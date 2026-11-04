@@ -1,4 +1,5 @@
 import type { ChAvailability, ChRoster, ChRosterPlayer } from '../../data/roster';
+import { classYearKey, classYearLineFor, type ChYearKey } from '../../lib/class-year';
 import { formatSigned, MINUS } from '../../lib/format';
 import type { ChPlayerPeek } from '../../ui/PlayerPeek';
 import { displayPlaces } from '../../lib/rank';
@@ -132,3 +133,81 @@ export function legsCaption(p: Pick<ChRosterPlayer, 'sgPerRound' | 'sgLegs'>): {
   const every = legs.length === Object.keys(p.sgLegs).length;
   return { lead: every ? `Gains in every leg; most ${LEG_WORD[best[0]]}, ` : `Gains most ${LEG_WORD[best[0]]}, `, figure: formatSigned(best[1]), tail: '', tone: 'gain' };
 }
+
+/** The team's zone and day, on the roster's data behind the lane's flag; a fixture has none and reads the product default. */
+export type RosterClock = { tz: string; day: string } | undefined;
+
+/** A player's year key on the team's calendar: null keeps the neutral coin. */
+export const yearKeyOf = (gradYear: number | null | undefined, clock: RosterClock): ChYearKey | null => classYearKey(gradYear, new Date(), clock?.tz);
+
+/** "Junior · Class of 2028" on the team's calendar, a far class once, null for a past or missing year. */
+export const yearLineOf = (gradYear: number | null | undefined, clock: RosterClock): string | null => classYearLineFor(gradYear, new Date(), clock?.tz);
+
+const YEAR_ORDER: readonly ChYearKey[] = ['sr', 'jr', 'so', 'fr'];
+const YEAR_WORD: Record<ChYearKey, [one: string, many: string]> = {
+  sr: ['Senior', 'Seniors'],
+  jr: ['Junior', 'Juniors'],
+  so: ['Sophomore', 'Sophomores'],
+  fr: ['Freshman', 'Freshmen'],
+};
+
+export type ClassMixRow = { key: ChYearKey; count: number; label: string };
+
+/** The class mix in year order: one row per year, a year with none included (the legend shows 0, as drawn). An unknown year is not counted. */
+export function classMix(players: ReadonlyArray<{ gradYear: number | null }>, clock: RosterClock): ClassMixRow[] {
+  const counts: Record<ChYearKey, number> = { sr: 0, jr: 0, so: 0, fr: 0 };
+  for (const p of players) {
+    const k = yearKeyOf(p.gradYear, clock);
+    if (k) counts[k] += 1;
+  }
+  return YEAR_ORDER.map((key) => ({ key, count: counts[key], label: YEAR_WORD[key][counts[key] === 1 ? 0 : 1] }));
+}
+
+export interface RosterTeamFigures {
+  total: number;
+  active: number;
+  injured: number;
+  /** The five lowest averages among active players with 3+ counting rounds; null until five qualify (or stats failed). */
+  topFive: ChRosterPlayer[] | null;
+  topFiveMean: number | null;
+}
+
+/** The team card's figures. Injured count as active (DECISIONS); the top five needs five players with three counting rounds. */
+export function teamCardFigures(players: ChRosterPlayer[], statsError = false): RosterTeamFigures {
+  const active = players.filter((p) => p.status === 'active');
+  const ranked = statsError ? [] : active.filter((p) => p.avg != null && p.rounds >= ROSTER_EARLY_FLOOR).sort((a, b) => a.avg! - b.avg!);
+  const topFive = ranked.length >= 5 ? ranked.slice(0, 5) : null;
+  return {
+    total: players.length,
+    active: active.length,
+    injured: active.filter((p) => p.availability === 'injured').length,
+    topFive,
+    topFiveMean: topFive ? topFive.reduce((a, p) => a + p.avg!, 0) / topFive.length : null,
+  };
+}
+
+export type RosterLeader = { kind: 'low' | 'heater' | 'look'; player: ChRosterPlayer; value: number };
+
+/**
+ * The leader cards, in order: Low average, On a heater (best mean of the last three), Needs a look. Only active players with three
+ * counting rounds count. Needs a look is the lowest strokes gained among players carrying a warning or loss note; missing strokes
+ * gained hides that card, and nobody with the note hides it too.
+ */
+export function leaderPicks(players: ChRosterPlayer[], statsError = false): RosterLeader[] {
+  if (statsError) return [];
+  const pool = players.filter((p) => p.status === 'active' && p.rounds >= ROSTER_EARLY_FLOOR);
+  const out: RosterLeader[] = [];
+  const low = pool.filter((p) => p.avg != null).sort((a, b) => a.avg! - b.avg!)[0];
+  if (low) out.push({ kind: 'low', player: low, value: low.avg! });
+  const lastThree = (p: ChRosterPlayer) => p.trend.slice(-3).reduce((a, b) => a + b, 0) / 3;
+  const hot = pool.filter((p) => p.trend.length >= 3).sort((a, b) => lastThree(a) - lastThree(b))[0];
+  if (hot) out.push({ kind: 'heater', player: hot, value: lastThree(hot) });
+  const look = pool
+    .filter((p) => (p.attention?.tone === 'warning' || p.attention?.tone === 'loss') && p.sgPerRound != null)
+    .sort((a, b) => a.sgPerRound! - b.sgPerRound!)[0];
+  if (look) out.push({ kind: 'look', player: look, value: look.sgPerRound! });
+  return out;
+}
+
+/** The last five rounds' range on one scale for the whole list: bars draw the same five they colour (R10). */
+export const lastFive = (trend: readonly number[]): readonly number[] => trend.slice(-5);

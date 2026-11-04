@@ -263,8 +263,11 @@
 .ch-avatar[data-year='fr'] {
   --ch-av-year: var(--ch-yr-fr);
 }
-.ch-avatar[data-dim] {
-  opacity: 0.8;
+/* A dimmed coin dims its fill only: the initials stay opaque white (classes-roster-home 06 13.4 A6). */
+.ch-avatar[data-year][data-dim] {
+  background: color-mix(in srgb, color-mix(in srgb, var(--ch-av-year) 35%, var(--ch-chart-flat)) 80%, transparent);
+}
+.ch-avatar[data-dim]:not([data-year]) {
   filter: saturate(0.35);
 }
 
@@ -2633,8 +2636,14 @@ html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
 .ch-formbars i {
   flex: 1;
   min-height: 5px;
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--ch-text-primary) 20%, transparent);
+  border-radius: var(--ch-radius-mark);
+  /* The neutral bar holds 3:1 as a chart mark (06 13.4 B16). */
+  background: var(--ch-chart-flat);
+}
+/* Under three rounds, two neutral stubs: an honest gap, not a shape. */
+.ch-formbars.is-stub i {
+  height: 8px;
+  flex: 0 0 14px;
 }
 .ch-formbars i[data-tone='gain'] {
   background: var(--ch-gain);
@@ -2642,4 +2651,139 @@ html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
 .ch-formbars i[data-tone='loss'] {
   background: var(--ch-loss);
   opacity: 0.85;
+}
+
+/* The lane's card head, note and shared pieces (classes-roster-home 06 1.3). Everything here is scoped to the flag. */
+[data-ch-crh='on'] .ch-surface--card {
+  overflow: hidden;
+  box-shadow: var(--ch-crh-card-shadow);
+}
+[data-ch-crh='on'] .ch-surface--card .ch-surface__head {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px 12px;
+}
+[data-ch-crh='on'] .ch-surface--card .ch-surface__head::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 16px;
+  height: var(--ch-hairline-w);
+  background: var(--ch-separator);
+  content: '';
+}
+[data-ch-crh='on'] .ch-surface--card .ch-surface__title {
+  margin: 0;
+  font: var(--ch-type-card-title);
+  letter-spacing: var(--ch-track-17);
+  color: var(--ch-text-primary);
+}
+[data-ch-crh='on'] .ch-surface--card .ch-surface__foot {
+  position: relative;
+  padding: 12px 16px 14px;
+  border-top: 0;
+  font: var(--ch-type-meta);
+  color: var(--ch-crh-ink2);
+}
+[data-ch-crh='on'] .ch-surface--card .ch-surface__foot::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 16px;
+  height: var(--ch-hairline-w);
+  background: var(--ch-separator);
+  content: '';
+}
+[data-ch-crh='on'] .ch-group__row:is(:active, [data-ch-pressed]) {
+  background: color-mix(in srgb, var(--ch-ink-900) 5%, transparent);
+}
+[data-ch-crh='on'] [data-year='sr'] {
+  --y: var(--ch-yr-sr);
+}
+[data-ch-crh='on'] [data-year='jr'] {
+  --y: var(--ch-yr-jr);
+}
+[data-ch-crh='on'] [data-year='so'] {
+  --y: var(--ch-yr-so);
+}
+[data-ch-crh='on'] [data-year='fr'] {
+  --y: var(--ch-yr-fr);
+}
+/* The empty and failed block, inside the card that would hold the data. */
+[data-ch-crh='on'] .ch-crh-ste {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 26px 20px 22px;
+  text-align: center;
+}
+[data-ch-crh='on'] .ch-crh-ste__ic {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  background: var(--ch-accent-tint);
+  color: var(--ch-accent-ink);
+}
+[data-ch-crh='on'] .ch-crh-ste.is-failed .ch-crh-ste__ic {
+  background: var(--ch-warn-bg);
+  color: var(--ch-warn-icon);
+}
+[data-ch-crh='on'] .ch-crh-ste > b {
+  font: var(--ch-type-16-strong);
+  color: var(--ch-text-primary);
+  text-wrap: balance;
+}
+[data-ch-crh='on'] .ch-crh-ste > p {
+  max-width: 34ch;
+  margin: 0;
+  font: var(--ch-type-14);
+  color: var(--ch-crh-ink2);
+  text-wrap: pretty;
+}
+[data-ch-crh='on'] .ch-crh-ste__btns {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+/* The scoring line on the lane's cards. The area is flat, no gradient (SHARED-2). */
+[data-ch-crh='on'] .ch-crh-line {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+[data-ch-crh='on'] .ch-crh-line__ln {
+  fill: none;
+  stroke: var(--ch-green-500);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+[data-ch-crh='on'] .ch-crh-line__ar {
+  fill: color-mix(in srgb, var(--ch-green-500) 10%, transparent);
+}
+[data-ch-crh='on'] .ch-crh-line__mean {
+  stroke: var(--ch-separator);
+  stroke-dasharray: 2 4;
+}
+[data-ch-crh='on'] .ch-crh-line__pt {
+  fill: var(--ch-green-500);
+  stroke: var(--ch-card-bg);
+  stroke-width: 2.2;
+}
+[data-ch-crh='on'] .ch-crh-line__t {
+  font-size: 11px;
+  fill: var(--ch-crh-ink4);
+}
+/* The focus ring (06 CP-6.1): ink on the page and cards, champagne on the green. Never after a tap. */
+main[data-ch-crh='on'] :focus-visible {
+  outline: 2px solid var(--ch-accent-ink);
+  outline-offset: 2px;
 }

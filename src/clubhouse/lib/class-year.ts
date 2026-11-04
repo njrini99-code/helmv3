@@ -45,3 +45,15 @@ export function classYearLine(classYear: string | null | undefined, graduationYe
   if (!grad || label === grad) return label;
   return `${label} · ${grad}`;
 }
+
+/**
+ * The line a player's year chip and sub-line read, behind the lane's flag: "Junior · Class of 2028" inside the four years, "Class of
+ * 2031" once when the year is further out, and null for a past or missing year, so no "Class of 2026" is invented for an active player.
+ */
+export function classYearLineFor(graduationYear: number | null | undefined, now = new Date(), tz: string = SEASON_DEFAULT_TZ): string | null {
+  if (!graduationYear) return null;
+  const year = yearOf(graduationYear, now, tz);
+  if (year) return classYearLine(year.label, graduationYear);
+  const academicEnd = Number(seasonStartOfDay(teamDay(now, tz)).slice(0, 4)) + 1;
+  return graduationYear > academicEnd ? classYearLine(null, graduationYear) : null;
+}

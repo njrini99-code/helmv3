@@ -11,6 +11,7 @@ import { NOTE_TABLE_MISSING_CODES, parseAvailability, type ChAvailability } from
 import { fromUntyped } from '@/lib/supabase/untyped';
 import {
   classYearLabel,
+  countsForScoring,
   displayHandicap,
   fullName,
   groupByPlayer,
@@ -25,6 +26,9 @@ import {
   type ChForm,
 } from './season';
 import { formatFixed } from '../lib/format';
+import { isoDay } from '../lib/dates';
+import { sgBaseline } from '../lib/sg';
+import { tourForGender } from './stats-common';
 
 /**
  * Coach Roster (Clubhouse). Server-read, final on first paint, every section
@@ -123,6 +127,10 @@ export interface ChRoster {
    * drawn). `failed`: the gate or a read did not load (dashes, CH-3212). A player with no current read is absent from `byPlayer`.
    */
   helm: ChRosterHelm;
+  /** Behind `clubhouse_classes_roster_home_v1`: the team's zone and day, for the year coins and the day and 1 August rollover. */
+  clock?: { tz: string; day: string };
+  /** Behind the same flag: the team's baseline name for SG / round ("vs Tour"), never "vs D1". */
+  sgVs?: string;
 }
 
 export type ChRosterHelm = { status: 'on'; byPlayer: Record<string, ChReadCount> } | { status: 'off' } | { status: 'failed' };
@@ -161,12 +169,12 @@ export function attentionFor(
   return null;
 }
 
-export async function loadRoster(input: { teamId: string; coachId: string }): Promise<ChRoster> {
+export async function loadRoster(input: { teamId: string; coachId: string; /** The lane's flag: practice rounds leave every figure (DECISIONS). Off counts as today. */ crh?: boolean }): Promise<ChRoster> {
   const supabase = await createClient();
   const now = new Date();
 
   const [teamRes, membersRes, requestsRes, tz] = await Promise.all([
-    supabase.from('golf_teams').select('name, join_code').eq('id', input.teamId).maybeSingle(),
+    supabase.from('golf_teams').select('name, join_code, gender').eq('id', input.teamId).maybeSingle(),
     supabase
       .from('golf_team_members')
       .select('status, jersey_number, joined_at, availability, availability_updated_at, player:golf_players(id, first_name, last_name, graduation_year, hometown, state, high_school_name, handicap, handicap_index)')
@@ -215,7 +223,8 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     loadHelm(supabase, input, ids),
     loadAvailabilityNotes(supabase, input.teamId),
   ]);
-  const byPlayer = groupByPlayer(season.rounds);
+  const counted = input.crh ? season.rounds.filter(countsForScoring) : season.rounds;
+  const byPlayer = groupByPlayer(counted);
   const teamPosting = season.rounds.some((r) => daysBetween(now, new Date(`${r.round_date.slice(0, 10)}T12:00:00Z`)) < QUIET_DAYS);
 
   const players: ChRosterPlayer[] = members.map((m) => {
@@ -261,7 +270,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
   });
 
   const activeIds = new Set(players.filter((p) => p.status === 'active').map((p) => p.id));
-  const teamAvg = season.error ? null : mean(season.rounds.filter((r) => activeIds.has(r.player_id) && isFull18(r)).map((r) => r.total_score as number));
+  const teamAvg = season.error ? null : mean(counted.filter((r) => activeIds.has(r.player_id) && isFull18(r)).map((r) => r.total_score as number));
 
   const requests: ChJoinRequest[] = (requestsRes.success ? (requestsRes.data ?? []) : [])
     .filter((r) => r.status === 'pending')
@@ -297,6 +306,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     requests,
     requestsError: !requestsRes.success,
     helm,
+    ...(input.crh ? { clock: { tz, day: isoDay(now, tz) }, sgVs: sgBaseline(tourForGender(teamRes.data?.gender)).vs } : {}),
   };
 }
 

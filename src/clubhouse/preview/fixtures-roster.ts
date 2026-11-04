@@ -126,6 +126,33 @@ export const PREVIEW_ROSTER_PARTIAL: ChRoster = {
 };
 
 /** `?state=helm-failed`: CoachHelm's counts did not load (the panel's dashes, CH-3212); everything else did. */
+/* Behind the lane's flag (classes-roster-home 05): the team's real name stands in for "Varsity", which has no field, and the states the matrices add. */
+export const PREVIEW_ROSTER_CRH: ChRoster = { ...PREVIEW_ROSTER, teamName: 'Demo University Golf', sgVs: 'vs Tour', clock: { tz: 'America/New_York', day: '2026-10-14' } };
+/** `?state=early`: everyone on two rounds, totals only: stubs, no SG, no leaders, no top five (the staging season today). */
+export const PREVIEW_ROSTER_EARLY: ChRoster = {
+  ...PREVIEW_ROSTER_CRH,
+  players: PREVIEW_ROSTER_CRH.players.map((p) => ({ ...p, rounds: 2, trend: p.trend.slice(-2), form: 'early' as const, sgPerRound: null, sgLegs: { tee: null, approach: null, around: null, putting: null }, attention: null })),
+};
+const LONG_NAME = 'Maximilian Featherstonehaugh-Whitaker';
+/** `?state=long`: a long name in the rows, a leader card and the requests row. */
+export const PREVIEW_ROSTER_LONG: ChRoster = {
+  ...PREVIEW_ROSTER_CRH,
+  players: PREVIEW_ROSTER_CRH.players.map((p, i) => (i === 0 ? { ...p, name: LONG_NAME, firstName: 'Maximilian' } : p)),
+  requests: PREVIEW_ROSTER_CRH.requests.map((r, i) => (i === 0 ? { ...r, name: LONG_NAME } : r)),
+};
+/** `?state=big`: 25 players; counts and the mix are computed and nothing is truncated. */
+export const PREVIEW_ROSTER_BIG: ChRoster = {
+  ...PREVIEW_ROSTER_CRH,
+  players: Array.from({ length: 25 }, (_, i) => {
+    const base = PREVIEW_ROSTER_CRH.players[i % PREVIEW_ROSTER_CRH.players.length]!;
+    return { ...base, id: `${base.id}-${i}`, name: i < 8 ? base.name : `${base.firstName} ${String.fromCharCode(65 + (i % 26))}.`, status: i === 24 ? 'inactive' : 'active' } as ChRosterPlayer;
+  }),
+};
+/** `?state=norequests`, with `&tab=requests`: the sheet with nobody waiting. */
+export const PREVIEW_ROSTER_NO_REQUESTS: ChRoster = { ...PREVIEW_ROSTER_CRH, requests: [] };
+/** `?state=onerequest`: one request, no Approve all. */
+export const PREVIEW_ROSTER_ONE_REQUEST: ChRoster = { ...PREVIEW_ROSTER_CRH, requests: PREVIEW_ROSTER_CRH.requests.slice(0, 1) };
+
 export const PREVIEW_ROSTER_HELM_FAILED: ChRoster = { ...PREVIEW_ROSTER, helm: { status: 'failed' } };
 /** `?state=helm-off`: CoachHelm is off for this coach, so the panel draws no CoachHelm block. */
 export const PREVIEW_ROSTER_HELM_OFF: ChRoster = { ...PREVIEW_ROSTER, helm: { status: 'off' } };
