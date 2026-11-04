@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChMessagesApi } from '../screens/messages/MessagesView';
 import { MessagesView } from '../screens/messages/MessagesScreen';
 import type { ChAnnouncement, ChConv, ChFile, ChMember, ChMsg, ChMute, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
-import { useToast } from '../ui/Toast';
+import { useToast, useToastPill } from '../ui/Toast';
 import { designFiles, designLongInbox, designReadMarks, DESIGN_CONVS, DESIGN_NOW, DESIGN_PEOPLE, DESIGN_REACTIONS, DESIGN_ROUTE_CONV, designRouteFixture, DESIGN_THREADS, DESIGN_VOTES, designAttachments, designMsg, designPins, designRowTyping } from './messages-design-cast';
 
 import { usePinned } from '../screens/messages/pinned';
@@ -200,6 +200,7 @@ declare global {
 export function PreviewMessages({ state, view, play, role = 'coach' }: { state?: string; view?: string; play?: string; role?: 'coach' | 'player' }) {
   const toast = useToast();
   const design = state === 'design';
+  useToastPill(design);
   const cast = useMemo(() => (design ? { ...DESIGN_CAST, ...designRouteFixture(view) } : castOf(role)), [design, role, view]);
   const { people, all } = cast;
   const [convs, setConvs] = useState<ChConv[]>(state === 'empty' || (design && (view === 'empty' || view === 'loading')) ? [] : design && view === 'longinbox' ? designLongInbox(cast.convs) : cast.convs);
@@ -283,6 +284,10 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
         picked.items.add(new File(['lineup'], 'Lineup · Saturday.pdf', { type: 'application/pdf' }));
         input.files = picked.files;
         input.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
+      }, () => {
+        document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        document.querySelector<HTMLElement>('.ch-msv-plus__key')?.getAttribute('aria-expanded') === 'true' && plus();
         return true;
       }],
       // The drag's stop, held still for the shot (06 S-MSG.times).

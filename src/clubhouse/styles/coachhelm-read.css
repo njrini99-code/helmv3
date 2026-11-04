@@ -1332,3 +1332,48 @@ html[data-fw-theme='dark'] .ch-hr .btn.pri {
 .ch-hr .hero b {
   letter-spacing: 0;
 }
+/* S-READ-DESK: the ladder no wider than 340. */
+@media (min-width: 821px) {
+  .ch-hr .ladder {
+    max-width: 340px;
+  }
+}
+.ch-hr-swr {
+  position: relative;
+}
+.ch-hr-swr summary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 34px;
+  cursor: pointer;
+  list-style: none;
+}
+.ch-hr-swr summary::-webkit-details-marker {
+  display: none;
+}
+.ch-hr-swr .pop {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 3;
+  display: grid;
+  width: 250px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-sheet-shadow);
+}
+.ch-hr-swr .pop a {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: var(--ch-text-primary);
+  font: var(--ch-type-15);
+}
+.ch-hr-swr .pop a[aria-current] {
+  background: var(--ch-well-bg-flat);
+  font: var(--ch-type-15-medium);
+}

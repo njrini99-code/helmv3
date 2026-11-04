@@ -64,6 +64,8 @@ export interface ChReadsRailRow {
 }
 
 export interface ChReadView {
+  /** Coach only, Mac rail: the team, to change player from the read (S-READ-DESK.rail). Never set for a player. */
+  team?: Array<{ id: string; name: string }>;
   head: { playerId: string | null; name: string; first: string };
   area: string;
   read: ChReadDetail | null;
@@ -179,7 +181,7 @@ export function toChReadDetail(raw: EvidenceInsight, deep: ChDeepInsight, role: 
   const diagnosis = ev.diagnosis as { basis?: { narrowing?: Parameters<typeof funnelOf>[0]; checked?: string[] } } | null | undefined;
   const support = base.engine?.support as { word?: string; range?: string | null } | undefined;
   const sampleN = num(ev.sample_n);
-  const factors = ev.confidence_factors as { sample_adequacy?: number } | undefined;
+  const factors = ev.confidence_factors as { sample_adequacy?: number; recency?: number; factors_measured?: boolean } | undefined;
   const rows: ChReadDetail['sure']['rows'] = [];
   if (sampleN != null && factors?.sample_adequacy != null && factors.sample_adequacy > 0) {
     const need = Math.round(sampleN / Math.min(1, factors.sample_adequacy));
@@ -189,6 +191,8 @@ export function toChReadDetail(raw: EvidenceInsight, deep: ChDeepInsight, role: 
     const floor = Math.ceil(need);
     rows.push({ k: 'Sample', have: sampleN, need, text: role === 'player' ? said : sampleN >= floor ? `${said}, past the ${floor} it needs` : `${sampleN} of the ${floor} ${noun || 'it counts'} it needs`.replace(' it counts it needs',' it needs') });
   }
+  // 03 §9: a real measure only when the engine says it measured it, and said as a share of its own window.
+  if (factors?.factors_measured === true && factors.recency != null) rows.push({ k: 'Recent', have: factors.recency, need: 1, text: factors.recency >= 0.5 ? 'Most rounds in the last 45 days' : 'Few rounds in the last 45 days' });
   const checked = cause?.checked as { holes_with_full_record?: number; of?: number; fields_missing?: string[] } | undefined;
   if (checked?.of) {
     const miss = checked.of - (checked.holes_with_full_record ?? 0);

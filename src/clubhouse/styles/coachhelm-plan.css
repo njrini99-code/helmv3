@@ -1664,3 +1664,9 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 .ch-cpv-full .fbar .vsw button:disabled {
   opacity: 0.4;
 }
+/* S-ASKD.pane: the chat narrows beside the plan, so nothing sits under it. */
+@media (min-width: 821px) {
+  .ch-root:has(> .ch-cpv-full) .ch-ask-main {
+    margin-right: 452px;
+  }
+}

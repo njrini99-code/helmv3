@@ -89,6 +89,15 @@ function AskFrame({ team, children }: { team?: string; children: ReactNode }) {
  * `load` is what the server read (data/coachhelm-chat.ts): a roster of nobody and a context that did not load are their own
  * pages; everything else is the chat. The conversation itself runs on the production hook and route, unchanged.
  */
+/** The scope line's words: who, from a name in the question, and the window, if the question gave one. Never a figure, so it can't overclaim. */
+export function askScope(question: string, team: string, names: readonly string[]): string {
+  const q = question.toLowerCase();
+  const who = names.find((n) => q.includes(n.toLowerCase()) || q.includes((n.split(' ')[0] ?? n).toLowerCase())) ?? team;
+  const rounds = q.match(/last (\d+) rounds/)?.[0];
+  const window = rounds ?? (/this season|this fall|this spring/.exec(q)?.[0]) ?? (/last season|last fall/.exec(q)?.[0]) ?? 'last 30 days';
+  return `${who} · ${window}`;
+}
+
 export function Ask({ load, chat = useCoachHelmChat, initial, v2 = false }: { load: ChAskLoad; chat?: ChAskChat; initial?: ChAskInitial; v2?: boolean }) {
   if (load.status === 'noRoster') {
     return (
@@ -291,6 +300,9 @@ function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatI
   const [sheetEvidence, setSheetEvidence] = useState<EvidenceFocus | null>(null);
   if (phone && evidenceOpen && evidence !== sheetEvidence) setSheetEvidence(evidence);
 
+  // S-ASK.scope: what the last question is about, in the same words the question used; it changes when a question is sent.
+  const lastAsked = [...chat.messages].reverse().find((m) => m.role === 'user')?.parts.flatMap((p) => (p.type === 'text' ? [p.text] : [])).join(' ') ?? '';
+  const scopeLine = showHome ? `${player ? 'My rounds' : data.teamName} · this season` : askScope(lastAsked, player ? 'My rounds' : data.teamName, player ? [] : (data.players ?? []).map((p) => p.name));
   return (
     <main className={'ch-ask' + (phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || chatSw.pending || undefined} data-switch={sw.pending ? 'view' : chatSw.pending ? 'chat' : undefined} data-ch-code="CH-13820" {...sw.enter}>
       {phone && (
@@ -355,7 +367,7 @@ function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatI
           )}
           {v2 && phone && !gone && (
             <p className="ch-ak-scope">
-              Reading <b>{player ? 'My rounds' : data.teamName} · {showHome ? 'this season' : 'last 30 days'}</b>
+              Reading <b>{scopeLine}</b>
             </p>
           )}
           <div className={'ch-ask-scroll' + (showHome ? ' is-home' : !gone && !data.threadFailed ? ' is-thread' : '')}>{body}</div>

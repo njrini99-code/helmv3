@@ -246,7 +246,7 @@ export function Receipt({ receipt, idempotencyKey }: { receipt: ActionReceipt; i
           <button type="button" className="lk undo" data-ch-ask-undo="" disabled={phase.kind === 'undoing'} onClick={() => void undo()}>
             <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" aria-hidden="true">
               <circle className="trk" cx="12" cy="12" r="10" />
-              <circle className="drn" cx="12" cy="12" r="10" style={{ animationDuration: `${left}ms` }} />
+              <circle className="drn" cx="12" cy="12" r="10" suppressHydrationWarning style={{ animationDuration: `${left}ms` }} />
             </svg>
             {phase.kind === 'undoing' ? 'Undoing' : 'Undo'}
           </button>

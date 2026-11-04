@@ -36,7 +36,7 @@ export function askFlowMessages(scene: string, stage: string): { messages: UIMes
   const proposal: ActionProposal & { tool: string } = { ...(f.publish ? { publish: f.publish } : {}), tool: f.tool, action: f.action, summary: f.title, facts: f.facts.map(([label, value]) => ({ label, value })), affects: [], notifications: [f.on], missing: [], idempotency_key: `key-${scene}` };
   const phase = stage === 'draft' || stage === 'confirm' ? 'requested' : stage === 'cancelled' ? 'denied' : 'approved';
   const parts: unknown[] = [...reads, { type: 'text', text: `Here’s a draft: ${f.title}. Change anything.`, state: 'done' }, { type: `tool-${f.tool}`, toolCallId: 'c1', input: {}, state: phase === 'requested' ? 'approval-requested' : 'approval-responded', approval: phase === 'requested' ? { id: 'approval-1' } : { id: 'approval-1', approved: phase === 'approved' } }, { type: 'data-action-proposal', id: `proposal-key-${scene}`, data: proposal }];
-  if (stage === 'receipt' || stage === 'told' || stage === 'failed' || stage === 'partial') parts.push({ type: 'data-action-receipt', id: `receipt-key-${scene}`, data: { status: stage === 'told' ? 'completed' : stage === 'failed' ? 'failed' : stage === 'partial' ? 'partial' : 'held', ...(stage === 'told' ? {} : { held_until: '2099-01-01T00:00:00Z' }), action: f.action, summary: f.done, created: [], notifications: stage === 'told' ? [{ channel: 'push', recipients: 7, status: 'sent', summary: 'Told 7' }] : [], idempotency_key: `key-${scene}` } as unknown as ActionReceipt });
+  if (stage === 'receipt' || stage === 'told' || stage === 'failed' || stage === 'partial') parts.push({ type: 'data-action-receipt', id: `receipt-key-${scene}`, data: { status: stage === 'told' ? 'completed' : stage === 'failed' ? 'failed' : stage === 'partial' ? 'partial' : 'held', ...(stage === 'told' ? {} : { held_until: '2099-01-01T00:00:00Z' }), action: f.action, summary: f.done, created: [], partial_failures: stage === 'partial' ? ['The invite didn’t go out.'] : [], notifications: stage === 'told' ? [{ channel: 'push', recipients: 7, status: 'sent', summary: 'Told 7' }] : [], idempotency_key: `key-${scene}` } as unknown as ActionReceipt });
   return { messages: [q, { id: 'a1', role: 'assistant', parts } as unknown as UIMessage], busy: false };
 }
 
@@ -54,7 +54,7 @@ const BRIEF = {
 };
 const assistant = (parts: unknown[]) => ({ id: 'a1', role: 'assistant', parts }) as unknown as UIMessage;
 const PLAN_Q = user('Build Thursday’s practice around putting');
-const planPart = (id: string, data: unknown) => ({ type: 'data-practice-plan', id, data });
+const planPart = (id: string, data: object) => ({ type: 'data-practice-plan', id, data: { ...data, saveOn: true } });
 const redrafted = { ...PP_PLAN_PART, draft: { ...PP_PLAN_PART.draft, version: PP_PLAN_PART.draft.version + 1, body: { ...PP_PLAN_PART.draft.body, variants: { ...PP_PLAN_PART.draft.body.variants, main: { ...PP_PLAN_PART.draft.body.variants.main, blocks: PP_PLAN_PART.draft.body.variants.main.blocks.map((b, i) => (i === 0 ? { ...b, len: b.len + 15 } : b)) } } } } };
 
 export interface AskIdRoute {

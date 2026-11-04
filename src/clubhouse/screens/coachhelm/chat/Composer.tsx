@@ -165,6 +165,15 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
   const [dismissed, setDismissed] = useState(false);
   const [pickIds, setPickIds] = useState<PickerIds>({});
   const box = useRef<HTMLTextAreaElement>(null);
+  // S-ASK.toolcard.ask-about: a chart mark fills the field; it never sends.
+  useEffect(() => {
+    const fill = (e: Event) => {
+      setValue((e as CustomEvent<string>).detail);
+      box.current?.focus();
+    };
+    window.addEventListener('ch-ask-fill', fill);
+    return () => window.removeEventListener('ch-ask-fill', fill);
+  }, [setValue]);
   const frame = useRef<HTMLDivElement>(null);
   const cmd = useRef<HTMLDivElement>(null);
   const cmdList = useRef<HTMLDivElement>(null);

@@ -160,18 +160,18 @@ html[data-fw-theme='dark'] .ch-th[data-v2] {
 .ch-ak-miss .flag { fill: var(--ch-text-primary); }
 .ch-ak-miss figcaption { font: var(--ch-type-14); color: var(--ch-text-secondary); text-align: center; }
 .ch-ak-putts { display: grid; gap: 8px; }
-.ch-ak-putts > div { display: grid; grid-template-columns: 84px minmax(0, 1fr) 40px 24px; align-items: center; gap: 8px; font: var(--ch-type-14);  color: var(--ch-text-secondary); }
+.ch-ak-putts > button { width: 100%; display: grid; grid-template-columns: 84px minmax(0, 1fr) 40px 24px; align-items: center; gap: 8px; font: var(--ch-type-14);  color: var(--ch-text-secondary); }
 .ch-ak-putts .t { display: block; height: 10px; border-radius: var(--ch-radius-xs); background: var(--ch-chart-track, #ebe5d8); overflow: hidden; }
 .ch-ak-putts .t i { display: block; height: 100%; background: var(--ch-chart-gain-fill, #1f6b45); transform-origin: 0 50%; }
 .ch-ak-putts b { font-weight:var(--ch-fw-600); color: var(--ch-text-primary); text-align: right; }
 .ch-ak-putts small { color: var(--ch-text-tertiary); text-align: right; font: var(--ch-type-13); }
 .ch-ak-season { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.ch-ak-season div { padding: 12px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); }
+.ch-ak-season .ch-ak-mark { padding: 12px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); }
 .ch-ak-season b { display: block; font: var(--ch-type-22-medium);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-22); }
 .ch-ak-season span { display: block; margin-top: 6px; font: var(--ch-type-13);  color: var(--ch-text-secondary); }
 .ch-ak-season p { grid-column: 1 / -1; margin: 0; font: var(--ch-type-13);  color: var(--ch-text-tertiary); }
 .ch-ak-holes { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 4px; }
-.ch-ak-holes span { display: grid; gap: 2px; justify-items: center; padding: 6px 0; border-radius: var(--ch-radius-sm); background: var(--ch-well-bg-flat); }
+.ch-ak-holes .ch-ak-mark { display: grid; gap: 2px; justify-items: center; padding: 6px 0; border-radius: var(--ch-radius-sm); background: var(--ch-well-bg-flat); }
 .ch-ak-holes small { font: var(--ch-type-12); color: var(--ch-text-tertiary); }
 .ch-ak-holes b { font: var(--ch-type-14-strong);  color: var(--ch-text-primary); }
 .ch-ak-holes .u b { color: var(--ch-flag, #b3261e); }
@@ -239,7 +239,7 @@ html[data-fw-theme='dark'] .ch-th[data-v2] {
 .ch-ak-knows { display: grid; gap: 8px; padding: 12px 12px; border-top: var(--ch-hairline-w) solid var(--ch-separator); }
 .ch-ak-knows__tone { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; padding: 2px; border-radius: var(--ch-radius-sm); background: var(--ch-canvas-sunken, var(--ch-bg-page)); }
 .ch-ak-knows__tone button { padding: 6px 4px; border: 0; border-radius: var(--ch-radius-sm); background: none; color: var(--ch-text-secondary); font: var(--ch-type-12-medium);  cursor: pointer; }
-.ch-ak-knows__tone button[aria-pressed='true'] { background: var(--ch-seg-on-bg); color: var(--ch-text-primary); }
+.ch-ak-knows__tone button[aria-pressed='true'] { background: var(--ch-seg-on-bg); color: var(--ch-seg-on-ink); }
 .ch-ak-knows h3 { margin: 0; font: var(--ch-type-12-strong); color: var(--ch-text-secondary); }
 .ch-ak-knows ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font: var(--ch-type-13);  }
 .ch-ak-knows li { display: flex; gap: 6px; align-items: start; justify-content: space-between; }
@@ -446,4 +446,42 @@ html[data-fw-theme='dark'] .ch-th[data-v2] {
 }
 .ch-ask.is-phone .ch-ak-home {
   padding-inline: 0;
+}
+.ch-ak-mark {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+.ch-ak-miss .w {
+  cursor: pointer;
+}
+.ch-th-cv__head {
+  position: relative;
+}
+.ch-th-cv__expand {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--ch-well-bg-flat);
+  color: var(--ch-text-secondary);
+}
+.ch-th-cv__expand::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+.ch-th-cv__full {
+  display: grid;
+  gap: 16px;
 }

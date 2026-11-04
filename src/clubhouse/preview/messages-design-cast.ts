@@ -72,6 +72,7 @@ export const DESIGN_POLL: Poll = {
 export const DESIGN_VOTES: PollResponseRow[] = [
   ...['maya', 'eli', 'owen', 'luca'].map((user_id) => ({ message_id: 't2', user_id, choice: 'o1' })),
   ...['sam', 'ben'].map((user_id) => ({ message_id: 't2', user_id, choice: 'o2' })),
+  { message_id: 't2', user_id: 'jack', choice: 'o3' },
 ];
 
 export const DESIGN_THREADS: Record<string, ChMsg[]> = {

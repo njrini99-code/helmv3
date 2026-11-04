@@ -488,7 +488,7 @@ export default async function ClubhousePreview({
           <StatsPlayer data={PREVIEW_PLAYER_LOOPS_SELF} coachId={null} shs={shs} />
         ) : (
           <StatsPlayer
-            data={state === 'early' ? PREVIEW_PLAYER_EARLY : state === 'self' ? (shs ? PREVIEW_PLAYER_SHS_SELF : PREVIEW_PLAYER_SUGGESTED) : shs ? PREVIEW_PLAYER_SHS : PREVIEW_PLAYER}
+            data={state === 'early' || state === 'one' ? PREVIEW_PLAYER_EARLY : state === 'self' ? (shs ? PREVIEW_PLAYER_SHS_SELF : PREVIEW_PLAYER_SUGGESTED) : shs ? PREVIEW_PLAYER_SHS : PREVIEW_PLAYER}
             coachId={state === 'self' ? null : 'preview-coach'}
             initialTab={tab}
             reads={state === 'readsoff' ? { status: 'off' } : state === 'readsfailed' ? PREVIEW_READS_FAILED : state === 'self' ? PREVIEW_SELF_READS : PREVIEW_PLAYER_READS}

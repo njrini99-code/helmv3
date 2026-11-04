@@ -7,7 +7,7 @@ import { HELM_PLAYERS, PREVIEW_TOUR, breakBias, penalties, slope } from './fixtu
 
 /** What the engine stores beside a read: the same keys the real row has, so the shapers draw every card. */
 const withDepth = (raw: EvidenceInsight, extra: Record<string, unknown>, movement: { from: number; to: number } | null): EvidenceInsight =>
-  ({ ...raw, evidence: { ...raw.evidence, sample_n: 28, confidence_factors: { sample_adequacy: 1 }, ...extra }, metadata: { ...(raw.metadata as object | null), ...(movement ? { movement } : {}) } }) as EvidenceInsight;
+  ({ ...raw, evidence: { ...raw.evidence, sample_n: 28, source_round_ids: ['r1', 'r2', 'r3', 'r4'], confidence_factors: { sample_adequacy: 1, factors_measured: true, recency: 0.8 }, ...extra }, metadata: { ...(raw.metadata as object | null), ...(movement ? { movement: { ...movement, direction: movement.to > movement.from ? 'up' : 'down' } } : {}) } }) as EvidenceInsight;
 const NARROW = (steps: Array<[string, string]>) => ({ basis: { narrowing: { steps: steps.map(([label, statement]) => ({ passed: true, label, statement })), stopped_at: null }, checked: ['length: 16 of 28', 'par: long par 4s', 'shape: both sides'] } });
 const LADDER = (team: number, tour: number) => ({ comparison: { lines: [{ source: 'team_pool', label: 'Team pool', value: team, n: 214, n_noun: 'putts', players: 9 }, { source: 'tour', label: 'Tour', value: tour }] } });
 
@@ -40,5 +40,6 @@ export function previewReadView(q: string | undefined, role: 'coach' | 'player',
   const others = Object.entries(RAW).filter(([k]) => k !== (q ?? 'approach')).map(([, f]) => ({ ...f(), player_id: raw.player_id }) as EvidenceInsight);
   const list = [deep, ...others.map(deepOf)];
   const dive: ChDeepDive = { list, tour: 'Tour', rounds: 21 as never, themes: {}, roundsFailed: false, plansFailed: false, themesFailed: false, counts: diveCounts(list) };
-  return toChReadView(dive, new Map([raw, ...others].map((r) => [r.id, r])), gone ? 'gone' : raw.id, role, { playerId: role === 'coach' ? raw.player_id : null, name: role === 'coach' ? name : 'You', first: role === 'coach' ? first : 'You' }, { ...READ_CALLS, teamPool: true });
+  const view = toChReadView(dive, new Map([raw, ...others].map((r) => [r.id, r])), gone ? 'gone' : raw.id, role, { playerId: role === 'coach' ? raw.player_id : null, name: role === 'coach' ? name : 'You', first: role === 'coach' ? first : 'You' }, { ...READ_CALLS, teamPool: true });
+  return role === 'coach' ? { ...view, team: [HELM_PLAYERS.priya, HELM_PLAYERS.eli, HELM_PLAYERS.jonah].map((p) => ({ id: p.id, name: p.name })) } : view;
 }
