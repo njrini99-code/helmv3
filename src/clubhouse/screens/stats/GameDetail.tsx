@@ -56,6 +56,15 @@ function floorFig(label: string, kind: 'fraction' | 'scramble', n: number, v: nu
   return [label, pct(v), note, t];
 }
 
+/** The page's key under the average round's bar. */
+const AVERAGE_ROUND = [
+  ['eagle', 'Eagle'],
+  ['birdie', 'Birdie'],
+  ['par', 'Par'],
+  ['bogey', 'Bogey'],
+  ['double', 'Double+'],
+] as const;
+
 const SECTIONS = [
   ['scoring', 'Scoring'],
   ['tee', 'Off the tee'],
@@ -158,6 +167,7 @@ function Sec({
   figs,
   detailFigs,
   otherFigs,
+  extra,
   rule,
   how,
   reads,
@@ -177,6 +187,8 @@ function Sec({
   detailFigs?: Fig[];
   /** Today's figures the page leaves out of its four: kept, in a card of their own. */
   otherFigs?: Fig[];
+  /** A panel the page leaves out, kept on a pushed detail below the page's own cards. */
+  extra?: ReactNode;
   /** The window and the rounds this section counts, under its figures. */
   rule: string;
   /** The phone's long account of what the rule line counts, behind "How this is measured" (the line above is then the short one). */
@@ -206,7 +218,7 @@ function Sec({
       </dl>
     );
     const figures = (
-      <ShsCard title="The figures" meta={detail.figuresMeta}>
+      <ShsCard title={detail.figuresFirst ? 'The figures' : 'Per round'} meta={detail.figuresMeta}>
         {tiles(detailFigs ?? figs)}
       </ShsCard>
     );
@@ -234,6 +246,7 @@ function Sec({
           </>
         )}
         {detail.after}
+        {extra}
         {otherFigs && otherFigs.length > 0 && <ShsCard title="More figures">{tiles(otherFigs)}</ShsCard>}
         <MoreOpen.Provider value>{more}</MoreOpen.Provider>
         <ShsCard title="What this counts">
@@ -546,6 +559,11 @@ export function GameDetail({
       <Sec
         id="scoring"
         detail={asDetail}
+        extra={
+          <Panel title="Scoring by par" wide>
+            <ParTiles rows={pars} mark={sgBaseline(tour).mark} />
+          </Panel>
+        }
         hide={!show('scoring')}
         reads={<ReadsLine reads={reads} area="scoring" />}
         icon={Flag}
@@ -576,12 +594,37 @@ export function GameDetail({
           </More>
         }
       >
-        <Panel title={asDetail ? 'An average round' : 'What an average round looks like'} wide {...noteOf('Every scored hole by result, under par to the left and over par to the right, with each result a round. Select one for the holes behind it. Doubles or worse are the quickest place to save strokes.', 'Doubles or worse are the quickest place to save strokes.')}>
-          <ScoreMixBar counts={totals} perRound={dist} triple={x.triplePlus} label="Every hole, by result" />
-        </Panel>
-        <Panel title="Scoring by par" wide>
-          <ParTiles rows={pars} mark={sgBaseline(tour).mark} />
-        </Panel>
+        {asDetail ? (
+          <ShsCard title="An average round" meta="18 holes by result">
+            {holesScored === 0 ? (
+              <p className="ch-sv-mix-none">No holes scored yet.</p>
+            ) : (
+              <div className="ch-sv-mix">
+                <div className="ch-shs-stack is-detail" aria-hidden="true" data-ch-grow="">
+                  {AVERAGE_ROUND.map(([key]) => (dist[key] > 0 ? <span key={key} className={`is-${key}`} style={{ flexGrow: dist[key], background: 'var(--ch-sv-mix-fill)' }} /> : null))}
+                </div>
+                <div className="ch-shs-skey">
+                  {AVERAGE_ROUND.map(([key, label]) => (
+                    <div key={key} className={`is-${key}`}>
+                      <i style={{ background: 'var(--ch-sv-mix-fill)' }} aria-hidden="true" />
+                      {label}
+                      <b className="ch-num">{formatFixed(dist[key])}</b>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </ShsCard>
+        ) : (
+          <Panel title="What an average round looks like" wide {...noteOf('Every scored hole by result, under par to the left and over par to the right, with each result a round. Select one for the holes behind it. Doubles or worse are the quickest place to save strokes.', 'Doubles or worse are the quickest place to save strokes.')}>
+            <ScoreMixBar counts={totals} perRound={dist} triple={x.triplePlus} label="Every hole, by result" />
+          </Panel>
+        )}
+        {!asDetail && (
+          <Panel title="Scoring by par" wide>
+            <ParTiles rows={pars} mark={sgBaseline(tour).mark} />
+          </Panel>
+        )}
       </Sec>
 
       <Sec

@@ -434,6 +434,17 @@ function ScoringCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => vo
 }
 
 /** The sentence (the honest insight, past its error only) and the two bars. Under four rounds it says when it will have something. */
+/** The page writes the change as one sentence: "Putts per round are down 0.8; greens in regulation are down 5.6 pts, against the previous 10." */
+function changeSentence(lines: ReadonlyArray<{ subject: string; figure: string; words: string }>): string {
+  const parts = lines.map((l, i) => {
+    const subject = i === 0 ? l.subject : l.subject.charAt(0).toLowerCase() + l.subject.slice(1);
+    const down = /^[−-]/.test(l.figure);
+    return `${subject} ${/^Putts|s$/.test(l.subject) ? 'are' : 'is'} ${down ? 'down' : 'up'} ${l.figure.replace(/^[−+-]/, '')}`;
+  });
+  const against = /than (.*)$/.exec(lines[0]?.words ?? '')?.[1];
+  return `${parts.join('; ')}${against ? `, against ${against}` : ''}.`;
+}
+
 function WhatChanged({ data }: { data: ChPlayerProfile }) {
   const scores = trendRounds(data.rounds, 'score').filter((r) => r.value != null);
   const bars = changeBars(data);
@@ -447,14 +458,7 @@ function WhatChanged({ data }: { data: ChPlayerProfile }) {
   return (
     <>
       {insight?.state === 'changes' ? (
-        <p className="ch-shs-hl">
-          {insight.lines.map((l, i) => (
-            <span key={l.subject}>
-              {i > 0 && ' '}
-              <b className={`ch-num ch-shs-${l.tone === 'is-gain' ? 'gain' : 'loss'}`}>{l.figure}</b> {l.words}.
-            </span>
-          ))}
-        </p>
+        <p className="ch-shs-hl">{changeSentence(insight.lines)}</p>
       ) : insight?.state === 'none' ? (
         <p className="ch-shs-hl">Nothing has moved past its usual round-to-round spread {insight.against}.</p>
       ) : (
