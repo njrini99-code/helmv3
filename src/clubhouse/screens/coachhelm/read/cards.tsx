@@ -16,7 +16,7 @@ import { ReadLadder } from './ReadLadder';
 
 function Card({ id, title, meta, obs, children }: { id: string; title: string; meta?: string | null; obs?: string; children: React.ReactNode }) {
   return (
-    <section className="card" id={id} aria-label={title}>
+    <section className="card" id={id} data-ch-hr-card={id === 'cfun' ? 'where' : id.slice(1)} aria-label={title}>
       <div className="ch">
         <h4>{title}</h4>
         {obs ? <span className="obs">{obs}</span> : meta ? <span className="meta">{meta}</span> : null}
