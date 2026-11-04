@@ -1,3 +1,4 @@
+import type { ChYearKey } from '../lib/class-year';
 import { initials as initialsOf } from '../lib/format';
 
 /** B19: the six coin tones (ui.css `.ch-avatar[data-tone]`); `sand` is the calm neutral itself. */
@@ -33,13 +34,31 @@ function typeOf(px: number): number {
  * Monogram coin. No photography in Clubhouse: initials on a calm neutral.
  * `id`: the person's stable id, the same one wherever they are drawn: a player's player id, else (a coach) their user id.
  */
-export function Avatar({ name, id, size = 'md', ring = false }: { name: string; id?: string | null; size?: AvatarSize | number; ring?: boolean }) {
+export function Avatar({
+  name,
+  id,
+  size = 'md',
+  ring = false,
+  year = null,
+  dim = false,
+}: {
+  name: string;
+  id?: string | null;
+  size?: AvatarSize | number;
+  ring?: boolean;
+  /** Opt-in, behind `clubhouse_classes_roster_home_v1`: a player with a known class year takes the year's colour (owner, 31 Oct). Everyone else keeps the id tone. */
+  year?: ChYearKey | null;
+  /** An inactive player's coin. */
+  dim?: boolean;
+}) {
   const px = typeof size === 'number' ? size : AVATAR_SIZES[size];
   const type = typeof size === 'number' ? typeOf(size) : AVATAR_TYPE[size];
   return (
     <span
       className={'ch-avatar' + (ring ? ' ch-avatar--ring' : '')}
-      data-tone={avatarTone(id || name)}
+      data-tone={year ? undefined : avatarTone(id || name)}
+      data-year={year ?? undefined}
+      data-dim={dim ? '' : undefined}
       style={{ ['--ch-av-size' as string]: `${px}px`, ['--ch-av-type' as string]: `${type}px` }}
       aria-hidden="true"
     >

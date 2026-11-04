@@ -60,6 +60,8 @@ export interface ChShellData {
    * because the flag registry is server-only. Off or absent: no class RPC is called anywhere and no column is sent.
    */
   classAwareness?: boolean;
+  /** `clubhouse_classes_roster_home_v1` is on: `.ch-root` carries `data-ch-crh="on"`. Server read; clients get it here or as a prop. */
+  crh?: boolean;
 }
 
 /** One of the coach's players, as the palette lists them: the id it opens and the name it shows. Nothing more. */
@@ -266,6 +268,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     timezone,
     askAvailable: askOn,
     classAwareness: isFlagEnabled('class_awareness_v1'),
+    crh: isFlagEnabled('clubhouse_classes_roster_home_v1'),
     course: courseOf(courseRes),
     roundInProgress: round && playerId ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null, toPar: toParOf(round.golf_holes ?? []), playerId } : null,
     viewerIsHeadCoach: !!staffRes && !staffRes.error && (staffRes.data ?? []).some((row) => row.role === 'head_coach'),

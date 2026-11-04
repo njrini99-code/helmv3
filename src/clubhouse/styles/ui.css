@@ -244,6 +244,30 @@
     --ch-av-ring: var(--ch-avatar-neutral-ring);
   }
 }
+/* A coin with a known class year (Avatar `year`, opt-in behind the lane's flag): white initials on the year's fill. It carries no
+   data-tone, so the phone's neutral rule above never reaches it. */
+.ch-avatar[data-year] {
+  background: var(--ch-av-year);
+  color: var(--ch-yr-ink);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.1), inset 0 1px 0 rgb(255 255 255 / 0.16);
+}
+.ch-avatar[data-year='sr'] {
+  --ch-av-year: var(--ch-yr-sr);
+}
+.ch-avatar[data-year='jr'] {
+  --ch-av-year: var(--ch-yr-jr);
+}
+.ch-avatar[data-year='so'] {
+  --ch-av-year: var(--ch-yr-so);
+}
+.ch-avatar[data-year='fr'] {
+  --ch-av-year: var(--ch-yr-fr);
+}
+.ch-avatar[data-dim] {
+  opacity: 0.8;
+  filter: saturate(0.35);
+}
+
 .ch-avatar--ring {
   box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08), inset 0 0 0 2px var(--ch-bg-surface), inset 0 0 0 3px var(--ch-green-600);
 }
@@ -2551,4 +2575,71 @@ html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
   .ch-app[data-ch-refresh='on'] .ch-sec__head ~ .ch-surface:last-child {
     padding-bottom: 0;
   }
+}
+
+/* The refreshed card (Surface variant="card") and grouped rows (ui/GroupList), used by the Classes, Roster and Home lane. Only that
+   lane's flagged screens render these classes. */
+.ch-surface--card {
+  border-radius: 16px;
+  background: var(--ch-card-bg);
+  box-shadow: 0 0 0 1px var(--ch-card-ring), var(--ch-card-shadow);
+}
+.ch-surface--card .ch-surface__foot {
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+  border-radius: 0 0 16px 16px;
+  background: transparent;
+  font: var(--ch-type-meta);
+  color: var(--ch-text-secondary);
+}
+.ch-group {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  --ch-group-inset: calc(16px + var(--ch-av-size, 32px) + 12px);
+}
+.ch-group__row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 8px 16px;
+}
+.ch-group__row[data-two-line] {
+  min-height: 64px;
+}
+.ch-group__row + .ch-group__row::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: var(--ch-group-inset);
+  height: var(--ch-hairline-w);
+  background: var(--ch-separator);
+  content: '';
+}
+.ch-group__row:is(:active, [data-ch-pressed]) {
+  background: color-mix(in srgb, var(--ch-ink-900) 5%, transparent);
+}
+
+/* The last five rounds as bars (ui/FormLine FormBars): green beat the team average, amber more than 2 over, ink otherwise. */
+.ch-formbars {
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  gap: 3px;
+  width: 44px;
+  height: 24px;
+}
+.ch-formbars i {
+  flex: 1;
+  min-height: 5px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--ch-text-primary) 20%, transparent);
+}
+.ch-formbars i[data-tone='gain'] {
+  background: var(--ch-gain);
+}
+.ch-formbars i[data-tone='loss'] {
+  background: var(--ch-loss);
+  opacity: 0.85;
 }

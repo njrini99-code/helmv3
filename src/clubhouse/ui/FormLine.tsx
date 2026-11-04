@@ -3,6 +3,7 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { deltaTone, halvesChange } from '../lib/stats-signal';
 import { Line } from './charts/Line';
+import { formBarTone } from './form-range';
 
 /**
  * What the form lines of one table share (B5): the scores' range, so the same height is the same score in every row, and
@@ -83,6 +84,26 @@ export function FormLine({
         width={width}
         height={height}
       />
+    </span>
+  );
+}
+
+/**
+ * The last five rounds as bars, on the range its list shares (`FormRange`) or its own: a lower score draws taller. Hidden from
+ * VoiceOver; the row's own label carries the figures.
+ */
+export function FormBars({ data, mean, n = 5 }: { data: readonly number[]; mean?: number | null; n?: number }) {
+  const shared = useContext(FormRangeContext);
+  const shown = data.slice(-n);
+  const domain = shared?.domain ?? formDomain([shown]);
+  if (!domain || shown.length === 0) return null;
+  const [lo, hi] = domain;
+  const span = hi - lo || 1;
+  return (
+    <span className="ch-formbars" aria-hidden="true">
+      {shown.map((score, i) => (
+        <i key={i} data-tone={formBarTone(score, mean)} style={{ height: `${Math.round(((hi - score) / span) * 100)}%` }} />
+      ))}
     </span>
   );
 }

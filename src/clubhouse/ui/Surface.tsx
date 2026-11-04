@@ -29,7 +29,7 @@ export function Surface({
   /** Caption on the footer's left (source, status). */
   footerNote?: ReactNode;
   padded?: boolean;
-  variant?: 'default' | 'flat';
+  variant?: 'default' | 'flat' | 'card';
   /** The title's heading level: 3 inside a Zone (the default), 2 when the Surface is a page's top-level section (F-0063). */
   level?: 2 | 3;
   children?: ReactNode;
@@ -37,7 +37,7 @@ export function Surface({
   const head = title || actions;
   const H = level === 2 ? 'h2' : 'h3';
   return (
-    <section className={'ch-surface' + (variant === 'flat' ? ' ch-surface--flat' : '')} aria-labelledby={id && title ? `${id}-t` : undefined}>
+    <section className={'ch-surface' + (variant === 'flat' ? ' ch-surface--flat' : variant === 'card' ? ' ch-surface--card' : '')} aria-labelledby={id && title ? `${id}-t` : undefined}>
       {head && (
         <div className="ch-surface__head">
           <div style={{ minWidth: 0 }}>

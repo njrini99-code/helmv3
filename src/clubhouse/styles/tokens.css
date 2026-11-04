@@ -633,6 +633,12 @@
   --ch-yr-so: #86672c;
   --ch-yr-fr: #9a4a35;
   --ch-yr-ink: #ffffff;
+  --ch-coin-bg: #e9e3d3;
+  --ch-coin-ink: #5a4e36;
+  --ch-coin-ring: rgb(90 78 54 / 0.22);
+  --ch-champagne-dot: #e2c98f;
+  --ch-on-green-2: rgb(244 241 232 / 0.84);
+  --ch-on-green-3: rgb(244 241 232 / 0.72);
   /* The one feature card: the frame's green, lit faintly from its top right corner. */
   --ch-feature-bg: radial-gradient(120% 90% at 100% 0%, rgb(123 199 154 / 0.14), transparent 60%), var(--ch-green-800);
   --ch-elevation-feature: 0 0 0 1px #082b1c, 0 14px 28px -18px rgb(11 58 37 / 0.7);
@@ -843,6 +849,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-yr-jr: #46739a;
   --ch-yr-so: #8b6b30;
   --ch-yr-fr: #a3533e;
+  --ch-coin-bg: #2a2e27;
+  --ch-coin-ink: #dcd3bc;
+  --ch-coin-ring: rgb(220 211 188 / 0.18);
   --ch-on-ink-warning: #8a5a0c;
   /* 4.5:1 or more on every night surface a field or menu sits on, the raised -2 well the darkest (4.7:1; it was #8f897c,
      3.78 there and 4.27 on the raised surface). Visual pass 2026-10-28. */

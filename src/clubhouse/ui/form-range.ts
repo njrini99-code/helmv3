@@ -9,3 +9,10 @@ export function formRangeWords(trends: Array<readonly number[] | null | undefine
   if (!all.length) return null;
   return `${Math.round(Math.min(...all))} to ${Math.round(Math.max(...all))}`;
 }
+
+/** A form bar's tone: green beat the mean, amber more than 2 strokes over it, otherwise ink; ink with no mean. */
+export function formBarTone(score: number, mean: number | null | undefined): 'gain' | 'loss' | 'flat' {
+  if (mean == null) return 'flat';
+  if (score < mean) return 'gain';
+  return score > mean + 2 ? 'loss' : 'flat';
+}

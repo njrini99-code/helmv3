@@ -4375,10 +4375,11 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     font: var(--ch-type-meta);
     color: var(--ch-text-secondary);
   }
-  .ch-app[data-ch-refresh='on'] [data-ch-sticky-controls] {
+  .ch-app[data-ch-refresh='on'] :is([data-ch-sticky-controls], .ch-stickybar) {
     position: sticky;
     z-index: 2;
-    top: var(--ch-sticky-top, 0);
+    top: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
+    padding-block: 8px;
     background: var(--ch-grouped-bg);
   }
 }
