@@ -1,3 +1,4 @@
+import { artifactsOf, type AskArtifact } from '../screens/coachhelm/chat/parts/artifacts';
 import type { UIMessage } from 'ai';
 import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { Measurement, MeasurementSeries, ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
@@ -156,6 +157,8 @@ export interface AskAssistantTurn {
   followUps: string[];
   /** The last turn, while it streams. */
   active: boolean;
+  /** Ask v2: the artifacts this turn wrote. */
+  artifacts?: AskArtifact[];
   /** Ask v2: every read of the turn, in order. */
   reads?: AskTurnRead[];
   /** Ask v2: the block types of a `show_visual` still on its way; null with none. */
@@ -485,6 +488,7 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
     followUps: hasAction ? [] : followUpsFor(envelopes),
     active,
     reads: turnReadsOf(parts),
+    artifacts: artifactsOf(parts as never),
     pendingVisual: pendingVisualOf(parts),
   };
 }

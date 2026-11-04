@@ -65,7 +65,10 @@ export interface ActionProposal {
 
 /** What the coach sees after a mutation ran. Durable; survives reload. */
 export interface ActionReceipt {
-  status: 'completed' | 'failed' | 'partial';
+  /** `held`: Ask v2's 8 second window, not yet written; the ledger's final receipt replaces it. */
+  status: 'completed' | 'failed' | 'partial' | 'held';
+  /** The instant a held run writes. */
+  held_until?: string;
   action: string;
   /** Coach-readable result, e.g. 'Created 8 practices, every Tuesday at 3:00 PM'. */
   summary: string;

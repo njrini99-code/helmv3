@@ -24,7 +24,7 @@ type Sb = SupabaseClient<Database>;
 
 const TABLE = 'golf_coachhelm_action_runs';
 
-export type ActionRunStatus = 'proposed' | 'approved' | 'denied' | 'completed' | 'failed';
+export type ActionRunStatus = 'proposed' | 'approved' | 'denied' | 'completed' | 'failed' | 'held' | 'cancelled';
 
 export interface ActionRun {
   id: string;

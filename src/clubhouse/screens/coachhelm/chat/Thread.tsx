@@ -23,6 +23,8 @@ import { useToast } from '../../../ui/Toast';
 import { Tooltip } from '../../../ui/Tooltip';
 import { CoachMark } from './CoachMark';
 import { AnswerCard } from './parts/AnswerCard';
+import { ConfirmCard, Receipt } from './parts/ConfirmCard';
+import type { AskArtifact } from './parts/artifacts';
 import { AskActionCard, AskReceiptCard } from './ActionCard';
 import { AskEvidenceView } from './Evidence';
 import { CoachComposition } from './visual/CoachComposition';
@@ -31,6 +33,7 @@ import { AskProse, AskUserText } from './Prose';
 import '../../../styles/coachhelm-thread.css';
 
 export interface AskThreadProps {
+  onArtifact?: (a: AskArtifact) => void;
   /** Ask v2's answer card, steps, chips and tool cards. Off: today's markup. */
   v2?: boolean;
   messages: UIMessage[];
@@ -91,7 +94,7 @@ function useElapsed(active: boolean): number | null {
  * the coach sends, and stays where the coach scrolled to while an answer streams. Streamed text
  * does not animate; a new turn arrives with the base fade.
  */
-export function AskThread({ v2 = false, messages, busy, error, offline, phone, players, onApprove, onDeny, onSend, onStop, onRetry, onNewChat, evidenceFocus, onOpenEvidence }: AskThreadProps) {
+export function AskThread({ v2 = false, onArtifact, messages, busy, error, offline, phone, players, onApprove, onDeny, onSend, onStop, onRetry, onNewChat, evidenceFocus, onOpenEvidence }: AskThreadProps) {
   const toast = useToast();
   const reduced = useChReducedMotion();
   const turns = useMemo(() => buildTurns(messages, { busy }), [messages, busy]);
@@ -203,11 +206,19 @@ export function AskThread({ v2 = false, messages, busy, error, offline, phone, p
                 playersByName={playersByName}
                 onSend={onSend}
                 actions={(b) => {
-                  if (b.kind === 'receipt') return <AskReceiptCard key={b.key} receipt={b.receipt} onAskAgain={onSend} />;
+                  if (b.kind === 'receipt') {
+                    // A receipt with its card is drawn on the card; one alone (an older thread) draws by itself.
+                    if (turn.blocks.some((x) => x.kind === 'proposal' && x.view.receipt)) return null;
+                    return (
+                      <section key={b.key} className="conf">
+                        <Receipt receipt={b.receipt} idempotencyKey={b.key.replace(/^r-receipt-/, '')} />
+                      </section>
+                    );
+                  }
                   if (b.kind !== 'proposal') return null;
-                  const focus = focusForProposal(turn.id, b.view);
-                  return <AskActionCard key={b.key} view={b.view} messageId={turn.id} phone={phone} hasEvidence={focus ? evidenceAvailable(messages, focus) : false} evidenceOpen={evidenceFocus?.key === b.view.key} onApprove={onApprove} onDeny={onDeny} onOpenEvidence={onOpenEvidence} />;
+                  return <ConfirmCard key={b.key} view={b.view} inlineReceipt={null} onApprove={onApprove} onDeny={onDeny} />;
                 }}
+                onArtifact={onArtifact}
                 players={players}
               />
             );

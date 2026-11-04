@@ -27,7 +27,7 @@
 import { isAskV2Enabled } from '@/lib/coachhelm/v3/chat/ask-flag';
 import { stripReadMarkers } from '@/lib/coachhelm/v3/chat/read-markers';
 import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import * as Sentry from '@sentry/nextjs';
 import {
@@ -565,6 +565,7 @@ export async function POST(req: NextRequest) {
         // Ask's whole-team tools follow Clubhouse for this team (flag, then allowlist).
         teamTools: isClubhouseForTeam(ctx.team_id),
         askV2,
+        defer: (fn) => after(fn),
       });
 
       const result = streamText({

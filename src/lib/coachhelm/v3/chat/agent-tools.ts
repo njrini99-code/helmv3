@@ -42,6 +42,7 @@
  * that will execute — not a client-side guess at what might happen.
  * ========================================================================== */
 
+import { holdForExecution, releaseHeld } from './undo-hold';
 import { tool } from 'ai';
 import type { ToolSet, UIMessageStreamWriter } from 'ai';
 import { z } from 'zod';
@@ -212,6 +213,8 @@ export interface BuildToolsArgs {
   teamTools?: boolean;
   /** Ask v2 (`coachhelm_ask_v2` and Clubhouse on for the team): steps update in place, and new tools join. Fairway's chat never sets it. */
   askV2?: boolean;
+  /** Ask v2: runs after the response is sent (`after` in the route), for the Undo hold's release. */
+  defer?: (fn: () => Promise<unknown>) => void;
 }
 
 /**
@@ -266,7 +269,7 @@ interface GatedAction<TInput, TPlan> {
   run: (plan: TPlan) => Promise<ActionReceipt>;
 }
 
-export function buildCoachTools({ sb, ctx, conversationId, writer, collect, teamTools = false, askV2 = false }: BuildToolsArgs): ToolSet {
+export function buildCoachTools({ sb, ctx, conversationId, writer, collect, teamTools = false, askV2 = false, defer }: BuildToolsArgs): ToolSet {
   let progressId = 0;
   const progress = (toolName: string, input: Record<string, unknown>) => {
     const label = PROGRESS_LABEL[toolName]?.(input) ?? 'Working';
@@ -472,6 +475,18 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
       return { status: 'failed', message: 'Could not start the action safely.' };
     }
 
+    // Ask v2: nothing is written and nobody is told for 8 seconds, so Undo leaves no row. Without HM1's column the run goes at once,
+    // as today, and offers no Undo: never a fake one.
+    if (askV2 && defer) {
+      const held = await holdForExecution(sb, { run_id: claim.run_id });
+      if (held.kind === 'held') {
+        const pending: ActionReceipt = { status: 'held', held_until: held.run_at, action: proposal.action, summary: proposal.summary, created: [], notifications: [], partial_failures: [], retryable: false, at: nowIso() };
+        collectActionNumbers(proposal.summary, { facts: proposal.facts });
+        writer.write({ type: 'data-action-receipt', id: `receipt-${proposal.idempotency_key}`, data: pending });
+        defer(() => releaseHeld(sb, { run_id: claim.run_id, run_at: held.run_at, run: () => action.run(plan) }));
+        return { status: 'held', message: `${proposal.summary} It goes through in 8 seconds unless the coach presses Undo.` };
+      }
+    }
     const receipt = await action.run(plan);
     await recordOutcome(sb, { run_id: claim.run_id, receipt });
     collectActionNumbers(receipt.summary, { created: receipt.created, notifications: receipt.notifications });

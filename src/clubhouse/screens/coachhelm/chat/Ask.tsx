@@ -1,5 +1,7 @@
 'use client';
 
+import { ArtifactView } from './parts/Artifact';
+import type { AskArtifact } from './parts/artifacts';
 import { MessagesSquare, PanelLeftOpen, SquarePen } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
@@ -124,6 +126,7 @@ function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatI
   // The chats panel stays as the coach left it when they return to this page (owner rule 8): a layout choice, not a chat's own state.
   const [panelOpen, setPanelOpen] = useAskKept('askPanel', initial?.panelOpen ?? true);
   const [drawer, setDrawer] = useState(initial?.drawer ?? false);
+  const [artifact, setArtifact] = useState<AskArtifact | null>(null);
   const [evidence, setEvidence] = useState<EvidenceFocus | null>(initial?.evidence ?? null);
   // Below 1440px the chats, the conversation and the evidence do not fit side by side (the thread was about 330px at 1280): opening
   // the evidence moves the chats aside for as long as it is open, without changing the kept choice, and showing the chats closes it.
@@ -243,6 +246,7 @@ function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatI
     <SectionBoundary surface="coachhelm.ask.thread" label="The conversation" code="CH-13225">
       <AskThread
         v2={v2}
+        onArtifact={setArtifact}
         messages={chat.messages}
         busy={chat.busy}
         error={notice}
@@ -342,6 +346,7 @@ function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatI
           </aside>
         )}
       </div>
+      {artifact && <ArtifactView artifact={artifact} phone={phone} body={(b) => <pre className="ch-ak-plain">{typeof b === 'string' ? b : JSON.stringify(b, null, 2)}</pre>} onClose={() => setArtifact(null)} />}
       {phone && (
         <>
           <HistoryDrawer {...histProps} open={drawer} onClose={() => setDrawer(false)} />

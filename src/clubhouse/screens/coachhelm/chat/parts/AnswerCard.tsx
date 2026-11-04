@@ -13,6 +13,8 @@ import { CoachVisualArtifact } from '../visual/CoachVisualArtifact';
 import { FollowUps } from './FollowUps';
 import { ReadChip } from './ReadChip';
 import { Sources } from './Sources';
+import { ArtifactCard } from './Artifact';
+import type { AskArtifact } from './artifacts';
 import { Steps } from './Steps';
 import { ToolSkeleton } from './ToolCard';
 
@@ -34,8 +36,9 @@ function useRan(active: boolean): number | null {
 }
 
 /** One card per assistant turn (the Messages receive surface): steps, prose with its read chips, visuals, sources; follow-ups sit under it. */
-export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players, onSend, actions }: { turn: AskAssistantTurn; fresh: boolean; showFollowUps: boolean; playersByName: Record<string, string>; players: Array<{ id: string; name: string }>; onSend: (text: string) => void; actions: (b: Extract<AskBlock, { kind: 'proposal' | 'receipt' }>) => ReactNode }) {
+export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players, onSend, actions, onArtifact }: { onArtifact?: (a: AskArtifact) => void; turn: AskAssistantTurn; fresh: boolean; showFollowUps: boolean; playersByName: Record<string, string>; players: Array<{ id: string; name: string }>; onSend: (text: string) => void; actions: (b: Extract<AskBlock, { kind: 'proposal' | 'receipt' }>) => ReactNode }) {
   const seconds = useRan(turn.active);
+  const artifacts = turn.artifacts ?? [];
   const toast = useToast();
   const reads = turn.reads ?? [];
   const known = useMemo(() => new Set(reads.map((r) => r.ref)), [reads]);
@@ -83,6 +86,9 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
           if (b.kind === 'composition') return <CoachComposition key={b.key} composition={b.composition} live={turn.active} />;
           return actions(b);
         })}
+        {artifacts.map((a) => (
+          <ArtifactCard key={a.id} artifact={a} writing={turn.active} onOpen={() => onArtifact?.(a)} />
+        ))}
         {turn.pendingVisual && <ToolSkeleton types={turn.pendingVisual} />}
         {!turn.active && (reads.length > 0 || turn.answerText) && (
           <div className="acts">
