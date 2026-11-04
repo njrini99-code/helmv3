@@ -4,7 +4,7 @@
 
 ```text
 Design package: design-refresh/coachhelm-read/ (CR0; 06 S-DIVE.why, W-READ-1)
-PR/commit:      agent/cr0-player-leak
+PR/commit:      agent/cr0-player-leak (#2444)
 Contract IDs:   CH-13982
 Actions:        none
 Data impact:    none (shaper only; stored insights unchanged)
