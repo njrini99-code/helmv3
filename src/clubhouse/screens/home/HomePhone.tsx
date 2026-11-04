@@ -17,7 +17,7 @@ import { coachHelmPlayerHref, PlayerPeek, type ChPlayerPeek } from '../../ui/Pla
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { WeekStrip as DayStrip } from '../../ui/WeekStrip';
 import { withPointSpan } from '../../ui/point-span';
-import { formatFixed, formatSigned, formatToPar } from '../../lib/format';
+import { formatFixed, formatSigned, changeInk, formatToPar } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
 import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { haptic } from '../../lib/haptics';
@@ -550,6 +550,55 @@ export function roundPeek(r: ChLatestRound, rows: ChCoachHome['leaderboard']['ro
 }
 
 /** A latest round's card (board 05): the figures, then Out and In; Message and the player's stats. */
+/** The sheet's scorecard (06 12): holes, par and score for each nine, marks on the score by its distance from par. */
+function CrhScorecard({ holes }: { holes: NonNullable<ChLatestRound['holes']> }) {
+  const nines = [
+    { label: 'Out', list: holes.filter((h) => h.n <= 9) },
+    { label: 'In', list: holes.filter((h) => h.n > 9) },
+  ].filter((n) => n.list.length > 0);
+  const total = (list: typeof holes, of: (h: (typeof holes)[number]) => number | null | undefined) => list.reduce((sum, h) => sum + (of(h) ?? 0), 0);
+  const mark = (score: number | null | undefined, par: number | null | undefined) => {
+    if (score == null || par == null) return '';
+    const d = score - par;
+    return d <= -1 ? ' is-birdie' : d === 1 ? ' is-bogey' : d >= 2 ? ' is-double' : '';
+  };
+  return (
+    <div className="ch-hm-card">
+      {nines.map((nine) => (
+        <div className="ch-hm-card__g" role="table" aria-label={nine.label === 'Out' ? 'Front nine' : 'Back nine'} key={nine.label}>
+          <div className="ch-hm-card__r is-holes" role="row">
+            <span role="columnheader">Hole</span>
+            {nine.list.map((h) => (
+              <span role="columnheader" key={h.n}>
+                {h.n}
+              </span>
+            ))}
+            <span role="columnheader">{nine.label}</span>
+          </div>
+          <div className="ch-hm-card__r" role="row">
+            <b role="rowheader">Par</b>
+            {nine.list.map((h) => (
+              <span role="cell" key={h.n}>
+                {h.par ?? <NoData />}
+              </span>
+            ))}
+            <b role="cell">{total(nine.list, (h) => h.par)}</b>
+          </div>
+          <div className="ch-hm-card__r" role="row">
+            <b role="rowheader">Score</b>
+            {nine.list.map((h) => (
+              <span role="cell" key={h.n} className={'ch-hm-card__s' + mark(h.score, h.par)}>
+                {h.score ?? <NoData />}
+              </span>
+            ))}
+            <b role="cell">{total(nine.list, (h) => h.score)}</b>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function RoundSheet({ crh = false, round, holesError, onClose }: { crh?: boolean; round: ChLatestRound | null; holesError: boolean; onClose: () => void }) {
   const message = round ? rebuiltHref(`/golf/dashboard/messages?player=${round.playerId}`) : null;
   const recap = round ? roundHref(round.id, 'coach') : null;
@@ -583,7 +632,7 @@ function RoundSheet({ crh = false, round, holesError, onClose }: { crh?: boolean
                 </Button>
               )
             )}
-            {helm && (
+            {helm && !crh && (
               <Button leftIcon={BrainCircuit} href={helm}>
                 CoachHelm
               </Button>
@@ -598,7 +647,7 @@ function RoundSheet({ crh = false, round, holesError, onClose }: { crh?: boolean
             <div>
               <dt>Score</dt>
               <dd className="ch-num">
-                {round.score} <span>{formatToPar(round.toPar)}</span>
+                {round.score} <span className={crh && (round.toPar ?? 0) < 0 ? 'is-under' : undefined}>{formatToPar(round.toPar)}</span>
               </dd>
             </div>
             <div>
@@ -611,7 +660,7 @@ function RoundSheet({ crh = false, round, holesError, onClose }: { crh?: boolean
             </div>
             <div>
               <dt>SG</dt>
-              <dd className="ch-num">{round.sg != null ? formatSigned(round.sg) : <NoData />}</dd>
+              <dd className={'ch-num' + (crh && round.sg != null ? ` ${changeInk(round.sg)}` : '')}>{round.sg != null ? formatSigned(round.sg) : <NoData />}</dd>
             </div>
           </dl>
           {holesError ? (
@@ -619,7 +668,9 @@ function RoundSheet({ crh = false, round, holesError, onClose }: { crh?: boolean
               Hole-by-hole scores didn’t load for this round. The total is right.
             </p>
           ) : round.holes ? (
-            <>
+            crh ? (
+              <CrhScorecard holes={round.holes} />
+            ) : <>
               <Nine label="Out" holes={round.holes.filter((h) => h.n <= 9)} caption="Front nine" />
               <Nine label="In" holes={round.holes.filter((h) => h.n > 9)} caption="Back nine" />
             </>

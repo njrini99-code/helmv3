@@ -1,5 +1,6 @@
 'use client';
 
+import { DeskBoard, DeskLegs, DeskRounds } from './HomeDeskCrh';
 import { CalendarPlus, ChevronRight, Flag, Sparkles, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import type { ChCoachHome } from '../../data/home';
@@ -88,17 +89,17 @@ function CoachHomeBody({ data, now, live, crh = false }: { data: ChCoachHome; no
         </div>
         {data.phone.form && data.legs && !noRounds && (
           <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
-            <TeamLegs legs={data.legs} covered={covered} />
+            {data.legs.holeRounds === 0 ? <TeamLegs legs={data.legs} covered={covered} /> : <DeskLegs legs={data.legs} />}
           </SectionBoundary>
         )}
         <div className="ch-h-grid">
           {!noRounds && (
             <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
-              <LatestRound data={data.latestRounds} covered={covered} />
+              {data.latestRounds.error || data.latestRounds.rounds.length === 0 ? <LatestRound data={data.latestRounds} covered={covered} /> : <DeskRounds rounds={data.latestRounds.rounds} />}
             </SectionBoundary>
           )}
           <SectionBoundary surface="home.leaderboard" label="The leaderboard" code="CH-2207">
-            <Leaderboard data={data.leaderboard} covered={covered} rounds={data.latestRounds.rounds} />
+            {data.leaderboard.error || data.leaderboard.rows.length === 0 ? <Leaderboard data={data.leaderboard} covered={covered} rounds={data.latestRounds.rounds} /> : <DeskBoard rows={data.leaderboard.rows} />}
           </SectionBoundary>
         </div>
       </main>

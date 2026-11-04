@@ -4916,3 +4916,152 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   --ch-home-x3: inset 0 -0.66px 0 var(--ch-separator);
   --ch-home-x4: inset -0.66px 0 0 var(--ch-separator);
 }
+
+/* The sheet's scorecard and marks (classes-roster-home 06 12), and the desktop's rows (06 11). Under the lane's flag. */
+.ch-hm-sheet.is-crh .ch-hm-strip dd span.is-under {
+  color: var(--ch-score-under);
+}
+.ch-hm-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px 12px 8px;
+  overflow-x: auto;
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+.ch-hm-card__g {
+  display: grid;
+  gap: 2px;
+  min-width: 300px;
+}
+.ch-hm-card__r {
+  display: grid;
+  grid-template-columns: 38px repeat(9, 1fr) 34px;
+  gap: 2px;
+  align-items: center;
+  min-height: 26px;
+  font: var(--ch-type-12-medium);
+  letter-spacing: var(--ch-track-12);
+  text-align: center;
+}
+.ch-hm-card__r b {
+  font: var(--ch-type-12-strong);
+  letter-spacing: var(--ch-track-12);
+  color: var(--ch-text-secondary);
+}
+.ch-hm-card__r.is-holes {
+  font: var(--ch-type-13);
+  color: var(--ch-text-tertiary);
+}
+.ch-hm-card__s {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-inline: auto;
+}
+.ch-hm-card__s.is-birdie {
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--ch-score-under);
+  font: var(--ch-type-12-strong);
+  letter-spacing: var(--ch-track-12);
+  color: var(--ch-score-under);
+}
+.ch-hm-card__s.is-bogey {
+  border-radius: var(--ch-radius-xs);
+  box-shadow: inset 0 0 0 1.5px var(--ch-text-secondary);
+}
+.ch-hm-card__s.is-double {
+  border-radius: var(--ch-radius-xs);
+  box-shadow: inset 0 0 0 1.5px var(--ch-text-secondary), inset 0 0 0 3px var(--ch-card-bg), inset 0 0 0 4.5px var(--ch-text-secondary);
+}
+.ch-dh-card {
+  padding: 16px;
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+.ch-dh-card__t {
+  margin: 0 0 12px;
+  font: var(--ch-type-card-title);
+  letter-spacing: var(--ch-track-card-title);
+}
+.ch-dh-legs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-dh-legs li {
+  display: grid;
+  gap: 4px;
+  padding: 0 16px;
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-dh-legs li + li {
+  box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-separator);
+}
+.ch-dh-legs em {
+  font-style: normal;
+}
+.ch-dh-legs__l {
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-dh-legs__sg {
+  font: var(--ch-type-28-strong);
+  letter-spacing: var(--ch-track-28);
+}
+.ch-dh-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-dh-rows li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-dh-rows li + li {
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-separator);
+}
+.ch-dh-rows__b {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.ch-dh-rows__b b {
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-dh-rows__b span {
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-dh-rows small {
+  font: var(--ch-type-12);
+  letter-spacing: var(--ch-track-12);
+  color: var(--ch-text-secondary);
+}
+.ch-dh-rank {
+  width: 20px;
+  font: var(--ch-type-13-strong);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-crh-ink4);
+}
+/* Later today and Since you last looked sit in the card that holds them, as every other section on the lane's Home (06 11). */
+[data-ch-crh='on'] :is(.ch-hm-later .ch-hm-tl, .ch-hm-since__l) {
+  padding-inline: 16px;
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
