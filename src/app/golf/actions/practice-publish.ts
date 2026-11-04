@@ -79,9 +79,8 @@ async function takeDownPracticePlanImpl(input: { planId: string; expectedVersion
   return { success: true };
 }
 
-const feature = { sport: 'golf', feature: 'practice_plans' } as const;
-const observedPublish = withAdminObserved('publishPracticePlan', feature, publishPracticePlanImpl);
-const observedTakeDown = withAdminObserved('takeDownPracticePlan', feature, takeDownPracticePlanImpl);
+const observedPublish = withAdminObserved('publishPracticePlan', { sport: 'golf', feature: 'practice_plans' }, publishPracticePlanImpl);
+const observedTakeDown = withAdminObserved('takeDownPracticePlan', { sport: 'golf', feature: 'practice_plans' }, takeDownPracticePlanImpl);
 
 export async function publishPracticePlan(input: Parameters<typeof publishPracticePlanImpl>[0]) {
   return observedPublish(input);

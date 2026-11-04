@@ -1,4 +1,5 @@
 'use client';
+import { Button } from '../../../ui/Button';
 
 import { Lock } from 'lucide-react';
 import { useState } from 'react';
@@ -38,21 +39,21 @@ export function IntentSheet({ open, playerId, first, value, save = LIVE_SAVE_INT
   const footer = asking ? (
     <div className="sheet__f is-discard">
       <p>Discard changes?</p>
-      <button type="button" className="ch-btn ch-btn--secondary" onClick={onClose}>
+      <Button variant="secondary" onClick={onClose}>
         Discard
-      </button>
-      <button type="button" className="ch-btn ch-btn--primary" onClick={() => setAsking(false)}>
+      </Button>
+      <Button variant="primary" onClick={() => setAsking(false)}>
         Keep editing
-      </button>
+      </Button>
     </div>
   ) : (
     <div className="sheet__f">
-      <button type="button" className="ch-btn ch-btn--secondary" data-ch-sheet-close="" disabled={run.pending} onClick={onClose}>
+      <Button variant="secondary" data-ch-sheet-close="" disabled={run.pending} onClick={onClose}>
         Cancel
-      </button>
-      <button type="button" className="ch-btn ch-btn--primary" data-ch-hf-intent-save="" disabled={run.pending} aria-busy={run.pending || undefined} onClick={() => void run.run()}>
+      </Button>
+      <Button variant="primary" data-ch-hf-intent-save="" disabled={run.pending} aria-busy={run.pending || undefined} onClick={() => void run.run()}>
         {run.pending ? 'Saving' : 'Save plan'}
-      </button>
+      </Button>
     </div>
   );
   return (

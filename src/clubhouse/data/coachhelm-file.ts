@@ -277,7 +277,7 @@ export async function loadPlayerYourWeek(input: { playerId: string }): Promise<{
     const zone = teamId ? await loadTeamZone(supabase, teamId, 'coachhelm') : 'America/New_York';
     const list = byFeed(load.data.list, [...raw.keys()]);
     const [proposals, rowsRead, standing, field, toGo, penalties, last] = await Promise.all([
-      loadProposals(supabase, playerId, teamId, list.map((d) => ({ id: d.base.id, title: d.base.title }))),
+      loadProposals(supabase, playerId, teamId, list.map((d) => ({ id: d.base.id, title: d.base.title })), true),
       readStandingRows(playerId),
       loadPlayerStanding({ playerId, feed: () => Promise.resolve([]) }),
       newestDay(supabase, playerId).then((d) => (teamId && d ? loadFileField({ teamId, playerId, lastRound: d }, { role: 'player' }, zone) : null)),

@@ -46,7 +46,10 @@ afterEach(() => {
 
 describe('D-64 springs (extension, 2026-10-08)', () => {
   it('keep the D-64 base duration (the drop\'s reveal spring: D-64\'s reveal) with a bounce of 0 to 0.1, handed to framer as stiffness and damping so velocity carries', () => {
+    // Named, signed-off exceptions: Messages' send, pop and lift (owner, 31 Oct 2026, "as long as it's smooth"; messages 02 §2.2) and the quick chat's pour (coachhelm 07).
+    const named = new Set(['send', 'pop', 'lift', 'pour']);
     for (const [kind, { visualDuration, bounce }] of Object.entries(CH_SPRINGS)) {
+      if (named.has(kind)) continue;
       expect(visualDuration).toBe(kind === 'reveal' ? CH_DUR.reveal : CH_DUR.base);
       expect(bounce).toBeGreaterThanOrEqual(0);
       expect(bounce).toBeLessThanOrEqual(0.1);

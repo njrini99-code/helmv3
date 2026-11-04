@@ -1,4 +1,5 @@
 'use client';
+import { pluralWord } from '../../lib/plural';
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
@@ -12,6 +13,7 @@ import { BriefCard } from '../../screens/coachhelm/chat/parts/BriefCard';
 import { PlanCard } from '../../screens/coachhelm/plan/PlanCard';
 import '../../styles/coachhelm-plan.css';
 import { subscribeOnline } from '../AskSheetBody';
+import { modKey } from '../command/shortcuts';
 import type { ChAskSheetChat } from '../AskSheet';
 import { HelmMark, useQcCtx } from './QuickChatProvider';
 import { quickStarts } from './starts';
@@ -257,7 +259,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, cha
             {!phone && (
               <div className="cmp__hint">
                 <span>
-                  <kbd>⌘J</kbd> open
+                  <kbd>{modKey(true)}J</kbd> open
                 </span>
                 <span>
                   <kbd>esc</kbd> close
@@ -266,7 +268,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, cha
               </div>
             )}
           </div>
-          {phone && <span className="qc__grab" aria-hidden="true" />}
+          {phone && <i className="ch-grab" aria-hidden="true" />}
         </div>
       </section>
     </div>
@@ -302,7 +304,7 @@ function AssistantTurn({ turn, online, stopped, onSend, onApprove, onDeny, onOpe
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" aria-hidden="true">
               <path d="M5 13l4 4L19 7" />
             </svg>
-            {turn.steps.length} {turn.steps.length === 1 ? 'step' : 'steps'}
+            {turn.steps.length} {pluralWord(turn.steps.length, 'step', 'steps')}
           </span>
         )
       )}

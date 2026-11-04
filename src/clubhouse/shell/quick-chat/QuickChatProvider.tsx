@@ -4,6 +4,7 @@ import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useM
 import type { UseCoachHelmChatResult } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
 import { haptic } from '../../lib/haptics';
 import { useChPhone } from '../../lib/use-phone';
+import { modKey } from '../command/shortcuts';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { AskSheetContext, lookingAt } from '../AskSheet';
 import { useClubhouseRole } from '../context';
@@ -134,7 +135,7 @@ export function HelmKey() {
         aria-label="CoachHelm"
         aria-haspopup="dialog"
         aria-expanded={open}
-        title="CoachHelm ⌘J"
+        title={`CoachHelm ${modKey(true)}J`}
         data-ch-qc-key=""
         style={live ? { visibility: 'hidden' } : undefined}
         onPointerEnter={warm}

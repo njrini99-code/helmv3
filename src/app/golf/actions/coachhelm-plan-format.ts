@@ -51,10 +51,9 @@ async function undoPlanFormatImpl(id: string): Promise<{ success: boolean }> {
   return { success: !error };
 }
 
-const feature = { sport: 'golf', feature: 'practice_plans' } as const;
-const obsRead = withAdminObserved('readPlanFormat', feature, readPlanFormatImpl);
-const obsSet = withAdminObserved('setPlanFormat', feature, setPlanFormatImpl);
-const obsUndo = withAdminObserved('undoPlanFormat', feature, undoPlanFormatImpl);
+const obsRead = withAdminObserved('readPlanFormat', { sport: 'golf', feature: 'practice_plans' }, readPlanFormatImpl);
+const obsSet = withAdminObserved('setPlanFormat', { sport: 'golf', feature: 'practice_plans' }, setPlanFormatImpl);
+const obsUndo = withAdminObserved('undoPlanFormat', { sport: 'golf', feature: 'practice_plans' }, undoPlanFormatImpl);
 
 export async function readPlanFormat(documentId: string) {
   return obsRead(documentId);

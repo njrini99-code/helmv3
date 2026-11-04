@@ -9,8 +9,6 @@ import { practiceRpc, practiceTables } from '@/lib/golf/practice-db';
 import { isPracticeMissing, practiceErrorOf } from '@/lib/golf/practice-errors';
 import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
 
-export const DEFAULT_PLAN_FOLDER = 'Practice plans' as const;
-
 const cleanFolder = (f: string): string | null => {
   const t = f.trim();
   return t && t.length <= 60 && t.toLowerCase() !== 'team' ? t : null;
@@ -69,10 +67,9 @@ async function listPlanFoldersImpl(): Promise<{ folders: Array<{ name: string; c
   return { folders: [...counts].map(([name, count]) => ({ name, count })) };
 }
 
-const feature = { sport: 'golf', feature: 'practice_plans' } as const;
-const obsSave = withAdminObserved('savePracticePlanDraft', feature, savePracticePlanDraftImpl);
-const obsUndo = withAdminObserved('undoPracticePlanDraft', feature, undoPracticePlanDraftImpl);
-const obsList = withAdminObserved('listPlanFolders', feature, listPlanFoldersImpl);
+const obsSave = withAdminObserved('savePracticePlanDraft', { sport: 'golf', feature: 'practice_plans' }, savePracticePlanDraftImpl);
+const obsUndo = withAdminObserved('undoPracticePlanDraft', { sport: 'golf', feature: 'practice_plans' }, undoPracticePlanDraftImpl);
+const obsList = withAdminObserved('listPlanFolders', { sport: 'golf', feature: 'practice_plans' }, listPlanFoldersImpl);
 
 export async function savePracticePlanDraft(input: Parameters<typeof savePracticePlanDraftImpl>[0]) {
   return obsSave(input);

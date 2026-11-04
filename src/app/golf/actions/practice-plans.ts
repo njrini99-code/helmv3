@@ -47,10 +47,9 @@ async function recordPracticePlanOpenImpl(input: { planId: string }): Promise<vo
   await practiceRpc(sb, 'golf_practice_plan_record_open', { p_plan_id: input.planId });
 }
 
-const feature = { sport: 'golf', feature: 'practice_plans' } as const;
-const observedSave = withAdminObserved('savePracticePlan', feature, savePracticePlanImpl);
-const observedDelete = withAdminObserved('deletePracticePlan', feature, deletePracticePlanImpl);
-const observedOpen = withAdminObserved('recordPracticePlanOpen', feature, recordPracticePlanOpenImpl);
+const observedSave = withAdminObserved('savePracticePlan', { sport: 'golf', feature: 'practice_plans' }, savePracticePlanImpl);
+const observedDelete = withAdminObserved('deletePracticePlan', { sport: 'golf', feature: 'practice_plans' }, deletePracticePlanImpl);
+const observedOpen = withAdminObserved('recordPracticePlanOpen', { sport: 'golf', feature: 'practice_plans' }, recordPracticePlanOpenImpl);
 
 export async function savePracticePlan(input: Parameters<typeof savePracticePlanImpl>[0]) {
   return observedSave(input);

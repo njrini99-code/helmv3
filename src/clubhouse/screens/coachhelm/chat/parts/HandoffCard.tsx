@@ -1,4 +1,5 @@
 'use client';
+import { Button } from '../../../../ui/Button';
 
 import { useRouter } from 'next/navigation';
 import { messagesPrefillHref } from '../../../messages/prefill';
@@ -11,12 +12,12 @@ export function HandoffCard({ handoff }: { handoff: AskHandoffData }) {
     <section className="ch-ak-handoff">
       <b>{handoff.title}</b>
       <p>Nothing is sent until you tap Send.</p>
-      <button type="button" className="ch-btn ch-btn--secondary" onClick={() => {
+      <Button variant="secondary" onClick={() => {
         const href = messagesPrefillHref({ players: handoff.players, draft: handoff.draft, returnTo: 'ask' });
         if (href) router.push(href);
       }}>
         Open in Messages
-      </button>
+      </Button>
     </section>
   );
 }

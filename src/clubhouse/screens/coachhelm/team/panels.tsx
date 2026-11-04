@@ -1,4 +1,5 @@
 'use client';
+import { pluralWord } from '../../../lib/plural';
 
 import { X } from 'lucide-react';
 import { STATIONS, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
@@ -35,8 +36,8 @@ function Head({ lead, name, line, onClose }: { lead: React.ReactNode; name: stri
 /** Your figure, the team pool and the Tour, as bars from zero in one scale; the Team row only with a pool of five or more (W-TEAM-11). */
 function Comparison({ read, first }: { read: ChInsight; first: string }) {
   const c = read.compare;
-  if (!c || c.you == null) return null;
-  const mx = Math.max(c.you, c.team ?? 0, c.tour ?? 0) * 1.08 || 1;
+  if (!c || c.own == null) return null;
+  const mx = Math.max(c.own, c.team ?? 0, c.tour ?? 0) * 1.08 || 1;
   const fmt = (v: number) => `${formatFixed(v, c.unit === '%' ? 0 : Math.abs(v) < 10 ? 2 : 1)}${c.unit}`;
   const row = (label: string, v: number, cls: string) => (
     <div className="ld" key={label}>
@@ -54,7 +55,7 @@ function Comparison({ read, first }: { read: ChInsight; first: string }) {
         <span className="meta">{c.higherBetter ? 'Higher is better' : 'Lower is better'}</span>
       </div>
       <div className="lad">
-        {row(first, c.you, 'you')}
+        {row(first, c.own, 'you')}
         {c.team != null && row('Team', c.team, '')}
         {c.tour != null && row('Tour', c.tour, 'tour')}
       </div>
@@ -334,7 +335,7 @@ export function CourseSheet({ row, data, onPlayer, onRead, onClose }: { row: Cou
         <span>
           a round to par here
           <br />
-          {d ? `${Math.abs(d).toFixed(1)} ${d > 0 ? 'over' : 'under'} the team’s season of ${toPar(season)}` : 'Level with the team’s season'}
+          {d ? `${formatFixed(Math.abs(d), 1)} ${d > 0 ? 'over' : 'under'} the team’s season of ${toPar(season)}` : 'Level with the team’s season'}
         </span>
       </div>
       <section className="card">
@@ -348,12 +349,12 @@ export function CourseSheet({ row, data, onPlayer, onRead, onClose }: { row: Cou
             if (!p) return null;
             const dd = Math.round((x.value - x.season) * 10) / 10;
             return (
-              <button type="button" className="cp tapp" key={x.id} onClick={() => onPlayer(x.id)} aria-label={`${p.name}: ${toPar(x.value)} a round here from ${x.rounds} ${x.rounds === 1 ? 'round' : 'rounds'}, season ${toPar(x.season)}`}>
+              <button type="button" className="cp tapp" key={x.id} onClick={() => onPlayer(x.id)} aria-label={`${p.name}: ${toPar(x.value)} a round here from ${x.rounds} ${pluralWord(x.rounds, 'round', 'rounds')}, season ${toPar(x.season)}`}>
                 <Coin player={p} small />
                 <span className="n">
                   <b>{p.first}</b>
                   <span>
-                    {x.rounds} {x.rounds === 1 ? 'round' : 'rounds'} here
+                    {x.rounds} {pluralWord(x.rounds, 'round', 'rounds')} here
                   </span>
                 </span>
                 <span className="db" aria-hidden="true">

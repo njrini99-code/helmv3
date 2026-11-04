@@ -2,6 +2,7 @@
 
 import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
@@ -16,7 +17,7 @@ const UNDO_MS = 8_000;
 /**
  * Request more: the player's one write. The row is the 8 second hold (HM4): Undo deletes it before `release_at`, and the release alone sends. It follows HELM_CUSTOMER_EMAIL_ENABLED: off means logged, no email (DECISIONS).
  */
-export async function requestAskCredits(note?: string): Promise<{ success: boolean; id?: string; error?: string }> {
+async function requestAskCreditsImpl(note?: string): Promise<{ success: boolean; id?: string; error?: string }> {
   if (!isPlayerAskEnabled()) return { success: false, error: 'Ask is off.' };
   const sb = await createClient();
   const ctx = await resolvePlayerChatContext(sb).catch(() => null);
@@ -55,10 +56,21 @@ async function releaseRequest(id: string, teamName: string): Promise<void> {
   if (sent.sent) await fromUntyped(admin, 'ask_credit_requests').update({ sent_at: new Date().toISOString() } as never).eq('id', id);
 }
 
-export async function undoAskCredits(id: string): Promise<{ success: boolean }> {
+async function undoAskCreditsImpl(id: string): Promise<{ success: boolean }> {
   const sb = await createClient();
   const ctx = await resolvePlayerChatContext(sb).catch(() => null);
   if (!ctx) return { success: false };
   const { data } = await fromUntyped(createAdminClient(), 'ask_credit_requests').delete().eq('id', id).eq('player_id', ctx.player_id).gt('release_at', new Date().toISOString()).select('id');
   return { success: ((data as unknown[] | null) ?? []).length > 0 };
+}
+
+const observedRequestAskCredits = withAdminObserved('requestAskCredits', { sport: 'golf', feature: 'coachhelm_ai_engine' }, requestAskCreditsImpl);
+const observedUndoAskCredits = withAdminObserved('undoAskCredits', { sport: 'golf', feature: 'coachhelm_ai_engine' }, undoAskCreditsImpl);
+
+export async function requestAskCredits(note?: string): Promise<{ success: boolean; id?: string; error?: string }> {
+  return observedRequestAskCredits(note);
+}
+
+export async function undoAskCredits(id: string): Promise<{ success: boolean }> {
+  return observedUndoAskCredits(id);
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, CircleAlert, ClipboardCheck, ExternalLink, Flag, Megaphone, CalendarPlus, type LucideIcon } from 'lucide-react';
+import { Check, CircleAlert, ClipboardCheck, ArrowUpRight, Flag, Megaphone, CalendarPlus, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { AskProposalView } from '../../../../data/coachhelm-chat-thread';
@@ -193,7 +193,7 @@ export function Receipt({ receipt, idempotencyKey }: { receipt: ActionReceipt; i
         {link?.href && (
           <a className="lk" href={askLinkHref(link.href) ?? link.href}>
             Open
-            <Icon icon={ExternalLink} size={14} />
+            <Icon icon={ArrowUpRight} size={14} />
           </a>
         )}
       </div>

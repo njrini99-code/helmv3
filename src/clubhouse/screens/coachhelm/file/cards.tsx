@@ -1,4 +1,6 @@
 'use client';
+import { AVATAR_SIZES, type AvatarSize } from '../../../ui/Avatar';
+import { pluralWord } from '../../../lib/plural';
 
 import Link from 'next/link';
 import { Check, Eye, Flag, Lock, MessageSquare, Target, Users, X } from 'lucide-react';
@@ -27,9 +29,9 @@ export function CardHead({ title, meta, lock = false, id }: { title: string; met
   );
 }
 
-export function Avatar({ name, size }: { name: string; size: number }) {
+export function Avatar({ name, size }: { name: string; size: AvatarSize }) {
   return (
-    <span className="av" style={{ ['--s' as string]: `${size}px` }} aria-hidden="true">
+    <span className="av" style={{ ['--s' as string]: `${AVATAR_SIZES[size]}px` }} aria-hidden="true">
       {initials(name)}
     </span>
   );
@@ -38,7 +40,7 @@ export function Avatar({ name, size }: { name: string; size: number }) {
 function cmpCells(i: ChInsight, team: number | null) {
   const c = i.compare;
   const fmt = (v: number | null | undefined) => (v == null ? '—' : `${formatFixed(v, c?.unit === '%' ? 0 : Math.abs(v) < 10 ? 1 : 0)}${c?.unit ?? ''}`);
-  const you = c?.you ?? null;
+  const you = c?.own ?? null;
   const tour = c?.tour ?? null;
   const youLoses = you != null && tour != null && (c?.higherBetter ? you < tour : you > tour);
   return { you: c ? fmt(you) : (i.evidence.gauge?.you ?? i.value), team: fmt(team), tour: fmt(tour), youLoses };
@@ -69,7 +71,7 @@ export function FeatureCard({
   const b = d.base;
   const cells = cmpCells(b, team);
   const mine = lens === 'coach';
-  const anchor = d.closes?.anchor === 'team' && team != null ? "the team's average" : 'the Tour';
+  const anchor = d.closes?.anchor === 'team' && team != null ? 'the team’s average' : 'the Tour';
   return (
     <section
       className="feat tap"
@@ -90,7 +92,7 @@ export function FeatureCard({
     >
       {mine ? (
         <div className="feat__who">
-          <Avatar name={name} size={28} />
+          <Avatar name={name} size="sm" />
           <span>
             <b>{first}’s top read</b> · {AREA[d.area] ?? 'Course and scoring'}
           </span>
@@ -147,7 +149,7 @@ export function EarlyFeature({ lens, first, rounds, toGo }: { lens: FileLens; fi
         <div className="feat__k">CoachHelm</div>
       )}
       <h3 className="feat__t">{lens === 'coach' ? 'No reads yet' : 'Your reads start after 4 full rounds'}</h3>
-      <div className="prog" aria-label={`${done} of ${floor} rounds that count`}>
+      <div className="prog" role="img" aria-label={`${done} of ${floor} rounds that count`}>
         {Array.from({ length: floor }, (_, i) => (
           <i key={i} className={i < done ? 'on' : ''} />
         ))}
@@ -242,7 +244,7 @@ export function PlanCard({ plan, lens, first, onDrawn }: { plan: ChFilePlan | nu
             <span>
               <b>{plan.practice.drill}</b>
               <small>
-                {plan.practice.count} {plan.practice.count === 1 ? 'session' : 'sessions'} logged this week
+                {plan.practice.count} {pluralWord(plan.practice.count, 'session', 'sessions')} logged this week
               </small>
             </span>
           </div>
@@ -359,7 +361,7 @@ export function SgCard({ sg, who, standingHref }: { sg: ChFileSg; who: string; s
               <div className="sg__row" key={r.id}>
                 <span>{r.label}</span>
                 <div className="sg__trk">
-                  {r.strokes != null && <i className={`sg__bar ${r.strokes < 0 ? 'loss' : 'gain'}`} style={{ width: `${width}%` }} />}
+                  {r.strokes != null && <i className={`sg__bar ${toneOfStrokes(r.strokes)}`} style={{ width: `${width}%` }} />}
                   {r.team != null && <i className="sg__team" style={{ left: `${50 + Math.max(-1, Math.min(1, r.team)) * 50}%` }} />}
                 </div>
                 <b className={r.tone === 'none' ? 'none' : r.tone}>{r.figure}</b>
@@ -585,4 +587,9 @@ export function TrackCard({ track, first }: { track: ChFileTrack; first: string 
       )}
     </section>
   );
+}
+
+/** A bar's side on the strokes rail: which way it's drawn. */
+function toneOfStrokes(v: number): 'loss' | 'gain' {
+  return v >= 0 ? ('gain' as const) : ('loss' as const);
 }

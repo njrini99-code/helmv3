@@ -276,7 +276,7 @@ function compareOf(ev: InsightEvidence, tour: ChTourBaseline | null): ChInsight[
   const p = ev.comparison?.primary;
   const pool = p?.source === 'team_pool' && typeof p.players === 'number' && p.players >= 5 && typeof p.value === 'number' ? p.value : null;
   return {
-    you: num(ev.your_value),
+    own: num(ev.your_value),
     team: pool,
     tour: tour?.values.get(ev.metric ?? '') ?? null,
     higherBetter: ev.polarity === 'higher_better',

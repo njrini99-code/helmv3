@@ -310,7 +310,7 @@ export async function playerTeam(supabase: Supabase, playerId: string): Promise<
  * A proposal made through Fairway's Add focus area or Ask CoachHelm before they wrote the team carries none (`team_id` null), so the
  * read is the player's own proposals on their team or on no team: filtering on the team alone hid every one of those from the player it was for.
  */
-export async function loadProposals(supabase: Supabase, playerId: string, teamId: string | null, insights: ReadonlyArray<{ id: string; title: string }>): Promise<ChPlayerHelm['proposals']> {
+export async function loadProposals(supabase: Supabase, playerId: string, teamId: string | null, insights: ReadonlyArray<{ id: string; title: string }>, withAt = false): Promise<ChPlayerHelm['proposals']> {
   if (!teamId) return { list: [], error: false };
   const res = await supabase
     .from('golf_player_focus_areas')
@@ -327,7 +327,7 @@ export async function loadProposals(supabase: Supabase, playerId: string, teamId
   const titles = new Map(insights.map((i) => [i.id, speak(i.title, { role: 'player' })]));
   const rows = res.data ?? [];
   const coaches = await coachUserIds(supabase, rows.map((r) => r.coach_id).filter((id): id is string => !!id));
-  const list: ChProposal[] = rows.map((r) => ({ id: r.id, title: r.title, from: (r.from_insight_id && titles.get(r.from_insight_id)) || null, coachUserId: (r.coach_id && coaches?.get(r.coach_id)?.userId) || null, ...(r.created_at ? { at: r.created_at } : {}), ...(r.coach_id && coaches?.get(r.coach_id)?.name ? { coachName: coaches.get(r.coach_id)!.name as string } : {}) }));
+  const list: ChProposal[] = rows.map((r) => ({ id: r.id, title: r.title, from: (r.from_insight_id && titles.get(r.from_insight_id)) || null, coachUserId: (r.coach_id && coaches?.get(r.coach_id)?.userId) || null, ...(withAt && r.created_at ? { at: r.created_at } : {}), ...(withAt && r.coach_id && coaches?.get(r.coach_id)?.name ? { coachName: coaches.get(r.coach_id)!.name as string } : {}) }));
   return { list, error: false };
 }
 

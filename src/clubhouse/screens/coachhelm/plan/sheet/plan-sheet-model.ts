@@ -1,3 +1,4 @@
+import { formatWith, partsWith } from '../../../../lib/dates';
 import { gridOf, type PlanBodyV2, type PlanWhy } from '@/lib/coachhelm/v3/practice-plan/model';
 
 export interface SheetRow {
@@ -28,13 +29,13 @@ export interface PlanSheetModel {
 }
 
 const LETTER = 'ABCDEF';
-const clock = (d: Date, zone: string) => new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: zone }).format(d);
+const clock = (d: Date, zone: string) => formatWith(d, { hour: 'numeric', minute: '2-digit', timeZone: zone });
 
 /** What the sheet draws. A player's model has no `why` key at all, so it can't reach the DOM or the payload (02 §2.3). */
 export function toSheetModel(input: { body: PlanBodyV2; why?: Record<string, PlanWhy>; title: string; team: string; start: Date; end: Date | null; zone: string; coaches: string[]; names: ReadonlyMap<string, string>; state: string }, copy: 'coach' | 'player'): PlanSheetModel {
   const { body, zone } = input;
   const letterOf = (groupId: string) => LETTER[body.groups.findIndex((g) => g.id === groupId)] ?? '';
-  const parts = new Intl.DateTimeFormat('en-US', { weekday: 'short', day: 'numeric', timeZone: zone }).formatToParts(input.start);
+  const parts = partsWith(input.start, { weekday: 'short', day: 'numeric', timeZone: zone });
   let at = input.start.getTime();
   const rows: SheetRow[] = body.variants.main.blocks.map((b) => {
     const start = new Date(at);

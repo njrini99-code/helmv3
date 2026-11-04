@@ -1,5 +1,6 @@
 'use client';
 
+import { useRefresh } from '../../../lib/use-refresh';
 import { Ellipsis } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -57,6 +58,7 @@ function Failed({ title, body, code, action }: { title: string; body: string; co
 export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallbackFirst }: { load: ChViewLoad<ChReadView>; voice: ChViewVoice; writes?: ChCoachHelmWrites; fallbackFirst?: string }) {
   const phone = useChPhone();
   const router = useRouter();
+  const { refresh } = useRefresh();
   const coach = voice.role === 'coach';
   const backHref = coach ? coachBoardFor(voice.playerId) : PLAYER_HELM_HREF.board;
   const first = coach ? voice.first : (fallbackFirst ?? 'CoachHelm');
@@ -88,7 +90,7 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
         title="This read didn’t load"
         body="Nothing was lost. Check the connection and try again."
         action={
-          <Button variant="primary" onClick={() => router.refresh()}>
+          <Button variant="primary" onClick={() => refresh()}>
             Try again
           </Button>
         }
@@ -106,7 +108,7 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
           <span>
             <b>Part of this read didn’t load.</b> Everything else is here.
           </span>
-          <Button variant="ghost" size="sm" onClick={() => router.refresh()}>
+          <Button variant="ghost" size="sm" onClick={() => refresh()}>
             Try again
           </Button>
         </div>

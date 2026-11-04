@@ -1,4 +1,5 @@
 'use client';
+import { pluralWord } from '../../../lib/plural';
 
 import { useRef } from 'react';
 import { formatSigned } from '../../../lib/format';
@@ -91,7 +92,7 @@ export function SpotCard({
         </div>
         <div className="spl-r">
           <div className="subh">
-            What CoachHelm sees here · {reads.length} open {reads.length === 1 ? 'read' : 'reads'}
+            What CoachHelm sees here · {reads.length} open {pluralWord(reads.length, 'read', 'reads')}
           </div>
           <div className="rds">
             {reads.map(({ player, read }) => (

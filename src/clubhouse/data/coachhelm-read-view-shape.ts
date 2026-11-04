@@ -1,3 +1,4 @@
+import { formatFixed } from '../lib/format';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { ChReadCalls } from './coachhelm-read-calls';
 import type { ChDeepDive, ChDeepInsight, ChDiveHole, ChDivePlan, ChDiveRound, ChDiveTheme } from './coachhelm-dive-shape';
@@ -97,7 +98,7 @@ export function benchmarkLadder(ev: Record<string, unknown> | null | undefined, 
   if (you == null) return null;
   const comparison = ev?.comparison as { lines?: Array<Record<string, unknown>>; primary?: Record<string, unknown> } | undefined;
   const unit = ev?.unit === 'percent' ? '%' : '';
-  const fmt = (v: number) => (unit ? `${Math.round(v)}%` : v.toFixed(Math.abs(v) < 10 ? 1 : 0));
+  const fmt = (v: number) => (unit ? `${Math.round(v)}%` : formatFixed(v, Math.abs(v) < 10 ? 1 : 0));
   const all = comparison?.lines ?? (comparison?.primary ? [comparison.primary] : []);
   const lines = all
     .filter((l) => num(l.value) != null && (l.source !== 'team_pool' || (calls.teamPool && calls.teamPoolOnLadder === 'when-flag-on')))
@@ -142,7 +143,7 @@ export function readCauseOf(cause: Record<string, unknown> | null | undefined, w
     const slice = String(alt?.label ?? 'This slice');
     const arms = [arm(alt?.arm_a, slice), arm(alt?.arm_b, 'Everywhere else')].filter((x): x is { label: string; failures: number; n: number } => !!x);
     const lift = num(alt?.lift);
-    return { state: 'likely', track: 1, arms, verdict: lift != null ? `${slice} misses ${lift.toFixed(1)} times as often as everywhere else.` : null, range: supportRange };
+    return { state: 'likely', track: 1, arms, verdict: lift != null ? `${slice} misses ${formatFixed(lift, 1)} times as often as everywhere else.` : null, range: supportRange };
   }
   const gap = cause.data_gap as Record<string, unknown> | null | undefined;
   const cd = cause.count_down as Record<string, number> | undefined;
@@ -285,7 +286,7 @@ export interface ChReadSummary {
 export function toChReadSummary(d: ChReadDetail, area: string, role: 'coach' | 'player'): ChReadSummary {
   const c = d.cause;
   const tier: ChReadSummary['tier'] = c?.state === 'counted' ? { kind: 'counted', word: role === 'coach' ? 'Counted' : 'Seen in your shots' } : c?.state === 'likely' && role === 'coach' ? { kind: 'likely', word: 'Likely' } : { kind: 'plain', word: 'Not traced' };
-  const causeLine = c?.state === 'counted' ? c.path.join(' → ') : c?.state === 'likely' ? (c.verdict ?? '') : d.funnel ? d.funnel.steps.map((s) => s.label).join(' · ') : 'CoachHelm says why once one repeats in the shots.';
+  const causeLine = c?.state === 'counted' ? c.path.join(' to ') : c?.state === 'likely' ? (c.verdict ?? '') : d.funnel ? d.funnel.steps.map((s) => s.label).join(' · ') : 'CoachHelm says why once one repeats in the shots.';
   return {
     id: d.insight.id,
     area,

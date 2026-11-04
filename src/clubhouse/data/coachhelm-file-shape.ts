@@ -1,3 +1,5 @@
+import { partsWith } from '../lib/dates';
+import { pluralWord } from '../lib/plural';
 import type { ChProposal } from './coachhelm-shape';
 import { FIELD_DAY_LABEL, type FieldDayEntry } from '@/lib/coachhelm/v3/field-day/field';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
@@ -7,7 +9,7 @@ import type { ChDeepInsight, ChDiveCleared } from './coachhelm-dive-shape';
 import type { ChLadder } from './coachhelm-ladder-shape';
 import type { ChCoachPlayerHead } from './coachhelm-views-shape';
 import type { ChHelmLifecycle } from './coachhelm-shape';
-import { formatSigned } from '../lib/format';
+import { formatSigned, formatFixed } from '../lib/format';
 
 /** The file's shapes, pure and client-safe (coachhelm-lenses 02-PLAN 2.3). A coach-only card is simply absent from every shape built for a player or the lens. */
 
@@ -55,7 +57,7 @@ export function toChFileSg(ladder: ChLadder, rows: readonly PlayerStanding[], wh
   });
   const known = out.filter((r) => r.strokes != null);
   const worst = known.length ? known.reduce((a, b) => ((b.strokes as number) < (a.strokes as number) ? b : a)) : null;
-  const costs = (v: number) => Math.abs(v).toFixed(1);
+  const costs = (v: number) => formatFixed(Math.abs(v), 1);
   const whom = who.you ? 'you' : who.first;
   let note: string | null = null;
   if (worst && (worst.strokes as number) < 0) {
@@ -113,7 +115,7 @@ export function fileDay(iso: string | null | undefined, zone: string): string | 
   if (!iso) return null;
   const d = new Date(iso.length === 10 ? `${iso}T12:00:00Z` : iso);
   if (Number.isNaN(d.getTime())) return null;
-  const p = new Intl.DateTimeFormat('en-US', { month: 'numeric', day: 'numeric', timeZone: iso.length === 10 ? 'UTC' : zone }).formatToParts(d);
+  const p = partsWith(d, { month: 'numeric', day: 'numeric', timeZone: iso.length === 10 ? 'UTC' : zone });
   const m = Number(p.find((x) => x.type === 'month')?.value ?? 1);
   return `${MONTHS[m - 1]} ${p.find((x) => x.type === 'day')?.value}`;
 }
@@ -158,7 +160,7 @@ function toFileGoal(g: Goal, row: ChFocusRow | null, zone: string): ChFileGoal {
   const lowerBetter = target != null && base != null ? target < base : true;
   const worse = last != null && target != null ? (lowerBetter ? last > target : last < target) : false;
   const word = last == null || base == null ? null : last === base ? 'No change' : (lowerBetter ? last < base : last > base) ? 'Improved' : 'Worse';
-  return { title: g.title, line: `${points.length} check-in${points.length === 1 ? '' : 's'}`, word, target, points, worse };
+  return { title: g.title, line: `${points.length} check-in${pluralWord(points.length, '', 's')}`, word, target, points, worse };
 }
 
 export interface ChFileField {
@@ -182,7 +184,7 @@ export interface ChFileField {
 
 export const FIELD_PLAYER_FLOOR = 5;
 
-const signedOne = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(1)}`;
+const signedOne = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${formatFixed(Math.abs(v), 1)}`;
 
 /** Numbers straight from `FieldDayEntry`: the mean and relative include the player, and the copy says so. No card for a player under five: the mean would give away teammates' sum (02 13.3). */
 export function toChFileField(entry: FieldDayEntry | null, others: readonly number[], view: { role: 'coach'; first: string } | { role: 'player'; first?: string }, round: { date: string; course: string | null; score: number | null }, zone: string): ChFileField | null {
@@ -194,7 +196,7 @@ export function toChFileField(entry: FieldDayEntry | null, others: readonly numb
   const mates = entry.field_n - 1;
   const who = view.role === 'coach' ? view.first : 'you';
   const shot = view.role === 'coach' ? `${view.first} shot` : 'You shot';
-  const sentence = `${shot}${round.score != null ? ` ${round.score}` : ` ${signedOne(me)}`}. ${mates} ${mates === 1 ? 'teammate' : 'teammates'} played; the field, ${who} included, averaged ${signedOne(entry.field_mean)}.`;
+  const sentence = `${shot}${round.score != null ? ` ${round.score}` : ` ${signedOne(me)}`}. ${mates} ${pluralWord(mates, 'teammate', 'teammates')} played; the field, ${who} included, averaged ${signedOne(entry.field_mean)}.`;
   const vals = [me, entry.field_mean, ...(view.role === 'coach' ? others : [])];
   let lo = Math.floor(Math.min(...vals));
   let hi = Math.ceil(Math.max(...vals));
@@ -274,7 +276,7 @@ export function toChFileTrack(rows: ReadonlyArray<{ id: string; title: string; o
     if (word === 'No change') noChange++;
     if (!word) continue;
     const a = r.from_insight_id ? byInsight.get(r.from_insight_id) : undefined;
-    const delta = a ? `${formatSigned(a.baseline_value).replace('+', '')} → ${formatSigned(a.post_value).replace('+', '')}` : null;
+    const delta = a ? `${formatSigned(a.baseline_value).replace('+', '')} to ${formatSigned(a.post_value).replace('+', '')}` : null;
     out.push({ id: r.id, title: r.title, word, meta: [delta, fileDay(r.completed_at, zone)].filter(Boolean).join(' · ') });
   }
   return { assigned: rows.length, improved, noChange, open: rows.length - out.length, rows: out };
@@ -344,4 +346,4 @@ export function playerKicker(stage: ChFileStage, coach: string): string {
   return 'Top of your list';
 }
 
-export const FILE_SIGN = (v: number) => (v > 0 ? `+${Math.abs(v).toFixed(1)}` : v < 0 ? `−${Math.abs(v).toFixed(1)}` : Math.abs(v).toFixed(1));
+export const FILE_SIGN = (v: number) => (v > 0 ? `+${formatFixed(Math.abs(v), 1)}` : v < 0 ? `−${formatFixed(Math.abs(v), 1)}` : formatFixed(Math.abs(v), 1));

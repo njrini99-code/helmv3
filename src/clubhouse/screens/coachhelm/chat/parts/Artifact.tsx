@@ -1,4 +1,5 @@
 'use client';
+import { Button } from '../../../../ui/Button';
 
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
@@ -43,16 +44,16 @@ function Actions({ builderHref }: { builderHref: string | null }) {
   return (
     <div className="apf">
       {builderHref && (
-        <a className="ch-btn ch-btn--secondary" href={builderHref}>
+        <Button variant="secondary" href={builderHref}>
           Edit in builder
-        </a>
+        </Button>
       )}
-      <button type="button" className="ch-btn ch-btn--secondary" aria-disabled="true" title="Comes with the Practice tab">
+      <Button variant="secondary" disabled>
         Save draft…
-      </button>
-      <button type="button" className="ch-btn ch-btn--primary" aria-disabled="true" title="Comes with the Practice tab">
+      </Button>
+      <Button variant="primary" disabled>
         Publish…
-      </button>
+      </Button>
     </div>
   );
 }

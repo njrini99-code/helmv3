@@ -1,4 +1,5 @@
 'use client';
+import { formatFixed } from '../../../lib/format';
 
 import { useEffect, useRef, useState } from 'react';
 import { CalendarDays, ChevronRight, Flag, MessageSquare, Target, Check } from 'lucide-react';
@@ -89,7 +90,7 @@ export function WhereCard({ funnel, pictures }: { funnel: NonNullable<ChReadDeta
             </div>
           ))}
         </div>
-        {!funnel.stopped && <div className="cn">Each step only shows when its count clears the engine&apos;s floor.</div>}
+        {!funnel.stopped && <div className="cn">Each step only shows when its count clears the engine’s floor.</div>}
       </div>
     </Card>
   );
@@ -175,7 +176,7 @@ export function WhyCard({ d, voice, pictures }: { d: ChReadDetail; voice: ChView
               </div>
             )}
             <div className="verdict">
-              <b>{cause.count}.</b> {cause.eventStrokes != null ? `Each one cost about ${Math.abs(cause.eventStrokes).toFixed(1)} strokes.` : ''}
+              <b>{cause.count}.</b> {cause.eventStrokes != null ? `Each one cost about ${formatFixed(Math.abs(cause.eventStrokes), 1)} strokes.` : ''}
               <span className="q">Counted in {coach ? `${first}’s` : 'your'} recorded shots on these holes.</span>
             </div>
             {cause.holes.length > 0 && (

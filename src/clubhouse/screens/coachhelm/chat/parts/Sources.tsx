@@ -1,4 +1,5 @@
 'use client';
+import { pluralWord } from '../../../../lib/plural';
 
 import { BookOpen } from 'lucide-react';
 import { useId, useState } from 'react';
@@ -21,7 +22,7 @@ export function Sources({ reads }: { reads: AskTurnRead[] }) {
           ))}
         </span>
         <span className="ch-num">
-          {reads.length} {reads.length === 1 ? 'read' : 'reads'}
+          {reads.length} {pluralWord(reads.length, 'read', 'reads')}
         </span>
       </button>
       {open && (

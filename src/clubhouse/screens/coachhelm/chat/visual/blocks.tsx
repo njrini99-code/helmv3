@@ -1,4 +1,5 @@
 'use client';
+import { formatFixed } from '../../../../lib/format';
 
 import type { HoleStripBlock, MissPatternBlock, PuttProfileBlock, SeasonCompareBlock } from '@/lib/coachhelm/v3/chat/visuals/composition';
 
@@ -45,7 +46,7 @@ export function PuttProfile({ block }: { block: PuttProfileBlock }) {
 }
 
 export function SeasonCompare({ block }: { block: SeasonCompareBlock }) {
-  const fmt = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(1)}`;
+  const fmt = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${formatFixed(Math.abs(v), 1)}`;
   const t = block.this_season;
   const l = block.last_season;
   return (

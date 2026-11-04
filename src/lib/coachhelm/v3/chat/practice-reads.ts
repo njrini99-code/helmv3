@@ -35,7 +35,7 @@ export async function getDrillBank(sb: Sb, ctx: CoachChatContext, input: { categ
 
 export async function getTeamStrokesGained(sb: Sb, ctx: CoachChatContext, input: { rounds: number }): Promise<ToolEnvelope> {
   const ids = ctx.roster.map((p) => p.id);
-  const { data, error } = await sb.from('golf_rounds').select('round_date, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting').in('player_id', ids).eq('status', 'completed').not('strokes_gained_tee', 'is', null).order('round_date', { ascending: false }).limit(input.rounds * Math.max(1, ids.length));
+  const { data, error } = await sb.from('golf_rounds').select('round_date, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting').in('player_id', ids).eq('status', 'completed').eq('is_test', false).not('strokes_gained_tee', 'is', null).order('round_date', { ascending: false }).limit(input.rounds * Math.max(1, ids.length));
   if (error) return unavailableEnvelope('Could not read strokes gained.', 'The rounds read failed.');
   const rows = data ?? [];
   const dates = [...new Set(rows.map((r) => r.round_date))].slice(0, input.rounds);

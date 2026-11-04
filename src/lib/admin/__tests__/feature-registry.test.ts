@@ -26,6 +26,7 @@ const EXPECTED_KEYS: FeatureKey[] = [
   'messaging',
   'announcements',
   'documents',
+  'practice_plans',
   'travel',
   'team_info',
   'join_team_flow',
@@ -478,7 +479,7 @@ describe('FEATURE_REGISTRY completeness', () => {
 
   it('rpcInput() excludes the CRM row and carries heartbeat tables', () => {
     const input = rpcInput();
-    expect(input).toHaveLength(86);
+    expect(input).toHaveLength(87);
     expect(input.some((i) => i.key === 'crm_recruiting_pipeline')).toBe(false);
     const roundTracking = input.find((i) => i.key === 'round_tracking');
     expect(roundTracking?.heartbeat_table).toBe('golf_rounds');

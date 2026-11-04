@@ -1,4 +1,6 @@
 'use client';
+import { formatWith } from '../../../lib/dates';
+import { pluralWord } from '../../../lib/plural';
 
 import { useRef, useState } from 'react';
 import { courseReads, type ChTeamBoardData, type ChTeamPlayer, type ChTourRow } from '../../../data/coachhelm-team-shape';
@@ -13,12 +15,11 @@ const READ_CAP = 3;
 /** To par: "+6.4", "E" at zero (AC-COURSE-02). */
 export const toPar = (v: number): string => {
   const r = Math.round(v * 10) / 10;
-  return r === 0 ? 'E' : `${r < 0 ? MINUS : '+'}${Math.abs(r).toFixed(1)}`;
+  return r === 0 ? 'E' : `${r < 0 ? MINUS : '+'}${formatFixed(Math.abs(r), 1)}`;
 };
 
-const DAY_FMT = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 /** A calendar day, never moved by the viewer's zone (CP-TEAM-16). */
-const day = (iso: string) => DAY_FMT.format(new Date(`${iso}T00:00:00Z`));
+const day = (iso: string) => formatWith(new Date(`${iso}T00:00:00Z`), { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
 /** The weekly line, lowest score on top; it draws once and a Show more doesn't redraw it (AC-COURSE-03, AC-COURSEALL-03). */
 function Trend({ history }: { history: CourseHistory }) {
@@ -48,7 +49,7 @@ function Trend({ history }: { history: CourseHistory }) {
       <text className="avl" x={w - R + 12} y={y(season) + 4}>
         {toPar(season)}
       </text>
-      <path className="ln" d={'M' + pts.map((p) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' L')} />
+      <path className="ln" d={'M' + pts.map((p) => `${Math.round(p[0] * 10) / 10} ${Math.round(p[1] * 10) / 10}`).join(' L')} />
       {pts.map((p, i) => (
         <circle key={weeks[i]!.start} className={'d' + (i === n - 1 ? ' last' : '')} cx={p[0]} cy={p[1]} r={i === n - 1 ? 4.6 : 3.1} />
       ))}
@@ -77,7 +78,7 @@ const TOUR_WORDS: Record<ChTourRow['id'], { label: string; unit: string; fmt: (v
   opening_hole_delta: { label: 'First hole', unit: 'vs average hole', fmt: (v) => signed2(v) },
 };
 function signed2(v: number): string {
-  return `${v < 0 ? MINUS : '+'}${Math.abs(v).toFixed(2)}`;
+  return `${v < 0 ? MINUS : '+'}${formatFixed(Math.abs(v), 2)}`;
 }
 
 function CourseRow({ row, season, readCount, onCourse }: { row: CourseHistoryRow; season: number; readCount: number; onCourse: (id: string) => void }) {
@@ -88,12 +89,12 @@ function CourseRow({ row, season, readCount, onCourse }: { row: CourseHistoryRow
         <b>{row.name}</b>
         <span>
           {row.rounds} rounds · last {day(row.last)}
-          {readCount ? ` · ${readCount} ${readCount === 1 ? 'read' : 'reads'}` : ''}
+          {readCount ? ` · ${readCount} ${pluralWord(readCount, 'read', 'reads')}` : ''}
         </span>
       </span>
       <span className="cv">
         <b>{toPar(row.value)}</b>
-        <span className={d > 0 ? 'l' : d < 0 ? 'g' : 'e'}>{d ? `${Math.abs(d).toFixed(1)} ${d > 0 ? 'over' : 'under'} season` : 'Level with season'}</span>
+        <span className={d > 0 ? 'l' : d < 0 ? 'g' : 'e'}>{d ? `${formatFixed(Math.abs(d), 1)} ${d > 0 ? 'over' : 'under'} season` : 'Level with season'}</span>
       </span>
       <Chevron />
     </button>
@@ -180,7 +181,7 @@ export function CourseCard({ data, onRead, onCourse, onRetry }: { data: ChTeamBo
   const readsBlock = (
     <div className="cmr">
       <div className="subh">
-        What CoachHelm sees here{reads.length ? ` · ${reads.length} open ${reads.length === 1 ? 'read' : 'reads'}` : ''}
+        What CoachHelm sees here{reads.length ? ` · ${reads.length} open ${pluralWord(reads.length, 'read', 'reads')}` : ''}
       </div>
       <div className="rds">
         {shownReads.map((r) => {
@@ -226,7 +227,7 @@ export function CourseCard({ data, onRead, onCourse, onRetry }: { data: ChTeamBo
     <section ref={card} className="card spot cm" data-spot="" data-ch-team-card="course" aria-label="Course and scoring">
       <div className="ch">
         <h4>Course and scoring</h4>
-        <span className="meta">Not on the hole · {reads.length ? `${reads.length} open ${reads.length === 1 ? 'read' : 'reads'}` : 'No open reads yet'}</span>
+        <span className="meta">Not on the hole · {reads.length ? `${reads.length} open ${pluralWord(reads.length, 'read', 'reads')}` : 'No open reads yet'}</span>
       </div>
       <div className="ch-htb-coursephone">
         {historyBlock}

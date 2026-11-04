@@ -1,4 +1,5 @@
 'use client';
+import { Button } from '../../../ui/Button';
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -85,22 +86,19 @@ export function PlanCard({ plan, onSend }: { plan: PlanPartData; onSend: (text: 
             <span>Only coaches can see it. Players are told when you publish.</span>
             <div className="btns">
               {undoOpen && (
-                <button
-                  type="button"
-                  className="ch-btn ch-btn--secondary"
-                  onClick={() => {
+                <Button variant="secondary" onClick={() => {
                     void undoPracticePlanDraft({ planId: state.planId, created: state.created, savedAt: state.savedAt }).then((r) => (r.success ? setState({ k: 'undone' }) : setError(r.error ?? null)));
                   }}
                 >
                   Undo
-                </button>
+                </Button>
               )}
-              <button type="button" className="ch-btn ch-btn--secondary" onClick={() => router.push(`/golf/dashboard/practice/plan/${state.planId}?from=coachhelm`)}>
+              <Button variant="secondary" onClick={() => router.push(`/golf/dashboard/practice/plan/${state.planId}?from=coachhelm`)}>
                 Open
-              </button>
-              <button type="button" className="ch-btn ch-btn--primary" onClick={() => onSend(`Publish the plan ${plan.title}`)}>
+              </Button>
+              <Button variant="primary" onClick={() => onSend(`Publish the plan ${plan.title}`)}>
                 Publish…
-              </button>
+              </Button>
             </div>
           </div>
         ) : state.k === 'undone' ? (
@@ -109,12 +107,12 @@ export function PlanCard({ plan, onSend }: { plan: PlanPartData; onSend: (text: 
           <>
             <p className="ch-cp-inert">Comes with the Practice tab</p>
             <div className="btns">
-              <button type="button" className="ch-btn ch-btn--secondary" disabled>
+              <Button variant="secondary" disabled>
                 Save draft…
-              </button>
-              <button type="button" className="ch-btn ch-btn--primary" disabled>
+              </Button>
+              <Button variant="primary" disabled>
                 Publish…
-              </button>
+              </Button>
             </div>
           </>
         ) : (
@@ -172,9 +170,9 @@ export function PlanCard({ plan, onSend }: { plan: PlanPartData; onSend: (text: 
               </p>
             )}
             <div className="btns">
-              <button type="button" className="ch-btn ch-btn--primary" disabled={state.k === 'saving' || !plan.eventId} onClick={() => void save()}>
+              <Button variant="primary" disabled={state.k === 'saving' || !plan.eventId} onClick={() => void save()}>
                 {state.k === 'saving' ? 'Saving…' : state.k === 'failed' ? 'Try again' : 'Save draft…'}
-              </button>
+              </Button>
             </div>
           </>
         )}

@@ -1,4 +1,5 @@
 'use client';
+import { pluralWord } from '../../../lib/plural';
 
 import { STATIONS, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
 import type { ChBriefWorking } from '../../../data/coachhelm-coach-brief-shape';
@@ -108,7 +109,7 @@ export function WorkingCard({ working, proposed, failed, onRetry }: { working: r
       <div className="ch">
         <h4>Working on</h4>
         <span className="meta">
-          {n} focus {n === 1 ? 'area' : 'areas'}
+          {n} focus {pluralWord(n, 'area', 'areas')}
         </span>
       </div>
       {failed ? (

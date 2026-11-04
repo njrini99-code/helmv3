@@ -1,4 +1,5 @@
 'use client';
+import { Button } from '../../../../ui/Button';
 
 import { useState } from 'react';
 import { requestAskCredits, undoAskCredits } from '@/app/golf/actions/coachhelm-ask-credits';
@@ -20,9 +21,9 @@ export function OutCard({ sent, onRequest }: { sent: boolean; onRequest: () => v
       <b>Ask is paused until Monday</b>
       <p>{sent ? 'Your request went in. We’ll take a look.' : 'Need more before Monday?'}</p>
       {!sent && (
-        <button type="button" className="ch-btn ch-btn--secondary" onClick={onRequest}>
+        <Button variant="secondary" onClick={onRequest}>
           Request more
-        </button>
+        </Button>
       )}
     </section>
   );
@@ -36,15 +37,12 @@ export function PlayerOut() {
       <section className="ch-ak-out" role="status">
         <b>Request ready</b>
         <p>It goes in once Undo closes.</p>
-        <button
-          type="button"
-          className="ch-btn ch-btn--secondary"
-          onClick={() => {
+        <Button variant="secondary" onClick={() => {
             if (state.id) void undoAskCredits(state.id).then((r) => setState(r.success ? { phase: 'idle' } : { phase: 'sent' }));
           }}
         >
           Undo
-        </button>
+        </Button>
       </section>
     );
   return (

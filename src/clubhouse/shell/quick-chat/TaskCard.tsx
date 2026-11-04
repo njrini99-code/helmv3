@@ -1,4 +1,5 @@
 'use client';
+import { pluralWord } from '../../lib/plural';
 
 import { useEffect, useRef, useState } from 'react';
 import type { TaskVisual } from '@/lib/coachhelm/v3/chat/action-types';
@@ -30,7 +31,7 @@ const toldLine = (n: ReadonlyArray<{ channel: string; recipients: number; status
   const sent = n.filter((x) => x.status !== 'failed');
   if (!sent.length) return null;
   const most = Math.max(...sent.map((x) => x.recipients));
-  return most ? `${most} ${most === 1 ? 'player' : 'players'} told.` : null;
+  return most ? `${most} ${pluralWord(most, 'player', 'players')} told.` : null;
 };
 
 /** S-TASK: the card, its visual, confirm, busy, receipt with the ring, told, undone, failed, cancelled. Every receipt value is the server's. */

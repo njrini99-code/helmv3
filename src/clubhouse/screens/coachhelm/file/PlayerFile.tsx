@@ -1,6 +1,8 @@
 'use client';
+import { formatWith } from '../../../lib/dates';
 
-import { AlertTriangle, Eye, MessageSquare, MoreHorizontal, Users } from 'lucide-react';
+import { useRefresh } from '../../../lib/use-refresh';
+import { TriangleAlert, Eye, MessageSquare, Ellipsis, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
@@ -101,10 +103,10 @@ export function FileFailed({ who, onRetry }: { who: string; onRetry: () => void 
     <section className="card" role="alert">
       <div className="empty">
         <span className="empty__ic warn">
-          <Icon icon={AlertTriangle} size={22} />
+          <Icon icon={TriangleAlert} size={22} />
         </span>
         <b>Couldn’t load {who}</b>
-        <p>Nothing was lost. Check your connection and try again.</p>
+        <p>Nothing was lost. Try again.</p>
         <button type="button" className="btn sec" data-ch-hf-retry="" onClick={onRetry}>
           Try again
         </button>
@@ -116,13 +118,14 @@ export function FileFailed({ who, onRetry }: { who: string; onRetry: () => void 
 /** A coach's file on one player (S-FILE, coachhelm_player_file_v1). */
 export function PlayerFile({ load, at, insight, roster, writes = LIVE_COACHHELM_WRITES, saveIntent = LIVE_SAVE_INTENT, initialLens = 'coach' }: FileHostProps) {
   const router = useRouter();
+  const { refresh } = useRefresh();
   const phone = useChPhone();
   if (load.status !== 'ready') {
     return (
       <main className={'ch-hf' + (phone ? ' is-phone' : '')}>
         {phone && <PhoneTop back={{ label: 'CoachHelm', onBack: () => router.push(PLAYER_HELM_HREF.board) }} title="CoachHelm" />}
         <div className="ch-hf-flow">
-          <FileFailed who="this player’s file" onRetry={() => router.refresh()} />
+          <FileFailed who="this player’s file" onRetry={() => refresh()} />
         </div>
       </main>
     );
@@ -183,7 +186,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
     const assignedHere = shown.feat && fa.assigned[shown.feat.base.id];
     if (!assignedHere || shown.plan?.stage === 'accepted') return shown.plan;
     if (shown.plan && shown.plan.stage !== 'none' && shown.plan.stage !== 'declined') return shown.plan;
-    const today = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date());
+    const today = formatWith(new Date(), { month: 'short', day: 'numeric' });
     return { stage: 'suggested', focusId: null, title: shown.feat?.base.title ?? null, fromInsight: shown.feat?.base.id ?? null, since: null, handshake: { suggested: today, shown: null, accepted: null, declined: null }, goal: null, practice: null, coach: shown.plan?.coach ?? 'Your coach' };
   }, [shown, fa.assigned]);
 
@@ -321,7 +324,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
         <PhoneTop
           back={{ label: 'CoachHelm', onBack: () => router.push(PLAYER_HELM_HREF.board) }}
           title={head.name}
-          action={more(((p: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void }) => <PhoneIconAction icon={MoreHorizontal} label={`More for ${first}`} onClick={p.onClick} />) as never)}
+          action={more(((p: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void }) => <PhoneIconAction icon={Ellipsis} label={`More for ${first}`} onClick={p.onClick} />) as never)}
         />
       )}
       <div className="dmain">
@@ -335,7 +338,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
               <div className="rows">
                 {roster.map((r) => (
                   <Link key={r.id} replace prefetch={false} href={playerFileHref(r.id, undefined, true)} className={'r' + (r.id === head.playerId ? ' is-sel' : '')} aria-current={r.id === head.playerId ? 'page' : undefined} data-ch-hf-open="">
-                    <Avatar name={r.name} size={32} />
+                    <Avatar name={r.name} size="md" />
                     <span className="r__t">
                       <b>{r.name}</b>
                       {r.line && <small>{r.line}</small>}
@@ -349,7 +352,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
         <div className="dfile">
           {!phone && (
             <div className="dhead">
-              <Avatar name={head.name} size={52} />
+              <Avatar name={head.name} size="xl" />
               <div>
                 <h1 className="lt">{head.name}</h1>
                 <p>{head.line}</p>
@@ -357,7 +360,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
               <div className="aseg">{lensBar}</div>
               {more(((p: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void }) => (
                 <button type="button" ref={p.ref} className="ib" data-ch-hf-more="" aria-label={`More for ${first}`} onClick={p.onClick}>
-                  <Icon icon={MoreHorizontal} size={19} />
+                  <Icon icon={Ellipsis} size={19} />
                 </button>
               )) as never)}
             </div>

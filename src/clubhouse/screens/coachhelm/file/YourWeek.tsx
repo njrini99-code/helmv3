@@ -1,7 +1,7 @@
 'use client';
 
+import { useRefresh } from '../../../lib/use-refresh';
 import { Check } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import type { ChDeepInsight } from '../../../data/coachhelm-dive-shape';
 import type { ChPlayerWeek } from '../../../data/coachhelm-file-shape';
@@ -22,7 +22,7 @@ import { FileFailed } from './PlayerFile';
 /** The player's own CoachHelm with the flag on (S-BOARD): the lens's cards, for real. Accept and Decline are today's `ProposalRow`, live. */
 export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLoad<ChPlayerWeek>; writes?: ChPlayerWrites }) {
   const phone = useChPhone();
-  const router = useRouter();
+  const { refresh } = useRefresh();
   const sw = useViewSwitch<PlayerHelmView>('board', (v) => PLAYER_HELM_HREF[v], PLAYER_HELM_VIEWS);
   const [openRead, setOpenRead] = useState<string | null>(null);
   const data = load.status === 'ready' ? load.data : null;
@@ -37,7 +37,7 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
       <main className={'ch-hf' + (phone ? ' is-phone' : ' is-desk')}>
         {phone && <PhoneTop start title="CoachHelm" />}
         <div className="ch-hf-flow">
-          <FileFailed who="your CoachHelm" onRetry={() => router.refresh()} />
+          <FileFailed who="your CoachHelm" onRetry={() => refresh()} />
         </div>
       </main>
     );

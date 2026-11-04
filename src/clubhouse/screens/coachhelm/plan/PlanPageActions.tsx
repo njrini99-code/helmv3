@@ -1,4 +1,5 @@
 'use client';
+import { Button } from '../../../ui/Button';
 
 import { useEffect } from 'react';
 import { recordPracticePlanOpen } from '@/app/golf/actions/practice-plans';
@@ -11,8 +12,8 @@ export function PlanPageActions({ plan, playerPlanId }: { plan: PlanSheetModel; 
     if (playerPlanId) void recordPracticePlanOpen({ planId: playerPlanId });
   }, [playerPlanId]);
   return (
-    <button type="button" className="ch-btn ch-btn--secondary" onClick={() => void printPlan(plan)}>
+    <Button variant="secondary" onClick={() => void printPlan(plan)}>
       Print
-    </button>
+    </Button>
   );
 }

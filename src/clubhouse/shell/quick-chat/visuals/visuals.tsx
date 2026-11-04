@@ -1,4 +1,6 @@
 'use client';
+import { formatWith } from '../../../lib/dates';
+import { pluralWord } from '../../../lib/plural';
 
 import { useEffect, useState } from 'react';
 import type { TaskVisual } from '@/lib/coachhelm/v3/chat/action-types';
@@ -13,7 +15,7 @@ const hours = (t: string) => {
   return (h ?? 0) + (m ?? 0) / 60;
 };
 const clock = (h: number) => `${h % 12 || 12} ${h < 12 || h === 24 ? 'AM' : 'PM'}`;
-const dayLong = (date: string, opts: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-US', { ...opts, timeZone: 'UTC' }).format(new Date(`${date}T12:00:00Z`));
+const dayLong = (date: string, opts: Intl.DateTimeFormatOptions) => formatWith(new Date(`${date}T12:00:00Z`), { ...opts, timeZone: 'UTC' });
 const time12 = (t: string) => {
   const v = hours(t);
   const h = Math.floor(v);
@@ -154,7 +156,7 @@ export function QualifierVisual({ visual }: { visual: Qual }) {
               ))}
             </span>
             <span>
-              {scored} by score · {visual.picks} your {visual.picks === 1 ? 'pick' : 'picks'}
+              {scored} by score · {visual.picks} your {pluralWord(visual.picks, 'pick', 'picks')}
             </span>
           </dd>
         </div>

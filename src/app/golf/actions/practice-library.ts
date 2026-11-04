@@ -55,10 +55,9 @@ async function archiveTeamDrillImpl(input: { drillId: string; archived: boolean 
   return error ? { success: false, error: 'Couldn’t save the drill.', code: 'CH-17006', unavailable: isPracticeMissing(error.code) } : { success: true };
 }
 
-const feature = { sport: 'golf', feature: 'practice_plans' } as const;
-const observedCreate = withAdminObserved('createTeamDrill', feature, createTeamDrillImpl);
-const observedCopy = withAdminObserved('copyLibraryDrill', feature, copyLibraryDrillImpl);
-const observedArchive = withAdminObserved('archiveTeamDrill', feature, archiveTeamDrillImpl);
+const observedCreate = withAdminObserved('createTeamDrill', { sport: 'golf', feature: 'practice_plans' }, createTeamDrillImpl);
+const observedCopy = withAdminObserved('copyLibraryDrill', { sport: 'golf', feature: 'practice_plans' }, copyLibraryDrillImpl);
+const observedArchive = withAdminObserved('archiveTeamDrill', { sport: 'golf', feature: 'practice_plans' }, archiveTeamDrillImpl);
 
 export async function createTeamDrill(input: DrillInput) {
   return observedCreate(input);
