@@ -56,7 +56,7 @@ const ROUND_COLUMNS =
   'id, player_id, course_id, course_name, tees_played, round_date, round_type, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting';
 
 export const TREND_LENGTH = 7;
-export const MIN_SG_ROUNDS = 3;
+export { MIN_SG_ROUNDS } from './season-floors';
 
 /** The zone a season turns in when the team's own isn't to hand: the one the rest of Clubhouse falls back to. */
 export const SEASON_DEFAULT_TZ = 'America/New_York';

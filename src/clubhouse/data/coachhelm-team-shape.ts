@@ -8,7 +8,8 @@ import type { ChTrackRecord } from './coachhelm-track-record-shape';
 import type { CourseHistory } from '@/lib/coachhelm/v3/team-board/course-shape';
 import { effectiveCount, weightedMean } from './stats-weight';
 import { holeRounds } from './round-scope';
-import { MIN_SG_ROUNDS, type ChRound } from './season';
+import { MIN_SG_ROUNDS } from './season-floors';
+import type { ChRound } from './season';
 import { TEAM_PATTERN_MIN_MEMBERS } from '@/lib/coachhelm/v3/team-pattern/pattern';
 
 /** The coach's team board (the hole), pure and client-safe (coachhelm-team 02-PLAN 4.5). */
