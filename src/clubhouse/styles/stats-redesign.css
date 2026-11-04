@@ -1609,7 +1609,7 @@ li + li > .ch-shs-rrow::before {
 .ch-shs-goal1 b {
   display: block;
   font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); }
-.ch-shs-goal1 span.ch-num {
+.ch-shs-goal1 > div span.ch-num {
   display: block;
   margin-top: 2px;
   font: var(--ch-type-15);
@@ -2161,4 +2161,21 @@ p.ch-shs-mini-cap {
 .ch-shs-feature,
 .ch-shs-chart {
   --ch-border-focus: var(--ch-on-green-plate);
+}
+
+/* Rounds detail: Personal bests as hairline cells, not tiles (06 S-STATS.rounds). */
+.ch-shs .ch-gx-tiles {
+  gap: 0;
+}
+.ch-shs .ch-gx-tiles > div {
+  padding: 12px 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-separator);
+}
+.ch-shs .ch-gx-tiles > div:nth-child(odd) {
+  box-shadow: inset calc(-1 * var(--ch-hairline-w)) calc(-1 * var(--ch-hairline-w)) 0 var(--ch-separator);
+}
+.ch-shs .ch-gx-tiles > div:nth-child(even) {
+  padding-inline-start: 12px;
 }

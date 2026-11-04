@@ -170,7 +170,7 @@ export function TeeMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra; on
           <Empty code={NOTHING}>No tee misses with a direction are logged in this window.</Empty>
         )}
       </Panel>
-      <Panel title="Where tee shots finish" wide note="Shots with no direction logged count as center, as on the production page.">
+      <Panel title="Where tee shots finish" wide note="Shots with no direction logged count as center.">
         <Shots error={x.sprayError} code="CH-5212" what="Where shots finish" onRetry={onRetry}>
           {x.spray && x.spray.driving.shots > 0 ? <SectorGrid g={x.spray.driving} unit="tee shots" /> : <Empty code="CH-5315">No tee shots with a finish are logged in this window.</Empty>}
         </Shots>
@@ -244,7 +244,7 @@ export function ApproachMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtr
       <Panel title="Greens by round" wide>
         <ByRound points={x.series.gir} unit="%" digits={0} label="Greens in regulation by round" what="greens in regulation" />
       </Panel>
-      <Panel title="Where approaches finish" wide note="Every approach shot, including lay-ups. Shots with no direction logged count as center, as on the production page.">
+      <Panel title="Where approaches finish" wide note="Every approach shot, including lay-ups. Shots with no direction logged count as center.">
         <Shots error={x.sprayError} code="CH-5212" what="Where shots finish" onRetry={onRetry}>
           {x.spray && x.spray.approach.shots > 0 ? <SectorGrid g={x.spray.approach} unit="approaches" /> : <Empty code="CH-5315">No approach shots with a finish are logged in this window.</Empty>}
         </Shots>

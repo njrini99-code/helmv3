@@ -1018,7 +1018,8 @@ function RoundsDetail({ data }: { data: ChPlayerProfile }) {
         <RoundTicker rounds={tickerRounds(data)} />
         <p className="ch-shs-mini-cap">{n > 1 ? 'Best round in green. Score by round is on the Scoring page.' : 'Score by round is on the Scoring page.'}</p>
       </ShsCard>
-      {data.rounds.length > 0 && <RoundsExtra x={data.extra} filter={data.filter} phone share={{ viewer: data.viewer, name: data.name, coach: data.attestingCoach }} />}
+      {data.rounds.length > 0 && <RoundsExtra noCompare x={data.extra} filter={data.filter} phone share={{ viewer: data.viewer, name: data.name, coach: data.attestingCoach }} />}
+      {data.rounds.length > 0 && <AgainstBefore compare={data.extra.compare} rows={COMPARE_ROWS.all} previous={hasPrevious(data)} how={SHS_HOW.scoring} />}
       <ShsCard title="Every round" meta={plural(data.rounds.length, 'round')} flush>
         {data.rounds.length === 0 ? (
           <EmptyState code="CH-5302" kind="filtered" compact title="No rounds in this window." body="Try This season to see every round posted since August." />

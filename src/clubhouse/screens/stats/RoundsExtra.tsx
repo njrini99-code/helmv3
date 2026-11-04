@@ -57,12 +57,15 @@ export function RoundsExtra({
   x,
   filter,
   phone = false,
+  noCompare = false,
   zones = false,
   share,
 }: {
   x: ChProfileExtra;
   filter: ChFilter;
   phone?: boolean;
+  /** The redesign's phone draws its own Against the N before. */
+  noCompare?: boolean;
   /** Desktop: the same figures as zones (the Overview's style) instead of cards. */
   zones?: boolean;
   /** Who the personal-best card is for (P005-C2); omitted, the bests have no Share. */
@@ -218,7 +221,7 @@ export function RoundsExtra({
           <BestTiles b={x.bests9} at={at} label="Personal bests, 9 holes" />
         </Card>
       )}
-      <Card id="rx-compare" title="This window against the one before" meta={compareNote} phone={phone}>
+      {!noCompare && <Card id="rx-compare" title="This window against the one before" meta={compareNote} phone={phone}>
         {c ? (
           <>
             <DataTable
@@ -244,7 +247,7 @@ export function RoundsExtra({
         ) : (
           <Empty code="CH-5313">{why}</Empty>
         )}
-      </Card>
+      </Card>}
     </>
   );
 }
