@@ -476,6 +476,26 @@ async function setPlayerAvailabilityImpl(input: {
       return { success: false };
     }
 
+    // Marked available: the coach-only reason (an injury, say) no longer applies, so it must not resurface on the next Injured or Away.
+    // Best effort and after the availability write: the table may not exist yet (held migration), and a failed clear is not a failed save.
+    if (input.availability === 'available') {
+      try {
+        const { error: clearError } = await fromUntyped(supabase, 'golf_player_availability_coach_notes')
+          .delete()
+          .eq('team_id', teamId)
+          .eq('player_id', input.playerId);
+        if (clearError && !NOTE_TABLE_MISSING.has(String(clearError.code))) {
+          await logServerError(`setPlayerAvailability reason clear failed: ${clearError.message}`, {
+            action: 'roster.setPlayerAvailability',
+            playerId: input.playerId,
+            teamId,
+          });
+        }
+      } catch {
+        // The reason stays until the coach clears it; the availability itself saved.
+      }
+    }
+
     revalidatePath('/golf/dashboard/roster');
     updateTag(CACHE_TAGS.ROSTER);
     return { success: true };

@@ -13,11 +13,13 @@ Held items: none
 
 ### Changed
 
-- The qualifiers fields' placeholder reads on --ch-text-placeholder, and the fact values are 600 (qualifiers.css).
+- The qualifiers fields' placeholder reads on --ch-text-placeholder, and the
+  fact values are 600 (qualifiers.css).
 
 ### Why
 
-- The cross-page entry, docs/clubhouse/changes/2026-10-22-look-and-feel-pass.md, holds the reasons.
+- The cross-page entry, docs/clubhouse/changes/2026-10-22-look-and-feel-pass.md,
+  holds the reasons.
 
 ### Verification
 

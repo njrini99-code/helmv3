@@ -7,7 +7,7 @@ import { tourForGender } from './stats-common';
 import { readRoundTypeOptions } from './rounds-type-options';
 import { loadRoundDebrief } from './round-debrief';
 import type { ChReviewHistoryInput } from './round-history';
-import { currentRoundType, toHoles, toReview, type ChHoleRow, type ChReviewRoundRow, type ChReviewTypeEdit, type ChRoundReview, type ChShotRow } from './round-review-shape';
+import { currentRoundType, reviewTour, toHoles, toReview, type ChHoleRow, type ChReviewRoundRow, type ChReviewTypeEdit, type ChRoundReview, type ChShotRow } from './round-review-shape';
 
 export type * from './round-review-shape';
 
@@ -75,7 +75,7 @@ export async function loadRoundReview(roundId: string, viewerIn: ChReviewViewer 
   if (round.status === 'in_progress') return { kind: 'inProgress', playerId: round.player_id };
 
   const row = round as ChReviewRoundRow;
-  const [holesRes, shotsRes, teeRes, playerRes, teamRes, typeOptions, noteRes] = await Promise.all([
+  const [holesRes, shotsRes, teeRes, playerRes, teamRes, settingsRes, typeOptions, noteRes] = await Promise.all([
     supabase.from('golf_holes').select('hole_number, par, yardage, score, putts, fairway_hit, gir, penalty_strokes').eq('round_id', roundId).order('hole_number', { ascending: true }),
     fetchAllRowsResult<ChShotRow>(
       (from, to) => supabase.from('golf_shots').select(SHOT_COLUMNS).eq('round_id', roundId).order('hole_number', { ascending: true }).order('shot_number', { ascending: true }).range(from, to),
@@ -85,6 +85,8 @@ export async function loadRoundReview(roundId: string, viewerIn: ChReviewViewer 
     round.tee_id ? supabase.from('golf_course_tees').select('total_yards').eq('id', round.tee_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
     viewer.role === 'coach' ? supabase.from('golf_players').select('first_name, last_name').eq('id', round.player_id).maybeSingle() : Promise.resolve({ data: null, error: null }),
     viewer.teamId ? supabase.from('golf_teams').select('gender').eq('id', viewer.teamId).maybeSingle() : Promise.resolve({ data: null, error: null }),
+    // The team's own strokes gained baseline (Coaching Intelligence); the review names the Tour the stored figures were measured against.
+    viewer.teamId ? supabase.from('golf_team_settings').select('sg_baseline').eq('team_id', viewer.teamId).maybeSingle() : Promise.resolve({ data: null, error: null }),
     // The Fairway round page's qualifier reads for its type editor; logs and degrades on its own (never throws).
     readRoundTypeOptions(supabase, { playerId: round.player_id, roundId, roundTeamId: row.team_id ?? null, coach: viewer.role === 'coach' }),
     // The coach's note lives on the round's CoachHelm review row (one per round); a round with no review row has no note.
@@ -95,6 +97,8 @@ export async function loadRoundReview(roundId: string, viewerIn: ChReviewViewer 
   if (teeRes.error) log('tee', teeRes.error);
   if (playerRes.error) log('player', playerRes.error);
   if (teamRes.error) log('team', teamRes.error);
+  // A failed settings read leaves the gender's Tour (the default), logged: the label is then only wrong for a team that picked the other Tour.
+  if (settingsRes.error) log('sg-baseline', settingsRes.error);
   if (noteRes.error) log('coach-note', noteRes.error);
 
   const holes = holesRes.error ? [] : toHoles((holesRes.data ?? []) as ChHoleRow[], shotsRes.error ? [] : (shotsRes.data ?? []));
@@ -108,7 +112,7 @@ export async function loadRoundReview(roundId: string, viewerIn: ChReviewViewer 
     coachView: viewer.role === 'coach',
     teeYards: teeRes.data?.total_yards ?? null,
     // Without the team's row the tour is unknown and no baseline is claimed (as on Stats, CH-4210); a read that failed says so.
-    tour: teamRes.data ? tourForGender(teamRes.data.gender) : null,
+    tour: teamRes.data ? reviewTour(tourForGender(teamRes.data.gender), settingsRes.error ? null : (settingsRes.data?.sg_baseline ?? null)) : null,
     teeError: !!teeRes.error,
     playerError: !!playerRes.error || (viewer.role === 'coach' && !playerRes.data),
     tourError: !!teamRes.error,

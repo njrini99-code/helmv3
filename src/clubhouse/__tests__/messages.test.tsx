@@ -200,6 +200,7 @@ beforeEach(() => {
   live.msgs.sendMessage.mockReset().mockResolvedValue(undefined);
   live.msgs.editMessage.mockReset().mockResolvedValue(undefined);
   live.msgs.removeMessage.mockReset().mockResolvedValue(undefined);
+  live.msgs.retryMessage.mockReset().mockResolvedValue(true);
   live.reactions.setReaction.mockReset().mockResolvedValue(undefined);
   live.files.sendMessageWithAttachments.mockReset().mockResolvedValue({ success: true });
   live.files.getPendingAttachmentSend.mockReset().mockResolvedValue(null);
@@ -567,6 +568,27 @@ describe('Messages · validation, haptics, accessibility', () => {
     await expectCode('CH-7017', /Couldn’t confirm this message sent\. Check before sending again\./);
     await user.click(within(code('CH-7016') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(live.msgs.retryMessage).toHaveBeenCalledWith('f1');
+  });
+
+  it('CH-1903 Try again while offline is refused with the shared notice and sends nothing', async () => {
+    const user = userEvent.setup();
+    live.msgs.messages = [{ ...mine, id: 'f1', sendFailed: true, sendOutcome: 'refused' }];
+    show();
+    await expectCode('CH-7016', /Not sent/);
+    setOnline(false);
+    await user.click(within(code('CH-7016') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    await expectCode('CH-1903', /offline/);
+    expect(live.msgs.retryMessage).not.toHaveBeenCalled();
+  });
+
+  it('CH-7004 Try again that fails again says so', async () => {
+    const user = userEvent.setup();
+    live.msgs.retryMessage.mockResolvedValueOnce(false);
+    live.msgs.messages = [{ ...mine, id: 'f1', sendFailed: true, sendOutcome: 'refused' }];
+    show();
+    await expectCode('CH-7016', /Not sent/);
+    await user.click(within(code('CH-7016') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    await expectCode('CH-7004', /Couldn’t send the message/);
   });
 
   it('CH-7801 the composer is named for the conversation; failures in the thread are alerts', async () => {

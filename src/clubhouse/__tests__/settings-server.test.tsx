@@ -241,6 +241,29 @@ describe('Settings · the server loader', () => {
     }
   });
 
+  it('82101 event pushes an account never saved read as on, as the sender treats them; a saved off stays off', async () => {
+    // The action fills a missing key with its own default (push_events off); the sender merges the delivery default (on).
+    actions.getNotificationPreferences.mockResolvedValue({ data: { email_messages: true, push_messages: false, push_events: false, quiet_mode: false } });
+    tables.current = coachTables({ users: { data: { notification_preferences: { email_messages: true } } } });
+    const untouched = await loadSettings(coachSession, 't1');
+    expect(untouched.delivery).toEqual({ value: expect.objectContaining({ push_events: true, push_messages: false }), error: false });
+
+    tables.current = coachTables({ users: { data: { notification_preferences: { push_events: false } } } });
+    expect((await loadSettings(coachSession, 't1')).delivery.value).toMatchObject({ push_events: false });
+
+    // No users row at all is the same untouched account.
+    tables.current = coachTables({ users: { data: null } });
+    expect((await loadSettings(coachSession, 't1')).delivery.value).toMatchObject({ push_events: true });
+  });
+
+  it('82101 a failed read of the saved keys keeps the action’s values and is logged', async () => {
+    actions.getNotificationPreferences.mockResolvedValue({ data: { push_events: false } });
+    tables.current = coachTables({ users: { error: { message: 'boom' } } });
+    const data = await loadSettings(coachSession, 't1');
+    expect(data.delivery.value).toMatchObject({ push_events: false });
+    expect(logServer).toHaveBeenCalledWith('settings', 'savedPrefs', { message: 'boom' }, 'notifications');
+  });
+
   it('82101 a coach with no team still loads: the team sections are null, not failed', async () => {
     tables.current = coachTables();
     const data = await loadSettings(coachSession, null);

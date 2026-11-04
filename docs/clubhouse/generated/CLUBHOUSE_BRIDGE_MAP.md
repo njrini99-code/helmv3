@@ -153,7 +153,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Page | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | Total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P001 | 3 | 2 | 1 | 6 |  | 16 | 6 | 4 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 28 | 1 | 3 | 1 | 3 | 1 | 1 |  | 111 |
+| P001 | 3 | 2 | 1 | 7 |  | 17 | 6 | 4 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 28 | 1 | 3 | 1 | 3 | 1 | 1 |  | 113 |
 | P002 | 5 | 2 | 1 | 16 | 8 | 26 | 1 | 6 |  |  | 1 |  |  | 2 |  | 3 | 3 | 8 | 1 |  | 1 |  | 1 | 1 |  | 86 |
 | P003 | 2 | 3 | 3 | 9 | 4 | 24 | 2 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 86 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
@@ -161,14 +161,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P006 | 4 | 5 | 3 | 10 | 14 | 58 | 1 | 8 | 1 | 2 | 7 | 3 | 2 | 2 | 1 | 7 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 146 |
 | P007 | 2 | 11 | 1 | 11 | 6 | 48 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 9 | 5 | 6 | 1 | 1 | 1 |  | 2 | 1 |  | 121 |
 | P008 | 2 | 1 | 3 | 6 | 15 | 44 | 3 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 138 |
-| P009 | 7 | 7 | 4 | 13 | 14 | 34 | 7 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 137 |
+| P009 | 7 | 7 | 4 | 13 | 14 | 35 | 8 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 139 |
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
 | P011 | 16 | 15 |  | 26 | 11 | 44 | 22 | 5 | 2 |  | 24 | 2 | 1 | 4 | 4 | 4 | 11 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 210 |
 | P012 | 3 | 3 |  | 8 | 19 | 22 | 3 | 3 | 2 |  | 5 | 1 |  | 4 | 4 | 2 | 5 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 96 |
 | P013 | 7 | 15 |  | 36 | 1 | 45 | 71 | 7 | 3 |  |  | 1 |  | 3 | 4 | 4 | 9 | 19 | 1 |  | 1 |  | 1 |  |  | 228 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
-| P016 | 31 | 1 | 1 | 17 |  | 12 | 1 | 1 |  | 2 |  | 1 |  |  | 5 | 1 |  | 2 |  |  |  |  |  |  |  | 75 |
+| P016 | 31 | 1 | 1 | 18 |  | 17 | 1 | 1 |  | 2 | 2 | 1 |  |  | 5 | 2 |  | 3 |  |  |  |  |  |  |  | 85 |
 
 ## P001 Shell
 
@@ -186,6 +186,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10404 | CH-1304 | 04 Empty | `NOTHING_IS_SCHEDULED` | implemented | Nothing is scheduled |
 | 10405 | CH-1305 | 04 Empty | `A_COACH_WITH_ONE_TEAM_A_COACH` | implemented | A coach with one team, a coach who cannot switch (an assistant on several teams), or a player |
 | 10406 | CH-1306 | 04 Empty | `A_DASHBOARD_URL_THAT_MATCHES_NOTHING_OR` | implemented | A dashboard URL that matches nothing, or an id that no longer exists (a deleted round or player), inside the Clubhouse shell |
+| 10407 | CH-1307 | 04 Empty | `MORE_UNREAD_THAN_THE_BELL_LISTS` | implemented | More unread than the bell lists |
 | 10601 | CH-1001 | 06 Server / system error | `MARK_ALL_READ_IN_THE_BELL_FAILS` | implemented | "Mark all read" in the bell fails |
 | 10602 | CH-1201 | 06 Server / system error | `THE_BELLS_LIST_DOESNT_LOAD` | implemented | The bell's list doesn't load |
 | 10603 | CH-1202 | 06 Server / system error | `THE_PAGE_WAS_BUILT_FOR_AN_OLDER` | implemented | The page was built for an older version |
@@ -202,6 +203,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10614 | CH-1211 | 06 Server / system error | `A_PAGES_ONE_READ_DOESNT_LOAD_SO` | implemented | A page's one read doesn't load, so nothing can show under its head |
 | 10615 | CH-1270 | 06 Server / system error | `DELIVER_NOW_IN_THE_BELL_IS_REFUSED` | implemented | Deliver now in the bell is refused (P-10) |
 | 10616 | CH-1271 | 06 Server / system error | `A_PLAYERS_PUSHES_ARE_HELD_FOR_CLASS` | implemented | A player's pushes are held for class (P-10) |
+| 10617 | CH-1004 | 06 Server / system error | `OPENING_OR_CLEARING_A_NOTIFICATION_THE_SERVER` | implemented | Opening or clearing a notification: the server did not keep the read (it answered `success: false`, or the call failed) |
 | 10701 | CH-1901 | 07 Network / offline | `THE_DEVICE_GOES_OFFLINE` | implemented | The device goes offline |
 | 10702 | CH-1902 | 07 Network / offline | `A_SAVE_TAKES_LONGER_THAN_5_SECONDS` | implemented | A save takes longer than 5 seconds (forms, switches and CoachHelm settings) |
 | 10703 | CH-1903 | 07 Network / offline | `SOMEONE_SAVES_WHILE_OFFLINE` | implemented | Someone saves while offline |
@@ -1143,6 +1145,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90632 | CH-09222 | 06 Server / system error | `A_PLAYERS_ENTRIES_DONT_LOAD_ON_MY` | implemented | A player's entries don't load on /my-qualifiers |
 | 90633 | CH-09220 | 06 Server / system error | `A_REFRESH_OF_A_QUALIFIERS_STANDINGS_FAILS` | implemented | A refresh of a qualifier's standings fails after they were showing (a live update, a write's re-read, Try again) |
 | 90634 | CH-09223 | 06 Server / system error | `THE_PLAYERS_ROUNDS_PANEL_CRASHES` | implemented | The player's rounds panel crashes (desktop, beside the leaderboard) |
+| 90635 | CH-09224 | 06 Server / system error | `EDIT_AN_ENTRANT_WHOSE_PROFILE_CANNOT_BE` | implemented | Edit: an entrant whose profile cannot be read (injured, redshirt or inactive: the profile read admits active members only) |
 | 90701 | CH-09903 | 07 Network / offline | `THE_SQUAD_IS_CONFIRMED` | implemented | The squad is confirmed (Manage selections) |
 | 90702 |  | 07 Network / offline | `WRITES_REFUSED_OFFLINE` | implemented | Offline, none of the eight writes (create, save, close, reopen, start selecting, save a pick, remove a pick, confirm the squad) is sent: the shell's offline toast (CH-1903) names what did not happen, the error haptic fires, and the page does not move on. |
 | 90703 | CH-09904 | 07 Network / offline | `THE_LISTS_FILTER_AND_SEARCH` | reserved | The list's filter and search |
@@ -1150,6 +1153,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90705 | CH-09906 | 07 Network / offline | `PLAYER_A_LIVE_QUALIFIER_WITH_A_ROUND` | implemented | Player: a live qualifier with a round still to play, before its last day |
 | 90706 | CH-09907 | 07 Network / offline | `PLAYER_THE_SQUAD_IS_CONFIRMED` | reserved | Player: the squad is confirmed |
 | 90707 | CH-09908 | 07 Network / offline | `PLAYER_THEIR_OWN_RANKED_ROW_ON_A` | implemented | Player: their own ranked row on a board that draws a line |
+| 90708 | CH-09909 | 07 Network / offline | `COACH_A_ROUND_NUMBERS_CARDS_MIX_9` | implemented | Coach: a round number's cards mix 9 and 18 holes |
 | 90801 | CH-09310 | 08 Permission / authorization | `THE_QUALIFIER_ISNT_ON_THE_VIEWERS_TEAM` | implemented | The qualifier isn't on the viewer's team, or doesn't exist |
 | 90802 | CH-09311 | 08 Permission / authorization | `A_PLAYER_OPENS_NEW_OR_EDIT` | implemented | A player opens /new, /edit or /selection |
 | 90803 |  | 08 Permission / authorization | `COACH_ADDRESSES_READ_NOTHING_FOR_A_PLAYER` | implemented | For a player, /qualifiers/new, /qualifiers/[id]/edit and /qualifiers/[id]/selection stop at the coach-only page (CH-09311) before any loader runs, so nothing of the qualifier is read for them. |
@@ -2078,7 +2082,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 160201 | CH-16401 | 02 Initial loading / skeleton | `A_TOURNAMENTS_VIEW_IS_ON_ITS_WAY` | implemented | A Tournaments view is on its way (`load: 'loading'`) |
 | 160301 | CH-16604 | 03 Background loading / refresh | `A_LIVE_READ_FAILED_OR_THE_FEED` | implemented | A live read failed or the feed dropped |
 | 160401 | CH-16301 | 04 Empty | `A_VIEW_ITS_LANE_HASNT_BUILT_YET` | implemented | A view its lane hasn't built yet (the edit-event form, lineup builder, link inbox, live round and player view; their routes are wired and draw it with real data) |
-| 160402 | CH-16310 | 04 Empty | `HOME_NO_EVENT_IN_THE_SEASON_NOTHING` | implemented | Home: no event in the season, nothing failed |
+| 160402 | CH-16310 | 04 Empty | `HOME_NO_EVENT_IN_THE_SEASON_NOTHING` | deprecated | Retired 2026-10-25 (P-5 4.11.1): replaced by CH-16352. Home: no event in the season, nothing failed |
 | 160403 | CH-16311 | 04 Empty | `THE_SEASON_LEDGER_THE_SEASON_HAS_NO` | implemented | The season ledger (Home, History): the season has no finished event yet |
 | 160404 | CH-16312 | 04 Empty | `HOME_NO_EVENT_IS_UPCOMING_OR_LIVE` | implemented | Home: no event is upcoming or live |
 | 160405 | CH-16320 | 04 Empty | `EVENT_DESK_THE_EVENT_HAS_NO_SCORES` | implemented | Event desk: the event has no scores yet (not played, nothing entered) |
@@ -2094,6 +2098,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 160415 | CH-16304 | 04 Empty | `AN_EVENT_ADDRESS_THAT_IS_NOT_THIS` | implemented | An event address that is not this team's (deleted, another team's, not an id) |
 | 160416 | CH-16305 | 04 Empty | `A_PLAYER_ON_A_COACHS_TOURNAMENTS_PAGE` | implemented | A player on a coach's Tournaments page (new or edit event, lineup, live, compare, history, link rounds) |
 | 160417 | CH-16619 | 04 Empty | `NOBODY_IS_ON_THE_COURSE` | implemented | Nobody is on the course |
+| 160418 | CH-16352 | 04 Empty | `HOME_NO_EVENT_IN_THE_SEASON_NOTHING_2` | implemented | Home: no event in the season, nothing failed (P-5 4.11.1; replaces CH-16310) |
 | 160601 | CH-16201 | 06 Server / system error | `A_TOURNAMENTS_VIEWS_ONE_READ_FAILS` | implemented | A Tournaments view's one read fails (any view; `load: 'failed'`) |
 | 160602 | CH-16210 | 06 Server / system error | `HOME_THE_EVENTS_READ_FAILS_WHILE_THE` | implemented | Home: the events read fails while the page itself loads (`errors.events`) |
 | 160603 | CH-16220 | 06 Server / system error | `EVENT_DESK_HOLES_TAB_THE_SCORECARDS_READ` | implemented | Event desk, Holes tab: the scorecards read fails (`errors.holes`) |
@@ -2106,10 +2111,17 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 160610 | CH-16252 | 06 Server / system error | `COMPARE_THE_HOLE_FIGURES_READ_FAILS` | implemented | Compare: the hole figures read fails (`errors.holes`) |
 | 160611 | CH-16664 | 06 Server / system error | `CHANGING_THE_SHARE_LEVEL_FAILS` | implemented | Changing the share level fails (slice 2) |
 | 160612 | CH-16666 | 06 Server / system error | `THE_SHARE_FUNCTION_IS_NOT_IN_THE` | implemented | The share function is not in the database yet (slice 2) |
+| 160613 | CH-16050 | 06 Server / system error | `STOP_TRACKING_CONFIRMED_ON_THE_DESK_AND` | implemented | Stop tracking confirmed on the desk (CH-16550) and written (P-5) |
+| 160614 | CH-16051 | 06 Server / system error | `CANCEL_TOURNAMENT_CONFIRMED_ON_THE_DESK` | implemented | Cancel tournament confirmed on the desk (CH-16551) |
+| 160615 | CH-16052 | 06 Server / system error | `RESTORE_TOURNAMENT_ON_THE_DESK` | implemented | Restore tournament on the desk |
+| 160616 | CH-16053 | 06 Server / system error | `STOP_TRACKING_REFUSED_THE_RESULTS_ARE_OFFICIAL` | implemented | Stop tracking refused: the results are official |
+| 160617 | CH-16253 | 06 Server / system error | `HOME_THE_READ_OF_THE_CALENDARS_UNTRACKED` | implemented | Home (coach): the read of the calendar's untracked tournaments fails (`errors.untracked`, P-5) |
 | 160701 | CH-16605 | 07 Network / offline | `THE_DEVICE_IS_OFFLINE_WHILE_THE_CARD` | implemented | The device is offline while the card or the live view is open |
 | 160801 | CH-16609 | 08 Permission / authorization | `THE_COACH_HAS_NO_TEAM_OR_LOST` | implemented | The coach has no team, or lost access to it |
 | 161001 | CH-16920 | 10 Warning | `EVENT_DESK_THE_HOSTS_PUBLISHED_NUMBER_DIFFERS` | implemented | Event desk: the host's published number differs from our scorecard (`officialTotal` set and unequal) |
 | 161002 | CH-16665 | 10 Warning | `A_ROUNDS_SHARING_WAS_CHANGED_30_TIMES` | implemented | A round's sharing was changed 30 times (slice 2) |
+| 161101 | CH-16550 | 11 Destructive | `STOP_TRACKING_FROM_THE_DESKS_TOURNAMENT_MENU` | implemented | Stop tracking, from the desk's tournament menu (P-5) |
+| 161102 | CH-16551 | 11 Destructive | `CANCEL_TOURNAMENT_FROM_THE_DESKS_TOURNAMENT_MENU` | implemented | Cancel tournament, from the desk's tournament menu (P-5; the calendar's CH-6541) |
 | 161201 | CH-16621 | 12 State preservation | `A_PLAYER_WITH_THEIR_OWN_ROUND_ON` | implemented | A player with their own round on this qualifier (slice 4) |
 | 161501 | CH-16614 | 15 Data freshness / sync | `LANES_WITH_NO_WORD_FOR_90_MINUTES` | implemented | Lanes with no word for 90 minutes |
 | 161502 | CH-16672 | 15 Data freshness / sync | `A_LANE_SILENT_FOR_10_MINUTES_WITH` | implemented | A lane silent for 10 minutes with the last hole at least as old |
@@ -2117,8 +2129,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 161504 | CH-16677 | 15 Data freshness / sync | `TWO_OR_MORE_HOLES_LAND_IN_ONE` | reserved | Two or more holes land in one read (a phone that reconnected) |
 | 161505 | CH-16683 | 15 Data freshness / sync | `THE_PLAYERS_OWN_LIVE_CARD_NOT_SAVED` | implemented | The player's own live card, not saved for 10 minutes (slice 1) |
 | 161601 | CH-16601 | 16 Micro animation | `A_VALUE_CHANGES_AFTER_FIRST_PAINT` | reserved | A value changes after first paint (a live score, a team total, a place) |
+| 161602 | CH-16650 | 16 Micro animation | `HOME_A_TOURNAMENT_ARRIVES_WHILE_THE_PAGE` | implemented | Home: a tournament arrives while the page is open (another tab or coach set it up; P-5 M9) |
 | 161801 | CH-16801 | 18 Accessibility | `A_SIGNED_DIFFERENCE_OR_A_TRUST_STATE` | reserved | A signed difference or a trust state is read |
 | 161802 | CH-16641 | 18 Accessibility | `CALENDAR_GRID_BLOCK` | implemented | Calendar grid block (slice 4) |
+| 161803 | CH-16850 | 18 Accessibility | `HOME_A_TOURNAMENT_ARRIVES_WHILE_THE_PAGE_2` | implemented | Home: a tournament arrives while the page is open |
 
 ## Tombstones
 

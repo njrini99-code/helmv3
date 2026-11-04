@@ -222,6 +222,7 @@ page again (91402), and Retry runs the write again (91401).
 | 90632 | CH-09222 | `A_PLAYERS_ENTRIES_DONT_LOAD_ON_MY` | A player's entries don't load on /my-qualifiers |
 | 90633 | CH-09220 | `A_REFRESH_OF_A_QUALIFIERS_STANDINGS_FAILS` | A refresh of a qualifier's standings fails after they were showing (a live update, a write's re-read, Try again) |
 | 90634 | CH-09223 | `THE_PLAYERS_ROUNDS_PANEL_CRASHES` | The player's rounds panel crashes (desktop, beside the leaderboard) |
+| 90635 | CH-09224 | `EDIT_AN_ENTRANT_WHOSE_PROFILE_CANNOT_BE` | Edit: an entrant whose profile cannot be read (injured, redshirt or inactive: the profile read admits active members only) |
 
 ## 07 — Network / offline
 
@@ -244,6 +245,7 @@ category only because its kind (network and UX) defaults here.
 | 90705 | CH-09906 | `PLAYER_A_LIVE_QUALIFIER_WITH_A_ROUND` | Player: a live qualifier with a round still to play, before its last day |
 | 90706 | CH-09907 | `PLAYER_THE_SQUAD_IS_CONFIRMED` | Player: the squad is confirmed |
 | 90707 | CH-09908 | `PLAYER_THEIR_OWN_RANKED_ROW_ON_A` | Player: their own ranked row on a board that draws a line |
+| 90708 | CH-09909 | `COACH_A_ROUND_NUMBERS_CARDS_MIX_9` | Coach: a round number's cards mix 9 and 18 holes |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.

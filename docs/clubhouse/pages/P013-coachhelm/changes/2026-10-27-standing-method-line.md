@@ -14,8 +14,10 @@ Held items:     none
 
 ### Changed
 
-- Under the hero's headline, "Every stat, strokes gained included, is against the
-  Tour" read as a result (every stat is behind). It is a method note and now says
+- Under the hero's headline, "Every stat, strokes gained included, is against
+  the
+  Tour" read as a result (every stat is behind). It is a method note and now
+  says
   "is measured against the Tour" (`screens/coachhelm/views/Standing.tsx`).
 
 ### Why

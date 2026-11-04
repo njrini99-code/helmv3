@@ -17,6 +17,7 @@ import {
   isFull18,
   loadSeasonRounds,
   loadTeamZone,
+  SEASON_DEFAULT_TZ,
   mean,
   currentSeasonLabel,
   seasonStartDate,
@@ -25,6 +26,8 @@ import {
   type ChForm,
 } from './season';
 import { formatFixed } from '../lib/format';
+import { isoDay } from '../lib/dates';
+import { QUIET_DAYS, daysBetween as daysBetweenDates } from '../screens/home/model';
 
 /**
  * Coach Roster (Clubhouse). Server-read, final on first paint, every section
@@ -57,6 +60,11 @@ export interface ChRosterPlayer {
   coachNote: string | null;
   /** `warning`: a player gone quiet (no verdict on their scores); `loss`/`gain`: their scores moved the bad or the good way (CONS-20). */
   attention: { tone: 'warning' | 'loss' | 'gain'; text: string } | null;
+  /**
+   * What `attention` would read were the player available (the server leaves it out for an injured or away player). "Mark
+   * available" restores it at once instead of leaving the Needs a look chip gone until a refresh. Absent reads as null.
+   */
+  attentionIfAvailable?: ChRosterPlayer['attention'];
   /**
    * Can they play right now (golf_team_members.availability). Display only, on the coach's roster: it never changes team
    * access, which is `status` (Mark inactive). Inactive players can carry it too. The word comes from the team row; the
@@ -127,16 +135,15 @@ export interface ChRoster {
 
 export type ChRosterHelm = { status: 'on'; byPlayer: Record<string, ChReadCount> } | { status: 'off' } | { status: 'failed' };
 
-const QUIET_DAYS = 9;
-
-function daysBetween(a: Date, b: Date) {
-  return Math.floor((a.getTime() - b.getTime()) / 86_400_000);
+/** Whole team-local days from a round's date (YYYY-MM-DD or an ISO timestamp) to today in the team's zone, as Home counts them (never negative). */
+function quietDaysSince(roundDate: string, now: Date, tz: string) {
+  return Math.max(0, daysBetweenDates(roundDate.slice(0, 10), isoDay(now, tz)));
 }
 
 /**
  * "Needs a look": deterministic, from data the coach can verify.
- *   quiet     - an active player with no round in 9+ days while the team is posting
- *   slipping  - scoring up by 1.5 or more, newer half of form against older half
+ *   quiet     - an active player with no round in QUIET_DAYS+ team-local days (Home's rule and day count) while the team is posting
+ *   slipping  - the SE-cleared form status Home's leaderboard uses (`summarizePlayer().status`)
  *   hot       - the last four rounds all under their season average
  * A player who is injured or away is not asked about: the coach already knows why (their availability says so).
  */
@@ -145,13 +152,14 @@ export function attentionFor(
   now: Date,
   teamPosting: boolean,
   availability: ChAvailability = 'available',
+  tz: string = SEASON_DEFAULT_TZ,
 ): ChRosterPlayer['attention'] {
   if (availability !== 'available') return null;
   if (teamPosting && s.lastRoundDate) {
-    const days = daysBetween(now, new Date(`${s.lastRoundDate.slice(0, 10)}T12:00:00Z`));
+    const days = quietDaysSince(s.lastRoundDate, now, tz);
     if (days >= QUIET_DAYS) return { tone: 'warning', text: `No rounds in ${days} days` };
   }
-  if (s.formChange != null && s.formChange >= 1.5) {
+  if (s.status === 'slipping' && s.formChange != null && s.formChange > 0) {
     return { tone: 'loss', text: `Scoring up ${formatFixed(s.formChange, 1)}` };
   }
   const last4 = s.recent.slice(0, 4).map((r) => r.total_score as number);
@@ -216,7 +224,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     loadAvailabilityNotes(supabase, input.teamId),
   ]);
   const byPlayer = groupByPlayer(season.rounds);
-  const teamPosting = season.rounds.some((r) => daysBetween(now, new Date(`${r.round_date.slice(0, 10)}T12:00:00Z`)) < QUIET_DAYS);
+  const teamPosting = season.rounds.some((r) => quietDaysSince(r.round_date, now, tz) < QUIET_DAYS);
 
   const players: ChRosterPlayer[] = members.map((m) => {
     const p = m.player;
@@ -253,7 +261,8 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
       focusAreas: focus.error ? null : (focus.counts.get(p.id) ?? 0),
       goals: goals.error ? null : (goals.counts.get(p.id) ?? 0),
       coachNote: notes.notes.get(p.id) ?? null,
-      attention: status === 'active' && !season.error ? attentionFor(s, now, teamPosting, availability) : null,
+      attention: status === 'active' && !season.error ? attentionFor(s, now, teamPosting, availability, tz) : null,
+      attentionIfAvailable: status === 'active' && !season.error ? attentionFor(s, now, teamPosting, 'available', tz) : null,
       availability,
       availabilityUpdated: m.availability_updated_at,
       availabilityCoachNote: availNotes.notes.get(p.id) ?? null,
@@ -263,8 +272,16 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
   const activeIds = new Set(players.filter((p) => p.status === 'active').map((p) => p.id));
   const teamAvg = season.error ? null : mean(season.rounds.filter((r) => activeIds.has(r.player_id) && isFull18(r)).map((r) => r.total_score as number));
 
-  const requests: ChJoinRequest[] = (requestsRes.success ? (requestsRes.data ?? []) : [])
-    .filter((r) => r.status === 'pending')
+  const pendingRequests = (requestsRes.success ? (requestsRes.data ?? []) : []).filter((r) => r.status === 'pending');
+  // A request's player carries only the typed `handicap`; the roster shows `handicap_index` first (displayHandicap), so a request
+  // reads the same number it will show after approval. A failed read falls back to the typed value.
+  const indexByPlayer = new Map<string, number | null>();
+  if (pendingRequests.length) {
+    const { data: hcp, error: hcpError } = await supabase.from('golf_players').select('id, handicap_index').in('id', pendingRequests.map((r) => r.player_id));
+    if (hcpError) chLogServer('roster', 'requestHandicaps', hcpError, 'teams');
+    for (const h of hcp ?? []) indexByPlayer.set(h.id, h.handicap_index);
+  }
+  const requests: ChJoinRequest[] = pendingRequests
     .map((r) => {
       const gradYear = r.player?.graduation_year ?? null;
       const classYear = classYearLabel(gradYear, now, tz);
@@ -276,7 +293,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
         classYear,
         gradYear,
         requested,
-        handicap: r.player?.handicap ?? null,
+        handicap: r.player ? displayHandicap({ handicap_index: indexByPlayer.get(r.player_id) ?? null, handicap: r.player.handicap ?? null }) : null,
       };
     });
 

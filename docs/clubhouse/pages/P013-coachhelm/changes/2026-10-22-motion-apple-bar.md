@@ -13,11 +13,13 @@ Held items: none
 
 ### Changed
 
-- The trend evidence block in CoachHelm chat measures its width when the sidebar's fold settles, not on every frame of it.
+- The trend evidence block in CoachHelm chat measures its width when the
+  sidebar's fold settles, not on every frame of it.
 
 ### Why
 
-- The cross-page entry, docs/clubhouse/changes/2026-10-22-motion-apple-bar.md, holds the reasons.
+- The cross-page entry, docs/clubhouse/changes/2026-10-22-motion-apple-bar.md,
+  holds the reasons.
 
 ### Verification
 

@@ -395,6 +395,60 @@ describe('Calendar · swap audit §8 deep link', () => {
   });
 });
 
+describe('Calendar · all-day rows written as the team’s own day edges (audit F8)', () => {
+  const row = (id: string, start: string, end: string) => ({
+    id, team_id: 't1', title: id, event_type: 'tournament', start_time: start, end_time: end, all_day: true, status: 'scheduled',
+    location: null, description: null, requires_rsvp: false, rsvp_deadline: null, parent_event_id: null, recurrence_rule: null,
+    cancelled_at: null, cancellation_reason: null, updated_at: '2026-10-01T00:00:00+00:00', course_id: null, metadata: null, created_by: null,
+  });
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-14T18:40:00Z'));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('a two-day row from midnight ET to 11:59 PM ET draws two days, not three; a UTC-midnight row reads as before', async () => {
+    tables.current = {
+      golf_team_settings: { data: { timezone: 'America/New_York' } },
+      golf_teams: { data: { name: 'Varsity' } },
+      golf_team_members: { data: [] },
+      golf_player_classes: { data: [] },
+      golf_event_attendance: { data: [] },
+      golf_coach_blocked_time: { data: [] },
+      golf_events: {
+        data: [
+          row('Edges', '2026-10-02T04:00:00+00:00', '2026-10-04T03:59:00+00:00'),
+          row('Plain', '2026-10-09T00:00:00+00:00', '2026-10-10T00:00:00+00:00'),
+        ],
+        count: 2,
+      },
+    };
+    const d = await loadCalendar({ role: 'coach', teamId: 't1', viewerPlayerId: null, coachId: 'c1', view: 'month', date: '2026-10-14' });
+    const days = (id: string) => d.events.filter((e) => e.id === id).map((e) => e.date);
+    expect(days('Edges')).toEqual(['2026-10-02', '2026-10-03']);
+    expect(days('Plain')).toEqual(['2026-10-09', '2026-10-10']);
+  });
+
+  it('L7 the first-run count leaves out class meetings synced from players’ schedules', async () => {
+    const asked: Array<Array<[string, unknown[]]>> = [];
+    tables.current = {
+      golf_team_settings: { data: { timezone: 'America/New_York' } },
+      golf_teams: { data: { name: 'Varsity' } },
+      golf_team_members: { data: [] },
+      golf_player_classes: { data: [] },
+      golf_event_attendance: { data: [] },
+      golf_coach_blocked_time: { data: [] },
+      golf_events: (filters) => {
+        asked.push(filters);
+        return { data: [], count: 0 };
+      },
+    };
+    const d = await loadCalendar({ role: 'coach', teamId: 't1', viewerPlayerId: null, coachId: 'c1', view: 'month', date: '2026-10-14' });
+    expect(d.firstRun).toBe(true);
+    expect(asked.some((f) => f.some(([k, args]) => k === 'neq' && args[0] === 'event_type' && args[1] === 'class'))).toBe(true);
+  });
+});
+
 describe('Calendar · swap audit §8 attendance', () => {
   const board = () => cal(PREVIEW_CALENDAR.events);
 

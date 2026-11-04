@@ -234,7 +234,24 @@ interface GatedAction<TInput, TPlan> {
   run: (plan: TPlan) => Promise<ActionReceipt>;
 }
 
+/**
+ * A proposal's key, scoped to its conversation and its whole plan. The planners' keys name the intent (team, title,
+ * the first 40 characters of a body) so a retried Confirm dedupes; alone, they also matched a real repeat weeks later
+ * (the same title, a new audience), and Confirm returned last time's receipt and sent nothing (audit 2026-10-31). A retry
+ * of the same card is the same conversation and the same plan, so it still dedupes.
+ */
+function scopedKey(key: string, conversationId: string | null, plan: unknown): string {
+  let h = 0x811c9dc5;
+  const text = `${conversationId ?? ''}|${JSON.stringify(plan) ?? ''}`;
+  for (let i = 0; i < text.length; i += 1) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return `${key.slice(0, 110)}:${h.toString(36)}`;
+}
+
 export function buildCoachTools({ sb, ctx, conversationId, writer, collect, teamTools = false }: BuildToolsArgs): ToolSet {
+  const scope = <P extends { idempotency_key: string }>(proposal: P, plan: unknown): P => ({ ...proposal, idempotency_key: scopedKey(proposal.idempotency_key, conversationId, plan) });
   let progressId = 0;
   const progress = (toolName: string, input: Record<string, unknown>) => {
     const label = PROGRESS_LABEL[toolName]?.(input) ?? 'Working';
@@ -320,7 +337,9 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
   ): Promise<void> => {
     progress(action.toolName, input as Record<string, unknown>);
     try {
-      const { plan, proposal } = action.plan(input);
+      const built0 = action.plan(input);
+      const plan = built0.plan;
+      const proposal = scope(built0.proposal, built0.plan);
       await recordProposal(sb, {
         coach_id: ctx.coach_id,
         team_id: ctx.team_id,
@@ -378,7 +397,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
     try {
       const built = action.plan(input);
       plan = built.plan;
-      proposal = built.proposal;
+      proposal = scope(built.proposal, built.plan);
     } catch (err) {
       const expected = err instanceof ActionPlanError || err instanceof PracticePlanError;
       void logServerError(
@@ -752,7 +771,9 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
       onInputAvailable: async ({ input }) => {
         progress('create_recurring_practice', input as Record<string, unknown>);
         try {
-          const { plan, proposal } = planRecurringPractice(ctx, input as never);
+          const builtP = planRecurringPractice(ctx, input as never);
+          const plan = builtP.plan;
+          const proposal = scope(builtP.proposal, builtP.plan);
           await recordProposal(sb, {
             coach_id: ctx.coach_id,
             team_id: ctx.team_id,
@@ -808,7 +829,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
         try {
           const built = planRecurringPractice(ctx, input as never);
           plan = built.plan;
-          proposal = built.proposal;
+          proposal = scope(built.proposal, built.plan);
         } catch (err) {
           const expected = err instanceof PracticePlanError;
           void logServerError(

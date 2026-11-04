@@ -3,7 +3,7 @@
 import { ArrowRight, CalendarPlus, GraduationCap, Hash, MapPin, MessageSquare, School, X } from 'lucide-react';
 import { AnimatePresence, m } from 'motion/react';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { setIntent } from '@/app/golf/actions/v3/intent';
 import { setPlayerAvailabilityCoachNote } from '@/app/golf/actions/team-management';
 import { AVAILABILITY_NOTE_MAX } from '../../data/availability';
@@ -352,6 +352,41 @@ const NOTE_WARN = 200;
 /** Tells the list that a note is now stored, so the player reads back with it (31203). */
 export type NoteSaved = (playerId: string, note: string | null) => void;
 
+/**
+ * Saves a text field when it loses focus without ever dropping an edit: a blur while an earlier save is still in flight (the
+ * action gate answers `busy` with no toast) keeps the latest text and sends it when that save lands, if it differs from what
+ * that save sent.
+ */
+export function useBlurSave(save: { run: (value: string) => Promise<unknown> }) {
+  const sending = useRef(false);
+  const waiting = useRef<string | null>(null);
+  return useCallback(
+    async (next: string, saved: string) => {
+      if (sending.current) {
+        waiting.current = next;
+        return;
+      }
+      if (next === saved.trim()) return;
+      sending.current = true;
+      let value = next;
+      try {
+        for (;;) {
+          await save.run(value);
+          const queued = waiting.current;
+          waiting.current = null;
+          if (queued == null || queued === value) return;
+          value = queued;
+        }
+      } finally {
+        sending.current = false;
+      }
+    },
+    // `save.run` is stable per render of the owner; the refs carry the state across renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [save.run],
+  );
+}
+
 /** The coach's private note. Shared by the desktop panel and the phone profile (D-56). */
 export function CoachNote({ p, locked, onSaved }: { p: ChRosterPlayer; locked: boolean; onSaved: NoteSaved }) {
   const [saved, setSaved] = useState(p.coachNote ?? '');
@@ -374,6 +409,7 @@ export function CoachNote({ p, locked, onSaved }: { p: ChRosterPlayer; locked: b
       code: 'CH-3004',
     },
   );
+  const blurSave = useBlurSave(save);
   const left = NOTE_MAX - draft.length;
   const helpId = `note-help-${p.id}`;
   return (
@@ -395,9 +431,7 @@ export function CoachNote({ p, locked, onSaved }: { p: ChRosterPlayer; locked: b
         onChange={(e) => setDraft(e.target.value)}
         onBlur={async () => {
           if (locked) return;
-          const next = draft.trim();
-          if (next === saved.trim()) return;
-          await save.run(next);
+          await blurSave(draft.trim(), saved);
         }}
         aria-busy={save.pending}
       />
@@ -507,6 +541,7 @@ function AvailabilityNote({ p, onSaved }: { p: ChRosterPlayer; onSaved: (id: str
       code: 'CH-3011',
     },
   );
+  const blurSave = useBlurSave(save);
   const left = AVAILABILITY_NOTE_MAX - draft.length;
   const helpId = `avail-note-help-${p.id}`;
   return (
@@ -525,9 +560,7 @@ function AvailabilityNote({ p, onSaved }: { p: ChRosterPlayer; onSaved: (id: str
         aria-describedby={left <= NOTE_WARN ? helpId : undefined}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={async () => {
-          const next = draft.trim();
-          if (next === saved.trim()) return;
-          await save.run(next);
+          await blurSave(draft.trim(), saved);
         }}
         aria-busy={save.pending}
       />

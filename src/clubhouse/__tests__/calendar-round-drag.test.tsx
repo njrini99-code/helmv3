@@ -119,7 +119,7 @@ describe('P-5 moving a round', () => {
     expect(await writeMove({ e: roundEv(2), to: { date: '2026-11-06', start: 9, end: 14 }, kind: 'move', scope: 'single', expectedUpdatedAt: null }, TZ)).toEqual({
       ok: false,
       code: 'refused',
-      notice: { code: 'CH-6050', text: 'R2 is under way, so it can’t be changed here. Change it from Tournaments.' },
+      notice: { code: 'CH-6050', text: 'R2 is under way, so it can’t be changed.' },
       message: 'round_started',
     });
   });

@@ -188,6 +188,7 @@ export async function removeQualifierCoachPick(
 
 async function confirmQualifierSelectionImpl(
   qualifier_id: string,
+  expected_squad?: string[],
 ): Promise<QualifyingActionResult> {
   try {
     const ctx = await getAuthedCoachContext(qualifier_id);
@@ -203,7 +204,7 @@ async function confirmQualifierSelectionImpl(
     // runs under the caller's session and RLS.
     const r = await confirmSelection(
       ctx.supabase,
-      { qualifier_id, user_id: ctx.user.id },
+      { qualifier_id, user_id: ctx.user.id, ...(Array.isArray(expected_squad) ? { expected_squad: expected_squad.filter((x) => typeof x === 'string') } : {}) },
       { briefClient: () => createAdminClient() },
     );
     if (!r.ok) return r;
@@ -277,6 +278,7 @@ const observedConfirmQualifierSelection = withAdminObserved(
 /** The squad written is the one the server's order puts above the line, whichever surface confirms. */
 export async function confirmQualifierSelection(
   qualifier_id: string,
+  expected_squad?: string[],
 ): Promise<QualifyingActionResult> {
-  return observedConfirmQualifierSelection(qualifier_id);
+  return observedConfirmQualifierSelection(qualifier_id, expected_squad);
 }

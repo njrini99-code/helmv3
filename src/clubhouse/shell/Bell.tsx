@@ -12,6 +12,7 @@ import {
   DAY_BUCKET_LABEL,
   NOTIFICATION_CATEGORY_IDS,
   countByCategory,
+  countUnread,
   groupByDayBucket,
   isUnread,
   itemMatchesFilter,
@@ -36,6 +37,7 @@ import { armRelink } from './relink';
 import { chReport, chTrail } from '../lib/track';
 import { useAction, type ServerResult } from '../lib/use-action';
 import { ListPresence, PresenceRow } from '../ui/ListPresence';
+import { useToast } from '../ui/Toast';
 import { useRovingRows } from '../lib/roving';
 
 /**
@@ -86,7 +88,12 @@ function useLiveBell(): ChBellApi {
     () => ({
       unread: badges.notificationsUnread + badges.calendarNotifications,
       load: () => getUnifiedNotifications({ limit: FEED_LIMIT }),
-      markRead: (item: UnifiedNotificationItem) => markNotificationRead(item.id, item.source).then(() => refetch()),
+      markRead: (item: UnifiedNotificationItem) =>
+        markNotificationRead(item.id, item.source).then((r) => {
+          refetch();
+          // The action answers { success: false } rather than throwing; the bell needs the answer to put the row back.
+          return r;
+        }),
       markAll: () => markAllNotificationsRead(),
       refetchCount: () => void refetch(),
     }),
@@ -348,6 +355,38 @@ export function Bell() {
 
   const markAll = useAction('shell.markAllRead', api.markAll, { done: 'All notifications marked read', failed: 'Couldn’t mark your notifications read', code: 'CH-1001' });
 
+  const toast = useToast();
+  /** The server did not keep a read: it answered `success: false` (the action returns that rather than throwing). */
+  const refused = (r: unknown) => !!r && typeof r === 'object' && ((r as { success?: unknown }).success === false || (r as { ok?: unknown }).ok === false);
+  /**
+   * Writes the read state of items the feed already shows read. A write the server did not keep (or that threw) puts those rows
+   * back as unread and says so (CH-1004), so the bell never claims a read the server will undo on the next open.
+   */
+  const writeRead = async (list: UnifiedNotificationItem[]) => {
+    const write = api.markRead;
+    const unsaved: UnifiedNotificationItem[] = [];
+    await Promise.all(
+      list.map(async (item) => {
+        try {
+          if (refused(await write(item))) unsaved.push(item);
+        } catch (err: unknown) {
+          chReport(err, { surface: 'shell.bell', action: 'markRead', severity: 'low' });
+          unsaved.push(item);
+        }
+      }),
+    );
+    if (!unsaved.length) return;
+    const keys = new Set(unsaved.map(notificationKey));
+    setItems((prev) => prev?.map((i) => (keys.has(notificationKey(i)) ? { ...i, read_at: null } : i)) ?? prev);
+    haptic('error');
+    toast({
+      tone: 'error',
+      title: unsaved.length === 1 ? 'Couldn’t mark it read' : `Couldn’t mark ${unsaved.length} notifications read`,
+      body: 'They show as unread again. Try again.',
+      code: 'CH-1004',
+    });
+  };
+
   /** Marks items read where the coach cleared them (a swipe, a stack's ×): the feed restacks at once, the server follows. */
   const clearItems = (list: UnifiedNotificationItem[]) => {
     const unreadOnes = list.filter(isUnread);
@@ -357,10 +396,7 @@ export function Bell() {
     setItems((prev) => (prev ? markLocallyRead(prev, keys, new Date().toISOString()) : prev));
     // The server follows once the stacks below have slid into place: its answer refreshes the page under the drop and
     // the badge's count, and each was a long frame in the middle of the slide (WebKit, production build, 2026-10-16).
-    const write = api.markRead;
-    window.setTimeout(() => {
-      for (const item of unreadOnes) void write(item).catch((err: unknown) => chReport(err, { surface: 'shell.bell', action: 'markRead', severity: 'low' }));
-    }, chSpringCurve('smooth').ms + 80);
+    window.setTimeout(() => void writeRead(unreadOnes), chSpringCurve('smooth').ms + 80);
   };
   const markAllNow = async () => {
     const before = items;
@@ -377,7 +413,7 @@ export function Bell() {
     if (isUnread(item)) {
       const at = new Date().toISOString();
       setItems((prev) => prev?.map((i) => (i.id === item.id && i.source === item.source ? { ...i, read_at: at } : i)) ?? prev);
-      void api.markRead(item).catch((err: unknown) => chReport(err, { surface: 'shell.bell', action: 'markRead', severity: 'low' }));
+      void writeRead([item]);
     }
     close(false);
     // Stored links are only followed inside GolfHelm: a notification can never send someone off-site. One to the screen
@@ -393,6 +429,15 @@ export function Bell() {
   // of it and offers no Mark all read (the button keeps its badge).
   const listFailed = failed && !items?.length;
   const shownUnread = listFailed ? 0 : unread;
+  // The badge counts every unread row; the list holds the newest FEED_LIMIT. Past that page, unread rows are counted but not
+  // reachable one by one, so the panel says so (Mark all read clears them).
+  const olderUnread = !listFailed && items && items.length >= FEED_LIMIT ? Math.max(0, unread - countUnread(items)) : 0;
+  const olderNote =
+    olderUnread > 0 ? (
+      <div className="ch-bellp__day" data-ch-code="CH-1307">
+        {olderUnread} older unread {olderUnread === 1 ? 'isn’t' : 'aren’t'} listed here. Mark all read clears {olderUnread === 1 ? 'it' : 'them'}.
+      </div>
+    ) : null;
   // The bell renders on every section switch and strip open (it reads the switcher), so what it derives from the list
   // is kept between renders (overnight jank pass, 2026-10-15: rebuilding it was most of a switch's main thread).
   const cats = useMemo(() => {
@@ -494,6 +539,7 @@ export function Bell() {
           </section>
         ))
       )}
+      {olderNote}
     </div>
   );
 
@@ -614,6 +660,7 @@ export function Bell() {
                 >
                   <BellHeldRow />
                   <BellStacks items={items} failed={listFailed} onRetry={() => setAttempt((x) => x + 1)} onOpen={openItem} onClear={clearItems} />
+                  {olderNote}
                 </div>
                 <div className="ch-bst__drag" aria-hidden="true" onPointerDown={onSheetDrag}>
                   <span className="ch-grab" />

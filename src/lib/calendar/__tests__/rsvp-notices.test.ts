@@ -148,8 +148,18 @@ describe("F-0001: the Bell says the time in the team's zone, whatever zone the s
 
   it('notifyEventSeriesUpdate: the series row reads 10:00 AM', async () => {
     const { supabase } = fakeClient([timed, { ...timed, id: 'e2', start_time: '2026-11-07T15:00:00Z' }]);
-    await notifyEventSeriesUpdate('root', ['e1', 'e2'], supabase);
+    // A fixed clock before both occurrences: the first touched one is still ahead.
+    await notifyEventSeriesUpdate('root', ['e1', 'e2'], supabase, Date.parse('2026-10-01T00:00:00Z'));
     expect(messageOf()).toBe('Sat, Oct 31 at 10:00 AM and 1 later');
+  });
+
+  it('notifyEventSeriesUpdate: speaks of and links to the first occurrence still ahead, not one already past (audit F9)', async () => {
+    const { supabase } = fakeClient([timed, { ...timed, id: 'e2', start_time: '2026-11-07T15:00:00Z' }, { ...timed, id: 'e3', start_time: '2026-11-14T15:00:00Z' }]);
+    await notifyEventSeriesUpdate('root', ['e1', 'e2', 'e3'], supabase, Date.parse('2026-11-01T00:00:00Z'));
+    const row = (admin.calls[0]!.rows as Array<Record<string, unknown>>)[0]!;
+    expect(row.event_id).toBe('e2');
+    expect(row.action_url).toBe('/golf/dashboard/calendar?event=e2');
+    expect(messageOf()).toBe('Sat, Nov 7 at 10:00 AM and 1 later');
   });
 
   it('an all-day event gives its written date and no time', async () => {

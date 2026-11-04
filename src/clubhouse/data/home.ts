@@ -23,6 +23,7 @@ import { playerMine, playerSeesMeeting, replyClosedAt, type ChRsvp } from '../sc
 import { loadAttendanceCounts, loadInvitedCounts, type ChAttendanceCounts } from './attendance-counts';
 import { confirmedLine, daysBetween, homeSubline, inviteDetail } from '../screens/home/model';
 import { firstName } from '../lib/names';
+import { weekdayMonthDay } from '../lib/dates';
 import type { MarkEntries } from '../lib/marks-cookie';
 import type { ChCalChange } from '../screens/calendar/change-view';
 import type { ChHomeChange } from '../screens/home/change-rows';
@@ -106,6 +107,8 @@ export interface ChLeaderRow {
   status: ChForm;
   /** Days since the player's last countable round of any length, in the team's timezone. */
   quietDays: number | null;
+  /** That newest countable round, for the player peek ("Last round 74 +2, Pinehurst · Sat 25 Oct"); null with none scored. */
+  lastRound?: { score: number; toPar: number | null; label: string } | null;
   /** Injured or away (display only). An out player is not flagged for a quiet stretch. Absent reads as available. */
   availability?: ChAvailability;
 }
@@ -418,6 +421,12 @@ export async function loadCoachHome(input: {
   // Recency counts any countable round, nine holes included.
   const lastPlayed = new Map<string, string>();
   for (const r of seasonRounds) if (!lastPlayed.has(r.player_id)) lastPlayed.set(r.player_id, r.round_date.slice(0, 10));
+  const lastScored = new Map<string, NonNullable<ChLeaderRow['lastRound']>>();
+  for (const r of seasonRounds) {
+    if (lastScored.has(r.player_id) || r.total_score == null) continue;
+    const day = weekdayMonthDay(r.round_date.slice(0, 10));
+    lastScored.set(r.player_id, { score: r.total_score, toPar: r.score_to_par ?? null, label: [r.course_name, day, r.holes_played != null && r.holes_played < 18 ? `${r.holes_played} holes` : null].filter(Boolean).join(' · ') });
+  }
   const rows: ChLeaderRow[] = [];
   for (const p of roster) {
     const list = byPlayer.get(p.id);
@@ -434,6 +443,7 @@ export async function loadCoachHome(input: {
       sgPerRound: season.sgPerRound,
       status: season.status,
       quietDays: lastPlayed.has(p.id) ? Math.max(0, daysBetween(lastPlayed.get(p.id)!, today)) : null,
+      lastRound: lastScored.get(p.id) ?? null,
       availability: availabilityById.get(p.id) ?? 'available',
     });
   }
@@ -450,7 +460,11 @@ export async function loadCoachHome(input: {
     teamId: input.teamId,
     greeting: `${greeting}, ${coachFirst}`,
     teamChatId: chatRes.error ? null : (chatRes.data?.[0]?.id ?? null),
-    subline: homeSubline(rows, { roundsError, nextCompetition: wk.nextCompetition }),
+    subline: homeSubline(rows, {
+      roundsError,
+      nextCompetition: wk.nextCompetition,
+      unposted: roster.filter((p) => !byPlayer.get(p.id)?.length).map((p) => ({ name: nameOf(p), availability: availabilityById.get(p.id) ?? 'available' })),
+    }),
     todayLabel,
     clock: { tz, day },
     week: { ...wk.week, agenda: withWas(wk.week.agenda, changes.byEvent) },
@@ -523,6 +537,8 @@ export interface ChHomeWeek {
   todayEvents: ChHomeEvent[];
   /** The first competition later this week, for the week strip's note. */
   weekNote: { weekday: string; title: string } | null;
+  /** Every meeting the viewer sees in the loaded window (a player's own invited meetings, Decision B), for scoping their change marks. */
+  meetingIds: Set<string>;
 }
 
 /**
@@ -799,6 +815,7 @@ export async function loadHomeWeek(
     next: eventsRes.error || !upcoming ? null : toPhone(upcoming),
     todayEvents: eventsRes.error ? [] : todays.map(toPhone),
     weekNote: firstLater ? { weekday: weekdayOf(firstLater.localDate), title: firstLater.title } : null,
+    meetingIds: new Set(eventsRes.error ? [] : events.filter((e) => e.event_type === 'meeting').map((e) => e.id)),
   };
 
 }

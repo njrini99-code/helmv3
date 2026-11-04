@@ -5,6 +5,7 @@
  * for the GolfHelm calendar system
  */
 
+import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GolfCoach, GolfEvent, GolfEventAttendance, GolfPlayer } from '@/lib/types/golf';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -320,6 +321,18 @@ export async function writeEventInvitationNotices(input: {
 }
 
 /**
+ * The part of an event a player reads in a notice that its start and end do not already carry: a short hash of the title,
+ * place, type and all-day flag. A location-only or title-only edit then gets its own notice instead of being swallowed
+ * by the key of an earlier notice at the same time (audit F9).
+ */
+function visibleFieldsKey(event: { title?: string | null; location?: string | null; event_type?: string | null; all_day?: boolean | null }): string {
+  return createHash('sha1')
+    .update(JSON.stringify([event.title ?? '', event.location ?? '', event.event_type ?? '', event.all_day === true]))
+    .digest('hex')
+    .slice(0, 12);
+}
+
+/**
  * Update invitations when event details change
  * Notifies attendees of the update
  */
@@ -363,7 +376,7 @@ export async function notifyEventUpdate(
   // showed the superseded time. Folding the event's CURRENT timing into the
   // type means each distinct reschedule inserts exactly one fresh row
   // (repeat saves of the same time still dedupe) with no delete-then-reinsert.
-  const timingKey = `${event.start_time ?? 'tbd'}|${event.end_time ?? ''}`;
+  const timingKey = `${event.start_time ?? 'tbd'}|${event.end_time ?? ''}|${visibleFieldsKey(event)}`;
   const timeZone = changes ? null : await resolveTeamTimeZone([event.team_id], supabase, 'rsvp.notifyEventUpdate');
 
   const notifications = userIds.map(userId => ({
@@ -395,11 +408,11 @@ export async function notifyEventUpdate(
  * only admits the listed types, 'rsvp_response:%' and 'event_updated:%'. P-14 owns the wording and the push.
  * Throws when the insert fails, so the caller's allSettled logs it instead of the players silently hearing nothing.
  */
-export async function notifyEventSeriesUpdate(rootId: string, eventIds: string[], supabase: SupabaseClient): Promise<void> {
+export async function notifyEventSeriesUpdate(rootId: string, eventIds: string[], supabase: SupabaseClient, now: number = Date.now()): Promise<void> {
   if (eventIds.length === 0) return;
   const { data: events, error: eventsError } = await supabase
     .from('golf_events')
-    .select('id, team_id, title, start_time, end_time, all_day, location, requires_rsvp')
+    .select('id, team_id, title, start_time, end_time, all_day, location, event_type, requires_rsvp')
     .in('id', eventIds)
     .order('start_time', { ascending: true });
   if (eventsError) {
@@ -407,7 +420,11 @@ export async function notifyEventSeriesUpdate(rootId: string, eventIds: string[]
     return;
   }
   const asking = (events ?? []).filter((e) => e.requires_rsvp);
-  const first = asking[0];
+  // The notice speaks of, and links to, the first touched occurrence that has not happened yet: a series edited from
+  // its start usually has a first occurrence weeks in the past, and a link to that opens a practice that is over.
+  const futureIndex = asking.findIndex((e) => e.start_time && Date.parse(e.start_time) > now);
+  const targetIndex = futureIndex === -1 ? asking.length - 1 : futureIndex;
+  const first = asking[targetIndex];
   if (!first) return;
 
   const { data: attendances, error: attendanceError } = await supabase
@@ -425,12 +442,12 @@ export async function notifyEventSeriesUpdate(rootId: string, eventIds: string[]
   ];
   if (userIds.length === 0) return;
 
-  const later = asking.length - 1;
+  const later = asking.length - 1 - targetIndex;
   const timeZone = await resolveTeamTimeZone(first.team_id ? [first.team_id] : [], supabase, 'rsvp.notifyEventSeriesUpdate');
   const notifications = userIds.map((userId) => ({
     user_id: userId,
     event_id: first.id,
-    notification_type: `event_updated:series:${rootId}:${first.start_time ?? 'tbd'}`,
+    notification_type: `event_updated:series:${rootId}:${first.start_time ?? 'tbd'}|${visibleFieldsKey(first)}`,
     title: `Event updated: ${first.title}`,
     message: `${formatEventDate(first, timeZone)}${later > 0 ? ` and ${later} later` : ''}`,
     action_url: `/golf/dashboard/calendar?event=${first.id}`,

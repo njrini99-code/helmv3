@@ -50,7 +50,8 @@ export interface ChQTeeOption {
 }
 
 export interface ChQWrites {
-  create: (input: ChQCreateInput) => Promise<ServerResult<{ qualifierId: string }>>;
+  /** `roundCoursesFailed`: the qualifier exists but its per-round courses did not save. */
+  create: (input: ChQCreateInput) => Promise<ServerResult<{ qualifierId: string; roundCoursesFailed?: boolean }>>;
   saveEdit: (id: string, plan: ChQEditPlan) => Promise<ServerResult>;
   setStatus: (id: string, status: 'in_progress' | 'completed') => Promise<ServerResult>;
   /** Courses matching the search, the team's saved ones first when there is no search. Throws when the read fails. */
@@ -147,7 +148,8 @@ export interface ChQSelectionWrites {
   /** Give a place at a tied cut to a level player, or take it back (Q-114). */
   chooseTie: (id: string, playerId: string, give: boolean) => Promise<ServerResult>;
   /** `data.notified` is false when the squad committed but telling the players failed (Q-116). */
-  confirm: (id: string) => Promise<ServerResult<{ notified: boolean }>>;
+  /** `squad`: the players the coach was shown above the line; the server refuses when the standings moved since. */
+  confirm: (id: string, squad?: string[]) => Promise<ServerResult<{ notified: boolean }>>;
 }
 
 const STEPS: ChQSelectionStep[] = ['open', 'scoring', 'closed', 'selected'];
@@ -187,6 +189,7 @@ export function selectionReason(error: string | undefined): string | null {
   if (/could not verify remaining coach-pick slots/i.test(error)) return 'The picks already made couldn’t be checked just now. Try again.';
   if (/no entrant has a qualifying score/i.test(error)) return 'Nobody has a score in yet and no pick is made, so there is no squad to confirm.';
   // Before the general refusal below: a tie at the cut is its own reason (Q-114), and "choose every pick" would send the coach to the wrong place.
+  if (/standings changed/i.test(error)) return 'A round came in since this page loaded and the squad changed. Review it, then confirm again.';
   if (/cannot confirm: tie at the cut/i.test(error)) return 'Give every place at the cut to a level player before confirming.';
   if (/cannot confirm/i.test(error)) return 'Choose every pick, each with a reason, before confirming.';
   if (/could not verify|couldn.t confirm your roster/i.test(error)) return 'The roster couldn’t be checked just now. Try again.';
@@ -210,8 +213,8 @@ export const LIVE_SELECTION_WRITES: ChQSelectionWrites = {
   // The server decides the order (ranking.ts rankStandings, the board's): the tie and the squad confirmed are the ones
   // the board and Manage selections show, and the same ones Fairway confirms.
   chooseTie: async (id, playerId, give) => asResult(await chooseQualifierTiePlace(id, playerId, give)),
-  confirm: async (id) => {
-    const r = await confirmQualifierSelection(id);
+  confirm: async (id, squad) => {
+    const r = await confirmQualifierSelection(id, squad);
     if (r.ok) return { success: true, data: { notified: r.notified !== false } };
     const refused = asResult(r);
     return { success: false, error: refused.error };

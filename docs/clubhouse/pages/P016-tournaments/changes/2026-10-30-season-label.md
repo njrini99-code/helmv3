@@ -16,8 +16,12 @@ Held items:     whether to remove the now-unused Settings "Season" field is
 
 ### Changed
 
-- Tournaments' season label (`seasonOf().label`, `seasonLabelOf`) now comes from the one shared helper in `lib/season-start.ts`; the text is unchanged ("2026–27"). It is `currentSeasonLabel(now, zone)` (`data/season.ts`): 1 August in
-  the team's zone, en dash, "2026–27". Files: `data/tournaments-shape.ts`, `screens/tournaments/fields/rounds-model.ts`.
+- Tournaments' season label (`seasonOf().label`, `seasonLabelOf`) now comes from
+  the one shared helper in `lib/season-start.ts`; the text is unchanged
+  ("2026–27"). It is `currentSeasonLabel(now, zone)` (`data/season.ts`): 1
+  August in
+  the team's zone, en dash, "2026–27". Files: `data/tournaments-shape.ts`,
+  `screens/tournaments/fields/rounds-model.ts`.
 
 ### Why
 
