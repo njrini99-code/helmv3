@@ -2,7 +2,7 @@
 
 import { AnimatePresence, m, useIsPresent } from 'motion/react';
 import { CircleAlert, CircleCheck, X } from 'lucide-react';
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from './Icon';
 import { Tooltip } from './Tooltip';
@@ -78,6 +78,29 @@ export function useDelayedToast() {
 }
 
 const DISMISS_MS = { done: 4000, error: 8000 } as const;
+
+/**
+ * Messages redesign: the one toast, restyled as the page's glass pill at the top (MSG-TOAST-01, 02), while that page is up. It is the
+ * same component and stack; the page says it is showing, and the flag decides whether the page does.
+ */
+let pillOn = false;
+const pillSubs = new Set<() => void>();
+function setToastPill(on: boolean) {
+  pillOn = on;
+  for (const f of pillSubs) f();
+}
+const subscribePill = (f: () => void) => {
+  pillSubs.add(f);
+  return () => pillSubs.delete(f);
+};
+export function useToastPill(on: boolean): void {
+  useEffect(() => {
+    if (!on) return;
+    setToastPill(true);
+    return () => setToastPill(false);
+  }, [on]);
+}
+const PILL_DONE_MS = 1700;
 /** Let go after holding one, a toast stays at least this long, so it never vanishes the moment the finger lifts. */
 const HELD_RESUME_MS = 1500;
 /** A toast swiped this far toward its edge, or flicked, is dismissed (CH-1614). */
@@ -127,6 +150,7 @@ function useToastHost(active: boolean): HTMLDialogElement | null {
  * team's confirmation, Undo or Retry never sits over, or acts from, the new team's page (PAGE_PERFORMANCE.md rule 8).
  */
 export function ToastProvider({ children, scope = '' }: { children: ReactNode; scope?: string }) {
+  const pill = useSyncExternalStore(subscribePill, () => pillOn, () => false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [shownScope, setShownScope] = useState(scope);
   if (scope !== shownScope) {
@@ -186,7 +210,7 @@ export function ToastProvider({ children, scope = '' }: { children: ReactNode; s
       if (onExpire) expiries.set(id, onExpire);
       if (replace != null) keys.set(replace, id);
       const abort = () => dismiss(id);
-      const clock: ToastClock = { left: DISMISS_MS[tone], since: Date.now(), timer: window.setTimeout(() => dismiss(id), DISMISS_MS[tone]), held: false };
+      const clock: ToastClock = { left: pillOn && tone === 'done' ? PILL_DONE_MS : DISMISS_MS[tone], since: Date.now(), timer: window.setTimeout(() => dismiss(id), DISMISS_MS[tone]), held: false };
       clocks.set(id, clock);
       signal?.addEventListener('abort', abort, { once: true });
       lifetimes.set(id, () => {
@@ -219,7 +243,7 @@ export function ToastProvider({ children, scope = '' }: { children: ReactNode; s
 
   const stack = (
     // CH-1804: confirmations are announced politely; an error toast is role="alert", announced at once.
-    <div className={'ch-toasts' + (host ? ' ch-toasts--in-dialog' : '')} aria-live="polite" data-ui="clubhouse">
+    <div className={'ch-toasts' + (host ? ' ch-toasts--in-dialog' : '') + (pill ? ' is-pill' : '')} aria-live="polite" data-ui="clubhouse">
       <AnimatePresence initial={false}>
         {toasts.map((t) => (
           <ToastCard key={t.id} toast={t} reduced={reduced} onHold={hold} onLetGo={letGo} onDismiss={dismiss} onAct={acted} />
@@ -341,6 +365,7 @@ function ToastCard({
     gone: () => {
       const throw_ = thrown.current;
       if (reduced) return { opacity: 0, transition: { duration: 0 } };
+      if (!throw_ && pillOn) return { opacity: 0, transition: { duration: 0.2 } };
       if (!throw_) return { opacity: 0, y: 6, scale: 0.98, transition: chTween('base') };
       // On from where the finger let go, at the speed it was thrown, for another 48px as it fades.
       const out = chThrownExit(throw_.speed, 48);
@@ -357,12 +382,12 @@ function ToastCard({
       inert={!present}
       // CH-1604: it fades in here and rises 10px by CSS (`ch-toast-in`, ui.css), on the compositor; Motion keeps the
       // stack's reflow (layout), which owns this element's transform.
-      initial={reduced ? false : { opacity: 0 }}
-      animate={{ opacity: 1 }}
+      initial={reduced ? (pillOn ? { opacity: 0 } : false) : pillOn ? { opacity: 0, y: -8, scale: 0.96 } : { opacity: 0 }}
+      animate={pillOn ? { opacity: 1, y: 0, scale: 1 } : { opacity: 1 }}
       variants={leave}
       exit="gone"
       // CH-1604: a toast slides up 10px and fades in; the stack reflows (layout).
-      transition={chTween('base', reduced)}
+      transition={pillOn && !reduced ? { type: 'tween', duration: chSpringCurve('pop').ms / 1000, ease: chSpringCurve('pop').ease } : chTween('base', reduced)}
       onPointerDown={onPointerDown}
       onPointerEnter={(e) => { if (e.pointerType === 'mouse') holdFor('hover'); }}
       onPointerLeave={(e) => { if (e.pointerType === 'mouse') releaseFor('hover'); }}

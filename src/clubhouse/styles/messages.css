@@ -5363,3 +5363,236 @@ body:has([data-ch-ms-v2]) .ch-toast {
   font: 600 calc(14 * var(--ch-type-k)) / 1 var(--ch-font-sans);
   cursor: pointer;
 }
+/* 11e, 11c and 11d gaps */
+@container (min-width: 721px) {
+  [data-ch-ms-v2] .ch-ms-thread {
+    position: relative;
+  }
+  [data-ch-ms-v2] .ch-ms-th {
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 3;
+    background: var(--ch-glass-bg);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6);
+    backdrop-filter: blur(20px) saturate(1.6);
+  }
+  [data-ch-ms-v2] .ch-ms-th::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0;
+    height: 0.5px;
+    background: var(--ch-separator);
+    opacity: 0;
+    transition: opacity 200ms ease;
+  }
+  [data-ch-ms-v2] .ch-ms-th.is-under::after {
+    opacity: 1;
+  }
+  [data-ch-ms-v2] .ch-ms-thread > .ch-ms-scroll {
+    padding-top: 60px;
+  }
+  [data-ch-ms-v2] .ch-msv-barsearch {
+    position: absolute;
+    inset: 60px 0 auto;
+    z-index: 3;
+    max-height: 60%;
+    overflow: auto;
+    padding: 8px 24px;
+    background: var(--ch-glass-bg);
+    -webkit-backdrop-filter: blur(20px) saturate(1.6);
+    backdrop-filter: blur(20px) saturate(1.6);
+  }
+}
+.ch-msv-hoverbar {
+  position: absolute;
+  top: -20px;
+  z-index: 2;
+  display: flex;
+  gap: 0;
+  width: 144px;
+  height: 32.6px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--ch-glass-bg);
+  box-shadow: var(--ch-card-shadow);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  backdrop-filter: blur(20px) saturate(1.6);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px) scale(0.96);
+  transition: opacity 160ms var(--ch-ease), transform 220ms var(--ch-ease);
+}
+.ch-msv-hoverbar button {
+  display: grid;
+  place-items: center;
+  width: 26.9px;
+  height: 26.9px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--ch-text-secondary);
+  cursor: pointer;
+}
+.ch-msv-hoverbar button[aria-pressed='true'] {
+  color: var(--ch-accent);
+}
+.ch-ms-msg.is-mine .ch-msv-hoverbar {
+  right: 0;
+}
+.ch-ms-msg:not(.is-mine) .ch-msv-hoverbar {
+  left: 0;
+}
+[data-ch-ms-v2] .ch-ms-msg__line {
+  position: relative;
+}
+@media (hover: hover) {
+  .ch-ms-msg:hover .ch-msv-hoverbar,
+  .ch-msv-hoverbar:focus-within {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-msv-hoverbar {
+    transform: none;
+    transition: opacity var(--ch-fade-ms, 180ms) linear;
+  }
+}
+.ch-msv-holdmenu > button.is-danger {
+  color: var(--ch-danger, #b3261e);
+}
+.ch-msv-lift__copy {
+  pointer-events: auto;
+}
+/* Reactions: the origin on the corner, your own on a 4px page halo (M-MSG-13, MSG-REACT-04). */
+[data-ch-ms-v2] .ch-ms-reacts.on-mine .ch-ms-react {
+  transform-origin: 0% 100%;
+}
+[data-ch-ms-v2] .ch-ms-reacts.on-theirs .ch-ms-react {
+  transform-origin: 100% 100%;
+}
+[data-ch-ms-v2] .ch-ms-reacts .ch-ms-react.is-mine {
+  outline: 1.5px solid var(--ch-ring-own);
+  box-shadow: 0 0 0 4px var(--ch-bg-page), var(--ch-card-shadow);
+}
+/* Seen by and Votes: the sheet, one component on phone and desktop (MSG-SEEN, MSG-VOTES). */
+.ch-msv-sheet .ch-modal__panel {
+  border-radius: 20px;
+}
+.ch-msv-sheet .ch-modal__head .ch-iconbtn {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 40px;
+}
+.ch-msv-sheet .ch-modal__head .ch-iconbtn::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+}
+.ch-msv-sheet .ch-modal__titles h2 {
+  font: 700 calc(17 * var(--ch-type-k)) / 1.2 var(--ch-font-sans);
+}
+.ch-msv-sheet .ch-seen-row__meta {
+  font: 400 calc(13 * var(--ch-type-k)) / 1.3 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-msv-votes .ch-modal__panel {
+  max-height: 82%;
+}
+.ch-msv-votebar {
+  display: block;
+  height: 3px;
+  margin: 6px 0;
+  border-radius: 2px;
+  background: var(--ch-well-bg-flat);
+  overflow: hidden;
+}
+.ch-msv-votebar i {
+  display: block;
+  height: 100%;
+  background: var(--ch-accent);
+}
+.ch-msv-draftrem {
+  min-height: 44px;
+  border: 0;
+  background: none;
+  color: var(--ch-accent);
+  font: 500 calc(17 * var(--ch-type-k)) / 1.2 var(--ch-font-sans);
+  cursor: pointer;
+}
+/* The poll tick and face (M-MSG-15a, b, d). */
+.ch-msv-tick path {
+  stroke-dashoffset: 0;
+}
+[data-ch-ms-v2] .ch-ms-poll__mark[data-pop] {
+  animation: ch-msv-ring-pop var(--ch-dur-spring-pop) var(--ch-ease-spring-pop);
+}
+[data-ch-ms-v2] .ch-ms-poll__mark[data-pop] .ch-msv-tick path {
+  animation: ch-msv-tick-draw 260ms var(--ch-ease);
+}
+@keyframes ch-msv-ring-pop {
+  from {
+    transform: scale(0.6);
+  }
+}
+@keyframes ch-msv-tick-draw {
+  from {
+    stroke-dashoffset: 20;
+  }
+}
+.ch-msv-pollfaces {
+  display: inline-flex;
+  flex: none;
+  margin-right: 6px;
+}
+.ch-msv-pollfaces > span + span {
+  margin-left: -5px;
+}
+.ch-msv-pollfaces > span[data-pop] {
+  animation: ch-msv-face-pop var(--ch-dur-spring-pop) var(--ch-ease-spring-pop);
+}
+@keyframes ch-msv-face-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-ch-ms-v2] .ch-ms-poll__mark[data-pop],
+  [data-ch-ms-v2] .ch-ms-poll__mark[data-pop] .ch-msv-tick path {
+    animation: none;
+  }
+  .ch-msv-pollfaces > span[data-pop] {
+    animation: ch-msv-det-fade var(--ch-fade-ms, 180ms) linear;
+  }
+}
+/* The toast pill (MSG-TOAST-01), while the redesigned page is up. */
+.ch-toasts.is-pill {
+  top: calc(env(safe-area-inset-top) + 8px);
+  right: 0;
+  bottom: auto;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+.ch-toasts.is-pill .ch-toast {
+  width: auto;
+  min-width: 0;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: var(--ch-glass-bg);
+  color: var(--ch-text-primary);
+  font: 600 calc(13 * var(--ch-type-k)) / 1 var(--ch-font-sans);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  backdrop-filter: blur(20px) saturate(1.6);
+  pointer-events: auto;
+}
+.ch-toasts.is-pill .ch-toast__icon,
+.ch-toasts.is-pill .ch-toast__close {
+  display: none;
+}

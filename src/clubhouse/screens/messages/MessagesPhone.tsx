@@ -739,6 +739,9 @@ function PhoneThread({
           messageId={acting.id}
           mine={acting.mine}
           closeSignal={holdClose}
+          onReopen={() => {
+            holdAfter.current = null;
+          }}
           onClosed={() => {
             const then = holdAfter.current;
             holdAfter.current = null;

@@ -38,7 +38,7 @@ import { useConversationTeam } from '../../lib/use-conversation-team';
 import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type { ChMessagesData } from '../../data/messages';
-import { useDelayedToast, useToast } from '../../ui/Toast';
+import { useDelayedToast, useToast, useToastPill } from '../../ui/Toast';
 import { useNow } from '../../lib/use-now';
 import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, friendlyReason, isOffline } from '../../lib/use-action';
@@ -648,6 +648,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
   }, []);
 
   const redesign = data.redesign ?? false;
+  useToastPill(redesign);
   convIdsRef.current = new Set(convs.map((c) => c.id));
   const rowMutes = useRowMutes(data.viewerUserId, redesign);
   const convIds = useMemo(() => convs.map((c) => c.id), [convs]);

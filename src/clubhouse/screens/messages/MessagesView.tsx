@@ -63,7 +63,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, m as M } from "motion/react";
-import { CH_FADE_MS, chTween } from "../../lib/motion";
+import { CH_FADE_MS, chSpringCurve, chTween } from "../../lib/motion";
 import type { ChClock } from "../../lib/clock-cookie";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useComposerInset } from "./composer-inset";
@@ -91,6 +91,7 @@ import { SendCluster } from "./NotifyAnyway";
 import { ComposerPlusV2 } from "./ComposerPlusV2";
 import { ConversationSearch, detailsLine, MembersCard, MuteMenu, PhotosAndFiles, QuickActions, useDetailsColumn, useMuteAction } from "./details-v2";
 import { HelloCard } from "./HelloCard";
+import { HoldLift } from "./hold-lift";
 import { NewMessagePane } from "./NewMessagePane";
 import { useChipRise, useSendKeyPop } from "./thread-v2";
 import { GroupClassLine } from "./GroupClassLine";
@@ -136,7 +137,7 @@ import {
 import { SeenByReceipt, useSeenBy, useSeenByList } from "./seen-by";
 import { receiptCarrierId, SEEN_BY_VISIBILITY } from "@/lib/golf/message-receipts";
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
-import { fileMeta, fileSize, useConversationFiles } from "./files";
+import { fileKind, fileMeta, fileSize, useConversationFiles } from "./files";
 // Re-exported: MessagesPhone and older callers read it from here.
 export { fileSize } from "./files";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
@@ -880,7 +881,19 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
  * A reaction on a message (owner, 2026-10-08): the chip is the opposite colour of the bubble it sits under (ivory under
  * a green one, green under an ivory one), and a click opens who reacted, with a row to add or take back your own.
  */
-function ReactionChip({ api, messageId, r }: { api: ChMessagesApi; messageId: string; r: ChReaction }) {
+/** M-MSG-13: 0.4 to 1 on `pop`, from the corner the CSS sets; a fade under Reduce Motion. Once per badge. */
+function popBadge(el: HTMLElement | null) {
+  if (!el || el.dataset.chPopped) return;
+  el.dataset.chPopped = "1";
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: CH_FADE_MS, easing: "linear" });
+    return;
+  }
+  const c = chSpringCurve("pop");
+  el.animate([{ transform: "scale(.4)" }, { transform: "scale(1)" }], { duration: c.ms, easing: c.linear });
+}
+
+function ReactionChip({ api, messageId, r, arriving = false }: { api: ChMessagesApi; messageId: string; r: ChReaction; /** Redesign: a badge added after the bubble drew pops from its corner (M-MSG-13). */ arriving?: boolean }) {
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement | null>(null);
@@ -935,7 +948,10 @@ function ReactionChip({ api, messageId, r }: { api: ChMessagesApi; messageId: st
   return (
     <>
       <button
-        ref={btn}
+        ref={(el) => {
+          btn.current = el;
+          if (arriving) popBadge(el);
+        }}
         type="button"
         className={"ch-ms-react ch-num" + (r.mine ? " is-mine" : "")}
         aria-label={`${label}, ${r.count}${r.mine ? ", including you" : ""}. Show who reacted`}
@@ -996,7 +1012,7 @@ function ReactionChip({ api, messageId, r }: { api: ChMessagesApi; messageId: st
 }
 
 /** A photo in a message: shown in the thread, a click opens the full file. One that won't load falls back to the file chip. */
-function ImageAttachment({ f }: { f: ChAttachment }) {
+function ImageAttachment({ f, redesign = false }: { f: ChAttachment; redesign?: boolean }) {
   const [broken, setBroken] = useState(false);
   if (broken) {
     return (
@@ -1006,7 +1022,7 @@ function ImageAttachment({ f }: { f: ChAttachment }) {
         </span>
         <span style={{ minWidth: 0 }}>
           <b>{f.name}</b>
-          <span>{fileSize(f.size)}</span>
+          <span>{redesign ? `${fileKind(f.mime)} · ${fileSize(f.size)}` : fileSize(f.size)}</span>
         </span>
         <Icon icon={Download} size={15} />
       </a>
@@ -1024,10 +1040,13 @@ export function Attachments({
   load,
   id,
   mine,
+  redesign = false,
 }: {
   load: ChMessagesApi["attachments"];
   id: string;
   mine: boolean;
+  /** "{TYPE} · {size}" under the name (MSG-FILE-03). */
+  redesign?: boolean;
 }) {
   const [files, setFiles] = useState<ChAttachment[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -1073,7 +1092,7 @@ export function Attachments({
     <>
       {files.map((f) =>
         f.mime.startsWith("image/") && f.url ? (
-          <ImageAttachment key={f.id} f={f} />
+          <ImageAttachment key={f.id} f={f} redesign={redesign} />
         ) : (
         <a
           key={f.id}
@@ -1088,7 +1107,7 @@ export function Attachments({
           </span>
           <span style={{ minWidth: 0 }}>
             <b>{f.name}</b>
-            <span>{fileSize(f.size)}</span>
+            <span>{redesign ? `${fileKind(f.mime)} · ${fileSize(f.size)}` : fileSize(f.size)}</span>
           </span>
           <Icon icon={Download} size={15} />
           {mine && <span className="ch-sr-only">Sent by you</span>}
@@ -1187,6 +1206,18 @@ export function Bubble({
   onReply?: () => void;
 }) {
   const who = personOf(api, m.senderId);
+  // Redesign, desktop: right click and More open the same lift the phone's hold does (MSG-HOLD, MSG-THREAD-13).
+  const [lifted, setLifted] = useState(false);
+  const [liftClose, setLiftClose] = useState(0);
+  const liftAfter = useRef<(() => void) | null>(null);
+  const liftPick = (then: () => void) => {
+    liftAfter.current = then;
+    setLiftClose((n) => n + 1);
+  };
+  const drawn = useRef(false);
+  useEffect(() => {
+    drawn.current = true;
+  }, []);
   const [showTime, setShowTime] = useState(false);
   const press = useLongPress(m.failed ? undefined : onActions, onActions ? (direction) => {
     if (direction === "right") onReply?.();
@@ -1198,7 +1229,8 @@ export function Bubble({
       ? {
           onContextMenu: (e: ReactMouseEvent) => {
             e.preventDefault();
-            setPicking(true);
+            if (api.redesign) setLifted(true);
+            else setPicking(true);
           },
         }
       : {};
@@ -1353,7 +1385,7 @@ export function Bubble({
               )
             )}
             {m.hasAttachments && (
-              <Attachments load={api.attachments} id={m.id} mine={m.mine} />
+              <Attachments load={api.attachments} id={m.id} mine={m.mine} redesign={!!api.redesign} />
             )}
           </div>
           {onActions && !m.failed && (
@@ -1366,7 +1398,43 @@ export function Bubble({
               Message actions
             </button>
           )}
-          {!m.failed && !onActions && (
+          {api.redesign && !m.failed && !m.deleted && !onActions && (
+            <div className="ch-msv-hoverbar" role="toolbar" aria-label="Message actions">
+              {REACTIONS.filter((r) => r.key === "Like" || r.key === "Love" || r.key === "Laugh").map((r) => {
+                const on = reacts.some((x) => x.key === r.key && x.mine);
+                return (
+                  <button
+                    key={r.key}
+                    type="button"
+                    aria-label={`${on ? "Remove" : "React"} ${r.key.toLowerCase()}`}
+                    aria-pressed={on}
+                    onClick={() => {
+                      haptic("select");
+                      api.react(m.id, r.key, !on);
+                    }}
+                  >
+                    <Icon icon={r.icon} size={14.4} />
+                  </button>
+                );
+              })}
+              {onReply && (
+                <button type="button" aria-label="Reply" onClick={onReply}>
+                  <Icon icon={Reply} size={14.4} />
+                </button>
+              )}
+              <button
+                type="button"
+                aria-label="More message actions"
+                onClick={() => {
+                  refreshMenu();
+                  setLifted(true);
+                }}
+              >
+                <Icon icon={Ellipsis} size={14.4} />
+              </button>
+            </div>
+          )}
+          {!api.redesign && !m.failed && !onActions && (
             <div className="ch-ms-msg__tools">
               <Tooltip>
                 <button
@@ -1463,7 +1531,7 @@ export function Bubble({
         {reacts.length > 0 && (
           <div className={"ch-ms-reacts" + (m.mine ? " on-mine" : " on-theirs")}>
             {reacts.map((r) => (
-              <ReactionChip key={r.key} api={api} messageId={m.id} r={r} />
+              <ReactionChip key={r.key} api={api} messageId={m.id} r={r} arriving={!!api.redesign && drawn.current} />
             ))}
           </div>
         )}
@@ -1513,6 +1581,47 @@ export function Bubble({
         )}
       </div>
       {api.redesign && <span className="ch-msv-time ch-num">{clock(m.at, api.timeZone, api.clock)}</span>}
+      {api.redesign && lifted && (
+        <HoldLift
+          messageId={m.id}
+          mine={m.mine}
+          closeSignal={liftClose}
+          onReopen={() => {
+            liftAfter.current = null;
+          }}
+          onClosed={() => {
+            const then = liftAfter.current;
+            liftAfter.current = null;
+            setLifted(false);
+            then?.();
+          }}
+          bar={REACTIONS.map((r) => {
+            const on = reacts.some((x) => x.key === r.key && x.mine);
+            return (
+              <button
+                key={r.key}
+                type="button"
+                className={on ? "is-on" : undefined}
+                aria-label={`${on ? "Remove" : "React"} ${r.key.toLowerCase()}`}
+                aria-pressed={on}
+                onClick={() => {
+                  haptic("select");
+                  liftPick(() => api.react(m.id, r.key, !on));
+                }}
+              >
+                <Icon icon={r.icon} size={22} />
+              </button>
+            );
+          })}
+        >
+          {menuItems.map((item) => (
+            <button key={item.label} type="button" className={item.danger ? "is-danger" : undefined} onClick={() => liftPick(item.onSelect)}>
+              <span>{item.label}</span>
+              {item.icon && <Icon icon={item.icon} size={18} />}
+            </button>
+          ))}
+        </HoldLift>
+      )}
     </PresenceRow>
   );
 }
@@ -2262,6 +2371,17 @@ function Thread({
           : ""
       }`
     : conv.subtitle;
+  // Redesign: the bar's hairline shows once there is content under it (M-MSG-04b).
+  const barEl = useRef<HTMLElement | null>(null);
+  const [searching, setSearching] = useState(false);
+  useEffect(() => {
+    const el = scroller.current;
+    if (!api.redesign || !el) return;
+    const on = () => barEl.current?.classList.toggle("is-under", el.scrollTop >= 2);
+    on();
+    el.addEventListener("scroll", on, { passive: true });
+    return () => el.removeEventListener("scroll", on);
+  }, [api.redesign]);
 
   return (
     <PollThreadContext.Provider value={pollThread}>
@@ -2270,7 +2390,7 @@ function Thread({
       className="ch-ms-thread"
       aria-label={`Conversation with ${conv.title}`}
     >
-      <header className="ch-ms-th">
+      <header className="ch-ms-th" ref={barEl}>
         <div className="ch-ms-th__who">
           <span className="ch-ms-back">
             <IconButton
@@ -2294,6 +2414,19 @@ function Thread({
           </div>
         </div>
         <div className="ch-ms-th__act">
+          {api.redesign && (
+            <Tooltip>
+              <button
+                type="button"
+                className={"ch-btn ch-iconbtn " + (searching ? "ch-btn--secondary" : "ch-btn--ghost")}
+                aria-label="Search this conversation"
+                aria-pressed={searching}
+                onClick={() => setSearching((v) => !v)}
+              >
+                <Icon icon={Search} size={16} />
+              </button>
+            </Tooltip>
+          )}
           {calendarHref && api.viewer.role === "coach" && (
             <Tooltip>
               <a
@@ -2324,6 +2457,11 @@ function Thread({
           </Tooltip>
         </div>
       </header>
+      {api.redesign && searching && (
+        <div className="ch-msv-barsearch">
+          <ConversationSearch api={api} conv={conv} onClose={() => setSearching(false)} />
+        </div>
+      )}
       <div
         className="ch-ms-scroll"
         ref={scroller}

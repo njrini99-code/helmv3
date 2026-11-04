@@ -10,13 +10,17 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
  * rows below it. The real bubble hides while its copy is up. Dismissing settles the copy home, shrinks the bar and menu, fades the scrim
  * and returns focus to the bubble. Reduce Motion: everything appears in place and fades over `CH_FADE_MS`.
  */
-export function HoldLift({ messageId, mine, bar, children, onClosed, closeSignal }: { messageId: string; mine: boolean; bar: ReactNode; children: ReactNode; onClosed: () => void; /** Bumped by a pick, to run the dismiss. */ closeSignal: number }) {
+export function HoldLift({ messageId, mine, bar, children, onClosed, closeSignal, onReopen }: { /** A pick waiting on this dismiss is dropped when the lift is taken back. */ onReopen?: () => void; messageId: string; mine: boolean; bar: ReactNode; children: ReactNode; onClosed: () => void; /** Bumped by a pick, to run the dismiss. */ closeSignal: number }) {
   const reduced = useChReducedMotion();
   const scrim = useRef<HTMLDivElement | null>(null);
   const copy = useRef<HTMLDivElement | null>(null);
   const rbar = useRef<HTMLDivElement | null>(null);
   const menu = useRef<HTMLDivElement | null>(null);
   const closing = useRef(false);
+  const holdAfterCancel = useRef(onReopen);
+  holdAfterCancel.current = onReopen;
+  // The running exit: a touch on the settling copy reverses every part from where it is, never a second copy (HOLD_OUT, M-MSG-11).
+  const outs = useRef<Animation[]>([]);
   const [rect] = useState<DOMRect | null>(() => document.getElementById(`ch-ms-message-${messageId}`)?.querySelector('.ch-ms-bub, .ch-ms-img')?.getBoundingClientRect() ?? null);
   const shift = useRef(0);
   const source = useRef<HTMLElement | null>(null);
@@ -69,11 +73,23 @@ export function HoldLift({ messageId, mine, bar, children, onClosed, closeSignal
       else finish();
       return;
     }
-    rbar.current?.animate([{ opacity: 1 }, { transform: 'scale(.6)', opacity: 0 }], { duration: 160, easing: ease, fill: 'forwards' });
-    menu.current?.animate([{ opacity: 1 }, { transform: 'scale(.85)', opacity: 0 }], { duration: 160, easing: ease, fill: 'forwards' });
-    scrim.current?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 280, easing: ease, fill: 'forwards' });
+    const a = rbar.current?.animate([{ opacity: 1 }, { transform: 'scale(.6)', opacity: 0 }], { duration: 160, easing: ease, fill: 'forwards' });
+    const b = menu.current?.animate([{ opacity: 1 }, { transform: 'scale(.85)', opacity: 0 }], { duration: 160, easing: ease, fill: 'forwards' });
+    const c = scrim.current?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 280, easing: ease, fill: 'forwards' });
     const home = copy.current.animate([{ transform: getComputedStyle(copy.current).transform }, { transform: 'none' }], { duration: settle.ms, easing: settle.linear, fill: 'forwards' });
     home.onfinish = finish;
+    outs.current = [a, b, c, home].filter((x): x is Animation => !!x);
+  };
+
+  const reopen = () => {
+    if (!closing.current || !outs.current.length) return;
+    closing.current = false;
+    holdAfterCancel.current?.();
+    for (const x of outs.current) {
+      x.onfinish = null;
+      x.reverse();
+    }
+    outs.current = [];
   };
 
   const signal = useRef(closeSignal);
@@ -108,8 +124,8 @@ export function HoldLift({ messageId, mine, bar, children, onClosed, closeSignal
   const side = mine ? { right: Math.max(edge, vw - rect.right) } : { left: Math.max(edge, rect.left) };
   return createPortal(
     <div className="ch-msv-lift" data-ch-ms-v2="on" role="dialog" aria-modal="true" aria-label="Message actions" data-ch-code="CH-7604">
-      <div ref={scrim} className="ch-msv-lift__scrim" onClick={dismiss} aria-hidden="true" />
-      <div ref={copy} className="ch-msv-lift__copy" aria-hidden="true" style={{ left: rect.left, top: rect.top, width: rect.width, height: rect.height, transformOrigin: mine ? '100% 100%' : '0% 100%' }} />
+      <div ref={scrim} className="ch-msv-lift__scrim" onClick={() => (closing.current ? reopen() : dismiss())} aria-hidden="true" />
+      <div ref={copy} className="ch-msv-lift__copy" aria-hidden="true" onPointerDown={reopen} style={{ left: rect.left, top: rect.top, width: rect.width, height: rect.height, transformOrigin: mine ? '100% 100%' : '0% 100%' }} />
       <div ref={rbar} className="ch-msv-rbar" style={{ top: rect.top - 58 + shift.current, transformOrigin: mine ? '100% 100%' : '0% 100%', ...side }}>
         {bar}
       </div>
