@@ -169,7 +169,7 @@ export function PlanTask({ plan, online, onOpen }: { plan: PlanPartData; online:
                         create();
                       }}
                     >
-                      <input aria-label="Folder name" autoFocus maxLength={NAME_MAX} placeholder="Folder name" value={name} onChange={(e) => setName(e.target.value)} />
+                      <input aria-label="Folder name" ref={(el) => el?.focus()} maxLength={NAME_MAX} placeholder="Folder name" value={name} onChange={(e) => setName(e.target.value)} />
                       <button type="submit" className="btn primary" disabled={!clean || dupe || reserved}>
                         Create
                       </button>

@@ -21762,6 +21762,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/visuals/__tests__/compile.test.ts",
           "anchor": "src/clubhouse/data/coachhelm-chat-thread"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/team-board/__tests__/team-board-flag.test.ts",
+          "anchor": "src/clubhouse/data/coachhelm-team-shape"
         }
       ]
     },

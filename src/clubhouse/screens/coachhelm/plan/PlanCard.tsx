@@ -158,7 +158,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
     setDraft((d) => ({ ...d, version: d.version + 1, body: { ...d.body, variants: { ...d.body.variants, main: { blocks: d.body.variants.main.blocks.map((b) => (b.id === id ? next(b) : b)) } } } }));
     setChanged((s) => new Set(s).add(id));
   };
-  const useAlt = (slot: string, alt: PlanAlternative) => {
+  const pickAlt = (slot: string, alt: PlanAlternative) => {
     const [src, id] = alt.ref.split(':');
     const ref: DrillRef | null = (src === 'team' || src === 'lib') && id ? { src, id } : null;
     const owner = blocks.find((b) => b.id === slot || (b.kind === 'stations' && b.stations.some((s) => s.id === slot)));
@@ -417,7 +417,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                         }}
                       >
                         <Icon icon={FolderClosed} size={18} className="fi" />
-                        <input className="inp" autoFocus aria-label="Folder name" maxLength={FIELD_MAX} value={name} placeholder="Folder name" onChange={(e) => setName(e.target.value)} />
+                        <input className="inp" ref={(el) => el?.focus()} aria-label="Folder name" maxLength={FIELD_MAX} value={name} placeholder="Folder name" onChange={(e) => setName(e.target.value)} />
                         <button type="submit" className="btn-s" disabled={!clean || dupe || reserved}>
                           Create
                         </button>
@@ -577,7 +577,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                     {a.name}
                     <KindChip kind={a.kind} />
                   </span>
-                  <button type="button" className="btn-s" onClick={() => useAlt(sheet?.kind === 'swap' ? sheet.id : '', a)}>
+                  <button type="button" className="btn-s" onClick={() => pickAlt(sheet?.kind === 'swap' ? sheet.id : '', a)}>
                     Use
                   </button>
                   <span className="d">
