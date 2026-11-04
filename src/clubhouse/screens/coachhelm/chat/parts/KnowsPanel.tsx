@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { deleteCoachFact, saveCoachFact, setChatTone } from '@/app/golf/actions/coachhelm-ask';
 import type { ChAskData } from '../../../../data/coachhelm-chat-shape';
+import { Segmented } from '../../../../ui/Segmented';
 
 const TONES = [
   { id: 'straight', label: 'Straight' },
@@ -27,21 +28,17 @@ export function AskKnowsPanel({ knows, conversationId }: { knows: NonNullable<Ch
   };
   return (
     <div className="ch-ak-knows">
-      <div className="ch-ak-knows__tone" role="group" aria-label="Tone">
-        {TONES.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            aria-pressed={tone === t.id}
-            onClick={() => {
-              setTone(t.id);
-              if (conversationId) void setChatTone(conversationId, t.id);
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <Segmented
+        label="Tone"
+        block
+        size="sm"
+        value={tone}
+        options={TONES.map((t) => ({ value: t.id, label: t.label }))}
+        onChange={(id) => {
+          setTone(id);
+          if (conversationId) void setChatTone(conversationId, id);
+        }}
+      />
       <h3>CoachHelm knows</h3>
       <ul>
         {facts.map((f) => (

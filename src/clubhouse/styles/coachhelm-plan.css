@@ -1371,43 +1371,6 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 .ch-cpv-ply .avs {
   display: flex;
 }
-.ch-cpv-ply .av {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  margin-left: -6px;
-  border-radius: 50%;
-  background: var(--ch-accent);
-  box-shadow: 0 0 0 2px var(--ch-card-bg);
-  color: var(--ch-text-on-accent);
-  font: var(--ch-type-11-strong);
-  letter-spacing: var(--ch-track-11);
-}
-.ch-cpv-ply .av:first-child {
-  margin-left: 0;
-}
-.ch-cpv-ply .seg2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px;
-  padding: 2px;
-  border-radius: var(--ch-radius-sm);
-  background: var(--ch-well-bg-flat);
-}
-.ch-cpv-ply .seg2 button {
-  min-height: 32px;
-  border: 0;
-  border-radius: var(--ch-radius-sm);
-  background: none;
-  color: var(--ch-text-primary);
-  font: var(--ch-type-15-strong);
-  letter-spacing: var(--ch-track-15);
-}
-.ch-cpv-ply .seg2 .on {
-  background: var(--ch-accent);
-  color: var(--ch-text-on-accent);
-}
 .ch-cpv-ply .stop {
   position: relative;
   display: grid;
