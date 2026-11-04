@@ -112,6 +112,8 @@ import { useComposerInset } from "./composer-inset";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useThreadDragTimes } from "./use-thread-drag-times";
 import { classYearKey } from "../../lib/class-year";
+import { ConversationSearch, detailsLine, MembersCard, MuteMenu, PhotosAndFiles, popIn, QuickActions, tokenBeat, useMuteAction } from "./details-v2";
+import { HelloCard } from "./HelloCard";
 import { HoldLift } from "./hold-lift";
 import { noteTappedFace, ThreadDatePill, ThreadJumpKey, useFaceFlight, useReplyFromTyping, useSendRise, useThreadMakeRoom } from "./thread-v2";
 import { useFocusMessage } from "./use-focus-message";
@@ -310,7 +312,7 @@ function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void })
           ))}
         </section>
       ) : firstRun ? (
-        <MessagesFirstRun coach={api.viewer.role === "coach"} onNew={onNew} />
+        <MessagesFirstRun redesign coach={api.viewer.role === "coach"} teamName={api.teamName} onNew={onNew} />
       ) : (
         <div className="ch-msp-list">
           {filter === "all" && !q.trim() && pinned.length > 0 && (
@@ -626,7 +628,18 @@ function PhoneThread({
                 <Skeleton width="38%" height={40} radius={18} />
               </div>
             ) : !api.msgs.length ? (
+              api.redesign && !conv.group ? (
+                <HelloCard
+                  name={conv.title}
+                  id={convAvatarId(api, conv)}
+                  role={conv.subtitle ?? ""}
+                  coach={api.viewer.role === "coach"}
+                  year={convYear(api, conv)}
+                  onStarter={(text) => setSeed({ text, nonce: Date.now() })}
+                />
+              ) : (
               <EmptyState compact code="CH-7304" title="No messages yet" body={`Say hello to ${conv.group ? "the group" : firstName(conv.title)}.`} />
+              )
             ) : (
               // B7, as on desktop: a deletion closes in place and an arrival rises in at its full height, so the thread above
               // never moves (owner, 2026-10-31, as Fairway); the scroll stays with useThreadAnchor.
@@ -907,6 +920,8 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
     setMuteBusy(false);
   };
   const tiles = (calendarHref ? 1 : 0) + 1;
+  const muteV2 = useMuteAction(api);
+  const [searching, setSearching] = useState(false);
   const message = async (userId: string) => {
     if (!conv.group && userId === conv.memberIds[0]) return onBack();
     await api.startDirect(userId);
@@ -918,13 +933,25 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
         <SectionBoundary surface="messages.details" label="Details" code="CH-7213">
           <div className="ch-msp-page">
             <section className="ch-msp-prof">
-              {conv.group ? <GroupMark size="lg" /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={72} />}
+              {conv.group ? <GroupMark size="lg" /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={api.redesign ? 84 : 72} year={api.redesign ? convYear(api, conv) : null} />}
               <h2>{conv.title}</h2>
               <p className="ch-num">
-                {conv.group
+                {api.redesign ? detailsLine(conv, api.teamName) : conv.group
                   ? `${conv.memberCount} members · created by ${mine ? "you" : creator ? firstName(creator.name) : "a coach"}`
                   : conv.subtitle}
               </p>
+              {api.redesign ? (
+                <QuickActions
+                  api={api}
+                  conv={conv}
+                  mute={muteV2}
+                  profileHref={statsHref && other?.playerId ? `${statsHref}?player=${encodeURIComponent(other.playerId)}` : null}
+                  onSearch={() => setSearching((v) => !v)}
+                  onFiles={() => document.querySelector(".ch-msp-details .ch-msv-files")?.scrollIntoView({ block: "start" })}
+                  onAdd={() => setAdding(true)}
+                  onLeave={() => setLeaving(true)}
+                />
+              ) : (
               <div className="ch-msp-tiles" style={{ ["--ch-msp-n" as string]: tiles }}>
                 {calendarHref && (
                   <Link className="ch-msp-tile" href={calendarHref}>
@@ -949,9 +976,12 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
                   <span>{muted ? "Muted" : "Mute"}</span>
                 </button>
               </div>
+              )}
             </section>
 
-            {api.classDay && !conv.group && (
+            {api.redesign && searching && <ConversationSearch api={api} conv={conv} onClose={() => setSearching(false)} onPicked={onBack} />}
+
+            {api.classDay && !conv.group && (!api.redesign || coach) && (
               <ThreadClassSection
                 cls={api.classDay}
                 conv={conv}
@@ -964,7 +994,25 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
               />
             )}
 
-            {conv.group ? (
+            {api.redesign ? (
+              <>
+                {conv.group && <MembersCard api={api} conv={conv} onMessage={(id) => void message(id)} onRemove={mine && api.removeMember ? setRemoving : undefined} />}
+                {/* Schedule keeps its place on the page; the four across are the drawn four. */}
+                {calendarHref && (
+                  <Panel>
+                    <Link className="ch-msp-row is-btn" href={calendarHref}>
+                      <span className="ch-msp-row__ic">
+                        <Icon icon={CalendarPlus} size={16} />
+                      </span>
+                      <span className="ch-msp-row__b">
+                        <b>Schedule</b>
+                      </span>
+                      <Icon icon={ChevronRight} size={16} className="ch-msp-chev" />
+                    </Link>
+                  </Panel>
+                )}
+              </>
+            ) : conv.group ? (
               <Panel
                 title="Members"
                 action={
@@ -1016,10 +1064,10 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
               </Panel>
             )}
 
-            <FilesPanel api={api} conv={conv} />
+            {api.redesign ? <PhotosAndFiles api={api} conv={conv} /> : <FilesPanel api={api} conv={conv} />}
 
             {/* With the switch gone it can have nothing to show: then it isn't drawn. */}
-            {(api.muteError || !api.mute || muted || (conv.group && !mine) || api.deleteConversation) && (
+            {(api.muteError || !api.mute || muted || (conv.group && !mine && !api.redesign) || api.deleteConversation) && (
               <Panel>
                 {api.muteError ? (
                   <InlineNotice code="CH-7208" title="The mute setting didn’t load" body="Try again." onRetry={api.retryMute} />
@@ -1034,7 +1082,7 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
                     </div>
                   )
                 )}
-                {conv.group && !mine && (
+                {conv.group && !mine && !api.redesign && (
                   <button type="button" className="ch-msp-danger" onClick={() => setLeaving(true)}>
                     Leave group
                   </button>
@@ -1049,6 +1097,7 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
           </div>
         </SectionBoundary>
       </div>
+      {api.redesign && muteV2.choosing && <MuteMenu onPick={(h) => void muteV2.setMute(true, h)} onClose={() => muteV2.setChoosing(false)} />}
       <Modal
         open={choosing}
         onClose={() => setChoosing(false)}
@@ -1183,6 +1232,16 @@ function PhoneNewMessage({
   const seniors = players.filter((p) => p.subtitle === "Senior");
   const toggle = (id: string) => {
     haptic("select");
+    // Redesign, a player: the token shows, then the conversation opens (MSG-NEW-03). A coach may pick several for a group, so Next stays.
+    if (api.redesign && !coach && to[0] !== id) {
+      setTo([id]);
+      setBusy(true);
+      window.setTimeout(() => {
+        chTrail("messages start direct");
+        void api.startDirect(id).then(() => setBusy(false));
+      }, tokenBeat());
+      return;
+    }
     // Players start direct threads only (D-15): a second pick replaces the first.
     setTo((cur) => (!coach ? (cur[0] === id ? [] : [id]) : cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
   };
@@ -1242,11 +1301,11 @@ function PhoneNewMessage({
       />
       <div className="ch-msp-to">
         <span className="ch-msp-to__k" aria-hidden="true">
-          To
+          {api.redesign ? "To:" : "To"}
         </span>
         <div className="ch-msp-to__f">
           {to.map((id) => (
-            <button key={id} type="button" className="ch-msp-tok" aria-label={`Remove ${personOf(api, id)?.name ?? "person"}`} onClick={() => toggle(id)}>
+            <button key={id} type="button" className="ch-msp-tok" ref={api.redesign ? (el) => popIn(el, 0.8, true) : undefined} aria-label={`Remove ${personOf(api, id)?.name ?? "person"}`} onClick={() => toggle(id)}>
               {firstName(personOf(api, id)?.name ?? "Member")}
               <Icon icon={X} size={12} />
             </button>
@@ -1340,7 +1399,7 @@ function PhoneNewMessage({
               </div>
             </>
           )}
-          <h2 className="ch-ms-sec__l">{q ? "Results" : "People"}</h2>
+          <h2 className="ch-ms-sec__l">{q ? "Results" : api.redesign ? "Suggested" : "People"}</h2>
           {api.directoryError ? (
             <InlineNotice code="CH-7205" title="Your team list didn’t load" body="Try again." onRetry={api.retryDirectory} />
           ) : (
@@ -1349,7 +1408,7 @@ function PhoneNewMessage({
                 const on = to.includes(p.userId);
                 return (
                   <button key={p.userId} type="button" role="option" aria-selected={on} className="ch-msp-row is-btn" onClick={() => toggle(p.userId)}>
-                    <Avatar name={p.name} id={p.playerId ?? p.userId} size="lg" />
+                    <Avatar name={p.name} id={p.playerId ?? p.userId} size={api.redesign ? 32 : "lg"} />
                     <span className="ch-msp-row__b">
                       <b>{p.name}</b>
                       <span>{p.subtitle}</span>

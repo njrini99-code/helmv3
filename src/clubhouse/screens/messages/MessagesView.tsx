@@ -89,6 +89,9 @@ import { RailEmpty } from "./RailEmpty";
 import { ThreadClassSub } from "./ThreadClassSub";
 import { SendCluster } from "./NotifyAnyway";
 import { ComposerPlusV2 } from "./ComposerPlusV2";
+import { ConversationSearch, detailsLine, MembersCard, MuteMenu, PhotosAndFiles, QuickActions, useDetailsColumn, useMuteAction } from "./details-v2";
+import { HelloCard } from "./HelloCard";
+import { NewMessagePane } from "./NewMessagePane";
 import { useChipRise, useSendKeyPop } from "./thread-v2";
 import { GroupClassLine } from "./GroupClassLine";
 import { ThreadClassSection } from "./ThreadClassSection";
@@ -352,7 +355,7 @@ function SenderPeek({ api, who, children }: { api: ChMessagesApi; who: ChPerson 
 
 /* Rail */
 
-export function MessageHits({ api, q, nameMatches }: { api: ChMessagesApi; q: string; /** Redesign: how many names matched, so an empty search says it once (S-MSG.search). */ nameMatches?: number }) {
+export function MessageHits({ api, q, nameMatches, conversationId, onPicked }: { api: ChMessagesApi; q: string; /** One conversation's hits only (Details, Search). */ conversationId?: string; onPicked?: () => void; /** Redesign: how many names matched, so an empty search says it once (S-MSG.search). */ nameMatches?: number }) {
   const [hits, setHits] = useState<ChSearchHit[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -367,14 +370,14 @@ export function MessageHits({ api, q, nameMatches }: { api: ChMessagesApi; q: st
     setFailed(false);
     const t = window.setTimeout(() => {
       search(term)
-        .then((r) => live && (r ? setHits(r) : setFailed(true)))
+        .then((r) => live && (r ? setHits(conversationId ? r.filter((h) => h.conversationId === conversationId) : r) : setFailed(true)))
         .catch(() => live && setFailed(true));
     }, 250);
     return () => {
       live = false;
       window.clearTimeout(t);
     };
-  }, [search, term, attempt]);
+  }, [search, term, attempt, conversationId]);
   if (term.length < 2) return null;
   if (nameMatches != null && hits && !hits.length && !failed)
     return nameMatches > 0 ? null : (
@@ -421,6 +424,7 @@ export function MessageHits({ api, q, nameMatches }: { api: ChMessagesApi; q: st
                 // D-70: opening a hit is plain navigation, so it is silent (F-0071; CH-7703 ticks a reaction or a filter).
                 chTrail("messages open search hit");
                 api.openHit(h);
+                onPicked?.();
               }}
             >
               <span className="ch-ms-grp">
@@ -2356,7 +2360,11 @@ function Thread({
               <Skeleton width="38%" height={40} radius={18} />
             </div>
           ) : !api.msgs.length ? (
+            api.redesign && !conv.group ? (
+              <HelloCard name={conv.title} id={convAvatarId(api, conv)} role={conv.subtitle ?? ""} coach={api.viewer.role === "coach"} year={convYear(api, conv)} onStarter={(text) => setSeed({ text, nonce: Date.now() })} />
+            ) : (
             <EmptyState compact code="CH-7304" title="No messages yet" body={`Say hello to ${conv.group ? "the group" : firstName(conv.title)}.`} />
+            )
           ) : (
             // B7: a deleted message closes in place; one that arrives rises in at its full height, so the thread above it
             // never moves (owner, 2026-10-31, as Fairway's thread does). The scroll stays with useThreadAnchor (no FLIP), and
@@ -2760,8 +2768,17 @@ function Details({
     ? personOf(api, conv.memberIds[0] ?? "")
     : undefined;
   const statsHref = rebuiltHref("/golf/dashboard/stats", api.viewer.role);
+  const mute = useMuteAction(api);
+  const [searching, setSearching] = useState(false);
+  const detailsBody = useRef<HTMLElement | null>(null);
+  // MSG-ROLE-04: a coach on a direct thread with a player, nobody else.
+  const profileHref =
+    !conv.group && other?.role === "player" && other.playerId && api.viewer.role === "coach" && statsHref
+      ? `${statsHref}?player=${encodeURIComponent(other.playerId)}`
+      : null;
   return (
     <aside
+      ref={detailsBody}
       className="ch-ms-det"
       aria-label={conv.group ? "Group details" : "Details"}
     >
@@ -2780,15 +2797,29 @@ function Details({
             <Icon icon={Users} size={22} />
           </span>
         ) : (
-          <Avatar name={conv.title} id={convAvatarId(api, conv)} size="xl" ring />
+          <Avatar name={conv.title} id={convAvatarId(api, conv)} size={api.redesign ? 64 : "xl"} ring={!api.redesign} year={api.redesign ? convYear(api, conv) : null} />
         )}
         <b>{conv.title}</b>
         <span>
-          {conv.group ? `Group · ${conv.memberCount} members` : conv.subtitle}
+          {api.redesign ? detailsLine(conv, api.teamName) : conv.group ? `Group · ${conv.memberCount} members` : conv.subtitle}
         </span>
       </div>
+      {api.redesign && (
+        <QuickActions
+          api={api}
+          conv={conv}
+          mute={mute}
+          profileHref={profileHref}
+          onSearch={() => setSearching((v) => !v)}
+          onFiles={() => detailsBody.current?.querySelector(".ch-msv-files")?.scrollIntoView({ block: "start" })}
+          onAdd={() => setAdding(true)}
+          onLeave={() => setLeaving(true)}
+        />
+      )}
+      {api.redesign && searching && <ConversationSearch api={api} conv={conv} onClose={() => setSearching(false)} />}
+      {api.redesign && mute.choosing && <MuteMenu onPick={(h) => void mute.setMute(true, h)} onClose={() => mute.setChoosing(false)} />}
       <MuteControl api={api} />
-      {api.classDay && !conv.group && (
+      {api.classDay && !conv.group && (!api.redesign || api.viewer.role === "coach") && (
         <ThreadClassSection
           cls={api.classDay}
           conv={conv}
@@ -2803,7 +2834,7 @@ function Details({
           )}
         />
       )}
-      {!conv.group &&
+      {!api.redesign && !conv.group &&
         other?.role === "player" &&
         other.playerId &&
         api.viewer.role === "coach" &&
@@ -2817,7 +2848,15 @@ function Details({
             </Button>
           </div>
         )}
-      {conv.group && (
+      {api.redesign && conv.group && (
+        <MembersCard
+          api={api}
+          conv={conv}
+          onMessage={(id) => void api.startDirect(id)}
+          onRemove={mayRemove ? setRemoving : undefined}
+        />
+      )}
+      {!api.redesign && conv.group && (
         <div className="ch-ms-det__sec">
           <div className="ch-ms-det__l">
             <span>{conv.memberCount} members</span>
@@ -2869,8 +2908,8 @@ function Details({
           )}
         </div>
       )}
-      <FilesSection api={api} conv={conv} />
-      {conv.group && conv.creatorId !== api.viewer.userId && (
+      {api.redesign ? <PhotosAndFiles api={api} conv={conv} /> : <FilesSection api={api} conv={conv} />}
+      {!api.redesign && conv.group && conv.creatorId !== api.viewer.userId && (
         <div className="ch-ms-det__sec">
           <Button
             variant="danger"
@@ -3026,10 +3065,13 @@ function NewMessage({
   api,
   open,
   onClose,
+  initialMode,
 }: {
   api: ChMessagesApi;
   open: boolean;
   onClose: () => void;
+  /** The redesign's pane hands a group or an announcement over to this dialog. */
+  initialMode?: "group" | "announce";
 }) {
   const [mode, setMode] = useState<"direct" | "group" | "announce">("direct");
   const [body, setBody] = useState("");
@@ -3049,7 +3091,7 @@ function NewMessage({
     // A prefilled message (prefill.ts) opens with its people chosen and, for a group, its name.
     // Players start direct threads only (D-15): theirs keeps the first person.
     const group = !!prefill && prefill.to.length > 1 && api.viewer.role === "coach";
-    setMode(group ? "group" : "direct");
+    setMode(initialMode ?? (group ? "group" : "direct"));
     setTo(prefill ? (group ? prefill.to : prefill.to.slice(0, 1)) : []);
     setQ("");
     setTitle(prefill?.title ?? "");
@@ -3337,6 +3379,10 @@ function NewMessage({
 export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
   const [details, setDetails] = useState(false);
   const [compose, setCompose] = useState(false);
+  const [dialogMode, setDialogMode] = useState<"group" | "announce" | null>(null);
+  const detailsMounted = useDetailsColumn(details, !!api.redesign);
+  // A prefilled message keeps today's dialog: it carries people, a group name and a draft (MSG-NEW-02 draws only the plain start).
+  const newPane = !!api.redesign && compose && !api.prefill && !dialogMode;
   const conv = api.convs.find((c) => c.id === api.selectedId) ?? null;
   const ann = api.announcements.find((a) => a.id === api.selectedAnnId) ?? null;
   useEffect(() => setDetails(false), [api.selectedId]);
@@ -3365,7 +3411,7 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
               : "Conversations with your coaches and teammates, and the team’s announcements."
           }
         />
-        <MessagesFirstRun coach={api.viewer.role === "coach"} onNew={() => setCompose(true)} />
+        <MessagesFirstRun redesign={!!api.redesign} teamName={api.teamName} coach={api.viewer.role === "coach"} onNew={() => setCompose(true)} />
         <NewMessage api={api} open={compose} onClose={closeCompose} />
       </main>
     );
@@ -3387,6 +3433,13 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
       >
         <Rail api={api} onNew={() => setCompose(true)} />
       </SectionBoundary>
+      {newPane ? (
+        <NewMessagePane
+          api={api}
+          onCancel={() => setCompose(false)}
+          onDialog={(mode) => setDialogMode(mode)}
+        />
+      ) : (
       <Swap swapKey={pane.turn} className="ch-ms-pane">
         {ann ? (
           <SectionBoundary
@@ -3442,7 +3495,8 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
           </section>
         )}
       </Swap>
-      {conv && details && (
+      )}
+      {conv && detailsMounted && (
         <SectionBoundary
           surface="messages.details"
           label="Details"
@@ -3451,7 +3505,15 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
           <Details api={api} conv={conv} onClose={() => setDetails(false)} />
         </SectionBoundary>
       )}
-      <NewMessage api={api} open={compose} onClose={closeCompose} />
+      <NewMessage
+        api={api}
+        open={compose && !newPane}
+        initialMode={dialogMode ?? undefined}
+        onClose={() => {
+          setDialogMode(null);
+          closeCompose();
+        }}
+      />
     </main>
   );
 }
