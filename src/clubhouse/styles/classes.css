@@ -2866,7 +2866,7 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
     height: 20px;
     border-radius: 50%;
     background: #f4eedd;
-    box-shadow: 0 0 0 4px rgb(123 199 154 / 0.28), 0 2px 6px rgb(0 0 0 / 0.4);
+    box-shadow: var(--ch-classes-shadow-1);
     transform: translateX(-50%);
   }
   [data-ch-crh='on'] .ch-cl-term__soon {
@@ -3048,7 +3048,7 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
     border: 0;
     border-radius: 16px;
     background: var(--ch-cl-t);
-    box-shadow: inset 0 0 0 1px var(--ch-cl-tb), 0 1px 2px rgb(28 25 18 / 0.06);
+    box-shadow: var(--ch-classes-shadow-2);
     text-align: left;
   }
   [data-ch-crh='on'] .ch-cl-deck .ch-cl-card__name {
@@ -3082,7 +3082,7 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
   }
   [data-ch-crh='on'] .ch-cl-deck .ch-cl-card__week > span.is-on {
     background: var(--ch-tile-bg);
-    box-shadow: 0 1px 2px rgb(28 25 18 / 0.12), 0 0 0 1px var(--ch-cl-tb);
+    box-shadow: var(--ch-classes-shadow-3);
   }
   [data-ch-crh='on'] .ch-cl-deck .ch-cl-card__week > span.is-today {
     box-shadow: 0 0 0 2px var(--ch-accent);
@@ -3249,4 +3249,9 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
     color: var(--ch-warn-ink);
     font: 600 calc(13 * var(--ch-type-k)) / 1 var(--ch-font-sans);
   }
+}
+.ch-app {
+  --ch-classes-shadow-1: 0 0 0 4px rgb(123 199 154 / 0.28), 0 2px 6px rgb(0 0 0 / 0.4);
+  --ch-classes-shadow-2: inset 0 0 0 1px var(--ch-cl-tb), 0 1px 2px rgb(28 25 18 / 0.06);
+  --ch-classes-shadow-3: 0 1px 2px rgb(28 25 18 / 0.12), 0 0 0 1px var(--ch-cl-tb);
 }
