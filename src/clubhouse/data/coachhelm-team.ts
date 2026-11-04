@@ -38,7 +38,6 @@ import {
   STATIONS,
   stationFigures,
   teamTotalOf,
-  toChTeamLegs,
   type ChStation,
   type ChTeamBoardData,
   type ChTeamLeg,
@@ -46,6 +45,7 @@ import {
   type ChTeamPlayer,
   type ChTourRow,
 } from './coachhelm-team-shape';
+import { toChTeamLegs } from './coachhelm-team-legs';
 import { classYearLabel, loadSeasonRounds, loadTeamZone, seasonStartDate } from './season';
 import { NEEDS_MAX, WORKING_MAX } from './coachhelm-shape';
 
