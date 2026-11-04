@@ -30,6 +30,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "After one team has run it for a week with no overdue or fail-open signals and every team is on, delete the flag and its checks in their own reviewed change.",
   },
   {
+    feature_id: "clubhouse_refresh_v1",
+    owner: "golf/clubhouse",
+    purpose: "Sets data-ch-refresh=\"on\" on the Clubhouse app root. Every rule the refresh foundation adds is scoped under it: the flat page, Section heads as card headers on phone, the refreshed Surface, flat feature cards and large titles under the green bar. Off, every screen renders as main.",
+    type: "release",
+    status: "active",
+    created_at: "2026-11-03",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Remove the flag and inline the scoped rules once the owner has turned it on in production and the nine redesigned pages have shipped.",
+  },
+  {
     feature_id: "coachhelm_a4_sequence_attribution_surface",
     owner: "golf/coachhelm",
     purpose: "Gates whether the Round Review page renders the new per-hole sequence-attribution rollup (loadSequenceAttribution + computeSequenceAttribution + SequenceAttributionSection) below the existing stat breakdown; default off pending a design/product review of the section's placement, copy, and the observed-strokes-gained wording against a busy round.",

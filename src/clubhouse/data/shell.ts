@@ -51,6 +51,8 @@ export interface ChShellData {
   roundInProgress?: ChRoundInProgress | null;
   /** The signed-in coach is this team's head coach: the identity line says "Head coach". False when unread (plain "Coach"). */
   viewerIsHeadCoach?: boolean;
+  /** clubhouse_refresh_v1 is on: the app root carries `data-ch-refresh="on"`, which scopes the refresh's rules. Set by the dashboard layout, server only. */
+  refresh?: boolean;
   /** golf_tournaments_v1 is on (P016): the Tournaments nav entry and its routes. Set by the dashboard layout, server side. */
   tournaments?: boolean;
   /**

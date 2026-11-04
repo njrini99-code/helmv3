@@ -2475,3 +2475,80 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
     width: 100%;
   }
 }
+
+/* Clubhouse refresh, PR 2 (clubhouse_refresh_v1, off everywhere). The feature card is flat (SHARED-2). A Surface takes the card's
+   surface, ring and shadow; its head is title plus meta over a hairline inset 16, and its note is a band inside the card. */
+.ch-app[data-ch-refresh='on'] {
+  --ch-feature-bg: var(--ch-green-800);
+}
+html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
+  --ch-feature-bg: #123d29;
+}
+.ch-app[data-ch-refresh='on'] .ch-surface {
+  background: var(--ch-card-bg);
+  box-shadow: 0 0 0 1px var(--ch-card-ring), var(--ch-card-shadow);
+}
+.ch-app[data-ch-refresh='on'] .ch-surface__sub {
+  font: var(--ch-type-meta);
+  color: var(--ch-text-secondary);
+}
+.ch-app[data-ch-refresh='on'] .ch-surface__rule {
+  margin: 16px 0 0 16px;
+  background: var(--ch-separator);
+}
+.ch-app[data-ch-refresh='on'] .ch-surface__foot {
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+  background: transparent;
+  font: var(--ch-type-meta);
+  color: var(--ch-text-secondary);
+}
+
+/* On phone a Section's head is the header of the card under it; the meta sits right. Desktop keeps the flush Ledger head. */
+@media (max-width: 820px) {
+  .ch-app[data-ch-refresh='on'] .ch-sec {
+    gap: 0;
+  }
+  .ch-app[data-ch-refresh='on'] .ch-sec__head {
+    align-items: center;
+    padding: 16px 16px 12px;
+    border-top: 0;
+    border-radius: var(--ch-radius-card) var(--ch-radius-card) 0 0;
+    background: var(--ch-card-bg);
+    box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-separator);
+  }
+  .ch-app[data-ch-refresh='on'] .ch-sec__titles {
+    flex: 1;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .ch-app[data-ch-refresh='on'] .ch-sec__title {
+    font: var(--ch-type-card-title);
+    letter-spacing: var(--ch-track-card-title);
+    color: var(--ch-text-primary);
+    font-variation-settings: normal;
+  }
+  .ch-app[data-ch-refresh='on'] .ch-sec__meta {
+    font: var(--ch-type-meta);
+    color: var(--ch-text-secondary);
+  }
+  .ch-app[data-ch-refresh='on'] .ch-sec__head ~ * {
+    background: var(--ch-card-bg);
+  }
+  .ch-app[data-ch-refresh='on'] .ch-sec__head ~ :not(.ch-surface) {
+    padding-inline: 16px;
+  }
+  .ch-app[data-ch-refresh='on'] .ch-sec__head + * {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+  .ch-app[data-ch-refresh='on'] .ch-sec__head ~ :last-child {
+    padding-bottom: 16px;
+    border-bottom-right-radius: var(--ch-radius-card);
+    border-bottom-left-radius: var(--ch-radius-card);
+  }
+  .ch-app[data-ch-refresh='on'] .ch-sec__head ~ .ch-surface:last-child {
+    padding-bottom: 0;
+  }
+}

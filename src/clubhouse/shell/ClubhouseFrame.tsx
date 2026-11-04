@@ -177,7 +177,7 @@ export function ClubhouseFrame({
                       <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
                         Skip to content
                       </a>
-                      <div className="ch-app" data-ch-rail={folded ? 'folded' : undefined}>
+                      <div className="ch-app" data-ch-rail={folded ? 'folded' : undefined} data-ch-refresh={shell.refresh ? 'on' : undefined}>
                         <Sidebar userData={userData} shell={shell} pathname={pathname} teamSwitch={teamSwitch} folded={folded} />
                         <RailToggle folded={folded} onFold={setFolded} />
                         <div className="ch-canvas" id="ch-canvas">
