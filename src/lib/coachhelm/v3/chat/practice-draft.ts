@@ -8,6 +8,9 @@ import { requireRosterPlayer, type CoachChatContext } from './context';
 import type { FlowDef } from './create-tools';
 import { isPracticeTabEnabled } from '../practice-plan/flag';
 import { publishPracticePlan } from '@/app/golf/actions/practice-publish';
+import { sendMessage } from '@/app/actions/messages';
+import { pluralize } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/server';
 
 const Drill = z.string().describe('A ref from get_drill_bank detail.ids, like lib:<id>. Never invent one.').nullable().optional();
 const BlockInput = z.object({
@@ -126,26 +129,43 @@ export function practiceDraftTool({ ctx, writer, envelopes, evidenceByRef }: { c
   };
 }
 
-const publishInput = z.object({ plan_id: z.string().uuid(), version: z.number().int().min(1), title: z.string().min(1).max(80), people: z.number().int().min(1).describe('Players and coaches on the plan.'), when: z.string().min(1).max(60), where: z.string().max(80).default(''), first_player_line: z.string().max(140).describe('The notification the first player gets.') });
+const initialsOf = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
+
+/** One text message in the team channel, with no second push. False when it could not post (the publish still stands); the coach must be a participant. */
+async function postPlanToTeamChat(ctx: CoachChatContext, content: string): Promise<boolean> {
+  const sb = await createClient();
+  const { data } = await sb.from('golf_conversations').select('id').eq('team_id', ctx.team_id).eq('is_team_channel', true).limit(1).maybeSingle();
+  if (!data?.id) return false;
+  const sent = await sendMessage({ conversationId: data.id, content, sport: 'golf', createNotifications: false });
+  return sent.success;
+}
+
+const publishInput = z.object({ plan_id: z.string().uuid(), version: z.number().int().min(1), title: z.string().min(1).max(80), people: z.number().int().min(1).describe('Players and coaches on the plan.'), when: z.string().min(1).max(60), where: z.string().max(80).default(''), first_player_line: z.string().max(140).describe('The notification the first player gets.'), player_ids: z.array(z.string().uuid()).max(60).default([]).describe('Roster ids of the players on the plan, the first player first.'), team_chat: z.boolean().default(true).describe('Post the plan in Team chat too. False only if the coach said not to.') });
 
 /** Publish goes on the Ask hold: nothing is written or told until Undo closes. */
 export const publishFlow: FlowDef<z.infer<typeof publishInput>> = {
   name: 'publish_practice_plan',
   description: 'Publish a saved practice plan. Files it in Documents and tells the plan\'s people. REQUIRES the coach to confirm.',
   input: publishInput,
-  plan: (_ctx, i) => {
+  plan: (ctx, i) => {
     if (i.people < 1) throw new ActionPlanError('A plan needs people to publish to.');
+    const players = i.player_ids.map((id) => requireRosterPlayer(ctx, id));
+    const coaches = Math.max(0, i.people - players.length);
+    const who = players.length ? `${pluralize(players.length, 'player')}${coaches ? ` and ${pluralize(coaches, 'coach', 'coaches')}` : ''}` : `${i.people} people`;
+    const tellsLine = `${who}, push and bell`;
+    const first = players[0];
     return {
       action: `Publish to ${i.people} people`,
       summary: i.title,
-      publish: { heading: `Publish ${i.title}?`, coins: [], tellsLine: `${i.people} people, push and bell`, folder: 'Practice plans' },
-      facts: [{ label: 'When', value: i.when }, { label: 'Where', value: i.where || 'Not set' }, { label: 'Tells', value: `${i.people} people, push and bell` }, { label: 'What they get', value: i.first_player_line }],
-      notifications: [`It files in Documents and ${i.people} people hear once Undo closes, 8 seconds later.`],
-      key: ['publish_plan', i.plan_id, String(i.version)],
+      publish: { heading: `Publish ${i.title}?`, coins: players.slice(0, 9).map((p, n) => ({ initials: initialsOf(p.name), tone: n })), tellsLine, folder: 'Practice plans', teamChat: i.team_chat, ...(first ? { sample: { player: first.name.split(' ')[0] ?? first.name, title: i.title, body: i.first_player_line } } : {}) },
+      facts: [{ label: 'When', value: i.when }, { label: 'Where', value: i.where || 'Not set' }, { label: 'Tells', value: tellsLine }, { label: 'What they get', value: i.first_player_line }],
+      notifications: [`It files in Documents and ${i.people} people hear once Undo closes, 8 seconds later.${i.team_chat ? ' The plan posts in Team chat, with no second push.' : ''}`],
+      key: ['publish_plan', i.plan_id, String(i.version), i.team_chat ? 'chat' : 'no-chat'],
     };
   },
-  run: async (_ctx, i) => {
+  run: async (ctx, i) => {
     const res = await publishPracticePlan({ planId: i.plan_id, expectedVersion: i.version, notify: 'now' });
-    return res.success ? { ok: true, summary: `Published. ${res.recipients} people told.`, kind: 'practice_plan', label: i.title, href: `/golf/dashboard/practice/plan/${i.plan_id}` } : { ok: false, error: res.error, summary: res.error, kind: 'practice_plan' };
+    const chat = res.success && i.team_chat ? await postPlanToTeamChat(ctx, `${i.title} is published. ${i.when}.`) : null;
+    return res.success ? { ok: true, summary: `Published. ${res.recipients} people told.${chat === false ? ' The Team chat post didn’t send.' : ''}`, kind: 'practice_plan', label: i.title, href: `/golf/dashboard/practice/plan/${i.plan_id}` } : { ok: false, error: res.error, summary: res.error, kind: 'practice_plan' };
   },
 };

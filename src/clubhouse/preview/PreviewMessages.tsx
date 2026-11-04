@@ -5,7 +5,7 @@ import type { ChMessagesApi } from '../screens/messages/MessagesView';
 import { MessagesView } from '../screens/messages/MessagesScreen';
 import type { ChAnnouncement, ChConv, ChFile, ChMember, ChMsg, ChMute, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
 import { useToast } from '../ui/Toast';
-import { designFiles, designLongInbox, designReadMarks, DESIGN_CONVS, DESIGN_NOW, DESIGN_PEOPLE, DESIGN_REACTIONS, DESIGN_ROUTE_CONV, DESIGN_THREADS, DESIGN_VOTES, designAttachments, designMsg, designPins, designRowTyping } from './messages-design-cast';
+import { designFiles, designLongInbox, designReadMarks, DESIGN_CONVS, DESIGN_NOW, DESIGN_PEOPLE, DESIGN_REACTIONS, DESIGN_ROUTE_CONV, designRouteFixture, DESIGN_THREADS, DESIGN_VOTES, designAttachments, designMsg, designPins, designRowTyping } from './messages-design-cast';
 
 import { usePinned } from '../screens/messages/pinned';
 import { buildPollPayload, encodeChoice, parsePollPayload, pollFallbackText, tallyPoll, type Poll, type PollResponseRow } from '@/lib/golf/message-polls';
@@ -200,7 +200,7 @@ declare global {
 export function PreviewMessages({ state, view, play, role = 'coach' }: { state?: string; view?: string; play?: string; role?: 'coach' | 'player' }) {
   const toast = useToast();
   const design = state === 'design';
-  const cast = useMemo(() => (design ? DESIGN_CAST : castOf(role)), [design, role]);
+  const cast = useMemo(() => (design ? { ...DESIGN_CAST, ...designRouteFixture(view) } : castOf(role)), [design, role, view]);
   const { people, all } = cast;
   const [convs, setConvs] = useState<ChConv[]>(state === 'empty' || (design && (view === 'empty' || view === 'loading')) ? [] : design && view === 'longinbox' ? designLongInbox(cast.convs) : cast.convs);
   const [threads, setThreads] = useState(cast.threads);
@@ -276,6 +276,26 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
       pinlimit: [rowMenu],
       seen: [click(() => el('.ch-msv-seen'))],
       votes: [named('See votes')],
+      file: [plus, () => {
+        const input = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="file"]:not([accept])')).pop();
+        if (!input) return false;
+        const picked = new DataTransfer();
+        picked.items.add(new File(['lineup'], 'Lineup · Saturday.pdf', { type: 'application/pdf' }));
+        input.files = picked.files;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
+      }],
+      // The drag's stop, held still for the shot (06 S-MSG.times).
+      times: [() => {
+        const list = el('.ch-ms-msgs');
+        if (list) list.style.transform = 'translateX(-58px)';
+        return !!list;
+      }],
+      toast: [() => {
+        if (!lastTheirs()) return false;
+        toast({ title: 'Copied' });
+        return true;
+      }],
     };
     const list = steps[view] ?? [];
     // Each step waits for what it opens: a thread and its menus mount in their own time.
@@ -285,7 +305,7 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
       if (list[at]?.()) at += 1;
     }, 400);
     return () => clearInterval(timer);
-  }, [design, view]);
+  }, [design, view, toast]);
   useEffect(() => {
     if (design || state === 'empty' || state === 'rail' || state === 'announcement') return;
     if (window.matchMedia('(min-width: 821px)').matches) setSelectedId((id) => id ?? 'team');

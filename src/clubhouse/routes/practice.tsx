@@ -32,9 +32,11 @@ export async function PlanFormatRoute() {
   const sb = await createClient();
   const ctx = await resolveCoachChatContext(sb).catch(() => null);
   if (!ctx) redirect('/golf/dashboard/calendar');
-  const [{ data: format }, { count }] = await Promise.all([
+  const [{ data: format }, { count }, { data: next }] = await Promise.all([
     practiceTables(sb).from('golf_practice_plan_formats').select('name').eq('team_id', ctx.team_id).maybeSingle(),
     practiceTables(sb).from('golf_practice_plans').select('id', { count: 'exact', head: true }).eq('team_id', ctx.team_id).not('live_version', 'is', null),
+    // S-FMT.see: the newest plan, shown in the format. A missing table reads as none, and the link stays away.
+    practiceTables(sb).from('golf_practice_plans').select('id, title').eq('team_id', ctx.team_id).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
   ]);
-  return <PlanFormat teamId={ctx.team_id} current={(format as { name?: string } | null)?.name ?? 'GolfHelm standard'} published={count ?? 0} />;
+  return <PlanFormat teamId={ctx.team_id} current={(format as { name?: string } | null)?.name ?? 'GolfHelm standard'} published={count ?? 0} see={next ? { label: `See ${(next as { title?: string }).title ?? 'your plan'} in it`, href: `/golf/dashboard/practice/plan/${(next as { id: string }).id}` } : null} />;
 }

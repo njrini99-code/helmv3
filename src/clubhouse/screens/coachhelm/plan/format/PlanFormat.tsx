@@ -58,7 +58,7 @@ function Sample({ found }: { found?: boolean }) {
 }
 
 /** Practice › Plan format (S-FMT.*): one upload sets the layout new plans use. Layout only: a drill, a time or a name in the sample never carries over. */
-export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'GolfHelm standard', published = 0, sheet: startSheet = false, picked: startPicked = null, preview = false }: { teamId?: string; initial?: FormatView; current?: string; published?: number; sheet?: boolean; picked?: { name: string; meta: string } | null; preview?: boolean }) {
+export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'GolfHelm standard', published = 0, sheet: startSheet = false, picked: startPicked = null, preview = false, see = null }: { see?: { label: string; href: string } | null; teamId?: string; initial?: FormatView; current?: string; published?: number; sheet?: boolean; picked?: { name: string; meta: string } | null; preview?: boolean }) {
   const [view, setView] = useState<FormatView>(initial);
   const [sheet, setSheet] = useState(startSheet);
   const [picked] = useState(startPicked);
@@ -183,6 +183,7 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
             </div>
           </div>
           <div className="rlinks">
+            {see && <a href={see.href}>{see.label}</a>}
             {undoOpen && (
               <button
                 type="button"

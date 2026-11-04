@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUp, Check, ChevronDown, ChevronLeft, ClipboardList, FolderClosed, Minus, Plus, X } from 'lucide-react';
+import { ArrowUp, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, FolderClosed, Minus, Plus, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
@@ -64,6 +64,16 @@ export interface PlanCardPreview {
 
 /** The preview's stand-in for taps and reads; the live thread has no provider. */
 export const PlanPreview = createContext<PlanCardPreview | null>(null);
+/** Every plan written in this conversation, oldest first: a redraft is the same plan's next version (S-ASKD). */
+export const PlanVersions = createContext<readonly PlanPartData[]>([]);
+const planKey = (p: PlanPartData) => p.eventId ?? p.title;
+const blockSig = (b: PlanBlock) => JSON.stringify({ ...b, id: undefined });
+/** The blocks this version changed from the one before: new, or different in any field. */
+function changedBlocks(before: PlanPartData | undefined, now: PlanPartData): string[] {
+  if (!before) return [];
+  const old = new Map(before.draft.body.variants.main.blocks.map((b) => [b.id, blockSig(b)]));
+  return now.draft.body.variants.main.blocks.filter((b) => old.get(b.id) !== blockSig(b)).map((b) => b.id);
+}
 
 const DEFAULT = 'Practice plans';
 const FIELD_MAX = 60;
@@ -96,7 +106,12 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
   const reduced = useChReducedMotion();
   const saveOn = !!plan.saveOn;
   const [draft, setDraft] = useState(plan.draft);
-  const [changed, setChanged] = useState<ReadonlySet<string>>(() => new Set(preview?.swapped ? [Object.keys(plan.alternatives ?? {})[0] ?? ''] : []));
+  const versions = useContext(PlanVersions).filter((p) => planKey(p) === planKey(plan));
+  const own = Math.max(0, versions.indexOf(plan));
+  const redrafted = changedBlocks(versions[own - 1], plan);
+  const [viewing, setViewing] = useState<number | null>(null);
+  const shownVersion = viewing == null || viewing === own ? null : (versions[viewing] ?? null);
+  const [changed, setChanged] = useState<ReadonlySet<string>>(() => new Set([...(preview?.swapped ? [Object.keys(plan.alternatives ?? {})[0] ?? ''] : []), ...redrafted]));
   const blocks = draft.body.variants.main.blocks;
   const total = blocks.reduce((s, b) => s + b.len, 0);
   const [folders, setFolders] = useState<Array<{ name: string; count: number }>>(preview?.folders ?? []);
@@ -192,8 +207,8 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
             <Icon icon={ClipboardList} size={18} />
           </span>
           <div className="hd">
-            <span className="t">{plan.title}</span>
-            <span className="m">{['Draft', plan.when].filter(Boolean).join(' · ')}</span>
+            <span className="t">{redrafted.length ? `Changed ${plural(redrafted.length, 'block')}` : plan.title}</span>
+            <span className="m">{['Draft', redrafted.length ? plan.title : plan.when].filter(Boolean).join(' · ')}</span>
           </div>
           {!writing && (
             <button type="button" className="btn-s" onClick={() => setFull(true)}>
@@ -638,13 +653,24 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
               {phone && 'Ask'}
             </button>
             <b>{plan.title}</b>
+            {!phone && versions.length > 0 && (
+              <span className="vsw">
+                <button type="button" aria-label="Earlier version" disabled={(viewing ?? own) <= 0} onClick={() => setViewing((viewing ?? own) - 1)}>
+                  <Icon icon={ChevronLeft} size={14} />
+                </button>
+                <span className="vl ch-num">{(viewing ?? own) + 1} of {versions.length}</span>
+                <button type="button" aria-label="Later version" disabled={(viewing ?? own) >= versions.length - 1} onClick={() => setViewing((viewing ?? own) + 1)}>
+                  <Icon icon={ChevronRight} size={14} />
+                </button>
+              </span>
+            )}
           </div>
           <div className="fbody">
             <PracticePlanSheet
               plan={toSheetModel(
                 {
-                  body: draft.body,
-                  why: draft.why,
+                  body: shownVersion?.draft.body ?? draft.body,
+                  why: shownVersion?.draft.why ?? draft.why,
                   title: plan.title,
                   team: plan.sheet?.team ?? '',
                   start: new Date(plan.sheet?.start ?? Date.now()),

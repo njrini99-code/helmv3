@@ -645,7 +645,7 @@ export default async function ClubhousePreview({
     },
     'coachhelm-ask-v2': {
       path: '/golf/dashboard/coachhelm',
-      node: <PreviewAskV2 state={state} kind={q} scene={(await searchParams as { scene?: string }).scene} stage={(await searchParams as { stage?: string }).stage} viewer={(await searchParams as { viewer?: string }).viewer} />,
+      node: <PreviewAskV2 id={(await searchParams as { id?: string }).id} state={state} kind={q} scene={(await searchParams as { scene?: string }).scene} stage={(await searchParams as { stage?: string }).stage} viewer={(await searchParams as { viewer?: string }).viewer} />,
     },
     'coachhelm-views': {
       path: '/golf/dashboard/coachhelm',

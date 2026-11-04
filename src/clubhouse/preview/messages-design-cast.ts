@@ -157,7 +157,7 @@ export const DESIGN_ROUTE_CONV: Record<string, string> = {
   details: 'eli',
   groupdetails: 'team',
   mute: 'eli',
-  fresh: 'sam',
+  fresh: 'jack',
 };
 
 /** Pins per route: the page's three, with Dana unpinned for `rowmenu` so Pin is live; none on the first run (spec section 12). */
@@ -194,3 +194,38 @@ export const designLongInbox = (convs: readonly ChConv[]): ChConv[] => [
   ...convs.map((c, i) => (i === 1 ? { ...c, title: 'Christopher Vanderhoeven-Castellanos', lastText: 'Can we move Thursday’s range session to the short course so the freshmen can see it before the qualifier?' } : c)),
   ...Array.from({ length: 14 }, (_, i) => ({ ...convs[convs.length - 1]!, id: `long-${i}`, title: `Player ${i + 1}`, unread: 0 })),
 ];
+
+const LONG_ELI = 'Eli Brandt-Vanderhoeven';
+
+/** Per-route fixture changes (06 S-MSG.thread `failed` and `long`, S-MSG.fresh): the same cast, with only what that route adds. */
+export function designRouteFixture(view?: string): { people: ChPerson[]; convs: ChConv[]; threads: Record<string, ChMsg[]> } {
+  if (view === 'failed') {
+    return {
+      people: DESIGN_PEOPLE,
+      convs: DESIGN_CONVS,
+      threads: { ...DESIGN_THREADS, eli: [...(DESIGN_THREADS.eli ?? []), msg('e10', 'me', at(16, 8, 20), 'Can you bring the scorecard to lift?', { failed: 'refused' })] },
+    };
+  }
+  if (view === 'long') {
+    const role = 'Junior · Transfer from Wake Forest';
+    return {
+      people: DESIGN_PEOPLE.map((p) => (p.userId === 'eli' ? { ...p, name: LONG_ELI, subtitle: role } : p)),
+      convs: DESIGN_CONVS.map((c) => (c.id === 'eli' ? { ...c, title: LONG_ELI, subtitle: role } : c)),
+      threads: {
+        ...DESIGN_THREADS,
+        eli: [
+          ...(DESIGN_THREADS.eli ?? []),
+          msg('e11', 'eli', at(16, 8, 22), 'Here is the whole yardage book for the back nine, with the notes from Saturday and the pin sheet we talked about: https://example.com/golf/yardage/back-nine/saturday/pin-sheet-and-notes-for-the-whole-team'),
+        ],
+      },
+    };
+  }
+  if (view === 'fresh') {
+    return {
+      people: DESIGN_PEOPLE,
+      convs: [...DESIGN_CONVS, conv('jack', { title: 'Jack Liu', subtitle: 'Freshman', lastAt: null, lastSenderId: null, lastText: '' })],
+      threads: { ...DESIGN_THREADS, jack: [] },
+    };
+  }
+  return { people: DESIGN_PEOPLE, convs: DESIGN_CONVS, threads: DESIGN_THREADS };
+}

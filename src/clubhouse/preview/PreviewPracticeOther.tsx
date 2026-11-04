@@ -21,9 +21,22 @@ const VIEWS: Record<string, FormatView> = {
   failed: { k: 'failed', message: 'That file couldn’t be read.' },
 };
 
-/** `coachhelm-practice-format?state=empty|upload|picked|reading|found|set|undone|failed`. */
+/** `coachhelm-practice-format?state=empty|upload|picked|reading|found|set|undone|failed|see`. */
 export function PreviewPracticeFormat({ state }: { state?: string }) {
-  return <PlanFormat preview published={6} initial={VIEWS[state ?? ''] ?? { k: 'empty' }} sheet={state === 'upload' || state === 'upload-sheet' || state === 'picked'} picked={state === 'picked' ? { name: FILE, meta: '1 page · 240 KB' } : null} current={state === 'set' ? 'Fall practice sheet' : 'GolfHelm standard'} />;
+  if (state === 'see') {
+    return (
+      <main className="ch-page">
+        <PracticePlanSheet plan={toSheetModel({ body: PP_PLAN_PART.draft.body, title: 'Thursday practice', team: 'Demo University Golf', start: new Date('2026-11-05T19:00:00Z'), end: new Date('2026-11-05T22:00:00Z'), zone: 'America/New_York', coaches: [], names: new Map(), state: 'Published' }, 'coach')} />
+        <div className="ch-cpv">
+          <div className="acts is-pad">
+            <button type="button" className="btn-g is-fill">Share PDF</button>
+            <button type="button" className="btn-p is-fill">Print</button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+  return <PlanFormat preview published={6} see={{ label: 'See Thursday in it', href: '/clubhouse-preview/coachhelm-practice-format?state=see' }} initial={VIEWS[state ?? ''] ?? { k: 'empty' }} sheet={state === 'upload' || state === 'upload-sheet' || state === 'picked'} picked={state === 'picked' ? { name: FILE, meta: '1 page · 240 KB' } : null} current={state === 'set' ? 'Fall practice sheet' : 'GolfHelm standard'} />;
 }
 
 const STOPS = [

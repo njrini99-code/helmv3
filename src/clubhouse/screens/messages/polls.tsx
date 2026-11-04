@@ -479,6 +479,8 @@ function PollVotesModal({
   const me = api.viewer.userId;
   const nameOf = (id: string) => (id === me ? "You" : (api.directory.find((p) => p.userId === id)?.name ?? "Member"));
   const members = new Set([me, ...(conv?.memberIds ?? [])]);
+  // MSG-VOTES-01: rows carry the person's line under the name.
+  const lineOf = (id: string) => (id === me ? "" : (api.directory.find((p) => p.userId === id)?.subtitle ?? ""));
   const order = (ids: readonly string[]) => [...ids].sort((a, b) => (a === me ? -1 : b === me ? 1 : nameOf(a).localeCompare(nameOf(b))));
   const allWaiting = tally && conv ? order(pollWaiting(tally, [me, ...conv.memberIds])) : [];
   // Redesign: "Hasn't voted" lists players, coaches left out (MSG-VOTES-01).
@@ -487,7 +489,10 @@ function PollVotesModal({
   const row = (id: string) => (
     <li key={id} className="ch-ms-pollv__row">
       <Avatar name={id === me ? api.viewer.name : nameOf(id)} size="sm" />
-      <span className="ch-ms-pollv__name">{nameOf(id)}</span>
+      <span className="ch-ms-pollv__person">
+        <span className="ch-ms-pollv__name">{nameOf(id)}</span>
+        {api.redesign && lineOf(id) ? <small className="ch-ms-pollv__line">{lineOf(id)}</small> : null}
+      </span>
       {!members.has(id) && <span className="ch-ms-pollv__left">Left the group</span>}
     </li>
   );

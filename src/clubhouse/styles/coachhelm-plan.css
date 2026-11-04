@@ -1620,3 +1620,47 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   right: 4px;
   top: 4px;
 }
+.ch-cpv-pub .tells {
+  display: block;
+}
+.ch-cpv-pub .chg {
+  min-height: 29px;
+  margin-top: 6px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ch-well-bg-flat);
+  color: var(--ch-accent);
+  font: var(--ch-type-14-strong);
+}
+.ch-cpv-chat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 16px;
+  color: var(--ch-text-primary);
+  font: var(--ch-type-15);
+}
+.ch-cpv-full .fbar .vsw {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-14);
+}
+.ch-cpv-full .fbar .vsw button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--ch-well-bg-flat);
+  color: var(--ch-text-primary);
+}
+.ch-cpv-full .fbar .vsw button:disabled {
+  opacity: 0.4;
+}

@@ -23,6 +23,7 @@ import { useToast } from '../../../ui/Toast';
 import { Tooltip } from '../../../ui/Tooltip';
 import { CoachMark } from './CoachMark';
 import { AnswerCard } from './parts/AnswerCard';
+import { PlanVersions } from '../plan/PlanCard';
 import { ConfirmCard, Receipt } from './parts/ConfirmCard';
 import type { AskArtifact } from './parts/artifacts';
 import { AskActionCard, AskReceiptCard } from './ActionCard';
@@ -98,6 +99,7 @@ export function AskThread({ v2 = false, onArtifact, messages, busy, error, offli
   const toast = useToast();
   const reduced = useChReducedMotion();
   const turns = useMemo(() => buildTurns(messages, { busy }), [messages, busy]);
+  const planVersions = useMemo(() => turns.flatMap((t) => (t.role === 'assistant' ? t.blocks.flatMap((b) => (b.kind === 'plan' ? [b.plan] : [])) : [])), [turns]);
   const names = useMemo(() => players.map((p) => p.name), [players]);
   const playersByName = useMemo(() => Object.fromEntries(players.map((p) => [p.name, p.id])), [players]);
   const pending = pendingApproval(messages);
@@ -182,6 +184,7 @@ export function AskThread({ v2 = false, onArtifact, messages, busy, error, offli
   };
 
   return (
+    <PlanVersions.Provider value={planVersions}>
     <div ref={rootRef} className={'ch-th' + (phone ? ' ch-th--phone' : '')} data-ch-code="CH-13850" data-v2={v2 ? '' : undefined}>
       <div className="ch-th-col" role="log" aria-label="Conversation">
         {turns.map((turn) => {
@@ -216,7 +219,7 @@ export function AskThread({ v2 = false, onArtifact, messages, busy, error, offli
                     );
                   }
                   if (b.kind !== 'proposal') return null;
-                  return <ConfirmCard key={b.key} view={b.view} inlineReceipt={null} onApprove={onApprove} onDeny={onDeny} />;
+                  return <ConfirmCard key={b.key} view={b.view} inlineReceipt={null} onApprove={onApprove} onDeny={onDeny} onSend={onSend} />;
                 }}
                 onArtifact={onArtifact}
                 players={players}
@@ -308,6 +311,7 @@ export function AskThread({ v2 = false, onArtifact, messages, busy, error, offli
         <div ref={endRef} className="ch-th-end" />
       </div>
     </div>
+    </PlanVersions.Provider>
   );
 }
 

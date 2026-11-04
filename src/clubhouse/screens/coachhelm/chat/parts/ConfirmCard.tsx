@@ -6,6 +6,7 @@ import type { ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { AskProposalView } from '../../../../data/coachhelm-chat-thread';
 import { askLinkHref } from '../../../../data/coachhelm-chat-links';
 import { Icon } from '../../../../ui/Icon';
+import { Switch } from '../../../../ui/Switch';
 
 const KIND: Record<string, { icon: LucideIcon; verb: (n: number) => string; busy: string; chip: string }> = {
   create_recurring_practice: { icon: CalendarPlus, verb: () => 'Add to calendar', busy: 'Adding…', chip: 'Added' },
@@ -54,7 +55,7 @@ const HEAD: Record<string, { icon: LucideIcon; title: string }> = {
 const fallback = { icon: ClipboardCheck, verb: () => 'Confirm', busy: 'Working…', chip: 'Done' };
 
 /** Kit ② to ⑤: the draft as what it will become, who hears about it, then the capsule, the receipt with 8 seconds of Undo, and the Told row. Nothing is written before the named button. */
-export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny }: { view: AskProposalView; inlineReceipt: ActionReceipt | null; onApprove: (id: string) => void; onDeny: (id: string) => void }) {
+export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend }: { view: AskProposalView; inlineReceipt: ActionReceipt | null; onApprove: (id: string) => void; onDeny: (id: string) => void; onSend?: (text: string) => void }) {
   const { proposal: p, status } = view;
   const flow = FLOWS[view.tool];
   const kind = KIND[view.tool] ?? (flow ? { icon: ClipboardCheck, verb: () => flow.verb, busy: flow.busy, chip: flow.chip } : { ...fallback, verb: () => p.action });
@@ -69,6 +70,11 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny }: { view: 
     if (pressed || !view.approvalId) return;
     setPressed(true);
     (ok ? onApprove : onDeny)(view.approvalId);
+  };
+  // A confirmed proposal is exactly what it said, so a change replaces it with a new one rather than editing this one.
+  const replaceWith = (text: string) => {
+    answer(false);
+    onSend?.(text);
   };
   return (
     <section className={'conf' + (p.publish ? ' is-pub' : '') + (receipt?.status === 'completed' ? ' flash' : '')} aria-label={p.action}>
@@ -96,7 +102,12 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny }: { view: 
                       </span>
                     ))}
                   </span>
-                  {p.publish.tellsLine}
+                  <span className="tells">{p.publish.tellsLine}</span>
+                  {undecided && onSend && (
+                    <button type="button" className="chg" onClick={() => replaceWith(`Change who hears about ${p.summary}`)}>
+                      Change
+                    </button>
+                  )}
                 </span>
               </div>
             ) : (
@@ -135,6 +146,17 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny }: { view: 
             </div>
           </div>
         )}
+      {undecided && p.publish?.teamChat !== undefined && onSend && (
+        <div className="ch-cpv-chat">
+          <span>Post the plan card in Team chat</span>
+          <Switch
+            hideLabel
+            label="Post in Team chat"
+            checked={p.publish.teamChat}
+            onChange={() => replaceWith(p.publish?.teamChat ? `Publish ${p.summary} without the Team chat post` : `Publish ${p.summary} and post it in Team chat`)}
+          />
+        </div>
+      )}
       {undecided && (
         <p className="oncf">
           <b>On confirm:</b> {p.notifications.length ? p.notifications.join(' ') : 'Nothing is sent.'}

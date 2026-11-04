@@ -5859,3 +5859,13 @@ body:has([data-ch-ms-v2]) .ch-toast {
   font: var(--ch-type-13-strong);
   color: var(--ch-text-primary);
 }
+/* MSG-VOTES-01: name over the person's line. */
+.ch-ms-pollv__person {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.ch-ms-pollv__line {
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-13);
+}
