@@ -16,6 +16,15 @@
       "env": {
         "NODE_OPTIONS": "--max-old-space-size=6144"
       }
+    },
+    {
+      "name": "clubhouse-local",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "/private/tmp/claude-501/-Users-ricknini--claude-spares-spare-styWor/1640e9e2-05f9-4bc4-b161-bb78f0dc171e/scratchpad/polish/dev-local.sh"
+      ],
+      "port": 3100,
+      "url": "http://127.0.0.1:3100"
     }
   ]
 }
