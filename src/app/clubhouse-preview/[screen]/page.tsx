@@ -213,11 +213,11 @@ export default async function ClubhousePreview({
   searchParams,
 }: {
   params: Promise<{ screen: string }>;
-  searchParams: Promise<{ refresh?: string; state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string; round?: string; ask?: string; live?: string }>;
+  searchParams: Promise<{ play?: string; refresh?: string; state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string; round?: string; ask?: string; live?: string }>;
 }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen } = await params;
-  const { refresh, state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask, live } = await searchParams;
+  const { play, refresh, state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask, live } = await searchParams;
   // The header lab (/clubhouse-preview/header-lab) renders a page with one of the hero tones.
   const heroTone = heroToneFrom(tone);
   const qDetail = (role: 'coach' | 'player') => {
@@ -475,7 +475,7 @@ export default async function ClubhousePreview({
     },
     messages: {
       path: '/golf/dashboard/messages',
-      node: state === 'loading-route' ? <MessagesSkeleton /> : <PreviewMessages state={state} />,
+      node: state === 'loading-route' ? <MessagesSkeleton /> : <PreviewMessages state={state} view={view} play={play} />,
     },
     settings: {
       path: '/golf/dashboard/settings',

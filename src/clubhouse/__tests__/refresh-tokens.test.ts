@@ -69,3 +69,24 @@ describe('pressScaleOptIn', () => {
     for (const bad of ['', 'x', '0', '1', '1.2']) expect(pressScaleOptIn(el(bad))).toBeNull();
   });
 });
+
+describe('Messages tokens (11a)', () => {
+  it.each([
+    ['light', light, '#fdfcf8'],
+    ['dark', dark, '#f4eedd'],
+  ] as const)('your bubble text reads at least 4.5:1 on its fill, %s', (_, t, ink) => {
+    expect(contrast(ink, t('--ch-bubble-mine-fill'))).toBeGreaterThanOrEqual(4.5);
+  });
+  it.each([
+    ['light', light, '#46433d'],
+    ['dark', dark, '#d0c9b8'],
+  ] as const)('names and previews read at least 4.5:1 on their bubble, %s', (_, t, ink) => {
+    expect(contrast(ink, t('--ch-bubble-theirs-bg'))).toBeGreaterThanOrEqual(4.5);
+  });
+  it.each([
+    ['light', light],
+    ['dark', dark],
+  ] as const)('typing dots, your reaction ring and the switch off ring hold 3:1 on the page, %s', (_, t) => {
+    for (const mark of ['--ch-typing-dot', '--ch-ring-own', '--ch-switch-off-ring']) expect(contrast(t(mark), t('--ch-grouped-bg'))).toBeGreaterThanOrEqual(3);
+  });
+});

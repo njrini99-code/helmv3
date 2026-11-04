@@ -14,6 +14,8 @@ export interface ChPerson {
   name: string;
   role: 'coach' | 'player';
   subtitle: string;
+  /** The coin's class year (Messages redesign); null for a coach or an unknown year. */
+  gradYear?: number | null;
   /** golf_players.id, for links to the player's stats. */
   playerId: string | null;
 }

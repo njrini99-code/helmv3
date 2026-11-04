@@ -60,6 +60,11 @@ export const CH_SPRINGS = {
   smooth: { visualDuration: CH_DUR.base, bounce: 0 },
   settle: { visualDuration: CH_DUR.base, bounce: 0.1 },
   reveal: { visualDuration: CH_DUR.reveal, bounce: 0 },
+  // Messages only, past the 0.1 cap with the owner's sign-off (31 Oct 2026: "yeah as long as it's smooth"): a sent bubble arriving,
+  // a badge or key popping, a held bubble lifting. The D-64 three above keep the base or reveal duration and a bounce of 0 to 0.1.
+  send: { visualDuration: 0.42, bounce: 0.12 },
+  pop: { visualDuration: 0.25, bounce: 0.35 },
+  lift: { visualDuration: 0.28, bounce: 0.15 },
 } as const;
 export type ChSpringKind = keyof typeof CH_SPRINGS;
 

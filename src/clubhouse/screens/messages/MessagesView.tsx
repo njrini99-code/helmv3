@@ -180,6 +180,8 @@ export interface ChAttachmentRecovery {
 }
 
 export interface ChMessagesApi {
+  /** golf_messages_redesign_v1, read on the server: the screens branch on it, and the root carries `data-ch-ms-v2`. */
+  redesign?: boolean;
   viewer: { userId: string; role: "coach" | "player"; name: string };
   /** Coaches by golf_coaches.id, for an announcement's signature (P007-A1). */
   signers?: Record<string, { name: string; title: string }>;

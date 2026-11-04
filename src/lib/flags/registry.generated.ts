@@ -557,6 +557,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Not on the day production is turned on. Retire the Fairway shell and this flag in their own reviewed change, only after every coach and player route in docs/clubhouse/SWAP_AUDIT.md has a Clubhouse destination, no local round recovery depends on Fairway, and an observation window with a known rollback deployment has passed.",
   },
   {
+    feature_id: "golf_messages_redesign_v1",
+    owner: "golf/clubhouse",
+    purpose: "The redesigned Clubhouse Messages (design-refresh/messages, PR 11a to 11h). Sets data-ch-ms-v2 on the Messages root, which scopes every new rule; the phone and desktop screens branch on it. Off, Messages renders as main: no row typing listener, no row mute read, and typing clears at 3 seconds.",
+    type: "release",
+    status: "active",
+    created_at: "2026-11-03",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Once the owner has turned it on in production, delete the old rules and --ch-bubble-mine-bg in the cleanup PR 02-PLAN names, then remove the flag.",
+  },
+  {
     feature_id: "golf_tournaments_v1",
     owner: "golf/clubhouse",
     purpose: "Draws the Clubhouse Tournaments pages (season home, event desk, review, history, comparison, link inbox, event form, lineup and live round) and their nav entry for coaches and players, and lets the tournament server actions run. Off: the routes answer not found and the nav entry is hidden.",

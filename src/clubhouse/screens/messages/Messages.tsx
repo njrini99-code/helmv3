@@ -638,6 +638,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
   }, []);
 
   const api: ChMessagesApi = {
+    redesign: data.redesign ?? false,
     viewer: { userId: data.viewerUserId, role: data.role, name: data.viewerName },
     signers: data.signers,
     timeZone: data.timeZone,

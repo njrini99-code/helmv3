@@ -5,6 +5,7 @@ import type { ChMessagesApi } from '../screens/messages/MessagesView';
 import { MessagesView } from '../screens/messages/MessagesScreen';
 import type { ChAnnouncement, ChConv, ChFile, ChMember, ChMsg, ChMute, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
 import { useToast } from '../ui/Toast';
+import { DESIGN_CONVS, DESIGN_NOW, DESIGN_PEOPLE, DESIGN_REACTIONS, DESIGN_ROUTE_CONV, DESIGN_THREADS, DESIGN_VOTES, designAttachments, designMsg } from './messages-design-cast';
 import { buildPollPayload, encodeChoice, parsePollPayload, pollFallbackText, tallyPoll, type Poll, type PollResponseRow } from '@/lib/golf/message-polls';
 
 /**
@@ -179,19 +180,54 @@ const castOf = (role: 'coach' | 'player') =>
     ? { people: playerPeople, all: playerAll, convs: playerConvs, threads: playerThreads, me: { name: 'Jonah Okafor', subtitle: 'Sophomore', role: 'player' as const } }
     : { people, all, convs: baseConvs, threads: baseThreads, me: { name: 'Maya Reyes', subtitle: 'Head coach', role: 'coach' as const } };
 
-export function PreviewMessages({ state, role = 'coach' }: { state?: string; role?: 'coach' | 'player' }) {
+const DESIGN_CAST = {
+  people: DESIGN_PEOPLE,
+  all: DESIGN_PEOPLE.map((p) => p.userId),
+  convs: DESIGN_CONVS,
+  threads: DESIGN_THREADS,
+  me: { name: 'Nick Rini', subtitle: 'Head Coach', role: 'coach' as const },
+};
+
+/** What 11g's Playwright tests drive arrivals with: preview only, never in the app bundle (only the preview imports this module). */
+declare global {
+  interface Window {
+    __chMsgFixture?: { send: (text: string) => void; incoming: (text: string) => void; typing: (on: boolean) => void };
+  }
+}
+
+export function PreviewMessages({ state, view, play, role = 'coach' }: { state?: string; view?: string; play?: string; role?: 'coach' | 'player' }) {
   const toast = useToast();
-  const cast = useMemo(() => castOf(role), [role]);
+  const design = state === 'design';
+  const cast = useMemo(() => (design ? DESIGN_CAST : castOf(role)), [design, role]);
   const { people, all } = cast;
-  const [convs, setConvs] = useState<ChConv[]>(state === 'empty' ? [] : cast.convs);
+  const [convs, setConvs] = useState<ChConv[]>(state === 'empty' || (design && view === 'empty') ? [] : cast.convs);
   const [threads, setThreads] = useState(cast.threads);
-  const [reactions, setReactions] = useState(baseReactions);
-  const [votes, setVotes] = useState<PollResponseRow[]>(baseVotes);
+  const [reactions, setReactions] = useState(design ? DESIGN_REACTIONS : baseReactions);
+  const [votes, setVotes] = useState<PollResponseRow[]>(design ? DESIGN_VOTES : baseVotes);
   // P007 D4: as the live screen does, only desktop opens the team thread beside the rail, after hydration; the phone
   // stays on the inbox instead of pushing the thread in over it.
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [fixtureTyping, setFixtureTyping] = useState(view === 'typing' || view === 'grouptyping');
+  // The design fixture opens the page's route after mount, on either width, and hands 11g its arrivals.
   useEffect(() => {
-    if (state === 'empty' || state === 'rail' || state === 'announcement') return;
+    if (!design) return;
+    const id = view ? DESIGN_ROUTE_CONV[view] : undefined;
+    if (id) setSelectedId(id);
+    const add = (senderId: string, text: string) => {
+      setSelectedId((open) => {
+        const to = open ?? 'team';
+        const m = designMsg(`fx${Date.now()}`, senderId, DESIGN_NOW, text, { seen: senderId !== 'me' });
+        setThreads((t) => ({ ...t, [to]: [...(t[to] ?? []), m] }));
+        return to;
+      });
+    };
+    window.__chMsgFixture = { send: (text) => add('me', text), incoming: (text) => add('maya', text), typing: setFixtureTyping };
+    return () => {
+      delete window.__chMsgFixture;
+    };
+  }, [design, view]);
+  useEffect(() => {
+    if (design || state === 'empty' || state === 'rail' || state === 'announcement') return;
     if (window.matchMedia('(min-width: 821px)').matches) setSelectedId((id) => id ?? 'team');
   }, [state]);
   const [anns, setAnns] = useState<ChAnnouncement[]>(state === 'empty' ? [] : baseAnns);
@@ -211,13 +247,15 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
   );
 
   const api: ChMessagesApi = {
+    // The preview forces the redesign on for the design fixture, whatever the flag says.
+    redesign: design,
     viewer: { userId: 'me', role, name: cast.me.name },
     signers: { 'c-maya': { name: 'Maya Reyes', title: 'Head coach' } },
     timeZone: TZ,
-    now: NOW,
-    teamName: 'Varsity',
+    now: design ? DESIGN_NOW : NOW,
+    teamName: design ? 'Demo University Golf' : 'Varsity',
     convs,
-    convsLoading: state === 'loading',
+    convsLoading: state === 'loading' || (design && view === 'loading'),
     convsError: state === 'failed',
     refetchConvs: () => toast({ title: 'Refreshed' }),
     drafts: drafts.current,
@@ -231,7 +269,7 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
     msgsLoading: false,
     msgsError: state === 'thread-failed',
     refetchMsgs: () => undefined,
-    typing: selectedId === 'team',
+    typing: design ? fixtureTyping : selectedId === 'team',
     onTyping: () => undefined,
     send: async (text) => {
       if (!selectedId) return false;
@@ -271,7 +309,7 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
         }
         return { ...r, [messageId]: list.filter((x) => x.count > 0) };
       }),
-    attachments: previewAttachments,
+    attachments: design ? designAttachments : previewAttachments,
     polls: {
       tally: (messageId, poll) => tallyPoll(poll, votes, messageId, 'me'),
       vote: (messageId, poll, optionIds) => {
@@ -389,5 +427,10 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
       return true;
     },
   };
-  return <MessagesView api={api} />;
+  if (!design) return <MessagesView api={api} />;
+  return (
+    <div data-ch-preview-view={view ?? 'inbox'} data-ch-preview-play={play} style={{ display: 'contents' }}>
+      <MessagesView api={api} />
+    </div>
+  );
 }
