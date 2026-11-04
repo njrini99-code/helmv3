@@ -28,8 +28,8 @@ async function installSampler(page: Page) {
       const rows: Array<{ t: number; v: Array<{ x: number; y: number; w: number; h: number; o: number } | null> }> = [];
       const t0 = performance.now();
       while (performance.now() - t0 < ms) {
-        await new Promise((r) => requestAnimationFrame(r));
-        const now = performance.now();
+        // The frame's own time, the one its animations were computed at. A callback's wall clock jitters: a late frame then a prompt one read as a 15px move in 4ms.
+        const now = await new Promise<number>((r) => requestAnimationFrame(r));
         rows.push({
           t: now,
           v: names.map((name) => {
@@ -195,9 +195,11 @@ test.describe('phone, the team thread', () => {
   test.use({ viewport: PHONE });
   test.beforeEach(async ({ page }) => {
     await installSampler(page);
-    await page.goto('/clubhouse-preview/messages?state=design', { waitUntil: 'networkidle' });
-    await page.locator('.ch-ms-row .ch-ms-row__main').first().click();
+    // The team is pinned now, so its row isn't the first; its route opens it.
+    await page.goto('/clubhouse-preview/messages?state=design&view=team', { waitUntil: 'networkidle' });
     await page.locator('.ch-ms-poll__opt').first().waitFor();
+    // The thread pins to its end as its photos and poll settle; a test that scrolled before that would be scrolled back.
+    await page.waitForTimeout(800);
   });
 
   test('5. Votes sheet: close mid-rise, reopen', async ({ page }) => {

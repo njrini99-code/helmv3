@@ -156,6 +156,16 @@ export function useSpringToEnd(scroller: RefObject<HTMLElement | null>, toEnd: (
 export function useThreadMakeRoom(scroller: RefObject<HTMLElement | null>, count: number, enabled: boolean, reduced: boolean): void {
   const height = useRef<number | null>(null);
   const seen = useRef(count);
+  // The list also grows with no render (a photo loading): that isn't room to make, so the height stays current between renders.
+  useEffect(() => {
+    const list = scroller.current?.querySelector<HTMLElement>('.ch-ms-msgs');
+    if (!enabled || !list || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => {
+      height.current = list.offsetHeight;
+    });
+    ro.observe(list);
+    return () => ro.disconnect();
+  }, [scroller, enabled]);
   useLayoutEffect(() => {
     const before = seen.current;
     seen.current = count;

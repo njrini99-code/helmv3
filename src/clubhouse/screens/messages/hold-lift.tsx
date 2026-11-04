@@ -5,6 +5,15 @@ import { createPortal } from 'react-dom';
 import { CH_FADE_MS, chSpringCurve } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 
+/** An element's box with any press scale taken out: its place at rest. */
+function atRest(el: HTMLElement | null | undefined): DOMRect | null {
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  const w = el.offsetWidth || r.width;
+  const h = el.offsetHeight || r.height;
+  return new DOMRect(r.left - (w - r.width) / 2, r.top - (h - r.height) / 2, w, h);
+}
+
 /**
  * The lift (S-MSG.hold, 07 M-MSG-10 and 11): the held bubble's copy rises over a blurred thread with a reaction bar above it and today's
  * rows below it. The real bubble hides while its copy is up. Dismissing settles the copy home, shrinks the bar and menu, fades the scrim
@@ -21,7 +30,12 @@ export function HoldLift({ messageId, mine, bar, children, onClosed, closeSignal
   holdAfterCancel.current = onReopen;
   // The running exit: a touch on the settling copy reverses every part from where it is, never a second copy (HOLD_OUT, M-MSG-11).
   const outs = useRef<Animation[]>([]);
-  const [rect] = useState<DOMRect | null>(() => document.getElementById(`ch-ms-message-${messageId}`)?.querySelector('.ch-ms-bub, .ch-ms-img')?.getBoundingClientRect() ?? null);
+  // The bubble is mid-press (scale .97): the copy takes its size at rest, or its text would wrap differently and the lift would jump.
+  const [sink] = useState(() => {
+    const el = document.getElementById(`ch-ms-message-${messageId}`)?.querySelector<HTMLElement>('.ch-ms-bub, .ch-ms-img');
+    return el && el.offsetWidth ? el.getBoundingClientRect().width / el.offsetWidth : 1;
+  });
+  const [rect] = useState<DOMRect | null>(() => atRest(document.getElementById(`ch-ms-message-${messageId}`)?.querySelector<HTMLElement>('.ch-ms-bub, .ch-ms-img')) ?? null);
   const shift = useRef(0);
   const source = useRef<HTMLElement | null>(null);
 
@@ -51,7 +65,7 @@ export function HoldLift({ messageId, mine, bar, children, onClosed, closeSignal
       for (const n of [scrim.current, copy.current, rbar.current, menu.current]) n?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: CH_FADE_MS });
     } else {
       copy.current.style.transform = to;
-      copy.current.animate([{ transform: 'none' }, { transform: to }], { duration: lift.ms, easing: lift.linear });
+      copy.current.animate([{ transform: `scale(${sink})` }, { transform: to }], { duration: lift.ms, easing: lift.linear });
       scrim.current?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 462, easing: smooth.linear });
       rbar.current?.animate([{ transform: 'scale(.5)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: pop.ms, easing: pop.linear });
       menu.current?.animate([{ transform: 'scale(.8)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: lift.ms, easing: lift.linear });
