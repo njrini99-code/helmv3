@@ -911,7 +911,7 @@ html[data-fw-theme='dark'] .ch-hr .btn.pri {
   font: var(--ch-type-14-medium); 
   color:var(--ink);
   background:var(--card);
-  border:var(--ch-hairline-w) solid var(--line);
+  border:var(--ch-hairline-w) solid var(--ch-separator);
   border-radius: var(--ch-radius-sm);
   padding:8px 8px;
   min-height:36px;
@@ -1089,8 +1089,8 @@ html[data-fw-theme='dark'] .ch-hr .btn.pri {
 }
 .ch-hr .ash .grp {
   background:color-mix(in srgb,var(--card) 94%,transparent);
-  -webkit-backdrop-filter: var(--ch-glass-blur);
-  backdrop-filter: var(--ch-glass-blur);
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur));
+  backdrop-filter: blur(var(--ch-glass-blur));
   border-radius: var(--ch-radius-md);
   overflow:hidden;
 }

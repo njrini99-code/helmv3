@@ -1,9 +1,10 @@
 'use client';
 
-import { ArrowUp, Check, ChevronDown, ChevronLeft, ClipboardList, FolderClosed, Minus, Plus } from 'lucide-react';
+import { ArrowUp, Check, ChevronDown, ChevronLeft, ClipboardList, FolderClosed, Minus, Plus, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { useChPhone } from '../../../lib/use-phone';
 import { type DrillRef, type PlanBlock, type PlanDraft } from '@/lib/coachhelm/v3/practice-plan/model';
 import { listPlanFolders, savePracticePlanDraft, undoPracticePlanDraft } from '@/app/golf/actions/coachhelm-practice-plans';
 import { FormSheet } from '../../../ui/FormSheet';
@@ -107,7 +108,9 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
   );
   const [error, setError] = useState<string | null>(preview?.phase === 'failed' ? 'Your draft is still here. Try again.' : null);
   const [sheet, setSheet] = useState(preview?.sheet ?? null);
-  const [full, setFull] = useState(!!preview?.full);
+  const phone = useChPhone();
+  // Set after mount: it portals, and the first paint must match the server's.
+  const [full, setFull] = useState(false);
   const [ask, setAsk] = useState('');
   // The card writes itself once: a card that isn't new shows whole, as does Reduce Motion.
   const [shown, setShown] = useState(() => (preview?.phase === 'writing' ? (preview.writingAt ?? 1) : fresh && !reduced ? 0 : blocks.length));
@@ -170,9 +173,18 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
     setAsk('');
     setSheet(null);
   };
+  // S-ASKD.pane: on a Mac the plan opens beside the thread once it has written, and the card in the thread goes compact.
+  const writingNow = !!writing;
+  useEffect(() => {
+    if (preview?.full || (!writingNow && window.matchMedia('(min-width: 821px)').matches)) setFull(true);
+  }, [preview?.full, writingNow]);
+  const swapSlot =
+    sheet?.kind === 'swap'
+      ? blocks.flatMap((b) => (b.kind === 'stations' ? b.stations.map((s, i) => ({ id: s.id, head: `Station ${i + 1}`, drill: s.drill })) : b.kind === 'team' ? [{ id: b.id, head: b.title, drill: b.drill }] : [])).find((s) => s.id === sheet.id)
+      : null;
   let at = 0;
   return (
-    <div className="ch-cpv" data-ch="plan-card">
+    <div className={'ch-cpv' + (phone ? '' : ' is-desk')} data-ch="plan-card">
       <section className="art">
         <header className="art-h">
           <span className="tile">
@@ -463,7 +475,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
           ))}
         </div>
       )}
-      <FormSheet open={!!open} onClose={() => setSheet(null)} title={open?.title ?? ''} actionLabel="Done" onAction={() => setSheet(null)}>
+      <FormSheet open={!!open} onClose={() => setSheet(null)} title={open?.title.split(':')[0] ?? ''} actionLabel="Done" onAction={() => setSheet(null)}>
         {open && (
           <div className="ch-cpv ch-cpv-sheet">
             <div className="grp">
@@ -548,6 +560,12 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
       </FormSheet>
       <FormSheet open={sheet?.kind === 'swap'} onClose={() => setSheet(null)} title="Swap drill" actionLabel="Done" onAction={() => setSheet(null)}>
         <div className="ch-cpv ch-cpv-sheet">
+          {swapSlot && (
+            <div className="grp is-pad">
+              <b>{swapSlot.head}</b>
+              <span>{plan.drills?.[keyOf(swapSlot.drill)]?.name ?? 'No drill yet'}</span>
+            </div>
+          )}
           {slotAlts.length === 0 ? (
             <div className="grp is-pad">Nothing in your bank fits this one.</div>
           ) : (
@@ -595,7 +613,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                       <span>{r.label}</span>
                       {r.pct != null && (
                         <span className="tr">
-                          <i className="m" style={{ width: `${r.pct}%` }} />
+                          <i className={'m' + (r.tour != null && r.tour - r.pct > 8 ? ' is-gap' : '')} style={{ width: `${r.pct}%` }} />
                           {r.tour != null && <i className="t" style={{ left: `${r.tour}%` }} />}
                         </span>
                       )}
@@ -603,6 +621,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                     </div>
                   ))}
                 </div>
+                {evidence.rows.some((r) => r.pct != null && r.tour != null) && <small className="evkey">Bar: team make rate. Tick: Tour line. Amber where the gap is over 8 points.</small>}
               </>
             ) : (
               <span>That read isn’t in this conversation any more.</span>
@@ -613,9 +632,9 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
       {full && createPortal(
         <div className="ch-cpv-full" role="dialog" aria-modal="true" aria-label={plan.title}>
           <div className="fbar">
-            <button type="button" className="back" onClick={() => setFull(false)}>
-              <Icon icon={ChevronLeft} size={18} />
-              Ask
+            <button type="button" className="back" aria-label={phone ? undefined : 'Close the plan'} onClick={() => setFull(false)}>
+              <Icon icon={phone ? ChevronLeft : X} size={18} />
+              {phone && 'Ask'}
             </button>
             <b>{plan.title}</b>
           </div>
@@ -639,7 +658,16 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
             />
           </div>
           <div className="fdock">
-            <button type="button" className="btn-p is-wide" onClick={() => { setFull(false); onSend(`Publish the plan ${plan.title}`); }}>
+            {/* Inert until the builder ships (N-00 slice 1, 02-PLAN). */}
+            <button type="button" className="btn-g" aria-disabled="true" onClick={(e) => e.preventDefault()}>
+              Edit in builder
+            </button>
+            {!phone && state.k !== 'saved' && (
+              <button type="button" className="btn-g" disabled={state.k === 'saving'} onClick={() => void save()}>
+                {state.k === 'saving' ? 'Saving…' : 'Save draft…'}
+              </button>
+            )}
+            <button type="button" className="btn-p" onClick={() => { setFull(false); onSend(`Publish the plan ${plan.title}`); }}>
               Publish…
             </button>
           </div>

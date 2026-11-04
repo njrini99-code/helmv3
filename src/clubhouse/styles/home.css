@@ -5256,7 +5256,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     border-radius: var(--ch-radius-tail);
     background: var(--ch-selected-tint);
     font: var(--ch-type-13-strong);
-    color: var(--ch-accent-text);
+    color: var(--ch-accent);
   }
   .ch-dh-rows--agenda li > .ch-hm-now {
     margin-inline-start: auto;

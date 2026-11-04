@@ -138,6 +138,7 @@ export const publishFlow: FlowDef<z.infer<typeof publishInput>> = {
     return {
       action: `Publish to ${i.people} people`,
       summary: i.title,
+      publish: { heading: `Publish ${i.title}?`, coins: [], tellsLine: `${i.people} people, push and bell`, folder: 'Practice plans' },
       facts: [{ label: 'When', value: i.when }, { label: 'Where', value: i.where || 'Not set' }, { label: 'Tells', value: `${i.people} people, push and bell` }, { label: 'What they get', value: i.first_player_line }],
       notifications: [`It files in Documents and ${i.people} people hear once Undo closes, 8 seconds later.`],
       key: ['publish_plan', i.plan_id, String(i.version)],

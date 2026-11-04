@@ -62,7 +62,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny }: { view: 
     (ok ? onApprove : onDeny)(view.approvalId);
   };
   return (
-    <section className={'conf' + (receipt?.status === 'completed' ? ' flash' : '')} aria-label={p.action}>
+    <section className={'conf' + (p.publish ? ' is-pub' : '') + (receipt?.status === 'completed' ? ' flash' : '')} aria-label={p.action}>
       <div className="hd">
         <span className="ico">
           <Icon icon={kind.icon} size={17} />
@@ -71,7 +71,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny }: { view: 
           <b>{p.publish ? p.publish.heading : p.action}</b>
           {!(p.publish && receipt) && <span>{p.summary}</span>}
         </span>
-        <span className={'dchip' + (receipt?.status === 'completed' ? ' ok' : '')}>{receipt?.status === 'completed' ? kind.chip : 'Draft'}</span>
+        {!(p.publish && receipt?.status !== 'completed') && <span className={'dchip' + (receipt?.status === 'completed' ? ' ok' : '')}>{receipt?.status === 'completed' ? kind.chip : 'Draft'}</span>}
       </div>
       <div className={'evd' + (cancelled ? ' dim' : '')}>
         <div className="ls">
@@ -137,7 +137,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny }: { view: 
             Cancel
           </button>
           <button type="button" className={'p' + (pressed ? ' cap' : '')} data-ch-press="" disabled={pressed || !view.approvalId || p.missing.length > 0} onClick={() => answer(true)}>
-            {pressed ? kind.busy : kind.verb(count)}
+            {pressed ? kind.busy : p.publish ? p.action : kind.verb(count)}
           </button>
         </div>
       )}

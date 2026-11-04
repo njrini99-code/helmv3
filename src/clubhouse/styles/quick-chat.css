@@ -338,7 +338,7 @@ html[data-fw-theme='dark'] .ch-qcs {
 .ch-qcs .cmp__hint { display: flex; justify-content: center; gap: 12px; padding: 8px 0 0; font: var(--ch-type-13);  color: var(--a-ink-2); }
 .ch-qcs .cmp__hint kbd { font: var(--ch-type-11-medium); font-family: var(--ch-font-mono); letter-spacing: var(--ch-track-11); padding: 2px 4px; border-radius: var(--ch-radius-xs); background: var(--a-well); box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--a-sep); color: var(--a-ink-2); }
 .ch-qcs.is-phone .cmp__hint { display: none; }
-.ch-qcs .qc { background: var(--a-pglass); -webkit-backdrop-filter: var(--ch-glass-blur); backdrop-filter: var(--ch-glass-blur); box-shadow: var(--ch-qc-shadow-14); }
+.ch-qcs .qc { background: var(--a-pglass); -webkit-backdrop-filter: blur(var(--ch-glass-blur)); backdrop-filter: blur(var(--ch-glass-blur)); box-shadow: var(--ch-qc-shadow-14); }
 .ch-qcs.is-phone .qc { left: 10px; right: 10px; top: 104px; height: 700px; border-radius: var(--ch-radius-xl); }
 .ch-qcs .scrim { background: var(--a-veil); }
 .ch-qcs.is-desk .qc { width: 432px; right: 14px; top: 62px; height: 640px; border-radius: var(--ch-radius-xl); }

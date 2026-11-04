@@ -335,7 +335,7 @@ html[data-fw-theme='dark'] .ch-th[data-v2] {
 }
 .ch-ak-home .sugg svg {
   flex: none;
-  color: var(--ch-accent-text);
+  color: var(--ch-accent);
 }
 .ch-ak-home .sugg span {
   flex: 1;
@@ -394,4 +394,19 @@ html[data-fw-theme='dark'] .ch-th[data-v2] {
 .ch-ak-hs .hsr span {
   font: var(--ch-type-13);
   color: var(--ch-text-secondary);
+}
+/* A publish confirm reads as flat rows between hairlines (S-ASK.publish-confirm). */
+.ch-th[data-v2] .conf.is-pub .evd {
+  margin: 0 16px;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-th[data-v2] .conf.is-pub .evd .f {
+  padding: 8px 0;
+  border-bottom: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-th[data-v2] .evd .f.ch-cpv-pub .v {
+  display: block;
 }
