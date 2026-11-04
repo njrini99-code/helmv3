@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { plural } from '../../../lib/plural';
 import type { ChReadView } from '../../../data/coachhelm-read-view-shape';
 import type { ChViewVoice } from '../../../data/coachhelm-views-shape';
 
@@ -11,7 +12,7 @@ export function ReadsRail({ view, current, voice, hrefOf }: { view: ChReadView; 
       <div className="ch-hr-railh">
         <b>{voice.role === 'coach' ? voice.name : 'Your reads'}</b>
         <span>
-          {view.counts.insights} reads · {view.counts.needs} need work
+          {plural(view.counts.insights, 'read')} · {view.counts.needs} need work
         </span>
       </div>
       {view.rail.map((g) => (

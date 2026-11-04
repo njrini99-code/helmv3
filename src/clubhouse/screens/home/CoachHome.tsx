@@ -56,7 +56,7 @@ function CoachHomeBody({ data, now, live, crh = false }: { data: ChCoachHome; no
   if (crh)
     return (
       <main className="ch-h-main ch-h-main--desk" data-canopy="" data-ch-crh="on">
-        <header className="ch-h-herocard" data-canopy-head="">
+        <header className="ch-h-herocard">
           <div>
             <span className="ch-h-head__date">{data.todayLabel}</span>
             <h1 className="ch-display">{data.greeting}</h1>

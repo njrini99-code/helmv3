@@ -1,5 +1,5 @@
 'use client';
-import { pluralWord } from '../../../lib/plural';
+import { plural } from '../../../lib/plural';
 
 import { formatSigned } from '../../../lib/format';
 import { STATIONS, type ChStation, type ChTeamBoardData } from '../../../data/coachhelm-team-shape';
@@ -19,7 +19,7 @@ export function StationControl({
   courseReads: number;
   courseTab: boolean;
 }) {
-  const words = courseReads === 0 ? 'No reads' : pluralWord(courseReads, '1 read', '${courseReads} reads');
+  const words = courseReads === 0 ? 'No reads' : plural(courseReads, 'read');
   return (
     <div className="stchips" role="group" aria-label="Spots on the hole, and Course" style={courseTab ? undefined : { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
       {STATIONS.map((s) => {

@@ -5073,3 +5073,14 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   background: var(--ch-card-bg);
   box-shadow: var(--ch-card-shadow);
 }
+/* Team scoring in the lane's narrower column: figures over the chart, flat (SHARED-2), not today's three tracks. */
+@media (min-width: 821px) {
+  .ch-h-main[data-ch-crh='on'] .ch-h-grid .ch-h-form {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    margin: 0;
+    padding: 16px;
+    border-radius: var(--ch-radius-card);
+    background: var(--ch-feature-bg, var(--ch-frame));
+  }
+}
