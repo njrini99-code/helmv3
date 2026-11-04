@@ -47,7 +47,14 @@ export interface ProposalFact {
  * every recipient count, every notification that will fire is on the card. If a
  * field could surprise someone afterwards, it belongs in `facts`.
  */
+export type TaskVisual =
+  | { kind: 'cal'; date: string; start: string | null; end: string | null; title: string; where: string | null; who: string; rsvp: boolean }
+  | { kind: 'msg'; conversationId: string; thread: string; count: number; last: string | null; draft: string }
+  | { kind: 'qual'; title: string; rounds: number; start: string; total: number; picks: number; field: number; deadline: string | null };
+
 export interface ActionProposal {
+  /** What the quick chat draws in the card. Every value here is also in `facts`. */
+  visual?: TaskVisual;
   /** Human-readable action, e.g. 'Create a recurring practice'. */
   action: string;
   /** One-sentence plain-language summary of the effect. */

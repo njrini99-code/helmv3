@@ -1,5 +1,6 @@
 'use client';
 
+import { useQuickChatRun } from '../../../shell/quick-chat/QuickChatProvider';
 import { AskKnowsPanel } from './parts/KnowsPanel';
 import { AllowanceMeter, PlayerOut } from './parts/Allowance';
 import { ArtifactView } from './parts/Artifact';
@@ -163,12 +164,15 @@ function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatI
     window.history.replaceState(window.history.state, '', `${COACHHELM_HREF.ask}&c=${id}`);
   }, []);
 
-  const chat = useChatImpl({
+  const run = useQuickChatRun();
+  const own = useChatImpl({
     conversationId: data.notFound ? null : (data.thread?.id ?? null),
     initialMessages: data.thread?.messages,
     // The hook calls this while it updates its own state: adopt the id after that render, not inside it.
     onConversationId: (id) => queueMicrotask(() => adopt(id)),
   });
+  // The quick chat's run stays alive across the route: its thread renders from it until the run ends, then the loader takes over (05 S-PANEL.full).
+  const chat = run?.busy && run.conversationId && run.conversationId === data.thread?.id ? run : own;
 
   const out = data.allowance === 'out' || chat.messages.some((m) => m.parts.some((p) => p.type === 'data-allowance'));
   const pending = pendingApproval(chat.messages);

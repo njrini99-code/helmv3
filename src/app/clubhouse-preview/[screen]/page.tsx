@@ -227,6 +227,7 @@ export default async function ClubhousePreview({
 }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen } = await params;
+  const qc = (await searchParams as { qc?: string }).qc;
   const { station, refresh, state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask, live } = await searchParams;
   // The header lab (/clubhouse-preview/header-lab) renders a page with one of the hero tones.
   const heroTone = heroToneFrom(tone);
@@ -653,7 +654,7 @@ export default async function ClubhousePreview({
         userData={screen === 'coachhelm-player' || screen === 'coachhelm-views' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : user}
         // &round=1: the player has a round in progress (P001-C1: the dock's Resume accessory, the sidebar's card).
         // &refresh=on: the refresh foundation (clubhouse_refresh_v1), for lane captures; the flag itself stays off.
-        shell={{ ...PREVIEW_SHELL, ...(round ? { roundInProgress: PREVIEW_ROUND_IN_PROGRESS } : {}), ...(refresh === 'on' ? { refresh: true } : {}) }}
+        shell={{ ...PREVIEW_SHELL, ...(round ? { roundInProgress: PREVIEW_ROUND_IN_PROGRESS } : {}), ...(qc ? { quickChat: true, askAvailable: true } : {}), ...(refresh === 'on' ? { refresh: true } : {}) }}
         pathname={entry.path}
         // The preview's own query, as the live shell hands the frame the address's: `&section=` and a coach's `&player=` decide the phone bar (CH-1402).
         search={new URLSearchParams(Object.entries(await searchParams).filter((kv): kv is [string, string] => typeof kv[1] === 'string')).toString()}

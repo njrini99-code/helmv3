@@ -336,6 +336,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Remove once the coach Deep dive dossier is retired.",
   },
   {
+    feature_id: "coachhelm_quick_chat_v1",
+    owner: "golf/coachhelm",
+    purpose: "The top-bar Helm key and Glass quick chat. Off renders today's sparkle Ask sheet.",
+    type: "release",
+    status: "active",
+    created_at: "2026-11-04",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Remove once the coach Deep dive dossier is retired.",
+  },
+  {
     feature_id: "coachhelm_read_v1",
     owner: "golf/coachhelm",
     purpose: "The CoachHelm read as its own view (?view=read): the funnel, the cause state, how sure, how it moved, the rounds and what to do, from evidence already stored. Read only, no new writes. Off: every link keeps today's address and view=read falls through to the board.",

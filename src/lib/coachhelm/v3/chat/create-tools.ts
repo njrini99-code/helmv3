@@ -1,5 +1,7 @@
 import 'server-only';
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
+import { sendGolfMessage } from '@/app/actions/messages';
 import { createGolfEvent } from '@/app/golf/actions/calendar-events';
 import { createGolfTravelItinerary } from '@/app/golf/actions/travel';
 import { createGolfQualifier } from '@/app/golf/actions/qualifier-actions';
@@ -23,7 +25,7 @@ export interface FlowDef<I> {
   name: string;
   description: string;
   input: z.ZodType<I>;
-  plan: (ctx: CoachChatContext, input: I) => { facts: ProposalFact[]; action: string; summary: string; notifications: string[]; affects?: ActionProposal['affects']; key: Array<string | number> };
+  plan: (ctx: CoachChatContext, input: I) => { visual?: ActionProposal['visual']; facts: ProposalFact[]; action: string; summary: string; notifications: string[]; affects?: ActionProposal['affects']; key: Array<string | number> };
   run: (ctx: CoachChatContext, input: I) => Promise<{ ok: boolean; error?: string; summary: string; href?: string; kind: string; label?: string; notifications?: ActionReceipt['notifications'] }>;
 }
 
@@ -62,6 +64,7 @@ const eventFlow: FlowDef<z.infer<typeof eventInput>> = {
     if (!i.all_day && i.end! <= i.start!) throw new ActionPlanError('The end has to be after the start.');
     const who = names(ctx, i.invite_player_ids);
     return {
+      visual: { kind: 'cal', date: i.date, start: i.all_day ? null : (i.start ?? null), end: i.all_day ? null : (i.end ?? null), title: i.title, where: i.location ?? null, who: who.length ? `${who.length} players` : 'Not asked', rsvp: i.requires_rsvp },
       action: 'Add to calendar',
       summary: i.title,
       facts: [fact('When', i.all_day ? `${i.date}, all day` : `${i.date}, ${i.start} to ${i.end}`, false), fact('Type', i.event_type, false), fact('Where', i.location), fact('Invited', who.length ? who.join(', ') : null), fact('Replies', i.requires_rsvp ? 'Asked for' : 'Not asked for')],
@@ -105,6 +108,7 @@ const qualifierFlow: FlowDef<z.infer<typeof qualifierInput>> = {
     if (i.selection_slots_coach_pick > i.selection_slots_total) throw new ActionPlanError('Coach picks can’t be more than the squad.');
     const who = names(ctx, i.player_ids);
     return {
+      visual: { kind: 'qual', title: i.name, rounds: i.num_rounds, start: i.start_date, total: i.selection_slots_total, picks: i.selection_slots_coach_pick, field: who.length, deadline: null },
       action: 'Set qualifier',
       summary: i.name,
       facts: [fact('Starts', i.start_date, false), fact('Rounds', i.num_rounds, false), fact('Squad', `${i.selection_slots_total}, coach picks ${i.selection_slots_coach_pick}`, false), fact('Players', who.join(', '), false), fact('Rules', i.rules)],
@@ -243,7 +247,38 @@ const recruitFlow: FlowDef<z.infer<typeof recruitInput>> = {
   },
 };
 
-export const CREATE_FLOWS: ReadonlyArray<FlowDef<never>> = [eventFlow, tripFlow, qualifierFlow, goalFlow, noteFlow, blockFlow, breakFlow, termFlow, availFlow, recruitFlow] as unknown as ReadonlyArray<FlowDef<never>>;
+const messageInput = z.object({
+  conversation_id: z.string().uuid().describe('From find_thread, only when exactly one thread matched.'),
+  thread: z.string().min(1).max(120),
+  member_count: z.number().int().min(1),
+  last_message: z.string().max(500).optional(),
+  content: z.string().min(1).max(2000),
+});
+const messageFlow: FlowDef<z.infer<typeof messageInput>> = {
+  name: 'send_message',
+  description: 'Draft a message to one thread the coach is in, found with find_thread. It sends only after the coach presses Send and an 8 second Undo. REQUIRES the coach to confirm.',
+  input: messageInput,
+  plan: (_ctx, i) => ({
+    visual: { kind: 'msg', conversationId: i.conversation_id, thread: i.thread, count: i.member_count, last: i.last_message ?? null, draft: i.content },
+    action: `Send to ${i.member_count} ${i.member_count === 1 ? 'player' : 'players'}`,
+    summary: i.thread,
+    facts: [fact('Thread', i.thread, false), fact('Message', i.content, false)],
+    notifications: [`Sends as you to ${i.member_count} ${i.member_count === 1 ? 'player' : 'players'} in ${i.thread}, after an 8 second Undo.`],
+    key: ['message', i.conversation_id, i.content],
+  }),
+  run: async (_ctx, i) => {
+    // The client id is the hash of what's being sent, so a second release hits the 23505 path and returns the first message.
+    const res = await sendGolfMessage(i.conversation_id, i.content, stableMessageId(i.conversation_id, i.content));
+    return { ok: !!res?.success, error: res?.success ? undefined : 'That didn’t send. Nothing was delivered.', summary: `Sent to ${i.thread}.`, kind: 'message', label: i.thread, href: `/golf/dashboard/messages?conversation=${i.conversation_id}` };
+  },
+};
+
+function stableMessageId(conversationId: string, content: string): string {
+  const hex = createHash('sha256').update(`${conversationId}:${content}`).digest('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+}
+
+export const CREATE_FLOWS: ReadonlyArray<FlowDef<never>> = [messageFlow, eventFlow, tripFlow, qualifierFlow, goalFlow, noteFlow, blockFlow, breakFlow, termFlow, availFlow, recruitFlow] as unknown as ReadonlyArray<FlowDef<never>>;
 export const LINEUP_FLOWS: ReadonlyArray<FlowDef<never>> = [lineupFlow, lockFlow] as unknown as ReadonlyArray<FlowDef<never>>;
 export const CREATE_TOOL_NAMES: readonly string[] = [...CREATE_FLOWS, ...LINEUP_FLOWS].map((f) => f.name);
 

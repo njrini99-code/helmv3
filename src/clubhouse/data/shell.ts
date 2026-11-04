@@ -47,6 +47,8 @@ export interface ChShellData {
   course?: { lat: number; lng: number } | null;
   /** CoachHelm is on for the signed-in coach (the global, team and coach switches), so the shell offers the Ask sheet. */
   askAvailable?: boolean;
+  /** The top-bar Helm key and Glass quick chat (coachhelm_quick_chat_v1), on top of `askAvailable`. */
+  quickChat?: boolean;
   /** The signed-in player's round in progress, touched in the last 12 hours (P001-C1): the Resume accessory. */
   roundInProgress?: ChRoundInProgress | null;
   /** The signed-in coach is this team's head coach: the identity line says "Head coach". False when unread (plain "Coach"). */
@@ -265,6 +267,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     ...(coachId ? { overdueTasks } : {}),
     timezone,
     askAvailable: askOn,
+    quickChat: askOn && isFlagEnabled('coachhelm_quick_chat_v1'),
     classAwareness: isFlagEnabled('class_awareness_v1'),
     course: courseOf(courseRes),
     roundInProgress: round && playerId ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null, toPar: toParOf(round.golf_holes ?? []), playerId } : null,

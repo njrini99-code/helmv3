@@ -9,7 +9,7 @@ import type { Transition } from 'motion/react';
  *   2026-10-01, so a page is visible at once under the page crossfade).
  *   Curves: ease-out (.22,1,.36,1), in-out (.65,0,.35,1), spring (.34,1.3,.64,1). Since 2026-10-08, real springs
  *   on the same durations for what moves and can be interrupted or thrown (CH_SPRINGS, below).
- * Banned: count-ups and staggers. One exception (owner decision 1, 2026-10-24, OQ-16 / B9): when a chart's figures change
+ * Banned: count-ups and staggers, except the quick chat's content rise on open and its told coins (coachhelm 07 M-CONTENT, M-TOLD). One exception (owner decision 1, 2026-10-24, OQ-16 / B9): when a chart's figures change
  * (a new window), its bars, dots and lines glide to their new places over the base beat (useGlide, lib/motion-glide.ts).
  * Never on first paint, never under reduced motion, and the digits beside them do not roll: they take the new figure at once.
  */
@@ -65,7 +65,11 @@ export const CH_SPRINGS = {
   send: { visualDuration: 0.42, bounce: 0.12 },
   pop: { visualDuration: 0.25, bounce: 0.35 },
   lift: { visualDuration: 0.28, bounce: 0.15 },
+  /** The quick chat panel pouring out of the Helm key (2026-10-31): a native sheet's settle, no bounce. */
+  pour: { visualDuration: 0.42, bounce: 0 },
 } as const;
+/** The iOS sheet curve: the quick chat's close, live pill out, and the down half of press dips. */
+export const CH_EASE_SHEET = [0.32, 0.72, 0, 1] as const;
 export type ChSpringKind = keyof typeof CH_SPRINGS;
 
 /** framer's own reading of a visual duration and a bounce (motion-dom spring.mjs): ω = 2π / (1.2 × duration), ζ = 1 − bounce. */

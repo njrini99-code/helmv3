@@ -1,6 +1,8 @@
 import 'server-only';
 import { tool, type ToolSet, type UIMessageStreamWriter } from 'ai';
 import { z } from 'zod';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/types/database';
 import type { CoachChatContext } from './context';
 import { DraftBoardInput } from './create-tools';
 
@@ -24,9 +26,18 @@ const BriefInput = z.object({
 /**
  * Tools that write nothing: the practice brief asks, and the board hands a draft to Messages. Neither is confirm-gated because neither has a write to gate (02 §14.3). `draft_poll` is not registered: it stays off until held `20261028140800` is applied.
  */
-export function askDraftTools({ ctx, writer }: { ctx: CoachChatContext; writer: UIMessageStreamWriter }): ToolSet {
+export function askDraftTools({ sb, ctx, writer }: { sb: SupabaseClient<Database>; ctx: CoachChatContext; writer: UIMessageStreamWriter }): ToolSet {
   let n = 0;
   return {
+    find_thread: tool({
+      description: 'Find a thread the coach is in by its title. Exactly one match: use its id with send_message. Zero or several: ask the coach, never pick.',
+      inputSchema: z.object({ title: z.string().min(1).max(120) }),
+      execute: async ({ title }) => {
+        const { data, error } = await sb.from('golf_conversations').select('id, title, golf_conversation_participants(user_id)').eq('team_id', ctx.team_id).ilike('title', title.replace(/[%_]/g, '')).limit(5);
+        if (error) return { status: 'failed', message: 'Could not read your threads.' };
+        return { status: 'ok', matches: (data ?? []).map((c) => ({ id: c.id, title: c.title, members: Math.max(0, (c.golf_conversation_participants?.length ?? 1) - 1) })) };
+      },
+    }),
     ask_practice_brief: tool({
       description: 'Ask the coach up to four questions before building a practice plan. Never ask what a read already answered; give each option\'s source in `hint` and put the read\'s default in `pick`. Their answers come back as the next user turn. Writes nothing.',
       inputSchema: BriefInput,

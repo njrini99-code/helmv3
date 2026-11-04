@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
 import { isAskV2Enabled } from '@/lib/coachhelm/v3/chat/ask-flag';
+import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
 
 const FACT_MAX = 280;
 
@@ -42,4 +43,34 @@ export async function setChatTone(conversationId: string, tone: 'straight' | 'de
   if (!who || !isAskV2Enabled()) return { success: false, error: 'Unauthorized' };
   const { error } = await fromUntyped(who.sb, 'golf_coachhelm_chat_conversations').update({ tone } as never).eq('id', conversationId).eq('coach_id', who.id);
   return error ? { success: false, error: 'The tone wasn’t saved.' } : { success: true };
+}
+
+export interface QuickChatWeek {
+  days: Array<{ date: string; hasEvent: boolean }>;
+  items: Array<{ title: string; start: string; end: string | null }>;
+}
+
+/** The week around a draft event and that day's blocks, for the quick chat's card. RLS holds it to the coach's team. */
+export async function readQuickChatWeek(date: string): Promise<QuickChatWeek | null> {
+  const who = await coach();
+  if (!who || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  const ctx = await resolveCoachChatContext(who.sb).catch(() => null);
+  if (!ctx) return null;
+  const teamId = ctx.team_id;
+  const at = new Date(`${date}T12:00:00Z`);
+  const monday = new Date(at);
+  monday.setUTCDate(at.getUTCDate() - ((at.getUTCDay() + 6) % 7));
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setUTCDate(monday.getUTCDate() + i);
+    return iso(d);
+  });
+  const { data, error } = await who.sb.from('golf_events').select('title, start_time, end_time').eq('team_id', teamId).gte('start_time', `${days[0]}T00:00:00Z`).lte('start_time', `${days[6]}T23:59:59Z`).order('start_time');
+  if (error) return null;
+  const rows = data ?? [];
+  return {
+    days: days.map((d) => ({ date: d, hasEvent: rows.some((r) => r.start_time.startsWith(d)) })),
+    items: rows.filter((r) => r.start_time.startsWith(date)).map((r) => ({ title: r.title, start: r.start_time, end: r.end_time })),
+  };
 }

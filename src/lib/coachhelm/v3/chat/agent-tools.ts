@@ -522,7 +522,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
     toolName: f.name,
     plan: (input) => {
       const d = f.plan(ctx, input);
-      const proposal: ActionProposal = { action: d.action, summary: d.summary, facts: d.facts, affects: d.affects ?? [], notifications: d.notifications, missing: d.facts.filter((x) => x.missing).map((x) => x.label), idempotency_key: keyOf(d.key) };
+      const proposal: ActionProposal = { visual: d.visual, action: d.action, summary: d.summary, facts: d.facts, affects: d.affects ?? [], notifications: d.notifications, missing: d.facts.filter((x) => x.missing).map((x) => x.label), idempotency_key: keyOf(d.key) };
       return { plan: input, proposal };
     },
     run: async (input) => {
@@ -680,7 +680,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
     // Ask v2's create flows, each on the same gate: nothing writes before the named button, and nothing is told until Undo closes.
     ...(askV2 ? Object.fromEntries((isFlagEnabled('golf_tournaments_v1') ? [...CREATE_FLOWS, ...LINEUP_FLOWS] : CREATE_FLOWS).map((f) => [f.name, flowTool(f)])) : {}),
 
-    ...(askV2 ? askDraftTools({ ctx, writer }) : {}),
+    ...(askV2 ? askDraftTools({ sb, ctx, writer }) : {}),
 
     // Ask v2's reads: only with `coachhelm_ask_v2` and Clubhouse on for the team, so Fairway's tool set is what it was.
     ...(askV2
