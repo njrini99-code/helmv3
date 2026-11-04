@@ -21,3 +21,14 @@ Actions:        none; no route calls the loader yet
 Data impact:    `course_id` added to `ROUND_COLUMNS`
 Held items:     none
 ```
+
+## 2026-11-03 — CT1: route, shell and the hole at rest
+
+```text
+Design package: design-refresh/coachhelm-team/ (CT1)
+PR/commit:      agent/ct1-hole
+Contract IDs:   none
+Actions:        none
+Data impact:    the route calls loadCoachTeamBoard with the flag on; off everywhere
+Held items:     none
+```

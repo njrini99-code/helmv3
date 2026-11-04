@@ -5,6 +5,10 @@ import { pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { isTrackRecordEnabled } from '@/lib/coachhelm/v3/track-record/flag';
 import { isMondayBriefEnabled } from '@/lib/coachhelm/v3/monday-brief/flag';
+import { COURSE_TAB, isTeamBoardEnabled, TEAM_BOARD_FIRST_VIEW } from '@/lib/coachhelm/v3/team-board/flag';
+import { loadCoachTeamBoard } from '../data/coachhelm-team';
+import { TeamBoard } from '../screens/coachhelm/team/TeamBoard';
+import { TeamBoardSkeleton } from '../screens/coachhelm/team/TeamBoardSkeleton';
 import { emptyCoachHelm, loadCoachCoachHelm, loadCoachHelmGate, loadPlayerCoachHelm, loadPlayerHelmGate } from '../data/coachhelm';
 import { loadAskCoachHelm } from '../data/coachhelm-chat';
 import { loadCoachPlayerDeepDive, loadCoachPlayerGame, loadCoachPlayerScope, loadCoachPlayerStanding, type ChCoachPlayerScope } from '../data/coachhelm-player';
@@ -39,6 +43,7 @@ import '../styles/coachhelm-standing.css';
 import '../styles/coachhelm-dive.css';
 import '../styles/coachhelm-track.css';
 import '../styles/coachhelm-brief.css';
+import '../styles/coachhelm-team.css';
 
 /**
  * /golf/dashboard/coachhelm in Clubhouse, for coaches and players (the Fairway
@@ -58,6 +63,7 @@ import '../styles/coachhelm-brief.css';
 
 /** The coach's Board or Ask. The Board's loader checks the CoachHelm gate itself; Ask's is checked here, before its read. */
 async function CoachHelmView({ coachId, teamId, ask, conversationId, initialPlayer }: { coachId: string; teamId: string; ask: boolean; conversationId?: string; initialPlayer?: string }) {
+  if (!ask && isTeamBoardEnabled() && TEAM_BOARD_FIRST_VIEW === 'hole') return <TeamBoard data={await loadCoachTeamBoard({ coachId, teamId })} initialPlayer={initialPlayer} courseTab={COURSE_TAB} />;
   if (!ask) return <CoachBoard data={await loadCoachCoachHelm({ coachId, teamId })} initialPlayer={initialPlayer} trackRecordHref={isTrackRecordEnabled() ? COACH_TRACK_RECORD_HREF : undefined} briefHref={isMondayBriefEnabled() ? COACH_BRIEF_HREF : undefined} />;
   // Ask is CoachHelm's, so it is off when CoachHelm is off for this coach, their team or GolfHelm, as the board is: the
   // address that led here is answered with the board's own "CoachHelm is off" page, and a lookup that failed with Ask's own
@@ -216,7 +222,7 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, sectio
     // The Ask sub-tab is the coach's alone: a player's `?view=ask` falls through to their own board below.
     const ask = view === 'ask';
     return (
-      <Suspense fallback={ask ? <AskSkeleton chained /> : <CoachHelmSkeleton view="coach" chained />}>
+      <Suspense fallback={ask ? <AskSkeleton chained /> : isTeamBoardEnabled() && TEAM_BOARD_FIRST_VIEW === 'hole' ? <TeamBoardSkeleton /> : <CoachHelmSkeleton view="coach" chained />}>
         <CoachHelmView coachId={team.coachId} teamId={team.teamId} ask={ask} conversationId={c} initialPlayer={player} />
       </Suspense>
     );
