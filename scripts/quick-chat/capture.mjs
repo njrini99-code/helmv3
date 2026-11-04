@@ -1,3 +1,4 @@
+/* global document, window, MutationObserver */
 // Fidelity shots and motion clips for the CoachHelm quick chat: design page and app, state by state, side by side.
 //
 // Run on the Mac from the helmv3 repo root (it has Playwright). No sign-in: the app side uses the preview route
@@ -132,7 +133,7 @@ async function shootDesign(browser, r, theme) {
 
 // App: the preview fixture, themed the way the other packages do, Text Size through --ch-type-scale.
 const themeInit = (theme) => {
-  try { localStorage.setItem('golf_theme', theme); } catch {}
+  try { localStorage.setItem('golf_theme', theme); } catch { /* best effort: the capture goes on */ }
   const h = document.documentElement;
   const set = () => { if (h.getAttribute('data-fw-theme') !== theme) h.setAttribute('data-fw-theme', theme); };
   set(); new MutationObserver(set).observe(h, { attributes: true });
@@ -207,7 +208,7 @@ async function motion(browser, which) {
         });
         const video = page.video();
         await ctx.close();
-        if (video) { try { renameSync(await video.path(), join(CLIPS_DIR, name + '.webm')); } catch {} }
+        if (video) { try { renameSync(await video.path(), join(CLIPS_DIR, name + '.webm')); } catch { /* best effort: the capture goes on */ } }
       }
     }
   }
