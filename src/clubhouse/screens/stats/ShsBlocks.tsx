@@ -117,7 +117,7 @@ const SPAN: Readonly<Record<string, number>> = { 'Scoring avg': 12, 'Greens in r
 export function AgainstBefore({ compare, rows, how, previous }: { compare: ChCompare | null; rows: readonly string[]; how?: string; previous: boolean }) {
   const list = previous && compare ? compare.rows.filter((r) => rows.includes(r.label)) : [];
   return (
-    <ShsCard title={previous && compare ? `Against the ${compare.previousRounds} before` : 'Against the window before'} meta={list.length ? 'From round totals' : undefined}>
+    <ShsCard anchor="against" title={previous && compare ? `Against the ${compare.previousRounds} before` : 'Against the window before'} meta={list.length ? 'From round totals' : undefined}>
       {!list.length ? (
         <div className="ch-shs-nothing">
           <b>Nothing to compare yet</b>

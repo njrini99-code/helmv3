@@ -4,9 +4,12 @@ import { useEffect, useRef, type MouseEvent, type ReactNode, type RefObject } fr
 import { PhoneBar } from '../../ui/PhoneBar';
 import { PhoneScreen } from '../../shell/PhoneScreen';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { useGrowOnce } from './shs-motion';
 
 /** Focus moves to Back this long after a keyboard push (07 M-STATS-27; at once under Reduce Motion). */
 const FOCUS_BACK_MS = 80;
+/** The house push settles at 462ms. */
+const PUSH_SETTLE_MS = 462;
 
 /**
  * One pushed Stats detail: the house's PhoneScreen and pushed bar ("‹ My stats", the page's name centred, no bell) over a scrolling
@@ -25,6 +28,7 @@ export function StatsDetailScreen({
   restoreScroll,
   onLeave,
   big = false,
+  anchor,
 }: {
   id: string;
   title: string;
@@ -41,6 +45,8 @@ export function StatsDetailScreen({
   onLeave?: () => void;
   /** Text Size Larger and XXL reflow its cards (08 criterion 20). */
   big?: boolean;
+  /** Scroll this `data-ch-anchor` into view once the push has settled (What changed to Against the N before). */
+  anchor?: string | null;
 }) {
   const reduced = useChReducedMotion();
   const titleId = `ch-shs-d-${id}-t`;
@@ -54,6 +60,12 @@ export function StatsDetailScreen({
   useEffect(() => {
     if (body.current) body.current.scrollTop = restoreScroll ?? 0;
   }, [id, restoreScroll]);
+  useGrowOnce(body, reduced, [id, loading]);
+  useEffect(() => {
+    if (!anchor || loading) return;
+    const timer = window.setTimeout(() => body.current?.querySelector(`[data-ch-anchor="${anchor}"]`)?.scrollIntoView({ block: 'start', behavior: 'auto' }), reduced ? 0 : PUSH_SETTLE_MS);
+    return () => window.clearTimeout(timer);
+  }, [anchor, loading, reduced]);
   const leaving = (e: MouseEvent<HTMLDivElement>) => {
     if ((e.target as Element).closest?.('a[href]')) onLeave?.();
   };

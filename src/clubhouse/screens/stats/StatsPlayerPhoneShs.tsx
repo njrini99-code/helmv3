@@ -3,7 +3,7 @@
 import { AlertTriangle, Flag, MessageSquare, Plus, RotateCw, Share } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import Link from 'next/link';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import { basisWords, clearFilters, hasRange, isFiltered, rangeOf, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { playerInsight } from '../../data/stats-insight';
@@ -60,6 +60,9 @@ import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { DetailHero, StatsDetailScreen } from './StatsDetailScreen';
 import { ShsArrow, ShsCard, ShsChevron, ShsIcon, ShsPill, SummaryCard, type ShsIconName } from './SummaryCard';
 import { useStatsDetail, type StatsArrivalState } from './use-stats-detail';
+import { useGrowOnce, useStuck, WindowCrossfade } from './shs-motion';
+import { useChReducedMotion } from '../../lib/reduced-motion';
+import { filterKey } from './shs-figures';
 import { WindowSwitch } from './WindowSwitch';
 
 const PARTS: ReadonlyArray<{ id: 'tee' | 'approach' | 'short' | 'putting'; name: string; icon: ShsIconName; leg: string }> = [
@@ -166,10 +169,32 @@ export function StatsPlayerPhoneShs({
     }
   };
 
-  const go = (id: StatsDetailId) => open(id);
+  const go = (id: StatsDetailId, landOn?: string) => {
+    setAnchor(landOn ?? null);
+    open(id);
+  };
+  const [anchor, setAnchor] = useState<string | null>(null);
+  const reduced = useChReducedMotion();
+  const stuck = useStuck();
+  const root = useRef<HTMLDivElement>(null);
+  // A landing after a failed load or a Try again draws at rest: marks grow once in a session of the page, and that wasn't a first look.
+  const hadFailed = useRef(failed);
+  if (failed) hadFailed.current = true;
+  useGrowOnce(root, reduced || hadFailed.current, [below, failed, noRounds]);
+  // Keys that open a detail move focus to Back; a finger doesn't (07 M-STATS-27).
+  const keyboard = useRef(false);
 
   return (
-    <div className={'ch-shs' + (big ? ' is-big' : '')}>
+    <div
+      ref={root}
+      className={'ch-shs' + (big ? ' is-big' : '')}
+      onKeyDownCapture={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') keyboard.current = true;
+      }}
+      onPointerDownCapture={() => {
+        keyboard.current = false;
+      }}
+    >
       {coach ? (
         <PhoneTop title="Player stats" heading={false} back={{ label: 'Team', onBack: onBackToTeam }} action={<PhoneIconAction icon={Share} label={`Share ${first}’s stats`} onClick={() => void share()} />} />
       ) : (
@@ -193,7 +218,7 @@ export function StatsPlayerPhoneShs({
           </header>
         )}
 
-        <div className={'ch-shs-ctl' + (hasRange(data.filter) ? ' is-custom' : '')}>
+        <div className={'ch-shs-ctl' + (hasRange(data.filter) ? ' is-custom' : '') + (stuck ? ' is-stuck' : '')}>
           <div className="ch-shs-ctl__row">
             <WindowSwitch value={windowShown ?? rangeOf(data.filter)} onChange={onWindow} custom={hasRange(data.filter)} hook="stats-window-seg" />
             {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={onFilter} codes={{ empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' }} phone hook="stats-filter" />}
@@ -201,7 +226,7 @@ export function StatsPlayerPhoneShs({
           {updating}
         </div>
 
-        <div className="ch-shs-sheet">
+        <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className="ch-shs-sheet">
           {!filtered && noRounds && !firstRun && <NineHint code="CH-5324" filter={data.filter} options={data.filterOptions} who={coach ? `${first} has` : 'You have'} />}
           {failed && <FailedCard onRetry={onRetry} />}
           {emptyFilter && (
@@ -229,7 +254,7 @@ export function StatsPlayerPhoneShs({
                 <ScoringCard data={data} onOpen={() => go('scoring')} />
               </SectionBoundary>
               <SectionBoundary surface="stats.player.insight" label="What changed" code="CH-5204">
-                <SummaryCard go="scoring" onOpen={() => go('scoring')} title="What changed" meta={windowLabel(data.filter)} ariaLabel={`What changed. ${windowLabel(data.filter)}. Open details`}>
+                <SummaryCard go="scoring" onOpen={() => go('scoring', 'against')} title="What changed" meta={windowLabel(data.filter)} ariaLabel={`What changed. ${windowLabel(data.filter)}. Open details`}>
                   <WhatChanged data={data} />
                 </SummaryCard>
               </SectionBoundary>
@@ -278,13 +303,15 @@ export function StatsPlayerPhoneShs({
               </SectionBoundary>
             </>
           )}
-        </div>
+        </WindowCrossfade>
       </div>
 
       <AnimatePresence initial={false}>
         {detail && (
-          <StatsDetailScreen key={hashOf(detail)} id={hashOf(detail)} title={DETAIL_TITLE[detail as StatsPlayerDetailId]} backLabel={backLabel} onBack={close} scrollRef={detailScroll} restoreScroll={restoreTo?.detail ?? null} onLeave={saveScroll} big={big}>
-            <DetailBody id={detail as StatsPlayerDetailId} data={data} reads={reads} onRetry={onRetry} coach={coach} onAddFocus={onAddFocus} onPart={replace} />
+          <StatsDetailScreen key="stats-detail" keyboard={keyboard.current} anchor={anchor} id={hashOf(detail)} title={DETAIL_TITLE[detail as StatsPlayerDetailId]} backLabel={backLabel} onBack={close} scrollRef={detailScroll} restoreScroll={restoreTo?.detail ?? null} onLeave={saveScroll} big={big}>
+            <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className="ch-shs-d-sheet ch-shs-d-sheet--body">
+              <DetailBody id={detail as StatsPlayerDetailId} data={data} reads={reads} onRetry={onRetry} coach={coach} onAddFocus={onAddFocus} onPart={replace} />
+            </WindowCrossfade>
           </StatsDetailScreen>
         )}
       </AnimatePresence>
@@ -354,7 +381,7 @@ function ScoringCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => vo
       meta={round ? [round.date, round.type ? ROUND_TYPE[round.type] : null].filter(Boolean).join(' · ') : label}
       ariaLabel={`Scoring average ${formatFixed(data.win.avg)}, ${label}. Open details`}
     >
-      <div className="ch-shs-figs">
+      <div className="ch-shs-figs" key={round ? 'read' : filterKey(data.filter)} data-ch-fade-in={round ? undefined : ''}>
         <div className="ch-shs-figline">
           <span className="ch-shs-fig">{round ? round.score : formatFixed(data.win.avg)}</span>
           <span className="ch-shs-fig-sub">

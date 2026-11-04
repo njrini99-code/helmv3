@@ -1736,6 +1736,76 @@ p.ch-shs-mini-cap {
   display: none;
 }
 
+/* Grow once (07 M-STATS-12 to 15): a card waits at zero until a quarter of it is in view. A card with no marker class is at rest, so no script draws it whole. */
+.ch-shs-card.is-waiting:not(.is-seen) [data-ch-grow] {
+  transform: scaleX(0);
+}
+.ch-shs-card.is-waiting:not(.is-seen) [data-ch-grow-y] {
+  transform: scaleY(0);
+}
+.ch-shs-card.is-waiting:not(.is-seen) .ch-shs-rg .rf {
+  stroke-dashoffset: var(--ch-ring-c) !important;
+}
+.ch-shs-card.is-waiting:not(.is-seen) :is(.ch-shs-tour, .ch-shs-rib .dot, .ch-shs-db .track) {
+  opacity: 0;
+}
+.ch-shs-card.is-waiting [data-ch-grow],
+.ch-shs-card.is-waiting [data-ch-grow-y] {
+  transition: transform 360ms var(--ch-ease);
+}
+.ch-shs-card.is-waiting [data-ch-grow-y] {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+.ch-shs-card.is-waiting .ch-shs-rg .rf {
+  transition: stroke-dashoffset 360ms var(--ch-ease);
+}
+.ch-shs-card.is-waiting :is(.ch-shs-tour, .ch-shs-rib .dot, .ch-shs-db .track) {
+  transition: opacity 360ms var(--ch-ease);
+}
+
+/* The window's crossfade: the old page fades out over the new, in place (07 M-STATS-09). */
+.ch-shs-xfade {
+  position: relative;
+}
+.ch-shs-xfade-ghost {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  animation: ch-shs-ghost 260ms var(--ch-ease) forwards;
+}
+.ch-shs-xfade-ghost .ch-shs-feature {
+  visibility: hidden;
+}
+@keyframes ch-shs-ghost {
+  to {
+    opacity: 0;
+  }
+}
+[data-ch-fade-in] {
+  animation: ch-shs-skelin 260ms var(--ch-ease) backwards;
+}
+.ch-shs-d-sheet--body {
+  padding: 0;
+}
+
+/* The bar's 14pt shade, once the switch is stuck (07 M-STATS-11). */
+.ch-shs-ctl::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 14px;
+  background: linear-gradient(rgb(0 0 0 / 0.1), transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms linear;
+}
+.ch-shs-ctl.is-stuck::before {
+  opacity: 1;
+}
+
 /* Reduce Motion and Animations off: nothing travels; the sheen stops. */
 @media (prefers-reduced-motion: reduce) {
   .ch-shs-skel::before {
@@ -1748,8 +1818,12 @@ p.ch-shs-mini-cap {
   .ch-shs-sum,
   .ch-shs-whisk,
   .ch-shs-rrow,
-  .ch-shs-how .ch-shs-chev {
+  .ch-shs-how .ch-shs-chev,
+  .ch-shs-ctl::before {
     transition: none;
+  }
+  [data-ch-fade-in] {
+    animation-duration: 180ms;
   }
 }
 [data-motion='off'] .ch-shs-skel::before {
@@ -1776,4 +1850,14 @@ p.ch-shs-mini-cap {
   height: calc(40 * var(--ch-type-k));
   border-radius: 14px;
   background: var(--ch-well-bg);
+}
+[data-motion='off'] .ch-shs-xfade-ghost,
+[data-motion='off'] [data-ch-fade-in] {
+  animation: none;
+}
+[data-motion='off'] .ch-shs-xfade-ghost {
+  display: none;
+}
+[data-motion='off'] .ch-shs-ctl::before {
+  transition: none;
 }

@@ -1,6 +1,6 @@
-import { formatSigned } from '../../lib/format';
+import type { CSSProperties } from 'react';
+import { formatSigned, NO_DATA } from '../../lib/format';
 import { sgScale } from '../../lib/sg';
-import { NO_DATA } from '../../lib/format';
 import { divergeBar, sgTone, type ShsTone } from './shs-figures';
 
 /** Four mini diverging rows: label, a bar from a centre zero, the signed value. The card is the tap, so no whisker and no pin. */
@@ -114,7 +114,7 @@ export function GoalRing({ progress, label }: { progress: number; label: string 
     <span className="ch-shs-rg">
       <svg viewBox="0 0 64 64" aria-hidden="true">
         <circle className="rt" cx="32" cy="32" r={r} />
-        <circle className="rf" cx="32" cy="32" r={r} transform="rotate(-90 32 32)" style={{ strokeDasharray: c, strokeDashoffset: c * (1 - Math.max(0, Math.min(100, progress)) / 100) }} />
+        <circle className="rf" cx="32" cy="32" r={r} transform="rotate(-90 32 32)" style={{ strokeDasharray: c, strokeDashoffset: c * (1 - Math.max(0, Math.min(100, progress)) / 100), '--ch-ring-c': c } as CSSProperties} />
       </svg>
       <span className="ch-num">{label}</span>
     </span>

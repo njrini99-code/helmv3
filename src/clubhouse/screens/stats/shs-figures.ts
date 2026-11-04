@@ -24,6 +24,9 @@ export function windowShort(f: ChFilter): string {
   return f.window === 'season' ? 'Season' : 'Qualifiers';
 }
 
+/** One string per window and filter: a change of it is a window change, and nothing else is. */
+export const filterKey = (f: ChFilter): string => JSON.stringify(f);
+
 /** A strokes gained value's tone: flat inside ±0.05, and flat throughout under three rounds (criterion 21, 91). */
 export const sgTone = (v: number | null | undefined, ready = true): ShsTone => (!ready || v == null || Math.abs(v) < 0.05 ? 'flat' : v > 0 ? 'gain' : 'loss');
 

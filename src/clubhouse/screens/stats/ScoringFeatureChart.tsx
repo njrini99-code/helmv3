@@ -1,12 +1,32 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 'react';
+import { useChReducedMotion } from '../../lib/reduced-motion';
 import { hapticScrub } from '../../lib/haptics';
 import { meanSeries, parLine, type TrendRound } from './round-trend';
 import { monoPath, type ShsTone } from './shs-figures';
 
 const H = 160;
 const PAD = { l: 4, r: 30, t: 10, b: 26 };
+/** The line's morph on a window change (07 M-STATS-10). */
+const MORPH_MS = 360;
+const morphEase = (t: number) => 1 - Math.pow(1 - t, 3.2);
+
+type Pt = readonly [number, number];
+
+/** The old line's height at a new x, so each point moves from where the old line was. */
+function heightAt(pts: readonly Pt[], x: number): number | null {
+  if (!pts.length) return null;
+  if (x <= pts[0]![0]) return pts[0]![1];
+  for (let i = 1; i < pts.length; i++) {
+    if (x <= pts[i]![0]) {
+      const [x0, y0] = pts[i - 1]!;
+      const [x1, y1] = pts[i]!;
+      return y0 + ((y1 - y0) * (x - x0)) / (x1 - x0 || 1);
+    }
+  }
+  return pts[pts.length - 1]![1];
+}
 
 /**
  * The feature card's chart (08 criteria 12, 13, 68): 160 tall and never stretched, so its width is measured. Every round a dot, the
@@ -46,6 +66,45 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
   const line = monoPath(avg);
   const area = avg.length ? `${line}L${avg[avg.length - 1]![0]},${H - PAD.b}L${avg[0]![0]},${H - PAD.b}Z` : '';
   const colour = tone === 'gain' ? 'var(--s-gain-fill)' : tone === 'loss' ? 'var(--s-loss-fill)' : 'var(--s-flat)';
+
+  // The morph, on the drawn elements: React has already written the end state, and this walks to it. A window change mid-morph starts
+  // from the shape on screen; Reduce Motion and a first paint draw it at rest.
+  const reduced = useChReducedMotion();
+  const areaEl = useRef<SVGPathElement>(null);
+  const lineEl = useRef<SVGPathElement>(null);
+  const dotsEl = useRef<SVGGElement>(null);
+  const shape = useRef<{ dots: readonly Pt[]; avg: readonly Pt[] } | null>(null);
+  const roundsKey = shown.map((r) => r.id).join();
+  const dotPts: Pt[] = shown.map((r, i) => [x(i), y(r.value)]);
+  useLayoutEffect(() => {
+    const was = shape.current;
+    const end = { dots: dotPts, avg };
+    if (!was || reduced || was.dots.length === 0) {
+      shape.current = end;
+      return;
+    }
+    const startDots = dotPts.map((p) => heightAt(was.dots, p[0]) ?? p[1]);
+    const startAvg = avg.map((p) => heightAt(was.avg, p[0]) ?? p[1]);
+    const bottom = H - PAD.b;
+    const circles = Array.from(dotsEl.current?.querySelectorAll('circle') ?? []);
+    let raf = 0;
+    const t0 = performance.now();
+    const step = (now: number) => {
+      const t = morphEase(Math.min(1, (now - t0) / MORPH_MS));
+      const a = avg.map((p, i) => [p[0], startAvg[i]! + (p[1] - startAvg[i]!) * t] as const);
+      const d = dotPts.map((p, i) => [p[0], startDots[i]! + (p[1] - startDots[i]!) * t] as const);
+      shape.current = { dots: d, avg: a };
+      const path = monoPath(a);
+      if (lineEl.current) lineEl.current.setAttribute('d', path);
+      if (areaEl.current && a.length) areaEl.current.setAttribute('d', `${path}L${a[a.length - 1]![0]},${bottom}L${a[0]![0]},${bottom}Z`);
+      circles.forEach((c, i) => d[i] && c.setAttribute('cy', String(d[i]![1])));
+      if (t < 1) raf = requestAnimationFrame(step);
+      else shape.current = end;
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- a new set of rounds starts it; a resize just redraws
+  }, [roundsKey, reduced]);
 
   const set = useCallback(
     (i: number | null) => {
@@ -134,11 +193,13 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
           </g>
         ))}
         {par != null && <line className="ch-shs-parline" x1={PAD.l} x2={width - PAD.r + 4} y1={y(par)} y2={y(par)} />}
-        {area && <path d={area} fill="url(#ch-shs-hg)" />}
-        {line && <path className="ch-shs-avgline" d={line} stroke={colour} />}
+        {area && <path ref={areaEl} d={area} fill="url(#ch-shs-hg)" />}
+        {line && <path ref={lineEl} className="ch-shs-avgline" d={line} stroke={colour} />}
+        <g ref={dotsEl}>
         {shown.map((r, i) => (
           <circle key={r.id} className={'ch-shs-rdot' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')} cx={x(i)} cy={y(r.value)} r={read === i ? 6 : i === n - 1 ? 5 : 3.6} />
         ))}
+        </g>
         {read != null && (
           <>
             <line className="ch-shs-scrub" x1={x(read)} x2={x(read)} y1={PAD.t - 4} y2={H - PAD.b + 2} />
