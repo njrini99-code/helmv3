@@ -204,6 +204,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, cha
   return (
     <div className={'ch-qcs' + (phone ? ' is-phone' : ' is-desk') + (reduced ? ' is-reduce' : '')}>
       <div ref={scrim} className="scrim" hidden={!shown} onClick={onClose} aria-hidden="true" />
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- the dialog keeps Tab inside itself (AC-QC-PNL-08) */}
       <section id="ch-qc-panel" ref={panel} className="qc" role="dialog" aria-label="CoachHelm" hidden={!shown} data-ch-qc-panel="" onKeyDown={onPanelKey}>
         <header className="qc__h" data-qc-rise="" {...swipe}>
           <span className="qc__mark">
