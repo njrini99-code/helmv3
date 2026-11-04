@@ -10,7 +10,7 @@ import { playerInsight } from '../../data/stats-insight';
 import { formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { TERMS } from '../../lib/glossary';
 import { haptic } from '../../lib/haptics';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { chTrail } from '../../lib/track';
 import { useArrivalPainted } from '../../lib/use-painted';
@@ -40,7 +40,7 @@ import { RoundsExtra } from './RoundsExtra';
 import { RoundTrend } from './RoundTrend';
 import { trendRounds } from './round-trend';
 import { ScoringFeatureChart } from './ScoringFeatureChart';
-import { AgainstBefore, COMPARE_ROWS, HowToggle, Ribbon, SHS_HOW } from './ShsBlocks';
+import { AgainstBefore, COMPARE_ROWS, Ribbon, SHS_HOW } from './ShsBlocks';
 import {
   changeBars,
   divergeAt,
@@ -205,7 +205,7 @@ export function StatsPlayerPhoneShs({
       <div inert={detail != null} aria-hidden={detail != null || undefined}>
         {coach && (
           <header className="ch-spm-head">
-            <Avatar name={data.name} id={data.id} size={48} />
+            <Avatar name={data.name} id={data.id} size="lg" />
             <span className="ch-spm-head__id">
               <LargeTitle>{data.name}</LargeTitle>
               <p className="ch-num">{[data.classYear, failed ? null : `${plural(data.season.rounds, 'round')} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} ${TERMS.handicap.short}`].filter(Boolean).join(' · ')}</p>
@@ -275,7 +275,7 @@ export function StatsPlayerPhoneShs({
                       PARTS.map((p) => <PartCard key={p.id} data={data} part={p} onOpen={() => go(p.id)} />)
                     ) : (
                       <section className="ch-shs-card">
-                        <EmptyState compact code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
+                        <EmptyState kind="filtered" compact code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
                       </section>
                     )}
                   </SectionBoundary>
@@ -466,7 +466,7 @@ function WhatChanged({ data }: { data: ChPlayerProfile }) {
             <div className="ch-shs-cmp-row" key={b.label}>
               <span className="k">{b.label}</span>
               <span className="ch-shs-cmp-track">
-                <i className={`ch-shs-fill-${b.tone}`} data-ch-grow="" style={{ width: `${b.width.toFixed(1)}%` }} />
+                <i className={`ch-shs-fill-${b.tone}`} data-ch-grow="" style={{ width: `${formatFixed(b.width, 1)}%` }} />
               </span>
               <span className="v">{formatFixed(b.value)}</span>
             </div>
@@ -669,7 +669,7 @@ function RoundsCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => voi
         <div>
           <span className="ch-shs-bigv">
             {n}
-            <small>{n === 1 ? 'round' : 'rounds'}</small>
+            <small>{pluralWord(n, 'round', 'rounds')}</small>
           </span>
           {best && n > 1 && (
             <div className="ch-shs-cap">
@@ -868,7 +868,7 @@ function GameAreaDetail({ id, data, reads, onRetry }: { id: 'scoring' | 'tee' | 
         {hero}
         {before}
         <section className="ch-shs-card">
-          <EmptyState compact code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
+          <EmptyState kind="filtered" compact code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
         </section>
         {after}
       </>
@@ -1078,7 +1078,7 @@ function GoalsDetail({ data, coach, onAddFocus, onRetry }: { data: ChPlayerProfi
           </>
         )}
         {data.goals.length === 0 ? (
-          <EmptyState code="CH-5304" compact title="No goals set." body={coach ? `${first} has no goals yet.` : 'Goals you and your coach set show here.'} />
+          <EmptyState code="CH-5304" kind="first-run" compact title="No goals set." body={coach ? `${first} has no goals yet.` : 'Goals you and your coach set show here.'} />
         ) : (
           <div className="ch-shs-goals">
             {data.goals.map((g) => {
@@ -1100,7 +1100,7 @@ function GoalsDetail({ data, coach, onAddFocus, onRetry }: { data: ChPlayerProfi
       </ShsCard>
       <ShsCard title="Focus areas" meta={`${active} active${proposed ? ` · ${proposed} waiting on ${coach ? first : 'you'}` : ''}`} flush>
         {data.focusAreas.length === 0 ? (
-          <EmptyState code="CH-5303" compact title="No focus areas yet." body={coach ? 'Add one from a weak section above.' : 'Your coach adds focus areas; they show here.'} />
+          <EmptyState code="CH-5303" kind="first-run" compact title="No focus areas yet." body={coach ? 'Add one from a weak section above.' : 'Your coach adds focus areas; they show here.'} />
         ) : (
           <div className="ch-shs-dev">
             {data.focusAreas.map((f) => {

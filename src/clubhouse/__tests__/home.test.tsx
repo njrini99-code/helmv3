@@ -34,7 +34,7 @@ const session = vi.hoisted(() => ({ current: null as unknown }));
 const flag = vi.hoisted(() => ({ coach: true, player: true }));
 const requestCache = vi.hoisted(() => ({ coachTeam: vi.fn(), playerTeam: vi.fn() }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: async () => session.current }));
-vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: (role: 'coach' | 'player') => flag[role] }));
+vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: (role: 'coach' | 'player') => flag[role], statsRedesignEnabled: () => false }));
 vi.mock('@/lib/golf/dashboard-request-cache', () => ({
   // Clubhouse reads the three-way resolution (a failed read is not "no team"); the stub's team id stands for 'ok'.
   resolveCoachActiveTeamForRequest: async (...args: unknown[]) => {

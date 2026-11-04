@@ -68,7 +68,7 @@ export function useStuck(): boolean {
 export class WindowCrossfade extends Component<{ k: string; off: boolean; reduced: boolean; children: ReactNode; className?: string }> {
   private el: HTMLDivElement | null = null;
 
-  getSnapshotBeforeUpdate(prev: { k: string }): HTMLElement | null {
+  override getSnapshotBeforeUpdate(prev: { k: string }): HTMLElement | null {
     if (prev.k === this.props.k || this.props.off || !this.el) return null;
     const ghost = this.el.cloneNode(true) as HTMLElement;
     ghost.classList.add('ch-shs-xfade-ghost');
@@ -77,7 +77,7 @@ export class WindowCrossfade extends Component<{ k: string; off: boolean; reduce
     return ghost;
   }
 
-  componentDidUpdate(_: unknown, __: unknown, ghost: HTMLElement | null): void {
+  override componentDidUpdate(_: unknown, __: unknown, ghost: HTMLElement | null): void {
     if (!ghost || !this.el) return;
     const host = this.el;
     ghost.style.animationDuration = `${this.props.reduced ? CH_FADE_MS : XFADE_MS}ms`;
@@ -88,7 +88,7 @@ export class WindowCrossfade extends Component<{ k: string; off: boolean; reduce
     window.setTimeout(done, XFADE_MS + 100);
   }
 
-  render(): ReactNode {
+  override render(): ReactNode {
     return (
       <div
         className={'ch-shs-xfade' + (this.props.className ? ` ${this.props.className}` : '')}

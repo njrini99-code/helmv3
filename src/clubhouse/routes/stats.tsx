@@ -38,7 +38,7 @@ export async function ClubhouseStatsRoute({ player, window, tab, query }: { play
   if (team.role === 'player') {
     // Game detail's "CoachHelm sees…" reads beside the profile, for the session's own player id (never the address's).
     const [profile, reads] = await Promise.all([
-      loadPlayerProfile({ viewer: 'player', teamId: team.teamId, playerId: team.playerId, window: win, filter, shs }),
+      loadPlayerProfile({ viewer: 'player', teamId: team.teamId, playerId: team.playerId, window: win, filter, ...(shs ? { shs } : {}) }),
       loadStatsReads({ role: 'player', playerId: team.playerId }),
     ]);
     return profile ? <StatsPlayer data={profile} coachId={null} initialTab={tab} reads={reads} shs={shs} /> : <NotOnTeam coach={false} />;
@@ -53,10 +53,10 @@ export async function ClubhouseStatsRoute({ player, window, tab, query }: { play
     const reads: Promise<ChStatsReads> = loadCoachPlayerScope({ coachId: team.coachId, teamId: team.teamId, playerId: player })
       .then(readsForScope)
       .catch((): ChStatsReads => ({ status: 'failed' }));
-    const profile = await loadPlayerProfile({ viewer: 'coach', teamId: team.teamId, playerId: player, window: win, filter, shs });
+    const profile = await loadPlayerProfile({ viewer: 'coach', teamId: team.teamId, playerId: player, window: win, filter, ...(shs ? { shs } : {}) });
     return profile ? <StatsPlayer data={profile} coachId={team.coachId} initialTab={tab} reads={reads} shs={shs} /> : <NotOnTeam coach />;
   }
-  return <StatsTeam data={await loadTeamStats({ teamId: team.teamId, window: win, filter, shs })} shs={shs} />;
+  return <StatsTeam data={await loadTeamStats({ teamId: team.teamId, window: win, filter, ...(shs ? { shs } : {}) })} shs={shs} />;
 }
 
 export function StatsNoTeam({ coach }: { coach: boolean }) {

@@ -170,6 +170,7 @@ export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
             ) : noRounds ? (
               <section className="ch-shs-card">
                 <EmptyState
+                  kind={data.window === 'season' ? 'first-run' : 'filtered'}
                   code={data.window === 'qualifiers' ? 'CH-4302' : 'CH-4301'}
                   icon={data.window === 'qualifiers' ? Medal : ChartColumn}
                   title={data.window === 'qualifiers' ? 'No qualifier rounds this season yet' : 'No 18-hole rounds in this window yet'}
@@ -366,7 +367,7 @@ function TeamScoringDetail({ data, covered, days, mean }: { data: ChTeamStats; c
       <DetailHero figure={f ? figureValue(f) : NO_DATA} caption={['Team scoring average', toPar(data)].filter(Boolean).join(' · ')} chips={<Change data={data} />} />
       {days.length > 0 && (
         <ShsCard title="By round day" meta={mean == null ? undefined : 'Team mean dashed'}>
-          <Ribbon points={days.map((d) => ({ label: d.label, value: d.score }))} lowerIsBetter reference={mean == null ? null : { value: mean, label: 'Mean' }} format={(v) => v.toFixed(1)} />
+          <Ribbon points={days.map((d) => ({ label: d.label, value: d.score }))} lowerIsBetter reference={mean == null ? null : { value: mean, label: 'Mean' }} format={(v) => formatFixed(v, 1)} />
         </ShsCard>
       )}
       <TheRound data={data} note={context} />

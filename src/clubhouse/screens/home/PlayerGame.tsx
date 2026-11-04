@@ -494,8 +494,9 @@ function YourGameCard({ legs, tour, covered }: { legs: ChPlayerHome['legs']; tou
 }
 
 function YourGameLeg({ g, tour }: { g: ChPlayerLeg; tour: ChSgTour }) {
-  const fmt = (v: number) => (g.unit === '%' ? `${Math.round(v)}%` : v.toFixed(g.digits));
-  const tone = g.sg == null || Math.abs(g.sg) < 0.05 ? 'flat' : g.sg > 0 ? 'gain' : 'loss';
+  const fmt = (v: number) => (g.unit === '%' ? `${Math.round(v)}%` : formatFixed(v, g.digits));
+  const sgInk = changeTone(g.sg, false);
+  const tone = sgInk === 'is-gain' ? 'gain' : sgInk === 'is-loss' ? 'loss' : 'flat';
   const against = g.value != null && g.bench != null && !g.early ? (changeTone(g.value - g.bench, g.lowerIsBetter, g.unit === '%' ? 0 : g.digits) === 'is-gain' ? 'gain' : changeTone(g.value - g.bench, g.lowerIsBetter, g.unit === '%' ? 0 : g.digits) === 'is-loss' ? 'loss' : 'flat') : 'flat';
   const note = g.early && g.note ? `Early read · ${g.note}` : g.needs ?? g.note;
   return (

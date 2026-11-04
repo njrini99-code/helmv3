@@ -52,7 +52,7 @@ export const LEG_LABELS: Record<ChLegKey, [string, string]> = {
 type Pick = { made: number; total: number } | null;
 
 /** The four parts of the game over the window: a weighted rate (never a mean of percentages), a per-round trend, and one line. */
-export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, bench: Map<string, number> | null, sg: ReturnType<typeof summarizePlayer>['sgLegs']): ChPlayerLeg[], opts: { shs?: boolean } = {}) {
+export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, bench: Map<string, number> | null, sg: ReturnType<typeof summarizePlayer>['sgLegs'], opts: { shs?: boolean } = {}): ChPlayerLeg[] {
   const trendLength = opts.shs ? SHS_LEG_TREND : LEG_TREND;
   const oldestFirst = [...window].reverse();
   const rateOf = (pick: (r: ChRound) => Pick) => {

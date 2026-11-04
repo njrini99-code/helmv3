@@ -210,8 +210,8 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     ? await loadSeasonRounds(supabase, players.map((p) => p.id), { surface: 'stats', since: loadSince(f, start) })
     : { rounds: [], error: !!membersRes.error };
   // With the redesign on, the team's figures leave practice rounds out unless the filter asks for a type or picks rounds by hand (data/season.ts).
-  const scoring = practiceCut(input.shs, f) ? season.rounds.filter(countsForScoring) : season.rounds;
-  const byPlayer = groupByPlayer(scoring);
+  const scoringRounds = practiceCut(input.shs, f) ? season.rounds.filter(countsForScoring) : season.rounds;
+  const byPlayer = groupByPlayer(scoringRounds);
 
   const windowRounds: ChRound[] = [];
   const prevRounds: ChRound[] = [];
@@ -238,8 +238,8 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   // One cache read serves the window, the previous window and the season bests (either length, and earlier ones when Last 10 or a range
   // reaches before the season): only the rounds with their holes, and only the ones a figure reads, so Last 10's wider read does not
   // pull a year of putts. The season's bests are 18-hole rounds (`seasonFull`).
-  const seasonFull = scoring.filter((r) => (r.holes_played ?? 18) === 18);
-  const seasonRounds = seasonOnly(scoring, start);
+  const seasonFull = scoringRounds.filter((r) => (r.holes_played ?? 18) === 18);
+  const seasonRounds = seasonOnly(scoringRounds, start);
   const figureIds = [...new Set([...holeWindow, ...holePrev, ...holeRounds(seasonRounds)].map((r) => r.id))];
   const [cache, putts, longest, bench] = await Promise.all([
     loadRoundCache(supabase, figureIds, 'stats'),
@@ -406,7 +406,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const onDay = (d: string) => windowRounds.filter((r) => r.round_date === d);
 
   // Player x leg grid.
-  const grid = teamGrid(players, scoring, f, start);
+  const grid = teamGrid(players, scoringRounds, f, start);
 
   // Putting make rate by distance.
   let putting: ChTeamStats['putting'] = null;

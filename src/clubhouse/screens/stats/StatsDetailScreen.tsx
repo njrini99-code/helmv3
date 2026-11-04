@@ -74,6 +74,7 @@ export function StatsDetailScreen({
       <PhoneBar back={{ label: backLabel, onBack, hook: 'stats-back' }} title={title} titleId={titleId} action={<span className="ch-shs-d-slot" aria-hidden="true" />} />
       {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events -- only watches for a link leaving; every control inside has its own keys */}
       <div
+        role="group"
         className="ch-shs-d-body"
         data-ch-shs-detail={id}
         ref={(el) => {

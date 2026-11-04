@@ -267,6 +267,11 @@
      follows the root size (a browser's default text size, or a 130% root: rem) and the iPhone's Text Size
      (--ch-type-scale on <html>, from -apple-system-body, capped at XXL: lib/dynamic-type.ts). */
   --ch-type-k: calc(var(--ch-type-scale, 1) * 1rem / 16);
+  --ch-fw-400: 400;
+  --ch-fw-500: 500;
+  --ch-fw-600: 600;
+  --ch-fw-700: 700;
+  --ch-type-figure-40-500: 500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
   /* Title steps (once the serif titles; the owner moved titles to the heavy sans on 2026-10-07): page and section titles
      only, never data or controls. The names stay so every consumer follows. */
   --ch-type-serif-l: 600 calc(34 * var(--ch-type-k))/1.08 var(--ch-font-sans);
@@ -1392,11 +1397,11 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
 }
 
 /* The refresh's chart fills (DESIGN_LANGUAGE §3). Scoped so today's --ch-chart-*-fill values stay as they are with the flag off. */
-[data-ch-refresh] {
+[data-ch-refresh='on'] {
   --ch-chart-gain-fill: #1f6b45;
   --ch-chart-loss-fill: #b86f0c;
 }
-html[data-fw-theme='dark'] [data-ch-refresh] {
+html[data-fw-theme='dark'] [data-ch-refresh='on'] {
   --ch-chart-gain-fill: #4fa877;
   --ch-chart-loss-fill: #e09a35;
 }

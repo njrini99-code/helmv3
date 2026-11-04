@@ -1,4 +1,6 @@
 'use client';
+import { pluralWord } from '../../lib/plural';
+import { formatFixed } from '../../lib/format';
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 'react';
 import { useChReducedMotion } from '../../lib/reduced-motion';
@@ -142,7 +144,7 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
       data-ch-no-open=""
       role={interactive ? 'slider' : 'img'}
       tabIndex={interactive ? 0 : undefined}
-      aria-label={`Scores for ${n} ${n === 1 ? 'round' : 'rounds'}, from ${Math.round(first.value)} on ${first.label} to ${Math.round(last.value)} on ${last.label}. Use the arrow keys to read each round.`}
+      aria-label={`Scores for ${n} ${pluralWord(n, 'round', 'rounds')}, from ${Math.round(first.value)} on ${first.label} to ${Math.round(last.value)} on ${last.label}. Use the arrow keys to read each round.`}
       aria-valuemin={interactive ? 1 : undefined}
       aria-valuemax={interactive ? n : undefined}
       aria-valuenow={interactive ? (read ?? n - 1) + 1 : undefined}
@@ -248,7 +250,7 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
   const ticks: number[] = [];
   for (let q = lo; q <= hi; q++) if ((q - lo) % (hi - lo > 4 ? 2 : 1) === 0) ticks.push(q);
   return (
-    <div ref={box} className="ch-shs-chart" role="img" aria-label={`Team scoring average by round day, from ${v[0]!.toFixed(1)} to ${v[n - 1]!.toFixed(1)}. Lower scores sit higher.`}>
+    <div ref={box} className="ch-shs-chart" role="img" aria-label={`Team scoring average by round day, from ${formatFixed(v[0]!, 1)} to ${formatFixed(v[n - 1]!, 1)}. Lower scores sit higher.`}>
       <svg viewBox={`0 0 ${width} ${H}`} height={H} aria-hidden="true">
         <defs>
           <linearGradient id="ch-shs-tg" x1="0" x2="0" y1="0" y2="1">
@@ -280,7 +282,7 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
         )}
         {mean != null && (
           <text className="ch-shs-ax" x="4" y={y(mean) - 6}>
-            Mean {mean.toFixed(1)}
+            Mean {formatFixed(mean, 1)}
           </text>
         )}
       </svg>

@@ -1,6 +1,7 @@
+import { pluralWord } from '../../lib/plural';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import { isFiltered, basisWords, type ChFilter } from '../../data/stats-filter';
-import { formatFixed } from '../../lib/format';
+import { changeTone as changeInk, formatFixed } from '../../lib/format';
 import { deltaTone, halvesChange, mean } from '../../lib/stats-signal';
 import { trendRounds } from './round-trend';
 import type { StatsPlayerDetailId } from './detail-route';
@@ -28,7 +29,10 @@ export function windowShort(f: ChFilter): string {
 export const filterKey = (f: ChFilter): string => JSON.stringify(f);
 
 /** A strokes gained value's tone: flat inside ±0.05, and flat throughout under three rounds (criterion 21, 91). */
-export const sgTone = (v: number | null | undefined, ready = true): ShsTone => (!ready || v == null || Math.abs(v) < 0.05 ? 'flat' : v > 0 ? 'gain' : 'loss');
+export const sgTone = (v: number | null | undefined, ready = true): ShsTone => {
+  const ink = ready ? changeInk(v, false) : '';
+  return ink === 'is-gain' ? 'gain' : ink === 'is-loss' ? 'loss' : 'flat';
+};
 
 /** A change's tone, grey until it clears its error (`deltaTone`). */
 export function changeTone(delta: number | null | undefined, se: number | null | undefined, lowerIsBetter: boolean): ShsTone {
@@ -118,7 +122,7 @@ function scores(data: ChPlayerProfile): number[] {
 /** The scoring average's change, for the feature card and the Scoring hero. */
 export function scoringChange(data: ChPlayerProfile): ShsChange {
   const list = scores(data);
-  if (list.length < 4) return { chip: null, tone: 'flat', direction: 'flat', words: `${list.length} ${list.length === 1 ? 'round' : 'rounds'} so far. A change shows from 4.` };
+  if (list.length < 4) return { chip: null, tone: 'flat', direction: 'flat', words: `${list.length} ${pluralWord(list.length, 'round', 'rounds')} so far. A change shows from 4.` };
   if (hasPrevious(data)) {
     const row = data.extra.compare!.rows.find((r) => r.lowerIsBetter && /scor/i.test(r.label));
     if (row?.last != null && row.previous != null) {
@@ -224,10 +228,10 @@ export function monoPath(pts: ReadonlyArray<readonly [number, number]>): string 
       t[i + 1] = k * b * m[i]!;
     }
   }
-  let d = `M${pts[0]![0].toFixed(1)},${pts[0]![1].toFixed(1)}`;
+  let d = `M${formatFixed(pts[0]![0], 1)},${formatFixed(pts[0]![1], 1)}`;
   for (let i = 0; i < n - 1; i++) {
     const h = dx[i]! / 3;
-    d += `C${(pts[i]![0] + h).toFixed(1)},${(pts[i]![1] + t[i]! * h).toFixed(1)} ${(pts[i + 1]![0] - h).toFixed(1)},${(pts[i + 1]![1] - t[i + 1]! * h).toFixed(1)} ${pts[i + 1]![0].toFixed(1)},${pts[i + 1]![1].toFixed(1)}`;
+    d += `C${formatFixed((pts[i]![0] + h), 1)},${formatFixed((pts[i]![1] + t[i]! * h), 1)} ${formatFixed((pts[i + 1]![0] - h), 1)},${formatFixed((pts[i + 1]![1] - t[i + 1]! * h), 1)} ${formatFixed(pts[i + 1]![0], 1)},${formatFixed(pts[i + 1]![1], 1)}`;
   }
   return d;
 }

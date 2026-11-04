@@ -46,7 +46,7 @@ describe('useStatsDetail', () => {
     expect(window.location.hash).toBe('');
   });
 
-  it("SectionStrip's go(-1) closes it", async () => {
+  it("SectionStrip’s go(-1) closes it", async () => {
     const { result } = hook();
     act(() => result.current.open('tee'));
     const pop = popped();
