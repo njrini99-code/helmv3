@@ -186,6 +186,8 @@ export interface ChAttachmentRecovery {
 export interface ChMessagesApi {
   /** golf_messages_redesign_v1, read on the server: the screens branch on it, and the root carries `data-ch-ms-v2`. */
   redesign?: boolean;
+  /** The design fixture's starting filter (`view=unread`). */
+  designFilter?: ChConvFilter;
   /** Redesign only: this device's pins (pinned.ts; account-wide with 11h). */
   pins?: ChPins;
   /** Redesign only: who is typing in each conversation on screen (use-typing-by-conversation.ts). */
@@ -345,7 +347,7 @@ function SenderPeek({ api, who, children }: { api: ChMessagesApi; who: ChPerson 
 
 /* Rail */
 
-export function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
+export function MessageHits({ api, q, nameMatches }: { api: ChMessagesApi; q: string; /** Redesign: how many names matched, so an empty search says it once (S-MSG.search). */ nameMatches?: number }) {
   const [hits, setHits] = useState<ChSearchHit[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -369,6 +371,13 @@ export function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
     };
   }, [search, term, attempt]);
   if (term.length < 2) return null;
+  if (nameMatches != null && hits && !hits.length && !failed)
+    return nameMatches > 0 ? null : (
+      <section className="ch-msv-card ch-msv-noresults" role="status">
+        <b>No results</b>
+        <span>Try another name or word.</span>
+      </section>
+    );
   return (
     <section
       className="ch-ms-sec"
@@ -845,10 +854,10 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
                 </section>
               );
             })}
-            {!list.length && <RailEmpty filter={filter} q={q} onClearSearch={() => setQ("")} onShowAll={() => setFilter("all")} />}
+            {!list.length && !(api.redesign && q.trim()) && <RailEmpty filter={filter} q={q} onClearSearch={() => setQ("")} onShowAll={() => setFilter("all")} />}
             {/* Messages first; the team's announcements fold under them (owner, 2026-10-16). */}
             {filter !== "groups" && <AnnouncementsSection api={api} q={q} />}
-            <MessageHits api={api} q={q} />
+            <MessageHits api={api} q={q} nameMatches={api.redesign ? list.length : undefined} />
           </>
         )}
       </div>

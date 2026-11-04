@@ -1,6 +1,7 @@
 'use client';
 
 import { usePinned } from './pinned';
+import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { useRowMutes } from './use-row-mutes';
 import { useTypingByConversation } from './use-typing-by-conversation';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -246,6 +247,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
         setAutoOpened(null);
         void msgs.markRead();
       } else setAutoOpened(null);
+      // Redesign: after a failed deep link, leaving the thread lets the desktop open the newest beside the rail (02 Completeness 11b).
+      if (!id && data.redesign) setParamsDone(true);
       if (id) setSelectedAnnId(null);
       // Opening a conversation reads it, so a mark from Mark as unread goes.
       if (id) mark(id, false);
@@ -532,6 +535,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
     [data.directory, data.viewerPlayerId],
   );
 
+  const convIdsRef = useRef<ReadonlySet<string>>(new Set());
+  const badges = useNotificationBadges();
   const searchMessages = useCallback(
     async (q: string) => {
       const res = await searchGolfMessages(q, data.teamId);
@@ -544,6 +549,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
       return res.results
         .map((r) => ({ r, text: decodeMessageContent(r.content) }))
         .filter(({ text }) => !(isPollFallbackText(text) && pollHitOnlyInFooter(text, q)))
+        // Redesign: a hidden conversation isn't in the list, so the hits leave it out too until a newer message brings it back.
+        .filter(({ r }) => !data.redesign || convIdsRef.current.has(r.conversationId))
         .map(({ r, text }) => ({
           messageId: r.messageId,
           conversationId: r.conversationId,
@@ -553,7 +560,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
           at: r.createdAt,
         }));
     },
-    [data.teamId],
+    [data.teamId, data.redesign],
   );
 
   // Mute state for the open conversation.
@@ -641,6 +648,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
   }, []);
 
   const redesign = data.redesign ?? false;
+  convIdsRef.current = new Set(convs.map((c) => c.id));
   const rowMutes = useRowMutes(data.viewerUserId, redesign);
   const convIds = useMemo(() => convs.map((c) => c.id), [convs]);
   const pins = usePinned(data.viewerUserId, data.teamId ?? '', convIds, redesign);
@@ -874,6 +882,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
             mark(id, false);
             if (id === selectedId) setSelectedId(null);
             await refetch();
+            if (redesign) void badges.refetch();
           })
       : null,
     addCandidates,
@@ -966,6 +975,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         mark(id, false);
         haptic('success');
         await refetch();
+        if (redesign) void badges.refetch();
       });
       return ok;
     },

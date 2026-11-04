@@ -5,7 +5,7 @@ import type { ChMessagesApi } from '../screens/messages/MessagesView';
 import { MessagesView } from '../screens/messages/MessagesScreen';
 import type { ChAnnouncement, ChConv, ChFile, ChMember, ChMsg, ChMute, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
 import { useToast } from '../ui/Toast';
-import { DESIGN_CONVS, DESIGN_NOW, DESIGN_PEOPLE, DESIGN_REACTIONS, DESIGN_ROUTE_CONV, DESIGN_THREADS, DESIGN_VOTES, designAttachments, designMsg, designPins, designRowTyping } from './messages-design-cast';
+import { designLongInbox, DESIGN_CONVS, DESIGN_NOW, DESIGN_PEOPLE, DESIGN_REACTIONS, DESIGN_ROUTE_CONV, DESIGN_THREADS, DESIGN_VOTES, designAttachments, designMsg, designPins, designRowTyping } from './messages-design-cast';
 import { usePinned } from '../screens/messages/pinned';
 import { buildPollPayload, encodeChoice, parsePollPayload, pollFallbackText, tallyPoll, type Poll, type PollResponseRow } from '@/lib/golf/message-polls';
 
@@ -201,7 +201,7 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
   const design = state === 'design';
   const cast = useMemo(() => (design ? DESIGN_CAST : castOf(role)), [design, role]);
   const { people, all } = cast;
-  const [convs, setConvs] = useState<ChConv[]>(state === 'empty' || (design && view === 'empty') ? [] : cast.convs);
+  const [convs, setConvs] = useState<ChConv[]>(state === 'empty' || (design && view === 'empty') ? [] : design && view === 'longinbox' ? designLongInbox(cast.convs) : cast.convs);
   const [threads, setThreads] = useState(cast.threads);
   const [reactions, setReactions] = useState(design ? DESIGN_REACTIONS : baseReactions);
   const [votes, setVotes] = useState<PollResponseRow[]>(design ? DESIGN_VOTES : baseVotes);
@@ -253,6 +253,7 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
   const api: ChMessagesApi = {
     // The preview forces the redesign on for the design fixture, whatever the flag says.
     redesign: design,
+    designFilter: design && view === 'unread' ? 'unread' : undefined,
     ...(design ? { pins, typingByConv: designRowTyping(view) } : {}),
     viewer: { userId: 'me', role, name: cast.me.name },
     signers: { 'c-maya': { name: 'Maya Reyes', title: 'Head coach' } },

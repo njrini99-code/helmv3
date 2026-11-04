@@ -25,7 +25,7 @@ export async function ClubhouseMessagesRoute() {
   if (!session) return null;
   const team = await resolveClubhouseTeam(session);
   if (!team) {
-    return <MessagesNoTeam coach={pickGolfDashboardRole(session) === 'coach'} />;
+    return <MessagesNoTeam coach={pickGolfDashboardRole(session) === 'coach'} redesign={isFlagEnabled('golf_messages_redesign_v1')} />;
   }
   const viewerName = session.coach?.full_name ?? ([session.player?.first_name, session.player?.last_name].filter(Boolean).join(' ') || 'You');
   const viewerPlayerId = team.role === 'player' ? team.playerId : null;

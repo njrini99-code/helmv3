@@ -248,10 +248,17 @@ export function MessagesPhone({ api }: { api: ChMessagesApi }) {
 
 /** The redesign's inbox: context line, search and New, segmented, Pinned card, Recent card (06 S-MSG). No large title on the phone. */
 function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
-  const [filter, setFilter] = useState<ChConvFilter>("all");
+  const [filter, setFilter] = useState<ChConvFilter>(api.designFilter ?? "all");
   const [q, setQ] = useState("");
   const unread = api.convs.filter(isUnread).length;
   const list = filterConvs(api.convs, filter, q);
+  // A filter or search change cuts its leaving rows in one frame (M-MSG-03b); a row leaving the list fades (M-MSG-CP-11).
+  const scope = `${filter}\u0000${q}`;
+  const lastScope = useRef(scope);
+  const changedScope = lastScope.current !== scope;
+  useEffect(() => {
+    lastScope.current = scope;
+  });
   const loading = (api.convsLoading && !api.convs.length) || api.annLoading;
   const context = loading ? "Loading conversations" : [`${unread} unread`, api.teamName].filter(Boolean).join(" · ");
   const pinned = (api.pins?.ids ?? []).map((id) => api.convs.find((c) => c.id === id)).filter((c): c is ChConv => !!c);
@@ -301,7 +308,7 @@ function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void })
       ) : firstRun ? (
         <MessagesFirstRun coach={api.viewer.role === "coach"} onNew={onNew} />
       ) : (
-        <Swap swapKey={filter} className="ch-msp-list">
+        <div className="ch-msp-list">
           {filter === "all" && !q.trim() && pinned.length > 0 && (
             <section className="ch-msv-card" aria-label="Pinned">
               <h2 className="ch-msv-card__h">Pinned</h2>
@@ -333,17 +340,17 @@ function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void })
               <h2 className="ch-msv-card__h">
                 Recent <small className="ch-num">{list.length}</small>
               </h2>
-              <ListPresence>
+              <ListPresence arrive="inbox" cut={changedScope}>
                 {list.map((c) => (
                   <ConvRow key={c.id} api={api} c={c} avatarSize={44} phone />
                 ))}
               </ListPresence>
             </section>
           )}
-          {!list.length && <RailEmpty filter={filter} q={q} onClearSearch={() => setQ("")} onShowAll={() => setFilter("all")} />}
+          {!list.length && !q.trim() && <RailEmpty filter={filter} q={q} onClearSearch={() => setQ("")} onShowAll={() => setFilter("all")} />}
           {filter !== "groups" && <AnnouncementsSection api={api} q={q} />}
-          <MessageHits api={api} q={q} />
-        </Swap>
+          <MessageHits api={api} q={q} nameMatches={list.length} />
+        </div>
       )}
     </div>
   );

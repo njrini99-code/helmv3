@@ -4316,3 +4316,47 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 .ch-menu__item:disabled > :not(small) {
   opacity: 0.5;
 }
+
+/* Redesign: the announcements row is an inbox row, the search's empty card, the no-team card (06 S-MSG.announcements, 05 S-MSG.search, S-MSG.noteam). */
+[data-ch-ms-v2] .ch-ms-sec.is-ann .ch-ms-fold {
+  min-height: 64px;
+  padding: 10px 16px;
+  border-radius: 16px;
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+[data-ch-ms-v2] .ch-ms-fold .ch-ms-grp.is-ann {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--ch-well-bg-flat);
+  color: var(--ch-accent);
+}
+[data-ch-ms-v2] .ch-ms-fold__b b {
+  font: 600 calc(17 * var(--ch-type-k)) / calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+[data-ch-ms-v2] .ch-ms-fold__b > span {
+  font: 400 calc(15 * var(--ch-type-k)) / calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+[data-ch-ms-v2] .ch-msv-noresults {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 28px 22px;
+  text-align: center;
+}
+[data-ch-ms-v2] .ch-msv-noresults b {
+  font: 600 calc(17 * var(--ch-type-k)) / calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+}
+[data-ch-ms-v2] .ch-msv-noresults span {
+  font: 400 calc(15 * var(--ch-type-k)) / calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+[data-ch-ms-v2] .ch-msv-noteam {
+  margin: 16px var(--ch-page-x-phone);
+  border-radius: 16px;
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}

@@ -168,3 +168,9 @@ export const DESIGN_ROUTES = [
   'inbox', 'unread', 'rowtyping', 'longinbox', 'loading', 'rowmenu', 'pinlimit', 'thread', 'team', 'typing', 'grouptyping', 'times', 'failed', 'long', 'datepill', 'jump', 'toast',
   'attach', 'file', 'reply', 'edit', 'pollnew', 'hold', 'holdseen', 'react', 'seen', 'poll', 'votes', 'details', 'groupdetails', 'mute', 'empty', 'new', 'fresh',
 ] as const;
+
+/** `longinbox`: the longest real names and previews, and enough rows to scroll. */
+export const designLongInbox = (convs: readonly ChConv[]): ChConv[] => [
+  ...convs.map((c, i) => (i === 1 ? { ...c, title: 'Christopher Vanderhoeven-Castellanos', lastText: 'Can we move Thursday’s range session to the short course so the freshmen can see it before the qualifier?' } : c)),
+  ...Array.from({ length: 14 }, (_, i) => ({ ...convs[convs.length - 1]!, id: `long-${i}`, title: `Player ${i + 1}`, unread: 0 })),
+];
