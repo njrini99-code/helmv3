@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import type { ChWindow } from '../../data/stats-common';
 import type { ChSprayGroup } from '../../data/stats-detail';
 import { formatFixed, NO_DATA } from '../../lib/format';
@@ -71,7 +71,12 @@ export function Rule({ children, how }: { children: ReactNode; how?: string }) {
 }
 
 /** "More detail": a native disclosure (keyboard and screen reader for free), closed on every screen: the figures and the picture are the read. */
+/** Inside a pushed detail the page is the "more": its panels show open, with no toggle. */
+export const MoreOpen = createContext(false);
+
 export function More({ children }: { children: ReactNode }) {
+  const open = useContext(MoreOpen);
+  if (open) return <div className="ch-gm__body">{children}</div>;
   return (
     <details className="ch-gx-more">
       <summary>More detail</summary>

@@ -24,7 +24,8 @@ import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, ParTiles } from './c
 import { PuttBands } from './PuttBands';
 import type { PuttBandInput } from './putt-bands';
 import { ScoreMixBar } from './ScoreMixBar';
-import { Empty, More, Panel, Rule, RULE_WINDOW } from './detail';
+import { Empty, More, MoreOpen, Panel, Rule, RULE_WINDOW } from './detail';
+import { ShsCard } from './SummaryCard';
 import { ApproachMore, PuttingMore, ScoringMore, ShortMore, TeeMore } from './GameMore';
 import { readsLineParts } from './reads-line';
 import { missSplit } from './miss-split';
@@ -147,6 +148,7 @@ function Sec({
   reads,
   more,
   children,
+  detail,
 }: {
   id: string;
   /** The phone shows one section at a time (the chips switch it); desktop shows all five. */
@@ -165,8 +167,59 @@ function Sec({
   /** The figures below the headline: a "More detail" disclosure. */
   more: ReactNode;
   children: ReactNode;
+  /** The section as a pushed detail's body (clubhouse_stats_redesign_v1): the page's blocks around every panel of today's. */
+  detail?: GameAreaDetail;
 }) {
   if (hide) return null;
+  if (detail) {
+    const figures = (
+      <ShsCard title="The figures" meta={detail.figuresMeta}>
+        <dl className="ch-shs-m4">
+          {figs.map(([l, v, n, t, needs]) => {
+            const reason = needs ?? (v === NO_DATA ? NONE_REASON[`${id}:${l}`] : undefined);
+            return (
+              <div key={l}>
+                <dt className="t">{l}</dt>
+                <dd className={`v${t ? ` ch-shs-${t}` : ''}${reason ? ' ch-shs-none' : ''}`}>{reason ? NO_DATA : v}</dd>
+                {(reason || (n && v !== NO_DATA)) && <dd className="m">{reason ?? n}</dd>}
+              </div>
+            );
+          })}
+        </dl>
+      </ShsCard>
+    );
+    const panels = <div className="ch-gm__body">{children}</div>;
+    return (
+      <section className="ch-gm is-detail" id={`gm-${id}`} aria-label={title}>
+        {detail.hero}
+        {detail.figuresFirst && (
+          <ShsCard title={detail.bench ? 'You and the Tour' : 'In short'}>
+            <p className="ch-shs-plead">{lead}</p>
+            {detail.bench}
+          </ShsCard>
+        )}
+        {detail.figuresFirst ? (
+          <>
+            {figures}
+            {panels}
+            {detail.before}
+          </>
+        ) : (
+          <>
+            {detail.before}
+            {panels}
+            {figures}
+          </>
+        )}
+        {detail.after}
+        <MoreOpen.Provider value>{more}</MoreOpen.Provider>
+        <ShsCard title="What this counts">
+          <Rule how={how}>{rule}</Rule>
+          {reads}
+        </ShsCard>
+      </section>
+    );
+  }
   return (
     <section className="ch-gm" id={`gm-${id}`} aria-labelledby={`gm-${id}-t`}>
       <div className="ch-gm__id">
@@ -203,6 +256,17 @@ function Sec({
   );
 }
 
+/** What a redesigned detail draws around a section's own panels. */
+export interface GameAreaDetail {
+  hero: ReactNode;
+  bench?: ReactNode;
+  before?: ReactNode;
+  after?: ReactNode;
+  figuresMeta?: string;
+  /** Parts lead with In short and The figures; Scoring puts its chart and panels first (08 criterion 32). */
+  figuresFirst: boolean;
+}
+
 /**
  * Game detail: every section leads with one head-pro sentence built from the
  * numbers below it, then four figures against the Tour where golf_pga_standards has
@@ -227,6 +291,7 @@ export function GameDetail({
   phone = false,
   only,
   shs = false,
+  asDetail,
 }: {
   s: GolfStats;
   /** What the profile reads beyond the shot-level figures: per-round lines, holes, approach proximity, where shots finish. */
@@ -252,6 +317,8 @@ export function GameDetail({
   only?: GameSectionId;
   /** clubhouse_stats_redesign_v1: Missed short reads the calculator's own figure. */
   shs?: boolean;
+  /** With `only`: draw that section as the redesign's pushed detail. */
+  asDetail?: GameAreaDetail;
 }) {
   // The player reading their own stats is "You": the verb agrees and mid-sentence it is lower case (F-45).
   const reduced = useChReducedMotion();
@@ -446,6 +513,7 @@ export function GameDetail({
 
       <Sec
         id="scoring"
+        detail={asDetail}
         hide={!show('scoring')}
         reads={<ReadsLine reads={reads} area="scoring" />}
         icon={Flag}
@@ -486,6 +554,7 @@ export function GameDetail({
 
       <Sec
         id="tee"
+        detail={asDetail}
         hide={!show('tee')}
         reads={<ReadsLine reads={reads} area="tee" />}
         icon={MoveUpRight}
@@ -535,6 +604,7 @@ export function GameDetail({
 
       <Sec
         id="approach"
+        detail={asDetail}
         hide={!show('approach')}
         reads={<ReadsLine reads={reads} area="approach" />}
         icon={Crosshair}
@@ -635,6 +705,7 @@ export function GameDetail({
 
       <Sec
         id="short"
+        detail={asDetail}
         hide={!show('short')}
         reads={<ReadsLine reads={reads} area="short" />}
         icon={FlagTriangleRight}
@@ -689,6 +760,7 @@ export function GameDetail({
 
       <Sec
         id="putting"
+        detail={asDetail}
         hide={!show('putting')}
         reads={<ReadsLine reads={reads} area="putting" />}
         icon={CircleDot}

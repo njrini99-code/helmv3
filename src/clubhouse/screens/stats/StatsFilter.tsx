@@ -81,6 +81,7 @@ export function StatsFilter({
   onChange,
   phone = false,
   team = false,
+  hook,
 }: {
   filter: ChFilter;
   options: ChFilterOptions;
@@ -88,6 +89,8 @@ export function StatsFilter({
   count: number;
   codes: ChFilterCodes;
   onChange: (next: ChFilter) => void;
+  /** A capture hook on the open button (`data-ch`). */
+  hook?: string;
   phone?: boolean;
   /** The pick list names each round's player. */
   team?: boolean;
@@ -99,7 +102,7 @@ export function StatsFilter({
   return (
     <section className={'ch-sf' + (phone ? ' is-phone' : '')} aria-label="Round filter">
       <div className="ch-sf__bar">
-        <button type="button" className={'ch-btn ch-btn--ghost ch-btn--sm ch-sf__open' + (phone ? '' : ' ch-btn--flush-start')} aria-haspopup="dialog" onClick={() => setOpen(true)}>
+        <button type="button" className={'ch-btn ch-btn--ghost ch-btn--sm ch-sf__open' + (phone ? '' : ' ch-btn--flush-start')} aria-haspopup="dialog" data-ch={hook} onClick={() => setOpen(true)}>
           <Icon icon={SlidersHorizontal} size={14} />
           <span>Filter</span>
           {chips.length > 0 && <span role="img" className="ch-sf__n ch-num" aria-label={`${chips.length} on`}>{chips.length}</span>}

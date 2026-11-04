@@ -24,6 +24,7 @@ export function StatsDetailScreen({
   scrollRef,
   restoreScroll,
   onLeave,
+  big = false,
 }: {
   id: string;
   title: string;
@@ -38,6 +39,8 @@ export function StatsDetailScreen({
   restoreScroll?: number | null;
   /** A link inside is about to leave the page. */
   onLeave?: () => void;
+  /** Text Size Larger and XXL reflow its cards (08 criterion 20). */
+  big?: boolean;
 }) {
   const reduced = useChReducedMotion();
   const titleId = `ch-shs-d-${id}-t`;
@@ -55,8 +58,8 @@ export function StatsDetailScreen({
     if ((e.target as Element).closest?.('a[href]')) onLeave?.();
   };
   return (
-    <PhoneScreen labelledBy={titleId} className="ch-shs-screen">
-      <PhoneBar back={{ label: backLabel, onBack }} title={title} titleId={titleId} action={<span className="ch-shs-d-slot" aria-hidden="true" />} />
+    <PhoneScreen labelledBy={titleId} className={'ch-shs-screen' + (big ? ' is-big' : '')}>
+      <PhoneBar back={{ label: backLabel, onBack, hook: 'stats-back' }} title={title} titleId={titleId} action={<span className="ch-shs-d-slot" aria-hidden="true" />} />
       {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events -- only watches for a link leaving; every control inside has its own keys */}
       <div
         className="ch-shs-d-body"

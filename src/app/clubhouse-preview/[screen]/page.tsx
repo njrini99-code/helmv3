@@ -64,6 +64,7 @@ import {
   PREVIEW_TEAM_STATS,
 } from '@/clubhouse/preview/fixtures-stats';
 import '@/clubhouse/styles/stats.css';
+import '@/clubhouse/styles/stats-redesign.css';
 import '@/clubhouse/styles/calendar.css';
 import '@/clubhouse/styles/tournament-fields.css';
 import '@/clubhouse/styles/messages.css';
@@ -435,7 +436,7 @@ export default async function ClubhousePreview({
         state === 'failed' ? (
           <StatsPlayer data={{ ...PREVIEW_PLAYER, roundsError: true, statsError: true, devError: true }} coachId="preview-coach" shs={shs} />
         ) : state === 'loading' ? (
-          <StatsSkeletonFor profile />
+          <StatsSkeletonFor profile shs={shs} />
         ) : state === 'denied' && shs ? (
           <NotOnTeam coach={false} />
         ) : shs && previewShsPlayer(state) ? (

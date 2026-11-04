@@ -15,6 +15,7 @@ import { resolveClubhouseTeam } from './team';
 import { statsRedesignEnabled } from '../gate';
 import { NoTeam } from '../ui/NoTeam';
 import '../styles/stats.css';
+import '../styles/stats-redesign.css';
 
 /**
  * /golf/dashboard/stats in Clubhouse.

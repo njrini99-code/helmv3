@@ -43,6 +43,7 @@ import { FocusLoop } from './FocusLoop';
 import { ProposalAnswer } from './ProposalAnswer';
 import { GoalSetButton, GoalStatus, GoalSuggestions } from './Goals';
 import { StatsPlayerPhone } from './StatsPlayerPhone';
+import { StatsPlayerPhoneShs } from './StatsPlayerPhoneShs';
 import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { useChSessionState } from '../../lib/session-state';
 import { CACHE_ERROR, countWords, FORM_STEADY, shotsWords } from './notes';
@@ -216,6 +217,26 @@ export function StatsPlayer({ data, coachId, initialTab, reads, shs = false }: {
 
   // CH-5903: the figures on screen are dimmed until the new ones land; this says which ones they are.
   const updating = <UpdatingNote from={data.filter} to={loading} code="CH-5903" />;
+  if (phone && shs)
+    return (
+      <main className="ch-st is-phone" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined}>
+        <StatsPlayerPhoneShs
+          data={data}
+          initialTab={initialTab}
+          reads={reads}
+          playerHref={href(data.id, data.filter)}
+          messageHref={messageHref}
+          windowShown={rangeOf(loading ?? data.filter)}
+          onWindow={changeWindow}
+          onFilter={changeFilter}
+          onBackToTeam={() => go(null, data.filter)}
+          onAddFocus={coach && coachId ? () => setFocusOpen(true) : null}
+          onRetry={() => router.refresh()}
+          updating={updating}
+        />
+        {sheet}
+      </main>
+    );
   if (phone)
     return (
       <>
