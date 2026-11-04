@@ -492,6 +492,8 @@ On the v2 grammar (D-70): selection for choosing a player or an insight
 | 131706 | CH-13752 | `ASK_A_FOLLOW_UP_IS_TAPPED` | Ask: A follow-up is tapped |
 | 131707 | CH-13780 | `DEEP_DIVE_A_READ_IN_THE_LIST` | Deep dive: a read in the list, or a round or a plan under it, is tapped |
 | 131708 | CH-13705 | `RECHECK_TAPPED` | Re-check tapped |
+| 131709 | CH-13760 | `PLAYER_FILE_SAVING_A_COACHS_PLAN_FAILS` | Player File: saving a coach's plan fails |
+| 131710 | CH-13761 | `PLAYER_FILE_ONE_PART_OF_THE_FILE` | Player File: one part of the file didn't load |
 | 131760 | CH-13733 | `PLAYER_A_COURSE_IS_PICKED_IN_THEIR` | Player: a course is picked in their Course plan (chs-21) |
 
 From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
@@ -540,6 +542,8 @@ CH-1842, 11825 CH-1816.
 | 131817 | CH-13880 | `STANDING_A_SCREEN_READER_MOVES_THROUGH_THE` | Standing: a screen reader moves through the page |
 | 131818 | CH-13890 | `DEEP_DIVE_A_SCREEN_READER_MOVES_THROUGH` | Deep dive: a screen reader moves through the page |
 | 131819 | CH-13853 | `ASK_A_VALIDATED_VISUAL` | Ask: A validated visual (strokes gained anatomy) |
+| 131820 | CH-13861 | `READ_THE_LINKS_READ_IS_NO_LONGER` | Read: the link's read is no longer open |
+| 131821 | CH-13866 | `READ_THE_READ_DIDNT_LOAD` | Read: the read didn't load |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,

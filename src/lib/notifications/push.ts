@@ -42,6 +42,8 @@ import { holdOrPass } from './class-hold';
  */
 function pushDeliveryKeyFor(type: NotificationType): DeliveryNotificationKey | null {
   switch (type) {
+    case 'practice_plan':
+      return 'push_events';
     case 'new_message':
       return 'push_messages';
     // Announcements had NO switch of their own in the settings matrix — the
@@ -102,6 +104,11 @@ export function generatePushPayload(
   data: Record<string, unknown>
 ): { title: string; body: string; data: Record<string, unknown> } {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
+
+  // Golf's practice plan: the caller's own words and link (N-00 Wiring gap 1).
+  if (type === 'practice_plan') {
+    return { title: String(data.title ?? 'Practice plan'), body: String(data.body ?? ''), data: { ...data, url: String(data.url ?? '/golf/dashboard') } };
+  }
   // Deep-link contract (NAV-IA3): open the exact item when the sender supplies
   // its id, else the list it lives in.
   const idOf = (key: string): string | null => {
@@ -228,7 +235,7 @@ export function generatePushPayload(
       return {
         title: typeof data.title === 'string' && data.title ? data.title : 'While you were in class',
         body: String(data.body || ''),
-        data: { url: typeof data.link === 'string' && data.link.startsWith(baseUrl) ? data.link : `${baseUrl}/golf/dashboard`, type },
+        data: { url: sameOrigin(data.link, baseUrl) ? String(data.link) : `${baseUrl}/golf/dashboard`, type },
       };
     default:
       return {
@@ -664,4 +671,14 @@ export async function sendBulkPushNotification(
     }),
   );
   return { sent, failed };
+}
+
+/** A link only counts as ours when its origin is exactly ours: a prefix match would also pass https://helmsportslabs.com.evil.test. */
+function sameOrigin(link: unknown, baseUrl: string): boolean {
+  if (typeof link !== 'string') return false;
+  try {
+    return new URL(link).origin === new URL(baseUrl).origin;
+  } catch {
+    return false;
+  }
 }

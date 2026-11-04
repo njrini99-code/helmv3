@@ -109,3 +109,12 @@ export function relativeTime(at: Date | number | string, style: 'short' | 'long'
   if (days <= 1) return 'Yesterday';
   return shortDate(t);
 }
+
+/** A date formatted with explicit options, for a surface whose page draws its own shape. The one place these are built (CONS-16). */
+export function formatWith(at: Date | number, options: Intl.DateTimeFormatOptions): string {
+  return new Intl.DateTimeFormat('en-US', options).format(at);
+}
+
+export function partsWith(at: Date | number, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormatPart[] {
+  return new Intl.DateTimeFormat('en-US', options).formatToParts(at);
+}

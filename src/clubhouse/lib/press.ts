@@ -10,13 +10,24 @@ const bezier = (c: readonly number[]) => `cubic-bezier(${c.join(', ')})`;
  * and cards do not scale; they answer with their own pressed or selected look (owner 2026-10-01, audit F02: a whole
  * row or label shrinking read as rubbery and softened its text).
  */
-const PRESSABLE = '.ch-btn,[data-ch-press]';
+const PRESSABLE = '.ch-btn,[data-ch-press],[data-ch-press-scale]';
 /** Wider than this is a row or a full-width bar, not a button: it does not scale either. */
 export const PRESS_MAX_WIDTH = 240;
 
 /** v2: shrink by about 6px whatever the width, never below 0.96. */
 export function pressScale(width: number): number {
   return Math.max(0.96, 1 - 6 / (width || 80));
+}
+
+/**
+ * A card that opens something opts in with `data-ch-press-scale=".97"`: that flat scale at any width (the width cap is for a row or a
+ * bar that did not ask), and `--ch-ease` both ways. Null: no opt-in, or a value that is not a scale.
+ */
+export function pressScaleOptIn(el: Element | null): number | null {
+  const raw = el?.getAttribute('data-ch-press-scale');
+  if (raw == null || raw === '') return null;
+  const n = Number(raw);
+  return n > 0 && n < 1 ? n : null;
 }
 
 /** A touch press waits this long before it shrinks (A12): a scroll that starts on a button cancels first, so it never flinches. */
@@ -48,7 +59,7 @@ export function useChPress(motion: boolean): void {
   useEffect(() => {
     if (typeof Element === 'undefined') return;
     const scales = motion && !!Element.prototype.animate;
-    type Press = { target: HTMLElement | null; el: HTMLElement | null; scale: number };
+    type Press = { target: HTMLElement | null; el: HTMLElement | null; scale: number; flat: boolean };
     let held: (Press & { anim: Animation | null; at: number }) | null = null;
     /** A touch press waiting out its delay (A12): where it started, and the timer that will press it. */
     let pending: (Press & { x: number; y: number; id: number; timer: number }) | null = null;
@@ -62,11 +73,11 @@ export function useChPress(motion: boolean): void {
       lingering.target.removeAttribute('data-ch-pressed');
       lingering = null;
     };
-    const press = ({ target, el, scale }: Press) => {
+    const press = ({ target, el, scale, flat }: Press) => {
       unmark();
       target?.setAttribute('data-ch-pressed', '');
       const anim = el && scales ? el.animate([{ scale: '1' }, { scale: String(scale) }], { duration: CH_DUR.press * 1000, easing: bezier(CH_EASE), fill: 'forwards' }) : null;
-      held = { target, el, scale, anim, at: Date.now() };
+      held = { target, el, scale, flat, anim, at: Date.now() };
     };
     const drop = () => {
       if (!pending) return;
@@ -86,8 +97,9 @@ export function useChPress(motion: boolean): void {
       let el = from.closest(PRESSABLE) as HTMLElement | null;
       if (off(el)) el = null;
       const width = el?.getBoundingClientRect().width ?? 0;
-      if (width > PRESS_MAX_WIDTH) el = null;
-      const p: Press = { target: off(target) ? null : target, el, scale: pressScale(width) };
+      const optIn = pressScaleOptIn(el);
+      if (optIn == null && width > PRESS_MAX_WIDTH) el = null;
+      const p: Press = { target: off(target) ? null : target, el, scale: optIn ?? pressScale(width), flat: optIn != null };
       if (!p.target && !p.el) return;
       // Mouse and pen press at once; a finger waits out the delay, as UIKit's delaysContentTouches does in a scroll view.
       if (e.pointerType !== 'touch') {
@@ -128,7 +140,7 @@ export function useChPress(motion: boolean): void {
     const release = (now = false) => {
       window.clearTimeout(tapTimer);
       if (!held) return;
-      const { target, el, scale, anim, at } = held;
+      const { target, el, scale, flat, anim, at } = held;
       held = null;
       if (target) {
         const left = now ? 0 : PRESS_TAP_SHOW_MS - (Date.now() - at);
@@ -139,7 +151,7 @@ export function useChPress(motion: boolean): void {
       // Spring back from where the press actually is: a release before the press finished starts from part-way.
       const current = parseFloat(getComputedStyle(el).scale);
       const fromScale = Number.isFinite(current) && current > 0 ? current : scale;
-      el.animate([{ scale: String(fromScale) }, { scale: '1' }], { duration: CH_DUR.release * 1000, easing: bezier(CH_SPRING) });
+      el.animate([{ scale: String(fromScale) }, { scale: '1' }], { duration: CH_DUR.release * 1000, easing: bezier(flat ? CH_EASE : CH_SPRING) });
       anim.cancel();
     };
     document.addEventListener('pointerdown', down, true);

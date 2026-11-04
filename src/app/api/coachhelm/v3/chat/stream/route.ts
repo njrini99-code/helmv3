@@ -24,8 +24,13 @@
  *                      charts and receipts rather than only the prose.
  * ========================================================================== */
 
+import { isPracticePlansEnabled } from '@/lib/coachhelm/v3/practice-plan/flag';
+import { runPlayerTurn } from '@/lib/coachhelm/v3/chat/player-turn';
+import { knowsSection, readAskKnows } from '@/lib/coachhelm/v3/chat/ask-knows';
+import { isAskV2Enabled, isPlayerAskEnabled } from '@/lib/coachhelm/v3/chat/ask-flag';
+import { stripReadMarkers } from '@/lib/coachhelm/v3/chat/read-markers';
 import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { z } from 'zod';
 import * as Sentry from '@sentry/nextjs';
 import {
@@ -331,6 +336,12 @@ export async function POST(req: NextRequest) {
   try {
     ctx = await resolveCoachChatContext(supabase);
   } catch (err) {
+    // A player has no coach row: their own read-only Ask, on this route, with the role from the session.
+    if (err instanceof CoachContextError && err.status === 403 && isPlayerAskEnabled()) {
+      const body = Body.safeParse(await req.json().catch(() => null));
+      if (!body.success) return NextResponse.json({ error: 'Bad request' }, { status: 400 });
+      return runPlayerTurn(supabase, { messages: body.data.messages }, req.signal);
+    }
     if (err instanceof CoachContextError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }
@@ -549,6 +560,10 @@ export async function POST(req: NextRequest) {
   // comment.
   const claimsBlockEnabled = isFlagEnabled('coachhelm_chat_claim_gate');
 
+  // Ask v2 only where Clubhouse is on for the team: this route also serves Fairway's chat (coachhelm-ask 02, hard rules).
+  const askV2 = isAskV2Enabled() && isClubhouseForTeam(ctx.team_id);
+  const knows = askV2 ? await readAskKnows(supabase, { coachId: ctx.coach_id, teamId: ctx.team_id, conversationId: convId }).catch(() => null) : null;
+
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
       const tools = buildCoachTools({
@@ -559,6 +574,9 @@ export async function POST(req: NextRequest) {
         collect,
         // Ask's whole-team tools follow Clubhouse for this team (flag, then allowlist).
         teamTools: isClubhouseForTeam(ctx.team_id),
+        askV2,
+        practicePlans: isPracticePlansEnabled(),
+        defer: (fn) => after(fn),
       });
 
       const result = streamText({
@@ -589,7 +607,7 @@ export async function POST(req: NextRequest) {
         // string is ever edited.
         instructions: {
           role: 'system',
-          content: buildInstructions(ctx, new Date().toISOString(), claimsBlockEnabled),
+          content: buildInstructions(ctx, new Date().toISOString(), claimsBlockEnabled, { askV2, knows: knows ? knowsSection(knows) : null }),
           providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } },
         },
         // Pass the tool set so tool parts from earlier turns convert correctly —
@@ -653,7 +671,8 @@ export async function POST(req: NextRequest) {
         // the gate the whole action framework rests on — a model cannot reach
         // a write, only an approval request.
         toolApproval: ({ toolCall }) => (isConfirmRequired(toolCall.toolName) ? 'user-approval' : 'not-applicable'),
-        stopWhen: stepCountIs(8),
+        // The brief ends the turn: the coach's answers are the next message (practice-plan 02 §4.2).
+        stopWhen: [stepCountIs(8), ({ steps }: { steps: ReadonlyArray<{ toolCalls: ReadonlyArray<{ toolName: string }> }> }) => !!steps.at(-1)?.toolCalls.some((t) => t.toolName === 'ask_practice_brief')],
         onChunk: () => {
           if (firstTokenMs === null) firstTokenMs = Date.now() - startedAt;
         },
@@ -913,7 +932,8 @@ export async function POST(req: NextRequest) {
       const { strippedText, claims } = claimsBlockEnabled
         ? extractAndValidateChatClaims(rawText, measurements)
         : extractAndValidateClaimsSafe(rawText, null);
-      turnText = strippedText.trim();
+      // Read markers are the UI's: the "2" in `e2` is not a claim, and the stored `content` never carries one. The parts keep them.
+      turnText = (askV2 ? stripReadMarkers(strippedText) : strippedText).trim();
       turnVerdict = computeTurnVerdict({
         streamComplete: !streamErrored,
         text: turnText,

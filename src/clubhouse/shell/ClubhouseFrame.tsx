@@ -35,6 +35,7 @@ import { DockProvider, PhoneDock } from './Dock';
 import { PushAsk } from './PushAsk';
 import { useQuietRefresh } from './use-quiet-refresh';
 import { AskSheetProvider } from './AskSheet';
+import { QuickChatProvider } from './quick-chat/QuickChatProvider';
 import { CrumbProvider } from './crumbs';
 import { PhoneChromeProvider, PhoneUnderlay, usePhoneChromeState } from './phone-chrome';
 import '../styles/tokens.css';
@@ -168,16 +169,16 @@ export function ClubhouseFrame({
         <PhoneChromeProvider>
           <SectionSwitchProvider pathname={pathname} role={role} shell={shell}>
             {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
-            <FrameRoot motionOff={!showAnimations} fullScreen={fullScreen} homeRoot={rebuilt && pathname.replace(/\/$/, '') === '/golf/dashboard'}>
+            <FrameRoot crh={shell.crh ?? false} motionOff={!showAnimations} fullScreen={fullScreen} homeRoot={rebuilt && pathname.replace(/\/$/, '') === '/golf/dashboard'}>
               <ToastProvider scope={userData.teamId ?? ''}>
                 <CrumbProvider>
-                  <AskSheetProvider pathname={pathname} search={search} enabled={shell.askAvailable ?? false}>
+                  <MaybeQuickChat on={shell.quickChat ?? false} plans={shell.practicePlans ?? false} pathname={pathname} search={search} enabled={shell.askAvailable ?? false}>
                     <DockProvider>
                       {/* The first Tab on any page: jump past the navigation to the page itself (CH-1607: it slides into view). */}
                       <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
                         Skip to content
                       </a>
-                      <div className="ch-app" data-ch-rail={folded ? 'folded' : undefined}>
+                      <div className="ch-app" data-ch-rail={folded ? 'folded' : undefined} data-ch-refresh={shell.refresh ? 'on' : undefined}>
                         <Sidebar userData={userData} shell={shell} pathname={pathname} teamSwitch={teamSwitch} folded={folded} />
                         <RailToggle folded={folded} onFold={setFolded} />
                         <div className="ch-canvas" id="ch-canvas">
@@ -215,7 +216,7 @@ export function ClubhouseFrame({
                       {/* The iPhone app's push ask, once, at a calm moment (CH-1911); nothing in a browser. */}
                       <PushAsk pathname={pathname} role={role} screenKey={screenParam(search)} />
                     </DockProvider>
-                  </AskSheetProvider>
+                  </MaybeQuickChat>
                 </CrumbProvider>
               </ToastProvider>
             </FrameRoot>
@@ -228,7 +229,7 @@ export function ClubhouseFrame({
 }
 
 /** `.ch-root`, marked while a pushed phone screen covers the page, so toasts sit above its composer instead of the hidden tab bar. */
-function FrameRoot({ motionOff, fullScreen, homeRoot, children }: { motionOff: boolean; fullScreen: boolean; homeRoot: boolean; children: ReactNode }) {
+function FrameRoot({ crh, motionOff, fullScreen, homeRoot, children }: { crh: boolean; motionOff: boolean; fullScreen: boolean; homeRoot: boolean; children: ReactNode }) {
   const { immersive, noTabs, hero: pageHero } = usePhoneChromeState();
   const sections = useSectionSwitch();
   // P001-D4: Home's phone bar is the green hero's from the server's first paint (the device's last layout, F-36), not
@@ -253,6 +254,7 @@ function FrameRoot({ motionOff, fullScreen, homeRoot, children }: { motionOff: b
     <div
       ref={rootRef}
       className={`ch-root ${clubhouseFontVariables}`}
+      data-ch-crh={crh ? 'on' : undefined}
       data-ui="clubhouse"
       data-motion={motionOff ? 'off' : undefined}
       data-phone-immersive={immersive ? '' : undefined}
@@ -359,4 +361,17 @@ function useReloadFromBackForwardCache(): void {
     window.addEventListener('pageshow', onShow);
     return () => window.removeEventListener('pageshow', onShow);
   }, []);
+}
+
+/** Flag off, today's Ask sheet; on, the Helm key and Glass panel. */
+function MaybeQuickChat({ on, plans, pathname, search, enabled, children }: { on: boolean; plans: boolean; pathname: string; search: string; enabled: boolean; children: ReactNode }) {
+  return on ? (
+    <QuickChatProvider plans={plans} pathname={pathname} search={search} enabled={enabled}>
+      {children}
+    </QuickChatProvider>
+  ) : (
+    <AskSheetProvider pathname={pathname} search={search} enabled={enabled}>
+      {children}
+    </AskSheetProvider>
+  );
 }

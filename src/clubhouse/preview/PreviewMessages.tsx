@@ -4,7 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChMessagesApi } from '../screens/messages/MessagesView';
 import { MessagesView } from '../screens/messages/MessagesScreen';
 import type { ChAnnouncement, ChConv, ChFile, ChMember, ChMsg, ChMute, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
-import { useToast } from '../ui/Toast';
+import { useToast, useToastPill } from '../ui/Toast';
+import { designFiles, designLongInbox, designReadMarks, DESIGN_CONVS, DESIGN_NOW, DESIGN_PEOPLE, DESIGN_REACTIONS, DESIGN_ROUTE_CONV, designRouteFixture, DESIGN_THREADS, DESIGN_VOTES, designAttachments, designMsg, designPins, designRowTyping } from './messages-design-cast';
+
+import { usePinned } from '../screens/messages/pinned';
 import { buildPollPayload, encodeChoice, parsePollPayload, pollFallbackText, tallyPoll, type Poll, type PollResponseRow } from '@/lib/golf/message-polls';
 
 /**
@@ -179,29 +182,147 @@ const castOf = (role: 'coach' | 'player') =>
     ? { people: playerPeople, all: playerAll, convs: playerConvs, threads: playerThreads, me: { name: 'Jonah Okafor', subtitle: 'Sophomore', role: 'player' as const } }
     : { people, all, convs: baseConvs, threads: baseThreads, me: { name: 'Maya Reyes', subtitle: 'Head coach', role: 'coach' as const } };
 
-export function PreviewMessages({ state, role = 'coach' }: { state?: string; role?: 'coach' | 'player' }) {
+const DESIGN_CAST = {
+  people: DESIGN_PEOPLE,
+  all: DESIGN_PEOPLE.map((p) => p.userId),
+  convs: DESIGN_CONVS,
+  threads: DESIGN_THREADS,
+  me: { name: 'Nick Rini', subtitle: 'Head Coach', role: 'coach' as const },
+};
+
+/** What 11g's Playwright tests drive arrivals with: preview only, never in the app bundle (only the preview imports this module). */
+declare global {
+  interface Window {
+    __chMsgFixture?: { send: (text: string) => void; incoming: (text: string) => void; typing: (on: boolean) => void };
+  }
+}
+
+export function PreviewMessages({ state, view, play, role = 'coach' }: { state?: string; view?: string; play?: string; role?: 'coach' | 'player' }) {
   const toast = useToast();
-  const cast = useMemo(() => castOf(role), [role]);
+  const design = state === 'design';
+  useToastPill(design);
+  const cast = useMemo(() => (design ? { ...DESIGN_CAST, ...designRouteFixture(view) } : castOf(role)), [design, role, view]);
   const { people, all } = cast;
-  const [convs, setConvs] = useState<ChConv[]>(state === 'empty' ? [] : cast.convs);
+  const [convs, setConvs] = useState<ChConv[]>(state === 'empty' || (design && (view === 'empty' || view === 'loading')) ? [] : design && view === 'longinbox' ? designLongInbox(cast.convs) : cast.convs);
   const [threads, setThreads] = useState(cast.threads);
-  const [reactions, setReactions] = useState(baseReactions);
-  const [votes, setVotes] = useState<PollResponseRow[]>(baseVotes);
+  const [reactions, setReactions] = useState(design ? DESIGN_REACTIONS : baseReactions);
+  const [votes, setVotes] = useState<PollResponseRow[]>(design ? DESIGN_VOTES : baseVotes);
   // P007 D4: as the live screen does, only desktop opens the team thread beside the rail, after hydration; the phone
   // stays on the inbox instead of pushing the thread in over it.
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [fixtureTyping, setFixtureTyping] = useState(view === 'typing' || view === 'grouptyping');
+  // The design fixture opens the page's route after mount, on either width, and hands 11g its arrivals.
   useEffect(() => {
-    if (state === 'empty' || state === 'rail' || state === 'announcement') return;
+    if (!design) return;
+    const id = view ? DESIGN_ROUTE_CONV[view] : undefined;
+    if (id) setSelectedId(id);
+    // Desktop opens Eli beside the rail on the inbox routes, as the page does.
+    else if (view && ['inbox', 'unread', 'longinbox', 'rowtyping'].includes(view) && window.matchMedia('(min-width: 821px)').matches) setSelectedId('eli');
+    const add = (senderId: string, text: string) => {
+      setSelectedId((open) => {
+        const to = open ?? 'team';
+        const m = designMsg(`fx${Date.now()}`, senderId, DESIGN_NOW, text, { seen: senderId !== 'me' });
+        setThreads((t) => ({ ...t, [to]: [...(t[to] ?? []), m] }));
+        return to;
+      });
+    };
+    window.__chMsgFixture = { send: (text) => add('me', text), incoming: (text) => add('maya', text), typing: setFixtureTyping };
+    return () => {
+      delete window.__chMsgFixture;
+    };
+  }, [design, view]);
+  // The page's overlays, opened the way a person would (spec section 12): the fixture stays out of the screens' code.
+  useEffect(() => {
+    if (!design || !view) return;
+    const el = (sel: string) => document.querySelector<HTMLElement>(sel);
+    const lastMine = () => Array.from(document.querySelectorAll<HTMLElement>('.ch-ms-msg.is-mine .ch-ms-msg__stack')).pop() ?? null;
+    const lastTheirs = () => Array.from(document.querySelectorAll<HTMLElement>('.ch-ms-msg:not(.is-mine) .ch-ms-msg__stack')).pop() ?? null;
+    const click = (target: () => HTMLElement | null | undefined) => () => {
+      const found = target();
+      found?.click();
+      return !!found;
+    };
+    const named = (text: string) => click(() => Array.from(document.querySelectorAll<HTMLElement>('button, [role="menuitem"]')).find((b) => b.textContent?.trim() === text));
+    const hold = (target: () => HTMLElement | null) => () => {
+      const found = target();
+      found?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 200, clientY: 300 }));
+      return !!found;
+    };
+    const details = click(() => el('[aria-label="Details"]'));
+    const plus = click(() => el('.ch-msv-plus__key'));
+    // A phone row opens its sheet from the hold or from this control; a desktop row from a right click.
+    const rowMenu = () => {
+      const row = el('.ch-ms-swipe .ch-ms-row');
+      if (row) {
+        const b = row.getBoundingClientRect();
+        const at = { bubbles: true, pointerType: 'touch', isPrimary: true, clientX: b.left + 40, clientY: b.top + 20 };
+        row.dispatchEvent(new PointerEvent('pointerdown', at));
+        return true;
+      }
+      return hold(() => el('.ch-ms-row'))();
+    };
+    const steps: Record<string, Array<() => boolean>> = {
+      new: [click(() => el('[aria-label="New message"]'))],
+      details: [details],
+      groupdetails: [details],
+      mute: [details, named('Mute')],
+      attach: [plus],
+      pollnew: [plus, named('Poll')],
+      hold: [hold(lastTheirs)],
+      holdseen: [hold(lastMine)],
+      react: [hold(lastTheirs), click(() => el('.ch-msv-rbar button:nth-child(2)'))],
+      reply: [hold(lastTheirs), named('Reply')],
+      edit: [hold(lastMine), named('Edit')],
+      rowmenu: [rowMenu],
+      pinlimit: [rowMenu],
+      seen: [click(() => el('.ch-msv-seen'))],
+      votes: [named('See votes')],
+      file: [plus, () => {
+        const input = Array.from(document.querySelectorAll<HTMLInputElement>('input[type="file"]:not([accept])')).pop();
+        if (!input) return false;
+        const picked = new DataTransfer();
+        picked.items.add(new File(['lineup'], 'Lineup · Saturday.pdf', { type: 'application/pdf' }));
+        input.files = picked.files;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        return true;
+      }, () => {
+        document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        if (el('.ch-msv-plus__key')?.getAttribute('aria-expanded') === 'true') plus();
+        return true;
+      }],
+      // The drag's stop, held still for the shot (06 S-MSG.times).
+      times: [() => {
+        const list = el('.ch-ms-msgs');
+        if (list) list.style.transform = 'translateX(-58px)';
+        return !!list;
+      }],
+      toast: [() => {
+        if (!lastTheirs()) return false;
+        toast({ title: 'Copied' });
+        return true;
+      }],
+    };
+    const list = steps[view] ?? [];
+    // Each step waits for what it opens: a thread and its menus mount in their own time.
+    let at = 0;
+    const timer = setInterval(() => {
+      if (at >= list.length) return clearInterval(timer);
+      if (list[at]?.()) at += 1;
+    }, 400);
+    return () => clearInterval(timer);
+  }, [design, view, toast]);
+  useEffect(() => {
+    if (design || state === 'empty' || state === 'rail' || state === 'announcement') return;
     if (window.matchMedia('(min-width: 821px)').matches) setSelectedId((id) => id ?? 'team');
-  }, [state]);
-  const [anns, setAnns] = useState<ChAnnouncement[]>(state === 'empty' ? [] : baseAnns);
+  }, [state, design]);
+  const [anns, setAnns] = useState<ChAnnouncement[]>(state === 'empty' || design ? [] : baseAnns);
   const [annId, setAnnId] = useState<string | null>(state === 'announcement' ? 'an1' : null);
   const [mute, setMute] = useState<ChMute>({ muted: false, until: null });
   // Any row's mute (owner decision 14), the open one's included: the preview's own record by conversation.
   const [mutes, setMutes] = useState<Record<string, ChMute>>({});
   const muteOf = useCallback(async (id: string): Promise<ChMute> => mutes[id] ?? { muted: false, until: null }, [mutes]);
 
-  const files = useCallback(async (id: string) => (state === 'files-failed' ? null : (previewFiles[id] ?? [])), [state]);
+  const files = useCallback(async (id: string) => (state === 'files-failed' ? null : design ? (designFiles[id] ?? []) : (previewFiles[id] ?? [])), [state, design]);
   const addCandidates = useCallback(async () => (state === 'add-failed' ? null : previewCandidates), [state]);
 
   const drafts = useRef(new Map<string, string>());
@@ -210,14 +331,22 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
     [cast, people],
   );
 
+  const pinSeed = useMemo(() => designPins(view), [view]);
+  const convIds = useMemo(() => convs.map((c) => c.id), [convs]);
+  const pins = usePinned('me', 'design', convIds, design, pinSeed);
   const api: ChMessagesApi = {
+    // The preview forces the redesign on for the design fixture, whatever the flag says.
+    redesign: design,
+    designFilter: design && view === 'unread' ? 'unread' : undefined,
+    ...(design ? { pins, typingByConv: designRowTyping(view), ...(view === 'grouptyping' ? { typingUserIds: ['maya'] } : {}) } : {}),
     viewer: { userId: 'me', role, name: cast.me.name },
     signers: { 'c-maya': { name: 'Maya Reyes', title: 'Head coach' } },
     timeZone: TZ,
-    now: NOW,
-    teamName: 'Varsity',
+    now: design ? DESIGN_NOW : NOW,
+    teamName: design ? 'Demo University Golf' : 'Varsity',
+    ...(design ? { receipts: { status: 'ready' as const, marks: designReadMarks(view), retry: () => undefined } } : {}),
     convs,
-    convsLoading: state === 'loading',
+    convsLoading: state === 'loading' || (design && view === 'loading'),
     convsError: state === 'failed',
     refetchConvs: () => toast({ title: 'Refreshed' }),
     drafts: drafts.current,
@@ -231,7 +360,7 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
     msgsLoading: false,
     msgsError: state === 'thread-failed',
     refetchMsgs: () => undefined,
-    typing: selectedId === 'team',
+    typing: design ? fixtureTyping : selectedId === 'team',
     onTyping: () => undefined,
     send: async (text) => {
       if (!selectedId) return false;
@@ -271,7 +400,7 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
         }
         return { ...r, [messageId]: list.filter((x) => x.count > 0) };
       }),
-    attachments: previewAttachments,
+    attachments: design ? designAttachments : previewAttachments,
     polls: {
       tally: (messageId, poll) => tallyPoll(poll, votes, messageId, 'me'),
       vote: (messageId, poll, optionIds) => {
@@ -389,5 +518,10 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
       return true;
     },
   };
-  return <MessagesView api={api} />;
+  if (!design) return <MessagesView api={api} />;
+  return (
+    <div data-ch-preview-view={view ?? 'inbox'} data-ch-preview-play={play} style={{ display: 'contents' }}>
+      <MessagesView api={api} />
+    </div>
+  );
 }

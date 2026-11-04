@@ -225,7 +225,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/stats-analytics.md` | current | yes | - | yes | - |
 | `memory/features/team-access-control.md` | current | yes | - | - | - |
 | `memory/features/team-communications.md` | current | yes | - | yes | - |
-| `memory/features/team-operations.md` | current | yes | - | - | - |
+| `memory/features/team-operations.md` | current | yes | - | yes | - |
 
 ### `REFERENCE`
 
@@ -373,18 +373,18 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | Dead |
 | --- | --- | --- | --- | --- | --- |
-| `design-refresh/ask/02-PLAN.md` | current | - | - | - | 6 |
+| `design-refresh/ask/02-PLAN.md` | current | - | - | - | - |
 | `design-refresh/classes-roster-home/02-PLAN.md` | current | - | - | - | - |
-| `design-refresh/coachhelm-lenses/02-PLAN.md` | current | - | - | - | 6 |
-| `design-refresh/coachhelm-read/02-PLAN.md` | current | - | - | - | 3 |
-| `design-refresh/coachhelm-team/02-PLAN.md` | current | - | - | - | 3 |
-| `design-refresh/coachhelm/02-PLAN.md` | current | - | - | - | 7 |
+| `design-refresh/coachhelm-lenses/02-PLAN.md` | current | - | - | - | 4 |
+| `design-refresh/coachhelm-read/02-PLAN.md` | current | - | - | - | 2 |
+| `design-refresh/coachhelm-team/02-PLAN.md` | current | - | - | - | 2 |
+| `design-refresh/coachhelm/02-PLAN.md` | current | - | - | - | 2 |
 | `design-refresh/completeness/practice-plan.md` | current | - | - | - | - |
 | `design-refresh/completeness/wiring-practice-plan.md` | current | - | - | - | - |
 | `design-refresh/messages/02-PLAN.md` | current | - | - | - | - |
-| `design-refresh/practice-plan/02-PLAN.md` | current | - | - | - | 10 |
+| `design-refresh/practice-plan/02-PLAN.md` | current | - | - | - | 3 |
 | `design-refresh/practice-plan/COACHHELM_PRACTICE_PLAN.md` | current | - | - | - | - |
-| `design-refresh/prerequisites/N-00-practice-plan-builder.md` | current | - | - | yes | 27 |
+| `design-refresh/prerequisites/N-00-practice-plan-builder.md` | current | - | - | yes | 17 |
 | `design-refresh/stats-home/02-PLAN.md` | current | - | - | - | - |
 | `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md` | current | yes | - | - | - |
 | `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` | current | yes | - | yes | 14 |
@@ -710,7 +710,7 @@ them would bury everything above.
 | `DESIGN.md` | current | - | - | yes | - |
 | `android/playstore/SUBMISSION.md` | current | - | - | - | - |
 | `design-refresh/ACCEPTANCE-SHARED.md` | current | - | - | - | - |
-| `design-refresh/BUILD_BRIEF.md` | current | - | - | yes | 1 |
+| `design-refresh/BUILD_BRIEF.md` | current | - | - | yes | - |
 | `design-refresh/BUILD_CONTRACT_STANDARD.md` | current | - | - | - | - |
 | `design-refresh/CLASSES_ROSTER_HOME_IMPLEMENTATION.md` | current | - | - | yes | - |
 | `design-refresh/CODE_PROMPT.md` | current | - | - | - | - |
@@ -723,11 +723,11 @@ them would bury everything above.
 | `design-refresh/ask/01-BRIEF.md` | current | - | - | - | - |
 | `design-refresh/ask/03-DATA-CHECKS.md` | current | - | - | - | - |
 | `design-refresh/ask/04-FIDELITY-SPEC.md` | current | - | - | - | - |
-| `design-refresh/ask/05-SCREENS.md` | current | - | - | - | 1 |
+| `design-refresh/ask/05-SCREENS.md` | current | - | - | - | - |
 | `design-refresh/ask/06-SCREEN-SPECS.md` | current | - | - | - | - |
 | `design-refresh/ask/07-MOTION.md` | current | - | - | - | - |
-| `design-refresh/ask/08-ACCEPTANCE.md` | current | - | - | - | 1 |
-| `design-refresh/ask/ASK_REDESIGN.md` | current | - | - | - | 1 |
+| `design-refresh/ask/08-ACCEPTANCE.md` | current | - | - | - | - |
+| `design-refresh/ask/ASK_REDESIGN.md` | current | - | - | - | - |
 | `design-refresh/classes-roster-home/01-BRIEFS.md` | current | - | - | - | - |
 | `design-refresh/classes-roster-home/03-DATA-CHECKS.md` | current | - | - | yes | - |
 | `design-refresh/classes-roster-home/04-FIDELITY-SPEC.md` | current | - | - | - | - |
@@ -741,7 +741,7 @@ them would bury everything above.
 | `design-refresh/coachhelm-lenses/03-DATA-CHECKS.md` | current | - | - | - | - |
 | `design-refresh/coachhelm-lenses/04-FIDELITY-SPEC.md` | current | - | - | yes | - |
 | `design-refresh/coachhelm-lenses/05-SCREENS.md` | current | - | - | - | - |
-| `design-refresh/coachhelm-lenses/06-SCREEN-SPECS.md` | current | - | - | - | 1 |
+| `design-refresh/coachhelm-lenses/06-SCREEN-SPECS.md` | current | - | - | - | - |
 | `design-refresh/coachhelm-lenses/07-MOTION.md` | current | - | - | - | - |
 | `design-refresh/coachhelm-lenses/08-ACCEPTANCE.md` | current | - | - | - | - |
 | `design-refresh/coachhelm-lenses/capture/contrast-table.md` | current | - | - | - | - |
@@ -749,14 +749,14 @@ them would bury everything above.
 | `design-refresh/coachhelm-read/03-DATA-CHECKS.md` | current | - | - | - | - |
 | `design-refresh/coachhelm-read/04-FIDELITY-SPEC.md` | current | - | - | - | - |
 | `design-refresh/coachhelm-read/05-SCREENS.md` | current | - | - | - | - |
-| `design-refresh/coachhelm-read/06-SCREEN-SPECS.md` | current | - | - | - | 1 |
+| `design-refresh/coachhelm-read/06-SCREEN-SPECS.md` | current | - | - | - | - |
 | `design-refresh/coachhelm-read/07-MOTION.md` | current | - | - | - | - |
 | `design-refresh/coachhelm-read/08-ACCEPTANCE.md` | current | - | - | - | - |
 | `design-refresh/coachhelm-team/01-BRIEF.md` | current | - | - | - | - |
 | `design-refresh/coachhelm-team/03-DATA-CHECKS.md` | current | - | - | - | - |
 | `design-refresh/coachhelm-team/04-FIDELITY-SPEC.md` | current | - | - | yes | - |
 | `design-refresh/coachhelm-team/05-SCREENS.md` | current | - | - | yes | - |
-| `design-refresh/coachhelm-team/06-SCREEN-SPECS.md` | current | - | - | - | 1 |
+| `design-refresh/coachhelm-team/06-SCREEN-SPECS.md` | current | - | - | - | - |
 | `design-refresh/coachhelm-team/07-MOTION.md` | current | - | - | - | - |
 | `design-refresh/coachhelm-team/08-ACCEPTANCE.md` | current | - | - | - | - |
 | `design-refresh/coachhelm/01-BRIEF.md` | current | - | - | - | - |
@@ -792,18 +792,18 @@ them would bury everything above.
 | `design-refresh/messages/05-SCREENS.md` | current | - | - | - | - |
 | `design-refresh/messages/06-SCREEN-SPECS.md` | current | - | - | - | - |
 | `design-refresh/messages/07-MOTION.md` | current | - | - | - | - |
-| `design-refresh/messages/08-ACCEPTANCE.md` | current | - | - | - | 2 |
+| `design-refresh/messages/08-ACCEPTANCE.md` | current | - | - | - | 1 |
 | `design-refresh/messages/SETTLED-4NOV.md` | current | - | - | - | - |
-| `design-refresh/messages/pin-sync/PIN-SYNC.md` | current | - | - | - | 3 |
+| `design-refresh/messages/pin-sync/PIN-SYNC.md` | current | - | - | - | 2 |
 | `design-refresh/practice-plan/01-BRIEF.md` | current | - | - | - | - |
 | `design-refresh/practice-plan/03-DATA-CHECKS.md` | current | - | - | - | - |
 | `design-refresh/practice-plan/04-FIDELITY-SPEC.md` | current | - | - | - | - |
 | `design-refresh/practice-plan/05-SCREENS.md` | current | - | - | - | - |
-| `design-refresh/practice-plan/06-SCREEN-SPECS.md` | current | - | - | - | 6 |
+| `design-refresh/practice-plan/06-SCREEN-SPECS.md` | current | - | - | - | 1 |
 | `design-refresh/practice-plan/07-MOTION.md` | current | - | - | - | - |
 | `design-refresh/practice-plan/08-ACCEPTANCE.md` | current | - | - | - | - |
 | `design-refresh/practice-plan/capture/contrast-table.md` | current | - | - | - | - |
-| `design-refresh/prerequisites/N-10-documents.md` | current | - | - | yes | 28 |
+| `design-refresh/prerequisites/N-10-documents.md` | current | - | - | yes | 26 |
 | `design-refresh/prerequisites/PRACTICE_DESIGN_SPEC.md` | current | - | - | yes | - |
 | `design-refresh/prerequisites/changelog/N-00.md` | current | - | - | yes | 2 |
 | `design-refresh/prerequisites/changelog/N-10.md` | current | - | - | - | - |
@@ -1008,6 +1008,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-10-30-skeleton-feature-shape.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-30-targets-type-focus.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-31-fairway-bubbles-and-send.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-04-redesign-train.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/auth-onboarding-ground-truth.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/intelligence.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/02_AUTHORITY_MODEL.md` | current | - | - | yes | - |
@@ -1105,6 +1106,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-30-role-routes-and-nav-once.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-30-skip-link.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-31-resume-bar-discard.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-04-redesign-train.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |
@@ -1131,6 +1133,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-10-30-earlier-reads-and-prefetch.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-10-30-night-contrast.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-10-31-leaderboard-client.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-03-crh-coach-home.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-03-shs-your-game.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P003-roster/DESIGN.md` | current | - | - | - | - |
@@ -1154,6 +1158,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P003-roster/changes/2026-10-27-invite-link.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-10-30-season-label.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/changes/2026-11-03-crh-roster.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P004-stats-team/DESIGN.md` | current | - | - | - | - |
@@ -1184,6 +1189,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-10-30-night-contrast.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-10-30-push-once.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-10-30-season-label.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-03-shs-team.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P005-stats-player/DESIGN.md` | current | - | - | - | - |
@@ -1213,6 +1219,9 @@ them would bury everything above.
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-10-30-game-detail-reads-retry.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-10-30-night-contrast.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-10-30-push-once.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-03-redesign-plumbing.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-03-shs-polish.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-03-shs-summary.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P006-calendar/DESIGN.md` | current | - | - | - | - |
@@ -1274,6 +1283,10 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-30-rail-first-load.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-30-start-dm-at-once.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-31-thread-rise.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-11-03-msg-composer.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-11-03-msg-details.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-11-03-msg-hold.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-11-03-msg-thread.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P008-settings/DESIGN.md` | current | - | - | - | - |
@@ -1348,6 +1361,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P010-hub/changes/2026-10-30-coach-second-wave.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-10-30-instant-post-and-task.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-10-30-season-label.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/changes/2026-11-04-redesign-train.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P011-rounds/DESIGN.md` | current | - | - | - | - |
@@ -1408,6 +1422,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P012-classes/changes/2026-10-25-p10-class-awareness.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-10-28-design-picks.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P012-classes/changes/2026-11-03-crh-classes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/DESIGN.md` | current | - | - | - | - |
@@ -1445,6 +1460,9 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-30-a11y-touch-type.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-30-history-sheet-reduced.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-30-putting-figure-once.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-03-cr0-player-likely-cause.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-03-l0-private-goals.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-03-team-board.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |

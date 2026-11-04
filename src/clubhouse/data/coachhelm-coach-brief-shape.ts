@@ -88,6 +88,9 @@ export interface ChBriefWorking {
   /** "4 rounds since Oct 2" or "4 of 10 rounds since Oct 2"; null without a start day. */
   since: string | null;
   href: string;
+  /** The team board's Working on ring: whose, and where it stands; null when any of the three is missing. */
+  playerId?: string;
+  progress?: { from: number; now: number; target: number } | null;
 }
 
 export interface ChBriefGoal {
@@ -186,6 +189,10 @@ function sinceLine(f: BriefFocusRow, rounds: readonly MondayBriefRound[]): strin
   return `${counted} since ${shortDay(start)}`;
 }
 
+function progressOf(from: number | null, now: number | null, target: number | null): { from: number; now: number; target: number } | null {
+  return from == null || now == null || target == null ? null : { from, now, target };
+}
+
 function workingOf(focus: readonly BriefFocusRow[], names: ReadonlyMap<string, string>, rounds: readonly MondayBriefRound[]): ChBriefWorking[] {
   return focus
     .filter((f) => f.status !== null && f.status in WORKING_WORD && names.has(f.player_id))
@@ -198,6 +205,8 @@ function workingOf(focus: readonly BriefFocusRow[], names: ReadonlyMap<string, s
         word: WORKING_WORD[f.status as string] as string,
         line: progressLine(f.target_metric, num(f.current_value), num(f.target_value), num(f.baseline_value)),
         since: sinceLine(f, rounds),
+        playerId: f.player_id,
+        progress: progressOf(num(f.baseline_value), num(f.current_value), num(f.target_value)),
         href: `${BOARD}?player=${encodeURIComponent(f.player_id)}`,
       },
     }))

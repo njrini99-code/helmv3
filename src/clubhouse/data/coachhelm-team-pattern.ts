@@ -1,6 +1,7 @@
 import type { TeamPatternResult } from '@/lib/coachhelm/v3/team-pattern/pattern';
 import { teamPatternBelowLine, teamPatternMembersLine, teamPatternStrokesLine } from '@/lib/coachhelm/v3/team-pattern/pattern';
 import type { LadderRung } from '@/lib/coachhelm/v3/support/ladder';
+import type { ChLadderAreaId } from './coachhelm-ladder-shape';
 import { MINUS } from '../lib/format';
 import { pluralWord } from '../lib/plural';
 
@@ -31,6 +32,9 @@ export interface ChTeamPatternRow {
   /** The practice step most members share. */
   next: string | null;
   who: ChTeamPatternMember[];
+  /** The team board: who shares it, and the station the members' reads sit at (null: none). The rows above ignore both. */
+  memberIds?: string[];
+  area?: ChLadderAreaId | null;
 }
 
 export interface ChTeamPatterns {
@@ -70,7 +74,14 @@ export function memberValue(value: number | null, unit: string | null): string |
 }
 
 /** The board's Team pattern section, or null when there is nothing to draw (no pattern and nothing below the threshold). */
-export function toChTeamPatterns(result: TeamPatternResult, names: ReadonlyMap<string, string>): ChTeamPatterns | null {
+/** The most common station across a pattern's members. */
+function commonArea(areas: ReadonlyArray<ChLadderAreaId | null>): ChLadderAreaId | null {
+  const counts = new Map<ChLadderAreaId, number>();
+  for (const a of areas) if (a) counts.set(a, (counts.get(a) ?? 0) + 1);
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+}
+
+export function toChTeamPatterns(result: TeamPatternResult, names: ReadonlyMap<string, string>, areaOfInsight?: (insightId: string) => ChLadderAreaId | null): ChTeamPatterns | null {
   if (result.patterns.length === 0 && result.below_threshold === 0) return null;
   return {
     rows: result.patterns.map((p) => ({
@@ -84,6 +95,8 @@ export function toChTeamPatterns(result: TeamPatternResult, names: ReadonlyMap<s
         value: memberValue(m.value, p.unit),
         ladder: LADDER_WORD[m.ladder] ?? 'Likely',
       })),
+      memberIds: p.member_reads.map((m) => m.player_id),
+      area: areaOfInsight ? commonArea(p.member_reads.map((m) => areaOfInsight(m.insight_id))) : null,
     })),
     below: teamPatternBelowLine(result.below_threshold),
     reach: `${result.roster_with_reads} of ${result.roster_total} players have enough rounds for reads.`,

@@ -110,6 +110,32 @@ export function coachReadHref(playerId: string, insightId: string, roster: Reado
   return `${coachPlayerHref('deep-dive', playerId)}&insight=${encodeURIComponent(insightId)}`;
 }
 
+export const READ_VIEW = 'read';
+
+/** Cross-lane links take `on` from the server (START_HERE section 4): off returns today's address byte for byte. The roster guard stays with the caller (`coachReadHref`). */
+export function readHref(player: string | null, insight: string, on = false): string {
+  const enc = encodeURIComponent;
+  if (!on) return player ? `${coachPlayerHref('deep-dive', player)}&insight=${enc(insight)}` : diveReadHref(insight);
+  return player ? `/golf/dashboard/coachhelm?view=read&player=${enc(player)}&insight=${enc(insight)}` : `/golf/dashboard/coachhelm?view=read&insight=${enc(insight)}`;
+}
+
+export type PlayerFileCard = 'feat' | 'plan' | 'field' | 'reads' | 'sg' | 'intent' | 'track';
+
+/** The old views read `from=file` and skip the redirect (the file's "Full standing" link). */
+export const FILE_BYPASS = 'file';
+
+/** A coach's file on one player. Off (or a caller that passed nothing) gives today's address byte for byte; with the flag on those redirect here, so a forgotten `on` still lands (02 Completeness pass). */
+export function playerFileHref(playerId: string, at?: { card?: PlayerFileCard; insight?: string }, on = false): string {
+  const enc = encodeURIComponent;
+  if (!on) {
+    if (at?.card === 'sg') return coachPlayerHref('standing', playerId);
+    return `${coachPlayerHref('deep-dive', playerId)}${at?.insight ? `&insight=${enc(at.insight)}` : ''}`;
+  }
+  return `/golf/dashboard/coachhelm?view=player&player=${enc(playerId)}${at?.card ? `&at=${at.card}` : ''}${at?.insight ? `&insight=${enc(at.insight)}` : ''}`;
+}
+
+export const FILE_VIEW = 'player';
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /**

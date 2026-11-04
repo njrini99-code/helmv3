@@ -15,7 +15,16 @@ export function MessagesHead({ brief }: { brief?: string }) {
 }
 
 /** Signed in, but on no team yet: the whole page says so (CH-7308). */
-export function MessagesNoTeam({ coach }: { coach: boolean }) {
+export function MessagesNoTeam({ coach, redesign = false }: { coach: boolean; /** golf_messages_redesign_v1: the empty inbox card. */ redesign?: boolean }) {
+  if (redesign)
+    return (
+      <main className="ch-ms ch-ms--first" data-canopy="" data-ch-ms-v2="on">
+        <MessagesHead />
+        <div className="ch-msv-noteam">
+          <NoTeam code="CH-7308" coach={coach} body="Messages open once you’re on a team roster, with your coaches and teammates." />
+        </div>
+      </main>
+    );
   return (
     <main className="ch-ms ch-ms--first" data-canopy="">
       <MessagesHead />

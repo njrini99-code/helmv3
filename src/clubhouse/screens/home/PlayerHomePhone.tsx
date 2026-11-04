@@ -38,7 +38,7 @@ import { GirViz, PuttsViz, SgViz } from './RoundViz';
  * scorecard inline), scoring and the parts of the game. Same loader and
  * catalog as desktop.
  */
-export function PlayerHomePhone({ data, now: frozen, live, playerId }: { data: ChPlayerHome; now?: string; /** The player's live round and their team's (P-6); omitted, the own card is not drawn. */ live?: ChPlayerLive; playerId?: string }) {
+export function PlayerHomePhone({ data, now: frozen, live, playerId, shs = false }: { data: ChPlayerHome; /** clubhouse_stats_redesign_v1: the flat hero and the Your game card. */ shs?: boolean; now?: string; /** The player's live round and their team's (P-6); omitted, the own card is not drawn. */ live?: ChPlayerLive; playerId?: string }) {
   usePhoneHero(true);
   const ticking = useNow();
   const now = useMemo(() => (frozen ? new Date(frozen) : ticking), [frozen, ticking]);
@@ -49,11 +49,21 @@ export function PlayerHomePhone({ data, now: frozen, live, playerId }: { data: C
   const covered = failed.length > 1;
 
   return (
-    <main className="ch-hm ch-hm--player" aria-label="Home">
+    <main className="ch-hm ch-hm--player" aria-label="Home" data-ch-hero-flat={shs ? '' : undefined}>
       {/* Owner, 2026-10-06: the CoachHelm brief no longer sits between the greeting and Up next on the player's phone. */}
       <header className="ch-hm-hero is-player">
-        <span className="ch-hm-hero__date">{data.todayLabel}</span>
-        <h1>{data.greeting}</h1>
+        {shs ? (
+          // The bar and the greeting are one flat green, down to the sheet's lip (S-HOMEGAME). What follows stays on the page, so its inks hold.
+          <div className="ch-shs-hero-top">
+            <span>{data.todayLabel}</span>
+            <h1>{data.greeting}</h1>
+          </div>
+        ) : (
+          <>
+            <span className="ch-hm-hero__date">{data.todayLabel}</span>
+            <h1>{data.greeting}</h1>
+          </>
+        )}
         <PageRefreshNotice parts={failed} />
         <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
           {data.week.error ? (
@@ -121,15 +131,17 @@ export function PlayerHomePhone({ data, now: frozen, live, playerId }: { data: C
             <Today list={data.today} now={now} failed={data.week.error} quiet={nothingAhead} canPlan={false} />
           </SectionBoundary>
         )}
-        {noRoundsYet(data) ? (
+        {noRoundsYet(data) && !shs ? (
           <NoRoundsYet />
         ) : (
           <>
-            <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
-              <Latest data={data.latest} covered={covered} />
-            </SectionBoundary>
+            {!noRoundsYet(data) && (
+              <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
+                <Latest data={data.latest} covered={covered} />
+              </SectionBoundary>
+            )}
             <SectionBoundary surface="home.game" label="Your scoring" code="CH-2217">
-              <PlayerGame data={data} phone covered={covered} />
+              <PlayerGame data={data} phone covered={covered} shs={shs} />
             </SectionBoundary>
           </>
         )}

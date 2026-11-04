@@ -153,8 +153,10 @@ Every step, including running it in the iOS app, is in `MOBILE.md`.
     npx eslint <changed files>
     npx vitest run src/clubhouse
     npm run -s clubhouse:check
-    npm run clubhouse:a11y          # dev server on :3100; add the page and its states to CH_A11Y_PAGES first
-    NODE_OPTIONS=--max-old-space-size=8192 npm run build   # when a server surface changed
+    npm run clubhouse:a11y          # dev server on :3100; add the page and its
+    states to CH_A11Y_PAGES first
+    NODE_OPTIONS=--max-old-space-size=8192 npm run build   # when a server
+    surface changed
 
 Force every failure contract once (a loader that throws, an action that
 errors, offline, invalid input, permission denied, an optimistic rollback);
@@ -234,3 +236,22 @@ for scripts/clubhouse/shots.mjs.
 suite, reviewed visual baselines, CSS guard, measured-performance reader,
 Next DevTools MCP and React profiler setup. Use `npm run clubhouse:quality`
 for smoke checks and `npm run clubhouse:quality:full` for the larger matrix.
+
+## Redesign flags
+
+All of these are off in every environment (`config/feature-flags.yml`).
+
+- `clubhouse_refresh_v1` is the foundation. It sets `data-ch-refresh="on"` on
+  the
+  app root and scopes every rule the refresh adds. With it off, every screen
+  renders
+  as main.
+- `clubhouse_classes_roster_home_v1`: see `memory/features/roster-team.md`.
+- `clubhouse_stats_redesign_v1`: see `memory/features/stats-analytics.md`.
+- The Messages redesign flag: see `memory/features/team-communications.md`.
+- The CoachHelm flags: see `memory/features/coachhelm-ai.md`.
+- The practice plan flag: see `memory/features/team-operations.md`.
+
+The redesign's migrations are written and not applied.
+`supabase/migrations/HELD.md`
+is authoritative.

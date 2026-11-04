@@ -1,6 +1,7 @@
 import { SkelLine, Skeleton } from '../../ui/States';
 import '../../styles/classes.css';
 import { LargeTitleSkeleton } from '../../ui/LargeTitle';
+import { CrhSkelCard } from '../../ui/CrhSkelCard';
 
 /** Route loading for Classes: the header, the term overview, then the deck of classes beside the week's side card, in place. On desktop the header is the framed page head at its loaded height and the deck's placeholders are rows (classes.css). */
 export function ClassesSkeleton() {
@@ -56,6 +57,20 @@ export function ClassesSkeleton() {
           at 390): the term line's box under the double rule over the two actions, the term's feature card, Today and its rows, the
           week's overlaps and what your coach sees (the rail comes first on the phone), then your classes as rows. classes.css shows
           the shape for the width, so the server needs no width to draw it. */}
+      {/* The lane's flag is on `.ch-root`; CSS picks which phone skeleton shows, since this route's loading is a client component (06 §4.8). */}
+      <div className="ch-cl-sk-crh" aria-hidden="true">
+        {/* A plain title: the skeleton's one large-title block is the phone shape's below, and CSS shows one shape. */}
+        <p className="ch-large-title ch-cl-title">Classes</p>
+        <Skeleton width={190} height={15} />
+        <span className="ch-cl-sk-crh__term">
+          {['38%', '62%', '100%', '54%'].map((w, i) => (
+            <i key={i} style={{ width: w, height: [14, 26, 10, 12][i] }} />
+          ))}
+        </span>
+        {['Today', 'Your classes'].map((t) => (
+          <CrhSkelCard key={t} title={t} />
+        ))}
+      </div>
       <div className="ch-cl-sk-phone">
         <header className="ch-cl-sk-h">
           <div>

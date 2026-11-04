@@ -389,7 +389,7 @@ export function focusStatusSaid(missing: ChBoardMissing | undefined, who: string
  * a card that states no finding offers nothing (CH-13904). Dismissed, the row is the notice with Undo (CH-13901). `where`: which page
  * the notice names ("your board" on the coach's own board; "the board" on a player's Deep dive).
  */
-export function FocusActions({ fa, target, missing, where, extra }: { fa: ChFocusActions; target: ChFocusTarget; missing?: ChBoardMissing; where: 'board' | 'dive'; extra?: ReactNode }) {
+export function FocusActions({ fa, target, missing, where, extra, noDismiss = false }: { /** The team board offers no Dismiss (W-TEAM-12). */ noDismiss?: boolean; fa: ChFocusActions; target: ChFocusTarget; missing?: ChBoardMissing; where: 'board' | 'dive'; extra?: ReactNode }) {
   const { ins, first } = target;
   if (fa.dismissed[ins.id]) {
     return (
@@ -436,7 +436,7 @@ export function FocusActions({ fa, target, missing, where, extra }: { fa: ChFocu
           {fa.here('assign', ins.id) ? <span data-ch-code="CH-13403">Assigning…</span> : ins.declined ? 'Propose again' : 'Assign as focus'}
         </Button>
       )}
-      <Button
+      {!noDismiss && <Button
         variant="ghost"
         leftIcon={Archive}
         busy={fa.here('dismiss', ins.id)}
@@ -448,7 +448,7 @@ export function FocusActions({ fa, target, missing, where, extra }: { fa: ChFocu
         }}
       >
         {fa.here('dismiss', ins.id) ? <span data-ch-code="CH-13403">Dismissing…</span> : 'Dismiss'}
-      </Button>
+      </Button>}
       {extra}
       {mine === 'proposed' && <p className="ch-hl-cact__m">{first} sees it as a proposal and accepts it to start.</p>}
       {!mine && !stale && !statusUnknown && ins.declined && (

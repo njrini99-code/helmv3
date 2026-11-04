@@ -48,7 +48,20 @@ export function useThreadAnchor(
 
   const toEnd = useCallback(() => {
     const s = scroller.current;
-    if (s) s.scrollTop = s.scrollHeight;
+    if (s) {
+      // The thread making room (useThreadMakeRoom) moves the list down by transform, and a transform counts as scrollable
+      // overflow: pinning to that inflated height would jump the thread by the room being made. The end is where the list's
+      // own box ends, without the transform. Off the redesign nothing moves the list, and this is today's line.
+      const list = s.querySelector<HTMLElement>('.ch-ms-msgs');
+      const moved = list?.getAnimations?.().length ? new DOMMatrixReadOnly(getComputedStyle(list).transform).m42 : 0;
+      if (list && moved > 0) {
+        const below = parseFloat(getComputedStyle(s).paddingBottom) || 0;
+        const bottom = list.getBoundingClientRect().bottom - moved - s.getBoundingClientRect().top + s.scrollTop;
+        s.scrollTop = bottom + below - s.clientHeight;
+      } else {
+        s.scrollTop = s.scrollHeight;
+      }
+    }
     nearEnd.current = true;
     setUnseen(0);
     setAtEnd(true);

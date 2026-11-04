@@ -1394,3 +1394,15 @@ html:not([data-fw-theme='dark']) .ch-ask {
     animation: ch-view-enter var(--ch-dur-quick) var(--ch-ease) backwards;
   }
 }
+/* S-ASKD.pane: the chat narrows beside the plan, so nothing sits under it. */
+@media (min-width: 821px) {
+  .ch-root:has(> .ch-cpv-full) .ch-ask-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ch-root:has(> .ch-cpv-full) .ch-ask-body > :not(.ch-ask-main) {
+    display: none;
+  }
+  .ch-root:has(> .ch-cpv-full) .ch-ask-main {
+    margin-right: 452px;
+  }
+}

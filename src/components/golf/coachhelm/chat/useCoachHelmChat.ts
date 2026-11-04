@@ -47,6 +47,8 @@ export interface ChatContextChip {
 }
 
 export interface UseCoachHelmChatOptions {
+  /** Player Ask's route. Left out, today's. */
+  endpoint?: string;
   conversationId?: string | null;
   /** Messages restored from durable history, already in UI part form. */
   initialMessages?: UIMessage[];
@@ -128,7 +130,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
   const transport = React.useMemo(
     () =>
       new DefaultChatTransport({
-        api: STREAM_ENDPOINT,
+        api: options.endpoint ?? STREAM_ENDPOINT,
         fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
           const response = await fetch(input, init);
           const minted = response.headers.get('x-conversation-id');
@@ -143,7 +145,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
           },
         }),
       }),
-    [conversationId, adoptConversation],
+    [conversationId, adoptConversation, options.endpoint],
   );
 
   const chat = useChat({

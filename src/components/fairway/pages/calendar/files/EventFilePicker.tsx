@@ -52,6 +52,8 @@ export function EventFilePicker({
     void (async () => {
       try {
         const result = await getDocuments(teamId);
+        // Plan rows have no file (N-00 010400): they aren't attachments.
+        if (result.data) result.data = result.data.filter((d) => d.file_url != null);
         if (cancelled) return;
         if (result.error || !result.data) {
           setState({ status: 'failed', error: result.error ?? 'Could not load the document library.' });

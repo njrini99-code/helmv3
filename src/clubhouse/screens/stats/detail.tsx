@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import type { ChWindow } from '../../data/stats-common';
 import type { ChSprayGroup } from '../../data/stats-detail';
 import { formatFixed, NO_DATA } from '../../lib/format';
@@ -71,7 +71,12 @@ export function Rule({ children, how }: { children: ReactNode; how?: string }) {
 }
 
 /** "More detail": a native disclosure (keyboard and screen reader for free), closed on every screen: the figures and the picture are the read. */
+/** Inside a pushed detail the page is the "more": its panels show open, with no toggle. */
+export const MoreOpen = createContext(false);
+
 export function More({ children }: { children: ReactNode }) {
+  const open = useContext(MoreOpen);
+  if (open) return <div className="ch-gm__body">{children}</div>;
   return (
     <details className="ch-gx-more">
       <summary>More detail</summary>
@@ -170,19 +175,22 @@ export function RoundLine({
   digits = 0,
   label,
   lowerIsBetter = false,
+  refLine,
 }: {
   points: Array<{ label: string; value: number }>;
   unit?: string;
   digits?: number;
   label: string;
   lowerIsBetter?: boolean;
+  /** A dashed reference (Par, or a Tour figure that is loaded) with its label at the right end. Left out, the chart is main's. */
+  refLine?: { value: number; label: string };
 }) {
   const w = 690;
   const h = 150;
   const pad = 26;
   const vals = points.map((p) => p.value);
-  const lo = Math.min(...vals);
-  const hi = Math.max(...vals);
+  const lo = Math.min(...vals, ...(refLine ? [refLine.value] : []));
+  const hi = Math.max(...vals, ...(refLine ? [refLine.value] : []));
   const span = hi - lo || 1;
   const x = (i: number) => pad + (i * (w - pad * 2)) / Math.max(1, points.length - 1);
   const y = (v: number) => 30 + ((lowerIsBetter ? v - lo : hi - v) / span) * (h - 62);
@@ -197,6 +205,14 @@ export function RoundLine({
       <text x={mean.x} y={mean.y} textAnchor={mean.anchor} className="ch-ax ch-num">
         avg {f(avg)}
       </text>
+      {refLine && (
+        <g data-ch-ref-line="">
+          <line x1={pad} x2={w - pad} y1={y(refLine.value)} y2={y(refLine.value)} stroke="var(--ch-chart-zero)" strokeDasharray="3 4" />
+          <text x={w - pad} y={y(refLine.value) - 5} textAnchor="end" className="ch-ax ch-num">
+            {refLine.label}
+          </text>
+        </g>
+      )}
       <path d={points.map((p, i) => `${i ? 'L' : 'M'}${x(i)},${y(p.value)}`).join(' ')} fill="none" stroke="var(--ch-green-700)" strokeWidth={2} strokeLinejoin="round" />
       {points.map((p, i) => {
         const last = i === points.length - 1;

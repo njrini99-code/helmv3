@@ -133,3 +133,12 @@ The profile shows real fields only; no captain, major, birthday, home course or 
   `getTeamJoinRequests` read.
 - **Plan 1:1** links to `calendar?new=1&with=<playerId>` (D-52), and "All N" rounds to
   `stats?player=<id>&window=season&tab=rounds` (D-53).
+
+## Classes, Roster and coach Home refresh (flag off)
+
+`clubhouse_classes_roster_home_v1` is off in every environment. It sets
+`data-ch-crh="on"` on the Clubhouse root and the screen roots, and leaves practice
+rounds out of the lane's averages. With it off, today's screens render unchanged.
+It has no migration. Screens: `src/clubhouse/screens/roster/RosterPhoneCrh.tsx`,
+`src/clubhouse/screens/classes/ClassesCrh.tsx`,
+`src/clubhouse/screens/home/HomeDeskCrh.tsx`.

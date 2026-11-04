@@ -14,6 +14,8 @@ export interface ChPerson {
   name: string;
   role: 'coach' | 'player';
   subtitle: string;
+  /** The coin's class year (Messages redesign); null for a coach or an unknown year. */
+  gradYear?: number | null;
   /** golf_players.id, for links to the player's stats. */
   playerId: string | null;
 }
@@ -40,6 +42,8 @@ export interface ChConv {
   /** The last message is a poll's plain-text copy (`isPollFallbackText`): the row shows its glyph and question. */
   lastIsPoll?: boolean;
   creatorId: string | null;
+  /** Messages redesign: the viewer muted this conversation (the row's glyph). Absent with the flag off or before the read lands. */
+  muted?: boolean;
 }
 
 /**
@@ -159,7 +163,7 @@ export function sectionOf(iso: string | null, now: string, timeZone: string): 't
 }
 
 export type ChThreadItem =
-  | { kind: 'day'; key: string; label: string }
+  | { kind: 'day'; key: string; label: string; at: string }
   | { kind: 'msg'; key: string; m: ChMsg; first: boolean; last: boolean };
 
 /** Day separators, and runs of messages from one sender within five minutes grouped as one block. */
@@ -170,7 +174,7 @@ export function threadItems(msgs: ChMsg[], now: string, timeZone: string): ChThr
     const d = parts(m.at, timeZone);
     if (d !== day) {
       day = d;
-      out.push({ kind: 'day', key: `d${d}`, label: dayLabel(m.at, now, timeZone) });
+      out.push({ kind: 'day', key: `d${d}`, label: dayLabel(m.at, now, timeZone), at: m.at });
     }
     const prev = msgs[i - 1];
     const next = msgs[i + 1];

@@ -26,6 +26,8 @@ export type MenuItem =
       caption?: string;
       /** A keyboard shortcut, right-aligned. */
       shortcut?: string;
+      /** Shown but not pickable, dimmed; its caption says why. Absent elsewhere: every other menu is as it was. */
+      disabled?: boolean;
     }
   | { kind: 'separator' };
 
@@ -249,6 +251,7 @@ export function MenuItems({ items, onClose }: { items: MenuItem[]; onClose: (foc
         }
         return (
           <button
+            disabled={it.disabled}
             key={it.label}
             type="button"
             role={role}

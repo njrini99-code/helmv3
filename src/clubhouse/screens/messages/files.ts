@@ -52,9 +52,9 @@ export function useConversationFiles(api: ChMessagesApi, conv: ChConv) {
   return { files, failed, retry: () => setAttempt((n) => n + 1), open };
 }
 
-const kindOf = (mime: string) =>
+export const fileKind = (mime: string) =>
   mime === "application/pdf" ? "PDF" : mime.startsWith("image/") ? "Image" : mime.startsWith("video/") ? "Video" : mime.startsWith("audio/") ? "Audio" : "File";
 
 /** "PDF · 48 KB · Today", the second line of a file row. */
 export const fileMeta = (f: ChFile, api: ChMessagesApi) =>
-  [kindOf(f.mime), fileSize(f.size), f.sentAt ? dayLabel(f.sentAt, api.now, api.timeZone) : null].filter(Boolean).join(" · ");
+  [fileKind(f.mime), fileSize(f.size), f.sentAt ? dayLabel(f.sentAt, api.now, api.timeZone) : null].filter(Boolean).join(" · ");

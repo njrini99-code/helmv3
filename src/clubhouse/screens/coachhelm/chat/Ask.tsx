@@ -1,6 +1,12 @@
 'use client';
 
-import { MessagesSquare, PanelLeftOpen, SquarePen } from 'lucide-react';
+import { useQuickChatRun } from '../../../shell/quick-chat/QuickChatProvider';
+import { AskKnowsPanel } from './parts/KnowsPanel';
+import { AllowanceMeter, PlayerOut } from './parts/Allowance';
+import { ArtifactView } from './parts/Artifact';
+import type { AskArtifact } from './parts/artifacts';
+import { MessagesSquare, PanelLeftOpen, Settings2, SquarePen } from 'lucide-react';
+import { Modal } from '../../../ui/Modal';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
 import { describeChatError } from '../../../data/coachhelm-chat-error';
@@ -16,7 +22,7 @@ import { AskComposer, useRefuseOffline } from './Composer';
 import { askDraftKey, useAskKept } from './drafts';
 import { AskEvidencePanel } from './EvidencePanel';
 import { conversationHref, HistoryDrawer, HistoryPanel } from './History';
-import { AskHome } from './Home';
+import { AskHome, AskHomeV2 } from './Home';
 import { AskInputsFailed, AskNoRoster, AskThreadFailed, AskUnavailable } from './States';
 import { useViewSwitch } from '../use-view-switch';
 import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from './SubTabs';
@@ -83,7 +89,16 @@ function AskFrame({ team, children }: { team?: string; children: ReactNode }) {
  * `load` is what the server read (data/coachhelm-chat.ts): a roster of nobody and a context that did not load are their own
  * pages; everything else is the chat. The conversation itself runs on the production hook and route, unchanged.
  */
-export function Ask({ load, chat = useCoachHelmChat, initial }: { load: ChAskLoad; chat?: ChAskChat; initial?: ChAskInitial }) {
+/** The scope line's words: who, from a name in the question, and the window, if the question gave one. Never a figure, so it can't overclaim. */
+export function askScope(question: string, team: string, names: readonly string[]): string {
+  const q = question.toLowerCase();
+  const who = names.find((n) => q.includes(n.toLowerCase()) || q.includes((n.split(' ')[0] ?? n).toLowerCase())) ?? team;
+  const rounds = q.match(/last (\d+) rounds/)?.[0];
+  const window = rounds ?? (/this season|this fall|this spring/.exec(q)?.[0]) ?? (/last season|last fall/.exec(q)?.[0]) ?? 'last 30 days';
+  return `${who} · ${window}`;
+}
+
+export function Ask({ load, chat = useCoachHelmChat, initial, v2 = false }: { load: ChAskLoad; chat?: ChAskChat; initial?: ChAskInitial; v2?: boolean }) {
   if (load.status === 'noRoster') {
     return (
       <AskFrame team={load.teamName}>
@@ -99,10 +114,10 @@ export function Ask({ load, chat = useCoachHelmChat, initial }: { load: ChAskLoa
     );
   }
   // A different conversation is a different chat: the hook reads its starting messages once.
-  return <AskChat key={load.data.notFound ? 'gone' : (load.data.thread?.id ?? 'new')} data={load.data} useChatImpl={chat} initial={initial} />;
+  return <AskChat key={load.data.notFound ? 'gone' : (load.data.thread?.id ?? 'new')} data={load.data} useChatImpl={chat} initial={initial} v2={v2} />;
 }
 
-function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl: ChAskChat; initial?: ChAskInitial }) {
+function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatImpl: ChAskChat; initial?: ChAskInitial; v2: boolean }) {
   const phone = useChPhone();
   // A switch to the Board moves the strip at once and dims the chat (aria-busy) until the Board is ready.
   const sw = useViewSwitch<CoachHelmView>('ask', (v) => COACHHELM_HREF[v]);
@@ -124,6 +139,7 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
   // The chats panel stays as the coach left it when they return to this page (owner rule 8): a layout choice, not a chat's own state.
   const [panelOpen, setPanelOpen] = useAskKept('askPanel', initial?.panelOpen ?? true);
   const [drawer, setDrawer] = useState(initial?.drawer ?? false);
+  const [artifact, setArtifact] = useState<AskArtifact | null>(null);
   const [evidence, setEvidence] = useState<EvidenceFocus | null>(initial?.evidence ?? null);
   // Below 1440px the chats, the conversation and the evidence do not fit side by side (the thread was about 330px at 1280): opening
   // the evidence moves the chats aside for as long as it is open, without changing the kept choice, and showing the chats closes it.
@@ -158,13 +174,17 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
     window.history.replaceState(window.history.state, '', `${COACHHELM_HREF.ask}&c=${id}`);
   }, []);
 
-  const chat = useChatImpl({
+  const run = useQuickChatRun();
+  const own = useChatImpl({
     conversationId: data.notFound ? null : (data.thread?.id ?? null),
     initialMessages: data.thread?.messages,
     // The hook calls this while it updates its own state: adopt the id after that render, not inside it.
     onConversationId: (id) => queueMicrotask(() => adopt(id)),
   });
+  // The quick chat's run stays alive across the route: its thread renders from it until the run ends, then the loader takes over (05 S-PANEL.full).
+  const chat = run?.busy && run.conversationId && run.conversationId === data.thread?.id ? run : own;
 
+  const out = data.allowance === 'out' || chat.messages.some((m) => m.parts.some((p) => p.type === 'data-allowance'));
   const pending = pendingApproval(chat.messages);
   const showHome = chat.messages.length === 0 && !gone && !data.threadFailed;
   const notice = chat.error ? describeChatError(chat.error) : null;
@@ -204,7 +224,10 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
   }, [chat.messages.length]);
 
   const heading = gone ? 'Chat not found' : (title ?? 'New chat');
+  const player = data.role === 'player';
   const histProps = {
+    // Desktop: at the foot of the rail. Phone: the settings sheet (S-ASK.settings.sheet).
+    footer: v2 && data.knows && !player && !phone ? <AskKnowsPanel knows={data.knows} conversationId={openId} /> : undefined,
     conversations,
     openId: chatSw.shown === NEW_CHAT ? null : chatSw.shown,
     nowIso: data.nowIso,
@@ -216,6 +239,7 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
   const composer = (variant: 'hero' | 'dock') => (
     <SectionBoundary surface="coachhelm.ask.composer" label="The message box" code="CH-13225">
       <AskComposer
+        hint={v2 ? (player ? 'Ask about your game' : 'Ask about your team') : undefined}
         variant={variant}
         phone={phone}
         players={data.players}
@@ -238,10 +262,12 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
   ) : data.threadFailed ? (
     <AskThreadFailed onNew={newChat} />
   ) : showHome ? (
-    <AskHome data={data} phone={phone} heroComposer={composer('hero')} onAsk={ask} />
+    v2 ? <AskHomeV2 data={data} phone={phone} heroComposer={composer('hero')} onAsk={ask} focus={data.focus} /> : <AskHome data={data} phone={phone} heroComposer={composer('hero')} onAsk={ask} />
   ) : (
     <SectionBoundary surface="coachhelm.ask.thread" label="The conversation" code="CH-13225">
       <AskThread
+        v2={v2}
+        onArtifact={setArtifact}
         messages={chat.messages}
         busy={chat.busy}
         error={notice}
@@ -269,12 +295,16 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
     setChatsAside(false);
     if (evidenceOpen && narrowDesktop()) setEvidence(null);
   };
+  const [settingsOpen, setSettingsOpen] = useState(false);
   // The phone sheet's subject, kept after it closes so its exit still has the content it showed.
   const [sheetEvidence, setSheetEvidence] = useState<EvidenceFocus | null>(null);
   if (phone && evidenceOpen && evidence !== sheetEvidence) setSheetEvidence(evidence);
 
+  // S-ASK.scope: what the last question is about, in the same words the question used; it changes when a question is sent.
+  const lastAsked = [...chat.messages].reverse().find((m) => m.role === 'user')?.parts.flatMap((p) => (p.type === 'text' ? [p.text] : [])).join(' ') ?? '';
+  const scopeLine = showHome ? `${player ? 'My rounds' : data.teamName} · this season` : askScope(lastAsked, player ? 'My rounds' : data.teamName, player ? [] : (data.players ?? []).map((p) => p.name));
   return (
-    <main className={'ch-ask' + (phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || chatSw.pending || undefined} data-switch={sw.pending ? 'view' : chatSw.pending ? 'chat' : undefined} data-ch-code="CH-13820" {...sw.enter}>
+    <main className={'ch-ask' + (v2 ? ' ch-ak-root' : '') + (phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || chatSw.pending || undefined} data-switch={sw.pending ? 'view' : chatSw.pending ? 'chat' : undefined} data-ch-code="CH-13820" {...sw.enter}>
       {phone && (
         <>
           <PhoneTop
@@ -289,17 +319,28 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
                 <span className="ch-ask-ph__title">{showHome && !gone ? 'CoachHelm' : heading}</span>
               </>
             }
-            action={<PhoneIconAction icon={SquarePen} label="New chat" onClick={newChat} />}
+            action={
+              <>
+                {v2 && data.knows && !player && <PhoneIconAction icon={Settings2} label="Chat settings" onClick={() => setSettingsOpen(true)} />}
+                <PhoneIconAction icon={SquarePen} label="New chat" onClick={newChat} />
+              </>
+            }
           />
           <h1 className="ch-sr-only">Ask CoachHelm</h1>
+          {v2 && data.knows && !player && (
+            <Modal open={settingsOpen} title="Chat settings" detent={0.62} className="ch-ak-settings" onClose={() => setSettingsOpen(false)}>
+              <AskKnowsPanel knows={data.knows} conversationId={openId} />
+            </Modal>
+          )}
         </>
       )}
       <div className="ch-ask-top">
-        <CoachHelmTabs active={sw.shown} onGo={sw.go} />
+        {!player && <CoachHelmTabs active={sw.shown} onGo={sw.go} />}
+        {player && data.allowance && !(v2 && showHome) && <AllowanceMeter bucket={data.allowance} />}
         {!phone && <TeamLabel name={data.teamName} />}
       </div>
       <div className={'ch-ask-body' + (!phone && chatsShown ? ' has-panel' : '') + (!phone && evidenceOpen ? ' has-evidence' : '')}>
-        {!phone && (
+        {!phone && !player && (
           <SectionBoundary surface="coachhelm.ask.history" label="Your chats" code="CH-13225">
             <HistoryPanel {...histProps} heading="CoachHelm" open={chatsShown} onHide={() => setPanelOpen(false)} />
           </SectionBoundary>
@@ -324,8 +365,18 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
               <h1 className="ch-ask-head__t">{heading}</h1>
             </header>
           )}
+          {v2 && phone && !gone && (
+            <p className="ch-ak-scope">
+              Reading <b>{scopeLine}</b>
+            </p>
+          )}
           <div className={'ch-ask-scroll' + (showHome ? ' is-home' : !gone && !data.threadFailed ? ' is-thread' : '')}>{body}</div>
-          {docked && (
+          {player && out && (
+            <div className="ch-ask-dock">
+              <PlayerOut />
+            </div>
+          )}
+          {docked && !(player && out) && (
             <div className="ch-ask-dock">
               {composer('dock')}
               {!phone && (
@@ -341,6 +392,7 @@ function AskChat({ data, useChatImpl, initial }: { data: ChAskData; useChatImpl:
           </aside>
         )}
       </div>
+      {artifact && <ArtifactView artifact={artifact} phone={phone} body={(b) => <pre className="ch-ak-plain">{typeof b === 'string' ? b : JSON.stringify(b, null, 2)}</pre>} onClose={() => setArtifact(null)} />}
       {phone && (
         <>
           <HistoryDrawer {...histProps} open={drawer} onClose={() => setDrawer(false)} />

@@ -4347,3 +4347,52 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 :where(html[data-fw-theme='dark']) .ch-asks__panel {
   background: var(--ch-bg-elevated);
 }
+
+/* Clubhouse refresh, PR 2 (clubhouse_refresh_v1, off everywhere): the page is one flat colour. Without the attribute every rule above stands. */
+@media (min-width: 821px) {
+  .ch-app[data-ch-refresh='on'] .ch-canvas {
+    background:
+      linear-gradient(90deg, rgb(11 58 37 / 0.04), rgb(11 58 37 / 0.012) 90px, transparent 200px) local,
+      var(--ch-workspace);
+  }
+}
+@media (max-width: 820px) {
+  [data-ui='clubhouse'] .ch-app[data-ch-refresh='on'],
+  [data-ui='clubhouse'] .ch-app[data-ch-refresh='on'] .ch-canvas {
+    background: var(--ch-grouped-bg);
+  }
+}
+
+/* Clubhouse refresh, PR 3 (clubhouse_refresh_v1, off everywhere): the large title's context line, the title's scroll scale origin
+   (shell/large-title.tsx sets scale and opacity from the scroll), and controls that stick under the green bar on the page colour.
+   The bar itself is not touched. */
+@media (max-width: 820px) {
+  .ch-app[data-ch-refresh='on'] .ch-large-title {
+    transform-origin: left bottom;
+  }
+  .ch-app[data-ch-refresh='on'] .ch-large-title__context {
+    margin: 4px 0 0;
+    font: var(--ch-type-meta);
+    color: var(--ch-text-secondary);
+  }
+  .ch-app[data-ch-refresh='on'] :is([data-ch-sticky-controls], .ch-stickybar) {
+    position: sticky;
+    z-index: 2;
+    top: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
+    padding-block: 8px;
+    background: var(--ch-grouped-bg);
+  }
+}
+@media (min-width: 821px) {
+  .ch-large-title__context {
+    display: none;
+  }
+}
+
+/* The coach's Home bar and hero are one green (Nick, 31 Oct; 06 §11.1). Only with the lane on, and only over a coach hero; player Home
+   follows through data-ch-hero-flat (stats-home PR 6), so a --ch-frame bar never sits over a --ch-green-800 hero. */
+@media (max-width: 820px) {
+  .ch-root[data-ch-crh='on'][data-phone-hero]:has(.ch-hm[data-ch-crh='on'], [data-ch-hero-flat]) .ch-topbar {
+    background: var(--ch-frame);
+  }
+}

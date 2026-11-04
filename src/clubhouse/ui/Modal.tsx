@@ -28,11 +28,16 @@ export function Modal({
   children,
   code,
   initialFocus,
+  className,
+  detent,
+  atRest = false,
 }: {
   /** A control in the head beside Close (the course picker's Add a course). */
   action?: ReactNode;
   /** Catalog number (docs/clubhouse/catalog). */
   code?: string;
+  /** An extra class on the dialog (a lane's own sheet). */
+  className?: string;
   /** A selector inside the sheet that takes focus as it opens instead of the heading (a new item's first field). */
   initialFocus?: string;
   open: boolean;
@@ -43,6 +48,10 @@ export function Modal({
   width?: number;
   footer?: ReactNode;
   children?: ReactNode;
+  /** A fixed phone height as a share of the screen (0.9, 0.74, 0.62), capped at 92dvh. Absent: content height, as every other sheet. */
+  detent?: number;
+  /** Opened by a link: on screen at its resting place with no rise (classes-roster-home 07 M-CRH-46). */
+  atRest?: boolean;
 }) {
   const titleId = useId();
   const descriptionId = useId();
@@ -52,6 +61,7 @@ export function Modal({
     // The heading takes focus as the sheet opens, not the Close key: a tap-opened sheet shows no ring on Close, and
     // VoiceOver starts on the title (P001 shared finding). Tab goes on to Close and the rest.
     focusSelector: initialFocus ?? '.ch-modal__titles h2',
+    atRest,
   });
   const drag = useSheetDrag(ref, onClose, { enabled: phone, reduced });
 
@@ -60,9 +70,11 @@ export function Modal({
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <dialog
       ref={ref}
-      className="ch-modal"
+      className={'ch-modal' + (className ? ` ${className}` : '')}
       data-ch-code={code}
-      style={{ ['--ch-modal-w' as string]: `${width}px` }}
+      data-ch-detent={detent ? '' : undefined}
+      data-ch-at-rest={atRest ? '' : undefined}
+      style={{ ['--ch-modal-w' as string]: `${width}px`, ...(detent ? { ['--ch-modal-detent' as string]: `${detent * 100}dvh` } : {}) }}
       aria-labelledby={titleId}
       aria-describedby={description ? descriptionId : undefined}
       onCancel={(e) => {

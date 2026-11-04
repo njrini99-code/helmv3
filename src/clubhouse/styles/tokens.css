@@ -267,6 +267,12 @@
      follows the root size (a browser's default text size, or a 130% root: rem) and the iPhone's Text Size
      (--ch-type-scale on <html>, from -apple-system-body, capped at XXL: lib/dynamic-type.ts). */
   --ch-type-k: calc(var(--ch-type-scale, 1) * 1rem / 16);
+  --ch-fw-400: 400;
+  --ch-fw-500: 500;
+  --ch-fw-600: 600;
+  --ch-fw-700: 700;
+  --ch-type-figure-40-500: 500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
+  --ch-type-figure-44-500: 500 calc(44 * var(--ch-type-k))/1 var(--ch-font-sans);
   /* Title steps (once the serif titles; the owner moved titles to the heavy sans on 2026-10-07): page and section titles
      only, never data or controls. The names stay so every consumer follows. */
   --ch-type-serif-l: 600 calc(34 * var(--ch-type-k))/1.08 var(--ch-font-sans);
@@ -355,6 +361,11 @@
   --ch-type-eyebrow: 500 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-track-eyebrow: 0;
   --ch-type-card-title: 600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+  /* Clubhouse refresh, PR 1: row title, meta, and the two figures (width and tracking are the caller's; DESIGN_LANGUAGE 6). */
+  --ch-type-row: 500 calc(16 * var(--ch-type-k))/calc(21 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-meta: 400 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-figure-hero: 500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
+  --ch-type-figure: 600 calc(17 * var(--ch-type-k))/1 var(--ch-font-sans);
   --ch-track-card-title: var(--ch-track-17);
 
   /* Space and layout */
@@ -603,6 +614,100 @@
   /* A flush row's press: a deeper green tint, not a scale (lib/press.ts scales keys up to 240px only). */
   /* The section rule the phone board draws above a heading: an engraved double hairline. */
   --ch-ledger-rule-double: 3px double rgb(110 98 62 / 0.22);
+  /* Clubhouse refresh, PR 1 (design-refresh/DESIGN_LANGUAGE.md 3, 6, "Adopted from threads"). Additive: nothing reads them yet. */
+  --ch-grouped-bg: #f2f0e9;
+  --ch-card-bg: #fffefb;
+  --ch-well-bg-flat: #f6f4ee;
+  --ch-separator: rgb(28 27 24 / 0.1);
+  --ch-card-ring: rgb(28 27 24 / 0.07);
+  --ch-card-shadow: var(--ch-elevation-reading);
+  --ch-gain: #14613d;
+  --ch-loss: #9a5700;
+  --ch-flag: #b3261e;
+  --ch-chart-flat: #6b675f;
+  --ch-chart-track: #ebe5d8;
+  --ch-chart-zero: #5f5c55;
+  --ch-feature-ink: #f4f1e8;
+  --ch-feature-ink-2: #d3d9cb;
+  --ch-feature-gain: #8fd3aa;
+  --ch-feature-loss: #edb867;
+  --ch-feature-flag: #f49a8d;
+  /* The phone Stats redesign (clubhouse_stats_redesign_v1; stats-home 04 section 2 and 06). Additive: only .ch-shs reads them. */
+  --ch-feature-ink-3: #b4c0b3;
+  --ch-feature-under: #f49a8d;
+  --ch-feature-flat: #bcc5b9;
+  --ch-feature-gain-fill: #6fc096;
+  --ch-feature-loss-fill: #e5a445;
+  --ch-feature-sep: rgb(244 241 232 / 0.14);
+  --ch-feature-track: #2c5440;
+  --ch-feature-gain-tint: #20523a;
+  --ch-feature-loss-tint: #2f4e30;
+  --ch-feature-flat-tint: #2b5340;
+  --ch-feature-shadow: 0 1px 2px rgb(11 30 20 / 0.2), 0 10px 24px -14px rgb(11 30 20 / 0.5);
+  --ch-feature-icon-bg: rgb(244 241 232 / 0.12);
+  --ch-separator-strong: rgb(28 27 24 / 0.16);
+  --ch-press-wash: rgb(28 27 24 / 0.05);
+  --ch-chip-gain-bg: #e8eee8;
+  --ch-chip-loss-bg: #f7f0e6;
+  --ch-chip-flag-bg: #f7e8e5;
+  --ch-chip-flat-bg: #f2f1ee;
+  --ch-chip-danger-bg: #f7e8e5;
+  --ch-chart-bogey: #b3884a;
+  --ch-chart-par: #d9d2c3;
+  --ch-champagne-dot: #e2c98f;
+  --ch-stats-accent: #155a39;
+  --ch-yr-sr: #1f6b45;
+  --ch-yr-jr: #3d6787;
+  --ch-yr-so: #86672c;
+  --ch-yr-fr: #9a4a35;
+  --ch-yr-ink: #ffffff;
+  /* Messages redesign, 11a (golf_messages_redesign_v1): nothing in main reads these. Shadows are filters, so the drawn tail casts with the body. */
+  --ch-bubble-theirs-bg: #fffefb;
+  --ch-bubble-mine-fill: #155a39;
+  --ch-bubble-radius: 19px;
+  --ch-bubble-join: 6px;
+  --ch-poll-bar: rgb(21 90 57 / 0.1);
+  --ch-poll-bar-on: rgb(21 90 57 / 0.2);
+  --ch-bubble-theirs-shadow: drop-shadow(0 0 0.5px rgb(28 27 24 / 0.24)) drop-shadow(0 1px 2px rgb(28 25 18 / 0.05)) drop-shadow(0 6px 8px rgb(28 25 18 / 0.06));
+  --ch-bubble-mine-shadow: drop-shadow(0 1px 1px rgb(11 58 37 / 0.22)) drop-shadow(0 6px 10px rgb(11 58 37 / 0.2));
+  --ch-shadow-float: 0 0 0 0.5px rgb(28 25 18 / 0.1), 0 8px 24px -6px rgb(28 25 18 / 0.22), 0 2px 6px rgb(28 25 18 / 0.08);
+  --ch-glass: rgb(253 251 247 / 0.78);
+  --ch-glass-strong: rgb(253 251 247 / 0.9);
+  --ch-glass-rule: rgb(28 25 18 / 0.1);
+  --ch-typing-dot: #7a766c;
+  --ch-ring-own: #8c703a;
+  --ch-switch-off-ring: #8e8a80;
+  --ch-chart-line: #3f7556;
+  --ch-countdown-on-green: #e3f5e9;
+  --ch-coin-bg: #e9e3d3;
+  --ch-coin-ink: #5a4e36;
+  --ch-coin-ring: rgb(90 78 54 / 0.22);
+  --ch-on-green-2: rgb(244 241 232 / 0.84);
+  --ch-on-green-3: rgb(244 241 232 / 0.72);
+  /* Clubhouse classes, roster and home lane (design-refresh/classes-roster-home 06 1.2): additive, read only by its flagged screens. */
+  --ch-crh-ink2: #46433d;
+  --ch-crh-ink4: #5f5c55;
+  --ch-accent-ink: #155a39;
+  --ch-accent-tint: rgb(21 90 57 / 0.1);
+  --ch-card-bg-raised: #f8f6f0;
+  --ch-tile-bg: #fffefb;
+  --ch-warn-bg: rgb(154 87 0 / 0.1);
+  --ch-warn-ink: #7a4500;
+  --ch-warn-icon: #9a5700;
+  --ch-warn-ring: rgb(154 87 0 / 0.22);
+  --ch-warn-on-green: #f6d69e;
+  --ch-warn-on-green-bg: rgb(231 174 87 / 0.18);
+  --ch-on-green-chip: #e3f5e9;
+  --ch-on-green-chip-bg: rgb(123 199 154 / 0.18);
+  --ch-on-green-rule: rgb(244 241 232 / 0.14);
+  --ch-on-green-mark: rgb(244 241 232 / 0.5);
+  --ch-switch-on: #2e8a57;
+  --ch-crh-card-shadow: var(--ch-elevation-reading);
+  --ch-crh-leader-shadow: 0 1px 2px rgb(28 25 18 / 0.05), 0 8px 20px -14px rgb(28 25 18 / 0.12);
+  --ch-crh-btn-shadow: 0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(28 25 18 / 0.05);
+  --ch-crh-btn-pri-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), 0 6px 14px -8px rgb(11 58 37 / 0.7);
+  --ch-crh-sheet-shadow: 0 -10px 40px -10px rgb(0 0 0 / 0.35);
+  --ch-crh-well-shadow: inset 0 1px 2px rgb(28 25 18 / 0.05);
   /* The one feature card: the frame's green, lit faintly from its top right corner. */
   --ch-feature-bg: radial-gradient(120% 90% at 100% 0%, rgb(123 199 154 / 0.14), transparent 60%), var(--ch-green-800);
   --ch-elevation-feature: 0 0 0 1px #082b1c, 0 14px 28px -18px rgb(11 58 37 / 0.7);
@@ -753,8 +858,14 @@
      that moves an anchored part, such as a sheet rising. Where linear() is missing it is the ease-out over base. An
      interruptible state change keeps a curve: a CSS spring would restart from rest when retargeted, so those springs
      run in script. */
+  --ch-ease-spring-pour: var(--ch-ease);
+  --ch-dur-spring-pour: 420ms;
+  --ch-ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
   --ch-ease-spring-smooth: var(--ch-ease);
   --ch-dur-spring-smooth: var(--ch-dur-base);
+  /* The settle spring for a part CSS moves (a switch thumb): chSpring('settle'). Where linear() is missing, the ease-out over base. */
+  --ch-ease-spring-settle: var(--ch-ease);
+  --ch-dur-spring-settle: var(--ch-dur-base);
   --ch-reveal-offset: 40ms;
   --ch-reveal-step: 55ms;
   --ch-reveal-rise: 10px;
@@ -791,6 +902,71 @@
  */
 html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   color-scheme: dark;
+  /* Messages redesign, 11a. */
+  --ch-bubble-theirs-bg: #232925;
+  --ch-bubble-mine-fill: #1f6b45;
+  --ch-poll-bar: rgb(124 199 155 / 0.12);
+  --ch-poll-bar-on: rgb(124 199 155 / 0.24);
+  --ch-bubble-theirs-shadow: drop-shadow(0 0.5px 0.5px rgb(0 0 0 / 0.4)) drop-shadow(0 3px 6px rgb(0 0 0 / 0.3));
+  --ch-bubble-mine-shadow: drop-shadow(0 1px 1px rgb(0 0 0 / 0.4)) drop-shadow(0 6px 10px rgb(0 0 0 / 0.35));
+  --ch-shadow-float: 0 0 0 0.5px rgb(237 231 216 / 0.12), 0 8px 24px -6px rgb(0 0 0 / 0.6), 0 2px 6px rgb(0 0 0 / 0.4);
+  --ch-glass: rgb(22 27 23 / 0.74);
+  --ch-glass-strong: rgb(27 32 28 / 0.88);
+  --ch-glass-rule: rgb(237 231 216 / 0.1);
+  --ch-typing-dot: #827d71;
+  --ch-ring-own: #c9ad74;
+  --ch-switch-off-ring: #827d71;
+  /* Clubhouse refresh, PR 1. Dark Sophomore is #8B6B30 (DECISIONS: white reads 4.95:1; the language table's #8F6E31 gives 4.7). */
+  --ch-grouped-bg: #0e120f;
+  --ch-card-bg: #191e1a;
+  --ch-well-bg-flat: #141815;
+  --ch-separator: rgb(241 236 223 / 0.1);
+  --ch-card-ring: rgb(255 255 255 / 0.06);
+  --ch-card-shadow: var(--ch-elevation-reading);
+  --ch-gain: #7cc79b;
+  --ch-loss: #e7ae57;
+  --ch-flag: #f28b7d;
+  --ch-chart-flat: #a39d90;
+  --ch-chart-track: #2c322d;
+  --ch-chart-zero: #ada697;
+  /* The phone Stats redesign, dark. */
+  --ch-stats-accent: #7cc79b;
+  --ch-feature-track: #325644;
+  --ch-feature-gain-tint: #26553e;
+  --ch-feature-loss-tint: #355133;
+  --ch-feature-flat-tint: #315643;
+  --ch-feature-shadow: 0 0 0 1px rgb(255 255 255 / 0.06);
+  --ch-separator-strong: rgb(241 236 223 / 0.16);
+  --ch-press-wash: rgb(241 236 223 / 0.06);
+  --ch-chip-gain-bg: #29392f;
+  --ch-chip-loss-bg: #3a3524;
+  --ch-chip-flag-bg: #3c2f2a;
+  --ch-chip-flat-bg: #292d28;
+  --ch-chip-danger-bg: #3c2f2a;
+  --ch-chart-bogey: #c9a46a;
+  --ch-chart-par: #3a403b;
+  --ch-yr-sr: #2a7a51;
+  --ch-yr-jr: #46739a;
+  --ch-yr-so: #8b6b30;
+  --ch-yr-fr: #a3533e;
+  --ch-chart-line: #6db488;
+  --ch-coin-bg: #2a2e27;
+  --ch-coin-ink: #dcd3bc;
+  --ch-coin-ring: rgb(220 211 188 / 0.18);
+  --ch-crh-ink2: #d0c9b8;
+  --ch-crh-ink4: #ada697;
+  --ch-accent-ink: #7cc79b;
+  --ch-accent-tint: rgb(124 199 155 / 0.12);
+  --ch-card-bg-raised: #1d231f;
+  --ch-tile-bg: rgb(255 255 255 / 0.09);
+  --ch-warn-bg: rgb(231 174 87 / 0.12);
+  --ch-warn-ink: #f0c77e;
+  --ch-warn-icon: #e7ae57;
+  --ch-warn-ring: rgb(231 174 87 / 0.24);
+  --ch-crh-card-shadow: var(--ch-elevation-reading);
+  --ch-crh-leader-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 20px -14px rgb(0 0 0 / 0.5);
+  --ch-crh-btn-shadow: 0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(0 0 0 / 0.3);
+  --ch-crh-well-shadow: inset 0 1px 2px rgb(0 0 0 / 0.3);
   --ch-on-ink-warning: #8a5a0c;
   /* 4.5:1 or more on every night surface a field or menu sits on, the raised -2 well the darkest (4.7:1; it was #8f897c,
      3.78 there and 4.27 on the raised surface). Visual pass 2026-10-28. */
@@ -1084,6 +1260,16 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   [data-ui='clubhouse'] {
     --ch-ease-spring-smooth: linear(0, 0.0418, 0.136, 0.2508, 0.3677, 0.477, 0.5739, 0.657, 0.7266, 0.7839, 0.8303, 0.8675, 0.8971, 0.9204, 0.9387, 0.953, 0.964, 0.9725, 0.9791, 0.9841, 0.988, 0.9909, 0.9931, 0.9948, 0.9961, 0.9971, 0.9978, 0.9983, 0.9988, 1);
     --ch-dur-spring-smooth: 462ms;
+    --ch-ease-spring-pour: linear(0, 0.0177, 0.0621, 0.1229, 0.1926, 0.2661, 0.3395, 0.4106, 0.4777, 0.5398, 0.5967, 0.6481, 0.6942, 0.7351, 0.7713, 0.8031, 0.8309, 0.8551, 0.8761, 0.8942, 0.9099, 0.9233, 0.9349, 0.9448, 0.9532, 0.9604, 0.9665, 0.9717, 0.9762, 0.9799, 0.9831, 0.9858, 0.988, 0.99, 0.9916, 0.9929, 0.9941, 0.995, 0.9958, 0.9965, 0.9971, 0.9976, 0.998, 0.9983, 0.9986, 0.9988, 1);
+    --ch-dur-spring-pour: 742ms;
+    --ch-ease-spring-send: linear(0, 0.0175, 0.0624, 0.1251, 0.1982, 0.2764, 0.3554, 0.4325, 0.5057, 0.5737, 0.6357, 0.6915, 0.7411, 0.7847, 0.8225, 0.8551, 0.8828, 0.9063, 0.9259, 0.9423, 0.9557, 0.9666, 0.9754, 0.9824, 0.988, 0.9923, 0.9956, 0.9981, 0.9999, 1.0011, 1.002, 1.0025, 1.0028, 1.003, 1.0029, 1.0028, 1.0027, 1.0025, 1.0022, 1.002, 1.0018, 1.0015, 1.0013, 1.0011, 1);
+    --ch-dur-spring-send: 700ms;
+    --ch-ease-spring-pop: linear(0, 0.0483, 0.1654, 0.3163, 0.4756, 0.6259, 0.7569, 0.8635, 0.9448, 1.0024, 1.0394, 1.0598, 1.0676, 1.0666, 1.0599, 1.0502, 1.0394, 1.0288, 1.0194, 1.0116, 1.0055, 1.001, 0.998, 0.9963, 0.9955, 0.9954, 0.9957, 0.9963, 0.9971, 0.9978, 0.9985, 1);
+    --ch-dur-spring-pop: 496ms;
+    --ch-ease-spring-lift: linear(0, 0.0388, 0.1306, 0.2476, 0.3711, 0.4898, 0.5971, 0.6899, 0.7675, 0.8304, 0.88, 0.9182, 0.9469, 0.9678, 0.9826, 0.9926, 0.9991, 1.0031, 1.0053, 1.0062, 1.0063, 1.0059, 1.0052, 1.0045, 1.0037, 1.003, 1.0023, 1.0018, 1.0013, 1);
+    --ch-dur-spring-lift: 471ms;
+    --ch-ease-spring-settle: linear(0, 0.0429, 0.1419, 0.2645, 0.3907, 0.509, 0.6136, 0.7024, 0.7754, 0.8338, 0.8795, 0.9145, 0.9408, 0.9601, 0.974, 0.9839, 0.9906, 0.9952, 0.9981, 0.9998, 1.0008, 1.0013, 1.0015, 1.0015, 1.0014, 1.0012, 1);
+    --ch-dur-spring-settle: 417ms;
   }
 }
 
@@ -1097,6 +1283,13 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-dur-release: 0ms;
   --ch-dur-reveal: 0ms;
   --ch-dur-spring-smooth: 0ms;
+  --ch-dur-spring-pour: 0ms;
+  --ch-dur-spring-settle: 0ms;
+  --ch-dur-spring-send: 0ms;
+  --ch-dur-spring-pop: 0ms;
+  --ch-dur-spring-lift: 0ms;
+  /* Not zeroed: a reduced transition is an opacity crossfade this long. Equal to CH_FADE_MS (lib/motion.ts). */
+  --ch-dur-crossfade-rm: 180ms;
   --ch-reveal-offset: 0ms;
   --ch-reveal-step: 0ms;
   --ch-reveal-rise: 0px;
@@ -1131,7 +1324,7 @@ html:has([data-ui='clubhouse']) {
      (PhoneScreen), and how far the page beneath draws back (UIKit's parallax, about a third). */
   --ch-dur-vt-push: 260ms;
   --ch-ease-vt-push: cubic-bezier(0.22, 1, 0.36, 1);
-  --ch-vt-parallax: -30%;
+  --ch-vt-parallax: -24%;
   /* The dim on the page beneath a push (B16, CH-1618): PhoneScreen's scrim, and the same depth as a filter for a route
      push, whose page beneath is a view-transition snapshot that cannot take an overlay. */
   --ch-push-dim: rgb(20 18 12 / 0.1);
@@ -1296,4 +1489,16 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-chart-loss-on-tint: #f3c77e;
     --ch-chart-flag: #f6a294;
   }
+}
+
+/* The refresh's chart fills (DESIGN_LANGUAGE §3). Scoped so today's --ch-chart-*-fill values stay as they are with the flag off. */
+.ch-root[data-ch-refresh='on'], [data-ui='clubhouse'] [data-ch-refresh='on'] {
+  --ch-score-under: #9e3b2e;
+  --ch-chart-gain-fill: #1f6b45;
+  --ch-chart-loss-fill: #b86f0c;
+}
+html[data-fw-theme='dark'] .ch-root[data-ch-refresh='on'], html[data-fw-theme='dark'] [data-ui='clubhouse'] [data-ch-refresh='on'] {
+  --ch-score-under: #f28b7d;
+  --ch-chart-gain-fill: #4fa877;
+  --ch-chart-loss-fill: #e09a35;
 }

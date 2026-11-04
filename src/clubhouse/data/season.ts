@@ -3,6 +3,7 @@ import type { createClient } from '@/lib/supabase/server';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { isCountableRound } from '@/lib/golf/round-countable';
+import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { getValidTimezone } from '@/lib/calendar/timezone';
 import { chLogServer } from '../lib/track-server';
@@ -25,6 +26,8 @@ type Supabase = Awaited<ReturnType<typeof createClient>>;
 export interface ChRound {
   id: string;
   player_id: string;
+  /** The course's row, when the round has one (Team's Course tab groups by it). Optional: a fixture or an older row has none. */
+  course_id?: string | null;
   course_name: string | null;
   tees_played: string | null;
   round_date: string;
@@ -52,7 +55,16 @@ export interface ChRound {
 }
 
 const ROUND_COLUMNS =
-  'id, player_id, course_name, tees_played, round_date, round_type, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting';
+  'id, player_id, course_id, course_name, tees_played, round_date, round_type, total_score, score_to_par, front_nine, back_nine, holes_played, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting';
+
+/**
+ * Whether a round counts in averages (START_HERE's shared values table): true when `round_type` is null or
+ * `roundTypeFromDb(round_type) !== 'practice'`. Roster, Home and Stats loaders call it under their lane flags. Latest rounds
+ * lists every round; Stats' pressure gap and by-type row keep the uncut window. `roundTypeFromDb` reads an unknown type as practice.
+ */
+export function countsForScoring(r: { round_type: string | null }): boolean {
+  return r.round_type == null || roundTypeFromDb(r.round_type) !== 'practice';
+}
 
 export const TREND_LENGTH = 7;
 export const MIN_SG_ROUNDS = 3;

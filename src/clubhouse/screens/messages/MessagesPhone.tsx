@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { AnimatePresence, useIsPresent } from "motion/react";
-import {
+import { Flag,
   ArrowUp,
   Bell,
   BellOff,
@@ -40,6 +40,7 @@ import {
   type ReactNode,
 } from "react";
 import { Avatar } from "../../ui/Avatar";
+import { Segmented } from "../../ui/Segmented";
 import { EmptyState, Skeleton } from "../../ui/States";
 import { RailEmpty } from "./RailEmpty";
 import { ThreadClassSub } from "./ThreadClassSub";
@@ -92,7 +93,6 @@ import {
   EditMessageModal,
   LeaveGroupModal,
   DeleteConversationModal,
-  MessageHits,
   NewDivider,
   REACTIONS,
   RemoveMemberModal,
@@ -100,6 +100,8 @@ import {
   muteLabel,
   personOf,
   convAvatarId,
+  convYear,
+  TypingMini,
   useAddAttachments,
   useAutosize,
   useNewDivider,
@@ -107,6 +109,13 @@ import {
 } from "./MessagesView";
 import { useComposerInset } from "./composer-inset";
 import { useThreadAnchor } from "./use-thread-anchor";
+import { MessageHits } from "./message-hits";
+import { useThreadDragTimes } from "./use-thread-drag-times";
+import { ConversationSearch, detailsLine, MembersCard, MuteMenu, PhotosAndFiles, popIn, QuickActions, tokenBeat, useMuteAction } from "./details-v2";
+import { HelloCard } from "./HelloCard";
+import { HoldLift } from "./hold-lift";
+import { HoldSeenRow } from "./seen-by";
+import { noteTappedFace, ThreadDatePill, ThreadJumpKey, useFaceFlight, useReplyFromTyping, useSendRise, useSpringToEnd, useThreadMakeRoom } from "./thread-v2";
 import { useFocusMessage } from "./use-focus-message";
 import { ListPresence, PresenceRow } from "../../ui/ListPresence";
 import { pluralWord } from "../../lib/plural";
@@ -181,7 +190,7 @@ export function MessagesPhone({ api }: { api: ChMessagesApi }) {
       />
       <div className="ch-msp-inbox" inert={depth > 0 || undefined}>
         <SectionBoundary surface="messages.rail" label="Your conversations" code="CH-7210">
-          <PhoneInbox api={api} onNew={() => setComposing(true)} />
+          {api.redesign ? <PhoneInboxV2 api={api} onNew={() => setComposing(true)} /> : <PhoneInbox api={api} onNew={() => setComposing(true)} />}
         </SectionBoundary>
       </div>
 
@@ -242,6 +251,120 @@ export function MessagesPhone({ api }: { api: ChMessagesApi }) {
 }
 
 /* Inbox */
+
+/** The redesign's inbox: context line, search and New, segmented, Pinned card, Recent card (06 S-MSG). No large title on the phone. */
+function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
+  const [filter, setFilter] = useState<ChConvFilter>(api.designFilter ?? "all");
+  const [q, setQ] = useState("");
+  const unread = api.convs.filter(isUnread).length;
+  const list = filterConvs(api.convs, filter, q);
+  // A filter or search change cuts its leaving rows in one frame (M-MSG-03b); a row leaving the list fades (M-MSG-CP-11).
+  const scope = `${filter}\u0000${q}`;
+  const lastScope = useRef(scope);
+  const changedScope = lastScope.current !== scope;
+  useEffect(() => {
+    lastScope.current = scope;
+  });
+  const loading = (api.convsLoading && !api.convs.length) || api.annLoading;
+  const context = loading ? "Loading conversations" : [`${unread} unread`, api.teamName].filter(Boolean).join(" · ");
+  const pinned = (api.pins?.ids ?? []).map((id) => api.convs.find((c) => c.id === id)).filter((c): c is ChConv => !!c);
+  const firstRun = isMessagesFirstRun(api);
+  // A pin isn't listed twice (06 S-MSG): the Pinned card holds it unless a search or Groups is asking.
+  const pinIds = new Set(pinned.map((c) => c.id));
+  const recent = filter !== "groups" && !q.trim() ? list.filter((c) => !pinIds.has(c.id)) : list;
+  const recentTitle = filter === "unread" ? "Unread" : filter === "groups" ? "Groups" : "Recent";
+  return (
+    <div className="ch-msp-page ch-msp-home ch-msv-inbox" onClickCapture={(e) => noteTappedFace(e.target)}>
+      {!firstRun && (
+        <div className="ch-msv-top">
+          <p className="ch-msv-ctx ch-num">{context}</p>
+          <div className="ch-msv-srow">
+            <SearchField value={q} onChange={setQ} placeholder="Search" label="Search conversations and messages" className="ch-msv-search" />
+            <button type="button" className="ch-msv-new" aria-label="New message" onClick={onNew}>
+              <Icon icon={SquarePen} size={19} />
+            </button>
+          </div>
+          <Segmented<ChConvFilter>
+            redraws
+            block
+            label="Filter conversations"
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { value: "all", label: "All" },
+              { value: "unread", label: "Unread" },
+              { value: "groups", label: "Groups" },
+            ]}
+          />
+        </div>
+      )}
+      {api.convsError ? (
+        <InlineNotice code="CH-7201" title="Conversations didn’t load" body="Your messages are safe. Try again." onRetry={api.refetchConvs} />
+      ) : loading ? (
+        <section className="ch-msv-card" role="status" aria-label="Loading conversations" data-ch-code="CH-7402">
+          <div className="ch-msv-card__h" aria-hidden="true">
+            <span className="ch-msv-sk" style={{ width: 64, height: 11 }} />
+          </div>
+          {Array.from({ length: 5 }, (_, i) => (
+            <div key={i} className="ch-ms-row" aria-hidden="true" style={{ cursor: "default" }}>
+              <span className="ch-msv-sk" style={{ width: 44, height: 44, borderRadius: "50%" }} />
+              <span style={{ display: "grid", gap: 8 }}>
+                <span className="ch-msv-sk" style={{ width: 124.2, height: 11 }} />
+                <span className="ch-msv-sk" style={{ width: 210.6, height: 9 }} />
+              </span>
+            </div>
+          ))}
+        </section>
+      ) : firstRun ? (
+        <MessagesFirstRun redesign coach={api.viewer.role === "coach"} teamName={api.teamName ?? undefined} onNew={onNew} onTeam={api.viewer.role === "coach" ? onNew : undefined} />
+      ) : (
+        <div className="ch-msp-list">
+          {filter !== "groups" && !q.trim() && pinned.length > 0 && (
+            <section className="ch-msv-card" aria-label="Pinned">
+              <h2 className="ch-msv-card__h">Pinned</h2>
+              <div className="ch-msv-pins">
+                {pinned.map((c) => {
+                  const typers = api.typingByConv?.get(c.id);
+                  const said = c.lastSenderId !== api.viewer.userId ? c.lastText : null;
+                  return (
+                    <button key={c.id} type="button" className="ch-msv-pin" onClick={() => api.select(c.id)}>
+                      {typers?.length ? (
+                        <span className="ch-msv-bubblet"><TypingMini /></span>
+                      ) : said ? (
+                        <span className="ch-msv-bubblet">{said}</span>
+                      ) : null}
+                      {c.group ? (
+                        <span className="ch-ms-grp ch-msv-pin__grp"><Icon icon={c.title === api.teamName ? Flag : Users} size={31} /></span>
+                      ) : (
+                        <Avatar name={c.title} id={convAvatarId(api, c)} size="xl" year={convYear(api, c)} />
+                      )}
+                      <span className="ch-msv-pin__l">{c.title === api.teamName ? "Team" : c.group ? c.title : firstName(c.title)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+          {recent.length > 0 && (
+            <section className="ch-msv-card" aria-label={recentTitle}>
+              <h2 className="ch-msv-card__h">
+                {recentTitle} <small className="ch-num">{recent.length}</small>
+              </h2>
+              <ListPresence arrive="inbox" cut={changedScope}>
+                {recent.map((c) => (
+                  <ConvRow key={c.id} api={api} c={c} avatarSize={44} phone />
+                ))}
+              </ListPresence>
+            </section>
+          )}
+          {!list.length && !q.trim() && <RailEmpty filter={filter} q={q} onClearSearch={() => setQ("")} onShowAll={() => setFilter("all")} />}
+          {filter !== "groups" && <AnnouncementsSection api={api} q={q} />}
+          <MessageHits api={api} q={q} nameMatches={list.length} />
+        </div>
+      )}
+    </div>
+  );
+}
 
 function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
   const [filter, setFilter] = useState<ChConvFilter>("all");
@@ -363,9 +486,9 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
 
 /* Thread */
 
-const GroupMark = ({ size }: { size: "sm" | "md" | "lg" }) => (
+const GroupMark = ({ size, flag = false }: { size: "sm" | "md" | "lg"; flag?: boolean }) => (
   <span className={`ch-msp-mark is-${size}`} aria-hidden="true">
-    <Icon icon={Users} size={size === "lg" ? 28 : size === "md" ? 17 : 15} />
+    <Icon icon={flag ? Flag : Users} size={size === "lg" ? 28 : size === "md" ? 17 : 15} />
   </span>
 );
 
@@ -388,6 +511,7 @@ function PhoneThread({
   covered: boolean;
 }) {
   const toast = useToast();
+  const threadReduced = useChReducedMotion();
   const [acting, setActing] = useState<ChMsg | null>(null);
   const [replyToId, setReplyToId] = useState<string | null>(null);
   const [replySending, setReplySending] = useState(false);
@@ -423,6 +547,13 @@ function PhoneThread({
     if (replyToId && !acting) composerRef.current?.querySelector("textarea")?.focus();
   }, [replyToId, acting]);
   const [editing, setEditing] = useState<ChMsg | null>(null);
+  // Redesign: a pick runs the dismiss first, then what was picked (07 M-MSG-11).
+  const [holdClose, setHoldClose] = useState(0);
+  const holdAfter = useRef<(() => void) | null>(null);
+  const pickHold = (then: () => void) => {
+    holdAfter.current = then;
+    setHoldClose((n) => n + 1);
+  };
   const [deleting, setDeleting] = useState<ChMsg | null>(null);
   const scroller = useRef<HTMLDivElement | null>(null);
   const items = useMemo(() => threadItems(api.msgs, api.now, api.timeZone), [api.msgs, api.now, api.timeZone]);
@@ -437,6 +568,12 @@ function PhoneThread({
     if (firstMessage) onFirstSent();
     // The composer has taken the first message; nothing else to hand over.
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useThreadDragTimes(scroller, !!api.redesign, threadReduced);
+  useThreadMakeRoom(scroller, api.msgs.length, !!api.redesign, threadReduced);
+  const jumpToEnd = useSpringToEnd(scroller, anchor.toEnd, threadReduced);
+  useReplyFromTyping(scroller, api.msgs.length, !!api.typing, !!api.redesign, threadReduced);
+  useFaceFlight(!!api.redesign, threadReduced);
+  useSendRise(scroller, api.msgs.length, !!api.redesign, threadReduced);
   const titleId = `ch-msp-thread-${conv.id}`;
   const sub = conv.group ? `${conv.memberCount} members` : conv.subtitle;
   const copy = async (m: ChMsg) => {
@@ -458,9 +595,9 @@ function PhoneThread({
         back={{ onBack, ariaLabel: "Back to Messages" }}
         title={
           <button type="button" className="ch-msp-who" onClick={onDetails}>
-            {conv.group ? <GroupMark size="sm" /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} />}
+            {conv.group ? <GroupMark size="sm" /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} year={convYear(api, conv)} />}
             <span>
-              <b>{conv.title}</b>
+              <b>{api.redesign && !conv.group ? firstName(conv.title) : conv.title}</b>
               <em>
                 <ThreadClassSub cls={api.classDay} conv={conv} other={conv.group ? undefined : personOf(api, conv.memberIds[0] ?? "")} sub={sub} where="phone" />
               </em>
@@ -496,7 +633,18 @@ function PhoneThread({
                 <Skeleton width="38%" height={40} radius={18} />
               </div>
             ) : !api.msgs.length ? (
+              api.redesign && !conv.group ? (
+                <HelloCard
+                  name={conv.title}
+                  id={convAvatarId(api, conv)}
+                  role={conv.subtitle ?? ""}
+                  coach={api.viewer.role === "coach"}
+                  year={convYear(api, conv)}
+                  onStarter={(text) => setSeed({ text, nonce: Date.now() })}
+                />
+              ) : (
               <EmptyState compact code="CH-7304" title="No messages yet" body={`Say hello to ${conv.group ? "the group" : firstName(conv.title)}.`} />
+              )
             ) : (
               // B7, as on desktop: a deletion closes in place and an arrival rises in at its full height, so the thread above
               // never moves (owner, 2026-10-31, as Fairway); the scroll stays with useThreadAnchor.
@@ -505,7 +653,7 @@ function PhoneThread({
                   it.kind === "day"
                     ? [
                         <PresenceRow as="div" key={it.key} className="ch-ms-day">
-                          <span>{it.label}</span>
+                          <span>{it.label}{api.redesign ? <b className="ch-num"> {clock(it.at, api.timeZone, api.clock)}</b> : null}</span>
                         </PresenceRow>,
                       ]
                     : [
@@ -531,7 +679,24 @@ function PhoneThread({
               </ListPresence>
             )}
             {/* CH-7602, as on desktop: no dots under a thread that didn't load or is still loading. */}
-            {api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (
+            {api.redesign && api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (
+              (api.typingUserIds?.length ? api.typingUserIds : [conv.memberIds[0] ?? ""]).map((id) => {
+                const who = personOf(api, id);
+                const name = firstName(who?.name ?? conv.title);
+                return (
+                  <div key={id} className={"ch-ms-msg is-first" + (conv.group ? " is-group" : "")}>
+                    <span className="ch-ms-msg__av">{<Avatar name={who?.name ?? conv.title} id={who ? (who.playerId ?? who.userId) : convAvatarId(api, conv)} size="sm" />}</span>
+                    <div className="ch-ms-msg__col">
+                      <div className={"ch-msv-typing" + (conv.group ? " has-name" : "")} role="status" aria-label={`${name} is typing`}>
+                        {conv.group && <b className="ch-msv-bname">{name}</b>}
+                        <span className="ch-msv-typing__dots"><i /><i /><i /></span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            {!api.redesign && api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (
               <div className="ch-ms-msg is-first">
                 <span className="ch-ms-msg__av">{!conv.group && <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} />}</span>
                 <div className="ch-ms-msg__col">
@@ -546,12 +711,21 @@ function PhoneThread({
           </div>
         </div>
       </SectionBoundary>
-      <ThreadBelow anchor={anchor} />
+      {api.redesign ? (
+        <>
+          <ThreadDatePill scroller={scroller} />
+          <ThreadJumpKey scroller={scroller} unseen={anchor.unseen} onJump={jumpToEnd} />
+        </>
+      ) : (
+        <ThreadBelow anchor={anchor} />
+      )}
       <div ref={composerRef} className="ch-msp-composer">
       <Composer
         key={conv.id}
         api={api}
         conv={conv}
+        editing={api.redesign ? editing : null}
+        onEditDone={() => setEditing(null)}
         phone
         unavailable={api.msgsError}
         initialDraft={firstMessage?.text}
@@ -564,7 +738,51 @@ function PhoneThread({
       />
       </div>
 
-      <Modal code="CH-7604" open={acting != null} onClose={() => setActing(null)} title="Message">
+      {api.redesign && acting && (
+        <HoldLift
+          key={acting.id}
+          messageId={acting.id}
+          mine={acting.mine}
+          closeSignal={holdClose}
+          onReopen={() => {
+            holdAfter.current = null;
+          }}
+          onClosed={() => {
+            const then = holdAfter.current;
+            holdAfter.current = null;
+            setActing(null);
+            then?.();
+          }}
+          bar={REACTIONS.map((r) => {
+            const on = (api.reactions.get(acting.id) ?? []).some((x) => x.key === r.key && x.mine);
+            return (
+              <button
+                key={r.key}
+                type="button"
+                className={on ? "is-on" : undefined}
+                aria-label={`${on ? "Remove" : "React"} ${r.key.toLowerCase()}`}
+                aria-pressed={on}
+                onClick={() => {
+                  haptic("select");
+                  pickHold(() => api.react(acting.id, r.key, !on));
+                }}
+              >
+                <Icon icon={r.icon} size={22} />
+              </button>
+            );
+          })}
+        >
+          {acting.poll && <PollSheetRows hold id={acting.id} done={() => pickHold(() => undefined)} />}
+          <SheetRow hold icon={Reply} label="Reply" disabled={replySending} onClick={() => pickHold(() => reply(acting))} />
+          {conv.group && !acting.mine && <SeenSheetRow hold api={api} m={acting} open={() => pickHold(() => seenList.open(acting, null))} />}
+          {acting.text && <SheetRow hold icon={Copy} label={acting.poll ? "Copy poll" : "Copy"} onClick={() => pickHold(() => void copy(acting))} />}
+          {acting.mine && acting.text && !acting.poll && <SheetRow hold icon={Pencil} label="Edit" onClick={() => pickHold(() => setEditing(acting))} />}
+          {conv.group && acting.mine && <HoldSeenRow api={api} m={acting} onOpen={() => pickHold(() => seenList.open(acting, null))} />}
+          {acting.mine && <hr />}
+          {acting.mine && <SheetRow hold icon={Trash2} label="Delete" danger onClick={() => pickHold(() => setDeleting(acting))} />}
+        </HoldLift>
+      )}
+      <Modal code="CH-7604" open={!api.redesign && acting != null} onClose={() => setActing(null)} title="Message">
         {acting && (
           <div className="ch-msp-acts">
             <div role="group" className="ch-msp-acts__preview" aria-label="Selected message">
@@ -613,7 +831,7 @@ function PhoneThread({
           </div>
         )}
       </Modal>
-      <EditMessageModal api={api} message={editing} onClose={() => setEditing(null)} />
+      <EditMessageModal api={api} message={api.redesign ? null : editing} onClose={() => setEditing(null)} />
       <DeleteMessageModal api={api} message={deleting} onClose={() => setDeleting(null)} />
       {seenList.render(api, true)}
     </PhoneScreen>
@@ -622,10 +840,10 @@ function PhoneThread({
 }
 
 /** P-1 slice 6: "Seen by 9 of 11" in the long-press sheet, for a coach, between Reply and Copy. */
-function SeenSheetRow({ api, m, open }: { api: ChMessagesApi; m: ChMsg; open: () => void }) {
+function SeenSheetRow({ api, m, open, hold }: { api: ChMessagesApi; m: ChMsg; open: () => void; hold?: boolean }) {
   const seen = useSeenBy(api, m);
   if (!seen?.canOpen) return null;
-  return <SheetRow icon={CheckCheck} label={seen.label === "Sent" ? "Not seen yet" : seen.label} onClick={open} />;
+  return <SheetRow hold={hold} icon={CheckCheck} label={seen.label === "Sent" ? "Not seen yet" : seen.label} onClick={open} />;
 }
 
 /** P-1: a player under (a) sees the count of their own message in the sheet's preview line, never the list. */
@@ -636,7 +854,7 @@ function ActingSeenMeta({ api, m }: { api: ChMessagesApi; m: ChMsg }) {
 }
 
 /** D26: a poll's own rows in the long-press sheet, from its card's live state: See votes, Remind, Close poll, Share result. */
-function PollSheetRows({ id, done }: { id: string; done: () => void }) {
+function PollSheetRows({ id, done, hold }: { id: string; done: () => void; hold?: boolean }) {
   const a = pollCardActions(id);
   if (!a) return null;
   const run = (f: () => void) => () => {
@@ -645,15 +863,22 @@ function PollSheetRows({ id, done }: { id: string; done: () => void }) {
   };
   return (
     <>
-      {a.seeVotes && <SheetRow icon={ListChecks} label="See votes" onClick={run(a.seeVotes)} />}
-      {a.remind && <SheetRow icon={BellRing} label={`Remind ${a.remind.count}`} onClick={run(a.remind.run)} />}
-      {a.close && <SheetRow icon={Lock} label="Close poll" onClick={run(a.close)} />}
-      {a.share && <SheetRow icon={Share} label="Share result" onClick={run(a.share)} />}
+      {a.seeVotes && <SheetRow hold={hold} icon={ListChecks} label="See votes" onClick={run(a.seeVotes)} />}
+      {a.remind && <SheetRow hold={hold} icon={BellRing} label={`Remind ${a.remind.count}`} onClick={run(a.remind.run)} />}
+      {a.close && <SheetRow hold={hold} icon={Lock} label="Close poll" onClick={run(a.close)} />}
+      {a.share && <SheetRow hold={hold} icon={Share} label="Share result" onClick={run(a.share)} />}
     </>
   );
 }
 
-function SheetRow({ icon, label, onClick, danger, disabled }: { icon: typeof Copy; label: string; onClick: () => void; danger?: boolean; disabled?: boolean }) {
+function SheetRow({ icon, label, onClick, danger, disabled, hold }: { icon: typeof Copy; label: string; onClick: () => void; danger?: boolean; disabled?: boolean; /** The redesign's glass menu: the word, then the icon (S-MSG.hold). */ hold?: boolean }) {
+  if (hold)
+    return (
+      <button type="button" className={danger ? "is-danger" : undefined} onClick={onClick} disabled={disabled}>
+        <span>{label}</span>
+        <Icon icon={icon} size={18} />
+      </button>
+    );
   return (
     <button type="button" className={"ch-msp-row is-btn" + (danger ? " is-danger" : "")} onClick={onClick} disabled={disabled}>
       <span className="ch-msp-row__ic">
@@ -712,24 +937,38 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
     setMuteBusy(false);
   };
   const tiles = (calendarHref ? 1 : 0) + 1;
+  const muteV2 = useMuteAction(api);
+  const [searching, setSearching] = useState(false);
   const message = async (userId: string) => {
     if (!conv.group && userId === conv.memberIds[0]) return onBack();
     await api.startDirect(userId);
   };
   return (
     <PhoneScreen labelledBy={titleId} className="ch-msp-details">
-      <PhoneBar back={{ label: "Chat", onBack }} title="Details" titleId={titleId} />
+      <PhoneBar back={{ label: api.redesign ? "Back" : "Chat", onBack }} title="Details" titleId={titleId} />
       <div className="ch-msp-scroll">
         <SectionBoundary surface="messages.details" label="Details" code="CH-7213">
           <div className="ch-msp-page">
             <section className="ch-msp-prof">
-              {conv.group ? <GroupMark size="lg" /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={72} />}
+              {conv.group ? <GroupMark size="lg" flag={!!api.redesign && !!conv.channel} /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={api.redesign ? 84 : 72} year={api.redesign ? convYear(api, conv) : null} />}
               <h2>{conv.title}</h2>
               <p className="ch-num">
-                {conv.group
+                {api.redesign ? detailsLine(conv, api.teamName) : conv.group
                   ? `${conv.memberCount} members · created by ${mine ? "you" : creator ? firstName(creator.name) : "a coach"}`
                   : conv.subtitle}
               </p>
+              {api.redesign ? (
+                <QuickActions
+                  api={api}
+                  conv={conv}
+                  mute={muteV2}
+                  profileHref={statsHref && other?.playerId ? `${statsHref}?player=${encodeURIComponent(other.playerId)}` : null}
+                  onSearch={() => setSearching((v) => !v)}
+                  onFiles={() => document.querySelector(".ch-msp-details .ch-msv-files")?.scrollIntoView({ block: "start" })}
+                  onAdd={() => setAdding(true)}
+                  onLeave={() => setLeaving(true)}
+                />
+              ) : (
               <div className="ch-msp-tiles" style={{ ["--ch-msp-n" as string]: tiles }}>
                 {calendarHref && (
                   <Link className="ch-msp-tile" href={calendarHref}>
@@ -754,9 +993,12 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
                   <span>{muted ? "Muted" : "Mute"}</span>
                 </button>
               </div>
+              )}
             </section>
 
-            {api.classDay && !conv.group && (
+            {api.redesign && searching && <ConversationSearch api={api} conv={conv} onClose={() => setSearching(false)} onPicked={onBack} />}
+
+            {api.classDay && !conv.group && (!api.redesign || coach) && (
               <ThreadClassSection
                 cls={api.classDay}
                 conv={conv}
@@ -769,7 +1011,25 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
               />
             )}
 
-            {conv.group ? (
+            {api.redesign ? (
+              <>
+                {conv.group && <MembersCard api={api} conv={conv} onMessage={(id) => void message(id)} onRemove={mine && api.removeMember ? setRemoving : undefined} />}
+                {/* Schedule keeps its place on the page; the four across are the drawn four. */}
+                {calendarHref && (
+                  <Panel>
+                    <Link className="ch-msp-row is-btn" href={calendarHref}>
+                      <span className="ch-msp-row__ic">
+                        <Icon icon={CalendarPlus} size={16} />
+                      </span>
+                      <span className="ch-msp-row__b">
+                        <b>Schedule</b>
+                      </span>
+                      <Icon icon={ChevronRight} size={16} className="ch-msp-chev" />
+                    </Link>
+                  </Panel>
+                )}
+              </>
+            ) : conv.group ? (
               <Panel
                 title="Members"
                 action={
@@ -821,10 +1081,10 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
               </Panel>
             )}
 
-            <FilesPanel api={api} conv={conv} />
+            {api.redesign ? <PhotosAndFiles api={api} conv={conv} /> : <FilesPanel api={api} conv={conv} />}
 
             {/* With the switch gone it can have nothing to show: then it isn't drawn. */}
-            {(api.muteError || !api.mute || muted || (conv.group && !mine) || api.deleteConversation) && (
+            {(api.muteError || !api.mute || muted || (conv.group && !mine && !api.redesign) || api.deleteConversation) && (
               <Panel>
                 {api.muteError ? (
                   <InlineNotice code="CH-7208" title="The mute setting didn’t load" body="Try again." onRetry={api.retryMute} />
@@ -839,7 +1099,7 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
                     </div>
                   )
                 )}
-                {conv.group && !mine && (
+                {conv.group && !mine && !api.redesign && (
                   <button type="button" className="ch-msp-danger" onClick={() => setLeaving(true)}>
                     Leave group
                   </button>
@@ -854,6 +1114,7 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
           </div>
         </SectionBoundary>
       </div>
+      {api.redesign && muteV2.choosing && <MuteMenu anchor={muteV2.anchor} onPick={(h) => void muteV2.setMute(true, h)} onClose={() => muteV2.setChoosing(false)} />}
       <Modal
         open={choosing}
         onClose={() => setChoosing(false)}
@@ -982,12 +1243,24 @@ function PhoneNewMessage({
   const needsName = group && !name.trim();
   // A coach's group is a team broadcast: with no player in it, it would reach the whole team (groupLacksPlayer).
   const needsPlayer = group && groupLacksPlayer(api.viewer.role, to, api.directory);
-  const people = api.directory.filter((p) => p.name.toLowerCase().includes(q.trim().toLowerCase()));
+  // The lane's Suggested: people with no direct thread yet; a search looks through everyone (d64).
+  const direct = new Set(api.convs.filter((c) => !c.group).map((c) => c.memberIds[0]));
+  const people = api.directory.filter((p) => (q.trim() ? p.name.toLowerCase().includes(q.trim().toLowerCase()) : !api.redesign || !direct.has(p.userId) || to.includes(p.userId)));
   const players = api.directory.filter((p) => p.role === "player");
   const coaches = api.directory.filter((p) => p.role === "coach");
   const seniors = players.filter((p) => p.subtitle === "Senior");
   const toggle = (id: string) => {
     haptic("select");
+    // Redesign, a player: the token shows, then the conversation opens (MSG-NEW-03). A coach may pick several for a group, so Next stays.
+    if (api.redesign && !coach && to[0] !== id) {
+      setTo([id]);
+      setBusy(true);
+      window.setTimeout(() => {
+        chTrail("messages start direct");
+        void api.startDirect(id).then(() => setBusy(false));
+      }, tokenBeat());
+      return;
+    }
     // Players start direct threads only (D-15): a second pick replaces the first.
     setTo((cur) => (!coach ? (cur[0] === id ? [] : [id]) : cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
   };
@@ -1033,73 +1306,8 @@ function PhoneNewMessage({
     return () => document.removeEventListener("keydown", onKey);
   }, [onCancel, present]);
   const who = to.length === 1 ? firstName(personOf(api, to[0]!)?.name ?? "them") : `${to.length} people`;
-  return (
-    <PhoneScreen labelledBy="ch-msp-new-title" className="ch-msp-new" keyboardAware>
-      <PhoneBar
-        back={{ label: "Cancel", chevron: false, onBack: onCancel }}
-        title="New message"
-        titleId="ch-msp-new-title"
-        action={
-          <PhoneTextAction onClick={() => void go()} disabled={!to.length} busy={busy}>
-            {busy ? "Starting…" : group ? "Create group" : "Next"}
-          </PhoneTextAction>
-        }
-      />
-      <div className="ch-msp-to">
-        <span className="ch-msp-to__k" aria-hidden="true">
-          To
-        </span>
-        <div className="ch-msp-to__f">
-          {to.map((id) => (
-            <button key={id} type="button" className="ch-msp-tok" aria-label={`Remove ${personOf(api, id)?.name ?? "person"}`} onClick={() => toggle(id)}>
-              {firstName(personOf(api, id)?.name ?? "Member")}
-              <Icon icon={X} size={12} />
-            </button>
-          ))}
-          <input
-            className="ch-msp-to__in"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={to.length ? "" : "Name or group"}
-            aria-label="Search people"
-            autoComplete="off"
-          />
-        </div>
-      </div>
-      {group && (
-        <label className="ch-msp-to is-name">
-          <span className="ch-msp-to__k">Name</span>
-          <input
-            ref={nameInput}
-            className="ch-msp-to__in"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Group name"
-            maxLength={80}
-            aria-invalid={touched && needsName}
-          />
-        </label>
-      )}
-      <div className="ch-msp-scroll">
-        <div className="ch-msp-page">
-          {seed?.draft && (
-            <p className="ch-ms-new__draft">
-              <span>Your draft, ready in the conversation to edit and send</span>
-              <q>{seed.draft}</q>
-            </p>
-          )}
-          {touched && needsName && (
-            <p className="ch-field__help is-error" data-ch-code="CH-7104" role="alert">
-              Name the group so players know what it’s for.
-            </p>
-          )}
-          {touched && needsPlayer && (
-            <p className="ch-field__help is-error" data-ch-code="CH-7105" role="alert">
-              Choose at least one player. Coaches join the group once it exists.
-            </p>
-          )}
-          {coach && !q && (
-            <>
+  const quickGroups = coach && !q ? (
+<>
               <h2 className="ch-ms-sec__l">Quick groups</h2>
               <div className="ch-msp-panel">
                 <button type="button" className="ch-msp-row is-btn" onClick={onAnnounce}>
@@ -1144,8 +1352,78 @@ function PhoneNewMessage({
                 )}
               </div>
             </>
+  ) : null;
+  return (
+    <PhoneScreen labelledBy="ch-msp-new-title" className="ch-msp-new" keyboardAware>
+      <PhoneBar
+        back={{ label: "Cancel", chevron: false, onBack: onCancel }}
+        title="New message"
+        titleId="ch-msp-new-title"
+        action={
+          !api.redesign || (coach && to.length > 0) ? (
+            <PhoneTextAction onClick={() => void go()} disabled={!to.length} busy={busy}>
+              {busy ? "Starting…" : group ? "Create group" : "Next"}
+            </PhoneTextAction>
+          ) : undefined
+        }
+      />
+      <div className="ch-msp-to">
+        <span className="ch-msp-to__k" aria-hidden="true">
+          {api.redesign ? "To:" : "To"}
+        </span>
+        <div className="ch-msp-to__f">
+          {to.map((id) => (
+            <button key={id} type="button" className="ch-msp-tok" ref={api.redesign ? (el) => popIn(el, 0.8, true) : undefined} aria-label={`Remove ${personOf(api, id)?.name ?? "person"}`} onClick={() => toggle(id)}>
+              {firstName(personOf(api, id)?.name ?? "Member")}
+              <Icon icon={X} size={12} />
+            </button>
+          ))}
+          <input
+            className="ch-msp-to__in"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={to.length || api.redesign ? "" : "Name or group"}
+            aria-label="Search people"
+            autoComplete="off"
+          />
+        </div>
+      </div>
+      {group && (
+        <label className="ch-msp-to is-name">
+          <span className="ch-msp-to__k">Name</span>
+          <input
+            ref={nameInput}
+            className="ch-msp-to__in"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Group name"
+            maxLength={80}
+            aria-invalid={touched && needsName}
+          />
+        </label>
+      )}
+      <div className="ch-msp-scroll">
+        <div className="ch-msp-page">
+          {seed?.draft && (
+            <p className="ch-ms-new__draft">
+              <span>Your draft, ready in the conversation to edit and send</span>
+              <q>{seed.draft}</q>
+            </p>
           )}
-          <h2 className="ch-ms-sec__l">{q ? "Results" : "People"}</h2>
+          {touched && needsName && (
+            <p className="ch-field__help is-error" data-ch-code="CH-7104" role="alert">
+              Name the group so players know what it’s for.
+            </p>
+          )}
+          {touched && needsPlayer && (
+            <p className="ch-field__help is-error" data-ch-code="CH-7105" role="alert">
+              Choose at least one player. Coaches join the group once it exists.
+            </p>
+          )}
+          {!api.redesign && quickGroups}
+          {api.redesign && !api.directoryError && !people.length && !q ? null : (
+            <h2 className={api.redesign ? "ch-msv-suggest__h" : "ch-ms-sec__l"}>{q ? "Results" : api.redesign ? "Suggested" : "People"}</h2>
+          )}
           {api.directoryError ? (
             <InlineNotice code="CH-7205" title="Your team list didn’t load" body="Try again." onRetry={api.retryDirectory} />
           ) : (
@@ -1154,24 +1432,27 @@ function PhoneNewMessage({
                 const on = to.includes(p.userId);
                 return (
                   <button key={p.userId} type="button" role="option" aria-selected={on} className="ch-msp-row is-btn" onClick={() => toggle(p.userId)}>
-                    <Avatar name={p.name} id={p.playerId ?? p.userId} size="lg" />
+                    {api.redesign ? <Avatar name={p.name} id={p.playerId ?? p.userId} size="md" /> : <Avatar name={p.name} id={p.playerId ?? p.userId} size="lg" />}
                     <span className="ch-msp-row__b">
                       <b>{p.name}</b>
                       <span>{p.subtitle}</span>
                     </span>
-                    <span className={"ch-msp-check" + (on ? " is-on" : "")} aria-hidden="true">
-                      {on && <Icon icon={Check} size={14} />}
-                    </span>
+                    {(!api.redesign || on) && (
+                      <span className={"ch-msp-check" + (on ? " is-on" : "")} aria-hidden="true">
+                        {on && <Icon icon={Check} size={14} />}
+                      </span>
+                    )}
                   </button>
                 );
               })}
-              {!people.length && <p className="ch-msp-none">{q.trim() ? `No one matches “${q.trim()}”.` : "No one to message yet."}</p>}
+              {!people.length && (q.trim() || !api.redesign) && <p className="ch-msp-none">{q.trim() ? `No one matches “${q.trim()}”.` : "No one to message yet."}</p>}
             </div>
           )}
           {group && <p className="ch-msp-hint ch-num">Messages to {to.length} people start a new group.</p>}
+          {api.redesign && quickGroups}
         </div>
       </div>
-      <footer ref={footer} className="ch-ms-comp">
+      <footer ref={footer} className="ch-ms-comp" hidden={api.redesign && !to.length}>
         <AttachChips files={files} onRemove={(i) => setFiles(files.filter((_, j) => j !== i))} />
         <div className="ch-ms-comp__field">
           <AttachButton phone disabled={!to.length} onPick={(picked) => setFiles(addFiles(files, picked))} />

@@ -179,12 +179,12 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
  * The class a change takes: green when it moved the good way by more than its standard error, amber the other way, none when it
  * is no clear change (stats visuals Q4; D-42, F-54).
  */
-function toneClass(f: ChFigure): string {
+export function toneClass(f: ChFigure): string {
   const t = deltaTone(f.delta, f.se, f.lowerIsBetter);
   return t === 'is-gain' ? 'ch-gain' : t === 'is-loss' ? 'ch-loss' : '';
 }
 
-const figureValue = (f: ChFigure) => (f.value == null ? NO_DATA : `${formatFixed(f.value, f.digits)}${f.unit}`);
+export const figureValue = (f: ChFigure) => (f.value == null ? NO_DATA : `${formatFixed(f.value, f.digits)}${f.unit}`);
 
 /**
  * The one hero figure: the scoring average, its change and what the change is against ("vs previous 10"). A window with
@@ -276,7 +276,7 @@ function Trend({ data }: { data: ChTeamStats }) {
 }
 
 /** What each of the round's other figures is drawn against, in words (owner, 2026-10-07: no bare numbers). */
-function reference(f: ChFigure): string | null {
+export function reference(f: ChFigure): string | null {
   const g = f.gauge;
   if (g?.kind === 'rate' && g.ref != null) return `${g.refLabel ?? 'Tour'} average ${Math.round(g.ref)}%`;
   if (g?.kind === 'putts') return 'Two putts a green is 36';
@@ -411,7 +411,7 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
   );
 }
 
-function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: ChLegPick; sort: Sort; onSort: (s: Sort) => void }) {
+export function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: ChLegPick; sort: Sort; onSort: (s: Sort) => void }) {
   const i = legIndex(leg);
   // On SG the list ranks by the chosen leg (the team total by default); on Avg it shows each player's total.
   const sgOf = (p: ChTeamStats['grid'][number]) => (sort === 'sg' && i >= 0 ? (p.legs[i] ?? null) : p.total);
@@ -483,7 +483,7 @@ function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: ChLegPic
 }
 
 /** Make rate by distance: a bar per band, the Tour rate as a mark, a band under it in amber. */
-function Putting({ data, covered }: { data: ChTeamStats; covered: boolean }) {
+export function Putting({ data, covered }: { data: ChTeamStats; covered: boolean }) {
   if (data.puttsError) return <RetryNotice code="CH-4203" title="Team putting didn’t load" body="Try again." covered={covered} />;
   if (!data.putting) return <EmptyState compact code="CH-4306" title="No putts logged in this window." body="Putting fills in from rounds posted with putt distances." />;
   const bands = data.putting.bands.slice(0, 5);

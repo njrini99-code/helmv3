@@ -2,6 +2,7 @@ import type { PulseItem, PulseSource } from '@/lib/coachhelm/v3/chat/program-pul
 import type { ChReadEngine } from './coachhelm-engine-shape';
 import type { ChPathLine } from './coachhelm-path';
 import type { ChNotEnough } from './coachhelm-firm';
+import type { ChLadderAreaId } from './coachhelm-ladder-shape';
 import type { ChTeamPatterns } from './coachhelm-team-pattern';
 import { plural, pluralWord } from '../lib/plural';
 
@@ -97,6 +98,14 @@ export interface ChHelmWeek {
 export interface ChInsight {
   id: string;
   playerId: string;
+  /** The read sheet's comparison bars: numbers, where the gauge above has only words. Team only with a pool of five or more (W-TEAM-11). */
+  compare?: { own: number | null; team: number | null; tour: number | null; higherBetter: boolean; unit: string };
+  /** The course a worst-holes read names (its signature `<player>:course_worst_holes:<course_id>`); null otherwise. */
+  courseId?: string | null;
+  /** The strokes a round at stake as a figure ("0.6"), only with an estimate (`strokesAtStake`). */
+  stakes?: string | null;
+  /** The team board's station: the raw category through `areaOf`; null for scoring, pressure and course management. */
+  area?: ChLadderAreaId | null;
   /** "Putting", "Course management". */
   category: string;
   priority: ChHelmPri;
@@ -157,6 +166,10 @@ export interface ChProposal {
   from: string | null;
   /** The proposing coach's user id, for "Tell coach why" after a decline; null when unknown, and then the link is not offered. */
   coachUserId?: string | null;
+  /** The assigning coach's display name (`golf_coaches.full_name`); absent when the read failed, and the page says "Your coach". */
+  coachName?: string;
+  /** When it was proposed (ISO). */
+  at?: string;
 }
 
 /**

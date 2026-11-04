@@ -165,7 +165,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
 | P011 | 16 | 15 |  | 26 | 11 | 44 | 22 | 5 | 2 |  | 24 | 2 | 1 | 4 | 4 | 4 | 11 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 210 |
 | P012 | 3 | 3 |  | 8 | 19 | 22 | 3 | 3 | 2 |  | 5 | 1 |  | 4 | 4 | 2 | 5 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 96 |
-| P013 | 7 | 15 |  | 36 | 1 | 45 | 71 | 7 | 3 |  |  | 1 |  | 3 | 4 | 4 | 9 | 19 | 1 |  | 1 |  | 1 |  |  | 228 |
+| P013 | 7 | 15 |  | 36 | 1 | 45 | 71 | 7 | 3 |  |  | 1 |  | 3 | 4 | 4 | 11 | 21 | 1 |  | 1 |  | 1 |  |  | 232 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
 | P016 | 31 | 1 | 1 | 17 |  | 12 | 1 | 1 |  | 2 |  | 1 |  |  | 5 | 1 |  | 2 |  |  |  |  |  |  |  | 75 |
@@ -1822,6 +1822,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 131706 | CH-13752 | 17 Haptic | `ASK_A_FOLLOW_UP_IS_TAPPED` | implemented | Ask: A follow-up is tapped |
 | 131707 | CH-13780 | 17 Haptic | `DEEP_DIVE_A_READ_IN_THE_LIST` | implemented | Deep dive: a read in the list, or a round or a plan under it, is tapped |
 | 131708 | CH-13705 | 17 Haptic | `RECHECK_TAPPED` | implemented | Re-check tapped |
+| 131709 | CH-13760 | 17 Haptic | `PLAYER_FILE_SAVING_A_COACHS_PLAN_FAILS` | implemented | Player File: saving a coach's plan fails |
+| 131710 | CH-13761 | 17 Haptic | `PLAYER_FILE_ONE_PART_OF_THE_FILE` | implemented | Player File: one part of the file didn't load |
 | 131760 | CH-13733 | 17 Haptic | `PLAYER_A_COURSE_IS_PICKED_IN_THEIR` | reserved | Player: a course is picked in their Course plan (chs-21) |
 | 131801 | CH-13801 | 18 Accessibility | `A_SCREEN_READER_MOVES_THROUGH_THE_PAGE` | implemented | A screen reader moves through the page |
 | 131802 | CH-13802 | 18 Accessibility | `A_GAUGE` | reserved | A gauge |
@@ -1842,6 +1844,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 131817 | CH-13880 | 18 Accessibility | `STANDING_A_SCREEN_READER_MOVES_THROUGH_THE` | reserved | Standing: a screen reader moves through the page |
 | 131818 | CH-13890 | 18 Accessibility | `DEEP_DIVE_A_SCREEN_READER_MOVES_THROUGH` | implemented | Deep dive: a screen reader moves through the page |
 | 131819 | CH-13853 | 18 Accessibility | `ASK_A_VALIDATED_VISUAL` | implemented | Ask: A validated visual (strokes gained anatomy) |
+| 131820 | CH-13861 | 18 Accessibility | `READ_THE_LINKS_READ_IS_NO_LONGER` | implemented | Read: the link's read is no longer open |
+| 131821 | CH-13866 | 18 Accessibility | `READ_THE_READ_DIDNT_LOAD` | implemented | Read: the read didn't load |
 | 131901 |  | 19 Responsive layout | `PHONE_LAYOUT` | implemented | At 820px and below CoachHelm is the phone build, never a shrunken desktop: the page takes the phone frame, the shell's top bar reads CoachHelm, and the boards, writes and states are the desktop's. Separately, when the page's container is 640px wide or less the coach's players are a row of pills that scrolls sideways. Choosing an insight on the player's phone brings the focus into view; on a wider screen the page stays where it is. |
 | 132101 |  | 21 Performance | `LOADER_READS_IN_ROUNDS` | implemented | The loaders read on the server before first paint, in a few rounds and never per row. A coach: the gate; the roster, then the players' names; then the program pulse, the visible insights (paginated) and each player's top insight (one per player, so only it counts as shown in the effectiveness ledger) together; then the drills and the focus areas made from those insights together. A player: the gate, the feed (up to 30), then the drills; the dismissal and visible reads and the rounds count are read only when the feed comes back empty. A drill or focus-area read that fails is logged and the board draws without it. |
 | 132301 |  | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A read that fails in a loader is logged through chLogServer('coachhelm', {read}, …) under the coachhelm feature (gate, feed, visible, dismissed, rounds, drills, assigned, roster, players, heads) and named on the page; a write that fails is reported through chReport under the coachhelm surface with its action (coachhelm.assign, coachhelm.dismiss, coachhelm.undo), at low severity when the server refused it, after a chTrail breadcrumb for the intent; a section that crashes reports under its own surface (coachhelm.focus, coachhelm.side, coachhelm.pulse, coachhelm.players). |

@@ -12,7 +12,7 @@ import { Button, IconButton } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { InlineNotice } from '../../ui/Notices';
 import { PageRefreshNotice } from '../../ui/RefreshNotice';
-import { FormLine, FormRange } from '../../ui/FormLine';
+import { FormBars, FormLine, FormRange } from '../../ui/FormLine';
 import { formRangeWords } from '../../ui/form-range';
 import { Icon } from '../../ui/Icon';
 import { Menu, type MenuItem } from '../../ui/Menu';
@@ -40,10 +40,15 @@ import { useJoinRequests } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
 import { availabilityCopy, RosterPeek, type AvailabilityControl } from './RosterPeek';
 import { RosterPhone } from './RosterPhone';
+import { FormStubs, RequestsRow, RequestsSheetCrh, RosterPhoneCrh } from './RosterPhoneCrh';
+import { RosterLeaders } from './RosterLeaders';
+import { RosterTeamCard } from './RosterTeamCard';
+import { useDeepLinkSheet } from '../../shell/use-deep-link-sheet';
+import { useHomeDayRollover } from '../home/use-day-rollover';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { Tooltip } from '../../ui/Tooltip';
 import { RosterSpread } from './RosterSpread';
-import { AVAILABILITY_WORD, availabilityLine, earlyNeed, rosterFailedParts, rosterPeek, rosterStandings, teamInSentence, type RosterStanding } from './format';
+import { AVAILABILITY_WORD, availabilityLine, earlyNeed, lastFive, rosterFailedParts, rosterPeek, rosterStandings, teamInSentence, yearKeyOf, type RosterClock, type RosterStanding } from './format';
 import { StatusConfirm, statusCopy } from './RosterStatus';
 import { classNoteFor, type RosterClassLines } from './class-line';
 import { useRosterClassLines } from './useClassLines';
@@ -87,7 +92,13 @@ let linkedPlayer: string | null = null;
 /** A `?invite=1` arrival (Home's first-run Invite players) not yet shown, held across a remount like the linked player. */
 let linkedInvite = false;
 
-export function Roster({ data }: { data: ChRoster }) {
+/** The day and 1 August rollover, only behind the lane's flag (06 Wiring W.1). A fixture without a clock stays still. */
+function RosterDayRollover({ clock }: { clock: RosterClock }) {
+  useHomeDayRollover(clock, !clock);
+  return null;
+}
+
+export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_classes_roster_home_v1`, from the server. Off renders today's screens. */ crh?: boolean }) {
   const copy = useCopyText();
   const toast = useToast();
   const router = useRouter();
@@ -103,16 +114,19 @@ export function Roster({ data }: { data: ChRoster }) {
   const [q, setQ] = useChSessionState('q', '');
   const [show, setShow] = useChSessionState<Show>('show', 'active');
   const [sort, setSort] = useChSessionState<Sort>('sort', 'avg');
-  const [view, setView] = useChSessionState<View>('view', 'faces');
+  const [view, setView] = useChSessionState<View>('view', crh ? 'list' : 'faces');
   // Counts the coach's own layout changes: the cards and the table swap with motion on those (CH-3603), never when the
   // kept layout comes back as the page opens.
   const [viewTurn, setViewTurn] = useState(0);
   const [sel, setSel] = useState<string | null>(null);
   const [invite, setInvite] = useState(false);
+  // Behind the flag a link opens the sheet at rest and Back closes it (05 CP.3); off keeps today's handling below.
+  const inviteLink = useDeepLinkSheet('invite', { value: '1', enabled: crh });
   // `?invite=1` (Home's first-run Invite players) opens the invite sheet once, on desktop and the phone, and the param is
   // dropped so a reload or Back shows the roster. Only the coach's roster reads it: a player's roster and the no-team page
   // are other screens and ignore it (wiring audit, 2026-10-17).
   useEffect(() => {
+    if (crh) return;
     const url = new URL(window.location.href);
     if (url.searchParams.get('invite') === '1') {
       linkedInvite = true;
@@ -120,11 +134,13 @@ export function Roster({ data }: { data: ChRoster }) {
       window.history.replaceState(null, '', url.pathname + url.search);
     }
     if (linkedInvite) setInvite(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
   }, []);
   const closeInvite = useCallback(() => {
     linkedInvite = false;
     setInvite(false);
-  }, []);
+    if (inviteLink.open) inviteLink.close();
+  }, [inviteLink]);
   // The bell's join-request notice links here with `?tab=requests` (createTeamJoinRequest). The phone opens its requests sheet
   // (RosterPhone). On desktop the requests are the card under the header: the link takes focus there, scrolling it into view if it
   // is not, and the param is dropped so a reload or Back shows the roster as it is. With no request waiting (the notice was
@@ -150,7 +166,8 @@ export function Roster({ data }: { data: ChRoster }) {
   const [restatus, setRestatus] = useState<ChRosterPlayer | null>(null);
   // Mid-sentence the team is its name, or "your team" when the team row didn't load (P003 #8).
   const teamRef = teamInSentence(data);
-  const jr = useJoinRequests(teamRef, data.requests);
+  const jr = useJoinRequests(teamRef, data.requests, crh);
+  const [requestsOpen, setRequestsOpen] = useState(false);
   const phone = useChPhone();
   // P-10: the team's class lines (flag off: nothing is fetched and the map is empty). `hold` keeps them still under a finger.
   const { lines: classLines, press: hold } = useRosterClassLines(data.teamId, players);
@@ -163,8 +180,9 @@ export function Roster({ data }: { data: ChRoster }) {
   // Phone: the open player is a pushed screen (RosterPhone keeps it in the history, CH-1906).
   // A link with ?player= opens that profile once; the param is dropped so a reload shows the list.
   const [openId, setOpenId] = useState<string | null>(null);
+  const [arrivedAtRest, setArrivedAtRest] = useState(false);
   useEffect(() => {
-    if (!phone) return;
+    if (!phone || crh) return;
     const url = new URL(window.location.href);
     const id = url.searchParams.get('player') ?? linkedPlayer;
     if (!id) return;
@@ -176,6 +194,7 @@ export function Roster({ data }: { data: ChRoster }) {
       window.history.replaceState(null, '', url.pathname + url.search);
     }
     setOpenId(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `crh` comes from the server and never changes on a screen
   }, [phone]);
   useEffect(() => {
     if (openId && players.some((p) => p.id === openId)) linkedPlayer = null;
@@ -184,8 +203,55 @@ export function Roster({ data }: { data: ChRoster }) {
     chTrail('roster open player');
     // CH-3701: a tick on opening a player, changing a filter, layout or sort.
     haptic('select');
+    setArrivedAtRest(false);
     setOpenId(id);
   }, []);
+  // Behind the flag, `?player=` (05 CP.3): the param leaves the address and the stack's own history entry owns Back. A phone shows the
+  // profile at rest over the list; a desktop selects the row and scrolls it into view. Not on this team: the list and a toast that names
+  // nobody (CP-8), since the id may be another team's player.
+  useEffect(() => {
+    if (!crh) return;
+    const url = new URL(window.location.href);
+    const id = url.searchParams.get('player') ?? linkedPlayer;
+    if (!id) return;
+    linkedPlayer = id;
+    if (url.searchParams.has('player')) {
+      url.searchParams.delete('player');
+      window.history.replaceState(window.history.state, '', url.pathname + url.search);
+    }
+    if (!data.players.some((p) => p.id === id)) {
+      linkedPlayer = null;
+      if (!data.playersError) toast({ title: 'That player isn’t on your roster.' });
+      return;
+    }
+    if (window.matchMedia(CH_PHONE_QUERY).matches) {
+      setArrivedAtRest(true);
+      setOpenId(id);
+    } else {
+      linkedPlayer = null;
+      setSel(id);
+      requestAnimationFrame(() => document.querySelector(`[data-ch-player="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'center' }));
+    }
+    // Once, on arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // S-ROSTER.profile.removed: a read that no longer has the open player pops the profile and says so (M-CRH-49).
+  const openFirst = useRef<string | null>(null);
+  useEffect(() => {
+    if (!crh || !openId) {
+      openFirst.current = null;
+      return;
+    }
+    const open = players.find((p) => p.id === openId);
+    if (open) {
+      openFirst.current = open.firstName;
+      return;
+    }
+    const first = openFirst.current;
+    openFirst.current = null;
+    setOpenId(null);
+    if (first) toast({ title: `${first} is no longer on the roster.` });
+  }, [crh, openId, players, toast]);
 
   useEffect(() => {
     try {
@@ -227,7 +293,8 @@ export function Roster({ data }: { data: ChRoster }) {
   }, [players, q, show, sortBy]);
 
   const attn = players.filter((p) => p.attention && p.status === 'active');
-  const cur = players.find((p) => p.id === sel);
+  // Behind the flag the first row by the current sort is selected until the coach picks one (06 7.12).
+  const cur = players.find((p) => p.id === sel) ?? (crh && !sel ? rows[0] : undefined);
   const select = useCallback((id: string | null) => {
     if (id) chTrail('roster open player');
     haptic('select');
@@ -394,7 +461,8 @@ export function Roster({ data }: { data: ChRoster }) {
   const dialogs = (
     <>
       <InviteModal
-        open={invite}
+        open={invite || inviteLink.open}
+        atRest={inviteLink.atRest}
         onClose={closeInvite}
         teamName={teamRef}
         code={data.joinCode}
@@ -440,6 +508,33 @@ export function Roster({ data }: { data: ChRoster }) {
     </>
   );
 
+  if (phone && crh) {
+    return (
+      <>
+        <RosterDayRollover clock={data.clock} />
+        <RosterPhoneCrh
+          data={data}
+          players={players}
+          jr={jr}
+          openId={openId}
+          arrivedAtRest={arrivedAtRest}
+          onOpen={openPlayer}
+          onClose={() => setOpenId(null)}
+          onInvite={() => setInvite(true)}
+          onRemove={setRemoving}
+          onStatus={setRestatus}
+          onNoteSaved={noteSaved}
+          availability={availability}
+          classLines={classLines}
+          hold={hold}
+          onRetry={() => router.refresh()}
+        >
+          {dialogs}
+        </RosterPhoneCrh>
+      </>
+    );
+  }
+
   if (phone) {
     return (
       <RosterPhone
@@ -467,8 +562,9 @@ export function Roster({ data }: { data: ChRoster }) {
   const failed = rosterFailedParts(data);
   const covered = failed.length > 1;
   return (
-    <main className="ch-rs" data-canopy="">
-      <header className="ch-rs-head" data-canopy-head="tight">
+    <main className={'ch-rs' + (crh ? ' ch-rsd' : '')} data-canopy={crh ? undefined : ''} data-ch-crh={crh ? 'on' : undefined}>
+      {crh && <RosterDayRollover clock={data.clock} />}
+      <header className="ch-rs-head" data-canopy-head={crh ? undefined : 'tight'}>
         <div>
           <span className="ch-rs-team">
             <span className="ch-rs-team__name">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
@@ -503,7 +599,7 @@ export function Roster({ data }: { data: ChRoster }) {
         </div>
         <div className="ch-rs-head__act">
           {players.length > 0 && (
-            <Button variant="ghost" leftIcon={Download} onClick={exportCsv}>
+            <Button variant={crh ? 'secondary' : 'ghost'} leftIcon={Download} onClick={exportCsv}>
               Export
             </Button>
           )}
@@ -518,8 +614,22 @@ export function Roster({ data }: { data: ChRoster }) {
 
       <PageRefreshNotice parts={failed} />
 
+      {crh && !data.playersError && players.length > 0 && (
+        <div className="ch-rs-top">
+          <RosterTeamCard viewer="coach" season={data.season} players={players} waiting={data.requestsError ? null : jr.reqs.length} statsError={data.statsError} clock={data.clock} />
+          <RosterLeaders players={players} statsError={data.statsError} clock={data.clock} onOpen={openSel} />
+        </div>
+      )}
+
       <SectionBoundary surface="roster.requests" label="Join requests" code="CH-3204">
-        <RosterRequests ref={requestsRef} teamName={teamRef} jr={jr} error={data.requestsError} covered={covered} onRetry={() => router.refresh()} />
+        {crh && !data.requestsError ? (
+          <div ref={requestsRef as never} className="ch-rsd-reqs">
+            <RequestsRow jr={jr} error={false} covered={covered} clock={data.clock} onRetry={() => router.refresh()} onOpen={() => setRequestsOpen(true)} />
+            <RequestsSheetCrh open={requestsOpen} atRest={false} onClose={() => setRequestsOpen(false)} data={data} jr={jr} clock={data.clock} />
+          </div>
+        ) : (
+          <RosterRequests ref={requestsRef} teamName={teamRef} jr={jr} error={data.requestsError} covered={covered} onRetry={() => router.refresh()} />
+        )}
       </SectionBoundary>
 
       {data.statsError && (
@@ -532,7 +642,7 @@ export function Roster({ data }: { data: ChRoster }) {
         />
       )}
 
-      {attn.length > 0 && (
+      {!crh && attn.length > 0 && (
         <section className="ch-rs-attn" aria-label="Needs a look">
           <span className="ch-rs-attn__l">Needs a look</span>
           {attn.map((p) => (
@@ -577,7 +687,7 @@ export function Roster({ data }: { data: ChRoster }) {
         />
       ) : (
         <>
-          {!phone && !data.statsError && <RosterSpread players={spreadPlayers} teamAvg={teamAvg} onOpen={openSel} />}
+          {!crh && !phone && !data.statsError && <RosterSpread players={spreadPlayers} teamAvg={teamAvg} onOpen={openSel} />}
           <div className="ch-rs-bar">
             <SearchField className="ch-rs-search" value={q} onChange={setQ} placeholder="Search players by name" label="Search players" />
             <div className="ch-rs-bar__r">
@@ -650,6 +760,11 @@ export function Roster({ data }: { data: ChRoster }) {
                   sortableAvg={!data.statsError}
                   classLines={classLines}
                   hold={hold}
+                  crh={crh}
+                  clock={data.clock}
+                  mean={teamAvg}
+                  onSelect={openSel}
+                  selected={cur?.id ?? null}
                   onShowEveryone={() => {
                     setQ('');
                     setShow('all');
@@ -658,7 +773,7 @@ export function Roster({ data }: { data: ChRoster }) {
               </Swap>
             </SectionBoundary>
             <SectionBoundary surface="roster.peek" label="The player panel" code="CH-3206">
-              <RosterPeek p={cur} notesLocked={data.notesError} onClose={() => setSel(null)} onNoteSaved={noteSaved} availability={availability} helm={data.helm} classLine={classNoteFor(cur ?? { availability: 'available' }, cur ? classLines.get(cur.id) : undefined)} />
+              <RosterPeek p={cur} notesLocked={data.notesError} onClose={() => setSel(null)} onNoteSaved={noteSaved} availability={availability} helm={data.helm} classLine={classNoteFor(cur ?? { availability: 'available' }, cur ? classLines.get(cur.id) : undefined)} crh={crh} clock={data.clock} />
             </SectionBoundary>
           </div>
         </>
@@ -695,7 +810,18 @@ function RosterList({
   sortableAvg,
   classLines,
   hold,
+  crh = false,
+  clock,
+  mean = null,
+  onSelect,
+  selected = null,
 }: {
+  /** The lane's flag: year coins, the last five rounds as bars, an amber Injured chip and a row that selects instead of leaving. */
+  crh?: boolean;
+  clock?: RosterClock;
+  mean?: number | null;
+  onSelect?: (id: string) => void;
+  selected?: string | null;
   rows: ChRosterPlayer[];
   standings: ReturnType<typeof rosterStandings>;
   view: View;
@@ -719,7 +845,7 @@ function RosterList({
   const press = usePressPrefetch();
   return (
     // B5: every row's form line on one range, so the same height is the same score down the table.
-    <FormRange trends={rows.map((p) => p.trend)} earlyBelow={3}>
+    <FormRange trends={rows.map((p) => (crh ? lastFive(p.trend) : p.trend))} earlyBelow={3}>
         {rows.length === 0 ? (
           <EmptyState
             kind="filtered"
@@ -757,7 +883,7 @@ function RosterList({
                   )}
                 </span>
                 <span className="ch-rs-face__av">
-                  <Avatar name={p.name} id={p.id} size={76} />
+                  <Avatar name={p.name} id={p.id} size={76} year={crh ? yearKeyOf(p.gradYear, clock) : null} dim={crh && p.status === 'inactive'} />
                 </span>
                 <span className="ch-rs-face__name">{p.name}</span>
                 <span className="ch-rs-face__meta">{[p.classYear, p.hometown].filter(Boolean).join(' · ') || ' '}</span>
@@ -793,7 +919,7 @@ function RosterList({
               </SortHeader>
               <span role="columnheader">Status</span>
               {/* The lines share one range (B5), and the header says its ends (row 102). */}
-              <span role="columnheader">{['Last 7 rounds', formRangeWords(rows.map((p) => p.trend), 3)].filter(Boolean).join(' · ')}</span>
+              <span role="columnheader">{crh ? 'Last 5' : ['Last 7 rounds', formRangeWords(rows.map((p) => p.trend), 3)].filter(Boolean).join(' · ')}</span>
               {!sortableAvg ? (
                 <span role="columnheader" className="r">
                   Avg
@@ -806,9 +932,9 @@ function RosterList({
               <SortHeader k="hcp" sort={sortBy} onSort={onSort} end>
                 HCP
               </SortHeader>
-              <span role="columnheader" className="r">SG / rd</span>
+              <span role="columnheader" className="r">{crh ? 'SG/rd' : 'SG / rd'}</span>
               <SortHeader k="rounds" sort={sortBy} onSort={onSort} end>
-                Rounds
+                {crh ? 'Rds' : 'Rounds'}
               </SortHeader>
               <span role="columnheader">
                 <span className="ch-sr-only">Actions</span>
@@ -818,7 +944,8 @@ function RosterList({
               <div
                 key={p.id}
                 role="row"
-                className={'ch-rs-row' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
+                data-ch-player={crh ? p.id : undefined}
+                className={'ch-rs-row' + ((crh ? selected : sel) === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
                 {...bind(p)}
                 {...hold}
               >
@@ -826,11 +953,11 @@ function RosterList({
                   <button
                     type="button"
                     className="ch-rs-who"
-                    onClick={() => openProfile(p.id)}
-                    {...press(profileHref(p.id))}
-                    aria-label={`${p.name}. Open profile`}
+                    onClick={() => (crh && onSelect ? onSelect(p.id) : openProfile(p.id))}
+                    {...(crh ? {} : press(profileHref(p.id)))}
+                    aria-label={crh ? `${p.name}. Show in the panel` : `${p.name}. Open profile`}
                   >
-                    <Avatar name={p.name} id={p.id} size="lg" />
+                    <Avatar name={p.name} id={p.id} size="lg" year={crh ? yearKeyOf(p.gradYear, clock) : null} dim={crh && p.status === 'inactive'} />
                     <span>
                       <b>{p.name}</b>
                       <RowMeta p={p} line={classNoteFor(p, classLines.get(p.id))} />
@@ -838,13 +965,23 @@ function RosterList({
                   </button>
                 </span>
                 <span role="cell">
-                  <span className={`ch-rs-status is-${p.status}`}>
-                    <i aria-hidden="true" />
-                    {p.status === 'active' ? 'Active' : 'Inactive'}
-                  </span>
+                  {crh && p.status === 'active' && p.availability === 'injured' ? (
+                    <span className="ch-rsx-chip is-amber">Injured</span>
+                  ) : crh ? (
+                    <span className="ch-rsx-chip">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
+                  ) : (
+                    <span className={`ch-rs-status is-${p.status}`}>
+                      <i aria-hidden="true" />
+                      {p.status === 'active' ? 'Active' : 'Inactive'}
+                    </span>
+                  )}
                 </span>
                 <span role="cell">
-                  <FormLine data={p.trend} width={120} height={30} earlyBelow={3} label={`${p.name} form`} />
+                  {crh ? (
+                    p.trend.length >= 3 ? <FormBars data={p.trend} mean={mean} /> : <FormStubs />
+                  ) : (
+                    <FormLine data={p.trend} width={120} height={30} earlyBelow={3} label={`${p.name} form`} />
+                  )}
                 </span>
                 <span role="cell" className="r ch-num ch-rs-num">{formatFixed(p.avg)}</span>
                 <span role="cell" className="r ch-num ch-rs-num2">{formatHcp(p.handicap)}</span>
@@ -876,7 +1013,9 @@ function InviteModal({
   codeFailed,
   emailInvites,
   onRetry,
+  atRest = false,
 }: {
+  atRest?: boolean;
   open: boolean;
   onClose: () => void;
   teamName: string;
@@ -916,6 +1055,7 @@ function InviteModal({
   return (
     <Modal
       open={open}
+      atRest={atRest}
       onClose={onClose}
       icon={UserPlus}
       title="Invite players"

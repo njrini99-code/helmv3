@@ -35,6 +35,9 @@ const REPLAYABLE = new Set([
   'data-visual-artifact',
   // A model-designed composition carries its figures and hash the same way.
   'data-visual-composition',
+  'data-brief',
+  'data-practice-plan',
+  'data-handoff',
   'data-action-proposal',
   'data-action-receipt',
   // The live grounding flag (route.ts's `execute`, N15) is written into the

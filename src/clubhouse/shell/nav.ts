@@ -276,6 +276,7 @@ export const CH_DASHBOARD_SEGMENTS: readonly string[] = [
   'messages',
   'my-qualifiers',
   'players',
+  'practice',
   'qualifiers',
   'recruiting',
   'roster',

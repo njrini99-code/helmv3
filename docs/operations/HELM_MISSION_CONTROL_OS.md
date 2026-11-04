@@ -1,32 +1,45 @@
 # Helm Mission Control OS
 
-> **Goal:** Turn Helm Sports Labs into a real business operating system: partner issue intake, GitHub/Claude fixing flow, auto-updating PR/fix timeline, live telemetry, docs state, roadmap, competitive intel, customer feedback, and launch visibility.
+> **Goal:** Turn Helm Sports Labs into a real business operating system: partner
+issue intake, GitHub/Claude fixing flow, auto-updating PR/fix timeline, live
+telemetry, docs state, roadmap, competitive intel, customer feedback, and launch
+visibility.
 >
 > **Repo:** `njrini99-code/helmv3`
 >
-> **Audience:** Nick, business partners, Claude Code, future agents, and anyone helping operate Helm.
+> **Audience:** Nick, business partners, Claude Code, future agents, and anyone
+helping operate Helm.
 >
-> **Core decision:** Use **Huly Cloud** as the partner-facing command center, **GitHub** as engineering truth, **n8n self-hosted on the Mac mini** as the automation engine, **Claude Code** as the fix/build agent, and **PostHog/Sentry/Vercel/Supabase** as the live product-state layer.
+> **Core decision:** Use **Huly Cloud** as the partner-facing command center,
+**GitHub** as engineering truth, **n8n self-hosted on the Mac mini** as the
+automation engine, **Claude Code** as the fix/build agent, and
+**PostHog/Sentry/Vercel/Supabase** as the live product-state layer.
 
 ---
 
 ## 1. Executive summary
 
-Helm should not be run out of scattered docs, random chats, and memory. It needs a central operating room.
+Helm should not be run out of scattered docs, random chats, and memory. It needs
+a central operating room.
 
 The ideal partner experience:
 
 1. Partner opens **Helm Mission Control**.
-2. Partner sees what is being fixed, what shipped, what is blocked, and what decisions are needed.
+2. Partner sees what is being fixed, what shipped, what is blocked, and what
+   decisions are needed.
 3. Partner types an issue in plain English.
 4. The issue becomes a structured Huly/GitHub issue.
-5. n8n enriches it with product area, severity, labels, reproduction questions, and suggested priority.
+5. n8n enriches it with product area, severity, labels, reproduction questions,
+   and suggested priority.
 6. If it is safe and clear, the issue receives `agent:ready`.
-7. Claude Code investigates, creates a branch, fixes it, runs checks, and opens a PR.
-8. The PR, tests, deployment preview, merge, and production release all appear in a **Git Activity Timeline**.
+7. Claude Code investigates, creates a branch, fixes it, runs checks, and opens
+   a PR.
+8. The PR, tests, deployment preview, merge, and production release all appear
+   in a **Git Activity Timeline**.
 9. Partners get plain-English updates without needing to understand Git.
 
-The safest version is not “partner says bug → Claude pushes to main.” The safe expert workflow is:
+The safest version is not “partner says bug → Claude pushes to main.” The safe
+expert workflow is:
 
 ```text
 Partner report
@@ -537,7 +550,8 @@ body:
 
 ### 6.3 GitHub Projects fields
 
-Even if Huly is the partner HQ, create a GitHub Project as the engineering backup:
+Even if Huly is the partner HQ, create a GitHub Project as the engineering
+backup:
 
 ```text
 Project: Helm Engineering Control
@@ -680,7 +694,8 @@ Recommended activation:
 
 - Nick or trusted partner can comment: `@claude fix this safely and open a PR.`
 - n8n can add label `agent:ready` only after triage.
-- For P0/security/database/auth issues, n8n should add `agent:needs-human-review`, not `agent:ready`.
+- For P0/security/database/auth issues, n8n should add
+  `agent:needs-human-review`, not `agent:ready`.
 
 ---
 
@@ -768,7 +783,8 @@ docker compose up -d
 - Only Nick should be an n8n admin.
 - Partners should never edit n8n workflows.
 - Avoid arbitrary Code nodes where possible.
-- Keep credentials scoped: GitHub token only for needed repo; Huly credentials only for workspace; Sentry/PostHog read tokens only when enough.
+- Keep credentials scoped: GitHub token only for needed repo; Huly credentials
+  only for workspace; Sentry/PostHog read tokens only when enough.
 - Back up Postgres and n8n credentials.
 - Rotate credentials if the Mac mini is compromised.
 
@@ -811,7 +827,9 @@ Do not invent reproduction steps. If unclear, ask for exactly the missing detail
 Trigger:
 
 - GitHub Trigger node
-- Events: issues, issue_comment, pull_request, pull_request_review, pull_request_review_comment, push, check_run, check_suite, deployment, deployment_status, release
+- Events: issues, issue_comment, pull_request, pull_request_review,
+  pull_request_review_comment, push, check_run, check_suite, deployment,
+  deployment_status, release
 
 Steps:
 
@@ -1219,7 +1237,8 @@ No issue should reach `agent:ready` unless it has:
 - Repro or enough context
 - Risk classification
 
-If missing context, n8n/Huly asks for clarification instead of wasting Claude tokens.
+If missing context, n8n/Huly asks for clarification instead of wasting Claude
+tokens.
 
 ### 12.2 Claude-ready gate
 
@@ -1441,8 +1460,10 @@ The first version is successful when:
 - Nick can approve it with `agent:ready` or `@claude`.
 - Claude opens a PR.
 - Huly shows the linked PR.
-- n8n writes a timeline event for issue created, PR opened, CI result, PR merged, and deployed.
-- Partners can read the timeline and understand what happened without asking Nick.
+- n8n writes a timeline event for issue created, PR opened, CI result, PR
+  merged, and deployed.
+- Partners can read the timeline and understand what happened without asking
+  Nick.
 - Weekly State of Helm report is generated automatically.
 
 ---
@@ -1502,7 +1523,8 @@ Docs Agent
 Release Agent
 ```
 
-Each issue can be decomposed into agent subtasks. Claude Code can implement; separate reviews can critique.
+Each issue can be decomposed into agent subtasks. Claude Code can implement;
+separate reviews can critique.
 
 ### 18.4 Bug Autopsy
 

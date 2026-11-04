@@ -77,6 +77,8 @@ export interface AskComposerProps {
   variant: 'hero' | 'dock';
   phone: boolean;
   players: ChAskPlayer[];
+  /** Ask v2's home line, one line on a phone (E-HOME). */
+  hint?: string;
   /** A reply is on its way: Send becomes Stop. */
   busy: boolean;
   /** The last send failed: its text comes back into the box (once, and only into an empty box). */
@@ -154,7 +156,7 @@ function usePickerRoom(anchor: RefObject<HTMLElement | null>, open: boolean, bel
  *  - Offline, Send is refused before anything is sent: an error toast (CH-1903) and the text stays.
  *  - A send that failed puts its text back (once, into an empty box); a card awaiting a decision disables Send.
  */
-export function AskComposer({ variant, phone, players, busy, failed, blocked, onSend, onStop, autoFocus, fresh = false, draftKey = null, roster = true }: AskComposerProps) {
+export function AskComposer({ variant, phone, players, busy, failed, blocked, onSend, onStop, autoFocus, fresh = false, draftKey = null, roster = true, hint }: AskComposerProps) {
   const refuseOffline = useRefuseOffline();
   const finePointer = useFinePointer();
   const hero = variant === 'hero';
@@ -163,6 +165,15 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
   const [dismissed, setDismissed] = useState(false);
   const [pickIds, setPickIds] = useState<PickerIds>({});
   const box = useRef<HTMLTextAreaElement>(null);
+  // S-ASK.toolcard.ask-about: a chart mark fills the field; it never sends.
+  useEffect(() => {
+    const fill = (e: Event) => {
+      setValue((e as CustomEvent<string>).detail);
+      box.current?.focus();
+    };
+    window.addEventListener('ch-ask-fill', fill);
+    return () => window.removeEventListener('ch-ask-fill', fill);
+  }, [setValue]);
   const frame = useRef<HTMLDivElement>(null);
   const cmd = useRef<HTMLDivElement>(null);
   const cmdList = useRef<HTMLDivElement>(null);
@@ -300,7 +311,7 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
 
   const canSend = value.trim().length > 0 && !blocked;
   const first = hero || fresh;
-  const placeholder = first ? (phone ? 'Ask about a player, a stat, or the week' : 'Ask about a player, a stat, or the week ahead') : 'Ask a follow-up';
+  const placeholder = first && hint ? hint : first ? (phone ? 'Ask about a player, a stat, or the week' : 'Ask about a player, a stat, or the week ahead') : 'Ask a follow-up';
 
   const plus = (
     <Menu

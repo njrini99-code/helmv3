@@ -91,7 +91,7 @@ describe('the push and the pop', () => {
     const curve = chSpringCurve('smooth');
     expect(tokens).toContain(`--ch-ease-vt-push: ${curve.linear};`);
     expect(tokens).toContain(`--ch-dur-vt-push: ${curve.ms}ms;`);
-    expect(tokens).toContain('--ch-vt-parallax: -30%;');
+    expect(tokens).toContain('--ch-vt-parallax: -24%;');
   });
 
   it('push: drawn by the live page over a copy (C1), so the view transition swaps at once; pop: the leaving page on top', () => {

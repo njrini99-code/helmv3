@@ -19,7 +19,7 @@ import { AskThread } from '../screens/coachhelm/chat/Thread';
 import type { ChAskSheetChat } from './AskSheet';
 import '../styles/coachhelm-ask.css';
 
-function subscribeOnline(cb: () => void) {
+export function subscribeOnline(cb: () => void) {
   window.addEventListener('online', cb);
   window.addEventListener('offline', cb);
   return () => {

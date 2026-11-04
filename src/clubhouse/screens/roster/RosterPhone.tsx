@@ -404,7 +404,7 @@ export function RosterPhoneRow({
   return (
     <PlayerPeek player={rosterPeek(p)}>
       <ViewTransition name={`ch-rsm-row-${p.id}`} update={slide ? 'ch-rsm-reorder' : 'none'} enter="none" exit="none" share="none" default="none">
-        <button type="button" className="ch-rsm-row" aria-label={label} data-ch-code="CH-3806" onClick={() => onOpen(p.id)} {...hold}>
+        <button type="button" className="ch-rsm-row" data-ch-roster-row="" aria-label={label} data-ch-code="CH-3806" onClick={() => onOpen(p.id)} {...hold}>
           <Avatar name={p.name} id={p.id} size="md" />
           <span className="ch-rsm-row__b">
             <b>{p.name}</b>

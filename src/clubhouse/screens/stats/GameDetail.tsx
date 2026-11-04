@@ -3,7 +3,7 @@
 import { ArrowRight, CircleDot, Crosshair, Flag, FlagTriangleRight, MoveUpRight, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense, use, useEffect, useState, type ReactNode } from 'react';
-import { gameSectionFromHash } from './legs';
+import { gameSectionFromHash, type GameSectionId } from './legs';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useChSessionState } from '../../lib/session-state';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
@@ -19,14 +19,19 @@ import { useRefresh } from '../../lib/use-refresh';
 import { EmptyState } from '../../ui/States';
 import { haptic } from '../../lib/haptics';
 import { formatFixed, formatPct, NO_DATA } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { floorRate, sampleState } from '../../lib/stats-signal';
 import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, ParTiles } from './charts';
 import { PuttBands } from './PuttBands';
+import { HBars } from './MiniCharts';
+import { PUTT_NEEDS, puttBandViews } from './putt-bands';
 import type { PuttBandInput } from './putt-bands';
 import { ScoreMixBar } from './ScoreMixBar';
-import { Empty, More, Panel, Rule, RULE_WINDOW } from './detail';
+import { Empty, More, MoreOpen, Panel, Rule, RULE_WINDOW } from './detail';
+import { ShsCard } from './SummaryCard';
 import { ApproachMore, PuttingMore, ScoringMore, ShortMore, TeeMore } from './GameMore';
 import { readsLineParts } from './reads-line';
+import { missSplit } from './miss-split';
 import { plural } from '../../lib/plural';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
 
@@ -50,6 +55,15 @@ function floorFig(label: string, kind: 'fraction' | 'scramble', n: number, v: nu
   if (f.early) return [label, pct(f.value), [f.early, note].filter(Boolean).join(' · '), undefined];
   return [label, pct(v), note, t];
 }
+
+/** The page's key under the average round's bar. */
+const AVERAGE_ROUND = [
+  ['eagle', 'Eagle'],
+  ['birdie', 'Birdie'],
+  ['par', 'Par'],
+  ['bogey', 'Bogey'],
+  ['double', 'Double+'],
+] as const;
 
 const SECTIONS = [
   ['scoring', 'Scoring'],
@@ -110,6 +124,9 @@ function ReadsLineNow({ reads, area }: { reads: ChStatsReads | undefined; area: 
 }
 
 /** What a figure that has nothing behind it says in place of a bare dash (the phone's brief): the reason, in a few words. */
+const isNone = (v: unknown) => v === NO_DATA;
+/** The value, or the no-data dash. */
+const dash = <T,>(v: T | null | undefined, say: (v: T) => string): string => (v == null ? NO_DATA : say(v));
 const NONE_REASON: Record<string, string> = {
   'scoring:Scoring average': 'No scores yet',
   'scoring:Birdies / round': 'No holes scored',
@@ -131,6 +148,15 @@ const NONE_REASON: Record<string, string> = {
   'putting:3-putts / round': 'No putts tracked',
   'putting:One-putt rate': 'No putts tracked',
   'putting:First putt': 'No putts tracked',
+  'tee:All tee shots': 'No drives logged',
+  'tee:Driver': 'No driver shots',
+  'tee:Other tee shots': 'No other tee shots',
+  'approach:From the fairway': 'No fairway approaches',
+  'short:From the fringe': 'No fringe chances',
+  'putting:Putts / round': 'No putts tracked',
+  'putting:Three-putts / round': 'No putts tracked',
+  'putting:One-putts / round': 'No putts tracked',
+  'putting:Make rate 5–10 ft': 'No putts tracked',
 };
 
 function Sec({
@@ -141,11 +167,15 @@ function Sec({
   lead,
   sub,
   figs,
+  detailFigs,
+  otherFigs,
+  extra,
   rule,
   how,
   reads,
   more,
   children,
+  detail,
 }: {
   id: string;
   /** The phone shows one section at a time (the chips switch it); desktop shows all five. */
@@ -155,6 +185,12 @@ function Sec({
   lead: string;
   sub: string;
   figs: Fig[];
+  /** The page's four figures for a pushed detail, where they differ from today's. */
+  detailFigs?: Fig[];
+  /** Today's figures the page leaves out of its four: kept, in a card of their own. */
+  otherFigs?: Fig[];
+  /** A panel the page leaves out, kept on a pushed detail below the page's own cards. */
+  extra?: ReactNode;
   /** The window and the rounds this section counts, under its figures. */
   rule: string;
   /** The phone's long account of what the rule line counts, behind "How this is measured" (the line above is then the short one). */
@@ -164,8 +200,64 @@ function Sec({
   /** The figures below the headline: a "More detail" disclosure. */
   more: ReactNode;
   children: ReactNode;
+  /** The section as a pushed detail's body (clubhouse_stats_redesign_v1): the page's blocks around every panel of today's. */
+  detail?: GameAreaDetail;
 }) {
   if (hide) return null;
+  if (detail) {
+    const tiles = (list: Fig[]) => (
+      <dl className="ch-shs-m4">
+        {list.map(([l, v, n, t, needs]) => {
+          const reason = needs ?? (isNone(v) ? NONE_REASON[`${id}:${l}`] : undefined);
+          return (
+            <div key={l}>
+              <dt className="t">{l}</dt>
+              <dd className={`v${t ? ` ch-shs-${t}` : ''}${reason ? ' ch-shs-none' : ''}`}>{reason ? <NoData /> : v}</dd>
+              {(reason || (n && !isNone(v))) && <dd className="m">{reason ?? n}</dd>}
+            </div>
+          );
+        })}
+      </dl>
+    );
+    const figures = (
+      <ShsCard title={detail.figuresFirst ? 'The figures' : 'Per round'} meta={detail.figuresMeta}>
+        {tiles(detailFigs ?? figs)}
+      </ShsCard>
+    );
+    const panels = <div className="ch-gm__body">{children}</div>;
+    return (
+      <section className="ch-gm is-detail" id={`gm-${id}`} aria-label={title}>
+        {detail.hero}
+        {detail.figuresFirst && (
+          <ShsCard title={detail.bench ? 'You and the Tour' : 'In short'}>
+            <p className="ch-shs-plead">{lead}</p>
+            {detail.bench}
+          </ShsCard>
+        )}
+        {detail.figuresFirst ? (
+          <>
+            {figures}
+            {panels}
+            {detail.before}
+          </>
+        ) : (
+          <>
+            {detail.before}
+            {panels}
+            {figures}
+          </>
+        )}
+        {detail.after}
+        {extra}
+        {otherFigs && otherFigs.length > 0 && <ShsCard title="More figures">{tiles(otherFigs)}</ShsCard>}
+        <MoreOpen.Provider value>{more}</MoreOpen.Provider>
+        <ShsCard title="What this counts">
+          <Rule how={how}>{rule}</Rule>
+          {reads}
+        </ShsCard>
+      </section>
+    );
+  }
   return (
     <section className="ch-gm" id={`gm-${id}`} aria-labelledby={`gm-${id}-t`}>
       <div className="ch-gm__id">
@@ -181,7 +273,7 @@ function Sec({
         </header>
         <dl className="ch-gm__figs">
           {figs.map(([l, v, n, t, needs]) => {
-            const reason = needs ?? (v === NO_DATA ? NONE_REASON[`${id}:${l}`] : undefined);
+            const reason = needs ?? (isNone(v) ? NONE_REASON[`${id}:${l}`] : undefined);
             return (
               <div key={l}>
                 <dt>{l}</dt>
@@ -200,6 +292,17 @@ function Sec({
       </div>
     </section>
   );
+}
+
+/** What a redesigned detail draws around a section's own panels. */
+export interface GameAreaDetail {
+  hero: ReactNode;
+  bench?: ReactNode;
+  before?: ReactNode;
+  after?: ReactNode;
+  figuresMeta?: string;
+  /** Parts lead with In short and The figures; Scoring puts its chart and panels first (08 criterion 32). */
+  figuresFirst: boolean;
 }
 
 /**
@@ -224,6 +327,9 @@ export function GameDetail({
   reads,
   onRetry,
   phone = false,
+  only,
+  shs = false,
+  asDetail,
 }: {
   s: GolfStats;
   /** What the profile reads beyond the shot-level figures: per-round lines, holes, approach proximity, where shots finish. */
@@ -245,6 +351,12 @@ export function GameDetail({
   reads?: ChReadsSource;
   onRetry?: () => void;
   phone?: boolean;
+  /** One section alone, for a pushed detail page: no chips, no hash listener, and the session's choice is not read. */
+  only?: GameSectionId;
+  /** clubhouse_stats_redesign_v1: Missed short reads the calculator's own figure. */
+  shs?: boolean;
+  /** With `only`: draw that section as the redesign's pushed detail. */
+  asDetail?: GameAreaDetail;
 }) {
   // The player reading their own stats is "You": the verb agrees and mid-sentence it is lower case (F-45).
   const reduced = useChReducedMotion();
@@ -255,12 +367,12 @@ export function GameDetail({
   // on desktop it only follows the scroll, so it is not kept.
   const [chosen, setChosen] = useChSessionState<string>('game-section', 'scoring');
   const [spied, setSpied] = useState<string>('scoring');
-  const on = phone ? chosen : spied;
+  const on = only ?? (phone ? chosen : spied);
   const setOn = phone ? setChosen : setSpied;
-  const show = (id: string) => !phone || on === id;
+  const show = (id: string) => (only ? only === id : !phone || on === id);
 
   useEffect(() => {
-    if (phone) return;
+    if (phone || only) return;
     const els = SECTIONS.map(([id]) => document.getElementById(`gm-${id}`)).filter((e): e is HTMLElement => !!e);
     const io = new IntersectionObserver(
       (entries) => {
@@ -271,13 +383,13 @@ export function GameDetail({
     );
     els.forEach((e) => io.observe(e));
     return () => io.disconnect();
-  }, [phone]);
+  }, [phone, only]);
 
   // An address that ends `#gm-<section>` (the team grid's leg figures) names the phone's section: it is chosen, then scrolled
   // to once it is in the page, since the phone draws only the chosen one. A new request each time, so the same hash twice scrolls twice.
   const [asked, setAsked] = useState<{ id: string } | null>(null);
   useEffect(() => {
-    if (!phone) return;
+    if (!phone || only) return;
     const read = () => {
       const id = gameSectionFromHash(window.location.hash);
       if (!id) return;
@@ -287,7 +399,7 @@ export function GameDetail({
     read();
     window.addEventListener('hashchange', read);
     return () => window.removeEventListener('hashchange', read);
-  }, [phone, setChosen]);
+  }, [phone, only, setChosen]);
   useEffect(() => {
     if (!phone || !asked || on !== asked.id) return;
     const el = document.getElementById(`gm-${asked.id}`);
@@ -330,6 +442,13 @@ export function GameDetail({
   const left = s.missLeftPct;
   const right = s.missRightPct;
   const benchPen = bench.penalty_rate_per_round ?? null;
+  const yds = (v: number | null | undefined) => (v == null ? NO_DATA : `${Math.round(v)} yds`);
+  const driveTotal = s.fairwayOpportunities || 1;
+  const driveSplit = [
+    { label: 'Left', share: (s.missLeftCount / driveTotal) * 100, cls: 'ch-shs-fill-flat' },
+    { label: 'Fairway', share: (s.fairwaysHit / driveTotal) * 100, cls: 'ch-shs-fill-gain' },
+    { label: 'Right', share: (s.missRightCount / driveTotal) * 100, cls: 'ch-shs-fill-miss' },
+  ];
 
   // Approach
   const girBands: Array<[string, number | null]> = [
@@ -354,8 +473,7 @@ export function GameDetail({
   ];
   const tourProx = (x.approach ?? []).map((b) => ({ band: b.label.replace('-', '–').replace(' yd', ''), value: b.value, bench: b.bench, n: b.shots, floor: b.floor }));
   const worstProx = tourProx.filter((b) => b.value != null && b.bench != null).sort((a, b) => b.value! - b.bench! - (a.value! - a.bench!))[0];
-  const missShort = (s.approachMissShortPct ?? 0) + (s.approachMissShortLeftPct ?? 0) + (s.approachMissShortRightPct ?? 0);
-  const missLong = (s.approachMissLongPct ?? 0) + (s.approachMissLongLeftPct ?? 0) + (s.approachMissLongRightPct ?? 0);
+  const { short: missShort, long: missLong } = missSplit(s, shs);
   const hasMiss = s.approachMissTotal > 0;
 
   // Short game
@@ -384,6 +502,8 @@ export function GameDetail({
   const worstPutt = leadBands
     .filter((b) => b.value != null && b.bench != null && b.n >= 10)
     .sort((a, b) => (a.value! - a.bench!) - (b.value! - b.bench!))[0];
+  const putts = puttBandViews(curve);
+  const fiveToTen = putts.find((b) => b.label.startsWith('5–10'));
   const onePuttRate = s.holesPlayed ? (s.onePuttsTotal / s.holesPlayed) * 100 : null;
   // Nearest band first ("0_3", "3_5", ... "35_plus"), whatever order the cache keeps them in (F-54).
   const lag = Object.entries(s.approachPuttAvgLeaveByBand ?? {})
@@ -417,14 +537,16 @@ export function GameDetail({
 
   return (
     <div className={'ch-gd' + (phone ? ' is-phone' : '')}>
-      <nav className="ch-gd__nav" aria-label="Game sections">
-        {SECTIONS.map(([id, l]) => (
-          <button key={id} type="button" className="ch-pill" aria-pressed={on === id} onClick={() => jump(id)}>
-            {l}
-          </button>
-        ))}
-        <span className="ch-gd__src">{sample} logged</span>
-      </nav>
+      {!only && (
+        <nav className="ch-gd__nav" aria-label="Game sections">
+          {SECTIONS.map(([id, l]) => (
+            <button key={id} type="button" className="ch-pill" aria-pressed={on === id} onClick={() => jump(id)}>
+              {l}
+            </button>
+          ))}
+          <span className="ch-gd__src">{sample} logged</span>
+        </nav>
+      )}
       <WithReads reads={reads}>
         {(r) =>
           r?.status === 'failed' && <ReadsFailedNotice />
@@ -438,6 +560,12 @@ export function GameDetail({
 
       <Sec
         id="scoring"
+        detail={asDetail}
+        extra={
+          <Panel title="Scoring by par" wide>
+            <ParTiles rows={pars} mark={sgBaseline(tour).mark} />
+          </Panel>
+        }
         hide={!show('scoring')}
         reads={<ReadsLine reads={reads} area="scoring" />}
         icon={Flag}
@@ -468,16 +596,42 @@ export function GameDetail({
           </More>
         }
       >
-        <Panel title="What an average round looks like" wide {...noteOf('Every scored hole by result, under par to the left and over par to the right, with each result a round. Select one for the holes behind it. Doubles or worse are the quickest place to save strokes.', 'Doubles or worse are the quickest place to save strokes.')}>
-          <ScoreMixBar counts={totals} perRound={dist} triple={x.triplePlus} label="Every hole, by result" />
-        </Panel>
-        <Panel title="Scoring by par" wide>
-          <ParTiles rows={pars} mark={sgBaseline(tour).mark} />
-        </Panel>
+        {asDetail ? (
+          <ShsCard title="An average round" meta="18 holes by result">
+            {holesScored === 0 ? (
+              <p className="ch-sv-mix-none">No holes scored yet.</p>
+            ) : (
+              <div className="ch-sv-mix">
+                <div className="ch-shs-stack is-detail" aria-hidden="true" data-ch-grow="">
+                  {AVERAGE_ROUND.map(([key]) => (dist[key] > 0 ? <span key={key} className={`is-${key}`} style={{ flexGrow: dist[key], background: 'var(--ch-sv-mix-fill)' }} /> : null))}
+                </div>
+                <div className="ch-shs-skey">
+                  {AVERAGE_ROUND.map(([key, label]) => (
+                    <div key={key} className={`is-${key}`}>
+                      <i style={{ background: 'var(--ch-sv-mix-fill)' }} aria-hidden="true" />
+                      {label}
+                      <b className="ch-num">{formatFixed(dist[key])}</b>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </ShsCard>
+        ) : (
+          <Panel title="What an average round looks like" wide {...noteOf('Every scored hole by result, under par to the left and over par to the right, with each result a round. Select one for the holes behind it. Doubles or worse are the quickest place to save strokes.', 'Doubles or worse are the quickest place to save strokes.')}>
+            <ScoreMixBar counts={totals} perRound={dist} triple={x.triplePlus} label="Every hole, by result" />
+          </Panel>
+        )}
+        {!asDetail && (
+          <Panel title="Scoring by par" wide>
+            <ParTiles rows={pars} mark={sgBaseline(tour).mark} />
+          </Panel>
+        )}
       </Sec>
 
       <Sec
         id="tee"
+        detail={asDetail}
         hide={!show('tee')}
         reads={<ReadsLine reads={reads} area="tee" />}
         icon={MoveUpRight}
@@ -495,7 +649,17 @@ export function GameDetail({
         }
         figs={[
           floorFig('Fairways hit', 'fraction', fwRounds, fw, s.fairwayOpportunities ? `${s.fairwaysHit} of ${s.fairwayOpportunities} attempts` : null, undefined),
-          ['Driver distance', s.drivingDistanceDriverOnly == null ? NO_DATA : `${Math.round(s.drivingDistanceDriverOnly)} yds`, 'Average drive', undefined],
+          ['Driver distance', dash(s.drivingDistanceDriverOnly, (v) => `${Math.round(v)} yds`), 'Average drive', undefined],
+          ['Penalties / round', num(s.penaltiesPerRound), benchPen != null ? `Tour ${benchPen}` : null, tone(s.penaltiesPerRound, benchPen, true)],
+          ['Fairways par 5', pct(s.fairwayPctPar5), s.fairwayPctPar4 != null ? `Par 4s: ${Math.round(s.fairwayPctPar4)}%` : null, undefined],
+        ]}
+        detailFigs={[
+          floorFig('Fairways hit', 'fraction', fwRounds, fw, 'Par 4s and 5s', undefined),
+          ['All tee shots', yds(s.drivingDistanceAvg), 'First shot of each hole', undefined],
+          ['Driver', yds(s.drivingDistanceDriverOnly), 'Carry and roll', undefined],
+          ['Other tee shots', yds(s.drivingDistanceNonDriverOnly), 'When driver stays in the bag', undefined],
+        ]}
+        otherFigs={[
           ['Penalties / round', num(s.penaltiesPerRound), benchPen != null ? `Tour ${benchPen}` : null, tone(s.penaltiesPerRound, benchPen, true)],
           ['Fairways par 5', pct(s.fairwayPctPar5), s.fairwayPctPar4 != null ? `Par 4s: ${Math.round(s.fairwayPctPar4)}%` : null, undefined],
         ]}
@@ -505,28 +669,56 @@ export function GameDetail({
           </More>
         }
       >
-        <Panel title="Where drives finish" note="Share of tee shots on par 4s and 5s.">
-          {s.fairwayOpportunities > 0 ? (
-            <FairwayStrip opportunities={s.fairwayOpportunities} hit={s.fairwaysHit} left={s.missLeftCount} right={s.missRightCount} />
-          ) : (
-            <EmptyState compact code="CH-5317" title="No drive results logged." />
-          )}
-        </Panel>
-        <Panel title="Distance by club">
-          <Compare
-            unit=" yds"
-            max={320}
-            rows={[
-              { label: 'All tee shots', value: s.drivingDistanceAvg, sub: 'First shot of each hole' },
-              { label: 'Driver', value: s.drivingDistanceDriverOnly, sub: 'Carry and roll' },
-              { label: 'Other clubs', value: s.drivingDistanceNonDriverOnly, sub: 'When driver stays in the bag' },
-            ]}
-          />
-        </Panel>
+        {asDetail ? (
+          <ShsCard title="Where drives finish" meta="Par 4s and 5s">
+            {s.fairwayOpportunities > 0 ? (
+              <>
+                <div className="ch-shs-stack is-detail" aria-hidden="true" data-ch-grow="">
+                  {driveSplit.map((d) => (
+                    <span key={d.label} className={d.cls} style={{ flexGrow: d.share }} />
+                  ))}
+                </div>
+                <div className="ch-shs-skey">
+                  {driveSplit.map((d) => (
+                    <div key={d.label}>
+                      <i className={d.cls} aria-hidden="true" />
+                      {d.label}
+                      <b className="ch-num">{Math.round(d.share)}%</b>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <EmptyState compact code="CH-5317" kind="first-run" title="No drive results logged." />
+            )}
+          </ShsCard>
+        ) : (
+          <>
+            <Panel title="Where drives finish" note="Share of tee shots on par 4s and 5s.">
+              {s.fairwayOpportunities > 0 ? (
+                <FairwayStrip opportunities={s.fairwayOpportunities} hit={s.fairwaysHit} left={s.missLeftCount} right={s.missRightCount} />
+              ) : (
+                <EmptyState compact code="CH-5317" title="No drive results logged." />
+              )}
+            </Panel>
+            <Panel title="Distance by club">
+              <Compare
+                unit=" yds"
+                max={320}
+                rows={[
+                  { label: 'All tee shots', value: s.drivingDistanceAvg, sub: 'First shot of each hole' },
+                  { label: 'Driver', value: s.drivingDistanceDriverOnly, sub: 'Carry and roll' },
+                  { label: 'Other clubs', value: s.drivingDistanceNonDriverOnly, sub: 'When driver stays in the bag' },
+                ]}
+              />
+            </Panel>
+          </>
+        )}
       </Sec>
 
       <Sec
         id="approach"
+        detail={asDetail}
         hide={!show('approach')}
         reads={<ReadsLine reads={reads} area="approach" />}
         icon={Crosshair}
@@ -544,19 +736,31 @@ export function GameDetail({
         }
         figs={[
           floorFig('Greens in regulation', 'fraction', girRounds, s.girPercentage, bench.gir_pct != null ? `Tour ${bench.gir_pct}%` : null, tone(s.girPercentage, bench.gir_pct)),
-          ['Proximity · all', s.approachProximityAvg == null ? NO_DATA : `${Math.round(s.approachProximityAvg)} ft`, 'Every approach', undefined],
-          ['Missed short', hasMiss ? pct(missShort) : NO_DATA, 'Of missed greens', hasMiss && missShort > missLong ? 'loss' : undefined],
+          ['Proximity · all', dash(s.approachProximityAvg, (v) => `${Math.round(v)} ft`), 'Every approach', undefined],
+          ['Missed short', dash(hasMiss ? missShort : null, pct), 'Of missed greens', hasMiss && missShort > missLong ? 'loss' : undefined],
           ['From the rough', pct(s.girPctFromRough), s.girPctFromFairway != null ? `GIR · fairway ${Math.round(s.girPctFromFairway)}%` : null, undefined],
         ]}
+        detailFigs={[
+          floorFig('Greens in regulation', 'fraction', girRounds, s.girPercentage, bench.gir_pct != null ? `Tour ${bench.gir_pct}%` : null, tone(s.girPercentage, bench.gir_pct)),
+          ['From the fairway', pct(s.girPctFromFairway), 'Greens hit', undefined],
+          ['From the rough', pct(s.girPctFromRough), 'Greens hit', undefined],
+          ['Missed short', dash(hasMiss ? missShort : null, pct), 'Of missed greens', hasMiss && missShort > missLong ? 'loss' : undefined],
+        ]}
+        otherFigs={[['Proximity · all', dash(s.approachProximityAvg, (v) => `${Math.round(v)} ft`), 'Every approach', undefined]]}
         more={
           <More>
             <ApproachMore s={s} x={x} onRetry={onRetry} />
           </More>
         }
       >
-        <Panel title="Greens hit by distance" wide note="Bars are the GIR rate from each band.">
+        {asDetail && (
+          <ShsCard title="Greens hit by distance" meta="Yards">
+            <HBars rows={girBands.map(([band, value]) => ({ label: band, value }))} />
+          </ShsCard>
+        )}
+        {!asDetail && <Panel title="Greens hit by distance" wide note="Bars are the GIR rate from each band.">
           <Ladder rows={girBands.map(([band, value]) => ({ band, value, bench: null }))} unit="%" label="Yards to the pin" phone={phone} />
-        </Panel>
+        </Panel>}
         <Panel
           title="Proximity against the Tour"
           wide
@@ -627,6 +831,7 @@ export function GameDetail({
 
       <Sec
         id="short"
+        detail={asDetail}
         hide={!show('short')}
         reads={<ReadsLine reads={reads} area="short" />}
         icon={FlagTriangleRight}
@@ -648,13 +853,32 @@ export function GameDetail({
           ['Inside 10 yds', pct(s.scramblingPct0_10), 'Up and down', undefined],
           ['From the rough', pct(s.scramblingPctRough), benchScrRough != null ? `Tour ${benchScrRough}%` : `${s.scrambleRoughAttempts} attempts`, tone(s.scramblingPctRough, benchScrRough)],
         ]}
+        detailFigs={[
+          floorFig('Scrambling', 'scramble', s.scrambleAttempts, s.scramblingPercentage, 'Up and down', undefined),
+          floorFig('Sand saves', 'scramble', s.sandSaveAttempts, s.sandSavePercentage, benchSand != null ? `Tour ${benchSand}%` : null, tone(s.sandSavePercentage, benchSand)),
+          ['Inside 10 yds', pct(s.scramblingPct0_10), 'Saved', undefined],
+          floorFig('From the fringe', 'scramble', s.scrambleFringeAttempts, s.scramblingPctFringe, null, undefined),
+        ]}
         more={
           <More>
             <ShortMore s={s} />
           </More>
         }
       >
-        <Panel title="Up and down by lie" note="Counts are attempts in the window.">
+        {asDetail && (
+          <ShsCard title="Up and down by lie">
+            <HBars
+              tourKey
+              rows={[
+                { label: 'All chances', value: s.scramblingPercentage, sub: `${s.scrambleAttempts} attempts` },
+                { label: 'Fairway', value: s.scramblingPctFairway, sub: `${s.scrambleFairwayAttempts} attempts`, tour: benchScrFw },
+                { label: 'Rough', value: s.scramblingPctRough, sub: `${s.scrambleRoughAttempts} attempts`, tour: benchScrRough },
+                { label: 'Sand', value: s.scramblingPctSand, sub: `${s.scrambleSandAttempts} attempts`, tour: benchSand },
+              ]}
+            />
+          </ShsCard>
+        )}
+        {!asDetail && <Panel title="Up and down by lie" note="Counts are attempts in the window.">
           <Compare
             unit="%"
             max={100}
@@ -665,7 +889,7 @@ export function GameDetail({
               { label: 'Sand', value: s.scramblingPctSand, sub: `${s.scrambleSandAttempts} attempts${benchSand != null ? ` · Tour ${benchSand}%` : ''}` },
             ]}
           />
-        </Panel>
+        </Panel>}
         <Panel title="Up and down by distance" note="The last band is everything over 20 yards.">
           <Compare
             unit="%"
@@ -681,6 +905,7 @@ export function GameDetail({
 
       <Sec
         id="putting"
+        detail={asDetail}
         hide={!show('putting')}
         reads={<ReadsLine reads={reads} area="putting" />}
         icon={CircleDot}
@@ -698,7 +923,18 @@ export function GameDetail({
           ['Putts / GIR', num(s.puttsPerGir, 2), null, undefined],
           ['3-putts / round', num(s.threePuttsPerRound), null, undefined],
           ['One-putt rate', pct(onePuttRate), 'Of holes', undefined],
-          ['First putt', s.firstPuttDistanceAvg == null ? NO_DATA : `${formatFixed(s.firstPuttDistanceAvg)} ft`, 'Average start', undefined],
+          ['First putt', dash(s.firstPuttDistanceAvg, (v) => `${formatFixed(v)} ft`), 'Average start', undefined],
+        ]}
+        detailFigs={[
+          ['Putts / round', num(s.puttsPerRound), 'Two a green is 36', undefined],
+          ['Three-putts / round', num(s.threePuttsPerRound), null, undefined],
+          ['One-putts / round', dash(s.holesPlayed || null, (h) => num((s.onePuttsTotal * 18) / h)), null, undefined],
+          ['Make rate 5–10 ft', dash(fiveToTen?.rate, pct), fiveToTen?.bench != null ? `Tour ${Math.round(fiveToTen.bench)}%` : null, fiveToTen?.grade === 'is-loss' ? 'loss' : fiveToTen?.grade === 'is-gain' ? 'gain' : undefined],
+        ]}
+        otherFigs={[
+          ['Putts / GIR', num(s.puttsPerGir, 2), null, undefined],
+          ['One-putt rate', pct(onePuttRate), 'Of holes', undefined],
+          ['First putt', dash(s.firstPuttDistanceAvg, (v) => `${formatFixed(v)} ft`), 'Average start', undefined],
         ]}
         more={
           <More>
@@ -706,7 +942,13 @@ export function GameDetail({
           </More>
         }
       >
-        <Panel
+        {asDetail && (
+          <ShsCard title="Make rate by distance" meta="Line marks the Tour">
+            {x.puttsError && <InlineNotice code="CH-5211" title="Putts past 20 feet didn’t load." body="The curve stops at 20 feet. Try again." onRetry={onRetry} />}
+            <HBars tourKey rows={putts.map((b) => ({ label: b.label, value: b.rate, tour: b.bench, early: b.state === 'early', needs: b.state === 'none' ? PUTT_NEEDS : null }))} />
+          </ShsCard>
+        )}
+        {!asDetail && <Panel
           title="Make rate by distance"
           wide
           {...noteOf(
@@ -716,7 +958,7 @@ export function GameDetail({
         >
           {x.puttsError && <InlineNotice code="CH-5211" title="Putts past 20 feet didn’t load." body="The curve stops at 20 feet. Try again." onRetry={onRetry} />}
           <PuttBands bands={curve} compact={phone} />
-        </Panel>
+        </Panel>}
         <Panel title="How putts miss" wide>
           {/* Four zeros and "100% low side" claimed a pattern that was never logged (F-54). */}
           {[s.puttMissLeftPct, s.puttMissRightPct, s.puttMissShortPct, s.puttMissLongPct].some((v) => v != null && v > 0) ? (

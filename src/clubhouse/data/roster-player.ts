@@ -2,6 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { chLogServer } from '../lib/track-server';
+import { isoDay } from '../lib/dates';
 import { classYearLabel, currentSeasonLabel, displayHandicap, fullName, loadTeamZone } from './season';
 
 /**
@@ -44,9 +45,11 @@ export interface ChPlayerRoster {
   playersError: boolean;
   /** The team's coaching staff, head coach first. Null when it didn't load (logged): the group is left out, never "no coaches". */
   coaches?: ChTeamCoach[] | null;
+  /** Behind `clubhouse_classes_roster_home_v1`: the team's zone and day, for the year coins and the day and 1 August rollover. */
+  clock?: { tz: string; day: string };
 }
 
-export async function loadPlayerRoster(input: { teamId: string; playerId: string }): Promise<ChPlayerRoster> {
+export async function loadPlayerRoster(input: { teamId: string; playerId: string; crh?: boolean }): Promise<ChPlayerRoster> {
   const supabase = await createClient();
   const now = new Date();
 
@@ -92,6 +95,7 @@ export async function loadPlayerRoster(input: { teamId: string; playerId: string
     players,
     playersError: !!membersRes.error,
     coaches: staffRes.error ? null : coachesOf((staffRes.data ?? []) as unknown as Staff[]),
+    ...(input.crh ? { clock: { tz, day: isoDay(now, tz) } } : {}),
   };
 }
 

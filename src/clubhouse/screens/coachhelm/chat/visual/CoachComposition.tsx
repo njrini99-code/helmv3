@@ -1,4 +1,7 @@
 'use client';
+import { Modal } from '../../../../ui/Modal';
+import { Icon } from '../../../../ui/Icon';
+import { Maximize2 } from 'lucide-react';
 
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import type { Measurement, MeasurementSeries } from '@/lib/coachhelm/v3/chat/provenance';
@@ -18,6 +21,7 @@ import {
 } from '../../../../data/coachhelm-chat-thread';
 import { changeTone } from '../../../../lib/format';
 import { useChReducedMotion } from '../../../../lib/reduced-motion';
+import { HoleStrip, MissPattern, PuttProfile, SeasonCompare } from './blocks';
 import { DataTable, Drawing, Ranking, TableToggle, TeamTable, Tiles, Trend } from '../Evidence';
 
 /**
@@ -210,6 +214,14 @@ function Block({ block, drawIn }: { block: ResolvedBlock; drawIn: boolean }) {
           <Split ms={block.measurements} />
         </FigureBlock>
       );
+    case 'miss_pattern':
+      return <FigureBlock title="Where the misses go" table={null}><MissPattern block={block} /></FigureBlock>;
+    case 'putt_profile':
+      return <FigureBlock title="Make rate by distance" table={null}><PuttProfile block={block} /></FigureBlock>;
+    case 'season_compare':
+      return <FigureBlock title={block.metric} table={null}><SeasonCompare block={block} /></FigureBlock>;
+    case 'hole_strip':
+      return <FigureBlock title="Hole by hole" table={null}><HoleStrip block={block} /></FigureBlock>;
     case 'compare': {
       const team = teamTable(block.measurements);
       return (
@@ -227,6 +239,7 @@ export function CoachComposition({ composition, live = false }: { composition: V
   // finishing does not replay or snap anything. Reduced motion is read on every render, so a setting that resolves after
   // hydration (its server snapshot is "off") or is turned on mid-answer still draws the visual final.
   const [arrivedLive] = useState(live);
+  const [expanded, setExpanded] = useState(false);
   const animate = arrivedLive && !reduced;
   const split = composition.layout === 'split';
   const { ms, series } = figuresOf(composition.blocks);
@@ -258,6 +271,9 @@ export function CoachComposition({ composition, live = false }: { composition: V
         {entity && <p className="ch-th-cv__entity">{entity}</p>}
         <h3 className="ch-th-cv__title">{composition.title}</h3>
         {composition.lede && <p className="ch-th-cv__lede">{composition.lede}</p>}
+        <button type="button" className="ch-th-cv__expand" aria-label="Expand" onClick={() => setExpanded(true)}>
+          <Icon icon={Maximize2} size={16} />
+        </button>
       </header>
       <div className="ch-th-cv__grid">
         {composition.blocks.map((b, i) => (
@@ -272,6 +288,16 @@ export function CoachComposition({ composition, live = false }: { composition: V
         </p>
       ))}
       {provenance && <p className="ch-th-fig__src ch-th-cv__src">{provenance}</p>}
+      {/* S-ASK.toolcard.expanded: the same figures as the card. */}
+      <Modal open={expanded} onClose={() => setExpanded(false)} title={composition.title}>
+        <div className="ch-th-cv ch-th-cv__full">
+          {composition.blocks.map((b, i) => (
+            <div key={i} className="ch-th-cv__block" data-type={b.type}>
+              <Block block={b} drawIn={false} />
+            </div>
+          ))}
+        </div>
+      </Modal>
     </section>
   );
 }

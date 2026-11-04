@@ -1211,7 +1211,7 @@ features:
     owner: product
     criticality: high
     observability:
-      feature_keys: [task_management, documents, travel, coach_dashboard]
+      feature_keys: [task_management, documents, travel, coach_dashboard, practice_plans]
     docs:
       feature: memory/features/team-operations.md
       flows:
@@ -1228,6 +1228,7 @@ features:
         - src/app/golf/(dashboard)/dashboard/documents/**
         - src/app/golf/(dashboard)/dashboard/travel/**
         - src/app/golf/(dashboard)/dashboard/team-hub/**
+        - src/app/golf/(dashboard)/dashboard/practice/plan/**
       components:
         - src/components/fairway/pages/tasks/**
         - src/components/golf/documents/**
@@ -1245,17 +1246,24 @@ features:
         - src/app/golf/actions/travel.ts
         - src/app/golf/actions/dashboard-data.ts
         - src/app/golf/actions/command-palette.ts
+        - src/app/golf/actions/practice-plans.ts
+        - src/app/golf/actions/practice-publish.ts
+        - src/app/golf/actions/practice-library.ts
       services:
         - src/lib/supabase/**
         - src/lib/golf/nav-registry.ts
         - src/clubhouse/data/home.ts
         - src/clubhouse/data/player-home.ts
+        - src/clubhouse/data/practice-plan.ts
+        - src/lib/golf/practice-*.ts
       db:
         - supabase/migrations/*task*.sql
         # Team documents only: `*document*` also matched recruiting's recruit_documents files.
         - supabase/migrations/*golf_document*.sql
         - supabase/migrations/*baseball_documents*.sql
         - supabase/migrations/*documents_storage*.sql
+        # Practice plans (N-00, held; see supabase/migrations/HELD.md).
+        - supabase/migrations/*golf_practice*.sql
         # What a player may read of a teammate (security review S4, held; see
         # supabase/migrations/HELD.md): the profile function the roster, team
         # and RSVP reads call.

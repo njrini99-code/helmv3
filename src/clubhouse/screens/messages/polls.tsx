@@ -367,9 +367,28 @@ export function PollCard({
                 <span className="ch-ms-poll__fill" aria-hidden="true" />
                 <span className="ch-ms-poll__level" aria-hidden="true" />
                 <span className="ch-ms-poll__mark" aria-hidden="true" data-pop={on && tapped === o.id ? "" : undefined}>
-                  {on && <Icon icon={Check} size={12} />}
+                  {on &&
+                    (api.redesign ? (
+                      <svg className="ch-msv-tick" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                        <path d="M2.2 6.4 4.9 9l4.9-5.6" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" pathLength={20} strokeDasharray={20} />
+                      </svg>
+                    ) : (
+                      <Icon icon={Check} size={12} />
+                    ))}
                 </span>
                 <span className="ch-ms-poll__label">{o.label}</span>
+                {api.redesign && tally && (tally.voters[o.id]?.length ?? 0) > 0 && (
+                  <span className="ch-msv-pollfaces" aria-hidden="true">
+                    {[...(tally.voters[o.id] ?? [])]
+                      .sort((a, b) => (a === api.viewer.userId ? 1 : b === api.viewer.userId ? -1 : 0))
+                      .slice(-3)
+                      .map((id) => (
+                        <span key={id} data-pop={id === api.viewer.userId && tapped === o.id ? "" : undefined}>
+                          <Avatar name={api.directory.find((p) => p.userId === id)?.name ?? (id === api.viewer.userId ? api.viewer.name : "Member")} size={18} />
+                        </span>
+                      ))}
+                  </span>
+                )}
                 {/* M8: the leader's tag fades in when the poll closes live (nothing animates on a card drawn final). */}
                 <AnimatePresence initial={false}>
                   {lead && closed && <FadeCopy key="tag" className="ch-ms-poll__tag">{tied ? "Tied" : "Most votes"}</FadeCopy>}
@@ -460,12 +479,20 @@ function PollVotesModal({
   const me = api.viewer.userId;
   const nameOf = (id: string) => (id === me ? "You" : (api.directory.find((p) => p.userId === id)?.name ?? "Member"));
   const members = new Set([me, ...(conv?.memberIds ?? [])]);
+  // MSG-VOTES-01: rows carry the person's line under the name.
+  const lineOf = (id: string) => (id === me ? "" : (api.directory.find((p) => p.userId === id)?.subtitle ?? ""));
   const order = (ids: readonly string[]) => [...ids].sort((a, b) => (a === me ? -1 : b === me ? 1 : nameOf(a).localeCompare(nameOf(b))));
-  const waiting = tally && conv ? order(pollWaiting(tally, [me, ...conv.memberIds])) : [];
+  const allWaiting = tally && conv ? order(pollWaiting(tally, [me, ...conv.memberIds])) : [];
+  // Redesign: "Hasn't voted" lists players, coaches left out (MSG-VOTES-01).
+  const waiting = api.redesign ? allWaiting.filter((id) => api.directory.find((p) => p.userId === id)?.role !== "coach" && !(id === me && api.viewer.role === "coach")) : allWaiting;
+  const totalVotes = poll.options.reduce((sum, o) => sum + (tally?.voters[o.id]?.length ?? 0), 0);
   const row = (id: string) => (
     <li key={id} className="ch-ms-pollv__row">
       <Avatar name={id === me ? api.viewer.name : nameOf(id)} size="sm" />
-      <span className="ch-ms-pollv__name">{nameOf(id)}</span>
+      <span className="ch-ms-pollv__person">
+        <span className="ch-ms-pollv__name">{nameOf(id)}</span>
+        {api.redesign && lineOf(id) ? <small className="ch-ms-pollv__line">{lineOf(id)}</small> : null}
+      </span>
       {!members.has(id) && <span className="ch-ms-pollv__left">Left the group</span>}
     </li>
   );
@@ -473,16 +500,23 @@ function PollVotesModal({
     <Modal
       open={open}
       onClose={onClose}
-      icon={ListChecks}
+      icon={api.redesign ? undefined : ListChecks}
       title="Votes"
       description={poll.question}
-      width={440}
+      width={api.redesign ? 400 : 440}
+      className={api.redesign ? "ch-msv-sheet ch-msv-votes" : undefined}
       action={closed ? <span className="ch-ms-pollv__final">Final</span> : undefined}
       footer={
         remind ? (
+          api.redesign ? (
+            <button type="button" className="ch-msv-draftrem" onClick={remind.run}>
+              Draft a reminder
+            </button>
+          ) : (
           <Button variant="primary" onClick={remind.run}>
             Remind {remind.count}
           </Button>
+          )
         ) : undefined
       }
     >
@@ -493,8 +527,16 @@ function PollVotesModal({
             <section key={o.id} className="ch-ms-pollv__opt" aria-label={o.label}>
               <h3 className="ch-ms-pollv__h">
                 <span>{o.label}</span>
-                <span className="ch-num">{ids.length}</span>
+                <span className="ch-num">
+                  {ids.length}
+                  {api.redesign && totalVotes > 0 ? ` · ${Math.round((ids.length / totalVotes) * 100)}%` : ""}
+                </span>
               </h3>
+              {api.redesign && (
+                <span className="ch-msv-votebar" aria-hidden="true">
+                  <i style={{ width: `${totalVotes ? (ids.length / totalVotes) * 100 : 0}%` }} />
+                </span>
+              )}
               {ids.length ? <ul className="ch-ms-pollv__who">{ids.map(row)}</ul> : <p className="ch-ms-pollv__none">No votes yet</p>}
             </section>
           );
@@ -787,13 +829,23 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
     <Modal
       open={open}
       onClose={onClose}
-      icon={ListChecks}
+      icon={api.redesign ? undefined : ListChecks}
       title="New poll"
-      description={`Everyone in ${conv.title} can vote and see who voted.`}
+      description={api.redesign ? undefined : `Everyone in ${conv.title} can vote and see who voted.`}
       initialFocus="#ch-ms-poll-q"
-      width={480}
+      width={api.redesign ? 400 : 480}
+      className={api.redesign ? "ch-msv-pollnew" : undefined}
       action={
-        !empty || multi || ends !== "none" ? (
+        api.redesign ? (
+          <>
+            <button type="button" className="ch-msv-txtbtn is-cancel" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="button" className="ch-msv-txtbtn is-strong" disabled={!ready || busy} onClick={() => void send()}>
+              {busy ? "Sending…" : "Send"}
+            </button>
+          </>
+        ) : !empty || multi || ends !== "none" ? (
           <button
             type="button"
             className="ch-ms-pollf__clear"
@@ -807,14 +859,16 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
         ) : undefined
       }
       footer={
-        <>
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant={earlier ? "secondary" : "primary"} busy={busy} disabled={!ready} onClick={() => void send()}>
-            {busy ? "Sending…" : "Send poll"}
-          </Button>
-        </>
+        api.redesign ? undefined : (
+          <>
+            <Button variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button variant={earlier ? "secondary" : "primary"} busy={busy} disabled={!ready} onClick={() => void send()}>
+              {busy ? "Sending…" : "Send poll"}
+            </Button>
+          </>
+        )
       }
     >
       <form
@@ -858,7 +912,7 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
         </div>
         {/* M11, M17: the chips fade out once there is something to keep, and back in when Clear empties the form. */}
         <AnimatePresence initial={false}>
-          {empty && (
+          {empty && !api.redesign && (
             <FadePart key="quick" className="ch-ms-pollf__quick">
               <span className="ch-ms-pollf__quickl" id="ch-ms-poll-quick">
                 Quick start
@@ -921,17 +975,33 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
           {options.length >= POLL_MAX_OPTIONS && options.every((o) => o.trim()) ? (
             <p className="ch-field__help">A poll takes up to 6 choices.</p>
           ) : (
-            <p className="ch-field__help">
-              <Icon icon={Plus} size={12} /> A new row appears as you fill the last one.
-            </p>
+            !api.redesign && (
+              <p className="ch-field__help">
+                <Icon icon={Plus} size={12} /> A new row appears as you fill the last one.
+              </p>
+            )
           )}
         </fieldset>
-        <Switch checked={multi} onChange={setMulti} label="Allow more than one answer" />
+        <Switch checked={multi} onChange={setMulti} label={api.redesign ? "Allow multiple answers" : "Allow more than one answer"} />
         <div className="ch-field" aria-invalid={invalid("ends")}>
-          <span className="ch-field__label" id="ch-ms-poll-ends">
-            Voting ends
-          </span>
-          {endsFit ? (
+          {!api.redesign && (
+            <span className="ch-field__label" id="ch-ms-poll-ends">
+              Voting ends
+            </span>
+          )}
+          {api.redesign ? (
+            <Menu
+              label="Closes"
+              align="start"
+              items={ENDS.map((e) => ({ label: e.label, checked: e.value === ends, onSelect: () => setEnds(e.value) }))}
+              trigger={(p) => (
+                <button type="button" className="ch-msv-closes" {...p}>
+                  Closes
+                  <b>{ENDS.find((e) => e.value === ends)!.label}</b>
+                </button>
+              )}
+            />
+          ) : endsFit ? (
             <div ref={endsRow}>
               <Segmented<Ends> label="Voting ends" value={ends} options={ENDS} onChange={setEnds} block size="sm" />
             </div>

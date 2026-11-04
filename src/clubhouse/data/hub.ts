@@ -899,7 +899,8 @@ export function folders(docs: Array<{ id: string; title: string; folder: string 
   const sorted = [...docs].sort((a, b) => (b.updated_at ?? b.created_at ?? '').localeCompare(a.updated_at ?? a.created_at ?? ''));
   for (const d of sorted) {
     const name = d.folder?.trim() || 'Team';
-    const ext = fileKind(d.file_type, d.file_url);
+    // A plan row has no file (N-00 010400): `file_url` may be null once it's applied, and it opens its plan page, not a download.
+    const ext = d.file_url == null ? 'plan' : fileKind(d.file_type, d.file_url);
     out.set(name, [
       ...(out.get(name) ?? []),
       {

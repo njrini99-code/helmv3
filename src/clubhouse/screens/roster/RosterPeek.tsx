@@ -20,7 +20,7 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
 import { rebuiltHref } from '../../shell/nav';
-import { AVAILABILITY_WORD, legsCaption, relativeAgo } from './format';
+import { AVAILABILITY_WORD, legsCaption, relativeAgo, yearKeyOf, yearLineOf, type RosterClock } from './format';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { plural, pluralWord } from '../../lib/plural';
 import { ClassStatusLine } from '../../ui/ClassStatusLine';
@@ -42,7 +42,12 @@ export function RosterPeek({
   availability,
   helm,
   classLine,
+  crh = false,
+  clock,
 }: {
+  /** The lane's flag: year coin and chip, no repeated class line. */
+  crh?: boolean;
+  clock?: RosterClock;
   p: ChRosterPlayer | undefined;
   notesLocked: boolean;
   onClose: () => void;
@@ -83,7 +88,7 @@ export function RosterPeek({
           exit={reduced ? { opacity: 0 } : { opacity: 0, transform: 'translateX(12px)' }}
           transition={chTween('base', reduced)}
         >
-          <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} onNoteSaved={onNoteSaved} availability={availability} helm={helm} classLine={classLine} />
+          <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} onNoteSaved={onNoteSaved} availability={availability} helm={helm} classLine={classLine} crh={crh} clock={clock} />
         </m.aside>
       )}
     </AnimatePresence>
@@ -98,7 +103,11 @@ function PeekBody({
   availability,
   helm,
   classLine,
+  crh = false,
+  clock,
 }: {
+  crh?: boolean;
+  clock?: RosterClock;
   p: ChRosterPlayer;
   notesLocked: boolean;
   onClose: () => void;
@@ -117,7 +126,8 @@ function PeekBody({
   const facts = [
     { icon: MapPin, label: 'Hometown', value: p.hometown },
     { icon: School, label: 'High school', value: p.highSchool },
-    { icon: GraduationCap, label: 'Class of', value: p.gradYear ? String(p.gradYear) : null },
+    // The year chip says it behind the flag, so it isn't said twice.
+    { icon: GraduationCap, label: 'Class of', value: !crh && p.gradYear ? String(p.gradYear) : null },
     { icon: Hash, label: 'Jersey', value: p.jersey },
   ].filter((f) => f.value);
   const messageHref = rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(p.id)}`);
@@ -140,22 +150,31 @@ function PeekBody({
 
   return (
     <>
-      <div className="ch-rs-peek__top">
-        <span className={`ch-rs-status is-${p.status}`}>
-          <i aria-hidden="true" />
-          {p.status === 'active' ? 'Active' : 'Inactive'}
-        </span>
-        <IconButton icon={X} label="Close" size="sm" onClick={onClose} />
-      </div>
+      {!crh && (
+        <div className="ch-rs-peek__top">
+          <span className={`ch-rs-status is-${p.status}`}>
+            <i aria-hidden="true" />
+            {p.status === 'active' ? 'Active' : 'Inactive'}
+          </span>
+          <IconButton icon={X} label="Close" size="sm" onClick={onClose} />
+        </div>
+      )}
       <div className="ch-rs-peek__hero">
         <span className="ch-rs-peek__av">
-          <Avatar name={p.name} id={p.id} size={96} />
+          <Avatar name={p.name} id={p.id} size={crh ? 76 : 96} year={crh ? yearKeyOf(p.gradYear, clock) : null} dim={crh && p.status === 'inactive'} />
         </span>
         <h2 className="ch-display">{p.name}</h2>
-        <span className="ch-rs-peek__sub">
-          {[p.classYear, p.gradYear ? `Class of ${p.gradYear}` : null, p.availability !== 'available' ? AVAILABILITY_WORD[p.availability] : null].filter(Boolean).join(' · ') ||
-            'Player'}
-        </span>
+        {crh ? (
+          <span className="ch-rs-ychip" data-year={yearKeyOf(p.gradYear, clock) ?? undefined}>
+            <i aria-hidden="true" />
+            {[yearLineOf(p.gradYear, clock), p.availability !== 'available' ? AVAILABILITY_WORD[p.availability] : null].filter(Boolean).join(' · ') || 'Player'}
+          </span>
+        ) : (
+          <span className="ch-rs-peek__sub">
+            {[p.classYear, p.gradYear ? `Class of ${p.gradYear}` : null, p.availability !== 'available' ? AVAILABILITY_WORD[p.availability] : null].filter(Boolean).join(' · ') ||
+              'Player'}
+          </span>
+        )}
         {classLine && (
           <span className="ch-rs-peek__class">
             <ClassStatusLine kind={classLine.kind} text={classLine.text} />
@@ -178,7 +197,7 @@ function PeekBody({
         )}
       </div>
 
-      {facts.length > 0 && (
+      {!crh && facts.length > 0 && (
         <dl className="ch-rs-peek__facts">
           {facts.map((f) => (
             <div key={f.label}>
@@ -200,9 +219,11 @@ function PeekBody({
           </div>
         ))}
       </dl>
-      <LegsCaption p={p} />
+      {crh && <FormLine data={p.trend} width={292} height={70} earlyBelow={3} label={`${p.name}, last rounds: ${p.trend.join(', ') || 'none'}`} />}
+      {/* The rest lives on the full profile (06 7.12: identity, buttons, four figures, chart, the link). */}
+      {!crh && <LegsCaption p={p} />}
 
-      <div className="ch-rs-peek__sec">
+      {!crh && <div className="ch-rs-peek__sec">
         <div className="ch-rs-peek__l">
           <b>Form</b>
           <span>
@@ -213,9 +234,9 @@ function PeekBody({
         <p className="ch-rs-peek__note" data-ch-code={p.trend.length ? undefined : 'CH-3305'}>
           {p.trend.length ? FORM_NOTE[p.form] : 'Form appears once rounds are posted.'}
         </p>
-      </div>
+      </div>}
 
-      {p.recent.length > 0 && (
+      {!crh && p.recent.length > 0 && (
         <div className="ch-rs-peek__sec">
           <div className="ch-rs-peek__l">
             <b>Recent rounds</b>
@@ -234,7 +255,7 @@ function PeekBody({
         </div>
       )}
 
-      <div className="ch-rs-peek__sec">
+      {!crh && <div className="ch-rs-peek__sec">
         <div className="ch-rs-peek__l">
           <b>Development</b>
         </div>
@@ -248,22 +269,22 @@ function PeekBody({
             {devCounts}
           </div>
         )}
-      </div>
+      </div>}
 
-      <HelmBlock p={p} helm={helm} />
+      {!crh && <HelmBlock p={p} helm={helm} />}
 
-      <AvailabilityPanel key={`avail-${p.id}`} p={p} control={availability} />
+      {!crh && <AvailabilityPanel key={`avail-${p.id}`} p={p} control={availability} />}
 
-      <CoachNote key={p.id} p={p} locked={notesLocked} onSaved={onNoteSaved} />
+      {!crh && <CoachNote key={p.id} p={p} locked={notesLocked} onSaved={onNoteSaved} />}
 
       {profileHref && (
         <div className="ch-rs-peek__foot">
-          <Button variant="primary" rightIcon={ArrowRight} href={profileHref}>
+          <Button variant={crh ? 'secondary' : 'primary'} rightIcon={crh ? undefined : ArrowRight} href={profileHref}>
             Open full profile
           </Button>
         </div>
       )}
-      {p.joined && <span className="ch-rs-peek__since">{p.joined}</span>}
+      {!crh && p.joined && <span className="ch-rs-peek__since">{p.joined}</span>}
     </>
   );
 }
@@ -353,7 +374,7 @@ const NOTE_WARN = 200;
 export type NoteSaved = (playerId: string, note: string | null) => void;
 
 /** The coach's private note. Shared by the desktop panel and the phone profile (D-56). */
-export function CoachNote({ p, locked, onSaved }: { p: ChRosterPlayer; locked: boolean; onSaved: NoteSaved }) {
+export function CoachNote({ p, locked, onSaved, onDirty }: { p: ChRosterPlayer; locked: boolean; onSaved: NoteSaved; /** Behind the lane's flag: the field holds text not yet saved, so the profile asks before it leaves. */ onDirty?: (dirty: boolean) => void }) {
   const [saved, setSaved] = useState(p.coachNote ?? '');
   const [draft, setDraft] = useState(p.coachNote ?? '');
   const save = useAction(
@@ -392,8 +413,13 @@ export function CoachNote({ p, locked, onSaved }: { p: ChRosterPlayer; locked: b
         readOnly={locked}
         placeholder={locked ? undefined : `Something to remember about ${p.firstName}`}
         aria-describedby={locked || left <= NOTE_WARN ? helpId : undefined}
-        onChange={(e) => setDraft(e.target.value)}
+        onChange={(e) => {
+          setDraft(e.target.value);
+          onDirty?.(e.target.value.trim() !== saved.trim());
+        }}
         onBlur={async () => {
+          // Leaving the field saves it, so it is no longer unsaved text to ask about.
+          onDirty?.(false);
           if (locked) return;
           const next = draft.trim();
           if (next === saved.trim()) return;

@@ -666,6 +666,58 @@ Coach chat runs on Sonnet 5.5 (`MODEL_FOR_TASK.coach_chat`, 2026-10-29).
 Fixture for screenshots: `/fairway-preview/coachhelm-evidence` (`?live` replays
 the motion; dev only).
 
+## Clubhouse redesign behind flags (all off, migrations held)
+
+<!-- schema-drift-absent: golf_coachhelm_coach_facts, golf_practice_plans -->
+Every flag below is off in every environment (`config/feature-flags.yml`). Every
+migration named here is written and not applied. `supabase/migrations/HELD.md` is
+authoritative for them. With the flags off, today's CoachHelm renders unchanged.
+
+| Flag | What it turns on |
+| --- | --- |
+| `coachhelm_ask_v2` | The redesigned Ask: answer card, live steps, read chips, artifacts, create flows, Undo hold. |
+| `coachhelm_read_v1` | The read as its own view (`?view=read`). Read only. Off, the address falls through to the board. |
+| `coachhelm_player_file_v1` | One file per player for a coach (`?view=player`). No new writes. Off, the address is the board. |
+| `coachhelm_team_board_v1` | The coach's Team view in Clubhouse. Read only. |
+| `coachhelm_quick_chat_v1` | The top-bar Helm key and Glass quick chat. Off, the sparkle Ask sheet stays. |
+| `coachhelm_player_ask_v1` | A player's own read-only Ask. Works only with `coachhelm_ask_v2` also on. |
+| `coachhelm_practice_plans_v1` | Ask drafts, files and publishes practice plans. Off, Ask has no plan tools. |
+
+Screens and data:
+
+- Read: `src/clubhouse/screens/coachhelm/read/ReadPage.tsx`, `src/clubhouse/data/coachhelm-read-view.ts`.
+- Player file: `src/clubhouse/screens/coachhelm/file/PlayerFile.tsx`, `src/clubhouse/data/coachhelm-file.ts`.
+- Team board: `src/clubhouse/screens/coachhelm/team/TeamBoard.tsx`, `src/clubhouse/data/coachhelm-team.ts`.
+- Quick chat: `src/clubhouse/shell/quick-chat/QuickChatProvider.tsx`.
+
+Ask v2 rules:
+
+- `src/app/api/coachhelm/v3/chat/stream/route.ts` also serves Fairway's chat. It
+  uses Ask v2 only when the flag is on and Clubhouse is on for the team.
+- The Undo hold lasts 8 seconds (`src/lib/coachhelm/v3/chat/undo-hold.ts`). Undo
+  inside it leaves no row and tells nobody.
+- `20261101090000_coachhelm_action_runs_hold.sql` adds the column the hold needs.
+  Without it, the write runs at once and no Undo is offered.
+- `src/app/api/coachhelm/v3/chat/actions/[key]/route.ts` is new. `GET` returns the
+  receipt and `DELETE` undoes a held action. It answers 404 for another coach's key
+  and when the flag is off.
+- `20261101090100_coachhelm_ask_tone_and_facts.sql` adds per-chat tone and
+  `golf_coachhelm_coach_facts`. Tone and knows stay hidden until it is applied.
+
+New server actions:
+
+- `src/app/golf/actions/coachhelm-ask.ts`: `saveCoachFact`, `deleteCoachFact`,
+  `setChatTone`, `readQuickChatWeek`.
+- `src/app/golf/actions/coachhelm-practice-plans.ts`: `savePracticePlanDraft`,
+  `undoPracticePlanDraft`, `listPlanFolders`. Saving needs both
+  `coachhelm_practice_plans_v1` and `golf_practice_plans`.
+- `src/app/golf/actions/coachhelm-plan-format.ts`: `readPlanFormat`,
+  `setPlanFormat`, `undoPlanFormat`. A format is layout only. A new plan's drills,
+  times and groups never come from the sample.
+
+Player Ask and its allowance are in `memory/features/player-coachhelm-development.md`.
+Plan storage and publishing are in `memory/features/team-operations.md`.
+
 ## UI Contract
 
 - Coach views need fast triage: new, acknowledged, dismissed, resolved, and priority states must be visible.

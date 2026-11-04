@@ -18,6 +18,8 @@ import { Measurement, MeasurementSeries } from '../provenance';
 import { VisualSpec } from './schema';
 
 export const COMPOSITION_SCHEMA_VERSION = 1;
+/** Ask v2's four blocks. A composition that holds none stays version 1, so Fairway and stored rows are unchanged. */
+export const COMPOSITION_SCHEMA_V2 = 2;
 
 /** A label the model writes. Drawn as written, so it may not carry a figure. */
 const Words = (max: number) => z.string().trim().min(1).max(max);
@@ -74,6 +76,26 @@ export const CompositionSpec = z.object({
 export type CompositionSpec = z.infer<typeof CompositionSpec>;
 
 /** A block as drawn: the design choices plus the figures, copied from the reads. */
+const MissPatternResolved = z.object({
+  type: z.literal('miss_pattern'),
+  total: z.number(),
+  no_direction: z.number(),
+  inside_15: z.number(),
+  inside_25: z.number(),
+  wedges: z.array(z.object({ direction: z.string(), count: z.number(), avg_left_ft: z.number().nullable() })),
+});
+const PuttProfileResolved = z.object({
+  type: z.literal('putt_profile'),
+  buckets: z.array(z.object({ id: z.string(), label: z.string(), attempts: z.number(), made: z.number(), rate: z.number().nullable() })),
+});
+const SeasonBand = z.object({ mean: z.number(), lo: z.number(), hi: z.number(), n: z.number() }).nullable();
+const SeasonCompareResolved = z.object({ type: z.literal('season_compare'), metric: z.string(), this_season: SeasonBand, last_season: SeasonBand, method: z.string() });
+const HoleStripResolved = z.object({ type: z.literal('hole_strip'), holes: z.array(z.object({ hole_number: z.number(), to_par: z.number().nullable() })) });
+export type MissPatternBlock = z.infer<typeof MissPatternResolved>;
+export type PuttProfileBlock = z.infer<typeof PuttProfileResolved>;
+export type SeasonCompareBlock = z.infer<typeof SeasonCompareResolved>;
+export type HoleStripBlock = z.infer<typeof HoleStripResolved>;
+
 export const ResolvedBlock = z.discriminatedUnion('type', [
   z.object({ type: z.literal('headline'), measurement: Measurement, label: z.string().nullable() }),
   z.object({ type: z.literal('kpis'), measurements: z.array(Measurement).min(1) }),
@@ -88,13 +110,17 @@ export const ResolvedBlock = z.discriminatedUnion('type', [
   z.object({ type: z.literal('split'), measurements: z.array(Measurement).min(2) }),
   z.object({ type: z.literal('compare'), measurements: z.array(Measurement).min(2) }),
   z.object({ type: z.literal('note'), kind: NoteKind, text: z.string() }),
+  MissPatternResolved,
+  PuttProfileResolved,
+  SeasonCompareResolved,
+  HoleStripResolved,
 ]);
 export type ResolvedBlock = z.infer<typeof ResolvedBlock>;
 
 /** What is stored in the message and drawn: validated, immutable, hashed. */
 export const ValidatedComposition = z.object({
   artifactId: z.string(),
-  schemaVersion: z.literal(COMPOSITION_SCHEMA_VERSION),
+  schemaVersion: z.union([z.literal(COMPOSITION_SCHEMA_VERSION), z.literal(COMPOSITION_SCHEMA_V2)]),
   kind: z.literal('compose'),
   title: z.string(),
   lede: z.string().nullable(),
@@ -124,3 +150,17 @@ export const ShowVisualInput = VisualSpec.extend({
   blocks: z.array(CompositionBlockSpec).max(6).optional(),
 });
 export type ShowVisualInput = z.infer<typeof ShowVisualInput>;
+
+/** Ask v2's blocks, offered to the model only with `askV2` on: Fairway's tool schema stays what it was. Each is drawn from a read's `detail`, never from the spec. */
+export const CompositionBlockSpecV2 = z.union([
+  CompositionBlockSpec,
+  z.discriminatedUnion('type', [
+    z.object({ type: z.literal('miss_pattern'), ref: Ref }),
+    z.object({ type: z.literal('putt_profile'), ref: Ref }),
+    z.object({ type: z.literal('season_compare'), ref: Ref }),
+    z.object({ type: z.literal('hole_strip'), ref: Ref }),
+  ]),
+]);
+export type CompositionBlockSpecV2 = z.infer<typeof CompositionBlockSpecV2>;
+export const CompositionSpecV2 = CompositionSpec.extend({ blocks: z.array(CompositionBlockSpecV2).min(1).max(6) });
+export const ShowVisualInputV2 = ShowVisualInput.extend({ blocks: z.array(CompositionBlockSpecV2).max(6).optional() });

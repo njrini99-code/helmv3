@@ -30,7 +30,7 @@ interface AskSheetCtx {
   warm: () => void;
   available: boolean;
 }
-const Ctx = createContext<AskSheetCtx>({ open: false, setOpen: () => {}, warm: () => {}, available: false });
+export const AskSheetContext = createContext<AskSheetCtx>({ open: false, setOpen: () => {}, warm: () => {}, available: false });
 
 /** What the sheet says it is looking at, from the address and the page's own trail ("Stats · Jonah Okafor"). */
 export function lookingAt(
@@ -90,27 +90,27 @@ export function AskSheetProvider({
 
   const value = useMemo(() => ({ open, setOpen, warm, available }), [open, warm, available]);
   return (
-    <Ctx.Provider value={value}>
+    <AskSheetContext.Provider value={value}>
       {children}
       {available && loaded && (
         <Suspense fallback={null}>
           <AskSheetBody key={`${pathname}?${search}`} open={open} onClose={() => setOpen(false)} looking={looking} chat={chat} />
         </Suspense>
       )}
-    </Ctx.Provider>
+    </AskSheetContext.Provider>
   );
 }
 
 /** For anything that opens the sheet from the page (a "Ask about this" link). */
 export function useAskSheet(): { open: () => void; available: boolean } {
-  const { setOpen, available } = useContext(Ctx);
+  const { setOpen, available } = useContext(AskSheetContext);
   const open = useCallback(() => setOpen(true), [setOpen]);
   return { open, available };
 }
 
 /** The top bar's Ask key (coach only, never on CoachHelm itself). */
 export function AskSheetButton() {
-  const { open, setOpen, warm, available } = useContext(Ctx);
+  const { open, setOpen, warm, available } = useContext(AskSheetContext);
   if (!available) return null;
   return (
     <button

@@ -42,13 +42,21 @@
  * that will execute — not a client-side guess at what might happen.
  * ========================================================================== */
 
+import { getClassTimes, getDrillBank, getTeamPuttingProfile, getTeamStrokesGained } from './practice-reads';
+import { practicePicture } from './practice-pictures';
+import { practiceDraftTool, publishFlow } from './practice-draft';
+import { askDraftTools } from './ask-draft-tools';
+import { CREATE_FLOWS, CREATE_TOOL_NAMES, LINEUP_FLOWS, type FlowDef } from './create-tools';
+import { getProximityByBand, getRoundDetail, getShotPattern } from './shot-reads';
+import { compareSeasons, getCalendar, getCourse, getRootCauses } from './engine-reads';
+import { holdForExecution, releaseHeld } from './undo-hold';
 import { tool } from 'ai';
 import type { ToolSet, UIMessageStreamWriter } from 'ai';
 import { z } from 'zod';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { compileVisual } from './visuals/compile';
 import { compileComposition } from './visuals/compile-composition';
-import { CompositionSpec, ShowVisualInput, type ValidatedComposition } from './visuals/composition';
+import { CompositionSpec, CompositionSpecV2, ShowVisualInput, ShowVisualInputV2, type ValidatedComposition } from './visuals/composition';
 import { VisualSpec, type ValidatedVisualArtifact } from './visuals/schema';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
@@ -88,6 +96,7 @@ import { claimForExecution, recordOutcome, recordProposal } from './action-runs'
 import { runWithCoachHelmTeams } from '@/lib/coachhelm/canary';
 import {
   ActionPlanError,
+  keyOf,
   planAnnouncement,
   planFocusArea,
   planTask,
@@ -109,7 +118,7 @@ const CONFIRM_REQUIRED_TOOLS = [
 export type ConfirmRequiredTool = (typeof CONFIRM_REQUIRED_TOOLS)[number];
 
 export function isConfirmRequired(name: string): name is ConfirmRequiredTool {
-  return (CONFIRM_REQUIRED_TOOLS as readonly string[]).includes(name);
+  return name === 'publish_practice_plan' || (CONFIRM_REQUIRED_TOOLS as readonly string[]).includes(name) || CREATE_TOOL_NAMES.includes(name);
 }
 
 /**
@@ -158,6 +167,13 @@ const PROGRESS_LABEL: Record<string, (input: Record<string, unknown>) => string>
   get_upcoming_events: () => 'Checking the schedule and RSVPs',
   get_open_tasks: () => 'Checking outstanding tasks',
   get_team_travel: () => 'Checking team travel',
+  get_shot_pattern: () => 'Reading the logged shots',
+  get_proximity_by_band: () => 'Reading proximity by band',
+  get_round_detail: () => 'Reading the round hole by hole',
+  get_root_causes: () => 'Reading the open causes',
+  get_calendar: () => 'Reading the team calendar',
+  get_course: () => 'Reading the course',
+  compare_seasons: () => 'Comparing the seasons',
   show_visual: () => 'Building the visual',
   find_player: () => 'Finding that player on your roster',
   create_recurring_practice: () => 'Preparing the practice dates',
@@ -165,6 +181,43 @@ const PROGRESS_LABEL: Record<string, (input: Record<string, unknown>) => string>
   create_task: () => 'Drafting a task',
   create_team_announcement: () => 'Drafting a team update',
 };
+
+/** The same words, past tense, for the row once the read is back (Ask v2). */
+const PROGRESS_DONE: Record<string, string> = {
+  get_team_overview: 'Read your roster',
+  get_player_metrics: 'Read recorded statistics',
+  get_player_trend: 'Read the recorded rounds',
+  get_putting_distance_profile: 'Compared putting by distance',
+  compare_players: 'Compared players on the same window',
+  get_team_metric_ranking: 'Ranked the team',
+  get_player_weakest_areas: 'Found where the gap is largest',
+  get_recent_rounds: 'Read recent rounds',
+  get_team_rounds: 'Read the team’s rounds',
+  get_qualifiers: 'Read qualifier standings',
+  get_tournaments: 'Read tournament results',
+  get_player_insights: 'Read open signals',
+  get_focus_areas: 'Checked active focus areas',
+  get_upcoming_events: 'Checked the schedule and RSVPs',
+  get_open_tasks: 'Checked outstanding tasks',
+  get_team_travel: 'Checked team travel',
+  get_shot_pattern: 'Read the logged shots',
+  get_proximity_by_band: 'Read proximity by band',
+  get_round_detail: 'Read the round hole by hole',
+  get_root_causes: 'Read the open causes',
+  get_calendar: 'Read the team calendar',
+  get_course: 'Read the course',
+  compare_seasons: 'Compared the seasons',
+  find_player: 'Found that player on your roster',
+  show_visual: 'Built the visual',
+};
+
+/** One short fact from the envelope's own counts, never a number not in it; it goes through `collect` with the envelope, so the audit already knows it. */
+function detailFor(envelope: ToolEnvelope): string | undefined {
+  const m = envelope.measurements[0];
+  if (!m || !m.sample_size) return undefined;
+  const unit = m.sample_unit === 'rounds' ? (m.sample_size === 1 ? 'round' : 'rounds') : m.sample_size === 1 ? String(m.sample_unit).replace(/s$/, '') : String(m.sample_unit);
+  return `${m.sample_size} ${unit}`;
+}
 
 export interface BuildToolsArgs {
   sb: Sb;
@@ -180,6 +233,12 @@ export interface BuildToolsArgs {
    * src/clubhouse may not import the gate. Left out, the whole-team tools stay off.
    */
   teamTools?: boolean;
+  /** Ask v2 (`coachhelm_ask_v2` and Clubhouse on for the team): steps update in place, and new tools join. Fairway's chat never sets it. */
+  askV2?: boolean;
+  /** coachhelm_practice_plans_v1: the four reads, the brief, the draft and publish. */
+  practicePlans?: boolean;
+  /** Ask v2: runs after the response is sent (`after` in the route), for the Undo hold's release. */
+  defer?: (fn: () => Promise<unknown>) => void;
 }
 
 /**
@@ -234,14 +293,30 @@ interface GatedAction<TInput, TPlan> {
   run: (plan: TPlan) => Promise<ActionReceipt>;
 }
 
-export function buildCoachTools({ sb, ctx, conversationId, writer, collect, teamTools = false }: BuildToolsArgs): ToolSet {
+export function buildCoachTools({ sb, ctx, conversationId, writer, collect: collectOuter, teamTools = false, practicePlans = false, askV2 = false, defer }: BuildToolsArgs): ToolSet {
+  const seenEnvelopes: ToolEnvelope[] = [];
+  const collect = (e: ToolEnvelope) => {
+    seenEnvelopes.push(e);
+    collectOuter(e);
+  };
   let progressId = 0;
   const progress = (toolName: string, input: Record<string, unknown>) => {
     const label = PROGRESS_LABEL[toolName]?.(input) ?? 'Working';
+    const id = `progress-${(progressId += 1)}`;
     writer.write({
       type: 'data-progress',
-      id: `progress-${(progressId += 1)}`,
+      id,
       data: { label, tool: toolName },
+    });
+    return { id, label };
+  };
+  /** Ask v2: the SDK replaces a data part with the same id, so the row updates in place. */
+  const progressEnd = (step: { id: string; label: string }, toolName: string, envelope: ToolEnvelope | null, failed: boolean) => {
+    if (!askV2) return;
+    writer.write({
+      type: 'data-progress',
+      id: step.id,
+      data: { label: step.label, tool: toolName, state: failed ? 'failed' : 'done', done: PROGRESS_DONE[toolName] ?? step.label, ...(envelope ? practicePicture(toolName, envelope) : {}), ...(envelope && detailFor(envelope) ? { detail: detailFor(envelope) } : {}) },
     });
   };
 
@@ -259,10 +334,11 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
   const read =
     <I extends Record<string, unknown>>(name: string, run: (input: I) => Promise<ToolEnvelope>) =>
     async (input: I) => {
-      progress(name, input);
+      const step = progress(name, input);
       // HELM_COACHHELM_TEAMS canary: every roster player is on ctx.team_id, so
       // the chat's team is the scope (no read).
       const envelope = await guarded(() => runWithCoachHelmTeams([ctx.team_id], () => run(input)), collect, name, ctx);
+      progressEnd(step, name, envelope, envelope.coverage === 'unavailable');
       const ref = `e${evidenceByRef.size + 1}`;
       evidenceByRef.set(ref, envelope);
       evidence(name, envelope, ref);
@@ -428,6 +504,18 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
       return { status: 'failed', message: 'Could not start the action safely.' };
     }
 
+    // Ask v2: nothing is written and nobody is told for 8 seconds, so Undo leaves no row. Without HM1's column the run goes at once,
+    // as today, and offers no Undo: never a fake one.
+    if (askV2 && defer) {
+      const held = await holdForExecution(sb, { run_id: claim.run_id });
+      if (held.kind === 'held') {
+        const pending: ActionReceipt = { status: 'held', held_until: held.run_at, action: proposal.action, summary: proposal.summary, created: [], notifications: [], partial_failures: [], retryable: false, at: nowIso() };
+        collectActionNumbers(proposal.summary, { facts: proposal.facts });
+        writer.write({ type: 'data-action-receipt', id: `receipt-${proposal.idempotency_key}`, data: pending });
+        defer(() => releaseHeld(sb, { run_id: claim.run_id, run_at: held.run_at, run: () => action.run(plan) }));
+        return { status: 'held', message: `${proposal.summary} It goes through in 8 seconds unless the coach presses Undo.` };
+      }
+    }
     const receipt = await action.run(plan);
     await recordOutcome(sb, { run_id: claim.run_id, receipt });
     collectActionNumbers(receipt.summary, { created: receipt.created, notifications: receipt.notifications });
@@ -437,6 +525,26 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
       data: receipt,
     });
     return { status: receipt.status, message: receipt.summary };
+  };
+
+  /** A create flow on today's gate. The team is re-read at execute, so a coach who switched teams never writes to the old one (TASK_FIELDS 5.3). */
+  const flowGated = (f: FlowDef<never>): GatedAction<never, never> => ({
+    toolName: f.name,
+    plan: (input) => {
+      const d = f.plan(ctx, input);
+      const proposal: ActionProposal = { visual: d.visual, ...(d.publish ? { publish: d.publish } : {}), action: d.action, summary: d.summary, facts: d.facts, affects: d.affects ?? [], notifications: d.notifications, missing: d.facts.filter((x) => x.missing).map((x) => x.label), idempotency_key: keyOf(d.key) };
+      return { plan: input, proposal };
+    },
+    run: async (input) => {
+      const r = await f.run(ctx, input);
+      const at = nowIso();
+      if (!r.ok) return { status: 'failed', action: f.name, summary: r.error ?? 'That didn’t go through. Nothing was saved.', created: [], notifications: [], partial_failures: [], error: r.error, retryable: true, at };
+      return { status: 'completed', action: f.name, summary: r.summary, created: [{ kind: r.kind, count: 1, ...(r.href ? { href: r.href } : {}), ...(r.label ? { label: r.label } : {}) }], notifications: r.notifications ?? [], partial_failures: [], retryable: false, at };
+    },
+  });
+  const flowTool = (f: FlowDef<never>) => {
+    const action = flowGated(f);
+    return tool({ description: f.description, inputSchema: f.input as never, onInputAvailable: ({ input }: { input: never }) => proposeGated(action, input), execute: (input: never) => executeGated(action, input) } as never);
   };
 
   const FOCUS_AREA: GatedAction<Parameters<typeof planFocusArea>[1], ReturnType<typeof planFocusArea>['plan']> = {
@@ -548,11 +656,11 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
     show_visual: tool({
       description:
         'Show the coach one visual built from reads you already made in this answer; follow the visual playbook in your instructions. kind "compose": you design it from building blocks (headline, kpis, trend, bars, split, compare, note), each naming the evidence_ref of the read it draws from, plus a title in words, an optional one-line lede and layout; the figures are filled in from the reads. kind "sg_anatomy": one player\'s strokes gained legs (get_player_metrics with sg_tee, sg_approach, sg_around_green and sg_putting), passing each read\'s evidence_ref in evidenceRefs. No title, lede, label or note may contain a number. If it is refused because of a number, call it once more in words; if a block is dropped or the visual is refused for any other reason, say what you found in words instead.',
-      inputSchema: ShowVisualInput,
+      inputSchema: askV2 ? ShowVisualInputV2 : ShowVisualInput,
       execute: async (input) => {
         progress('show_visual', {});
         if (input.kind === 'compose') {
-          const parsed = CompositionSpec.safeParse(input);
+          const parsed = (askV2 ? CompositionSpecV2 : CompositionSpec).safeParse(input);
           if (!parsed.success) return { status: 'refused', reason: 'invalid', message: 'A composition needs a title and at least one block.' };
           const result = compileComposition(parsed.data, evidenceByRef);
           if (!result.ok) return { status: 'refused', reason: result.reason, message: result.message, dropped: result.dropped };
@@ -578,6 +686,62 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect, team
         };
       },
     }),
+
+    // Ask v2's create flows, each on the same gate: nothing writes before the named button, and nothing is told until Undo closes.
+    ...(askV2 ? Object.fromEntries((isFlagEnabled('golf_tournaments_v1') ? [...CREATE_FLOWS, ...LINEUP_FLOWS] : CREATE_FLOWS).map((f) => [f.name, flowTool(f)])) : {}),
+
+    ...(askV2 ? askDraftTools({ sb, ctx, writer }) : {}),
+    ...(practicePlans && teamTools
+      ? {
+          get_class_times: tool({ description: 'Who is in class on a day, per tracked player. Read before planning a practice.', inputSchema: z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }), execute: read('get_class_times', (input) => getClassTimes(sb, ctx, input)) }),
+          get_drill_bank: tool({ description: 'Team drills and the GolfHelm library, with the refs a plan must use. A drill is never invented.', inputSchema: z.object({ category: z.string().max(40).optional() }), execute: read('get_drill_bank', (input) => getDrillBank(sb, ctx, input)) }),
+          get_team_strokes_gained: tool({ description: 'The team\'s strokes gained per area over recent rounds.', inputSchema: z.object({ rounds: z.number().int().min(3).max(30).default(10) }), execute: read('get_team_strokes_gained', (input) => getTeamStrokesGained(sb, ctx, input)) }),
+          get_team_putting_profile: tool({ description: 'The team\'s putting by distance.', inputSchema: z.object({ rounds: z.number().int().min(3).max(30).default(10) }), execute: read('get_team_putting_profile', (input) => getTeamPuttingProfile(sb, ctx, input)) }),
+          ...practiceDraftTool({ ctx, writer, envelopes: () => seenEnvelopes, evidenceByRef }),
+          [publishFlow.name]: flowTool(publishFlow as unknown as FlowDef<never>),
+        }
+      : {}),
+
+    // Ask v2's reads: only with `coachhelm_ask_v2` and Clubhouse on for the team, so Fairway's tool set is what it was.
+    ...(askV2
+      ? {
+        get_shot_pattern: tool({
+          description: 'Miss directions, distance left and lies from logged shots for a player or the team in a window; mode "putting" gives make rate by the Stats page\'s distance buckets. Never a figure the shots do not hold.',
+          inputSchema: z.object({ player_id: z.string().uuid().optional(), club_type: z.string().max(40).optional(), from_yards: z.number().optional(), to_yards: z.number().optional(), since_days: z.number().int().min(1).max(365).default(60), mode: z.enum(['approach', 'putting']).default('approach') }),
+          execute: read('get_shot_pattern', (input) => getShotPattern(sb, ctx, input)),
+        }),
+        get_proximity_by_band: tool({
+          description: 'Average distance left by approach band.',
+          inputSchema: z.object({ player_id: z.string().uuid().optional(), bands: z.array(z.tuple([z.number(), z.number()])).min(1).max(8), since_days: z.number().int().min(1).max(365).default(60) }),
+          execute: read('get_proximity_by_band', (input) => getProximityByBand(sb, ctx, input)),
+        }),
+        get_round_detail: tool({
+          description: 'One of the team\'s rounds hole by hole: score, putts, penalties, greens.',
+          inputSchema: z.object({ round_id: z.string().uuid() }),
+          execute: read('get_round_detail', (input) => getRoundDetail(sb, ctx, input)),
+        }),
+        get_root_causes: tool({
+          description: 'The open causes stored on a player\'s reads. Records nothing as shown.',
+          inputSchema: z.object({ player_id: z.string().uuid() }),
+          execute: read('get_root_causes', (input) => getRootCauses(sb, ctx, input)),
+        }),
+        get_calendar: tool({
+          description: 'Team events between two instants, on the team\'s clock.',
+          inputSchema: z.object({ from: z.string(), to: z.string() }),
+          execute: read('get_calendar', (input) => getCalendar(sb, ctx, input)),
+        }),
+        get_course: tool({
+          description: 'A course\'s holes, with this team\'s scoring to par by hole.',
+          inputSchema: z.object({ course_id: z.string().uuid() }),
+          execute: read('get_course', (input) => getCourse(sb, ctx, input)),
+        }),
+        compare_seasons: tool({
+          description: 'This season against last for a player or the team, with last season\'s usual range.',
+          inputSchema: z.object({ player_id: z.string().uuid().optional() }),
+          execute: read('compare_seasons', (input) => compareSeasons(sb, ctx, input)),
+        }),
+        }
+      : {}),
 
     // Whole-team reads, built for Clubhouse's Ask. This engine also serves Fairway's chat, so they are registered only
     // while Clubhouse is on for this coach's team (golf_clubhouse_ui, then the HELM_CLUBHOUSE_TEAMS allowlist). Left

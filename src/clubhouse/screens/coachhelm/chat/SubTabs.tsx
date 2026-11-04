@@ -18,14 +18,14 @@ export type CoachHelmView = keyof typeof COACHHELM_HREF;
  * `held`: drawn by a loading skeleton, in the place and at the size the page draws it, inert and hidden from assistive tech (the
  * skeleton's own label says it is loading), so the control does not morph from a bar into itself when the page lands.
  */
-export function CoachHelmTabs({ active, onGo, held = false }: { active: CoachHelmView; onGo?: (view: CoachHelmView) => void; held?: boolean }) {
+export function CoachHelmTabs({ boardLabel = 'Board', active, onGo, held = false }: { boardLabel?: 'Board' | 'Team'; active: CoachHelmView; onGo?: (view: CoachHelmView) => void; held?: boolean }) {
   return (
     <div className="ch-ask-tabs" data-ch-strip="" data-ch-code={held ? undefined : 'CH-13923'} inert={held || undefined} aria-hidden={held || undefined}>
       <Segmented
         label="CoachHelm view"
         value={active}
         options={[
-          { value: 'board', label: 'Board' },
+          { value: 'board', label: boardLabel },
           { value: 'ask', label: 'Ask' },
         ]}
         onChange={(v) => onGo?.(v)}

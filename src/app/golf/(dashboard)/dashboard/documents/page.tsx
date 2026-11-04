@@ -85,6 +85,7 @@ export default async function GolfDocumentsPage() {
     uploader: { full_name: string | null } | null;
   };
 
+  // Plan rows (N-00 010400) have no file and open their plan page in Clubhouse; Fairway lists files only.
   const baseQuery = supabase
     .from('golf_documents')
     .select(`
@@ -104,6 +105,7 @@ export default async function GolfDocumentsPage() {
       version_count,
       folder
     `)
+    .not('file_url', 'is', null)
     .eq('team_id', teamId)
     .order('created_at', { ascending: false });
 

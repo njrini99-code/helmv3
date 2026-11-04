@@ -14,11 +14,12 @@ type Shown = ChRange | 'custom';
  * The range, counted in rounds (decision Q5): Last 5, 10 and 20, then the season and qualifier rounds. While a custom date range is
  * on it is the time, so no range is chosen: another, already-selected "Custom" stands for it (choosing a range clears the dates).
  */
-export function WindowSwitch({ value, onChange, custom = false }: { value: ChRange; onChange: (v: ChRange) => void; custom?: boolean }) {
+export function WindowSwitch({ value, onChange, custom = false, hook }: { value: ChRange; onChange: (v: ChRange) => void; custom?: boolean; /** The capture hook on each segment, with the redesign's flag only. */ hook?: string }) {
   return (
     <Segmented<Shown>
       size="sm"
       label="Window"
+      hook={hook}
       value={custom ? 'custom' : value}
       onChange={(v) => v !== 'custom' && onChange(v)}
       options={[

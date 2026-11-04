@@ -204,6 +204,15 @@ export interface ChAskData {
   notFound: boolean;
   /** The conversation exists but its messages did not read (an existing chat is never empty). */
   threadFailed: boolean;
+  /** Tone and standing facts: absent until HM2 is applied, and then neither control draws. */
+  knows?: { tone: 'straight' | 'detailed' | 'team_talk'; facts: Array<{ id: string; text: string }>; teamId: string } | null;
+  /** The player's Ask: their word for the week, no amount ever. */
+  allowance?: AskAllowanceBucket;
+  role?: 'coach' | 'player';
+  /** The player's first name, for the home's greeting. */
+  firstName?: string;
+  /** The player's own focus lines on Ask's home. */
+  focus?: Array<{ text: string; ask: string | null }>;
 }
 
 export type ChAskLoad =
@@ -274,3 +283,6 @@ export function matchPlayers(players: readonly ChAskPlayer[], query: string, men
     .filter((p) => !q || p.name.toLowerCase().includes(q))
     .slice(0, 8);
 }
+
+/** Ask this week, as a word only (AK10b): the server never sends an amount. */
+export type AskAllowanceBucket = 'plenty' | 'low' | 'out';

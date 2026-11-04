@@ -10,6 +10,7 @@ export type NotificationType =
   | 'camp_registration'
   | 'profile_view'
   // Golf notifications
+  | 'practice_plan'
   | 'team_announcement'
   | 'qualifier_created'
   | 'qualifier_updated'

@@ -569,3 +569,14 @@
   color: var(--ch-green-600);
   font: var(--ch-type-13);
 }
+[data-ch-crh='on'] .ch-surface--card .ch-ca-panel {
+  background: none;
+  box-shadow: none;
+}
+[data-ch-crh='on'] .ch-surface--card .ch-ca-panel > h2 {
+  position: absolute;
+  width: var(--ch-hairline-w);
+  height: var(--ch-hairline-w);
+  overflow: hidden;
+  clip-path: inset(50%);
+}

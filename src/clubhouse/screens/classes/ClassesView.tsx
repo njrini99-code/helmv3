@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2, TriangleAlert, Upload } from 'lucide-react';
+import { GraduationCap, Plus, RotateCw, Trash2, TriangleAlert, Upload } from 'lucide-react';
 import { classNameOf, conflictsOf, dayToken, groupConflicts, inTerm, orderClasses, shortDay, syncStartFor, toChClass, type ChClass, type ChClassesPage, type ChClassInput, type ChImportRow } from '../../data/classes-shape';
 import { chTrail } from '../../lib/track';
 import { friendlyReason, normalise, useAction, type ServerResult } from '../../lib/use-action';
@@ -25,7 +25,13 @@ import { newClassId, type ChClassesWrites, type ChRemoveAllData } from './writes
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { chScrollIntoView } from '../../lib/smooth-scroll';
 import { pluralWord } from '../../lib/plural';
-import { LargeTitle } from '../../ui/LargeTitle';
+import { LargeTitle, LargeTitleContext } from '../../ui/LargeTitle';
+import { MenuSheet } from '../../ui/ContextMenu';
+import { useDeepLinkSheet } from '../../shell/use-deep-link-sheet';
+import { useHomeDayRollover } from '../home/use-day-rollover';
+import { Surface } from '../../ui/Surface';
+import { CrhStateBlock } from '../../ui/CrhStateBlock';
+import { OverlapsCardCrh, TermCard, TodayCard } from './ClassesCrh';
 
 const label = (c: { code: string; name: string }) => c.code || c.name;
 
@@ -46,10 +52,11 @@ const label = (c: { code: string; name: string }) => c.code || c.name;
 /** A remove whose calendar part landed and whose row delete did not (writes.remove). */
 const offCalendar = (r: { success?: boolean; data?: unknown }) => !r.success && (r.data as { offCalendar?: boolean } | undefined)?.offCalendar === true;
 
-export function ClassesView({ data, writes, statusWrites }: { data: ChClassesPage; writes: ChClassesWrites; /** P-10: present only with `class_awareness_v1` on; absent draws no Class status panel. */ statusWrites?: ChClassStatusWrites }) {
+export function ClassesView({ data, writes, statusWrites, crh = false }: { data: ChClassesPage; crh?: boolean; writes: ChClassesWrites; /** P-10: present only with `class_awareness_v1` on; absent draws no Class status panel. */ statusWrites?: ChClassStatusWrites }) {
   const reduced = useChReducedMotion();
   const phone = useChPhone();
   const router = useRouter();
+  const [addMenu, setAddMenu] = useState(false);
   const [classes, setClasses] = useState(data.classes.list);
   // The classes whose last calendar sync failed, this visit only: no column holds it, so a reload starts clean.
   const [failedSync, setFailedSync] = useState<Set<string>>(() => new Set());
@@ -284,8 +291,14 @@ export function ClassesView({ data, writes, statusWrites }: { data: ChClassesPag
   };
   // `?new=1` (the command palette's Add class, A16) opens the add form once, then leaves the address plain, so Back or a
   // reload never opens it again. After hydration, so the server's page and the first client render agree.
+  // Behind the lane's flag: one Back closes the form before it leaves the screen, and it opens at rest (02 CP-02.4).
+  const newLink = useDeepLinkSheet('new', { value: '1', enabled: crh });
+  useHomeDayRollover(crh ? data.clock : undefined, !crh);
   useEffect(() => {
-    if (new URL(window.location.href).searchParams.get('new') !== '1') return;
+    if (newLink.open) setForm((f) => f ?? { editing: null, id: newClassId() });
+  }, [newLink.open]);
+  useEffect(() => {
+    if (crh || new URL(window.location.href).searchParams.get('new') !== '1') return;
     router.replace('/golf/dashboard/classes', { scroll: false });
     setForm({ editing: null, id: newClassId() });
     // Once, on arrival.
@@ -346,24 +359,63 @@ export function ClassesView({ data, writes, statusWrites }: { data: ChClassesPag
     </>
   );
 
+  const crhOverlaps = (
+    <SectionBoundary surface="classes.side" label="This week’s overlaps" code="CH-12203">
+            <div id="ch-cl-overlaps" className="ch-cl-overanchor">
+              <OverlapsCardCrh groups={groups} error={week.error} onRetry={() => router.refresh()} />
+            </div>
+          </SectionBoundary>
+  );
+  const crhStatus = (
+    <Surface variant="card" padded={false}>
+            {statusWrites && (
+              <SectionBoundary surface="classes.status" label="Class status" code="CH-12203">
+                <ClassStatusPanel
+                  classes={classes}
+                  writes={statusWrites}
+                  onTagged={(termLabel) => setClasses((prev) => prev.map((c) => (c.semester ? c : { ...c, semester: termLabel })))}
+                  onResync={(id) => {
+                    const k = classes.find((x) => x.id === id);
+                    if (k) void syncClasses([k]);
+                  }}
+                  onFix={(id) => {
+                    const k = classes.find((x) => x.id === id);
+                    if (k) setForm({ editing: k, id: '' });
+                  }}
+                />
+              </SectionBoundary>
+            )}
+            <CoachNote aware={!!statusWrites} />
+          </Surface>
+  );
+
   return (
-    <main className={'ch-cl' + (phone ? ' is-phone' : '')} aria-labelledby={phone ? undefined : 'ch-cl-title'} aria-label={phone ? 'Classes' : undefined} data-canopy={phone ? undefined : ''}>
+    <main data-ch-crh={crh ? 'on' : undefined} className={'ch-cl' + (phone ? ' is-phone' : '')} aria-labelledby={phone ? undefined : 'ch-cl-title'} aria-label={phone ? 'Classes' : undefined} data-canopy={phone || crh ? undefined : ''}>
       {/* Phone: the section's create action is the top bar's plus (B10.1), shown when the head's Add class would be: a
           first run's empty state carries its own, and a failed read keeps it (CH-12201). */}
       {phone && (
-        <PhoneTop title="Classes" start action={data.classes.error || !nothing ? <PhoneIconAction icon={Plus} label="Add class" onClick={startAdd} /> : undefined} />
+        <PhoneTop title="Classes" start action={crh ? <PhoneIconAction icon={Plus} label="Add or import a class" onClick={() => setAddMenu(true)} /> : data.classes.error || !nothing ? <PhoneIconAction icon={Plus} label="Add class" onClick={startAdd} /> : undefined} />
       )}
-      <header className="ch-cl-h" data-canopy-head={phone ? undefined : ''}>
+      <header className="ch-cl-h" data-canopy-head={phone || crh ? undefined : ''}>
         <div>
-          <span className="ch-cl-k">
-            {term.label} · {shortDay(term.start)} – {shortDay(term.end)}
-          </span>
+          {!(crh && phone) && (
+            <span className="ch-cl-k">
+              {term.label} · {shortDay(term.start)} – {shortDay(term.end)}
+            </span>
+          )}
           {/* Phone: the top bar is the page's one heading, and the page draws the one large title under the term line (owner
               decision 4, 2026-10-24: every phone section root has it), hidden from VoiceOver so the name is read once. */}
           {phone ? (
-            <LargeTitle as="p" hidden className="ch-cl-title">
-              Classes
-            </LargeTitle>
+            <>
+              <LargeTitle as="p" hidden className="ch-cl-title">
+                Classes
+              </LargeTitle>
+              {crh && (
+                <LargeTitleContext>
+                  {term.label} · {shortDay(term.start)} – {shortDay(term.end)}
+                </LargeTitleContext>
+              )}
+            </>
           ) : (
             <h1 id="ch-cl-title">Classes</h1>
           )}
@@ -374,9 +426,11 @@ export function ClassesView({ data, writes, statusWrites }: { data: ChClassesPag
         {(data.classes.error || !nothing) && (
           <div className="ch-cl-h__a">
             {!data.classes.error && <SyncStatus failed={failedList.length} syncing={sync.pending} onRetry={() => void syncClasses(failedList)} />}
-            <Button leftIcon={Upload} onClick={startImport}>
-              Import schedule
-            </Button>
+            {!(crh && phone) && (
+              <Button leftIcon={Upload} onClick={startImport}>
+                Import schedule
+              </Button>
+            )}
             {/* On the phone it is the top bar's plus. */}
             {!phone && (
               <Button variant="primary" leftIcon={Plus} onClick={startAdd}>
@@ -387,7 +441,60 @@ export function ClassesView({ data, writes, statusWrites }: { data: ChClassesPag
         )}
       </header>
 
-      {data.classes.error ? (
+      {crh && data.classes.error ? (
+        <Surface variant="card" level={2} padded={false} title="Your classes">
+          <CrhStateBlock kind="failed" code="CH-12201" title="Classes didn’t load" body="Try again. Nothing you added is lost.">
+            <Button leftIcon={RotateCw} onClick={() => router.refresh()}>
+              Try again
+            </Button>
+          </CrhStateBlock>
+        </Surface>
+      ) : crh && nothing ? (
+        <Surface variant="card" level={2} padded={false} title="Your classes">
+          <CrhStateBlock code="CH-12301" icon={GraduationCap} title="No classes yet" body="Add your schedule so practice and travel are planned around it. Your coach sees when you’re in class. Your teammates don’t.">
+            <Button variant="primary" leftIcon={Upload} onClick={startImport}>
+              Import schedule
+            </Button>
+            <Button leftIcon={Plus} onClick={startAdd}>
+              Add a class
+            </Button>
+          </CrhStateBlock>
+        </Surface>
+      ) : crh ? (
+        <>
+          <SectionBoundary surface="classes.term" label="The term overview" code="CH-12203">
+            <TermCard desk={!phone} term={term} classes={classes} week={week} todayIso={todayIso} overlaps={conflicts.length} overlapsError={week.error} onOverlaps={() => chScrollIntoView(document.getElementById('ch-cl-overlaps'), reduced)} />
+          </SectionBoundary>
+          {phone ? (
+            <>
+              <SectionBoundary surface="classes.today" label="Today’s classes" code="CH-12203">
+                <TodayCard classes={classes} term={term} todayIso={todayIso} week={week} onOpen={(x) => setOpenId(x.id)} />
+              </SectionBoundary>
+              {crhOverlaps}
+              <SectionBoundary surface="classes.deck" label="Your classes" code="CH-12203">
+                <div className="ch-cl-deck">{deck}</div>
+              </SectionBoundary>
+              {crhStatus}
+            </>
+          ) : (
+            // Desktop keeps the side layout (06 §4.9): the binders in three columns, the overlaps and the status card beside them.
+            <div className="ch-cl-dgrid">
+              <SectionBoundary surface="classes.deck" label="Your classes" code="CH-12203">
+                <section aria-labelledby="ch-cl-deck-h">
+                  <h2 id="ch-cl-deck-h" className="ch-cl-dgrid__h">
+                    Your classes<span className="ch-num">{classes.length}</span>
+                  </h2>
+                  {deck}
+                </section>
+              </SectionBoundary>
+              <aside className="ch-cl-dgrid__side">
+                {crhOverlaps}
+                {crhStatus}
+              </aside>
+            </div>
+          )}
+        </>
+      ) : data.classes.error ? (
         <InlineNotice code="CH-12201" title="Your classes didn’t load" body="Nothing is lost. Your classes are still saved; try again in a moment." onRetry={() => router.refresh()} />
       ) : nothing ? (
         <EmptyState
@@ -465,7 +572,20 @@ export function ClassesView({ data, writes, statusWrites }: { data: ChClassesPag
         </>
       )}
 
+      {crh && (
+        <MenuSheet
+          open={addMenu}
+          title="Add a class"
+          label="Add or import a class"
+          onClose={() => setAddMenu(false)}
+          items={[
+            { label: 'Add class', icon: Plus, onSelect: startAdd },
+            { label: 'Import schedule', icon: Upload, onSelect: startImport },
+          ]}
+        />
+      )}
       <ClassDetail
+        crh={crh && phone}
         c={open}
         todayIso={todayIso}
         term={term}

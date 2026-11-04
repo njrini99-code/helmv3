@@ -41,7 +41,13 @@ import {
   Lock,
   BellRing,
   Share,
+  Pin,
+  PinOff,
+  Flag,
 } from "lucide-react";
+import { classYearKey } from "../../lib/class-year";
+import type { ChPins } from "./pinned";
+import { BubbleTail, useThreadMakeRoom } from "./thread-v2";
 import {
   useCallback,
   useEffect,
@@ -58,7 +64,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, m as M } from "motion/react";
-import { chTween } from "../../lib/motion";
+import { CH_FADE_MS, chSpringCurve, chTween } from "../../lib/motion";
 import type { ChClock } from "../../lib/clock-cookie";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useComposerInset } from "./composer-inset";
@@ -83,6 +89,14 @@ import { EmptyState, Skeleton } from "../../ui/States";
 import { RailEmpty } from "./RailEmpty";
 import { ThreadClassSub } from "./ThreadClassSub";
 import { SendCluster } from "./NotifyAnyway";
+import { ComposerPlusV2 } from "./ComposerPlusV2";
+import { ConversationSearch, detailsLine, MembersCard, MuteMenu, PhotosAndFiles, QuickActions, useDetailsColumn, useMuteAction } from "./details-v2";
+import { HelloCard } from "./HelloCard";
+import { HoldLift } from "./hold-lift";
+import { MessageHits } from "./message-hits";
+import { personOf } from "./person-of";
+import { NewMessagePane } from "./NewMessagePane";
+import { useChipRise, useSendKeyPop } from "./thread-v2";
 import { GroupClassLine } from "./GroupClassLine";
 import { ThreadClassSection } from "./ThreadClassSection";
 import { isNotifyChord, notifyChordLabel, sendNotify } from "./notify-anyway";
@@ -104,7 +118,6 @@ import {
   linkParts,
   MESSAGE_MAX,
   railTime,
-  searchSnippet,
   sectionOf,
   threadItems,
   untilLabel,
@@ -123,10 +136,10 @@ import {
   type ChFile,
   type ChReceipts,
 } from "./model";
-import { SeenByReceipt, useSeenBy, useSeenByList } from "./seen-by";
+import { HoldSeenRow, SeenByPill, SeenByReceipt, useSeenBy, useSeenByList } from "./seen-by";
 import { receiptCarrierId, SEEN_BY_VISIBILITY } from "@/lib/golf/message-receipts";
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
-import { fileMeta, fileSize, useConversationFiles } from "./files";
+import { fileKind, fileMeta, fileSize, useConversationFiles } from "./files";
 // Re-exported: MessagesPhone and older callers read it from here.
 export { fileSize } from "./files";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
@@ -180,6 +193,16 @@ export interface ChAttachmentRecovery {
 }
 
 export interface ChMessagesApi {
+  /** golf_messages_redesign_v1, read on the server: the screens branch on it, and the root carries `data-ch-ms-v2`. */
+  redesign?: boolean;
+  /** The design fixture's starting filter (`view=unread`). */
+  designFilter?: ChConvFilter;
+  /** Redesign only: who is typing in the open thread, one bubble each. */
+  typingUserIds?: string[];
+  /** Redesign only: this device's pins (pinned.ts; account-wide with 11h). */
+  pins?: ChPins;
+  /** Redesign only: who is typing in each conversation on screen (use-typing-by-conversation.ts). */
+  typingByConv?: ReadonlyMap<string, string[]>;
   viewer: { userId: string; role: "coach" | "player"; name: string };
   /** Coaches by golf_coaches.id, for an announcement's signature (P007-A1). */
   signers?: Record<string, { name: string; title: string }>;
@@ -313,8 +336,7 @@ export interface ChMessagesApi {
   receipts?: ChReceipts;
 }
 
-export const personOf = (api: ChMessagesApi, userId: string) =>
-  api.directory.find((p) => p.userId === userId);
+export { personOf };
 
 /** B19: a direct conversation's coin takes the other person's tone, from the id their coin has everywhere (a player's
  *  player id, else a coach's user id); a group has none. */
@@ -335,97 +357,6 @@ function SenderPeek({ api, who, children }: { api: ChMessagesApi; who: ChPerson 
 
 /* Rail */
 
-export function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
-  const [hits, setHits] = useState<ChSearchHit[] | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [attempt, setAttempt] = useState(0);
-  const search = api.searchMessages;
-  const term = q.trim();
-  useEffect(() => {
-    if (term.length < 2) {
-      setHits(null);
-      return;
-    }
-    let live = true;
-    setFailed(false);
-    const t = window.setTimeout(() => {
-      search(term)
-        .then((r) => live && (r ? setHits(r) : setFailed(true)))
-        .catch(() => live && setFailed(true));
-    }, 250);
-    return () => {
-      live = false;
-      window.clearTimeout(t);
-    };
-  }, [search, term, attempt]);
-  if (term.length < 2) return null;
-  return (
-    <section
-      className="ch-ms-sec"
-      aria-label="Messages matching your search"
-      // CH-7802: results are announced as they arrive.
-      aria-live="polite"
-    >
-      <div className="ch-ms-sec__l">In messages</div>
-      {failed ? (
-        <InlineNotice
-          code="CH-7203"
-          title="Message search didn’t load"
-          body="Conversations above still match by name."
-          onRetry={() => setAttempt((a) => a + 1)}
-        />
-      ) : !hits ? (
-        <div className="ch-ms-sec__card" aria-busy="true" data-ch-code="CH-7404">
-          <div className="ch-ms-row" style={{ cursor: "default" }}>
-            <span />
-            <Skeleton width="80%" height={13} />
-          </div>
-        </div>
-      ) : !hits.length ? (
-        <EmptyState compact kind="filtered" code="CH-7303" title={`No messages mention “${term}”`} />
-      ) : (
-        <div className="ch-ms-sec__card">
-          {hits.slice(0, 20).map((h) => {
-            // The row is one line: it opens just before the match, which is marked (wave 5 #11).
-            const cut = searchSnippet(h.text, term);
-            return (
-            <button
-              key={h.messageId}
-              type="button"
-              className="ch-ms-row is-hit"
-              onClick={() => {
-                // D-70: opening a hit is plain navigation, so it is silent (F-0071; CH-7703 ticks a reaction or a filter).
-                chTrail("messages open search hit");
-                api.openHit(h);
-              }}
-            >
-              <span className="ch-ms-grp">
-                <Icon icon={Search} size={14} />
-              </span>
-              <span className="ch-ms-row__main">
-                <span className="ch-ms-row__top">
-                  <b>{h.conversationName}</b>
-                  <span className="ch-num">
-                    {railTime(h.at, api.now, api.timeZone, api.clock)}
-                  </span>
-                </span>
-                <span className="ch-ms-row__bot">
-                  <span>
-                    <em>{h.senderName}: </em>
-                    {cut.before}
-                    {cut.match && <mark className="ch-ms-hit">{cut.match}</mark>}
-                    {cut.after}
-                  </span>
-                </span>
-              </span>
-            </button>
-            );
-          })}
-        </div>
-      )}
-    </section>
-  );
-}
 
 /** One conversation in the list: the desktop rail and the phone inbox. */
 export function ConvRow({ api, c, avatarSize = 36, phone = false }: { api: ChMessagesApi; c: ChConv; avatarSize?: number; phone?: boolean }) {
@@ -446,16 +377,26 @@ export function ConvRow({ api, c, avatarSize = 36, phone = false }: { api: ChMes
   // Owner decision 14: the row's actions, each on this row's conversation whether or not it is the open one. Right-click
   // and Shift+F10 on the desktop; on the phone a 500ms long press, a keyboard's Shift+F10 or the VoiceOver button below
   // open the same rows as a sheet (ui/ContextMenu.tsx). The phone's swipes repeat Mark as read/unread and Delete.
+  const rowItems: MenuItem[] = [
+      { label: "Open conversation", icon: MessageSquare, onSelect: open },
+      // Redesign: Pin after Open (drawn order). At three pins it stays in the menu, dimmed, saying why (PIN-SYNC D7).
+      ...(api.pins
+        ? [
+            api.pins.has(c.id)
+              ? { label: "Unpin", icon: PinOff, onSelect: () => api.pins!.toggle(c.id) }
+              : { label: "Pin", icon: Pin, caption: api.pins.atLimit ? "Pin up to 3" : undefined, disabled: api.pins.atLimit, onSelect: () => api.pins!.toggle(c.id) },
+          ]
+        : []),
+      { label: unread ? "Mark as read" : "Mark as unread", icon: unread ? MailOpen : Mail, onSelect: toggleRead },
+      { label: "Mute…", icon: BellOff, onSelect: () => setMuting(true) },
+      ...(askDelete ? [{ kind: "separator" as const }, { label: api.redesign ? "Delete conversation" : "Delete", icon: Trash2, danger: true, onSelect: askDelete }] : []),
+  ];
   const ctx = useContextMenu<ChConv>({
     label: (row) => `Actions for ${row.title}`,
     title: (row) => row.title,
     touchHold: phone,
-    items: () => [
-      { label: "Open conversation", icon: MessageSquare, onSelect: open },
-      { label: unread ? "Mark as read" : "Mark as unread", icon: unread ? MailOpen : Mail, onSelect: toggleRead },
-      { label: "Mute…", icon: BellOff, onSelect: () => setMuting(true) },
-      ...(askDelete ? [{ kind: "separator" as const }, { label: "Delete", icon: Trash2, danger: true, onSelect: askDelete }] : []),
-    ],
+    anchored: !!api.redesign,
+    items: () => (api.redesign ? rowItems.map((item) => (item.kind === "separator" ? item : { ...item, icon: undefined })) : rowItems),
   });
   const sheets = (
     <>
@@ -562,6 +503,30 @@ function RowMuteModal({ api, c, open, onClose }: { api: ChMessagesApi; c: ChConv
   );
 }
 
+/** A direct thread with a player whose year is known: the coin's year colour. */
+export function convYear(api: ChMessagesApi, c: ChConv) {
+  if (!api.redesign || c.group) return null;
+  const person = personOf(api, c.memberIds[0] ?? "");
+  return person?.gradYear ? classYearKey(person.gradYear, new Date(api.now), api.timeZone) : null;
+}
+
+/** The three dots a row or pin swaps its preview line for (M-MSG-30). Hidden from VoiceOver as a picture; the sentence is on the wrapper. */
+export function TypingMini() {
+  return (
+    <span className="ch-ms-typing-mini" role="img" aria-label="Typing">
+      <i />
+      <i />
+      <i />
+    </span>
+  );
+}
+
+/** Two typers by name, three or more as "Several" (05's default). */
+export function typersLine(api: ChMessagesApi, typers: readonly string[]): string {
+  if (typers.length > 2) return "Several people are typing";
+  return `${typers.map((id) => firstName(personOf(api, id)?.name ?? "Member")).join(" and ")} are typing`;
+}
+
 function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { api: ChMessagesApi; c: ChConv; avatarSize: number; onOpen: () => void; bind: ContextMenuBind; plain?: boolean }) {
   const row = {
     type: "button" as const,
@@ -570,18 +535,21 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { ap
     onClick: onOpen,
     ...bind,
   };
+  const typers = api.typingByConv?.get(c.id);
   const body = (
     <>
       {c.group ? (
         <span className="ch-ms-grp">
-          <Icon icon={Users} size={15} />
+          <Icon icon={api.redesign && c.channel ? Flag : Users} size={15} />
         </span>
       ) : (
-        <Avatar name={c.title} id={convAvatarId(api, c)} size={avatarSize} />
+        <Avatar name={c.title} id={convAvatarId(api, c)} size={avatarSize} year={api.redesign ? convYear(api, c) : null} />
       )}
       <span className="ch-ms-row__main">
         <span className="ch-ms-row__top">
+          {api.redesign && isUnread(c) && <i className="ch-msv-dot" aria-hidden="true" />}
           <b>{c.title}</b>
+          {api.redesign && c.muted && <Icon icon={BellOff} size={13} className="ch-ms-row__mute" aria-label="Muted" />}
           <span className="ch-num">
             {railTime(c.lastAt, api.now, api.timeZone, api.clock)}
           </span>
@@ -591,7 +559,13 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { ap
             {/* One inline child, so the phone's two-line clamp (a vertical -webkit-box, which blockifies each child)
                 keeps the sender, the poll glyph and the text on one line (F-0052). */}
             <span className="ch-ms-row__prev">
-              {c.lastText ? (
+              {typers?.length ? (
+                typers.length === 1 ? (
+                  <TypingMini />
+                ) : (
+                  typersLine(api, typers)
+                )
+              ) : c.lastText ? (
                 <>
                   {c.lastSenderId &&
                     (c.group ||
@@ -621,7 +595,9 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { ap
               )}
             </span>
           </span>
-          {c.unread > 0 ? (
+          {api.redesign ? (
+            isUnread(c) ? <span className="ch-sr-only">{c.unread > 0 ? `${c.unread} unread` : "Marked unread"}</span> : null
+          ) : c.unread > 0 ? (
             <span role="img"
               className="ch-ms-count ch-num"
               aria-label={`${c.unread} unread`}
@@ -646,16 +622,50 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { ap
   );
 }
 
+/** "3 unread · 7 conversations" on the desktop rail. */
+export function inboxContextDesktop(unread: number, total: number): string {
+  return `${unread} unread · ${plural(total, "conversation")}`;
+}
+
+/** The rail's flat "Pinned" and "Recent" labels over rows (no cards on the rail; the phone draws cards). */
+function PinnedAndRecent({ api, list, row }: { api: ChMessagesApi; list: ChConv[]; row: (c: ChConv) => ReactNode }) {
+  const pinned = api.pins?.ids ?? [];
+  const pinnedRows = pinned.map((id) => list.find((c) => c.id === id)).filter((c): c is ChConv => !!c);
+  const recent = list.filter((c) => !pinned.includes(c.id));
+  return (
+    <>
+      {pinnedRows.length > 0 && (
+        <section className="ch-ms-sec" aria-label="Pinned">
+          <div className="ch-ms-sec__l">Pinned</div>
+          <div className="ch-ms-sec__card">
+            <ListPresence>{pinnedRows.map(row)}</ListPresence>
+          </div>
+        </section>
+      )}
+      {recent.length > 0 && (
+        <section className="ch-ms-sec" aria-label="Recent">
+          <div className="ch-ms-sec__l">Recent</div>
+          <div className="ch-ms-sec__card">
+            <ListPresence>{recent.map(row)}</ListPresence>
+          </div>
+        </section>
+      )}
+    </>
+  );
+}
+
 function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
   const body = useRef<HTMLDivElement | null>(null);
   usePanelSmoothScroll(body);
   // B11: ↑ and ↓ walk the conversations; the rail is one Tab stop.
   useRovingRows(body, ".ch-ms-row");
   usePageKeys("Messages", RAIL_KEYS);
-  const [filter, setFilter] = useState<ChConvFilter>("all");
+  const [filter, setFilter] = useState<ChConvFilter>(api.designFilter ?? "all");
   const [q, setQ] = useState("");
   const unread = api.convs.filter(isUnread).length;
   const list = filterConvs(api.convs, filter, q);
+  // The lane's first run (S-MSG.empty): the rail keeps Messages, New and Search; the card in the pane says the rest.
+  const firstRun = !!api.redesign && isMessagesFirstRun(api);
   const sections: Array<[ReturnType<typeof sectionOf>, string]> = [
     ["today", "Today"],
     ["week", "This week"],
@@ -677,23 +687,26 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
             </button>
           </Tooltip>
         </div>
+        {api.redesign && <p className="ch-ms-rail__ctx ch-num">{firstRun ? "No conversations yet" : (api.convsLoading && !api.convs.length) || api.annLoading ? "Loading conversations" : inboxContextDesktop(unread, api.convs.length)}</p>}
         <SearchField
           value={q}
           onChange={setQ}
-          placeholder="Search people and messages"
+          placeholder={api.redesign ? "Search" : "Search people and messages"}
           label="Search conversations and messages"
         />
-        <Segmented<ChConvFilter> redraws
-          size="sm"
-          label="Filter conversations"
-          value={filter}
-          onChange={setFilter}
-          options={[
-            { value: "all", label: "All" },
-            { value: "unread", label: `Unread · ${unread}` },
-            { value: "groups", label: "Groups" },
-          ]}
-        />
+        {!firstRun && (
+          <Segmented<ChConvFilter> redraws
+            size="sm"
+            label="Filter conversations"
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { value: "all", label: "All" },
+              { value: "unread", label: api.redesign ? "Unread" : `Unread · ${unread}` },
+              { value: "groups", label: "Groups" },
+            ]}
+          />
+        )}
       </div>
       <div className="ch-ms-rail__body" ref={body}>
         {api.convsError ? (
@@ -718,7 +731,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
               </div>
             ))}
           </div>
-        ) : !api.convs.length ? (
+        ) : firstRun ? null : !api.convs.length ? (
           <EmptyState
             code="CH-7301"
             compact
@@ -737,7 +750,14 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
           />
         ) : (
           <>
-            {sections.map(([k, l]) => {
+            {api.redesign && (
+              <PinnedAndRecent
+                api={api}
+                list={list}
+                row={(c) => <ConvRow key={c.id} api={api} c={c} />}
+              />
+            )}
+            {!api.redesign && sections.map(([k, l]) => {
               const rows = list.filter(
                 (c) => sectionOf(c.lastAt, api.now, api.timeZone) === k,
               );
@@ -755,10 +775,10 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
                 </section>
               );
             })}
-            {!list.length && <RailEmpty filter={filter} q={q} onClearSearch={() => setQ("")} onShowAll={() => setFilter("all")} />}
+            {!list.length && !(api.redesign && q.trim()) && <RailEmpty filter={filter} q={q} onClearSearch={() => setQ("")} onShowAll={() => setFilter("all")} />}
             {/* Messages first; the team's announcements fold under them (owner, 2026-10-16). */}
             {filter !== "groups" && <AnnouncementsSection api={api} q={q} />}
-            <MessageHits api={api} q={q} />
+            <MessageHits api={api} q={q} nameMatches={api.redesign ? list.length : undefined} />
           </>
         )}
       </div>
@@ -772,7 +792,19 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
  * A reaction on a message (owner, 2026-10-08): the chip is the opposite colour of the bubble it sits under (ivory under
  * a green one, green under an ivory one), and a click opens who reacted, with a row to add or take back your own.
  */
-function ReactionChip({ api, messageId, r }: { api: ChMessagesApi; messageId: string; r: ChReaction }) {
+/** M-MSG-13: 0.4 to 1 on `pop`, from the corner the CSS sets; a fade under Reduce Motion. Once per badge. */
+function popBadge(el: HTMLElement | null) {
+  if (!el || el.dataset.chPopped) return;
+  el.dataset.chPopped = "1";
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: CH_FADE_MS, easing: "linear" });
+    return;
+  }
+  const c = chSpringCurve("pop");
+  el.animate([{ transform: "scale(.4)" }, { transform: "scale(1)" }], { duration: c.ms, easing: c.linear });
+}
+
+function ReactionChip({ api, messageId, r, arriving = false }: { api: ChMessagesApi; messageId: string; r: ChReaction; /** Redesign: a badge added after the bubble drew pops from its corner (M-MSG-13). */ arriving?: boolean }) {
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement | null>(null);
@@ -827,7 +859,10 @@ function ReactionChip({ api, messageId, r }: { api: ChMessagesApi; messageId: st
   return (
     <>
       <button
-        ref={btn}
+        ref={(el) => {
+          btn.current = el;
+          if (arriving) popBadge(el);
+        }}
         type="button"
         className={"ch-ms-react ch-num" + (r.mine ? " is-mine" : "")}
         aria-label={`${label}, ${r.count}${r.mine ? ", including you" : ""}. Show who reacted`}
@@ -839,7 +874,7 @@ function ReactionChip({ api, messageId, r }: { api: ChMessagesApi; messageId: st
         }}
       >
         <Icon icon={REACTION_ICON[r.key]} size={12} />
-        {r.count}
+        {!api.redesign || r.count > 1 ? r.count : null}
       </button>
       {typeof document !== "undefined" &&
         createPortal(
@@ -888,7 +923,7 @@ function ReactionChip({ api, messageId, r }: { api: ChMessagesApi; messageId: st
 }
 
 /** A photo in a message: shown in the thread, a click opens the full file. One that won't load falls back to the file chip. */
-function ImageAttachment({ f }: { f: ChAttachment }) {
+function ImageAttachment({ f, redesign = false }: { f: ChAttachment; redesign?: boolean }) {
   const [broken, setBroken] = useState(false);
   if (broken) {
     return (
@@ -898,7 +933,7 @@ function ImageAttachment({ f }: { f: ChAttachment }) {
         </span>
         <span style={{ minWidth: 0 }}>
           <b>{f.name}</b>
-          <span>{fileSize(f.size)}</span>
+          <span>{redesign ? `${fileKind(f.mime)} · ${fileSize(f.size)}` : fileSize(f.size)}</span>
         </span>
         <Icon icon={Download} size={15} />
       </a>
@@ -916,10 +951,13 @@ export function Attachments({
   load,
   id,
   mine,
+  redesign = false,
 }: {
   load: ChMessagesApi["attachments"];
   id: string;
   mine: boolean;
+  /** "{TYPE} · {size}" under the name (MSG-FILE-03). */
+  redesign?: boolean;
 }) {
   const [files, setFiles] = useState<ChAttachment[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -965,7 +1003,7 @@ export function Attachments({
     <>
       {files.map((f) =>
         f.mime.startsWith("image/") && f.url ? (
-          <ImageAttachment key={f.id} f={f} />
+          <ImageAttachment key={f.id} f={f} redesign={redesign} />
         ) : (
         <a
           key={f.id}
@@ -980,7 +1018,7 @@ export function Attachments({
           </span>
           <span style={{ minWidth: 0 }}>
             <b>{f.name}</b>
-            <span>{fileSize(f.size)}</span>
+            <span>{redesign ? `${fileKind(f.mime)} · ${fileSize(f.size)}` : fileSize(f.size)}</span>
           </span>
           <Icon icon={Download} size={15} />
           {mine && <span className="ch-sr-only">Sent by you</span>}
@@ -1079,6 +1117,18 @@ export function Bubble({
   onReply?: () => void;
 }) {
   const who = personOf(api, m.senderId);
+  // Redesign, desktop: right click and More open the same lift the phone's hold does (MSG-HOLD, MSG-THREAD-13).
+  const [lifted, setLifted] = useState(false);
+  const [liftClose, setLiftClose] = useState(0);
+  const liftAfter = useRef<(() => void) | null>(null);
+  const liftPick = (then: () => void) => {
+    liftAfter.current = then;
+    setLiftClose((n) => n + 1);
+  };
+  const drawn = useRef(false);
+  useEffect(() => {
+    drawn.current = true;
+  }, []);
   const [showTime, setShowTime] = useState(false);
   const press = useLongPress(m.failed ? undefined : onActions, onActions ? (direction) => {
     if (direction === "right") onReply?.();
@@ -1090,7 +1140,8 @@ export function Bubble({
       ? {
           onContextMenu: (e: ReactMouseEvent) => {
             e.preventDefault();
-            setPicking(true);
+            if (api.redesign) setLifted(true);
+            else setPicking(true);
           },
         }
       : {};
@@ -1126,6 +1177,8 @@ export function Bubble({
       ]
     : m.mine
       ? [
+          ...(api.redesign && onReply ? [{ label: "Reply", icon: Reply, onSelect: onReply }] : []),
+          ...(api.redesign && m.text ? [{ label: "Copy", icon: Copy, onSelect: () => void copyText() }] : []),
           // An attachment-only message has no text to edit (as the phone's sheet: wave 5 #8).
           ...(m.text ? [{ label: "Edit", icon: Pencil, onSelect: onEdit }] : []),
           ...seenItem,
@@ -1135,6 +1188,16 @@ export function Bubble({
         ? [...seenItem, ...(onReply ? [{ label: "Reply", icon: Reply, onSelect: onReply }] : []), { label: "Copy", icon: Copy, onSelect: () => void copyText() }]
         : seenItem;
   const reacts = api.reactions.get(m.id) ?? [];
+  // Redesign: two taps within 300ms toggle Like, once (MSG-HOLD-06).
+  const lastTap = useRef(0);
+  const toggleLikeOnDouble = () => {
+    const now = Date.now();
+    if (now - lastTap.current < 300) {
+      lastTap.current = 0;
+      haptic("select");
+      api.react(m.id, "Like", !reacts.some((r) => r.key === "Like" && r.mine));
+    } else lastTap.current = now;
+  };
   const reduced = useChReducedMotion();
   const reactBtn = useRef<HTMLButtonElement | null>(null);
   const bar = useRef<HTMLDivElement | null>(null);
@@ -1183,6 +1246,14 @@ export function Bubble({
       </div>
     );
   }
+  // S-MSG.hold: Seen by has its own row on your own group message; the rest keep today's actions, Delete last.
+  const holdRows = menuItems.flatMap((item) => (item.kind === "separator" || (group && m.mine && item.label === "Seen by") ? [] : [item]));
+  const holdRow = (item: (typeof holdRows)[number]) => (
+    <button key={item.label} type="button" className={item.danger ? "is-danger" : undefined} onClick={() => { if (item.onSelect) liftPick(item.onSelect); }}>
+      <span>{item.label}</span>
+      {item.icon && <Icon icon={item.icon} size={18} />}
+    </button>
+  );
   return (
     <PresenceRow
       as="div"
@@ -1201,13 +1272,18 @@ export function Bubble({
         <span className="ch-ms-msg__av">
           {last && (
             <SenderPeek api={api} who={who}>
-              <Avatar name={who?.name ?? "Member"} id={who ? (who.playerId ?? who.userId) : null} size={30} />
+              <Avatar
+                name={who?.name ?? "Member"}
+                id={who ? (who.playerId ?? who.userId) : null}
+                size={30}
+                year={api.redesign && who?.gradYear ? classYearKey(who.gradYear, new Date(api.now), api.timeZone) : null}
+              />
             </SenderPeek>
           )}
         </span>
       )}
       <div className="ch-ms-msg__col">
-        {!m.mine && first && group && (
+        {!api.redesign && !m.mine && first && group && (
           <SenderPeek api={api} who={who}>
             <span className="ch-ms-msg__who">
               {firstName(who?.name ?? "Member")}
@@ -1215,19 +1291,22 @@ export function Bubble({
           </SenderPeek>
         )}
         <div className="ch-ms-msg__line">
-          <div className="ch-ms-msg__stack" {...press} {...rightClick}>
+          <div className="ch-ms-msg__stack" {...press} {...rightClick} {...(api.redesign && !m.failed && !m.deleted ? { "data-ch-press-scale": ".97", onClick: toggleLikeOnDouble, onDoubleClick: (e: ReactMouseEvent) => e.preventDefault() } : {})}>
             {m.replyToId && <ReplyQuote api={api} replyToId={m.replyToId} />}
             {m.poll ? (
               <PollCard api={api} messageId={m.id} poll={m.poll} mine={m.mine} />
             ) : (
               m.text && (
                 <div className="ch-ms-bub">
+                  {/* Redesign: the sender's name sits inside a run's first bubble (06 S-MSG.team). */}
+                  {api.redesign && !m.mine && first && group && <b className="ch-msv-bname">{firstName(who?.name ?? "Member")}</b>}
                   <MessageText text={m.text} />
+                  {api.redesign && last && <BubbleTail />}
                 </div>
               )
             )}
             {m.hasAttachments && (
-              <Attachments load={api.attachments} id={m.id} mine={m.mine} />
+              <Attachments load={api.attachments} id={m.id} mine={m.mine} redesign={!!api.redesign} />
             )}
           </div>
           {onActions && !m.failed && (
@@ -1240,7 +1319,43 @@ export function Bubble({
               Message actions
             </button>
           )}
-          {!m.failed && !onActions && (
+          {api.redesign && !m.failed && !m.deleted && !onActions && (
+            <div className="ch-msv-hoverbar" role="toolbar" aria-label="Message actions">
+              {REACTIONS.filter((r) => r.key === "Like" || r.key === "Love" || r.key === "Laugh").map((r) => {
+                const on = reacts.some((x) => x.key === r.key && x.mine);
+                return (
+                  <button
+                    key={r.key}
+                    type="button"
+                    aria-label={`${on ? "Remove" : "React"} ${r.key.toLowerCase()}`}
+                    aria-pressed={on}
+                    onClick={() => {
+                      haptic("select");
+                      api.react(m.id, r.key, !on);
+                    }}
+                  >
+                    <Icon icon={r.icon} size={14.4} />
+                  </button>
+                );
+              })}
+              {onReply && (
+                <button type="button" aria-label="Reply" onClick={onReply}>
+                  <Icon icon={Reply} size={14.4} />
+                </button>
+              )}
+              <button
+                type="button"
+                aria-label="More message actions"
+                onClick={() => {
+                  refreshMenu();
+                  setLifted(true);
+                }}
+              >
+                <Icon icon={Ellipsis} size={14.4} />
+              </button>
+            </div>
+          )}
+          {!api.redesign && !m.failed && !onActions && (
             <div className="ch-ms-msg__tools">
               <Tooltip>
                 <button
@@ -1337,7 +1452,7 @@ export function Bubble({
         {reacts.length > 0 && (
           <div className={"ch-ms-reacts" + (m.mine ? " on-mine" : " on-theirs")}>
             {reacts.map((r) => (
-              <ReactionChip key={r.key} api={api} messageId={m.id} r={r} />
+              <ReactionChip key={r.key} api={api} messageId={m.id} r={r} arriving={!!api.redesign && drawn.current} />
             ))}
           </div>
         )}
@@ -1361,12 +1476,19 @@ export function Bubble({
             </button>
           </span>
         ) : (
-          (last || showTime) && (
-            <span className="ch-ms-msg__t ch-num">
-              {clock(m.at, api.timeZone, api.clock)}
-              {m.edited ? " · Edited" : ""}
+          // The lane: times live behind the drag (S-MSG.times); only your latest message keeps its receipt, as a pill (S-MSG.seen).
+          api.redesign && group ? (
+            carrier && m.mine && (
+              <span className="ch-ms-seen-slot">
+                <SeenByPill api={api} m={m} onOpen={onSeenBy ? (el) => onSeenBy(m, el) : undefined} />
+              </span>
+            )
+          ) : (api.redesign ? carrier && m.mine && m.seen : last || showTime) && (
+            <span className={"ch-ms-msg__t ch-num" + (api.redesign ? " is-pill" : "")}>
+              {api.redesign ? (m.seen && !group ? `Seen ${clock(m.at, api.timeZone, api.clock)}` : null) : clock(m.at, api.timeZone, api.clock)}
+              {!api.redesign && m.edited ? " · Edited" : ""}
               {/* OC-3: a direct thread's "Seen" sits on the carrier only (or a time revealed by a swipe), not every run-end. */}
-              {m.mine && !group && m.seen && (carrier || showTime) ? " · Seen" : ""}
+              {!api.redesign && m.mine && !group && m.seen && (carrier || showTime) ? " · Seen" : ""}
               {/* P-1 M3: when the receipt moves to a newer message, the old one fades out on quick (instant when reduced). */}
               <AnimatePresence initial={false}>
                 {group && (carrier || showTime) && (
@@ -1386,6 +1508,47 @@ export function Bubble({
           </span>
         )}
       </div>
+      {api.redesign && <span className="ch-msv-time ch-num">{clock(m.at, api.timeZone, api.clock)}</span>}
+      {api.redesign && lifted && (
+        <HoldLift
+          messageId={m.id}
+          mine={m.mine}
+          closeSignal={liftClose}
+          onReopen={() => {
+            liftAfter.current = null;
+          }}
+          onClosed={() => {
+            const then = liftAfter.current;
+            liftAfter.current = null;
+            setLifted(false);
+            then?.();
+          }}
+          bar={REACTIONS.map((r) => {
+            const on = reacts.some((x) => x.key === r.key && x.mine);
+            return (
+              <button
+                key={r.key}
+                type="button"
+                className={on ? "is-on" : undefined}
+                aria-label={`${on ? "Remove" : "React"} ${r.key.toLowerCase()}`}
+                aria-pressed={on}
+                onClick={() => {
+                  haptic("select");
+                  liftPick(() => api.react(m.id, r.key, !on));
+                }}
+              >
+                <Icon icon={r.icon} size={22} />
+              </button>
+            );
+          })}
+        >
+          {holdRows.filter((item) => !item.danger).map(holdRow)}
+          {/* S-MSG.holdseen: your own message in a group gets who read it, faces and all, between hairlines. */}
+          {group && m.mine && onSeenBy && <HoldSeenRow api={api} m={m} onOpen={() => liftPick(() => onSeenBy(m, actionsBtn.current))} />}
+          {holdRows.some((item) => item.danger) && <hr />}
+          {holdRows.filter((item) => item.danger).map(holdRow)}
+        </HoldLift>
+      )}
     </PresenceRow>
   );
 }
@@ -1422,6 +1585,13 @@ function MessageText({ text }: { text: string }) {
 }
 
 /** A parent outside the loaded history remains an honest unavailable reference. */
+/** The chip's name (S-MSG.reply): the first name, or "yourself" for your own message. */
+function replyName(api: ChMessagesApi, id: string): string {
+  const m = api.msgs.find((x) => x.id === id);
+  if (!m) return "message";
+  return m.mine ? "yourself" : firstName(personOf(api, m.senderId)?.name ?? "them");
+}
+
 export function ReplyQuote({ api, replyToId }: { api: ChMessagesApi; replyToId: string }) {
   const reduced = useChReducedMotion();
   const parent = api.msgs.find((m) => m.id === replyToId);
@@ -1488,11 +1658,13 @@ export function AttachChips({
   onRemove: (index: number) => void;
   disabled?: boolean;
 }) {
+  const reduced = useChReducedMotion();
+  const rise = useChipRise(reduced);
   if (!files.length) return null;
   return (
     <div className="ch-ms-to">
       {files.map((f, i) => (
-        <span key={`${f.name}${i}`} className="ch-ms-to__c" title={f.name}>
+        <span key={`${f.name}${i}`} className="ch-ms-to__c" title={f.name} ref={rise}>
           <Icon icon={FileText} size={13} />
           <span className="ch-ms-to__n">{f.name}</span>
           <Tooltip>
@@ -1599,6 +1771,18 @@ export function useAutosize(ta: RefObject<HTMLTextAreaElement | null>, value: st
   }, [ta, value]);
 }
 
+/** Redesign: the send key's place. Empty field, nothing there at all (computed `display: none`, MSG-ALL-09); otherwise it pops in and out. */
+function SendKeyHolder({ redesign, ready, children }: { redesign: boolean; ready: boolean; children: ReactNode }) {
+  const reduced = useChReducedMotion();
+  const { ref, hidden } = useSendKeyPop(ready, reduced);
+  if (!redesign) return <>{children}</>;
+  return (
+    <span ref={ref} className="ch-msv-sendkey" hidden={hidden}>
+      {children}
+    </span>
+  );
+}
+
 /** Within this of MESSAGE_MAX a composer counts down, so the limit never stops typing (or cuts a paste) unannounced. */
 const COUNT_FROM = 300;
 
@@ -1627,9 +1811,14 @@ export function Composer({
   onSendingChange,
   unavailable = false,
   seed = null,
+  editing = null,
+  onEditDone,
 }: {
   api: ChMessagesApi;
   conv: ChConv;
+  /** Redesign: your text message being edited; the field holds it and Send saves it (MSG-EDIT-01). */
+  editing?: ChMsg | null;
+  onEditDone?: () => void;
   /** Phone: the design's "+" attach button, and no keyboard hint. */
   phone?: boolean;
   /** A first message written before the conversation existed (the phone's New message). */
@@ -1671,6 +1860,20 @@ export function Composer({
   const [sending, setSending] = useState(false);
   const sendingRef = useRef(false);
   const ta = useRef<HTMLTextAreaElement | null>(null);
+  const composerReduced = useChReducedMotion();
+  // Redesign: Edit fills the field, focused, caret at the end; leaving it empties the field again.
+  const editId = editing?.id ?? null;
+  useEffect(() => {
+    if (!editing) return;
+    setDraft(editing.text);
+    const t = ta.current;
+    requestAnimationFrame(() => {
+      t?.focus();
+      t?.setSelectionRange(editing.text.length, editing.text.length);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per message put up for editing
+  }, [editId]);
+  const chipRise = useChipRise(composerReduced);
   const footer = useRef<HTMLElement | null>(null);
   const typingTimer = useRef<number | null>(null);
   const ready = (draft.trim() || files.length || resumed) && !sending && !checking && !checkFailed && !unavailable;
@@ -1730,6 +1933,25 @@ export function Composer({
 
   const send = async (notifyAnyway = false) => {
     if (!ready || sendingRef.current) return;
+    if (editing) {
+      const text = draft.trim();
+      if (text === editing.text.trim()) {
+        onEditDone?.();
+        setDraft("");
+        return;
+      }
+      sendingRef.current = true;
+      setSending(true);
+      const ok = await api.edit(editing.id, text);
+      sendingRef.current = false;
+      setSending(false);
+      if (ok) {
+        document.getElementById(`ch-ms-message-${editing.id}`)?.querySelector(".ch-ms-bub")?.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration: composerReduced ? CH_FADE_MS : 260, easing: "cubic-bezier(.22,1,.36,1)" });
+        setDraft("");
+        onEditDone?.();
+      }
+      return;
+    }
     sendingRef.current = true;
     const text = draft.trim();
     const pending = files;
@@ -1836,7 +2058,31 @@ export function Composer({
     <footer ref={footer} className="ch-ms-comp" aria-busy={checking || sending || undefined}>
       {checkFailed && <InlineNotice code="CH-7217" title="Couldn’t check a pending send" body="Try again before sending another message." onRetry={() => setCheckAttempt((n) => n + 1)} />}
       {unconfirmed && <InlineNotice code="CH-7023" title="Couldn’t confirm this send" body="This send is unconfirmed. Retry send checks the original request; editing stays locked until its outcome is known." />}
-      {effectiveParent && (
+      {api.redesign && editing && (
+        <div className="ch-ms-comp__reply is-edit" ref={chipRise}>
+          <Icon icon={Pencil} size={18} />
+          Editing message
+          <IconButton icon={X} label="Cancel edit" onClick={() => { setDraft(""); onEditDone?.(); }} />
+        </div>
+      )}
+      {api.redesign && effectiveParent && (
+        <div className="ch-ms-comp__reply" ref={chipRise}>
+          <Icon icon={Reply} size={18} />
+          Replying to {replyName(api, effectiveParent)}
+          <IconButton icon={X} label="Cancel reply" onClick={() => { setRecoveredParent(null); onClearReply?.(); }} disabled={sending || unconfirmed || checking || checkFailed} />
+        </div>
+      )}
+      {!api.redesign && editing && (
+        <div className="ch-ms-comp__reply is-edit" ref={chipRise}>
+          <Icon icon={Pencil} size={18} />
+          <span className="ch-msv-chip__b">
+            <b>Edit message</b>
+            <span>{editing.text}</span>
+          </span>
+          <IconButton icon={X} label="Cancel edit" onClick={() => { setDraft(""); onEditDone?.(); }} />
+        </div>
+      )}
+      {!api.redesign && effectiveParent && (
         <div className="ch-ms-comp__reply">
           <ReplyQuote api={api} replyToId={effectiveParent} />
           <IconButton icon={X} label="Cancel reply" onClick={() => { setRecoveredParent(null); onClearReply?.(); }} disabled={sending || unconfirmed || checking || checkFailed || unavailable} />
@@ -1851,7 +2097,14 @@ export function Composer({
         onRemove={(i) => setFiles((s) => s.filter((_, j) => j !== i))}
       />
       <div className="ch-ms-comp__field">
-        {phone && conv.group && api.polls ? (
+        {api.redesign ? (
+          <ComposerPlusV2
+            api={api}
+            conv={conv}
+            disabled={unconfirmed || checking || checkFailed || unavailable}
+            onPick={(picked) => { setFiles(addFiles(filesRef.current, picked)); setMissingFiles((names) => names.filter((name) => !picked.some((file) => file.name === name))); }}
+          />
+        ) : phone && conv.group && api.polls ? (
           // D21: on a phone, one "+" with a menu (Photo or file, Poll), as iMessage's; a direct thread keeps the plain "+".
           <ComposerPlus
             api={api}
@@ -1891,7 +2144,7 @@ export function Composer({
           maxLength={MESSAGE_MAX}
           enterKeyHint={phone ? "enter" : "send"}
         />
-        <SendCluster phone={phone} ready={!!ready} unconfirmed={unconfirmed} notify={notify} mac={mac} onSend={(notifyAnyway) => void send(notifyAnyway)} />
+        <SendKeyHolder redesign={!!api.redesign} ready={!!ready || unconfirmed}><SendCluster phone={phone} ready={!!ready} unconfirmed={unconfirmed} notify={notify} mac={mac} onSend={(notifyAnyway) => void send(notifyAnyway)} /></SendKeyHolder>
       </div>
       {unavailable ? (
         <span className="ch-ms-comp__hint">
@@ -2035,6 +2288,7 @@ function Thread({
   const focusing = !!api.focusMessageId || (!!api.foundMessageId && api.msgs.some((m) => m.id === api.foundMessageId));
   const anchor = useThreadAnchor(scroller, { convId: conv.id, count: api.msgs.length, lastMine: !!api.msgs.at(-1)?.mine, typing: api.typing, paused: focusing });
   const reducedMotion = useChReducedMotion();
+  useThreadMakeRoom(scroller, api.msgs.length, !!api.redesign, reducedMotion);
   useFocusMessage(scroller, { target: api.focusMessageId ?? null, loading: api.msgsLoading, count: api.msgs.length, reduced: reducedMotion, onDone: (id) => api.messageFocused?.(id), toEnd: anchor.toEnd });
   // The thread eases like the page does, with a longer glide (a conversation is read down a long column); desktop,
   // wheel only: a trackpad stays native.
@@ -2066,7 +2320,20 @@ function Thread({
           : ""
       }`
     : conv.subtitle;
+  // Redesign: the bar's hairline shows once there is content under it (M-MSG-04b).
+  const barEl = useRef<HTMLElement | null>(null);
+  const [searching, setSearching] = useState(false);
+  useEffect(() => {
+    const el = scroller.current;
+    if (!api.redesign || !el) return;
+    const on = () => barEl.current?.classList.toggle("is-under", el.scrollTop >= 2);
+    on();
+    el.addEventListener("scroll", on, { passive: true });
+    return () => el.removeEventListener("scroll", on);
+  }, [api.redesign]);
 
+  const typistId = api.typingUserIds?.[0] ?? api.typingByConv?.get(conv.id)?.[0];
+  const typist = typistId ? personOf(api, typistId) : undefined;
   return (
     <PollThreadContext.Provider value={pollThread}>
     <section
@@ -2074,7 +2341,7 @@ function Thread({
       className="ch-ms-thread"
       aria-label={`Conversation with ${conv.title}`}
     >
-      <header className="ch-ms-th">
+      <header className="ch-ms-th" ref={barEl}>
         <div className="ch-ms-th__who">
           <span className="ch-ms-back">
             <IconButton
@@ -2088,7 +2355,7 @@ function Thread({
               <Icon icon={Users} size={17} />
             </span>
           ) : (
-            <Avatar name={conv.title} id={convAvatarId(api, conv)} size={38} />
+            <Avatar name={conv.title} id={convAvatarId(api, conv)} size={api.redesign ? 36 : 38} />
           )}
           <div style={{ minWidth: 0 }}>
             <b>{conv.title}</b>
@@ -2098,6 +2365,9 @@ function Thread({
           </div>
         </div>
         <div className="ch-ms-th__act">
+          {api.redesign && (
+            <IconButton icon={Search} label="Search this conversation" variant={searching ? "secondary" : "ghost"} pressed={searching} onClick={() => setSearching((v) => !v)} />
+          )}
           {calendarHref && api.viewer.role === "coach" && (
             <Tooltip>
               <a
@@ -2128,6 +2398,11 @@ function Thread({
           </Tooltip>
         </div>
       </header>
+      {api.redesign && searching && (
+        <div className="ch-msv-barsearch">
+          <ConversationSearch api={api} conv={conv} onClose={() => setSearching(false)} />
+        </div>
+      )}
       <div
         className="ch-ms-scroll"
         ref={scroller}
@@ -2164,7 +2439,11 @@ function Thread({
               <Skeleton width="38%" height={40} radius={18} />
             </div>
           ) : !api.msgs.length ? (
+            api.redesign && !conv.group ? (
+              <HelloCard name={conv.title} id={convAvatarId(api, conv)} role={conv.subtitle ?? ""} coach={api.viewer.role === "coach"} year={convYear(api, conv)} onStarter={(text) => setSeed({ text, nonce: Date.now() })} />
+            ) : (
             <EmptyState compact code="CH-7304" title="No messages yet" body={`Say hello to ${conv.group ? "the group" : firstName(conv.title)}.`} />
+            )
           ) : (
             // B7: a deleted message closes in place; one that arrives rises in at its full height, so the thread above it
             // never moves (owner, 2026-10-31, as Fairway's thread does). The scroll stays with useThreadAnchor (no FLIP), and
@@ -2174,7 +2453,7 @@ function Thread({
                 it.kind === "day"
                   ? [
                       <PresenceRow as="div" key={it.key} className="ch-ms-day">
-                        <span>{it.label}</span>
+                        <span>{it.label}{api.redesign ? <b className="ch-num"> {clock(it.at, api.timeZone, api.clock)}</b> : null}</span>
                       </PresenceRow>,
                     ]
                   : [
@@ -2200,19 +2479,24 @@ function Thread({
           )}
           {/* No dots under a thread that didn't load or is still loading (states audit c9): nothing to type into yet. */}
           {api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (
-            <div className="ch-ms-msg is-first" /* CH-7602: the typing dots */>
-              {/* The realtime hook says someone is typing, not who: a direct thread knows, a group doesn't. */}
-              <span className="ch-ms-msg__av">{!conv.group && <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} />}</span>
+            <div className={"ch-ms-msg is-first" + (conv.group ? " is-group" : "")} /* CH-7602: the typing dots */>
+              {/* The realtime hook says someone is typing, not who: a direct thread knows; the redesign's group reads the typers. */}
+              <span className="ch-ms-msg__av">
+                {(api.redesign ? conv.group && typist : !conv.group) && <Avatar name={api.redesign && typist ? typist.name : conv.title} id={api.redesign && typist ? (typist.playerId ?? typist.userId) : convAvatarId(api, conv)} size={30} />}
+              </span>
               <div className="ch-ms-msg__col">
-                <div
-                  className="ch-ms-typing"
-                  role="status"
-                  aria-label={`${conv.group ? "Someone" : firstName(conv.title)} is typing`}
-                >
-                  <i />
-                  <i />
-                  <i />
-                </div>
+                {api.redesign ? (
+                  <div className={"ch-msv-typing" + (conv.group ? " has-name" : "")} role="status" aria-label={`${conv.group ? (typist ? firstName(typist.name) : "Someone") : firstName(conv.title)} is typing`}>
+                    {conv.group && typist && <b className="ch-msv-bname">{firstName(typist.name)}</b>}
+                    <span className="ch-msv-typing__dots"><i /><i /><i /></span>
+                  </div>
+                ) : (
+                  <div className="ch-ms-typing" role="status" aria-label={`${conv.group ? "Someone" : firstName(conv.title)} is typing`}>
+                    <i />
+                    <i />
+                    <i />
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -2223,6 +2507,8 @@ function Thread({
         key={conv.id}
         api={api}
         conv={conv}
+        editing={api.redesign ? editing : null}
+        onEditDone={() => setEditing(null)}
         unavailable={api.msgsError}
         replyToId={replyToId}
         onClearReply={() => setReplying(null)}
@@ -2232,7 +2518,7 @@ function Thread({
         seed={seed}
       />
 
-      <EditMessageModal api={api} message={editing} onClose={() => setEditing(null)} />
+      <EditMessageModal api={api} message={api.redesign ? null : editing} onClose={() => setEditing(null)} />
       <DeleteMessageModal api={api} message={deleting} onClose={() => setDeleting(null)} />
       {seenList.render(api, false)}
     </section>
@@ -2566,8 +2852,17 @@ function Details({
     ? personOf(api, conv.memberIds[0] ?? "")
     : undefined;
   const statsHref = rebuiltHref("/golf/dashboard/stats", api.viewer.role);
+  const mute = useMuteAction(api);
+  const [searching, setSearching] = useState(false);
+  const detailsBody = useRef<HTMLElement | null>(null);
+  // MSG-ROLE-04: a coach on a direct thread with a player, nobody else.
+  const profileHref =
+    !conv.group && other?.role === "player" && other.playerId && api.viewer.role === "coach" && statsHref
+      ? `${statsHref}?player=${encodeURIComponent(other.playerId)}`
+      : null;
   return (
     <aside
+      ref={detailsBody}
       className="ch-ms-det"
       aria-label={conv.group ? "Group details" : "Details"}
     >
@@ -2586,15 +2881,29 @@ function Details({
             <Icon icon={Users} size={22} />
           </span>
         ) : (
-          <Avatar name={conv.title} id={convAvatarId(api, conv)} size="xl" ring />
+          <Avatar name={conv.title} id={convAvatarId(api, conv)} size="xl" ring={!api.redesign} year={api.redesign ? convYear(api, conv) : null} />
         )}
         <b>{conv.title}</b>
         <span>
-          {conv.group ? `Group · ${conv.memberCount} members` : conv.subtitle}
+          {api.redesign ? detailsLine(conv, api.teamName) : conv.group ? `Group · ${conv.memberCount} members` : conv.subtitle}
         </span>
       </div>
+      {api.redesign && (
+        <QuickActions
+          api={api}
+          conv={conv}
+          mute={mute}
+          profileHref={profileHref}
+          onSearch={() => setSearching((v) => !v)}
+          onFiles={() => detailsBody.current?.querySelector(".ch-msv-files")?.scrollIntoView({ block: "start" })}
+          onAdd={() => setAdding(true)}
+          onLeave={() => setLeaving(true)}
+        />
+      )}
+      {api.redesign && searching && <ConversationSearch api={api} conv={conv} onClose={() => setSearching(false)} />}
+      {api.redesign && mute.choosing && <MuteMenu anchor={mute.anchor} onPick={(h) => void mute.setMute(true, h)} onClose={() => mute.setChoosing(false)} />}
       <MuteControl api={api} />
-      {api.classDay && !conv.group && (
+      {api.classDay && !conv.group && (!api.redesign || api.viewer.role === "coach") && (
         <ThreadClassSection
           cls={api.classDay}
           conv={conv}
@@ -2609,7 +2918,7 @@ function Details({
           )}
         />
       )}
-      {!conv.group &&
+      {!api.redesign && !conv.group &&
         other?.role === "player" &&
         other.playerId &&
         api.viewer.role === "coach" &&
@@ -2623,7 +2932,15 @@ function Details({
             </Button>
           </div>
         )}
-      {conv.group && (
+      {api.redesign && conv.group && (
+        <MembersCard
+          api={api}
+          conv={conv}
+          onMessage={(id) => void api.startDirect(id)}
+          onRemove={mayRemove ? setRemoving : undefined}
+        />
+      )}
+      {!api.redesign && conv.group && (
         <div className="ch-ms-det__sec">
           <div className="ch-ms-det__l">
             <span>{conv.memberCount} members</span>
@@ -2675,8 +2992,8 @@ function Details({
           )}
         </div>
       )}
-      <FilesSection api={api} conv={conv} />
-      {conv.group && conv.creatorId !== api.viewer.userId && (
+      {api.redesign ? <PhotosAndFiles api={api} conv={conv} /> : <FilesSection api={api} conv={conv} />}
+      {!api.redesign && conv.group && conv.creatorId !== api.viewer.userId && (
         <div className="ch-ms-det__sec">
           <Button
             variant="danger"
@@ -2832,10 +3149,13 @@ function NewMessage({
   api,
   open,
   onClose,
+  initialMode,
 }: {
   api: ChMessagesApi;
   open: boolean;
   onClose: () => void;
+  /** The redesign's pane hands a group or an announcement over to this dialog. */
+  initialMode?: "group" | "announce";
 }) {
   const [mode, setMode] = useState<"direct" | "group" | "announce">("direct");
   const [body, setBody] = useState("");
@@ -2855,11 +3175,12 @@ function NewMessage({
     // A prefilled message (prefill.ts) opens with its people chosen and, for a group, its name.
     // Players start direct threads only (D-15): theirs keeps the first person.
     const group = !!prefill && prefill.to.length > 1 && api.viewer.role === "coach";
-    setMode(group ? "group" : "direct");
+    setMode(initialMode ?? (group ? "group" : "direct"));
     setTo(prefill ? (group ? prefill.to : prefill.to.slice(0, 1)) : []);
     setQ("");
     setTitle(prefill?.title ?? "");
     setTouched(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initialMode seeds the sheet when it opens, and only then
   }, [open, prefill, api.viewer.role]);
   const coachGroup = mode === "group" && api.viewer.role === "coach";
   // A coach's group can include other coaches (D-45): they're added right after it's created.
@@ -3143,6 +3464,10 @@ function NewMessage({
 export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
   const [details, setDetails] = useState(false);
   const [compose, setCompose] = useState(false);
+  const [dialogMode, setDialogMode] = useState<"group" | "announce" | null>(null);
+  const detailsMounted = useDetailsColumn(details, !!api.redesign);
+  // A prefilled message keeps today's dialog: it carries people, a group name and a draft (MSG-NEW-02 draws only the plain start).
+  const newPane = !!api.redesign && compose && !api.prefill && !dialogMode;
   const conv = api.convs.find((c) => c.id === api.selectedId) ?? null;
   const ann = api.announcements.find((a) => a.id === api.selectedAnnId) ?? null;
   useEffect(() => setDetails(false), [api.selectedId]);
@@ -3160,7 +3485,7 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
   const [pane, setPane] = useState({ key: paneKey, turn: 0 });
   if (pane.key !== paneKey) setPane({ key: paneKey, turn: pane.key === null ? pane.turn : pane.turn + 1 });
 
-  if (isMessagesFirstRun(api) && !conv && !ann) {
+  if (!api.redesign && isMessagesFirstRun(api) && !conv && !ann) {
     return (
       // Under the page's framed head, as every page's first-run empty (states audit c4, c9); its one action is the empty's.
       <main data-view="desktop" className="ch-ms ch-ms--first" data-canopy="">
@@ -3193,6 +3518,13 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
       >
         <Rail api={api} onNew={() => setCompose(true)} />
       </SectionBoundary>
+      {newPane ? (
+        <NewMessagePane
+          api={api}
+          onCancel={() => setCompose(false)}
+          onDialog={(mode) => setDialogMode(mode)}
+        />
+      ) : (
       <Swap swapKey={pane.turn} className="ch-ms-pane">
         {ann ? (
           <SectionBoundary
@@ -3220,6 +3552,16 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
               onBack={() => api.select(null)}
             />
           </SectionBoundary>
+        ) : api.redesign && isMessagesFirstRun(api) ? (
+          <section className="ch-ms-thread is-empty">
+            <MessagesFirstRun
+              redesign
+              teamName={api.teamName ?? undefined}
+              coach={api.viewer.role === "coach"}
+              onNew={() => setCompose(true)}
+              onTeam={api.viewer.role === "coach" ? () => { setDialogMode("group"); setCompose(true); } : undefined}
+            />
+          </section>
         ) : (
           <section className="ch-ms-thread is-empty">
             <EmptyState
@@ -3248,7 +3590,8 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
           </section>
         )}
       </Swap>
-      {conv && details && (
+      )}
+      {conv && detailsMounted && (
         <SectionBoundary
           surface="messages.details"
           label="Details"
@@ -3257,7 +3600,15 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
           <Details api={api} conv={conv} onClose={() => setDetails(false)} />
         </SectionBoundary>
       )}
-      <NewMessage api={api} open={compose} onClose={closeCompose} />
+      <NewMessage
+        api={api}
+        open={compose && !newPane}
+        initialMode={dialogMode ?? undefined}
+        onClose={() => {
+          setDialogMode(null);
+          closeCompose();
+        }}
+      />
     </main>
   );
 }

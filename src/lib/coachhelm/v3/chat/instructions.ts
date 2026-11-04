@@ -190,10 +190,18 @@ its own question.
  * day-formatted, so the static prefix stays identical across requests
  * within one flag state.
  */
+const READ_MARKER_SECTION = `
+## Naming your reads
+
+After a sentence that states a figure, write the evidence_ref of the read it came
+from in square brackets. Example: "Jonah is making 62% from three to five feet [e2]."
+Name only refs you were given this turn; never explain the marker.`;
+
 export function buildInstructions(
   ctx: CoachChatContext,
   nowIso: string,
   claimsBlockEnabled: boolean,
+  opts: { askV2?: boolean; knows?: string | null } = {},
 ): string {
   const today = new Intl.DateTimeFormat('en-US', {
     weekday: 'long',
@@ -215,6 +223,8 @@ export function buildInstructions(
     // and leaves the prefix before it identical (prompt caching).
     ...(claimsBlockEnabled ? [CLAIMS_BLOCK_SECTION] : []),
     ACTIONS_SECTION,
+    ...(opts.askV2 ? [READ_MARKER_SECTION] : []),
+    ...(opts.askV2 && opts.knows ? [opts.knows] : []),
   ];
 
   return `${sections.join('\n\n')}

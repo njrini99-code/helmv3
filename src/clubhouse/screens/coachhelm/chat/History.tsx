@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { MessagesSquare, PanelLeftClose, SquarePen } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useRef } from 'react';
@@ -28,6 +29,8 @@ export interface AskHistoryProps {
    * dims until the next one lands. A plain tap goes through it; a modified one (a new tab) is still the link.
    */
   onOpen?: (id: string) => void;
+  /** Ask v2's tone and "CoachHelm knows", under the list. */
+  footer?: ReactNode;
 }
 
 /** The address of a saved conversation. */
@@ -126,6 +129,7 @@ export function HistoryPanel(props: AskHistoryProps & { open: boolean; onHide: (
         New chat
       </button>
       <HistoryList {...props} />
+      {props.footer}
     </aside>
   );
 }

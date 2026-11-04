@@ -52,16 +52,11 @@ import {
   dedupeBySubject,
   rankEvidenceInsightsScored,
 } from './insight-delivery-ranking';
-import { deliverReads, READS_V1_FLAG, type FoldedRead, type ReadsDeliveryPlan } from './insight-delivery-reads';
-import { loadPinnedReadIds } from '@/lib/coachhelm/delivery/pinned-reads';
+import { deliverReads, type FoldedRead } from './insight-delivery-reads';
+import { applyPlayerFeedbackOverlay, loadPlayerFeedbackByInsight, readsDeliveryPlan, shapePlayerFeed } from '@/lib/coachhelm/delivery/player-feed';
 import {
-  coachhelmTeamAllowlist,
-  isCoachHelmFlagEnabled,
-  loadCanaryTeamsForPlayers,
-  runWithCoachHelmTeams,
   withPlayerCoachHelmTeams,
 } from '@/lib/coachhelm/canary';
-import { isFlagEnabled } from '@/lib/flags';
 import {
   V3_ENGINE_FILTER,
   VISIBLE_LIFECYCLE_STATES,
@@ -267,68 +262,6 @@ const INSIGHT_SELECT = `
 // Player feedback overlay (P1-09)
 // ---------------------------------------------------------------------------
 
-/**
- * P1-09 — load the player's latest feedback per insight from
- * `golf_insight_player_feedback`, keyed by insight_id. The canonical read paths
- * write feedback (player-feedback.ts) but historically NEVER read it back, so a
- * player-dismissed insight reappeared on refresh and useful/not-useful state
- * never persisted. We apply the latest feedback per (player, insight) — most
- * recent `created_at` wins, since the upsert keeps one row but a service-role
- * caller could leave history.
- *
- * Returns a Map<insight_id, InsightPlayerFeedback>. Best-effort: a query error
- * yields an empty map (no overlay) rather than throwing — the feed still
- * renders, just without feedback state, which is the safe degradation.
- */
-async function loadPlayerFeedbackByInsight(
-  supabase: SupabaseClient<Database>,
-  playerId: string,
-): Promise<Map<string, InsightPlayerFeedback>> {
-  const out = new Map<string, InsightPlayerFeedback>();
-  const { data, error } = await supabase
-    .from('golf_insight_player_feedback')
-    .select('insight_id, rating, created_at')
-    .eq('player_id', playerId)
-    .order('created_at', { ascending: false });
-
-  if (error || !data) return out;
-
-  for (const row of data) {
-    // Newest-first order means the FIRST row we see per insight is the latest.
-    if (out.has(row.insight_id)) continue;
-    const rating = row.rating;
-    if (
-      rating === 'helpful' ||
-      rating === 'not_helpful' ||
-      rating === 'dismissed' ||
-      rating === 'acknowledged'
-    ) {
-      out.set(row.insight_id, { rating, created_at: row.created_at });
-    }
-  }
-  return out;
-}
-
-/**
- * P1-09 — overlay the player's feedback onto a ranked insight list: attach
- * `player_feedback` for the UI chips and DROP rows the player has dismissed, so
- * a dismissal actually sticks across refreshes. Coach reads never call this, so
- * a player-only dismissal never removes the insight from a coach's view.
- */
-function applyPlayerFeedbackOverlay(
-  insights: EvidenceInsight[],
-  feedbackByInsight: Map<string, InsightPlayerFeedback>,
-): EvidenceInsight[] {
-  if (feedbackByInsight.size === 0) return insights;
-  const out: EvidenceInsight[] = [];
-  for (const insight of insights) {
-    const fb = feedbackByInsight.get(insight.id);
-    if (fb?.rating === 'dismissed') continue; // hide player-dismissed rows
-    out.push(fb ? { ...insight, player_feedback: fb } : insight);
-  }
-  return out;
-}
-
 // ---------------------------------------------------------------------------
 // Exposure ledger (P1-12)
 // ---------------------------------------------------------------------------
@@ -373,55 +306,6 @@ function recordExposureForReturned(
   // the render path (and a rejected promise can't surface because it never
   // rejects). `void` documents the deliberate non-await.
   void recordInsightExposure(rows);
-}
-
-/**
- * CoachHelm Slice 0 delivery (flag `coachhelm_reads_v1_copy`, off by
- * default): fold overlapping reads into one and hold each player to 3 open
- * reads + 1 strength (`insight-delivery-reads.ts`). Off: the lists are what
- * they were, and nothing extra is read. On: the reads a live focus area came
- * from are loaded for these players, so the fold never hides one. Read once
- * per call so one response never mixes the two. (`rank_factors` on exposure
- * rows belongs to Slice 1, flag `coachhelm_support_v1`.)
- */
-async function readsDeliveryPlan(
-  supabase: SupabaseClient,
-  playerIds: readonly string[],
-  includeMore = false,
-): Promise<ReadsDeliveryPlan> {
-  const allow = coachhelmTeamAllowlist();
-  if (allow) return canaryReadsDeliveryPlan(supabase, playerIds, includeMore, allow);
-  if (!isCoachHelmFlagEnabled(READS_V1_FLAG)) return { fold: false, cap: false };
-  // null: the focus-area read failed (logged by the loader). Fold without
-  // pins rather than not at all; a read behind a focus could then fold, as it
-  // did before the pin rule, and nothing else changes.
-  const pinned = await loadPinnedReadIds(supabase, playerIds);
-  return { fold: true, cap: !includeMore, pinned: pinned ?? undefined };
-}
-
-/**
- * HELM_COACHHELM_TEAMS canary: the plan is decided per player, each in that
- * player's canary teams' scope (one batched team read), so a coach's mixed
- * feed folds and caps the listed players' reads and leaves the rest as they
- * were. A failed team read leaves every player out (fail closed).
- */
-async function canaryReadsDeliveryPlan(
-  supabase: SupabaseClient,
-  playerIds: readonly string[],
-  includeMore: boolean,
-  allow: ReadonlySet<string>,
-): Promise<ReadsDeliveryPlan> {
-  if (!isFlagEnabled(READS_V1_FLAG)) return { fold: false, cap: false };
-  // null: the team read failed (logged); no player gets the plan.
-  const teamsByPlayer = await loadCanaryTeamsForPlayers(supabase, playerIds, allow);
-  const players = new Set(
-    playerIds.filter((id) =>
-      runWithCoachHelmTeams(teamsByPlayer?.get(id) ?? [], () => isCoachHelmFlagEnabled(READS_V1_FLAG)),
-    ),
-  );
-  if (players.size === 0) return { fold: false, cap: false };
-  const pinned = await loadPinnedReadIds(supabase, [...players]);
-  return { fold: true, cap: !includeMore, pinned: pinned ?? undefined, players };
 }
 
 /** insight id → rank score, for `recordExposureForReturned`. Not exported:
@@ -781,36 +665,9 @@ async function getInsightsForPlayerImpl(
     return true;
   });
 
-  // RANK-1: order the player feed by the shared `scoreInsight` composite — the
-  // SAME contract every surface uses — so a high-leverage leak (or a high-
-  // confidence zero-impact diagnostic, via the rank floor) leads the card stack
-  // instead of whatever was created most recently. Coach weights default to 1.0
-  // until calibration lands; active goals float goal-touching rows up.
-  const weights = await loadCoachWeightsForPlayer(supabase, playerId).catch(() => ({}));
-  const activeGoals = await loadActiveGoals(playerId).catch(() => []);
-  const rankedScored = await rankEvidenceInsightsScored(filtered, weights, activeGoals, supabase);
-  const ranked = rankedScored.map((r) => r.insight);
-
-  // Finding 29: apply the SAME (player:category:metric-subject) dedupe the
-  // coach feed uses (via the shared `dedupeBySubject` helper) so a player does
-  // not see duplicate-subject cards a coach viewing the same player sees merged.
-  // C2: collapse the 3 par_scoring rows into ONE "Scoring by par type" card
-  // BEFORE dedupe so the merged card is treated as a single unit downstream.
-  // Dedupe AFTER ranking so the surviving row is the highest-ranked of a group,
-  // then trim to the requested limit.
-  const deduped = dedupeBySubject(collapseParScoring(ranked));
-
-  // P1-09: overlay the player's own feedback — attach state for UI chips and
-  // DROP rows the player has dismissed (so a dismissal sticks across refreshes).
-  // Apply BEFORE the limit slice so a dismissed row doesn't consume a slot.
-  const feedbackByInsight = await loadPlayerFeedbackByInsight(supabase, playerId).catch(
-    () => new Map<string, InsightPlayerFeedback>(),
-  );
-  // CoachHelm Slice 0 (flag off by default): fold overlapping reads, then
-  // hold the player to 3 open reads + 1 strength, AFTER their dismissals so a
-  // dismissed read never takes a slot, and BEFORE the limit slice.
-  const plan = await readsDeliveryPlan(supabase, [playerId], opts.includeMore === true);
-  const shown = deliverReads(applyPlayerFeedbackOverlay(deduped, feedbackByInsight), plan).slice(0, limit);
+  // Rank, fold, overlay, cap and slice live in `shapePlayerFeed` (no write there), so the coach's lens can shape the same list and
+  // record nothing (coachhelm-lenses PR 5a). The exposure below stays the only "shown".
+  const { shown, rankedScored } = await shapePlayerFeed(supabase, playerId, filtered, { limit, includeMore: opts.includeMore === true });
   // Record exposure for the EXACT rows returned (post overlay + slice) — a row
   // dropped by the limit or by a player dismissal is never counted as shown.
   const scores = scoreMap(rankedScored);
@@ -1112,7 +969,15 @@ export async function getInsightsForCoachWithMeta(
  */
 async function getTopInsightsForPlayersImpl(
   playerIds: string[],
-  opts: { limit?: number } = {},
+  opts: {
+    limit?: number;
+    /**
+     * For a surface that knows what it draws only after shaping the rows (the CoachHelm team board). Called once with the returned rows;
+     * the ones whose ids the promise resolves to are recorded as shown, in that order. A promise that rejects records nothing. Omitted:
+     * every returned row counts, as before.
+     */
+    drawnLater?: (shown: Map<string, EvidenceInsight[]>) => Promise<readonly string[]>;
+  } = {},
   supabaseOverride?: SupabaseClient,
 ): Promise<Map<string, EvidenceInsight[]>> {
   const out = new Map<string, EvidenceInsight[]>();
@@ -1225,6 +1090,7 @@ async function getTopInsightsForPlayersImpl(
   // a dedup read on `golf_insight_exposure` plus an insert each — which is the
   // N+1 Sentry flagged as JAVASCRIPT-NEXTJS-R2 on /golf/dashboard/stats/team.
   const exposureRows: ReturnType<typeof buildExposureRows> = [];
+  const scoresByPlayer = new Map<string, ReturnType<typeof scoreMap>>();
   const plan = await readsDeliveryPlan(supabase, [...byPlayer.keys()]);
   const supportFactors = isSupportPassEnabled();
   // Neutral weights unless `coachhelm_corrections_v1` is on: then each
@@ -1243,9 +1109,29 @@ async function getTopInsightsForPlayersImpl(
     // (RLS-scoped sweep, not a resolved coach row) so it's left null. The
     // score is the one this sweep actually ranked on (neutral weights unless
     // corrections are on).
-    exposureRows.push(
-      ...buildExposureRows(sliced, 'roster_card', null, scoreMap(rankedScored), { rankFactors: supportFactors }),
+    if (opts.drawnLater) scoresByPlayer.set(pid, scoreMap(rankedScored));
+    else
+      exposureRows.push(
+        ...buildExposureRows(sliced, 'roster_card', null, scoreMap(rankedScored), { rankFactors: supportFactors }),
+      );
+  }
+  if (opts.drawnLater) {
+    void opts.drawnLater(out).then(
+      (drawnIds) => {
+        const byId = new Map([...out.values()].flat().map((i) => [i.id, i]));
+        const drawnByPlayer = new Map<string, EvidenceInsight[]>();
+        for (const id of drawnIds) {
+          const ins = byId.get(id);
+          if (ins) drawnByPlayer.set(ins.player_id, [...(drawnByPlayer.get(ins.player_id) ?? []), ins]);
+        }
+        const rows = [...drawnByPlayer].flatMap(([pid, list]) =>
+          buildExposureRows(list, 'roster_card', null, scoresByPlayer.get(pid) ?? new Map(), { rankFactors: supportFactors }),
+        );
+        if (rows.length > 0) void recordInsightExposure(rows);
+      },
+      () => undefined,
     );
+    return out;
   }
   // Fire-and-forget, failure-silent — same contract as recordExposureForReturned.
   if (exposureRows.length > 0) void recordInsightExposure(exposureRows);
@@ -1260,7 +1146,7 @@ const observedGetTopInsightsForPlayers = withAdminObserved(
 );
 export async function getTopInsightsForPlayers(
   playerIds: string[],
-  opts: { limit?: number } = {},
+  opts: { limit?: number; drawnLater?: (shown: Map<string, EvidenceInsight[]>) => Promise<readonly string[]> } = {},
   supabaseOverride?: SupabaseClient,
 ): Promise<Map<string, EvidenceInsight[]>> {
   return observedGetTopInsightsForPlayers(playerIds, opts, supabaseOverride);

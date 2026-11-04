@@ -47,10 +47,16 @@ export interface ChShellData {
   course?: { lat: number; lng: number } | null;
   /** CoachHelm is on for the signed-in coach (the global, team and coach switches), so the shell offers the Ask sheet. */
   askAvailable?: boolean;
+  /** The top-bar Helm key and Glass quick chat (coachhelm_quick_chat_v1), on top of `askAvailable`. */
+  quickChat?: boolean;
+  /** coachhelm_practice_plans_v1: the quick chat offers its plan tile. */
+  practicePlans?: boolean;
   /** The signed-in player's round in progress, touched in the last 12 hours (P001-C1): the Resume accessory. */
   roundInProgress?: ChRoundInProgress | null;
   /** The signed-in coach is this team's head coach: the identity line says "Head coach". False when unread (plain "Coach"). */
   viewerIsHeadCoach?: boolean;
+  /** clubhouse_refresh_v1 is on: the app root carries `data-ch-refresh="on"`, which scopes the refresh's rules. Set by the dashboard layout, server only. */
+  refresh?: boolean;
   /** golf_tournaments_v1 is on (P016): the Tournaments nav entry and its routes. Set by the dashboard layout, server side. */
   tournaments?: boolean;
   /**
@@ -58,6 +64,8 @@ export interface ChShellData {
    * because the flag registry is server-only. Off or absent: no class RPC is called anywhere and no column is sent.
    */
   classAwareness?: boolean;
+  /** `clubhouse_classes_roster_home_v1` is on: `.ch-root` carries `data-ch-crh="on"`. Server read; clients get it here or as a prop. */
+  crh?: boolean;
 }
 
 /** One of the coach's players, as the palette lists them: the id it opens and the name it shows. Nothing more. */
@@ -263,7 +271,10 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     ...(coachId ? { overdueTasks } : {}),
     timezone,
     askAvailable: askOn,
+    quickChat: askOn && isFlagEnabled('coachhelm_quick_chat_v1'),
+    practicePlans: isFlagEnabled('coachhelm_practice_plans_v1'),
     classAwareness: isFlagEnabled('class_awareness_v1'),
+    crh: isFlagEnabled('clubhouse_classes_roster_home_v1'),
     course: courseOf(courseRes),
     roundInProgress: round && playerId ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null, toPar: toParOf(round.golf_holes ?? []), playerId } : null,
     viewerIsHeadCoach: !!staffRes && !staffRes.error && (staffRes.data ?? []).some((row) => row.role === 'head_coach'),

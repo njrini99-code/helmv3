@@ -151,7 +151,8 @@ just production — there is no separate safety net.
 The assignment flagged this as "only if a tag/query can identify it (search
 issues for BadDeviceToken first), else document as deferred." The org-level
 and project-level classic issue-search endpoints
-(`/organizations/helm-xs/issues/`, `/projects/helm-xs/javascript-nextjs/issues/`)
+(`/organizations/helm-xs/issues/`,
+`/projects/helm-xs/javascript-nextjs/issues/`)
 both return `403 {"detail":"You do not have permission to perform this
 action."}` for this token regardless of query — that looks like a token-scope
 gap (`event:read` on the issue-stream specifically), not evidence the events
@@ -396,10 +397,14 @@ widget count.
 - Affected Users — `error-events`, big_number, `count_unique(user)`
 - Unresolved Issues — `error-events`, big_number, `count()`, `is:unresolved`
 - Regressed Issues — `issue`, table, `is:regressed`
-- Workflow Success vs Failure — `metrics`, line, `sum(helm.workflow.success)` / `sum(helm.workflow.failure)`
-- Server Latency p50/p95 — `spans`, line, `p50(span.duration)` / `p95(span.duration)`, `span.op:http.server`
-- Web Vitals p75 — `spans`, table, `p75(measurements.lcp/fcp/cls/ttfb)`, `is_transaction:true`
-- Top Unresolved Issues — `issue`, table, `is:unresolved environment:production`, ordered by count
+- Workflow Success vs Failure — `metrics`, line, `sum(helm.workflow.success)` /
+  `sum(helm.workflow.failure)`
+- Server Latency p50/p95 — `spans`, line, `p50(span.duration)` /
+  `p95(span.duration)`, `span.op:http.server`
+- Web Vitals p75 — `spans`, table, `p75(measurements.lcp/fcp/cls/ttfb)`,
+  `is_transaction:true`
+- Top Unresolved Issues — `issue`, table, `is:unresolved
+  environment:production`, ordered by count
 
 Deliberately **not** included: a release-marker widget and an uptime-status
 widget. Release markers are a per-chart display toggle in the Sentry UI, not
@@ -409,17 +414,25 @@ fabricated. Uptime status has no dashboard `widgetType`; monitor status is
 only visible on the monitor's own page (linked above).
 
 ### Golf Round Reliability (`9931247`)
-- helm.workflow attempts by action/result (`sport:golf`) — `metrics`, table, grouped
-- helm.workflow failures by action/result (`sport:golf`) — `metrics`, table, grouped
+- helm.workflow attempts by action/result (`sport:golf`) — `metrics`, table,
+  grouped
+- helm.workflow failures by action/result (`sport:golf`) — `metrics`, table,
+  grouped
 - helm.workflow duration p50/p95 (`sport:golf`) — `metrics`, line
 - DB/RPC Failure Codes — `error-events`, table, grouped by `pg_error_code`
 - DB Span Latency p50/p95 — `spans`, line, `span.op:db`
 
 ### CoachHelm AI (`9931248`)
-- gen_ai.* Span Volume — `spans`, line, `count()`, `span.op:gen_ai*` (best-guess wildcard on span op naming — verify against the actual `gen_ai.*` span op Phase D emits once shipped, e.g. via `GET /organizations/helm-xs/spans/fields/` or a Discover query, and adjust if the real op string differs)
+- gen_ai.* Span Volume — `spans`, line, `count()`, `span.op:gen_ai*` (best-guess
+  wildcard on span op naming — verify against the actual `gen_ai.*` span op
+  Phase D emits once shipped, e.g. via `GET
+  /organizations/helm-xs/spans/fields/` or a Discover query, and adjust if the
+  real op string differs)
 - CoachHelm Error Rate — `error-events`, line, `feature:coachhelm*`
-- gen_ai Token Usage (input/output) — `metrics`, big_number ×2, `sum(gen_ai.usage.input_tokens)` / `sum(gen_ai.usage.output_tokens)`
-- helm.ai Request Volume — `metrics`, line, `sum(helm.ai.request/success/failure)`
+- gen_ai Token Usage (input/output) — `metrics`, big_number ×2,
+  `sum(gen_ai.usage.input_tokens)` / `sum(gen_ai.usage.output_tokens)`
+- helm.ai Request Volume — `metrics`, line,
+  `sum(helm.ai.request/success/failure)`
 - helm.ai Duration p50/p95 by model — `metrics`, table, grouped by `model`
 
 ### Jobs & Integrations (`9931249`)
@@ -435,7 +448,15 @@ widget type in this API).
 
 ### Client Experience — created 2026-09-03 after freeing a slot
 
-**Update (commander, 2026-09-03 ~02:45Z):** the owner granted admin authority for this build. `General Template copy` (`308736`) was verified widget-for-widget identical to `General Template` (`260884`) (same 14 widget titles, display types and query fields, never visited) and deleted, which freed the tenth slot; the payload below was then POSTed unchanged and came back as dashboard `9931306` with all five widgets (verified by GET). `General Template copy 1` (`308738`) and `Mobile Template copy` (`308733`) are still present and still look like duplicates; deleting them remains an owner choice. The original blocked-state record is kept below for provenance.
+**Update (commander, 2026-09-03 ~02:45Z):** the owner granted admin authority
+for this build. `General Template copy` (`308736`) was verified
+widget-for-widget identical to `General Template` (`260884`) (same 14 widget
+titles, display types and query fields, never visited) and deleted, which freed
+the tenth slot; the payload below was then POSTed unchanged and came back as
+dashboard `9931306` with all five widgets (verified by GET). `General Template
+copy 1` (`308738`) and `Mobile Template copy` (`308733`) are still present and
+still look like duplicates; deleting them remains an owner choice. The original
+blocked-state record is kept below for provenance.
 
 #### Original record
 
@@ -526,4 +547,8 @@ views. There is no separate cleanup needed for the alert-rule id.
 > legacy API"). To change a metric detector's query: `POST /alert-rules/` a new
 > rule (creates a detector + an auto workflow), `PUT` the new detector's
 > `workflowIds` to the shared owner-notify workflow, `DELETE` the auto workflow,
-> then `DELETE` the old detector. 2026-09-03: 9711170 → 9711646 → 9712025 this way; the final query `feature:golf_round_lifecycle` is what Phase C's flight-recorder finalize emits (`recordWorkflow({ feature: 'golf_round_lifecycle', action: <workflow> })` for `golf.round.submit`, `golf.round.autosave`, `golf.shot.delete`, `golf.shot.add_or_edit`).
+> then `DELETE` the old detector. 2026-09-03: 9711170 → 9711646 → 9712025 this
+way; the final query `feature:golf_round_lifecycle` is what Phase C's
+flight-recorder finalize emits (`recordWorkflow({ feature:
+'golf_round_lifecycle', action: <workflow> })` for `golf.round.submit`,
+`golf.round.autosave`, `golf.shot.delete`, `golf.shot.add_or_edit`).

@@ -108,6 +108,16 @@ export async function isTournamentsFor(role: 'coach' | 'player' | null | undefin
   return isClubhouseFor(role);
 }
 
+/** Whether the phone Stats redesign is on (`clubhouse_stats_redesign_v1`): the `shs` prop on Stats and player Home, read here because flags are server only. */
+export function statsRedesignEnabled(): boolean {
+  return isFlagEnabled('clubhouse_stats_redesign_v1');
+}
+
+/** Whether the refresh foundation is on (`clubhouse_refresh_v1`): the shell's `refresh`, read here because flags are server only. */
+export function refreshEnabled(): boolean {
+  return isFlagEnabled('clubhouse_refresh_v1');
+}
+
 /** Whether the Tournaments nav entry may show: the flag only (the shell that draws it is already Clubhouse's). */
 export function tournamentsNavEnabled(): boolean {
   return isFlagEnabled('golf_tournaments_v1');

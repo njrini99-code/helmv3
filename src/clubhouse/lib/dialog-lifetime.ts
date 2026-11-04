@@ -37,7 +37,10 @@ export function useDialogLifetime(open: boolean, {
   surfaceSelector,
   focusSelector,
   fallbackFocus,
+  atRest = false,
 }: {
+  /** Opened by a link: no rise and no scrim fade; it is at rest on its first frame (classes-roster-home 07 M-CRH-46). */
+  atRest?: boolean;
   direction?: 'bottom' | 'left' | 'center';
   surfaceSelector?: string;
   focusSelector?: string;
@@ -109,7 +112,8 @@ export function useDialogLifetime(open: boolean, {
         // animation's clock starts when its style lands, so the frames spent laying out a long sheet were taken off the
         // start of the rise and it jumped up from part way (phone, owner 2026-10-15: "needs to be smoother"). Two
         // frames later it plays from the bottom, on the compositor.
-        holdRise(dialog, surface, mode === 'fade');
+        if (atRest) chSetScrim(dialog, 1, 0);
+        else holdRise(dialog, surface, mode === 'fade');
         dialog.showModal();
         // A field that asked for focus (autoFocus) keeps it; otherwise the named element (a title) takes it.
         const active = document.activeElement;
@@ -171,6 +175,7 @@ export function useDialogLifetime(open: boolean, {
       }
       exit.cancel();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- atRest is read as the sheet opens; a later change never replays it
   }, [open, reduced, mode, direction, surfaceSelector, focusSelector]);
 
   // A caller can clear its selected object immediately on dismiss. Retain the

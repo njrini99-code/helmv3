@@ -13,6 +13,7 @@ import { resolveMinerWindows } from '@/lib/coachhelm/v2/mining/pattern-miner';
 import { chLogServer } from '../lib/track-server';
 import { isOpenFinding, kindOf, staleFloor } from './coachhelm-classify';
 import { toChInsight } from './coachhelm-map';
+import { areaOf } from './coachhelm-ladder-shape';
 import { isNotEnoughYet, notEnoughOf, notEnoughRead, splitFirm, type ChNotEnoughPlayer } from './coachhelm-firm';
 import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
 import { readCorrections } from './coachhelm-corrections';
@@ -96,7 +97,7 @@ export async function loadPlayerDismissed(supabase: Supabase, playerId: string):
  * `min_rounds_for_signal` through the engine's own resolver, never under the miner's minimum, `resolveMinerWindows`) less the
  * countable completed rounds in its lookback window. For the empty board's "Post 2 more rounds"; null when a read failed.
  */
-async function roundsToGo(supabase: Supabase, playerId: string): Promise<number | null> {
+export async function roundsToGo(supabase: Supabase, playerId: string): Promise<number | null> {
   try {
     const settings = await getPlayerSignalSettings(playerId);
     const { minRounds, lookbackDays } = resolveMinerWindows({ minRounds: settings.minRoundsForSignal, lookbackDays: settings.patternLookbackDays });
@@ -309,7 +310,7 @@ export async function playerTeam(supabase: Supabase, playerId: string): Promise<
  * A proposal made through Fairway's Add focus area or Ask CoachHelm before they wrote the team carries none (`team_id` null), so the
  * read is the player's own proposals on their team or on no team: filtering on the team alone hid every one of those from the player it was for.
  */
-async function loadProposals(supabase: Supabase, playerId: string, teamId: string | null, insights: ReadonlyArray<{ id: string; title: string }>): Promise<ChPlayerHelm['proposals']> {
+export async function loadProposals(supabase: Supabase, playerId: string, teamId: string | null, insights: ReadonlyArray<{ id: string; title: string }>, withAt = false): Promise<ChPlayerHelm['proposals']> {
   if (!teamId) return { list: [], error: false };
   const res = await supabase
     .from('golf_player_focus_areas')
@@ -326,21 +327,25 @@ async function loadProposals(supabase: Supabase, playerId: string, teamId: strin
   const titles = new Map(insights.map((i) => [i.id, speak(i.title, { role: 'player' })]));
   const rows = res.data ?? [];
   const coaches = await coachUserIds(supabase, rows.map((r) => r.coach_id).filter((id): id is string => !!id));
-  const list: ChProposal[] = rows.map((r) => ({ id: r.id, title: r.title, from: (r.from_insight_id && titles.get(r.from_insight_id)) || null, coachUserId: (r.coach_id && coaches?.get(r.coach_id)) || null }));
+  const list: ChProposal[] = rows.map((r) => ({ id: r.id, title: r.title, from: (r.from_insight_id && titles.get(r.from_insight_id)) || null, coachUserId: (r.coach_id && coaches?.get(r.coach_id)?.userId) || null, ...(withAt && r.created_at ? { at: r.created_at } : {}), ...(withAt && r.coach_id && coaches?.get(r.coach_id)?.name ? { coachName: coaches.get(r.coach_id)!.name as string } : {}) }));
   return { list, error: false };
 }
 
 /** The user ids of these coaches (golf_coaches is readable to any signed-in user). A failed read is logged and leaves them unknown. */
 /** Proposing coaches' user ids by coach id, or null when the read failed (each proposal then offers no "Tell coach why"). */
-async function coachUserIds(supabase: Supabase, coachIds: string[]): Promise<Map<string, string> | null> {
+async function coachUserIds(supabase: Supabase, coachIds: string[]): Promise<Map<string, { userId: string; name: string | null }> | null> {
   const ids = [...new Set(coachIds)];
   if (!ids.length) return new Map();
-  const res = await supabase.from('golf_coaches').select('id, user_id').in('id', ids);
+  const res = await supabase.from('golf_coaches').select('id, user_id, full_name').in('id', ids);
   if (res.error) {
     log('proposalCoaches', res.error);
     return null;
   }
-  return new Map((res.data ?? []).filter((c): c is { id: string; user_id: string } => !!c.user_id).map((c) => [c.id, c.user_id]));
+  const coachWord = (full: string | null) => {
+    const last = full?.trim().split(/\s+/).pop();
+    return last ? `Coach ${last}` : null;
+  };
+  return new Map((res.data ?? []).flatMap((c) => (c.user_id ? [[c.id, { userId: c.user_id, name: coachWord(c.full_name) }] as const] : [])));
 }
 
 /** The disabled gate names why; a failed lookup is a failed read, not "off". */
@@ -666,7 +671,7 @@ export async function eligibleForPatterns(supabase: Supabase, playerIds: string[
  * engine's cause families shared by enough of the roster, from the visible
  * reads the board already loaded. Off, or a failed read, draws nothing.
  */
-async function teamPatternsOf(supabase: Supabase, teamId: string, roster: ReadonlyArray<{ id: string; name: string }>, openRows: Promise<readonly RankableEvidenceInsight[]>): Promise<ChTeamPatterns | null> {
+export async function teamPatternsOf(supabase: Supabase, teamId: string, roster: ReadonlyArray<{ id: string; name: string }>, openRows: Promise<readonly RankableEvidenceInsight[]>, onFail?: () => void): Promise<ChTeamPatterns | null> {
   if (!teamPatternEnabled() || roster.length === 0) return null;
   try {
     const [eligible, rows] = await Promise.all([
@@ -676,22 +681,29 @@ async function teamPatternsOf(supabase: Supabase, teamId: string, roster: Readon
       ),
       openRows,
     ]);
-    if (!eligible) return null;
+    if (!eligible) {
+      onFail?.();
+      return null;
+    }
+    const areas = new Map(rows.map((r) => [r.id, areaOf(r.category)]));
+    const areaOfInsight = (id: string) => areas.get(id) ?? null;
     const result = computeTeamPatterns({
       teamId,
       reads: rows.map((r) => ({ id: r.id, player_id: r.player_id, insight_type: r.insight_type ?? '', evidence: r.evidence })),
       rosterTotal: roster.length,
       eligiblePlayerIds: eligible,
     });
-    return toChTeamPatterns(result, new Map(roster.map((p) => [p.id, p.name])));
+    return toChTeamPatterns(result, new Map(roster.map((p) => [p.id, p.name])), areaOfInsight);
   } catch (err) {
     log('teamPatterns', err);
+    onFail?.();
     return null;
   }
 }
 
-async function topInsights(ids: string[]): Promise<Map<string, EvidenceInsight[]>> {
+export async function topInsights(ids: string[], opts?: { limit?: number; drawnLater?: (shown: Map<string, EvidenceInsight[]>) => Promise<readonly string[]> }): Promise<Map<string, EvidenceInsight[]>> {
   try {
+    if (opts) return await getTopInsightsForPlayers(ids, opts);
     // One insight per player: only the top of each row is drawn, so only it is counted as shown in the effectiveness ledger.
     return await getTopInsightsForPlayers(ids, { limit: 1 });
   } catch (err) {
@@ -733,7 +745,7 @@ async function pulseOf(): Promise<ChPulse> {
  * board without waiting for it and an early return leaves nothing unhandled. A pulse that threw is `failed`, which the board draws
  * as the pulse not loading (CH-13203), logged here.
  */
-function pulseLater(): Promise<ChPulseResult> {
+export function pulseLater(): Promise<ChPulseResult> {
   return handled(
     pulseOf().then(
       (pulse): ChPulseResult => ({ status: 'ok', pulse }),

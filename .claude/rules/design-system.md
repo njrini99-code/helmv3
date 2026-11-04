@@ -69,7 +69,7 @@ renders in Baseball and stays on legacy scales.
 `useReducedMotionGuard()` + tokens from `src/lib/coachhelm/v3/motion.ts`;
 `haptic(...)` from `@/lib/haptics` (raw `useReducedMotion`/`triggerHaptic` are
 lint errors on golf paths). Data renders final on mount: no count-up or draw-on.
-One exception (owner, 2026-10-29): CoachHelm chat visuals that arrive in a LIVE
+One exception (owner): CoachHelm chat visuals that arrive in a LIVE
 answer rise in and draw on (`src/components/golf/coachhelm/chat/EvidenceMotion.tsx`,
 spec in `docs/architecture/coachhelm-visual-playbook.md`); restored threads and
 reduced motion still render final, and numbers are never counted up.
