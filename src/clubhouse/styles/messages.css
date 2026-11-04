@@ -4311,3 +4311,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
     transform: none;
   }
 }
+
+/* A pin at the limit: dimmed, its caption says why (PIN-SYNC D7). The caption keeps its own contrast. */
+.ch-menu__item:disabled > :not(small) {
+  opacity: 0.5;
+}
