@@ -124,7 +124,7 @@ export const PREVIEW_TEAM_BOARD: ChTeamBoardData = {
     below: null,
     reach: '5 of 5 players have enough rounds for reads.',
   },
-  pulse: { status: 'ok', pulse: { rows: [], error: false } },
+  pulse: { rows: [], error: false },
   record: { status: 'ok', value: PREVIEW_TRACK_RECORD },
   brief: {
     status: 'ok',

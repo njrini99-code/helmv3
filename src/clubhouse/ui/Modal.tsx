@@ -28,6 +28,7 @@ export function Modal({
   children,
   code,
   initialFocus,
+  className,
 }: {
   /** A control in the head beside Close (the course picker's Add a course). */
   action?: ReactNode;
@@ -35,6 +36,8 @@ export function Modal({
   code?: string;
   /** A selector inside the sheet that takes focus as it opens instead of the heading (a new item's first field). */
   initialFocus?: string;
+  /** A screen's own hook on the dialog, for its scoped styles. */
+  className?: string;
   open: boolean;
   onClose: () => void;
   title: string;
@@ -60,7 +63,7 @@ export function Modal({
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <dialog
       ref={ref}
-      className="ch-modal"
+      className={'ch-modal' + (className ? ` ${className}` : '')}
       data-ch-code={code}
       style={{ ['--ch-modal-w' as string]: `${width}px` }}
       aria-labelledby={titleId}

@@ -15,6 +15,7 @@ import { useFocusActions } from '../parts';
 import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from '../writes';
 import { RecheckReads } from '../Recheck';
 import type { ChTeamStory } from '../../../data/coachhelm-team-shape';
+import type { ChDiveTheme } from '../../../data/coachhelm-dive-shape';
 import { RecordCard, RosterCard, WorkingCard } from './Cards';
 import { CourseCard } from './CourseCard';
 import { Huddle } from './Huddle';
@@ -187,18 +188,28 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
   const skeletonCard = <span className="skl" style={{ height: 120, borderRadius: 16 }} />;
   const today = (
     <Part value={data.brief} fallback={skeletonCard}>
-      {(b) => (
-        <StoriesCard
-          brief={b.status === 'ok' ? b.value : null}
-          themes={null}
-          failed={b.status === 'failed'}
-          onRetry={onRetry}
-          players={list}
-          phone={phone}
-          onDesk={(s) => setOpen({ kind: 'story', id: s.id, story: s, week: b.status === 'ok' ? b.value.week : 'This week' })}
-          onAction={storyAction}
-        />
-      )}
+      {(b) => {
+        const card = (themes: Record<string, Record<string, ChDiveTheme>> | null) => (
+          <StoriesCard
+            brief={b.status === 'ok' ? b.value : null}
+            themes={themes}
+            failed={b.status === 'failed'}
+            onRetry={onRetry}
+            players={list}
+            phone={phone}
+            onDesk={(s) => setOpen({ kind: 'story', id: s.id, story: s, week: b.status === 'ok' ? b.value.week : 'This week' })}
+            onAction={storyAction}
+          />
+        );
+        // Themes come later than the brief; the tiles draw without them until they land.
+        return data.themes ? (
+          <Part value={data.themes} fallback={card(null)}>
+            {(t) => card(t.status === 'ok' ? t.value : null)}
+          </Part>
+        ) : (
+          card(null)
+        );
+      }}
     </Part>
   );
   const proposed = list.flatMap((player) => player.reads.needs.filter((read) => fa.assigned[read.id] || read.assigned === 'proposed').map((read) => ({ player, read })));
@@ -244,7 +255,7 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
           <h4>Add your players to see the team</h4>
         </div>
         <div className="cb">
-          <Button variant="secondary" href={rebuiltHref('/golf/dashboard/roster', 'coach')}>
+          <Button variant="secondary" href={rebuiltHref('/golf/dashboard/roster', 'coach') ?? undefined}>
             Go to Roster
           </Button>
         </div>

@@ -65,7 +65,7 @@ export function emptyTeamBoard(off: ChTeamBoardData['off'] = null): ChTeamBoardD
     stations: stationFigures([]),
     teamTotal: { strokes: null, rounds: 0 },
     course: { history: null, reads: [], against: null },
-    pulse: { status: 'ok', pulse: { rows: [], error: false } },
+    pulse: { rows: [], error: false },
   };
 }
 
@@ -80,6 +80,13 @@ function part<T>(what: string, read: () => Promise<T>): Promise<ChTeamPart<T>> {
       },
     ),
   );
+}
+
+/** A view load's data; anything but ready is that part failing, drawn as its own notice and never as "nothing". */
+async function ready<T>(what: string, load: Promise<{ status: string; data?: T }>): Promise<T> {
+  const res = await load;
+  if (res.status !== 'ready' || res.data === undefined) throw new Error(`${what}: ${res.status}`);
+  return res.data;
 }
 
 /**
@@ -244,8 +251,8 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     notEnough: notEnoughOf(heldBack),
     ...(missing ? { missing } : {}),
     pulse,
-    ...(isMondayBriefEnabled() ? { brief: part('brief', () => loadCoachBrief({ coachId: input.coachId, teamId: input.teamId, now })) } : {}),
-    ...(isTrackRecordEnabled() ? { record: part('record', () => loadCoachTrackRecord({ coachId: input.coachId, teamId: input.teamId, now })) } : {}),
+    ...(isMondayBriefEnabled() ? { brief: part('brief', () => ready('brief', loadCoachBrief({ coachId: input.coachId, teamId: input.teamId, now }))) } : {}),
+    ...(isTrackRecordEnabled() ? { record: part('record', () => ready('record', loadCoachTrackRecord({ coachId: input.coachId, teamId: input.teamId, now }))) } : {}),
     themes: part('themes', async () => {
       // At most four at a time, only players the reads say are moving (02-PLAN 4.5).
       const out: Record<string, ReturnType<typeof themesByCategory>> = {};
