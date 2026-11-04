@@ -342,6 +342,8 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
       const p = list2.find((x) => x.id === open.id);
       return p ? <PlayerPanel player={p} data={data} onRead={openRead} fileOn={fileOn} onClose={close} /> : null;
     }
+    // A phone tells its story in the viewer, the tile's own (StoriesCard).
+    if (open.kind === 'story' && phone) return null;
     if (open.kind === 'story') return <StoryDeskPanel story={open.story} week={open.week} round={rounds?.[open.story.who] ?? null} onClose={close} onAction={storyAction} />;
     const row = data.course.history?.courses.find((c) => c.id === open.id);
     return row ? <CourseSheet row={row} data={data} onPlayer={openPlayer} onRead={openRead} onClose={close} /> : null;

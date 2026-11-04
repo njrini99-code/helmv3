@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { TriangleAlert, X } from 'lucide-react';
 import { storiesOf, type ChStoryRound, type ChTeamPlayer, type ChTeamStory } from '../../../data/coachhelm-team-shape';
 import { formatFixed } from '../../../lib/format';
@@ -206,7 +207,7 @@ export function StoriesCard({
   const names = new Map(players.map((p) => [p.id, p.name]));
   const all = storiesOf(brief, themes, names).slice(0, MAX_TILES);
   const [seen, setSeen] = useChSessionState<string[]>('coachhelm-team-stories', []);
-  const [open, setOpen] = useState<number | null>(autoOpen && phone ? 0 : null);
+  const [open, setOpen] = useState<number | null>(autoOpen ? 0 : null);
   const byName = new Map(players.map((p) => [p.name, p]));
   const coin = (s: ChTeamStory) => byName.get(s.who) ?? null;
   const roundOf = (s: ChTeamStory) => rounds?.[s.who] ?? null;
@@ -272,20 +273,23 @@ export function StoriesCard({
           );
         })}
       </div>
-      {phone && open != null && (
-        <StoryViewer
-          stories={all}
-          start={open}
-          week={week}
-          coin={coin}
-          roundOf={roundOf}
-          onClose={() => setOpen(null)}
-          onAction={(s) => {
-            setOpen(null);
-            onAction(s);
-          }}
-        />
-      )}
+      {phone && open != null && typeof document !== 'undefined' &&
+        // Out of the card: its surface would otherwise hold the full-screen viewer inside it.
+        createPortal(
+          <StoryViewer
+            stories={all}
+            start={open}
+            week={week}
+            coin={coin}
+            roundOf={roundOf}
+            onClose={() => setOpen(null)}
+            onAction={(s) => {
+              setOpen(null);
+              onAction(s);
+            }}
+          />,
+          document.querySelector('.ch-htb') ?? document.body,
+        )}
     </section>
   );
 }

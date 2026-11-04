@@ -2102,3 +2102,9 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 .ch-htb .sto-bar.is-now i {
   background: rgb(143 211 170 / 0.8);
 }
+.ch-htb > .story {
+  z-index: var(--ch-z-sheet);
+}
+.ch-htb > .story h3 {
+  color: var(--f-ink);
+}
