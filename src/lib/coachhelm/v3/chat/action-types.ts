@@ -53,6 +53,8 @@ export type TaskVisual =
   | { kind: 'qual'; title: string; rounds: number; start: string; total: number; picks: number; field: number; deadline: string | null };
 
 export interface ActionProposal {
+  /** A plan's publish: who hears (as coins) and one player's own line, for the card to draw. Every value is also in `facts`. */
+  publish?: { heading: string; coins: Array<{ initials: string; tone: number }>; tellsLine: string; folder: string; sample: { player: string; title: string; body: string } | null };
   /** What the quick chat draws in the card. Every value here is also in `facts`. */
   visual?: TaskVisual;
   /** Human-readable action, e.g. 'Create a recurring practice'. */

@@ -82,7 +82,7 @@ function fakeChat(start: { busy?: boolean; error?: unknown; messages?: UIMessage
  * rejected | readfail | partial | long | reads (an answer that names Jonah's reads, each a link to his Deep dive) | readsother
  * (the same reads for a player not on the team: no links). Nothing reaches the server.
  */
-export function PreviewAsk({ state, kind, v2 = false }: { state?: string; kind?: string; v2?: boolean }) {
+export function PreviewAsk({ state, kind, v2 = false, messages, busy }: { state?: string; kind?: string; v2?: boolean; messages?: UIMessage[]; busy?: boolean }) {
   const offline = state === 'offline';
   useEffect(() => {
     if (!offline) return;
@@ -113,6 +113,9 @@ export function PreviewAsk({ state, kind, v2 = false }: { state?: string; kind?:
       const q: UIMessage = { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Who should play the qualifier on Oct 6?' }] };
       data = { ...base, thread: { id: 'c-qual', title: 'Qualifier lineup for Oct 6', messages: [q] } };
       start = { error: raw };
+    } else if (messages) {
+      data = { ...base, thread: { id: 'c-practice', title: 'Thursday practice', messages } };
+      start = { busy };
     } else if (state && state in ASK_THREAD_STATES) {
       const t = ASK_THREAD_STATES[state]!;
       data = { ...base, thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: t.messages } };
@@ -121,7 +124,7 @@ export function PreviewAsk({ state, kind, v2 = false }: { state?: string; kind?:
     }
     const load: ChAskLoad = state === 'noroster' ? { status: 'noRoster', teamName: 'Finley University' } : state === 'failed' ? { status: 'failed' } : { status: 'ready', data };
     return { load, chat: fakeChat(start), initial: init };
-  }, [state, kind]);
+  }, [state, kind, messages, busy]);
 
   if (state === 'loading') return <AskSkeleton />;
   return <Ask v2={v2} load={load} chat={chat} initial={initial} />;

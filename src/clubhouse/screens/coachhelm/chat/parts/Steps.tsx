@@ -1,7 +1,9 @@
 'use client';
 
 import { ChevronDown } from 'lucide-react';
-import { useId, useState } from 'react';
+import { PlanPreview } from '../../plan/PlanCard';
+import { ReadPicture } from '../../plan/ReadPicture';
+import { useContext, useId, useState } from 'react';
 import { stepsReceipt, type AskStep } from '../../../../data/coachhelm-chat-thread';
 import { Icon } from '../../../../ui/Icon';
 
@@ -29,7 +31,7 @@ function Glyph({ state, active }: { state: AskStep['state']; active: boolean }) 
  * The run (kit ①): one row per step the server announced, never an invented one, no percentage, no timer. Live while the turn runs; when it ends it folds to one line ("4 steps · 3s") that reopens. `waiting`: the turn stopped at a Confirm.
  */
 export function Steps({ steps, active, seconds, waiting = false, stopped = false }: { steps: AskStep[]; active: boolean; seconds: number | null; waiting?: boolean; stopped?: boolean }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(!!useContext(PlanPreview)?.stepsOpen);
   const id = useId();
   if (steps.length === 0) return null;
   const last = steps.length - 1;
@@ -44,6 +46,7 @@ export function Steps({ steps, active, seconds, waiting = false, stopped = false
             <span className="tx">
               <span className={running ? 'lb shim' : 'lb'}>{done ? (s.done ?? s.label) : s.label}</span>
               {s.detail && !running && <small>{s.detail}</small>}
+              {s.picture && !running && <ReadPicture picture={s.picture} />}
             </span>
           </li>
         );

@@ -28,7 +28,7 @@ export async function getDrillBank(sb: Sb, ctx: CoachChatContext, input: { categ
   if (input.category) q = q.eq('category', input.category);
   const lib = await q;
   if (lib.error) return unavailableEnvelope('Could not read the drill bank.', 'The library read failed.');
-  const drills = [...teamRows.map((d) => ({ ref: `team:${d.id}`, title: d.name, category: d.area, minutes: d.minutes })), ...(lib.data ?? []).map((d) => ({ ref: `lib:${d.id}`, title: d.title, category: d.category, minutes: d.duration_min }))];
+  const drills = [...teamRows.map((d) => ({ ref: `team:${d.id}`, title: d.name, category: d.area, minutes: d.minutes, kind: d.kind })), ...(lib.data ?? []).map((d) => ({ ref: `lib:${d.id}`, title: d.title, category: d.category, minutes: d.duration_min }))];
   if (!drills.length) return env('No drills in the bank yet.', { drills: [] }, 'empty');
   return env(`${drills.length} drills in the bank.`, { drills, ids: drills.map((d) => d.ref) });
 }

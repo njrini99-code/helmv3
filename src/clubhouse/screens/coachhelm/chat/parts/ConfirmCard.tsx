@@ -27,6 +27,7 @@ const FLOWS: Record<string, { verb: string; busy: string; chip: string }> = {
   set_availability_note: { verb: 'Save note', busy: 'Saving…', chip: 'Saved' },
   create_recruit: { verb: 'Add recruit', busy: 'Adding…', chip: 'Added' },
 };
+FLOWS.publish_practice_plan = { verb: 'Publish', busy: 'Publishing…', chip: 'Published' };
 const fallback = { icon: ClipboardCheck, verb: () => 'Confirm', busy: 'Working…', chip: 'Done' };
 
 /** Kit ② to ⑤: the draft as what it will become, who hears about it, then the capsule, the receipt with 8 seconds of Undo, and the Told row. Nothing is written before the named button. */
@@ -53,22 +54,51 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny }: { view: 
           <Icon icon={kind.icon} size={17} />
         </span>
         <span className="tt">
-          <b>{p.action}</b>
-          <span>{p.summary}</span>
+          <b>{p.publish ? p.publish.heading : p.action}</b>
+          {!(p.publish && receipt) && <span>{p.summary}</span>}
         </span>
         <span className={'dchip' + (receipt?.status === 'completed' ? ' ok' : '')}>{receipt?.status === 'completed' ? kind.chip : 'Draft'}</span>
       </div>
       <div className={'evd' + (cancelled ? ' dim' : '')}>
         <div className="ls">
-          {p.facts.map((f) => (
+          {(p.publish ? p.facts.filter((f) => f.label !== 'What they get') : p.facts).map((f) =>
+            p.publish && f.label === 'Tells' ? (
+              <div key={f.label} className="f ch-cpv-pub">
+                <span className="k">Tells</span>
+                <span className="v">
+                  <span className="avs" aria-hidden="true">
+                    {p.publish.coins.map((c, i) => (
+                      <span key={i} className={`av t-${c.tone % 6}`}>
+                        {c.initials}
+                      </span>
+                    ))}
+                  </span>
+                  {p.publish.tellsLine}
+                </span>
+              </div>
+            ) : (
             <div key={f.label} className="f">
               <span className="k">{f.label}</span>
               {f.missing ? <span className="ns">Not set</span> : <span className="v">{f.value}</span>}
               {f.source && <span className="inf">{f.source}</span>}
             </div>
-          ))}
+            ),
+          )}
         </div>
       </div>
+      {undecided &&
+        p.publish?.sample && (
+          <div className="ch-cpv-sample">
+            <small>What {p.publish.sample.player} gets (each player sees their own start)</small>
+            <div className="preview">
+              <span className="app" aria-hidden="true" />
+              <span>
+                <b>{p.publish.sample.title}</b>
+                {p.publish.sample.body}
+              </span>
+            </div>
+          </div>
+        )}
       {undecided && (
         <p className="oncf">
           <b>On confirm:</b> {p.notifications.length ? p.notifications.join(' ') : 'Nothing is sent.'}

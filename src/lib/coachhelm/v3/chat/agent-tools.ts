@@ -43,6 +43,7 @@
  * ========================================================================== */
 
 import { getClassTimes, getDrillBank, getTeamPuttingProfile, getTeamStrokesGained } from './practice-reads';
+import { practicePicture } from './practice-pictures';
 import { practiceDraftTool, publishFlow } from './practice-draft';
 import { askDraftTools } from './ask-draft-tools';
 import { CREATE_FLOWS, CREATE_TOOL_NAMES, LINEUP_FLOWS, type FlowDef } from './create-tools';
@@ -315,7 +316,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
     writer.write({
       type: 'data-progress',
       id: step.id,
-      data: { label: step.label, tool: toolName, state: failed ? 'failed' : 'done', done: PROGRESS_DONE[toolName] ?? step.label, ...(envelope && detailFor(envelope) ? { detail: detailFor(envelope) } : {}) },
+      data: { label: step.label, tool: toolName, state: failed ? 'failed' : 'done', done: PROGRESS_DONE[toolName] ?? step.label, ...(envelope ? practicePicture(toolName, envelope) : {}), ...(envelope && detailFor(envelope) ? { detail: detailFor(envelope) } : {}) },
     });
   };
 
@@ -696,7 +697,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
           get_drill_bank: tool({ description: 'Team drills and the GolfHelm library, with the refs a plan must use. A drill is never invented.', inputSchema: z.object({ category: z.string().max(40).optional() }), execute: read('get_drill_bank', (input) => getDrillBank(sb, ctx, input)) }),
           get_team_strokes_gained: tool({ description: 'The team\'s strokes gained per area over recent rounds.', inputSchema: z.object({ rounds: z.number().int().min(3).max(30).default(10) }), execute: read('get_team_strokes_gained', (input) => getTeamStrokesGained(sb, ctx, input)) }),
           get_team_putting_profile: tool({ description: 'The team\'s putting by distance.', inputSchema: z.object({ rounds: z.number().int().min(3).max(30).default(10) }), execute: read('get_team_putting_profile', (input) => getTeamPuttingProfile(sb, ctx, input)) }),
-          ...practiceDraftTool({ ctx, writer, envelopes: () => seenEnvelopes }),
+          ...practiceDraftTool({ ctx, writer, envelopes: () => seenEnvelopes, evidenceByRef }),
           [publishFlow.name]: flowTool(publishFlow as unknown as FlowDef<never>),
         }
       : {}),

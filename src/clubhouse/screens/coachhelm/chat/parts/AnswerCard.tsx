@@ -1,6 +1,7 @@
 'use client';
 
 import { PlanCard } from '../../plan/PlanCard';
+import { PlanIntake } from '../../plan/PlanIntake';
 import { BriefCard } from './BriefCard';
 import { HandoffCard } from './HandoffCard';
 import { Copy } from 'lucide-react';
@@ -86,7 +87,8 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
             );
           if (b.kind === 'evidence') return <AskEvidenceView key={b.key} envelope={b.envelope} roster={players} />;
           if (b.kind === 'visual') return <CoachVisualArtifact key={b.key} artifact={b.artifact} />;
-          if (b.kind === 'plan') return <PlanCard key={b.key} plan={b.plan} onSend={onSend} />;
+          if (b.kind === 'plan') return <PlanCard key={b.key} plan={b.plan} onSend={onSend} fresh={fresh} />;
+          if (b.kind === 'brief' && b.brief.intake) return <PlanIntake key={b.key} brief={b.brief} onSend={onSend} />;
           if (b.kind === 'brief') return <BriefCard key={b.key} title={b.brief.title} questions={b.brief.questions} onDone={(_a, line) => onSend(line || 'Skip, just build')} />;
           if (b.kind === 'handoff') return <HandoffCard key={b.key} handoff={b.handoff} />;
           if (b.kind === 'composition') return <CoachComposition key={b.key} composition={b.composition} live={turn.active} />;

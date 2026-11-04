@@ -21,7 +21,9 @@ const BlockInput = z.object({
   aim: z.string().max(200).default(''),
   because: z.string().max(280).nullable().default(null),
   routine: z.boolean().default(false),
-  stations: z.array(z.object({ id: z.string(), place: z.string().max(80), drill: Drill, note: z.string().max(280).default('') })).max(8).optional(),
+  sources: z.array(z.object({ evidence_ref: z.string().max(80), label: z.string().max(40) })).max(4).default([]).describe('The reads behind this Because, by the evidence_ref they returned.'),
+  alternatives: z.array(z.object({ ref: z.string(), line: z.string().max(120) })).max(3).default([]).describe('Up to three swaps for this block\'s drill, from get_drill_bank.'),
+  stations: z.array(z.object({ id: z.string(), place: z.string().max(80), drill: Drill, note: z.string().max(280).default(''), alternatives: z.array(z.object({ ref: z.string(), line: z.string().max(120) })).max(3).default([]) })).max(8).optional(),
   turn_min: z.number().int().min(5).max(60).optional(),
   move_min: z.number().int().min(0).max(10).optional(),
   hole_from: z.number().int().min(1).max(18).optional(),
@@ -32,6 +34,8 @@ const Input = z.object({
   title: z.string().min(1).max(80),
   focus: z.string().max(140).default(''),
   place: z.string().max(80).default(''),
+  when: z.string().max(60).optional().describe('The practice in words: Thu, Nov 5 · 2:00 to 5:00 PM.'),
+  start: z.string().regex(/^\d{2}:\d{2}$/).optional().describe('The practice start, 24 hour clock, team zone.'),
   minutes_asked: z.number().int().min(5).max(360).describe('The length the coach asked for. Blocks must add up to it.'),
   groups: z.array(z.object({ id: z.string(), name: z.string().max(20), players: z.array(z.string().uuid()) })).max(6).default([]),
   players: z.array(z.string().uuid()).max(60).default([]),
@@ -61,8 +65,33 @@ function toBlock(b: In['blocks'][number], groupIds: string[]): PlanBlock {
   return { ...base, kind: 'team', place: b.place, drill: refOf(b.drill) };
 }
 
+/** What the card draws beyond the plan: drill names, swaps, and the figures behind each source chip, all from this turn's reads. */
+function planCardMeta(input: In, reads: readonly ToolEnvelope[], byRef: ReadonlyMap<string, ToolEnvelope>) {
+  const bank = reads.flatMap((e) => ((e.detail as { drills?: Array<{ ref: string; title: string; minutes?: number | null; kind?: string | null }> } | undefined)?.drills ?? []));
+  const kindOf = (k: string | null | undefined): 'skill' | 'random' | 'pressure' => (k === 'random' || k === 'pressure' ? k : 'skill');
+  const drills = Object.fromEntries(bank.map((d) => [d.ref, { name: d.title, kind: kindOf(d.kind) }]));
+  const alts = (list: Array<{ ref: string; line: string }>) =>
+    list.flatMap((a) => {
+      const d = bank.find((x) => x.ref === a.ref);
+      return d ? [{ ref: a.ref, name: d.title, kind: kindOf(d.kind), min: d.minutes ?? 0, line: a.line }] : [];
+    });
+  const alternatives: Record<string, ReturnType<typeof alts>> = {};
+  const sources: Record<string, Array<{ ref: string; label: string }>> = {};
+  const evidence: Record<string, { label: string; line: string; rows: Array<{ label: string; value: string }> }> = {};
+  for (const b of input.blocks) {
+    if (b.alternatives.length) alternatives[b.id] = alts(b.alternatives);
+    for (const st of b.stations ?? []) if (st.alternatives.length) alternatives[st.id] = alts(st.alternatives);
+    if (b.sources.length) sources[b.id] = b.sources.map((x) => ({ ref: x.evidence_ref, label: x.label }));
+    for (const x of b.sources) {
+      const read = byRef.get(x.evidence_ref);
+      if (read) evidence[x.evidence_ref] = { label: x.label, line: read.summary, rows: read.measurements.slice(0, 8).map((m) => ({ label: m.metric_label, value: m.value == null ? '—' : String(m.value) })) };
+    }
+  }
+  return { when: input.when, start: input.start, drills, alternatives, sources, evidence };
+}
+
 /** `draft_practice_plan` writes nothing. Each Because is audited against this turn's reads; one that fails keeps its Aim and shows "Lean read" (02 §5.2). */
-export function practiceDraftTool({ ctx, writer, envelopes }: { ctx: CoachChatContext; writer: UIMessageStreamWriter; envelopes: () => readonly ToolEnvelope[] }): ToolSet {
+export function practiceDraftTool({ ctx, writer, envelopes, evidenceByRef }: { ctx: CoachChatContext; writer: UIMessageStreamWriter; envelopes: () => readonly ToolEnvelope[]; evidenceByRef: ReadonlyMap<string, ToolEnvelope> }): ToolSet {
   let version = 0;
   return {
     draft_practice_plan: tool({
@@ -90,7 +119,7 @@ export function practiceDraftTool({ ctx, writer, envelopes }: { ctx: CoachChatCo
         }
         const body: PlanBodyV2 = { v: 2, focus: input.focus, notes: '', place: input.place, arrivalBufferMin: 15, bring: input.bring, players: input.players, groups: input.groups.map((g) => ({ ...g, savedGroupId: null })), variants: { main: { blocks: input.blocks.map((b) => toBlock(b, groupIds)) }, rain: null } };
         version += 1;
-        writer.write({ type: 'data-practice-plan', id: `plan-${version}`, data: { version, eventId: input.event_id, title: input.title, draft: { body, why, version }, saveOn: isPracticeTabEnabled() } });
+        writer.write({ type: 'data-practice-plan', id: `plan-${version}`, data: { version, eventId: input.event_id, title: input.title, draft: { body, why, version }, saveOn: isPracticeTabEnabled(), ...planCardMeta(input, envelopes(), evidenceByRef) } });
         return { status: 'shown', message: `A ${Math.round(sum / 60 * 10) / 10} hour plan in ${input.blocks.length} blocks is on the card. Nothing is saved yet.` };
       },
     }),

@@ -1,5 +1,6 @@
 import { artifactsOf, type AskArtifact } from '../screens/coachhelm/chat/parts/artifacts';
 import type { UIMessage } from 'ai';
+import type { ReadPictureData } from '../screens/coachhelm/plan/ReadPicture';
 import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { Measurement, MeasurementSeries, ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
 import { ValidatedComposition } from '@/lib/coachhelm/v3/chat/visuals/composition';
@@ -93,6 +94,8 @@ export interface AskStep {
   done?: string;
   /** One fact the read returned. */
   detail?: string;
+  /** A practice read's picture, drawn under the finished step. */
+  picture?: ReadPictureData;
 }
 
 /** One read of a turn, by the ref the model cites (Ask v2). */
@@ -132,6 +135,8 @@ import type { PlanPartData } from '../screens/coachhelm/plan/PlanCard';
 
 export interface AskBriefData {
   title: string;
+  /** A practice plan's one card: every group at once, with its line under the head. */
+  intake?: { line: string; format?: string | null };
   questions: Array<{ id: string; title: string; why?: string; multi?: boolean; options: Array<{ id: string; label: string; hint?: string }>; pick?: string[] }>;
 }
 
@@ -419,8 +424,8 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
   const steps: AskStep[] = parts
     .filter((p) => p.type === 'data-progress')
     .map((p, i) => {
-      const d = dataOf<{ label?: string; state?: AskStep['state']; done?: string; detail?: string }>(p);
-      return { id: String(p.id ?? `step-${i}`), label: stepLabel(d?.label), ...(d?.state ? { state: d.state } : {}), ...(d?.done ? { done: stepLabel(d.done) } : {}), ...(d?.detail ? { detail: d.detail } : {}) };
+      const d = dataOf<{ label?: string; state?: AskStep['state']; done?: string; detail?: string; picture?: ReadPictureData }>(p);
+      return { id: String(p.id ?? `step-${i}`), label: stepLabel(d?.label), ...(d?.state ? { state: d.state } : {}), ...(d?.done ? { done: stepLabel(d.done) } : {}), ...(d?.picture ? { picture: d.picture } : {}), ...(d?.detail ? { detail: d.detail } : {}) };
     });
   const envelopes = parts
     .filter((p) => p.type === 'data-evidence')

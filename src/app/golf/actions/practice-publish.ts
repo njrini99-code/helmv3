@@ -4,7 +4,7 @@ import { after } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
-import { diffVersions, parsePlanBody, validatePlan } from '@/lib/coachhelm/v3/practice-plan/model';
+import { diffVersions, parsePlanBody, pathFor, validatePlan, type PlanBodyV2 } from '@/lib/coachhelm/v3/practice-plan/model';
 import { isPracticeTabEnabled } from '@/lib/coachhelm/v3/practice-plan/flag';
 import { practiceRpc, practiceTables } from '@/lib/golf/practice-db';
 import { fanOutPracticePlan, type PracticeNotice } from '@/lib/golf/practice-fanout';
@@ -12,6 +12,23 @@ import { isPracticeMissing, practiceErrorOf } from '@/lib/golf/practice-errors';
 import type { PracticeResult } from './practice-plans';
 
 const when = (iso: string, zone: string, opts: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-US', { ...opts, timeZone: zone }).format(new Date(iso));
+
+/** A first publish tells each player their own first stop (S-PLY.notify); a coach, or a player with no group, gets the plan's line. */
+async function firstStopNotices(sb: Awaited<ReturnType<typeof createClient>>, body: PlanBodyV2, recipients: Recipient[], eventStart: Date, title: string, time: string): Promise<PracticeNotice[]> {
+  const fallback = `${time} · Open the plan to see where you start`;
+  const userIds = recipients.map((r) => r.user_id);
+  const { data } = await sb.from('golf_players').select('id, user_id').in('user_id', userIds);
+  const playerOf = new Map((data ?? []).map((p) => [p.user_id, p.id]));
+  const byBody = new Map<string, string[]>();
+  for (const u of userIds) {
+    const playerId = playerOf.get(u);
+    const first = playerId ? pathFor(body, playerId, eventStart)[0] : undefined;
+    const group = playerId ? body.groups.find((g) => g.players.includes(playerId)) : undefined;
+    const line = first ? `${time} · You start on ${first.place}${group ? ` with Group ${group.name}` : ''}` : fallback;
+    byBody.set(line, [...(byBody.get(line) ?? []), u]);
+  }
+  return [...byBody].map(([line, ids]) => ({ userIds: ids, title, body: line }));
+}
 
 interface Recipient {
   user_id: string;
@@ -55,7 +72,8 @@ async function publishPracticePlanImpl(input: { planId: string; expectedVersion:
   if (input.notify === 'now' && notified && recipients.length) {
     const word = when(event?.start_time ?? new Date().toISOString(), zone, { weekday: 'long' });
     const time = when(event?.start_time ?? new Date().toISOString(), zone, { hour: 'numeric', minute: '2-digit' });
-    const notices: PracticeNotice[] = [row.first_publish ? { userIds: recipients.map((r) => r.user_id), title: `Practice plan for ${word}`, body: `${time} · Open the plan to see where you start` } : { userIds: recipients.map((r) => r.user_id), title: `${word}’s plan changed`, body: changes?.changes[0]?.line ?? 'Open the plan to see what changed' }];
+    const firstNotices = row.first_publish ? await firstStopNotices(sb, body, recipients, eventStart, `Practice plan for ${word}`, time) : [];
+    const notices: PracticeNotice[] = row.first_publish ? firstNotices : [ { userIds: recipients.map((r) => r.user_id), title: `${word}’s plan changed`, body: changes?.changes[0]?.line ?? 'Open the plan to see what changed' }];
     after(() => fanOutPracticePlan(plan.id, row.published_version, row.first_publish ? 'published' : 'updated', notices));
   }
   revalidatePath('/golf/dashboard/documents');
