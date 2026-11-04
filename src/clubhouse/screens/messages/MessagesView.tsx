@@ -643,6 +643,7 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { ap
       )}
       <span className="ch-ms-row__main">
         <span className="ch-ms-row__top">
+          {api.redesign && isUnread(c) && <i className="ch-msv-dot" aria-hidden="true" />}
           <b>{c.title}</b>
           {api.redesign && c.muted && <Icon icon={BellOff} size={13} className="ch-ms-row__mute" aria-label="Muted" />}
           <span className="ch-num">
@@ -690,7 +691,9 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { ap
               )}
             </span>
           </span>
-          {c.unread > 0 ? (
+          {api.redesign ? (
+            isUnread(c) ? <span className="ch-sr-only">{c.unread > 0 ? `${c.unread} unread` : "Marked unread"}</span> : null
+          ) : c.unread > 0 ? (
             <span role="img"
               className="ch-ms-count ch-num"
               aria-label={`${c.unread} unread`}
@@ -1555,12 +1558,13 @@ export function Bubble({
             </button>
           </span>
         ) : (
-          (last || showTime) && (
-            <span className="ch-ms-msg__t ch-num">
-              {clock(m.at, api.timeZone, api.clock)}
-              {m.edited ? " · Edited" : ""}
+          // The lane: times live behind the drag (S-MSG.times); only your latest message keeps its receipt, as a pill (S-MSG.seen).
+          (api.redesign ? carrier && m.mine && (group || m.seen) : last || showTime) && (
+            <span className={"ch-ms-msg__t ch-num" + (api.redesign ? " is-pill" : "")}>
+              {api.redesign ? (m.seen && !group ? `Seen ${clock(m.at, api.timeZone, api.clock)}` : null) : clock(m.at, api.timeZone, api.clock)}
+              {!api.redesign && m.edited ? " · Edited" : ""}
               {/* OC-3: a direct thread's "Seen" sits on the carrier only (or a time revealed by a swipe), not every run-end. */}
-              {m.mine && !group && m.seen && (carrier || showTime) ? " · Seen" : ""}
+              {!api.redesign && m.mine && !group && m.seen && (carrier || showTime) ? " · Seen" : ""}
               {/* P-1 M3: when the receipt moves to a newer message, the old one fades out on quick (instant when reduced). */}
               <AnimatePresence initial={false}>
                 {group && (carrier || showTime) && (
@@ -2503,7 +2507,7 @@ function Thread({
                 it.kind === "day"
                   ? [
                       <PresenceRow as="div" key={it.key} className="ch-ms-day">
-                        <span>{it.label}</span>
+                        <span>{it.label}{api.redesign ? <b className="ch-num"> {clock(it.at, api.timeZone, api.clock)}</b> : null}</span>
                       </PresenceRow>,
                     ]
                   : [

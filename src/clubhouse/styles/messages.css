@@ -4641,8 +4641,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   [data-ch-ms-v2] .ch-ms-th .ch-avatar {
     flex: none;
   }
-  [data-ch-ms-v2] .ch-ms-bub {
+  [data-ch-ms-v2] .ch-ms-msg__col {
     max-width: min(520px, 72%);
+  }
+  [data-ch-ms-v2] .ch-ms-bub {
     font: var(--ch-type-15); letter-spacing: var(--ch-track-15); }
   [data-ch-ms-v2] .ch-ms-msgs {
     max-width: var(--ch-measure-reading);
@@ -4935,6 +4937,44 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   color: var(--ch-text-secondary);
 }
 /* Reaction badges (MSG-REACT-01, 04). */
+[data-ch-ms-v2] .ch-ms-msg__col {
+  position: relative;
+}
+[data-ch-ms-v2] .ch-ms-msg__t.is-pill {
+  align-self: flex-end;
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-messages-x3);
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+[data-ch-ms-v2] .ch-ms-msg__t.is-pill:empty {
+  display: none;
+}
+[data-ch-ms-v2] .ch-ms-day b {
+  font-weight: 400;
+}
+[data-ch-ms-v2] .ch-ms-row__top:has(.ch-msv-dot) b {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+[data-ch-ms-v2] .ch-msv-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-block-start: 6px;
+  margin-inline-end: -2px;
+  border-radius: 50%;
+  background: var(--ch-accent);
+}
+[data-ch-ms-v2] .ch-msv-card .ch-ms-row {
+  padding-inline: 16px;
+}
+[data-ch-ms-v2] .ch-msv-files .ch-msp-none {
+  padding: 0 16px 12px;
+}
 [data-ch-ms-v2] .ch-ms-reacts {
   position: absolute;
   top: -14px;
@@ -5349,7 +5389,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
     position: absolute;
     inset: 0 0 auto;
     z-index: 3;
-    background: var(--ch-glass-bg);
+    background: var(--ch-glass-strong);
     -webkit-backdrop-filter: var(--ch-glass-blur);
     backdrop-filter: var(--ch-glass-blur);
   }

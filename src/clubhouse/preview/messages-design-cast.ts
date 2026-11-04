@@ -122,9 +122,11 @@ export const DESIGN_REACTIONS: Record<string, ChReaction[]> = {
   e8: [rx('Love', 1)],
 };
 
+const DESIGN_PHOTO = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 236 170"><rect width="236" height="110" fill="#dfe6d8"/><rect y="100" width="236" height="70" fill="#a9c99a"/><ellipse cx="170" cy="170" rx="110" ry="42" fill="#3a8a58"/><ellipse cx="30" cy="172" rx="70" ry="24" fill="#3a8a58"/><line x1="150" y1="60" x2="150" y2="118" stroke="#222" stroke-width="2"/><path d="M150 60l16 5-16 5z" fill="#c63d2f"/></svg>')}`;
+
 export const designAttachments = async (messageId: string) => {
   if (messageId === 'o1') return [{ id: 'da-o1', name: 'Swing video.mov', size: 42 * 1024 * 1024, mime: 'video/quicktime', url: null }];
-  if (messageId === 'e7') return [{ id: 'da-e7', name: 'Back nine.jpg', size: 2 * 1024 * 1024, mime: 'image/jpeg', url: null }];
+  if (messageId === 'e7') return [{ id: 'da-e7', name: 'Back nine.jpg', size: 2 * 1024 * 1024, mime: 'image/svg+xml', url: DESIGN_PHOTO }];
   return [];
 };
 

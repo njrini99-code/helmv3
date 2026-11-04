@@ -32,10 +32,16 @@ export function HoldLift({ messageId, mine, bar, children, onClosed, closeSignal
     copy.current.replaceChildren(el.cloneNode(true));
     el.style.visibility = 'hidden';
     const menuH = menu.current?.offsetHeight ?? 0;
-    const top = rect.top - 58;
-    const bottom = rect.bottom + 8 + menuH;
-    const limit = window.innerHeight - 16;
-    shift.current = top < 60 ? 60 - top : bottom > limit ? limit - bottom : 0;
+    // M-MSG-10b: the menu 10 below the bubble, the bar 56 above it, inside 60 top / 36 bottom on a phone and 12 / 12 on a desktop.
+    const phone = window.innerWidth < 768;
+    const insetTop = phone ? 60 : 12;
+    const top = rect.top - 56;
+    const bottom = rect.bottom + 10 + menuH;
+    const limit = window.innerHeight - (phone ? 36 : 12);
+    shift.current = bottom > limit ? Math.max(limit - bottom, insetTop - top) : top < insetTop ? insetTop - top : 0;
+    // The bar and menu are placed here, after the menu can be measured: a render alone would leave them at the unshifted spot.
+    if (rbar.current) rbar.current.style.top = `${top + shift.current}px`;
+    if (menu.current) menu.current.style.top = `${rect.bottom + 10 + shift.current}px`;
     const lift = chSpringCurve('lift');
     const pop = chSpringCurve('pop');
     const smooth = chSpringCurve('smooth');
@@ -125,11 +131,11 @@ export function HoldLift({ messageId, mine, bar, children, onClosed, closeSignal
   return createPortal(
     <div className="ch-msv-lift" data-ch-ms-v2="on" role="dialog" aria-modal="true" aria-label="Message actions" data-ch-code="CH-7604">
       <div ref={scrim} className="ch-msv-lift__scrim" onClick={() => (closing.current ? reopen() : dismiss())} aria-hidden="true" />
-      <div ref={copy} className="ch-msv-lift__copy" aria-hidden="true" onPointerDown={reopen} style={{ left: rect.left, top: rect.top, width: rect.width, height: rect.height, transformOrigin: mine ? '100% 100%' : '0% 100%' }} />
-      <div ref={rbar} className="ch-msv-rbar" style={{ top: rect.top - 58 + shift.current, transformOrigin: mine ? '100% 100%' : '0% 100%', ...side }}>
+      <div ref={copy} className={'ch-msv-lift__copy ch-ms-msg is-first is-last' + (mine ? ' is-mine' : '')} aria-hidden="true" onPointerDown={reopen} style={{ left: rect.left, top: rect.top, width: rect.width, height: rect.height, transformOrigin: mine ? '100% 100%' : '0% 100%' }} />
+      <div ref={rbar} className="ch-msv-rbar" style={{ top: rect.top - 56, transformOrigin: mine ? '100% 100%' : '0% 100%', ...side }}>
         {bar}
       </div>
-      <div ref={menu} className="ch-msv-holdmenu" style={{ top: rect.bottom + 8 + shift.current, transformOrigin: mine ? '100% 0%' : '0% 0%', ...side }}>
+      <div ref={menu} className="ch-msv-holdmenu" style={{ top: rect.bottom + 10, transformOrigin: mine ? '100% 0%' : '0% 0%', ...side }}>
         {children}
       </div>
     </div>,

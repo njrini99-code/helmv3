@@ -163,7 +163,7 @@ export function sectionOf(iso: string | null, now: string, timeZone: string): 't
 }
 
 export type ChThreadItem =
-  | { kind: 'day'; key: string; label: string }
+  | { kind: 'day'; key: string; label: string; at: string }
   | { kind: 'msg'; key: string; m: ChMsg; first: boolean; last: boolean };
 
 /** Day separators, and runs of messages from one sender within five minutes grouped as one block. */
@@ -174,7 +174,7 @@ export function threadItems(msgs: ChMsg[], now: string, timeZone: string): ChThr
     const d = parts(m.at, timeZone);
     if (d !== day) {
       day = d;
-      out.push({ kind: 'day', key: `d${d}`, label: dayLabel(m.at, now, timeZone) });
+      out.push({ kind: 'day', key: `d${d}`, label: dayLabel(m.at, now, timeZone), at: m.at });
     }
     const prev = msgs[i - 1];
     const next = msgs[i + 1];

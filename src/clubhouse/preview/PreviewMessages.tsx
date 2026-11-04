@@ -201,7 +201,7 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
   const design = state === 'design';
   const cast = useMemo(() => (design ? DESIGN_CAST : castOf(role)), [design, role]);
   const { people, all } = cast;
-  const [convs, setConvs] = useState<ChConv[]>(state === 'empty' || (design && view === 'empty') ? [] : design && view === 'longinbox' ? designLongInbox(cast.convs) : cast.convs);
+  const [convs, setConvs] = useState<ChConv[]>(state === 'empty' || (design && (view === 'empty' || view === 'loading')) ? [] : design && view === 'longinbox' ? designLongInbox(cast.convs) : cast.convs);
   const [threads, setThreads] = useState(cast.threads);
   const [reactions, setReactions] = useState(design ? DESIGN_REACTIONS : baseReactions);
   const [votes, setVotes] = useState<PollResponseRow[]>(design ? DESIGN_VOTES : baseVotes);
@@ -227,11 +227,64 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
       delete window.__chMsgFixture;
     };
   }, [design, view]);
+  // The page's overlays, opened the way a person would (spec section 12): the fixture stays out of the screens' code.
+  useEffect(() => {
+    if (!design || !view) return;
+    const el = (sel: string) => document.querySelector<HTMLElement>(sel);
+    const lastMine = () => Array.from(document.querySelectorAll<HTMLElement>('.ch-ms-msg.is-mine .ch-ms-msg__stack')).pop() ?? null;
+    const click = (target: () => HTMLElement | null | undefined) => () => {
+      const found = target();
+      found?.click();
+      return !!found;
+    };
+    const named = (text: string) => click(() => Array.from(document.querySelectorAll<HTMLElement>('button, [role="menuitem"]')).find((b) => b.textContent?.trim() === text));
+    const hold = (target: () => HTMLElement | null) => () => {
+      const found = target();
+      found?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 200, clientY: 300 }));
+      return !!found;
+    };
+    const details = click(() => el('[aria-label="Details"]'));
+    const plus = click(() => el('.ch-msv-plus__key'));
+    // A phone row opens its sheet from the hold or from this control; a desktop row from a right click.
+    const rowMenu = () => {
+      const phone = document.querySelector<HTMLElement>('.ch-ms-swipe .ch-sr-only--focusable button');
+      if (phone) {
+        phone.click();
+        return true;
+      }
+      return hold(() => el('.ch-ms-row'))();
+    };
+    const steps: Record<string, Array<() => boolean>> = {
+      new: [click(() => el('[aria-label="New message"]'))],
+      details: [details],
+      groupdetails: [details],
+      mute: [details, named('Mute')],
+      attach: [plus],
+      pollnew: [plus, named('Poll')],
+      hold: [hold(lastMine)],
+      holdseen: [hold(lastMine)],
+      react: [hold(lastMine)],
+      reply: [hold(lastMine), named('Reply')],
+      edit: [hold(lastMine), named('Edit')],
+      rowmenu: [rowMenu],
+      pinlimit: [rowMenu],
+      seen: [click(() => el('.ch-ms-seen-slot button'))],
+      votes: [named('See votes')],
+    };
+    const list = steps[view] ?? [];
+    // Each step waits for what it opens: a thread and its menus mount in their own time.
+    let at = 0;
+    const timer = setInterval(() => {
+      if (at >= list.length) return clearInterval(timer);
+      if (list[at]?.()) at += 1;
+    }, 400);
+    return () => clearInterval(timer);
+  }, [design, view]);
   useEffect(() => {
     if (design || state === 'empty' || state === 'rail' || state === 'announcement') return;
     if (window.matchMedia('(min-width: 821px)').matches) setSelectedId((id) => id ?? 'team');
   }, [state, design]);
-  const [anns, setAnns] = useState<ChAnnouncement[]>(state === 'empty' ? [] : baseAnns);
+  const [anns, setAnns] = useState<ChAnnouncement[]>(state === 'empty' || design ? [] : baseAnns);
   const [annId, setAnnId] = useState<string | null>(state === 'announcement' ? 'an1' : null);
   const [mute, setMute] = useState<ChMute>({ muted: false, until: null });
   // Any row's mute (owner decision 14), the open one's included: the preview's own record by conversation.

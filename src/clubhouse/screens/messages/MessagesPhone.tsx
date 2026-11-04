@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { AnimatePresence, useIsPresent } from "motion/react";
-import {
+import { Flag,
   ArrowUp,
   Bell,
   BellOff,
@@ -268,6 +268,10 @@ function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void })
   const context = loading ? "Loading conversations" : [`${unread} unread`, api.teamName].filter(Boolean).join(" · ");
   const pinned = (api.pins?.ids ?? []).map((id) => api.convs.find((c) => c.id === id)).filter((c): c is ChConv => !!c);
   const firstRun = isMessagesFirstRun(api);
+  // A pin isn't listed twice (06 S-MSG): the Pinned card holds it unless a search or Groups is asking.
+  const pinIds = new Set(pinned.map((c) => c.id));
+  const recent = filter !== "groups" && !q.trim() ? list.filter((c) => !pinIds.has(c.id)) : list;
+  const recentTitle = filter === "unread" ? "Unread" : filter === "groups" ? "Groups" : "Recent";
   return (
     <div className="ch-msp-page ch-msp-home ch-msv-inbox" onClickCapture={(e) => noteTappedFace(e.target)}>
       {!firstRun && (
@@ -314,13 +318,13 @@ function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void })
         <MessagesFirstRun redesign coach={api.viewer.role === "coach"} teamName={api.teamName ?? undefined} onNew={onNew} />
       ) : (
         <div className="ch-msp-list">
-          {filter === "all" && !q.trim() && pinned.length > 0 && (
+          {filter !== "groups" && !q.trim() && pinned.length > 0 && (
             <section className="ch-msv-card" aria-label="Pinned">
               <h2 className="ch-msv-card__h">Pinned</h2>
               <div className="ch-msv-pins">
                 {pinned.map((c) => {
                   const typers = api.typingByConv?.get(c.id);
-                  const said = !c.group && c.lastSenderId !== api.viewer.userId ? c.lastText : null;
+                  const said = c.lastSenderId !== api.viewer.userId ? c.lastText : null;
                   return (
                     <button key={c.id} type="button" className="ch-msv-pin" onClick={() => api.select(c.id)}>
                       {typers?.length ? (
@@ -329,24 +333,24 @@ function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void })
                         <span className="ch-msv-bubblet">{said}</span>
                       ) : null}
                       {c.group ? (
-                        <span className="ch-ms-grp ch-msv-pin__grp"><Icon icon={Users} size={31} /></span>
+                        <span className="ch-ms-grp ch-msv-pin__grp"><Icon icon={c.title === api.teamName ? Flag : Users} size={31} /></span>
                       ) : (
                         <Avatar name={c.title} id={convAvatarId(api, c)} size="xl" year={convYear(api, c)} />
                       )}
-                      <span className="ch-msv-pin__l">{c.group ? c.title : firstName(c.title)}</span>
+                      <span className="ch-msv-pin__l">{c.title === api.teamName ? "Team" : c.group ? c.title : firstName(c.title)}</span>
                     </button>
                   );
                 })}
               </div>
             </section>
           )}
-          {list.length > 0 && (
-            <section className="ch-msv-card" aria-label="Recent">
+          {recent.length > 0 && (
+            <section className="ch-msv-card" aria-label={recentTitle}>
               <h2 className="ch-msv-card__h">
-                Recent <small className="ch-num">{list.length}</small>
+                {recentTitle} <small className="ch-num">{recent.length}</small>
               </h2>
               <ListPresence arrive="inbox" cut={changedScope}>
-                {list.map((c) => (
+                {recent.map((c) => (
                   <ConvRow key={c.id} api={api} c={c} avatarSize={44} phone />
                 ))}
               </ListPresence>
@@ -592,7 +596,7 @@ function PhoneThread({
           <button type="button" className="ch-msp-who" onClick={onDetails}>
             {conv.group ? <GroupMark size="sm" /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} year={convYear(api, conv)} />}
             <span>
-              <b>{conv.title}</b>
+              <b>{api.redesign && !conv.group ? firstName(conv.title) : conv.title}</b>
               <em>
                 <ThreadClassSub cls={api.classDay} conv={conv} other={conv.group ? undefined : personOf(api, conv.memberIds[0] ?? "")} sub={sub} where="phone" />
               </em>
@@ -648,7 +652,7 @@ function PhoneThread({
                   it.kind === "day"
                     ? [
                         <PresenceRow as="div" key={it.key} className="ch-ms-day">
-                          <span>{it.label}</span>
+                          <span>{it.label}{api.redesign ? <b className="ch-num"> {clock(it.at, api.timeZone, api.clock)}</b> : null}</span>
                         </PresenceRow>,
                       ]
                     : [
