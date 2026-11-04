@@ -1,0 +1,168 @@
+# Contrast from coachhelm-ask.html tokens (WCAG 2.x). Text target 4.9:1, floor 4.5:1, marks 3.0:1.
+
+## Light
+Pair                                                                                          fg  ratio  result
+Body text on card                                                                        #1C1B18  17.08  ok
+Secondary text on card (step done label, meta, receipt sub)                              #46433D   9.77  ok
+Tertiary text on card (done step detail, axis, hours)                                    #5F5C55   6.61  ok
+Body text on page (home greeting, history rows)                                          #1C1B18  15.10  ok
+Secondary on page (scope line, home context line)                                        #46433D   8.64  ok
+Tertiary on page (desktop disclaimer, history "Today")                                   #5F5C55   5.85  ok
+Body text on well (pills, answer pills, mk chips)                                        #1C1B18  15.66  ok
+Secondary on well (read chips, tags, Told row, scope chips)                              #46433D   8.96  ok
+Tertiary on well (goal and strip axis labels)                                            #5F5C55   6.06  ok
+Secondary on track (busy blocks on the week grid)                                        #46433D   7.85  ok
+Loss figures on card                                                                     #9A5700   5.57  ok
+Loss on well (tied standings)                                                            #9A5700   5.11  ok
+Gain figures on card                                                                     #14613D   7.42  ok
+Accent links and labels on card (Open, Undo, hint, Change answers)                       #155A39   8.15  ok
+Accent on well (goal label)                                                              #155A39   7.48  ok
+Accent on accent tint over card (read chip on, Hypothesis tag, Draft chip done, location chip)   #155A39   6.96  ok
+Ink on accent tint over card (picked option, chosen folder)                              #1C1B18  14.57  ok
+Accent on accent tint over well (stage bar current)                                      #155A39   6.96  ok
+Under par red on card (hole strip only)                                                  #B3261E   6.48  ok (3:1 mark)
+Primary button label (onbtn on btn)                                                      #FFFEFB   8.15  ok
+Event block label on the week grid (onbtn on btn, 11px)                                  #FFFEFB   8.15  ok
+Event block time (onbtn at 85% on btn)                                                   #DCE5DE   6.40  ok
+Capsule label (accent on tint over card)                                                 #155A39   6.96  ok
+User bubble text, top of gradient                                                        #F7F4EA   7.47  ok
+User bubble text, bottom of gradient                                                     #F7F4EA   9.36  ok
+Segmented on label (#F7F4EA on #155A39)                                                  #F7F4EA   7.47  ok
+Segmented on label (#F7F4EA on #1d6a45, top of shade)                                    #F7F4EA   5.96  ok
+Composer text on glass over page                                                         #1C1B18  16.50  ok
+Composer placeholder on glass over page                                                  #5F5C55   6.39  ok
+Desktop top bar search placeholder (ink3 on card)                                        #5F5C55   6.61  ok
+Feature ink on feature card (pulse, plan hero)                                           #F4F1E8  11.30  ok
+Feature secondary on feature card (pulse small, legend)                                  #D3D9CB   8.84  ok
+Green bar title (onframe on frame)                                                       #F4EEDD  12.03  ok
+Green bar icons and desktop nav (onframe2 on frame)                                      #D0D0BC   8.88  ok
+Desktop nav group label (240 233 214 at 72% on frame)                                    #B0B6A3   6.68  ok
+Desktop nav active (#0a331f on 95% ivory over frame)                                     #0A331F  10.99  ok
+Badge count (#1C1B18 on champ)                                                           #1C1B18   9.03  ok
+Lock screen time and date (onframe2 on frame2)                                           #D0D1BD   7.91  ok
+Lock banner title (#1C1B18 on 90% ivory over frame)                                      #1C1B18  13.81  ok
+Lock banner meta (#46433D on 90% ivory over frame)                                       #46433D   7.91  ok
+Lock banner Urgent (#8A4C00 on 90% ivory over frame)                                     #8A4C00   5.41  ok
+Coin initials #fdfcf8 on #3D6787 (JO)                                                    #FDFCF8   5.86  ok
+Coin initials #fdfcf8 on #1F6B45 (TH)                                                    #FDFCF8   6.30  ok
+Coin initials #fdfcf8 on #2F6F73 (JB)                                                    #FDFCF8   5.62  ok
+Coin initials #fdfcf8 on #8A5A2B (EL)                                                    #FDFCF8   5.72  ok
+Coin initials #fdfcf8 on #5B5F8F (MA)                                                    #FDFCF8   5.88  ok
+Coin initials #fdfcf8 on #9A5700 (AN)                                                    #FDFCF8   5.47  ok
+Coin initials #fdfcf8 on #6B675F (SA)                                                    #FDFCF8   5.48  ok
+Coach mark CR #F4F1E8 on #155A39                                                         #F4F1E8   7.28  ok
+Cancelled draft, secondary (ink2 on well, saturate(0))                                   #434343   8.97  ok
+Cancelled draft, title (ink on well, saturate(0))                                        #1B1B1B  15.66  ok
+Cancelled draft, loss mark (lossfill on well, saturate(0))                               #777777   4.05  ok (3:1 mark)
+Cancelled line (ink2 on card)                                                            #46433D   9.77  ok
+Paused composer placeholder (ink3 on strong glass, box at full opacity)                  #5F5C55   6.39  ok
+Lineup standings row already seated (name in ink2 on well)                               #46433D   8.96  ok
+Seated coin #fdfcf8 on #2F6F73 at saturate(.25) (JB)                                     #FCFCFB   5.95  ok
+Seated coin #fdfcf8 on #3D6787 at saturate(.25) (JO)                                     #FCFCFB   6.08  ok
+Seated coin #fdfcf8 on #1F6B45 at saturate(.25) (TH)                                     #FCFCFB   6.88  ok
+Seated coin #fdfcf8 on #8A5A2B at saturate(.25) (EL)                                     #FCFCFB   6.03  ok
+Seated coin #fdfcf8 on #5B5F8F at saturate(.25) (MA)                                     #FCFCFB   5.97  ok
+Seated coin #fdfcf8 on #9A5700 at saturate(.25) (AN)                                     #FCFCFB   6.17  ok
+Told coin before it lights (initials at 35%)                                             #809BAF   2.07  exempt: the unlit coin is a transitional frame
+Folder list document row (ink2 on card, full opacity)                                    #46433D   9.77  ok
+Folder list document icon (ink3 at 70% on card)                                          #8F8D87   3.30  ok (3:1 mark)
+Cancel after the confirm press (disabled, 50%)                                           #A2A09C   2.57  exempt (disabled)
+Back on the first brief question (disabled, 40%)                                         #B5B3AF   2.07  exempt (disabled)
+Loss fill on track                                                                       #B86F0C   3.15  ok (3:1 mark)
+Gain fill on track                                                                       #1F6B45   5.15  ok (3:1 mark)
+Neutral fill on track                                                                    #6B675F   4.49  ok (3:1 mark)
+Loss fill on card (dots, tees)                                                           #B86F0C   3.92  ok (3:1 mark)
+Gain fill on card                                                                        #1F6B45   6.41  ok (3:1 mark)
+Zero rule and season tick on card                                                        #5F5C55   6.61  ok (3:1 mark)
+Active step dot (accent on card)                                                         #155A39   8.15  ok (3:1 mark)
+Failed step ring (loss on card)                                                          #9A5700   5.57  ok (3:1 mark)
+Write head caret (accent on well)                                                        #155A39   7.48  ok (3:1 mark)
+Undo ring drain (accent on card)                                                         #155A39   8.15  ok (3:1 mark)
+Undo ring track against card                                                             #EBE5D8   1.24  exempt: track is decorative (the drain carries the meaning, 8.15/8.45)
+Busy dot on the week (lossfill on card)                                                  #B86F0C   3.92  ok (3:1 mark)
+Paused send button icon (ink3 on track)                                                  #5F5C55   5.31  ok (3:1 mark)
+
+## Dark
+Pair                                                                                          fg  ratio  result
+Body text on card                                                                        #F1ECDF  14.34  ok
+Secondary text on card (step done label, meta, receipt sub)                              #D0C9B8  10.25  ok
+Tertiary text on card (done step detail, axis, hours)                                    #ADA697   6.99  ok
+Body text on page (home greeting, history rows)                                          #F1ECDF  16.01  ok
+Secondary on page (scope line, home context line)                                        #D0C9B8  11.45  ok
+Tertiary on page (desktop disclaimer, history "Today")                                   #ADA697   7.80  ok
+Body text on well (pills, answer pills, mk chips)                                        #F1ECDF  15.20  ok
+Secondary on well (read chips, tags, Told row, scope chips)                              #D0C9B8  10.87  ok
+Tertiary on well (goal and strip axis labels)                                            #ADA697   7.41  ok
+Secondary on track (busy blocks on the week grid)                                        #D0C9B8   7.95  ok
+Loss figures on card                                                                     #E7AE57   8.53  ok
+Loss on well (tied standings)                                                            #E7AE57   9.04  ok
+Gain figures on card                                                                     #7CC79B   8.45  ok
+Accent links and labels on card (Open, Undo, hint, Change answers)                       #7CC79B   8.45  ok
+Accent on well (goal label)                                                              #7CC79B   8.96  ok
+Accent on accent tint over card (read chip on, Hypothesis tag, Draft chip done, location chip)   #7CC79B   6.39  ok
+Ink on accent tint over card (picked option, chosen folder)                              #F1ECDF  10.83  ok
+Accent on accent tint over well (stage bar current)                                      #7CC79B   6.39  ok
+Under par red on card (hole strip only)                                                  #F28B7D   7.06  ok (3:1 mark)
+Primary button label (onbtn on btn)                                                      #0E120F   9.44  ok
+Event block label on the week grid (onbtn on btn, 11px)                                  #0E120F   9.44  ok
+Event block time (onbtn at 85% on btn)                                                   #1E2D24   7.19  ok
+Capsule label (accent on tint over card)                                                 #7CC79B   6.39  ok
+User bubble text, top of gradient                                                        #F1ECDF   8.20  ok
+User bubble text, bottom of gradient                                                     #F1ECDF  10.25  ok
+Segmented on label (#F7F4EA on #155A39)                                                  #F7F4EA   7.47  ok
+Segmented on label (#F7F4EA on #1d6a45, top of shade)                                    #F7F4EA   5.96  ok
+Composer text on glass over page                                                         #F1ECDF  14.28  ok
+Composer placeholder on glass over page                                                  #ADA697   6.96  ok
+Desktop top bar search placeholder (ink3 on card)                                        #ADA697   6.99  ok
+Feature ink on feature card (pulse, plan hero)                                           #F4F1E8  10.78  ok
+Feature secondary on feature card (pulse small, legend)                                  #D3D9CB   8.44  ok
+Green bar title (onframe on frame)                                                       #F4EEDD  16.12  ok
+Green bar icons and desktop nav (onframe2 on frame)                                      #D0CBBA  11.52  ok
+Desktop nav group label (240 233 214 at 72% on frame)                                    #AFAE9E   8.31  ok
+Desktop nav active (#0a331f on 95% ivory over frame)                                     #0A331F  10.87  ok
+Badge count (#1C1B18 on champ)                                                           #1C1B18   9.03  ok
+Lock screen time and date (onframe2 on frame2)                                           #D0CCBB  10.90  ok
+Lock banner title (#1C1B18 on 90% ivory over frame)                                      #1C1B18  13.52  ok
+Lock banner meta (#46433D on 90% ivory over frame)                                       #46433D   7.74  ok
+Lock banner Urgent (#8A4C00 on 90% ivory over frame)                                     #8A4C00   5.29  ok
+Coin initials #fdfcf8 on #3D6787 (JO)                                                    #FDFCF8   5.86  ok
+Coin initials #fdfcf8 on #1F6B45 (TH)                                                    #FDFCF8   6.30  ok
+Coin initials #fdfcf8 on #2F6F73 (JB)                                                    #FDFCF8   5.62  ok
+Coin initials #fdfcf8 on #8A5A2B (EL)                                                    #FDFCF8   5.72  ok
+Coin initials #fdfcf8 on #5B5F8F (MA)                                                    #FDFCF8   5.88  ok
+Coin initials #fdfcf8 on #9A5700 (AN)                                                    #FDFCF8   5.47  ok
+Coin initials #fdfcf8 on #6B675F (SA)                                                    #FDFCF8   5.48  ok
+Coach mark CR #F4F1E8 on #155A39                                                         #F4F1E8   7.28  ok
+Cancelled draft, secondary (ink2 on well, saturate(0))                                   #C9C9C9  10.86  ok
+Cancelled draft, title (ink on well, saturate(0))                                        #ECECEC  15.20  ok
+Cancelled draft, loss mark (lossfill on well, saturate(0))                               #A2A2A2   7.00  ok (3:1 mark)
+Cancelled line (ink2 on card)                                                            #D0C9B8  10.25  ok
+Paused composer placeholder (ink3 on strong glass, box at full opacity)                  #ADA697   6.96  ok
+Lineup standings row already seated (name in ink2 on well)                               #D0C9B8  10.87  ok
+Seated coin #fdfcf8 on #2F6F73 at saturate(.25) (JB)                                     #FCFCFB   5.95  ok
+Seated coin #fdfcf8 on #3D6787 at saturate(.25) (JO)                                     #FCFCFB   6.08  ok
+Seated coin #fdfcf8 on #1F6B45 at saturate(.25) (TH)                                     #FCFCFB   6.88  ok
+Seated coin #fdfcf8 on #8A5A2B at saturate(.25) (EL)                                     #FCFCFB   6.03  ok
+Seated coin #fdfcf8 on #5B5F8F at saturate(.25) (MA)                                     #FCFCFB   5.97  ok
+Seated coin #fdfcf8 on #9A5700 at saturate(.25) (AN)                                     #FCFCFB   6.17  ok
+Told coin before it lights (initials at 35%)                                             #809BAF   2.07  exempt: the unlit coin is a transitional frame
+Folder list document row (ink2 on card, full opacity)                                    #D0C9B8  10.25  ok
+Folder list document icon (ink3 at 70% on card)                                          #817D72   4.12  ok (3:1 mark)
+Cancel after the confirm press (disabled, 50%)                                           #747469   3.57  exempt (disabled)
+Back on the first brief question (disabled, 40%)                                         #626259   2.76  exempt (disabled)
+Loss fill on track                                                                       #E09A35   5.52  ok (3:1 mark)
+Gain fill on track                                                                       #4FA877   4.50  ok (3:1 mark)
+Neutral fill on track                                                                    #A39D90   4.86  ok (3:1 mark)
+Loss fill on card (dots, tees)                                                           #E09A35   7.12  ok (3:1 mark)
+Gain fill on card                                                                        #4FA877   5.80  ok (3:1 mark)
+Zero rule and season tick on card                                                        #ADA697   6.99  ok (3:1 mark)
+Active step dot (accent on card)                                                         #7CC79B   8.45  ok (3:1 mark)
+Failed step ring (loss on card)                                                          #E7AE57   8.53  ok (3:1 mark)
+Write head caret (accent on well)                                                        #7CC79B   8.96  ok (3:1 mark)
+Undo ring drain (accent on card)                                                         #7CC79B   8.45  ok (3:1 mark)
+Undo ring track against card                                                             #2C322D   1.29  exempt: track is decorative (the drain carries the meaning, 8.15/8.45)
+Busy dot on the week (lossfill on card)                                                  #E09A35   7.12  ok (3:1 mark)
+Paused send button icon (ink3 on track)                                                  #ADA697   5.42  ok (3:1 mark)
+
+## Flags (0)
+- none

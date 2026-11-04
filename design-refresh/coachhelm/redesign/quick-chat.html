@@ -1,0 +1,1957 @@
+<title>CoachHelm Quick Chat</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: the Messages page's frame. A sticky live device on the left (phone or desktop), chapters with Play buttons on
+   the right. The app inside the device uses Clubhouse's design-language tokens (DESIGN_LANGUAGE.md, 31 Oct). */
+:root {
+  /* Spec page around the device */
+  --pg: #f5f0e4; --pg-2: #ede8db; --card: #fcfaf5; --ink: #1c1b18; --ink-2: #3a3833; --ink-3: #5f5c55;
+  --rule: rgb(28 25 18 / 0.12); --rule-2: rgb(28 25 18 / 0.2); --champ: #8a6f3a; --champ-rule: rgb(176 149 96 / 0.38);
+  --green: #155a39; --green-ink: #155a39; --green-tint: #e6efe8; --frame: #0a331f; --frame-ink: #f4eedd;
+  --code-bg: #efeadd; --pass: #1c6b43; --pass-bg: #e6f2ea; --warn: #8a4f00; --warn-bg: #f7ead6;
+  --shadow-dev: 0 0 0 1px rgb(28 25 18 / 0.08), 0 30px 60px -30px rgb(10 51 31 / 0.45), 0 12px 24px -12px rgb(28 25 18 / 0.18);
+
+  /* App inside the device (DESIGN_LANGUAGE.md tokens) */
+  --a-page: #f2f0e9; --a-card: #fffefb; --a-well: #f6f4ee; --a-ink: #1c1b18; --a-ink-2: #46433d; --a-ink-3: #5f5c55;
+  --a-accent: #155a39; --a-accent-ink: #fdfcf8; --a-accent-text: #155a39; --a-tint: rgb(21 90 57 / 0.1);
+  --a-gain: #14613d; --a-loss: #9a5700; --a-loss-tint: rgb(154 87 0 / 0.08);
+  --a-sep: rgb(28 27 24 / 0.1); --a-ring: rgb(28 27 24 / 0.07);
+  --a-shadow: 0 1px 2px rgb(28 25 18 / 0.05), 0 8px 20px -12px rgb(28 25 18 / 0.12);
+  --a-shadow-pop: 0 0 0 0.5px rgb(28 25 18 / 0.1), 0 22px 48px -18px rgb(28 25 18 / 0.35), 0 4px 12px rgb(28 25 18 / 0.08);
+  --a-frame: #0a331f; --a-frame-ink: #f4eedd; --a-frame-icon: rgb(240 233 214 / 0.86); --a-champ: #dccda6; --a-champ-ink: #725b2c;
+  --a-skel: #ebe7dd; --a-scrim: rgb(14 18 15 / 0.16); --a-glass: rgb(253 251 247 / 0.78);
+  --a-yr-sr: #1f6b45; --a-yr-jr: #3d6787; --a-yr-so: #86672c; --a-yr-fr: #9a4a35;
+  --a-block: #1f6b45; --a-block-ink: #f4f1e8; --a-block-2: #6b675f;
+  --a-seg1: #155a39; --a-seg2: #23704a; --a-seg3: #2f7d55;
+  --a-pglass: rgb(253 252 248 / 0.84); --a-pglass-hi: rgb(255 255 255 / 0.7); --a-veil: rgb(242 240 233 / 0.42); --a-veil-dark: rgb(14 18 15 / 0.2);
+  --a-pshadow: 0 0 0 0.5px rgb(28 25 18 / 0.12), 0 36px 72px -26px rgb(28 25 18 / 0.4), 0 12px 28px -12px rgb(28 25 18 / 0.18);
+  --a-tile: #fffefb; --a-tile-ring: rgb(28 27 24 / 0.07);
+
+  --f-sans: "Instrument Sans", ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --topbar: 60px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --pg: #131814; --pg-2: #181d19; --card: #1b201c; --ink: #f1ecdf; --ink-2: #e2dccd; --ink-3: #bab3a4;
+    --rule: rgb(237 231 216 / 0.12); --rule-2: rgb(237 231 216 / 0.2); --champ: #c9ad74; --champ-rule: rgb(205 187 142 / 0.3);
+    --green: #23704a; --green-ink: #84c9a0; --green-tint: #1d2a22; --frame: #08150e; --frame-ink: #f4eedd;
+    --code-bg: #20261f; --pass: #84c9a0; --pass-bg: #1d2a22; --warn: #e7ae57; --warn-bg: #2e2416;
+    --shadow-dev: 0 0 0 1px rgb(237 231 216 / 0.08), 0 30px 60px -30px rgb(0 0 0 / 0.8), 0 12px 24px -12px rgb(0 0 0 / 0.5);
+    --a-page: #0e120f; --a-card: #191e1a; --a-well: #141815; --a-ink: #f1ecdf; --a-ink-2: #d0c9b8; --a-ink-3: #ada697;
+    --a-accent: #1f6b45; --a-accent-ink: #f4eedd; --a-accent-text: #7cc79b; --a-tint: rgb(124 199 155 / 0.12);
+    --a-gain: #7cc79b; --a-loss: #e7ae57; --a-loss-tint: rgb(231 174 87 / 0.12);
+    --a-sep: rgb(241 236 223 / 0.1); --a-ring: rgb(255 255 255 / 0.06);
+    --a-shadow: 0 1px 0 rgb(255 255 255 / 0.04) inset;
+    --a-shadow-pop: 0 0 0 0.5px rgb(237 231 216 / 0.12), 0 22px 48px -18px rgb(0 0 0 / 0.8), 0 4px 12px rgb(0 0 0 / 0.4);
+    --a-frame: #08150e; --a-frame-ink: #f4eedd; --a-frame-icon: rgb(240 233 214 / 0.86); --a-champ: #cdbb8e; --a-champ-ink: #cdbb8e;
+    --a-skel: #232a25; --a-scrim: rgb(0 0 0 / 0.4); --a-glass: rgb(22 27 23 / 0.74);
+    --a-yr-sr: #2a7a51; --a-yr-jr: #46739a; --a-yr-so: #88692e; --a-yr-fr: #a3533e;
+    --a-block: #4fa877; --a-block-ink: #0e120f; --a-block-2: #a39d90;
+    --a-seg1: #4fa877; --a-seg2: #7cc79b; --a-seg3: #9dd6b4;
+    --a-pglass: rgb(27 32 28 / 0.84); --a-pglass-hi: rgb(255 255 255 / 0.07); --a-veil: rgb(14 18 15 / 0.5); --a-veil-dark: rgb(0 0 0 / 0.45);
+    --a-pshadow: 0 0 0 0.5px rgb(237 231 216 / 0.14), 0 36px 72px -26px rgb(0 0 0 / 0.85), 0 12px 28px -12px rgb(0 0 0 / 0.5);
+    --a-tile: #1f2520; --a-tile-ring: rgb(255 255 255 / 0.06);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --pg: #131814; --pg-2: #181d19; --card: #1b201c; --ink: #f1ecdf; --ink-2: #e2dccd; --ink-3: #bab3a4;
+  --rule: rgb(237 231 216 / 0.12); --rule-2: rgb(237 231 216 / 0.2); --champ: #c9ad74; --champ-rule: rgb(205 187 142 / 0.3);
+  --green: #23704a; --green-ink: #84c9a0; --green-tint: #1d2a22; --frame: #08150e; --frame-ink: #f4eedd;
+  --code-bg: #20261f; --pass: #84c9a0; --pass-bg: #1d2a22; --warn: #e7ae57; --warn-bg: #2e2416;
+  --shadow-dev: 0 0 0 1px rgb(237 231 216 / 0.08), 0 30px 60px -30px rgb(0 0 0 / 0.8), 0 12px 24px -12px rgb(0 0 0 / 0.5);
+  --a-page: #0e120f; --a-card: #191e1a; --a-well: #141815; --a-ink: #f1ecdf; --a-ink-2: #d0c9b8; --a-ink-3: #ada697;
+  --a-accent: #1f6b45; --a-accent-ink: #f4eedd; --a-accent-text: #7cc79b; --a-tint: rgb(124 199 155 / 0.12);
+  --a-gain: #7cc79b; --a-loss: #e7ae57; --a-loss-tint: rgb(231 174 87 / 0.12);
+  --a-sep: rgb(241 236 223 / 0.1); --a-ring: rgb(255 255 255 / 0.06);
+  --a-shadow: 0 1px 0 rgb(255 255 255 / 0.04) inset;
+  --a-shadow-pop: 0 0 0 0.5px rgb(237 231 216 / 0.12), 0 22px 48px -18px rgb(0 0 0 / 0.8), 0 4px 12px rgb(0 0 0 / 0.4);
+  --a-frame: #08150e; --a-frame-ink: #f4eedd; --a-frame-icon: rgb(240 233 214 / 0.86); --a-champ: #cdbb8e; --a-champ-ink: #cdbb8e;
+  --a-skel: #232a25; --a-scrim: rgb(0 0 0 / 0.4); --a-glass: rgb(22 27 23 / 0.74);
+  --a-yr-sr: #2a7a51; --a-yr-jr: #46739a; --a-yr-so: #88692e; --a-yr-fr: #a3533e;
+  --a-block: #4fa877; --a-block-ink: #0e120f; --a-block-2: #a39d90;
+  --a-seg1: #4fa877; --a-seg2: #7cc79b; --a-seg3: #9dd6b4;
+  --a-pglass: rgb(27 32 28 / 0.84); --a-pglass-hi: rgb(255 255 255 / 0.07); --a-veil: rgb(14 18 15 / 0.5); --a-veil-dark: rgb(0 0 0 / 0.45);
+  --a-pshadow: 0 0 0 0.5px rgb(237 231 216 / 0.14), 0 36px 72px -26px rgb(0 0 0 / 0.85), 0 12px 28px -12px rgb(0 0 0 / 0.5);
+  --a-tile: #1f2520; --a-tile-ring: rgb(255 255 255 / 0.06);
+  color-scheme: dark;
+}
+
+/* ───────── Spec page ───────── */
+html { -webkit-text-size-adjust: 100%; }
+body { background: var(--pg); color: var(--ink); font: 400 15px/1.55 var(--f-sans); -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--frame); }
+*, *::before, *::after { box-sizing: border-box; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--champ); outline-offset: 2px; }
+
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; min-height: var(--topbar);
+  padding-block: 10px; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px));
+  background: var(--frame); color: var(--frame-ink); box-shadow: inset 0 -1px 0 rgb(201 173 116 / 0.35); }
+.brand { display: flex; align-items: center; gap: 10px; margin-right: auto; min-width: 0; }
+.brand svg { width: 28px; height: 28px; flex: none; }
+.brand b { font: 600 15px/1.2 var(--f-sans); letter-spacing: -0.01em; white-space: nowrap; }
+.brand span { font: 500 12px/1.2 var(--f-sans); color: rgb(244 238 221 / 0.72); white-space: nowrap; }
+.ctl { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.seg { display: inline-flex; padding: 3px; border-radius: 999px; background: rgb(244 238 221 / 0.1); box-shadow: inset 0 0 0 1px rgb(244 238 221 / 0.14); }
+.seg button { border: 0; background: none; padding: 6px 12px; border-radius: 999px; font: 500 12.5px/1 var(--f-sans); color: rgb(244 238 221 / 0.86); cursor: pointer; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: #f4eedd; color: #0b3a25; box-shadow: 0 1px 2px rgb(0 0 0 / 0.25); }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 48px; max-width: 1500px; margin: 0 auto;
+  padding-block: 28px 96px; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
+.stage-col { min-width: 0; }
+.stage { position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--topbar) + 20px); height: calc(100vh - var(--topbar) - 44px - env(safe-area-inset-top, 0px)); min-height: 560px;
+  display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.stage__box { position: relative; flex: 1; width: 100%; min-height: 0; }
+.stage__cap { display: flex; align-items: center; gap: 10px; min-height: 34px; padding: 6px 14px 6px 10px; border-radius: 999px; background: var(--card); box-shadow: 0 0 0 1px var(--rule);
+  font: 500 13px/1.3 var(--f-sans); color: var(--ink-2); max-width: 100%; }
+.stage__cap i { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--green-ink); opacity: 0.35; }
+.stage__cap.is-live i { opacity: 1; animation: capLive 1.2s ease-in-out infinite; }
+@keyframes capLive { 50% { transform: scale(0.6); } }
+.stage__cap span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.chapters { min-width: 0; }
+.hero { padding: 8px 0 36px; border-bottom: 1px solid var(--champ-rule); }
+.eyebrow { margin: 0 0 10px; font: 600 13px/1 var(--f-sans); color: var(--champ); }
+h1 { margin: 0 0 16px; font: 600 clamp(32px, 4vw, 44px)/1.05 var(--f-sans); letter-spacing: -0.03em; text-wrap: balance; }
+h2 { margin: 0 0 12px; font: 600 25px/1.18 var(--f-sans); letter-spacing: -0.02em; text-wrap: balance; }
+h3 { margin: 22px 0 8px; font: 600 16px/1.3 var(--f-sans); letter-spacing: -0.01em; }
+p { margin: 0 0 14px; max-width: 64ch; }
+.lead { font-size: 17px; color: var(--ink-2); }
+.muted { color: var(--ink-3); }
+.big-changes { margin: 22px 0 0; padding: 0; list-style: none; display: grid; gap: 12px; counter-reset: c; }
+.big-changes li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: start; }
+.big-changes li::before { counter-increment: c; content: counter(c); display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--green-tint); color: var(--green-ink); font: 600 13px/1 var(--f-sans); }
+.ch { padding: 40px 0 36px; border-bottom: 1px solid var(--champ-rule); scroll-margin-top: calc(var(--topbar) + 20px); }
+.plays { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 20px; }
+.play { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 15px 8px 11px; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--card); color: var(--ink); box-shadow: 0 0 0 1px var(--rule-2), 0 1px 2px rgb(28 25 18 / 0.06); font: 500 14px/1 var(--f-sans); transition: transform 0.12s, box-shadow 0.18s, background 0.18s; }
+.play svg { width: 16px; height: 16px; color: var(--green-ink); }
+.play:hover { box-shadow: 0 0 0 1px var(--green-ink), 0 4px 12px -6px rgb(28 25 18 / 0.25); }
+.play:active { transform: scale(0.97); }
+.play.is-on { background: var(--green); color: #f4eedd; box-shadow: none; }
+.play.is-on svg { color: #f4eedd; }
+
+.spec-wrap { overflow-x: auto; margin: 6px 0 12px; border-radius: 14px; background: var(--card); box-shadow: 0 0 0 1px var(--rule); }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th, td { padding: 11px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--rule); }
+th { font: 600 11.5px/1.2 var(--f-sans); color: var(--ink-3); background: var(--pg-2); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td b { font-weight: 600; }
+td:first-child { min-width: 150px; }
+code, .mono { font-family: var(--f-mono); font-size: 0.84em; padding: 1px 5px; border-radius: 5px; background: var(--code-bg); overflow-wrap: anywhere; }
+.where { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 16px; margin: 16px 0 0; padding: 16px 18px; border-radius: 14px; background: var(--pg-2); font-size: 14px; }
+.where dt { font: 600 12px/1.6 var(--f-sans); color: var(--ink-3); }
+.where dd { margin: 0; min-width: 0; }
+.springs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin: 18px 0 8px; }
+.spring { padding: 12px 12px 10px; border-radius: 14px; background: var(--card); box-shadow: 0 0 0 1px var(--rule); }
+.spring svg { width: 100%; height: 64px; display: block; margin: 4px 0 6px; overflow: visible; }
+.spring b { font: 600 14px/1.2 var(--f-sans); }
+.spring .tag { font: 600 10.5px/1 var(--f-sans); padding: 3px 6px; border-radius: 999px; background: var(--pg-2); color: var(--ink-3); margin-left: 6px; vertical-align: 2px; }
+.spring .tag.new { background: var(--green-tint); color: var(--green-ink); }
+.spring dl { display: grid; grid-template-columns: auto 1fr; gap: 1px 8px; margin: 0; font: 400 11.5px/1.5 var(--f-mono); color: var(--ink-3); }
+.spring dd { margin: 0; color: var(--ink-2); text-align: right; }
+.calls { display: grid; gap: 12px; margin: 16px 0 0; padding: 0; list-style: none; }
+.calls li { padding: 16px 18px; border-radius: 14px; background: var(--card); box-shadow: 0 0 0 1px var(--rule); }
+.calls b { display: block; margin-bottom: 4px; font-size: 15.5px; }
+.calls p { margin: 0; font-size: 14px; color: var(--ink-2); }
+.calls .pick { display: inline-block; margin-top: 8px; padding: 3px 9px; border-radius: 999px; background: var(--green-tint); color: var(--green-ink); font: 600 12.5px/1.5 var(--f-sans); }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font: 600 12px/1.5 var(--f-sans); }
+.pill.new { background: var(--warn-bg); color: var(--warn); }
+.pill.have { background: var(--pass-bg); color: var(--pass); }
+.src { margin: 14px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.src li { padding: 14px 16px; border-radius: 14px; background: var(--card); box-shadow: 0 0 0 1px var(--rule); font-size: 14px; }
+.src li b { display: block; margin-bottom: 2px; }
+.foot { padding: 32px 0 0; font-size: 13px; color: var(--ink-3); }
+
+@media (max-width: 1080px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .stage { position: relative; top: 0; height: min(86vh, 780px); min-height: 520px; }
+  .brand span { display: none; }
+}
+@media (max-width: 560px) {
+  .top { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .where { grid-template-columns: minmax(0, 1fr); }
+  h2 { font-size: 22px; }
+}
+
+/* ───────── Devices ───────── */
+.dev { position: absolute; left: 50%; top: 50%; transform-origin: 50% 50%; }
+/* Shot mode: the device alone at its own size, for side-by-side screenshots */
+.shot body { padding: 0 !important; }
+.shot .top, .shot .chapters, .shot .stage__cap { display: none !important; }
+.shot .layout { display: block; max-width: none; padding: 0; margin: 0; }
+.shot .stage { position: static; height: auto; min-height: 0; padding: 0; background: none; box-shadow: none; }
+.shot .stage__box { position: static; }
+.shot .dev { position: relative; left: 0; top: 0; border-radius: 0; padding: 0; box-shadow: none; }
+.shot .phone { width: 402px; height: 874px; }
+.shot .phone__scr { border-radius: 0; }
+/* Capture sizes and Text Size: #…-w390, #…-w430, #…-xxl */
+.w390 .phone, .shot.w390 .phone { width: 390px; height: 844px; }
+.w430 .phone, .shot.w430 .phone { width: 430px; height: 932px; }
+.xxl .app { --k: 1.36; }
+.mcheck { position: fixed; z-index: 99; right: 16px; bottom: 16px; max-width: 420px; padding: 14px 16px; border-radius: 16px; background: var(--card); color: var(--ink); box-shadow: 0 0 0 1px var(--rule-2), 0 18px 40px -18px rgb(0 0 0 / 0.4); font: 400 13px/1.4 var(--f-sans); }
+.mcheck b { display: block; margin-bottom: 6px; font-size: 14px; }
+.mcheck p { margin: 4px 0 0; }
+.mcheck p.ok { color: var(--pass); }
+.mcheck p.no { color: var(--warn); }
+.mcheck span { display: block; color: var(--ink-2, inherit); font-size: 12px; }
+.phone { width: 402px; height: 874px; border-radius: 62px; padding: 11px; background: #1a1c19; box-shadow: var(--shadow-dev), inset 0 0 0 1.5px #3b3e39, inset 0 0 0 4px #121411; }
+.phone__scr { position: relative; width: 100%; height: 100%; border-radius: 52px; overflow: hidden; background: var(--a-frame); isolation: isolate; }
+.island { position: absolute; z-index: 80; top: 11px; left: 50%; width: 124px; height: 36px; margin-left: -62px; border-radius: 20px; background: #000; pointer-events: none; }
+.sbar { position: absolute; z-index: 75; top: 0; left: 0; right: 0; height: 54px; display: flex; align-items: center; justify-content: space-between; padding: 6px 34px 0 46px; font: 600 16px/1 var(--f-sans); color: #f4eedd; pointer-events: none; }
+.sbar svg { height: 12px; fill: #f4eedd; }
+.homei { position: absolute; z-index: 75; bottom: 8px; left: 50%; width: 140px; height: 5px; margin-left: -70px; border-radius: 3px; background: var(--a-ink); opacity: 0.8; pointer-events: none; }
+.desk { width: 1280px; height: 800px; border-radius: 16px; overflow: hidden; background: var(--a-frame); box-shadow: var(--shadow-dev); display: grid; grid-template-columns: 232px minmax(0, 1fr); }
+
+/* ───────── App ───────── */
+.app { --k: 1; position: relative; font-family: var(--f-sans); color: var(--a-ink); -webkit-font-smoothing: antialiased; }
+.app svg { flex: none; }
+.ic { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* The green bar: unchanged from today, the CoachHelm key added beside the bell. */
+.gbar { position: absolute; z-index: 30; left: 0; right: 0; top: 0; height: 98px; padding: 54px 8px 0 16px; display: flex; align-items: center; gap: 4px; background: var(--a-frame); }
+.gbar__t { flex: 1; min-width: 0; display: inline-flex; align-items: center; gap: 6px; font: 600 calc(18px * var(--k))/1.2 var(--f-sans); color: var(--a-frame-ink); white-space: nowrap; }
+.gbar__t svg { width: 14px; height: 14px; stroke-width: 2.4; opacity: 0.86; }
+.gbar__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--a-champ); }
+.gbtn { position: relative; display: inline-grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: none; color: var(--a-frame-icon); cursor: pointer; }
+.gbtn .badge { position: absolute; top: 6px; right: 5px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px; background: var(--a-champ); color: #0b3a25; font: 700 calc(10.5px * var(--k))/17px var(--f-sans); text-align: center; }
+.sheet-lip { position: absolute; z-index: 1; left: 0; right: 0; top: 98px; bottom: 0; border-radius: 16px 16px 0 0; background: var(--a-page); overflow: hidden; }
+
+/* The key: the Helm mark, a 44pt target. On: an ivory disc under it, so the panel reads as coming from it. */
+.hkey { position: relative; display: inline-grid; place-items: center; width: 44px; height: 44px; border: 0; padding: 0; border-radius: 22px; background: none; cursor: pointer; color: var(--a-frame-icon); }
+.hkey__disc { position: absolute; inset: 4px; border-radius: 18px; background: rgb(244 238 221 / 0.16); opacity: 0; transform: scale(0.82); transition: opacity 0.2s, transform 0.26s cubic-bezier(0.22, 1, 0.36, 1); }
+.hkey.is-on .hkey__disc { opacity: 1; transform: none; }
+.app.reduce .hkey__disc { transform: none; transition: opacity 0.18s linear; }
+.hkey__mark { position: relative; width: 24px; height: 24px; }
+.hkey__mark .wheel, .qc__mark .wheel, .dside__brand .wheel { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; transform-origin: 12px 12px; }
+.hkey__mark .ball, .qc__mark .ball, .dside__brand .ball { fill: currentColor; }
+.hkey.is-working .hkey__mark .wheel { animation: helmTurn 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+@keyframes helmTurn { to { transform: rotate(360deg); } }
+.app.reduce .hkey.is-working .hkey__mark .wheel { animation: none; }
+.hkey__flag { position: absolute; top: 7px; right: 7px; width: 9px; height: 9px; border-radius: 50%; background: var(--a-champ); box-shadow: 0 0 0 2px var(--a-frame); transform: scale(0); }
+.hkey.has-flag .hkey__flag { transform: scale(1); }
+.app.reduce .hkey__flag { transform: none; opacity: 0; }
+.app.reduce .hkey.has-flag .hkey__flag { opacity: 1; }
+
+/* The live pill: the key grows left into a capsule while a task runs with the panel closed (Dynamic Island compact). */
+.live { position: absolute; z-index: 32; height: 36px; right: 0; top: 50%; margin-top: -18px; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 10px; border: 0; border-radius: 18px;
+  background: #06231a; color: var(--a-frame-ink); box-shadow: inset 0 0 0 1px rgb(220 205 166 / 0.28); font: 600 calc(13.5px * var(--k))/1 var(--f-sans); white-space: nowrap; cursor: pointer; transform-origin: 100% 50%; }
+.live[hidden] { display: none !important; }
+.live__ic { position: relative; width: 18px; height: 18px; display: grid; place-items: center; }
+.live__spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgb(244 238 221 / 0.25); border-top-color: #f4eedd; animation: spin 0.9s linear infinite; }
+.app.reduce .live__spin { animation: none; border-top-color: rgb(244 238 221 / 0.25); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.live__dot { width: 9px; height: 9px; border-radius: 50%; background: var(--a-champ); }
+.live__ok { width: 18px; height: 18px; border-radius: 50%; background: #7cc79b; color: #0b3a25; display: grid; place-items: center; }
+.live__ok svg { width: 11px; height: 11px; stroke-width: 3.2; }
+.keyslot { position: relative; width: 44px; height: 44px; }
+
+/* Page under the panel: Calendar (phone) */
+.pscroll { position: absolute; inset: 0; overflow: hidden; padding: 14px 16px 40px; display: flex; flex-direction: column; gap: 20px; }
+.ltitle { margin: 6px 0 0; font: 600 calc(34px * var(--k))/1.1 var(--f-sans); letter-spacing: -0.034em; }
+.lctx { margin: -14px 0 0; font: 400 calc(15px * var(--k))/1.3 var(--f-sans); color: var(--a-ink-2); }
+.card { border-radius: 16px; background: var(--a-card); box-shadow: 0 0 0 1px var(--a-ring), var(--a-shadow); }
+.card__h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 14px 16px 10px; }
+.card__h b { font: 600 calc(17px * var(--k))/1.25 var(--f-sans); }
+.card__h span { font: 400 calc(15px * var(--k))/1.25 var(--f-sans); color: var(--a-ink-2); }
+.wk { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 0 10px 14px; }
+.wk i { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 7px 0 8px; border-radius: 12px; font-style: normal; }
+.wk i small { font: 500 calc(12px * var(--k))/1 var(--f-sans); color: var(--a-ink-3); }
+.wk i b { font: 600 calc(16px * var(--k))/1 var(--f-sans); font-variant-numeric: tabular-nums; }
+.wk i em { width: 5px; height: 5px; border-radius: 50%; background: var(--a-ink-3); opacity: 0.6; }
+.wk i em.n { opacity: 0; }
+.wk i.today { background: var(--a-accent); color: var(--a-accent-ink); }
+.wk i.today small { color: var(--a-accent-ink); opacity: 0.85; }
+.wk i.today em { background: var(--a-accent-ink); }
+.rows .r { position: relative; display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: 64px; padding: 10px 16px; }
+.rows .r + .r::before { content: ""; position: absolute; top: 0; left: 80px; right: 0; height: 1px; background: var(--a-sep); }
+.r__d { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.r__d small { font: 600 calc(12px * var(--k))/1 var(--f-sans); color: var(--a-accent-text); }
+.r__d b { font: 600 calc(20px * var(--k))/1 var(--f-sans); font-variant-numeric: tabular-nums; }
+.r__t b { display: block; font: 500 calc(16px * var(--k))/1.3 var(--f-sans); }
+.r__t span { display: block; font: 400 calc(15px * var(--k))/1.3 var(--f-sans); color: var(--a-ink-2); }
+.r svg.chev { width: 14px; height: 14px; color: var(--a-ink-3); stroke-width: 2.2; }
+
+.scrim { position: absolute; z-index: 25; inset: 98px 0 0; background: var(--a-scrim); opacity: 0; pointer-events: none; }
+
+/* ───────── The quick chat panel ───────── */
+.qc { position: absolute; z-index: 40; display: flex; flex-direction: column; border-radius: 24px; background: var(--a-card); box-shadow: var(--a-shadow-pop); overflow: hidden; }
+.qc[hidden] { display: none !important; }
+.task__f[hidden] { display: none !important; }
+.fmenu[hidden] { display: none !important; }
+.phone .qc { left: 8px; right: 8px; top: 92px; max-height: 724px; }
+.desk .qc { width: 420px; right: 16px; top: 58px; max-height: 690px; border-radius: 20px; }
+.qc__nub { position: absolute; top: -6px; width: 14px; height: 14px; background: var(--a-card); transform: rotate(45deg); border-radius: 3px; box-shadow: -0.5px -0.5px 0 rgb(28 25 18 / 0.08); }
+.qc__h { flex: none; display: flex; align-items: center; gap: 10px; padding: 14px 10px 10px 16px; }
+.qc__av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--a-accent); color: var(--a-accent-ink); }
+.qc__av svg { width: 20px; height: 20px; }
+.qc__ttl { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.qc__ttl b { font: 600 calc(17px * var(--k))/1.2 var(--f-sans); }
+.qc__ttl span { display: inline-flex; align-items: center; gap: 5px; font: 400 calc(13px * var(--k))/1.2 var(--f-sans); color: var(--a-ink-2); }
+.qc__ttl span svg { width: 13px; height: 13px; stroke-width: 2; }
+.qbtn { display: inline-grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--a-well); color: var(--a-ink-2); cursor: pointer; }
+.qbtn svg { width: 17px; height: 17px; stroke-width: 2.1; }
+.qc__body { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 4px 14px 12px; scrollbar-width: none; overscroll-behavior: contain; }
+.qc__body::-webkit-scrollbar { display: none; }
+.qc__inner { display: flex; flex-direction: column; gap: 12px; }
+
+.hello { padding: 4px 2px 2px; }
+.hello p { margin: 0 0 12px; font: 400 calc(15px * var(--k))/1.4 var(--f-sans); color: var(--a-ink-2); }
+.sugg { display: grid; gap: 8px; }
+.sg { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px; align-items: center; min-height: 52px; padding: 9px 12px; border: 0; border-radius: 14px; background: var(--a-well); color: var(--a-ink); text-align: left; cursor: pointer; font: 500 calc(15px * var(--k))/1.3 var(--f-sans); }
+.sg:active { transform: scale(0.98); }
+.sg i { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: var(--a-card); color: var(--a-accent-text); box-shadow: 0 0 0 1px var(--a-ring); }
+.sg i svg { width: 17px; height: 17px; stroke-width: 2; }
+.sg small { display: block; font: 400 calc(13px * var(--k))/1.3 var(--f-sans); color: var(--a-ink-2); }
+
+.ub { align-self: flex-end; max-width: 84%; padding: 9px 14px; border-radius: 19px 19px 6px 19px; background: var(--a-accent); color: var(--a-accent-ink); font: 400 calc(15.5px * var(--k))/1.35 var(--f-sans); }
+.say { margin: 0; font: 400 calc(15.5px * var(--k))/1.45 var(--f-sans); color: var(--a-ink); }
+
+/* ① Steps */
+.steps { list-style: none; margin: 0; padding: 2px 0; display: flex; flex-direction: column; gap: 2px; }
+.step { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: center; min-height: 32px; font: 400 calc(15px * var(--k))/1.3 var(--f-sans); color: var(--a-ink); }
+.step.done { color: var(--a-ink-2); }
+.step__g { position: relative; width: 20px; height: 20px; display: grid; place-items: center; }
+.step__g .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--a-accent-text); animation: breathe 1.2s ease-in-out infinite; }
+@keyframes breathe { 50% { transform: scale(0.6); opacity: 0.7; } }
+.app.reduce .step__g .dot { animation: none; }
+.step__g > * { grid-area: 1 / 1; }
+.step.done .dot { display: none; }
+.step__g svg { width: 16px; height: 16px; stroke: var(--a-accent-text); stroke-width: 2.6; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 20; stroke-dashoffset: 20; }
+.step.done .step__g svg { animation: draw 0.24s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.app.reduce .step.done .step__g svg { animation: none; stroke-dashoffset: 0; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.step.fail .step__g svg { stroke: var(--a-loss); }
+.step.active .step__l { position: relative; overflow: hidden; }
+.step.active .step__l::after { content: ""; position: absolute; inset: 0 auto 0 0; width: 45%; background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--a-card) 62%, transparent), transparent); transform: translateX(-110%); animation: band 1.9s cubic-bezier(0.45, 0, 0.55, 1) infinite; will-change: transform; }
+.app.reduce .step.active .step__l::after { animation: none; display: none; }
+@keyframes band { to { transform: translateX(330%); } }
+.steps-sum { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; padding: 5px 10px 5px 8px; border: 0; border-radius: 999px; background: var(--a-well); color: var(--a-ink-2); font: 500 calc(13px * var(--k))/1 var(--f-sans); cursor: pointer; }
+.steps-sum svg { width: 13px; height: 13px; stroke-width: 2.6; color: var(--a-accent-text); }
+
+/* ② Task visual: one card, the real object assembling */
+.task { position: relative; border-radius: 16px; background: var(--a-card); box-shadow: 0 0 0 1px var(--a-ring), 0 1px 2px rgb(28 25 18 / 0.05), 0 10px 24px -14px rgb(28 25 18 / 0.2); overflow: hidden; }
+.task__h { display: flex; align-items: center; gap: 10px; padding: 14px 14px 10px; }
+.task__ic { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: var(--a-tint); color: var(--a-accent-text); }
+.task__ic svg { width: 18px; height: 18px; stroke-width: 2; }
+.task__ttl { flex: 1; min-width: 0; }
+.task__ttl b { display: block; min-height: 1.25em; font: 600 calc(17px * var(--k))/1.25 var(--f-sans); }
+.task__ttl span { display: block; font: 400 calc(13px * var(--k))/1.3 var(--f-sans); color: var(--a-ink-2); }
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 7px; font: 600 calc(13px * var(--k))/1.3 var(--f-sans); background: var(--a-well); color: var(--a-ink-2); white-space: nowrap; }
+.chip.ok { background: var(--a-tint); color: var(--a-accent-text); }
+.chip.warn { background: var(--a-loss-tint); color: var(--a-loss); }
+.task__b { padding: 0 14px 12px; display: flex; flex-direction: column; gap: 12px; }
+.facts { margin: 0; border-radius: 12px; background: var(--a-well); }
+.fact { position: relative; display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; align-items: center; min-height: 44px; padding: 8px 12px; }
+.fact + .fact::before { content: ""; position: absolute; top: 0; left: 12px; right: 0; height: 1px; background: var(--a-sep); }
+.fact dt { font: 400 calc(14px * var(--k))/1.3 var(--f-sans); color: var(--a-ink-2); }
+.fact dd { margin: 0; min-width: 0; display: flex; align-items: center; gap: 8px; font: 500 calc(15px * var(--k))/1.3 var(--f-sans); }
+.fact dd.unset { color: var(--a-ink-2); font-weight: 400; }
+.sk { display: inline-block; height: 12px; width: var(--w, 60%); border-radius: 6px; background: var(--a-skel); }
+.sk.anim { position: relative; overflow: hidden; }
+.sk.anim::after { content: ""; position: absolute; inset: 0 auto 0 0; width: 60%; background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--a-card) 50%, transparent), transparent); transform: translateX(-100%); animation: band 1.6s linear infinite; }
+.app.reduce .sk.anim::after { animation: none; display: none; }
+.caret { display: inline-block; width: 2px; height: 1.05em; margin-left: 1px; vertical-align: -0.15em; background: var(--a-accent-text); animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.head-ring { box-shadow: 0 0 0 2px var(--a-accent-text); }
+
+.coins { display: inline-flex; }
+.coin { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; color: #fff; font: 700 calc(9.5px * var(--k))/1 var(--f-sans); box-shadow: 0 0 0 2px var(--a-well), inset 0 0 0 1px rgb(0 0 0 / 0.1); }
+.coin + .coin { margin-left: -6px; }
+.coin.sr { background: var(--a-yr-sr); } .coin.jr { background: var(--a-yr-jr); } .coin.so { background: var(--a-yr-so); } .coin.fr { background: var(--a-yr-fr); }
+.coin.more { background: var(--a-card); color: var(--a-ink-2); box-shadow: 0 0 0 2px var(--a-well), inset 0 0 0 1px var(--a-sep); font-size: calc(10px * var(--k)); width: 28px; border-radius: 12px; }
+
+/* Calendar visual: week strip + a day rail with the new block */
+.cal-wk { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-wk i { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0 7px; border-radius: 10px; font-style: normal; isolation: isolate; }
+/* The day's fill fades in on a layer under it: opacity only, no colour transition. */
+.cal-wk i::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--a-tint); opacity: 0; transition: opacity 0.2s ease; }
+.cal-wk i.tgt::before { opacity: 1; }
+.app.reduce .cal-wk i::before { transition: opacity 0.18s linear; }
+.cal-wk i small { font: 500 calc(13px * var(--k))/1 var(--f-sans); color: var(--a-ink-3); }
+.cal-wk i b { font: 600 calc(15px * var(--k))/1 var(--f-sans); font-variant-numeric: tabular-nums; }
+.cal-wk i em { width: 5px; height: 5px; border-radius: 50%; background: var(--a-ink-3); }
+.cal-wk i em.n { opacity: 0; }
+.cal-wk i.tgt b { color: var(--a-accent-text); }
+.cal-wk i em.new { background: var(--a-accent-text); opacity: 1; transform: scale(0); }
+.rail { position: relative; height: 150px; border-radius: 12px; background: var(--a-well); overflow: hidden; }
+.rail .hr { position: absolute; left: 0; right: 0; height: 1px; background: var(--a-sep); }
+.rail .hr span { position: absolute; left: 10px; top: -7px; font: 500 calc(13px * var(--k))/1 var(--f-sans); color: var(--a-ink-3); background: var(--a-well); padding-right: 6px; font-variant-numeric: tabular-nums; }
+.blk { position: absolute; left: 62px; right: 10px; border-radius: 9px; padding: 6px 10px; overflow: hidden; }
+.blk b { display: block; font: 600 calc(13.5px * var(--k))/1.2 var(--f-sans); }
+.blk span { display: block; font: 400 calc(13px * var(--k))/1.25 var(--f-sans); }
+.blk.old { background: var(--a-card); box-shadow: inset 0 0 0 1px var(--a-sep); color: var(--a-ink-2); }
+.blk.old b { color: var(--a-ink); }
+.blk.new { background: var(--a-block); color: var(--a-block-ink); box-shadow: 0 6px 14px -8px rgb(11 58 37 / 0.6); transform-origin: 50% 0; }
+.blk.new.ghost { background: transparent; color: var(--a-accent-text); box-shadow: inset 0 0 0 1.5px var(--a-accent-text); border: 0; }
+
+/* Message visual */
+.mthread { border-radius: 12px; background: var(--a-well); padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+.mthread__h { display: flex; align-items: center; gap: 8px; font: 600 calc(14px * var(--k))/1.2 var(--f-sans); }
+.mthread__h > span:not(.coins) { font-weight: 400; color: var(--a-ink-2); }
+.mb { max-width: 88%; padding: 8px 12px; border-radius: 17px; font: 400 calc(15px * var(--k))/1.35 var(--f-sans); }
+.mb.them { align-self: flex-start; background: var(--a-card); color: var(--a-ink); box-shadow: 0 0 0 1px var(--a-ring); border-bottom-left-radius: 6px; }
+.mb.draft { align-self: flex-end; background: var(--a-card); color: var(--a-ink); box-shadow: inset 0 0 0 1.5px var(--a-accent-text); border-bottom-right-radius: 6px; min-height: 36px; min-width: 60px; }
+.mb.sent { background: var(--a-accent); color: var(--a-accent-ink); box-shadow: none; }
+.mmeta { align-self: flex-end; font: 500 calc(13px * var(--k))/1.2 var(--f-sans); color: var(--a-ink-2); }
+.mtone { display: flex; gap: 6px; flex-wrap: wrap; }
+.mtone button { border: 0; padding: 6px 11px; border-radius: 999px; background: var(--a-well); color: var(--a-ink-2); font: 500 calc(13px * var(--k))/1 var(--f-sans); cursor: pointer; }
+.mtone button[aria-pressed="true"] { background: var(--a-ink); color: var(--a-card); }
+
+/* Qualifier visual */
+.qrounds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.qr { display: flex; flex-direction: column; gap: 3px; padding: 9px 10px; border-radius: 12px; background: var(--a-well); }
+.qr small { font: 600 calc(13px * var(--k))/1 var(--f-sans); color: var(--a-accent-text); }
+.qr b { font: 600 calc(15px * var(--k))/1.2 var(--f-sans); }
+.qr span { font: 400 calc(13px * var(--k))/1.25 var(--f-sans); color: var(--a-ink-2); }
+.seats { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.seat { width: 30px; height: 30px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--a-sep); display: grid; place-items: center; color: var(--a-ink-3); }
+.seat.on { background: var(--a-tint); box-shadow: inset 0 0 0 1.5px var(--a-accent-text); color: var(--a-accent-text); }
+.seat.pick { box-shadow: inset 0 0 0 1.5px var(--a-champ-ink); }
+.seat svg { width: 14px; height: 14px; stroke-width: 2.2; }
+.seats-l { font: 400 calc(13px * var(--k))/1.3 var(--f-sans); color: var(--a-ink-2); }
+
+/* Plan visual */
+.pbar { display: flex; height: 34px; border-radius: 10px; overflow: hidden; gap: 2px; background: var(--a-well); }
+.pseg { display: flex; align-items: center; padding: 0 8px; color: #fff; font: 600 calc(13px * var(--k))/1 var(--f-sans); white-space: nowrap; overflow: hidden; transform-origin: 0 50%; }
+.pseg.a { background: var(--a-seg1); } .pseg.b { background: var(--a-seg2); } .pseg.c { background: var(--a-seg3); }
+:root[data-theme="dark"] .pseg { color: #0e120f; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pseg { color: #0e120f; } }
+.pblocks { margin: 0; padding: 0; list-style: none; border-radius: 12px; background: var(--a-well); }
+.pblocks li { position: relative; display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 10px; align-items: center; min-height: 48px; padding: 7px 12px; }
+.pblocks li + li::before { content: ""; position: absolute; top: 0; left: 32px; right: 0; height: 1px; background: var(--a-sep); }
+.pblocks i { width: 10px; height: 10px; border-radius: 3px; }
+.pblocks b { display: block; font: 500 calc(15px * var(--k))/1.25 var(--f-sans); }
+.pblocks span { display: block; font: 400 calc(13px * var(--k))/1.25 var(--f-sans); color: var(--a-ink-2); }
+.pblocks em { font: 600 calc(14px * var(--k))/1 var(--f-sans); font-style: normal; font-variant-numeric: tabular-nums; color: var(--a-ink-2); }
+.shelf { display: flex; gap: 8px; align-items: flex-end; padding: 10px 12px; border-radius: 12px; background: var(--a-well); }
+.doc { width: 52px; height: 64px; border-radius: 8px; background: var(--a-card); box-shadow: 0 0 0 1px var(--a-ring), 0 4px 10px -6px rgb(28 25 18 / 0.25); padding: 7px 6px; display: flex; flex-direction: column; gap: 4px; }
+.doc i { height: 4px; border-radius: 2px; background: var(--a-skel); }
+.doc i.g { background: var(--a-seg1); width: 60%; }
+.shelf__l { margin-left: auto; align-self: center; font: 400 calc(13px * var(--k))/1.3 var(--f-sans); color: var(--a-ink-2); text-align: right; }
+.qlist { border-radius: 12px; background: var(--a-well); }
+.qlist .r { position: relative; display: grid; gap: 12px; align-items: center; min-height: 52px; grid-template-columns: 32px minmax(0, 1fr) auto; padding: 8px 12px; }
+.qlist .r + .r::before { content: ""; position: absolute; top: 0; left: 56px; right: 0; height: 1px; background: var(--a-sep); }
+
+/* ③ Confirm  ④ Commit  ⑤ Receipt */
+.task__f { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 14px; border-top: 1px solid var(--a-sep); }
+.oncf { display: flex; gap: 8px; align-items: flex-start; font: 400 calc(14px * var(--k))/1.35 var(--f-sans); color: var(--a-ink-2); }
+.oncf svg { width: 16px; height: 16px; margin-top: 1px; stroke-width: 2; color: var(--a-ink-2); }
+.oncf b { font-weight: 600; color: var(--a-ink); }
+.btns { display: flex; gap: 8px; }
+.btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px; border: 0; border-radius: 12px; font: 600 calc(15px * var(--k))/1 var(--f-sans); cursor: pointer; white-space: nowrap; overflow: hidden; }
+.btn.ghost { background: var(--a-well); color: var(--a-ink); }
+.btn.primary { flex: 1; background: var(--a-accent); color: var(--a-accent-ink); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 4px 10px -6px rgb(11 58 37 / 0.6); }
+.btn.primary .sweep { position: absolute; left: 0; bottom: 0; height: 3px; width: 40%; border-radius: 2px; background: rgb(244 241 232 / 0.9); transform: translateX(-100%); }
+.btn.primary.busy .sweep { animation: sweep 0.9s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
+.app.reduce .btn.primary.busy .sweep { animation: none; transform: none; width: 100%; opacity: 0.35; }
+@keyframes sweep { to { transform: translateX(260%); } }
+.btn:disabled { cursor: default; }
+.btn svg { width: 17px; height: 17px; stroke-width: 2.4; }
+.rcpt { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.rcpt__g { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--a-accent); color: var(--a-accent-ink); }
+.rcpt__g svg { width: 13px; height: 13px; stroke-width: 3.2; }
+.rcpt__g.fail { background: var(--a-loss-tint); color: var(--a-loss); }
+.rcpt__g.neutral { background: var(--a-well); color: var(--a-ink-2); }
+.rcpt__t b { display: block; font: 600 calc(15px * var(--k))/1.25 var(--f-sans); }
+.rcpt__t span { display: block; font: 400 calc(13.5px * var(--k))/1.3 var(--f-sans); color: var(--a-ink-2); }
+.rcpt__a { display: flex; gap: 2px; align-items: center; }
+.tbtn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 10px; border: 0; border-radius: 10px; background: none; color: var(--a-accent-text); font: 600 calc(14.5px * var(--k))/1 var(--f-sans); cursor: pointer; }
+.tbtn:active { background: var(--a-tint); }
+.undo-ring { position: relative; width: 22px; height: 22px; }
+.undo-ring svg { position: absolute; inset: 0; width: 22px; height: 22px; }
+.undo-ring .trk { fill: none; stroke: var(--a-tint); stroke-width: 2.4; }
+.undo-ring .rem { fill: none; stroke: var(--a-accent-text); stroke-width: 2.4; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 11px 11px; stroke-dasharray: 56.55; }
+.undo-ring .arr { position: absolute; inset: 5px; width: 12px; height: 12px; stroke: var(--a-accent-text); stroke-width: 2.4; fill: none; }
+.task.dimmed .task__b :is(.cal-wk em, .seat, .pblocks i, .doc, .fldr svg) { opacity: 0.6; }
+.task.dimmed .blk.new, .task.dimmed .pseg { background: var(--a-skel); color: var(--a-ink-2); box-shadow: none; }
+.flyer { position: absolute; z-index: 5; pointer-events: none; }
+.turn { display: contents; }
+
+/* Composer */
+.qc__comp { flex: none; padding: 8px 10px 12px; border-top: 1px solid var(--a-sep); background: var(--a-card); }
+.cmp { display: flex; align-items: flex-end; gap: 6px; padding: 5px 5px 5px 14px; border-radius: 22px; background: var(--a-well); box-shadow: inset 0 0 0 1px var(--a-sep); }
+.cmp__t { flex: 1; min-width: 0; min-height: 34px; padding: 8px 0 7px; font: 400 calc(16px * var(--k))/1.3 var(--f-sans); color: var(--a-ink); overflow-wrap: anywhere; }
+.cmp__t.ph { color: var(--a-ink-3); }
+.cmp__send { display: grid; place-items: center; width: 34px; height: 34px; flex: none; border: 0; border-radius: 50%; background: var(--a-accent); color: var(--a-accent-ink); cursor: pointer; }
+.cmp__send.off { background: var(--a-skel); color: var(--a-ink-3); }
+.cmp__send.stop { background: var(--a-ink); color: var(--a-card); box-shadow: none; }
+.cmp__send .sq { width: 11px; height: 11px; border-radius: 3px; background: currentColor; }
+.step.stopped .step__g::after { content: ''; width: 10px; height: 2px; border-radius: 1px; background: var(--a-ink-3); }
+.say.quiet { color: var(--a-ink-2); }
+/* completion beats */
+.task::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 2px var(--a-accent-text); opacity: 0; pointer-events: none; }
+.task.won::after { animation: won 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes won { 20% { opacity: 0.6; } 100% { opacity: 0; } }
+.rcpt__g { position: relative; }
+.rcpt__g::after { content: ""; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 2px var(--a-accent-text); opacity: 0; }
+.rcpt__g.pop::after { animation: halo 0.62s cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes halo { 0% { opacity: 0.55; transform: scale(1); } 100% { opacity: 0; transform: scale(1.9); } }
+.rcpt__g.pop svg path { stroke-dasharray: 22; stroke-dashoffset: 22; animation: draw 0.3s 0.1s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.app.reduce .task.won::after, .app.reduce .rcpt__g.pop::after { animation: none; }
+.app.reduce .rcpt__g.pop svg path { animation: none; stroke-dashoffset: 0; }
+.told { display: flex; align-items: center; gap: 10px; margin-top: 2px; padding: 9px 12px; border-radius: 12px; background: var(--a-well); font: 400 calc(13.5px * var(--k))/1.35 var(--f-sans); color: var(--a-ink-2); }
+.told b { color: var(--a-ink); font-weight: 600; }
+.told .coins .coin { box-shadow: 0 0 0 2px var(--a-well), inset 0 0 0 1px rgb(0 0 0 / 0.1); }
+.told .coin { position: relative; }
+.told .coin.seen::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 9px; height: 9px; border-radius: 50%; background: var(--a-accent-text); box-shadow: 0 0 0 2px var(--a-well); }
+/* plan asks first */
+.qask { display: grid; gap: 12px; padding: 14px; border-radius: 16px; background: var(--a-card); box-shadow: 0 0 0 1px var(--a-ring), 0 10px 24px -14px rgb(28 25 18 / 0.2); }
+.qask__q { margin: 0; font: 600 calc(16px * var(--k))/1.3 var(--f-sans); }
+.qask__q span { display: block; margin-top: 2px; font: 400 calc(13.5px * var(--k))/1.35 var(--f-sans); color: var(--a-ink-2); }
+.qask__g { display: grid; gap: 6px; }
+.qask__g > span { font: 400 calc(13.5px * var(--k))/1.2 var(--f-sans); color: var(--a-ink-2); }
+.opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.opts button { min-height: 36px; padding: 0 13px; border: 0; border-radius: 999px; background: var(--a-well); color: var(--a-ink); font: 500 calc(14px * var(--k))/1 var(--f-sans); cursor: pointer; box-shadow: inset 0 0 0 1px var(--a-sep); }
+.opts button[aria-pressed="true"] { background: var(--a-accent); color: var(--a-accent-ink); box-shadow: none; }
+.qask .btn.primary:disabled { background: var(--a-well); color: var(--a-ink-3); box-shadow: none; }
+/* folder picker */
+.fold { display: flex; align-items: center; gap: 10px; }
+.fold__l { font: 400 calc(14px * var(--k))/1 var(--f-sans); color: var(--a-ink-2); }
+.fold__b { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 10px 0 11px; border: 0; border-radius: 11px; background: var(--a-well); color: var(--a-ink); font: 600 calc(14.5px * var(--k))/1 var(--f-sans); cursor: pointer; box-shadow: inset 0 0 0 1px var(--a-sep); }
+.fold__b svg { width: 16px; height: 16px; stroke-width: 2; }
+.fold__b .fi { color: var(--a-accent-text); }
+.fmenu { list-style: none; margin: 0; padding: 4px; border-radius: 14px; background: var(--a-well); display: grid; }
+.fmenu li { position: relative; }
+.fmenu button { width: 100%; display: grid; grid-template-columns: 20px minmax(0, 1fr) 18px; gap: 10px; align-items: center; min-height: 44px; padding: 0 10px; border: 0; border-radius: 10px; background: none; color: var(--a-ink); font: 500 calc(14.5px * var(--k))/1.2 var(--f-sans); text-align: left; cursor: pointer; }
+.fmenu button small { font-weight: 400; color: var(--a-ink-2); margin-left: 6px; }
+.fmenu button svg { width: 17px; height: 17px; stroke-width: 2; }
+.fmenu button .fi { color: var(--a-ink-2); }
+.fmenu button .ck { color: var(--a-accent-text); opacity: 0; }
+.fmenu button[aria-checked="true"] { background: var(--a-card); box-shadow: 0 0 0 1px var(--a-ring); }
+.fmenu button[aria-checked="true"] .ck { opacity: 1; }
+.fmenu button[aria-checked="true"] .fi { color: var(--a-accent-text); }
+.fmenu .newf { color: var(--a-accent-text); }
+.fmenu li + li.sepr { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--a-sep); }
+.fnew { display: flex; gap: 6px; padding: 4px; }
+.fnew input { flex: 1; min-width: 0; min-height: 44px; margin: -2px; padding: 0 12px; border: 2px solid transparent; background-clip: padding-box; outline: 2px solid var(--a-accent-text) !important; outline-offset: -2px; border-radius: 12px; background-color: var(--a-card); color: var(--a-ink); font: 500 calc(14.5px * var(--k))/1 var(--f-sans); }
+.fnew .btn { min-height: 40px; padding: 0 14px; flex: none; }
+/* plan lands in its folder */
+.fshelf { position: relative; display: flex; gap: 10px; align-items: flex-end; padding: 12px; border-radius: 12px; background: var(--a-well); }
+.fldr { position: relative; width: 74px; display: grid; justify-items: center; gap: 4px; font: 600 calc(13px * var(--k))/1.2 var(--f-sans); color: var(--a-ink); text-align: center; }
+.fldr svg { width: 58px; height: 46px; }
+.fldr .fb { fill: color-mix(in oklab, var(--a-accent) 22%, var(--a-card)); stroke: var(--a-accent-text); stroke-width: 1.2; }
+.fldr .ff { fill: color-mix(in oklab, var(--a-accent) 34%, var(--a-card)); }
+.fldr.dim .fb { fill: var(--a-card); stroke: var(--a-ring); } .fldr.dim .ff { fill: var(--a-skel); }
+.fldr.dim { color: var(--a-ink-2); font-weight: 500; }
+.fldr small { font-weight: 400; color: var(--a-ink-2); }
+.fdoc { position: absolute; left: 21px; top: -6px; width: 32px; height: 40px; border-radius: 5px; background: var(--a-card); box-shadow: 0 0 0 1px var(--a-ring), 0 6px 12px -6px rgb(28 25 18 / 0.35); padding: 5px 4px; display: grid; gap: 3px; align-content: start; }
+.fdoc i { height: 3px; border-radius: 2px; background: var(--a-skel); } .fdoc i:first-child { background: var(--a-seg1); width: 60%; }
+.cmp__send svg { width: 17px; height: 17px; stroke-width: 2.5; }
+.cmp__open { display: flex; justify-content: space-between; align-items: center; padding: 8px 4px 0; font: 400 calc(13px * var(--k))/1.3 var(--f-sans); color: var(--a-ink-2); }
+.cmp__open b { font-weight: 600; color: var(--a-accent-text); }
+
+
+/* ───────── The drop-down, rebuilt (31 Oct, after Nick's "looks like shit") ─────────
+   Shared: airy 20pt insets, a header with the Helm mark and a live context line, a 2×2 of starts drawn as tinted tiles,
+   an "Earlier today" receipt, and the Messages composer pill. Nick picked Glass on 31 Oct; the other two directions are gone. */
+.qc { box-shadow: var(--a-pshadow); }
+.qc__sheet { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.qc__h { gap: 12px; padding: 18px 14px 12px 20px; }
+.qc__mark { position: relative; flex: none; width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; color: #f4eedd;
+  background: #155a39; box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18), 0 4px 10px -4px rgb(11 58 37 / 0.5); }
+.qc__mark svg { width: 22px; height: 22px; }
+.qc__ttl b { font: 600 calc(17px * var(--k))/1.2 var(--f-sans); letter-spacing: -0.01em; }
+.qc__ttl .qc__ctx { display: inline-flex; align-items: center; gap: 6px; margin-top: 2px; font: 400 calc(13px * var(--k))/1.2 var(--f-sans); color: var(--a-ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qc__ctx i { width: 6px; height: 6px; border-radius: 50%; background: var(--a-accent-text); box-shadow: 0 0 0 3px var(--a-tint); flex: none; }
+.qbtn { width: 34px; height: 34px; background: rgb(28 25 18 / 0.05); color: var(--a-ink-2); }
+:root[data-theme="dark"] .qbtn { background: rgb(255 255 255 / 0.07); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .qbtn { background: rgb(255 255 255 / 0.07); } }
+.qbtn svg { width: 16px; height: 16px; }
+.qc__body { padding: 2px 20px 16px; }
+.qc__inner { gap: 14px; }
+.hello { padding: 2px 0 0; display: grid; gap: 14px; }
+.hello__t { margin: 4px 0 0; font: 600 calc(24px * var(--k))/1.15 var(--f-sans); letter-spacing: -0.025em; text-wrap: balance; }
+.hello .hello__s { margin: -8px 0 0; font: 400 calc(14.5px * var(--k))/1.35 var(--f-sans); color: var(--a-ink-2); }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tile { position: relative; display: grid; align-content: start; gap: 3px; min-height: 104px; padding: 12px 12px 13px; border: 0; border-radius: 16px; text-align: left; cursor: pointer;
+  background: var(--a-tile); color: var(--a-ink); box-shadow: 0 0 0 1px var(--a-tile-ring), 0 1px 2px rgb(28 25 18 / 0.04), 0 8px 18px -12px rgb(28 25 18 / 0.18);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1); }
+.tile:active { transform: scale(0.97); transition-duration: 0.11s; }
+.app.reduce .tile { transition: none; }
+.app.reduce .tile:active { transform: none; }
+.tile i { display: grid; place-items: center; width: 34px; height: 34px; margin-bottom: 8px; border-radius: 11px; color: var(--tc); background: color-mix(in oklab, var(--tc) 13%, var(--a-tile)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tc) 18%, transparent); }
+.tile i svg { width: 18px; height: 18px; stroke-width: 2; }
+.tile b { font: 600 calc(15px * var(--k))/1.25 var(--f-sans); }
+.tile span { font: 400 calc(13px * var(--k))/1.3 var(--f-sans); color: var(--a-ink-2); }
+.tile .go { position: absolute; top: 12px; right: 12px; width: 15px; height: 15px; color: var(--a-ink-3); stroke-width: 2.2; }
+.tile { --tc: var(--a-accent-text); }
+:root[data-theme="dark"] .tile i { color: var(--tc); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tile i { color: var(--tc); } }
+.recent { display: grid; gap: 6px; }
+.recent__l { font: 500 calc(13px * var(--k))/1 var(--f-sans); color: var(--a-ink-2); padding-left: 2px; }
+.recent__r { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 14px; background: var(--a-tile); box-shadow: 0 0 0 1px var(--a-tile-ring); }
+.recent__r .ok { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--a-tint); color: var(--a-accent-text); }
+.recent__r .ok svg { width: 12px; height: 12px; stroke-width: 3; }
+.recent__r b { display: block; font: 500 calc(14.5px * var(--k))/1.25 var(--f-sans); }
+.recent__r small { display: block; font: 400 calc(13px * var(--k))/1.3 var(--f-sans); color: var(--a-ink-2); }
+.recent__r .t { font: 400 calc(13px * var(--k))/1 var(--f-sans); color: var(--a-ink-3); font-variant-numeric: tabular-nums; }
+.qc__comp { padding: 6px 12px 14px; border-top: 0; background: none; }
+.cmp { align-items: center; gap: 4px; padding: 5px; border-radius: 26px; background: var(--a-tile); box-shadow: 0 0 0 0.5px rgb(28 25 18 / 0.12), 0 8px 22px -8px rgb(28 25 18 / 0.22), 0 2px 5px rgb(28 25 18 / 0.06); }
+:root[data-theme="dark"] .cmp { box-shadow: 0 0 0 0.5px rgb(237 231 216 / 0.14), 0 8px 22px -8px rgb(0 0 0 / 0.6); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmp { box-shadow: 0 0 0 0.5px rgb(237 231 216 / 0.14), 0 8px 22px -8px rgb(0 0 0 / 0.6); } }
+.cmp__plus, .cmp__mic { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border: 0; border-radius: 50%; color: var(--a-ink-2); background: var(--a-well); cursor: pointer; }
+.cmp__mic { background: none; color: var(--a-ink-3); }
+.cmp__plus svg, .cmp__mic svg { width: 18px; height: 18px; stroke-width: 2; }
+.cmp__t { padding: 8px 4px 7px; }
+.cmp__send { width: 36px; height: 36px; background: var(--a-accent); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 2px 6px -2px rgb(11 58 37 / 0.5); }
+.cmp__send.off { background: var(--a-well); box-shadow: none; }
+.cmp__hint { display: flex; justify-content: center; gap: 14px; padding: 8px 0 0; font: 400 calc(13px * var(--k))/1 var(--f-sans); color: var(--a-ink-2); }
+.cmp__hint kbd { font: 500 calc(11px * var(--k))/1 var(--f-mono); padding: 2px 5px; border-radius: 5px; background: var(--a-well); box-shadow: inset 0 -1px 0 var(--a-sep); color: var(--a-ink-2); }
+.phone .cmp__hint { display: none; }
+.qc__grab { display: none; }
+
+/* Glass: a frosted frame that comes out of the key. Fixed height, so it never animates its height; cards inside are solid. */
+.pv-a .qc { background: var(--a-pglass); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); box-shadow: inset 0 1px 0 var(--a-pglass-hi), var(--a-pshadow); }
+.pv-a.phone__scr .qc { left: 10px; right: 10px; top: 104px; height: 700px; border-radius: 32px; }
+.pv-a .scrim { background: var(--a-veil); }
+.desk.pv-a .qc { width: 432px; right: 14px; top: 62px; height: 640px; border-radius: 26px; }
+.phone__scr.pv-a .qc__grab { display: block; flex: none; width: 36px; height: 5px; margin: 0 auto 8px; border-radius: 3px; background: var(--a-ink-3); }
+
+.qc__nub { display: none; }
+
+/* Desktop app */
+.dside { display: flex; flex-direction: column; gap: 4px; padding: 18px 12px; color: rgb(244 238 221 / 0.8); }
+.dside__brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 18px; color: #f4eedd; font: 600 16px/1 var(--f-sans); }
+.dside__brand svg { width: 28px; height: 28px; }
+.dside a { display: flex; align-items: center; gap: 10px; min-height: 38px; padding: 0 10px; border-radius: 10px; font: 500 14px/1 var(--f-sans); color: inherit; text-decoration: none; }
+.dside a svg { width: 18px; height: 18px; }
+.dside a.on { background: rgb(244 238 221 / 0.12); color: #f4eedd; box-shadow: inset 0 0 0 1px rgb(201 173 116 / 0.3); }
+.dside h6 { margin: 14px 10px 6px; font: 600 11px/1 var(--f-sans); color: rgb(244 238 221 / 0.6); }
+.dws { position: relative; margin: 8px 8px 8px 0; border-radius: 14px; overflow: hidden; background: var(--a-page); }
+.dbar { position: absolute; z-index: 30; top: 0; left: 0; right: 0; height: 56px; display: flex; align-items: center; gap: 8px; padding: 0 12px 0 24px; background: var(--a-glass); -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%); box-shadow: 0 0.5px 0 var(--a-sep); }
+.dbar__crumb { flex: 1; font: 600 15px/1 var(--f-sans); }
+.dbar__crumb span { font-weight: 400; color: var(--a-ink-2); }
+.dsearch { display: inline-flex; align-items: center; gap: 8px; height: 34px; width: 240px; padding: 0 10px; border-radius: 10px; background: var(--a-well); color: var(--a-ink-2); font: 400 13.5px/1 var(--f-sans); box-shadow: inset 0 0 0 1px var(--a-sep); }
+.dsearch svg { width: 15px; height: 15px; }
+.dsearch kbd { margin-left: auto; font: 500 11.5px/1 var(--f-mono); color: var(--a-ink-3); }
+.dbtn { display: inline-grid; place-items: center; width: 38px; height: 38px; border: 0; border-radius: 10px; background: none; color: var(--a-ink-2); cursor: pointer; }
+.dbtn svg { width: 19px; height: 19px; }
+.desk .hkey { width: 44px; height: 44px; border-radius: 10px; color: var(--a-accent-text); }
+.desk .hkey__disc { inset: 3px; border-radius: 10px; }
+.desk .hkey__disc { background: var(--a-tint); }
+.desk .hkey__flag { background: var(--a-champ-ink); box-shadow: 0 0 0 2px var(--a-page); top: 8px; right: 8px; }
+.desk .keyslot { width: 44px; height: 44px; }
+.desk .live { background: var(--a-accent); color: var(--a-accent-ink); box-shadow: none; height: 34px; margin-top: -17px; }
+.dpage { position: absolute; inset: 56px 0 0; padding: 26px 32px; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; overflow: hidden; }
+.dgrid { display: grid; grid-template-columns: 52px repeat(7, 1fr); border-radius: 16px; background: var(--a-card); box-shadow: 0 0 0 1px var(--a-ring), var(--a-shadow); overflow: hidden; }
+.dgrid > div { min-height: 64px; border-left: 1px solid var(--a-sep); border-top: 1px solid var(--a-sep); padding: 6px; font: 500 12px/1.2 var(--f-sans); color: var(--a-ink-3); position: relative; }
+.dgrid > div.hd { min-height: 46px; display: flex; flex-direction: column; align-items: center; gap: 3px; border-top: 0; color: var(--a-ink-2); }
+.dgrid > div.hd b { font: 600 17px/1 var(--f-sans); color: var(--a-ink); }
+.dgrid > div.tm { border-left: 0; text-align: right; padding-right: 8px; }
+.dev-ev { position: absolute; left: 4px; right: 4px; border-radius: 8px; padding: 5px 7px; font: 600 12px/1.2 var(--f-sans); }
+.dev-ev span { display: block; font-weight: 400; }
+.dev-ev.g { background: var(--a-tint); color: var(--a-accent-text); }
+.dev-ev.n { background: var(--a-well); color: var(--a-ink-2); box-shadow: inset 0 0 0 1px var(--a-sep); }
+/* ───────── 06 fixes (3 Nov) ───────── */
+/* (a) The glass is only the frame and header. The scrolling body is a solid card sheet, 6pt in from the frame's sides,
+   so steps, the reply line, the greeting, tiles and cards all sit on solid. The composer pill was already solid. */
+.pv-a .qc__body { margin: 0 6px; padding: 14px 14px 16px; border-radius: 20px; background: var(--a-card); box-shadow: 0 0 0 0.5px var(--a-ring); }
+/* (d) Every hit target is 44: a transparent pad; the drawn size is unchanged. */
+.qbtn, .cmp__plus, .cmp__mic, .cmp__send, .steps-sum, .opts button, .fold__b, .mtone button, .dbtn { position: relative; }
+.fnew .btn { overflow: visible; }
+.qbtn::before, .cmp__plus::before, .cmp__mic::before, .cmp__send::before, .steps-sum::before, .opts button::before, .fold__b::before,
+.mtone button::before, .fnew .btn::before, .dbtn::before, .live::before { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
+/* G10: the older qualifier row's icon at full strength; its "Finished" line already says it is old. */
+.qlist .r + .r .task__ic { opacity: 1 !important; }
+</style>
+
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.2" fill="none" stroke="#f4eedd" stroke-width="1.7"/><g stroke="#f4eedd" stroke-width="1.9" stroke-linecap="round"><path d="M12 1.6v2.2M12 20.2v2.2M1.6 12h2.2M20.2 12h2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></g><circle cx="12" cy="12" r="5" fill="#dccda6"/></svg>
+    <div><b>CoachHelm quick chat</b><br><span>Clubhouse · top-bar key · design for review</span></div>
+  </div>
+  <div class="ctl">
+    <div class="seg" role="group" aria-label="Device">
+      <button type="button" id="d-phone" aria-pressed="true">iPhone</button>
+      <button type="button" id="d-desk" aria-pressed="false">Desktop</button>
+    </div>
+    <div class="seg" role="group" aria-label="Theme">
+      <button type="button" id="t-light" aria-pressed="false">Light</button>
+      <button type="button" id="t-dark" aria-pressed="false">Dark</button>
+    </div>
+    <div class="seg" role="group" aria-label="Motion">
+      <button type="button" id="m-full" aria-pressed="true">Motion</button>
+      <button type="button" id="m-reduce" aria-pressed="false">Reduce Motion</button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="stage-col">
+    <div class="stage">
+      <div class="stage__box" id="box"></div>
+      <div class="stage__cap" id="cap"><i></i><span>Tap the Helm key, or press any Play button</span></div>
+    </div>
+  </div>
+
+  <main class="chapters">
+    <section class="hero">
+      <p class="eyebrow">Lane 5 of the CoachHelm redesign</p>
+      <h1>CoachHelm, one tap from every screen</h1>
+      <p class="lead">The Helm mark sits in the green bar beside the bell. Tap it and a small chat drops from the key. Ask for something and the page is about what happens next: the thing it is making builds itself in front of you, you confirm, it lands where it lives in the app, and you watch the players get it.</p>
+      <ol class="big-changes">
+        <li><span><b>The key replaces today's sparkle button.</b> Same slot, same 44pt target, now the Helm mark. The green bar is otherwise untouched.</span></li>
+        <li><span><b>A glass drop-down, not a bottom sheet.</b> The panel scales out of the key and closes back into it, on phone and desktop.</span></li>
+        <li><span><b>You see the task being made.</b> An event drops onto its day, a message types into its thread, a qualifier fills its rounds, a plan lays out its blocks.</span></li>
+        <li><span><b>Nothing writes before you say so.</b> Every task ends in a confirm button named for what it does, then an 8 second Undo. Nothing is saved and nobody is told until Undo has passed, so Undo really takes it back.</span></li>
+        <li><span><b>Finishing is the show.</b> The card flashes once, the check draws itself, the event drops onto its day or the plan drops into its folder, and when Undo runs out you see each player get it.</span></li>
+        <li><span><b>It asks when your words leave a gap.</b> A practice plan starts with three quick questions; a qualifier asks how many seats are your picks and which tees. It never guesses a field that decides something.</span></li>
+        <li><span><b>Close it mid-task and the key carries on.</b> The key grows into a small live pill in the bar, like the Dynamic Island, and tells you when it needs you.</span></li>
+      </ol>
+      <div class="plays"><button class="play" data-play="whole"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Watch one task start to finish</button></div>
+    </section>
+
+    <section class="ch" id="panel">
+      <p class="eyebrow">The drop-down · Glass, your pick</p>
+      <h2>A frosted panel that comes out of the key</h2>
+      <p>The panel floats 10pt in from the edges with a soft two-layer shadow and a lit top edge, and the page behind it dims slightly. The glass is only the frame: the scrolling body is a solid sheet 6pt in from its sides, so every task card, tile and line of text sits on solid and nothing is read through glass. Inside: a big greeting, four start tiles with accent-tinted icons, an "Earlier today" receipt so you see what it last did, and the Messages composer pill with + and the mic.</p>
+      <div class="plays">
+        <button class="play" data-play="pva"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Open, close, and turn around mid-flight</button>
+      </div>
+      <div class="spec-wrap"><table>
+        <tr><th>Moment</th><th>What moves</th><th>Why it stays smooth</th></tr>
+        <tr><td><b>Open</b></td><td>The panel scales up out of the key, half size to full, on the <code>pour</code> spring (no bounce). It is fully opaque by 90ms. Header, body and composer rise 8pt just behind it, 30ms apart.</td><td>Transform and opacity only. Uniform scale keeps the corners true. The panel's size is fixed, so nothing is measured mid-move.</td></tr>
+        <tr><td><b>Close</b></td><td>Back into the key in 220ms on the iOS sheet curve, content fading first.</td><td>Faster than it opened, so it never feels like waiting.</td></tr>
+        <tr><td><b>Turn around</b></td><td>Tap the key again mid-open and it heads home from exactly where it is, no jump. Same the other way.</td><td>Each move reads the panel's current position before it starts.</td></tr>
+        <tr><td><b>New content</b></td><td>The panel keeps one height (700pt on phone, 640pt on desktop). Steps, task cards and receipts arrive by rising 6 to 8pt and fading in; the body scrolls to them.</td><td>No height animation, which is the usual cause of choppy panels.</td></tr>
+      </table></div>
+      <p class="muted">Reduce Motion: every move is a 180ms crossfade (the app's <code>CH_FADE_MS</code>), nothing scales or slides.</p>
+    </section>
+
+    <section class="ch" id="visuals">
+      <p class="eyebrow">1 · The task itself</p>
+      <h2>Four things it makes, built in front of you</h2>
+      <p>Each task is drawn as the real object at small size, not as a form. Fields CoachHelm has not filled yet are quiet bars; each one resolves with a small rise as the answer arrives, and a green caret or ring shows what is being written right now. Anything optional it could not fill says "Not set", so you see the gap before you confirm. Tap any field to change it in place.</p>
+      <div class="plays">
+        <button class="play" data-play="cal"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Calendar event</button>
+        <button class="play" data-play="msg"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Message draft</button>
+        <button class="play" data-play="qual"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Qualifier</button>
+        <button class="play" data-play="plan"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Practice plan</button>
+      </div>
+      <div class="spec-wrap"><table>
+        <tr><th>Task</th><th>How it builds</th><th>Where it lands</th></tr>
+        <tr><td><b>Calendar event</b></td><td>The week strip lights Thursday, the day rail shows what is already there (Lift until 2:45), then the new block grows down from 3:00 to 5:00 and its title types in. Players fan in as coins.</td><td>The block lifts and arcs into Thursday's cell, which takes a dot.</td></tr>
+        <tr><td><b>Message</b></td><td>The real thread opens small, with the last message for context. Your draft types into an outlined bubble. Tone chips under it (Plain, Warmer, Shorter) redraft in place, and go once you send.</td><td>On your Send, the bubble fills green and slides into the thread. Delivered after the Undo window.</td></tr>
+        <tr><td><b>Qualifier</b></td><td>Three round tiles fill with dates and the course; travel seats light up, four by score and one coach pick in champagne; the field of players fans in.</td><td>The card folds into a row at the top of Qualifiers.</td></tr>
+        <tr><td><b>Practice plan</b></td><td>It asks what you want first (chapter 3). Then the 90 minute bar splits into blocks in proportion as each one is added, and the block list fills under it.</td><td>The plan drops into the folder you picked, which bumps and counts it. Players see it only when you publish.</td></tr>
+      </table></div>
+    </section>
+
+    <section class="ch" id="confirm">
+      <p class="eyebrow">2 · Confirm, done, undo</p>
+      <h2>Finishing a task, beat by beat</h2>
+      <p>The confirm row sits inside the task card. One line says exactly who hears about it. The main button says what it does: "Add to calendar", "Send to 6 players", "Set qualifier", "Save plan". Finishing gets four beats, each under half a second, so it feels finished without feeling slow. <b>Working:</b> the button becomes an "Adding…" capsule with a sweep. <b>Lands:</b> the object travels home (event onto its day, bubble into the thread, qualifier into the list, plan into its folder) and the card's edge flashes green once. <b>Receipt:</b> the check draws itself inside a disc that sends out one soft ring, the draft chip turns to "Added", and Undo's ring starts to drain. <b>Told:</b> when Undo runs out, players light up one by one as the notice reaches them, with a dot on anyone who has seen it. Notifications wait for that moment, so Undo never chases a push.</p>
+      <div class="plays">
+        <button class="play" data-play="success"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Confirm and land it</button>
+        <button class="play" data-play="whole"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Land it and let Undo run out</button>
+        <button class="play" data-play="undo"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Undo</button>
+        <button class="play" data-play="fail"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Failed</button>
+        <button class="play" data-play="cancel"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Cancel</button>
+      </div>
+      <div class="spec-wrap"><table>
+        <tr><th>State</th><th>What you see</th><th>Copy</th></tr>
+        <tr><td><b>Confirm</b></td><td>Info line, Cancel (ghost), named primary button. Both lock after the first tap.</td><td>"On confirm: 11 players see it on their calendar. No RSVP asked."</td></tr>
+        <tr><td><b>Working</b></td><td>Button becomes a capsule, label crossfades, a thin sweep runs under it.</td><td>"Adding…"</td></tr>
+        <tr><td><b>Lands</b></td><td>Object flies home in 462ms; the card's edge flashes green once (900ms, fades out); the Draft chip springs to Added, Sent, Set or Saved.</td><td>chip: "Added"</td></tr>
+        <tr><td><b>Done</b></td><td>Check draws in 300ms inside a green disc that sends out one soft ring; past tense line with where and when, Open, and Undo with a draining ring.</td><td>"Added to calendar" · "Thu 6 Nov, 3:00 to 5:00 PM"</td></tr>
+        <tr><td><b>Told</b></td><td>After 8 seconds Undo fades and a row slides in: player coins light up one by one, a dot marks who has seen it. A plan says it is private until you publish.</td><td>"11 players got it on their calendar." · "Delivered to 6. Seen by 2."</td></tr>
+        <tr><td><b>Undone</b></td><td>The object flies back out; neutral disc.</td><td>"Undone. The practice was removed. Nobody was told."</td></tr>
+        <tr><td><b>Failed</b></td><td>Amber disc, reason, Try again. The draft stays so nothing is lost.</td><td>"Couldn't add the practice. Nothing was saved."</td></tr>
+        <tr><td><b>Cancelled</b></td><td>Draft dims to 60% and stays readable.</td><td>"Cancelled. Nothing was created."</td></tr>
+      </table></div>
+    </section>
+
+    <section class="ch" id="plan">
+      <p class="eyebrow">3 · Practice plans</p>
+      <h2>It asks what you want, then builds it, then files it where you say</h2>
+      <p>A plan request never jumps straight to a draft. After reading the day on the calendar, CoachHelm asks three things in one small card: how long, what to work on, and who it is for. Anything you already said is ticked for you, so "90 minutes of wedges" arrives with both picked. Your answers become your reply in the chat, and the plan builds from them. Before you save, a "Save to" row picks the folder in Documents; the last option makes a new folder in place, and the plan saves straight into it.</p>
+      <div class="plays">
+        <button class="play" data-play="plan"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Plan: questions, then the build</button>
+        <button class="play" data-play="folder"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Save to a new folder</button>
+      </div>
+      <div class="spec-wrap"><table>
+        <tr><th>Part</th><th>Rule</th></tr>
+        <tr><td><b>Questions</b></td><td>One card, three groups of chips: How long (60 min, 90 min, 2 hours), Work on (Putting, Wedges, Driving, On course; pick several), Who (Everyone, Travel squad, Pick players). "Build the plan" stays dim until each group has an answer. Same card the practice plan wizard opens with, so the two match.</td></tr>
+        <tr><td><b>Answers</b></td><td>The card folds into your own bubble ("90 min · putting, wedges, on course · everyone"), so the chat reads as a conversation and the plan can say what it was built from.</td></tr>
+        <tr><td><b>Save to</b></td><td>A row above the confirm: "Save to [folder ⌄]", defaulting to your last folder. It opens a list in place (no popover over the card): your folders with plan counts, a check on the chosen one, and New folder at the bottom.</td></tr>
+        <tr><td><b>New folder</b></td><td>New folder turns into a name field with Create. The folder appears at the top of the list, already chosen, and the confirm line updates: "saved to Documents in Fall season". Enter creates, Escape closes.</td></tr>
+        <tr><td><b>Lands</b></td><td>The plan page drops into the folder icon on a short arc, the folder squashes and springs back, and its count ticks up. Receipt: "Plan saved · Documents · Fall season".</td></tr>
+      </table></div>
+      <dl class="where">
+        <dt>Shared</dt><dd>The question card and the folder picker are pieces ⑥ and ⑦ in <code>coachhelm/AGENT_KIT.md</code>, so the Ask tab and the practice plan wizard use the same ones.</dd>
+        <dt>Needs</dt><dd>Documents is round two and has no folders yet: a folders table, <code>create_document_folder</code>, and a <code>folderId</code> on <code>save_practice_plan</code>. Making a folder happens on Create, before the plan's own confirm, and is undone with the plan if nothing else is in it.</dd>
+      </dl>
+    </section>
+
+    <section class="ch" id="ask">
+      <p class="eyebrow">4 · Asking</p>
+      <h2>Type it once, watch it work</h2>
+      <p>The panel opens knowing where you are ("Looking at Calendar") and offers four starts for that screen. A request becomes your bubble, then a short list of steps that only shows steps CoachHelm has actually started, never a guessed plan or a percentage. The active step shimmers; a finished one takes a check and turns to past tense with what it found ("Checked Thursday · lift ends at 2:45"). While it runs, the send button becomes Stop. When the work is done the list folds into one line you can reopen.</p>
+      <div class="plays">
+        <button class="play" data-play="steps"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Type a request and run the steps</button>
+        <button class="play" data-play="stop"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Stop it mid-run</button>
+      </div>
+      <div class="spec-wrap"><table>
+        <tr><th>Part</th><th>Rule</th></tr>
+        <tr><td><b>Step label</b></td><td>Present tense, names the real thing: "Checking Thursday on the team calendar", "Finding the travel squad". Never a tool name, never "Thinking".</td></tr>
+        <tr><td><b>Glyphs</b></td><td>Active: 8pt green dot breathing every 1.2s. Done: a check that draws in 240ms. Failed: amber, never red (red means under par).</td></tr>
+        <tr><td><b>Done label</b></td><td>The same line, now past tense, plus the one fact it found, in secondary ink.</td></tr>
+        <tr><td><b>Stop</b></td><td>The send button is a Stop square the whole time steps run. Stop ends the run, marks the step it was on with a dash, and says "Stopped. Nothing was saved." Steps only read until Confirm, so stopping never leaves half a write.</td></tr>
+        <tr><td><b>Fold</b></td><td>When the task card is ready, the list folds to "3 steps · 2s". Tap to reopen.</td></tr>
+        <tr><td><b>Context</b></td><td>The "Looking at" line comes from the page (today's <code>lookingAt()</code>), so "him" on Jonah's profile means Jonah.</td></tr>
+      </table></div>
+    </section>
+
+    <section class="ch" id="key">
+      <p class="eyebrow">5 · The key</p>
+      <h2>Where it lives in the bar</h2>
+      <p>On phone the right side of the green bar holds two 44pt keys: the Helm key, then the bell (or the page's own action, like + on Classes). On desktop it sits between the search pill and the bell in the glass bar. Coaches only, as Ask is today, and hidden on the CoachHelm tab itself, which is the full chat.</p>
+      <div class="plays">
+        <button class="play" data-play="open"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Open from the key</button>
+        <button class="play" data-play="close"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Close back into it</button>
+        <button class="play" data-play="live"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Close mid-task: the live pill</button>
+      </div>
+      <div class="spec-wrap"><table>
+        <tr><th>Moment</th><th>What moves</th><th>Timing</th></tr>
+        <tr><td><b>Open</b></td><td>The panel scales from half size to full with its origin on the key, opaque by 90ms. Content rises 8pt just behind, header first. The key's ivory disc fades and grows in. The page under it dims slightly.</td><td><code>pour</code> spring, 420ms, no bounce</td></tr>
+        <tr><td><b>Close</b></td><td>Back into the key from wherever it is, content fading first. Tapping the scrim, the key, the ×, Escape, ⌘J, or swiping up on the header all close it.</td><td>220ms, iOS sheet curve <code>cubic-bezier(.32,.72,0,1)</code></td></tr>
+        <tr><td><b>Live pill</b></td><td>Closed while a task runs: the key grows left into a 36pt capsule with a spinner and the current step. It turns to a champagne dot and "Needs your OK" at the confirm, then shrinks back into the key, which keeps a champagne flag; when done it shows a check and "Added", then shrinks back to the key.</td><td>Scales out of the key (60% to 100%) on <code>smooth</code>, never its width; label crossfade 180ms</td></tr>
+        <tr><td><b>Reduce Motion</b></td><td>No scale, no spin, no travel. Panel and pill crossfade.</td><td>180ms opacity</td></tr>
+      </table></div>
+      <dl class="where">
+        <dt>Code</dt><dd><code>shell/AskSheet.tsx</code> (<code>AskSheetButton</code>, CH-1840) becomes the Helm key; <code>AskSheetBody.tsx</code> becomes the drop-down. The chat hook, route and saved threads stay the same.</dd>
+        <dt>Mark</dt><dd>A 24pt line version of <code>HelmMark</code> (<code>shell/BrandWord.tsx</code>) in on-green ink <code>rgb(240 233 214 / .86)</code>, 8.9:1 on the bar.</dd>
+        <dt>Phone panel</dt><dd>10pt from each side, 12pt below the bar, radius 32, 700pt tall or to the keyboard's top if that is less. Cards inside are solid, never glass.</dd>
+        <dt>Desktop panel</dt><dd>432pt wide under the key, 640pt tall, radius 26. Clicking outside, Escape or ⌘J closes it.</dd>
+      </dl>
+    </section>
+
+    <section class="ch" id="motion">
+      <p class="eyebrow">6 · Motion</p>
+      <h2>Springs, from the app's own set</h2>
+      <p>Everything uses <code>lib/motion.ts</code> springs and the <code>tokens.css</code> durations. One spring is new: <b>pour</b>, for the panel coming out of the key, with no bounce so it settles like a native sheet rather than bobbing. Only transform and opacity animate, except the step list's fold.</p>
+      <div class="springs" id="springs"></div>
+      <div class="spec-wrap"><table>
+        <tr><th>Moment</th><th>Duration</th><th>Curve</th><th>Reduce Motion</th></tr>
+        <tr><td>Panel open</td><td>420ms</td><td>pour (no bounce), opaque by 90ms</td><td>180ms fade</td></tr>
+        <tr><td>Panel content in</td><td>280ms, 8pt rise, 30ms apart</td><td><code>--ch-ease</code></td><td>with the panel</td></tr>
+        <tr><td>Panel close</td><td>220ms</td><td>iOS sheet curve</td><td>180ms fade</td></tr>
+        <tr><td>Step row in</td><td>260ms</td><td>settle</td><td>180ms fade</td></tr>
+        <tr><td>Check draw</td><td>240ms</td><td><code>--ch-ease</code></td><td>instant</td></tr>
+        <tr><td>Field resolves</td><td>260ms, 6px rise</td><td><code>--ch-ease</code></td><td>180ms fade</td></tr>
+        <tr><td>Card settles</td><td>dip to .985 in 90ms, back</td><td>iOS sheet curve, then settle</td><td>none</td></tr>
+        <tr><td>Object lands</td><td>430ms on an arc, lands centred</td><td>smooth</td><td>180ms fade</td></tr>
+        <tr><td>Card edge flash</td><td>900ms once</td><td><code>--ch-ease</code>, opacity only</td><td>none</td></tr>
+        <tr><td>Check draw + ring</td><td>300ms + 620ms</td><td><code>--ch-ease</code></td><td>check shown, no ring</td></tr>
+        <tr><td>Plan into folder</td><td>462ms drop, folder bump</td><td>ease-in drop + settle</td><td>180ms fade</td></tr>
+        <tr><td>Players told</td><td>90ms apart, settle each</td><td>settle</td><td>all at once</td></tr>
+        <tr><td>Undo ring</td><td>8s</td><td>linear</td><td>linear (a timer)</td></tr>
+        <tr><td>Live pill</td><td>from the key, 260ms</td><td>smooth</td><td>180ms fade</td></tr>
+      </table></div>
+    </section>
+
+    <section class="ch" id="fit">
+      <p class="eyebrow">7 · How it fits today's app</p>
+      <h2>What is already built, what is new</h2>
+      <p>Ask already proposes a write, waits for Confirm and leaves a receipt (<code>AskActionCard</code>, <code>AskReceiptCard</code>), and the server already streams step labels (<code>PROGRESS_LABEL</code>). This design keeps all of that and redraws it. Three of the four tasks need a new write on the server, each behind its own confirm.</p>
+      <div class="spec-wrap"><table>
+        <tr><th>Task</th><th>Today</th><th>Needed</th></tr>
+        <tr><td><b>Calendar event</b></td><td><span class="pill have">Built</span> <code>create_recurring_practice</code> makes a repeating practice</td><td>A one-off <code>create_event</code> on the existing <code>createGolfEvent</code>, always sending all-day and the team's offset.</td></tr>
+        <tr><td><b>Message</b></td><td><span class="pill have">Built</span> <code>create_team_announcement</code> drafts a team update</td><td>A draft into a real Messages thread (squad or player). The coach's Send press sends it; CoachHelm never sends on its own.</td></tr>
+        <tr><td><b>Qualifier</b></td><td><span class="pill new">New</span> no Ask write yet</td><td><code>create_qualifier</code> on <code>createGolfQualifier</code> (name, dates, rounds, course and tees per round, squad size, your picks, field).</td></tr>
+        <tr><td><b>Practice plan</b></td><td><span class="pill new">New</span> builder not built yet (round two)</td><td><code>save_practice_plan</code> with a <code>folderId</code>, shared with the practice plan wizard lane, saved as a draft. Plus <code>create_document_folder</code> for New folder.</td></tr>
+        <tr><td><b>Undo</b></td><td><span class="pill new">New</span> receipts have no undo</td><td>The write itself waits 8 seconds on the server. Undo cancels it before anything is saved or sent, so no delete is needed. Open during the 8 seconds saves straight away.</td></tr>
+      </table></div>
+      <p class="muted">Shared with the Ask tab and practice plan lanes: <code>design-refresh/coachhelm/AGENT_KIT.md</code> holds the steps, task visual, confirm, receipt and undo rules all three use. Nothing here changes what shot tracking collects. Prep only: no deploys, migrations or flag flips.</p>
+    </section>
+
+    <section class="ch" id="fields">
+      <p class="eyebrow">8 · Getting it right</p>
+      <h2>What each task fills in, and when it asks</h2>
+      <p>Every value on a task card comes from one of four places, and the card says which: your words, something it read (the calendar, the roster, your courses), the screen you are on, or a fixed rule. If a field that decides something is not in your words and a read can't settle it to one answer, it asks before it drafts. It never asks what a read already answers.</p>
+      <div class="spec-wrap"><table>
+        <tr><th>Task</th><th>From your words</th><th>Works out</th><th>Asks when missing</th><th>Who is told</th></tr>
+        <tr><td><b>Calendar event</b></td><td>Day, start and end, where, who</td><td>That the slot is free, all 11 on the roster, the team's time zone</td><td>A time with no end or length, a name that fits two players, a meeting with nobody invited</td><td>Nobody unless you ask for replies; then invites after Undo</td></tr>
+        <tr><td><b>Message</b></td><td>What to say, which thread</td><td>The thread, only if exactly one of your threads has that name</td><td>A group name that matches two threads or none, a new group with no name</td><td>The thread, when you press Send, after Undo</td></tr>
+        <tr><td><b>Qualifier</b></td><td>Name, rounds, course, squad size</td><td>The days, the course from your saved courses, the field</td><td>Rounds, your picks in the squad, which tees, a course that matches two</td><td>Every player in the field: push and email, after Undo</td></tr>
+        <tr><td><b>Practice plan</b></td><td>The day</td><td>The free window, the blocks from your focus areas</td><td>Length, what to work on, who</td><td>Nobody until you publish</td></tr>
+      </table></div>
+      <p>Some things are not fields, so it never asks for them and says so if you do: qualifier exemptions and tie rules (the server ranks, and a tie at the cut is always your call), "best 3 of 4" counting, sending an announcement later, and anonymous polls. All twenty task types, field by field with where each value lands, are in <code>coachhelm/TASK_FIELDS.md</code>, shared with the Ask tab so the two never drift.</p>
+      <div class="plays"><button class="play" data-play="qual"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>Qualifier: it asks, then sets it</button></div>
+    </section>
+
+    <section class="ch" id="calls">
+      <p class="eyebrow">9 · Settled for launch</p>
+      <h2>Four calls, made, and easy to flip</h2>
+      <ul class="calls">
+        <li><b>Drop-down on phone too</b><p>The panel drops from the key on phone and desktop. The type box sits mid-screen until the keyboard comes up, then rides it. Flip: phone goes back to today's bottom sheet; nothing else changes.</p><span class="pick">Set: drop-down on both</span></li>
+        <li><b>Undo window: 8 seconds</b><p>Nothing is saved or sent until it runs out. Long enough to catch a mistake, short enough that invites don't feel late. Flip: one number on the server.</p><span class="pick">Set: 8 seconds</span></li>
+        <li><b>Coaches only</b><p>Players don't get the key at launch. A read-only player version (their own stats and schedule) can come later behind its own switch.</p><span class="pick">Set: coaches only</span></li>
+        <li><b>Live pill on</b><p>Close the panel mid-task and the key grows into a small pill in the bar until the task needs you. Flip: the key just shows a dot.</p><span class="pick">Set: keep it</span></li>
+      </ul>
+    </section>
+
+    <section class="ch" id="research">
+      <p class="eyebrow">10 · What it learned from</p>
+      <h2>Ten references, and what each one changed</h2>
+      <ul class="src" id="srcs">
+        <li><b>Apple: SwiftUI springs and WWDC23 “Animate with springs”</b>Bounce 0 as the default, about 0.15 reads as a light spring, never above 0.3 on UI. That is why every spring here is 0 to 0.12. <a href="https://developer.apple.com/documentation/swiftui/animation" target="_blank" rel="noopener">Source</a></li>
+        <li><b>Apple: Live Activities and the Dynamic Island</b>Compact while running, a brief expanded moment on an important update, text changing with a soft content transition. That is the live pill. <a href="https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities" target="_blank" rel="noopener">Source</a></li>
+        <li><b>Apple: App Intents snippets (WWDC25)</b>A confirm snippet is the editable object plus one verb button; the result keeps the facts and a Done. Kept short enough to read without scrolling. <a href="https://developer.apple.com/videos/play/wwdc2025/275" target="_blank" rel="noopener">Source</a></li>
+        <li><b>Claude in Chrome</b>A plan you can approve or change, a named prompt before each action, and some steps that always ask. Here: every write shows Confirm, whatever the setting. <a href="https://support.claude.com/en/articles/12902446-manage-claude-in-chrome-permissions" target="_blank" rel="noopener">Source</a></li>
+        <li><b>OpenAI Operator and ChatGPT agent</b>Narrates what it is doing right now, asks before anything that buys or sends, and stops when you say stop. Here: present-tense steps and the Stop square. <a href="https://openai.com/index/introducing-operator/" target="_blank" rel="noopener">Source</a></li>
+        <li><b>Linear agent guidelines</b>An action posts as “Searching” and updates in place to “Searched” with its result; acknowledge at once; step back the moment you are asked. Here: past-tense done labels. <a href="https://linear.app/developers/aig" target="_blank" rel="noopener">Source</a></li>
+        <li><b>Raycast AI tools</b>The confirm runs before the tool, lists its side effects as name and value, and has a destructive style. Here: the “On confirm” line. <a href="https://developers.raycast.com/api-reference/tool" target="_blank" rel="noopener">Source</a></li>
+        <li><b>Microsoft Copilot agent rules</b>The prompt must name the action (“Do you want to proceed?” fails), edits before confirm are honoured exactly, and completion shows facts beyond a title. <a href="https://learn.microsoft.com/microsoftteams/platform/concepts/deploy-and-publish/appsource/prepare/review-copilot-validation-guidelines" target="_blank" rel="noopener">Source</a></li>
+        <li><b>Gmail Undo Send and Nielsen Norman Group</b>Prefer Undo for routine actions and confirm only what is serious; label buttons with the outcome. Gmail holds a send for 5 to 30 seconds. Here: 8 seconds with notifications held. <a href="https://www.nngroup.com/articles/confirmation-dialog/" target="_blank" rel="noopener">Source</a></li>
+        <li><b>Emil Kowalski: origin-aware popovers</b>Grow from the trigger, not from the centre and never from zero; close faster than you open. Here: 50% to 100% from the key, 220ms close. <a href="https://emilkowal.ski/ui/origin-aware-animations" target="_blank" rel="noopener">Source</a></li>
+      </ul>
+    </section>
+    <p class="foot">Design only. Clubhouse tokens from <code>DESIGN_LANGUAGE.md</code>, 31 Oct. Text sizes follow iPhone Text Size through <code>--ch-type-k</code>. No accent left-border cards; amber for failures and losses; red never appears in the agent UI.</p>
+  </main>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const st = { closing: false, pv: 'a', device: 'phone', reduce: false, run: 0, open: false, busy: false, lastKind: 'cal', liveTok: 0, flagT: 0 };
+  try { const t = localStorage.getItem('chqc-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) st.reduce = true;
+
+  /* ───── springs as linear() easings (framer's reading: ω = 2π / (1.2 × visualDuration), ζ = 1 − bounce) ───── */
+  function spring(vd, bounce) {
+    const w = (2 * Math.PI) / (1.2 * vd), z = Math.max(0.05, 1 - bounce), pts = [];
+    const x = (t) => {
+      if (z >= 1) return 1 - Math.exp(-w * t) * (1 + w * t);
+      const wd = w * Math.sqrt(1 - z * z);
+      return 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + (z * w / wd) * Math.sin(wd * t));
+    };
+    let T = vd;
+    for (let t = vd; t < 3; t += 0.01) { let ok = true; for (let u = t; u < t + 0.2; u += 0.02) if (Math.abs(1 - x(u)) > 0.002) { ok = false; break; } if (ok) { T = t; break; } }
+    const N = 44;
+    for (let i = 0; i <= N; i++) pts.push(+x((T * i) / N).toFixed(4));
+    pts[N] = 1;
+    return { easing: 'linear(' + pts.join(', ') + ')', duration: Math.round(T * 1000), x };
+  }
+  const SP = { smooth: spring(0.26, 0), settle: spring(0.26, 0.1), reveal: spring(0.52, 0), drop: spring(0.36, 0.12), pour: spring(0.42, 0), unfold: spring(0.44, 0), sheet: spring(0.46, 0) };
+  const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+  const linSupported = (() => { try { return CSS.supports('animation-timing-function', 'linear(0, 1)'); } catch (e) { return false; } })();
+  // Reduce Motion: every move is an opacity crossfade of the app's CH_FADE_MS (180ms), linear.
+  const FADE_RM = 180;
+  function anim(el, frames, opts) {
+    if (!el) return Promise.resolve();
+    if (st.reduce) {
+      const o = frames[frames.length - 1].opacity;
+      const a = el.animate([{ opacity: frames[0].opacity ?? 1 }, { opacity: o ?? 1 }], { duration: FADE_RM, easing: 'linear', fill: 'both' });
+      return a.finished.catch(() => {});
+    }
+    let { kind, duration, easing } = opts;
+    if (kind) { const s = SP[kind]; duration = duration || s.duration; easing = linSupported ? s.easing : EASE; }
+    const a = el.animate(frames, { duration, easing: easing || EASE, fill: opts.fill || 'both', delay: opts.delay || 0, composite: opts.composite || 'replace' });
+    return a.finished.catch(() => {});
+  }
+  function mark(name) { document.body.dataset.qc = name; }
+  const sleep = (ms) => new Promise((r) => setTimeout(r, st.reduce ? Math.min(ms, ms * 0.5) : ms));
+  class Stop extends Error {}
+  const guard = (id) => { if (id !== st.run) throw new Stop(); };
+
+  /* ───── icons ───── */
+  const I = {
+    chev: '<svg class="ic" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>',
+    bell: '<svg class="ic" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
+    x: '<svg class="ic" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+    eye: '<svg class="ic" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+    up: '<svg class="ic" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
+    cal: '<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+    msg: '<svg class="ic" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>',
+    flag: '<svg class="ic" viewBox="0 0 24 24"><path d="M5 22V3M5 4h11l-2 4 2 4H5"/></svg>',
+    plan: '<svg class="ic" viewBox="0 0 24 24"><path d="M9 3h6l1 2h3v16H5V5h3z"/><path d="M9 12h6M9 16h4"/></svg>',
+    check: '<svg class="ic" viewBox="0 0 24 24"><path d="M5 12.5 10 17 19 7"/></svg>',
+    expand: '<svg class="ic" viewBox="0 0 24 24"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>',
+    mic: '<svg class="ic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+    arrow: '<svg class="ic go" viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg>',
+    folder: '<svg class="ic fi" viewBox="0 0 24 24"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h4l2 2h9A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/></svg>',
+    plus: '<svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+    info: '<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+    alert: '<svg class="ic" viewBox="0 0 24 24"><path d="M12 8v5M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg>',
+    search: '<svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+    gear: '<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+    home: '<svg class="ic" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+    stats: '<svg class="ic" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg>',
+    users: '<svg class="ic" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 8M22 21a7 7 0 0 0-5-6.7"/></svg>',
+    trophy: '<svg class="ic" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>',
+    seat: '<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>',
+    star: '<svg class="ic" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>',
+  };
+  const helm = (cls = 'hkey__mark') => '<svg class="' + cls + '" viewBox="0 0 24 24" aria-hidden="true"><g class="wheel"><circle cx="12" cy="12" r="8.2"/><path d="M12 1.8v2.4M12 19.8v2.4M1.8 12h2.4M19.8 12h2.4M4.8 4.8l1.7 1.7M17.5 17.5l1.7 1.7M4.8 19.2l1.7-1.7M17.5 6.5l1.7-1.7"/></g><circle class="ball" cx="12" cy="12" r="4.6"/></svg>';
+
+  const PLAYERS = [['JO', 'sr'], ['MR', 'jr'], ['EP', 'so'], ['CB', 'sr'], ['SW', 'fr'], ['DO', 'jr'], ['LH', 'so'], ['TR', 'fr'], ['BC', 'jr'], ['AK', 'fr'], ['NV', 'so']];
+  const coin = ([i, y]) => '<span class="coin ' + y + '">' + i + '</span>';
+
+  /* ───── device ───── */
+  const box = $('#box');
+  function keyHTML() {
+    return '<span class="keyslot"><button class="hkey" type="button" aria-label="CoachHelm" aria-haspopup="dialog" aria-expanded="false"><span class="hkey__disc"></span>' + helm() + '<span class="hkey__flag"></span></button>' +
+      '<button class="live" type="button" hidden aria-live="polite"><span class="live__ic"></span><span class="live__l"></span></button></span>';
+  }
+  function panelHTML() {
+    return '<section class="qc" role="dialog" aria-label="CoachHelm" hidden>' +
+      '<header class="qc__h"><span class="qc__mark">' + helm('') + '</span><span class="qc__ttl"><b>CoachHelm</b><span class="qc__ctx"><i></i>Looking at Calendar · week of 3 Nov</span></span>' +
+      '<button class="qbtn qc__full" type="button" aria-label="Open full chat">' + I.expand + '</button><button class="qbtn qc__x" type="button" aria-label="Close">' + I.x + '</button></header>' +
+      '<div class="qc__sheet"><div class="qc__body"><div class="qc__inner"></div></div>' +
+      '<div class="qc__comp"><div class="cmp"><button class="cmp__plus" type="button" aria-label="Add">' + I.plus + '</button><div class="cmp__t ph">Ask CoachHelm or tell it what to do</div><button class="cmp__mic" type="button" aria-label="Dictate">' + I.mic + '</button><button class="cmp__send off" type="button" aria-label="Send">' + I.up + '</button></div>' +
+      '<div class="cmp__hint"><span><kbd>⌘J</kbd> open</span><span><kbd>esc</kbd> close</span><span>Saved in CoachHelm</span></div></div>' +
+      '<span class="qc__grab" aria-hidden="true"></span></div></section>';
+  }
+  function buildPhone() {
+    return '<div class="dev phone" id="dev"><div class="phone__scr app">' +
+      '<div class="island"></div><div class="sbar"><span>9:41</span><svg viewBox="0 0 64 12"><rect x="0" y="6" width="3" height="6" rx="1"/><rect x="5" y="4" width="3" height="8" rx="1"/><rect x="10" y="2" width="3" height="10" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/><rect x="38" y="1" width="22" height="10" rx="3" fill="none" stroke="#f4eedd" stroke-width="1.2"/><rect x="40" y="3" width="16" height="6" rx="1.5"/></svg></div>' +
+      '<div class="gbar"><span class="gbar__t">Calendar ' + I.chev + '<span class="gbar__dot"></span></span>' + keyHTML() + '<button class="gbtn" type="button" aria-label="Notifications">' + I.bell + '<span class="badge">3</span></button></div>' +
+      '<div class="sheet-lip"><div class="pscroll">' +
+        '<h1 class="ltitle">Calendar</h1><p class="lctx">Varsity · week of 3 Nov</p>' +
+        '<div class="card"><div class="card__h"><b>This week</b><span>Nov 3 to 9</span></div><div class="wk" id="pwk">' +
+          ['Mon 3', 'Tue 4', 'Wed 5', 'Thu 6', 'Fri 7', 'Sat 8', 'Sun 9'].map((d, i) => { const [a, b] = d.split(' '); return '<i class="' + (i === 0 ? 'today' : '') + '"><small>' + a[0] + '</small><b>' + b + '</b><em class="' + ([0, 1, 4].includes(i) ? '' : 'n') + '"></em></i>'; }).join('') +
+        '</div></div>' +
+        '<div class="card"><div class="card__h"><b>Up next</b><span>4 events</span></div><div class="rows">' +
+          row('Mon', '3', 'Team lift', 'Field house · 2:00 PM') + row('Tue', '4', 'Practice: short game', 'Lonnie Poole · 3:00 PM') + row('Fri', '7', 'Travel to Charlotte', 'Bus leaves 6:15 AM') + row('Sat', '8', 'Charlotte Invitational', 'Round 1 · 8:00 AM') +
+        '</div></div></div></div>' +
+      '<div class="scrim"></div>' + panelHTML() + '<div class="homei"></div></div></div>';
+  }
+  function row(d, n, t, s) { return '<div class="r"><span class="r__d"><small>' + d + '</small><b>' + n + '</b></span><span class="r__t"><b>' + t + '</b><span>' + s + '</span></span><svg class="ic chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div>'; }
+  function buildDesk() {
+    const days = ['Mon 3', 'Tue 4', 'Wed 5', 'Thu 6', 'Fri 7', 'Sat 8', 'Sun 9'];
+    let grid = '<div class="hd tm"></div>' + days.map((d) => { const [a, b] = d.split(' '); return '<div class="hd">' + a + '<b>' + b + '</b></div>'; }).join('');
+    ['8 AM', '10 AM', '12 PM', '2 PM', '4 PM', '6 PM'].forEach((t, r) => {
+      grid += '<div class="tm">' + t + '</div>';
+      for (let c = 0; c < 7; c++) {
+        let ev = '';
+        if (r === 3 && c === 0) ev = '<span class="dev-ev n" style="top:6px">Team lift<span>2:00</span></span>';
+        if (r === 3 && c === 1) ev = '<span class="dev-ev g" style="top:30px">Short game<span>3:00</span></span>';
+        if (r === 0 && c === 5) ev = '<span class="dev-ev g" style="top:6px">Charlotte Inv.<span>8:00</span></span>';
+        grid += '<div>' + ev + '</div>';
+      }
+    });
+    return '<div class="dev desk app" id="dev">' +
+      '<nav class="dside"><div class="dside__brand">' + helm('') + 'GolfHelm</div>' +
+      '<a>' + I.home + 'Home</a><a>' + I.stats + 'Stats</a><a>' + I.users + 'Roster</a><a class="on">' + I.cal + 'Calendar</a><a>' + I.msg + 'Messages</a><h6>Compete</h6><a>' + I.trophy + 'Qualifiers</a><a>' + I.flag + 'Tournaments</a><a>' + I.plan + 'Practice</a></nav>' +
+      '<div class="dws"><div class="dbar"><span class="dbar__crumb"><span>Team · </span>Calendar</span><span class="dsearch">' + I.search + 'Search<kbd>⌘K</kbd></span>' + keyHTML() + '<button class="dbtn" type="button" aria-label="Notifications">' + I.bell + '</button><button class="dbtn" type="button" aria-label="Settings">' + I.gear + '</button></div>' +
+      '<div class="dpage"><div class="dgrid">' + grid + '</div><div class="card"><div class="card__h"><b>Up next</b><span>4 events</span></div><div class="rows">' + row('Mon', '3', 'Team lift', '2:00 PM') + row('Tue', '4', 'Short game', '3:00 PM') + row('Fri', '7', 'Travel', '6:15 AM') + '</div></div></div>' +
+      panelHTML() + '</div></div>';
+  }
+  function mount() {
+    st.run++; st.open = false; st.busy = false; st.closing = false; st.liveTok++; clearTimeout(st.flagT);
+    box.innerHTML = st.device === 'phone' ? buildPhone() : buildDesk();
+    const app = $('.app', box);
+    app.classList.toggle('reduce', st.reduce);
+    app.classList.add('pv-' + st.pv);
+    fit();
+    wire();
+    renderHello();
+    // Complete at rest: the panel open on its starting state.
+    openPanel(true);
+  }
+  function fit() {
+    const dev = $('#dev'); if (!dev) return;
+    const w = dev.offsetWidth || (st.device === 'phone' ? 402 : 1280), h = dev.offsetHeight || (st.device === 'phone' ? 874 : 800);
+    if (document.documentElement.classList.contains('shot')) { dev.style.transform = 'none'; return; }
+    const s = Math.min(box.clientWidth / w, box.clientHeight / h, 1);
+    dev.style.transform = 'translate(-50%, -50%) scale(' + s + ')';
+  }
+  window.addEventListener('resize', fit);
+  // Escape closes from anywhere; ⌘J or Ctrl+J toggles, as the desktop hint says.
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && st.open && e.target.tagName !== 'INPUT') closePanel();
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'j' || e.key === 'J')) { e.preventDefault(); st.open ? closePanel() : openPanel(); }
+  });
+  const A = () => ({ app: $('.app', box), key: $('.hkey', box), live: $('.live', box), qc: $('.qc', box), body: $('.qc__body', box), inner: $('.qc__inner', box), scrim: $('.scrim', box), cmp: $('.cmp__t', box), send: $('.cmp__send', box) });
+
+  function wire() {
+    const { key, qc, scrim, live } = A();
+    key.addEventListener('click', () => { st.open ? closePanel() : openPanel(); });
+    $('.qc__x', qc).addEventListener('click', () => closePanel());
+    if (scrim) scrim.addEventListener('click', () => closePanel());
+    live.addEventListener('click', () => openPanel());
+  }
+  function cap(text, liveOn) { const c = $('#cap'); c.querySelector('span').textContent = text; c.classList.toggle('is-live', !!liveOn); }
+
+  /* ───── open / close: from the key ───── */
+  // Transform origin = the key's centre in the panel's own untransformed box (ignores any running animation and the stage zoom).
+  function offsetIn(el, root) { let x = 0, y = 0; for (let n = el; n && n !== root; n = n.offsetParent) { x += n.offsetLeft; y += n.offsetTop; } return { x, y }; }
+  function originFor(qc, key) {
+    const app = $('.app', box), q = offsetIn(qc, app), k = offsetIn(key, app);
+    return (k.x + key.offsetWidth / 2 - q.x) + 'px ' + (k.y + key.offsetHeight / 2 - q.y) + 'px';
+  }
+
+  // Read where an element is right now (mid-animation included), then stop its animations, so the next move starts there.
+  function hold(el) {
+    const cs = getComputedStyle(el);
+    const now = { transform: cs.transform && cs.transform !== 'none' ? cs.transform : 'none', opacity: cs.opacity === '' ? 1 : +cs.opacity };
+    el.getAnimations().forEach((a) => a.cancel());
+    return now;
+  }
+  // A press-style dip from wherever the element is now: down in 90ms on the sheet curve, back to rest on settle. One effect, the curve on each keyframe.
+  const SHEET = 'cubic-bezier(0.32, 0.72, 0, 1)';
+  function nudge(el, to) {
+    if (!el) return Promise.resolve();
+    const now = hold(el), T = 90 + SP.settle.duration;
+    return anim(el, [{ transform: now.transform, easing: SHEET }, { transform: to, offset: 90 / T, easing: linSupported ? SP.settle.easing : EASE }, { transform: 'none' }], { duration: T, easing: 'linear', fill: 'none' });
+  }
+  // The key's wheel turns while CoachHelm works. When it stops, it finishes to the next spoke (45°, the wheel's symmetry), so it never snaps back.
+  function setWorking(on) {
+    const { key } = A(); if (!key) return;
+    const w = $('.hkey__mark .wheel', key); if (!w) return;
+    if (on) { if (!st.reduce) key.classList.add('is-working'); return; }
+    if (!key.classList.contains('is-working')) return;
+    let deg = 0; const m = (getComputedStyle(w).transform || '').match(/matrix\(([^)]+)\)/);
+    if (m) { const v = m[1].split(',').map(Number); deg = (Math.atan2(v[1], v[0]) * 180) / Math.PI; if (deg < 0) deg += 360; }
+    key.classList.remove('is-working');
+    const next = Math.ceil(deg / 45) * 45;
+    if (!st.reduce && next - deg > 0.5) anim(w, [{ transform: 'rotate(' + deg.toFixed(2) + 'deg)' }, { transform: 'rotate(' + next + 'deg)' }], { duration: 260, easing: EASE, fill: 'none' });
+  }
+  async function openPanel(instant) {
+    const { qc, key, scrim, live } = A();
+    if (st.open) return;
+    st.open = true; mark('open');
+    qc.hidden = false;
+    key.classList.add('is-on'); key.setAttribute('aria-expanded', 'true'); key.classList.remove('has-flag'); clearTimeout(st.flagT);
+    if (!live.hidden) shrinkLive();
+    if (instant) { if (scrim) scrim.style.opacity = 1; return; }
+    const wasClosing = st.closing;
+    const from = wasClosing ? hold(qc) : { transform: 'scale(0.5)', opacity: 0 };
+    const sFrom = scrim ? hold(scrim).opacity : 0;
+    st.closing = false;
+    if (scrim) anim(scrim, [{ opacity: sFrom }, { opacity: 1 }], { duration: 240, easing: 'linear' });
+    const parts = [$('.qc__h', qc), $('.qc__body', qc), $('.qc__comp', qc)];
+    if (st.reduce) { await anim(qc, [{ opacity: from.opacity }, { opacity: 1 }], { duration: FADE_RM }); return; }
+    qc.style.transformOrigin = originFor(qc, key);
+    // The panel scales up out of the key (uniform, so corners stay true); it is fully opaque by 90ms.
+    // Content rises 8pt just behind it, header first. Transform and opacity only.
+    // Mid-close, each part turns around from where it is, with no delay.
+    parts.forEach((el, i) => { const h = hold(el), f0 = wasClosing ? h : { opacity: 0, transform: 'translateY(8px)' }; anim(el, [{ opacity: f0.opacity, transform: f0.transform }, { opacity: 1, transform: 'none' }], { duration: 280, delay: wasClosing ? 0 : 60 + i * 30, easing: EASE, fill: 'backwards' }); });
+    anim(qc, [{ opacity: from.opacity }, { opacity: 1 }], { duration: Math.max(1, 90 * (1 - from.opacity)), easing: 'linear', fill: 'none' });
+    await anim(qc, [{ transform: from.transform }, { transform: 'none' }], { kind: 'pour', fill: 'none' });
+  }
+  async function closePanel() {
+    const { qc, key, scrim } = A();
+    if (!st.open) return;
+    st.open = false; st.closing = true; mark('closed');
+    key.classList.remove('is-on'); key.setAttribute('aria-expanded', 'false');
+    const now = hold(qc);
+    if (scrim) { const so = hold(scrim).opacity; anim(scrim, [{ opacity: so }, { opacity: 0 }], { duration: 200, easing: 'linear' }); }
+    if (st.reduce) { await anim(qc, [{ opacity: now.opacity }, { opacity: 0 }], { duration: FADE_RM }); }
+    else {
+      qc.style.transformOrigin = originFor(qc, key);
+      [$('.qc__h', qc), $('.qc__body', qc), $('.qc__comp', qc)].forEach((el) => { const o = hold(el).opacity; anim(el, [{ opacity: o }, { opacity: 0 }], { duration: 100, easing: 'linear' }); });
+      // Back into the key, faster than it came out: one transform effect on the iOS sheet curve,
+      // and a separate opacity effect that holds for 88ms, then fades out over 132ms, linear.
+      anim(qc, [{ opacity: now.opacity }, { opacity: now.opacity, offset: 0.4 }, { opacity: 0 }], { duration: 220, easing: 'linear' });
+      await anim(qc, [{ transform: now.transform }, { transform: 'scale(0.5)' }], { duration: 220, easing: SHEET });
+    }
+    if (!st.open) { st.closing = false; qc.hidden = true; qc.getAnimations().forEach((a) => a.cancel()); if (scrim) scrim.getAnimations().forEach((a) => a.cancel()); $$('.qc__h, .qc__body, .qc__comp', qc).forEach((el) => el.getAnimations().forEach((a) => a.cancel())); }
+  }
+
+  /* ───── live pill (key grows into a capsule while a task runs with the panel closed) ───── */
+  function setLive(state, label) {
+    const { live, key } = A();
+    const ic = $('.live__ic', live), l = $('.live__l', live);
+    ic.innerHTML = state === 'work' ? '<span class="live__spin"></span>' : state === 'wait' ? '<span class="live__dot"></span>' : '<span class="live__ok">' + I.check + '</span>';
+    const first = live.hidden, regrow = !first && live.dataset.out; mark('live-' + state);
+    l.textContent = label;
+    if (first || regrow) {
+      // A shrink in flight turns around from where the pill is.
+      st.liveTok++; delete live.dataset.out;
+      const from = regrow ? hold(live) : { transform: 'scale(0.6)', opacity: 0 };
+      live.hidden = false; key.style.visibility = 'hidden'; key.classList.remove('has-flag');
+      live.style.transformOrigin = 'calc(100% - 22px) 50%'; anim(live, [{ transform: from.transform, opacity: from.opacity }, { transform: 'none', opacity: 1 }], { kind: 'smooth' }); anim(l, [{ opacity: 0 }, { opacity: 1 }], { duration: 160, delay: regrow ? 0 : 90, fill: 'backwards' });
+    } else anim(l, [{ opacity: 0 }, { opacity: 1 }], { duration: 180 });
+  }
+  function shrinkLive(after) {
+    const { live, key } = A();
+    if (live.hidden) return;
+    const tok = ++st.liveTok; live.dataset.out = '1';
+    const now = hold(live);
+    anim(live, [{ transform: now.transform, opacity: now.opacity }, { transform: 'scale(0.6)', opacity: 0 }], { duration: 200, easing: SHEET }).then(() => {
+      if (tok !== st.liveTok) return;
+      delete live.dataset.out; live.hidden = true; live.getAnimations().forEach((a) => a.cancel()); key.style.visibility = '';
+      if (after) after();
+    });
+  }
+  // Waiting with the panel closed: the pill says so, then shrinks back into the key, which keeps a champagne flag.
+  function flagLater() {
+    clearTimeout(st.flagT);
+    st.flagT = setTimeout(() => {
+      if (st.open) return;
+      shrinkLive(() => {
+        if (st.open) return;
+        const { key } = A(); key.classList.add('has-flag');
+        anim($('.hkey__flag', key), [{ transform: 'scale(0)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { kind: 'settle', fill: 'none' });
+      });
+    }, 1800);
+  }
+
+  /* ───── content ───── */
+  const SUGG = [
+    ['cal', I.cal, 'Add a practice', 'Thursday at 3, at the range'],
+    ['msg', I.msg, 'Message the travel squad', 'Friday’s bus time'],
+    ['qual', I.flag, 'Set the fall qualifier', '3 rounds next week'],
+    ['plan', I.plan, 'Make a practice plan', 'It asks what you want first'],
+  ];
+  function renderHello() {
+    const { inner, cmp, send } = A();
+    inner.innerHTML = '<div class="hello"><h3 class="hello__t">What should we get done?</h3><p class="hello__s">You confirm everything before it happens.</p><div class="tiles">' +
+      SUGG.map(([k, ic, t, s]) => '<button class="tile t-' + k + '" type="button" data-k="' + k + '"><i>' + ic + '</i>' + I.arrow + '<b>' + t + '</b><span>' + s + '</span></button>').join('') + '</div>' +
+      '<div class="recent"><span class="recent__l">Earlier today</span><div class="recent__r"><span class="ok">' + I.check + '</span><span><b>Moved Team lift to 2:00 PM</b><small>Mon 3 Nov · 11 players told</small></span><span class="t">9:12 AM</span></div></div></div>';
+    $$('.tile', inner).forEach((b) => b.addEventListener('click', () => go(b.dataset.k, { fromSugg: true })));
+    resetComposer();
+  }
+  function resetComposer() { const { cmp, send } = A(); cmp.textContent = 'Ask CoachHelm or tell it what to do'; cmp.classList.add('ph'); resetSend(send); }
+
+  const TASKS = {
+    cal: {
+      ask: 'Add a team practice Thursday 3 to 5 at the range, everyone',
+      steps: ['Checking Thursday on the team calendar', 'Finding everyone on the active roster', 'Drafting the practice'], past: ['Checked Thursday · lift ends at 2:45', 'Found 11 active players', 'Drafted the practice'],
+      say: 'Thursday’s lift ends at 2:45, so 3:00 is clear. Here’s the practice.',
+      cta: 'Add to calendar', busy: 'Adding…', live: 'Adding practice',
+      on: '<b>On confirm:</b> 11 players see it on their calendar. No RSVP asked.',
+      done: ['Added to calendar', 'Thu 6 Nov, 3:00 to 5:00 PM'], told: '<b>11 players</b> got it on their calendar.', toldN: 11, seen: 0, undone: 'Undone. Nothing was added and nobody was told.',
+      fail: ['Couldn’t add the practice', 'The calendar didn’t answer. Nothing was saved.'],
+    },
+    msg: {
+      ask: 'Tell the travel squad the bus leaves the field house at 6:15 Friday',
+      steps: ['Finding your Travel squad thread', 'Checking Friday’s travel on the calendar', 'Drafting your message'], past: ['Found your Travel squad thread · 6 players', 'Checked Friday’s travel · bus at 6:15', 'Drafted your message'],
+      say: 'Drafted in the Travel squad thread. It goes out when you send it.',
+      cta: 'Send to 6 players', busy: 'Sending…', live: 'Drafting message',
+      on: '<b>Sends as you</b> to 6 players in Travel squad, after an 8 second Undo.',
+      done: ['Sent to Travel squad', 'Delivered to 6 players'], told: '<b>Delivered to 6.</b> Seen by 2.', toldN: 6, seen: 2, undone: 'Unsent. Nobody saw it.',
+      fail: ['Couldn’t send the message', 'You’re offline. The draft is kept.'],
+    },
+    qual: {
+      ask: 'Set up the fall qualifier, 3 rounds next week at Lonnie Poole, top 5 travel',
+      steps: ['Reading your active roster', 'Finding Lonnie Poole in your courses', 'Checking next week on the team calendar'], past: ['Read your roster · 11 active', 'Found Lonnie Poole · 3 tees saved', 'Checked next week · Mon to Wed are clear'],
+      askAfter: 1,
+      say: 'Mon to Wed at Lonnie Poole from the whites. Four seats go by score and one is your pick.',
+      cta: 'Set qualifier', busy: 'Setting…', live: 'Setting qualifier',
+      on: '<b>On confirm:</b> 11 players get a push and an email once Undo closes.',
+      done: ['Qualifier set', 'Fall qualifier · starts Mon 10 Nov'], told: '<b>11 players</b> got a push and an email.', toldN: 11, seen: 0, undone: 'Undone. Nothing was created and nobody was told.',
+      fail: ['Couldn’t set the qualifier', 'Qualifiers didn’t answer. Nothing was created.'],
+    },
+    plan: {
+      ask: 'Make a practice plan for Tuesday',
+      steps: ['Reading Tuesday on the team calendar', 'Laying out the 90 minutes', 'Drafting the plan'], past: ['Read Tuesday · free 3:00 to 4:30 PM', 'Laid out the 90 minutes', 'Drafted the plan'],
+      askAfter: 0,
+      say: 'Ninety minutes in three blocks, from your answers. Pick a folder and save it.',
+      cta: 'Save plan', busy: 'Saving…', live: 'Saving plan',
+      on: '<b>On confirm:</b> saved to Documents in <span data-f="fname">Practice plans</span>. Players see it only when you publish.',
+      done: ['Plan saved', 'Documents · Practice plans'], undone: 'Undone. Nothing was saved.',
+      fail: ['Couldn’t save the plan', 'Documents didn’t answer. Nothing was saved.'],
+      told: 'Only you can see it. Players are told when you publish.',
+    },
+  };
+
+  function taskShell(kind) {
+    const T = TASKS[kind];
+    const icon = { cal: I.cal, msg: I.msg, qual: I.flag, plan: I.plan }[kind];
+    const sub = { cal: 'Team calendar', msg: 'Messages', qual: 'Qualifiers', plan: 'Practice plan' }[kind];
+    return '<article class="task" data-kind="' + kind + '"><div class="task__h"><span class="task__ic">' + icon + '</span><span class="task__ttl"><b data-f="title"></b><span>' + sub + '</span></span><span class="chip">Draft</span></div>' +
+      '<div class="task__b">' + body(kind) + '</div>' +
+      '<div class="task__f" hidden>' + (kind === 'plan' ? folderRow() : '') + '<div class="oncf">' + I.info + '<span>' + T.on + '</span></div><div class="btns"><button class="btn ghost" type="button" data-a="cancel">Cancel</button><button class="btn primary" type="button" data-a="ok"><span class="lbl">' + T.cta + '</span><span class="sweep"></span></button></div></div></article>';
+  }
+  const sk = (w) => '<span class="sk anim" style="--w:' + w + '"></span>';
+  function body(kind) {
+    if (kind === 'cal') {
+      const d = [['M', 3, 1], ['T', 4, 1], ['W', 5, 0], ['T', 6, 0], ['F', 7, 1], ['S', 8, 1], ['S', 9, 0]];
+      return '<div class="cal-wk">' + d.map(([a, n, e], i) => '<i data-d="' + i + '"><small>' + a + '</small><b>' + n + '</b><em class="' + (e ? '' : 'n') + '"></em>' + (i === 3 ? '<em class="new" style="position:absolute;bottom:7px"></em>' : '') + '</i>').join('') + '</div>' +
+        '<div class="rail">' + ['2 PM', '3 PM', '4 PM', '5 PM', '6 PM'].map((t, i) => '<div class="hr" style="top:' + (12 + i * 32) + 'px"><span>' + t + '</span></div>').join('') +
+        '<div class="blk old" style="top:12px;height:24px;padding:4px 10px"><b>Team lift · until 2:45</b></div>' +
+        '<div class="blk new" data-f="block" style="top:45px;height:62px;opacity:0"><b data-f="btitle"></b><span data-f="bwhere"></span></div></div>' +
+        '<dl class="facts"><div class="fact"><dt>When</dt><dd data-f="when">' + sk('70%') + '</dd></div><div class="fact"><dt>Where</dt><dd data-f="where">' + sk('55%') + '</dd></div><div class="fact"><dt>Who</dt><dd data-f="who">' + sk('45%') + '</dd></div><div class="fact"><dt>RSVP</dt><dd data-f="rsvp">' + sk('30%') + '</dd></div></dl>';
+    }
+    if (kind === 'msg') {
+      return '<div class="mthread"><div class="mthread__h"><span class="coins">' + PLAYERS.slice(0, 4).map(coin).join('') + '<span class="coin more">+2</span></span>Travel squad <span>· 6</span></div>' +
+        '<div class="mb them">Do we need to bring our own lunch Friday?</div><div class="mb draft" data-f="draft"></div><div class="mmeta" data-f="meta">Draft · only you can see this</div></div>' +
+        '<div class="mtone" data-f="tone" style="opacity:0"><button type="button" aria-pressed="true">Plain</button><button type="button" aria-pressed="false">Warmer</button><button type="button" aria-pressed="false">Shorter</button></div>';
+    }
+    if (kind === 'qual') {
+      return '<div class="qrounds">' + [1, 2, 3].map((r) => '<div class="qr" data-f="r' + r + '"><small>Round ' + r + '</small><b>' + sk('70%') + '</b><span>' + sk('85%') + '</span></div>').join('') + '</div>' +
+        '<dl class="facts"><div class="fact"><dt>Travel</dt><dd><span class="seats" data-f="seats">' + [0, 1, 2, 3, 4].map((i) => '<span class="seat' + (i === 4 ? ' pick' : '') + '">' + (i === 4 ? I.star : I.seat) + '</span>').join('') + '</span></dd></div>' +
+        '<div class="fact"><dt>Field</dt><dd data-f="field">' + sk('50%') + '</dd></div><div class="fact"><dt>Entry ends</dt><dd data-f="deadline">' + sk('40%') + '</dd></div></dl>';
+    }
+    return '<div class="pbar" data-f="pbar"><span class="pseg a" style="flex:20;transform:scaleX(0)">Putting</span><span class="pseg b" style="flex:30;transform:scaleX(0)">Wedges</span><span class="pseg c" style="flex:40;transform:scaleX(0)">9 holes</span></div>' +
+      '<ul class="pblocks"><li data-f="b1"><i style="background:var(--a-seg1)"></i><span>' + sk('60%') + '</span><em></em></li><li data-f="b2"><i style="background:var(--a-seg2)"></i><span>' + sk('50%') + '</span><em></em></li><li data-f="b3"><i style="background:var(--a-seg3)"></i><span>' + sk('55%') + '</span><em></em></li></ul>' +
+      '<dl class="facts"><div class="fact"><dt>Length</dt><dd data-f="len">' + sk('30%') + '</dd></div><div class="fact"><dt>Where</dt><dd data-f="pwhere">' + sk('50%') + '</dd></div></dl>';
+  }
+
+  /* ───── helpers inside the panel ───── */
+  function scrollEnd(smooth = true) { const { body } = A(); body.scrollTo({ top: body.scrollHeight, behavior: smooth && !st.reduce ? 'smooth' : 'auto' }); }
+  async function grow(fn) {
+    const { qc } = A();
+    const h0 = qc.offsetHeight; fn(); const h1 = qc.offsetHeight;
+    void h0; void h1; // fixed-height panel: content is appended, the body scrolls, nothing animates height
+    scrollEnd();
+  }
+  async function reveal(el, html) {
+    if (!el) return;
+    el.innerHTML = html;
+    el.classList.remove('unset');
+    await anim(el, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: EASE, fill: 'none' });
+  }
+  async function type(el, text, id, cps = 38) {
+    if (st.reduce) { el.textContent = text; return; }
+    el.innerHTML = '<span class="tx"></span><span class="caret"></span>';
+    const tx = $('.tx', el);
+    for (let i = 1; i <= text.length; i++) { guard(id); tx.textContent = text.slice(0, i); await new Promise((r) => setTimeout(r, 1000 / cps)); }
+    const c = $('.caret', el); if (c) c.remove();
+  }
+
+  /* ───── a whole run ───── */
+  function resetSend(send) { send.classList.remove('stop'); send.classList.add('off'); send.setAttribute('aria-label', 'Send'); send.innerHTML = I.up; send.onclick = null; }
+  function armStop(send, list, id) {
+    send.classList.remove('off'); send.classList.add('stop'); send.setAttribute('aria-label', 'Stop'); send.innerHTML = '<span class="sq"></span>';
+    send.onclick = () => {
+      if (id !== st.run) return;
+      st.run++; st.busy = false; setWorking(false);
+      const a = $('.step.active', list); if (a) { a.classList.remove('active'); a.classList.add('stopped'); const d = $('.dot', a); if (d) d.remove(); }
+      resetSend(send);
+      list.insertAdjacentHTML('afterend', '<p class="say quiet">Stopped. Nothing was saved.</p>');
+      anim(list.nextElementSibling, [{ opacity: 0 }, { opacity: 1 }], { duration: 180, fill: 'none' });
+      if (!st.open) shrinkLive();
+      cap('Stopped. Steps already done are listed; nothing was written.', false); mark('stopped');
+    };
+  }
+  async function go(kind, opt = {}) {
+    const id = ++st.run; st.lastKind = kind; st.busy = true;
+    const T = TASKS[kind];
+    try {
+      if (!st.open) await openPanel();
+      guard(id);
+      setWorking(false);
+      // A receipt still inside its Undo window stays: the new run is appended as a turn under it.
+      const keep = !!$('.task[data-win="1"]', A().inner);
+      if (keep) resetComposer(); else renderHello();
+      const { inner, cmp, send, body } = A();
+      cap('Typing the request', true);
+      if (!opt.fromSugg || true) { cmp.classList.remove('ph'); await type(cmp, T.ask, id, 60); send.classList.remove('off'); await sleep(260); }
+      guard(id);
+      cmp.textContent = 'Ask CoachHelm or tell it what to do'; cmp.classList.add('ph'); send.classList.add('off');
+      await grow(() => { const h = '<section class="turn"><div class="ub">' + T.ask + '</div><ol class="steps" aria-live="polite"></ol></section>'; if (keep) inner.insertAdjacentHTML('beforeend', h); else inner.innerHTML = h; });
+      const turn = inner.lastElementChild;
+      anim($('.ub', turn), [{ opacity: 0, transform: 'translateY(10px) scale(0.96)' }, { opacity: 1, transform: 'none' }], { kind: 'settle', fill: 'none' });
+      const list = $('.steps', turn);
+      armStop(send, list, id);
+      setWorking(true);
+      for (let i = 0; i < T.steps.length; i++) {
+        guard(id);
+        cap(T.steps[i], true);
+        const prev = list.lastElementChild; if (prev) { prev.classList.remove('active'); prev.classList.add('done'); $('.step__l', prev).textContent = T.past[i - 1]; }
+        if (i === 0) mark('steps');
+        const li = document.createElement('li');
+        li.className = 'step active';
+        li.innerHTML = '<span class="step__g"><span class="dot"></span><svg viewBox="0 0 16 16"><path d="M3 8.5 6.5 12 13 4.5"/></svg></span><span class="step__l">' + T.steps[i] + '</span>';
+        await grow(() => list.appendChild(li));
+        anim(li, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { kind: 'settle', fill: 'none' });
+        if (opt.liveAt === i) { await sleep(200); await closePanel(); setLive('work', T.steps[i]); }
+        if (!st.open && opt.liveAt != null) { const l = $('.live__l', A().live); if (l) l.textContent = T.steps[i]; }
+        if (opt.stopAt === i) { await sleep(650); send.click(); }
+        if (T.askAfter === i) { await sleep(700); guard(id); setWorking(false); await (kind === 'qual' ? askQual : askPlan)(inner, list, id); guard(id); setWorking(true); }
+        await sleep(i === T.steps.length - 1 ? 700 : 950);
+      }
+      guard(id);
+      const last = list.lastElementChild; last.classList.remove('active'); last.classList.add('done'); $('.step__l', last).textContent = T.past[T.steps.length - 1];
+      resetSend(send); setWorking(false);
+      $$('.dot', list).forEach((d) => d.remove());
+      await sleep(260);
+      // Fold the steps into one line, then the reply and the task card.
+      const n = T.steps.length;
+      await grow(() => {
+        list.outerHTML = '<button class="steps-sum" type="button">' + I.check + n + ' steps · 2s</button>';
+        turn.insertAdjacentHTML('beforeend', '<p class="say">' + T.say + '</p>' + taskShell(kind));
+      });
+      const task = $('.task', turn);
+      anim($('.say', turn), [{ opacity: 0 }, { opacity: 1 }], { duration: 200, fill: 'none' });
+      anim(task, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { kind: 'settle', fill: 'none' });
+      scrollEnd();
+      cap('Building the ' + { cal: 'practice', msg: 'message', qual: 'qualifier', plan: 'plan' }[kind], true);
+      await build(kind, task, id);
+      guard(id);
+      // Settle, then the confirm row.
+      await nudge(task, 'scale(0.985)');
+      const f = $('.task__f', task);
+      await grow(() => { f.hidden = false; });
+      anim(f, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: EASE, fill: 'none' });
+      scrollEnd();
+      wireConfirm(task, kind);
+      if (kind === 'plan') wireFolders(task);
+      mark('confirm-' + kind);
+      st.busy = false;
+      if (!st.open) { setLive('wait', 'Needs your OK'); flagLater(); }
+      cap('Waiting for your OK. Nothing is saved yet.', false);
+      if (opt.then) await opt.then(task, id);
+      else if (kind === 'plan') { await sleep(900); await folderDemo(task, id); }
+    } catch (e) { if (!(e instanceof Stop)) console.error(e); }
+  }
+
+  async function build(kind, task, id) {
+    const f = (k) => task.querySelector('[data-f="' + k + '"]');
+    const title = f('title');
+    if (kind === 'cal') {
+      const cell = task.querySelector('.cal-wk i[data-d="3"]');
+      cell.classList.add('tgt', 'head-ring'); await sleep(350);
+      await type(title, 'Team practice', id); guard(id);
+      const blk = f('block'); blk.style.opacity = 1;
+      blk.classList.add('ghost');
+      await anim(blk, [{ transform: 'scaleY(0.12)' }, { transform: 'scaleY(1)' }], { kind: 'smooth' });
+      blk.classList.remove('ghost');
+      await type(f('btitle'), 'Team practice', id, 50);
+      f('bwhere').textContent = 'Lonnie Poole range · 3:00 to 5:00';
+      cell.classList.remove('head-ring');
+      await reveal(f('when'), 'Thu 6 Nov · 3:00 to 5:00 PM'); await sleep(220); guard(id);
+      await reveal(f('where'), 'Lonnie Poole range'); await sleep(220); guard(id);
+      f('who').innerHTML = '<span class="coins"></span><span>All 11 active</span>';
+      const cs = $('.coins', f('who'));
+      for (let i = 0; i < 6; i++) { guard(id); cs.insertAdjacentHTML('beforeend', i === 5 ? '<span class="coin more">+6</span>' : coin(PLAYERS[i])); anim(cs.lastElementChild, [{ opacity: 0, transform: 'translateX(-8px) scale(0.7)' }, { opacity: 1, transform: 'none' }], { kind: 'settle', fill: 'none' }); await sleep(70); }
+      await sleep(200);
+      const r = f('rsvp'); await reveal(r, 'Not asked'); r.classList.add('unset');
+      return;
+    }
+    if (kind === 'msg') {
+      await type(title, 'Message to Travel squad', id); guard(id);
+      const d = f('draft'); d.classList.add('head-ring');
+      await type(d, 'Bus leaves the field house at 6:15 Friday. Bags on by 6. Lunch is covered, so no need to bring one.', id, 55);
+      d.classList.remove('head-ring');
+      const tone = f('tone'); await anim(tone, [{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], { duration: 220 }); tone.style.opacity = 1;
+      $$('button', tone).forEach((b) => b.addEventListener('click', () => {
+        $$('button', tone).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+        const t = { Plain: 'Bus leaves the field house at 6:15 Friday. Bags on by 6. Lunch is covered, so no need to bring one.', Warmer: 'Big weekend, guys. Bus leaves the field house at 6:15 Friday, bags on by 6. Lunch is on us, so just bring your game.', Shorter: 'Bus 6:15 Fri from the field house. Bags on by 6. Lunch covered.' }[b.textContent];
+        // Out from where it is, swap, back in: no jump to a fixed opacity.
+        const tok = (d._tok = (d._tok || 0) + 1), o = hold(d).opacity;
+        anim(d, [{ opacity: o }, { opacity: 0 }], { duration: 90, easing: 'linear' }).then(() => { if (tok !== d._tok) return; hold(d); d.textContent = t; anim(d, [{ opacity: 0 }, { opacity: 1 }], { duration: 140, easing: 'linear', fill: 'none' }); });
+      }));
+      return;
+    }
+    if (kind === 'qual') {
+      await type(title, 'Fall qualifier', id); guard(id);
+      const days = [['Mon 10 Nov', 'Lonnie Poole · white'], ['Tue 11 Nov', 'Lonnie Poole · white'], ['Wed 12 Nov', 'Lonnie Poole · white']];
+      for (let i = 0; i < 3; i++) { guard(id); const q = f('r' + (i + 1)); q.classList.add('head-ring'); await reveal($('b', q), days[i][0]); await reveal($('span', q), days[i][1]); q.classList.remove('head-ring'); await sleep(120); }
+      const seats = $$('.seat', f('seats'));
+      for (let i = 0; i < seats.length; i++) { guard(id); seats[i].classList.add('on'); nudge(seats[i], 'scale(1.12)'); await sleep(110); }
+      f('seats').insertAdjacentHTML('beforeend', '<span class="seats-l">4 by score · 1 your pick</span>');
+      anim(f('seats').lastElementChild, [{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: 'linear', fill: 'none' });
+      await sleep(200);
+      f('field').innerHTML = '<span class="coins"></span><span>11 players</span>';
+      const cs = $('.coins', f('field'));
+      for (let i = 0; i < 6; i++) { guard(id); cs.insertAdjacentHTML('beforeend', i === 5 ? '<span class="coin more">+6</span>' : coin(PLAYERS[i + 3])); anim(cs.lastElementChild, [{ opacity: 0, transform: 'translateX(-8px) scale(0.7)' }, { opacity: 1, transform: 'none' }], { kind: 'settle', fill: 'none' }); await sleep(70); }
+      await sleep(180);
+      const dl = f('deadline'); await reveal(dl, 'Not set'); dl.classList.add('unset');
+      return;
+    }
+    await type(title, 'Tuesday practice', id); guard(id);
+    const segs = $$('.pseg', f('pbar'));
+    const rows = [['Putting ladder', '3, 6, 9, 12 ft · make 3 in a row', '20'], ['Wedges to flags', '40, 60, 80 yd · 10 balls each', '30'], ['9 holes, best ball', 'Front nine · pairs', '40']];
+    for (let i = 0; i < 3; i++) {
+      guard(id);
+      const li = f('b' + (i + 1)); li.classList.add('head-ring');
+      await anim(segs[i], [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { kind: 'smooth' });
+      segs[i].style.transform = 'none';
+      await reveal($('span', li), '<b>' + rows[i][0] + '</b><span>' + rows[i][1] + '</span>');
+      $('em', li).textContent = rows[i][2] + ' min';
+      li.classList.remove('head-ring');
+      await sleep(160);
+    }
+    await reveal(f('len'), '90 min · Tue 4 Nov, 3:00 PM'); await sleep(160);
+    await reveal(f('pwhere'), 'Lonnie Poole');
+  }
+
+  /* ───── qualifier: it asks what your words left open ───── */
+  async function askQual(inner, list, id) {
+    cap('CoachHelm asks what it can’t work out', true);
+    setTimeout(() => mark('asking'), 0);
+    const html = '<div class="qask" role="group" aria-label="Qualifier questions"><p class="qask__q">Two things before I set it<span>“Top 5 travel” doesn’t say how many are your picks, and Lonnie Poole has three tees.</span></p>' +
+      '<div class="qask__g"><span>Your picks in the 5</span><div class="opts" data-g="picks"><button type="button" aria-pressed="false">None, all by score</button><button type="button" aria-pressed="false">1</button><button type="button" aria-pressed="false">2</button></div></div>' +
+      '<div class="qask__g"><span>Tees</span><div class="opts" data-g="tees"><button type="button" aria-pressed="false">White</button><button type="button" aria-pressed="false">Blue</button><button type="button" aria-pressed="false">Black</button></div></div>' +
+      '<button class="btn primary" type="button" data-a="build" disabled><span class="lbl">Set it up</span></button></div>';
+    await grow(() => list.insertAdjacentHTML('afterend', html));
+    const q = list.nextElementSibling;
+    anim(q, [{ opacity: 0, transform: 'translateY(8px) scale(0.98)' }, { opacity: 1, transform: 'none' }], { kind: 'settle', fill: 'none' });
+    scrollEnd();
+    $$('.opts', q).forEach((g) => $$('button', g).forEach((b) => b.addEventListener('click', () => {
+      $$('button', g).forEach((x) => x.setAttribute('aria-pressed', 'false'));
+      b.setAttribute('aria-pressed', 'true');
+    })));
+    const tap = async (g, label) => { guard(id); const b = $$('[data-g="' + g + '"] button', q).find((x) => x.textContent === label); b.click(); await nudge(b, 'scale(0.94)'); await sleep(300); };
+    await sleep(800);
+    await tap('picks', '1'); await tap('tees', 'White');
+    const go = $('[data-a="build"]', q); go.disabled = false; await sleep(420); guard(id);
+    await nudge(go, 'scale(0.97)');
+    await anim(q, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(0.96)' }], { duration: 180, easing: EASE });
+    await grow(() => { q.outerHTML = '<div class="ub">1 pick · white tees</div>'; });
+    flipAnswer(list);
+  }
+
+  // The answer bubble goes above the steps so new steps land under it. FLIP: both start from where they were drawn.
+  function flipAnswer(list) {
+    const ub = list.nextElementSibling;
+    const y0 = list.offsetTop, u0 = ub.offsetTop;
+    ub.after(list);
+    const dy = y0 - list.offsetTop, du = u0 - ub.offsetTop;
+    anim(ub, [{ opacity: 0, transform: 'translateY(' + (du + 10) + 'px) scale(0.96)' }, { opacity: 1, transform: 'none' }], { kind: 'settle', fill: 'none' });
+    if (dy) anim(list, [{ transform: 'translateY(' + dy + 'px)' }, { transform: 'none' }], { kind: 'settle', fill: 'none' });
+    scrollEnd();
+  }
+
+  /* ───── plan: it asks what you want first ───── */
+  async function askPlan(inner, list, id) {
+    cap('CoachHelm asks what the plan should cover', true);
+    setTimeout(() => mark('asking'), 0);
+    const html = '<div class="qask" role="group" aria-label="Plan questions"><p class="qask__q">What should Tuesday cover?<span>Pick what fits. Anything you already said is ticked.</span></p>' +
+      '<div class="qask__g"><span>How long</span><div class="opts" data-g="len"><button type="button" aria-pressed="false">60 min</button><button type="button" aria-pressed="false">90 min</button><button type="button" aria-pressed="false">2 hours</button></div></div>' +
+      '<div class="qask__g"><span>Work on</span><div class="opts" data-g="focus"><button type="button" aria-pressed="false">Putting</button><button type="button" aria-pressed="false">Wedges</button><button type="button" aria-pressed="false">Driving</button><button type="button" aria-pressed="false">On course</button></div></div>' +
+      '<div class="qask__g"><span>Who</span><div class="opts" data-g="who"><button type="button" aria-pressed="false">Everyone</button><button type="button" aria-pressed="false">Travel squad</button><button type="button" aria-pressed="false">Pick players</button></div></div>' +
+      '<button class="btn primary" type="button" data-a="build" disabled><span class="lbl">Build the plan</span></button></div>';
+    await grow(() => list.insertAdjacentHTML('afterend', html));
+    const q = list.nextElementSibling;
+    anim(q, [{ opacity: 0, transform: 'translateY(8px) scale(0.98)' }, { opacity: 1, transform: 'none' }], { kind: 'settle', fill: 'none' });
+    scrollEnd();
+    $$('.opts', q).forEach((g) => $$('button', g).forEach((b) => b.addEventListener('click', () => {
+      if (g.dataset.g !== 'focus') $$('button', g).forEach((x) => x.setAttribute('aria-pressed', 'false'));
+      b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true'));
+    })));
+    const tap = async (g, label) => { guard(id); const b = $$('[data-g="' + g + '"] button', q).find((x) => x.textContent === label); b.click(); await nudge(b, 'scale(0.94)'); await sleep(260); };
+    await sleep(700);
+    await tap('len', '90 min'); await tap('focus', 'Putting'); await tap('focus', 'Wedges'); await tap('focus', 'On course'); await tap('who', 'Everyone');
+    const go = $('[data-a="build"]', q); go.disabled = false; await sleep(420); guard(id);
+    await nudge(go, 'scale(0.97)');
+    // The answers become your message, and the run carries on.
+    await anim(q, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(0.96)' }], { duration: 180, easing: EASE });
+    await grow(() => { q.outerHTML = '<div class="ub">90 min · putting, wedges, on course · everyone</div>'; });
+    flipAnswer(list);
+  }
+
+  /* ───── plan: save to a folder, or make one ───── */
+  const FOLDERS = [['Practice plans', '4'], ['Qualifier prep', '2'], ['Team rules', '3']];
+  function folderRow() {
+    return '<div class="fold"><span class="fold__l">Save to</span><button class="fold__b" type="button" aria-haspopup="menu" aria-expanded="false">' + I.folder + '<b data-f="fbtn">Practice plans</b>' + I.chev + '</button></div><ul class="fmenu" role="menu" hidden></ul>';
+  }
+  function fillMenu(task) {
+    const m = $('.fmenu', task), cur = task.dataset.folder || 'Practice plans';
+    const list = (task._folders || FOLDERS);
+    m.innerHTML = list.map(([n, c]) => '<li><button type="button" role="menuitemradio" aria-checked="' + (n === cur) + '" data-fn="' + n + '">' + I.folder + '<span>' + n + '<small>' + c + '</small></span><span class="ck">' + I.check + '</span></button></li>').join('') +
+      '<li class="sepr"><button type="button" class="newf" data-a="newf">' + I.plus + '<span>New folder</span><span></span></button></li>';
+  }
+  function pickFolder(task, name) {
+    task.dataset.folder = name;
+    $('[data-f="fbtn"]', task).textContent = name;
+    const fn = $('[data-f="fname"]', task); if (fn) fn.textContent = name;
+  }
+  async function toggleMenu(task, open) {
+    const m = $('.fmenu', task), b = $('.fold__b', task);
+    if (open === undefined) open = m.hidden;
+    if (open) fillMenu(task);
+    b.setAttribute('aria-expanded', String(open));
+    await grow(() => { m.hidden = !open; });
+    if (open) { anim(m, [{ opacity: 0, transform: 'translateY(-4px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: EASE, fill: 'none' }); scrollEnd(); }
+  }
+  function wireFolders(task) {
+    const m = $('.fmenu', task);
+    $('.fold__b', task).onclick = () => toggleMenu(task);
+    m.onclick = async (e) => {
+      const it = e.target.closest('button'); if (!it) return;
+      if (it.dataset.fn) { pickFolder(task, it.dataset.fn); $$('[role="menuitemradio"]', m).forEach((x) => x.setAttribute('aria-checked', String(x === it))); await sleep(180); toggleMenu(task, false); }
+      else if (it.dataset.a === 'newf') newFolderField(task);
+      else if (it.dataset.a === 'mkf') makeFolder(task);
+    };
+  }
+  async function newFolderField(task) {
+    const li = $('.fmenu .sepr', task);
+    await grow(() => { li.innerHTML = '<div class="fnew"><input type="text" aria-label="Folder name" placeholder="Folder name" maxlength="40"><button class="btn primary" type="button" data-a="mkf">Create</button></div>'; });
+    const inp = $('input', li); inp.focus({ preventScroll: true });
+    inp.onkeydown = (e) => { if (e.key === 'Enter') makeFolder(task); if (e.key === 'Escape') toggleMenu(task, false); };
+    return inp;
+  }
+  async function makeFolder(task) {
+    const inp = $('.fnew input', task); const name = (inp && inp.value.trim()) || 'New folder';
+    task._folders = [[name, 'new']].concat(task._folders || FOLDERS);
+    pickFolder(task, name);
+    fillMenu(task);
+    const it = $('.fmenu [data-fn]', task);
+    anim(it, [{ opacity: 0, transform: 'translateY(-8px) scale(0.97)' }, { opacity: 1, transform: 'none' }], { kind: 'settle', fill: 'none' });
+    await sleep(520);
+    toggleMenu(task, false);
+  }
+  async function folderDemo(task, id) {
+    if (!$('.fold__b', task) || $('.btn.primary.busy', task)) return;
+    cap('Save to: picking a folder, then making a new one', true);
+    await toggleMenu(task, true); await sleep(900); guard(id);
+    const nf = $('.fmenu [data-a="newf"]', task); await nudge(nf, 'scale(0.98)');
+    const inp = await newFolderField(task); await sleep(300); guard(id);
+    for (const ch of 'Fall season') { guard(id); inp.value += ch; await sleep(55); }
+    await sleep(350); guard(id);
+    await makeFolder(task);
+    cap('Saving to Fall season. Nothing is saved until you press Save plan.', false); mark('folder');
+  }
+
+  function wireConfirm(task, kind) {
+    const ok = $('[data-a="ok"]', task), no = $('[data-a="cancel"]', task);
+    ok.onclick = () => commit(task, kind, false);
+    no.onclick = () => cancel(task);
+  }
+
+  /* ───── commit: capsule, the object flies home, receipt + undo ───── */
+  async function commit(task, kind, failIt, id = ++st.run) {
+    const T = TASKS[kind];
+    const ok = $('[data-a="ok"]', task), no = $('[data-a="cancel"]', task);
+    try {
+      ok.disabled = true; no.disabled = true;
+      cap(T.busy, true);
+      const lbl = $('.lbl', ok);
+      await anim(no, [{ opacity: 1 }, { opacity: 0 }], { duration: 160 }); no.style.visibility = 'hidden';
+      lbl.textContent = T.busy; ok.classList.add('busy');
+      anim(lbl, [{ opacity: 0 }, { opacity: 1 }], { duration: 180, fill: 'none' });
+      if (!st.open) setLive('work', T.live);
+      await sleep(1100); guard(id);
+      ok.classList.remove('busy');
+      if (failIt) return failed(task, kind, id);
+      await land(task, kind, id); guard(id);
+      // The Draft chip fades out from where it is, then the new chip settles in.
+      const chip = $('.task__h .chip', task), co = hold(chip).opacity;
+      anim(chip, [{ opacity: co }, { opacity: 0 }], { duration: 90, easing: 'linear' }).then(() => {
+        hold(chip); chip.className = 'chip ok'; chip.textContent = { cal: 'Added', msg: 'Sent', qual: 'Set', plan: 'Saved' }[kind];
+        anim(chip, [{ transform: 'scale(0.8)', opacity: 0 }, { transform: 'none', opacity: 1 }], { kind: 'settle', fill: 'none' });
+      });
+      task.classList.remove('won'); void task.offsetWidth; task.classList.add('won');
+      await receipt(task, kind, id);
+    } catch (e) { if (!(e instanceof Stop)) console.error(e); }
+  }
+  async function land(task, kind, id) {
+    if (kind === 'cal') {
+      const blk = $('.blk.new', task), cell = $('.cal-wk i[data-d="3"]', task), dot = $('.cal-wk i[data-d="3"] em.new', task);
+      const tr = task.getBoundingClientRect(), br = blk.getBoundingClientRect(), cr = cell.getBoundingClientRect(), sc = tr.width / task.offsetWidth || 1;
+      const fly = blk.cloneNode(true); fly.classList.add('flyer');
+      Object.assign(fly.style, { left: (br.left - tr.left) / sc + 'px', top: (br.top - tr.top) / sc + 'px', width: br.width / sc + 'px', height: br.height / sc + 'px', right: 'auto', margin: 0, transformOrigin: '50% 50%' });
+      task.appendChild(fly); blk.style.opacity = 0.22;
+      const dx = (cr.left + cr.width / 2 - (br.left + br.width / 2)) / sc, dy = (cr.top + cr.height / 2 - (br.top + br.height / 2)) / sc;
+      // A smooth arc (quadratic, lifted 52pt at its control point), sampled at 21 keyframes so it has no kink; the smooth spring sets the pace along it.
+      const fr = [];
+      for (let i = 0; i <= 20; i++) {
+        const p = i / 20, x = 2 * (1 - p) * p * 0.4 * dx + p * p * dx, y = 2 * (1 - p) * p * (0.4 * dy - 52) + p * p * dy;
+        fr.push({ offset: p, transform: 'translate(' + x.toFixed(2) + 'px,' + y.toFixed(2) + 'px) scale(' + (1 - 0.92 * p).toFixed(4) + ')', opacity: p <= 0.45 ? 1 : +(1 - (0.8 * (p - 0.45)) / 0.55).toFixed(4) });
+      }
+      await anim(fly, fr, { kind: 'smooth', fill: 'none' });
+      fly.remove();
+      dot.style.transform = 'scale(1)';
+      anim(cell, [{ transform: 'scale(1)' }, { transform: 'scale(1.1)' }, { transform: 'scale(1)' }], { kind: 'settle', fill: 'none' });
+      anim(dot, [{ transform: 'scale(0)' }, { transform: 'scale(1)' }], { kind: 'settle', fill: 'none' });
+      blk.style.opacity = 1;
+      return;
+    }
+    if (kind === 'msg') {
+      const d = $('[data-f="draft"]', task), meta = $('[data-f="meta"]', task);
+      d.classList.add('sent');
+      nudge(d, 'translateY(-3px) scale(1.02)');
+      const tn = $('[data-f="tone"]', task), to = hold(tn).opacity;
+      meta.textContent = 'Sending in 8s'; tn.style.opacity = 0; tn.inert = true;
+      anim(tn, [{ opacity: to }, { opacity: 0 }], { duration: 200, easing: 'linear', fill: 'none' });
+      return sleep(300);
+    }
+    // Qualifier and plan fold into where they live.
+    const b = $('.task__b', task);
+    const h0 = b.offsetHeight;
+    const dest = kind === 'qual'
+      ? '<div class="qlist"><div class="r"><span class="task__ic" style="width:32px;height:32px">' + I.flag + '</span><span class="r__t"><b>Fall qualifier</b><span>3 rounds · Lonnie Poole · 11 players</span></span><span class="chip ok">New</span></div><div class="r"><span class="task__ic" style="width:32px;height:32px;opacity:.6">' + I.flag + '</span><span class="r__t"><b>Spring qualifier</b><span>Finished · 4 rounds</span></span><svg class="ic chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></div></div>'
+      : (() => { const fn = task.dataset.folder || 'Practice plans'; const others = FOLDERS.filter(([n]) => n !== fn).slice(0, 2); return '<div class="fshelf"><span class="fldr" data-new>' + '<svg viewBox="0 0 58 46"><path class="fb" d="M3 8a4 4 0 0 1 4-4h14l5 5h25a4 4 0 0 1 4 4v26a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z"/><path class="ff" d="M3 17a3 3 0 0 1 3-3h46a3 3 0 0 1 3 3v22a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z"/></svg>' + '<span>' + fn + '</span><small data-f="fcount">' + (FOLDERS.find(([n]) => n === fn) ? FOLDERS.find(([n]) => n === fn)[1] + ' plans' : 'Empty') + '</small><span class="fdoc"><i></i><i></i><i></i><i style="width:70%"></i></span></span>' + others.map(([n, c]) => '<span class="fldr dim">' + '<svg viewBox="0 0 58 46"><path class="fb" d="M3 8a4 4 0 0 1 4-4h14l5 5h25a4 4 0 0 1 4 4v26a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z"/><path class="ff" d="M3 17a3 3 0 0 1 3-3h46a3 3 0 0 1 3 3v22a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z"/></svg>' + '<span>' + n + '</span><small>' + c + ' plans</small></span>').join('') + '<span class="shelf__l">Documents</span></div>'; })();
+    await anim(b, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(0.92) translateY(-6px)' }], { duration: 220, easing: EASE });
+    await grow(() => { b.innerHTML = dest; });
+    b.getAnimations().forEach((a) => a.cancel());
+    const n = kind === 'qual' ? $('.qlist .r', b) : $('[data-new]', b);
+    if (kind === 'qual') {
+      anim(n, [{ opacity: 0, transform: 'translateY(-14px) scale(1.04)' }, { opacity: 1, transform: 'none' }], { kind: 'settle', fill: 'none' });
+      anim($('.qlist .r:nth-child(2)', b), [{ opacity: 0 }, { opacity: 1 }], { duration: 260, delay: 120, easing: 'linear', fill: 'backwards' });
+    }
+    else {
+      // The plan drops into its folder; the folder takes it with a bump and its count ticks.
+      const doc = $('.fdoc', n);
+      anim(n, [{ opacity: 0 }, { opacity: 1 }], { duration: 160, fill: 'none' });
+      $$('.fldr.dim, .shelf__l', b).forEach((x) => anim(x, [{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: 'linear', fill: 'none' }));
+      // The page drops in one curve (ease-in, so it lands moving); its opacity is a separate effect that holds, then fades over the last 30 percent.
+      anim(doc, [{ opacity: 1 }, { opacity: 1, offset: 0.7 }, { opacity: 0 }], { duration: 462, easing: 'linear' });
+      await anim(doc, [{ transform: 'translateY(-46px) scale(1.25) rotate(-4deg)', easing: 'cubic-bezier(0.5, 0, 0.75, 0)' }, { transform: 'translateY(14px) scale(0.7) rotate(0deg)' }], { duration: 462, easing: 'linear' });
+      doc.remove();
+      anim($('svg', n), [{ transform: 'scale(1)' }, { transform: 'scale(1.08, 0.94)' }, { transform: 'scale(1)' }], { kind: 'settle', fill: 'none' });
+      const c = $('[data-f="fcount"]', n); const was = parseInt(c.textContent, 10); c.textContent = (was ? was + 1 : 1) + (was ? ' plans' : ' plan');
+    }
+    void h0;
+  }
+  async function receipt(task, kind, id) {
+    const T = TASKS[kind];
+    const f = $('.task__f', task);
+    const html = '<div class="rcpt"><span class="rcpt__g">' + I.check + '</span><span class="rcpt__t"><b>' + T.done[0] + '</b><span>' + (kind === 'plan' ? 'Documents · ' + (task.dataset.folder || 'Practice plans') : T.done[1]) + '</span></span><span class="rcpt__a">' +
+      '<button class="tbtn" type="button" data-a="undo"><span class="undo-ring"><svg viewBox="0 0 22 22"><circle class="trk" cx="11" cy="11" r="9"/><circle class="rem" cx="11" cy="11" r="9"/></svg><svg class="arr" viewBox="0 0 12 12"><path d="M3.5 4.5h4a2.5 2.5 0 0 1 0 5H5M5 2.5l-2 2 2 2"/></svg></span>Undo</button><button class="tbtn" type="button" data-a="open">Open</button></span></div>';
+    await grow(() => { f.innerHTML = html; });
+    anim($('.rcpt', f), [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { kind: 'settle', fill: 'none' });
+    const g = $('.rcpt__g', f); g.classList.add('pop');
+    anim(g, [{ transform: 'scale(0.4)' }, { transform: 'scale(1)' }], { kind: 'settle', fill: 'none' });
+    cap(T.done[0] + '. Undo for 8 seconds.', false); mark('receipt-' + kind);
+    task.dataset.win = '1';
+    if (!st.open) { setLive('done', { cal: 'Added', msg: 'Sent', qual: 'Set', plan: 'Saved' }[kind]); setTimeout(() => { if (!st.open) shrinkLive(); }, 1800); }
+    const rem = $('.rem', f);
+    const ring = rem.animate([{ strokeDashoffset: 0 }, { strokeDashoffset: 56.55 }], { duration: 8000, easing: 'linear', fill: 'forwards' });
+    $('[data-a="undo"]', f).onclick = () => { ring.cancel(); undo(task, kind); };
+    if (kind === 'msg') {
+      const meta = $('[data-f="meta"]', task);
+      let s = 8; const t = setInterval(() => { s--; if (!meta.isConnected || task.dataset.undone) return clearInterval(t); meta.textContent = s > 0 ? 'Sending in ' + s + 's' : 'Delivered'; if (s <= 0) clearInterval(t); }, 1000);
+    }
+    ring.finished.then(() => {
+      delete task.dataset.win;
+      const u = $('[data-a="undo"]', f); if (!u || task.dataset.undone) return;
+      // Undo fades but keeps its box, so Open doesn't shift.
+      u.disabled = true;
+      anim(u, [{ opacity: 1 }, { opacity: 0 }], { duration: 180 }).then(() => { u.style.visibility = 'hidden'; });
+      told(task, kind);
+      if (st.lastKind === kind) cap(kind === 'plan' ? 'Undo window closed. The plan stays private until you publish.' : 'Undo window closed. Now players are told. The receipt stays in the chat.', false);
+    }).catch(() => {});
+  }
+  async function told(task, kind) {
+    const T = TASKS[kind], f = $('.task__f', task);
+    if (!f || task.dataset.undone || $('.told', f)) return;
+    const n = T.toldN || 0;
+    const html = '<div class="told">' + (n ? '<span class="coins"></span>' : '<span class="task__ic" style="width:28px;height:28px">' + I.folder + '</span>') + '<span>' + T.told + '</span></div>';
+    await grow(() => f.insertAdjacentHTML('beforeend', html));
+    const row = $('.told', f), cs = $('.coins', row);
+    anim(row, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 260, easing: EASE, fill: 'none' });
+    if (!cs) { mark('told-' + kind); return; }
+    // Each player lights up as the notice reaches them (a real order: the server's delivery events).
+    const show = Math.min(n, 5);
+    for (let i = 0; i < show; i++) {
+      cs.insertAdjacentHTML('beforeend', coin(PLAYERS[i]));
+      const c = cs.lastElementChild; if (i < (T.seen || 0)) c.classList.add('seen');
+      anim(c, [{ opacity: 0, transform: 'scale(0.6)' }, { opacity: 1, transform: 'none' }], { kind: 'settle', fill: 'none' });
+      await sleep(st.reduce ? 0 : 90);
+    }
+    if (n > show) { cs.insertAdjacentHTML('beforeend', '<span class="coin more">+' + (n - show) + '</span>'); anim(cs.lastElementChild, [{ opacity: 0 }, { opacity: 1 }], { duration: 160, fill: 'none' }); }
+    mark('told-' + kind);
+  }
+  async function undo(task, kind) {
+    const T = TASKS[kind];
+    task.dataset.undone = '1'; delete task.dataset.win;
+    const f = $('.task__f', task);
+    if (kind === 'cal') {
+      const blk = $('.blk.new', task), dot = $('.cal-wk i[data-d="3"] em.new', task);
+      anim(dot, [{ transform: 'scale(1)' }, { transform: 'scale(0)' }], { duration: 200 }); dot.style.transform = 'scale(0)';
+      await anim(blk, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scaleY(0.2)' }], { duration: 280, easing: EASE });
+    } else if (kind === 'msg') {
+      const d = $('[data-f="draft"]', task); d.classList.remove('sent'); const tn = $('[data-f="tone"]', task); tn.style.opacity = 1; tn.inert = false; $('[data-f="meta"]', task).textContent = 'Unsent · back to draft';
+      const o = hold(d).opacity;
+      anim(d, [{ opacity: o }, { opacity: 0.4 }, { opacity: 1 }], { duration: 200, easing: 'linear', fill: 'none' });
+    } else {
+      const n = kind === 'qual' ? $('.qlist .r', task) : $('[data-new]', task);
+      await anim(n, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-10px) scale(0.9)' }], { duration: 280, easing: EASE });
+      n.style.visibility = 'hidden';
+    }
+    const chip = $('.task__h .chip', task); chip.className = 'chip'; chip.textContent = 'Undone';
+    await grow(() => { f.innerHTML = '<div class="rcpt"><span class="rcpt__g neutral"><svg class="ic" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></span><span class="rcpt__t"><b>' + T.undone.split('. ')[0] + '</b><span>' + T.undone.split('. ').slice(1).join('. ') + '</span></span><span></span></div>'; });
+    anim($('.rcpt', f), [{ opacity: 0 }, { opacity: 1 }], { duration: 200, fill: 'none' });
+    cap(T.undone, false); mark('undone-' + kind);
+  }
+  async function failed(task, kind, id) {
+    const T = TASKS[kind];
+    const f = $('.task__f', task);
+    const chip = $('.task__h .chip', task); chip.className = 'chip warn'; chip.textContent = 'Not saved';
+    await grow(() => { f.innerHTML = '<div class="rcpt"><span class="rcpt__g fail">' + I.alert + '</span><span class="rcpt__t"><b>' + T.fail[0] + '</b><span>' + T.fail[1] + '</span></span><span></span></div><div class="btns"><button class="btn ghost" type="button" data-a="cancel">Cancel</button><button class="btn primary" type="button" data-a="ok"><span class="lbl">Try again</span><span class="sweep"></span></button></div>'; });
+    anim(f, [{ opacity: 0, transform: 'translateX(-4px)', easing: EASE }, { opacity: 1, transform: 'translateX(3px)', offset: 0.5, easing: 'cubic-bezier(0.65, 0, 0.35, 1)' }, { opacity: 1, transform: 'none' }], { duration: 300, easing: 'linear', fill: 'none' });
+    $('[data-a="ok"]', f).onclick = () => { f.innerHTML = '<div class="oncf">' + I.info + '<span>' + T.on + '</span></div><div class="btns"><button class="btn ghost" type="button" data-a="cancel">Cancel</button><button class="btn primary" type="button" data-a="ok"><span class="lbl">' + T.cta + '</span><span class="sweep"></span></button></div>'; chip.className = 'chip'; chip.textContent = 'Draft'; commit(task, kind, false); };
+    $('[data-a="cancel"]', f).onclick = () => cancel(task);
+    if (!st.open) setLive('wait', 'Didn’t go through');
+    cap(T.fail[0] + '. The draft is kept.', false); mark('failed-' + kind);
+  }
+  async function cancel(task) {
+    const f = $('.task__f', task);
+    task.classList.add('dimmed');
+    const chip = $('.task__h .chip', task); chip.className = 'chip'; chip.textContent = 'Cancelled';
+    await grow(() => { f.innerHTML = '<div class="rcpt"><span class="rcpt__g neutral">' + I.x + '</span><span class="rcpt__t"><b>Cancelled</b><span>Nothing was created.</span></span><span></span></div>'; });
+    
+    cap('Cancelled. Nothing was created.', false); mark('cancelled');
+  }
+
+  /* ───── Play buttons ───── */
+  async function ensureTask(kind) {
+    const t = $$('.task[data-kind="' + kind + '"]', box).pop();
+    if (t && $('.task__f [data-a="ok"]', t) && !$('.btn.primary.busy', t)) return t;
+    let done;
+    const p = new Promise((r) => (done = r));
+    go(kind, { then: (task) => done(task) });
+    return p;
+  }
+  async function showPanel() {
+    await sleep(120);
+    if (st.open) { cap('Glass: closing back into the key', true); await closePanel(); await sleep(380); }
+    cap('Glass: out of the key', true); await openPanel(); await sleep(1400);
+    cap('Glass: back into the key', true); await closePanel(); await sleep(420);
+    cap('Glass: tap the key twice fast, it turns around mid-flight', true); await openPanel(); await sleep(140); await closePanel(); await sleep(90);
+    await openPanel(); cap('Glass. Tap a tile, or the key to close.', false);
+  }
+  const PLAYS = {
+    pva: () => showPanel(),
+    open: async () => { if (st.open) { await closePanel(); await sleep(250); } renderHello(); cap('Open: out of the key', true); await openPanel(); cap('Open. Tap a start or the key to close.', false); },
+    close: async () => { if (!st.open) { await openPanel(); await sleep(450); } cap('Close: back into the key', true); await closePanel(); cap('Closed. Tap the key to open.', false); },
+    live: async () => { cap('Starting a task, then closing the panel', true); go('cal', { liveAt: 0 }); },
+    steps: async () => { go(st.lastKind === 'cal' ? 'cal' : st.lastKind); },
+    stop: async () => { cap('Running, then you press Stop', true); go('cal', { stopAt: 1 }); },
+    cal: () => go('cal'), msg: () => go('msg'), qual: () => go('qual'), plan: () => go('plan'),
+    success: async () => { const t = await ensureTask(st.lastKind); await sleep(500); commit(t, t.dataset.kind, false); },
+    undo: async () => { const t = await ensureTask(st.lastKind); await sleep(500); const id = ++st.run; await commit(t, t.dataset.kind, false, id); if (id !== st.run) return; await sleep(1600); const u = $('[data-a="undo"]', t); if (u) u.click(); },
+    fail: async () => { const t = await ensureTask(st.lastKind); await sleep(500); commit(t, t.dataset.kind, true); },
+    cancel: async () => { const t = await ensureTask(st.lastKind); await sleep(600); cancel(t); },
+    whole: async () => { const t = await ensureTask(st.lastKind); await sleep(500); cap('Confirm, land, then the Undo window runs out', true); await commit(t, t.dataset.kind, false); },
+    folder: async () => { const t = await ensureTask('plan'); await sleep(400); const id = st.run; try { await folderDemo(t, id); } catch (e) { if (!(e instanceof Stop)) console.error(e); } },
+  };
+  $$('[data-play]').forEach((b) => b.addEventListener('click', () => {
+    $$('.play').forEach((x) => x.classList.toggle('is-on', x === b));
+    if (window.innerWidth <= 1080) $('.stage').scrollIntoView({ behavior: st.reduce ? 'auto' : 'smooth', block: 'start' });
+    PLAYS[b.dataset.play]();
+  }));
+
+  /* ───── controls ───── */
+  function setDevice(d) { st.device = d; $('#d-phone').setAttribute('aria-pressed', String(d === 'phone')); $('#d-desk').setAttribute('aria-pressed', String(d === 'desk')); mount(); }
+  $('#d-phone').onclick = () => setDevice('phone');
+  $('#d-desk').onclick = () => setDevice('desk');
+  function syncTheme() { const t = document.documentElement.dataset.theme; const dark = t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; $('#t-light').setAttribute('aria-pressed', String(!dark)); $('#t-dark').setAttribute('aria-pressed', String(dark)); }
+  function setTheme(t) { document.documentElement.dataset.theme = t; try { localStorage.setItem('chqc-theme', t); } catch (e) {} syncTheme(); }
+  $('#t-light').onclick = () => setTheme('light');
+  $('#t-dark').onclick = () => setTheme('dark');
+  function setReduce(r) { st.reduce = r; $('#m-full').setAttribute('aria-pressed', String(!r)); $('#m-reduce').setAttribute('aria-pressed', String(r)); const a = $('.app', box); if (a) a.classList.toggle('reduce', r); }
+  $('#m-full').onclick = () => setReduce(false);
+  $('#m-reduce').onclick = () => setReduce(true);
+
+  /* ───── spring cards ───── */
+  const sc = $('#springs');
+  [['smooth', 'smooth', 'visualDuration 0.26 · bounce 0', 0.26, 0, ''], ['settle', 'settle', 'visualDuration 0.26 · bounce 0.1', 0.26, 0.1, ''], ['reveal', 'reveal', 'visualDuration 0.52 · bounce 0', 0.52, 0, ''], ['pour', 'pour', 'visualDuration 0.42 · bounce 0', 0.42, 0, 'new']].forEach(([k, name, , vd, b, tag]) => {
+    const s = SP[k];
+    let d = '';
+    for (let i = 0; i <= 60; i++) { const t = (s.duration / 1000) * (i / 60); const y = s.x(t); d += (i ? 'L' : 'M') + (i * (140 / 60)).toFixed(1) + ' ' + (58 - y * 46).toFixed(1); }
+    sc.insertAdjacentHTML('beforeend', '<div class="spring"><b>' + name + '</b>' + (tag ? '<span class="tag new">New</span>' : '<span class="tag">Today</span>') +
+      '<svg viewBox="0 0 140 64"><line x1="0" y1="12" x2="140" y2="12" stroke="var(--rule-2)" stroke-dasharray="3 3"/><line x1="0" y1="58" x2="140" y2="58" stroke="var(--rule)"/><path d="' + d + '" fill="none" stroke="var(--green-ink)" stroke-width="2"/></svg>' +
+      '<dl><dt>duration</dt><dd>' + vd * 1000 + 'ms</dd><dt>bounce</dt><dd>' + b + '</dd><dt>settles</dt><dd>' + s.duration + 'ms</dd></dl></div>');
+  });
+
+  /* ───── Addressable states (for screenshots) and the motion check ─────
+     #<state>-<phone|desk>-<light|dark>[-w390|-w430][-xxl][-reduce][-shot]   e.g. #confirm-cal-phone-light-reduce-shot
+     The page sets <body data-qc="..."> as each moment is reached; capture/capture.mjs waits on it.
+     #motion-check runs the in-page check and writes window.__motionCheck. */
+  const STATE_PLAYS = {
+    hello: [null, 'open'], steps: ['steps', 'steps'], asking: ['plan', 'asking'],
+    'confirm-cal': ['cal', 'confirm-cal'], 'confirm-msg': ['msg', 'confirm-msg'], 'confirm-qual': ['qual', 'confirm-qual'], 'asking-qual': ['qual', 'asking'], 'confirm-plan': ['plan', 'folder'],
+    'receipt-cal': ['success', 'receipt-cal'], 'told-cal': ['whole', 'told-cal'], 'told-msg': ['whole', 'told-msg'],
+    'undone-cal': ['undo', 'undone-cal'], 'failed-cal': ['fail', 'failed-cal'], cancelled: ['cancel', 'cancelled'], stopped: ['stop', 'stopped'],
+    live: ['live', 'live-wait'], 'live-work': ['live', 'live-work'], folder: ['folder', 'folder'], closed: ['close', 'closed'],
+  };
+  // Every finish beat for every kind: receipt-, told-, undone-, failed- with cal, msg, qual, plan.
+  ['cal', 'msg', 'qual', 'plan'].forEach((k) => {
+    STATE_PLAYS['receipt-' + k] = ['success', 'receipt-' + k]; STATE_PLAYS['told-' + k] = ['whole', 'told-' + k];
+    STATE_PLAYS['undone-' + k] = ['undo', 'undone-' + k]; STATE_PLAYS['failed-' + k] = ['fail', 'failed-' + k];
+  });
+  async function fromHash() {
+    const h = decodeURIComponent(location.hash.slice(1));
+    if (!h || h === 'motion-check') return h === 'motion-check' ? motionCheck() : undefined;
+    const tk = h.split('-');
+    const dev = tk.includes('desk') ? 'desk' : 'phone';
+    const theme = tk.includes('dark') ? 'dark' : tk.includes('light') ? 'light' : null;
+    const name = tk.filter((t) => !['phone', 'desk', 'light', 'dark', 'reduce', 'shot', 'xxl', 'w390', 'w430'].includes(t)).join('-');
+    const root = document.documentElement;
+    root.classList.toggle('shot', tk.includes('shot'));
+    root.classList.toggle('xxl', tk.includes('xxl'));
+    root.classList.toggle('w390', tk.includes('w390'));
+    root.classList.toggle('w430', tk.includes('w430'));
+    if (theme) document.documentElement.dataset.theme = theme;
+    syncTheme(); setReduce(tk.includes('reduce'));
+    st.device = dev; $('#d-phone').setAttribute('aria-pressed', String(dev === 'phone')); $('#d-desk').setAttribute('aria-pressed', String(dev === 'desk'));
+    mount(); fit();
+    const sp = STATE_PLAYS[name]; if (!sp) return;
+    const [kind, target] = sp;
+    if (name.endsWith('-msg') || name.endsWith('-qual')) st.lastKind = name.split('-')[1];
+    if (name.startsWith('told-') || name.startsWith('receipt-') || name.startsWith('undone-') || name.startsWith('failed-')) st.lastKind = name.split('-')[1];
+    if (kind) PLAYS[kind]();
+    document.body.dataset.want = target;
+  }
+  window.addEventListener('hashchange', fromHash);
+
+  async function motionCheck() {
+    const out = [], ok = (name, pass, note) => out.push({ name, pass, note });
+    const props = new Set(), rm = [];
+    const orig = Element.prototype.animate;
+    Element.prototype.animate = function (frames, o) {
+      (Array.isArray(frames) ? frames : [frames]).forEach((f) => Object.keys(f).forEach((k) => { if (!['offset', 'easing', 'composite'].includes(k)) props.add(k + (this.closest && this.closest('.undo-ring') ? ' (undo ring)' : '')); }));
+      if (st.reduce) rm.push({ d: (o && o.duration) || 0, k: (Array.isArray(frames) ? frames : [frames]).flatMap((f) => Object.keys(f)) });
+      return orig.call(this, frames, o);
+    };
+    const cssNames = new Set(); const onAnim = (e) => cssNames.add(e.animationName); document.addEventListener('animationstart', onAnim, true);
+    // CSS transitions count too: every property a transition starts on inside the device, and, under Reduce Motion, each one's duration.
+    const trans = new Set(), rmTr = [];
+    const onTr = (e) => { if (!box.contains(e.target)) return; trans.add(e.propertyName); if (st.reduce) rmTr.push({ p: e.propertyName, d: parseFloat(getComputedStyle(e.target).transitionDuration) * 1000 || 0 }); };
+    document.addEventListener('transitionrun', onTr, true);
+    const scaleOf = (el) => { const t = getComputedStyle(el).transform; if (!t || t === 'none') return 1; const m = t.match(/matrix\(([^,]+)/); return m ? +m[1] : 1; };
+    const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
+    st.device = 'phone'; setReduce(false); mount(); await sleep(400);
+    const { qc } = A();
+    // 1 · open then close at 150ms: close starts where open was
+    await closePanel(); await sleep(300);
+    openPanel(); await sleep(150); const s1 = scaleOf(qc); closePanel(); await frame(); const s2 = scaleOf(qc);
+    ok('Close mid-open starts where the panel is', Math.abs(s1 - s2) < 0.06, 'scale ' + s1.toFixed(3) + ' → ' + s2.toFixed(3));
+    await sleep(500);
+    // 2 · close then open at 80ms
+    openPanel(); await sleep(600); closePanel(); await sleep(80); const s3 = scaleOf(qc); openPanel(); await frame(); const s4 = scaleOf(qc);
+    ok('Open mid-close starts where the panel is', Math.abs(s3 - s4) < 0.06, 'scale ' + s3.toFixed(3) + ' → ' + s4.toFixed(3));
+    await sleep(600);
+    // 3 · frame pacing while opening (informational on this machine)
+    await closePanel(); await sleep(300);
+    const gaps = []; let last = performance.now(), run = true;
+    (function tick(t) { gaps.push(t - last); last = t; if (run) requestAnimationFrame(tick); })(performance.now());
+    await openPanel(); run = false;
+    const long = gaps.filter((g) => g > 25).length;
+    ok('Open holds frame rate', long <= 1, gaps.length + ' frames, ' + long + ' over 25ms, worst ' + Math.max(...gaps).toFixed(1) + 'ms');
+    // 4 · a whole task: panel height never changes
+    const h0 = qc.offsetHeight; let hMax = 0;
+    const hw = setInterval(() => { hMax = Math.max(hMax, Math.abs(qc.offsetHeight - h0)); }, 50);
+    PLAYS.whole(); await new Promise((r) => { const t = setInterval(() => { if ((document.body.dataset.qc || '').startsWith('told')) { clearInterval(t); r(); } }, 200); });
+    clearInterval(hw);
+    ok('Panel height is fixed through a whole task', hMax === 0, 'moved ' + hMax + 'px');
+    // 5 · only transform and opacity (the 22pt Undo ring's stroke is the one allowed paint)
+    const bad = [...props].filter((p) => !['transform', 'opacity', 'strokeDashoffset (undo ring)'].includes(p));
+    const badCss = [...cssNames].filter((n) => !['capLive', 'helmTurn', 'spin', 'breathe', 'band', 'blink', 'sweep', 'won', 'halo', 'draw'].includes(n));
+    const badTr = [...trans].filter((p) => !['transform', 'opacity'].includes(p)).map((p) => p + ' (transition)');
+    ok('Only transform and opacity animate', !bad.length && !badCss.length && !badTr.length, bad.concat(badCss, badTr).join(', ') || [...props].concat([...trans].map((p) => p + ' (transition)')).join(', '));
+    // 6 · Reduce Motion: every move is opacity, 180ms (CH_FADE_MS) or less, over open, close, a whole task, the plan (ask and folder) and the live pill
+    setReduce(true); mount(); await sleep(300); rm.length = 0; rmTr.length = 0;
+    const until = (pred, ms = 60000) => new Promise((r) => { const t0 = performance.now(); const t = setInterval(() => { if (pred(document.body.dataset.qc || '') || performance.now() - t0 > ms) { clearInterval(t); r(); } }, 100); });
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const seen = [];
+    await PLAYS.close(); seen.push(document.body.dataset.qc); await wait(200);
+    await PLAYS.open(); seen.push(document.body.dataset.qc); await wait(200);
+    PLAYS.whole(); await until((m) => m.startsWith('told')); seen.push(document.body.dataset.qc); await wait(200);
+    PLAYS.plan(); await until((m) => m === 'folder'); seen.push(document.body.dataset.qc); await wait(200);
+    PLAYS.live(); await until((m) => m === 'live-wait'); seen.push(document.body.dataset.qc); await wait(2400);
+    const rbad = rm.filter((a) => a.d > FADE_RM && a.d < 5000 || a.k.some((k) => k !== 'opacity' && k !== 'strokeDashoffset'));
+    const rtbad = rmTr.filter((a) => a.p !== 'opacity' || a.d > FADE_RM);
+    ok('Reduce Motion: opacity only, 180ms or less', !rbad.length && !rtbad.length, seen.join(' → ') + ': ' + rm.length + ' moves and ' + rmTr.length + ' transitions, ' + (rbad.length + rtbad.length) + ' off');
+    setReduce(false);
+    document.removeEventListener('animationstart', onAnim, true); document.removeEventListener('transitionrun', onTr, true);
+    Element.prototype.animate = orig;
+    window.__motionCheck = out;
+    document.body.dataset.motionCheck = out.every((r) => r.pass) ? 'pass' : 'fail';
+    const box2 = document.createElement('div'); box2.className = 'mcheck';
+    box2.innerHTML = '<b>Motion check · ' + out.filter((r) => r.pass).length + ' of ' + out.length + '</b>' + out.map((r) => '<p class="' + (r.pass ? 'ok' : 'no') + '">' + (r.pass ? 'Pass' : 'Fail') + ' · ' + r.name + '<span>' + r.note + '</span></p>').join('');
+    document.body.appendChild(box2);
+  }
+
+  syncTheme(); setReduce(st.reduce);
+  mount();
+  if ('ResizeObserver' in window) new ResizeObserver(fit).observe(box);
+  if (location.hash) fromHash();
+})();
+</script>

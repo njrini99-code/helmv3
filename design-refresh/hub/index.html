@@ -1,0 +1,442 @@
+<title>Clubhouse Redesign Hub</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: the app's own green bar as the page head, then one flat column of grouped cards, the way Clubhouse itself reads. */
+:root{
+  --frame:#0a331f; --frame-ink:#f4eedd; --frame-soft:rgba(240,233,214,.78); --champ:#dccda6;
+  --bg:#f2efe7; --card:#fffdf8; --ink:#1c1b18; --ink-2:#46433d; --ink-3:#6b675f; --hair:#e3ddcf;
+  --gain:#1f6b45; --gain-tint:#e2efe6; --wait:#8a5a10; --wait-tint:#f5ead6; --doc:#4f4b43; --doc-tint:#e9e6df;
+  --shot-bg:#e9e4d8;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+  --display:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --frame:#08150e; --frame-ink:#f4eedd; --frame-soft:rgba(240,233,214,.74); --champ:#dccda6;
+  --bg:#0f1311; --card:#181d1a; --ink:#ece7da; --ink-2:#c9c3b5; --ink-3:#a39d90; --hair:#2b322d;
+  --gain:#8fd3aa; --gain-tint:#173325; --wait:#edb867; --wait-tint:#33281a; --doc:#c9c3b5; --doc-tint:#262a27;
+  --shot-bg:#202622; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --frame:#08150e; --frame-ink:#f4eedd; --frame-soft:rgba(240,233,214,.74); --champ:#dccda6;
+  --bg:#0f1311; --card:#181d1a; --ink:#ece7da; --ink-2:#c9c3b5; --ink-3:#a39d90; --hair:#2b322d;
+  --gain:#8fd3aa; --gain-tint:#173325; --wait:#edb867; --wait-tint:#33281a; --doc:#c9c3b5; --doc-tint:#262a27;
+  --shot-bg:#202622; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.wrap{max-width:1040px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.bar{background:var(--frame);color:var(--frame-ink)}
+header.bar .wrap{padding-block:28px 40px}
+.switch{display:inline-flex;align-items:center;gap:8px;font:600 15px var(--sans);color:var(--frame-soft);letter-spacing:.01em}
+.switch i{width:7px;height:7px;border-radius:50%;background:var(--champ);display:inline-block}
+h1{font:700 clamp(30px,5vw,40px)/1.1 var(--display);letter-spacing:-.02em;margin:14px 0 10px;text-wrap:balance}
+.lede{color:var(--frame-soft);max-width:62ch;margin:0;font-size:17px}
+main .wrap{display:flex;flex-direction:column;gap:40px;padding-block:28px 64px}
+.lip{height:18px;background:var(--bg);border-radius:18px 18px 0 0;margin-top:-18px;position:relative}
+section{display:flex;flex-direction:column;gap:16px}
+h2{font:700 24px/1.2 var(--display);letter-spacing:-.015em;margin:0}
+.sub{color:var(--ink-3);margin:-8px 0 0;max-width:68ch}
+.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:0 1px 0 var(--hair)}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))}
+.ws{display:flex;flex-direction:column;gap:10px;min-width:0}
+.ws h3{font:650 17px/1.3 var(--display);margin:0}
+.chip{align-self:flex-start;font:600 12.5px/1 var(--sans);letter-spacing:.02em;padding:6px 10px;border-radius:999px}
+.ok{background:var(--gain-tint);color:var(--gain)}
+.wait{background:var(--wait-tint);color:var(--wait)}
+.doc{background:var(--doc-tint);color:var(--doc)}
+.ws p{margin:0;color:var(--ink-2);font-size:15px}
+.ws .meta{margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:12px;border-top:1px solid var(--hair);font-size:14px;color:var(--ink-3)}
+.ws .meta a{font-weight:600;color:var(--gain);text-decoration:none}
+.ws .meta a:hover,.ws .meta a:focus-visible{text-decoration:underline}
+.rules{display:grid;gap:0;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.rule{padding:16px 4px;border-bottom:1px solid var(--hair);display:grid;grid-template-columns:28px 1fr;gap:10px;min-width:0}
+.rule b{display:block;font-weight:650}
+.rule span{color:var(--ink-2);font-size:15px}
+.rule svg{width:22px;height:22px;stroke:var(--gain);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;margin-top:2px}
+.seg{display:inline-flex;background:var(--doc-tint);border-radius:12px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{font:600 14px var(--sans);color:var(--ink-2);background:none;border:0;padding:8px 14px;border-radius:9px;cursor:pointer}
+.seg button[aria-selected="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.seg button:focus-visible,a:focus-visible{outline:2px solid var(--gain);outline-offset:2px}
+.pairs{display:flex;flex-direction:column;gap:28px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.pair h4{grid-column:1/-1;margin:0;font:650 16px var(--display)}
+.shot{margin:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+.shot figcaption{font:600 12px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.shot .ph{aspect-ratio:9/16;border-radius:22px;overflow:hidden;background:var(--shot-bg);max-width:100%}
+.shot img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.shot .open{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;height:100%;padding:20px;text-align:center;color:var(--ink-2);font-size:15px}
+.shot .open a{font-weight:650;color:var(--gain)}
+.notes{margin:0;padding-left:18px;color:var(--ink-2);font-size:15px;display:flex;flex-direction:column;gap:6px}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:15px}
+th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--hair);vertical-align:top}
+th{font:600 12px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+td.n{font-variant-numeric:tabular-nums;color:var(--ink-3);width:44px}
+td .chip{display:inline-block}
+.split{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.split .card h3{margin:0 0 10px;font:650 17px var(--display)}
+.split ol,.split ul{margin:0;padding-left:20px;color:var(--ink-2);font-size:15px;display:flex;flex-direction:column;gap:8px}
+code{font:13.5px var(--mono);background:var(--doc-tint);padding:1px 6px;border-radius:6px;overflow-wrap:anywhere}
+.foot{color:var(--ink-3);font-size:14px}
+@media (max-width:560px){.pair{gap:10px}.shot .ph{border-radius:16px}}
+@media (prefers-reduced-motion:no-preference){.pairs[data-on]{animation:in .28s ease-out}@keyframes in{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:none}}}
+</style>
+
+<header class="bar">
+  <div class="wrap">
+    <span class="switch">Clubhouse design refresh <i></i></span>
+    <h1>Clubhouse Redesign Hub</h1>
+    <p class="lede">Every phone redesign in one place: where each one stands, what changes on every screen, today against the design, and the order Claude Code builds it in.</p>
+  </div>
+</header>
+<div class="lip"></div>
+
+<main><div class="wrap">
+
+<section aria-labelledby="s-status">
+  <h2 id="s-status">Where each redesign stands</h2>
+  <div class="grid">
+    <article class="card ws">
+      <span class="chip ok">Approved · ready to build</span>
+      <h3>Classes, Roster and coach Home</h3>
+      <p>Your six calls are locked in: practice rounds out of averages, no Captain tag, a plain Injured chip, nothing on Classes without a source, one green on Home, and no "Needs a look" strip on desktop.</p>
+      <div class="meta"><span>PRs 7 to 10</span><a href="https://claude.ai/artifact/QnVN3x63a79TM8geunzccU">Open the design</a></div>
+    </article>
+    <article class="card ws">
+      <span class="chip ok">Build package ready · calls settled</span>
+      <h3>Stats and player Home</h3>
+      <p>Every stat is back on the summary, including scrambling and greens in regulation, and the strokes gained bars are fixed. All 201 figures are mapped to where the app really gets them, and Home's bar and hero are one green.</p>
+      <div class="meta"><span>PRs 4 to 6</span><a href="https://claude.ai/artifact/2Xz3LTyYgtM11mdB51Ac7S">Open the design</a></div>
+    </article>
+    <article class="card ws">
+      <span class="chip ok">Build package ready · calls settled</span>
+      <h3>Messages</h3>
+      <p>Signed off, with all 34 states linked and an animation check that passes all 11 cases. The build contract is written: every screen and state, its exact sizes, all 33 animations and 171 pass or fail checks. Nothing new is collected. Pin sync is its own held PR with one database change.</p>
+      <div class="meta"><span>PRs 11a to 11h</span><a href="https://claude.ai/artifact/BXhxxNzJDAJLMoNXPjMpev">Open the design</a></div>
+    </article>
+    <article class="card ws">
+      <span class="chip ok">Build package ready · calls settled</span>
+      <h3>CoachHelm Team, the golf hole</h3>
+      <p>Where the team gives back strokes, drawn as a hole you tap spot by spot, with up to 4 open reads per player. A fifth Course tab holds course reads and the team's scoring history by week and by course, against Tour. Desktop ends level at every size, and every word and figure matches what the app really has. The build contract is written: every screen and state, its exact sizes, all 41 animations and about 170 checks.</p>
+      <div class="meta"><span>PRs CT0a to CT7</span><a href="https://claude.ai/artifact/HAWFGcKWn4hbZgn2jU6TjK">Open the design</a></div>
+    </article>
+    <article class="card ws">
+      <span class="chip ok">Build package ready · calls settled</span>
+      <h3>CoachHelm read</h3>
+      <p>One read in full: what is off, where it shows up, why CoachHelm thinks so and how sure, then what to do. Every subscreen, sheet and state is live on the design, and the package now lists all 43 screens with exact sizes, 26 motion rows and pass/fail checks per PR.</p>
+      <div class="meta"><span>PRs CR0 to CR6</span><a href="https://claude.ai/artifact/SUL5hLtah5MmBd2dkU8mTK">Open the design</a></div>
+    </article>
+    <article class="card ws">
+      <span class="chip ok">Build package ready · calls settled</span>
+      <h3>CoachHelm Lenses</h3>
+      <p>One file per player, seen the coach's way or the player's. Players compare only against the team average and the PGA Tour, and get a field card only when 5 or more played, so no teammate's score can be worked out. The build contract is written: every screen, its sizes, 28 animations and pass or fail checks. Its first PR fixes a live leak of a player's private goals.</p>
+      <div class="meta"><span>PRs L0 to L6</span><a href="https://claude.ai/artifact/2wbDt4ckf9Nudnsv22MUXe">Open the design</a></div>
+    </article>
+    <article class="card ws">
+      <span class="chip ok">Build package ready · calls settled</span>
+      <h3>CoachHelm quick chat</h3>
+      <p>The Helm key in the green bar pours out the Glass panel you picked. A task shows its steps, asks when your words leave a gap, draws the real thing with every value it will write, and only then writes. Undo is a real 8 seconds: nothing is saved or sent and nobody is told until it closes.</p>
+      <div class="meta"><span>PRs QC0 to QC6</span><a href="https://claude.ai/artifact/9coRP9KHUfDw9sPE3g1FEq">Open the design</a></div>
+    </article>
+    <article class="card ws">
+      <span class="chip ok">Build package ready · calls settled</span>
+      <h3>CoachHelm Ask</h3>
+      <p>Ask works like Claude: steps you can watch, real golf visuals with their sources, plans in a side pane you save to a folder, and one flow that creates things in every tab. Nothing is written until you press, and Undo lasts 8 seconds before anyone is told.</p>
+      <div class="meta"><span>PRs AK0 to AK12</span><a href="https://claude.ai/artifact/Bh4Vim8M1dXW7wnVrd3NAA">Open the design</a></div>
+    </article>
+    <article class="card ws">
+      <span class="chip ok">Ready for build review (prep only)</span>
+      <h3>CoachHelm practice plans</h3>
+      <p>CoachHelm builds a practice plan from Ask and in the builder, asks first, shows a picture for each read and writes every block with a Why. Players get only their group's part. Package: <code>design-refresh/practice-plan/</code>.</p>
+      <div class="meta"><span>PRs PP0 to PP9</span><a href="https://claude.ai/artifact/N8XKShSAhyL1foRtUfiqz5">Open the design</a></div>
+    </article>
+    <article class="card ws">
+      <span class="chip doc">Written down · later</span>
+      <h3>Dark text on the gradient</h3>
+      <p>Already shipped, so it's documented and left for after the redesigns. The flat page in PR 2 removes the gradient behind every screen; 34 other screens follow by area.</p>
+      <div class="meta"><span>Follow-up</span><span>No PR yet</span></div>
+    </article>
+  </div>
+</section>
+
+<section aria-labelledby="s-rules">
+  <h2 id="s-rules">What every screen follows</h2>
+  <p class="sub">One design language across all of them, so a build in one section looks like it belongs next to the others.</p>
+  <div class="card rules">
+    <div class="rule"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="2"/><path d="M3 14h18M3 18h12"/></svg><div><b>The green top bar stays as it is</b><span>Section switcher on the left with its dot, the bell or the page's action on the right. Pushed pages show "‹ Roster" with the title centred.</span></div></div>
+    <div class="rule"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg><div><b>A flat page under it</b><span>The gradient goes, so dark text never sits on a moving tint again.</span></div></div>
+    <div class="rule"><svg viewBox="0 0 24 24"><path d="M5 18V7h6M5 12h5M14 18l3-9 3 9M15 15h4"/></svg><div><b>Large titles that settle on scroll</b><span>34pt on the page, shrinking to 86% and fading as you scroll. Nothing moves into the bar.</span></div></div>
+    <div class="rule"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="18" height="8" rx="2"/></svg><div><b>Organized and airy, nothing removed</b><span>Every figure stays. Cards are grouped by the question they answer, picture first, 24pt apart with 20pt inside.</span></div></div>
+    <div class="rule"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="9" height="14" rx="2"/><path d="M15 9l4 3-4 3"/></svg><div><b>Summary, then detail</b><span>Each card shows the picture; a tap pushes its detail page with more visuals. Back returns you to the same spot.</span></div></div>
+    <div class="rule"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg><div><b>Motion that matches the app</b><span>The house push spring everywhere (462ms, the page behind slides 24%), an edge swipe to go back, and a 180ms fade under Reduce Motion. One table of shared values in START_HERE beats every lane file.</span></div></div>
+    <div class="rule"><svg viewBox="0 0 24 24"><path d="M4 20V4M9 6h11M9 12h11M9 18h7"/></svg><div><b>No accent left borders</b><span>Text sits on a surface. One green feature card per view at most.</span></div></div>
+    <div class="rule"><svg viewBox="0 0 24 24"><path d="M5 19L11 5l6 14M7.5 14h7M19 9v6M16 12h6"/></svg><div><b>Text follows iPhone Text Size</b><span>Cards grow and nothing clips at the largest size. Phone edge 16pt, 20pt on large phones.</span></div></div>
+    <div class="rule"><svg viewBox="0 0 24 24"><circle cx="8" cy="9" r="3.5"/><circle cx="16" cy="9" r="3.5"/><path d="M3 20c.8-3 2.8-4.5 5-4.5s4.2 1.5 5 4.5M11 20c.8-3 2.8-4.5 5-4.5s4.2 1.5 5 4.5"/></svg><div><b>Year colours on player avatars</b><span>Freshman to senior, on Roster, Classes and coach Home. Coaches and unknown years keep the plain coin.</span></div></div>
+  </div>
+</section>
+
+<section aria-labelledby="s-ba">
+  <h2 id="s-ba">Today against the design</h2>
+  <p class="sub">Left is the phone today, right is the approved design, both in light mode. Dark mode, few-round and no-round states and the largest Text Size are in the design folder too.</p>
+  <div class="seg" role="tablist" aria-label="Redesign">
+    <button role="tab" id="t-stats" aria-selected="true" aria-controls="p-stats">Stats and Home</button>
+    <button role="tab" id="t-classes" aria-selected="false" aria-controls="p-classes">Classes, Roster, Home</button>
+    <button role="tab" id="t-msg" aria-selected="false" aria-controls="p-msg">Messages</button>
+    <button role="tab" id="t-read" aria-selected="false" aria-controls="p-read">CoachHelm read</button>
+  </div>
+
+  <div class="pairs card" id="p-stats" role="tabpanel" aria-labelledby="t-stats">
+    <div class="pair">
+      <h4>My stats</h4>
+      <figure class="shot"><figcaption>Today</figcaption><div class="ph"><img src="img/st-before-mystats.jpg" alt="Today's phone My stats: a comparison table and rounds list." loading="lazy"></div></figure>
+      <figure class="shot"><figcaption>Design</figcaption><div class="ph"><img src="img/st-after-summary.jpg" alt="Redesigned My stats: green scoring average card with its trend chart, What changed, and At a glance." loading="lazy"></div></figure>
+    </div>
+    <div class="pair">
+      <h4>A detail page (Approach)</h4>
+      <figure class="shot"><figcaption>Today</figcaption><div class="ph"><img src="img/st-before-detail.jpg" alt="Today's game detail and trend view." loading="lazy"></div></figure>
+      <figure class="shot"><figcaption>Design</figcaption><div class="ph"><img src="img/st-after-approach.jpg" alt="Redesigned Approach detail page pushed from its summary card." loading="lazy"></div></figure>
+    </div>
+    <div class="pair">
+      <h4>Team stats</h4>
+      <figure class="shot"><figcaption>Today</figcaption><div class="ph"><img src="img/st-before-team.jpg" alt="Today's team stats." loading="lazy"></div></figure>
+      <figure class="shot"><figcaption>Design</figcaption><div class="ph"><img src="img/st-after-team.jpg" alt="Redesigned team stats summary." loading="lazy"></div></figure>
+    </div>
+    <div class="pair">
+      <h4>Player Home, Your game</h4>
+      <figure class="shot"><figcaption>Today</figcaption><div class="ph"><img src="img/st-before-home.jpg" alt="Today's player Home, Your game." loading="lazy"></div></figure>
+      <figure class="shot"><figcaption>Design</figcaption><div class="ph"><img src="img/st-after-home.jpg" alt="Redesigned player Home, Your game as one card." loading="lazy"></div></figure>
+    </div>
+  </div>
+
+  <div class="pairs card" id="p-classes" role="tabpanel" aria-labelledby="t-classes" hidden>
+    <div class="pair">
+      <h4>Roster</h4>
+      <figure class="shot"><figcaption>Today</figcaption><div class="ph"><img src="img/cl-before-roster.jpg" alt="Today's phone Roster: coaches and a plain player list." loading="lazy"></div></figure>
+      <figure class="shot"><figcaption>Design</figcaption><div class="ph"><div class="open"><span>Green team card, three leader cards, year avatars and form bars in one player card.</span><a href="https://claude.ai/artifact/QnVN3x63a79TM8geunzccU">Open the Roster design</a></div></div></figure>
+    </div>
+    <div class="pair">
+      <h4>Classes</h4>
+      <figure class="shot"><figcaption>Today</figcaption><div class="ph"><img src="img/cl-before-classes.jpg" alt="Today's phone Classes." loading="lazy"></div></figure>
+      <figure class="shot"><figcaption>Design</figcaption><div class="ph"><div class="open"><span>One term card ("6 weeks left · term ends Dec 15"), a Today card with a day ribbon, and class binders in their tones.</span><a href="https://claude.ai/artifact/QnVN3x63a79TM8geunzccU">Open the Classes design</a></div></div></figure>
+    </div>
+    <div class="pair">
+      <h4>Coach Home</h4>
+      <figure class="shot"><figcaption>Today</figcaption><div class="ph"><img src="img/cl-before-home.jpg" alt="Today's coach Home, scrolled." loading="lazy"></div></figure>
+      <figure class="shot"><figcaption>Design</figcaption><div class="ph"><div class="open"><span>Bar and hero in one flat green, greeting at 34pt, Up next on the hero, the team's game as one 2×2 card.</span><a href="https://claude.ai/artifact/QnVN3x63a79TM8geunzccU">Open the Home design</a></div></div></figure>
+    </div>
+    <p class="foot">Screenshots of these three designs come from the capture script on your Mac, the first step of the build. The design page shows every state, sub page and motion now.</p>
+  </div>
+
+  <div class="pairs card" id="p-msg" role="tabpanel" aria-labelledby="t-msg" hidden>
+    <div class="pair">
+      <h4>A conversation</h4>
+      <figure class="shot"><figcaption>Today</figcaption><div class="ph"><img src="img/ms-before-thread.jpg" alt="Today's Messages conversation on phone." loading="lazy"></div></figure>
+      <figure class="shot"><figcaption>Design</figcaption><div class="ph"><img src="img/ms-after-thread.jpg" alt="Redesigned Messages conversation: flat green sent bubbles, a photo, day pill, Seen receipt and a glass composer." loading="lazy"></div></figure>
+    </div>
+    <p class="foot">The design page has every state live: inbox, polls, holds and reactions, Seen by, details, mute and the empty inbox, plus a motion lab with Replay on each animation.</p>
+  </div>
+
+  <div class="pairs card" id="p-read" role="tabpanel" aria-labelledby="t-read" hidden>
+    <div class="pair">
+      <h4>A read on the Board</h4>
+      <figure class="shot"><figcaption>Today</figcaption><div class="ph"><img src="img/cr-before-board.jpg" alt="Today's CoachHelm Board on phone: a green card with the headline and a sentence, two numbers against the Tour, and a closed Why we think this row." loading="lazy"></div></figure>
+      <figure class="shot"><figcaption>Design</figcaption><div class="ph"><img src="img/cr-after-board.jpg" alt="Redesigned read summary on the Board: headline, hero number, a ladder against the team pool and the Tour, the cause line and what closing it is worth, then Open the read." loading="lazy"></div></figure>
+    </div>
+    <div class="pair">
+      <h4>The read itself</h4>
+      <figure class="shot"><figcaption>Today</figcaption><div class="ph"><div class="open"><span>Today the rest sits on a separate Deep dive page in seven sections that look alike.</span></div></div></figure>
+      <figure class="shot"><figcaption>Design</figcaption><div class="ph"><img src="img/cr-after-read.jpg" alt="Redesigned read page: the headline card, then where it shows up, why CoachHelm thinks so, how sure, how it has moved, the rounds behind it and what to do." loading="lazy"></div></figure>
+    </div>
+    <p class="foot">The design page has phone and desktop, coach and player, all three reads and every state a read can be in, including the More sheet, the answer row, Assigning, Dismissed and the error pages. Each one has its own link.</p>
+  </div>
+</section>
+
+<section aria-labelledby="s-order">
+  <h2 id="s-order">Build order</h2>
+  <p class="sub">Draft pull requests, one at a time. Nothing deploys, no flags flip, and shot tracking keeps collecting exactly what it does today.</p>
+  <div class="card tbl">
+    <table>
+      <thead><tr><th>PR</th><th>What it changes</th><th>State</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>Shared colour, type and spacing tokens</td><td><span class="chip ok">Ready</span></td></tr>
+        <tr><td class="n">2</td><td>Flat page under the green bar; section titles move into their cards</td><td><span class="chip ok">Ready</span></td></tr>
+        <tr><td class="n">3</td><td>Large titles and sticky controls under the bar, bar itself untouched</td><td><span class="chip ok">Ready</span></td></tr>
+        <tr><td class="n">4a</td><td>Stats groundwork, with no visible change except the "Missed short" fix</td><td><span class="chip ok">Ready</span></td></tr>
+        <tr><td class="n">4b</td><td>My stats on phone: summary cards that push their detail pages</td><td><span class="chip ok">Ready</span></td></tr>
+        <tr><td class="n">4c</td><td>Detail page polish: panel order, chart drag, charts that grow once</td><td><span class="chip ok">Ready</span></td></tr>
+        <tr><td class="n">5</td><td>Team stats on phone, same pattern</td><td><span class="chip ok">Ready</span></td></tr>
+        <tr><td class="n">6</td><td>Player Home, Your game as one card</td><td><span class="chip ok">Ready</span></td></tr>
+        <tr><td class="n">7</td><td>Year-coloured avatars, and the "Class of 2031 · Class of 2031" label fix</td><td><span class="chip ok">Ready</span></td></tr>
+        <tr><td class="n">8</td><td>Roster, coach and player, phone and desktop</td><td><span class="chip ok">Ready</span></td></tr>
+        <tr><td class="n">9</td><td>Classes on phone</td><td><span class="chip ok">Ready</span></td></tr>
+        <tr><td class="n">10</td><td>Coach Home on phone, one green bar and hero</td><td><span class="chip ok">Ready</span></td></tr>
+        <tr><td class="n">11a to 11h</td><td>Messages in eight steps: groundwork, inbox, thread and bubbles, composer and send, hold and reactions and polls, details and mute, the motion tests, then pin sync (held)</td><td><span class="chip ok">Ready</span></td></tr>
+        <tr><td class="n">CT0a–7</td><td>CoachHelm Team behind its own switch, off: count only reads that are drawn, a read-only team loader, then the hole, the spot card, sheets, stories, the huddle, roster and track record, and motion</td><td><span class="chip ok">Ready</span></td></tr>
+        <tr><td class="n">CR0–6</td><td>CoachHelm read behind its own switch, off: first a fix so players never see a likely cause today, then the plumbing, phone cards, desktop, the summary card for the Board, motion and states, and tests</td><td><span class="chip ok">Ready</span></td></tr>
+        <tr><td class="n">L0–6</td><td>CoachHelm Lenses behind its own switch, off: first a fix so the coach's Deep dive never shows a player's private goals, then one file per player with the coach and player lens</td><td><span class="chip ok">Ready</span></td></tr>
+        <tr><td class="n">AK0–12</td><td>CoachHelm Ask behind its own switch, off: plumbing, the answer card and live steps, read chips, visuals, confirm and Undo, artifacts, the new reads, tone, the practice brief and folders, player Ask and its weekly allowance, the create flows, then the side-by-side and motion tests</td><td><span class="chip ok">Ready · five held database changes, none run</span></td></tr>
+        <tr><td class="n">QC0–6</td><td>CoachHelm quick chat behind its own switch, off: plumbing and the new pour spring, the Helm key, the Glass panel, steps and questions, task cards with the held Undo and receipts, the live pill, then the side-by-side and motion tests</td><td><span class="chip ok">Ready · Undo waits on one held database change</span></td></tr>
+        <tr><td class="n">PP0–9</td><td>CoachHelm practice plans behind its own switch, off: the printed sheet and fixtures, read steps and pictures, the ask-first card, the plan card and refine, save to a folder, publish with Undo, print and PDF, plan format, the builder helper, then the player side</td><td><span class="chip ok">Ready for build review (prep only) · PP4, PP5, PP8 and PP9 wait on the Practice tab</span></td></tr>
+        <tr><td class="n">12</td><td>Motion and Reduce Motion pass across all of it</td><td><span class="chip ok">Ready, runs last</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="s-calls">
+  <h2 id="s-calls">Stats calls</h2>
+  <p class="sub">All three settled. You said "Keep as drawn" on 31 Oct; the other two are built as yes.</p>
+  <div class="card tbl">
+    <table>
+      <thead><tr><th></th><th>The call</th><th>Built as</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>Keep the Stats page head as drawn, with "Overview" and the other section names on the page, or use the large title every other section has</td><td><span class="chip ok">Settled</span> As drawn</td></tr>
+        <tr><td class="n">2</td><td>Let detail pages run longer than drawn so nothing from today is removed</td><td>Yes</td></tr>
+        <tr><td class="n">3</td><td>Read Home's trend over 10 rounds instead of 7, so "Improving" and "Slipping" can actually show</td><td>Yes</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="s-mcalls">
+  <h2 id="s-mcalls">Messages calls</h2>
+  <p class="sub">All five are settled.</p>
+  <div class="card tbl">
+    <table>
+      <thead><tr><th></th><th>The call</th><th>Where it stands</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>Announcement in the + menu</td><td><span class="chip ok">Settled</span> Left out</td></tr>
+        <tr><td class="n">2</td><td>Typing dots on inbox rows and pins, and the typer's name in groups</td><td><span class="chip ok">Settled</span> Built, no database change</td></tr>
+        <tr><td class="n">3</td><td>Three animations with a little more bounce than the app's usual limit</td><td><span class="chip ok">Settled</span> Kept, checked for smoothness</td></tr>
+        <tr><td class="n">4</td><td>A Camera row in the + menu (Photos already opens the camera)</td><td><span class="chip ok">Settled</span> Left out: Photos, File, Poll</td></tr>
+        <tr><td class="n">5</td><td>Pins sync across your devices (needs a database change)</td><td><span class="chip ok">Settled</span> Yes, as its own held PR 11h</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="s-tcalls">
+  <h2 id="s-tcalls">CoachHelm Team calls</h2>
+  <p class="sub">Settled 31 Oct. You picked 2 and 3; 1 is built as a default you can flip in one place.</p>
+  <div class="card tbl">
+    <table>
+      <thead><tr><th></th><th>The call</th><th>Built as</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>Open CoachHelm on the hole and call the tab Team instead of Board</td><td>Yes</td></tr>
+        <tr><td class="n">2</td><td>A fifth tab, Course, beside the four spots: course, scoring and pressure reads (20 of 68 on staging), plus the team's to-par by week and by course and the team against Tour</td><td>Yes, your call</td></tr>
+        <tr><td class="n">3</td><td>Every open read per player, up to 3 needs work and 1 working, instead of one</td><td>Yes, your call</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="s-rcalls">
+  <h2 id="s-rcalls">CoachHelm read calls</h2>
+  <p class="sub">Built with my picks as defaults. Each one is a single switch in the build, so you can flip it any time.</p>
+  <div class="card tbl">
+    <table>
+      <thead><tr><th></th><th>The call</th><th>Built as</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>Bring pictures back into the read, each with its number written beside it</td><td>Yes</td></tr>
+        <tr><td class="n">2</td><td>Players see where it shows up (counted, not a cause), but never a likely cause</td><td>Yes</td></tr>
+        <tr><td class="n">3</td><td>The team pool beside the Tour on the ladder</td><td>Yes, while its switch is on</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="s-qcalls">
+  <h2 id="s-qcalls">Quick chat calls</h2>
+  <p class="sub">You left these to me. Each is built as a default you can flip with one switch.</p>
+  <div class="card tbl">
+    <table>
+      <thead><tr><th></th><th>The call</th><th>Built as</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>Drop-down on phone too, instead of today's bottom sheet</td><td>Yes</td></tr>
+        <tr><td class="n">2</td><td>How long Undo lasts before anything is saved or anyone is told</td><td>8 seconds</td></tr>
+        <tr><td class="n">3</td><td>Who gets the key</td><td>Coaches only</td></tr>
+        <tr><td class="n">4</td><td>Close the panel mid-task and the key becomes a small live pill</td><td>Yes</td></tr>
+        <tr><td class="n">5</td><td>Where a plan saves until Documents folders ship</td><td>Practice plans</td></tr>
+        <tr><td class="n">6</td><td>Send a message from the card with your own press, under the same Undo</td><td>Yes</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="s-acalls">
+  <h2 id="s-acalls">Ask calls</h2>
+  <p class="sub">You decided the first two. The rest you left to me; each is built as a default you can flip.</p>
+  <div class="card tbl">
+    <table>
+      <thead><tr><th></th><th>The call</th><th>Built as</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td>Announcements post when you press Post, with Undo</td><td><span class="chip ok">Settled</span> Yes, players told once Undo closes</td></tr>
+        <tr><td class="n">2</td><td>What players compare themselves against</td><td><span class="chip ok">Settled</span> PGA Tour and team averages only</td></tr>
+        <tr><td class="n">3</td><td>A drill Ask saves would show in every team's bank</td><td>Drill flow off until the team bank change is applied</td></tr>
+        <tr><td class="n">4</td><td>Setting a lineup and locking it</td><td>Set has Undo; Lock is its own card, with no Undo</td></tr>
+        <tr><td class="n">5</td><td>A Lift flow</td><td>Waits until Lift has a team table</td></tr>
+        <tr><td class="n">6</td><td>A player's Request more mail while customer email is off</td><td>Logged, no email</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="s-true">
+  <h2 id="s-true">Built to look like the design</h2>
+  <div class="split">
+    <div class="card">
+      <h3>A PR is done only when it matches</h3>
+      <ol>
+        <li>Screenshot the build at the design's sizes, light and dark, every sub page and state.</li>
+        <li>Put each beside the design page and list every difference until there are none.</li>
+        <li>Record the motion, once normally and once with Reduce Motion on.</li>
+        <li>Walk every tap: what it opens, back, tab switching, sheets.</li>
+        <li>Where something can't be built as drawn, stop that part, write why with two options, and keep going on the rest.</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>Numbers checked against the real data</h3>
+      <ul>
+        <li>"Missed short" on Stats counts corner misses twice, so a true 54% can show as high as 74%. The build uses the calculator's figure alone.</li>
+        <li>The first Stats mock invented most Tour numbers. The design now shows a Tour mark only where the app has one.</li>
+        <li>Greens, putts and scrambling come from three sources that disagree. Each figure now has one source, the same on summary and detail.</li>
+        <li>Home's "Improving" and "Slipping" can't appear today; the fix is in the Stats notes.</li>
+        <li>Practice rounds stay out of every average. Five preview data bugs on Roster, Classes and Home are fixed inside their PRs.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="s-hand">
+  <h2 id="s-hand">Handing it to Claude Code</h2>
+  <div class="card">
+    <p style="margin:0 0 12px;color:var(--ink-2)">Everything is in one zip, <code>clubhouse-redesign-package.zip</code>. Copy its <code>design-refresh/</code> folder to the repo root and paste the prompt in <code>CODE_PROMPT.md</code>. The agent starts at <code>START_HERE.md</code>: the rules, one table of shared values, the build order with the two leak fixes first, and the loop that proves each PR matches its design side by side. Every lane has its screens, specs, motion and pass or fail checks, plus its design page, plan, data checks and capture script.</p>
+    <p style="margin:0;color:var(--ink-2)">It keeps your laptop light: one dev server, one browser, at most two helpers at a time.</p>
+  </div>
+  <p class="foot">Updated 4 November. All nine lanes are complete and in the zip.</p>
+</section>
+
+</div></main>
+
+<script>
+(function(){
+  var tabs=[].slice.call(document.querySelectorAll('[role="tab"]'));
+  function show(t){
+    tabs.forEach(function(b){
+      var on=b===t; b.setAttribute('aria-selected',on?'true':'false'); b.tabIndex=on?0:-1;
+      var p=document.getElementById(b.getAttribute('aria-controls'));
+      p.hidden=!on; if(on){p.setAttribute('data-on','');}else{p.removeAttribute('data-on');}
+    });
+    try{localStorage.setItem('hub-tab',t.id)}catch(e){}
+  }
+  tabs.forEach(function(b,i){
+    b.addEventListener('click',function(){show(b)});
+    b.addEventListener('keydown',function(e){
+      var d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0; if(!d)return;
+      var n=tabs[(i+d+tabs.length)%tabs.length]; n.focus(); show(n);
+    });
+  });
+  var saved=null; try{saved=localStorage.getItem('hub-tab')}catch(e){}
+  var s=saved&&document.getElementById(saved); show(s||tabs[0]);
+})();
+</script>

@@ -1,0 +1,3028 @@
+{
+ "S-STATS": {
+  "kind": "screen",
+  "design": "stats-light-full",
+  "app": "player?state=self",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "stats-light-full",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "stats-light-full-loading",
+    "app": "player?state=loading",
+    "na": false,
+    "add": false
+   },
+   "empty": {
+    "design": "stats-light-none",
+    "app": "player?state=empty",
+    "na": false,
+    "add": true
+   },
+   "failed": {
+    "design": "stats-light-full-failed",
+    "app": "player?state=failed",
+    "na": false,
+    "add": false
+   },
+   "few": {
+    "design": "stats-light-few",
+    "app": "player?state=early",
+    "na": false,
+    "add": false
+   },
+   "long": {
+    "design": "stats-light-full-long",
+    "app": "player?state=long",
+    "na": false,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": "player?state=lots",
+    "na": false,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": "player?state=one",
+    "na": false,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "xxl": {
+    "design": "stats-light-full-xxl",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "stats-dark-full",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "stats-light-full-reduce",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "w430": {
+    "design": "stats-light-full-wide",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "player?state=self&flag=off",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "practice": {
+    "design": "",
+    "app": "player?state=practice",
+    "na": false,
+    "add": true
+   }
+  }
+ },
+ "S-STATS.stuck": {
+  "kind": "inline state",
+  "design": "stats-light-full",
+  "app": "player?state=self",
+  "action": "scroll:320",
+  "states": {
+   "default": {
+    "design": "stats-light-full",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "stats-light-full-loading",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "empty": {
+    "design": "stats-light-none",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "failed": {
+    "design": "stats-light-full-failed",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "few": {
+    "design": "stats-light-few",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "long": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "xxl": {
+    "design": "stats-light-full-xxl",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "stats-dark-full",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "stats-light-full-reduce",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "w430": {
+    "design": "stats-light-full-wide",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "player?state=self&flag=off",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-STATS.window": {
+  "kind": "inline state",
+  "design": "stats-light-full",
+  "app": "player?state=self",
+  "action": "tap:seg-last20",
+  "states": {
+   "default": {
+    "design": "stats-light-full",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "stats-light-full-loading",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "empty": {
+    "design": "stats-light-none",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "failed": {
+    "design": "stats-light-full-failed",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "few": {
+    "design": "stats-light-few",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "long": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "xxl": {
+    "design": "stats-light-full-xxl",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "stats-dark-full",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "stats-light-full-reduce",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "w430": {
+    "design": "stats-light-full-wide",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "player?state=self&flag=off",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-STATS.custom": {
+  "kind": "inline state",
+  "design": "",
+  "app": "player?state=self&range=custom",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "",
+    "app": "player?state=self&range=custom",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "empty": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "failed": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "few": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "long": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "xxl": {
+    "design": "",
+    "app": "player?state=self&range=custom",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "",
+    "app": "player?state=self&range=custom",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "",
+    "app": "player?state=self&range=custom",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "w430": {
+    "design": "",
+    "app": "player?state=self&range=custom",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "player?state=self&range=custom&flag=off",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "player?state=self&range=custom",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "player?state=self&range=custom",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-STATS.scrub": {
+  "kind": "inline state",
+  "design": "stats-light-full",
+  "app": "player?state=self",
+  "action": "scrub:0.6",
+  "states": {
+   "default": {
+    "design": "stats-light-full",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "stats-light-full-loading",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "empty": {
+    "design": "stats-light-none",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "failed": {
+    "design": "stats-light-full-failed",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "few": {
+    "design": "stats-light-few",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "long": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "xxl": {
+    "design": "stats-light-full-xxl",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "stats-dark-full",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "stats-light-full-reduce",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "w430": {
+    "design": "stats-light-full-wide",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "player?state=self&flag=off",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "player?state=self",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-STATS.filter": {
+  "kind": "sheet (today's, 62%)",
+  "design": "",
+  "app": "player?state=self (tap filter)",
+  "action": "tap:filter",
+  "states": {}
+ },
+ "S-STATS.switcher": {
+  "kind": "menu (today's)",
+  "design": "",
+  "app": "player?state=self (tap switcher)",
+  "action": null,
+  "states": {}
+ },
+ "S-STATS.scoring": {
+  "kind": "push",
+  "design": "stats-light-full-scoring",
+  "app": "player?state=self#gm-scoring",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "stats-light-full-scoring",
+    "app": "player?state=self#gm-scoring",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "empty": {
+    "design": "stats-light-none-scoring",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "failed": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "few": {
+    "design": "stats-light-few-scoring",
+    "app": "player?state=early#gm-scoring",
+    "na": false,
+    "add": false
+   },
+   "long": {
+    "design": "",
+    "app": "player?state=long#gm-scoring",
+    "na": false,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": "player?state=lots#gm-scoring",
+    "na": false,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": "player?state=one#gm-scoring",
+    "na": false,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": "player?state=self#gm-scoring",
+    "na": false,
+    "add": false
+   },
+   "xxl": {
+    "design": "stats-light-full-xxl-scoring",
+    "app": "player?state=self#gm-scoring",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "stats-dark-full-scoring",
+    "app": "player?state=self#gm-scoring",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "stats-light-full-reduce-scoring",
+    "app": "player?state=self#gm-scoring",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": "player?state=self#gm-scoring",
+    "na": false,
+    "add": false
+   },
+   "w430": {
+    "design": "stats-light-full-wide-scoring",
+    "app": "player?state=self#gm-scoring",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": "player?state=self#gm-scoring",
+    "na": false,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "player?state=self&flag=off#gm-scoring",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "player?state=self#gm-scoring",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "player?state=self#gm-scoring",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-STATS.sg": {
+  "kind": "push",
+  "design": "stats-light-full-sg",
+  "app": "player?state=self#sd-sg",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "stats-light-full-sg",
+    "app": "player?state=self#sd-sg",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "empty": {
+    "design": "stats-light-none-sg",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "failed": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "few": {
+    "design": "stats-light-few-sg",
+    "app": "player?state=early#sd-sg",
+    "na": false,
+    "add": false
+   },
+   "long": {
+    "design": "stats-light-full-long-sg",
+    "app": "player?state=long#sd-sg",
+    "na": false,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": "player?state=lots#sd-sg",
+    "na": false,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": "player?state=one#sd-sg",
+    "na": false,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": "player?state=self#sd-sg",
+    "na": false,
+    "add": false
+   },
+   "xxl": {
+    "design": "stats-light-full-xxl-sg",
+    "app": "player?state=self#sd-sg",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "stats-dark-full-sg",
+    "app": "player?state=self#sd-sg",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "stats-light-full-reduce-sg",
+    "app": "player?state=self#sd-sg",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": "player?state=self#sd-sg",
+    "na": false,
+    "add": false
+   },
+   "w430": {
+    "design": "stats-light-full-wide-sg",
+    "app": "player?state=self#sd-sg",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": "player?state=self#sd-sg",
+    "na": false,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "player?state=self&flag=off#sd-sg",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "player?state=self#sd-sg",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "player?state=self#sd-sg",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-STATS.sg-pin": {
+  "kind": "inline state",
+  "design": "stats-light-full-sg",
+  "app": "player?state=self#sd-sg",
+  "action": "tap:drow-0",
+  "states": {
+   "default": {
+    "design": "stats-light-full-sg",
+    "app": "player?state=self#sd-sg",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "empty": {
+    "design": "stats-light-none-sg",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "failed": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "few": {
+    "design": "stats-light-few-sg",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "long": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "xxl": {
+    "design": "stats-light-full-xxl-sg",
+    "app": "player?state=self#sd-sg",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "stats-dark-full-sg",
+    "app": "player?state=self#sd-sg",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "stats-light-full-reduce-sg",
+    "app": "player?state=self#sd-sg",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "w430": {
+    "design": "stats-light-full-wide-sg",
+    "app": "player?state=self#sd-sg",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "player?state=self&flag=off#sd-sg",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "player?state=self#sd-sg",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "player?state=self#sd-sg",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-STATS.how": {
+  "kind": "inline state",
+  "design": "stats-light-full-scoring",
+  "app": "player?state=self#gm-scoring",
+  "action": "tap:how",
+  "states": {
+   "default": {
+    "design": "stats-light-full-scoring",
+    "app": "player?state=self#gm-scoring",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "empty": {
+    "design": "stats-light-none-scoring",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "failed": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "few": {
+    "design": "stats-light-few-scoring",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "long": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "xxl": {
+    "design": "stats-light-full-xxl-scoring",
+    "app": "player?state=self#gm-scoring",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "stats-dark-full-scoring",
+    "app": "player?state=self#gm-scoring",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "stats-light-full-reduce-scoring",
+    "app": "player?state=self#gm-scoring",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "w430": {
+    "design": "stats-light-full-wide-scoring",
+    "app": "player?state=self#gm-scoring",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "player?state=self&flag=off#gm-scoring",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "player?state=self#gm-scoring",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "player?state=self#gm-scoring",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-STATS.tee": {
+  "kind": "push",
+  "design": "stats-light-full-tee",
+  "app": "player?state=self#gm-tee",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "stats-light-full-tee",
+    "app": "player?state=self#gm-tee",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "empty": {
+    "design": "stats-light-none-tee",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "failed": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "few": {
+    "design": "stats-light-few-tee",
+    "app": "player?state=early#gm-tee",
+    "na": false,
+    "add": false
+   },
+   "long": {
+    "design": "stats-light-full-long-tee",
+    "app": "player?state=long#gm-tee",
+    "na": false,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": "player?state=lots#gm-tee",
+    "na": false,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": "player?state=one#gm-tee",
+    "na": false,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": "player?state=self#gm-tee",
+    "na": false,
+    "add": false
+   },
+   "xxl": {
+    "design": "stats-light-full-xxl-tee",
+    "app": "player?state=self#gm-tee",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "stats-dark-full-tee",
+    "app": "player?state=self#gm-tee",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "stats-light-full-reduce-tee",
+    "app": "player?state=self#gm-tee",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": "player?state=self#gm-tee",
+    "na": false,
+    "add": false
+   },
+   "w430": {
+    "design": "stats-light-full-wide-tee",
+    "app": "player?state=self#gm-tee",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": "player?state=self#gm-tee",
+    "na": false,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "player?state=self&flag=off#gm-tee",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "player?state=self#gm-tee",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "player?state=self#gm-tee",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-STATS.approach": {
+  "kind": "push",
+  "design": "stats-light-full-approach",
+  "app": "player?state=self#gm-approach",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "stats-light-full-approach",
+    "app": "player?state=self#gm-approach",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "empty": {
+    "design": "stats-light-none-approach",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "failed": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "few": {
+    "design": "stats-light-few-approach",
+    "app": "player?state=early#gm-approach",
+    "na": false,
+    "add": false
+   },
+   "long": {
+    "design": "",
+    "app": "player?state=long#gm-approach",
+    "na": false,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": "player?state=lots#gm-approach",
+    "na": false,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": "player?state=one#gm-approach",
+    "na": false,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": "player?state=self#gm-approach",
+    "na": false,
+    "add": false
+   },
+   "xxl": {
+    "design": "stats-light-full-xxl-approach",
+    "app": "player?state=self#gm-approach",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "stats-dark-full-approach",
+    "app": "player?state=self#gm-approach",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "stats-light-full-reduce-approach",
+    "app": "player?state=self#gm-approach",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": "player?state=self#gm-approach",
+    "na": false,
+    "add": false
+   },
+   "w430": {
+    "design": "stats-light-full-wide-approach",
+    "app": "player?state=self#gm-approach",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": "player?state=self#gm-approach",
+    "na": false,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "player?state=self&flag=off#gm-approach",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "player?state=self#gm-approach",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "player?state=self#gm-approach",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-STATS.short": {
+  "kind": "push",
+  "design": "stats-light-full-short",
+  "app": "player?state=self#gm-short",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "stats-light-full-short",
+    "app": "player?state=self#gm-short",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "empty": {
+    "design": "stats-light-none-short",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "failed": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "few": {
+    "design": "stats-light-few-short",
+    "app": "player?state=early#gm-short",
+    "na": false,
+    "add": false
+   },
+   "long": {
+    "design": "",
+    "app": "player?state=long#gm-short",
+    "na": false,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": "player?state=lots#gm-short",
+    "na": false,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": "player?state=one#gm-short",
+    "na": false,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": "player?state=self#gm-short",
+    "na": false,
+    "add": false
+   },
+   "xxl": {
+    "design": "stats-light-full-xxl-short",
+    "app": "player?state=self#gm-short",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "stats-dark-full-short",
+    "app": "player?state=self#gm-short",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "stats-light-full-reduce-short",
+    "app": "player?state=self#gm-short",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": "player?state=self#gm-short",
+    "na": false,
+    "add": false
+   },
+   "w430": {
+    "design": "stats-light-full-wide-short",
+    "app": "player?state=self#gm-short",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": "player?state=self#gm-short",
+    "na": false,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "player?state=self&flag=off#gm-short",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "player?state=self#gm-short",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "player?state=self#gm-short",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-STATS.putting": {
+  "kind": "push",
+  "design": "stats-light-full-putting",
+  "app": "player?state=self#gm-putting",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "stats-light-full-putting",
+    "app": "player?state=self#gm-putting",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "empty": {
+    "design": "stats-light-none-putting",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "failed": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "few": {
+    "design": "stats-light-few-putting",
+    "app": "player?state=early#gm-putting",
+    "na": false,
+    "add": false
+   },
+   "long": {
+    "design": "",
+    "app": "player?state=long#gm-putting",
+    "na": false,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": "player?state=lots#gm-putting",
+    "na": false,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": "player?state=one#gm-putting",
+    "na": false,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": "player?state=self#gm-putting",
+    "na": false,
+    "add": false
+   },
+   "xxl": {
+    "design": "stats-light-full-xxl-putting",
+    "app": "player?state=self#gm-putting",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "stats-dark-full-putting",
+    "app": "player?state=self#gm-putting",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "stats-light-full-reduce-putting",
+    "app": "player?state=self#gm-putting",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": "player?state=self#gm-putting",
+    "na": false,
+    "add": false
+   },
+   "w430": {
+    "design": "stats-light-full-wide-putting",
+    "app": "player?state=self#gm-putting",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": "player?state=self#gm-putting",
+    "na": false,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "player?state=self&flag=off#gm-putting",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "player?state=self#gm-putting",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "player?state=self#gm-putting",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-STATS.rounds": {
+  "kind": "push",
+  "design": "stats-light-full-rounds",
+  "app": "player?state=self#sd-rounds",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "stats-light-full-rounds",
+    "app": "player?state=self#sd-rounds",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "empty": {
+    "design": "stats-light-none-rounds",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "failed": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "few": {
+    "design": "stats-light-few-rounds",
+    "app": "player?state=early#sd-rounds",
+    "na": false,
+    "add": false
+   },
+   "long": {
+    "design": "stats-light-full-long-rounds",
+    "app": "player?state=long#sd-rounds",
+    "na": false,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": "player?state=lots#sd-rounds",
+    "na": false,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": "player?state=one#sd-rounds",
+    "na": false,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": "player?state=self#sd-rounds",
+    "na": false,
+    "add": false
+   },
+   "xxl": {
+    "design": "stats-light-full-xxl-rounds",
+    "app": "player?state=self#sd-rounds",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "stats-dark-full-rounds",
+    "app": "player?state=self#sd-rounds",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "stats-light-full-reduce-rounds",
+    "app": "player?state=self#sd-rounds",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": "player?state=self#sd-rounds",
+    "na": false,
+    "add": false
+   },
+   "w430": {
+    "design": "stats-light-full-wide-rounds",
+    "app": "player?state=self#sd-rounds",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": "player?state=self#sd-rounds",
+    "na": false,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "player?state=self&flag=off#sd-rounds",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "player?state=self#sd-rounds",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "player?state=self#sd-rounds",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-STATS.round": {
+  "kind": "push (today's round page)",
+  "design": "",
+  "app": "today's round route",
+  "action": null,
+  "states": {}
+ },
+ "S-STATS.goals": {
+  "kind": "push",
+  "design": "stats-light-full-goals",
+  "app": "player?state=self#sd-goals",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "stats-light-full-goals",
+    "app": "player?state=self#sd-goals",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "empty": {
+    "design": "stats-light-none-goals",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "failed": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "few": {
+    "design": "stats-light-few-goals",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "long": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": "player?state=lots#sd-goals",
+    "na": false,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": "player?state=one#sd-goals",
+    "na": false,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": "player?state=self#sd-goals",
+    "na": false,
+    "add": false
+   },
+   "xxl": {
+    "design": "stats-light-full-xxl-goals",
+    "app": "player?state=self#sd-goals",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "stats-dark-full-goals",
+    "app": "player?state=self#sd-goals",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "stats-light-full-reduce-goals",
+    "app": "player?state=self#sd-goals",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": "player?state=self#sd-goals",
+    "na": false,
+    "add": false
+   },
+   "w430": {
+    "design": "stats-light-full-wide-goals",
+    "app": "player?state=self#sd-goals",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": "player?state=self#sd-goals",
+    "na": false,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "player?state=self&flag=off#sd-goals",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "player?state=self#sd-goals",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "player?state=self#sd-goals",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-STATS.coach": {
+  "kind": "screen variant",
+  "design": "",
+  "app": "player?player=<id>",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "",
+    "app": "player?player=<id>",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "",
+    "app": "player?state=loading",
+    "na": false,
+    "add": false
+   },
+   "empty": {
+    "design": "",
+    "app": "player?state=empty",
+    "na": false,
+    "add": true
+   },
+   "failed": {
+    "design": "",
+    "app": "player?state=failed",
+    "na": false,
+    "add": false
+   },
+   "few": {
+    "design": "",
+    "app": "player?state=early",
+    "na": false,
+    "add": false
+   },
+   "long": {
+    "design": "",
+    "app": "player?state=long",
+    "na": false,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": "player?state=lots",
+    "na": false,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": "player?state=one",
+    "na": false,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": "player?player=<id>",
+    "na": false,
+    "add": false
+   },
+   "xxl": {
+    "design": "",
+    "app": "player?player=<id>",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "",
+    "app": "player?player=<id>",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "",
+    "app": "player?player=<id>",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": "player?player=<id>",
+    "na": false,
+    "add": false
+   },
+   "w430": {
+    "design": "",
+    "app": "player?player=<id>",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": "player?player=<id>",
+    "na": false,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "player?player=<id>&flag=off",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "player?player=<id>",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "player?player=<id>",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-TEAMSTATS": {
+  "kind": "screen",
+  "design": "team-light-full",
+  "app": "stats",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "team-light-full",
+    "app": "stats",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "team-light-full-loading",
+    "app": "stats?state=loading",
+    "na": false,
+    "add": false
+   },
+   "empty": {
+    "design": "team-light-none",
+    "app": "stats?state=empty",
+    "na": false,
+    "add": false
+   },
+   "failed": {
+    "design": "team-light-full-failed",
+    "app": "stats?state=failed",
+    "na": false,
+    "add": false
+   },
+   "few": {
+    "design": "team-light-few",
+    "app": "stats?state=partial",
+    "na": false,
+    "add": false
+   },
+   "long": {
+    "design": "team-light-full-long",
+    "app": "stats?state=long",
+    "na": false,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": "stats?state=lots",
+    "na": false,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": "stats?state=one",
+    "na": false,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": "stats",
+    "na": false,
+    "add": false
+   },
+   "xxl": {
+    "design": "team-light-full-xxl",
+    "app": "stats",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "team-dark-full",
+    "app": "stats",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "team-light-full-reduce",
+    "app": "stats",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": "stats",
+    "na": false,
+    "add": false
+   },
+   "w430": {
+    "design": "team-light-full-wide",
+    "app": "stats",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": "stats",
+    "na": false,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "stats?flag=off",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "stats",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "stats",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-TEAMSTATS.filter": {
+  "kind": "sheet (today's, 62%)",
+  "design": "",
+  "app": "stats (tap filter)",
+  "action": "tap:filter",
+  "states": {}
+ },
+ "S-TEAMSTATS.tscore": {
+  "kind": "push",
+  "design": "team-light-full-tscore",
+  "app": "stats#sd-team-score",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "team-light-full-tscore",
+    "app": "stats#sd-team-score",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "empty": {
+    "design": "team-light-none-tscore",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "failed": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "few": {
+    "design": "team-light-few-tscore",
+    "app": "stats?state=partial#sd-team-score",
+    "na": false,
+    "add": false
+   },
+   "long": {
+    "design": "",
+    "app": "stats?state=long#sd-team-score",
+    "na": false,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": "stats?state=lots#sd-team-score",
+    "na": false,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": "stats?state=one#sd-team-score",
+    "na": false,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": "stats#sd-team-score",
+    "na": false,
+    "add": false
+   },
+   "xxl": {
+    "design": "team-light-full-xxl-tscore",
+    "app": "stats#sd-team-score",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "team-dark-full-tscore",
+    "app": "stats#sd-team-score",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "team-light-full-reduce-tscore",
+    "app": "stats#sd-team-score",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": "stats#sd-team-score",
+    "na": false,
+    "add": false
+   },
+   "w430": {
+    "design": "team-light-full-wide-tscore",
+    "app": "stats#sd-team-score",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": "stats#sd-team-score",
+    "na": false,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "stats?flag=off#sd-team-score",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "stats#sd-team-score",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "stats#sd-team-score",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-TEAMSTATS.tgame": {
+  "kind": "push",
+  "design": "team-light-full-tgame",
+  "app": "stats#sd-team-game",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "team-light-full-tgame",
+    "app": "stats#sd-team-game",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "empty": {
+    "design": "team-light-none-tgame",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "failed": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "few": {
+    "design": "team-light-few-tgame",
+    "app": "stats?state=partial#sd-team-game",
+    "na": false,
+    "add": false
+   },
+   "long": {
+    "design": "",
+    "app": "stats?state=long#sd-team-game",
+    "na": false,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": "stats?state=lots#sd-team-game",
+    "na": false,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": "stats?state=one#sd-team-game",
+    "na": false,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": "stats#sd-team-game",
+    "na": false,
+    "add": false
+   },
+   "xxl": {
+    "design": "team-light-full-xxl-tgame",
+    "app": "stats#sd-team-game",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "team-dark-full-tgame",
+    "app": "stats#sd-team-game",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "team-light-full-reduce-tgame",
+    "app": "stats#sd-team-game",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": "stats#sd-team-game",
+    "na": false,
+    "add": false
+   },
+   "w430": {
+    "design": "team-light-full-wide-tgame",
+    "app": "stats#sd-team-game",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": "stats#sd-team-game",
+    "na": false,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "stats?flag=off#sd-team-game",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "stats#sd-team-game",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "stats#sd-team-game",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-TEAMSTATS.tplayers": {
+  "kind": "push",
+  "design": "team-light-full-tplayers",
+  "app": "stats#sd-team-players",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "team-light-full-tplayers",
+    "app": "stats#sd-team-players",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "empty": {
+    "design": "team-light-none-tplayers",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "failed": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "few": {
+    "design": "team-light-few-tplayers",
+    "app": "stats?state=partial#sd-team-players",
+    "na": false,
+    "add": false
+   },
+   "long": {
+    "design": "team-light-full-long-tplayers",
+    "app": "stats?state=long#sd-team-players",
+    "na": false,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": "stats?state=lots#sd-team-players",
+    "na": false,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": "stats?state=one#sd-team-players",
+    "na": false,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": "stats#sd-team-players",
+    "na": false,
+    "add": false
+   },
+   "xxl": {
+    "design": "team-light-full-xxl-tplayers",
+    "app": "stats#sd-team-players",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "team-dark-full-tplayers",
+    "app": "stats#sd-team-players",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "team-light-full-reduce-tplayers",
+    "app": "stats#sd-team-players",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": "stats#sd-team-players",
+    "na": false,
+    "add": false
+   },
+   "w430": {
+    "design": "team-light-full-wide-tplayers",
+    "app": "stats#sd-team-players",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": "stats#sd-team-players",
+    "na": false,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "stats?flag=off#sd-team-players",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "stats#sd-team-players",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "stats#sd-team-players",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-TEAMSTATS.pin": {
+  "kind": "inline state",
+  "design": "team-light-full-tplayers",
+  "app": "stats#sd-team-players",
+  "action": "tap:prow-0",
+  "states": {
+   "default": {
+    "design": "team-light-full-tplayers",
+    "app": "stats#sd-team-players",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "empty": {
+    "design": "team-light-none-tplayers",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "failed": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "few": {
+    "design": "team-light-few-tplayers",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "long": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "xxl": {
+    "design": "team-light-full-xxl-tplayers",
+    "app": "stats#sd-team-players",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "team-dark-full-tplayers",
+    "app": "stats#sd-team-players",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "team-light-full-reduce-tplayers",
+    "app": "stats#sd-team-players",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "w430": {
+    "design": "team-light-full-wide-tplayers",
+    "app": "stats#sd-team-players",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "stats?flag=off#sd-team-players",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "stats#sd-team-players",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "stats#sd-team-players",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-TEAMSTATS.peek": {
+  "kind": "sheet (today's PlayerPeek)",
+  "design": "",
+  "app": "stats#sd-team-players (tap a Players row)",
+  "action": null,
+  "states": {}
+ },
+ "S-TEAMSTATS.player": {
+  "kind": "push (today's)",
+  "design": "",
+  "app": "player?player=<id>",
+  "action": null,
+  "states": {}
+ },
+ "S-HOMEGAME": {
+  "kind": "card on player Home",
+  "design": "home-light-full",
+  "app": "home-player",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "home-light-full",
+    "app": "home-player",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "home-light-full-loading",
+    "app": "home-player?state=loading",
+    "na": false,
+    "add": true
+   },
+   "empty": {
+    "design": "home-light-none",
+    "app": "home-player?state=empty",
+    "na": false,
+    "add": true
+   },
+   "failed": {
+    "design": "home-light-full-failed",
+    "app": "home-player?state=failed",
+    "na": false,
+    "add": true
+   },
+   "few": {
+    "design": "home-light-few",
+    "app": "home-player?state=early",
+    "na": false,
+    "add": true
+   },
+   "long": {
+    "design": "home-light-full-long",
+    "app": "home-player?state=long",
+    "na": false,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "one": {
+    "design": "",
+    "app": "home-player?state=one",
+    "na": false,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": "home-player",
+    "na": false,
+    "add": false
+   },
+   "xxl": {
+    "design": "home-light-full-xxl",
+    "app": "home-player",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "home-dark-full",
+    "app": "home-player",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "home-light-full-reduce",
+    "app": "home-player",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": "home-player",
+    "na": false,
+    "add": false
+   },
+   "w430": {
+    "design": "home-light-full-wide",
+    "app": "home-player",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": "home-player",
+    "na": false,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "home-player?flag=off",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "home-player",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "home-player",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-HOMEGAME.leg": {
+  "kind": "link (no slide)",
+  "design": "",
+  "app": "player?state=self#gm-tee",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "",
+    "app": "player?state=self#gm-tee",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "empty": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "failed": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "few": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "long": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "one": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "xxl": {
+    "design": "",
+    "app": "player?state=self#gm-tee",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "",
+    "app": "player?state=self#gm-tee",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "",
+    "app": "player?state=self#gm-tee",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "w430": {
+    "design": "",
+    "app": "player?state=self#gm-tee",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "player?state=self&flag=off#gm-tee",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "player?state=self#gm-tee",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "player?state=self#gm-tee",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-ALL.retry": {
+  "kind": "inline state",
+  "design": "stats-light-full-failed",
+  "app": "player?state=failed",
+  "action": "tap:retry",
+  "states": {
+   "default": {
+    "design": "stats-light-full-failed",
+    "app": "player?state=failed",
+    "na": false,
+    "add": false
+   },
+   "loading": {
+    "design": "stats-light-full-failed-loading",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "empty": {
+    "design": "stats-light-none-failed",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "failed": {
+    "design": "stats-light-full-failed",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "few": {
+    "design": "stats-light-few-failed",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "long": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "lots": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "one": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": true
+   },
+   "offline": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "xxl": {
+    "design": "stats-light-full-failed-xxl",
+    "app": "player?state=failed",
+    "na": false,
+    "add": false
+   },
+   "dark": {
+    "design": "stats-dark-full-failed",
+    "app": "player?state=failed",
+    "na": false,
+    "add": false
+   },
+   "reduce": {
+    "design": "stats-light-full-failed-reduce",
+    "app": "player?state=failed",
+    "na": false,
+    "add": false
+   },
+   "w390": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "w430": {
+    "design": "stats-light-full-failed-wide",
+    "app": "player?state=failed",
+    "na": false,
+    "add": false
+   },
+   "desktop": {
+    "design": "",
+    "app": null,
+    "na": true,
+    "add": false
+   },
+   "flagoff": {
+    "design": "",
+    "app": "player?state=failed&flag=off",
+    "na": false,
+    "add": true
+   },
+   "w600": {
+    "design": "",
+    "app": "player?state=failed",
+    "na": false,
+    "add": false
+   },
+   "w820": {
+    "design": "",
+    "app": "player?state=failed",
+    "na": false,
+    "add": false
+   }
+  }
+ },
+ "S-STATS.filter-empty": {
+  "kind": "inline state",
+  "design": "",
+  "app": "player?state=filterempty",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "",
+    "app": "player?state=filterempty",
+    "na": false,
+    "add": true
+   },
+   "season": {
+    "design": "",
+    "app": "player?state=filterempty&window=season",
+    "na": false,
+    "add": true
+   },
+   "dark": {
+    "design": "",
+    "app": "player?state=filterempty",
+    "na": false,
+    "add": true
+   },
+   "xxl": {
+    "design": "",
+    "app": "player?state=filterempty",
+    "na": false,
+    "add": true
+   },
+   "w430": {
+    "design": "",
+    "app": "player?state=filterempty",
+    "na": false,
+    "add": true
+   }
+  }
+ },
+ "S-TEAMSTATS.filter-empty": {
+  "kind": "inline state",
+  "design": "",
+  "app": "stats?state=filterempty",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "",
+    "app": "stats?state=filterempty",
+    "na": false,
+    "add": true
+   },
+   "dark": {
+    "design": "",
+    "app": "stats?state=filterempty",
+    "na": false,
+    "add": true
+   },
+   "xxl": {
+    "design": "",
+    "app": "stats?state=filterempty",
+    "na": false,
+    "add": true
+   }
+  }
+ },
+ "S-STATS.updating": {
+  "kind": "inline state",
+  "design": "",
+  "app": "player?state=updating",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "",
+    "app": "player?state=updating",
+    "na": false,
+    "add": true
+   },
+   "failed": {
+    "design": "",
+    "app": "player?state=updating-failed",
+    "na": false,
+    "add": true
+   }
+  }
+ },
+ "S-STATS.detail-loading": {
+  "kind": "inline state",
+  "design": "",
+  "app": "player?state=loading#sd-goals",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "",
+    "app": "player?state=loading#sd-goals",
+    "na": false,
+    "add": true
+   },
+   "team": {
+    "design": "",
+    "app": "stats?state=loading#sd-team-score",
+    "na": false,
+    "add": true
+   },
+   "deeplink-failed": {
+    "design": "",
+    "app": "player?state=failed#sd-sg",
+    "na": false,
+    "add": true
+   },
+   "deeplink-empty": {
+    "design": "",
+    "app": "player?state=empty#gm-tee",
+    "na": false,
+    "add": true
+   }
+  }
+ },
+ "S-STATS.return": {
+  "kind": "inline state",
+  "design": "",
+  "app": "player?state=self#sd-rounds",
+  "action": null,
+  "states": {},
+  "note": "app only, by hand or e2e (Completeness pass, 4 Nov 2026)"
+ },
+ "S-STATS.refresh": {
+  "kind": "inline state (today's)",
+  "design": "",
+  "app": "player?state=self",
+  "action": null,
+  "states": {},
+  "note": "app only, by hand or e2e (Completeness pass, 4 Nov 2026)"
+ },
+ "S-STATS.goals-sheets": {
+  "kind": "sheets (today's)",
+  "design": "",
+  "app": "player?state=self#sd-goals",
+  "action": null,
+  "states": {},
+  "note": "app only, by hand or e2e (Completeness pass, 4 Nov 2026)"
+ },
+ "S-STATS.share": {
+  "kind": "sheet (today's)",
+  "design": "",
+  "app": "player?player=<id>",
+  "action": null,
+  "states": {},
+  "note": "app only, by hand or e2e (Completeness pass, 4 Nov 2026)"
+ },
+ "S-STATS.denied": {
+  "kind": "inline state",
+  "design": "",
+  "app": "player?state=denied",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "",
+    "app": "player?state=denied",
+    "na": false,
+    "add": true
+   },
+   "team": {
+    "design": "",
+    "app": "stats?viewer=player",
+    "na": false,
+    "add": true
+   },
+   "hash": {
+    "design": "",
+    "app": "player?state=self#sd-team-game",
+    "na": false,
+    "add": true
+   }
+  }
+ },
+ "S-HOMEGAME.season-start": {
+  "kind": "inline state",
+  "design": "",
+  "app": "home-player?state=newseason",
+  "action": null,
+  "states": {
+   "default": {
+    "design": "",
+    "app": "home-player?state=newseason",
+    "na": false,
+    "add": true
+   },
+   "dark": {
+    "design": "",
+    "app": "home-player?state=newseason",
+    "na": false,
+    "add": true
+   }
+  }
+ }
+}

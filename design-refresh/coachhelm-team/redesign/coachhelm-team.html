@@ -1,0 +1,1189 @@
+<title>CoachHelm Team Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wdth,wght@75..100,400..700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Studio page in the Clubhouse refresh shell: deep green masthead, three directions, the live phone, desktop, then the build notes. */
+:root{
+  --pg:#f1ede4; --pg-raised:#fbf8f1; --pg-sunk:#e8e2d5;
+  --fg:#1a1915; --fg-2:#46433d; --fg-3:#5f5b53;
+  --line:rgba(26,25,21,.14); --line-soft:rgba(26,25,21,.08);
+  --brand:#0b3a25; --brand-ink:#f4eedd; --brand-ink-2:rgba(244,238,221,.84);
+  --green:#155a39; --amber:#8f5200; --ok-bg:#e5f1e9; --warn-bg:#f6ead6;
+  --sans:'Instrument Sans',ui-sans-serif,-apple-system,'Segoe UI',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --spring:linear(0,.006,.025 2.8%,.101 6.1%,.539 18.9%,.721 25.3%,.849 31.5%,.937 38.1%,.968 41.8%,.991 45.7%,1.006 50.1%,1.015 55%,1.017 63.9%,1.001);
+  --spring-o:linear(0,.009,.035 2.1%,.141 4.4%,.723 12.9%,.938 16.7%,1.017 19.4%,1.067,1.099 24.3%,1.108 26%,1.103 28.5%,1.067 34.6%,1.007 47.9%,.996 55.2%,1.001);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --pg:#0f1310; --pg-raised:#171c18; --pg-sunk:#0b0e0c;
+  --fg:#f1ecdf; --fg-2:#d0c9b8; --fg-3:#b3ac9d;
+  --line:rgba(241,236,223,.16); --line-soft:rgba(241,236,223,.08);
+  --brand:#0a2418; --green:#7ccb9c; --amber:#f0b35a; --ok-bg:#1e3326; --warn-bg:#36291a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --pg:#0f1310; --pg-raised:#171c18; --pg-sunk:#0b0e0c;
+  --fg:#f1ecdf; --fg-2:#d0c9b8; --fg-3:#b3ac9d;
+  --line:rgba(241,236,223,.16); --line-soft:rgba(241,236,223,.08);
+  --brand:#0a2418; --green:#7ccb9c; --amber:#f0b35a; --ok-bg:#1e3326; --warn-bg:#36291a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--pg);color:var(--fg);font:400 16px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--brand)}
+a{color:var(--green);text-underline-offset:3px}
+code{font-family:var(--mono);font-size:.84em}
+h1,h2,h3,h4{text-wrap:balance;margin:0}
+p{margin:0}
+button{font-family:inherit;color:inherit}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.mast{background:var(--brand);color:var(--brand-ink)}
+.mast .wrap{padding-block:40px 36px;display:grid;gap:16px}
+.mast .eyebrow{font:500 14px/1.3 var(--sans);color:var(--brand-ink-2)}
+.mast h1{font:650 clamp(32px,6vw,56px)/1.02 var(--sans);font-variation-settings:'wdth' 86;letter-spacing:-.028em;max-width:16ch}
+.mast .lead{font-size:17px;max-width:66ch;color:var(--brand-ink-2)}
+.big4{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:6px 0 0;padding:0;list-style:none}
+.big4 li{border-top:1px solid rgba(244,238,221,.22);padding-top:12px;font-size:14.5px;line-height:1.45;color:var(--brand-ink-2)}
+.big4 b{display:block;color:var(--brand-ink);font-weight:600;font-size:16px;margin-bottom:2px}
+section.blk{padding-block:48px 8px}
+.blk h2{font:650 clamp(24px,3.4vw,32px)/1.1 var(--sans);font-variation-settings:'wdth' 90;letter-spacing:-.02em;margin-bottom:8px}
+.blk .sub{color:var(--fg-2);max-width:72ch;margin-bottom:22px}
+
+/* three directions */
+.dirs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:18px}
+.dir{background:var(--pg-raised);border:1px solid var(--line-soft);border-radius:18px;padding:16px;display:grid;gap:12px;align-content:start;position:relative}
+.dir.pick{box-shadow:0 0 0 2px var(--green)}
+.dir .pickt{position:absolute;top:14px;right:14px;font:600 12.5px/1 var(--sans);padding:6px 9px;border-radius:8px;background:var(--ok-bg);color:var(--green)}
+.dir .lt{font:600 13px/1 var(--mono);color:var(--fg-3)}
+.dir h3{font:600 21px/1.2 var(--sans);letter-spacing:-.012em}
+.dir p{color:var(--fg-2);font-size:15px}
+.dir dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:14.5px}
+.dir dt{font-weight:600}
+.dir dd{margin:0;color:var(--fg-2)}
+.dvis{border-radius:14px;overflow:hidden;height:300px;display:grid;place-items:center;background:var(--pg-sunk);padding:14px}
+.dvis>div{width:100%;max-width:300px}
+.verdict{margin-top:18px;background:var(--pg-raised);border:1px solid var(--line-soft);border-radius:14px;padding:16px 18px;color:var(--fg-2);max-width:80ch}
+.verdict b{color:var(--fg)}
+
+/* studio */
+.studio{display:grid;grid-template-columns:minmax(0,460px) minmax(0,1fr);gap:40px;align-items:start}
+@media (max-width:980px){.studio{grid-template-columns:minmax(0,1fr)}}
+.controls{display:grid;gap:10px;margin-bottom:16px}
+.crow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+.crow .lab{font:500 13.5px/1 var(--sans);color:var(--fg-2);min-width:52px}
+.pseg{display:inline-flex;flex-wrap:wrap;padding:3px;border-radius:11px;background:var(--pg-sunk);gap:2px}
+.pseg button{appearance:none;border:0;background:none;color:var(--fg-2);font:500 13.5px/1 var(--sans);padding:8px 11px;border-radius:8px;cursor:pointer;min-height:34px}
+.pseg button[aria-pressed="true"]{background:var(--pg-raised);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.08),0 0 0 1px var(--line-soft)}
+.plays{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.play{appearance:none;border:1px solid var(--line);background:var(--pg-raised);color:var(--fg);font:500 13.5px/1 var(--sans);padding:9px 12px 9px 10px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;min-height:36px;transition:transform .11s var(--ease)}
+.play svg{color:var(--green);flex:none}
+.play:active{transform:scale(.97)}
+.pseg button:focus-visible,.play:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.stage{display:flex;justify-content:center}
+.notes{display:grid;gap:12px;counter-reset:n}
+.note{background:var(--pg-raised);border:1px solid var(--line-soft);border-radius:14px;padding:14px 16px 14px 50px;position:relative}
+.note::before{counter-increment:n;content:counter(n);position:absolute;left:14px;top:14px;width:24px;height:24px;border-radius:50%;background:var(--brand);color:var(--brand-ink);font:600 12.5px/24px var(--sans);text-align:center}
+.note h3{font:600 16px/1.3 var(--sans);margin-bottom:3px}
+.note p{color:var(--fg-2);font-size:14.5px;line-height:1.5}
+.tag{display:inline-block;font:600 11.5px/1 var(--sans);padding:4px 7px;border-radius:6px;background:var(--ok-bg);color:var(--green);vertical-align:2px;margin-left:4px}
+.tag.am{background:var(--warn-bg);color:var(--amber)}
+
+/* desktop holder */
+.desk-fit{position:relative;overflow:hidden;border-radius:16px;box-shadow:0 30px 60px -36px rgba(0,0,0,.45),0 0 0 1px var(--line)}
+.desk-fit .desk{transform-origin:0 0;position:absolute;left:0;top:0}
+
+/* tables and boxes */
+.tbl-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--line-soft);background:var(--pg-raised)}
+table{border-collapse:collapse;width:100%;min-width:820px;font-size:14.5px;line-height:1.45}
+th,td{text-align:left;vertical-align:top;padding:12px 14px;border-bottom:1px solid var(--line-soft)}
+th{font:600 13px/1.3 var(--sans);color:var(--fg-2);background:var(--pg-sunk)}
+tr:last-child td{border-bottom:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:14px}
+.box{background:var(--pg-raised);border:1px solid var(--line-soft);border-radius:14px;padding:16px 18px}
+.box h3{font:600 16px/1.3 var(--sans);margin-bottom:6px}
+.box p,.box li{color:var(--fg-2);font-size:14.5px;line-height:1.5}
+.box ol,.box ul{margin:0;padding-left:18px;display:grid;gap:6px}
+.calls{display:grid;gap:12px}
+.call{background:var(--pg-raised);border:1px solid var(--line-soft);border-radius:14px;padding:16px 20px;display:grid;gap:6px}
+.call h3{font:600 17px/1.3 var(--sans)}
+.call p{color:var(--fg-2);font-size:15px}
+.call .rec{color:var(--fg)}
+.call .rec b{color:var(--green)}
+footer{padding-block:48px 64px;color:var(--fg-3);font-size:14px}
+
+/* ================= DEVICE (phone + desktop) from Clubhouse tokens from DESIGN_LANGUAGE.md ================= */
+.dev{
+  --bg:#F2F0E9; --card:#FFFEFB; --well:#F6F4EE; --ink:#1C1B18; --ink-2:#46433D; --ink-3:#5F5C55;
+  --gain:#14613D; --loss:#9A5700; --accent:#155A39; --sep:rgb(28 27 24/.10); --ring:rgb(28 27 24/.07);
+  --gain-fill:#1F6B45; --loss-fill:#B86F0C; --neutral-fill:#6B675F; --track:#EBE5D8; --zero:#5F5C55;
+  --nav:#0a331f; --nav-ink:#f4eedd; --nav-ink-2:rgb(240 233 214/.86); --champ:#dccda6;
+  --feat:#0B3A25; --f-ink:#F4F1E8; --f-ink-2:#D3D9CB; --f-gain:#8FD3AA; --f-loss:#EDB867;
+  --seg-on:linear-gradient(#1d7048,#135a38); --seg-ink:#f6f1e3; --tint-acc:rgb(21 90 57/.10); --tint-loss:rgb(154 87 0/.11); --loss-on-tint:#8A4D00;
+  --shadow:0 1px 2px rgb(28 25 18/.05),0 8px 20px -12px rgb(28 25 18/.12);
+  --shadow-lg:0 2px 6px rgb(28 25 18/.06),0 24px 48px -20px rgb(28 25 18/.3);
+  --scrim:rgb(14 12 8/.34); --k:1; --edge:16px;
+  font-family:var(--sans);color:var(--ink);
+}
+.dev[data-mode="dark"]{
+  --bg:#0E120F; --card:#191E1A; --well:#141815; --ink:#F1ECDF; --ink-2:#D0C9B8; --ink-3:#ADA697;
+  --gain:#7CC79B; --loss:#E7AE57; --accent:#7CC79B; --sep:rgb(241 236 223/.10); --ring:rgb(255 255 255/.06);
+  --gain-fill:#4FA877; --loss-fill:#E09A35; --neutral-fill:#A39D90; --track:#2C322D; --zero:#ADA697;
+  --nav:#08150e; --feat:#123D29; --tint-acc:rgb(124 199 155/.14); --tint-loss:rgb(231 174 87/.14); --loss-on-tint:#E7AE57;
+  --shadow:0 1px 0 rgb(255 255 255/.04) inset; --shadow-lg:0 1px 0 rgb(255 255 255/.05) inset,0 24px 48px -20px rgb(0 0 0/.6); --scrim:rgb(0 0 0/.5);
+}
+.dev .num{font-variant-numeric:tabular-nums}
+.dev button{appearance:none;border:0;background:none;cursor:pointer;text-align:left;font:inherit;color:inherit}
+.dev button:focus-visible,.dev [tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+.dev .tapp{transition:transform 280ms var(--ease)}
+.dev .tapp:active{transform:scale(.97);transition-duration:110ms}
+
+/* phone shell */
+.ph{width:390px;max-width:100%;height:820px;border-radius:48px;background:#0c0f0d;padding:11px;box-shadow:0 30px 60px -30px rgba(0,0,0,.45),0 0 0 1px rgba(0,0,0,.25);position:relative}
+.ph.lg{width:430px;--edge:20px}
+.ph .scr{position:relative;width:100%;height:100%;border-radius:38px;overflow:hidden;background:var(--bg)}
+.ph .view{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;background:var(--bg)}
+.ph .view::-webkit-scrollbar{display:none}
+.ph .homebar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:var(--ink);opacity:.35;z-index:30;pointer-events:none}
+.gbar{position:sticky;top:0;z-index:7;background:var(--nav);color:var(--nav-ink);padding-top:44px;padding-bottom:18px}
+.gbar::after{content:"";position:absolute;left:0;right:0;bottom:0;height:18px;border-radius:18px 18px 0 0;background:var(--bg)}
+.gbar .sbar{position:absolute;top:15px;left:30px;right:26px;display:flex;justify-content:space-between;align-items:center;font:600 15px/1 var(--sans)}
+.gbar .isl{position:absolute;left:50%;top:9px;width:112px;height:32px;border-radius:20px;background:#000;transform:translateX(-50%)}
+.gb{height:48px;display:flex;align-items:center;gap:4px;padding:0 6px 4px var(--edge)}
+.gb .sw{display:inline-flex;align-items:center;gap:7px;font:600 calc(18px*var(--k))/1 var(--sans);letter-spacing:-.012em;min-height:44px;white-space:nowrap}
+.gb .dot{width:6px;height:6px;border-radius:50%;background:var(--champ);margin-left:2px}
+.gb .ib{width:44px;height:44px;display:grid;place-items:center;color:var(--nav-ink-2);position:relative;flex:none}
+.gb .ib.first{margin-left:auto}
+.gb .badge{position:absolute;top:5px;right:3px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--nav);box-shadow:0 0 0 1.5px var(--nav-ink);font:600 11px/18px var(--sans);text-align:center;color:var(--nav-ink)}
+.sheet{display:flex;flex-direction:column;gap:24px;padding:6px var(--edge) 72px}
+.seg2{display:grid;grid-template-columns:1fr 1fr;padding:3px;border-radius:12px;background:var(--well);box-shadow:inset 0 1px 2px rgb(28 25 18/.07)}
+.seg2 span{text-align:center;font:500 calc(15px*var(--k))/1 var(--sans);padding:10px 0;border-radius:9px;color:var(--ink-2)}
+.seg2 span.on{background:var(--seg-on);color:var(--seg-ink);box-shadow:0 1px 2px rgba(0,0,0,.18)}
+.lt{display:grid;gap:2px;padding-top:2px}
+.lt h2{font:600 calc(34px*var(--k))/1.2 var(--sans);font-variation-settings:'wdth' 88;letter-spacing:-.034em}
+.lt p{font:400 calc(15px*var(--k))/1.35 var(--sans);color:var(--ink-2)}
+
+/* cards */
+.card{background:var(--card);border-radius:16px;box-shadow:0 0 0 1px var(--ring),var(--shadow);overflow:hidden}
+.ch{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:16px 16px 10px}
+.ch h4{font:600 calc(17px*var(--k))/1.25 var(--sans)}
+.ch .meta{font:400 calc(15px*var(--k))/1.33 var(--sans);color:var(--ink-2);text-align:right}
+.cb{padding:0 16px 16px}
+.subh{font:600 calc(13.5px*var(--k))/1.2 var(--sans);color:var(--ink-2);padding:6px 16px 6px}
+.chipk{display:inline-flex;align-items:center;gap:5px;font:600 calc(12.5px*var(--k))/1 var(--sans);padding:5px 8px;border-radius:7px;background:var(--well);color:var(--ink-2);box-shadow:0 0 0 1px var(--ring);white-space:nowrap}
+.chipk.l{background:var(--tint-loss);color:var(--loss-on-tint);box-shadow:none}
+.chipk.g{background:var(--tint-acc);color:var(--gain);box-shadow:none}
+.coin{width:30px;height:30px;border-radius:50%;display:inline-grid;place-items:center;flex:none;background:var(--c);color:#fff;font:600 11.5px/1 var(--sans);letter-spacing:.02em}
+.coin.sm{width:24px;height:24px;font-size:10px}
+.coin.early{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--c)}
+.dev[data-mode="dark"] .coin.early{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--c) 60%,#fff)}
+
+/* today stories */
+.tiles{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding:2px 16px 16px;scroll-snap-type:x mandatory}
+.tiles::-webkit-scrollbar{display:none}
+.tile{flex:none;width:calc(138px*var(--k));min-height:162px;border-radius:15px;background:var(--well);box-shadow:inset 0 0 0 1px var(--ring);padding:10px 11px 11px;display:flex;flex-direction:column;gap:8px;position:relative;scroll-snap-align:start}
+.tile.new{box-shadow:inset 0 0 0 2px var(--accent)}
+.tile .tv{height:44px;display:flex;align-items:center}
+.tile .tv svg{width:100%;height:auto}
+.tile b{font:600 calc(14.5px*var(--k))/1.25 var(--sans)}
+.tile .tm{margin-top:auto;display:flex;align-items:center;gap:6px;font:400 calc(12.5px*var(--k))/1.2 var(--sans);color:var(--ink-2)}
+
+/* the hole (one feature card per view) */
+.feat{background:var(--feat);color:var(--f-ink);border-radius:16px;padding:18px 16px 14px;position:relative;overflow:hidden;box-shadow:0 14px 30px -18px rgba(5,30,18,.6)}
+.feat .hk{font:500 calc(14px*var(--k))/1.2 var(--sans);color:var(--f-ink-2)}
+.feat .hn{display:flex;align-items:flex-end;gap:12px;margin-top:8px}
+.feat .hn b{font:500 calc(40px*var(--k))/1 var(--sans);font-variation-settings:'wdth' 92;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.feat .hn span{font:400 calc(14px*var(--k))/1.3 var(--sans);color:var(--f-ink-2);padding-bottom:3px}
+.feat .hole{margin:6px -6px 0}
+.holesvg{display:block;width:100%;height:auto;overflow:visible}
+.holesvg text{font-family:var(--sans);font-variant-numeric:tabular-nums}
+.holesvg .rough{fill:rgb(0 0 0/.10)}
+.holesvg .fair{fill:none;stroke:rgb(244 241 232/.075);stroke-linecap:round;stroke-linejoin:round}
+.holesvg .mow{fill:none;stroke:rgb(244 241 232/.035);stroke-linecap:round}
+.holesvg .fringe{fill:rgb(143 211 170/.10)}
+.holesvg .grn{fill:rgb(143 211 170/.17)}
+.holesvg .bunk{fill:rgb(237 184 103/.22)}
+.holesvg .teebox{fill:rgb(244 241 232/.18)}
+.holesvg .flight{fill:none;stroke:rgb(244 241 232/.62);stroke-width:1.7;stroke-linecap:round}
+.holesvg .ball{fill:#fff;filter:drop-shadow(0 1px 2px rgb(0 0 0/.45))}
+.holesvg .pole{stroke:rgb(244 241 232/.75);stroke-width:1.5}
+.holesvg .flag{fill:var(--champ)}
+.stn{cursor:pointer;transform-box:view-box;transition:transform 520ms var(--spring-o),opacity 220ms var(--ease)}
+.stn.pre{transform:scale(.3);opacity:0}
+.stn .halo{fill:rgb(237 184 103/.17);stroke:var(--f-loss);stroke-width:1.5;transition:fill 260ms var(--ease),stroke-width 260ms var(--ease)}
+.stn .core{fill:var(--f-loss)}
+.stn .pulse{fill:none;stroke:var(--f-loss);stroke-width:1.5;opacity:0;transform-box:fill-box;transform-origin:center}
+.stn.on .halo{fill:rgb(237 184 103/.34);stroke-width:2.6}
+.stn.on .pulse{animation:pulse 2.4s var(--ease) 2}
+@keyframes pulse{0%{opacity:.7;transform:scale(1)}100%{opacity:0;transform:scale(1.7)}}
+.stn .sl{fill:var(--f-ink-2);font-size:13px;font-weight:500}
+.stn .sv{fill:var(--f-ink);font-size:19px;font-weight:600;letter-spacing:-.02em}
+.stn.on .sl{fill:var(--f-ink);font-weight:600}
+.scn circle{stroke:rgb(244 241 232/.55);stroke-width:1.5}
+.scn text{fill:#fff;font-size:9.5px;font-weight:600;text-anchor:middle;dominant-baseline:central}
+.scn.early circle{fill:var(--feat)!important;stroke-dasharray:3 2.4}
+.scn.early text{fill:var(--f-ink)}
+.stchips{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;padding:3px;border-radius:12px;background:rgb(244 241 232/.07);margin-top:6px}
+.stchips button{border-radius:9px;padding:8px 4px;text-align:center!important;font:500 calc(13px*var(--k))/1.15 var(--sans);color:var(--f-ink-2);transition:background 260ms var(--ease),color 260ms var(--ease)}
+.stchips button b{display:block;font:600 calc(14px*var(--k))/1.2 var(--sans);color:var(--f-loss);font-variant-numeric:tabular-nums;margin-top:2px}
+.stchips button.cm{position:relative}
+.stchips button.cm::before{content:"";position:absolute;left:-2px;top:10px;bottom:10px;width:1px;background:rgb(244 241 232/.16)}
+.stchips button.cm b{color:var(--f-ink);font-weight:500}
+.hole .stn:not(.pre){transition:transform 520ms var(--spring-o),opacity 260ms var(--ease)}
+.hole.offh .stn:not(.pre){opacity:.38}
+.hole.offh .scn{opacity:.5;transition:opacity 260ms var(--ease)}
+.stchips button[aria-pressed="true"]{background:rgb(244 241 232/.10);box-shadow:inset 0 0 0 1px rgb(244 241 232/.18);color:var(--f-ink)}
+.stchips button[aria-pressed="true"] b{color:var(--f-ink)}
+.hfoot{display:flex;justify-content:space-between;gap:10px;margin-top:10px;font:400 calc(13px*var(--k))/1.35 var(--sans);color:var(--f-ink-2)}
+
+/* station card */
+.bars{display:grid;gap:14px;padding:2px 16px 4px}
+.br{display:grid;grid-template-columns:calc(92px*var(--k)) minmax(0,1fr) 52px;gap:10px;align-items:center;min-height:30px;border-radius:9px}
+.br .bn{display:flex;align-items:center;gap:7px;font:500 calc(14.5px*var(--k))/1.2 var(--sans);white-space:nowrap;overflow:hidden}
+.br .bt{position:relative;height:14px;border-radius:7px;background:var(--track)}
+.br .bt .z{position:absolute;top:-4px;bottom:-4px;left:84%;width:1.5px;background:var(--zero);border-radius:1px}
+.br .bt .avg{position:absolute;top:-3px;bottom:-3px;width:0;border-left:1.5px dashed var(--ink-3)}
+.br .bf{position:absolute;top:0;bottom:0;border-radius:7px;transition:width 520ms var(--spring),right 520ms var(--spring),left 520ms var(--spring)}
+.br .bf.l{background:var(--loss-fill)}
+.br .bf.g{background:var(--gain-fill)}
+.br .bf.early{background:repeating-linear-gradient(-45deg,var(--loss-fill) 0 4px,color-mix(in srgb,var(--loss-fill) 45%,var(--card)) 4px 7px)}
+.br .bv{font:600 calc(14.5px*var(--k))/1 var(--sans);text-align:right;font-variant-numeric:tabular-nums;color:var(--loss)}
+.br .bv.g{color:var(--gain)}
+.axis{display:flex;justify-content:space-between;padding:4px 16px 12px calc(16px + 102px*var(--k));font:400 calc(12.5px*var(--k))/1.2 var(--sans);color:var(--ink-3)}
+.axis span:last-child{padding-right:44px}
+.rds{display:grid;border-top:1px solid var(--sep)}
+.rd{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:11px;align-items:center;padding:12px 16px;position:relative;width:100%}
+.rd+.rd::before{content:"";position:absolute;top:0;left:56px;right:0;border-top:1px solid var(--sep)}
+.rd b{display:block;font:500 calc(15.5px*var(--k))/1.3 var(--sans)}
+.rd .ev{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:5px;align-items:center;font:400 calc(13px*var(--k))/1.2 var(--sans);color:var(--ink-2)}
+.chev{color:var(--ink-3)}
+.pat{margin:4px 16px 16px;padding:12px 14px;border-radius:14px;background:var(--well);box-shadow:inset 0 1px 2px rgb(28 25 18/.05);display:grid;gap:8px}
+.pat .pc{display:flex;align-items:center;gap:0}
+.pat .pc .coin{margin-left:-6px;box-shadow:0 0 0 2px var(--well)}
+.pat .pc .coin:first-child{margin-left:0}
+.pat b{font:600 calc(15px*var(--k))/1.3 var(--sans)}
+.pat span{font:400 calc(13.5px*var(--k))/1.35 var(--sans);color:var(--ink-2)}
+.pat .btn{justify-self:start}
+.nopat{margin:4px 16px 16px;font:400 calc(13.5px*var(--k))/1.4 var(--sans);color:var(--ink-2)}
+.btn{display:inline-flex;align-items:center;justify-content:center!important;gap:8px;min-height:42px;padding:0 15px;border-radius:12px;font:600 calc(15px*var(--k))/1 var(--sans)!important;transition:transform 280ms var(--ease)}
+.btn:active{transform:scale(.97);transition-duration:110ms}
+.btn.pri{background:var(--accent);color:#F6F1E3!important}
+.dev[data-mode="dark"] .btn.pri{color:#0E120F!important}
+.btn.gh{color:var(--accent)!important;box-shadow:inset 0 0 0 1px var(--sep)}
+.btn.sm{min-height:36px;padding:0 12px;font-size:calc(14px*var(--k))!important}
+.fadein{animation:fadein 300ms var(--ease) both}
+/* Course tab */
+.spot.cm{display:flex;flex-direction:column}
+.spot.cm .cmh{order:1}.spot.cm .cmr{order:2}.spot.cm .shpw{order:3}.spot.cm .crsw{order:4}
+.cmh{padding:2px 16px 14px}
+.cmk{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.cmk b{font:600 calc(32px*var(--k))/1 var(--sans);font-variation-settings:'wdth' 92;letter-spacing:-.035em;font-variant-numeric:tabular-nums}
+.cmk>span:not(.chipk){font:400 calc(13px*var(--k))/1.3 var(--sans);color:var(--ink-2);padding-bottom:1px}
+.cmk .chipk{margin-left:auto;margin-bottom:2px}
+.trend{display:block;width:100%;height:auto;margin-top:14px;overflow:visible}
+.trend .gl{stroke:var(--sep)}
+.trend .av{stroke:var(--ink-3);stroke-width:1.2;stroke-dasharray:3 4}
+.trend .ln{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+.trend .d{fill:var(--card);stroke:var(--accent);stroke-width:2;transform-box:fill-box;transform-origin:center}
+.trend .d.last{fill:var(--accent)}
+.trend text{font:500 11px/1 var(--sans);fill:var(--ink-3);font-variant-numeric:tabular-nums}
+.trend .lv{font-size:12.5px;font-weight:600;fill:var(--ink)}
+.trend .avl{font-weight:600;fill:var(--ink-2)}
+.tkey{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;font:400 calc(12.5px*var(--k))/1.2 var(--sans);color:var(--ink-3)}
+.tkey span{display:inline-flex;align-items:center;gap:6px}
+.tkey i{display:inline-block;width:14px;height:0;border-top:2.2px solid var(--accent);border-radius:2px}
+.tkey i.ka{border-top:1.4px dashed var(--ink-3)}
+.crs{display:grid;border-top:1px solid var(--sep)}
+.cr{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:11px 16px;width:100%;border-bottom:1px solid var(--sep)}
+.cr:last-child{border-bottom:0}
+.cr .cn{min-width:0}
+.cr .cn b{display:block;font:500 calc(15px*var(--k))/1.25 var(--sans)}
+.cr .cn span,.cr .cv span{display:block;font:400 calc(12.5px*var(--k))/1.3 var(--sans);color:var(--ink-2);margin-top:2px;font-variant-numeric:tabular-nums}
+.cr .cv{text-align:right}
+.cr .cv b{display:block;font:600 calc(15px*var(--k))/1.2 var(--sans);font-variant-numeric:tabular-nums}
+.cr .cv .l{color:var(--loss);font-weight:500}.cr .cv .g{color:var(--gain);font-weight:500}
+.dev .more,.more{align-self:flex-start;margin:0 16px 10px;padding:8px 0;min-height:36px;font:600 calc(14px*var(--k))/1 var(--sans);color:var(--accent)!important}
+.shape{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--sep);border-top:1px solid var(--sep)}
+.shape>div{background:var(--card);padding:11px 14px 13px;min-width:0}
+.shape .sl{display:block;font:500 calc(12.5px*var(--k))/1.2 var(--sans);color:var(--ink-2)}
+.shape .sv{display:block;font:600 calc(19px*var(--k))/1.15 var(--sans);letter-spacing:-.01em;font-variant-numeric:tabular-nums;margin-top:6px}
+.shape .st{display:block;font:400 calc(12px*var(--k))/1.3 var(--sans);color:var(--ink-3);margin-top:3px;font-variant-numeric:tabular-nums}
+.desk .spl-l .crsw{border-top:1px solid var(--sep);padding-top:6px}
+.desk .spl-l .cmh{padding-top:4px}
+.desk .spl-r .shpw{margin-top:auto}
+.desk .spl-l .crsw .crs,.desk .spl-r .cmr .rds{border-top:0}
+.cicon{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--tint-acc);color:var(--accent);flex:none}
+.cmk.sh{padding:2px 2px 0}
+.cpl{display:grid;border-top:1px solid var(--sep)}
+.cp{display:grid;grid-template-columns:auto minmax(64px,1fr) minmax(64px,36%) auto;gap:10px;align-items:center;padding:10px 16px;width:100%;border-bottom:1px solid var(--sep)}
+.cp:last-child{border-bottom:0}
+.cp .n{min-width:0}
+.cp .n b{display:block;font:500 calc(14.5px*var(--k))/1.25 var(--sans)}
+.cp .n span{display:block;font:400 calc(12.5px*var(--k))/1.3 var(--sans);color:var(--ink-2)}
+.db{position:relative;height:14px}
+.db i{position:absolute;top:6px;height:2px;border-radius:1px;background:var(--loss-fill)}
+.db i.g{background:var(--gain-fill)}
+.db u,.dbkey u{position:absolute;top:2px;width:10px;height:10px;border-radius:50%;margin-left:-5px;box-sizing:border-box}
+.db u.s,.dbkey u.s{border:2px solid var(--ink-3);background:var(--card)}
+.db u.h,.dbkey u.h{background:var(--ink)}
+.cp .v{text-align:right;min-width:62px}
+.cp .v b{display:block;font:600 calc(14.5px*var(--k))/1.2 var(--sans);font-variant-numeric:tabular-nums}
+.cp .v span{display:block;font:500 calc(12px*var(--k))/1.3 var(--sans);color:var(--ink-3)}
+.cp .v .l{color:var(--loss)}.cp .v .g{color:var(--gain)}
+.dbkey{display:flex;gap:16px;padding:2px 16px 12px;font:400 calc(12.5px*var(--k))/1.2 var(--sans);color:var(--ink-3)}
+.dbkey span{display:inline-flex;align-items:center;gap:7px}
+.dbkey u{position:relative;top:0;margin-left:0}
+.ins .cnote{font-size:calc(13.5px*var(--k))}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}}
+
+/* huddle */
+.hud{padding:0 10px 4px}
+.hudsvg{display:block;width:100%;height:auto;overflow:visible}
+.hudsvg text{font-family:var(--sans)}
+.hudsvg .ax{stroke:var(--sep)}
+.hudsvg .tour{stroke:var(--gain-fill);stroke-width:1.5}
+.hudsvg .avg{stroke:var(--ink-3);stroke-dasharray:4 4}
+.hudsvg .q{fill:var(--ink-3);font-size:11px}
+.hudsvg .axl{fill:var(--ink-2);font-size:11.5px;font-weight:500}
+.hudsvg .tl{fill:var(--gain);font-size:11px;font-weight:600}
+.hudsvg .trail{fill:none;stroke-width:2.5;stroke-linecap:round;opacity:.55}
+.hudsvg .ghost{opacity:.35}
+.hudsvg .hp{cursor:pointer}
+.hudsvg .hp text{fill:#fff;font-size:10.5px;font-weight:600;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.hudsvg .hp.early circle.dotc{fill:var(--card)!important;stroke-dasharray:3.5 2.5;stroke-width:2}
+.hudsvg .hp.early text{fill:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;padding:4px 16px 14px;font:400 calc(12.5px*var(--k))/1.35 var(--sans);color:var(--ink-2)}
+
+/* roster */
+.rr{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:11px 16px;position:relative;width:100%}
+.rr+.rr::before{content:"";position:absolute;top:0;left:58px;right:0;border-top:1px solid var(--sep)}
+.rr b{display:block;font:500 calc(16px*var(--k))/1.25 var(--sans)}
+.rr .m{font:400 calc(13.5px*var(--k))/1.3 var(--sans);color:var(--ink-2)}
+.rr .tot{text-align:right;font:600 calc(15px*var(--k))/1.2 var(--sans);color:var(--loss);font-variant-numeric:tabular-nums}
+.rr .tot span{display:block;font:400 calc(12.5px*var(--k))/1.3 var(--sans);color:var(--ink-2)}
+.fp{display:block}
+.fp .z{stroke:var(--zero);stroke-width:1}
+.fp .l{fill:var(--loss-fill)} .fp .g{fill:var(--gain-fill)}
+.fp .lab{fill:var(--ink-3);font:500 8px var(--sans);text-anchor:middle}
+
+/* working + record */
+.wk{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center;padding:10px 16px}
+.wk+.wk{border-top:1px solid var(--sep)}
+.wk b{display:block;font:500 calc(15px*var(--k))/1.3 var(--sans)}
+.wk span{display:block;font:400 calc(13.5px*var(--k))/1.35 var(--sans);color:var(--ink-2)}
+.wk .st{font-weight:600}
+.wk .st.ok{color:var(--gain)} .wk .st.wait{color:var(--ink-2)}
+.ringc .trk{stroke:var(--track)}
+.ringc .fil{stroke:var(--gain-fill);transition:stroke-dashoffset 900ms var(--ease)}
+.ringc .fil.mid{stroke:var(--neutral-fill)}
+.ringc.prop .trk{stroke-dasharray:3 3;stroke:var(--neutral-fill)}
+.wk.pop{animation:popin 520ms var(--spring-o) both}
+@keyframes popin{from{opacity:0;transform:scale(.94)}}
+.rec{padding:0 16px 16px;display:grid;gap:12px}
+.rec .big{display:flex;align-items:baseline;gap:8px}
+.rec .big b{font:500 calc(34px*var(--k))/1 var(--sans);font-variation-settings:'wdth' 92;letter-spacing:-.035em;font-variant-numeric:tabular-nums}
+.rec .big span{font:400 calc(14px*var(--k))/1.3 var(--sans);color:var(--ink-2)}
+.lv{display:grid;grid-template-columns:calc(128px*var(--k)) minmax(0,1fr) auto;gap:10px;align-items:center;font:500 calc(14px*var(--k))/1.2 var(--sans)}
+.lv .t{position:relative;height:10px;border-radius:5px;background:var(--track)}
+.lv .t i{position:absolute;inset:0 auto 0 0;border-radius:5px;background:var(--gain-fill)}
+.lv .t i.na{background:var(--neutral-fill)}
+.lv .t u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);border-radius:1px}
+.lv .n{font:400 calc(13.5px*var(--k))/1 var(--sans);color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.recfoot{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid var(--sep);padding:10px 16px 12px;font:400 calc(13.5px*var(--k))/1.3 var(--sans);color:var(--ink-2)}
+
+/* bottom sheet (phone) and inspector (desktop) share content */
+.rs{position:absolute;inset:0;z-index:15;pointer-events:none}
+.rs .scrim{position:absolute;inset:0;background:var(--scrim);opacity:0;transition:opacity 280ms var(--ease)}
+.rs .pan{position:absolute;left:0;right:0;bottom:0;max-height:86%;overflow-y:auto;scrollbar-width:none;background:var(--bg);border-radius:20px 20px 0 0;transform:translateY(105%);transition:transform 280ms var(--ease);box-shadow:var(--shadow-lg)}
+.rs.on{pointer-events:auto}
+.rs.on .scrim{opacity:1}
+.rs.on .pan{transform:none;transition:transform 462ms var(--spring)}
+.grab{width:36px;height:5px;border-radius:3px;background:var(--track);margin:8px auto 2px}
+.ins{display:grid;gap:14px;padding:8px var(--edge) 40px}
+.insh{display:flex;align-items:center;gap:10px}
+.insh .c{flex:1;min-width:0}
+.insh b{display:block;font:600 calc(16px*var(--k))/1.25 var(--sans)}
+.insh span{display:block;font:400 calc(13.5px*var(--k))/1.3 var(--sans);color:var(--ink-2)}
+.xb{width:34px;height:34px;border-radius:50%;background:var(--well)!important;display:grid;place-items:center;color:var(--ink-2);flex:none;box-shadow:0 0 0 1px var(--ring)}
+.ins h3{font:600 calc(23px*var(--k))/1.18 var(--sans);letter-spacing:-.018em}
+.ins .lede{font:400 calc(15.5px*var(--k))/1.45 var(--sans);color:var(--ink-2)}
+.evs{display:flex;flex-wrap:wrap;gap:6px}
+.lad{display:grid;gap:10px;padding:2px 16px 16px}
+.ld{display:grid;grid-template-columns:calc(70px*var(--k)) minmax(0,1fr) auto;gap:10px;align-items:center;font:500 calc(14.5px*var(--k))/1.2 var(--sans)}
+.ld .t{height:12px;border-radius:6px;background:var(--track);position:relative;overflow:hidden}
+.ld .t i{position:absolute;inset:0 auto 0 0;border-radius:6px;background:var(--neutral-fill);transition:width 520ms var(--spring)}
+.ld .t i.you{background:var(--loss-fill)}
+.ld .t i.tour{background:var(--gain-fill)}
+.ld .v{font:600 calc(14.5px*var(--k))/1 var(--sans);font-variant-numeric:tabular-nums}
+.drill{display:flex;gap:12px;align-items:flex-start;padding:14px 16px}
+.dicon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--tint-acc);color:var(--gain);flex:none}
+.drill b{display:block;font:600 calc(15.5px*var(--k))/1.3 var(--sans)}
+.drill span{display:block;font:400 calc(14px*var(--k))/1.35 var(--sans);color:var(--ink-2)}
+.acts{display:flex;gap:10px}
+.acts .btn{flex:1}
+.dev .lk,.lk{display:inline-flex;align-items:center;gap:6px;font:600 calc(14.5px*var(--k))/1 var(--sans);color:var(--accent);padding:6px 0}
+.assigned{display:flex;align-items:center;gap:10px;flex:1;min-height:42px;padding:0 14px;border-radius:12px;background:var(--tint-acc);color:var(--gain);font:600 calc(14.5px*var(--k))/1.25 var(--sans)}
+.assigned path{stroke-dasharray:24;stroke-dashoffset:24;animation:draw 360ms var(--ease) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.spin{width:18px;height:18px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.pbars{display:grid;gap:10px;padding:2px 16px 16px}
+
+/* story overlay (phone) */
+.story{position:absolute;inset:0;z-index:20;background:var(--feat);color:var(--f-ink);display:flex;flex-direction:column;padding:54px var(--edge) 34px;transform:translateY(102%);transition:transform 280ms var(--ease);pointer-events:none}
+.story.on{transform:none;transition:transform 462ms var(--spring);pointer-events:auto}
+.prog{display:flex;gap:4px}
+.prog i{flex:1;height:3px;border-radius:2px;background:rgb(244 241 232/.25);overflow:hidden}
+.prog i b{display:block;height:100%;width:0;background:var(--f-ink)}
+.prog i.done b{width:100%}
+.sto-h{display:flex;align-items:center;gap:10px;margin-top:14px}
+.sto-h .c{flex:1}
+.sto-h b{display:block;font:600 calc(15px*var(--k))/1.2 var(--sans)}
+.sto-h span{font:400 calc(13px*var(--k))/1.3 var(--sans);color:var(--f-ink-2)}
+.sto-h .xb{background:rgb(244 241 232/.12)!important;color:var(--f-ink);box-shadow:none}
+.sto-b{flex:1;display:flex;flex-direction:column;justify-content:center;gap:22px;position:relative}
+.sto-b h3{font:600 calc(30px*var(--k))/1.1 var(--sans);letter-spacing:-.025em;font-variation-settings:'wdth' 90}
+.sto-b p{font:400 calc(16px*var(--k))/1.45 var(--sans);color:var(--f-ink-2)}
+.sto-b .src{font:400 calc(13px*var(--k))/1.35 var(--sans);color:var(--f-ink-2);display:flex;gap:6px;align-items:center}
+.sto-f{display:flex;gap:10px}
+.sto-f .btn{flex:1;background:var(--f-ink);color:#0B3A25!important}
+.sto-f .btn.gh2{background:rgb(244 241 232/.12);color:var(--f-ink)!important}
+.sto-anim{animation:storyin 420ms var(--spring) both}
+@keyframes storyin{from{opacity:0;transform:translateX(24px)}}
+.holes18{display:grid;grid-template-columns:repeat(9,1fr);gap:5px}
+.holes18 i{aspect-ratio:1;border-radius:8px;background:rgb(244 241 232/.09);display:grid;place-items:center;font:600 calc(13px*var(--k))/1 var(--sans);font-style:normal;color:var(--f-ink-2);font-variant-numeric:tabular-nums}
+.holes18 i.dbl{background:var(--f-loss);color:#2B1A00}
+.holes18 i.bog{background:rgb(237 184 103/.22);color:var(--f-ink)}
+.holes18 i.bir{background:rgb(143 211 170/.24);color:var(--f-ink)}
+.sbars{display:grid;gap:12px}
+.sbar2{display:grid;gap:6px}
+.sbar2 .h{display:flex;justify-content:space-between;font:500 calc(14.5px*var(--k))/1.2 var(--sans);color:var(--f-ink-2)}
+.sbar2 .h b{color:var(--f-ink);font-variant-numeric:tabular-nums}
+.sbar2 .t{height:16px;border-radius:8px;background:rgb(244 241 232/.10);position:relative}
+.sbar2 .t i{position:absolute;inset:0 auto 0 0;border-radius:8px;background:var(--f-loss);width:0;transition:width 700ms var(--spring)}
+.sbar2 .t i.g{background:var(--f-gain)}
+.sbar2 .t u{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--f-ink);border-radius:1px}
+.sbar2 .t s{position:absolute;top:-22px;transform:translateX(-50%);font:500 11.5px/1 var(--sans);text-decoration:none;color:var(--f-ink-2);white-space:nowrap}
+
+/* data states: loading skeletons, empty board, failed source notices */
+.skl{display:block;background:var(--well);border-radius:8px;position:relative;overflow:hidden}
+.skl::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgb(255 255 255/.45),transparent);transform:translateX(-100%);animation:shim 1.4s var(--ease) infinite}
+.dev[data-mode="dark"] .skl::after{background:linear-gradient(90deg,transparent,rgb(255 255 255/.06),transparent)}
+.feat .skl{background:rgb(244 241 232/.09)}
+.feat .skl::after{background:linear-gradient(90deg,transparent,rgb(244 241 232/.10),transparent)}
+@keyframes shim{to{transform:translateX(100%)}}
+.sklc{padding:16px;display:grid;gap:12px}
+.sklrow{display:grid;grid-template-columns:30px minmax(0,1fr) 48px;gap:12px;align-items:center}
+.notice{display:flex;gap:12px;align-items:flex-start;padding:2px 16px 16px}
+.notice .ni{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--tint-loss);color:var(--loss);flex:none}
+.notice b{display:block;font:600 calc(15px*var(--k))/1.3 var(--sans)}
+.notice span{display:block;font:400 calc(14px*var(--k))/1.4 var(--sans);color:var(--ink-2)}
+.notice .btn{margin-top:10px}
+.emptyh{font:400 calc(15px*var(--k))/1.45 var(--sans);color:var(--f-ink-2);margin-top:8px;max-width:34ch}
+.steps{display:grid;gap:0;padding:0 16px 8px;counter-reset:st}
+.steps div{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;padding:10px 0;align-items:start}
+.steps div+div{border-top:1px solid var(--sep)}
+.steps div::before{counter-increment:st;content:counter(st);width:26px;height:26px;border-radius:50%;background:var(--tint-acc);color:var(--gain);font:600 13px/26px var(--sans);text-align:center}
+.steps b{display:block;font:500 calc(15px*var(--k))/1.3 var(--sans)}
+.steps span{display:block;font:400 calc(13.5px*var(--k))/1.4 var(--sans);color:var(--ink-2)}
+.nordss{padding:12px 16px 4px;font:400 calc(14px*var(--k))/1.4 var(--sans);color:var(--ink-2)}
+.dev[data-rm] .skl::after{animation:none;opacity:0}
+
+/* reduce motion */
+.dev[data-rm] *,.dev[data-rm] *::before,.dev[data-rm] *::after{animation-duration:1ms!important;animation-iteration-count:1!important;transition-duration:1ms!important}
+.dev[data-rm] .rs .scrim,.dev[data-rm] .rs .pan,.dev[data-rm] .story,.dev[data-rm] .insp{transition:opacity 180ms linear!important;transform:none!important}
+.dev[data-rm] .rs .pan,.dev[data-rm] .story,.dev[data-rm] .insp{opacity:0}
+.dev[data-rm] .rs.on .pan,.dev[data-rm] .story.on,.dev[data-rm] .insp.on{opacity:1}
+.dev[data-rm] .stn.on .pulse{animation:none!important;opacity:0}
+.dev .coin{display:inline-grid!important;color:#fff!important;font:600 11.5px/1 var(--sans)!important;margin-top:0!important}
+.dev .coin.sm{font-size:10px!important}
+.dev .coin.early{color:var(--ink)!important}
+.dev[data-rm] .rmfade{animation:rmfade 180ms linear both!important}
+@keyframes rmfade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.stn.on .pulse{animation:none}}
+
+/* desktop */
+.desk{width:1280px;height:832px;display:grid;grid-template-columns:232px minmax(0,1fr);background:var(--nav);padding:8px 8px 8px 0}
+.side{color:var(--nav-ink);padding:10px 12px;display:flex;flex-direction:column;gap:2px;font-size:15px}
+.side .logo{font:600 22px/1 var(--sans);letter-spacing:-.03em;font-variation-settings:'wdth' 88;padding:12px 12px 18px;display:flex;align-items:center;gap:9px}
+.side .logo svg{color:var(--champ)}
+.side a{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:9px;color:var(--nav-ink-2);text-decoration:none;font-weight:500}
+.side a.on{background:rgb(244 238 221/.95);color:#0a331f;font-weight:600}
+.side .grp{font-size:13px;color:rgb(240 233 214/.72);padding:14px 12px 4px}
+.dmain{background:var(--bg);border-radius:12px;display:grid;grid-template-rows:58px minmax(0,1fr);overflow:hidden;position:relative}
+.glass{display:flex;align-items:center;gap:16px;padding:0 18px 0 24px;background:color-mix(in srgb,var(--card) 78%,transparent);backdrop-filter:blur(24px) saturate(170%);border-bottom:1px solid var(--sep);z-index:3}
+.glass .t{font:600 17px/1 var(--sans)}
+.glass .seg2{width:180px}
+.glass .seg2 span{padding:7px 0;font-size:14px}
+.glass .scope{font:400 14px/1 var(--sans);color:var(--ink-2)}
+.glass .r{margin-left:auto;display:flex;gap:8px;align-items:center;color:var(--ink-2)}
+.glass .srch{display:flex;align-items:center;gap:8px;background:var(--card);box-shadow:0 0 0 1px var(--ring);border-radius:10px;padding:7px 10px;font-size:14px;color:var(--ink-3);width:220px}
+.dbody{overflow-y:auto;padding:22px 24px 40px;scrollbar-width:thin}
+.dgrid{--rail:clamp(320px,30%,440px);display:grid;grid-template-columns:minmax(0,1fr) var(--rail);gap:18px;align-items:stretch}
+.dcol{display:flex;flex-direction:column;gap:18px;min-width:0}
+.dcol>.card:last-child{flex:1}
+/* the last card in each column takes up the slack, laid out so the extra height reads as air inside the card, not a gap under it */
+.desk .spot{display:flex;flex-direction:column}
+.spl,.spl-l,.spl-r{display:contents}
+.desk .spl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);flex:1;border-top:1px solid var(--sep)}
+.desk .spl-l{display:flex;flex-direction:column;border-right:1px solid var(--sep);padding-top:12px}
+.desk .spl-r{display:flex;flex-direction:column;padding-top:6px}
+.desk .spl-l .axis{padding-left:calc(16px + 102px*var(--k))}
+.desk .spl-l .bars{gap:12px}
+.desk .spl-r .rds{border-top:0}
+.desk .spl-r .pat,.desk .spl-r .nopat{margin-top:auto}
+.desk .huddle{display:flex;flex-direction:column}
+.desk .huddle .hud{flex:1;display:grid;align-items:center}
+.desk .recc{display:flex;flex-direction:column}
+.desk .recc .rec{flex:1;align-content:space-evenly}
+.desk .recc .lv .n b{font-weight:400;color:var(--ink-3)}
+.desk .feat{padding:20px 22px 16px}
+.desk .feat .top{display:flex;justify-content:space-between;gap:20px;align-items:flex-end}
+.desk .feat .stchips{width:min(500px,64%);margin:0;flex:none}
+.desk .feat .hole{margin:8px 0 0}
+.desk .tiles{flex-direction:column;overflow:visible;padding:2px 16px 16px}
+.desk .tile{width:auto;min-height:0;flex-direction:row;align-items:center;gap:12px;padding:10px 12px}
+.desk .tile .tv{width:96px;flex:none;height:36px}
+.desk .tile .tt{display:grid;gap:3px}
+.desk .tile .tm{margin-top:0}
+.rost .rr{grid-template-columns:auto minmax(0,1fr) 112px auto 64px;gap:16px;padding:12px 18px}
+.rost .rr+.rr::before{left:60px}
+.rost .lm{justify-self:start}
+.dsw{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin-bottom:14px}
+.dsw .lab{font:500 13.5px/1 var(--sans);color:var(--fg-2)}
+.insp{position:absolute;top:58px;right:0;bottom:0;width:420px;background:var(--bg);box-shadow:-1px 0 0 var(--sep),var(--shadow-lg);transform:translateX(102%);transition:transform 280ms var(--ease);overflow-y:auto;z-index:4;--edge:20px}
+.insp.on{transform:none;transition:transform 462ms var(--spring)}
+.insp .ins{padding-top:18px}
+.dev .br{padding:0}
+.insh .c b,.drill b,.steps b{color:var(--ink)}
+.sto-h b{color:var(--f-ink)}
+.insh .cicon,.drill .dicon{color:var(--accent)}
+</style>
+
+<header class="mast">
+  <div class="wrap">
+    <p class="eyebrow">Clubhouse · CoachHelm · the team view, lane 1 of 6 · version 2, polished · design only, nothing deployed</p>
+    <h1>Your team, drawn on a golf hole</h1>
+    <p class="lead">Version 1 rearranged today's cards, and that's not good enough. This version starts again. The Team tab opens on a hole your players actually play: every stroke the team gives back to Tour sits where it happens, from the tee to the cup, with each player standing at the place they lose most. Tap a spot on the hole and the whole board turns to it: who loses it, what CoachHelm has read about it, and what to practise.</p>
+    <ul class="big4">
+      <li><b>No more opening players one at a time</b>The hole, the bars and the reads show the whole team at once. A player's page is one tap away, not the only way in.</li>
+      <li><b>Every audited read has a home</b>Reads that sat behind one pill, behind flags or deep in a player's page now sit at their spot on the hole.</li>
+      <li><b>Golf pictures first, words beside them</b>The hole, a huddle chart, finger-print bars and morning stories. The same visual language as the read and Ask pages.</li>
+      <li><b>Evidence stays strict</b>Every figure says its window and sample. Early players are drawn hollow. A spot with no shared pattern says what it's waiting for.</li>
+    </ul>
+  </div>
+</header>
+
+<section class="blk" id="directions">
+  <div class="wrap">
+    <h2>Three directions</h2>
+    <p class="sub">Three ways to answer "how is my team doing, and where do I spend practice?" Each one is drawn from the same team data. The studio below goes deep on the first, and brings the best of the other two in as supporting pieces.</p>
+    <div class="dirs" id="dirs"></div>
+    <p class="verdict"><b>Going deep on A.</b> It's the only one a coach reads like golf rather than like a dashboard, and every tap on it leads straight to a practice decision. B becomes the Huddle card further down, because it's the best picture of who is moving where. C becomes the This week stories at the top, because they're the best thing to open each morning.</p>
+  </div>
+</section>
+
+<section class="blk" id="studio">
+  <div class="wrap">
+    <h2>Try it on the phone</h2>
+    <p class="sub">The real green bar, the parchment sheet and the Team · Ask switch stay. Tap any spot on the hole, any player, any read or any story. The Play buttons run each motion on its own.</p>
+    <div class="studio">
+      <div>
+        <div class="controls" role="group" aria-label="Prototype controls">
+          <div class="crow"><span class="lab">Look</span><div class="pseg" data-k="mode"><button data-v="light" aria-pressed="true">Light</button><button data-v="dark" aria-pressed="false">Dark</button></div>
+            <span class="lab" style="min-width:0;margin-left:4px">Phone</span><div class="pseg" data-k="size"><button data-v="std" aria-pressed="true">6.1 in</button><button data-v="lg" aria-pressed="false">6.9 in</button></div></div>
+          <div class="crow"><span class="lab">Text</span><div class="pseg" data-k="k"><button data-v="1" aria-pressed="true">Default</button><button data-v="1.12" aria-pressed="false">Larger</button><button data-v="1.35" aria-pressed="false">Largest</button></div>
+            <div class="pseg" data-k="rm"><button data-v="off" aria-pressed="true">Motion</button><button data-v="on" aria-pressed="false">Reduce</button></div></div>
+          <div class="crow"><span class="lab">Data</span><div class="pseg" data-k="data"><button data-v="normal" aria-pressed="true">Season</button><button data-v="early" aria-pressed="false">Early</button><button data-v="long" aria-pressed="false">Long names</button><button data-v="failed" aria-pressed="false">Failed</button><button data-v="loading" aria-pressed="false">Loading</button><button data-v="empty" aria-pressed="false">Empty</button></div></div>
+          <div class="plays">
+            <button class="play" data-play="fly"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.8v10.4L12 7z" fill="currentColor"/></svg>Play the hole</button>
+            <button class="play" data-play="station"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.8v10.4L12 7z" fill="currentColor"/></svg>Move to putting</button>
+            <button class="play" data-play="course"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.8v10.4L12 7z" fill="currentColor"/></svg>Open the Course tab</button>
+            <button class="play" data-play="story"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.8v10.4L12 7z" fill="currentColor"/></svg>Morning stories</button>
+            <button class="play" data-play="huddle"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.8v10.4L12 7z" fill="currentColor"/></svg>Huddle moves</button>
+            <button class="play" data-play="assign"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.8v10.4L12 7z" fill="currentColor"/></svg>Read to focus</button>
+          </div>
+        </div>
+        <div class="stage"><div class="ph dev" id="ph" data-mode="light"><div class="scr" id="scr"></div></div></div>
+      </div>
+      <div class="notes">
+        <div class="note"><h3>This week <span class="tag">built, hidden today</span></h3><p>Three story tiles, newest first, ringed until opened. Each opens full screen and steps through with its own picture and the round or window it came from. Built from the Monday brief and program pulse (<code>ChMondayBrief</code>, <code>ChPulse</code>), which today sit behind a link and a collapsed line.</p></div>
+        <div class="note"><h3>The hole <span class="tag">new</span></h3><p>The one green feature card. The team's strokes to Tour this season, split across the four places on a hole (<code>ChLadder</code> per roster player, averaged). Each spot is sized by what it costs. Players stand beside the spot where they lose most; under 15 rounds they're hollow. On first open a ball plays the hole and the spots land as it passes.</p></div>
+        <div class="note"><h3>The spot you tapped <span class="tag">new</span></h3><p>Who loses it, as bars against Tour with the team average dashed. Then every open CoachHelm read about that spot, from every player, ranked by strokes, each with its sample and how sure. Today a coach sees one read for one selected player. Here the Board's own caps apply per player (3 needs work, 1 working).</p></div>
+        <div class="note"><h3>Shared pattern <span class="tag">built, hidden today</span></h3><p>When three or more players share the same step (<code>ChTeamPatterns</code>), it shows under the reads with an Add to practice button that opens the practice plan lane. With fewer than three, it says so and doesn't guess.</p></div>
+        <div class="note"><h3>The huddle <span class="tag">new</span></h3><p>Ball striking against scoring, both as strokes to Tour, with Tour and the team average marked. A line shows where each player stood after their first 10 rounds. It tells you who is moving and in which direction, which no list can.</p></div>
+        <div class="note"><h3>Roster with finger-prints <span class="tag">replaces the pills</span></h3><p>Every player in one list, with a four-bar finger-print of where they gain and lose, their season total and open reads. Tap for their sheet; it links to their own page (the coach and player lane).</p></div>
+        <div class="note"><h3>Working and track record <span class="tag">built, hidden today</span></h3><p>Focus areas in progress, drawn as rings toward their target (<code>ChBriefWorking</code>). Then how often CoachHelm's reads held up when re-checked, by level, against its targets (<code>ChTrackRecord</code>).</p></div>
+        <div class="note"><h3>Read sheet <span class="am tag">links to lanes 2 and 4</span></h3><p>A read opens in a sheet: the comparison ladder, its evidence, the drill and Assign as focus. Open the full read goes to the read redesign; Ask about this carries the read into Ask.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="blk" id="desktop">
+  <div class="wrap">
+    <h2>The same board on desktop</h2>
+    <p class="sub">The sidebar and the glass top bar stay. Two columns that always end level: the hole and the spot you tapped on the left, with the bars and the reads side by side; This week, Working on and the huddle in a rail on the right. The roster and the track record close the board. The rail grows with the screen (30%, 320 to 440 px), so nothing is left as an empty band at 1280, 1440 or 1728. A read or story opens in a panel on the right so you never lose your place. It follows the phone's Look switch.</p>
+    <div class="dsw"><span class="lab">Screen</span><div class="pseg" data-k="dw"><button data-v="1280" aria-pressed="true">1280 × 832</button><button data-v="1440" aria-pressed="false">1440 × 900</button><button data-v="1728" aria-pressed="false">1728 × 1117</button></div><span class="lab" style="color:var(--fg-3)">MacBook Air 13, 15 and Pro 16 default sizes</span></div>
+    <div class="desk-fit" id="deskfit"><div class="desk dev" id="desk" data-mode="light"></div></div>
+  </div>
+</section>
+
+<section class="blk" id="map">
+  <div class="wrap">
+    <h2>Where every audited read lives now</h2>
+    <p class="sub">From the board-to-data audit (<code>docs/clubhouse/phone/coachhelm.md</code>) and the pipeline trace that found 66% of insights never reach a screen (<code>docs/audits/COACHHELM_PIPELINE_TRACE_2026-08-20.md</code>). Every type below exists in <code>src/clubhouse/data/</code> today.</p>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>What CoachHelm produces</th><th>Where a coach sees it today</th><th>Where it lives in version 2</th><th>How it behaves with what's built</th></tr></thead>
+      <tbody>
+        <tr><td>Each player's reads (<code>ChInsight</code>)</td><td>One top read for the one selected pill</td><td>At their spot on the hole; the spot card lists every player's reads there</td><td>Loader asks for the Board's caps per player (3 needs work, 1 working) instead of 1. Each read's category picks its spot.</td></tr>
+        <tr><td>Strokes gained by area vs Tour (<code>ChLadder</code>)</td><td>One player's Standing only</td><td>The hole, the spot bars, the huddle and the finger-prints</td><td>Season standing per roster player, one team query. A player with no figure for an area is left off that spot and the sheet says why (<code>missing</code>).</td></tr>
+        <tr><td>Earlier standing (first 10 rounds)</td><td>Nowhere</td><td>Huddle lines</td><td>Needs a check: if the standing table can't give a first-10 window, the lines drop and the dots stay. No new data is collected.</td></tr>
+        <tr><td>Category trend (<code>ChDiveTheme.trend</code>)</td><td>Deep dive only</td><td>Stories ("approaches slipped") and the player sheet</td><td>Only Improving or Slipping become a story; No clear change never does.</td></tr>
+        <tr><td>Program pulse and Monday brief (<code>ChPulse</code>, <code>ChMondayBrief</code>)</td><td>Collapsed line; Brief link behind a flag</td><td>This week stories and counts</td><td>A failed source keeps its own notice, never "nothing new".</td></tr>
+        <tr><td>Team patterns (<code>ChTeamPatterns</code>)</td><td>Under the board, flag off</td><td>Shared pattern on the spot card</td><td>Same maths (<code>computeTeamPatterns</code>). Under three players it says what it's waiting for.</td></tr>
+        <tr><td>Focus areas in progress (<code>ChBriefWorking</code>, <code>ChEngineVerdict</code>)</td><td>Coach Brief only</td><td>Working card with rings</td><td>Assign still creates a proposal (<code>createFocusAreaFromInsightV2</code>); the row reads Proposed until the player accepts.</td></tr>
+        <tr><td>Not enough yet (<code>ChNotEnough</code>)</td><td>Collapsed line</td><td>Early reads and hollow players, with their count-down in the sheet</td><td>Never a number it can't stand behind.</td></tr>
+        <tr><td>Claim ladder, cause, audit (<code>ChReadEngine</code>)</td><td>Inside one card, behind flags</td><td>Cause state on every read; the full chain in the read lane's page</td><td>Each part shows only when its flag and field are present, as today.</td></tr>
+        <tr><td>Track record (<code>ChTrackRecord</code>)</td><td>Separate page, flag off</td><td>Track record card</td><td><code>unavailable</code> reads as such.</td></tr>
+        <tr><td>Reads the pipeline hides (tentative trap, v2 filter, 1-per-player cap)</td><td>Never</td><td>The 1-per-player cap is lifted here</td><td>The tentative trap and v2 filter are engine fixes for the root cause lane. Nothing changes what is generated or what shot tracking collects.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<section class="blk" id="build">
+  <div class="wrap">
+    <h2>What it takes to build</h2>
+    <p class="sub">Read-only loader work plus new screens. No migration, no new column, no flag flipped by this design.</p>
+    <div class="grid2">
+      <div class="box"><h3>Loader (<code>data/coachhelm.ts</code>)</h3><ol><li>Raise the coach read from <code>limit: 1</code> to the Board caps per player.</li><li>Read every roster player's <code>ChLadder</code> in one team query, and the first-10 window if the table has it.</li><li>Hand the brief, patterns, working and track record to the board.</li><li>For Course: add course and score to par to the season's rounds read it already does, and average the roster's standing rows for par scoring, penalties, doubles and the first hole.</li></ol></div>
+      <div class="box"><h3>Screens (<code>screens/coachhelm/</code>)</h3><ol><li>New <code>TeamHole.tsx</code> (one SVG, phone vertical, desktop horizontal), <code>SpotCard.tsx</code> with its Course variant, <code>CourseSheet.tsx</code>, <code>Huddle.tsx</code>, <code>StoryViewer.tsx</code>.</li><li><code>CoachBoard.tsx</code> becomes the team board; pills and the single top card retire.</li><li>One evidence sheet shared with the coach and player lane (<code>EvidenceSheet.tsx</code>); on desktop it opens as an inspector.</li></ol></div>
+      <div class="box"><h3>Rules kept</h3><ul><li>One flat page colour, titles inside cards, one green feature card per view.</li><li>Amber for losses, green for gains. No accent left-border cards.</li><li>Every figure names its window and sample.</li><li>Shared springs; Reduce Motion turns every move into a 180 ms fade and skips the ball.</li></ul></div>
+      <div class="box"><h3>Build package (<code>design-refresh/coachhelm-team/</code>)</h3><ul><li><code>01-BRIEF.md</code>: the problem, what changes, done when.</li><li><code>02-PLAN.md</code>: file by file, PR by PR, with fixtures and preview routes.</li><li><code>03-DATA-CHECKS.md</code>: where every figure comes from and the loader caps.</li><li><code>04-FIDELITY-SPEC.md</code>: every size, state, tap and motion as numbers.</li><li><code>capture/capture.mjs</code>: design and app shots side by side, and motion clips, run on the Mac.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<section class="blk" id="lanes">
+  <div class="wrap">
+    <h2>Hand-offs to the other lanes</h2>
+    <div class="grid2">
+      <div class="box"><h3>Root cause and output</h3><p>Open the full read in the sheet goes to their read page (funnel, cause, how sure).</p></div>
+      <div class="box"><h3>Coach and player view</h3><p>A player's sheet links to "Open Eli's page" in their coach-of-player view.</p></div>
+      <div class="box"><h3>The Ask tab</h3><p>Team · Ask stays. Ask about this carries the read or spot into Ask as context.</p></div>
+      <div class="box"><h3>Top-right quick chat</h3><p>If the CoachHelm icon joins the green bar, it sits left of the bell. Nothing here moves.</p></div>
+      <div class="box"><h3>Practice plan creation</h3><p>Add to practice on a shared pattern sends the step and the players to the plan wizard.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="blk" id="research">
+  <div class="wrap">
+    <h2>What we borrowed</h2>
+    <div class="grid2">
+      <div class="box"><h3>Shot-tracking strokes gained maps</h3><p>Golf apps that draw strokes on a hole make the numbers feel like golf. Here the whole team shares one hole.</p></div>
+      <div class="box"><h3>Apple Fitness and Instagram stories</h3><p>Short, full-screen, one idea each, ringed until seen. Here: This week.</p></div>
+      <div class="box"><h3>Linear Insights</h3><p>Tapping a chart filters everything around it. Here: tap a spot and the board turns to it.</p></div>
+      <div class="box"><h3>Sports scouting quadrants</h3><p>Two axes and a trail show movement better than any table. Here: the huddle.</p></div>
+      <div class="box"><h3>Strava's AI summaries, as a warning</h3><p>Claims without their data read as vague. Here: every story and read names its window and sample.</p></div>
+      <div class="box"><h3>Metaculus track record</h3><p>Showing how often you were right earns trust. Here: the track record card.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="blk" id="calls">
+  <div class="wrap">
+    <h2>Calls, settled</h2>
+    <div class="calls">
+      <div class="call"><h3>1. Open the CoachHelm tab on the hole, and call it Team</h3><p>Board becomes Team, and the hole leads the page on phone and desktop.</p><p class="rec">Default: <b>yes</b>, built that way. One setting flips it back to today's board as the first view; the build package names it.</p></div>
+      <div class="call"><h3>2. A fifth tab, Course, for reads and history off the hole</h3><p>Course, scoring and pressure reads have no spot on the hole; on staging that's 20 of 68 open reads, penalties included. The Course tab holds them with the team's scoring week by week, every course played this season, and the team against Tour on par 3s, 4s and 5s, penalties, doubles and the first hole. Try it: tap Course under the hole.</p><p class="rec">You said: <b>"I like having 5th tab with course stuff like reads and perf history"</b>.</p></div>
+      <div class="call"><h3>3. Show every open read per player, up to 4</h3><p>Up to 3 needs work and 1 working per player instead of 1, at no extra query. Only reads actually drawn count as shown, so the track record stays honest.</p><p class="rec">You said: <b>"the 4 open reads are good"</b>.</p></div>
+    </div>
+    <p class="sub" style="margin-top:14px">Settled here: one evidence sheet shared with the coach and player lane. The Monday brief, team patterns and track record are already switched on wherever Clubhouse is on; the old board just never showed them, so nothing needs flipping. Words and figures follow the app: one decimal, Solid, Early and Thin read, the five track record levels, hollow under 5 rounds on file, and "This week" for what's new.</p>
+  </div>
+</section>
+
+<footer><div class="wrap">CoachHelm Team Board, version 2 · demo data from the preview team (Varsity, five players, 73 rounds) · design only, nothing deployed</div></footer>
+
+<script>
+(function(){
+const MINUS='−';
+/* Data state from the link hash (see capture states below): early, long, failed, loading, empty. */
+const HT=(location.hash||'').slice(1).split('-').filter(Boolean);
+const DS=['early','long','failed','loading','empty'].find(x=>HT.includes(x))||'normal';
+const SPRING='linear(0,.006,.025 2.8%,.101 6.1%,.539 18.9%,.721 25.3%,.849 31.5%,.937 38.1%,.968 41.8%,.991 45.7%,1.006 50.1%,1.015 55%,1.017 63.9%,1.001)';
+const f2=v=>(v<0?MINUS:'+')+Math.abs(v).toFixed(1);
+const pct=v=>Math.round(v*100)+'%';
+
+const AREAS=[
+  {k:'tee',n:'Off the tee',s:'Tee'},
+  {k:'app',n:'Approach',s:'Approach'},
+  {k:'sg',n:'Around the green',s:'Short game'},
+  {k:'putt',n:'Putting',s:'Putting'}];
+const P=[
+  {id:'eb',n:'Eli Brandt',f:'Eli',ini:'EB',yr:'Jr',r:21,c:'#2F6B4F',sg:{tee:-.31,app:-1.08,sg:-.22,putt:-.47},first:{tee:-.28,app:-1.21,sg:-.30,putt:-.62}},
+  {id:'jo',n:'Jonah Okafor',f:'Jonah',ini:'JO',yr:'Sr',r:18,c:'#8A5A2B',sg:{tee:.12,app:-.54,sg:-.38,putt:-.96},first:{tee:.05,app:-.60,sg:-.41,putt:-1.22}},
+  {id:'pn',n:'Priya Natarajan',f:'Priya',ini:'PN',yr:'So',r:16,c:'#4B5F8A',sg:{tee:-.18,app:-.89,sg:.08,putt:-.71},first:{tee:-.20,app:-.70,sg:0,putt:-.75}},
+  {id:'tm',n:'Theo Marchetti',f:'Theo',ini:'TM',yr:'Fr',r:4,c:'#7A4E6E',early:1,sg:{tee:-.64,app:-.41,sg:-.29,putt:-.83}},
+  {id:'sw',n:'Sam Whitfield',f:'Sam',ini:'SW',yr:'Jr',r:3,c:'#5E6B3A',early:1,sg:{tee:-.22,app:-.77,sg:-.51,putt:-.35}}];
+if(DS==='early'||DS==='empty')P.forEach((p,i)=>{p.r=DS==='empty'?0:[3,4,4,3,2][i];p.early=1;delete p.first;});
+if(DS==='long'){Object.assign(P[0],{n:'Elijah Brandt-Whitaker',f:'Elijah'});Object.assign(P[2],{n:'Priyanka Natarajan-Okonkwo',f:'Priyanka'});}
+const PB=Object.fromEntries(P.map(p=>[p.id,p]));
+const team=k=>P.reduce((a,p)=>a+p.sg[k],0)/P.length;
+const TOTAL=AREAS.reduce((a,A)=>a+team(A.k),0);
+const worst=p=>AREAS.reduce((w,A)=>p.sg[A.k]<p.sg[w]?A.k:w,'tee');
+const tot=p=>AREAS.reduce((a,A)=>a+p.sg[A.k],0);
+const RANK=AREAS.slice().sort((a,b)=>team(a.k)-team(b.k)).map(a=>a.k);
+const RANKW=['biggest leak','second biggest','third','smallest'];
+/* Course: reads with no spot on the hole (course management, scoring, pressure) plus the scoring history. */
+const CM={k:'cm',n:'Course and scoring',s:'Course'};
+const areaOf=k=>AREAS.find(a=>a.k===k)||CM;
+
+const READS=[
+ {id:'r1',p:'eb',st:'app',t:'Long approaches finish short-right',lede:'From 175 yards and out, 9 of Eli’s 16 missed greens finish short and right.',sz:.6,sure:'Solid read',cause:'Counted',m:'Greens hit from 175 yd and out',u:'%',you:31,tm:38,tour:52,hi:1,drill:['Carry ladder, 175 to 200 yd','20 min · ball striking']},
+ {id:'r2',p:'pn',st:'app',t:'Approaches from 100 to 150 come up short',lede:'11 of Priya’s 18 missed greens from 100 to 150 yards finish short of the green.',sz:.5,sure:'Solid read',cause:'Likely',m:'Proximity from 100 to 150 yd',u:' ft',you:34,tm:29,tour:23,drill:['Front edge plus one targets','15 min · wedges']},
+ {id:'r3',p:'sw',st:'app',t:'Proximity from 125 to 175',lede:'Sam’s approaches from 125 to 175 finish 41 feet away on average, from 6 rounds.',sz:.4,sure:'Thin read',cause:'Not traced',m:'Proximity from 125 to 175 yd',u:' ft',you:41,tm:33,tour:27,wait:'4 more rounds before CoachHelm suggests a drill'},
+ {id:'r4',p:'jo',st:'putt',t:'Downhill putts from 5 to 10 feet',lede:'Jonah makes 4 of 15 downhill putts from 5 to 10 feet, against 9 of 16 uphill.',sz:.5,sure:'Solid read',cause:'Counted',m:'Makes from 5 to 10 ft',u:'%',you:38,tm:46,tour:56,hi:1,drill:['Downhill gate drill, 6 ft','15 min · putting']},
+ {id:'r5',p:'tm',st:'putt',t:'Three-putts from 30 feet and out',lede:'Theo three-putts 1.2 times a round from 30 feet and out, from 4 rounds.',sz:.5,sure:'Thin read',cause:'Likely',m:'Three-putts a round, 30 ft and out',u:'',you:1.2,tm:.7,tour:.4,drill:['Lag to a 3 ft circle','15 min · putting']},
+ {id:'r6',p:'pn',st:'putt',t:'Putts from 5 to 10 feet',lede:'Priya makes 44% from 5 to 10 feet. The cause isn’t traced yet.',sz:.3,sure:'Early read',cause:'Not traced',m:'Makes from 5 to 10 ft',u:'%',you:44,tm:46,tour:56,hi:1,drill:['Clock drill, 6 ft','15 min · putting']},
+ {id:'r7',p:'tm',st:'tee',t:'Drives finish right of the fairway',lede:'1 in 3 of Theo’s drives finish in the right rough or worse, from 4 rounds.',sz:.4,sure:'Thin read',cause:'Likely',m:'Fairways hit',u:'%',you:48,tm:57,tour:61,hi:1,drill:['Gate at the start line','20 min · driver']},
+ {id:'r8',p:'eb',st:'cm',t:'Penalty strokes: 1.1 per round',lede:'Across 21 rounds Eli averages 1.1 penalty strokes a round, most from the tee.',sz:.8,sure:'Early read',cause:'Not traced',m:'Penalty strokes a round',u:'',you:1.1,tm:.6,tour:.3,drill:['Pick the safe line: 9-hole game','30 min · on course']},
+ {id:'r9',p:'sw',st:'sg',t:'Up and down from greenside bunkers',lede:'Sam has got up and down 2 times from 11 greenside bunkers, from 6 rounds.',sz:.4,sure:'Thin read',cause:'Not traced',m:'Up and down from bunkers',u:'%',you:18,tm:39,tour:50,hi:1,wait:'4 more rounds before CoachHelm suggests a drill'},
+ {id:'r10',p:'jo',st:'sg',t:'Chips from 20 to 40 yards run past',lede:'Jonah’s chips from 20 to 40 yards finish 9 feet away, most of them past the hole.',sz:.3,sure:'Early read',cause:'Likely',m:'Proximity from 20 to 40 yd',u:' ft',you:9,tm:7,tour:6,drill:['Landing spot towel drill','15 min · short game']},
+ {id:'r11',p:'jo',st:'cm',t:'Double bogey-or-worse rate: 7.6%',lede:'Jonah makes double bogey or worse on 7.6% of holes across 18 rounds. Tour is 2.0%.',sz:.6,sure:'Early read',cause:'Not traced',m:'Double bogey or worse, share of holes',u:'%',dp:1,you:7.6,tm:6.1,tour:2,drill:['Bogey is a good score: 9-hole game','30 min · on course']},
+ {id:'r13',p:'eb',st:'cm',crs:'oak',t:'Worst holes on Oak Hollow: #4, #11, #17',lede:'Across 11 rounds at Oak Hollow, Eli averages 1.1 over par on holes 4, 11 and 17.',sz:.4,sure:'Early read',cause:'Not traced',m:'Over par a hole on 4, 11 and 17',u:'',dp:1,you:1.1,tm:.6,tour:null,drill:['Fat side of the green: target game','20 min · on course']},
+ {id:'r14',p:'tm',st:'cm',t:'Par 3 scoring: 3.48 (+0.48 vs par)',lede:'Theo averages 3.48 on par 3s, from 4 rounds. Tour is 3.00.',sz:.4,sure:'Thin read',cause:'Not traced',m:'Average score on par 3s',u:'',dp:2,you:3.48,tm:3.36,tour:3,wait:'A few more rounds before CoachHelm suggests a drill'},
+ {id:'r12',p:'pn',st:'cm',t:'Opening hole gap: +0.19 strokes vs round avg',lede:'Priya scores 0.19 worse on the first hole than on an average hole, from 16 rounds.',sz:.1,sure:'Early read',cause:'Not traced',m:'First hole against the average hole',u:'',dp:2,you:.19,tm:.12,tour:.1,drill:['Warm-up that ends on the first tee shot','10 min · before the round']}];
+if(DS==='early'){for(let i=READS.length-1;i>=0;i--){const r=READS[i];if(!['r3','r5','r7','r9'].includes(r.id))READS.splice(i,1);else{r.sure='Early';r.wait=r.wait||'A few more rounds before CoachHelm suggests a drill';delete r.drill;}}}
+if(DS==='empty')READS.length=0;
+if(DS==='long'){READS[0].t='Long approaches from 175 yards and out finish short and right of the green';}
+const RB=Object.fromEntries(READS.map(r=>[r.id,r]));
+const ROUNDS=P.reduce((a,p)=>a+p.r,0);
+const readsAt=k=>READS.filter(r=>r.st===k); /* CoachHelm feed order, never re-ranked (spec 8 M) */
+const readsOf=id=>READS.filter(r=>r.p===id);
+const PATTERN={app:{who:['eb','pn','sw'],t:'Eli, Priya and Sam all miss approaches short',s:'3 of 5 players · common step: the ball finishes short of the green'}};
+const WORK0=DS==='empty'||DS==='early'?[]:[
+ {id:'w1',p:'jo',t:'Lag putting from 30 ft and out',s:'Three-putts 0.9 to 0.5 a round · target 0.4',st:'Active · 5 rounds in',ok:1,v:.8},
+ {id:'w2',p:'pn',t:'Wedges from 50 to 100 yd',s:'Proximity 24 ft to 21 ft · target 18 ft',st:'In progress · 3 rounds in',v:.4}];
+if(DS==='early')delete PATTERN.app;
+const EARLY_ONE=DS==='early';
+const STORIES=[
+ {p:'eb',when:'Thursday at Hilltop',short:'Two doubles from penalties',h:'Eli made two doubles from penalties at Hilltop',body:'Holes 7 and 14: both drives went into the hazard, then a penalty drop. That’s the same leak as Eli’s open penalty read.',src:'Thursday’s round · 18 of 18 holes with shots tracked',go:'r8',goT:'Open the penalty read',vis:'holes'},
+ {p:'jo',when:'Since Oct 12',short:'Three-putts coming down',h:'Jonah’s three-putts are coming down',body:'0.9 a round before the lag putting focus started, 0.5 a round since. The target is 0.4.',src:'5 rounds since the focus started on Oct 12',go:null,goT:'See the focus',vis:'jonah'},
+ {p:'pn',when:'Last 6 rounds',short:'Approaches slipped',h:'Priya’s approaches slipped',body:'After Priya’s first 10 rounds, approaches cost 0.70 a round. Across the season it’s now 0.89.',src:'16 rounds this season · trend: Slipping',go:'r2',goT:'Open the approach read',vis:'priya'}];
+if(EARLY_ONE)STORIES.length=1;
+const SCORES=[0,0,1,0,0,0,2,0,-1,0,1,0,0,2,0,0,1,0];
+const WK=['Aug 17','Aug 24','Aug 31','Sep 7','Sep 14','Sep 21','Sep 28','Oct 5','Oct 12','Oct 19','Oct 26'];
+const TREND=(DS==='early'?[['Oct 12',7.0],['Oct 19',6.3],['Oct 26',6.5]]:[7.6,6.9,8.1,6.3,6.6,5.9,6.2,6.8,5.4,5.7,6.1].map((v,i)=>[WK[i],v])).map(([w,v])=>({w,v}));
+const CRS=DS==='early'?[
+ {id:'oak',n:'Oak Hollow',last:'Oct 26',pl:{eb:[2,7.5],jo:[2,3.5],pn:[2,6.0],tm:[1,8.0],sw:[1,9.0]}},
+ {id:'hill',n:'Hilltop',last:'Oct 29',story:0,pl:{eb:[1,9.0],jo:[1,5.0],pn:[1,7.0],tm:[1,9.0],sw:[1,10.0]}},
+ {id:'brook',n:'Brookfield',last:'Oct 14',pl:{jo:[1,2.0],pn:[1,5.0],tm:[1,7.0]}}]:[
+ {id:'oak',n:'Oak Hollow',last:'Oct 26',pl:{eb:[11,7.0],jo:[9,3.4],pn:[8,5.5],tm:[3,8.1],sw:[2,8.6]}},
+ {id:'hill',n:'Hilltop',last:'Oct 29',story:0,pl:{eb:[5,9.4],jo:[4,4.6],pn:[4,7.1],tm:[1,9.0],sw:[1,10.0]}},
+ {id:'lake',n:'Lakeside',last:'Sep 16',pl:{eb:[2,8.0],jo:[2,4.5],pn:[1,7.0]}},
+ {id:'ridge',n:'Ridgeview',last:'Aug 18',pl:{eb:[2,8.5],jo:[2,5.5],pn:[1,9.0]}},
+ {id:'brook',n:'Brookfield',last:'Oct 14',pl:{eb:[1,7.0],jo:[1,2.0],pn:[2,5.5]}}];
+const r1=v=>Math.round(v*10)/10;
+CRS.forEach(c=>{const e=Object.values(c.pl);c.r=e.reduce((a,x)=>a+x[0],0);c.v=r1(e.reduce((a,x)=>a+x[0]*x[1],0)/c.r);});
+CRS.sort((a,b)=>b.r-a.r);
+const SEASON=r1(CRS.reduce((a,c)=>a+c.r*c.v,0)/CRS.reduce((a,c)=>a+c.r,0));
+const seasonOf=id=>{let n=0,t=0;CRS.forEach(c=>{const x=c.pl[id];if(x){n+=x[0];t+=x[0]*x[1];}});return n?r1(t/n):null;};
+const TP=v=>v===0?'E':(v<0?MINUS:'+')+Math.abs(v).toFixed(1);
+const SHAPE=[{l:'Par 3s',v:'+0.36',u:'a hole',t:'+0.00'},{l:'Par 4s',v:'+0.27',u:'a hole',t:MINUS+'0.03'},{l:'Par 5s',v:'+0.02',u:'a hole',t:MINUS+'0.45'},
+ {l:'Penalty strokes',v:'0.6',u:'a round',t:'0.3'},{l:'Double or worse',v:'6.1%',u:'of holes',t:'2.0%'},{l:'First hole',v:'+0.12',u:'vs average hole',t:'+0.10'}];
+const REC=[{l:'Seen repeatedly',h:9,n:10,tg:.8},{l:'Observed',h:11,n:14,tg:.7},{l:'Likely',h:8,n:12,tg:.6},{l:'Working hypothesis',h:5,n:9,tg:null},{l:'Not enough yet',h:3,n:10,tg:.5,below:1}];
+
+const S={mode:'light',lg:false,k:1,rm:false,st:'app',cmAll:false,crsAll:false,assigned:false,story:0,flown:{},dw:1280,hold:false};
+
+/* ---------- small pieces ---------- */
+const coin=(p,sm)=>`<span class="coin${sm?' sm':''}${p.early?' early':''}" style="--c:${p.c}" aria-hidden="true">${p.ini}</span>`;
+const chev='<svg class="chev" width="8" height="14" viewBox="0 0 8 14" aria-hidden="true"><path d="M1.5 1.5 6.5 7l-5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const xIcon='<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>';
+const warnI='<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M9 2.5 16 15H2z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 7.5v3.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="13" r="1" fill="currentColor"/></svg>';
+const flagI='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.2 14.2V2.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M4.8 2.6l7.6 2.6-7.6 2.7z" fill="currentColor"/></svg>';
+const sureChip=r=>`<span class="chipk${r.sure==='Solid read'?' g':''}">${r.sure}</span>`;
+function fp(p,w=60,h=34,labels){
+  const bw=10,gap=(w-4*bw)/3,z=9,sc=20/1.1;let s=`<svg class="fp" width="${w}" height="${h+(labels?10:0)}" viewBox="0 0 ${w} ${h+(labels?10:0)}" aria-hidden="true"><line class="z" x1="0" x2="${w}" y1="${z}" y2="${z}"/>`;
+  AREAS.forEach((A,i)=>{const v=p.sg[A.k],x=i*(bw+gap),hh=Math.max(2,Math.min(Math.abs(v)*sc,v<0?h-z:z));
+    s+=v<0?`<rect class="l" x="${x}" y="${z+1}" width="${bw}" height="${hh}" rx="2.5"/>`:`<rect class="g" x="${x}" y="${z-1-hh}" width="${bw}" height="${hh}" rx="2.5"/>`;
+    if(labels)s+=`<text class="lab" x="${x+bw/2}" y="${h+8}">${A.s[0]}</text>`;});
+  return s+'</svg>';}
+function ring(v,cls=''){const r=15,c=2*Math.PI*r;return `<svg class="ringc ${cls}" width="38" height="38" viewBox="0 0 38 38" aria-hidden="true"><circle class="trk" cx="19" cy="19" r="${r}" fill="none" stroke-width="4"/><circle class="fil${v<.5?' mid':''}" cx="19" cy="19" r="${r}" fill="none" stroke-width="4" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-v)}" transform="rotate(-90 19 19)"/></svg>`;}
+
+/* ---------- the hole ---------- */
+const HOLE={
+ v:{w:330,h:400,path:'M150 362 C 128 326 96 290 110 250 C 122 212 192 186 198 134 C 202 110 186 90 170 76',fw:58,
+    green:{cx:172,cy:70,rx:66,ry:38},fringe:{cx:172,cy:72,rx:80,ry:50},tee:{x:134,y:356,w:32,h:16},bunk:[{cx:110,cy:100,rx:14,ry:8},{cx:62,cy:236,rx:12,ry:7}],flag:{x:170,y:76},
+    st:{tee:{x:150,y:354,lx:178,ly:350,a:'start'},app:{x:110,y:250,lx:146,ly:256,a:'start'},sg:{x:198,y:134,lx:234,ly:134,a:'start'},putt:{x:170,y:76,lx:252,ly:58,a:'start'}},
+    coins:{app:[[40,292],[64,292],[88,292]],putt:[[118,98],[142,112]],tee:[[200,384]],sg:[[160,152]]}},
+ h:{w:760,h:268,path:'M70 168 C 150 180 230 198 300 184 C 380 168 470 110 552 102 C 600 98 634 106 664 120',fw:74,
+    green:{cx:664,cy:116,rx:76,ry:52},fringe:{cx:662,cy:118,rx:92,ry:64},tee:{x:42,y:160,w:30,h:16},bunk:[{cx:586,cy:62,rx:18,ry:9},{cx:250,cy:236,rx:16,ry:8}],flag:{x:664,y:120},
+    st:{tee:{x:70,y:168,lx:70,ly:214,a:'middle'},app:{x:300,y:184,lx:300,ly:232,a:'middle'},sg:{x:552,y:102,lx:510,ly:44,a:'middle'},putt:{x:664,y:120,lx:664,ly:200,a:'middle'}},
+    coins:{app:[[272,140],[298,140],[324,140]],putt:[[604,152],[628,166]],tee:[[70,128]],sg:[[552,148]]}}};
+function holeSVG(o,mini,bare){
+  const H=HOLE[o];let s=`<svg class="holesvg" viewBox="0 0 ${H.w} ${H.h}" role="img" aria-label="A golf hole showing where the team loses strokes to Tour: off the tee ${f2(team('tee'))}, approach ${f2(team('app'))}, around the green ${f2(team('sg'))}, putting ${f2(team('putt'))} a round.">`;
+  s+=`<path class="fair" d="${H.path}" stroke-width="${H.fw}"/><path class="mow" d="${H.path}" stroke-width="${H.fw*.42}"/>`;
+  s+=`<ellipse class="fringe" cx="${H.fringe.cx}" cy="${H.fringe.cy}" rx="${H.fringe.rx}" ry="${H.fringe.ry}"/><ellipse class="grn" cx="${H.green.cx}" cy="${H.green.cy}" rx="${H.green.rx}" ry="${H.green.ry}"/>`;
+  H.bunk.forEach(b=>s+=`<ellipse class="bunk" cx="${b.cx}" cy="${b.cy}" rx="${b.rx}" ry="${b.ry}"/>`);
+  s+=`<rect class="teebox" x="${H.tee.x}" y="${H.tee.y}" width="${H.tee.w}" height="${H.tee.h}" rx="4"/>`;
+  s+=`<line class="pole" x1="${H.flag.x}" y1="${H.flag.y}" x2="${H.flag.x}" y2="${H.flag.y-34}"/><path class="flag" d="M${H.flag.x} ${H.flag.y-34} l16 5 -16 5z"/>`;
+  s+=`<path class="flight" d="${H.path}"/>`;
+  if(!bare)AREAS.forEach(A=>{const t=H.st[A.k],v=team(A.k),R=10+Math.abs(v)*22;
+    s+=`<g class="stn${A.k===S.st?' on':''}${mini?'':' pre'}" data-act="st" data-v="${A.k}" tabindex="${mini?-1:0}" role="button" aria-label="${A.n}, ${f2(v)} a round" style="transform-origin:${t.x}px ${t.y}px">`+
+       `<circle class="pulse" cx="${t.x}" cy="${t.y}" r="${R}"/><circle class="halo" cx="${t.x}" cy="${t.y}" r="${R}"/><circle class="core" cx="${t.x}" cy="${t.y}" r="4.5"/>`+
+       `<text class="sl" x="${t.lx}" y="${t.ly}" text-anchor="${t.a}">${A.n}</text><text class="sv" x="${t.lx}" y="${t.ly+21}" text-anchor="${t.a}">${f2(v)}</text></g>`;
+    P.filter(p=>worst(p)===A.k).forEach((p,i)=>{const c=H.coins[A.k][i];if(!c)return;
+      s+=`<g class="scn${p.early?' early':''}"><circle cx="${c[0]}" cy="${c[1]}" r="11" fill="${p.c}"/><text x="${c[0]}" y="${c[1]}">${p.ini}</text></g>`;});
+  });
+  return s+`<circle class="ball" r="4.2" cx="-20" cy="-20" opacity="0"/></svg>`;}
+function stChips(){const n=readsAt('cm').length;return `<div class="stchips" role="group" aria-label="Spots on the hole, and Course">${AREAS.map(A=>`<button data-act="st" data-v="${A.k}" aria-pressed="${A.k===S.st}">${A.s}<b>${f2(team(A.k))}</b></button>`).join('')}<button class="cm" data-act="st" data-v="cm" aria-pressed="${S.st==='cm'}" aria-label="Course and scoring, ${n} open reads">${CM.s}<b>${n||'No'} read${n===1?'':'s'}</b></button></div>`;}
+function heroPhone(){return `<div class="feat hero"><div class="hk">Where Varsity gives back strokes</div>
+  <div class="hn"><b>${f2(TOTAL)}</b><span>a round to Tour<br>This season · ${ROUNDS} rounds</span></div>
+  <div class="hole${S.st==='cm'?' offh':''}">${holeSVG('v')}</div>${stChips()}
+  <div class="hfoot"><span>Players stand where they lose most. Hollow: fewer than 5 rounds.</span></div></div>`;}
+
+/* ---------- spot card ---------- */
+const ZP=84,SC=1.3;
+function barRow(p,k){const v=p.sg[k],neg=v<0,w=neg?Math.min(Math.abs(v)/SC*ZP,ZP):Math.min(v/.25*(100-ZP),100-ZP);
+  return `<button class="br tapp" data-p="${p.id}" data-act="player" data-v="${p.id}" aria-label="${p.n}, ${f2(v)}"><span class="bn">${coin(p,1)}${p.f}</span><span class="bt"><i class="z"></i><i class="avg" style="left:${ZP-Math.abs(team(k))/SC*ZP}%"></i><i class="bf ${neg?'l':'g'}${p.early?' early':''}" data-w="${w}" style="${neg?'right':'left'}:${neg?100-ZP:ZP}%;width:${w}%"></i></span><span class="bv${neg?'':' g'}">${f2(v)}</span></button>`;}
+function readRow(r,withName){const p=PB[r.p];
+  return `<button class="rd tapp" data-act="read" data-v="${r.id}">${coin(p)}<span><b>${withName?p.f+': ':''}${r.t}</b><span class="ev"><span class="chipk l">${r.sz.toFixed(1).replace(/^0/,'')} a round</span><span>${p.r} rounds</span>${sureChip(r)}</span></span>${chev}</button>`;}
+function spotInner(){const k=S.st;if(k==='cm')return courseInner();const A=AREAS.find(a=>a.k===k),pat=PATTERN[k];
+  const rows=P.slice().sort((a,b)=>a.sg[k]-b.sg[k]);
+  return `<div class="ch"><h4>${A.n}</h4><span class="meta">${f2(team(k))} a round · ${RANKW[RANK.indexOf(k)]}</span></div>
+   <div class="spl"><div class="spl-l"><div class="bars">${rows.map(p=>barRow(p,k)).join('')}</div>
+   <div class="axis"><span>Team average dashed</span><span>Tour</span></div></div>
+   <div class="spl-r"><div class="subh">What CoachHelm sees here · ${readsAt(k).length} open read${readsAt(k).length===1?'':'s'}</div>
+   <div class="rds">${readsAt(k).map(r=>readRow(r,1)).join('')||`<p class="nordss">No open reads here yet. CoachHelm reads a spot once a player has enough rounds to stand behind it.</p>`}</div>
+   ${pat?`<div class="pat"><div class="pc">${pat.who.map(id=>coin(PB[id],1)).join('')}</div><b>${pat.t}</b><span>${pat.s}</span><button class="btn gh sm" data-act="toast" data-v="practice">Add to practice</button></div>`
+        :`<p class="nopat">No shared pattern here yet. CoachHelm needs three players with the same step before it calls one.</p>`}</div></div>`;}
+function spotCard(){return `<div class="card spot${S.st==='cm'?' cm':''}" data-spot>${spotInner()}</div>`;}
+
+/* ---------- Course tab ---------- */
+function trendSVG(){const w=320,h=118,L=6,R=40,T=14,B=24,vs=TREND.map(t=>t.v).concat(SEASON),lo=Math.min(...vs)-.35,hi=Math.max(...vs)+.35;
+  const n=TREND.length,x=i=>L+(n<2?(w-L-R)/2:i*(w-L-R)/(n-1)),y=v=>T+(v-lo)/(hi-lo)*(h-T-B);
+  const pts=TREND.map((t,i)=>[x(i),y(t.v)]),d='M'+pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' L'),ys=y(SEASON),lp=pts[n-1];
+  let s=`<svg class="trend" viewBox="0 0 ${w} ${h}" role="img" aria-label="Team average to par, week by week this season, from ${TP(TREND[0].v)} in the week of ${TREND[0].w} to ${TP(TREND[n-1].v)} in the week of ${TREND[n-1].w}. Season ${TP(SEASON)}. Higher on the chart is better.">`;
+  s+=`<line class="gl" x1="${L}" x2="${w-R+8}" y1="${h-B+6}" y2="${h-B+6}"/>`;
+  s+=`<line class="av" x1="${L}" x2="${w-R+8}" y1="${ys.toFixed(1)}" y2="${ys.toFixed(1)}"/><text class="avl" x="${w-R+12}" y="${(ys+4).toFixed(1)}">${TP(SEASON)}</text>`;
+  s+=`<path class="ln" d="${d}"/>`;
+  pts.forEach((p,i)=>s+=`<circle class="d${i===n-1?' last':''}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${i===n-1?4.6:3.1}" style="--i:${i}"/>`);
+  s+=`<text class="lv" x="${lp[0].toFixed(1)}" y="${(lp[1]-10).toFixed(1)}" text-anchor="middle">${TP(TREND[n-1].v)}</text>`;
+  TREND.forEach((t,i)=>{const m=t.w.slice(0,3);if(i===0||TREND[i-1].w.slice(0,3)!==m)s+=`<text class="mo" x="${x(i).toFixed(1)}" y="${h-4}" text-anchor="${i===0?'start':'middle'}">${m}</text>`;});
+  return s+'</svg>';}
+function crsRow(c){const d=r1(c.v-SEASON),rs=READS.filter(r=>r.crs===c.id).length;
+  return `<button class="cr tapp" data-act="course" data-v="${c.id}"><span class="cn"><b>${c.n}</b><span>${c.r} rounds · last ${c.last}${rs?` · ${rs} read`:''}</span></span><span class="cv"><b>${TP(c.v)}</b><span class="${d>0?'l':d<0?'g':'e'}">${d?`${Math.abs(d).toFixed(1)} ${d>0?'over':'under'} season`:'Level with season'}</span></span>${chev}</button>`;}
+function courseInner(){const rs=readsAt('cm'),n=TREND.length,l4=n>=6?r1(TREND.slice(-4).reduce((a,t)=>a+t.v,0)/4):null,cr=S.crsAll?CRS:CRS.slice(0,4),rv=S.cmAll?rs:rs.slice(0,3);
+  const chip=l4==null?`<span class="chipk">Early season</span>`:`<span class="chipk${l4<SEASON?' g':l4>SEASON?' l':''}">Last 4 weeks ${TP(l4)}</span>`;
+  return `<div class="ch"><h4>${CM.n}</h4><span class="meta">Not on the hole · ${rs.length?`${rs.length} open read${rs.length===1?'':'s'}`:'No open reads yet'}</span></div>
+   <div class="spl"><div class="spl-l">
+    <div class="cmh"><div class="cmk"><b>${TP(SEASON)}</b><span>a round to par<br>This season · ${ROUNDS} rounds</span>${chip}</div>${trendSVG()}<div class="tkey"><span><i class="kl"></i>Team, week by week</span><span><i class="ka"></i>Season</span><span>Higher is better</span></div></div>
+    <div class="crsw"><div class="subh">Courses this season · ${CRS.length}</div><div class="crs">${cr.map(crsRow).join('')}</div>${CRS.length>4?`<button class="more" data-act="crsall" aria-expanded="${S.crsAll}">${S.crsAll?'Show fewer':`Show all ${CRS.length} courses`}</button>`:''}</div>
+   </div><div class="spl-r">
+    <div class="cmr"><div class="subh">What CoachHelm sees here${rs.length?` · ${rs.length} open read${rs.length===1?'':'s'}`:''}</div>
+     <div class="rds">${rv.map(r=>readRow(r,1)).join('')||`<p class="nordss">No course or scoring reads yet. Penalties, big numbers, par scoring and the first hole get read once a player has enough rounds to stand behind it.</p>`}</div>
+     ${rs.length>3?`<button class="more" data-act="cmall" aria-expanded="${S.cmAll}">${S.cmAll?'Show fewer':`Show ${rs.length-3} more`}</button>`:''}</div>
+    <div class="shpw"><div class="subh">Team against Tour · ${DS==='early'?`from ${ROUNDS} rounds`:'this season'}</div><div class="shape">${SHAPE.map(c=>`<div><span class="sl">${c.l}</span><span class="sv">${c.v}</span><span class="st">${c.u} · Tour ${c.t}</span></div>`).join('')}</div></div>
+   </div></div>`;}
+function courseSheet(id){const c=CRS.find(x=>x.id===id);if(!c)return '';const d=r1(c.v-SEASON),rs=READS.filter(r=>r.crs===id),st=c.story!=null?STORIES[c.story]:null;
+  const pl=Object.entries(c.pl).map(([pid,[n,v]])=>({p:PB[pid],n,v,s:seasonOf(pid)})).filter(x=>x.p).sort((a,b)=>a.v-b.v);
+  const all=pl.flatMap(x=>[x.v,x.s]),lo=Math.min(...all)-.6,hi=Math.max(...all)+.6,pc=v=>((v-lo)/(hi-lo)*100).toFixed(1);
+  return `<div class="insh"><span class="cicon">${flagI}</span><span class="c"><b>${c.n}</b><span>${c.r} rounds this season · last ${c.last}</span></span><button class="xb" data-act="close" aria-label="Close">${xIcon}</button></div>
+  <div class="cmk sh"><b>${TP(c.v)}</b><span>a round to par here<br>${d?`${Math.abs(d).toFixed(1)} ${d>0?'over':'under'} the team’s season of ${TP(SEASON)}`:`Level with the team’s season`}</span></div>
+  <div class="card"><div class="ch"><h4>Players here</h4><span class="meta">Against their own season</span></div>
+   <div class="cpl">${pl.map(x=>{const dd=r1(x.v-x.s),a=Math.min(+pc(x.v),+pc(x.s)),b=Math.abs(+pc(x.v)-+pc(x.s));
+     return `<button class="cp tapp" data-act="player" data-v="${x.p.id}" aria-label="${x.p.n}: ${TP(x.v)} a round here from ${x.n} round${x.n===1?'':'s'}, season ${TP(x.s)}">${coin(x.p,1)}<span class="n"><b>${x.p.f}</b><span>${x.n} round${x.n===1?'':'s'} here</span></span><span class="db" aria-hidden="true"><i class="${dd>0?'':'g'}" style="left:${a}%;width:${b}%"></i><u class="s" style="left:${pc(x.s)}%"></u><u class="h" style="left:${pc(x.v)}%"></u></span><span class="v"><b>${TP(x.v)}</b><span class="${dd>0?'l':dd<0?'g':''}">${dd?`${Math.abs(dd).toFixed(1)} ${dd>0?'over':'under'}`:'Level'}</span></span></button>`;}).join('')}</div>
+   <div class="dbkey"><span><u class="h"></u>Here</span><span><u class="s"></u>Their season</span></div></div>
+  ${rs.length?`<div class="card"><div class="ch"><h4>Reads about ${c.n}</h4><span class="meta">${rs.length}</span></div><div class="rds">${rs.map(r=>readRow(r,1)).join('')}</div></div>`:''}
+  ${st?`<button class="lk" data-act="story" data-v="${c.story}">Read the story from ${st.when} ${chev}</button>`:''}
+  <p class="lede cnote">Every counted round here this season, practice, qualifiers and tournaments. To par uses the tees each player played.</p>`;}
+
+/* ---------- huddle ---------- */
+function huddleSVG(){
+  const w=320,h=256,L=36,R=12,T=16,B=36,lo=-1.8,hi=.2;
+  const X=v=>L+(v-lo)/(hi-lo)*(w-L-R),Y=v=>T+(hi-v)/(hi-lo)*(h-T-B);
+  const as=team('tee')+team('app'),ac=team('sg')+team('putt');
+  let s=`<svg class="hudsvg" viewBox="0 0 ${w} ${h}" role="img" aria-label="Huddle chart: ball striking against scoring for each player.">`;
+  s+=`<line class="ax" x1="${L}" x2="${w-R}" y1="${h-B}" y2="${h-B}"/><line class="ax" x1="${L}" x2="${L}" y1="${T}" y2="${h-B}"/>`;
+  s+=`<line class="tour" x1="${X(0)}" x2="${X(0)}" y1="${T}" y2="${h-B}"/><line class="tour" x1="${L}" x2="${w-R}" y1="${Y(0)}" y2="${Y(0)}"/><text class="tl" x="${X(0)-4}" y="${Y(0)-5}" text-anchor="end">Tour</text>`;
+  s+=`<line class="avg" x1="${X(as)}" x2="${X(as)}" y1="${T}" y2="${h-B}"/><line class="avg" x1="${L}" x2="${w-R}" y1="${Y(ac)}" y2="${Y(ac)}"/>`;
+  s+=`<text class="q" x="${L+6}" y="${T+28}">Scores well, strikes poorly</text><text class="q" x="${L+6}" y="${h-B-8}">Behind on both</text><text class="q" x="${X(as)+6}" y="${h-B-8}">Strikes well, leaks scoring</text>`;
+  s+=`<text class="axl" x="${(L+w-R)/2}" y="${h-10}" text-anchor="middle">Ball striking: tee and approach</text><text class="axl" transform="translate(12 ${(T+h-B)/2}) rotate(-90)" text-anchor="middle">Scoring: short game and putting</text>`;
+  P.forEach(p=>{const sx=p.sg.tee+p.sg.app,sy=p.sg.sg+p.sg.putt,x=X(sx),y=Y(sy);
+    if(p.first){const fx=X(p.first.tee+p.first.app),fy=Y(p.first.sg+p.first.putt);
+      s+=`<circle class="ghost" cx="${fx}" cy="${fy}" r="4" fill="${p.c}"/><line class="trail" data-p="${p.id}" x1="${fx}" y1="${fy}" x2="${x}" y2="${y}" stroke="${p.c}"/>`;}
+    s+=`<g class="hp${p.early?' early':''}" data-act="player" data-v="${p.id}" data-p="${p.id}" tabindex="0" role="button" aria-label="${p.n}: striking ${f2(sx)}, scoring ${f2(sy)}"><circle class="dotc" cx="${x}" cy="${y}" r="13" fill="${p.c}" stroke="${p.c}"/><text x="${x}" y="${y}">${p.ini}</text></g>`;});
+  return s+'</svg>';}
+function huddleCard(){return `<div class="card huddle"><div class="ch"><h4>The huddle</h4><span class="meta">Strokes to Tour a round</span></div><div class="hud">${huddleSVG()}</div>
+ <div class="legend">${P.some(p=>p.first)?'<span>Line: from their first 10 rounds to now</span>':''}<span>Dashed: team average</span><span>Hollow: fewer than 5 rounds</span></div></div>`;}
+
+/* ---------- roster, working, record, today ---------- */
+function rosterCard(){return `<div class="card"><div class="ch"><h4>Roster</h4><span class="meta">T · A · S · P</span></div>
+ ${P.slice().sort((a,b)=>tot(a)-tot(b)).map(p=>`<button class="rr tapp" data-act="player" data-v="${p.id}">${coin(p)}<span><b>${p.n}</b><span class="m">${p.yr} · ${p.r?p.r+' rounds':'no rounds yet'}${p.early&&p.r?' · early':''}</span></span>${p.r?`${fp(p)}<span class="tot">${f2(tot(p))}<span>${readsOf(p.id).length} open</span></span>`:'<span></span><span></span>'}</button>`).join('')}</div>`;}
+function workRows(){if(!WORK0.length&&!S.assigned)return `<p class="nordss" style="padding-bottom:16px">Nothing in progress yet. Assign a read as a focus and it shows here.</p>`;let w=WORK0.map(x=>`<div class="wk">${ring(x.v)}<div><b>${PB[x.p].f} · ${x.t}</b><span>${x.s}</span><span class="st ${x.ok?'ok':'wait'}">${x.st}</span></div></div>`).join('');
+  if(S.assigned){const r=RB[S.assigned];w+=`<div class="wk pop">${ring(0,'prop')}<div><b>${PB[r.p].f} · ${r.t}</b><span>From ${r.you}${r.u} now · ${PB[r.p].f} sets the target</span><span class="st wait">Proposed · ${PB[r.p].f} accepts it in their app</span></div></div>`;}
+  return w;}
+function workCard(){return `<div class="card work"><div class="ch"><h4>Working on</h4><span class="meta" data-workn>${workCount()}</span></div><div data-work>${workRows()}</div></div>`;}
+function recCard(desk){if(DS==='failed'||DS==='empty')return `<div class="card recc"><div class="ch"><h4>How often CoachHelm is right</h4></div><div class="notice"><span class="ni">${warnI}</span><div><b>${DS==='empty'?'No reads to check yet':'Track record unavailable right now'}</b><span>${DS==='empty'?'Reads are re-checked against new rounds once the team has some.':'It shows again once the check runs. No number is shown in its place.'}</span></div></div></div>`;
+ const H=REC.reduce((a,r)=>a+r.h,0),N=REC.reduce((a,r)=>a+r.n,0);
+ return `<div class="card recc"><div class="ch"><h4>How often CoachHelm is right</h4></div><div class="rec"><div class="big"><b>${H} of ${N}</b><span>reads held up when re-checked</span></div>
+ ${REC.map(r=>`<div class="lv"><span>${r.l}</span><span class="t"><i class="${r.tg?'':'na'}" style="width:${r.h/r.n*100}%"></i>${r.tg?`<u style="left:${r.tg*100}%" title="target"></u>`:''}</span><span class="n">${r.h} of ${r.n}${desk?`<b> · ${r.tg?(r.below?'target under ':'target ')+Math.round(r.tg*100)+'%':'no target yet'}</b>`:''}</span></div>`).join('')}</div>
+ <div class="recfoot"><span>Line: the target for that level</span><button class="lk" data-act="toast" data-v="recheck">Re-check reads</button></div></div>`;}
+function tileVis(s){
+  if(s.vis==='holes')return `<svg viewBox="0 0 108 40" aria-hidden="true">${SCORES.map((v,i)=>`<rect x="${(i%9)*12}" y="${Math.floor(i/9)*20}" width="10" height="17" rx="3" fill="${v>=2?'var(--loss-fill)':v===1?'color-mix(in srgb,var(--loss-fill) 30%,var(--track))':v<0?'var(--gain-fill)':'var(--track)'}"/>`).join('')}</svg>`;
+  if(s.vis==='jonah')return `<svg viewBox="0 0 108 40" aria-hidden="true"><rect x="0" y="4" width="${.9/1*100}" height="12" rx="6" fill="var(--track)"/><rect x="0" y="24" width="${.5*100}" height="12" rx="6" fill="var(--gain-fill)"/><rect x="${.4*100}" y="20" width="2" height="20" rx="1" fill="var(--ink)"/></svg>`;
+  return `<svg viewBox="0 0 108 40" aria-hidden="true"><rect x="0" y="4" width="${.70/1*100}" height="12" rx="6" fill="var(--track)"/><rect x="0" y="24" width="${.89*100}" height="12" rx="6" fill="var(--loss-fill)"/></svg>`;}
+function todayCard(desk){if(DS==='failed')return `<div class="card today"><div class="ch"><h4>This week</h4></div><div class="notice"><span class="ni">${warnI}</span><div><b>Couldn’t load what’s new</b><span>The weekly brief didn’t load. Everything below is current.</span><button class="btn gh sm" data-act="toast" data-v="retry">Try again</button></div></div></div>`;
+ return `<div class="card today"><div class="ch"><h4>This week</h4><span class="meta">4 rounds · 2 new reads · 1 cleared</span></div>
+ <div class="tiles">${STORIES.map((s,i)=>`<button class="tile tapp${S.seen&&S.seen[i]?'':' new'}" data-act="story" data-v="${i}"><span class="tv">${tileVis(s)}</span>${desk?'<span class="tt">':''}<b>${s.short}</b><span class="tm">${coin(PB[s.p],1)}${PB[s.p].f} · ${s.when}</span>${desk?'</span>':''}</button>`).join('')}</div></div>`;}
+
+/* ---------- data states ---------- */
+function deskCards(){
+ if(DS==='loading')return `<div class="dcol">${skHero(250)}${skCard(5)}</div><div class="dcol">${skCard(3)}${skCard(2)}${skCard(0,220)}</div>${skCard(5)}${skCard(3)}`;
+ if(DS==='empty')return `<div class="dcol">${emptyHero('h')}</div><div class="dcol">${emptySteps()}</div>${rosterDesk()}${recCard(1)}`;
+ return `    <div class="dcol">
+     <div class="feat hero"><div class="top"><div><div class="hk">Where Varsity gives back strokes</div><div class="hn"><b>${f2(TOTAL)}</b><span>a round to Tour<br>This season · ${ROUNDS} rounds</span></div></div>${stChips()}</div>
+      <div class="hole${S.st==='cm'?' offh':''}">${holeSVG('h')}</div><div class="hfoot"><span>Players stand where they lose most. Hollow: fewer than 5 rounds.</span><span>Tap a spot</span></div></div>
+     ${spotCard()}
+    </div>
+    <div class="dcol">${todayCard(1)}${workCard()}${huddleCard()}</div>
+    ${rosterDesk()}
+    ${recCard(1)}
+`;}
+function rosterDesk(){return `<div class="card rost"><div class="ch"><h4>Roster</h4><span class="meta">Finger-print: tee, approach, short game, putting</span></div>${P.slice().sort((a,b)=>tot(a)-tot(b)).map(p=>`<button class="rr tapp" data-act="player" data-v="${p.id}">${coin(p)}<span><b>${p.n}</b><span class="m">${p.yr} · ${p.r} rounds${p.early?' · early':''}</span></span>${p.r?`<span class="lm chipk l">Loses most: ${AREAS.find(A=>A.k===worst(p)).s}</span>${fp(p,78,34,1)}<span class="tot">${f2(tot(p))}<span>${readsOf(p.id).length} open</span></span>`:`<span class="lm chipk">No rounds yet</span><span></span><span></span>`}</button>`).join('')}</div>`;}
+const sk=(w,h,r)=>`<span class="skl" style="width:${w};height:${h}px${r?';border-radius:'+r+'px':''}"></span>`;
+const skCard=(rows=3,tall)=>`<div class="card" aria-hidden="true"><div class="sklc">${sk('42%',16)}${tall?sk('100%',tall,12):''}${Array.from({length:rows},()=>`<div class="sklrow">${sk('30px',30,15)}${sk('100%',12)}${sk('48px',12)}</div>`).join('')}</div></div>`;
+const skHero=(h)=>`<div class="feat hero" aria-hidden="true"><div style="display:grid;gap:10px">${sk('54%',14)}${sk('38%',40)}${sk('100%',h,14)}</div></div>`;
+function emptyHero(o){return `<div class="feat hero"><div class="hk">Where Varsity gives back strokes</div><div class="hn"><b>No rounds yet</b></div><p class="emptyh">The hole fills in after the team’s first round this season. Each spot then shows what it costs the team against Tour.</p><div class="hole" style="opacity:.55">${holeSVG(o,1,1)}</div></div>`;}
+function emptySteps(){return `<div class="card"><div class="ch"><h4>What fills in, and when</h4></div><div class="steps">
+ <div><span><b>After the first round</b><span>The hole and each player’s four-area figures, against Tour.</span></span></div>
+ <div><span><b>As rounds add up</b><span>Players are drawn hollow until they have 5 rounds on file. CoachHelm reads a spot once there are enough shots to stand behind it.</span></span></div>
+ <div><span><b>When three players share a step</b><span>A shared pattern shows on that spot, with Add to practice.</span></span></div></div></div>`;}
+function phoneCards(){
+ if(DS==='loading')return `${skCard(0,120)}${skHero(300)}${skCard(5)}${skCard(4)}`;
+ if(DS==='empty')return `${emptyHero('v')}${emptySteps()}${rosterCard()}`;
+ return `${todayCard()}${heroPhone()}${spotCard()}${huddleCard()}${rosterCard()}${workCard()}${recCard()}`;}
+
+/* ---------- sheet content ---------- */
+function readInner(r){const p=PB[r.p],A=areaOf(r.st),mx=Math.max(r.you,r.tm,r.tour??0)*1.08,fm=v=>r.dp!=null?v.toFixed(r.dp):v;
+ const row=(l,v,c)=>`<div class="ld"><span>${l}</span><span class="t"><i class="${c}" data-w="${v/mx*100}" style="width:0%"></i></span><span class="v">${fm(v)}${r.u}</span></div>`;
+ const act=S.assigned===r.id?`<div class="assigned"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M3.5 9.5 7.5 13 14.5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Proposed to ${p.f} · now in Working on</div>`
+   :`<button class="btn pri" data-act="assign" data-v="${r.id}">Assign as focus</button>`;
+ return `<div class="insh">${coin(p)}<span class="c"><b>${p.n}</b><span>${A.n} · ${p.r} rounds this season</span></span><button class="xb" data-act="close" aria-label="Close">${xIcon}</button></div>
+ <h3>${r.t}</h3><p class="lede">${r.lede}</p>
+ <div class="evs"><span class="chipk l">Worth ${r.sz.toFixed(1).replace(/^0/,'')} a round</span>${sureChip(r)}<span class="chipk">Cause: ${r.cause}</span><span class="chipk">This season</span></div>
+ <div class="card"><div class="ch"><h4>${r.m}</h4><span class="meta">${r.hi?'Higher is better':'Lower is better'}</span></div><div class="lad">${row(p.f,r.you,'you')}${row('Team',r.tm,'')}${r.tour!=null?row('Tour',r.tour,'tour'):''}</div>${r.tour==null?'<p class="nordss" style="padding:0 16px 14px">No Tour figure for single holes, so none is drawn.</p>':''}</div>
+ ${r.drill?`<div class="card"><div class="drill"><span class="dicon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></span><span><b>${r.drill[0]}</b><span>${r.drill[1]}</span></span></div></div>`
+   :`<div class="card"><div class="drill"><span class="dicon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span><span><b>Still gathering</b><span>${r.wait}</span></span></div></div>`}
+ <div class="acts" data-acts>${act}<button class="btn gh" data-act="toast" data-v="ask">Ask about this</button></div>
+ <button class="lk" data-act="toast" data-v="full">Open the full read ${chev}</button>`;}
+function playerInner(p){const rs=readsOf(p.id);
+ if(!p.r)return `<div class="insh">${coin(p)}<span class="c"><b>${p.n}</b><span>${p.yr} · no rounds yet this season</span></span><button class="xb" data-act="close" aria-label="Close">${xIcon}</button></div>
+ <div class="card"><div class="notice" style="padding-top:16px"><span class="ni">${warnI}</span><div><b>Nothing to show yet</b><span>${p.f}’s four-area figures show after their first round this season.</span></div></div></div>
+ <button class="lk" data-act="toast" data-v="page">Open ${p.f}’s page ${chev}</button>`;
+ return `<div class="insh">${coin(p)}<span class="c"><b>${p.n}</b><span>${p.yr} · ${p.r} rounds · ${f2(tot(p))} a round to Tour${p.early?' · early':''}</span></span><button class="xb" data-act="close" aria-label="Close">${xIcon}</button></div>
+ <div class="card"><div class="ch"><h4>Where ${p.f} gains and loses</h4><span class="meta">This season</span></div><div class="bars">${AREAS.map(A=>{const v=p.sg[A.k],neg=v<0,w=neg?Math.min(Math.abs(v)/SC*ZP,ZP):Math.min(v/.25*(100-ZP),100-ZP);
+   return `<div class="br"><span class="bn">${A.s}</span><span class="bt"><i class="z"></i><i class="avg" style="left:${ZP-Math.abs(team(A.k))/SC*ZP}%"></i><i class="bf ${neg?'l':'g'}${p.early?' early':''}" style="${neg?'right':'left'}:${neg?100-ZP:ZP}%;width:${w}%"></i></span><span class="bv${neg?'':' g'}">${f2(v)}</span></div>`;}).join('')}</div><div class="axis"><span>Team average dashed</span><span>Tour</span></div></div>
+ <div class="card"><div class="ch"><h4>Open reads</h4><span class="meta">${rs.length}</span></div><div class="rds">${rs.map(r=>readRow(r,0)).join('')||'<p class="nopat">No open reads.</p>'}</div></div>
+ <button class="lk" data-act="toast" data-v="page">Open ${p.f}’s page ${chev}</button>`;}
+function storyDeskInner(i){const s=STORIES[i],p=PB[s.p];
+ return `<div class="insh">${coin(p)}<span class="c"><b>${p.n}</b><span>${s.when}</span></span><button class="xb" data-act="close" aria-label="Close">${xIcon}</button></div>
+ <div class="feat" style="padding:18px"><h3 style="font:600 22px/1.2 var(--sans);letter-spacing:-.015em">${s.h}</h3><div style="margin-top:16px">${storyVis(s)}</div><p style="margin-top:14px;color:var(--f-ink-2);font-size:15px">${s.body}</p></div>
+ <p class="lede" style="font-size:13.5px">${s.src}</p>${s.go?`<button class="btn pri" data-act="read" data-v="${s.go}">${s.goT}</button>`:''}`;}
+
+/* ---------- story viewer (phone) ---------- */
+function storyVis(s){
+  if(s.vis==='holes')return `<div class="holes18">${SCORES.map((v,i)=>`<i class="${v>=2?'dbl':v===1?'bog':v<0?'bir':''}">${i+1}</i>`).join('')}</div>`;
+  if(s.vis==='jonah')return `<div class="sbars"><div class="sbar2"><div class="h"><span>Before the focus</span><b>0.9 a round</b></div><div class="t"><i data-w="90"></i></div></div><div class="sbar2"><div class="h"><span>Last 5 rounds</span><b>0.5 a round</b></div><div class="t"><i class="g" data-w="50"></i><u style="left:40%"></u></div></div><div class="h" style="font-size:13px;color:var(--f-ink-2)">Line: the 0.4 target</div></div>`;
+  return `<div class="sbars"><div class="sbar2"><div class="h"><span>First 10 rounds</span><b>${MINUS}0.70</b></div><div class="t"><i data-w="70"></i></div></div><div class="sbar2"><div class="h"><span>Season to date</span><b>${MINUS}0.89</b></div><div class="t"><i data-w="89"></i></div></div></div>`;}
+function storyHTML(i){const s=STORIES[i],p=PB[s.p];
+ return `<div class="prog">${STORIES.map((_,j)=>`<i class="${j<i?'done':''}"><b></b></i>`).join('')}</div>
+ <div class="sto-h">${coin(p)}<span class="c"><b>${p.f}</b><span>${s.when}</span></span><button class="xb" data-act="close" aria-label="Close stories">${xIcon}</button></div>
+ <div class="sto-b sto-anim" data-act="next"><h3>${s.h}</h3>${storyVis(s)}<p>${s.body}</p><span class="src">${s.src}</span></div>
+ <div class="sto-f">${s.go?`<button class="btn" data-act="read" data-v="${s.go}">${s.goT}</button>`:`<button class="btn" data-act="closeto" data-v="work">${s.goT}</button>`}<button class="btn gh2" data-act="next">${i<STORIES.length-1?'Next':'Done'}</button></div>`;}
+
+/* ---------- build roots ---------- */
+const ph=document.getElementById('ph'),desk=document.getElementById('desk');
+const icons={
+ chev:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>',
+ bell:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
+ plus:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'};
+function buildPhone(){
+ const scr=document.getElementById('scr');
+ scr.innerHTML=`<div class="view" data-view>
+  <div class="gbar"><div class="isl"></div><div class="sbar"><span class="num">9:41</span><span><svg width="56" height="12" viewBox="0 0 56 12" fill="currentColor" aria-hidden="true"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="1" width="3" height="11" rx="1"/><rect x="28" y="1" width="23" height="11" rx="3" fill="none" stroke="currentColor" stroke-opacity=".5"/><rect x="30" y="3" width="17" height="7" rx="1.5"/></svg></span></div>
+   <div class="gb"><span class="sw">CoachHelm ${icons.chev}<span class="dot"></span></span><span class="ib first" aria-label="Notifications, 3 new">${icons.bell}<span class="badge">3</span></span><span class="ib" aria-label="New">${icons.plus}</span></div></div>
+  <div class="sheet">
+   <div class="seg2"><span class="on">Team</span><span>Ask</span></div>
+   <div class="lt"><h2>Varsity</h2><p>${P.length} players · ${ROUNDS?ROUNDS+' rounds this season · '+READS.length+' open reads':'no rounds yet this season'}</p></div>
+   ${phoneCards()}
+  </div></div>
+  <div class="rs" data-rs><div class="scrim" data-act="close"></div><div class="pan" role="dialog" aria-modal="true"><div class="grab"></div><div class="ins" data-ins></div></div></div>
+  <div class="story" data-story role="dialog" aria-label="This week stories"></div>
+  <div class="homebar"></div>`;}
+function buildDesk(){
+ const nav=(n,on)=>`<a href="#" tabindex="-1" class="${on?'on':''}">${n}</a>`;
+ desk.innerHTML=`<nav class="side" aria-label="GolfHelm"><div class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/></svg>Golfhelm</div>
+  ${nav('Home')}${nav('CoachHelm',1)}${nav('Calendar')}${nav('Messages')}<div class="grp">Varsity</div>${nav('Roster')}${nav('Stats')}${nav('Rounds')}${nav('Qualifiers')}${nav('Practice')}</nav>
+  <div class="dmain"><div class="glass"><span class="t">CoachHelm</span><div class="seg2"><span class="on">Team</span><span>Ask</span></div><span class="scope">Varsity · 5 players · this season</span><span class="r"><span class="srch">Search</span>${icons.bell}</span></div>
+   <div class="dbody"><div class="dgrid">
+${deskCards()}
+   </div></div>
+   <div class="insp" data-rs role="dialog"><div class="ins" data-ins></div></div></div>`;}
+
+/* ---------- motion helpers ---------- */
+const rm=()=>S.rm;
+function growBars(root){requestAnimationFrame(()=>requestAnimationFrame(()=>root.querySelectorAll('[data-w]').forEach(el=>el.style.width=el.dataset.w+'%')));}
+function scaleOf(el){const r=el.getBoundingClientRect();return el.offsetWidth?r.width/el.offsetWidth:1;}
+function flySetup(root){const svg=root.querySelector('.holesvg');if(!svg)return null;
+  const path=svg.querySelector('.flight'),len=path.getTotalLength(),order=['tee','app','sg','putt'];
+  const H=HOLE[root===desk?'h':'v'];const fr={};
+  order.forEach(k=>{const t=H.st[k];let best=0,bd=1e9;for(let i=0;i<=200;i++){const pt=path.getPointAtLength(len*i/200),d=(pt.x-t.x)**2+(pt.y-t.y)**2;if(d<bd){bd=d;best=i/200;}}fr[k]=best;});
+  return {svg,path,len,fr};}
+function flyBall(root){const f=flySetup(root);if(!f)return;const {svg,path,len,fr}=f;const ball=svg.querySelector('.ball'),stns=[...svg.querySelectorAll('.stn')];if(!stns.length)return;
+  if(rm()){stns.forEach(s=>s.classList.remove('pre'));path.style.strokeDasharray='';path.style.strokeDashoffset='';ball.setAttribute('opacity','0');return;}
+  stns.forEach(s=>s.classList.add('pre'));path.style.strokeDasharray=len;path.style.strokeDashoffset=len;ball.setAttribute('opacity','1');
+  const D=1900,t0=performance.now(),ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  (function step(now){const t=Math.min(1,(now-t0)/D),e=ease(t),pt=path.getPointAtLength(len*e);
+    ball.setAttribute('cx',pt.x);ball.setAttribute('cy',pt.y);path.style.strokeDashoffset=len*(1-e);
+    stns.forEach(s=>{if(e>=fr[s.dataset.v]-.02)s.classList.remove('pre');});
+    if(t<1)requestAnimationFrame(step);else{ball.animate([{opacity:1},{opacity:0}],{duration:500,delay:300,fill:'forwards'});}
+  })(t0);}
+function drawTrend(root){if(rm())return;const svg=root.querySelector('.trend');if(!svg)return;const ln=svg.querySelector('.ln');let len=600;try{len=ln.getTotalLength()||600;}catch(e){}
+  ln.animate([{strokeDasharray:len,strokeDashoffset:len},{strokeDasharray:len,strokeDashoffset:0}],{duration:900,easing:'cubic-bezier(.3,.7,.2,1)'});
+  svg.querySelectorAll('.d').forEach((c,i)=>c.animate([{opacity:0,transform:'scale(.4)'},{opacity:1,transform:'none'}],{duration:420,delay:120+i*55,easing:SPRING,fill:'backwards'}));
+  svg.querySelectorAll('.lv,.avl').forEach(t=>t.animate([{opacity:0},{opacity:1}],{duration:260,delay:760,fill:'backwards'}));}
+function setStation(k){if(S.st===k)return;S.st=k;
+  [ph,desk].forEach(root=>{
+    root.querySelectorAll('.hole').forEach(h=>h.classList.toggle('offh',k==='cm'));
+    root.querySelectorAll('.stn').forEach(s=>s.classList.toggle('on',s.dataset.v===k));
+    root.querySelectorAll('.stchips button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===k));
+    const card=root.querySelector('[data-spot]');if(!card)return;
+    const sc=scaleOf(card),first={},oldW={};
+    card.querySelectorAll('.br[data-p]').forEach(el=>{first[el.dataset.p]=el.getBoundingClientRect().top;const b=el.querySelector('.bf');oldW[el.dataset.p]=b.style.width;});
+    card.classList.toggle('cm',k==='cm');card.innerHTML=spotInner();
+    if(k==='cm'){card.querySelectorAll('.cmh,.crsw,.cmr,.shpw,.ch').forEach(el=>el.classList.add(rm()?'rmfade':'fadein'));drawTrend(card);return;}
+    card.querySelectorAll('.br[data-p]').forEach(el=>{const b=el.querySelector('.bf'),nw=b.dataset.w+'%';if(!rm()&&oldW[el.dataset.p]!=null){b.style.transition='none';b.style.width=oldW[el.dataset.p];}
+      const d=(first[el.dataset.p]-el.getBoundingClientRect().top)/sc;if(d&&!rm())el.animate([{transform:`translateY(${d}px)`},{transform:'none'}],{duration:520,easing:SPRING});
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{b.style.transition='';b.style.width=nw;}));});
+    card.querySelectorAll(rm()?'.bars,.rds,.pat,.nopat,.subh,.ch':'.rds,.pat,.nopat,.subh,.ch').forEach(el=>el.classList.add(rm()?'rmfade':'fadein'));
+  });}
+function rerenderCourse(){[ph,desk].forEach(root=>{const c=root.querySelector('[data-spot]');if(c&&S.st==='cm')c.innerHTML=spotInner();});}
+function openPanel(root,html){const rs=root.querySelector('[data-rs]'),ins=rs.querySelector('[data-ins]');ins.innerHTML=html;ins.scrollTop=0;if(rs.scrollTop)rs.scrollTop=0;rs.classList.add('on');growBars(ins);
+  const pan=rs.querySelector('.pan');if(pan)pan.scrollTop=0;}
+function closeAll(root){root.querySelector('[data-rs]')?.classList.remove('on');stopStory();const st=root.querySelector('[data-story]');if(st)st.classList.remove('on');}
+function workCount(){const n=WORK0.length+(S.assigned?1:0);return n===1?'1 focus area':`${n} focus areas`;}
+function refreshWork(){[ph,desk].forEach(root=>{root.querySelectorAll('[data-work]').forEach(w=>w.innerHTML=workRows());root.querySelectorAll('[data-workn]').forEach(m=>m.textContent=workCount());});}
+function assign(root,id){const box=root.querySelector('[data-acts]');if(!box)return;const btn=box.querySelector('[data-act="assign"]');if(!btn)return;
+  btn.innerHTML='<span class="spin"></span>Proposing';btn.disabled=true;
+  setTimeout(()=>{S.assigned=id;box.innerHTML=readInner(RB[id]).match(/<div class="acts" data-acts>([\s\S]*?)<\/div>\s*<button class="lk"/)[1];refreshWork();},rm()?10:700);}
+/* stories */
+let stT=null;
+function stopStory(){clearTimeout(stT);stT=null;}
+function showStory(i){const st=ph.querySelector('[data-story]');stopStory();
+  if(i>=STORIES.length){st.classList.remove('on');return;}
+  S.story=i;S.seen=S.seen||{};S.seen[i]=1;st.innerHTML=storyHTML(i);st.classList.add('on');
+  ph.querySelectorAll('.tile[data-v="'+i+'"]').forEach(t=>t.classList.remove('new'));
+  growBars(st);
+  const bar=st.querySelectorAll('.prog i')[i].querySelector('b');const dur=5200;
+  if(S.hold){bar.style.width='45%';return;}
+  if(rm()){bar.style.width='100%';return;}
+  bar.animate([{width:'0%'},{width:'100%'}],{duration:dur,easing:'linear',fill:'forwards'});
+  stT=setTimeout(()=>showStory(i+1),dur);}
+/* toasts as gentle inline confirmation */
+function toast(root,v){const msg={practice:'Opens the practice plan wizard with this step and these players (practice lane).',ask:'Opens Ask with this read attached (Ask lane).',full:'Opens the full read: funnel, cause and how sure (read lane).',page:'Opens their coach-of-player page (coach and player lane).',recheck:'Re-checks open reads against new rounds. Read only; nothing is written.',retry:'Tries the weekly brief again. The rest of the board stays as it is.'}[v];
+  let t=root.querySelector('.toastx');if(!t){t=document.createElement('div');t.className='toastx';t.setAttribute('role','status');
+   Object.assign(t.style,{position:'absolute',left:'50%',bottom:'28px',transform:'translateX(-50%)',zIndex:40,background:'var(--ink)',color:'var(--bg)',font:'500 13.5px/1.35 var(--sans)',padding:'10px 14px',borderRadius:'12px',maxWidth:'86%',boxShadow:'var(--shadow-lg)',transition:'opacity .2s',opacity:0});
+   (root===ph?root.querySelector('.scr'):root.querySelector('.dmain')).appendChild(t);}
+  t.textContent=msg;t.style.opacity=1;clearTimeout(t._h);t._h=setTimeout(()=>t.style.opacity=0,2600);}
+
+/* ---------- events ---------- */
+function handle(root,e){const el=e.target.closest('[data-act]');if(!el||!root.contains(el))return;const a=el.dataset.act,v=el.dataset.v;
+  if(a==='st')return setStation(v);
+  if(a==='read'){stopStory();root.querySelector('[data-story]')?.classList.remove('on');return openPanel(root,readInner(RB[v]));}
+  if(a==='player')return openPanel(root,playerInner(PB[v]));
+  if(a==='course')return openPanel(root,courseSheet(v));
+  if(a==='cmall'){S.cmAll=!S.cmAll;return rerenderCourse();}
+  if(a==='crsall'){S.crsAll=!S.crsAll;return rerenderCourse();}
+  if(a==='close')return closeAll(root);
+  if(a==='assign')return assign(root,v);
+  if(a==='story'){if(root===desk){S.seen=S.seen||{};S.seen[v]=1;el.classList.remove('new');return openPanel(root,storyDeskInner(+v));}return showStory(+v);}
+  if(a==='next')return showStory(S.story+1);
+  if(a==='closeto'){closeAll(root);const w=root.querySelector('.work');if(w)root.querySelector('[data-view]').scrollTo({top:w.offsetTop-80,behavior:rm()?'auto':'smooth'});return;}
+  if(a==='toast')return toast(root,v);}
+[ph,desk].forEach(root=>{root.addEventListener('click',e=>handle(root,e));
+  root.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-act][tabindex]')){e.preventDefault();handle(root,e);}});});
+
+/* ---------- plays ---------- */
+const view=()=>ph.querySelector('[data-view]');
+function scrollTo(sel,off=70){const el=ph.querySelector(sel);if(!el)return;view().scrollTo({top:el.offsetTop-off,behavior:rm()?'auto':'smooth'});}
+const PLAYS={
+ fly(){closeAll(ph);scrollTo('.hero',60);setTimeout(()=>flyBall(ph),rm()?0:450);flyBall(desk);},
+ course(){closeAll(ph);scrollTo('.hero',60);const to=S.st==='cm'?'app':'cm';setTimeout(()=>setStation(to),rm()?0:500);setTimeout(()=>scrollTo('[data-spot]',70),rm()?0:1300);},
+ station(){closeAll(ph);scrollTo('.hero',60);const to=S.st==='putt'?'app':'putt';setTimeout(()=>setStation(to),rm()?0:500);setTimeout(()=>scrollTo('[data-spot]',70),rm()?0:1300);},
+ story(){closeAll(ph);view().scrollTo({top:0,behavior:'auto'});S.seen={};buildTiles();setTimeout(()=>showStory(0),rm()?0:250);},
+ huddle(){closeAll(ph);scrollTo('.huddle',70);setTimeout(()=>animHuddle(ph),rm()?0:500);animHuddle(desk);},
+ assign(){closeAll(ph);S.assigned=false;refreshWork();setTimeout(()=>{openPanel(ph,readInner(RB.r8));setTimeout(()=>assign(ph,'r8'),rm()?0:900);},rm()?0:200);}};
+function buildTiles(){[ph,desk].forEach(root=>root.querySelectorAll('.tile').forEach(t=>t.classList.add('new')));}
+function animHuddle(root){if(rm())return;const svg=root.querySelector('.hudsvg');if(!svg)return;const sc=scaleOf(svg)||1;
+  svg.querySelectorAll('.trail').forEach(l=>{const p=PB[l.dataset.p],len=Math.hypot(l.x2.baseVal.value-l.x1.baseVal.value,l.y2.baseVal.value-l.y1.baseVal.value);
+    l.animate([{strokeDasharray:len,strokeDashoffset:len},{strokeDasharray:len,strokeDashoffset:0}],{duration:1100,easing:SPRING});
+    const g=svg.querySelector(`.hp[data-p="${l.dataset.p}"]`);const dx=l.x1.baseVal.value-l.x2.baseVal.value,dy=l.y1.baseVal.value-l.y2.baseVal.value;
+    g.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:'translate(0,0)'}],{duration:1100,easing:SPRING});});
+  svg.querySelectorAll('.hp.early').forEach(g=>g.animate([{opacity:0,transform:'scale(.6)'},{opacity:1,transform:'none'}],{duration:500,delay:500,easing:SPRING,fill:'backwards'}));}
+document.querySelectorAll('[data-play]').forEach(b=>b.addEventListener('click',()=>PLAYS[b.dataset.play]()));
+
+/* ---------- controls ---------- */
+function applyLook(){[ph,desk].forEach(r=>{r.dataset.mode=S.mode;if(S.rm)r.setAttribute('data-rm','');else r.removeAttribute('data-rm');});
+  ph.classList.toggle('lg',S.lg);ph.style.setProperty('--k',S.k);buildDirs();}
+document.querySelectorAll('.pseg[data-k]').forEach(g=>g.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  g.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));const k=g.dataset.k,v=b.dataset.v;
+  if(k==='data'){location.hash=(v==='normal'?'studio':v)+'-live';location.reload();return;}
+  if(k==='mode')S.mode=v;if(k==='size')S.lg=v==='lg';if(k==='k')S.k=+v;if(k==='rm')S.rm=v==='on';if(k==='dw'){S.dw=+v;return fitDesk();}applyLook();fitDesk();}));
+
+/* ---------- three directions ---------- */
+function buildDirs(){const box=document.getElementById('dirs');
+ const A=`<div class="dev" data-mode="${S.mode}"><div class="feat" style="padding:12px 12px 8px"><div class="hk" style="font-size:12px">Where Varsity gives back strokes</div><div class="hn" style="margin-top:4px"><b style="font-size:30px">${f2(TOTAL)}</b></div><div class="hole" style="margin:0">${holeSVG('v',1)}</div></div></div>`;
+ const B=`<div class="dev" data-mode="${S.mode}"><div class="card" style="padding:8px 4px 4px"><div class="ch" style="padding:6px 10px"><h4 style="font-size:15px">The huddle</h4></div><div class="hud">${huddleSVG()}</div></div></div>`;
+ const C=`<div class="dev" data-mode="${S.mode}"><div style="background:var(--feat);color:var(--f-ink);border-radius:16px;padding:14px;display:grid;gap:14px;height:272px;align-content:start"><div class="prog"><i class="done"><b></b></i><i><b style="width:55%"></b></i><i><b></b></i></div><div class="sto-h" style="margin:0">${coin(PB.jo,1)}<span class="c"><b style="font-size:13px">Jonah</b><span>Since Oct 12</span></span></div><h3 style="font:600 21px/1.15 var(--sans);letter-spacing:-.02em">Jonah’s three-putts are coming down</h3><div class="sbars"><div class="sbar2"><div class="h"><span>Before</span><b>0.9</b></div><div class="t"><i style="width:90%"></i></div></div><div class="sbar2"><div class="h"><span>Last 5</span><b>0.5</b></div><div class="t"><i class="g" style="width:50%"></i><u style="left:40%"></u></div></div></div></div></div>`;
+ box.innerHTML=[
+  ['A','The hole','The team’s strokes to Tour drawn on one golf hole, from tee to cup. Each player stands where they lose most. Tap a spot and the board turns to it.',A,'Reads like golf; leads straight to what to practise; whole team at once','Needs the four-area split for every player, which is built'],
+  ['B','The huddle','Every player plotted on ball striking against scoring, with a line showing where they’ve come from. Quadrants say who strikes it and who scores it.',B,'Shows movement and type of player in one picture','Two numbers per player hides which part of the game; no reads in it'],
+  ['C','Morning stories','Each morning opens on three full-screen stories, one idea each, with the round or window they came from. Swipe or wait.',C,'The best thing to open with coffee; uses the brief and pulse that are hidden today','A story feed alone is not a place to work from']]
+ .map((d,i)=>`<article class="dir${i===0?' pick':''}">${i===0?'<span class="pickt">Going deep</span>':''}<span class="lt">Direction ${d[0]}</span><h3>${d[1]}</h3><div class="dvis"><div>${d[3]}</div></div><p>${d[2]}</p><dl><dt>Good at</dt><dd>${d[4]}</dd><dt>Gives up</dt><dd>${d[5]}</dd></dl></article>`).join('');}
+
+/* ---------- desktop fit ---------- */
+const fit=document.getElementById('deskfit');
+const DH={1280:832,1440:900,1728:1117};
+function fitDesk(){const w=S.dw,h=DH[w];desk.style.width=w+'px';desk.style.height=h+'px';const s=Math.min(1,fit.clientWidth/w);desk.style.transform=`scale(${s})`;fit.style.height=(h*s)+'px';}
+window.addEventListener('resize',fitDesk);
+
+/* ---------- capture states ----------
+   A link hash lands the page on one state, for screenshots. Tokens joined by "-", any order:
+   dark, reduce, lg (6.9 in phone), xxl (largest text), 1280 / 1440 / 1728 (desktop size),
+   tee / app / sg / putt / course (spot or the Course tab), all (Course lists expanded), crs (Hilltop course sheet), read, player, story, assigned, and a phone scroll target: spot, huddle, roster, work, record.
+   Data states: early, long, failed, loading, empty. Examples: #putt-dark, #read-1440, #story-reduce, #huddle-xxl, #empty-dark-1728.
+   With a hash, motion lands at its end state, unless the hash also has "live" (the Data switch adds it). */
+const T=HT.filter(x=>x!=='live'&&x!=='studio'),LIVE=HT.includes('live');
+if(HT.length){S.hold=!LIVE;
+  if(T.includes('dark'))S.mode='dark';if(T.includes('reduce'))S.rm=true;if(T.includes('lg'))S.lg=true;if(T.includes('xxl'))S.k=1.35;
+  const w=T.find(x=>DH[x]);if(w)S.dw=+w;const st=T.find(x=>['tee','app','sg','putt','course'].includes(x));if(st)S.st=st==='course'?'cm':st;if(T.includes('all'))S.cmAll=S.crsAll=true;if(T.includes('assigned'))S.assigned='r8';
+  const pick=(k,v)=>document.querySelectorAll(`.pseg[data-k="${k}"] button`).forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===String(v)));
+  pick('data',DS);pick('mode',S.mode);pick('size',S.lg?'lg':'std');pick('k',S.k);pick('rm',S.rm?'on':'off');pick('dw',S.dw);}
+
+/* ---------- start ---------- */
+buildPhone();buildDesk();applyLook();fitDesk();growBars(document);
+if(HT.length){
+  if(S.hold)[ph,desk].forEach(r=>r.querySelectorAll('.stn').forEach(x=>x.classList.remove('pre')));
+  const tgt={spot:'[data-spot]',huddle:'.huddle',roster:'.rr',work:'.work',record:'.recc'}[T.find(x=>['spot','huddle','roster','work','record'].includes(x))];
+  if(tgt){const el=ph.querySelector(tgt);if(el)view().scrollTop=el.offsetTop-(tgt==='.rr'?120:70);}
+  const r0=RB[S.assigned]||readsAt(S.st)[0]||READS[0];if(T.includes('read')&&r0){openPanel(ph,readInner(r0));openPanel(desk,readInner(r0));}
+  if(T.includes('player')){openPanel(ph,playerInner(PB.eb));openPanel(desk,playerInner(PB.eb));}
+  if(T.includes('crs')){openPanel(ph,courseSheet('hill'));openPanel(desk,courseSheet('hill'));}
+  if(T.includes('story')){showStory(0);S.seen={0:1};openPanel(desk,storyDeskInner(0));desk.querySelectorAll('.tile[data-v="0"]').forEach(t=>t.classList.remove('new'));}
+  document.getElementById(T.some(x=>DH[x])?'desktop':'studio')?.scrollIntoView();
+}
+const start=()=>{if(S.hold)return;flyBall(ph);flyBall(desk);};
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>setTimeout(start,250));else setTimeout(start,400);
+})();
+</script>

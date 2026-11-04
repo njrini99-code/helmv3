@@ -1,0 +1,62 @@
+capture --id all --state default --side design --out /tmp/claude-0/-home-user/374abcde-1240-51b2-99e1-8c1953305d8d/scratchpad/ctest/shots
+2026-11-03T23:30:18.068Z
+
+saved 42
+  S-STATS__default__design__light
+  S-STATS__default__design__dark
+  S-STATS.stuck__default__design__light
+  S-STATS.stuck__default__design__dark
+  S-STATS.window__default__design__light
+  S-STATS.window__default__design__dark
+  S-STATS.scrub__default__design__light
+  S-STATS.scrub__default__design__dark
+  S-STATS.scoring__default__design__light
+  S-STATS.scoring__default__design__dark
+  S-STATS.sg__default__design__light
+  S-STATS.sg__default__design__dark
+  S-STATS.sg-pin__default__design__light
+  S-STATS.sg-pin__default__design__dark
+  S-STATS.how__default__design__light
+  S-STATS.how__default__design__dark
+  S-STATS.tee__default__design__light
+  S-STATS.tee__default__design__dark
+  S-STATS.approach__default__design__light
+  S-STATS.approach__default__design__dark
+  S-STATS.short__default__design__light
+  S-STATS.short__default__design__dark
+  S-STATS.putting__default__design__light
+  S-STATS.putting__default__design__dark
+  S-STATS.rounds__default__design__light
+  S-STATS.rounds__default__design__dark
+  S-STATS.goals__default__design__light
+  S-STATS.goals__default__design__dark
+  S-TEAMSTATS__default__design__light
+  S-TEAMSTATS__default__design__dark
+  S-TEAMSTATS.tscore__default__design__light
+  S-TEAMSTATS.tscore__default__design__dark
+  S-TEAMSTATS.tgame__default__design__light
+  S-TEAMSTATS.tgame__default__design__dark
+  S-TEAMSTATS.tplayers__default__design__light
+  S-TEAMSTATS.tplayers__default__design__dark
+  S-TEAMSTATS.pin__default__design__light
+  S-TEAMSTATS.pin__default__design__dark
+  S-HOMEGAME__default__design__light
+  S-HOMEGAME__default__design__dark
+  S-ALL.retry__default__design__light
+  S-ALL.retry__default__design__dark
+
+skipped 12
+  S-STATS.custom__default__design__light: not drawn on the design page (state does not apply)
+  S-STATS.custom__default__design__dark: not drawn on the design page (state does not apply)
+  S-STATS.filter: today's sheet (today's, 62%), not redrawn; shoot it in the app with the step "tap:filter"
+  S-STATS.switcher: today's menu (today's), not redrawn; shoot it in the app with the step "player?state=self (tap switcher)"
+  S-STATS.round: today's push (today's round page), not redrawn; shoot it in the app with the step "today's round route"
+  S-STATS.coach__default__design__light: not drawn on the design page (state does not apply)
+  S-STATS.coach__default__design__dark: not drawn on the design page (state does not apply)
+  S-TEAMSTATS.filter: today's sheet (today's, 62%), not redrawn; shoot it in the app with the step "tap:filter"
+  S-TEAMSTATS.peek: today's sheet (today's PlayerPeek), not redrawn; shoot it in the app with the step "stats#sd-team-players (tap a Players row)"
+  S-TEAMSTATS.player: today's push (today's), not redrawn; shoot it in the app with the step "player?player=<id>"
+  S-HOMEGAME.leg__default__design__light: not drawn on the design page (state does not apply)
+  S-HOMEGAME.leg__default__design__dark: not drawn on the design page (state does not apply)
+
+failed 0
