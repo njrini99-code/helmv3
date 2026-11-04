@@ -105,6 +105,7 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
         </div>
       </div>
       <Modal open={!!openRead} onClose={() => setOpenRead(null)} title={open?.base.title ?? 'This read'} className="ch-htb-sheet ch-htb ch-hf ch-hf-sheet" width={480} initialFocus=".xb">
+        {/* eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role */}
         <div className="ins">{openRead && (open ? <ReadPanel read={open.base} deep={open} penalties={penalties} player={{ id: '', name: 'You', first: 'You', rounds: data.rounds ?? 0, early: false }} role="player" readOn={data.readOn} roster={[]} fileHost onClose={() => setOpenRead(null)} /> : <GonePanel onClose={() => setOpenRead(null)} />)}</div>
       </Modal>
     </main>

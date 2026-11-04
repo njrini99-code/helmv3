@@ -230,7 +230,7 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
   useEffect(() => {
     if (design || state === 'empty' || state === 'rail' || state === 'announcement') return;
     if (window.matchMedia('(min-width: 821px)').matches) setSelectedId((id) => id ?? 'team');
-  }, [state]);
+  }, [state, design]);
   const [anns, setAnns] = useState<ChAnnouncement[]>(state === 'empty' ? [] : baseAnns);
   const [annId, setAnnId] = useState<string | null>(state === 'announcement' ? 'an1' : null);
   const [mute, setMute] = useState<ChMute>({ muted: false, until: null });

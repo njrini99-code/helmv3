@@ -63,7 +63,7 @@ export function TeamRosterPhoneCrh({ data, onRetry }: { data: ChPlayerRoster; on
           </Surface>
         ) : (
           <>
-            <RosterTeamCard role="player" season={data.season} players={data.players} clock={clock} />
+            <RosterTeamCard viewer="player" season={data.season} players={data.players} clock={clock} />
             {!solo && (
               <div className="ch-stickybar ch-rsx-sort">
                 <Segmented<TeamSort>

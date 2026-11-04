@@ -137,6 +137,7 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
   const last = shown[n - 1]!;
   const interactive = n > 1;
   return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- a scrubbed chart has no native element; role and keys are on it
     <div
       ref={box}
       className="ch-shs-chart"

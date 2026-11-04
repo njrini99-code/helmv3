@@ -96,6 +96,7 @@ export function SummaryCard({
       data-go={go}
       data-ch="stats-card"
       data-ch-press-scale=".97"
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role -- the whole summary card is the control (stats-home 06)
       role="link"
       tabIndex={0}
       aria-label={ariaLabel}

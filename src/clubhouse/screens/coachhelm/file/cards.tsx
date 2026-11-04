@@ -77,6 +77,7 @@ export function FeatureCard({
       className="feat tap"
       data-ch-hf-read="top"
       data-ch="file-feature"
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role -- the whole card is the button (lenses 06); its inner links stay real
       role="button"
       tabIndex={0}
       aria-label={`Open the read: ${b.title}`}

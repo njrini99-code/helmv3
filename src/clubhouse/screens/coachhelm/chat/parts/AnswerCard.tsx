@@ -43,7 +43,7 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
   const seconds = useRan(turn.active);
   const artifacts = turn.artifacts ?? [];
   const toast = useToast();
-  const reads = turn.reads ?? [];
+  const reads = useMemo(() => turn.reads ?? [], [turn.reads]);
   const known = useMemo(() => new Set(reads.map((r) => r.ref)), [reads]);
   const chip = useMemo(
     () => ({

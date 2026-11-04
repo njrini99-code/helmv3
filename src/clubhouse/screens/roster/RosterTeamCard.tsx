@@ -7,8 +7,8 @@ import { plural, pluralWord } from '../../lib/plural';
 
 /** Coach or player, the same card; a player's holds neither injured, waiting nor the top five, in the DOM or in the props. */
 type Props =
-  | { role: 'coach'; season: string | null; players: ChRosterPlayer[]; waiting: number | null; statsError: boolean; clock: RosterClock }
-  | { role: 'player'; season: string | null; players: ReadonlyArray<{ gradYear: number | null }>; clock: RosterClock };
+  | { viewer: 'coach'; season: string | null; players: ChRosterPlayer[]; waiting: number | null; statsError: boolean; clock: RosterClock }
+  | { viewer: 'player'; season: string | null; players: ReadonlyArray<{ gradYear: number | null }>; clock: RosterClock };
 
 /**
  * The Roster's one feature card (classes-roster-home 06 7.2): the season, the counts, the total, the class mix in year colours with its
@@ -16,11 +16,11 @@ type Props =
  */
 export function RosterTeamCard(props: Props) {
   const { season, players, clock } = props;
-  const coach = props.role === 'coach' ? teamCardFigures(props.players, props.statsError) : null;
+  const coach = props.viewer === 'coach' ? teamCardFigures(props.players, props.statsError) : null;
   const total = players.length;
   const active = coach ? coach.active : total;
   const injured = coach?.injured ?? 0;
-  const waiting = props.role === 'coach' ? props.waiting : null;
+  const waiting = props.viewer === 'coach' ? props.waiting : null;
   const mix = classMix(players, clock);
   const counts = [`${active} active`, injured > 0 ? `${injured} injured` : null, waiting ? `${waiting} waiting` : null].filter(Boolean).join(' · ');
   const title = season ? `${season} season` : null;

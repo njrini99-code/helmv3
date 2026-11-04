@@ -175,6 +175,7 @@ export function useDialogLifetime(open: boolean, {
       }
       exit.cancel();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- atRest is read as the sheet opens; a later change never replays it
   }, [open, reduced, mode, direction, surfaceSelector, focusSelector]);
 
   // A caller can clear its selected object immediately on dismiss. Retain the

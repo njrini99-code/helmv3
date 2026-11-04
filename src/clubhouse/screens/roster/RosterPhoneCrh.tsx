@@ -198,7 +198,7 @@ export function RosterPhoneCrh({
           </Surface>
         ) : (
           <>
-            <RosterTeamCard role="coach" season={data.season} players={players} waiting={data.requestsError ? null : jr.reqs.length} statsError={data.statsError} clock={clock} />
+            <RosterTeamCard viewer="coach" season={data.season} players={players} waiting={data.requestsError ? null : jr.reqs.length} statsError={data.statsError} clock={clock} />
             <div className="ch-rsx-sec is-tight">
               <RosterLeaders players={players} statsError={data.statsError} clock={clock} onOpen={onOpen} />
             </div>
@@ -280,7 +280,6 @@ export function RosterPhoneCrh({
         {open && (
           <PhoneScreen key={`player-${open.id}`} labelledBy="ch-rsm-prof-title" className="ch-rsm-screen ch-rsx-screen">
             <PhoneBar back={{ label: 'Roster', onBack: guardedClose }} title={open.name} titleId="ch-rsm-prof-title" action={<PhoneIconAction icon={Ellipsis} label="Player actions" onClick={() => setActing(true)} />} />
-            {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- only catches a link's click while the note is unsaved */}
             <div className="ch-rsm-scroll" onClickCapture={onProfileClick}>
               <SectionBoundary surface="roster.peek" label="The player panel" code="CH-3206">
                 <RosterProfileCrh

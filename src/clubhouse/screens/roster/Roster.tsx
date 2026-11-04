@@ -615,7 +615,7 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
 
       {crh && !data.playersError && players.length > 0 && (
         <div className="ch-rs-top">
-          <RosterTeamCard role="coach" season={data.season} players={players} waiting={data.requestsError ? null : jr.reqs.length} statsError={data.statsError} clock={data.clock} />
+          <RosterTeamCard viewer="coach" season={data.season} players={players} waiting={data.requestsError ? null : jr.reqs.length} statsError={data.statsError} clock={data.clock} />
           <RosterLeaders players={players} statsError={data.statsError} clock={data.clock} onOpen={openSel} />
         </div>
       )}

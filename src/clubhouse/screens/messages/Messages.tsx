@@ -257,7 +257,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
       setFoundMessageId(null);
       setSelectedId(id);
     },
-    [autoOpened, selectedId, msgs, mark],
+    [autoOpened, selectedId, msgs, mark, data.redesign],
   );
   /** A search hit's message, gone to in the open thread (useFocusMessage), then marked for a moment. */
   const [focusMessageId, setFocusMessageId] = useState<string | null>(null);

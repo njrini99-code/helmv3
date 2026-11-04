@@ -3224,6 +3224,7 @@ function NewMessage({
     setQ("");
     setTitle(prefill?.title ?? "");
     setTouched(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initialMode seeds the sheet when it opens, and only then
   }, [open, prefill, api.viewer.role]);
   const coachGroup = mode === "group" && api.viewer.role === "coach";
   // A coach's group can include other coaches (D-45): they're added right after it's created.

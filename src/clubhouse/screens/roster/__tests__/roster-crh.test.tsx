@@ -54,17 +54,17 @@ describe('years on the team card', () => {
 
 describe('RosterTeamCard', () => {
   it('a coach sees injured, waiting and the top five', () => {
-    render(<RosterTeamCard role="coach" season="2026–27" players={[...FIVE, player('f', { availability: 'injured' })]} waiting={2} statsError={false} clock={CLOCK} />);
+    render(<RosterTeamCard viewer="coach" season="2026–27" players={[...FIVE, player('f', { availability: 'injured' })]} waiting={2} statsError={false} clock={CLOCK} />);
     expect(screen.getByText('6 active · 1 injured · 2 waiting')).toBeTruthy();
     expect(screen.getByText('Top five')).toBeTruthy();
   });
   it('a player’s card has no injured, waiting or top five, in the DOM', () => {
-    const { container } = render(<RosterTeamCard role="player" season="2026–27" players={[{ gradYear: 2027 }, { gradYear: 2028 }]} clock={CLOCK} />);
+    const { container } = render(<RosterTeamCard viewer="player" season="2026–27" players={[{ gradYear: 2027 }, { gradYear: 2028 }]} clock={CLOCK} />);
     expect(container.textContent).toContain('2 active');
     for (const held of ['injured', 'waiting', 'Top five']) expect(container.textContent).not.toContain(held);
   });
   it('is one flat title with no card-specific season guess', () => {
-    render(<RosterTeamCard role="player" season={null} players={[]} clock={CLOCK} />);
+    render(<RosterTeamCard viewer="player" season={null} players={[]} clock={CLOCK} />);
     expect(screen.getByRole('group').textContent).toContain('—');
   });
 });
