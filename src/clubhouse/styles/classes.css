@@ -2784,6 +2784,7 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
   }
   [data-ch-crh='on'] .ch-cl-term__h h2 {
     margin: 0;
+    color: var(--ch-on-green-plate);
     font: var(--ch-type-20-strong);
     letter-spacing: -0.02em;
   }

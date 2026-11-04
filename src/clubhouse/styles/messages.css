@@ -4111,6 +4111,17 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 [data-ch-ms-v2] .ch-ms-rail .ch-ms-row.is-sel {
   background: color-mix(in srgb, var(--ch-ink-900) 5%, transparent);
 }
+/* The row keeps its own ink: the wash is pale here, not today's green fill. */
+[data-ch-ms-v2] .ch-ms-row.is-sel .ch-ms-row__top b {
+  color: var(--ch-text-primary);
+}
+[data-ch-ms-v2] .ch-ms-row.is-sel .ch-ms-row__top > span {
+  color: var(--ch-text-tertiary);
+}
+[data-ch-ms-v2] .ch-ms-row.is-sel .ch-ms-row__bot > span:first-child,
+[data-ch-ms-v2] .ch-ms-row.is-sel .ch-ms-row__bot em {
+  color: var(--ch-text-secondary);
+}
 [data-ch-ms-v2] .ch-ms-row[data-ch-pressed] {
   background: color-mix(in srgb, var(--ch-ink-900) 5%, transparent);
 }

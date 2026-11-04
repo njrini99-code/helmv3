@@ -196,7 +196,7 @@ export function toChReadDetail(raw: EvidenceInsight, deep: ChDeepInsight, role: 
   const funnelAllowed = role === 'coach' || calls.playerFunnel;
   return {
     insight: base,
-    stance: String(deep.stance),
+    stance: deep.stance.word,
     headline: {
       title: base.title,
       lede: base.lede,
@@ -233,7 +233,7 @@ export function railOf(list: readonly ChDeepInsight[], role: 'coach' | 'player')
       .map((i) => ({
         id: i.base.id,
         title: i.base.title,
-        sub: [String(i.stance), role === 'coach' ? i.firmness : null].filter(Boolean).join(' · '),
+        sub: [typeof i.stance === "object" ? i.stance.word : i.stance, role === 'coach' ? i.firmness : null].filter(Boolean).join(' · '),
         value: i.base.value,
         tone: i.base.strength ? ('good' as const) : i.base.stale ? ('plain' as const) : ('warn' as const),
       })),

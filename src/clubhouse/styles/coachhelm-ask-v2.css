@@ -205,17 +205,17 @@ html[data-fw-theme='dark'] .ch-th[data-v2] {
 .ch-ak-out p { margin: 0; font: var(--ch-type-14);  color: var(--ch-text-secondary); }
 
 /* AK8: tone and CoachHelm knows, under the chats. */
-.ch-ak-knows { display: grid; gap: 8px; padding: 12px 12px; border-top: var(--ch-hairline-w) solid var(--ch-line); }
-.ch-ak-knows__tone { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; padding: 2px; border-radius: var(--ch-radius-sm); background: var(--ch-canvas-sunken, var(--ch-canvas)); }
+.ch-ak-knows { display: grid; gap: 8px; padding: 12px 12px; border-top: var(--ch-hairline-w) solid var(--ch-separator); }
+.ch-ak-knows__tone { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; padding: 2px; border-radius: var(--ch-radius-sm); background: var(--ch-canvas-sunken, var(--ch-bg-page)); }
 .ch-ak-knows__tone button { padding: 6px 4px; border: 0; border-radius: var(--ch-radius-sm); background: none; color: var(--ch-text-secondary); font: var(--ch-type-12-medium);  cursor: pointer; }
-.ch-ak-knows__tone button[aria-pressed='true'] { background: var(--ch-seg-on-bg); color: var(--ch-text); }
+.ch-ak-knows__tone button[aria-pressed='true'] { background: var(--ch-seg-on-bg); color: var(--ch-text-primary); }
 .ch-ak-knows h3 { margin: 0; font: var(--ch-type-12-strong); color: var(--ch-text-secondary); }
 .ch-ak-knows ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font: var(--ch-type-13);  }
 .ch-ak-knows li { display: flex; gap: 6px; align-items: start; justify-content: space-between; }
 .ch-ak-knows li button { border: 0; background: none; color: var(--ch-text-secondary); font: var(--ch-type-12); cursor: pointer; }
-.ch-ak-knows input { width: 100%; padding: 6px 8px; border: var(--ch-hairline-w) solid var(--ch-line); border-radius: var(--ch-radius-sm); background: var(--ch-card); color: var(--ch-text); font: var(--ch-type-16); letter-spacing: var(--ch-track-16); }
+.ch-ak-knows input { width: 100%; padding: 6px 8px; border: var(--ch-hairline-w) solid var(--ch-separator); border-radius: var(--ch-radius-sm); background: var(--ch-card-bg); color: var(--ch-text-primary); font: var(--ch-type-16); letter-spacing: var(--ch-track-16); }
 /* AK11c: a draft that opens Messages. */
-.ch-ak-handoff { display: grid; gap: 6px; padding: 12px; border-radius: var(--ch-radius-lg); background: var(--ch-card); }
+.ch-ak-handoff { display: grid; gap: 6px; padding: 12px; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); }
 .ch-ak-handoff p { margin: 0; font: var(--ch-type-13);  color: var(--ch-text-secondary); }
 .ch-th[data-v2] {
   --ch-ask-shadow-1: 0 0 0 0.5px var(--ak-hair), 0 1px 2px rgb(28 25 18 / 0.05);

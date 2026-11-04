@@ -57,7 +57,7 @@ html[data-fw-theme='dark'] .ch-hr {
   gap:6px;
   border:0;
   background:none;
-  color:var(--nav-ink);
+  color:var(--ch-on-green-ink);
   font: var(--ch-type-20-strong); 
   letter-spacing: -0.01em;
   padding:8px 4px 8px 0;
@@ -79,7 +79,7 @@ html[data-fw-theme='dark'] .ch-hr {
   place-items:center;
   border:0;
   background:none;
-  color:var(--nav-ink-2);
+  color:var(--ch-on-green-2);
   cursor:pointer;
   flex:none;
   position:relative;
@@ -95,11 +95,11 @@ html[data-fw-theme='dark'] .ch-hr {
   height:18px;
   padding:0 4px;
   border-radius: var(--ch-radius-sm);
-  background:var(--nav);
-  box-shadow:0 0 0 1.5px var(--nav-ink);
+  background:var(--ch-frame);
+  box-shadow:0 0 0 1.5px var(--ch-on-green-ink);
   font: var(--ch-type-11-strong); 
   text-align:center;
-  color:var(--nav-ink); letter-spacing: var(--ch-track-11); }
+  color:var(--ch-on-green-ink); letter-spacing: var(--ch-track-11); }
 .ch-hr .back {
   display:inline-flex;
   align-items:center;
@@ -160,7 +160,7 @@ html[data-fw-theme='dark'] .ch-hr {
   position:relative;
   z-index:1; letter-spacing: var(--ch-track-15); }
 .ch-hr .seg span.on {
-  background:var(--seg-on);
+  background:var(--ch-seg-on-bg);
   color:var(--seg-ink);
   box-shadow:var(--ch-read-shadow-1);
 }
@@ -279,6 +279,7 @@ html[data-fw-theme='dark'] .ch-hr {
   color:var(--f-gain);
 }
 .ch-hr .feat h3 {
+  color: var(--f-ink);
   font: var(--ch-type-22-strong); 
   letter-spacing: -0.02em;
   margin:8px 0 0;
@@ -908,8 +909,8 @@ html[data-fw-theme='dark'] .ch-hr .btn.pri {
   z-index: var(--ch-z-raised);}
 .ch-hr .ssel {
   font: var(--ch-type-14-medium); 
-  color:var(--fg);
-  background:var(--pg-raised);
+  color:var(--ink);
+  background:var(--card);
   border:var(--ch-hairline-w) solid var(--line);
   border-radius: var(--ch-radius-sm);
   padding:8px 8px;
@@ -1121,7 +1122,7 @@ html[data-fw-theme='dark'] .ch-hr .btn.pri {
 @keyframes ch-hr-fadein {from{opacity:0;}to{opacity:1;}}
 .ch-hr .stc .go {
   font: var(--ch-type-14-medium); 
-  color:var(--green);
+  color:var(--accent);
   text-decoration:none;
   justify-self:start;
 }

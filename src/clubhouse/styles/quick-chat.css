@@ -385,7 +385,7 @@ html[data-fw-theme='dark'] .ch-qck { --a-accent-text: #7cc79b; --a-tint: rgb(124
 .ch-qck .live__ok svg { width: 11px; height: 11px; stroke-width: 3.2; }
 .ch-qck .keyslot { position: relative; width: 44px; height: 44px; }
 .ch-qcs, .ch-qck {
-  --ch-qc-shadow-1: var(--a-shadow-pop);
+  --ch-qc-shadow-1: var(--ch-shadow-float);
   --ch-qc-shadow-2: 0 0 0 var(--ch-hairline-w) var(--a-ring), 0 1px 2px rgb(28 25 18 / 0.05), 0 10px 24px -14px rgb(28 25 18 / 0.2);
   --ch-qc-shadow-3: 0 6px 14px -8px rgb(11 58 37 / 0.6);
   --ch-qc-shadow-4: 0 0 0 var(--ch-hairline-w) var(--a-ring), 0 4px 10px -6px rgb(28 25 18 / 0.25);
