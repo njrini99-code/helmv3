@@ -13,7 +13,13 @@ import { useViewSwitch } from '../use-view-switch';
 import { Modal } from '../../../ui/Modal';
 import { useFocusActions } from '../parts';
 import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from '../writes';
+import { RecheckReads } from '../Recheck';
+import type { ChTeamStory } from '../../../data/coachhelm-team-shape';
+import { RecordCard, RosterCard, WorkingCard } from './Cards';
 import { CourseCard } from './CourseCard';
+import { Huddle } from './Huddle';
+import { Part } from './Part';
+import { StoriesCard, StoryDeskPanel } from './Stories';
 import { Inspector } from './Inspector';
 import { CourseSheet, GonePanel, PlayerPanel, ReadPanel } from './panels';
 import { SpotCard } from './SpotCard';
@@ -35,14 +41,6 @@ export interface TeamBoardProps {
   initialStation?: TeamStation;
   /** The hole's Try again when the reads didn't load. */
   onRetry?: () => void;
-  /** Later PRs' cards: each receives the live station. */
-  slots?: {
-    today?: ReactNode;
-    huddle?: ReactNode;
-    roster?: ReactNode;
-    working?: ReactNode;
-    record?: ReactNode;
-  };
 }
 
 function Hero({
@@ -146,13 +144,13 @@ function EmptySteps() {
 }
 
 /** The coach's Team view: the green bar untouched, the switch, the title, then one green feature card (the hole). */
-export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRITES, readOn = false, fileOn = false, initialPlayer, initialInsight, initialStation, slots, onRetry }: TeamBoardProps) {
+export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRITES, readOn = false, fileOn = false, initialPlayer, initialInsight, initialStation, onRetry }: TeamBoardProps) {
   const phone = useChPhone();
   const sw = useViewSwitch<CoachHelmView>('board', (v) => COACHHELM_HREF[v], Object.keys(COACHHELM_HREF) as CoachHelmView[]);
   const leak = useMemo(() => stationOrder(data.stations)[0] ?? 'approach', [data.stations]);
   const [station, setStation] = useState<TeamStation>(initialStation ?? leak);
   const top = useRef<HTMLElement | null>(null);
-  const [open, setOpen] = useState<{ kind: 'read' | 'player' | 'course'; id: string } | null>(null);
+  const [open, setOpen] = useState<{ kind: 'read' | 'player' | 'course'; id: string } | { kind: 'story'; id: string; story: ChTeamStory; week: string } | null>(null);
   const close = useCallback(() => setOpen(null), []);
   const fa = useFocusActions(writes);
   // `?player=` and `?open=read&insight=`: once, after first paint, and off the address by replace (AC-TEAM-23, W-TEAM-14). An id not on the board opens
@@ -168,6 +166,13 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
   const openRead = (id: string) => setOpen({ kind: 'read', id });
   const openPlayer = (id: string) => setOpen({ kind: 'player', id });
   const openCourse = (id: string) => setOpen({ kind: 'course', id });
+  const storyAction = (s: ChTeamStory) => {
+    if (s.kind === 'working') {
+      setOpen(null);
+      document.querySelector('[data-ch-team-card="working"]')?.scrollIntoView({ block: 'start' });
+    } else if (s.kind === 'theme') openPlayer(s.playerId);
+    else window.location.assign(s.href);
+  };
   const list: ChTeamPlayer[] = data.players.list;
   const noRounds = data.teamTotal.rounds === 0;
   const tabs = data.off ? null : <CoachHelmTabs active={sw.shown} onGo={sw.go} boardLabel="Team" />;
@@ -179,6 +184,36 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
     </header>
   );
   const course = courseReads(list).length;
+  const skeletonCard = <span className="skl" style={{ height: 120, borderRadius: 16 }} />;
+  const today = (
+    <Part value={data.brief} fallback={skeletonCard}>
+      {(b) => (
+        <StoriesCard
+          brief={b.status === 'ok' ? b.value : null}
+          themes={null}
+          failed={b.status === 'failed'}
+          onRetry={onRetry}
+          players={list}
+          phone={phone}
+          onDesk={(s) => setOpen({ kind: 'story', id: s.id, story: s, week: b.status === 'ok' ? b.value.week : 'This week' })}
+          onAction={storyAction}
+        />
+      )}
+    </Part>
+  );
+  const proposed = list.flatMap((player) => player.reads.needs.filter((read) => fa.assigned[read.id] || read.assigned === 'proposed').map((read) => ({ player, read })));
+  const working = (
+    <Part value={data.brief} fallback={skeletonCard}>
+      {(b) => <WorkingCard working={b.status === 'ok' ? b.value.working : []} proposed={proposed} failed={b.status === 'failed'} onRetry={onRetry} />}
+    </Part>
+  );
+  const huddle = <Huddle data={data} onPlayer={openPlayer} />;
+  const roster = <RosterCard players={list} phone={phone} onPlayer={openPlayer} />;
+  const record = (
+    <Part value={data.record} fallback={skeletonCard}>
+      {(r) => <RecordCard part={r} desk={!phone} />}
+    </Part>
+  );
   const spot =
     station === 'course' ? (
       <CourseCard data={data} onRead={openRead} onCourse={openCourse} onRetry={onRetry} />
@@ -222,7 +257,7 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
       <>
         <EmptyHero data={data} phone />
         <EmptySteps />
-        {slots?.roster}
+        {roster}
       </>
     ) : (
       <div className="dgrid">
@@ -232,20 +267,20 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
         <div className="dcol">
           <EmptySteps />
         </div>
-        {slots?.roster}
-        {slots?.record}
+        {roster}
+        {record}
       </div>
     );
   } else if (phone) {
     body = (
       <>
-        {slots?.today}
+        {today}
         <Hero data={data} station={station} setStation={setStation} phone course={course} courseTab={courseTab} />
         {spot}
-        {slots?.huddle}
-        {slots?.roster}
-        {slots?.working}
-        {slots?.record}
+        {huddle}
+        {roster}
+        {working}
+        {record}
       </>
     );
   } else {
@@ -256,12 +291,12 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
           {spot}
         </div>
         <div className="dcol">
-          {slots?.today}
-          {slots?.working}
-          {slots?.huddle}
+          {today}
+          {working}
+          {huddle}
         </div>
-        {slots?.roster}
-        {slots?.record}
+        {roster}
+        {record}
       </div>
     );
   }
@@ -279,6 +314,7 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
       const p = list2.find((x) => x.id === open.id);
       return p ? <PlayerPanel player={p} data={data} onRead={openRead} fileOn={fileOn} onClose={close} /> : null;
     }
+    if (open.kind === 'story') return <StoryDeskPanel story={open.story} week={open.week} onClose={close} onAction={storyAction} />;
     const row = data.course.history?.courses.find((c) => c.id === open.id);
     return row ? <CourseSheet row={row} data={data} onPlayer={openPlayer} onRead={openRead} onClose={close} /> : null;
   })();
@@ -301,6 +337,8 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
           {body}
         </div>
       )}
+      {/* W-TEAM-16: today's Re-check, under the board, not in the record card. */}
+      {!data.off && data.roster.count > 0 && <RecheckReads players={data.roster.count} />}
       {phone ? (
         <Modal open={!!openPanel} onClose={close} title="Details" className="ch-htb-sheet" initialFocus=".xb">
           <div className="ins">{openPanel}</div>

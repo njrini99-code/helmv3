@@ -54,3 +54,14 @@ Actions:        Assign through today's useFocusActions; no new write
 Data impact:    none
 Held items:     none
 ```
+
+## 2026-11-03 — CT4 to CT6: stories, huddle, roster, working, record
+
+```text
+Design package: design-refresh/coachhelm-team/ (CT4, CT5, CT6)
+PR/commit:      agent/ct4-6-cards
+Contract IDs:   as today's Re-check
+Actions:        none new
+Data impact:    none
+Held items:     none
+```

@@ -129,7 +129,7 @@ export function ReadPanel({
       )}
       {!read.stale && (
         <div className="acts" data-acts="">
-          <FocusActions fa={fa} target={{ playerId: player.id, first: player.first, ins: read }} missing={missing} where="board" />
+          <FocusActions fa={fa} target={{ playerId: player.id, first: player.first, ins: read }} missing={missing} where="board" noDismiss />
         </div>
       )}
       {href && (

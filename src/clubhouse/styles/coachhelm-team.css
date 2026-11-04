@@ -1991,3 +1991,42 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 .ch-htb .ch-htb-ladnote {
   padding: 0 16px 14px;
 }
+
+/* Stories: the viewer covers the board, and its progress fill scales instead of growing a width. */
+.ch-htb .story {
+  position: fixed;
+  z-index: var(--ch-z-panel);
+}
+.ch-htb .prog i b {
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+.ch-htb .prog i.done b {
+  transform: scaleX(1);
+}
+.ch-htb .prog i.now b {
+  animation: ch-htb-prog 5200ms linear both;
+}
+.ch-htb .story.is-held .prog i.now b {
+  animation-play-state: paused;
+}
+@keyframes ch-htb-prog {
+  to {
+    transform: scaleX(1);
+  }
+}
+.ch-htb-storydesk {
+  padding: 18px;
+}
+.ch-htb-storydesk h3 {
+  font: 600 calc(22px * var(--k)) / 1.2 var(--sans);
+  letter-spacing: -0.015em;
+}
+.ch-htb .rec .lv .t i {
+  width: 100%;
+  transform-origin: 0 50%;
+}
+.ch-htb .ch-htb-workempty {
+  padding-bottom: 16px;
+}
