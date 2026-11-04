@@ -92,11 +92,11 @@ html[data-fw-theme='dark'] .ch-htb {
   padding-top:2px;
 }
 .ch-htb .lt h2 {
-  font: var(--ch-type-34-strong); 
+  font: var(--ch-type-34-strong);
   font-variation-settings:'wdth' 88;
   letter-spacing: -0.038em;}
 .ch-htb .lt p {
-  font: var(--ch-type-15); 
+  font: var(--ch-type-15);
   color:var(--ink-2); letter-spacing: var(--ch-track-15); }
 .ch-htb .card {
   background:var(--card);
@@ -114,14 +114,14 @@ html[data-fw-theme='dark'] .ch-htb {
 .ch-htb .ch h4 {
   font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); }
 .ch-htb .ch .meta {
-  font: var(--ch-type-15); 
+  font: var(--ch-type-15);
   color:var(--ink-2);
   text-align:right; letter-spacing: var(--ch-track-15); }
 .ch-htb .cb {
   padding:0 16px 16px;
 }
 .ch-htb .subh {
-  font: var(--ch-type-14-strong); 
+  font: var(--ch-type-14-strong);
   color:var(--ink-2);
   padding:6px 16px 6px;
 }
@@ -129,7 +129,7 @@ html[data-fw-theme='dark'] .ch-htb {
   display:inline-flex;
   align-items:center;
   gap:4px;
-  font: var(--ch-type-13-strong); 
+  font: var(--ch-type-13-strong);
   padding:4px 8px;
   border-radius: var(--ch-radius-tail);
   background:var(--well);
@@ -156,7 +156,7 @@ html[data-fw-theme='dark'] .ch-htb {
   flex:none;
   background:var(--c);
   color:#fff;
-  font: var(--ch-type-12-strong); 
+  font: var(--ch-type-12-strong);
   letter-spacing: 0.01em;}
 .ch-htb .coin.sm {
   width:24px;
@@ -214,7 +214,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   display:flex;
   align-items:center;
   gap:6px;
-  font: var(--ch-type-13); 
+  font: var(--ch-type-13);
   color:var(--ink-2);
 }
 .ch-htb .feat {
@@ -227,7 +227,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   box-shadow:var(--ch-team-shadow-2);
 }
 .ch-htb .feat .hk {
-  font: var(--ch-type-14-medium); 
+  font: var(--ch-type-14-medium);
   color:var(--f-ink-2);
 }
 .ch-htb .feat .hn {
@@ -237,7 +237,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   margin-top:8px;
 }
 .ch-htb .feat .hn b {
-  font: var(--ch-type-figure-40-500); 
+  font: var(--ch-type-figure-40-500);
   font-variation-settings:'wdth' 88;
   letter-spacing: -0.038em;
   }
@@ -342,7 +342,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
 .ch-htb .stn .sv {
   fill:var(--f-ink);
   font: var(--ch-type-20-strong);
-  
+
   letter-spacing: -0.02em;}
 .ch-htb .stn.on .sl {
   fill:var(--f-ink);
@@ -354,7 +354,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
 .ch-htb .scn text {
   fill:#fff;
   font: var(--ch-type-11-strong);
-  
+
   text-anchor:middle;
   dominant-baseline:central; letter-spacing: var(--ch-track-11); }
 .ch-htb .scn.early circle {
@@ -377,15 +377,15 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   border-radius: var(--ch-radius-sm);
   padding:8px 4px;
   text-align:center!important;
-  font: var(--ch-type-13-medium); 
+  font: var(--ch-type-13-medium);
   color:var(--f-ink-2);
   transition:background 260ms var(--ease),color 260ms var(--ease);
 }
 .ch-htb .stchips button b {
   display:block;
-  font: var(--ch-type-14-strong); 
+  font: var(--ch-type-14-strong);
   color:var(--f-loss);
-  
+
   margin-top:2px;
 }
 .ch-htb .stchips button.cm {
@@ -426,7 +426,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   justify-content:space-between;
   gap:8px;
   margin-top:8px;
-  font: var(--ch-type-13); 
+  font: var(--ch-type-13);
   color:var(--f-ink-2);
 }
 .ch-htb .bars {
@@ -445,7 +445,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   display:flex;
   align-items:center;
   gap:6px;
-  font: var(--ch-type-15-medium); 
+  font: var(--ch-type-15-medium);
   white-space:nowrap;
   overflow:hidden; letter-spacing: var(--ch-track-15); }
 .ch-htb .br .bt {
@@ -486,7 +486,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   background:repeating-linear-gradient(-45deg,var(--loss-fill) 0 4px,color-mix(in srgb,var(--loss-fill) 45%,var(--card)) 4px 7px);
 }
 .ch-htb .br .bv {
-  font: var(--ch-type-15-strong); 
+  font: var(--ch-type-15-strong);
   letter-spacing: var(--ch-track-15);
   text-align:right;
   color:var(--loss); }
@@ -497,7 +497,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   display:flex;
   justify-content:space-between;
   padding:4px 16px 12px calc(16px + 48*var(--k));
-  font: var(--ch-type-13); 
+  font: var(--ch-type-13);
   color:var(--ink-3);
 }
 .ch-htb .axis span:last-child {
@@ -533,7 +533,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   gap:4px 6px;
   margin-top:4px;
   align-items:center;
-  font: var(--ch-type-13); 
+  font: var(--ch-type-13);
   color:var(--ink-2);
 }
 .ch-htb .chev {
@@ -563,7 +563,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
 .ch-htb .pat b {
   font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
 .ch-htb .pat span {
-  font: var(--ch-type-14); 
+  font: var(--ch-type-14);
   color:var(--ink-2);
 }
 .ch-htb .pat .btn {
@@ -571,7 +571,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
 }
 .ch-htb .nopat {
   margin:4px 16px 16px;
-  font: var(--ch-type-14); 
+  font: var(--ch-type-14);
   color:var(--ink-2);
 }
 .ch-htb .btn {
@@ -582,7 +582,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   min-height:42px;
   padding:0 16px;
   border-radius: var(--ch-radius-md);
-  font: var(--ch-type-15-strong); 
+  font: var(--ch-type-15-strong);
   transition:transform 280ms var(--ease); letter-spacing: var(--ch-track-15); }
 .ch-htb .btn[data-ch-pressed] {
   transform:scale(.97);
@@ -632,7 +632,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   flex-wrap:wrap;
 }
 .ch-htb .cmk b {
-  font: var(--ch-type-34-strong); 
+  font: var(--ch-type-34-strong);
   font-variation-settings:'wdth' 96;
   letter-spacing: -0.038em;
   }
@@ -678,11 +678,11 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   fill:var(--accent);
 }
 .ch-htb .trend text {
-  font: var(--ch-type-11-medium); 
+  font: var(--ch-type-11-medium);
   fill:var(--ink-3); letter-spacing: var(--ch-track-11); }
 .ch-htb .trend .lv {
   font: var(--ch-type-13-strong);
-  
+
   fill:var(--ink);
 }
 .ch-htb .trend .avl {
@@ -694,7 +694,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   flex-wrap:wrap;
   gap:4px 12px;
   margin-top:8px;
-  font: var(--ch-type-13); 
+  font: var(--ch-type-13);
   color:var(--ink-3);
 }
 .ch-htb .tkey span {
@@ -758,7 +758,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   margin:0 16px 8px;
   padding:8px 0;
   min-height:36px;
-  font: var(--ch-type-14-strong); 
+  font: var(--ch-type-14-strong);
   color:var(--accent)!important;
 }
 .ch-htb .shape {
@@ -775,14 +775,14 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
 }
 .ch-htb .shape .sl {
   display:block;
-  font: var(--ch-type-13-medium); 
+  font: var(--ch-type-13-medium);
   color:var(--ink-2);
 }
 .ch-htb .shape .sv {
   display:block;
-  font: var(--ch-type-20-strong); 
+  font: var(--ch-type-20-strong);
   letter-spacing: -0.01em;
-  
+
   margin-top:6px;
 }
 .ch-htb .shape .st {
@@ -900,7 +900,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   display:flex;
   gap:16px;
   padding:2px 16px 12px;
-  font: var(--ch-type-13); 
+  font: var(--ch-type-13);
   color:var(--ink-3);
 }
 .ch-htb .dbkey span {
@@ -964,7 +964,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
 .ch-htb .hudsvg .hp text {
   fill:#fff;
   font: var(--ch-type-11-strong);
-  
+
   text-anchor:middle;
   dominant-baseline:central;
   pointer-events:none; letter-spacing: var(--ch-track-11); }
@@ -981,7 +981,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   flex-wrap:wrap;
   gap:4px 12px;
   padding:4px 16px 12px;
-  font: var(--ch-type-13); 
+  font: var(--ch-type-13);
   color:var(--ink-2);
 }
 .ch-htb .rr {
@@ -1010,7 +1010,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
 }
 .ch-htb .rr .tot {
   text-align:right;
-  font: var(--ch-type-15-strong); 
+  font: var(--ch-type-15-strong);
   color:var(--loss); letter-spacing: var(--ch-track-15); }
 .ch-htb .rr .tot span {
   display:block;
@@ -1049,7 +1049,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); }
 .ch-htb .wk span {
   display:block;
-  font: var(--ch-type-14); 
+  font: var(--ch-type-14);
   color:var(--ink-2);
 }
 .ch-htb .wk .st {
@@ -1089,7 +1089,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   gap:8px;
 }
 .ch-htb .rec .big b {
-  font: var(--ch-type-34-medium); 
+  font: var(--ch-type-34-medium);
   font-variation-settings:'wdth' 96;
   letter-spacing: -0.038em;
   }
@@ -1126,9 +1126,9 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   background:var(--ink);
   border-radius: var(--ch-radius-mark);}
 .ch-htb .lv .n {
-  font: var(--ch-type-14); 
+  font: var(--ch-type-14);
   color:var(--ink-2);
-  
+
   white-space:nowrap;
 }
 .ch-htb .recfoot {
@@ -1212,10 +1212,10 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   box-shadow:0 0 0 var(--ch-hairline-w) var(--ring);
 }
 .ch-htb .ins h3 {
-  font: var(--ch-type-22-strong); 
+  font: var(--ch-type-22-strong);
   letter-spacing: -0.02em;}
 .ch-htb .ins .lede {
-  font: var(--ch-type-16); 
+  font: var(--ch-type-16);
   color:var(--ink-2); letter-spacing: var(--ch-track-16); }
 .ch-htb .evs {
   display:flex;
@@ -1276,7 +1276,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   font: var(--ch-type-16-strong); letter-spacing: var(--ch-track-16); }
 .ch-htb .drill span {
   display:block;
-  font: var(--ch-type-14); 
+  font: var(--ch-type-14);
   color:var(--ink-2);
 }
 .ch-htb .acts {
@@ -1291,7 +1291,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   display:inline-flex;
   align-items:center;
   gap:6px;
-  font: var(--ch-type-15-strong); 
+  font: var(--ch-type-15-strong);
   color:var(--accent);
   padding:6px 0; letter-spacing: var(--ch-track-15); }
 .ch-htb .assigned {
@@ -1392,15 +1392,15 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   position:relative;
 }
 .ch-htb .sto-b h3 {
-  font: var(--ch-type-28-strong); 
+  font: var(--ch-type-28-strong);
   letter-spacing: -0.03em;
   font-variation-settings:'wdth' 88;
 }
 .ch-htb .sto-b p {
-  font: var(--ch-type-16); 
+  font: var(--ch-type-16);
   color:var(--f-ink-2); letter-spacing: var(--ch-track-16); }
 .ch-htb .sto-b .src {
-  font: var(--ch-type-13); 
+  font: var(--ch-type-13);
   color:var(--f-ink-2);
   display:flex;
   gap:6px;
@@ -1434,7 +1434,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   background:rgb(244 241 232/.09);
   display:grid;
   place-items:center;
-  font: var(--ch-type-13-strong); 
+  font: var(--ch-type-13-strong);
   font-style:normal;
   color:var(--f-ink-2);
   }
@@ -1461,7 +1461,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
 .ch-htb .sbar2 .h {
   display:flex;
   justify-content:space-between;
-  font: var(--ch-type-15-medium); 
+  font: var(--ch-type-15-medium);
   color:var(--f-ink-2); letter-spacing: var(--ch-track-15); }
 .ch-htb .sbar2 .h b {
   color:var(--f-ink);
@@ -1494,7 +1494,7 @@ html[data-fw-theme='dark'] .ch-htb .coin.early {
   position:absolute;
   top:-22px;
   transform:translateX(-50%);
-  font: var(--ch-type-12-medium); 
+  font: var(--ch-type-12-medium);
   text-decoration:none;
   color:var(--f-ink-2);
   white-space:nowrap;
@@ -1556,14 +1556,14 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
 .ch-htb .notice span {
   display:block;
-  font: var(--ch-type-14); 
+  font: var(--ch-type-14);
   color:var(--ink-2);
 }
 .ch-htb .notice .btn {
   margin-top:8px;
 }
 .ch-htb .emptyh {
-  font: var(--ch-type-15); 
+  font: var(--ch-type-15);
   color:var(--f-ink-2);
   margin-top:8px;
   max-width:34ch; letter-spacing: var(--ch-track-15); }
@@ -1591,7 +1591,7 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   border-radius: 50%;
   background:var(--tint-acc);
   color:var(--gain);
-  font: var(--ch-type-13-strong); 
+  font: var(--ch-type-13-strong);
   text-align:center;
 }
 .ch-htb .steps b {
@@ -1599,18 +1599,18 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); }
 .ch-htb .steps span {
   display:block;
-  font: var(--ch-type-14); 
+  font: var(--ch-type-14);
   color:var(--ink-2);
 }
 .ch-htb .nordss {
   padding:12px 16px 4px;
-  font: var(--ch-type-14); 
+  font: var(--ch-type-14);
   color:var(--ink-2);
 }
 .ch-htb .coin {
   display:inline-grid!important;
   color:#fff!important;
-  font: var(--ch-type-12-strong); 
+  font: var(--ch-type-12-strong);
   margin-top:0!important;
 }
 .ch-htb .coin.sm {
@@ -1956,7 +1956,7 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   padding: 16px;
 }
 .ch-htb-storydesk h3 {
-  font: var(--ch-type-22-strong); 
+  font: var(--ch-type-22-strong);
   letter-spacing: -0.01em;
 }
 .ch-htb .rec .lv .t i {

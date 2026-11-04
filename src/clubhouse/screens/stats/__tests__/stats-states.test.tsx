@@ -165,4 +165,3 @@ describe('Team Stats states', () => {
     expect(document.querySelector('.ch-shs-few')!.textContent).toMatch(/^From 2 round days\./);
   });
 });
-

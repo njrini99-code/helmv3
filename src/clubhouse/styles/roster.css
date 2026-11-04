@@ -2857,12 +2857,12 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 }
 [data-ch-crh='on'] .ch-rs-tcard__n b {
   font: var(--ch-type-34-strong);
-  
+
   letter-spacing: var(--ch-track-34);
 }
 [data-ch-crh='on'] .ch-rs-tcard__n span {
   font: var(--ch-type-13-medium);
-  
+
   color: var(--ch-on-green-3);
 }
 [data-ch-crh='on'] .ch-rs-mix {
@@ -2882,7 +2882,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   flex-wrap: wrap;
   gap: 6px 12px;
   font: var(--ch-type-13-medium);
-  
+
   color: var(--ch-on-green-2);
 }
 [data-ch-crh='on'] .ch-rs-mix__lg > span {
@@ -2928,7 +2928,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   color: var(--ch-on-green-chip);
   font: var(--ch-type-13-strong);
   font-style: normal;
-  
+
 }
 [data-ch-crh='on'] .ch-rs-tcard--skel {
   min-height: 168px;
@@ -2961,7 +2961,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   justify-content: space-between;
   gap: 6px;
   font: var(--ch-type-13-strong);
-  
+
   color: var(--ch-crh-ink2);
 }
 [data-ch-crh='on'] .ch-rs-ldr__k svg {
@@ -2969,7 +2969,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 }
 [data-ch-crh='on'] .ch-rs-ldr__v {
   font: var(--ch-type-28-strong);
-  
+
   letter-spacing: var(--ch-track-28);
 }
 [data-ch-crh='on'] .ch-rs-ldr__v.is-loss {
@@ -2978,7 +2978,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 [data-ch-crh='on'] .ch-rs-ldr__v small {
   margin-left: 4px;
   font: var(--ch-type-13-medium);
-  
+
   letter-spacing: 0;
   color: var(--ch-crh-ink2);
 }
@@ -3084,7 +3084,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     background: var(--ch-green-fill-600);
     color: var(--ch-yr-ink);
     font: var(--ch-type-13-strong);
-    
+
     text-align: center;
   }
   /* Rows */
@@ -3155,7 +3155,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     background: var(--ch-warn-bg);
     color: var(--ch-warn-ink);
     font: var(--ch-type-13-strong);
-    
+
   }
   [data-ch-crh='on'] .ch-rsx-row__v {
     display: grid;
@@ -3179,7 +3179,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'] .ch-rsx-row__v span {
     font: var(--ch-type-13);
-    
+
     color: var(--ch-crh-ink4);
     white-space: nowrap;
   }
@@ -3286,7 +3286,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   [data-ch-crh='on'] .ch-rsx-figs dd {
     margin: 0;
     font: var(--ch-type-22-strong);
-    
+
     letter-spacing: var(--ch-track-22);
     color: var(--ch-text-primary);
   }
@@ -3325,11 +3325,11 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'] .ch-rsx-well b {
     font: var(--ch-type-20-strong);
-    
+
     color: var(--ch-text-primary); letter-spacing: var(--ch-track-20); }
   [data-ch-crh='on'] .ch-rsx-well span {
     font: var(--ch-type-13-strong);
-    
+
     color: var(--ch-crh-ink2);
   }
   [data-ch-crh='on'] .ch-rsx-well span.is-under {
@@ -3357,7 +3357,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'] .ch-rsx-facts dt {
     font: var(--ch-type-13);
-    
+
     color: var(--ch-crh-ink4);
   }
   [data-ch-crh='on'] .ch-rsx-facts dd {
@@ -3401,7 +3401,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'] .ch-rsx-code__v {
     font: var(--ch-type-17-strong);
-    
+
     color: var(--ch-text-primary); letter-spacing: var(--ch-track-17); }
   [data-ch-crh='on'] .ch-rsx-acts {
     display: grid;
@@ -3446,7 +3446,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   background: var(--ch-accent-tint);
   color: var(--ch-accent-ink);
   font: var(--ch-type-13-strong);
-  
+
 }
 [data-ch-crh='on'] .ch-rsx-chip.is-amber {
   background: var(--ch-warn-bg);
@@ -3462,7 +3462,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   background: color-mix(in srgb, var(--y, var(--ch-accent-ink)) 14%, transparent);
   color: color-mix(in srgb, var(--y, var(--ch-accent-ink)) 62%, var(--ch-ink-900));
   font: var(--ch-type-13-strong);
-  
+
 }
 [data-ch-crh='on'] .ch-rs-ychip i {
   width: 8px;
@@ -3545,7 +3545,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     background: var(--ch-green-fill-600);
     color: var(--ch-yr-ink);
     font: var(--ch-type-13-strong);
-    
+
     text-align: center;
   }
   [data-ch-crh='on'] .ch-rsx-req__coins .ch-avatar {
