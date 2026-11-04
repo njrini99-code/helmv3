@@ -17,7 +17,8 @@ export function useFlyIn(svg: RefObject<SVGSVGElement | null>, ready: boolean): 
   const once = useRef(false);
   useLayoutEffect(() => {
     const root = svg.current;
-    if (!root || !ready || flown || reduced || once.current) return;
+    // The media query too: this first layout effect still holds the hook's server value, so Reduce Motion would fly once.
+    if (!root || !ready || flown || reduced || once.current || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     once.current = true;
     const path = root.querySelector<SVGPathElement>('.flight');
     const ball = root.querySelector<SVGCircleElement>('.ball');
@@ -75,6 +76,10 @@ export function useFlyIn(svg: RefObject<SVGSVGElement | null>, ready: boolean): 
       window.clearTimeout(wait);
       cancelAnimationFrame(frame);
       for (const s of stations) s.classList.remove('pre');
+      // Interrupted (a remount, Strict Mode's rerun): the line never stays undrawn, and the rerun may fly.
+      path.style.removeProperty('stroke-dasharray');
+      path.style.removeProperty('stroke-dashoffset');
+      once.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on the first paint with data
   }, [ready]);

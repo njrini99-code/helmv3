@@ -14,12 +14,14 @@ const PLAYERS = {
 const leg = (strokes: number, rounds: number): ChTeamLeg => ({ strokes, rounds, missing: null });
 const legs = (r: number, tee: number, approach: number, short_game: number, putting: number) => ({ tee: leg(tee, r), approach: leg(approach, r), short_game: leg(short_game, r), putting: leg(putting, r) });
 
-const read = (playerId: string, id: string, category: string, title: string, content: string) =>
-  toChInsight({ ...slope(playerId, id), category, title, content } as EvidenceInsight, { tour: PREVIEW_TOUR, viewer: { role: 'coach', first: title.split(' ')[0] ?? 'Player' } });
+const read = (playerId: string, id: string, category: string, title: string, content: string, drawn?: { stakes: string; sample: string }) => {
+  const r = toChInsight({ ...slope(playerId, id), category, title, content } as EvidenceInsight, { tour: PREVIEW_TOUR, viewer: { role: 'coach', first: title.split(' ')[0] ?? 'Player' } });
+  return drawn ? { ...r, stakes: drawn.stakes, evidence: { ...r.evidence, sample: drawn.sample } } : r;
+};
 
 const READS: Record<string, ReturnType<typeof read>[]> = {
   [PLAYERS.eli.id]: [
-    read(PLAYERS.eli.id, 'r1', 'approach', 'Long approaches finish short-right', 'From 175 yards and out, 9 of Eli’s 16 missed greens finish short and right.'),
+    read(PLAYERS.eli.id, 'r1', 'approach', 'Long approaches finish short-right', 'From 175 yards and out, 9 of Eli’s 16 missed greens finish short and right.', { stakes: '.6', sample: '21 rounds' }),
     read(PLAYERS.eli.id, 'r8', 'course_management', 'Penalty strokes: 1.1 per round', 'Across 21 rounds Eli averages 1.1 penalty strokes a round, most from the tee.'),
     read(PLAYERS.eli.id, 'r13', 'course_management', 'Worst holes on Oak Hollow: #4, #11, #17', 'Across 11 rounds at Oak Hollow, Eli averages 1.1 over par on holes 4, 11 and 17.'),
   ],
@@ -29,7 +31,7 @@ const READS: Record<string, ReturnType<typeof read>[]> = {
     read(PLAYERS.jonah.id, 'r11', 'scoring', 'Double bogey-or-worse rate: 7.6%', 'Jonah makes double bogey or worse on 7.6% of holes across 18 rounds. Tour is 2.0%.'),
   ],
   [PLAYERS.priya.id]: [
-    read(PLAYERS.priya.id, 'r2', 'approach', 'Approaches from 100 to 150 come up short', '11 of Priya’s 18 missed greens from 100 to 150 yards finish short of the green.'),
+    read(PLAYERS.priya.id, 'r2', 'approach', 'Approaches from 100 to 150 come up short', '11 of Priya’s 18 missed greens from 100 to 150 yards finish short of the green.', { stakes: '.5', sample: '16 rounds' }),
     read(PLAYERS.priya.id, 'r6', 'putting', 'Putts from 5 to 10 feet', 'Priya makes 44% from 5 to 10 feet. The cause isn’t traced yet.'),
     read(PLAYERS.priya.id, 'r12', 'pressure', 'Opening hole gap: +0.19 strokes vs round avg', 'Priya scores 0.19 worse on the first hole than on an average hole, from 16 rounds.'),
   ],
@@ -39,7 +41,7 @@ const READS: Record<string, ReturnType<typeof read>[]> = {
     read(PLAYERS.theo.id, 'r14', 'scoring', 'Par 3 scoring: 3.48 (+0.48 vs par)', 'Theo averages 3.48 on par 3s, from 4 rounds. Tour is 3.00.'),
   ],
   [PLAYERS.sam.id]: [
-    read(PLAYERS.sam.id, 'r3', 'approach', 'Proximity from 125 to 175', 'Sam’s approaches from 125 to 175 finish 41 feet away on average, from 6 rounds.'),
+    read(PLAYERS.sam.id, 'r3', 'approach', 'Proximity from 125 to 175', 'Sam’s approaches from 125 to 175 finish 41 feet away on average, from 6 rounds.', { stakes: '.4', sample: '3 rounds' }),
     read(PLAYERS.sam.id, 'r9', 'short_game', 'Up and down from greenside bunkers', 'Sam has got up and down 2 times from 11 greenside bunkers, from 6 rounds.'),
   ],
 };

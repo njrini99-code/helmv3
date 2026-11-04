@@ -495,6 +495,7 @@ function Rounds({ years, data, trends, onOpen, covered }: { years?: Record<strin
                 {/* P003-C1: a hold on the row peeks at the player, from what Home loaded (the board's row, else this round). */}
                 <PlayerPeek player={roundPeek(r, trends, data.rounds)}>
                   <button
+                    data-ch-round-row=""
                     type="button"
                     className="ch-hm-rd"
                     onClick={() => {

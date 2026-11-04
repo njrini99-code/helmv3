@@ -98,4 +98,4 @@ export const HOLE: Record<'v' | 'h', HoleGeometry> = {
 };
 
 export const STATION_NAME: Record<ChStation, string> = { tee: 'Off the tee', approach: 'Approach', short_game: 'Around the green', putting: 'Putting' };
-export const STATION_SHORT: Record<ChStation, string> = { tee: 'Tee', approach: 'Approach', short_game: 'Around the green', putting: 'Putting' };
+export const STATION_SHORT: Record<ChStation, string> = { tee: 'Tee', approach: 'Approach', short_game: 'Short game', putting: 'Putting' };

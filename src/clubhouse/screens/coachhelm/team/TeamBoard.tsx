@@ -170,7 +170,7 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
   const storyAction = (s: ChTeamStory) => {
     if (s.kind === 'working') {
       setOpen(null);
-      document.querySelector('[data-ch-team-card="working"]')?.scrollIntoView({ block: 'start' });
+      document.querySelector('[data-ch-team-card="work"]')?.scrollIntoView({ block: 'start' });
     } else if (s.kind === 'theme') openPlayer(s.playerId);
     else window.location.assign(s.href);
   };

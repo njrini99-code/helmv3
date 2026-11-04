@@ -224,7 +224,7 @@ export function CourseCard({ data, onRead, onCourse, onRetry }: { data: ChTeamBo
     </div>
   );
   return (
-    <section ref={card} className="card spot cm" data-spot="" data-ch-team-card="course" aria-label="Course and scoring">
+    <section ref={card} className="card spot cm" data-spot="" data-ch-team-card="spot" aria-label="Course and scoring">
       <div className="ch">
         <h4>Course and scoring</h4>
         <span className="meta">Not on the hole · {reads.length ? `${reads.length} open ${pluralWord(reads.length, 'read', 'reads')}` : 'No open reads yet'}</span>

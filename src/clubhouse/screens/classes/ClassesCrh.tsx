@@ -147,7 +147,7 @@ function ClassRow({ c, sub, onOpen }: { c: ChClass; sub: string | null; onOpen?:
   return (
     <GroupRow twoLine className="ch-cl-tr">
       {onOpen ? (
-        <button type="button" className="ch-cl-tr__btn" onClick={() => onOpen(c)}>
+        <button type="button" className="ch-cl-tr__btn" data-ch-class-row="" onClick={() => onOpen(c)}>
           {body}
           <Icon icon={ChevronRight} size={15} />
         </button>

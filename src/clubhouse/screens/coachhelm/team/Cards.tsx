@@ -105,7 +105,7 @@ function Ring({ v, proposed = false }: { v: number; proposed?: boolean }) {
 export function WorkingCard({ working, proposed, failed, onRetry }: { working: readonly ChBriefWorking[]; proposed: ReadonlyArray<{ player: ChTeamPlayer; read: ChInsight }>; failed: boolean; onRetry?: () => void }) {
   const n = working.length + proposed.length;
   return (
-    <section className="card work" data-ch-team-card="working" aria-label="Working on">
+    <section className="card work" data-ch-team-card="work" aria-label="Working on">
       <div className="ch">
         <h4>Working on</h4>
         <span className="meta">
