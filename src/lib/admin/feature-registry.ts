@@ -20,7 +20,8 @@ export type FeatureApp = 'golfhelm' | 'coachhelm' | 'baseballhelm';
 export type FeatureTier = 'high' | 'med' | 'low';
 
 export type FeatureKey =
-  // GolfHelm (24)
+  // GolfHelm (25)
+  | 'practice_plans'
   | 'round_tracking'
   | 'stats_analytics'
   | 'qualifiers'
@@ -389,6 +390,17 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     seasonalEmpty: false,
     healthSignal:
       'createEnrichedAnnouncement multi-insert lands atomically (announcement+recipients+docs+tasks); partial-write = error.',
+  },
+  {
+    key: 'practice_plans',
+    label: 'Practice plans',
+    app: 'golfhelm',
+    actions: { 'src/app/golf/actions/practice-plans.ts': 'ALL', 'src/app/golf/actions/practice-publish.ts': 'ALL', 'src/app/golf/actions/practice-library.ts': 'ALL' },
+    primaryTable: 'golf_practice_plans',
+    heartbeatTable: null,
+    tier: 'med',
+    seasonalEmpty: true,
+    healthSignal: 'Saves and publishes succeed.',
   },
   {
     key: 'documents',

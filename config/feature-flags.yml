@@ -1253,6 +1253,54 @@ flags:
     kill_switch_behavior: null
     cleanup_plan: >-
       Remove once the coach Deep dive dossier is retired.
+  - feature_id: golf_practice_plans
+    owner: golf/clubhouse
+    purpose: >-
+      Clubhouse Practice (N-00 minimum build): the plan page and the plan writes behind it. Needs migrations 20261026010000 to 20261026010600 (HELD.md).
+    type: release
+    status: active
+    created_at: "2026-11-04"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Remove once production has run with it on for a full month with no practice errors. The pages stay; only the gate goes.
+  - feature_id: golf_documents_library
+    owner: golf/clubhouse
+    purpose: >-
+      The Documents library (N-10). Off in this build: today's Documents keeps rendering, plan rows only.
+    type: release
+    status: active
+    created_at: "2026-11-04"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Remove with N-10's library release.
+  - feature_id: coachhelm_practice_plans_v1
+    owner: golf/coachhelm
+    purpose: >-
+      CoachHelm drafts, files and publishes practice plans from Ask and the practice builder. Off: Ask has no plan tools and the builder has no helper.
+    type: release
+    status: active
+    created_at: "2026-11-04"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Remove after the flag has been on in production for a season and the Practice tab flag is gone.
   - feature_id: coachhelm_quick_chat_v1
     owner: golf/coachhelm
     purpose: >-
@@ -1269,7 +1317,7 @@ flags:
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
-      Remove once the coach Deep dive dossier is retired.
+      Remove once the Helm key has replaced the sparkle key for every coach.
   - feature_id: coachhelm_player_ask_v1
     owner: golf/coachhelm
     purpose: >-

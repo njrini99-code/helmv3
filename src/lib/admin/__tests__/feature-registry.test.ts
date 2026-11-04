@@ -10,7 +10,7 @@ import {
 } from '@/lib/admin/feature-registry';
 
 // The canonical key list per docs/superpowers/specs/helm-bridge/FEATURE_COVERAGE.md
-// §1.1 (24) + §1.2 (14) + §1.3 (48) + §1.4 (1 excluded) = 87. Hard-coded here on purpose —
+// §1.1 (25) + §1.2 (14) + §1.3 (48) + §1.4 (1 excluded) = 88. Hard-coded here on purpose —
 // the doc is canonical, this list is the tripwire that catches drift between
 // the spec and the registry.
 const EXPECTED_KEYS: FeatureKey[] = [
@@ -251,9 +251,9 @@ function scanExports(relPath: string): string[] {
 
 describe('FEATURE_REGISTRY completeness', () => {
   it('has exactly 86 entries with unique keys', () => {
-    expect(FEATURE_REGISTRY).toHaveLength(87);
+    expect(FEATURE_REGISTRY).toHaveLength(88);
     const keys = FEATURE_REGISTRY.map((f) => f.key);
-    expect(new Set(keys).size).toBe(87);
+    expect(new Set(keys).size).toBe(88);
   });
 
   it('matches the FEATURE_COVERAGE.md §1 canonical key list exactly', () => {

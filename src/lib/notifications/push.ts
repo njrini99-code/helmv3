@@ -42,6 +42,8 @@ import { holdOrPass } from './class-hold';
  */
 function pushDeliveryKeyFor(type: NotificationType): DeliveryNotificationKey | null {
   switch (type) {
+    case 'practice_plan':
+      return 'push_events';
     case 'new_message':
       return 'push_messages';
     // Announcements had NO switch of their own in the settings matrix — the
@@ -102,6 +104,11 @@ export function generatePushPayload(
   data: Record<string, unknown>
 ): { title: string; body: string; data: Record<string, unknown> } {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
+
+  // Golf's practice plan: the caller's own words and link (N-00 Wiring gap 1).
+  if (type === 'practice_plan') {
+    return { title: String(data.title ?? 'Practice plan'), body: String(data.body ?? ''), data: { ...data, url: String(data.url ?? '/golf/dashboard') } };
+  }
   // Deep-link contract (NAV-IA3): open the exact item when the sender supplies
   // its id, else the list it lives in.
   const idOf = (key: string): string | null => {
