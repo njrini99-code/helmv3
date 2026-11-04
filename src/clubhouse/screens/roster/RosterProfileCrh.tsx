@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { CalendarPlus, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import type { ChRosterHelm, ChRosterPlayer } from '../../data/roster';
@@ -8,7 +9,8 @@ import { Button } from '../../ui/Button';
 import { CrhLine } from '../../ui/CrhLine';
 import { InlineNotice } from '../../ui/Notices';
 import { Surface } from '../../ui/Surface';
-import { changeTone, formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeTone, formatFixed, formatHcp, formatSigned, formatToPar } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { rebuiltHref } from '../../shell/nav';
 import { AvailabilityPanel, CoachNote, HelmPanel, type AvailabilityControl, type NoteSaved } from './RosterPeek';
 import { AVAILABILITY_WORD, rowNote, yearKeyOf, yearLineOf, type RosterClock } from './format';
@@ -46,12 +48,12 @@ export function RosterProfileCrh({
   const year = yearKeyOf(p.gradYear, clock);
   const line = yearLineOf(p.gradYear, clock);
   const out = p.availability !== 'available' ? AVAILABILITY_WORD[p.availability] : null;
-  const facts: Array<[string, string]> = [
-    ['Hometown', p.hometown ?? NO_DATA],
-    ['High school', p.highSchool ?? NO_DATA],
-    ['Joined', p.joined ? p.joined.replace(/^Joined /, '') : NO_DATA],
+  const facts: Array<[string, ReactNode]> = [
+    ['Hometown', p.hometown ?? <NoData />],
+    ['High school', p.highSchool ?? <NoData />],
+    ['Joined', p.joined ? p.joined.replace(/^Joined /, '') : <NoData />],
     ['Rounds this season', String(p.rounds)],
-    ...(p.jersey ? ([['Jersey', p.jersey]] as Array<[string, string]>) : []),
+    ...(p.jersey ? ([['Jersey', p.jersey]] as Array<[string, ReactNode]>) : []),
   ];
   const sg = p.sgPerRound;
   return (
@@ -98,7 +100,7 @@ export function RosterProfileCrh({
             </div>
             <div>
               <dt>SG / round</dt>
-              <dd className={'ch-num ' + (sg == null ? 'is-none' : changeTone(sg, false, 1))}>{sg == null ? NO_DATA : formatSigned(sg)}</dd>
+              <dd className={'ch-num ' + (sg == null ? 'is-none' : changeTone(sg, false, 1))}>{sg == null ? <NoData /> : formatSigned(sg)}</dd>
               <span className="ch-rsx-figs__f">{sgVs}</span>
             </div>
           </dl>

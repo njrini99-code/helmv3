@@ -1,3 +1,4 @@
+import { isoDay } from './dates';
 import { seasonStartOfDay } from './season-start';
 
 // Plain (not server-only, unlike data/season.ts): a client row can word a year line.
@@ -5,7 +6,7 @@ const SEASON_DEFAULT_TZ = 'America/New_York';
 
 /** Today on the team's calendar. */
 function teamDay(now: Date, tz: string): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+  return isoDay(now, tz);
 }
 
 export type ChYearKey = 'sr' | 'jr' | 'so' | 'fr';

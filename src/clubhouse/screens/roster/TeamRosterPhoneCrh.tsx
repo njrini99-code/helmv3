@@ -17,7 +17,7 @@ import { TERMS } from '../../lib/glossary';
 import { useFlipRows } from './use-flip-rows';
 import { RosterTeamCard } from './RosterTeamCard';
 import { yearKeyOf, yearLineOf, type RosterClock } from './format';
-import { sortTeammates, type TeamSort } from './team';
+import { SORT_HCP, sortTeammates, type TeamSort } from './team';
 
 /**
  * The player's phone Roster behind the lane's flag (06 10): the team card with active and class mix only, a sticky sort, then Coaches and
@@ -74,7 +74,7 @@ export function TeamRosterPhoneCrh({ data, onRetry }: { data: ChPlayerRoster; on
                   options={[
                     { value: 'name', label: 'Name' },
                     { value: 'class', label: 'Class' },
-                    { value: 'hcp', label: TERMS.handicap.short, aria: `${TERMS.handicap.short}, ${TERMS.handicap.long.toLowerCase()}` },
+                    { value: SORT_HCP, label: TERMS.handicap.short, aria: `${TERMS.handicap.short}, ${TERMS.handicap.long.toLowerCase()}` },
                   ]}
                 />
               </div>

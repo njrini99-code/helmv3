@@ -1,7 +1,7 @@
 'use client';
 
 import { ChartColumn, Check, ChevronRight, CircleAlert, Copy, Ellipsis, RotateCw, UserCheck, UserMinus, UserPlus, Users, UserX } from 'lucide-react';
-import { AnimatePresence } from 'motion/react';
+import { AnimatePresence, useReducedMotion } from 'motion/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
@@ -24,7 +24,8 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
 import { Surface } from '../../ui/Surface';
 import { ClassStatusLine } from '../../ui/ClassStatusLine';
-import { changeTone, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
+import { changeTone, formatFixed, formatHcp, formatSigned } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { TERMS } from '../../lib/glossary';
 import { pluralWord, plural } from '../../lib/plural';
 import { rebuiltHref } from '../../shell/nav';
@@ -216,7 +217,7 @@ export function RosterPhoneCrh({
                   data.statsError
                     ? [{ value: 'name', label: 'Name' }]
                     : [
-                        { value: 'avg', label: 'Avg', aria: `Avg, ${TERMS.scoringAvg.long.toLowerCase()}` },
+                        { value: 'avg', label: TERMS.avg.short, aria: `${TERMS.avg.short}, ${TERMS.scoringAvg.long.toLowerCase()}` },
                         { value: 'sg', label: TERMS.strokesGained.short, aria: `${TERMS.strokesGained.short}, ${TERMS.strokesGained.long.toLowerCase()}` },
                         { value: 'name', label: 'Name' },
                       ]
@@ -335,7 +336,8 @@ export function RosterPhoneCrh({
 
 /** A profile from a link is at rest on its first frame: this presence is new with the profile in it, so it runs no `initial` (M-CRH-46). */
 function ProfilePresence({ atRest, children }: { atRest: boolean; children: ReactNode }) {
-  return atRest ? (
+  const reduced = useReducedMotion();
+  return atRest || reduced ? (
     <AnimatePresence key="rest" initial={false}>
       {children}
     </AnimatePresence>
@@ -417,7 +419,7 @@ export function RosterRowCrh({
           </span>
           {kind === 'active' && (p.trend.length >= 3 ? <FormBars data={p.trend} mean={mean} /> : <FormStubs />)}
           <span className="ch-rsm-row__v ch-rsx-row__v" data-sort={bySg ? 'sg' : undefined}>
-            <b className={`ch-num ${bySg ? (sg == null ? 'is-none' : changeTone(sg, false)) : p.avg == null ? 'is-none' : ''}`.trim()}>{bySg ? (sg == null ? NO_DATA : formatSigned(sg)) : p.avg == null ? NO_DATA : formatFixed(p.avg)}</b>
+            <b className={`ch-num ${bySg ? (sg == null ? 'is-none' : changeTone(sg, false)) : p.avg == null ? 'is-none' : ''}`.trim()}>{bySg ? (sg == null ? <NoData /> : formatSigned(sg)) : p.avg == null ? <NoData /> : formatFixed(p.avg)}</b>
             <span className="ch-num">{bySg ? 'SG / rd' : `${formatHcp(p.handicap)} ${TERMS.handicap.short}`}</span>
           </span>
           <span className="ch-rsm-row__chev" aria-hidden="true">

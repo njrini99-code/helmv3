@@ -7,6 +7,8 @@ export const TERMS = {
   strokesGained: { long: 'Strokes gained', short: 'SG' },
   shortGame: { long: 'Short game', short: 'Short game' },
   sgArg: { long: 'Around the green', short: 'Around green' },
+  /** The redesigned Roster's sort chip, drawn as Avg (classes-roster-home 06). */
+  avg: { long: 'Scoring average', short: 'Avg' },
   scoringAvg: { long: 'Scoring average', short: 'Scoring avg' },
   handicap: { long: 'Handicap', short: 'HCP' },
   gir: { long: 'Greens in regulation', short: 'GIR' },

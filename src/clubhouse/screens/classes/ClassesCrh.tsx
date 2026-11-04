@@ -1,6 +1,7 @@
 'use client';
 
 import { AlertTriangle, Bus, ChevronRight } from 'lucide-react';
+import { formatWith } from '../../lib/dates';
 import { useChClock } from '../../lib/use-clock';
 import {
   addDays,
@@ -220,7 +221,7 @@ export function TodayCard({ classes, term, todayIso, week, onOpen }: { classes: 
   const shown = today.length ? todayIso : next?.iso;
   const rows = today.length ? today : (next?.list ?? []);
   const events = !shown || week.error ? [] : week.events.filter((e) => eventWindowOn(e, shown));
-  const weekday = dateOf(todayIso).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
+  const weekday = formatWith(dateOf(todayIso), { weekday: 'long', timeZone: 'UTC' });
   const nextWords = next ? `Next: ${DAY_LONG[dayToken(next.iso)]}, ${shortDay(next.iso)}` : null;
   return (
     <Surface variant="card" level={2} padded={false} title="Today" actions={<span className="ch-cl-meta">{weekday}</span>}>

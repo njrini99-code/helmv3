@@ -1,5 +1,6 @@
 import { Avatar } from '../../ui/Avatar';
-import { formatFixed, NO_DATA } from '../../lib/format';
+import { formatFixed } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import type { ChRosterPlayer } from '../../data/roster';
 import { classMix, teamCardFigures, yearKeyOf, type RosterClock } from './format';
 import { plural, pluralWord } from '../../lib/plural';
@@ -22,13 +23,13 @@ export function RosterTeamCard(props: Props) {
   const waiting = props.role === 'coach' ? props.waiting : null;
   const mix = classMix(players, clock);
   const counts = [`${active} active`, injured > 0 ? `${injured} injured` : null, waiting ? `${waiting} waiting` : null].filter(Boolean).join(' · ');
-  const title = season ? `${season} season` : NO_DATA;
+  const title = season ? `${season} season` : null;
   const mixWords = mix.filter((m) => m.count > 0).map((m) => `${m.count} ${m.label}`).join(', ');
   return (
-    <section className="ch-rs-tcard" role="group" aria-label={`${title}. ${plural(total, 'player')}. ${counts}.`}>
+    <section className="ch-rs-tcard" role="group" aria-label={`${title ?? 'Season not set'}. ${plural(total, 'player')}. ${counts}.`}>
       <div className="ch-rs-tcard__top">
         <span className="ch-rs-tcard__h">
-          <b>{title}</b>
+          <b>{title ?? <NoData />}</b>
           <span className="ch-num">{counts}</span>
         </span>
         <span className="ch-rs-tcard__n">

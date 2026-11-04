@@ -1001,7 +1001,9 @@ html[data-fw-theme='dark'] .ch-hr .btn.pri {
   font: var(--ch-type-15); 
   color:var(--ink-2); letter-spacing: var(--ch-track-15); }
 .ch-hr .errc .code {
-  font: var(--ch-type-mono);
+  font: var(--ch-type-11-medium);
+  font-family: var(--ch-font-mono);
+  letter-spacing: var(--ch-track-11);
   color:var(--ink-3);
 }
 .ch-hr .cx {

@@ -717,7 +717,7 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { ap
 
 /** "3 unread · 7 conversations" on the desktop rail. */
 export function inboxContextDesktop(unread: number, total: number): string {
-  return `${unread} unread · ${total} ${total === 1 ? "conversation" : "conversations"}`;
+  return `${unread} unread · ${plural(total, "conversation")}`;
 }
 
 /** The rail's flat "Pinned" and "Recent" labels over rows (no cards on the rail; the phone draws cards). */

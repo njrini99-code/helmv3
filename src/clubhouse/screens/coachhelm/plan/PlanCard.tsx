@@ -170,7 +170,7 @@ export function PlanCard({ plan, onSend }: { plan: PlanPartData; onSend: (text: 
               </p>
             )}
             <div className="btns">
-              <Button variant="primary" disabled={state.k === 'saving' || !plan.eventId} onClick={() => void save()}>
+              <Button variant="primary" busy={state.k === 'saving'} disabled={!plan.eventId} onClick={() => void save()}>
                 {state.k === 'saving' ? 'Saving…' : state.k === 'failed' ? 'Try again' : 'Save draft…'}
               </Button>
             </div>
