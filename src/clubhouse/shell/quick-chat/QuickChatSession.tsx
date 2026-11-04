@@ -116,7 +116,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, cha
   const stepLabel = assistant?.steps[assistant.steps.length - 1]?.label ?? 'Working';
   const receiptStatus = assistant?.blocks.flatMap((b) => (b.kind === 'proposal' ? [b.view.receipt?.status] : b.kind === 'receipt' ? [b.receipt.status] : [])).find(Boolean);
   useEffect(() => {
-    if (pending) {
+    if (pendingId) {
       setRun({ state: 'wait', label: 'Needs your OK' });
       if (open) return;
       const t = setTimeout(() => {

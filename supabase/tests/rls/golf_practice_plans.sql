@@ -1,7 +1,6 @@
 -- N-00 v2 Practice (20261026010000..20261026010800): who can write, read and publish practice plans,
 -- that drafts and own-work lines stay private, that Documents rows follow publish and take down,
 -- and that the drill bank, saved groups, templates and make-ups keep their rules.
--- WRITTEN, NOT RUN where it was authored (no Supabase stack): run with npm run test:rls before applying.
 BEGIN;
 \ir _helpers.sql
 SELECT plan(91);
@@ -46,11 +45,11 @@ BEGIN
   -- A trimmed zone that Postgres knows: the make-up due-date check must trim before it looks it up.
   INSERT INTO public.golf_team_settings (team_id, timezone) VALUES (t_x, '  Pacific/Honolulu  ');
   INSERT INTO public.golf_events (id, team_id, created_by, title, event_type, location, start_time, end_time, all_day) VALUES
-    ('00000000-0000-0000-0000-000000e17501', t_x, u_h, 'Thursday practice', 'practice', 'Lakeside range',
+    ('00000000-0000-0000-0000-000000e17501', t_x, c_h, 'Thursday practice', 'practice', 'Lakeside range',
       now() + interval '2 days', now() + interval '2 days 3 hours', false),
-    ('00000000-0000-0000-0000-000000e17502', t_x, u_h, 'Range day', 'practice', NULL,
+    ('00000000-0000-0000-0000-000000e17502', t_x, c_h, 'Range day', 'practice', NULL,
       now() + interval '3 days', NULL, true),
-    ('00000000-0000-0000-0000-000000e17503', t_x, u_h, 'Team meeting', 'meeting', NULL,
+    ('00000000-0000-0000-0000-000000e17503', t_x, c_h, 'Team meeting', 'meeting', NULL,
       now() + interval '4 days', now() + interval '4 days 1 hour', false);
   INSERT INTO public.golf_conversations (id, team_id, is_team_chat, title, created_by) VALUES
     ('00000000-0000-0000-0000-000000e17601', t_x, true, 'Team X', u_h);
@@ -245,7 +244,7 @@ SELECT lives_ok($$SELECT public.golf_practice_plan_save(NULL, '00000000-0000-000
 SELECT ok((SELECT edited_after_publish FROM public.golf_practice_plans WHERE id = '00000000-0000-0000-0000-000000e17701'),
   'an edit after publish is flagged as not yet published');
 SELECT is((SELECT published_version FROM public.golf_practice_plan_publish('00000000-0000-0000-0000-000000e17701', 5,
-  '[{"kind":"block_time","block":"b1"}]', true)), 2, 'republish makes version 2');
+  '["The first block moved"]', true)), 2, 'republish makes version 2');
 SELECT is((SELECT count(*)::int FROM public.golf_practice_plan_versions WHERE plan_id = '00000000-0000-0000-0000-000000e17701' AND is_live), 1,
   'exactly one version is live after republish');
 SELECT is((SELECT uploaded_by FROM public.golf_documents WHERE practice_plan_id = '00000000-0000-0000-0000-000000e17701'),
