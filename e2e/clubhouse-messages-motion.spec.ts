@@ -12,18 +12,18 @@ import { expect, test, type Page } from '@playwright/test';
  * unique to each moving thing, and nothing is added to the DOM for a test.
  */
 test.skip(!process.env.PLAYWRIGHT_BASE_URL?.includes('localhost'), 'The preview routes run against a local dev server');
-test.describe.configure({ mode: 'serial' });
 
 const THREAD = '/clubhouse-preview/messages?state=design&view=thread';
 const PHONE = { width: 390, height: 844 };
 const DESKTOP = { width: 1440, height: 900 };
 
-type Targets = Record<string, string>;
+/** A tracked element: the newest match of `sel` holding `text`, so a later arrival never swaps what is being judged. */
+type Targets = Record<string, { sel: string; text?: string }>;
 
 /** Installs the sampler: `__mcStart(targets, ms)` records each target's box and effective opacity each frame. */
 async function installSampler(page: Page) {
   await page.addInitScript(() => {
-    (window as unknown as { __mcStart: (t: Record<string, string>, ms: number) => Promise<unknown> }).__mcStart = async (targets, ms) => {
+    (window as unknown as { __mcStart: (t: Record<string, { sel: string; text?: string }>, ms: number) => Promise<unknown> }).__mcStart = async (targets, ms) => {
       const names = Object.keys(targets);
       const rows: Array<{ t: number; v: Array<{ x: number; y: number; w: number; h: number; o: number } | null> }> = [];
       const t0 = performance.now();
@@ -33,9 +33,9 @@ async function installSampler(page: Page) {
         rows.push({
           t: now,
           v: names.map((name) => {
-            const list = document.querySelectorAll(targets[name]!);
-            // `:last` in a selector name means the newest match, which is how a just-sent bubble is tracked.
-            const n = (name.endsWith(':last') ? list[list.length - 1] : list[0]) as HTMLElement | undefined;
+            const { sel, text } = targets[name]!;
+            const list = [...document.querySelectorAll<HTMLElement>(sel)].filter((e) => !text || e.textContent?.includes(text));
+            const n = list[list.length - 1];
             if (!n || !n.isConnected) return null;
             const r = n.getBoundingClientRect();
             let o = 1;
@@ -102,10 +102,10 @@ async function run(page: Page, targets: Targets, ms: number, act: () => Promise<
   expect(verdict.filter((v) => !v.ok)).toEqual([]);
 }
 
-const composer = (page: Page) => page.getByRole('textbox', { name: /message/i }).last();
+const composer = (page: Page) => page.locator('.ch-ms-comp textarea').last();
 async function send(page: Page, text: string) {
   await composer(page).fill(text);
-  await page.getByRole('button', { name: 'Send' }).click();
+  await page.locator('.ch-ms-send').click();
 }
 const reply = (page: Page, text: string, typingMs: number) =>
   page.evaluate(
@@ -119,7 +119,8 @@ const reply = (page: Page, text: string, typingMs: number) =>
     },
     [text, typingMs] as const,
   );
-const bubble = '.ch-ms-msg .ch-ms-bubble';
+const bubble = '.ch-ms-msg .ch-ms-bub';
+const olderText = async (page: Page) => ((await page.locator(bubble).last().textContent()) ?? '').trim().slice(0, 24);
 
 async function hold(page: Page) {
   const last = page.locator(bubble).last();
@@ -139,7 +140,8 @@ test.describe('phone', () => {
   });
 
   test('1. Send twice, 140 ms apart', async ({ page }) => {
-    await run(page, { 'older message': bubble, 'newest:last': bubble }, 1400, async () => {
+    const older = await olderText(page);
+    await run(page, { 'older message': { sel: bubble, text: older }, 'first bubble': { sel: bubble, text: 'Range at 3' }, 'second bubble': { sel: bubble, text: 'Bring the alignment sticks' } }, 2400, async () => {
       await send(page, 'Range at 3');
       await page.waitForTimeout(140);
       await send(page, 'Bring the alignment sticks');
@@ -147,7 +149,8 @@ test.describe('phone', () => {
   });
 
   test('2. A reply lands while yours is still rising', async ({ page }) => {
-    await run(page, { 'older message': bubble, 'newest:last': bubble }, 2000, async () => {
+    const older = await olderText(page);
+    await run(page, { 'older message': { sel: bubble, text: older }, 'your bubble': { sel: bubble, text: 'See you at 3' } }, 2000, async () => {
       await send(page, 'See you at 3');
       await page.waitForTimeout(120);
       await reply(page, 'On my way', 220);
@@ -155,7 +158,7 @@ test.describe('phone', () => {
   });
 
   test('3. Hold, then let go mid-lift', async ({ page }) => {
-    await run(page, { 'held bubble:last': `${bubble}, .ch-msv-lift__copy` }, 1100, async () => {
+    await run(page, { 'held bubble': { sel: `${bubble}, .ch-msv-lift__copy` } }, 1100, async () => {
       await hold(page);
       await page.waitForTimeout(90);
       await page.keyboard.press('Escape');
@@ -163,7 +166,7 @@ test.describe('phone', () => {
   });
 
   test('4. Hold again while it settles', async ({ page }) => {
-    await run(page, { 'held bubble:last': `${bubble}, .ch-msv-lift__copy` }, 1800, async () => {
+    await run(page, { 'held bubble': { sel: `${bubble}, .ch-msv-lift__copy` } }, 1800, async () => {
       await hold(page);
       await page.waitForTimeout(420);
       await page.keyboard.press('Escape');
@@ -175,30 +178,91 @@ test.describe('phone', () => {
   });
 
   test('6. Attach: close and reopen fast', async ({ page }) => {
-    const plus = page.locator('.ch-msv-plus button').first();
-    await run(page, { 'plus key': '.ch-msv-plus button' }, 900, async () => {
-      await plus.click();
+    const key = (await page.locator('.ch-msv-plus__key').boundingBox())!;
+    // Real pointer events at the key's place: an open menu sits over the page, and a tap there still goes where it lands.
+    const tap = () => page.mouse.click(key.x + key.width / 2, key.y + key.height / 2);
+    await run(page, { 'plus key': { sel: '.ch-msv-plus__key' } }, 900, async () => {
+      await tap();
       await page.waitForTimeout(110);
-      await plus.click();
+      await tap();
       await page.waitForTimeout(60);
-      await plus.click();
+      await tap();
+    });
+  });
+});
+
+test.describe('phone, the team thread', () => {
+  test.use({ viewport: PHONE });
+  test.beforeEach(async ({ page }) => {
+    await installSampler(page);
+    await page.goto('/clubhouse-preview/messages?state=design', { waitUntil: 'networkidle' });
+    await page.locator('.ch-ms-row .ch-ms-row__main').first().click();
+    await page.locator('.ch-ms-poll__opt').first().waitFor();
+  });
+
+  test('5. Votes sheet: close mid-rise, reopen', async ({ page }) => {
+    const link = page.locator('.ch-ms-poll__link').last();
+    await link.scrollIntoViewIfNeeded();
+    const box = (await link.boundingBox())!;
+    const open = () => page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await run(page, { sheet: { sel: 'dialog[open] .ch-modal__panel' } }, 1500, async () => {
+      await open();
+      await page.waitForTimeout(160);
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(110);
+      await open();
+      await page.waitForTimeout(700);
+      await page.keyboard.press('Escape');
+    });
+  });
+
+  test('8. Vote, then change it 100 ms later', async ({ page }) => {
+    const poll = page.locator('.ch-ms-poll__opts').last();
+    await poll.scrollIntoViewIfNeeded();
+    const opts = poll.locator('.ch-ms-poll__opt');
+    await run(page, { 'choice fills': { sel: '.ch-ms-poll__fill' } }, 1100, async () => {
+      await opts.nth(0).click();
+      await page.waitForTimeout(100);
+      await opts.nth(1).click();
     });
   });
 
   test('9. Jump key: away and back quickly', async ({ page }) => {
-    await page.evaluate(() => {
-      const el = document.querySelector('.ch-ms-msgs') as HTMLElement | null;
-      if (el) el.scrollTop = 0;
-    });
-    const jump = page.locator('.ch-msv-jump');
-    await jump.waitFor();
-    await run(page, { 'jump key': '.ch-msv-jump' }, 900, async () => {
-      await jump.click();
-      await page.waitForTimeout(90);
-      await page.evaluate(() => {
-        const el = document.querySelector('.ch-ms-msgs') as HTMLElement | null;
+    const away = () =>
+      page.evaluate(() => {
+        const el = document.querySelector('.ch-msp-scroll') as HTMLElement | null;
         if (el) el.scrollTop = 0;
       });
+    // The key shows past 90% of a screen from the end, so the thread is made long enough first (the fixture adds to Eli's).
+    await page.goto(THREAD, { waitUntil: 'networkidle' });
+    await page.locator(bubble).first().waitFor();
+    await page.evaluate(() => {
+      const f = (window as unknown as { __chMsgFixture: { incoming: (s: string) => void } }).__chMsgFixture;
+      for (let i = 0; i < 14; i++) f.incoming(`Filler ${i}`);
+    });
+    await page.waitForTimeout(1200);
+    await away();
+    const jump = page.locator('.ch-msv-jump');
+    await jump.waitFor();
+    await run(page, { 'jump key': { sel: '.ch-msv-jump' } }, 900, async () => {
+      await jump.click();
+      await page.waitForTimeout(90);
+      await away();
+    });
+  });
+});
+
+test.describe('phone, from the inbox', () => {
+  test.use({ viewport: PHONE });
+  test('7. Back pressed mid-push', async ({ page }) => {
+    await installSampler(page);
+    await page.goto('/clubhouse-preview/messages?state=design', { waitUntil: 'networkidle' });
+    const row = page.locator('.ch-ms-row').filter({ hasText: 'Eli' }).first();
+    await row.waitFor();
+    await run(page, { 'conversation list': { sel: '.ch-msp-inbox' } }, 1200, async () => {
+      await row.click();
+      await page.waitForTimeout(170);
+      await page.getByRole('button', { name: 'Back to Messages' }).click();
     });
   });
 });
@@ -211,7 +275,7 @@ test.describe('phone, Reduce Motion', () => {
     await page.locator(bubble).first().waitFor();
     await run(
       page,
-      { 'your bubble:last': bubble },
+      { 'your bubble': { sel: bubble, text: 'Calm' } },
       1400,
       async () => {
         await send(page, 'Calm');
@@ -229,8 +293,8 @@ test.describe('desktop', () => {
     await installSampler(page);
     await page.goto(THREAD, { waitUntil: 'networkidle' });
     await page.locator(bubble).first().waitFor();
-    const details = page.getByRole('button', { name: 'Details' });
-    await run(page, { composer: '.ch-ms-composer, .ch-msv-composer', 'latest message:last': bubble }, 1500, async () => {
+    const details = page.getByRole('button', { name: 'Details', exact: true });
+    await run(page, { composer: { sel: '.ch-ms-comp' }, 'latest message': { sel: bubble } }, 1500, async () => {
       await details.click();
       await page.waitForTimeout(150);
       await details.click();

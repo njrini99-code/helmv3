@@ -2,7 +2,7 @@
 
 import { Bell, BellOff, CalendarDays, Clock, FileText, LogOut, MessageSquare, Paperclip, Search, UserMinus, UserPlus, UserRound } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useLayoutEffect } from 'react';
 import { chSpringCurve } from '../../lib/motion';
 import { haptic } from '../../lib/haptics';
 import { Avatar } from '../../ui/Avatar';
@@ -320,6 +320,17 @@ export function PhotosAndFiles({ api, conv }: { api: ChMessagesApi; conv: ChConv
  */
 export function useDetailsColumn(open: boolean, redesign: boolean): boolean {
   const [mounted, setMounted] = useState(open);
+  // M-MSG-20b, the one layout animation the design keeps: set inline as the design's `wsMotion` does, so a close mid-open
+  // turns around where it is. Reduce Motion: the column snaps. Off the redesign, nothing is set.
+  useLayoutEffect(() => {
+    if (!redesign || reduced()) return;
+    const grid = document.querySelector<HTMLElement>('.ch-ms');
+    if (!grid) return;
+    grid.style.transition = 'grid-template-columns 462ms var(--ch-ease-spring-smooth)';
+    return () => {
+      grid.style.transition = '';
+    };
+  }, [redesign]);
   useEffect(() => {
     if (!redesign) return setMounted(open);
     if (open) setMounted(true);
@@ -333,7 +344,7 @@ export function useDetailsColumn(open: boolean, redesign: boolean): boolean {
     const started = performance.now();
     const pin = (now: number) => {
       if (atEnd && scroller) scroller.scrollTop = scroller.scrollHeight;
-      if (now - started < 480) frame = requestAnimationFrame(pin);
+      if (now - started < 502) frame = requestAnimationFrame(pin);
       else if (!open) setMounted(false);
     };
     frame = requestAnimationFrame(pin);

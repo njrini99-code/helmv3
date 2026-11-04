@@ -5,11 +5,12 @@ import { expect, test, type Page } from '@playwright/test';
  * PR: load it, drive what opens on it, and assert no running animation or transition moves anything (transform, translate,
  * scale, rotate, or a layout property). Crossfades stay, as opacity only.
  *
+ * MOTION_CONTROL=1 runs it with motion on, the control: the tapped screens should fail, which shows the check can see travel.
  * WebKit, because that is what Helm's users run. LOCAL ONLY (the preview routes need a dev server):
  *   PLAYWRIGHT_BASE_URL=http://localhost:3100 npx playwright test e2e/clubhouse-reduced-motion.spec.ts --project=chromium
  */
 test.skip(!process.env.PLAYWRIGHT_BASE_URL?.includes('localhost'), 'The preview routes run against a local dev server');
-test.use({ browserName: 'webkit', reducedMotion: 'reduce', viewport: { width: 390, height: 844 } });
+test.use({ browserName: 'webkit', reducedMotion: process.env.MOTION_CONTROL ? 'no-preference' : 'reduce', viewport: { width: 390, height: 844 } });
 
 const SCREENS: Array<{ pr: string; path: string; tap?: string }> = [
   { pr: 'PR 2 flat page, PR 3 large titles, PR 10 coach Home', path: '/clubhouse-preview/home' },
@@ -51,13 +52,12 @@ for (const s of SCREENS) {
     expect(await moving(page)).toEqual([]);
     if (s.tap) {
       const hit = page.locator(s.tap).first();
-      if (await hit.count()) {
-        await hit.click();
-        // Sampled across the open, not only at rest: a push or a sheet would be mid-flight here.
-        for (let i = 0; i < 6; i++) {
-          expect(await moving(page)).toEqual([]);
-          await page.waitForTimeout(40);
-        }
+      await hit.waitFor();
+      await hit.click();
+      // Sampled across the open, not only at rest: a push or a sheet would be mid-flight here.
+      for (let i = 0; i < 6; i++) {
+        expect(await moving(page)).toEqual([]);
+        await page.waitForTimeout(40);
       }
     }
   });
