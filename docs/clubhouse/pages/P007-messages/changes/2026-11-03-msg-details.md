@@ -10,3 +10,14 @@ Actions:        none new
 Data impact:    none; in-conversation search filters today's searchMessages results on the client
 Held items:     none
 ```
+
+## 2026-11-03 — PR 11h (golf_messages_redesign_v1, off; migration held)
+
+```text
+Design package: design-refresh/messages/pin-sync/ (PR 11h)
+PR/commit:      agent/msg-11h
+Contract IDs:   as today's pins
+Actions:        none new; RPC golf_pin_conversation, once the owner applies
+Data impact:    none until applied; device pins stay the fallback
+Held items:     20261031150000_golf_conversation_pins.sql (WRITTEN, HOLD, NOT APPLIED)
+```

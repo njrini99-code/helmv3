@@ -1,6 +1,6 @@
 'use client';
 
-import { usePinned } from './pinned';
+import { useConversationPins } from './use-conversation-pins';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { useRowMutes } from './use-row-mutes';
 import { useTypingByConversation } from './use-typing-by-conversation';
@@ -652,7 +652,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
   convIdsRef.current = new Set(convs.map((c) => c.id));
   const rowMutes = useRowMutes(data.viewerUserId, redesign);
   const convIds = useMemo(() => convs.map((c) => c.id), [convs]);
-  const pins = usePinned(data.viewerUserId, data.teamId ?? '', convIds, redesign);
+  const pins = useConversationPins(data.viewerUserId, data.teamId ?? '', convIds, redesign);
   const typingByConv = useTypingByConversation(data.viewerUserId, convIds, selectedId, redesign);
   const shownConvs = useMemo(() => (redesign && rowMutes.muted ? convs.map((c) => ({ ...c, muted: rowMutes.muted!.has(c.id) })) : convs), [redesign, rowMutes.muted, convs]);
 
