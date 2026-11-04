@@ -10,7 +10,7 @@
   --a-pglass: rgb(253 252 248 / 0.84); --a-pglass-hi: rgb(255 255 255 / 0.7); --a-veil: rgb(242 240 233 / 0.42);
   --a-pshadow: 0 0 0 0.5px rgb(28 25 18 / 0.12), 0 36px 72px -26px rgb(28 25 18 / 0.4), 0 12px 28px -12px rgb(28 25 18 / 0.18);
   --a-tile: #fffefb; --a-tile-ring: rgb(28 27 24 / 0.07);
-  --a-shadow: 0 1px 2px rgb(28 25 18 / 0.05), 0 8px 20px -12px rgb(28 25 18 / 0.12);
+  --a-shadow: var(--ch-elevation-reading);
 }
 html[data-fw-theme='dark'] .ch-qcs {
   --a-card: #191e1a; --a-well: #141815; --a-ink-2: #d0c9b8; --a-ink-3: #ada697; --a-accent-text: #7cc79b; --a-tint: rgb(124 199 155 / 0.12);
@@ -19,7 +19,7 @@ html[data-fw-theme='dark'] .ch-qcs {
   --a-seg1: #4fa877; --a-seg2: #7cc79b; --a-seg3: #9dd6b4;
   --a-pglass: rgb(27 32 28 / 0.84); --a-pglass-hi: rgb(255 255 255 / 0.07); --a-veil: rgb(14 18 15 / 0.5);
   --a-pshadow: 0 0 0 0.5px rgb(237 231 216 / 0.14), 0 36px 72px -26px rgb(0 0 0 / 0.85), 0 12px 28px -12px rgb(0 0 0 / 0.5);
-  --a-tile: #1f2520; --a-tile-ring: rgb(255 255 255 / 0.06); --a-shadow: 0 1px 0 rgb(255 255 255 / 0.04) inset;
+  --a-tile: #1f2520; --a-tile-ring: rgb(255 255 255 / 0.06); --a-shadow: var(--ch-elevation-reading);
 }
 .ch-qcs .hkey { position: relative; display: inline-grid; place-items: center; width: 44px; height: 44px; border: 0; padding: 0; border-radius: var(--ch-radius-xl); background: none; cursor: pointer; color: var(--a-frame-icon); }
 .ch-qcs .hkey__disc { position: absolute; inset: 4px; border-radius: var(--ch-radius-lg); background: rgb(244 238 221 / 0.16); opacity: 0; transform: scale(0.82); transition: opacity 0.2s, transform 0.26s cubic-bezier(0.22, 1, 0.36, 1); }

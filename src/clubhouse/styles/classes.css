@@ -3244,7 +3244,7 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
   --ch-classes-shadow-3: 0 1px 2px rgb(28 25 18 / 0.12), 0 0 0 var(--ch-hairline-w) var(--ch-cl-tb);
 }
 [data-ui='clubhouse'] {
-  --ch-classes-x1: 0 0 0 var(--ch-hairline-w) var(--ch-card-ring), var(--ch-card-shadow);
+  --ch-classes-x1: var(--ch-elevation-reading);
   --ch-classes-x2: inset 0 1px 3px rgb(0 0 0 / 0.35), 0 1px 0 rgb(255 255 255 / 0.08);
   --ch-classes-x3: inset 0 0 0 1.5px var(--ch-cl-tf);
   --ch-classes-x4: inset 0 0 0 var(--ch-hairline-w) var(--ch-cl-tb);

@@ -11,7 +11,7 @@
   --a-accent: #155a39;
   --a-sep: rgb(28 27 24 / 0.1);
   --a-ring: rgb(28 27 24 / 0.07);
-  --a-shadow: 0 0 0 var(--ch-hairline-w) var(--a-ring), 0 1px 2px rgb(28 25 18 / 0.05), 0 8px 20px -12px rgb(28 25 18 / 0.12);
+  --a-shadow: var(--ch-elevation-reading);
   --a-feat: #0b3a25;
   --a-feat-1: #f4f1e8;
   --a-feat-2: #d3d9cb;
@@ -43,7 +43,7 @@ html[data-fw-theme='dark'] .ch-hf {
   --a-accent: #7cc79b;
   --a-sep: rgb(241 236 223 / 0.1);
   --a-ring: rgb(255 255 255 / 0.06);
-  --a-shadow: 0 0 0 var(--ch-hairline-w) var(--a-ring), inset 0 var(--ch-hairline-w) 0 rgb(255 255 255 / 0.04);
+  --a-shadow: var(--ch-elevation-reading);
   --a-feat: #123d29;
   --a-press: rgb(241 236 223 / 0.06);
   --a-skel: #252c26;

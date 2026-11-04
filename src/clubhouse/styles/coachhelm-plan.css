@@ -125,7 +125,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
 .ch-cpv .art {
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: 0 0 0 1px var(--cpv-sep);
+  box-shadow: var(--ch-elevation-reading);
   overflow: hidden;
 }
 .ch-cpv .art-h {

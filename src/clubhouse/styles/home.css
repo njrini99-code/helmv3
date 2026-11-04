@@ -4957,7 +4957,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 }
 [data-ui='clubhouse'] {
   --ch-home-x1: inset 0 0 0 var(--ch-hairline-w) rgb(255 255 255 / 0.14);
-  --ch-home-x2: 0 0 0 var(--ch-hairline-w) var(--ch-card-ring), var(--ch-card-shadow);
+  --ch-home-x2: var(--ch-elevation-reading);
   --ch-home-x3: inset 0 -0.66px 0 var(--ch-separator);
   --ch-home-x4: inset -0.66px 0 0 var(--ch-separator);
 }

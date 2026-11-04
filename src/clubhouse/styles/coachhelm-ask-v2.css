@@ -250,7 +250,7 @@ html[data-fw-theme='dark'] .ch-th[data-v2] {
 .ch-ak-handoff p { margin: 0; font: var(--ch-type-13);  color: var(--ch-text-secondary); }
 .ch-th[data-v2] {
   --ch-ask-shadow-1: 0 0 0 0.5px var(--ak-hair), 0 1px 2px rgb(28 25 18 / 0.05);
-  --ch-ask-shadow-2: 0 0 0 0.5px var(--ak-hair), 0 1px 2px rgb(28 25 18 / 0.04);
+  --ch-ask-shadow-2: var(--ch-elevation-reading);
 }
 .ch-th[data-v2], .ch-ak-pane, .ch-ak-out, .ch-ak-season, .ch-ak-knows, .ch-ak-meter, .ch-ak-handoff {
   --ch-ask-v2-x1: 0 0 0 0.5px rgb(28 27 24 / 0.14);

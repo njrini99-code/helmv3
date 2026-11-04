@@ -2040,7 +2040,7 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   }
 }
 .ch-htb {
-  --ch-team-shadow-1: 0 0 0 var(--ch-hairline-w) var(--ring),var(--shadow);
+  --ch-team-shadow-1: var(--ch-elevation-reading);
   --ch-team-shadow-2: 0 14px 30px -18px rgba(5,30,18,.6);
   --ch-team-shadow-3: var(--shadow-lg);
   --ch-team-shadow-4: -1px 0 0 var(--sep),var(--shadow-lg);

@@ -236,7 +236,9 @@
       "exports": [
         "PreviewAskV2"
       ],
-      "styles": [],
+      "styles": [
+        "src/clubhouse/styles/coachhelm-ask.css"
+      ],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -2278,6 +2280,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
@@ -2293,6 +2296,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm-plan.css",
         "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
@@ -2670,6 +2674,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-thread.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
@@ -2905,7 +2910,8 @@
       "group": "screens",
       "exports": [
         "PlanCard",
-        "PlanPreview"
+        "PlanPreview",
+        "PlanVersions"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
@@ -12565,7 +12571,7 @@
         },
         {
           "name": "--ch-classes-x1",
-          "value": "0 0 0 var(--ch-hairline-w) var(--ch-card-ring), var(--ch-card-shadow)",
+          "value": "var(--ch-elevation-reading)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -12609,6 +12615,7 @@
         "ch-ak-hs",
         "ch-ak-knows",
         "ch-ak-knows__tone",
+        "ch-ak-mark",
         "ch-ak-meter",
         "ch-ak-miss",
         "ch-ak-out",
@@ -12623,6 +12630,9 @@
         "ch-cpv-pub",
         "ch-th",
         "ch-th-col",
+        "ch-th-cv__expand",
+        "ch-th-cv__full",
+        "ch-th-cv__head",
         "ch-th-user"
       ],
       "tokens": [
@@ -12633,7 +12643,7 @@
         },
         {
           "name": "--ch-ask-shadow-2",
-          "value": "0 0 0 0.5px var(--ak-hair), 0 1px 2px rgb(28 25 18 / 0.04)",
+          "value": "var(--ch-elevation-reading)",
           "scope": ".ch-th[data-v2]"
         },
         {
@@ -13100,6 +13110,8 @@
     {
       "file": "src/clubhouse/styles/coachhelm-plan.css",
       "classes": [
+        "ch-ask-body",
+        "ch-ask-main",
         "ch-cp-card",
         "ch-cp-folder",
         "ch-cp-foot",
@@ -13113,6 +13125,7 @@
         "ch-cp-why",
         "ch-cpv",
         "ch-cpv-banner",
+        "ch-cpv-chat",
         "ch-cpv-fmt",
         "ch-cpv-full",
         "ch-cpv-ply",
@@ -13236,6 +13249,7 @@
         "ch-hr-plainp",
         "ch-hr-rail",
         "ch-hr-railh",
+        "ch-hr-swr",
         "ch-hr-topar"
       ],
       "tokens": [
@@ -13246,7 +13260,7 @@
         },
         {
           "name": "--ch-read-shadow-2",
-          "value": "0 0 0 var(--ch-hairline-w) var(--ring),var(--shadow)",
+          "value": "var(--ch-elevation-reading)",
           "scope": ".ch-hr"
         },
         {
@@ -13391,7 +13405,7 @@
       "tokens": [
         {
           "name": "--ch-team-shadow-1",
-          "value": "0 0 0 var(--ch-hairline-w) var(--ring),var(--shadow)",
+          "value": "var(--ch-elevation-reading)",
           "scope": ".ch-htb"
         },
         {
@@ -14561,7 +14575,7 @@
         },
         {
           "name": "--ch-home-x2",
-          "value": "0 0 0 var(--ch-hairline-w) var(--ch-card-ring), var(--ch-card-shadow)",
+          "value": "var(--ch-elevation-reading)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -15061,9 +15075,11 @@
         "ch-ms-pollv__final",
         "ch-ms-pollv__h",
         "ch-ms-pollv__left",
+        "ch-ms-pollv__line",
         "ch-ms-pollv__name",
         "ch-ms-pollv__none",
         "ch-ms-pollv__opt",
+        "ch-ms-pollv__person",
         "ch-ms-pollv__row",
         "ch-ms-pollv__who",
         "ch-ms-quiet",
@@ -21607,7 +21623,7 @@
         },
         {
           "name": "--ch-card-shadow",
-          "value": "0 1px 2px rgb(28 25 18 / 0.05), 0 8px 20px -12px rgb(28 25 18 / 0.12)",
+          "value": "var(--ch-elevation-reading)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -22002,7 +22018,7 @@
         },
         {
           "name": "--ch-crh-card-shadow",
-          "value": "0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(28 25 18 / 0.05), 0 8px 20px -12px rgb(28 25 18 / 0.12)",
+          "value": "var(--ch-elevation-reading)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -22657,7 +22673,7 @@
         },
         {
           "name": "--ch-card-shadow",
-          "value": "0 1px 0 rgb(255 255 255 / 0.04) inset",
+          "value": "var(--ch-elevation-reading)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -22857,7 +22873,7 @@
         },
         {
           "name": "--ch-crh-card-shadow",
-          "value": "0 0 0 1px var(--ch-card-ring), inset 0 1px 0 rgb(255 255 255 / 0.04)",
+          "value": "var(--ch-elevation-reading)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -25385,7 +25401,7 @@
         },
         {
           "name": "--ch-ui-x1",
-          "value": "0 0 0 var(--ch-hairline-w) var(--ch-card-ring), var(--ch-card-shadow)",
+          "value": "var(--ch-elevation-reading)",
           "scope": "[data-ui='clubhouse']"
         },
         {

@@ -29,7 +29,7 @@
   --s-flat: var(--ch-chart-flat);
   --s-track: var(--ch-chart-track);
   --s-zero: var(--ch-chart-zero);
-  --s-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-card-ring), var(--ch-card-shadow);
+  --s-shadow: var(--ch-elevation-reading);
   background: var(--s-bg);
   color: var(--s-ink);
 }
