@@ -1240,7 +1240,6 @@ html[data-fw-theme='dark'] .ch-hr .btn.pri {
 .ch-hr .lr .v {
   font: var(--ch-type-14-strong);
   letter-spacing: var(--ch-track-14);
-  font-variant-numeric: tabular-nums;
 }
 .ch-hr .lr .sdot {
   flex: none;

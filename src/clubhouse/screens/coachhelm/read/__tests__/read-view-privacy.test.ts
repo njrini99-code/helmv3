@@ -59,7 +59,7 @@ describe('a likely cause, by viewer', () => {
     const c = readCauseOf(CAUSE, null, 'player', '1.1 to 2.9')!;
     expect(c.state).toBe('not_traced');
     const json = JSON.stringify(c);
-    for (const key of ['arms', 'verdict', 'range', 'failures']) expect(json).not.toContain(`"${key}"`);
+    for (const key of ['arms', 'verdict', 'range', 'failures']) expect(json).not.toContain(`${JSON.stringify(key)}`);
     expect(json).not.toContain('175+');
     expect(json).not.toContain('2.3');
   });

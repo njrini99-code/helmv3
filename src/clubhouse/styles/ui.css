@@ -2794,6 +2794,7 @@ main[data-ch-crh='on'] :focus-visible {
   }
 }
 /* Lane figures: tabular from the one owner (CONS-39). */
+.ch-hr .lr .v,
 .ch-cp-row .t,
 .ch-cp-sheet .pp-date b,
 .ch-cp-sheet .pp-h span,

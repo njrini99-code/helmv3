@@ -53,7 +53,7 @@ export function useThreadAnchor(
       // overflow: pinning to that inflated height would jump the thread by the room being made. The end is where the list's
       // own box ends, without the transform. Off the redesign nothing moves the list, and this is today's line.
       const list = s.querySelector<HTMLElement>('.ch-ms-msgs');
-      const moved = list?.getAnimations().length ? new DOMMatrixReadOnly(getComputedStyle(list).transform).m42 : 0;
+      const moved = list?.getAnimations?.().length ? new DOMMatrixReadOnly(getComputedStyle(list).transform).m42 : 0;
       if (list && moved > 0) {
         const below = parseFloat(getComputedStyle(s).paddingBottom) || 0;
         const bottom = list.getBoundingClientRect().bottom - moved - s.getBoundingClientRect().top + s.scrollTop;

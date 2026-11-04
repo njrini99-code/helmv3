@@ -168,7 +168,7 @@ export function useThreadMakeRoom(scroller: RefObject<HTMLElement | null>, count
     if (reduced || !list.animate || was == null) return;
     const d = Math.max(-s.clientHeight, Math.min(s.clientHeight, now - was));
     if (Math.abs(d) < 1) return;
-    const moved = list.getAnimations().length ? new DOMMatrixReadOnly(getComputedStyle(list).transform).m42 : 0;
+    const moved = list.getAnimations?.().length ? new DOMMatrixReadOnly(getComputedStyle(list).transform).m42 : 0;
     const bottom = list.getBoundingClientRect().bottom - moved - s.getBoundingClientRect().top + s.scrollTop;
     const fromEnd = bottom + (parseFloat(getComputedStyle(s).paddingBottom) || 0) - s.clientHeight - s.scrollTop;
     if (fromEnd > 60) return;
