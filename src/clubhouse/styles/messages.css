@@ -4367,6 +4367,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   border-radius: 16px;
   background: var(--ch-card-bg);
   box-shadow: var(--ch-card-shadow);
+}
+
 /* Messages redesign, 11c: thread and bubbles (06 S-MSG.thread, .team, .typing, .times, .date-pill, .jump). */
 [data-ch-ms-v2] .ch-ms-day > span {
   padding: 4px 11px;
@@ -4748,7 +4750,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   padding: 6px;
   border-radius: 22px;
   background: var(--ch-glass-strong);
-  box-shadow: var(--ch-pop-shadow, var(--ch-card-shadow));
+  box-shadow: var(--ch-shadow-float);
   transform-origin: 18px 100%;
   animation: ch-msv-lift 471ms var(--ch-ease-spring-lift, var(--ch-ease)) backwards;
 }
@@ -5116,17 +5118,6 @@ body:has([data-ch-ms-v2]) .ch-toast {
   background: var(--ch-well-bg-flat);
   color: var(--ch-accent);
   font: 600 calc(12 * var(--ch-type-k)) / 1.2 var(--ch-font-sans);
-}
-/* Desktop: the one layout animation in Messages, the details column (MSG-DETAILS-03). */
-@container (min-width: 1101px) {
-  [data-ch-ms-v2] .ch-ms {
-    transition: grid-template-columns 462ms var(--ch-ease-spring-smooth);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  [data-ch-ms-v2] .ch-ms {
-    transition: none;
-  }
 }
 [data-ch-ms-v2] .ch-switch input:not(:checked) + * {
   box-shadow: inset 0 0 0 1.5px var(--ch-switch-off-ring);
