@@ -2,7 +2,7 @@
 import { formatWith } from '../../../lib/dates';
 
 import { useRefresh } from '../../../lib/use-refresh';
-import { TriangleAlert, Eye, MessageSquare, Ellipsis, Users } from 'lucide-react';
+import { Check, TriangleAlert, Eye, MessageSquare, Ellipsis, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
@@ -210,6 +210,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
         </>
       ) : planNow?.stage === 'accepted' ? (
         <span className="btn is-done" role="status">
+          <Icon icon={Check} size={18} />
           Your focus since {planNow.since}
         </span>
       ) : null

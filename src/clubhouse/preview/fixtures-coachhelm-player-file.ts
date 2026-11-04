@@ -70,7 +70,9 @@ export function previewPlayerFile(state: string): ChPlayerFile {
     track: none ? toChFileTrack([], [], ZONE) : toChFileTrack([{ id: 'fa-0', title: 'Lag putting', outcome_status: 'improved', completed_at: '2026-09-28T00:00:00Z', from_insight_id: null }, { id: 'fa-1', title: 'Penalty strokes', outcome_status: null, completed_at: null, from_insight_id: 'pv-1' }], [], ZONE),
   };
   const strengths = list.filter((d) => d.base.strength);
-  const lens: ChFileCards = { ...cards, intent: undefined, track: undefined, dismissed: [], reads: list.filter((d) => !d.base.strength && d !== list[0]).slice(0, 2), working: strengths.slice(0, 1), more: Math.max(0, list.length - 3), sg: cards.sg && SG_YOU, field: field(state, 'player') };
+  // The loader asks for the read in the player's own voice (lens: true); the fixture's reads are written for the coach.
+  const inYourVoice = cards.feat ? { ...cards.feat, base: { ...cards.feat.base, lede: cards.feat.base.lede.replace(/^Across all (\d+) rounds on file \w+ is averaging ([\d.]+) penalty strokes per round\./, 'You’re averaging $2 penalty strokes a round across all $1 rounds.') } } : null;
+  const lens: ChFileCards = { ...cards, feat: inYourVoice, intent: undefined, track: undefined, dismissed: [], reads: list.filter((d) => !d.base.strength && d !== list[0]).slice(0, 2), working: strengths.slice(0, 1), more: Math.max(0, list.length - 3), sg: cards.sg && SG_YOU, field: field(state, 'player') };
   return {
     head: { playerId: voice.playerId, name: state === 'long' ? 'Maximilian Okonkwo-Vandermeer' : voice.name, first: state === 'long' ? 'Maximilian' : FIRST, line: voice.line },
     cards,

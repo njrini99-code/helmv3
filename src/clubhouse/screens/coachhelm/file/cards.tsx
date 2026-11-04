@@ -121,7 +121,7 @@ export function FeatureCard({
         {d.closes && (
           <>
             {' '}
-            Closing it to {anchor} is worth <b>{d.closes.strokes} strokes a round</b>.
+            {mine ? <>Closing it to {anchor}</> : <>Getting to {d.closes?.anchor === 'team' && team != null ? 'the team’s number' : 'the Tour’s number'}</>} is worth <b>{d.closes.strokes} strokes a round</b>.
           </>
         )}
       </p>

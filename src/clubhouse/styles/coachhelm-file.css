@@ -313,7 +313,7 @@ html[data-fw-theme='dark'] .ch-hf {
 .ch-hf .grid2 { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr); gap: 20px; align-items: start; }
 .ch-hf .col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 .ch-hf .dhead { display: flex; align-items: center; gap: 12px; }
-.ch-hf .dhead .lt { font: var(--ch-type-28); letter-spacing: var(--ch-track-28); }
+.ch-hf .dhead .lt { font: var(--ch-type-28-strong); letter-spacing: var(--ch-track-28); }
 .ch-hf .dhead p { margin: 2px 0 0; font: var(--ch-type-15); color: var(--a-ink-2); letter-spacing: var(--ch-track-15); }
 .ch-hf .dhead .aseg { margin-left: auto; width: 300px; }
 @media (prefers-reduced-motion: reduce) { .ch-hf .sk i::before { animation: none; display: none; } .ch-hf .hs__s .fill, .ch-hf .hs__s i, .ch-hf .hs__s i svg { transition: none; } }
