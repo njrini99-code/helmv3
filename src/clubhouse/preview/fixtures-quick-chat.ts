@@ -52,9 +52,9 @@ function task(kind: Kind, phase: 'confirm' | 'held' | 'done' | 'failed' | 'cance
   const p = proposal(kind);
   const approved = phase !== 'confirm' && phase !== 'cancelled';
   const tool = { type: `tool-${TOOL[kind]}`, toolCallId: 'call-1', input: {}, state: phase === 'confirm' ? 'approval-requested' : 'approval-responded', approval: { id: 'approval-1', ...(phase === 'confirm' ? {} : { approved }) } };
-  const receipt: ActionReceipt | null = phase === 'held' || phase === 'done' || phase === 'failed'
-    ? { status: phase === 'held' ? 'held' : phase === 'done' ? 'completed' : 'failed', ...(phase === 'held' ? { held_until: new Date(Date.now() + 8000).toISOString() } : {}), action: p.action, summary: phase === 'failed' ? 'The calendar didn’t answer. Nothing was saved.' : DONE[kind], created: [{ kind: 'event', count: 1, href: '/golf/dashboard/calendar', label: p.summary }], notifications: phase === 'done' ? [{ channel: 'bell', recipients: kind === 'msg' ? 6 : 11, status: 'sent' }] : [], partial_failures: [], retryable: phase === 'failed' }
-    : null;
+  const receipt = (phase === 'held' || phase === 'done' || phase === 'failed'
+    ? { status: phase === 'held' ? 'held' : phase === 'done' ? 'completed' : 'failed', ...(phase === 'held' ? { held_until: new Date(Date.now() + 8000).toISOString() } : {}), action: p.action, summary: phase === 'failed' ? 'The calendar didn’t answer. Nothing was saved.' : DONE[kind], created: [{ kind: 'event', count: 1, href: '/golf/dashboard/calendar', label: p.summary }], notifications: phase === 'done' ? [{ channel: 'bell', recipients: kind === 'msg' ? 6 : 11, status: 'sent' as const }] : [], partial_failures: [], retryable: phase === 'failed' }
+    : null) as ActionReceipt | null;
   return [
     user('u1', ASK[kind]),
     assistant([...STEPS, { type: 'text', text: SAY[kind], state: 'done' }, tool, { type: 'data-action-proposal', id: `proposal-${p.idempotency_key}`, data: p }, ...(receipt ? [{ type: 'data-action-receipt', id: `receipt-${p.idempotency_key}`, data: receipt }] : [])]),
