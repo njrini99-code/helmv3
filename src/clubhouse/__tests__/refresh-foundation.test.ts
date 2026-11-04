@@ -22,9 +22,9 @@ const scopedRules = (f: string) => {
 };
 
 describe('clubhouse_refresh_v1', () => {
-  it('is off in every environment', () => {
+  it('is off in production and development, on in Preview (staging)', () => {
     const flag = FLAG_REGISTRY.find((f) => f.feature_id === 'clubhouse_refresh_v1');
-    expect(flag).toMatchObject({ default: false, environment: { production: false, preview: false, development: false } });
+    expect(flag).toMatchObject({ default: false, environment: { production: false, preview: true, development: false } });
   });
 
   it('the page takes no light or paper under the flag', () => {

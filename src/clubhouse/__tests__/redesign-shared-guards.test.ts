@@ -30,12 +30,12 @@ const entryOf = (flag: string) => {
 };
 
 /** SHARED-8. A flag that isn't off everywhere can't promise "flag off renders today's screens" anywhere. */
-describe('every lane’s flag is a release flag, off in every environment', () => {
+describe('every lane’s flag is a release flag, off in production and development, on in Preview (staging)', () => {
   it.each(LANE_FLAGS)('%s', (flag) => {
     const e = entryOf(flag);
     expect(e).toMatch(/default: false/);
     expect(e).toMatch(/production: false/);
-    expect(e).toMatch(/preview: false/);
+    expect(e).toMatch(/preview: true/);
     expect(e).toMatch(/development: false/);
   });
 });

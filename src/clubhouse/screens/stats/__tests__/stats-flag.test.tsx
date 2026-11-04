@@ -8,12 +8,12 @@ const yml = readFileSync(resolve(process.cwd(), 'config/feature-flags.yml'), 'ut
 
 /** W-STATS-1, CP-114. The render half (main's tree, no lane hook, `#sd-*` ignored) grows with each PR that adds a screen behind the flag. */
 describe('clubhouse_stats_redesign_v1', () => {
-  it('exists, off in every environment', () => {
+  it('exists, off in production and development, on in Preview (staging)', () => {
     const entry = yml.split('- feature_id: clubhouse_stats_redesign_v1')[1]!.split('- feature_id:')[0]!;
     expect(entry).toMatch(/type: release/);
     expect(entry).toMatch(/default: false/);
     expect(entry).toMatch(/production: false/);
-    expect(entry).toMatch(/preview: false/);
+    expect(entry).toMatch(/preview: true/);
     expect(entry).toMatch(/development: false/);
   });
 

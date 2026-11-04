@@ -40,7 +40,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -57,7 +57,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -74,7 +74,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -142,7 +142,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -346,7 +346,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -363,7 +363,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -380,7 +380,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -397,7 +397,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -414,7 +414,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -567,7 +567,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -720,7 +720,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -737,7 +737,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -754,7 +754,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
