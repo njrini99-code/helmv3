@@ -57,7 +57,7 @@ function task(kind: Kind, phase: 'confirm' | 'held' | 'done' | 'failed' | 'cance
     : null) as ActionReceipt | null;
   return [
     user('u1', ASK[kind]),
-    assistant([...STEPS, { type: 'text', text: SAY[kind], state: 'done' }, tool, { type: 'data-action-proposal', id: `proposal-${p.idempotency_key}`, data: p }, ...(receipt ? [{ type: 'data-action-receipt', id: `receipt-${p.idempotency_key}`, data: receipt }] : [])]),
+    assistant([...STEPS, { type: 'text', text: SAY[kind], state: 'done' }, tool, { type: 'data-action-proposal', id: `proposal-${p.idempotency_key}`, data: { ...p, tool: TOOL[kind] } }, ...(receipt ? [{ type: 'data-action-receipt', id: `receipt-${p.idempotency_key}`, data: receipt }] : [])]),
   ];
 }
 

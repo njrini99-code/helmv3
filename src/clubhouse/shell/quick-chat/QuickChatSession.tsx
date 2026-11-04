@@ -42,6 +42,8 @@ export default function QuickChatSession({ open, onClose, looking, pathname, cha
   const chat = useChatImpl({ initialContext: looking.playerId ? [{ kind: 'player', id: looking.playerId, label: looking.playerName ?? 'This player' }] : undefined });
   const turns = useMemo(() => buildTurns(chat.messages, { busy: chat.busy }), [chat.messages, chat.busy]);
   const pending = pendingApproval(chat.messages);
+  // A fresh object each render: effects key on its id, or setting the key's state re-renders into a loop.
+  const pendingId = pending?.approvalId ?? null;
   const notice = chat.error ? describeChatError(chat.error) : null;
   const [text, setText] = useState(initialText);
   const [stopped, setStopped] = useState(false);
@@ -132,7 +134,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, cha
     }
     setRun({ state: 'idle', label: '' });
     return undefined;
-  }, [pending, chat.busy, stepLabel, receiptStatus, open, setRun, setFlag]);
+  }, [pendingId, chat.busy, stepLabel, receiptStatus, open, setRun, setFlag]);
 
   // Anything added scrolls the body; the panel's own height never moves (M-GROW).
   useEffect(() => {
@@ -158,8 +160,8 @@ export default function QuickChatSession({ open, onClose, looking, pathname, cha
     setStopped(false);
     chat.send(queued[0]!);
     setQueued((q) => q.slice(1));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- sends when the way clears
-  }, [queued, chat.busy, pending, online]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sends when the way clears, keyed on the id (`pending` is new each render)
+  }, [queued, chat.busy, pendingId, online]);
   const stop = () => {
     chat.stop();
     setStopped(true);
