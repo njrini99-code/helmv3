@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
 import { describeChatError } from '../../data/coachhelm-chat-error';
-import { buildTurns, pendingApproval, type AskAssistantTurn } from '../../data/coachhelm-chat-thread';
+import { buildTurns, pendingApproval, stepsReceipt, type AskAssistantTurn } from '../../data/coachhelm-chat-thread';
 import { useChPhone } from '../../lib/use-phone';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { conversationHref } from '../../screens/coachhelm/chat/History';
@@ -17,10 +17,15 @@ import { modKey } from '../command/shortcuts';
 import type { ChAskSheetChat } from '../AskSheet';
 import { HelmMark, useQcCtx } from './QuickChatProvider';
 import { quickStarts } from './starts';
+import { useEarlierToday } from './earlier-today';
 import { TaskCard } from './TaskCard';
 import { useQcMotion } from './useQcMotion';
 
 const TURNS_SHOWN = 30;
+/** AC-QC-STP-04: past six rows, the oldest done ones fold. */
+const STEPS_SHOWN = 6;
+/** A release this far up on the header or grab bar closes the phone panel (M-CLOSE's build rule); the panel doesn't follow the finger. */
+const SWIPE_SLOP = 10;
 const Ico = ({ d, size }: { d: string; size?: number }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width={size} height={size} aria-hidden="true">
     <path d={d} />
@@ -135,12 +140,26 @@ export default function QuickChatSession({ open, onClose, looking, pathname, cha
     if (el && chat.messages.length) el.scrollTo({ top: el.scrollHeight, behavior: reduced ? 'auto' : 'smooth' });
   }, [chat.messages, reduced]);
 
+  // AC-QC-CMP-03, 05: a message written during a run or offline waits, and goes when it can. A pending confirm holds it too.
+  const [queued, setQueued] = useState<string[]>([]);
   const send = (t: string) => {
-    if (!t.trim() || chat.busy || pending || !online) return;
-    setStopped(false);
-    chat.send(t.trim());
+    const clean = t.trim();
+    if (!clean) return;
     setText('');
+    if (chat.busy || pending || !online) {
+      setQueued((q) => [...q, clean]);
+      return;
+    }
+    setStopped(false);
+    chat.send(clean);
   };
+  useEffect(() => {
+    if (!queued.length || chat.busy || pending || !online) return;
+    setStopped(false);
+    chat.send(queued[0]!);
+    setQueued((q) => q.slice(1));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sends when the way clears
+  }, [queued, chat.busy, pending, online]);
   const stop = () => {
     chat.stop();
     setStopped(true);
@@ -152,13 +171,41 @@ export default function QuickChatSession({ open, onClose, looking, pathname, cha
   };
 
   const fresh = turns.length === 0;
-  const canSend = !!text.trim() && online && !pending;
+  const canSend = !!text.trim();
+  const earlier = useEarlierToday(open, fresh);
+  // Tab stays inside the dialog (AC-QC-PNL-08).
+  const onPanelKey = (e: React.KeyboardEvent<HTMLElement>) => {
+    if (e.key !== 'Tab' || !panel.current) return;
+    const stops = [...panel.current.querySelectorAll<HTMLElement>('button:not(:disabled), textarea, a[href], input:not(:disabled), [tabindex="0"]')].filter((el) => el.offsetParent !== null);
+    if (!stops.length) return;
+    const first = stops[0]!;
+    const last = stops[stops.length - 1]!;
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
+  const swipeFrom = useRef<number | null>(null);
+  const swipe = phone
+    ? {
+        onPointerDown: (e: React.PointerEvent) => {
+          swipeFrom.current = e.clientY;
+        },
+        onPointerUp: (e: React.PointerEvent) => {
+          if (swipeFrom.current != null && swipeFrom.current - e.clientY > SWIPE_SLOP) onClose();
+          swipeFrom.current = null;
+        },
+      }
+    : {};
   const hidden = turns.length > TURNS_SHOWN ? turns.length - TURNS_SHOWN : 0;
   return (
     <div className={'ch-qcs' + (phone ? ' is-phone' : ' is-desk') + (reduced ? ' is-reduce' : '')}>
       <div ref={scrim} className="scrim" hidden={!shown} onClick={onClose} aria-hidden="true" />
-      <section ref={panel} className="qc" role="dialog" aria-label="CoachHelm" hidden={!shown} data-ch-qc-panel="">
-        <header className="qc__h" data-qc-rise="">
+      <section ref={panel} className="qc" role="dialog" aria-label="CoachHelm" hidden={!shown} data-ch-qc-panel="" onKeyDown={onPanelKey}>
+        <header className="qc__h" data-qc-rise="" {...swipe}>
           <span className="qc__mark">
             <HelmMark />
           </span>
@@ -194,6 +241,21 @@ export default function QuickChatSession({ open, onClose, looking, pathname, cha
                       </button>
                     ))}
                   </div>
+                  {earlier && (
+                    <div className="earlier">
+                      <small>Earlier today</small>
+                      <div className="earlier__r">
+                        <span className="rcpt__g">
+                          <Ico d="M5 13l4 4L19 7" />
+                        </span>
+                        <span className="earlier__t">
+                          <b>{earlier.title}</b>
+                          <span>{earlier.line}</span>
+                        </span>
+                        <time className="ch-num">{earlier.at}</time>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>
@@ -268,46 +330,72 @@ export default function QuickChatSession({ open, onClose, looking, pathname, cha
               </div>
             )}
           </div>
-          {phone && <i className="ch-grab" aria-hidden="true" />}
+          {phone && <i className="ch-grab" aria-hidden="true" {...swipe} />}
         </div>
       </section>
     </div>
   );
 }
 
+/** The steps, and their fold once the card is ready: "N steps · Ns", which a tap reopens in place (AC-QC-STP-03, 04). */
+function Steps({ turn, stopped }: { turn: AskAssistantTurn; stopped: boolean }) {
+  const [opened, setOpened] = useState(false);
+  const [more, setMore] = useState(false);
+  // Only the browser that watched the run knows how long it took; a reloaded chat folds to the count alone.
+  const started = useRef<number | null>(turn.active ? performance.now() : null);
+  const seconds = useRef<number | null>(null);
+  if (turn.active && started.current === null) started.current = performance.now();
+  if (!turn.active && started.current !== null && seconds.current === null) seconds.current = (performance.now() - started.current) / 1000;
+  const list = turn.active || !turn.blocks.length || opened;
+  if (!turn.steps.length) return null;
+  const summary = (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" aria-hidden="true">
+      <path d="M5 13l4 4L19 7" />
+    </svg>
+  );
+  if (!list)
+    return (
+      <button type="button" className="steps-sum" aria-expanded="false" onClick={() => setOpened(true)}>
+        {summary}
+        {stepsReceipt(turn.steps, seconds.current)}
+      </button>
+    );
+  const folded = more ? 0 : Math.max(0, turn.steps.length - STEPS_SHOWN);
+  return (
+    <ol className="steps" aria-live="polite">
+      {folded > 0 && (
+        <li className="step done">
+          <button type="button" className="steps-sum" onClick={() => setMore(true)}>
+            {folded} more {pluralWord(folded, 'step', 'steps')}
+          </button>
+        </li>
+      )}
+      {turn.steps.slice(folded).map((s) => {
+        const last = s === turn.steps[turn.steps.length - 1];
+        const active = turn.active && last;
+        return (
+          <li key={s.id} className={'step ' + (active ? 'active' : stopped && last ? 'stopped' : 'done')}>
+            <span className="step__g">
+              {active ? (
+                <span className="dot" />
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" aria-hidden="true">
+                  <path d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </span>
+            <span className="step__l">{s.label}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 function AssistantTurn({ turn, online, stopped, onSend, onApprove, onDeny, onOpen }: { turn: AskAssistantTurn; online: boolean; stopped: boolean; onSend: (t: string) => void; onApprove: (id: string) => void; onDeny: (id: string) => void; onOpen: (href: string) => void }) {
   return (
     <>
-      {turn.active || !turn.blocks.length ? (
-        <ol className="steps" aria-live="polite">
-          {turn.steps.map((s, i) => {
-            const active = turn.active && i === turn.steps.length - 1;
-            return (
-              <li key={s.id} className={'step ' + (active ? 'active' : stopped && i === turn.steps.length - 1 ? 'stopped' : 'done')}>
-                <span className="step__g">
-                  {active ? (
-                    <span className="dot" />
-                  ) : (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" aria-hidden="true">
-                      <path d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </span>
-                <span className="step__l">{s.label}</span>
-              </li>
-            );
-          })}
-        </ol>
-      ) : (
-        turn.steps.length > 0 && (
-          <span className="steps-sum">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" aria-hidden="true">
-              <path d="M5 13l4 4L19 7" />
-            </svg>
-            {turn.steps.length} {pluralWord(turn.steps.length, 'step', 'steps')}
-          </span>
-        )
-      )}
+      <Steps turn={turn} stopped={stopped} />
       {stopped && !turn.active && !turn.blocks.length && <p className="say quiet">Stopped. Nothing was saved.</p>}
       {turn.note && <p className="say quiet">{turn.note}</p>}
       {turn.blocks.map((b) => {

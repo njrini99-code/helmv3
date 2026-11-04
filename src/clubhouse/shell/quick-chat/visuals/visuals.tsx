@@ -134,8 +134,18 @@ const nextDay = (date: string, n: number) => {
   return d.toISOString().slice(0, 10);
 };
 
-export function QualifierVisual({ visual }: { visual: Qual }) {
+export function QualifierVisual({ visual, landed = false }: { visual: Qual; landed?: boolean }) {
   const scored = visual.total - visual.picks;
+  // M-LAND-qual: the Qualifiers list takes the body's place once it has faded, with the new row on top.
+  if (landed)
+    return (
+      <div className="qlist">
+        <div className="qlist__r is-new">
+          <b>{visual.title}</b>
+          <span>New</span>
+        </div>
+      </div>
+    );
   return (
     <>
       <div className="qrounds">

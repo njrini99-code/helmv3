@@ -1,10 +1,25 @@
 'use client';
 import { pluralWord } from '../../lib/plural';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { haptic } from '../../lib/haptics';
+import { useChReducedMotion } from '../../lib/reduced-motion';
+import { land, landed, taskIn, toldIn } from './task-motion';
 import type { TaskVisual } from '@/lib/coachhelm/v3/chat/action-types';
 import type { AskProposalView } from '../../data/coachhelm-chat-thread';
 import { EventVisual, MessageVisual, QualifierVisual } from './visuals/visuals';
+
+/** M-TYPE: text the card writes, one character per tick; a card that isn't new shows it whole, as does Reduce Motion. */
+function useTyped(text: string, perSecond: number, on: boolean): string {
+  const [n, setN] = useState(on ? 0 : text.length);
+  useEffect(() => {
+    if (!on) return setN(text.length);
+    setN(0);
+    const tick = setInterval(() => setN((c) => (c >= text.length ? (clearInterval(tick), c) : c + 1)), 1000 / perSecond);
+    return () => clearInterval(tick);
+  }, [text, perSecond, on]);
+  return text.slice(0, n);
+}
 
 const WORDS: Record<TaskVisual['kind'], { icon: string; sub: string; chip: string; busy: string; done: string; failTitle: string }> = {
   cal: { icon: 'M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z', sub: 'Team calendar', chip: 'Added', busy: 'Adding…', done: 'Added to calendar', failTitle: 'Couldn’t add the practice' },
@@ -44,6 +59,36 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
   const ring = useRef<SVGCircleElement>(null);
   const card = useRef<HTMLElement>(null);
   const key = view.key;
+  const reduced = useChReducedMotion();
+  // The land plays over the draft's chip and footer; the receipt arrives when it ends (M-LAND, M-CHIP, M-RCPT).
+  const [landing, setLanding] = useState(false);
+  const [typing] = useState(() => !reduced && phaseOf(view).k === 'draft');
+  const was = useRef<Phase['k'] | null>(null);
+  const wasLanding = useRef(false);
+  useLayoutEffect(() => {
+    const before = was.current;
+    was.current = phase.k;
+    const el = card.current;
+    if (!el?.animate) return;
+    if (before === null) {
+      if (phase.k === 'draft') void taskIn(el, reduced);
+      return;
+    }
+    if ((before === 'draft' || before === 'busy') && (phase.k === 'held' || phase.k === 'done')) {
+      setLanding(true);
+      void land(el, visual?.kind ?? 'generic', reduced).then(() => setLanding(false));
+    } else if (before === 'held' && phase.k === 'done') {
+      toldIn(el.querySelector('.told'), reduced);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs on the phase moving, and reads the rest as it was then
+  }, [phase.k]);
+  useLayoutEffect(() => {
+    if (wasLanding.current && !landing && card.current?.animate) {
+      landed(card.current, reduced);
+      haptic('success');
+    }
+    wasLanding.current = landing;
+  }, [landing, reduced]);
 
   // The server's receipt moves the phase on, except an Undo the coach already made.
   useEffect(() => {
@@ -87,22 +132,25 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
     onOpen(href);
   };
 
-  const chip = phase.k === 'draft' || phase.k === 'busy' ? 'Draft' : phase.k === 'undone' ? 'Undone' : phase.k === 'failed' ? 'Not saved' : phase.k === 'cancelled' ? 'Cancelled' : w.chip;
-  const chipClass = 'chip' + (phase.k === 'held' || phase.k === 'done' ? ' ok' : phase.k === 'failed' ? ' fail' : '');
+  const shown: Phase = landing ? { k: 'busy' } : phase;
+  const title = visual?.kind === 'cal' || visual?.kind === 'qual' ? visual.title : visual?.kind === 'msg' ? visual.thread : view.proposal.summary;
+  const typed = useTyped(title, 38, typing);
+  const chip = shown.k === 'draft' || shown.k === 'busy' ? 'Draft' : phase.k === 'undone' ? 'Undone' : phase.k === 'failed' ? 'Not saved' : phase.k === 'cancelled' ? 'Cancelled' : w.chip;
+  const chipClass = 'chip' + (shown.k === 'held' || shown.k === 'done' ? ' ok' : shown.k === 'failed' ? ' fail' : '');
   return (
-    <article ref={card} className={'task' + (phase.k === 'held' ? ' won' : '') + (phase.k === 'cancelled' ? ' cancelled' : '')} data-kind={visual?.kind ?? 'generic'}>
+    <article ref={card} className={'task' + (shown.k === 'held' ? ' won' : '') + (phase.k === 'cancelled' ? ' cancelled' : '')} data-kind={visual?.kind ?? 'generic'}>
       <div className="task__h">
         <span className="task__ic">{svg(w.icon)}</span>
         <span className="task__ttl">
-          <b>{visual?.kind === 'cal' || visual?.kind === 'qual' ? visual.title : visual?.kind === 'msg' ? visual.thread : view.proposal.summary}</b>
+          <b aria-label={title}>{typed}</b>
           <span>{w.sub}</span>
         </span>
         <span className={chipClass}>{chip}</span>
       </div>
       <div className="task__b">
-        {visual?.kind === 'cal' && <EventVisual visual={visual} landed={phase.k === 'held' || phase.k === 'done'} removed={phase.k === 'undone'} />}
+        {visual?.kind === 'cal' && <EventVisual visual={visual} landed={shown.k === 'held' || shown.k === 'done'} removed={phase.k === 'undone'} />}
         {visual?.kind === 'msg' && <MessageVisual visual={visual} sent={phase.k === 'held' || phase.k === 'done'} phase={phase.k} onTone={(t) => onSend(t === 'Plain' ? 'Make it plain' : t === 'Warmer' ? 'Make it warmer' : 'Make it shorter')} />}
-        {visual?.kind === 'qual' && <QualifierVisual visual={visual} />}
+        {visual?.kind === 'qual' && <QualifierVisual visual={visual} landed={shown.k === 'held' || shown.k === 'done'} />}
         {!visual && (
           <dl className="facts">
             {view.proposal.facts.map((f) => (
@@ -115,7 +163,7 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
         )}
       </div>
       <div className="task__f">
-        {(phase.k === 'draft' || phase.k === 'busy') && (
+        {(shown.k === 'draft' || shown.k === 'busy') && (
           <>
             <div className="oncf">
               <span>
@@ -124,7 +172,7 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
             </div>
             {!online && <p className="say quiet">You’re offline. Nothing was saved.</p>}
             <div className="btns">
-              {phase.k === 'draft' && (
+              {shown.k === 'draft' && (
                 <button
                   type="button"
                   className="btn ghost"
@@ -139,21 +187,21 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
               )}
               <button
                 type="button"
-                className={'btn primary' + (phase.k === 'busy' ? ' busy' : '')}
-                disabled={locked || !view.approvalId || !online || phase.k === 'busy'}
+                className={'btn primary' + (shown.k === 'busy' ? ' busy' : '')}
+                disabled={locked || !view.approvalId || !online || shown.k === 'busy'}
                 onClick={() => {
                   setLocked(true);
                   setPhase({ k: 'busy' });
                   if (view.approvalId) onApprove(view.approvalId);
                 }}
               >
-                <span className="lbl">{phase.k === 'busy' ? w.busy : view.proposal.action}</span>
+                <span className="lbl">{shown.k === 'busy' ? w.busy : view.proposal.action}</span>
                 <span className="sweep" />
               </button>
             </div>
           </>
         )}
-        {phase.k === 'held' && (
+        {shown.k === 'held' && (
           <div className="rcpt">
             <span className="rcpt__g pop">{svg('M5 13l4 4L19 7')}</span>
             <span className="rcpt__t">
@@ -178,30 +226,30 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
             </span>
           </div>
         )}
-        {phase.k === 'done' && (
+        {shown.k === 'done' && (
           <>
             <div className="rcpt">
               <span className="rcpt__g">{svg('M5 13l4 4L19 7')}</span>
               <span className="rcpt__t">
                 <b>{w.done}</b>
-                <span>{phase.line}</span>
+                <span>{(phase as { line: string }).line}</span>
               </span>
               <span className="rcpt__a">
-                {phase.href && (
-                  <button className="tbtn" type="button" data-a="open" onClick={() => onOpen(phase.href!)}>
+                {(phase as { href: string | null }).href && (
+                  <button className="tbtn" type="button" data-a="open" onClick={() => onOpen((phase as { href: string | null }).href!)}>
                     Open
                   </button>
                 )}
               </span>
             </div>
-            {phase.told && (
+            {(phase as { told: string | null }).told && (
               <div className="told">
-                <span>{phase.told}</span>
+                <span>{(phase as { told: string | null }).told}</span>
               </div>
             )}
           </>
         )}
-        {phase.k === 'undone' && (
+        {shown.k === 'undone' && (
           <div className="rcpt neutral">
             <span className="rcpt__g">{svg('M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3')}</span>
             <span className="rcpt__t">
@@ -210,7 +258,7 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
             </span>
           </div>
         )}
-        {phase.k === 'cancelled' && (
+        {shown.k === 'cancelled' && (
           <div className="rcpt neutral">
             <span className="rcpt__g">{svg('M6 6l12 12M18 6L6 18')}</span>
             <span className="rcpt__t">
@@ -219,12 +267,12 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
             </span>
           </div>
         )}
-        {phase.k === 'failed' && (
+        {shown.k === 'failed' && (
           <div className="rcpt fail" role="alert">
             <span className="rcpt__g">{svg('M12 8v5M12 17h.01')}</span>
             <span className="rcpt__t">
               <b>{w.failTitle}</b>
-              <span>{phase.reason}</span>
+              <span>{(phase as { reason: string }).reason}</span>
             </span>
           </div>
         )}
