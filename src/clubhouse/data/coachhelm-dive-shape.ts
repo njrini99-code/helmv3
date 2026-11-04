@@ -11,7 +11,7 @@ import { formatFixed, formatSG, formatToPar } from '../lib/format';
 import { diffSe, halvesTone, POOLED_LEG_SD, POOLED_SD, standardError } from '../lib/stats-signal';
 import { rebuiltHref } from '../shell/nav';
 import { formatComparison } from './coachhelm-map';
-import { toChRead, type ChRead } from './coachhelm-read-shape';
+import { toChRead, writeUpFor, type ChRead } from './coachhelm-read-shape';
 import type { ChViewer } from './coachhelm-voice';
 import { stanceOf, type ChBoardMissing, type ChInsight, type ChStance } from './coachhelm-shape';
 import { figure } from './coachhelm-standing-shape';
@@ -325,10 +325,13 @@ function outcomeFor(raw: EvidenceInsight): ChDiveOutcome | null {
   return o ? { ...o, when: fmtShortDate(raw.outcome_measured_at ?? null) } : null;
 }
 
-function diagnosisFor(ev: InsightEvidence, say: (t: string) => string): ChDiveDiagnosis | null {
+function diagnosisFor(ev: InsightEvidence, say: (t: string) => string, role: ChViewer['role']): ChDiveDiagnosis | null {
   const d = ev.diagnosis;
   const cause = d?.root_cause?.trim();
   if (!d || !cause) return null;
+  // CR0: a likely cause is the coach's alone. The shape is serialized to a client component, so its sentence, its reason and the two
+  // arms that make the guess (the drivers) are left out here for a player, not hidden in the view.
+  if (role !== 'coach' && d.causality_level !== 'observed_sequence') return null;
   // The generators' "off its benchmark, cause inferred from the aggregate" line states no cause: no diagnosis is drawn rather than a
   // box that says nothing (and its "sample adequate" reason and the driver the evidence block already shows).
   if (isPlaceholderCause(cause)) return null;
@@ -538,11 +541,14 @@ export function toChDeepInsight(
   role: ChViewer['role'] = 'player',
 ): ChDeepInsight {
   const ev = raw.evidence;
-  const diagnosis = diagnosisFor(ev, say);
+  const diagnosis = diagnosisFor(ev, say, role);
   const closes = closesFor(raw, inputs.themes);
   const rounds = roundsFor(ev, inputs.rounds, role);
+  const read = toChRead(raw, base, { diagnosis, closes, newestListed: rounds.list[0]?.date ?? null, windowEnd: fmtShortDate(ev.window_end || null), role }, say);
+  // CR0: the view already drops these sentences when it draws the write-up; a cause a player is not shown leaves the payload as well.
+  const withheld = role !== 'coach' && read.why.level === null && !!base.why;
   return {
-    base,
+    base: withheld ? { ...base, why: writeUpFor(base.why as string, false) } : base,
     cat: raw.category ?? 'other',
     stance: stanceOf(base),
     measured: { label: base.evidence.label || ev.metric_label, value: base.value, span: spanOf(ev) },
@@ -552,7 +558,7 @@ export function toChDeepInsight(
     closes,
     rounds,
     plan: planFor(raw, inputs.focusAreas, inputs.goals, role === 'coach' ? say : undefined),
-    read: toChRead(raw, base, { diagnosis, closes, newestListed: rounds.list[0]?.date ?? null, windowEnd: fmtShortDate(ev.window_end || null), role }, say),
+    read,
     area: areaOf(raw.category),
     firmness: firmnessOf(base),
     where: whereFor(ev, inputs.rounds, role),

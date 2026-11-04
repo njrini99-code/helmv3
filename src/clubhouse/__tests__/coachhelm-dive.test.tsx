@@ -167,6 +167,45 @@ describe('the deep dive as the page draws it', () => {
     expect(deep({ ...DIVE_BIG, outcome_status: 'no_change', outcome_measured_at: null }, FULL_INPUTS).outcome).toEqual({ word: 'No change', tone: 'plain', when: null });
   });
 
+  describe('CR0: a likely cause is the coach’s alone', () => {
+    const say = (t: string) => t;
+    const asRole = (role: 'coach' | 'player') => {
+      const viewer = role === 'coach' ? ({ role, first: 'Jonah' } as const) : ({ role } as const);
+      const base = toChInsight(DIVE_SLOPE, { tour: PREVIEW_TOUR, viewer });
+      return { base, shaped: toChDeepInsight(DIVE_SLOPE, base, FULL_INPUTS, say, role) };
+    };
+
+    it('W-READ-1: the player’s serialized row holds no drivers, no cause sentence and no reason', () => {
+      const { shaped } = asRole('player');
+      expect(shaped.diagnosis).toBeNull();
+      expect(shaped.read.why).toMatchObject({ level: null, text: 'Not traced yet: the record does not say why.' });
+      const payload = JSON.stringify(shaped);
+      for (const held of ['drivers', 'pace-control', 'Downhill make rate, 4-6 ft', 'Level make rate, 4-6 ft', 'Both groups have enough putts']) expect(payload).not.toContain(held);
+    });
+
+    it('W-READ-1: the coach’s row keeps them, with the card’s text untouched', () => {
+      const { base, shaped } = asRole('coach');
+      expect(shaped.base).toBe(base);
+      expect(shaped.diagnosis).toMatchObject({
+        level: 'hypothesis',
+        drivers: [
+          { label: 'Downhill make rate, 4-6 ft', value: '58%', n: 31 },
+          { label: 'Level make rate, 4-6 ft', value: '81%', n: 44 },
+        ],
+        reason: 'Both groups have enough putts to compare, and a gap this size is not likely to be chance',
+      });
+      expect(JSON.stringify(shaped)).toContain('pace-control');
+    });
+
+    it('a cause seen in the player’s shots stays whole for them', () => {
+      const base = toChInsight(DIVE_PENALTIES, { tour: PREVIEW_TOUR, viewer: { role: 'player' } });
+      const shaped = toChDeepInsight(DIVE_PENALTIES, base, FULL_INPUTS, say, 'player');
+      expect(shaped.base).toBe(base);
+      expect(shaped.diagnosis?.level).toBe('observed');
+      expect(shaped.diagnosis?.drivers.length).toBeGreaterThan(0);
+    });
+  });
+
   it('CH-13982 the diagnosis: a cause seen in a shot sequence is measured, one inferred from standings is a hypothesis; the drivers carry their counts', () => {
     expect(by(PREVIEW_DIVE, 'in-pen').diagnosis).toMatchObject({
       level: 'observed',
@@ -176,7 +215,8 @@ describe('the deep dive as the page draws it', () => {
       ],
       reason: 'Twenty-one rounds is enough to trust an average this size',
     });
-    expect(by(PREVIEW_DIVE, 'in-slope').diagnosis?.level).toBe('hypothesis');
+    // CR0: a player gets no likely cause at all; the coach's row keeps it (below, 'CR0').
+    expect(by(PREVIEW_DIVE, 'in-slope').diagnosis).toBeNull();
     // No stated cause is no diagnosis, never an empty box.
     expect(by(PREVIEW_DIVE, 'in-brk').diagnosis).toBeNull();
     const blank: EvidenceInsight = { ...DIVE_SLOPE, evidence: { ...DIVE_SLOPE.evidence, diagnosis: { ...DIVE_SLOPE.evidence.diagnosis!, root_cause: '  ' } } };
@@ -200,7 +240,7 @@ describe('the deep dive as the page draws it', () => {
       },
     });
     expect(deep(withCause('not_traced', 'inferred_hypothesis'), FULL_INPUTS).diagnosis).toBeNull();
-    expect(deep(withCause('inferred_hypothesis', 'inferred_hypothesis'), FULL_INPUTS).diagnosis?.level).toBe('hypothesis');
+    expect(deep(withCause('inferred_hypothesis', 'inferred_hypothesis'), FULL_INPUTS).diagnosis).toBeNull();
     expect(deep(withCause('observed_sequence', 'observed_sequence'), FULL_INPUTS).diagnosis?.level).toBe('observed');
   });
 
@@ -737,22 +777,26 @@ describe('the Deep dive screen', () => {
     expect(part.textContent).not.toContain('pace-control pattern rather than a green-reading one: the gap shows up inside 6 ft and not beyond it, where line matters more than speed (');
     // Nor in the full write-up: the generator's own sentence guessing that cause is left out for the player.
     expect(article().textContent).not.toMatch(/pace-control/);
-    expect(part.textContent).toContain('Downhill make rate, 4-6 ft');
-    expect(part.textContent).toContain('31 counted');
-    expect(part.textContent).toContain('Both groups have enough putts to compare');
-    expect(within(part).getByText('The full write-up')).toBeTruthy();
+    // CR0: nor the two arms that make the guess, their counts or the reason for trusting it.
+    expect(part.textContent).not.toContain('Downhill make rate, 4-6 ft');
+    expect(part.textContent).not.toContain('Level make rate, 4-6 ft');
+    expect(part.textContent).not.toMatch(/\d+ counted/);
+    expect(part.textContent).not.toContain('Both groups have enough putts to compare');
     await userEvent.click(within(rail()).getByRole('button', { name: /Penalty strokes/ }));
     expect(code('CH-13982')!.textContent).toBe('Measured in your shots');
     expect(line('Why').contains(code('CH-13982'))).toBe(true);
     expect(line('Why').textContent).toContain('Most of them come off the tee with the driver');
+    const seen = within(article()).getByRole('region', { name: 'Why CoachHelm thinks so' });
+    expect(seen.textContent).toContain('17 counted');
+    expect(within(seen).getByText('The full write-up')).toBeTruthy();
   });
 
   it('the generators’ stock confidence reason ("sample adequate") is not drawn; the drivers it counted still are', () => {
-    const stock: EvidenceInsight = { ...DIVE_SLOPE, evidence: { ...DIVE_SLOPE.evidence, diagnosis: { ...DIVE_SLOPE.evidence.diagnosis!, confidence_reason: 'sample adequate' } } };
+    const stock: EvidenceInsight = { ...DIVE_PENALTIES, evidence: { ...DIVE_PENALTIES.evidence, diagnosis: { ...DIVE_PENALTIES.evidence.diagnosis!, confidence_reason: 'sample adequate' } } };
     show(diveLoad({ ...PREVIEW_DIVE, list: [deep(stock, FULL_INPUTS)] }));
     const part = within(article()).getByRole('region', { name: 'Why CoachHelm thinks so' });
     expect(part.textContent).not.toMatch(/sample adequate/i);
-    expect(part.textContent).toContain('31 counted');
+    expect(part.textContent).toContain('17 counted');
   });
 
   it('this week’s drill is the Board’s own, on the read’s Next line and nowhere else; the row’s own action stands in when there is no drill', async () => {
