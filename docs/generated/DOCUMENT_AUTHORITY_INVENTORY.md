@@ -397,6 +397,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/COMPLETION_PLAN_2026-10-18.md` | current | - | - | - | - |
 | `docs/clubhouse/PRODUCTION-PLAN-2026-11-05.md` | current | - | - | - | - |
 | `docs/clubhouse/ROUNDS_PLAN.md` | current | - | - | - | - |
+| `docs/clubhouse/TEST-PLAN-2026-11-05.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/templates/HELD_DATA_PLAN.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/templates/HELD_FEATURE_PLAN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-22-player-course-plan.md` | current | - | - | - | 1 |

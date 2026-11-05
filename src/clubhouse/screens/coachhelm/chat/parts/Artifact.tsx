@@ -41,20 +41,12 @@ function Versions({ n, at, onGo }: { n: number; at: number; onGo: (i: number) =>
 }
 
 function Actions({ builderHref }: { builderHref: string | null }) {
+  // The plan's own Save row does the saving in the thread (one Save row, practice-plan 02). Here, only the builder when it exists.
+  if (!builderHref) return null;
   return (
     <div className="apf">
-      {/* The plan's own Save row does this in the thread (one Save row, practice-plan 02); here they wait for the Practice tab and call nothing. */}
-      <small className="apf__note">Comes with the Practice tab</small>
-      {builderHref && (
-        <Button variant="secondary" href={builderHref}>
-          Edit in builder
-        </Button>
-      )}
-      <Button variant="secondary" disabled>
-        Save draft…
-      </Button>
-      <Button variant="primary" disabled>
-        Publish…
+      <Button variant="secondary" href={builderHref}>
+        Edit in builder
       </Button>
     </div>
   );
