@@ -66,7 +66,7 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
     .map((v, i) => (v == null ? null : ([x(i), y(v)] as const)))
     .filter((p): p is readonly [number, number] => p != null);
   const line = monoPath(avg);
-  const area = avg.length ? `${line}L${avg[avg.length - 1]![0]},${H - PAD.b}L${avg[0]![0]},${H - PAD.b}Z` : '';
+  const area = line ? `${line}L${avg[avg.length - 1]![0]},${H - PAD.b}L${avg[0]![0]},${H - PAD.b}Z` : '';
   const colour = tone === 'gain' ? 'var(--ch-shs-s-gain-fill)' : tone === 'loss' ? 'var(--ch-shs-s-loss-fill)' : 'var(--ch-shs-s-flat)';
 
   // The morph, on the drawn elements: React has already written the end state, and this walks to it. A window change mid-morph starts
@@ -98,7 +98,7 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
       shape.current = { dots: d, avg: a };
       const path = monoPath(a);
       if (lineEl.current) lineEl.current.setAttribute('d', path);
-      if (areaEl.current && a.length) areaEl.current.setAttribute('d', `${path}L${a[a.length - 1]![0]},${bottom}L${a[0]![0]},${bottom}Z`);
+      if (areaEl.current && path) areaEl.current.setAttribute('d', `${path}L${a[a.length - 1]![0]},${bottom}L${a[0]![0]},${bottom}Z`);
       circles.forEach((c, i) => d[i] && c.setAttribute('cy', String(d[i]![1])));
       if (t < 1) raf = requestAnimationFrame(step);
       else shape.current = end;

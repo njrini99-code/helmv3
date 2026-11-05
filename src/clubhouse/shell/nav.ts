@@ -211,6 +211,8 @@ const CH_REBUILT_CHILDREN: Record<string, RegExp> = {
   '/golf/dashboard/qualifiers': /^\/golf\/dashboard\/qualifiers\/(new|[0-9a-f-]{36}(\/(edit|selection))?)$/i,
 };
 
+const CH_PRACTICE_PAGES = /^\/golf\/dashboard\/practice\/(format|plan\/[^/]+)$/;
+
 /**
  * Rebuilt addresses whose parent isn't rebuilt for that role. A coach has no
  * Rounds library in v2, but opens a player's round review from Stats. A player
@@ -219,8 +221,9 @@ const CH_REBUILT_CHILDREN: Record<string, RegExp> = {
  */
 const CH_REBUILT_PATTERNS: Record<ChRole, readonly RegExp[]> = {
   // P-7: a player's history at one course, reached from a round or the library (a coach's from a player's round).
-  coach: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/course\/[^/]+$/],
-  player: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/continue\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/course\/[^/]+$/],
+  // Practice's plan and format pages decide for themselves: flag off or no access goes to Calendar (N-00 §0.2), so the segment must render.
+  coach: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/course\/[^/]+$/, CH_PRACTICE_PAGES],
+  player: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/continue\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/course\/[^/]+$/, CH_PRACTICE_PAGES],
 };
 
 /**
@@ -363,6 +366,9 @@ const PUSHED_BELOW: ReadonlyArray<{ path: RegExp; top: (role: ChRole, m: RegExpE
     top: (role) => (role === 'coach' ? { back: 'Stats', title: 'Round', parent: '/golf/dashboard/stats' } : { back: 'Rounds', title: 'Round', parent: '/golf/dashboard/rounds' }),
   },
   { path: /^\/golf\/dashboard\/rounds\/recover$/, top: () => ({ back: 'Rounds', title: 'Recover', parent: '/golf/dashboard/rounds' }) },
+  // No parent: a plan opens from Ask, a push, Documents or Calendar, and Back returns to whichever it was (D-41).
+  { path: /^\/golf\/dashboard\/practice\/plan\/[^/]+$/, top: () => ({ back: 'Back', title: 'Practice plan' }) },
+  { path: /^\/golf\/dashboard\/practice\/format$/, top: (role) => (role === 'coach' ? { back: 'Back', title: 'Plan format' } : null) },
   // P-7: no parent, so Back steps back to the round or the library it came from (D-41).
   { path: /^\/golf\/dashboard\/rounds\/course\/[^/]+$/, top: (role) => ({ back: role === 'coach' ? 'Round' : 'Rounds', title: 'Course' }) },
 ];

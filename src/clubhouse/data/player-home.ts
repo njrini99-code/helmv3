@@ -246,7 +246,8 @@ export async function loadPlayerAsks(supabase: Client, input: { teamId: string; 
   const [eventsRes, annRes, assignRes] = await Promise.all([
     supabase.rpc('get_player_hub_events', { p_team_id: input.teamId, p_player_id: input.playerId, p_since: since }),
     getPlayerHubAnnouncements(input.teamId, input.playerId).catch((err: unknown) => ({ success: false as const, error: err instanceof Error ? err.message : 'failed' })),
-    supabase.from('golf_task_assignments').select('task_id, status').eq('player_id', input.playerId).limit(1000),
+    // Open rows only: finished ones pile up over the years and would use up the cap.
+    supabase.from('golf_task_assignments').select('task_id, status').eq('player_id', input.playerId).neq('status', 'completed').limit(1000),
   ]);
   const parsed = eventsRes.error ? null : parsePlayerHubEvents(eventsRes.data);
   if (!parsed?.ok) {

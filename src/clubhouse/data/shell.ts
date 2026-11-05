@@ -159,7 +159,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
       .is('cancelled_at', null)
       .order('start_time', { ascending: true })
       // Room for the meetings a player isn't invited to, which are passed over (Decision B).
-      .limit(12),
+      .limit(40),
     supabase
       .from('golf_team_join_requests')
       .select('id', { count: 'exact', head: true })

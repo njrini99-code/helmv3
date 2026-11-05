@@ -1090,6 +1090,7 @@ future reader hits it there, not only in this file.
 | `20261104090000_golf_practice_plan_coach_why_and_draft_row.sql` | **HOLD** | Practice plan lane. coach_why and the draft-row filer. Needs N-00 010600; applied before it, it refers to tables that do not exist. | 2026-11-04, wiring pass |
 | `20261102090000_golf_practice_plan_formats.sql` | **HOLD** | Practice plan lane. Plan format table, PP7. Harmless alone; nothing reads it. | 2026-11-04, wiring pass |
 | `20261105090000_golf_player_hub_events_class_rows.sql` | **HOLD** | Class privacy. Same rule as 20261031142000, for the definer hub RPC that skips it. Also lists team events before classes, so classes can't use up its 20. Apply right after 20261031142000. | 2026-11-05, with the redesign follow-ups. |
+| `20261105100000_golf_players_coach_reads_inactive_members.sql` | **HOLD** | Roster. Lets a staffed coach read their team's inactive members' profile rows, so Roster lists them and they can be marked active again. Production has 5 such rows. Apply with the redesign migrations. | 2026-11-05, with the go-live fixes. |
 
 This is a different advisor category from O6(c) above — that one is the ~430
 WARN-level `pg_graphql_*_table_exposed` findings, closed by unexposing

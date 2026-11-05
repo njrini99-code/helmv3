@@ -140,7 +140,9 @@ export function chSpringCurve(
   const ease = (p: number) => (p <= 0 ? 0 : p >= 1 ? 1 : chSpringAt(kind, p * end, v0));
   const steps = Math.max(8, Math.round(ms / 16));
   const points = Array.from({ length: steps + 1 }, (_, i) => (i === 0 ? 0 : i === steps ? 1 : +ease(i / steps).toFixed(4)));
-  return { ms, ease, linear: `linear(${points.join(', ')})` };
+  // iOS before 17.2 throws on a linear() easing in animate(), so an older phone gets the house curve in its place.
+  const hasLinear = typeof CSS === 'undefined' || !CSS.supports || CSS.supports('transition-timing-function', 'linear(0, 1)');
+  return { ms, ease, linear: hasLinear ? `linear(${points.join(', ')})` : `cubic-bezier(${CH_EASE.join(', ')})` };
 }
 
 /** A panel's content swap inside a fixed frame (a Settings section): a base crossfade with a 6px settle. */

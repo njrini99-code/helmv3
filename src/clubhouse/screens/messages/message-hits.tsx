@@ -21,6 +21,8 @@ export function MessageHits({ api, q, nameMatches, conversationId, onPicked }: {
       return;
     }
     let live = true;
+    // The last term's results aren't this term's, and its "no results" isn't either.
+    setHits(null);
     setFailed(false);
     const t = window.setTimeout(() => {
       search(term)

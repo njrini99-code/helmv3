@@ -137,9 +137,12 @@ function usePickerRoom(anchor: RefObject<HTMLElement | null>, open: boolean, bel
     measure();
     window.addEventListener('resize', measure);
     window.visualViewport?.addEventListener('resize', measure);
+    // iOS pans the viewport over the keyboard without resizing it.
+    window.visualViewport?.addEventListener('scroll', measure);
     return () => {
       window.removeEventListener('resize', measure);
       window.visualViewport?.removeEventListener('resize', measure);
+      window.visualViewport?.removeEventListener('scroll', measure);
     };
   }, [anchor, open, below]);
   return open ? room : null;

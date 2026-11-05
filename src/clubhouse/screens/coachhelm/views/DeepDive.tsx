@@ -1,5 +1,6 @@
 'use client';
 
+import { splitSentences } from '@/lib/utils/sentences';
 import { AnimatePresence } from 'motion/react';
 import { ChevronRight, Compass, Flag, MessageSquare, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
@@ -42,7 +43,7 @@ export function withoutDrill(why: string, drill: string | null | undefined): str
   const head = (t: string) => t.toLowerCase().replace(/[^a-z0-9\s-]/g, '').split(/\s+/).filter(Boolean).slice(0, 3).join(' ');
   const key = drill ? head(drill) : '';
   if (!key) return why;
-  const kept = why.split(/(?<=[.!?])\s+/).filter((s) => head(s) !== key);
+  const kept = splitSentences(why).filter((s) => head(s) !== key);
   return kept.join(' ').trim() || null;
 }
 

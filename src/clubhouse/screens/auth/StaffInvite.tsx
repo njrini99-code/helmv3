@@ -64,15 +64,19 @@ export function StaffInvite({ token, preview, writes = gateWrites, initial, navi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Off the page, the walk to the dashboard is off too.
+  const leaveTimer = useRef(0);
+  useEffect(() => () => window.clearTimeout(leaveTimer.current), []);
+
   // Same ordering the sign-up form uses: refresh so server components re-read the new session and staff row before
   // the dashboard, or it renders against a cache that predates the row just written.
   const finish = () => {
     haptic('success');
     go('joined');
     router.refresh();
-    window.setTimeout(() => {
+    leaveTimer.current = window.setTimeout(() => {
       setLeaving(true);
-      window.setTimeout(() => to('/golf/dashboard'), reduced ? 100 : Math.max(100, OPENING_PUSH_MS));
+      leaveTimer.current = window.setTimeout(() => to('/golf/dashboard'), reduced ? 100 : Math.max(100, OPENING_PUSH_MS));
     }, reduced ? 600 : 1400);
   };
 

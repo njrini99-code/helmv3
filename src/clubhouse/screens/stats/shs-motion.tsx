@@ -72,6 +72,8 @@ export class WindowCrossfade extends Component<{ k: string; off: boolean; reduce
   override getSnapshotBeforeUpdate(prev: { k: string }): HTMLElement | null {
     if (prev.k === this.props.k || this.props.off || !this.el) return null;
     const ghost = this.el.cloneNode(true) as HTMLElement;
+    // A copy still fading from the last switch isn't part of what's on screen now.
+    for (const old of ghost.querySelectorAll('.ch-shs-xfade-ghost')) old.remove();
     ghost.classList.add('ch-shs-xfade-ghost');
     ghost.setAttribute('aria-hidden', 'true');
     ghost.setAttribute('inert', '');
@@ -85,7 +87,9 @@ export class WindowCrossfade extends Component<{ k: string; off: boolean; reduce
     host.appendChild(ghost);
     // Off a timer too: with Animations off the copy never animates, so it would never say it finished.
     const done = () => ghost.remove();
-    ghost.addEventListener('animationend', done, { once: true });
+    ghost.addEventListener('animationend', (e) => {
+      if (e.target === ghost) done();
+    });
     window.setTimeout(done, XFADE_MS + 100);
   }
 

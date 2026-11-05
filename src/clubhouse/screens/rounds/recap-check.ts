@@ -1,3 +1,4 @@
+import { splitSentences } from '@/lib/utils/sentences';
 import type { ChRoundReview } from '../../data/round-review-shape';
 
 /**
@@ -26,8 +27,7 @@ const CLEAR = 0.5;
 /** The recap's sentences (keeps the closing stop with each). */
 export function sentences(text: string): string[] {
   // A stop ends a sentence only before a space, so "0.9" stays whole.
-  return text
-    .split(/(?<=[.!?]["”’)]?)\s+/)
+  return splitSentences(text, '"”’)')
     .map((s) => s.trim())
     .filter(Boolean);
 }

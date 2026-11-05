@@ -24,7 +24,8 @@ type Supabase = Awaited<ReturnType<typeof createClient>>;
 
 async function hasNextStepColumns(supabase: Supabase): Promise<boolean> {
   const { error } = await supabase.from('golf_recruits').select('next_step_date', { head: true }).limit(0);
-  return !error;
+  // Only a missing column turns the fields off; a passing timeout must not hide them for this load.
+  return !(error?.code === '42703' || error?.code === 'PGRST204');
 }
 
 async function programOf(supabase: Supabase): Promise<NonNullable<ChRecruiting['program']> | null> {

@@ -5049,6 +5049,10 @@
         "definedIn": "supabase/migrations/20260610040000_stats_population_updown_and_trigger_columns.sql"
       },
       {
+        "id": "user_coaches_inactive_golf_member",
+        "definedIn": "supabase/migrations/20261105100000_golf_players_coach_reads_inactive_members.sql"
+      },
+      {
         "id": "user_has_pending_join_request_to_coach_team",
         "definedIn": "supabase/migrations/20260808170000_join_request_predicate_staff_strict.sql"
       },

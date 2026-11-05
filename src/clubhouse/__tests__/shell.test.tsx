@@ -11,7 +11,7 @@ const hapticSpy = vi.hoisted(() => vi.fn());
 vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 const routerSpy = vi.hoisted(() => ({ push: vi.fn(), back: vi.fn(), replace: vi.fn() }));
-vi.mock('next/navigation', () => ({ useRouter: () => routerSpy, usePathname: () => '/golf/dashboard' }));
+vi.mock('next/navigation', () => ({ useRouter: () => routerSpy, useSearchParams: () => new URLSearchParams(), usePathname: () => '/golf/dashboard' }));
 vi.mock('../lib/fonts', () => ({ clubhouseFontVariables: '' }));
 vi.mock('@/hooks/golf/use-appearance-preferences', () => ({ useAppearancePreferences: () => ({ showAnimations: true, updatePreferences: vi.fn() }) }));
 const logServer = vi.hoisted(() => vi.fn());
@@ -314,12 +314,12 @@ describe('Shell · page states', () => {
 
   it('CH-1301 a page that is not rebuilt', async () => {
     wrap(<NotRebuilt label="Rounds" />);
-    await expectCode('CH-1301', /Rounds hasn.t been rebuilt yet/);
+    await expectCode('CH-1301', /Rounds isn.t available here/);
     // The page empty's anatomy, as the route error draws it: a medallion, no card, and the way back to Home.
     const page = code('CH-1301')!;
     expect(page.querySelector('.ch-sheet')).toBeNull();
     expect(page.querySelector('.ch-empty-page:not(.ch-empty-page--danger) .ch-empty-page__ic svg')).not.toBeNull();
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Rounds hasn’t been rebuilt yet');
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Rounds isn’t available here');
     const home = screen.getByRole('link', { name: 'Back to Home' });
     expect(home.getAttribute('href')).toBe('/golf/dashboard');
     expect(home.className).toContain('ch-btn--primary');
@@ -1307,7 +1307,7 @@ describe('Shell · behaviour contracts (P001)', () => {
     expect(routerSpy.replace).not.toHaveBeenCalled();
   });
 
-  it('10802 a player on a page rebuilt for coaches only is told it is a coach\u2019s page; on an unbuilt one, that it is coming', () => {
+  it('10802 a player on a page rebuilt for coaches only is told it is a coach\u2019s page; on an unbuilt one, that it is not available', () => {
     const { unmount } = render(
       <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/recruiting">
         <p>Recruiting body</p>
@@ -1316,13 +1316,21 @@ describe('Shell · behaviour contracts (P001)', () => {
     expect(screen.queryByText('Recruiting body')).toBeNull();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Only coaches use Recruiting');
     unmount();
+    // A coach's old page that moves for coaches only: a player is told the same, not that it is unavailable.
+    const old = render(
+      <ClubhouseFrame userData={player} shell={shell} pathname="/golf/dashboard/courses">
+        <p>Courses body</p>
+      </ClubhouseFrame>,
+    );
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/^Only coaches use /);
+    old.unmount();
     // A coach on an unbuilt address still reads the plain notice.
     render(
       <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/dev/haptics">
         <p>Dev body</p>
       </ClubhouseFrame>,
     );
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/hasn.t been rebuilt yet$/);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/isn.t available here$/);
   });
 
   it('10301 the bell reads its list again every time it opens', async () => {
