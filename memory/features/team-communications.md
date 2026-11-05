@@ -192,6 +192,9 @@ Announcement create
      createGolfDocument: file lands in the team document library, then the
      new document id joins documentIds)
   -> createEnrichedAnnouncement()
+  -> READ golf_announcements: the same coach, team, title and body in the last
+     2 minutes returns that post's id and stops (a retry after a lost response);
+     a failed read goes on to the insert
   -> INSERT golf_announcements
   -> INSERT targeted recipients or broadcast metadata
   -> INSERT linked documents
