@@ -1,3 +1,4 @@
+import { tidyCourseName } from '../lib/course-name';
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
@@ -267,7 +268,7 @@ export async function loadRoster(input: { teamId: string; coachId: string; /** T
       form: s.status,
       recent: every.recent.slice(0, 3).map((r) => ({
         id: r.id,
-        course: r.course_name ?? 'Course not recorded',
+        course: tidyCourseName(r.course_name) || 'Course not recorded',
         date: shortDate(r.round_date),
         score: r.total_score as number,
         toPar: r.score_to_par,

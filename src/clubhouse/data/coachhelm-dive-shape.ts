@@ -1,3 +1,4 @@
+import { tidyCourseName } from '../lib/course-name';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { fmtShortDate } from '@/components/golf/coachhelm/home/buildPlayerHubViewModel';
 import type { InsightEvidence, InsightMovement, InsightUnit } from '@/lib/coachhelm/v2/insights/types';
@@ -264,7 +265,7 @@ function roundsFor(ev: InsightEvidence | undefined, byId: ReadonlyMap<string, Di
     return {
       id: r.id,
       date: fmtShortDate(r.round_date) ?? r.round_date.slice(0, 10),
-      course: r.course_name?.trim() || null,
+      course: tidyCourseName(r.course_name) || null,
       score: num(r.total_score) != null ? String(r.total_score) : '—',
       toPar: toPar != null ? formatToPar(toPar) : null,
       toPar18: toPar != null && holes > 0 ? (toPar * 18) / holes : null,
@@ -490,7 +491,7 @@ export function whereFor(ev: unknown, byId: ReadonlyMap<string, DiveRoundRow>, v
       {
         key: `${ref.round_id}:${ref.hole_number}`,
         date: fmtShortDate(r.round_date) ?? r.round_date.slice(0, 10),
-        course: r.course_name?.trim() || null,
+        course: tidyCourseName(r.course_name) || null,
         hole: ref.hole_number,
         what: seq.what,
         href: rebuiltHref(`/golf/dashboard/rounds/${r.id}`, 'player'),

@@ -1,3 +1,4 @@
+import { tidyCourseName } from '../lib/course-name';
 import 'server-only';
 import type { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
@@ -32,7 +33,7 @@ export const WINDOW_LABEL: Record<ChWindow, string> = {
 
 /** A round as the filter reads it. */
 export function roundRow(r: ChRound): ChFilterRow {
-  return { id: r.id, date: r.round_date.slice(0, 10), kind: roundKind(r.round_type), course: r.course_name, holes: r.holes_played ?? 18 };
+  return { id: r.id, date: r.round_date.slice(0, 10), kind: roundKind(r.round_type), course: r.course_name == null ? r.course_name : tidyCourseName(r.course_name) || null, holes: r.holes_played ?? 18 };
 }
 
 /**

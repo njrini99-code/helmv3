@@ -1,3 +1,4 @@
+import { tidyCourseName } from '../lib/course-name';
 import 'server-only';
 import type { ChStoryRound } from './coachhelm-team-shape';
 import { createClient } from '@/lib/supabase/server';
@@ -281,7 +282,7 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
         if (!name || !mine.length) continue;
         out[name] = {
           date: r.round_date,
-          course: r.course_name,
+          course: tidyCourseName(r.course_name) || null,
           holes: mine.map((h) => ({ n: h.hole_number, toPar: h.score == null ? null : h.score - h.par })),
           tracked: mine.filter((h) => h.putts != null || h.fairway_hit != null || h.gir != null).length,
         };

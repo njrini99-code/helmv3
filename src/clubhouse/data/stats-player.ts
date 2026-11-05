@@ -1,3 +1,4 @@
+import { tidyCourseName } from '../lib/course-name';
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { getDetailedStats } from '@/app/golf/actions/stats-data';
@@ -624,7 +625,7 @@ export async function loadPlayerProfile(input: {
       const total = !!r.total_only;
       return {
         id: r.id,
-        course: r.course_name ?? 'Course not recorded',
+        course: tidyCourseName(r.course_name) || 'Course not recorded',
         date: shortDate(r.round_date),
         iso: r.round_date.slice(0, 10),
         type: roundKind(r.round_type),
