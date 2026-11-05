@@ -501,9 +501,9 @@ html[data-fw-theme='dark'] .ch-ak-th {
 [data-motion='off'] .ch-ak-th :is(.qcard, .qpane, .qsum .pills span) { animation: none; }
 
 /* Kit ② draft filling (M-ASK-42, 56): one field every 260ms behind a green write head, then the On confirm line and the buttons. A card that was not new draws still. */
-.ch-ak-th .conf.is-fill .evd .f { position: relative; animation: ch-ak-rise6 0.26s var(--ch-ease) both; animation-delay: calc(var(--ch-i, 0) * 260ms); }
-.ch-ak-th .conf.is-fill .evd .f::before { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; border-radius: var(--ch-radius-mark); background: var(--ch-green-600); opacity: 0; transform-origin: 0 50%; animation: ch-ak-wh 0.26s linear both; animation-delay: calc(var(--ch-i, 0) * 260ms); }
-.ch-ak-th .conf.is-fill .oncf, .ch-ak-th .conf.is-fill .btns, .ch-ak-th .conf.is-fill .ch-ak-evlink { animation: ch-ak-rise6 0.26s var(--ch-ease-spring-settle) both; animation-delay: calc(var(--ch-n, 0) * 260ms); }
+.ch-ak-th .conf.is-fill .evd .f { position: relative; animation: ch-ak-rise6 0.26s var(--ch-ease) both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-base)); }
+.ch-ak-th .conf.is-fill .evd .f::before { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; border-radius: var(--ch-radius-mark); background: var(--ch-green-600); opacity: 0; transform-origin: 0 50%; animation: ch-ak-wh 0.26s linear both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-base)); }
+.ch-ak-th .conf.is-fill .oncf, .ch-ak-th .conf.is-fill .btns, .ch-ak-th .conf.is-fill .ch-ak-evlink { animation: ch-ak-rise6 0.26s var(--ch-ease-spring-settle) both; animation-delay: calc(var(--ch-n, 0) * var(--ch-dur-base)); }
 @keyframes ch-ak-wh { 0% { opacity: 1; transform: scaleX(0); } 90% { opacity: 1; transform: scaleX(1); } 100% { opacity: 0; } }
 
 /* E-INF: what Ask worked out, each with its source; a tap asks to change it. Pops 70ms apart with the card (M-ASK-40). */
@@ -515,7 +515,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-worked button.ipl::after { content: ''; position: absolute; inset: -4px 0; }
 .ch-ak-worked .ipl b { font: var(--ch-type-13-strong); color: var(--ch-text-primary); }
 .ch-ak-worked .ipl span { font: var(--ch-type-12); color: var(--ch-text-tertiary); }
-.ch-ak-th .conf.is-fill .ipl { animation: ch-ak-pop 0.54s var(--ch-ease-spring-pop, var(--ch-ease)) both; animation-delay: calc(var(--ch-i, 0) * 70ms); }
+.ch-ak-th .conf.is-fill .ipl { animation: ch-ak-pop 0.54s var(--ch-ease-spring-pop, var(--ch-ease)) both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-press) / 1.57); }
 @keyframes ch-ak-pop { from { opacity: 0; transform: scale(0.9); } }
 
 .ch-ak-th .ch-ak-evlink { position: relative; display: block; margin: 6px 16px 0; padding: 0; border: 0; background: none; font: var(--ch-type-14-strong); color: var(--ch-green-600); cursor: pointer; }
@@ -536,7 +536,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .told .coin { display: inline-flex; margin-left: -4px; border-radius: 50%; box-shadow: 0 0 0 2px var(--ch-well-bg-flat); }
 .ch-ak-th .told .coin:first-child { margin-left: 0; }
 .ch-ak-th .told.is-live { animation: ch-ak-rise6 0.46s var(--ch-ease-spring-smooth) both; }
-.ch-ak-th .told.is-live .coin { animation: ch-ak-coin 0.54s var(--ch-ease-spring-pop, var(--ch-ease)) both; animation-delay: calc(160ms + var(--ch-i, 0) * 90ms); }
+.ch-ak-th .told.is-live .coin { animation: ch-ak-coin 0.54s var(--ch-ease-spring-pop, var(--ch-ease)) both; animation-delay: calc(var(--ch-dur-typing-step) + var(--ch-i, 0) * var(--ch-dur-press) / 1.22); }
 @keyframes ch-ak-coin { from { opacity: 0.35; filter: saturate(0.3); transform: scale(0.85); } }
 
 /* E-WK: the week the draft lands in. Hour column 30, five days, body 132. */
@@ -592,8 +592,8 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-qual .bar { display: inline-flex; gap: 4px; }
 .ch-ak-qual .bar i { width: 24px; height: 6px; border-radius: var(--ch-radius-mark); background: var(--ch-chart-gain-fill); }
 .ch-ak-qual .bar i.pick { background: var(--ch-chart-track); box-shadow: inset 0 0 0 1px var(--ch-chart-gain-fill); }
-.ch-ak-th .conf.is-fill .ch-ak-qual .rd { animation: ch-ak-qr 0.71s var(--ch-ease-spring-send, var(--ch-ease)) both; animation-delay: calc(var(--ch-i, 0) * 90ms); }
-.ch-ak-th .conf.is-fill .ch-ak-qual .bar i { animation: ch-ak-fade 0.08s linear both; animation-delay: calc(var(--ch-i, 0) * 80ms); }
+.ch-ak-th .conf.is-fill .ch-ak-qual .rd { animation: ch-ak-qr 0.71s var(--ch-ease-spring-send, var(--ch-ease)) both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-press) / 1.22); }
+.ch-ak-th .conf.is-fill .ch-ak-qual .bar i { animation: ch-ak-fade 0.08s linear both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-press) / 1.375); }
 @keyframes ch-ak-qr { from { opacity: 0; transform: translateX(24px); } }
 
 @media (prefers-reduced-motion: reduce) {
@@ -605,12 +605,10 @@ html[data-fw-theme='dark'] .ch-ak-th {
 [data-motion='off'] .ch-ak-th .conf.is-fill :is(.evd .f, .oncf, .btns, .ch-ak-evlink, .ipl, .ch-ak-lock .ban, .ch-ak-qual .rd, .ch-ak-qual .bar i), [data-motion='off'] .ch-ak-th :is(.dchip.is-pop, .told.is-live, .told.is-live .coin), [data-motion='off'] .ch-ak-wk .slot.is-landing { animation: none; }
 [data-motion='off'] .ch-ak-th .conf.is-fill .evd .f::before, [data-motion='off'] .ch-ak-wk .slot.is-open::after { display: none; }
 
-/* M-ASK-11, 12: the steps fold and open on the grid track; the Next row (announced, not started) has no check and no shimmer. */
-.ch-ak-th .work .fold { display: grid; grid-template-rows: 1fr; }
-.ch-ak-th .work .fold > div { min-height: 0; overflow: hidden; }
-.ch-ak-th .work .fold.is-opening { animation: ch-ak-unfold 0.36s var(--ch-ease-spring-smooth) both; }
-.ch-ak-th .work .fold.is-closing { animation: ch-ak-unfold 0.36s var(--ch-ease-spring-smooth) reverse both; }
-@keyframes ch-ak-unfold { from { grid-template-rows: 0fr; opacity: 0; } }
+/* M-ASK-11, 12: the steps fold and open on a clip, not the box's height (07 rules out animating layout); the Next row (announced, not started) has no check and no shimmer. */
+.ch-ak-th .work .fold.is-opening { animation: ch-ak-unfold var(--ch-dur-marks) var(--ch-ease-spring-smooth) both; }
+.ch-ak-th .work .fold.is-closing { animation: ch-ak-unfold var(--ch-dur-marks) var(--ch-ease-spring-smooth) reverse both; }
+@keyframes ch-ak-unfold { from { clip-path: inset(0 0 100% 0); opacity: 0; } to { clip-path: inset(0); opacity: 1; } }
 .ch-ak-th .step .ic.is-next { color: var(--ch-text-tertiary); }
 .ch-ak-th .step.is-next .tx { color: var(--ch-text-secondary); }
 
@@ -628,16 +626,16 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .ch-ak-stopped button::after { content: ''; position: absolute; inset: -12px 0; }
 
 /* M-ASK-18, 20: the shot and engine blocks' marks grow once, on an answer this visit watched. */
-.ch-th-cv[data-live] .ch-ak-putts .t i { animation: ch-ak-growx 0.36s var(--ch-ease-spring-settle) var(--ch-cv-lag, 0ms) both; }
-.ch-th-cv[data-live] .ch-ak-miss .w { animation: ch-ak-wedge 0.36s var(--ch-ease-spring-settle) var(--ch-cv-lag, 0ms) both; transform-origin: 90px 90px; }
-.ch-th-cv[data-live] .ch-ak-season .ch-ak-mark, .ch-th-cv[data-live] .ch-ak-holes .ch-ak-mark { animation: ch-ak-rise6 0.36s var(--ch-ease-spring-settle) var(--ch-cv-lag, 0ms) both; }
+[data-live] .ch-ak-putts .t i { animation: ch-ak-growx 0.36s var(--ch-ease-spring-settle) var(--ch-cv-lag, 0s) both; }
+[data-live] .ch-ak-miss .w { animation: ch-ak-wedge 0.36s var(--ch-ease-spring-settle) var(--ch-cv-lag, 0s) both; transform-origin: 90px 90px; }
+[data-live] .ch-ak-season .ch-ak-mark, [data-live] .ch-ak-holes .ch-ak-mark { animation: ch-ak-rise6 0.36s var(--ch-ease-spring-settle) var(--ch-cv-lag, 0s) both; }
 @keyframes ch-ak-growx { from { transform: scaleX(0); } }
 @keyframes ch-ak-wedge { from { opacity: 0; transform: scale(0.9); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .ch-ak-th .work .fold, .ch-ak-th .cpop, .ch-ak-th .srcw .in, .ch-th-cv[data-live] .ch-ak-putts .t i, .ch-th-cv[data-live] .ch-ak-miss .w, .ch-th-cv[data-live] .ch-ak-season .ch-ak-mark, .ch-th-cv[data-live] .ch-ak-holes .ch-ak-mark { animation: none; }
+  .ch-ak-th .work .fold, .ch-ak-th .cpop, .ch-ak-th .srcw .in, [data-live] .ch-ak-putts .t i, [data-live] .ch-ak-miss .w, [data-live] .ch-ak-season .ch-ak-mark, [data-live] .ch-ak-holes .ch-ak-mark { animation: none; }
 }
-[data-motion='off'] .ch-ak-th :is(.work .fold, .cpop, .srcw .in), [data-motion='off'] .ch-th-cv[data-live] :is(.ch-ak-putts .t i, .ch-ak-miss .w, .ch-ak-season .ch-ak-mark, .ch-ak-holes .ch-ak-mark) { animation: none; }
+[data-motion='off'] .ch-ak-th :is(.work .fold, .cpop, .srcw .in), [data-motion='off'] [data-live] :is(.ch-ak-putts .t i, .ch-ak-miss .w, .ch-ak-season .ch-ak-mark, .ch-ak-holes .ch-ak-mark) { animation: none; }
 
 /* E-COMP: the scope chips say what the next answer reads; never a figure. */
 .ch-ak-root .ch-ak-cscope { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0 0 4px; }
@@ -678,6 +676,3 @@ html[data-fw-theme='dark'] .ch-ak-th {
 /* In the one-row box the chips take their own row above it. */
 .ch-ak-root .ch-ask-cmp.is-dock .ch-ask-cmp__box:has(.ch-ak-cscope), .ch-ak-root .ch-ask-cmp.is-phone .ch-ask-cmp__box:has(.ch-ak-cscope) { flex-wrap: wrap; }
 .ch-ak-root .ch-ask-cmp.is-dock .ch-ak-cscope, .ch-ak-root .ch-ask-cmp.is-phone .ch-ak-cscope { order: -1; flex: 0 0 100%; }
-
-/* The plan pane: the close button sits over the head of the bar, so the title starts past it. */
-@media (min-width: 821px) { .ch-cpv-full .fbar > b { padding-left: 32px; } }
