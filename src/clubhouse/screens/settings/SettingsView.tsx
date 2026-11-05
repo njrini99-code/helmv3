@@ -158,7 +158,7 @@ export function SettingsView({
   return (
     <DirtyContext.Provider value={report}>
       <main className="ch-set" data-canopy="">
-        <header className="ch-set-head" data-canopy-head="">
+        <header className="ch-set-head" data-canopy-head="tight">
           <h1 className="ch-display">Settings</h1>
           <p>
             {viewerRoleLabel(data)}

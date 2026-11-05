@@ -230,7 +230,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
       <div className="ch-qf-back" onClickCapture={back.onClickCapture}>
         <BackLink href={detailHref}>Qualifier</BackLink>
       </div>
-      <header className="ch-qf-head" data-canopy-head="">
+      <header className="ch-qf-head" data-canopy-head="tight">
         <div>
           <span className="ch-qf-eyebrow">Manage selections</span>
           <LargeTitle>{data.name}</LargeTitle>

@@ -7,7 +7,7 @@ import { NoTeam } from '../../ui/NoTeam';
  */
 export function CalendarPageHead({ brief }: { brief?: string }) {
   return (
-    <header className="ch-cal-mast" data-canopy-head="">
+    <header className="ch-cal-mast" data-canopy-head="tight">
       <div className="ch-cal-mast__l">
         <h1 id="ch-cal-page-title">Calendar</h1>
         {brief && <p>{brief}</p>}

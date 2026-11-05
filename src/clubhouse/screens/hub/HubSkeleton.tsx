@@ -11,7 +11,7 @@ import '../../styles/hub.css';
 export function HubSkeleton() {
   return (
     <main className="ch-hb ch-hb--skel" data-canopy="" aria-busy="true" aria-label="Loading Team Hub" data-ch-code="CH-10405">
-      <header className="ch-hb-h" data-canopy-head="">
+      <header className="ch-hb-h" data-canopy-head="tight">
         <div>
           <HubSkeletonChip />
           <Skeleton width={220} height={40} radius={10} />

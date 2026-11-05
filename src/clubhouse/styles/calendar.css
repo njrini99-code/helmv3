@@ -493,13 +493,13 @@
   );
 }
 .ch-wk__col.is-today {
-  background-color: rgb(21 90 57 / 0.025);
+  background-color: rgb(21 90 57 / 0.015);
 }
 /* Time that has gone (overnight polish, 2026-10-15): past days and today's hours above the now line take a faint wash,
    and ended events step back, so the week reads from the now line forward. Hover, focus and selection bring one back. */
 .ch-wk__col.is-past,
 .ch-wk__gone {
-  background-color: color-mix(in oklab, var(--ch-text-primary) 3.5%, transparent);
+  background-color: color-mix(in oklab, var(--ch-text-primary) 2%, transparent);
 }
 .ch-wk__gone {
   position: absolute;
@@ -3412,11 +3412,12 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
 }
 
 /* Loading in the framed page head (desktop): the masthead holds the loaded one's measured height (WebKit 1440 and
-   1100, 2026-10-07: 136px with the sans range title and the line), so the toolbar and the week don't move on load. */
+   1100, 2026-10-07: 136px with the sans range title and the line, less the tight head's 20px), so the toolbar and the
+   week don't move on load. */
 @media (min-width: 821px) {
   .ch-cal--skel[data-canopy] > .ch-cal-mast {
     box-sizing: border-box;
-    min-height: 136px;
+    min-height: 116px;
   }
 }
 
@@ -3631,7 +3632,7 @@ html[data-fw-theme='dark'] .ch-pp__trigger.is-on {
   box-shadow: 0 0 0 1px rgb(107 187 140 / 0.32);
 }
 html[data-fw-theme='dark'] .ch-wk__col.is-today {
-  background-color: rgb(107 187 140 / 0.04);
+  background-color: rgb(107 187 140 / 0.025);
 }
 html[data-fw-theme='dark'] .ch-ev--practice,
 html[data-fw-theme='dark'] .ch-ev--workout {
@@ -3810,8 +3811,9 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   left: 0;
   right: 0;
 }
+/* Quiet: these stack on today's column with the tint and the gone hours, and a band read as a stray edge at the grid's top. */
 .ch-wk__sky > i.is-night {
-  background: rgb(46 58 92 / 0.055);
+  background: rgb(46 58 92 / 0.03);
 }
 .ch-wk__sky > i.is-golden {
   background: linear-gradient(to bottom, rgb(232 180 106 / 0), rgb(232 180 106 / 0.14));
@@ -3830,7 +3832,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   white-space: nowrap;
 }
 :where(html[data-fw-theme='dark']) .ch-wk__sky > i.is-night {
-  background: rgb(0 0 0 / 0.18);
+  background: rgb(0 0 0 / 0.1);
 }
 :where(html[data-fw-theme='dark']) .ch-wk__sky > i.is-golden {
   background: linear-gradient(to bottom, rgb(201 173 116 / 0), rgb(201 173 116 / 0.1));

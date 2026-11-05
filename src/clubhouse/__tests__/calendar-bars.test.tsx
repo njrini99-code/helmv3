@@ -59,12 +59,26 @@ const up = () =>
   act(() => {
     window.dispatchEvent(new MouseEvent('pointerup'));
   });
-function grid(events: ChCalEvent[], onBarMove = vi.fn()) {
-  const view = render(<TimeGrid dates={DAYS} events={events} people={new Map()} now={{ date: '2026-10-19', hour: 12 }} selId={null} flagged={new Set()} onSelect={() => {}} onDay={() => {}} onBarMove={onBarMove} />);
+function grid(events: ChCalEvent[], onBarMove = vi.fn(), dates: string[] = DAYS) {
+  const view = render(<TimeGrid dates={dates} events={events} people={new Map()} now={{ date: '2026-10-19', hour: 12 }} selId={null} flagged={new Set()} onSelect={() => {}} onDay={() => {}} onBarMove={onBarMove} />);
   return { ...view, onBarMove };
 }
 
 describe('the lane', () => {
+  it('a run one week column wide shows its name and no times: its first day on the week’s last column', () => {
+    const edge = respan(ev({ id: 'state', title: 'State championship', type: 'tournament', allDay: false, start: 8, end: 17 }), { from: DAYS[6]!, to: '2026-10-27' });
+    const { container } = grid(edge);
+    const bar = container.querySelector('.ch-wk__allday .ch-ev-bar')!;
+    expect(bar.textContent).toContain('State championship');
+    expect(bar.querySelector('.ch-ev-bar__t')).toBeNull();
+  });
+
+  it('the day view’s one column is wide, so the run keeps its time there', () => {
+    const edge = respan(ev({ id: 'state', title: 'State championship', type: 'tournament', allDay: false, start: 8, end: 17 }), { from: DAYS[6]!, to: '2026-10-27' });
+    const { container } = grid(edge, vi.fn(), [DAYS[6]!]);
+    expect([...container.querySelectorAll('.ch-wk__allday .ch-ev-bar__t')].map((t) => t.textContent)).toEqual(['8:00 AM']);
+  });
+
   it('a run draws once across its days with its start and end times, and leaves the time grid', () => {
     const { container } = grid(RUN);
     const bars = container.querySelectorAll('.ch-wk__allday .ch-ev-bar');

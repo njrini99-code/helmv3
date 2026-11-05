@@ -376,7 +376,7 @@ export function TimeGrid({
         <div className="ch-wk__allday" ref={lane} style={{ gridTemplateRows: `repeat(${rows}, 26px)` }}>
           <span style={{ gridRow: `1 / span ${rows}` }}>All day</span>
           {bars.map((b) => (
-            <LaneBar key={b.e.id} b={b} people={people} viewerId={viewerId} sel={selId === b.e.id} onSelect={onSelect} drag={barEngine.bind(b.e)} state={bd?.e.id === b.e.id ? 'held' : undefined} />
+            <LaneBar key={b.e.id} b={b} narrow={b.c0 === b.c1 && dates.length > 1} people={people} viewerId={viewerId} sel={selId === b.e.id} onSelect={onSelect} drag={barEngine.bind(b.e)} state={bd?.e.id === b.e.id ? 'held' : undefined} />
           ))}
           {bd &&
             (() => {
@@ -388,7 +388,7 @@ export function TimeGrid({
               const pill = bd.edge === 'to' ? `Now ends ${barPill({ from: bd.to.to, to: bd.to.to })}` : bd.edge === 'from' ? `Now starts ${barPill({ from: bd.to.from, to: bd.to.from })}` : barPill(bd.to);
               return (
                 <div className="ch-dd-barcard" aria-hidden="true" style={{ gridColumn: `${c0 + 2} / ${c1 + 3}`, gridRow: row + 1 }}>
-                  <LaneBar b={{ e: bd.e, span: bd.to, c0, c1, row, clipStart: bd.to.from < first, clipEnd: bd.to.to > dates[dates.length - 1]! }} people={people} viewerId={viewerId} sel={false} onSelect={() => {}} state="card" />
+                  <LaneBar b={{ e: bd.e, span: bd.to, c0, c1, row, clipStart: bd.to.from < first, clipEnd: bd.to.to > dates[dates.length - 1]! }} narrow={c0 === c1 && dates.length > 1} people={people} viewerId={viewerId} sel={false} onSelect={() => {}} state="card" />
                   <span className="ch-dd-pill ch-num">
                     <span>{pill}</span>
                   </span>
@@ -459,9 +459,12 @@ export function TimeGrid({
 /**
  * P-4 4.5: one bar across the days an all-day event or a run covers, in the week's all-day lane. A run prints its start
  * at the left end and its end at the right; an end that runs past the week is cut in a chevron and has no grip here.
+ * A bar one week column wide (`narrow`: a run's first or last day at the week's edge) has room for its name only, so the
+ * times stay in its peek and its detail.
  */
 function LaneBar({
   b,
+  narrow = false,
   people,
   viewerId,
   sel,
@@ -470,6 +473,7 @@ function LaneBar({
   state,
 }: {
   b: ChLaneBar;
+  narrow?: boolean;
   people: Map<string, ChCalPerson>;
   viewerId?: string | null;
   sel: boolean;
@@ -480,7 +484,7 @@ function LaneBar({
   const clock = useChClock();
   const { e, span } = b;
   const title = eventTitle(e, people, viewerId);
-  const run = !e.allDay && e.span?.start != null && e.span.end != null;
+  const run = !narrow && !e.allDay && e.span?.start != null && e.span.end != null;
   const days = span.from === span.to ? `${dowOf(span.from)} ${dayNum(span.from)}` : `${dowOf(span.from)} ${dayNum(span.from)} to ${dowOf(span.to)} ${dayNum(span.to)}`;
   return (
     <button

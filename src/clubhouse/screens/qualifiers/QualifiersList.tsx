@@ -82,7 +82,7 @@ export function QualifiersList({ data, live }: { data: ChQList; live?: Record<st
     <main className="ch-qf ch-qf--list" data-canopy="">
       {/* Phone (board 01): Qualifiers opens from More (D-66), so the top bar goes back there. */}
       <PhoneTop heading={false} title={data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} start />
-      <header className="ch-qf-head" data-canopy-head="">
+      <header className="ch-qf-head" data-canopy-head="tight">
         <div>
           {/* The filter pills below carry the active and concluded counts, so the eyebrow is the page's name alone (no second copy
               of the counts, and no dashes when they failed to load). The phone's top bar already names the page, so it has none. */}

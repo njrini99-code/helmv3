@@ -586,7 +586,7 @@ export function TeamHub({
       {phone && coach && (
         <PhoneTop title="Team Hub" start heading={false} action={primary ? <PhoneIconAction icon={Plus} label={primary.label} onClick={primary.run} /> : undefined} />
       )}
-      <header className="ch-hb-h" data-canopy-head="">
+      <header className="ch-hb-h" data-canopy-head="tight">
         <div>
           {/* Coach only (wave 7): a player is never told their own role. */}
           {coach && (

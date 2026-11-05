@@ -44,6 +44,7 @@ export function PageHero({
   actions,
   figures,
   children,
+  tight = false,
 }: {
   eyebrow?: ReactNode;
   title: ReactNode;
@@ -54,10 +55,12 @@ export function PageHero({
   figures?: ReadonlyArray<{ label: string; value: ReactNode }>;
   /** The one line under the title. */
   children?: ReactNode;
+  /** The tight head (shell.css): no double rule above, the title just under the top bar. */
+  tight?: boolean;
 }) {
   const tone = useHeroTone();
   return (
-    <header className="ch-hero" data-tone={tone} data-canopy-head="">
+    <header className="ch-hero" data-tone={tone} data-canopy-head={tight ? 'tight' : ''}>
       {tone === 'topo' && <Contour />}
       {eyebrow && <span className="ch-hero__eyebrow">{eyebrow}</span>}
       <h1 id={titleId} className="ch-hero__title ch-display">
