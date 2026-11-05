@@ -1,11 +1,14 @@
 'use client';
 
 import Link from 'next/link';
+import { UserPlus } from 'lucide-react';
 import type { ChCoachHome, ChHomeEvent } from '../../data/home';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
 import { CALENDAR, eventHref, whenLabel } from './event-links';
+import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
+import { plural } from '../../lib/plural';
 import { EmptyState } from '../../ui/States';
 import { useChClockText } from '../../lib/use-clock';
 import { formatAvg, formatToPar } from '../../lib/format';
@@ -50,7 +53,7 @@ export function DeskNext({ e, now }: { e: ChHomeEvent; now: Date | null }) {
 }
 
 /** A card's title over a hairline, with the card's one link on the right when that route is rebuilt (06 §1.3). */
-function DeskHead({ id, title, href, link }: { id: string; title: string; href: string | null; link: string }) {
+export function DeskHead({ id, title, href, link }: { id: string; title: string; href: string | null; link: string }) {
   return (
     <div className="ch-dh-card__h">
       <h2 id={id} className="ch-dh-card__t">
@@ -153,6 +156,32 @@ export function DeskBoard({ rows, rosterSize }: { rows: ChCoachHome['leaderboard
         <p className="ch-dh-rest">Early reads. Places start at three 18-hole rounds.</p>
       ) : (
         shown.length < DESK_BOARD && rosterSize > rows.length && <p className="ch-dh-rest">Players join the board with their first 18-hole round.</p>
+      )}
+    </section>
+  );
+}
+
+/** The board before there is one, in the board's own card: who to invite, or that it fills in as rounds are posted. */
+export function DeskBoardEmpty({ rosterSize, inviteHref }: { rosterSize: number; inviteHref: string | null }) {
+  return (
+    <section className="ch-dh-card" aria-labelledby="ch-dh-board">
+      <DeskHead id="ch-dh-board" title="Leaderboard" href={rebuiltHref('/golf/dashboard/roster')} link="Roster" />
+      {rosterSize === 0 ? (
+        <EmptyState
+          compact
+          code="CH-2304"
+          title="No players on the roster yet."
+          body="Share your team code from Roster; players appear here as they join."
+          action={
+            inviteHref ? (
+              <Button size="sm" variant="primary" leftIcon={UserPlus} href={inviteHref}>
+                Invite players
+              </Button>
+            ) : undefined
+          }
+        />
+      ) : (
+        <EmptyState compact code="CH-2305" title="No 18-hole rounds posted yet this season." body={`${plural(rosterSize, 'player is', 'players are')} on the roster. The leaderboard fills in as rounds are posted.`} />
       )}
     </section>
   );

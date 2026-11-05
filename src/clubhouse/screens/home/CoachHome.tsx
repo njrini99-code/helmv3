@@ -1,6 +1,6 @@
 'use client';
 
-import { DeskAgenda, DeskBoard, DeskNext, DeskRounds } from './HomeDeskCrh';
+import { DeskAgenda, DeskBoard, DeskNext, DeskRounds, DeskBoardEmpty, DeskHead } from './HomeDeskCrh';
 import { CALENDAR } from './event-links';
 import { CalendarPlus, ChevronRight, Flag, Sparkles, UserPlus } from 'lucide-react';
 import Link from 'next/link';
@@ -110,7 +110,7 @@ function CoachHomeBody({ data, now, live, crh = false }: { data: ChCoachHome; no
             {data.leaderboard.error ? (
               <CrhFailedCard id="ch-dh-board-failed" title="Leaderboard" href={rebuiltHref('/golf/dashboard/roster') ?? '#'} link="Roster" code="CH-2204" what="The leaderboard didn’t load" body="Scores are safe. Try again." />
             ) : data.leaderboard.rows.length === 0 ? (
-              <Leaderboard data={data.leaderboard} covered={covered} rounds={data.latestRounds.rounds} />
+              <DeskBoardEmpty rosterSize={data.leaderboard.rosterSize} inviteHref={rebuiltHref('/golf/dashboard/roster?invite=1')} />
             ) : (
               <DeskBoard rows={data.leaderboard.rows} rosterSize={data.leaderboard.rosterSize} />
             )}
@@ -176,6 +176,30 @@ export function isFirstRun(data: ChCoachHome): boolean {
   );
 }
 
+/** The three first steps, as the phone board and the desk's card both list them (06 11.2). */
+function SetupRows({ roster }: { roster: string | null }) {
+  return (
+    <>
+      {[
+        { icon: UserPlus, title: 'Invite players', sub: 'They join with a link', href: roster ?? '/golf/dashboard/roster' },
+        { icon: CalendarPlus, title: 'Add your season', sub: 'Practices, qualifiers and tournaments', href: '/golf/dashboard/calendar?new=1' },
+        { icon: Flag, title: 'Post the first round', sub: 'Stats fill in from there', href: '/golf/dashboard/rounds' },
+      ].map((r) => (
+        <Link key={r.title} href={r.href} className="ch-hm-setup__r" data-ch-press="">
+          <span className="ch-hm-setup__ic">
+            <Icon icon={r.icon} size={18} />
+          </span>
+          <span>
+            <b>{r.title}</b>
+            <span>{r.sub}</span>
+          </span>
+          <Icon icon={ChevronRight} size={16} />
+        </Link>
+      ))}
+    </>
+  );
+}
+
 /**
  * The v2 first-run page empty state (gh-states.jsx, EMPTY.home.coach; D-71): the two first steps, under the same framed
  * head as the loaded page on desktop (states audit, 2026-10-08) and the Ledger's page intro on the phone (`--first`).
@@ -201,23 +225,47 @@ function HomeFirstRun({ data, phone, crh = false }: { data: ChCoachHome; phone: 
           {events && <WeekStrip days={data.week.days} note={data.phone.weekNote} />}
           <section className="ch-hm-setup" aria-labelledby="ch-hm-setup-t" data-ch-code="CH-2308">
             <h2 id="ch-hm-setup-t">Get your team set up</h2>
-            {[
-              { icon: UserPlus, title: 'Invite players', sub: 'They join with a link', href: roster ?? '/golf/dashboard/roster' },
-              { icon: CalendarPlus, title: 'Add your season', sub: 'Practices, qualifiers and tournaments', href: '/golf/dashboard/calendar?new=1' },
-              { icon: Flag, title: 'Post the first round', sub: 'Stats fill in from there', href: '/golf/dashboard/rounds' },
-            ].map((r) => (
-              <Link key={r.title} href={r.href} className="ch-hm-setup__r" data-ch-press="">
-                <span className="ch-hm-setup__ic">
-                  <Icon icon={r.icon} size={18} />
-                </span>
-                <span>
-                  <b>{r.title}</b>
-                  <span>{r.sub}</span>
-                </span>
-                <Icon icon={ChevronRight} size={16} />
-              </Link>
-            ))}
+            <SetupRows roster={roster} />
           </section>
+        </div>
+      </main>
+    );
+  if (crh)
+    return (
+      <main className="ch-h-main ch-h-main--desk" data-ch-crh="on">
+        <header className="ch-h-herocard">
+          <div>
+            <span className="ch-h-head__date">{data.todayLabel}</span>
+            <h1 className="ch-display">Welcome to Clubhouse</h1>
+            <p className="ch-h-head__sub ch-dh-brief">
+              <Icon icon={Sparkles} size={14} />
+              Set up your team and your first week shows here.
+            </p>
+            <CoachQueue queue={data.queue} phone />
+          </div>
+        </header>
+        <div className="ch-h-grid">
+          <section className="ch-dh-card ch-hm-setup" aria-labelledby="ch-hm-setup-t" data-ch-code="CH-2308">
+            <DeskHead id="ch-hm-setup-t" title="Get your team set up" href={null} link="" />
+            <SetupRows roster={roster} />
+          </section>
+          {events ? (
+            <DeskAgenda rows={data.week.agenda} />
+          ) : (
+            <section className="ch-dh-card" aria-labelledby="ch-dh-week">
+              <DeskHead id="ch-dh-week" title="This week" href={CALENDAR} link="Calendar" />
+              <EmptyState
+                compact
+                title="Nothing on the calendar this week"
+                body="New events show here with who’s going."
+                action={
+                  <Button size="sm" leftIcon={CalendarPlus} href="/golf/dashboard/calendar?new=1">
+                    New event
+                  </Button>
+                }
+              />
+            </section>
+          )}
         </div>
       </main>
     );

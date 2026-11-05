@@ -5413,6 +5413,23 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     gap: 16px;
     padding: var(--ch-page-top-crh) var(--ch-page-gutter) 40px;
   }
+  .ch-h-herocard > :only-child {
+    grid-column: 1 / -1;
+  }
+  .ch-dh-card.ch-hm-setup h2 {
+    padding: 0;
+  }
+  .ch-dh-card.ch-hm-setup .ch-hm-setup__r + .ch-hm-setup__r {
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
+  }
+  @media (hover: hover) {
+    .ch-dh-card.ch-hm-setup .ch-hm-setup__r {
+      transition: background var(--ch-dur-quick) var(--ch-ease);
+    }
+    .ch-dh-card.ch-hm-setup .ch-hm-setup__r:hover {
+      background: var(--ch-bg-subtle);
+    }
+  }
   .ch-h-herocard .ch-hm-queue {
     display: grid;
     gap: 8px;

@@ -302,6 +302,13 @@ describe('Home · empty', () => {
     expect(code('CH-2305')!.textContent).toMatch(/6 players are on the roster/);
   });
 
+  it('CH-2305 the redesigned desk says no rounds in the board’s own card', () => {
+    render(<CoachHome data={{ ...PREVIEW_HOME, leaderboard: { ...PREVIEW_HOME.leaderboard, rows: [], rosterSize: 6 } }} crh />);
+    const empty = code('CH-2305')!;
+    expect(empty.closest('.ch-dh-card')).not.toBeNull();
+    expect(document.querySelector('.ch-h-lb')).toBeNull();
+  });
+
   it('CH-2305 players and no round: the leaderboard’s line says it once, and the latest round’s pane steps aside', () => {
     wrap(<CoachHome data={{ ...PREVIEW_HOME, latestRounds: { rounds: [], error: false, holesError: false }, leaderboard: { rows: [], scorecards: 0, rosterSize: 7, error: false } }} />);
     expect(code('CH-2305')).not.toBeNull();
@@ -539,6 +546,15 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
 });
 
 describe('Home · first run (v2 page empty state, D-71)', () => {
+  it('CH-2308 the redesigned desk opens first run on the hero card and the setup list, with the week beside it', () => {
+    render(<CoachHome data={PREVIEW_HOME_EMPTY} crh />);
+    expect(screen.getByRole('heading', { level: 1, name: 'Welcome to Clubhouse' }).closest('.ch-h-herocard')).not.toBeNull();
+    const setup = code('CH-2308')!;
+    expect(setup.tagName).toBe('SECTION');
+    for (const link of ['Invite players', 'Add your season', 'Post the first round']) expect(within(setup as HTMLElement).getByRole('link', { name: new RegExp(link) })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'This week' })).toBeTruthy();
+  });
+
   it('CH-2308 a team with nothing yet gets the first steps; the header’s actions step aside', () => {
     const empty: ChCoachHome = {
       ...PREVIEW_HOME,
