@@ -176,7 +176,7 @@ export function AskReceiptCard({ receipt, onAskAgain }: { receipt: ActionReceipt
             return (
               <li key={i}>
                 {href ? (
-                  <Link href={href} className="ch-th-chip">
+                  <Link prefetch={false} href={href} className="ch-th-chip">
                     {text}
                     <Icon icon={ArrowRight} size={13} />
                   </Link>

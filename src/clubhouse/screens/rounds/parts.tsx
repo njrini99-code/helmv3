@@ -588,6 +588,7 @@ export function RoundRow({ r, href, onOpen, bind }: { r: ChLibraryRound; href: s
   const label = `${shortDay(r.date)}, ${r.course}, ${r.score}${r.toPar != null ? ` (${formatToPar(r.toPar)})` : ''}`;
   return href ? (
     <Link
+      prefetch={false}
       href={href}
       className={'ch-rd-sc' + (under ? ' is-under' : '')}
       aria-label={label}

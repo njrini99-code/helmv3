@@ -23,7 +23,7 @@ export function ReadsRail({ view, current, voice, hrefOf }: { view: ChReadView; 
             </summary>
             <div className="pop">
               {view.team.map((p) => (
-                <Link key={p.id} href={coachBoardFor(p.id)} aria-current={p.id === voice.playerId ? 'true' : undefined}>
+                <Link prefetch={false} key={p.id} href={coachBoardFor(p.id)} aria-current={p.id === voice.playerId ? 'true' : undefined}>
                   {p.name}
                 </Link>
               ))}
@@ -41,7 +41,7 @@ export function ReadsRail({ view, current, voice, hrefOf }: { view: ChReadView; 
         <div key={g.label}>
           <h5>{g.label}</h5>
           {g.rows.map((r) => (
-            <Link key={r.id} className={'lr' + (r.id === current ? ' on' : '')} href={hrefOf(r.id)} replace scroll={false} aria-current={r.id === current ? 'page' : undefined}>
+            <Link prefetch={false} key={r.id} className={'lr' + (r.id === current ? ' on' : '')} href={hrefOf(r.id)} replace scroll={false} aria-current={r.id === current ? 'page' : undefined}>
               <span className={`sdot ${r.tone}`} />
               <div className="c">
                 {r.title}

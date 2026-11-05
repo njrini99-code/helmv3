@@ -477,7 +477,7 @@ export function Updates({ data, covered = false, read, onOpen }: {
           {data.rows.map((n: ChHubUpdate) => (
             <li key={n.id} className={isNew(n) ? 'is-new' : undefined}>
               {n.href ? (
-                <Link href={n.href} onClick={() => onOpen?.(n)}>
+                <Link prefetch={false} href={n.href} onClick={() => onOpen?.(n)}>
                   <UpdateBody n={{ ...n, unread: isNew(n) }} />
                 </Link>
               ) : (

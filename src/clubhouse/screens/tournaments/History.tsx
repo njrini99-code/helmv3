@@ -190,7 +190,7 @@ function Trend({ points, state, note }: { points: TrendPoint[]; state: ChTourHis
         </svg>
         {points.map((p, i) =>
           p.value == null ? null : (
-            <Link key={p.event.id} href={paths.desk(p.event.id)} className={'ch-tour-rev-dot' + (p.scorecardsOnly ? ' is-cards' : '')} style={{ left: `${trendX(i, n) * 100}%`, top: `${((TOP + trendY(p.value, lo, hi) * SPAN) / H) * 100}%` }} aria-label={label(p)} title={`${p.event.name} · ${p.rounds} rounds · ${p.players} players`}>
+            <Link prefetch={false} key={p.event.id} href={paths.desk(p.event.id)} className={'ch-tour-rev-dot' + (p.scorecardsOnly ? ' is-cards' : '')} style={{ left: `${trendX(i, n) * 100}%`, top: `${((TOP + trendY(p.value, lo, hi) * SPAN) / H) * 100}%` }} aria-label={label(p)} title={`${p.event.name} · ${p.rounds} rounds · ${p.players} players`}>
               <i />
             </Link>
           ),
@@ -222,7 +222,7 @@ function TrendBars({ points, data, state, note }: { points: TrendPoint[]; data: 
       <ol className="ch-tour-rev-bars" style={{ gridTemplateColumns: `repeat(${Math.max(points.length, 1)}, minmax(0, 1fr))` }}>
         {points.map((p) => (
           <li key={p.event.id}>
-            <Link href={paths.desk(p.event.id)} className={'ch-tour-rev-bar' + (p.event.seasonId === current ? ' is-now' : '')} aria-label={label(p)}>
+            <Link prefetch={false} href={paths.desk(p.event.id)} className={'ch-tour-rev-bar' + (p.event.seasonId === current ? ' is-now' : '')} aria-label={label(p)}>
               <b className="ch-num">{p.value == null ? <NoData /> : formatSigned(p.value, 1)}</b>
               <i style={{ height: p.value == null ? 14 : 14 + (1 - trendY(p.value, lo, hi)) * 70 }} />
               <span>{p.event.short}</span>

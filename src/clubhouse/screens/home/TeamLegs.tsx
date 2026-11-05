@@ -45,7 +45,7 @@ function People({ p, className }: { p: ChLegPeople; className: string }) {
     const href = legPlayerHref(id);
     const text = p.names[p.ids.indexOf(id)] ?? '';
     return href ? (
-      <Link key={id} href={href} className={className}>
+      <Link prefetch={false} key={id} href={href} className={className}>
         {text}
       </Link>
     ) : (

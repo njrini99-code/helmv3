@@ -510,7 +510,7 @@ function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['r
                   {(() => {
                     const href = rebuiltHref(`/golf/dashboard/rounds/${r.id}`, role);
                     return href ? (
-                      <Link href={href} className="ch-tr__link ch-tr__name" title={r.course} aria-label={`${r.course}, ${r.date}: open the round`}>
+                      <Link prefetch={false} href={href} className="ch-tr__link ch-tr__name" title={r.course} aria-label={`${r.course}, ${r.date}: open the round`}>
                         {r.course}
                       </Link>
                     ) : (

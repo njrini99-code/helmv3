@@ -463,7 +463,7 @@ export function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: C
               <li key={p.id}>
                 {/* P003-C1: a hold peeks at the player; a tap still opens their stats. */}
                 <PlayerPeek player={gridPeek(p)}>
-                  <Link href={teamPlayerHref(p.id, data.filter)} className="ch-stm-row" {...press(teamPlayerHref(p.id, data.filter))}>
+                  <Link prefetch={false} href={teamPlayerHref(p.id, data.filter)} className="ch-stm-row" {...press(teamPlayerHref(p.id, data.filter))}>
                     <Avatar name={p.name} id={p.id} size="md" />
                     <span className="ch-stm-row__b">
                       <b>{p.name}</b>

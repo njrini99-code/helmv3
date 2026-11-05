@@ -256,7 +256,7 @@ function NoEvents() {
       </div>
       <div className="ch-hm-none__q">
         {QUICK.map((t) => (
-          <Link key={t} href={newEventHref(t)} className="ch-hm-none__chip" data-ch-press="">
+          <Link prefetch={false} key={t} href={newEventHref(t)} className="ch-hm-none__chip" data-ch-press="">
             <Icon icon={TYPE_ICON[t]} size={13} />
             {TYPE_LABEL[t]}
           </Link>
@@ -305,7 +305,7 @@ export function Today({ list, now, failed, quiet, canPlan = true, inline = false
         const mark = live || e.id === next;
         return (
           <li key={e.id} className={'ch-hm-tl__r' + (past ? ' is-past' : '') + (mark ? ' is-now' : '')}>
-            <Link href={eventHref(e)} className="ch-hm-tl__a">
+            <Link prefetch={false} href={eventHref(e)} className="ch-hm-tl__a">
               <span className="ch-hm-tl__t ch-num">{e.allDay ? 'All day' : t12(e.startLabel).replace(/\s?[AP]M$/, '')}</span>
               <span className="ch-hm-tl__rail" aria-hidden="true">
                 <i className={`is-${e.type}`} />

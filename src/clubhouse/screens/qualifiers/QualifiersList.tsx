@@ -374,7 +374,7 @@ function Hero({ item, standingsError, today, line }: { item: ChQListItem; standi
 function Card({ item, standingsError, today, line }: { item: ChQListItem; standingsError: boolean; today?: string; line?: ChQLiveLine }) {
   const press = usePressPrefetch();
   return (
-    <Link href={detailHref(item.id)} className="ch-qf-card" onClick={opened(item.id, 'card')} {...press(detailHref(item.id))}>
+    <Link prefetch={false} href={detailHref(item.id)} className="ch-qf-card" onClick={opened(item.id, 'card')} {...press(detailHref(item.id))}>
       <div className="ch-qf-card__h">
         <div>
           <h3>{item.name}</h3>

@@ -187,7 +187,7 @@ export function WhyCard({ d, voice, pictures }: { d: ChReadDetail; voice: ChView
               <div className="holes">
                 {cause.holes.map((h) =>
                   h.href ? (
-                    <Link className="hole" key={h.key} href={h.href}>
+                    <Link prefetch={false} className="hole" key={h.key} href={h.href}>
                       {h.date} · hole {h.hole}
                     </Link>
                   ) : (

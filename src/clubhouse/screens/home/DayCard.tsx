@@ -194,7 +194,7 @@ export function LaterToday({ todays, cardId, now, extras }: { todays: ChHomeEven
       key: e.id,
       at: e.allDay ? -1 : minutesOf(e.startIso, e.timezone),
       node: (
-        <Link href={eventHref(e)} className="ch-hm-tl__a">
+        <Link prefetch={false} href={eventHref(e)} className="ch-hm-tl__a">
           <span className="ch-hm-tl__t ch-num">{e.allDay ? 'All day' : t12(e.startLabel).replace(/\s?[AP]M$/, '')}</span>
           <span className="ch-hm-tl__rail" aria-hidden="true">
             <i className={`is-${e.type}`} />
@@ -234,7 +234,7 @@ export function LaterToday({ todays, cardId, now, extras }: { todays: ChHomeEven
       key: x.key,
       at: x.at,
       node: x.href ? (
-        <Link href={x.href} className="ch-hm-tl__a">
+        <Link prefetch={false} href={x.href} className="ch-hm-tl__a">
           {body}
         </Link>
       ) : (

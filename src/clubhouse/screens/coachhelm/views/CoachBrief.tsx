@@ -73,7 +73,7 @@ function WorkingRow({ w }: { w: ChBriefWorking }) {
 function GoalPlayer({ p }: { p: ChBriefGoalPlayer }) {
   return (
     <li className="ch-hbr-goals__p">
-      <Link className="ch-hbr-goals__name" href={p.href}>
+      <Link prefetch={false} className="ch-hbr-goals__name" href={p.href}>
         {p.name}
       </Link>
       <ul>

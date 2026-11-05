@@ -448,6 +448,7 @@ function Rounds({ rounds, open, role }: { rounds: ChPlayerProfile['rounds']; ope
                     // The name says the score as well as the course and date (the label used to hide it), and the row
                     // carries the list's chevron, as the team page's player rows do (visual pass 2026-10-28).
                     <Link
+                      prefetch={false}
                       href={href}
                       className="ch-spm-round is-link"
                       aria-label={`${r.course}, ${r.date}: ${[r.score, r.toPar != null ? `${formatToPar(r.toPar)} to par` : null, r.sg != null ? `${formatSigned(r.sg)} strokes gained` : null].filter((x) => x != null).join(', ')}. Open the round`}

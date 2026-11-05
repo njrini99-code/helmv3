@@ -1076,6 +1076,7 @@ function RoundsDetail({ data }: { data: ChPlayerProfile }) {
                 <li key={r.id}>
                   {href ? (
                     <Link
+                      prefetch={false}
                       href={href}
                       className="ch-shs-rrow"
                       data-ch="stats-round-row"

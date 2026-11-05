@@ -241,7 +241,7 @@ function SeasonBests({ bests, filter, longestError, covered }: { bests: ChTeamSt
         bests.map((b) => (
           <div key={b.label} className="ch-best__r">
             <span className="ch-best__k">{b.label}</span>
-            <Link href={teamPlayerHref(b.playerId, filter)} className="ch-who" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link prefetch={false} href={teamPlayerHref(b.playerId, filter)} className="ch-who" style={{ textDecoration: 'none', color: 'inherit' }}>
               <Avatar name={b.name} id={b.playerId} size={26} />
               <span>
                 <b>{b.name}</b>

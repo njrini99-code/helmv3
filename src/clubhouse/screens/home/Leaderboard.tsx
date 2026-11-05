@@ -74,7 +74,7 @@ function Row({ p, pos, rounds }: { p: ChLeaderRow; pos: { label: string; place: 
   const top = pos.place != null && pos.place <= 3;
   // P002 D3: the row is a table row (a div); the link is the player's name, stretched over the row by its ::after.
   const name = href ? (
-    <Link href={href} className="ch-h-lb__go" {...press(href)}>
+    <Link prefetch={false} href={href} className="ch-h-lb__go" {...press(href)}>
       <span className="ch-h-lb__name">{p.name}</span>
       <LinkPending />
     </Link>

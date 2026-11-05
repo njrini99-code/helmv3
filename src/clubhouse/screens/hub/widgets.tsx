@@ -326,7 +326,7 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
                   return (
                     <li key={e.id} className={!coach && r ? 'has-reply' : undefined}>
                       <time className="ch-num">{clk(e.time)}</time>
-                      <Link href={`/golf/dashboard/calendar?date=${day.date}&event=${e.id}`}>
+                      <Link prefetch={false} href={`/golf/dashboard/calendar?date=${day.date}&event=${e.id}`}>
                         <b>
                           {e.title}
                           {r?.mandatory && <span className="ch-hb-req">Required</span>}

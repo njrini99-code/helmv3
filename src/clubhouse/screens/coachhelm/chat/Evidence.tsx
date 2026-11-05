@@ -183,7 +183,7 @@ function Reads({ block, roster }: { block: Extract<AskEvidence, { kind: 'reads' 
         return (
           <li key={r.id}>
             {href ? (
-              <Link href={href} className="ch-th-reads__r">
+              <Link prefetch={false} href={href} className="ch-th-reads__r">
                 {body}
                 <Icon icon={ChevronRight} size={15} />
               </Link>
@@ -326,7 +326,7 @@ export function Ranking({ rows, signed, label, highlight }: { rows: AskRankRow[]
             <span className="ch-th-rank__n">{r.rank}</span>
             <span className="ch-th-rank__who">
               {href ? (
-                <Link href={href} className="ch-th-rank__name">
+                <Link prefetch={false} href={href} className="ch-th-rank__name">
                   {r.label}
                 </Link>
               ) : (

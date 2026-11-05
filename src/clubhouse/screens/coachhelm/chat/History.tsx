@@ -82,6 +82,7 @@ function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigat
                   return (
                     <li key={c.id}>
                       <Link
+                        prefetch={false}
                         href={conversationHref(c.id)}
                         className={'ch-ask-hist__row' + (on ? ' is-on' : '')}
                         aria-current={on ? 'page' : undefined}

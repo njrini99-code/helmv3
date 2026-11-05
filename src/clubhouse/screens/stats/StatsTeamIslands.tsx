@@ -870,7 +870,7 @@ function LegGrid({
                   <span>
                     {/* P003-C1: resting on the name shows the player's card; the row still opens their stats. */}
                     <PlayerPeek player={gridPeek(g)} within="[role=cell]">
-                      <Link href={playerHref(g.id)} className="ch-lg__a" onFocus={() => setFocus(g.id)} onMouseEnter={() => setFocus(g.id)} {...press(playerHref(g.id))}>
+                      <Link prefetch={false} href={playerHref(g.id)} className="ch-lg__a" onFocus={() => setFocus(g.id)} onMouseEnter={() => setFocus(g.id)} {...press(playerHref(g.id))}>
                         <b>{g.name}</b>
                         <LinkPending />
                       </Link>
@@ -885,7 +885,7 @@ function LegGrid({
                   return (
                     <span key={i} role="cell" className={'ch-lg__cell' + (i === li ? ' is-col' : '') + (i === worst ? ' is-worst' : '')}>
                       {/* Q12: the figure opens that player's Game detail for this leg; the row's name link still opens the profile. */}
-                      {v != null && <Link className="ch-lg__cl" href={legDetailHref(g.id, data.filter, LEGS_LIST[i]!)} aria-label={`${g.name}, ${LEGS_LIST[i]!.toLowerCase()} ${formatSigned(v)}: open game detail`} />}
+                      {v != null && <Link prefetch={false} className="ch-lg__cl" href={legDetailHref(g.id, data.filter, LEGS_LIST[i]!)} aria-label={`${g.name}, ${LEGS_LIST[i]!.toLowerCase()} ${formatSigned(v)}: open game detail`} />}
                       <span className={'ch-num ' + changeInk(v)}>{v == null ? <NoData /> : formatSigned(v)}</span>
                       <span className="ch-lg__track" aria-hidden="true">
                         {v != null && <i className={'ch-lg__bar ' + changeTone(v, false, 1)} style={bar(v)} />}
