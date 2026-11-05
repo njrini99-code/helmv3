@@ -2918,7 +2918,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   box-shadow: var(--ch-roster-x2);
 }
 [data-ch-crh='on'] .ch-rs-tcard__coins .ch-avatar + .ch-avatar {
-  margin-left: -8px;
+  margin-left: -4px;
 }
 [data-ch-crh='on'] .ch-rs-tcard__f em {
   margin-left: auto;
@@ -2942,24 +2942,29 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 [data-ch-crh='on'] .ch-rs-ldr {
   display: grid;
   flex: none;
-  align-content: start;
+  align-content: center;
+  justify-items: center;
   gap: 8px;
   width: min(62%, 220px);
-  padding: 12px 12px 12px;
+  padding: 16px 12px;
   border: 0;
   border-radius: var(--ch-radius-card);
   /* The drawn 11% tint landed on the page's own tone, so the card disappeared into it (owner, 5 Nov): nearly the card's fill, a year ring and lift. */
   background: color-mix(in srgb, var(--ch-rs-y, var(--ch-chart-flat)) 4%, var(--ch-card-bg));
   box-shadow: var(--ch-roster-x3);
   color: var(--ch-text-primary);
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   scroll-snap-align: start;
+}
+[data-ch-crh='on'] .ch-rs-ldr__bars {
+  display: block;
+  margin-top: 4px;
 }
 [data-ch-crh='on'] .ch-rs-ldr__k {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 6px;
   font: var(--ch-type-13-strong);
 

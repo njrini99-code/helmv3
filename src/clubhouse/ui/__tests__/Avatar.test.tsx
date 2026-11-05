@@ -61,3 +61,13 @@ describe('Avatar size', () => {
     expect(coin({ name: 'Jamie Rivera' }).size).toBe(`${AVATAR_SIZES.md}px`);
   });
 });
+
+/** Owner, 5 Nov: coins are the calm neutral, whatever the year. */
+describe('Avatar colour', () => {
+  it('draws no year colour', () => {
+    const { container } = render(<Avatar name="Theo Marchetti" id="p1" year="sr" />);
+    const el = container.querySelector('.ch-avatar')!;
+    expect(el.getAttribute('data-year')).toBeNull();
+    expect(el.getAttribute('data-tone')).not.toBeNull();
+  });
+});

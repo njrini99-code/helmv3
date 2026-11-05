@@ -16,3 +16,5 @@ Flags off: Messages file chips no longer rise on each keystroke, and CoachHelm T
 No screenshots in this entry: these changes were made without a browser and are checked in the final WebKit pass.
 
 Depth (owner, 5 Nov: "I just want more depth"): the redesign's cards move to `--ch-elevation-lifted`, a firmer edge and a longer cast than `--ch-elevation-reading`, in both themes. This goes past DESIGN_LANGUAGE's two-layer shadow on the owner's call. Roster's leader cards take nearly the card's fill with a year ring, because the drawn 11% tint matched the page's tone.
+
+Avatars (owner, 5 Nov: "Avatar colors are supposed to be calm neutral"): `ui/Avatar` no longer draws a year colour, which reverses DESIGN_LANGUAGE's class-year coins; the year stays in its chip and the class bar. Leader cards (owner, same day) centre their text and carry the player's last-five bars.
