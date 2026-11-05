@@ -30,12 +30,15 @@ type Outcome = { data: unknown; error: unknown };
 const PLAYER_ID = '8c1b4e77-2d95-4a30-9f16-5b7e0c9a3d21';
 const ok = (data: unknown): Outcome => ({ data, error: null });
 
-let recent: Array<{ id: string; body: string }> | null = null;
+type Recent = { id: string; body: string; urgency: string; requires_acknowledgement: boolean };
+let recent: Recent[] | null = null;
+let recipientRows: Array<{ player_id: string }> = [];
 let duplicateFilters: Array<[string, unknown]> = [];
 let inserted: string[] = [];
 
 function chain(table: string) {
   const settle = (): Outcome => {
+    if (table === 'golf_announcement_recipients') return ok(recipientRows);
     if (table === 'golf_team_members') return ok([{ player_id: PLAYER_ID, team_id: 'team-1', status: 'active' }]);
     if (table === 'golf_players') return ok([{ user_id: 'u-player' }]);
     if (table === 'users') return ok([{ id: 'u-player', email: 'p@example.com' }]);
@@ -96,6 +99,7 @@ async function post() {
 
 beforeEach(() => {
   recent = null;
+  recipientRows = [{ player_id: PLAYER_ID }];
   duplicateFilters = [];
   inserted = [];
   spies.notify.mockClear();
@@ -104,7 +108,7 @@ beforeEach(() => {
 
 describe('createEnrichedAnnouncement · the duplicate check', () => {
   it('returns the post that landed, inserts nothing and notifies nobody', async () => {
-    recent = [{ id: 'ann-earlier', body: 'Be early.' }];
+    recent = [{ id: 'ann-earlier', body: 'Be early.', urgency: 'normal', requires_acknowledgement: false }];
     const result = await post();
     expect(result).toEqual({ success: true, data: { announcementId: 'ann-earlier' } });
     expect(inserted).toEqual([]);
@@ -113,13 +117,21 @@ describe('createEnrichedAnnouncement · the duplicate check', () => {
   });
 
   it('looks only at this coach, this team and this exact post', async () => {
-    recent = [{ id: 'ann-earlier', body: 'Be early.' }];
+    recent = [{ id: 'ann-earlier', body: 'Be early.', urgency: 'normal', requires_acknowledgement: false }];
     await post();
     expect(Object.fromEntries(duplicateFilters)).toEqual({ team_id: 'team-1', created_by: 'coach-1', title: 'Bus leaves at 6' });
   });
 
   it('inserts when the same title has a different body', async () => {
-    recent = [{ id: 'ann-earlier', body: 'Something else.' }];
+    recent = [{ id: 'ann-earlier', body: 'Something else.', urgency: 'normal', requires_acknowledgement: false }];
+    const result = await post();
+    expect(result).toMatchObject({ success: true, data: { announcementId: 'ann-new' } });
+    expect(inserted).toContain('golf_announcements');
+  });
+
+  it('inserts when the same words go to different players', async () => {
+    recent = [{ id: 'ann-earlier', body: 'Be early.', urgency: 'normal', requires_acknowledgement: false }];
+    recipientRows = [{ player_id: 'someone-else' }];
     const result = await post();
     expect(result).toMatchObject({ success: true, data: { announcementId: 'ann-new' } });
     expect(inserted).toContain('golf_announcements');

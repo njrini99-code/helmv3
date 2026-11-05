@@ -24,12 +24,14 @@ type Outcome = { data: unknown; error: unknown };
 const PLAYER_ID = '4d2f8a11-6b93-4c27-8e51-9a0c3b7d2e64';
 const ok = (data: unknown): Outcome => ({ data, error: null });
 
-let recent: Array<{ id: string; description: string | null; due_date: string | null }> = [];
+let recent: Array<{ id: string; description: string | null; due_date: string | null; priority?: string; category?: string | null }> = [];
+let assigned: Array<{ player_id: string }> = [];
 let duplicateFilters: Array<[string, unknown]> = [];
 let inserted: string[] = [];
 
 function chain(table: string) {
   const settle = (): Outcome => {
+    if (table === 'golf_task_assignments') return ok(assigned);
     if (table === 'golf_team_members') return ok([{ player_id: PLAYER_ID }]);
     if (table === 'golf_players') return ok([{ user_id: 'u-player' }]);
     if (table === 'users') return ok([{ id: 'u-player', email: 'p@example.com' }]);
@@ -84,14 +86,23 @@ async function create(description?: string, dueDate?: string) {
 
 beforeEach(() => {
   recent = [];
+  assigned = [{ player_id: PLAYER_ID }];
   duplicateFilters = [];
   inserted = [];
   spies.notify.mockClear();
 });
 
 describe('createTask · the duplicate check', () => {
+  it('inserts when the same task goes to different players', async () => {
+    recent = [{ id: 'task-earlier', description: null, due_date: null, priority: 'normal', category: null }];
+    assigned = [{ player_id: 'someone-else' }];
+    const result = await create();
+    expect(result).toMatchObject({ success: true, data: { taskId: 'task-new' } });
+    expect(inserted).toContain('golf_tasks');
+  });
+
   it('returns the task that landed, inserts nothing and notifies nobody', async () => {
-    recent = [{ id: 'task-earlier', description: 'Before Friday', due_date: '2026-11-06' }];
+    recent = [{ id: 'task-earlier', description: 'Before Friday', due_date: '2026-11-06', priority: 'normal', category: null }];
     const result = await create('Before Friday', '2026-11-06');
     expect(result).toEqual({ success: true, data: { taskId: 'task-earlier' } });
     expect(inserted).toEqual([]);
@@ -99,7 +110,7 @@ describe('createTask · the duplicate check', () => {
   });
 
   it('treats a blank description and due date as the empty row they were saved as', async () => {
-    recent = [{ id: 'task-earlier', description: null, due_date: null }];
+    recent = [{ id: 'task-earlier', description: null, due_date: null, priority: 'normal', category: null }];
     const result = await create();
     expect(result).toEqual({ success: true, data: { taskId: 'task-earlier' } });
     expect(inserted).toEqual([]);
@@ -111,14 +122,14 @@ describe('createTask · the duplicate check', () => {
   });
 
   it('inserts when the title matches but the description differs', async () => {
-    recent = [{ id: 'task-earlier', description: 'Before Friday', due_date: null }];
+    recent = [{ id: 'task-earlier', description: 'Before Friday', due_date: null, priority: 'normal', category: null }];
     const result = await create('Before Monday');
     expect(result).toMatchObject({ success: true, data: { taskId: 'task-new' } });
     expect(inserted).toContain('golf_tasks');
   });
 
   it('inserts when the title matches but the due date differs', async () => {
-    recent = [{ id: 'task-earlier', description: null, due_date: '2026-11-06' }];
+    recent = [{ id: 'task-earlier', description: null, due_date: '2026-11-06', priority: 'normal', category: null }];
     const result = await create(undefined, '2026-11-09');
     expect(result).toMatchObject({ success: true, data: { taskId: 'task-new' } });
     expect(inserted).toContain('golf_tasks');

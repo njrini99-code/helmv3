@@ -1,3 +1,4 @@
+import { plural } from '../lib/plural';
 import type { ChLadderAreaId } from './coachhelm-ladder-shape';
 import type { ChCoachHelmData, ChInsight, ChBoardMissing } from './coachhelm-shape';
 import type { ChCoachBrief, ChBriefWorking } from './coachhelm-coach-brief-shape';
@@ -97,7 +98,7 @@ export function boardPlayerCount(stations: ChTeamBoardData['stations']): number 
 
 /** Beside the board's window: whose average the figures are. */
 export function boardPlayerWords(n: number): string {
-  return `average of ${n} ${n === 1 ? 'player' : 'players'}`;
+  return `average of ${plural(n, 'player')}`;
 }
 
 /** The hero: the team mean of stored per-round totals, never the sum of the legs (AC-HOLE-26, 8 K). */

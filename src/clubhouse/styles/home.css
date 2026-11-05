@@ -4886,7 +4886,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   .ch-dh-brief > svg {
     flex: none;
-    margin-top: 3px;
+    margin-top: 2px;
     color: var(--ch-hero-mint);
   }
   /* The class line sits on the green here: the on-green ink, and a hover the green can carry. */
@@ -5358,7 +5358,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-h-main[data-ch-crh='on'] .ch-hm-legs__a {
     border-radius: var(--ch-radius-xs);
     color: var(--ch-green-600);
-    font-weight: var(--ch-fw-600);
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 2px;
@@ -5483,7 +5482,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     align-items: baseline;
     justify-content: space-between;
     gap: 12px;
-    padding: 14px 16px 12px;
+    padding: 12px 16px;
   }
   :is(.ch-dh-card__h, .ch-h-main[data-ch-crh='on'] .ch-hm-form__head, .ch-h-main[data-ch-crh='on'] .ch-dh-failed .ch-hm-sec__h)::after {
     position: absolute;

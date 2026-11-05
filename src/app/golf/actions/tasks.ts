@@ -401,16 +401,23 @@ async function createTaskImpl(
     }
 
     // A retry after a lost response: the task that landed is the answer, not a second one for every player.
-    const { data: sameRecent } = await supabase
+    // Only the whole request counts as the same task; new assignees get their own. A failed read answers no repeat.
+    const { data: sameRecent, error: sameRecentError } = await supabase
       .from('golf_tasks')
-      .select('id, description, due_date')
+      .select('id, description, due_date, priority, category')
       .eq('team_id', teamId)
       .eq('assigned_by', coach.id)
       .eq('title', title)
       .gte('created_at', new Date(Date.now() - 2 * 60 * 1000).toISOString())
       .limit(5);
-    const repeat = (sameRecent ?? []).find((t) => t.description === (description || null) && t.due_date === (dueDate || null));
-    if (repeat) return { success: true, data: { taskId: repeat.id } };
+    const wantAssignees = new Set(assignToPlayerIds ?? []);
+    for (const t of sameRecentError ? [] : (sameRecent ?? [])) {
+      if (t.description !== (description || null) || t.due_date !== (dueDate || null) || t.priority !== (priority || 'normal') || t.category !== (category || null)) continue;
+      const { data: rows, error: rowsError } = await supabase.from('golf_task_assignments').select('player_id').eq('task_id', t.id);
+      if (rowsError) break;
+      const have = new Set((rows ?? []).map((r) => r.player_id));
+      if (have.size === wantAssignees.size && [...have].every((id) => wantAssignees.has(id))) return { success: true, data: { taskId: t.id } };
+    }
 
     // Create the task
     const { data: task, error: taskError } = await supabase

@@ -21,7 +21,7 @@ export async function PracticePlanRoute({ planId }: { planId: string }) {
   if (load.status !== 'ready') {
     return (
       <main className="ch-page" data-ch="practice-plan">
-        <EmptyState title="This plan isn’t available" body="It may have been removed, or it isn’t published yet." action={<Button href="/golf/dashboard/calendar">Go to Calendar</Button>} />
+        <EmptyState size="page" title="This plan isn’t available" body="It may have been removed, or it isn’t published yet." action={<Button href="/golf/dashboard/calendar">Go to Calendar</Button>} />
       </main>
     );
   }
