@@ -3,6 +3,9 @@
 --   golf_events, but get_player_hub_events is SECURITY DEFINER, so it skips
 --   that policy and still lists them, titles included, to any player who calls
 --   it. This gives the function the same rule.
+--   Its LIMIT 20 also ran over class rows: production has a team with 255 in
+--   the next 21 days (5 Nov, read only), so classes could use up the 20 and the
+--   app, which drops them, showed an empty week. Team events now come first.
 -- WHO: signed-in players and staffed coaches, through the same gate as before.
 --   A player gets their own class rows and no one else's. A coach sees them
 --   all. Every other event type is unchanged.
@@ -84,7 +87,9 @@ BEGIN
           OR v_coach
           OR public.golf_player_owns_class_event(description)
         )
-      ORDER BY start_time ASC
+      -- Team events first, so classes never use up the 20. The list still comes back in
+      -- time order (the jsonb_agg below).
+      ORDER BY (event_type = 'class'), start_time ASC
       LIMIT 20
     ),
     counts AS (

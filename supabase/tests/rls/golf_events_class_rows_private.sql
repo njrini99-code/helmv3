@@ -7,12 +7,14 @@
 -- does not, by a direct read or through the hub RPC. The coach reads it. Other
 -- event types stay visible to the team.
 --
--- Plan arithmetic: 2 owner + 2 teammate + 2 coach = 6.
+-- Team events also come first, so a full timetable can't use up the hub's 20.
+--
+-- Plan arithmetic: 2 owner + 2 teammate + 2 coach + 1 crowding = 7.
 
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(6);
+SELECT plan(7);
 
 DO $$
 BEGIN
@@ -119,6 +121,28 @@ SELECT is(
        now() - interval '1 day')) e),
   'CLS,PR',
   'the coach reads the class row through the hub'
+);
+
+-- A full timetable doesn't push a team event off the hub.
+RESET role;
+INSERT INTO public.golf_events (team_id, title, description, event_type, start_time, end_time, status)
+SELECT
+  '00000000-0000-0000-0000-000000182301', 'CLS' || n,
+  '[class:00000000-0000-0000-0000-000000182701]', 'class',
+  now() + interval '1 hour' + (n * interval '1 minute'),
+  now() + interval '2 hours' + (n * interval '1 minute'), 'scheduled'
+FROM generate_series(1, 25) AS n;
+SET LOCAL role TO authenticated;
+SET LOCAL request.jwt.claims TO
+  '{"sub": "00000000-0000-0000-0000-000000182002", "role": "authenticated"}';
+SELECT ok(
+  EXISTS (
+    SELECT 1 FROM jsonb_array_elements(public.get_player_hub_events(
+      '00000000-0000-0000-0000-000000182301',
+      '00000000-0000-0000-0000-000000182502',
+      now() - interval '1 day')) e
+    WHERE e->>'title' = 'PR'),
+  'a practice two days out survives 25 class rows before it'
 );
 
 SELECT * FROM finish();
