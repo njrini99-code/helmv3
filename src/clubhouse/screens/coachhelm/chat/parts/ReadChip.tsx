@@ -4,13 +4,13 @@ import { BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import type { AskTurnRead } from '../../../../data/coachhelm-chat-thread';
-import { readRows } from '../../../../data/coachhelm-chat-thread';
+import { readBasis, readRows } from '../../../../data/coachhelm-chat-thread';
 import { rebuiltHref } from '../../../../shell/nav';
 import { Icon } from '../../../../ui/Icon';
 
 /** Where a read's figures live: this player's Stats, or the team's. Null where Stats isn't rebuilt, and then no link is drawn. */
 export function readStatsHref(read: AskTurnRead): string | null {
-  const entity = read.envelope.measurements[0]?.entity;
+  const entity = readBasis(read.envelope)?.entity;
   if (!entity) return null;
   return rebuiltHref(entity.kind === 'player' ? `/golf/dashboard/stats?player=${entity.id}` : '/golf/dashboard/stats');
 }
@@ -19,7 +19,7 @@ export function readStatsHref(read: AskTurnRead): string | null {
 export function ReadChip({ read, onSources }: { read: AskTurnRead; /** Opens this answer's list of every read. */ onSources?: () => void }) {
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement>(null);
-  const pop = useRef<HTMLDivElement>(null);
+  const pop = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -46,19 +46,20 @@ export function ReadChip({ read, onSources }: { read: AskTurnRead; /** Opens thi
         <Icon icon={BookOpen} size={12} />
         {read.chip}
       </button>
+      {/* A chip sits inside the answer's paragraph, so every box in here is a span: a div or a list in a <p> is invalid HTML. */}
       {open && (
-        <div ref={pop} className="cpop" role="dialog" aria-label={read.name}>
+        <span ref={pop} className="cpop" role="dialog" aria-label={read.name}>
           <b>{read.name}</b>
-          <dl>
+          <span className="rows">
             {rows.map((r) => (
-              <div key={r.label}>
-                <dt>{r.label}</dt>
-                <dd className="ch-num">{r.value}</dd>
-              </div>
+              <span className="row" key={r.label}>
+                <span className="k">{r.label}</span>
+                <span className="v ch-num">{r.value}</span>
+              </span>
             ))}
-          </dl>
+          </span>
           {(stats || onSources) && (
-            <div className="cpop-f">
+            <span className="cpop-f">
               {stats && (
                 <Link prefetch={false} href={stats}>
                   Open in Stats
@@ -75,9 +76,9 @@ export function ReadChip({ read, onSources }: { read: AskTurnRead; /** Opens thi
                   Sources
                 </button>
               )}
-            </div>
+            </span>
           )}
-        </div>
+        </span>
       )}
     </span>
   );

@@ -378,7 +378,16 @@ const READ_NAME: Record<string, string> = {
   get_team_travel: 'Travel',
 };
 
-function windowWords(m: Measurement | undefined): string | null {
+/** What a read's figures rest on: its first measurement, or its first series (a trend's envelope carries only that). */
+export function readBasis(envelope: ToolEnvelope): (Pick<Measurement, 'entity' | 'window_start' | 'window_end' | 'as_of' | 'sample_size' | 'sample_unit'>) | undefined {
+  const m = envelope.measurements[0];
+  if (m) return m;
+  const s = envelope.series?.[0];
+  // A series' points may be rounds or buckets, so it claims no sample of its own: its window and date are what it knows.
+  return s ? { entity: s.entity, window_start: s.window_start, window_end: s.window_end, as_of: s.as_of, sample_size: 0, sample_unit: 'rounds' } : undefined;
+}
+
+function windowWords(m: Pick<Measurement, 'window_start' | 'window_end' | 'sample_unit' | 'sample_size'> | undefined): string | null {
   if (!m?.window_start || !m.window_end) return m?.sample_unit === 'rounds' && m.sample_size > 0 ? `${m.sample_size} rounds` : null;
   const days = Math.round((Date.parse(m.window_end) - Date.parse(m.window_start)) / 86_400_000);
   return Number.isFinite(days) && days > 0 ? `${days} days` : null;
@@ -392,7 +401,7 @@ function turnReadsOf(parts: ReadonlyArray<Record<string, unknown> & { type: stri
     if (!d?.envelope || !d.ref) continue;
     const tool = d.tool ?? '';
     const name = READ_NAME[tool] ?? 'Read';
-    const win = windowWords(d.envelope.measurements[0]);
+    const win = windowWords(readBasis(d.envelope));
     out.push({ ref: d.ref, tool, name, chip: win ? `${name} · ${win}` : name, envelope: d.envelope });
   }
   return out;
@@ -400,13 +409,13 @@ function turnReadsOf(parts: ReadonlyArray<Record<string, unknown> & { type: stri
 
 /** What a read chip's popover says: only what the envelope holds (AK2). */
 export function readRows(read: AskTurnRead): Array<{ label: string; value: string }> {
-  const m = read.envelope.measurements[0];
+  const m = readBasis(read.envelope);
   if (!m) return [{ label: 'Read', value: read.name }];
   const line = sourceLine(m);
   return [
     ...(m.sample_size > 0 ? [{ label: 'Sample', value: sampleWords(m.sample_size, m.sample_unit) }] : []),
     ...(windowWords(m) ? [{ label: 'Window', value: windowWords(m) as string }] : []),
-    ...(line && !m.sample_size ? [{ label: 'Source', value: line }] : []),
+    ...(line && !m.sample_size && !windowWords(m) ? [{ label: 'Source', value: line }] : []),
     ...(fmtDay(m.as_of) ? [{ label: 'Computed', value: fmtDay(m.as_of) as string }] : []),
   ];
 }
