@@ -235,7 +235,9 @@ export async function loadCalendar(input: {
         .range(from, to),
     ),
     // RLS scopes this: a coach reads every rostered player's classes, a player only their own.
-    supabase.from('golf_player_classes').select('id, player_id, instructor, days, semester, building, room').eq('team_id', input.teamId).limit(1000),
+    fetchAllRowsResult((from, to) =>
+      supabase.from('golf_player_classes').select('id, player_id, instructor, days, semester, building, room').eq('team_id', input.teamId).order('id', { ascending: true }).range(from, to),
+    ),
     // The coach's own blocked time is read with the events, not after them. Only a coach's, and only their own
     // (`coach_id`): a player never reads any (60802).
     input.role === 'coach' && input.coachId

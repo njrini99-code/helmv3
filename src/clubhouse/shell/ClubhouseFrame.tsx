@@ -1,7 +1,7 @@
 'use client';
 
 import { LazyMotion } from 'motion/react';
-import { createContext, memo, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, memo, useContext, useEffect, useRef, useState, type ReactNode, Suspense } from 'react';
 import { useChPhone } from '../lib/use-phone';
 import { useChDynamicType } from '../lib/dynamic-type';
 import type { GolfUserData } from '@/contexts/golf-user-context';
@@ -15,6 +15,8 @@ import { ToastProvider } from '../ui/Toast';
 import type { ChShellData } from '../data/shell';
 import { useRouter } from 'next/navigation';
 import { useNavOnce } from '../lib/nav-once';
+import { DemoEnterTracker } from '@/components/demo/DemoEnterTracker';
+import { DemoPricingNudge } from '@/components/golf/demo/DemoPricingNudge';
 import { activeNavItem, isAliased, isKnownDashboardPath, isRebuilt, phoneFullScreen, phonePushedTop, routeLabel, withoutCoachParams } from './nav';
 import { Sidebar } from './Sidebar';
 import { RailToggle } from './RailToggle';
@@ -207,6 +209,11 @@ export function ClubhouseFrame({
                           <div className="ch-dock-spacer" aria-hidden="true" />
                         </div>
                       </div>
+                      {/* Nudge first: it reads ?demo=1 before the tracker strips it (DemoPricingNudge.tsx). */}
+                      <Suspense fallback={null}>
+                        <DemoPricingNudge />
+                        <DemoEnterTracker />
+                      </Suspense>
                       <PhoneDock round={shell.roundInProgress ?? null} pathname={pathname} />
                       <SectionStrip pathname={pathname} role={role} user={{ name: userData.name }} />
                       {/* Desktop only: Cmd K's palette, G-then-letter jumps, / and ? (shell/command). */}

@@ -5,6 +5,7 @@ import { Button } from '../../../ui/Button';
 import { Badge } from '../../../../clubhouse/ui/Badge';
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { safeSave } from '../../../screens/coachhelm/plan/safe-save';
 import { squashFolder } from '../../../screens/coachhelm/chat/ask-flight';
 import { listPlanFolders, savePracticePlanDraft, undoPracticePlanDraft } from '@/app/golf/actions/coachhelm-practice-plans';
 import type { PlanPartData } from '../../../screens/coachhelm/plan/PlanCard';
@@ -64,20 +65,26 @@ export function PlanTask({ plan, online, onOpen }: { plan: PlanPartData; online:
   const reserved = clean.toLowerCase() === 'team';
   const needsEvent = plan.eventId == null;
   const folderRef = useRef<HTMLButtonElement>(null);
+  const [undoing, setUndoing] = useState(false);
+  const [undoFailed, setUndoFailed] = useState(false);
   const save = async () => {
     setPhase({ k: 'busy' });
     if (preview) return setPhase({ k: 'saved', planId: 'preview', created: true, savedAt: '', until: new Date(Date.now() + 8000).toISOString(), folder });
-    const res = await savePracticePlanDraft({ eventId: plan.eventId, planId: null, version: 0, title: plan.title, draft: plan.draft, folder });
+    const res = await safeSave(() => savePracticePlanDraft({ eventId: plan.eventId, planId: null, version: 0, title: plan.title, draft: plan.draft, folder }));
     if (!res.success) return setPhase({ k: 'failed', reason: res.error });
     // The folder takes the page (M-ASK-78), then the receipt. It's saved already, so a stalled animation can't hold that back.
-    if (folderRef.current) await Promise.race([squashFolder(folderRef.current, reduced), new Promise((done) => window.setTimeout(done, 800))]);
+    if (folderRef.current) await Promise.race([squashFolder(folderRef.current, reduced).catch(() => {}), new Promise((done) => window.setTimeout(done, 800))]);
     setPhase({ k: 'saved', planId: res.planId, created: res.created, savedAt: res.savedAt, until: new Date(Date.now() + 8000).toISOString(), folder });
   };
   const undo = async () => {
     if (phase.k !== 'saved') return;
     if (preview) return setPhase({ k: 'undone' });
-    const res = await undoPracticePlanDraft({ planId: phase.planId, created: phase.created, savedAt: phase.savedAt });
+    if (undoing) return;
+    setUndoing(true);
+    const res = await safeSave(() => undoPracticePlanDraft({ planId: phase.planId, created: phase.created, savedAt: phase.savedAt }));
+    setUndoing(false);
     if (res.success) setPhase({ k: 'undone' });
+    else setUndoFailed(true);
   };
   const create = () => {
     if (!clean || dupe || reserved) return;
@@ -207,6 +214,11 @@ export function PlanTask({ plan, online, onOpen }: { plan: PlanPartData; online:
                 )}
               </span>
             </div>
+            {undoFailed && (
+              <p className="say quiet" role="alert">
+                Too late to undo. It’s saved.
+              </p>
+            )}
             {phase.k === 'failed' && (
               <p className="say quiet" role="alert">
                 {phase.reason}

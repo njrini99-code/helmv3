@@ -126,7 +126,7 @@ export function PlayerFile({ load, at, insight, roster, writes = LIVE_COACHHELM_
   if (load.status !== 'ready') {
     return (
       <main className={'ch-hf' + (phone ? ' is-phone' : '')}>
-        {phone && <PhoneTop back={{ label: 'CoachHelm', onBack: () => router.push(PLAYER_HELM_HREF.board) }} title="CoachHelm" />}
+        {phone && <PhoneTop back={{ label: 'Back', onBack: () => (window.history.length > 1 ? router.back() : router.push(PLAYER_HELM_HREF.board)) }} title="CoachHelm" />}
         <div className="ch-hf-flow">
           <FileFailed who="this player’s file" onRetry={() => refresh()} />
         </div>
@@ -326,7 +326,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
     <main className={'ch-hf' + (phone ? ' is-phone' : ' is-desk')} aria-label={`${head.name}’s file`} data-ch="player-file">
       {phone && (
         <PhoneTop
-          back={{ label: 'CoachHelm', onBack: () => router.push(PLAYER_HELM_HREF.board) }}
+          back={{ label: 'Back', onBack: () => (window.history.length > 1 ? router.back() : router.push(PLAYER_HELM_HREF.board)) }}
           title={head.name}
           action={more(((p: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void }) => <PhoneIconAction icon={Ellipsis} label={`More for ${first}`} onClick={p.onClick} />) as never)}
         />

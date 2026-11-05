@@ -257,7 +257,7 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     storyRounds: part('storyRounds', async () => {
       // AC-TODAY-04: only a round inside the week earns the strip; a player's newest one.
       const since = new Date(now.getTime() - 7 * 86_400_000).toISOString().slice(0, 10);
-      const { data: rounds, error } = await supabase.from('golf_rounds').select('id, player_id, round_date, course_name').in('player_id', [...names.keys()]).gte('round_date', since).order('round_date', { ascending: false });
+      const { data: rounds, error } = await supabase.from('golf_rounds').select('id, player_id, round_date, course_name').eq('is_test', false).eq('status', 'completed').in('player_id', [...names.keys()]).gte('round_date', since).order('round_date', { ascending: false });
       if (error) throw error;
       const newest = new Map<string, { id: string; player_id: string; round_date: string; course_name: string | null }>();
       for (const r of rounds ?? []) if (!newest.has(r.player_id)) newest.set(r.player_id, r);

@@ -1,3 +1,4 @@
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import type { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { rpcAttendanceCounts } from '@/lib/golf/attendance-counts-rpc';
@@ -46,8 +47,8 @@ export async function loadInvitedCounts(supabase: Client, ids: string[], onError
   }
   const byEvent = new Map(ids.map((id) => [id, 0]));
   for (const chunk of chunkIds([...new Set(ids)])) {
-    // A chunk of meetings' invitees: well under the row cap.
-    const { data, error } = await supabase.from('golf_event_attendance').select('event_id').in('event_id', chunk).limit(1000);
+    // A chunk of meetings' invitees can pass the row cap, so it is paged.
+    const { data, error } = await fetchAllRowsResult((from, to) => supabase.from('golf_event_attendance').select('id, event_id').in('event_id', chunk).order('id', { ascending: true }).range(from, to));
     if (error) {
       onError(error);
       return null;

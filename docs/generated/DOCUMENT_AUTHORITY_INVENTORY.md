@@ -1014,6 +1014,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-10-31-fairway-bubbles-and-send.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-04-empty-avatar-skeleton.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-04-redesign-train.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-05-go-live-bug-hunt.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-05-mockup-motion-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/auth-onboarding-ground-truth.md` | current | - | - | - | - |
@@ -1115,6 +1116,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-31-data-correctness.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-31-resume-bar-discard.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-04-redesign-train.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-05-go-live-bug-hunt.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
@@ -1145,6 +1147,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-10-31-leaderboard-client.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-03-crh-coach-home.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-03-shs-your-game.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-05-go-live-bug-hunt.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | yes | - |
@@ -1170,6 +1173,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P003-roster/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-10-30-season-label.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-03-crh-roster.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/changes/2026-11-05-go-live-bug-hunt.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CONTRACT.md` | current | - | - | yes | - |
@@ -1203,6 +1207,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-10-30-season-label.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-10-31-data-correctness.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-03-shs-team.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-05-go-live-bug-hunt.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CONTRACT.md` | current | - | - | yes | - |
@@ -1237,6 +1242,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-03-redesign-plumbing.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-03-shs-polish.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-03-shs-summary.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-05-go-live-bug-hunt.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CONTRACT.md` | current | - | - | yes | - |
@@ -1266,6 +1272,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-30-publish-defers-notices.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-30-targets.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-31-p5-set-up-from-calendar.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-11-05-go-live-bug-hunt.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |
@@ -1305,6 +1312,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-03-msg-details.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-03-msg-hold.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-03-msg-thread.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-11-05-go-live-bug-hunt.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | yes | - |
@@ -1489,6 +1497,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-03-team-board.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-04-player-cause-and-ask-leaks.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-04-shared-segmented.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-05-go-live-bug-hunt.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |
@@ -1502,6 +1511,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P014-recruiting/changes/2026-10-23-type-scale.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/changes/2026-10-27-stage-control.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/changes/2026-10-28-visual-pass.md` | current | - | - | - | 1 |
+| `docs/clubhouse/pages/P014-recruiting/changes/2026-11-05-go-live-bug-hunt.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P015-auth/DESIGN.md` | current | - | - | - | - |

@@ -215,6 +215,7 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
     setGone(false);
     setEvidence(null);
     setDrawer(false);
+    setArtifact(null);
     window.history.replaceState(window.history.state, '', COACHHELM_HREF.ask);
   };
 
@@ -394,7 +395,7 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
           </aside>
         )}
       </div>
-      {artifact && <ArtifactView artifact={artifact} phone={phone} body={(b) => <pre className="ch-ak-plain">{typeof b === 'string' ? b : JSON.stringify(b, null, 2)}</pre>} onClose={() => setArtifact(null)} />}
+      {artifact && <ArtifactView key={artifact.id} artifact={artifact} phone={phone} body={(b) => <pre className="ch-ak-plain">{typeof b === 'string' ? b : JSON.stringify(b, null, 2)}</pre>} onClose={() => setArtifact(null)} />}
       {phone && (
         <>
           <HistoryDrawer {...histProps} open={drawer} onClose={() => setDrawer(false)} />

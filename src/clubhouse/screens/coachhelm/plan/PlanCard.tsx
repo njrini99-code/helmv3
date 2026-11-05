@@ -5,6 +5,7 @@ import { Button } from '../../../ui/Button';
 import { ArrowUp, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, FolderClosed, Minus, Plus, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
+import { safeSave } from './safe-save';
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { flyPageToFolder, squashFolder } from '../chat/ask-flight';
 import { plural } from '../../../lib/plural';
@@ -164,12 +165,13 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
     return m;
   }, [blocks, plan.drills]);
   const mixTotal = mix.skill + mix.random + mix.pressure;
+  const [undoing, setUndoing] = useState(false);
   const save = async (): Promise<SavedPlanRef | null> => {
     setState({ k: 'saving' });
     if (preview) return null;
     // The stored version from the last save of this plan, and null for a plan not saved yet. `draft.version` counts this card's edits: the database has never seen it.
     const target = savedPlanFor(planKey(plan));
-    const res = await savePracticePlanDraft({ eventId: plan.eventId, planId: target?.planId ?? null, version: target?.version ?? null, title: plan.title, draft, folder });
+    const res = await safeSave(() => savePracticePlanDraft({ eventId: plan.eventId, planId: target?.planId ?? null, version: target?.version ?? null, title: plan.title, draft, folder }));
     if (!res.success) {
       setError(res.error);
       setState({ k: 'failed' });
@@ -184,9 +186,9 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
     if (fold && artRef.current) {
       const page = artRef.current;
       const landing = (async () => {
-        await flyPageToFolder(page, fold, reduced);
+        await flyPageToFolder(page, fold, reduced).catch(() => {});
         setFolders((list) => (list.some((f) => f.name === folder) ? list.map((f) => (f.name === folder ? { ...f, count: f.count + 1 } : f)) : [...list, { name: folder, count: 1 }]));
-        await squashFolder(fold, reduced);
+        await squashFolder(fold, reduced).catch(() => {});
       })();
       await Promise.race([landing, new Promise((done) => window.setTimeout(done, 1500))]);
     }
@@ -224,8 +226,11 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
   };
   // S-ASKD.pane: on a Mac the plan opens beside the thread once it has written, and the card in the thread goes compact.
   const writingNow = !!writing;
+  // Only as this plan finishes writing: a chat reopened with plans in it doesn't open a pane for each one.
+  const wasWriting = useRef(writingNow);
   useEffect(() => {
-    if (preview?.full || (!writingNow && window.matchMedia('(min-width: 821px)').matches)) setFull(true);
+    if (preview?.full || (wasWriting.current && !writingNow && window.matchMedia('(min-width: 821px)').matches)) setFull(true);
+    wasWriting.current = writingNow;
   }, [preview?.full, writingNow]);
   const swapSlot =
     sheet?.kind === 'swap'
@@ -405,13 +410,17 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                     {undoOpen && (
                       <button
                         type="button"
+                        disabled={undoing}
                         onClick={() => {
                           if (preview) return setState({ k: 'undone' });
-                          void undoPracticePlanDraft({ planId: state.planId, created: state.created, savedAt: state.savedAt }).then((r) => {
-                            if (!r.success) return setError('Too late to undo. It’s saved.');
-                            forgetSavedPlan(planKey(plan));
-                            setState({ k: 'undone' });
-                          });
+                          setUndoing(true);
+                          void safeSave(() => undoPracticePlanDraft({ planId: state.planId, created: state.created, savedAt: state.savedAt }))
+                            .then((r) => {
+                              if (!r.success) return setError('Too late to undo. It’s saved.');
+                              forgetSavedPlan(planKey(plan));
+                              setState({ k: 'undone' });
+                            })
+                            .finally(() => setUndoing(false));
                         }}
                       >
                         Undo
@@ -722,10 +731,11 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
             />
           </div>
           <div className="fdock">
-            {/* Inert until the builder ships (N-00 slice 1, 02-PLAN). */}
-            <Button variant="secondary" disabled>
-              Edit in builder
-            </Button>
+            {state.k === 'saved' && (
+              <Button variant="secondary" onClick={() => router.push(`/golf/dashboard/practice/plan/${state.planId}`)}>
+                Edit in builder
+              </Button>
+            )}
             {!phone && state.k !== 'saved' && (
               <Button variant="secondary" busy={state.k === 'saving'} onClick={() => void save()}>
                 {state.k === 'saving' ? 'Saving…' : 'Save draft…'}
