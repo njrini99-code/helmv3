@@ -96,7 +96,7 @@ BaseballHelm (recruiting + team management + Lift Lab) · active · criticality 
 
 Calendar And Events · active · criticality high · owner product
 
-- **Relations:** 0 doc/structurally-evidenced, 6 import-graph-only (weak)
+- **Relations:** 0 doc/structurally-evidenced, 7 import-graph-only (weak)
 - **Tables:** `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`, `helm_debug`
 - **RPCs:** `golf_import_player_classes`
 - **Test surfaces:** 3
@@ -126,7 +126,7 @@ Coach Intelligence Triage · active · criticality high · owner product
 
 CoachHelm AI · active · criticality high · owner product
 
-- **Relations:** 5 doc/structurally-evidenced, 14 import-graph-only (weak)
+- **Relations:** 5 doc/structurally-evidenced, 15 import-graph-only (weak)
 - **Tables:** `ask_credit_requests`, `ask_usage_weekly`, `golf_coachhelm_action_runs`, `golf_coachhelm_coach_facts`, `golf_coachhelm_corrections`, `golf_coachhelm_player_state`, `golf_coachhelm_run_log`, `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`
 - **RPCs:** `claim_round_recap_lock`, `prune_stale_player_standing`, `refresh_player_standing`, `refresh_player_stats_cache`, `release_round_recap_lock`
 - **Test surfaces:** 3
@@ -427,6 +427,7 @@ Team Operations · active · criticality high · owner product
 | `coachhelm_ai` | `admin_platform` | feature_doc_contract, import_graph |
 | `coachhelm_ai` | `auth_onboarding_join` | import_graph (weak) |
 | `coachhelm_ai` | `baseball_core` | import_graph (weak) |
+| `coachhelm_ai` | `calendar_events` | import_graph (weak) |
 | `coachhelm_ai` | `coach_intelligence_triage` | import_graph (weak) |
 | `coachhelm_ai` | `email_outbound` | import_graph (weak) |
 | `coachhelm_ai` | `golf_round_lifecycle` | import_graph (weak) |

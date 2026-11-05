@@ -15965,6 +15965,18 @@
     },
     {
       "source": "coachhelm_ai",
+      "target": "calendar_events",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-ask.ts",
+          "anchor": "src/lib/calendar/timezone"
+        }
+      ]
+    },
+    {
+      "source": "coachhelm_ai",
       "target": "claim_round_recap_lock",
       "kind": "feature_rpc",
       "evidence": [
@@ -16416,6 +16428,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-ask.ts",
           "anchor": "src/lib/coachhelm/v3/chat/context"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-ask.ts",
+          "anchor": "src/lib/coachhelm/v3/chat/quick-chat-week"
         },
         {
           "kind": "import_graph",
@@ -21797,6 +21814,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/player-turn.ts",
+          "anchor": "src/lib/coachhelm/v2/gate"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/composite/composite-evidence-floor.test.ts",
           "anchor": "src/lib/coachhelm/v2/insights/upsert"
         },
@@ -22021,6 +22043,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/create-tools.ts",
           "anchor": "src/app/golf/actions/v3/goals"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/player-tools.ts",
+          "anchor": "src/lib/coachhelm/reads/player-cause"
         },
         {
           "kind": "import_graph",
