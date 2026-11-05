@@ -156,7 +156,7 @@ export type ChTeamStory =
 export function storiesOf(brief: ChCoachBrief | null, themes: Record<string, Record<string, ChDiveTheme>> | null, names: ReadonlyMap<string, string>): ChTeamStory[] {
   const out: ChTeamStory[] = [];
   for (const r of brief?.reads ?? []) if (r.kind === 'read') out.push({ kind: 'read', id: `read:${r.id}`, who: r.who, line: r.title, href: r.href, body: r.behind ?? r.next ?? null });
-  for (const w of brief?.working ?? ([] as ChBriefWorking[])) out.push({ kind: 'working', id: `working:${w.id}`, playerId: w.playerId ?? null, who: w.who, line: w.line ?? w.title, href: w.href, progress: w.progress ?? null });
+  for (const w of brief?.working ?? ([] as ChBriefWorking[])) out.push({ kind: 'working', id: `working:${w.id}`, playerId: w.playerId ?? null, who: w.who, line: w.headline ?? (w.line ? `${w.title}: ${w.line}` : w.title), href: w.href, progress: w.progress ?? null });
   for (const [playerId, byCat] of Object.entries(themes ?? {})) {
     for (const [cat, t] of Object.entries(byCat)) {
       const word = t.trend?.word;

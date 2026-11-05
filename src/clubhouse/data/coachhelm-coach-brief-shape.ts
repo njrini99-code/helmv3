@@ -85,6 +85,8 @@ export interface ChBriefWorking {
   word: string;
   /** "Now 58%, target 70%, from 52%"; null when the metric is not one CoachHelm measures or nothing is recorded. */
   line: string | null;
+  /** A tile's words, naming what it measures: "3-5 ft putting: now 58%, target 70%"; the title alone with no figures. */
+  headline?: string;
   /** "4 rounds since Oct 2" or "4 of 10 rounds since Oct 2"; null without a start day. */
   since: string | null;
   href: string;
@@ -193,23 +195,41 @@ function progressOf(from: number | null, now: number | null, target: number | nu
   return from == null || now == null || target == null ? null : { from, now, target };
 }
 
+/**
+ * A focus's name without the figure it was written with: an assigned read's title is stored as "3-5 ft putting: 47%", and
+ * beside the live "Now 48%" that frozen 47% reads as a second, wrong figure. Stored data is left alone.
+ */
+export function focusTitle(title: string | null | undefined): string {
+  return (title ?? '').trim().replace(/\s*:\s*[−-]?\d+(?:\.\d+)?\s*(?:%|ft|yd)?$/, '');
+}
+
+/** The tile's headline: the name, then where it stands and where it is going; the bars carry the before. */
+function workingHeadline(title: string, metric: string | null, now: number | null, target: number | null): string {
+  const figures = [valueOf(metric, now) ? `now ${valueOf(metric, now)}` : null, valueOf(metric, target) ? `target ${valueOf(metric, target)}` : null].filter(Boolean);
+  return figures.length ? `${title}: ${figures.join(', ')}` : title;
+}
+
 function workingOf(focus: readonly BriefFocusRow[], names: ReadonlyMap<string, string>, rounds: readonly MondayBriefRound[]): ChBriefWorking[] {
   return focus
     .filter((f) => f.status !== null && f.status in WORKING_WORD && names.has(f.player_id))
-    .map((f) => ({
-      row: f,
-      view: {
-        id: f.id,
-        who: names.get(f.player_id) as string,
-        title: f.title?.trim() || standingLabel(f.target_metric ?? '') || 'Focus area',
-        word: WORKING_WORD[f.status as string] as string,
-        line: progressLine(f.target_metric, num(f.current_value), num(f.target_value), num(f.baseline_value)),
-        since: sinceLine(f, rounds),
-        playerId: f.player_id,
-        progress: progressOf(num(f.baseline_value), num(f.current_value), num(f.target_value)),
-        href: `${BOARD}?player=${encodeURIComponent(f.player_id)}`,
-      },
-    }))
+    .map((f) => {
+      const title = focusTitle(f.title) || standingLabel(f.target_metric ?? '') || 'Focus area';
+      return {
+        row: f,
+        view: {
+          id: f.id,
+          who: names.get(f.player_id) as string,
+          title,
+          word: WORKING_WORD[f.status as string] as string,
+          line: progressLine(f.target_metric, num(f.current_value), num(f.target_value), num(f.baseline_value)),
+          headline: workingHeadline(title, f.target_metric, num(f.current_value), num(f.target_value)),
+          since: sinceLine(f, rounds),
+          playerId: f.player_id,
+          progress: progressOf(num(f.baseline_value), num(f.current_value), num(f.target_value)),
+          href: `${BOARD}?player=${encodeURIComponent(f.player_id)}`,
+        },
+      };
+    })
     .sort((a, b) => a.view.who.localeCompare(b.view.who) || String(b.row.started_at ?? '').localeCompare(String(a.row.started_at ?? '')))
     .map((x) => x.view);
 }

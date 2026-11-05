@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
+import { focusTitle } from '../../../../data/coachhelm-coach-brief-shape';
 import { StoriesCard } from '../Stories';
 
 const brief = (over = {}) =>
@@ -38,5 +39,32 @@ describe('story picture (AC-STORY-03, AC-TODAY-04)', () => {
     show(null);
     expect(document.querySelector('.sto-holes')).toBeNull();
     expect(document.querySelector('.story')!.textContent).toContain('Week of Oct 26');
+  });
+});
+
+describe('a working tile says what it is about', () => {
+  const tile = (w: object) => render(<StoriesCard brief={brief({ reads: [], working: [{ id: 'w', who: 'Eli Brandt', title: '3-5 ft putting', word: 'Active', since: null, href: '#', ...w }] })} themes={null} failed={false} players={[]} phone={false} rounds={null} onDesk={() => {}} onAction={() => {}} />);
+
+  it('leads with the focus name, then the figures', () => {
+    tile({ line: 'Now 48%, target 69%, from 47%', headline: '3-5 ft putting: now 48%, target 69%' });
+    expect(document.querySelector('.tile b')!.textContent).toBe('3-5 ft putting: now 48%, target 69%');
+  });
+
+  it('still names it when a row has no headline, or nothing measured', () => {
+    tile({ line: 'Now 48%, target 69%' });
+    expect(document.querySelector('.tile b')!.textContent).toBe('3-5 ft putting: Now 48%, target 69%');
+    cleanup();
+    tile({ line: null });
+    expect(document.querySelector('.tile b')!.textContent).toBe('3-5 ft putting');
+  });
+});
+
+describe('focusTitle', () => {
+  it('drops a figure frozen into a stored title, and nothing else', () => {
+    expect(focusTitle('3-5 ft putting: 47%')).toBe('3-5 ft putting');
+    expect(focusTitle('  Up and down: 12.5 ft ')).toBe('Up and down');
+    expect(focusTitle('Approach play is the biggest leak — costing ~1.4 strokes per round')).toBe('Approach play is the biggest leak — costing ~1.4 strokes per round');
+    expect(focusTitle('100-150')).toBe('100-150');
+    expect(focusTitle(null)).toBe('');
   });
 });
