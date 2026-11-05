@@ -265,7 +265,7 @@ export function BoardPartial({ missing, what, focus = true }: { missing: ChBoard
 /** `below`: one more line under the sentence, inside the header (the coach's "Since you were last here", D4). */
 export function Head({ who, title = 'CoachHelm', children, aside, below, phone = false }: { who?: ReactNode; title?: ReactNode; children: ReactNode; aside?: ReactNode; below?: ReactNode; phone?: boolean }) {
   return (
-    <header className={'ch-hl-h' + (aside ? ' has-aside' : '')} data-canopy-head="">
+    <header className={'ch-hl-h' + (aside ? ' has-aside' : '')} data-canopy-head="tight">
       {who && <span className="ch-hl-role">{who}</span>}
       {/* The phone's one large title (owner decision 4: the same 34 semibold sans as every section root, not the desktop's serif). */}
       {phone ? (

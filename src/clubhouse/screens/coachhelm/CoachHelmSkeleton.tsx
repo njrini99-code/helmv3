@@ -155,7 +155,7 @@ export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player';
       {phone && <StripSkeleton coach={coach} phone />}
       {phone ? (
         // The phone's intro at its loaded line heights: the coach's eyebrow, the large title and the live line under the double rule.
-        <header className="ch-hl-h" data-canopy-head="">
+        <header className="ch-hl-h" data-canopy-head="tight">
           {coach && <Line h={14.4} w={56} sh={11} />}
           <LargeTitleSkeleton width={176} />
           {coach ? (
@@ -175,7 +175,7 @@ export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player';
       ) : (
         // Each line at the loaded line's height (the role 18, the title 48, the line 21, "Since you were last here" 32), so the
         // head is the loaded head's 195px (coach) and the strip sits where the page puts it.
-        <header className="ch-hl-h has-aside" data-canopy-head="">
+        <header className="ch-hl-h has-aside" data-canopy-head="tight">
           {/* The role line is the coach's only (Head). */}
           {coach && <SkelLine line={18} bar={11} width={40} />}
           <SkelLine line={48} bar={38} width={196} />

@@ -1706,7 +1706,7 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   margin: 0;
 }
 .ch-htb-desk {
-  padding: 20px 24px 40px;
+  padding: 20px var(--ch-page-gutter) 40px;
 }
 .ch-htb-deskhead {
   display: flex;

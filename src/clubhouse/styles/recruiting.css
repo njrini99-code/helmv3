@@ -6,7 +6,7 @@
   gap: 22px;
   max-width: var(--ch-measure-wide);
   margin: 0 auto;
-  padding: var(--ch-page-head-top) var(--ch-page-gutter) 80px;
+  padding: var(--ch-page-top-no-eyebrow) var(--ch-page-gutter) 80px;
 }
 .ch-rec-head {
   display: flex;
@@ -33,7 +33,7 @@
 .ch-rec-none {
   max-width: var(--ch-measure-page);
   margin: 0 auto;
-  padding: var(--ch-page-head-top) var(--ch-page-gutter) 80px;
+  padding: var(--ch-page-top-no-eyebrow) var(--ch-page-gutter) 80px;
 }
 
 /* ── Pipeline: the four stages on one line, each a filter ─────────────────── */

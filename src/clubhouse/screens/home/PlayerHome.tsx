@@ -116,7 +116,7 @@ function PlayerHomeBody({ data, now, live, playerId, shs }: { data: ChPlayerHome
 /** The framed head: the day, the greeting, Message coach and Start a round. */
 function DeskHead({ data, post }: { data: ChPlayerHome; post: string | null }) {
   return (
-    <header className="ch-h-head" data-canopy-head="">
+    <header className="ch-h-head" data-canopy-head="tight">
       <span className="ch-h-head__date">{data.todayLabel}</span>
       <h1 className="ch-display">{data.greeting}</h1>
       <div className="ch-h-head__actions">
@@ -179,7 +179,7 @@ function PlayerFirstRun({ data, own }: { data: ChPlayerHome; own?: ReactNode }) 
     // `--first`: the framed head on desktop, as the loaded page has (states audit, 2026-10-08), and the Ledger's page
     // intro on the phone (home.css "Player Home on the phone").
     <main className="ch-h-main ch-h-main--first" data-canopy="">
-      <header className="ch-h-head" data-canopy-head="">
+      <header className="ch-h-head" data-canopy-head="tight">
         <span className="ch-h-head__date">{data.todayLabel}</span>
         <h1 className="ch-display">{data.greeting}</h1>
       </header>

@@ -80,7 +80,7 @@
 /* The canopy rises from under the top bar: the page's top padding is part of the green. The date line is 4px shorter
    than the page head's eyebrow (tokens.css), so the top adds it. */
 .ch-h-main--desk[data-canopy] {
-  padding-top: var(--ch-page-top-eyebrow-short-4);
+  padding-top: var(--ch-page-top-eyebrow-short-2);
 }
 .ch-h-main--desk[data-canopy] > .ch-h-head {
   padding-top: 4px;
@@ -2566,7 +2566,7 @@
    load (WebKit 1440, 2026-10-07: 183px with the sans greeting, the two-line brief and the actions). */
 @media (min-width: 821px) {
   .ch-h-main[aria-busy='true'][data-canopy] {
-    padding-top: var(--ch-page-top-eyebrow-short-4);
+    padding-top: var(--ch-page-top-eyebrow-short-2);
   }
   .ch-h-main[aria-busy='true'][data-canopy] > .ch-h-head {
     box-sizing: border-box;
@@ -5411,7 +5411,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   .ch-h-main[data-ch-crh='on'] {
     gap: 16px;
-    padding: 24px 32px 40px;
+    padding: var(--ch-page-top-crh) var(--ch-page-gutter) 40px;
   }
   .ch-h-herocard .ch-hm-queue {
     display: grid;

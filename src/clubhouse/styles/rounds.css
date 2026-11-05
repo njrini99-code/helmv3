@@ -7,7 +7,7 @@
   gap: 18px;
   max-width: var(--ch-measure-page);
   margin: 0 auto;
-  padding: var(--ch-page-head-top) var(--ch-page-gutter) 80px;
+  padding: var(--ch-page-top-eyebrow-low-2) var(--ch-page-gutter) 80px;
   color: var(--ch-text-primary);
 }
 .ch-rd-k {
@@ -1036,7 +1036,7 @@ a.ch-rd-sc:focus-visible {
   gap: 16px;
   max-width: var(--ch-measure-page);
   margin: 0 auto;
-  padding: var(--ch-page-head-top) var(--ch-page-gutter) 80px;
+  padding: var(--ch-page-top-eyebrow-low-2) var(--ch-page-gutter) 80px;
   color: var(--ch-text-primary);
 }
 .ch-rv.is-phone {

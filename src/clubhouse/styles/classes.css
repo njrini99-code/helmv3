@@ -3291,7 +3291,7 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
 /* Classes, desktop, behind the lane's flag (06 §4.9): main padding 28 36 40, gap 22; the term card as a row; binders in 3 columns beside a 340 aside. */
 .ch-cl[data-ch-crh='on']:not(.is-phone) {
   gap: 20px;
-  padding: 24px 32px 40px;
+  padding: var(--ch-page-top-crh) var(--ch-page-gutter) 40px;
   background: var(--ch-grouped-bg);
 }
 .ch-cl[data-ch-crh='on']:not(.is-phone) .ch-cl-h {

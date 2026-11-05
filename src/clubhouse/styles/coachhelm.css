@@ -44,11 +44,15 @@
 }
 /* The role line is 4px shorter than the page head's eyebrow (tokens.css), so the top adds it. */
 .ch-hl[data-canopy] {
-  padding-top: var(--ch-page-top-eyebrow-short-4);
+  padding-top: 0;
+}
+/* The player's board has no role line above its title: that room comes off the top instead. */
+.ch-hl[data-canopy]:not(:has(.ch-hl-role)) {
+  padding-top: 24px;
 }
 .ch-hl[data-canopy] > .ch-hl-h {
   padding-top: 6px;
-  row-gap: 4px;
+  row-gap: 2px;
 }
 
 /* Desktop's title; on the phone the title is the one large title (.ch-large-title, shell.css), never this serif. */

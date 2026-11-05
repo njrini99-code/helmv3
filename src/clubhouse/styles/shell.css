@@ -2144,6 +2144,14 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   }
 }
 
+/* One left edge on a desk, whichever section is open: page mains have different measures, and centring each on its own
+   moved the title between tabs on a wide screen. Each sits where the widest would. The three-pane desks fill the frame. */
+@media (min-width: 821px) {
+  [data-ui='clubhouse'] main:not(.ch-ms, .ch-htb, .ch-hf, .ch-ask) {
+    margin-inline: max(0px, calc((100vw - var(--ch-sidebar-w) - var(--ch-measure-wide)) / 2)) auto;
+  }
+}
+
 /* The page head (owner, 2026-10-07: "match the bundle", the Coach Home design handoff). A page opts in with
    main[data-canopy] and marks its title block data-canopy-head; on desktop the block is the opening of the ivory
    workspace, not a band: a double hairline above, one below, a small engraved date or section line, a heavy sans
@@ -2151,7 +2159,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 @media (min-width: 821px) {
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] {
     position: relative;
-    padding: 32px 4px 32px;
+    padding: 32px 0;
     box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
   }
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head]::before {
