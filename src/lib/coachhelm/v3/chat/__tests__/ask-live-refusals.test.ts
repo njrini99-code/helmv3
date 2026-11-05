@@ -42,7 +42,6 @@ function verdictFor(rawText: string, envelopes: readonly ToolEnvelope[], extraDa
   });
 }
 
-const reasonOf = (v: ReturnType<typeof verdictFor>) => (v.outcome === 'rejected' ? v.reason : null);
 const tokensOf = (v: ReturnType<typeof verdictFor>) => verdictRecord(v)?.unmatched_tokens ?? [];
 
 describe('refusal 1: "How many rounds has Owen Carter played this season, and what is his scoring average?"', () => {

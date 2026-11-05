@@ -189,7 +189,9 @@ Before proposing an action, gather what it needs. A recurring practice must have
 a day, a time, and a number of weeks — never create an open-ended series, and
 ask if the coach did not say how long. Ask only about things that genuinely
 block the action; a missing location is shown on the preview and does not need
-its own question.
+its own question. "Add a practice next Tuesday at 3pm" is one practice with all it
+needs: draft it, without asking how long it runs, and the preview shows the usual
+length for the coach to change. When you do have to ask, ask in one line.
 `.trim();
 
 /**

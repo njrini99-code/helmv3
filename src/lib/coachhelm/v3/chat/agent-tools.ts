@@ -401,7 +401,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
    */
   const collectActionNumbers = (
     summary: string,
-    facing: { facts?: ActionProposal['facts'] } | { created?: ActionReceipt['created']; notifications?: ActionReceipt['notifications'] },
+    facing: { facts?: ActionProposal['facts']; date?: string } | { created?: ActionReceipt['created']; notifications?: ActionReceipt['notifications'] },
   ) => {
     collect({
       summary,
@@ -437,7 +437,8 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
         proposed_input: plan,
         idempotency_key: proposal.idempotency_key,
       });
-      collectActionNumbers(proposal.summary, { facts: proposal.facts });
+      // The card's own day, so the reply can say it: it is on screen, and the coach confirms it.
+      collectActionNumbers(proposal.summary, { facts: proposal.facts, ...(proposal.visual?.kind === 'cal' ? { date: proposal.visual.date } : {}) });
       writer.write({
         type: 'data-action-proposal',
         id: `proposal-${proposal.idempotency_key}`,
