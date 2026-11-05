@@ -2793,6 +2793,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/coachhelm-file.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -2817,6 +2818,7 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -2843,6 +2845,7 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -3219,6 +3222,7 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -3244,6 +3248,7 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -3260,6 +3265,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/coachhelm-team.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -3706,6 +3712,8 @@
       "exports": [
         "DeskAgenda",
         "DeskBoard",
+        "DeskBoardEmpty",
+        "DeskHead",
         "DeskNext",
         "DeskRounds"
       ],
@@ -4440,7 +4448,8 @@
         "MessagesNoTeam"
       ],
       "styles": [
-        "src/clubhouse/styles/messages.css"
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4491,7 +4500,8 @@
         "MessagesSkeleton"
       ],
       "styles": [
-        "src/clubhouse/styles/messages.css"
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4666,6 +4676,7 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
@@ -12004,6 +12015,8 @@
         "ch-cal-body",
         "ch-cal-ft",
         "ch-cal-ft__band",
+        "ch-cal-ftb",
+        "ch-cal-ftb__idle",
         "ch-cal-jump",
         "ch-cal-jump__d",
         "ch-cal-jump__dow",
@@ -15864,6 +15877,8 @@
         "ch-hb-bento",
         "ch-hb-board",
         "ch-hb-board__f",
+        "ch-hb-board__l",
+        "ch-hb-board__m",
         "ch-hb-board__t",
         "ch-hb-card",
         "ch-hb-card__h",
@@ -15959,6 +15974,7 @@
         "ch-hw-discs__k",
         "ch-hw-discs__line",
         "ch-hw-figs",
+        "ch-hw-figs-note",
         "ch-hw-files",
         "ch-hw-files__b",
         "ch-hw-files__ty",
@@ -19444,6 +19460,7 @@
         "ch-skel",
         "ch-textarea",
         "ch-trd",
+        "ch-trd-earlier",
         "ch-trd-meta",
         "ch-trd-meta__tee",
         "ch-trd-score",
@@ -19831,6 +19848,7 @@
       "file": "src/clubhouse/styles/shell.css",
       "classes": [
         "ch-app",
+        "ch-ask",
         "ch-ask-cmp__round",
         "ch-asks",
         "ch-asks__ctx",
@@ -19946,8 +19964,10 @@
         "ch-hero__eyebrow",
         "ch-hero__line",
         "ch-hero__title",
+        "ch-hf",
         "ch-hl-role",
         "ch-hm",
+        "ch-htb",
         "ch-iconbtn",
         "ch-identity",
         "ch-identity__meta",
@@ -19972,6 +19992,7 @@
         "ch-more__team",
         "ch-more__tick",
         "ch-more__x",
+        "ch-ms",
         "ch-nav",
         "ch-nav--plate",
         "ch-nav__group",
@@ -22956,7 +22977,7 @@
         },
         {
           "name": "--ch-page-head-top",
-          "value": "34px",
+          "value": "12px",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -22977,6 +22998,11 @@
         {
           "name": "--ch-page-top-eyebrow-low-2",
           "value": "calc(var(--ch-page-head-top) - 2px)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-page-top-crh",
+          "value": "calc(var(--ch-page-head-top) + 9px)",
           "scope": "[data-ui='clubhouse']"
         },
         {
