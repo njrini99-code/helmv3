@@ -64,7 +64,7 @@ export function TourMain({ view, phone, labelledBy, className, busy, label, chil
  * The view's head. Desktop: the canopy head (an eyebrow, the title, one line, then `meta` such as a row of chips, and the
  * actions on the right). Phone: the kit's PageIntro, `meta`, and the actions at full width.
  */
-export function TourHead({ id, phone, eyebrow, title, line, meta, actions, crumb, tight = false }: { id: string; phone: boolean; eyebrow: ReactNode; title: ReactNode; line?: ReactNode; meta?: ReactNode; actions?: ReactNode; crumb?: ReactNode; tight?: boolean }) {
+export function TourHead({ id, phone, eyebrow, title, line, meta, actions, crumb }: { id: string; phone: boolean; eyebrow: ReactNode; title: ReactNode; line?: ReactNode; meta?: ReactNode; actions?: ReactNode; crumb?: ReactNode }) {
   if (phone)
     return (
       <>
@@ -77,7 +77,7 @@ export function TourHead({ id, phone, eyebrow, title, line, meta, actions, crumb
   return (
     <>
       {crumb}
-      <header className="ch-tour-head" data-canopy-head={tight ? 'tight' : ''}>
+      <header className="ch-tour-head" data-canopy-head="tight">
         <div className="ch-tour-head__t">
           <span className="ch-tour-head__k ch-num">{eyebrow}</span>
           <h1 id={id}>{title}</h1>
@@ -130,7 +130,7 @@ export function TourCrumb({ href, children = 'Tournaments' }: { href: string; ch
 export function TourLoading({ view, phone, title, className, children }: { view: ChTourView; phone: boolean; title: string; className?: string; children: ReactNode }) {
   return (
     <TourMain view={view} phone={phone} busy label={`Loading ${title.toLowerCase()}`} className={'ch-tour--skel' + (className ? ` ${className}` : '')}>
-      <header className="ch-tour-head" data-canopy-head={phone ? undefined : ''}>
+      <header className="ch-tour-head" data-canopy-head={phone ? undefined : 'tight'}>
         <div className="ch-tour-head__t">
           <Skeleton width={150} height={13} />
           <Skeleton width={phone ? 200 : 300} height={phone ? 34 : 44} radius={10} />

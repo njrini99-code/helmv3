@@ -13,7 +13,7 @@ import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 export function QualifiersSkeleton({ mode = 'all' }: { mode?: 'all' | 'mine' }) {
   return (
     <main className="ch-qf ch-qf--list" aria-busy="true" aria-label="Loading qualifiers" data-ch-code="CH-09401" data-canopy="">
-      <header className="ch-qf-head" data-canopy-head="">
+      <header className="ch-qf-head" data-canopy-head="tight">
         <div>
           <Skeleton width={200} height={11} />
           <span className="ch-qf-skel-desk">
@@ -149,7 +149,7 @@ export function QualifierDetailSkeleton() {
       {/* Each line at its loaded height (measured in WebKit 2026-10-07): the eyebrow, the name, the sentence at its
           measure (so the coach's actions sit where they do loaded), then the actions. The framed head's heights are the
           held lines' classes in qualifiers.css. */}
-      <header className="ch-qf-head" data-canopy-head="">
+      <header className="ch-qf-head" data-canopy-head="tight">
         <div>
           <Skeleton width={140} height={22} radius={5} />
           <Held className="ch-qf-held--name">
@@ -271,7 +271,7 @@ export function QualifierSelectionSkeleton() {
       <div className="ch-qf-back">
         <Skeleton width={110} height={30} radius={8} />
       </div>
-      <header className="ch-qf-head" data-canopy-head="">
+      <header className="ch-qf-head" data-canopy-head="tight">
         <div>
           <Held className="ch-qf-held--eyebrow">
             <Skeleton width={140} height={14} />
@@ -385,7 +385,7 @@ export function QualifierFormSkeleton() {
       <Held className="ch-qf-held--back">
         <Skeleton width={110} height={30} radius={8} />
       </Held>
-      <header className="ch-qf-head" data-canopy-head="">
+      <header className="ch-qf-head" data-canopy-head="tight">
         <div>
           <Held className="ch-qf-held--eyebrow">
             <Skeleton width={120} height={14} />

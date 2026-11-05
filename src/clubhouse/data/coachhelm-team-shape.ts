@@ -90,6 +90,16 @@ export function stationFigures(players: ReadonlyArray<Pick<ChTeamPlayer, 'legs'>
   return out;
 }
 
+/** How many players the hole's figures rest on: the station most of them reach (a player can be at the floor on one leg only). */
+export function boardPlayerCount(stations: ChTeamBoardData['stations']): number {
+  return Math.max(0, ...STATIONS.map((s) => stations[s].n));
+}
+
+/** Beside the board's window: whose average the figures are. */
+export function boardPlayerWords(n: number): string {
+  return `average of ${n} ${n === 1 ? 'player' : 'players'}`;
+}
+
 /** The hero: the team mean of stored per-round totals, never the sum of the legs (AC-HOLE-26, 8 K). */
 export function teamTotalOf(players: ReadonlyArray<Pick<ChTeamPlayer, 'total'>>): number | null {
   const xs = players.map((p) => p.total).filter((v): v is number => v != null);

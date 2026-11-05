@@ -181,7 +181,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
   return (
     <main className={'ch-rd' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rd-title" aria-busy={refreshing || undefined} data-canopy={phone ? undefined : ''}>
       {phone && <PhoneTop start heading={false} title="Rounds" />}
-      <header className="ch-rd-h" data-canopy-head={phone ? undefined : ''}>
+      <header className="ch-rd-h" data-canopy-head={phone ? undefined : 'tight'}>
         <div>
           <span className="ch-rd-k">{counted ? `Since August 1 · ${counted} counted ${pluralWord(counted, 'round')}` : 'Since August 1'}</span>
           {/* CH-11410: a refresh with the page on screen keeps it and says it is updating (a Try again is the usual cause). */}

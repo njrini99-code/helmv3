@@ -133,7 +133,7 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
   return (
     <main className={'ch-rd ch-trd' + (phone ? ' is-phone' : '')} aria-labelledby="ch-trd-title" aria-busy={refreshing || undefined} data-canopy={phone ? undefined : ''}>
       {phone && <PhoneTop start heading={false} title="Rounds" />}
-      <header className="ch-rd-h" data-canopy-head={phone ? undefined : ''}>
+      <header className="ch-rd-h" data-canopy-head={phone ? undefined : 'tight'}>
         <div>
           <span className="ch-rd-k">
             {data.teamName ? `${data.teamName} · ` : ''}

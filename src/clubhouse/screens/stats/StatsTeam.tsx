@@ -52,6 +52,7 @@ export function StatsTeam({ data, shs = false }: { data: ChTeamStats; /** clubho
       <SectionGroup>
         <PrintHead subject={[data.teamName, data.season, 'Team stats'].filter(Boolean).join(' · ')} />
         <PageHero
+          tight
           eyebrow={[data.teamName, data.season].filter(Boolean).join(' · ')}
           title="Team stats"
           figures={

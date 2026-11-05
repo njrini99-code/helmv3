@@ -1155,7 +1155,7 @@ function CalendarBody({
           onCancel={() => answered(ask.e.id)}
         />
       )}
-      <header className="ch-cal-mast" data-canopy-head="">
+      <header className="ch-cal-mast" data-canopy-head="tight">
         <div className="ch-cal-mast__l">
           <button ref={jumpBtn} type="button" className="ch-cal-title" onClick={() => setJump(!jump)} aria-expanded={jump} aria-haspopup="dialog" aria-label={`${title.main}${title.year ? ` ${title.year}` : ''}. Jump to a date`}>
             <h1>{title.main}</h1>

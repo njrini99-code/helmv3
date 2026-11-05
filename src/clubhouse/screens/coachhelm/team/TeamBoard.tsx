@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { courseReads, stationOrder, readsDrawn, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
+import { boardPlayerCount, boardPlayerWords, courseReads, stationOrder, readsDrawn, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
 import { formatSigned } from '../../../lib/format';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
@@ -66,13 +66,16 @@ function Hero({
   courseTab: boolean;
 }) {
   const list = data.players.list;
+  // The hole's figures are each player's season mean, averaged over the players at the shots floor (coachhelm-team-legs.ts):
+  // said here because Home's team's game pools every player's last 10 and reads differently.
+  const counted = boardPlayerCount(data.stations);
   const figure = (
     <div className="hn">
       <b className="ch-num">{formatSigned(data.teamTotal.strokes)}</b>
       <span>
         a round {data.team.baselineLabel}
         <br />
-        This season · {data.teamTotal.rounds} rounds
+        This season · {data.teamTotal.rounds} rounds{counted > 0 && ` · ${boardPlayerWords(counted)}`}
       </span>
     </div>
   );

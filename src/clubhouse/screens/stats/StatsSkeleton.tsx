@@ -26,7 +26,7 @@ export function StatsProfileSkeleton({ coach = false }: { coach?: boolean }) {
           <Skeleton width={112} height={30} radius={10} />
         </div>
       )}
-      <section className="ch-pf-hero" aria-hidden="true" data-canopy-head="">
+      <section className="ch-pf-hero" aria-hidden="true" data-canopy-head="tight">
         <span className="ch-pf-hero__av">
           <Skeleton width={84} height={84} radius={42} />
         </span>
@@ -105,7 +105,7 @@ export function StatsSkeleton() {
       {/* P004-D7: the page keeps its one h1 while it loads. */}
       <h1 className="ch-sr-only">Team stats</h1>
       {/* The framed page head in place (PageHero): the section line, the sans title's line and the line under it, the window switch on the right. */}
-      <header className="ch-hero" data-canopy-head="" aria-hidden="true">
+      <header className="ch-hero" data-canopy-head="tight" aria-hidden="true">
         <Line height={14.3}>
           <Skeleton width={150} height={11} />
         </Line>

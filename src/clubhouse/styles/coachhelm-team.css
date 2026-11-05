@@ -117,6 +117,14 @@ html[data-fw-theme='dark'] .ch-htb {
   font: var(--ch-type-15);
   color:var(--ch-tb-ink-2);
   text-align:right; letter-spacing: var(--ch-track-15); }
+/* The narrow rail's title holds its line; the counts beside it take what is left and wrap. */
+.ch-htb .today .ch h4 {
+  flex: none;
+  white-space: nowrap;
+}
+.ch-htb .today .ch .meta {
+  min-width: 0;
+}
 .ch-htb .cb {
   padding:0 16px 16px;
 }

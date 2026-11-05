@@ -194,7 +194,7 @@ export function QualifierDetail({
         <div className="ch-qf-back" onClickCapture={back.onClickCapture}>
           <BackLink href={LIST_HREF}>Qualifiers</BackLink>
         </div>
-        <header className="ch-qf-head" data-canopy-head="">
+        <header className="ch-qf-head" data-canopy-head="tight">
           <div>
             <span className="ch-qf-eyebrow">
               <StatusPill status={status} ended={feed.ended} />

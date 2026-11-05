@@ -8,7 +8,7 @@ export function RoundsSkeleton() {
   return (
     <main className="ch-rd" aria-busy="true" aria-label="Loading your rounds" data-ch-code="CH-11401" data-canopy="">
       <div className="ch-rd-sk-desk">
-        <header className="ch-rd-h" data-canopy-head="">
+        <header className="ch-rd-h" data-canopy-head="tight">
           <div>
             <Skeleton width={200} height={13} />
             <div style={{ height: 10 }} />
@@ -115,7 +115,7 @@ export function RoundReviewSkeleton() {
           <Skeleton width={72} height={16} />
         </span>
         {/* The framed page head, line for line: eyebrow 14.3, the course in the 44px sans 47.5, the tee line 21. */}
-        <header className="ch-rv-hero" aria-hidden="true" data-canopy-head="">
+        <header className="ch-rv-hero" aria-hidden="true" data-canopy-head="tight">
           <div className="ch-rv-hero__l">
             <SkelLine h={14.3} w={140} sh={10} />
             <SkelLine h={47.5} w={260} sh={36} />
