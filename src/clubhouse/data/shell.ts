@@ -281,7 +281,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     timezone,
     askAvailable: askOn,
     quickChat: askOn && isFlagEnabled('coachhelm_quick_chat_v1'),
-    practicePlans: isFlagEnabled('coachhelm_practice_plans_v1'),
+    practicePlans: isFlagEnabled('coachhelm_practice_plans_v1') && isFlagEnabled('golf_practice_plans'),
     classAwareness: isFlagEnabled('class_awareness_v1'),
     crh: isFlagEnabled('clubhouse_classes_roster_home_v1'),
     course: courseOf(courseRes),

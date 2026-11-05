@@ -198,9 +198,11 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
     setGone(false);
     chat.send(text);
   };
-  const ask = (text: string) => {
-    if (chat.busy || pending || refuseOffline()) return;
+  /** False when it wasn't sent, so a card that sends through this can stay open. */
+  const ask = (text: string): boolean => {
+    if (chat.busy || pending || refuseOffline()) return false;
     send(text);
+    return true;
   };
   // `send`, for the composer, is the same without the gate: it already refused offline and blocked sends.
 

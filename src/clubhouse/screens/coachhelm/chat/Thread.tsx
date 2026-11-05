@@ -48,7 +48,7 @@ export interface AskThreadProps {
   /** Both receive the APPROVAL id (`part.approval.id`). */
   onApprove: (approvalId: string) => void;
   onDeny: (approvalId: string) => void;
-  onSend: (text: string) => void;
+  onSend: (text: string) => boolean | void;
   onStop: () => void;
   onRetry: () => void;
   onNewChat: () => void;

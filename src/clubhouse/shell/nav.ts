@@ -214,14 +214,13 @@ const CH_REBUILT_CHILDREN: Record<string, RegExp> = {
 const CH_PRACTICE_PAGES = /^\/golf\/dashboard\/practice\/(format|plan\/[^/]+)$/;
 
 /**
- * Rebuilt addresses whose parent isn't rebuilt for that role. A coach has no
- * Rounds library in v2, but opens a player's round review from Stats. A player
+ * Rebuilt addresses whose parent isn't rebuilt for that role. A player
  * also continues a round, /rounds/continue/[id] (P011, over the round engine;
  * /rounds/new and /rounds/recover are rebuilt routes above).
  */
 const CH_REBUILT_PATTERNS: Record<ChRole, readonly RegExp[]> = {
   // P-7: a player's history at one course, reached from a round or the library (a coach's from a player's round).
-  // Practice's plan and format pages decide for themselves: flag off or no access goes to Calendar (N-00 §0.2), so the segment must render.
+  // Practice's plan and format pages decide for themselves: flag off goes to Calendar (N-00 §0.2) and a plan that won't load shows its empty state, so the segment must render.
   coach: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/course\/[^/]+$/, CH_PRACTICE_PAGES],
   player: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/continue\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/course\/[^/]+$/, CH_PRACTICE_PAGES],
 };

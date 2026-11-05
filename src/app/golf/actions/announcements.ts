@@ -251,6 +251,48 @@ async function discardUnaddressedAnnouncement(
 // CREATE ENRICHED ANNOUNCEMENT
 // ============================================================================
 
+const sameIds = (a: readonly string[], b: readonly string[]) => {
+  const left = new Set(a);
+  const right = new Set(b);
+  return left.size === right.size && [...left].every((id) => right.has(id));
+};
+
+/**
+ * The announcement this exact request already made in the last two minutes, or null. Any read that fails answers null:
+ * a rare second copy is better than a post that silently never went out. Inline tasks aren't compared, so a request
+ * carrying them is never treated as a repeat.
+ */
+async function findRepeatAnnouncement(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  teamId: string,
+  coachId: string,
+  post: { title: string; body: string; urgency: string; requiresAcknowledgement: boolean; recipientPlayerIds: string[] | null; documentIds: string[]; inlineTasks: unknown[] },
+): Promise<string | null> {
+  if (post.inlineTasks.length > 0) return null;
+  const { data: recent, error } = await supabase
+    .from('golf_announcements')
+    .select('id, body, urgency, requires_acknowledgement')
+    .eq('team_id', teamId)
+    .eq('created_by', coachId)
+    .eq('title', post.title)
+    .gte('created_at', new Date(Date.now() - 2 * 60 * 1000).toISOString())
+    .limit(5);
+  if (error) return null;
+  // The body is compared here, not in the query: a long one would pass the URL limit.
+  const same = (recent ?? []).filter((a) => a.body === post.body && a.urgency === post.urgency && !!a.requires_acknowledgement === post.requiresAcknowledgement);
+  for (const candidate of same) {
+    const [recipients, documents] = await Promise.all([
+      supabase.from('golf_announcement_recipients').select('player_id').eq('announcement_id', candidate.id),
+      supabase.from('golf_announcement_documents').select('document_id').eq('announcement_id', candidate.id),
+    ]);
+    if (recipients.error || documents.error) return null;
+    const sameRecipients = sameIds((recipients.data ?? []).map((r) => r.player_id), post.recipientPlayerIds ?? []);
+    const sameDocuments = sameIds((documents.data ?? []).map((d) => d.document_id), post.documentIds);
+    if (sameRecipients && sameDocuments) return candidate.id;
+  }
+  return null;
+}
+
 async function createEnrichedAnnouncementImpl(input: {
   title: string;
   body: string;
@@ -335,6 +377,11 @@ async function createEnrichedAnnouncementImpl(input: {
 
     // Who this actually reaches. Resolved before the write for the reason above.
     const targetPlayerIds = validated.recipientPlayerIds ?? roster.ids;
+
+    // A retry after a lost response: the post that landed is the answer, not a second notice to every player.
+    // Only the whole request counts as the same post, so new recipients or files always go out as their own.
+    const repeatId = await findRepeatAnnouncement(supabase, teamId, coach.id, validated);
+    if (repeatId) return { success: true, data: { announcementId: repeatId } };
 
     // 1. Create the announcement
     const { data: announcement, error: annError } = await supabase

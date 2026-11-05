@@ -90,7 +90,7 @@ async function CoachHelmView({ coachId, teamId, ask, conversationId, initialPlay
   const gate = await loadCoachHelmGate(coachId);
   if (gate.status === 'off') return <CoachBoard data={emptyCoachHelm(gate.off)} />;
   if (gate.status === 'failed') return <Ask load={{ status: 'failed' }} />;
-  return <Ask v2={isAskV2Enabled()} slashFlags={{ plans: isFlagEnabled('coachhelm_practice_plans_v1'), lineup: isFlagEnabled('golf_tournaments_v1') }} load={await loadAskCoachHelm({ conversationId })} />;
+  return <Ask v2={isAskV2Enabled()} slashFlags={{ plans: isFlagEnabled('coachhelm_practice_plans_v1') && isFlagEnabled('golf_practice_plans'), lineup: isFlagEnabled('golf_tournaments_v1') }} load={await loadAskCoachHelm({ conversationId })} />;
 }
 
 /** One read for a coach: state by state as `CoachPlayerPage` (coachhelm-read 02-PLAN 3.3). */

@@ -6,7 +6,7 @@ import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 export function TeamRoundsSkeleton() {
   return (
     <main className="ch-rd ch-trd" aria-busy="true" aria-label="Loading team rounds" data-ch-code="CH-11413" data-canopy="">
-      <header className="ch-rd-h" data-canopy-head="">
+      <header className="ch-rd-h" data-canopy-head="tight">
         <div>
           <Skeleton width={200} height={13} />
           <div style={{ height: 10 }} />

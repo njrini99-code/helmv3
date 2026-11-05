@@ -195,7 +195,6 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
         title={e.name}
         meta={meta}
         actions={actions}
-        tight
       />
 
       {first && (

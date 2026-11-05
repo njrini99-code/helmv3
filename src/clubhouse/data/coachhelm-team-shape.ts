@@ -1,3 +1,4 @@
+import { plural } from '../lib/plural';
 import type { ChLadderAreaId } from './coachhelm-ladder-shape';
 import type { ChCoachHelmData, ChInsight, ChBoardMissing } from './coachhelm-shape';
 import type { ChCoachBrief, ChBriefWorking } from './coachhelm-coach-brief-shape';
@@ -88,6 +89,16 @@ export function stationFigures(players: ReadonlyArray<Pick<ChTeamPlayer, 'legs'>
     out[s] = { team: xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null, n: xs.length };
   }
   return out;
+}
+
+/** How many players the hole's figures rest on: the station most of them reach (a player can be at the floor on one leg only). */
+export function boardPlayerCount(stations: ChTeamBoardData['stations']): number {
+  return Math.max(0, ...STATIONS.map((s) => stations[s].n));
+}
+
+/** Beside the board's window: whose average the figures are. */
+export function boardPlayerWords(n: number): string {
+  return `average of ${plural(n, 'player')}`;
 }
 
 /** The hero: the team mean of stored per-round totals, never the sum of the legs (AC-HOLE-26, 8 K). */

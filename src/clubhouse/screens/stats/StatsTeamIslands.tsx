@@ -238,6 +238,8 @@ function LegTrends({
   setLeg: (l: ChLeg) => void;
 }) {
   const scale = legScale(legWeeks);
+  // One span for the four cards, so a week sits at the same place on each.
+  const span = trendSpan(LEGS_LIST.map((l) => legWeeks[l]));
   return (
     <>
       <section className="ch-sgm-row" aria-label={`Strokes gained by leg, team. ${legScaleWords(scale)}.`}>
@@ -245,7 +247,7 @@ function LegTrends({
           <LegTrend
             key={l}
             leg={l}
-            data={legWeeks[l]}
+            data={legWeeks[l].slice(span.from, span.to)}
             change={legHalves?.[l]}
             mean={legTotals[i] ?? null}
             scale={scale}
@@ -273,10 +275,18 @@ export function legScaleWords(scale: { lo: number; hi: number }): string {
 function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: string | null; setFocus: (id: string | null) => void }) {
   const [lens, setLens] = useChSessionState<Lens>('team-lens', 'sg');
   const isSg = lens === 'sg';
-  const n = data.weeks.length;
-  const team = isSg ? data.team.sg : data.team.score;
+  const lensTeam = isSg ? data.team.sg : data.team.score;
   // `m` is the window's own mean: what the list beside the chart shows and is sorted by (never the last week's value).
-  const lines = data.players.map((p) => ({ p, v: isSg ? p.sg : p.score, m: isSg ? p.sgMean : p.scoreMean })).filter((l) => l.v.some((x) => x != null));
+  const lensLines = data.players.map((p) => ({ p, v: isSg ? p.sg : p.score, m: isSg ? p.sgMean : p.scoreMean })).filter((l) => l.v.some((x) => x != null));
+  // The weeks come from every round in the window, the strokes gained only from rounds with shots: a week nobody has a value
+  // in on this lens is not drawn, so the plot uses its width instead of ending in a cliff. Interior gaps stay, as gaps.
+  const span = trendSpan([lensTeam, ...lensLines.map((l) => l.v)]);
+  const weeks = data.weeks.slice(span.from, span.to);
+  const team = lensTeam.slice(span.from, span.to);
+  const lines = lensLines.map((l) => ({ ...l, v: l.v.slice(span.from, span.to) }));
+  const n = weeks.length;
+  // Only strokes gained can stop for this reason; a week is listed because a round was played in it.
+  const noShots = isSg && span.to < data.weeks.length && n > 0 ? `Newer rounds have no shot data, so the line stops at ${weeks[n - 1]}.` : null;
   const all = [...team, ...lines.flatMap((l) => l.v)].filter((v): v is number => v != null);
   const w = 900;
   const h = 300;
@@ -299,7 +309,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   }, [all, isSg, par, ref]);
   // Weeks are spaced by their dates when the data has them (row 119): only weeks with rounds are listed, so a quiet week
   // between two shows as a wider step, not as the next week.
-  const share = weekShares(n, data.weekStarts);
+  const share = weekShares(n, data.weekStarts?.slice(span.from, span.to));
   const x = (i: number) => (n <= 1 ? (padL + w - padR) / 2 : padL + share[i]! * (w - padL - padR));
   const y = (v: number) => padT + ((hi - v) / (hi - lo)) * (h - padT - padB);
   const ticks = isSg ? niceTicks(lo, hi) : niceTicks(Math.min(lo, hi), Math.max(lo, hi));
@@ -338,7 +348,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
     const by = `${formatFixed(Math.abs(h.delta))} ${isSg ? 'a round' : 'strokes a round'}`;
     return `${subject.charAt(0).toUpperCase() + subject.slice(1)} ${verb} ${h.delta > 0 ? 'up' : 'down'} ${by}, newer half vs older half.`;
   };
-  const note = (() => {
+  const trendNote = (() => {
     if (sel) {
       const a = firstValue(sel.v);
       const b = lastValue(sel.v);
@@ -354,6 +364,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
       'The team has two weeks in this window so far; a change needs three.'
     );
   })();
+  const note = noShots ? `${trendNote} ${noShots}` : trendNote;
   const sorted = [...lines].sort((a, b) => {
     const av = a.m ?? (isSg ? -99 : 999);
     const bv = b.m ?? (isSg ? -99 : 999);
@@ -427,7 +438,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                 <dt>Best week</dt>
                 <dd className="ch-num">
                   {fmt(best.v)}
-                  <em>{data.weeks[best.i]}</em>
+                  <em>{weeks[best.i]}</em>
                 </dd>
               </div>
               {tLast && (
@@ -435,7 +446,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                   <dt>Latest week</dt>
                   <dd className="ch-num">
                     {fmt(tLast.v)}
-                    <em>{data.weeks[tLast.i]}</em>
+                    <em>{weeks[tLast.i]}</em>
                   </dd>
                 </div>
               )}
@@ -531,7 +542,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                   </text>
                 </g>
               ))}
-              {data.weeks.map((wk, i) => (
+              {weeks.map((wk, i) => (
                 <text key={wk + i} x={x(i)} y={h - 8} textAnchor="middle" className="ch-tick ch-num">
                   {wk}
                 </text>
@@ -590,7 +601,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                   <line x1={x(scrub)} x2={x(scrub)} y1={padT} y2={h - padB} />
                   <circle cx={x(scrub)} cy={y(team[scrub]!)} r={5} />
                   <text x={Math.min(Math.max(x(scrub), padL + 54), w - padR - 54)} y={padT - 3} textAnchor="middle">
-                    {data.weeks[scrub]} · {fmt(team[scrub]!)}
+                    {weeks[scrub]} · {fmt(team[scrub]!)}
                   </text>
                 </g>
               )}
@@ -671,6 +682,21 @@ function niceTicks(lo: number, hi: number): number[] {
 }
 
 /** The four leg charts' one scale: the handoff's range (−1.5 to +1), widened only when a week of any leg falls outside it. */
+/**
+ * The weeks a chart draws: from the first week any series has a value to the last, `to` exclusive. A gap between them stays
+ * (a line bridges it). With no value anywhere the whole range comes back, so the chart still has its axis and its empty word.
+ */
+export function trendSpan(series: ReadonlyArray<ReadonlyArray<number | null>>): { from: number; to: number } {
+  const n = series[0]?.length ?? 0;
+  const has = (i: number) => series.some((s) => s[i] != null);
+  let from = 0;
+  while (from < n && !has(from)) from++;
+  if (from === n) return { from: 0, to: n };
+  let to = n;
+  while (to > from && !has(to - 1)) to--;
+  return { from, to };
+}
+
 /** Each week's share of the plot's width, first at 0 and last at 1: by date when every week has one, else evenly by index. */
 export function weekShares(n: number, starts: readonly string[] | undefined): number[] {
   const even = Array.from({ length: n }, (_, i) => (n <= 1 ? 0.5 : i / (n - 1)));

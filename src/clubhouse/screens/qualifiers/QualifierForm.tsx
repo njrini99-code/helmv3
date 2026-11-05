@@ -275,7 +275,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
       >
         <BackLink href={doneHref}>{editing ? 'Qualifier' : 'Qualifiers'}</BackLink>
       </div>
-      <header className="ch-qf-head" data-canopy-head="">
+      <header className="ch-qf-head" data-canopy-head="tight">
         <div>
           <span className="ch-qf-eyebrow">{editing ? 'Edit qualifier' : 'Qualifiers'}</span>
           <LargeTitle>{editing ? data.name : 'New qualifier'}</LargeTitle>

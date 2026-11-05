@@ -645,15 +645,17 @@ export function splitInline(text: string, names: string[]): InlineSegment[] {
   if (last < text.length) bolds.push({ text: text.slice(last), bold: false });
   if (bolds.length === 0) bolds.push({ text, bold: false });
   if (sorted.length === 0) return bolds.filter((s) => s.text);
-  const re = new RegExp(`\\b(${sorted.map(escapeRe).join('|')})\\b`, 'g');
+  // Not \\b, which is ASCII only and misses "Chloé" and "Élodie". The edge is captured: iOS before 16.4 has no lookbehind.
+  const re = new RegExp(`(^|[^\\p{L}\\p{N}])(${sorted.map(escapeRe).join('|')})(?![\\p{L}\\p{N}])`, 'gu');
   const out: InlineSegment[] = [];
   for (const seg of bolds) {
     let at = 0;
     for (const m of seg.text.matchAll(re)) {
-      const start = m.index ?? 0;
+      const name = m[2] ?? '';
+      const start = (m.index ?? 0) + (m[1]?.length ?? 0);
       if (start > at) out.push({ text: seg.text.slice(at, start), bold: seg.bold });
-      out.push({ text: m[0], bold: seg.bold, mention: m[0] });
-      at = start + m[0].length;
+      out.push({ text: name, bold: seg.bold, mention: name });
+      at = start + name.length;
     }
     if (at < seg.text.length) out.push({ text: seg.text.slice(at), bold: seg.bold });
   }

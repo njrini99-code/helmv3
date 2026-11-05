@@ -610,7 +610,7 @@ export function RoundReview({
           {back.label}
         </Link>
       )}
-      <header className="ch-rv-hero" data-canopy-head={phone ? undefined : ''}>
+      <header className="ch-rv-hero" data-canopy-head={phone ? undefined : 'tight'}>
         <div className="ch-rv-hero__l">
           <span className="ch-rv-hero__k">{kicker}</span>
           {/* D11: one h1 per screen, the course; the phone bar's "Round" is plain text (heading={false}). */}

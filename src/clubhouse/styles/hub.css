@@ -842,6 +842,10 @@
   gap: 16px;
   align-items: start;
 }
+/* One folder uses the page: it doesn't sit in the first of several empty columns. */
+.ch-hb-docs:not(:has(.ch-hb-folder ~ .ch-hb-folder)) {
+  grid-template-columns: minmax(0, 1fr);
+}
 .ch-hb-drop {
   display: grid;
   grid-column: 1 / -1;

@@ -40,7 +40,7 @@ function useRan(active: boolean): number | null {
 }
 
 /** One card per assistant turn (the Messages receive surface): steps, prose with its read chips, visuals, sources; follow-ups sit under it. */
-export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players, onSend, actions, onArtifact }: { onArtifact?: (a: AskArtifact) => void; turn: AskAssistantTurn; fresh: boolean; showFollowUps: boolean; playersByName: Record<string, string>; players: Array<{ id: string; name: string }>; onSend: (text: string) => void; actions: (b: Extract<AskBlock, { kind: 'proposal' | 'receipt' }>) => ReactNode }) {
+export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players, onSend, actions, onArtifact }: { onArtifact?: (a: AskArtifact) => void; turn: AskAssistantTurn; fresh: boolean; showFollowUps: boolean; playersByName: Record<string, string>; players: Array<{ id: string; name: string }>; onSend: (text: string) => boolean | void; actions: (b: Extract<AskBlock, { kind: 'proposal' | 'receipt' }>) => ReactNode }) {
   const seconds = useRan(turn.active);
   const artifacts = turn.artifacts ?? [];
   const toast = useToast();

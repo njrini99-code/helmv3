@@ -3563,7 +3563,8 @@
         "ClassHomeLine"
       ],
       "styles": [
-        "src/clubhouse/styles/class-awareness.css"
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/home.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -10745,6 +10746,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm-team.css",
         "src/clubhouse/styles/coachhelm.css",
@@ -12789,6 +12791,7 @@
         "ch-ak-turn",
         "ch-btn--primary",
         "ch-cpv-pub",
+        "ch-seg__b",
         "ch-th-col",
         "ch-th-prose",
         "ch-th-user"
@@ -15412,7 +15415,10 @@
         "ch-avatar",
         "ch-badge",
         "ch-btn",
+        "ch-ca-home--desktop",
+        "ch-ca-home__btn",
         "ch-cd",
+        "ch-dh-brief",
         "ch-dh-card",
         "ch-dh-card__h",
         "ch-dh-card__t",
@@ -15423,10 +15429,16 @@
         "ch-dh-next__f",
         "ch-dh-next__k",
         "ch-dh-rank",
+        "ch-dh-rest",
         "ch-dh-rows",
         "ch-dh-rows--agenda",
+        "ch-dh-rows--board",
+        "ch-dh-rows--rounds",
         "ch-dh-rows__b",
+        "ch-dh-score",
+        "ch-dh-time",
         "ch-empty",
+        "ch-es",
         "ch-fgr__note",
         "ch-h-agenda",
         "ch-h-agenda__a",
@@ -15804,6 +15816,16 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-dh-inset",
+          "value": "56px",
+          "scope": ".ch-dh-rows--board"
+        },
+        {
+          "name": "--ch-dh-inset",
+          "value": "16px",
+          "scope": ".ch-dh-rows--board.is-unplaced"
+        },
+        {
           "name": "--ch-skel-base",
           "value": "rgb(244 238 221 / 0.16)",
           "scope": "@media (max-width: 820px) → .ch-hm-sk-crh__hero"
@@ -15869,6 +15891,7 @@
         "ch-hb-file__ic",
         "ch-hb-file__open",
         "ch-hb-files",
+        "ch-hb-folder",
         "ch-hb-form",
         "ch-hb-h",
         "ch-hb-home",
@@ -18472,6 +18495,7 @@
         "ch-rs-peek__cap",
         "ch-rs-peek__class",
         "ch-rs-peek__dev",
+        "ch-rs-peek__early",
         "ch-rs-peek__facts",
         "ch-rs-peek__figs",
         "ch-rs-peek__foot",

@@ -105,6 +105,9 @@ confirms, then advances; failure preserves that post and the existing Retry.
 ```txt
 Task create
   -> createTask()
+  -> READ golf_tasks: the same coach, team, title, description and due date in
+     the last 2 minutes returns that task's id and stops (a retry after a lost
+     response); a failed read goes on to the insert
   -> INSERT golf_tasks
   -> INSERT golf_task_assignments per player
 
@@ -189,8 +192,11 @@ is off in every environment. The migrations are written and not applied.
 `supabase/migrations/HELD.md` is authoritative for their order and preconditions.
 
 - Route: `src/app/golf/(dashboard)/dashboard/practice/plan/[planId]/page.tsx`
-  renders `src/clubhouse/routes/practice.tsx`. With the flag off, or when the plan
-  does not load, it redirects to Calendar. It never shows a 404.
+  renders `src/clubhouse/routes/practice.tsx`. With the flag off, or with no
+  session, it redirects to Calendar. A plan that does not load (gone,
+unpublished,
+  or the tables missing) shows an empty state with a way to Calendar. It never
+  shows a 404.
 - Save and publish check the flag. The other plan and drill writes do not.
 - `src/app/golf/actions/practice-plans.ts`: `savePracticePlan`,
   `deletePracticePlan`, `recordPracticePlanOpen`.

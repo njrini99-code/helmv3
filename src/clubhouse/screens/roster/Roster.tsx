@@ -913,7 +913,7 @@ function RosterList({
               one Tab stop. Inside the roster.list boundary, so it runs once that has hydrated. */}
           <RovingRows selector=".ch-rs-list .ch-rs-who" within=".ch-rs-body" />
           <SideScroll className="ch-rs-list ch-sheet" role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
-            <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
+            <div className={'ch-rs-row ch-rs-row--head' + (crh ? '' : ' ch-well-soft')} role="row">
               <SortHeader k="name" sort={sortBy} onSort={onSort}>
                 Player
               </SortHeader>

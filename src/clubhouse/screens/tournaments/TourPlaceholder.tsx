@@ -53,7 +53,7 @@ export function TourPlaceholder({
   if (load === 'loading') {
     return (
       <main className={cls} aria-busy="true" aria-label={`Loading ${title.toLowerCase()}`} data-ch-code="CH-16401" data-ch-tour-view={view} data-canopy="">
-        <header className="ch-tour-head" data-canopy-head="">
+        <header className="ch-tour-head" data-canopy-head="tight">
           <Skeleton width={150} height={13} />
           <Skeleton width={260} height={36} radius={10} />
         </header>
@@ -63,7 +63,7 @@ export function TourPlaceholder({
   }
   return (
     <main className={cls} aria-labelledby={`ch-tour-${view}-title`} data-ch-tour-view={view} data-canopy={phone ? undefined : ''}>
-      <header className="ch-tour-head" data-canopy-head={phone ? undefined : ''}>
+      <header className="ch-tour-head" data-canopy-head={phone ? undefined : 'tight'}>
         <span className="ch-tour-head__k">{eyebrow}</span>
         <h1 id={`ch-tour-${view}-title`}>{title}</h1>
       </header>

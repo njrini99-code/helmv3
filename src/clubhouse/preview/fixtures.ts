@@ -254,6 +254,16 @@ export const PREVIEW_HOME_QUEUE_FAILED: ChCoachHome = { ...PREVIEW_HOME, queue: 
 /** No round in the last ten with hole scores (CH-2314). */
 export const PREVIEW_HOME_LEGS_NO_HOLES: ChCoachHome = { ...PREVIEW_HOME, legs: { ...PREVIEW_LEGS, holeRounds: 0 } };
 
+/** `?state=early`: the season's first week. One event, every player under three rounds, so nobody has a place yet. */
+export const PREVIEW_HOME_EARLY: ChCoachHome = {
+  ...PREVIEW_HOME,
+  week: { ...PREVIEW_HOME.week, agenda: PREVIEW_HOME.week.agenda.slice(0, 1) },
+  leaderboard: {
+    ...PREVIEW_HOME.leaderboard,
+    rows: PREVIEW_HOME.leaderboard.rows.map((r) => ({ ...r, rounds: 2, trend: r.trend.slice(-2), sgPerRound: null, status: 'early' as const })),
+  },
+};
+
 /** Rounds with holes but nobody with enough of them to rank (CH-2315). */
 export const PREVIEW_HOME_LEGS_UNRANKED: ChCoachHome = {
   ...PREVIEW_HOME,

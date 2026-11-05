@@ -10,7 +10,7 @@ export function SettingsSkeleton() {
   return (
     <main className="ch-set" data-canopy="" aria-busy="true" aria-label="Loading settings" data-ch-code="CH-8401">
       <div className="ch-set-skel-desk">
-        <header className="ch-set-head" data-canopy-head="">
+        <header className="ch-set-head" data-canopy-head="tight">
           <Skeleton width={170} height={40} radius={10} />
           <Skeleton width={260} height={13} />
         </header>
