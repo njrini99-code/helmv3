@@ -8,6 +8,7 @@ import { PhoneTop } from '../../../shell/phone-chrome';
 import { Button } from '../../../ui/Button';
 import { LargeTitle, LargeTitleContext } from '../../../ui/LargeTitle';
 import { rebuiltHref } from '../../../shell/nav';
+import { CoachHelmOffNotice } from '../CoachBoard';
 import { CoachHelmTabs, COACHHELM_HREF, type CoachHelmView } from '../chat/SubTabs';
 import { useViewSwitch } from '../use-view-switch';
 import { Modal } from '../../../ui/Modal';
@@ -192,7 +193,7 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
   const list: ChTeamPlayer[] = data.players.list;
   const noRounds = data.teamTotal.rounds === 0;
   const tabs = data.off ? null : <CoachHelmTabs active={sw.shown} onGo={sw.go} boardLabel="Team" />;
-  const context = data.roster.count === 0 ? 'No players yet' : noRounds ? `${data.roster.count} players · no rounds yet this season` : `${data.roster.count} players · ${data.teamTotal.rounds} rounds this season · ${readsDrawn(list)} open reads`;
+  const context = data.off ? 'CoachHelm reads the rounds your players post.' : data.roster.count === 0 ? 'No players yet' : noRounds ? `${data.roster.count} players · no rounds yet this season` : `${data.roster.count} players · ${data.teamTotal.rounds} rounds this season · ${readsDrawn(list)} open reads`;
   const head = (
     <header className="lt">
       <LargeTitle>{data.team.name || 'CoachHelm'}</LargeTitle>
@@ -265,7 +266,10 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
   );
 
   let body: ReactNode;
-  if (data.roster.count === 0 && !data.roster.error) {
+  // An off board loads nothing (`emptyTeamBoard`), so its zero players mean nothing: CoachHelm being off is the whole page, as on today's board.
+  if (data.off) {
+    body = <CoachHelmOffNotice off={data.off} />;
+  } else if (data.roster.count === 0 && !data.roster.error) {
     body = (
       <section className="card ch-htb-noplayers" data-ch-team-card="noplayers">
         <div className="ch">

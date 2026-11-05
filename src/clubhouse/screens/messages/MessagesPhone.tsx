@@ -1453,7 +1453,7 @@ function PhoneNewMessage({
         </div>
       </div>
       <footer ref={footer} className="ch-ms-comp" hidden={api.redesign && !to.length}>
-        <AttachChips files={files} onRemove={(i) => setFiles(files.filter((_, j) => j !== i))} />
+        <AttachChips redesign={!!api.redesign} files={files} onRemove={(i) => setFiles(files.filter((_, j) => j !== i))} />
         <div className="ch-ms-comp__field">
           <AttachButton phone disabled={!to.length} onPick={(picked) => setFiles(addFiles(files, picked))} />
           <textarea

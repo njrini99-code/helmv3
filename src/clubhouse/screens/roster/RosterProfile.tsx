@@ -139,9 +139,9 @@ export function RosterProfile({
         <section className="ch-rsm-panel" aria-labelledby={`recent-${p.id}`}>
           <div className="ch-rsm-panel__h">
             <b id={`recent-${p.id}`}>Recent rounds</b>
-            {roundsHref && p.rounds > 0 && (
-              <Link href={roundsHref} className="ch-rsm-panel__link ch-num" aria-label={`All ${p.rounds} rounds this season`}>
-                All {p.rounds}
+            {roundsHref && (p.roundsAll ?? p.rounds) > 0 && (
+              <Link href={roundsHref} className="ch-rsm-panel__link ch-num" aria-label={`All ${p.roundsAll ?? p.rounds} rounds this season`}>
+                All {p.roundsAll ?? p.rounds}
               </Link>
             )}
           </div>

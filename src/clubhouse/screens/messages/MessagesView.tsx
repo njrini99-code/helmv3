@@ -1643,10 +1643,13 @@ export function AttachChips({
   files,
   onRemove,
   disabled = false,
+  redesign = false,
 }: {
   files: File[];
   onRemove: (index: number) => void;
   disabled?: boolean;
+  /** Behind the Messages flag a new chip rises (MSG-FILE-02); flag off, it just appears, as main. */
+  redesign?: boolean;
 }) {
   const reduced = useChReducedMotion();
   const rise = useChipRise(reduced);
@@ -1654,7 +1657,7 @@ export function AttachChips({
   return (
     <div className="ch-ms-to">
       {files.map((f, i) => (
-        <span key={`${f.name}${i}`} className="ch-ms-to__c" title={f.name} ref={rise}>
+        <span key={`${f.name}${i}`} className="ch-ms-to__c" title={f.name} ref={redesign ? rise : undefined}>
           <Icon icon={FileText} size={13} />
           <span className="ch-ms-to__n">{f.name}</span>
           <Tooltip>
@@ -2063,7 +2066,7 @@ export function Composer({
         </div>
       )}
       {!api.redesign && editing && (
-        <div className="ch-ms-comp__reply is-edit" ref={chipRise}>
+        <div className="ch-ms-comp__reply is-edit">
           <Icon icon={Pencil} size={18} />
           <span className="ch-msv-chip__b">
             <b>Edit message</b>
@@ -2082,6 +2085,7 @@ export function Composer({
       {missingFiles.length > 0 && <div role="status" className="ch-ms-to" aria-label="Attachments to choose again">Choose these files again: {missingFiles.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c">{name}<Tooltip><button type="button" aria-label={`Dismiss ${name}`} onClick={() => setMissingFiles((now) => now.filter((_, j) => j !== i))}><Icon icon={X} size={12} /></button></Tooltip></span>)}</div>}
       {conv.group && api.classDay && <GroupClassLine cls={api.classDay} conv={conv} personOf={(id) => personOf(api, id)} />}
       <AttachChips
+        redesign={!!api.redesign}
         disabled={unconfirmed || checking || checkFailed || unavailable}
         files={files}
         onRemove={(i) => setFiles((s) => s.filter((_, j) => j !== i))}

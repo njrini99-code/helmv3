@@ -113,7 +113,7 @@ function DetailSkeleton() {
  * The first block of every detail, on the page, not in a card: the figure (500 40/1), its caption, then its chips.
  * A summary card and its hero read one value (one source per figure).
  */
-export function DetailHero({ figure, unit, caption, chips }: { figure: ReactNode; unit?: string; caption: ReactNode; chips?: ReactNode }) {
+export function DetailHero({ figure, unit, caption, chips, gauge }: { figure: ReactNode; unit?: string; caption: ReactNode; chips?: ReactNode; /** The figure drawn against its reference (decorative; the figure says it). */ gauge?: ReactNode }) {
   return (
     <div className="ch-shs-d-hero">
       <span className="ch-shs-d-hero__fig ch-num">
@@ -121,6 +121,7 @@ export function DetailHero({ figure, unit, caption, chips }: { figure: ReactNode
         {unit && <small>{unit}</small>}
       </span>
       <p className="ch-shs-d-hero__cap">{caption}</p>
+      {gauge && <div className="ch-shs-d-hero__gauge" aria-hidden="true">{gauge}</div>}
       {chips && <div className="ch-shs-d-hero__chips">{chips}</div>}
     </div>
   );

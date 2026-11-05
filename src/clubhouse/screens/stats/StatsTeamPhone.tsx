@@ -219,6 +219,19 @@ export function teamDaysMean(days: Array<{ score: number; n?: number }>): number
   return days.reduce((a, d) => a + d.score * (d.n ?? 1), 0) / w;
 }
 
+/**
+ * The newer half of the round days against the older half, worded as a change only past its standard error (A1), which the loader takes from
+ * the rounds behind each half: a day's mean of six rounds is not read as one round. The line's ink follows the same test as the words (row 69).
+ */
+export function teamTrendReading(data: Pick<ChTeamStats, 'daysHalves'>, known: number): { tone: '' | 'is-gain' | 'is-loss'; reading: string } {
+  const change = data.daysHalves;
+  const tone = known < 3 ? '' : halvesTone(change, true);
+  return {
+    tone,
+    reading: tone === '' ? 'No clear change across the window.' : `${change!.delta < 0 ? 'Down' : 'Up'} ${formatFixed(Math.abs(change!.delta))} strokes a round, newer half vs older half.`,
+  };
+}
+
 /** The team's average on each of its last ten round days against their mean (dashed), with a one-line reading. */
 function Trend({ data }: { data: ChTeamStats }) {
   const days = data.days ?? [];
@@ -243,15 +256,7 @@ function Trend({ data }: { data: ChTeamStats }) {
         </p>
       </section>
     );
-  // The newer half of the round days against the older half, worded as a change only past its standard error (A1), which the
-  // loader takes from the rounds behind each half: a day's mean of six rounds is not read as one round.
-  const change = data.daysHalves;
-  // The line's ink follows the same test as the words: green or amber only for a change past its noise (row 69).
-  const tone = known.length < 3 ? '' : halvesTone(change, true);
-  const reading =
-    tone === ''
-      ? 'No clear change across the window.'
-      : `${change!.delta < 0 ? 'Down' : 'Up'} ${formatFixed(Math.abs(change!.delta))} strokes a round, newer half vs older half.`;
+  const { tone, reading } = teamTrendReading(data, known.length);
   // The mean of the rounds behind the line, each counted once (A8.10): a day weighs its whole rounds, not one point a day.
   const mean = teamDaysMean(known);
   return (

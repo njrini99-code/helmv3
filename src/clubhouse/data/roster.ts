@@ -49,6 +49,8 @@ export interface ChRosterPlayer {
   status: 'active' | 'inactive';
   joined: string | null;
   rounds: number;
+  /** Every round this season, practice included (Recent rounds and "All N"); the same as `rounds` with the lane's flag off. Optional for fixtures. */
+  roundsAll?: number;
   avg: number | null;
   sgPerRound: number | null;
   /** Strokes gained per round by leg over the same rounds as `sgPerRound` (summarizePlayer); null for a leg with too few rounds. */
@@ -225,11 +227,14 @@ export async function loadRoster(input: { teamId: string; coachId: string; /** T
   ]);
   const counted = input.crh ? season.rounds.filter(countsForScoring) : season.rounds;
   const byPlayer = groupByPlayer(counted);
+  // Averages, form and the floors read the cut rounds; Recent rounds and "All N" list every round the player posted (SHARED: Latest rounds lists every round).
+  const everyRound = input.crh ? groupByPlayer(season.rounds) : byPlayer;
   const teamPosting = season.rounds.some((r) => daysBetween(now, new Date(`${r.round_date.slice(0, 10)}T12:00:00Z`)) < QUIET_DAYS);
 
   const players: ChRosterPlayer[] = members.map((m) => {
     const p = m.player;
     const s = summarizePlayer(byPlayer.get(p.id) ?? []);
+    const every = input.crh ? summarizePlayer(everyRound.get(p.id) ?? []) : s;
     const status = m.status === 'inactive' ? 'inactive' : 'active';
     const availability: ChAvailability = parseAvailability(m.availability);
     return {
@@ -247,12 +252,13 @@ export async function loadRoster(input: { teamId: string; coachId: string; /** T
         ? `Joined ${new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(m.joined_at))}`
         : null,
       rounds: s.rounds,
+      roundsAll: every.rounds,
       avg: s.avg,
       sgPerRound: s.sgPerRound,
       sgLegs: s.sgLegs,
       trend: s.trend,
       form: s.status,
-      recent: s.recent.slice(0, 3).map((r) => ({
+      recent: every.recent.slice(0, 3).map((r) => ({
         id: r.id,
         course: r.course_name ?? 'Course not recorded',
         date: shortDate(r.round_date),

@@ -137,8 +137,9 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
     else setLate(true);
   };
   const open = async () => {
-    await fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(key)}?now=1`, { method: 'POST' }).catch(() => null);
-    const href = view.receipt?.created[0]?.href ?? (visual?.kind === 'msg' ? `/golf/dashboard/messages?conversation=${visual.conversationId}` : visual?.kind === 'qual' ? '/golf/dashboard/qualifiers' : '/golf/dashboard/calendar');
+    const res = await fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(key)}?now=1`, { method: 'POST' }).catch(() => null);
+    const row = (await res?.json().catch(() => null)) as { receipt?: AskProposalView['receipt'] } | null;
+    const href = row?.receipt?.created[0]?.href ?? view.receipt?.created[0]?.href ?? (visual?.kind === 'msg' ? `/golf/dashboard/messages?conversation=${visual.conversationId}` : visual?.kind === 'qual' ? '/golf/dashboard/qualifiers' : '/golf/dashboard/calendar');
     onOpen(href);
   };
 

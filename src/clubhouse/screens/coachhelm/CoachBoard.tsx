@@ -39,6 +39,30 @@ export const coachBoardLinks = {
   settings: () => rebuiltHref('/golf/dashboard/settings/coaching-intelligence', 'coach'),
 };
 
+/** CH-13305: CoachHelm turned off (globally, for the team or by this coach), said as the page's one notice, on either board. */
+export function CoachHelmOffNotice({ off }: { off: NonNullable<ChCoachHelmData['off']> }) {
+  return (
+    <EmptyState
+      size="page"
+      code="CH-13305"
+      {...(off.by === 'global' ? { kind: 'restricted' as const } : { shape: 'rows' as const })}
+      title="CoachHelm is off"
+      body={
+        off.by === 'global'
+          ? 'CoachHelm is turned off for GolfHelm right now, so no insights are being shown.'
+          : `${off.by === 'team' ? 'Your team has' : 'You have'} turned CoachHelm off${off.reason ? `: “${off.reason}”` : ''}. Turn it back on in Settings to see signals again.`
+      }
+      action={
+        off.by !== 'global' && coachBoardLinks.settings() ? (
+          <Button variant="primary" href={coachBoardLinks.settings()!}>
+            Open CoachHelm settings
+          </Button>
+        ) : undefined
+      }
+    />
+  );
+}
+
 /**
  * CoachHelm for the coach (P013; design/handoff/Coach - CoachHelm.html,
  * helm3.jsx `CoachHelm`; spec docs/clubhouse/phone/coachhelm.md; the design
@@ -114,24 +138,7 @@ export function CoachBoard({
   const inviteHref = coachBoardLinks.invite();
 
   const body = data.off ? (
-    <EmptyState
-      size="page"
-      code="CH-13305"
-      {...(data.off.by === 'global' ? { kind: 'restricted' as const } : { shape: 'rows' as const })}
-      title="CoachHelm is off"
-      body={
-        data.off.by === 'global'
-          ? 'CoachHelm is turned off for GolfHelm right now, so no insights are being shown.'
-          : `${data.off.by === 'team' ? 'Your team has' : 'You have'} turned CoachHelm off${data.off.reason ? `: “${data.off.reason}”` : ''}. Turn it back on in Settings to see signals again.`
-      }
-      action={
-        data.off.by !== 'global' && coachBoardLinks.settings() ? (
-          <Button variant="primary" href={coachBoardLinks.settings()!}>
-            Open CoachHelm settings
-          </Button>
-        ) : undefined
-      }
-    />
+    <CoachHelmOffNotice off={data.off} />
   ) : !data.roster.error && data.roster.count === 0 ? (
     <EmptyState
       size="page"

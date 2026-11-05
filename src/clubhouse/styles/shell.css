@@ -2079,7 +2079,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--ch-accent, currentColor);
+  background: var(--ch-green-600, currentColor);
   transform-origin: left center;
   animation: ch-lp-sweep var(--ch-dur-sweep) var(--ch-ease-io) var(--ch-dur-press) infinite;
 }

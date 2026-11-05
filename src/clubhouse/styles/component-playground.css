@@ -23,7 +23,7 @@
 .ch-playground__field, .ch-gallery__field { display: grid; gap: 8px; min-width: 0; }
 .ch-playground__field > span { display: flex; justify-content: space-between; gap: 8px; }
 .ch-playground__field output { color: var(--ch-text-secondary); }
-.ch-playground__field input[type='range'] { width: 100%; accent-color: var(--ch-accent); }
+.ch-playground__field input[type='range'] { width: 100%; accent-color: var(--ch-green-600); }
 .ch-playground__field textarea { width: 100%; resize: vertical; font: var(--ch-type-body-s); }
 .ch-playground__previews { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: start; gap: 24px; min-width: 0; }
 .ch-playground__pane { min-width: 0; }

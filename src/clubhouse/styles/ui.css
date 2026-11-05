@@ -2184,7 +2184,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--ch-accent);
+  background: var(--ch-green-600);
   animation: ch-trust-live var(--ch-dur-live) var(--ch-ease-io) infinite;
 }
 .ch-trust__at,

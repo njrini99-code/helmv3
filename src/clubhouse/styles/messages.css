@@ -4229,7 +4229,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
     border-radius: 50%;
     background: var(--ch-card-bg);
     box-shadow: var(--ch-messages-x2);
-    color: var(--ch-accent);
+    color: var(--ch-green-600);
   }
   /* 44 target on the 40 key (MSG-ALL-08). */
   [data-ch-ms-v2] .ch-msv-new::before {
@@ -4346,7 +4346,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   height: 44px;
   border-radius: var(--ch-radius-md);
   background: var(--ch-well-bg-flat);
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 [data-ch-ms-v2] .ch-ms-fold__b b {
   font: var(--ch-type-17-strong);
@@ -4796,7 +4796,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   height: 32px;
   border-radius: var(--ch-radius-sm);
   background: var(--ch-well-bg-flat);
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 [data-ch-ms-v2] .ch-msv-attach__ic.is-photos {
   background: var(--ch-bubble-mine-fill);
@@ -4898,7 +4898,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   border: 0;
   border-radius: 50%;
   background: none;
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
   cursor: pointer;
 }
 .ch-msv-rbar > button.is-on {
@@ -5058,7 +5058,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   margin-block-start: 6px;
   margin-inline-end: -2px;
   border-radius: 50%;
-  background: var(--ch-accent);
+  background: var(--ch-green-600);
 }
 [data-ch-ms-v2] .ch-msv-card :where(.ch-ms-row) {
   padding-inline: 16px;
@@ -5183,7 +5183,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
   padding: 0 12px;
   border: 0;
   background: none;
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
   font: var(--ch-type-15-strong);
   cursor: pointer; letter-spacing: var(--ch-track-15); }
 [data-ch-ms-v2] .ch-msv-hello {
@@ -5257,7 +5257,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
 [data-ch-ms-v2] .ch-msp-tile svg {
   width: 20px;
   height: 20px;
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 [data-ch-ms-v2] .ch-msp-panel {
   border-radius: var(--ch-radius-lg);
@@ -5268,7 +5268,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
   padding: 2px 6px;
   border-radius: var(--ch-radius-tail);
   background: var(--ch-well-bg-flat);
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
   font: var(--ch-type-12-strong);
 }
 [data-ch-ms-v2] .ch-switch input:not(:checked) + * {
@@ -5349,7 +5349,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
   padding: 8px 6px;
   border: 0;
   background: none;
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
   font: var(--ch-type-17-medium);
   letter-spacing: var(--ch-track-17);
   cursor: pointer;
@@ -5426,7 +5426,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
   min-height: 44px;
   border: 0;
   background: none;
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
   font: var(--ch-type-15-medium);
   cursor: pointer; letter-spacing: var(--ch-track-15); }
 .ch-msv-seeall {
@@ -5489,7 +5489,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
   height: 32px;
   border-radius: var(--ch-radius-sm);
   background: var(--ch-well-bg-flat);
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 .ch-msv-ptiles {
   display: grid;
@@ -5558,7 +5558,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
   min-height: 44px;
   border: 0;
   background: none;
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
   font: var(--ch-type-17-medium);
   cursor: pointer; letter-spacing: var(--ch-track-17); }
 .ch-msv-newpane__in {
@@ -5673,7 +5673,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
   cursor: pointer;
 }
 .ch-msv-hoverbar button[aria-pressed='true'] {
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 .ch-ms-msg.is-mine .ch-msv-hoverbar {
   right: 0;
@@ -5699,7 +5699,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
   }
 }
 .ch-msv-holdmenu > button.is-danger {
-  color: var(--ch-danger, #b3261e);
+  color: var(--ch-danger-600);
 }
 .ch-msv-lift__copy {
   pointer-events: auto;
@@ -5750,13 +5750,13 @@ body:has([data-ch-ms-v2]) .ch-toast {
 .ch-msv-votebar i {
   display: block;
   height: 100%;
-  background: var(--ch-accent);
+  background: var(--ch-green-600);
 }
 .ch-msv-draftrem {
   min-height: 44px;
   border: 0;
   background: none;
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
   font: var(--ch-type-17-medium);
   cursor: pointer; letter-spacing: var(--ch-track-17); }
 /* The poll tick and face (M-MSG-15a, b, d). */
