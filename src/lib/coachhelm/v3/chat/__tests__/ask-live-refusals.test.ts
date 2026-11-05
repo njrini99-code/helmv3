@@ -91,6 +91,30 @@ describe('refusal 1: "How many rounds has Owen Carter played this season, and wh
     expect(tokensOf(verdictFor(withBlock('Over his 0 rounds his score to par is 0.5.', [empty]), [envelope({ measurements: [empty], detail: { this_season: { mean: 0.5 } } })]))).toEqual(['score_to_par_per_18:unsupported_small_number']);
   });
 
+  describe('a thin figure left out of the block', () => {
+    const coleSame = figure({ metric_id: 'scoring_average_vs_par', value: 0.5, entity: COLE, sample_size: 14, window_start: '2026-05-28', window_end: '2026-09-26' });
+
+    it('is still refused without its sample', () => {
+      expect(tokensOf(verdictFor(withBlock('Owen Carter sits at 0.5 this season.', [avg]), reads))).toEqual(['score_to_par_per_18:unsupported_small_number']);
+      expect(tokensOf(verdictFor(withBlock('He sits at 0.5 this season.', [avg]), reads))).toEqual(['score_to_par_per_18:unsupported_small_number']);
+    });
+
+    it('passes with it', () => {
+      expect(verdictFor(withBlock('Owen Carter sits at 0.5 over his 2 rounds.', [avg]), reads).outcome).toBe('accepted');
+    });
+
+    it('does not fire when the number could be another figure', () => {
+      const shared = [...reads, envelope({ measurements: [coleSame] })];
+      expect(verdictFor(withBlock('Owen Carter sits at 0.5 this season.', [avg]), shared).outcome).toBe('accepted');
+    });
+
+    it('does not fire on a sentence about nobody, or on a small whole number', () => {
+      expect(verdictFor(withBlock('The range sits at 0.5 here.', [avg]), reads).outcome).toBe('accepted');
+      const whole = figure({ metric_id: 'score_to_par_per_18', value: 2, entity: OWEN, sample_size: 3, window_start: '2026-08-01', window_end: '2027-07-31' });
+      expect(verdictFor(withBlock('Owen Carter is 2 under this season.', []), [envelope({ measurements: [whole] })]).outcome).toBe('accepted');
+    });
+  });
+
   it('thinSampleStated pairs each figure with its nearest count', () => {
     const line = "Owen's 0.5 over his 2 rounds sits beside his 5.08 over 12 rounds, per 18 holes across 12 rounds.";
     expect(thinSampleStated(line, 0.5, 2, 'rounds')).toBe(true);
