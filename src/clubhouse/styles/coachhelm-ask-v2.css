@@ -475,3 +475,25 @@ html[data-fw-theme='dark'] .ch-ak-th {
   .ch-ak-pane.is-leaving, .ch-ak-push.is-leaving { animation: ch-ak-fade-out var(--ch-dur-rm-fade) linear both; }
 }
 [data-motion='off'] .ch-ak-pane, [data-motion='off'] .ch-ak-push { animation: none; }
+
+/* M-ASK-33 to 39: the brief. The card rises, a pane slides on the send spring (Back reverses), the dots and the choice settle. */
+@keyframes ch-ak-rise { from { opacity: 0; transform: translateY(8px); } }
+@keyframes ch-ak-pane-next { from { transform: translateX(100%); } }
+@keyframes ch-ak-pane-back { from { transform: translateX(-100%); } }
+@keyframes ch-ak-pill { from { opacity: 0; transform: translateY(6px); } }
+.ch-ak-th .qcard { animation: ch-ak-rise var(--ch-dur-spring-settle) var(--ch-ease-spring-settle) both; }
+.ch-ak-th .qpane.is-next { animation: ch-ak-pane-next var(--ch-dur-spring-send) var(--ch-ease-spring-send) both; }
+.ch-ak-th .qpane.is-back { animation: ch-ak-pane-back var(--ch-dur-spring-send) var(--ch-ease-spring-send) both; }
+.ch-ak-th .qdots i { transition: width var(--ch-dur-spring-settle) var(--ch-ease-spring-settle), background-color var(--ch-dur-base) var(--ch-ease); }
+.ch-ak-th .opt { transition: background-color var(--ch-dur-base) var(--ch-ease), box-shadow var(--ch-dur-base) var(--ch-ease); }
+.ch-ak-th .opt .bx { display: grid; place-items: center; flex: none; width: 20px; height: 20px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ch-text-tertiary); color: var(--ch-text-on-accent); transition: background-color var(--ch-dur-base) var(--ch-ease), box-shadow var(--ch-dur-base) var(--ch-ease); }
+.ch-ak-th .opt.multi .bx { border-radius: var(--ch-radius-xs); }
+.ch-ak-th .opt .bx path { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset var(--ch-dur-base) var(--ch-ease); }
+.ch-ak-th .opt[aria-pressed='true'] .bx { background: var(--ch-accent); box-shadow: none; }
+.ch-ak-th .opt[aria-pressed='true'] .bx path { stroke-dashoffset: 0; }
+.ch-ak-th .qsum .pills span { animation: ch-ak-pill var(--ch-dur-base) var(--ch-ease) both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-press) / 2.75); }
+@media (prefers-reduced-motion: reduce) {
+  .ch-ak-th .qcard, .ch-ak-th .qpane.is-next, .ch-ak-th .qpane.is-back, .ch-ak-th .qsum .pills span { --ch-i: 0; animation: ch-ak-fade var(--ch-dur-rm-fade) linear both; }
+  .ch-ak-th .qdots i, .ch-ak-th .opt, .ch-ak-th .opt .bx, .ch-ak-th .opt .bx path { transition: none; }
+}
+[data-motion='off'] .ch-ak-th :is(.qcard, .qpane, .qsum .pills span) { animation: none; }

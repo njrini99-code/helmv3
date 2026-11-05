@@ -5,6 +5,7 @@ import { Button } from '../../../ui/Button';
 import { Badge } from '../../../../clubhouse/ui/Badge';
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { squashFolder } from '../../../screens/coachhelm/chat/ask-flight';
 import { listPlanFolders, savePracticePlanDraft, undoPracticePlanDraft } from '@/app/golf/actions/coachhelm-practice-plans';
 import type { PlanPartData } from '../../../screens/coachhelm/plan/PlanCard';
 import { useUndoWindow } from '../../../screens/coachhelm/plan/useUndoWindow';
@@ -62,11 +63,14 @@ export function PlanTask({ plan, online, onOpen }: { plan: PlanPartData; online:
   const dupe = folders.some((f) => f.name.toLowerCase() === clean.toLowerCase()) || clean.toLowerCase() === DEFAULT.toLowerCase();
   const reserved = clean.toLowerCase() === 'team';
   const needsEvent = plan.eventId == null;
+  const folderRef = useRef<HTMLButtonElement>(null);
   const save = async () => {
     setPhase({ k: 'busy' });
     if (preview) return setPhase({ k: 'saved', planId: 'preview', created: true, savedAt: '', until: new Date(Date.now() + 8000).toISOString(), folder });
     const res = await savePracticePlanDraft({ eventId: plan.eventId, planId: null, version: 0, title: plan.title, draft: plan.draft, folder });
     if (!res.success) return setPhase({ k: 'failed', reason: res.error });
+    // The folder takes the page (M-ASK-78), then the receipt. It's saved already, so a stalled animation can't hold that back.
+    if (folderRef.current) await Promise.race([squashFolder(folderRef.current, reduced), new Promise((done) => window.setTimeout(done, 800))]);
     setPhase({ k: 'saved', planId: res.planId, created: res.created, savedAt: res.savedAt, until: new Date(Date.now() + 8000).toISOString(), folder });
   };
   const undo = async () => {
@@ -136,7 +140,7 @@ export function PlanTask({ plan, online, onOpen }: { plan: PlanPartData; online:
           <>
             <div className="fold">
               <span className="fold__l">Save to</span>
-              <button className="fold__b" type="button" aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu((v) => !v)}>
+              <button ref={folderRef} className="fold__b" type="button" aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu((v) => !v)}>
                 <Ico d={FOLDER} className="fi" />
                 <b>{folder}</b>
                 <Ico d="M6 9l6 6 6-6" />
