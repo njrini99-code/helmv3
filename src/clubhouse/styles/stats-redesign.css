@@ -1332,7 +1332,7 @@ li + li > .ch-shs-rrow::before {
   font: var(--ch-type-16-medium);
   white-space: nowrap;
   text-overflow: ellipsis; letter-spacing: var(--ch-track-16); }
-.ch-shs-rrow .c span {
+.ch-shs-rrow .c span:not(.ch-avatar) {
   display: block;
   overflow: hidden;
   font: var(--ch-type-15);

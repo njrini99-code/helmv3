@@ -60,14 +60,14 @@ describe('Titles are headlines', () => {
 });
 
 describe('The section empty is a line on the Ledger', () => {
-  it('flush and left-aligned: no well, the glyph beside the title, the title without its full stop', () => {
+  it('centred with no well (owner, 4 Nov), the glyph above the title, the title without its full stop', () => {
     const { container } = render(<EmptyState code="CH-10301" icon={Users} title="No trips planned." body="Plan a trip and players see the itinerary here." />);
     const el = container.querySelector('[data-ch-code="CH-10301"]')!;
     expect(el.className).toBe('ch-empty ch-empty--icon');
     expect(el.querySelector('.ch-well-soft')).toBeNull();
     expect(el.querySelector(':scope > .ch-empty__icon > svg')).not.toBeNull();
     expect(screen.getByText('No trips planned').className).toBe('ch-empty__title');
-    expect(rule('.ch-empty')).toMatch(/justify-items: start;[\s\S]*text-align: left;/);
+    expect(rule('.ch-empty')).toMatch(/justify-items: center;[\s\S]*text-align: center;/);
     expect(rule('.ch-empty__icon')).toContain('color: var(--ch-ledger-ink);');
   });
 
@@ -426,7 +426,7 @@ describe('CH-1609 skeletons draw bars and rules, not filled cards', () => {
     expect(rule("  [data-ui='clubhouse'] main[data-canopy] .ch-skel--block")).toMatch(/border-radius: 0 !important;[\s\S]*animation: none;/);
     // The deeper shade (states audit, 2026-10-08), through its token since P001-D6.
     expect(rule('.ch-skel')).toContain('var(--ch-skel-base)');
-    expect(readFileSync(join(root, 'styles/tokens.css'), 'utf8')).toMatch(/--ch-skel-base: #e2dbca;/);
+    expect(readFileSync(join(root, 'styles/tokens.css'), 'utf8')).toMatch(/--ch-skel-base: #d8d0bb;/);
   });
 
   it('SkelLine holds the line box; SkelRows are Ledger rows; SkelRule is the rule', () => {

@@ -416,7 +416,7 @@ html[data-fw-theme='dark'] .ch-hr {
 .ch-hr .row .c b {
   display:block;
   font: var(--ch-type-16-medium); letter-spacing: var(--ch-track-16); }
-.ch-hr .row .c span {
+.ch-hr .row .c span:not(.ch-avatar) {
   display:block;
   font: var(--ch-type-14);
   color:var(--ch-hr-ink-2);
@@ -1167,7 +1167,7 @@ html[data-fw-theme='dark'] .ch-hr {
   flex: 1;
   min-width: 0;
 }
-.ch-hr .lr .c span {
+.ch-hr .lr .c span:not(.ch-avatar) {
   display: block;
   font: var(--ch-type-13);
   letter-spacing: var(--ch-track-13);

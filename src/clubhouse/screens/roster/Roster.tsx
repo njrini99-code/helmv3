@@ -978,7 +978,7 @@ function RosterList({
                 </span>
                 <span role="cell">
                   {crh ? (
-                    p.trend.length >= 3 ? <FormBars data={p.trend} mean={mean} /> : <FormStubs />
+                    p.trend.length >= 3 ? <FormBars data={p.trend} mean={mean} /> : p.trend.length > 0 ? <FormStubs /> : <span className="ch-num">—</span>
                   ) : (
                     <FormLine data={p.trend} width={120} height={30} earlyBelow={3} label={`${p.name} form`} />
                   )}

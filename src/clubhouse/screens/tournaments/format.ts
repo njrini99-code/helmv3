@@ -55,7 +55,8 @@ export function tourDayTime(instant: string): string {
 
 /** "54 holes" for the event's rounds at its format's hole count. */
 export function holesLabel(e: Pick<ChTourEvent, 'rounds' | 'format'>): string {
-  return `${e.rounds.length * e.format.holes} holes`;
+  const holes = e.rounds.length * e.format.holes;
+  return holes > 0 ? `${holes} holes` : 'Holes not set';
 }
 
 /** "stroke play" or "match play": the words the event line uses for how the event is scored. */

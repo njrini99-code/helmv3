@@ -510,7 +510,7 @@ html[data-fw-theme='dark'] .ch-htb {
 }
 .ch-htb .pat b {
   font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
-.ch-htb .pat span {
+.ch-htb .pat span:not(.ch-avatar) {
   font: var(--ch-type-14);
   color:var(--ch-tb-ink-2);
 }
@@ -752,7 +752,7 @@ html[data-fw-theme='dark'] .ch-htb {
 .ch-htb .cp .n b {
   display:block;
   font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); }
-.ch-htb .cp .n span {
+.ch-htb .cp .n span:not(.ch-avatar) {
   display:block;
   font: var(--ch-type-13);
   color:var(--ch-tb-ink-2);
@@ -1283,7 +1283,7 @@ html[data-fw-theme='dark'] .ch-htb {
 .ch-htb .sto-h b {
   display:block;
   font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
-.ch-htb .sto-h .c span {
+.ch-htb .sto-h .c span:not(.ch-avatar) {
   font: var(--ch-type-13);
   color:var(--ch-tb-f-ink-2);
 }

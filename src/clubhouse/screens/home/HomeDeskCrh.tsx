@@ -6,6 +6,7 @@ import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
 import { CALENDAR, eventHref, whenLabel } from './event-links';
 import { Icon } from '../../ui/Icon';
+import { EmptyState } from '../../ui/States';
 import { useChClockText } from '../../lib/use-clock';
 import { formatAvg, formatToPar } from '../../lib/format';
 import { Avatar } from '../../ui/Avatar';
@@ -54,6 +55,9 @@ export function DeskAgenda({ rows }: { rows: ChCoachHome['week']['agenda'] }) {
           Calendar
         </Link>
       </div>
+      {rows.length === 0 ? (
+        <EmptyState compact kind="first-run" code="CH-2301" title="Nothing on the calendar this week" body="Practices, qualifiers and travel show up here." />
+      ) : (
       <ul className="ch-dh-rows ch-dh-rows--agenda">
         {rows.map((r) => (
           <li key={r.id}>
@@ -67,6 +71,7 @@ export function DeskAgenda({ rows }: { rows: ChCoachHome['week']['agenda'] }) {
           </li>
         ))}
       </ul>
+      )}
     </section>
   );
 }

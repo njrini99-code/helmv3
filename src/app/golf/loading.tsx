@@ -2,7 +2,7 @@ import { FairwayShellSkeleton } from '@/components/fairway/app-shell/FairwayShel
 import { FairwayDashboardSkeleton } from '@/components/fairway/pages/dashboard/FairwayDashboardSkeleton';
 import { clubhouseLoadingFrame } from '@/clubhouse/gate';
 import { ClubhouseShellSkeleton } from '@/clubhouse/shell/ShellSkeleton';
-import { HomeSkeleton } from '@/clubhouse/screens/home/HomeSkeleton';
+import { BootSkeleton } from '@/clubhouse/shell/BootSkeleton';
 
 /**
  * Loading UI for EVERYTHING under /golf that has no closer boundary.
@@ -42,10 +42,10 @@ export default function GolfLoading() {
     <div data-ch-boot-skeleton="" style={{ display: 'contents' }}>
       {frame === 'clubhouse' ? (
         <ClubhouseShellSkeleton>
-          <HomeSkeleton />
+          <BootSkeleton />
         </ClubhouseShellSkeleton>
       ) : frame === 'neutral' ? (
-        <div className="min-h-dvh" role="status" aria-busy="true" aria-live="polite" data-loading-frame="neutral">
+        <div className="min-h-dvh" style={{ background: 'Canvas', colorScheme: 'light dark' }} role="status" aria-busy="true" aria-live="polite" data-loading-frame="neutral">
           <span className="sr-only">Loading</span>
         </div>
       ) : (

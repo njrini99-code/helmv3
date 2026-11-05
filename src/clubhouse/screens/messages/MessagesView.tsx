@@ -737,16 +737,6 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
             compact
             icon={MessageSquare}
             title="No conversations yet"
-            body={
-              api.viewer.role === "coach"
-                ? "Start one with a player, or create a team group."
-                : "Message a coach or a teammate to start."
-            }
-            action={
-              <Button size="sm" leftIcon={SquarePen} onClick={onNew}>
-                New message
-              </Button>
-            }
           />
         ) : (
           <>

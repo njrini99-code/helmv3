@@ -512,8 +512,8 @@
   --ch-on-green-plate: #f4f1e8;
   --ch-on-green-label: #e9e4d6;
   --ch-press-well: #ece8de;
-  --ch-skel-base: #e2dbca;
-  --ch-skel-sheen: #ece6d8;
+  --ch-skel-base: #d8d0bb;
+  --ch-skel-sheen: #ebe5d6;
   --ch-topbar-paper: #f7f2e6;
   /* Radius (row 35): four steps, 8 / 12 / 16 / 20. xs is the floor for keycaps, badges, checkboxes and the nested rule,
      not a step. Capsules are 999px, circles 50%. Inner corner = outer step less the padding between, floored at xs:
@@ -1221,8 +1221,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-raised-bg: linear-gradient(180deg, #262d27 0%, #212722 60%, #1d231e 100%);
   --ch-sheet-bg: #1b201c;
   --ch-scrim: rgb(2 6 4 / 0.58);
-  --ch-skel-base: #252c26;
-  --ch-skel-sheen: #2e362f;
+  --ch-skel-base: #2f382f;
+  --ch-skel-sheen: #3c463d;
 }
 
 /* Phone: warm ivory with the layered surfaces in the supplied design boards.
