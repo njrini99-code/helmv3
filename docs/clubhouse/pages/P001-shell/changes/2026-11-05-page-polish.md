@@ -11,6 +11,9 @@ Data impact:    none
 Held items:     none
 ```
 
-On the desktop bar the Helm key takes the ghost icon button's look, as the bell and Settings beside it: secondary ink, 36px, a 20px mark, the same hover and on state. The spec's ivory idle mark is for the green phone bar and was nearly invisible on parchment. The phone key is unchanged.
+On the desktop bar the Helm key takes the ghost icon button's look, as the bell
+and Settings beside it: secondary ink, 36px, a 20px mark, the same hover and on
+state. The spec's ivory idle mark is for the green phone bar and was nearly
+invisible on parchment. The phone key is unchanged.
 
 `PageHero` takes `tight`, for the pages on the tight head.

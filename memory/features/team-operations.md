@@ -193,7 +193,8 @@ is off in every environment. The migrations are written and not applied.
 
 - Route: `src/app/golf/(dashboard)/dashboard/practice/plan/[planId]/page.tsx`
   renders `src/clubhouse/routes/practice.tsx`. With the flag off, or with no
-  session, it redirects to Calendar. A plan that does not load (gone, unpublished,
+  session, it redirects to Calendar. A plan that does not load (gone,
+unpublished,
   or the tables missing) shows an empty state with a way to Calendar. It never
   shows a 404.
 - Save and publish check the flag. The other plan and drill writes do not.
