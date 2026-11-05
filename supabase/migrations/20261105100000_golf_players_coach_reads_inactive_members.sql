@@ -14,7 +14,7 @@
 -- VERIFY:   policyname = 'golf_players_select_coach_inactive_member';
 
 CREATE OR REPLACE FUNCTION public.user_coaches_inactive_golf_member(
-  check_player_id uuid
+    check_player_id uuid
 )
 RETURNS boolean
 LANGUAGE sql
