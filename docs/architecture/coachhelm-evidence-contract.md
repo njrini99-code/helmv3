@@ -488,10 +488,11 @@ closes that gap for a `compose()` caller that opts in.
 - **Season figures (2026-11-05).** `get_season_scoring`, `compare_seasons` and
   `get_team_rounds` count what Roster counts: a full 18-hole round that counts
   in a score (`isScoreCountable`, so a total-only round too), practice left out
-  unless practice was asked for. `get_season_scoring` and `compare_seasons` use
-  Roster's own reader (`loadSeasonRounds`, `countsForScoring`,
-  `seasonStartDate`). The stats cache's windows run across seasons and are not
-  a season figure.
+  unless practice was asked for. `chat/season-rule.ts` states Roster's rule from
+  the same lib pieces, as code outside `src/clubhouse` may not import
+  `data/season.ts`, and `chat/__tests__/season-reads.test.ts` fails if the two
+  part. The stats cache's windows run across seasons and are not a season
+  figure.
 - **Package 8 addendum checklist item (f), "a concise evidence-backed
   review narrative," remains UNBUILT** (audited 2026-09-23): no caller
   and no persistence path. `round-review.ts`'s `composeRoundReview` has a
