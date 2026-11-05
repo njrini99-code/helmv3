@@ -41,7 +41,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     environment: {
       production: false,
       preview: true,
-      development: true,
+      development: false,
     },
     kill_switch_behavior: null,
     cleanup_plan: "Remove the flag and the old phone flattening blocks once the owner has turned it on in production and the screens have held for a season.",
@@ -58,7 +58,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     environment: {
       production: false,
       preview: true,
-      development: true,
+      development: false,
     },
     kill_switch_behavior: null,
     cleanup_plan: "Remove the flag and inline the scoped rules once the owner has turned it on in production and the nine redesigned pages have shipped.",
@@ -75,7 +75,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     environment: {
       production: false,
       preview: true,
-      development: true,
+      development: false,
     },
     kill_switch_behavior: null,
     cleanup_plan: "Remove once today's phone Stats long scroll is deleted.",
@@ -143,7 +143,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     environment: {
       production: false,
       preview: true,
-      development: true,
+      development: false,
     },
     kill_switch_behavior: null,
     cleanup_plan: "Remove once the coach Deep dive dossier is retired.",
@@ -347,7 +347,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     environment: {
       production: false,
       preview: true,
-      development: true,
+      development: false,
     },
     kill_switch_behavior: null,
     cleanup_plan: "Remove once the coach Deep dive dossier is retired.",
@@ -364,7 +364,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     environment: {
       production: false,
       preview: true,
-      development: true,
+      development: false,
     },
     kill_switch_behavior: null,
     cleanup_plan: "Remove once the coach Deep dive dossier is retired.",
@@ -381,7 +381,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     environment: {
       production: false,
       preview: true,
-      development: true,
+      development: false,
     },
     kill_switch_behavior: null,
     cleanup_plan: "Remove after the flag has been on in production for a season and the Practice tab flag is gone.",
@@ -398,7 +398,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     environment: {
       production: false,
       preview: true,
-      development: true,
+      development: false,
     },
     kill_switch_behavior: null,
     cleanup_plan: "Remove once the Helm key has replaced the sparkle key for every coach.",
@@ -415,7 +415,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     environment: {
       production: false,
       preview: true,
-      development: true,
+      development: false,
     },
     kill_switch_behavior: null,
     cleanup_plan: "Remove once the coach Deep dive dossier is retired.",
@@ -568,7 +568,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     environment: {
       production: false,
       preview: true,
-      development: true,
+      development: false,
     },
     kill_switch_behavior: null,
     cleanup_plan: "Remove once the old CoachBoard is deleted.",
@@ -721,7 +721,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     environment: {
       production: false,
       preview: true,
-      development: true,
+      development: false,
     },
     kill_switch_behavior: null,
     cleanup_plan: "Remove with N-10's library release.",
@@ -738,7 +738,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     environment: {
       production: false,
       preview: true,
-      development: true,
+      development: false,
     },
     kill_switch_behavior: null,
     cleanup_plan: "Once the owner has turned it on in production, delete the old rules and --ch-bubble-mine-bg in the cleanup PR 02-PLAN names, then remove the flag.",
@@ -755,7 +755,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     environment: {
       production: false,
       preview: true,
-      development: true,
+      development: false,
     },
     kill_switch_behavior: null,
     cleanup_plan: "Remove once production has run with it on for a full month with no practice errors. The pages stay; only the gate goes.",

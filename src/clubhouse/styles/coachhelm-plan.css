@@ -1571,3 +1571,10 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 .ch-cpv-pub .avs .ch-avatar + .ch-avatar {
   margin-left: -4px;
 }
+
+/* The pane's close button sits on the title line on a desk: the title starts past it. */
+@media (min-width: 821px) {
+  .ch-cpv-full .fbar > b {
+    padding-left: 32px;
+  }
+}
