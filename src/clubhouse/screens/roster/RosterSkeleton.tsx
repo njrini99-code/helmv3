@@ -1,4 +1,7 @@
+'use client';
+
 import { SkelLine, Skeleton } from '../../ui/States';
+import { useClubhouseRole } from '../../shell/context';
 import '../../styles/roster.css';
 import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 
@@ -8,9 +11,12 @@ import { LargeTitleSkeleton } from '../../ui/LargeTitle';
  * look are drawn only when there are some, so the skeleton leaves them out and they push the grid down when they come.
  */
 export function RosterSkeleton({ crh = false }: { /** `clubhouse_classes_roster_home_v1`, from the server. */ crh?: boolean }) {
+  // The coach's desktop page in the lane is its own shape (Roster.tsx); a player's keeps the face cards.
+  const role = useClubhouseRole();
+  const coachCrh = crh && role !== 'player';
   return (
-    <main className={'ch-rs' + (crh ? ' ch-rsx' : '')} data-canopy="" aria-busy="true" aria-label="Loading roster" data-ch-code="CH-3401" data-ch-crh={crh ? 'on' : undefined}>
-      <div className="ch-rs-skel-desk">
+    <main className={'ch-rs' + (crh ? ' ch-rsx' : '') + (coachCrh ? ' ch-rsd' : '')} data-canopy={coachCrh ? undefined : ''} aria-busy="true" aria-label="Loading roster" data-ch-code="CH-3401" data-ch-crh={crh ? 'on' : undefined}>
+      {coachCrh ? <RosterDeskSkeletonCrh /> : <div className="ch-rs-skel-desk">
         <header className="ch-rs-head" data-canopy-head="tight">
           <div>
             <Skeleton width={180} height={30} radius={15} />
@@ -48,7 +54,7 @@ export function RosterSkeleton({ crh = false }: { /** `clubhouse_classes_roster_
             </div>
           ))}
         </div>
-      </div>
+      </div>}
       {/* The phone page's own classes, so the eyebrow, the title, the sort and each row land where the loaded page puts them. */}
       {crh ? <RosterPhoneSkeletonCrh /> : <div className="ch-rsm-skel ch-rsm-page">
         <div className="ch-rsm-head">
@@ -79,6 +85,66 @@ export function RosterSkeleton({ crh = false }: { /** `clubhouse_classes_roster_
         </ul>
       </div>}
     </main>
+  );
+}
+
+/** The lane's desktop page in waiting: the head, the green team card and three leaders, the toolbar, the table beside the player. */
+function RosterDeskSkeletonCrh() {
+  return (
+    <div className="ch-rs-skel-desk">
+      <header className="ch-rs-head">
+        <div>
+          <Skeleton width={180} height={14} />
+          <Skeleton width={150} height={40} radius={10} />
+          <Skeleton width={340} height={15} />
+        </div>
+        <div className="ch-rs-head__act">
+          <Skeleton width={92} height={36} radius={10} />
+          <Skeleton width={130} height={36} radius={10} />
+        </div>
+      </header>
+      <div className="ch-rs-top" aria-hidden="true">
+        <div className="ch-rs-tcard ch-rs-tcard--skel">
+          <Skeleton width="44%" height={14} />
+          <Skeleton width="30%" height={12} />
+          <Skeleton width="100%" height={10} />
+          <Skeleton width="70%" height={12} />
+        </div>
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="ch-rs-ldr" style={{ width: 'auto', cursor: 'default' }}>
+            <Skeleton width={90} height={13} />
+            <Skeleton width={72} height={30} radius={8} />
+            <Skeleton width={130} height={16} />
+            <Skeleton width={52} height={20} />
+          </div>
+        ))}
+      </div>
+      <div className="ch-rs-bar">
+        <Skeleton width={320} height={36} radius={10} />
+        <Skeleton width={360} height={34} radius={12} />
+      </div>
+      <div className="ch-rs-body has-peek" aria-hidden="true">
+        <div className="ch-rs-list">
+          {Array.from({ length: 7 }, (_, i) => (
+            <div key={i} className="ch-rs-sk-row">
+              <Skeleton width={40} height={40} radius={20} />
+              <span className="ch-rs-sk-row__b">
+                <Skeleton width={130} height={15} />
+                <Skeleton width={110} height={12} />
+              </span>
+              <Skeleton width={84} height={20} />
+              <Skeleton width={120} height={14} />
+            </div>
+          ))}
+        </div>
+        <div className="ch-rs-peek ch-rs-sk-peek">
+          <Skeleton width={84} height={84} radius={42} />
+          <Skeleton width={170} height={20} />
+          <Skeleton width={150} height={26} radius={13} />
+          <Skeleton width="100%" height={72} radius={12} />
+        </div>
+      </div>
+    </div>
   );
 }
 

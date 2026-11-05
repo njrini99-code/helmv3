@@ -99,7 +99,7 @@ function DetailSkeleton() {
         <span className="ch-shs-skel ch-shs-skel--cap" />
       </div>
       {[0, 1].map((i) => (
-        <div key={i} className="ch-shs-card ch-shs-skel-card ch-shs-skel-card--d">
+        <div key={i} className="ch-shs-card ch-shs-skel-card ch-shs-skel-card--d" suppressHydrationWarning>
           <span className="ch-shs-skel ch-shs-skel--t" />
           <span className="ch-shs-skel ch-shs-skel--v" />
           <span className="ch-shs-skel ch-shs-skel--blk" />

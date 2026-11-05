@@ -5485,3 +5485,38 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     content: none;
   }
 }
+
+/* The lane's desktop coach Home in waiting (SkeletonDeskCrh). */
+.ch-h-sk-dcrh {
+  display: none;
+}
+@media (min-width: 821px) {
+  [data-ch-crh='on'] .ch-h-main[aria-busy='true']:has(> .ch-h-sk-dcrh) > :not(.ch-h-sk-dcrh) {
+    display: none;
+  }
+  [data-ch-crh='on'] .ch-h-main[aria-busy='true'] > .ch-h-sk-dcrh {
+    display: grid;
+    gap: 16px;
+    /* The loading main keeps the framed page's top inset; the lane's page starts 14px higher. */
+    margin-top: -14px;
+  }
+  .ch-h-sk-dcrh__hero {
+    min-height: 215px;
+  }
+  .ch-h-sk-dcrh__lines {
+    display: grid;
+    align-content: start;
+    gap: 12px;
+  }
+  .ch-h-sk-dcrh__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 16px;
+  }
+  .ch-h-sk-dcrh__card {
+    display: grid;
+    align-content: start;
+    gap: 16px;
+    padding: 20px;
+  }
+}

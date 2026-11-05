@@ -232,7 +232,7 @@ export function StatsPlayerPhoneShs({
           {!filtered && noRounds && !firstRun && <NineHint code="CH-5324" filter={data.filter} options={data.filterOptions} who={coach ? `${first} has` : 'You have'} />}
           {failed && <FailedCard onRetry={onRetry} seen={data} />}
           {emptyFilter && (
-            <section className="ch-shs-card ch-shs-empty">
+            <section className="ch-shs-card ch-shs-empty" suppressHydrationWarning>
               <FilterEmpty code="CH-5320" onClear={() => onFilter(clearFilters(data.filter))} />
             </section>
           )}
@@ -276,7 +276,7 @@ export function StatsPlayerPhoneShs({
                     ) : data.stats && data.stats.roundsPlayed > 0 ? (
                       PARTS.map((p) => <PartCard key={p.id} data={data} part={p} onOpen={() => go(p.id)} />)
                     ) : (
-                      <section className="ch-shs-card">
+                      <section className="ch-shs-card" suppressHydrationWarning>
                         <EmptyState kind="filtered" compact code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
                       </section>
                     )}
@@ -325,7 +325,7 @@ function FailedCard({ onRetry, seen }: { onRetry: () => void; /** The page's dat
   const [busy, setBusy] = useState(false);
   useEffect(() => setBusy(false), [seen]);
   return (
-    <section className="ch-shs-card" role="alert" data-ch-code="CH-5201">
+    <section className="ch-shs-card" suppressHydrationWarning role="alert" data-ch-code="CH-5201">
       <div className="ch-shs-notice">
         <span className="ch-shs-notice__ic--flag">
           <Icon icon={AlertTriangle} size={16} />
@@ -355,7 +355,7 @@ function FailedCard({ onRetry, seen }: { onRetry: () => void; /** The page's dat
 
 function FirstRunCard() {
   return (
-    <section className="ch-shs-card ch-shs-empty">
+    <section className="ch-shs-card ch-shs-empty" suppressHydrationWarning>
       <span className="ch-shs-empty__ic">
         <Icon icon={Flag} size={22} />
       </span>
@@ -878,7 +878,7 @@ function GameAreaDetail({ id, data, reads, onRetry }: { id: 'scoring' | 'tee' | 
       <>
         {hero}
         {before}
-        <section className="ch-shs-card">
+        <section className="ch-shs-card" suppressHydrationWarning>
           <EmptyState kind="filtered" compact code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
         </section>
         {after}

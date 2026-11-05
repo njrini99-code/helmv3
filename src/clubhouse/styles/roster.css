@@ -3702,3 +3702,37 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   --ch-roster-x4: 0 0 0 2px var(--ch-card-bg);
   --ch-roster-x5: inset 0 0 0 1px #000;
 }
+
+/* The season bar and its legend, one tone a year (the same tokens as the year chips). */
+[data-ch-crh='on'] :is(.ch-rs-mix, .ch-rs-mix__lg) [data-year='sr'] {
+  --ch-rs-y: var(--ch-yr-sr);
+}
+[data-ch-crh='on'] :is(.ch-rs-mix, .ch-rs-mix__lg) [data-year='jr'] {
+  --ch-rs-y: var(--ch-yr-jr);
+}
+[data-ch-crh='on'] :is(.ch-rs-mix, .ch-rs-mix__lg) [data-year='so'] {
+  --ch-rs-y: var(--ch-yr-so);
+}
+[data-ch-crh='on'] :is(.ch-rs-mix, .ch-rs-mix__lg) [data-year='fr'] {
+  --ch-rs-y: var(--ch-yr-fr);
+}
+
+/* The lane's desktop table and player in waiting (RosterSkeleton). */
+.ch-rs-sk-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 84px 120px;
+  align-items: center;
+  gap: 12px;
+  height: 57px;
+  padding-inline: 12px;
+}
+.ch-rs-sk-row__b {
+  display: grid;
+  gap: 6px;
+}
+.ch-rs-sk-peek {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px 20px;
+}

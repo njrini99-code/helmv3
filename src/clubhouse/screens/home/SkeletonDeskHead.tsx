@@ -105,3 +105,51 @@ export function SkeletonDeskForm() {
     </>
   );
 }
+
+/** One card in waiting on the lane's coach Home, at the height its loaded card takes. */
+function CrhCard({ minHeight, rows }: { minHeight: number; rows: Array<number | string> }) {
+  return (
+    <div className="ch-surface ch-surface--card ch-h-sk-dcrh__card" style={{ minHeight }}>
+      <Skeleton width={110} height={15} />
+      {rows.map((w, i) => (
+        <Skeleton key={i} width={w} height={13} />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * The lane's desktop coach Home in waiting (CoachHome, crh): the green card, then the week and team scoring, the team's
+ * game, the latest round and the leaderboard. Home's CSS shows it and hides the page's other shape. Nothing for a player,
+ * whose desktop Home stays the framed head.
+ */
+export function SkeletonDeskCrh() {
+  const player = useClubhouseRole() === 'player';
+  if (player) return null;
+  return (
+    <div className="ch-h-sk-dcrh" aria-hidden="true">
+      <div className="ch-h-herocard ch-h-sk-dcrh__hero">
+        <div className="ch-h-sk-dcrh__lines">
+          <Skeleton width={150} height={13} />
+          <Skeleton width={340} height={34} radius={10} />
+          <Skeleton width="88%" height={13} />
+          <Skeleton width="62%" height={13} />
+        </div>
+        <div className="ch-h-herocard__next ch-h-sk-dcrh__lines">
+          <Skeleton width={90} height={13} />
+          <Skeleton width="72%" height={20} />
+          <Skeleton width="56%" height={13} />
+        </div>
+      </div>
+      <div className="ch-h-sk-dcrh__grid">
+        <CrhCard minHeight={334} rows={['82%', '64%', '76%', '58%', '70%']} />
+        <CrhCard minHeight={334} rows={[120, '100%', '74%']} />
+      </div>
+      <CrhCard minHeight={297} rows={['100%', '86%', '92%']} />
+      <div className="ch-h-sk-dcrh__grid">
+        <CrhCard minHeight={314} rows={['74%', '100%', '66%']} />
+        <CrhCard minHeight={314} rows={['88%', '80%', '84%', '76%', '82%']} />
+      </div>
+    </div>
+  );
+}

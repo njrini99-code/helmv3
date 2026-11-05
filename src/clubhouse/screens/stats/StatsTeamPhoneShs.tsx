@@ -157,11 +157,11 @@ export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
             {filtered && data.roundCount > 0 && data.roundsEffective < 3 && <EarlyRead code="CH-4314" count={data.roundCount} whole={data.roundsEffective} />}
             {noRounds && !filtered && <NineHint code="CH-4319" filter={data.filter} options={data.filterOptions} who="This team has" />}
             {noRounds && filtered ? (
-              <section className="ch-shs-card ch-shs-empty">
+              <section className="ch-shs-card ch-shs-empty" suppressHydrationWarning>
                 <TeamFilterEmpty />
               </section>
             ) : firstRun ? (
-              <section className="ch-shs-card ch-shs-empty">
+              <section className="ch-shs-card ch-shs-empty" suppressHydrationWarning>
                 <span className="ch-shs-empty__ic">
                   <Icon icon={Flag} size={22} />
                 </span>
@@ -169,7 +169,7 @@ export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
                 <p>When players finish rounds with shot tracking, this page fills in: the team scoring average, strokes gained by leg, and who gains and loses.</p>
               </section>
             ) : noRounds ? (
-              <section className="ch-shs-card">
+              <section className="ch-shs-card" suppressHydrationWarning>
                 <EmptyState
                   kind={data.window === 'season' ? 'first-run' : 'filtered'}
                   code={data.window === 'qualifiers' ? 'CH-4302' : 'CH-4301'}
@@ -241,7 +241,7 @@ function TeamFailedCard({ seen }: { /** The page's data: a new copy means the re
   const [busy, setBusy] = useState(false);
   useEffect(() => setBusy(false), [seen]);
   return (
-    <section className="ch-shs-card ch-shs-empty is-danger" role="alert" data-ch-code="CH-4201">
+    <section className="ch-shs-card ch-shs-empty is-danger" suppressHydrationWarning role="alert" data-ch-code="CH-4201">
       <span className="ch-shs-empty__ic">
         <Icon icon={AlertTriangle} size={22} />
       </span>

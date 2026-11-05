@@ -92,7 +92,7 @@ export function SummaryCard({
   };
   return (
     <section
-      className={'ch-shs-card ch-shs-sum' + (feature ? ' ch-shs-feature' : '')}
+      className={'ch-shs-card ch-shs-sum' + (feature ? ' ch-shs-feature' : '')} suppressHydrationWarning
       data-go={go}
       data-ch="stats-card"
       data-ch-press-scale=".97"
@@ -134,7 +134,7 @@ export function SummaryCard({
 /** A plain card: the same box, with no chevron and no tap (`acard`, the style today's re-homed blocks take too). */
 export function ShsCard({ title, meta, flush = false, anchor, children }: { title: string; meta?: ReactNode; flush?: boolean; /** A place a push can land on. */ anchor?: string; children: ReactNode }) {
   return (
-    <section className={'ch-shs-card' + (flush ? ' is-flushb' : '')} aria-label={title} data-ch-anchor={anchor}>
+    <section className={'ch-shs-card' + (flush ? ' is-flushb' : '')} suppressHydrationWarning aria-label={title} data-ch-anchor={anchor}>
       <div className="ch-shs-ah">
         <h3>{title}</h3>
         {meta != null && <span className="ch-shs-ah__meta">{meta}</span>}

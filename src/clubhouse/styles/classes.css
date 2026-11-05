@@ -3140,9 +3140,55 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
 [data-ch-crh='on'] .ch-cl-sk-phone {
   display: none;
 }
-[data-ch-crh='on'] .ch-cl-sk-crh {
-  display: grid;
-  gap: 12px;
+@media (max-width: 820px) {
+  [data-ch-crh='on'] .ch-cl-sk-crh {
+    display: grid;
+    gap: 12px;
+  }
+}
+.ch-cl-sk-dcrh {
+  display: none;
+}
+@media (min-width: 821px) {
+  [data-ch-crh='on'] .ch-cl-sk-desk {
+    display: none;
+  }
+  [data-ch-crh='on'] .ch-cl-sk-dcrh {
+    display: grid;
+    gap: 20px;
+    /* The loading main keeps the framed page's top inset; the lane's page starts 12px higher. */
+    margin-top: -12px;
+  }
+  .ch-cl-sk-dcrh__h {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    min-height: 68px;
+  }
+  .ch-cl-sk-dcrh__stack {
+    display: grid;
+    gap: 10px;
+  }
+  .ch-cl-sk-dcrh__acts {
+    display: flex;
+    gap: 8px;
+  }
+  .ch-cl-sk-dcrh__term {
+    min-height: 224px;
+    border-radius: var(--ch-radius-lg);
+    background: var(--ch-frame);
+  }
+  .ch-cl-sk-dcrh__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 248px;
+    gap: 16px;
+  }
+  .ch-cl-sk-dcrh__deck {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+  }
 }
 [data-ch-crh='on'] .ch-cl-sk-crh__term {
   display: grid;
