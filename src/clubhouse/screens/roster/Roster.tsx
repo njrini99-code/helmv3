@@ -1149,9 +1149,9 @@ function FaceFigures({
   return (
     <span className="ch-rs-figs">
       <span className="ch-rs-fig">
-        <span className="ch-rs-fig__k">Scoring</span>
+        <span className="ch-rs-fig__k">Season avg</span>
         <b className="ch-num">{formatFixed(p.avg)}</b>
-        <span className="ch-rs-fig__m">{standing && standing.of > 1 ? `${standing.tied ? `T${standing.place}` : ord(standing.place)} of ${standing.of}` : need ?? 'Avg'}</span>
+        <span className="ch-rs-fig__m">{standing && standing.of > 1 ? `${standing.tied ? `T${standing.place}` : ord(standing.place)} of ${standing.of}` : need ?? plural(p.rounds, 'round')}</span>
         {p.avg != null && standing && standing.of > 1 && (
           <span className="ch-rs-strip" aria-hidden="true">
             {avgs.map((v, k) => (

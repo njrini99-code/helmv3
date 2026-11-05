@@ -289,6 +289,7 @@ function Chip({ e, tab, canDrag, onPick, lifted, onAltMove }: { e: ChCalEvent; t
       tabIndex={tab ? 0 : -1}
       aria-roledescription={canDrag ? 'draggable event' : undefined}
       aria-label={`${roundLabel(e, e.title).name}${roundLabel(e, e.title).spoken}${e.allDay || e.start == null ? '' : `, ${fmtHour(e.start, true)}`}${e.cancelled ? ', cancelled' : ''}${mk?.aria ?? ''}`}
+      title={roundLabel(e, e.title).name}
       className={'ch-mo__ev' + (isMajor(e.type) ? ` is-major is-${e.type}` : '') + (canDrag ? ' is-draggable' : '') + (lifted ? ' is-held' : '') + (e.cancelled ? ' is-cancelled' : '')}
       onKeyDown={(ev) => {
         if (canDrag && ev.altKey && (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight')) {
@@ -325,6 +326,7 @@ function Ribbon({ r, tab, canDrag, onPick, onGrab, dates, lifted }: { r: ChLaneB
       tabIndex={tab ? 0 : -1}
       aria-roledescription={canDrag ? 'draggable event' : undefined}
       aria-label={`${roundLabel(e, e.title).name}${roundLabel(e, e.title).spoken}, ${dowOf(span.from)} ${dayNum(span.from)} to ${dowOf(span.to)} ${dayNum(span.to)}`}
+      title={roundLabel(e, e.title).name}
       className={`ch-mo__ribbon ch-ev--${e.type}${isMajor(e.type) ? ' is-major' : ''}${r.clipStart ? ' is-clip-start' : ''}${r.clipEnd ? ' is-clip-end' : ''}${canDrag ? ' is-draggable' : ''}${lifted ? ' is-held' : ''}`}
       style={{ ['--ch-mo-span' as string]: n, ['--ch-mo-lane' as string]: r.row } as React.CSSProperties}
       onPointerDownCapture={(ev) => {
