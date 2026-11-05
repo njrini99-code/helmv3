@@ -894,6 +894,7 @@ them would bury everything above.
 | `docs/clubhouse/CHANGELOG.md` | current | - | - | yes | - |
 | `docs/clubhouse/CHECKLIST_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/CLICKABLES.md` | current | - | - | - | - |
+| `docs/clubhouse/GO-LIVE-RUNBOOK.md` | current | - | - | - | - |
 | `docs/clubhouse/HANDOFF.md` | current | - | - | - | - |
 | `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
 | `docs/clubhouse/PAGE_PERFORMANCE.md` | current | - | - | - | - |
@@ -1012,6 +1013,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-10-31-fairway-bubbles-and-send.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-04-empty-avatar-skeleton.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-04-redesign-train.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-05-mockup-motion-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/auth-onboarding-ground-truth.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/intelligence.md` | current | - | - | - | - |

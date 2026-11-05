@@ -3167,7 +3167,7 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
   }
   .ch-cl-sk-dcrh__stack {
     display: grid;
-    gap: 10px;
+    gap: 8px;
   }
   .ch-cl-sk-dcrh__acts {
     display: flex;
