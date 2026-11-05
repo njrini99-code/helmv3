@@ -3481,9 +3481,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 @media (min-width: 821px) {
   [data-ch-crh='on'].ch-rsd {
     gap: 16px;
-    min-height: 100%;
     padding: 24px 32px 40px;
-    background: var(--ch-grouped-bg);
   }
   [data-ch-crh='on'].ch-rsd .ch-rs-head h1 {
     margin: 4px 0;
