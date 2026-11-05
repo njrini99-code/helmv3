@@ -1,6 +1,8 @@
 import 'server-only';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/types/database';
 import { sendGolfMessage } from '@/app/actions/messages';
 import { createGolfEvent } from '@/app/golf/actions/calendar-events';
 import { createGolfTravelItinerary } from '@/app/golf/actions/travel';
@@ -14,8 +16,26 @@ import { createRecruit } from '@/app/golf/actions/recruiting';
 import { lockTournamentLineup, setTournamentEntries } from '@/app/golf/actions/tournaments';
 import type { CoachChatContext } from './context';
 import { requireRosterPlayer } from './context';
-import { ActionPlanError } from './action-planners';
+import { askTables } from './ask-db';
+import { APPROVED_RUN_TTL_MS } from './action-runs';
+import { ActionPlanError, keyOf } from './action-planners';
 import type { ActionProposal, ActionReceipt, ProposalFact } from './action-types';
+
+type Sb = SupabaseClient<Database>;
+
+/** One attempt at a flow's write. `requestId` is the same for every retry of the same card, so a retry finds the row instead of writing a second. */
+export interface FlowAttempt {
+  sb: Sb;
+  requestId: string;
+}
+
+/** What a flow's receipt says once its row exists. */
+interface FlowDone {
+  summary: string;
+  kind: string;
+  label?: string;
+  href?: string;
+}
 
 /**
  * Ask v2's create flows (TASK_FIELDS §5). One tool per flow, each on the same gate as today's four writes: `plan` runs before Confirm and writes nothing;
@@ -26,15 +46,46 @@ export interface FlowDef<I> {
   description: string;
   input: z.ZodType<I>;
   plan: (ctx: CoachChatContext, input: I) => { visual?: ActionProposal['visual']; publish?: ActionProposal['publish']; facts: ProposalFact[]; action: string; summary: string; notifications: string[]; affects?: ActionProposal['affects']; key: Array<string | number> };
-  run: (ctx: CoachChatContext, input: I) => Promise<{ ok: boolean; error?: string; summary: string; href?: string; kind: string; label?: string; notifications?: ActionReceipt['notifications'] }>;
+  run: (ctx: CoachChatContext, input: I, attempt: FlowAttempt) => Promise<{ ok: boolean; error?: string; summary: string; href?: string; kind: string; label?: string; notifications?: ActionReceipt['notifications'] }>;
+  /** Writes the moment the coach presses, with no hold and no Undo (02-PLAN §14.4, 08-ACCEPTANCE: Lock is its own card with no Undo). */
+  immediate?: boolean;
+  /** Reads what the card has to show before Confirm (a round's note). Nothing the model said stands in for it. */
+  prepare?: (sb: Sb, ctx: CoachChatContext, input: I) => Promise<I>;
+  /** The table whose row id is `requestId`: an action that failed after that row exists is recorded as done, never offered again. */
+  landed?: { table: 'golf_events' | 'golf_coach_blocked_time' | 'golf_recruits'; done: (input: I) => FlowDone };
+}
+
+/** The same request id for every retry of one card: the coach's own ledger key, hashed. Two coaches' same-looking events never collide. */
+export function flowRequestId(coachId: string, key: string): string {
+  return stableUuid(`${coachId}:${key}`);
+}
+
+/** One flow's write on one input, as the gate, the release, Open and the sweep all run it. Nothing starts until `run` is called. */
+export function flowCommit<I>(f: FlowDef<I>, sb: Sb, ctx: CoachChatContext, input: I): { run: () => Promise<ActionReceipt>; readBack?: () => Promise<ActionReceipt | null> } {
+  const requestId = () => flowRequestId(ctx.coach_id, keyOf(f.plan(ctx, input).key));
+  const completed = (r: FlowDone & { notifications?: ActionReceipt['notifications'] }): ActionReceipt => ({ status: 'completed', action: f.name, summary: r.summary, created: [{ kind: r.kind, count: 1, ...(r.href ? { href: r.href } : {}), ...(r.label ? { label: r.label } : {}) }], notifications: r.notifications ?? [], partial_failures: [], retryable: false, at: new Date().toISOString() });
+  const landed = f.landed;
+  return {
+    run: async () => {
+      const r = await f.run(ctx, input, { sb, requestId: requestId() });
+      if (!r.ok) return { status: 'failed', action: f.name, summary: r.error ?? 'That didn’t go through. Nothing was saved.', created: [], notifications: [], partial_failures: [], error: r.error, retryable: true, at: new Date().toISOString() };
+      return completed(r);
+    },
+    ...(landed
+      ? {
+          readBack: async () => {
+            const { data, error } = await askTables(sb).from(landed.table).select('id').eq('id', requestId()).maybeSingle();
+            return !error && data ? completed(landed.done(input)) : null;
+          },
+        }
+      : {}),
+  };
 }
 
 const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const TIME = z.string().regex(/^\d{2}:\d{2}$/);
 const fact = (label: string, value: string | number | null | undefined, optional = true): ProposalFact => (value == null || value === '' ? { label, value: 'Not set', ...(optional ? {} : { missing: true }) } : { label, value: String(value) });
 const names = (ctx: CoachChatContext, ids: readonly string[]) => ids.map((id) => requireRosterPlayer(ctx, id).name);
-const uuid = () => globalThis.crypto.randomUUID();
-
 /** A team zone offset for a local wall time, as the calendar's own action wants it. */
 function offsetOn(date: string, time: string, zone: string): number {
   const at = new Date(`${date}T${time}:00Z`);
@@ -55,8 +106,10 @@ const eventInput = z.object({
   invite_player_ids: z.array(z.string().uuid()).default([]),
   requires_rsvp: z.boolean().default(false),
 });
+const eventDone = (i: z.infer<typeof eventInput>): FlowDone => ({ summary: `${i.title} is on the calendar.`, kind: 'event', label: i.title, href: '/golf/dashboard/calendar' });
 const eventFlow: FlowDef<z.infer<typeof eventInput>> = {
   name: 'create_event',
+  landed: { table: 'golf_events', done: eventDone },
   description: 'Add one event to the team calendar. Ask first for the type if two fit, for start and end if timed and not given, and who is invited to a meeting. REQUIRES the coach to confirm.',
   input: eventInput,
   plan: (ctx, i) => {
@@ -72,9 +125,9 @@ const eventFlow: FlowDef<z.infer<typeof eventInput>> = {
       key: ['event', i.title, i.date, i.start ?? '', i.invite_player_ids.join(',')],
     };
   },
-  run: async (ctx, i) => {
-    const res = await createGolfEvent({ requestId: uuid(), title: i.title, eventType: i.event_type, startDate: i.date, startTime: i.all_day ? undefined : i.start, endTime: i.all_day ? undefined : i.end, allDay: i.all_day, timezoneOffset: -offsetOn(i.date, i.start ?? '12:00', ctx.timezone), location: i.location, description: i.notes, requiresRsvp: i.requires_rsvp, attendeeIds: i.invite_player_ids });
-    return { ok: res.success, error: res.success ? undefined : res.error, summary: `${i.title} is on the calendar.`, kind: 'event', label: i.title, href: '/golf/dashboard/calendar' };
+  run: async (ctx, i, { requestId }) => {
+    const res = await createGolfEvent({ requestId, title: i.title, eventType: i.event_type, startDate: i.date, startTime: i.all_day ? undefined : i.start, endTime: i.all_day ? undefined : i.end, allDay: i.all_day, timezoneOffset: -offsetOn(i.date, i.start ?? '12:00', ctx.timezone), location: i.location, description: i.notes, requiresRsvp: i.requires_rsvp, attendeeIds: i.invite_player_ids });
+    return { ok: res.success, error: res.success ? undefined : res.error, ...eventDone(i) };
   },
 };
 
@@ -138,18 +191,50 @@ const goalFlow: FlowDef<z.infer<typeof goalInput>> = {
   },
 };
 
-const noteInput = z.object({ round_id: z.string().uuid(), player_id: z.string().uuid(), note: z.string().min(1).max(2000), existing: z.string().max(2000).optional().describe('The note already on the round, from get_round_detail.') });
-const noteFlow: FlowDef<z.infer<typeof noteInput>> = {
+const NOTE_MAX = 2000;
+const noteInput = z.object({ round_id: z.string().uuid(), player_id: z.string().uuid(), note: z.string().min(1).max(NOTE_MAX) });
+/** `existing` is what the card shows, read from the round before Confirm; the write reads it again. The model never supplies it. */
+type NoteInput = z.infer<typeof noteInput> & { existing?: string };
+
+/** The note already on the round. `saveRoundCoachNote` replaces the column, so nothing appends without this. */
+async function roundNote(sb: Sb, roundId: string): Promise<string | null> {
+  const { data, error } = await sb.from('golf_round_reviews').select('coach_notes').eq('round_id', roundId).maybeSingle();
+  if (error) return null;
+  return (data?.coach_notes ?? '').trim();
+}
+
+/** Below what was there, whole. A retry that finds its own words already at the end writes nothing; too long is refused, never cut. */
+export function appendedNote(current: string, note: string): { kind: 'write'; text: string } | { kind: 'already' } | { kind: 'too_long' } {
+  const words = note.trim();
+  if (current && (current === words || current.endsWith(`\n\n${words}`))) return { kind: 'already' };
+  const text = current ? `${current}\n\n${words}` : words;
+  return text.length > NOTE_MAX ? { kind: 'too_long' } : { kind: 'write', text };
+}
+
+const NOTE_TOO_LONG = `With the earlier note this passes ${NOTE_MAX} characters. Nothing was changed; shorten the new note.`;
+const noteFlow: FlowDef<NoteInput> = {
   name: 'add_round_note',
-  description: 'Add a coach note to a round, under any earlier note. The player always sees it. REQUIRES the coach to confirm.',
+  description: 'Add a coach note to a round, under any earlier note, which stays. The player always sees it. REQUIRES the coach to confirm.',
   input: noteInput,
+  prepare: async (sb, _ctx, i) => {
+    const existing = await roundNote(sb, i.round_id);
+    if (existing === null) throw new ActionPlanError('Could not read the note already on this round.');
+    return { ...i, existing };
+  },
   plan: (ctx, i) => {
     const p = requireRosterPlayer(ctx, i.player_id);
+    if (i.existing && appendedNote(i.existing, i.note).kind === 'too_long') throw new ActionPlanError(NOTE_TOO_LONG);
     return { action: 'Add note', summary: `A note on ${p.name}’s round`, facts: [...(i.existing ? [fact('Earlier note', i.existing)] : []), fact('Adding', i.note, false)], notifications: [`${p.name} will see this note, once Undo closes.`], key: ['note', i.round_id, i.note] };
   },
-  run: async (_ctx, i) => {
-    const res = await saveRoundCoachNote(i.round_id, [i.existing, i.note].filter(Boolean).join('\n\n').slice(0, 2000));
-    return { ok: res.success, error: res.success ? undefined : res.error, summary: 'The note is on the round.', kind: 'note' };
+  run: async (_ctx, i, { sb }) => {
+    const done = { summary: 'The note is on the round.', kind: 'note' };
+    const current = await roundNote(sb, i.round_id);
+    if (current === null) return { ok: false, error: 'Could not read the note already on this round. Nothing was changed.', ...done };
+    const next = appendedNote(current, i.note);
+    if (next.kind === 'already') return { ok: true, ...done };
+    if (next.kind === 'too_long') return { ok: false, error: NOTE_TOO_LONG, ...done };
+    const res = await saveRoundCoachNote(i.round_id, next.text);
+    return { ok: res.success, error: res.success ? undefined : res.error, ...done };
   },
 };
 
@@ -160,7 +245,7 @@ export const lineupFlow: FlowDef<z.infer<typeof lineupInput>> = {
   input: lineupInput,
   plan: (ctx, i) => {
     const rows = i.entries.map((e) => `${e.slot ?? '—'} ${requireRosterPlayer(ctx, e.player_id).name} (${e.role})`);
-    return { action: 'Set lineup', summary: 'Tournament lineup', facts: [fact('Lineup', rows.join(', '), false)], notifications: ['Nobody is told until the lineup is locked.'], key: ['lineup', i.tournament_id, i.version, rows.join(',')] };
+    return { action: 'Set lineup', summary: 'Tournament lineup', facts: [fact('Lineup', rows.join(', '), false)], notifications: ['Nobody is told.'], key: ['lineup', i.tournament_id, i.version, rows.join(',')] };
   },
   run: async (_ctx, i) => {
     const res = (await setTournamentEntries(i.tournament_id, i.entries.map((e) => ({ playerId: e.player_id, role: e.role, slot: e.slot, reasoning: e.reasoning })), i.version)) as { ok?: boolean; success?: boolean; error?: string };
@@ -168,12 +253,24 @@ export const lineupFlow: FlowDef<z.infer<typeof lineupInput>> = {
   },
 };
 const lockInput = z.object({ tournament_id: z.string().uuid() });
+
+/** The coach's own `set_lineup` for this tournament still in its hold or running. Locking now would lock the old entries, and the new ones would then land on a locked lineup. */
+async function lineupStillLanding(sb: Sb, ctx: CoachChatContext, tournamentId: string): Promise<boolean | null> {
+  const fresh = new Date(Date.now() - APPROVED_RUN_TTL_MS).toISOString();
+  const { data, error } = await askTables(sb).from('golf_coachhelm_action_runs').select('id').eq('coach_id', ctx.coach_id).eq('tool_name', 'set_lineup').eq('proposed_input->>tournament_id', tournamentId).or(`status.eq.held,and(status.eq.approved,decided_at.gt.${fresh})`).limit(1);
+  if (error) return null;
+  return (data ?? []).length > 0;
+}
+
 export const lockFlow: FlowDef<z.infer<typeof lockInput>> = {
   name: 'lock_lineup',
-  description: 'Lock a lineup that is set. This cannot be undone once the hold passes. REQUIRES the coach to confirm.',
+  description: 'Lock a lineup that is set. It locks the moment the coach presses and cannot be undone. REQUIRES the coach to confirm.',
   input: lockInput,
-  plan: (_ctx, i) => ({ action: 'Lock the lineup', summary: 'This can’t be undone once it locks.', facts: [fact('Tournament', 'As set', false)], notifications: ['Substitutions only work if the event allows them.'], key: ['lock', i.tournament_id] }),
-  run: async (_ctx, i) => {
+  immediate: true,
+  plan: (_ctx, i) => ({ action: 'Lock the lineup', summary: 'This locks at once and can’t be undone.', facts: [fact('Tournament', 'As set', false)], notifications: ['Substitutions only work if the event allows them.'], key: ['lock', i.tournament_id] }),
+  run: async (ctx, i, { sb }) => {
+    const landing = await lineupStillLanding(sb, ctx, i.tournament_id);
+    if (landing !== false) return { ok: false, error: landing === null ? 'Could not check the lineup. It isn’t locked; try again.' : 'The lineup is still going through. It isn’t locked; lock it once it lands.', summary: 'Lineup locked.', kind: 'lineup' };
     const res = (await lockTournamentLineup(i.tournament_id)) as { ok?: boolean; success?: boolean; error?: string };
     return { ok: !!(res.ok ?? res.success), error: res.error, summary: 'Lineup locked.', kind: 'lineup' };
   },
@@ -181,8 +278,10 @@ export const lockFlow: FlowDef<z.infer<typeof lockInput>> = {
 
 /** The quiet flows: nobody is told. */
 const blockInput = z.object({ title: z.string().min(1).max(200), date: DATE, end_date: DATE.optional(), start: TIME.optional(), end: TIME.optional() });
+const blockDone = (): FlowDone => ({ summary: 'That time is blocked.', kind: 'blocked_time', href: '/golf/dashboard/calendar' });
 const blockFlow: FlowDef<z.infer<typeof blockInput>> = {
   name: 'add_blocked_time',
+  landed: { table: 'golf_coach_blocked_time', done: blockDone },
   description: 'Block off the coach’s own time. Players never see it. REQUIRES the coach to confirm.',
   input: blockInput,
   plan: (_c, i) => {
@@ -190,9 +289,9 @@ const blockFlow: FlowDef<z.infer<typeof blockInput>> = {
     if (i.start && i.end && i.end <= i.start) throw new ActionPlanError('The end has to be after the start.');
     return { action: 'Block time', summary: i.title, facts: [fact('When', [i.date, i.start && i.end ? `${i.start} to ${i.end}` : 'all day'].join(', '), false)], notifications: ['Nobody is told. Only you see it.'], key: ['block', i.title, i.date, i.start ?? ''] };
   },
-  run: async (_c, i) => {
-    const res = (await addCoachBlockedTime({ requestId: uuid(), title: i.title, startDate: i.date, endDate: i.end_date ?? i.date, startTime: i.start, endTime: i.end, allDay: !i.start })) as { success: boolean; error?: string };
-    return { ok: res.success, error: res.error, summary: 'That time is blocked.', kind: 'blocked_time', href: '/golf/dashboard/calendar' };
+  run: async (_c, i, { requestId }) => {
+    const res = (await addCoachBlockedTime({ requestId, title: i.title, startDate: i.date, endDate: i.end_date ?? i.date, startTime: i.start, endTime: i.end, allDay: !i.start })) as { success: boolean; error?: string };
+    return { ok: res.success, error: res.error, ...blockDone() };
   },
 };
 const breakInput = z.object({ first_day: DATE, last_day: DATE, label: z.string().max(60) });
@@ -236,14 +335,16 @@ const availFlow: FlowDef<z.infer<typeof availInput>> = {
   },
 };
 const recruitInput = z.object({ first_name: z.string().min(1).max(120), last_name: z.string().max(120).optional(), grad_year: z.number().int().min(2020).max(2040).optional(), email: z.string().email().max(254).optional(), phone: z.string().max(40).optional(), hometown: z.string().max(120).optional(), state: z.string().length(2).optional(), notes: z.string().max(5000).optional(), status: z.enum(['recruiting', 'watched', 'offered', 'committed']).default('recruiting') });
+const recruitDone = (): FlowDone => ({ summary: 'The recruit is added.', kind: 'recruit', href: '/golf/dashboard/recruiting' });
 const recruitFlow: FlowDef<z.infer<typeof recruitInput>> = {
   name: 'create_recruit',
+  landed: { table: 'golf_recruits', done: recruitDone },
   description: 'Add a recruit. Ask for a grad year if a grade was given. Coach only. REQUIRES the coach to confirm.',
   input: recruitInput,
   plan: (_c, i) => ({ action: 'Add recruit', summary: [i.first_name, i.last_name].filter(Boolean).join(' '), facts: [fact('Grad year', i.grad_year), fact('Status', i.status, false), fact('Hometown', [i.hometown, i.state].filter(Boolean).join(', '))], notifications: ['Nobody is told. Only coaches see it.'], key: ['recruit', i.first_name, i.last_name ?? '', i.grad_year ?? ''] }),
-  run: async (_c, i) => {
-    const res = (await createRecruit({ first_name: i.first_name, last_name: i.last_name, hs_class: i.grad_year, email: i.email, phone: i.phone, hometown: i.hometown, state: i.state, notes: i.notes, status: i.status }, { requestId: uuid() })) as { success?: boolean; ok?: boolean; error?: string };
-    return { ok: !!(res.success ?? res.ok), error: res.error, summary: 'The recruit is added.', kind: 'recruit', href: '/golf/dashboard/recruiting' };
+  run: async (_c, i, { requestId }) => {
+    const res = (await createRecruit({ first_name: i.first_name, last_name: i.last_name, hs_class: i.grad_year, email: i.email, phone: i.phone, hometown: i.hometown, state: i.state, notes: i.notes, status: i.status }, { requestId })) as { success?: boolean; ok?: boolean; error?: string };
+    return { ok: !!(res.success ?? res.ok), error: res.error, ...recruitDone() };
   },
 };
 
@@ -274,7 +375,12 @@ const messageFlow: FlowDef<z.infer<typeof messageInput>> = {
 };
 
 function stableMessageId(conversationId: string, content: string): string {
-  const hex = createHash('sha256').update(`${conversationId}:${content}`).digest('hex');
+  return stableUuid(`${conversationId}:${content}`);
+}
+
+/** A v4-shaped id from a seed: the same seed, the same id. */
+function stableUuid(seed: string): string {
+  const hex = createHash('sha256').update(seed).digest('hex');
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
 }
 

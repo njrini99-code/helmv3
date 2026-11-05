@@ -286,6 +286,8 @@ export interface ScopedNumber {
   player_id: string | null;
   /** The field name the number was stored under, or null (parsed from prose). */
   metric_key: string | null;
+  /** A team-level figure (`team_scope: true` on the payload): beside a name it needs a team cue, like a team `Measurement`. */
+  team?: boolean;
 }
 
 /** A roster member the audit can recognise by name in the model's text. */
@@ -1113,7 +1115,7 @@ export function auditNumericClaims(
   for (const n of extraSupported) {
     if (typeof n === 'number') add(n, UNSCOPED);
     else if (n && typeof n.value === 'number') {
-      add(n.value, { player: n.player_id ?? null, team: false, ...familyOf(n.metric_key) });
+      add(n.value, { player: n.player_id ?? null, team: n.team === true, ...familyOf(n.metric_key) });
     }
   }
   for (const s of series) {
@@ -1239,27 +1241,36 @@ export function collectNumbers(value: unknown, depth = 0): number[] {
  * or null for a number parsed out of a tool's own prose. Unrecognised keys
  * simply bind to no metric, so this can only ever narrow what a detail number
  * supports, never widen it.
+ *
+ * Two more markers a payload can carry (Ask v2's shot and engine reads, whose
+ * figures live in `detail`): `team_scope: true` makes everything beneath it a
+ * team figure, and `metric_scope: '<key>'` names the metric for numbers whose
+ * own field name says nothing (`rate`, `mean`). Without them a team read's
+ * numbers were anchored to nobody, and so supported a claim about anyone.
  */
 export function collectScopedNumbers(
   value: unknown,
   playerId: string | null = null,
   key: string | null = null,
   depth = 0,
+  inherited: { team?: boolean; metric?: string } = {},
 ): ScopedNumber[] {
   if (depth > 6 || value === null || value === undefined) return [];
+  const team = inherited.team && playerId === null ? { team: true } : {};
   if (typeof value === 'number') {
-    return Number.isFinite(value) ? [{ value, player_id: playerId, metric_key: key }] : [];
+    return Number.isFinite(value) ? [{ value, player_id: playerId, metric_key: inherited.metric ?? key, ...team }] : [];
   }
   if (typeof value === 'string') {
-    return numbersInText(value).map((n) => ({ value: n, player_id: playerId, metric_key: null }));
+    return numbersInText(value).map((n) => ({ value: n, player_id: playerId, metric_key: null, ...team }));
   }
-  if (Array.isArray(value)) return value.flatMap((v) => collectScopedNumbers(v, playerId, key, depth + 1));
+  if (Array.isArray(value)) return value.flatMap((v) => collectScopedNumbers(v, playerId, key, depth + 1, inherited));
   if (typeof value === 'object') {
     const obj = value as Record<string, unknown>;
     const nested = obj.player && typeof obj.player === 'object' ? (obj.player as Record<string, unknown>).player_id : undefined;
     const own = typeof obj.player_id === 'string' ? obj.player_id : typeof nested === 'string' ? nested : null;
     const scope = own ?? playerId;
-    return Object.entries(obj).flatMap(([k, v]) => collectScopedNumbers(v, scope, k, depth + 1));
+    const next = { team: obj.team_scope === true || inherited.team, metric: typeof obj.metric_scope === 'string' ? obj.metric_scope : inherited.metric };
+    return Object.entries(obj).flatMap(([k, v]) => collectScopedNumbers(v, scope, k, depth + 1, next));
   }
   return [];
 }
@@ -1267,10 +1278,18 @@ export function collectScopedNumbers(
 /**
  * The numbers an envelope supports: its `detail` ({@link collectScopedNumbers}) and the counts and read window its own
  * `summary` states ("Nothing scheduled in the next 60 days.", "14 open tasks, 13 overdue."). A summary is written by
- * the tool from what it read, so the model restating it is grounded. Summary numbers bind to no player or metric.
+ * the tool from what it read, so the model restating it is grounded. Summary numbers bind to no metric, and to the
+ * read's own player or team when its `detail` says which, so a player's read can't ground a figure about someone else.
  * Owner, 2026-10-31: an answer repeating "the next 60 days" was withheld because only `detail` was read.
  */
+/** A figure a read computed itself, in the envelope's own shape: who it measured, the window, and the sample behind it. */
+export function readFigure(f: Pick<Measurement, 'metric_id' | 'metric_label' | 'unit' | 'value' | 'entity' | 'window_start' | 'window_end' | 'sample_size' | 'sample_unit' | 'source' | 'method'> & Partial<Pick<Measurement, 'denominator' | 'direction'>>): Measurement {
+  return { denominator: null, direction: null, ...f, as_of: nowIso(), coverage: 'complete', coverage_note: null, benchmark: null };
+}
+
 export function collectEnvelopeNumbers(envelope: Pick<ToolEnvelope, 'summary' | 'detail'>): ScopedNumber[] {
-  const fromSummary = numbersInText(envelope.summary).map((value) => ({ value, player_id: null, metric_key: null }));
+  const top = (envelope.detail && typeof envelope.detail === 'object' ? envelope.detail : {}) as { player_id?: unknown; team_scope?: unknown };
+  const who = typeof top.player_id === 'string' ? { player_id: top.player_id } : { player_id: null, ...(top.team_scope === true ? { team: true } : {}) };
+  const fromSummary = numbersInText(envelope.summary).map((value) => ({ value, ...who, metric_key: null }));
   return [...(envelope.detail === undefined ? [] : collectScopedNumbers(envelope.detail)), ...fromSummary];
 }

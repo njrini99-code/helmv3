@@ -5,7 +5,7 @@ import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { PUTT_DISTANCE_BUCKETS, puttBucketFor } from '@/lib/golf/putt-distance-buckets';
 import { requireRosterPlayer, type CoachChatContext } from './context';
-import { nowIso, unavailableEnvelope, type ToolEnvelope } from './provenance';
+import { nowIso, readFigure, unavailableEnvelope, type Measurement, type ToolEnvelope } from './provenance';
 
 type Sb = SupabaseClient<Database>;
 
@@ -111,7 +111,7 @@ export function puttProfileOf(shots: ReadonlyArray<Pick<ShotRow, 'putt_distance_
 const SHOT_COLUMNS = 'miss_direction, distance_to_hole_before, distance_unit_before, distance_to_hole_after, distance_unit_after, lie_before, lie_after, club_type, is_penalty, putt_distance_feet, putt_made';
 
 /** Team-scoped, only reads: never a write to `golf_shots`, `golf_rounds` or the round RPCs (SHARED-10). */
-async function shotsOf(sb: Sb, ctx: CoachChatContext, input: { player_id?: string; since_days: number }): Promise<{ shots: ShotRow[]; rounds: number; since: string; playerName: string | null } | null> {
+async function shotsOf(sb: Sb, ctx: CoachChatContext, input: { player_id?: string; since_days: number }): Promise<{ shots: ShotRow[]; rounds: number; since: string; playerName: string | null; entity: Measurement['entity']; scope: { player_id: string } | { team_scope: true } } | null> {
   const player = input.player_id ? requireRosterPlayer(ctx, input.player_id) : null;
   const since = new Date(Date.now() - input.since_days * 86_400_000).toISOString().slice(0, 10);
   let q = sb.from('golf_rounds').select('id').eq('team_id', ctx.team_id).eq('status', 'completed').eq('is_test', false).gte('round_date', since);
@@ -126,10 +126,19 @@ async function shotsOf(sb: Sb, ctx: CoachChatContext, input: { player_id?: strin
     if (res.error) return null;
     shots.push(...(res.data ?? []));
   }
-  return { shots, rounds: ids.length, since, playerName: player?.name ?? null };
+  return {
+    shots,
+    rounds: ids.length,
+    since,
+    playerName: player?.name ?? null,
+    entity: player ? { kind: 'player', id: player.id, label: player.name } : { kind: 'team', id: ctx.team_id, label: ctx.team_name },
+    // Every figure in `detail` belongs to this one player or to the team, so the claim audit can't let it stand for anyone else.
+    scope: player ? { player_id: player.id } : { team_scope: true },
+  };
 }
 
 const whose = (name: string | null, team: string) => name ?? team;
+const today = () => nowIso().slice(0, 10);
 
 export async function getShotPattern(sb: Sb, ctx: CoachChatContext, input: { player_id?: string; club_type?: string; from_yards?: number; to_yards?: number; since_days: number; mode?: 'approach' | 'putting' }): Promise<ToolEnvelope> {
   const read = await shotsOf(sb, ctx, input);
@@ -137,7 +146,8 @@ export async function getShotPattern(sb: Sb, ctx: CoachChatContext, input: { pla
   const who = whose(read.playerName, ctx.team_name);
   if (input.mode === 'putting') {
     const profile = puttProfileOf(read.shots);
-    return { summary: `${who}: putting by distance, last ${input.since_days} days.`, measurements: [], series: [], detail: { kind: 'putt_profile', profile, rounds: read.rounds, since: read.since, since_days: input.since_days }, coverage: profile.attempts ? 'complete' : 'empty', coverage_note: profile.attempts ? null : 'No putts with a distance in this window.', as_of: nowIso() };
+    const measurements = profile.buckets.flatMap((b) => (b.rate == null ? [] : [readFigure({ metric_id: `putt_make_rate_${b.id}`, metric_label: `Make rate, ${b.label}`, unit: 'percent', value: b.rate, entity: read.entity, window_start: read.since, window_end: today(), sample_size: b.attempts, sample_unit: 'attempts', denominator: b.attempts, direction: 'higher_better', source: 'shots', method: 'putts_made_over_attempts_by_stats_bucket' })]));
+    return { summary: `${who}: putting by distance, last ${input.since_days} days.`, measurements, series: [], detail: { ...read.scope, metric_scope: 'putt_make_rate', kind: 'putt_profile', profile, rounds: read.rounds, since: read.since, since_days: input.since_days }, coverage: profile.attempts ? 'complete' : 'empty', coverage_note: profile.attempts ? null : 'No putts with a distance in this window.', as_of: nowIso() };
   }
   const list = read.shots.filter((s) => {
     if (s.putt_distance_feet != null) return false;
@@ -148,7 +158,9 @@ export async function getShotPattern(sb: Sb, ctx: CoachChatContext, input: { pla
     return true;
   });
   const pattern = missPatternOf(list);
-  return { summary: `${who}: ${pattern.total} shots, last ${input.since_days} days.`, measurements: [], series: [], detail: { kind: 'miss_pattern', pattern, rounds: read.rounds, since: read.since, since_days: input.since_days }, coverage: pattern.total ? 'complete' : 'empty', coverage_note: pattern.total ? null : 'No shots logged in this window.', as_of: nowIso() };
+  const shotCount = (metric_id: string, metric_label: string, value: number) => readFigure({ metric_id, metric_label, unit: 'count', value, entity: read.entity, window_start: read.since, window_end: today(), sample_size: pattern.total, sample_unit: 'shots', source: 'shots', method: 'count_of_logged_shots' });
+  const measurements = pattern.total ? [shotCount('shots_logged', 'Shots logged', pattern.total), shotCount('shots_inside_15ft', 'Left inside 15 ft', pattern.inside_15), shotCount('shots_inside_25ft', 'Left inside 25 ft', pattern.inside_25)] : [];
+  return { summary: `${who}: ${pattern.total} shots, last ${input.since_days} days.`, measurements, series: [], detail: { ...read.scope, kind: 'miss_pattern', pattern, rounds: read.rounds, since: read.since, since_days: input.since_days }, coverage: pattern.total ? 'complete' : 'empty', coverage_note: pattern.total ? null : 'No shots logged in this window.', as_of: nowIso() };
 }
 
 /** Average distance left by approach band, from where the approach was played. */
@@ -163,7 +175,8 @@ export async function getProximityByBand(sb: Sb, ctx: CoachChatContext, input: {
     const lefts = inBand.map((s) => toFeet(s.distance_to_hole_after, s.distance_unit_after)).filter((v): v is number => v != null);
     return { from_yards: lo, to_yards: hi, shots: inBand.length, avg_left_ft: lefts.length ? Math.round((lefts.reduce((a, b) => a + b, 0) / lefts.length) * 10) / 10 : null };
   });
-  return { summary: `${whose(read.playerName, ctx.team_name)}: proximity by band, last ${input.since_days} days.`, measurements: [], series: [], detail: { bands: rows, rounds: read.rounds }, coverage: rows.some((r) => r.shots) ? 'complete' : 'empty', coverage_note: rows.some((r) => r.shots) ? null : 'No approach shots in this window.', as_of: nowIso() };
+  const measurements = rows.flatMap((r) => (r.avg_left_ft == null ? [] : [readFigure({ metric_id: `proximity_${r.from_yards}_${r.to_yards}_yards`, metric_label: `Average left from ${r.from_yards} to ${r.to_yards} yards`, unit: 'feet', value: r.avg_left_ft, entity: read.entity, window_start: read.since, window_end: today(), sample_size: r.shots, sample_unit: 'shots', direction: 'lower_better', source: 'shots', method: 'mean_distance_to_hole_after_by_approach_band' })]));
+  return { summary: `${whose(read.playerName, ctx.team_name)}: proximity by band, last ${input.since_days} days.`, measurements, series: [], detail: { ...read.scope, bands: rows, rounds: read.rounds }, coverage: rows.some((r) => r.shots) ? 'complete' : 'empty', coverage_note: rows.some((r) => r.shots) ? null : 'No approach shots in this window.', as_of: nowIso() };
 }
 
 /** Hole by hole for one of the team's rounds. A round off this team isn't read at all. */
@@ -175,5 +188,7 @@ export async function getRoundDetail(sb: Sb, ctx: CoachChatContext, input: { rou
   const holes = await sb.from('golf_holes').select('hole_number, par, score, putts, penalty_strokes, gir').eq('round_id', input.round_id).order('hole_number');
   if (holes.error) return unavailableEnvelope('Could not read that round.', 'The holes query failed.');
   const list = holes.data ?? [];
-  return { summary: `${player.name}, ${r.data.course_name ?? 'a round'} on ${r.data.round_date}.`, measurements: [], series: [], detail: { kind: 'hole_strip', round: { date: r.data.round_date, course: r.data.course_name, total: r.data.total_score, to_par: r.data.score_to_par }, holes: list }, coverage: list.length ? 'complete' : 'empty', coverage_note: list.length ? null : 'This round was posted as a total, with no holes.', as_of: nowIso() };
+  const roundFigure = (metric_id: string, metric_label: string, value: number) => readFigure({ metric_id, metric_label, unit: 'score', value, entity: { kind: 'player', id: player.id, label: player.name }, window_start: r.data!.round_date, window_end: r.data!.round_date, sample_size: list.length, sample_unit: 'holes', source: 'rounds', method: 'round_as_posted' });
+  const measurements = [...(r.data.total_score == null ? [] : [roundFigure('total_score', 'Total score', r.data.total_score)]), ...(r.data.score_to_par == null ? [] : [roundFigure('score_to_par', 'Score to par', r.data.score_to_par)])];
+  return { summary: `${player.name}, ${r.data.course_name ?? 'a round'} on ${r.data.round_date}.`, measurements, series: [], detail: { player_id: player.id, kind: 'hole_strip', round: { date: r.data.round_date, course: r.data.course_name, total: r.data.total_score, to_par: r.data.score_to_par }, holes: list }, coverage: list.length ? 'complete' : 'empty', coverage_note: list.length ? null : 'This round was posted as a total, with no holes.', as_of: nowIso() };
 }
