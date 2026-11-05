@@ -64,6 +64,7 @@ import {
 import { buildCoachTools, isConfirmRequired } from '@/lib/coachhelm/v3/chat/agent-tools';
 import { buildInstructions } from '@/lib/coachhelm/v3/chat/instructions';
 import {
+  coachRequestDates,
   collectDates,
   collectEnvelopeNumbers,
   // Imported as a value, not `type`-only: `priorTurnEvidence` runs it as a
@@ -76,6 +77,7 @@ import {
   type MeasurementSeries,
   type ScopedNumber,
 } from '@/lib/coachhelm/v3/chat/provenance';
+import { todayIsoInZone } from '@/lib/golf/timezone';
 import {
   computeTurnVerdict,
   STREAM_INCOMPLETE_NOTE,
@@ -496,6 +498,8 @@ export async function POST(req: NextRequest) {
     detailNumbers.push(...collectEnvelopeNumbers(envelope));
     if (envelope.detail !== undefined) detailDates.push(...collectDates(envelope.detail, ctx.timezone));
   };
+  // A date the coach's own words name ("next Tuesday") is theirs to have restated, with or without a tool run.
+  detailDates.push(...coachRequestDates(userText, todayIsoInZone(ctx.timezone)));
 
   // Seed the audit with evidence THIS conversation already produced (see
   // priorTurnEvidence's doc comment) — a fresh conversation has none to load.
@@ -517,6 +521,10 @@ export async function POST(req: NextRequest) {
       conversationId,
       PRIOR_EVIDENCE_ROW_LIMIT,
     );
+    // The draft usually lands a turn after the date was said ("next Tuesday", then "5pm"), so earlier asks count, each from its own day.
+    for (const m of priorMessages) {
+      if (m.role === 'user') detailDates.push(...coachRequestDates(m.content, todayIsoInZone(ctx.timezone, new Date(m.created_at))));
+    }
     const prior = priorTurnEvidence(priorMessages, ctx.timezone);
     measurements.push(...prior.shared.measurements);
     seriesAll.push(...prior.shared.series);

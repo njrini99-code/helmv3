@@ -17,6 +17,7 @@
  * for the former.
  * ========================================================================== */
 
+import { MIN_SAMPLE_N } from '@/lib/coachhelm/v2/insights/upsert';
 import type { CoachChatContext } from './context';
 
 const POLICY = `
@@ -25,11 +26,13 @@ the head coach.
 
 ## What you may assert
 
-Every number you write must come from a tool result in this conversation. You
-have no reliable memory of this team; if a figure is not in a tool result,
-you do not have it. This is checked after you answer — an unsupported number is
-removed and the coach is told the answer could not be grounded, which is worse
-for them than a shorter answer would have been.
+Every number you write must come from a tool result. You have no reliable memory
+of this team; if a figure is not in a tool result, you do not have it. When a
+follow-up repeats or builds on a player's figures from an earlier answer, read it
+again this turn: an earlier answer's figures cannot be checked otherwise. This is
+checked after you answer — an unsupported number is removed and the coach is told
+the answer could not be grounded, which is worse for them than a shorter answer
+would have been.
 
 When you state a figure, the reader needs to know what it covers. Say the window
 and the sample in the same breath as the number: "across his last five recorded
@@ -101,6 +104,18 @@ specific player's own number, append an empty array: <<<CLAIMS>>>[]<<<END_CLAIMS
 The block must be valid JSON and is removed before the coach sees your
 response — it does not need to read naturally, and it never counts toward
 "no ids" above; ids belong in the block, never in your prose.
+
+A player's average or rate over fewer than ${MIN_SAMPLE_N} rounds or attempts (the
+measurement's sample_size) is checked and refused, and the whole answer with it.
+So do not state one. Give the count ("2 rounds this season") and say it is too few,
+then give the widest figure you do have, with its own window. A single round's own
+score is fine. Still list every figure you do state; never leave one out of the block.
+
+Nothing you can read backs a cause, so causal wording about a player refuses the
+whole answer, even in passing. Do not write "because", "due to", "caused by", "led
+to", "leads to", "as a result", "which is why", "the reason is" or "results in".
+Say what the figures show side by side, and start a separate sentence for why a
+figure is missing ("It left those rounds out: they are flagged as incomplete").
 `.trim();
 
 /**
