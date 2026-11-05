@@ -12,7 +12,12 @@ export interface ChTeamRound extends ChLibraryRound {
   player: string;
 }
 
-export type ChTeamRoundRow = ChRoundListRow & { player_id: string };
+export type ChTeamRoundRow = ChRoundListRow & {
+  player_id: string;
+  /** Which round of a qualifier this was, and when it was posted: the order of one player's rounds on one day. */
+  qualifier_round_number?: number | null;
+  created_at?: string | null;
+};
 
 export interface ChTeamSeason {
   /** 18-hole countable rounds since 1 August. */
@@ -47,6 +52,7 @@ export interface ChTeamRounds {
 /** Newest first, as the loader reads them; a round whose player is not on the roster read is left out and counted. */
 export function toTeamRounds(rows: readonly ChTeamRoundRow[], names: ReadonlyMap<string, string>): { list: ChTeamRound[]; unscored: number } {
   const list: ChTeamRound[] = [];
+  const raw = new Map(rows.map((row) => [row.id, row]));
   let unscored = 0;
   for (const row of rows) {
     const round = toLibraryRound(row);
@@ -56,7 +62,10 @@ export function toTeamRounds(rows: readonly ChTeamRoundRow[], names: ReadonlyMap
     }
     list.push({ ...round, playerId: row.player_id, player: names.get(row.player_id) ?? 'Unnamed player' });
   }
-  list.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.id.localeCompare(b.id)));
+  // Newest day first. Inside a day, one player's rounds stay together, in the order they were played: round 1 above round 2.
+  const played = (r: ChTeamRound) => raw.get(r.id)?.qualifier_round_number ?? Number.MAX_SAFE_INTEGER;
+  const posted = (r: ChTeamRound) => raw.get(r.id)?.created_at ?? '';
+  list.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.player.localeCompare(b.player) || a.playerId.localeCompare(b.playerId) || played(a) - played(b) || posted(a).localeCompare(posted(b)) || a.id.localeCompare(b.id)));
   return { list, unscored };
 }
 
