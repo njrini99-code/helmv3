@@ -45,6 +45,7 @@
 import { getClassTimes, getDrillBank, getTeamPuttingProfile, getTeamStrokesGained } from './practice-reads';
 import { practicePicture } from './practice-pictures';
 import { practiceDraftTool, publishFlow } from './practice-draft';
+import { getSeasonScoring } from './season-reads';
 import { askDraftTools } from './ask-draft-tools';
 import { CREATE_FLOWS, CREATE_TOOL_NAMES, LINEUP_FLOWS, flowCommit, type FlowDef } from './create-tools';
 import { heldCommitFor } from './held-runner';
@@ -161,6 +162,7 @@ const PROGRESS_LABEL: Record<string, (input: Record<string, unknown>) => string>
   get_player_weakest_areas: () => 'Looking for where the gap is largest',
   get_recent_rounds: () => 'Reading recent rounds',
   get_team_rounds: () => 'Reading the team’s rounds',
+  get_season_scoring: () => 'Reading this season’s scoring',
   get_qualifiers: () => 'Reading qualifier standings',
   get_tournaments: () => 'Reading tournament results',
   get_player_insights: () => 'Reading open signals',
@@ -194,6 +196,7 @@ const PROGRESS_DONE: Record<string, string> = {
   get_player_weakest_areas: 'Found where the gap is largest',
   get_recent_rounds: 'Read recent rounds',
   get_team_rounds: 'Read the team’s rounds',
+  get_season_scoring: 'Read this season’s scoring',
   get_qualifiers: 'Read qualifier standings',
   get_tournaments: 'Read tournament results',
   get_player_insights: 'Read open signals',
@@ -787,6 +790,12 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
     // out of the tool set, the model is never offered them and a call to either is refused as an unknown tool.
     ...(teamTools
       ? {
+        get_season_scoring: tool({
+          description:
+            'Scoring average and to par this season, the figures Roster shows: full 18-hole rounds that count, since 1 August in the team\'s zone, practice left out. No player_id: the team\'s average, pooled per round, and each player\'s. Use for any question about scoring this season; get_player_metrics windows run across seasons.',
+          inputSchema: z.object({ player_id: z.string().uuid().optional() }),
+          execute: read('get_season_scoring', (input) => getSeasonScoring(sb, ctx, input)),
+        }),
         get_team_rounds: tool({
           description:
             'Every active player\'s completed rounds in a window, optionally only practice, qualifier or tournament rounds (or one qualifier). Returns per-player round counts and average score, to par and putts, already computed, plus the most recent rounds. Use for any team-wide question about rounds, qualifier or tournament scoring, or practice results.',

@@ -8,6 +8,7 @@ import type { CoachChatContext } from './context';
 import { getFocusAreas, getPlayerMetric, getPlayerTrend, getRecentRounds, readUpcomingEventRows, replyOf } from './read-tools';
 import { getRoundDetail, getShotPattern } from './shot-reads';
 import { compareSeasons } from './engine-reads';
+import { getSeasonScoring } from './season-reads';
 import { nowIso, unavailableEnvelope, type ToolEnvelope } from './provenance';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { playerTitle } from '@/lib/coachhelm/reads/player-cause';
@@ -87,6 +88,7 @@ export function buildPlayerTools({ sb, ctx, playerId, writer, collect }: { sb: S
     get_upcoming_events: tool({ description: 'Your team schedule.', inputSchema: z.object({ days_ahead: z.number().int().min(1).max(60).default(14) }), execute: read('get_upcoming_events', 'Checking the schedule', 'Checked the schedule', (i: { days_ahead: number }) => myUpcomingEvents(sb, ctx, playerId, i)) }),
     get_shot_pattern: tool({ description: 'Your misses, or your putting by distance.', inputSchema: z.object({ since_days: z.number().int().min(1).max(365).default(60), mode: z.enum(['approach', 'putting']).default('approach') }), execute: read('get_shot_pattern', 'Reading your shots', 'Read your shots', (i: { since_days: number; mode: 'approach' | 'putting' }) => getShotPattern(sb, ctx, { player_id: playerId, since_days: i.since_days, mode: i.mode })) }),
     get_round_detail: tool({ description: 'One of your rounds, hole by hole.', inputSchema: z.object({ round_id: z.string().uuid() }), execute: read('get_round_detail', 'Reading the round', 'Read the round', (i: { round_id: string }) => myRoundDetail(sb, ctx, playerId, i)) }),
+    get_season_scoring: tool({ description: 'Your scoring average and to par this season: full 18-hole rounds since 1 August, practice left out. Use for any question about your scoring this season.', inputSchema: z.object({}), execute: read('get_season_scoring', 'Reading your season', 'Read your season', () => getSeasonScoring(sb, ctx, { player_id: playerId })) }),
     compare_seasons: tool({ description: 'This season against last, yours.', inputSchema: z.object({}), execute: read('compare_seasons', 'Comparing your seasons', 'Compared your seasons', () => compareSeasons(sb, ctx, { player_id: playerId })) }),
     get_my_reads: tool({ description: 'Your open CoachHelm reads.', inputSchema: z.object({}), execute: read('get_my_reads', 'Reading your CoachHelm', 'Read your CoachHelm', () => myReads(sb, playerId)) }),
     show_visual: tool({
