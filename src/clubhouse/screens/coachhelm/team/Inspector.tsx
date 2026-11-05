@@ -25,8 +25,11 @@ export function Inspector({ open, onClose, children, label }: { open: boolean; o
     };
   }, [open, onClose]);
   return (
-    <aside ref={panel} className={'insp' + (open ? ' on' : '')} aria-label={label} aria-hidden={!open} inert={!open || undefined}>
-      <div className="ins">{children}</div>
-    </aside>
+    // The rail is the canvas's right edge under the bar: the panel slides inside it, so it never crosses the app's frame.
+    <div className="insp-rail">
+      <aside ref={panel} className={'insp' + (open ? ' on' : '')} aria-label={label} aria-hidden={!open} inert={!open || undefined}>
+        <div className="ins">{children}</div>
+      </aside>
+    </div>
   );
 }

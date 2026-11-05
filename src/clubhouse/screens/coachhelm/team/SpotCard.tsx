@@ -5,6 +5,7 @@ import { useRef } from 'react';
 import { formatSigned } from '../../../lib/format';
 import { patternAt, readsAt, stationOrder, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
 import { STATION_NAME } from './hole-geometry';
+import { namesLine } from './Huddle';
 import { Coin, ReadRow } from './parts';
 import { useContentIn, useRowFlip } from './team-motion';
 
@@ -25,14 +26,7 @@ function BarRow({ player, station, teamValue, onPlayer }: { player: ChTeamPlayer
       {player.first}
     </span>
   );
-  if (v == null)
-    return (
-      <button type="button" className="br tapp" data-p={player.id} onClick={() => onPlayer(player.id)} aria-label={`${player.name}, ${leg.missing ?? 'not measured'}`}>
-        {name}
-        <span className="bmiss">{leg.missing}</span>
-        <span className="bv is-none">—</span>
-      </button>
-    );
+  if (v == null) return null;
   const loss = v < 0;
   return (
     <button type="button" className="br tapp" data-ch-press-scale=".97" data-p={player.id} data-early={player.early || undefined} onClick={() => onPlayer(player.id)} aria-label={`${player.name}, ${formatSigned(v)}`}>
@@ -63,6 +57,8 @@ export function SpotCard({
   const teamValue = data.stations[station].team;
   const rank = stationOrder(data.stations).indexOf(station);
   const rows = [...list].sort((a, b) => (a.legs[station].strokes ?? Infinity) - (b.legs[station].strokes ?? Infinity));
+  const measured = rows.filter((p) => p.legs[station].strokes != null);
+  const unmeasured = rows.filter((p) => p.legs[station].strokes == null);
   const reads = readsAt(list, station);
   const patterns = patternAt(data.patterns, station);
   const names = new Map(list.map((p) => [p.id, p]));
@@ -80,15 +76,28 @@ export function SpotCard({
       </div>
       <div className="spl">
         <div className="spl-l">
-          <div className="bars">
-            {rows.map((p) => (
-              <BarRow key={p.id} player={p} station={station} teamValue={teamValue} onPlayer={onPlayer} />
-            ))}
-          </div>
-          <div className="axis">
-            <span>Team average dashed</span>
-            <span>Tour</span>
-          </div>
+          {measured.length > 0 && (
+            <>
+              <div className="bars">
+                {measured.map((p) => (
+                  <BarRow key={p.id} player={p} station={station} teamValue={teamValue} onPlayer={onPlayer} />
+                ))}
+              </div>
+              <div className="axis">
+                <span>Team average dashed</span>
+                <span>Tour</span>
+              </div>
+            </>
+          )}
+          {/* One row per player with a figure (AC-SPOT-02); the rest are one sentence, not six identical rows. */}
+          {unmeasured.length > 0 && (
+            <p className="nofig" data-ch-team-nofigure="">
+              <b>
+                No {STATION_NAME[station].toLowerCase()} figure yet for {namesLine(unmeasured.map((p) => p.first))}.
+              </b>{' '}
+              {unmeasured[0]?.legs[station].missing}
+            </p>
+          )}
         </div>
         <div className="spl-r">
           <div className="subh">

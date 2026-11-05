@@ -14,8 +14,8 @@ const R = 12;
 const T = 16;
 const B = 36;
 const COIN_R = 13;
-/** Two coins never sit closer than this: their edges clear by 3pt. */
-const COIN_GAP = COIN_R * 2 + 3;
+/** Two coins never sit closer than this: their edges clear by 6pt, enough for a hollow coin's stroke. */
+const COIN_GAP = COIN_R * 2 + 6;
 
 /** Starts at −1.8 to +0.2 and widens in steps of 0.5 so no coin is clipped (AC-HUDDLE-01). */
 export function huddleRange(points: ReadonlyArray<{ x: number; y: number }>): { lo: number; hi: number } {
@@ -145,19 +145,35 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
   const plotted = list.map((p) => ({ p, at: huddlePoint(p) })).filter((x): x is { p: ChTeamPlayer; at: { x: number; y: number } } => !!x.at);
   const missing = list.filter((p) => !huddlePoint(p));
   if (!plotted.length && !missing.length) return null;
+  // A chart of one coin, or none, says nothing: most real teams start here, so the card says what it's waiting for and stays small.
+  if (plotted.length < 2) {
+    const only = plotted[0]?.p;
+    return (
+      <section className="card huddle is-waiting" data-ch-team-card="huddle" aria-label="The huddle">
+        <div className="ch">
+          <h4>The huddle</h4>
+          <span className="meta">Strokes to Tour a round</span>
+        </div>
+        <p className="nordss" data-ch-team-huddlewait="">
+          It draws once two players have all four figures{only ? `. ${only.first} is the only one so far.` : '.'}
+        </p>
+        <p className="nordss" data-ch-team-notplotted="">
+          {notPlottedLine(missing)}
+        </p>
+      </section>
+    );
+  }
   const { lo, hi } = huddleRange(plotted.map((x) => x.at));
   const X = (v: number) => L + ((v - lo) / (hi - lo)) * (W - L - R);
   const Y = (v: number) => T + ((hi - v) / (hi - lo)) * (H - T - B);
   const st = data.stations;
   const as = (st.tee.team ?? 0) + (st.approach.team ?? 0);
   const ac = (st.short_game.team ?? 0) + (st.putting.team ?? 0);
-  // A team average of one player is that player: no dashed lines to read against, and the words fall back to the Tour lines.
-  const hasAverage = plotted.length >= 2;
   const coins = spreadCoins(
     plotted.map((x) => ({ x: X(x.at.x), y: Y(x.at.y) })),
     { x0: L + COIN_R + 1, x1: W - R - COIN_R - 1, y0: T + COIN_R + 1, y1: H - B - COIN_R - 1 },
   );
-  const words = placeHuddleWords({ x0: L, x1: W - R, y0: T, y1: H - B, midX: hasAverage ? X(as) : X(0), midY: hasAverage ? Y(ac) : Y(0), tourX: X(0), tourY: Y(0), coins });
+  const words = placeHuddleWords({ x0: L, x1: W - R, y0: T, y1: H - B, midX: X(as), midY: Y(ac), tourX: X(0), tourY: Y(0), coins });
   return (
     <section className="card huddle" data-ch-team-card="huddle" aria-label="The huddle">
       <div className="ch">
@@ -173,12 +189,8 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
           <text className="tl" x={X(0) - 4} y={Y(0) - 5} textAnchor="end">
             Tour
           </text>
-          {hasAverage && (
-            <>
-              <line className="avg" x1={X(as)} x2={X(as)} y1={T} y2={H - B} />
-              <line className="avg" x1={L} x2={W - R} y1={Y(ac)} y2={Y(ac)} />
-            </>
-          )}
+          <line className="avg" x1={X(as)} x2={X(as)} y1={T} y2={H - B} />
+          <line className="avg" x1={L} x2={W - R} y1={Y(ac)} y2={Y(ac)} />
           {words.map((w) => (
             <text className="q" key={w.key} data-word={w.key} x={w.x} y={w.y}>
               {w.lines.map((line, i) => (
@@ -224,7 +236,7 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
         </svg>
       </div>
       <div className="legend">
-        {hasAverage && <span>Dashed: team average</span>}
+        <span>Dashed: team average</span>
         <span>Hollow: fewer than 5 rounds</span>
       </div>
       {missing.length > 0 && (

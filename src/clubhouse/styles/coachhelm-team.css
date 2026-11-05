@@ -1594,8 +1594,27 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 }
 /* The rail is too narrow for word, bar and line on one row: the line takes its own row under them. */
 .ch-htb.is-desk .recc .lv {
-  grid-template-columns:112px minmax(0,1fr);
+  grid-template-columns:136px minmax(0,1fr);
   row-gap:4px;
+}
+.ch-htb .rec .big {
+  align-items:center;
+  gap:12px;
+}
+.ch-htb .rec .big b {
+  white-space:nowrap;
+}
+/* The roster takes the record's height in its rows, never as a blank band under the last one (AC-TEAM-07). */
+.ch-htb.is-desk .rost {
+  display:flex;
+  flex-direction:column;
+}
+.ch-htb.is-desk .rost .rr {
+  flex:1 1 auto;
+}
+.ch-htb.is-desk .huddle.is-waiting .nordss + .nordss {
+  padding-top:0;
+  padding-bottom:16px;
 }
 .ch-htb.is-desk .recc .lv .n {
   grid-column:1 / -1;
@@ -1777,6 +1796,24 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 .ch-htb .br .bv.is-none {
   color: var(--ch-tb-ink-3);
 }
+.ch-htb .nofig {
+  margin: 0;
+  padding: 8px 16px 12px;
+  font: var(--ch-type-14);
+  color: var(--ch-tb-ink-2);
+}
+.ch-htb .nofig b {
+  font: var(--ch-type-14-medium);
+  color: var(--ch-tb-ink);
+}
+.ch-htb .rr .tot.is-none {
+  color: var(--ch-tb-ink-3);
+}
+.ch-htb .rr .fp-none {
+  font: var(--ch-type-13);
+  color: var(--ch-tb-ink-3);
+  white-space: nowrap;
+}
 .ch-htb .br .bn {
   text-overflow: ellipsis;
 }
@@ -1828,10 +1865,75 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 .ch-htb.is-desk {
   position: relative;
 }
-.ch-htb .insp {
+/* The panel lives in the canvas as the mock draws it: flush under the glass bar, flush to the canvas's right edge, the
+   canvas's own corner at the bottom. The rail clips its slide to that edge and lets the shadow fall left over the board. */
+.ch-htb .insp-rail {
   position: fixed;
-  top: 58px;
+  top: calc(8px + var(--ch-topbar-h));
+  right: 8px;
+  bottom: 8px;
   width: 420px;
+  z-index: 4;
+  pointer-events: none;
+  clip-path: inset(0 0 0 -64px);
+}
+.ch-htb .insp {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  pointer-events: auto;
+  border-radius: 0 0 var(--ch-radius-lg) 0;
+  box-shadow: none;
+}
+.ch-htb .insp.on {
+  box-shadow: -1px 0 0 var(--ch-tb-sep), var(--ch-team-shadow-4);
+}
+/* Room, not a cut: the panel takes the right column's place and the board's left column closes up beside it, so no card
+   runs under the panel ("Tap a s", "biggest l"). Nothing restacks, so what the coach tapped stays where it was. Below
+   1180 the board is one column with no right column to give up, and the panel overlays it (CP-TEAM-6). */
+@media (min-width: 1180px) {
+  .ch-htb.has-insp .ch-htb-desk {
+    padding-right: calc(420px + var(--ch-page-gutter));
+  }
+  .ch-htb.has-insp .dgrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ch-htb.has-insp .dgrid > .dcol:nth-child(2),
+  .ch-htb.has-insp .dgrid > .recc {
+    display: none;
+  }
+  .ch-htb.has-insp .feat .top {
+    flex-wrap: wrap;
+  }
+  .ch-htb.has-insp .feat .top > .hn {
+    flex: 1 1 200px;
+  }
+  .ch-htb.has-insp .feat .stchips {
+    flex: 1 1 320px;
+    width: auto;
+    max-width: 500px;
+  }
+}
+/* A 1280 window leaves the board about 530 wide beside the panel: the hole's area names would draw under 9pt, and the
+   chips right above say them, so only the figures stay; bars and reads stack instead of squeezing side by side. */
+@media (min-width: 1180px) and (max-width: 1399px) {
+  .ch-htb.has-insp .holesvg .sl {
+    display: none;
+  }
+  .ch-htb.has-insp .spl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ch-htb.has-insp .spl-l {
+    border-right: 0;
+    padding-bottom: 8px;
+  }
+  .ch-htb.has-insp .spl-r {
+    border-top: var(--ch-hairline-w) solid var(--ch-tb-sep);
+  }
+}
+/* Re-check closes the board's column at the same rhythm as the cards above it. */
+.ch-htb-desk > .ch-hl-rck {
+  margin-top: 16px;
 }
 .ch-htb .ins .lk {
   text-decoration: none;

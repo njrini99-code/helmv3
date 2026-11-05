@@ -61,6 +61,8 @@ export interface ChTrackRung {
   line: string;
   /** What the line stands on: the rechecked count still needed, or the target and where the level sits against it. */
   sub: string;
+  /** A level without enough rechecked reads, in the Team board's short form: "2 of 6 rechecked". */
+  short?: string;
   tone: ChTrackTone;
   /** Drawn only once the level has enough rechecked reads: the held count over the rechecked count, and the target in tenths. */
   bar: { held: number; of: number; target: number | null } | null;
@@ -82,6 +84,8 @@ export type ChTrackRecord =
       since: string;
       /** The program line, 02 §9. */
       program: string;
+      /** The program line's two counts, for the Team board's big figure (AC-RECORD-01). */
+      tally: { held: number; rechecked: number };
       /** Reads shown before the claim ladder, counted in the program line and in no level; null when none. */
       unrated: string | null;
       /** The staff's corrections, 03 §7.3; null when corrections are not recorded yet. */
@@ -106,7 +110,8 @@ function rungView(row: RungRow, sinceWord: string): ChTrackRung {
       row.shown === 0
         ? `None shown since ${sinceWord}`
         : `${row.rechecked} of ${row.shown} rechecked so far. Judged from ${TRACK_RECORD_MIN_RECHECKED}`;
-    return { id: row.rung, word, line: 'Not enough yet', sub, tone: 'plain', bar: null };
+    const short = row.shown === 0 ? 'none shown' : `${row.rechecked} of ${row.shown} rechecked`;
+    return { id: row.rung, word, line: 'Not enough yet', sub, short, tone: 'plain', bar: null };
   }
   const line = `${row.held} of ${row.rechecked} held`;
   const said =
@@ -184,6 +189,7 @@ export function toChTrackRecord(tr: TrackRecord, opts: { since: string; correcti
     state: 'ready',
     since,
     program: programLine(tr, since),
+    tally: { held: tr.program.held, rechecked: tr.program.rechecked },
     unrated:
       unratedShown > 0
         ? `${plural(unratedShown, 'read')} ${unratedShown === 1 ? 'was' : 'were'} shown before reads carried a level, so ${unratedShown === 1 ? 'it counts' : 'they count'} above and in no level below.`

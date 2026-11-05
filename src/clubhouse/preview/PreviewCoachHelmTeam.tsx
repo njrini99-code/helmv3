@@ -21,7 +21,7 @@ function stateData(state: string | undefined): ChTeamBoardData {
   }
   if (state === 'sparse') {
     // The shape most real teams have: one player with shots, six with total-only rounds.
-    const names = ['Theo Marchetti', 'Sam Whitfield', 'Priya Natarajan', 'Luca Romano', 'Owen Tate', 'Mina Park'];
+    const names = ['Noah Reed', 'Sam Whitfield', 'Priya Natarajan', 'Luca Romano', 'Owen Tate', 'Mina Park'];
     const proto = list[0] as ChTeamPlayer;
     // Rounds with hole scores but no shots for two of them; a total alone for the other four (`scoresOnly`).
     const noFigures: ChTeamPlayer[] = names.map((name, i) => ({ ...proto, id: `pl-sparse-${i}`, name, first: name.split(' ')[0] as string, rounds: i < 2 ? 2 : 0, scoresOnly: i < 2 ? 0 : 3 + i, early: true, reads: { needs: [], working: [] }, total: null, worst: null, legs: Object.fromEntries(STATIONS.map((s) => [s, { strokes: null, rounds: 0, missing: 'Shows from 3 rounds with shots.' }])) as ChTeamPlayer['legs'] }));

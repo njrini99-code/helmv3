@@ -7,7 +7,7 @@ import { playerRoundsLine, STATIONS, type ChTeamPlayer } from '../../../data/coa
 import type { ChBriefWorking } from '../../../data/coachhelm-coach-brief-shape';
 import type { ChInsight } from '../../../data/coachhelm-shape';
 import type { ChTeamPart } from '../../../data/coachhelm-team-shape';
-import type { ChTrackRecord } from '../../../data/coachhelm-track-record-shape';
+import type { ChTrackRecord, ChTrackRung as ChRung } from '../../../data/coachhelm-track-record-shape';
 import { formatSigned } from '../../../lib/format';
 import { Button } from '../../../ui/Button';
 import { Coin } from './parts';
@@ -53,6 +53,9 @@ export function RosterCard({ players, phone, onPlayer }: { players: readonly ChT
       </div>
       {sorted.map((p) => {
         const open = p.reads.needs.length + p.reads.working.length;
+        // Most real rows: rounds with no shot figures. No empty finger-print, no dash in the loss colour, no "0 open".
+        const noFigures = STATIONS.every((s) => p.legs[s].strokes == null);
+        const noFiguresChip = p.rounds ? 'No shot figures yet' : p.scoresOnly ? 'Scores only' : 'No rounds yet';
         return (
           <button type="button" className="rr tapp" key={p.id} onClick={() => onPlayer(p.id)}>
             <Coin player={p} />
@@ -64,20 +67,26 @@ export function RosterCard({ players, phone, onPlayer }: { players: readonly ChT
                 {p.heldBack ? ` · ${p.heldBack} held back` : ''}
               </span>
             </span>
-            {!phone && (p.rounds ? p.worst ? <span className="lm"><Badge tone="warning">Loses most: {STATION_SHORT[p.worst]}</Badge></span> : <span /> : <span className="lm chipk">{p.scoresOnly ? 'Scores only' : 'No rounds yet'}</span>)}
-            {p.rounds ? (
-              <>
-                <FingerPrint player={p} labels={!phone} />
-                <span className={'tot' + (p.total != null && p.total > 0 ? ' g' : '')}>
-                  {formatSigned(p.total)}
-                  <span>{open} open</span>
+            {!phone &&
+              (noFigures ? (
+                <span className="lm">
+                  <Badge tone="neutral">{noFiguresChip}</Badge>
                 </span>
-              </>
+              ) : p.worst ? (
+                <span className="lm">
+                  <Badge tone="warning">Loses most: {STATION_SHORT[p.worst]}</Badge>
+                </span>
+              ) : (
+                <span />
+              ))}
+            {noFigures ? <span /> : <FingerPrint player={p} labels={!phone} />}
+            {noFigures && p.total == null && !open ? (
+              <span />
             ) : (
-              <>
-                <span />
-                <span />
-              </>
+              <span className={'tot' + (p.total == null ? ' is-none' : p.total > 0 ? ' g' : '')}>
+                {p.total != null && formatSigned(p.total)}
+                {(open > 0 || !noFigures) && <span>{open} open</span>}
+              </span>
             )}
           </button>
         );
@@ -160,6 +169,13 @@ export function WorkingCard({ working, proposed, failed, onRetry }: { working: r
   );
 }
 
+/** A rung's target in the rail's short form; the bar's mark already says whether it's met (AC-RECORD-02). */
+function targetShort(g: ChRung): string {
+  const t = g.bar?.target;
+  if (t == null) return 'no target yet';
+  return g.id === 'not_enough_yet' ? `target under ${t} in 10` : `target ${t} in 10`;
+}
+
 /** The rungs' own words; a rung under 10 rechecked says "Not enough yet", never a share (AC-RECORD-02, 03). */
 export function RecordCard({ part, desk = false }: { part: ChTeamPart<ChTrackRecord>; desk?: boolean }) {
   const notice = (title: string, body: string) => (
@@ -185,7 +201,16 @@ export function RecordCard({ part, desk = false }: { part: ChTeamPart<ChTrackRec
       </div>
       <div className="rec">
         <div className="big">
-          <span>{r.program}</span>
+          {r.tally.rechecked > 0 ? (
+            <>
+              <b className="ch-num">
+                {r.tally.held} of {r.tally.rechecked}
+              </b>
+              <span>reads held up when re-checked</span>
+            </>
+          ) : (
+            <span>{r.program}</span>
+          )}
         </div>
         {r.rungs.map((g) => (
           <div className="lv" key={g.id}>
@@ -200,7 +225,7 @@ export function RecordCard({ part, desk = false }: { part: ChTeamPart<ChTrackRec
             )}
             <span className="n">
               {g.line}
-              {desk && g.bar ? <b> · {g.sub}</b> : null}
+              {desk ? <b> · {g.bar ? targetShort(g) : (g.short ?? g.sub)}</b> : null}
             </span>
           </div>
         ))}

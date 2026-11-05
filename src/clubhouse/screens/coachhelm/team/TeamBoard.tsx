@@ -89,13 +89,13 @@ function Hero({
           {figure}
         </>
       ) : (
-        <div className="top">
-          <div>
-            <div className="hk">Where {data.team.name} gives back strokes</div>
+        <>
+          <div className="hk">Where {data.team.name} gives back strokes</div>
+          <div className="top">
             {figure}
+            {chips}
           </div>
-          {chips}
-        </div>
+        </>
       )}
       <div className={'hole' + (station === 'course' ? ' offh' : '')}>
         <TeamHole stations={data.stations} players={list} station={station} onStation={setStation} orientation={phone ? 'v' : 'h'} />
@@ -367,7 +367,7 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
   const recheck = !data.off && data.roster.count > 0 ? <RecheckReads players={data.roster.count} /> : null;
 
   return (
-    <main ref={top} className={'ch-htb ' + (phone ? 'is-phone' : 'is-desk')} aria-busy={sw.pending || undefined} data-ch-screen="coachhelm-team">
+    <main ref={top} className={'ch-htb ' + (phone ? 'is-phone' : 'is-desk') + (!phone && openPanel ? ' has-insp' : '')} aria-busy={sw.pending || undefined} data-ch-screen="coachhelm-team">
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone ? (
         <div className="sheet">
