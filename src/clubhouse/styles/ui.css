@@ -2493,7 +2493,7 @@ html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
   outline-offset: 2px;
 }
 [data-ui='clubhouse'] {
-  --ch-ui-x1: var(--ch-elevation-reading);
+  --ch-ui-x1: var(--ch-elevation-lifted);
   --ch-ui-x2: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-separator);
   --ch-ui-x3: inset 0 0 0 var(--ch-hairline-w) rgb(0 0 0 / 0.1), inset 0 var(--ch-hairline-w) 0 rgb(255 255 255 / 0.16);
 }

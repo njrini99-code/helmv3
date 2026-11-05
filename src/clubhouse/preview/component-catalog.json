@@ -2055,7 +2055,8 @@
       "file": "src/clubhouse/screens/coachhelm/CoachBoard.tsx",
       "group": "screens",
       "exports": [
-        "CoachBoard"
+        "CoachBoard",
+        "CoachHelmOffNotice"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
@@ -3603,7 +3604,8 @@
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/live.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3767,7 +3769,8 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -9102,6 +9105,18 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/shell/BootSkeleton.tsx",
+      "group": "shell",
+      "exports": [
+        "BootSkeleton"
+      ],
+      "styles": [
+        "src/clubhouse/styles/shell.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/shell/BrandWord.tsx",
       "group": "shell",
       "exports": [
@@ -9892,6 +9907,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -12705,7 +12721,7 @@
         },
         {
           "name": "--ch-classes-x6",
-          "value": "0 0 0 2px var(--ch-accent)",
+          "value": "0 0 0 2px var(--ch-green-600)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -13272,7 +13288,7 @@
         },
         {
           "name": "--ch-hf-a-shadow",
-          "value": "var(--ch-elevation-reading)",
+          "value": "var(--ch-elevation-lifted)",
           "scope": ".ch-hf"
         },
         {
@@ -13412,7 +13428,7 @@
         },
         {
           "name": "--ch-hf-a-shadow",
-          "value": "var(--ch-elevation-reading)",
+          "value": "var(--ch-elevation-lifted)",
           "scope": "html[data-fw-theme='dark'] .ch-hf"
         },
         {
@@ -18711,7 +18727,7 @@
         },
         {
           "name": "--ch-roster-x3",
-          "value": "0 0 0 1px color-mix(in srgb, var(--ch-rs-y, var(--ch-chart-flat)) 24%, transparent), var(--ch-crh-leader-shadow)",
+          "value": "0 0 0 1px color-mix(in srgb, var(--ch-rs-y, var(--ch-chart-flat)) 34%, transparent), var(--ch-elevation-lifted)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -19753,6 +19769,8 @@
         "ch-bellp__top",
         "ch-bellp__txt",
         "ch-bellp__x",
+        "ch-boot-page",
+        "ch-boot-page__card",
         "ch-brand",
         "ch-brand__fold",
         "ch-brand__line",
@@ -19806,7 +19824,6 @@
         "ch-dock__slot",
         "ch-empty",
         "ch-empty--compact",
-        "ch-empty--icon",
         "ch-empty-page",
         "ch-empty-page--danger",
         "ch-empty-page__a",
@@ -20110,6 +20127,7 @@
     {
       "file": "src/clubhouse/styles/stats-redesign.css",
       "classes": [
+        "ch-avatar",
         "ch-btn",
         "ch-gd",
         "ch-gm",
@@ -20152,6 +20170,7 @@
         "ch-shs-d-hero__cap",
         "ch-shs-d-hero__chips",
         "ch-shs-d-hero__fig",
+        "ch-shs-d-hero__gauge",
         "ch-shs-d-sheet",
         "ch-shs-d-sheet--body",
         "ch-shs-d-slot",
@@ -20209,6 +20228,7 @@
         "ch-shs-mrails",
         "ch-shs-mrow",
         "ch-shs-mrows",
+        "ch-shs-needs",
         "ch-shs-none",
         "ch-shs-nothing",
         "ch-shs-notice",
@@ -23092,12 +23112,12 @@
         },
         {
           "name": "--ch-skel-base",
-          "value": "#e2dbca",
+          "value": "#d8d0bb",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-skel-sheen",
-          "value": "#ece6d8",
+          "value": "#ebe5d6",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -23233,6 +23253,11 @@
         {
           "name": "--ch-elevation-reading",
           "value": "inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(28 25 18 / 0.085),\n    var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.08), var(--ch-light-drift-mid) 8px 18px -10px rgb(28 25 18 / 0.16),\n    var(--ch-light-drift) 22px 40px -24px rgb(28 25 18 / 0.18)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-elevation-lifted",
+          "value": "inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(28 25 18 / 0.1),\n    var(--ch-light-drift-near) 1px 3px rgb(28 25 18 / 0.12), var(--ch-light-drift-mid) 12px 24px -10px rgb(28 25 18 / 0.26),\n    var(--ch-light-drift) 30px 52px -22px rgb(28 25 18 / 0.3)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -23382,7 +23407,7 @@
         },
         {
           "name": "--ch-card-shadow",
-          "value": "var(--ch-elevation-reading)",
+          "value": "var(--ch-elevation-lifted)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -23777,12 +23802,7 @@
         },
         {
           "name": "--ch-crh-card-shadow",
-          "value": "var(--ch-elevation-reading)",
-          "scope": "[data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-crh-leader-shadow",
-          "value": "0 1px 2px rgb(28 25 18 / 0.05), 0 8px 20px -14px rgb(28 25 18 / 0.12)",
+          "value": "var(--ch-elevation-lifted)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -24432,7 +24452,7 @@
         },
         {
           "name": "--ch-card-shadow",
-          "value": "var(--ch-elevation-reading)",
+          "value": "var(--ch-elevation-lifted)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -24632,12 +24652,7 @@
         },
         {
           "name": "--ch-crh-card-shadow",
-          "value": "var(--ch-elevation-reading)",
-          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
-        },
-        {
-          "name": "--ch-crh-leader-shadow",
-          "value": "0 1px 2px rgb(0 0 0 / 0.3), 0 8px 20px -14px rgb(0 0 0 / 0.5)",
+          "value": "var(--ch-elevation-lifted)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -25286,6 +25301,11 @@
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
+          "name": "--ch-elevation-lifted",
+          "value": "inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(255 255 255 / 0.09),\n    var(--ch-light-drift-near) 1px 3px rgb(0 0 0 / 0.45), var(--ch-light-drift-mid) 12px 24px -10px rgb(0 0 0 / 0.65),\n    var(--ch-light-drift) 30px 52px -22px rgb(0 0 0 / 0.65)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-elevation-cast",
           "value": "var(--ch-light-drift-near) 1px 2px rgb(0 0 0 / 0.3), var(--ch-light-drift-mid) 8px 18px -10px rgb(0 0 0 / 0.5),\n    var(--ch-light-drift) 22px 40px -24px rgb(0 0 0 / 0.5)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
@@ -25637,12 +25657,12 @@
         },
         {
           "name": "--ch-skel-base",
-          "value": "#252c26",
+          "value": "#2f382f",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
           "name": "--ch-skel-sheen",
-          "value": "#2e362f",
+          "value": "#3c463d",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -26805,6 +26825,7 @@
         "ch-set-course__save",
         "ch-set-course__state",
         "ch-set-course__where",
+        "ch-sheet",
         "ch-shs-ax",
         "ch-shs-bench-k",
         "ch-shs-bigv",
@@ -27161,7 +27182,7 @@
         },
         {
           "name": "--ch-ui-x1",
-          "value": "var(--ch-elevation-reading)",
+          "value": "var(--ch-elevation-lifted)",
           "scope": "[data-ui='clubhouse']"
         },
         {

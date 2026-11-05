@@ -56,7 +56,10 @@ describe('the coach card from the stored coach copy', () => {
     // Both voices state the same numbers, line by line.
     expect(numbersIn(plain(coach.title))).toEqual(numbersIn(plain(player.title)));
     expect(numbersIn(plain(coach.lede)).sort()).toEqual(numbersIn(plain(player.lede)).sort());
-    expect(numbersIn(plain(coach.why ?? '')).sort()).toEqual(numbersIn(plain(player.why ?? '')).sort());
+    // CR0: the guess is the coach's, so a player's why is the coach's less that sentence, with no number of its own.
+    const coachWhy = numbersIn(plain(coach.why ?? ''));
+    expect(numbersIn(plain(player.why ?? '')).filter((n) => !coachWhy.includes(n))).toEqual([]);
+    expect(plain(player.why ?? '')).not.toMatch(/consistent with/i);
   });
 
   it('the focus area it assigns is saved in the player’s own words, never the coach copy', () => {

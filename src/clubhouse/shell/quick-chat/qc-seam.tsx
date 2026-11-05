@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext } from 'react';
-import type { QuickChatWeek } from '@/app/golf/actions/coachhelm-ask';
+import type { QuickChatWeek } from '@/lib/coachhelm/v3/chat/quick-chat-week';
 import type { QcEarlier } from './earlier-today';
 
 /**

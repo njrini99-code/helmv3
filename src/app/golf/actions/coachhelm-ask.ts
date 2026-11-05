@@ -48,7 +48,6 @@ async function setChatToneImpl(conversationId: string, tone: 'straight' | 'detai
   return error ? { success: false, error: 'The tone wasn’t saved.' } : { success: true };
 }
 
-export type { QuickChatWeek } from '@/lib/coachhelm/v3/chat/quick-chat-week';
 
 /** The week around a draft event and that day's blocks, for the quick chat's card. RLS holds it to the coach's team. */
 async function readQuickChatWeekImpl(date: string): Promise<QuickChatWeek | null> {

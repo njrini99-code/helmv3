@@ -11,7 +11,7 @@
   --ch-hf-a-accent: #155a39;
   --ch-hf-a-sep: rgb(28 27 24 / 0.1);
   --ch-hf-a-ring: rgb(28 27 24 / 0.07);
-  --ch-hf-a-shadow: var(--ch-elevation-reading);
+  --ch-hf-a-shadow: var(--ch-elevation-lifted);
   --ch-hf-a-feat: #0b3a25;
   --ch-hf-a-feat-1: #f4f1e8;
   --ch-hf-a-feat-2: #d3d9cb;
@@ -43,7 +43,7 @@ html[data-fw-theme='dark'] .ch-hf {
   --ch-hf-a-accent: #7cc79b;
   --ch-hf-a-sep: rgb(241 236 223 / 0.1);
   --ch-hf-a-ring: rgb(255 255 255 / 0.06);
-  --ch-hf-a-shadow: var(--ch-elevation-reading);
+  --ch-hf-a-shadow: var(--ch-elevation-lifted);
   --ch-hf-a-feat: #123d29;
   --ch-hf-a-press: rgb(241 236 223 / 0.06);
   --ch-hf-a-skel: #252c26;

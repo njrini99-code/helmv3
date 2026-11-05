@@ -4,7 +4,8 @@ import { pluralWord } from '../../../lib/plural';
 
 import { useEffect, useState } from 'react';
 import type { TaskVisual } from '@/lib/coachhelm/v3/chat/action-types';
-import { readQuickChatWeek, type QuickChatWeek } from '@/app/golf/actions/coachhelm-ask';
+import { readQuickChatWeek } from '@/app/golf/actions/coachhelm-ask';
+import type { QuickChatWeek } from '@/lib/coachhelm/v3/chat/quick-chat-week';
 import { clockIn } from '@/lib/coachhelm/v3/chat/quick-chat-week';
 import { useQcSeam } from '../qc-seam';
 
