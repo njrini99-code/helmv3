@@ -3563,7 +3563,8 @@
         "ClassHomeLine"
       ],
       "styles": [
-        "src/clubhouse/styles/class-awareness.css"
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/home.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -15412,7 +15413,10 @@
         "ch-avatar",
         "ch-badge",
         "ch-btn",
+        "ch-ca-home--desktop",
+        "ch-ca-home__btn",
         "ch-cd",
+        "ch-dh-brief",
         "ch-dh-card",
         "ch-dh-card__h",
         "ch-dh-card__t",
@@ -15423,10 +15427,16 @@
         "ch-dh-next__f",
         "ch-dh-next__k",
         "ch-dh-rank",
+        "ch-dh-rest",
         "ch-dh-rows",
         "ch-dh-rows--agenda",
+        "ch-dh-rows--board",
+        "ch-dh-rows--rounds",
         "ch-dh-rows__b",
+        "ch-dh-score",
+        "ch-dh-time",
         "ch-empty",
+        "ch-es",
         "ch-fgr__note",
         "ch-h-agenda",
         "ch-h-agenda__a",
@@ -15802,6 +15812,16 @@
           "name": "--ch-home-x4",
           "value": "inset -0.66px 0 0 var(--ch-separator)",
           "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-dh-inset",
+          "value": "56px",
+          "scope": ".ch-dh-rows--board"
+        },
+        {
+          "name": "--ch-dh-inset",
+          "value": "16px",
+          "scope": ".ch-dh-rows--board.is-unplaced"
         },
         {
           "name": "--ch-skel-base",
@@ -18472,6 +18492,7 @@
         "ch-rs-peek__cap",
         "ch-rs-peek__class",
         "ch-rs-peek__dev",
+        "ch-rs-peek__early",
         "ch-rs-peek__facts",
         "ch-rs-peek__figs",
         "ch-rs-peek__foot",
