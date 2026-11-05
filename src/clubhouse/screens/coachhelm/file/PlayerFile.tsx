@@ -48,17 +48,15 @@ function Fold({ show, children }: { show: boolean; children: ReactNode }) {
   const [mounted, setMounted] = useState(show);
   const ref = useRef<HTMLDivElement>(null);
   const reduced = useChReducedMotion();
-  const first = useRef(true);
+  // What it last settled on. A real flip moves it, never a re-run: Strict Mode's second mount, or Reduce Motion read after hydration.
+  const settled = useRef(show);
   useEffect(() => {
     if (show) setMounted(true);
   }, [show]);
   useLayoutEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
-    }
     const el = ref.current;
-    if (!el) return;
+    if (!el || settled.current === show) return;
+    settled.current = show;
     if (reduced || typeof el.animate !== 'function') {
       if (!show) setMounted(false);
       return;

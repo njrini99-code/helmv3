@@ -1,7 +1,7 @@
 import { LazyMotion, domAnimation } from 'motion/react';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ReactNode } from 'react';
+import { StrictMode, type ReactNode } from 'react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../../../lib/haptics', () => ({ haptic: vi.fn() }));
@@ -82,6 +82,29 @@ describe('the coach file and the lens', () => {
   it('no row at all reads Not set yet, never a made-up default (S-FILE 29)', () => {
     render(<PlayerFile load={{ status: 'ready', data: previewPlayerFile('nointent') }} roster={null} />, { wrapper: Wrap });
     expect(document.body.textContent).toContain('Not set yet');
+  });
+});
+
+describe('a lens card folds only on a real flip (Reduce Motion sweep)', () => {
+  it('does not animate on mount, Strict Mode’s second effect included, and does on the lens flip', async () => {
+    const animate = vi.fn(() => ({ cancel: vi.fn(), onfinish: null }) as unknown as Animation);
+    const had = Element.prototype.animate;
+    Element.prototype.animate = animate as unknown as typeof Element.prototype.animate;
+    try {
+      const user = userEvent.setup();
+      render(
+        <StrictMode>
+          <PlayerFile load={{ status: 'ready', data: previewPlayerFile('default') }} roster={null} />
+        </StrictMode>,
+        { wrapper: Wrap },
+      );
+      const onFold = () => animate.mock.contexts.filter((el) => (el as unknown as Element).classList?.contains('wrap-collapse')).length;
+      expect(onFold()).toBe(0);
+      await user.click(screen.getAllByRole('radio').find((r) => r.getAttribute('aria-checked') === 'false')!);
+      await waitFor(() => expect(onFold()).toBeGreaterThan(0));
+    } finally {
+      Element.prototype.animate = had;
+    }
   });
 });
 
