@@ -160,4 +160,27 @@ describe('the player page (S-BOARD, W-LNS-14, W-LNS-15)', () => {
     expect(screen.getAllByRole('button', { name: 'Accept' }).length).toBeGreaterThan(0);
     expect(within(document.body).queryByText('Declined')).toBeNull();
   });
+
+  it('Decline is held: nothing writes until the page is left, then once; a refusal shows CH-13005 and brings the buttons back', async () => {
+    const writes: ChPlayerWrites = { accept: vi.fn(async () => ({ success: true })), decline: vi.fn(async () => ({ success: false, error: 'no' })) };
+    render(<YourWeek load={{ status: 'ready', data: week('proposed') }} writes={writes} />, { wrapper: Wrap });
+    await userEvent.click(screen.getAllByRole('button', { name: 'Decline' }).filter((b) => !(b as HTMLButtonElement).disabled)[0]!);
+    await waitFor(() => expect(document.querySelector('[data-ch-code="CH-13912"]')).not.toBeNull());
+    expect(writes.decline).not.toHaveBeenCalled();
+    window.dispatchEvent(new Event('pagehide'));
+    await waitFor(() => expect(document.querySelector('[data-ch-code="CH-13005"]')).not.toBeNull());
+    expect(writes.decline).toHaveBeenCalledTimes(1);
+    expect(writes.decline).toHaveBeenCalledWith('fa-1');
+    expect(writes.accept).not.toHaveBeenCalled();
+    expect(screen.getAllByRole('button', { name: 'Accept' }).some((b) => !(b as HTMLButtonElement).disabled)).toBe(true);
+  });
+
+  it('Undo on a held Decline means the write is never sent', async () => {
+    const writes: ChPlayerWrites = { accept: vi.fn(async () => ({ success: true })), decline: vi.fn(async () => ({ success: true })) };
+    render(<YourWeek load={{ status: 'ready', data: week('proposed') }} writes={writes} />, { wrapper: Wrap });
+    await userEvent.click(screen.getAllByRole('button', { name: 'Decline' }).filter((b) => !(b as HTMLButtonElement).disabled)[0]!);
+    await userEvent.click(await screen.findByRole('button', { name: 'Undo' }));
+    window.dispatchEvent(new Event('pagehide'));
+    expect(writes.decline).not.toHaveBeenCalled();
+  });
 });

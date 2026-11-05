@@ -56,6 +56,18 @@ describe('whose key it is', () => {
   });
 });
 
+describe('the Told counts (W-QC-14)', () => {
+  it('answer with the row read for this coach and key, unchanged', async () => {
+    const row = { status: 'completed', notifications: [{ channel: 'bell', recipients: 11, status: 'sent' }], created: [{ kind: 'event', count: 1 }] };
+    hold.receiptFor.mockResolvedValue(row);
+    const res = await GET(req('', 'GET'), params);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(row);
+    expect(hold.receiptFor).toHaveBeenCalledTimes(1);
+    expect(hold.receiptFor).toHaveBeenCalledWith(expect.anything(), { coach_id: 'coach-1', idempotency_key: KEY });
+  });
+});
+
 describe('Open', () => {
   it('without now=1 nothing commits', async () => {
     const res = await POST(req(), params);

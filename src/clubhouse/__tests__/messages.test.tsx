@@ -1606,6 +1606,28 @@ describe('Messages · prefilled messages (D2-7: the coach presses Send)', () => 
     expect(a.createGolfConversation).not.toHaveBeenCalled();
   });
 
+  it('MSG-CP-56 New announcement is in a coach New message and absent from a player DOM', async () => {
+    const user = userEvent.setup();
+    const { unmount } = showPhone();
+    await user.click(await screen.findByRole('button', { name: 'New message' }));
+    expect((await screen.findByRole('region', { name: 'New message' })).textContent).toMatch(/announcement/i);
+    unmount();
+    showPhone({ ...data, role: 'player', viewerPlayerId: 'p-me' });
+    await user.click(await screen.findByRole('button', { name: 'New message' }));
+    expect((await screen.findByRole('region', { name: 'New message' })).textContent).not.toMatch(/announcement/i);
+  });
+
+  it('W-MSG-16 the coach own unsent draft wins over the prefill, and nothing is sent', async () => {
+    live.convs.conversations = [team, dmEli];
+    new DraftStore(data.viewerUserId).set('dm-eli', 'My own words');
+    params.current = stash({ players: ['p-eli'], draft: 'Can you make the 3:30 block?' });
+    show();
+    const box = await screen.findByRole('textbox', { name: /Message Eli/ });
+    await waitFor(() => expect((box as HTMLTextAreaElement).value).toBe('My own words'));
+    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+    new DraftStore(data.viewerUserId).delete('dm-eli');
+  });
+
   it('two players open New message as a named group with the draft quoted; nothing is created until the coach presses on', async () => {
     const user = userEvent.setup();
     a.createGolfTeamBroadcast.mockResolvedValue({ conversationId: 'grp' });

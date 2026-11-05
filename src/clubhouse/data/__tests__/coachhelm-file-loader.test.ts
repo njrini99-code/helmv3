@@ -242,4 +242,11 @@ describe('the player Your week (S-BOARD 6 to 8, W-LNS-15)', () => {
     expect(Object.keys(load.data.cards)).not.toContain('track');
     expect(load.data.cards.field?.dots).toBeNull();
   });
+
+  it('with no coach name to hand the plan says Your coach', async () => {
+    db.tables.golf_rounds = { data: [], error: null };
+    const { load } = await loadPlayerYourWeek({ playerId: 'p1' });
+    if (load.status !== 'ready') throw new Error(`expected ready, got ${load.status}`);
+    expect(load.data.cards.plan?.coach).toBe('Your coach');
+  });
 });
