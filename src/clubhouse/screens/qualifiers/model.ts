@@ -128,6 +128,33 @@ export interface ChQBoard {
   topScore: number;
   squad: number;
   submitted: number;
+  /**
+   * Round numbers whose scores mix 9-hole and 18-hole cards (owner, 2026-10-31: a 9-hole round counts as its round, and
+   * the board says when one round compares unlike cards). Left out, none do.
+   */
+  mixed?: ChQMixedRound[];
+}
+
+export interface ChQMixedRound {
+  number: number;
+  nine: number;
+  full: number;
+}
+
+/** The rounds whose cards are not all one length, in round order. A card with no length on it reads as 18 holes. */
+export function mixedLengthRounds(rounds: ReadonlyArray<Pick<ChQRound, 'number' | 'holesPlayed' | 'total'>>): ChQMixedRound[] {
+  const by = new Map<number, { nine: number; full: number }>();
+  for (const r of rounds) {
+    if (r.total == null) continue;
+    const slot = by.get(r.number) ?? { nine: 0, full: 0 };
+    if ((r.holesPlayed ?? 18) === 9) slot.nine += 1;
+    else slot.full += 1;
+    by.set(r.number, slot);
+  }
+  return [...by.entries()]
+    .filter(([, s]) => s.nine > 0 && s.full > 0)
+    .sort(([a], [b]) => a - b)
+    .map(([number, s]) => ({ number, ...s }));
 }
 
 /** The first scheduled round with no score in (the one a player plays next), or null when every round is in. */
@@ -284,7 +311,8 @@ export function buildBoard(input: {
     else row.state = i < topScore ? 'qualifying' : i < squad && row.played >= minBubble ? 'bubble' : null;
   });
 
-  return { rows: scored, unscored, topScore, squad, submitted: all.reduce((s, r) => s + r.played, 0) };
+  const mixed = mixedLengthRounds(input.rounds);
+  return { rows: scored, unscored, topScore, squad, submitted: all.reduce((s, r) => s + r.played, 0), ...(mixed.length ? { mixed } : {}) };
 }
 
 /** One line on the board measured from the viewer's row (row 74, "you vs the line"). */

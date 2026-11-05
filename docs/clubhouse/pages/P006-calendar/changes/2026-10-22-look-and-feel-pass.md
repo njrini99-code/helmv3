@@ -13,11 +13,13 @@ Held items: none
 
 ### Changed
 
-- The event title's placeholder reads on --ch-text-placeholder, and the group-event title and the class-group title are 600 (calendar.css).
+- The event title's placeholder reads on --ch-text-placeholder, and the
+  group-event title and the class-group title are 600 (calendar.css).
 
 ### Why
 
-- The cross-page entry, docs/clubhouse/changes/2026-10-22-look-and-feel-pass.md, holds the reasons.
+- The cross-page entry, docs/clubhouse/changes/2026-10-22-look-and-feel-pass.md,
+  holds the reasons.
 
 ### Verification
 

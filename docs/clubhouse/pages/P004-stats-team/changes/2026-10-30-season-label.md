@@ -16,7 +16,8 @@ Held items:     whether to remove the now-unused Settings "Season" field is
 
 ### Changed
 
-- The Team stats eyebrow shows the computed season. It is `currentSeasonLabel(now, zone)` (`data/season.ts`): 1 August in
+- The Team stats eyebrow shows the computed season. It is
+  `currentSeasonLabel(now, zone)` (`data/season.ts`): 1 August in
   the team's zone, en dash, "2026–27". Files: `data/stats-team.ts`.
 
 ### Why

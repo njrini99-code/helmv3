@@ -155,7 +155,7 @@ export function CoursePicker({
                 kind="filtered"
                 code="CH-6340"
                 title={`No courses match “${q.trim()}”`}
-                body="Use the name as it is. You can swap in the library course later from Tournaments."
+                body="Use the name as it is, or search again."
                 action={
                   <Button
                     variant="secondary"

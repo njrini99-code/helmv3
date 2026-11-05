@@ -13,11 +13,13 @@ Held items: none
 
 ### Changed
 
-- RoundZones re-reads the label size when the sidebar's fold settles, not on every frame of it.
+- RoundZones re-reads the label size when the sidebar's fold settles, not on
+  every frame of it.
 
 ### Why
 
-- The cross-page entry, docs/clubhouse/changes/2026-10-22-motion-apple-bar.md, holds the reasons.
+- The cross-page entry, docs/clubhouse/changes/2026-10-22-motion-apple-bar.md,
+  holds the reasons.
 
 ### Verification
 

@@ -205,6 +205,9 @@ export async function getPlayerTeamId(
     .select('team_id')
     .eq('player_id', playerId)
     .eq('status', 'active')
+    // A player active on two teams resolves to the newest, as the Clubhouse shell does (getActivePlayerTeamMembership).
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   // PGRST116 is not a failure here — it is `.maybeSingle()` meeting a player
@@ -250,6 +253,49 @@ export async function getPlayerTeamId(
   }
 
   return anyMembership?.team_id ?? null;
+}
+/**
+ * The team a qualifier round belongs to: the qualifier's own, when the player is an active member of it. A player active
+ * on two teams resolved through getPlayerTeamId to the newest team, so a round in the other team's qualifier was saved
+ * under the wrong team and its coach, teammates and board could not see it (audit 2026-10-31). Null when the qualifier
+ * can't be read or the player isn't on its team; the caller then keeps getPlayerTeamId's answer.
+ */
+/**
+ * Whether this player discarded this round (golf_round_discards, written by the delete trigger, 20261031141000).
+ * A save or submit against a round id that no longer exists answers `round_discarded` then instead of
+ * `round_missing`, so no device rebuilds a round its player threw away. A failed read is "not known": the caller
+ * keeps its `round_missing` path, as before the table existed.
+ */
+export async function roundWasDiscarded(supabase: SupabaseClient, roundId: string, playerId: string): Promise<boolean> {
+  try {
+    // nosemgrep: helmv3-server-action-missing-auth-check -- plain helper (not an action); both callers authenticated and resolved the player id
+    const { data, error } = await (supabase as SupabaseClient)
+      .from('golf_round_discards' as never)
+      .select('round_id')
+      .eq('round_id', roundId)
+      .eq('player_id', playerId)
+      .limit(1);
+    return !error && Array.isArray(data) && data.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+export async function qualifierTeamIdFor(
+  supabase: SupabaseClient,
+  qualifierId: string | null | undefined,
+  playerId: string,
+): Promise<string | null> {
+  if (!qualifierId) return null;
+  // nosemgrep: helmv3-server-action-missing-auth-check -- plain helper (no server directive, not an action); every caller has already authenticated and passes the player id
+  const { data: q, error: qualifierError } = await supabase.from('golf_qualifiers').select('team_id').eq('id', qualifierId).maybeSingle();
+  // A failed read is "not known": the caller falls back to the player's own team, as before this helper existed.
+  if (qualifierError) return null;
+  const teamId = (q as { team_id: string | null } | null)?.team_id ?? null;
+  if (!teamId) return null;
+  // nosemgrep: helmv3-server-action-missing-auth-check -- plain helper; see above
+  const { data: m, error: memberError } = await supabase.from('golf_team_members').select('team_id').eq('team_id', teamId).eq('player_id', playerId).eq('status', 'active').limit(1).maybeSingle();
+  return !memberError && m ? teamId : null;
 }
 // deriveLieAfterFromResult, deriveLieAfter imported from '@/lib/utils/shot-helpers'
 

@@ -617,7 +617,7 @@ async function updateGolfEventImpl(
     // Verify event belongs to coach's team
     const { data: existingEvent, error: existingEventError } = await supabase
       .from('golf_events')
-      .select('team_id')
+      .select('team_id, title, event_type, location, start_time, end_time')
       .eq('id', eventId)
       .single();
 
@@ -639,6 +639,11 @@ async function updateGolfEventImpl(
     if (existingEvent.team_id !== teamId) {
       return { success: false, error: 'Access denied' };
     }
+
+    // The row as it stood before this write, copied now, to tell later what the save really changed.
+    const prior = { ...existingEvent } as {
+      title?: string | null; event_type?: string | null; location?: string | null; start_time?: string | null; end_time?: string | null;
+    };
 
     // Validate input
     const validatedData = golfEventUpdateSchema.parse(data);
@@ -804,14 +809,19 @@ async function updateGolfEventImpl(
     // Notify team players about event update. Time / location / title /
     // type all matter to a player who's already RSVP'd — a drag-and-drop
     // reschedule is exactly the case where attendees need to hear about it.
+    // The editor sends the title and the start on every save, so "was sent" is not "changed": compare with the row
+    // as it stood before this write (audit F9). A save that changes only notes, RSVP rules or invitees tells no one;
+    // a field this read did not return counts as changed, as it always did.
+    const instant = (v: string | null | undefined) => (v ? Date.parse(v) : null);
+    const differs = (next: unknown, prev: unknown, same: (a: unknown, b: unknown) => boolean = Object.is) =>
+      prev === undefined ? true : !same(next, prev);
+    const sameInstant = (a: unknown, b: unknown) => instant(a as string | null) === instant(b as string | null);
     const meaningfulChange =
-      validatedData.title !== undefined ||
-      validatedData.location !== undefined ||
-      validatedData.eventType !== undefined ||
-      validatedData.startDate !== undefined ||
-      validatedData.startTime !== undefined ||
-      validatedData.endDate !== undefined ||
-      validatedData.endTime !== undefined;
+      (updateData.title !== undefined && differs(updateData.title, prior.title)) ||
+      (updateData.location !== undefined && differs(updateData.location, prior.location ?? null)) ||
+      (updateData.event_type !== undefined && differs(updateData.event_type, prior.event_type)) ||
+      (updateData.start_time !== undefined && differs(updateData.start_time, prior.start_time, sameInstant)) ||
+      (updateData.end_time !== undefined && differs(updateData.end_time, prior.end_time ?? null, sameInstant));
     if (teamId && meaningfulChange) {
       try {
         const { notifyEventUpdate } = await import('@/lib/calendar/rsvp');
@@ -952,14 +962,26 @@ async function deleteGolfEventImpl(
     }
 
     if (options?.hard) {
+      // A series root's children hang off it (parent_event_id ON DELETE CASCADE): deleting the root permanently erased
+      // every occurrence, reply and attendance record of the series (audit 2026-10-31). The series has its own delete.
+      const { count: children, error: childError } = await supabase
+        .from('golf_events')
+        .select('id', { count: 'exact', head: true })
+        .eq('parent_event_id', eventId);
+      if (childError) return { success: false, error: 'Couldn’t check the series. Nothing was deleted. Try again.' };
+      if ((children ?? 0) > 0) {
+        return { success: false, error: 'This starts a series. Delete it from the series options instead, so the other dates stay or go as you choose.' };
+      }
       // Hard delete is gated: only an already-cancelled event, or one with
       // zero attendance rows, may be permanently removed (the FK cascade
       // destroys RSVPs and attendee notification history).
       if (existingEvent.status !== 'cancelled') {
-        const { count } = await supabase
+        const { count, error: countError } = await supabase
           .from('golf_event_attendance')
           .select('id', { count: 'exact', head: true })
           .eq('event_id', eventId);
+        // A failed count is not zero invitees.
+        if (countError) return { success: false, error: 'Couldn’t check who is invited. Nothing was deleted. Try again.' };
 
         if ((count ?? 0) > 0) {
           return {

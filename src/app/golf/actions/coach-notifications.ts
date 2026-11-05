@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { calendarUnreadCutoffIso } from './unified-notifications-model';
 import { countUnreadMessages, readViewerParticipants } from '@/lib/golf/unread-message-count';
+import { getGolfActiveTeamConversationIds } from '@/app/actions/messages';
 
 interface ActionResult<T = void> {
   success: boolean;
@@ -110,7 +111,11 @@ async function getCoachNotificationCountsImpl(
       // A deleted (hidden) conversation is skipped until a new message brings
       // it back, as the inbox does (src/lib/golf/unread-message-count.ts). One unreadable
       // conversation makes the TOTAL unknown.
-      unreadMessages = await countUnreadMessages(supabase, viewerId, participants);
+      // The active team's conversations only, as the inbox shows: a coach on two teams saw a badge counting the other
+      // team's unread with no row to clear it (audit 2026-10-31). Null (couldn't scope) counts them all, as before.
+      const scope = await getGolfActiveTeamConversationIds().catch(() => null);
+      const scoped = scope ? participants.filter((p) => scope.includes(p.conversation_id)) : participants;
+      unreadMessages = await countUnreadMessages(supabase, viewerId, scoped);
     }
 
     return {

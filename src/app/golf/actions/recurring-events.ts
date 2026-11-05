@@ -50,6 +50,36 @@ function occurrenceTz(date: string, time: string, timeZone: string | undefined, 
   }
   return fallbackOffset !== undefined ? formatTimezoneOffset(fallbackOffset) : '';
 }
+/** Minutes `timeZone` is ahead of UTC at the instant `ms` (EDT is -240). Null when the zone can't be read. */
+function zoneOffsetAt(ms: number, timeZone: string): number | null {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(new Date(ms));
+    const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
+    const wall = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
+    return Math.round((wall - Math.floor(ms / 1000) * 1000) / 60_000);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * `ms` moved by `wallDeltaMs` of wall-clock time in `timeZone`: a practice at 4 PM moved a day across a clock change stays at
+ * 4 PM there. A millisecond delta landed it at 3 PM (audit 2026-10-31, the Nov 1 change). Without a zone, the plain delta.
+ */
+function shiftWall(ms: number, wallDeltaMs: number, timeZone: string | undefined): number {
+  const off = timeZone ? zoneOffsetAt(ms, timeZone) : null;
+  if (off == null) return ms + wallDeltaMs;
+  const wall = ms + off * 60_000 + wallDeltaMs;
+  // The target's own offset, settled in two passes (the guess can sit across the change itself).
+  let out = wall - off * 60_000;
+  for (let i = 0; i < 2; i += 1) {
+    const o = zoneOffsetAt(out, timeZone!);
+    if (o == null) break;
+    out = wall - o * 60_000;
+  }
+  return out;
+}
+
 /**
  * The series' RSVP deadline as one instant, shared by every occurrence. The editor sends datetime-local wall time
  * ("YYYY-MM-DDTHH:MM"), which used to be stored with no offset, so Postgres read it as UTC (an ET coach's 6 PM became
@@ -382,19 +412,19 @@ function deferRecurringDeleteNotify(opts: {
       const detail = `${scopeLabel} cancelled — ${startLabel}${location ? ` at ${location}` : ''}`;
 
       const inAppPromise = (async () => {
-        const notifications = eventIds.flatMap((eventId) =>
-          userIds.map((uid) => ({
-            user_id: uid,
-            event_id: eventId,
-            notification_type: 'event_cancelled',
-            title: `Cancelled: ${title}`,
-            message: detail,
-            action_url: `/golf/dashboard/calendar`,
-          })),
-        );
+        // One notice per player, with no event: this runs after the rows are gone, and a row naming a deleted event
+        // fails its foreign key, so nobody got the in-app notice (audit 2026-10-31); one per occurrence would also have
+        // put forty rows in a player's Bell for one series.
+        const notifications = userIds.map((uid) => ({
+          user_id: uid,
+          event_id: null,
+          notification_type: 'event_cancelled',
+          title: `Cancelled: ${title}`,
+          message: detail,
+          action_url: `/golf/dashboard/calendar`,
+        }));
         for (const chunk of chunkArray(notifications, ID_CHUNK_SIZE)) {
-          const { error: notifError } = await fromUntyped(adminClient, 'golf_calendar_notifications')
-            .upsert(chunk, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: false });
+          const { error: notifError } = await fromUntyped(adminClient, 'golf_calendar_notifications').insert(chunk);
           if (notifError) {
             await logServerError(`deleteRecurringEvent notification insert failed: ${notifError.message}`, {
               action: 'recurring_events.deleteRecurringEvent.notify',
@@ -747,9 +777,11 @@ async function createRecurringEventImpl(
       return { success: false, error: teamResolution.error };
     }
     const teamId = teamResolution.teamId;
-    const tz = input.timezoneOffset !== undefined ? formatTimezoneOffset(input.timezoneOffset) : '';
 
     const rootDate = occurrenceDates[0]!;
+    // The root's own date's offset, as every child takes: a Weekdays series created on a Saturday before a clock change
+    // starts on Monday, and the offset of the day it was made put that first practice an hour off (audit 2026-10-31).
+    const rootTz = (time: string | undefined) => occurrenceTz(rootDate, time ?? '00:00', input.timeZone, input.timezoneOffset);
     const rsvpDeadline = seriesRsvpDeadline(input.rsvpDeadline, input.timeZone, input.timezoneOffset);
 
     // Same invariant the edit path guards (see END_BEFORE_START_ERROR): every
@@ -758,8 +790,8 @@ async function createRecurringEventImpl(
     // first insert and the coach only ever sees "Failed to create recurring
     // event. Please try again." Say what is actually wrong instead.
     if (input.startTime && input.endTime) {
-      const rootStartMs = Date.parse(`${rootDate}T${input.startTime}${tz}`);
-      const rootEndMs = Date.parse(`${rootDate}T${input.endTime}${tz}`);
+      const rootStartMs = Date.parse(`${rootDate}T${input.startTime}${rootTz(input.startTime)}`);
+      const rootEndMs = Date.parse(`${rootDate}T${input.endTime}${rootTz(input.endTime)}`);
       if (Number.isFinite(rootStartMs) && Number.isFinite(rootEndMs) && rootEndMs < rootStartMs) {
         return { success: false, error: END_BEFORE_START_ERROR };
       }
@@ -772,8 +804,8 @@ async function createRecurringEventImpl(
       title: input.title,
       description: input.description || null,
       event_type: input.eventType,
-      start_time: input.startTime ? `${rootDate}T${input.startTime}${tz}` : `${rootDate}T00:00:00${tz}`,
-      end_time: input.endTime ? `${rootDate}T${input.endTime}${tz}` : null,
+      start_time: input.startTime ? `${rootDate}T${input.startTime}${rootTz(input.startTime)}` : `${rootDate}T00:00:00${rootTz(undefined)}`,
+      end_time: input.endTime ? `${rootDate}T${input.endTime}${rootTz(input.endTime)}` : null,
       location: input.location || null,
       created_by: coach.id,
       team_id: teamId,
@@ -1007,9 +1039,13 @@ async function createRecurringEventImpl(
           return;
         }
 
+        // A series with an invite list (a meeting, a 1:1 series) tells only those invited, as a single event does
+        // (Q-108): the whole roster heard about a private meeting series (audit 2026-10-31).
+        const invited = new Set(input.attendeeIds ?? []);
         const playerIds = (teamMembers ?? [])
           .map((m) => m.player_id)
-          .filter((id): id is string => Boolean(id));
+          .filter((id): id is string => Boolean(id))
+          .filter((id) => (invited.size > 0 ? invited.has(id) : input.eventType !== 'meeting'));
         if (playerIds.length === 0) return;
 
         const { data: players, error: playersError } = await adminClient
@@ -1118,6 +1154,13 @@ const observedCreateRecurringEvent = withAdminObserved(
   createRecurringEventImpl,
 );
 
+/** Whether the coach is on the team's staff (golf_team_coach_staff), the rule every other calendar write uses. A failed read denies. */
+async function coachIsOnStaff(supabase: Awaited<ReturnType<typeof createClient>>, coachId: string, teamId: string | null): Promise<boolean> {
+  if (!teamId) return false;
+  const { data, error } = await supabase.from('golf_team_coach_staff').select('coach_id').eq('team_id', teamId).eq('coach_id', coachId).limit(1).maybeSingle();
+  return !error && !!data;
+}
+
 export async function createRecurringEvent(
   input: CreateRecurringEventInput
 ): Promise<ActionResult<{ eventId: string; invitationsError?: string }>> {
@@ -1161,8 +1204,9 @@ async function editRecurringEventImpl(
       return { success: false, error: 'Event not found' };
     }
 
-    // Verify ownership
-    if (targetEvent.created_by !== coach.id) {
+    // Any coach on the event's team staff, as single-event edits and attendance authorise (audit 2026-10-31: an
+    // assistant could edit one practice of a series but not cancel or move the series the head coach created).
+    if (!(await coachIsOnStaff(supabase, coach.id, targetEvent.team_id))) {
       return { success: false, error: 'Not authorized' };
     }
 
@@ -1229,6 +1273,10 @@ async function editRecurringEventImpl(
     const endChanged = newEndMs !== null && Number.isFinite(newEndMs) && newEndMs !== oldEndMs;
     const startDeltaMs =
       startChanged && newStartMs !== null && Number.isFinite(oldStartMs) ? newStartMs - oldStartMs : 0;
+    // The same move as wall-clock time in the team's zone, which every other row of the series takes.
+    const oldOff = input.timeZone && Number.isFinite(oldStartMs) ? zoneOffsetAt(oldStartMs, input.timeZone) : null;
+    const newOff = input.timeZone && newStartMs !== null && Number.isFinite(newStartMs) ? zoneOffsetAt(newStartMs, input.timeZone) : null;
+    const wallDeltaMs = oldOff != null && newOff != null ? startDeltaMs + (newOff - oldOff) * 60_000 : startDeltaMs;
 
     // ANSWER AN IMPOSSIBLE WINDOW HERE, not with a Postgres error. The other
     // half of the same invariant the scope-'this' carry below protects:
@@ -1439,7 +1487,7 @@ async function editRecurringEventImpl(
 
               let newRowStartMs: number | null = Number.isFinite(rowStartMs) ? rowStartMs : null;
               if (startChanged && newStartMs !== null) {
-                newRowStartMs = Number.isFinite(rowStartMs) ? rowStartMs + startDeltaMs : newStartMs;
+                newRowStartMs = Number.isFinite(rowStartMs) ? shiftWall(rowStartMs, wallDeltaMs, input.timeZone) : newStartMs;
                 payload.start_time = new Date(newRowStartMs).toISOString();
               }
 
@@ -1448,7 +1496,7 @@ async function editRecurringEventImpl(
               } else if (startChanged && row.end_time) {
                 const rowEndMs = Date.parse(row.end_time);
                 if (Number.isFinite(rowEndMs)) {
-                  payload.end_time = new Date(rowEndMs + startDeltaMs).toISOString();
+                  payload.end_time = new Date(shiftWall(rowEndMs, wallDeltaMs, input.timeZone)).toISOString();
                 }
               }
 
@@ -1624,8 +1672,9 @@ async function deleteRecurringEventImpl(
       return { success: false, error: 'Event not found' };
     }
 
-    // Verify ownership
-    if (targetEvent.created_by !== coach.id) {
+    // Any coach on the event's team staff, as single-event edits and attendance authorise (audit 2026-10-31: an
+    // assistant could edit one practice of a series but not cancel or move the series the head coach created).
+    if (!(await coachIsOnStaff(supabase, coach.id, targetEvent.team_id))) {
       return { success: false, error: 'Not authorized' };
     }
 

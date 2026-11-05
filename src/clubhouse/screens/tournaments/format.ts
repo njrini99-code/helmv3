@@ -5,7 +5,7 @@
  * agree whatever the machine's zone. "Today" is always the view's `data.now`, never the clock.
  */
 import { formatDateOnly } from '@/lib/golf/date-only';
-import { formatClock } from '../../lib/dates';
+import { formatClock, isoDay } from '../../lib/dates';
 import { formatFixed, formatSigned, formatToPar, MINUS } from '../../lib/format';
 import type { ChTourEvent, ChTourRecord, TourFormat } from './types';
 import { formatPct } from './standings';
@@ -23,6 +23,18 @@ export function tourRange(start: string, end: string): string {
   if (start.slice(0, 10) === end.slice(0, 10)) return tourDay(start);
   const sameMonth = start.slice(0, 7) === end.slice(0, 7);
   return `${tourDay(start)} – ${tourDay(end, sameMonth ? { day: 'numeric' } : { month: 'short', day: 'numeric' })}`;
+}
+
+/**
+ * The team's own date at `now` (yyyy-mm-dd). `now` is a UTC instant, so its first ten characters are tomorrow for about
+ * four hours each US evening: an event today read "Tomorrow" (audit 2026-10-31).
+ */
+export function teamToday(now: string, timezone: string): string {
+  try {
+    return isoDay(now, timezone);
+  } catch {
+    return now.slice(0, 10);
+  }
 }
 
 /** Whole days from `now`'s date to `iso`'s date (negative once it has passed). */

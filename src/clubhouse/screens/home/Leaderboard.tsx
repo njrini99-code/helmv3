@@ -46,7 +46,10 @@ export function leaderPeek(p: ChLeaderRow, rounds: ChLatestRound[] = []): ChPlay
     id: p.playerId,
     name: p.name,
     sub: p.classYear,
-    lastRound: last ? { score: last.score, toPar: last.toPar, label: last.meta.split(' \u00b7 ').slice(0, 2).join(' \u00b7 ') } : null,
+    // The row's own newest round first (any length): the latest-rounds list is 18 holes only, so a newer 9 lost to an
+    // older 18 while the reason line counted days from the newer one.
+    lastRound:
+      p.lastRound ?? (last ? { score: last.score, toPar: last.toPar, label: last.meta.split(' \u00b7 ').slice(0, 2).join(' \u00b7 ') } : null),
     avg: p.avg,
     trend: p.trend,
     reason: quiet ? `No round in ${p.quietDays} days` : p.status === 'slipping' ? 'Scoring is creeping up' : null,

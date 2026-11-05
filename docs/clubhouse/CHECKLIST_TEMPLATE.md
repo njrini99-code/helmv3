@@ -13,35 +13,51 @@ Route: <route>   Surface tag: `<screen>` (Sentry `surface=<screen>.<section>`)
 ## spec
 
 - [ ] Desktop reference files and screenshots are named above
-- [ ] Every figure on the screen is mapped to a table and column, or logged as a data gap in PROGRESS.md
-- [ ] Every control is mapped to an existing server action, or to a migration that has to be written (never applied by an agent)
-- [ ] Differences between the README and the screenshots are resolved as decisions in PROGRESS.md
+- [ ] Every figure on the screen is mapped to a table and column, or logged as a
+  data gap in PROGRESS.md
+- [ ] Every control is mapped to an existing server action, or to a migration
+  that has to be written (never applied by an agent)
+- [ ] Differences between the README and the screenshots are resolved as
+  decisions in PROGRESS.md
 
 ## desktop
 
-- [ ] Matches the reference at 924px and at 1280px or wider (spacing, type, radius, depth)
+- [ ] Matches the reference at 924px and at 1280px or wider (spacing, type,
+  radius, depth)
 - [ ] Only Clubhouse tokens and classes are used, and `clubhouse:check` is clean
 - [ ] Numbers are tabular, with a true minus, `E` for even and `—` for no data
-- [ ] Red appears only for under par and the pin flag; gains are green and losses amber
-- [ ] Copy is in sentence case, in the head-pro voice, and actions are a verb plus an object
-- [ ] Controls that point at an unbuilt screen are hidden via `rebuiltHref`, never dead
-- [ ] A narrow canvas (container below 860px) reflows without horizontal page scroll
+- [ ] Red appears only for under par and the pin flag; gains are green and
+  losses amber
+- [ ] Copy is in sentence case, in the head-pro voice, and actions are a verb
+  plus an object
+- [ ] Controls that point at an unbuilt screen are hidden via `rebuiltHref`,
+  never dead
+- [ ] A narrow canvas (container below 860px) reflows without horizontal page
+  scroll
 
 ## wired
 
-- [ ] Everything is read server-side in one pass, so final data is on first paint (no client fetch waterfall)
-- [ ] Reads go through the RLS-scoped client, with no service role for a user's own data
-- [ ] Every Supabase call reads `error`; lists over 1,000 rows paginate, and `.in()` is chunked
-- [ ] Null, zero and "early read" render differently, and windows and samples are stated
-- [ ] Dates and times are resolved in the team's timezone on the server, with no hydration mismatch
+- [ ] Everything is read server-side in one pass, so final data is on first
+  paint (no client fetch waterfall)
+- [ ] Reads go through the RLS-scoped client, with no service role for a user's
+  own data
+- [ ] Every Supabase call reads `error`; lists over 1,000 rows paginate, and
+  `.in()` is chunked
+- [ ] Null, zero and "early read" render differently, and windows and samples
+  are stated
+- [ ] Dates and times are resolved in the team's timezone on the server, with no
+  hydration mismatch
 - [ ] Unit tests cover the loader's derivations
 
 ## states
 
-- [ ] Loading: a route skeleton shaped like the page, so nothing shifts when data lands
+- [ ] Loading: a route skeleton shaped like the page, so nothing shifts when
+  data lands
 - [ ] Empty (first run): says what will appear here and the one next step
-- [ ] Empty (filtered or no results): distinct from first run, and offers to clear filters
-- [ ] Partial failure: each section has its own failure flag and shows an inline notice with Try again; the rest of the page still works
+- [ ] Empty (filtered or no results): distinct from first run, and offers to
+  clear filters
+- [ ] Partial failure: each section has its own failure flag and shows an inline
+  notice with Try again; the rest of the page still works
 - [ ] Crash containment: every section is wrapped in a `SectionBoundary` with a surface tag
 - [ ] Route error: the Clubhouse error view (it inherits the `logError`, chunk and stale-action recovery)
 - [ ] Not found and no access: plain words and a way back

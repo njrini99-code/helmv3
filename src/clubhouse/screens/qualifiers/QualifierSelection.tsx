@@ -112,7 +112,10 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   const tieChosen = tied.filter((c) => c.onScore).length;
   const tieFull = tieChosen + giving.size >= tiePlaces;
   const tieReady = tied.length === 0 || tieChosen === tiePlaces;
-  const eligible = cands.filter((c) => c.rank != null && !c.onScore && !c.pick && !(stage < 2 && c.tiedAtCut));
+  // A player level at the cut waits for the tie places; once they are given, those left over are in the field like
+  // anyone else, as the server counts them (pickableCount). Excluding them for good left a squad that needed a pick
+  // with nobody to pick (audit 2026-10-31).
+  const eligible = cands.filter((c) => c.rank != null && !c.onScore && !c.pick && !(stage < 2 && c.tiedAtCut && !tieReady));
   const unranked = cands.filter((c) => c.rank == null && !c.pick);
   // A field smaller than the squad has fewer players to pick than pick places; the server needs only those
   // (canConfirmSelection), so the empty places don't hold up the confirmation.
@@ -149,7 +152,7 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
   const confirm = useAction(
     'qualifiers.confirmSquad',
     async () => {
-      const res = await writes.confirm(data.id);
+      const res = await writes.confirm(data.id, [...onScore, ...picks].map((c) => c.playerId));
       const landed = normalise(res);
       if (landed.success) {
         // Q-116: telling the players is best effort; say so when it failed rather than claiming they were told.

@@ -110,7 +110,13 @@ export interface QualifierRoundCourse {
 // QUALIFIER ACTIONS
 // ============================================================================
 
-async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<ActionResult<{ qualifierId: string }>> {
+/**
+ * `roundCoursesFailed` is set when the qualifier was created but its per-round courses did not save: the coach is told, not shown a
+ * clean success with an empty course list (the board's par then comes from the rounds instead of the tee).
+ */
+type CreateGolfQualifierData = { qualifierId: string; roundCoursesFailed?: true };
+
+async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<ActionResult<CreateGolfQualifierData>> {
   try {
     // Validate input
     const validatedData = golfQualifierSchema.parse(data);
@@ -213,6 +219,7 @@ async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<Action
     // generated Database types; the migration is unapplied). A failure here must
     // NOT roll back the qualifier the coach already created — surface it and move
     // on so courses can be re-assigned via setQualifierRoundCourses().
+    let roundCoursesFailed = false;
     if (validatedData.roundCourses && validatedData.roundCourses.length > 0) {
       const numRounds = validatedData.numRounds;
       const rows = validatedData.roundCourses
@@ -233,6 +240,7 @@ async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<Action
         ).insert(rows);
 
         if (roundCoursesError) {
+          roundCoursesFailed = true;
           await logServerError(
             `createGolfQualifier round-course write failed: ${roundCoursesError.message}`,
             { action: 'createGolfQualifier.roundCourses', featureArea: 'qualifiers' },
@@ -332,7 +340,7 @@ async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<Action
     revalidatePath('/golf/dashboard/qualifiers');
     updateTag(CACHE_TAGS.DASHBOARD);
 
-    return { success: true, data: { qualifierId: qualifier.id } };
+    return { success: true, data: { qualifierId: qualifier.id, ...(roundCoursesFailed ? { roundCoursesFailed: true as const } : {}) } };
 
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -346,7 +354,7 @@ const observedCreateGolfQualifier = withAdminObserved(
   { demoSafe: true, sport: 'golf', feature: 'qualifiers' },
   createGolfQualifierImpl,
 );
-export async function createGolfQualifier(data: GolfQualifierInput): Promise<ActionResult<{ qualifierId: string }>> {
+export async function createGolfQualifier(data: GolfQualifierInput): Promise<ActionResult<CreateGolfQualifierData>> {
   return observedCreateGolfQualifier(data);
 }
 /**

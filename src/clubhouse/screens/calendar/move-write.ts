@@ -54,15 +54,18 @@ export function movePayload(m: HeldMove, timeZone: string) {
     if (e.allDay) return { startDate: to.from, endDate: to.to, allDay: true };
     // A timed run keeps its first day's start and last day's end.
     const startTime = toHHMM(e.span?.start ?? e.start ?? 0);
-    const endTime = toHHMM(e.span?.end ?? e.end ?? 0);
+    const endHour = e.span?.end ?? e.end ?? 0;
+    const endTime = toHHMM(endHour);
+    // A run that ends at midnight holds 24 on its last day: that is the next day's 00:00, as a single move writes it.
+    const endDate = endHour >= 24 ? addDay(to.to) : to.to;
     return {
       startDate: to.from,
-      endDate: to.to,
+      endDate,
       startTime,
       endTime,
       allDay: false,
       timezoneOffset: offsetMinutesFor(to.from, startTime, timeZone) ?? undefined,
-      endTimezoneOffset: offsetMinutesFor(to.to, endTime, timeZone) ?? undefined,
+      endTimezoneOffset: offsetMinutesFor(endDate, endTime, timeZone) ?? undefined,
     };
   }
   const startTime = toHHMM(to.start);

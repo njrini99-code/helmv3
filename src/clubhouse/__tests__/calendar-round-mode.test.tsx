@@ -93,7 +93,7 @@ describe('P-5 round mode', () => {
 
   it('Edit round opens round mode: the banner, no title or type, and Edit tournament', async () => {
     const dlg = await openRound();
-    expect(within(dlg).getByRole('note').textContent).toMatch(/^R2Part of Pinehurst Invitational · R2 of 3Course, format and lineup are edited in Tournaments\./);
+    expect(within(dlg).getByRole('note').textContent).toMatch(/^R2Part of Pinehurst Invitational · R2 of 3Day, times, notes and who’s invited are edited here\. Course, format and lineup can’t be changed yet\./);
     expect(within(dlg).queryByLabelText('Event title')).toBeNull();
     expect(within(dlg).queryByRole('radiogroup', { name: 'Event type' })).toBeNull();
     expect(within(dlg).queryByText('Location')).toBeNull();
@@ -177,7 +177,7 @@ describe('P-5 round mode', () => {
       </LazyMotion>,
     );
     const dlg = await screen.findByRole('dialog', { name: 'Round' });
-    expect(within(dlg).getByRole('note').textContent).toMatch(/R2 is under way\. Change it from Tournaments\./);
+    expect(within(dlg).getByRole('note').textContent).toMatch(/R2 is under way, so it can’t be edited\./);
     expect((within(dlg).getByRole('combobox', { name: 'First tee' }) as HTMLInputElement).closest('fieldset')!.disabled).toBe(true);
     expect(within(dlg).queryByRole('button', { name: 'Save changes' })).toBeNull();
     expect(within(dlg).getAllByRole('button', { name: 'Close' }).some((b) => b.textContent === 'Close')).toBe(true);

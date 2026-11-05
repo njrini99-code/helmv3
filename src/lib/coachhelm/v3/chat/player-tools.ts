@@ -5,7 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { METRIC_IDS } from './metrics-catalog';
 import type { CoachChatContext } from './context';
-import { getFocusAreas, getPlayerMetric, getPlayerTrend, getRecentRounds, readUpcomingEventRows } from './read-tools';
+import { getFocusAreas, getPlayerMetric, getPlayerTrend, getRecentRounds, readUpcomingEventRows, replyOf } from './read-tools';
 import { getRoundDetail, getShotPattern } from './shot-reads';
 import { compareSeasons } from './engine-reads';
 import { nowIso, unavailableEnvelope, type ToolEnvelope } from './provenance';
@@ -30,8 +30,9 @@ async function myReads(sb: Sb, playerId: string): Promise<ToolEnvelope> {
  */
 async function myUpcomingEvents(sb: Sb, ctx: CoachChatContext, playerId: string, input: { days_ahead: number }): Promise<ToolEnvelope> {
   const days = Math.min(Math.max(input.days_ahead, 1), 60);
-  const rows = await readUpcomingEventRows(sb, ctx, days);
-  if (!rows) return unavailableEnvelope('Could not read the calendar.', 'The events query failed.');
+  const read = await readUpcomingEventRows(sb, ctx, days);
+  if (!read) return unavailableEnvelope('Could not read the calendar.', 'The events query failed.');
+  const { rows } = read;
   if (rows.length === 0) return { summary: `Nothing scheduled in the next ${days} days.`, measurements: [], series: [], detail: { events: [] }, coverage: 'empty', coverage_note: null, as_of: nowIso() };
   const rsvp = rows.filter((e) => e.requires_rsvp === true).map((e) => e.id);
   const mine = rsvp.length ? await sb.from('golf_event_attendance').select('event_id, status').eq('player_id', playerId).in('event_id', rsvp) : { data: [], error: null };
@@ -41,7 +42,7 @@ async function myUpcomingEvents(sb: Sb, ctx: CoachChatContext, playerId: string,
     if (e.requires_rsvp !== true) return base;
     const said = reply.get(e.id);
     // A failed read is not "you have not replied".
-    return { ...base, rsvp_deadline: e.rsvp_deadline, my_rsvp: mine.error ? null : said === 'accepted' || said === 'declined' ? said : 'no_reply' };
+    return { ...base, rsvp_deadline: e.rsvp_deadline, my_rsvp: mine.error ? null : replyOf(said) === 'pending' ? 'no_reply' : replyOf(said) };
   });
   return { summary: `${events.length} event${events.length === 1 ? '' : 's'} in the next ${days} days.`, measurements: [], series: [], detail: { timezone: ctx.timezone, events }, coverage: mine.error ? 'partial' : 'complete', coverage_note: mine.error ? 'Your replies could not be read.' : null, as_of: nowIso() };
 }

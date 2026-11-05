@@ -13,11 +13,14 @@ Held items: none
 
 ### Changed
 
-- The sign-in and onboarding placeholders read on --ch-text-placeholder in both themes (auth.css, onboard.css). The sign-in pages keep their own weights under their contract.
+- The sign-in and onboarding placeholders read on --ch-text-placeholder in both
+  themes (auth.css, onboard.css). The sign-in pages keep their own weights under
+  their contract.
 
 ### Why
 
-- The cross-page entry, docs/clubhouse/changes/2026-10-22-look-and-feel-pass.md, holds the reasons.
+- The cross-page entry, docs/clubhouse/changes/2026-10-22-look-and-feel-pass.md,
+  holds the reasons.
 
 ### Verification
 

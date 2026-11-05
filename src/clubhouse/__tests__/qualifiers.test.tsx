@@ -638,7 +638,7 @@ describe('Qualifiers · the loader', () => {
       golf_team_members: { data: [{ player: player('p1', 'Ann') }, { player: player('p3', 'Cal') }] },
       golf_qualifiers: { data: Q },
       golf_qualifier_entries: { data: entries },
-      golf_rounds: { data: [{ player_id: 'p2', qualifier_round_number: 2 }] },
+      golf_rounds: { data: [{ player_id: 'p2', qualifier_round_number: 2, status: 'completed' }] },
       golf_qualifier_selections: { data: [{ player_id: 'p1' }] },
       golf_qualifier_round_courses: { data: [] },
     };
@@ -649,6 +649,47 @@ describe('Qualifiers · the loader', () => {
     expect(form.players.find((p) => p.id === 'p1')).toMatchObject({ locked: 'squad', inactive: false });
     expect(form.players.find((p) => p.id === 'p3')?.locked).toBe(false);
     expect(form.initial.playerIds.sort()).toEqual(['p1', 'p2']);
+  });
+
+  it('90513 F10 an abandoned round holds no slot: it still locks its player in, but does not stop the round count going down', async () => {
+    tables.current = {
+      golf_team_members: { data: [{ player: player('p1', 'Ann') }, { player: player('p2', 'Bea') }] },
+      golf_qualifiers: { data: Q },
+      golf_qualifier_entries: { data: entries },
+      golf_rounds: {
+        data: [
+          { player_id: 'p1', qualifier_round_number: 1, status: 'completed' },
+          { player_id: 'p2', qualifier_round_number: 2, status: 'abandoned' },
+        ],
+      },
+      golf_qualifier_selections: { data: [] },
+      golf_qualifier_round_courses: { data: [] },
+    };
+    const form = (await loadQualifierForm({ teamId: 't1', qualifierId: 'q1' }))!;
+    // The database counts only started and finished rounds (the round-cap trigger), so the form must not refuse what it would allow.
+    expect(form.minRounds).toBe(1);
+    // The abandoned round is still a round in this qualifier: p2 cannot be taken out (setQualifierEntrants counts any status).
+    expect(form.players.find((p) => p.id === 'p2')?.locked).toBe('round');
+  });
+
+  it('CH-09224 F7 an entrant whose profile cannot be read stays in the Edit form as "Inactive player", so a save does not remove them', async () => {
+    const unreadable = [entries[0]!, { qualifier_id: 'q1', player_id: 'p2', player: null }];
+    tables.current = {
+      golf_team_members: { data: [{ player: player('p1', 'Ann') }] },
+      golf_qualifiers: { data: Q },
+      golf_qualifier_entries: { data: unreadable },
+      golf_rounds: { data: rounds },
+      golf_qualifier_selections: { data: [] },
+      golf_qualifier_round_courses: { data: [] },
+      golf_holes: holesFor,
+    };
+    const form = (await loadQualifierForm({ teamId: 't1', qualifierId: 'q1' }))!;
+    expect(form.players.find((p) => p.id === 'p2')).toMatchObject({ name: 'Inactive player', inactive: true, classYear: null, locked: 'round' });
+    // Still in the player list the form sends back, so saving does not silently remove them.
+    expect(form.initial.playerIds.sort()).toEqual(['p1', 'p2']);
+    // The board, like Confirm squad (the server loader), ranks readable entrants only: the two never disagree about the field.
+    const detail = (await loadQualifierDetail({ role: 'coach', teamId: 't1', playerId: null, qualifierId: 'q1' }))!;
+    expect(detail.board!.rows.map((r) => r.playerId)).toEqual(['p1']);
   });
 });
 
@@ -1891,6 +1932,15 @@ describe('Qualifiers · create and edit', () => {
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/golf/dashboard/qualifiers/q-new'));
     // Back from the new qualifier does not return to a form whose Create would make a second one.
     expect(router.push).not.toHaveBeenCalledWith('/golf/dashboard/qualifiers/q-new');
+  });
+
+  it('CH-09001 F9 a qualifier created without its course assignments says so, instead of a clean "created"', async () => {
+    const user = userEvent.setup();
+    const writes = fakeWrites({ create: vi.fn(async () => ({ success: true, data: { qualifierId: 'q-new', roundCoursesFailed: true } })) });
+    wrap(<QualifierForm data={form({ initial: { ...form().initial, name: 'Conference qualifier', startDate: '2026-10-19' } })} writes={writes} />);
+    await user.click(screen.getByRole('button', { name: 'Create qualifier' }));
+    await screen.findByText('Qualifier created, but its courses didn’t save. Open Edit to set them.');
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/golf/dashboard/qualifiers/q-new'));
   });
 
   it('wave-6 the Players head has one Select all or Clear all; Clear all keeps a player with a round in', async () => {
@@ -3571,5 +3621,18 @@ describe('Qualifiers · this file', () => {
     const titles = (file: string) => read(file).split('\n').filter((l) => /^\s*(it|describe|test)(\.each\(.*\))?\(/.test(l));
     const unnamed = bridge.filter((r) => r.page === 'P009' && !r.chCode && r.status === 'implemented').filter((r) => !(r.tests ?? []).some((f) => titles(f).some((l) => l.includes(String(r.id)))));
     expect(unnamed.map((r) => r.id)).toEqual([]);
+  });
+});
+
+describe('mixed-length rounds (owner, 2026-10-31)', () => {
+  it('CH-09909 names a round whose cards mix 9 and 18 holes, and only that round', async () => {
+    const { mixedLengthRounds } = await import('../screens/qualifiers/model');
+    const { MixedRounds } = await import('../screens/qualifiers/parts');
+    const r = (number: number, holesPlayed: number | null, total: number | null = 72) => ({ number, holesPlayed, total });
+    const mixed = mixedLengthRounds([r(1, 18), r(1, null), r(4, 9, 38), r(4, 18), r(4, 9, 40), r(5, 9, 36), r(5, 9, 37), r(2, 9, null)]);
+    expect(mixed).toEqual([{ number: 4, nine: 2, full: 1 }]);
+    wrap(<MixedRounds mixed={mixed} />);
+    await expectCode('CH-09909', /Round 4 mixes 9- and 18-hole cards/);
+    expect(code('CH-09909')!.textContent).toMatch(/2 players played 9 holes and 1 player played 18/);
   });
 });

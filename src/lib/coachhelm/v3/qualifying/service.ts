@@ -289,7 +289,7 @@ export async function removeCoachPick(
  */
 export async function confirmSelection(
   supabase: Sb,
-  args: { qualifier_id: string; user_id: string },
+  args: { qualifier_id: string; user_id: string; expected_squad?: readonly string[] },
   opts: { briefClient?: () => Sb } = {},
 ): Promise<ServiceResult<{ notified: boolean }>> {
   const workspace = await loadQualifyingWorkspace(supabase, args.qualifier_id);
@@ -345,9 +345,28 @@ export async function confirmSelection(
     };
   }
 
+  // The squad the coach was shown, when the surface sends it: a round signed since the page loaded can change who is on
+  // score, and the confirm (and every player's notice) would then go to a squad nobody saw (audit 2026-10-31).
+  if (args.expected_squad) {
+    const now = new Set([...topScoreRows.map((r) => r.player_id), ...workspace.candidates.filter((c) => c.selection?.selection_type === 'coach_pick').map((c) => c.player_id)]);
+    const shown = new Set(args.expected_squad);
+    if (now.size !== shown.size || [...now].some((id) => !shown.has(id))) {
+      return { ok: false, error: 'cannot confirm: standings changed since this page loaded' };
+    }
+  }
+
   if (topScoreRows.length > 0) {
     const { error: insErr } = await writeSelections(supabase, topScoreRows);
     if (insErr) return { ok: false, error: insErr.message };
+  }
+  // A place on score given earlier (a tie place) to a player no longer above the line stays a selection otherwise, and
+  // the squad comes out one over its size. Only top_score rows go; a coach's pick is never touched here.
+  {
+    const keep = topScoreRows.map((r) => r.player_id);
+    let del = supabase.from('golf_qualifier_selections').delete().eq('qualifier_id', workspace.qualifier_id).eq('selection_type', 'top_score');
+    if (keep.length) del = del.not('player_id', 'in', `(${keep.join(',')})`);
+    const { error: delErr } = await del;
+    if (delErr) return { ok: false, error: delErr.message };
   }
 
   // Compare-and-set: only the confirmation that moves 'closed' to

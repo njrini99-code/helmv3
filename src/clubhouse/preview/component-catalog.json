@@ -5252,6 +5252,7 @@
       "group": "screens",
       "exports": [
         "Meta",
+        "MixedRounds",
         "Pos",
         "StateBadge",
         "StatusPill",
@@ -8660,10 +8661,12 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-home.css",
+        "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -8858,6 +8861,25 @@
         "TourPathsProvider"
       ],
       "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/track-actions.tsx",
+      "group": "screens",
+      "exports": [
+        "DeskTrackMenu"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats.css"
+      ],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -26563,6 +26585,13 @@
         "ch-tour-home-feat__p",
         "ch-tour-home-feat__ready",
         "ch-tour-home-feat__t",
+        "ch-tour-home-next",
+        "ch-tour-home-next__chev",
+        "ch-tour-home-next__n",
+        "ch-tour-home-next__row",
+        "ch-tour-home-setup__go",
+        "ch-tour-home-setup__plate",
+        "ch-tour-home__today",
         "ch-tour-home__up"
       ],
       "tokens": []
