@@ -5,7 +5,7 @@ import { Badge } from '../../../ui/Badge';
 import { pluralWord } from '../../../lib/plural';
 
 import { X } from 'lucide-react';
-import { STATIONS, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
+import { playerRoundsLine, STATIONS, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
 import type { ChInsight } from '../../../data/coachhelm-shape';
 import { coachReadHref, playerFileHref, readHref } from '../../../data/coachhelm-views-shape';
 import type { CourseHistoryRow } from '@/lib/coachhelm/v3/team-board/course-shape';
@@ -245,12 +245,12 @@ export function PlayerPanel({ player, data, onRead, fileOn, onClose }: { player:
   if (player.rounds === 0)
     return (
       <>
-        <Head lead={<Coin player={player} />} name={player.name} line={`${year} · no rounds yet this season`} onClose={onClose} />
+        <Head lead={<Coin player={player} />} name={player.name} line={`${year} · ${playerRoundsLine(player)}${player.scoresOnly ? '' : ' this season'}`} onClose={onClose} />
         <section className="card">
           <div className="notice" style={{ paddingTop: 16 }}>
             <div>
               <b>Nothing to show yet</b>
-              <span>{player.first}’s four-area figures show after their first round this season.</span>
+              <span>{player.first}’s four-area figures show after their first round {player.scoresOnly ? 'posted hole by hole' : 'this season'}.</span>
             </div>
           </div>
         </section>

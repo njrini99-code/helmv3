@@ -27,6 +27,8 @@ export interface ChTeamPlayer {
   first: string;
   classYear: string | null;
   rounds: number;
+  /** This season's rounds posted as a total only: real rounds, too thin for the four-area figures `rounds` counts. */
+  scoresOnly?: number;
   early: boolean;
   legs: Record<ChStation, ChTeamLeg>;
   total: number | null;
@@ -56,7 +58,8 @@ export interface ChTeamBoardData {
   /** Leg figures from the season's rounds; `error`: that read failed, and the hole says so. */
   legsError: boolean;
   stations: Record<ChStation, { team: number | null; n: number }>;
-  teamTotal: { strokes: number | null; rounds: number };
+  /** `rounds` have hole scores and feed the figures; `scoresOnly` were posted as a total alone. */
+  teamTotal: { strokes: number | null; rounds: number; scoresOnly?: number };
   course: { history: CourseHistory | null; reads: ChInsight[]; against: ChTourRow[] | null };
   patterns?: ChTeamPatterns | null;
   /** off: nothing is drawn; failed: the card says so, never "no pattern" (W-TEAM-6). */
@@ -166,3 +169,9 @@ export function storiesOf(brief: ChCoachBrief | null, themes: Record<string, Rec
 
 /** The context line's "reads drawn" count: reads the board actually draws, after the caps; never the signals count (AC-TEAM-22). */
 export const readsDrawn = (players: readonly ChTeamPlayer[]): number => players.reduce((n, p) => n + p.reads.needs.length + p.reads.working.length, 0);
+
+/** What a player's line says about their season: a total-only round is still a round, never "no rounds yet". */
+export function playerRoundsLine(p: Pick<ChTeamPlayer, 'rounds' | 'scoresOnly'>): string {
+  if (p.rounds) return plural(p.rounds, 'round');
+  return p.scoresOnly ? `${plural(p.scoresOnly, 'round')}, scores only` : 'no rounds yet';
+}

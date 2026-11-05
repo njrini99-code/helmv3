@@ -3,7 +3,7 @@
 import { Badge } from '../../../ui/Badge';
 import { pluralWord } from '../../../lib/plural';
 
-import { STATIONS, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
+import { playerRoundsLine, STATIONS, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
 import type { ChBriefWorking } from '../../../data/coachhelm-coach-brief-shape';
 import type { ChInsight } from '../../../data/coachhelm-shape';
 import type { ChTeamPart } from '../../../data/coachhelm-team-shape';
@@ -59,12 +59,12 @@ export function RosterCard({ players, phone, onPlayer }: { players: readonly ChT
             <span>
               <b>{p.name}</b>
               <span className="m">
-                {[phone ? shortYear(p.classYear) : p.classYear, p.rounds ? `${p.rounds} rounds` : 'no rounds yet'].filter(Boolean).join(' · ')}
+                {[phone ? shortYear(p.classYear) : p.classYear, playerRoundsLine(p)].filter(Boolean).join(' · ')}
                 {p.early && p.rounds ? ' · early' : ''}
                 {p.heldBack ? ` · ${p.heldBack} held back` : ''}
               </span>
             </span>
-            {!phone && (p.rounds ? p.worst ? <span className="lm"><Badge tone="warning">Loses most: {STATION_SHORT[p.worst]}</Badge></span> : <span /> : <span className="lm chipk">No rounds yet</span>)}
+            {!phone && (p.rounds ? p.worst ? <span className="lm"><Badge tone="warning">Loses most: {STATION_SHORT[p.worst]}</Badge></span> : <span /> : <span className="lm chipk">{p.scoresOnly ? 'Scores only' : 'No rounds yet'}</span>)}
             {p.rounds ? (
               <>
                 <FingerPrint player={p} labels={!phone} />

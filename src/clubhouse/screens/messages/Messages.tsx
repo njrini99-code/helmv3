@@ -740,6 +740,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
         if (sendOptions?.notifyAnyway) await msgs.sendMessage(text, replyToId ?? null, { notifyAnyway: true });
         else if (replyToId) await msgs.sendMessage(text, replyToId);
         else await msgs.sendMessage(text);
+        // The rail's preview and order, right away: its realtime update may come late or not at all.
+        void refetch();
         return true;
       } catch (err) {
         // The bubble's state comes from the hook's classifySendFailure, which is this same test: the toast and the bubble

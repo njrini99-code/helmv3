@@ -185,6 +185,14 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
 
   const countable = seasonRounds.rounds.filter((r) => isCountableRound(r as never));
   const legs = toChTeamLegs(countable, ids);
+  // A total-only round counts on Roster and Team rounds but has no holes for the figures here; the board still says it exists.
+  const scoresOnly = new Map<string, number>();
+  let scoresOnlyTotal = 0;
+  for (const r of seasonRounds.rounds) {
+    if (!(r as { total_only?: boolean }).total_only) continue;
+    scoresOnly.set(r.player_id, (scoresOnly.get(r.player_id) ?? 0) + 1);
+    scoresOnlyTotal += 1;
+  }
   const list: ChTeamPlayer[] = roster.map((p) => {
     const first = p.name === NO_NAME ? NO_NAME : firstName(p.name);
     const coach = { role: 'coach', first } as const;
@@ -211,6 +219,7 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
       first,
       classYear: classYearLabel(p.graduationYear, undefined, zone) || null,
       rounds: leg?.rounds ?? 0,
+      scoresOnly: scoresOnly.get(p.id) ?? 0,
       early: leg?.early ?? true,
       legs: seasonRounds.error ? noLegs() : (leg?.legs ?? noLegs()),
       total: seasonRounds.error ? null : (leg?.total ?? null),
@@ -245,7 +254,7 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     players: { list, error: false },
     legsError: seasonRounds.error,
     stations: stationFigures(list),
-    teamTotal: { strokes: teamTotalOf(list), rounds: countable.length },
+    teamTotal: { strokes: teamTotalOf(list), rounds: countable.length, scoresOnly: scoresOnlyTotal },
     course: { history, reads: courseReads(list), against },
     patterns,
     patternsStatus: !teamPatternEnabled() ? 'off' : patternsFailed ? 'failed' : 'ok',

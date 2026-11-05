@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { plural } from '../../../lib/plural';
 import { boardPlayerCount, boardPlayerWords, courseReads, stationOrder, readsDrawn, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
 import { formatSigned } from '../../../lib/format';
 import { useChPhone } from '../../../lib/use-phone';
@@ -75,7 +76,7 @@ function Hero({
       <span>
         a round {data.team.baselineLabel}
         <br />
-        This season · {data.teamTotal.rounds} rounds{counted > 0 && ` · ${boardPlayerWords(counted)}`}
+        This season · {data.teamTotal.scoresOnly ? `${plural(data.teamTotal.rounds, 'round')} with hole scores` : `${data.teamTotal.rounds} rounds`}{counted > 0 && ` · ${boardPlayerWords(counted)}`}
       </span>
     </div>
   );
@@ -109,13 +110,18 @@ function Hero({
 }
 
 function EmptyHero({ data, phone }: { data: ChTeamBoardData; phone: boolean }) {
+  const scoresOnly = data.teamTotal.scoresOnly ?? 0;
   return (
     <section className="feat hero ch-htb-feat" data-ch-team-card="hole">
       <div className="hk">Where {data.team.name} gives back strokes</div>
       <div className="hn">
-        <b>No rounds yet</b>
+        <b>{scoresOnly ? 'No hole scores yet' : 'No rounds yet'}</b>
       </div>
-      <p className="emptyh">The hole fills in after the team’s first round this season. Each spot then shows what it costs the team against Tour.</p>
+      <p className="emptyh">
+        {scoresOnly
+          ? `This season’s ${plural(scoresOnly, 'round')} only have a total score. The hole fills in after the first round posted hole by hole.`
+          : 'The hole fills in after the team’s first round this season. Each spot then shows what it costs the team against Tour.'}
+      </p>
       <div className="hole" style={{ opacity: 0.55 }}>
         <TeamHole stations={data.stations} players={[]} station="approach" onStation={() => {}} orientation={phone ? 'v' : 'h'} bare />
       </div>
@@ -195,8 +201,9 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
   };
   const list: ChTeamPlayer[] = data.players.list;
   const noRounds = data.teamTotal.rounds === 0;
+  const allRounds = data.teamTotal.rounds + (data.teamTotal.scoresOnly ?? 0);
   const tabs = data.off ? null : <CoachHelmTabs active={sw.shown} onGo={sw.go} boardLabel="Team" />;
-  const context = data.off ? 'CoachHelm reads the rounds your players post.' : data.roster.count === 0 ? 'No players yet' : noRounds ? `${data.roster.count} players · no rounds yet this season` : `${data.roster.count} players · ${data.teamTotal.rounds} rounds this season · ${readsDrawn(list)} open reads`;
+  const context = data.off ? 'CoachHelm reads the rounds your players post.' : data.roster.count === 0 ? 'No players yet' : allRounds === 0 ? `${data.roster.count} players · no rounds yet this season` : `${data.roster.count} players · ${plural(allRounds, 'round')} this season · ${readsDrawn(list)} open reads`;
   const head = (
     <header className="lt">
       <LargeTitle>{data.team.name || 'CoachHelm'}</LargeTitle>
