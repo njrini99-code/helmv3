@@ -1544,6 +1544,16 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+/* A major event with the cell to itself takes two lines before it ellipsizes (the "N more" rows never do). */
+.ch-mo__ev.is-two {
+  align-items: flex-start;
+}
+.ch-mo__ev.is-two span:first-of-type {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+}
 .ch-mo__ev.is-major {
   margin: 0 -4px;
   padding: 4px 8px;
