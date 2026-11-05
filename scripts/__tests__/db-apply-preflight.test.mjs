@@ -100,6 +100,28 @@ describe('isHeldInRegister', () => {
     expect(isHeldInRegister(register, STILL_HELD_QUALIFIED)).toBe(true);
   });
 
+  // 2026-11-04: the pins row read **WRITTEN — HOLD — NOT APPLIED**, so the leading-keyword rule did not see it and
+  // db:apply would have run it. Applied and approved rows are not held by design (NOW_APPLIED, NOW_APPROVED below), so
+  // this covers every row whose status says it is still held or not applied.
+  it('every row whose status says HOLD or NOT APPLIED is held by db:apply', () => {
+    const rows = register
+      .split('\n')
+      .filter((line) => line.trim().startsWith('|'))
+      .map((line) => line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|'))
+      .filter((cells) => cells.length >= 2 && /\.sql/.test(cells[0]))
+      .map((cells) => ({
+        names: cells[0].split(/[+,]/).map((t) => t.replace(/`/g, '').trim()).filter((t) => t.endsWith('.sql')),
+        status: cells[1].trim(),
+      }))
+      .filter(({ status }) => /\bHOLD\b|NOT APPLIED/i.test(status) && !/^\*\*(VERIFIED )?APPLIED\b/i.test(status));
+    expect(rows.length).toBeGreaterThan(40);
+    const leaks = rows.flatMap(({ names, status }) =>
+      names.filter((name) => !isHeldInRegister(register, name)).map((name) => `${name}: ${status}`),
+    );
+    expect(leaks).toEqual([]);
+    expect(isHeldInRegister(register, '20261031150000_golf_conversation_pins.sql')).toBe(true);
+  });
+
   it('the old regex missed it — this is the regression being locked', () => {
     // Carries a qualified status (`**HOLD — R3, not yet reviewed**`), so the
     // old literal `**HOLD**` match failed on it.

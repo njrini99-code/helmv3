@@ -344,12 +344,12 @@ Each local copy matches the published page as of 4 Nov 2026 (only the document w
 | `messages/05-SCREENS.md` | 109645 | `b1098eb6a4e7eb8a2a29772cf20a4bbb514886d6e3b0a0810b8a7236503f7ced` |
 | `messages/06-SCREEN-SPECS.md` | 252410 | `ced5e06be0dd8cb0e5390a4a92c0bc6f24f0066105198352bf446d0051b1e1c0` |
 | `messages/07-MOTION.md` | 76635 | `3e0f26bab339b0711fd5991410f0cc15c9685096a53880ed8565718e53ef886e` |
-| `messages/08-ACCEPTANCE.md` | 111238 | `6a06f8c2d34f812c58c5d38cbad5ad517660f71ef3a47c51d934c59c4ad4cc5b` |
+| `messages/08-ACCEPTANCE.md` | 111241 | `a5c2472c7a0f5f99df84a86d2b132bc149582a9182737a40288f0bc95486401f` |
 | `messages/README.md` | 7161 | `ab254cc23cee0fd786047c2f214bda11eecc0ecc7ab78fe2ced7a8c38a7b61a0` |
 | `messages/SETTLED-4NOV.md` | 7400 | `6d67afc8efc6f2849a4c4253adfca38abc7cd073bddfe99774331a0a344d81bd` |
 | `messages/capture/capture.mjs` | 18321 | `e1730253ffaf5df3c11dd79ee5fd6604e5d1398acd09315fc45dda25e0c7f5d2` |
 | `messages/pin-sync/20261031150000_golf_conversation_pins.sql` | 15281 | `e25beb7e9ae92953541be4f967521068b0db0c496de9ad26dc1dde8afcd9c582` |
-| `messages/pin-sync/PIN-SYNC.md` | 17789 | `c9b46c356fb3c195687783f30334f555f2cbaa8753790f090ee166fdd0bf6f0a` |
+| `messages/pin-sync/PIN-SYNC.md` | 17786 | `c8f59fce4e334690481a175799a98df8f4b19e017d1b5af2f443f99b6776541a` |
 | `messages/pin-sync/local-check/01-stub.sql` | 2170 | `06ea3abb12c2375e5fafbee96d7624a53baf2fd15dfbfa46b7df8009b4a81c57` |
 | `messages/pin-sync/local-check/02-seed.sql` | 1219 | `ab3f1311bdf55deaf98c6668abaa64df69ee43e44025fd119744de42bfec5899` |
 | `messages/pin-sync/local-check/03-check.sql` | 3690 | `1e28893f307e6cecd5807e3e876c0b419488955de10640e693116f1134676399` |
