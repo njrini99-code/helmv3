@@ -89,7 +89,7 @@ export interface AskStep {
   id: string;
   label: string;
   /** Ask v2's replaced progress part; old parts lack them and draw as today. */
-  state?: 'active' | 'done' | 'failed';
+  state?: 'active' | 'done' | 'failed' | 'next';
   /** The past-tense label. */
   done?: string;
   /** One fact the read returned. */

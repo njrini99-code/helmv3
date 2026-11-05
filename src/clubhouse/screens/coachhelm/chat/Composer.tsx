@@ -74,6 +74,8 @@ export function useRefuseOffline(): () => boolean {
 }
 
 export interface AskComposerProps {
+  /** Ask v2's scope chips (E-COMP): what the next answer will read, from the words so far. None: no chips. */
+  scopeOf?: (text: string) => string[];
   /** Ask v2's `/` list (ask 05). A pick fills the box. */
   slash?: readonly ChAskSlash[];
   /** `hero`: the new chat's big box with its Players and date chips. `dock`: the one-line box at the foot of a thread. */
@@ -162,7 +164,7 @@ function usePickerRoom(anchor: RefObject<HTMLElement | null>, open: boolean, bel
  *  - Offline, Send is refused before anything is sent: an error toast (CH-1903) and the text stays.
  *  - A send that failed puts its text back (once, into an empty box); a card awaiting a decision disables Send.
  */
-export function AskComposer({ variant, phone, players, busy, failed, blocked, onSend, onStop, autoFocus, fresh = false, draftKey = null, roster = true, hint, slash = [] }: AskComposerProps) {
+export function AskComposer({ scopeOf, variant, phone, players, busy, failed, blocked, onSend, onStop, autoFocus, fresh = false, draftKey = null, roster = true, hint, slash = [] }: AskComposerProps) {
   const refuseOffline = useRefuseOffline();
   const finePointer = useFinePointer();
   const hero = variant === 'hero';
@@ -344,6 +346,8 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
   };
 
   const canSend = value.trim().length > 0 && !blocked;
+  // The phone's scope line already says it until the coach types; a chip only earns its row there once the words change the scope.
+  const scopeChips = scopeOf && (!phone || value.trim()) ? scopeOf(value) : [];
   const first = hero || fresh;
   const placeholder = first && hint ? hint : first ? (phone ? 'Ask about a player, a stat, or the week' : 'Ask about a player, a stat, or the week ahead') : 'Ask a follow-up';
 
@@ -395,6 +399,13 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
   return (
     <div className={'ch-ask-cmp is-' + variant + (phone ? ' is-phone' : '')}>
       <div className="ch-ask-cmp__box" ref={frame}>
+        {scopeChips.length > 0 && (
+          <div className="ch-ak-cscope" aria-label="What the next answer reads">
+            {scopeChips.map((c) => (
+              <span key={c}>{c}</span>
+            ))}
+          </div>
+        )}
         <label className="ch-ask-cmp__label" htmlFor={`${listId}-ta`}>
           {first ? 'Ask CoachHelm' : 'Reply to CoachHelm'}
         </label>

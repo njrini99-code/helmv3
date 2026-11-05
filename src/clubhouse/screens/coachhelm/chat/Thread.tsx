@@ -2,7 +2,7 @@
 
 import type { UIMessage } from 'ai';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Check, ChevronDown, CircleAlert, Copy, RotateCw } from 'lucide-react';
+import { ArrowDown, Check, ChevronDown, CircleAlert, Copy, RotateCw } from 'lucide-react';
 import type { ChatErrorNotice } from '../../../data/coachhelm-chat-error';
 import {
   buildTurns,
@@ -39,6 +39,8 @@ export interface AskThreadProps {
   v2?: boolean;
   /** The team's name, for a draft that shows how a player's phone will read it. */
   team?: string;
+  /** The assistant message the coach pressed Stop on. */
+  stoppedTurn?: string | null;
   messages: UIMessage[];
   /** A turn is in flight. */
   busy: boolean;
@@ -67,10 +69,11 @@ function scrollParentOf(el: HTMLElement | null): HTMLElement | null {
   return null;
 }
 
-function nearBottom(sp: HTMLElement | null): boolean {
-  if (sp) return sp.scrollHeight - sp.scrollTop - sp.clientHeight < 80;
+/** How far from the bottom the reader is. */
+function fromBottom(sp: HTMLElement | null): { gap: number; screen: number } {
+  if (sp) return { gap: sp.scrollHeight - sp.scrollTop - sp.clientHeight, screen: sp.clientHeight };
   const doc = document.documentElement;
-  return doc.scrollHeight - window.scrollY - window.innerHeight < 80;
+  return { gap: doc.scrollHeight - window.scrollY - window.innerHeight, screen: window.innerHeight };
 }
 
 /** Seconds the browser watched a turn run, or null for a turn it did not (a reloaded thread has no honest duration). */
@@ -97,7 +100,7 @@ function useElapsed(active: boolean): number | null {
  * the coach sends, and stays where the coach scrolled to while an answer streams. Streamed text
  * does not animate; a new turn arrives with the base fade.
  */
-export function AskThread({ v2 = false, team, onArtifact, messages, busy, error, offline, phone, players, onApprove, onDeny, onSend, onStop, onRetry, onNewChat, evidenceFocus, onOpenEvidence }: AskThreadProps) {
+export function AskThread({ v2 = false, team, stoppedTurn = null, onArtifact, messages, busy, error, offline, phone, players, onApprove, onDeny, onSend, onStop, onRetry, onNewChat, evidenceFocus, onOpenEvidence }: AskThreadProps) {
   const toast = useToast();
   const reduced = useChReducedMotion();
   const turns = useMemo(() => buildTurns(messages, { busy }), [messages, busy]);
@@ -113,15 +116,20 @@ export function AskThread({ v2 = false, team, onArtifact, messages, busy, error,
   const rootRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
+  // CP-7: Ask v2 follows the answer while the reader is within 0.9 of a screen of the bottom; past that, S-ASK.jump brings them back.
+  const [away, setAway] = useState(false);
   useEffect(() => {
     const sp = scrollParentOf(rootRef.current);
     const target: HTMLElement | Window = sp ?? window;
     const onScroll = () => {
-      stick.current = nearBottom(sp);
+      const { gap, screen } = fromBottom(sp);
+      const reach = v2 ? screen * 0.9 : 80;
+      stick.current = gap < reach;
+      if (v2) setAway(gap >= reach);
     };
     target.addEventListener('scroll', onScroll, { passive: true });
     return () => target.removeEventListener('scroll', onScroll);
-  }, []);
+  }, [v2]);
   const turnCount = turns.length;
   const lastRole = last?.role;
   useEffect(() => {
@@ -190,7 +198,7 @@ export function AskThread({ v2 = false, team, onArtifact, messages, busy, error,
     <PlanVersions.Provider value={planVersions}>
     <div ref={rootRef} className={'ch-th' + (v2 ? ' ch-ak-th' : '') + (phone ? ' ch-th--phone' : '')} data-ch-code="CH-13850" data-v2={v2 ? '' : undefined}>
       <div className="ch-th-col" role="log" aria-label="Conversation">
-        {turns.map((turn) => {
+        {turns.map((turn, turnIndex) => {
           const fresh = !initial.current?.has(turn.id) && !continued.current.has(turn.id);
           if (turn.role === 'user') {
             return (
@@ -207,6 +215,11 @@ export function AskThread({ v2 = false, team, onArtifact, messages, busy, error,
               <AnswerCard
                 key={turn.id}
                 turn={turn}
+                stopped={stoppedTurn === turn.id}
+                question={(() => {
+                  const before = turns[turnIndex - 1];
+                  return before?.role === 'user' ? before.text : undefined;
+                })()}
                 fresh={fresh}
                 showFollowUps={showFollowUps}
                 playersByName={playersByName}
@@ -327,6 +340,21 @@ export function AskThread({ v2 = false, team, onArtifact, messages, busy, error,
         {error && <AskError notice={error} offline={offline} changed={failedAnswerChangedNothing(messages)} onRetry={onRetry} onNewChat={onNewChat} />}
         <div ref={endRef} className="ch-th-end" />
       </div>
+      {v2 && away && (
+        <button
+          type="button"
+          className="ch-ak-jump"
+          aria-label="Jump to the latest"
+          data-ch-press=""
+          onClick={() => {
+            stick.current = true;
+            setAway(false);
+            endRef.current?.scrollIntoView?.({ block: 'end', behavior: reduced ? 'instant' : 'smooth' });
+          }}
+        >
+          <Icon icon={ArrowDown} size={19} />
+        </button>
+      )}
     </div>
     </PlanVersions.Provider>
   );

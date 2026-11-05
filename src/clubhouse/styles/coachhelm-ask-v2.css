@@ -28,7 +28,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .step .ic { display: grid; place-items: center; width: 20px; height: 20px; margin-top: 1px; }
 .ch-ak-th .step .ic.ok { color: var(--ch-gain); }
 .ch-ak-th .step .ic.is-fail { color: var(--ch-loss); }
-.ch-ak-th .step.done .ic path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: ch-ak-draw 0.24s var(--ch-ease) forwards; }
+.ch-ak-th .steps.is-live .step.done .ic path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: ch-ak-draw 0.24s var(--ch-ease) forwards; }
 .ch-ak-th .step .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ch-green-600); animation: ch-ak-breath 0.6s ease-in-out infinite alternate; }
 .ch-ak-th .step .dash { width: 10px; height: 2px; border-radius: var(--ch-radius-mark); background: var(--ch-text-tertiary); }
 .ch-ak-th .step .ringa { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--ch-green-600); }
@@ -78,7 +78,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 @media (prefers-reduced-motion: reduce) {
   .ch-ak-th .step .dot, .ch-ak-th .step .lb.shim, .ch-ak-th .sk i { animation: none; }
   .ch-ak-th .step .lb.shim { color: var(--ch-text-primary); background: none; }
-  .ch-ak-th .step.done .ic path { animation: none; stroke-dashoffset: 0; }
+  .ch-ak-th .steps.is-live .step.done .ic path { animation: none; stroke-dashoffset: 0; }
   .ch-ak-th .step.is-in { animation: none; }
 }
 /* AK4: confirm, commit, receipt, Undo (kit ② to ⑤) */
@@ -604,3 +604,73 @@ html[data-fw-theme='dark'] .ch-ak-th {
 }
 [data-motion='off'] .ch-ak-th .conf.is-fill :is(.evd .f, .oncf, .btns, .ch-ak-evlink, .ipl, .ch-ak-lock .ban, .ch-ak-qual .rd, .ch-ak-qual .bar i), [data-motion='off'] .ch-ak-th :is(.dchip.is-pop, .told.is-live, .told.is-live .coin), [data-motion='off'] .ch-ak-wk .slot.is-landing { animation: none; }
 [data-motion='off'] .ch-ak-th .conf.is-fill .evd .f::before, [data-motion='off'] .ch-ak-wk .slot.is-open::after { display: none; }
+
+/* M-ASK-11, 12: the steps fold and open on the grid track; the Next row (announced, not started) has no check and no shimmer. */
+.ch-ak-th .work .fold { display: grid; grid-template-rows: 1fr; }
+.ch-ak-th .work .fold > div { min-height: 0; overflow: hidden; }
+.ch-ak-th .work .fold.is-opening { animation: ch-ak-unfold 0.36s var(--ch-ease-spring-smooth) both; }
+.ch-ak-th .work .fold.is-closing { animation: ch-ak-unfold 0.36s var(--ch-ease-spring-smooth) reverse both; }
+@keyframes ch-ak-unfold { from { grid-template-rows: 0fr; opacity: 0; } }
+.ch-ak-th .step .ic.is-next { color: var(--ch-text-tertiary); }
+.ch-ak-th .step.is-next .tx { color: var(--ch-text-secondary); }
+
+/* E-CITE: the popover opens from its chip and goes on to Stats or the list of reads (M-ASK-22). */
+.ch-ak-th .cpop { animation: ch-ak-cpop 0.2s var(--ch-ease) both; }
+@keyframes ch-ak-cpop { from { opacity: 0; transform: translateY(4px) scale(0.98); } }
+.ch-ak-th .cpop-f { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; padding-top: 8px; border-top: var(--ch-hairline-w) solid var(--ch-separator); }
+.ch-ak-th .cpop-f a, .ch-ak-th .cpop-f button { position: relative; padding: 0; border: 0; background: none; font: var(--ch-type-14-strong); color: var(--ch-green-600); text-decoration: none; cursor: pointer; }
+.ch-ak-th .cpop-f a::after, .ch-ak-th .cpop-f button::after { content: ''; position: absolute; inset: -12px 0; }
+.ch-ak-th .srcw .in { animation: ch-ak-fade 0.26s var(--ch-ease) both; }
+
+/* S-ASK.turn.stopped: the words stay, the turn says it stopped. */
+.ch-ak-th .ch-ak-stopped { display: flex; align-items: baseline; gap: 8px; margin: 0; font: var(--ch-type-14); color: var(--ch-text-secondary); }
+.ch-ak-th .ch-ak-stopped button { position: relative; padding: 0; border: 0; background: none; font: var(--ch-type-14-strong); color: var(--ch-green-600); cursor: pointer; }
+.ch-ak-th .ch-ak-stopped button::after { content: ''; position: absolute; inset: -12px 0; }
+
+/* M-ASK-18, 20: the shot and engine blocks' marks grow once, on an answer this visit watched. */
+.ch-th-cv[data-live] .ch-ak-putts .t i { animation: ch-ak-growx 0.36s var(--ch-ease-spring-settle) var(--ch-cv-lag, 0ms) both; }
+.ch-th-cv[data-live] .ch-ak-miss .w { animation: ch-ak-wedge 0.36s var(--ch-ease-spring-settle) var(--ch-cv-lag, 0ms) both; transform-origin: 90px 90px; }
+.ch-th-cv[data-live] .ch-ak-season .ch-ak-mark, .ch-th-cv[data-live] .ch-ak-holes .ch-ak-mark { animation: ch-ak-rise6 0.36s var(--ch-ease-spring-settle) var(--ch-cv-lag, 0ms) both; }
+@keyframes ch-ak-growx { from { transform: scaleX(0); } }
+@keyframes ch-ak-wedge { from { opacity: 0; transform: scale(0.9); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ch-ak-th .work .fold, .ch-ak-th .cpop, .ch-ak-th .srcw .in, .ch-th-cv[data-live] .ch-ak-putts .t i, .ch-th-cv[data-live] .ch-ak-miss .w, .ch-th-cv[data-live] .ch-ak-season .ch-ak-mark, .ch-th-cv[data-live] .ch-ak-holes .ch-ak-mark { animation: none; }
+}
+[data-motion='off'] .ch-ak-th :is(.work .fold, .cpop, .srcw .in), [data-motion='off'] .ch-th-cv[data-live] :is(.ch-ak-putts .t i, .ch-ak-miss .w, .ch-ak-season .ch-ak-mark, .ch-ak-holes .ch-ak-mark) { animation: none; }
+
+/* E-COMP: the scope chips say what the next answer reads; never a figure. */
+.ch-ak-root .ch-ak-cscope { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0 0 4px; }
+.ch-ak-root .ch-ak-cscope span { padding: 2px 8px; border-radius: var(--ch-radius-sm); background: var(--ch-well-bg-flat); box-shadow: 0 0 0 1px var(--ch-card-ring); font: var(--ch-type-13-strong); color: var(--ch-text-secondary); }
+
+/* S-ASK.jump: 40 glass, right 16, 12 above the composer (CP-7). */
+.ch-ak-th { position: relative; }
+.ch-ak-th .ch-ak-jump { position: sticky; z-index: var(--ch-z-sticky); bottom: 12px; display: grid; place-items: center; width: 40px; height: 40px; margin: 0 0 0 auto; border: 0; border-radius: 50%; background: var(--ch-glass-strong); -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%); box-shadow: var(--ch-shadow-float); color: var(--ch-text-primary); cursor: pointer; }
+.ch-ak-th .ch-ak-jump::after { content: ''; position: absolute; inset: -2px; }
+
+/* E-QCARD: head with its tile and count; Back stays on the first question, disabled; the free line closes the last. */
+.ch-ak-th .qic { display: grid; place-items: center; flex: none; width: 30px; height: 30px; border-radius: var(--ch-radius-sm); background: var(--ch-ak-ak-tint); color: var(--ch-green-600); }
+.ch-ak-th .qtt { flex: 1; min-width: 0; display: grid; }
+.ch-ak-th .qtt small { font: var(--ch-type-13-medium); color: var(--ch-text-secondary); }
+.ch-ak-th .qft .c:disabled { opacity: 0.4; cursor: default; }
+.ch-ak-th .qft .p { margin-left: auto; }
+.ch-ak-th .qpane .free { width: 100%; min-height: 46px; padding: 12px; border: 0; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); box-shadow: 0 0 0 0.5px var(--ch-ak-ak-hair); font: var(--ch-type-15); color: var(--ch-text-primary); text-align: left; }
+.ch-ak-th .qpane .free.is-closed { color: var(--ch-text-secondary); cursor: pointer; }
+
+/* S-ASK.knows: "Edit what it knows" is a line in the rail, not the page's primary action. */
+.ch-ak-knows .ed { position: relative; justify-self: start; padding: 0; border: 0; background: none; font: var(--ch-type-14-strong); color: var(--ch-green-600); text-align: left; cursor: pointer; }
+.ch-ak-knows .ed::after { content: ''; position: absolute; inset: -12px 0; }
+.ch-ak-knows .ed.is-quiet { font: var(--ch-type-14); color: var(--ch-text-secondary); }
+.ch-ak-knows form { display: grid; gap: 6px; }
+.ch-ak-knows form input { width: 100%; min-height: 44px; padding: 8px 12px; border: 0; border-radius: var(--ch-radius-sm); background: var(--ch-card-bg); box-shadow: 0 0 0 1px var(--ch-card-ring); font: var(--ch-type-14); color: var(--ch-text-primary); }
+.ch-ak-knows form .acts { display: flex; gap: 12px; }
+.ch-ak-knows form .acts button { min-height: 44px; padding: 0; border: 0; background: none; font: var(--ch-type-14-strong); color: var(--ch-green-600); cursor: pointer; }
+.ch-ak-knows form .acts button:disabled { opacity: 0.4; cursor: default; }
+.ch-ak-knows form .acts button[type='button'] { color: var(--ch-text-secondary); }
+
+/* What Ask can see. */
+.ch-ak-see { display: grid; margin: 0; }
+.ch-ak-see > div { display: grid; gap: 2px; padding: 12px 0; border-top: var(--ch-hairline-w) solid var(--ch-separator); }
+.ch-ak-see > div:first-child { border-top: 0; padding-top: 0; }
+.ch-ak-see dt { font: var(--ch-type-15-strong); color: var(--ch-text-primary); }
+.ch-ak-see dd { margin: 0; font: var(--ch-type-14); color: var(--ch-text-secondary); }

@@ -9,6 +9,10 @@ const WIDTHS: Record<string, number[]> = {
   split: [60, 40],
   compare: [90, 90],
   note: [90, 60],
+  miss_pattern: [50, 50, 50, 70],
+  putt_profile: [90, 75, 60, 45, 30],
+  season_compare: [100, 100, 60],
+  hole_strip: [100, 100],
 };
 
 /** While `show_visual` is on its way: a skeleton shaped by the blocks already named. Nothing is drawn as a figure until the composition lands (AK3). */

@@ -1,13 +1,22 @@
 'use client';
 
 import { BookOpen } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import type { AskTurnRead } from '../../../../data/coachhelm-chat-thread';
 import { readRows } from '../../../../data/coachhelm-chat-thread';
+import { rebuiltHref } from '../../../../shell/nav';
 import { Icon } from '../../../../ui/Icon';
 
+/** Where a read's figures live: this player's Stats, or the team's. Null where Stats isn't rebuilt, and then no link is drawn. */
+export function readStatsHref(read: AskTurnRead): string | null {
+  const entity = read.envelope.measurements[0]?.entity;
+  if (!entity) return null;
+  return rebuiltHref(entity.kind === 'player' ? `/golf/dashboard/stats?player=${entity.id}` : '/golf/dashboard/stats');
+}
+
 /** A pill naming the read and window a sentence's figure came from. Tap opens what's behind it; every row comes from the envelope (AK2). */
-export function ReadChip({ read }: { read: AskTurnRead }) {
+export function ReadChip({ read, onSources }: { read: AskTurnRead; /** Opens this answer's list of every read. */ onSources?: () => void }) {
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement>(null);
   const pop = useRef<HTMLDivElement>(null);
@@ -30,6 +39,7 @@ export function ReadChip({ read }: { read: AskTurnRead }) {
     };
   }, [open]);
   const rows = readRows(read);
+  const stats = readStatsHref(read);
   return (
     <span className="cite-wrap">
       <button ref={btn} type="button" className={'cite' + (open ? ' on' : '')} aria-expanded={open} aria-haspopup="dialog" onClick={() => setOpen((v) => !v)}>
@@ -47,6 +57,26 @@ export function ReadChip({ read }: { read: AskTurnRead }) {
               </div>
             ))}
           </dl>
+          {(stats || onSources) && (
+            <div className="cpop-f">
+              {stats && (
+                <Link prefetch={false} href={stats}>
+                  Open in Stats
+                </Link>
+              )}
+              {onSources && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    onSources();
+                  }}
+                >
+                  Sources
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </span>
