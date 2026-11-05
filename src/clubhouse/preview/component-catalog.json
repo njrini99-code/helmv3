@@ -2424,6 +2424,7 @@
         "AskUserText"
       ],
       "styles": [
+        "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-thread.css"
       ],
       "examples": [],
@@ -3961,11 +3962,16 @@
       "file": "src/clubhouse/screens/home/SkeletonDeskHead.tsx",
       "group": "screens",
       "exports": [
+        "SkeletonDeskCrh",
         "SkeletonDeskForm",
         "SkeletonDeskHead"
       ],
       "styles": [
-        "src/clubhouse/styles/home.css"
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -12477,6 +12483,13 @@
         "ch-cl-sk-crh",
         "ch-cl-sk-crh__card",
         "ch-cl-sk-crh__term",
+        "ch-cl-sk-dcrh",
+        "ch-cl-sk-dcrh__acts",
+        "ch-cl-sk-dcrh__deck",
+        "ch-cl-sk-dcrh__grid",
+        "ch-cl-sk-dcrh__h",
+        "ch-cl-sk-dcrh__stack",
+        "ch-cl-sk-dcrh__term",
         "ch-cl-sk-desk",
         "ch-cl-sk-h",
         "ch-cl-sk-head",
@@ -12777,6 +12790,7 @@
         "ch-btn--primary",
         "ch-cpv-pub",
         "ch-th-col",
+        "ch-th-prose",
         "ch-th-user"
       ],
       "tokens": [
@@ -12849,6 +12863,11 @@
           "name": "--ch-ask-v2-x1",
           "value": "0 0 0 0.5px rgb(28 27 24 / 0.14)",
           "scope": ".ch-ak-th, .ch-ak-pane, .ch-ak-out, .ch-ak-season, .ch-ak-knows, .ch-ak-meter, .ch-ak-handoff"
+        },
+        {
+          "name": "--ch-i",
+          "value": "0",
+          "scope": "@media (prefers-reduced-motion: reduce) → .ch-ak-th .qcard, .ch-ak-th .qpane.is-next, .ch-ak-th .qpane.is-back, .ch-ak-th .qsum .pills span"
         }
       ]
     },
@@ -15515,6 +15534,11 @@
         "ch-h-round__who",
         "ch-h-sec",
         "ch-h-sheet",
+        "ch-h-sk-dcrh",
+        "ch-h-sk-dcrh__card",
+        "ch-h-sk-dcrh__grid",
+        "ch-h-sk-dcrh__hero",
+        "ch-h-sk-dcrh__lines",
         "ch-h-topar",
         "ch-hm",
         "ch-hm--player",
@@ -18475,6 +18499,9 @@
         "ch-rs-search",
         "ch-rs-sg",
         "ch-rs-sgbar",
+        "ch-rs-sk-peek",
+        "ch-rs-sk-row",
+        "ch-rs-sk-row__b",
         "ch-rs-skel-desk",
         "ch-rs-solo",
         "ch-rs-sorth",
@@ -18762,6 +18789,26 @@
           "name": "--ch-roster-x5",
           "value": "inset 0 0 0 1px #000",
           "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-rs-y",
+          "value": "var(--ch-yr-sr)",
+          "scope": "[data-ch-crh='on'] :is(.ch-rs-mix, .ch-rs-mix__lg) [data-year='sr']"
+        },
+        {
+          "name": "--ch-rs-y",
+          "value": "var(--ch-yr-jr)",
+          "scope": "[data-ch-crh='on'] :is(.ch-rs-mix, .ch-rs-mix__lg) [data-year='jr']"
+        },
+        {
+          "name": "--ch-rs-y",
+          "value": "var(--ch-yr-so)",
+          "scope": "[data-ch-crh='on'] :is(.ch-rs-mix, .ch-rs-mix__lg) [data-year='so']"
+        },
+        {
+          "name": "--ch-rs-y",
+          "value": "var(--ch-yr-fr)",
+          "scope": "[data-ch-crh='on'] :is(.ch-rs-mix, .ch-rs-mix__lg) [data-year='fr']"
         }
       ]
     },
@@ -24334,6 +24381,46 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-dur-marks",
+          "value": "360ms",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-dur-word",
+          "value": "320ms",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-dur-rm-fade",
+          "value": "120ms",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-dur-story-body",
+          "value": "420ms",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-dur-typing",
+          "value": "1200ms",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-dur-typing-step",
+          "value": "160ms",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-dur-story",
+          "value": "5200ms",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-ease-typing",
+          "value": "cubic-bezier(0.45, 0, 0.55, 1)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-skel-delay",
           "value": "0ms",
           "scope": "[data-ui='clubhouse']"
@@ -25925,6 +26012,36 @@
         },
         {
           "name": "--ch-dur-sweep",
+          "value": "0ms",
+          "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-dur-marks",
+          "value": "0ms",
+          "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-dur-word",
+          "value": "0ms",
+          "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-dur-story-body",
+          "value": "0ms",
+          "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-dur-typing",
+          "value": "0ms",
+          "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-dur-typing-step",
+          "value": "0ms",
+          "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-dur-story",
           "value": "0ms",
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']"
         },
