@@ -13,7 +13,8 @@ import { resolvePlayerChatContext } from './player-context';
 import { CoachContextError } from './context';
 import { buildPlayerTools, PLAYER_INSTRUCTIONS } from './player-tools';
 import { readBucket, recordPlayerSpend } from './player-allowance';
-import { auditNumericClaims, type ToolEnvelope } from './provenance';
+import { auditPlayerAnswer, playerLedgerRow } from './player-audit';
+import type { ToolEnvelope } from './provenance';
 import { stripReadMarkers } from './read-markers';
 import { isIncompleteToolPart } from './ui-parts';
 
@@ -57,14 +58,15 @@ export async function runPlayerTurn(sb: SupabaseClient<Database>, body: { messag
       });
       writer.merge(result.toUIMessageStream({ sendReasoning: false, onError: () => 'CoachHelm couldn’t finish that answer.' }));
       const text = stripReadMarkers(await result.text);
-      auditNumericClaims(text, envelopes.flatMap((e) => e.measurements), envelopes.flatMap((e) => e.series));
+      const unsupported = auditPlayerAnswer({ text, envelopes, messages: uiMessages, timezone: ctx.timezone, roster: ctx.roster });
       const usage = await result.usage;
       const input = usage.inputTokens ?? 0;
       const output = usage.outputTokens ?? 0;
       const usd = estimateCachedCostUsd(MODEL_FOR_TASK.coach_chat, input, output, usage.inputTokenDetails);
       await recordPlayerSpend({ playerId: ctx.player_id, teamId: ctx.team_id, zone: ctx.timezone, usd });
       try {
-        await createAdminClient().from('golf_coachhelm_llm_calls').insert({ task: 'coach_chat', model: MODEL_FOR_TASK.coach_chat, player_id: ctx.player_id, coach_id: null, input_tokens: input, output_tokens: output, cost_usd: usd } as never);
+        const { error } = await createAdminClient().from('golf_coachhelm_llm_calls').insert(playerLedgerRow({ playerId: ctx.player_id, promptTokens: input, completionTokens: output, costUsd: usd, unsupported }));
+        if (error) throw new Error(error.message);
       } catch (err) {
         void logServerError(`player ask: llm ledger failed: ${err instanceof Error ? err.message : 'unknown'}`, { action: 'coachhelm.ask.player' }, 'warning');
       }
