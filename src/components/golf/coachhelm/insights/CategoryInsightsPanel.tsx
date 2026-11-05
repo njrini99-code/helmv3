@@ -33,6 +33,7 @@
  * is injected exactly as `ThemesPanel` did.
  * ========================================================================== */
 
+import { splitSentencesBefore } from '@/lib/utils/sentences';
 import { useId, useMemo, useState } from 'react';
 import { ChevronDown, Lightbulb, Target, TrendingDown, TrendingUp } from 'lucide-react';
 
@@ -290,8 +291,7 @@ function driverSourceLabel(source: RootDriver['source']): string {
 function splitSentences(text: string): string[] {
   const trimmed = text.trim();
   if (!trimmed) return [];
-  return trimmed
-    .split(/(?<=[.!?])\s+(?=[A-Z(])/)
+  return splitSentencesBefore(trimmed, 'A-Z(')
     .map((s) => s.trim())
     .filter(Boolean);
 }

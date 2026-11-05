@@ -1,3 +1,4 @@
+import { splitSentences } from '@/lib/utils/sentences';
 import { isNotTracedCause } from './cause-state';
 import { isPlaceholderCause } from './placeholder-cause';
 
@@ -14,7 +15,13 @@ const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
  * A sentence that states or guesses a cause ("It's consistent with a pace-control pattern", "That's driven by", "the classic under-read").
  * "points to" after a figure is a measure ("23 points to the Tour"), so it does not count.
  */
-export const CAUSAL = /\b(?:consistent with|looks? like|(?<![\d.]\s)points? to|suggests?|likely|because|due to|caused by|driven by|stems? from|the classic)\b/i;
+const CAUSAL_WORDS = /\b(?:consistent with|looks? like|suggests?|likely|because|due to|caused by|driven by|stems? from|the classic)\b/i;
+export const CAUSAL = {
+  test(sentence: string): boolean {
+    if (CAUSAL_WORDS.test(sentence)) return true;
+    return [...sentence.matchAll(/\bpoints? to\b/gi)].some((m) => !/[\d.]\s$/.test(sentence.slice(0, m.index ?? 0)));
+  },
+};
 
 /** The player reads a cause only when it was counted in their shots; anything else, a guess or no cause at all, is not traced for them. */
 export function playerSeesCause(ev: unknown): boolean {
@@ -39,7 +46,7 @@ function armWords(ev: unknown): string[] {
     }
   }
   const root = str(rec(e?.diagnosis)?.root_cause);
-  if (root && !isPlaceholderCause(root)) out.push(...root.split(/(?<=[.!?])\s+/).map((s) => s.replace(/[.!?]+$/, '').trim()));
+  if (root && !isPlaceholderCause(root)) out.push(...splitSentences(root).map((s) => s.replace(/[.!?]+$/, '').trim()));
   return out.filter(Boolean).map((w) => w.toLowerCase());
 }
 
@@ -56,8 +63,7 @@ export function withoutGuessedCause(text: string | null | undefined, ev: unknown
   if (!t) return null;
   if (playerSeesCause(ev)) return t;
   return (
-    t
-      .split(/(?<=[.!?])\s+/)
+    splitSentences(t)
       .filter((s) => !CAUSAL.test(s) && !namesWithheldArm(s, ev))
       .join(' ')
       .trim() || null

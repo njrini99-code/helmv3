@@ -17,3 +17,6 @@ replaces Fairway.
 - Messages: search doesn't show the last term's results under a new one.
 - Stats: rapid window switches don't flash an older page.
 - Motion: iOS before 17.2 gets a plain curve, as linear() throws there.
+- Stats: a filter down to one round no longer draws an invalid chart path.
+- Older iPhones: no lookbehind regex, which iOS before 16.4 can't parse and
+  which stops the whole script it ships in. A test keeps them out.

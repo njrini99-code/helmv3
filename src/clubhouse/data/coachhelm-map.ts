@@ -1,3 +1,4 @@
+import { splitSentencesBefore } from '@/lib/utils/sentences';
 import { strokesAtStake } from './coachhelm-strokes';
 import { areaOf } from './coachhelm-ladder-shape';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
@@ -57,13 +58,13 @@ export function areaTypeFor(category: string | null | undefined): string {
 }
 
 /** Sentences end at . ! or ? before a capital, digit or opening mark, so "1.1" and "~0.6." stay whole. */
-const SENTENCE_BREAK = /(?<=[.!?])\s+(?=[A-Z0-9("“'])/;
+const SENTENCE_START = 'A-Z0-9("“\'';
 
 /** The first sentence, and the rest as one paragraph. */
 export function splitContent(content: string | null | undefined): { lede: string; why: string | null } {
   const text = (content ?? '').replace(/\s+/g, ' ').trim();
   if (!text) return { lede: '', why: null };
-  const [lede = '', ...rest] = text.split(SENTENCE_BREAK);
+  const [lede = '', ...rest] = splitSentencesBefore(text, SENTENCE_START);
   const why = rest.join(' ').trim();
   return { lede, why: why || null };
 }
@@ -85,8 +86,7 @@ export function withoutSampleAside(content: string | null | undefined, metric: s
 }
 export function withoutCollegeAverage(content: string | null | undefined): string {
   const text = (content ?? '').replace(/\s+/g, ' ').trim();
-  return text
-    .split(SENTENCE_BREAK)
+  return splitSentencesBefore(text, SENTENCE_START)
     .filter((s) => !COLLEGE_AVERAGE.test(s))
     .join(' ');
 }

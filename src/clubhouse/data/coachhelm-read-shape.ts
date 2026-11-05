@@ -1,3 +1,4 @@
+import { splitSentences } from '@/lib/utils/sentences';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import { CAUSAL } from '@/lib/coachhelm/reads/player-cause';
@@ -146,7 +147,7 @@ const LOWER_START = /^(Your|No|Non)\b/;
  * what the Why line holds back. A cause the viewer is shown keeps the write-up whole. Null when nothing is left.
  */
 export function writeUpFor(text: string, traced: boolean): string | null {
-  const kept = traced ? [text] : text.split(/(?<=[.!?])\s+/).filter((s) => !CAUSAL.test(s));
+  const kept = traced ? [text] : splitSentences(text).filter((s) => !CAUSAL.test(s));
   return kept.join(' ').trim() || null;
 }
 

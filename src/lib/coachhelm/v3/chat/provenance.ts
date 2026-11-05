@@ -880,10 +880,10 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
   }
   const names: Array<Occurrence & { ids: ReadonlySet<string> }> = [];
   for (const [name, ids] of idsByName) {
-    const re = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(name)}(?![\\p{L}\\p{N}])`, 'gu');
+    const re = new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp(name)}(?![\\p{L}\\p{N}])`, 'gu');
     for (const m of text.matchAll(re)) {
-      const start = m.index ?? 0;
-      names.push({ start, end: start + m[0].length, ids });
+      const start = (m.index ?? 0) + (m[1]?.length ?? 0);
+      names.push({ start, end: (m.index ?? 0) + m[0].length, ids });
     }
   }
   names.sort((a, b) => a.start - b.start);
