@@ -400,6 +400,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/foundation-v2/templates/HELD_FEATURE_PLAN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-22-player-course-plan.md` | current | - | - | - | 1 |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-24-course-plan-send.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-04-practice-plan-end-to-end.md` | current | - | - | - | - |
 | `docs/clubhouse/templates/HELD_DATA_PLAN.md` | current | - | - | - | - |
 | `docs/clubhouse/templates/HELD_FEATURE_PLAN.md` | current | - | - | - | - |
 | `docs/features/CALENDAR_COMPREHENSIVE_IMPLEMENTATION_PLAN.md` | current | yes | - | - | 4 |
@@ -1008,7 +1009,9 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-10-30-skeleton-feature-shape.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-30-targets-type-focus.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-31-fairway-bubbles-and-send.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-04-empty-avatar-skeleton.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-04-redesign-train.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/auth-onboarding-ground-truth.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/intelligence.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/02_AUTHORITY_MODEL.md` | current | - | - | yes | - |
@@ -1463,6 +1466,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-03-cr0-player-likely-cause.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-03-l0-private-goals.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-03-team-board.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-04-player-cause-and-ask-leaks.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-04-shared-segmented.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |

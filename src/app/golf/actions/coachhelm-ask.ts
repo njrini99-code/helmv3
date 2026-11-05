@@ -7,7 +7,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { isAskV2Enabled } from '@/lib/coachhelm/v3/chat/ask-flag';
 import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
 import { quickChatWeekBounds, quickChatWeekDays, quickChatWeekOf, type QuickChatWeek } from '@/lib/coachhelm/v3/chat/quick-chat-week';
-import { loadTeamZone } from '@/clubhouse/data/season';
+import { getValidTimezone } from '@/lib/calendar/timezone';
 
 const FACT_MAX = 280;
 
@@ -58,7 +58,9 @@ async function readQuickChatWeekImpl(date: string): Promise<QuickChatWeek | null
   if (!ctx) return null;
   const teamId = ctx.team_id;
   // The team's calendar, as Calendar and Home read it; a failed read falls back to the product's default zone, never UTC (`loadTeamZone`).
-  const tz = await loadTeamZone(who.sb, teamId, 'quick-chat');
+  const zone = await who.sb.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle();
+  if (zone.error) await logServerError(`quick chat week timezone failed: ${zone.error.message}`, { action: 'coachhelm.ask.quickChatWeek' });
+  const tz = getValidTimezone(zone.data?.timezone ?? null);
   const { from, to } = quickChatWeekBounds(quickChatWeekDays(date));
   const { data, error } = await who.sb.from('golf_events').select('title, start_time, end_time').eq('team_id', teamId).gte('start_time', from).lte('start_time', to).order('start_time');
   if (error) return null;
