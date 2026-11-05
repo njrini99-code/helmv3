@@ -37,6 +37,8 @@ export interface AskThreadProps {
   onArtifact?: (a: AskArtifact) => void;
   /** Ask v2's answer card, steps, chips and tool cards. Off: today's markup. */
   v2?: boolean;
+  /** The team's name, for a draft that shows how a player's phone will read it. */
+  team?: string;
   messages: UIMessage[];
   /** A turn is in flight. */
   busy: boolean;
@@ -95,7 +97,7 @@ function useElapsed(active: boolean): number | null {
  * the coach sends, and stays where the coach scrolled to while an answer streams. Streamed text
  * does not animate; a new turn arrives with the base fade.
  */
-export function AskThread({ v2 = false, onArtifact, messages, busy, error, offline, phone, players, onApprove, onDeny, onSend, onStop, onRetry, onNewChat, evidenceFocus, onOpenEvidence }: AskThreadProps) {
+export function AskThread({ v2 = false, team, onArtifact, messages, busy, error, offline, phone, players, onApprove, onDeny, onSend, onStop, onRetry, onNewChat, evidenceFocus, onOpenEvidence }: AskThreadProps) {
   const toast = useToast();
   const reduced = useChReducedMotion();
   const turns = useMemo(() => buildTurns(messages, { busy }), [messages, busy]);
@@ -151,7 +153,8 @@ export function AskThread({ v2 = false, onArtifact, messages, busy, error, offli
     for (const r of receipts) {
       if (seen.current.has(r.key)) continue;
       seen.current.add(r.key);
-      if (r.receipt.status === 'completed') {
+      // Held is a write that went through its press and is waiting out Undo, not a failure: no "not completed" toast.
+      if (r.receipt.status === 'completed' || r.receipt.status === 'held') {
         haptic('success');
       } else {
         haptic('error');
@@ -219,7 +222,21 @@ export function AskThread({ v2 = false, onArtifact, messages, busy, error, offli
                     );
                   }
                   if (b.kind !== 'proposal') return null;
-                  return <ConfirmCard key={b.key} view={b.view} inlineReceipt={null} onApprove={onApprove} onDeny={onDeny} onSend={onSend} />;
+                  const focus = focusForProposal(turn.id, b.view);
+                  return (
+                    <ConfirmCard
+                      key={b.key}
+                      view={b.view}
+                      inlineReceipt={null}
+                      fresh={fresh}
+                      roster={players}
+                      team={team}
+                      evidence={focus && evidenceAvailable(messages, focus) ? { open: evidenceFocus?.key === b.view.key, onOpen: () => onOpenEvidence(focus) } : undefined}
+                      onApprove={onApprove}
+                      onDeny={onDeny}
+                      onSend={onSend}
+                    />
+                  );
                 }}
                 onArtifact={onArtifact}
                 players={players}
