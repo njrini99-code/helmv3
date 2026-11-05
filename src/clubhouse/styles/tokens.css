@@ -877,6 +877,15 @@
   --ch-dur-live: 2.8s;
   /* The pending hairline's sweep (LinkPending, shell.css). */
   --ch-dur-sweep: 900ms;
+  /* The mockups' own beats: chart marks settling (360), a story's body (420), a typing dot's cycle and its step, a story. */
+  --ch-dur-marks: 360ms;
+  --ch-dur-word: 320ms;
+  --ch-dur-rm-fade: 120ms;
+  --ch-dur-story-body: 420ms;
+  --ch-dur-typing: 1200ms;
+  --ch-dur-typing-step: 160ms;
+  --ch-dur-story: 5200ms;
+  --ch-ease-typing: cubic-bezier(0.45, 0, 0.55, 1);
   /* Skeletons wait this long before showing, then fade in over base. */
   /* 0: a route load on a phone runs past any delay, so a delay only added a blank frame before the skeleton (F-37). */
   --ch-skel-delay: 0ms;
@@ -1304,6 +1313,12 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-dur-shimmer: 0ms;
   --ch-dur-live: 0ms;
   --ch-dur-sweep: 0ms;
+  --ch-dur-marks: 0ms;
+  --ch-dur-word: 0ms;
+  --ch-dur-story-body: 0ms;
+  --ch-dur-typing: 0ms;
+  --ch-dur-typing-step: 0ms;
+  --ch-dur-story: 0ms;
 }
 
 /* The page crossfade's timings (RouteFrame's <ViewTransition>, shell.css). The view-transition pseudo-elements hang off

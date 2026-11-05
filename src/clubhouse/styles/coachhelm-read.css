@@ -474,7 +474,7 @@ html[data-fw-theme='dark'] .ch-hr {
   background:var(--ch-hr-neutral-fill);
   transform:scaleX(var(--ch-hr-s));
   transform-origin:left center;
-  transition:transform 360ms var(--ch-hr-ease);
+  transition:transform var(--ch-dur-marks) var(--ch-hr-ease);
 }
 .ch-hr .fbar.last {
   background:var(--ch-hr-loss-fill);
@@ -549,7 +549,7 @@ html[data-fw-theme='dark'] .ch-hr {
   height:14px;
   border-radius: 50%;
   background:var(--ch-hr-track);
-  transition:transform 360ms var(--ch-hr-ease),opacity 360ms var(--ch-hr-ease);
+  transition:transform var(--ch-dur-marks) var(--ch-hr-ease),opacity var(--ch-dur-marks) var(--ch-hr-ease);
 }
 .ch-hr .dots i.f {
   background:var(--ch-hr-loss-fill);
@@ -599,7 +599,7 @@ html[data-fw-theme='dark'] .ch-hr {
   color:var(--ch-hr-ink);
   position:relative;
   z-index:1;
-  transition:transform 360ms var(--ch-hr-ease),opacity 360ms var(--ch-hr-ease);
+  transition:transform var(--ch-dur-marks) var(--ch-hr-ease),opacity var(--ch-dur-marks) var(--ch-hr-ease);
 }
 .ch-hr .pn.hit .nd {
   background:color-mix(in srgb,var(--ch-hr-loss-fill) 16%,var(--ch-hr-card));
@@ -616,7 +616,7 @@ html[data-fw-theme='dark'] .ch-hr {
   height:2px;
   background:var(--ch-hr-neutral-fill);
   transform-origin:left;
-  transition:transform 360ms var(--ch-hr-ease);
+  transition:transform var(--ch-dur-marks) var(--ch-hr-ease);
 }
 .ch-hr .pn:last-child::after {
   display:none;

@@ -1320,7 +1320,7 @@ html[data-fw-theme='dark'] .ch-htb {
   gap:8px;
 }
 .ch-htb .sto-anim {
-  animation:storyin 420ms var(--ch-tb-spring) both;
+  animation:storyin var(--ch-dur-story-body) var(--ch-tb-spring) both;
 }
 @keyframes ch-htb-storyin {from{opacity:0;transform:translateX(24px);}}
 .ch-htb .holes18 {
@@ -1828,7 +1828,7 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   transform: scaleX(1);
 }
 .ch-htb .prog i.now b {
-  animation: ch-htb-prog 5200ms linear both;
+  animation: ch-htb-prog var(--ch-dur-story) linear both;
 }
 .ch-htb .story.is-held .prog i.now b {
   animation-play-state: paused;
@@ -1872,7 +1872,7 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   animation: ch-htb-rise var(--ch-dur-reveal) var(--ch-tb-spring);
 }
 .ch-htb .sto-b {
-  animation: ch-htb-slide 420ms var(--ch-tb-spring);
+  animation: ch-htb-slide var(--ch-dur-story-body) var(--ch-tb-spring);
 }
 @keyframes ch-htb-rise {
   from {

@@ -460,7 +460,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 /* M-ASK-14: words fade in as they arrive; the word is the only fade, so the block's own stands down. */
 @media (prefers-reduced-motion: no-preference) {
   .ch-ak-th .ch-th-prose[data-streaming] > * { animation: none; }
-  .ch-ak-th .ch-th-prose[data-streaming] .w { animation: ch-ak-fade 320ms var(--ch-ease) both; }
+  .ch-ak-th .ch-th-prose[data-streaming] .w { animation: ch-ak-fade var(--ch-dur-word) var(--ch-ease) both; }
 }
 [data-motion='off'] .ch-ak-th .ch-th-prose[data-streaming] .w { animation: none; }
 
@@ -471,7 +471,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-pane, .ch-ak-push { animation: ch-ak-slide-in var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) both; }
 .ch-ak-pane.is-leaving, .ch-ak-push.is-leaving { animation: ch-ak-slide-out var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) both; }
 @media (prefers-reduced-motion: reduce) {
-  .ch-ak-pane, .ch-ak-push { animation: ch-ak-fade 120ms linear both; }
-  .ch-ak-pane.is-leaving, .ch-ak-push.is-leaving { animation: ch-ak-fade-out 120ms linear both; }
+  .ch-ak-pane, .ch-ak-push { animation: ch-ak-fade var(--ch-dur-rm-fade) linear both; }
+  .ch-ak-pane.is-leaving, .ch-ak-push.is-leaving { animation: ch-ak-fade-out var(--ch-dur-rm-fade) linear both; }
 }
 [data-motion='off'] .ch-ak-pane, [data-motion='off'] .ch-ak-push { animation: none; }

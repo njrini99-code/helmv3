@@ -8,6 +8,9 @@ const bez = (c: readonly number[]) => `cubic-bezier(${c.join(',')})`;
 /**
  * M-OPEN, M-CLOSE, M-RETARGET, M-CONTENT, M-SCRIM. A toggle mid-move reads where the panel is, cancels and goes from there, never from the start.
  */
+/** M-QC: the panel is opaque by 90 ms, on purpose below the motion scale: a slower fade reads as a ghost of the page. */
+const PANEL_OPAQUE_MS = 90;
+
 export function useQcMotion(reduced: boolean) {
   const anims = useRef<Animation[]>([]);
   const stop = () => {
@@ -29,8 +32,7 @@ export function useQcMotion(reduced: boolean) {
       panel.style.transformOrigin = `${origin.x - r.left}px ${origin.y - r.top}px`;
       const curve = chSpringCurve('pour');
       anims.current.push(panel.animate([{ transform: was.t }, { transform: 'none' }], { duration: curve.ms, easing: curve.linear }));
-      // Opaque by 90 ms (07): a slower fade reads as a ghost of the page behind it.
-      anims.current.push(panel.animate([{ opacity: was.o }, { opacity: 1 }], { duration: 90, easing: bez(CH_EASE) }));
+      anims.current.push(panel.animate([{ opacity: was.o }, { opacity: 1 }], { duration: PANEL_OPAQUE_MS, easing: bez(CH_EASE) }));
       if (scrim) anims.current.push(scrim.animate([{ opacity: scrimFrom }, { opacity: 1 }], { duration: CH_DUR.base * 1000, easing: bez(CH_EASE) }));
       // The one allowed stagger: header, body, composer (07 M-CONTENT).
       panel.querySelectorAll<HTMLElement>('[data-qc-rise]').forEach((el, i) => {
