@@ -169,6 +169,7 @@ export function DeskBoardEmpty({ rosterSize, inviteHref }: { rosterSize: number;
       {rosterSize === 0 ? (
         <EmptyState
           compact
+          kind="first-run"
           code="CH-2304"
           title="No players on the roster yet."
           body="Share your team code from Roster; players appear here as they join."
@@ -181,7 +182,7 @@ export function DeskBoardEmpty({ rosterSize, inviteHref }: { rosterSize: number;
           }
         />
       ) : (
-        <EmptyState compact code="CH-2305" title="No 18-hole rounds posted yet this season." body={`${plural(rosterSize, 'player is', 'players are')} on the roster. The leaderboard fills in as rounds are posted.`} />
+        <EmptyState compact kind="first-run" code="CH-2305" title="No 18-hole rounds posted yet this season." body={`${plural(rosterSize, 'player is', 'players are')} on the roster. The leaderboard fills in as rounds are posted.`} />
       )}
     </section>
   );

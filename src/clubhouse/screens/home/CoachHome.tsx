@@ -256,6 +256,7 @@ function HomeFirstRun({ data, phone, crh = false }: { data: ChCoachHome; phone: 
               <DeskHead id="ch-dh-week" title="This week" href={CALENDAR} link="Calendar" />
               <EmptyState
                 compact
+                kind="first-run"
                 title="Nothing on the calendar this week"
                 body="New events show here with who’s going."
                 action={
