@@ -30,10 +30,10 @@ const plusDays = (date: string, n: number) => {
   return d.toISOString().slice(0, 10);
 };
 
-/** Five days holding the draft's day: the working week, or the five that end on a weekend day. */
+/** Five days holding the draft's day: the working week, or Wednesday to Sunday for a weekend day, so every day shown is in the week the read returned. */
 function fiveDays(date: string): string[] {
   const dow = (new Date(`${date}T12:00:00Z`).getUTCDay() + 6) % 7;
-  const start = dow <= 4 ? plusDays(date, -dow) : plusDays(date, 4 - dow);
+  const start = dow <= 4 ? plusDays(date, -dow) : plusDays(date, 2 - dow);
   return Array.from({ length: 5 }, (_, i) => plusDays(start, i));
 }
 
@@ -73,7 +73,11 @@ export function WeekDraft({ visual, state }: { visual: Cal; state: 'draft' | 'la
     const to = until ? until.hours + until.minutes / 60 : from + 1;
     return to > first && from < first + SPAN ? [{ key: it.start + it.title, title: it.title, from: Math.max(from, first), to: Math.min(to, first + SPAN) }] : [];
   });
-  const hasEvent = (d: string) => week?.days.find((x) => x.date === d)?.hasEvent ?? false;
+  // Busy or free only from the read: until it answers, or if it fails, a day's dot says neither.
+  const dot = (d: string) => {
+    const day = week?.days.find((x) => x.date === d);
+    return !day ? undefined : day.hasEvent ? 'is-busy' : 'is-free';
+  };
   const place = start != null && end != null ? { top: `${pct(start)}%`, height: `${Math.max(((end - start) / SPAN) * 100, 16)}%` } : { top: '0%', height: '16%' };
   return (
     <div className="ch-ak-wk" role="img" aria-label={`${dayWord(visual.date, { weekday: 'long', month: 'short', day: 'numeric' })}: ${visual.title}${busy.length ? `, with ${busy.length} other ${pluralWord(busy.length, 'event', 'events')} that day` : ''}`}>
@@ -83,7 +87,7 @@ export function WeekDraft({ visual, state }: { visual: Cal; state: 'draft' | 'la
           <span key={d} className={d === visual.date ? 'on' : undefined}>
             <small>{dayWord(d, { weekday: 'short' })}</small>
             <b className="ch-num">{Number(d.slice(8))}</b>
-            <em className={d === visual.date && state !== 'gone' && state !== 'draft' ? 'is-new' : hasEvent(d) ? 'is-busy' : 'is-free'} />
+            <em className={d === visual.date && state !== 'gone' && state !== 'draft' ? 'is-new' : dot(d)} />
           </span>
         ))}
       </div>

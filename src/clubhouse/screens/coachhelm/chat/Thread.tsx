@@ -248,7 +248,8 @@ export function AskThread({ v2 = false, team, stoppedTurn = null, onArtifact, me
                       key={b.key}
                       view={b.view}
                       inlineReceipt={null}
-                      fresh={fresh}
+                      // A live answer takes over from the placeholder, so the turn's own `fresh` is false; what counts is that it was streaming as the card arrived.
+                      fresh={turn.active}
                       roster={players}
                       team={team}
                       evidence={focus && evidenceAvailable(messages, focus) ? { open: evidenceFocus?.key === b.view.key, onOpen: () => onOpenEvidence(focus) } : undefined}

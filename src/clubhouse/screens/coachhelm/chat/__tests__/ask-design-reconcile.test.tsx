@@ -109,6 +109,35 @@ describe('the receipt', () => {
   });
 });
 
+describe('a card arriving in a live answer', () => {
+  const props = { v2: true, error: null, offline: false, phone: false, players: [], onApprove: vi.fn(), onDeny: vi.fn(), onSend: vi.fn(), onStop: vi.fn(), onRetry: vi.fn(), onNewChat: vi.fn(), evidenceFocus: null, onOpenEvidence: vi.fn() };
+  const q = { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Set a meeting' }] };
+  const parts = [{ type: 'data-action-proposal', id: 'p-k', data: { ...proposal(), tool: 'create_event' } }, { type: 'tool-create_event', toolCallId: 'c1', state: 'approval-requested', input: {}, approval: { id: 'a1' } }];
+  it('fills its fields, though the answer took over from the placeholder', () => {
+    const { container, rerender } = render(<AskThread {...props} busy messages={[q] as unknown as UIMessage[]} />);
+    rerender(<AskThread {...props} busy messages={[q, { id: 'a1', role: 'assistant', parts }] as unknown as UIMessage[]} />);
+    expect(container.querySelector('.conf.is-fill')).not.toBeNull();
+    // Still filled as it was when the stream ends: nothing replays or snaps.
+    rerender(<AskThread {...props} busy={false} messages={[q, { id: 'a1', role: 'assistant', parts }] as unknown as UIMessage[]} />);
+    expect(container.querySelector('.conf.is-fill')).not.toBeNull();
+  });
+  it('draws still when the thread opens with it', () => {
+    const { container } = render(<AskThread {...props} busy={false} messages={[q, { id: 'a1', role: 'assistant', parts }] as unknown as UIMessage[]} />);
+    expect(container.querySelector('.conf')).not.toBeNull();
+    expect(container.querySelector('.conf.is-fill')).toBeNull();
+  });
+});
+
+describe('the week grid', () => {
+  const cal = { kind: 'cal', date: '2026-11-07', start: '10:00', end: '11:00', title: 'Saturday session', where: null, who: '7 players', rsvp: false } as const;
+  it('a weekend day shows Wednesday to Sunday, every day inside the week it read, and says nothing of a day until the read answers', () => {
+    const { container } = render(card(view({}, { visual: cal })));
+    const days = [...container.querySelectorAll('.ch-ak-wk .wh > span b')].map((b) => b.textContent);
+    expect(days).toEqual(['4', '5', '6', '7', '8']);
+    expect(container.querySelector('.ch-ak-wk em.is-free, .ch-ak-wk em.is-busy')).toBeNull();
+  });
+});
+
 describe('a held receipt in the thread', () => {
   it('is not a failed write: no "not completed" toast', () => {
     const msg = (parts: unknown[]) => [{ id: 'a1', role: 'assistant', parts }] as unknown as UIMessage[];
