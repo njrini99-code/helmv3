@@ -33,7 +33,7 @@ const ctx: CoachChatContext = {
 
 describe('team-wide CoachHelm read tools', () => {
   it('get_team_rounds averages each player and ranks by to par', async () => {
-    const round = (player_id: string, to: number, score: number) => ({ id: `${player_id}${score}`, player_id, round_date: '2026-10-10', course_name: 'Oak', round_type: 'qualifier', qualifier_id: 'q1', qualifier_round_number: 1, total_score: score, score_to_par: to, total_putts: 30, holes_played: 18, front_nine: 36, back_nine: 36 });
+    const round = (player_id: string, to: number, score: number) => ({ id: `${player_id}${score}`, player_id, round_date: '2026-10-10', course_name: 'Oak', round_type: 'qualifier', qualifier_id: 'q1', qualifier_round_number: 1, total_score: score, score_to_par: to, total_putts: 30, holes_played: 18, front_nine: Math.floor(score / 2), back_nine: Math.ceil(score / 2) });
     const env = await getTeamRounds(
       sbWith({ golf_rounds: [{ data: [round('p1', 4, 76), round('p1', 2, 74), round('p2', 1, 73)] }] }),
       ctx,
@@ -145,7 +145,7 @@ describe('team-wide CoachHelm read tools', () => {
   });
 
   it('an answer written from these envelopes passes the numeric audit', async () => {
-    const round = (player_id: string, to: number, score: number) => ({ id: `${player_id}${score}`, player_id, round_date: '2026-10-10', course_name: 'Oak', round_type: 'qualifier', qualifier_id: 'q1', qualifier_round_number: 1, total_score: score, score_to_par: to, total_putts: 30, holes_played: 18, front_nine: 36, back_nine: 36 });
+    const round = (player_id: string, to: number, score: number) => ({ id: `${player_id}${score}`, player_id, round_date: '2026-10-10', course_name: 'Oak', round_type: 'qualifier', qualifier_id: 'q1', qualifier_round_number: 1, total_score: score, score_to_par: to, total_putts: 30, holes_played: 18, front_nine: Math.floor(score / 2), back_nine: Math.ceil(score / 2) });
     const env = await getTeamRounds(sbWith({ golf_rounds: [{ data: [round('p1', 4, 76), round('p1', 2, 74), round('p2', 1, 73)] }] }), ctx, { round_type: 'qualifier', since_days: 30 });
     const verdict = computeTurnVerdict({
       streamComplete: true,
@@ -160,7 +160,7 @@ describe('team-wide CoachHelm read tools', () => {
   });
 
   it('a made-up figure about the same players is still rejected', async () => {
-    const round = (player_id: string, to: number, score: number) => ({ id: `${player_id}${score}`, player_id, round_date: '2026-10-10', course_name: 'Oak', round_type: 'qualifier', qualifier_id: 'q1', qualifier_round_number: 1, total_score: score, score_to_par: to, total_putts: 30, holes_played: 18, front_nine: 36, back_nine: 36 });
+    const round = (player_id: string, to: number, score: number) => ({ id: `${player_id}${score}`, player_id, round_date: '2026-10-10', course_name: 'Oak', round_type: 'qualifier', qualifier_id: 'q1', qualifier_round_number: 1, total_score: score, score_to_par: to, total_putts: 30, holes_played: 18, front_nine: Math.floor(score / 2), back_nine: Math.ceil(score / 2) });
     const env = await getTeamRounds(sbWith({ golf_rounds: [{ data: [round('p2', 1, 73)] }] }), ctx, { since_days: 30 });
     const verdict = computeTurnVerdict({
       streamComplete: true,
@@ -178,7 +178,7 @@ describe('team-wide CoachHelm read tools', () => {
 describe('a capped team read is never called complete (2026-10-28)', () => {
   const qualifier = { id: 'q1', name: 'Fall Qualifier', status: 'completed', start_date: '2026-09-20', end_date: '2026-09-21', num_rounds: 2, course_name: 'Oak', spots_available: 5, selection_state: 'set' };
   const qRound = (i: number) => ({ qualifier_id: 'q1', player_id: i % 2 ? 'p1' : 'p2', total_score: 72 + (i % 5), score_to_par: i % 5, qualifier_round_number: 1 });
-  const teamRound = (i: number) => ({ id: `r${i}`, player_id: i % 2 ? 'p1' : 'p2', round_date: '2026-10-10', course_name: 'Oak', round_type: 'practice', qualifier_id: null, qualifier_round_number: null, total_score: 72 + (i % 5), score_to_par: i % 5, total_putts: 30, holes_played: 18, front_nine: 36, back_nine: 36 });
+  const teamRound = (i: number) => ({ id: `r${i}`, player_id: i % 2 ? 'p1' : 'p2', round_date: '2026-10-10', course_name: 'Oak', round_type: 'practice', qualifier_id: null, qualifier_round_number: null, total_score: 72 + (i % 5), score_to_par: i % 5, total_putts: 30, holes_played: 18, front_nine: 36, back_nine: 36 + (i % 5) });
 
   it('get_qualifiers at its 900-round cap is partial and says why', async () => {
     const env = await getQualifiers(
@@ -201,7 +201,7 @@ describe('a capped team read is never called complete (2026-10-28)', () => {
   });
 
   it('get_team_rounds at its 600-round cap marks every per-player figure and the weekly line partial, not only the envelope', async () => {
-    const env = await getTeamRounds(sbWith({ golf_rounds: [{ data: Array.from({ length: 600 }, (_, i) => teamRound(i)) }] }), ctx, { since_days: 60 });
+    const env = await getTeamRounds(sbWith({ golf_rounds: [{ data: Array.from({ length: 600 }, (_, i) => teamRound(i)) }] }), ctx, { round_type: 'practice', since_days: 60 });
     expect(env.coverage).toBe('partial');
     expect(env.measurements.length).toBe(2);
     for (const m of env.measurements) {
