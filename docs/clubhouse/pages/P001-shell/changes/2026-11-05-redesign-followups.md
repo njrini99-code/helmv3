@@ -11,6 +11,9 @@ Data impact:    none
 Held items:     none
 ```
 
-A cold load draws Home's skeleton on Home only (`BootSkeleton`), and the neutral frame paints the system canvas. Quick chat's week uses the team's time zone and its tick reads tenths.
+A cold load draws Home's skeleton on Home only (`BootSkeleton`), and the neutral
+frame paints the system canvas. Quick chat's week uses the team's time zone and
+its tick reads tenths.
 
-Screenshots: checked by fixture in WebKit at 390 and 1440; none stored with this entry.
+Screenshots: checked by fixture in WebKit at 390 and 1440; none stored with this
+entry.

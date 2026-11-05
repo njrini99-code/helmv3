@@ -11,6 +11,8 @@ Data impact:    none
 Held items:     none
 ```
 
-The team comparison and team trend return behind the Stats flag, and figures no longer fade in on load.
+The team comparison and team trend return behind the Stats flag, and figures no
+longer fade in on load.
 
-Screenshots: checked by fixture in WebKit at 390 and 1440; none stored with this entry.
+Screenshots: checked by fixture in WebKit at 390 and 1440; none stored with this
+entry.

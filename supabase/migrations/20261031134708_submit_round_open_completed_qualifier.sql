@@ -1,22 +1,36 @@
--- Open submission to a completed qualifier in the database, as the app already is.
+-- Open submission to a completed qualifier in the database, as the app already
+-- is.
 --
--- Owner decision 2026-08-31 (memory/features/golf-round-lifecycle.md, "Submitting and STARTING a round in a completed
--- qualifier are open too"): a round may be started and submitted in a completed qualifier; what protects the standings
--- is entry, the round number within num_rounds and a free slot, all kept. 20260831180000 removed the refusal from
--- reclassify_golf_round and the app's guards went in the same change, but submit_round_atomic still refused:
--- a player who started a qualifier round and finished it after the coach closed the qualifier lost the submit with
--- "This qualifier has already been completed". Owner approved this fix 2026-10-31.
+-- Owner decision 2026-08-31 (memory/features/golf-round-lifecycle.md,
+-- "Submitting and STARTING a round in a completed
+-- qualifier are open too"): a round may be started and submitted in a completed
+-- qualifier; what protects the standings
+-- is entry, the round number within num_rounds and a free slot, all kept.
+-- 20260831180000 removed the refusal from
+-- reclassify_golf_round and the app's guards went in the same change, but
+-- submit_round_atomic still refused:
+-- a player who started a qualifier round and finished it after the coach closed
+-- the qualifier lost the submit with
+-- "This qualifier has already been completed". Owner approved this fix
+-- 2026-10-31.
 --
--- Removes that one IF block (and its comment) by anchored text replacement, as 20261001000000 does; refuses to run
--- unless the anchor occurs exactly once. Every other check is unchanged, including the started-round number guard
--- and the duplicate-slot guard that follow it. No table, row, grant or signature change.
+-- Removes that one IF block (and its comment) by anchored text replacement, as
+-- 20261001000000 does; refuses to run
+-- unless the anchor occurs exactly once. Every other check is unchanged,
+-- including the started-round number guard
+-- and the duplicate-slot guard that follow it. No table, row, grant or
+-- signature change.
 --
--- ROLLBACK: supabase/rollbacks/20261031134708_submit_round_open_completed_qualifier.rollback.sql (live body verbatim,
+-- ROLLBACK:
+-- supabase/rollbacks/20261031134708_submit_round_open_completed_qualifier.rollback.sql -- noqa: LT05
+-- (live body verbatim,
 --   read-only capture 2026-10-31, prosrc md5 dde64d4f093e39d0b96d6119adab4093).
 --
 -- VERIFY: select 1 from pg_proc where proname = 'submit_round_atomic'
--- VERIFY:   and position('This qualifier has already been completed' in prosrc) = 0
--- VERIFY:   and position('You have already submitted this qualifier round' in prosrc) > 0
+-- VERIFY: and position('This qualifier has already been completed' in prosrc) =
+-- VERIFY:   0
+-- VERIFY: and position('You have already submitted this qualifier round' in
+-- VERIFY:   prosrc) > 0
 -- VERIFY:   and position('expected_updated_at' in prosrc) > 0;
 
 DO $$

@@ -11,6 +11,8 @@ Data impact:    none
 Held items:     none
 ```
 
-A tournament with no rounds or holes says "Holes not set" instead of "0 holes". Dark accent text passes contrast.
+A tournament with no rounds or holes says "Holes not set" instead of "0 holes".
+Dark accent text passes contrast.
 
-Screenshots: checked by fixture in WebKit at 390 and 1440; none stored with this entry.
+Screenshots: checked by fixture in WebKit at 390 and 1440; none stored with this
+entry.

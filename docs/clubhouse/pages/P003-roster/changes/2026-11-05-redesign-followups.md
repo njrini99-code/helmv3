@@ -11,8 +11,11 @@ Data impact:    none
 Held items:     none
 ```
 
-A player with no rounds draws no form bars. Recent rounds and "All N" list every round while averages keep the cut.
+A player with no rounds draws no form bars. Recent rounds and "All N" list every
+round while averages keep the cut.
 
-Screenshots: checked by fixture in WebKit at 390 and 1440; none stored with this entry.
+Screenshots: checked by fixture in WebKit at 390 and 1440; none stored with this
+entry.
 
-Leader cards centre their text and carry the player's last-five bars. Coins are the calm neutral.
+Leader cards centre their text and carry the player's last-five bars. Coins are
+the calm neutral.

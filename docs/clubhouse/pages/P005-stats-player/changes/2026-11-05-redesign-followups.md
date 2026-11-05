@@ -11,6 +11,8 @@ Data impact:    none
 Held items:     none
 ```
 
-The figure gauge, score trend words, "N rounds, M countable" and early tags return behind the Stats flag, and figures no longer fade in on load.
+The figure gauge, score trend words, "N rounds, M countable" and early tags
+return behind the Stats flag, and figures no longer fade in on load.
 
-Screenshots: checked by fixture in WebKit at 390 and 1440; none stored with this entry.
+Screenshots: checked by fixture in WebKit at 390 and 1440; none stored with this
+entry.

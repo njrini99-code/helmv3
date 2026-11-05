@@ -13,4 +13,5 @@ Held items:     none
 
 Dark accent text and icons move to a token that passes.
 
-Screenshots: checked by fixture in WebKit at 390 and 1440; none stored with this entry.
+Screenshots: checked by fixture in WebKit at 390 and 1440; none stored with this
+entry.

@@ -57,7 +57,8 @@ function zoneOffsetAt(ms: number, timeZone: string): number | null {
     const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
     const wall = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'), get('second'));
     return Math.round((wall - Math.floor(ms / 1000) * 1000) / 60_000);
-  } catch {
+  } catch (err) {
+    void logServerError(`zoneOffsetAt could not read ${timeZone}: ${String(err)}`, { action: 'golf.recurringEvents.zoneOffsetAt' });
     return null;
   }
 }

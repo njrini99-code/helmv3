@@ -11,6 +11,9 @@ Data impact:    none
 Held items:     none
 ```
 
-Desktop has one empty state and one New message. File chips stay put while typing. The device pin import waits for the inbox and runs once. Dark accent text passes contrast.
+Desktop has one empty state and one New message. File chips stay put while
+typing. The device pin import waits for the inbox and runs once. Dark accent
+text passes contrast.
 
-Screenshots: checked by fixture in WebKit at 390 and 1440; none stored with this entry.
+Screenshots: checked by fixture in WebKit at 390 and 1440; none stored with this
+entry.

@@ -1,72 +1,109 @@
--- Fill golf_rounds.tee_id where the round's own tee name names exactly one published tee on its course.
+-- Fill golf_rounds.tee_id where the round's own tee name names exactly one
+-- published tee on its course.
 --
--- Owner approved 2026-10-31 ("tee_id backfill"), with an archive first so no data is lost. Read-only count the same
--- day: on Guilford, Shenandoah (men, women) and UNCW, 133 completed rounds have tee_id NULL while `tees_played`
--- matches exactly one non-draft golf_course_tees row of the round's course_id (none ambiguous). Without the link the
--- round review shows no yardage and "same tees" comparisons (record-marks.ts) miss these rounds.
+-- Owner approved 2026-10-31 ("tee_id backfill"), with an archive first so no
+-- data is lost. Read-only count the same
+-- day: on Guilford, Shenandoah (men, women) and UNCW, 133 completed rounds have
+-- tee_id NULL while `tees_played`
+-- matches exactly one non-draft golf_course_tees row of the round's course_id
+-- (none ambiguous). Without the link the
+-- round review shows no yardage and "same tees" comparisons (record-marks.ts)
+-- miss these rounds.
 --
 -- Scope, deliberately narrow:
---   * completed, non-test rounds of players active on those four teams; tee_id NULL; course_id set;
---   * a match is `normalized_tee_name = lower(collapsed-whitespace trim(tees_played))` on the same course, non-draft,
+--   * completed, non-test rounds of players active on those four teams; tee_id
+--   NULL; course_id set;
+--   * a match is `normalized_tee_name = lower(collapsed-whitespace
+--   trim(tees_played))` on the same course, non-draft,
 --     and it must be the ONLY match; anything else is left alone;
---   * in-progress rounds are left to the app, which now carries the tee on continue (2ae6ce803).
--- Only tee_id changes. Ratings, slope, scores and updated_at are untouched (no trigger fires on tee_id: the stats
--- cache and live-round triggers list their columns, and none is tee_id). Completed rounds are guarded as permanent
--- history (helm_private.guard_golf_round_lifecycle); this write uses that guard's own transaction-local 'atomic'
+--   * in-progress rounds are left to the app, which now carries the tee on
+--   continue (2ae6ce803).
+-- Only tee_id changes. Ratings, slope, scores and updated_at are untouched (no
+-- trigger fires on tee_id: the stats
+-- cache and live-round triggers list their columns, and none is tee_id).
+-- Completed rounds are guarded as permanent
+-- history (helm_private.guard_golf_round_lifecycle); this write uses that
+-- guard's own transaction-local 'atomic'
 -- bypass, and the statement after it checks that nothing but tee_id moved.
 --
--- ARCHIVE: helm_private.golf_rounds_tee_backfill_20261031 keeps each touched round's id, old and new tee_id and the
--- whole row as it was (jsonb). ROLLBACK: supabase/rollbacks/20261031140000_golf_rounds_tee_id_backfill.rollback.sql
+-- ARCHIVE: helm_private.golf_rounds_tee_backfill_20261031 keeps each touched
+-- round's id, old and new tee_id and the
+-- whole row as it was (jsonb). ROLLBACK:
+-- supabase/rollbacks/20261031140000_golf_rounds_tee_id_backfill.rollback.sql
 -- sets tee_id back from the archive.
 --
--- VERIFY: select 1 from helm_private.golf_rounds_tee_backfill_20261031 having count(*) > 0;
--- VERIFY: select 1 where not exists (select 1 from helm_private.golf_rounds_tee_backfill_20261031 a join golf_rounds r on r.id = a.round_id where r.tee_id is distinct from a.new_tee_id);
+-- VERIFY: select 1 from helm_private.golf_rounds_tee_backfill_20261031 having
+-- VERIFY:   count(*) > 0;
+-- VERIFY: select 1 where not exists (select 1 from
+-- VERIFY:   helm_private.golf_rounds_tee_backfill_20261031 a join golf_rounds r
+-- VERIFY:   on r.id = a.round_id where r.tee_id is distinct from a.new_tee_id);
 
 CREATE TABLE IF NOT EXISTS helm_private.golf_rounds_tee_backfill_20261031 (
-  round_id uuid PRIMARY KEY,
-  old_tee_id uuid,
-  new_tee_id uuid NOT NULL,
-  row_before jsonb NOT NULL,
-  archived_at timestamptz NOT NULL DEFAULT now()
+    round_id uuid PRIMARY KEY,
+    old_tee_id uuid,
+    new_tee_id uuid NOT NULL,
+    row_before jsonb NOT NULL,
+    archived_at timestamptz NOT NULL DEFAULT now()
 );
-REVOKE ALL ON helm_private.golf_rounds_tee_backfill_20261031 FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON helm_private.golf_rounds_tee_backfill_20261031 FROM public,
+anon,
+authenticated;
 
 WITH scope AS (
-  SELECT DISTINCT r.id
-  FROM golf_rounds r
-  JOIN golf_team_members m ON m.player_id = r.player_id AND m.status = 'active'
-  WHERE m.team_id IN (
-      'b714c30f-5459-4a57-8ccd-8af84fe6861a', 'a852910f-e5a6-4e34-8a72-998e718ff80d',
-      'ffd6985f-14b4-4448-895f-d5af20da8d6a', 'f5b4fc75-4581-4843-9b62-7d3bc4686aa5')
+    SELECT DISTINCT r.id
+    FROM golf_rounds AS r
+    INNER JOIN
+        golf_team_members AS m
+        ON r.player_id = m.player_id AND m.status = 'active'
+    WHERE m.team_id IN (
+        'b714c30f-5459-4a57-8ccd-8af84fe6861a',
+        'a852910f-e5a6-4e34-8a72-998e718ff80d',
+        'ffd6985f-14b4-4448-895f-d5af20da8d6a',
+        'f5b4fc75-4581-4843-9b62-7d3bc4686aa5'
+    )
     AND r.status = 'completed'
     AND r.is_test = false
-    AND r.tee_id IS NULL
-    AND r.course_id IS NOT NULL
-    AND nullif(trim(r.tees_played), '') IS NOT NULL
+    AND r.tee_id IS null
+    AND r.course_id IS NOT null
+    AND nullif(trim(r.tees_played), '') IS NOT null
 ),
+
 matched AS (
-  SELECT r.id AS round_id, min(t.id::text)::uuid AS tee_id, count(*) AS n
-  FROM golf_rounds r
-  JOIN scope s ON s.id = r.id
-  JOIN golf_course_tees t
-    ON t.course_id = r.course_id
-   AND t.is_draft = false
-   AND t.normalized_tee_name = lower(regexp_replace(trim(r.tees_played), '\s+', ' ', 'g'))
-  GROUP BY r.id
+    SELECT
+        r.id AS round_id,
+        min(t.id::text)::uuid AS tee_id,
+        count(*) AS n
+    FROM golf_rounds AS r
+    INNER JOIN scope AS s ON r.id = s.id
+    INNER JOIN golf_course_tees AS t
+        ON
+            r.course_id = t.course_id
+            AND t.is_draft = false
+            AND t.normalized_tee_name
+            = lower(regexp_replace(trim(r.tees_played), '\s+', ' ', 'g'))
+    GROUP BY r.id
 )
-INSERT INTO helm_private.golf_rounds_tee_backfill_20261031 (round_id, old_tee_id, new_tee_id, row_before)
-SELECT r.id, r.tee_id, m.tee_id, to_jsonb(r)
-FROM golf_rounds r
-JOIN matched m ON m.round_id = r.id AND m.n = 1
+
+INSERT INTO helm_private.golf_rounds_tee_backfill_20261031 (
+    round_id, old_tee_id, new_tee_id, row_before
+)
+SELECT
+    r.id,
+    r.tee_id AS old_tee_id,
+    m.tee_id AS new_tee_id,
+    to_jsonb(r) AS row_before
+FROM golf_rounds AS r
+INNER JOIN matched AS m ON r.id = m.round_id AND m.n = 1
 ON CONFLICT (round_id) DO NOTHING;
 
 SELECT set_config('helm.golf_lifecycle_write', 'atomic', true);
 
 UPDATE golf_rounds r
 SET tee_id = a.new_tee_id
-FROM helm_private.golf_rounds_tee_backfill_20261031 a
-WHERE a.round_id = r.id
-  AND r.tee_id IS NULL;
+FROM helm_private.golf_rounds_tee_backfill_20261031 AS a
+WHERE
+    a.round_id = r.id
+    AND r.tee_id IS null;
 
 SELECT set_config('helm.golf_lifecycle_write', '', true);
 

@@ -11,6 +11,9 @@ Data impact:    none
 Held items:     none
 ```
 
-Desktop week says when it is empty, the phone no longer says it twice, player Home applies `countsForScoring` behind the Stats flag, and the strokes gained bars respect Reduce Motion.
+Desktop week says when it is empty, the phone no longer says it twice, player
+Home applies `countsForScoring` behind the Stats flag, and the strokes gained
+bars respect Reduce Motion.
 
-Screenshots: checked by fixture in WebKit at 390 and 1440; none stored with this entry.
+Screenshots: checked by fixture in WebKit at 390 and 1440; none stored with this
+entry.
