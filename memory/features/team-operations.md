@@ -199,6 +199,18 @@ is off in every environment. The migrations are written and not applied.
   `src/lib/golf/practice-fanout.ts`.
 - `src/app/golf/actions/practice-library.ts`: `createTeamDrill`,
   `copyLibraryDrill`, `archiveTeamDrill`.
+- A version body is flat, as `golf_practice_plan_public_body` writes it: the
+  published layout's blocks at the top level, no `variants`, and Own work
+  `lines` removed. Read it with `parseVersionBody`, never `parsePlanBody`, which
+  is for drafts. A player's lines come from `golf_practice_plan_lines`.
+- A player cannot read `golf_practice_plans` (RLS): their title and event come
+  from the live version row. `toSheetModel(..., 'player', playerId)` holds only
+  their own group. RLS still lets a player read the whole live body directly,
+  so this is a limit on what the app sends, not on what the policy allows.
+- `golf_practice_plan_save` wants a null expected version for a plan's first
+  save by event, and refuses any save by event once the plan exists. The card
+  saves an existing plan by id with the version the last save returned, and
+  Publish names the plan id and version in the thread.
 - Telemetry uses the runtime feature key `practice_plans`.
 - Tables: `golf_practice_plans`, `golf_practice_plan_versions`,
   `golf_practice_plan_lines`, `golf_practice_plan_opens`, `golf_team_drills`,

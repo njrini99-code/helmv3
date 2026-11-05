@@ -11,13 +11,16 @@ export interface PracticePlanRow {
   body: unknown;
   version: number;
   status: 'draft' | 'published';
-  live_version: number | null;
+  published_version: number | null;
   coach_why?: unknown;
   updated_at: string;
 }
 export interface PracticePlanVersionRow {
   plan_id: string;
   version: number;
+  /** Frozen with the version. A player reads these here: `golf_practice_plans` is coach-only. */
+  title: string;
+  event_id: string | null;
   body: unknown;
   published_at: string;
 }

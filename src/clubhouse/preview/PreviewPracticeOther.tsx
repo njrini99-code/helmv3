@@ -55,7 +55,7 @@ const STOPS = [
 /** `coachhelm-practice-player?state=notify|practice|plan|docs`: a push can only be drawn; the rest are the player's screens. */
 export function PreviewPracticePlayer({ state }: { state?: string }) {
   const sheet = (
-    <PracticePlanSheet plan={toSheetModel({ body: PP_PLAN_PART.draft.body, title: 'Thursday practice', team: 'Demo University Golf', start: new Date('2026-11-05T19:00:00Z'), end: new Date('2026-11-05T22:00:00Z'), zone: 'America/New_York', coaches: PP_COACHES, names: PP_NAMES, state: 'Published' }, 'player')} />
+    <PracticePlanSheet plan={toSheetModel({ body: PP_PLAN_PART.draft.body, title: 'Thursday practice', team: 'Demo University Golf', start: new Date('2026-11-05T19:00:00Z'), end: new Date('2026-11-05T22:00:00Z'), zone: 'America/New_York', coaches: PP_COACHES, names: PP_NAMES, state: 'Published' }, 'player', PP_PLAN_PART.draft.body.groups[1]?.players[0])} />
   );
   if (state === 'plan') return <main className="ch-page">{sheet}</main>;
   return (

@@ -96,6 +96,32 @@ export function parsePlanBody(json: unknown): PlanBodyV2 | null {
   return { v: 2, focus: b.focus ?? '', notes: b.notes ?? '', place: b.place ?? '', arrivalBufferMin: b.arrivalBufferMin ?? 15, bring: b.bring ?? [], players: b.players ?? [], groups: b.groups ?? [], variants: { main: b.variants.main, rain: b.variants.rain ?? null } };
 }
 
+/**
+ * A frozen version's body. `golf_practice_plan_public_body` (migration 010600) writes it flat: the active layout's blocks at
+ * the top level, no `variants`, and every Own work block's `lines` removed (they live in `golf_practice_plan_lines`). The result
+ * reads as a draft does, with the published layout as `main`. Lines always come back empty, whatever the row holds: a reader
+ * adds the one player's own with `withOwnLines`, so nobody else's can pass through.
+ */
+export function parseVersionBody(json: unknown): PlanBodyV2 | null {
+  if (!json || typeof json !== 'object') return null;
+  const flat = json as Partial<PlanBodyV2> & { blocks?: unknown };
+  if (flat.v !== 2) return null;
+  const blocks = Array.isArray(flat.blocks) ? (flat.blocks as PlanBlock[]) : flat.variants?.main?.blocks;
+  if (!Array.isArray(blocks)) return null;
+  const clean = blocks.map((b): PlanBlock => (b.kind === 'own' ? { ...b, lines: {} } : b));
+  return parsePlanBody({ v: 2, focus: flat.focus, notes: flat.notes, place: flat.place, arrivalBufferMin: flat.arrivalBufferMin, bring: flat.bring, players: flat.players, groups: flat.groups, variants: { main: { blocks: clean }, rain: null } });
+}
+
+/** One player's Own work lines, from `golf_practice_plan_lines`, back on a parsed version body. */
+export function withOwnLines(body: PlanBodyV2, playerId: string, rows: ReadonlyArray<{ block_id: string; line: string }>): PlanBodyV2 {
+  const lineOf = new Map(rows.map((r) => [r.block_id, r.line]));
+  const blocks = body.variants.main.blocks.map((b): PlanBlock => {
+    const line = b.kind === 'own' ? lineOf.get(b.id) : undefined;
+    return b.kind === 'own' && line ? { ...b, lines: { [playerId]: line } } : b;
+  });
+  return { ...body, variants: { ...body.variants, main: { blocks } } };
+}
+
 /** The automatic rotation: [turn][station] = group id or ''. Each group moves one station a turn. */
 export function autoGrid(b: Pick<StationsBlock, 'stations' | 'groupIds' | 'turns'>): string[][] {
   const n = b.stations.length;
@@ -253,6 +279,12 @@ export function diffVersions(prev: PlanBodyV2, next: PlanBodyV2, eventStart: Dat
     for (const s of a) if (!b.some((x) => x.blockId === s.blockId && x.place === s.place)) changes.push({ player: p, line: `${s.place} is off the plan` });
   }
   return { wordingOnly: changes.length === 0, affected: [...new Set(changes.map((c) => c.player))], changes };
+}
+
+/** What `golf_practice_plan_publish` stores in `p_changes`: at most 30 distinct strings of 1 to 140 characters. Anything else is refused. */
+export function changeLines(diff: Pick<PlanDiff, 'changes'>): string[] {
+  const lines = diff.changes.map((c) => c.line.trim().slice(0, 140).trim()).filter(Boolean);
+  return [...new Set(lines)].slice(0, 30);
 }
 
 /** A player's copy: no Why, no Aim, and no other group's assignments (02 §2.2). */
