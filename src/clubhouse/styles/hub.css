@@ -2822,7 +2822,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 }
 .ch-hb-board__l b {
   font: var(--ch-type-15-medium);
-  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-on-green-ink);
 }
 .ch-hb-board__t {
