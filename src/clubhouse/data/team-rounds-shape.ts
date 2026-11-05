@@ -20,9 +20,13 @@ export interface ChTeamSeason {
   /** Players with at least one of them. */
   players: number;
   avg: number | null;
-  /** Rounds under par among them. */
+  /** Practice rounds among them: listed and counted, but never in the average, under par or the low round. */
+  practice: number;
+  /** The rounds those figures use: `rounds` less `practice`. */
+  scored: number;
+  /** Rounds under par among the scored ones. */
   underPar: number;
-  /** The best round by score to par, then by score; the lowest gross score when no round has a to-par. */
+  /** The best scored round by score to par, then by score; the lowest gross score when no round has a to-par. */
   best: { score: number; toPar: number | null; player: string; course: string; date: string } | null;
 }
 
@@ -56,22 +60,29 @@ export function toTeamRounds(rows: readonly ChTeamRoundRow[], names: ReadonlyMap
   return { list, unscored };
 }
 
+/** A round in the team's averages: anything but practice. */
+export const countsTowardAverage = (r: Pick<ChTeamRound, 'type'>) => r.type !== 'practice';
+
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 
 /** The team's season figures from the listed rounds: countable, 18 holes, since `since` (the rule the player's Rounds season uses). */
 export function teamSeasonFrom(list: readonly ChTeamRound[], since: string): ChTeamSeason {
   const s = list.filter((r) => r.countable && r.holes === 18 && r.date >= since);
-  const withPar = s.filter((r): r is ChTeamRound & { toPar: number } => r.toPar != null);
+  // Practice stays out of the figures, as on Roster, Home and Stats (`countsForScoring`).
+  const scored = s.filter(countsTowardAverage);
+  const withPar = scored.filter((r): r is ChTeamRound & { toPar: number } => r.toPar != null);
   // The low round is by score to par; a season with no to-par at all falls back to the lowest gross score, so the tile isn't blank.
   const best: ChTeamRound | null = withPar.length
     ? withPar.reduce((m, r) => (r.toPar < m.toPar || (r.toPar === m.toPar && r.score < m.score) ? r : m))
-    : s.length
-      ? s.reduce((m, r) => (r.score < m.score ? r : m))
+    : scored.length
+      ? scored.reduce((m, r) => (r.score < m.score ? r : m))
       : null;
   return {
     rounds: s.length,
     players: new Set(s.map((r) => r.playerId)).size,
-    avg: mean(s.map((r) => r.score)),
+    avg: mean(scored.map((r) => r.score)),
+    practice: s.length - scored.length,
+    scored: scored.length,
     underPar: withPar.filter((r) => r.toPar < 0).length,
     best: best ? { score: best.score, toPar: best.toPar ?? null, player: best.player, course: best.course, date: best.date } : null,
   };

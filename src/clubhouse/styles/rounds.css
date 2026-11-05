@@ -602,6 +602,14 @@
   font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }
+/* Where the season's figures stop and the older rounds start. */
+.ch-trd-earlier {
+  margin: 16px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--ch-border-subtle);
+  font: var(--ch-type-13);
+  color: var(--ch-text-tertiary);
+}
 
 /* Tools */
 .ch-rd-tools {

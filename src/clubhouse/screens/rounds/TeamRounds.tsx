@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
+import { Fragment, useMemo } from 'react';
 import { Flag, UserPlus, Users } from 'lucide-react';
-import type { ChTeamRound, ChTeamRounds } from '../../data/team-rounds-shape';
+import { countsTowardAverage, type ChTeamRound, type ChTeamRounds } from '../../data/team-rounds-shape';
 import { formatFixed, formatToPar } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
 import { useChSessionState } from '../../lib/session-state';
@@ -197,9 +197,9 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
               label="The team this season"
               code="CH-11319"
               items={[
-                { label: 'Rounds', value: s.rounds ? s.rounds : <NoData />, note: s.players ? `${plural(s.players, 'player')}` : undefined },
-                { label: 'Average', value: s.avg == null ? <NoData /> : formatFixed(s.avg, 1), note: s.avg == null ? undefined : '18 holes' },
-                { label: 'Under par', value: s.rounds ? s.underPar : <NoData />, tone: s.underPar ? 'under' : undefined, note: s.rounds ? `of ${s.rounds}` : undefined },
+                { label: 'Rounds', value: s.rounds ? s.rounds : <NoData />, note: s.players ? `${plural(s.players, 'player')}${s.practice ? ` · ${s.practice} practice` : ''}` : undefined },
+                { label: 'Average', value: s.avg == null ? <NoData /> : formatFixed(s.avg, 1), note: s.avg == null ? undefined : s.practice ? '18 holes, no practice' : '18 holes' },
+                { label: 'Under par', value: s.scored ? s.underPar : <NoData />, tone: s.underPar ? 'under' : undefined, note: s.scored ? `of ${s.scored}` : undefined },
                 { label: 'Low round', value: best ? best.score : <NoData />, note: best ? `${best.player.split(' ')[0]} · ${best.toPar == null ? shortDay(best.date) : formatToPar(best.toPar)}` : undefined },
               ]}
             />
@@ -229,8 +229,10 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
             {groups.length === 0 ? (
               <EmptyState code="CH-11321" compact title={q.trim() ? `No rounds for “${q.trim()}”` : 'No rounds for this player'} body={q.trim() ? 'Check the spelling, or search part of a name or course.' : 'They haven’t posted a round yet.'} />
             ) : (
-              groups.map((g) => {
-                const full = g.rounds.filter((r) => r.holes === 18 && r.countable);
+              groups.map((g, i) => {
+                // The figures above are this season's; the list runs further back, so the page says where the season ends.
+                const earlierFrom = group === 'month' && g.rounds[0]!.date < data.seasonStart && (i === 0 || groups[i - 1]!.rounds[0]!.date >= data.seasonStart);
+                const full = g.rounds.filter((r) => r.holes === 18 && r.countable && countsTowardAverage(r));
                 const avg = full.length ? full.reduce((a, r) => a + r.score, 0) / full.length : null;
                 const meta = (
                   <span className="ch-num">
@@ -239,13 +241,16 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
                   </span>
                 );
                 return (
-                  <Section key={g.key} id={`ch-trd-${g.key.replace(/\W+/g, '-').toLowerCase()}`} title={g.title} meta={meta}>
-                    <LedgerList label={`${g.title}, ${g.rounds.length} rounds`}>
-                      {g.rounds.map((r) => (
-                        <TeamRoundRow key={r.id} r={r} by={group} />
-                      ))}
-                    </LedgerList>
-                  </Section>
+                  <Fragment key={g.key}>
+                    {earlierFrom && <p className="ch-trd-earlier">Before this season, not in the figures above</p>}
+                    <Section id={`ch-trd-${g.key.replace(/\W+/g, '-').toLowerCase()}`} title={g.title} meta={meta}>
+                      <LedgerList label={`${g.title}, ${g.rounds.length} rounds`}>
+                        {g.rounds.map((r) => (
+                          <TeamRoundRow key={r.id} r={r} by={group} />
+                        ))}
+                      </LedgerList>
+                    </Section>
+                  </Fragment>
                 );
               })
             )}
