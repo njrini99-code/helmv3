@@ -24,7 +24,7 @@ export function heldCommitFor(sb: SupabaseClient<Database>, ctx: CoachChatContex
   const flow = FLOWS.find((f) => f.name === row.tool_name);
   if (flow) {
     const parsed = flow.input.safeParse(row.proposed_input);
-    return parsed.success ? flowCommit(flow, sb, ctx, parsed.data) : unwritable(row.tool_name);
+    return parsed.success ? flowCommit(flow, sb, ctx, parsed.data, row.idempotency_key) : unwritable(row.tool_name);
   }
   if (row.tool_name === 'create_focus_area') return { run: () => executeFocusArea(row.proposed_input as never) };
   if (row.tool_name === 'create_task') return { run: () => executeTask(row.proposed_input as never) };

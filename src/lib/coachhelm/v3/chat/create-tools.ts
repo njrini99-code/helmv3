@@ -18,7 +18,7 @@ import type { CoachChatContext } from './context';
 import { requireRosterPlayer } from './context';
 import { askTables } from './ask-db';
 import { APPROVED_RUN_TTL_MS } from './action-runs';
-import { ActionPlanError, keyOf } from './action-planners';
+import { ActionPlanError } from './action-planners';
 import type { ActionProposal, ActionReceipt, ProposalFact } from './action-types';
 
 type Sb = SupabaseClient<Database>;
@@ -55,14 +55,14 @@ export interface FlowDef<I> {
   landed?: { table: 'golf_events' | 'golf_coach_blocked_time' | 'golf_recruits'; done: (input: I) => FlowDone };
 }
 
-/** The same request id for every retry of one card: the coach's own ledger key, hashed. Two coaches' same-looking events never collide. */
+/** The same request id for every retry of one card: the coach's own scoped ledger key, hashed, so two cards that differ anywhere are two rows. Two coaches' same-looking events never collide. */
 export function flowRequestId(coachId: string, key: string): string {
   return stableUuid(`${coachId}:${key}`);
 }
 
 /** One flow's write on one input, as the gate, the release, Open and the sweep all run it. Nothing starts until `run` is called. */
-export function flowCommit<I>(f: FlowDef<I>, sb: Sb, ctx: CoachChatContext, input: I): { run: () => Promise<ActionReceipt>; readBack?: () => Promise<ActionReceipt | null> } {
-  const requestId = () => flowRequestId(ctx.coach_id, keyOf(f.plan(ctx, input).key));
+export function flowCommit<I>(f: FlowDef<I>, sb: Sb, ctx: CoachChatContext, input: I, ledgerKey: string): { run: () => Promise<ActionReceipt>; readBack?: () => Promise<ActionReceipt | null> } {
+  const requestId = () => flowRequestId(ctx.coach_id, ledgerKey);
   const completed = (r: FlowDone & { notifications?: ActionReceipt['notifications'] }): ActionReceipt => ({ status: 'completed', action: f.name, summary: r.summary, created: [{ kind: r.kind, count: 1, ...(r.href ? { href: r.href } : {}), ...(r.label ? { label: r.label } : {}) }], notifications: r.notifications ?? [], partial_failures: [], retryable: false, at: new Date().toISOString() });
   const landed = f.landed;
   return {

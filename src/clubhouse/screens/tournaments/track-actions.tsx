@@ -114,6 +114,8 @@ export function DeskTrackMenu({ tournamentId, name, track }: { tournamentId: str
     try {
       const res = await setTournamentCancelled(tournamentId, null, false, null, track.version);
       if (!res.success) return fail((res.code ?? 'failed') as TournamentRefusal, 'cancel', 'restore');
+      // A cancel from this menu held this on; the restored row now says otherwise, so the menu can cancel again.
+      setHeld(false);
       haptic('success');
       const t = deskTrackToast('restored', name);
       toast({ title: t.title, code: t.code, replace: 'tour-track' });

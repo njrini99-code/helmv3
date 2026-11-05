@@ -31,6 +31,8 @@ export interface HeldRow {
   proposed_input: unknown;
   team_id: string;
   run_at: string;
+  /** The row's scoped ledger key: the write's request id comes from it, so a rebuilt write hits the same row. */
+  idempotency_key: string;
 }
 /** How to write a held row. Nothing has started until `run` is called, and only the winner of `takeHeld` calls it. */
 export interface HeldCommit {
@@ -40,7 +42,7 @@ export interface HeldCommit {
 /** Null: not this request's to write (another team's row); it stays held. */
 export type HeldResolver = (row: HeldRow) => HeldCommit | null;
 
-const HELD_COLUMNS = 'id, tool_name, proposed_input, team_id, run_at';
+const HELD_COLUMNS = 'id, tool_name, proposed_input, team_id, run_at, idempotency_key';
 
 /**
  * Held to approved in one update: whoever wins runs it, and `claimForExecution`'s in-flight and TTL rules then apply unchanged.

@@ -481,7 +481,9 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
     let plan: TPlan;
     let proposal: ActionProposal;
     try {
-      const built = action.plan(input);
+      // The same prepared input the card was built from, so this claims the proposal the coach saw. If what it read has
+      // changed since (a round's note), the key differs, the claim finds nothing, and the stale card writes nothing.
+      const built = action.plan(action.prepare ? await action.prepare(input) : input);
       plan = built.plan;
       proposal = scope(built.proposal, built.plan);
     } catch (err) {
@@ -564,8 +566,8 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
       const proposal: ActionProposal = { visual: d.visual, ...(d.publish ? { publish: d.publish } : {}), action: d.action, summary: d.summary, facts: d.facts, affects: d.affects ?? [], notifications: d.notifications, missing: d.facts.filter((x) => x.missing).map((x) => x.label), idempotency_key: keyOf(d.key) };
       return { plan: input, proposal };
     },
-    run: (input) => flowCommit(f, sb, ctx, input).run(),
-    readBack: (input) => flowCommit(f, sb, ctx, input).readBack?.() ?? Promise.resolve(null),
+    run: (input) => flowCommit(f, sb, ctx, input, scopedKey(keyOf(f.plan(ctx, input).key), conversationId, input)).run(),
+    readBack: (input) => flowCommit(f, sb, ctx, input, scopedKey(keyOf(f.plan(ctx, input).key), conversationId, input)).readBack?.() ?? Promise.resolve(null),
     immediate: f.immediate,
     prepare: f.prepare ? (input) => f.prepare!(sb, ctx, input) : undefined,
   });
