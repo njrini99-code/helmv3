@@ -194,6 +194,8 @@ export interface ChAttachmentRecovery {
 
 export interface ChMessagesApi {
   /** golf_messages_redesign_v1, read on the server: the screens branch on it, and the root carries `data-ch-ms-v2`. */
+  /** Set once by a handoff from Ask: the phone's back key returns there, the one time (W-MSG-16). */
+  leaveToAsk?: () => void;
   redesign?: boolean;
   /** The design fixture's starting filter (`view=unread`). */
   designFilter?: ChConvFilter;

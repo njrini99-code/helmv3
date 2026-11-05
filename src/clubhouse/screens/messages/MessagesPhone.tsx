@@ -200,7 +200,7 @@ export function MessagesPhone({ api }: { api: ChMessagesApi }) {
             key={`thread-${conv.id}`}
             api={api}
             conv={conv}
-            onBack={() => select(null)}
+            onBack={() => (api.leaveToAsk ? api.leaveToAsk() : select(null))}
             onDetails={() => {
               haptic("select");
               setDetails(true);

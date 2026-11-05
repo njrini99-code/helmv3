@@ -77,8 +77,18 @@ each row's VERIFY, the flag order, the deploy command, `release:status
 
 | Stage | State |
 | --- | --- |
-| 1. Land the fixes | In progress |
-| 2. Lane audit | Not started |
-| 3. Tests | Not started |
+| 1. Land the fixes | PR open, waiting on CI |
+| 2. Lane audit | Fixtures done in WebKit. Device motion not verified |
+| 3. Tests | 126 added for leak, write and wiring checks. Rest need a database |
 | 4. Real data and smoothness | Blocked on the preview deploy decision |
-| 5. Runbook | Not started |
+| 5. Runbook | Written (`GO-LIVE-RUNBOOK.md`), not rehearsed |
+
+## Known gaps at go-live
+
+- The Practice builder and its helper aren't built (PP8, blocked on N-00).
+- Ask has no `/plan`, `/lineup` or `/recap` jobs, and no read of team patterns,
+  track record, corrections, practice reviews or documents.
+- W-QC-9: a qualifier from Ask writes no tees, so "Tees weren't saved" can't
+  appear.
+- MSG-CP-56 ("Discard this announcement?") conflicts with wave 5 #7, which keeps
+  the draft on Cancel. The code follows wave 5 #7. Owner's call.

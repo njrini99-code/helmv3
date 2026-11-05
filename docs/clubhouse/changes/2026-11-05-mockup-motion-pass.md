@@ -16,6 +16,10 @@ own tokens. This pass closes the gaps found against them.
 - CoachHelm: a read and a player's page push and pop as pages, and the Team
   Board's links to them no longer reload the app.
 
+Also fixed from the acceptance pass: a failed Undo hold no longer writes, a
+prefill keeps its thread, poll and return to Ask, the coach is told when their
+own draft wins, and the practice brief follows the practice flag.
+
 Not built: the Practice builder and its helper (PP8, blocked on N-00), and
 Ask's `/plan`, `/lineup` and `/recap` jobs.
 

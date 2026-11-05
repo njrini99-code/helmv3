@@ -83,7 +83,14 @@ export function takePrefill(params: { get: (k: string) => string | null }): ChPr
     if (!players.length) return null;
     const draft = typeof v.draft === 'string' ? v.draft.slice(0, 2000) : '';
     const title = typeof v.title === 'string' ? v.title.trim().slice(0, 80) || undefined : undefined;
-    return { players, draft, title };
+    const conversationId = typeof v.conversationId === 'string' && v.conversationId ? v.conversationId : undefined;
+    const returnTo = v.returnTo === 'ask' ? ('ask' as const) : undefined;
+    const q = v.poll;
+    const poll =
+      q && typeof q.question === 'string' && Array.isArray(q.options) && q.options.every((o) => typeof o === 'string')
+        ? { question: q.question, options: q.options, ...(typeof q.closes === 'string' ? { closes: q.closes } : {}), ...(q.multi === true ? { multi: true } : {}) }
+        : undefined;
+    return { players, draft, title, ...(conversationId ? { conversationId } : {}), ...(poll ? { poll } : {}), ...(returnTo ? { returnTo } : {}) };
   } catch {
     return null;
   }

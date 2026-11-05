@@ -546,8 +546,18 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
         defer(() => releaseHeld(sb, { run_id: claim.run_id, run_at: held.run_at, run: () => action.run(plan), readBack: action.readBack ? () => action.readBack!(plan) : undefined }));
         return { status: 'held', message: `${proposal.summary} It goes through in 8 seconds unless the coach presses Undo.` };
       }
+      // The hold itself failed: the coach was promised 8 seconds of Undo, so nothing goes through without it.
+      if (held.kind === 'error') {
+        const refused: ActionReceipt = { status: 'failed', action: proposal.action, summary: 'That didn’t go through. Nothing was saved.', created: [], notifications: [], partial_failures: [], retryable: true, at: nowIso() };
+        await recordOutcome(sb, { run_id: claim.run_id, receipt: refused });
+        writer.write({ type: 'data-action-receipt', id: `receipt-${proposal.idempotency_key}`, data: refused });
+        return { status: refused.status, message: refused.summary };
+      }
     }
-    const receipt = await action.run(plan);
+    const ran = await action.run(plan);
+    // No hold column on this stack (W-QC-12): it went at once, and the coach is told there's no Undo rather than shown a fake one.
+    const noUndo = askV2 && defer && !action.immediate && ran.status === 'completed';
+    const receipt: ActionReceipt = noUndo ? { ...ran, summary: `${ran.summary} Undo isn’t on here yet.` } : ran;
     await recordOutcome(sb, { run_id: claim.run_id, receipt });
     collectActionNumbers(receipt.summary, { created: receipt.created, notifications: receipt.notifications });
     writer.write({
@@ -719,7 +729,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
     // Ask v2's create flows, each on the same gate: nothing writes before the named button, and nothing is told until Undo closes.
     ...(askV2 ? Object.fromEntries((isFlagEnabled('golf_tournaments_v1') ? [...CREATE_FLOWS, ...LINEUP_FLOWS] : CREATE_FLOWS).map((f) => [f.name, flowTool(f)])) : {}),
 
-    ...(askV2 ? askDraftTools({ sb, ctx, writer }) : {}),
+    ...(askV2 ? askDraftTools({ sb, ctx, writer, practicePlans }) : {}),
     ...(practicePlans && teamTools
       ? {
           get_class_times: tool({ description: 'Who is in class on a day, per tracked player. Read before planning a practice.', inputSchema: z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }), execute: read('get_class_times', (input) => getClassTimes(sb, ctx, input)) }),

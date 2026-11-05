@@ -95,6 +95,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const [paramsDone, setParamsDone] = useState(false);
   /** A prefilled message waiting in New message (prefill.ts): the recipients and the group's name. */
   const [prefill, setPrefill] = useState<{ to: string[]; draft: string; title: string } | null>(null);
+  const [returnToAsk, setReturnToAsk] = useState(false);
   /** The prefilled draft lands in the composer of the conversation New message creates; the coach still presses Send. */
   const pendingDraft = useRef<string | null>(null);
 
@@ -218,15 +219,23 @@ export function Messages({ data }: { data: ChMessagesData }) {
         });
       }
       chTrail('messages prefill');
-      const existing = to.length === 1 ? directWith(convs, to[0]!) : undefined;
+      setReturnToAsk(pre.returnTo === 'ask');
+      // Nothing posts a poll from here: its words land in the draft, and the coach is told (W-MSG-16).
+      const words = pre.poll && !pre.draft ? [pre.poll.question, ...pre.poll.options].join('\n') : pre.draft;
+      if (pre.poll) toast({ tone: 'error', title: 'Couldn’t open the poll draft', body: 'Nothing was posted.', code: 'CH-7001' });
+      // A thread the coach can see opens; one they can't falls back to the one-player message, never another group.
+      const named = pre.conversationId ? convs.find((c) => c.id === pre.conversationId) : undefined;
+      const existing = named ?? (to.length === 1 ? directWith(convs, to[0]!) : undefined);
       if (existing) {
         // An unsent draft of the coach's own wins over the prefill.
-        if (pre.draft && !drafts.get(existing.id)) drafts.set(existing.id, pre.draft);
+        const own = drafts.get(existing.id);
+        if (words && !own) drafts.set(existing.id, words);
+        else if (words && own && own !== words) toast({ title: 'You already had a draft here.', code: 'CH-7001' });
         setSelectedId(existing.id);
         return;
       }
-      pendingDraft.current = pre.draft || null;
-      setPrefill({ to, draft: pre.draft, title: pre.title ?? '' });
+      pendingDraft.current = words || null;
+      setPrefill({ to, draft: words, title: pre.title ?? '' });
     } else if (conv) {
       router.replace('/golf/dashboard/messages', { scroll: false });
       // A thread the list doesn't hold yet (one just started with the viewer) is looked for once more before it is
@@ -668,6 +677,14 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const shownConvs = useMemo(() => (redesign && rowMutes.muted ? convs.map((c) => ({ ...c, muted: rowMutes.muted!.has(c.id) })) : convs), [redesign, rowMutes.muted, convs]);
 
   const api: ChMessagesApi = {
+    ...(returnToAsk
+      ? {
+          leaveToAsk: () => {
+            setReturnToAsk(false);
+            router.push('/golf/dashboard/coachhelm?view=ask');
+          },
+        }
+      : {}),
     redesign,
     ...(redesign ? { pins, typingByConv } : {}),
     viewer: { userId: data.viewerUserId, role: data.role, name: data.viewerName },
