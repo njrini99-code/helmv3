@@ -930,9 +930,17 @@ export function bucketBlock(s: MeasurementSeries, highlight: string | null = nul
   };
 }
 
-export function measurementTable(ms: Measurement[], caption: string): AskTable {
+/** Players are ranked against each other; a team's own figure is the line they read against, not one more player (QA-3). */
+export function playersOnly<T extends { entity: { kind: string } }>(ms: T[]): T[] {
+  const players = ms.filter((m) => m.entity.kind === 'player');
+  return players.length ? players : ms;
+}
+
+export function measurementTable(all: Measurement[], caption: string): AskTable {
+  const ms = playersOnly(all);
+  const team = all.find((m) => m.entity.kind === 'team' && ms !== all && ms.length > 0);
   return {
-    caption,
+    caption: team ? `${caption} (${team.entity.label}: ${formatValue(team.value, team.unit, team)})` : caption,
     columns: ['Player', 'Metric', 'Value', 'Sample'],
     rows: ms.map((m) => [m.entity.label, m.metric_label, formatValue(m.value, m.unit, m), m.sample_size > 0 ? sampleWords(m.sample_size, m.sample_unit) : NO_DATA]),
   };
@@ -969,8 +977,8 @@ export const shortMetric = (label: string) => label.replace(/^strokes gained[:\s
 const lowerIsBetter = (m: { direction: Measurement['direction'] }) => m.direction === 'lower_better';
 
 /** Players on one metric, ranked as the read gave them, each with its bar on one fitted axis (`AskRankRow`). */
-export function rankRows(ms: Measurement[], order: 'best_first' | 'as_read' = 'as_read', highlight: string | null = null): { rows: AskRankRow[]; signed: boolean } {
-  const ranked = ms.filter((m): m is Measurement & { value: number } => m.value !== null);
+export function rankRows(all: Measurement[], order: 'best_first' | 'as_read' = 'as_read', highlight: string | null = null): { rows: AskRankRow[]; signed: boolean } {
+  const ranked = playersOnly(all).filter((m): m is Measurement & { value: number } => m.value !== null);
   const dir = ranked[0]?.direction ?? null;
   const sorted = order === 'best_first' && dir ? [...ranked].sort((a, b) => (dir === 'lower_better' ? a.value - b.value : b.value - a.value)) : ranked;
   const strokes = sorted.every((m) => m.unit === 'strokes');
@@ -989,7 +997,8 @@ export function rankRows(ms: Measurement[], order: 'best_first' | 'as_read' = 'a
 }
 
 /** Players across the same metrics, as one table (`AskTeamTable`): the best per metric marked by that metric's direction. */
-export function teamTable(ms: Measurement[]): AskTeamTable {
+export function teamTable(all: Measurement[]): AskTeamTable {
+  const ms = playersOnly(all);
   const players: AskTeamTable['players'] = [];
   const metrics: AskTeamTable['metrics'] = [];
   for (const m of ms) {
@@ -1133,10 +1142,11 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
     });
   }
 
-  // Nothing above drew it (a tool whose output is a list of records, or a kind added later): its table, never nothing.
+  // Nothing above drew it (a tool whose output is a list of records, or a kind added later): its real table, or no block at all. A
+  // placeholder table read as a broken chart, one row saying "Read" under the headings Read and Result (QA-2).
   if (blocks.length === 0) {
-    const table = detailTable(envelope.detail, envelope.summary) ?? { caption: envelope.summary, columns: ['Read', 'Result'], rows: [[envelope.summary, envelope.coverage_note ?? 'Read']] };
-    blocks.push({ kind: 'table', title: envelope.summary, source: null, note: partialNote(envelope), bench: null, table });
+    const table = detailTable(envelope.detail, envelope.summary);
+    if (table) blocks.push({ kind: 'table', title: envelope.summary, source: null, note: partialNote(envelope), bench: null, table });
   }
   return blocks;
 }

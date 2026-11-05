@@ -57,7 +57,7 @@ import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 import { todayIsoInZone } from '@/lib/golf/timezone';
 import { isScoreCountable } from '@/lib/golf/round-score-countable';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
-import { countsForScoring } from '@/clubhouse/data/season';
+import { countsForScoring } from './season-rule';
 
 type Sb = SupabaseClient<Database>;
 type StatsRow = Record<string, unknown>;

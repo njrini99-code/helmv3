@@ -2,10 +2,9 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
-import { loadSeasonRounds, seasonStartDate } from '@/clubhouse/data/season';
 import { requireRosterPlayer, type CoachChatContext } from './context';
 import { nowIso, readFigure, unavailableEnvelope, type ToolEnvelope } from './provenance';
-import { inSeasonAverage } from './season-reads';
+import { inSeasonAverage, loadCountedRounds, seasonStartDate } from './season-rule';
 
 type Sb = SupabaseClient<Database>;
 
@@ -68,8 +67,8 @@ export async function compareSeasons(sb: Sb, ctx: CoachChatContext, input: { pla
   const player = input.player_id ? requireRosterPlayer(ctx, input.player_id) : null;
   const seasonStart = seasonStartDate(new Date(), ctx.timezone);
   const start = Number(seasonStart.slice(0, 4));
-  // Roster's own reader and rule, like get_season_scoring and get_team_rounds: a full 18-hole round that counts, practice left out, the active roster.
-  const { rounds, error } = await loadSeasonRounds(sb as never, player ? [player.id] : ctx.roster.map((p) => p.id), { surface: 'ask-compare-seasons', since: `${start - 1}-08-01` });
+  // Roster's rule, like get_season_scoring and get_team_rounds: a full 18-hole round that counts, practice left out, the active roster.
+  const { rounds, error } = await loadCountedRounds(sb, player ? [player.id] : ctx.roster.map((p) => p.id), `${start - 1}-08-01`);
   if (error) return unavailableEnvelope('Could not compare the seasons.', 'The rounds query failed.');
   const counted = rounds.filter((r) => inSeasonAverage(r) && r.score_to_par != null);
   const split = (y: number) => counted.filter((r) => (y === start ? r.round_date >= seasonStart : r.round_date < seasonStart)).map((r) => r.score_to_par as number);

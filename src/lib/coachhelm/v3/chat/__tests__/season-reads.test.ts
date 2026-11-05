@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ChRound } from '@/clubhouse/data/season';
+import * as roster from '@/clubhouse/data/season';
 import type { CoachChatContext } from '../context';
 import { compareSeasons } from '../engine-reads';
 import { extractAndValidateChatClaims } from '../claims-packet';
 import { collectDates, collectEnvelopeNumbers } from '../provenance';
 import { getTeamRounds } from '../read-tools';
 import { getSeasonScoring, seasonScoringEnvelope } from '../season-reads';
+import { countsForScoring, inSeasonAverage, isFull18, loadCountedRounds, seasonStartDate, type SeasonRound } from '../season-rule';
 import { computeTurnVerdict } from '../verdict';
 
 const person = (id: string, name: string) => ({ id, name, first_name: name, last_name: null, graduation_year: null });
@@ -19,8 +20,8 @@ const ctx: CoachChatContext = {
 };
 
 let id = 0;
-const round = (player_id: string, total_score: number, over: Partial<ChRound> = {}): ChRound =>
-  ({ id: `r${(id += 1)}`, player_id, round_date: '2026-09-25', round_type: 'qualifier', total_score, score_to_par: total_score - 72, front_nine: null, back_nine: null, holes_played: 18, total_putts: null, course_name: 'Home', strokes_gained_total: null, ...over }) as ChRound;
+const round = (player_id: string, total_score: number, over: Partial<SeasonRound> = {}): SeasonRound =>
+  ({ id: `r${(id += 1)}`, player_id, round_date: '2026-09-25', round_type: 'qualifier', total_score, score_to_par: total_score - 72, front_nine: null, back_nine: null, holes_played: 18, total_putts: null, course_name: 'Home', strokes_gained_total: null, ...over }) as SeasonRound;
 
 /** A PostgREST double that answers every read of `table` with `rows`, once per page. */
 function sbWith(rows: unknown[], error: unknown = null) {
@@ -43,7 +44,7 @@ function sbWith(rows: unknown[], error: unknown = null) {
 
 const season = { start: '2026-08-01', today: '2026-11-05' };
 
-describe('get_season_scoring: Roster\'s rule', () => {
+describe('get_season_scoring', () => {
   const rounds = [
     round('p-owen', 74),
     round('p-owen', 71),
@@ -84,7 +85,7 @@ describe('get_season_scoring: Roster\'s rule', () => {
     expect(none.measurements).toEqual([]);
   });
 
-  it('asks Roster\'s reader for this season, for the active roster', async () => {
+  it('reads this season, for the active roster', async () => {
     const { sb, calls } = sbWith([]);
     const read = await getSeasonScoring(sb, ctx, {});
     expect(read.coverage).toBe('empty');
@@ -128,6 +129,41 @@ describe('get_season_scoring: Roster\'s rule', () => {
     expect(verdictFor("The team's scoring average this season is 73.5 over 4 rounds.", [{ metric: 'season_scoring_average', who: 'team-1' }]).outcome).toBe('rejected');
     expect(verdictFor('Owen Carter is at 70.5 over his 2 rounds.', [{ metric: 'season_scoring_average', who: 'p-cole' }]).outcome).toBe('rejected');
     expect(verdictFor('Owen Carter is at 72.5 this season.', [{ metric: 'season_scoring_average', who: 'p-owen' }]).outcome).toBe('rejected');
+  });
+});
+
+describe("season-rule.ts stays Roster's rule", () => {
+  it('counts practice the same way, every spelling', () => {
+    for (const round_type of [null, 'practice', 'qualifier', 'qualifying', 'tournament', 'casual', 'something new']) {
+      expect(countsForScoring({ round_type })).toBe(roster.countsForScoring({ round_type }));
+    }
+  });
+
+  it('turns the season on the same day, in the team\'s zone', () => {
+    for (const at of ['2026-07-31T23:00:00Z', '2026-08-01T03:59:00Z', '2026-08-01T04:00:00Z', '2026-12-31T12:00:00Z', '2027-01-01T01:00:00Z']) {
+      for (const zone of ['America/New_York', 'America/Los_Angeles', 'UTC']) {
+        expect(seasonStartDate(new Date(at), zone)).toBe(roster.seasonStartDate(new Date(at), zone));
+      }
+    }
+  });
+
+  it('reads the same rounds as Roster\'s loader, with the same totals', async () => {
+    const rows = [
+      round('p-owen', 74),
+      round('p-owen', 75, { front_nine: 36, back_nine: 37 }),
+      round('p-owen', 40, { front_nine: 36, back_nine: 37 }),
+      round('p-owen', 36, { holes_played: 9, front_nine: 36 }),
+      round('p-owen', 36, { holes_played: 9 }),
+      round('p-owen', 37),
+      round('p-owen', 70, { front_nine: 35 }),
+      round('p-owen', 69, { round_type: 'practice', front_nine: 34, back_nine: 35 }),
+    ];
+    const mine = await loadCountedRounds(sbWith(rows).sb, ['p-owen'], '2026-08-01');
+    const theirs = await roster.loadSeasonRounds(sbWith(rows).sb, ['p-owen'], { surface: 'test', since: '2026-08-01' });
+    const shape = (rs: ReadonlyArray<SeasonRound>) => rs.map((r) => [r.id, r.total_score, r.score_to_par, isFull18(r), inSeasonAverage(r)]).sort();
+    expect(mine.rounds.length).toBeGreaterThan(0);
+    expect(shape(mine.rounds)).toEqual(shape(theirs.rounds as unknown as SeasonRound[]));
+    expect(mine.rounds.filter(isFull18).map((r) => r.id).sort()).toEqual(theirs.rounds.filter(roster.isFull18).map((r) => r.id).sort());
   });
 });
 
