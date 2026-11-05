@@ -11,6 +11,7 @@ import { TOUR_LABEL, type ChHelmAssigned, type ChHelmBar, type ChHelmEvidence, t
 import { readTextFor, speak, type ChViewer } from './coachhelm-voice';
 import { pathLineFor } from './coachhelm-path';
 import { withoutPlaceholderCause } from '@/lib/coachhelm/reads/placeholder-cause';
+import { playerTitle, withoutGuessedCause } from '@/lib/coachhelm/reads/player-cause';
 import { anyEngineFlag, auditOf, causeOf, correctionsOf, isEmptyEngine, supportOf, verdictOf, type ChCorrectionsInput, type ChEngineFlags, type ChEngineLifecycle, type ChReadEngine, type ChVerdictRow } from './coachhelm-engine-shape';
 
 /**
@@ -231,15 +232,15 @@ function evidenceFor(ins: EvidenceInsight, kind: ChKind, tour: ChTourBaseline | 
   };
 }
 
-function weekFor(ins: EvidenceInsight, unit: ReturnType<typeof buildInsightUnit>, drillText: string | null | undefined, say: (text: string) => string): ChHelmWeek | null {
+function weekFor(ins: EvidenceInsight, unit: ReturnType<typeof buildInsightUnit>, drillText: string | null | undefined, say: (text: string) => string, keep: (text: string | null | undefined) => string | null | undefined): ChHelmWeek | null {
   const drill = ins.drills?.[0];
   if (drill) {
     const minutes = num(drill.duration_min);
     const meta = [minutes != null && minutes > 0 ? `${minutes} min` : null, drill.difficulty?.trim() || null].filter(Boolean).join(' · ');
-    const text = drillText?.trim();
+    const text = keep(drillText)?.trim();
     return { title: drill.title, text: text ? say(text) : null, meta: meta || null };
   }
-  const action = unit.action?.trim();
+  const action = keep(unit.action)?.trim();
   return action && !GENERIC_ACTION.test(action) ? { title: null, text: say(action), meta: null } : null;
 }
 
@@ -304,11 +305,16 @@ export function toChInsight(
   const stale: ChStale | null = staleDay ? { newestRound: fmtShortDate(staleDay) ?? staleDay } : null;
   // A "Projected impact: ~0.00 strokes per round." sentence says nothing, so it is not drawn (coachhelm-strokes.ts).
   // The generators' placeholder cause states no cause, so no line of the card prints it (design call §4, "Both worlds").
-  const parts = (content: string) => splitContent(withoutCollegeAverage(withoutSampleAside(withoutPlaceholderCause(withoutZeroImpact(content, ev)), ev.metric)));
-  const { lede, why } = parts(voiced.content);
-  const claim = lede || ev.diagnosis?.symptom?.trim() || '';
-  // The focus area is saved with the player's own claim, so with the coach copy drawn it is split from the row's own content.
-  const playerClaim = voiced.coachCopy.content ? parts(ins.content).lede || ev.diagnosis?.symptom?.trim() || '' : claim;
+  const cleaned = (content: string) => withoutCollegeAverage(withoutSampleAside(withoutPlaceholderCause(withoutZeroImpact(content, ev)), ev.metric));
+  // CR0: anything but a coach's card leaves the server without a guessed cause, every field of it, so a card no Deep dive shaped (the Board) holds none either.
+  const forCoach = (extra.engine?.viewer ?? extra.viewer)?.role === 'coach';
+  const playerParts = splitContent(withoutGuessedCause(cleaned(ins.content), ev));
+  const playerSymptom = withoutGuessedCause(ev.diagnosis?.symptom, ev) ?? '';
+  const { lede, why } = forCoach ? splitContent(cleaned(voiced.content)) : playerParts;
+  const claim = lede || (forCoach ? ev.diagnosis?.symptom?.trim() : playerSymptom) || '';
+  // The focus area is saved with the player's own claim whoever assigns it, and the player reads it: never the coach copy, never the guess.
+  const playerClaim = playerParts.lede || playerSymptom;
+  const ownTitle = playerTitle(ins.title, ev);
   const evidence = evidenceFor(ins, kind, tour, say);
   const engine = kind === 'note' ? null : engineFor(ins, evidence, extra.engine, extra.engine?.viewer ?? extra.viewer);
   return {
@@ -324,10 +330,10 @@ export function toChInsight(
     kind,
     stale,
     acknowledged: ins.status === 'acknowledged',
-    title: say(voiced.title),
+    title: say(forCoach ? voiced.title : ownTitle),
     // Typeset as the player reads it, with ordinary spaces: the focus area is saved, and Fairway draws it too. Always the player's
     // own text, never the coach copy.
-    assignAs: { title: plain(speak(ins.title, { role: 'player' })), description: plain(speak(playerClaim, { role: 'player' }) || ins.title) },
+    assignAs: { title: plain(speak(ownTitle, { role: 'player' })), description: plain(speak(playerClaim, { role: 'player' }) || ownTitle) },
     lede: say(claim),
     why: why ? say(why) : null,
     // A note has no number of its own: the par card's value is one of three standings under a title for all of them.
@@ -343,7 +349,7 @@ export function toChInsight(
       // The generators' Title Case label in the symptom is set in sentence case first, then in the viewer's voice.
       say: (text: string) => say(sentenceCase(text)),
     }),
-    week: kind === 'note' ? null : weekFor(ins, unit, extra.drillText, say),
+    week: kind === 'note' ? null : weekFor(ins, unit, extra.drillText, say, forCoach ? (t) => t : (t) => withoutGuessedCause(t, ev)),
     lifecycle: (LIFECYCLES.includes(ins.lifecycle_state) ? ins.lifecycle_state : 'detected') as ChHelmLifecycle,
     metric: ev.metric,
     current: kind === 'note' ? null : you,

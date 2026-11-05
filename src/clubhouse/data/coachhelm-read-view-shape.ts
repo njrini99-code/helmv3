@@ -1,4 +1,5 @@
 import { formatFixed } from '../lib/format';
+import { namesWithheldArm } from '@/lib/coachhelm/reads/player-cause';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { ChReadCalls } from './coachhelm-read-calls';
 import type { ChDeepDive, ChDeepInsight, ChDiveHole, ChDivePlan, ChDiveRound, ChDiveTheme } from './coachhelm-dive-shape';
@@ -161,13 +162,16 @@ export function readCauseOf(cause: Record<string, unknown> | null | undefined, w
   };
 }
 
-function checkedLabels(lines: readonly string[] | undefined): string[] {
+function checkedLabels(lines: readonly string[] | undefined, role: 'coach' | 'player'): string[] {
   // The engine's lines start with a level ("length: 16 of 28 …"); the card names what was looked at, and drops the family codes ("A5 …").
   const out: string[] = [];
   for (const l of lines ?? []) {
     if (/^A\d+\b/.test(l)) continue;
     const key = l.match(/^(\w+):/)?.[1];
-    out.push(key === 'length' ? 'Length of the approach' : key === 'par' ? 'Par and length of the hole' : key === 'shape' ? 'Where the miss finished' : l);
+    const named = key === 'length' ? 'Length of the approach' : key === 'par' ? 'Par and length of the hole' : key === 'shape' ? 'Where the miss finished' : null;
+    // A line with no plain name is the engine's own, with its counts: a coach reads it, a player's payload does not carry it.
+    if (named) out.push(named);
+    else if (role === 'coach') out.push(l);
   }
   return [...new Set(out)];
 }
@@ -202,6 +206,9 @@ export function toChReadDetail(raw: EvidenceInsight, deep: ChDeepInsight, role: 
   const tourLine = (ev.comparison as { lines?: Array<{ source?: string; label?: string; value?: number }> } | undefined)?.lines?.find((l) => l.source === 'tour');
   const theme = themes[deep.cat] ?? null;
   const funnelAllowed = role === 'coach' || calls.playerFunnel;
+  const funnel = funnelAllowed ? funnelOf(diagnosis?.basis?.narrowing) : null;
+  // Call 2 gives a player the observed funnel; Q3 stays either way, so a step that is an arm of a likely cause is not on their copy.
+  const playerSteps = funnel?.steps.filter((s) => !namesWithheldArm(`${s.label} ${s.statement}`, ev)) ?? [];
   return {
     insight: base,
     stance: deep.stance.word,
@@ -215,13 +222,13 @@ export function toChReadDetail(raw: EvidenceInsight, deep: ChDeepInsight, role: 
       foot: { sample: base.evidence.sample, firm: base.evidence.read?.word ?? null, rung: role === 'coach' ? (support?.word ?? null) : null, through: base.evidence.asOf },
       stale: base.stale ? `A newer round (${base.stale.newestRound}) is not in this read yet. It is re-read overnight.` : null,
     },
-    funnel: funnelAllowed ? funnelOf(diagnosis?.basis?.narrowing) : null,
+    funnel: role === 'coach' || !funnel ? funnel : playerSteps.length ? { ...funnel, steps: playerSteps } : null,
     cause: readCauseOf(cause, deep.where, role, support?.range ?? null),
     legacy: cause ? null : deep.diagnosis,
     sure: {
       word: base.evidence.read?.word ?? null,
       rows,
-      checked: checkedLabels(diagnosis?.basis?.checked),
+      checked: checkedLabels(diagnosis?.basis?.checked, role),
       rung: role === 'coach' && support?.word ? { word: support.word, range: support.range ?? null } : null,
     },
     moved: movement && deep.movement ? { from: movement.from, to: movement.to, text: deep.movement.text, tone: String(deep.movement.tone), ref: tourLine?.value != null ? { label: tourLine.label ?? 'Tour', value: tourLine.value } : null, theme, through: base.evidence.asOf } : null,

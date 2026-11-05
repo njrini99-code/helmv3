@@ -152,3 +152,87 @@ describe('assignStateOf (W-READ-7), the same gate as FocusActions', () => {
     expect(assignStateOf(i, f)).toBe(want);
   });
 });
+
+/**
+ * The whole payload, not the named fields: this row says its guess in the first sentence, the title, the action and the engine's checked
+ * lines, so every string a player's client receives is searched. A filter on `why` alone passes the block above and fails here.
+ */
+describe('a likely cause told in the row’s own words', () => {
+  const ARMS = { label: 'From 175+ yards', arm_a: { n: 28, failures: 16, rate: 0.57 }, arm_b: { n: 40, failures: 10, rate: 0.25 }, lift: 2.3 };
+  const told = (state: 'inferred_hypothesis' | 'observed_sequence' = 'inferred_hypothesis'): EvidenceInsight => {
+    const r = slope(HELM_PLAYERS.priya.id, 'in-told');
+    return {
+      ...r,
+      title: 'Approach misses driven by long irons',
+      // The first sentence is the guess (it would be the lede); the second names an arm with no causal word; the third is the measure.
+      content: 'Your approach misses are driven by long irons. From 175+ yards you missed 16 of 28, against 10 of 40 otherwise. You hit 36% of greens from the fairway.',
+      drills: [],
+      evidence: {
+        ...r.evidence,
+        ladder: 'likely',
+        support: SUPPORT,
+        cause:
+          state === 'inferred_hypothesis'
+            ? { state, alternatives: [ARMS], checked: { holes_with_full_record: 18, of: 20, fields_missing: ['lie'] } }
+            : { state, path: ['Long approach', 'Short side'], occurrences: 6, denominator: 9, population: 'misses', example_holes: [] },
+        diagnosis: {
+          symptom: 'Approach misses are driven by long irons',
+          root_cause: 'Long irons from 175+ yards look like the cause',
+          causality_level: state,
+          drivers: [{ metric: 'cause_arm_a_rate', label: 'From 175+ yards', value: 57, unit: 'percent', sample_n: 28 }],
+          recommended_action: 'Work on approaches from 175+ yards in the next practice block',
+          confidence_reason: 'Likely from the totals',
+          basis: { kind: 'hypothesis_policy', hypothesis_label: 'likely', checked: ['A5 family', 'length: 16 of 28 approaches', 'lie: 16 of 28 from 175+ yards'], narrowing: { path: ['All approaches', 'From 175+ yards'], stopped_at: null, steps: [{ passed: true, label: 'All approaches', statement: '26 of 68 approaches missed' }, { passed: true, label: 'From 175+ yards', statement: '16 of 28 approaches from 175+ yd missed' }] } },
+        },
+      } as unknown as EvidenceInsight['evidence'],
+    };
+  };
+  const build = (role: 'coach' | 'player', row: EvidenceInsight) => {
+    const viewer = role === 'coach' ? ({ role: 'coach', first: 'Priya' } as const) : ({ role: 'player' } as const);
+    const base = toChInsight(row, { tour: PREVIEW_TOUR, viewer, engine: { flags: { support: true, cause: true, audit: true }, now: '2026-11-01T00:00:00.000Z', viewer } as never });
+    const deep = toChDeepInsight(row, base, { rounds: new Map(), focusAreas: [], goals: [], themes: null }, (s) => s, role);
+    return { base, deep, detail: toChReadDetail(row, deep, role, 'Priya', CALLS, {}) };
+  };
+  const LEAKS = ['driven by', '175+', '16 of 28', '10 of 40', 'look like', 'long irons', 'Long irons', '2.3'];
+  const leaks = (json: string) => LEAKS.filter((w) => json.includes(w));
+
+  it('no string on the player’s Read payload carries an arm or the guess', () => {
+    const { detail: d, deep } = build('player', told());
+    expect(leaks(JSON.stringify(d))).toEqual([]);
+    expect(leaks(JSON.stringify(deep))).toEqual([]);
+  });
+
+  it('the Board’s card, which never passes the Deep dive, holds neither', () => {
+    expect(leaks(JSON.stringify(build('player', told()).base))).toEqual([]);
+  });
+
+  it('the measure survives: the lede is the first sentence the player may read', () => {
+    const { base, detail } = build('player', told());
+    expect(base.lede).toBe('You hit 36% of greens from the fairway.');
+    expect(detail.headline.lede).toBe(base.lede);
+    expect(base.why).toBeNull();
+    expect(base.title).toBeTruthy();
+    // Call 2 keeps the observed funnel; the step that is an arm of the guess is not on the player's copy.
+    expect(detail.funnel?.steps.map((s) => s.label)).toEqual(['All approaches']);
+    expect(detail.sure.checked).toEqual(['Length of the approach']);
+  });
+
+  it('a coach still reads the row whole, and the arms', () => {
+    const { base, detail } = build('coach', told());
+    expect(base.lede).toContain('driven by long irons');
+    expect(base.why).toContain('16 of 28');
+    expect(detail.cause?.state).toBe('likely');
+  });
+
+  it('a focus area a coach assigns from the read is saved without the guess: the player reads it', () => {
+    const { base } = build('coach', told());
+    expect(leaks(JSON.stringify(base.assignAs))).toEqual([]);
+    expect(base.assignAs.description).toBe('You hit 36% of greens from the fairway.');
+  });
+
+  it('a counted cause reaches the player whole', () => {
+    const { base, detail } = build('player', told('observed_sequence'));
+    expect(base.lede).toContain('driven by long irons');
+    expect(detail.cause?.state).toBe('counted');
+  });
+});

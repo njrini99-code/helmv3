@@ -1025,12 +1025,8 @@ export async function getFocusAreas(
 // Schedule + RSVP
 // ===========================================================================
 
-export async function getUpcomingEvents(
-  sb: Sb,
-  ctx: CoachChatContext,
-  input: { days_ahead: number },
-): Promise<ToolEnvelope> {
-  const days = Math.min(Math.max(input.days_ahead, 1), 60);
+/** The team's coming events, the one read a coach's and a player's schedule share. Null when the query failed. */
+export async function readUpcomingEventRows(sb: Sb, ctx: CoachChatContext, days: number) {
   const now = new Date();
   const until = new Date(now.getTime() + days * 86400_000);
 
@@ -1046,9 +1042,17 @@ export async function getUpcomingEvents(
     .lte('start_time', until.toISOString())
     .order('start_time', { ascending: true })
     .limit(50);
-  if (error) return unavailableEnvelope('Could not read the calendar.', 'The events query failed.');
+  return error ? null : (events ?? []).filter((e) => e.status !== 'cancelled');
+}
 
-  const rows = (events ?? []).filter((e) => e.status !== 'cancelled');
+export async function getUpcomingEvents(
+  sb: Sb,
+  ctx: CoachChatContext,
+  input: { days_ahead: number },
+): Promise<ToolEnvelope> {
+  const days = Math.min(Math.max(input.days_ahead, 1), 60);
+  const rows = await readUpcomingEventRows(sb, ctx, days);
+  if (!rows) return unavailableEnvelope('Could not read the calendar.', 'The events query failed.');
   if (rows.length === 0) {
     return {
       summary: `Nothing scheduled in the next ${days} days.`,

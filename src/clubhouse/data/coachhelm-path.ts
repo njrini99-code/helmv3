@@ -1,5 +1,6 @@
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import { isPlaceholderCause } from '@/lib/coachhelm/reads/placeholder-cause';
+import { namesWithheldArm, withoutGuessedCause } from '@/lib/coachhelm/reads/player-cause';
 import type { ChViewer } from './coachhelm-voice';
 import { plural } from '../lib/plural';
 
@@ -75,8 +76,12 @@ export function pathLineFor(
 ): ChPathLine | null {
   if (opts.note) return null;
   const say = opts.say ?? ((t: string) => t);
-  const narrowing = narrowingOf(ev);
-  const stored = symptomOf(ev);
+  const coach = opts.viewer?.role === 'coach';
+  // CR0: a step that names an arm of a likely cause, or a symptom that says the guess, is the coach's.
+  const steps = narrowingOf(ev);
+  const shown = coach ? steps : (steps?.filter((s) => !namesWithheldArm(s, ev)) ?? null);
+  const narrowing = shown?.length ? shown : null;
+  const stored = coach ? symptomOf(ev) : (withoutGuessedCause(symptomOf(ev), ev) ?? '');
   const symptom = stored ? say(stored) : opts.measured;
   const roundsN = count(ev.rounds_n) && ev.rounds_n > 0 && !/\brounds?$/.test(opts.sample) ? plural(ev.rounds_n, 'round') : null;
   const fallback: ChPathLine = { tier: 'not_traced', seen: symptom, count: opts.sample || null, rounds: roundsN, firmness: NOT_TRACED_SHOT_BY_SHOT, narrowing };
