@@ -356,6 +356,18 @@ describe('prose: paragraphs, lists, bold and roster names', () => {
   it('a name that is not on the roster is text, and a lone asterisk is a character', () => {
     expect(splitInline('Wake Forest shot 3* under', ['Jonah Okafor'])).toEqual([{ text: 'Wake Forest shot 3* under', bold: false }]);
   });
+  it('finds an accented name at either end, and not inside a longer word', () => {
+    expect(splitInline('Chloé and Élodie', ['Chloé', 'Élodie'])).toEqual([
+      { text: 'Chloé', bold: false, mention: 'Chloé' },
+      { text: ' and ', bold: false },
+      { text: 'Élodie', bold: false, mention: 'Élodie' },
+    ]);
+    expect(splitInline('**Élodie** putted; Chloéa did not', ['Chloé', 'Élodie'])).toEqual([
+      { text: 'Élodie', bold: true, mention: 'Élodie' },
+      { text: ' putted; Chloéa did not', bold: false },
+    ]);
+    expect(splitInline('MÉlodie', ['Élodie', 'Mélodie'])).toEqual([{ text: 'MÉlodie', bold: false }]);
+  });
   it('an @mention in the coach\'s line is found, longest name first, and "@Jonah" alone is not "@Jonah Okafor"', () => {
     expect(splitAtMentions('Create a focus area for @Jonah Okafor on putts', ['Jonah', 'Jonah Okafor'])).toEqual([
       { text: 'Create a focus area for ' },

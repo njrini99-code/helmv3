@@ -203,17 +203,13 @@ export function PlanTask({ plan, online, onOpen }: { plan: PlanPartData; online:
         )}
         {open && (
           <>
-            <div className="oncf">
-              <span>
-                {saveOn ? (
-                  <>
-                    <b>On confirm:</b> saved to Documents in {folder}. Players see it only when you publish.
-                  </>
-                ) : (
-                  'Comes with the Practice tab'
-                )}
-              </span>
-            </div>
+            {saveOn && (
+              <div className="oncf">
+                <span>
+                  <b>On confirm:</b> saved to Documents in {folder}. Players see it only when you publish.
+                </span>
+              </div>
+            )}
             {undoFailed && (
               <p className="say quiet" role="alert">
                 Too late to undo. It’s saved.

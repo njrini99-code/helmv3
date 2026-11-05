@@ -214,8 +214,7 @@ const CH_REBUILT_CHILDREN: Record<string, RegExp> = {
 const CH_PRACTICE_PAGES = /^\/golf\/dashboard\/practice\/(format|plan\/[^/]+)$/;
 
 /**
- * Rebuilt addresses whose parent isn't rebuilt for that role. A coach has no
- * Rounds library in v2, but opens a player's round review from Stats. A player
+ * Rebuilt addresses whose parent isn't rebuilt for that role. A player
  * also continues a round, /rounds/continue/[id] (P011, over the round engine;
  * /rounds/new and /rounds/recover are rebuilt routes above).
  */

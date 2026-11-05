@@ -400,6 +400,18 @@ async function createTaskImpl(
       };
     }
 
+    // A retry after a lost response: the task that landed is the answer, not a second one for every player.
+    const { data: sameRecent } = await supabase
+      .from('golf_tasks')
+      .select('id, description, due_date')
+      .eq('team_id', teamId)
+      .eq('assigned_by', coach.id)
+      .eq('title', title)
+      .gte('created_at', new Date(Date.now() - 2 * 60 * 1000).toISOString())
+      .limit(5);
+    const repeat = (sameRecent ?? []).find((t) => t.description === (description || null) && t.due_date === (dueDate || null));
+    if (repeat) return { success: true, data: { taskId: repeat.id } };
+
     // Create the task
     const { data: task, error: taskError } = await supabase
       .from('golf_tasks')

@@ -336,6 +336,19 @@ async function createEnrichedAnnouncementImpl(input: {
     // Who this actually reaches. Resolved before the write for the reason above.
     const targetPlayerIds = validated.recipientPlayerIds ?? roster.ids;
 
+    // A retry after a lost response: the post that landed is the answer, not a second notice to every player.
+    const { data: sameRecent } = await supabase
+      .from('golf_announcements')
+      .select('id')
+      .eq('team_id', teamId)
+      .eq('created_by', coach.id)
+      .eq('title', validated.title)
+      .eq('body', validated.body)
+      .gte('created_at', new Date(Date.now() - 2 * 60 * 1000).toISOString())
+      .limit(1)
+      .maybeSingle();
+    if (sameRecent) return { success: true, data: { announcementId: sameRecent.id } };
+
     // 1. Create the announcement
     const { data: announcement, error: annError } = await supabase
       .from('golf_announcements')

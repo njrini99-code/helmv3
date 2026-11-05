@@ -1015,6 +1015,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-04-empty-avatar-skeleton.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-04-redesign-train.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-05-go-live-bug-hunt.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-05-known-bugs.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-05-mockup-motion-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/auth-onboarding-ground-truth.md` | current | - | - | - | - |
@@ -1117,6 +1118,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-31-resume-bar-discard.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-04-redesign-train.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-05-go-live-bug-hunt.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-05-known-bugs.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
@@ -1499,6 +1501,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-04-player-cause-and-ask-leaks.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-04-shared-segmented.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-05-go-live-bug-hunt.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-05-known-bugs.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |

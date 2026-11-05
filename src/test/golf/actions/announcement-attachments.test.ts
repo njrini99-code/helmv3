@@ -33,7 +33,13 @@ function chain(table: string) {
   const settle = () => outcomes.get(table) ?? { data: [], error: null };
   const node: Record<string, unknown> = {};
   const self = () => node;
+  // The duplicate check before an insert is the only read that filters on .gte: it finds no earlier copy here.
+  let recentRead = false;
   Object.assign(node, {
+    gte: () => {
+      recentRead = true;
+      return node;
+    },
     select: self,
     eq: self,
     in: self,
@@ -54,8 +60,8 @@ function chain(table: string) {
       return n;
     },
     single: async () => settle(),
-    maybeSingle: async () => settle(),
-    then: (resolve: (v: Outcome) => unknown, reject?: (e: unknown) => unknown) => Promise.resolve(settle()).then(resolve, reject),
+    maybeSingle: async () => (recentRead ? { data: null, error: null } : settle()),
+    then: (resolve: (v: Outcome) => unknown, reject?: (e: unknown) => unknown) => Promise.resolve(recentRead ? { data: [], error: null } : settle()).then(resolve, reject),
   });
   return node;
 }

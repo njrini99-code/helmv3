@@ -381,19 +381,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
             )}
             {state.k === 'undone' ? (
               <p className="inert">Removed. Nothing was saved.</p>
-            ) : !saveOn ? (
-              <>
-                <p className="inert">Comes with the Practice tab</p>
-                <div className="acts">
-                  <Button variant="secondary" disabled>
-                    Save draft
-                  </Button>
-                  <Button variant="primary" disabled>
-                    Publish…
-                  </Button>
-                </div>
-              </>
-            ) : state.k === 'saved' ? (
+            ) : !saveOn ? null : state.k === 'saved' ? (
               <div className="savedw">
                 <div className="saved" role="status">
                   <span className="okc">

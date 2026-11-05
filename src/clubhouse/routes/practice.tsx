@@ -1,3 +1,5 @@
+import { Button } from '../ui/Button';
+import { EmptyState } from '../ui/States';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { practiceTables } from '@/lib/golf/practice-db';
@@ -16,7 +18,13 @@ export async function PracticePlanRoute({ planId }: { planId: string }) {
   // A coach who also has a player row is a coach, as the session says.
   const player = session.role === 'player' ? session.player : null;
   const load = player ? await loadPlayerPlan(planId, player.id) : await loadCoachPlan(planId);
-  if (load.status !== 'ready') redirect('/golf/dashboard/calendar');
+  if (load.status !== 'ready') {
+    return (
+      <main className="ch-page" data-ch="practice-plan">
+        <EmptyState title="This plan isn’t available" body="It may have been removed, or it isn’t published yet." action={<Button href="/golf/dashboard/calendar">Go to Calendar</Button>} />
+      </main>
+    );
+  }
   if (player) {
     const practice = await loadPlayerPractice(planId, player.id);
     if (practice.status === 'ready') return <PlayerPractice data={practice.data} planId={planId} everyone={<PracticePlanSheet plan={load.plan} />} />;

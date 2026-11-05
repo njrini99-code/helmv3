@@ -47,7 +47,7 @@ export function classifyNav({ from, to, tabRoots, tabBar = false, back = false }
 
 const PHONE = '(max-width: 820px)';
 /** How long a kind waits for its navigation to commit before it lapses (a tap that never navigated). */
-const LAPSE_MS = 1500;
+const LAPSE_MS = 3000;
 /** How long after the commit the kind stays: past the push's 462ms spring. */
 const SETTLE_MS = 700;
 let shownPath = '';

@@ -13,7 +13,7 @@ export interface BriefQuestion {
 }
 
 /** Ask first (kit ⑥): one question at a time, dots, Back, Next, "Skip, just build"; folds to answer pills. Never asks what a read answered. */
-export function BriefCard({ title, questions, onDone }: { title: string; questions: BriefQuestion[]; onDone: (answers: Record<string, string[]>, line: string) => void }) {
+export function BriefCard({ title, questions, onDone }: { title: string; questions: BriefQuestion[]; onDone: (answers: Record<string, string[]>, line: string) => boolean | void }) {
   const [at, setAt] = useState(0);
   // M-ASK-35: which way the next pane slides; Back reverses.
   const [back, setBack] = useState(false);
@@ -27,8 +27,9 @@ export function BriefCard({ title, questions, onDone }: { title: string; questio
   if (!q) return null;
   const summary = () => questions.map((x) => (answers[x.id] ?? []).map((id) => x.options.find((o) => o.id === id)?.label).filter(Boolean).join(', ')).filter(Boolean);
   const finish = () => {
+    // Not sent (a reply is still running, or offline): the answers stay open to send again.
+    if (onDone(answers, summary().join(' · ')) === false) return;
     setDone(true);
-    onDone(answers, summary().join(' · '));
   };
   if (done)
     return (
