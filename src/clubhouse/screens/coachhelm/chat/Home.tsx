@@ -107,7 +107,7 @@ export function AskHomeV2({ data, phone, heroComposer, onAsk, focus }: { data: C
   return (
     <div className={'ch-ak-home' + (phone ? ' is-phone' : '')} data-ch="ask-home">
       <div className="hi">
-        <h2>{player ? `${greeting(hour).replace('Good ', '').replace(/^./, (c) => c.toUpperCase())}${data.firstName ? `, ${data.firstName}` : ''}` : `${greeting(hour)}, Coach`}</h2>
+        <h2>{player ? `${greeting(hour).replace('Good ', '').replace(/^./, (c) => c.toUpperCase())}${data.firstName ? `, ${data.firstName}` : ''}` : `${greeting(hour)}, ${data.firstName ?? 'Coach'}`}</h2>
         <p>{player ? 'I read your rounds and shots. Only you and your coaches see this.' : `I can read every round, shot, practice and event for ${data.teamName}.`}</p>
       </div>
       {data.noRounds && <NothingYet phone={phone} />}

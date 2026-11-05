@@ -15,3 +15,6 @@ A brief card stays open with its answers when the send is refused (a reply is
 still running, or offline). Accented names such as Chloé and Élodie now link as
 mentions. With saving off, a plan draws no save footer. The plans slash command
 needs both practice plan flags.
+
+Ask greets the coach by first name, and the tone control keeps its three labels
+whole in the narrow rail.

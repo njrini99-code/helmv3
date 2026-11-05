@@ -30,7 +30,7 @@ type Outcome = { data: unknown; error: unknown };
 const PLAYER_ID = '8c1b4e77-2d95-4a30-9f16-5b7e0c9a3d21';
 const ok = (data: unknown): Outcome => ({ data, error: null });
 
-let recent: { id: string } | null = null;
+let recent: Array<{ id: string; body: string }> | null = null;
 let duplicateFilters: Array<[string, unknown]> = [];
 let inserted: string[] = [];
 
@@ -59,7 +59,7 @@ function chain(table: string) {
     },
     gte: () => {
       duplicateFilters = filters;
-      return { limit: () => ({ maybeSingle: async () => ok(recent) }) };
+      return { limit: async () => ok(recent ?? []) };
     },
     insert: () => {
       inserted.push(table);
@@ -104,7 +104,7 @@ beforeEach(() => {
 
 describe('createEnrichedAnnouncement · the duplicate check', () => {
   it('returns the post that landed, inserts nothing and notifies nobody', async () => {
-    recent = { id: 'ann-earlier' };
+    recent = [{ id: 'ann-earlier', body: 'Be early.' }];
     const result = await post();
     expect(result).toEqual({ success: true, data: { announcementId: 'ann-earlier' } });
     expect(inserted).toEqual([]);
@@ -113,9 +113,16 @@ describe('createEnrichedAnnouncement · the duplicate check', () => {
   });
 
   it('looks only at this coach, this team and this exact post', async () => {
-    recent = { id: 'ann-earlier' };
+    recent = [{ id: 'ann-earlier', body: 'Be early.' }];
     await post();
-    expect(Object.fromEntries(duplicateFilters)).toEqual({ team_id: 'team-1', created_by: 'coach-1', title: 'Bus leaves at 6', body: 'Be early.' });
+    expect(Object.fromEntries(duplicateFilters)).toEqual({ team_id: 'team-1', created_by: 'coach-1', title: 'Bus leaves at 6' });
+  });
+
+  it('inserts when the same title has a different body', async () => {
+    recent = [{ id: 'ann-earlier', body: 'Something else.' }];
+    const result = await post();
+    expect(result).toMatchObject({ success: true, data: { announcementId: 'ann-new' } });
+    expect(inserted).toContain('golf_announcements');
   });
 
   it('inserts when nothing recent matches', async () => {

@@ -339,15 +339,15 @@ async function createEnrichedAnnouncementImpl(input: {
     // A retry after a lost response: the post that landed is the answer, not a second notice to every player.
     const { data: sameRecent } = await supabase
       .from('golf_announcements')
-      .select('id')
+      .select('id, body')
       .eq('team_id', teamId)
       .eq('created_by', coach.id)
       .eq('title', validated.title)
-      .eq('body', validated.body)
       .gte('created_at', new Date(Date.now() - 2 * 60 * 1000).toISOString())
-      .limit(1)
-      .maybeSingle();
-    if (sameRecent) return { success: true, data: { announcementId: sameRecent.id } };
+      .limit(5);
+    // Compared here, not in the query: a long body would pass the URL limit and turn the check off.
+    const repeat = (sameRecent ?? []).find((a) => a.body === validated.body);
+    if (repeat) return { success: true, data: { announcementId: repeat.id } };
 
     // 1. Create the announcement
     const { data: announcement, error: annError } = await supabase

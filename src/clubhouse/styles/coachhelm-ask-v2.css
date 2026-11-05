@@ -232,6 +232,8 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-settings .ch-ak-knows { border-top: 0; padding: 0; gap: 16px; }
 .ch-ak-pane .apf__note, .ch-ak-push .apf__note { flex-basis: 100%; font: var(--ch-type-13); color: var(--ch-text-secondary); }
 .ch-ak-knows { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 12px 12px; border-top: var(--ch-hairline-w) solid var(--ch-separator); }
+/* Three tones in a narrow rail: each label stays whole. */
+.ch-ak-knows .ch-seg__b { min-width: 0; padding-inline: 4px; white-space: nowrap; }
 .ch-ak-knows h3 { margin: 0; font: var(--ch-type-12-strong); color: var(--ch-text-secondary); }
 .ch-ak-knows ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font: var(--ch-type-13);  }
 .ch-ak-knows li { display: flex; gap: 6px; align-items: start; justify-content: space-between; }

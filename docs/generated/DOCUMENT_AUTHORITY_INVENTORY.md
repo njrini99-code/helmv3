@@ -1393,6 +1393,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P010-hub/changes/2026-10-30-season-label.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-10-31-data-correctness.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-04-redesign-train.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/changes/2026-11-05-known-bugs.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P011-rounds/DESIGN.md` | current | - | - | - | - |

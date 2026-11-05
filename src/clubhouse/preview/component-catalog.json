@@ -10745,6 +10745,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm-team.css",
         "src/clubhouse/styles/coachhelm.css",
@@ -12789,6 +12790,7 @@
         "ch-ak-turn",
         "ch-btn--primary",
         "ch-cpv-pub",
+        "ch-seg__b",
         "ch-th-col",
         "ch-th-prose",
         "ch-th-user"
@@ -15869,6 +15871,7 @@
         "ch-hb-file__ic",
         "ch-hb-file__open",
         "ch-hb-files",
+        "ch-hb-folder",
         "ch-hb-form",
         "ch-hb-h",
         "ch-hb-home",
