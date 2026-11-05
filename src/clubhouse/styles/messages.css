@@ -4151,13 +4151,14 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   height: 5px;
   border-radius: 50%;
   background: var(--ch-typing-dot);
-  animation: ch-msv-typing var(--ch-dur-sweep) var(--ch-ease) infinite;
+  /* M-MSG-30: a 1200 ms cycle, 160 ms apart, not on the motion tokens. */
+  animation: ch-msv-typing 1200ms cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
 [data-ch-ms-v2] .ch-ms-typing-mini i:nth-child(2) {
-  animation-delay: var(--ch-dur-quick);
+  animation-delay: 160ms;
 }
 [data-ch-ms-v2] .ch-ms-typing-mini i:nth-child(3) {
-  animation-delay: var(--ch-dur-release);
+  animation-delay: 320ms;
 }
 @keyframes ch-msv-typing {
   0%,
@@ -4430,6 +4431,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   pointer-events: none;
   transform: scaleX(-1);
 }
+/* Spec 06: your bubble is one flat fill, so the drawn tail joins it without a seam. */
+[data-ch-ms-v2] .ch-ms-msg.is-mine .ch-ms-bub:not(.ch-ms-bub--file, .is-deleted) {
+  background: var(--ch-bubble-mine-fill);
+}
 [data-ch-ms-v2] .ch-ms-msg.is-mine .ch-msv-tail {
   right: -5px;
   left: auto;
@@ -4468,13 +4473,14 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   height: 7px;
   border-radius: 50%;
   background: var(--ch-typing-dot);
-  animation: ch-msv-typing var(--ch-dur-sweep) var(--ch-ease) infinite;
+  /* M-MSG-30: a 1200 ms cycle, 160 ms apart, not on the motion tokens. */
+  animation: ch-msv-typing 1200ms cubic-bezier(0.45, 0, 0.55, 1) infinite;
 }
 [data-ch-ms-v2] .ch-msv-typing__dots i:nth-child(2) {
-  animation-delay: var(--ch-dur-quick);
+  animation-delay: 160ms;
 }
 [data-ch-ms-v2] .ch-msv-typing__dots i:nth-child(3) {
-  animation-delay: var(--ch-dur-release);
+  animation-delay: 320ms;
 }
 @keyframes ch-msv-typing-pop {
   from {
