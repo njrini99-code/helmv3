@@ -2766,9 +2766,14 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 }
 
 /* The coach's task board and a task's progress: figures you can read, a track under them. */
+.ch-hb-list.is-board {
+  max-width: none;
+}
 .ch-hb-board {
   display: grid;
-  gap: 16px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px 64px;
   margin-bottom: 32px;
   padding: 24px 32px;
   border-radius: var(--ch-radius-lg);
@@ -2800,6 +2805,25 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 }
 .ch-hb-board__f > .is-warn dd {
   color: var(--ch-stage-gold);
+}
+.ch-hb-board__m {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.ch-hb-board__l {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+  font: var(--ch-type-13-medium);
+  color: var(--ch-on-green-ink-muted);
+}
+.ch-hb-board__l b {
+  font: var(--ch-type-15-medium);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-on-green-ink);
 }
 .ch-hb-board__t {
   height: 6px;
@@ -2906,6 +2930,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
     content: '';
   }
   .ch-hb-board {
+    grid-template-columns: minmax(0, 1fr);
     padding: 20px;
   }
   .ch-hb-board__f dd {
@@ -3702,6 +3727,10 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 .ch-hw-figs .is-warn dd,
 .ch-hw-figs .is-warn dt {
   color: var(--ch-warning-600);
+}
+.ch-hw-figs-note {
+  font: var(--ch-type-12-medium);
+  color: var(--ch-text-secondary);
 }
 .ch-hw-tlist {
   margin: 0;

@@ -159,11 +159,13 @@ describe('100101 Team Hub · Home’s widgets', () => {
 });
 
 describe('100101 100102 Team Hub · Tasks (a player has the tab; the coach’s board)', () => {
-  it('the coach’s board totals completions across the team and names what no one has done', () => {
+  it('the coach’s board counts tasks in its figures, and labels player assignments on its track', () => {
     show(PREVIEW_HUB_COACH, 'tasks');
     const board = screen.getByRole('region', { name: 'Task progress' });
-    expect([...board.querySelectorAll('.ch-hb-board__f > div')].map((d) => `${d.querySelector('dt')?.textContent} ${d.querySelector('dd')?.textContent}`)).toEqual(['done 13', 'left 10', 'overdue 1']);
-    expect(within(board).getByText('1 overdue task has no one done yet.')).toBeTruthy();
+    expect([...board.querySelectorAll('.ch-hb-board__f > div')].map((d) => `${d.querySelector('dt')?.textContent} ${d.querySelector('dd')?.textContent}`)).toEqual(['open tasks 3', 'overdue 1', 'complete 1']);
+    expect(within(board).getByText('13 of 23 done')).toBeTruthy();
+    expect(within(board).getByRole('img').getAttribute('aria-label')).toBe('13 of 23 player assignments done');
+    expect(within(board).getByText('No player has finished the overdue task.')).toBeTruthy();
     expect(board.querySelector('.is-warn')).not.toBeNull();
   });
 
