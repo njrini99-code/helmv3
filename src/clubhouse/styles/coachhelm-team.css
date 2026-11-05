@@ -1001,6 +1001,8 @@ html[data-fw-theme='dark'] .ch-htb {
 .ch-htb .rec {
   padding:0 16px 16px;
   display:grid;
+  /* One column that can shrink: a long rung line wraps inside the card instead of widening it past its edge. */
+  grid-template-columns:minmax(0,1fr);
   gap:12px;
 }
 .ch-htb .rec .big {
@@ -1115,7 +1117,7 @@ html[data-fw-theme='dark'] .ch-htb {
 .ch-htb .insh b {
   display:block;
   font: var(--ch-type-16-strong); letter-spacing: var(--ch-track-16); }
-.ch-htb .insh span {
+.ch-htb .insh span:not(.ch-avatar) {
   display:block;
   font: var(--ch-type-14);
   color:var(--ch-tb-ink-2);
@@ -1585,6 +1587,15 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   flex:1;
   align-content:space-evenly;
 }
+/* The rail is too narrow for word, bar and line on one row: the line takes its own row under them. */
+.ch-htb.is-desk .recc .lv {
+  grid-template-columns:112px minmax(0,1fr);
+  row-gap:4px;
+}
+.ch-htb.is-desk .recc .lv .n {
+  grid-column:1 / -1;
+  white-space:normal;
+}
 .ch-htb.is-desk .recc .lv .n b {
   font-weight:var(--ch-fw-400);
   color:var(--ch-tb-ink-3);
@@ -1632,7 +1643,8 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   margin-top:0;
 }
 .ch-htb .rost .rr {
-  grid-template-columns:auto minmax(0,1fr) 112px auto 64px;
+  /* The chip's column fits its longest words ("Loses most: Short game"), so it never runs under the finger-print. */
+  grid-template-columns:auto minmax(0,1fr) 160px auto 64px;
   gap:16px;
   padding:12px 16px;
 }
@@ -1641,6 +1653,7 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 }
 .ch-htb .rost .lm {
   justify-self:start;
+  white-space:nowrap;
 }
 .ch-htb .insp {
   position:absolute;

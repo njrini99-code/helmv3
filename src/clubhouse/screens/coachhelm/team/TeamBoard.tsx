@@ -363,6 +363,9 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
     return row ? <CourseSheet row={row} data={data} onPlayer={openPlayer} onRead={openRead} onClose={close} /> : null;
   })();
 
+  // W-TEAM-16: today's Re-check, under the board, not in the record card. On a desk it sits inside the board's own column, on its left edge.
+  const recheck = !data.off && data.roster.count > 0 ? <RecheckReads players={data.roster.count} /> : null;
+
   return (
     <main ref={top} className={'ch-htb ' + (phone ? 'is-phone' : 'is-desk')} aria-busy={sw.pending || undefined} data-ch-screen="coachhelm-team">
       {phone && <PhoneTop start title="CoachHelm" />}
@@ -379,10 +382,10 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
             {tabs}
           </div>
           {body}
+          {recheck}
         </div>
       )}
-      {/* W-TEAM-16: today's Re-check, under the board, not in the record card. */}
-      {!data.off && data.roster.count > 0 && <RecheckReads players={data.roster.count} />}
+      {phone && recheck}
       {phone ? (
         <Modal open={!!openPanel} onClose={close} title="Details" className="ch-htb-sheet">
           <div className="ins">{openPanel}</div>

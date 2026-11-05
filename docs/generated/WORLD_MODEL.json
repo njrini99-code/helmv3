@@ -21555,6 +21555,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/season-rule.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/season-rule.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/shot-reads.ts",
           "anchor": "src/lib/supabase/chunk-ids"
         },
@@ -21804,6 +21814,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/__tests__/season-reads.test.ts",
+          "anchor": "src/clubhouse/data/season"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/create-tools.ts",
           "anchor": "src/app/golf/actions/tournaments"
         },
@@ -21848,6 +21863,21 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/causality/chains.ts",
           "anchor": "src/app/golf/actions/causal-relationships"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/__tests__/ask-live-refusals.test.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/upsert"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/claims-packet.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/upsert"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/instructions.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/upsert"
         },
         {
           "kind": "import_graph",
@@ -22387,6 +22417,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/player-audit.ts",
+          "anchor": "src/lib/golf/timezone"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/practice-planner.ts",
           "anchor": "src/lib/golf/recurrence"
         },
@@ -22428,7 +22463,32 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/read-tools.ts",
-          "anchor": "src/lib/golf/round-countable"
+          "anchor": "src/lib/golf/round-score-countable"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/read-tools.ts",
+          "anchor": "src/lib/golf/round-total"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/season-reads.ts",
+          "anchor": "src/lib/golf/timezone"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/season-rule.ts",
+          "anchor": "src/lib/golf/round-score-countable"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/season-rule.ts",
+          "anchor": "src/lib/golf/round-total"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/season-rule.ts",
+          "anchor": "src/lib/golf/round-type-utils"
         },
         {
           "kind": "import_graph",

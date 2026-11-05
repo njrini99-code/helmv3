@@ -56,14 +56,21 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
           </text>
           <line className="avg" x1={X(as)} x2={X(as)} y1={T} y2={H - B} />
           <line className="avg" x1={L} x2={W - R} y1={Y(ac)} y2={Y(ac)} />
-          <text className="q" x={L + 6} y={T + 28}>
-            Scores well, strikes poorly
+          {/* Two lines each, so a label stays in its quadrant whatever the team's average does to the dashed lines. */}
+          <text className="q" x={L + 6} y={T + 16}>
+            <tspan>Scores well, </tspan>
+            <tspan x={L + 6} dy={11}>
+              strikes poorly
+            </tspan>
           </text>
           <text className="q" x={L + 6} y={H - B - 8}>
             Behind on both
           </text>
-          <text className="q" x={X(as) + 6} y={H - B - 8}>
-            Strikes well, leaks scoring
+          <text className="q" x={X(as) + 6} y={H - B - 19}>
+            <tspan>Strikes well, </tspan>
+            <tspan x={X(as) + 6} dy={11}>
+              leaks scoring
+            </tspan>
           </text>
           <text className="axl" x={(L + W - R) / 2} y={H - 10} textAnchor="middle">
             Ball striking: tee and approach

@@ -4,6 +4,7 @@ import { FROSTED_CARD_CLASS } from '@/components/fairway/modules/frosted';
 import { cn } from '@/lib/utils';
 import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
 import { CoachHelmRouteSkeleton } from '@/clubhouse/screens/coachhelm/CoachHelmSkeleton';
+import { isTeamBoardEnabled, TEAM_BOARD_FIRST_VIEW } from '@/lib/coachhelm/v3/team-board/flag';
 
 /* ============================================================================
  * Route Suspense fallback for the Player CoachHelm overview
@@ -125,5 +126,5 @@ function FairwayCoachHelmLoading() {
 
 // Clubhouse CoachHelm (golf_clubhouse_ui) gets its own skeleton, in the signed-in role's shape, inside the Clubhouse shell.
 export default function CoachHelmLoading() {
-  return <ClubhouseSwitch clubhouse={<CoachHelmRouteSkeleton />} fallback={<FairwayCoachHelmLoading />} />;
+  return <ClubhouseSwitch clubhouse={<CoachHelmRouteSkeleton teamBoard={isTeamBoardEnabled() && TEAM_BOARD_FIRST_VIEW === 'hole'} />} fallback={<FairwayCoachHelmLoading />} />;
 }

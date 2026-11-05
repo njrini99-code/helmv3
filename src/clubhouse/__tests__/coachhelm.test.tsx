@@ -1326,6 +1326,16 @@ describe('CoachHelm route skeleton', () => {
     expect(code('CH-13401')).not.toBeNull();
   });
 
+  it('with the team board on, a coach draws the board skeleton from the first frame, never the older page first', () => {
+    const { container } = render(
+      <GolfUserProvider userData={{ role: 'coach', userId: 'u', name: 'X' }}>
+        <CoachHelmRouteSkeleton teamBoard />
+      </GolfUserProvider>,
+    );
+    expect(container.querySelector('.ch-htb')).not.toBeNull();
+    expect(container.querySelector('.ch-hl')).toBeNull();
+  });
+
   it('the route’s skeleton is the view the address names, as the route decides it, so a hard load draws one shape, not the board’s and then the view’s', () => {
     const q = (s: string) => new URLSearchParams(s);
     // The coach's: Ask; a player's Deep dive or Standing only with the player; the board for the rest (the flagged views too).

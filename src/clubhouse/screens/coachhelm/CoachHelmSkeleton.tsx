@@ -9,6 +9,7 @@ import { useChPhone } from '../../lib/use-phone';
 import '../../styles/coachhelm.css';
 import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 import { AskSkeleton } from './chat/AskSkeleton';
+import { TeamBoardSkeleton } from './team/TeamBoardSkeleton';
 import { CoachHelmTabs } from './chat/SubTabs';
 import { PlayerHelmTabs } from './views/PlayerHelmTabs';
 import { DiveSkeleton, StandingSkeleton } from './views/Skeletons';
@@ -264,7 +265,7 @@ export function routeSkeletonFor(role: string | null | undefined, params: { get(
  * skeletons in a row, the second a different shape). The view's own Suspense fallback is the same skeleton, chained, so it takes
  * over without fading in again.
  */
-export function CoachHelmRouteSkeleton() {
+export function CoachHelmRouteSkeleton({ teamBoard = false }: { teamBoard?: boolean }) {
   const role = useGolfUserOptional()?.role;
   const params = useSearchParams();
   const which = routeSkeletonFor(role, params);
@@ -275,5 +276,7 @@ export function CoachHelmRouteSkeleton() {
   }
   if (which === 'standing') return <StandingSkeleton />;
   if (which === 'deep-dive') return <DiveSkeleton />;
+  // A coach's first view is the team board: draw its shape from the first frame, not the older page's and then the board's.
+  if (which === 'coach' && teamBoard && (!params?.get('view') || params.get('view') === 'board')) return <TeamBoardSkeleton />;
   return <CoachHelmSkeleton view={which} />;
 }
