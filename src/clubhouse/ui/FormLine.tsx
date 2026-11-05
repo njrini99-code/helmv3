@@ -89,8 +89,9 @@ export function FormLine({
 }
 
 /**
- * The last five rounds as bars, on the range its list shares (`FormRange`) or its own: a lower score draws taller. Hidden from
- * VoiceOver; the row's own label carries the figures.
+ * The last five rounds as bars, on the range its list shares (`FormRange`) or its own: a lower score draws taller, from a 30% floor
+ * (06 7.6) so the team's highest scores still read as bars, not slivers, when one player stretches the range. Hidden from VoiceOver;
+ * the row's own label carries the figures.
  */
 export function FormBars({ data, mean, n = 5 }: { data: readonly number[]; mean?: number | null; n?: number }) {
   const shared = useContext(FormRangeContext);
@@ -102,7 +103,7 @@ export function FormBars({ data, mean, n = 5 }: { data: readonly number[]; mean?
   return (
     <span className="ch-formbars" aria-hidden="true">
       {shown.map((score, i) => (
-        <i key={i} data-tone={formBarTone(score, mean)} style={{ height: `${Math.round(((hi - score) / span) * 100)}%` }} />
+        <i key={i} data-tone={formBarTone(score, mean)} style={{ height: `${Math.round(30 + ((hi - score) / span) * 70)}%` }} />
       ))}
     </span>
   );

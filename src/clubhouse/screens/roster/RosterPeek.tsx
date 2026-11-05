@@ -17,7 +17,7 @@ import { Segmented } from '../../ui/Segmented';
 import { useAction, type ActionCopy } from '../../lib/use-action';
 import { chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
-import { formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeTone, formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
 import { rebuiltHref } from '../../shell/nav';
 import { AVAILABILITY_WORD, legsCaption, relativeAgo, yearKeyOf, yearLineOf, type RosterClock } from './format';
@@ -95,6 +95,11 @@ export function RosterPeek({
   );
 }
 
+/** The lane's figure that takes a gain or loss colour (06 7.12). */
+const SG_FIGURE = 'SG / round';
+/** Under this many rounds there is no line to draw (the rows' bars hold the same floor). */
+const PEEK_LINE_FLOOR = 3;
+
 function PeekBody({
   p,
   notesLocked,
@@ -120,7 +125,7 @@ function PeekBody({
   const figs: Array<[string, string]> = [
     ['Scoring avg', formatFixed(p.avg)],
     ['Handicap', formatHcp(p.handicap)],
-    ['SG / round', p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)],
+    [SG_FIGURE, p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)],
     ['Rounds', String(p.rounds)],
   ];
   const facts = [
@@ -184,12 +189,12 @@ function PeekBody({
         {(messageHref || planHref) && (
           <div className="ch-rs-peek__quick">
             {messageHref && (
-              <Button size="sm" leftIcon={MessageSquare} href={messageHref}>
+              <Button size={crh ? 'md' : 'sm'} variant={crh ? 'primary' : 'secondary'} leftIcon={MessageSquare} href={messageHref}>
                 Message
               </Button>
             )}
             {planHref && (
-              <Button size="sm" leftIcon={CalendarPlus} href={planHref}>
+              <Button size={crh ? 'md' : 'sm'} leftIcon={crh ? undefined : CalendarPlus} href={planHref}>
                 Schedule 1:1
               </Button>
             )}
@@ -215,11 +220,16 @@ function PeekBody({
         {figs.map(([l, v]) => (
           <div key={l}>
             <dt>{l}</dt>
-            <dd className="ch-num">{v}</dd>
+            <dd className={'ch-num' + (crh && l === SG_FIGURE ? ' ' + changeTone(p.sgPerRound, false, 1) : '')}>{v}</dd>
           </div>
         ))}
       </dl>
-      {crh && <FormLine data={p.trend} width={292} height={70} earlyBelow={3} label={`${p.name}, last rounds: ${p.trend.join(', ') || 'none'}`} />}
+      {crh &&
+        (p.trend.length >= PEEK_LINE_FLOOR ? (
+          <FormLine data={p.trend} width={292} height={70} earlyBelow={PEEK_LINE_FLOOR} label={`${p.name}, last rounds: ${p.trend.join(', ')}`} />
+        ) : (
+          <p className="ch-rs-peek__early">{p.trend.length > 0 ? 'Early read. Form shows at three rounds.' : 'No 18-hole rounds yet this season.'}</p>
+        ))}
       {/* The rest lives on the full profile (06 7.12: identity, buttons, four figures, chart, the link). */}
       {!crh && <LegsCaption p={p} />}
 

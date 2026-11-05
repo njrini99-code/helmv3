@@ -61,7 +61,12 @@ function CoachHomeBody({ data, now, live, crh = false }: { data: ChCoachHome; no
           <div>
             <span className="ch-h-head__date">{data.todayLabel}</span>
             <h1 className="ch-display">{data.greeting}</h1>
-            {(data.subline || failed.length > 0) && <p className="ch-h-head__sub">{failed.length > 0 ? CRH_PART_FAILED : data.subline}</p>}
+            {(data.subline || failed.length > 0) && (
+              <p className="ch-h-head__sub ch-dh-brief">
+                <Icon icon={Sparkles} size={14} />
+                {failed.length > 0 ? CRH_PART_FAILED : data.subline}
+              </p>
+            )}
             {data.teamId && data.clock && <ClassHomeLine teamId={data.teamId} today={data.clock.day} teamTimeZone={data.clock.tz} variant="desktop" />}
             <CoachQueue queue={data.queue} covered={covered} phone />
           </div>
@@ -102,7 +107,13 @@ function CoachHomeBody({ data, now, live, crh = false }: { data: ChCoachHome; no
             </SectionBoundary>
           )}
           <SectionBoundary surface="home.leaderboard" label="The leaderboard" code="CH-2207">
-            {data.leaderboard.error || data.leaderboard.rows.length === 0 ? <Leaderboard data={data.leaderboard} covered={covered} rounds={data.latestRounds.rounds} /> : <DeskBoard rows={data.leaderboard.rows} />}
+            {data.leaderboard.error ? (
+              <CrhFailedCard id="ch-dh-board-failed" title="Leaderboard" href={rebuiltHref('/golf/dashboard/roster') ?? '#'} link="Roster" code="CH-2204" what="The leaderboard didn’t load" body="Scores are safe. Try again." />
+            ) : data.leaderboard.rows.length === 0 ? (
+              <Leaderboard data={data.leaderboard} covered={covered} rounds={data.latestRounds.rounds} />
+            ) : (
+              <DeskBoard rows={data.leaderboard.rows} rosterSize={data.leaderboard.rosterSize} />
+            )}
           </SectionBoundary>
         </div>
       </main>

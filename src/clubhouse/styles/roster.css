@@ -3482,7 +3482,6 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   [data-ch-crh='on'].ch-rsd {
     gap: 16px;
     padding: 24px 32px 40px;
-    background: var(--ch-grouped-bg);
   }
   [data-ch-crh='on'].ch-rsd .ch-rs-head h1 {
     margin: 4px 0;
@@ -3595,30 +3594,88 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     color: var(--ch-crh-ink2);
     text-align: center;
   }
-  /* The drawn seven columns (06 7.11) in the room the app's wider sidebar leaves: the player's name keeps 130. */
+  /* The drawn seven columns (06 7.11) in the room the app's wider sidebar leaves: the player's name keeps 130. The row is flat
+     in its card: no capsule, one hairline between rows from the 16 inset, a selected row tints edge to edge. */
   [data-ch-crh='on'].ch-rsd .ch-rs-row {
+    position: relative;
     grid-template-columns: minmax(130px, 2.3fr) 72px 84px 44px 40px 48px 36px 24px;
     column-gap: 8px;
     min-width: 0;
+    min-height: 64px;
     margin: 0;
-    padding-inline: 12px;
+    padding: 8px 16px;
+    border: 0;
+    border-radius: 0;
   }
+  [data-ch-crh='on'].ch-rsd .ch-rs-row + .ch-rs-row::before {
+    position: absolute;
+    inset: 0 0 auto 16px;
+    height: var(--ch-hairline-w);
+    background: var(--ch-separator);
+    content: '';
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-row--head {
+    min-height: 0;
+    padding-block: 12px;
+    color: var(--ch-text-secondary);
+  }
+  /* A right-aligned label sits over its figures: the sort arrow hangs off its left and takes no room. */
+  [data-ch-crh='on'].ch-rsd .ch-rs-row--head .ch-rs-sorth__ar {
+    display: none;
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-row--head .ch-rs-sorth.is-on .ch-rs-sorth__ar {
+    display: inline-flex;
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-row--head .r .ch-rs-sorth {
+    position: relative;
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-row--head .r .ch-rs-sorth__ar {
+    position: absolute;
+    right: calc(100% - 4px);
+  }
+  /* One track for the season card, and the leaders share the rest: none leaves the card the row, never a hole. */
   [data-ch-crh='on'].ch-rsd .ch-rs-top {
     display: grid;
-    grid-template-columns: minmax(320px, 1.2fr) repeat(3, minmax(200px, 1fr));
+    grid-auto-columns: minmax(200px, 1fr);
+    grid-auto-flow: column;
+    grid-template-columns: minmax(320px, 1.2fr);
     gap: 12px;
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-tcard:only-child {
+    grid-template-columns: minmax(240px, 1fr) minmax(0, 2fr);
+    column-gap: 32px;
+    align-items: center;
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-tcard:only-child > .ch-rs-tcard__top {
+    grid-row: 1 / span 2;
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-tcard:only-child > .ch-rs-mix,
+  [data-ch-crh='on'].ch-rsd .ch-rs-tcard:only-child > .ch-rs-mix__lg {
+    grid-column: 2;
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-tcard:only-child > .ch-rs-tcard__f {
+    grid-column: 1 / -1;
   }
   [data-ch-crh='on'].ch-rsd .ch-rs-ldrs {
     display: contents;
   }
+  /* The drawn leader card (06 7.3): read from the left, the kicker's mark at the far end. */
   [data-ch-crh='on'].ch-rsd .ch-rs-ldr {
+    align-content: start;
+    justify-items: stretch;
     width: auto;
+    padding: 14px 16px;
+    text-align: left;
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-ldr__k {
+    justify-content: space-between;
   }
   [data-ch-crh='on'].ch-rsd .ch-rs-tcard {
     align-content: space-between;
   }
   [data-ch-crh='on'].ch-rsd .ch-rs-list {
     overflow: auto;
+    padding: 0;
     border-radius: var(--ch-radius-card);
     background: var(--ch-card-bg);
     box-shadow: var(--ch-crh-card-shadow);
@@ -3640,23 +3697,82 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     height: 26px;
     gap: 4px;
   }
+  /* Under three rounds the drawn stubs fill the cell, as the bars beside them do (06 7.6). */
+  [data-ch-crh='on'].ch-rsd .ch-rs-list .ch-formbars.is-stub i {
+    flex: 1;
+    height: 5px;
+  }
   [data-ch-crh='on'].ch-rsd .ch-rs-body.has-peek {
     grid-template-columns: minmax(0, 1fr) 330px;
     gap: 20px;
   }
+  /* The panel has no top bar here, so the coin sits inside it with no ring or lift (06 7.12). */
   [data-ch-crh='on'].ch-rsd .ch-rs-peek__av {
-    margin-top: 0;
+    margin: 0 0 4px;
+    box-shadow: none;
   }
   [data-ch-crh='on'].ch-rsd .ch-rs-peek__hero {
-    padding-top: 20px;
+    margin: 0;
+    padding: 20px 20px 0;
     background: none;
     border: 0;
     box-shadow: none;
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-peek__quick {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+    margin-top: 8px;
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-peek__quick > * {
+    width: 100%;
+  }
+  /* Four figures, two by two, on hairline gaps (06 7.12). */
+  [data-ch-crh='on'].ch-rsd .ch-rs-peek__figs {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--ch-hairline-w);
+    overflow: hidden;
+    padding: 0;
+    border: 0;
+    border-radius: var(--ch-radius-md);
+    background: var(--ch-separator);
+    box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-separator);
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-peek__figs div,
+  [data-ch-crh='on'].ch-rsd .ch-rs-peek__figs div:first-child {
+    gap: 4px;
+    padding: 12px;
+    background: var(--ch-card-bg);
+    box-shadow: none;
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-peek__figs dt {
+    font: var(--ch-type-13);
+    color: var(--ch-text-secondary);
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-peek__figs dd {
+    font: var(--ch-type-20-strong);
+    letter-spacing: var(--ch-track-20);
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-peek__figs dd.is-gain {
+    color: var(--ch-chart-gain);
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-peek__figs dd.is-loss {
+    color: var(--ch-chart-loss);
+  }
+  /* Under three rounds a quiet line in place of the chart, not a box that looks empty. */
+  [data-ch-crh='on'].ch-rsd .ch-rs-peek__early {
+    margin-block: 0;
+    font: var(--ch-type-14);
+    color: var(--ch-text-secondary);
+    text-align: center;
+    text-wrap: balance;
   }
   [data-ch-crh='on'].ch-rsd .ch-rs-peek__foot :is(a, button) {
     width: 100%;
   }
   [data-ch-crh='on'].ch-rsd .ch-rs-peek {
+    gap: 14px;
     border-radius: var(--ch-radius-card);
     background: var(--ch-card-bg);
     box-shadow: var(--ch-crh-card-shadow);
@@ -3664,6 +3780,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 }
 @media (min-width: 821px) and (max-width: 1192px) {
   [data-ch-crh='on'].ch-rsd .ch-rs-top {
+    grid-auto-flow: row;
     grid-template-columns: minmax(0, 1fr);
   }
   [data-ch-crh='on'].ch-rsd .ch-rs-ldrs {
