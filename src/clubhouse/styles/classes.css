@@ -3289,6 +3289,12 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
 }
 
 /* Classes, desktop, behind the lane's flag (06 §4.9): main padding 28 36 40, gap 22; the term card as a row; binders in 3 columns beside a 340 aside. */
+/* The route skeleton opens where the redesigned desk does, so its head does not step down on arrival. */
+@media (min-width: 821px) {
+  .ch-cl[aria-busy='true'] {
+    padding-top: var(--ch-page-top-crh);
+  }
+}
 .ch-cl[data-ch-crh='on']:not(.is-phone) {
   gap: 20px;
   padding: var(--ch-page-top-crh) var(--ch-page-gutter) 40px;

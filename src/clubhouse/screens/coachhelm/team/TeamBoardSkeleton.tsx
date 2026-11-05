@@ -44,8 +44,13 @@ export function TeamBoardSkeleton() {
     );
   return (
     <main className="ch-htb is-desk" aria-busy="true">
-      <div className="ch-htb-desk" aria-hidden="true">
-        <div className="dgrid">
+      <div className="ch-htb-desk">
+        {/* The board's own head line, so the cards don't step down when it arrives. */}
+        <div className="ch-htb-deskhead">
+          <span className="skl" aria-hidden="true" style={{ width: 180, height: 20 }} />
+          <CoachHelmTabs active="board" held boardLabel="Team" />
+        </div>
+        <div className="dgrid" aria-hidden="true">
           <div className="dcol">
             {hero(250)}
             {rows(5)}

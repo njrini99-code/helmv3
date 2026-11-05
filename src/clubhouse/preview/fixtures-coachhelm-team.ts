@@ -145,8 +145,8 @@ export const PREVIEW_TEAM_BOARD: ChTeamBoardData = {
       outOfDate: null,
       patterns: null,
       working: [
-        { id: 'w1', who: PLAYERS.jonah.name, playerId: PLAYERS.jonah.id, title: 'Lag putting from 30 ft and out', word: 'Active', line: 'Three-putts 0.9 to 0.5 a round · target 0.4', since: '5 rounds in', href: '#', progress: { from: 0.9, now: 0.5, target: 0.4 } },
-        { id: 'w2', who: PLAYERS.priya.name, playerId: PLAYERS.priya.id, title: 'Wedges from 50 to 100 yd', word: 'In progress', line: 'Proximity 24 ft to 21 ft · target 18 ft', since: '3 rounds in', href: '#', progress: { from: 24, now: 21, target: 18 } },
+        { id: 'w1', who: PLAYERS.jonah.name, playerId: PLAYERS.jonah.id, title: 'Lag putting from 30 ft and out', word: 'Active', line: 'Three-putts 0.9 to 0.5 a round · target 0.4', headline: 'Lag putting from 30 ft and out: now 0.5, target 0.4', since: '5 rounds in', href: '#', progress: { from: 0.9, now: 0.5, target: 0.4 } },
+        { id: 'w2', who: PLAYERS.priya.name, playerId: PLAYERS.priya.id, title: 'Wedges from 50 to 100 yd', word: 'In progress', line: 'Proximity 24 ft to 21 ft · target 18 ft', headline: 'Wedges from 50 to 100 yd: now 21 ft, target 18 ft', since: '3 rounds in', href: '#', progress: { from: 24, now: 21, target: 18 } },
       ],
       record: null,
       goals: [],
