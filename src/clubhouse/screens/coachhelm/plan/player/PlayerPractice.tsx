@@ -5,7 +5,8 @@ import { Button } from '../../../../ui/Button';
 import { Avatar } from '../../../../ui/Avatar';
 
 import { ClipboardList, FolderClosed } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { recordPracticePlanOpen } from '@/app/golf/actions/practice-plans';
 import { Icon } from '../../../../ui/Icon';
 import { LargeTitle } from '../../../../ui/LargeTitle';
 import { Segmented } from '../../../../ui/Segmented';
@@ -28,8 +29,12 @@ export interface PlayerPracticeData {
   planHref: string | null;
 }
 
-/** A player's Practice page (S-PLY.practice): their own stops only, with Now and Next. A player's model never carries a Why, an Aim or another group's stops. */
-export function PlayerPractice({ data, everyone }: { data: PlayerPracticeData; everyone: ReactNode }) {
+/** A player's Practice page (S-PLY.practice): their own stops only, with Now and Next. A player's model never carries a Why, an Aim or another group's stops, and the sheet tab is their own copy. */
+export function PlayerPractice({ data, everyone, planId = null }: { data: PlayerPracticeData; everyone: ReactNode; planId?: string | null }) {
+  // The one open this view records, after paint (Seen by). A preview passes no plan.
+  useEffect(() => {
+    if (planId) void recordPracticePlanOpen({ planId });
+  }, [planId]);
   const [tab, setTab] = useState<'mine' | 'all'>('mine');
   return (
     <main className="ch-page ch-cpv ch-cpv-ply" data-ch="player-practice">
@@ -66,7 +71,7 @@ export function PlayerPractice({ data, everyone }: { data: PlayerPracticeData; e
         value={tab}
         options={[
           { value: 'mine', label: 'Your practice' },
-          { value: 'all', label: 'Everyone' },
+          { value: 'all', label: 'Your sheet' },
         ]}
         onChange={setTab}
       />

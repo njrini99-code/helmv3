@@ -336,8 +336,9 @@ export async function POST(req: NextRequest) {
   try {
     ctx = await resolveCoachChatContext(supabase);
   } catch (err) {
-    // A player has no coach row: their own read-only Ask, on this route, with the role from the session.
-    if (err instanceof CoachContextError && err.status === 403 && isPlayerAskEnabled()) {
+    // A player has no coach row: their own read-only Ask, on this route, with the role from the session. Only that denial comes here (any other
+    // stays what it was), and the player turn confirms a player row and runs the team gate itself.
+    if (err instanceof CoachContextError && err.reason === 'not_a_coach' && isPlayerAskEnabled()) {
       const body = Body.safeParse(await req.json().catch(() => null));
       if (!body.success) return NextResponse.json({ error: 'Bad request' }, { status: 400 });
       return runPlayerTurn(supabase, { messages: body.data.messages }, req.signal);

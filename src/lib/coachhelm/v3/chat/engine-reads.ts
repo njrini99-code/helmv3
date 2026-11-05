@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { requireRosterPlayer, type CoachChatContext } from './context';
-import { nowIso, unavailableEnvelope, type ToolEnvelope } from './provenance';
+import { nowIso, readFigure, unavailableEnvelope, type ToolEnvelope } from './provenance';
 
 type Sb = SupabaseClient<Database>;
 
@@ -16,7 +16,7 @@ export async function getRootCauses(sb: Sb, ctx: CoachChatContext, input: { play
     const c = (r.evidence as { cause?: { state?: string; word?: string; text?: string } } | null)?.cause;
     return c && c.state ? [{ insight_id: r.id, title: r.title, category: r.category, state: c.state, word: c.word ?? null, text: c.text ?? null }] : [];
   });
-  return { summary: `${player.name}: ${causes.length} open cause${causes.length === 1 ? '' : 's'}.`, measurements: [], series: [], detail: { player: player.name, causes }, coverage: causes.length ? 'complete' : 'empty', coverage_note: causes.length ? null : 'No stored cause for this player.', as_of: nowIso() };
+  return { summary: `${player.name}: ${causes.length} open cause${causes.length === 1 ? '' : 's'}.`, measurements: [], series: [], detail: { player_id: player.id, player: player.name, causes }, coverage: causes.length ? 'complete' : 'empty', coverage_note: causes.length ? null : 'No stored cause for this player.', as_of: nowIso() };
 }
 
 /** Events in a window on the team's clock, with the shape the free-slot logic needs. */
@@ -45,8 +45,12 @@ export async function getCourse(sb: Sb, ctx: CoachChatContext, input: { course_i
     e.n++;
     by.set(h.hole_number, e);
   }
-  const list = (holes.data ?? []).map((h) => ({ ...h, team_to_par: by.get(h.hole_number) ? Math.round((by.get(h.hole_number)!.sum / by.get(h.hole_number)!.n) * 100) / 100 : null, rounds: by.get(h.hole_number)?.n ?? 0 }));
-  return { summary: `Course read: ${list.length} holes, ${ids.length} team rounds.`, measurements: [], series: [], detail: { kind: 'hole_strip', holes: list }, coverage: list.length ? 'complete' : 'empty', coverage_note: list.length ? null : 'No hole data for this course.', as_of: nowIso() };
+  // A hole's par and yardage are facts about the course and stand beside anyone's name; only the scoring is this team's.
+  const list = (holes.data ?? []).map((h) => ({ ...h, team: { team_scope: true as const, to_par: by.get(h.hole_number) ? Math.round((by.get(h.hole_number)!.sum / by.get(h.hole_number)!.n) * 100) / 100 : null, rounds: by.get(h.hole_number)?.n ?? 0 } }));
+  const entity = { kind: 'team' as const, id: ctx.team_id, label: ctx.team_name };
+  const points = list.flatMap((h) => (h.team.to_par == null ? [] : [{ at: `Hole ${h.hole_number}`, value: h.team.to_par, bucket: `Hole ${h.hole_number}`, sample_size: h.team.rounds }]));
+  const series = points.length ? [{ metric_id: 'team_to_par_by_hole', metric_label: 'Team scoring to par by hole', unit: 'score' as const, entity, points, window_start: null, window_end: null, as_of: nowIso(), coverage: 'complete' as const, coverage_note: null, source: 'rounds', method: 'mean_hole_score_minus_par', benchmark: null, direction: 'lower_better' as const }] : [];
+  return { summary: `Course read: ${list.length} holes, ${ids.length} team rounds.`, measurements: [], series, detail: { kind: 'hole_strip', holes: list }, coverage: list.length ? 'complete' : 'empty', coverage_note: list.length ? null : 'No hole data for this course.', as_of: nowIso() };
 }
 
 const seasonOf = (d: Date) => (d.getUTCMonth() >= 7 ? d.getUTCFullYear() : d.getUTCFullYear() - 1);
@@ -71,5 +75,8 @@ export async function compareSeasons(sb: Sb, ctx: CoachChatContext, input: { pla
   const split = (y: number) => (data ?? []).filter((r) => seasonOf(new Date(`${r.round_date}T12:00:00Z`)) === y && r.score_to_par != null).map((r) => ((r.score_to_par as number) * 18) / ((r.holes_played as number) > 0 ? (r.holes_played as number) : 18));
   const thisYear = seasonBand(split(start));
   const last = seasonBand(split(start - 1));
-  return { summary: `${player?.name ?? ctx.team_name}: this season against last.`, measurements: [], series: [], detail: { kind: 'season_compare', metric: 'Score to par per 18', this_season: thisYear, last_season: last, method: 'Usual range is last season’s mean plus or minus one standard deviation of round values.' }, coverage: thisYear && last ? 'complete' : 'partial', coverage_note: thisYear && last ? null : 'One of the seasons has no rounds yet.', as_of: nowIso() };
+  const entity = player ? { kind: 'player' as const, id: player.id, label: player.name } : { kind: 'team' as const, id: ctx.team_id, label: ctx.team_name };
+  const seasonFigure = (band: { mean: number; n: number } | null, from: number, label: string) => (band ? [readFigure({ metric_id: 'score_to_par_per_18', metric_label: `Score to par per 18, ${label}`, unit: 'score', value: band.mean, entity, window_start: `${from}-08-01`, window_end: `${from + 1}-07-31`, sample_size: band.n, sample_unit: 'rounds', direction: 'lower_better', source: 'rounds', method: 'mean_round_to_par_scaled_to_18' })] : []);
+  const measurements = [...seasonFigure(thisYear, start, 'this season'), ...seasonFigure(last, start - 1, 'last season')];
+  return { summary: `${player?.name ?? ctx.team_name}: this season against last.`, measurements, series: [], detail: { ...(player ? { player_id: player.id } : { team_scope: true }), metric_scope: 'score_to_par', kind: 'season_compare', metric: 'Score to par per 18', this_season: thisYear, last_season: last, method: 'Usual range is last season’s mean plus or minus one standard deviation of round values.' }, coverage: thisYear && last ? 'complete' : 'partial', coverage_note: thisYear && last ? null : 'One of the seasons has no rounds yet.', as_of: nowIso() };
 }

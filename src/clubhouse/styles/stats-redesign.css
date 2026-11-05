@@ -1648,9 +1648,25 @@ li + li > .ch-shs-rrow::before {
   flex: 0 0 auto;
   flex-basis: 0;
 }
-.ch-shs-hrail > i.is-early {
+.ch-shs-hrail > i.is-early,
+.ch-shs-bar.is-early {
   background: none;
   box-shadow: var(--ch-stats-redesign-x5);
+}
+/* What a leg under its floor needs, in place of its bar. */
+.ch-shs-needs {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+  white-space: nowrap;
+}
+/* A figure drawn against its reference, under the hero's caption. */
+.ch-shs-d-hero__gauge {
+  margin-top: 8px;
 }
 
 /* The bench bar on a part page; it scales with Text Size. */
@@ -1913,9 +1929,6 @@ p.ch-shs-mini-cap {
     opacity: 0;
   }
 }
-.ch-shs-figs[data-ch-fade-in] {
-  animation: ch-shs-skelin var(--ch-dur-base) var(--ch-ease) backwards;
-}
 .ch-shs-d-sheet--body {
   padding: 0;
 }
@@ -1953,9 +1966,6 @@ p.ch-shs-mini-cap {
   .ch-shs-ctl::before {
     transition: none;
   }
-  .ch-shs-figs[data-ch-fade-in] {
-    animation-duration: var(--ch-dur-quick);
-  }
 }
 [data-motion='off'] .ch-shs-skel::before {
   animation: none;
@@ -1982,8 +1992,7 @@ p.ch-shs-mini-cap {
   border-radius: var(--ch-radius-md);
   background: var(--ch-well-bg);
 }
-[data-motion='off'] .ch-shs-xfade-ghost,
-[data-motion='off'] .ch-shs-figs[data-ch-fade-in] {
+[data-motion='off'] .ch-shs-xfade-ghost {
   animation: none;
 }
 [data-motion='off'] .ch-shs-xfade-ghost {

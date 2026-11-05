@@ -30,7 +30,7 @@ import { useGrowOnce, useStuck, WindowCrossfade } from './shs-motion';
 import { EarlyRead, NineHint } from './StatsFilter';
 import { DetailHero, StatsDetailScreen } from './StatsDetailScreen';
 import { PhoneWindowSwitch, RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty } from './StatsTeamIslands';
-import { figureValue, Players, Putting, reference, teamDaysMean, type ChLegPick } from './StatsTeamPhone';
+import { figureValue, Players, Putting, reference, teamDaysMean, teamTrendReading, type ChLegPick } from './StatsTeamPhone';
 import { TeamInsight } from './StatsInsight';
 import { ShsArrow, ShsCard, ShsPill, SummaryCard } from './SummaryCard';
 import { teamRankRows } from './team-rank';
@@ -364,12 +364,15 @@ function TheRound({ data, note }: { data: ChTeamStats; note?: string | null }) {
 function TeamScoringDetail({ data, covered, days, mean }: { data: ChTeamStats; covered: boolean; days: ReadonlyArray<{ label: string; score: number; n?: number }>; mean: number | null }) {
   const f = scoringFigure(data);
   const context = `${data.teamName} · ${data.activeCount} active ${pluralWord(data.activeCount, 'player')} · countable rounds only.`;
+  // Today's trend reading, on the card that now draws the trend. One round day is a point, not a trend.
+  const trend = days.length >= 2 ? teamTrendReading(data, days.length) : null;
   return (
     <>
       <DetailHero figure={f ? figureValue(f) : <NoData />} caption={['Team scoring average', toPar(data)].filter(Boolean).join(' · ')} chips={<Change data={data} />} />
       {days.length > 0 && (
         <ShsCard title="By round day" meta={mean == null ? undefined : 'Team mean dashed'}>
-          <Ribbon points={days.map((d) => ({ label: d.label, value: d.score }))} lowerIsBetter reference={mean == null ? null : { value: mean, label: 'Mean' }} format={(v) => formatFixed(v, 1)} />
+          <Ribbon points={days.map((d) => ({ label: d.label, value: d.score }))} lowerIsBetter reference={mean == null ? null : { value: mean, label: 'Mean' }} format={(v) => formatFixed(v, 1)} tone={trend?.tone === 'is-gain' ? 'gain' : trend?.tone === 'is-loss' ? 'loss' : 'flat'} />
+          <p className="ch-shs-mini-cap">{trend ? `Lower is better. ${trend.reading}` : 'The trend draws once the team has rounds on a second day.'}</p>
         </ShsCard>
       )}
       <TheRound data={data} note={context} />

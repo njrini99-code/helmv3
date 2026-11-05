@@ -5,7 +5,7 @@ import { sgScale } from '../../lib/sg';
 import { divergeBar, sgTone, type ShsTone } from './shs-figures';
 
 /** Four mini diverging rows: label, a bar from a centre zero, the signed value. The card is the tap, so no whisker and no pin. */
-export function MiniDiverging({ rows, ready = true, fixedScale }: { rows: ReadonlyArray<{ label: string; value: number | null }>; ready?: boolean; fixedScale?: number }) {
+export function MiniDiverging({ rows, ready = true, fixedScale }: { rows: ReadonlyArray<{ label: string; value: number | null; /** `early` draws the bar hollow and untoned. */ state?: string }>; ready?: boolean; fixedScale?: number }) {
   if (!ready)
     return (
       <div className="ch-shs-mrows is-wait">
@@ -21,14 +21,15 @@ export function MiniDiverging({ rows, ready = true, fixedScale }: { rows: Readon
   return (
     <div className="ch-shs-mrows">
       {rows.map((r) => {
-        const tone = sgTone(r.value);
+        const early = r.state === 'early';
+        const tone = early ? 'flat' : sgTone(r.value);
         const bar = r.value == null ? null : divergeBar(r.value, scale);
         return (
           <div className="ch-shs-mrow" key={r.label}>
             <span className="lab">{r.label}</span>
             <span className="ch-shs-rail" aria-hidden="true">
               <span className="ch-shs-zero" />
-              {bar && <span className={`ch-shs-bar ch-shs-fill-${tone}`} data-ch-grow="" style={{ left: `${bar.left}%`, width: `${bar.width}%`, transformOrigin: `${(r.value ?? 0) >= 0 ? '0' : '100%'} 50%` }} />}
+              {bar && <span className={`ch-shs-bar ch-shs-fill-${tone}${early ? ' is-early' : ''}`} data-ch-grow="" style={{ left: `${bar.left}%`, width: `${bar.width}%`, transformOrigin: `${(r.value ?? 0) >= 0 ? '0' : '100%'} 50%` }} />}
             </span>
             <span className={`val${tone === 'flat' ? '' : ` ch-shs-${tone}`}${r.value == null ? ' ch-shs-none' : ''}`}>{formatSigned(r.value)}</span>
           </div>

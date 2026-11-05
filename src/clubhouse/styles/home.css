@@ -4637,7 +4637,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-link {
     font: var(--ch-type-meta);
-    color: var(--ch-accent);
+    color: var(--ch-green-600);
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-meta {
     font: var(--ch-type-meta);
@@ -4663,7 +4663,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     padding: 4px 8px;
     border-radius: var(--ch-radius-tail);
     background: var(--ch-accent-tint);
-    color: var(--ch-accent);
+    color: var(--ch-green-600);
     font: var(--ch-type-13-strong);
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-tl__rail::before {
@@ -4843,10 +4843,16 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     transform: scaleX(0);
   }
 }
+/* Both Homes' bars: drawn in place under Reduce Motion and with Animations off. */
 @media (prefers-reduced-motion: reduce) {
-  .ch-hm[data-ch-crh='on'] .ch-hm-legs__bar > i {
+  .ch-hm[data-ch-crh='on'] .ch-hm-legs__bar > i,
+  .ch-h-main[data-ch-crh='on'] .ch-hm-legs__bar > i {
     animation: none;
   }
+}
+[data-motion='off'] .ch-hm[data-ch-crh='on'] .ch-hm-legs__bar > i,
+[data-motion='off'] .ch-h-main[data-ch-crh='on'] .ch-hm-legs__bar > i {
+  animation: none;
 }
 [data-motion='off'] .ch-hm[data-ch-crh='on'] .ch-hm-legs__bar > i {
   animation: none;
@@ -4927,7 +4933,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   height: 36px;
   border-radius: var(--ch-radius-sm);
   background: var(--ch-chip-gain-bg, var(--ch-well-bg-flat));
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 .ch-hm-setup__r b {
   display: block;
@@ -5261,7 +5267,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     border-radius: var(--ch-radius-tail);
     background: var(--ch-selected-tint);
     font: var(--ch-type-13-strong);
-    color: var(--ch-accent);
+    color: var(--ch-green-600);
   }
   .ch-dh-rows--agenda li > .ch-hm-now {
     margin-inline-start: auto;

@@ -652,7 +652,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
   convIdsRef.current = new Set(convs.map((c) => c.id));
   const rowMutes = useRowMutes(data.viewerUserId, redesign);
   const convIds = useMemo(() => convs.map((c) => c.id), [convs]);
-  const pins = useConversationPins(data.viewerUserId, data.teamId ?? '', convIds, redesign);
+  const pins = useConversationPins(data.viewerUserId, data.teamId ?? '', convIds, redesign, !loading && !error);
   const typingByConv = useTypingByConversation(data.viewerUserId, convIds, selectedId, redesign);
   const shownConvs = useMemo(() => (redesign && rowMutes.muted ? convs.map((c) => ({ ...c, muted: rowMutes.muted!.has(c.id) })) : convs), [redesign, rowMutes.muted, convs]);
 

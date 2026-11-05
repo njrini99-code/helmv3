@@ -46,7 +46,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--ch-accent);
+  background: var(--ch-green-600);
 }
 
 /* The two panes: chats, the conversation, and the evidence when it is open */

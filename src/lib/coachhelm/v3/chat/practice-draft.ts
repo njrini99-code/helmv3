@@ -17,8 +17,8 @@ const BlockInput = z.object({
   id: z.string().min(1).max(40),
   kind: z.enum(['team', 'stations', 'course', 'own', 'break']),
   title: z.string().min(1).max(80),
-  len: z.number().int().min(5).max(360),
-  place: z.string().max(80).default(''),
+  len: z.number().int().min(5).max(360).multipleOf(5),
+  place: z.string().max(40).default(''),
   note: z.string().max(280).default(''),
   drill: Drill,
   aim: z.string().max(200).default(''),
@@ -26,8 +26,8 @@ const BlockInput = z.object({
   routine: z.boolean().default(false),
   sources: z.array(z.object({ evidence_ref: z.string().max(80), label: z.string().max(40) })).max(4).default([]).describe('The reads behind this Because, by the evidence_ref they returned.'),
   alternatives: z.array(z.object({ ref: z.string(), line: z.string().max(120) })).max(3).default([]).describe('Up to three swaps for this block\'s drill, from get_drill_bank.'),
-  stations: z.array(z.object({ id: z.string(), place: z.string().max(80), drill: Drill, note: z.string().max(280).default(''), alternatives: z.array(z.object({ ref: z.string(), line: z.string().max(120) })).max(3).default([]) })).max(8).optional(),
-  turn_min: z.number().int().min(5).max(60).optional(),
+  stations: z.array(z.object({ id: z.string(), place: z.string().min(1).max(40), drill: Drill, note: z.string().max(280).default(''), alternatives: z.array(z.object({ ref: z.string(), line: z.string().max(120) })).max(3).default([]) })).max(8).optional(),
+  turn_min: z.number().int().min(5).max(60).multipleOf(5).optional(),
   move_min: z.number().int().min(0).max(10).optional(),
   hole_from: z.number().int().min(1).max(18).optional(),
   hole_to: z.number().int().min(1).max(18).optional(),
@@ -109,6 +109,10 @@ export function practiceDraftTool({ ctx, writer, envelopes, evidenceByRef }: { c
         const sum = input.blocks.reduce((s, b) => s + b.len, 0);
         if (sum !== input.minutes_asked) return { status: 'refused', message: `The blocks add up to ${sum} minutes; the coach asked for ${input.minutes_asked}. Fix the lengths.` };
         const groupIds = input.groups.map((g) => g.id);
+        const blocks = input.blocks.map((b) => toBlock(b, groupIds));
+        // What the save would refuse (golf_practice_plan_check_body), said while the model can still fix it.
+        if (blocks.some((b) => b.kind === 'stations' && !b.stations.length)) return { status: 'refused', message: 'A stations block needs at least one station.' };
+        if (blocks.some((b) => b.len % 5 !== 0)) return { status: 'refused', message: 'A stations block must come to a length in 5 minute steps. Change its turn or move minutes.' };
         const measurements = envelopes().flatMap((e) => e.measurements);
         const series = envelopes().flatMap((e) => e.series);
         const details = envelopes().map((e) => e.detail);
@@ -120,7 +124,7 @@ export function practiceDraftTool({ ctx, writer, envelopes, evidenceByRef }: { c
           const lean = !routine && (!claim || (Array.isArray(bad) ? bad.length > 0 : false));
           why[b.id] = { aim: b.aim, because: routine || lean ? null : claim, sources: [], lean, routine };
         }
-        const body: PlanBodyV2 = { v: 2, focus: input.focus, notes: '', place: input.place, arrivalBufferMin: 15, bring: input.bring, players: input.players, groups: input.groups.map((g) => ({ ...g, savedGroupId: null })), variants: { main: { blocks: input.blocks.map((b) => toBlock(b, groupIds)) }, rain: null } };
+        const body: PlanBodyV2 = { v: 2, focus: input.focus, notes: '', place: input.place, arrivalBufferMin: 15, bring: input.bring, players: input.players, groups: input.groups.map((g) => ({ ...g, savedGroupId: null })), variants: { main: { blocks }, rain: null } };
         version += 1;
         writer.write({ type: 'data-practice-plan', id: `plan-${version}`, data: { version, eventId: input.event_id, title: input.title, draft: { body, why, version }, saveOn: isPracticeTabEnabled(), ...planCardMeta(input, envelopes(), evidenceByRef) } });
         return { status: 'shown', message: `A ${Math.round(sum / 60 * 10) / 10} hour plan in ${input.blocks.length} blocks is on the card. Nothing is saved yet.` };
@@ -138,7 +142,7 @@ async function postPlanToTeamChat(ctx: CoachChatContext, content: string): Promi
   return sent.success;
 }
 
-const publishInput = z.object({ plan_id: z.string().uuid(), version: z.number().int().min(1), title: z.string().min(1).max(80), people: z.number().int().min(1).describe('Players and coaches on the plan.'), when: z.string().min(1).max(60), where: z.string().max(80).default(''), first_player_line: z.string().max(140).describe('The notification the first player gets.'), player_ids: z.array(z.string().uuid()).max(60).default([]).describe('Roster ids of the players on the plan, the first player first.'), team_chat: z.boolean().default(true).describe('Post the plan in Team chat too. False only if the coach said not to.') });
+const publishInput = z.object({ plan_id: z.string().uuid().describe('The plan_id in the coach\'s Publish message. Never guess one; without it, ask the coach to press Publish on the plan.'), version: z.number().int().min(1).describe('The version in the coach\'s Publish message.'), title: z.string().min(1).max(80), people: z.number().int().min(1).describe('Players and coaches on the plan.'), when: z.string().min(1).max(60), where: z.string().max(80).default(''), first_player_line: z.string().max(140).describe('The notification the first player gets.'), player_ids: z.array(z.string().uuid()).max(60).default([]).describe('Roster ids of the players on the plan, the first player first.'), team_chat: z.boolean().default(true).describe('Post the plan in Team chat too. False only if the coach said not to.') });
 
 /** Publish goes on the Ask hold: nothing is written or told until Undo closes. */
 export const publishFlow: FlowDef<z.infer<typeof publishInput>> = {

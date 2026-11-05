@@ -629,7 +629,7 @@
 }
 @media (hover: hover) {
   .ch-tour-cmp-v:hover .ch-tour-cmp-v__n {
-    color: var(--ch-accent);
+    color: var(--ch-green-600);
   }
 }
 /* A value that rests on too little shows, with the words that say so; it never reads as a settled figure. */
@@ -777,7 +777,7 @@
   background: none;
   font: var(--ch-type-13-medium);
   line-height: var(--ch-lead-tight);
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
   cursor: pointer;
 }
 

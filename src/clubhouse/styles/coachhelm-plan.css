@@ -58,7 +58,7 @@
 .ch-cp-card { display: grid; gap: 12px; padding: 12px 16px; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg, var(--ch-bg-surface)); box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline); }
 .ch-cp-card h4 { margin: 0; font: var(--ch-type-17-strong);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-17); }
 .ch-cp-strip { display: flex; gap: 2px; height: 8px; border-radius: var(--ch-radius-xs); overflow: hidden; }
-.ch-cp-strip i { display: block; background: var(--ch-accent); transform-origin: 0 50%; animation: ch-cp-seg var(--ch-dur-release) var(--ch-ease) both; }
+.ch-cp-strip i { display: block; background: var(--ch-green-600); transform-origin: 0 50%; animation: ch-cp-seg var(--ch-dur-release) var(--ch-ease) both; }
 @keyframes ch-cp-seg { from { transform: scaleX(0); } }
 .ch-cp-row { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-top: var(--ch-hairline-w) solid var(--ch-border-hairline); }
 .ch-cp-row .t { font: var(--ch-type-15-strong);   color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
@@ -66,7 +66,7 @@
 .ch-cp-row b { font: var(--ch-type-16-medium); color: var(--ch-text-primary); letter-spacing: var(--ch-track-16); }
 .ch-cp-row p { margin: 2px 0 0; font: var(--ch-type-15);  color: var(--ch-text-secondary); letter-spacing: var(--ch-track-15); }
 .ch-cp-why { margin-top: 8px; padding: 8px 8px; border-radius: var(--ch-radius-sm); background: var(--ch-bg-subtle); font: var(--ch-type-15);  color: var(--ch-text-secondary); letter-spacing: var(--ch-track-15); }
-.ch-cp-why b { display: block; font: var(--ch-type-13-strong); color: var(--ch-accent); }
+.ch-cp-why b { display: block; font: var(--ch-type-13-strong); color: var(--ch-green-600); }
 .ch-cp-foot { display: grid; gap: 8px; }
 .ch-cp-foot .btns { display: flex; gap: 8px; }
 .ch-cp-foot .btns > * { flex: 1; min-height: 44px; }
@@ -75,18 +75,19 @@
 .ch-cp-menu { display: grid; padding: 4px; border-radius: var(--ch-radius-md); background: var(--ch-bg-subtle); }
 .ch-cp-menu button { display: flex; justify-content: space-between; min-height: 44px; align-items: center; padding: 0 8px; border: 0; border-radius: var(--ch-radius-sm); background: none; color: var(--ch-text-primary); font: var(--ch-type-15-medium);  cursor: pointer; letter-spacing: var(--ch-track-15); }
 .ch-cp-menu button[aria-checked='true'] { background: var(--ch-bg-surface); }
-.ch-cp-menu input { min-height: 40px; padding: 0 12px; border: 0; border-radius: var(--ch-radius-sm); background: var(--ch-bg-surface); color: var(--ch-text-primary); font: var(--ch-type-16-medium);  box-shadow: inset 0 0 0 2px var(--ch-accent); letter-spacing: var(--ch-track-16); }
+.ch-cp-menu input { min-height: 40px; padding: 0 12px; border: 0; border-radius: var(--ch-radius-sm); background: var(--ch-bg-surface); color: var(--ch-text-primary); font: var(--ch-type-16-medium);  box-shadow: inset 0 0 0 2px var(--ch-green-600); letter-spacing: var(--ch-track-16); }
 .ch-cp-receipt { display: grid; gap: 4px; }
 .ch-cp-receipt b { font: var(--ch-type-15-strong);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
 .ch-cp-receipt span { font: var(--ch-type-14); color: var(--ch-text-secondary); }
 .ch-cp-inert { font: var(--ch-type-13); color: var(--ch-text-secondary); }
 @media print {
-  body > *:not(.ch-cp-print-root) { display: none !important; }
+  /* Only while printPlan has its root on the page: printing anything else stays as it was. */
+  body:has(> .ch-cp-print-root) > *:not(.ch-cp-print-root) { display: none !important; }
   .ch-cp-print-root { display: block !important; }
   .ch-cp-print-root .ch-cp-sheet { box-shadow: none; border-radius: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .ch-cp-sheet .drow, .ch-cp-sheet .pp-rot { break-inside: avoid; }
 }
-@page { size: letter portrait; margin: 12mm; }
+/* The sheet's paper size is set by printPlan for the length of its print: a page rule here would apply to every page that loads this file. */
 .ch-cp-sheet {
   --ch-plan-shadow-1: 0 0 0 var(--ch-hairline-w) rgb(28 27 24 / .08),0 1px 2px rgb(28 25 18 / .06),0 18px 38px -20px rgb(28 25 18 / .38);
 }
@@ -142,7 +143,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
   height: 32px;
   border-radius: var(--ch-radius-sm);
   background: var(--ch-accent-tint);
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 .ch-cpv .hd {
   flex: 1;
@@ -232,7 +233,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
 .ch-cpv .k-pressure { background: color-mix(in srgb, var(--ch-pl-cpv-pressure) 14%, var(--ch-card-bg)); }
 .ch-cpv .changed {
   background: var(--ch-accent-tint);
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 .ch-cpv .sl {
   display: grid;
@@ -294,7 +295,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
   border-radius: var(--ch-radius-tail);
   background: var(--ch-card-bg);
   box-shadow: inset 0 0 0 1px var(--ch-pl-cpv-sep);
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
   font: var(--ch-type-13-strong);
 }
 .ch-cpv .srcb::after {
@@ -309,7 +310,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
 .ch-cpv .blk.wh {
   min-height: 96px;
   border-radius: var(--ch-radius-md);
-  box-shadow: inset 0 0 0 2px var(--ch-accent);
+  box-shadow: inset 0 0 0 2px var(--ch-green-600);
 }
 .ch-cpv .sb {
   display: block;
@@ -327,7 +328,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
   width: 2px;
   height: 16px;
   margin-left: 2px;
-  background: var(--ch-accent);
+  background: var(--ch-green-600);
   vertical-align: -2px;
 }
 .ch-cpv .building {
@@ -349,7 +350,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
 .ch-cpv .building .bar i {
   display: block;
   height: 100%;
-  background: var(--ch-accent);
+  background: var(--ch-green-600);
   transform-origin: left center;
 }
 .ch-cpv .foot {
@@ -417,7 +418,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
 }
 .ch-cpv .fi {
   flex: none;
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 .ch-cpv .flist {
   border-radius: var(--ch-radius-md);
@@ -454,7 +455,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
   color: var(--ch-text-secondary);
 }
 .ch-cpv .fr .tk {
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
   opacity: 0;
 }
 .ch-cpv .fr.on .tk {
@@ -468,7 +469,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
   grid-template-columns: 24px minmax(0, 1fr) auto;
 }
 .ch-cpv .fr.nw .n {
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 .ch-cpv .fr .inp {
   min-width: 0;
@@ -477,7 +478,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: var(--ch-card-bg);
-  box-shadow: inset 0 0 0 2px var(--ch-accent);
+  box-shadow: inset 0 0 0 2px var(--ch-green-600);
   font: var(--ch-type-15);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
@@ -517,10 +518,10 @@ html[data-fw-theme='dark'] .ch-cpv-full {
   border-radius: var(--ch-radius-md);
   background: var(--ch-well-bg-flat);
   box-shadow: inset 0 0 0 1px var(--ch-pl-cpv-sep);
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 .ch-cpv .fold.tg {
-  box-shadow: inset 0 0 0 2px var(--ch-accent);
+  box-shadow: inset 0 0 0 2px var(--ch-green-600);
 }
 .ch-cpv .fold b {
   font: var(--ch-type-13-strong);
@@ -565,7 +566,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
   font: var(--ch-type-14-strong);
 }
 .ch-cpv .inert {
@@ -658,7 +659,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
   height: 32px;
   border: 0;
   background: none;
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 .ch-cpv-sheet .stepper button::after {
   content: "";
@@ -701,7 +702,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 .ch-cpv-sheet .alt {
   position: relative;
@@ -1119,7 +1120,7 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   align-items: center;
   gap: 12px;
   padding: 8px 16px;
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 .ch-cpv .lrn .r span {
   font: var(--ch-type-15);
@@ -1238,7 +1239,7 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--ch-accent);
+  background: var(--ch-green-600);
 }
 .ch-cpv .fsum .fs {
   position: relative;
@@ -1249,7 +1250,7 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 }
 .ch-cpv .fsum .okc {
   background: var(--ch-accent-tint);
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 .ch-cpv .fsum b {
   display: block;
@@ -1285,7 +1286,7 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
   font: var(--ch-type-15-strong);
   letter-spacing: var(--ch-track-15);
 }
@@ -1304,7 +1305,7 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   letter-spacing: var(--ch-track-16);
 }
 .ch-cpv-sheet .upopt svg {
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 .ch-cpv-sheet .upopt + .upopt::before {
   content: "";
@@ -1409,7 +1410,7 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 }
 .ch-cpv-ply .now {
   background: var(--ch-accent-tint);
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 .ch-cpv-ply .nx {
   background: var(--ch-well-bg-flat);
@@ -1484,16 +1485,16 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   font: var(--ch-type-13);
 }
 .ch-cpv .fi {
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 .ch-cpv .fr.nw .n {
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
 }
 /* S-FMT.found: each part found gets a green ring, its tag inside the page. */
 .ch-cpv .smp.found > * {
   position: relative;
   border-radius: var(--ch-radius-xs);
-  box-shadow: 0 0 0 2px var(--ch-accent);
+  box-shadow: 0 0 0 2px var(--ch-green-600);
 }
 .ch-cpv .smp.found .tagr {
   right: 4px;
@@ -1538,7 +1539,7 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   opacity: 0.4;
 }
 .ch-cpv .rlinks a {
-  color: var(--ch-accent);
+  color: var(--ch-green-600);
   font: var(--ch-type-15-medium);
   letter-spacing: var(--ch-track-15);
 }

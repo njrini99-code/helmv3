@@ -698,6 +698,19 @@ Ask v2 rules:
   inside it leaves no row and tells nobody.
 - `20261101090000_coachhelm_action_runs_hold.sql` adds the column the hold needs.
   Without it, the write runs at once and no Undo is offered.
+- A player reaches the stream route's player branch only with no coach row
+  (`CoachContextError.reason === 'not_a_coach'`). Any other coach denial stays
+  denied, and a failed coach lookup is a 500. `runPlayerTurn` confirms a player
+  row, then applies `isCoachHelmEnabledForPlayer` before the rate limit and model.
+- Player Ask returns no teammate's data and no guessed cause
+  (`src/lib/coachhelm/v3/chat/player-tools.ts`): `get_upcoming_events` carries the
+  player's own `my_rsvp` (`accepted`, `declined`, `no_reply`) and no counts or
+  names; `get_round_detail` reads only their own rounds; `get_my_reads` titles pass
+  `playerTitle`.
+- What a player may read of a cause has one owner,
+  `src/lib/coachhelm/reads/player-cause.ts`. Only a counted sequence is theirs. The
+  Clubhouse mapper (`toChInsight`) applies it for any viewer but a coach, and
+  `assignAs` for every viewer, since the player reads the saved focus area.
 - `src/app/api/coachhelm/v3/chat/actions/[key]/route.ts` is new. `GET` returns the
   receipt and `DELETE` undoes a held action. It answers 404 for another coach's key
   and when the flag is off.

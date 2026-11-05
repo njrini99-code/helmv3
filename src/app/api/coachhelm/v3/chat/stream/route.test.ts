@@ -150,10 +150,20 @@ vi.mock('@/lib/auth/rate-limit', () => ({
 }));
 vi.mock('@/lib/coachhelm/v3/chat/context', () => ({
   CoachContextError: class CoachContextError extends Error {
-    status = 401;
+    constructor(
+      message?: string,
+      readonly status: number = 401,
+      readonly reason?: string,
+    ) {
+      super(message);
+    }
   },
   resolveCoachChatContext: mocks.resolveCoachChatContext,
 }));
+// The player branch (flag on here, so only the route's own test decides who reaches it).
+const playerBranch = vi.hoisted(() => ({ runPlayerTurn: vi.fn(async () => new Response('player turn')) }));
+vi.mock('@/lib/coachhelm/v3/chat/player-turn', () => playerBranch);
+vi.mock('@/lib/coachhelm/v3/chat/ask-flag', async (importOriginal) => ({ ...(await importOriginal<object>()), isPlayerAskEnabled: () => true }));
 vi.mock('@/lib/coachhelm/v3/chat/agent-tools', () => ({
   buildCoachTools: mocks.buildCoachTools,
   isConfirmRequired: () => false,
@@ -1331,5 +1341,27 @@ describe('POST /coachhelm/v3/chat/stream — the CoachHelm gate (CH13-20)', () =
     // The chat maps this exact body to its own sentence (error-message.ts), so a coach is not told Ask is "for coaches".
     expect(await res.json()).toEqual({ error: 'CoachHelm is off for your team.' });
     expect(mocks.streamText).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /coachhelm/v3/chat/stream — who reaches the player branch', () => {
+  const denied = async (...args: [string, number, string?]) => {
+    const { CoachContextError } = await import('@/lib/coachhelm/v3/chat/context');
+    return new (CoachContextError as unknown as new (...a: [string, number, string?]) => Error)(...args);
+  };
+  it('a coach denied with a 403 stays denied: no player turn', async () => {
+    playerBranch.runPlayerTurn.mockClear();
+    mocks.resolveCoachChatContext.mockRejectedValueOnce(await denied('That player is not on your active roster', 403));
+    const res = await POST(makeRequest(baseBody));
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: 'That player is not on your active roster' });
+    expect(playerBranch.runPlayerTurn).not.toHaveBeenCalled();
+  });
+  it('a signed-in user with no coach row goes to the player branch, which checks they are a player', async () => {
+    playerBranch.runPlayerTurn.mockClear();
+    mocks.resolveCoachChatContext.mockRejectedValueOnce(await denied('This surface is for coaches', 403, 'not_a_coach'));
+    const res = await POST(makeRequest(baseBody));
+    expect(await res.text()).toBe('player turn');
+    expect(playerBranch.runPlayerTurn).toHaveBeenCalledTimes(1);
   });
 });

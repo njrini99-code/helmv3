@@ -3238,7 +3238,7 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
   --ch-classes-x3: inset 0 0 0 1.5px var(--ch-cl-tf);
   --ch-classes-x4: inset 0 0 0 var(--ch-hairline-w) var(--ch-cl-tb);
   --ch-classes-x5: inset 0 0 0 1px color-mix(in srgb, var(--ch-cl-tb) 70%, transparent);
-  --ch-classes-x6: 0 0 0 2px var(--ch-accent);
+  --ch-classes-x6: 0 0 0 2px var(--ch-green-600);
   --ch-classes-x7: inset 0 0.66px 0 var(--ch-separator);
 }
 

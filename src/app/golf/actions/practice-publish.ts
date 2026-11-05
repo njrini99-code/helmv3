@@ -4,7 +4,7 @@ import { after } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
-import { diffVersions, parsePlanBody, pathFor, validatePlan, type PlanBodyV2 } from '@/lib/coachhelm/v3/practice-plan/model';
+import { changeLines, diffVersions, parsePlanBody, parseVersionBody, pathFor, validatePlan, type PlanBodyV2 } from '@/lib/coachhelm/v3/practice-plan/model';
 import { isPracticeTabEnabled } from '@/lib/coachhelm/v3/practice-plan/flag';
 import { practiceRpc, practiceTables } from '@/lib/golf/practice-db';
 import { fanOutPracticePlan, type PracticeNotice } from '@/lib/golf/practice-fanout';
@@ -43,7 +43,7 @@ async function publishPracticePlanImpl(input: { planId: string; expectedVersion:
   if (!isPracticeTabEnabled()) return { success: false, error: 'Practice plans aren’t on for your team yet.', unavailable: true };
   const sb = await createClient();
   const db = practiceTables(sb);
-  const { data: plan, error: readError } = await db.from('golf_practice_plans').select('id, title, body, event_id, version, live_version').eq('id', input.planId).maybeSingle();
+  const { data: plan, error: readError } = await db.from('golf_practice_plans').select('id, title, body, event_id, version, published_version').eq('id', input.planId).maybeSingle();
   if (readError) return { success: false, error: 'Couldn’t publish the plan.', code: 'CH-17002', unavailable: isPracticeMissing(readError.code) };
   if (!plan) return { success: false, error: 'That plan is gone.', code: 'CH-17002' };
   const body = parsePlanBody(plan.body);
@@ -56,17 +56,17 @@ async function publishPracticePlanImpl(input: { planId: string; expectedVersion:
   if (check.errors.length) return { success: false, error: check.errors.length === 1 ? check.errors[0]!.message : `Fix ${check.errors.length} problems to publish.`, code: check.errors.some((e) => e.code === 'CH-17116') ? 'CH-17116' : 'CH-17115' };
 
   let changes: ReturnType<typeof diffVersions> | null = null;
-  if (plan.live_version != null) {
-    const { data: live, error: liveError } = await db.from('golf_practice_plan_versions').select('body').eq('plan_id', plan.id).eq('version', plan.live_version).maybeSingle();
+  if (plan.published_version != null) {
+    const { data: live, error: liveError } = await db.from('golf_practice_plan_versions').select('body').eq('plan_id', plan.id).eq('version', plan.published_version).maybeSingle();
     // No earlier version to read means no "what changed" line, and the publish still stands.
-    const prev = liveError ? null : parsePlanBody(live?.body);
+    const prev = liveError ? null : parseVersionBody(live?.body);
     if (prev) changes = diffVersions(prev, body, eventStart, zone);
   }
   const notified = input.notify !== 'none' && !changes?.wordingOnly;
-  const { data, error } = await practiceRpc(sb, 'golf_practice_plan_publish', { p_plan_id: input.planId, p_expected_version: input.expectedVersion, p_changes: changes?.changes ?? [], p_notified: notified });
+  const { data, error } = await practiceRpc(sb, 'golf_practice_plan_publish', { p_plan_id: input.planId, p_expected_version: input.expectedVersion, p_changes: changes ? changeLines(changes) : [], p_notified: notified });
   if (error) {
     const m = practiceErrorOf(error.message);
-    return { success: false, error: m.token ? m.message : plan.live_version == null ? 'Couldn’t publish the plan. Nothing was sent.' : 'Couldn’t republish.', code: m.token ? m.code : plan.live_version == null ? 'CH-17002' : 'CH-17003', stale: m.token === 'practice_plan_stale', unavailable: isPracticeMissing(error.code) };
+    return { success: false, error: m.token ? m.message : plan.published_version == null ? 'Couldn’t publish the plan. Nothing was sent.' : 'Couldn’t republish.', code: m.token ? m.code : plan.published_version == null ? 'CH-17002' : 'CH-17003', stale: m.token === 'practice_plan_stale', unavailable: isPracticeMissing(error.code) };
   }
   const row = (Array.isArray(data) ? data[0] : data) as { published_version: number; document_id: string | null; first_publish: boolean; recipients: Recipient[] | null } | null;
   if (!row) return { success: false, error: 'Couldn’t publish the plan.', code: 'CH-17002' };

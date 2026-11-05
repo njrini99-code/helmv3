@@ -316,7 +316,7 @@
   top: 0;
   bottom: 0;
   width: var(--ch-hairline-w);
-  background: var(--ch-accent);
+  background: var(--ch-green-600);
 }
 .ch-ca-strip__axis {
   position: relative;

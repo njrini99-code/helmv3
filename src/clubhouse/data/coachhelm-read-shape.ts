@@ -1,5 +1,6 @@
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import { CAUSAL } from '@/lib/coachhelm/reads/player-cause';
 import { teamPoolLine } from '@/lib/coachhelm/reads/team-pool-line';
 import type { ChInsight } from './coachhelm-shape';
 import type { ChViewer } from './coachhelm-voice';
@@ -138,9 +139,6 @@ export function sampleOf(
 
 /** The generator labels that open a comparison in lower case after "Compared with" ("your right-to-left make %", "no downhill penalty"). */
 const LOWER_START = /^(Your|No|Non)\b/;
-
-/** A sentence that states or guesses a cause ("It's consistent with a pace-control pattern", "That's driven by", "the classic under-read"). */
-const CAUSAL = /\b(?:consistent with|looks like|points? to|suggests?|likely|because|due to|caused by|driven by|stems? from|the classic)\b/i;
 
 /**
  * The generator's write-up as this viewer reads it. When the Why line is not traced for them (no cause, or an inferred one a

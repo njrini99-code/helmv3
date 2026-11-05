@@ -16,8 +16,8 @@ const cleanFolder = (f: string): string | null => {
 
 type SaveResult = { success: true; planId: string; version: number; documentId: string | null; folder: string; created: boolean; savedAt: string } | { success: false; error: string; unavailable?: boolean; needsEvent?: boolean };
 
-/** Save draft: the coach's press. The body goes to N-00's save; Why lines go to the coach-only column, never the body. Not on the hold: it writes at once and Undo removes it. */
-async function savePracticePlanDraftImpl(input: { eventId: string | null; planId: string | null; version: number; title: string; draft: PlanDraft; folder: string }): Promise<SaveResult> {
+/** Save draft: the coach's press. `version` is the plan's stored version, and null for a plan not saved yet, which is what N-00's save asks of a first save. The body goes to N-00's save; Why lines go to the coach-only column, never the body. Not on the hold: it writes at once and Undo removes it. */
+async function savePracticePlanDraftImpl(input: { eventId: string | null; planId: string | null; version: number | null; title: string; draft: PlanDraft; folder: string }): Promise<SaveResult> {
   if (!isPracticePlansEnabled() || !isPracticeTabEnabled()) return { success: false, error: 'Comes with the Practice tab.', unavailable: true };
   const folder = cleanFolder(input.folder);
   if (!folder) return { success: false, error: 'A folder name is 1 to 60 characters and can’t be Team.' };

@@ -4,6 +4,7 @@ import { convertToModelMessages, createUIMessageStream, createUIMessageStreamRes
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/auth/rate-limit';
+import { isCoachHelmEnabledForPlayer } from '@/lib/coachhelm/v2/gate';
 import { resolveModelProvider } from '@/lib/ai/model-provider';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
@@ -27,6 +28,9 @@ export async function runPlayerTurn(sb: SupabaseClient<Database>, body: { messag
     const status = err instanceof CoachContextError ? err.status : 500;
     return NextResponse.json({ error: 'Ask could not load.' }, { status });
   }
+  // CoachHelm switched off for the player or their team answers nothing here, as for a coach (CH13-20). The gate fails closed on a lookup error.
+  const helmGate = await isCoachHelmEnabledForPlayer(ctx.player_id);
+  if (!helmGate.effectivelyEnabled) return NextResponse.json({ error: 'CoachHelm is off for your team.' }, { status: 403 });
   const rl = await checkRateLimit(`coachhelm:chat:player:${ctx.player_id}`, RATE_LIMITS.API_GENERAL);
   if (!rl.allowed) return NextResponse.json({ error: 'Too many requests. Please slow down.' }, { status: 429 });
   const bucket = await readBucket(ctx.player_id, ctx.timezone);
