@@ -2,7 +2,7 @@
 import { Button } from '../../../../ui/Button';
 
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { PhoneTop } from '../../../../shell/phone-chrome';
 import { Icon } from '../../../../ui/Icon';
 import { KIND_LABEL, type AskArtifact } from './artifacts';
@@ -64,10 +64,26 @@ function Actions({ builderHref }: { builderHref: string | null }) {
 export function ArtifactView({ artifact, phone, body, onClose, builderHref = null }: { artifact: AskArtifact; phone: boolean; body: (versionBody: unknown) => ReactNode; onClose: () => void; builderHref?: string | null }) {
   const [at, setAt] = useState(artifact.versions.length - 1);
   const v = artifact.versions[Math.min(at, artifact.versions.length - 1)];
+  // M-ASK-30: it slides back out, then leaves. With nothing to wait for (Animations off), it leaves at once.
+  const root = useRef<HTMLElement>(null);
+  const [leaving, setLeaving] = useState(false);
+  useEffect(() => {
+    if (!leaving) return;
+    const running = root.current?.getAnimations?.() ?? [];
+    if (running.length === 0) return onClose();
+    let live = true;
+    void Promise.allSettled(running.map((a) => a.finished)).then(() => {
+      if (live) onClose();
+    });
+    return () => {
+      live = false;
+    };
+  }, [leaving, onClose]);
+  const close = () => setLeaving(true);
   if (phone) {
     return (
-      <div className="ch-ak-push" role="dialog" aria-label={artifact.title}>
-        <PhoneTop back={{ label: 'Ask', onBack: onClose }} title={artifact.title} />
+      <div ref={root as RefObject<HTMLDivElement>} className={'ch-ak-push' + (leaving ? ' is-leaving' : '')} role="dialog" aria-label={artifact.title}>
+        <PhoneTop back={{ label: 'Ask', onBack: close }} title={artifact.title} />
         <div className="apb">{v && body(v.body)}</div>
         <div className="apdock">
           <Versions n={artifact.versions.length} at={at} onGo={setAt} />
@@ -77,14 +93,14 @@ export function ArtifactView({ artifact, phone, body, onClose, builderHref = nul
     );
   }
   return (
-    <aside className="ch-ak-pane" aria-label={artifact.title}>
+    <aside ref={root} className={'ch-ak-pane' + (leaving ? ' is-leaving' : '')} aria-label={artifact.title}>
       <header>
         <span>
           <b>{artifact.title}</b>
           <small>{KIND_LABEL[artifact.kind]}</small>
         </span>
         <Versions n={artifact.versions.length} at={at} onGo={setAt} />
-        <button type="button" className="sb" aria-label="Close" onClick={onClose}>
+        <button type="button" className="sb" aria-label="Close" onClick={close}>
           <Icon icon={X} size={16} />
         </button>
       </header>

@@ -11,6 +11,8 @@ import { Avatar } from '../../../../ui/Avatar';
 import { Badge } from '../../../../ui/Badge';
 import { Icon } from '../../../../ui/Icon';
 import { Switch } from '../../../../ui/Switch';
+import { useChReducedMotion } from '../../../../lib/reduced-motion';
+import { flyDraftHome } from '../ask-flight';
 
 const KIND: Record<string, { icon: LucideIcon; verb: (n: number) => string; busy: string; chip: string }> = {
   create_recurring_practice: { icon: CalendarPlus, verb: () => 'Add to calendar', busy: 'Adding…', chip: 'Added' },
@@ -65,6 +67,18 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend }: 
   const kind = KIND[view.tool] ?? (flow ? { icon: ClipboardCheck, verb: () => flow.verb, busy: flow.busy, chip: flow.chip } : { ...fallback, verb: () => p.action });
   const [pressed, setPressed] = useState(false);
   const receipt = inlineReceipt ?? view.receipt;
+  const reduced = useChReducedMotion();
+  const cardRef = useRef<HTMLElement>(null);
+  // M-ASK-45: the write answered in this visit, so the draft flies home. A reloaded receipt draws still.
+  const hadReceipt = useRef(!!receipt);
+  useEffect(() => {
+    if (hadReceipt.current || !receipt) return;
+    hadReceipt.current = true;
+    const card = cardRef.current;
+    const draft = card?.querySelector<HTMLElement>('.ls');
+    const slot = card?.querySelector<HTMLElement>('.ch-ak-hs .hsr.nw');
+    if (receipt.status !== 'failed' && card && draft && slot) void flyDraftHome(card, draft, slot, reduced);
+  }, [receipt, reduced]);
   const players = p.affects.filter((a) => a.kind === 'player').length;
   const team = p.affects.some((a) => a.kind === 'team');
   const count = players || (team ? Number(p.facts.find((f) => /player|recipient/i.test(f.label))?.value.match(/\d+/)?.[0] ?? 0) : 0);
@@ -81,7 +95,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend }: 
     onSend?.(text);
   };
   return (
-    <section className={'conf' + (p.publish ? ' is-pub' : '') + (receipt?.status === 'completed' ? ' flash' : '')} aria-label={p.action}>
+    <section ref={cardRef} className={'conf' + (p.publish ? ' is-pub' : '') + (receipt?.status === 'completed' ? ' flash' : '')} aria-label={p.action}>
       <div className="hd">
         <span className="ico">
           <Icon icon={HEAD[view.tool]?.icon ?? kind.icon} size={17} />

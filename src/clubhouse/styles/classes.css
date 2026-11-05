@@ -3157,7 +3157,7 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
     display: grid;
     gap: 20px;
     /* The loading main keeps the framed page's top inset; the lane's page starts 12px higher. */
-    margin-top: -12px;
+    margin-top: calc(-1 * var(--ch-space-3));
   }
   .ch-cl-sk-dcrh__h {
     display: flex;

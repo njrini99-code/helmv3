@@ -13,7 +13,20 @@ import { markHandPop } from './ua-pop';
  */
 export type ChNavKind = 'push' | 'pop' | 'fade';
 
-const strip = (p: string) => (p.split(/[?#]/)[0] ?? p).replace(/\/$/, '') || '/';
+/**
+ * A page's identity for page motion: its path, plus `?view=` where a query value is a page of its own. CoachHelm's read and a
+ * player's page live on the section's one route, and are pushed screens all the same.
+ */
+export function chNavPath(pathname: string, search: string = ''): string {
+  const base = pathname.replace(/\/$/, '') || '/';
+  if (base !== '/golf/dashboard/coachhelm') return base;
+  const view = new URLSearchParams(search).get('view');
+  return view === 'read' || view === 'player' ? `${base}?view=${view}` : base;
+}
+const strip = (p: string) => {
+  const [path = p, search = ''] = (p.split('#')[0] ?? p).split('?');
+  return chNavPath(path, search);
+};
 const within = (child: string, parent: string) => parent !== '/' && child.startsWith(parent + '/');
 
 /**
@@ -119,7 +132,7 @@ function onClick(e: MouseEvent) {
   const tabBar = !!a.closest('.ch-strip');
   // A section item that opens the page already showing (a hash, the same route) is no switch: nothing to swap.
   const tab = isSectionLink(a) && url.pathname.replace(/\/$/, '') !== from.replace(/\/$/, '');
-  const kind = classifyNav({ from, to: url.pathname, tabRoots: tabRoots(), tabBar });
+  const kind = classifyNav({ from, to: url.pathname + url.search, tabRoots: tabRoots(), tabBar });
   mark(kind, tab);
   holdForPush(from);
 }
@@ -407,7 +420,7 @@ function playPop(from = 1) {
 
 function onPopState() {
   if (!shownPath) return;
-  const kind = classifyNav({ from: shownPath, to: location.pathname, tabRoots: tabRoots(), back: true });
+  const kind = classifyNav({ from: shownPath, to: location.pathname + location.search, tabRoots: tabRoots(), back: true });
   // Drawn here rather than by a view transition (playPop), so the keyframes never run as well.
   if (kind === 'pop' && window.matchMedia?.(PHONE).matches) {
     const from = takeRunningPush();

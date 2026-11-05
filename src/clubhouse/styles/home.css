@@ -5498,7 +5498,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     display: grid;
     gap: 16px;
     /* The loading main keeps the framed page's top inset; the lane's page starts 14px higher. */
-    margin-top: -14px;
+    margin-top: calc(-1 * (var(--ch-space-3) + var(--ch-space-0_5)));
   }
   .ch-h-sk-dcrh__hero {
     min-height: 215px;

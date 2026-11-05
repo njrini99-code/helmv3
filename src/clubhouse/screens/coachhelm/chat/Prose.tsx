@@ -23,16 +23,19 @@ export function AskProse({ text, lead = false, playersByName, streaming = false,
     if (!chip) return plainInline(s);
     return splitReadMarkers(s, chip.known).map((seg, i) => ('ref' in seg ? <Fragment key={`r${i}`}>{chip.draw(seg.ref)}</Fragment> : <Fragment key={`t${i}`}>{plainInline(seg.text)}</Fragment>));
   };
+  // Ask v2, while it streams: each word fades in as it arrives (M-ASK-14). The keys hold, so a word already in never replays.
+  const words = (t: string): ReactNode =>
+    chip && streaming ? t.split(/(\s+)/).map((w, k) => (/\S/.test(w) ? <span key={k} className="w">{w}</span> : w)) : t;
   const plainInline = (s: string) =>
     splitInline(s, names).map((seg, i) => {
       const id = seg.mention ? playersByName[seg.mention] : undefined;
       const href = id ? playerStatsHref(id) : null;
       const body = href ? (
         <Link href={href} className="ch-th-mention">
-          {seg.text}
+          {words(seg.text)}
         </Link>
       ) : (
-        seg.text
+        words(seg.text)
       );
       return seg.bold ? <strong key={i}>{body}</strong> : <Fragment key={i}>{body}</Fragment>;
     });

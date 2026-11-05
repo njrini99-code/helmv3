@@ -5,7 +5,8 @@ import { Button } from '../../../ui/Button';
 import { ArrowUp, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, FolderClosed, Minus, Plus, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { flyPageToFolder, squashFolder } from '../chat/ask-flight';
 import { plural } from '../../../lib/plural';
 import { useChPhone } from '../../../lib/use-phone';
 import { type DrillRef, type PlanBlock, type PlanDraft } from '@/lib/coachhelm/v3/practice-plan/model';
@@ -108,6 +109,8 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
   const router = useRouter();
   const reduced = useChReducedMotion();
   const saveOn = !!plan.saveOn;
+  const artRef = useRef<HTMLElement>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState(plan.draft);
   const versions = useContext(PlanVersions).filter((p) => planKey(p) === planKey(plan));
   const own = Math.max(0, versions.indexOf(plan));
@@ -175,6 +178,18 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
     setError(null);
     const saved = { planId: res.planId, version: res.version };
     rememberSavedPlan(planKey(plan), saved);
+    // M-ASK-77 and 78: the page drops into its folder and the count ticks once, then the receipt. It's saved already, so a
+    // flight that never settles (a hidden tab) can't hold the receipt back.
+    const fold = stripRef.current?.querySelector<HTMLElement>('.fold.tg');
+    if (fold && artRef.current) {
+      const page = artRef.current;
+      const landing = (async () => {
+        await flyPageToFolder(page, fold, reduced);
+        setFolders((list) => (list.some((f) => f.name === folder) ? list.map((f) => (f.name === folder ? { ...f, count: f.count + 1 } : f)) : [...list, { name: folder, count: 1 }]));
+        await squashFolder(fold, reduced);
+      })();
+      await Promise.race([landing, new Promise((done) => window.setTimeout(done, 1500))]);
+    }
     setState({ k: 'saved', planId: res.planId, version: res.version, created: res.created, savedAt: res.savedAt, until: new Date(Date.now() + 8000).toISOString(), folder });
     return saved;
   };
@@ -219,7 +234,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
   let at = 0;
   return (
     <div className={'ch-cpv' + (phone ? '' : ' is-desk')} data-ch="plan-card">
-      <section className="art">
+      <section ref={artRef} className="art">
         <header className="art-h">
           <span className="tile">
             <Icon icon={ClipboardList} size={18} />
@@ -489,7 +504,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                   </div>
                 )}
                 {state.k === 'saving' && (
-                  <div className="dstrip" aria-hidden="true">
+                  <div ref={stripRef} className="dstrip" aria-hidden="true">
                     {[{ name: folder, count: folders.find((f) => f.name === folder)?.count ?? 0 }, ...folders.filter((f) => f.name !== folder).slice(0, 2)].map((f, i) => (
                       <div key={f.name} className={'fold' + (i === 0 ? ' tg' : '')}>
                         <Icon icon={FolderClosed} size={24} />

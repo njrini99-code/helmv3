@@ -456,3 +456,22 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .dchip {
   flex: none;
 }
+
+/* M-ASK-14: words fade in as they arrive; the word is the only fade, so the block's own stands down. */
+@media (prefers-reduced-motion: no-preference) {
+  .ch-ak-th .ch-th-prose[data-streaming] > * { animation: none; }
+  .ch-ak-th .ch-th-prose[data-streaming] .w { animation: ch-ak-fade 320ms var(--ch-ease) both; }
+}
+[data-motion='off'] .ch-ak-th .ch-th-prose[data-streaming] .w { animation: none; }
+
+/* M-ASK-28 to 30: the plan pane and the pushed plan slide in and out on the smooth spring. */
+@keyframes ch-ak-slide-in { from { transform: translateX(100%); } }
+@keyframes ch-ak-slide-out { to { transform: translateX(100%); } }
+@keyframes ch-ak-fade-out { to { opacity: 0; } }
+.ch-ak-pane, .ch-ak-push { animation: ch-ak-slide-in var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) both; }
+.ch-ak-pane.is-leaving, .ch-ak-push.is-leaving { animation: ch-ak-slide-out var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) both; }
+@media (prefers-reduced-motion: reduce) {
+  .ch-ak-pane, .ch-ak-push { animation: ch-ak-fade 120ms linear both; }
+  .ch-ak-pane.is-leaving, .ch-ak-push.is-leaving { animation: ch-ak-fade-out 120ms linear both; }
+}
+[data-motion='off'] .ch-ak-pane, [data-motion='off'] .ch-ak-push { animation: none; }

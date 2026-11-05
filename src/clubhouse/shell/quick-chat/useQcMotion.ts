@@ -29,7 +29,8 @@ export function useQcMotion(reduced: boolean) {
       panel.style.transformOrigin = `${origin.x - r.left}px ${origin.y - r.top}px`;
       const curve = chSpringCurve('pour');
       anims.current.push(panel.animate([{ transform: was.t }, { transform: 'none' }], { duration: curve.ms, easing: curve.linear }));
-      anims.current.push(panel.animate([{ opacity: was.o }, { opacity: 1 }], { duration: CH_DUR.quick * 1000, easing: bez(CH_EASE) }));
+      // Opaque by 90 ms (07): a slower fade reads as a ghost of the page behind it.
+      anims.current.push(panel.animate([{ opacity: was.o }, { opacity: 1 }], { duration: 90, easing: bez(CH_EASE) }));
       if (scrim) anims.current.push(scrim.animate([{ opacity: scrimFrom }, { opacity: 1 }], { duration: CH_DUR.base * 1000, easing: bez(CH_EASE) }));
       // The one allowed stagger: header, body, composer (07 M-CONTENT).
       panel.querySelectorAll<HTMLElement>('[data-qc-rise]').forEach((el, i) => {
