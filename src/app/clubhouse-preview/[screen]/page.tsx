@@ -359,6 +359,7 @@ export default async function ClubhousePreview({
         <RoundReviewSkeleton />
       ) : (
         <RoundReview
+          fromRounds={(await searchParams as { from?: string }).from === 'rounds'}
           review={
             { coach: PREVIEW_REVIEW_COACH, coachnoted: PREVIEW_REVIEW_COACH_NOTED, playernoted: PREVIEW_REVIEW_PLAYER_NOTED, notefailed: PREVIEW_REVIEW_NOTE_FAILED, noshots: PREVIEW_REVIEW_NO_SHOTS, noholes: PREVIEW_REVIEW_NO_HOLES, total: PREVIEW_REVIEW_TOTAL_ONLY, holebyhole: PREVIEW_REVIEW_HOLE_BY_HOLE, nosg: PREVIEW_REVIEW_NO_SG, debrief: PREVIEW_REVIEW_DEBRIEF, 'debrief-thin': PREVIEW_REVIEW_DEBRIEF_THIN }[state ?? ''] ?? PREVIEW_REVIEW
           }

@@ -81,3 +81,10 @@ describe('Team rounds · a row is a push (A13, A14)', () => {
     expect(hapticSpy).not.toHaveBeenCalled();
   });
 });
+
+describe('Team rounds · a row says where it came from', () => {
+  it('the review link carries from=rounds, so a reload names Back on the server render', () => {
+    render(ui());
+    expect(firstRow().getAttribute('href')).toMatch(/\/rounds\/[^?]+\?from=rounds$/);
+  });
+});

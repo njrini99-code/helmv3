@@ -101,9 +101,11 @@ export default async function RoundDetailPage({
   // Clubhouse round review (golf_clubhouse_ui), for the player and their coaches.
   if (await isClubhouseFor(await getGolfDashboardRole())) {
     // P-7: `?hole=` opens the review on that hole (the course page's plays link here).
-    const raw = (await searchParams)?.hole;
+    const params = await searchParams;
+    const raw = params?.hole;
     const hole = Number(Array.isArray(raw) ? raw[0] : raw);
-    return <ClubhouseRoundReviewRoute id={id} hole={Number.isInteger(hole) && hole >= 1 && hole <= 18 ? hole : null} />;
+    // Team rounds' link says where it came from, so Back is named on the server render too.
+    return <ClubhouseRoundReviewRoute id={id} hole={Number.isInteger(hole) && hole >= 1 && hole <= 18 ? hole : null} fromRounds={params?.from === 'rounds'} />;
   }
   const supabase = await createClient();
 

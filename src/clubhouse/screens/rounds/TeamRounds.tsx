@@ -37,7 +37,7 @@ const landed = (d: ChTeamRounds) => !d.rounds.error && !d.rosterError;
 
 /** A round's review opens only once its screen is rebuilt for the coach (nav.rebuiltHref), so no dead rows. */
 export const teamRoundsLinks = {
-  review: (id: string) => rebuiltHref(`/golf/dashboard/rounds/${id}`, 'coach'),
+  review: (id: string) => rebuiltHref(`/golf/dashboard/rounds/${id}?from=rounds`, 'coach'),
   stats: (playerId: string) => rebuiltHref(`/golf/dashboard/stats?player=${playerId}&tab=rounds`, 'coach'),
 };
 
