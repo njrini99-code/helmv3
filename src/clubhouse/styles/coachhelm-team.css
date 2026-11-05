@@ -881,6 +881,11 @@ html[data-fw-theme='dark'] .ch-htb {
 .ch-htb .hudsvg .hp {
   cursor:pointer;
 }
+/* A coin spread off its true point keeps a line back to it. */
+.ch-htb .hudsvg .ldr {
+  stroke:var(--ch-tb-ink-3);
+  stroke-width:1;
+}
 .ch-htb .hudsvg .hp text {
   fill:#fff;
   font: var(--ch-type-11-strong);

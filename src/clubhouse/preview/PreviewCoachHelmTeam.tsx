@@ -19,6 +19,15 @@ function stateData(state: string | undefined): ChTeamBoardData {
     const empty: ChTeamPlayer[] = list.map((p) => ({ ...p, rounds: 0, early: true, reads: { needs: [], working: [] }, total: null, worst: null, legs: Object.fromEntries(STATIONS.map((s) => [s, { strokes: null, rounds: 0, missing: 'No rounds yet.' }])) as ChTeamPlayer['legs'] }));
     return { ...base, players: { list: empty, error: false }, stations: stationFigures(empty), teamTotal: { strokes: null, rounds: 0 }, course: { history: null, reads: [], against: null } };
   }
+  if (state === 'sparse') {
+    // The shape most real teams have: one player with shots, six with total-only rounds.
+    const names = ['Theo Marchetti', 'Sam Whitfield', 'Priya Natarajan', 'Luca Romano', 'Owen Tate', 'Mina Park'];
+    const proto = list[0] as ChTeamPlayer;
+    // Rounds with hole scores but no shots for two of them; a total alone for the other four (`scoresOnly`).
+    const noFigures: ChTeamPlayer[] = names.map((name, i) => ({ ...proto, id: `pl-sparse-${i}`, name, first: name.split(' ')[0] as string, rounds: i < 2 ? 2 : 0, scoresOnly: i < 2 ? 0 : 3 + i, early: true, reads: { needs: [], working: [] }, total: null, worst: null, legs: Object.fromEntries(STATIONS.map((s) => [s, { strokes: null, rounds: 0, missing: 'Shows from 3 rounds with shots.' }])) as ChTeamPlayer['legs'] }));
+    const sparse = [list[3] as ChTeamPlayer, ...noFigures];
+    return { ...base, roster: { count: sparse.length, error: false }, players: { list: sparse, error: false }, stations: stationFigures(sparse), teamTotal: { strokes: sparse[0]?.total ?? null, rounds: 22, scoresOnly: 26 } };
+  }
   if (state === 'failed') return { ...base, brief: { status: 'failed' }, record: { status: 'failed' } } as ChTeamBoardData;
   if (state === 'failed-all') return { ...base, players: { list: [], error: true } };
   if (state === 'partial') return { ...base, players: { list: [], error: true } };
