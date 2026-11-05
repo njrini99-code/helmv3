@@ -211,6 +211,8 @@ const CH_REBUILT_CHILDREN: Record<string, RegExp> = {
   '/golf/dashboard/qualifiers': /^\/golf\/dashboard\/qualifiers\/(new|[0-9a-f-]{36}(\/(edit|selection))?)$/i,
 };
 
+const CH_PRACTICE_PAGES = /^\/golf\/dashboard\/practice\/(format|plan\/[^/]+)$/;
+
 /**
  * Rebuilt addresses whose parent isn't rebuilt for that role. A coach has no
  * Rounds library in v2, but opens a player's round review from Stats. A player
@@ -219,8 +221,9 @@ const CH_REBUILT_CHILDREN: Record<string, RegExp> = {
  */
 const CH_REBUILT_PATTERNS: Record<ChRole, readonly RegExp[]> = {
   // P-7: a player's history at one course, reached from a round or the library (a coach's from a player's round).
-  coach: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/course\/[^/]+$/],
-  player: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/continue\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/course\/[^/]+$/],
+  // Practice's plan and format pages decide for themselves: flag off or no access goes to Calendar (N-00 §0.2), so the segment must render.
+  coach: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/course\/[^/]+$/, CH_PRACTICE_PAGES],
+  player: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/continue\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/course\/[^/]+$/, CH_PRACTICE_PAGES],
 };
 
 /**

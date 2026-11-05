@@ -22,6 +22,13 @@ function aliasedAddresses(): string[] {
 }
 
 describe('old addresses Clubhouse moved (Simulator, 2026-10-14)', () => {
+  it('Practice links from a plan card reach their page for both roles, so its own flag and access check run', () => {
+    for (const role of ['coach', 'player'] as const) {
+      expect(isRebuilt('/golf/dashboard/practice/format', role)).toBe(true);
+      expect(isRebuilt('/golf/dashboard/practice/plan/00000000-0000-0000-0000-000000000001', role)).toBe(true);
+    }
+  });
+
   it('every route that redirects into Clubhouse is on the frame’s aliased list', () => {
     const addresses = aliasedAddresses();
     expect(addresses.length).toBeGreaterThan(10);

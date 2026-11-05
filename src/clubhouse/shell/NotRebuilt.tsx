@@ -6,7 +6,7 @@ import { Button } from '../ui/Button';
 import { Icon } from '../ui/Icon';
 
 /**
- * Shown for any route the Clubhouse rebuild hasn't reached yet (CH-1301). It is the page empty's anatomy, as the route
+ * Shown for an address with no Clubhouse screen for this role (CH-1301). It is the page empty's anatomy, as the route
  * error draws it (states audit, 2026-10-08): a medallion, the title, one or two sentences and the way back to Home,
  * with no card. `coachOnly`: a player on a page rebuilt for coaches only (Recruiting, What's new) is told it is a
  * coach's page, as Qualifiers says "Only coaches create qualifiers", not that it is coming.
@@ -21,11 +21,11 @@ export function NotRebuilt({ label, coachOnly = false }: { label: string; coachO
               <Icon icon={coachOnly ? Lock : Hourglass} size={26} />
             </span>
           </span>
-          <h1 className="ch-empty-page__title">{coachOnly ? `Only coaches use ${label}` : `${label} hasn’t been rebuilt yet`}</h1>
+          <h1 className="ch-empty-page__title">{coachOnly ? `Only coaches use ${label}` : `${label} isn’t available here`}</h1>
           <p className="ch-empty-page__body">
             {coachOnly
               ? 'Your rounds, stats and team are on Home.'
-              : 'It’s on the list for the new GolfHelm design. Home is ready now, and each screen joins it as it’s finished.'}
+              : 'Your team, rounds and stats are on Home.'}
           </p>
           <div className="ch-empty-page__a">
             <Button variant="primary" leftIcon={House} href="/golf/dashboard">
