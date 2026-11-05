@@ -393,6 +393,34 @@ describe('Calendar · new event deep link', () => {
 describe('Calendar · saves that fail', () => {
   // Two replies below freeze the clock to the sample's day; nothing after them runs on it.
   afterEach(() => vi.useRealTimers());
+  it('Find a time stays in the form whoever is invited, so Clear and Select all do not move the dialog', async () => {
+    const user = userEvent.setup();
+    wrap(cal(), { initialNew: true });
+    const dlg = await screen.findByRole('dialog');
+    const block = () => dlg.querySelectorAll('.ch-cal-ftb').length;
+    expect(block()).toBe(1);
+    const toggle = within(dlg).getByRole('button', { name: /^(Select all|Clear)$/ });
+    await user.click(toggle);
+    expect(block()).toBe(1);
+    await user.click(toggle);
+    expect(block()).toBe(1);
+  });
+
+  it('the Today card counts a new event as soon as it is published, before the re-read lands', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(`${PREVIEW_CALENDAR.today}T16:00:00Z`));
+    const user = userEvent.setup();
+    a.createGolfEvent.mockImplementation(() => new Promise(() => {}));
+    wrap(cal(), { initialNew: true });
+    const title = () => document.querySelector('.ch-in__title')!.textContent ?? '';
+    const before = title();
+    await user.type(await screen.findByRole('textbox', { name: 'Event title' }), 'Short game');
+    await user.click(screen.getByRole('button', { name: 'Publish event' }));
+    await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());
+    // The reply never comes: only the event drawn at publish can have moved the count.
+    expect(Number.parseInt(title(), 10)).toBe((Number.parseInt(before, 10) || 0) + 1);
+  });
+
   it('CH-6101 CH-6001 61202 a new event needs a title; a failed publish keeps the editor with everything as typed', async () => {
     const user = userEvent.setup();
     a.createGolfEvent.mockImplementation(fail);
