@@ -89,7 +89,9 @@ describe('a lens card folds only on a real flip (Reduce Motion sweep)', () => {
   it('does not animate on mount, Strict Mode’s second effect included, and does on the lens flip', async () => {
     const animate = vi.fn(() => ({ cancel: vi.fn(), onfinish: null }) as unknown as Animation);
     const had = Element.prototype.animate;
+    const hadList = Element.prototype.getAnimations;
     Element.prototype.animate = animate as unknown as typeof Element.prototype.animate;
+    Element.prototype.getAnimations = () => [];
     try {
       const user = userEvent.setup();
       render(
@@ -104,6 +106,7 @@ describe('a lens card folds only on a real flip (Reduce Motion sweep)', () => {
       await waitFor(() => expect(onFold()).toBeGreaterThan(0));
     } finally {
       Element.prototype.animate = had;
+      Element.prototype.getAnimations = hadList;
     }
   });
 });
