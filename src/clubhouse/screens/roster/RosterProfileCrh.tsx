@@ -52,7 +52,7 @@ export function RosterProfileCrh({
     ['Hometown', p.hometown ?? <NoData />],
     ['High school', p.highSchool ?? <NoData />],
     ['Joined', p.joined ? p.joined.replace(/^Joined /, '') : <NoData />],
-    ['Rounds this season', String(p.rounds)],
+    ['Rounds this season', String(p.roundsAll ?? p.rounds)],
     ...(p.jersey ? ([['Jersey', p.jersey]] as Array<[string, ReactNode]>) : []),
   ];
   const sg = p.sgPerRound;
@@ -133,9 +133,9 @@ export function RosterProfileCrh({
             padded={false}
             title="Recent rounds"
             actions={
-              roundsHref && p.rounds > 0 ? (
-                <Link href={roundsHref} className="ch-rsx-link ch-num" aria-label={`All ${p.rounds} rounds this season`}>
-                  All {p.rounds}
+              roundsHref && (p.roundsAll ?? p.rounds) > 0 ? (
+                <Link href={roundsHref} className="ch-rsx-link ch-num" aria-label={`All ${p.roundsAll ?? p.rounds} rounds this season`}>
+                  All {p.roundsAll ?? p.rounds}
                 </Link>
               ) : undefined
             }

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Skeleton } from '../../ui/States';
-import { SkeletonDeskForm, SkeletonDeskHead } from './SkeletonDeskHead';
+import { SkeletonDeskCrh, SkeletonDeskForm, SkeletonDeskHead } from './SkeletonDeskHead';
 import { SkeletonHeroBar } from './SkeletonHeroBar';
 import { SkeletonCrhCards, SkeletonPhoneHero } from './SkeletonPhoneHero';
 import '../../styles/home.css';
@@ -43,6 +43,8 @@ export function HomeSkeleton() {
           ))}
         </div>
       </div>
+      {/* The lane's coach page; CSS picks it, as the phone's above. */}
+      <SkeletonDeskCrh />
       {/* Desktop head in the reader's shape: the coach's brief, or the player's plain head. */}
       <SkeletonDeskHead />
       {/* Row 79, as CoachHome draws it: the week's sheet first, then (the coach's) scoring form and four parts. */}

@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => {
-  const state: { qualifierInsert: Record<string, unknown> | null } = {
+  const state: { qualifierInsert: Record<string, unknown> | null; failInsertOn: string | null } = {
     qualifierInsert: null,
+    failInsertOn: null,
   };
 
   function tableChain(table: string) {
@@ -11,6 +12,9 @@ const mocked = vi.hoisted(() => {
     const result = () => {
       if (table === 'golf_coaches') {
         return { data: { id: 'coach-1', organization_id: 'org-1' }, error: null };
+      }
+      if (wrote && table === mocked.state.failInsertOn) {
+        return { data: null, error: { message: 'insert refused' } };
       }
       if (table === 'golf_qualifiers' && wrote) {
         return { data: { id: 'qualifier-1' }, error: null };
@@ -70,6 +74,23 @@ import { createGolfQualifier } from '../qualifier-actions';
 describe('createGolfQualifier', () => {
   beforeEach(() => {
     mocked.state.qualifierInsert = null;
+    mocked.state.failInsertOn = null;
+  });
+
+  it('says so when the qualifier is created but its per-round courses did not save (audit F9)', async () => {
+    const input = {
+      name: 'Fall Qualifying',
+      startDate: '2026-08-23',
+      playerIds: [],
+      numRounds: 2,
+      roundCourses: [{ roundNumber: 1, courseId: null, courseName: 'Finley GC', teeId: null }],
+    };
+    const ok = await createGolfQualifier(input);
+    expect(ok).toEqual({ success: true, data: { qualifierId: 'qualifier-1' } });
+
+    mocked.state.failInsertOn = 'golf_qualifier_round_courses';
+    const partial = await createGolfQualifier(input);
+    expect(partial).toEqual({ success: true, data: { qualifierId: 'qualifier-1', roundCoursesFailed: true } });
   });
 
   it('persists a multi-round cap in the qualifier creation write', async () => {

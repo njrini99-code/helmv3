@@ -13,15 +13,17 @@ import '../styles/coachhelm-plan.css';
 export async function PracticePlanRoute({ planId }: { planId: string }) {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/dashboard/calendar');
-  const load = session.player ? await loadPlayerPlan(planId, session.player.id) : await loadCoachPlan(planId);
+  // A coach who also has a player row is a coach, as the session says.
+  const player = session.role === 'player' ? session.player : null;
+  const load = player ? await loadPlayerPlan(planId, player.id) : await loadCoachPlan(planId);
   if (load.status !== 'ready') redirect('/golf/dashboard/calendar');
-  if (session.player) {
-    const practice = await loadPlayerPractice(planId, session.player.id);
-    if (practice.status === 'ready') return <PlayerPractice data={practice.data} everyone={<PracticePlanSheet plan={load.plan} />} />;
+  if (player) {
+    const practice = await loadPlayerPractice(planId, player.id);
+    if (practice.status === 'ready') return <PlayerPractice data={practice.data} planId={planId} everyone={<PracticePlanSheet plan={load.plan} />} />;
   }
   return (
     <main className="ch-page" data-ch="practice-plan">
-      <PlanPageActions plan={load.plan} playerPlanId={session.player ? planId : null} />
+      <PlanPageActions plan={load.plan} playerPlanId={player ? planId : null} />
       <PracticePlanSheet plan={load.plan} />
     </main>
   );
@@ -34,7 +36,7 @@ export async function PlanFormatRoute() {
   if (!ctx) redirect('/golf/dashboard/calendar');
   const [{ data: format }, { count }, { data: next }] = await Promise.all([
     practiceTables(sb).from('golf_practice_plan_formats').select('name').eq('team_id', ctx.team_id).maybeSingle(),
-    practiceTables(sb).from('golf_practice_plans').select('id', { count: 'exact', head: true }).eq('team_id', ctx.team_id).not('live_version', 'is', null),
+    practiceTables(sb).from('golf_practice_plans').select('id', { count: 'exact', head: true }).eq('team_id', ctx.team_id).not('published_version', 'is', null),
     // S-FMT.see: the newest plan, shown in the format. A missing table reads as none, and the link stays away.
     practiceTables(sb).from('golf_practice_plans').select('id, title').eq('team_id', ctx.team_id).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
   ]);

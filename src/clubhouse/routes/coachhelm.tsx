@@ -1,6 +1,7 @@
 import 'server-only';
 import { Suspense, type ReactNode } from 'react';
 import { redirect } from 'next/navigation';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { isTrackRecordEnabled } from '@/lib/coachhelm/v3/track-record/flag';
@@ -89,7 +90,7 @@ async function CoachHelmView({ coachId, teamId, ask, conversationId, initialPlay
   const gate = await loadCoachHelmGate(coachId);
   if (gate.status === 'off') return <CoachBoard data={emptyCoachHelm(gate.off)} />;
   if (gate.status === 'failed') return <Ask load={{ status: 'failed' }} />;
-  return <Ask v2={isAskV2Enabled()} load={await loadAskCoachHelm({ conversationId })} />;
+  return <Ask v2={isAskV2Enabled()} slashFlags={{ plans: isFlagEnabled('coachhelm_practice_plans_v1'), lineup: isFlagEnabled('golf_tournaments_v1') }} load={await loadAskCoachHelm({ conversationId })} />;
 }
 
 /** One read for a coach: state by state as `CoachPlayerPage` (coachhelm-read 02-PLAN 3.3). */

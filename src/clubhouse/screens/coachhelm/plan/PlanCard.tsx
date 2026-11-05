@@ -5,11 +5,13 @@ import { Button } from '../../../ui/Button';
 import { ArrowUp, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, FolderClosed, Minus, Plus, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { flyPageToFolder, squashFolder } from '../chat/ask-flight';
 import { plural } from '../../../lib/plural';
 import { useChPhone } from '../../../lib/use-phone';
 import { type DrillRef, type PlanBlock, type PlanDraft } from '@/lib/coachhelm/v3/practice-plan/model';
 import { listPlanFolders, savePracticePlanDraft, undoPracticePlanDraft } from '@/app/golf/actions/coachhelm-practice-plans';
+import { forgetSavedPlan, publishRequest, rememberSavedPlan, savedPlanFor, type SavedPlanRef } from './saved-plans';
 import { FormSheet } from '../../../ui/FormSheet';
 import { Icon } from '../../../ui/Icon';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
@@ -107,6 +109,8 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
   const router = useRouter();
   const reduced = useChReducedMotion();
   const saveOn = !!plan.saveOn;
+  const artRef = useRef<HTMLElement>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
   const [draft, setDraft] = useState(plan.draft);
   const versions = useContext(PlanVersions).filter((p) => planKey(p) === planKey(plan));
   const own = Math.max(0, versions.indexOf(plan));
@@ -160,20 +164,47 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
     return m;
   }, [blocks, plan.drills]);
   const mixTotal = mix.skill + mix.random + mix.pressure;
-  const save = async () => {
+  const save = async (): Promise<SavedPlanRef | null> => {
     setState({ k: 'saving' });
-    if (preview) return;
-    const res = await savePracticePlanDraft({ eventId: plan.eventId, planId: null, version: 0, title: plan.title, draft, folder });
+    if (preview) return null;
+    // The stored version from the last save of this plan, and null for a plan not saved yet. `draft.version` counts this card's edits: the database has never seen it.
+    const target = savedPlanFor(planKey(plan));
+    const res = await savePracticePlanDraft({ eventId: plan.eventId, planId: target?.planId ?? null, version: target?.version ?? null, title: plan.title, draft, folder });
     if (!res.success) {
       setError(res.error);
-      return setState({ k: 'failed' });
+      setState({ k: 'failed' });
+      return null;
     }
     setError(null);
+    const saved = { planId: res.planId, version: res.version };
+    rememberSavedPlan(planKey(plan), saved);
+    // M-ASK-77 and 78: the page drops into its folder and the count ticks once, then the receipt. It's saved already, so a
+    // flight that never settles (a hidden tab) can't hold the receipt back.
+    const fold = stripRef.current?.querySelector<HTMLElement>('.fold.tg');
+    if (fold && artRef.current) {
+      const page = artRef.current;
+      const landing = (async () => {
+        await flyPageToFolder(page, fold, reduced);
+        setFolders((list) => (list.some((f) => f.name === folder) ? list.map((f) => (f.name === folder ? { ...f, count: f.count + 1 } : f)) : [...list, { name: folder, count: 1 }]));
+        await squashFolder(fold, reduced);
+      })();
+      await Promise.race([landing, new Promise((done) => window.setTimeout(done, 1500))]);
+    }
     setState({ k: 'saved', planId: res.planId, version: res.version, created: res.created, savedAt: res.savedAt, until: new Date(Date.now() + 8000).toISOString(), folder });
+    return saved;
+  };
+  /** Publish is of a saved plan: what's on the card is saved first, then the thread is told which plan and version. */
+  const publish = async () => {
+    if (preview) return onSend(`Publish the plan ${plan.title}`);
+    if (state.k === 'saving') return;
+    const saved = state.k === 'saved' ? { planId: state.planId, version: state.version } : await save();
+    if (saved) onSend(publishRequest(plan.title, saved));
   };
   const setBlock = (id: string, next: (b: PlanBlock) => PlanBlock) => {
     setDraft((d) => ({ ...d, version: d.version + 1, body: { ...d.body, variants: { ...d.body.variants, main: { blocks: d.body.variants.main.blocks.map((b) => (b.id === id ? next(b) : b)) } } } }));
     setChanged((s) => new Set(s).add(id));
+    // An edit after a save isn't saved: the card goes back to Save draft, and Publish saves it first.
+    setState((s) => (s.k === 'saved' ? { k: 'draft' } : s));
   };
   const pickAlt = (slot: string, alt: PlanAlternative) => {
     const [src, id] = alt.ref.split(':');
@@ -203,7 +234,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
   let at = 0;
   return (
     <div className={'ch-cpv' + (phone ? '' : ' is-desk')} data-ch="plan-card">
-      <section className="art">
+      <section ref={artRef} className="art">
         <header className="art-h">
           <span className="tile">
             <Icon icon={ClipboardList} size={18} />
@@ -376,7 +407,11 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                         type="button"
                         onClick={() => {
                           if (preview) return setState({ k: 'undone' });
-                          void undoPracticePlanDraft({ planId: state.planId, created: state.created, savedAt: state.savedAt }).then((r) => (r.success ? setState({ k: 'undone' }) : setError('Too late to undo. It’s saved.')));
+                          void undoPracticePlanDraft({ planId: state.planId, created: state.created, savedAt: state.savedAt }).then((r) => {
+                            if (!r.success) return setError('Too late to undo. It’s saved.');
+                            forgetSavedPlan(planKey(plan));
+                            setState({ k: 'undone' });
+                          });
                         }}
                       >
                         Undo
@@ -385,7 +420,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                   </span>
                 </div>
                 {error && <p className="inert is-fail">{error}</p>}
-                <Button variant="primary" size="lg" className="is-wide" onClick={() => onSend(`Publish the plan ${plan.title}`)}>
+                <Button variant="primary" size="lg" className="is-wide" onClick={() => void publish()}>
                   Publish…
                 </Button>
               </div>
@@ -463,13 +498,13 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                     <Button variant="secondary" onClick={() => void save()}>
                       {state.k === 'failed' ? 'Try again' : 'Save draft'}
                     </Button>
-                    <Button variant="primary" onClick={() => onSend(`Publish the plan ${plan.title}`)}>
+                    <Button variant="primary" onClick={() => void publish()}>
                       Publish…
                     </Button>
                   </div>
                 )}
                 {state.k === 'saving' && (
-                  <div className="dstrip" aria-hidden="true">
+                  <div ref={stripRef} className="dstrip" aria-hidden="true">
                     {[{ name: folder, count: folders.find((f) => f.name === folder)?.count ?? 0 }, ...folders.filter((f) => f.name !== folder).slice(0, 2)].map((f, i) => (
                       <div key={f.name} className={'fold' + (i === 0 ? ' tg' : '')}>
                         <Icon icon={FolderClosed} size={24} />
@@ -696,7 +731,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                 {state.k === 'saving' ? 'Saving…' : 'Save draft…'}
               </Button>
             )}
-            <Button variant="primary" onClick={() => { setFull(false); onSend(`Publish the plan ${plan.title}`); }}>
+            <Button variant="primary" onClick={() => { setFull(false); void publish(); }}>
               Publish…
             </Button>
           </div>

@@ -19,8 +19,9 @@ export interface ChPlayerPeek {
   name: string;
   /** "Junior", "Class of 2027"; null to leave the line out. */
   sub?: string | null;
+  /** Null when the player has no round; left out when the page did not load it (the figure is then not drawn, never "—"). */
   lastRound?: { score: number; toPar: number | null; label: string } | null;
-  /** Scoring average; null when there are no countable rounds. */
+  /** Scoring average; null when there are no countable rounds; left out when the page did not load it. */
   avg?: number | null;
   /** Oldest to newest 18-hole scores, for the word-sized line. */
   trend?: number[];
@@ -55,6 +56,10 @@ export function PlayerPeek({ player, within, children }: { player: ChPlayerPeek;
 
 export function PlayerPeekCard({ p }: { p: ChPlayerPeek }) {
   const last = p.lastRound ?? null;
+  // A page that holds no rounds (Calendar, Messages) leaves the figures out: an empty "Last round —" read as "no data"
+  // for a player who has played (owner, 2026-10-31).
+  const hasLast = p.lastRound !== undefined;
+  const hasAvg = p.avg !== undefined;
   return (
     <div className="ch-ppeek" data-ch-code="CH-1832">
       <div className="ch-ppeek__head">
@@ -70,27 +75,33 @@ export function PlayerPeekCard({ p }: { p: ChPlayerPeek }) {
           <span>{p.reason}</span>
         </p>
       )}
-      <dl className="ch-ppeek__figs">
-        <div>
-          <dt>Last round</dt>
-          <dd className="ch-num">
-            {last ? (
-              <>
-                {last.score}
-                {last.toPar != null && <small> {formatToPar(last.toPar)}</small>}
-              </>
-            ) : (
-              <NoData />
-            )}
-          </dd>
-          {last && <span className="ch-ppeek__m">{last.label}</span>}
-        </div>
-        <div>
-          <dt>Average</dt>
-          <dd className="ch-num">{p.avg == null ? <NoData /> : formatFixed(p.avg)}</dd>
-          {p.trend && p.trend.length >= 2 && <TrendLine scores={p.trend} />}
-        </div>
-      </dl>
+      {(hasLast || hasAvg) && (
+        <dl className="ch-ppeek__figs">
+          {hasLast && (
+            <div>
+              <dt>Last round</dt>
+              <dd className="ch-num">
+                {last ? (
+                  <>
+                    {last.score}
+                    {last.toPar != null && <small> {formatToPar(last.toPar)}</small>}
+                  </>
+                ) : (
+                  <NoData />
+                )}
+              </dd>
+              {last && last.label && <span className="ch-ppeek__m">{last.label}</span>}
+            </div>
+          )}
+          {hasAvg && (
+            <div>
+              <dt>Average</dt>
+              <dd className="ch-num">{p.avg == null ? <NoData /> : formatFixed(p.avg)}</dd>
+              {p.trend && p.trend.length >= 2 && <TrendLine scores={p.trend} />}
+            </div>
+          )}
+        </dl>
+      )}
     </div>
   );
 }

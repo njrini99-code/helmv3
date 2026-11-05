@@ -200,7 +200,7 @@ export function MessagesPhone({ api }: { api: ChMessagesApi }) {
             key={`thread-${conv.id}`}
             api={api}
             conv={conv}
-            onBack={() => select(null)}
+            onBack={() => (api.leaveToAsk ? api.leaveToAsk() : select(null))}
             onDetails={() => {
               haptic("select");
               setDetails(true);
@@ -1453,7 +1453,7 @@ function PhoneNewMessage({
         </div>
       </div>
       <footer ref={footer} className="ch-ms-comp" hidden={api.redesign && !to.length}>
-        <AttachChips files={files} onRemove={(i) => setFiles(files.filter((_, j) => j !== i))} />
+        <AttachChips redesign={!!api.redesign} files={files} onRemove={(i) => setFiles(files.filter((_, j) => j !== i))} />
         <div className="ch-ms-comp__field">
           <AttachButton phone disabled={!to.length} onPick={(picked) => setFiles(addFiles(files, picked))} />
           <textarea

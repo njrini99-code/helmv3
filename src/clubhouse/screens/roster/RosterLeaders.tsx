@@ -5,6 +5,7 @@ import type { ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
 import { Icon } from '../../ui/Icon';
 import { formatFixed, formatSigned } from '../../lib/format';
+import { FormBars } from '../../ui/FormLine';
 import { leaderPicks, yearKeyOf, type RosterClock, type RosterLeader } from './format';
 
 const KIND: Record<RosterLeader['kind'], { label: string; icon: LucideIcon; unit: string | null }> = {
@@ -40,6 +41,11 @@ export function RosterLeaders({ players, statsError, clock, onOpen }: { players:
               <Avatar name={p.name} id={p.id} size="sm" year={year} />
               <b>{p.name}</b>
             </span>
+            {p.trend.length >= 3 && (
+              <span className="ch-rs-ldr__bars">
+                <FormBars data={p.trend} mean={p.avg} />
+              </span>
+            )}
           </button>
         );
       })}

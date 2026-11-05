@@ -4,7 +4,9 @@ import { pluralWord } from '../../../lib/plural';
 
 import { useEffect, useState } from 'react';
 import type { TaskVisual } from '@/lib/coachhelm/v3/chat/action-types';
-import { readQuickChatWeek, type QuickChatWeek } from '@/app/golf/actions/coachhelm-ask';
+import { readQuickChatWeek } from '@/app/golf/actions/coachhelm-ask';
+import type { QuickChatWeek } from '@/lib/coachhelm/v3/chat/quick-chat-week';
+import { clockIn } from '@/lib/coachhelm/v3/chat/quick-chat-week';
 import { useQcSeam } from '../qc-seam';
 
 type Cal = Extract<TaskVisual, { kind: 'cal' }>;
@@ -24,9 +26,9 @@ const time12 = (t: string) => {
   return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
 };
 
-const untilClock = (iso: string) => {
-  const at = new Date(iso);
-  return `${at.getUTCHours() % 12 || 12}:${String(at.getUTCMinutes()).padStart(2, '0')}`;
+const untilClock = (iso: string, tz: string) => {
+  const at = clockIn(iso, tz);
+  return `${at.hours % 12 || 12}:${String(at.minutes).padStart(2, '0')}`;
 };
 
 /** Week strip, day rail, the new block, the facts. Hour lines 32pt apart from y 12: start − 1h to end + 1h. */
@@ -65,13 +67,15 @@ export function EventVisual({ visual, landed, removed }: { visual: Cal; landed: 
           </div>
         ))}
         {(week?.items ?? []).map((it) => {
-          const at = new Date(it.start);
-          const h = at.getUTCHours() + at.getUTCMinutes() / 60;
+          // The team's hours, as the week above buckets them; a fixture's times read as written.
+          const tz = week?.timeZone ?? 'UTC';
+          const at = clockIn(it.start, tz);
+          const h = at.hours + at.minutes / 60;
           return h >= first && h <= first + 4 ? (
             <div className="blk old" key={it.start + it.title} style={{ top: y(h), height: 24, padding: '4px 10px' }}>
               <b>
                 {it.title}
-                {it.end && ` · until ${untilClock(it.end)}`}
+                {it.end && ` · until ${untilClock(it.end, tz)}`}
               </b>
             </div>
           ) : null;

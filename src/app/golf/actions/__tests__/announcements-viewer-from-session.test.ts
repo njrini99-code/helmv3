@@ -100,6 +100,28 @@ describe('getAnnouncementsWithMeta — the role comes from the session', () => {
     expect(rows[0]!.acknowledged_players?.map((p) => p.player_id)).toEqual(['p2']);
   });
 
+  it('counts acknowledgements over players still on the team, so a removed player never reads "2 of 1"', async () => {
+    coachAuthorized.value = true;
+    tables.set('golf_coaches', { one: { id: 'c1', organization_id: 'org-1' } });
+    tables.set('golf_players', { one: null, many: [] });
+    // p3 acknowledged both and has since left; p2 is the only one on the team.
+    tables.set('golf_team_members', { many: [{ player_id: 'p2' }] });
+    tables.set('golf_announcement_recipients', { many: [{ announcement_id: 'a-p2', player_id: 'p2' }, { announcement_id: 'a-p2', player_id: 'p3' }] });
+    tables.set('golf_announcement_acknowledgements', {
+      many: [
+        { announcement_id: 'a-all', player_id: 'p2' },
+        { announcement_id: 'a-all', player_id: 'p3' },
+        { announcement_id: 'a-p2', player_id: 'p3' },
+      ],
+    });
+
+    const res = await list(true, null);
+    const rows = res.success ? res.data ?? [] : [];
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    expect(byId.get('a-all')).toMatchObject({ acknowledged_count: 1, total_recipients: 1 });
+    expect(byId.get('a-p2')).toMatchObject({ acknowledged_count: 0, total_recipients: 1 });
+  });
+
   it('a coach not staffed here who holds a player profile is not this team\'s coach', async () => {
     coachAuthorized.value = false;
     tables.set('golf_coaches', { one: { id: 'c9', organization_id: 'org-9' } });

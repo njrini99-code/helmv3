@@ -4,8 +4,8 @@
 --
 -- A player used to read every team meeting, 1:1s included. Now a player sees a
 -- meeting only when they have their own attendance row on it; every other
--- event type stays visible to the whole team; the team's coach sees
--- everything. The player hub lists the same set. Each refusal is paired with
+-- event type except class stays visible to the whole team (class rows:
+-- golf_events_class_rows_private.sql); the team's coach sees everything. The player hub lists the same set. Each refusal is paired with
 -- the permission it must not have taken away (the invited player's RSVP
 -- upsert, self-RSVP to a team-wide event, the coach's full view).
 --
@@ -23,7 +23,7 @@ SELECT plan(18);
 --            to nothing); outsider 04 on team B
 --   events (team A): PR practice, no invites; PI practice, invite list of 02
 --            only; M1 meeting, 02 invited; M2 meeting, nobody invited (the
---            coach's own); CL class row; PX cancelled practice
+--            coach's own); CL class row with no owner tag, coach only; PX cancelled practice
 -- ============================================================================
 DO $$
 BEGIN
@@ -114,7 +114,7 @@ SET LOCAL request.jwt.claims TO
 SELECT is(
   (SELECT string_agg(title, ',' ORDER BY title) FROM public.golf_events
     WHERE team_id = '00000000-0000-0000-0000-000000181301'),
-  'CL,PI,PR,PX',
+  'PI,PR,PX',
   'a player sees the team''s non-meeting events (an invite list does not hide a practice) and no meeting they are not on'
 );
 SELECT is(
@@ -141,7 +141,7 @@ SELECT is(
        '00000000-0000-0000-0000-000000181301',
        '00000000-0000-0000-0000-000000181503',
        now() - interval '1 day')) e),
-  'CL,PI,PR',
+  'PI,PR',
   'the player hub lists no meeting the player is not on (and no cancelled event)'
 );
 SELECT throws_ok(
@@ -165,7 +165,7 @@ SET LOCAL request.jwt.claims TO
 SELECT is(
   (SELECT string_agg(title, ',' ORDER BY title) FROM public.golf_events
     WHERE team_id = '00000000-0000-0000-0000-000000181301'),
-  'CL,M1,PI,PR,PX',
+  'M1,PI,PR,PX',
   'an invited player sees their meeting, and not the meeting nobody is invited to'
 );
 SELECT is(
@@ -192,7 +192,7 @@ SELECT is(
        '00000000-0000-0000-0000-000000181301',
        '00000000-0000-0000-0000-000000181502',
        now() - interval '1 day')) e),
-  'CL,M1,PI,PR',
+  'M1,PI,PR',
   'the invited player''s hub lists their meeting'
 );
 RESET role;

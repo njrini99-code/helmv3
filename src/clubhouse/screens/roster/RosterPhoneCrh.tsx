@@ -417,7 +417,7 @@ export function RosterRowCrh({
               </span>
             )}
           </span>
-          {kind === 'active' && (p.trend.length >= 3 ? <FormBars data={p.trend} mean={mean} /> : <FormStubs />)}
+          {kind === 'active' && (p.trend.length >= 3 ? <FormBars data={p.trend} mean={mean} /> : p.trend.length > 0 ? <FormStubs /> : null)}
           <span className="ch-rsm-row__v ch-rsx-row__v" data-sort={bySg ? 'sg' : undefined}>
             <b className={`ch-num ${bySg ? (sg == null ? 'is-none' : changeTone(sg, false)) : p.avg == null ? 'is-none' : ''}`.trim()}>{bySg ? (sg == null ? <NoData /> : formatSigned(sg)) : p.avg == null ? <NoData /> : formatFixed(p.avg)}</b>
             <span className="ch-num">{bySg ? 'SG / rd' : `${formatHcp(p.handicap)} ${TERMS.handicap.short}`}</span>

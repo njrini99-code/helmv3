@@ -512,8 +512,8 @@
   --ch-on-green-plate: #f4f1e8;
   --ch-on-green-label: #e9e4d6;
   --ch-press-well: #ece8de;
-  --ch-skel-base: #e2dbca;
-  --ch-skel-sheen: #ece6d8;
+  --ch-skel-base: #d8d0bb;
+  --ch-skel-sheen: #ebe5d6;
   --ch-topbar-paper: #f7f2e6;
   /* Radius (row 35): four steps, 8 / 12 / 16 / 20. xs is the floor for keycaps, badges, checkboxes and the nested rule,
      not a step. Capsules are 999px, circles 50%. Inner corner = outer step less the padding between, floored at xs:
@@ -566,6 +566,10 @@
   --ch-elevation-reading: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(28 25 18 / 0.085),
     var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.08), var(--ch-light-drift-mid) 8px 18px -10px rgb(28 25 18 / 0.16),
     var(--ch-light-drift) 22px 40px -24px rgb(28 25 18 / 0.18);
+  /* The redesign's cards (owner, 5 Nov: "more depth"): the reading surface's light, with a firmer edge and a longer cast. */
+  --ch-elevation-lifted: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(28 25 18 / 0.1),
+    var(--ch-light-drift-near) 1px 3px rgb(28 25 18 / 0.12), var(--ch-light-drift-mid) 12px 24px -10px rgb(28 25 18 / 0.26),
+    var(--ch-light-drift) 30px 52px -22px rgb(28 25 18 / 0.3);
   /* The reading surface's cast shadow alone, for dark and branded surfaces where a white top edge or ink hairline
      would draw a line (the green hero, the green Up next card). */
   --ch-elevation-cast: var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.06),
@@ -620,7 +624,7 @@
   --ch-well-bg-flat: #f6f4ee;
   --ch-separator: rgb(28 27 24 / 0.1);
   --ch-card-ring: rgb(28 27 24 / 0.07);
-  --ch-card-shadow: var(--ch-elevation-reading);
+  --ch-card-shadow: var(--ch-elevation-lifted);
   --ch-gain: #14613d;
   --ch-loss: #9a5700;
   --ch-flag: #b3261e;
@@ -702,8 +706,7 @@
   --ch-on-green-rule: rgb(244 241 232 / 0.14);
   --ch-on-green-mark: rgb(244 241 232 / 0.5);
   --ch-switch-on: #2e8a57;
-  --ch-crh-card-shadow: var(--ch-elevation-reading);
-  --ch-crh-leader-shadow: 0 1px 2px rgb(28 25 18 / 0.05), 0 8px 20px -14px rgb(28 25 18 / 0.12);
+  --ch-crh-card-shadow: var(--ch-elevation-lifted);
   --ch-crh-btn-shadow: 0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(28 25 18 / 0.05);
   --ch-crh-btn-pri-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), 0 6px 14px -8px rgb(11 58 37 / 0.7);
   --ch-crh-sheet-shadow: 0 -10px 40px -10px rgb(0 0 0 / 0.35);
@@ -874,6 +877,15 @@
   --ch-dur-live: 2.8s;
   /* The pending hairline's sweep (LinkPending, shell.css). */
   --ch-dur-sweep: 900ms;
+  /* The mockups' own beats: chart marks settling (360), a story's body (420), a typing dot's cycle and its step, a story. */
+  --ch-dur-marks: 360ms;
+  --ch-dur-word: 320ms;
+  --ch-dur-rm-fade: 120ms;
+  --ch-dur-story-body: 420ms;
+  --ch-dur-typing: 1200ms;
+  --ch-dur-typing-step: 160ms;
+  --ch-dur-story: 5200ms;
+  --ch-ease-typing: cubic-bezier(0.45, 0, 0.55, 1);
   /* Skeletons wait this long before showing, then fade in over base. */
   /* 0: a route load on a phone runs past any delay, so a delay only added a blank frame before the skeleton (F-37). */
   --ch-skel-delay: 0ms;
@@ -922,7 +934,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-well-bg-flat: #141815;
   --ch-separator: rgb(241 236 223 / 0.1);
   --ch-card-ring: rgb(255 255 255 / 0.06);
-  --ch-card-shadow: var(--ch-elevation-reading);
+  --ch-card-shadow: var(--ch-elevation-lifted);
   --ch-gain: #7cc79b;
   --ch-loss: #e7ae57;
   --ch-flag: #f28b7d;
@@ -963,8 +975,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-warn-ink: #f0c77e;
   --ch-warn-icon: #e7ae57;
   --ch-warn-ring: rgb(231 174 87 / 0.24);
-  --ch-crh-card-shadow: var(--ch-elevation-reading);
-  --ch-crh-leader-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 20px -14px rgb(0 0 0 / 0.5);
+  --ch-crh-card-shadow: var(--ch-elevation-lifted);
   --ch-crh-btn-shadow: 0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(0 0 0 / 0.3);
   --ch-crh-well-shadow: inset 0 1px 2px rgb(0 0 0 / 0.3);
   --ch-on-ink-warning: #8a5a0c;
@@ -1130,6 +1141,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-elevation-reading: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(255 255 255 / 0.06),
     var(--ch-light-drift-near) 1px 2px rgb(0 0 0 / 0.35), var(--ch-light-drift-mid) 8px 18px -10px rgb(0 0 0 / 0.5),
     var(--ch-light-drift) 22px 40px -24px rgb(0 0 0 / 0.5);
+  --ch-elevation-lifted: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(255 255 255 / 0.09),
+    var(--ch-light-drift-near) 1px 3px rgb(0 0 0 / 0.45), var(--ch-light-drift-mid) 12px 24px -10px rgb(0 0 0 / 0.65),
+    var(--ch-light-drift) 30px 52px -22px rgb(0 0 0 / 0.65);
   --ch-elevation-cast: var(--ch-light-drift-near) 1px 2px rgb(0 0 0 / 0.3), var(--ch-light-drift-mid) 8px 18px -10px rgb(0 0 0 / 0.5),
     var(--ch-light-drift) 22px 40px -24px rgb(0 0 0 / 0.5);
   --ch-elevation-reading-hover: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(255 255 255 / 0.09),
@@ -1221,8 +1235,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-raised-bg: linear-gradient(180deg, #262d27 0%, #212722 60%, #1d231e 100%);
   --ch-sheet-bg: #1b201c;
   --ch-scrim: rgb(2 6 4 / 0.58);
-  --ch-skel-base: #252c26;
-  --ch-skel-sheen: #2e362f;
+  --ch-skel-base: #2f382f;
+  --ch-skel-sheen: #3c463d;
 }
 
 /* Phone: warm ivory with the layered surfaces in the supplied design boards.
@@ -1299,6 +1313,12 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-dur-shimmer: 0ms;
   --ch-dur-live: 0ms;
   --ch-dur-sweep: 0ms;
+  --ch-dur-marks: 0ms;
+  --ch-dur-word: 0ms;
+  --ch-dur-story-body: 0ms;
+  --ch-dur-typing: 0ms;
+  --ch-dur-typing-step: 0ms;
+  --ch-dur-story: 0ms;
 }
 
 /* The page crossfade's timings (RouteFrame's <ViewTransition>, shell.css). The view-transition pseudo-elements hang off

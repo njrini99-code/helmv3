@@ -107,6 +107,7 @@ first-run and filtered empties are in its contract.
 | 10404 | CH-1304 | `NOTHING_IS_SCHEDULED` | Nothing is scheduled |
 | 10405 | CH-1305 | `A_COACH_WITH_ONE_TEAM_A_COACH` | A coach with one team, a coach who cannot switch (an assistant on several teams), or a player |
 | 10406 | CH-1306 | `A_DASHBOARD_URL_THAT_MATCHES_NOTHING_OR` | A dashboard URL that matches nothing, or an id that no longer exists (a deleted round or player), inside the Clubhouse shell |
+| 10407 | CH-1307 | `MORE_UNREAD_THAN_THE_BELL_LISTS` | More unread than the bell lists |
 
 ## 05 — Validation
 
@@ -145,6 +146,7 @@ one read fails (10614, `EmptyState size="page" tone="danger"`).
 | 10614 | CH-1211 | `A_PAGES_ONE_READ_DOESNT_LOAD_SO` | A page's one read doesn't load, so nothing can show under its head |
 | 10615 | CH-1270 | `DELIVER_NOW_IN_THE_BELL_IS_REFUSED` | Deliver now in the bell is refused (P-10) |
 | 10616 | CH-1271 | `A_PLAYERS_PUSHES_ARE_HELD_FOR_CLASS` | A player's pushes are held for class (P-10) |
+| 10617 | CH-1004 | `OPENING_OR_CLEARING_A_NOTIFICATION_THE_SERVER` | Opening or clearing a notification: the server did not keep the read (it answered `success: false`, or the call failed) |
 
 ## 07 — Network / offline
 

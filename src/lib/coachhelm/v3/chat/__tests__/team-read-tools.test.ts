@@ -33,7 +33,7 @@ const ctx: CoachChatContext = {
 
 describe('team-wide CoachHelm read tools', () => {
   it('get_team_rounds averages each player and ranks by to par', async () => {
-    const round = (player_id: string, to: number, score: number) => ({ id: `${player_id}${score}`, player_id, round_date: '2026-10-10', course_name: 'Oak', round_type: 'qualifier', qualifier_id: 'q1', qualifier_round_number: 1, total_score: score, score_to_par: to, total_putts: 30 });
+    const round = (player_id: string, to: number, score: number) => ({ id: `${player_id}${score}`, player_id, round_date: '2026-10-10', course_name: 'Oak', round_type: 'qualifier', qualifier_id: 'q1', qualifier_round_number: 1, total_score: score, score_to_par: to, total_putts: 30, holes_played: 18, front_nine: 36, back_nine: 36 });
     const env = await getTeamRounds(
       sbWith({ golf_rounds: [{ data: [round('p1', 4, 76), round('p1', 2, 74), round('p2', 1, 73)] }] }),
       ctx,
@@ -46,6 +46,15 @@ describe('team-wide CoachHelm read tools', () => {
     expect(env.coverage).toBe('complete');
   });
 
+  it('get_team_rounds keeps a 9-hole round out of the averages but in the count', async () => {
+    const full = { id: 'f', player_id: 'p1', round_date: '2026-10-10', course_name: 'Oak', round_type: 'qualifier', qualifier_id: 'q1', qualifier_round_number: 1, total_score: 74, score_to_par: 2, total_putts: 30, holes_played: 18, front_nine: 37, back_nine: 37 };
+    const nine = { ...full, id: 'n', total_score: 38, score_to_par: 2, total_putts: 15, holes_played: 9, back_nine: null, front_nine: 38 };
+    const env = await getTeamRounds(sbWith({ golf_rounds: [{ data: [full, nine] }] }), ctx, { since_days: 30 });
+    const d = env.detail as { players: Array<{ rounds: number; rounds_averaged: number; avg_score: number; avg_putts: number }> };
+    expect(d.players[0]).toMatchObject({ rounds: 2, rounds_averaged: 1, avg_score: 74, avg_putts: 30 });
+    expect(env.coverage_note).toMatch(/1 round is 9 holes or incomplete/);
+  });
+
   it('get_team_rounds asks for qualifier rounds under both spellings, so older “qualifying” rounds count', async () => {
     const sb = sbWith({ golf_rounds: [{ data: [] }] }) as unknown as { from: ReturnType<typeof vi.fn> };
     await getTeamRounds(sb as never, ctx, { round_type: 'qualifier', since_days: 30 });
@@ -55,7 +64,7 @@ describe('team-wide CoachHelm read tools', () => {
   });
 
   it('get_team_rounds counts an older “qualifying” round as a qualifier round and reports it as one', async () => {
-    const row = (id: string, round_type: string) => ({ id, player_id: 'p1', round_date: '2026-10-10', course_name: 'Oak', round_type, qualifier_id: 'q1', qualifier_round_number: 1, total_score: 74, score_to_par: 2, total_putts: 30 });
+    const row = (id: string, round_type: string) => ({ id, player_id: 'p1', round_date: '2026-10-10', course_name: 'Oak', round_type, qualifier_id: 'q1', qualifier_round_number: 1, total_score: 74, score_to_par: 2, total_putts: 30, holes_played: 18, front_nine: 36, back_nine: 36 });
     const env = await getTeamRounds(
       sbWith({ golf_rounds: [{ data: [row('r1', 'qualifying'), row('r2', 'qualifier')] }] }),
       ctx,
@@ -136,7 +145,7 @@ describe('team-wide CoachHelm read tools', () => {
   });
 
   it('an answer written from these envelopes passes the numeric audit', async () => {
-    const round = (player_id: string, to: number, score: number) => ({ id: `${player_id}${score}`, player_id, round_date: '2026-10-10', course_name: 'Oak', round_type: 'qualifier', qualifier_id: 'q1', qualifier_round_number: 1, total_score: score, score_to_par: to, total_putts: 30 });
+    const round = (player_id: string, to: number, score: number) => ({ id: `${player_id}${score}`, player_id, round_date: '2026-10-10', course_name: 'Oak', round_type: 'qualifier', qualifier_id: 'q1', qualifier_round_number: 1, total_score: score, score_to_par: to, total_putts: 30, holes_played: 18, front_nine: 36, back_nine: 36 });
     const env = await getTeamRounds(sbWith({ golf_rounds: [{ data: [round('p1', 4, 76), round('p1', 2, 74), round('p2', 1, 73)] }] }), ctx, { round_type: 'qualifier', since_days: 30 });
     const verdict = computeTurnVerdict({
       streamComplete: true,
@@ -151,7 +160,7 @@ describe('team-wide CoachHelm read tools', () => {
   });
 
   it('a made-up figure about the same players is still rejected', async () => {
-    const round = (player_id: string, to: number, score: number) => ({ id: `${player_id}${score}`, player_id, round_date: '2026-10-10', course_name: 'Oak', round_type: 'qualifier', qualifier_id: 'q1', qualifier_round_number: 1, total_score: score, score_to_par: to, total_putts: 30 });
+    const round = (player_id: string, to: number, score: number) => ({ id: `${player_id}${score}`, player_id, round_date: '2026-10-10', course_name: 'Oak', round_type: 'qualifier', qualifier_id: 'q1', qualifier_round_number: 1, total_score: score, score_to_par: to, total_putts: 30, holes_played: 18, front_nine: 36, back_nine: 36 });
     const env = await getTeamRounds(sbWith({ golf_rounds: [{ data: [round('p2', 1, 73)] }] }), ctx, { since_days: 30 });
     const verdict = computeTurnVerdict({
       streamComplete: true,
@@ -169,7 +178,7 @@ describe('team-wide CoachHelm read tools', () => {
 describe('a capped team read is never called complete (2026-10-28)', () => {
   const qualifier = { id: 'q1', name: 'Fall Qualifier', status: 'completed', start_date: '2026-09-20', end_date: '2026-09-21', num_rounds: 2, course_name: 'Oak', spots_available: 5, selection_state: 'set' };
   const qRound = (i: number) => ({ qualifier_id: 'q1', player_id: i % 2 ? 'p1' : 'p2', total_score: 72 + (i % 5), score_to_par: i % 5, qualifier_round_number: 1 });
-  const teamRound = (i: number) => ({ id: `r${i}`, player_id: i % 2 ? 'p1' : 'p2', round_date: '2026-10-10', course_name: 'Oak', round_type: 'practice', qualifier_id: null, qualifier_round_number: null, total_score: 72 + (i % 5), score_to_par: i % 5, total_putts: 30 });
+  const teamRound = (i: number) => ({ id: `r${i}`, player_id: i % 2 ? 'p1' : 'p2', round_date: '2026-10-10', course_name: 'Oak', round_type: 'practice', qualifier_id: null, qualifier_round_number: null, total_score: 72 + (i % 5), score_to_par: i % 5, total_putts: 30, holes_played: 18, front_nine: 36, back_nine: 36 });
 
   it('get_qualifiers at its 900-round cap is partial and says why', async () => {
     const env = await getQualifiers(

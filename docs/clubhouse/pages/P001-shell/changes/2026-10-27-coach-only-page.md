@@ -15,12 +15,15 @@ Held items:     none
 
 ### Changed
 
-- A player who opened a page rebuilt for coaches only got "Recruiting hasn't been
+- A player who opened a page rebuilt for coaches only got "Recruiting hasn't
+  been
   rebuilt yet. It's on the list for the new GolfHelm design." The Recruiting
   page's own redirect home never ran, because the frame does not render a page
   that is not rebuilt for the role. What's new is an alias, so its page renders
-  hidden, but for a player it draws a Fairway notice rather than redirecting, and
-  after the 2 s wait the same not-rebuilt page showed. Now, when the page is rebuilt
+  hidden, but for a player it draws a Fairway notice rather than redirecting,
+  and
+  after the 2 s wait the same not-rebuilt page showed. Now, when the page is
+  rebuilt
   for coaches, a player sees "Only coaches use Recruiting" (or What's new), the
   line "Your rounds, stats and team are on Home." and Back to Home, under a lock
   (`shell/NotRebuilt.tsx` `coachOnly`, `shell/ClubhouseFrame.tsx`).

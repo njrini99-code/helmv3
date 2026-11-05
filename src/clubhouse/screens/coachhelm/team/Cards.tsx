@@ -193,7 +193,7 @@ export function RecordCard({ part, desk = false }: { part: ChTeamPart<ChTrackRec
             {g.bar ? (
               <span className="t">
                 <i className={g.bar.target == null ? 'na' : ''} style={{ transform: `scaleX(${g.bar.of ? g.bar.held / g.bar.of : 0})` }} />
-                {g.bar.target != null && <u style={{ left: `${g.bar.target}%` }} title="target" />}
+                {g.bar.target != null && <u style={{ left: `${g.bar.target * 10}%` }} title="target" />}
               </span>
             ) : (
               <span className="t is-none" />

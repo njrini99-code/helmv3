@@ -169,6 +169,7 @@ function Later({ crh = false, data, rounds, now, today, quiet, onOpenRound }: Da
       </>
     );
   }
+  if (!data.week.error && !phone.today.length && quiet) return null;
   if (data.week.error || !phone.today.length) return <Today card={crh} list={phone.today} now={now} failed={data.week.error} quiet={quiet} />;
   const phase = dayPhase(phone.next, phone.today, rounds, now, today);
   const card = phase?.kind === 'event' ? phase.e : null;

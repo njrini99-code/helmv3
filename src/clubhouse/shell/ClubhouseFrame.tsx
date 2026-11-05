@@ -25,6 +25,7 @@ import { CommandLayer } from './command/CommandLayer';
 import { SectionStrip } from './SectionStrip';
 import { SectionSwitchProvider, useSectionSwitch } from './section-switch';
 import { RouteFrame } from './RouteFrame';
+import { chNavPath } from '../lib/nav-motion';
 import { PullToRefresh } from './PullToRefresh';
 import { teamSwitchFor } from './team-switch';
 import { AliasWait, NotRebuilt } from './NotRebuilt';
@@ -185,7 +186,7 @@ export function ClubhouseFrame({
                           <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} pushed={pushed} />
                           <OfflineBanner />
                           {/* A new team is a new page: the route remounts, so nothing the old team's screen held (a search, an open panel, a live feed) carries over. */}
-                          <RouteFrame routeKey={`${pathname}\u0000${userData.teamId ?? ''}${relink ? `\u0000${relink}` : ''}`} scrollKey={`${pathname}\u0000${userData.teamId ?? ''}\u0000${screenParam(search)}`}>
+                          <RouteFrame routeKey={`${chNavPath(pathname, search)}\u0000${userData.teamId ?? ''}${relink ? `\u0000${relink}` : ''}`} scrollKey={`${pathname}\u0000${userData.teamId ?? ''}\u0000${screenParam(search)}`}>
                             {rebuilt || !known ? (
                               children
                             ) : (

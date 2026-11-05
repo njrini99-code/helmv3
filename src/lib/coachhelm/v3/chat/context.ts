@@ -62,6 +62,8 @@ export class CoachContextError extends Error {
   constructor(
     message: string,
     readonly status: 401 | 403 | 404,
+    /** Set only where the session has no coach row at all: the one denial the stream route may answer with the player's Ask. */
+    readonly reason?: 'not_a_coach',
   ) {
     super(message);
     this.name = 'CoachContextError';
@@ -81,12 +83,14 @@ export async function resolveCoachChatContext(sb: Sb): Promise<CoachChatContext>
   } = await sb.auth.getUser();
   if (!user) throw new CoachContextError('Not signed in', 401);
 
-  const { data: coach } = await sb
+  const { data: coach, error: coachError } = await sb
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
     .maybeSingle();
-  if (!coach) throw new CoachContextError('This surface is for coaches', 403);
+  // A failed read says nothing about who this is, so it is never "not a coach".
+  if (coachError) throw new Error('Could not read the coach context');
+  if (!coach) throw new CoachContextError('This surface is for coaches', 403, 'not_a_coach');
 
   const teamId = await resolveCoachTeamIdWithCookie(sb, coach.organization_id, coach.id);
   if (!teamId) throw new CoachContextError('No active team for this coach', 404);

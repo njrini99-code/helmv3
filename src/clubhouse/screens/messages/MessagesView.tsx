@@ -194,6 +194,8 @@ export interface ChAttachmentRecovery {
 
 export interface ChMessagesApi {
   /** golf_messages_redesign_v1, read on the server: the screens branch on it, and the root carries `data-ch-ms-v2`. */
+  /** Set once by a handoff from Ask: the phone's back key returns there, the one time (W-MSG-16). */
+  leaveToAsk?: () => void;
   redesign?: boolean;
   /** The design fixture's starting filter (`view=unread`). */
   designFilter?: ChConvFilter;
@@ -737,16 +739,6 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
             compact
             icon={MessageSquare}
             title="No conversations yet"
-            body={
-              api.viewer.role === "coach"
-                ? "Start one with a player, or create a team group."
-                : "Message a coach or a teammate to start."
-            }
-            action={
-              <Button size="sm" leftIcon={SquarePen} onClick={onNew}>
-                New message
-              </Button>
-            }
           />
         ) : (
           <>
@@ -962,19 +954,56 @@ export function Attachments({
   const [files, setFiles] = useState<ChAttachment[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // Signed URLs expire (1 h). A thread left open longer re-signs them: on a timer, and on coming back to the tab.
+  const [refresh, setRefresh] = useState(0);
+  const loadedAt = useRef(0);
+  const haveFiles = useRef(false);
   useEffect(() => {
     let live = true;
-    setFailed(false);
-    load(id)
-      .then((a) => live && (a ? setFiles(a) : setFailed(true)))
-      .catch((err) => {
-        chReport(err, { surface: "messages.attachments", severity: "low" });
-        if (live) setFailed(true);
-      });
+    let retry: number | undefined;
+    const silent = haveFiles.current;
+    if (!silent) setFailed(false);
+    // The message row can reach a recipient before its attachment rows exist (separate inserts), so an
+    // empty list for a message flagged as having files is asked again once before it is believed.
+    const run = (again: boolean) =>
+      load(id)
+        .then((a) => {
+          if (!live) return;
+          if (a && a.length === 0 && again) {
+            retry = window.setTimeout(() => run(false), 1500);
+            return;
+          }
+          if (a) {
+            loadedAt.current = Date.now();
+            haveFiles.current = true;
+            setFiles(a);
+          } else if (!silent) setFailed(true);
+        })
+        .catch((err) => {
+          chReport(err, { surface: "messages.attachments", severity: "low" });
+          if (live && !silent) setFailed(true);
+        });
+    void run(true);
     return () => {
       live = false;
+      if (retry) window.clearTimeout(retry);
     };
-  }, [load, id, attempt]);
+  }, [load, id, attempt, refresh]);
+  useEffect(() => {
+    const AGE = 45 * 60_000;
+    const stale = () => haveFiles.current && Date.now() - loadedAt.current > AGE;
+    const timer = window.setInterval(() => {
+      if (stale()) setRefresh((n) => n + 1);
+    }, 5 * 60_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && stale()) setRefresh((n) => n + 1);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
   if (failed) {
     return (
       <button
@@ -1653,10 +1682,13 @@ export function AttachChips({
   files,
   onRemove,
   disabled = false,
+  redesign = false,
 }: {
   files: File[];
   onRemove: (index: number) => void;
   disabled?: boolean;
+  /** Behind the Messages flag a new chip rises (MSG-FILE-02); flag off, it just appears, as main. */
+  redesign?: boolean;
 }) {
   const reduced = useChReducedMotion();
   const rise = useChipRise(reduced);
@@ -1664,7 +1696,7 @@ export function AttachChips({
   return (
     <div className="ch-ms-to">
       {files.map((f, i) => (
-        <span key={`${f.name}${i}`} className="ch-ms-to__c" title={f.name} ref={rise}>
+        <span key={`${f.name}${i}`} className="ch-ms-to__c" title={f.name} ref={redesign ? rise : undefined}>
           <Icon icon={FileText} size={13} />
           <span className="ch-ms-to__n">{f.name}</span>
           <Tooltip>
@@ -2073,7 +2105,7 @@ export function Composer({
         </div>
       )}
       {!api.redesign && editing && (
-        <div className="ch-ms-comp__reply is-edit" ref={chipRise}>
+        <div className="ch-ms-comp__reply is-edit">
           <Icon icon={Pencil} size={18} />
           <span className="ch-msv-chip__b">
             <b>Edit message</b>
@@ -2092,6 +2124,7 @@ export function Composer({
       {missingFiles.length > 0 && <div role="status" className="ch-ms-to" aria-label="Attachments to choose again">Choose these files again: {missingFiles.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c">{name}<Tooltip><button type="button" aria-label={`Dismiss ${name}`} onClick={() => setMissingFiles((now) => now.filter((_, j) => j !== i))}><Icon icon={X} size={12} /></button></Tooltip></span>)}</div>}
       {conv.group && api.classDay && <GroupClassLine cls={api.classDay} conv={conv} personOf={(id) => personOf(api, id)} />}
       <AttachChips
+        redesign={!!api.redesign}
         disabled={unconfirmed || checking || checkFailed || unavailable}
         files={files}
         onRemove={(i) => setFiles((s) => s.filter((_, j) => j !== i))}

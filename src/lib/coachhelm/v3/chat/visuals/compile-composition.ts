@@ -71,7 +71,7 @@ function resolveV2(block: Exclude<CompositionBlockSpecV2, CompositionBlockSpec>,
     return { ok: true, block: { type: 'season_compare', metric: x.metric, this_season: x.this_season, last_season: x.last_season, method: x.method }, drawn };
   }
   if (d.kind !== 'hole_strip') return none;
-  const holes = (d.holes as Array<{ hole_number: number; par: number; score?: number | null; team_to_par?: number | null }>).map((h) => ({ hole_number: h.hole_number, to_par: h.team_to_par ?? (h.score != null ? h.score - h.par : null) }));
+  const holes = (d.holes as Array<{ hole_number: number; par: number; score?: number | null; team?: { to_par: number | null } }>).map((h) => ({ hole_number: h.hole_number, to_par: h.team?.to_par ?? (h.score != null ? h.score - h.par : null) }));
   return { ok: true, block: { type: 'hole_strip', holes }, drawn };
 }
 

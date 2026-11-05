@@ -10,7 +10,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 type Filter = [string, unknown];
-type Call = { table: string; op: 'select' | 'update'; payload?: unknown; options?: unknown; filters: Filter[] };
+type Call = { table: string; op: 'select' | 'update' | 'delete'; payload?: unknown; options?: unknown; filters: Filter[] };
 
 const state = vi.hoisted(() => ({
   user: { id: 'user-1' } as { id: string } | null,
@@ -19,6 +19,7 @@ const state = vi.hoisted(() => ({
   membership: { id: 'm-1' } as { id: string } | null,
   readError: null as { message: string } | null,
   update: { error: null as { message: string } | null, count: 1 as number | null },
+  clear: { error: null as { code?: string; message: string } | null },
   calls: [] as Call[],
 }));
 
@@ -48,6 +49,11 @@ vi.mock('@/lib/supabase/server', () => ({
         state.calls.push(call);
         return chain(call, () => ({ data: null, error: state.update.error, count: state.update.count }));
       },
+      delete: () => {
+        const call: Call = { table, op: 'delete', filters: [] };
+        state.calls.push(call);
+        return chain(call, () => ({ error: state.clear.error }));
+      },
     }),
   })),
 }));
@@ -68,6 +74,7 @@ beforeEach(() => {
   state.membership = { id: 'm-1' };
   state.readError = null;
   state.update = { error: null, count: 1 };
+  state.clear = { error: null };
   state.calls = [];
   cache.revalidatePath.mockClear();
   cache.updateTag.mockClear();
@@ -140,6 +147,31 @@ describe('setPlayerAvailability', () => {
     });
     expect(logger.logServerError).toHaveBeenCalledWith(expect.stringContaining('read failed: connection reset'), expect.anything());
     expect(updates()).toHaveLength(0);
+  });
+
+  it('marking a player available clears their coach-only reason, on this team, after the availability saved', async () => {
+    expect(await setPlayerAvailability({ playerId: 'p-1', availability: 'available' })).toEqual({ success: true });
+    const [clear] = state.calls.filter((c) => c.op === 'delete');
+    expect(clear!.table).toBe('golf_player_availability_coach_notes');
+    expect(clear!.filters).toEqual([
+      ['team_id', 'team-1'],
+      ['player_id', 'p-1'],
+    ]);
+    expect(state.calls.indexOf(clear!)).toBeGreaterThan(state.calls.findIndex((c) => c.op === 'update'));
+  });
+
+  it('injured or away keeps the reason: nothing is cleared', async () => {
+    for (const availability of ['injured', 'away'] as const) await setPlayerAvailability({ playerId: 'p-1', availability });
+    expect(state.calls.filter((c) => c.op === 'delete')).toHaveLength(0);
+  });
+
+  it('a reason that cannot be cleared (table missing, or another failure) never fails the availability save; only the second is logged', async () => {
+    state.clear = { error: { code: 'PGRST205', message: 'missing' } };
+    expect(await setPlayerAvailability({ playerId: 'p-1', availability: 'available' })).toEqual({ success: true });
+    expect(logger.logServerError).not.toHaveBeenCalled();
+    state.clear = { error: { code: '57014', message: 'timeout' } };
+    expect(await setPlayerAvailability({ playerId: 'p-1', availability: 'available' })).toEqual({ success: true });
+    expect(logger.logServerError).toHaveBeenCalledWith(expect.stringContaining('reason clear failed: timeout'), expect.anything());
   });
 
   it('a write that changes no row (RLS hid it) fails, and refreshes nothing', async () => {

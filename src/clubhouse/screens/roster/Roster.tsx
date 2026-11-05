@@ -364,13 +364,13 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
   const setAvailability = useAction(
     'roster.setAvailability',
     async (p: ChRosterPlayer, to: ChAvailability) => {
-      const before = { availability: p.availability, availabilityUpdated: p.availabilityUpdated, attention: p.attention };
+      const before = { availability: p.availability, availabilityUpdated: p.availabilityUpdated, attention: p.attention, availabilityCoachNote: p.availabilityCoachNote };
       const stamp = new Date().toISOString();
       setPlayers((ps) =>
         ps.map((x) =>
           x.id === p.id
-            ? // Injured or away drops a Needs a look reason: the coach already knows why.
-              { ...x, availability: to, availabilityUpdated: stamp, attention: to === 'available' ? x.attention : null }
+            ? // Injured or away drops a Needs a look reason (the coach already knows why); available brings back what the server would show.
+              { ...x, availability: to, availabilityUpdated: stamp, attention: to === 'available' ? (x.attentionIfAvailable ?? x.attention) : null, availabilityCoachNote: to === 'available' ? null : x.availabilityCoachNote }
             : x,
         ),
       );
@@ -978,7 +978,7 @@ function RosterList({
                 </span>
                 <span role="cell">
                   {crh ? (
-                    p.trend.length >= 3 ? <FormBars data={p.trend} mean={mean} /> : <FormStubs />
+                    p.trend.length >= 3 ? <FormBars data={p.trend} mean={mean} /> : p.trend.length > 0 ? <FormStubs /> : <span className="ch-num">—</span>
                   ) : (
                     <FormLine data={p.trend} width={120} height={30} earlyBelow={3} label={`${p.name} form`} />
                   )}

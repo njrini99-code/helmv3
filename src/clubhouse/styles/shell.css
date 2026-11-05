@@ -524,20 +524,13 @@
 .ch-empty {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  justify-items: start;
+  justify-items: center;
   row-gap: 4px;
-  padding: 16px 0 8px;
-  text-align: left;
-}
-.ch-empty--icon {
-  grid-template-columns: 16px minmax(0, 1fr);
-  column-gap: 12px;
-}
-.ch-empty > :not(.ch-empty__icon) {
-  grid-column: -2 / -1;
+  padding: 24px 12px;
+  text-align: center;
 }
 .ch-empty--compact {
-  padding: 12px 0 6px;
+  padding: 16px 12px;
 }
 
 /* The v2 page empty state (gh-polish.css .gh-empty): the whole page body is
@@ -552,6 +545,15 @@
   place-items: center;
   min-height: calc(100vh - 140px);
   padding: 56px 24px;
+}
+/* A screen's own empty is the card that would have held its data, not a block floating on the page. A dead end (not
+   found, not rebuilt) and the route error keep the whole canvas. */
+.ch-empty-page:not(.ch-empty-page--danger, .ch-notyet *) {
+  min-height: 0;
+  padding: 40px 24px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
 }
 .ch-empty-page__in {
   display: flex;
@@ -718,11 +720,9 @@
 }
 .ch-empty__icon {
   display: grid;
-  grid-row: 1;
-  grid-column: 1;
   place-items: center;
   height: 16px;
-  margin-top: 2px;
+  margin-bottom: 4px;
   color: var(--ch-ledger-ink);
 }
 .ch-empty__title {
@@ -743,6 +743,7 @@
 .ch-empty__action {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
   margin-top: 12px;
 }
@@ -2078,7 +2079,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--ch-accent, currentColor);
+  background: var(--ch-green-600, currentColor);
   transform-origin: left center;
   animation: ch-lp-sweep var(--ch-dur-sweep) var(--ch-ease-io) var(--ch-dur-press) infinite;
 }
@@ -4395,4 +4396,18 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   .ch-root[data-ch-crh='on'][data-phone-hero]:has(.ch-hm[data-ch-crh='on'], [data-ch-hero-flat]) .ch-topbar {
     background: var(--ch-frame);
   }
+}
+
+/* A cold entry on any route but Home (shell/BootSkeleton). */
+.ch-boot-page {
+  display: grid;
+  gap: 12px;
+  padding: 24px var(--ch-page-x-phone, 16px);
+}
+.ch-boot-page__card {
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
 }

@@ -248,6 +248,8 @@ export interface ChTourLineupState {
 
 export interface ChTourEvent {
   id: string;
+  /** Every round's calendar entry is cancelled: off Up next and Coming up, kept in the season's list. */
+  cancelled?: boolean;
   seasonId: string;
   name: string;
   /** "Oakmont", for tight places. */
@@ -277,6 +279,8 @@ export interface ChTourEvent {
   note: string | null;
   /** A calendar tournament event with no tournament row yet: shown as "Set up". */
   legacy: boolean;
+  /** P-5 4.11: when the tournament row was made (the season home's "Set up today"). */
+  createdAt?: string | null;
 }
 
 // ── Season home (5.1) ──────────────────────────────────────────────────────────────────────────────────────────
@@ -381,7 +385,9 @@ export interface ChTourHomeData {
   heatmap: ChTourHeatmap;
   /** The link inbox teaser. */
   links: { candidates: number; high: number } | null;
-  errors: Partial<Record<'events' | 'path' | 'ladder' | 'heatmap' | 'links', true>>;
+  errors: Partial<Record<'events' | 'path' | 'ladder' | 'heatmap' | 'links' | 'untracked', true>>;
+  /** P-5 4.11.3: this season's tournament events on the calendar that aren't tracked yet, grouped (coach only). */
+  untracked?: import('./setup-groups').ChTourSetupGroup[];
 }
 
 // ── Event desk (5.4, 5.6, 5.7, 5.13) ──────────────────────────────────────────────────────────────────────────
@@ -495,6 +501,23 @@ export interface ChTourDeskData {
   /** The previous edition at the same course, for the desk's Compare (5.4). */
   previous: { eventId: string; name: string } | null;
   errors: Partial<Record<'rounds' | 'holes' | 'field' | 'review' | 'travel', true>>;
+  /**
+   * P-5 4.11.5: what the desk's Cancel tournament, Restore tournament and Stop tracking need. Null when it couldn't be
+   * read: the menu then offers nothing rather than a write that would be refused.
+   */
+  track?: ChTourTrack | null;
+}
+
+export interface ChTourTrack {
+  /** The tournament's optimistic-lock version. */
+  version: number;
+  /** Every round's calendar entry is cancelled. */
+  cancelled: boolean;
+  official: boolean;
+  /** The first round with a score entered, or null: a scored tournament stays tracked. */
+  scoredRound: number | null;
+  /** How many calendar entries (rounds) it has. */
+  entries: number;
 }
 
 // ── Review, history, link inbox (5.9, 5.10, 5.12) ──────────────────────────────────────────────────────────────
@@ -924,6 +947,8 @@ export interface ChTourViewBase {
 
 export interface TournamentsHomeProps extends ChTourViewBase {
   data: ChTourHomeData;
+  /** P-5 8.7: follow the calendar's tournament events (realtime). The route turns it on; tests and the preview don't. */
+  live?: boolean;
 }
 export interface EventDeskProps extends ChTourViewBase {
   data: ChTourDeskData;

@@ -293,7 +293,7 @@ const OFF_TRACK: Record<string, number> = {
   // 4: the Ledger's h2/h3 -0.022em override is now a zero-weight default on the role tracking (visual pass 2026-10-28).
   'styles/shell.css': 4,
   'styles/stats.css': 8,
-  'styles/ui.css': 4,
+  'styles/ui.css': 3,
 };
 
 /**

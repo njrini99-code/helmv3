@@ -159,7 +159,8 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
         {note && (
           <div className="ch-tfx-note ch-tfx-note--error" role="alert" tabIndex={-1} data-ch-code={note.code} id="ch-tour-form-error">
             <b>Couldn’t set up the tournament. Nothing was saved.</b>
-            <span>{note.text}</span>
+            {/* The generic refusal already is this sentence: say it once (audit 2026-10-31). */}
+            {note.text !== 'Couldn’t set up the tournament. Nothing was saved.' && <span>{note.text}</span>}
           </div>
         )}
         <div className="ch-tour-lu-form__name">

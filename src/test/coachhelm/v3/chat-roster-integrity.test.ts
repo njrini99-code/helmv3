@@ -17,7 +17,7 @@ function sbWith(responses: Record<string, { data: unknown; error?: unknown }>) {
   const builder = (table: string) => {
     const result = responses[table] ?? { data: [], error: null };
     const chain: Record<string, unknown> = {};
-    for (const method of ['select', 'eq', 'in', 'order', 'gte', 'lte', 'neq', 'limit']) {
+    for (const method of ['select', 'eq', 'in', 'order', 'gte', 'lte', 'neq', 'limit', 'range']) {
       chain[method] = vi.fn(() => chain);
     }
     chain.maybeSingle = vi.fn(async () => result);

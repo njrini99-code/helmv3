@@ -10,6 +10,7 @@ const XFADE_MS = 260;
  * Marks grow once, the first time their card is a quarter in view, and never again: not on scroll back, a window change, a refresh or a
  * Try again (07 M-STATS-12 to 15). The class stays on the element, so a re-render keeps it; `at rest` draws everything seen straight away
  * (Reduce Motion, Animations off, a landing after a retry).
+ * This can run before a card's Suspense boundary hydrates, so each card carries suppressHydrationWarning for these classes.
  */
 export function useGrowOnce(root: RefObject<HTMLElement | null>, atRest: boolean, deps: readonly unknown[] = []): void {
   useEffect(() => {

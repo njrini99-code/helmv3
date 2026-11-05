@@ -6,6 +6,8 @@ import { askTables } from '@/lib/coachhelm/v3/chat/ask-db';
 import { logServerError } from '@/lib/server-error-logger';
 import { isAskV2Enabled } from '@/lib/coachhelm/v3/chat/ask-flag';
 import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
+import { quickChatWeekBounds, quickChatWeekDays, quickChatWeekOf, type QuickChatWeek } from '@/lib/coachhelm/v3/chat/quick-chat-week';
+import { getValidTimezone } from '@/lib/calendar/timezone';
 
 const FACT_MAX = 280;
 
@@ -46,10 +48,6 @@ async function setChatToneImpl(conversationId: string, tone: 'straight' | 'detai
   return error ? { success: false, error: 'The tone wasn’t saved.' } : { success: true };
 }
 
-export interface QuickChatWeek {
-  days: Array<{ date: string; hasEvent: boolean }>;
-  items: Array<{ title: string; start: string; end: string | null }>;
-}
 
 /** The week around a draft event and that day's blocks, for the quick chat's card. RLS holds it to the coach's team. */
 async function readQuickChatWeekImpl(date: string): Promise<QuickChatWeek | null> {
@@ -58,22 +56,14 @@ async function readQuickChatWeekImpl(date: string): Promise<QuickChatWeek | null
   const ctx = await resolveCoachChatContext(who.sb).catch(() => null);
   if (!ctx) return null;
   const teamId = ctx.team_id;
-  const at = new Date(`${date}T12:00:00Z`);
-  const monday = new Date(at);
-  monday.setUTCDate(at.getUTCDate() - ((at.getUTCDay() + 6) % 7));
-  const iso = (d: Date) => d.toISOString().slice(0, 10);
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday);
-    d.setUTCDate(monday.getUTCDate() + i);
-    return iso(d);
-  });
-  const { data, error } = await who.sb.from('golf_events').select('title, start_time, end_time').eq('team_id', teamId).gte('start_time', `${days[0]}T00:00:00Z`).lte('start_time', `${days[6]}T23:59:59Z`).order('start_time');
+  // The team's calendar, as Calendar and Home read it; a failed read falls back to the product's default zone, never UTC (`loadTeamZone`).
+  const zone = await who.sb.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle();
+  if (zone.error) await logServerError(`quick chat week timezone failed: ${zone.error.message}`, { action: 'coachhelm.ask.quickChatWeek' });
+  const tz = getValidTimezone(zone.data?.timezone ?? null);
+  const { from, to } = quickChatWeekBounds(quickChatWeekDays(date));
+  const { data, error } = await who.sb.from('golf_events').select('title, start_time, end_time').eq('team_id', teamId).gte('start_time', from).lte('start_time', to).order('start_time');
   if (error) return null;
-  const rows = data ?? [];
-  return {
-    days: days.map((d) => ({ date: d, hasEvent: rows.some((r) => r.start_time.startsWith(d)) })),
-    items: rows.filter((r) => r.start_time.startsWith(date)).map((r) => ({ title: r.title, start: r.start_time, end: r.end_time })),
-  };
+  return quickChatWeekOf(date, data ?? [], tz);
 }
 
 const observedSaveCoachFact = withAdminObserved('saveCoachFact', { sport: 'golf', feature: 'coachhelm_ai_engine' }, saveCoachFactImpl);

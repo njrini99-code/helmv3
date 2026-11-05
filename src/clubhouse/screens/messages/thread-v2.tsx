@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowDown } from 'lucide-react';
-import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { CH_FADE_MS, chSpringCurve, CH_EASE, chSpringAt, CH_DUR, CH_SPRING_SETTLE_MS } from '../../lib/motion';
 import { Icon } from '../../ui/Icon';
 
@@ -354,9 +354,12 @@ export function useSendKeyPop(ready: boolean, reduced: boolean): { ref: RefObjec
 
 /** A chip rises 12 on `smooth` when it arrives; Reduce Motion, it appears (MSG-FILE-02, MSG-REPLY-02). */
 export function useChipRise(reduced: boolean): (el: HTMLElement | null) => void {
-  return (el) => {
-    if (!el || reduced || !el.animate) return;
+  // One callback for the life of the composer: a new ref each render made React call it on every keystroke, and every chip rose again.
+  const still = useRef(reduced);
+  still.current = reduced;
+  return useCallback((el) => {
+    if (!el || still.current || !el.animate) return;
     const curve = chSpringCurve('smooth');
     el.animate([{ transform: 'translateY(12px)' }, { transform: 'none' }], { duration: curve.ms, easing: curve.linear });
-  };
+  }, []);
 }

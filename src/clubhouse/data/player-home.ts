@@ -6,7 +6,7 @@ import { homeClock, latestWithHoles, loadHomeWeek, type ChHomeClock, type ChHome
 import type { MarkEntries } from '../lib/marks-cookie';
 import type { ChHomeChange } from '../screens/home/change-rows';
 import { loadHomeChanges, withChange, withWas } from './home-changes';
-import { isFull18, lastTenFloor, loadSeasonRounds, mean, seasonStartDate, summarizePlayer, type ChRound } from './season';
+import { countsForScoring, isFull18, lastTenFloor, loadSeasonRounds, mean, seasonStartDate, summarizePlayer, type ChRound } from './season';
 import { holeRounds } from './round-scope';
 import { legRows, type ChPlayerLeg } from './leg-rows';
 import { replyClosedAt } from '../screens/calendar/model';
@@ -117,10 +117,12 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   const roundsRead = loadSeasonRounds(supabase, [input.playerId], { surface: 'home', since: lastTenFloor() });
   const playerRead = Promise.resolve(supabase.from('golf_players').select('handicap_index, handicap').eq('id', input.playerId).maybeSingle());
   const teamRead = Promise.resolve(supabase.from('golf_teams').select('gender, created_by, organization_id').eq('id', input.teamId).maybeSingle());
-  const fullOf = (res: Awaited<typeof roundsRead>) => (res.error ? [] : res.rounds.filter(isFull18));
+  // Behind the Stats flag practice rounds stay out of the scores, the legs, the brief and strokes gained, so Home's figures equal My stats' (DATA-CHECKS, SHARED-11).
+  const fullOf = (res: Awaited<typeof roundsRead>) => (res.error ? [] : (input.shs ? res.rounds.filter(countsForScoring) : res.rounds).filter(isFull18));
   // The leg figures are hole-level: the newest rounds with their holes (a round posted as a total only has none, Q-123). The brief and the scoring chart are scores and count every round.
   const windowOf = (res: Awaited<typeof roundsRead>) => holeRounds(fullOf(res)).slice(0, LEG_WINDOW);
-  const latestRead = roundsRead.then((res) => latestWithHoles(supabase, fullOf(res), () => input.firstName));
+  // Latest rounds lists every round, practice included.
+  const latestRead = roundsRead.then((res) => latestWithHoles(supabase, res.error ? [] : res.rounds.filter(isFull18), () => input.firstName));
   const cacheRead = roundsRead.then((res) => {
     const window = windowOf(res);
     return window.length ? loadRoundCache(supabase, window.map((r) => r.id), 'home') : { byRound: new Map<string, ChRoundCache>(), error: false };
@@ -133,7 +135,8 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     teamId: input.teamId,
     tz: clockRead.then((c) => c.tz),
     now,
-    visibleMeetings: weekRead.then((w) => new Set([w.next, ...w.todayEvents].filter((e): e is ChHomeEvent => !!e && e.type === 'meeting').map((e) => e.id))),
+    // Every meeting the player is invited to in the loaded window, not only the next one or today's.
+    visibleMeetings: weekRead.then((w) => w.meetingIds),
   });
   const [{ greeting, todayLabel, tz, day }, wk, roundsRes, playerRes, teamRes, latest, cache, bench, coachUserId, asks, changes] = await Promise.all([
     clockRead,

@@ -6,13 +6,7 @@ import { refusalCopy, type RefusalKey, type TournamentRefusal } from '@/lib/golf
 
 export { refusalCopy, refusalOf, type TournamentRefusal } from '@/lib/golf/tournaments/refusals';
 
-/**
- * Refusals only the tournaments page can meet (stopping tracking of an official tournament) take their number on that
- * page's catalog (P016; P-5 reserved a number there) once 4.33's page lands; the calendar never calls those writes.
- */
-type CalendarKey = Exclude<RefusalKey, 'tournament_official'>;
-
-export const REFUSAL_CODE: Record<CalendarKey, string> = {
+export const REFUSAL_CODE: Record<RefusalKey, string> = {
   stale: 'CH-6241',
   already_tracked: 'CH-6048',
   event_is_series: 'CH-6148',
@@ -24,6 +18,8 @@ export const REFUSAL_CODE: Record<CalendarKey, string> = {
   bad_name: 'CH-6147',
   round_started: 'CH-6050',
   round_has_scores: 'CH-6051',
+  // Only the desk's Stop tracking meets it: the tournaments page's number.
+  tournament_official: 'CH-16053',
   qualifier_not_found: 'CH-6052',
   qualifier_linked: 'CH-6057',
   trip_not_found: 'CH-6053',
@@ -38,6 +34,5 @@ export const REFUSAL_CODE: Record<CalendarKey, string> = {
 /** A refusal's words and catalog number, for an inline notice or a toast. */
 export function refusalNotice(r: TournamentRefusal, ctx: Parameters<typeof refusalCopy>[1] = {}): { code: string; text: string } {
   const c = refusalCopy(r, ctx);
-  if (c.key === 'tournament_official') return refusalNotice('failed', { ...ctx, save: ctx.save ?? 'untrack' });
   return { code: REFUSAL_CODE[c.key], text: c.text };
 }

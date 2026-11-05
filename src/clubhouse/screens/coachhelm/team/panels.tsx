@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Badge } from '../../../ui/Badge';
 import { pluralWord } from '../../../lib/plural';
 
@@ -225,9 +226,9 @@ export function ReadPanel({
         </div>
       )}
       {href && (
-        <a className="lk" href={href}>
+        <Link className="lk" href={href}>
           Open the full read <Chevron />
-        </a>
+        </Link>
       )}
     </>
   );
@@ -236,9 +237,9 @@ export function ReadPanel({
 export function PlayerPanel({ player, data, onRead, fileOn, onClose }: { player: ChTeamPlayer; data: ChTeamBoardData; onRead: (id: string) => void; fileOn: boolean; onClose: () => void }) {
   const reads = [...player.reads.needs, ...player.reads.working];
   const page = (
-    <a className="lk" href={playerFileHref(player.id, undefined, fileOn)}>
+    <Link className="lk" href={playerFileHref(player.id, undefined, fileOn)}>
       Open {player.first}’s page <Chevron />
-    </a>
+    </Link>
   );
   const year = player.classYear ?? 'Player';
   if (player.rounds === 0)

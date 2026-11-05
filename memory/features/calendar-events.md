@@ -39,6 +39,18 @@ read errors. Failed reads reach the existing channel or fan-out error logger;
 they do not silently become an empty recipient list. Tournament invitation and
 cancellation notice lookups also log failures independently of the saved event.
 
+## Update notices (2026-10-31 audit)
+
+`updateGolfEvent` tells replied players only when the title, place, type, start
+or end really differ from the row before the write (the editor sends title and
+start on every save, so "was sent" is not "changed"). The Bell type is
+`event_updated:<start>|<end>|<hash of title, place, type, all-day>`, so a
+place-only or title-only edit at the same time is its own notice; an identical
+repeat still dedupes. A series notice names and links the first touched
+occurrence that has not happened yet. Class rows no longer end the first-run
+empty state, and an all-day row written as the team's own day edges is read with
+`eventDaySpan` in the Clubhouse loader.
+
 ## Current State
 
 Calendar and Events provide team scheduling, RSVP, attendance tracking,

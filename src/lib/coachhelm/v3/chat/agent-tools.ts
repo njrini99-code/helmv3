@@ -46,10 +46,11 @@ import { getClassTimes, getDrillBank, getTeamPuttingProfile, getTeamStrokesGaine
 import { practicePicture } from './practice-pictures';
 import { practiceDraftTool, publishFlow } from './practice-draft';
 import { askDraftTools } from './ask-draft-tools';
-import { CREATE_FLOWS, CREATE_TOOL_NAMES, LINEUP_FLOWS, type FlowDef } from './create-tools';
+import { CREATE_FLOWS, CREATE_TOOL_NAMES, LINEUP_FLOWS, flowCommit, type FlowDef } from './create-tools';
+import { heldCommitFor } from './held-runner';
 import { getProximityByBand, getRoundDetail, getShotPattern } from './shot-reads';
 import { compareSeasons, getCalendar, getCourse, getRootCauses } from './engine-reads';
-import { holdForExecution, releaseHeld } from './undo-hold';
+import { holdForExecution, releaseHeld, sweepHeld } from './undo-hold';
 import { tool } from 'ai';
 import type { ToolSet, UIMessageStreamWriter } from 'ai';
 import { z } from 'zod';
@@ -291,9 +292,35 @@ interface GatedAction<TInput, TPlan> {
   toolName: string;
   plan: (input: TInput) => { plan: TPlan; proposal: ActionProposal };
   run: (plan: TPlan) => Promise<ActionReceipt>;
+  /** Finds the row a failed write left behind, so it is recorded as done rather than offered again. */
+  readBack?: (plan: TPlan) => Promise<ActionReceipt | null>;
+  /** Reads what the card shows, before `plan` builds it. */
+  prepare?: (input: TInput) => Promise<TInput>;
+  /** Skips the hold: it writes on the press, with no Undo. */
+  immediate?: boolean;
+}
+
+/**
+ * A proposal's key, scoped to its conversation and its whole plan. The planners' keys name the intent (team, title,
+ * the first 40 characters of a body) so a retried Confirm dedupes; alone, they also matched a real repeat weeks later
+ * (the same title, a new audience), and Confirm returned last time's receipt and sent nothing (audit 2026-10-31). A retry
+ * of the same card is the same conversation and the same plan, so it still dedupes.
+ */
+function scopedKey(key: string, conversationId: string | null, plan: unknown): string {
+  let h = 0x811c9dc5;
+  const text = `${conversationId ?? ''}|${JSON.stringify(plan) ?? ''}`;
+  for (let i = 0; i < text.length; i += 1) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return `${key.slice(0, 110)}:${h.toString(36)}`;
 }
 
 export function buildCoachTools({ sb, ctx, conversationId, writer, collect: collectOuter, teamTools = false, practicePlans = false, askV2 = false, defer }: BuildToolsArgs): ToolSet {
+  const scope = <P extends { idempotency_key: string }>(proposal: P, plan: unknown): P => ({ ...proposal, idempotency_key: scopedKey(proposal.idempotency_key, conversationId, plan) });
+  // The next chat request finishes what a cut-off function left held (TASK_FIELDS §3 step 5). It has to be a request: the writes read the coach from the session.
+  if (askV2 && defer) defer(() => sweepHeld(sb, { coach_id: ctx.coach_id, team_id: ctx.team_id, resolve: (row) => heldCommitFor(sb, ctx, row) }));
+
   const seenEnvelopes: ToolEnvelope[] = [];
   const collect = (e: ToolEnvelope) => {
     seenEnvelopes.push(e);
@@ -396,7 +423,9 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
   ): Promise<void> => {
     progress(action.toolName, input as Record<string, unknown>);
     try {
-      const { plan, proposal } = action.plan(input);
+      const built0 = action.plan(action.prepare ? await action.prepare(input) : input);
+      const plan = built0.plan;
+      const proposal = scope(built0.proposal, built0.plan);
       await recordProposal(sb, {
         coach_id: ctx.coach_id,
         team_id: ctx.team_id,
@@ -452,9 +481,11 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
     let plan: TPlan;
     let proposal: ActionProposal;
     try {
-      const built = action.plan(input);
+      // The same prepared input the card was built from, so this claims the proposal the coach saw. If what it read has
+      // changed since (a round's note), the key differs, the claim finds nothing, and the stale card writes nothing.
+      const built = action.plan(action.prepare ? await action.prepare(input) : input);
       plan = built.plan;
-      proposal = built.proposal;
+      proposal = scope(built.proposal, built.plan);
     } catch (err) {
       const expected = err instanceof ActionPlanError || err instanceof PracticePlanError;
       void logServerError(
@@ -506,17 +537,27 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
 
     // Ask v2: nothing is written and nobody is told for 8 seconds, so Undo leaves no row. Without HM1's column the run goes at once,
     // as today, and offers no Undo: never a fake one.
-    if (askV2 && defer) {
+    if (askV2 && defer && !action.immediate) {
       const held = await holdForExecution(sb, { run_id: claim.run_id });
       if (held.kind === 'held') {
         const pending: ActionReceipt = { status: 'held', held_until: held.run_at, action: proposal.action, summary: proposal.summary, created: [], notifications: [], partial_failures: [], retryable: false, at: nowIso() };
         collectActionNumbers(proposal.summary, { facts: proposal.facts });
         writer.write({ type: 'data-action-receipt', id: `receipt-${proposal.idempotency_key}`, data: pending });
-        defer(() => releaseHeld(sb, { run_id: claim.run_id, run_at: held.run_at, run: () => action.run(plan) }));
+        defer(() => releaseHeld(sb, { run_id: claim.run_id, run_at: held.run_at, run: () => action.run(plan), readBack: action.readBack ? () => action.readBack!(plan) : undefined }));
         return { status: 'held', message: `${proposal.summary} It goes through in 8 seconds unless the coach presses Undo.` };
       }
+      // The hold itself failed: the coach was promised 8 seconds of Undo, so nothing goes through without it.
+      if (held.kind === 'error') {
+        const refused: ActionReceipt = { status: 'failed', action: proposal.action, summary: 'That didn’t go through. Nothing was saved.', created: [], notifications: [], partial_failures: [], retryable: true, at: nowIso() };
+        await recordOutcome(sb, { run_id: claim.run_id, receipt: refused });
+        writer.write({ type: 'data-action-receipt', id: `receipt-${proposal.idempotency_key}`, data: refused });
+        return { status: refused.status, message: refused.summary };
+      }
     }
-    const receipt = await action.run(plan);
+    const ran = await action.run(plan);
+    // No hold column on this stack (W-QC-12): it went at once, and the coach is told there's no Undo rather than shown a fake one.
+    const noUndo = askV2 && defer && !action.immediate && ran.status === 'completed';
+    const receipt: ActionReceipt = noUndo ? { ...ran, summary: `${ran.summary} Undo isn’t on here yet.` } : ran;
     await recordOutcome(sb, { run_id: claim.run_id, receipt });
     collectActionNumbers(receipt.summary, { created: receipt.created, notifications: receipt.notifications });
     writer.write({
@@ -535,12 +576,10 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
       const proposal: ActionProposal = { visual: d.visual, ...(d.publish ? { publish: d.publish } : {}), action: d.action, summary: d.summary, facts: d.facts, affects: d.affects ?? [], notifications: d.notifications, missing: d.facts.filter((x) => x.missing).map((x) => x.label), idempotency_key: keyOf(d.key) };
       return { plan: input, proposal };
     },
-    run: async (input) => {
-      const r = await f.run(ctx, input);
-      const at = nowIso();
-      if (!r.ok) return { status: 'failed', action: f.name, summary: r.error ?? 'That didn’t go through. Nothing was saved.', created: [], notifications: [], partial_failures: [], error: r.error, retryable: true, at };
-      return { status: 'completed', action: f.name, summary: r.summary, created: [{ kind: r.kind, count: 1, ...(r.href ? { href: r.href } : {}), ...(r.label ? { label: r.label } : {}) }], notifications: r.notifications ?? [], partial_failures: [], retryable: false, at };
-    },
+    run: (input) => flowCommit(f, sb, ctx, input, scopedKey(keyOf(f.plan(ctx, input).key), conversationId, input)).run(),
+    readBack: (input) => flowCommit(f, sb, ctx, input, scopedKey(keyOf(f.plan(ctx, input).key), conversationId, input)).readBack?.() ?? Promise.resolve(null),
+    immediate: f.immediate,
+    prepare: f.prepare ? (input) => f.prepare!(sb, ctx, input) : undefined,
   });
   const flowTool = (f: FlowDef<never>) => {
     const action = flowGated(f);
@@ -690,7 +729,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
     // Ask v2's create flows, each on the same gate: nothing writes before the named button, and nothing is told until Undo closes.
     ...(askV2 ? Object.fromEntries((isFlagEnabled('golf_tournaments_v1') ? [...CREATE_FLOWS, ...LINEUP_FLOWS] : CREATE_FLOWS).map((f) => [f.name, flowTool(f)])) : {}),
 
-    ...(askV2 ? askDraftTools({ sb, ctx, writer }) : {}),
+    ...(askV2 ? askDraftTools({ sb, ctx, writer, practicePlans }) : {}),
     ...(practicePlans && teamTools
       ? {
           get_class_times: tool({ description: 'Who is in class on a day, per tracked player. Read before planning a practice.', inputSchema: z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }), execute: read('get_class_times', (input) => getClassTimes(sb, ctx, input)) }),
@@ -916,7 +955,9 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
       onInputAvailable: async ({ input }) => {
         progress('create_recurring_practice', input as Record<string, unknown>);
         try {
-          const { plan, proposal } = planRecurringPractice(ctx, input as never);
+          const builtP = planRecurringPractice(ctx, input as never);
+          const plan = builtP.plan;
+          const proposal = scope(builtP.proposal, builtP.plan);
           await recordProposal(sb, {
             coach_id: ctx.coach_id,
             team_id: ctx.team_id,
@@ -972,7 +1013,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
         try {
           const built = planRecurringPractice(ctx, input as never);
           plan = built.plan;
-          proposal = built.proposal;
+          proposal = scope(built.proposal, built.plan);
         } catch (err) {
           const expected = err instanceof PracticePlanError;
           void logServerError(

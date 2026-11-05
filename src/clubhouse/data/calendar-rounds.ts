@@ -1,4 +1,5 @@
 import 'server-only';
+import { isTourSchemaMissing } from '@/lib/golf/tournament-refusals';
 import { tourTable } from './tournaments-db';
 import type { ChCalRoundRef } from '../screens/calendar/model';
 
@@ -25,13 +26,19 @@ export async function loadRoundRefs(
   eventIds: string[],
   role: 'coach' | 'player',
   nowMs: number = Date.now(),
-): Promise<{ refs: Map<string, ChCalRoundRef>; failed: boolean; error?: unknown }> {
+): Promise<{ refs: Map<string, ChCalRoundRef>; failed: boolean; missing?: boolean; error?: unknown }> {
   const refs = new Map<string, ChCalRoundRef>();
-  if (!eventIds.length) return { refs, failed: false };
+  if (!eventIds.length) {
+    // No tournament event in the window: still ask whether the held tables are there, so the editor offers the
+    // tournament section only where a save can land (a preview on production's data has none of them yet).
+    const probe = await tourTable(supabase, 'golf_tournament_rounds').select('round_event_id, course_label').limit(1);
+    return probe.error && isTourSchemaMissing(probe.error) ? { refs, failed: false, missing: true } : { refs, failed: false };
+  }
   const { data, error } = await tourTable(supabase, 'golf_tournament_rounds')
     .select('round_event_id, tournament_id, round_number, start_type, status, course_label, tournament:golf_tournaments(id, name, rounds_count, version, lineup_locked_at, lineup_published_at)')
     .in('round_event_id', eventIds);
-  if (error) return { refs, failed: true, error };
+  // The held tables (4.33's, or P-5's course_label) aren't applied yet: no refs, and nothing failed (preview reads production).
+  if (error) return isTourSchemaMissing(error) ? { refs, failed: false, missing: true } : { refs, failed: true, error };
   const rows = (data ?? []) as unknown as RoundRow[];
   if (!rows.length) return { refs, failed: false };
   const tids = [...new Set(rows.map((r) => r.tournament_id))];
@@ -40,7 +47,7 @@ export async function loadRoundRefs(
     role === 'coach' ? tourTable(supabase, 'golf_tournament_entries').select('tournament_id').in('tournament_id', tids) : null,
   ]);
   if (allRes.error) return { refs, failed: true, error: allRes.error };
-  if (entriesRes?.error) return { refs, failed: true, error: entriesRes.error };
+  if (entriesRes?.error) return isTourSchemaMissing(entriesRes.error) ? { refs, failed: false, missing: true } : { refs, failed: true, error: entriesRes.error };
   const live = new Map<string, boolean>();
   for (const r of (allRes.data ?? []) as unknown as Array<{ tournament_id: string; event: { status: string | null } | Array<{ status: string | null }> | null }>) {
     const ev = Array.isArray(r.event) ? r.event[0] : r.event;

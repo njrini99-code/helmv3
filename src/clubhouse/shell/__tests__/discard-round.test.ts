@@ -35,7 +35,7 @@ describe('discardRoundInProgress', () => {
 
   it('keeps everything local when the request fails', async () => {
     m.deleteInProgressRound.mockRejectedValue(new Error('offline'));
-    await expect(discardRoundInProgress('r1', 'p1')).resolves.toEqual({ ok: false, error: 'Couldn’t discard the round. Try again.' });
+    await expect(discardRoundInProgress('r1', 'p1')).resolves.toEqual({ ok: false, error: null });
     expect(m.clearEmergencySave).not.toHaveBeenCalled();
   });
 });

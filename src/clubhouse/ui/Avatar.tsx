@@ -39,14 +39,13 @@ export function Avatar({
   id,
   size = 'md',
   ring = false,
-  year = null,
   dim = false,
 }: {
   name: string;
   id?: string | null;
   size?: AvatarSize | number;
   ring?: boolean;
-  /** Opt-in, behind `clubhouse_classes_roster_home_v1`: a player with a known class year takes the year's colour (owner, 31 Oct). Everyone else keeps the id tone. */
+  /** Accepted and not drawn. Owner, 5 Nov: coins are the calm neutral, whatever the year; the year shows in its chip and the class bar. */
   year?: ChYearKey | null;
   /** An inactive player's coin. */
   dim?: boolean;
@@ -56,8 +55,7 @@ export function Avatar({
   return (
     <span
       className={'ch-avatar' + (ring ? ' ch-avatar--ring' : '')}
-      data-tone={year ? undefined : avatarTone(id || name)}
-      data-year={year ?? undefined}
+      data-tone={avatarTone(id || name)}
       data-dim={dim ? '' : undefined}
       style={{ ['--ch-av-size' as string]: `${px}px`, ['--ch-av-type' as string]: `${type}px` }}
       aria-hidden="true"

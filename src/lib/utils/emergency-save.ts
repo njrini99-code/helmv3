@@ -60,6 +60,9 @@ export interface EmergencySaveData {
   timestamp: number;
   setupData: {
     courseName: string;
+    /** The catalog course and tee, when the round has them; a restore re-creates the round with both (audit 2026-10-31). */
+    courseId?: string;
+    teeId?: string;
     courseCity: string;
     courseState: string;
     courseRating: string;
@@ -460,6 +463,8 @@ export function loadLatestEmergencySave(playerId: string): EmergencySaveData | n
         // This browser can be used by more than one golfer. Hide another
         // account's snapshot without making that player's shots unrecoverable.
         if (parsed.playerId !== playerId) continue;
+        // A round discarded on this device is not offered back (a stale tab can write its copy after the discard).
+        if (wasRoundDiscarded(parsed.roundId, playerId)) continue;
 
         if (!latest || parsed.timestamp > latest.timestamp) {
           latest = parsed;

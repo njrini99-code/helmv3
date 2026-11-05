@@ -12,6 +12,7 @@ import { diffSe, halvesTone, POOLED_LEG_SD, POOLED_SD, standardError } from '../
 import { rebuiltHref } from '../shell/nav';
 import { formatComparison } from './coachhelm-map';
 import { toChRead, writeUpFor, type ChRead } from './coachhelm-read-shape';
+import { playerSeesCause } from '@/lib/coachhelm/reads/player-cause';
 import type { ChViewer } from './coachhelm-voice';
 import { stanceOf, type ChBoardMissing, type ChInsight, type ChStance } from './coachhelm-shape';
 import { figure } from './coachhelm-standing-shape';
@@ -331,7 +332,7 @@ function diagnosisFor(ev: InsightEvidence, say: (t: string) => string, role: ChV
   if (!d || !cause) return null;
   // CR0: a likely cause is the coach's alone. The shape is serialized to a client component, so its sentence, its reason and the two
   // arms that make the guess (the drivers) are left out here for a player, not hidden in the view.
-  if (role !== 'coach' && d.causality_level !== 'observed_sequence') return null;
+  if (role !== 'coach' && !playerSeesCause(ev)) return null;
   // The generators' "off its benchmark, cause inferred from the aggregate" line states no cause: no diagnosis is drawn rather than a
   // box that says nothing (and its "sample adequate" reason and the driver the evidence block already shows).
   if (isPlaceholderCause(cause)) return null;

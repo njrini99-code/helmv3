@@ -7,6 +7,34 @@ import { CrhSkelCard } from '../../ui/CrhSkelCard';
 export function ClassesSkeleton() {
   return (
     <main className="ch-cl" aria-busy="true" aria-label="Loading your classes" data-ch-code="CH-12401" data-canopy="">
+      {/* The lane's desktop page: the head, the green term card, the binders beside the overlaps. CSS picks it. */}
+      <div className="ch-cl-sk-dcrh" aria-hidden="true">
+        <header className="ch-cl-sk-dcrh__h">
+          <div className="ch-cl-sk-dcrh__stack">
+            <Skeleton width={190} height={13} />
+            <Skeleton width={150} height={36} radius={10} />
+          </div>
+          <div className="ch-cl-sk-dcrh__acts">
+            <Skeleton width={150} height={36} radius={10} />
+            <Skeleton width={120} height={36} radius={10} />
+          </div>
+        </header>
+        <div className="ch-cl-sk-dcrh__term" />
+        <div className="ch-cl-sk-dcrh__grid">
+          <section>
+            <Skeleton width={130} height={17} />
+            <div className="ch-cl-sk-dcrh__deck">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} width="100%" height={236} radius={18} shape="solid" />
+              ))}
+            </div>
+          </section>
+          <div className="ch-cl-sk-dcrh__stack">
+            <Skeleton width="100%" height={220} radius={18} shape="solid" />
+            <Skeleton width="100%" height={120} radius={18} shape="solid" />
+          </div>
+        </div>
+      </div>
       <div className="ch-cl-sk-desk">
         <header className="ch-cl-h" data-canopy-head="">
           <div>

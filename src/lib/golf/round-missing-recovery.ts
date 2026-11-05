@@ -95,6 +95,7 @@ const SIGNAL_KEY_MESSAGES: Readonly<Record<string, string>> = {
   retry: 'That save did not go through. Your shots are still on this device. Please try again.',
   conflict: ROUND_CONFLICT_MESSAGE,
   [ROUND_MISSING_ERROR]: ROUND_RECREATE_FAILED_MESSAGE,
+  round_discarded: 'This round was discarded, so it was not saved. Start a new round to keep scoring.',
   // Fallback only — `describeRoundWriteResult` below prefers the specific
   // hole/field sentence carried alongside this key. This bare-key mapping is
   // what a caller sees if it (incorrectly) passes only `result.error` for a

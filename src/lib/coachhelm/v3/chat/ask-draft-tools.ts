@@ -26,7 +26,7 @@ const BriefInput = z.object({
 /**
  * Tools that write nothing: the practice brief asks, and the board hands a draft to Messages. Neither is confirm-gated because neither has a write to gate (02 §14.3). `draft_poll` is not registered: it stays off until held `20261028140800` is applied.
  */
-export function askDraftTools({ sb, ctx, writer }: { sb: SupabaseClient<Database>; ctx: CoachChatContext; writer: UIMessageStreamWriter }): ToolSet {
+export function askDraftTools({ sb, ctx, writer, practicePlans = false }: { practicePlans?: boolean; sb: SupabaseClient<Database>; ctx: CoachChatContext; writer: UIMessageStreamWriter }): ToolSet {
   let n = 0;
   return {
     find_thread: tool({
@@ -38,14 +38,18 @@ export function askDraftTools({ sb, ctx, writer }: { sb: SupabaseClient<Database
         return { status: 'ok', matches: (data ?? []).map((c) => ({ id: c.id, title: c.title, members: Math.max(0, (c.golf_conversation_participants?.length ?? 1) - 1) })) };
       },
     }),
-    ask_practice_brief: tool({
-      description: 'Ask the coach up to four questions before building a practice plan. Never ask what a read already answered; give each option\'s source in `hint` and put the read\'s default in `pick`. Their answers come back as the next user turn. Writes nothing.',
-      inputSchema: BriefInput,
-      execute: async (input) => {
-        writer.write({ type: 'data-brief', id: `brief-${(n += 1)}`, data: input });
-        return { status: 'shown', message: 'The questions are on screen. Stop here and wait for the coach to answer.' };
-      },
-    }),
+    ...(practicePlans
+      ? {
+          ask_practice_brief: tool({
+            description: 'Ask the coach up to four questions before building a practice plan. Never ask what a read already answered; give each option\'s source in `hint` and put the read\'s default in `pick`. Their answers come back as the next user turn. Writes nothing.',
+            inputSchema: BriefInput,
+            execute: async (input) => {
+              writer.write({ type: 'data-brief', id: `brief-${(n += 1)}`, data: input });
+              return { status: 'shown', message: 'The questions are on screen. Stop here and wait for the coach to answer.' };
+            },
+          }),
+        }
+      : {}),
     draft_board: tool({
       description: 'Open a message to one player in Messages with a short note about the board you just drew. Sends nothing: the coach taps Send there.',
       inputSchema: DraftBoardInput,

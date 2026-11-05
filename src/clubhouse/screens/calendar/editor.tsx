@@ -501,7 +501,9 @@ export function EventEditor({
         // Notes and place apply literally to every event in scope, so they go only when the coach changed them (an
         // emptied field goes as '', which clears it); untouched, each event keeps its own.
         updates: {
-          title: title.trim(),
+          // The title too: sent always, it put a renamed occurrence ("Practice (makeup)") back to the series' name on an
+          // unrelated time or place change (audit 2026-10-31).
+          ...(title.trim() !== (base.title ?? '').trim() ? { title: title.trim() } : {}),
           ...(notes.trim() !== (base.notes ?? '').trim() ? { description: notes.trim() } : {}),
           ...(loc.trim() !== (base.location ?? '').trim() ? { location: loc.trim() } : {}),
           // Like notes and place, sent only when the coach changed it, so each event keeps its own otherwise.

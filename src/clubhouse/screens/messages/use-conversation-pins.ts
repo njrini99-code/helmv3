@@ -50,7 +50,8 @@ interface PinsClient {
   removeChannel: (ch: unknown) => unknown;
 }
 
-export function useConversationPins(viewer: string, team: string, convIds: readonly string[], enabled: boolean): ChPins {
+/** `inboxReady`: the inbox has answered, so `convIds` is what it holds and not the empty list of a cold load. */
+export function useConversationPins(viewer: string, team: string, convIds: readonly string[], enabled: boolean, inboxReady = true): ChPins {
   const device = usePinned(viewer, team, convIds, enabled);
   const toast = useToast();
   // null: device pins are showing (no table, or the probe hasn't answered in time).
@@ -59,6 +60,12 @@ export function useConversationPins(viewer: string, team: string, convIds: reado
   const client = useRef<PinsClient | null>(null);
   const queue = useRef<Map<string, boolean>>(new Map());
   const known = convIds.join('\u0000');
+  // The import reads the inbox when it runs; an inbox change is never a reason to probe or subscribe again.
+  const knownRef = useRef(known);
+  knownRef.current = known;
+  // Which viewer and team the shown server list is theirs, and which of them has had this visit's import.
+  const probedFor = useRef<string | null>(null);
+  const importedFor = useRef<string | null>(null);
 
   const read = useCallback(async (): Promise<readonly string[] | null> => {
     const db = client.current;
@@ -91,7 +98,7 @@ export function useConversationPins(viewer: string, team: string, convIds: reado
       } catch {
         return;
       }
-      const inbox = new Set(known ? known.split('\u0000') : []);
+      const inbox = new Set(knownRef.current ? knownRef.current.split('\u0000') : []);
       let list = start;
       for (const id of readPinned(viewer, team)) {
         if (list.length >= PIN_LIMIT) break;
@@ -114,10 +121,11 @@ export function useConversationPins(viewer: string, team: string, convIds: reado
         // A refused write runs the import again next time; it skips what's already pinned.
       }
     },
-    [known, send, team, viewer],
+    [send, team, viewer],
   );
 
   useEffect(() => {
+    probedFor.current = null;
     setServer(null);
     if (!enabled || Date.now() < unavailableUntil) {
       setWaiting(false);
@@ -138,8 +146,8 @@ export function useConversationPins(viewer: string, team: string, convIds: reado
       window.clearTimeout(wait);
       setWaiting(false);
       if (!list) return;
+      probedFor.current = `${viewer}:${team}`;
       setServer(list);
-      void runImport(list);
       await Promise.resolve(db.realtime.setAuth?.()).catch(() => undefined);
       if (!live) return;
       const ch = db.channel(`golf-pins:${viewer}`, { config: { private: true } });
@@ -172,7 +180,16 @@ export function useConversationPins(viewer: string, team: string, convIds: reado
       window.removeEventListener('online', flush);
       if (channel) db.removeChannel(channel);
     };
-  }, [enabled, read, runImport, send, team, viewer]);
+  }, [enabled, read, send, team, viewer]);
+
+  // The import waits for both the server's list and the inbox, in either order, and runs once: on a cold load the inbox is still empty, and
+  // reading it then would skip every device pin as "not in the inbox" and clear them.
+  useEffect(() => {
+    const key = `${viewer}:${team}`;
+    if (!enabled || !inboxReady || server == null || probedFor.current !== key || importedFor.current === key) return;
+    importedFor.current = key;
+    void runImport(server);
+  }, [enabled, inboxReady, runImport, server, team, viewer]);
 
   const toggle = useCallback(
     (id: string) => {

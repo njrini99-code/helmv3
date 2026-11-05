@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import { basisWords, clearFilters, hasRange, isFiltered, rangeOf, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { playerInsight } from '../../data/stats-insight';
-import { formatFixed, formatHcp, formatSigned, formatToPar } from '../../lib/format';
+import { formatAvg, formatFixed, formatHcp, formatSigned, formatToPar } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
 import { TERMS } from '../../lib/glossary';
 import { haptic } from '../../lib/haptics';
@@ -26,20 +26,21 @@ import { PhoneIconAction } from '../../ui/PhoneBar';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
-import { SgChangeChip } from './charts';
+import { FigureGauge, SgChangeChip } from './charts';
 import { hashOf, type StatsDetailId, type StatsPlayerDetailId } from './detail-route';
 import { ROUND_TYPE } from './detail';
 import { devMetric, devProgress, devTitle, devValue, goalLine, progressOf } from './dev-format';
 import { FocusLoop } from './FocusLoop';
 import { GameDetail, type ChReadsSource } from './GameDetail';
 import { GoalSetButton, GoalStatus, GoalSuggestions } from './Goals';
-import { sgLegRows } from './leg-rows';
+import { legReadout, sgLegRows } from './leg-rows';
 import { GoalRing, MiniDiverging, MiniRails, RoundTicker, type MiniRailRow } from './MiniCharts';
-import { CACHE_ERROR, shotsWords } from './notes';
+import { CACHE_ERROR, countWords, shotsWords } from './notes';
 import { ProposalAnswer } from './ProposalAnswer';
 import { RoundsExtra } from './RoundsExtra';
 import { RoundTrend } from './RoundTrend';
 import { trendRounds } from './round-trend';
+import { halvesChange, halvesTone } from '../../lib/stats-signal';
 import { ScoringFeatureChart } from './ScoringFeatureChart';
 import { AgainstBefore, COMPARE_ROWS, Ribbon, SHS_HOW } from './ShsBlocks';
 import {
@@ -231,7 +232,7 @@ export function StatsPlayerPhoneShs({
           {!filtered && noRounds && !firstRun && <NineHint code="CH-5324" filter={data.filter} options={data.filterOptions} who={coach ? `${first} has` : 'You have'} />}
           {failed && <FailedCard onRetry={onRetry} seen={data} />}
           {emptyFilter && (
-            <section className="ch-shs-card ch-shs-empty">
+            <section className="ch-shs-card ch-shs-empty" suppressHydrationWarning>
               <FilterEmpty code="CH-5320" onClear={() => onFilter(clearFilters(data.filter))} />
             </section>
           )}
@@ -275,7 +276,7 @@ export function StatsPlayerPhoneShs({
                     ) : data.stats && data.stats.roundsPlayed > 0 ? (
                       PARTS.map((p) => <PartCard key={p.id} data={data} part={p} onOpen={() => go(p.id)} />)
                     ) : (
-                      <section className="ch-shs-card">
+                      <section className="ch-shs-card" suppressHydrationWarning>
                         <EmptyState kind="filtered" compact code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
                       </section>
                     )}
@@ -324,7 +325,7 @@ function FailedCard({ onRetry, seen }: { onRetry: () => void; /** The page's dat
   const [busy, setBusy] = useState(false);
   useEffect(() => setBusy(false), [seen]);
   return (
-    <section className="ch-shs-card" role="alert" data-ch-code="CH-5201">
+    <section className="ch-shs-card" suppressHydrationWarning role="alert" data-ch-code="CH-5201">
       <div className="ch-shs-notice">
         <span className="ch-shs-notice__ic--flag">
           <Icon icon={AlertTriangle} size={16} />
@@ -354,7 +355,7 @@ function FailedCard({ onRetry, seen }: { onRetry: () => void; /** The page's dat
 
 function FirstRunCard() {
   return (
-    <section className="ch-shs-card ch-shs-empty">
+    <section className="ch-shs-card ch-shs-empty" suppressHydrationWarning>
       <span className="ch-shs-empty__ic">
         <Icon icon={Flag} size={22} />
       </span>
@@ -383,7 +384,7 @@ function ScoringCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => vo
       meta={round ? [round.date, round.type ? ROUND_TYPE[round.type] : null].filter(Boolean).join(' · ') : label}
       ariaLabel={`Scoring average ${formatFixed(data.win.avg)}, ${label}. Open details`}
     >
-      <div className="ch-shs-figs" key={round ? 'read' : filterKey(data.filter)} data-ch-fade-in={round ? undefined : ''}>
+      <div className="ch-shs-figs">
         <div className="ch-shs-figline">
           <span className="ch-shs-fig">{round ? round.score : formatFixed(data.win.avg)}</span>
           <span className="ch-shs-fig-sub">
@@ -524,6 +525,7 @@ function SgCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => void })
         </div>
       </div>
       <MiniDiverging rows={rows} ready={ready} />
+      {ready && earlyLegsNote(rows) && <p className="ch-shs-mini-cap">{earlyLegsNote(rows)}</p>}
       {ready && said && (
         <p className="ch-shs-sumfoot">
           Strongest: <b>{said.strongest}</b>.{said.leak && (
@@ -798,7 +800,8 @@ function GameAreaDetail({ id, data, reads, onRetry }: { id: 'scoring' | 'tee' | 
     hero = (
       <DetailHero
         figure={formatFixed(data.win.avg)}
-        caption={`Scoring average${data.win.toPar == null ? '' : ` · ${formatToPar(data.win.toPar)} to par`} · ${label}`}
+        caption={`Scoring average${data.win.toPar == null ? '' : ` · ${formatToPar(data.win.toPar)} to par`} · ${label}${coach && data.teamAvg != null ? ` · Team ${formatAvg(data.teamAvg)}` : ''}`}
+        gauge={data.win.avg != null && data.win.toPar != null ? <FigureGauge gauge={{ kind: 'par', toPar: data.win.toPar }} n={data.win.avg} /> : undefined}
         chips={
           <>
             {change.chip && (
@@ -814,9 +817,11 @@ function GameAreaDetail({ id, data, reads, onRetry }: { id: 'scoring' | 'tee' | 
     );
     const parValues = new Set(data.rounds.map((r) => (r.toPar == null || r.holes !== 18 ? null : r.score - r.toPar)));
     const par = parValues.size === 1 ? [...parValues][0]! : null;
+    const reading = scoreTrendReading(data);
     before = x.series.score.length > 0 && (
       <ShsCard title="Score by round" meta={par == null ? undefined : 'Par dashed'}>
         <Ribbon points={x.series.score} lowerIsBetter reference={par == null ? null : { value: par, label: 'Par' }} />
+        {reading && <p className="ch-shs-mini-cap">{reading}</p>}
       </ShsCard>
     );
     after = (
@@ -873,7 +878,7 @@ function GameAreaDetail({ id, data, reads, onRetry }: { id: 'scoring' | 'tee' | 
       <>
         {hero}
         {before}
-        <section className="ch-shs-card">
+        <section className="ch-shs-card" suppressHydrationWarning>
           <EmptyState kind="filtered" compact code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
         </section>
         {after}
@@ -899,6 +904,22 @@ function GameAreaDetail({ id, data, reads, onRetry }: { id: 'scoring' | 'tee' | 
       asDetail={{ hero, bench, before, after, figuresMeta: windowShort(data.filter), figuresFirst: id !== 'scoring' }}
     />
   );
+}
+
+/** What today's Scoring trend said in words: how far the rounds run, which way they went past the noise (A1), and that a 9-hole score is doubled. */
+export function scoreTrendReading(data: ChPlayerProfile): string | null {
+  const rounds = trendRounds(data.rounds, 'score');
+  if (rounds.length === 0) return null;
+  const moved = halvesTone(halvesChange(rounds.map((r) => r.value!), 'score'), true, 0);
+  const said = moved === 'is-gain' ? ', lower lately' : moved === 'is-loss' ? ', higher lately' : rounds.length >= 3 ? ', no clear change' : '';
+  const doubled = rounds.some((r) => r.holes === 9) ? ' 9-hole scores doubled.' : '';
+  return `${plural(rounds.length, 'round')}, from ${Math.round(rounds[0]!.value!)} to ${Math.round(rounds[rounds.length - 1]!.value!)}${said}.${doubled}`;
+}
+
+/** The muted legs, named: a leg between its show and early floors reads as an early read, as today's bars did. */
+export function earlyLegsNote(rows: ReadonlyArray<{ label: string; state?: string; total?: boolean }>): string | null {
+  const early = rows.filter((r) => r.state === 'early' && !r.total).map((r) => r.label);
+  return early.length ? `Hollow bars are early reads (${early.join(', ')}) and can still move a lot.` : null;
 }
 
 function SgDetail({ data, onPart }: { data: ChPlayerProfile; onPart: (id: StatsDetailId) => void }) {
@@ -929,6 +950,7 @@ function SgDetail({ data, onPart }: { data: ChPlayerProfile; onPart: (id: StatsD
       <DetailHero
         figure={formatSigned(data.win.sgPerRound)}
         caption={`Strokes a round against the Tour · ${label}`}
+        gauge={data.win.sgPerRound != null ? <FigureGauge gauge={{ kind: 'sg', tour: data.tour }} n={data.win.sgPerRound} /> : undefined}
         chips={
           <>
             {total?.se != null && data.win.sgPerRound != null && (
@@ -942,18 +964,21 @@ function SgDetail({ data, onPart }: { data: ChPlayerProfile; onPart: (id: StatsD
       />
       <ShsCard title="By part of the game" meta="Per round">
         <p className="ch-shs-readout" aria-live="polite">
-          {pinned?.value != null && pinned.se != null ? `${pinned.label}: ${formatSigned(pinned.value)} a round, likely ${formatSigned(pinned.value - pinned.se)} to ${formatSigned(pinned.value + pinned.se)}.` : pinned?.value != null ? `${pinned.label}: ${formatSigned(pinned.value)} a round.` : 'Tap a part to see its likely range.'}
+          {pinned ? legReadout(pinned) : 'Tap a part to see its likely range.'}
         </p>
         {all.map((r) => {
-          const tone = sgTone(r.value);
+          // An early read is muted and untoned, a leg under its floor says what it needs (as today's SgBars).
+          const early = r.state === 'early';
+          const tone = early ? 'flat' : sgTone(r.value);
           const bar = r.value == null ? null : divergeBar(r.value, scale);
           const on = pin === r.key;
           return (
-            <button key={r.key} type="button" className={`ch-shs-drow${r.total ? ' is-total' : ''}${on ? ' is-pinned' : ''}`} data-ch="stats-sg-row" aria-pressed={on} aria-label={`${r.label}: ${formatSigned(r.value)} a round`} onClick={() => setPin(on ? null : r.key)}>
+            <button key={r.key} type="button" className={`ch-shs-drow${r.total ? ' is-total' : ''}${on ? ' is-pinned' : ''}`} data-ch="stats-sg-row" aria-pressed={on} aria-label={r.value == null && r.tag ? `${r.label}: ${r.tag}` : `${r.label}: ${formatSigned(r.value)} a round${early && r.tag ? `, ${r.tag}` : ''}`} onClick={() => setPin(on ? null : r.key)}>
               <span className="lab">{r.label}</span>
               <span className="ch-shs-rail">
                 <span className="ch-shs-zero" />
-                {bar && <span className={`ch-shs-bar ch-shs-fill-${tone}`} data-ch-grow="" style={{ left: `${bar.left}%`, width: `${bar.width}%`, transformOrigin: `${(r.value ?? 0) >= 0 ? '0' : '100%'} 50%` }} />}
+                {bar && <span className={`ch-shs-bar ch-shs-fill-${tone}${early ? ' is-early' : ''}`} data-ch-grow="" style={{ left: `${bar.left}%`, width: `${bar.width}%`, transformOrigin: `${(r.value ?? 0) >= 0 ? '0' : '100%'} 50%` }} />}
+                {r.value == null && r.tag && <span className="ch-shs-needs">{r.tag}</span>}
                 {r.value != null && r.se != null && <span className="ch-shs-whisk" style={{ left: `${divergeAt(r.value - r.se, scale)}%`, width: `${divergeAt(r.value + r.se, scale) - divergeAt(r.value - r.se, scale)}%` }} />}
               </span>
               <span className={`val${tone === 'flat' ? '' : ` ch-shs-${tone}`}`}>{formatSigned(r.value)}</span>
@@ -969,6 +994,7 @@ function SgDetail({ data, onPart }: { data: ChPlayerProfile; onPart: (id: StatsD
           </span>
           <span />
         </div>
+        {earlyLegsNote(all) && <p className="ch-shs-mini-cap">{earlyLegsNote(all)}</p>}
       </ShsCard>
       <ShsCard title="Open a part" flush>
         <ul className="ch-shs-rlist">
@@ -1017,7 +1043,7 @@ function RoundsDetail({ data }: { data: ChPlayerProfile }) {
   const label = windowLabel(data.filter);
   return (
     <>
-      <DetailHero figure={String(n)} caption={`Rounds · averaging ${formatFixed(data.win.avg)} · ${label}`} />
+      <DetailHero figure={String(n)} caption={`Rounds · averaging ${formatFixed(data.win.avg)} · ${label}`} chips={<span className="ch-num">{countWords(n, data.win.effRounds)} in this window.</span>} />
       <ShsCard title="Round by round" meta="Taller is lower">
         <RoundTicker rounds={tickerRounds(data)} />
         <p className="ch-shs-mini-cap">{n > 1 ? 'Best round in green. Score by round is on the Scoring page.' : 'Score by round is on the Scoring page.'}</p>

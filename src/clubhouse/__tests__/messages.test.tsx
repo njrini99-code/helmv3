@@ -200,6 +200,7 @@ beforeEach(() => {
   live.msgs.sendMessage.mockReset().mockResolvedValue(undefined);
   live.msgs.editMessage.mockReset().mockResolvedValue(undefined);
   live.msgs.removeMessage.mockReset().mockResolvedValue(undefined);
+  live.msgs.retryMessage.mockReset().mockResolvedValue(true);
   live.reactions.setReaction.mockReset().mockResolvedValue(undefined);
   live.files.sendMessageWithAttachments.mockReset().mockResolvedValue({ success: true });
   live.files.getPendingAttachmentSend.mockReset().mockResolvedValue(null);
@@ -567,6 +568,27 @@ describe('Messages · validation, haptics, accessibility', () => {
     await expectCode('CH-7017', /Couldn’t confirm this message sent\. Check before sending again\./);
     await user.click(within(code('CH-7016') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(live.msgs.retryMessage).toHaveBeenCalledWith('f1');
+  });
+
+  it('CH-1903 Try again while offline is refused with the shared notice and sends nothing', async () => {
+    const user = userEvent.setup();
+    live.msgs.messages = [{ ...mine, id: 'f1', sendFailed: true, sendOutcome: 'refused' }];
+    show();
+    await expectCode('CH-7016', /Not sent/);
+    setOnline(false);
+    await user.click(within(code('CH-7016') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    await expectCode('CH-1903', /offline/);
+    expect(live.msgs.retryMessage).not.toHaveBeenCalled();
+  });
+
+  it('CH-7004 Try again that fails again says so', async () => {
+    const user = userEvent.setup();
+    live.msgs.retryMessage.mockResolvedValueOnce(false);
+    live.msgs.messages = [{ ...mine, id: 'f1', sendFailed: true, sendOutcome: 'refused' }];
+    show();
+    await expectCode('CH-7016', /Not sent/);
+    await user.click(within(code('CH-7016') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    await expectCode('CH-7004', /Couldn’t send the message/);
   });
 
   it('CH-7801 the composer is named for the conversation; failures in the thread are alerts', async () => {
@@ -1582,6 +1604,28 @@ describe('Messages · prefilled messages (D2-7: the coach presses Send)', () => 
     await waitFor(() => expect((box as HTMLTextAreaElement).value).toBe('Can you make the 3:30 block?'));
     expect(live.msgs.sendMessage).not.toHaveBeenCalled();
     expect(a.createGolfConversation).not.toHaveBeenCalled();
+  });
+
+  it('MSG-CP-56 New announcement is in a coach New message and absent from a player DOM', async () => {
+    const user = userEvent.setup();
+    const { unmount } = showPhone();
+    await user.click(await screen.findByRole('button', { name: 'New message' }));
+    expect((await screen.findByRole('region', { name: 'New message' })).textContent).toMatch(/announcement/i);
+    unmount();
+    showPhone({ ...data, role: 'player', viewerPlayerId: 'p-me' });
+    await user.click(await screen.findByRole('button', { name: 'New message' }));
+    expect((await screen.findByRole('region', { name: 'New message' })).textContent).not.toMatch(/announcement/i);
+  });
+
+  it('W-MSG-16 the coach own unsent draft wins over the prefill, and nothing is sent', async () => {
+    live.convs.conversations = [team, dmEli];
+    new DraftStore(data.viewerUserId).set('dm-eli', 'My own words');
+    params.current = stash({ players: ['p-eli'], draft: 'Can you make the 3:30 block?' });
+    show();
+    const box = await screen.findByRole('textbox', { name: /Message Eli/ });
+    await waitFor(() => expect((box as HTMLTextAreaElement).value).toBe('My own words'));
+    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+    new DraftStore(data.viewerUserId).delete('dm-eli');
   });
 
   it('two players open New message as a named group with the draft quoted; nothing is created until the coach presses on', async () => {

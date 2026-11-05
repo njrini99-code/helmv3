@@ -24,11 +24,32 @@ export async function holdForExecution(sb: Sb, args: { run_id: string; now?: num
   return { kind: 'error' };
 }
 
-/** Held to approved in one update: whoever wins runs it, and `claimForExecution`'s in-flight and TTL rules then apply unchanged. */
-async function takeHeld(sb: Sb, where: { run_id: string } | { coach_id: string; idempotency_key: string }): Promise<string | null> {
-  let q = askTables(sb).from(TABLE).update({ status: 'approved' } as never).eq('status', 'held');
-  q = 'run_id' in where ? q.eq('id', where.run_id) : q.eq('coach_id', where.coach_id).eq('idempotency_key', where.idempotency_key);
-  const { data, error } = await q.select('id').maybeSingle();
+/** A held ledger row, as the sweep and Open need it to rebuild the write. */
+export interface HeldRow {
+  id: string;
+  tool_name: string;
+  proposed_input: unknown;
+  team_id: string;
+  run_at: string;
+  /** The row's scoped ledger key: the write's request id comes from it, so a rebuilt write hits the same row. */
+  idempotency_key: string;
+}
+/** How to write a held row. Nothing has started until `run` is called, and only the winner of `takeHeld` calls it. */
+export interface HeldCommit {
+  run: () => Promise<ActionReceipt>;
+  readBack?: () => Promise<ActionReceipt | null>;
+}
+/** Null: not this request's to write (another team's row); it stays held. */
+export type HeldResolver = (row: HeldRow) => HeldCommit | null;
+
+const HELD_COLUMNS = 'id, tool_name, proposed_input, team_id, run_at, idempotency_key';
+
+/**
+ * Held to approved in one update: whoever wins runs it, and `claimForExecution`'s in-flight and TTL rules then apply unchanged.
+ * `decided_at` restarts here: the TTL measures a run in flight, and a row swept late has only just started.
+ */
+async function takeHeld(sb: Sb, where: { run_id: string }): Promise<string | null> {
+  const { data, error } = await askTables(sb).from(TABLE).update({ status: 'approved', decided_at: new Date().toISOString() } as never).eq('status', 'held').eq('id', where.run_id).select('id').maybeSingle();
   if (error) return null;
   return (data as { id?: string } | null)?.id ?? null;
 }
@@ -72,23 +93,29 @@ export async function cancelHeld(sb: Sb, args: { coach_id: string; idempotency_k
   return data ? 'cancelled' : 'late';
 }
 
-/** Open: commits now. The losing `after()` then finds nothing to take. */
-export async function commitHeldNow(sb: Sb, args: { coach_id: string; idempotency_key: string; run: () => Promise<ActionReceipt> }): Promise<ActionReceipt | null> {
-  const id = await takeHeld(sb, { coach_id: args.coach_id, idempotency_key: args.idempotency_key });
-  return id ? execute(sb, id, args.run) : null;
+/** Open (`due_only` off): commits now. The ring ending (`due_only`): commits only once `run_at` has passed, if `after()` died. The losing `after()` then finds nothing to take. */
+export async function commitHeldNow(sb: Sb, args: { coach_id: string; idempotency_key: string; resolve: HeldResolver; due_only?: boolean; now?: number }): Promise<ActionReceipt | null> {
+  const { data, error } = await askTables(sb).from(TABLE).select(HELD_COLUMNS).eq('coach_id', args.coach_id).eq('idempotency_key', args.idempotency_key).eq('status', 'held').maybeSingle();
+  if (error || !data) return null;
+  const row = data as unknown as HeldRow;
+  if (args.due_only && Date.parse(row.run_at) > (args.now ?? Date.now())) return null;
+  const commit = args.resolve(row);
+  if (!commit) return null;
+  const id = await takeHeld(sb, { run_id: row.id });
+  return id ? execute(sb, id, commit.run, commit.readBack) : null;
 }
 
-/** On the next chat request: runs any overdue held row once. The function that held it may have been cut off; the key keeps it single. */
-export async function sweepHeld(sb: Sb, args: { coach_id: string; run: (row: { tool_name: string; proposed_input: unknown }) => Promise<ActionReceipt> | null }): Promise<number> {
-  const { data, error } = await askTables(sb).from(TABLE).select('id, tool_name, proposed_input').eq('coach_id', args.coach_id).eq('status', 'held').lte('run_at', new Date().toISOString()).limit(10);
+/** On the next chat request: runs any overdue held row once. The function that held it may have been cut off; the take keeps it single, and the write starts only after the take. */
+export async function sweepHeld(sb: Sb, args: { coach_id: string; team_id: string; resolve: HeldResolver }): Promise<number> {
+  const { data, error } = await askTables(sb).from(TABLE).select(HELD_COLUMNS).eq('coach_id', args.coach_id).eq('team_id', args.team_id).eq('status', 'held').lte('run_at', new Date().toISOString()).order('run_at').limit(10);
   if (error || !data) return 0;
   let done = 0;
-  for (const row of data as unknown as Array<{ id: string; tool_name: string; proposed_input: unknown }>) {
-    const running = args.run(row);
-    if (!running) continue;
+  for (const row of data as unknown as HeldRow[]) {
+    const commit = args.resolve(row);
+    if (!commit) continue;
     const id = await takeHeld(sb, { run_id: row.id });
     if (!id) continue;
-    await execute(sb, id, () => running);
+    await execute(sb, id, commit.run, commit.readBack);
     done++;
   }
   return done;

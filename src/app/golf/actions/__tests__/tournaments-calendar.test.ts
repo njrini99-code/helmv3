@@ -194,7 +194,7 @@ describe('createTournamentFromCalendar', () => {
     ['qualifier_not_found', 'qualifier_not_found', 'That qualifier was deleted. Pick another or choose None.'],
     ['qualifier_linked', 'qualifier_linked', 'That qualifier already counts toward another event. Pick another or choose None.'],
     ['trip_not_found', 'trip_not_found', 'That trip is already linked to another event. Pick another or choose None.'],
-    ['entries_unavailable', 'entries_unavailable', 'The lineup can’t be saved from here yet. Save without it and set it in Tournaments.'],
+    ['entries_unavailable', 'entries_unavailable', 'The lineup can’t be saved from here yet. Save without it.'],
     ['request_conflict', 'request_conflict', 'Couldn’t set up the tournament. Nothing was saved.'],
     ['something else', 'failed', 'Couldn’t set up the tournament. Nothing was saved.'],
   ];
@@ -227,10 +227,10 @@ describe('updateTournamentRound', () => {
   it('returns each refusal as its code, naming the round', async () => {
     for (const [raised, code, text] of [
       ['stale', 'stale', 'This tournament changed since you opened it. Reload to see the latest.'],
-      ['round_started', 'round_started', 'R2 is under way, so it can’t be changed here. Change it from Tournaments.'],
+      ['round_started', 'round_started', 'R2 is under way, so it can’t be changed.'],
       ['round_order', 'round_order', 'Rounds go in order. R2 can’t start before the round before it.'],
-      ['round_fields_locked', 'round_fields_locked', 'This event is part of the tournament. Its type, name and course are changed in Tournaments.'],
-      ['round_type_locked', 'round_type_locked', 'This event is part of the tournament. Its type, name and course are changed in Tournaments.'],
+      ['round_fields_locked', 'round_fields_locked', 'This event is part of the tournament. Its type, name and course can’t be changed from the calendar. Its day, times and notes are changed with Edit round.'],
+      ['round_type_locked', 'round_type_locked', 'This event is part of the tournament. Its type, name and course can’t be changed from the calendar. Its day, times and notes are changed with Edit round.'],
     ] as const) {
       m.rpc.golf_tournament_update_round = () => ({ data: null, error: { code: 'P0001', message: raised } });
       expect(await updateTournamentRound(R2, { startAt: '2026-11-06T09:00:00-05:00' }, 4)).toEqual({ success: false, code, error: text });
@@ -265,7 +265,7 @@ describe('setTournamentCancelled', () => {
   });
   it('maps refusals: scores, under way, and a restore out of order', async () => {
     m.rpc.golf_tournament_set_cancelled = () => ({ data: null, error: { code: 'P0001', message: 'round_has_scores' } });
-    expect(await setTournamentCancelled(TID, R2, true, null, 4)).toEqual({ success: false, code: 'round_has_scores', error: 'R2 has scores, so it can’t be cancelled. Change it from Tournaments.' });
+    expect(await setTournamentCancelled(TID, R2, true, null, 4)).toEqual({ success: false, code: 'round_has_scores', error: 'R2 has scores, so it can’t be cancelled.' });
     m.rpc.golf_tournament_set_cancelled = () => ({ data: null, error: { code: 'P0001', message: 'round_order' } });
     expect(await setTournamentCancelled(TID, R2, false, null, 4)).toMatchObject({ success: false, code: 'round_order', error: expect.stringMatching(/^R2 can’t come back where it was/) });
   });
