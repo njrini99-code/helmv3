@@ -130,7 +130,7 @@ export function DeskRounds({ rounds }: { rounds: ChCoachHome['latestRounds']['ro
  * Leaderboard: the top five, rank, coin, average; rows 52, inset 56 (06 11). The rank rule stays leaderPlaces' (B13). When nobody has a
  * place yet there is no rank column to fill: a column of dashes reads as broken, so the rows drop it and a quiet line says why.
  */
-export function DeskBoard({ rows }: { rows: ChCoachHome['leaderboard']['rows'] }) {
+export function DeskBoard({ rows, rosterSize }: { rows: ChCoachHome['leaderboard']['rows']; rosterSize: number }) {
   const shown = rows.slice(0, DESK_BOARD);
   const places = leaderPlaces(rows);
   const unplaced = shown.every((_, i) => places[i]!.place == null);
@@ -152,7 +152,7 @@ export function DeskBoard({ rows }: { rows: ChCoachHome['leaderboard']['rows'] }
       {unplaced ? (
         <p className="ch-dh-rest">Early reads. Places start at three 18-hole rounds.</p>
       ) : (
-        shown.length < DESK_BOARD && <p className="ch-dh-rest">Players join the board with their first 18-hole round.</p>
+        shown.length < DESK_BOARD && rosterSize > rows.length && <p className="ch-dh-rest">Players join the board with their first 18-hole round.</p>
       )}
     </section>
   );

@@ -112,7 +112,7 @@ function CoachHomeBody({ data, now, live, crh = false }: { data: ChCoachHome; no
             ) : data.leaderboard.rows.length === 0 ? (
               <Leaderboard data={data.leaderboard} covered={covered} rounds={data.latestRounds.rounds} />
             ) : (
-              <DeskBoard rows={data.leaderboard.rows} />
+              <DeskBoard rows={data.leaderboard.rows} rosterSize={data.leaderboard.rosterSize} />
             )}
           </SectionBoundary>
         </div>

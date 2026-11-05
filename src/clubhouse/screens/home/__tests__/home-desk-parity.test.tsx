@@ -8,7 +8,7 @@ afterEach(cleanup);
 
 describe('coach Home desktop, design parity', () => {
   it('a board where nobody has a place drops the rank column and says why', () => {
-    const { container } = render(<DeskBoard rows={PREVIEW_HOME_EARLY.leaderboard.rows} />);
+    const { container } = render(<DeskBoard rows={PREVIEW_HOME_EARLY.leaderboard.rows} rosterSize={8} />);
     expect(container.querySelectorAll('.ch-dh-rank')).toHaveLength(0);
     expect(screen.getByText(/Places start at three 18-hole rounds/)).toBeTruthy();
     expect(container.textContent).not.toContain('—');
@@ -16,16 +16,24 @@ describe('coach Home desktop, design parity', () => {
 
   it('a board with places keeps its ranks, and a player still early keeps the dash', () => {
     const rows = PREVIEW_HOME.leaderboard.rows.slice(0, 5).map((r, i) => (i === 4 ? { ...r, status: 'early' as const } : { ...r, status: 'steady' as const }));
-    const { container } = render(<DeskBoard rows={rows} />);
+    const { container } = render(<DeskBoard rows={rows} rosterSize={8} />);
     const ranks = [...container.querySelectorAll('.ch-dh-rank')].map((n) => n.textContent);
     expect(ranks).toEqual(['1', '2', '3', '4', '—']);
     expect(screen.queryByText(/Places start at/)).toBeNull();
   });
 
+  it('a short board says players are still to join only when some are', () => {
+    const rows = PREVIEW_HOME.leaderboard.rows.slice(0, 3).map((r) => ({ ...r, status: 'steady' as const }));
+    const { rerender } = render(<DeskBoard rows={rows} rosterSize={3} />);
+    expect(screen.queryByText(/join the board/)).toBeNull();
+    rerender(<DeskBoard rows={rows} rosterSize={6} />);
+    expect(screen.getByText(/join the board/)).toBeTruthy();
+  });
+
   it('the board and Latest rounds link to their rebuilt routes from the card head', () => {
     render(
       <>
-        <DeskBoard rows={PREVIEW_HOME.leaderboard.rows} />
+        <DeskBoard rows={PREVIEW_HOME.leaderboard.rows} rosterSize={8} />
         <DeskRounds rounds={PREVIEW_HOME.latestRounds.rounds} />
       </>,
     );

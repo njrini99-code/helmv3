@@ -4890,7 +4890,8 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     color: var(--ch-hero-mint);
   }
   /* The class line sits on the green here: the on-green ink, and a hover the green can carry. */
-  .ch-h-herocard .ch-ca-home--desktop .ch-ca-home__btn {
+  .ch-h-herocard .ch-ca-home--desktop .ch-ca-home__btn,
+  .ch-h-herocard .ch-ca-home--desktop .ch-ca-home__btn > svg {
     color: var(--ch-on-green-2);
   }
   .ch-h-herocard .ch-ca-home--desktop .ch-ca-home__btn[data-ch-pressed] {
@@ -5160,7 +5161,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   color: var(--ch-text-secondary);
 }
 .ch-dh-score.is-under em {
-  color: var(--ch-chart-loss);
+  color: var(--ch-chart-flag);
 }
 /* An empty week sits in the middle of the room the card keeps beside its partner. */
 .ch-dh-card > .ch-es {
