@@ -4,6 +4,7 @@ import { useQuickChatRun } from '../../../shell/quick-chat/QuickChatProvider';
 import { AskKnowsPanel } from './parts/KnowsPanel';
 import { AllowanceMeter, PlayerOut } from './parts/Allowance';
 import { ArtifactView } from './parts/Artifact';
+import { askSlashCommands } from '../../../data/coachhelm-slash';
 import type { AskArtifact } from './parts/artifacts';
 import { MessagesSquare, PanelLeftOpen, Settings2, SquarePen } from 'lucide-react';
 import { Modal } from '../../../ui/Modal';
@@ -98,7 +99,7 @@ export function askScope(question: string, team: string, names: readonly string[
   return `${who} · ${window}`;
 }
 
-export function Ask({ load, chat = useCoachHelmChat, initial, v2 = false }: { load: ChAskLoad; chat?: ChAskChat; initial?: ChAskInitial; v2?: boolean }) {
+export function Ask({ load, chat = useCoachHelmChat, initial, v2 = false, slashFlags }: { slashFlags?: { plans: boolean; lineup: boolean }; load: ChAskLoad; chat?: ChAskChat; initial?: ChAskInitial; v2?: boolean }) {
   if (load.status === 'noRoster') {
     return (
       <AskFrame team={load.teamName}>
@@ -114,10 +115,10 @@ export function Ask({ load, chat = useCoachHelmChat, initial, v2 = false }: { lo
     );
   }
   // A different conversation is a different chat: the hook reads its starting messages once.
-  return <AskChat key={load.data.notFound ? 'gone' : (load.data.thread?.id ?? 'new')} data={load.data} useChatImpl={chat} initial={initial} v2={v2} />;
+  return <AskChat key={load.data.notFound ? 'gone' : (load.data.thread?.id ?? 'new')} data={load.data} useChatImpl={chat} initial={initial} v2={v2} slashFlags={slashFlags} />;
 }
 
-function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatImpl: ChAskChat; initial?: ChAskInitial; v2: boolean }) {
+function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskData; useChatImpl: ChAskChat; initial?: ChAskInitial; v2: boolean; slashFlags?: { plans: boolean; lineup: boolean } }) {
   const phone = useChPhone();
   // A switch to the Board moves the strip at once and dims the chat (aria-busy) until the Board is ready.
   const sw = useViewSwitch<CoachHelmView>('ask', (v) => COACHHELM_HREF[v]);
@@ -240,6 +241,7 @@ function AskChat({ data, useChatImpl, initial, v2 }: { data: ChAskData; useChatI
     <SectionBoundary surface="coachhelm.ask.composer" label="The message box" code="CH-13225">
       <AskComposer
         hint={v2 ? (player ? 'Ask about your game' : 'Ask about your team') : undefined}
+        slash={v2 ? askSlashCommands({ player, plans: !!slashFlags?.plans, lineup: !!slashFlags?.lineup }) : undefined}
         variant={variant}
         phone={phone}
         players={data.players}

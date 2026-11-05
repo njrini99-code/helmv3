@@ -489,7 +489,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .opt .bx { display: grid; place-items: center; flex: none; width: 20px; height: 20px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ch-text-tertiary); color: var(--ch-text-on-accent); transition: background-color var(--ch-dur-base) var(--ch-ease), box-shadow var(--ch-dur-base) var(--ch-ease); }
 .ch-ak-th .opt.multi .bx { border-radius: var(--ch-radius-xs); }
 .ch-ak-th .opt .bx path { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset var(--ch-dur-base) var(--ch-ease); }
-.ch-ak-th .opt[aria-pressed='true'] .bx { background: var(--ch-accent); box-shadow: none; }
+.ch-ak-th .opt[aria-pressed='true'] .bx { background: var(--ch-selected-strong); box-shadow: none; }
 .ch-ak-th .opt[aria-pressed='true'] .bx path { stroke-dashoffset: 0; }
 .ch-ak-th .qsum .pills span { animation: ch-ak-pill var(--ch-dur-base) var(--ch-ease) both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-press) / 2.75); }
 @media (prefers-reduced-motion: reduce) {

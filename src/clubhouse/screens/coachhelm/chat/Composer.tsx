@@ -14,6 +14,7 @@ import {
   type ChAskRange,
 } from '../../../data/coachhelm-chat-shape';
 import { ASK_STATS, matchStats } from '../../../data/coachhelm-mentions';
+import { matchSlash, slashQuery, type ChAskSlash } from '../../../data/coachhelm-slash';
 import { haptic } from '../../../lib/haptics';
 import { isOffline } from '../../../lib/use-action';
 import { Avatar } from '../../../ui/Avatar';
@@ -73,6 +74,8 @@ export function useRefuseOffline(): () => boolean {
 }
 
 export interface AskComposerProps {
+  /** Ask v2's `/` list (ask 05). A pick fills the box. */
+  slash?: readonly ChAskSlash[];
   /** `hero`: the new chat's big box with its Players and date chips. `dock`: the one-line box at the foot of a thread. */
   variant: 'hero' | 'dock';
   phone: boolean;
@@ -156,7 +159,7 @@ function usePickerRoom(anchor: RefObject<HTMLElement | null>, open: boolean, bel
  *  - Offline, Send is refused before anything is sent: an error toast (CH-1903) and the text stays.
  *  - A send that failed puts its text back (once, into an empty box); a card awaiting a decision disables Send.
  */
-export function AskComposer({ variant, phone, players, busy, failed, blocked, onSend, onStop, autoFocus, fresh = false, draftKey = null, roster = true, hint }: AskComposerProps) {
+export function AskComposer({ variant, phone, players, busy, failed, blocked, onSend, onStop, autoFocus, fresh = false, draftKey = null, roster = true, hint, slash = [] }: AskComposerProps) {
   const refuseOffline = useRefuseOffline();
   const finePointer = useFinePointer();
   const hero = variant === 'hero';
@@ -241,6 +244,10 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
   const stats = useMemo(() => matchStats(ASK_STATS, query ?? '', value), [query, value]);
   const pickable = matches.length + stats.length > 0;
   const room = usePickerRoom(frame, pickerOpen, hero && !phone);
+  const typedSlash = slashQuery(value);
+  const slashes = useMemo(() => (typedSlash === null || dismissed ? [] : matchSlash(slash, typedSlash)), [slash, typedSlash, dismissed]);
+  const [slashAt, setSlashAt] = useState(0);
+  const slashActive = Math.min(slashAt, Math.max(0, slashes.length - 1));
 
   const focusEnd = useCallback(() => {
     // Focus inside the tap itself, so a phone raises its keyboard (or keeps it up); the caret goes to the end once the new
@@ -284,9 +291,33 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
     focusEnd();
   };
 
+  const pickSlash = (c: ChAskSlash) => {
+    haptic('select');
+    setValue(c.seed);
+    setSlashAt(0);
+    focusEnd();
+  };
+
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // 229: a soft keyboard (iOS autocorrect, an IME) still has the key; the event handed to cmdk would lose that mark.
     if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+    if (slashes.length > 0) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSlashAt((slashActive + (e.key === 'ArrowDown' ? 1 : -1) + slashes.length) % slashes.length);
+        return;
+      }
+      if ((e.key === 'Enter' && !e.shiftKey) || e.key === 'Tab') {
+        e.preventDefault();
+        pickSlash(slashes[slashActive]!);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setDismissed(true);
+        return;
+      }
+    }
     // The picker's keys go to cmdk's root. It sits beside the box, not around it, so a closed picker never takes Enter,
     // the arrows or a Shift+Enter from the text. Tab picks as Enter does.
     if (pickerOpen && pickable && PICKER_KEYS.has(e.key) && !e.shiftKey && !e.altKey && !e.metaKey && !e.ctrlKey) {
@@ -426,6 +457,19 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
           )}
           {send}
         </div>
+        {slashes.length > 0 && (
+          // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- not a control; it only keeps the focus in the text box
+          <div className="ch-ask-pick" data-ch-code="CH-13821" onMouseDown={(e) => e.preventDefault()}>
+            <div className="ch-ask-pick__list" role="listbox" aria-label="Commands">
+              {slashes.map((c, i) => (
+                <button key={c.command} type="button" role="option" aria-selected={i === slashActive} data-selected={i === slashActive ? 'true' : undefined} className="ch-ask-pick__row" onClick={() => pickSlash(c)}>
+                  <span className="ch-ask-pick__name">{c.command}</span>
+                  <span>{c.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {pickerOpen && (
           // A press on the picker never moves the focus: the text box keeps it, and the phone its keyboard.
           // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- not a control; it only keeps the focus in the text box
