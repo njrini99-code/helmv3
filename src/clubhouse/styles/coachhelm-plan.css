@@ -1578,22 +1578,26 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   /* The green bar: its title stays centred and clears Back and the version switch; the switch reads on green. */
   .ch-cpv-full .fbar {
     min-height: calc(56px + env(safe-area-inset-top));
-    padding: env(safe-area-inset-top) 96px 0;
+    padding: env(safe-area-inset-top) 16px 0;
   }
   .ch-cpv-full .fbar > b {
     min-width: 0;
+    max-width: calc(100% - 192px);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
   .ch-cpv-full .back {
-    top: calc(6px + env(safe-area-inset-top));
+    inset-block: env(safe-area-inset-top) 0;
+    height: 44px;
+    margin-block: auto;
   }
   .ch-cpv-full .fbar .vsw {
     position: absolute;
-    top: calc(14px + env(safe-area-inset-top));
+    inset-block: env(safe-area-inset-top) 0;
     right: 8px;
-    margin: 0;
+    height: 28px;
+    margin: auto 0;
     color: var(--ch-on-green-ink);
   }
   .ch-cpv-full .fbar .vsw button {

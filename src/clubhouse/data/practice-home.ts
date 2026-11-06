@@ -273,10 +273,12 @@ export async function loadPlanForBuilder(planId: string): Promise<{ status: 'rea
   if (!team || !roster) return { status: 'gone' };
   const start = new Date(event.start_time);
   const helperOn = isPracticePlansEnabled();
-  const [drills, facts, coaches] = await Promise.all([
+  const [drills, facts, coaches, filed] = await Promise.all([
     drillBank(sb, row.team_id),
     helperOn ? helperFacts(sb, row.team_id, start, team.zone) : Promise.resolve([]),
     team.org ? sb.from('golf_coaches').select('full_name').eq('organization_id', team.org) : Promise.resolve({ data: [] as Array<{ full_name: string | null }>, error: null }),
+    // A read that fails leaves the default folder; `practice_plan_id` comes with the held migrations, so the column isn't in the generated types yet.
+    practiceTables(sb).from('golf_documents').select('folder').eq('practice_plan_id', row.id).maybeSingle(),
   ]);
   return {
     status: 'ready',
@@ -300,6 +302,7 @@ export async function loadPlanForBuilder(planId: string): Promise<{ status: 'rea
       why: (row.coach_why ?? {}) as Record<string, PlanWhy>,
       step: row.step === 'groups' || row.step === 'drills' || row.step === 'review' ? row.step : 'blocks',
       drills,
+      folder: filed.error ? null : ((filed.data as { folder?: string | null } | null)?.folder ?? null),
       helperOn,
       facts,
     },

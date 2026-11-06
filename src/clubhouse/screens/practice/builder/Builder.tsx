@@ -85,7 +85,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
   const [saidLine, setSaidLine] = useState<string | null>(null);
 
   const snapshot = useMemo(() => ({ title, step, body, why }), [title, step, body, why]);
-  const save = useAutosave({ planId: data.planId, version: data.version, snapshot, preview: previewing });
+  const save = useAutosave({ planId: data.planId, version: data.version, snapshot, folder: data.folder ?? undefined, preview: previewing });
 
   // An offline tab's edits come back when it returns (S-PRC.bld-save-status).
   useEffect(() => {

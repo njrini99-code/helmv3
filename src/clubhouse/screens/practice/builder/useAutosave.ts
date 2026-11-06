@@ -47,7 +47,7 @@ export function restoredDraft(planId: string): Snapshot | null {
  * Offline keeps the plan in this tab and saves on reconnect (CH-13084); three failures in a row ask (CH-13080). A kept suggestion's Why goes to the coach-only
  * column through the draft save, so it never reaches the body a player reads. `preview`: nothing reaches a server.
  */
-export function useAutosave({ planId, version, snapshot, preview = false }: { planId: string; version: number; snapshot: Snapshot; preview?: boolean }) {
+export function useAutosave({ planId, version, snapshot, folder = 'Practice plans', preview = false }: { planId: string; version: number; snapshot: Snapshot; folder?: string; preview?: boolean }) {
   const [status, setStatus] = useState<SaveStatus>('saved');
   const latest = useRef(snapshot);
   const saved = useRef(JSON.stringify(snapshot));
@@ -72,7 +72,7 @@ export function useAutosave({ planId, version, snapshot, preview = false }: { pl
       try {
         const whyJson = JSON.stringify(snap.why);
         const res = whyJson !== savedWhy.current
-          ? await savePracticePlanDraft({ eventId: null, planId, version: versionRef.current, title: snap.title, draft: { body: snap.body, why: snap.why, version: versionRef.current }, folder: 'Practice plans' })
+          ? await savePracticePlanDraft({ eventId: null, planId, version: versionRef.current, title: snap.title, draft: { body: snap.body, why: snap.why, version: versionRef.current }, folder, step: snap.step })
           : await savePracticePlan({ planId, expectedVersion: versionRef.current, title: snap.title, step: snap.step, body: snap.body });
         if (!res.success) {
           if ('stale' in res && res.stale) return setStatus('stale');
@@ -100,7 +100,7 @@ export function useAutosave({ planId, version, snapshot, preview = false }: { pl
     });
     inFlight.current = p;
     return p;
-  }, [planId]);
+  }, [planId, folder]);
 
   const json = JSON.stringify(snapshot);
   useEffect(() => {

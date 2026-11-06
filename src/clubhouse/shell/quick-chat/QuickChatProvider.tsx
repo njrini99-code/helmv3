@@ -107,7 +107,7 @@ export function HelmKey() {
   const live = !open && run.state !== 'idle';
   return (
     <span className={'ch-qck keyslot' + (phone ? ' is-phone' : ' is-desk') + (reduced ? ' is-reduce' : '')} ref={keyRef}>
-      <Tooltip label="Quick chat with CoachHelm" shortcut={[modKey(true), 'J']}>
+      <Tooltip shortcut={[modKey(true), 'J']}>
       <button
         type="button"
         className={'hkey' + (open ? ' is-on' : '') + (open && run.state === 'work' ? ' is-working' : '') + (flag ? ' has-flag' : '')}
