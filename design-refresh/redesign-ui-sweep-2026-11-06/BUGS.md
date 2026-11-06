@@ -694,4 +694,3 @@ Staging (QA site, demo team, desktop 1440x900) plus Nick's two iPhone screenshot
 - [P2] **MOB-PRAC-10 Documents: desktop drop copy, a 32px ⋯ button and an 11px type tag on the phone** — Practice > Documents, 320–430, light and dark.
 - [P2] **MOB-PRAC-11 The folder name field refocuses on every render and lacks keyboard hints** — plan builder > new / rename folder, keyboard up.
 - [P2] **MOB-PRAC-12 Plan format's file input sits outside the modal sheet** — Plan format > upload a format file, all widths.
-
