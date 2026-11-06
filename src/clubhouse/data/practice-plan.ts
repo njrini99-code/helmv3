@@ -27,7 +27,7 @@ async function context(sb: Awaited<ReturnType<typeof createClient>>, eventId: st
   return { event, team, names, coaches: (coaches ?? []).map((c) => c.full_name).filter((n): n is string => !!n) };
 }
 
-const stateWord = (r: PracticePlanRow): string => (r.status === 'published' ? 'Published' : 'Draft · Only coaches');
+const stateWord = (r: PracticePlanRow): string => (r.status === 'published' ? 'Published' : 'Draft · not published');
 
 /** A coach's copy: the draft body and the Why lines from the coach-only column. */
 export async function loadCoachPlan(planId: string): Promise<PlanPageLoad> {
@@ -93,7 +93,7 @@ export async function loadPlayerPractice(planId: string, playerId: string, now: 
       when: [end ? `${clockOf(start)} to ${clockOf(end)}` : clockOf(start), body.place || ctx.event.location].filter(Boolean).join(' · '),
       focus: body.focus,
       group: group ? { name: group.name, mates: group.players.filter((p) => p !== playerId).map((p) => (ctx.names.get(p) ?? '').split(' ')[0]!).filter(Boolean) } : null,
-      stops: mine.stops.map((s, i) => ({ time: clockOf(s.start), place: s.place, line: [s.title, s.note].filter(Boolean).join(' · '), now: i === nowAt, next: i === nextAt })),
+      stops: mine.stops.map((s, i) => ({ startsAt: +s.start, endsAt: +s.end, time: clockOf(s.start), place: s.place, line: [s.title, s.note].filter(Boolean).join(' · '), now: i === nowAt, next: i === nextAt })),
       documents: 'Team Hub › Practice plans',
       planHref: null,
     },

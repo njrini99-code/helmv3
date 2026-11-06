@@ -11,6 +11,7 @@ import { publishPracticePlan } from '@/app/golf/actions/practice-publish';
 import { sendMessage } from '@/app/actions/messages';
 import { pluralize } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/server';
+import { getAppBaseUrl } from '@/lib/app-base-url';
 
 const Drill = z.string().describe('A ref from get_drill_bank detail.ids, like lib:<id>. Never invent one.').nullable().optional();
 const BlockInput = z.object({
@@ -196,7 +197,7 @@ export const publishFlow: FlowDef<z.infer<typeof publishInput>> = {
   },
   run: async (ctx, i) => {
     const res = await publishPracticePlan({ planId: i.plan_id, expectedVersion: i.version, notify: 'now' });
-    const chat = res.success && i.team_chat ? await postPlanToTeamChat(ctx, `${i.title} is published. ${i.when}.`) : null;
+    const chat = res.success && i.team_chat ? await postPlanToTeamChat(ctx, `${i.title} is published. ${i.when}. ${getAppBaseUrl()}/golf/dashboard/practice/plan/${i.plan_id}`) : null;
     return res.success ? { ok: true, summary: `Published. ${res.recipients} people told.${chat === false ? ' The Team chat post didn’t send.' : ''}`, kind: 'practice_plan', label: i.title, href: `/golf/dashboard/practice/plan/${i.plan_id}` } : { ok: false, error: res.error, summary: res.error, kind: 'practice_plan' };
   },
 };

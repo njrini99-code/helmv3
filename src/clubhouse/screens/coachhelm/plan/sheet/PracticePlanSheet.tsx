@@ -31,7 +31,9 @@ export function PracticePlanSheet({ plan, density = 'phone' }: { plan: PlanSheet
       </dl>
       {plan.groups.length > 0 && (
         <section>
-          <h3 className="pp-h">Groups</h3>
+          <h3 className="pp-h">
+            Groups{plan.copy === 'coach' && <span> · {plan.playersLine}</span>}
+          </h3>
           <div className="pp-groups">
             {plan.groups.map((g) => (
               <div key={g.letter} className={`pp-g g-${g.letter}`}>
@@ -50,7 +52,9 @@ export function PracticePlanSheet({ plan, density = 'phone' }: { plan: PlanSheet
         </section>
       )}
       <section>
-        <h3 className="pp-h">Schedule</h3>
+        <h3 className="pp-h">
+          Schedule<span> · {plan.totalLine}</span>
+        </h3>
         <div className="sched">
           {plan.rows.map((r) => (
             <div className="drow" key={r.id}>
@@ -62,7 +66,7 @@ export function PracticePlanSheet({ plan, density = 'phone' }: { plan: PlanSheet
                 <div className="pn">{r.title}</div>
                 {r.detail && <div className="pd">{r.detail}</div>}
                 {r.rotation ? (
-                  <div className="pp-rot" style={{ gridTemplateColumns: `minmax(0,1fr) repeat(${r.rotation.turns.length},40px)` }}>
+                  <div className="pp-rot" style={{ ['--ch-pp-turns' as string]: r.rotation.turns.length }}>
                     <span className="h">Station</span>
                     {r.rotation.turns.map((t) => (
                       <span className="h" key={t}>
@@ -89,7 +93,7 @@ export function PracticePlanSheet({ plan, density = 'phone' }: { plan: PlanSheet
                 )}
                 {r.why && (
                   <p className="pp-why">
-                    <b>Why</b> {r.why}
+                    <b>Why</b> <WhyLine text={r.why} />
                   </p>
                 )}
               </div>
@@ -98,18 +102,21 @@ export function PracticePlanSheet({ plan, density = 'phone' }: { plan: PlanSheet
         </div>
       </section>
       <div className="pp-two">
-        <section>
-          <h3 className="pp-h">Bring</h3>
-          <ul className="pp-check">
-            {plan.bring.map((b) => (
-              <li key={b}>{b}</li>
-            ))}
-          </ul>
-        </section>
+        {plan.bring.length > 0 && (
+          <section>
+            <h3 className="pp-h">Bring</h3>
+            <ul className="pp-check">
+              {plan.bring.map((b) => (
+                <li key={b}>{b}</li>
+              ))}
+            </ul>
+          </section>
+        )}
         <section>
           <h3 className="pp-h">Notes</h3>
           {plan.notes ? <p className="pp-focus">{plan.notes}</p> : (
             <div className="pp-lines" aria-hidden="true">
+              <i />
               <i />
               <i />
               <i />
@@ -119,9 +126,26 @@ export function PracticePlanSheet({ plan, density = 'phone' }: { plan: PlanSheet
       </div>
       <footer className="pp-foot">
         <span>{plan.foot}</span>
-        <span>Page 1 of 1</span>
       </footer>
     </article>
+  );
+}
+
+/** A loss in a Why line, in amber: the figure only, with a true minus. */
+function WhyLine({ text }: { text: string }) {
+  const parts = text.split(/([-\u2212]\d+(?:\.\d+)?)/);
+  return (
+    <>
+      {parts.map((p, i) =>
+        i % 2 ? (
+          <span className="neg" key={i}>
+            {p.replace('-', '\u2212')}
+          </span>
+        ) : (
+          p
+        ),
+      )}
+    </>
   );
 }
 

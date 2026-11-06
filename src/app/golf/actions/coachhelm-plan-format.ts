@@ -35,19 +35,30 @@ async function readPlanFormatImpl(documentId: string): Promise<{ success: true; 
   }
 }
 
-async function setPlanFormatImpl(input: { documentId: string; name: string; sections: FormatSections }): Promise<{ success: boolean; error?: string; id?: string }> {
+export interface PriorFormat {
+  source_document_id: string | null;
+  name: string;
+  sections: FormatSections;
+}
+
+async function setPlanFormatImpl(input: { documentId: string; name: string; sections: FormatSections }): Promise<{ success: boolean; error?: string; id?: string; prior?: PriorFormat | null }> {
   if (!isPracticePlansEnabled()) return { success: false, error: 'Comes with the Practice tab.' };
   const sb = await createClient();
   const ctx = await resolveCoachChatContext(sb).catch(() => null);
   if (!ctx) return { success: false, error: 'Unauthorized' };
+  // There's one row a team, and the upsert overwrites it: keep what it said, so Undo can put it back.
+  const { data: was } = await practiceTables(sb).from('golf_practice_plan_formats').select('source_document_id, name, sections').eq('team_id', ctx.team_id).maybeSingle();
+  const prior = (was as PriorFormat | null) ?? null;
   const { data, error } = await practiceTables(sb).from('golf_practice_plan_formats').upsert({ team_id: ctx.team_id, source_document_id: input.documentId, name: input.name, sections: input.sections, created_by: ctx.user_id }, { onConflict: 'team_id' }).select('id').maybeSingle();
   if (error) return { success: false, error: isPracticeMissing(error.code) ? 'Comes with the Practice tab.' : 'The format wasn’t set.' };
-  return { success: true, id: (data as { id?: string } | null)?.id };
+  return { success: true, id: (data as { id?: string } | null)?.id, prior };
 }
 
-async function undoPlanFormatImpl(id: string): Promise<{ success: boolean }> {
+/** Undo: the format before this one comes back, or the team's standard sheet if there wasn't one. */
+async function undoPlanFormatImpl(input: { id: string; prior: PriorFormat | null }): Promise<{ success: boolean }> {
   const sb = await createClient();
-  const { error } = await practiceTables(sb).from('golf_practice_plan_formats').delete().eq('id', id);
+  const table = practiceTables(sb).from('golf_practice_plan_formats');
+  const { error } = input.prior ? await table.update({ source_document_id: input.prior.source_document_id, name: input.prior.name, sections: input.prior.sections }).eq('id', input.id) : await table.delete().eq('id', input.id);
   return { success: !error };
 }
 
@@ -61,6 +72,6 @@ export async function readPlanFormat(documentId: string) {
 export async function setPlanFormat(input: Parameters<typeof setPlanFormatImpl>[0]) {
   return obsSet(input);
 }
-export async function undoPlanFormat(id: string) {
-  return obsUndo(id);
+export async function undoPlanFormat(input: { id: string; prior: PriorFormat | null }) {
+  return obsUndo(input);
 }

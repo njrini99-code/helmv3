@@ -2,7 +2,7 @@
 import { Button } from '../../../ui/Button';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
 import { recordPracticePlanOpen } from '@/app/golf/actions/practice-plans';
@@ -16,9 +16,10 @@ export function PlanPageActions({ plan, playerPlanId, editHref = null }: { plan:
   }, [playerPlanId]);
   const phone = useChPhone();
   const router = useRouter();
+  const from = useSearchParams().get('from');
   return (
     <div className="ch-prc-planacts">
-      {phone && <PhoneTop title="Practice plan" back={{ label: 'Practice', onBack: () => router.back() }} />}
+      {phone && <PhoneTop title="Practice plan" back={{ label: 'Practice', onBack: () => (from === 'coachhelm' ? router.push('/golf/dashboard/coachhelm/chat') : router.back()) }} />}
       {editHref && (
         <Button variant="secondary" href={editHref}>
           Edit
@@ -26,6 +27,9 @@ export function PlanPageActions({ plan, playerPlanId, editHref = null }: { plan:
       )}
       <Button variant="secondary" onClick={() => void printPlan(plan)}>
         Print
+      </Button>
+      <Button variant="secondary" onClick={() => void printPlan(plan)}>
+        Share PDF
       </Button>
     </div>
   );

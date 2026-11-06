@@ -6,19 +6,20 @@ import { Camera, Check, ChevronLeft, CircleCheck, Clock, FileText, Image as Imag
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState, type ChangeEvent } from 'react';
-import { readPlanFormat, setPlanFormat, undoPlanFormat, type FormatSections } from '@/app/golf/actions/coachhelm-plan-format';
-import { createGolfDocument, uploadGolfDocument } from '@/app/golf/actions/documents';
+import { readPlanFormat, setPlanFormat, undoPlanFormat, type FormatSections, type PriorFormat } from '@/app/golf/actions/coachhelm-plan-format';
+import { createGolfDocument, deleteGolfDocument, uploadGolfDocument } from '@/app/golf/actions/documents';
 import { FormSheet } from '../../../../ui/FormSheet';
 import { Icon } from '../../../../ui/Icon';
 import { useChPhone } from '../../../../lib/use-phone';
 import { PhoneTop } from '../../../../shell/phone-chrome';
+import { plural } from '../../../../lib/plural';
 import { useUndoWindow } from '../useUndoWindow';
 
 export type FormatView =
   | { k: 'empty' }
   | { k: 'reading'; file: string; meta: string }
   | { k: 'found'; file: string; documentId: string; sections: FormatSections }
-  | { k: 'set'; file: string; id: string; until: string }
+  | { k: 'set'; file: string; id: string; until: string; prior?: PriorFormat | null }
   | { k: 'failed'; message: string };
 
 const LINE: Record<FormatSections[number]['key'], string> = {
@@ -70,6 +71,7 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
   const [name, setName] = useState(current);
   // Undo puts back the name the page had: the file just undone isn't the current format.
   const before = useRef(current);
+  const lastSample = useRef<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const libraryInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
@@ -81,9 +83,12 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
     setView({ k: 'reading', file: file.name, meta: `${file.type.includes('pdf') ? 'PDF' : 'File'} · 1 page` });
     const up = await uploadGolfDocument(file, teamId);
     if (!up.success || !up.file_url) return setView({ k: 'failed', message: 'That file didn’t upload. Try again.' });
-    const doc = (await createGolfDocument({ team_id: teamId, title: file.name, file_url: up.file_url, file_type: file.type, file_size: file.size, player_visible: false, folder: 'Practice plans' })) as { data?: { id?: string } | null };
+    const doc = (await createGolfDocument({ team_id: teamId, title: file.name, file_url: up.file_url, file_type: file.type, file_size: file.size, player_visible: false, folder: 'Plan formats' })) as { data?: { id?: string } | null };
     const documentId = doc.data?.id;
     if (!documentId) return setView({ k: 'failed', message: 'That file didn’t upload. Try again.' });
+    // Try another: the last sample goes, so a coach's Documents doesn't fill with retries.
+    if (lastSample.current) void deleteGolfDocument(lastSample.current).catch(() => {});
+    lastSample.current = documentId;
     const res = await readPlanFormat(documentId);
     if (!res.success) return setView({ k: 'failed', message: res.error });
     setView({ k: 'found', file: file.name, documentId, sections: res.sections });
@@ -101,7 +106,7 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
     if (!res.success || !res.id) return setView({ k: 'failed', message: res.error ?? 'The format wasn’t set.' });
     before.current = name;
     setName(view.file.replace(/\.[^.]+$/, ''));
-    setView({ k: 'set', file: view.file, id: res.id, until });
+    setView({ k: 'set', file: view.file, id: res.id, until, prior: res.prior ?? null });
   };
   const learns = (
     <section className="art">
@@ -165,7 +170,7 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
             </span>
             <div className="hd">
               <span className="t">Here’s your format</span>
-              <span className="m">New plans follow this layout. The drills and times still come from your data.</span>
+              <span className="m">{plural(view.sections.length, 'section')}. New plans follow this layout. The drills and times still come from your data.</span>
             </div>
           </header>
           <Sample found />
@@ -208,8 +213,9 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
                 type="button"
                 onClick={() => {
                   if (preview) return setView({ k: 'empty' });
-                  void undoPlanFormat(view.id)
-                    .then(() => {
+                  void undoPlanFormat({ id: view.id, prior: view.prior ?? null })
+                    .then((r) => {
+                      if (!r.success) return setView({ k: 'failed', message: 'That didn’t undo. Your format is still set.' });
                       setName(before.current);
                       setView({ k: 'empty' });
                     })
@@ -251,12 +257,12 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
         <span>Current format</span>
         <span className="m">{shownName}</span>
       </section>
-      {/* The three ways in differ: any file, the photo library, the camera itself. */}
-      <input ref={fileInput} type="file" accept="application/pdf,image/*,.doc,.docx,.xls,.xlsx" hidden onChange={onFile} />
-      <input ref={libraryInput} type="file" accept="image/*" hidden onChange={onFile} />
-      <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={onFile} />
       <FormSheet open={sheet} onClose={() => setSheet(false)} title="Upload a plan" actionLabel="Done" onAction={() => setSheet(false)}>
         <div className="ch-cpv ch-cpv-sheet">
+          {/* The three ways in differ: any file, the photo library, the camera itself. In the sheet: outside a modal they're inert. */}
+          <input ref={fileInput} type="file" accept="application/pdf,image/*,.doc,.docx,.xls,.xlsx" hidden onChange={onFile} />
+          <input ref={libraryInput} type="file" accept="image/*" hidden onChange={onFile} />
+          <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={onFile} />
           {picked ? (
             <div className="grp">
               <div className="pickf">

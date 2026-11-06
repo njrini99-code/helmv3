@@ -24,13 +24,19 @@ export interface PlanSheetModel {
   groups: Array<{ letter: string; names: string[] }>;
   rows: SheetRow[];
   bring: string[];
+  /** "9 players", beside Groups. */
+  playersLine: string;
+  /** "3 h", beside Schedule. */
+  totalLine: string;
   notes: string;
   foot: string;
 }
 
 const LETTER = 'ABCDEF';
 const NO_DATA = '—';
-const clock = (d: Date | null, zone: string | null) => (d && zone ? formatWith(d, { hour: 'numeric', minute: '2-digit', timeZone: zone }) : NO_DATA);
+// The one clock Practice prints in a column: no AM or PM. The sheet's Time row says the period once.
+const clock = (d: Date | null, zone: string | null) => (d && zone ? formatWith(d, { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: zone }).replace(/\s?[AP]M$/, '') : NO_DATA);
+const clockFull = (d: Date | null, zone: string | null) => (d && zone ? formatWith(d, { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: zone }) : NO_DATA);
 
 /**
  * What the sheet draws. A player's model has no `why` key at all, and of the groups only the viewer's own: another group's names, letters and
@@ -83,13 +89,18 @@ export function toSheetModel(input: { body: PlanBodyV2; why?: Record<string, Pla
     dayWord: (parts.find((p) => p.type === 'weekday')?.value ?? '').toUpperCase(),
     dayNum: parts.find((p) => p.type === 'day')?.value ?? NO_DATA,
     meta: [
-      { label: 'Time', value: `${clock(input.start, zone)}${input.end ? ` to ${clock(input.end, zone)}` : ''}` },
+      { label: 'Time', value: input.end ? `${clock(input.start, zone)} to ${clockFull(input.end, zone)}` : clockFull(input.start, zone) },
       { label: 'Place', value: body.place || NO_DATA },
       { label: 'Coaches', value: input.coaches.join(', ') || NO_DATA },
     ],
     groups: body.groups.flatMap((g, i) => (player && g.id !== ownGroup?.id ? [] : [{ letter: LETTER[i] ?? '', names: g.players.map((p) => input.names.get(p) ?? NO_DATA) }])),
     rows,
-    bring: body.bring.map((b) => (b.qty > 1 ? `${b.item} × ${b.qty}` : b.item)),
+    playersLine: `${new Set(body.groups.flatMap((g) => g.players)).size} players`.replace(/^1 players$/, '1 player'),
+    totalLine: (() => {
+      const total = body.variants.main.blocks.reduce((sum, b) => sum + b.len, 0);
+      return total >= 60 ? `${Math.round((total / 60) * 10) / 10} h` : `${total} min`;
+    })(),
+    bring: body.bring.map((b) => (b.qty > 1 ? `${b.item} · ${b.qty}` : b.item)),
     notes: body.notes,
     foot: input.state,
   };

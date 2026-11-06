@@ -87,7 +87,7 @@ export async function PracticePlanRoute({ planId }: { planId: string }) {
   }
   if (player) {
     const practice = await loadPlayerPractice(planId, player.id);
-    if (practice.status === 'ready') return <PlayerPractice data={practice.data} planId={planId} everyone={<PracticePlanSheet plan={load.plan} />} />;
+    if (practice.status === 'ready') return <PlayerPractice data={practice.data} planId={planId} everyone={<><PlanPageActions plan={load.plan} playerPlanId={null} /><PracticePlanSheet plan={load.plan} /></>} />;
   }
   return (
     <main className="ch-page ch-prc-planpage" data-ch="practice-plan">

@@ -19,6 +19,7 @@ import { Icon } from '../../../ui/Icon';
 import { InlineNotice } from '../../../ui/Notices';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { PracticePlanSheet } from './sheet/PracticePlanSheet';
+import { printPlan } from './PrintPlan';
 import { toSheetModel } from './sheet/plan-sheet-model';
 import { useUndoWindow } from './useUndoWindow';
 
@@ -298,6 +299,22 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
     sheet?.kind === 'swap'
       ? blocks.flatMap((b) => (b.kind === 'stations' ? b.stations.map((s, i) => ({ id: s.id, head: `Station ${i + 1}`, drill: s.drill })) : b.kind === 'team' ? [{ id: b.id, head: b.title, drill: b.drill }] : [])).find((s) => s.id === sheet.id)
       : null;
+  const sheetModel = toSheetModel(
+    {
+      // While it writes, the pane fills in block by block with the card.
+      body: shownVersion?.draft.body ?? (writing ? { ...draft.body, variants: { ...draft.body.variants, main: { blocks: blocks.slice(0, shown) } } } : draft.body),
+      why: shownVersion?.draft.why ?? draft.why,
+      title: plan.title,
+      team: plan.sheet?.team ?? '',
+      start: plan.sheet?.start ? new Date(plan.sheet.start) : null,
+      end: plan.sheet?.end ? new Date(plan.sheet.end) : null,
+      zone: plan.sheet?.zone ?? null,
+      coaches: plan.sheet?.coaches ?? [],
+      names: new Map(Object.entries(plan.sheet?.names ?? {})),
+      state: 'Draft · not published',
+    },
+    'coach',
+  );
   let at = 0;
   return (
     <div className={'ch-cpv' + (phone ? '' : ' is-desk')} data-ch="plan-card">
@@ -520,7 +537,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                         }}
                       >
                         <Icon icon={FolderClosed} size={18} className="fi" />
-                        <input className="inp" ref={(el) => el?.focus()} aria-label="Folder name" maxLength={FIELD_MAX} value={name} placeholder="Folder name" onChange={(e) => setName(e.target.value)} />
+                        <input className="inp" autoFocus autoCapitalize="words" enterKeyHint="done" aria-label="Folder name" maxLength={FIELD_MAX} value={name} placeholder="Folder name" onChange={(e) => setName(e.target.value)} />
                         <Button variant="secondary" size="sm" type="submit" disabled={!clean || dupe || reserved}>
                           Create
                         </Button>
@@ -654,7 +671,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                 sendAsk(open.title);
               }}
             >
-              <input aria-label="Ask about this block" placeholder="Ask about this block" value={ask} onChange={(e) => setAsk(e.target.value)} />
+              <input enterKeyHint="send" autoCapitalize="sentences" aria-label="Ask about this block" placeholder="Ask about this block" value={ask} onChange={(e) => setAsk(e.target.value)} />
               <button type="submit" aria-label="Send" disabled={!ask.trim()}>
                 <Icon icon={ArrowUp} size={18} />
               </button>
@@ -697,7 +714,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
               sendAsk('This station');
             }}
           >
-            <input aria-label="Ask about this station" placeholder="Ask about this station" value={ask} onChange={(e) => setAsk(e.target.value)} />
+            <input enterKeyHint="send" autoCapitalize="sentences" aria-label="Ask about this station" placeholder="Ask about this station" value={ask} onChange={(e) => setAsk(e.target.value)} />
             <button type="submit" aria-label="Send" disabled={!ask.trim()}>
               <Icon icon={ArrowUp} size={18} />
             </button>
@@ -754,24 +771,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
             )}
           </div>
           <div className="fbody">
-            <PracticePlanSheet
-              plan={toSheetModel(
-                {
-                  // While it writes, the pane fills in block by block with the card.
-                  body: shownVersion?.draft.body ?? (writing ? { ...draft.body, variants: { ...draft.body.variants, main: { blocks: blocks.slice(0, shown) } } } : draft.body),
-                  why: shownVersion?.draft.why ?? draft.why,
-                  title: plan.title,
-                  team: plan.sheet?.team ?? '',
-                  start: plan.sheet?.start ? new Date(plan.sheet.start) : null,
-                  end: plan.sheet?.end ? new Date(plan.sheet.end) : null,
-                  zone: plan.sheet?.zone ?? null,
-                  coaches: plan.sheet?.coaches ?? [],
-                  names: new Map(Object.entries(plan.sheet?.names ?? {})),
-                  state: 'Draft · Only coaches',
-                },
-                'coach',
-              )}
-            />
+            <PracticePlanSheet plan={sheetModel} />
           </div>
           <div className="fdock">
             {!saveOn ? (
@@ -789,6 +789,9 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                     )}
                   </p>
                 )}
+                <Button variant="secondary" onClick={() => void printPlan(sheetModel)}>
+                  {phone ? 'Share PDF' : 'Print'}
+                </Button>
                 {state.k === 'saved' && (
                   <Button variant="secondary" onClick={() => router.push(`/golf/dashboard/practice/plan/${state.planId}/edit`)}>
                     Edit in builder

@@ -40,6 +40,7 @@ FLOWS.publish_practice_plan = { verb: 'Publish', busy: 'Publishing…', chip: 'P
 /** Where a confirmed draft lands (the page's `hs`): the screen and section, with this row on top. Its neighbours would need a read per screen, so only the new row draws. */
 const LANDS: Record<string, { app: string; where: string }> = {
   create_event: { app: 'Calendar', where: 'Wednesday' },
+  publish_practice_plan: { app: 'Documents', where: 'Practice plans' },
   create_recurring_practice: { app: 'Calendar', where: 'Practices' },
   create_team_announcement: { app: 'Messages', where: 'Announcements' },
   create_announcement: { app: 'Messages', where: 'Announcements' },
@@ -261,7 +262,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
         </div>
       )}
       {cancelled && <p className="cxl">Cancelled. Nothing was created.</p>}
-      {receipt && <Receipt receipt={receipt} idempotencyKey={view.key} undoneLine={UNDONE[view.tool]} telling={p.notifications.length > 0 && !p.notifications.every((n) => /^(nobody|nothing)/i.test(n))} coins={coinNames(p, roster)} onUndone={() => setUndone(true)} />}
+      {receipt && <Receipt {...(view.tool === 'publish_practice_plan' ? { failedLine: 'Nothing was sent.', onRetry: onSend ? () => onSend(`Publish the plan ${p.summary}`) : undefined } : {})} receipt={receipt} idempotencyKey={view.key} undoneLine={UNDONE[view.tool]} telling={p.notifications.length > 0 && !p.notifications.every((n) => /^(nobody|nothing)/i.test(n))} coins={coinNames(p, roster)} onUndone={() => setUndone(true)} />}
     </section>
   );
 }
@@ -269,7 +270,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
 type Phase = { kind: 'held' } | { kind: 'undoing' } | { kind: 'undone' } | { kind: 'done'; receipt: ActionReceipt };
 
 /** The receipt row. While held: the ring drains over the time left, and Undo cancels the run on the server. A reload past the window draws the durable receipt with no Undo. */
-export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, telling = false, coins = [], onUndone }: { receipt: ActionReceipt; idempotencyKey: string; undoneLine?: string; /** Someone hears about this once the window closes. */ telling?: boolean; /** Who was told, where the card knows. */ coins?: readonly string[]; onUndone?: () => void }) {
+export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, telling = false, coins = [], onUndone, failedLine = 'Nothing was saved.', onRetry }: { failedLine?: string; onRetry?: () => void; receipt: ActionReceipt; idempotencyKey: string; undoneLine?: string; /** Someone hears about this once the window closes. */ telling?: boolean; /** Who was told, where the card knows. */ coins?: readonly string[]; onUndone?: () => void }) {
   const held = receipt.status === 'held' && receipt.held_until ? receipt.held_until : null;
   const [phase, setPhase] = useState<Phase>(held ? { kind: 'held' } : { kind: 'done', receipt });
   // Late: the server said the window had closed (409). A refused or dropped Undo is its own line and can be pressed again.
@@ -364,8 +365,13 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
         </span>
         <div>
           <b>{r.summary}</b>
-          <span className="sub">Nothing was saved.</span>
+          <span className="sub">{failedLine}</span>
         </div>
+        {onRetry && (
+          <Button variant="secondary" size="sm" onClick={onRetry}>
+            Try again
+          </Button>
+        )}
       </div>
     );
   const link = r.created.find((c) => c.href);

@@ -21,10 +21,10 @@ export async function getClassTimes(sb: Sb, ctx: CoachChatContext, input: { date
 
 /** The one bank: team drills once `golf_team_drills` exists, then the GolfHelm library. A drill is never invented. */
 export async function getDrillBank(sb: Sb, ctx: CoachChatContext, input: { category?: string }): Promise<ToolEnvelope> {
-  const team = await practiceTables(sb).from('golf_team_drills').select('id, name, area, kind, minutes').eq('team_id', ctx.team_id).is('archived_at', null).limit(20);
+  const team = await practiceTables(sb).from('golf_team_drills').select('id, name, area, kind, minutes').eq('team_id', ctx.team_id).is('archived_at', null).limit(60);
   const teamRows = team.error ? [] : ((team.data ?? []) as Array<Pick<TeamDrillRow, 'id' | 'name' | 'area' | 'kind' | 'minutes'>>);
   if (team.error && !isPracticeMissing(team.error.code)) return unavailableEnvelope('Could not read the drill bank.', 'The team drill read failed.');
-  let q = sb.from('golf_drills').select('id, title, category, duration_min').limit(20);
+  let q = sb.from('golf_drills').select('id, title, category, duration_min').limit(60);
   if (input.category) q = q.eq('category', input.category);
   const lib = await q;
   if (lib.error) return unavailableEnvelope('Could not read the drill bank.', 'The library read failed.');
