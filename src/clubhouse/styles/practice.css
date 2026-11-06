@@ -1,6 +1,7 @@
 /* Practice, the tab (S-PRC.home) and the builder (S-BLD, S-BLDD): flat page, card surfaces, one fill and a ring for what's selected, no stripes. */
 .ch-prc {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 24px;
   align-content: start;
   max-width: var(--ch-measure-page);
@@ -1086,4 +1087,7 @@ main.ch-prc-planpage {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+}
+.ch-prc-formatlink {
+  text-decoration: none;
 }
