@@ -167,11 +167,11 @@ import '@/clubhouse/styles/coachhelm-file.css';
 import '@/clubhouse/styles/coachhelm-ask-v2.css';
 import '@/clubhouse/styles/coachhelm-plan.css';
 import '@/clubhouse/styles/practice.css';
-import { PreviewPracticeBuilder, PreviewPracticeHome } from '@/clubhouse/preview/PreviewPracticeHome';
+import { PreviewPracticeBuilder, PreviewPracticeHome, PreviewPracticeLibrary } from '@/clubhouse/preview/PreviewPracticeHome';
 import { PreviewPracticePlan } from '@/clubhouse/preview/PreviewPracticePlan';
 import { PreviewPracticeThread } from '@/clubhouse/preview/PreviewPracticeThread';
 import { PreviewAskV2 } from '@/clubhouse/preview/PreviewAskV2';
-import { PreviewPracticeFormat, PreviewPracticePlayer } from '@/clubhouse/preview/PreviewPracticeOther';
+import { PreviewPracticeFormat, PreviewPracticePlayer, PreviewPracticePrint, PreviewPracticeRun } from '@/clubhouse/preview/PreviewPracticeOther';
 import { PreviewCoachHelmRead } from '@/clubhouse/preview/PreviewCoachHelmRead';
 import { PreviewCoachHelmPlayerFile } from '@/clubhouse/preview/PreviewCoachHelmPlayerFile';
 import { PreviewCoachHelmTeam } from '@/clubhouse/preview/PreviewCoachHelmTeam';
@@ -214,6 +214,9 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  *   /clubhouse-preview/coachhelm ?state=recheck-running | recheck-done | recheck-quiet | recheck-ratelimited | recheck-failed   (Re-check reads answers that way once tapped)
  *   /clubhouse-preview/coachhelm-player ?state=engine   (every engine flag on, CoachHelm surfaces A)
  *   /clubhouse-preview/coachhelm-player ?state=empty | norounds | working | failed | off | loading | proposed | failproposal | proposalsfailed   (Jonah)
+ *   /clubhouse-preview/coachhelm-practice-print ?state=norotation | nodrills
+ *   /clubhouse-preview/coachhelm-practice-run ?state=draft | edited
+ *   /clubhouse-preview/coachhelm-practice-library ?tab=drills | drill | groups | templates &state=empty | library
  *   /clubhouse-preview/coachhelm-practice-home ?state=empty | firstrun | new | player | player-empty   (Practice, the tab; synthetic plans, nothing reaches a server)
  *   /clubhouse-preview/coachhelm-practice-builder ?state=empty | blocks | sheet | ghosts | kept | groups | drills | review | publish | stale | new   (the builder over the design page's plan; nothing reaches a server)
  *   /clubhouse-preview/coachhelm-ask ?state=… &q=…   (the Ask sub-tab; states in src/clubhouse/preview/PreviewAsk.tsx)
@@ -638,6 +641,10 @@ export default async function ClubhousePreview({
       path: '/golf/dashboard/practice',
       node: <PreviewPracticeHome state={state} />,
     },
+    'coachhelm-practice-library': {
+      path: '/golf/dashboard/practice/drills',
+      node: <PreviewPracticeLibrary tab={tab} state={state} />,
+    },
     'coachhelm-practice-builder': {
       path: '/golf/dashboard/practice/plan/preview/edit',
       node: <PreviewPracticeBuilder state={state} />,
@@ -649,6 +656,14 @@ export default async function ClubhousePreview({
     'coachhelm-practice-player': {
       path: '/player/practice/plan/preview',
       node: <PreviewPracticePlayer state={state} />,
+    },
+    'coachhelm-practice-print': {
+      path: '/golf/dashboard/practice/print/preview',
+      node: <PreviewPracticePrint state={state} />,
+    },
+    'coachhelm-practice-run': {
+      path: '/golf/dashboard/practice/plan/preview',
+      node: <PreviewPracticeRun state={state} />,
     },
     'coachhelm-practice-thread': {
       path: '/golf/dashboard/coachhelm',

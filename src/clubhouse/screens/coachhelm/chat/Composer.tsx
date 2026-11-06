@@ -90,6 +90,8 @@ export interface AskComposerProps {
   failed: boolean;
   /** An action card is waiting for Confirm or Cancel: a new question can't go over it (PR #2105 fixes that on the server). */
   blocked: boolean;
+  /** A player out of Ask: the box stays, says why and takes nothing (E-OUT). */
+  paused?: string;
   onSend: (text: string) => void;
   onStop: () => void;
   autoFocus?: boolean;
@@ -166,7 +168,7 @@ function usePickerRoom(anchor: RefObject<HTMLElement | null>, open: boolean, bel
  *  - Offline, Send is refused before anything is sent: an error toast (CH-1903) and the text stays.
  *  - A send that failed puts its text back (once, into an empty box); a card awaiting a decision disables Send.
  */
-export function AskComposer({ seed, scopeOf, variant, phone, players, busy, failed, blocked, onSend, onStop, autoFocus, fresh = false, draftKey = null, roster = true, hint, slash = [] }: AskComposerProps) {
+export function AskComposer({ seed, scopeOf, variant, phone, players, busy, failed, blocked, paused, onSend, onStop, autoFocus, fresh = false, draftKey = null, roster = true, hint, slash = [] }: AskComposerProps) {
   const refuseOffline = useRefuseOffline();
   const finePointer = useFinePointer();
   const hero = variant === 'hero';
@@ -274,7 +276,7 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
 
   const submit = () => {
     const typed = value.trim();
-    if (!typed || busy || blocked) return;
+    if (!typed || busy || blocked || paused) return;
     if (refuseOffline()) return;
     last.current = { text: typed, range };
     haptic('press');
@@ -351,11 +353,11 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
     }
   };
 
-  const canSend = value.trim().length > 0 && !blocked;
+  const canSend = value.trim().length > 0 && !blocked && !paused;
   // The phone's scope line already says it until the coach types; a chip only earns its row there once the words change the scope.
   const scopeChips = scopeOf && (!phone || value.trim()) ? scopeOf(value) : [];
   const first = hero || fresh;
-  const placeholder = first && hint ? hint : first ? (phone ? 'Ask about a player, a stat, or the week' : 'Ask about a player, a stat, or the week ahead') : 'Ask a follow-up';
+  const placeholder = paused ? paused : first && hint ? hint : first ? (phone ? 'Ask about a player, a stat, or the week' : 'Ask about a player, a stat, or the week ahead') : 'Ask a follow-up';
 
   const plus = (
     <Menu
@@ -422,6 +424,7 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
           className="ch-ask-cmp__ta"
           rows={hero && !phone ? 2 : 1}
           value={value}
+          disabled={!!paused}
           placeholder={placeholder}
           enterKeyHint="send"
           autoComplete="off"

@@ -1,5 +1,4 @@
-import { isCountableRound } from '@/lib/golf/round-countable';
-import { holeRounds } from './round-scope';
+import { holeRounds, isScoreCountable } from './round-scope';
 import { countsForScoring, MIN_SG_ROUNDS, type ChRound } from './season';
 import { effectiveCount, weightedMean } from './stats-weight';
 
@@ -9,9 +8,12 @@ import { effectiveCount, weightedMean } from './stats-weight';
  * only by the window each names.
  */
 
-/** The rounds a figure may read: complete rounds that count, with practice left out. Round lists still show everything. */
+/**
+ * The rounds a figure may read: rounds that count toward a score, with practice left out. An 18-hole total posted without its holes is
+ * one of them; only strokes gained leaves it out, through `holeRounds`. Round lists still show everything.
+ */
 export function roundsForFigures<T extends { round_type: string | null }>(rounds: readonly T[]): T[] {
-  return rounds.filter((r) => countsForScoring(r) && isCountableRound(r as never));
+  return rounds.filter((r) => countsForScoring(r) && isScoreCountable(r as never));
 }
 
 export type ChLegKey = 'tee' | 'approach' | 'around' | 'putting';

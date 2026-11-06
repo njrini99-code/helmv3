@@ -4806,9 +4806,17 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   background: var(--ch-well-bg-flat);
   color: var(--ch-green-600);
 }
+[data-ch-ms-v2] .ch-msv-attach__ic.is-file {
+  background: var(--ch-attach-file);
+  color: var(--ch-attach-glyph);
+}
+[data-ch-ms-v2] .ch-msv-attach__ic.is-poll {
+  background: var(--ch-attach-poll);
+  color: var(--ch-attach-glyph);
+}
 [data-ch-ms-v2] .ch-msv-attach__ic.is-photos {
-  background: var(--ch-bubble-mine-fill);
-  color: var(--ch-text-on-accent);
+  background: var(--ch-attach-photos);
+  color: var(--ch-attach-glyph);
 }
 /* Reply, edit and file chips share one box: 44 tall, padding 6 8 6 6, radius 12 (MSG-FILE-01, MSG-REPLY-01). */
 [data-ch-ms-v2] .ch-ms-comp__reply,
@@ -5699,6 +5707,15 @@ body:has([data-ch-ms-v2]) .ch-toast {
     pointer-events: auto;
     transform: none;
   }
+}
+/* No hover on a finger: a long press holds the bar and the time open (MOB-MSG-2). */
+.ch-ms-msg[data-ch-bar] .ch-msv-hoverbar {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+[data-ch-ms-v2] .ch-ms-msg[data-ch-bar] .ch-msv-time {
+  opacity: 1;
 }
 @media (prefers-reduced-motion: reduce) {
   .ch-msv-hoverbar {

@@ -56,6 +56,94 @@ async function archiveTeamDrillImpl(input: { drillId: string; archived: boolean 
   return error ? { success: false, error: 'Couldn’t save the drill.', code: 'CH-17006', unavailable: isPracticeMissing(error.code) } : { success: true };
 }
 
+/** The drill page's Edit (N-00 4.7): drafts pick up the change; published plans keep their frozen copy. */
+async function updateTeamDrillImpl(input: DrillInput & { drillId: string }): Promise<PracticeResult<object>> {
+  const bad = check(input);
+  if (bad) return { success: false, error: bad, code: 'CH-17112' };
+  const { sb, userId } = await who();
+  if (!userId) return { success: false, error: 'Not signed in.' };
+  const { error } = await practiceTables(sb).from('golf_team_drills').update({ name: input.name.trim(), area: input.area, kind: input.kind, minutes: input.minutes, setup: input.setup ?? '', goal: input.goal ?? '', updated_by: userId }).eq('id', input.drillId).eq('team_id', input.teamId);
+  if (error) return { success: false, error: 'Couldn’t save the drill.', code: 'CH-17006', unavailable: isPracticeMissing(error.code) };
+  return { success: true };
+}
+
+export interface GroupInput {
+  teamId: string;
+  groupId: string | null;
+  name: string;
+  playerIds: string[];
+}
+async function saveGroupImpl(input: GroupInput): Promise<PracticeResult<{ id: string }>> {
+  const name = input.name.trim();
+  if (!name || name.length > 40) return { success: false, error: 'Name the group, up to 40 characters.', code: 'CH-17113' };
+  if (input.playerIds.length > 30) return { success: false, error: 'A group holds up to 30 players.', code: 'CH-17113' };
+  const { sb, userId } = await who();
+  if (!userId) return { success: false, error: 'Not signed in.' };
+  const db = practiceTables(sb).from('golf_practice_groups');
+  const res = input.groupId
+    ? await db.update({ name, player_ids: input.playerIds }).eq('id', input.groupId).eq('team_id', input.teamId).select('id').single()
+    : await db.insert({ team_id: input.teamId, name, player_ids: input.playerIds, created_by: userId }).select('id').single();
+  if (res.error || !res.data) {
+    if (res.error?.code === '23505') return { success: false, error: 'You already have a group with that name.', code: 'CH-17113' };
+    return { success: false, error: 'Couldn’t save the group.', code: 'CH-17006', unavailable: isPracticeMissing(res.error?.code) };
+  }
+  return { success: true, id: (res.data as { id: string }).id };
+}
+async function deleteGroupImpl(input: { teamId: string; groupId: string }): Promise<PracticeResult<object>> {
+  const { sb } = await who();
+  const { error } = await practiceTables(sb).from('golf_practice_groups').delete().eq('id', input.groupId).eq('team_id', input.teamId);
+  if (error) return { success: false, error: 'Couldn’t delete the group.', code: 'CH-17006', unavailable: isPracticeMissing(error.code) };
+  return { success: true };
+}
+
+async function duplicateTemplateImpl(input: { teamId: string; name: string; kind: 'session' | 'block'; minutes: number; body: unknown }): Promise<PracticeResult<{ id: string }>> {
+  const { sb, userId } = await who();
+  if (!userId) return { success: false, error: 'Not signed in.' };
+  const { data, error } = await practiceTables(sb).from('golf_practice_templates').insert({ team_id: input.teamId, name: input.name.trim().slice(0, 60), kind: input.kind, minutes: input.minutes, body: input.body, created_by: userId }).select('id').single();
+  if (error || !data) return { success: false, error: 'Couldn’t save the template.', code: 'CH-17006', unavailable: isPracticeMissing(error?.code) };
+  return { success: true, id: (data as { id: string }).id };
+}
+async function renameTemplateImpl(input: { teamId: string; templateId: string; name: string }): Promise<PracticeResult<object>> {
+  const name = input.name.trim();
+  if (!name || name.length > 60) return { success: false, error: 'Name it, up to 60 characters.', code: 'CH-17112' };
+  const { sb } = await who();
+  const { error } = await practiceTables(sb).from('golf_practice_templates').update({ name }).eq('id', input.templateId).eq('team_id', input.teamId);
+  if (error) return { success: false, error: 'Couldn’t rename the template.', code: 'CH-17006', unavailable: isPracticeMissing(error.code) };
+  return { success: true };
+}
+async function deleteTemplateImpl(input: { teamId: string; templateId: string }): Promise<PracticeResult<object>> {
+  const { sb } = await who();
+  const { error } = await practiceTables(sb).from('golf_practice_templates').delete().eq('id', input.templateId).eq('team_id', input.teamId);
+  if (error) return { success: false, error: 'Couldn’t delete the template.', code: 'CH-17006', unavailable: isPracticeMissing(error.code) };
+  return { success: true };
+}
+
+const OBS = { sport: 'golf', feature: 'practice_plans' } as const;
+const observedUpdate = withAdminObserved('updateTeamDrill', OBS, updateTeamDrillImpl);
+const observedSaveGroup = withAdminObserved('savePracticeGroup', OBS, saveGroupImpl);
+const observedDeleteGroup = withAdminObserved('deletePracticeGroup', OBS, deleteGroupImpl);
+const observedDuplicate = withAdminObserved('savePracticeTemplate', OBS, duplicateTemplateImpl);
+const observedRename = withAdminObserved('renamePracticeTemplate', OBS, renameTemplateImpl);
+const observedDeleteTemplate = withAdminObserved('deletePracticeTemplate', OBS, deleteTemplateImpl);
+export async function updateTeamDrill(input: DrillInput & { drillId: string }) {
+  return observedUpdate(input);
+}
+export async function savePracticeGroup(input: GroupInput) {
+  return observedSaveGroup(input);
+}
+export async function deletePracticeGroup(input: { teamId: string; groupId: string }) {
+  return observedDeleteGroup(input);
+}
+export async function savePracticeTemplate(input: { teamId: string; name: string; kind: 'session' | 'block'; minutes: number; body: unknown }) {
+  return observedDuplicate(input);
+}
+export async function renamePracticeTemplate(input: { teamId: string; templateId: string; name: string }) {
+  return observedRename(input);
+}
+export async function deletePracticeTemplate(input: { teamId: string; templateId: string }) {
+  return observedDeleteTemplate(input);
+}
+
 const observedCreate = withAdminObserved('createTeamDrill', { sport: 'golf', feature: 'practice_plans' }, createTeamDrillImpl);
 const observedCopy = withAdminObserved('copyLibraryDrill', { sport: 'golf', feature: 'practice_plans' }, copyLibraryDrillImpl);
 const observedArchive = withAdminObserved('archiveTeamDrill', { sport: 'golf', feature: 'practice_plans' }, archiveTeamDrillImpl);

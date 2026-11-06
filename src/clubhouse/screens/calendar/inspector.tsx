@@ -442,6 +442,8 @@ function PlayerReply({ e, playerId, now, onDone }: { e: ChCalEvent; playerId: st
   );
 }
 
+const PLAN_WORD = { none: 'No plan yet', draft: 'Draft', published: 'Published', edited: 'Edits not published' } as const;
+
 export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date: string }) {
   const e = find(ctx.events, id, date);
   const toast = useToast();
@@ -538,6 +540,18 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
         {e.recurring && <Fact icon={Repeat}>{e.recurring}</Fact>}
         {e.notes && <Fact icon={Text}>{e.notes}</Fact>}
       </div>
+      {e.plan && (coach || e.plan.state !== 'none') && (
+        <div className="ch-in__sec ch-in__plan">
+          <span className="ch-in__plan-s">{PLAN_WORD[e.plan.state]}</span>
+          {e.plan.state === 'none' ? (
+            <Button variant="primary" href={`/golf/dashboard/practice?new=1&event=${e.id}`}>
+              Build plan
+            </Button>
+          ) : (
+            <Button href={`/golf/dashboard/practice/plan/${e.plan.id}`}>Open plan</Button>
+          )}
+        </div>
+      )}
       {coach && <EventLiveRow e={e} />}
       {coach && overlap && (
         <Warn

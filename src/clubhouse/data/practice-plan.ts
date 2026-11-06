@@ -4,10 +4,19 @@ import { createClient } from '@/lib/supabase/server';
 import { parsePlanBody, parseVersionBody, toPlayerPlan, withOwnLines, type PlanBodyV2, type PlanWhy } from '@/lib/coachhelm/v3/practice-plan/model';
 import { practiceTables, type PracticePlanRow, type PracticePlanVersionRow } from '@/lib/golf/practice-db';
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
-import { toSheetModel, type PlanSheetModel } from '../screens/coachhelm/plan/sheet/plan-sheet-model';
+import { sheetFormat, toSheetModel, type PlanSheetFormat, type PlanSheetModel } from '../screens/coachhelm/plan/sheet/plan-sheet-model';
 import type { PlayerPracticeData } from '../screens/coachhelm/plan/player/PlayerPractice';
+import type { ChPlanStatus } from '../screens/practice/CoachPlanBar';
+import type { PrintDrill } from '../screens/practice/PrintStudio';
 
-export type PlanPageLoad = { status: 'ready'; plan: PlanSheetModel; stops?: ReturnType<typeof toPlayerPlan> } | { status: 'gone' } | { status: 'unavailable' };
+/** What a coach's plan page draws around the sheet. */
+export interface CoachPlanExtras {
+  status: ChPlanStatus;
+  body: PlanBodyV2;
+  start: Date | null;
+  zone: string;
+}
+export type PlanPageLoad = { status: 'ready'; plan: PlanSheetModel; stops?: ReturnType<typeof toPlayerPlan>; coach?: CoachPlanExtras } | { status: 'gone' } | { status: 'unavailable' };
 
 async function context(sb: Awaited<ReturnType<typeof createClient>>, eventId: string | null) {
   if (!eventId) return null;
@@ -27,7 +36,17 @@ async function context(sb: Awaited<ReturnType<typeof createClient>>, eventId: st
   return { event, team, names, coaches: (coaches ?? []).map((c) => c.full_name).filter((n): n is string => !!n) };
 }
 
-const stateWord = (r: PracticePlanRow): string => (r.status === 'published' ? 'Published' : 'Draft · not published');
+const stateWord = (r: PracticePlanRow, zone: string, publishedAt: string | null): string => {
+  if (r.status !== 'published') return 'Draft · not published';
+  return publishedAt ? `Published ${formatWith(new Date(publishedAt), { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: zone })}` : 'Published';
+};
+
+/** The team's format, for the sheet (S-FMT). A missing table, or none set, is the standard sheet. */
+async function readFormat(sb: Awaited<ReturnType<typeof createClient>>, teamId: string): Promise<PlanSheetFormat | null> {
+  const { data, error } = await practiceTables(sb).from('golf_practice_plan_formats').select('name, sections').eq('team_id', teamId).maybeSingle();
+  if (error || !data) return null;
+  return sheetFormat(data as { name: string; sections: Array<{ key: string; name: string }> });
+}
 
 /** A coach's copy: the draft body and the Why lines from the coach-only column. */
 export async function loadCoachPlan(planId: string): Promise<PlanPageLoad> {
@@ -39,7 +58,16 @@ export async function loadCoachPlan(planId: string): Promise<PlanPageLoad> {
   if (!row || !body) return { status: 'gone' };
   const ctx = await context(sb, row.event_id);
   if (!ctx) return { status: 'gone' };
-  return { status: 'ready', plan: toSheetModel({ body, why: (row.coach_why ?? {}) as Record<string, PlanWhy>, title: row.title ?? 'Practice plan', team: ctx.team?.name ?? '', start: new Date(ctx.event.start_time), end: ctx.event.end_time ? new Date(ctx.event.end_time) : null, zone: ctx.team?.timezone ?? 'America/New_York', coaches: ctx.coaches, names: ctx.names, state: stateWord(row) }, 'coach') };
+  const opens = row.status === 'published' ? await practiceTables(sb).from('golf_practice_plan_opens').select('player_id').eq('plan_id', planId) : null;
+  const seen = opens && !opens.error ? { names: ((opens.data ?? []) as Array<{ player_id: string }>).map((o) => ctx.names.get(o.player_id)).filter((n): n is string => !!n), of: ctx.names.size } : null;
+  const zone = ctx.team?.timezone ?? 'America/New_York';
+  const [format, live] = await Promise.all([
+    readFormat(sb, ctx.event.team_id),
+    row.status === 'published' && row.published_version != null ? practiceTables(sb).from('golf_practice_plan_versions').select('published_at').eq('plan_id', planId).eq('version', row.published_version).maybeSingle() : Promise.resolve({ data: null }),
+  ]);
+  const publishedAt = (live.data as { published_at: string } | null)?.published_at ?? null;
+  const coach: CoachPlanExtras = { body, zone, start: new Date(ctx.event.start_time), status: { planId, title: row.title ?? 'Practice plan', version: row.version, status: row.status === 'published' ? 'published' : 'draft', edited: row.published_version != null && row.version !== row.published_version, seen } };
+  return { status: 'ready', coach, plan: toSheetModel({ body, why: (row.coach_why ?? {}) as Record<string, PlanWhy>, title: row.title ?? 'Practice plan', team: ctx.team?.name ?? '', start: new Date(ctx.event.start_time), end: ctx.event.end_time ? new Date(ctx.event.end_time) : null, zone: ctx.team?.timezone ?? 'America/New_York', coaches: ctx.coaches, names: ctx.names, state: stateWord(row, zone, publishedAt), format }, 'coach') };
 }
 
 /**
@@ -67,7 +95,8 @@ export async function loadPlayerPlan(planId: string, playerId: string): Promise<
   if (live.status !== 'ready') return live;
   const { row, body, ctx } = live;
   const start = new Date(ctx.event.start_time);
-  return { status: 'ready', plan: toSheetModel({ body, title: row.title || 'Practice plan', team: ctx.team?.name ?? '', start, end: ctx.event.end_time ? new Date(ctx.event.end_time) : null, zone: ctx.team?.timezone ?? 'America/New_York', coaches: ctx.coaches, names: ctx.names, state: 'Published' }, 'player', playerId), stops: toPlayerPlan(body, playerId, start) };
+  const format = await readFormat(sb, ctx.event.team_id);
+  return { status: 'ready', plan: toSheetModel({ body, title: row.title || 'Practice plan', team: ctx.team?.name ?? '', start, end: ctx.event.end_time ? new Date(ctx.event.end_time) : null, zone: ctx.team?.timezone ?? 'America/New_York', coaches: ctx.coaches, names: ctx.names, state: `Published ${formatWith(new Date(row.published_at), { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: ctx.team?.timezone ?? 'America/New_York' })}`, format }, 'player', playerId), stops: toPlayerPlan(body, playerId, start) };
 }
 
 /** A player's Practice page: their own stops only, from the live version. Now and Next by the clock, in the team's zone. */
@@ -92,10 +121,39 @@ export async function loadPlayerPractice(planId: string, playerId: string, now: 
       title: row.title || 'Practice plan',
       when: [end ? `${clockOf(start)} to ${clockOf(end)}` : clockOf(start), body.place || ctx.event.location].filter(Boolean).join(' · '),
       focus: body.focus,
-      group: group ? { name: group.name, mates: group.players.filter((p) => p !== playerId).map((p) => (ctx.names.get(p) ?? '').split(' ')[0]!).filter(Boolean) } : null,
+      group: group ? { name: group.name, me: (ctx.names.get(playerId) ?? '').split(' ')[0] || undefined, mates: group.players.filter((p) => p !== playerId).map((p) => (ctx.names.get(p) ?? '').split(' ')[0]!).filter(Boolean) } : null,
       stops: mine.stops.map((s, i) => ({ startsAt: +s.start, endsAt: +s.end, time: clockOf(s.start), place: s.place, line: [s.title, s.note].filter(Boolean).join(' · '), now: i === nowAt, next: i === nextAt })),
-      documents: 'Team Hub › Practice plans',
-      planHref: null,
+      documents: { label: 'Team Hub › Documents › Practice plans', href: '/golf/dashboard/team?tab=documents' },
+      planHref: `/golf/dashboard/practice/plan/${planId}?view=sheet`,
     },
   };
+}
+
+/** The print studio's extra read: the plan's drills, by the refs in its body. A failed read prints without the appendix. */
+export async function loadPlanDrills(planId: string): Promise<PrintDrill[]> {
+  const sb = await createClient();
+  const db = practiceTables(sb);
+  const { data } = await db.from('golf_practice_plans').select('body').eq('id', planId).maybeSingle();
+  const body = data ? parsePlanBody((data as { body: unknown }).body) : null;
+  if (!body) return [];
+  const refs = body.variants.main.blocks.flatMap((b) => (b.kind === 'team' ? [b.drill] : b.kind === 'stations' ? b.stations.map((s) => s.drill) : [])).filter((d): d is NonNullable<typeof d> => !!d);
+  const teamIds = [...new Set(refs.filter((r) => r.src === 'team').map((r) => r.id))];
+  const libIds = [...new Set(refs.filter((r) => r.src === 'lib').map((r) => r.id))];
+  const [team, lib] = await Promise.all([
+    teamIds.length ? db.from('golf_team_drills').select('name, area, minutes, setup, goal, diagram, scoring, levels').in('id', teamIds) : Promise.resolve({ data: [] }),
+    libIds.length ? sb.from('golf_drills').select('title, category, duration_min, description').in('id', libIds) : Promise.resolve({ data: [] }),
+  ]);
+  return [
+    ...(((team.data ?? []) as Array<{ name: string; area: string; minutes: number; setup: string; goal: string; diagram: PrintDrill['diagram']; scoring: PrintDrill['scoring'] | null; levels: { par?: string; birdie?: string; eagle?: string } | null }>).map((d) => ({
+      name: d.name,
+      line: `${d.area.replace('_', ' ')} · ${d.minutes} min`,
+      setup: d.setup,
+      goal: d.goal,
+      area: d.area,
+      diagram: d.diagram,
+      scoring: d.scoring ?? [],
+      levels: [d.levels?.par ? `Par ${d.levels.par}` : null, d.levels?.birdie ? `Birdie ${d.levels.birdie}` : null, d.levels?.eagle ? `Eagle ${d.levels.eagle}` : null].filter(Boolean).join('  ') || null,
+    }))),
+    ...(((lib.data ?? []) as Array<{ title: string; category: string | null; duration_min: number | null; description: string | null }>).map((d) => ({ name: d.title, line: [d.category?.replace('_', ' '), d.duration_min ? `${d.duration_min} min` : null].filter(Boolean).join(' · '), setup: d.description ?? '', goal: '' }))),
+  ];
 }

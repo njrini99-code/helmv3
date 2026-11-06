@@ -6,7 +6,7 @@ import { summarizePlayer, type ChRound } from '../season';
 import { filterFor } from '../stats-filter';
 import { teamGrid } from '../stats-team';
 
-const round = (id: string, over: Partial<ChRound> = {}): ChRound =>
+const round = (id: string, over: Partial<ChRound> & Record<string, unknown> = {}): ChRound =>
   ({
     id,
     player_id: 'cole',
@@ -28,7 +28,7 @@ const round = (id: string, over: Partial<ChRound> = {}): ChRound =>
   }) as unknown as ChRound;
 
 /** The demo team's shape: real rounds, a practice round, a total-only round. */
-const POSTED = [round('1'), round('2'), round('3'), round('4', { round_type: 'practice', strokes_gained_tee: -9 }), round('5', { total_only: true, strokes_gained_total: null, strokes_gained_tee: null, strokes_gained_approach: null, strokes_gained_around_green: null, strokes_gained_putting: null })];
+const POSTED = [round('1'), round('2'), round('3'), round('4', { round_type: 'practice', strokes_gained_tee: -9 }), round('5', { total_only: true, recorded_holes: 0, is_complete: false, strokes_gained_total: null, strokes_gained_tee: null, strokes_gained_approach: null, strokes_gained_around_green: null, strokes_gained_putting: null })];
 const PLAYERS = [{ id: 'cole', first_name: 'Cole', last_name: 'Bennett' }];
 
 describe('one figure across pages (QA-1)', () => {
@@ -36,6 +36,17 @@ describe('one figure across pages (QA-1)', () => {
 
   it('leaves practice out of every figure', () => {
     expect(counted.map((r) => r.id)).toEqual(['1', '2', '3', '5']);
+  });
+
+  it('keeps a completed total-only round in the count and out of strokes gained', () => {
+    const f = figuresOver(counted);
+    expect(f.rounds).toBe(4);
+    expect(f.holeRounds).toBe(3);
+    expect(summarizePlayer(counted).rounds).toBe(4);
+  });
+
+  it('leaves out a round that was started and never finished', () => {
+    expect(roundsForFigures([round('9', { status: 'in_progress', recorded_holes: 7, is_complete: false, holes_played: 7, total_score: null })])).toEqual([]);
   });
 
   it('Team view, Roster and Stats read the same round count and legs for the same window', () => {

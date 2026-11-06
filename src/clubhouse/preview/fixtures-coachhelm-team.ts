@@ -14,21 +14,23 @@ const PLAYERS = {
 const leg = (strokes: number, rounds: number): ChTeamLeg => ({ strokes, rounds, missing: null });
 const legs = (r: number, tee: number, approach: number, short_game: number, putting: number) => ({ tee: leg(tee, r), approach: leg(approach, r), short_game: leg(short_game, r), putting: leg(putting, r) });
 
-const read = (playerId: string, id: string, category: string, title: string, content: string, drawn?: { stakes: string; sample: string }) => {
+const read = (playerId: string, id: string, category: string, title: string, content: string, drawn?: { stakes: string; sample: string; assigned?: 'proposed'; word?: string; label?: string; compare?: { own: number; team: number; tour: number; unit: string; higherBetter: boolean } }) => {
   const r = toChInsight({ ...slope(playerId, id), category, title, content } as EvidenceInsight, { tour: PREVIEW_TOUR, viewer: { role: 'coach', first: title.split(' ')[0] ?? 'Player' } });
-  return drawn ? { ...r, stakes: drawn.stakes, evidence: { ...r.evidence, sample: drawn.sample } } : r;
+  if (!drawn) return r;
+  const evidence = { ...r.evidence, sample: drawn.sample, ...(drawn.label ? { label: drawn.label } : {}), ...(drawn.word && r.evidence.read ? { read: { ...r.evidence.read, word: drawn.word } } : {}) };
+  return { ...r, stakes: drawn.stakes, evidence, ...(drawn.assigned ? { assigned: drawn.assigned } : {}), ...(drawn.compare ? { compare: { ...r.compare, ...drawn.compare } } : {}) } as typeof r;
 };
 
 const READS: Record<string, ReturnType<typeof read>[]> = {
   [PLAYERS.eli.id]: [
-    read(PLAYERS.eli.id, 'r1', 'approach', 'Long approaches finish short-right', 'From 175 yards and out, 9 of Eli’s 16 missed greens finish short and right.', { stakes: '.6', sample: '21 rounds' }),
-    read(PLAYERS.eli.id, 'r8', 'course_management', 'Penalty strokes: 1.1 per round', 'Across 21 rounds Eli averages 1.1 penalty strokes a round, most from the tee.'),
-    read(PLAYERS.eli.id, 'r13', 'course_management', 'Worst holes on Oak Hollow: #4, #11, #17', 'Across 11 rounds at Oak Hollow, Eli averages 1.1 over par on holes 4, 11 and 17.'),
+    read(PLAYERS.eli.id, 'r1', 'approach', 'Long approaches finish short-right', 'From 175 yards and out, 9 of Eli’s 16 missed greens finish short and right.', { stakes: '.6', sample: '21 rounds', word: 'Solid read', label: 'Greens hit from 175 yd and out', compare: { own: 31, team: 38, tour: 52, unit: '%', higherBetter: true } }),
+    read(PLAYERS.eli.id, 'r8', 'course_management', 'Penalty strokes: 1.1 per round', 'Across 21 rounds Eli averages 1.1 penalty strokes a round, most from the tee.', { stakes: '.8', sample: '21 rounds', word: 'Early read', assigned: 'proposed' }),
+    read(PLAYERS.eli.id, 'r13', 'course_management', 'Worst holes on Oak Hollow: #4, #11, #17', 'Across 11 rounds at Oak Hollow, Eli averages 1.1 over par on holes 4, 11 and 17.', { stakes: '.4', sample: '21 rounds', word: 'Early read' }),
   ],
   [PLAYERS.jonah.id]: [
     read(PLAYERS.jonah.id, 'r4', 'putting', 'Downhill putts from 5 to 10 feet', 'Jonah makes 4 of 15 downhill putts from 5 to 10 feet, against 9 of 16 uphill.'),
     read(PLAYERS.jonah.id, 'r10', 'short_game', 'Chips from 20 to 40 yards run past', 'Jonah’s chips from 20 to 40 yards finish 9 feet away, most of them past the hole.'),
-    read(PLAYERS.jonah.id, 'r11', 'scoring', 'Double bogey-or-worse rate: 7.6%', 'Jonah makes double bogey or worse on 7.6% of holes across 18 rounds. Tour is 2.0%.'),
+    read(PLAYERS.jonah.id, 'r11', 'scoring', 'Double bogey-or-worse rate: 7.6%', 'Jonah makes double bogey or worse on 7.6% of holes across 18 rounds. Tour is 2.0%.', { stakes: '.6', sample: '18 rounds', word: 'Early read' }),
   ],
   [PLAYERS.priya.id]: [
     read(PLAYERS.priya.id, 'r2', 'approach', 'Approaches from 100 to 150 come up short', '11 of Priya’s 18 missed greens from 100 to 150 yards finish short of the green.', { stakes: '.5', sample: '16 rounds' }),
@@ -41,7 +43,7 @@ const READS: Record<string, ReturnType<typeof read>[]> = {
     read(PLAYERS.theo.id, 'r14', 'scoring', 'Par 3 scoring: 3.48 (+0.48 vs par)', 'Theo averages 3.48 on par 3s, from 4 rounds. Tour is 3.00.'),
   ],
   [PLAYERS.sam.id]: [
-    read(PLAYERS.sam.id, 'r3', 'approach', 'Proximity from 125 to 175', 'Sam’s approaches from 125 to 175 finish 41 feet away on average, from 6 rounds.', { stakes: '.4', sample: '3 rounds' }),
+    read(PLAYERS.sam.id, 'r3', 'approach', 'Proximity from 125 to 175', 'Sam’s approaches from 125 to 175 finish 41 feet away on average, from 6 rounds.', { stakes: '.4', sample: '3 rounds', word: 'Thin read' }),
     read(PLAYERS.sam.id, 'r9', 'short_game', 'Up and down from greenside bunkers', 'Sam has got up and down 2 times from 11 greenside bunkers, from 6 rounds.'),
   ],
 };
@@ -82,8 +84,20 @@ const HISTORY: CourseHistory = {
   last4: 6.0,
   weeks: WEEK_STARTS.map((start, i) => ({ start, value: WEEK_VALUES[i] as number, n: 6 })),
   courses: [
-    { id: 'oak', name: 'Oak Hollow', rounds: 33, value: 5.9, last: '2026-10-26', players: [] },
-    { id: 'hill', name: 'Hilltop', rounds: 15, value: 7.5, last: '2026-10-29', players: [] },
+    { id: 'oak', name: 'Oak Hollow', rounds: 33, value: 5.9, last: '2026-10-26', players: [
+      { id: PLAYERS.jonah.id, rounds: 4, value: 4.6, season: 3.9 },
+      { id: PLAYERS.priya.id, rounds: 4, value: 7.1, season: 6.2 },
+      { id: PLAYERS.theo.id, rounds: 1, value: 9.0, season: 8.3 },
+      { id: PLAYERS.eli.id, rounds: 5, value: 9.4, season: 7.8 },
+      { id: PLAYERS.sam.id, rounds: 1, value: 10.0, season: 9.1 },
+    ] },
+    { id: 'hill', name: 'Hilltop', rounds: 15, value: 7.5, last: '2026-10-29', players: [
+      { id: PLAYERS.jonah.id, rounds: 4, value: 4.6, season: 3.9 },
+      { id: PLAYERS.priya.id, rounds: 4, value: 7.1, season: 6.2 },
+      { id: PLAYERS.theo.id, rounds: 1, value: 9.0, season: 8.3 },
+      { id: PLAYERS.eli.id, rounds: 5, value: 9.4, season: 7.8 },
+      { id: PLAYERS.sam.id, rounds: 1, value: 10.0, season: 9.1 },
+    ] },
     { id: 'lake', name: 'Lakeside', rounds: 5, value: 6.6, last: '2026-09-16', players: [] },
     { id: 'ridge', name: 'Ridgeview', rounds: 5, value: 7.3, last: '2026-08-18', players: [] },
     { id: 'brook', name: 'Brookfield', rounds: 4, value: 5.0, last: '2026-10-14', players: [] },
@@ -139,7 +153,7 @@ export const PREVIEW_TEAM_BOARD: ChTeamBoardData = {
     value: {
       team: '5 players',
       week: 'Week of Oct 26',
-      reads: [{ id: 'r1', kind: 'read', who: PLAYERS.eli.name, title: 'Long approaches finish short-right', tag: 'Likely', strokes: null, next: null, behind: null, href: '#' }],
+      reads: [{ id: 'r1', kind: 'read', who: PLAYERS.eli.name, title: 'Two doubles from penalties', tag: 'Likely', strokes: null, next: null, behind: 'Holes 7 and 14: both drives went into the hazard, then a penalty drop. That’s the same leak as Eli’s open penalty read.', href: '#' }],
       counts: '4 rounds · 2 new reads · 1 cleared',
       cleared: [],
       outOfDate: null,

@@ -70,7 +70,7 @@ import { ThreadJumpKey } from "./thread-v2";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useComposerInset } from "./composer-inset";
 import { useFocusMessage } from "./use-focus-message";
-import { pollCardActions, PollButton, PollCard, PollSheet, PollThreadContext, type ChPollsApi, type PollThreadActions } from "./polls";
+import { pollCardActions, PollButton, PollCard, PollSheet, PollThreadContext, usePollSeed, type ChPollsApi, type PollThreadActions } from "./polls";
 import { useChReducedMotion } from "../../lib/reduced-motion";
 import { Avatar } from "../../ui/Avatar";
 import { Badge } from "../../ui/Badge";
@@ -141,6 +141,7 @@ import { HoldSeenRow, SeenByPill, SeenByReceipt, useSeenBy, useSeenByList } from
 import { receiptCarrierId, SEEN_BY_VISIBILITY } from "@/lib/golf/message-receipts";
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
 import { fileKind, fileMeta, fileSize, useConversationFiles } from "./files";
+import { subscribeThreadFiles, takeThreadFiles } from "./prefill";
 // Re-exported: MessagesPhone and older callers read it from here.
 export { fileSize } from "./files";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
@@ -971,7 +972,20 @@ export function Attachments({
   const [refresh, setRefresh] = useState(0);
   const loadedAt = useRef(0);
   const haveFiles = useRef(false);
+  // A long thread doesn't sign every file on open: only what's about to scroll into view (MOB-MSG-24).
+  const spot = useRef<HTMLSpanElement | null>(null);
+  const [near, setNear] = useState(() => typeof IntersectionObserver === "undefined");
   useEffect(() => {
+    const el = spot.current;
+    if (near || !el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) setNear(true);
+    }, { rootMargin: "800px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [near]);
+  useEffect(() => {
+    if (!near) return;
     let live = true;
     let retry: number | undefined;
     const silent = haveFiles.current;
@@ -1001,7 +1015,7 @@ export function Attachments({
       live = false;
       if (retry) window.clearTimeout(retry);
     };
-  }, [load, id, attempt, refresh]);
+  }, [load, id, attempt, refresh, near]);
   useEffect(() => {
     const AGE = 45 * 60_000;
     const stale = () => haveFiles.current && Date.now() - loadedAt.current > AGE;
@@ -1037,7 +1051,7 @@ export function Attachments({
   }
   if (!files)
     return (
-      <span aria-busy="true" data-ch-code="CH-7408">
+      <span ref={spot} aria-busy="true" data-ch-code="CH-7408">
         <Skeleton width={240} height={54} radius={14} />
       </span>
     );
@@ -1187,7 +1201,18 @@ export function Bubble({
     drawn.current = true;
   }, []);
   const [showTime, setShowTime] = useState(false);
-  const press = useLongPress(m.failed ? undefined : onActions, onActions ? (direction) => {
+  // The desk layout on a finger (a landscape iPhone, an iPad) has no sheet and no hover: a long press holds the bar open.
+  const [barHeld, setBarHeld] = useState(false);
+  const rowRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!barHeld) return;
+    const away = (e: PointerEvent) => {
+      if (!rowRef.current?.contains(e.target as Node)) setBarHeld(false);
+    };
+    document.addEventListener('pointerdown', away);
+    return () => document.removeEventListener('pointerdown', away);
+  }, [barHeld]);
+  const press = useLongPress(m.failed ? undefined : (onActions ?? (api.redesign ? () => setBarHeld(true) : undefined)), onActions ? (direction) => {
     if (direction === "right") onReply?.();
     else setShowTime(true);
   } : undefined);
@@ -1317,6 +1342,8 @@ export function Bubble({
     <PresenceRow
       as="div"
       id={`ch-ms-message-${m.id}`}
+      ref={rowRef as never}
+      data-ch-bar={barHeld ? "" : undefined}
       className={
         "ch-ms-msg" +
         (group ? " is-group" : "") +
@@ -1790,6 +1817,7 @@ export function AttachButton({
 export function ComposerPlus({ api, conv, disabled, onPick }: { api: ChMessagesApi; conv: ChConv; disabled?: boolean; onPick: (picked: File[]) => void }) {
   const input = useRef<HTMLInputElement | null>(null);
   const [polling, setPolling] = useState(false);
+  const seedKey = usePollSeed(conv.id, () => setPolling(true));
   return (
     <>
       <Menu
@@ -1813,7 +1841,7 @@ export function ComposerPlus({ api, conv, disabled, onPick }: { api: ChMessagesA
           e.target.value = "";
         }}
       />
-      <PollSheet key={conv.id} api={api} conv={conv} open={polling} onClose={() => setPolling(false)} />
+      <PollSheet key={seedKey} api={api} conv={conv} open={polling} onClose={() => setPolling(false)} />
     </>
   );
 }
@@ -1919,6 +1947,15 @@ export function Composer({
   const [files, setFiles] = useState<File[]>(recovery?.files ?? initialFiles ?? []);
   const filesRef = useRef(files);
   filesRef.current = files;
+  // A board from Ask lands here as a file waiting to be sent: the coach presses Send.
+  useEffect(() => {
+    const take = () => {
+      const seeded = takeThreadFiles(conv.id);
+      if (seeded.length) setFiles((f) => [...f, ...seeded]);
+    };
+    take();
+    return subscribeThreadFiles(take);
+  }, [conv.id]);
   const [sending, setSending] = useState(false);
   const sendingRef = useRef(false);
   const ta = useRef<HTMLTextAreaElement | null>(null);
