@@ -13,7 +13,7 @@ if (visual && !process.env.CH_VISUAL_BASELINES) {
 }
 export default defineConfig({
   testDir: './e2e',
-  testMatch: ['clubhouse-quality.spec.ts', 'clubhouse-playground.spec.ts'],
+  testMatch: ['clubhouse-quality.spec.ts', 'clubhouse-playground.spec.ts', 'clubhouse-gate.spec.ts'],
   // Compiles every route the suite opens before the first test (see the setup file); the server keeps them compiled.
   globalSetup: './e2e/clubhouse-quality.setup.ts',
   fullyParallel: false,
@@ -34,12 +34,18 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
-  projects: ['chromium', 'webkit'].flatMap((browserName) =>
-    (['no-preference', 'reduce'] as const).map((reducedMotion) => ({
-      name: `${browserName}-${reducedMotion}`,
-      use: { browserName: browserName as 'chromium' | 'webkit', reducedMotion },
-    })),
-  ),
+  projects: [
+    ...['chromium', 'webkit'].flatMap((browserName) =>
+      (['no-preference', 'reduce'] as const).map((reducedMotion) => ({
+        name: `${browserName}-${reducedMotion}`,
+        testIgnore: 'clubhouse-gate.spec.ts',
+        use: { browserName: browserName as 'chromium' | 'webkit', reducedMotion },
+      })),
+    ),
+    // The presentation gate: what Nick's phone runs, at 390x844 in WebKit, and a desk at 1440x900 in Chromium.
+    { name: 'gate-phone', testMatch: 'clubhouse-gate.spec.ts', use: { browserName: 'webkit' as const, viewport: { width: 390, height: 844 } } },
+    { name: 'gate-desktop', testMatch: 'clubhouse-gate.spec.ts', use: { browserName: 'chromium' as const, viewport: { width: 1440, height: 900 } } },
+  ],
   webServer: process.env.CH_BASE ? undefined : {
     command: './node_modules/.bin/next dev --webpack --hostname 127.0.0.1 --port 3100',
     // Ready means "the server answers", not "the popup lab has compiled": a static file answers in about 50 ms once the

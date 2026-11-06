@@ -356,7 +356,8 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
       if (id) setAnnId(null);
       if (id) setConvs((cs) => cs.map((c) => (c.id === id ? { ...c, unread: 0, markedUnread: false } : c)));
     },
-    msgs: selectedId ? (threads[selectedId] ?? []) : [],
+    // ?state=stress: forty messages, the length a real team thread reaches.
+    msgs: selectedId ? (state === 'stress' ? Array.from({ length: 40 }, (_, i) => { const m = (threads[selectedId] ?? [])[i % Math.max(1, (threads[selectedId] ?? []).length)] as ChMsg; return { ...m, id: `${m.id}-s${i}` }; }) : (threads[selectedId] ?? [])) : [],
     msgsLoading: false,
     msgsError: state === 'thread-failed',
     refetchMsgs: () => undefined,

@@ -23,6 +23,11 @@ function stateData(state: string | undefined): ChTeamBoardData {
   if (state === 'failed-all') return { ...base, players: { list: [], error: true } };
   if (state === 'partial') return { ...base, players: { list: [], error: true } };
   if (state === 'noplayers') return { ...base, roster: { count: 0, error: false }, players: { list: [], error: false } };
+  // The figures staging really produced, which sank the hole's halos and labels: one early player carrying the whole board (TEAM-1 to TEAM-5).
+  if (state === 'stress') {
+    const stress: ChTeamPlayer = { ...(list[3] as ChTeamPlayer), id: 'pl-stress', name: 'Cole Bennett', first: 'Cole', rounds: 3, early: true, total: 0.5, worst: 'putting', legs: { tee: { strokes: 2.5, rounds: 3, missing: null }, approach: { strokes: 1.9, rounds: 3, missing: null }, short_game: { strokes: 0, rounds: 3, missing: null }, putting: { strokes: -3.9, rounds: 3, missing: null } } };
+    return { ...base, team: { ...base.team, name: 'Demo University Golf' }, roster: { count: 1, error: false }, players: { list: [stress], error: false }, stations: stationFigures([stress]), teamTotal: { strokes: 0.5, rounds: 3 } };
+  }
   if (state === 'long') {
     const worst: ChStation = 'approach';
     const many = Array.from({ length: 15 }, (_, i) => ({ ...(list[i % list.length] as ChTeamPlayer), id: `pl-long-${i}`, name: i % 2 ? 'Elijah Brandt-Whitaker' : 'Priyanka Natarajan-Okonkwo', worst }));
