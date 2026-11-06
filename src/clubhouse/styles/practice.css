@@ -1175,7 +1175,7 @@ main.ch-prc-planpage {
 .ch-prc-facts { display: grid; gap: 12px; margin: 16px 0 0; padding: 16px; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-card-shadow); }
 .ch-prc-facts:empty { display: none; }
 .ch-prc-facts dt { font: var(--ch-type-13); color: var(--ch-text-secondary); }
-.ch-prc-facts dd { margin: 2px 0 0; font: var(--ch-type-15); color: var(--ch-text-primary); overflow-wrap: anywhere; }
+.ch-prc-facts dd { margin: 2px 0 0; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); overflow-wrap: anywhere; }
 .ch-prc-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
 .ch-prc-card { display: grid; gap: 6px; width: 100%; padding: 16px; border: 0; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-card-shadow); text-align: start; font: var(--ch-type-13); color: var(--ch-text-secondary); cursor: pointer; }
 .ch-prc-card b { font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
@@ -1189,19 +1189,19 @@ main.ch-prc-planpage {
 .ch-prc-glance li { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 8px; }
 .ch-prc-glance li > span:first-child { color: var(--ch-text-tertiary); }
 .ch-prc-checks { display: grid; margin: 0; padding: 0; list-style: none; }
-.ch-prc-checks label { display: flex; align-items: center; gap: 8px; min-height: 44px; font: var(--ch-type-15); color: var(--ch-text-primary); }
+.ch-prc-checks label { display: flex; align-items: center; gap: 8px; min-height: 44px; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
 .ch-prc-checks li + li { border-top: var(--ch-hairline-w) solid var(--ch-separator); }
 
 /* The coach's bar on the plan page, and the Run card (N-00 4.11, 4.12). */
 .ch-prc-seen { min-height: 44px; margin-inline-end: auto; padding: 0 4px; border: 0; background: none; font: var(--ch-type-14-medium); color: var(--ch-accent); cursor: pointer; }
 .ch-prc-seenlist { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.ch-prc-seenlist li { display: flex; align-items: center; gap: 8px; font: var(--ch-type-15); color: var(--ch-text-primary); }
+.ch-prc-seenlist li { display: flex; align-items: center; gap: 8px; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
 .ch-prc-run { display: grid; gap: 12px; margin-block-end: 16px; padding: 16px; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-elevation-lifted); }
 .ch-prc-run__h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.ch-prc-run__h h2 { margin: 0; font: var(--ch-type-17-strong); color: var(--ch-text-primary); }
+.ch-prc-run__h h2 { margin: 0; font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); color: var(--ch-text-primary); }
 .ch-prc-run__h span { font: var(--ch-type-14); color: var(--ch-text-secondary); }
 .ch-prc-run__now { display: grid; gap: 2px; padding: 12px; border-radius: var(--ch-radius-md); background: var(--ch-selected-bg); box-shadow: inset 0 0 0 2px var(--ch-selected-pill-ring); }
-.ch-prc-run__now b { font: var(--ch-type-15-strong); color: var(--ch-text-primary); }
+.ch-prc-run__now b { font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
 .ch-prc-run__now span { font: var(--ch-type-13); color: var(--ch-text-secondary); }
 .ch-prc-run ul { display: grid; margin: 0; padding: 0; list-style: none; }
 .ch-prc-run li { display: grid; grid-template-columns: 28px minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: center; min-height: 52px; padding-block: 8px; border-block-start: var(--ch-hairline-w) solid var(--ch-separator); }
@@ -1212,7 +1212,7 @@ main.ch-prc-planpage {
 .ch-prc-run__g.g-D { background: var(--ch-pl-cpv-gd); }
 .ch-prc-run__g.g-E { background: var(--ch-pl-cpv-ge); }
 .ch-prc-run__g.g-F { background: var(--ch-pl-cpv-gf); }
-.ch-prc-run li b { display: block; font: var(--ch-type-15-medium); color: var(--ch-text-primary); }
+.ch-prc-run li b { display: block; font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
 .ch-prc-run li small { display: block; font: var(--ch-type-13); color: var(--ch-text-secondary); }
 .ch-prc-run__a { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; }
 
@@ -1223,14 +1223,15 @@ main.ch-prc-planpage {
 .ch-prt-opts { margin: 0; padding: 0; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-elevation-lifted); list-style: none; overflow: hidden; --ch-group-inset: 16px; }
 .ch-prt-opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-inline: 16px; }
 .ch-prt-opt__t { display: grid; gap: 2px; min-width: 0; }
-.ch-prt-opt__t b { font: var(--ch-type-15-medium); color: var(--ch-text-primary); }
+.ch-prt-opt__t b { font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
 .ch-prt-opt__t span { font: var(--ch-type-13); color: var(--ch-text-secondary); }
 .ch-prt-note { margin: 0; padding-inline: 16px; font: var(--ch-type-13); color: var(--ch-text-secondary); }
-.ch-prt-none { margin: 0; padding: 48px 16px; font: var(--ch-type-15); text-align: center; color: var(--ch-text-secondary); }
+.ch-prt-none { margin: 0; padding: 48px 16px; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); text-align: center; color: var(--ch-text-secondary); }
 .ch-prt-sheet { display: grid; justify-items: center; gap: 8px; margin: 0; min-width: 0; }
 .ch-prt-sheet figcaption { font: var(--ch-type-13); color: var(--ch-text-secondary); }
 .ch-prt-frame { position: relative; width: 100%; overflow: hidden; background: var(--ch-print-paper); border-radius: var(--ch-radius-xs); box-shadow: var(--ch-elevation-lifted); }
-.ch-prt-paper { position: absolute; inset: 0 auto auto 0; transform-origin: 0 0; visibility: hidden; --ch-type-k: 1px; color: var(--ch-print-ink); }
+.ch-prt-paper { position: absolute; inset: 0 auto auto 0; transform-origin: 0 0; visibility: hidden; color: var(--ch-print-ink); }
+.ch-prt-paper[data-ui='clubhouse'] { --ch-type-k: var(--ch-print-k); }
 .ch-prt-paper[data-ready] { visibility: visible; }
 
 /* One sheet, on screen and on paper: ink on white, so it copies the same in black and white. */
@@ -1248,7 +1249,7 @@ main.ch-prc-planpage {
 .ch-prt-brief li { display: grid; gap: 2px; align-content: start; }
 .ch-prt-brief b { font: var(--ch-type-14-strong); color: var(--ch-print-ink); }
 .ch-prt-brief span { font: var(--ch-type-12); color: var(--ch-print-soft); }
-.ch-prt-eyebrow { margin: 0; font: var(--ch-type-15); color: var(--ch-print-soft); }
+.ch-prt-from { margin: 0; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); color: var(--ch-print-soft); }
 .ch-prt-run { display: flex; justify-content: space-between; gap: 16px; padding-block-end: 8px; border-block-end: var(--ch-hairline-w) solid var(--ch-print-rule); font: var(--ch-type-13); color: var(--ch-print-soft); }
 .ch-prt-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-block-start: auto; padding-block-start: 12px; border-block-start: var(--ch-hairline-w) solid var(--ch-print-rule); font: var(--ch-type-12); color: var(--ch-print-soft); }
 .ch-prt-foot__l { flex: 1; min-width: 0; }
@@ -1258,23 +1259,23 @@ main.ch-prc-planpage {
 .ch-prt-qr svg { display: block; width: 100%; height: 100%; }
 
 .ch-prt-board__h { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
-.ch-prt-board__h h2 { margin: 4px 0 0; font: 600 calc(44 * var(--ch-type-k))/1.05 var(--ch-font-sans); letter-spacing: var(--ch-track-28); color: var(--ch-print-ink); }
-.ch-prt-board__t { display: grid; justify-items: end; gap: 2px; font: var(--ch-type-15); color: var(--ch-print-soft); }
-.ch-prt-board__t b { font: 600 calc(30 * var(--ch-type-k))/1.1 var(--ch-font-sans); color: var(--ch-print-ink); }
+.ch-prt-board__h h2 { margin: 4px 0 0; font: var(--ch-type-print-title); letter-spacing: var(--ch-track-28); color: var(--ch-print-ink); }
+.ch-prt-board__t { display: grid; justify-items: end; gap: 2px; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); color: var(--ch-print-soft); }
+.ch-prt-board__t b { font: var(--ch-type-28-strong); letter-spacing: var(--ch-track-28); color: var(--ch-print-ink); }
 .ch-prt-board { flex: 1; width: 100%; border-collapse: collapse; table-layout: fixed; }
-.ch-prt-board thead th { padding: 0 0 12px 16px; font-weight: inherit; text-align: start; vertical-align: bottom; }
-.ch-prt-board thead th b { display: block; font: 600 calc(26 * var(--ch-type-k))/1.1 var(--ch-font-sans); color: var(--ch-print-ink); }
-.ch-prt-board thead th span { display: block; margin-block-start: 4px; font: var(--ch-type-15); color: var(--ch-print-soft); }
+.ch-prt-board thead th { padding: 0 0 12px 16px; text-align: start; vertical-align: bottom; }
+.ch-prt-board thead th b { display: block; font: var(--ch-type-22-strong); letter-spacing: var(--ch-track-22); color: var(--ch-print-ink); }
+.ch-prt-board thead th span { display: block; margin-block-start: 4px; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); color: var(--ch-print-soft); }
 .ch-prt-board thead td { width: 148px; }
-.ch-prt-board tbody th, .ch-prt-board tbody td { padding: 12px 0 12px 16px; border-block-start: var(--ch-hairline-w) solid var(--ch-print-rule); font: 600 calc(56 * var(--ch-type-k))/1 var(--ch-font-sans); text-align: start; color: var(--ch-print-ink); }
+.ch-prt-board tbody th, .ch-prt-board tbody td { padding: 12px 0 12px 16px; border-block-start: var(--ch-hairline-w) solid var(--ch-print-rule); font: var(--ch-type-print-figure); text-align: start; color: var(--ch-print-ink); }
 .ch-prt-board tbody th { padding-inline-start: 0; }
-.ch-prt-board small { font: var(--ch-type-15); color: var(--ch-print-soft); }
+.ch-prt-board small { font: var(--ch-type-15); letter-spacing: var(--ch-track-15); color: var(--ch-print-soft); }
 
 .ch-prt-cards { flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: -40px; }
 .ch-prt-card { display: flex; flex-direction: column; gap: 12px; padding: 40px 32px; break-inside: avoid; }
 .ch-prt-card + .ch-prt-card { border-inline-start: var(--ch-hairline-w) dashed var(--ch-print-soft); }
 .ch-prt-card header { display: flex; justify-content: space-between; gap: 12px; font: var(--ch-type-12); color: var(--ch-print-soft); }
-.ch-prt-card h3 { margin: 4px 0 0; font: 600 calc(30 * var(--ch-type-k))/1.1 var(--ch-font-sans); letter-spacing: var(--ch-track-28); color: var(--ch-print-ink); }
+.ch-prt-card h3 { margin: 4px 0 0; font: var(--ch-type-28-strong); letter-spacing: var(--ch-track-28); color: var(--ch-print-ink); }
 .ch-prt-card__deck { margin: 0; font: var(--ch-type-14); color: var(--ch-print-soft); }
 .ch-prt-card ol { display: grid; margin: 0; padding: 0; list-style: none; }
 .ch-prt-card li { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 8px; padding-block: 8px; border-block-start: var(--ch-hairline-w) solid var(--ch-print-rule); font: var(--ch-type-13); }
@@ -1284,7 +1285,7 @@ main.ch-prc-planpage {
 
 .ch-prt-drills { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 32px; align-content: start; }
 .ch-prt-drills article { display: grid; gap: 6px; align-content: start; break-inside: avoid; }
-.ch-prt-drills h3 { margin: 0; font: var(--ch-type-15-strong); color: var(--ch-print-ink); }
+.ch-prt-drills h3 { margin: 0; font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); color: var(--ch-print-ink); }
 .ch-prt-drills small { font: var(--ch-type-12); color: var(--ch-print-soft); }
 .ch-prt-drills p { margin: 0; font: var(--ch-type-13); color: var(--ch-print-ink); }
 .ch-prt-drills ul { display: grid; margin: 0; padding: 0; list-style: none; }
@@ -1296,7 +1297,7 @@ main.ch-prc-planpage {
 @page ch-plan-tall { size: letter portrait; margin: 0.5in 0.5in 0.6in; }
 @page ch-plan-wide { size: letter landscape; margin: 0.4in; }
 @media print {
-  .ch-cp-print-root[data-ui='clubhouse'] { --ch-type-k: 1px; }
+  .ch-cp-print-root[data-ui='clubhouse'] { --ch-type-k: var(--ch-print-k); }
   .ch-prt-page { padding: 0; break-after: page; }
   .ch-prt-page:last-child { break-after: auto; }
   .ch-prt-page--tall { min-height: 9.8in; }

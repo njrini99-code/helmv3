@@ -83,7 +83,7 @@ function RangeBoard({ plan, row, next, at, draft }: { plan: PlanSheetModel; row:
     <>
       <header className="ch-prt-board__h">
         <div>
-          <p className="ch-prt-eyebrow">
+          <p className="ch-prt-from">
             {plan.team} · Range board{draft ? ' · Draft' : ''}
           </p>
           <h2>{row.title}</h2>

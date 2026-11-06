@@ -13,6 +13,8 @@
   --ch-print-soft: #46433d;
   --ch-print-rule: #c9c5ba;
   --ch-print-paper: #ffffff;
+  /* Paper keeps its size whatever the reader's Text Size (N-00 4.14). */
+  --ch-print-k: 1px;
 }
 [data-ui='clubhouse'] {
   /* Ivory neutrals */
@@ -367,6 +369,9 @@
   --ch-type-28-medium: 500 calc(28 * var(--ch-type-k))/calc(34 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-type-28-strong: 600 calc(28 * var(--ch-type-k))/calc(34 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-track-28: -0.03em;
+  /* The range board, read from ten feet (N-00 4.14). */
+  --ch-type-print-title: 600 calc(44 * var(--ch-type-k))/1.05 var(--ch-font-sans);
+  --ch-type-print-figure: 600 calc(56 * var(--ch-type-k))/1 var(--ch-font-sans);
   --ch-type-34: 400 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-type-34-medium: 500 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-type-34-strong: 600 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
