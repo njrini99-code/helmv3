@@ -218,7 +218,7 @@ export function ReadPanel({
       )}
       {coach && fa && !read.stale && (
         <div className="acts" data-acts="">
-          <FocusActions fa={fa} target={{ playerId: player.id, first: player.first, ins: read }} missing={missing} where="board" noDismiss={!dismissible} />
+          <FocusActions propose fa={fa} target={{ playerId: player.id, first: player.first, ins: read }} missing={missing} where="board" noDismiss={!dismissible} />
           {ask && (
             <Button variant="secondary" href={ask}>
               Ask about this

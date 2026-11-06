@@ -162,6 +162,8 @@ export function RecordCard({ part, desk = false }: { part: ChTeamPart<ChTrackRec
   );
   if (part.status === 'failed' || part.value.state === 'unavailable') return notice('Track record unavailable right now', 'It shows again once the check runs. No number is shown in its place.');
   const r = part.value;
+  const held = r.rungs.reduce((n, g) => n + (g.bar?.held ?? 0), 0);
+  const checked = r.rungs.reduce((n, g) => n + (g.bar?.of ?? 0), 0);
   if (r.empty) return notice('No reads to check yet', 'Reads are re-checked against new rounds once the team has some.');
   return (
     <section className="card recc" data-ch-team-card="record" aria-label="How often CoachHelm is right">
@@ -170,6 +172,11 @@ export function RecordCard({ part, desk = false }: { part: ChTeamPart<ChTrackRec
       </div>
       <div className="rec">
         <div className="big">
+          {checked > 0 && (
+            <b className="ch-num">
+              {held} of {checked}
+            </b>
+          )}
           <span>{r.program}</span>
         </div>
         {r.rungs.map((g) => (
@@ -181,7 +188,7 @@ export function RecordCard({ part, desk = false }: { part: ChTeamPart<ChTrackRec
                 {g.bar.target != null && <u style={{ left: `${g.bar.target * 10}%` }} title="target" />}
               </span>
             ) : (
-              <span className="t is-none" />
+              <span className="t is-none">—</span>
             )}
             <span className="n">
               {g.line}

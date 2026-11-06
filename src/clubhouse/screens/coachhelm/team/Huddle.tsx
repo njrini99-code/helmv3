@@ -37,8 +37,9 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
   const X = (v: number) => L + ((v - lo) / (hi - lo)) * (W - L - R);
   const Y = (v: number) => T + ((hi - v) / (hi - lo)) * (H - T - B);
   const st = data.stations;
-  const as = (st.tee.team ?? 0) + (st.approach.team ?? 0);
-  const ac = (st.short_game.team ?? 0) + (st.putting.team ?? 0);
+  // A station nobody has a figure for isn't zero, so its average isn't drawn on the Tour line (FID-TEAM-17).
+  const as = st.tee.team == null || st.approach.team == null ? null : st.tee.team + st.approach.team;
+  const ac = st.short_game.team == null || st.putting.team == null ? null : st.short_game.team + st.putting.team;
   const labelWide = (t: string) => t.length * 12 * 0.54;
   const clear = (x: number, y: number, t: string) => !plotted.some(({ at }) => X(at.x) + 13 > x && X(at.x) - 13 < x + labelWide(t) && Y(at.y) + 13 > y && Y(at.y) - 13 < y + 14);
   const firstMissing = (p: ChTeamPlayer): ChStation | undefined => STATIONS.find((s) => p.legs[s].strokes == null);
@@ -57,8 +58,8 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
           <ChartText className="tl" size={12} x={X(0) - 4} y={Y(0) - 5} textAnchor="end">
             Tour
           </ChartText>
-          <line className="avg" x1={X(as)} x2={X(as)} y1={T} y2={H - B} />
-          <line className="avg" x1={L} x2={W - R} y1={Y(ac)} y2={Y(ac)} />
+          {as != null && <line className="avg" x1={X(as)} x2={X(as)} y1={T} y2={H - B} />}
+          {ac != null && <line className="avg" x1={L} x2={W - R} y1={Y(ac)} y2={Y(ac)} />}
           {/* Against the plot's own edges, whatever the averages are, and only where no coin stands (TEAM-14). */}
           {clear(L + 6, T + 8, 'Scores well, strikes poorly') && (
             <ChartText className="q" size={12} x={L + 6} y={T + 16}>

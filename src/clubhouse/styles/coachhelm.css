@@ -1856,7 +1856,13 @@ html:not([data-fw-theme='dark']) .ch-hl {
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-subtle);
 }
+.ch-hl-cx__c::after {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
 .ch-hl-cx__c {
+  position: relative;
   all: unset;
   box-sizing: border-box;
   cursor: pointer;

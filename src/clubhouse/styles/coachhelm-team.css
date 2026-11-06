@@ -238,7 +238,6 @@ html[data-fw-theme='dark'] .ch-htb {
 }
 .ch-htb .holesvg {
   display:block;
-  overflow:hidden;
   width:100%;
   height:auto;
   overflow:visible;
@@ -519,8 +518,14 @@ html[data-fw-theme='dark'] .ch-htb {
   font: var(--ch-type-13);
   color:var(--ch-tb-ink-3);
 }
+.ch-htb .axis {
+  position:relative;
+}
+/* Tour sits under its line: 84% along the track (TEAM-27). */
 .ch-htb .axis span:last-child {
-  padding-right:40px;
+  position:absolute;
+  left:calc(16px + 48*var(--ch-tb-k) + (100% - 16px - 48*var(--ch-tb-k) - 16px - 52px) * .84);
+  transform:translateX(-50%);
 }
 .ch-htb .rds {
   display:grid;
@@ -582,8 +587,6 @@ html[data-fw-theme='dark'] .ch-htb {
   margin:4px 16px 16px;
   font: var(--ch-type-14);
   color:var(--ch-tb-ink-2);
-}
-.ch-htb .fadein {
 }
 .ch-htb .spot.cm {
   display:flex;
@@ -898,7 +901,6 @@ html[data-fw-theme='dark'] .ch-htb {
   display:block;
   width:100%;
   height:auto;
-  overflow:visible;
 }
 .ch-htb .hudsvg text {
   font-family:var(--ch-tb-sans);
@@ -1055,8 +1057,6 @@ html[data-fw-theme='dark'] .ch-htb {
 .ch-htb .ringc.prop .trk {
   stroke-dasharray:3 3;
   stroke:var(--ch-tb-neutral-fill);
-}
-.ch-htb .wk.pop {
 }
 @keyframes ch-htb-popin {from{opacity:0;transform:scale(.94);}}
 .ch-htb .rec {
@@ -1401,8 +1401,6 @@ html[data-fw-theme='dark'] .ch-htb {
   display:flex;
   gap:8px;
 }
-.ch-htb .sto-anim {
-}
 @keyframes ch-htb-storyin {from{opacity:0;transform:translateX(24px);}}
 .ch-htb .holes18 {
   display:grid;
@@ -1718,9 +1716,10 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 .ch-htb .insp {
   position:absolute;
   top:58px;
-  right:0;
+  right:env(safe-area-inset-right);
   bottom:0;
-  width:420px;
+  width:min(420px, 50vw);
+  padding-bottom:env(safe-area-inset-bottom);
   background:var(--ch-tb-bg);
   box-shadow:var(--ch-team-shadow-4);
   transform:translateX(102%);
@@ -2151,5 +2150,33 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 @media (max-width: 399px) {
   .ch-htb .shape {
     grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+.ch-htb .rec .t.is-none {
+  background:none;
+  color:var(--ch-tb-ink-3);
+}
+html[data-fw-theme='dark'] .ch-htb .hudsvg .dotc,
+html[data-fw-theme='dark'] .ch-htb .scn circle {
+  stroke:rgb(244 241 232/.5);
+}
+.ch-htb .hudsvg {
+  overflow:hidden;
+}
+.ch-htb .hudsvg .hit {
+  stroke:none;
+  pointer-events:all;
+}
+.ch-htb-sheet .ins {
+  padding-bottom:calc(72px + env(safe-area-inset-bottom));
+}
+.ch-htb .insp .ins {
+  padding-top:22px;
+}
+/* A narrow sheet stacks the value under the bar rather than clip it (MOB-TEAM-13). */
+@media (max-width: 340px) {
+  .ch-htb .cr {
+    grid-template-columns:minmax(0,1fr) auto;
   }
 }

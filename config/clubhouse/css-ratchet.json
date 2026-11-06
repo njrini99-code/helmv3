@@ -60,8 +60,8 @@
     "crh-negative-margin": 0
   },
   "src/clubhouse/styles/coachhelm-team.css": {
-    "hex": 38,
-    "svg-overflow-visible": 2,
+    "hex": 37,
+    "svg-overflow-visible": 1,
     "crh-negative-margin": 0
   },
   "src/clubhouse/styles/coachhelm-thread.css": {
