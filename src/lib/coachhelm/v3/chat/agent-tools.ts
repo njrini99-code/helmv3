@@ -42,7 +42,7 @@
  * that will execute — not a client-side guess at what might happen.
  * ========================================================================== */
 
-import { getClassTimes, getDrillBank, getTeamPuttingProfile, getTeamStrokesGained } from './practice-reads';
+import { getClassTimes, getDrillBank, getPlanFormat, getTeamPuttingProfile, getTeamStrokesGained } from './practice-reads';
 import { practicePicture } from './practice-pictures';
 import { practiceDraftTool, publishFlow } from './practice-draft';
 import { getSeasonScoring } from './season-reads';
@@ -746,6 +746,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
       ? {
           get_class_times: tool({ description: 'Who is in class on a day, per tracked player. Read before planning a practice.', inputSchema: z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }), execute: read('get_class_times', (input) => getClassTimes(sb, ctx, input)) }),
           get_drill_bank: tool({ description: 'Team drills and the GolfHelm library, with the refs a plan must use. A drill is never invented.', inputSchema: z.object({ category: z.string().max(40).optional() }), execute: read('get_drill_bank', (input) => getDrillBank(sb, ctx, input)) }),
+          get_plan_format: tool({ description: 'The team\'s plan format: its section names and order. Read it before drafting a plan, and call the sections by these names.', inputSchema: z.object({}), execute: read('get_plan_format', () => getPlanFormat(sb, ctx)) }),
           get_team_strokes_gained: tool({ description: 'The team\'s strokes gained per area over recent rounds.', inputSchema: z.object({ rounds: z.number().int().min(3).max(30).default(10) }), execute: read('get_team_strokes_gained', (input) => getTeamStrokesGained(sb, ctx, input)) }),
           get_team_putting_profile: tool({ description: 'The team\'s putting by distance.', inputSchema: z.object({ rounds: z.number().int().min(3).max(30).default(10) }), execute: read('get_team_putting_profile', (input) => getTeamPuttingProfile(sb, ctx, input)) }),
           ...practiceDraftTool({ ctx, writer, envelopes: () => seenEnvelopes, evidenceByRef }),

@@ -763,11 +763,11 @@ export function Documents({
                   <button type="button" className="ch-hb-file__open" onClick={() => onOpen(d)} disabled={opening === d.id} aria-label={`Open ${d.title}, ${d.type}`}>
                     <span className={`ch-hb-file__ic is-${d.type.toLowerCase()}`} aria-hidden="true">
                       <Icon icon={FILE_ICON[d.type] ?? FileText} size={18} />
-                      <em>{d.type}</em>
+                      {!d.planId && <em>{d.type}</em>}
                     </span>
                     <span className="ch-hb-file__b">
                       <b>{d.title}</b>
-                      <span className="ch-num">{[d.size, d.date].filter(Boolean).join(' · ')}</span>
+                      <span className="ch-num">{[d.planId ? (d.isPublic ? 'Shared with players' : 'Draft · Only coaches') : d.size, d.date].filter(Boolean).join(' · ')}</span>
                     </span>
                     <Icon icon={d.planId ? ChevronRight : Download} size={15} className="ch-hb-muted" />
                   </button>

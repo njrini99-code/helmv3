@@ -1,4 +1,12 @@
-import type { PlanSheetModel } from './plan-sheet-model';
+import { Fragment } from 'react';
+import type { PlanSheetModel, PlanSheetSection } from './plan-sheet-model';
+
+const DEFAULT_ORDER: Array<{ key: PlanSheetSection; name: string }> = [
+  { key: 'groups', name: '' },
+  { key: 'schedule', name: '' },
+  { key: 'bring', name: '' },
+  { key: 'notes', name: '' },
+];
 
 const Gd = ({ letter }: { letter: string }) => <i className={`gd g-${letter}`}>{letter}</i>;
 
@@ -6,6 +14,62 @@ const Gd = ({ letter }: { letter: string }) => <i className={`gd g-${letter}`}>{
 export function PracticePlanSheet({ plan, density = 'phone', part = 'all', draft = false }: { plan: PlanSheetModel; density?: 'pane' | 'phone' | 'print'; part?: 'all' | 'schedule' | 'rest'; draft?: boolean }) {
   const first = part !== 'rest';
   const last = part !== 'schedule';
+  const order = plan.format?.sections ?? DEFAULT_ORDER;
+  const named = (o: { key: PlanSheetSection; name: string }, word: string) => o.name || word;
+  const section = (o: { key: PlanSheetSection; name: string }) => {
+    if (o.key === 'groups') {
+      return plan.groups.length > 0 ? (
+        <section>
+          <h3 className="pp-h">
+            {named(o, 'Groups')}
+            {plan.copy === 'coach' && <span>{plan.playersLine}</span>}
+          </h3>
+          <div className="pp-groups">
+            {plan.groups.map((g) => (
+              <div key={g.letter} className={`pp-g g-${g.letter}`}>
+                <span className="gh">
+                  <Gd letter={g.letter} />
+                  Group {g.letter}
+                </span>
+                <ul>
+                  {g.names.map((n, i) => (
+                    <li key={`${n}-${i}`}>{n}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null;
+    }
+    if (o.key === 'schedule') return <Schedule plan={plan} title={named(o, 'Schedule')} />;
+    if (o.key === 'bring') {
+      return plan.bring.length > 0 ? (
+        <section>
+          <h3 className="pp-h">{named(o, 'Bring')}</h3>
+          <ul className="pp-check">
+            {plan.bring.map((b) => (
+              <li key={b}>{b}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null;
+    }
+    return (
+      <section>
+        <h3 className="pp-h">{named(o, 'Notes')}</h3>
+        {plan.notes ? (
+          <p className="pp-focus">{plan.notes}</p>
+        ) : (
+          <div className="pp-lines" aria-hidden="true">
+            {Array.from({ length: part === 'rest' ? 6 : 4 }, (_, i) => (
+              <i key={i} />
+            ))}
+          </div>
+        )}
+      </section>
+    );
+  };
   return (
     <article className="ch-cp-sheet" data-density={density} data-copy={plan.copy} data-part={part === 'all' ? undefined : part}>
       {first && (
@@ -34,31 +98,40 @@ export function PracticePlanSheet({ plan, density = 'phone', part = 'all', draft
           </div>
         ))}
       </dl>
-      {plan.groups.length > 0 && (
-        <section>
-          <h3 className="pp-h">
-            Groups{plan.copy === 'coach' && <span>{plan.playersLine}</span>}
-          </h3>
-          <div className="pp-groups">
-            {plan.groups.map((g) => (
-              <div key={g.letter} className={`pp-g g-${g.letter}`}>
-                <span className="gh">
-                  <Gd letter={g.letter} />
-                  Group {g.letter}
-                </span>
-                <ul>
-                  {g.names.map((n, i) => (
-                    <li key={`${n}-${i}`}>{n}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </section>
+        </>
       )}
+      {order.filter((o) => (o.key === 'groups' || o.key === 'schedule' ? first : last)).map((o, i, shown) => {
+        const pair = o.key === 'bring' ? shown[i + 1]?.key === 'notes' : o.key === 'notes' ? shown[i + 1]?.key === 'bring' : false;
+        const paired = o.key === 'bring' ? shown[i - 1]?.key === 'notes' : o.key === 'notes' ? shown[i - 1]?.key === 'bring' : false;
+        if (paired) return null;
+        if (pair && plan.bring.length > 0) {
+          const other = shown[i + 1]!;
+          return (
+            <div className="pp-two" key={o.key}>
+              {section(o)}
+              {section(other)}
+            </div>
+          );
+        }
+        return <Fragment key={o.key}>{section(o)}{pair ? section(shown[i + 1]!) : null}</Fragment>;
+      })}
+      {part === 'all' && (
+        <footer className="pp-foot">
+          <span>{plan.foot}</span>
+          {plan.format && <span>In your format · {plan.format.name}</span>}
+        </footer>
+      )}
+    </article>
+  );
+}
+
+
+function Schedule({ plan, title }: { plan: PlanSheetModel; title: string }) {
+  return (
       <section>
         <h3 className="pp-h">
-          Schedule<span>{plan.totalLine}</span>
+          {title}
+          <span>{plan.totalLine}</span>
         </h3>
         <div className="sched">
           {plan.rows.map((r) => (
@@ -106,46 +179,12 @@ export function PracticePlanSheet({ plan, density = 'phone', part = 'all', draft
           ))}
         </div>
       </section>
-        </>
-      )}
-      {last && (
-        <>
-      <div className="pp-two">
-        {plan.bring.length > 0 && (
-          <section>
-            <h3 className="pp-h">Bring</h3>
-            <ul className="pp-check">
-              {plan.bring.map((b) => (
-                <li key={b}>{b}</li>
-              ))}
-            </ul>
-          </section>
-        )}
-        <section>
-          <h3 className="pp-h">Notes</h3>
-          {plan.notes ? <p className="pp-focus">{plan.notes}</p> : (
-            <div className="pp-lines" aria-hidden="true">
-              {Array.from({ length: part === 'rest' ? 6 : 4 }, (_, i) => (
-                <i key={i} />
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
-      {part === 'all' && (
-      <footer className="pp-foot">
-        <span>{plan.foot}</span>
-      </footer>
-      )}
-        </>
-      )}
-    </article>
   );
 }
 
 /** A loss in a Why line, in amber: the figure only, with a true minus. */
 function WhyLine({ text }: { text: string }) {
-  const parts = text.split(/([-\u2212]\d+(?:\.\d+)?)/);
+  const parts = text.split(/((?<![\w.\u2212-])[-\u2212]\d+(?:\.\d+)?)/);
   return (
     <>
       {parts.map((p, i) =>

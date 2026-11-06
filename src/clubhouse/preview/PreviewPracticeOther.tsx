@@ -82,9 +82,9 @@ export function PreviewPracticePlayer({ state }: { state?: string }) {
           title: 'Thursday practice',
           when: '2:00 to 5:00 PM · Lakeside Golf Club',
           focus: 'Putts inside 6 feet and speed from long range. Finish under pressure.',
-          group: { name: 'B', mates: ['Eli', 'Owen'] },
+          group: { name: 'B', me: 'Jonah', mates: ['Eli', 'Owen'] },
           stops: STOPS.map(([time, place, line, mark]) => ({ time: time!, place: place!, line: line!, now: mark === 'now', next: mark === 'next' })),
-          documents: 'Team Hub › Practice plans',
+          documents: { label: 'Team Hub › Documents › Practice plans', href: '/clubhouse-preview/hub' },
           planHref: null,
         }}
       />

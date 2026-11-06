@@ -1,4 +1,5 @@
 import 'server-only';
+import { LIBRARY_DRILL_KINDS } from '@/lib/coachhelm/v3/practice-plan/library-kinds';
 import { createClient } from '@/lib/supabase/server';
 import { practiceTables } from '@/lib/golf/practice-db';
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
@@ -9,15 +10,6 @@ import { AREA_WORDS } from '../screens/practice/starters';
 import type { ChDrillDetail, ChDrillRow, ChLibraryLoad, ChPracticeGroup, ChPracticeTemplate, ChRosterRow } from './practice-library-shape';
 
 /** N-00 4.7: what a library category becomes on a copy. A category with no match keeps its own word. */
-const LIBRARY_AREA: Record<string, { area: PlanArea; kind: DrillKind }> = {
-  putting: { area: 'putting', kind: 'skill' },
-  short_game: { area: 'short_game', kind: 'skill' },
-  approach: { area: 'approach', kind: 'skill' },
-  tee: { area: 'tee', kind: 'skill' },
-  course_management: { area: 'course', kind: 'random' },
-  scoring: { area: 'course', kind: 'random' },
-  pressure: { area: 'mental', kind: 'pressure' },
-};
 const TEAM_COLUMNS = 'id, name, area, kind, minutes, players, levels, setup, goal, equipment, scoring, tags, media_url, archived_at';
 
 interface TeamDrillFull {
@@ -43,7 +35,7 @@ function levelsLine(l: TeamDrillFull['levels']): string | null {
 }
 const teamRow = (d: TeamDrillFull): ChDrillRow => ({ id: d.id, source: 'team', name: d.name, area: d.area, areaLabel: AREA_WORDS[d.area] ?? d.area, kind: d.kind, minutes: d.minutes, players: d.players, levels: levelsLine(d.levels) });
 const libRow = (d: { id: string; title: string; category: string | null; duration_min: number | null }): ChDrillRow => {
-  const m = d.category ? LIBRARY_AREA[d.category] : undefined;
+  const m = d.category ? LIBRARY_DRILL_KINDS[d.category] : undefined;
   return { id: d.id, source: 'lib', name: d.title, area: m?.area ?? null, areaLabel: m ? AREA_WORDS[m.area] : (d.category ?? 'Drill').replace(/_/g, ' '), kind: m?.kind ?? null, minutes: d.duration_min, players: null, levels: null };
 };
 

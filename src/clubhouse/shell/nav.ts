@@ -376,7 +376,7 @@ const PUSHED_BELOW: ReadonlyArray<{ path: RegExp; top: (role: ChRole, m: RegExpE
   },
   { path: /^\/golf\/dashboard\/rounds\/recover$/, top: () => ({ back: 'Rounds', title: 'Recover', parent: '/golf/dashboard/rounds' }) },
   // No parent: a plan opens from Ask, a push, Documents or Calendar, and Back returns to whichever it was (D-41).
-  { path: /^\/golf\/dashboard\/practice\/plan\/[^/]+$/, top: () => ({ back: 'Back', title: 'Practice plan' }) },
+  { path: /^\/golf\/dashboard\/practice\/plan\/[^/]+$/, top: (role) => ({ back: 'Back', title: role === 'player' ? '' : 'Practice plan' }) },
   { path: /^\/golf\/dashboard\/practice\/drills\/[^/]+$/, top: () => ({ back: 'Drills', title: 'Drill', parent: '/golf/dashboard/practice/drills' }) },
   { path: /^\/golf\/dashboard\/practice\/print\/([^/]+)$/, top: (role, m) => (role === 'coach' ? { back: 'Plan', title: 'Print', parent: `/golf/dashboard/practice/plan/${m[1]}` } : null) },
   { path: /^\/golf\/dashboard\/practice\/format$/, top: (role) => (role === 'coach' ? { back: 'Back', title: 'Plan format' } : null) },
