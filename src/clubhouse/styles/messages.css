@@ -5903,8 +5903,8 @@ body:has([data-ch-ms-v2]) .ch-toast {
 /* MSG-15: the reply quote is flat inside the bubble. */
 [data-ch-ms-v2] .ch-ms-quote { background: var(--ch-well-bg-flat); box-shadow: none; }
 /* MSG-19: the skeleton is built on the row's own type, so nothing jumps when the rows land. */
-.ch-msv-sk.is-line { display: block; height: 1lh; font: var(--ch-type-15); background-clip: content-box; padding-block: 3px; }
-.ch-msv-sk.is-line.is-small { font: var(--ch-type-13); }
+.ch-msv-sk.is-line { display: block; height: 1lh; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); background-clip: content-box; padding-block: 2px; }
+.ch-msv-sk.is-line.is-small { font: var(--ch-type-13); letter-spacing: var(--ch-track-13); }
 .ch-msv-sk.is-w20 { width: 20%; }
 .ch-msv-sk.is-w40 { width: 40%; }
 .ch-msv-sk.is-w70 { width: 70%; }
