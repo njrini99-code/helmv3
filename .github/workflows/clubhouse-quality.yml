@@ -101,7 +101,9 @@ jobs:
           github-token: ${{ github.token }}
       - name: Smoke normal and reduced motion in Chromium and WebKit
         timeout-minutes: 25
-        run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project chromium-no-preference --project chromium-reduce --project webkit-no-preference --project webkit-reduce
+        run: >-
+          ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts
+          --project chromium-no-preference --project chromium-reduce --project webkit-no-preference --project webkit-reduce
       # Boxes leaving their card, clipped text, nested cards, small type and targets, contrast, page edge: at 390x844 in WebKit and
       # 1440x900 in Chromium, light and dark, on stress fixtures. A known failure is marked with its bug and must keep failing until fixed.
       - name: Presentation gate
