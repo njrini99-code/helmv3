@@ -1,4 +1,15 @@
+# 2026-11-06 — P002
+
 ## 2026-11-06 — One source for rounds and strokes gained
+
+```text
+Design package: design-refresh/redesign-ui-sweep-2026-11-06
+PR/commit:      agent/ch-numbers
+Contract IDs:   none new
+Actions:        none new
+Data impact:    figures read one helper; no query changes
+Held items:     none
+```
 
 - Rounds and strokes gained come from one helper (`data/figure-window.ts`).
   Team view, Roster and Stats read the same rounds, so two figures differ only
