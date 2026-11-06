@@ -208,7 +208,7 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
   const noRounds = data.teamTotal.rounds === 0;
   const tabs = data.off ? null : <CoachHelmTabs active={sw.shown} onGo={sw.go} boardLabel="Team" />;
   const context = data.off ? 'CoachHelm reads the rounds your players post.' : data.roster.count === 0 ? 'No players yet' : noRounds ? `${plural(data.roster.count, 'player')} · no rounds yet this season` : `${plural(data.roster.count, 'player')} · ${plural(data.teamTotal.rounds, 'round')} this season · ${plural(readsDrawn(list), 'open read')}`;
-  const head = <CoachHelmHead title={data.team.name || 'CoachHelm'} context={context} tabs={tabs} />;
+  const head = <CoachHelmHead title={data.team.name || 'CoachHelm'} context={context} scope={data.team.name ? `${data.team.name} · ${plural(data.roster.count, 'player')} · this season` : undefined} tabs={tabs} />;
   const course = courseReads(list).length;
   const skeletonCard = <span className="skl" style={{ height: 120, borderRadius: 16 }} />;
   const today = (
@@ -371,9 +371,7 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
         </div>
       ) : (
         <div className="ch-htb-desk">
-          <div className="ch-htb-deskhead">
-            {head}
-          </div>
+          {head}
           {body}
         </div>
       )}

@@ -46,6 +46,11 @@ describe('placeLabels', () => {
     const placed = placeLabels(marks, box);
     expect(placed.every((l) => l.fits && inside(l))).toBe(true);
   });
+  it("takes the design's place while it's clear, and leaves it when a big halo covers it", () => {
+    const prefer = { x: 60, y: 40, anchor: 'middle' as const };
+    expect(placeLabels([{ id: 'a', x: 100, y: 100, r: 10, w: 40, h: 16, prefer }], box)[0]).toMatchObject({ x: 60, y: 40, anchor: 'middle' });
+    expect(placeLabels([{ id: 'a', x: 80, y: 48, r: 28, w: 40, h: 16, prefer }], box)[0]!.y).not.toBe(40);
+  });
   it('keeps a label off an obstacle, such as a coin', () => {
     const coin = { x: 120, y: 100, w: 22, h: 22 };
     const [l] = placeLabels([{ id: 'a', x: 100, y: 110, r: 10, w: 60, h: 16 }], box, 6, [coin]);

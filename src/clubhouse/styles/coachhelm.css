@@ -2119,9 +2119,11 @@ html:not([data-fw-theme='dark']) .ch-hl {
   gap: 4px;
   min-width: 0;
 }
-.ch-chd.is-desk {
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 24px;
-  width: 100%;
+.ch-chd__scope {
+  overflow: hidden;
+  min-width: 0;
+  font: var(--ch-type-14);
+  color: var(--ch-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

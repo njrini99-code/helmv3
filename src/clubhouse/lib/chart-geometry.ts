@@ -17,13 +17,14 @@ export function scaleToBox(value: number, [lo, hi]: readonly [number, number], l
 }
 
 export type LabelBox = { x: number; y: number; w: number; h: number };
-export type LabelMark = { id: string; x: number; y: number; r: number; w: number; h: number };
+/** `prefer`: where the design puts this label, tried first; its anchor is the side the text hangs from. */
+export type LabelMark = { id: string; x: number; y: number; r: number; w: number; h: number; prefer?: { x: number; y: number; anchor: 'start' | 'middle' | 'end' } };
 export type PlacedLabel = LabelBox & { id: string; anchor: 'start' | 'middle' | 'end'; fits: boolean };
 
 const overlap = (a: LabelBox, b: LabelBox) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
 
 /**
- * Puts each mark's label beside the mark, inside `box`, clear of every mark, every obstacle (a coin, a flag) and every label placed so far. Tries right, left, below,
+ * Puts each mark's label beside the mark, inside `box`, clear of every mark, every obstacle (a coin, a flag) and every label placed so far. Tries the design's own place when it has one, then right, left, below,
  * above; when none is clear it takes the one that covers least and says so (`fits: false`), so a caller can shorten or drop it.
  * Labels come back top-left; `anchor` is the side the text should hang from at that box.
  */
@@ -32,6 +33,7 @@ export function placeLabels(marks: readonly LabelMark[], box: LabelBox, gap = 6,
   const placed: PlacedLabel[] = [];
   for (const m of marks) {
     const options: Array<LabelBox & { anchor: PlacedLabel['anchor'] }> = [
+      ...(m.prefer ? [{ x: m.prefer.x, y: m.prefer.y, w: m.w, h: m.h, anchor: m.prefer.anchor }] : []),
       { x: m.x + m.r + gap, y: m.y - m.h / 2, w: m.w, h: m.h, anchor: 'start' },
       { x: m.x - m.r - gap - m.w, y: m.y - m.h / 2, w: m.w, h: m.h, anchor: 'end' },
       { x: m.x - m.w / 2, y: m.y + m.r + gap, w: m.w, h: m.h, anchor: 'middle' },

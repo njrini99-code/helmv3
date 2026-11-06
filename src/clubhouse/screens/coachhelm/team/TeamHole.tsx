@@ -62,7 +62,9 @@ export function TeamHole({
       STATIONS.map((s) => {
         const v = stations[s].team;
         const value = v == null ? 'Not measured' : formatSigned(v);
-        return { id: s, x: H.st[s].x, y: H.st[s].y, r: stationRadius(v), w: Math.max(wide(STATION_SHORT[s], labelSize), wide(value, valueSize)) + 2, h: labelSize + valueSize + 4 };
+        const w = Math.max(wide(STATION_SHORT[s], labelSize), wide(value, valueSize)) + 2;
+        const t = H.st[s];
+        return { id: s, x: t.x, y: t.y, r: stationRadius(v), w, h: labelSize + valueSize + 4, prefer: { x: t.a === 'start' ? t.lx : t.lx - w / 2, y: t.ly - labelSize, anchor: t.a } };
       }),
       { x: 4, y: 4, w: H.w - 8, h: H.h - 8 },
       6,

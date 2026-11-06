@@ -32,9 +32,9 @@ export function TeamBoardSkeleton() {
     return (
       <main className="ch-htb is-phone" aria-busy="true">
         <PhoneTop start title="CoachHelm" />
-        <CoachHelmTabs active="board" held boardLabel="Team" />
         <div className="sheet" aria-hidden="true">
           <LargeTitleSkeleton />
+          <CoachHelmTabs active="board" held boardLabel="Team" />
           <span className="skl" style={{ height: 120, borderRadius: 16 }} />
           {hero(300)}
           {rows(5)}
