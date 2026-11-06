@@ -1043,9 +1043,10 @@ main.ch-prc-planpage {
   .ch-prc-week {
     display: flex;
     gap: 8px;
-    margin: 0 -16px;
-    padding: 2px 16px;
+    margin: 0 calc(-1 * var(--ch-page-x-phone));
+    padding: 2px var(--ch-page-x-phone);
     overflow-x: auto;
+    scroll-padding-inline: var(--ch-page-x-phone);
     scroll-snap-type: x proximity;
     scrollbar-width: none;
   }

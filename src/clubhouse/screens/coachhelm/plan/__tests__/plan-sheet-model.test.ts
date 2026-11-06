@@ -17,7 +17,7 @@ describe('plan sheet model', () => {
   });
   it('starts blocks on the clock in the team zone', () => {
     const rows = toSheetModel(input, 'coach').rows;
-    expect(rows[0]!.start).toBe('2:00 PM');
+    expect(rows[0]!.start).toBe('2:00');
     expect(rows[1]!.start).toBe('2:30 PM');
   });
   it('draws the rotation as the design does', () => {

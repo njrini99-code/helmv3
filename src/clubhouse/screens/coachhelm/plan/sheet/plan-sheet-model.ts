@@ -20,6 +20,8 @@ export interface PlanSheetModel {
   focus: string;
   dayWord: string;
   dayNum: string;
+  /** "NOV", under the day. */
+  monthWord: string;
   meta: Array<{ label: string; value: string }>;
   groups: Array<{ letter: string; names: string[] }>;
   rows: SheetRow[];
@@ -49,7 +51,7 @@ export function toSheetModel(input: { body: PlanBodyV2; why?: Record<string, Pla
   const ownGroup = player && viewer ? (body.groups.find((g) => g.players.includes(viewer)) ?? null) : null;
   const ownLetter = ownGroup ? letterOf(ownGroup.id) : '';
   // No practice picked yet: the sheet says it doesn't know the day and the times. It never makes them up from now.
-  const parts = input.start && zone ? partsWith(input.start, { weekday: 'short', day: 'numeric', timeZone: zone }) : [];
+  const parts = input.start && zone ? partsWith(input.start, { weekday: 'short', day: 'numeric', month: 'short', timeZone: zone }) : [];
   const dated = !!input.start && !!zone;
   let at = input.start?.getTime() ?? 0;
   const rows: SheetRow[] = body.variants.main.blocks.flatMap((b): SheetRow[] => {
@@ -78,7 +80,10 @@ export function toSheetModel(input: { body: PlanBodyV2; why?: Record<string, Pla
       if (b.pairings.length && !pairings.length) return [];
       if (pairings.length) base.who = pairings.map((p) => ({ letter: letterOf(body.groups.find((g) => p.players.every((x) => g.players.includes(x)))?.id ?? ''), text: `Tee +${p.teeMin}` }));
     }
-    return [why && !why.routine && why.because ? { ...base, why: why.because } : base];
+    if (why && !why.routine && why.because) return [{ ...base, why: why.because }];
+    // A routine block makes no claim, and its note is why it's there: the coach's copy draws it as the Why (S-ASK.full-plan).
+    if (copy === 'coach' && why?.routine && b.note && b.kind !== 'course' && b.kind !== 'stations') return [{ ...base, detail: 'place' in b ? b.place : '', why: b.note }];
+    return [base];
   });
   return {
     copy,
@@ -88,6 +93,7 @@ export function toSheetModel(input: { body: PlanBodyV2; why?: Record<string, Pla
     focus: body.focus,
     dayWord: (parts.find((p) => p.type === 'weekday')?.value ?? '').toUpperCase(),
     dayNum: parts.find((p) => p.type === 'day')?.value ?? NO_DATA,
+    monthWord: (parts.find((p) => p.type === 'month')?.value ?? '').toUpperCase(),
     meta: [
       { label: 'Time', value: input.end ? `${clock(input.start, zone)} to ${clockFull(input.end, zone)}` : clockFull(input.start, zone) },
       { label: 'Place', value: body.place || NO_DATA },

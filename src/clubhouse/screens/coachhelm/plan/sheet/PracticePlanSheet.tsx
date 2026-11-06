@@ -17,6 +17,7 @@ export function PracticePlanSheet({ plan, density = 'phone' }: { plan: PlanSheet
         <span className="pp-date">
           <span>{plan.dayWord}</span>
           <b>{plan.dayNum}</b>
+          {plan.monthWord && <span>{plan.monthWord}</span>}
         </span>
       </header>
       <h2 className="pp-title">{plan.title}</h2>
@@ -32,7 +33,7 @@ export function PracticePlanSheet({ plan, density = 'phone' }: { plan: PlanSheet
       {plan.groups.length > 0 && (
         <section>
           <h3 className="pp-h">
-            Groups{plan.copy === 'coach' && <span> · {plan.playersLine}</span>}
+            Groups{plan.copy === 'coach' && <span>{plan.playersLine}</span>}
           </h3>
           <div className="pp-groups">
             {plan.groups.map((g) => (
@@ -53,7 +54,7 @@ export function PracticePlanSheet({ plan, density = 'phone' }: { plan: PlanSheet
       )}
       <section>
         <h3 className="pp-h">
-          Schedule<span> · {plan.totalLine}</span>
+          Schedule<span>{plan.totalLine}</span>
         </h3>
         <div className="sched">
           {plan.rows.map((r) => (

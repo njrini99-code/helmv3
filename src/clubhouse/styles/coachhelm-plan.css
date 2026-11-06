@@ -31,7 +31,7 @@
 .ch-cp-sheet .pp-g ul {list-style:none;margin:0;padding:0;display:grid;gap:2px;font: var(--ch-type-14); }
 .ch-cp-sheet .gd {width:19px;height:19px;border-radius: var(--ch-radius-xs);font: var(--ch-type-12-strong); letter-spacing: var(--ch-track-12); }
 .ch-cp-sheet .sched {display:grid;}
-.ch-cp-sheet .drow {display:grid;grid-template-columns:calc(46px * var(--ch-type-k)) minmax(0,1fr);gap:8px;padding:8px 0;border-top:var(--ch-hairline-w) solid var(--ch-pl-rule);}
+.ch-cp-sheet .drow {display:grid;grid-template-columns:calc(46 * var(--ch-type-k)) minmax(0,1fr);gap:8px;padding:8px 0;border-top:var(--ch-hairline-w) solid var(--ch-pl-rule);}
 .ch-cp-sheet .drow:first-child {border-top:var(--ch-hairline-w) solid var(--ch-pl-ink-3);}
 .ch-cp-sheet .pt b {display:block;font: var(--ch-type-14-strong); }
 .ch-cp-sheet .pt span {font: var(--ch-type-12);color:var(--ch-pl-ink-2);}
@@ -40,7 +40,7 @@
 .ch-cp-sheet .pp-who {display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;}
 .ch-cp-sheet .pp-who span {display:inline-flex;align-items:center;gap:6px;font: var(--ch-type-13-medium); padding:2px 8px 2px 2px;border-radius: var(--ch-radius-tail);background:#F1EEE6;}
 .ch-cp-sheet .pp-who span.all {padding:4px 8px;}
-.ch-cp-sheet .pp-rot {margin-top:8px;display:grid;grid-template-columns:minmax(0,1fr) repeat(var(--ch-pp-turns,3),calc(40px * var(--ch-type-k)));gap:4px 6px;align-items:center;}
+.ch-cp-sheet .pp-rot {margin-top:8px;display:grid;grid-template-columns:minmax(0,1fr) repeat(var(--ch-pp-turns,3),calc(40 * var(--ch-type-k)));gap:4px 6px;align-items:center;}
 .ch-cp-sheet .pp-rot .h {font: var(--ch-type-12-medium); color:var(--ch-pl-ink-2);text-align:center;padding-bottom:2px;}
 .ch-cp-sheet .pp-rot .h:first-child {text-align:left;}
 .ch-cp-sheet .pp-rot .s {min-width:0;}
@@ -1776,10 +1776,6 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 .ch-cpv-vz .ax > span:last-child { transform: translateX(-100%); }
 /* PP-20: the rotation grid and meta tighten on a phone. */
 .ch-cp-sheet { container-type: inline-size; }
-@container (max-width: 480px) {
-  .ch-cp-sheet .pp-meta { grid-template-columns: minmax(0, 1fr); }
-  .ch-cp-sheet .pp-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
 /* PP-22: every tap in the card and its sheets reaches 44. */
 .ch-cpv .refine button,
 .ch-cpv .saverow,
@@ -1798,7 +1794,7 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 @keyframes ch-cp-sweep { from { transform: scaleX(0.2); } to { transform: scaleX(1); } }
 /* PP-24: long folder names stop at one line. */
 .ch-cpv .fr .n,
-.ch-cpv .saverow b,
+.ch-cpv .saverow > span,
 .ch-cpv .dstrip .fold b {
   display: block;
   min-width: 0;
@@ -1832,14 +1828,14 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 @media screen { .ch-cp-print-root { display: none; } }
 /* Phone: rotation cells tighten, Bring and Notes stack on the narrowest phones and the largest Text Sizes. */
 @container (max-width: 380px) {
-  .ch-cp-sheet .pp-rot { grid-template-columns: minmax(0, 1fr) repeat(var(--ch-pp-turns, 3), calc(32px * var(--ch-type-k))); }
+  .ch-cp-sheet .pp-rot { grid-template-columns: minmax(0, 1fr) repeat(var(--ch-pp-turns, 3), calc(32 * var(--ch-type-k))); }
   .ch-cp-sheet .pp-rot .c { height: 28px; }
   .ch-cp-sheet .pp-two { grid-template-columns: minmax(0, 1fr); }
 }
 .ch-cp-sheet .pp-h span { font-weight: 400; color: var(--ch-pl-ink-3); }
 .ch-cp-sheet .pp-why .neg { color: var(--ch-pl-loss); font-weight: 600; }
-.ch-cpv-ply .stop { grid-template-columns: calc(52px * var(--ch-type-k)) minmax(0, 1fr) auto; }
-.ch-cpv .blk { grid-template-columns: calc(54px * var(--ch-type-k)) minmax(0, 1fr); }
+.ch-cpv-ply .stop { grid-template-columns: calc(52 * var(--ch-type-k)) minmax(0, 1fr) auto; }
+.ch-cpv .blk { grid-template-columns: calc(54 * var(--ch-type-k)) minmax(0, 1fr); }
 .ch-cpv .rlinks a {
   display: inline-flex;
   align-items: center;
@@ -1850,3 +1846,22 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   white-space: nowrap;
 }
 .ch-cpv .fsum .okc, .ch-cpv .okc { background: var(--ch-gain-tint, var(--ch-accent-tint)); color: var(--ch-gain, var(--ch-green-600)); }
+/* The full plan's body sits on the green bar with the page's rounded top, and the bar's ⋯ opens Share PDF. */
+.ch-cpv-full { background: var(--ch-frame); }
+.ch-cpv-full .fbody {
+  border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
+  background: var(--ch-grouped-bg);
+}
+.ch-cpv-full .fmore { position: absolute; right: 8px; bottom: 6px; }
+.ch-cpv-full .fmore__b {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--ch-champagne-dot);
+}
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-cpv-full .vsw { position: absolute; right: 52px; bottom: 6px; }
+}

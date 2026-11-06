@@ -3,7 +3,7 @@
 import { CH_DESK_QUERY } from '@/clubhouse/lib/phone-query';
 import { Button } from '../../../ui/Button';
 
-import { ArrowUp, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, FolderClosed, Minus, Plus, X } from 'lucide-react';
+import { ArrowUp, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, Ellipsis, FolderClosed, Minus, Plus, Printer, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { safeSave } from './safe-save';
@@ -16,6 +16,7 @@ import { listPlanFolders, savePracticePlanDraft, undoPracticePlanDraft } from '@
 import { forgetSavedPlan, publishRequest, rememberSavedPlan, savedPlanFor, type SavedPlanRef } from './saved-plans';
 import { FormSheet } from '../../../ui/FormSheet';
 import { Icon } from '../../../ui/Icon';
+import { Menu } from '../../../ui/Menu';
 import { InlineNotice } from '../../../ui/Notices';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { PracticePlanSheet } from './sheet/PracticePlanSheet';
@@ -86,16 +87,11 @@ function changedBlocks(before: PlanPartData | undefined, now: PlanPartData): str
 const DEFAULT = 'Practice plans';
 const FIELD_MAX = 60;
 const NO_CLAIM = 'Routine. No claim.';
-/** Ways to change this plan: its own length, and nothing that names an event it isn't for. */
+/** Ways to change this plan: from its own length, and nothing that names an event it isn't for. */
 export function refineChips(minutes: number): string[] {
-  const hours = minutes / 60;
-  const shorter = minutes > 60 ? Math.max(60, minutes - 30) : null;
-  return [
-    shorter ? `Make it ${shorter % 60 === 0 ? `${shorter / 60} hours` : `${shorter} minutes`}`.replace(/^Make it 1 hours$/, 'Make it 1 hour') : null,
-    hours < 3 ? `Make it ${minutes + 30} minutes` : null,
-    'More pressure',
-    'Less on the range',
-  ].filter((c): c is string => !!c).slice(0, 3);
+  const hours = Math.floor((minutes - 1) / 60);
+  const shorter = hours >= 2 ? `Make it ${hours} hours` : hours === 1 ? 'Make it 1 hour' : `Make it ${minutes + 30} minutes`;
+  return [shorter, 'More pressure', 'Less on the range'];
 }
 const keyOf = (d: DrillRef | null | undefined) => (d ? `${d.src}:${d.id}` : '');
 const clock = (start: string | undefined, plus: number) => {
@@ -758,6 +754,18 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
               {phone && 'Ask'}
             </button>
             <b title={plan.title}>{plan.title}</b>
+            <span className="fmore">
+              <Menu
+                label="More for this plan"
+                align="end"
+                items={[{ label: phone ? 'Share PDF' : 'Print', icon: Printer, onSelect: () => void printPlan(sheetModel) }]}
+                trigger={(p) => (
+                  <button type="button" className="fmore__b" aria-label="More for this plan" {...p}>
+                    <Icon icon={Ellipsis} size={20} />
+                  </button>
+                )}
+              />
+            </span>
             {!phone && versions.length > 0 && (
               <span className="vsw">
                 <button type="button" aria-label="Earlier version" disabled={(viewing ?? own) <= 0} onClick={() => setViewing((viewing ?? own) - 1)}>
@@ -789,9 +797,6 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                     )}
                   </p>
                 )}
-                <Button variant="secondary" onClick={() => void printPlan(sheetModel)}>
-                  {phone ? 'Share PDF' : 'Print'}
-                </Button>
                 {state.k === 'saved' && (
                   <Button variant="secondary" onClick={() => router.push(`/golf/dashboard/practice/plan/${state.planId}/edit`)}>
                     Edit in builder
