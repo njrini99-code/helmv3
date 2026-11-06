@@ -10,7 +10,7 @@ import '../../styles/coachhelm.css';
 import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 import { AskSkeleton } from './chat/AskSkeleton';
 import { TeamBoardSkeleton } from './team/TeamBoardSkeleton';
-import { CoachHelmTabs } from './chat/SubTabs';
+import { CoachHelmTabs, type CoachHelmView } from './chat/SubTabs';
 import { PlayerHelmTabs } from './views/PlayerHelmTabs';
 import { DiveSkeleton, StandingSkeleton } from './views/Skeletons';
 
@@ -68,8 +68,8 @@ function FocusSkeleton() {
  * strip arrived with the page and pushed everything below it down. On desktop it is the strip itself, held (inert, hidden from
  * assistive tech), so it is exactly as wide and placed as the page's and does not turn from a bar into the control on landing.
  */
-function StripSkeleton({ coach, phone }: { coach: boolean; phone: boolean }) {
-  if (!phone) return coach ? <CoachHelmTabs active="board" held /> : <PlayerHelmTabs active="board" held />;
+function StripSkeleton({ coach, phone, active = 'board' }: { coach: boolean; phone: boolean; active?: CoachHelmView }) {
+  if (!phone) return coach ? <CoachHelmTabs active={active} held /> : <PlayerHelmTabs active="board" held />;
   return (
     <div className="ch-hl-sk__tabs" style={{ height: 44 }}>
       <Skeleton width="100%" height={36} radius={18} />
@@ -144,7 +144,7 @@ function CoachBoardBody(): ReactNode {
  * were last here" line, then the players beside the focus. CH-13401 (player) and CH-13402 (coach). `chained`: the page's own Suspense draws it after the route's
  * `loading.tsx` skeleton, in the same place, so it does not fade in again over it (a second fade would dip the page).
  */
-export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player'; chained?: boolean }) {
+export function CoachHelmSkeleton({ view, chained, active }: { view: 'coach' | 'player'; chained?: boolean; active?: CoachHelmView }) {
   const coach = view === 'coach';
   const phone = useChPhone();
   return (
@@ -153,7 +153,7 @@ export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player';
     <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-busy="true" aria-label="Loading CoachHelm" data-skel={chained ? 'chained' : undefined} data-ch-code={coach ? 'CH-13402' : 'CH-13401'} data-canopy={phone ? undefined : ''}>
       {/* The screen's one h1 while it loads, for the page outline (P013 D8). */}
       <h1 className="ch-sr-only">CoachHelm</h1>
-      {phone && <StripSkeleton coach={coach} phone />}
+      {phone && <StripSkeleton coach={coach} phone active={active} />}
       {phone ? (
         // The phone's intro at its loaded line heights: the coach's eyebrow, the large title and the live line under the double rule.
         <header className="ch-hl-h" data-canopy-head="tight">
@@ -183,7 +183,7 @@ export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player';
           <SkelLine line={21} bar={13} width={coach ? 210 : 360} />
           {coach && <SkelLine line={32} bar={13} width={196} />}
           <div className="ch-hl-h__aside">
-            <StripSkeleton coach={coach} phone={false} />
+            <StripSkeleton coach={coach} phone={false} active={active} />
           </div>
         </header>
       )}
@@ -278,5 +278,5 @@ export function CoachHelmRouteSkeleton({ teamBoard = false }: { teamBoard?: bool
   if (which === 'deep-dive') return <DiveSkeleton />;
   // A coach's first view is the team board: draw its shape from the first frame, not the older page's and then the board's.
   if (which === 'coach' && teamBoard && (!params?.get('view') || params.get('view') === 'board')) return <TeamBoardSkeleton />;
-  return <CoachHelmSkeleton view={which} />;
+  return <CoachHelmSkeleton view={which} active={params?.get('view') === 'brief' ? 'brief' : undefined} />;
 }

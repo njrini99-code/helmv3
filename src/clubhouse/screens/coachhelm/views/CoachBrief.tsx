@@ -1,37 +1,35 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 import { briefSectionId, type ChBriefGoalPlayer, type ChBriefSection, type ChBriefWorking, type ChCoachBrief } from '../../../data/coachhelm-coach-brief-shape';
-import { COACH_BOARD_HREF } from '../../../data/coachhelm-track-record-shape';
 import type { ChViewLoad } from '../../../data/coachhelm-views-shape';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
+import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from '../chat/SubTabs';
+import { useViewSwitch } from '../use-view-switch';
 import { Button } from '../../../ui/Button';
 import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { EmptyState } from '../../../ui/States';
 import { Surface } from '../../../ui/Surface';
 import { TeamPatterns } from '../TeamPatterns';
 import { Row } from './MondayBrief';
-import { BackLink } from '../../../ui/Section';
 import '../../../styles/coachhelm-brief.css';
 import { plural } from '../../../lib/plural';
 import { LargeTitle } from '../../../ui/LargeTitle';
 
 const LINE = 'Who to talk to this week, what the team is working on, and how CoachHelm’s reads have held.';
 
-/** On the phone a pushed screen's bar (back to CoachHelm, "Brief"); on desktop a back link above the page's own header. */
+/** A view of CoachHelm beside Team and Ask: the same strip, the same section bar on the phone, and the page's own header. */
 function Frame({ children }: { children: ReactNode }) {
   const phone = useChPhone();
-  const router = useRouter();
+  const sw = useViewSwitch<CoachHelmView>('brief', (v) => COACHHELM_HREF[v]);
+  const tabs = <CoachHelmTabs active={sw.shown} onGo={sw.go} />;
   return (
-    <main className={'ch-hl ch-hmb ch-hbr' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hbr-title" data-canopy={phone ? undefined : ''} data-ch-code="CH-13983">
-      {phone && <PhoneTop back={{ label: 'CoachHelm', onBack: () => router.push(COACH_BOARD_HREF) }} title="Brief" titleId="ch-hbr-title" />}
-      <header className="ch-hl-h ch-hmb-h" data-canopy-head="">
-        {!phone && (
-          <BackLink href={COACH_BOARD_HREF}>CoachHelm</BackLink>
-        )}
+    <main className={'ch-hl ch-hmb ch-hbr' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hbr-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''} data-ch-code="CH-13983" {...sw.enter}>
+      {phone && <PhoneTop start title="CoachHelm" />}
+      {phone && tabs}
+      <header className={'ch-hl-h ch-hmb-h' + (phone ? '' : ' has-aside')} data-canopy-head="">
         <span className="ch-hl-role">Coach</span>
         {phone ? (
           <LargeTitle as="p" className="ch-hl-h__t">
@@ -43,6 +41,7 @@ function Frame({ children }: { children: ReactNode }) {
           </h1>
         )}
         <p>{LINE}</p>
+        {!phone && <div className="ch-hl-h__aside">{tabs}</div>}
       </header>
       {children}
     </main>

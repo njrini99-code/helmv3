@@ -6,15 +6,35 @@ const InClubhouse = createContext(false);
 const Role = createContext<'coach' | 'player' | null>(null);
 const ClassAwareness = createContext(false);
 
+/** Which of CoachHelm's views are on: the flag registry is server-only, so the shell reads them once and hands them down. Outside the shell, none. */
+export interface ChHelmViews {
+  /** coachhelm_monday_brief_v1: the coach's Brief is a view of the page. */
+  brief?: boolean;
+  /** coachhelm_player_ask_v1: the player's Ask is a view of the page. */
+  playerAsk?: boolean;
+  /** coachhelm_team_board_v1, Team first: the coach's first view is Team, not Board. */
+  team?: boolean;
+}
+const HelmViews = createContext<ChHelmViews>({});
+
 /** Marks a subtree as rendered inside the Clubhouse shell, for the signed-in role. */
-export function ClubhouseMarker({ children, role = null, classAwareness = false }: { children: ReactNode; role?: 'coach' | 'player' | null; classAwareness?: boolean }) {
+export function ClubhouseMarker({ children, role = null, classAwareness = false, helmViews }: { children: ReactNode; role?: 'coach' | 'player' | null; classAwareness?: boolean; helmViews?: ChHelmViews }) {
   return (
     <InClubhouse.Provider value>
       <Role.Provider value={role}>
-        <ClassAwareness.Provider value={classAwareness}>{children}</ClassAwareness.Provider>
+        <ClassAwareness.Provider value={classAwareness}>
+          <HelmViews.Provider value={helmViews ?? NO_VIEWS}>{children}</HelmViews.Provider>
+        </ClassAwareness.Provider>
       </Role.Provider>
     </InClubhouse.Provider>
   );
+}
+
+const NO_VIEWS: ChHelmViews = {};
+
+/** Which of CoachHelm's views the strips offer. */
+export function useHelmViews(): ChHelmViews {
+  return useContext(HelmViews);
 }
 
 /**

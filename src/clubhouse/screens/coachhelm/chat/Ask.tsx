@@ -8,6 +8,7 @@ import { askSlashCommands } from '../../../data/coachhelm-slash';
 import type { AskArtifact } from './parts/artifacts';
 import { MessagesSquare, PanelLeftOpen, Settings2, SquarePen } from 'lucide-react';
 import { Modal } from '../../../ui/Modal';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
 import { describeChatError } from '../../../data/coachhelm-chat-error';
@@ -26,6 +27,8 @@ import { conversationHref, HistoryDrawer, HistoryPanel } from './History';
 import { AskHome, AskHomeV2 } from './Home';
 import { AskInputsFailed, AskNoRoster, AskThreadFailed, AskUnavailable } from './States';
 import { useViewSwitch } from '../use-view-switch';
+import { PLAYER_HELM_HREF } from '../../../data/coachhelm-views-shape';
+import { PlayerHelmTabs } from '../views/PlayerHelmTabs';
 import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from './SubTabs';
 import { AskThread } from './Thread';
 
@@ -65,6 +68,12 @@ function TeamLabel({ name }: { name: string }) {
       {name}
     </span>
   );
+}
+
+/** A player's Ask is a view of their CoachHelm: the same strip, so Your week, Standing and Deep dive are one tap away. */
+function PlayerAskTabs() {
+  const router = useRouter();
+  return <PlayerHelmTabs active="ask" onGo={(v) => router.push(PLAYER_HELM_HREF[v])} />;
 }
 
 /** The frame the states without a chat share: the sub-tab strip (so the Board is one tap away) over the state. */
@@ -353,7 +362,7 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
         </>
       )}
       <div className="ch-ask-top">
-        {!player && <CoachHelmTabs active={sw.shown} onGo={sw.go} />}
+        {player ? <PlayerAskTabs /> : <CoachHelmTabs active={sw.shown} onGo={sw.go} />}
         {player && data.allowance && !(v2 && showHome) && <AllowanceMeter bucket={data.allowance} />}
         {!phone && <TeamLabel name={data.teamName} />}
       </div>

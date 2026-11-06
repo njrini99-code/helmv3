@@ -2,10 +2,12 @@
 
 import { ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { COACH_PLAYER_VIEWS, PLAYER_HELM_DEVELOPMENT_HREF, PLAYER_HELM_TAB_LABEL, type PlayerHelmView } from '../../../data/coachhelm-views-shape';
 import { haptic } from '../../../lib/haptics';
 import { useChPhone } from '../../../lib/use-phone';
+import { useHelmViews } from '../../../shell/context';
 import { rebuiltHref } from '../../../shell/nav';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
@@ -13,6 +15,9 @@ import { Segmented } from '../../../ui/Segmented';
 import { useHScroll } from '../../../ui/use-hscroll';
 
 const VIEWS: readonly PlayerHelmView[] = ['board', 'standing', 'deep-dive'];
+/** The player's Ask (coachhelm_player_ask_v1): a view of this page with its own address, and no read of its own for the strip to wait on. */
+const PLAYER_ASK_HREF = '/golf/dashboard/coachhelm?view=ask';
+type PlayerTab = PlayerHelmView | 'ask';
 
 /**
  * The player's CoachHelm sub-navigation, the player's counterpart of the coach's Board and Ask strip (CH-13923): Board, Standing
@@ -32,12 +37,16 @@ const VIEWS: readonly PlayerHelmView[] = ['board', 'standing', 'deep-dive'];
  * `held`: drawn by a loading skeleton (desktop), inert and hidden from assistive tech, so the strip stands where and as wide as the
  * page draws it and does not morph from a bar into itself when the page lands.
  */
-export function PlayerHelmTabs({ active, onGo, coach = false, held = false }: { active: PlayerHelmView; onGo?: (view: PlayerHelmView) => void; coach?: boolean; held?: boolean }) {
+export function PlayerHelmTabs({ active, onGo, coach = false, held = false }: { active: PlayerTab; onGo?: (view: PlayerHelmView) => void; coach?: boolean; held?: boolean }) {
   const phone = useChPhone();
+  const router = useRouter();
+  const ask = !coach && !!useHelmViews().playerAsk;
+  const go = (v: PlayerTab) => (v === 'ask' ? router.push(PLAYER_ASK_HREF) : onGo?.(v));
   const row = useRef<HTMLDivElement>(null);
   const rowEdges = useHScroll<HTMLDivElement>(row);
   const development = coach ? null : rebuiltHref(PLAYER_HELM_DEVELOPMENT_HREF, 'player');
-  const views = coach ? COACH_PLAYER_VIEWS : VIEWS;
+  const views: readonly PlayerTab[] = coach ? COACH_PLAYER_VIEWS : ask ? [...VIEWS, 'ask'] : VIEWS;
+  const labelOf = (v: PlayerTab) => (v === 'ask' ? 'Ask' : PLAYER_HELM_TAB_LABEL[v]);
 
   // The chip row is wider than the screen: start with the current chip in view, without moving the page.
   useEffect(() => {
@@ -59,10 +68,10 @@ export function PlayerHelmTabs({ active, onGo, coach = false, held = false }: { 
               onClick={() => {
                 if (v === active) return;
                 haptic('select');
-                onGo?.(v);
+                go(v);
               }}
             >
-              {PLAYER_HELM_TAB_LABEL[v]}
+              {labelOf(v)}
             </button>
           ))}
           {development && (
@@ -77,7 +86,7 @@ export function PlayerHelmTabs({ active, onGo, coach = false, held = false }: { 
   }
   return (
     <div className="ch-hv-tabs" data-ch-strip="" data-ch-code={held ? undefined : 'CH-13930'} inert={held || undefined} aria-hidden={held || undefined}>
-      <Segmented<PlayerHelmView> label="CoachHelm view" value={active} options={views.map((v) => ({ value: v, label: PLAYER_HELM_TAB_LABEL[v] }))} onChange={(v) => onGo?.(v)} />
+      <Segmented<PlayerTab> label="CoachHelm view" value={active} options={views.map((v) => ({ value: v, label: labelOf(v) }))} onChange={(v) => go(v)} />
       {development && (
         <Button variant="ghost" size="sm" href={development} rightIcon={ArrowUpRight} feel="select">
           Development
