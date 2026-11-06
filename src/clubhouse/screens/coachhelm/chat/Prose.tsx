@@ -75,12 +75,24 @@ export function AskProse({ text, lead = false, playersByName, streaming = false,
               </tbody>
             </table>
           </ScrollRegion>
+        ) : b.kind === 'heading' ? (
+          <h4 key={i} className="ch-th-h">
+            {inline(b.text)}
+          </h4>
         ) : b.kind === 'list' ? (
-          <ul key={i} className="ch-th-list">
-            {b.items.map((item, j) => (
-              <li key={j}>{inline(item)}</li>
-            ))}
-          </ul>
+          b.ordered ? (
+            <ol key={i} className="ch-th-list is-ordered">
+              {b.items.map((item, j) => (
+                <li key={j}>{inline(item)}</li>
+              ))}
+            </ol>
+          ) : (
+            <ul key={i} className="ch-th-list">
+              {b.items.map((item, j) => (
+                <li key={j}>{inline(item)}</li>
+              ))}
+            </ul>
+          )
         ) : (
           // Only the first paragraph of a lead block is the takeaway: a lead that runs to four paragraphs is an answer, not a headline.
           <p key={i} className={lead && i === 0 ? 'ch-th-p ch-th-p--lead' : 'ch-th-p'}>

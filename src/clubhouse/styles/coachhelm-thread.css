@@ -2011,3 +2011,14 @@ a.ch-th-reads__r:focus-visible {
   display: grid;
   gap: 16px;
 }
+
+/* ASK-7: an answer's heading and numbered list, on the page's roles. */
+.ch-th-h {
+  margin: 0;
+  font: var(--ch-type-16-strong);
+  letter-spacing: var(--ch-track-16);
+  color: var(--ch-text-primary);
+}
+.ch-th-list.is-ordered {
+  list-style: decimal;
+}

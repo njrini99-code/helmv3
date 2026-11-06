@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { PhoneTop } from '../../../../shell/phone-chrome';
 import { Icon } from '../../../../ui/Icon';
+import { AskProse } from '../Prose';
 import { KIND_LABEL, type AskArtifact } from './artifacts';
 
 /** A card in the stream: the tile scans while it writes. */
@@ -22,6 +23,39 @@ export function ArtifactCard({ artifact, writing, onOpen }: { artifact: AskArtif
       </span>
       <span className="go">Open</span>
     </button>
+  );
+}
+
+const words = (key: string) => key.replace(/[_-]+/g, ' ').replace(/^./, (c) => c.toUpperCase());
+
+/** The artifact's words, never its raw data (ASK-1): text as prose; a record as labelled rows, a list as a list, however deep. */
+export function ArtifactBody({ body }: { body: unknown }) {
+  if (body == null) return null;
+  if (typeof body === 'string') return <AskProse text={body} playersByName={{}} />;
+  if (typeof body !== 'object') return <p className="ch-th-p">{String(body)}</p>;
+  if (Array.isArray(body))
+    return (
+      <ul className="ch-th-list">
+        {body.map((item, i) => (
+          <li key={i}>
+            <ArtifactBody body={item} />
+          </li>
+        ))}
+      </ul>
+    );
+  return (
+    <dl className="ch-ak-rec">
+      {Object.entries(body as Record<string, unknown>)
+        .filter(([key, v]) => v != null && v !== '' && !/(^|_)id$/.test(key))
+        .map(([key, v]) => (
+          <div key={key}>
+            <dt>{words(key)}</dt>
+            <dd>
+              <ArtifactBody body={v} />
+            </dd>
+          </div>
+        ))}
+    </dl>
   );
 }
 

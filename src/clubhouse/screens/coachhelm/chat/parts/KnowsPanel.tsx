@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Button } from '../../../../ui/Button';
 import { deleteCoachFact, saveCoachFact, setChatTone } from '@/app/golf/actions/coachhelm-ask';
 import type { ChAskData } from '../../../../data/coachhelm-chat-shape';
 import { Modal } from '../../../../ui/Modal';
@@ -71,8 +72,9 @@ export function AskKnowsPanel({ knows, conversationId }: { knows: NonNullable<Ch
         {facts.map((f) => (
           <li key={f.id}>
             <span>{f.text}</span>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
               aria-label={`Remove: ${f.text}`}
               onClick={() =>
                 void deleteCoachFact(f.id).then((r) => {
@@ -82,7 +84,7 @@ export function AskKnowsPanel({ knows, conversationId }: { knows: NonNullable<Ch
               }
             >
               Remove
-            </button>
+            </Button>
           </li>
         ))}
       </ul>
@@ -94,14 +96,14 @@ export function AskKnowsPanel({ knows, conversationId }: { knows: NonNullable<Ch
           }}
         >
           {/* eslint-disable-next-line jsx-a11y/no-autofocus -- the coach just pressed to add a line */}
-          <input autoFocus aria-label="What CoachHelm should know" maxLength={280} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && setAdding(false)} />
+          <input autoFocus className="ch-input" aria-label="What CoachHelm should know" maxLength={280} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && setAdding(false)} />
           <span className="acts">
-            <button type="submit" disabled={!text.trim()}>
+            <Button type="submit" variant="primary" size="sm" disabled={!text.trim()}>
               Save
-            </button>
-            <button type="button" onClick={() => setAdding(false)}>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setAdding(false)}>
               Cancel
-            </button>
+            </Button>
           </span>
         </form>
       ) : (
@@ -116,7 +118,7 @@ export function AskKnowsPanel({ knows, conversationId }: { knows: NonNullable<Ch
         <AskCanSee />
       </Modal>
       {error && (
-        <p role="alert" className="ch-ak-meter is-low">
+        <p role="alert" className="ch-ak-knows__err">
           {error}
         </p>
       )}

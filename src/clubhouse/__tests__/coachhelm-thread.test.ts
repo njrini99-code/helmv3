@@ -344,12 +344,17 @@ describe('buildEvidencePanel: the figures behind an action card', () => {
 });
 
 describe('prose: paragraphs, lists, bold and roster names', () => {
-  it('splits paragraphs and lists, and drops a heading marker rather than honouring it', () => {
-    expect(parseProse('## Heading\nline two\n\n- one\n- two\n\nLast')).toEqual([
-      { kind: 'paragraph', text: 'Heading line two' },
+  it('splits paragraphs and lists; a heading is a heading and a numbered list stays numbered (ASK-7)', () => {
+    expect(parseProse('## Heading\nline two\n\n- one\n- two\n\n1. first\n2. second\n\nLast')).toEqual([
+      { kind: 'heading', text: 'Heading' },
+      { kind: 'paragraph', text: 'line two' },
       { kind: 'list', items: ['one', 'two'] },
+      { kind: 'list', items: ['first', 'second'], ordered: true },
       { kind: 'paragraph', text: 'Last' },
     ]);
+  });
+  it('code ticks, single-star italics and links read as their words (ASK-7)', () => {
+    expect(splitInline('Use `putts` and *only* [the chart](https://x.test/a)', [])).toEqual([{ text: 'Use putts and only the chart', bold: false }]);
   });
   it('bold first, then roster names: longest first, on word boundaries', () => {
     expect(splitInline('**Nick Rini** and Nicky and Nick', ['Nick', 'Nick Rini'])).toEqual([

@@ -563,7 +563,8 @@ export function failedAnswerChangedNothing(messages: UIMessage[]): { changedNoth
 
 export type ProseBlock =
   | { kind: 'paragraph'; text: string }
-  | { kind: 'list'; items: string[] }
+  | { kind: 'heading'; text: string }
+  | { kind: 'list'; items: string[]; ordered?: boolean }
   /** A GitHub pipe table. The model is told not to write them; older answers have them, and raw pipes read as broken. */
   | { kind: 'table'; header: string[]; rows: string[][]; numeric: boolean[] };
 
@@ -589,13 +590,15 @@ export function parseProse(text: string): ProseBlock[] {
   const blocks: ProseBlock[] = [];
   let paragraph: string[] = [];
   let list: string[] = [];
+  let ordered = false;
   const flushParagraph = () => {
     if (paragraph.length > 0) blocks.push({ kind: 'paragraph', text: paragraph.join(' ').trim() });
     paragraph = [];
   };
   const flushList = () => {
-    if (list.length > 0) blocks.push({ kind: 'list', items: list });
+    if (list.length > 0) blocks.push({ kind: 'list', items: list, ...(ordered ? { ordered } : {}) });
     list = [];
+    ordered = false;
   };
   const lines = text.split('\n');
   for (let i = 0; i < lines.length; i++) {
@@ -614,16 +617,22 @@ export function parseProse(text: string): ProseBlock[] {
       blocks.push({ kind: 'table', header, rows, numeric });
       continue;
     }
+    const heading = /^#{1,6}\s+(.*)$/.exec(line);
     const bullet = /^\s*(?:[-*•]|\d+[.)])\s+(.*)$/.exec(line);
-    if (bullet) {
+    if (heading) {
       flushParagraph();
+      flushList();
+      blocks.push({ kind: 'heading', text: heading[1] ?? '' });
+    } else if (bullet) {
+      flushParagraph();
+      if (list.length === 0) ordered = /^\s*\d/.test(line);
       list.push(bullet[1] ?? '');
     } else if (line.trim() === '') {
       flushParagraph();
       flushList();
     } else {
       flushList();
-      paragraph.push(line.replace(/^#{1,6}\s*/, ''));
+      paragraph.push(line);
     }
   }
   flushParagraph();
@@ -642,6 +651,8 @@ const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** Bold, then roster names (longest first, on word boundaries: "Nicky" is not Nick; "Wake Forest" is not a player). */
 export function splitInline(text: string, names: string[]): InlineSegment[] {
+  // What a model writes and the page doesn't draw: code ticks, single-star italics and links read as their words (ASK-7).
+  text = text.replace(/`([^`]+)`/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/(^|[^*])\*([^*\s][^*]*?)\*(?!\*)/g, '$1$2');
   const sorted = [...names].filter(Boolean).sort((a, b) => b.length - a.length);
   const bolds: Array<{ text: string; bold: boolean }> = [];
   let last = 0;

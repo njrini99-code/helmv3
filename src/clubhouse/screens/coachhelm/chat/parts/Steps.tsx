@@ -118,7 +118,6 @@ export function Steps({ steps, active, seconds, waiting = false, stopped = false
             <span className="t">
               <span className="shim">Working</span>
             </span>
-            <Icon icon={ChevronDown} size={16} />
           </div>
         )}
         {list(true)}

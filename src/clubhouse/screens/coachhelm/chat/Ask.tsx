@@ -3,7 +3,7 @@
 import { useQuickChatRun } from '../../../shell/quick-chat/QuickChatProvider';
 import { AskKnowsPanel } from './parts/KnowsPanel';
 import { AllowanceMeter, PlayerOut } from './parts/Allowance';
-import { ArtifactView } from './parts/Artifact';
+import { ArtifactBody, ArtifactView } from './parts/Artifact';
 import { askSlashCommands } from '../../../data/coachhelm-slash';
 import type { AskArtifact } from './parts/artifacts';
 import { MessagesSquare, PanelLeftOpen, Settings2, SquarePen } from 'lucide-react';
@@ -325,7 +325,7 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
     if (evidenceOpen && narrowDesktop()) setEvidence(null);
   };
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const artifactView = artifact && <ArtifactView key={artifact.id} artifact={artifact} phone={phone} body={(b) => <pre className="ch-ak-plain">{typeof b === 'string' ? b : JSON.stringify(b, null, 2)}</pre>} onClose={() => setArtifact(null)} />;
+  const artifactView = artifact && <ArtifactView key={artifact.id} artifact={artifact} phone={phone} body={(b) => <ArtifactBody body={b} />} onClose={() => setArtifact(null)} />;
   // The phone sheet's subject, kept after it closes so its exit still has the content it showed.
   const [sheetEvidence, setSheetEvidence] = useState<EvidenceFocus | null>(null);
   if (phone && evidenceOpen && evidence !== sheetEvidence) setSheetEvidence(evidence);
@@ -334,7 +334,8 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
     <main className={'ch-ask' + (v2 ? ' ch-ak-root' : '') + (phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || chatSw.pending || undefined} data-switch={sw.pending ? 'view' : chatSw.pending ? 'chat' : undefined} data-ch-code="CH-13820" {...sw.enter}>
       {phone && (
         <>
-          <PhoneTop
+          {/* One bar: an open artifact owns it (ASK-3), and two tops portalled into one slot fought over it. */}
+          {!artifact && <PhoneTop
             lead
             title={
               <>
@@ -352,7 +353,7 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
                 <PhoneIconAction icon={SquarePen} label="New chat" onClick={newChat} />
               </>
             }
-          />
+          />}
           <h1 className="ch-sr-only">Ask CoachHelm</h1>
           {v2 && data.knows && !player && (
             <Modal open={settingsOpen} title="Chat settings" detent={0.62} className="ch-ak-settings" onClose={() => setSettingsOpen(false)}>

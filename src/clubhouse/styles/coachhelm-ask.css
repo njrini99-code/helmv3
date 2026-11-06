@@ -1407,3 +1407,16 @@ html:not([data-fw-theme='dark']) .ch-ask {
     margin-right: 452px;
   }
 }
+
+/* ASK-13: Ask owns the phone's height: no extra scroll on the canvas, and with the tabs hidden the dock carries the home indicator's inset. */
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  .ch-canvas:has(> .ch-ask), .ch-root[data-phone-notabs] .ch-canvas:has(> .ch-ask) {
+    padding-bottom: 0;
+  }
+  .ch-root[data-phone-notabs] .ch-ask {
+    height: calc(100dvh - var(--ch-phone-topbar-h) - env(safe-area-inset-top) - var(--keyboard-height, 0px));
+  }
+  .ch-root[data-phone-notabs] .ch-ask-dock {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+}

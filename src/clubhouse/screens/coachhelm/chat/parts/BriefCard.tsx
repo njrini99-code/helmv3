@@ -1,6 +1,7 @@
 'use client';
 
 import { ClipboardList } from 'lucide-react';
+import { Button } from '../../../../ui/Button';
 import { useState } from 'react';
 import { Icon } from '../../../../ui/Icon';
 
@@ -98,15 +99,15 @@ export function BriefCard({ title, questions, onDone }: { title: string; questio
           ))}
       </div>
       <div className="qft">
-        <button type="button" className="c" disabled={at === 0} onClick={() => go(at - 1)}>
+        <Button variant="ghost" disabled={at === 0} onClick={() => go(at - 1)}>
           Back
-        </button>
-        <button type="button" className="sk" onClick={finish}>
+        </Button>
+        <Button variant="ghost" onClick={finish}>
           Skip, just build
-        </button>
-        <button type="button" className="p" data-ch-press="" onClick={() => (at === questions.length - 1 ? finish() : go(at + 1))}>
+        </Button>
+        <Button variant="primary" className="p" onClick={() => (at === questions.length - 1 ? finish() : go(at + 1))}>
           {at === questions.length - 1 ? 'Build it' : 'Next'}
-        </button>
+        </Button>
       </div>
     </section>
   );
