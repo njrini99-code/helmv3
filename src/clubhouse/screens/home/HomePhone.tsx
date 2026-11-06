@@ -129,7 +129,7 @@ export function HomePhone({ data, now: frozen, live, crh = false }: { crh?: bool
 
         {!data.week.error && !nothingAhead && (
           <SectionBoundary surface="home.week" label="This week" code="CH-2205">
-            <WeekStrip days={data.week.days} note={phone.weekNote} />
+            <WeekStrip calendar days={data.week.days} note={phone.weekNote} />
           </SectionBoundary>
         )}
 
@@ -436,14 +436,16 @@ export function Form({ form, crh = false }: { form: ChTeamForm; crh?: boolean })
 }
 
 /** `children`: what follows the week inside its section (the player's Today). A competition day carries its type's mark, the one the calendar draws. */
-export function WeekStrip({ days, note, children }: { days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote']; children?: ReactNode }) {
+export function WeekStrip({ days, note, children, calendar = false }: { calendar?: boolean; days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote']; children?: ReactNode }) {
   return (
     <section className="ch-hm-sec" aria-labelledby="ch-hm-week">
       <div className="ch-hm-sec__h">
         <h2 id="ch-hm-week">This week</h2>
-        <Link className="ch-hm-link" href={CALENDAR}>
-          Calendar
-        </Link>
+        {calendar && (
+          <Link className="ch-hm-link" href={CALENDAR}>
+            Calendar
+          </Link>
+        )}
       </div>
       <DayStrip
         label="This week"

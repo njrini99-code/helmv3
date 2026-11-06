@@ -283,14 +283,12 @@ describe('the composer', () => {
     expect(box().value).toBe('にほん');
   });
 
-  it('without a fine pointer Enter is a new line and only Send sends', async () => {
+  it('on a phone the blue send key sends: Enter does what its label says (MOB-ASK)', async () => {
     fine = false;
     const { chat } = show();
     await userEvent.type(box(), 'Hello{Enter}');
-    expect(chat.calls.send).not.toHaveBeenCalled();
-    expect(box().value).toBe('Hello\n');
-    await userEvent.click(screen.getByRole('button', { name: 'Send' }));
-    expect(chat.calls.send).toHaveBeenCalledWith('Hello');
+    expect(chat.calls.send).toHaveBeenCalledTimes(1);
+    expect(box().value).toBe('');
   });
 
   it('Send is off until there is text', async () => {
