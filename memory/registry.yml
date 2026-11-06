@@ -1230,7 +1230,7 @@ features:
         - src/app/golf/(dashboard)/dashboard/documents/**
         - src/app/golf/(dashboard)/dashboard/travel/**
         - src/app/golf/(dashboard)/dashboard/team-hub/**
-        - src/app/golf/(dashboard)/dashboard/practice/plan/**
+        - src/app/golf/(dashboard)/dashboard/practice/**
       components:
         - src/components/fairway/pages/tasks/**
         - src/components/golf/documents/**
@@ -1238,6 +1238,7 @@ features:
         - src/components/fairway/pages/team-hub/**
         - src/clubhouse/screens/home/**
         - src/clubhouse/screens/hub/**
+        - src/clubhouse/screens/practice/**
       api:
         - src/components/fairway/pages/documents/**
       actions:
@@ -1257,6 +1258,7 @@ features:
         - src/clubhouse/data/home.ts
         - src/clubhouse/data/player-home.ts
         - src/clubhouse/data/practice-plan.ts
+        - src/clubhouse/data/practice-home.ts
         - src/lib/golf/practice-*.ts
       db:
         - supabase/migrations/*task*.sql

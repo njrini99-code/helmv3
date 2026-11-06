@@ -7,6 +7,7 @@ export interface QcFixture {
   messages: UIMessage[];
   busy?: boolean;
   closed?: boolean;
+  failed?: boolean;
 }
 
 type Kind = 'cal' | 'msg' | 'qual';
@@ -145,6 +146,8 @@ export const QC_FIXTURES: Record<string, QcFixture> = {
   ...Object.fromEntries(kinds.map((k) => [`busy-${k}`, { messages: task(k, 'busy') }])),
   // S-LIVE at work: the panel closed while a step runs.
   'live-work': { messages: [user('u1', ASK.cal), assistant([step(1, 'Finding everyone on the active roster', false)])], busy: true, closed: true },
+  // AC-QC-CMP-06: the stream went mid-run.
+  'stream-error': { messages: [user('u1', ASK.cal), assistant([step(1, 'Checked Thursday · lift ends at 2:45')])], failed: true },
   cancelled: { messages: task('cal', 'cancelled') },
   asking: { messages: [user('u1', 'Make a practice plan for Tuesday'), assistant([step(1, 'Checked Tuesday · nothing else on the calendar'), askPlan])] },
   'asking-qual': { messages: [user('u1', ASK.qual), assistant([step(1, 'Read the course’s tees'), askQual])] },

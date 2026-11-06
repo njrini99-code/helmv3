@@ -20,6 +20,9 @@ import { PlanTask } from './visuals/PlanTask';
 import { useEarlierToday } from './earlier-today';
 import { TaskCard } from './TaskCard';
 import { useQcMotion } from './useQcMotion';
+import { useDictation } from './useDictation';
+import { ASK_STARTERS } from '../../data/coachhelm-chat-shape';
+import { Menu } from '../../ui/Menu';
 
 const TURNS_SHOWN = 30;
 /** AC-QC-STP-04: past six rows, the oldest done ones fold. */
@@ -46,6 +49,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
   const pendingId = pending?.approvalId ?? null;
   const notice = chat.error ? describeChatError(chat.error) : null;
   const [text, setText] = useState(initialText);
+  const mic = useDictation((words) => setText((t) => (t.trim() ? `${t.trimEnd()} ${words}` : words)));
   const [stopped, setStopped] = useState(false);
   const panel = useRef<HTMLElement>(null);
   const scrim = useRef<HTMLDivElement>(null);
@@ -293,7 +297,16 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
                       />
                     ),
                   )}
-                  {notice && <p className="say quiet">{notice.message ?? 'CoachHelm couldn’t finish that.'}</p>}
+                  {notice && (
+                    <p className="say quiet qc-lost" role="alert">
+                      <span>{notice.message ?? 'Lost the connection. Nothing was saved.'}</span>
+                      {notice.recovery === 'retry' && (
+                        <button type="button" onClick={() => chat.retry()}>
+                          Try again
+                        </button>
+                      )}
+                    </p>
+                  )}
                 </>
               )}
             </div>
@@ -301,6 +314,22 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
           <div className="qc__comp" data-qc-rise="">
             {!online && <p className="say quiet">You’re offline. CoachHelm will send when you’re back.</p>}
             <div className="cmp">
+              <Menu
+                label="Add to your question"
+                align="start"
+                items={ASK_STARTERS.filter((s) => s.id !== 'add-player').map((s) => ({
+                  label: s.label,
+                  onSelect: () => {
+                    setText((t) => (t.trim() ? `${t.trimEnd()} ${s.seed}` : s.seed));
+                    field.current?.focus();
+                  },
+                }))}
+                trigger={(t) => (
+                  <button {...t} type="button" className="cmp__plus" aria-label="Add to your question">
+                    <Ico d="M12 5v14M5 12h14" size={18} />
+                  </button>
+                )}
+              />
               <textarea
                 ref={field}
                 className="cmp__t"
@@ -316,6 +345,11 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
                   }
                 }}
               />
+              {mic.available && (
+                <button type="button" className={'cmp__mic' + (mic.on ? ' is-on' : '')} aria-label={mic.on ? 'Stop dictating' : 'Dictate'} aria-pressed={mic.on} onClick={mic.toggle}>
+                  <Ico d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3" size={18} />
+                </button>
+              )}
               {chat.busy ? (
                 <button className="cmp__send stop" type="button" aria-label="Stop" onClick={stop}>
                   <span className="sq" />

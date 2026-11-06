@@ -453,6 +453,25 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
   flex: none;
   width: auto;
 }
+.ch-qcs .cmp__mic.is-on {
+  color: var(--ch-qc-a-accent-text);
+}
+.ch-qcs .qc-lost {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--ch-loss);
+}
+.ch-qcs .qc-lost button {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--ch-qc-a-accent-text);
+  font: var(--ch-type-14-medium);
+  cursor: pointer;
+}
 /* The pill takes the focus ring, not the field inside it: a square ring in a round composer. */
 .ch-qcs .cmp .cmp__t:focus,
 .ch-qcs .cmp .cmp__t:focus-visible {
