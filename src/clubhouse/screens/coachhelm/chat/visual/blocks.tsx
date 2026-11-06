@@ -61,7 +61,7 @@ export function PuttProfile({ block }: { block: PuttProfileBlock }) {
   );
 }
 
-/** This season's mean against last season's usual range, on one scale. A band only: there's no round-by-round line in the read, so none is drawn. */
+/** This season's mean against last season’s usual range, on one scale. A band only: there's no round-by-round line in the read, so none is drawn. */
 export function SeasonCompare({ block }: { block: SeasonCompareBlock }) {
   const fmt = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${formatFixed(Math.abs(v), 1)}`;
   const t = block.this_season;
@@ -74,7 +74,7 @@ export function SeasonCompare({ block }: { block: SeasonCompareBlock }) {
   return (
     <div className="ch-ak-season">
       {t && l && (
-        <svg className="scale" viewBox="0 0 320 44" role="img" aria-label={`This season ${fmt(t.mean)} against last season's usual range of ${fmt(l.lo)} to ${fmt(l.hi)}`}>
+        <svg className="scale" viewBox="0 0 320 44" role="img" aria-label={`This season ${fmt(t.mean)} against last season’s usual range of ${fmt(l.lo)} to ${fmt(l.hi)}`}>
           <rect className="band" x={x(l.lo)} y="10" width={Math.max(2, x(l.hi) - x(l.lo))} height="24" rx="6" />
           <line className="last" x1={x(l.mean)} x2={x(l.mean)} y1="10" y2="34" />
           <line className="range" x1={x(t.lo)} x2={x(t.hi)} y1="22" y2="22" />
