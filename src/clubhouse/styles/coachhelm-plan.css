@@ -87,6 +87,8 @@
   /* Only while printPlan has its root on the page: printing anything else stays as it was. */
   body:has(> .ch-cp-print-root) > *:not(.ch-cp-print-root) { display: none !important; }
   .ch-cp-print-root { display: block !important; }
+  /* Paper keeps its size whatever the reader's Text Size. */
+  .ch-cp-print-root[data-ui='clubhouse'] { --ch-type-k: var(--ch-print-k); }
   .ch-cp-print-root .ch-cp-sheet { box-shadow: none; border-radius: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .ch-cp-sheet .drow, .ch-cp-sheet .pp-rot { break-inside: avoid; }
 }
@@ -100,8 +102,7 @@
 
 /* The plan in Ask, as drawn (practice-plan 06 S-ASK.plan-card to S-ASK.saved). Scoped to the card and its sheets; values snapped to the scale, listed in the PR. */
 .ch-cpv,
-.ch-cpv-full,
-.ch-prc-run {
+.ch-cpv-full {
   --ch-pl-cpv-track: #ebe5d8;
   --ch-pl-cpv-skill: #3d6787;
   --ch-pl-cpv-random: #6e5487;
@@ -120,8 +121,7 @@
   min-width: 0;
 }
 html[data-fw-theme='dark'] .ch-cpv,
-html[data-fw-theme='dark'] .ch-cpv-full,
-html[data-fw-theme='dark'] .ch-prc-run {
+html[data-fw-theme='dark'] .ch-cpv-full {
   --ch-pl-cpv-track: #2c322d;
   --ch-pl-cpv-skill: #6e9bc0;
   --ch-pl-cpv-random: #b49acb;

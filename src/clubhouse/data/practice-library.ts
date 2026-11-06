@@ -59,7 +59,7 @@ export async function loadDrills(teamId: string): Promise<ChLibraryLoad<{ team: 
   ]);
   if (team.error) {
     if (missing(team.error.code)) return { status: 'unavailable' };
-    await logServerError(`loadDrills: ${team.error.message}`, { action: 'practice.drills', errorCode: 'CH-17006' }, 'warning');
+    await logServerError(`loadDrills: ${team.error.message}`, { action: 'practice.drills' }, 'warning');
     return { status: 'failed' };
   }
   if (lib.error) return { status: 'failed' };
