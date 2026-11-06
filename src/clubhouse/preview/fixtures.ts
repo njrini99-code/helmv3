@@ -311,6 +311,21 @@ export const PREVIEW_HOME_REAL_SHAPE: ChCoachHome = {
   },
 };
 
+/** `?state=extreme`: figures nobody tried in the fixtures: a very poor early read, a wide scoring line. Every scale must hold. */
+export const PREVIEW_HOME_EXTREME: ChCoachHome = {
+  ...PREVIEW_HOME,
+  legs: {
+    ...PREVIEW_LEGS,
+    rows: PREVIEW_LEGS.rows.map((r, i) => ({ ...r, sg: [-3.9, 5.2, -9.4, 0.04][i]!, delta: [-6.2, 4.1, null, 0][i]!, gains: tieOf(['Tyler H.'], 2.4), loses: tieOf(['Ethan P.'], -9.4) })),
+  },
+  phone: {
+    ...PREVIEW_HOME.phone,
+    form: { ...PREVIEW_HOME.phone.form!, avg: 88.4, delta: -11.2, deltaSe: 1, line: [71, 112, 68, 94, 103, 88], roundsThisWeek: 42, putts: { avg: 41.2, delta: 8.3, se: 1 }, gir: { pct: 4, delta: -41, se: 1 } },
+  },
+  latestRounds: { ...PREVIEW_HOME.latestRounds, rounds: PREVIEW_HOME.latestRounds.rounds.map((r, i) => (i === 0 ? { ...r, score: 118, toPar: 46 } : r)) },
+  leaderboard: { ...PREVIEW_HOME.leaderboard, rows: PREVIEW_HOME.leaderboard.rows.map((r, i) => (i === 0 ? { ...r, avg: 103.4, trend: [68, 118, 72, 110, 95] } : r)) },
+};
+
 /** `?state=oneday`: totals only, on a single round day, so there is no line to draw. */
 export const PREVIEW_HOME_ONE_DAY: ChCoachHome = {
   ...PREVIEW_HOME_TOTALS_ONLY,

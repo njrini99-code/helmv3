@@ -285,6 +285,10 @@ function TeamGameCard({ data, onOpen }: { data: ChTeamStats; onOpen: () => void 
           <div className="ch-shs-cap">Team strokes a round against the Tour</div>
         </div>
       </div>
+      {legRows(data).every((r) => r.value == null) ? (
+        <p className="ch-shs-sumfoot">Fills in from rounds posted with shots. Rounds posted as totals still count toward scoring.</p>
+      ) : (
+        <>
       <MiniDiverging rows={legRows(data)} fixedScale={4} />
       {foot.length > 0 && (
         <p className="ch-shs-sumfoot">
@@ -295,6 +299,8 @@ function TeamGameCard({ data, onOpen }: { data: ChTeamStats; onOpen: () => void 
             </span>
           ))}
         </p>
+      )}
+        </>
       )}
     </SummaryCard>
   );
@@ -329,6 +335,7 @@ function TeamPlayersCard({ data, onOpen }: { data: ChTeamStats; onOpen: () => vo
         ))}
       </div>
       {said && <p className="ch-shs-sumfoot">{said}</p>}
+      {ranked.length === 0 && <p className="ch-shs-sumfoot">Fills in from rounds posted with shots.</p>}
     </SummaryCard>
   );
 }

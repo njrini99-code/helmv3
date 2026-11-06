@@ -1226,6 +1226,12 @@
 .ch-pf-hero__figs > div:nth-child(3) {
   max-width: 188px;
 }
+/* An empty window on the green card: the empty state's ink follows the card, or it reads dark on dark. */
+.ch-sgt__hold .ch-es {
+  --ch-text-primary: var(--ch-on-green-ink);
+  --ch-text-secondary: var(--ch-on-green-ink-muted);
+  --ch-text-tertiary: var(--ch-on-green-ink-muted);
+}
 /* The route skeleton's hero card and figures at their loaded heights, so the page under them doesn't move. */
 .ch-st-skel-sgt.ch-sgt {
   min-height: 524px;

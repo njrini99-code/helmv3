@@ -694,7 +694,7 @@ export const PREVIEW_PLAYER_TOTALS: ChPlayerProfile = {
   ...PREVIEW_PLAYER_EARLY,
   season: { ...season(76.5, [77, 76, 78, 75, 77, 76], null, 6, 'steady'), sgLegs: { tee: null, approach: null, around: null, putting: null } },
   win: windowSeason({ ...season(76.5, [77, 76, 78, 75, 77, 76], null, 6, 'steady'), sgLegs: { tee: null, approach: null, around: null, putting: null } }),
-  rounds: PREVIEW_PLAYER.rounds.slice(0, 6),
+  rounds: PREVIEW_PLAYER.rounds.slice(0, 6).map((r) => ({ ...r, sg: null })),
   extra: { ...PREVIEW_PLAYER_EARLY.extra, holeRounds: 0, series: { ...PREVIEW_PLAYER_EARLY.extra.series, score: PREVIEW_PLAYER.extra.series.score.slice(-6), gir: [], fairway: [] } },
   comparisons: PREVIEW_PLAYER.comparisons.map((c) => ({ ...c, you: null, team: null })),
 };
@@ -708,8 +708,29 @@ export const PREVIEW_TEAM_TOTALS: ChTeamStats = {
   team: { ...PREVIEW_TEAM_STATS.team, sg: PREVIEW_TEAM_STATS.team.sg.map(() => null), sgMean: null },
   players: PREVIEW_TEAM_STATS.players.map((p) => ({ ...p, sg: p.sg.map(() => null) })),
   legWeeks: Object.fromEntries(Object.keys(PREVIEW_TEAM_STATS.legWeeks).map((k) => [k, []])) as unknown as ChTeamStats['legWeeks'],
+  legTotals: [null, null, null, null] as never,
   grid: PREVIEW_TEAM_STATS.grid.map((g) => ({ ...g, legs: g.legs.map(() => null), total: null, change: null })),
   putting: null as never,
+};
+
+/** `?state=extreme`: a very poor early read and a wide spread of scores. Every bar, axis and dot must stay in its card. */
+const big = (v: number | null) => (v == null ? null : v * 3.4);
+export const PREVIEW_TEAM_EXTREME: ChTeamStats = {
+  ...PREVIEW_TEAM_STATS,
+  team: { ...PREVIEW_TEAM_STATS.team, sg: PREVIEW_TEAM_STATS.team.sg.map(big), sgMean: -3.9, score: PREVIEW_TEAM_STATS.team.score.map((v, i) => (v == null ? null : v + (i % 2 ? 22 : -6))), scoreMean: 88.4 },
+  players: PREVIEW_TEAM_STATS.players.map((p) => ({ ...p, sg: p.sg.map(big), sgMean: big(p.sgMean ?? null), score: p.score.map((v, i) => (v == null ? null : v + (i % 2 ? 30 : -4))) })),
+  legTotals: [-3.9, 2.4, -9.4, 0.04] as never,
+  legWeeks: Object.fromEntries(Object.entries(PREVIEW_TEAM_STATS.legWeeks).map(([k, v]) => [k, v.map(big)])) as ChTeamStats['legWeeks'],
+  grid: PREVIEW_TEAM_STATS.grid.map((g, i) => ({ ...g, legs: g.legs.map(big), total: i === 0 ? -14.2 : big(g.total), avg: i === 0 ? 112.6 : g.avg })),
+};
+
+/** `?state=extreme`: one player's early figures, far from the fixtures' usual ones. */
+export const PREVIEW_PLAYER_EXTREME: ChPlayerProfile = {
+  ...PREVIEW_PLAYER,
+  season: { ...PREVIEW_PLAYER.season, sgLegs: { tee: -3.9, approach: 5.2, around: -9.4, putting: 0.04 } },
+  win: { ...PREVIEW_PLAYER.win, sgPerRound: -7.6 },
+  sgChange: { ...PREVIEW_PLAYER.sgChange, delta: -11.3 },
+  comparisons: PREVIEW_PLAYER.comparisons.map((c) => (c.sg ? { ...c, you: (c.you ?? 0) * 6 } : c)),
 };
 
 export const PREVIEW_TEAM_EARLY_FILTER: ChTeamStats = { ...PREVIEW_TEAM_STATS, filter: { ...filterFor('last10'), courses: ['Oakmont CC'] }, roundCount: 2 };

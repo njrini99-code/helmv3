@@ -137,9 +137,11 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg, shs = false }: {
 
   // Hole-level stats read the rounds that have their holes scored, not a round posted as a total only (Q-123): say so when that is fewer.
   const coverage = holeCoverage(data.extra.holeRounds ?? w.rounds, w.rounds);
+  // Every round posted as a total: nothing yet for the four parts. One zone says so, rather than four cards of dashes saying it four times.
+  const noShots = fwOpp === 0 && !miss && scrAtt === 0 && sandAtt === 0 && bands.every((b) => b.attempts === 0) && girYou == null && puttsYou == null && scrYou == null && cmp('Fairways hit')?.you == null;
   return (
     <Zones>
-      {coverage && (
+      {coverage && !noShots && (
         <p className="ch-zns__note">
           {coverage}; the scoring average and the pressure gap read all {w.rounds}. {coach ? 'Team values are pooled from the active players’ rounds in the same window, where the round cache has the figure. ' : ''}Bands need 10 shots or putts.
         </p>
@@ -253,6 +255,20 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg, shs = false }: {
         )}
       </Zone>
 
+      {noShots ? (
+        <Zone
+          n={3}
+          title="Shot by shot"
+          def={
+            <>
+              Off the tee, approach, short game and putting read the shots a round is posted with. <b>Rounds posted as totals</b> still count toward scoring above.
+            </>
+          }
+        >
+          <Missing>These fill in once a round is posted with its holes and shots.</Missing>
+        </Zone>
+      ) : (
+        <>
       <Zone
         n={3}
         title="Off the tee"
@@ -529,9 +545,11 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg, shs = false }: {
           <Missing>Make rates appear once putts are logged with their distances.</Missing>
         )}
       </Zone>
+        </>
+      )}
 
       <Zone
-        n={7}
+        n={noShots ? 4 : 7}
         title="The last rounds"
         def={
           <>

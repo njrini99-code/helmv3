@@ -131,7 +131,7 @@ function PeekBody({
     ['Scoring avg', formatFixed(p.avg)],
     ['Handicap', formatHcp(p.handicap)],
     [SG_FIGURE, p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)],
-    ['Rounds', statsError ? NO_DATA : String(p.rounds)],
+    ['Rounds', statsError ? formatFixed(null) : String(p.rounds)],
   ];
   const facts = [
     { icon: MapPin, label: 'Hometown', value: p.hometown },

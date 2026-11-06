@@ -38,6 +38,7 @@ import { InviteByEmail } from './InviteByEmail';
 import { RosterRequests } from './RosterRequests';
 import { useJoinRequests } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
+import { NoData } from '../../ui/NoData';
 import { availabilityCopy, RosterPeek, type AvailabilityControl } from './RosterPeek';
 import { RosterPhone } from './RosterPhone';
 import { FormStubs, RequestsRow, RequestsSheetCrh, RosterPhoneCrh } from './RosterPhoneCrh';
@@ -988,7 +989,7 @@ function RosterList({
                 <span role="cell" className={'r ch-num ch-rs-sg ' + changeTone(p.sgPerRound, false, 1)}>
                   {p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)}
                 </span>
-                <span role="cell" className="r ch-num ch-rs-num2">{sortableAvg === false ? NO_DATA : p.rounds}</span>
+                <span role="cell" className="r ch-num ch-rs-num2">{sortableAvg === false ? <NoData /> : p.rounds}</span>
                 <span role="cell" className="r">
                   <Menu
                     label={`Actions for ${p.name}`}

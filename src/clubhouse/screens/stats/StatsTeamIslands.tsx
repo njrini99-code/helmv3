@@ -217,8 +217,15 @@ export function TeamCharts({ data, tape }: { data: ChTeamCharts; tape?: ReactNod
       </SectionBoundary>
 
       <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
-        <LegTrends legWeeks={data.legWeeks} legHalves={data.legHalves} legTotals={data.legTotals} leg={leg} setLeg={setLeg} />
-        <LegGrid data={data} leg={leg} focus={focus} setFocus={setFocus} />
+        {data.grid.every((g) => g.legs.every((v) => v == null)) ? (
+          // Rounds posted as totals: one line, not four empty cards and a table of dashes.
+          <EmptyState code="CH-4303" compact kind="first-run" title="Strokes gained by leg fills in from rounds with shots." body="Rounds posted as totals still count toward the team’s scoring above." />
+        ) : (
+          <>
+            <LegTrends legWeeks={data.legWeeks} legHalves={data.legHalves} legTotals={data.legTotals} leg={leg} setLeg={setLeg} />
+            <LegGrid data={data} leg={leg} focus={focus} setFocus={setFocus} />
+          </>
+        )}
       </SectionBoundary>
     </>
   );
@@ -273,7 +280,10 @@ export function legScaleWords(scale: { lo: number; hi: number }): string {
 }
 
 function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: string | null; setFocus: (id: string | null) => void }) {
-  const [lens, setLens] = useChSessionState<Lens>('team-lens', 'sg');
+  const [storedLens, setLens] = useChSessionState<Lens>('team-lens', 'sg');
+  // No shots anywhere in the window (rounds posted as totals): the card opens on what the team does have, its scoring, and offers no empty lens.
+  const noSg = data.team.sg.every((v) => v == null) && data.players.every((p) => p.sg.every((v) => v == null));
+  const lens: Lens = noSg ? 'score' : storedLens;
   const isSg = lens === 'sg';
   const lensTeam = isSg ? data.team.sg : data.team.score;
   // `m` is the window's own mean: what the list beside the chart shows and is sorted by (never the last week's value).
@@ -413,7 +423,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
           <span className="ch-sgt__row">
             {/* The headline changes at once on a window or lens change, as Stocks' price does: no fade-and-rise under the reader. */}
             <b className={'ch-sgt__n ch-num ' + (isSg ? changeInk(leadValue) : '')}>{withPointSpan(leadText)}</b>
-            {lead?.delta == null && lead?.context && (
+            {lead?.delta == null && lead?.context && leadValue != null && (
               <span className="ch-sgt__chg is-flat">
                 <em>{lead.context}</em>
               </span>
@@ -484,16 +494,18 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               Players
             </span>
           </div>
-          <Segmented<Lens>
-            size="sm"
-            label="Measure"
-            value={lens}
-            onChange={setLens}
-            options={[
-              { value: 'sg', label: 'Strokes gained' },
-              { value: 'score', label: 'Scoring' },
-            ]}
-          />
+          {!noSg && (
+            <Segmented<Lens>
+              size="sm"
+              label="Measure"
+              value={lens}
+              onChange={setLens}
+              options={[
+                { value: 'sg', label: 'Strokes gained' },
+                { value: 'score', label: 'Scoring' },
+              ]}
+            />
+          )}
         </div>
       </div>
       {/* Strokes gained and Scoring crossfade (CH-4603). */}

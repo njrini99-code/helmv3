@@ -211,9 +211,9 @@ function TeamPutting({ putting, failed, covered }: { putting: ChTeamStats['putti
   if (failed) return <RetryNotice code="CH-4203" title="Team putting didn’t load" body="Try again." covered={covered} />;
   if (!putting)
     return (
-      <div className="ch-st-card">
+      <YardagePage title="Team putting" meta="Make rate by distance">
         <EmptyState code="CH-4306" compact title="No putts logged in this window." body="Putting fills in from rounds posted with putt distances." />
-      </div>
+      </YardagePage>
     );
   // The count covers only the bands the rings draw.
   const drawn = putting.bands.slice(0, 5).reduce((a, b) => a + b.attempts, 0);
