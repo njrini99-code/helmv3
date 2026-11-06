@@ -21,7 +21,7 @@
   justify-content: space-between;
   gap: 16px;
 }
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-prc-h .ch-large-title:not([hidden]) {
     margin: 0;
     font: var(--ch-type-34-strong);
@@ -1096,7 +1096,7 @@ main.ch-prc-planpage {
   margin: 0 auto;
   padding: var(--ch-page-top-coachhelm) var(--ch-page-gutter) var(--ch-page-bottom);
 }
-@media (max-width: 820px), (pointer: coarse) and (max-height: 500px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   main.ch-prc-planpage {
     padding: 8px 16px calc(var(--ch-page-bottom-tall) + env(safe-area-inset-bottom));
   }
@@ -1307,7 +1307,7 @@ main.ch-prc-planpage {
   .ch-prt-card:last-child { padding-inline-end: 0; }
 }
 
-@media (max-width: 820px), (pointer: coarse) and (max-height: 500px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-prt-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .ch-prt-side { grid-column: 1; grid-row: 1; position: static; }
   .ch-prt-pages { grid-column: 1; grid-row: 2; }
