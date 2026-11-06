@@ -7,7 +7,7 @@ import { HELM_PLAYERS, PREVIEW_TOUR, breakBias, penalties, slope } from './fixtu
 
 /** What the engine stores beside a read: the same keys the real row has, so the shapers draw every card. */
 const withDepth = (raw: EvidenceInsight, extra: Record<string, unknown>, movement: { from: number; to: number } | null): EvidenceInsight =>
-  ({ ...raw, evidence: { ...raw.evidence, sample_n: 28, source_round_ids: ['r1', 'r2', 'r3', 'r4'], confidence_factors: { sample_adequacy: 1, factors_measured: true, recency: 0.8 }, ...extra }, metadata: { ...(raw.metadata as object | null), ...(movement ? { movement: { ...movement, direction: movement.to > movement.from ? 'up' : 'down' } } : {}) } }) as EvidenceInsight;
+  ({ ...raw, evidence: { ...raw.evidence, sample_n: 28, source_round_ids: ['00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000003', '00000000-0000-4000-8000-000000000004'], confidence_factors: { sample_adequacy: 1, factors_measured: true, recency: 0.8 }, ...extra }, metadata: { ...(raw.metadata as object | null), ...(movement ? { movement: { ...movement, direction: movement.to > movement.from ? 'up' : 'down' } } : {}) } }) as EvidenceInsight;
 const NARROW = (steps: Array<[string, string]>) => ({ basis: { narrowing: { steps: steps.map(([label, statement]) => ({ passed: true, label, statement })), stopped_at: null }, checked: ['length: 16 of 28', 'par: long par 4s', 'shape: both sides'] } });
 const LADDER = (team: number, tour: number) => ({ comparison: { lines: [{ source: 'team_pool', label: 'Team pool', value: team, n: 214, n_noun: 'putts', players: 9 }, { source: 'tour', label: 'Tour', value: tour }] } });
 
@@ -23,7 +23,7 @@ const RAW: Record<string, () => EvidenceInsight> = {
 const OWNER = (q: string | undefined) => (q === 'penalties' ? HELM_PLAYERS.eli.name : q === 'putts' ? HELM_PLAYERS.jonah.name : HELM_PLAYERS.priya.name);
 const ROUNDS = () =>
   new Map(
-    ([['r1', '2026-10-22', 'Lonnie Poole', 74, 2], ['r2', '2026-10-15', 'Hilltop', 76, 4], ['r3', '2026-10-08', 'Lonnie Poole', 72, 0], ['r4', '2026-10-01', 'Hilltop', 75, 3]] as const).map(([id, round_date, course_name, total_score, score_to_par]) => [id, { id, round_date, course_name, total_score, score_to_par, holes_played: 18 }]),
+    ([['00000000-0000-4000-8000-000000000001', '2026-10-22', 'Lonnie Poole', 74, 2], ['00000000-0000-4000-8000-000000000002', '2026-10-15', 'Hilltop', 76, 4], ['00000000-0000-4000-8000-000000000003', '2026-10-08', 'Lonnie Poole', 72, 0], ['00000000-0000-4000-8000-000000000004', '2026-10-01', 'Hilltop', 75, 3]] as const).map(([id, round_date, course_name, total_score, score_to_par]) => [id, { id, round_date, course_name, total_score, score_to_par, holes_played: 18 }]),
   );
 
 /** A real row through the real shapers, so the preview can't draw what the page can't. The fixtures are today's builders with the engine's depth on them; the design page's own copy isn't in them. */
@@ -50,7 +50,7 @@ export function previewReadView(q: string | undefined, role: 'coach' | 'player',
       : state === 'nofunnel'
         ? { ...view, read: { ...view.read, funnel: null } }
         : state === 'allrounds'
-          ? { ...view, read: { ...view.read, rounds: { total: 9, list: Array.from({ length: 9 }, (_, i) => ({ ...view.read!.rounds.list[i % view.read!.rounds.list.length]!, id: `r${i}`, counted: i % 3 })) } } }
+          ? { ...view, read: { ...view.read, rounds: { total: 9, list: Array.from({ length: 9 }, (_, i) => ({ ...view.read!.rounds.list[i % view.read!.rounds.list.length]!, id: `00000000-0000-4000-8000-00000000001${i}`, counted: i % 3 })) } } }
           : view;
   return role === 'coach' ? { ...shaped, team: [HELM_PLAYERS.priya, HELM_PLAYERS.eli, HELM_PLAYERS.jonah].map((p) => ({ id: p.id, name: p.name })) } : shaped;
 }

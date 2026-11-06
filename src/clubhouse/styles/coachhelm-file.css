@@ -348,22 +348,22 @@ html[data-fw-theme='dark'] .ch-hf {
 }
 /* The stance chips share a column, so every read's title starts on one edge. */
 .ch-hf .r:has(> .ch-badge:first-child) {
-  grid-template-columns: 96px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(96px, auto) minmax(0, 1fr) auto;
 }
 .ch-hf .r > .ch-badge:first-child {
   justify-self: start;
 }
-.ch-hf .dots i {
-  margin-left: -7px;
-}
-.ch-hf .dots i.me {
-  margin-left: -10px;
+.ch-hf .dots i,
+.ch-hf .dots i.me,
+.ch-hf .dots i.mean {
+  margin-left: 0;
+  transform: translateX(-50%);
 }
 .ch-hf .dots i[data-row='1'] {
-  top: 1px;
+  transform: translate(-50%, -12px);
 }
 .ch-hf .dots i[data-row='2'] {
-  top: 25px;
+  transform: translate(-50%, 12px);
 }
 /* The evidence sheet's sections: the text and the strip sit inside the card's padding, not on its edge. */
 .ch-hf.ch-hf-sheet .card > .ch-hf-strip,

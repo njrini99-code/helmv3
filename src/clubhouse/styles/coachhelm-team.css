@@ -1875,7 +1875,7 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   width: 420px;
   z-index: 4;
   pointer-events: none;
-  clip-path: inset(0 0 0 -64px);
+  clip-path: inset(0 0 0 -48px);
 }
 .ch-htb .insp {
   position: absolute;

@@ -197,7 +197,7 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
     const moved = <MovedCard d={read} failed={data.failed.themes} pictures={pictures} />;
     const rounds = <RoundsCard d={read} failed={data.failed.rounds} />;
     const askHref = askAboutReadHref({ insightId: read.insight.id, title: read.insight.title, first: coach ? first : undefined }, askOn);
-    const todo = <DoCard d={read} voice={voice} fa={fa} missing={data.missing} messageHref={messageHref} askHref={askHref} practiceHref={null} onMore={() => setMore(true)} />;
+    const todo = <DoCard d={read} voice={voice} fa={fa} missing={data.missing} messageHref={messageHref} askHref={askHref} practiceHref={null} onMore={phone ? () => setMore(true) : undefined} />;
     body = phone ? (
       <>
         {dismissedNotice}

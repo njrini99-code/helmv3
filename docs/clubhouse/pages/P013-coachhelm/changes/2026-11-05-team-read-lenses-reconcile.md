@@ -13,11 +13,12 @@ Held items:     none
 
 Team board. The desk panel now sits in the canvas, flush under the glass bar
 and to the canvas's edge, with the canvas's corner. It no longer crosses the
-app's frame. The owner's call on top of the mock, which cuts cards off under
-the panel: from 1180 up the panel takes the right column's place and the left
-column closes up beside it, so no card runs under it and nothing restacks.
-Below 1180 it overlays the one column, as CP-TEAM-6 says. Esc returns focus to
-what was tapped, in Safari too.
+app's frame. The owner flagged cards cut off under it, which the mock also does,
+so this departs from AC-INSP-01: from 1180 up the panel takes the right column's
+place, those cards are hidden while it's open, and the left column closes up
+beside it. No card runs under it and nothing restacks. Below 1180 it overlays
+the one column, as CP-TEAM-6 says. Esc returns focus to what was tapped, in
+Safari too.
 
 The huddle spreads coins that would overlap, with a leader line back to the
 true point. Its quadrant words go where no coin or Tour line crosses them, and

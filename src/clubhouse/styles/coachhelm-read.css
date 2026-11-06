@@ -1266,7 +1266,7 @@ html[data-fw-theme='dark'] .ch-hr {
   padding: 6px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-separator), 0 18px 40px -16px rgb(0 0 0 / 0.35);
+  box-shadow: var(--ch-elevation-overlay);
   transform-origin: 100% 0;
   animation: ch-hr-pop var(--ch-dur-quick) var(--ch-hr-ease);
 }
