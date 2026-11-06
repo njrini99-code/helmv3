@@ -1147,6 +1147,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-05-known-bugs.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-05-page-polish.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-06-coachhelm-head-in-bar.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
@@ -1557,6 +1558,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-05-page-polish.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-06-one-window.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-06-team-lane.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |

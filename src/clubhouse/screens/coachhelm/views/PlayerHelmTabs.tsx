@@ -40,7 +40,8 @@ type PlayerTab = PlayerHelmView | 'ask';
 export function PlayerHelmTabs({ active, onGo, coach = false, held = false }: { active: PlayerTab; onGo?: (view: PlayerHelmView) => void; coach?: boolean; held?: boolean }) {
   const phone = useChPhone();
   const router = useRouter();
-  const ask = !coach && !!useHelmViews().playerAsk;
+  const helmViews = useHelmViews();
+  const ask = !coach && !!helmViews.playerAsk;
   const go = (v: PlayerTab) => (v === 'ask' ? router.push(PLAYER_ASK_HREF) : onGo?.(v));
   const row = useRef<HTMLDivElement>(null);
   const rowEdges = useHScroll<HTMLDivElement>(row);

@@ -199,10 +199,12 @@ function StoryViewer({
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `leave` only reads `onClose`, and it's rebuilt each render
   }, [onClose]);
   if (!story) return null;
   const p = coin(story);
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- the dialog owns its hold, swipe and focus trap; each has its button
     <div
       ref={box}
       className={'story' + (leaving ? '' : ' on') + (held ? ' is-held' : '')}

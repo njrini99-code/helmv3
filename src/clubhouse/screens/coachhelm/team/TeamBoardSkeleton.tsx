@@ -36,7 +36,7 @@ export function TeamBoardSkeleton() {
           <header className="ch-chd is-phone">
             <div className="ch-chd__t">
               <LargeTitleSkeleton />
-              <span className="skl" style={{ width: '72%', height: 14, margin: '3px 0' }} />
+              <span className="skl" style={{ width: '72%', height: 16, margin: '2px 0' }} />
             </div>
             <div className="ch-chd__sw">
               <CoachHelmTabs active="board" held boardLabel="Team" />
