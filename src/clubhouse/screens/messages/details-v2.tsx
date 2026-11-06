@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, BellOff, FileText, LogOut, Paperclip, Search, UserMinus, UserPlus, UserRound } from 'lucide-react';
+import { Bell, BellOff, FileText, LogOut, Paperclip, Search, UserMinus, UserPlus, UserRound, ImageOff } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, useLayoutEffect } from 'react';
 import { chSpringCurve } from '../../lib/motion';
@@ -42,7 +42,9 @@ export function useMuteAction(api: ChMessagesApi) {
   const setChoosing = (on: boolean, from?: HTMLElement) => {
     if (on && from) {
       const r = from.getBoundingClientRect();
-      setAnchor({ left: Math.max(16, Math.min(r.left, window.innerWidth - 236 - 16)), top: r.bottom + 8 });
+      // Below the key, or above it where the screen ends; flush with the key but clear of the edge (MSG-18).
+      const roomBelow = window.innerHeight - r.bottom > 240;
+      setAnchor({ left: Math.max(16, Math.min(r.left, window.innerWidth - 236 - 16)), top: roomBelow ? r.bottom + 8 : Math.max(16, r.top - 8 - 200) });
     }
     setChoosingOn(on);
   };
@@ -148,7 +150,7 @@ export function QuickActions({
           <span>Add</span>
         </button>
       )}
-      {conv.group && !mine && (
+      {conv.group && !mine && !conv.channel && (
         <button type="button" className="ch-msp-tile" onClick={onLeave}>
           <Icon icon={LogOut} size={20} />
           <span>Leave</span>
@@ -248,21 +250,27 @@ const isImage = (f: ChFile) => f.mime.startsWith('image/');
 /** One image's tile, its signed address read as the thread reads it (`attachments`). */
 function PhotoTile({ api, file, onOpen }: { api: ChMessagesApi; file: ChFile; onOpen: () => void }) {
   const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
   const read = api.attachments;
   useEffect(() => {
     let live = true;
     read(file.messageId)
       .then((list) => {
-        if (live) setUrl(list?.find((x) => x.id === file.id)?.url ?? null);
+        if (!live) return;
+        const found = list?.find((x) => x.id === file.id)?.url ?? null;
+        setUrl(found);
+        setFailed(!found);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (live) setFailed(true);
+      });
     return () => {
       live = false;
     };
   }, [read, file.id, file.messageId]);
   return (
     <button type="button" className="ch-msv-ptile" aria-label={`Open ${file.name}`} onClick={onOpen}>
-      {url && <img src={url} alt="" loading="lazy" />}
+      {url ? <img src={url} alt="" loading="lazy" /> : failed ? <span className="ch-msv-photo-off"><Icon icon={ImageOff} size={20} /></span> : <span className="ch-msv-sk" aria-hidden="true" />}
     </button>
   );
 }
@@ -334,7 +342,9 @@ export function useDetailsColumn(open: boolean, redesign: boolean): boolean {
     if (!redesign || reduced()) return;
     const grid = document.querySelector<HTMLElement>('.ch-ms');
     if (!grid) return;
-    grid.style.transition = 'grid-template-columns 462ms var(--ch-ease-spring-smooth)';
+    // The owner's drawn motion, on the tokens. Reduce Motion: the column lands, with no reflow every frame.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    grid.style.transition = 'grid-template-columns var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth)';
     return () => {
       grid.style.transition = '';
     };

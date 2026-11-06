@@ -178,7 +178,9 @@ export function MessagesPhone({ api }: { api: ChMessagesApi }) {
       <PhoneTop
         title="Messages"
         start
+        // The redesign's root keeps the bell: its New message key is the one in the body (MSG-1).
         action={
+          api.redesign ? undefined : (
           <PhoneIconAction
             icon={SquarePen}
             label="New message"
@@ -186,6 +188,7 @@ export function MessagesPhone({ api }: { api: ChMessagesApi }) {
               setComposing(true);
             }}
           />
+          )
         }
       />
       <div className="ch-msp-inbox" inert={depth > 0 || undefined}>
@@ -271,7 +274,7 @@ function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void })
   const firstRun = isMessagesFirstRun(api);
   // A pin isn't listed twice (06 S-MSG): the Pinned card holds it unless a search or Groups is asking.
   const pinIds = new Set(pinned.map((c) => c.id));
-  const recent = filter !== "groups" && !q.trim() ? list.filter((c) => !pinIds.has(c.id)) : list;
+  const recent = filter === "all" && !q.trim() ? list.filter((c) => !pinIds.has(c.id)) : list;
   const recentTitle = filter === "unread" ? "Unread" : filter === "groups" ? "Groups" : "Recent";
   return (
     <div className="ch-msp-page ch-msp-home ch-msv-inbox" onClickCapture={(e) => noteTappedFace(e.target)}>
@@ -303,14 +306,14 @@ function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void })
       ) : loading ? (
         <section className="ch-msv-card" role="status" aria-label="Loading conversations" data-ch-code="CH-7402">
           <div className="ch-msv-card__h" aria-hidden="true">
-            <span className="ch-msv-sk" style={{ width: 64, height: 11 }} />
+            <span className="ch-msv-sk is-line is-w20" />
           </div>
           {Array.from({ length: 5 }, (_, i) => (
             <div key={i} className="ch-ms-row" aria-hidden="true" style={{ cursor: "default" }}>
-              <span className="ch-msv-sk" style={{ width: 44, height: 44, borderRadius: "50%" }} />
-              <span style={{ display: "grid", gap: 8 }}>
-                <span className="ch-msv-sk" style={{ width: 124.2, height: 11 }} />
-                <span className="ch-msv-sk" style={{ width: 210.6, height: 9 }} />
+              <span className="ch-msv-sk is-face" />
+              <span className="ch-msv-sk__t">
+                <span className="ch-msv-sk is-line is-w40" />
+                <span className="ch-msv-sk is-line is-small is-w70" />
               </span>
             </div>
           ))}
@@ -319,7 +322,7 @@ function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void })
         <MessagesFirstRun redesign coach={api.viewer.role === "coach"} teamName={api.teamName ?? undefined} onNew={onNew} onTeam={api.viewer.role === "coach" ? onNew : undefined} />
       ) : (
         <div className="ch-msp-list">
-          {filter !== "groups" && !q.trim() && pinned.length > 0 && (
+          {filter === "all" && !q.trim() && pinned.length > 0 && (
             <section className="ch-msv-card" aria-label="Pinned">
               <h2 className="ch-msv-card__h">Pinned</h2>
               <div className="ch-msv-pins">
@@ -334,11 +337,11 @@ function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void })
                         <span className="ch-msv-bubblet">{said}</span>
                       ) : null}
                       {c.group ? (
-                        <span className="ch-ms-grp ch-msv-pin__grp"><Icon icon={c.title === api.teamName ? Flag : Users} size={31} /></span>
+                        <span className="ch-ms-grp ch-msv-pin__grp"><Icon icon={c.channel ? Flag : Users} size={31} /></span>
                       ) : (
                         <Avatar name={c.title} id={convAvatarId(api, c)} size="xl" year={convYear(api, c)} />
                       )}
-                      <span className="ch-msv-pin__l">{c.title === api.teamName ? "Team" : c.group ? c.title : firstName(c.title)}</span>
+                      <span className="ch-msv-pin__l">{c.channel ? "Team" : c.group ? c.title : firstName(c.title)}</span>
                     </button>
                   );
                 })}
@@ -595,7 +598,7 @@ function PhoneThread({
         back={{ onBack, ariaLabel: "Back to Messages" }}
         title={
           <button type="button" className="ch-msp-who" onClick={onDetails}>
-            {conv.group ? <GroupMark size="sm" /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} year={convYear(api, conv)} />}
+            {conv.group ? <GroupMark size="md" flag={!!conv.channel} /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size="md" year={convYear(api, conv)} />}
             <span>
               <b>{api.redesign && !conv.group ? firstName(conv.title) : conv.title}</b>
               <em>
@@ -680,9 +683,10 @@ function PhoneThread({
             )}
             {/* CH-7602, as on desktop: no dots under a thread that didn't load or is still loading. */}
             {api.redesign && api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (
-              (api.typingUserIds?.length ? api.typingUserIds : [conv.memberIds[0] ?? ""]).map((id) => {
-                const who = personOf(api, id);
-                const name = firstName(who?.name ?? conv.title);
+              (api.typingUserIds?.length ? api.typingUserIds : conv.group ? [""] : [conv.memberIds[0] ?? ""]).map((id) => {
+                const who = id ? personOf(api, id) : null;
+                // No typer known in a group: say so, never a member who isn't typing (MSG-4).
+                const name = !id ? "Someone" : firstName(who?.name ?? conv.title);
                 return (
                   <div key={id} className={"ch-ms-msg is-first" + (conv.group ? " is-group" : "")}>
                     <span className="ch-ms-msg__av">{<Avatar name={who?.name ?? conv.title} id={who ? (who.playerId ?? who.userId) : convAvatarId(api, conv)} size="sm" />}</span>

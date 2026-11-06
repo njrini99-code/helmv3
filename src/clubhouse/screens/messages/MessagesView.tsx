@@ -66,6 +66,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, m as M } from "motion/react";
 import { CH_FADE_MS, chSpringCurve, chTween } from "../../lib/motion";
 import type { ChClock } from "../../lib/clock-cookie";
+import { ThreadJumpKey } from "./thread-v2";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useComposerInset } from "./composer-inset";
 import { useFocusMessage } from "./use-focus-message";
@@ -2535,7 +2536,7 @@ function Thread({
           )}
         </div>
       </div>
-      <ThreadBelow anchor={anchor} />
+      {api.redesign ? <ThreadJumpKey scroller={scroller} unseen={anchor.unseen} onJump={anchor.toEnd} /> : <ThreadBelow anchor={anchor} />}
       <Composer
         key={conv.id}
         api={api}

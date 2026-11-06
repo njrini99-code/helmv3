@@ -1,5 +1,6 @@
 'use client';
 
+import { CH_PHONE_QUERY } from '../../lib/phone-query';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { CH_FADE_MS, chSpringCurve, CH_DUR, CH_SPRING_SETTLE_MS } from '../../lib/motion';
@@ -19,6 +20,17 @@ function atRest(el: HTMLElement | null | undefined): DOMRect | null {
  * rows below it. The real bubble hides while its copy is up. Dismissing settles the copy home, shrinks the bar and menu, fades the scrim
  * and returns focus to the bubble. Reduce Motion: everything appears in place and fades over `CH_FADE_MS`.
  */
+/** The notch and home bar, in pixels, from the page's own env(). */
+function safeAreaInsets(): { top: number; bottom: number } {
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;visibility:hidden;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)';
+  document.body.appendChild(probe);
+  const cs = getComputedStyle(probe);
+  const out = { top: parseFloat(cs.paddingTop) || 0, bottom: parseFloat(cs.paddingBottom) || 0 };
+  probe.remove();
+  return out;
+}
+
 export function HoldLift({ messageId, mine, bar, children, onClosed, closeSignal, onReopen }: { /** A pick waiting on this dismiss is dropped when the lift is taken back. */ onReopen?: () => void; messageId: string; mine: boolean; bar: ReactNode; children: ReactNode; onClosed: () => void; /** Bumped by a pick, to run the dismiss. */ closeSignal: number }) {
   const reduced = useChReducedMotion();
   const scrim = useRef<HTMLDivElement | null>(null);
@@ -47,12 +59,14 @@ export function HoldLift({ messageId, mine, bar, children, onClosed, closeSignal
     el.style.visibility = 'hidden';
     const menuH = menu.current?.offsetHeight ?? 0;
     // M-MSG-10b: the menu 10 below the bubble, the bar 56 above it, inside 60 top / 36 bottom on a phone and 12 / 12 on a desktop.
-    const phone = window.innerWidth < 768;
-    const insetTop = phone ? 60 : 12;
+    const phone = window.matchMedia(CH_PHONE_QUERY).matches;
+    const safe = safeAreaInsets();
+    const insetTop = (phone ? 60 : 12) + safe.top;
     const top = rect.top - 56;
     const bottom = rect.bottom + 10 + menuH;
-    const limit = window.innerHeight - (phone ? 36 : 12);
-    shift.current = bottom > limit ? Math.max(limit - bottom, insetTop - top) : top < insetTop ? insetTop - top : 0;
+    const limit = window.innerHeight - (phone ? 36 : 12) - safe.bottom;
+    // A bubble too tall for the screen keeps the menu on it; the copy clips at the top instead (MSG-6).
+    shift.current = bottom > limit ? (bottom - top > limit - insetTop ? limit - bottom : Math.max(limit - bottom, insetTop - top)) : top < insetTop ? insetTop - top : 0;
     // The bar and menu are placed here, after the menu can be measured: a render alone would leave them at the unshifted spot.
     if (rbar.current) rbar.current.style.top = `${top + shift.current}px`;
     if (menu.current) menu.current.style.top = `${rect.bottom + 10 + shift.current}px`;
