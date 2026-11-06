@@ -246,7 +246,12 @@ export function RouteErrorView({
             )}
           </div>
           {digest && <p className="ch-empty-page__ref ch-num">Reference {digest}</p>}
-          {devDetail && <pre className="ch-notyet__dev" tabIndex={0}>{devDetail}</pre>}
+          {devDetail && (
+            // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- it scrolls, so axe needs it focusable to scroll by keyboard
+            <pre className="ch-notyet__dev" tabIndex={0}>
+              {devDetail}
+            </pre>
+          )}
         </div>
       </div>
     </main>
