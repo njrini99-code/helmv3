@@ -915,6 +915,9 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   .ch-ask-body.has-panel {
     grid-template-columns: minmax(0, 1fr);
   }
+  .ch-ask[data-ch-vv] {
+    height: calc(var(--ch-vv-h) + var(--ch-vv-top) - var(--ch-phone-topbar-h) - env(safe-area-inset-top));
+  }
   .ch-ask-scroll {
     padding: 0 var(--ch-page-x-phone) 12px;
   }

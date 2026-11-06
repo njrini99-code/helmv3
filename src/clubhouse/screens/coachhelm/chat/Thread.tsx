@@ -140,12 +140,19 @@ export function AskThread({ v2 = false, team, stoppedTurn = null, onArtifact, me
   }, [v2]);
   const turnCount = turns.length;
   const lastRole = last?.role;
+  // ASK-15: only the thread's own scroller moves. scrollIntoView also scrolls every ancestor, the page included.
+  const toEnd = (behavior: ScrollBehavior) => {
+    const sp = scrollParentOf(rootRef.current);
+    if (sp) sp.scrollTo?.({ top: sp.scrollHeight, behavior });
+    else endRef.current?.scrollIntoView?.({ block: 'end', behavior });
+  };
   useEffect(() => {
     // The coach sent something: show it, wherever they were.
     if (lastRole === 'user') {
       stick.current = true;
-      endRef.current?.scrollIntoView?.({ block: 'end', behavior: reduced ? 'instant' : 'smooth' });
+      toEnd(reduced ? 'instant' : 'smooth');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- toEnd reads refs
   }, [turnCount, lastRole, reduced]);
   useEffect(() => {
     // Streaming: follow the answer only while the coach is at the bottom.
@@ -153,7 +160,7 @@ export function AskThread({ v2 = false, team, stoppedTurn = null, onArtifact, me
     // Coalesce chunks received before the next paint; never inherit CSS smooth
     // scrolling, which would restart an animation for every stream update.
     const frame = requestAnimationFrame(() => {
-      if (stick.current) endRef.current?.scrollIntoView?.({ block: 'end', behavior: 'instant' });
+      if (stick.current) toEnd('instant');
     });
     return () => cancelAnimationFrame(frame);
   }, [messages, busy, error, lastRole]);
@@ -344,7 +351,7 @@ export function AskThread({ v2 = false, team, stoppedTurn = null, onArtifact, me
                 // E-STEPS: the first frame is already the live row, so nothing swaps when the first read names itself.
                 <Steps steps={[{ id: 'first', label: 'Reading your program', state: 'active' }]} active seconds={null} />
               ) : (
-                <p className="ch-th-think" aria-live="polite">
+                <p className="ch-th-think">
                   <span className="ch-th-live">Reading your program</span>
                 </p>
               )}
@@ -366,7 +373,7 @@ export function AskThread({ v2 = false, team, stoppedTurn = null, onArtifact, me
             onClick={() => {
               stick.current = true;
               setJump(null);
-              endRef.current?.scrollIntoView?.({ block: 'end', behavior: reduced ? 'instant' : 'smooth' });
+              toEnd(reduced ? 'instant' : 'smooth');
             }}
           >
             <Icon icon={ArrowDown} size={19} />
@@ -385,14 +392,14 @@ function Work({ turn, onStop }: { turn: AskAssistantTurn; onStop?: () => void })
   const listId = useId();
   if (turn.steps.length === 0) {
     return turn.active && turn.blocks.length === 0 ? (
-      <p className="ch-th-think" aria-live="polite">
+      <p className="ch-th-think">
         {/* The placeholder's words, so the hand-over from it to the answer changes nothing on screen (2026-10-29). */}
         <span className="ch-th-live">Reading your program</span>
       </p>
     ) : null;
   }
   const list = (live: boolean) => (
-    <ol id={live ? undefined : listId} className="ch-th-steps" aria-label="What CoachHelm is doing" aria-live={live ? 'polite' : undefined} aria-relevant={live ? 'additions text' : undefined}>
+    <ol id={live ? undefined : listId} className="ch-th-steps" aria-label="What CoachHelm is doing">
       {turn.steps.map((s, i) => {
         const current = live && i === turn.steps.length - 1;
         return (

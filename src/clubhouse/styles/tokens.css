@@ -182,6 +182,15 @@
   --ch-accent: var(--ch-green-600);
   /* Ask's own accent and card (owner, 6 Nov): the design's palette, without moving the app's accent. */
   --ch-ask-accent: var(--ch-green-600);
+  /* Quick chat's live pill and plan bar (coachhelm/06). */
+  --ch-qc-seg-ink: #fff;
+  --ch-qc-live-bg: #06231a;
+  --ch-qc-live-ok: #7cc79b;
+  --ch-qc-live-ok-ink: #0b3a25;
+  --ch-qc-r-live: 18px;
+  --ch-qc-r-bubble: 19px;
+  --ch-qc-r-tile: 10px;
+  --ch-champagne-ink: #725b2c;
   --ch-ask-on-accent: #fffefb;
   --ch-ask-card: var(--ch-bubble-theirs-bg);
   --ch-ask-mine-a: var(--ch-bubble-mine-fill);
@@ -1091,6 +1100,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-text-on-accent: #f4eedd;
   --ch-accent: #23704a;
   --ch-ask-accent: #7cc79b;
+  --ch-qc-seg-ink: #0e120f;
+  --ch-champagne-ink: #cdbb8e;
   --ch-ask-on-accent: #0e120f;
   --ch-ask-card: #191e1a;
   --ch-ask-mine-a: #1f4d35;

@@ -46,7 +46,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .cite { position: relative; display: inline-flex; align-items: center; gap: 4px; vertical-align: 1px; margin-left: 4px; padding: 4px 8px; border: 0; border-radius: 999px; background: var(--ch-well-bg-flat); box-shadow: 0 0 0 0.5px var(--ch-ak-ak-hair); font: var(--ch-type-13-strong);  color: var(--ch-text-secondary); white-space: nowrap; cursor: pointer; }
 .ch-ak-th .cite::after { content: ''; position: absolute; inset: -4px; }
 .ch-ak-th .cite.on { background: var(--ch-ak-ak-tint); color: var(--ch-ask-accent); box-shadow: none; }
-.ch-ak-th .cpop { display: block; position: absolute; z-index: var(--ch-z-panel); top: calc(100% + 6px); left: 0; width: 280px; max-width: 72vw; padding: 12px 12px; border-radius: var(--ch-radius-md); background: var(--ch-card-bg); box-shadow: var(--ch-shadow-float); font: var(--ch-type-14); }
+.ch-ak-th .cpop { display: block; overflow-y: auto; position: absolute; z-index: var(--ch-z-panel); top: calc(100% + 6px); left: 0; width: 280px; max-width: 72vw; padding: 12px 12px; border-radius: var(--ch-radius-md); background: var(--ch-card-bg); box-shadow: var(--ch-shadow-float); font: var(--ch-type-14); }
 .ch-ak-th .cpop b { display: block; margin-bottom: 8px; font: var(--ch-type-15-strong);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
 .ch-ak-th .cpop .rows { display: grid; gap: 4px; }
 .ch-ak-th .cpop .row { display: flex; justify-content: space-between; gap: 12px; }
@@ -802,9 +802,8 @@ html[data-fw-theme='dark'] .ch-ak-th {
 /* Phone: an answer is text on the page, and its cards stand alone at full width, rather than a card holding a card. */
 .ch-ak-root.is-phone .ch-ak-th .msg-a { padding: 0; border-radius: 0; background: none; filter: none; box-shadow: none; }
 
-/* Phone: one surface at a time. The draft's facts are plain rows in the card, not a well inside a card, with a narrower label so a date stays on one line. */
+/* Phone: the draft's well keeps its design (E-EVD), with a narrower label so a date stays on one line. */
 @media (max-width: 820px) {
-  .ch-ak-th .conf:not(.is-pub) .evd { margin: 12px 16px 4px; padding: 0; background: none; box-shadow: none; border-radius: 0; }
   /* The labels share one column as wide as the longest, so "Attachment" can't run into its value at any Text Size. */
   .ch-ak-th .conf:not(.is-pub) .evd .ls { grid-template-columns: max-content minmax(0, 1fr); column-gap: 8px; }
   .ch-ak-th .conf:not(.is-pub) .evd .f { grid-column: 1 / -1; grid-template-columns: subgrid; }
@@ -891,3 +890,44 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
     background: var(--ch-accent-press);
   }
 }
+
+/* The draft's own picture per flow (06 E-EVD, E-TASK, E-GOAL, E-NOTE, E-TRAVEL, E-LINEUP). */
+.ch-ak-th .evd.has-dt { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 12px; }
+.ch-ak-th .evd .dt { align-self: start; padding: 6px 0 7px; border-radius: 10px; background: var(--ch-card-bg); box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-card-ring, var(--ch-border-hairline)); text-align: center; font: var(--ch-type-12-strong); letter-spacing: 0.04em; color: var(--ch-ask-accent); }
+.ch-ak-th .evd .dt b { display: block; font: var(--ch-type-20-strong); letter-spacing: 0; color: var(--ch-text-primary); }
+.ch-ak-th .told .coin.more { display: inline-grid; place-items: center; min-width: 24px; height: 24px; background: var(--ch-card-bg); font: var(--ch-type-12-strong); color: var(--ch-text-secondary); }
+.ch-ak-tk, .ch-ak-goal, .ch-ak-nb, .ch-ak-route, .ch-ak-lu { margin: 12px 16px 0; padding: 12px; border-radius: var(--ch-radius-lg); background: var(--ch-well-bg-flat); box-shadow: inset 0 0 0 0.5px var(--ch-ak-ak-hair); }
+.ch-ak-tk { display: flex; align-items: center; gap: 14px; }
+.ch-ak-tk .tkr { flex: none; width: 64px; height: 64px; }
+.ch-ak-tk .rt, .ch-ak-tk .rp { fill: none; stroke-width: 6; }
+.ch-ak-tk .rt { stroke: var(--ch-chart-track); }
+.ch-ak-tk .rp { stroke: var(--ch-ask-accent); stroke-dasharray: 100; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 32px 32px; }
+.ch-ak-tk .r1 { font: var(--ch-type-17-strong); fill: var(--ch-text-primary); }
+.ch-ak-tk .r2 { font: var(--ch-type-11); fill: var(--ch-text-secondary); }
+.ch-ak-tk .tkb { display: grid; gap: 6px; min-width: 0; }
+.ch-ak-tk .tkb b { font: var(--ch-type-15-strong); color: var(--ch-text-primary); overflow-wrap: anywhere; }
+.ch-ak-tk .who { display: flex; align-items: center; gap: 4px; }
+.ch-ak-tk .who small { font: var(--ch-type-12-strong); color: var(--ch-text-secondary); }
+.ch-ak-goal { display: grid; gap: 8px; }
+.ch-ak-goal small { display: block; font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-ak-goal b { display: block; font: var(--ch-type-28-strong); letter-spacing: var(--ch-track-28); color: var(--ch-text-primary); }
+.ch-ak-nb { display: grid; gap: 4px; }
+.ch-ak-nb small { font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-ak-nb p { margin: 0; font: var(--ch-type-14); color: var(--ch-text-primary); overflow-wrap: anywhere; }
+.ch-ak-route { display: grid; gap: 4px; padding: 4px 12px 12px; }
+.ch-ak-route svg { display: block; width: 100%; height: auto; }
+.ch-ak-route .rbase, .ch-ak-route .rline { fill: none; stroke-linecap: round; }
+.ch-ak-route .rbase { stroke: var(--ch-chart-track); stroke-width: 6; }
+.ch-ak-route .rline { stroke: var(--ch-ask-accent); stroke-width: 3; }
+.ch-ak-route .ro { fill: var(--ch-card-bg); stroke: var(--ch-ask-accent); stroke-width: 3; }
+.ch-ak-route .rd { fill: var(--ch-ask-accent); }
+.ch-ak-route .ends { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+.ch-ak-route .ends > span:last-child { text-align: right; }
+.ch-ak-route small { display: block; font: var(--ch-type-12); color: var(--ch-text-secondary); }
+.ch-ak-route b { display: block; font: var(--ch-type-14-strong); color: var(--ch-text-primary); overflow-wrap: anywhere; }
+.ch-ak-route .how { font: var(--ch-type-12-strong); color: var(--ch-text-tertiary); text-transform: capitalize; }
+.ch-ak-lu { display: grid; gap: 6px; list-style: none; }
+.ch-ak-lu li { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 4px 10px; border-radius: var(--ch-radius-md); background: var(--ch-card-bg); box-shadow: 0 0 0 0.5px var(--ch-ak-ak-hair); }
+.ch-ak-lu .n { min-width: 24px; font: var(--ch-type-13-strong); color: var(--ch-text-secondary); }
+.ch-ak-lu .nm { min-width: 0; font: var(--ch-type-14); color: var(--ch-text-primary); overflow-wrap: anywhere; }
+.ch-ak-lu li.alt .nm { color: var(--ch-text-secondary); }

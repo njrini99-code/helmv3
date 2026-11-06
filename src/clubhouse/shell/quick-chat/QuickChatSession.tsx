@@ -54,6 +54,19 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
   // The turn that was stopped, not the session: an earlier finished turn stays finished.
   const [stoppedId, setStoppedId] = useState<string | null>(null);
   const panel = useRef<HTMLElement>(null);
+  // MOB-QC-13: one announcement when an answer finishes, not one per streamed word.
+  const finished = useMemo(() => (chat.busy ? '' : ([...turns].reverse().find((t) => t.role === 'assistant') as { answerText?: string } | undefined)?.answerText ?? ''), [chat.busy, turns]);
+  // MOB-QC-14: on the phone the panel is modal for VoiceOver too, which aria-modal alone isn't in Safari.
+  useEffect(() => {
+    if (!phone || !open) return;
+    const root = document.querySelector<HTMLElement>('.ch-root');
+    if (!root) return;
+    const was = root.inert;
+    root.inert = true;
+    return () => {
+      root.inert = was;
+    };
+  }, [phone, open]);
   const scrim = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
   const field = useRef<HTMLTextAreaElement>(null);
@@ -257,6 +270,9 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
         </header>
         <div className="qc__sheet">
           <div className="qc__body" ref={body} data-qc-rise="">
+            <p className="ch-sr-only" role="status">
+              {finished}
+            </p>
             <div className="qc__inner">
               {fresh ? (
                 <div className="hello">

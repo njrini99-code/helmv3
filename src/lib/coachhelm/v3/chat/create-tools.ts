@@ -155,6 +155,7 @@ const tripFlow: FlowDef<z.infer<typeof tripInput>> = {
   plan: (_ctx, i) => {
     if (i.return_date && i.return_date < i.departure_date) throw new ActionPlanError('The return is before the leave date. Ask the coach.');
     return {
+      visual: { kind: 'trip', from: i.departure_location ?? null, to: i.destination, how: i.transportation_type, leave: i.departure_date, back: i.return_date ?? null },
       action: 'Add the trip',
       summary: `${i.event_name} · ${i.destination}`,
       facts: [fact('Leaves', [i.departure_date, i.departure_time].filter(Boolean).join(' '), false), fact('How', i.transportation_type, false), fact('From', i.departure_location), fact('Back', [i.return_date, i.return_time].filter(Boolean).join(' ')), fact('Hotel', i.hotel_name), fact('Rooms', i.room_assignments), fact('Uniform', i.uniform_requirements), fact('Gear', i.gear_list?.join(', '))],
@@ -177,7 +178,7 @@ const qualifierFlow: FlowDef<z.infer<typeof qualifierInput>> = {
     if (i.selection_slots_coach_pick > i.selection_slots_total) throw new ActionPlanError('Coach picks can’t be more than the squad.');
     const who = names(ctx, i.player_ids);
     return {
-      visual: { kind: 'qual', title: i.name, rounds: i.num_rounds, start: i.start_date, total: i.selection_slots_total, picks: i.selection_slots_coach_pick, field: who.length, deadline: null },
+      visual: { kind: 'qual', title: i.name, rounds: i.num_rounds, start: i.start_date, total: i.selection_slots_total, picks: i.selection_slots_coach_pick, field: who.length, deadline: i.entry_deadline ?? null },
       action: 'Set qualifier',
       summary: i.name,
       facts: [fact('Starts', i.start_date, false), fact('Rounds', i.num_rounds, false), fact('Squad', `${i.selection_slots_total}, coach picks ${i.selection_slots_coach_pick}`, false), fact('Players', who.join(', '), false), fact('Rules', i.rules)],
@@ -199,7 +200,7 @@ const goalFlow: FlowDef<z.infer<typeof goalInput>> = {
   input: goalInput,
   plan: (ctx, i) => {
     const p = requireRosterPlayer(ctx, i.player_id);
-    return { action: 'Set goal', summary: `${i.label}, ${i.window_days}-day goal for ${p.name}`, facts: [fact('Player', p.name, false), fact('Target', i.target_value, false), fact('By', `${i.window_days} days`, false), fact('How', i.mode === 'mandatory' ? 'Assigned' : 'Suggested', false)], notifications: [`${p.name} gets a push once Undo closes.`], key: ['goal', p.id, i.metric_id, i.target_value, i.window_days] };
+    return { visual: { kind: 'goal', player: p.name, stat: i.label, target: i.target_value, days: i.window_days }, action: 'Set goal', summary: `${i.label}, ${i.window_days}-day goal for ${p.name}`, facts: [fact('Player', p.name, false), fact('Target', i.target_value, false), fact('By', `${i.window_days} days`, false), fact('How', i.mode === 'mandatory' ? 'Assigned' : 'Suggested', false)], notifications: [`${p.name} gets a push once Undo closes.`], key: ['goal', p.id, i.metric_id, i.target_value, i.window_days] };
   },
   run: async (ctx, i) => {
     const res = (await createGoal({ team_id: ctx.team_id, player_id_if_coach_creating: i.player_id, metric_id: i.metric_id, title: `${i.label}, ${i.window_days}-day goal`, category: 'manual', ends_at: new Date(Date.now() + i.window_days * 86_400_000).toISOString(), target_value: i.target_value, target_source: 'manual', baseline_value: null, coach_assignment_mode: i.mode })) as { ok?: boolean; success?: boolean; error?: string };
@@ -240,7 +241,7 @@ const noteFlow: FlowDef<NoteInput> = {
   plan: (ctx, i) => {
     const p = requireRosterPlayer(ctx, i.player_id);
     if (i.existing && appendedNote(i.existing, i.note).kind === 'too_long') throw new ActionPlanError(NOTE_TOO_LONG);
-    return { action: 'Add note', summary: `A note on ${p.name}’s round`, facts: [...(i.existing ? [fact('Earlier note', i.existing)] : []), fact('Adding', i.note, false)], notifications: [`${p.name} will see this note, once Undo closes.`], key: ['note', i.round_id, i.note] };
+    return { visual: { kind: 'note', player: p.name, note: i.note }, action: 'Add note', summary: `A note on ${p.name}’s round`, facts: [...(i.existing ? [fact('Earlier note', i.existing)] : []), fact('Adding', i.note, false)], notifications: [`${p.name} will see this note, once Undo closes.`], key: ['note', i.round_id, i.note] };
   },
   run: async (_ctx, i, { sb }) => {
     const done = { summary: 'The note is on the round.', kind: 'note' };
@@ -261,7 +262,7 @@ export const lineupFlow: FlowDef<z.infer<typeof lineupInput>> = {
   input: lineupInput,
   plan: (ctx, i) => {
     const rows = i.entries.map((e) => `${e.slot ?? '—'} ${requireRosterPlayer(ctx, e.player_id).name} (${e.role})`);
-    return { action: 'Set lineup', summary: 'Tournament lineup', facts: [fact('Lineup', rows.join(', '), false)], notifications: ['Nobody is told.'], key: ['lineup', i.tournament_id, i.version, rows.join(',')] };
+    return { visual: { kind: 'lineup', seats: i.entries.map((e) => ({ slot: e.slot, name: requireRosterPlayer(ctx, e.player_id).name, alternate: e.role === 'alternate' })) }, action: 'Set lineup', summary: 'Tournament lineup', facts: [fact('Lineup', rows.join(', '), false)], notifications: ['Nobody is told.'], key: ['lineup', i.tournament_id, i.version, rows.join(',')] };
   },
   run: async (_ctx, i) => {
     const res = (await setTournamentEntries(i.tournament_id, i.entries.map((e) => ({ playerId: e.player_id, role: e.role, slot: e.slot, reasoning: e.reasoning })), i.version)) as { ok?: boolean; success?: boolean; error?: string };

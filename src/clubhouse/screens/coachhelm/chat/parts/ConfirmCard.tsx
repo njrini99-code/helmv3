@@ -14,7 +14,7 @@ import { Icon } from '../../../../ui/Icon';
 import { Switch } from '../../../../ui/Switch';
 import { useChReducedMotion } from '../../../../lib/reduced-motion';
 import { flyDraftHome } from '../ask-flight';
-import { LockPreview, QualDraft, WeekDraft } from './DraftVisual';
+import { DateTile, GoalDraft, LineupDraft, NoteDraft, TaskDraft, TripDraft, draftDate, LockPreview, QualDraft, WeekDraft } from './DraftVisual';
 
 const KIND: Record<string, { icon: LucideIcon; verb: (n: number) => string; busy: string; chip: string }> = {
   create_recurring_practice: { icon: CalendarPlus, verb: () => 'Add to calendar', busy: 'Adding…', chip: 'Added' },
@@ -146,6 +146,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
   const rest = allFacts.filter((f) => !worked.includes(f));
   const facts = rest.length ? rest : allFacts;
   const visual = p.visual;
+  const date = p.publish ? null : draftDate(visual);
   const announcement = view.tool === 'create_team_announcement' || view.tool === 'create_announcement';
   return (
     <section ref={cardRef} className={'conf' + (p.publish ? ' is-pub' : '') + (landing && landed ? ' flash' : '') + (filling ? ' is-fill' : '')} style={filling ? { ['--ch-n' as string]: facts.length } : undefined} aria-label={p.action}>
@@ -181,7 +182,13 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
       )}
       {!cancelled && announcement && <LockPreview proposal={p} team={team} />}
       {!cancelled && visual?.kind === 'qual' && <QualDraft visual={visual} />}
-      <div className={'evd' + (cancelled ? ' dim' : '')}>
+      {!cancelled && visual?.kind === 'task' && <TaskDraft visual={visual} today={new Date().toISOString().slice(0, 10)} />}
+      {!cancelled && visual?.kind === 'goal' && <GoalDraft visual={visual} />}
+      {!cancelled && visual?.kind === 'note' && <NoteDraft visual={visual} />}
+      {!cancelled && visual?.kind === 'trip' && <TripDraft visual={visual} />}
+      {!cancelled && visual?.kind === 'lineup' && <LineupDraft visual={visual} />}
+      <div className={'evd' + (cancelled ? ' dim' : '') + (date ? ' has-dt' : '')}>
+        {date && <DateTile date={date} />}
         <div className="ls">
           {facts.map((f, i) =>
             p.publish && f.label === 'Tells' ? (
@@ -439,13 +446,18 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
       </div>
       {delivered.length > 0 && (
         <p className={'told' + (watched.current ? ' is-live' : '')}>
-          {coins.length > 0 && coins.length === Math.max(...delivered.map((n) => n.recipients)) && (
+          {coins.length > 0 && (
             <span className="coins" aria-hidden="true">
-              {coins.map((name, i) => (
+              {coins.slice(0, 4).map((name, i) => (
                 <span key={name} className="coin" style={{ ['--ch-i' as string]: i }}>
                   <Avatar name={name} size="xs" />
                 </span>
               ))}
+              {coins.length > 4 && (
+                <span className="coin more ch-num" style={{ ['--ch-i' as string]: 4 }}>
+                  +{coins.length - 4}
+                </span>
+              )}
             </span>
           )}
           <span className="tx">

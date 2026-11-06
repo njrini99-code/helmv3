@@ -50,7 +50,12 @@ export interface ProposalFact {
 export type TaskVisual =
   | { kind: 'cal'; date: string; start: string | null; end: string | null; title: string; where: string | null; who: string; rsvp: boolean }
   | { kind: 'msg'; conversationId: string; thread: string; count: number; last: string | null; draft: string }
-  | { kind: 'qual'; title: string; rounds: number; start: string; total: number; picks: number; field: number; deadline: string | null };
+  | { kind: 'qual'; title: string; rounds: number; start: string; total: number; picks: number; field: number; deadline: string | null }
+  | { kind: 'task'; title: string; due: string | null; who: string[] }
+  | { kind: 'goal'; player: string; stat: string; target: number; days: number }
+  | { kind: 'note'; player: string; note: string }
+  | { kind: 'trip'; from: string | null; to: string; how: string; leave: string; back: string | null }
+  | { kind: 'lineup'; seats: Array<{ slot: number | null; name: string; alternate: boolean }> };
 
 export interface ActionProposal {
   /** A plan's publish: who hears (as coins) and one player's own line, for the card to draw. Every value is also in `facts`. */
