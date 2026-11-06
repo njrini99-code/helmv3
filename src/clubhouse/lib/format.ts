@@ -1,3 +1,4 @@
+import { plural } from './plural';
 /**
  * Clubhouse number formatting. Figures always use a true minus, E for even,
  * and an em dash for no data. Null, zero and "early read" never look alike.
@@ -110,6 +111,6 @@ export function formatWhole(value: number): string {
 
 /** What a figure says beside it: its window and the rounds it rests on (SYS-7). */
 export function windowWords(window: 'season' | 'last10', rounds: number): string {
-  const n = `${rounds} ${rounds === 1 ? 'round' : 'rounds'}`;
+  const n = plural(rounds, 'round');
   return window === 'season' ? `This season · ${n}` : `Last 10 · ${n}`;
 }
