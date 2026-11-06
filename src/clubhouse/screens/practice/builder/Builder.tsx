@@ -269,7 +269,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
       setConfirm(true);
     }
   };
-  /* The practice's time, from the builder (N-00 4.4, CH-17509). */
+  /* The practice's time, from the builder (N-00 4.4). */
   const [moving, setMoving] = useState<{ start: string; end: string } | null>(null);
   const [moveAsk, setMoveAsk] = useState(false);
   const moveFrom = () => ({ start: zonedClock(data.start, data.zone), end: data.end ? zonedClock(data.end, data.zone) : '' });
