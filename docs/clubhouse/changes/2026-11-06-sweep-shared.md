@@ -12,8 +12,8 @@ Held items:     none
 ```
 
 New: `lib/phone-query.ts`, `lib/chart-geometry.ts` (`clampRadius`, `scaleToBox`,
-`placeLabels`), `ui/charts/ChartText.tsx`, and a development warning for a Surface
-inside a Surface.
+`placeLabels`), `ui/charts/ChartText.tsx`, and a development warning for a nested
+Surface.
 
 Reduce Motion: every transition narrows to a 180ms opacity fade. A keyframe opts
 in with `--ch-rm-animation` (MOT-01). Sheets leave at the release duration
