@@ -8,7 +8,7 @@ const css = (f: string) => readFileSync(join(ROOT, 'styles', f), 'utf8').replace
 /** The bodies of every `@media (<query>) {…}` block in a sheet, joined. */
 function blocks(src: string, query: string): string {
   const out: string[] = [];
-  let at = src.indexOf(`@media (${query}) {`);
+  let at = src.indexOf(`@media (${query})`);
   while (at !== -1) {
     let depth = 0;
     let i = src.indexOf('{', at);
@@ -18,7 +18,7 @@ function blocks(src: string, query: string): string {
       else if (src[i] === '}' && --depth === 0) break;
     }
     out.push(src.slice(start, i));
-    at = src.indexOf(`@media (${query}) {`, i);
+    at = src.indexOf(`@media (${query})`, i);
   }
   return out.join('\n');
 }

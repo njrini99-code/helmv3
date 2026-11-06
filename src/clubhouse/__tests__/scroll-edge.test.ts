@@ -25,8 +25,8 @@ describe('scroll edge under floating bars (row 41)', () => {
   });
   it('the desktop top bar has no constant hairline: the shade shows once the canvas has scrolled, light and dark', () => {
     const shell = read('shell.css');
-    const desk = shell.slice(shell.indexOf("@media (min-width: 821px) {\n  [data-ui='clubhouse'] .ch-topbar {"));
-    expect(desk).toMatch(/^@media \(min-width: 821px\) \{\s*\[data-ui='clubhouse'\] \.ch-topbar \{\s*border-bottom-color: transparent;/);
+    const desk = shell.slice(shell.indexOf("@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {\n  [data-ui='clubhouse'] .ch-topbar {"));
+    expect(desk).toMatch(/^@media \(min-width: 821px\)[^{]*\{\s*\[data-ui='clubhouse'\] \.ch-topbar \{\s*border-bottom-color: transparent;/);
     const before = rule(desk, "[data-ui='clubhouse'] .ch-topbar::before");
     expect(before).toContain('height: var(--ch-scroll-edge-h);');
     expect(before).toContain('background: var(--ch-scroll-edge-down);');
@@ -37,7 +37,7 @@ describe('scroll edge under floating bars (row 41)', () => {
   });
   it('Increase Contrast keeps the desktop bar\'s line at rest (review of #2361)', () => {
     const shell = read('shell.css');
-    const at = shell.indexOf('@media (min-width: 821px) and (prefers-contrast: more) {');
+    const at = shell.indexOf('@media (min-width: 821px) and (prefers-contrast: more) and ((min-height: 501px) or (pointer: fine)) {');
     expect(at).toBeGreaterThan(-1);
     expect(shell.slice(at, shell.indexOf('}\n}', at))).toMatch(/\.ch-topbar \{\s*border-bottom-color: var\(--ch-border-hairline\);/);
   });

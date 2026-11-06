@@ -116,6 +116,6 @@ describe('inbox row craft (PR 9)', () => {
   });
 
   it('F-0051 the phone Announcements card sits on the page edge, not 4px past it', () => {
-    expect(css).toMatch(/@media \(max-width: 820px\) \{[^@]*\.ch-msp \.ch-ms-sec\.is-ann\s*\{[^}]*margin-inline: 0;/);
+    expect(css).toMatch(/@media \(max-width: 820px\)[^{]*\{[^@]*\.ch-msp \.ch-ms-sec\.is-ann\s*\{[^}]*margin-inline: 0;/);
   });
 });

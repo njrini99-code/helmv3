@@ -7,7 +7,7 @@ import { ROOT } from './_scan';
 const css = (f: string) => readFileSync(join(ROOT, 'styles', f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 function phone(src: string): string {
   const out: string[] = [];
-  let at = src.indexOf('@media (max-width: 820px) {');
+  let at = src.indexOf('@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {');
   while (at !== -1) {
     let depth = 0;
     let i = src.indexOf('{', at);
@@ -17,7 +17,7 @@ function phone(src: string): string {
       else if (src[i] === '}' && --depth === 0) break;
     }
     out.push(src.slice(start, i));
-    at = src.indexOf('@media (max-width: 820px) {', i);
+    at = src.indexOf('@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {', i);
   }
   return out.join('\n');
 }

@@ -18,7 +18,7 @@ describe('the phone query', () => {
     expect(CH_DESK_QUERY).toContain('(pointer: fine)');
   });
   it('no stylesheet tests the phone by width alone, so CSS and useChPhone agree', () => {
-    const bare = walk('src/clubhouse').flatMap((f) => (readFileSync(f, 'utf8').match(/@media \(max-width: 820px\) \{|@media \(min-width: 821px\) \{/g) ?? []).map(() => f));
+    const bare = walk('src/clubhouse').flatMap((f) => (readFileSync(f, 'utf8').match(new RegExp('@media \\(m(?:ax|in)-width: 82[01]px\\) \\{', 'g')) ?? []).map(() => f));
     expect(bare).toEqual([]);
   });
 });

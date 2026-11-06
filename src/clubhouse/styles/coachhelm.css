@@ -2125,11 +2125,3 @@ html:not([data-fw-theme='dark']) .ch-hl {
   gap: 24px;
   width: 100%;
 }
-.ch-chd__sw .ch-ask-tabs,
-.ch-chd__sw .ch-seg {
-  margin: 0;
-}
-.ch-chd.is-phone .ch-chd__sw .ch-seg {
-  display: flex;
-  width: 100%;
-}

@@ -42,7 +42,7 @@ describe('WindowSwitch · the range in rounds', () => {
     expect(at).toBeGreaterThan(-1);
     expect(css.match(/\.ch-sw-last\s*\{/g)).toHaveLength(1);
     const block = css.lastIndexOf('@media', at);
-    expect(css.slice(block, css.indexOf('{', block))).toBe('@media (max-width: 820px) ');
+    expect(css.slice(block, css.indexOf('{', block))).toBe('@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) ');
   });
 
   it('the phone segments grow from their own label widths, so "Qualifiers" is not clipped beside 5, 10 and 20 (390px, PR #2257)', () => {

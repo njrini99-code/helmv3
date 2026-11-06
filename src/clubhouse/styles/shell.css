@@ -1641,7 +1641,7 @@ button.ch-more__row[disabled] {
   background: var(--ch-green-fill-600);
   box-shadow: 0 0 0 2px var(--ch-phone-bar-bg, var(--ch-bg-page));
   font: var(--ch-type-12-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-on-accent);
 }
@@ -3613,7 +3613,7 @@ html[data-fw-theme='dark'] .ch-offline {
   }
   /* On the bell's green the handle is an ivory one. */
   .ch-bst__drag > .ch-grab {
-    margin-top: 18px;
+    margin-top: 16px;
     background: rgb(244 238 221 / 0.42);
   }
 
@@ -3660,19 +3660,12 @@ html[data-fw-theme='dark'] .ch-offline {
   }
   .ch-bst-pill::before {
     position: absolute;
-    inset: -8px -2px;
+    inset: -8px;
     content: '';
   }
   .ch-bst-pill--x {
-    position: relative;
     width: 28px;
     padding: 0;
-  }
-  /* The 44 a thumb needs, without touching the next pill's (MOB-SHELL-16). */
-  .ch-bst-pill--x::before {
-    content: '';
-    position: absolute;
-    inset: -8px;
   }
   .ch-bst-pill:focus-visible {
     outline: 2px solid var(--ch-border-focus-on-dark);
