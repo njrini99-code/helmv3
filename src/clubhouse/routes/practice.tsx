@@ -27,7 +27,7 @@ const OFF = (
 );
 const FAILED = (
   <main className="ch-page" data-ch="practice">
-    <EmptyState size="page" tone="danger" title="Practice didn’t load" body="Your plans are safe. Check your connection and try again." action={<Button href="/golf/dashboard/practice">Try again</Button>} />
+    <EmptyState size="page" tone="danger" title="Practice didn’t load" body="Your plans are safe. Try again." action={<Button href="/golf/dashboard/practice">Try again</Button>} />
   </main>
 );
 

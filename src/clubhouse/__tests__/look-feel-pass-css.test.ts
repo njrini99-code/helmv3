@@ -283,7 +283,7 @@ const OFF_TRACK: Record<string, number> = {
   'styles/coachhelm.css': 2,
   'styles/hero-tones.css': 1,
   'styles/home.css': 11,
-  'styles/hub.css': 8,
+  'styles/hub.css': 7,
   'styles/onboard.css': 4,
   'styles/qualifiers.css': 2,
   'styles/roster.css': 2,

@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowDown, ArrowUp, ChevronRight, Copy, Flag, Coffee, LayoutGrid, MoreHorizontal, Plus, Printer, Trash2, User, Users, type LucideIcon } from 'lucide-react';
+import { ArrowDown, ArrowUp, ChevronRight, Copy, Flag, Coffee, LayoutGrid, Ellipsis, Plus, Printer, Trash2, User, Users, type LucideIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { deletePracticePlan } from '@/app/golf/actions/practice-plans';
@@ -476,7 +476,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
       ]}
       trigger={(p) => (
         <button type="button" {...p} className="ch-prc-more" aria-label={`More for ${b.title}`}>
-          <Icon icon={MoreHorizontal} size={18} />
+          <Icon icon={Ellipsis} size={18} />
         </button>
       )}
     />
