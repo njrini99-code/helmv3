@@ -1,5 +1,7 @@
 'use client';
 
+import type { PlanBodyV2 } from '@/lib/coachhelm/v3/practice-plan/model';
+import { PracticeTabs } from './PracticeTabs';
 import { ChevronRight, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
@@ -89,7 +91,7 @@ export function PlanRows({ rows, label }: { rows: ChPracticeRow[]; label: string
  * Practice, the coach's tab (S-PRC.home): the week, what's up next, and every plan. New plan is the page's one primary action; on a phone it is the
  * bar's plus. With no plan ever made, one card with the ways to start (S-PRC.home-first-run), and no empty headers.
  */
-export function PracticeHome({ data, askOn, openNew = false, previewSheet = false }: { data: ChPracticeHome; askOn: boolean; openNew?: boolean; previewSheet?: boolean }) {
+export function PracticeHome({ data, askOn, openNew = false, previewSheet = false, template = null }: { template?: { name: string; body: PlanBodyV2 } | null; data: ChPracticeHome; askOn: boolean; openNew?: boolean; previewSheet?: boolean }) {
   const phone = useChPhone();
   const [sheet, setSheet] = useState<{ event: string | null } | null>(openNew ? { event: null } : null);
   const [pastOpen, setPastOpen] = useState(false);
@@ -116,6 +118,8 @@ export function PracticeHome({ data, askOn, openNew = false, previewSheet = fals
       <section aria-label="This week">
         <WeekStrip week={data.week} onPlan={(event) => setSheet({ event })} />
       </section>
+
+      <PracticeTabs active="plans" />
 
       {data.firstRun ? (
         <section className="ch-prc-card ch-prc-first" data-ch-code="CH-13396">
@@ -194,7 +198,7 @@ export function PracticeHome({ data, askOn, openNew = false, previewSheet = fals
           <Icon icon={ChevronRight} size={16} />
         </Link>
       )}
-      <NewPlanSheet key={sheet?.event ?? 'new'} open={!!sheet} onClose={() => setSheet(null)} events={data.open} copies={data.copies} roster={data.roster} askOn={askOn} initialEvent={sheet?.event} preview={previewSheet} />
+      <NewPlanSheet key={sheet?.event ?? 'new'} template={template} open={!!sheet} onClose={() => setSheet(null)} events={data.open} copies={data.copies} roster={data.roster} askOn={askOn} initialEvent={sheet?.event} preview={previewSheet} />
     </main>
   );
 }

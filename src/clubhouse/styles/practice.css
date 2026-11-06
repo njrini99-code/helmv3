@@ -1156,3 +1156,38 @@ main.ch-prc-planpage {
 .ch-prc-formatlink {
   text-decoration: none;
 }
+
+/* Practice's tabs, and the Drills, Groups and Templates pages (N-00 4.1). */
+.ch-prc-tabs { margin-block: 16px; }
+.ch-prc-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 12px 16px; }
+.ch-prc-chip { min-height: 36px; padding: 6px 12px; border: 0; border-radius: 999px; background: var(--ch-well-bg-flat); box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline); font: var(--ch-type-14-medium); color: var(--ch-text-secondary); cursor: pointer; }
+.ch-prc-chip[aria-pressed='true'] { background: var(--ch-selected-tint); color: var(--ch-selected-ink); box-shadow: none; }
+.ch-prc-chip::after { content: ''; position: absolute; inset: -4px 0; }
+.ch-prc-chip { position: relative; }
+.ch-prc-sec { margin-block-end: 24px; }
+.ch-prc-sec h2 { margin: 0 0 8px; font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
+.ch-prc-sec__h { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-block-end: 8px; }
+.ch-prc-sec__h h2 { margin: 0; }
+.ch-prc-list { margin: 0; padding: 0; list-style: none; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-card-shadow); overflow: hidden; }
+.ch-prc-list li + li { border-top: var(--ch-hairline-w) solid var(--ch-separator); }
+.ch-prc-mark { flex: none; padding: 2px 6px; border-radius: var(--ch-radius-xs); background: var(--ch-well-bg-flat); font: var(--ch-type-12-strong); color: var(--ch-text-secondary); }
+.ch-prc-none { margin: 0 0 12px; font: var(--ch-type-14); color: var(--ch-text-secondary); }
+.ch-prc-facts { display: grid; gap: 12px; margin: 16px 0 0; padding: 16px; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-card-shadow); }
+.ch-prc-facts:empty { display: none; }
+.ch-prc-facts dt { font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-prc-facts dd { margin: 2px 0 0; font: var(--ch-type-15); color: var(--ch-text-primary); overflow-wrap: anywhere; }
+.ch-prc-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+.ch-prc-card { display: grid; gap: 6px; width: 100%; padding: 16px; border: 0; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-card-shadow); text-align: start; font: var(--ch-type-13); color: var(--ch-text-secondary); cursor: pointer; }
+.ch-prc-card b { font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
+.ch-prc-faces { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.ch-prc-faces small { font: var(--ch-type-12-strong); color: var(--ch-text-secondary); }
+.ch-prc-tmpl { position: relative; cursor: default; }
+.ch-prc-tmpl > [aria-haspopup], .ch-prc-tmpl > .ch-icon-btn { position: absolute; top: 8px; inset-inline-end: 8px; }
+.ch-prc-tmpl__go { display: grid; gap: 4px; min-width: 0; padding: 0; padding-inline-end: 32px; border: 0; background: none; text-align: start; font: var(--ch-type-13); color: var(--ch-text-secondary); cursor: pointer; }
+.ch-prc-tmpl__go small { font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-prc-glance { display: grid; gap: 2px; margin: 8px 0 0; padding: 8px 0 0; border-top: var(--ch-hairline-w) solid var(--ch-separator); list-style: none; font: var(--ch-type-13); color: var(--ch-text-primary); }
+.ch-prc-glance li { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 8px; }
+.ch-prc-glance li > span:first-child { color: var(--ch-text-tertiary); }
+.ch-prc-checks { display: grid; margin: 0; padding: 0; list-style: none; }
+.ch-prc-checks label { display: flex; align-items: center; gap: 8px; min-height: 44px; font: var(--ch-type-15); color: var(--ch-text-primary); }
+.ch-prc-checks li + li { border-top: var(--ch-hairline-w) solid var(--ch-separator); }
