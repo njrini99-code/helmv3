@@ -364,7 +364,7 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
   })();
 
   // W-TEAM-16: today's Re-check, under the board, not in the record card. On a desk it sits inside the board's own column, on its left edge.
-  const recheck = !data.off && data.roster.count > 0 ? <RecheckReads players={data.roster.count} /> : null;
+  const recheck = !data.off && data.roster.count > 0 ? <div className="ch-htb-recheck"><RecheckReads players={data.roster.count} /></div> : null;
 
   return (
     <main ref={top} className={'ch-htb ' + (phone ? 'is-phone' : 'is-desk') + (!phone && openPanel ? ' has-insp' : '')} aria-busy={sw.pending || undefined} data-ch-screen="coachhelm-team">
