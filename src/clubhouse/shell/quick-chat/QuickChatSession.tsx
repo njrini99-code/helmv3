@@ -43,7 +43,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
   const reduced = useChReducedMotion();
   const online = useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
   const { keyRef, setRun, setFlag, setSession } = useQcCtx();
-  const chat = useChatImpl({ initialContext: looking.playerId ? [{ kind: 'player', id: looking.playerId, label: looking.playerName ?? 'This player' }] : undefined });
+  const chat = useChatImpl({ surface: 'quick_chat', initialContext: looking.playerId ? [{ kind: 'player', id: looking.playerId, label: looking.playerName ?? 'This player' }] : undefined });
   const turns = useMemo(() => buildTurns(chat.messages, { busy: chat.busy }), [chat.messages, chat.busy]);
   const pending = pendingApproval(chat.messages);
   // A fresh object each render: effects key on its id, or setting the key's state re-renders into a loop.

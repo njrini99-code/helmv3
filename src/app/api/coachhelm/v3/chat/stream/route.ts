@@ -128,6 +128,8 @@ const Body = z.object({
   /** Full UI message list from `useChat`. */
   messages: z.array(z.unknown()).min(1),
   client_turn_id: z.string().min(1).max(128),
+  /** Quick chat asks for its own tools; anything else is the Ask tab, which never sends. */
+  surface: z.enum(['ask', 'quick_chat']).optional(),
 });
 
 /**
@@ -584,6 +586,7 @@ export async function POST(req: NextRequest) {
         // Ask's whole-team tools follow Clubhouse for this team (flag, then allowlist).
         teamTools: isClubhouseForTeam(ctx.team_id),
         askV2,
+        surface: parsed.data.surface,
         practicePlans: isPracticePlansEnabled(),
         defer: (fn) => after(fn),
       });

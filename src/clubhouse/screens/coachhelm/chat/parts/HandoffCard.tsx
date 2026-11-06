@@ -13,7 +13,7 @@ export function HandoffCard({ handoff }: { handoff: AskHandoffData }) {
       <b>{handoff.title}</b>
       <p>Nothing is sent until you tap Send.</p>
       <Button variant="secondary" onClick={() => {
-        const href = messagesPrefillHref({ players: handoff.players, draft: handoff.draft, returnTo: 'ask' });
+        const href = messagesPrefillHref({ players: handoff.players, draft: handoff.draft, conversationId: handoff.conversationId, returnTo: 'ask' });
         if (href) router.push(href);
       }}>
         Open in Messages

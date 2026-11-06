@@ -4,7 +4,10 @@ import { z } from 'zod';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import type { CoachChatContext } from './context';
-import { DraftBoardInput } from './create-tools';
+import { DraftBoardInput, DraftMessageInput } from './create-tools';
+
+/** Which chat is asking: Quick chat's card is the coach's Send, the Ask tab hands words to Messages. */
+export type AskSurface = 'ask' | 'quick_chat';
 
 const BriefInput = z.object({
   title: z.string().min(1).max(120),
@@ -26,11 +29,11 @@ const BriefInput = z.object({
 /**
  * Tools that write nothing: the practice brief asks, and the board hands a draft to Messages. Neither is confirm-gated because neither has a write to gate (02 §14.3). `draft_poll` is not registered: it stays off until held `20261028140800` is applied.
  */
-export function askDraftTools({ sb, ctx, writer, practicePlans = false }: { practicePlans?: boolean; sb: SupabaseClient<Database>; ctx: CoachChatContext; writer: UIMessageStreamWriter }): ToolSet {
+export function askDraftTools({ sb, ctx, writer, practicePlans = false, surface = 'ask' }: { practicePlans?: boolean; surface?: AskSurface; sb: SupabaseClient<Database>; ctx: CoachChatContext; writer: UIMessageStreamWriter }): ToolSet {
   let n = 0;
   return {
     find_thread: tool({
-      description: 'Find a thread the coach is in by its title. Exactly one match: use its id with send_message. Zero or several: ask the coach, never pick.',
+      description: 'Find a thread the coach is in by its title. Exactly one match: write to that thread with its id. Zero or several: ask the coach, never pick.',
       inputSchema: z.object({ title: z.string().min(1).max(120) }),
       execute: async ({ title }) => {
         const { data, error } = await sb.from('golf_conversations').select('id, title, golf_conversation_participants(user_id)').eq('team_id', ctx.team_id).ilike('title', title.replace(/[%_]/g, '')).limit(5);
@@ -60,5 +63,28 @@ export function askDraftTools({ sb, ctx, writer, practicePlans = false }: { prac
         return { status: 'shown', message: 'The draft is ready to open in Messages. Nothing was sent.' };
       },
     }),
+    // TASK_FIELDS 3 and 5.4: only Quick chat's card is the coach's Send. In the Ask tab a message is words handed to the composer.
+    ...(surface === 'quick_chat'
+      ? {}
+      : {
+          draft_message: tool({
+            description: 'Open a message in Messages with the words already in the composer, for one thread found with find_thread or for named players. Sends nothing: the coach taps Send there.',
+            inputSchema: DraftMessageInput,
+            execute: async ({ conversation_id, player_ids, content }) => {
+              if (conversation_id) {
+                const { data, error } = await sb.from('golf_conversations').select('id, title').eq('team_id', ctx.team_id).eq('id', conversation_id).maybeSingle();
+                if (error) return { status: 'failed', message: 'Could not read that thread.' };
+                if (!data) return { status: 'refused', message: 'That thread is not on your team.' };
+                writer.write({ type: 'data-handoff', id: `handoff-${(n += 1)}`, data: { kind: 'message', players: [], conversationId: data.id, title: data.title ? `Draft for ${data.title}` : 'Draft for this thread', draft: content } });
+                return { status: 'shown', message: 'The draft is ready to open in Messages. Nothing was sent.' };
+              }
+              const people = (player_ids ?? []).map((id) => ctx.roster.find((p) => p.id === id));
+              if (!people.length || people.some((p) => !p)) return { status: 'refused', message: 'Every player must be on your active roster.' };
+              const only = people.length === 1 ? people[0] : null;
+              writer.write({ type: 'data-handoff', id: `handoff-${(n += 1)}`, data: { kind: 'message', players: people.map((p) => p!.id), title: only ? `Draft for ${only.name}` : `Draft for ${people.length} players`, draft: content } });
+              return { status: 'shown', message: 'The draft is ready to open in Messages. Nothing was sent.' };
+            },
+          }),
+        }),
   };
 }

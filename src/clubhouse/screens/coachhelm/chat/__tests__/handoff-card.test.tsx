@@ -30,6 +30,13 @@ describe('HandoffCard', () => {
     expect(takePrefill(new URL(href, 'https://x.test').searchParams)).toMatchObject({ players: ['p-eli'], draft: DRAFT });
   });
 
+  it('a draft for one thread opens that thread with no players named', async () => {
+    render(<HandoffCard handoff={{ title: 'Draft for Travel squad', players: [], conversationId: 'conv-1', draft: DRAFT } as never} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Open in Messages' }));
+    const href = router.push.mock.calls[0]?.[0] as string;
+    expect(takePrefill(new URL(href, 'https://x.test').searchParams)).toMatchObject({ players: [], conversationId: 'conv-1', draft: DRAFT });
+  });
+
   it('with nobody to write to it goes nowhere', async () => {
     render(<HandoffCard handoff={{ title: 'Message', players: [], draft: DRAFT } as never} />);
     await userEvent.click(screen.getByRole('button', { name: 'Open in Messages' }));

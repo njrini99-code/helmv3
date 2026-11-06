@@ -207,7 +207,9 @@ export function Messages({ data }: { data: ChMessagesData }) {
       const userOf = (id: string) => data.directory.find((p) => p.playerId === id)?.userId;
       const { kept, dropped } = onRoster(pre.players, (id) => !!userOf(id));
       const to = kept.map((id) => userOf(id)!);
-      if (!to.length) {
+      // A draft for one thread names nobody: the thread itself is the recipient, if the coach can see it.
+      const named = pre.conversationId ? convs.find((c) => c.id === pre.conversationId) : undefined;
+      if (!to.length && !named) {
         toast({ tone: 'error', title: "Couldn’t open that conversation", body: 'Those players aren’t on your team, or haven’t set up their accounts yet.', code: 'CH-7001' });
         return;
       }
@@ -225,7 +227,6 @@ export function Messages({ data }: { data: ChMessagesData }) {
       const words = pre.poll && !pre.draft ? [pre.poll.question, ...pre.poll.options].join('\n') : pre.draft;
       if (pre.poll) toast({ tone: 'error', title: 'Couldn’t open the poll draft', body: 'Nothing was posted.', code: 'CH-7001' });
       // A thread the coach can see opens; one they can't falls back to the one-player message, never another group.
-      const named = pre.conversationId ? convs.find((c) => c.id === pre.conversationId) : undefined;
       const existing = named ?? (to.length === 1 ? directWith(convs, to[0]!) : undefined);
       if (existing) {
         // An unsent draft of the coach's own wins over the prefill.

@@ -142,8 +142,11 @@ export interface AskBriefData {
 
 /** A draft that opens Messages; the tool writes nothing and the coach sends. */
 export interface AskHandoffData {
-  kind: 'board';
+  kind: 'board' | 'message';
+  /** Empty when the draft names one thread. */
   players: string[];
+  /** One thread the coach is in, found by find_thread. */
+  conversationId?: string;
   title: string;
   draft: string;
 }

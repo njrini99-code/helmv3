@@ -403,3 +403,11 @@ export const CREATE_TOOL_NAMES: readonly string[] = [...CREATE_FLOWS, ...LINEUP_
 
 /** Boards and polls never write: the coach presses Send in Messages. Their result is a hand-off the browser turns into a prefill. */
 export const DraftBoardInput = z.object({ player_id: z.string().uuid(), note: z.string().max(2000).optional() });
+/** One thread found with find_thread, or the players to write to. Either way the words land in the Messages composer. */
+export const DraftMessageInput = z
+  .object({
+    conversation_id: z.string().uuid().optional().describe('From find_thread, only when exactly one thread matched.'),
+    player_ids: z.array(z.string().uuid()).min(1).max(40).optional(),
+    content: z.string().min(1).max(2000),
+  })
+  .refine((v) => !!v.conversation_id !== !!v.player_ids, { message: 'Name one thread or the players, not both.' });

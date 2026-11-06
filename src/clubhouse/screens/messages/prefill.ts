@@ -47,12 +47,12 @@ function keyOf(p: ChPrefill): string {
 
 /**
  * The href that opens Messages with this prefill. In the browser it also keeps the prefill in sessionStorage under the
- * href's key (the same prefill writes the same entry, so calling it on every render is harmless). With no players it
- * returns null: there is nobody to write to.
+ * href's key (the same prefill writes the same entry, so calling it on every render is harmless). With no players and
+ * no thread it returns null: there is nobody to write to.
  */
 export function messagesPrefillHref({ players, draft, title, conversationId, poll, returnTo }: ChPrefill): string | null {
   const ids = [...new Set(players.filter(Boolean))];
-  if (!ids.length) return null;
+  if (!ids.length && !conversationId) return null;
   const p: ChPrefill = { players: ids, draft: draft.slice(0, 2000), title: ids.length > 1 ? title?.slice(0, 80) || undefined : undefined, ...(conversationId ? { conversationId } : {}), ...(poll ? { poll } : {}), ...(returnTo ? { returnTo } : {}) };
   const key = keyOf(p);
   if (typeof window !== 'undefined') {
@@ -80,7 +80,7 @@ export function takePrefill(params: { get: (k: string) => string | null }): ChPr
   try {
     const v = JSON.parse(raw) as Partial<ChPrefill>;
     const players = Array.isArray(v.players) ? [...new Set(v.players.filter((x): x is string => typeof x === 'string' && !!x))] : [];
-    if (!players.length) return null;
+    if (!players.length && !(typeof v.conversationId === 'string' && v.conversationId)) return null;
     const draft = typeof v.draft === 'string' ? v.draft.slice(0, 2000) : '';
     const title = typeof v.title === 'string' ? v.title.trim().slice(0, 80) || undefined : undefined;
     const conversationId = typeof v.conversationId === 'string' && v.conversationId ? v.conversationId : undefined;
