@@ -188,6 +188,12 @@ export function PracticeHome({ data, askOn, openNew = false, previewSheet = fals
           )}
         </>
       )}
+      {phone && askOn && (
+        <Link href="/golf/dashboard/practice/format" className="ch-prc-past ch-prc-formatlink">
+          Plan format
+          <Icon icon={ChevronRight} size={16} />
+        </Link>
+      )}
       <NewPlanSheet key={sheet?.event ?? 'new'} open={!!sheet} onClose={() => setSheet(null)} events={data.open} copies={data.copies} roster={data.roster} askOn={askOn} initialEvent={sheet?.event} preview={previewSheet} />
     </main>
   );

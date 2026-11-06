@@ -188,7 +188,8 @@ Player Team Hub
 The tables and functions in this section do not exist in production yet.
 
 `golf_practice_plans` is the flag for the Clubhouse plan page and its writes. It
-is off in every environment. The migrations are written and not applied.
+is off in production and on in preview. The migrations are written and held for
+production; staging, which preview reads, has them.
 `supabase/migrations/HELD.md` is authoritative for their order and preconditions.
 
 - Route: `src/app/golf/(dashboard)/dashboard/practice/plan/[planId]/page.tsx`
@@ -197,9 +198,21 @@ is off in every environment. The migrations are written and not applied.
 unpublished,
   or the tables missing) shows an empty state with a way to Calendar. It never
   shows a 404.
+- `src/app/golf/(dashboard)/dashboard/practice/page.tsx` is the Practice tab, in
+  the nav with the flag (`practiceNavEnabled`, `ChNavFeatures.practice`):
+  `loadCoachPracticeHome` for a coach, `loadPlayerPracticeHome` for a player,
+  which reads live versions only. `practice/plan/[planId]/edit/page.tsx` is the
+  coach's builder (`loadPlanForBuilder`, `screens/practice/builder/`); a player
+  on it is sent to the plan page.
+- The builder saves by id with the version it read, 800ms after an edit
+  (`useAutosave`). `savePracticePlan` takes a null version only for a first save
+  by event, and a save on a plan another coach changed is stale, never merged.
+- CoachHelm's Fill the draft (`coachhelm_practice_plans_v1`) runs the Ask stream
+  and `draft_practice_plan`, which writes nothing. Its blocks are suggestions
+  until kept; a kept Why reaches `coach_why` through `savePracticePlanDraft`.
 - Save and publish check the flag. The other plan and drill writes do not.
 - `src/app/golf/actions/practice-plans.ts`: `savePracticePlan`,
-  `deletePracticePlan`, `recordPracticePlanOpen`.
+  `deletePracticePlan`, `recordPracticePlanOpen`, `copyPlanBody`.
 - `src/app/golf/actions/practice-publish.ts`: `publishPracticePlan`,
   `takeDownPracticePlan`. Push and bell go out through
   `src/lib/golf/practice-fanout.ts`.

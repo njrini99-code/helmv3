@@ -14,7 +14,7 @@ function fake(f: QcFixture): ChAskSheetChat {
     return {
       messages,
       status: f.busy ? 'streaming' : 'ready',
-      error: undefined,
+      error: f.failed ? new Error('Lost the connection. Nothing was saved.') : undefined,
       busy: !!f.busy,
       conversationId: 'preview',
       context: [],
