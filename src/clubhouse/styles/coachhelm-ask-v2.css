@@ -6,10 +6,6 @@
   --ch-ak-ak-track: #ebe5d8;
   --ch-ak-ak-feature: #0b3a25;
   /* The design's card geometry (06), which sits between the app's radius steps. */
-  --ch-ak-r-tile: 9px;
-  --ch-ak-r-row: 14px;
-  --ch-ak-r-card: 18px;
-  --ch-ak-r-answer: 22px;
 }
 html[data-fw-theme='dark'] .ch-ak-th {
   --ch-ak-ak-hair: rgb(241 236 223 / 0.14);
@@ -20,7 +16,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .ch-th-col { display: flex; flex-direction: column; gap: 20px; }
 .ch-ak-th .ch-ak-turn { display: grid; gap: 12px; min-width: 0; }
 .ch-ak-th .ch-ak-turn.is-new .msg-a { animation: ch-ak-fade 0.26s var(--ch-ease) both; }
-.ch-ak-th .msg-a { display: grid; gap: 16px; min-width: 0; padding: 16px 20px 16px; border-radius: var(--ch-ak-r-answer); background: var(--ch-ask-card); box-shadow: var(--ch-card-shadow); }
+.ch-ak-th .msg-a { display: grid; gap: 16px; min-width: 0; padding: 16px 20px 16px; border-radius: var(--ch-radius-xl); background: var(--ch-ask-card); box-shadow: var(--ch-card-shadow); }
 .ch-ak-th .who { display: flex; align-items: center; gap: 8px; font: var(--ch-type-15-strong);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
 .ch-ak-th .prose { margin: 0; font: var(--ch-type-16);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-16); }
 .ch-ak-th .work .sum { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; border: 0; background: none; padding: 0; text-align: left; font: var(--ch-type-15); color: var(--ch-text-secondary); cursor: pointer; letter-spacing: var(--ch-track-15); }
@@ -89,7 +85,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 /* AK4: confirm, commit, receipt, Undo (kit ② to ⑤) */
 .ch-ak-th .conf { position: relative; overflow: hidden; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-ask-shadow-2); }
 .ch-ak-th .conf .hd { display: flex; align-items: center; gap: 12px; padding: 16px 16px 12px; border-bottom: var(--ch-hairline-w) solid var(--ch-separator); }
-.ch-ak-th .conf .ico { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: var(--ch-ak-r-tile); background: var(--ch-ak-ak-tint); color: var(--ch-ask-accent); }
+.ch-ak-th .conf .ico { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: var(--ch-radius-sm); background: var(--ch-ak-ak-tint); color: var(--ch-ask-accent); }
 .ch-ak-th .conf .tt { min-width: 0; flex: 1; }
 .ch-ak-th .conf .tt b { display: block; font: var(--ch-type-16-strong);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-16); }
 .ch-ak-th .conf .tt span { display: block; font: var(--ch-type-14);  color: var(--ch-text-secondary); }
@@ -123,7 +119,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .receipt .undo svg { width: 20px; height: 20px; }
 .ch-ak-th .receipt .undo .trk { stroke: var(--ch-ak-ak-track); }
 .ch-ak-th .receipt .undo .drn { stroke: var(--ch-ask-accent); stroke-dasharray: 63; transform: rotate(-90deg); transform-origin: 12px 12px; animation: ch-ak-drain 8s linear forwards; }
-.ch-ak-th .told { margin: 0 16px 16px; padding: 12px 12px; border-radius: var(--ch-ak-r-row); background: var(--ch-well-bg-flat); box-shadow: inset 0 0 0 0.5px var(--ch-ak-ak-hair); font: var(--ch-type-13);  color: var(--ch-text-secondary); }
+.ch-ak-th .told { margin: 0 16px 16px; padding: 12px 12px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); box-shadow: inset 0 0 0 0.5px var(--ch-ak-ak-hair); font: var(--ch-type-13);  color: var(--ch-text-secondary); }
 .ch-ak-th .told b { font-weight:var(--ch-fw-600); color: var(--ch-text-primary); }
 @keyframes ch-ak-capsule { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
 @keyframes ch-ak-edge { from { opacity: 1; } to { opacity: 0; } }
@@ -194,7 +190,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .qpane h5 { margin: 0; font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); }
 .ch-ak-th .qpane .why { margin: -6px 0 0; font: var(--ch-type-14);  color: var(--ch-text-secondary); }
 .ch-ak-th .opts { display: grid; gap: 8px; }
-.ch-ak-th .opt { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 12px 12px; border: 0; border-radius: var(--ch-ak-r-row); background: var(--ch-well-bg-flat); box-shadow: 0 0 0 0.5px var(--ch-ak-ak-hair); font: var(--ch-type-15); color: var(--ch-text-primary); text-align: left; cursor: pointer; letter-spacing: var(--ch-track-15); }
+.ch-ak-th .opt { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 12px 12px; border: 0; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); box-shadow: 0 0 0 0.5px var(--ch-ak-ak-hair); font: var(--ch-type-15); color: var(--ch-text-primary); text-align: left; cursor: pointer; letter-spacing: var(--ch-track-15); }
 .ch-ak-th .opt[aria-pressed='true'] { background: var(--ch-selected-tint); box-shadow: 0 0 0 1.5px var(--ch-ask-accent); }
 .ch-ak-th .opt .ot { flex: 1; min-width: 0; }
 .ch-ak-th .opt .hint { flex: none; padding: 2px 6px; border-radius: var(--ch-radius-tail); background: var(--ch-card-bg); box-shadow: 0 0 0 0.5px var(--ch-ak-ak-hair); font: var(--ch-type-12-strong);  color: var(--ch-ask-accent); white-space: nowrap; }
@@ -210,7 +206,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
   grid-template-columns: 1fr auto;
   gap: 6px;
   padding: 12px 16px;
-  border-radius: var(--ch-ak-r-card, var(--ch-radius-lg));
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
   box-shadow: var(--ch-card-shadow);
   font: var(--ch-type-13);
@@ -237,7 +233,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-meter.is-low { color: var(--ch-loss); }
 .ch-ak-outwrap { display: grid; gap: 12px; margin-top: 12px; }
 /* Out of Ask (E-OUT): why, what's still here, and the one thing to do. */
-.ch-ak-out { display: grid; overflow: hidden; border-radius: var(--ch-ak-r-card, var(--ch-radius-lg)); background: var(--ch-card-bg); box-shadow: var(--ch-ask-v2-x1); }
+.ch-ak-out { display: grid; overflow: hidden; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-ask-v2-x1); }
 .ch-ak-out .top { display: grid; gap: 8px; padding: 16px 16px 12px; }
 .ch-ak-out .ic { display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); color: var(--ch-text-secondary); }
 .ch-ak-out h3 { margin: 0; font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); color: var(--ch-text-primary); }
@@ -469,7 +465,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
   flex: none;
   width: 28px;
   height: 28px;
-  border-radius: var(--ch-ak-r-tile);
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-well-bg-flat);
   color: var(--ch-text-secondary);
 }
@@ -892,7 +888,7 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 
 /* The draft's own picture per flow (06 E-EVD, E-TASK, E-GOAL, E-NOTE, E-TRAVEL, E-LINEUP). */
 .ch-ak-th .evd.has-dt { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 12px; }
-.ch-ak-th .evd .dt { align-self: start; padding: 6px 0 6px; border-radius: 10px; background: var(--ch-card-bg); box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-card-ring, var(--ch-border-hairline)); text-align: center; font: var(--ch-type-12-strong); letter-spacing: var(--ch-track-12); color: var(--ch-ask-accent); }
+.ch-ak-th .evd .dt { align-self: start; padding: 6px 0 6px; border-radius: var(--ch-radius-sm); background: var(--ch-card-bg); box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-card-ring, var(--ch-border-hairline)); text-align: center; font: var(--ch-type-12-strong); letter-spacing: var(--ch-track-12); color: var(--ch-ask-accent); }
 .ch-ak-th .evd .dt b { display: block; font: var(--ch-type-20-strong); letter-spacing: var(--ch-track-20); color: var(--ch-text-primary); }
 .ch-ak-th .told .coin.more { display: inline-grid; place-items: center; min-width: 24px; height: 24px; background: var(--ch-card-bg); font: var(--ch-type-12-strong); color: var(--ch-text-secondary); }
 .ch-ak-tk, .ch-ak-goal, .ch-ak-nb, .ch-ak-route, .ch-ak-lu { margin: 12px 16px 0; padding: 12px; border-radius: var(--ch-radius-lg); background: var(--ch-well-bg-flat); box-shadow: inset 0 0 0 0.5px var(--ch-ak-ak-hair); }
