@@ -542,3 +542,7 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 /* FID-QC-1: a hand-off to Ask is a line with its one action. */
 .ch-qcs .qc-handoff { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .ch-qcs .qc-handoff button { flex: none; min-height: 44px; padding: 0 12px; border: 0; border-radius: var(--ch-radius-md); background: var(--ch-qc-a-tint); color: var(--ch-qc-a-accent-text); font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); cursor: pointer; }
+
+/* FID-QC-2: a partial receipt isn't a success: the glyph says so, in the loss amber. */
+.ch-qcs .rcpt__g.is-partial { background: color-mix(in srgb, var(--ch-loss) 16%, var(--ch-qc-a-card)); color: var(--ch-loss); }
+.ch-qcs .step__d { color: var(--ch-qc-a-ink-2); }

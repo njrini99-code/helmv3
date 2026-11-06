@@ -100,13 +100,13 @@ function AskFrame({ team, children }: { team?: string; children: ReactNode }) {
  * `load` is what the server read (data/coachhelm-chat.ts): a roster of nobody and a context that did not load are their own
  * pages; everything else is the chat. The conversation itself runs on the production hook and route, unchanged.
  */
-/** The scope line's words: who, from a name in the question, and the window, if the question gave one. Never a figure, so it can't overclaim. */
+/** The scope line's words: who, from a name in the question, and the window only if the question gave one (QA-5: a guessed "last 30 days" contradicted answers read over the season). Never a figure, so it can't overclaim. */
 export function askScope(question: string, team: string, names: readonly string[]): string {
   const q = question.toLowerCase();
   const who = names.find((n) => q.includes(n.toLowerCase()) || q.includes((n.split(' ')[0] ?? n).toLowerCase())) ?? team;
   const rounds = q.match(/last (\d+) rounds/)?.[0];
-  const window = rounds ?? (/this season|this fall|this spring/.exec(q)?.[0]) ?? (/last season|last fall/.exec(q)?.[0]) ?? 'last 30 days';
-  return `${who} · ${window}`;
+  const window = rounds ?? (/this season|this fall|this spring/.exec(q)?.[0]) ?? (/last season|last fall/.exec(q)?.[0]) ?? (/last 30 days/.exec(q)?.[0]);
+  return window ? `${who} · ${window}` : who;
 }
 
 export function Ask({ load, chat = useCoachHelmChat, initial, v2 = false, slashFlags }: { slashFlags?: { plans: boolean; lineup: boolean }; load: ChAskLoad; chat?: ChAskChat; initial?: ChAskInitial; v2?: boolean }) {

@@ -165,7 +165,9 @@ export function scanPage(args: { phone: boolean }): GateFinding[] {
         const range = document.createRange();
         range.selectNodeContents(el);
         const b = range.getBoundingClientRect();
-        if (b.width > 0) box = b;
+        // Words past an ellipsis aren't painted: the box they're clipped to is where they end.
+        const clipped = getComputedStyle(el).overflowX !== 'visible';
+        if (b.width > 0) box = clipped ? { left: Math.max(b.left, r.left), right: Math.min(b.right, r.right), width: Math.min(b.right, r.right) - Math.max(b.left, r.left) } : b;
       }
       const left = box.left - c.left, right = c.right - box.right;
       const near = Math.min(left, right);

@@ -56,13 +56,14 @@ export interface FlowDef<I> {
 }
 
 /** The same request id for every retry of one card: the coach's own scoped ledger key, hashed, so two cards that differ anywhere are two rows. Two coaches' same-looking events never collide. */
-export function flowRequestId(coachId: string, key: string): string {
-  return stableUuid(`${coachId}:${key}`);
+export function flowRequestId(coachId: string, teamId: string, key: string): string {
+  // The team is in the id: the same card on a coach's second team is a second row, not a replay of the first.
+  return stableUuid(`${coachId}:${teamId}:${key}`);
 }
 
 /** One flow's write on one input, as the gate, the release, Open and the sweep all run it. Nothing starts until `run` is called. */
 export function flowCommit<I>(f: FlowDef<I>, sb: Sb, ctx: CoachChatContext, input: I, ledgerKey: string): { run: () => Promise<ActionReceipt>; readBack?: () => Promise<ActionReceipt | null> } {
-  const requestId = () => flowRequestId(ctx.coach_id, ledgerKey);
+  const requestId = () => flowRequestId(ctx.coach_id, ctx.team_id, ledgerKey);
   const completed = (r: FlowDone & { notifications?: ActionReceipt['notifications'] }): ActionReceipt => ({ status: 'completed', action: f.name, summary: r.summary, created: [{ kind: r.kind, count: 1, ...(r.href ? { href: r.href } : {}), ...(r.label ? { label: r.label } : {}) }], notifications: r.notifications ?? [], partial_failures: [], retryable: false, at: new Date().toISOString() });
   const landed = f.landed;
   return {
@@ -99,34 +100,46 @@ const eventInput = z.object({
   event_type: z.enum(['practice', 'tournament', 'qualifier', 'meeting', 'travel', 'other']),
   date: DATE,
   start: TIME.optional().describe('Required unless all_day.'),
-  end: TIME.optional().describe('Required unless all_day. Never guess a length.'),
+  end: TIME.optional().describe('Required for a timed event unless it is a practice. A practice with no end said: leave this out, and the card shows the usual length for the coach to change. Never guess a length yourself.'),
   all_day: z.boolean().default(false),
   location: z.string().max(500).optional(),
   notes: z.string().max(5000).optional(),
   invite_player_ids: z.array(z.string().uuid()).default([]),
   requires_rsvp: z.boolean().default(false),
 });
+/** Production's practices run 150 minutes at the mode, 165 at the median (78 events, 2026-11-05). On the card, marked as assumed; the coach confirms it or changes it. */
+export const USUAL_PRACTICE_MINUTES = 150;
+/** The end a timed event is written with: the coach's, or a practice's usual length when that stays on the same day. Null means ask. */
+export function eventEnd(i: { event_type: string; start?: string; end?: string; all_day?: boolean }): string | null {
+  if (i.end) return i.end;
+  if (i.all_day || i.event_type !== 'practice' || !i.start) return null;
+  const [h, m] = i.start.split(':').map(Number) as [number, number];
+  const total = h * 60 + m + USUAL_PRACTICE_MINUTES;
+  if (total >= 24 * 60) return null;
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
 const eventDone = (i: z.infer<typeof eventInput>): FlowDone => ({ summary: `${i.title} is on the calendar.`, kind: 'event', label: i.title, href: '/golf/dashboard/calendar' });
 const eventFlow: FlowDef<z.infer<typeof eventInput>> = {
   name: 'create_event',
   landed: { table: 'golf_events', done: eventDone },
-  description: 'Add one event to the team calendar. Ask first for the type if two fit, for start and end if timed and not given, and who is invited to a meeting. REQUIRES the coach to confirm.',
+  description: 'Add one event to the team calendar, including a single practice. Ask first for the type if two fit, for the start if timed and not given, for the end if timed and not a practice, and who is invited to a meeting. A practice with a start needs nothing else: do not ask how long, call this and the card shows the usual length. REQUIRES the coach to confirm.',
   input: eventInput,
   plan: (ctx, i) => {
-    if (!i.all_day && (!i.start || !i.end)) throw new ActionPlanError('A timed event needs a start and an end. Ask the coach.');
-    if (!i.all_day && i.end! <= i.start!) throw new ActionPlanError('The end has to be after the start.');
+    const end = eventEnd(i);
+    if (!i.all_day && (!i.start || !end)) throw new ActionPlanError('A timed event needs a start and an end. Ask the coach.');
+    if (!i.all_day && end! <= i.start!) throw new ActionPlanError('The end has to be after the start.');
     const who = names(ctx, i.invite_player_ids);
     return {
-      visual: { kind: 'cal', date: i.date, start: i.all_day ? null : (i.start ?? null), end: i.all_day ? null : (i.end ?? null), title: i.title, where: i.location ?? null, who: who.length ? `${who.length} players` : 'Not asked', rsvp: i.requires_rsvp },
+      visual: { kind: 'cal', date: i.date, start: i.all_day ? null : (i.start ?? null), end: i.all_day ? null : end, title: i.title, where: i.location ?? null, who: who.length ? `${who.length} players` : 'Not asked', rsvp: i.requires_rsvp },
       action: 'Add to calendar',
       summary: i.title,
-      facts: [fact('When', i.all_day ? `${i.date}, all day` : `${i.date}, ${i.start} to ${i.end}`, false), fact('Type', i.event_type, false), fact('Where', i.location), fact('Invited', who.length ? who.join(', ') : null), fact('Replies', i.requires_rsvp ? 'Asked for' : 'Not asked for')],
+      facts: [fact('When', i.all_day ? `${i.date}, all day` : `${i.date}, ${i.start} to ${end}`, false), ...(!i.all_day && !i.end ? [{ label: 'Length', value: `${USUAL_PRACTICE_MINUTES / 60} hours`, source: 'The usual practice. Tell me if it should end earlier or later.' }] : []), fact('Type', i.event_type, false), fact('Where', i.location), fact('Invited', who.length ? who.join(', ') : null), fact('Replies', i.requires_rsvp ? 'Asked for' : 'Not asked for')],
       notifications: i.requires_rsvp && who.length ? [`${who.length} players get a bell, email and push once Undo closes.`] : ['Nobody is told.'],
-      key: ['event', i.title, i.date, i.start ?? '', i.invite_player_ids.join(',')],
+      key: ['event', i.title, i.date, i.start ?? '', end ?? '', i.invite_player_ids.join(',')],
     };
   },
   run: async (ctx, i, { requestId }) => {
-    const res = await createGolfEvent({ requestId, title: i.title, eventType: i.event_type, startDate: i.date, startTime: i.all_day ? undefined : i.start, endTime: i.all_day ? undefined : i.end, allDay: i.all_day, timezoneOffset: -offsetOn(i.date, i.start ?? '12:00', ctx.timezone), location: i.location, description: i.notes, requiresRsvp: i.requires_rsvp, attendeeIds: i.invite_player_ids });
+    const res = await createGolfEvent({ requestId, title: i.title, eventType: i.event_type, startDate: i.date, startTime: i.all_day ? undefined : i.start, endTime: i.all_day ? undefined : (eventEnd(i) ?? undefined), allDay: i.all_day, timezoneOffset: -offsetOn(i.date, i.start ?? '12:00', ctx.timezone), location: i.location, description: i.notes, requiresRsvp: i.requires_rsvp, attendeeIds: i.invite_player_ids });
     return { ok: res.success, error: res.success ? undefined : res.error, ...eventDone(i) };
   },
 };

@@ -21,8 +21,10 @@
  * most of chat, which is the opposite of what a "slice 1" opt-in gate is for.
  * ========================================================================== */
 
+import { MIN_SAMPLE_N } from '@/lib/coachhelm/v2/insights/upsert';
 import type { Measurement } from './provenance';
 import {
+  CAUSAL_LANGUAGE_RE,
   validateClaims,
   type ClaimReference,
   type EvidencePacket,
@@ -110,9 +112,13 @@ type WindowedMeasurement = Measurement & { window_start: string; window_end: str
  * A team or round measurement carries no player to scope by and builds none.
  */
 export function buildPlayerPackets(measurements: readonly Measurement[]): EvidencePacket[] {
+  return packetsFor(measurements, 'player');
+}
+
+function packetsFor(measurements: readonly Measurement[], kind: Measurement['entity']['kind']): EvidencePacket[] {
   const groups = new Map<string, WindowedMeasurement[]>();
   for (const m of measurements) {
-    if (m.entity?.kind !== 'player' || m.window_start === null || m.window_end === null || m.value === null) continue;
+    if (m.entity?.kind !== kind || m.window_start === null || m.window_end === null || m.value === null) continue;
     const key = `${m.entity.id}\u0000${m.window_start}\u0000${m.window_end}`;
     const list = groups.get(key) ?? [];
     list.push(m as WindowedMeasurement);
@@ -161,6 +167,115 @@ function snapToEntry(claim: ClaimReference, packet: EvidencePacket): ClaimRefere
   return Math.abs(rounded - claim.value) < 1e-9 ? { ...claim, value: entry.value } : claim;
 }
 
+const SENTENCE_BREAK = /[.!?](?=\s|$)|\n/;
+
+const COUNT_WORDS = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+const SAMPLE_NOUNS: Record<Measurement['sample_unit'], string> = {
+  rounds: 'rounds?',
+  shots: 'shots?|approach(?:es)?|putts?',
+  attempts: 'attempts?|tries|try|putts?|chances?|looks?',
+  holes: 'holes?',
+  events: 'events?|tournaments?',
+  players: 'players?',
+};
+
+/** Every "2 rounds" / "those two recorded rounds" in a sentence: the count and where it sits. Letters only between them, so "18 holes across 12 rounds" reads 12. */
+function samplesStated(sentence: string, unit: Measurement['sample_unit']): Array<{ n: number; at: number }> {
+  const re = new RegExp(`(^|[^\\d.])(\\d+|${COUNT_WORDS.join('|')})\\b(?:\\s+[a-z'’-]+){0,3}?\\s+(?:${SAMPLE_NOUNS[unit]})\\b`, 'gi');
+  return [...sentence.matchAll(re)].map((m) => {
+    const word = (m[2] ?? '').toLowerCase();
+    return { n: /^\d/.test(word) ? Number(word) : COUNT_WORDS.indexOf(word) + 1, at: (m.index ?? 0) + (m[1]?.length ?? 0) };
+  });
+}
+
+/** Where a claim's value is written in a sentence, sign aside ("-2" reads "2 under par"), at any trailing zeros. */
+function valueAt(sentence: string, value: number): number[] {
+  const abs = String(Math.abs(value)).replace('.', '\\.');
+  const tail = abs.includes('.') ? '0*' : '(?:\\.0+)?';
+  return [...sentence.matchAll(new RegExp(`(^|[^\\d.])${abs}${tail}(?!\\d|\\.\\d)`, 'g'))].map((m) => (m.index ?? 0) + (m[1]?.length ?? 0));
+}
+
+/**
+ * Owner, 2026-11-05: a figure under the floor is allowed when it says what it rests on. The value has already matched by the time
+ * the floor fires (checkClaim's order), so all that is left is the honesty the floor is for: the sentence holding the figure states
+ * the sample, nearest to the figure if it states more than one, and that sample is the measurement's own. A count that is someone
+ * else's ("72.5 over his 9 rounds" for a 2-round figure) fails, as does a figure written with no sample at all.
+ */
+export function thinSampleStated(prose: string, value: number, sampleSize: number, unit: Measurement['sample_unit']): boolean {
+  let stated = false;
+  for (const sentence of prose.split(SENTENCE_BREAK)) {
+    const samples = samplesStated(sentence, unit);
+    for (const at of valueAt(sentence, value)) {
+      // The "2" of "2 rounds" is a count, not this figure.
+      if (samples.some((s) => s.at === at)) continue;
+      const nearest = [...samples].sort((a, b) => Math.abs(a.at - at) - Math.abs(b.at - at))[0];
+      if (!nearest) continue;
+      if (nearest.n !== sampleSize) return false;
+      stated = true;
+    }
+  }
+  return stated;
+}
+
+/**
+ * A thin figure written in the answer and left out of the block: the block is the model's own word, so leaving a figure out must not
+ * dodge the floor. Only where the figure is plainly this one: the sentence names its player (or, in a one-player turn, says he or she),
+ * no other measurement holds that value, and it is not a small whole number, which the audit treats as a count.
+ */
+function omittedThinFigures(prose: string, measurements: readonly Measurement[], claims: readonly ClaimReference[]): Measurement[] {
+  const players = new Set(measurements.filter((m) => m.entity?.kind === 'player').map((m) => m.entity.id));
+  const thin = measurements.filter((m) => m.entity?.kind === 'player' && m.value !== null && m.sample_size >= 2 && m.sample_size < MIN_SAMPLE_N && !(Number.isInteger(m.value) && Math.abs(m.value) <= 12));
+  return thin.filter((m) => {
+    if (claims.some((c) => c.player_id === m.entity.id && c.metric_id === m.metric_id && c.window_start === m.window_start && c.window_end === m.window_end)) return false;
+    if (measurements.some((o) => o !== m && o.value !== null && Math.abs(Math.abs(o.value) - Math.abs(m.value as number)) < 1e-9)) return false;
+    const parts = m.entity.label.split(/\s+/).filter((n) => n.length > 1);
+    const about = (s: string) => parts.some((n) => s.includes(n)) || (players.size === 1 && /\b(?:he|she|his|her)\b/i.test(s));
+    const named = prose.split(SENTENCE_BREAK).filter((s) => about(s) && valueAt(s, m.value as number).length > 0);
+    return named.length > 0 && !named.some((s) => thinSampleStated(s, m.value as number, m.sample_size, m.sample_unit));
+  });
+}
+
+/** The cause side of a causal sentence: after "because", "due to", "caused by"; before "led to", "which is why", "results in". */
+function causeSide(sentence: string): string {
+  const after = /\b(?:because|due to|caused? by|as a result of|the reason (?:is|for|was))\b/i.exec(sentence);
+  if (after) return sentence.slice(after.index + after[0].length);
+  const before = CAUSAL_LANGUAGE_RE.exec(sentence);
+  return before ? sentence.slice(0, before.index) : sentence;
+}
+
+/** What a read can say about itself or a calendar: why a figure is missing or thin, or why a day doesn't work. Not a claim about anyone's play. */
+const DATA_CAUSE =
+  /\b(?:flag(?:s|ged)?|incomplete|excluded|left out|leaves? out|not counted|(?:doesn|don)['’]?t count|no data|no recorded|no rounds|not recorded|not logged|(?:hasn|haven)['’]?t logged|(?:isn|aren)['’]?t available|not available|unavailable|too few|sample size|the (?:tool|read|window|sample|cache)|9-hole|nine-hole|total only|class|exams?|schedule|calendar|conflict|rsvps?|weather|rain)\b/i;
+/** A sentence about this answer's limits ("I can't give you that because..."). "I think..." is not one. */
+const ANSWER_LIMIT = /^\s*(?:i|we)\s+(?:can['’]?t|cannot|couldn['’]?t|don['’]?t have|didn['’]?t|left|used|won['’]?t|am not)\b|^\s*i['’]m not\b/i;
+/** A measured part of the game: a cause that names one with its figure is arithmetic on the evidence, and the audit checks the figure. */
+const MEASURED_CUE =
+  /\b(?:strokes? gained|sg|strokes?|putt\w*|approach|off the tee|tee shots?|around the greens?|short game|gir|greens?|fairways?|scrambl\w*|up[- ]and[- ]downs?|sand saves?|bunkers?|penalt\w*|driving|scor\w*|shot|to par|over par|under par|birdies?|bogeys?|doubles?)\b/i;
+/** A sentence about someone's play, so an unmeasured cause in it is a claim nothing here can back. */
+const PLAY_WORD =
+  /\b(?:he|she|his|her|him|score\w*|scoring|averag\w*|strokes?|rounds?|putt\w*|approach|tee|greens?|fairways?|chip\w*|bunkers?|swing|tempo|confidence|pressure|form|game|struggl\w*|improv\w*|slump\w*|fell|falling|drop\w*|rose|rising|declin\w*|slipp\w*|losing|gaining|lost|gained)\b/i;
+
+/**
+ * The causal sentences no evidence stands behind. Chat figures never carry `causal_support`, so the whole-prose check refused every
+ * "because": a correct answer saying the tool "left 12 out because it flags them as incomplete" was withheld. A cause is now a claim
+ * only when it is about play and names nothing measured: "because his tempo gets quicker under pressure" stays refused, whereas
+ * "because he lost 2.4 strokes on approach" passes on its figure, which the numeric audit has already checked. A causal claim the
+ * model TAGS `causal` still needs backing (`checkClaim`), and recap's compose() gate is untouched.
+ */
+export function unbackedCausalSentences(prose: string, measurements: readonly Measurement[]): string[] {
+  const names = new Set(measurements.filter((m) => m.entity?.kind === 'player').flatMap((m) => m.entity.label.split(/\s+/)).filter((n) => n.length > 1));
+  const namesPlayer = (s: string) => [...names].some((n) => new RegExp(`(^|[^\\p{L}])${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\p{L}])`, 'u').test(s));
+  return prose.split(SENTENCE_BREAK).filter((sentence) => {
+    if (!CAUSAL_LANGUAGE_RE.test(sentence)) return false;
+    const cause = causeSide(sentence);
+    if (ANSWER_LIMIT.test(sentence) || DATA_CAUSE.test(cause)) return false;
+    // A bare count ("over the last 3 rounds") is the window, not a measured cause.
+    const figures = cause.replace(/\b\d+\s+(?:[a-z'’-]+\s+){0,2}rounds?\b/gi, ' ');
+    if (/\d/.test(figures) && MEASURED_CUE.test(cause)) return false;
+    return PLAY_WORD.test(sentence) || namesPlayer(sentence);
+  });
+}
+
 const MALFORMED: TypedClaimAttempt = { accepted: [], rejected: [], malformed: true };
 
 function stripOnly(rawText: string): string {
@@ -190,10 +305,14 @@ function stripOnly(rawText: string): string {
  * already checked, before this gate runs, by `auditNumericClaims`, which since
  * row 47(b) binds each number to the player and metric the text names.
  *
- * Causal PROSE ("because", "led to") with no backed causal claim is still
- * rejected, exactly as `validateClaims` rules it. Chat measurements never
- * carry `causal_support`, so with the flag on any causal wording about a
- * player fails the turn — an owner decision, reported rather than changed.
+ * Causal PROSE is checked sentence by sentence ({@link unbackedCausalSentences}):
+ * only a cause about play that names nothing measured is refused.
+ *
+ * A figure under the sample floor passes when its sentence states the
+ * measurement's own sample ({@link thinSampleStated}); owner, 2026-11-05.
+ *
+ * A claim may also name a team measurement, which never engages the gate on its
+ * own but is checked like any other once it does.
  *
  * Never throws: any internal error fails closed as `malformed`.
  */
@@ -208,6 +327,8 @@ export function extractAndValidateChatClaims(
     return { strippedText: stripOnly(rawText), claims: MALFORMED };
   }
   if (packets.length === 0) return { strippedText: stripOnly(rawText), claims: null };
+  // Lookups only: a team figure beside a player's is real, and "no packet" would call it the wrong player.
+  const claimable = [...packets, ...packetsFor(measurements, 'team')];
 
   const strippedText = stripAllClaimsDelimiters(rawText);
   try {
@@ -228,7 +349,7 @@ export function extractAndValidateChatClaims(
     const accepted: ClaimReference[] = [];
     const rejected: RejectedClaim[] = [];
     for (const raw of result.data) {
-      const forPlayer = packets.filter((p) => p.player_id === raw.player_id);
+      const forPlayer = claimable.filter((p) => p.player_id === raw.player_id);
       if (forPlayer.length === 0) {
         rejected.push({ claim: raw, reason: 'wrong_player' });
         continue;
@@ -242,14 +363,26 @@ export function extractAndValidateChatClaims(
       // why prose-level `uncited_number` is not applied).
       const verdict = validateClaims([snapToEntry(raw, packet)], packet, '');
       accepted.push(...verdict.accepted);
-      rejected.push(...verdict.rejected);
+      for (const r of verdict.rejected) {
+        const sampleSize = packet.entries.find((e) => e.metric_id === raw.metric_id)?.sample_n ?? 0;
+        const unit = measurements.find((m) => m.entity?.id === raw.player_id && m.metric_id === raw.metric_id && m.window_start === raw.window_start && m.window_end === raw.window_end)?.sample_unit;
+        if (r.reason === 'unsupported_small_number' && raw.claim_type !== 'causal' && sampleSize > 0 && unit && thinSampleStated(strippedText, raw.value, sampleSize, unit)) accepted.push(r.claim);
+        else rejected.push(r);
+      }
+    }
+
+    for (const m of omittedThinFigures(strippedText, measurements, result.data)) {
+      rejected.push({
+        claim: { claim_id: `thin:${m.metric_id}`, metric_id: m.metric_id, value: m.value as number, player_id: m.entity.id, window_start: m.window_start as string, window_end: m.window_end as string },
+        reason: 'unsupported_small_number',
+      });
     }
 
     // Prose-level causal check, once for the turn (see doc comment).
     const causallyBacked = accepted.some((c) => c.claim_type === 'causal');
     const alreadyFlagged = rejected.some((r) => r.reason === 'unsupported_cause');
     if (!causallyBacked && !alreadyFlagged) {
-      const prose = validateClaims([], packets[0] as EvidencePacket, strippedText);
+      const prose = validateClaims([], packets[0] as EvidencePacket, unbackedCausalSentences(strippedText, measurements).join('. '));
       rejected.push(...prose.rejected.filter((r) => r.reason === 'unsupported_cause'));
     }
 

@@ -1803,10 +1803,19 @@ a.ch-th-reads__r:focus-visible {
   font: var(--ch-type-14-strong);
   color: var(--ch-text-primary);
 }
-/* The sticky name column takes the figure's ground, not the card's. */
+/* QA-6: the sticky name column takes the card's own ground, so no tinted stripe runs down the table. */
 .ch-th-cv__fig .ch-th-team__table th:first-child {
-  background: var(--ch-sheet-bg);
+  background: var(--ch-bg-subtle);
 }
+/* QA-4: one surface. A figure sits flat on the visual's card, with no box of its own inside it. */
+.ch-th-cv .ch-th-cv__fig {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+/* QA-6: a jump to the title clears the sticky bar, so its Table toggle isn't under it. */
+.ch-th-cv__head { scroll-margin-top: 64px; }
 /* The answer as a number: its words on the left, the figure large on the right with a verdict in the metric's direction. */
 .ch-th-cv__hero {
   display: flex;

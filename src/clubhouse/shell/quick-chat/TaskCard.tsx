@@ -7,6 +7,7 @@ import { pluralWord } from '../../lib/plural';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { haptic } from '../../lib/haptics';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { Avatar } from '../../ui/Avatar';
 import { land, landed, taskIn, toldIn } from './task-motion';
 import type { TaskVisual } from '@/lib/coachhelm/v3/chat/action-types';
 import type { AskProposalView } from '../../data/coachhelm-chat-thread';
@@ -36,14 +37,14 @@ const svg = (d: string) => (
   </svg>
 );
 
-type Phase = { k: 'draft' } | { k: 'busy' } | { k: 'held'; until: string } | { k: 'done'; line: string; told: string | null; href: string | null } | { k: 'undone' } | { k: 'failed'; reason: string } | { k: 'cancelled' };
+type Phase = { k: 'draft' } | { k: 'busy' } | { k: 'held'; until: string } | { k: 'done'; line: string; told: string | null; href: string | null; partial: string | null } | { k: 'undone' } | { k: 'failed'; reason: string } | { k: 'cancelled' };
 
 function phaseOf(view: AskProposalView): Phase {
   const r = view.receipt;
   if (view.status === 'cancelled' || view.status === 'abandoned') return { k: 'cancelled' };
   if (r?.status === 'held' && r.held_until) return { k: 'held', until: r.held_until };
   if (r?.status === 'failed') return { k: 'failed', reason: r.error ?? r.summary };
-  if (r) return { k: 'done', line: r.summary, told: toldLine(r.notifications, view.proposal.visual?.kind), href: r.created[0]?.href ?? null };
+  if (r) return { k: 'done', line: r.summary, told: toldLine(r.notifications, view.proposal.visual?.kind), href: r.created[0]?.href ?? null, partial: r.status === 'partial' ? r.partial_failures.join(' ') || 'Part of this didn’t go through.' : null };
   return view.status === 'confirmed' ? { k: 'busy' } : { k: 'draft' };
 }
 /** The drawn lines (S-RCPT.told), from the receipt's own counts. Who was told and who has seen it stay off this row: a coach can't read another user's notification rows (Can't match as drawn). */
@@ -54,7 +55,11 @@ const toldLine = (n: ReadonlyArray<{ channel: string; recipients: number; status
   if (!most) return null;
   const who = `${most} ${pluralWord(most, 'player', 'players')}`;
   if (kind === 'msg') return `Delivered to ${most}.`;
-  if (kind === 'qual') return `${who} got a push and an email.`;
+  // What was actually sent, from the receipt: a player with email off got a push only.
+  if (kind === 'qual') {
+    const ways = sent.map((x) => (x.channel === 'email' ? 'an email' : x.channel === 'push' ? 'a push' : null)).filter(Boolean);
+    return ways.length ? `${who} got ${ways.join(' and ')}.` : `${who} told.`;
+  }
   if (kind === 'cal') return `${who} got it on their calendar`;
   return `${who} told.`;
 };
@@ -144,6 +149,7 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
     onOpen(href);
   };
 
+  const toldNames = view.proposal.affects.filter((a) => a.kind === 'player').map((a) => a.label);
   const shown: Phase = landing ? { k: 'busy' } : phase;
   const title = visual?.kind === 'cal' || visual?.kind === 'qual' ? visual.title : visual?.kind === 'msg' ? visual.thread : view.proposal.summary;
   const typed = useTyped(title, 38, typing);
@@ -231,10 +237,10 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
         {shown.k === 'done' && (
           <>
             <div className="rcpt">
-              <span className="rcpt__g">{svg('M5 13l4 4L19 7')}</span>
+              <span className={'rcpt__g' + ((phase as { partial?: string | null }).partial ? ' is-partial' : '')}>{svg((phase as { partial?: string | null }).partial ? 'M12 8v5M12 17h.01' : 'M5 13l4 4L19 7')}</span>
               <span className="rcpt__t">
-                <b>{w.done}</b>
-                <span>{(phase as { line: string }).line}</span>
+                <b>{(phase as { partial?: string | null }).partial ? 'Part of this went through' : w.done}</b>
+                <span>{(phase as { partial?: string | null }).partial ?? (phase as { line: string }).line}</span>
               </span>
               <span className="rcpt__a">
                 {(phase as { href: string | null }).href && (
@@ -246,6 +252,16 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
             </div>
             {(phase as { told: string | null }).told && (
               <div className="told">
+                {toldNames.length > 0 && (
+                  <span className="coins" aria-hidden="true">
+                    {toldNames.slice(0, 4).map((name) => (
+                      <span key={name} className="coin">
+                        <Avatar name={name} size="xs" />
+                      </span>
+                    ))}
+                    {toldNames.length > 4 && <span className="coin more ch-num">+{toldNames.length - 4}</span>}
+                  </span>
+                )}
                 <span>{(phase as { told: string | null }).told}</span>
               </div>
             )}

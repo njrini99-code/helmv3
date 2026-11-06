@@ -51,7 +51,8 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
   const notice = chat.error ? describeChatError(chat.error) : null;
   const [text, setText] = useState(initialText);
   const mic = useDictation((words) => setText((t) => (t.trim() ? `${t.trimEnd()} ${words}` : words)));
-  const [stopped, setStopped] = useState(false);
+  // The turn that was stopped, not the session: an earlier finished turn stays finished.
+  const [stoppedId, setStoppedId] = useState<string | null>(null);
   const panel = useRef<HTMLElement>(null);
   const scrim = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
@@ -178,19 +179,19 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
       setQueued((q) => [...q, clean]);
       return;
     }
-    setStopped(false);
+    setStoppedId(null);
     chat.send(clean);
   };
   useEffect(() => {
     if (!queued.length || chat.busy || pending || !online) return;
-    setStopped(false);
+    setStoppedId(null);
     chat.send(queued[0]!);
     setQueued((q) => q.slice(1));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sends when the way clears, keyed on the id (`pending` is new each render)
   }, [queued, chat.busy, pendingId, online]);
   const stop = () => {
     chat.stop();
-    setStopped(true);
+    setStoppedId(turns[turns.length - 1]?.id ?? null);
   };
   const full = () => {
     if (!chat.conversationId) return;
@@ -310,7 +311,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
                         failed={!!notice && turn.id === turns[turns.length - 1]?.id}
                         onFull={full}
                         online={online}
-                        stopped={stopped}
+                        stopped={stoppedId === turn.id}
                         onSend={send}
                         onApprove={chat.approve}
                         onDeny={chat.deny}
@@ -459,7 +460,10 @@ function Steps({ turn, stopped, failed = false }: { turn: AskAssistantTurn; stop
                 </svg>
               )}
             </span>
-            <span className="step__l">{s.label}</span>
+            <span className="step__l">
+              {active ? s.label : (s.done ?? s.label)}
+              {!active && s.detail && <span className="step__d"> · {s.detail}</span>}
+            </span>
           </li>
         );
       })}
