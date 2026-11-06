@@ -1237,10 +1237,11 @@
     gap: var(--ch-gap-section-phone-snug);
     padding: var(--ch-page-top-phone) var(--ch-page-x-phone) var(--ch-page-bottom-phone);
   }
+  /* The head opens the sheet: a rule above it only drew a stray line under the bar. */
   .ch-hb-h {
     gap: 16px;
-    padding: 16px 0 0;
-    border-top: var(--ch-ledger-rule-double);
+    padding: 8px 0 0;
+    border-top: 0;
     border-bottom: 0;
   }
   /* The page's large title (.ch-large-title, shell.css; owner decision 4) on its own line under the role chip and the
@@ -1352,6 +1353,15 @@
     font: var(--ch-type-13);
     line-height: var(--ch-lead-caption);
     font-variant-numeric: tabular-nums;
+  }
+  /* A tile on Home is its own card, so its head (Updates) carries no section rule. */
+  .ch-hw .ch-hb-card__h {
+    border-top: 0;
+  }
+  /* The week's rows are tap targets. */
+  .ch-hw-agenda a,
+  .ch-hw-later button {
+    min-height: 44px;
   }
   /* A failed part with no heading of its own (the latest post, the next trip) stands on its own double rule. */
   .ch-hb-part {
@@ -1648,8 +1658,6 @@
     padding: 8px 0 8px 16px;
   }
   .ch-hb-feed li > a {
-    margin: 0 -12px;
-    padding: 8px 12px 8px 32px;
     border-radius: var(--ch-radius-md);
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
@@ -2775,7 +2783,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   align-items: center;
   gap: 16px 64px;
   margin-bottom: 32px;
-  padding: 24px 32px;
+  padding: 24px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-feature-bg);
   box-shadow: var(--ch-elevation-feature);
@@ -3419,7 +3427,9 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 /* Waiting on: a ledger you can sort and open. */
 .ch-hw-led {
   width: 100%;
-  border-collapse: collapse;
+  /* Collapsed hairlines paint unevenly in WebKit: the head's rule came out darker under the first column. */
+  border-collapse: separate;
+  border-spacing: 0;
   font-variant-numeric: tabular-nums;
 }
 .ch-hw-led th,
@@ -3491,10 +3501,12 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
     background: var(--ch-ledger-row-hover);
   }
 }
+/* The note sits before the figure, so every figure lines up under its heading with or without one. */
 .ch-hw-led__n {
   display: inline-flex;
+  flex-direction: row-reverse;
   align-items: baseline;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 6px;
 }
 .ch-hw-led__n b {
