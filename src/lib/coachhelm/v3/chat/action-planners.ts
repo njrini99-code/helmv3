@@ -244,6 +244,7 @@ export function planTask(
     proposal: {
       action: 'Assign a task',
       summary: `${title}: ${ids.length} player${ids.length === 1 ? '' : 's'}.`,
+      visual: { kind: 'task', title, due: input.due_date ?? null, who: names },
       facts,
       affects: ids.map((id, i) => ({ kind: 'player' as const, id, label: names[i] ?? 'Player' })),
       notifications: [`${ids.length} player${ids.length === 1 ? ' is' : 's are'} notified in-app`],

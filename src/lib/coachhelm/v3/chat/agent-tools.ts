@@ -46,8 +46,9 @@ import { getClassTimes, getDrillBank, getTeamPuttingProfile, getTeamStrokesGaine
 import { practicePicture } from './practice-pictures';
 import { practiceDraftTool, publishFlow } from './practice-draft';
 import { getSeasonScoring } from './season-reads';
-import { askDraftTools } from './ask-draft-tools';
-import { CREATE_FLOWS, CREATE_TOOL_NAMES, LINEUP_FLOWS, flowCommit, type FlowDef } from './create-tools';
+import { askDraftTools, type AskSurface } from './ask-draft-tools';
+import { landingRows } from './landing-rows';
+import { CREATE_FLOWS, CREATE_TOOL_NAMES, LINEUP_FLOWS, drillFlow, flowCommit, type FlowDef } from './create-tools';
 import { heldCommitFor } from './held-runner';
 import { getProximityByBand, getRoundDetail, getShotPattern } from './shot-reads';
 import { compareSeasons, getCalendar, getCourse, getRootCauses } from './engine-reads';
@@ -183,6 +184,7 @@ const PROGRESS_LABEL: Record<string, (input: Record<string, unknown>) => string>
   create_focus_area: () => 'Drafting a focus area',
   create_task: () => 'Drafting a task',
   create_team_announcement: () => 'Drafting a team update',
+  create_drill: () => 'Drafting a drill',
 };
 
 /** The same words, past tense, for the row once the read is back (Ask v2). */
@@ -239,6 +241,10 @@ export interface BuildToolsArgs {
   teamTools?: boolean;
   /** Ask v2 (`coachhelm_ask_v2` and Clubhouse on for the team): steps update in place, and new tools join. Fairway's chat never sets it. */
   askV2?: boolean;
+  /** Ask v2's surface. `send_message` is registered only for Quick chat; left out, the Ask tab, which never sends. */
+  surface?: AskSurface;
+  /** Ask v2: an artifact's words, so the turn's number audit reads them with the answer. */
+  onArtifactWords?: (words: string) => void;
   /** coachhelm_practice_plans_v1: the four reads, the brief, the draft and publish. */
   practicePlans?: boolean;
   /** Ask v2: runs after the response is sent (`after` in the route), for the Undo hold's release. */
@@ -319,7 +325,7 @@ function scopedKey(key: string, conversationId: string | null, plan: unknown): s
   return `${key.slice(0, 110)}:${h.toString(36)}`;
 }
 
-export function buildCoachTools({ sb, ctx, conversationId, writer, collect: collectOuter, teamTools = false, practicePlans = false, askV2 = false, defer }: BuildToolsArgs): ToolSet {
+export function buildCoachTools({ sb, ctx, conversationId, writer, collect: collectOuter, teamTools = false, practicePlans = false, askV2 = false, surface = 'ask', onArtifactWords, defer }: BuildToolsArgs): ToolSet {
   const scope = <P extends { idempotency_key: string }>(proposal: P, plan: unknown): P => ({ ...proposal, idempotency_key: scopedKey(proposal.idempotency_key, conversationId, plan) });
   // The next chat request finishes what a cut-off function left held (TASK_FIELDS §3 step 5). It has to be a request: the writes read the coach from the session.
   if (askV2 && defer) defer(() => sweepHeld(sb, { coach_id: ctx.coach_id, team_id: ctx.team_id, resolve: (row) => heldCommitFor(sb, ctx, row) }));
@@ -439,10 +445,11 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
       });
       // The card's own day, so the reply can say it: it is on screen, and the coach confirms it.
       collectActionNumbers(proposal.summary, { facts: proposal.facts, ...(proposal.visual?.kind === 'cal' ? { date: proposal.visual.date } : {}) });
+      const neighbours = askV2 ? await landingRows(sb, ctx, action.toolName, input) : [];
       writer.write({
         type: 'data-action-proposal',
         id: `proposal-${proposal.idempotency_key}`,
-        data: { ...proposal, tool: action.toolName },
+        data: { ...proposal, ...(neighbours.length ? { neighbours } : {}), tool: action.toolName },
       });
     } catch (err) {
       // A plan we cannot build must never produce a Confirm button.
@@ -731,9 +738,10 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
     }),
 
     // Ask v2's create flows, each on the same gate: nothing writes before the named button, and nothing is told until Undo closes.
-    ...(askV2 ? Object.fromEntries((isFlagEnabled('golf_tournaments_v1') ? [...CREATE_FLOWS, ...LINEUP_FLOWS] : CREATE_FLOWS).map((f) => [f.name, flowTool(f)])) : {}),
+    ...(askV2 ? Object.fromEntries((isFlagEnabled('golf_tournaments_v1') ? [...CREATE_FLOWS, ...LINEUP_FLOWS] : CREATE_FLOWS).filter((f) => (f.name === 'send_message' ? surface === 'quick_chat' : f.name === 'publish_artifact' ? surface !== 'quick_chat' : true)).map((f) => [f.name, flowTool(f)])) : {}),
 
-    ...(askV2 ? askDraftTools({ sb, ctx, writer, practicePlans }) : {}),
+    ...(askV2 && practicePlans ? { [drillFlow.name]: flowTool(drillFlow as unknown as FlowDef<never>) } : {}),
+    ...(askV2 ? askDraftTools({ sb, ctx, writer, practicePlans, surface, onArtifactWords }) : {}),
     ...(practicePlans && teamTools
       ? {
           get_class_times: tool({ description: 'Who is in class on a day, per tracked player. Read before planning a practice.', inputSchema: z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }), execute: read('get_class_times', (input) => getClassTimes(sb, ctx, input)) }),

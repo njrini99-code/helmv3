@@ -183,7 +183,7 @@ function useKeepDockClear(ref: RefObject<HTMLElement | null>, on: boolean): void
  * the screen fits the visible area instead (`data-ch-vv`, shell.css), so its bar stays and the composer sits on the
  * keys. The app's WebView takes the other path: CapacitorProvider publishes `--keyboard-height` (body.capacitor).
  */
-function useSafariKeyboardFit(ref: RefObject<HTMLElement | null>, on: boolean): void {
+export function useSafariKeyboardFit(ref: RefObject<HTMLElement | null>, on: boolean): void {
   useEffect(() => {
     const el = ref.current;
     const vv = window.visualViewport;

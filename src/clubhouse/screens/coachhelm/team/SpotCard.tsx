@@ -42,7 +42,7 @@ function BarRow({ player, station, teamValue, onPlayer }: { player: ChTeamPlayer
         {teamValue != null && <i className="avg" style={{ left: `${teamValue < 0 ? ZERO_AT - (Math.min(-teamValue, LOSS_SCALE) / LOSS_SCALE) * ZERO_AT : ZERO_AT + (Math.min(teamValue, GAIN_SCALE) / GAIN_SCALE) * (100 - ZERO_AT)}%` }} />}
         <i className={`bf ${loss ? 'l' : 'g'}${player.early ? ' early' : ''}`} style={{ transform: `scaleX(${barScale(v)})` }} />
       </span>
-      <span className={'bv' + (loss ? '' : Math.abs(v) < 0.05 ? ' is-even' : ' g')}>{formatSigned(v)}</span>
+      <span className={'bv ch-num' + (loss ? '' : Math.abs(v) < 0.05 ? ' is-even' : ' g')}>{formatSigned(v)}</span>
     </button>
   );
 }

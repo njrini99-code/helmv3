@@ -137,6 +137,7 @@ async function shotsOf(sb: Sb, ctx: CoachChatContext, input: { player_id?: strin
   };
 }
 
+const SEASON_DAYS = 270;
 const whose = (name: string | null, team: string) => name ?? team;
 const today = () => nowIso().slice(0, 10);
 
@@ -145,7 +146,11 @@ export async function getShotPattern(sb: Sb, ctx: CoachChatContext, input: { pla
   if (!read) return unavailableEnvelope('Could not read those shots.', 'The shots query failed. This is not the same as having none.');
   const who = whose(read.playerName, ctx.team_name);
   if (input.mode === 'putting') {
-    const profile = puttProfileOf(read.shots);
+    const window = puttProfileOf(read.shots);
+    // The season tick on each bar (ASK_REDESIGN 3.4): the same player over the season. A failed second read just draws no tick.
+    const seasonRead = (input.since_days ?? 0) < SEASON_DAYS ? await shotsOf(sb, ctx, { ...input, since_days: SEASON_DAYS }).catch(() => null) : null;
+    const season = seasonRead ? puttProfileOf(seasonRead.shots) : null;
+    const profile = { ...window, buckets: window.buckets.map((b) => ({ ...b, season_rate: season?.buckets.find((x) => x.id === b.id)?.rate ?? null })) };
     const measurements = profile.buckets.flatMap((b) => (b.rate == null ? [] : [readFigure({ metric_id: `putt_make_rate_${b.id}`, metric_label: `Make rate, ${b.label}`, unit: 'percent', value: b.rate, entity: read.entity, window_start: read.since, window_end: today(), sample_size: b.attempts, sample_unit: 'attempts', denominator: b.attempts, direction: 'higher_better', source: 'shots', method: 'putts_made_over_attempts_by_stats_bucket' })]));
     return { summary: `${who}: putting by distance, last ${input.since_days} days.`, measurements, series: [], detail: { ...read.scope, metric_scope: 'putt_make_rate', kind: 'putt_profile', profile, rounds: read.rounds, since: read.since, since_days: input.since_days }, coverage: profile.attempts ? 'complete' : 'empty', coverage_note: profile.attempts ? null : 'No putts with a distance in this window.', as_of: nowIso() };
   }

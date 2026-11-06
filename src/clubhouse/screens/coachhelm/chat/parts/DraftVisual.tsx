@@ -8,6 +8,7 @@ import { clockIn, type QuickChatWeek } from '@/lib/coachhelm/v3/chat/quick-chat-
 import { formatWith } from '../../../../lib/dates';
 import { pluralWord } from '../../../../lib/plural';
 import { useQcSeam } from '../../../../shell/quick-chat/qc-seam';
+import { Avatar } from '../../../../ui/Avatar';
 import { Icon } from '../../../../ui/Icon';
 
 type Cal = Extract<TaskVisual, { kind: 'cal' }>;
@@ -190,5 +191,124 @@ export function QualDraft({ visual }: { visual: Qual }) {
         </span>
       </div>
     </div>
+  );
+}
+
+type Task = Extract<TaskVisual, { kind: 'task' }>;
+type Goal = Extract<TaskVisual, { kind: 'goal' }>;
+type Note = Extract<TaskVisual, { kind: 'note' }>;
+type Trip = Extract<TaskVisual, { kind: 'trip' }>;
+type Lineup = Extract<TaskVisual, { kind: 'lineup' }>;
+
+/** E-TASK: how long they have, on a ring of the week, and who it's for. */
+export function TaskDraft({ visual, today }: { visual: Task; today: string }) {
+  const days = visual.due ? Math.max(0, Math.round((Date.parse(`${visual.due}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)) / 86_400_000)) : null;
+  return (
+    <div className="ch-ak-tk">
+      {days != null && (
+        <svg className="tkr" viewBox="0 0 64 64" aria-hidden="true">
+          <circle cx="32" cy="32" r="26" className="rt" />
+          <circle cx="32" cy="32" r="26" className="rp" pathLength="100" style={{ strokeDashoffset: 100 - Math.min(100, (100 * days) / 7) }} />
+          <text x="32" y="31" textAnchor="middle" className="r1 ch-num">
+            {days}
+          </text>
+          <text x="32" y="44" textAnchor="middle" className="r2">
+            {pluralWord(days, 'day', 'days')}
+          </text>
+        </svg>
+      )}
+      <div className="tkb">
+        <b>{visual.title}</b>
+        <span className="who" aria-hidden="true">
+          {visual.who.slice(0, 3).map((name) => (
+            <Avatar key={name} name={name} size="xs" />
+          ))}
+          {visual.who.length > 3 && <small className="ch-num">+{visual.who.length - 3}</small>}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** E-GOAL: the stat and the target, and how long there is to reach it. */
+export function GoalDraft({ visual }: { visual: Goal }) {
+  return (
+    <div className="ch-ak-goal">
+      <span>
+        <small>{visual.stat}</small>
+        <b className="ch-num">{visual.target}</b>
+      </span>
+      <small className="ch-num">
+        {visual.player} · {visual.days} {pluralWord(visual.days, 'day', 'days')}
+      </small>
+    </div>
+  );
+}
+
+/** E-NOTE: the words as the player reads them, under the coach's coin. */
+export function NoteDraft({ visual }: { visual: Note }) {
+  return (
+    <div className="ch-ak-nb">
+      <small>For {visual.player}</small>
+      <p>{visual.note}</p>
+    </div>
+  );
+}
+
+/** E-TRAVEL: where it starts and ends. A route of the trip's own words, not a map: nothing here is drawn to scale. */
+export function TripDraft({ visual }: { visual: Trip }) {
+  return (
+    <div className="ch-ak-route">
+      <svg viewBox="0 0 340 84" aria-hidden="true">
+        <path className="rbase" d="M26 58 C 96 58, 110 18, 178 28 S 270 56, 312 22" />
+        <path className="rline" d="M26 58 C 96 58, 110 18, 178 28 S 270 56, 312 22" />
+        <circle cx="26" cy="58" r="6" className="ro" />
+        <circle cx="312" cy="22" r="7" className="rd" />
+      </svg>
+      <div className="ends">
+        <span>
+          <small>{dayWord(visual.leave, { weekday: 'short', month: 'short', day: 'numeric' })}</small>
+          <b>{visual.from ?? 'Leaves'}</b>
+        </span>
+        <span className="how">{visual.how}</span>
+        <span>
+          <small>{visual.back ? `Back ${dayWord(visual.back, { month: 'short', day: 'numeric' })}` : 'Arrives'}</small>
+          <b>{visual.to}</b>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** E-LINEUP: the seats, in order, with the alternates under them. */
+export function LineupDraft({ visual }: { visual: Lineup }) {
+  return (
+    <ol className="ch-ak-lu">
+      {visual.seats.map((s) => (
+        <li key={s.name} className={s.alternate ? 'alt' : undefined}>
+          <span className="n ch-num">{s.alternate ? 'Alt' : (s.slot ?? '—')}</span>
+          <Avatar name={s.name} size="xs" />
+          <span className="nm">{s.name}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** E-EVD's tile: the draft's date when it has one, else its kind. */
+export function draftDate(visual: TaskVisual | undefined): string | null {
+  if (!visual) return null;
+  if (visual.kind === 'cal') return visual.date;
+  if (visual.kind === 'qual') return visual.start;
+  if (visual.kind === 'task') return visual.due;
+  if (visual.kind === 'trip') return visual.leave;
+  return null;
+}
+export function DateTile({ date }: { date: string }) {
+  return (
+    <span className="dt" aria-hidden="true">
+      {dayWord(date, { weekday: 'short' }).toUpperCase()}
+      <b className="ch-num">{Number(date.slice(8))}</b>
+    </span>
   );
 }

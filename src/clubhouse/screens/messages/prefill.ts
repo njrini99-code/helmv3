@@ -27,7 +27,11 @@ export interface ChPrefill {
   conversationId?: string;
   poll?: { question: string; options: string[]; closes?: string; multi?: boolean };
   returnTo?: 'ask';
+  /** A board's picture. Kept in this tab's memory only: sessionStorage holds words, and a cold link just has none. */
+  files?: File[];
 }
+
+const heldFiles = new Map<string, File[]>();
 
 /**
  * The key for a prefill: a hash of what it holds, so the same prefill gives the same href on the server and in the
@@ -47,14 +51,15 @@ function keyOf(p: ChPrefill): string {
 
 /**
  * The href that opens Messages with this prefill. In the browser it also keeps the prefill in sessionStorage under the
- * href's key (the same prefill writes the same entry, so calling it on every render is harmless). With no players it
- * returns null: there is nobody to write to.
+ * href's key (the same prefill writes the same entry, so calling it on every render is harmless). With no players and
+ * no thread it returns null: there is nobody to write to.
  */
-export function messagesPrefillHref({ players, draft, title, conversationId, poll, returnTo }: ChPrefill): string | null {
+export function messagesPrefillHref({ players, draft, title, conversationId, poll, returnTo, files }: ChPrefill): string | null {
   const ids = [...new Set(players.filter(Boolean))];
-  if (!ids.length) return null;
+  if (!ids.length && !conversationId) return null;
   const p: ChPrefill = { players: ids, draft: draft.slice(0, 2000), title: ids.length > 1 ? title?.slice(0, 80) || undefined : undefined, ...(conversationId ? { conversationId } : {}), ...(poll ? { poll } : {}), ...(returnTo ? { returnTo } : {}) };
   const key = keyOf(p);
+  if (files?.length) heldFiles.set(key, files);
   if (typeof window !== 'undefined') {
     try {
       window.sessionStorage.setItem(STORE + key, JSON.stringify(p));
@@ -80,7 +85,7 @@ export function takePrefill(params: { get: (k: string) => string | null }): ChPr
   try {
     const v = JSON.parse(raw) as Partial<ChPrefill>;
     const players = Array.isArray(v.players) ? [...new Set(v.players.filter((x): x is string => typeof x === 'string' && !!x))] : [];
-    if (!players.length) return null;
+    if (!players.length && !(typeof v.conversationId === 'string' && v.conversationId)) return null;
     const draft = typeof v.draft === 'string' ? v.draft.slice(0, 2000) : '';
     const title = typeof v.title === 'string' ? v.title.trim().slice(0, 80) || undefined : undefined;
     const conversationId = typeof v.conversationId === 'string' && v.conversationId ? v.conversationId : undefined;
@@ -90,7 +95,9 @@ export function takePrefill(params: { get: (k: string) => string | null }): ChPr
       q && typeof q.question === 'string' && Array.isArray(q.options) && q.options.every((o) => typeof o === 'string')
         ? { question: q.question, options: q.options, ...(typeof q.closes === 'string' ? { closes: q.closes } : {}), ...(q.multi === true ? { multi: true } : {}) }
         : undefined;
-    return { players, draft, title, ...(conversationId ? { conversationId } : {}), ...(poll ? { poll } : {}), ...(returnTo ? { returnTo } : {}) };
+    const files = heldFiles.get(key);
+    heldFiles.delete(key);
+    return { players, draft, title, ...(conversationId ? { conversationId } : {}), ...(poll ? { poll } : {}), ...(returnTo ? { returnTo } : {}), ...(files?.length ? { files } : {}) };
   } catch {
     return null;
   }
@@ -102,4 +109,25 @@ export function onRoster(players: string[], known: (id: string) => boolean): { k
   const dropped: string[] = [];
   for (const id of players) (known(id) ? kept : dropped).push(id);
   return { kept, dropped };
+}
+
+/**
+ * Files waiting for a thread's composer (a board from Ask). The composer may already be open on that thread when they
+ * arrive, so it subscribes rather than reading once. The coach presses Send; nothing is uploaded until then.
+ */
+const threadFiles = new Map<string, File[]>();
+const fileListeners = new Set<() => void>();
+export function seedThreadFiles(conversationId: string, files: File[]): void {
+  if (!files.length) return;
+  threadFiles.set(conversationId, [...(threadFiles.get(conversationId) ?? []), ...files]);
+  fileListeners.forEach((l) => l());
+}
+export function takeThreadFiles(conversationId: string): File[] {
+  const files = threadFiles.get(conversationId) ?? [];
+  threadFiles.delete(conversationId);
+  return files;
+}
+export function subscribeThreadFiles(listener: () => void): () => void {
+  fileListeners.add(listener);
+  return () => void fileListeners.delete(listener);
 }

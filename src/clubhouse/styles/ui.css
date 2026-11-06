@@ -2489,7 +2489,8 @@ html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
 [data-ui='clubhouse'] main[data-ch-crh='on'] {
   --ch-border-focus: var(--ch-accent-ink);
 }
-[data-ui='clubhouse'] main[data-ch-crh='on'] :focus-visible {
+/* Not a programmatic reading destination, such as a sheet's title: base.css draws no box on those. */
+[data-ui='clubhouse'] main[data-ch-crh='on'] :focus-visible:not([tabindex='-1']) {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }

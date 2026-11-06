@@ -1035,7 +1035,7 @@ a.ch-th-reads__r:focus-visible {
   flex: none;
   align-self: flex-start;
   margin-top: 2px;
-  color: var(--ch-danger-600);
+  color: var(--ch-warning-600);
 }
 .ch-th-error__txt {
   flex: 1 1 200px;
@@ -1362,7 +1362,7 @@ a.ch-th-reads__r:focus-visible {
     font-size: calc(15 * var(--ch-type-k));
     line-height: 1.35;
     letter-spacing: -0.01em;
-    color: var(--ch-danger-600);
+    color: var(--ch-warning-600);
   }
   .ch-th--phone .ch-th-error > .ch-btn {
     margin-left: 32px;
@@ -1463,7 +1463,7 @@ a.ch-th-reads__r:focus-visible {
 /* Dark (Clubhouse at night). The action icon's ink stays ivory on its fill (the ivory ramp is the dark surfaces here);
    a cancelled action's fill steps down to a raised surface so that ink still reads. */
 :where(html[data-fw-theme='dark']) .ch-th-pill {
-  box-shadow: 0 0 0 1px var(--ch-border-control);
+  box-shadow: 0 0 0 1px var(--ch-border-strong, var(--ch-text-tertiary));
 }
 :where(html[data-fw-theme='dark']) .ch-th-act__icon {
   color: var(--ch-text-on-accent);

@@ -69,7 +69,7 @@ import type { ChClock } from "../../lib/clock-cookie";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useComposerInset } from "./composer-inset";
 import { useFocusMessage } from "./use-focus-message";
-import { pollCardActions, PollButton, PollCard, PollSheet, PollThreadContext, type ChPollsApi, type PollThreadActions } from "./polls";
+import { pollCardActions, PollButton, PollCard, PollSheet, PollThreadContext, usePollSeed, type ChPollsApi, type PollThreadActions } from "./polls";
 import { useChReducedMotion } from "../../lib/reduced-motion";
 import { Avatar } from "../../ui/Avatar";
 import { Badge } from "../../ui/Badge";
@@ -140,6 +140,7 @@ import { HoldSeenRow, SeenByPill, SeenByReceipt, useSeenBy, useSeenByList } from
 import { receiptCarrierId, SEEN_BY_VISIBILITY } from "@/lib/golf/message-receipts";
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
 import { fileKind, fileMeta, fileSize, useConversationFiles } from "./files";
+import { subscribeThreadFiles, takeThreadFiles } from "./prefill";
 // Re-exported: MessagesPhone and older callers read it from here.
 export { fileSize } from "./files";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
@@ -1760,6 +1761,7 @@ export function AttachButton({
 export function ComposerPlus({ api, conv, disabled, onPick }: { api: ChMessagesApi; conv: ChConv; disabled?: boolean; onPick: (picked: File[]) => void }) {
   const input = useRef<HTMLInputElement | null>(null);
   const [polling, setPolling] = useState(false);
+  const seedKey = usePollSeed(conv.id, () => setPolling(true));
   return (
     <>
       <Menu
@@ -1783,7 +1785,7 @@ export function ComposerPlus({ api, conv, disabled, onPick }: { api: ChMessagesA
           e.target.value = "";
         }}
       />
-      <PollSheet key={conv.id} api={api} conv={conv} open={polling} onClose={() => setPolling(false)} />
+      <PollSheet key={seedKey} api={api} conv={conv} open={polling} onClose={() => setPolling(false)} />
     </>
   );
 }
@@ -1889,6 +1891,15 @@ export function Composer({
   const [files, setFiles] = useState<File[]>(recovery?.files ?? initialFiles ?? []);
   const filesRef = useRef(files);
   filesRef.current = files;
+  // A board from Ask lands here as a file waiting to be sent: the coach presses Send.
+  useEffect(() => {
+    const take = () => {
+      const seeded = takeThreadFiles(conv.id);
+      if (seeded.length) setFiles((f) => [...f, ...seeded]);
+    };
+    take();
+    return subscribeThreadFiles(take);
+  }, [conv.id]);
   const [sending, setSending] = useState(false);
   const sendingRef = useRef(false);
   const ta = useRef<HTMLTextAreaElement | null>(null);

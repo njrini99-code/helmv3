@@ -3830,16 +3830,16 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 }
 
 /* The season bar and its legend, one tone a year (the same tokens as the year chips). */
-[data-ch-crh='on'] [data-year='sr'] {
+:is(.ch-rs, .ch-rsm)[data-ch-crh='on'] [data-year='sr'] {
   --ch-rs-y: var(--ch-yr-sr);
 }
-[data-ch-crh='on'] [data-year='jr'] {
+:is(.ch-rs, .ch-rsm)[data-ch-crh='on'] [data-year='jr'] {
   --ch-rs-y: var(--ch-yr-jr);
 }
-[data-ch-crh='on'] [data-year='so'] {
+:is(.ch-rs, .ch-rsm)[data-ch-crh='on'] [data-year='so'] {
   --ch-rs-y: var(--ch-yr-so);
 }
-[data-ch-crh='on'] [data-year='fr'] {
+:is(.ch-rs, .ch-rsm)[data-ch-crh='on'] [data-year='fr'] {
   --ch-rs-y: var(--ch-yr-fr);
 }
 
@@ -3876,5 +3876,42 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   }
   [data-ch-crh='on'].ch-rsd .ch-rs-list.is-one-status .ch-rs-row > :nth-child(2) {
     display: none;
+  }
+}
+
+/* The profile's cards sit 16 apart: the column's gap and each section's own margin were adding up. */
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  [data-ch-crh='on'] .ch-rsx-prof {
+    gap: 16px;
+  }
+  [data-ch-crh='on'] .ch-rsx-prof > .ch-rsx-sec {
+    margin-top: 0;
+  }
+}
+/* A long name stays inside its leader card, cut with an ellipsis. */
+[data-ch-crh='on'] .ch-rs-ldr {
+  min-width: 0;
+}
+[data-ch-crh='on'] .ch-rs-ldr__p {
+  max-width: 100%;
+  min-width: 0;
+}
+[data-ch-crh='on'] .ch-rs-ldr__p b {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The first action, then the other under it, as the empty designs draw them on a phone. */
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  [data-ch-crh='on'] .ch-empty__action {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+/* A player's page sits on the same page colour as the Roster it came from. */
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  [data-ch-crh='on'] .ch-rsx-screen {
+    background: var(--ch-grouped-bg);
   }
 }
