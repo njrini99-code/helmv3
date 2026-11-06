@@ -1,3 +1,4 @@
+import { TERMS } from '../../lib/glossary';
 import type { PlanArea, PlanBlock, PlanBodyV2 } from '@/lib/coachhelm/v3/practice-plan/model';
 
 /**
@@ -45,8 +46,8 @@ export const PLAN_STARTERS: readonly PlanStarter[] = [
     body: body([team('Warm-up', 30, 'Range'), { id: id('b'), kind: 'course', title: '18 holes, stroke play', len: 270, coach: null, note: 'Link it to a qualifier if it counts.', holeFrom: 1, holeTo: 18, format: 'stroke', pairings: [], qualifierId: null }, team('Debrief', 15, 'Clubhouse')]),
   },
   { id: 'tournament-prep', name: 'Tournament prep', minutes: 180, line: 'Play the course on the range, short game and putting to its speed', body: body([team('Warm-up', 20, 'Range'), team('Play the course on the range', 50, 'Range', 'One club per shot, as the card says.'), team('Short game to its green sizes', 40, 'Short game area'), team('Putting at its speed', 40, 'Putting green'), own('Own work', 30, 'Your choice')]) },
-  { id: 'skills-test', name: 'Skills test', minutes: 120, line: 'A scored block for each part of the game', body: body([team('Lag putting', 30, 'Putting green', 'Holed 3, inside 3 ft 2, 3 to 6 ft 1, 6 to 9 ft 0, beyond 9 ft minus 1.'), team('Short game', 30, 'Short game area'), team('Approach', 30, 'Range'), team('Tee', 30, 'Range')]) },
+  { id: 'skills-test', name: 'Skills test', minutes: 120, line: 'A scored block for each part of the game', body: body([team('Lag putting', 30, 'Putting green', 'Holed 3, inside 3 ft 2, 3 to 6 ft 1, 6 to 9 ft 0, beyond 9 ft minus 1.'), team(TERMS.shortGame.long, 30, 'Short game area'), team('Approach', 30, 'Range'), team('Tee', 30, 'Range')]) },
   { id: 'class-day-75', name: 'Class-day 75', minutes: 75, line: 'A tight window: warm-up, two stations, a pressure finisher', body: body([team('Warm-up', 10, 'Range'), stations('Two stations', 25, ['Putting green', 'Short game area']), team('Pressure finisher', 15, 'Putting green')], true) },
 ];
 
-export const AREA_WORDS: Record<PlanArea, string> = { putting: 'Putting', short_game: 'Short game', bunker: 'Bunker', approach: 'Approach', tee: 'Tee', course: 'Course', fitness: 'Fitness', mental: 'Mental' };
+export const AREA_WORDS: Record<PlanArea, string> = { putting: 'Putting', short_game: TERMS.shortGame.long, bunker: 'Bunker', approach: 'Approach', tee: 'Tee', course: 'Course', fitness: 'Fitness', mental: 'Mental' };

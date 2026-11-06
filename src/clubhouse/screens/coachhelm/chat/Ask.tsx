@@ -436,6 +436,7 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
           </aside>
         )}
       </div>
+      {/* Only keeps the pane mounted for its exit: ArtifactView honours prefers-reduced-motion itself. */}
       <AnimatePresence>{artifact && phone && artifactView}</AnimatePresence>
       {phone && (
         <>

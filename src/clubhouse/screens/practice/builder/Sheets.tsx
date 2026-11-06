@@ -1,5 +1,6 @@
 'use client';
 
+import { TERMS } from '../../../lib/glossary';
 import { Minus, Plus, Search, Trash2 } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
 import { createTeamDrill } from '@/app/golf/actions/practice-library';
@@ -166,7 +167,7 @@ function StationsFields({ block, body, onChange }: { block: StationsBlock; body:
   );
 }
 
-const AREAS = ['All', 'Putting', 'Short game', 'Bunker', 'Approach', 'Tee', 'Course', 'Fitness', 'Mental'];
+const AREAS = ['All', 'Putting', TERMS.shortGame.long, 'Bunker', 'Approach', 'Tee', 'Course', 'Fitness', 'Mental'];
 
 /** The one drill bank (S-PRC.drill-bank-sheet's list): search and area chips, your drills then GolfHelm's. The desk's rail and the phone's sheet draw the same. */
 export function BankList({ drills, onPick, onNew, pickLabel }: { drills: ChBankDrill[]; onPick: (d: ChBankDrill) => void; onNew: () => void; pickLabel: string }) {
@@ -213,7 +214,7 @@ export function BankList({ drills, onPick, onNew, pickLabel }: { drills: ChBankD
 
 const DRILL_AREAS: ReadonlyArray<{ value: string; label: string }> = [
   { value: 'putting', label: 'Putting' },
-  { value: 'short_game', label: 'Short game' },
+  { value: 'short_game', label: TERMS.shortGame.long },
   { value: 'bunker', label: 'Bunker' },
   { value: 'approach', label: 'Approach' },
   { value: 'tee', label: 'Tee' },

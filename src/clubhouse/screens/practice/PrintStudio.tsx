@@ -7,6 +7,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode }
 import { PracticePlanSheet } from '../coachhelm/plan/sheet/PracticePlanSheet';
 import type { PlanSheetModel, SheetRow } from '../coachhelm/plan/sheet/plan-sheet-model';
 import { printNode } from '../coachhelm/plan/PrintPlan';
+import { plural } from '../../lib/plural';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { Button } from '../../ui/Button';
@@ -207,7 +208,7 @@ function DrillsPage({ plan, drills, at, draft }: { plan: PlanSheetModel; drills:
                   {d.scoring.map((s) => (
                     <li key={s.label}>
                       <span>{s.label}</span>
-                      <span className="ch-num">{s.points === 1 ? '1 point' : `${s.points} points`}</span>
+                      <span className="ch-num">{plural(s.points, 'point')}</span>
                     </li>
                   ))}
                 </ul>

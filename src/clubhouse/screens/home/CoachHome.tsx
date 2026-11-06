@@ -199,7 +199,7 @@ function HomeFirstRun({ data, phone, crh = false }: { data: ChCoachHome; phone: 
           <CoachQueue queue={data.queue} phone />
         </header>
         <div className="ch-hm-body">
-          {events && <WeekStrip days={data.week.days} note={data.phone.weekNote} />}
+          {events && <WeekStrip calendar days={data.week.days} note={data.phone.weekNote} />}
           <section className="ch-hm-setup" aria-labelledby="ch-hm-setup-t" data-ch-code="CH-2308">
             <h2 id="ch-hm-setup-t">Get your team set up</h2>
             {[
@@ -232,7 +232,7 @@ function HomeFirstRun({ data, phone, crh = false }: { data: ChCoachHome; phone: 
       <CoachQueue queue={data.queue} phone={phone} />
       {events &&
         (phone ? (
-          <WeekStrip days={data.week.days} note={data.phone.weekNote} />
+          <WeekStrip calendar days={data.week.days} note={data.phone.weekNote} />
         ) : (
           <div className="ch-h-sheet ch-sheet is-solo">
             <Week week={data.week} />

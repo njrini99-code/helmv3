@@ -118,13 +118,12 @@ async function deleteTemplateImpl(input: { teamId: string; templateId: string })
   return { success: true };
 }
 
-const OBS = { sport: 'golf', feature: 'practice_plans' } as const;
-const observedUpdate = withAdminObserved('updateTeamDrill', OBS, updateTeamDrillImpl);
-const observedSaveGroup = withAdminObserved('savePracticeGroup', OBS, saveGroupImpl);
-const observedDeleteGroup = withAdminObserved('deletePracticeGroup', OBS, deleteGroupImpl);
-const observedDuplicate = withAdminObserved('savePracticeTemplate', OBS, duplicateTemplateImpl);
-const observedRename = withAdminObserved('renamePracticeTemplate', OBS, renameTemplateImpl);
-const observedDeleteTemplate = withAdminObserved('deletePracticeTemplate', OBS, deleteTemplateImpl);
+const observedUpdate = withAdminObserved('updateTeamDrill', { sport: 'golf', feature: 'practice_plans' }, updateTeamDrillImpl);
+const observedSaveGroup = withAdminObserved('savePracticeGroup', { sport: 'golf', feature: 'practice_plans' }, saveGroupImpl);
+const observedDeleteGroup = withAdminObserved('deletePracticeGroup', { sport: 'golf', feature: 'practice_plans' }, deleteGroupImpl);
+const observedDuplicate = withAdminObserved('savePracticeTemplate', { sport: 'golf', feature: 'practice_plans' }, duplicateTemplateImpl);
+const observedRename = withAdminObserved('renamePracticeTemplate', { sport: 'golf', feature: 'practice_plans' }, renameTemplateImpl);
+const observedDeleteTemplate = withAdminObserved('deletePracticeTemplate', { sport: 'golf', feature: 'practice_plans' }, deleteTemplateImpl);
 export async function updateTeamDrill(input: DrillInput & { drillId: string }) {
   return observedUpdate(input);
 }
