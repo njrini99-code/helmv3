@@ -56,13 +56,14 @@ export interface FlowDef<I> {
 }
 
 /** The same request id for every retry of one card: the coach's own scoped ledger key, hashed, so two cards that differ anywhere are two rows. Two coaches' same-looking events never collide. */
-export function flowRequestId(coachId: string, key: string): string {
-  return stableUuid(`${coachId}:${key}`);
+export function flowRequestId(coachId: string, teamId: string, key: string): string {
+  // The team is in the id: the same card on a coach's second team is a second row, not a replay of the first.
+  return stableUuid(`${coachId}:${teamId}:${key}`);
 }
 
 /** One flow's write on one input, as the gate, the release, Open and the sweep all run it. Nothing starts until `run` is called. */
 export function flowCommit<I>(f: FlowDef<I>, sb: Sb, ctx: CoachChatContext, input: I, ledgerKey: string): { run: () => Promise<ActionReceipt>; readBack?: () => Promise<ActionReceipt | null> } {
-  const requestId = () => flowRequestId(ctx.coach_id, ledgerKey);
+  const requestId = () => flowRequestId(ctx.coach_id, ctx.team_id, ledgerKey);
   const completed = (r: FlowDone & { notifications?: ActionReceipt['notifications'] }): ActionReceipt => ({ status: 'completed', action: f.name, summary: r.summary, created: [{ kind: r.kind, count: 1, ...(r.href ? { href: r.href } : {}), ...(r.label ? { label: r.label } : {}) }], notifications: r.notifications ?? [], partial_failures: [], retryable: false, at: new Date().toISOString() });
   const landed = f.landed;
   return {

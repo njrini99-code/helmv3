@@ -2,9 +2,10 @@
 
 import { Button } from '../../../../ui/Button';
 
-import { Check, CircleAlert, ClipboardCheck, ArrowUpRight, Flag, Megaphone, CalendarPlus, Truck, Trophy, Target, type LucideIcon } from 'lucide-react';
+import { Check, CircleAlert, ClipboardCheck, ArrowUpRight, Flag, Lock, Megaphone, CalendarPlus, StickyNote, Truck, Trophy, Target, Users, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import type { ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
+import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
+import { formatWith } from '../../../../lib/dates';
 import type { AskProposalView } from '../../../../data/coachhelm-chat-thread';
 import { askLinkHref } from '../../../../data/coachhelm-chat-links';
 import { Avatar } from '../../../../ui/Avatar';
@@ -50,12 +51,22 @@ const LANDS: Record<string, { app: string; where: string }> = {
   create_focus_area: { app: 'Home', where: 'Focus' },
   add_round_note: { app: 'Rounds', where: 'Coach notes' },
 };
+/** The section it lands in; an event's is its own day. */
+export function landsWhere(tool: string, visual: ActionProposal['visual']): string {
+  if (tool === 'create_event' && visual?.kind === 'cal' && visual.date) return formatWith(new Date(`${visual.date}T12:00:00`), { weekday: 'short', month: 'short', day: 'numeric' });
+  return LANDS[tool]?.where ?? '';
+}
 /** The kit's head per flow (06 kit ②): what it will become, with its own mark. */
 const HEAD: Record<string, { icon: LucideIcon; title: string }> = {
   create_event: { icon: CalendarPlus, title: 'New event' },
   create_trip: { icon: Truck, title: 'New trip' },
   create_qualifier: { icon: Trophy, title: 'New qualifier' },
   create_focus_area: { icon: Target, title: 'New focus' },
+  create_goal: { icon: Target, title: 'New goal' },
+  create_task: { icon: ClipboardCheck, title: 'New task' },
+  add_round_note: { icon: StickyNote, title: 'New round note' },
+  set_lineup: { icon: Users, title: 'New lineup' },
+  lock_lineup: { icon: Lock, title: 'Lock the lineup' },
   create_team_announcement: { icon: Megaphone, title: 'New announcement' },
   create_announcement: { icon: Megaphone, title: 'New announcement' },
 };
@@ -200,7 +211,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
         <div className="ch-ak-hs">
           <div className="hs-h">
             <b>{LANDS[view.tool]!.app}</b>
-            <span>{LANDS[view.tool]!.where}</span>
+            <span>{landsWhere(view.tool, visual)}</span>
             <small>Where it lands</small>
           </div>
           <div className={'hsr nw' + (receipt ? ' is-in' : '')}>
@@ -257,7 +268,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
         </div>
       )}
       {cancelled && <p className="cxl">Cancelled. Nothing was created.</p>}
-      {receipt && <Receipt receipt={receipt} idempotencyKey={view.key} undoneLine={UNDONE[view.tool]} telling={p.notifications.length > 0 && !p.notifications.every((n) => /^(nobody|nothing)/i.test(n))} coins={coinNames(p, roster)} onUndone={() => setUndone(true)} />}
+      {receipt && <Receipt failedLine={view.tool === 'publish_practice_plan' ? 'Nothing was sent.' : undefined} onRetry={onSend ? () => onSend(`Try that again: ${p.action}, ${p.summary}`) : undefined} receipt={receipt} idempotencyKey={view.key} undoneLine={UNDONE[view.tool]} telling={p.notifications.length > 0 && !p.notifications.every((n) => /^(nobody|nothing)/i.test(n))} coins={coinNames(p, roster)} onUndone={() => setUndone(true)} />}
     </section>
   );
 }
@@ -265,7 +276,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
 type Phase = { kind: 'held' } | { kind: 'undoing' } | { kind: 'undone' } | { kind: 'done'; receipt: ActionReceipt };
 
 /** The receipt row. While held: the ring drains over the time left, and Undo cancels the run on the server. A reload past the window draws the durable receipt with no Undo. */
-export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, telling = false, coins = [], onUndone }: { receipt: ActionReceipt; idempotencyKey: string; undoneLine?: string; /** Someone hears about this once the window closes. */ telling?: boolean; /** Who was told, where the card knows. */ coins?: readonly string[]; onUndone?: () => void }) {
+export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, telling = false, coins = [], onUndone, failedLine = 'Nothing was saved.', onRetry }: { failedLine?: string; onRetry?: () => void; receipt: ActionReceipt; idempotencyKey: string; undoneLine?: string; /** Someone hears about this once the window closes. */ telling?: boolean; /** Who was told, where the card knows. */ coins?: readonly string[]; onUndone?: () => void }) {
   const held = receipt.status === 'held' && receipt.held_until ? receipt.held_until : null;
   const [phase, setPhase] = useState<Phase>(held ? { kind: 'held' } : { kind: 'done', receipt });
   // Late: the server said the window had closed (409). A refused or dropped Undo is its own line and can be pressed again.
@@ -340,6 +351,20 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
           <b>{receipt.summary}</b>
           {late ? <span className="sub">Too late to undo. It’s done. Open it to change it.</span> : undoFailed ? <span className="sub">Couldn’t undo that. Try again.</span> : telling && !closed && <span className="sub">Players are told when Undo closes</span>}
         </div>
+        <button
+          type="button"
+          className="lk"
+          disabled={phase.kind === 'undoing'}
+          onClick={async () => {
+            const res = await fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(idempotencyKey)}?now=1`, { method: 'POST' }).catch(() => null);
+            const row = (await res?.json().catch(() => null)) as { receipt?: ActionReceipt | null } | null;
+            const href = row?.receipt?.created.find((c) => c.href)?.href ?? receipt.created.find((c) => c.href)?.href;
+            if (href) window.location.assign(askLinkHref(href) ?? href);
+          }}
+        >
+          Open
+          <Icon icon={ArrowUpRight} size={14} />
+        </button>
         {!late && (
           <button type="button" className={'lk undo' + (closed ? ' gone' : '')} data-ch-ask-undo="" disabled={phase.kind === 'undoing' || closed} aria-label={closed ? 'Undo closed' : `Undo, ${Math.round(left / 1000)} seconds`} onClick={() => void undo()}>
             <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.4" aria-hidden="true">
@@ -360,8 +385,13 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
         </span>
         <div>
           <b>{r.summary}</b>
-          <span className="sub">Nothing was saved.</span>
+          <span className="sub">{failedLine}</span>
         </div>
+        {onRetry && (
+          <Button variant="secondary" size="sm" onClick={onRetry}>
+            Try again
+          </Button>
+        )}
       </div>
     );
   const link = r.created.find((c) => c.href);
