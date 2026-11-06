@@ -2286,6 +2286,7 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
 }
 /* Re-check reads as the footer's link, still a 44 target; its status line, when there is one, wraps under the words. */
 .ch-htb .recfoot > div {
+  margin-left: auto;
   justify-content: flex-end;
 }
 .ch-htb .recfoot p:empty {

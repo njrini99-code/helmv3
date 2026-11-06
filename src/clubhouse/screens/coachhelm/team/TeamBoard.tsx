@@ -188,7 +188,8 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
     };
   }, [data.storyRounds]);
   const [weekBrief, setWeekBrief] = useState<ChCoachBrief | null>(null);
-  const [storyAsk, setStoryAsk] = useState<string | null>(null);
+  // A new object each time, so asking for the same story again opens it again.
+  const [storyAsk, setStoryAsk] = useState<{ id: string } | null>(null);
   useEffect(() => {
     let live = true;
     void Promise.resolve(data.brief).then((b) => {
@@ -392,7 +393,7 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
                 open: () => {
                   if (phone) {
                     setOpen(null);
-                    setStoryAsk(from.id);
+                    setStoryAsk({ id: from.id });
                   } else setOpen({ kind: 'story', id: from.id, story: from, week: weekBrief?.week ?? 'This week' });
                 },
               }
