@@ -57,5 +57,6 @@ and a qualifier's round tiles hydrate in Safari.
 Not built, and why: Templates, the Drills and Groups tabs, Print studio, Share,
 Take down from the builder and drag to reorder are N-00 screens with no route
 yet. The helper's per-step offers (Suggest a drill, Group by need, Check
-balance) and "Or add one block" need a scoped draft the tool doesn't take. Publish from
-the builder confirms first but has no 8 second Undo; Ask's publish does.
+balance) and "Or add one block" need a scoped draft the tool doesn't take.
+Publish from the builder confirms first but has no 8 second Undo; Ask's publish
+does.
