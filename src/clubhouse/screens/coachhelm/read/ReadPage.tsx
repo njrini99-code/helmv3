@@ -105,7 +105,7 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
       {dismissTarget && (
         <button
           type="button"
-         
+
           className="is-flag"
           onClick={() => {
             setMore(false);
