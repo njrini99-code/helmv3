@@ -708,8 +708,15 @@ export function coachRequestDates(text: string | null | undefined, todayIso: str
   return [...out].sort();
 }
 
-/** Tolerance for matching a written number against a measured one. */
-const MATCH_EPSILON = 0.051;
+/**
+ * Half a unit at the precision the number was written to: "72.5" and "72.6" both round 72.55 and "73" does too, while "72.95",
+ * written to the hundredth, claims 72.95. A flat tolerance on top of the rounded evidence let that one through (73 minus 0.05).
+ */
+function roundingTolerance(raw: string): number {
+  const dot = raw.indexOf('.');
+  const decimals = dot === -1 ? 0 : raw.length - dot - 1;
+  return 0.5 * 10 ** -decimals + 1e-9;
+}
 
 /**
  * A number written as an approximation or a bound rather than as a reading.
@@ -1113,11 +1120,10 @@ export function auditNumericClaims(
 
   const add = (n: number | null | undefined, scope: AnchorScope, metricId?: string) => {
     if (typeof n !== 'number' || !Number.isFinite(n)) return;
-    for (const v of [n, Math.abs(n)]) {
-      // "lost 7.61 strokes" and "-7.61 strokes" are the same statement, so a
-      // magnitude counts as sourced wherever its signed value does.
-      for (const w of [v, Math.round(v), Math.round(v * 10) / 10]) anchors.push({ value: w, ...scope });
-    }
+    // "lost 7.61 strokes" and "-7.61 strokes" are the same statement, so a
+    // magnitude counts as sourced wherever its signed value does. Rounding is
+    // the matcher's job (roundingTolerance), at the precision the text used.
+    for (const v of [n, Math.abs(n)]) anchors.push({ value: v, ...scope });
     if (metricId) {
       const key = metricGroup(metricId);
       const group = byMetric.get(key) ?? new Set<number>();
@@ -1262,9 +1268,8 @@ export function auditNumericClaims(
 
     const at = match.start;
     const hedged = HEDGE_BEFORE.test(scrubbed.slice(Math.max(0, at - 24), at));
-    const tolerance = hedged
-      ? Math.max(MATCH_EPSILON, Math.abs(value) * HEDGED_RELATIVE_TOLERANCE)
-      : MATCH_EPSILON;
+    const exact = roundingTolerance(raw);
+    const tolerance = hedged ? Math.max(exact, Math.abs(value) * HEDGED_RELATIVE_TOLERANCE) : exact;
 
     const near = (a: Anchor) => Math.abs(a.value - value) <= tolerance;
     const binding = bind.bindingFor(index);
