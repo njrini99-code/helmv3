@@ -303,8 +303,9 @@
 /* A block, not a flex row: an ellipsis on a flex container cuts a long title mid-letter. The line height centres it. */
 .ch-ask-hist__row {
   display: block;
-  height: 36px;
+  height: 44px;
   padding: 0 8px;
+  line-height: 44px;
   overflow: hidden;
   border-radius: var(--ch-radius-md);
   font: var(--ch-type-14);
@@ -922,7 +923,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     flex-direction: column;
   }
   .ch-ask-dock {
-    padding: 8px 12px 8px;
+    padding: 8px var(--ch-page-x-phone) 8px;
     box-shadow: 0 -1px 0 var(--ch-border-hairline);
     background: var(--ch-phone-composer-bg);
   }
@@ -1337,7 +1338,7 @@ html:not([data-fw-theme='dark']) .ch-ask {
   }
 }
 .ch-ask-cap__ic {
-  background: var(--ch-green-700);
+  background: var(--ch-accent);
   color: var(--ch-text-on-accent);
 }
 @media (hover: hover) {

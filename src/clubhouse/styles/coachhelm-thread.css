@@ -15,7 +15,7 @@
   font-variant-numeric: tabular-nums;
 }
 .ch-th--phone {
-  padding: 16px 16px 12px;
+  padding: 16px var(--ch-page-x-phone) 12px;
 }
 .ch-th-col {
   width: 100%;
@@ -63,7 +63,7 @@
   border-bottom-right-radius: var(--ch-radius-tail);
   background: var(--ch-bubble-mine-bg);
   box-shadow: var(--ch-elevation-bubble-mine);
-  color: #f7fbf8;
+  color: var(--ch-on-green-plate);
   font: var(--ch-type-16);
   letter-spacing: var(--ch-track-16);
   overflow-wrap: anywhere;
@@ -226,6 +226,7 @@
   flex-direction: column;
   gap: 16px;
   max-width: 68ch;
+  overflow-wrap: anywhere;
 }
 /* The answer (playbook §4, owner 2026-10-29 "the text after the charts has not a lot of contrast"): body 16px at 1.65 in the
    primary ink, the lead sentence 17px at medium weight. The colour already held (17.9:1 by day, 13.4:1 at night, measured in
@@ -989,7 +990,7 @@ a.ch-th-reads__r:focus-visible {
 .ch-th-pill {
   display: inline-flex;
   align-items: center;
-  min-height: 36px;
+  min-height: 44px;
   padding: 0 16px;
   border: 0;
   border-radius: 999px;
@@ -1024,7 +1025,8 @@ a.ch-th-reads__r:focus-visible {
   gap: 12px;
   padding: 16px 16px;
   border-radius: var(--ch-radius-lg);
-  background: var(--ch-danger-100);
+  /* An answer that didn't come is amber: red is for errors that lost something (owner rule). */
+  background: var(--ch-warning-100);
 }
 .ch-th--phone .ch-th-error {
   flex-wrap: wrap;
@@ -1740,6 +1742,8 @@ a.ch-th-reads__r:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  /* Clear of the expand button in the corner (ASK-4). */
+  padding-right: 44px;
 }
 .ch-th-cv__entity {
   font: var(--ch-type-13-medium);
@@ -1991,6 +1995,17 @@ a.ch-th-reads__r:focus-visible {
   content: '';
   position: absolute;
   inset: -6px;
+}
+/* One card deep inside the answer (ASK-5): the group is a hairline-separated section, and the figure the only well. */
+.msg-a .ch-th-cv {
+  padding: 12px 0 0;
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.msg-a .ch-th-cv__fig {
+  border-radius: var(--ch-radius-md);
 }
 .ch-th-cv__full {
   display: grid;
