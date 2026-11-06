@@ -4498,3 +4498,10 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     --ch-offline-top: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
   }
 }
+
+/* One surface below the last card: the page's colour reaches the bottom on a short page (MOB-CRH-9). */
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  .ch-root[data-ch-crh='on'] .ch-canvas:has(.ch-hm[data-ch-crh='on'], .ch-cl[data-ch-crh='on'], .ch-rsm[data-ch-crh='on']) {
+    background: var(--ch-grouped-bg);
+  }
+}

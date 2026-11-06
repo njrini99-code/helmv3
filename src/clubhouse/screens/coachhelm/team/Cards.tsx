@@ -111,9 +111,11 @@ export function WorkingCard({ working, proposed, failed, onRetry }: { working: r
     <section className="card work" data-ch-team-card="work" aria-label="Working on">
       <div className="ch">
         <h4>Working on</h4>
-        <span className="meta">
-          {n} focus {pluralWord(n, 'area', 'areas')}
-        </span>
+        {!failed && (
+          <span className="meta">
+            {n} focus {pluralWord(n, 'area', 'areas')}
+          </span>
+        )}
       </div>
       {failed ? (
         <Notice title="Couldn’t load this part" onRetry={onRetry} />
@@ -160,13 +162,13 @@ export function RecordCard({ part, desk = false, recheck = null }: { part: ChTea
         <h4>How often CoachHelm is right</h4>
       </div>
       <Notice title={title} body={body} />
+      {/* The way to run the check stays, whatever the record says (the design's failed state draws none; this is the coach's only way). */}
       {recheck && <div className="recfoot">{recheck}</div>}
     </section>
   );
   if (part.status === 'failed' || part.value.state === 'unavailable') return notice('Track record unavailable right now', 'It shows again once the check runs. No number is shown in its place.');
   const r = part.value;
-  const held = r.rungs.reduce((n, g) => n + (g.bar?.held ?? 0), 0);
-  const checked = r.rungs.reduce((n, g) => n + (g.bar?.of ?? 0), 0);
+  const { held, rechecked: checked } = r;
   if (r.empty) return notice('No reads to check yet', 'Reads are re-checked against new rounds once the team has some.');
   return (
     <section className="card recc" data-ch-team-card="record" aria-label="How often CoachHelm is right">
@@ -180,7 +182,7 @@ export function RecordCard({ part, desk = false, recheck = null }: { part: ChTea
               {held} of {checked}
             </b>
           )}
-          <span>{r.program}</span>
+          <span>{checked > 0 ? 'reads held up when re-checked' : r.program}</span>
         </div>
         {r.rungs.map((g) => (
           <div className="lv" key={g.id}>
@@ -195,8 +197,8 @@ export function RecordCard({ part, desk = false, recheck = null }: { part: ChTea
             )}
             <span className="n">
               {/* The rung named "Not enough yet" doesn't say so twice (QA-9). */}
-              {g.line === g.word ? null : g.line}
-              {desk && g.bar ? <b> · {g.sub}</b> : null}
+              {g.line === g.word ? null : g.line.replace(/ held$/, '')}
+              {desk && g.bar ? <b> · {g.bar.target == null ? 'no target yet' : `target ${/under/i.test(g.sub ?? '') ? 'under ' : ''}${g.bar.target * 10}%`}</b> : null}
             </span>
           </div>
         ))}

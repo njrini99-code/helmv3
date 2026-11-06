@@ -2120,6 +2120,9 @@ html:not([data-fw-theme='dark']) .ch-hl {
   display: grid;
   gap: 12px;
 }
+.ch-chd.is-phone {
+  padding-top: 16px;
+}
 .ch-chd__t {
   display: grid;
   gap: 4px;
