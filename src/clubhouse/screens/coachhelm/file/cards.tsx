@@ -280,6 +280,8 @@ function GoalBlock({ goal }: { goal: NonNullable<ChFilePlan['goal']> }) {
   const x = (i: number) => (goal.points.length < 2 ? W / 2 : 6 + (i * (W - 12)) / (goal.points.length - 1));
   const y = (v: number) => 8 + ((hi + pad - v) / (hi - lo + 2 * pad)) * (H - 26);
   const chip = goal.word === 'Improved' ? 'gain' : goal.word === 'Worse' ? 'loss' : 'plain';
+  const lastPoint = goal.points[goal.points.length - 1];
+  const goalLabelLeft = goal.target != null && lastPoint != null && Math.abs(y(lastPoint.value) - y(goal.target)) < 20;
   return (
     <div className="goal">
       <div className="goal__t">
@@ -292,7 +294,8 @@ function GoalBlock({ goal }: { goal: NonNullable<ChFilePlan['goal']> }) {
           {goal.target != null && (
             <>
               <line x1="0" x2={W} y1={y(goal.target)} y2={y(goal.target)} className="gl" />
-              <text x={W} y={y(goal.target) - 4} textAnchor="end" className="gt">
+              {/* The end the line isn't near, so the label never sits on the latest point. */}
+              <text x={goalLabelLeft ? 0 : W} y={y(goal.target) - 4} textAnchor={goalLabelLeft ? 'start' : 'end'} className="gt">
                 Goal {goal.target}
               </text>
             </>
@@ -313,9 +316,29 @@ function GoalBlock({ goal }: { goal: NonNullable<ChFilePlan['goal']> }) {
   );
 }
 
+/**
+ * Which row each teammate's dot sits on: 0 on the line, 1 above, 2 below. A dot that would touch the player's own mark or
+ * a dot already on its row moves off the line, so every player stays countable (all 14 pt, at every field size, AC S-FILE 23).
+ * `gap` is one dot's width as a fraction of the track.
+ */
+export function dotRows(values: readonly number[], me: number, lo: number, hi: number, gap = 0.05): number[] {
+  const f = (v: number) => (v - lo) / (hi - lo || 1);
+  const taken: number[][] = [[f(me)], [], []];
+  const order = values.map((v, i) => ({ v: f(v), i })).sort((a, b) => a.v - b.v);
+  const out = new Array<number>(values.length).fill(0);
+  for (const { v, i } of order) {
+    const row = taken.findIndex((placed) => placed.every((p) => Math.abs(p - v) >= gap));
+    const at = row < 0 ? 0 : row;
+    out[i] = at;
+    taken[at]!.push(v);
+  }
+  return out;
+}
+
 export function FieldCard({ field }: { field: ChFileField }) {
   const [lo, hi] = field.scale;
   const at = (v: number) => `${((v - lo) / (hi - lo)) * 100}%`;
+  const rows = dotRows(field.dots ?? [], field.me, lo, hi);
   return (
     <section className="card" aria-labelledby="ch-hf-field" data-ch-anchor="field">
       <CardHead id="ch-hf-field" title="Last round in context" meta={field.meta} />
@@ -332,7 +355,7 @@ export function FieldCard({ field }: { field: ChFileField }) {
         </div>
         <div className="dots" role="img" aria-label={`${field.caption}. ${field.label}.`}>
           {field.dots?.map((v, i) => (
-            <i key={i} style={{ left: at(v) }} />
+            <i key={i} data-row={rows[i] || undefined} style={{ left: at(v) }} />
           ))}
           <i className="mean" style={{ left: at(field.mean) }} />
           <i className="me" style={{ left: at(field.me) }} />

@@ -66,10 +66,13 @@ function Fold({ show, children }: { show: boolean; children: ReactNode }) {
     const opts = { duration: spring.ms, easing: spring.linear ?? EASE, fill: 'both' as const };
     const fade = { duration: show ? 260 : 180, easing: EASE, fill: 'both' as const };
     el.getAnimations().forEach((a) => a.cancel());
+    // Clip only while it folds: at rest a clipping wrapper cuts the card's shadow and squares its corners.
+    el.style.overflow = 'hidden';
     const box = el.animate(show ? [{ height: '0px', marginTop: '-24px' }, { height: `${h}px`, marginTop: '0px' }] : [{ height: `${h}px`, marginTop: '0px' }, { height: '0px', marginTop: '-24px' }], opts);
     el.animate(show ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], fade);
     box.onfinish = () => {
       el.getAnimations().forEach((a) => a.cancel());
+      el.style.overflow = '';
       if (!show) setMounted(false);
     };
     return () => {

@@ -75,7 +75,7 @@ html[data-fw-theme='dark'] .ch-hf {
 .ch-hf.is-phone .dhead.is-week { margin-top: 20px; display: block; }
 .ch-hf.is-phone .dhead.is-week p { margin-top: 4px; }
 .ch-hf .feat { color: var(--ch-hf-a-feat-1); }
-.ch-hf .ch-hf-coachline { margin: 0 -20px; }
+.ch-hf .ch-hf-coachline { margin: 0 -16px; }
 .ch-hf .goal svg .gl { stroke: var(--ch-hf-c-gain); stroke-width: 1.5; stroke-dasharray: 4 4; }
 .ch-hf .goal svg .pl { fill: none; stroke: var(--ch-hf-c-neutral); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .ch-hf .goal svg .pt { fill: var(--ch-hf-c-neutral); stroke: var(--ch-hf-a-card); stroke-width: 1.5; }
@@ -124,7 +124,7 @@ html[data-fw-theme='dark'] .ch-hf {
 .ch-hf .card__n { margin: 0; padding: 12px 16px 16px; border-top: var(--ch-hairline-w) solid var(--ch-hf-a-sep); font: var(--ch-type-15);  color: var(--ch-hf-a-ink-2); letter-spacing: var(--ch-track-15); }
 .ch-hf .card.tap { cursor: pointer; transition: box-shadow 0s; }
 .ch-hf .card.tap[data-ch-pressed] { box-shadow: var(--ch-file-shadow-2); transition-delay: var(--ch-dur-press); }
-.ch-hf .wrap-collapse { overflow: hidden; }
+.ch-hf .wrap-collapse { overflow: visible; }
 .ch-hf .feat { border-radius: var(--ch-radius-lg); padding: 20px; background: var(--ch-hf-a-feat); color: var(--ch-hf-a-feat-1); box-shadow: var(--ch-file-shadow-3); display: flex; flex-direction: column; gap: 12px; }
 .ch-hf .feat__who { display: flex; align-items: center; gap: 8px; font: var(--ch-type-15-medium); color: var(--ch-hf-a-feat-2); letter-spacing: var(--ch-track-15); }
 .ch-hf .feat__who b { color: var(--ch-hf-a-feat-1); font-weight:var(--ch-fw-600); }
@@ -318,6 +318,77 @@ html[data-fw-theme='dark'] .ch-hf {
 .ch-hf.is-phone .dmain { display: block; }
 .ch-hf .empty .ch-btn {
   margin-top: 8px;
+}
+/* The page never ends in a band of a second colour on a short file, and the rail's hairline runs the page's height. */
+.ch-hf.is-desk {
+  min-height: calc(100dvh - var(--ch-topbar-h) - 16px);
+}
+.ch-hf.is-desk > .dmain {
+  min-height: inherit;
+}
+/* One left edge in a card: head and body share 16, the rows' own inset. */
+.ch-hf .card__b {
+  padding-inline: 16px;
+}
+.ch-hf .ch-hf-trackrows {
+  margin-inline: -16px;
+}
+/* A card's meta wraps rather than cutting off ("Jonah vs Tour and t"); a read's line wraps too. */
+.ch-hf .card__h small,
+.ch-hf .r__t small {
+  text-wrap: pretty;
+  overflow: visible;
+  white-space: normal;
+}
+.ch-hf .card__h h4 {
+  flex: 0 1 auto;
+}
+.ch-hf .card__h small {
+  flex: 0 1 auto;
+}
+/* The stance chips share a column, so every read's title starts on one edge. */
+.ch-hf .r:has(> .ch-badge:first-child) {
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+}
+.ch-hf .r > .ch-badge:first-child {
+  justify-self: start;
+}
+.ch-hf .dots i {
+  margin-left: -7px;
+}
+.ch-hf .dots i.me {
+  margin-left: -10px;
+}
+.ch-hf .dots i[data-row='1'] {
+  top: 1px;
+}
+.ch-hf .dots i[data-row='2'] {
+  top: 25px;
+}
+/* The evidence sheet's sections: the text and the strip sit inside the card's padding, not on its edge. */
+.ch-hf.ch-hf-sheet .card > .ch-hf-strip,
+.ch-hf.ch-hf-sheet .card > .ch-hf-holes,
+.ch-hf.ch-hf-sheet .card > .ch-hf-why,
+.ch-hf.ch-hf-sheet .card > .ch-hf-whym {
+  margin-inline: 16px;
+}
+.ch-hf.ch-hf-sheet .card > :last-child:is(.ch-hf-strip, .ch-hf-holes, .ch-hf-why, .ch-hf-whym) {
+  margin-bottom: 16px;
+}
+/* The drill section is the card; the file's own well inside it would be a surface on a surface. */
+.ch-hf.ch-hf-sheet .card > .drill {
+  margin-top: 0;
+  padding: 12px 16px;
+  border-radius: 0;
+  background: none;
+}
+/* On a desk the sheet is a centred dialog: it hugs its content with all four corners round. */
+@media (min-width: 821px) {
+  .ch-htb-sheet.ch-hf-sheet .ch-modal__panel {
+    height: auto;
+    border-radius: var(--ch-radius-xl);
+    overflow: hidden;
+  }
 }
 .ch-hf .feat .ch-btn--ghost {
   color: var(--ch-on-green-ink);
