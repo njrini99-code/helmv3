@@ -713,3 +713,10 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-see > div:first-child { border-top: 0; padding-top: 0; }
 .ch-ak-see dt { font: var(--ch-type-15-strong); color: var(--ch-text-primary); }
 .ch-ak-see dd { margin: 0; font: var(--ch-type-14); color: var(--ch-text-secondary); }
+
+/* In the one-row box the chips take their own row above it. */
+.ch-ak-root .ch-ask-cmp.is-dock .ch-ask-cmp__box:has(.ch-ak-cscope), .ch-ak-root .ch-ask-cmp.is-phone .ch-ask-cmp__box:has(.ch-ak-cscope) { flex-wrap: wrap; }
+.ch-ak-root .ch-ask-cmp.is-dock .ch-ak-cscope, .ch-ak-root .ch-ask-cmp.is-phone .ch-ak-cscope { order: -1; flex: 0 0 100%; }
+
+/* The plan pane: the close button sits over the head of the bar, so the title starts past it. */
+@media (min-width: 821px) { .ch-cpv-full .fbar > b { padding-left: 32px; } }
