@@ -83,12 +83,12 @@ export function ComposerPlusV2({ api, conv, disabled, onPick }: { api: ChMessage
             Photos
           </button>
           <button type="button" role="menuitem" onClick={() => { files.current?.click(); close(); }}>
-            <span className="ch-msv-attach__ic"><Icon icon={FileText} size={17} /></span>
+            <span className="ch-msv-attach__ic is-file"><Icon icon={FileText} size={17} /></span>
             File
           </button>
           {canPoll && (
             <button type="button" role="menuitem" onClick={() => { setPolling(true); close(); }}>
-              <span className="ch-msv-attach__ic"><Icon icon={ListChecks} size={17} /></span>
+              <span className="ch-msv-attach__ic is-poll"><Icon icon={ListChecks} size={17} /></span>
               Poll
             </button>
           )}

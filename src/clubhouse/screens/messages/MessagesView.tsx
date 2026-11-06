@@ -972,7 +972,20 @@ export function Attachments({
   const [refresh, setRefresh] = useState(0);
   const loadedAt = useRef(0);
   const haveFiles = useRef(false);
+  // A long thread doesn't sign every file on open: only what's about to scroll into view (MOB-MSG-24).
+  const spot = useRef<HTMLSpanElement | null>(null);
+  const [near, setNear] = useState(() => typeof IntersectionObserver === "undefined");
   useEffect(() => {
+    const el = spot.current;
+    if (near || !el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) setNear(true);
+    }, { rootMargin: "800px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [near]);
+  useEffect(() => {
+    if (!near) return;
     let live = true;
     let retry: number | undefined;
     const silent = haveFiles.current;
@@ -1002,7 +1015,7 @@ export function Attachments({
       live = false;
       if (retry) window.clearTimeout(retry);
     };
-  }, [load, id, attempt, refresh]);
+  }, [load, id, attempt, refresh, near]);
   useEffect(() => {
     const AGE = 45 * 60_000;
     const stale = () => haveFiles.current && Date.now() - loadedAt.current > AGE;
@@ -1038,7 +1051,7 @@ export function Attachments({
   }
   if (!files)
     return (
-      <span aria-busy="true" data-ch-code="CH-7408">
+      <span ref={spot} aria-busy="true" data-ch-code="CH-7408">
         <Skeleton width={240} height={54} radius={14} />
       </span>
     );
@@ -1188,7 +1201,18 @@ export function Bubble({
     drawn.current = true;
   }, []);
   const [showTime, setShowTime] = useState(false);
-  const press = useLongPress(m.failed ? undefined : onActions, onActions ? (direction) => {
+  // The desk layout on a finger (a landscape iPhone, an iPad) has no sheet and no hover: a long press holds the bar open.
+  const [barHeld, setBarHeld] = useState(false);
+  const rowRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!barHeld) return;
+    const away = (e: PointerEvent) => {
+      if (!rowRef.current?.contains(e.target as Node)) setBarHeld(false);
+    };
+    document.addEventListener('pointerdown', away);
+    return () => document.removeEventListener('pointerdown', away);
+  }, [barHeld]);
+  const press = useLongPress(m.failed ? undefined : (onActions ?? (api.redesign ? () => setBarHeld(true) : undefined)), onActions ? (direction) => {
     if (direction === "right") onReply?.();
     else setShowTime(true);
   } : undefined);
@@ -1318,6 +1342,8 @@ export function Bubble({
     <PresenceRow
       as="div"
       id={`ch-ms-message-${m.id}`}
+      ref={rowRef as never}
+      data-ch-bar={barHeld ? "" : undefined}
       className={
         "ch-ms-msg" +
         (group ? " is-group" : "") +

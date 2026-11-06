@@ -4,6 +4,7 @@ import type { LucideIcon } from 'lucide-react';
 import { X } from 'lucide-react';
 import { useId, type ReactNode } from 'react';
 import { useDialogLifetime } from '../lib/dialog-lifetime';
+import { useSheetKeyboardFit } from './sheet-keyboard';
 import { useSheetDrag } from '../lib/sheet-drag';
 import { useChPhone } from '../lib/use-phone';
 import { Icon } from './Icon';
@@ -57,6 +58,7 @@ export function Modal({
   atRest?: boolean;
 }) {
   const titleId = useId();
+  useSheetKeyboardFit(open);
   const descriptionId = useId();
   const phone = useChPhone();
   const { ref, reduced, retainContent } = useDialogLifetime(open, {

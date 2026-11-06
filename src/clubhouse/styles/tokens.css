@@ -9,6 +9,11 @@
  */
 [data-ui='clubhouse'] {
   /* Paper: ink on white in every theme, so a sheet prints the same on any printer (N-00 4.14). */
+  /* The composer's attach tiles, the same in both themes (Messages 06, Ruling 15). */
+  --ch-attach-photos: #2f7d4c;
+  --ch-attach-file: #7f612a;
+  --ch-attach-poll: #155a39;
+  --ch-attach-glyph: #fdfcf8;
   --ch-print-ink: #1c1b18;
   --ch-print-soft: #46433d;
   --ch-print-rule: #c9c5ba;

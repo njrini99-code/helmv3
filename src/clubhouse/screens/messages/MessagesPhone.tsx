@@ -137,6 +137,8 @@ const NO_ANN: AnnDraft = { title: "", body: "", urgent: false, ack: true };
  */
 export function MessagesPhone({ api }: { api: ChMessagesApi }) {
   const [composing, setComposing] = useState(false);
+  // "Message the team": New message with everyone in it and the team's name on the group, as the desk's dialog opens.
+  const [teamSeed, setTeamSeed] = useState(false);
   useEffect(() => {
     if (api.prefill) setComposing(true);
   }, [api.prefill]);
@@ -193,7 +195,7 @@ export function MessagesPhone({ api }: { api: ChMessagesApi }) {
       />
       <div className="ch-msp-inbox" inert={depth > 0 || undefined}>
         <SectionBoundary surface="messages.rail" label="Your conversations" code="CH-7210">
-          {api.redesign ? <PhoneInboxV2 api={api} onNew={() => setComposing(true)} /> : <PhoneInbox api={api} onNew={() => setComposing(true)} />}
+          {api.redesign ? <PhoneInboxV2 api={api} onNew={() => setComposing(true)} onTeam={() => { setTeamSeed(true); setComposing(true); }} /> : <PhoneInbox api={api} onNew={() => setComposing(true)} />}
         </SectionBoundary>
       </div>
 
@@ -229,7 +231,9 @@ export function MessagesPhone({ api }: { api: ChMessagesApi }) {
           <PhoneNewMessage
             key="new"
             api={api}
+            teamSeed={teamSeed}
             onCancel={() => {
+              setTeamSeed(false);
               setComposing(false);
               api.clearPrefill?.();
             }}
@@ -256,7 +260,7 @@ export function MessagesPhone({ api }: { api: ChMessagesApi }) {
 /* Inbox */
 
 /** The redesign's inbox: context line, search and New, segmented, Pinned card, Recent card (06 S-MSG). No large title on the phone. */
-function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
+function PhoneInboxV2({ api, onNew, onTeam }: { api: ChMessagesApi; onNew: () => void; onTeam: () => void }) {
   const [filter, setFilter] = useState<ChConvFilter>(api.designFilter ?? "all");
   const [q, setQ] = useState("");
   const unread = api.convs.filter(isUnread).length;
@@ -319,7 +323,7 @@ function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void })
           ))}
         </section>
       ) : firstRun ? (
-        <MessagesFirstRun redesign coach={api.viewer.role === "coach"} teamName={api.teamName ?? undefined} onNew={onNew} onTeam={api.viewer.role === "coach" ? onNew : undefined} />
+        <MessagesFirstRun redesign coach={api.viewer.role === "coach"} teamName={api.teamName ?? undefined} onNew={onNew} onTeam={api.viewer.role === "coach" ? onTeam : undefined} />
       ) : (
         <div className="ch-msp-list">
           {filter === "all" && !q.trim() && pinned.length > 0 && (
@@ -1208,6 +1212,7 @@ function FilesPanel({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
 
 function PhoneNewMessage({
   api,
+  teamSeed = false,
   onCancel,
   onAnnounce,
   onFirstMessage,
@@ -1215,6 +1220,7 @@ function PhoneNewMessage({
   onDraft,
 }: {
   api: ChMessagesApi;
+  teamSeed?: boolean;
   onCancel: () => void;
   onAnnounce: () => void;
   /** Hands the first message to the thread that opens next; null takes it back. */
@@ -1227,9 +1233,9 @@ function PhoneNewMessage({
   // A prefilled message (prefill.ts) arrives with its people and its group name. Its draft is quoted here and lands in
   // the new thread's composer (not this screen's first message, which Next sends): the coach presses Send there.
   const [seed] = useState(() => api.prefill ?? null);
-  const [to, setTo] = useState<string[]>(() => (seed ? (coach ? seed.to : seed.to.slice(0, 1)) : []));
+  const [to, setTo] = useState<string[]>(() => (seed ? (coach ? seed.to : seed.to.slice(0, 1)) : teamSeed ? api.directory.map((p) => p.userId) : []));
   const [q, setQ] = useState("");
-  const [name, setName] = useState(seed?.title ?? "");
+  const [name, setName] = useState(seed?.title ?? (teamSeed ? (api.teamName ?? "") : ""));
   const draft = kept.text;
   const files = kept.files;
   const setDraft = (text: string) => onDraft({ text, files });
