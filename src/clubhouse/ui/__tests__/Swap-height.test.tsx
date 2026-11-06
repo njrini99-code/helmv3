@@ -26,7 +26,7 @@ afterEach(() => {
 
 const swap = (k: string) => (
   <LazyMotion features={domMax}>
-    <Swap swapKey={k}>
+    <Swap swapKey={k} resize="ease">
       <p>{k}</p>
     </Swap>
   </LazyMotion>
@@ -61,6 +61,29 @@ describe('Swap resize="instant"', () => {
 });
 
 /** B7: a swap eases its frame from the old content's height to the new one's, then lets it be `auto` again. */
+/** MOT-09: the default takes the new height at once, so a swap never lays out the page every frame. */
+describe('Swap by default', () => {
+  it('does not glide its height', () => {
+    const { rerender, container } = render(
+      <LazyMotion features={domMax}>
+        <Swap swapKey="a">
+          <p>a</p>
+        </Swap>
+      </LazyMotion>,
+    );
+    const frame = container.querySelector<HTMLElement>('.ch-swap')!;
+    contentH = 240;
+    rerender(
+      <LazyMotion features={domMax}>
+        <Swap swapKey="b">
+          <p>b</p>
+        </Swap>
+      </LazyMotion>,
+    );
+    expect(frame.style.transition).toBe('');
+  });
+});
+
 describe('Swap height', () => {
   it('on a key change the frame gets an explicit, clipped height that is cleared afterwards', async () => {
     const { rerender, container } = render(swap('a'));
