@@ -676,3 +676,12 @@ html[data-fw-theme='dark'] .ch-ak-th {
 /* In the one-row box the chips take their own row above it. */
 .ch-ak-root .ch-ask-cmp.is-dock .ch-ask-cmp__box:has(.ch-ak-cscope), .ch-ak-root .ch-ask-cmp.is-phone .ch-ask-cmp__box:has(.ch-ak-cscope) { flex-wrap: wrap; }
 .ch-ak-root .ch-ask-cmp.is-dock .ch-ak-cscope, .ch-ak-root .ch-ask-cmp.is-phone .ch-ak-cscope { order: -1; flex: 0 0 100%; }
+
+/* Phone: an answer is text on the page, and its cards stand alone at full width, rather than a card holding a card. */
+.ch-ak-root.is-phone .ch-ak-th .msg-a { padding: 0; border-radius: 0; background: none; filter: none; box-shadow: none; }
+
+/* Phone: one surface at a time. The draft's facts are plain rows in the card, not a well inside a card, with a narrower label so a date stays on one line. */
+@media (max-width: 820px) {
+  .ch-ak-th .conf:not(.is-pub) .evd { margin: 12px 16px 4px; padding: 0; background: none; box-shadow: none; border-radius: 0; }
+  .ch-ak-th .conf:not(.is-pub) .evd .f { grid-template-columns: 56px minmax(0, 1fr); }
+}
