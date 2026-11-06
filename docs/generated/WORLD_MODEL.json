@@ -23608,6 +23608,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/qualifier-actions.ts",
+          "anchor": "src/lib/supabase/admin"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/qualifier-actions.ts",
           "anchor": "src/lib/admin/observed-action"
         },
         {
@@ -23624,6 +23629,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/qualifying.ts",
           "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/qualifying/player-notify.ts",
+          "anchor": "src/lib/supabase/admin"
         }
       ]
     },

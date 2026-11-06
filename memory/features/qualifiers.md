@@ -401,6 +401,10 @@ in `docs/clubhouse/catalog/qualifiers.md` (CH-09xxx).
 - Calendar integration means deleting or rescheduling qualifiers can affect event views.
 - A date-based entry gate is a release-blocking regression: it strands an
   eligible player and contradicts the coach-controlled qualifier lifecycle.
+- Entrant notices read `users.email` with the service role (fingerprint 0f4b92c9, 2026-11-05): `createGolfQualifier`
+  and `notifyPlayersOfSelectionOutcome`. `public.users` RLS is own-row only, so the coach's session read no rows with
+  no error, and nobody was told (no email, push or bell). A failed read now logs on create and throws on confirm, so
+  the coach sees the Q-116 "not told" state.
 - `createGolfQualifier` writes the qualifier, then its round courses, then its
   entries, in separate calls. If the entries insert fails, the action returns
   "Failed to add players to qualifier. Please try again." although the

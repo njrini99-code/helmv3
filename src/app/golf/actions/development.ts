@@ -1385,7 +1385,12 @@ async function notifyPlayerOfProposedFocus(
     }
 
     if (playerRow?.user_id) {
-      const { data: userRow, error: userRowError } = await supabase
+      // SERVICE-ROLE, not the caller's client. `public.users` only allows
+      // `users_select_own` and `admin_read_all`, so a coach reading a player's row
+      // gets nothing and the player is never told. Same fix as announcements.ts.
+      // Not a privilege widening: every caller has already checked the coach may
+      // reach this player, and the email is only handed to the notifier.
+      const { data: userRow, error: userRowError } = await createAdminClient()
         .from('users')
         .select('email')
         .eq('id', playerRow.user_id)
@@ -1729,7 +1734,7 @@ async function createFocusAreaFromInsightV2Impl(
 
 const observedCreateFocusAreaFromInsightV2 = withAdminObserved(
   'createFocusAreaFromInsightV2',
-  { sport: 'golf', feature: 'development_plans_coach' },
+  { demoSafe: true, sport: 'golf', feature: 'development_plans_coach' },
   createFocusAreaFromInsightV2Impl,
 );
 
@@ -2016,7 +2021,7 @@ async function createFocusAreaFromInsightImpl(
 
 const observedCreateFocusAreaFromInsight = withAdminObserved(
   'createFocusAreaFromInsight',
-  { sport: 'golf', feature: 'development_plans_coach' },
+  { demoSafe: true, sport: 'golf', feature: 'development_plans_coach' },
   createFocusAreaFromInsightImpl,
 );
 
