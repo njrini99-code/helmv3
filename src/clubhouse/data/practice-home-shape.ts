@@ -114,6 +114,8 @@ export interface ChBuilderData {
   why: Record<string, PlanWhy>;
   step: 'blocks' | 'groups' | 'drills' | 'review';
   drills: ChBankDrill[];
+  /** The Documents folder the draft is filed in, so a kept suggestion's save doesn't move it; null when not filed yet. */
+  folder?: string | null;
   /** coachhelm_practice_plans_v1: the helper card, Fill the draft and the suggestions. */
   helperOn: boolean;
   /** What the helper's card leads with, from this request's reads; only what was read. */
