@@ -1209,9 +1209,10 @@ html[data-fw-theme='dark'] .ch-cg__head {
 /* A narrow cascaded block with height to spare wraps its title down the block, its warning at the foot instead of over the words. */
 @container (max-width: 60px) and (min-height: 64px) {
   .ch-ev--lane .ch-ev__t {
+    margin-inline: -2px;
+    font-size: calc(12 * var(--ch-type-k));
     -webkit-line-clamp: 4;
     line-clamp: 4;
-    overflow-wrap: anywhere;
   }
   .ch-ev--lane .ch-ev__warn {
     top: auto;

@@ -4082,3 +4082,11 @@ html[data-fw-theme='dark'] .ch-hw--dark {
     background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
   }
 }
+
+/* The week's rows on the phone: a full tap target, after the tile's own row rules above. */
+@media (max-width: 820px) {
+  .ch-hw .ch-hw-agenda a,
+  .ch-hw .ch-hw-later button {
+    min-height: 44px;
+  }
+}

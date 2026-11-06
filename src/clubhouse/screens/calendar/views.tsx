@@ -150,7 +150,7 @@ export function EventBlock({
   /** Overlapping events cascade, as Apple Calendar does (owner, 2026-10-06: the split lanes crushed titles into
    *  fragments): each later lane steps right and lies over the earlier ones, reaching the column's right edge, so every
    *  block keeps a readable width and an earlier one shows in full above where the next begins. */
-  const step = lanes > 1 ? Math.min(46, 70 / (lanes - 1)) : 0;
+  const step = lanes > 1 ? Math.min(40, 70 / (lanes - 1)) : 0;
   const left = step * lane;
   const shared = lanes > 1;
   // A busy block (someone's time, not a team event) lies under the events it overlaps, whatever its lane (A26): stepped in
