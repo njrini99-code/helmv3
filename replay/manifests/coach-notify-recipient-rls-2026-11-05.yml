@@ -18,7 +18,12 @@ fixture:
     target: src/test/coachhelm/v3/player-notify.test.ts
   - source: create-qualifier-roster-and-rollback.test.ts
     target: src/app/golf/actions/__tests__/create-qualifier-roster-and-rollback.test.ts
-test_command: "./node_modules/.bin/vitest run --project unit src/test/golf/actions/development.team-id.test.ts src/test/golf/actions/task-notify-recipients.test.ts src/test/coachhelm/v3/player-notify.test.ts src/app/golf/actions/__tests__/create-qualifier-roster-and-rollback.test.ts"
+test_command: >-
+  ./node_modules/.bin/vitest run --project unit
+  src/test/golf/actions/development.team-id.test.ts
+  src/test/golf/actions/task-notify-recipients.test.ts
+  src/test/coachhelm/v3/player-notify.test.ts
+  src/app/golf/actions/__tests__/create-qualifier-roster-and-rollback.test.ts
 expected:
   bad_version: fail
   fixed_version: pass
