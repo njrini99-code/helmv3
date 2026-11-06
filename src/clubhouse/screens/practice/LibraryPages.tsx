@@ -383,7 +383,10 @@ export function GroupsPage({ teamId, groups, roster, preview = false }: { teamId
             {roster.map((p) => (
               <li key={p.id}>
                 <label>
-                  <input type="checkbox" checked={picked.includes(p.id)} onChange={(e) => setPicked((list) => (e.target.checked ? [...list, p.id] : list.filter((x) => x !== p.id)))} />
+                  <input type="checkbox" checked={picked.includes(p.id)} onChange={(e) => {
+                  const on = e.target.checked;
+                  setPicked((list) => (on ? [...list, p.id] : list.filter((x) => x !== p.id)));
+                }} />
                   <Avatar name={p.name} size="xs" />
                   <span>{p.name}</span>
                 </label>
@@ -443,7 +446,7 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
   const [name, setName] = useState('');
   const [deleting, setDeleting] = useState<ChPracticeTemplate | null>(null);
   const [busy, setBusy] = useState(false);
-  const use = (ref: string) => router.push(`/golf/dashboard/practice?new=1&template=${encodeURIComponent(ref)}`);
+  const startFrom = (ref: string) => router.push(`/golf/dashboard/practice?new=1&template=${encodeURIComponent(ref)}`);
   const duplicate = async (t: { name: string; minutes: number; body: PlanBodyV2; kind: 'session' | 'block' }) => {
     if (preview) return;
     const r = await savePracticeTemplate({ teamId, name: t.name, kind: t.kind, minutes: t.minutes, body: t.body }).catch(() => ({ success: false as const, error: 'Couldn’t save the template.' }));
@@ -481,13 +484,13 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
           <ul className="ch-prc-cards">
             {PLAN_STARTERS.map((s) => (
               <li key={s.id} className="ch-prc-card ch-prc-tmpl">
-                <button type="button" className="ch-prc-tmpl__go" onClick={() => use(s.id)}>
+                <button type="button" className="ch-prc-tmpl__go" onClick={() => startFrom(s.id)}>
                   <b>{s.name}</b>
                   <span className="ch-num">Session · {hours(s.minutes)}</span>
                   <small>{s.line}</small>
                   <BodyGlance body={s.body} />
                 </button>
-                <Menu label={`${s.name}: more`} align="end" trigger={(p) => <IconButton icon={Ellipsis} size="sm" label={`${s.name}: more`} menu={p} />} items={[{ label: 'Use', onSelect: () => use(s.id) }, { label: 'Duplicate to your templates', onSelect: () => void duplicate({ name: s.name, minutes: s.minutes, body: s.body, kind: 'session' }) }]} />
+                <Menu label={`${s.name}: more`} align="end" trigger={(p) => <IconButton icon={Ellipsis} size="sm" label={`${s.name}: more`} menu={p} />} items={[{ label: 'Use', onSelect: () => startFrom(s.id) }, { label: 'Duplicate to your templates', onSelect: () => void duplicate({ name: s.name, minutes: s.minutes, body: s.body, kind: 'session' }) }]} />
               </li>
             ))}
           </ul>
@@ -504,7 +507,7 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
           <ul className="ch-prc-cards">
             {mine.map((t) => (
               <li key={t.id} className="ch-prc-card ch-prc-tmpl">
-                <button type="button" className="ch-prc-tmpl__go" onClick={() => use(t.id)}>
+                <button type="button" className="ch-prc-tmpl__go" onClick={() => startFrom(t.id)}>
                   <b>{t.name}</b>
                   <span className="ch-num">{t.kind === 'block' ? 'Block' : t.kind === 'week' ? 'Week' : 'Session'}{t.minutes ? ` · ${hours(t.minutes)}` : ''}</span>
                   <BodyGlance body={t.body} />
@@ -514,7 +517,7 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
                   align="end"
                   trigger={(p) => <IconButton icon={Ellipsis} size="sm" label={`${t.name}: more`} menu={p} />}
                   items={[
-                    { label: 'Use', onSelect: () => use(t.id) },
+                    { label: 'Use', onSelect: () => startFrom(t.id) },
                     { label: 'Duplicate', onSelect: () => void duplicate({ name: `${t.name} copy`, minutes: t.minutes ?? 60, body: t.body, kind: t.kind === 'block' ? 'block' : 'session' }) },
                     {
                       label: 'Rename',
