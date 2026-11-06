@@ -3,7 +3,7 @@ import type { ActionProposal, ActionReceipt, TaskVisual } from '@/lib/coachhelm/
 import type { QuickChatWeek } from '@/lib/coachhelm/v3/chat/quick-chat-week';
 import type { PlanCardPreview } from '../screens/coachhelm/plan/PlanCard';
 import { PP_COACHES, PP_NAMES, PP_PLAN_PART } from './fixtures-practice-plan';
-import { ASK_PLAYERS } from './fixtures-ask-thread';
+import { ASK_COMPOSITION, ASK_PLAYERS } from './fixtures-ask-thread';
 
 const ASK_ROSTER_COUNT = ASK_PLAYERS.length;
 
@@ -17,14 +17,14 @@ export const ASK_FLOWS: Record<string, Flow> = {
   plan_event: { visual: { kind: 'cal', date: '2026-11-03', start: '14:00', end: '17:00', title: 'Tuesday practice', where: 'Range and short game', who: 'Varsity', rsvp: false }, q: 'Build Tuesday’s practice', scope: 'Varsity · calendar', tool: 'create_event', action: 'Add to calendar', title: 'Tuesday practice', facts: [['When', 'Tue, Nov 3 · 2:00 to 5:00 PM'], ['Where', 'Range and short game']], on: 'Invites go out once Undo closes.', done: 'Added to Tuesday.' },
   f_event: { visual: { kind: 'cal', date: '2026-11-04', start: '16:00', end: '17:00', title: 'Team meeting', where: 'Film room', who: 'All 7 players', rsvp: true }, sources: { When: 'Calendar and classes', Who: 'Roster' }, q: 'Set a team meeting Wednesday at 4 in the film room', scope: 'Varsity · calendar', tool: 'create_event', action: 'Add to calendar', title: 'Team meeting', facts: [['When', 'Wed, Nov 4 · 4:00 to 5:00 PM'], ['Where', 'Film room'], ['Who', 'All 7 players']], on: '7 players see it on their calendar.', done: 'Added · Team meeting' },
   f_annc: { q: 'Tell the team the bus leaves Sunday at 7 for Hargrove', scope: 'Varsity · announcements', tool: 'create_announcement', action: 'Post to 7 players', title: 'Bus to Hargrove', facts: [['Message', 'Bus leaves the Clubhouse lot Sunday at 7:00 AM. Bags at the vans by 6:45.'], ['Urgency', 'Normal · pushes when they are free'], ['Asks for', 'Got it'], ['To', '7 players']], on: 'It posts to 7 players with a push and an email once Undo closes.', done: 'Posted · Bus to Hargrove' },
-  f_travel: { q: 'Set up travel for Hargrove', scope: 'Varsity · trips', tool: 'create_trip', action: 'Add the trip', title: 'Hargrove travel', facts: [['Leave', 'Sun, Nov 8 · 7:00 AM'], ['Back', 'Tue, Nov 10'], ['Who', '5 players, 2 coaches']], on: 'The 7 people see it in Hub once Undo closes.', done: 'Added · Hargrove travel' },
+  f_travel: { visual: { kind: 'trip', from: 'Campus', to: 'Hargrove CC', how: 'van', leave: '2026-11-08', back: '2026-11-10' }, q: 'Set up travel for Hargrove', scope: 'Varsity · trips', tool: 'create_trip', action: 'Add the trip', title: 'Hargrove travel', facts: [['Leave', 'Sun, Nov 8 · 7:00 AM'], ['Back', 'Tue, Nov 10'], ['Who', '5 players, 2 coaches']], on: 'The 7 people see it in Hub once Undo closes.', done: 'Added · Hargrove travel' },
   f_board: { q: 'Mark up Jonah’s approach for him', scope: 'Jonah Okafor · last 8 rounds', tool: 'draft_board', action: 'Open in Messages', title: 'Board for Jonah', facts: [['To', 'Jonah Okafor'], ['Attachment', 'Approach board']], on: 'Nothing is sent. The board goes into your message to Jonah, and you send it from Messages.', done: 'Opened in Messages' },
   f_poll: { q: 'Poll the team on dinner Friday', scope: 'Varsity · team chat', tool: 'draft_poll', action: 'Open in Messages', title: 'Team dinner poll', facts: [['Question', 'Where should we eat Friday?'], ['Options', 'Mexican, Barbecue, Pizza']], on: 'Nothing is sent until you press Send in team chat.', done: 'Opened in Messages' },
   f_qual: { visual: { kind: 'qual', title: 'Tiger Classic qualifier', rounds: 3, start: '2026-11-09', total: 5, picks: 1, field: 7, deadline: null }, q: 'Set up the Tiger Classic qualifier', scope: 'Varsity · qualifiers', tool: 'create_qualifier', action: 'Set qualifier', title: 'Tiger Classic qualifier', facts: [['Rounds', '3 rounds from Nov 9'], ['Field', '7 players'], ['Travels', 'Top 4, 1 coach pick']], on: '7 players are told once Undo closes.', done: 'Set · Tiger Classic qualifier' },
-  f_lineup: { q: 'Set the Hargrove lineup from the qualifier', scope: 'Varsity · Hargrove', tool: 'set_lineup', action: 'Set lineup', title: 'Hargrove lineup', facts: [['Starters', 'Eli, Theo, Jonah, Josie, Sam'], ['Alternate', 'Owen']], on: 'The lineup is set. Locking it is its own press.', done: 'Set · Hargrove lineup' },
-  f_task: { q: 'Give Eli and Theo a putting task', scope: 'Eli and Theo · tasks', tool: 'create_task', action: 'Assign task', title: 'Putting task for Eli and Theo', facts: [['Task', 'Gate drill, 4 feet, 25 makes'], ['Due', 'Fri, Nov 6'], ['To', 'Eli Brandt, Theo Marchetti']], on: 'It lands on their Home under To do.', done: 'Assigned · Putting task' },
-  f_goal: { q: 'Set Jonah an approach goal', scope: 'Jonah Okafor · goals', tool: 'create_goal', action: 'Set goal', title: 'Approach goal for Jonah', facts: [['Goal', 'Greens from 125 to 150 at 50%'], ['By', 'Dec 1'], ['Now', '38%']], on: 'Jonah sees it on his card, under Goals.', done: 'Set · Approach goal' },
-  f_note: { q: 'Note on Theo’s 13th at Hilltop', scope: 'Theo Marchetti · Hilltop', tool: 'add_round_note', action: 'Add note', title: 'Note on Theo’s hole 13', facts: [['Round', 'Hilltop, Oct 21'], ['Hole', '13'], ['Note', 'Good miss. Take the extra club there.']], on: 'Theo sees it in his round review.', done: 'Added · Note on hole 13' },
+  f_lineup: { visual: { kind: 'lineup', seats: [{ slot: 1, name: 'Eli Brandt', alternate: false }, { slot: 2, name: 'Theo Marchetti', alternate: false }, { slot: 3, name: 'Jonah Okafor', alternate: false }, { slot: 4, name: 'Josie Hart', alternate: false }, { slot: 5, name: 'Sam Lee', alternate: false }, { slot: null, name: 'Owen Park', alternate: true }] }, q: 'Set the Hargrove lineup from the qualifier', scope: 'Varsity · Hargrove', tool: 'set_lineup', action: 'Set lineup', title: 'Hargrove lineup', facts: [['Starters', 'Eli, Theo, Jonah, Josie, Sam'], ['Alternate', 'Owen']], on: 'The lineup is set. Locking it is its own press.', done: 'Set · Hargrove lineup' },
+  f_task: { visual: { kind: 'task', title: 'Gate drill, 4 feet, 25 makes', due: '2026-11-06', who: ['Eli Brandt', 'Theo Marchetti'] }, q: 'Give Eli and Theo a putting task', scope: 'Eli and Theo · tasks', tool: 'create_task', action: 'Assign task', title: 'Putting task for Eli and Theo', facts: [['Task', 'Gate drill, 4 feet, 25 makes'], ['Due', 'Fri, Nov 6'], ['To', 'Eli Brandt, Theo Marchetti']], on: 'It lands on their Home under To do.', done: 'Assigned · Putting task' },
+  f_goal: { visual: { kind: 'goal', player: 'Jonah Okafor', stat: 'Greens from 125 to 150', target: 50, days: 30 }, q: 'Set Jonah an approach goal', scope: 'Jonah Okafor · goals', tool: 'create_goal', action: 'Set goal', title: 'Approach goal for Jonah', facts: [['Goal', 'Greens from 125 to 150 at 50%'], ['By', 'Dec 1'], ['Now', '38%']], on: 'Jonah sees it on his card, under Goals.', done: 'Set · Approach goal' },
+  f_note: { visual: { kind: 'note', player: 'Theo Marchetti', note: 'Good miss. Take the extra club and play for the fat of the green.' }, q: 'Note on Theo’s 13th at Hilltop', scope: 'Theo Marchetti · Hilltop', tool: 'add_round_note', action: 'Add note', title: 'Note on Theo’s hole 13', facts: [['Round', 'Hilltop, Oct 21'], ['Hole', '13'], ['Note', 'Good miss. Take the extra club there.']], on: 'Theo sees it in his round review.', done: 'Added · Note on hole 13' },
   f_drill: { q: 'Add a 5 foot gate drill to the bank', scope: 'Varsity · drill bank', tool: 'create_drill', action: 'Add drill', title: '5 ft gate drill', facts: [['Area', 'Putting'], ['Length', '15 min']], on: 'It lands in your drill bank.', done: 'Added · 5 ft gate drill' },
 };
 
@@ -46,10 +46,22 @@ export const ASK_PREVIEW_WEEK: QuickChatWeek = {
 const user = (text: string) => ({ id: 'u1', role: 'user', parts: [{ type: 'text', text }] }) as unknown as UIMessage;
 const step = (i: number, label: string, active = false) => ({ type: 'data-progress', id: `p${i}`, data: { label, tool: 'read', ...(active ? { state: 'active' } : { state: 'done', done: label }) } });
 
+const HANDOFFS: Record<string, unknown[]> = {
+  f_board: [
+    { type: 'data-visual-composition', id: 'visual-vc-preview0001', data: ASK_COMPOSITION },
+    { type: 'data-handoff', id: 'handoff-1', data: { kind: 'board', players: ['p-jonah'], title: 'Board for Jonah Okafor', draft: 'Your misses are consistent, so they’re fixable. Let’s own 125 to 150 before Hargrove.' } },
+  ],
+  f_poll: [{ type: 'data-handoff', id: 'handoff-1', data: { kind: 'poll', players: [], conversationId: 'c-team', title: 'Poll for Varsity', thread: 'Varsity', draft: '', poll: { question: 'Which night works for a team dinner?', options: ['Mon Nov 2', 'Wed Nov 4', 'Thu Nov 5'], closes: '2026-11-07T17:00:00Z' } } }],
+};
+
 export function askFlowMessages(scene: string, stage: string): { messages: UIMessage[]; busy: boolean } | null {
   const f = ASK_FLOWS[scene];
   if (!f) return null;
   const q = user(f.q);
+  // A board and a poll write nothing, so they are hand-offs, not cards to confirm: what the server sends (TASK_FIELDS 5.5, 5.7).
+  if (HANDOFFS[scene] && stage !== 'reads' && stage !== 'steps' && stage !== 'typing') {
+    return { messages: [q, { id: 'a1', role: 'assistant', parts: [step(1, 'Read what it needs'), { type: 'text', text: `Here’s a draft: ${f.title}. Nothing goes out until you send it.`, state: 'done' }, ...HANDOFFS[scene]!] } as unknown as UIMessage], busy: false };
+  }
   const reads = [step(1, 'Read what it needs')];
   if (stage === 'reads' || stage === 'steps' || stage === 'typing') return { messages: [q, { id: 'a1', role: 'assistant', parts: [step(1, 'Reading', true)] } as unknown as UIMessage], busy: true };
   const proposal: ActionProposal & { tool: string } = { ...(f.publish ? { publish: f.publish } : {}), tool: f.tool, action: f.action, summary: f.title, ...(f.visual ? { visual: f.visual } : {}), facts: f.facts.map(([label, value]) => ({ label, value, ...(f.sources?.[label] ? { source: f.sources[label] } : {}) })), affects: [{ kind: 'team', id: 't', label: 'Varsity' }], notifications: [f.on], missing: [], idempotency_key: `key-${scene}` };

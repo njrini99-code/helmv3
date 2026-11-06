@@ -63,6 +63,11 @@ function targetNote(metric: MetricId, s: GoalTargetSuggestion | null, loading: b
   }
 }
 
+/** The iOS decimal pad has no minus key, and strokes gained targets are often negative (MOB-STATS-1). */
+export function flipSign(value: string): string {
+  return value.startsWith('-') ? value.slice(1) : `-${value}`;
+}
+
 export function GoalSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
   const [metric, setMetric] = useState<MetricId>(GOAL_METRICS.includes('sg_putting') ? 'sg_putting' : GOAL_METRICS[0]!);
@@ -185,6 +190,20 @@ export function GoalSheet({ open, onClose }: { open: boolean; onClose: () => voi
           <label className="ch-field__label" htmlFor="gs-target">
             Target
           </label>
+          {metric.startsWith('sg_') && (
+            <Button
+              size="sm"
+              variant="secondary"
+              aria={{ label: 'Make the target negative', pressed: target.startsWith('-') }}
+              onClick={() => {
+                editedRef.current = true;
+                setEdited(true);
+                setTarget(flipSign(target));
+              }}
+            >
+              {'\u2212'}
+            </Button>
+          )}
           <input
             id="gs-target"
             className="ch-input ch-num"
@@ -192,6 +211,7 @@ export function GoalSheet({ open, onClose }: { open: boolean; onClose: () => voi
             inputMode="decimal"
             step="0.1"
             value={target}
+            enterKeyHint="done"
             placeholder={loading ? 'Finding your starting point…' : 'Enter a target'}
             aria-invalid={touched && invalid}
             aria-describedby="gs-target-help"

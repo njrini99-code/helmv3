@@ -427,13 +427,13 @@ export function FocusActions({ fa, target, missing, where, extra, noDismiss = fa
       {mine ? (
         <span className="ch-hl-done" role="status" data-ch-code="CH-13601">
           <Icon icon={Check} size={15} />
-          {propose ? `Proposed to ${first}` : `Assigned as ${first}’s focus`}
+          {propose ? `Proposed to ${first} · now in Working on` : `Assigned as ${first}’s focus`}
         </span>
       ) : statusUnknown ? (
         <RefreshNotice code="CH-13207" title="Assign as focus isn’t offered right now" body={`${focusStatusSaid(missing, first)} Dismiss still works. Try again in a moment.`} />
       ) : stale ? null : (
-        <Button variant="primary" leftIcon={Flag} busy={fa.here('assign', ins.id)} disabled={fa.busy && !fa.here('assign', ins.id)} onClick={() => void fa.assign.run(target)}>
-          {fa.here('assign', ins.id) ? <span data-ch-code="CH-13403">{propose ? 'Proposing…' : 'Assigning…'}</span> : ins.declined ? 'Propose again' : propose ? 'Propose as focus' : 'Assign as focus'}
+        <Button variant="primary" leftIcon={propose ? undefined : Flag} busy={fa.here('assign', ins.id)} disabled={fa.busy && !fa.here('assign', ins.id)} onClick={() => void fa.assign.run(target)}>
+          {fa.here('assign', ins.id) ? <span data-ch-code="CH-13403">Assigning…</span> : ins.declined ? 'Propose again' : 'Assign as focus'}
         </Button>
       )}
       {!noDismiss && <Button

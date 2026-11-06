@@ -735,6 +735,20 @@ New server actions:
 Player Ask and its allowance are in `memory/features/player-coachhelm-development.md`.
 Plan storage and publishing are in `memory/features/team-operations.md`.
 
+### Ask v2 surfaces and hand-offs (sweep, 2026-11-06)
+
+- The chat request carries `surface`. `send_message` is registered only for
+  `quick_chat`. Left out, the surface is the Ask tab, which can't send.
+- The Ask tab's `draft_message`, `draft_poll` and `draft_board` write
+  `data-handoff` parts and nothing else. Messages takes the words, the poll or the
+  picture (`screens/messages/prefill.ts`), and the coach sends.
+- `write_artifact` writes `data-artifact`, kept by `restore.ts`. Its words join
+  the text `computeTurnVerdict` audits. `publish_artifact` is a held flow.
+- `create_drill` registers only with the practice plans flag; otherwise
+  `drill_bank_status` says the bank isn't on yet.
+- `landing-rows.ts` reads the rows a draft lands between, for the card only. A
+  failed read draws the new row alone.
+
 ## UI Contract
 
 - Coach views need fast triage: new, acknowledged, dismissed, resolved, and priority states must be visible.

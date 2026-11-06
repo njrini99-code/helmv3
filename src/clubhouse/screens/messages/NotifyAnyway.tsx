@@ -95,6 +95,8 @@ export function SendCluster({
         type="button"
         className={'ch-ms-send' + (ready ? ' is-ready' : '')}
         onClick={() => onSend(false)}
+        // A tap's mousedown would blur the field, and iOS lowers the keyboard before the send runs (MOB-MSG-5).
+        onMouseDown={(e) => e.preventDefault()}
         disabled={!ready}
         aria-label={unconfirmed ? 'Retry send' : 'Send'}
         aria-describedby={offered && phone ? HOLD_HINT_ID : undefined}

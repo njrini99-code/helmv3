@@ -2,7 +2,7 @@
 
 import { Check, ListChecks, Lock, Minus, Plus } from "lucide-react";
 import { AnimatePresence, m, useIsPresent } from "motion/react";
-import { createContext, useContext, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type ReactNode } from "react";
 import {
   POLL_MAX_OPTIONS,
   POLL_MIN_OPTIONS,
@@ -10,6 +10,7 @@ import {
   POLL_QUESTION_MAX,
   POLL_SUGGESTIONS,
   buildPollPayload,
+  customEndOf,
   defaultCustomEnd,
   encodeChoice,
   isPollClosed,
@@ -628,6 +629,38 @@ interface PollRow {
   id: number;
   text: string;
 }
+/** Bumped when Ask hands this conversation a poll: the sheet remounts on it, and the composer opens the sheet once. */
+const seeds = new Map<string, number>();
+const seedOpened = new Set<string>();
+const seedListeners = new Set<() => void>();
+const subscribeSeeds = (l: () => void) => {
+  seedListeners.add(l);
+  return () => void seedListeners.delete(l);
+};
+
+/** Ask's poll, in the sheet's own draft. Nothing is posted until the coach presses Send. */
+export function seedPollDraft(conversationId: string, poll: { question: string; options: string[]; multi?: boolean; closes?: string }, zone: string): void {
+  const at = poll.closes ? Date.parse(poll.closes) : NaN;
+  const end = Number.isFinite(at) ? customEndOf(at, zone) : defaultCustomEnd(Date.now(), zone);
+  drafts.set(conversationId, { question: poll.question, options: [...poll.options, ""], placeholders: null, multi: !!poll.multi, ends: Number.isFinite(at) ? "custom" : "none", customDate: end.date, customTime: end.time });
+  seeds.set(conversationId, (seeds.get(conversationId) ?? 0) + 1);
+  seedListeners.forEach((l) => l());
+}
+
+/** The sheet's key for this conversation; calls `open` once for each poll Ask hands it. */
+function usePollSeed(conversationId: string, open: () => void): string {
+  const n = useSyncExternalStore(subscribeSeeds, () => seeds.get(conversationId) ?? 0, () => 0);
+  useEffect(() => {
+    const mark = `${conversationId}:${n}`;
+    if (!n || seedOpened.has(mark)) return;
+    seedOpened.add(mark);
+    open();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per seed; `open` is a fresh closure on the same state
+  }, [conversationId, n]);
+  return `${conversationId}:${n}`;
+}
+export { usePollSeed };
+
 /** Test seam: the kept drafts start empty in each test. */
 export const clearPollDrafts = () => drafts.clear();
 
@@ -639,11 +672,12 @@ function endsWords(iso: string, nowIso: string, timeZone: string, hours: "12" | 
 /** The composer's poll button: group threads only, where "9 of 12 voted" means something. */
 export function PollButton({ api, conv, disabled }: { api: ChMessagesApi; conv: ChConv; disabled?: boolean }) {
   const [open, setOpen] = useState(false);
+  const seedKey = usePollSeed(conv.id, () => setOpen(true));
   if (!api.polls || !conv.group) return null;
   return (
     <>
       <IconButton icon={ListChecks} label="New poll" size="sm" disabled={disabled} onClick={() => setOpen(true)} />
-      <PollSheet key={conv.id} api={api} conv={conv} open={open} onClose={() => setOpen(false)} />
+      <PollSheet key={seedKey} api={api} conv={conv} open={open} onClose={() => setOpen(false)} />
     </>
   );
 }

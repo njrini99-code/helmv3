@@ -222,6 +222,8 @@ describe('causal wording: a cause is a claim only when it is about play and name
     'His average is not shown because the rounds are not recorded yet.',
     'Tuesday does not work because he has class.',
     'The event moved because of rain.',
+    'Thursday works better because of the weather.',
+    'He missed practice because of his exam schedule.',
     'His scoring average rose because he lost 2.4 strokes on approach.',
     'He lost strokes as a result of 4 penalties.',
     'Practice is at 3 because the bus leaves at 5.',
@@ -238,6 +240,9 @@ describe('causal wording: a cause is a claim only when it is about play and name
     'His tempo got quicker over the last 3 rounds, which is why he fell back.',
     'His scoring fell because his tempo slowed over his 4 rounds.',
     'Owen missed the cut because of nerves.',
+    'His scoring average rose because rain hurt his putting.',
+    'He played worse because of his class schedule.',
+    'His scoring average rose because rain cost him 2.4 strokes on approach.',
   ])('refused: %s', (text) => {
     expect(unbacked(text)).toBe(true);
   });

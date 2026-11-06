@@ -15,6 +15,9 @@
   gap: 2px;
   padding: 2px;
   border-radius: var(--ch-radius-md);
+  /* A flat track, not the recessed well: the green thumb is the only depth (AC-TEAM-02). */
+  --ch-well-bg: var(--ch-well-bg-flat);
+  --ch-well-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
 }
 .ch-seg__b {
   position: relative;
@@ -1872,12 +1875,14 @@ main[data-ch-crh='on'] .ch-modal__foot .ch-btn {
   }
   /* The drawn sheets carry their actions under the content, on the sheet's own colour (classes-roster-home 06 §5). */
   .ch-modal[data-ch-detent] .ch-modal__foot {
+    margin-bottom: auto;
     background: none;
     box-shadow: none;
     border-top: 0;
   }
   .ch-modal[data-ch-detent] .ch-modal__body {
-    flex: 1;
+    flex: 0 1 auto;
+    padding-bottom: 8px;
   }
   main[data-ch-crh='on'] .ch-modal__panel {
     border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;

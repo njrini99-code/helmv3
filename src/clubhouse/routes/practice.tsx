@@ -5,7 +5,10 @@ import { createClient } from '@/lib/supabase/server';
 import { practiceTables } from '@/lib/golf/practice-db';
 import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
 import { PlanFormat } from '../screens/coachhelm/plan/format/PlanFormat';
-import { loadCoachPlan, loadPlayerPlan, loadPlayerPractice } from '../data/practice-plan';
+import { loadCoachPlan, loadPlanDrills, loadPlayerPlan, loadPlayerPractice } from '../data/practice-plan';
+import { PrintStudio } from '../screens/practice/PrintStudio';
+import { CoachPlanBar } from '../screens/practice/CoachPlanBar';
+import { PlanRun } from '../screens/practice/PlanRun';
 import { PlayerPractice } from '../screens/coachhelm/plan/player/PlayerPractice';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { PracticePlanSheet } from '../screens/coachhelm/plan/sheet/PracticePlanSheet';
@@ -17,6 +20,10 @@ import { PracticeHome } from '../screens/practice/PracticeHome';
 import { PlayerPracticeHome } from '../screens/practice/PlayerPracticeHome';
 import { Builder } from '../screens/practice/builder/Builder';
 import { isPracticePlansEnabled } from '@/lib/coachhelm/v3/practice-plan/flag';
+import type { PlanBodyV2 } from '@/lib/coachhelm/v3/practice-plan/model';
+import { loadDrill, loadDrills, loadGroups, loadTemplates } from '../data/practice-library';
+import { DrillPage, DrillsPage, GroupsPage, TemplatesPage } from '../screens/practice/LibraryPages';
+import { PLAN_STARTERS } from '../screens/practice/starters';
 import '../styles/coachhelm-plan.css';
 import '../styles/practice.css';
 
@@ -32,7 +39,7 @@ const FAILED = (
 );
 
 /** Practice, the tab: the coach's plans with New plan, or the player's published ones. The page checks the flag. */
-export async function PracticeHomeRoute({ newPlan }: { newPlan?: boolean }) {
+export async function PracticeHomeRoute({ newPlan, template, event }: { newPlan?: boolean; template?: string; event?: string }) {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/dashboard/calendar');
   const team = await resolveClubhouseTeam(session);
@@ -52,7 +59,87 @@ export async function PracticeHomeRoute({ newPlan }: { newPlan?: boolean }) {
   const load = await loadCoachPracticeHome(team.teamId);
   if (load.status === 'unavailable') return OFF;
   if (load.status === 'failed') return FAILED;
-  return <PracticeHome data={load.data} askOn={isPracticePlansEnabled()} openNew={!!newPlan} />;
+  // Use on a template: New plan opens with it as the start. An unknown one just opens New plan.
+  const starter = template ? PLAN_STARTERS.find((t) => t.id === template) : undefined;
+  let from: { name: string; body: PlanBodyV2 } | null = starter ? { name: starter.name, body: starter.body } : null;
+  if (template && !starter) {
+    const saved = await loadTemplates(team.teamId);
+    const hit = saved.status === 'ready' ? saved.data.find((t) => t.id === template) : undefined;
+    if (hit) from = { name: hit.name, body: hit.body };
+  }
+  return <PracticeHome data={load.data} askOn={isPracticePlansEnabled()} openNew={!!newPlan} newEvent={event ?? null} template={from} />;
+}
+
+/** The coach's team for a Practice tab; a player goes to their own Practice. */
+async function coachTeam(): Promise<{ teamId: string } | null> {
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/dashboard/calendar');
+  if (session.role === 'player') redirect('/golf/dashboard/practice');
+  const team = await resolveClubhouseTeam(session);
+  return team && team.role !== 'player' ? { teamId: team.teamId } : null;
+}
+const NO_TEAM = (
+  <main className="ch-page" data-ch="practice">
+    <NoTeam code="CH-13395" coach body="Once you’re on a team, practice plans show here." />
+  </main>
+);
+
+export async function PracticeDrillsRoute() {
+  const team = await coachTeam();
+  if (!team) return NO_TEAM;
+  const load = await loadDrills(team.teamId);
+  if (load.status === 'unavailable') return OFF;
+  if (load.status === 'failed') return FAILED;
+  return <DrillsPage teamId={team.teamId} team={load.data.team} library={load.data.library} />;
+}
+
+export async function PracticeDrillRoute({ drillId }: { drillId: string }) {
+  const team = await coachTeam();
+  if (!team) return NO_TEAM;
+  const load = await loadDrill(team.teamId, drillId);
+  if (load.status === 'unavailable') return OFF;
+  if (load.status === 'failed') return FAILED;
+  if (!load.data) {
+    return (
+      <main className="ch-page" data-ch="practice">
+        <EmptyState size="page" title="This drill isn’t available" body="It may have been archived." action={<Button href="/golf/dashboard/practice/drills">Back to Drills</Button>} />
+      </main>
+    );
+  }
+  return <DrillPage teamId={team.teamId} drill={load.data} />;
+}
+
+export async function PracticeGroupsRoute() {
+  const team = await coachTeam();
+  if (!team) return NO_TEAM;
+  const load = await loadGroups(team.teamId);
+  if (load.status === 'unavailable') return OFF;
+  if (load.status === 'failed') return FAILED;
+  return <GroupsPage teamId={team.teamId} groups={load.data.groups} roster={load.data.roster} />;
+}
+
+export async function PracticeTemplatesRoute() {
+  const team = await coachTeam();
+  if (!team) return NO_TEAM;
+  const load = await loadTemplates(team.teamId);
+  if (load.status === 'unavailable') return OFF;
+  if (load.status === 'failed') return FAILED;
+  return <TemplatesPage teamId={team.teamId} templates={load.data} />;
+}
+
+/** The print studio, a coach's (N-00 4.14). A plan that won't load says so rather than printing nothing. */
+export async function PracticePrintRoute({ planId }: { planId: string }) {
+  const team = await coachTeam();
+  if (!team) return NO_TEAM;
+  const [load, drills] = await Promise.all([loadCoachPlan(planId), loadPlanDrills(planId).catch(() => [])]);
+  if (load.status !== 'ready') {
+    return (
+      <main className="ch-page" data-ch="practice">
+        <EmptyState size="page" title="This plan isn’t available" body="It may have been removed." action={<Button href="/golf/dashboard/practice">Back to Practice</Button>} />
+      </main>
+    );
+  }
+  return <PrintStudio plan={load.plan} drills={drills} draft={load.coach?.status.status === 'draft'} planHref={`/golf/dashboard/practice/plan/${planId}`} />;
 }
 
 /** The builder, a coach's. A player on this address gets their own plan page's address; nothing of a draft reaches them. */
@@ -91,7 +178,8 @@ export async function PracticePlanRoute({ planId }: { planId: string }) {
   }
   return (
     <main className="ch-page ch-prc-planpage" data-ch="practice-plan">
-      <PlanPageActions plan={load.plan} playerPlanId={player ? planId : null} editHref={player ? null : `/golf/dashboard/practice/plan/${planId}/edit`} />
+      <PlanPageActions plan={load.plan} playerPlanId={player ? planId : null} coachBar={!player && load.coach ? <CoachPlanBar status={load.coach.status} /> : null} />
+      {!player && load.coach?.start && load.coach.status.status === 'published' && <PlanRun planId={planId} title={load.coach.status.title} version={load.coach.status.version} body={load.coach.body} start={load.coach.start} zone={load.coach.zone} serverNow={Date.now()} />}
       <PracticePlanSheet plan={load.plan} />
     </main>
   );

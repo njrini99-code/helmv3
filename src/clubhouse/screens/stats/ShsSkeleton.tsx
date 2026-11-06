@@ -55,7 +55,7 @@ function Skeleton({ sections, code }: { sections: typeof SECTIONS; code?: string
           <section key={s.name} className="ch-shs-skel-sec">
             <h2 className="ch-shs-sech">{s.name}</h2>
             {s.cards.map((c) => (
-              <div key={c.title} className={'ch-shs-card ch-shs-skel-card' + (c.feature ? ' ch-shs-feature' : '')} style={{ height: c.height }}>
+              <div key={c.title} className={'ch-shs-card ch-shs-skel-card' + (c.feature ? ' ch-shs-feature' : '')} style={{ height: `calc(${c.height} * var(--ch-type-k))` }}>
                 <div className="ch-shs-ah">
                   <h3>{c.title}</h3>
                   {!c.feature && <span className="ch-shs-skel ch-shs-skel--meta" aria-hidden="true" />}

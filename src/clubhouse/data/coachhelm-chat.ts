@@ -191,12 +191,12 @@ async function coachFirstName(sb: Awaited<ReturnType<typeof createClient>>, coac
 
 /** A player's own open focus areas for Ask's home; a failed read draws no lines. */
 async function playerFocus(sb: Awaited<ReturnType<typeof createClient>>, playerId: string): Promise<NonNullable<ChAskData['focus']>> {
-  const { data, error } = await sb.from('golf_player_focus_areas').select('title').eq('player_id', playerId).eq('status', 'active').order('priority', { ascending: true }).limit(3);
+  const { data, error } = await sb.from('golf_player_focus_areas').select('title, outcome_status').eq('player_id', playerId).eq('status', 'active').order('priority', { ascending: true }).limit(3);
   if (error) {
     log('player focus', error);
     return [];
   }
-  return (data ?? []).map((f) => ({ text: f.title, ask: `How is ${f.title} going for me?` }));
+  return (data ?? []).map((f) => ({ text: f.title, ask: `How is ${f.title} going for me?`, trend: f.outcome_status === 'improved' ? 'up' : f.outcome_status === 'worsened' ? 'warn' : undefined }));
 }
 
 /** Tone and facts, only with Ask v2 on; a missing column or table (HM2 held) is null and the controls stay hidden. */

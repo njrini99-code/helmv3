@@ -4,7 +4,8 @@ import { AlertTriangle, ChartColumn, Flag, Medal } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { Button } from '../../ui/Button';
 import { useBigText } from './StatsPlayerPhoneShs';
-import { useRouter } from 'next/navigation';
+import { useRefresh } from '../../lib/use-refresh';
+import { useSegFade } from './seg-fade';
 import { useEffect, useRef, useState } from 'react';
 import type { ChTeamStats } from '../../data/stats-team';
 import { hasRange, isFiltered, nineRoundsInWindow } from '../../data/stats-filter';
@@ -110,6 +111,8 @@ export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
     if (data.puttsError) failed.push('team putting');
   }
   const covered = failed.length > 1;
+  const ctlRef = useRef<HTMLDivElement | null>(null);
+  useSegFade(ctlRef);
   const below = useArrivalPainted();
   const arrival: StatsArrivalState = data.roundsError ? 'failed' : noRounds ? 'empty' : 'ready';
   const { detail, open, close } = useStatsDetail({ screen: 'team', state: arrival });
@@ -140,7 +143,7 @@ export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
         <h1 className="ch-sr-only">Team stats</h1>
         <div inert={detail != null} aria-hidden={detail != null || undefined}>
           {!bare && (
-            <div className={'ch-shs-ctl' + (hasRange(data.filter) ? ' is-custom' : '') + (stuck ? ' is-stuck' : '')}>
+            <div ref={ctlRef} className={'ch-shs-ctl' + (hasRange(data.filter) ? ' is-custom' : '') + (stuck ? ' is-stuck' : '')}>
               <div className="ch-shs-ctl__row">
                 <PhoneWindowSwitch custom={hasRange(data.filter)} hook="stats-window-seg" />
                 {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone hook="stats-filter" />}
@@ -234,9 +237,14 @@ export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
 }
 
 function TeamFailedCard({ seen }: { /** The page's data: a new copy means the retry came back, so Try again works again. */ seen: unknown }) {
-  const router = useRouter();
+  const { refresh, refreshing } = useRefresh();
   const [busy, setBusy] = useState(false);
   useEffect(() => setBusy(false), [seen]);
+  useEffect(() => {
+    if (!busy || refreshing) return;
+    const t = window.setTimeout(() => setBusy(false), 1000);
+    return () => window.clearTimeout(t);
+  }, [busy, refreshing]);
   return (
     <section className="ch-shs-card ch-shs-empty is-danger" suppressHydrationWarning role="alert" data-ch-code="CH-4201">
       <span className="ch-shs-empty__ic">
@@ -247,13 +255,13 @@ function TeamFailedCard({ seen }: { /** The page's data: a new copy means the re
       <Button
         variant="secondary"
         size="sm"
-        busy={busy}
-        data-ch="stats-retry"
+        busy={busy || refreshing}
+        data={{ 'data-ch': 'stats-retry' }}
         onClick={() => {
           if (busy) return;
           setBusy(true);
           haptic('press');
-          router.refresh();
+          refresh();
         }}
       >
         Try again

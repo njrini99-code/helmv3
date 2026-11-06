@@ -13,7 +13,7 @@ import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from '../SubTabs';
 const labels = () => screen.getAllByRole('radio').map((r) => r.textContent);
 const coach = (views?: ChHelmViews, onGo?: (v: CoachHelmView) => void) =>
   render(
-    <ClubhouseMarker role="coach" helmViews={views}>
+    <ClubhouseMarker {...{ role: 'coach' as const }} helmViews={views}>
       <CoachHelmTabs active="board" onGo={onGo} />
     </ClubhouseMarker>,
   );
@@ -42,7 +42,7 @@ describe('CoachHelm views a coach can reach', () => {
 describe('CoachHelm views a player can reach', () => {
   const player = (views?: ChHelmViews) =>
     render(
-      <ClubhouseMarker role="player" helmViews={views}>
+      <ClubhouseMarker {...{ role: 'player' as const }} helmViews={views}>
         <PlayerHelmTabs active="board" />
       </ClubhouseMarker>,
     );

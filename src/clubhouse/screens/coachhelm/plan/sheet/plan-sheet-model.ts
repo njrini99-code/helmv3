@@ -32,6 +32,22 @@ export interface PlanSheetModel {
   totalLine: string;
   notes: string;
   foot: string;
+  /** The team's format (S-FMT): its order and names for the sheet's sections, and the foot's line. Absent: the standard sheet. */
+  format?: PlanSheetFormat | null;
+}
+export type PlanSheetSection = 'groups' | 'schedule' | 'bring' | 'notes';
+export interface PlanSheetFormat {
+  name: string;
+  /** Header isn't here: the sheet always opens with it. */
+  sections: Array<{ key: PlanSheetSection; name: string }>;
+}
+/** A saved format's sections, ready for the sheet: anything it left out still prints, after the ones it named. */
+export function sheetFormat(input: { name: string; sections: Array<{ key: string; name: string }> } | null | undefined): PlanSheetFormat | null {
+  if (!input?.sections?.length) return null;
+  const known: PlanSheetSection[] = ['groups', 'schedule', 'bring', 'notes'];
+  const named = input.sections.filter((s): s is { key: PlanSheetSection; name: string } => (known as string[]).includes(s.key));
+  const rest = known.filter((k) => !named.some((s) => s.key === k)).map((key) => ({ key, name: '' }));
+  return { name: input.name, sections: [...named, ...rest] };
 }
 
 const LETTER = 'ABCDEF';
@@ -44,7 +60,7 @@ const clockFull = (d: Date | null, zone: string | null) => (d && zone ? formatWi
  * What the sheet draws. A player's model has no `why` key at all, and of the groups only the viewer's own: another group's names, letters and
  * rotation cells are not in the model, so they can't reach the DOM or the payload (02 §2.3, owner 4 Nov). A player copy with no viewer, or a viewer in no group, has no group part.
  */
-export function toSheetModel(input: { body: PlanBodyV2; why?: Record<string, PlanWhy>; title: string; team: string; start: Date | null; end: Date | null; zone: string | null; coaches: string[]; names: ReadonlyMap<string, string>; state: string }, copy: 'coach' | 'player', viewer?: string): PlanSheetModel {
+export function toSheetModel(input: { body: PlanBodyV2; why?: Record<string, PlanWhy>; title: string; team: string; start: Date | null; end: Date | null; zone: string | null; coaches: string[]; names: ReadonlyMap<string, string>; state: string; format?: PlanSheetFormat | null }, copy: 'coach' | 'player', viewer?: string): PlanSheetModel {
   const { body, zone } = input;
   const letterOf = (groupId: string) => LETTER[body.groups.findIndex((g) => g.id === groupId)] ?? '';
   const player = copy === 'player';
@@ -109,5 +125,6 @@ export function toSheetModel(input: { body: PlanBodyV2; why?: Record<string, Pla
     bring: body.bring.map((b) => (b.qty > 1 ? `${b.item} · ${b.qty}` : b.item)),
     notes: body.notes,
     foot: input.state,
+    format: input.format ?? null,
   };
 }

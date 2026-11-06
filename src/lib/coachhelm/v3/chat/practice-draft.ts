@@ -198,6 +198,6 @@ export const publishFlow: FlowDef<z.infer<typeof publishInput>> = {
   run: async (ctx, i) => {
     const res = await publishPracticePlan({ planId: i.plan_id, expectedVersion: i.version, notify: 'now' });
     const chat = res.success && i.team_chat ? await postPlanToTeamChat(ctx, `${i.title} is published. ${i.when}. ${getAppBaseUrl()}/golf/dashboard/practice/plan/${i.plan_id}`) : null;
-    return res.success ? { ok: true, summary: `Published. ${res.recipients} people told.${chat === false ? ' The Team chat post didn’t send.' : ''}`, kind: 'practice_plan', label: i.title, href: `/golf/dashboard/practice/plan/${i.plan_id}` } : { ok: false, error: res.error, summary: res.error, kind: 'practice_plan' };
+    return res.success ? { ok: true, summary: `Published. ${res.recipients} people told.${chat === false ? ' The Team chat post didn’t send.' : ''}`, kind: 'practice_plan', label: i.title, href: `/golf/dashboard/practice/plan/${i.plan_id}`, notifications: [{ channel: 'push and bell', recipients: res.recipients, status: 'sent' as const }] } : { ok: false, error: res.error, summary: res.error, kind: 'practice_plan' };
   },
 };

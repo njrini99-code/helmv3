@@ -1,3 +1,5 @@
+# Clubhouse cross-page changes
+
 ## 2026-11-06 — Redesign sweep: one source for the numbers (SYS-7, QA-1/2/3)
 
 - `data/figure-window.ts` is the one place a figure's rounds and strokes

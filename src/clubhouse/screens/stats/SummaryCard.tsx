@@ -1,6 +1,6 @@
 'use client';
 
-import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { haptic } from '../../lib/haptics';
 
 /** The drawn 8 x 14 chevron. */
@@ -85,24 +85,17 @@ export function SummaryCard({
     if ((e.target as Element).closest?.('[data-ch-no-open]')) return;
     open();
   };
-  const onKeyDown = (e: KeyboardEvent<HTMLElement>) => {
-    if (e.target !== e.currentTarget || (e.key !== 'Enter' && e.key !== ' ')) return;
-    e.preventDefault();
-    open();
-  };
   return (
     <section
       className={'ch-shs-card ch-shs-sum' + (feature ? ' ch-shs-feature' : '')} suppressHydrationWarning
       data-go={go}
       data-ch="stats-card"
       data-ch-press-scale=".97"
-      // eslint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role -- the whole summary card is the control (stats-home 06)
-      role="link"
-      tabIndex={0}
-      aria-label={ariaLabel}
+      // A press anywhere opens it; VoiceOver and the keyboard get the one real button, so the chart and the links inside stay their own controls (STATS-8).
+      // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- the button below is the keyboard path
       onClick={onClick}
-      onKeyDown={onKeyDown}
     >
+      <button type="button" className="ch-shs-sum__key" data-ch-no-open aria-label={ariaLabel} onClick={open} />
       <div className="ch-shs-ah">
         <h3>
           {icon && <ShsIcon name={icon} />}

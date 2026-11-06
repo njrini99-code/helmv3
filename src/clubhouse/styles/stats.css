@@ -7206,7 +7206,6 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
 }
 .ch-sv-mix-key b {
   font: var(--ch-type-17-strong);
-  letter-spacing: var(--ch-track-17);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }

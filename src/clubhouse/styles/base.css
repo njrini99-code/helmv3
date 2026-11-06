@@ -137,10 +137,11 @@
 
 /* `svg .ch-num`: chart text sets its font shorthand in its screen's sheet, which loads later and would reset the figures
    to proportional at the same weight; the extra element keeps them even there (row 113). */
+/* Important because a screen's `font` shorthand, however specific, resets both to normal, and the figures stop lining up. */
 .ch-num,
 svg .ch-num {
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum';
+  font-variant-numeric: tabular-nums !important;
+  font-feature-settings: 'tnum' !important;
 }
 .ch-display {
   font-weight: 600;

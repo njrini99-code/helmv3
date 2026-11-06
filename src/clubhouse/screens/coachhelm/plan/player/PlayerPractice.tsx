@@ -4,7 +4,8 @@ import { Button } from '../../../../ui/Button';
 
 import { Avatar } from '../../../../ui/Avatar';
 
-import { ClipboardList, FolderClosed } from 'lucide-react';
+import { ClipboardList } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { recordPracticePlanOpen } from '@/app/golf/actions/practice-plans';
 import { Icon } from '../../../../ui/Icon';
@@ -27,9 +28,9 @@ export interface PlayerPracticeData {
   title: string;
   when: string;
   focus: string;
-  group: { name: string; mates: string[] } | null;
+  group: { name: string; mates: string[]; me?: string } | null;
   stops: PlayerStop[];
-  documents: string | null;
+  documents: { label: string; href: string } | null;
   planHref: string | null;
 }
 
@@ -46,7 +47,8 @@ export function PlayerPractice({ data, everyone, planId = null }: { data: Player
   useEffect(() => {
     if (planId) void recordPracticePlanOpen({ planId });
   }, [planId]);
-  const [tab, setTab] = useState<'mine' | 'all'>('mine');
+  const asked = useSearchParams().get('view');
+  const [tab, setTab] = useState<'mine' | 'all'>(() => (asked === 'sheet' ? 'all' : 'mine'));
   // Now and Next from the clock here, and again on a return to the app: the server's answer is only true when it was asked.
   const [clockAt, setClockAt] = useState<number | null>(null);
   useEffect(() => {
@@ -82,7 +84,7 @@ export function PlayerPractice({ data, everyone, planId = null }: { data: Player
         {data.group && (
           <div className="grpl">
             <span className="avs" aria-hidden="true">
-              {data.group.mates.slice(0, 3).map((m) => (
+              {[...(data.group.me ? [data.group.me] : []), ...data.group.mates].slice(0, 3).map((m) => (
                 <Avatar key={m} name={m} size="xs" />
               ))}
             </span>
@@ -122,19 +124,14 @@ export function PlayerPractice({ data, everyone, planId = null }: { data: Player
         everyone
       )}
       {data.documents && (
-        <section className="art">
-          <header className="art-h is-center">
-            <span className="tile">
-              <Icon icon={FolderClosed} size={18} />
-            </span>
-            <div className="hd">
-              <span className="t">In Documents</span>
-              <span className="m">{data.documents}</span>
-            </div>
-            <Button variant="secondary" size="sm" onClick={() => setTab('all')}>
-              Open the plan
-            </Button>
-          </header>
+        <section className="art is-docs">
+          <a className="docrow" href={data.documents.href}>
+            <span className="t">In Documents</span>
+            <span className="m">{data.documents.label}</span>
+          </a>
+          <Button variant="secondary" size="sm" onClick={() => setTab('all')}>
+            Open the plan
+          </Button>
         </section>
       )}
     </main>
