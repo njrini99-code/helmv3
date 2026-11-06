@@ -142,13 +142,16 @@ export interface AskBriefData {
 
 /** A draft that opens Messages; the tool writes nothing and the coach sends. */
 export interface AskHandoffData {
-  kind: 'board' | 'message';
+  kind: 'board' | 'message' | 'poll';
   /** Empty when the draft names one thread. */
   players: string[];
   /** One thread the coach is in, found by find_thread. */
   conversationId?: string;
   title: string;
+  /** The thread's name, on a poll. */
+  thread?: string;
   draft: string;
+  poll?: { question: string; options: string[]; multi?: boolean; closes?: string };
 }
 
 export type AskBlock =

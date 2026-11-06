@@ -14,6 +14,8 @@ import { addTeamBreak, saveTeamTerm } from '@/app/golf/actions/class-status';
 import { setPlayerAvailabilityCoachNote } from '@/app/golf/actions/team-management';
 import { createRecruit } from '@/app/golf/actions/recruiting';
 import { lockTournamentLineup, setTournamentEntries } from '@/app/golf/actions/tournaments';
+import { createTeamDrill } from '@/app/golf/actions/practice-library';
+import { POLL_MAX_OPTIONS, POLL_MIN_OPTIONS, POLL_OPTION_MAX, POLL_QUESTION_MAX } from '@/lib/golf/message-polls';
 import type { CoachChatContext } from './context';
 import { requireRosterPlayer } from './context';
 import { askTables } from './ask-db';
@@ -397,9 +399,36 @@ function stableUuid(seed: string): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
 }
 
+const drillInput = z.object({
+  name: z.string().min(1).max(80),
+  area: z.enum(['putting', 'short_game', 'bunker', 'approach', 'tee', 'course', 'fitness', 'mental']),
+  kind: z.enum(['skill', 'random', 'pressure']).default('skill'),
+  minutes: z.number().int().min(1).max(180),
+  setup: z.string().max(400).optional(),
+  goal: z.string().max(200).optional(),
+});
+const AREA_WORDS: Record<z.infer<typeof drillInput>['area'], string> = { putting: 'Putting', short_game: 'Short game', bunker: 'Bunker', approach: 'Approach', tee: 'Tee', course: 'On course', fitness: 'Fitness', mental: 'Mental' };
+/** TASK_FIELDS 5.14: one drill bank, N-00's `golf_team_drills`. Registered only with the practice plans flag, which waits on that held migration. */
+export const drillFlow: FlowDef<z.infer<typeof drillInput>> = {
+  name: 'create_drill',
+  description: 'Add a new drill to the team drill bank. Players see it only when a published plan uses it. REQUIRES the coach to confirm.',
+  input: drillInput,
+  plan: (_ctx, i) => ({
+    action: 'Add drill',
+    summary: i.name,
+    facts: [fact('Area', AREA_WORDS[i.area], false), fact('Length', `${i.minutes} min`, false), ...(i.setup ? [fact('Setup', i.setup, false)] : []), ...(i.goal ? [fact('Goal', i.goal, false)] : [])],
+    notifications: ['Nobody is told. Players see it when a plan uses it.'],
+    key: ['drill', i.name.trim().toLowerCase(), i.area, i.minutes],
+  }),
+  run: async (ctx, i) => {
+    const res = await createTeamDrill({ teamId: ctx.team_id, name: i.name, area: i.area, kind: i.kind, minutes: i.minutes, setup: i.setup, goal: i.goal });
+    return { ok: res.success, error: res.success ? undefined : res.error, summary: `${i.name} is in the drill bank.`, kind: 'drill', label: i.name };
+  },
+};
+
 export const CREATE_FLOWS: ReadonlyArray<FlowDef<never>> = [messageFlow, eventFlow, tripFlow, qualifierFlow, goalFlow, noteFlow, blockFlow, breakFlow, termFlow, availFlow, recruitFlow] as unknown as ReadonlyArray<FlowDef<never>>;
 export const LINEUP_FLOWS: ReadonlyArray<FlowDef<never>> = [lineupFlow, lockFlow] as unknown as ReadonlyArray<FlowDef<never>>;
-export const CREATE_TOOL_NAMES: readonly string[] = [...CREATE_FLOWS, ...LINEUP_FLOWS].map((f) => f.name);
+export const CREATE_TOOL_NAMES: readonly string[] = [...CREATE_FLOWS, ...LINEUP_FLOWS, drillFlow as unknown as FlowDef<never>].map((f) => f.name);
 
 /** Boards and polls never write: the coach presses Send in Messages. Their result is a hand-off the browser turns into a prefill. */
 export const DraftBoardInput = z.object({ player_id: z.string().uuid(), note: z.string().max(2000).optional() });
@@ -411,3 +440,11 @@ export const DraftMessageInput = z
     content: z.string().min(1).max(2000),
   })
   .refine((v) => !!v.conversation_id !== !!v.player_ids, { message: 'Name one thread or the players, not both.' });
+/** TASK_FIELDS 5.5: a poll lands in a group's composer with these words, and the coach posts it. */
+export const DraftPollInput = z.object({
+  conversation_id: z.string().uuid().describe('From find_thread: a group thread, only when exactly one matched.'),
+  question: z.string().min(1).max(POLL_QUESTION_MAX),
+  options: z.array(z.string().min(1).max(POLL_OPTION_MAX)).min(POLL_MIN_OPTIONS).max(POLL_MAX_OPTIONS),
+  multi: z.boolean().optional(),
+  closes_at: z.string().optional().describe('ISO time in the future, at most 30 days out. Leave out to keep it open.'),
+});

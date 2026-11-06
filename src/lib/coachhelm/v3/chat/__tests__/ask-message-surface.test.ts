@@ -69,3 +69,29 @@ describe('which chat can send a message', () => {
     expect(write).not.toHaveBeenCalled();
   });
 });
+
+describe('polls and drills from the Ask tab', () => {
+  beforeEach(() => write.mockClear());
+  const row = (members: number) => ({ id: THREAD, title: 'Varsity', golf_conversation_participants: Array.from({ length: members }, () => ({ user_id: 'u' })) });
+  const poll = { conversation_id: THREAD, question: 'Which night?', options: ['Mon', 'Wed'] };
+
+  it('a poll for a group lands in Messages and posts nothing', async () => {
+    const out = await tools('ask', row(8)).draft_poll!.execute!(poll, {} as never);
+    expect(out.status).toBe('shown');
+    expect(write.mock.calls[0]?.[0]).toMatchObject({ data: { kind: 'poll', conversationId: THREAD, thread: 'Varsity', poll: { question: 'Which night?', options: ['Mon', 'Wed'] } } });
+  });
+
+  it('refuses a one-to-one thread, a duplicate choice and a past end', async () => {
+    expect((await tools('ask', row(2)).draft_poll!.execute!(poll, {} as never)).status).toBe('refused');
+    expect((await tools('ask', row(8)).draft_poll!.execute!({ ...poll, options: ['Mon', 'mon'] }, {} as never)).status).toBe('refused');
+    expect((await tools('ask', row(8)).draft_poll!.execute!({ ...poll, closes_at: '2020-01-01T00:00:00Z' }, {} as never)).status).toBe('refused');
+    expect(write).not.toHaveBeenCalled();
+  });
+
+  it('with the drill bank off it says so instead of offering to save (TASK_FIELDS 5.14)', async () => {
+    const t = tools('ask');
+    expect(Object.keys(t)).not.toContain('create_drill');
+    const out = (await t.drill_bank_status!.execute!({}, {} as never)) as unknown as { message: string };
+    expect(out.message).toContain('Drill bank comes with the practice builder');
+  });
+});

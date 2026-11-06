@@ -3,7 +3,7 @@ import type { ActionProposal, ActionReceipt, TaskVisual } from '@/lib/coachhelm/
 import type { QuickChatWeek } from '@/lib/coachhelm/v3/chat/quick-chat-week';
 import type { PlanCardPreview } from '../screens/coachhelm/plan/PlanCard';
 import { PP_COACHES, PP_NAMES, PP_PLAN_PART } from './fixtures-practice-plan';
-import { ASK_PLAYERS } from './fixtures-ask-thread';
+import { ASK_COMPOSITION, ASK_PLAYERS } from './fixtures-ask-thread';
 
 const ASK_ROSTER_COUNT = ASK_PLAYERS.length;
 
@@ -46,10 +46,22 @@ export const ASK_PREVIEW_WEEK: QuickChatWeek = {
 const user = (text: string) => ({ id: 'u1', role: 'user', parts: [{ type: 'text', text }] }) as unknown as UIMessage;
 const step = (i: number, label: string, active = false) => ({ type: 'data-progress', id: `p${i}`, data: { label, tool: 'read', ...(active ? { state: 'active' } : { state: 'done', done: label }) } });
 
+const HANDOFFS: Record<string, unknown[]> = {
+  f_board: [
+    { type: 'data-visual-composition', id: 'visual-vc-preview0001', data: ASK_COMPOSITION },
+    { type: 'data-handoff', id: 'handoff-1', data: { kind: 'board', players: ['p-jonah'], title: 'Board for Jonah Okafor', draft: 'Your misses are consistent, so they’re fixable. Let’s own 125 to 150 before Hargrove.' } },
+  ],
+  f_poll: [{ type: 'data-handoff', id: 'handoff-1', data: { kind: 'poll', players: [], conversationId: 'c-team', title: 'Poll for Varsity', thread: 'Varsity', draft: '', poll: { question: 'Which night works for a team dinner?', options: ['Mon Nov 2', 'Wed Nov 4', 'Thu Nov 5'], closes: '2026-11-07T17:00:00Z' } } }],
+};
+
 export function askFlowMessages(scene: string, stage: string): { messages: UIMessage[]; busy: boolean } | null {
   const f = ASK_FLOWS[scene];
   if (!f) return null;
   const q = user(f.q);
+  // A board and a poll write nothing, so they are hand-offs, not cards to confirm: what the server sends (TASK_FIELDS 5.5, 5.7).
+  if (HANDOFFS[scene] && stage !== 'reads' && stage !== 'steps' && stage !== 'typing') {
+    return { messages: [q, { id: 'a1', role: 'assistant', parts: [step(1, 'Read what it needs'), { type: 'text', text: `Here’s a draft: ${f.title}. Nothing goes out until you send it.`, state: 'done' }, ...HANDOFFS[scene]!] } as unknown as UIMessage], busy: false };
+  }
   const reads = [step(1, 'Read what it needs')];
   if (stage === 'reads' || stage === 'steps' || stage === 'typing') return { messages: [q, { id: 'a1', role: 'assistant', parts: [step(1, 'Reading', true)] } as unknown as UIMessage], busy: true };
   const proposal: ActionProposal & { tool: string } = { ...(f.publish ? { publish: f.publish } : {}), tool: f.tool, action: f.action, summary: f.title, ...(f.visual ? { visual: f.visual } : {}), facts: f.facts.map(([label, value]) => ({ label, value, ...(f.sources?.[label] ? { source: f.sources[label] } : {}) })), affects: [{ kind: 'team', id: 't', label: 'Varsity' }], notifications: [f.on], missing: [], idempotency_key: `key-${scene}` };

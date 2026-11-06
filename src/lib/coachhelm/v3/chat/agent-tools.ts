@@ -47,7 +47,7 @@ import { practicePicture } from './practice-pictures';
 import { practiceDraftTool, publishFlow } from './practice-draft';
 import { getSeasonScoring } from './season-reads';
 import { askDraftTools, type AskSurface } from './ask-draft-tools';
-import { CREATE_FLOWS, CREATE_TOOL_NAMES, LINEUP_FLOWS, flowCommit, type FlowDef } from './create-tools';
+import { CREATE_FLOWS, CREATE_TOOL_NAMES, LINEUP_FLOWS, drillFlow, flowCommit, type FlowDef } from './create-tools';
 import { heldCommitFor } from './held-runner';
 import { getProximityByBand, getRoundDetail, getShotPattern } from './shot-reads';
 import { compareSeasons, getCalendar, getCourse, getRootCauses } from './engine-reads';
@@ -183,6 +183,7 @@ const PROGRESS_LABEL: Record<string, (input: Record<string, unknown>) => string>
   create_focus_area: () => 'Drafting a focus area',
   create_task: () => 'Drafting a task',
   create_team_announcement: () => 'Drafting a team update',
+  create_drill: () => 'Drafting a drill',
 };
 
 /** The same words, past tense, for the row once the read is back (Ask v2). */
@@ -735,6 +736,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
     // Ask v2's create flows, each on the same gate: nothing writes before the named button, and nothing is told until Undo closes.
     ...(askV2 ? Object.fromEntries((isFlagEnabled('golf_tournaments_v1') ? [...CREATE_FLOWS, ...LINEUP_FLOWS] : CREATE_FLOWS).filter((f) => f.name !== 'send_message' || surface === 'quick_chat').map((f) => [f.name, flowTool(f)])) : {}),
 
+    ...(askV2 && practicePlans ? { [drillFlow.name]: flowTool(drillFlow as unknown as FlowDef<never>) } : {}),
     ...(askV2 ? askDraftTools({ sb, ctx, writer, practicePlans, surface }) : {}),
     ...(practicePlans && teamTools
       ? {

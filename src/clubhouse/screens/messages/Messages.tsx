@@ -49,7 +49,8 @@ import { MessagesView } from './MessagesScreen';
 import { DraftStore } from './drafts';
 import { readMarkedUnread, withMark, writeMarkedUnread } from './marked-unread';
 import { FOUND_FOR_MS } from './use-focus-message';
-import { onRoster, takePrefill } from './prefill';
+import { onRoster, seedThreadFiles, takePrefill } from './prefill';
+import { seedPollDraft } from './polls';
 import { directWith, firstName, groupLacksPlayer, isDirect, isGroupRow, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
 const isGroup = isGroupRow;
@@ -99,6 +100,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const [returnToAsk, setReturnToAsk] = useState(false);
   /** The prefilled draft lands in the composer of the conversation New message creates; the coach still presses Send. */
   const pendingDraft = useRef<string | null>(null);
+  /** The same for a board's picture. */
+  const pendingFiles = useRef<File[] | null>(null);
 
   const people = useMemo(() => new Map(data.directory.map((p) => [p.userId, p])), [data.directory]);
   /** Conversations the viewer marked unread on this device (marked-unread.ts, owner decision 14). */
@@ -225,6 +228,12 @@ export function Messages({ data }: { data: ChMessagesData }) {
       setReturnToAsk(pre.returnTo === 'ask');
       // Nothing posts a poll from here: its words land in the draft, and the coach is told (W-MSG-16).
       const words = pre.poll && !pre.draft ? [pre.poll.question, ...pre.poll.options].join('\n') : pre.draft;
+      // A poll for a group thread opens in that thread's sheet (TASK_FIELDS 5.5): the coach presses Send there.
+      if (pre.poll && named?.group) {
+        seedPollDraft(named.id, pre.poll, data.timeZone);
+        setSelectedId(named.id);
+        return;
+      }
       if (pre.poll) toast({ tone: 'error', title: 'Couldn’t open the poll draft', body: 'Nothing was posted.', code: 'CH-7001' });
       // A thread the coach can see opens; one they can't falls back to the one-player message, never another group.
       const existing = named ?? (to.length === 1 ? directWith(convs, to[0]!) : undefined);
@@ -233,9 +242,11 @@ export function Messages({ data }: { data: ChMessagesData }) {
         const own = drafts.get(existing.id);
         if (words && !own) drafts.set(existing.id, words);
         else if (words && own && own !== words) toast({ title: 'You already had a draft here.', code: 'CH-7001' });
+        if (pre.files) seedThreadFiles(existing.id, pre.files);
         setSelectedId(existing.id);
         return;
       }
+      pendingFiles.current = pre.files ?? null;
       pendingDraft.current = words || null;
       setPrefill({ to, draft: words, title: pre.title ?? '' });
     } else if (conv) {
@@ -331,6 +342,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
     (conversationId: string) => {
       if (pendingDraft.current && !drafts.get(conversationId)) drafts.set(conversationId, pendingDraft.current);
       pendingDraft.current = null;
+      if (pendingFiles.current) seedThreadFiles(conversationId, pendingFiles.current);
+      pendingFiles.current = null;
       setPrefill(null);
     },
     [drafts],

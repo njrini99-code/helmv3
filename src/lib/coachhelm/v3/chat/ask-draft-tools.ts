@@ -4,10 +4,19 @@ import { z } from 'zod';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import type { CoachChatContext } from './context';
-import { DraftBoardInput, DraftMessageInput } from './create-tools';
+import { buildPollPayload } from '@/lib/golf/message-polls';
+import { DraftBoardInput, DraftMessageInput, DraftPollInput } from './create-tools';
 
 /** Which chat is asking: Quick chat's card is the coach's Send, the Ask tab hands words to Messages. */
 export type AskSurface = 'ask' | 'quick_chat';
+
+const POLL_PROBLEM: Record<string, string> = {
+  question: 'A poll needs a question.',
+  options: 'A poll needs 2 to 6 choices.',
+  duplicate: 'Two choices say the same thing.',
+  closes: 'The end time has to be in the future.',
+  closes_far: 'The end time has to be within 30 days.',
+};
 
 const BriefInput = z.object({
   title: z.string().min(1).max(120),
@@ -53,8 +62,18 @@ export function askDraftTools({ sb, ctx, writer, practicePlans = false, surface 
           }),
         }
       : {}),
+    // TASK_FIELDS 5.14: until the bank exists the flow says so, and offers the plan block instead of a card it can't keep.
+    ...(practicePlans
+      ? {}
+      : {
+          drill_bank_status: tool({
+            description: 'The coach asked to save a new drill. Call this, and say what it returns, instead of offering to save it.',
+            inputSchema: z.object({}),
+            execute: async () => ({ status: 'unavailable', message: 'Drill bank comes with the practice builder. Offer to put this drill into a practice plan block instead.' }),
+          }),
+        }),
     draft_board: tool({
-      description: 'Open a message to one player in Messages with a short note about the board you just drew. Sends nothing: the coach taps Send there.',
+      description: 'Make a board for one player from the visuals you drew this turn with show_visual: draw them first. It goes in a message to them in Messages as an image, under your short note. Sends nothing: the coach taps Send there.',
       inputSchema: DraftBoardInput,
       execute: async ({ player_id, note }) => {
         const player = ctx.roster.find((p) => p.id === player_id);
@@ -67,6 +86,21 @@ export function askDraftTools({ sb, ctx, writer, practicePlans = false, surface 
     ...(surface === 'quick_chat'
       ? {}
       : {
+          draft_poll: tool({
+            description: 'Open a poll in a group thread found with find_thread, in the poll sheet in Messages. Posts nothing: the coach taps Send there. Votes always show names.',
+            inputSchema: DraftPollInput,
+            execute: async ({ conversation_id, question, options, multi, closes_at }) => {
+              const built = buildPollPayload({ question, options, multi: !!multi, closesAt: closes_at ?? null });
+              if (!built.ok) return { status: 'refused', message: POLL_PROBLEM[built.problem] };
+              const { data, error } = await sb.from('golf_conversations').select('id, title, golf_conversation_participants(user_id)').eq('team_id', ctx.team_id).eq('id', conversation_id).maybeSingle();
+              if (error) return { status: 'failed', message: 'Could not read that thread.' };
+              if (!data) return { status: 'refused', message: 'That thread is not on your team.' };
+              if ((data.golf_conversation_participants?.length ?? 0) < 3) return { status: 'refused', message: 'A poll goes in a group thread.' };
+              const thread = data.title ?? 'this thread';
+              writer.write({ type: 'data-handoff', id: `handoff-${(n += 1)}`, data: { kind: 'poll', players: [], conversationId: data.id, title: `Poll for ${thread}`, thread, draft: '', poll: { question, options, ...(multi ? { multi: true } : {}), ...(closes_at ? { closes: closes_at } : {}) } } });
+              return { status: 'shown', message: 'The poll is ready to open in Messages. Nothing was posted.' };
+            },
+          }),
           draft_message: tool({
             description: 'Open a message in Messages with the words already in the composer, for one thread found with find_thread or for named players. Sends nothing: the coach taps Send there.',
             inputSchema: DraftMessageInput,

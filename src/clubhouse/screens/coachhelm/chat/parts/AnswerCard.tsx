@@ -57,6 +57,16 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
     }),
     [known, reads],
   );
+  const hasBoard = turn.blocks.some((b) => b.kind === 'handoff' && b.handoff.kind === 'board');
+  const charts = turn.blocks.filter((b) => b.kind === 'visual' || b.kind === 'composition');
+  const boardTiles =
+    hasBoard && charts.length > 0
+      ? charts.map((b) => (
+          <div key={b.key} className="bt">
+            {b.kind === 'visual' ? <CoachVisualArtifact artifact={b.artifact} /> : b.kind === 'composition' ? <CoachComposition composition={b.composition} live={false} /> : null}
+          </div>
+        ))
+      : undefined;
   const waiting = turn.blocks.some((b) => b.kind === 'proposal' && (b.view.status === 'live' || b.view.status === 'preparing'));
   const copy = async () => {
     try {
@@ -80,6 +90,8 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
           </p>
         )}
         {turn.blocks.map((b) => {
+          // A board holds the turn's charts: they're drawn once, on it, and what's on it is what the player gets.
+          if (boardTiles && (b.kind === 'visual' || b.kind === 'composition')) return null;
           if (b.kind === 'text')
             return (
               <div className="prose" key={b.key}>
@@ -91,7 +103,7 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
           if (b.kind === 'plan') return <PlanCard key={b.key} plan={b.plan} onSend={onSend} fresh={fresh} />;
           if (b.kind === 'brief' && b.brief.intake) return <PlanIntake key={b.key} brief={b.brief} onSend={onSend} />;
           if (b.kind === 'brief') return <BriefCard key={b.key} title={b.brief.title} questions={b.brief.questions} onDone={(_a, line) => onSend(line || 'Skip, just build')} />;
-          if (b.kind === 'handoff') return <HandoffCard key={b.key} handoff={b.handoff} />;
+          if (b.kind === 'handoff') return <HandoffCard key={b.key} handoff={b.handoff} tiles={b.handoff.kind === 'board' ? boardTiles : undefined} />;
           if (b.kind === 'composition') return <CoachComposition key={b.key} composition={b.composition} live={turn.active} />;
           return actions(b);
         })}

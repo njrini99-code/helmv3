@@ -36,6 +36,7 @@ const FLOWS: Record<string, { verb: string; busy: string; chip: string }> = {
   set_availability_note: { verb: 'Save note', busy: 'Saving…', chip: 'Saved' },
   create_recruit: { verb: 'Add recruit', busy: 'Adding…', chip: 'Added' },
 };
+FLOWS.create_drill = { verb: 'Add to drill bank', busy: 'Adding…', chip: 'Added' };
 FLOWS.publish_practice_plan = { verb: 'Publish', busy: 'Publishing…', chip: 'Published' };
 /** Where a confirmed draft lands (the page's `hs`): the screen and section, with this row on top. Its neighbours would need a read per screen, so only the new row draws. */
 const LANDS: Record<string, { app: string; where: string }> = {
@@ -47,6 +48,7 @@ const LANDS: Record<string, { app: string; where: string }> = {
   create_qualifier: { app: 'Qualifiers', where: 'This season' },
   set_lineup: { app: 'Tournaments', where: 'Lineup' },
   create_task: { app: 'Tasks', where: 'To do' },
+  create_drill: { app: 'Practice', where: 'Drill bank' },
   create_goal: { app: 'Stats', where: 'Goals' },
   create_focus_area: { app: 'Home', where: 'Focus' },
   add_round_note: { app: 'Rounds', where: 'Coach notes' },
@@ -80,6 +82,7 @@ const UNDONE: Record<string, string> = {
   create_trip: 'Undone. The trip was removed.',
   create_qualifier: 'Undone. The qualifier was removed.',
   create_task: 'Undone. The task was removed.',
+  create_drill: 'Undone. The drill was removed.',
   create_goal: 'Undone. The goal was removed.',
   create_focus_area: 'Undone. The focus was removed.',
   add_round_note: 'Undone. Your earlier notes are back as they were.',

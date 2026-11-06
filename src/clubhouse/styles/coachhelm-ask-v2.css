@@ -239,8 +239,22 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-knows li button { border: 0; background: none; color: var(--ch-text-secondary); font: var(--ch-type-12); cursor: pointer; }
 .ch-ak-knows input { width: 100%; padding: 6px 8px; border: var(--ch-hairline-w) solid var(--ch-separator); border-radius: var(--ch-radius-sm); background: var(--ch-card-bg); color: var(--ch-text-primary); font: var(--ch-type-16); letter-spacing: var(--ch-track-16); }
 /* AK11c: a draft that opens Messages. */
-.ch-ak-handoff { display: grid; gap: 6px; padding: 12px; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); }
-.ch-ak-handoff p { margin: 0; font: var(--ch-type-13);  color: var(--ch-text-secondary); }
+.ch-ak-th .ch-ak-handoff .ch-ak-draftwords { margin: 8px 16px 0; padding: 12px; border-radius: var(--ch-radius-lg); background: var(--ch-well-bg-flat); font: var(--ch-type-14); color: var(--ch-text-primary); white-space: pre-wrap; overflow-wrap: anywhere; }
+/* A board (E-BOARD): your note, then the turn's charts. What's drawn here is the picture that goes in the message. */
+.ch-ak-board { display: grid; gap: 8px; margin: 12px 16px 4px; padding: 12px; border-radius: var(--ch-radius-lg); background: var(--ch-well-bg-flat); }
+.ch-ak-board .bnote { margin: 0; padding: 8px 12px; border-radius: var(--ch-radius-md); background: var(--ch-card-bg); font: var(--ch-type-14); color: var(--ch-text-primary); overflow-wrap: anywhere; }
+.ch-ak-board .btiles { display: grid; gap: 8px; min-width: 0; }
+.ch-ak-board .bt { min-width: 0; }
+.ch-ak-board .bft { font: var(--ch-type-12); color: var(--ch-text-tertiary); }
+/* A poll (E-POLL): empty bars at zero until it's posted. */
+.ch-ak-pollp { display: grid; gap: 8px; margin: 12px 16px 4px; padding: 12px; border-radius: var(--ch-radius-lg); background: var(--ch-well-bg-flat); }
+.ch-ak-pollp .pq { font: var(--ch-type-15-strong); color: var(--ch-text-primary); overflow-wrap: anywhere; }
+.ch-ak-pollp .po { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.ch-ak-pollp .pr { display: grid; grid-template-columns: minmax(0, 40%) minmax(32px, 1fr) auto; align-items: center; gap: 8px; padding: 8px 12px; border-radius: var(--ch-radius-sm); background: var(--ch-card-bg); }
+.ch-ak-pollp .pt { font: var(--ch-type-14-strong); color: var(--ch-text-primary); overflow-wrap: anywhere; }
+.ch-ak-pollp .pb { height: 6px; border-radius: 999px; background: var(--ch-chart-track); }
+.ch-ak-pollp .pn { font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-ak-pollp .pf { font: var(--ch-type-12); color: var(--ch-text-secondary); }
 .ch-ak-th {
   --ch-ask-shadow-1: 0 0 0 0.5px var(--ch-ak-ak-hair), 0 1px 2px rgb(28 25 18 / 0.05);
   --ch-ask-shadow-2: var(--ch-elevation-reading);
