@@ -30,7 +30,7 @@ function Card({ id, title, meta, obs, children }: { id: string; title: string; m
   );
 }
 
-export function ReadHeadline({ d, view, coach, assigned }: { d: ChReadDetail; view: ChReadView; coach: boolean; assigned: boolean }) {
+export function ReadHeadline({ d, view, coach, assigned, dismissed = false }: { d: ChReadDetail; view: ChReadView; coach: boolean; assigned: boolean; dismissed?: boolean }) {
   const h = d.headline;
   const stale = !!h.stale;
   return (
@@ -40,7 +40,7 @@ export function ReadHeadline({ d, view, coach, assigned }: { d: ChReadDetail; vi
           {coach ? `${view.head.first} · ` : ''}
           {view.area}
         </span>
-        <span className={'st' + (stale ? ' plain' : '')}>{stale ? 'Out of date' : assigned && coach ? 'Assigned' : d.stance}</span>
+        <span className={'st' + (stale ? ' plain' : '')}>{stale ? 'Out of date' : dismissed && coach ? 'Dismissed' : assigned && coach ? 'Assigned' : d.stance}</span>
       </div>
       <h3>{h.title}</h3>
       <p className="lede">{h.lede}</p>
@@ -317,11 +317,9 @@ export function MovedCard({ d, failed, pictures }: { d: ChReadDetail; failed: bo
             <text x={l} y={H - 4} textAnchor="middle" fontSize="12" fill="var(--ch-hr-ink-3)">
               Before
             </text>
-            {m.through && (
-              <text x={r} y={H - 4} textAnchor="middle" fontSize="12" fill="var(--ch-hr-ink-3)">
-                {m.through}
-              </text>
-            )}
+            <text x={r} y={H - 4} textAnchor="middle" fontSize="12" fill="var(--ch-hr-ink-3)">
+              Now
+            </text>
           </svg>
         )}
         <p className={'ch-hr-plainp is-' + m.tone}>{m.text}</p>
@@ -367,23 +365,45 @@ export function RoundsCard({ d, failed }: { d: ChReadDetail; failed: boolean }) 
   const shown = all ? list : list.slice(0, 4);
   return (
     <Card id="crounds" title="The rounds behind it" meta={`${d.rounds.total} rounds`}>
-      {shown.map((r) => (
-        <div className="row" key={r.id}>
-          <div className="c">
-            <b>
-              {r.date}
-              {r.course ? ` · ${r.course}` : ''}
-            </b>
-            <span>{r.counted ? `${r.counted} counted ${r.counted > 1 ? 'holes' : 'hole'}` : 'Counted in the read'}</span>
+      {shown.map((r) => {
+        const inner = (
+          <>
+            <span className="c">
+              <b>
+                {r.date}
+                {r.course ? ` · ${r.course}` : ''}
+              </b>
+              <span>
+                {r.counted > 0 && (
+                  <span className="ch-hr-hdots" aria-hidden="true">
+                    {Array.from({ length: Math.min(r.counted, 5) }, (_, i) => (
+                      <i key={i} />
+                    ))}
+                  </span>
+                )}
+                {r.counted ? `${r.counted} counted ${r.counted > 1 ? 'holes' : 'hole'}` : 'Counted in the read'}
+              </span>
+            </span>
+            <span className="v">
+              {r.score} {r.toPar && <span className="ch-hr-topar">{r.toPar}</span>}
+            </span>
+          </>
+        );
+        // A chevron is a promise: a row with no review to open draws none (AC S-READ.rounds 3).
+        return r.href ? (
+          <Link prefetch={false} className="row tap" key={r.id} href={r.href}>
+            {inner}
+            <span className="chev">
+              <Icon icon={ChevronRight} size={14} />
+            </span>
+          </Link>
+        ) : (
+          <div className="row" key={r.id}>
+            {inner}
+            <span />
           </div>
-          <span className="v">
-            {r.score} {r.toPar && <span className="ch-hr-topar">{r.toPar}</span>}
-          </span>
-          <span className="chev">
-            <Icon icon={ChevronRight} size={14} />
-          </span>
-        </div>
-      ))}
+        );
+      })}
       {list.length > 4 && (
         <button type="button" className="row tap ch-hr-more" aria-expanded={all} onClick={() => setAll((v) => !v)}>
           <span className="c">
@@ -395,7 +415,7 @@ export function RoundsCard({ d, failed }: { d: ChReadDetail; failed: boolean }) 
   );
 }
 
-export function DoCard({ d, voice, fa, missing, messageHref, askHref, practiceHref }: { d: ChReadDetail; voice: ChViewVoice; fa: ChFocusActions; missing?: ChBoardMissing; messageHref: string | null; askHref: string | null; practiceHref: string | null }) {
+export function DoCard({ d, voice, fa, missing, messageHref, askHref, practiceHref, onMore }: { d: ChReadDetail; voice: ChViewVoice; fa: ChFocusActions; missing?: ChBoardMissing; messageHref: string | null; askHref: string | null; practiceHref: string | null; onMore?: () => void }) {
   const coach = voice.role === 'coach';
   const first = coach ? voice.first : '';
   const ins = d.insight;
@@ -446,18 +466,6 @@ export function DoCard({ d, voice, fa, missing, messageHref, askHref, practiceHr
         )}
         {coach && (
           <div className="ch-hr-acts">
-            {state === 'dismissed' && (
-              <div className="ntc" role="status" data-ch-code="CH-13901">
-                <div className="c">
-                  <span>
-                    <b>Insight dismissed.</b> It no longer shows on your board or on {first}’s. Undo brings it back.
-                  </span>
-                  <Button variant="ghost" size="sm" busy={fa.here('undo', ins.id)} onClick={() => void fa.undo.run(target)}>
-                    Undo
-                  </Button>
-                </div>
-              </div>
-            )}
             {state === 'assigned' && (
               <>
                 <div className="assigned" role="status" data-ch-code="CH-13601">
@@ -485,9 +493,16 @@ export function DoCard({ d, voice, fa, missing, messageHref, askHref, practiceHr
             )}
             {(state === 'open' || state === 'declined') && (
               <>
-                <Button variant="primary" leftIcon={Flag} busy={fa.here('assign', ins.id)} disabled={fa.busy && !fa.here('assign', ins.id)} onClick={() => void fa.assign.run(target)}>
-                  {fa.here('assign', ins.id) ? 'Assigning…' : state === 'declined' ? 'Propose again' : 'Assign as focus'}
-                </Button>
+                <div className="ch-hr-actrow">
+                  <Button variant="primary" leftIcon={Flag} busy={fa.here('assign', ins.id)} disabled={fa.busy && !fa.here('assign', ins.id)} onClick={() => void fa.assign.run(target)}>
+                    {fa.here('assign', ins.id) ? 'Assigning…' : state === 'declined' ? 'Propose again' : 'Assign as focus'}
+                  </Button>
+                  {onMore && (
+                    <Button variant="secondary" aria={{ label: "More for this read" }} onClick={onMore}>
+                      More
+                    </Button>
+                  )}
+                </div>
                 {state === 'declined' && (
                   <p className="am" data-ch-code="CH-13907">
                     {first} declined this as a focus. Propose again sends it back as a new proposal.

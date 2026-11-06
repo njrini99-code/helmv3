@@ -1238,7 +1238,104 @@ html[data-fw-theme='dark'] .ch-hr {
   color: var(--ch-text-primary);
   font: var(--ch-type-14-strong);
 }
-.ch-hr .ch-hr-deskbar > button {
+/* The rail runs down beside the action row and the two columns under it, so the headline and How sure start level. */
+.ch-hr.is-desk .ch-hr-desk > :first-child {
+  grid-row: 1 / span 2;
+}
+.ch-hr.is-desk .ch-hr-desk > .ch-hr-deskbar {
+  grid-column: 2 / -1;
+}
+.ch-hr .ch-hr-swap {
+  animation: ch-hr-swap var(--ch-dur-base) var(--ch-hr-ease);
+}
+@keyframes ch-hr-swap {
+  from {
+    opacity: 0;
+  }
+}
+.ch-hr .ch-hr-morewrap {
+  position: relative;
+}
+.ch-hr .ch-hr-morepop {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 3;
+  display: grid;
+  width: 250px;
+  padding: 6px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-separator), 0 18px 40px -16px rgb(0 0 0 / 0.35);
+  transform-origin: 100% 0;
+  animation: ch-hr-pop var(--ch-dur-quick) var(--ch-hr-ease);
+}
+@keyframes ch-hr-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+.ch-hr .ch-hr-morepop > button,
+.ch-hr .ch-hr-morelist > button,
+.ch-hr .ch-hr-morelist > a {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: var(--ch-radius-sm);
+  background: none;
+  color: var(--ch-text-primary);
+  text-align: left;
+  font: var(--ch-type-15-medium);
+  cursor: pointer;
+}
+.ch-hr .ch-hr-morepop > button:hover {
+  background: var(--ch-well-bg-flat);
+}
+.ch-hr .ch-hr-morepop > .is-flag,
+.ch-hr .ch-hr-morelist > .is-flag {
+  color: var(--ch-flag);
+}
+.ch-hr .ch-hr-actrow {
+  display: flex;
+  gap: 8px;
+}
+.ch-hr .ch-hr-actrow > .ch-btn--secondary {
+  flex: none;
+  min-height: 44px;
+}
+.ch-hr .ch-hr-hdots {
+  display: inline-flex;
+  gap: 2px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.ch-hr .ch-hr-hdots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ch-hr-loss-fill);
+}
+.ch-hr .row .c {
+  min-width: 0;
+}
+.ch-hr .row .c > span:not(.ch-avatar) {
+  display: block;
+}
+/* One target tile runs the card's width; half a card with air beside it reads as a hole. */
+.ch-hr .targets > :only-child {
+  grid-column: 1 / -1;
+}
+/* The footnote sits inside the card's padding, on the same left edge as the bars. */
+.ch-hr .cb > .cn {
+  margin: 12px 0 0;
+  padding: 12px 0 0;
+}
+.ch-hr .ladder.ch-hr-ladder {
+  margin-top: 16px;
+}
+.ch-hr .ch-hr-morewrap > button {
   position: relative;
   display: grid;
   width: 36px;
@@ -1251,7 +1348,7 @@ html[data-fw-theme='dark'] .ch-hr {
   color: var(--ch-text-primary);
   cursor: pointer;
 }
-.ch-hr .ch-hr-deskbar > button::before {
+.ch-hr .ch-hr-morewrap > button::before {
   content: "";
   position: absolute;
   inset: -4px;

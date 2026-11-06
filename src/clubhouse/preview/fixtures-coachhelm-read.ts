@@ -43,5 +43,14 @@ export function previewReadView(q: string | undefined, role: 'coach' | 'player',
   const list = [deep, ...others.map(deepOf)];
   const dive: ChDeepDive = { list, tour: 'Tour', rounds: 21 as never, themes: {}, roundsFailed: false, plansFailed: false, themesFailed: false, counts: diveCounts(list) };
   const view = toChReadView(dive, new Map([raw, ...others].map((r) => [r.id, r])), gone ? 'gone' : raw.id, role, { playerId: role === 'coach' ? raw.player_id : null, name: role === 'coach' ? name : 'You', first: role === 'coach' ? first : 'You' }, { ...READ_CALLS, teamPool: true });
-  return role === 'coach' ? { ...view, team: [HELM_PLAYERS.priya, HELM_PLAYERS.eli, HELM_PLAYERS.jonah].map((p) => ({ id: p.id, name: p.name })) } : view;
+  const shaped: ChReadView = !view.read
+    ? view
+    : state === 'notrend'
+      ? { ...view, read: { ...view.read, moved: null } }
+      : state === 'nofunnel'
+        ? { ...view, read: { ...view.read, funnel: null } }
+        : state === 'allrounds'
+          ? { ...view, read: { ...view.read, rounds: { total: 9, list: Array.from({ length: 9 }, (_, i) => ({ ...view.read!.rounds.list[i % view.read!.rounds.list.length]!, id: `r${i}`, counted: i % 3 })) } } }
+          : view;
+  return role === 'coach' ? { ...shaped, team: [HELM_PLAYERS.priya, HELM_PLAYERS.eli, HELM_PLAYERS.jonah].map((p) => ({ id: p.id, name: p.name })) } : shaped;
 }

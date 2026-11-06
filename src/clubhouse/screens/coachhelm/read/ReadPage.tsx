@@ -6,7 +6,8 @@ import { askAboutReadHref } from '../chat/ask-links';
 import { Icon } from '../../../ui/Icon';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useToast } from '../../../ui/Toast';
 import { readHref, type ChViewLoad, type ChViewVoice, coachBoardFor, PLAYER_HELM_HREF } from '../../../data/coachhelm-views-shape';
 import type { ChReadView } from '../../../data/coachhelm-read-view-shape';
 import { useChPhone } from '../../../lib/use-phone';
@@ -70,6 +71,65 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
   usePageCrumbs(data ? (coach ? ['CoachHelm', voice.name, data.area] : ['CoachHelm', data.area]) : ['CoachHelm']);
   const read = data?.read ?? null;
   const pictures = data?.calls.pictures ?? true;
+  const toast = useToast();
+  const moreWrap = useRef<HTMLDivElement | null>(null);
+  // The desk's popover closes on Esc or a click outside (M-READ-14); the phone's sheet is ui/Modal's own.
+  useEffect(() => {
+    if (!more || phone) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMore(false);
+    };
+    const onDown = (e: PointerEvent) => {
+      if (!moreWrap.current?.contains(e.target as Node)) setMore(false);
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onDown);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onDown);
+    };
+  }, [more, phone]);
+  const copyLink = () => {
+    setMore(false);
+    if (!read) return;
+    const url = `${window.location.origin}${readHref(coach ? voice.playerId : null, read.insight.id, true)}`;
+    void navigator.clipboard?.writeText(url).then(
+      () => toast({ title: 'Link copied' }),
+      () => toast({ title: 'Couldn’t copy the link' }),
+    );
+  };
+  const dismissTarget = read && coach ? { playerId: voice.playerId, first, ins: read.insight } : null;
+  const askRow = read ? askAboutReadHref({ insightId: read.insight.id, title: read.insight.title, first: coach ? first : undefined }, askOn) : null;
+  const moreItems = (
+    <>
+      {dismissTarget && (
+        <button
+          type="button"
+         
+          className="is-flag"
+          onClick={() => {
+            setMore(false);
+            void fa.dismiss.run(dismissTarget);
+          }}
+        >
+          Dismiss this read
+        </button>
+      )}
+      {phone && coach && (
+        <Link href={rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(voice.playerId)}`, 'coach') ?? '#'}>
+          Message {first}
+        </Link>
+      )}
+      {phone && askRow && (
+        <Link href={askRow}>
+          Ask CoachHelm about this
+        </Link>
+      )}
+      <button type="button" onClick={copyLink}>
+        Copy a link to this read
+      </button>
+    </>
+  );
   const back = (
     <Button variant="ghost" onClick={() => router.push(backHref)}>
       Back to {coach ? first : 'CoachHelm'}
@@ -116,16 +176,31 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
         </div>
       </div>
     );
-    const head = <ReadHeadline d={read} view={data} coach={coach} assigned={assigned} />;
+    const dismissedHere = coach && !!fa.dismissed[read.insight.id];
+    // At the top of the page, where the ⋯ that did it sits (S-READ.dismissed), not at the foot of What to do.
+    const dismissedNotice = dismissedHere && (
+      <div className="ntc" role="status" data-ch-code="CH-13901">
+        <div className="c">
+          <span>
+            <b>Insight dismissed.</b> It no longer shows on your board or on {first}’s. Undo brings it back.
+          </span>
+          <Button variant="ghost" size="sm" busy={fa.here('undo', read.insight.id)} onClick={() => void fa.undo.run({ playerId: voice.playerId, first, ins: read.insight })}>
+            Undo
+          </Button>
+        </div>
+      </div>
+    );
+    const head = <ReadHeadline d={read} view={data} coach={coach} assigned={assigned} dismissed={dismissedHere} />;
     const where = read.funnel && <WhereCard funnel={read.funnel} pictures={pictures} />;
     const why = <WhyCard d={read} voice={voice} pictures={pictures} />;
     const sure = <SureCard d={read} voice={voice} pictures={pictures} />;
     const moved = <MovedCard d={read} failed={data.failed.themes} pictures={pictures} />;
     const rounds = <RoundsCard d={read} failed={data.failed.rounds} />;
     const askHref = askAboutReadHref({ insightId: read.insight.id, title: read.insight.title, first: coach ? first : undefined }, askOn);
-    const todo = <DoCard d={read} voice={voice} fa={fa} missing={data.missing} messageHref={messageHref} askHref={askHref} practiceHref={null} />;
+    const todo = <DoCard d={read} voice={voice} fa={fa} missing={data.missing} messageHref={messageHref} askHref={askHref} practiceHref={null} onMore={() => setMore(true)} />;
     body = phone ? (
       <>
+        {dismissedNotice}
         {notice}
         {head}
         {where}
@@ -137,30 +212,42 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
       </>
     ) : (
       <>
-        <div className="ch-hr-col">
-          {/* S-READ-DESK: the read's actions, where the phone has its bar. */}
-          <div className="ch-hr-deskbar">
-            {askHref && (
-              <Button variant="secondary" size="lg" href={askHref}>
-                Ask about this read
-              </Button>
-            )}
-            {messageHref && (
-              <Button variant="secondary" size="lg" href={messageHref}>
-                Message {first}
-              </Button>
-            )}
-            <button type="button" className="ib" aria-label="More" onClick={() => setMore(true)}>
+        {/* S-READ-DESK: the read's actions, where the phone has its bar. Its own row, so the middle and right columns start level. */}
+        <div className="ch-hr-deskbar">
+          {askHref && (
+            <Button variant="secondary" href={askHref}>
+              Ask about this read
+            </Button>
+          )}
+          {messageHref && (
+            <Button variant="secondary" href={messageHref}>
+              Message {first}
+            </Button>
+          )}
+          <div className="ch-hr-morewrap" ref={moreWrap}>
+            <button type="button" className="ib" aria-label="More" aria-expanded={more} onClick={() => setMore((v) => !v)}>
               <Icon icon={Ellipsis} size={18} />
             </button>
+            {more && (
+              <div className="ch-hr-morepop">
+                {moreItems}
+                <button type="button" onClick={() => setMore(false)}>
+                  Close
+                </button>
+              </div>
+            )}
           </div>
+        </div>
+        {/* A rail row swaps the read: the columns fade in fresh, nothing slides (M-READ-23). */}
+        <div className="ch-hr-col ch-hr-swap" key={`mid-${read.insight.id}`}>
+          {dismissedNotice}
           {notice}
           {head}
           {where}
           {why}
           {todo}
         </div>
-        <div className="ch-hr-col is-evidence">
+        <div className="ch-hr-col is-evidence ch-hr-swap" key={`ev-${read.insight.id}`}>
           {sure}
           {moved}
           {rounds}
@@ -168,8 +255,6 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
       </>
     );
   }
-  const insight = read?.insight ?? null;
-  const target = insight && coach ? { playerId: voice.playerId, first, ins: insight } : null;
   return (
     <main className={'ch-hr ' + (phone ? 'is-phone' : 'is-desk')} data-ch-screen="coachhelm-read" data-ch-hr-page="">
       {bar}
@@ -181,26 +266,13 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
           {body}
         </div>
       )}
-      <Modal open={more} onClose={() => setMore(false)} title="More for this read">
-        <div className="ch-hr-morelist">
-          {target && (
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setMore(false);
-                void fa.dismiss.run(target);
-              }}
-            >
-              Dismiss this read
-            </Button>
-          )}
-          {coach && (
-            <Link className="lk" href={rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(voice.playerId)}`, 'coach') ?? '#'}>
-              Message {first}
-            </Link>
-          )}
-        </div>
-      </Modal>
+      {phone && (
+        <Modal open={more} onClose={() => setMore(false)} title={read?.insight.title ?? 'More for this read'}>
+          <div className="ch-hr-morelist">
+            {moreItems}
+          </div>
+        </Modal>
+      )}
     </main>
   );
 }
