@@ -130,7 +130,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 @keyframes ch-ak-ring { from { transform: scale(1); opacity: 0.6; } to { transform: scale(1.9); opacity: 0; } }
 @keyframes ch-ak-drain { to { stroke-dashoffset: 63; } }
 /* AK5: artifacts */
-.ch-ak-th .acard { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; padding: 12px 12px 12px 14px; border: 0; border-radius: var(--ch-ak-r-card); background: var(--ch-card-bg); box-shadow: var(--ch-ask-shadow-2); text-align: left; cursor: pointer; }
+.ch-ak-th .acard { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; padding: 12px 12px 12px 14px; border: 0; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-ask-shadow-2); text-align: left; cursor: pointer; }
 .ch-ak-th .acard .tile { position: relative; display: grid; align-content: start; gap: 4px; width: 44px; height: 52px; padding: 8px 6px; border-radius: var(--ch-radius-sm); background: var(--ch-well-bg-flat); box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-card-ring); overflow: hidden; }
 .ch-ak-th .acard .tile i { display: block; height: 4px; border-radius: var(--ch-radius-mark); background: var(--ch-ak-ak-track); }
 .ch-ak-th .acard .tile i:first-child { width: 70%; background: var(--ch-ask-accent); }
@@ -249,7 +249,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-out .ask { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-top: var(--ch-hairline-w) solid var(--ch-border-hairline); font: var(--ch-type-14); color: var(--ch-text-primary); }
 .ch-ak-out .ask.is-off { opacity: 0.5; }
 @media (prefers-reduced-motion: no-preference) {
-  .ch-ak-out .ask.is-late { animation: ch-ak-rise6 var(--ch-dur-base) var(--ch-ease) 900ms backwards; }
+  .ch-ak-out .ask.is-late { animation: ch-ak-rise6 var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-base) * 3.5) backwards; }
 }
 
 /* AK8: tone and CoachHelm knows, under the chats. */
@@ -447,7 +447,6 @@ html[data-fw-theme='dark'] .ch-ak-th {
   margin-left: auto;
   font: var(--ch-type-11-strong);
   letter-spacing: var(--ch-track-11);
-  text-transform: uppercase;
   color: var(--ch-text-tertiary);
 }
 .ch-ak-hs .hsr {
@@ -599,7 +598,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
   outline-offset: 2px;
 }
 /* ASK-20: the version arrows in the pane and on the phone's dock alike. */
-.vers {
+.ch-ak-pane .vers, .ch-ak-push .vers {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -607,7 +606,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
   letter-spacing: var(--ch-track-14);
   color: var(--ch-text-secondary);
 }
-.vers button {
+.ch-ak-pane .vers button, .ch-ak-push .vers button {
   position: relative;
   display: grid;
   place-items: center;
@@ -618,7 +617,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
   color: inherit;
   cursor: pointer;
 }
-.vers button:disabled {
+.ch-ak-pane .vers button:disabled, .ch-ak-push .vers button:disabled {
   opacity: 0.4;
   cursor: default;
 }
@@ -827,7 +826,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-knows__err {
   margin: 0;
   font: var(--ch-type-14);
-  color: var(--ch-danger-600);
+  color: var(--ch-warning-600);
 }
 /* ASK-21: under par is marked by a circle as well as its colour. */
 .ch-ak-holes .u b {
@@ -847,7 +846,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 /* MOB-ASK-12 */
 .ch-ak-push :is(.apb, .apdock) { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
 /* MOB-ASK-13: one line of placeholder, whatever the width. */
-.ch-ask-cmp textarea::placeholder { color: var(--ch-text-placeholder); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ch-ak-root .ch-ask-cmp textarea::placeholder { color: var(--ch-text-placeholder); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* FID-ASK-15: low is amber, not a shorter green. */
 .ch-ak-meter i.is-low { background-image: linear-gradient(90deg, var(--ch-chart-loss-fill) var(--ch-ak-fill, 20%), transparent 0); }
@@ -857,8 +856,8 @@ html[data-fw-theme='dark'] .ch-ak-th {
 
 /* E-SKEL: the skeleton fades out over the chart that replaces it, in the same place. Opacity only, so Reduced Motion keeps it. */
 .ch-ak-swap { position: relative; }
-.ch-ak-swap > .ghost { position: absolute; inset: 0; overflow: hidden; pointer-events: none; animation: ch-ak-fade-out var(--ch-dur-swap, 180ms) var(--ch-ease) forwards; }
-.ch-ak-swap > .next { animation: ch-ak-fade var(--ch-dur-swap, 180ms) var(--ch-ease) backwards; }
+.ch-ak-swap > .ghost { position: absolute; inset: 0; overflow: hidden; pointer-events: none; animation: ch-ak-fade-out var(--ch-dur-base) var(--ch-ease) forwards; }
+.ch-ak-swap > .next { animation: ch-ak-fade var(--ch-dur-base) var(--ch-ease) backwards; }
 
 /* Ask's buttons and links take its accent inside its own surfaces; the app's accent stays where it is. */
 .ch-ak-th, .ch-ak-pane, .ch-ak-push, .ch-ak-root .ch-ask-cmp {
