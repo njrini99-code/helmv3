@@ -3305,8 +3305,9 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   [data-ch-crh='on'] .ch-rsx-figs dd.is-none {
     color: var(--ch-crh-ink4);
   }
-  [data-ch-crh='on'] .ch-rsx-figs__f {
+  [data-ch-crh='on'] .ch-rsx-figs dd.ch-rsx-figs__f {
     font: var(--ch-type-13);
+    letter-spacing: normal;
     color: var(--ch-crh-ink2);
   }
   [data-ch-crh='on'] .ch-rsx-chart {

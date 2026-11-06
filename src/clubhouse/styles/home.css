@@ -5673,12 +5673,12 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 }
 
 /* The older cardless phone pass pulled its rows out 12px to the page; under the lane's cards that left a row 4px from the card's edge
-   (SYS-3). The card's own padding is the inset now. */
+   (SYS-3). The row keeps the card's 16 inset itself: these cards have no padding of their own. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-hm[data-ch-crh='on'] .ch-hm-rd,
   .ch-hm[data-ch-crh='on'] .ch-hm-tl__a {
     width: 100%;
     margin-inline: 0;
-    padding-inline: 0;
+    padding-inline: 16px;
   }
 }

@@ -96,12 +96,12 @@ export function RosterProfileCrh({
             <div>
               <dt>Handicap</dt>
               <dd className="ch-num">{formatHcp(p.handicap)}</dd>
-              <span className="ch-rsx-figs__f">Index</span>
+              <dd className="ch-rsx-figs__f">Index</dd>
             </div>
             <div>
               <dt>SG / round</dt>
               <dd className={'ch-num ' + (sg == null ? 'is-none' : changeTone(sg, false, 1))}>{sg == null ? <NoData /> : formatSigned(sg)}</dd>
-              <span className="ch-rsx-figs__f">{sgVs}</span>
+              <dd className="ch-rsx-figs__f">{sgVs}</dd>
             </div>
           </dl>
         </Surface>

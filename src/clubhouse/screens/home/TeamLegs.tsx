@@ -211,7 +211,7 @@ export function TeamLegsPhone({ legs, covered = false, crh = false }: { legs: Ch
     const worst = [...legs.rows].filter((l) => l.sg != null).sort((a, b) => (a.sg as number) - (b.sg as number)).slice(0, 2).filter((l) => (l.sg as number) < 0).map((l) => l.label);
     const note = legs.ranked && worst.length ? `${worst.join(' and ')} cost${worst.length === 1 ? 's' : ''} the most. Names open that player’s game on Stats.` : null;
     return (
-      <Surface variant="card" level={2} padded={false} title="The team’s game" actions={<span className="ch-hm-meta">SG per round</span>} footerNote={note ?? undefined}>
+      <Surface variant="card" level={2} padded={false} title="The team’s game" actions={<span className="ch-hm-meta">SG per round · last 10</span>} footerNote={note ?? undefined}>
         <Notices legs={legs} covered={covered} />
         {legs.holeRounds === 0 ? (
           <NoHoleRounds />

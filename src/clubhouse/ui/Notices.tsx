@@ -246,7 +246,7 @@ export function RouteErrorView({
             )}
           </div>
           {digest && <p className="ch-empty-page__ref ch-num">Reference {digest}</p>}
-          {devDetail && <pre className="ch-notyet__dev">{devDetail}</pre>}
+          {devDetail && <pre className="ch-notyet__dev" tabIndex={0}>{devDetail}</pre>}
         </div>
       </div>
     </main>

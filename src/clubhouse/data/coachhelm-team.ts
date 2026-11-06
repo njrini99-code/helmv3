@@ -7,7 +7,6 @@ import { teamPatternEnabled } from '@/lib/coachhelm/v3/team-pattern/flag';
 import { isTrackRecordEnabled } from '@/lib/coachhelm/v3/track-record/flag';
 import { toCourseHistory } from '@/lib/coachhelm/v3/team-board/course-shape';
 import { loadPlayersStandingMap } from '@/lib/coachhelm/v3/standing/loader';
-import { isCountableRound } from '@/lib/golf/round-countable';
 import { chLogServer } from '../lib/track-server';
 import { isOpenFinding } from './coachhelm-classify';
 import { loadCoachBrief } from './coachhelm-coach-brief';
@@ -46,6 +45,7 @@ import {
   type ChTeamPlayer,
   type ChTourRow,
 } from './coachhelm-team-shape';
+import { roundsForFigures } from './figure-window';
 import { toChTeamLegs } from './coachhelm-team-legs';
 import { classYearLabel, loadSeasonRounds, loadTeamZone, seasonStartDate } from './season';
 import { NEEDS_MAX, WORKING_MAX } from './coachhelm-shape';
@@ -183,7 +183,7 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
   const tour = tourResult.baseline;
   const iso = now.toISOString();
 
-  const countable = seasonRounds.rounds.filter((r) => isCountableRound(r as never));
+  const countable = roundsForFigures(seasonRounds.rounds);
   const legs = toChTeamLegs(countable, ids);
   const list: ChTeamPlayer[] = roster.map((p) => {
     const first = p.name === NO_NAME ? NO_NAME : firstName(p.name);

@@ -934,7 +934,7 @@ function RosterList({
               </SortHeader>
               <span role="columnheader" className="r">{crh ? 'SG/rd' : 'SG / rd'}</span>
               <SortHeader k="rounds" sort={sortBy} onSort={onSort} end>
-                {crh ? 'Rds' : 'Rounds'}
+                {crh ? <span title="Rounds this season">Rds</span> : 'Rounds'}
               </SortHeader>
               <span role="columnheader">
                 <span className="ch-sr-only">Actions</span>

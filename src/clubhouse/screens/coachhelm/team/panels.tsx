@@ -255,7 +255,7 @@ export function PlayerPanel({ player, data, onRead, fileOn, onClose }: { player:
     );
   return (
     <>
-      <Head lead={<Coin player={player} />} name={player.name} line={`${year} · ${player.rounds} rounds · ${formatSigned(player.total)} a round to Tour${player.early ? ' · early' : ''}`} onClose={onClose} />
+      <Head lead={<Coin player={player} />} name={player.name} line={`${year} · ${player.rounds} rounds this season · ${formatSigned(player.total)} a round to Tour${player.early ? ' · early' : ''}`} onClose={onClose} />
       <section className="card">
         <div className="ch">
           <h4>Where {player.first} gains and loses</h4>
