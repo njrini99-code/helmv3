@@ -27,7 +27,7 @@ export function StationControl({
         return (
           <button key={s} type="button" aria-pressed={value === s} aria-label={`${STATION_NAME[s]}, ${v == null ? 'not measured' : `${formatSigned(v)} a round`}`} onClick={() => onChange(s)}>
             {STATION_SHORT[s]}
-            <b>{v == null ? '—' : formatSigned(v)}</b>
+            <b className={v == null || Math.abs(v) < 0.05 ? 'is-even' : v > 0 ? 'is-gain' : undefined}>{v == null ? '—' : formatSigned(v)}</b>
           </button>
         );
       })}

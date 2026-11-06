@@ -64,11 +64,11 @@ export function RosterCard({ players, phone, onPlayer }: { players: readonly ChT
                 {p.heldBack ? ` · ${p.heldBack} held back` : ''}
               </span>
             </span>
-            {!phone && (p.rounds ? p.worst ? <span className="lm"><Badge tone="warning">Loses most: {STATION_SHORT[p.worst]}</Badge></span> : <span /> : <span className="lm chipk">No rounds yet</span>)}
+            {!phone && (p.rounds ? p.worst ? <span className="lm"><Badge tone="warning">{STATION_SHORT[p.worst]}</Badge></span> : <span /> : <span className="lm chipk">No rounds yet</span>)}
             {p.rounds ? (
               <>
                 <FingerPrint player={p} labels={!phone} />
-                <span className={'tot' + (p.total != null && p.total > 0 ? ' g' : '')}>
+                <span className={'tot' + (p.total == null || Math.abs(p.total) < 0.05 ? ' is-even' : p.total > 0 ? ' g' : '')}>
                   {formatSigned(p.total)}
                   <span>{open} open</span>
                 </span>

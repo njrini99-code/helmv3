@@ -11,7 +11,6 @@ import { useContentIn, useRowFlip } from './team-motion';
 const ZERO_AT = 84;
 const LOSS_SCALE = 1.3;
 const GAIN_SCALE = 0.25;
-const RANK = ['biggest leak', 'second biggest', 'third', 'smallest'];
 
 /** A loss of 1.30 fills the 84% to the left, a gain of 0.25 the 16% to the right, clamped beyond (AC-SPOT-03). */
 export const barScale = (v: number): number => (v < 0 ? Math.min(Math.abs(v) / LOSS_SCALE, 1) : Math.min(v / GAIN_SCALE, 1));
@@ -39,10 +38,11 @@ function BarRow({ player, station, teamValue, onPlayer }: { player: ChTeamPlayer
       {name}
       <span className="bt">
         <i className="z" />
-        {teamValue != null && <i className="avg" style={{ left: `${ZERO_AT - (Math.min(Math.abs(teamValue), LOSS_SCALE) / LOSS_SCALE) * ZERO_AT}%` }} />}
+        {/* On the fills' own scale, either side of Tour (TEAM-9). */}
+        {teamValue != null && <i className="avg" style={{ left: `${teamValue < 0 ? ZERO_AT - (Math.min(-teamValue, LOSS_SCALE) / LOSS_SCALE) * ZERO_AT : ZERO_AT + (Math.min(teamValue, GAIN_SCALE) / GAIN_SCALE) * (100 - ZERO_AT)}%` }} />}
         <i className={`bf ${loss ? 'l' : 'g'}${player.early ? ' early' : ''}`} style={{ transform: `scaleX(${barScale(v)})` }} />
       </span>
-      <span className={'bv' + (loss ? '' : ' g')}>{formatSigned(v)}</span>
+      <span className={'bv' + (loss ? '' : Math.abs(v) < 0.05 ? ' is-even' : ' g')}>{formatSigned(v)}</span>
     </button>
   );
 }
@@ -75,7 +75,7 @@ export function SpotCard({
       <div className="ch">
         <h4>{STATION_NAME[station]}</h4>
         <span className="meta">
-          {teamValue == null ? 'Not measured' : `${formatSigned(teamValue)} a round · ${RANK[rank]}`}
+          {teamValue == null ? 'Not measured' : `${formatSigned(teamValue)} a round${rank === 0 && teamValue < 0 ? ' · biggest leak' : ''}`}
         </span>
       </div>
       <div className="spl">

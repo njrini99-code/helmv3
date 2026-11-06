@@ -9,7 +9,7 @@ import { courseReads, type ChTeamBoardData, type ChTeamPlayer, type ChTourRow } 
 import type { CourseHistory, CourseHistoryRow } from '@/lib/coachhelm/v3/team-board/course-shape';
 import { formatFixed, MINUS } from '../../../lib/format';
 import { Chevron, ReadRow } from './parts';
-import { useContentIn, useTrendDraw } from './team-motion';
+import { useContentIn } from './team-motion';
 
 const COURSE_CAP = 4;
 const READ_CAP = 3;
@@ -106,7 +106,6 @@ function CourseRow({ row, season, readCount, onCourse }: { row: CourseHistoryRow
 /** The Course tab: scoring history, the reads with no spot, team against Tour, courses (S-TEAM.course). */
 export function CourseCard({ data, initialAll = false, onRead, onCourse, onRetry }: { initialAll?: boolean; data: ChTeamBoardData; onRead: (id: string) => void; onCourse: (id: string) => void; onRetry?: () => void }) {
   const card = useRef<HTMLElement | null>(null);
-  useTrendDraw(card);
   useContentIn(card, 'course', '.ch, .cmh, .crsw, .cmr, .shpw');
   const [allCourses, setAllCourses] = useState(initialAll);
   const [allReads, setAllReads] = useState(initialAll);
