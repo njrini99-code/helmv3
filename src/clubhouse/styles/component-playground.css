@@ -45,7 +45,6 @@
 .ch-gallery__motion[data-active='true'] { transform: translateX(12px); }
 @media (prefers-reduced-motion: reduce) {
   /* The sample opts out whole, past the shared Reduce Motion fade (base.css), so a coach trying the slider sees no move at all. */
-  /* The sample opts out whole, past the shared Reduce Motion fade (base.css), so a coach trying the slider sees no move at all. */
   .ch-gallery__motion.ch-gallery__motion { transition-property: none !important; }
 }
 [data-ui='clubhouse'][data-motion='off'] .ch-gallery__motion { transition: none; }
