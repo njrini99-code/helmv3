@@ -4943,6 +4943,8 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     display: grid;
     grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
     gap: 16px;
+    /* Each card its content's height: no stretched card with an empty bottom (QA-12). */
+    align-items: start;
   }
   /* One card in a row takes the row, so a part that stepped aside leaves no hole beside it. */
   .ch-h-main[data-ch-crh='on'] .ch-h-grid > :only-child {

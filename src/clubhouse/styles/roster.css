@@ -3865,3 +3865,12 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ch-rs-y, var(--ch-chart-flat)) 24%, transparent), var(--ch-elevation-reading);
   }
 }
+
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  [data-ch-crh='on'].ch-rsd .ch-rs-list.is-one-status .ch-rs-row {
+    grid-template-columns: minmax(130px, 2.3fr) 84px 44px 40px 48px 36px 24px;
+  }
+  [data-ch-crh='on'].ch-rsd .ch-rs-list.is-one-status .ch-rs-row > :nth-child(2) {
+    display: none;
+  }
+}

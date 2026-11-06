@@ -398,7 +398,7 @@ export function Form({ form, crh = false }: { form: ChTeamForm; crh?: boolean })
       <div className="ch-hm-form__top">
         <span>
           {/* The lane: the label is real text, not the old rule's ::after (06 §11.2). */}
-          <em id="ch-hm-form">{crh ? 'Average · last 10 rounds' : 'Team scoring average'}</em>
+          <em id="ch-hm-form">{crh ? 'Average · each player’s last 10' : 'Team scoring average'}</em>
           <b className="ch-num">{withPointSpan(formatFixed(form.avg))}</b>
         </span>
         <span className={'ch-hm-delta ch-num ' + avgTone}>

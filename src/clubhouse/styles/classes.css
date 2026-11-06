@@ -2739,7 +2739,7 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
   border-top: 0;
 }
 [data-ch-crh='on'] .ch-cl-h .ch-cl-title {
-  margin-top: 16px;
+  margin-top: 8px;
 }
 /* The term card: the view's one feature card, flat on the frame's green. */
 [data-ch-crh='on'] .ch-cl-term {
