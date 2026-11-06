@@ -48,6 +48,14 @@ afterEach(() => {
 });
 
 describe('the coach file and the lens', () => {
+  it('the read card is not a button wrapped around its actions: the title is the button', () => {
+    render(<PlayerFile load={{ status: 'ready', data: previewPlayerFile('default') }} roster={null} />, { wrapper: Wrap });
+    const card = document.querySelector('[data-ch="file-feature"]') as HTMLElement;
+    expect(card.getAttribute('role')).toBeNull();
+    expect(card.getAttribute('tabindex')).toBeNull();
+    expect(within(card).getByRole('button', { name: /^Open the read:/ }).closest('h3')).not.toBeNull();
+  });
+
   it('the lens has no plan, track record, dismissed read or coach control in the DOM (S-FILE.lens 4)', () => {
     render(<PlayerFile load={{ status: 'ready', data: previewPlayerFile('default') }} roster={null} initialLens="player" />, { wrapper: Wrap });
     const text = document.body.textContent ?? '';

@@ -500,9 +500,15 @@
 /* Placeholder and full-page error: both are the page empty's anatomy (.ch-empty-page), centred in the page. */
 .ch-notyet {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   min-height: calc(100dvh - var(--ch-topbar-h) - 16px);
   padding: 40px var(--ch-gutter);
+}
+/* A crash replaces the shell, so nothing paints the page behind it: on a phone .ch-root is the frame green, and the words sat on it at 1.2:1. */
+.ch-root > .ch-notyet {
+  min-height: 100dvh;
+  background: var(--ch-canvas-wash), var(--ch-bg-page);
 }
 .ch-notyet__dev {
   max-width: 100%;
