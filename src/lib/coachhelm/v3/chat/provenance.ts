@@ -466,10 +466,15 @@ const MONTH_NAME_ALT = Object.keys(MONTH_NAMES)
  * distance-band label as a date, and every observed case had a year), or a
  * month-day range that only spells the month once ("Aug 27-28",
  * "August 22-23") — the optional trailing group shares the first date's
- * month and year.
+ * month and year. A second day joined by a word ("September 25 and 26",
+ * "October 20 or 21") is captured too, unless a stat unit follows it
+ * ("September 25 and 26 putts" is a count); see {@link auditDateExpressions}.
  */
 const DATE_EXPRESSION_RE = new RegExp(
-  `\\b(?:(${MONTH_NAME_ALT})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s*(\\d{4}))?(?:\\s*[-–—]\\s*(\\d{1,2})(?:st|nd|rd|th)?\\b)?|(\\d{1,2})\\/(\\d{1,2})\\/(\\d{2}|\\d{4}))\\b`,
+  `\\b(?:(${MONTH_NAME_ALT})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s*(\\d{4}))?(?:\\s*[-–—]\\s*(\\d{1,2})(?:st|nd|rd|th)?\\b)?(\\s+(?:and|or|&)\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b(?![.,]\\d|\\s*%|-\\d|\\s+(?:STAT_NOUNS)\\b))?|(\\d{1,2})\\/(\\d{1,2})\\/(\\d{2}|\\d{4}))\\b`.replace(
+    'STAT_NOUNS',
+    'putts?|strokes?|shots?|rounds?|holes?|attempts?|birdies|birdie|pars?|bogeys?|eagles?|greens?|fairways?|yards?|yds?|feet|foot|ft|meters?|metres?|percent|pct|points?|players?|events?|tournaments?|times|total|more|fewer|over|under',
+  ),
   'gi',
 );
 
@@ -598,7 +603,7 @@ function auditDateExpressions(
 
   const scrubbed = text.replace(
     DATE_EXPRESSION_RE,
-    (whole, monthName, dayA, yearA, rangeEndDay, monthNumStr, dayNumStr, yearNumStr) => {
+    (whole, monthName, dayA, yearA, rangeEndDay, listTail, listDay, monthNumStr, dayNumStr, yearNumStr) => {
       const resolved = resolveDateMatch(monthName, dayA, yearA, monthNumStr, dayNumStr, yearNumStr);
       if (!resolved) return whole; // Not a real calendar date — leave for the numeric scan.
 
@@ -606,7 +611,7 @@ function auditDateExpressions(
         // With a range tail, `whole` includes the second day too ("Aug
         // 27-28") — flag just the head so the two days can be reported (and
         // individually deduped) independently.
-        flag(rangeEndDay ? `${monthName} ${dayA}` : whole, resolved.day);
+        flag(rangeEndDay ? `${monthName} ${dayA}` : whole.slice(0, whole.length - (listTail?.length ?? 0)), resolved.day);
       }
       // "Aug 27-28": the range's second day shares the first's month/year
       // but is never itself matched by DATE_EXPRESSION_RE (no month name of
@@ -619,6 +624,15 @@ function auditDateExpressions(
             flag(`${monthName} ${rangeEndDay}`, endDay);
           }
         }
+      }
+      // "September 25 and 26": the second day of a pair, which production and
+      // staging both refused as a bare number. Only an EXACT evidence date
+      // supports it, never window containment (same reasoning as the ordinal
+      // day below). Otherwise the tail stays in the text for the numeric scan.
+      if (listTail) {
+        const monthDay = `${String(resolved.month).padStart(2, '0')}-${String(Number(listDay)).padStart(2, '0')}`;
+        const exact = resolved.year === null ? evidenceMonthDays.has(monthDay) : evidenceDates.has(`${resolved.year}-${monthDay}`);
+        if (!exact) return ' '.repeat(whole.length - listTail.length) + listTail;
       }
       return ' '.repeat(whole.length);
     },
@@ -648,6 +662,48 @@ function auditDateExpressions(
  */
 const BARE_ORDINAL_DAY_RE =
   /(\b(?:on|since|from|until|till|through|by|before|after)\s+the\s+)(\d{1,2})(?:st|nd|rd|th)\b(?!\s+(?!(?:of|and|or|at|to|through|when|with|but)\b)[a-z])/gi;
+
+const WEEKDAY_INDEX: Record<string, number> = { sunday: 0, monday: 1, tuesday: 2, tues: 2, wednesday: 3, thursday: 4, thurs: 4, friday: 5, saturday: 6 };
+const WEEKDAY_WORDS_RE = /\b(?:(next|this)\s+)?(sunday|monday|tuesday|tues|wednesday|thursday|thurs|friday|saturday)\b/gi;
+const NEAR_DAY_WORDS_RE = /\b(today|tomorrow)\b/gi;
+
+function addDays(iso: string, days: number): string {
+  const [y, m, d] = iso.split('-').map(Number) as [number, number, number];
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
+/**
+ * The calendar days a coach's own message names, resolved from the day it was
+ * said (`todayIso`, in the coach's zone). The model is told today's date so it
+ * can turn "next Tuesday" into a date, and with no tool run yet nothing else
+ * can support that date: "Add a practice next Tuesday" was refused for writing
+ * "November 10" while asking the one question the draft needs.
+ *
+ * Only what the coach's words name: "next Tuesday" is the nearest Tuesday or
+ * the one after (people use it for both), and any other weekday, or a date
+ * that was not named, is still flagged. Dates only; these never support a number.
+ */
+export function coachRequestDates(text: string | null | undefined, todayIso: string): string[] {
+  if (!text) return [];
+  const out = new Set<string>();
+  for (const m of text.matchAll(NEAR_DAY_WORDS_RE)) out.add(addDays(todayIso, (m[1] ?? '').toLowerCase() === 'tomorrow' ? 1 : 0));
+  const todayIndex = new Date(`${todayIso}T00:00:00Z`).getUTCDay();
+  for (const m of text.matchAll(WEEKDAY_WORDS_RE)) {
+    const nearest = ((WEEKDAY_INDEX[(m[2] ?? '').toLowerCase()] ?? 0) - todayIndex + 7) % 7;
+    out.add(addDays(todayIso, nearest));
+    if ((m[1] ?? '').toLowerCase() === 'next') out.add(addDays(todayIso, nearest + 7));
+  }
+  for (const m of text.matchAll(DATE_EXPRESSION_RE)) {
+    // Lower-case "may" and "march" are ordinary English ("he may 10 putt it"); other months are not ("nov 10").
+    if (m[1] === 'may' || m[1] === 'march' || m[1] === 'mar') continue;
+    const r = resolveDateMatch(m[1], m[2], m[3], m[7], m[8], m[9]);
+    if (!r) continue;
+    const monthDay = `${String(r.month).padStart(2, '0')}-${String(r.day).padStart(2, '0')}`;
+    const thisYear = Number(todayIso.slice(0, 4));
+    out.add(r.year !== null ? `${r.year}-${monthDay}` : `${thisYear}-${monthDay}` >= todayIso ? `${thisYear}-${monthDay}` : `${thisYear + 1}-${monthDay}`);
+  }
+  return [...out].sort();
+}
 
 /** Tolerance for matching a written number against a measured one. */
 const MATCH_EPSILON = 0.051;
@@ -858,7 +914,11 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
   const tokens: Array<Occurrence & { raw: string }> = [];
   for (const m of text.matchAll(NUMERIC_TOKEN_RE)) {
     const start = m.index ?? 0;
-    tokens.push({ raw: m[0], start, end: start + m[0].length });
+    // A hyphen straight after a number is a range ("18-22", "125-175 yd", "50%-60%"), not a minus sign: both ends are still audited, as positives.
+    const isRange = m[0].startsWith('-') && start > 0 && /[\d%]/.test(text[start - 1] ?? '');
+    const raw = isRange ? m[0].slice(1) : m[0];
+    const from = isRange ? start + 1 : start;
+    tokens.push({ raw, start: from, end: from + raw.length });
   }
 
   // Name tokens → the ids they could mean (a shared first name means both).
@@ -948,8 +1008,13 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
     const clause = playerClauses[spanIndexAt(playerClauses, t.start)] as Span;
 
     let players: Set<string> | null;
+    // "-3.83 (Bo Ray)": a name in brackets straight after a number is whose number it is, whatever name came before it.
+    const bracket = /^\s*%?\s*\(\s*/.exec(text.slice(t.end, t.end + 8));
+    const bracketed = bracket ? names.find((n) => n.start === t.end + bracket[0].length) : undefined;
     const inClause = names.filter((n) => within(clause, n));
-    if (inClause.length > 0) {
+    if (bracketed) {
+      players = new Set(bracketed.ids);
+    } else if (inClause.length > 0) {
       players = union(inClause);
     } else {
       const inSentence = names.filter((n) => within(sentence, n));
