@@ -14,17 +14,17 @@ const PLAYERS = {
 const leg = (strokes: number, rounds: number): ChTeamLeg => ({ strokes, rounds, missing: null });
 const legs = (r: number, tee: number, approach: number, short_game: number, putting: number) => ({ tee: leg(tee, r), approach: leg(approach, r), short_game: leg(short_game, r), putting: leg(putting, r) });
 
-const read = (playerId: string, id: string, category: string, title: string, content: string, drawn?: { stakes: string; sample: string; word?: string; label?: string; compare?: { own: number; team: number; tour: number; unit: string; higherBetter: boolean } }) => {
+const read = (playerId: string, id: string, category: string, title: string, content: string, drawn?: { stakes: string; sample: string; assigned?: 'proposed'; word?: string; label?: string; compare?: { own: number; team: number; tour: number; unit: string; higherBetter: boolean } }) => {
   const r = toChInsight({ ...slope(playerId, id), category, title, content } as EvidenceInsight, { tour: PREVIEW_TOUR, viewer: { role: 'coach', first: title.split(' ')[0] ?? 'Player' } });
   if (!drawn) return r;
   const evidence = { ...r.evidence, sample: drawn.sample, ...(drawn.label ? { label: drawn.label } : {}), ...(drawn.word && r.evidence.read ? { read: { ...r.evidence.read, word: drawn.word } } : {}) };
-  return { ...r, stakes: drawn.stakes, evidence, ...(drawn.compare ? { compare: { ...r.compare, ...drawn.compare } } : {}) } as typeof r;
+  return { ...r, stakes: drawn.stakes, evidence, ...(drawn.assigned ? { assigned: drawn.assigned } : {}), ...(drawn.compare ? { compare: { ...r.compare, ...drawn.compare } } : {}) } as typeof r;
 };
 
 const READS: Record<string, ReturnType<typeof read>[]> = {
   [PLAYERS.eli.id]: [
     read(PLAYERS.eli.id, 'r1', 'approach', 'Long approaches finish short-right', 'From 175 yards and out, 9 of Eli’s 16 missed greens finish short and right.', { stakes: '.6', sample: '21 rounds', word: 'Solid read', label: 'Greens hit from 175 yd and out', compare: { own: 31, team: 38, tour: 52, unit: '%', higherBetter: true } }),
-    read(PLAYERS.eli.id, 'r8', 'course_management', 'Penalty strokes: 1.1 per round', 'Across 21 rounds Eli averages 1.1 penalty strokes a round, most from the tee.', { stakes: '.8', sample: '21 rounds', word: 'Early read' }),
+    read(PLAYERS.eli.id, 'r8', 'course_management', 'Penalty strokes: 1.1 per round', 'Across 21 rounds Eli averages 1.1 penalty strokes a round, most from the tee.', { stakes: '.8', sample: '21 rounds', word: 'Early read', assigned: 'proposed' }),
     read(PLAYERS.eli.id, 'r13', 'course_management', 'Worst holes on Oak Hollow: #4, #11, #17', 'Across 11 rounds at Oak Hollow, Eli averages 1.1 over par on holes 4, 11 and 17.', { stakes: '.4', sample: '21 rounds', word: 'Early read' }),
   ],
   [PLAYERS.jonah.id]: [

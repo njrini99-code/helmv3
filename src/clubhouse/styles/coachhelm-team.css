@@ -2219,8 +2219,8 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
 }
 
 .ch-htb .lv .n b {
-  display:block;
   font-weight:var(--ch-fw-400);
+  color:var(--ch-tb-ink-3);
 }
 
 /* The sub-tabs: what's leaving dims and stops answering while the next view loads, and the view that lands rises from that same
@@ -2307,4 +2307,8 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
 }
 html[data-fw-theme='dark'] .ch-htb {
   --ch-team-shadow-1: 0 0 0 1px var(--ch-tb-ring);
+}
+/* A notice opening its card, with no head above it, keeps the card's top inset. */
+.ch-htb .card > .notice:first-child {
+  padding-top: 16px;
 }

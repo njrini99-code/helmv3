@@ -249,7 +249,7 @@ export function PlayerPanel({ player, data, onRead, fileOn, onClose }: { player:
   if (player.rounds === 0)
     return (
       <>
-        <Head lead={<Coin player={player} />} name={player.name} line={`${year} · no rounds yet this season`} onClose={onClose} />
+        <Head lead={<Coin player={player} />} name={player.name} line={`${yearShort(year)} · no rounds yet this season`} onClose={onClose} />
         <section className="card">
           <Notice title="Nothing to show yet" body={`${player.first}’s four-area figures show after their first round this season.`} />
         </section>
