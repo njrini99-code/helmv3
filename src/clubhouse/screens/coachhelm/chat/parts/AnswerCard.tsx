@@ -40,18 +40,19 @@ function useRan(active: boolean): number | null {
 }
 
 /** One card per assistant turn (the Messages receive surface): steps, prose with its read chips, visuals, sources; follow-ups sit under it. */
-export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players, onSend, actions, onArtifact }: { onArtifact?: (a: AskArtifact) => void; turn: AskAssistantTurn; fresh: boolean; showFollowUps: boolean; playersByName: Record<string, string>; players: Array<{ id: string; name: string }>; onSend: (text: string) => boolean | void; actions: (b: Extract<AskBlock, { kind: 'proposal' | 'receipt' }>) => ReactNode }) {
+export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players, onSend, actions, onArtifact, stopped = false, question }: { /** The coach pressed Stop on this turn. */ stopped?: boolean; /** The question this turn answers, for Try again. */ question?: string; onArtifact?: (a: AskArtifact) => void; turn: AskAssistantTurn; fresh: boolean; showFollowUps: boolean; playersByName: Record<string, string>; players: Array<{ id: string; name: string }>; onSend: (text: string) => boolean | void; actions: (b: Extract<AskBlock, { kind: 'proposal' | 'receipt' }>) => ReactNode }) {
   const seconds = useRan(turn.active);
   const artifacts = turn.artifacts ?? [];
   const toast = useToast();
   const reads = useMemo(() => turn.reads ?? [], [turn.reads]);
   const known = useMemo(() => new Set(reads.map((r) => r.ref)), [reads]);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
   const chip = useMemo(
     () => ({
       known,
       draw: (ref: string) => {
         const read = reads.find((r) => r.ref === ref);
-        return read ? <ReadChip read={read} /> : null;
+        return read ? <ReadChip read={read} onSources={() => setSourcesOpen(true)} /> : null;
       },
     }),
     [known, reads],
@@ -72,7 +73,7 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
           <CoachMark working={turn.active} />
           CoachHelm
         </div>
-        <Steps steps={turn.steps} active={turn.active} seconds={seconds} waiting={waiting} />
+        <Steps steps={turn.steps} active={turn.active} seconds={seconds} waiting={waiting} stopped={stopped && !turn.answerText} />
         {turn.note && (
           <p className="prose ch-th-note" data-ch-code="CH-13252">
             {turn.note}
@@ -98,9 +99,19 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
           <ArtifactCard key={a.id} artifact={a} writing={turn.active} onOpen={() => onArtifact?.(a)} />
         ))}
         {turn.pendingVisual && <ToolSkeleton types={turn.pendingVisual} />}
+        {stopped && !turn.active && !!turn.answerText && (
+          <p className="ch-ak-stopped">
+            Stopped.
+            {question && (
+              <button type="button" onClick={() => onSend(question)}>
+                Try again
+              </button>
+            )}
+          </p>
+        )}
         {!turn.active && (reads.length > 0 || turn.answerText) && (
           <div className="acts">
-            <Sources reads={reads} />
+            <Sources reads={reads} open={sourcesOpen} onToggle={() => setSourcesOpen((v) => !v)} />
             <span className="sp" />
             {turn.answerText && !turn.note && (
               <button type="button" className="sb" aria-label="Copy" onClick={() => void copy()}>
@@ -110,7 +121,7 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
           </div>
         )}
       </article>
-      {showFollowUps && <FollowUps items={turn.followUps} onSend={onSend} />}
+      {showFollowUps && !stopped && <FollowUps items={turn.followUps} onSend={onSend} />}
     </div>
   );
 }

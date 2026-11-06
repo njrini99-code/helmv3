@@ -201,7 +201,15 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
   // A thread covers the page, so the phone tab bar steps aside; the new-chat home keeps it.
   usePhoneTabsHidden(phone && !showHome);
 
+  // CP-1, CP-3: the turn the coach stopped says so, from its own card, until the next send.
+  const [stoppedTurn, setStoppedTurn] = useState<string | null>(null);
+  const stop = () => {
+    const last = chat.messages[chat.messages.length - 1];
+    setStoppedTurn(last?.role === 'assistant' ? last.id : null);
+    chat.stop();
+  };
   const send = (text: string) => {
+    setStoppedTurn(null);
     lastSent.current = text;
     expecting.current = openId === null ? epoch.current : null;
     setGone(false);
@@ -249,10 +257,15 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
     onOpen: chatSw.go,
   };
 
+  // S-ASK.scope: what the last question is about, in the same words the question used; it changes when a question is sent.
+  const lastAsked = [...chat.messages].reverse().find((m) => m.role === 'user')?.parts.flatMap((p) => (p.type === 'text' ? [p.text] : [])).join(' ') ?? '';
+  const scopeLine = showHome ? `${player ? 'My rounds' : data.teamName} · this season` : askScope(lastAsked, player ? 'My rounds' : data.teamName, player ? [] : (data.players ?? []).map((p) => p.name));
+
   const composer = (variant: 'hero' | 'dock') => (
     <SectionBoundary surface="coachhelm.ask.composer" label="The message box" code="CH-13225">
       <AskComposer
         hint={v2 ? (player ? 'Ask about your game' : 'Ask about your team') : undefined}
+        scopeOf={v2 ? (text) => (text.trim() ? askScope(text, player ? 'My rounds' : data.teamName, player ? [] : (data.players ?? []).map((p) => p.name)) : scopeLine).split(' · ') : undefined}
         slash={v2 ? askSlashCommands({ player, plans: !!slashFlags?.plans, lineup: !!slashFlags?.lineup }) : undefined}
         variant={variant}
         phone={phone}
@@ -261,7 +274,7 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
         failed={Boolean(chat.error)}
         blocked={Boolean(pending)}
         onSend={send}
-        onStop={chat.stop}
+        onStop={stop}
         // eslint-disable-next-line jsx-a11y/no-autofocus -- a component prop; the composer focuses itself in an effect
         autoFocus={variant === 'hero'}
         fresh={showHome}
@@ -292,7 +305,8 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
         onApprove={chat.approve}
         onDeny={chat.deny}
         onSend={ask}
-        onStop={chat.stop}
+        onStop={stop}
+        stoppedTurn={stoppedTurn}
         onRetry={chat.retry}
         onNewChat={newChat}
         evidenceFocus={evidence}
@@ -311,13 +325,11 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
     if (evidenceOpen && narrowDesktop()) setEvidence(null);
   };
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const artifactView = artifact && <ArtifactView key={artifact.id} artifact={artifact} phone={phone} body={(b) => <pre className="ch-ak-plain">{typeof b === 'string' ? b : JSON.stringify(b, null, 2)}</pre>} onClose={() => setArtifact(null)} />;
   // The phone sheet's subject, kept after it closes so its exit still has the content it showed.
   const [sheetEvidence, setSheetEvidence] = useState<EvidenceFocus | null>(null);
   if (phone && evidenceOpen && evidence !== sheetEvidence) setSheetEvidence(evidence);
 
-  // S-ASK.scope: what the last question is about, in the same words the question used; it changes when a question is sent.
-  const lastAsked = [...chat.messages].reverse().find((m) => m.role === 'user')?.parts.flatMap((p) => (p.type === 'text' ? [p.text] : [])).join(' ') ?? '';
-  const scopeLine = showHome ? `${player ? 'My rounds' : data.teamName} · this season` : askScope(lastAsked, player ? 'My rounds' : data.teamName, player ? [] : (data.players ?? []).map((p) => p.name));
   return (
     <main className={'ch-ask' + (v2 ? ' ch-ak-root' : '') + (phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || chatSw.pending || undefined} data-switch={sw.pending ? 'view' : chatSw.pending ? 'chat' : undefined} data-ch-code="CH-13820" {...sw.enter}>
       {phone && (
@@ -401,13 +413,14 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
           )}
           {showHome && !phone && <p className="ch-ask-foot is-home">CoachHelm reads {data.teamName} data only. Check the numbers before you act on them.</p>}
         </section>
+        {artifact && !phone && artifactView}
         {!phone && evidenceOpen && evidence && (
           <aside className="ch-ask-ev" aria-label="Evidence">
             <AskEvidencePanel focus={evidence} messages={chat.messages} phone={false} onClose={() => setEvidence(null)} />
           </aside>
         )}
       </div>
-      {artifact && <ArtifactView key={artifact.id} artifact={artifact} phone={phone} body={(b) => <pre className="ch-ak-plain">{typeof b === 'string' ? b : JSON.stringify(b, null, 2)}</pre>} onClose={() => setArtifact(null)} />}
+      {artifact && phone && artifactView}
       {phone && (
         <>
           <HistoryDrawer {...histProps} open={drawer} onClose={() => setDrawer(false)} />
