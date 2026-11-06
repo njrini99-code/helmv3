@@ -653,7 +653,7 @@ html[data-fw-theme='dark'] .ch-prc-feat__go {
   padding: 12px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-well-bg-flat);
-  box-shadow: inset 0 0 0 2px rgb(21 90 57 / 0.32);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ch-accent) 32%, transparent);
 }
 .ch-prc-gb.is-arriving {
   animation: ch-prc-arrive var(--ch-dur-base) var(--ch-ease) both;
