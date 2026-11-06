@@ -3,17 +3,22 @@
 import { ArrowDown, ArrowUp, ChevronRight, Copy, Flag, Coffee, LayoutGrid, Ellipsis, Plus, Printer, Trash2, User, Users, type LucideIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { updateGolfEvent } from '@/app/golf/actions/calendar-events';
 import { deletePracticePlan } from '@/app/golf/actions/practice-plans';
 import { publishPracticePlan } from '@/app/golf/actions/practice-publish';
-import { mixMinutes, validatePlan, type PlanBlock, type PlanBodyV2, type PlanWhy } from '@/lib/coachhelm/v3/practice-plan/model';
+import { changeLines, diffVersions, mixMinutes, validatePlan, type PlanBlock, type PlanBodyV2, type PlanWhy } from '@/lib/coachhelm/v3/practice-plan/model';
 import type { ChBankDrill, ChBuilderData } from '../../../data/practice-home-shape';
+import { offsetMinutesFor } from '@/lib/golf/timezone';
+import { formatWallClock, formatWith } from '../../../lib/dates';
 import { plural } from '../../../lib/plural';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
 import { PhoneIconAction } from '../../../ui/PhoneBar';
 import { Button } from '../../../ui/Button';
-import { FormSheet } from '../../../ui/FormSheet';
+import { ActionSheet, FormSheet } from '../../../ui/FormSheet';
+import { Switch } from '../../../ui/Switch';
+import { TimeField } from '../../../ui/TimeField';
 import { Icon } from '../../../ui/Icon';
 import { Menu, type MenuItem } from '../../../ui/Menu';
 import { Modal } from '../../../ui/Modal';
@@ -52,6 +57,12 @@ type HelperState = { k: 'idle' } | { k: 'running'; request: string } | { k: 'gho
  */
 /** A publish waits this long with an Undo before anything is written or sent, as Ask's does. */
 const PUBLISH_HOLD_MS = 8000;
+
+const zonedClock = (iso: string, zone: string) => formatWith(new Date(iso), { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: zone });
+const zonedDate = (iso: string, zone: string) => {
+  const p = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: zone }).format(new Date(iso));
+  return p;
+};
 
 export function Builder({ data, autoFill = false, preview }: { data: ChBuilderData; autoFill?: boolean; preview?: BuilderPreview }) {
   const router = useRouter();
@@ -220,7 +231,11 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
 
   /* Publish. */
   const peopleLine = `${plural(body.players.length, 'player')} and ${plural(data.coaches.length, 'coach', 'coaches')}`;
-  const publishLabel = data.status === 'published' ? 'Republish' : 'Publish';
+  const republish = data.status === 'published';
+  const publishLabel = republish ? 'Republish' : 'Publish';
+  const [tell, setTell] = useState(true);
+  const diff = useMemo(() => (republish && data.liveBody ? diffVersions(data.liveBody, body, new Date(data.start), data.zone) : null), [republish, data.liveBody, body, data.start, data.zone]);
+  const affectedNames = useMemo(() => (diff?.affected ?? []).map((p) => data.roster.find((r) => r.id === p)?.name.split(' ')[0] ?? 'A player').join(', '), [diff, data.roster]);
   const doPublish = async () => {
     if (previewing) return setConfirm(false);
     setPublishing(true);
@@ -231,7 +246,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
       // The 8 second hold: nothing is written or sent until it runs out, so Undo, or closing the page, leaves the draft as it was.
       toast({
         title: `${publishLabel === 'Publish' ? 'Publishing' : 'Republishing'} in 8 seconds`,
-        body: `${peopleLine} hear when it goes.`,
+        body: republish ? (tell && diff && !diff.wordingOnly ? `${plural(diff.affected.length, 'player')} hear when it goes.` : 'No one will be notified.') : `${peopleLine} hear when it goes.`,
         holdMs: PUBLISH_HOLD_MS,
         action: { label: 'Undo', run: () => toast({ title: 'Not published. Nobody was told.' }) },
         onExpire: () => void commitPublish(expectedVersion),
@@ -244,18 +259,32 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
   };
   const commitPublish = async (expectedVersion: number) => {
     try {
-      const res = await publishPracticePlan({ planId: data.planId, expectedVersion, notify: 'now' });
+      const res = await publishPracticePlan({ planId: data.planId, expectedVersion, notify: republish && !tell ? 'none' : 'now' });
       if (!res.success) {
         setPublishError(res.stale ? 'Another coach changed this plan. Load the latest, then publish.' : res.error);
         setConfirm(true);
         return;
       }
-      toast({ title: 'Published', body: `${plural(res.recipients, 'person', 'people')} told`, code: 'CH-13081' });
+      toast({ title: 'Published', body: republish && !tell ? 'No one was told.' : `${plural(res.recipients, 'person', 'people')} told`, code: 'CH-13081' });
       router.push(`/golf/dashboard/practice/plan/${data.planId}`);
     } catch {
       setPublishError('Couldn’t publish the plan. Nothing was sent.');
       setConfirm(true);
     }
+  };
+  /* The practice's time, from the builder (N-00 4.4, CH-17509). */
+  const [moving, setMoving] = useState<{ start: string; end: string } | null>(null);
+  const [moveAsk, setMoveAsk] = useState(false);
+  const moveFrom = () => ({ start: zonedClock(data.start, data.zone), end: data.end ? zonedClock(data.end, data.zone) : '' });
+  const movePractice = async () => {
+    if (!moving) return;
+    setMoveAsk(false);
+    if (previewing || !data.eventId) return setMoving(null);
+    const date = zonedDate(data.start, data.zone);
+    const res = await updateGolfEvent(data.eventId, { startDate: date, startTime: moving.start, endTime: moving.end || undefined, timezoneOffset: offsetMinutesFor(date, moving.start, data.zone) ?? undefined }).catch(() => null);
+    setMoving(null);
+    if (!res?.success) return toast({ tone: 'error', title: 'Couldn’t move the practice', body: 'It’s still at the old time.' });
+    router.refresh();
   };
   const doDelete = async () => {
     if (previewing) return setAskDelete(false);
@@ -738,21 +767,55 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         </div>
       </FormSheet>
       <FormSheet open={confirm} onClose={() => setConfirm(false)} title={`${publishLabel} ${title}?`} actionLabel={data.status === 'published' ? 'Republish' : `Publish to ${plural(body.players.length + data.coaches.length, 'person', 'people')}`} onAction={() => void doPublish()} busy={publishing} code="CH-13081" note={publishError ?? undefined}>
-        <dl className="ch-prc-facts">
-          <div>
-            <dt>When</dt>
-            <dd className="ch-num">{data.meta}</dd>
+        {republish && diff ? (
+          <div className="ch-prc-changed">
+            <h3>What changed</h3>
+            {diff.wordingOnly ? (
+              <p className="ch-prc-note">Only wording changed. No one will be notified.</p>
+            ) : (
+              <>
+                <ul>
+                  {changeLines(diff).map((l) => (
+                    <li key={l}>{l}</li>
+                  ))}
+                </ul>
+                <Switch label="Tell players" checked={tell} onChange={setTell} />
+                <p className="ch-prc-note ch-num">{tell ? `${plural(diff.affected.length, 'player')} whose day changed will be notified: ${affectedNames}.` : 'No one will be notified.'}</p>
+              </>
+            )}
           </div>
-          <div>
-            <dt>Tells</dt>
-            <dd className="ch-num">{data.status === 'published' ? 'Players whose day changed, push and bell' : `${peopleLine}, push and bell`}</dd>
-          </div>
-          <div>
-            <dt>Files to</dt>
-            <dd>Documents › Practice plans</dd>
-          </div>
-        </dl>
+        ) : (
+          <dl className="ch-prc-facts">
+            <div>
+              <dt>When</dt>
+              <dd className="ch-num">{data.meta}</dd>
+            </div>
+            <div>
+              <dt>Tells</dt>
+              <dd className="ch-num">{republish ? 'Players whose day changed, push and bell' : `${peopleLine}, push and bell`}</dd>
+            </div>
+            <div>
+              <dt>Files to</dt>
+              <dd>Documents › Practice plans</dd>
+            </div>
+          </dl>
+        )}
       </FormSheet>
+      <FormSheet open={!!moving} onClose={() => setMoving(null)} title="Practice time" actionLabel="Save" onAction={() => setMoveAsk(true)} actionDisabled={!moving?.start}>
+        {moving && (
+          <div className="ch-prc-timeform">
+            <TimeField label="Starts" value={moving.start} onChange={(v) => setMoving({ ...moving, start: v })} />
+            <TimeField label="Ends" value={moving.end} onChange={(v) => setMoving({ ...moving, end: v })} />
+          </div>
+        )}
+      </FormSheet>
+      <ActionSheet
+        open={moveAsk}
+        onClose={() => setMoveAsk(false)}
+        title={moving ? `Also move ${data.dayWord} practice to ${moving.start ? formatWallClock(moving.start) : ''} on the calendar?` : ''}
+        message={data.inSeries ? 'Only this practice moves. The rest of the series stays.' : undefined}
+        actions={[{ label: 'Move practice', onClick: () => void movePractice() }]}
+      />
       <FormSheet open={askDelete} onClose={() => setAskDelete(false)} title="Delete this draft?" actionLabel="Delete" danger onAction={() => void doDelete()} busy={deleting} code="CH-13082">
         <p className="ch-prc-note">Players never saw it. This can’t be undone.</p>
       </FormSheet>
@@ -782,6 +845,9 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         {restored && <p className="ch-prc-note" role="status">Restored your changes</p>}
         {staleBar}
         <div className="ch-prb-sub">
+          <button type="button" className="ch-prb-when ch-num" onClick={() => setMoving(moveFrom())}>
+            {data.meta}
+          </button>
           {ribbonBar}
           {saveStatus}
         </div>
@@ -797,7 +863,9 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         <BackLink onClick={() => void goBack()}>Practice</BackLink>
         <div className="ch-prb-head__t">
           <input id="ch-prb-title" className="ch-prb-title" aria-label="Plan title" maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} />
-          <span className="ch-num">{data.meta}</span>
+          <button type="button" className="ch-prb-when ch-num" onClick={() => setMoving(moveFrom())}>
+            {data.meta}
+          </button>
           {saveStatus}
         </div>
         <div className="ch-prb-head__steps">{stepBar}</div>

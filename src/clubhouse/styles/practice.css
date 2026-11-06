@@ -1312,3 +1312,10 @@ main.ch-prc-planpage {
   .ch-prt-side { grid-column: 1; grid-row: 1; position: static; }
   .ch-prt-pages { grid-column: 1; grid-row: 2; }
 }
+
+/* The builder's time, and What changed on Republish (N-00 4.4, 4.11). */
+.ch-prb-when { min-height: 44px; padding: 0; border: 0; background: none; font: var(--ch-type-14); color: var(--ch-accent); text-align: start; cursor: pointer; }
+.ch-prc-timeform { display: grid; gap: 12px; padding: 16px; }
+.ch-prc-changed { display: grid; gap: 12px; padding: 16px; }
+.ch-prc-changed h3 { margin: 0; font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
+.ch-prc-changed ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font: var(--ch-type-14); color: var(--ch-text-primary); }
