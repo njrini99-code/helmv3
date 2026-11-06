@@ -11,6 +11,7 @@ import type { ChDiveTheme } from '../../../data/coachhelm-dive-shape';
 import { useChSessionState } from '../../../lib/session-state';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { CH_DUR } from '../../../lib/motion';
+import { useOverlayScrollLock } from '../../../lib/overlay-scroll';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { Coin, Notice } from './parts';
@@ -19,6 +20,9 @@ import { Coin, Notice } from './parts';
 const signed = (v: number) => formatFixed(v).replace('-', '\u2212');
 
 const STORY_MS = 5200;
+/** How far a finger moves before it's a swipe and not a hold, and how far it closes the viewer. */
+const DRAG_SLOP = 8;
+const DRAG_CLOSE = 120;
 const MAX_TILES = 3;
 
 const nameOf = (s: ChTeamStory) => s.who;
@@ -54,7 +58,7 @@ function TileVisual({ story, round }: { story: ChTeamStory; round: ChStoryRound 
   return null;
 }
 
-const weekdayOf = (iso: string) => formatWith(new Date(`${iso}T12:00:00Z`), { weekday: 'long', timeZone: 'UTC' });
+export const weekdayOf = (iso: string) => formatWith(new Date(`${iso}T12:00:00Z`), { weekday: 'long', timeZone: 'UTC' });
 /** "Thursday at Hilltop", or the story's own line when no round earned it. */
 const storyWhen = (s: ChTeamStory, week: string, round: ChStoryRound | null) => (round ? [weekdayOf(round.date), round.course].filter(Boolean).join(' at ') : whenOf(s, week));
 const actionOf = (s: ChTeamStory) => (s.kind === 'working' ? 'See Working on' : s.kind === 'read' ? 'Open the read' : 'Open this');
@@ -121,6 +125,30 @@ function StoryViewer({
   const [i, setI] = useState(start);
   const [held, setHeld] = useState(false);
   const reduced = useChReducedMotion();
+  // The page behind never moves while a story is up (MOB-TEAM-2).
+  useOverlayScrollLock();
+  // Swipe down closes it: the sheet follows the finger, and under Reduce Motion it waits for the lift, then fades.
+  const drag = useRef<{ y: number; dy: number; at: number } | null>(null);
+  const dragged = useRef(false);
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!drag.current) return;
+    drag.current.dy = Math.max(0, e.clientY - drag.current.y);
+    if (drag.current.dy > DRAG_SLOP) dragged.current = true;
+    if (!reduced && box.current && dragged.current) {
+      box.current.style.transition = 'none';
+      box.current.style.transform = `translateY(${drag.current.dy}px)`;
+    }
+  };
+  const onPointerEnd = () => {
+    const d = drag.current;
+    drag.current = null;
+    setHeld(false);
+    if (!d || !box.current) return;
+    box.current.style.transition = '';
+    box.current.style.transform = '';
+    const speed = d.dy / Math.max(1, performance.now() - d.at);
+    if (d.dy > DRAG_CLOSE || (d.dy > DRAG_SLOP && speed > 0.6)) leave();
+  };
   const box = useRef<HTMLDivElement | null>(null);
   const opener = useRef<HTMLElement | null>(null);
   const story = stories[i];
@@ -168,9 +196,15 @@ function StoryViewer({
       role="dialog"
       aria-modal="true"
       aria-label={`Story, ${nameOf(story)}`}
-      onPointerDown={() => setHeld(true)}
-      onPointerUp={() => setHeld(false)}
-      onPointerCancel={() => setHeld(false)}
+      onPointerDown={(e) => {
+        setHeld(true);
+        dragged.current = false;
+        // Not from a button: its press is its own, and a drag off it would close the viewer.
+        drag.current = (e.target as Element).closest?.('button, a') ? null : { y: e.clientY, dy: 0, at: performance.now() };
+      }}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerEnd}
+      onPointerCancel={onPointerEnd}
       // A keyboard reader gets the same pause as a held finger (FID-TEAM-6), and Tab stays inside the viewer.
       onFocusCapture={(e) => {
         if ((e.target as HTMLElement).matches(':focus-visible')) setHeld(true);
@@ -207,7 +241,13 @@ function StoryViewer({
         </button>
       </div>
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- Next, in the footer, is the keyboard's way */}
-      <div className="sto-b" onClick={next}>
+      <div
+        className="sto-b"
+        onClick={() => {
+          // The lift of a swipe still clicks.
+          if (!dragged.current) next();
+        }}
+      >
         <StoryBody story={story} round={roundOf(story)} />
       </div>
       <div className="sto-f">
@@ -232,6 +272,7 @@ export function StoriesCard({
   phone,
   rounds,
   autoOpen,
+  request = null,
   onDesk,
   onAction,
 }: {
@@ -244,6 +285,8 @@ export function StoriesCard({
   rounds: Record<string, ChStoryRound> | null;
   /** A link or the preview's `open=story` starts the phone viewer on the first story. */
   autoOpen?: boolean;
+  /** The course sheet's "Read the story": this story, in the phone viewer. */
+  request?: string | null;
   onDesk: (s: ChTeamStory) => void;
   onAction: (s: ChTeamStory) => void;
 }) {
@@ -251,6 +294,12 @@ export function StoriesCard({
   const all = storiesOf(brief, themes, names).slice(0, MAX_TILES);
   const [seen, setSeen] = useChSessionState<string[]>('coachhelm-team-stories', []);
   const [open, setOpen] = useState<number | null>(autoOpen ? 0 : null);
+  useEffect(() => {
+    if (!request) return;
+    const at = all.findIndex((s) => s.id === request);
+    if (at >= 0) setOpen(at);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- answers the request alone
+  }, [request]);
   const byName = new Map(players.map((p) => [p.name, p]));
   const coin = (s: ChTeamStory) => byName.get(s.who) ?? null;
   const roundOf = (s: ChTeamStory) => rounds?.[s.who] ?? null;
@@ -328,10 +377,11 @@ export function StoriesCard({
 }
 
 /** The desktop's story, in the inspector: no bars and no auto advance (AC-STORYDESK-01). */
-export function StoryDeskPanel({ story, week, round = null, onClose, onAction }: { story: ChTeamStory; week: string; round?: ChStoryRound | null; onClose: () => void; onAction: (s: ChTeamStory) => void }) {
+export function StoryDeskPanel({ story, week, round = null, player = null, onClose, onAction }: { story: ChTeamStory; week: string; round?: ChStoryRound | null; player?: ChTeamPlayer | null; onClose: () => void; onAction: (s: ChTeamStory) => void }) {
   return (
     <>
       <div className="insh">
+        {player && <Coin player={player} />}
         <span className="c">
           <b>{story.who}</b>
           <span>{storyWhen(story, week, story.kind === 'read' ? round : null)}</span>

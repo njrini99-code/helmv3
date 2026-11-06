@@ -1,9 +1,15 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { stationFigures, type ChTeamPlayer } from '../../../../data/coachhelm-team-shape';
+import { stationFigures, type ChTeamPlayer, type ChTeamStory } from '../../../../data/coachhelm-team-shape';
 import { PREVIEW_TEAM_BOARD } from '../../../../preview/fixtures-coachhelm-team';
 import { HOLE, stationRadius } from '../hole-geometry';
+import { SpotCard } from '../SpotCard';
+import { StoryDeskPanel } from '../Stories';
+import { TeamBoardSkeleton } from '../TeamBoardSkeleton';
 import { TeamHole } from '../TeamHole';
+import { Segmented } from '../../../../ui/Segmented';
 
 vi.mock('../../../../lib/use-phone', () => ({ useChPhone: () => true }));
 
@@ -58,5 +64,49 @@ describe("the hole on staging's real figures", () => {
   it('draws no motion on first paint (TEAM-33)', () => {
     const c = hole();
     expect(c.querySelector<SVGElement>('.stn')!.style.opacity).toBe('');
+  });
+});
+
+describe('the Team lane, what the fixtures hid', () => {
+  const noFigure = { ...cole, id: 'mia', name: 'Mia Thornton', first: 'Mia', legs: legs(null, null, null, null) } as ChTeamPlayer;
+  const data = { ...PREVIEW_TEAM_BOARD, players: { list: [cole, noFigure], error: false }, stations: stationFigures([cole, noFigure]) };
+
+  it('draws a bar only for a player with a figure there (FID-TEAM-16)', () => {
+    const { container } = render(<SpotCard data={data} station="putting" onRead={() => {}} onPlayer={() => {}} />);
+    expect(container.querySelectorAll('.bars > *')).toHaveLength(1);
+    expect(screen.queryByText('Mia Thornton')).toBeNull();
+  });
+
+  it('says what no bars means and drops the legend with them', () => {
+    const { container } = render(<SpotCard data={{ ...data, players: { list: [noFigure], error: false }, stations: stationFigures([noFigure]) }} station="putting" onRead={() => {}} onPlayer={() => {}} />);
+    expect(screen.getByText('No player has enough rounds here yet.')).toBeTruthy();
+    expect(container.querySelector('.axis')).toBeNull();
+  });
+
+  it('a failed pattern offers Try again, and the legend draws the mark it names (FID-TEAM-16, QA-9)', () => {
+    const retry = vi.fn();
+    const { container } = render(<SpotCard data={{ ...data, patternsStatus: 'failed' }} station="putting" onRead={() => {}} onPlayer={() => {}} onRetry={retry} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(retry).toHaveBeenCalledOnce();
+    expect(container.querySelector('.axis__team i')).not.toBeNull();
+  });
+
+  it('the desk story leads with the coin (FID-TEAM-12)', () => {
+    const story = { kind: 'theme', id: 't', playerId: 'cole', who: 'Cole Bennett', line: 'Putting is slipping', body: null } as unknown as ChTeamStory;
+    const { container } = render(<StoryDeskPanel story={story} week="This week" player={cole} onClose={() => {}} onAction={() => {}} />);
+    expect(container.querySelector('.insh')!.firstElementChild!.textContent).toBe(cole.name.split(' ').map((w) => w[0]).join(''));
+  });
+
+  it('the switch comes in the 41 tall size without forking the control (FID-TEAM-9)', () => {
+    const { container } = render(<Segmented label="View" size="lg" value="a" onChange={() => {}} options={[{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }]} />);
+    expect(container.querySelector('.ch-seg--lg')).not.toBeNull();
+    const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/controls.css'), 'utf8');
+    expect(css).toMatch(/\.ch-seg--lg \.ch-seg__b \{[^}]*height: calc\(35 \* var\(--ch-type-k\)\)/);
+  });
+
+  it('the loading frame keeps the page head in place and the loaded heights (TEAM-28)', () => {
+    const { container } = render(<TeamBoardSkeleton />);
+    expect(container.querySelector('.sheet > .ch-chd.is-phone .ch-chd__sw')).not.toBeNull();
+    expect(container.querySelector<HTMLElement>('.sheet > .ch-htb-feat')!.style.minHeight).toBe('406px');
   });
 });

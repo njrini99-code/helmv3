@@ -2190,3 +2190,45 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
   display:block;
   font-weight:var(--ch-fw-400);
 }
+
+/* The sub-tabs: what's leaving dims and stops answering while the next view loads, and the view that lands rises from that same
+   dim, as the other CoachHelm views do (MOT-13). The switch itself, in the top bar, doesn't change. */
+:where(.ch-htb) > * {
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-htb[aria-busy='true']:not([aria-label^='Loading']) > * {
+  opacity: 0.55;
+  pointer-events: none;
+}
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-htb[data-ch-enter]:not(.is-phone) > * {
+    animation: ch-view-enter var(--ch-dur-quick) var(--ch-ease) backwards;
+  }
+}
+/* The viewer owns every gesture on it: a hold pauses, a swipe down closes (MOB-TEAM-2). */
+.ch-htb .story {
+  touch-action: none;
+}
+/* The legend draws the mark it names (QA-9). */
+.ch-htb .axis__team {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ch-htb .axis__team i {
+  width: 12px;
+  border-top: var(--ch-hairline-w) dashed currentcolor;
+}
+.ch-htb .cp .v span {
+  display: block;
+  font: var(--ch-type-13);
+}
+.ch-htb .cp .v .l {
+  color: var(--ch-tb-loss, var(--ch-chart-loss));
+}
+.ch-htb .cp .v .g {
+  color: var(--ch-chart-gain);
+}
+.ch-htb .cp .v .e {
+  color: var(--ch-tb-ink-3);
+}

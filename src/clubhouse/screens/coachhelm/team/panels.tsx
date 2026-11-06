@@ -315,7 +315,7 @@ export function PlayerPanel({ player, data, onRead, fileOn, onClose }: { player:
 }
 
 /** One course: players here against their own season (S-TEAM.course-sheet). */
-export function CourseSheet({ row, data, onPlayer, onRead, onClose }: { row: CourseHistoryRow; data: ChTeamBoardData; onPlayer: (id: string) => void; onRead: (id: string) => void; onClose: () => void }) {
+export function CourseSheet({ row, data, onPlayer, onRead, onClose, story = null }: { row: CourseHistoryRow; data: ChTeamBoardData; onPlayer: (id: string) => void; onRead: (id: string) => void; story?: { when: string; open: () => void } | null; onClose: () => void }) {
   const season = data.course.history?.season ?? 0;
   const d = Math.round((row.value - season) * 10) / 10;
   const list = data.players.list;
@@ -374,6 +374,7 @@ export function CourseSheet({ row, data, onPlayer, onRead, onClose }: { row: Cou
                 </span>
                 <span className="v">
                   <b>{toPar(x.value)}</b>
+                  <span className={dd > 0 ? 'l' : dd < 0 ? 'g' : 'e'}>{dd ? `${formatFixed(Math.abs(dd), 1)} ${dd > 0 ? 'over' : 'under'}` : 'Level'}</span>
                 </span>
               </button>
             );
@@ -403,6 +404,11 @@ export function CourseSheet({ row, data, onPlayer, onRead, onClose }: { row: Cou
             })}
           </div>
         </section>
+      )}
+      {story && (
+        <Button variant="ghost" size="lg" onClick={story.open}>
+          Read the story from {story.when}
+        </Button>
       )}
       <p className="lede cnote">Every counted round here this season. To par uses the tees each player played.</p>
     </>

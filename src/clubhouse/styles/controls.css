@@ -10,6 +10,12 @@
 .ch-seg--sm {
   padding: 4px;
 }
+/* CoachHelm's view switch (FID-TEAM-9): 41 tall, 15/500, and its radius the track's less its padding. */
+.ch-seg--lg {
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--ch-radius-md);
+}
 .ch-seg__b {
   position: relative;
   height: 30px;
@@ -29,6 +35,11 @@
   touch-action: manipulation;
   transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease),
     background var(--ch-dur-press) var(--ch-ease);
+}
+.ch-seg--lg .ch-seg__b {
+  height: calc(35 * var(--ch-type-k));
+  border-radius: calc(var(--ch-radius-md) - 3px);
+  font: var(--ch-type-15-medium);
 }
 .ch-seg--sm .ch-seg__b {
   border-radius: max(var(--ch-radius-xs), calc(var(--ch-radius-lg) - var(--ch-space-1)));

@@ -25,6 +25,7 @@ export function CoachHelmTabs({ boardLabel, active, onGo, held = false }: { boar
     <div className="ch-ask-tabs" data-ch-strip="" data-ch-code={held ? undefined : 'CH-13923'} inert={held || undefined} aria-hidden={held || undefined}>
       <Segmented
         label="CoachHelm view"
+        size="lg"
         value={active}
         options={[
           { value: 'board', label: boardLabel ?? (views.team ? 'Team' : 'Board') },

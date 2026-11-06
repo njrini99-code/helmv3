@@ -19,13 +19,14 @@ import { Modal } from '../../../ui/Modal';
 import { useFocusActions } from '../parts';
 import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from '../writes';
 import { RecheckReads } from '../Recheck';
-import type { ChStoryRound, ChTeamStory } from '../../../data/coachhelm-team-shape';
+import { storiesOf, type ChStoryRound, type ChTeamStory } from '../../../data/coachhelm-team-shape';
+import type { ChCoachBrief } from '../../../data/coachhelm-coach-brief-shape';
 import type { ChDiveTheme } from '../../../data/coachhelm-dive-shape';
 import { RecordCard, RosterCard, WorkingCard } from './Cards';
 import { CourseCard } from './CourseCard';
 import { Huddle } from './Huddle';
 import { Part } from './Part';
-import { StoriesCard, StoryDeskPanel } from './Stories';
+import { StoriesCard, StoryDeskPanel, weekdayOf } from './Stories';
 import { Inspector } from './Inspector';
 import { CourseSheet, GonePanel, PlayerPanel, ReadPanel } from './panels';
 import { SpotCard } from './SpotCard';
@@ -54,6 +55,12 @@ export interface TeamBoardProps {
   onRetry?: () => void;
 }
 
+/** The figure says which way it points in words as well as colour (QA-7): "+0.5 a round better than Tour". */
+function betterOrWorse(strokes: number | null, baseline: string): string {
+  if (strokes == null || Math.abs(strokes) < 0.05) return baseline;
+  return baseline.replace(/^to /, strokes > 0 ? 'better than ' : 'worse than ');
+}
+
 function Hero({
   data,
   station,
@@ -77,7 +84,7 @@ function Hero({
     <div className="hn">
       <b className="ch-num">{formatSigned(data.teamTotal.strokes)}</b>
       <span>
-        a round {data.team.baselineLabel}
+        a round {betterOrWorse(data.teamTotal.strokes, data.team.baselineLabel)}
         <br />
         {windowWords('season', data.teamTotal.rounds)}{counted > 0 && ` · ${boardPlayerWords(counted)}`}
       </span>
@@ -160,6 +167,8 @@ function EmptySteps() {
 /** The coach's Team view: the green bar untouched, the switch, the title, then one green feature card (the hole). */
 export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE_COACHHELM_WRITES, readOn = false, fileOn = false, initialOpen, initialAll = false, initialPlayer, initialInsight, initialStation, onRetry }: TeamBoardProps) {
   const router = useRouter();
+  // Every failed part offers Try again; the route has no function to pass, so the board refreshes itself (FID-TEAM-1).
+  const retry = onRetry ?? (() => router.refresh());
   const phone = useChPhone();
   const sw = useViewSwitch<CoachHelmView>('board', (v) => COACHHELM_HREF[v], Object.keys(COACHHELM_HREF) as CoachHelmView[]);
   const leak = useMemo(() => stationOrder(data.stations)[0] ?? 'approach', [data.stations]);
@@ -177,6 +186,17 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
       live = false;
     };
   }, [data.storyRounds]);
+  const [weekBrief, setWeekBrief] = useState<ChCoachBrief | null>(null);
+  const [storyAsk, setStoryAsk] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    void Promise.resolve(data.brief).then((b) => {
+      if (live && b?.status === 'ok') setWeekBrief(b.value);
+    });
+    return () => {
+      live = false;
+    };
+  }, [data.brief]);
   const close = useCallback(() => setOpen(null), []);
   const fa = useFocusActions(writes);
   // `?player=` and `?open=read&insight=`: once, after first paint, and off the address by replace (AC-TEAM-23, W-TEAM-14). An id not on the board opens
@@ -219,11 +239,12 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
             brief={b.status === 'ok' ? b.value : null}
             themes={themes}
             failed={b.status === 'failed'}
-            onRetry={onRetry}
+            onRetry={retry}
             players={list}
             phone={phone}
             rounds={rounds}
             autoOpen={initialOpen?.kind === 'story'}
+            request={storyAsk}
             onDesk={(s) => setOpen({ kind: 'story', id: s.id, story: s, week: b.status === 'ok' ? b.value.week : 'This week' })}
             onAction={storyAction}
           />
@@ -242,7 +263,7 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
   const proposed = list.flatMap((player) => player.reads.needs.filter((read) => fa.assigned[read.id] || read.assigned === 'proposed').map((read) => ({ player, read })));
   const working = (
     <Part value={data.brief} fallback={skeletonCard}>
-      {(b) => <WorkingCard working={b.status === 'ok' ? b.value.working : []} proposed={proposed} failed={b.status === 'failed'} onRetry={onRetry} />}
+      {(b) => <WorkingCard working={b.status === 'ok' ? b.value.working : []} proposed={proposed} failed={b.status === 'failed'} onRetry={retry} />}
     </Part>
   );
   const huddle = <Huddle data={data} onPlayer={openPlayer} />;
@@ -254,13 +275,13 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
   );
   const spot =
     station === 'course' ? (
-      <CourseCard data={data} initialAll={initialAll} onRead={openRead} onCourse={openCourse} onRetry={onRetry} />
+      <CourseCard data={data} initialAll={initialAll} onRead={openRead} onCourse={openCourse} onRetry={retry} />
     ) : (
-      <SpotCard data={data} station={station} onRead={openRead} onPlayer={openPlayer} />
+      <SpotCard data={data} station={station} onRead={openRead} onPlayer={openPlayer} onRetry={retry} />
     );
   const failedHole = (
     <section className="card ch-htb-failed" role="alert" data-ch-team-card="hole">
-      <Notice title="The team’s reads didn’t load" body="Nothing here is wrong with your players’ rounds. Try again." onRetry={onRetry} />
+      <Notice title="The team’s reads didn’t load" body="Nothing here is wrong with your players’ rounds. Try again." onRetry={retry} />
     </section>
   );
 
@@ -347,9 +368,35 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
     }
     // A phone tells its story in the viewer, the tile's own (StoriesCard).
     if (open.kind === 'story' && phone) return null;
-    if (open.kind === 'story') return <StoryDeskPanel story={open.story} week={open.week} round={rounds?.[open.story.who] ?? null} onClose={close} onAction={storyAction} />;
+    if (open.kind === 'story') return <StoryDeskPanel story={open.story} week={open.week} round={rounds?.[open.story.who] ?? null} player={list2.find((p) => p.name === open.story.who) ?? null} onClose={close} onAction={storyAction} />;
     const row = data.course.history?.courses.find((c) => c.id === open.id);
-    return row ? <CourseSheet row={row} data={data} onPlayer={openPlayer} onRead={openRead} onClose={close} /> : null;
+    if (!row) return null;
+    // Only when a This week story came from a round here (AC-CSHEET-05).
+    const named = new Map(list2.map((p) => [p.id, p.name]));
+    const from = storiesOf(weekBrief, null, named).find((s) => s.kind === 'read' && rounds?.[s.who]?.course === row.name);
+    const when = from && rounds?.[from.who];
+    return (
+      <CourseSheet
+        row={row}
+        data={data}
+        onPlayer={openPlayer}
+        onRead={openRead}
+        onClose={close}
+        story={
+          from && when
+            ? {
+                when: weekdayOf(when.date),
+                open: () => {
+                  if (phone) {
+                    setOpen(null);
+                    setStoryAsk(from.id);
+                  } else setOpen({ kind: 'story', id: from.id, story: from, week: weekBrief?.week ?? 'This week' });
+                },
+              }
+            : null
+        }
+      />
+    );
   })();
 
   const panelTitle =

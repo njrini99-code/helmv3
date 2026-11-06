@@ -5,7 +5,7 @@ import { useRef } from 'react';
 import { formatSigned } from '../../../lib/format';
 import { patternAt, readsAt, stationOrder, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
 import { STATION_NAME } from './hole-geometry';
-import { Coin, ReadRow } from './parts';
+import { Coin, Notice, ReadRow } from './parts';
 import { useContentIn, useRowFlip } from './team-motion';
 
 const ZERO_AT = 84;
@@ -53,16 +53,19 @@ export function SpotCard({
   station,
   onRead,
   onPlayer,
+  onRetry,
 }: {
   data: ChTeamBoardData;
   station: ChStation;
   onRead: (id: string) => void;
   onPlayer: (id: string) => void;
+  onRetry?: () => void;
 }) {
   const list = data.players.list;
   const teamValue = data.stations[station].team;
   const rank = stationOrder(data.stations).indexOf(station);
-  const rows = [...list].sort((a, b) => (a.legs[station].strokes ?? Infinity) - (b.legs[station].strokes ?? Infinity));
+  // Players with a figure here (AC-SPOT-02); one with no figure has nothing to draw on the bar.
+  const rows = list.filter((p) => p.legs[station].strokes != null).sort((a, b) => (a.legs[station].strokes as number) - (b.legs[station].strokes as number));
   const reads = readsAt(list, station);
   const patterns = patternAt(data.patterns, station);
   const names = new Map(list.map((p) => [p.id, p]));
@@ -80,15 +83,21 @@ export function SpotCard({
       </div>
       <div className="spl">
         <div className="spl-l">
+          {!rows.length && <p className="nordss">No player has enough rounds here yet.</p>}
           <div className="bars">
             {rows.map((p) => (
               <BarRow key={p.id} player={p} station={station} teamValue={teamValue} onPlayer={onPlayer} />
             ))}
           </div>
-          <div className="axis">
-            <span>Team average dashed</span>
-            <span>Tour</span>
-          </div>
+          {rows.length > 0 && (
+            <div className="axis">
+              <span className="axis__team">
+                <i aria-hidden="true" />
+                Team average
+              </span>
+              <span>Tour</span>
+            </div>
+          )}
         </div>
         <div className="spl-r">
           <div className="subh">
@@ -101,9 +110,9 @@ export function SpotCard({
             {!reads.length && <p className="nordss">No open reads here yet. CoachHelm reads a spot once a player has enough rounds to stand behind it.</p>}
           </div>
           {status === 'failed' ? (
-            <p className="nopat" role="status">
-              Couldn’t load this part.
-            </p>
+            <div className="nopat" role="status">
+              <Notice title="Couldn’t load this part." onRetry={onRetry} />
+            </div>
           ) : status === 'off' ? null : patterns.length ? (
             patterns.map((row) => (
               <div className="pat" key={row.id}>
