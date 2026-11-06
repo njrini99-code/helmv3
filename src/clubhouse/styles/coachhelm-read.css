@@ -276,8 +276,8 @@ html[data-fw-theme='dark'] .ch-hr {
 }
 .ch-hr .hero b {
   font: var(--ch-type-figure-44-500);
-  font-variation-settings:'wdth' 96;
-  letter-spacing: -0.038em;
+  font-variation-settings:'wdth' 92;
+  letter-spacing: -0.04em;
 
   white-space:nowrap;
   flex:none;
@@ -637,6 +637,10 @@ html[data-fw-theme='dark'] .ch-hr {
   margin-top:12px;
 }
 .ch-hr .hole {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
   font: var(--ch-type-13-medium);
   padding:6px 8px;
   border-radius: var(--ch-radius-sm);
@@ -812,6 +816,8 @@ html[data-fw-theme='dark'] .ch-hr {
   margin-top:12px;
 }
 .ch-hr .lk {
+  position: relative;
+  min-height: 36px;
   appearance:none;
   border:0;
   display:inline-flex;
@@ -1098,12 +1104,6 @@ html[data-fw-theme='dark'] .ch-hr {
     grid-column: 2;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .ch-hr * {
-    animation-duration: 1ms !important;
-    transition-duration: 1ms !important;
-  }
-}
 [data-motion='off'] .ch-hr * {
   animation: none !important;
   transition: none !important;
@@ -1217,6 +1217,7 @@ html[data-fw-theme='dark'] .ch-hr {
 
 .ch-hr .ch-hr-deskbar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   align-items: center;
   gap: 8px;
@@ -1268,9 +1269,6 @@ html[data-fw-theme='dark'] .ch-hr {
 .ch-hr .ch-hr-railh:has(.ch-avatar) .ch-avatar {
   grid-row: 1 / span 2;
 }
-.ch-hr .hero b {
-  letter-spacing: 0;
-}
 /* S-READ-DESK: the ladder no wider than 340. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-hr .ladder {
@@ -1294,7 +1292,8 @@ html[data-fw-theme='dark'] .ch-hr {
 .ch-hr-swr .pop {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
+  left: auto;
+  right: 0;
   z-index: 3;
   display: grid;
   width: 250px;
@@ -1322,3 +1321,24 @@ html[data-fw-theme='dark'] .ch-hr {
 .ch-hr .ntc .ch-btn {
   flex: none;
 }
+
+/* 44pt taps on the hole and link chips, without growing what's drawn (RC-11, RC-12). */
+.ch-hr .hole::after,
+.ch-hr .lk::after { content: ''; position: absolute; inset: -4px 0; }
+.ch-hr .holes__more { align-self: center; font: var(--ch-type-13); letter-spacing: var(--ch-track-13); color: var(--ch-hr-ink-2); }
+/* RC-5: a share, not a count. */
+.ch-hr .dotsbar { height: 12px; border-radius: var(--ch-radius-tail); background: var(--ch-hr-well); overflow: hidden; }
+.ch-hr .dotsbar i { display: block; height: 100%; background: var(--ch-hr-loss-fill); transform-origin: left; }
+.ch-hr .dots i:not(.f) { box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-hr-neutral-fill); }
+/* RC-14 */
+.ch-hr .cdots { display: inline-flex; gap: 2px; margin-inline-end: 6px; vertical-align: middle; }
+.ch-hr .cdots i { width: 6px; height: 6px; border-radius: 50%; background: var(--ch-hr-loss-fill); }
+/* RC-4: the switcher's list isn't cut off by its own card. */
+.ch-hr .card:has(.ch-hr-swr) { overflow: visible; }
+/* RC-7: three columns only when this page has room for them, not when the window does. */
+.ch-hr.is-desk { container-type: inline-size; }
+@container (max-width: 1000px) {
+  .ch-hr.is-desk .ch-hr-desk { grid-template-columns: 250px minmax(0, 1fr); }
+}
+/* The bar's ⋯ */
+.ch-hr-morekey { display: inline-grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: none; color: var(--ch-on-green-ink); }
