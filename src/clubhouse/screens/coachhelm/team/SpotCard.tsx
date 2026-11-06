@@ -34,7 +34,7 @@ function BarRow({ player, station, teamValue, onPlayer }: { player: ChTeamPlayer
     );
   const loss = v < 0;
   return (
-    <button type="button" className="br tapp" data-ch-press-scale=".97" data-p={player.id} data-early={player.early || undefined} onClick={() => onPlayer(player.id)} aria-label={`${player.name}, ${formatSigned(v)}`}>
+    <button type="button" className="br tapp is-row" data-p={player.id} data-early={player.early || undefined} onClick={() => onPlayer(player.id)} aria-label={`${player.name}, ${formatSigned(v)}`}>
       {name}
       <span className="bt">
         <i className="z" />

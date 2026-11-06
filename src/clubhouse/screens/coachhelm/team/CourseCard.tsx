@@ -1,5 +1,6 @@
 'use client';
 
+import { useChPhone } from '../../../lib/use-phone';
 import { Notice } from './parts';
 import { Badge } from '../../../ui/Badge';
 import { formatWith } from '../../../lib/dates';
@@ -106,6 +107,7 @@ function CourseRow({ row, season, readCount, onCourse }: { row: CourseHistoryRow
 
 /** The Course tab: scoring history, the reads with no spot, team against Tour, courses (S-TEAM.course). */
 export function CourseCard({ data, initialAll = false, onRead, onCourse, onRetry }: { initialAll?: boolean; data: ChTeamBoardData; onRead: (id: string) => void; onCourse: (id: string) => void; onRetry?: () => void }) {
+  const phone = useChPhone();
   const card = useRef<HTMLElement | null>(null);
   useContentIn(card, 'course', '.ch, .cmh, .crsw, .cmr, .shpw');
   const [allCourses, setAllCourses] = useState(initialAll);
@@ -201,7 +203,7 @@ export function CourseCard({ data, initialAll = false, onRead, onCourse, onRetry
             return (
               <div key={row.id}>
                 <span className="sl">{w.label}</span>
-                <span className="sv">{row.team == null ? 'Not measured yet' : w.fmt(row.team)}</span>
+                <span className="sv">{row.team == null ? '—' : w.fmt(row.team)}</span>
                 {row.team != null && (
                   <span className="st">
                     {w.unit}
@@ -223,22 +225,26 @@ export function CourseCard({ data, initialAll = false, onRead, onCourse, onRetry
         <h4>Course and scoring</h4>
         <span className="meta">Not on the hole · {reads.length ? `${reads.length} open ${pluralWord(reads.length, 'read', 'reads')}` : 'No open reads yet'}</span>
       </div>
-      <div className="ch-htb-coursephone">
-        {historyBlock}
-        {readsBlock}
-        {against}
-        {coursesBlock}
-      </div>
-      <div className="spl ch-htb-coursedesk">
-        <div className="spl-l">
+      {/* One layout in the DOM (FID-TEAM-20). */}
+      {phone ? (
+        <div className="ch-htb-coursephone">
           {historyBlock}
-          {coursesBlock}
-        </div>
-        <div className="spl-r">
           {readsBlock}
           {against}
+          {coursesBlock}
         </div>
-      </div>
+      ) : (
+        <div className="spl ch-htb-coursedesk">
+          <div className="spl-l">
+            {historyBlock}
+            {coursesBlock}
+          </div>
+          <div className="spl-r">
+            {readsBlock}
+            {against}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

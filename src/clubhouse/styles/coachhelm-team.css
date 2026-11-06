@@ -80,6 +80,14 @@ html[data-fw-theme='dark'] .ch-htb {
   transform:scale(.97);
   transition-duration:var(--ch-dur-press);
 }
+/* Rows tint on press; only keys and tiles scale (MOT-40). */
+.ch-htb .tapp.is-row[data-ch-pressed],
+.ch-htb .rr.tapp[data-ch-pressed],
+.ch-htb .rd.tapp[data-ch-pressed],
+.ch-htb .cr.tapp[data-ch-pressed] {
+  transform:none;
+  background:var(--ch-ledger-row-press);
+}
 .ch-htb .sheet {
   display:flex;
   flex-direction:column;
@@ -161,6 +169,26 @@ html[data-fw-theme='dark'] .ch-htb {
   height:44px;
   display:flex;
   align-items:center;
+}
+.ch-htb .tv-holes {
+  display:grid;
+  grid-template-columns:repeat(9,minmax(0,1fr));
+  gap:2px;
+  width:100%;
+}
+.ch-htb .tv-holes i {
+  height:18px;
+  border-radius:var(--ch-radius-xs, 4px);
+  background:var(--ch-tb-track);
+}
+.ch-htb .tv-holes i.is-birdie {
+  background:var(--ch-tb-gain-fill);
+}
+.ch-htb .tv-holes i.is-bogey {
+  background:color-mix(in oklab, var(--ch-tb-loss-fill) 40%, var(--ch-tb-track));
+}
+.ch-htb .tv-holes i.is-double {
+  background:var(--ch-tb-loss-fill);
 }
 .ch-htb .tile .tv svg {
   width:100%;
@@ -2117,4 +2145,11 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 .ch-htb .bn,
 .ch-htb .br .bn {
   max-width:40vw;
+}
+
+/* Team against Tour two across on a narrow phone, so cells don't wrap (TEAM-26). */
+@media (max-width: 399px) {
+  .ch-htb .shape {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
 }

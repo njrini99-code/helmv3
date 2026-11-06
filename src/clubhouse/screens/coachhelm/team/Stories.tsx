@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { TriangleAlert, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { storiesOf, type ChStoryRound, type ChTeamPlayer, type ChTeamStory } from '../../../data/coachhelm-team-shape';
 import { formatWith } from '../../../lib/dates';
 import { formatFixed } from '../../../lib/format';
@@ -10,9 +10,10 @@ import type { ChCoachBrief } from '../../../data/coachhelm-coach-brief-shape';
 import type { ChDiveTheme } from '../../../data/coachhelm-dive-shape';
 import { useChSessionState } from '../../../lib/session-state';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
+import { CH_DUR } from '../../../lib/motion';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
-import { Coin } from './parts';
+import { Coin, Notice } from './parts';
 
 /** A true minus on a negative, and no plus: these are measures, not changes (TEAM-23). */
 const signed = (v: number) => formatFixed(v).replace('-', '\u2212');
@@ -24,7 +25,9 @@ const nameOf = (s: ChTeamStory) => s.who;
 const whenOf = (s: ChTeamStory, week: string) => (s.kind === 'theme' ? 'This season' : week);
 const shortOf = (s: ChTeamStory) => (s.kind === 'theme' ? `${s.word}: ${s.line}` : s.line);
 
-function TileVisual({ story }: { story: ChTeamStory }) {
+const holeTone = (d: number | null) => (d == null ? '' : d < 0 ? ' is-birdie' : d === 1 ? ' is-bogey' : d >= 2 ? ' is-double' : '');
+
+function TileVisual({ story, round }: { story: ChTeamStory; round: ChStoryRound | null }) {
   // The only pictures with a source: a focus's before, now and target, and a theme's direction (no invented figures, 03 section 6).
   const p = story.kind === 'working' ? story.progress : null;
   if (p) {
@@ -38,20 +41,23 @@ function TileVisual({ story }: { story: ChTeamStory }) {
       </svg>
     );
   }
-  const fill = story.kind === 'theme' && story.word === 'Slipping' ? 'var(--ch-tb-loss-fill)' : 'var(--ch-tb-gain-fill)';
-  return (
-    <svg viewBox="0 0 108 40" aria-hidden="true">
-      <rect x="0" y="4" width="70" height="12" rx="6" fill="var(--ch-tb-track)" />
-      <rect x="0" y="24" width="90" height="12" rx="6" fill={fill} />
-    </svg>
-  );
+  // A read's picture is its own round, hole by hole; without one, and for a theme, there's nothing true to draw (03 section 6).
+  if (story.kind === 'read' && round) {
+    return (
+      <span className="tv-holes">
+        {round.holes.map((h) => (
+          <i key={h.n} className={holeTone(h.toPar)} />
+        ))}
+      </span>
+    );
+  }
+  return null;
 }
 
 const weekdayOf = (iso: string) => formatWith(new Date(`${iso}T12:00:00Z`), { weekday: 'long', timeZone: 'UTC' });
 /** "Thursday at Hilltop", or the story's own line when no round earned it. */
 const storyWhen = (s: ChTeamStory, week: string, round: ChStoryRound | null) => (round ? [weekdayOf(round.date), round.course].filter(Boolean).join(' at ') : whenOf(s, week));
 const actionOf = (s: ChTeamStory) => (s.kind === 'working' ? 'See Working on' : s.kind === 'read' ? 'Open the read' : 'Open this');
-const holeTone = (d: number | null) => (d == null ? '' : d < 0 ? ' is-birdie' : d === 1 ? ' is-bogey' : d >= 2 ? ' is-double' : '');
 
 /** A story's picture and words (AC-STORY-03): the round's holes, or before and now against the target; nothing invented. */
 function StoryBody({ story, round }: { story: ChTeamStory; round: ChStoryRound | null }) {
@@ -118,7 +124,13 @@ function StoryViewer({
   const box = useRef<HTMLDivElement | null>(null);
   const opener = useRef<HTMLElement | null>(null);
   const story = stories[i];
-  const next = () => (i < stories.length - 1 ? setI(i + 1) : onClose());
+  // Slides down and out, then unmounts; under Reduce Motion the floor makes that transition land at once, so the fallback closes it.
+  const [leaving, setLeaving] = useState(false);
+  const leave = () => {
+    setLeaving(true);
+    window.setTimeout(onClose, CH_DUR.release * 1000 + 40);
+  };
+  const next = () => (i < stories.length - 1 ? setI(i + 1) : leave());
   useEffect(() => {
     opener.current = document.activeElement as HTMLElement | null;
     box.current?.querySelector<HTMLElement>('.xb')?.focus({ preventScroll: true });
@@ -139,7 +151,7 @@ function StoryViewer({
   }, [i, held, reduced]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') leave();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
@@ -149,7 +161,10 @@ function StoryViewer({
   return (
     <div
       ref={box}
-      className={'story on' + (held ? ' is-held' : '')}
+      className={'story' + (leaving ? '' : ' on') + (held ? ' is-held' : '')}
+      onTransitionEnd={(e) => {
+        if (leaving && e.target === box.current) onClose();
+      }}
       role="dialog"
       aria-modal="true"
       aria-label={`Story, ${nameOf(story)}`}
@@ -187,7 +202,7 @@ function StoryViewer({
           <b>{nameOf(story).split(' ')[0]}</b>
           <span>{storyWhen(story, week, story.kind === 'read' ? roundOf(story) : null)}</span>
         </span>
-        <button type="button" className="xb" aria-label="Close stories" onClick={onClose}>
+        <button type="button" className="xb" aria-label="Close stories" onClick={leave}>
           <Icon icon={X} size={16} />
         </button>
       </div>
@@ -246,20 +261,7 @@ export function StoriesCard({
         <div className="ch">
           <h4>This week</h4>
         </div>
-        <div className="notice">
-          <span className="ni">
-            <Icon icon={TriangleAlert} size={18} />
-          </span>
-          <div>
-            <b>Couldn’t load what’s new</b>
-            <span>The weekly brief didn’t load. Everything below is current.</span>
-            {onRetry && (
-              <Button variant="secondary" size="sm" onClick={onRetry}>
-                Try again
-              </Button>
-            )}
-          </div>
-        </div>
+        <Notice title="Couldn’t load what’s new" body="The weekly brief didn’t load. Everything below is current." onRetry={onRetry} />
       </section>
     );
   if (!all.length) return null;
@@ -267,7 +269,8 @@ export function StoriesCard({
     <section className="card today" data-ch-team-card="today" aria-label="This week">
       <div className="ch">
         <h4>This week</h4>
-        {brief?.counts && <span className="meta">{brief.counts}</span>}
+        {/* Four zeros in a row say nothing (QA-8). */}
+        {brief?.counts && /[1-9]/.test(brief.counts) && <span className="meta">{brief.counts}</span>}
       </div>
       <div className="tiles">
         {all.map((s, i) => {
@@ -293,9 +296,11 @@ export function StoriesCard({
                 else onDesk(s);
               }}
             >
-              <span className="tv">
-                <TileVisual story={s} />
-              </span>
+              {(s.kind === 'read' ? roundOf(s) : s.kind === 'working' ? s.progress : null) && (
+                <span className="tv">
+                  <TileVisual story={s} round={roundOf(s)} />
+                </span>
+              )}
               {phone ? text : <span className="tt">{text}</span>}
             </button>
           );
