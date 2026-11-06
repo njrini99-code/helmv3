@@ -180,7 +180,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
     // Only a reader at the bottom is followed, and without a smooth scroll on every token (MOB-QC-4).
     if (!el || !chat.messages.length) return;
     if (el.scrollHeight - el.scrollTop - el.clientHeight < 80) el.scrollTo({ top: el.scrollHeight, behavior: reduced || chat.busy ? 'auto' : 'smooth' });
-  }, [chat.messages, reduced]);
+  }, [chat.messages, chat.busy, reduced]);
 
   // AC-QC-CMP-03, 05: a message written during a run or offline waits, and goes when it can. A pending confirm holds it too.
   const [queued, setQueued] = useState<string[]>([]);

@@ -148,7 +148,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
           },
         }),
       }),
-    [conversationId, adoptConversation, options.endpoint],
+    [conversationId, adoptConversation, options.endpoint, options.surface],
   );
 
   const chat = useChat({
