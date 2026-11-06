@@ -53,10 +53,11 @@ export function askFlowMessages(scene: string, stage: string): { messages: UIMes
   const reads = [step(1, 'Read what it needs')];
   if (stage === 'reads' || stage === 'steps' || stage === 'typing') return { messages: [q, { id: 'a1', role: 'assistant', parts: [step(1, 'Reading', true)] } as unknown as UIMessage], busy: true };
   const proposal: ActionProposal & { tool: string } = { ...(f.publish ? { publish: f.publish } : {}), tool: f.tool, action: f.action, summary: f.title, ...(f.visual ? { visual: f.visual } : {}), facts: f.facts.map(([label, value]) => ({ label, value, ...(f.sources?.[label] ? { source: f.sources[label] } : {}) })), affects: [{ kind: 'team', id: 't', label: 'Varsity' }], notifications: [f.on], missing: [], idempotency_key: `key-${scene}` };
-  const phase = stage === 'draft' || stage === 'confirm' ? 'requested' : stage === 'cancelled' ? 'denied' : 'approved';
+  const phase = stage === 'draft' || stage === 'confirm' || stage === 'fill' ? 'requested' : stage === 'cancelled' ? 'denied' : 'approved';
   const parts: unknown[] = [...reads, { type: 'text', text: `Here’s a draft: ${f.title}. Change anything.`, state: 'done' }, { type: `tool-${f.tool}`, toolCallId: 'c1', input: {}, state: phase === 'requested' ? 'approval-requested' : 'approval-responded', approval: phase === 'requested' ? { id: 'approval-1' } : { id: 'approval-1', approved: phase === 'approved' } }, { type: 'data-action-proposal', id: `proposal-key-${scene}`, data: proposal }];
   if (stage === 'receipt' || stage === 'told' || stage === 'failed' || stage === 'partial') parts.push({ type: 'data-action-receipt', id: `receipt-key-${scene}`, data: { status: stage === 'told' ? 'completed' : stage === 'failed' ? 'failed' : stage === 'partial' ? 'partial' : 'held', ...(stage === 'told' ? {} : { held_until: new Date(Date.now() + 8000).toISOString() }), action: f.action, summary: f.done, created: [], partial_failures: stage === 'partial' ? ['The invite didn’t go out.'] : [], notifications: stage === 'told' ? [{ channel: 'push', recipients: ASK_ROSTER_COUNT, status: 'sent', summary: 'Told the team' }] : [], idempotency_key: `key-${scene}` } as unknown as ActionReceipt });
-  return { messages: [q, { id: 'a1', role: 'assistant', parts } as unknown as UIMessage], busy: false };
+  // `fill`: the card arriving in a live answer, so its fields fill.
+  return { messages: [q, { id: 'a1', role: 'assistant', parts } as unknown as UIMessage], busy: stage === 'fill' };
 }
 
 /** A question's stage on today's answer fixtures. */
