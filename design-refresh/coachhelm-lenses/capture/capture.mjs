@@ -210,7 +210,7 @@ const skip = (name, why) => { skipped.push(`${name}: ${why}`); console.log('skip
 const DESIGN_STAGE = `.top,.chapters,.stage__cap{display:none!important}.layout{display:block;max-width:none;padding:0}.stage{position:relative!important;top:0!important;height:1000px!important}#box .dev{transform:translate(-50%,-50%)!important}`;
 const designViewport = (vp) => (vp === 'desk' ? { width: 1440, height: 1000 } : { width: 1000, height: 1000 });
 async function openDesign(page, hash) {
-  await page.goto(`${PAGE}#${hash}`);
+  await page.goto(`${PAGE}?n=${Date.now()}#${hash}`);
   await page.addStyleTag({ content: DESIGN_STAGE });
   await page.evaluate(() => { window.dispatchEvent(new HashChangeEvent('hashchange')); window.dispatchEvent(new Event('resize')); });
   await page.evaluate(() => document.fonts && document.fonts.ready);

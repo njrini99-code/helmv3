@@ -15,6 +15,9 @@
   gap: 2px;
   padding: 2px;
   border-radius: var(--ch-radius-md);
+  /* A flat track, not the recessed well: the green thumb is the only depth (AC-TEAM-02). */
+  --ch-well-bg: var(--ch-well-bg-flat);
+  --ch-well-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
 }
 .ch-seg__b {
   position: relative;

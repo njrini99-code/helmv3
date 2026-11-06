@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { storiesOf, type ChStoryRound, type ChTeamPlayer, type ChTeamStory } from '../../../data/coachhelm-team-shape';
@@ -27,7 +27,8 @@ const MAX_TILES = 3;
 
 const nameOf = (s: ChTeamStory) => s.who;
 const whenOf = (s: ChTeamStory, week: string) => (s.kind === 'theme' ? 'This season' : week);
-const shortOf = (s: ChTeamStory) => (s.kind === 'theme' ? `${s.word}: ${s.line}` : s.line);
+/** A tile's headline. A focus area is named by its title: its line is figures, which a two-line headline cuts mid-sentence. */
+const shortOf = (s: ChTeamStory) => (s.kind === 'theme' ? `${s.word}: ${s.line}` : s.kind === 'working' ? s.title : s.line);
 
 const holeTone = (d: number | null) => (d == null ? '' : d < 0 ? ' is-birdie' : d === 1 ? ' is-bogey' : d >= 2 ? ' is-double' : '');
 
@@ -95,6 +96,7 @@ function StoryBody({ story, round }: { story: ChTeamStory; round: ChStoryRound |
         </div>
       )}
       {story.kind === 'read' && story.body && <p>{story.body}</p>}
+      {story.kind === 'working' && story.line !== story.title && <p>{story.line}</p>}
       {story.kind === 'read' && round && (
         <span className="src ch-num">
           {weekdayOf(round.date)}’s round · {round.tracked} of {round.holes.length} holes with shots tracked
@@ -124,6 +126,9 @@ function StoryViewer({
 }) {
   const [i, setI] = useState(start);
   const [held, setHeld] = useState(false);
+  // A body too tall for the screen (320 wide, or the largest Text Size) scrolls, and stays until the reader moves on (MOB-TEAM-3).
+  const body = useRef<HTMLDivElement | null>(null);
+  const [tall, setTall] = useState(false);
   const reduced = useChReducedMotion();
   // The page behind never moves while a story is up (MOB-TEAM-2).
   useOverlayScrollLock();
@@ -161,14 +166,25 @@ function StoryViewer({
   const next = () => (i < stories.length - 1 ? setI(i + 1) : leave());
   useEffect(() => {
     opener.current = document.activeElement as HTMLElement | null;
-    box.current?.querySelector<HTMLElement>('.xb')?.focus({ preventScroll: true });
+    // The viewer takes focus, not its Close: a screen reader lands on the story, and no ring shows on a button nobody chose.
+    box.current?.focus({ preventScroll: true });
     return () => opener.current?.focus?.({ preventScroll: true });
   }, []);
+  useLayoutEffect(() => {
+    const el = body.current;
+    if (!el) return;
+    const read = () => setTall(el.scrollHeight > el.clientHeight + 1);
+    read();
+    if (typeof ResizeObserver === 'undefined') return;
+    const seen = new ResizeObserver(read);
+    seen.observe(el);
+    return () => seen.disconnect();
+  }, [i]);
   // What's left of this story, so a hold resumes where the bar stopped instead of starting the full time over (MOT-11).
   const left = useRef({ story: -1, ms: STORY_MS });
   useEffect(() => {
     if (left.current.story !== i) left.current = { story: i, ms: STORY_MS };
-    if (reduced || held) return;
+    if (reduced || held || tall) return;
     const from = performance.now();
     const t = window.setTimeout(next, left.current.ms);
     return () => {
@@ -176,17 +192,19 @@ function StoryViewer({
       left.current.ms = Math.max(0, left.current.ms - (performance.now() - from));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- restarts on the story and the hold alone
-  }, [i, held, reduced]);
+  }, [i, held, reduced, tall]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') leave();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `leave` only reads `onClose`, and it's rebuilt each render
   }, [onClose]);
   if (!story) return null;
   const p = coin(story);
   return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- the dialog owns its hold, swipe and focus trap; each has its button
     <div
       ref={box}
       className={'story' + (leaving ? '' : ' on') + (held ? ' is-held' : '')}
@@ -195,12 +213,13 @@ function StoryViewer({
       }}
       role="dialog"
       aria-modal="true"
+      tabIndex={-1}
       aria-label={`Story, ${nameOf(story)}`}
       onPointerDown={(e) => {
         setHeld(true);
         dragged.current = false;
-        // Not from a button: its press is its own, and a drag off it would close the viewer.
-        drag.current = (e.target as Element).closest?.('button, a') ? null : { y: e.clientY, dy: 0, at: performance.now() };
+        // Not from a button: its press is its own, and a drag off it would close the viewer. A tall body's drag scrolls it.
+        drag.current = (e.target as Element).closest?.(tall ? 'button, a, .sto-b' : 'button, a') ? null : { y: e.clientY, dy: 0, at: performance.now() };
       }}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerEnd}
@@ -242,7 +261,8 @@ function StoryViewer({
       </div>
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- Next, in the footer, is the keyboard's way */}
       <div
-        className="sto-b"
+        ref={body}
+        className={'sto-b' + (tall ? ' is-tall' : '')}
         onClick={() => {
           // The lift of a swipe still clicks.
           if (!dragged.current) next();
