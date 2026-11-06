@@ -45,7 +45,7 @@ export function PlayerPracticeHome({ data }: { data: ChPlayerPracticeHome }) {
         </section>
       )}
       {none ? (
-        <EmptyState size="page" title="No plan yet" body="Your coach hasn’t published a plan for this practice yet." code="CH-17302" />
+        <EmptyState size="page" title="No plan yet" body="Your coach hasn’t published a plan for this practice yet." code="CH-13397" />
       ) : (
         <section aria-label="This week">
           <WeekStrip week={data.week} />

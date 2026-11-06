@@ -113,12 +113,19 @@ restoring it) are inside the action, so a toast's Retry completes them.
 | CH-13007 | Re-check rate-limited | Refused by the engine's rate limit (5 runs a minute per coach). The action's own words as the line: "Too many analyze requests in the last minute — please wait a moment and try again."; not reported as a failure; the board is not read again | `RecheckReads`, `COACHHELM_ENGINE_RATE_LIMITED` (`lib/auth/action-rate-limit-messages.ts`) | coachhelm-recheck.test › CH-13007 |
 | CH-13050 | Ask: An action CoachHelm proposed fails after Confirm | A toast "Create focus area, not completed" with the reason; the card becomes the failed receipt (CH-13253) | `Thread` (the receipt stream) | coachhelm-thread-ui.test › CH-13050 |
 | CH-13051 | Ask: Copy is refused by the clipboard | A toast that says the answer was not copied and how to copy it by hand (select the text) | `Thread` Copy | coachhelm-thread-ui.test › CH-13051 |
+| CH-13080 | Practice: three saves in a row failed (the design's CH-17001) | "Couldn't save · Try again" beside the title | `useAutosave` | practice-screens |
+| CH-13081 | Practice: publish went through | "Published" and who was told; a refusal says so in the sheet and nothing was sent | `Builder` | practice-screens |
+| CH-13082 | Practice: Delete draft refused | "Couldn't delete the plan" | `Builder` | practice-screens |
+| CH-13083 | Practice: a new drill saved | "Saved to your drill bank", and it lands in the slot | `Builder`, `NewDrillSheet` | practice-screens |
+| CH-13084 | Practice: offline while editing | "Offline · changes kept on this device"; saved on reconnect | `useAutosave` | practice-screens |
 
 ## 131xx Validation
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-13120 | Ask: Send while an action card waits for Confirm or Cancel | Send is off, Enter sends nothing, and the box says to confirm or cancel first; a pill or a follow-up sent over a waiting card is not sent either | `Composer`, `Ask` | coachhelm-ask.test › CH-13120 |
+| CH-13180 | Practice: a drill runs past its turn | "Drill runs 25 min; turn is 20." A warning, never a block | `Builder` | practice-screens |
+| CH-13181 | Practice: an all-day practice in New plan | Listed, disabled: "Give this practice a start and end time to plan it." | `NewPlanSheet` | practice-screens |
 
 ## 132xx Didn't load
 
@@ -199,6 +206,9 @@ restoring it) are inside the action, so a toast's Retry completes them.
 | CH-13324 | Ask: A chat search with no match | Search chats filters by title, and no match says so | `History` | coachhelm-ask.test › CH-13324 |
 | CH-13350 | Ask: A read tool found nothing recorded | The evidence says nothing is recorded for it, distinct from a failed read (CH-13250) | `Evidence` | coachhelm-thread-ui.test › CH-13350 |
 | CH-13333 | Player: no course has three of their countable rounds yet, or the course picked has fewer than three (chs-21) | "No course has three of your rounds on it yet. A plan needs three rounds on one course, with the course picked when you start the round." (or "You have 2 countable rounds at Pine Hollow. A plan needs three.") | `MyCoursePlan`, `PlanLines` | my-course-plan.test › says so when no course has three rounds |
+| CH-13395 | Practice: New plan, and someone with no team | The New plan sheet; NoTeam | `NewPlanSheet`, `PracticeHomeRoute` | practice-screens |
+| CH-13396 | Practice: a coach's first plan, or no practice this week | "Plan your first practice"; "No practices this week" | `PracticeHome` | practice-screens |
+| CH-13397 | Practice: a player with nothing published | "Your coach hasn't published a plan for this practice yet." | `PlayerPracticeHome` | practice-screens |
 
 ## 134xx Loading
 
@@ -223,6 +233,9 @@ restoring it) are inside the action, so a toast's Retry completes them.
 
 None. Dismiss is undoable, so it doesn't ask: the notice (CH-13901) keeps Undo
 in place.
+| CH-13580 | Practice: another coach saved first, or started this practice's plan | "Another coach changed this plan." Load latest; nothing is overwritten | `Builder`, `NewPlanSheet` | practice-screens |
+| CH-13581 | Practice: a block deleted | "Deleted Warm-up" with Undo; it goes back at its place | `Builder` | practice-screens |
+| CH-13582 | Practice: Split evenly | How many groups; replacing groups says so | `Builder` | practice-screens |
 
 ## 136xx Motion
 
@@ -273,6 +286,8 @@ in place.
 | CH-13851 | Ask: The evidence control | A button that opens the evidence as a labelled dialog | `Evidence`, `EvidencePanel` | coachhelm-thread-ui.test › CH-13851 |
 | CH-13852 | Ask: Evidence drawn as a chart | View as table shows the same numbers as a table | `Evidence` | coachhelm-thread-ui.test › CH-13852 |
 | CH-13853 | Ask: A validated visual (strokes gained anatomy) | Each part of the game is a button that opens its sample; arrow keys move between them; View as table shows the same figures; a note carries no figure of its own. Drawn from the figures stored in the message, so a reload draws the same chart | `CoachVisualArtifact` | coachhelm-visual-artifact.test › CH-13853 |
+| CH-13895 | Practice: a block's sheet on a phone, or Swap | Named by the block; Alt+Up and Alt+Down move a focused block | `Builder` | practice-screens |
+| CH-13896 | Practice: the time ribbon changes | Announced politely | `Builder` | practice-screens |
 
 ## 139xx Network and UX
 

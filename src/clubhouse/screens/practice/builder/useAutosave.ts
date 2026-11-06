@@ -43,8 +43,8 @@ export function restoredDraft(planId: string): Snapshot | null {
 }
 
 /**
- * S-PRC.bld-save-status: saves 800ms after the last edit, with the version it was read at. Another coach's save is "stale" (CH-17505), never overwritten.
- * Offline keeps the plan in this tab and saves on reconnect (CH-17901); three failures in a row ask (CH-17001). A kept suggestion's Why goes to the coach-only
+ * S-PRC.bld-save-status: saves 800ms after the last edit, with the version it was read at. Another coach's save is "stale" (CH-13580), never overwritten.
+ * Offline keeps the plan in this tab and saves on reconnect (CH-13084); three failures in a row ask (CH-13080). A kept suggestion's Why goes to the coach-only
  * column through the draft save, so it never reaches the body a player reads. `preview`: nothing reaches a server.
  */
 export function useAutosave({ planId, version, snapshot, preview = false }: { planId: string; version: number; snapshot: Snapshot; preview?: boolean }) {

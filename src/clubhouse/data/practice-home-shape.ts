@@ -25,7 +25,7 @@ export interface ChPracticeEvent {
   detail: string;
   title: string;
   place: string;
-  /** An all-day practice can't be planned until it has times (CH-17110). */
+  /** An all-day practice can't be planned until it has times (CH-13181). */
   allDay: boolean;
 }
 

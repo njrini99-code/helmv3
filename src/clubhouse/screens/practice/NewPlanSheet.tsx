@@ -57,7 +57,7 @@ export function NewPlanSheet({ open, onClose, events, copies, roster, askOn, ini
       const res = await savePracticePlan({ eventId: event.id, expectedVersion: null, title: event.title, step: 'blocks', body });
       if (!res.success) {
         if (res.stale) {
-          toast({ title: 'Another coach already started a plan for this practice', code: 'CH-17505' });
+          toast({ title: 'Another coach already started a plan for this practice', code: 'CH-13580' });
           router.refresh();
           onClose();
           return;
@@ -74,7 +74,7 @@ export function NewPlanSheet({ open, onClose, events, copies, roster, askOn, ini
   };
 
   return (
-    <FormSheet open={open} onClose={onClose} title="New plan" actionLabel={start === 'ask' ? 'Start with CoachHelm' : 'Create plan'} onAction={() => void create()} actionDisabled={!event || event.allDay || (start === 'copy' && !copyId)} busy={busy} code="CH-17300">
+    <FormSheet open={open} onClose={onClose} title="New plan" actionLabel="Create plan" full onAction={() => void create()} actionDisabled={!event || event.allDay || (start === 'copy' && !copyId)} busy={busy} code="CH-13395">
       <div className="ch-prc-new">
         {error && (
           <p className="ch-prc-new__err" role="alert">

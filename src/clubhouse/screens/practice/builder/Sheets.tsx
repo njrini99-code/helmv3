@@ -222,7 +222,7 @@ const DRILL_AREAS: ReadonlyArray<{ value: string; label: string }> = [
   { value: 'mental', label: 'Mental' },
 ];
 
-/** New drill (S-PRC.drill-new): the fields a slot needs. Save adds it to the bank and the slot (CH-17016). `preview`: a press closes it and reaches no server. */
+/** New drill (S-PRC.drill-new): the fields a slot needs. Save adds it to the bank and the slot (CH-13083). `preview`: a press closes it and reaches no server. */
 export function NewDrillSheet({ open, onClose, teamId, onSaved, preview = false }: { open: boolean; onClose: () => void; teamId: string; onSaved: (d: ChBankDrill) => void; preview?: boolean }) {
   const id = useId();
   const [name, setName] = useState('');
@@ -250,7 +250,7 @@ export function NewDrillSheet({ open, onClose, teamId, onSaved, preview = false 
     }
   };
   return (
-    <FormSheet open={open} onClose={onClose} title="New drill" actionLabel="Save" onAction={() => void save()} actionDisabled={!name.trim()} busy={busy} dirty={!!name} code="CH-17016" note={error ?? undefined}>
+    <FormSheet open={open} onClose={onClose} title="New drill" actionLabel="Save" onAction={() => void save()} actionDisabled={!name.trim()} busy={busy} dirty={!!name} code="CH-13083" note={error ?? undefined}>
       <div className="ch-prc-fields">
         <div className="ch-field">
           <label className="ch-field__label" htmlFor={`${id}-n`}>

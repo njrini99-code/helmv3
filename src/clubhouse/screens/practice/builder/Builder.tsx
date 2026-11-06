@@ -81,6 +81,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
   const [plan, setPlan] = useState<PlanPartData | null>(preview?.ghosts && !preview.kept ? preview.ghosts : null);
   const [ghosts, setGhosts] = useState<Ghost[]>(() => (preview?.ghosts && !preview.kept ? ghostsFrom(preview.ghosts.draft) : []));
   const [swap, setSwap] = useState<Ghost | null>(null);
+  const [keptIds, setKeptIds] = useState<string[]>([]);
   const [saidLine, setSaidLine] = useState<string | null>(null);
 
   const snapshot = useMemo(() => ({ title, step, body, why }), [title, step, body, why]);
@@ -118,7 +119,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
     if (!gone) return;
     setBody((b) => removeBlock(b, id));
     setSelected(null);
-    toast({ title: `Deleted ${gone.title}`, code: 'CH-17507', action: { label: 'Undo', run: () => setBody((b) => addBlock(b, gone, at)) } });
+    toast({ title: `Deleted ${gone.title}`, code: 'CH-13581', action: { label: 'Undo', run: () => setBody((b) => addBlock(b, gone, at)) } });
   };
   const duplicate = (b: PlanBlock) => {
     const at = blocks.findIndex((x) => x.id === b.id);
@@ -154,8 +155,10 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
     setBody(res.body);
     setWhy(res.why);
     const rest = ghosts.filter((x) => x.id !== g.id);
+    const ids = [...keptIds, g.id];
+    setKeptIds(ids);
     setGhosts(rest);
-    setHelper((h) => (rest.length ? h : { k: 'kept', count: (h.k === 'kept' ? h.count : 0) + 1, ids: [] }));
+    if (!rest.length) setHelper({ k: 'kept', count: ids.length, ids });
   };
   const keepAll = () => {
     if (!plan) return;
@@ -168,12 +171,15 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
     }
     setBody(b);
     setWhy(w);
-    setHelper({ k: 'kept', count: ghosts.length, ids: ghosts.map((g) => g.id) });
+    const ids = [...keptIds, ...ghosts.map((g) => g.id)];
+    setKeptIds(ids);
+    setHelper({ k: 'kept', count: ids.length, ids });
     setGhosts([]);
   };
   const undoKept = () => {
     if (helper.k !== 'kept') return;
     setBody((b) => helper.ids.reduce((x, id) => removeBlock(x, id), b));
+    setKeptIds([]);
     setHelper({ k: 'idle' });
   };
   const pickSwap = (g: Ghost, ref: string) => {
@@ -202,7 +208,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
   const pickDrill = (d: ChBankDrill) => {
     const target = slot ?? (step === 'blocks' && activeBlock?.kind === 'team' ? activeBlock.id : null);
     if (!target) {
-      toast({ title: 'Pick a block or station first', code: 'CH-17108' });
+      toast({ title: 'Pick a block or station first', code: 'CH-13180' });
       return;
     }
     setBody((b) => setSlotDrill(b, target, refOf(d.ref)));
@@ -223,7 +229,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         setPublishError(res.stale ? 'Another coach changed this plan. Load the latest, then publish.' : res.error);
         return;
       }
-      toast({ title: 'Published', body: `${plural(res.recipients, 'person', 'people')} told`, code: 'CH-17002' });
+      toast({ title: 'Published', body: `${plural(res.recipients, 'person', 'people')} told`, code: 'CH-13081' });
       router.push(`/golf/dashboard/practice/plan/${data.planId}`);
     } catch {
       setPublishError('Couldn’t publish the plan. Nothing was sent.');
@@ -237,7 +243,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
     try {
       const res = await deletePracticePlan({ planId: data.planId });
       if (!res.success) {
-        toast({ title: 'Couldn’t delete the plan', tone: 'error', code: 'CH-17008' });
+        toast({ title: 'Couldn’t delete the plan', tone: 'error', code: 'CH-13082' });
         return;
       }
       router.push('/golf/dashboard/practice');
@@ -278,7 +284,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
     </span>
   );
   const staleBar = (save.status === 'stale' || preview?.stale) && (
-    <div className="ch-prc-stale" role="alert" data-ch-code="CH-17505">
+    <div className="ch-prc-stale" role="alert" data-ch-code="CH-13580">
       <span>Another coach changed this plan.</span>
       <Button size="sm" onClick={() => (previewing ? undefined : window.location.reload())}>
         Load latest
@@ -286,7 +292,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
     </div>
   );
   const ribbonBar = (
-    <div className="ch-prc-ribbon" aria-live="polite" data-ch-code="CH-17803">
+    <div className="ch-prc-ribbon" aria-live="polite" data-ch-code="CH-13896">
       <span>
         <b className="ch-num">{rib.used}</b> planned
       </span>
@@ -395,7 +401,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         const before = ghosts.slice(0, i).reduce((s, x) => s + x.block.len, total);
         const alts = altsOf(g);
         return (
-          <li key={g.id} className={'ch-prc-gb' + (reduced ? '' : ' is-arriving')} data-ch="ghost-block">
+          <li key={g.id} className={'ch-prc-gb' + (reduced ? '' : ' is-arriving')} data-ch="ghost-block" style={phone ? undefined : { minHeight: Math.max(56, g.block.len * 1.2) }}>
             <div className="ch-prc-gb__top">
               <span className="ch-num ch-prc-gb__tm">{clockFor(data.start, data.zone, before)}</span>
               <b>{g.block.title}</b>
@@ -449,7 +455,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         { label: 'Delete', icon: Trash2, danger: true, feel: 'warning', onSelect: () => deleteBlock(b.id) },
       ]}
       trigger={(p) => (
-        <button type="button" {...p} className="ch-prc-more" aria-label={`More for ${b.title}`} onClickCapture={(e) => e.stopPropagation()}>
+        <button type="button" {...p} className="ch-prc-more" aria-label={`More for ${b.title}`}>
           <Icon icon={MoreHorizontal} size={18} />
         </button>
       )}
@@ -614,7 +620,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
               ) : s.drill ? (
                 <span className="ch-prc-slot__d">A drill that’s not in the bank</span>
               ) : null}
-              {long && <span className="ch-prc-slot__w ch-num" data-ch-code="CH-17108">Drill runs {d.minutes} min; turn is {s.minutes}.</span>}
+              {long && <span className="ch-prc-slot__w ch-num" data-ch-code="CH-13180">Drill runs {d.minutes} min; turn is {s.minutes}.</span>}
             </div>
             {s.drill && (
               <Button size="sm" variant="ghost" onClick={() => setBody((b) => setSlotDrill(b, s.id, null))} aria={{ label: `Take the drill off ${s.head}` }}>
@@ -686,7 +692,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
   const sheets = (
     <>
       {phone && activeBlock && (
-        <FormSheet open onClose={() => setSelected(null)} title={activeBlock.title || 'Block'} actionLabel="Done" onAction={() => setSelected(null)} actionDisabled={!activeBlock.title.trim()} code="CH-17800" full>
+        <FormSheet open onClose={() => setSelected(null)} title={activeBlock.title || 'Block'} actionLabel="Done" onAction={() => setSelected(null)} actionDisabled={!activeBlock.title.trim()} code="CH-13895" full>
           <BlockFields block={activeBlock} body={body} onChange={(n) => editBlock(activeBlock.id, n)} onRemove={() => deleteBlock(activeBlock.id)} />
         </FormSheet>
       )}
@@ -701,17 +707,17 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         onSaved={(d) => {
           setDrills((list) => [d, ...list]);
           setNewDrill(false);
-          toast({ title: 'Saved to your drill bank', code: 'CH-17016' });
+          toast({ title: 'Saved to your drill bank', code: 'CH-13083' });
           if (slot) pickDrill(d);
         }}
       />
-      <FormSheet open={splitOpen} onClose={() => setSplitOpen(false)} title="Split evenly" actionLabel="Split" onAction={() => { setBody((b) => splitGroups(b, splitN)); setSplitOpen(false); }} code="CH-17508" note={body.groups.some((g) => g.players.length) ? 'This replaces the groups you have.' : undefined}>
+      <FormSheet open={splitOpen} onClose={() => setSplitOpen(false)} title="Split evenly" actionLabel="Split" onAction={() => { setBody((b) => splitGroups(b, splitN)); setSplitOpen(false); }} code="CH-13582" note={body.groups.some((g) => g.players.length) ? 'This replaces the groups you have.' : undefined}>
         <div className="ch-prc-fields">
           <Segmented label="Number of groups" value={String(splitN)} options={[2, 3, 4, 5, 6].map((n) => ({ value: String(n), label: String(n) }))} onChange={(v) => setSplitN(Number(v))} />
           <p className="ch-prc-note">{plural(body.players.length, 'player')} into {splitN} groups.</p>
         </div>
       </FormSheet>
-      <FormSheet open={confirm} onClose={() => setConfirm(false)} title={`${publishLabel} ${title}?`} actionLabel={data.status === 'published' ? 'Republish' : `Publish to ${plural(body.players.length + data.coaches.length, 'person', 'people')}`} onAction={() => void doPublish()} busy={publishing} code="CH-17002" note={publishError ?? undefined}>
+      <FormSheet open={confirm} onClose={() => setConfirm(false)} title={`${publishLabel} ${title}?`} actionLabel={data.status === 'published' ? 'Republish' : `Publish to ${plural(body.players.length + data.coaches.length, 'person', 'people')}`} onAction={() => void doPublish()} busy={publishing} code="CH-13081" note={publishError ?? undefined}>
         <dl className="ch-prc-facts">
           <div>
             <dt>When</dt>
@@ -727,10 +733,10 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
           </div>
         </dl>
       </FormSheet>
-      <FormSheet open={askDelete} onClose={() => setAskDelete(false)} title="Delete this draft?" actionLabel="Delete" danger onAction={() => void doDelete()} busy={deleting} code="CH-17008">
+      <FormSheet open={askDelete} onClose={() => setAskDelete(false)} title="Delete this draft?" actionLabel="Delete" danger onAction={() => void doDelete()} busy={deleting} code="CH-13082">
         <p className="ch-prc-note">Players never saw it. This can’t be undone.</p>
       </FormSheet>
-      <FormSheet open={!!swap} onClose={() => setSwap(null)} title="Swap drill" actionLabel="Done" onAction={() => setSwap(null)} code="CH-17800">
+      <FormSheet open={!!swap} onClose={() => setSwap(null)} title="Swap drill" actionLabel="Done" onAction={() => setSwap(null)} code="CH-13895">
         <div className="ch-prc-bank">
           {swap && altsOf(swap).map((a) => (
             <button key={a.ref} type="button" className="ch-prc-drill" onClick={() => pickSwap(swap, a.ref)}>

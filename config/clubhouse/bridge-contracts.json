@@ -16555,6 +16555,39 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130436,
+    "page": "P013",
+    "category": 4,
+    "item": 36,
+    "name": "PRACTICE_NEW_PLAN_AND_SOMEONE_WITH_NO",
+    "chCode": "CH-13395",
+    "meaning": "Practice: New plan, and someone with no team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130437,
+    "page": "P013",
+    "category": 4,
+    "item": 37,
+    "name": "PRACTICE_A_COACHS_FIRST_PLAN_OR_NO",
+    "chCode": "CH-13396",
+    "meaning": "Practice: a coach's first plan, or no practice this week",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130438,
+    "page": "P013",
+    "category": 4,
+    "item": 38,
+    "name": "PRACTICE_A_PLAYER_WITH_NOTHING_PUBLISHED",
+    "chCode": "CH-13397",
+    "meaning": "Practice: a player with nothing published",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130460,
     "page": "P013",
     "category": 4,
@@ -16573,6 +16606,28 @@
     "name": "ASK_SEND_WHILE_AN_ACTION_CARD_WAITS",
     "chCode": "CH-13120",
     "meaning": "Ask: Send while an action card waits for Confirm or Cancel",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130502,
+    "page": "P013",
+    "category": 5,
+    "item": 2,
+    "name": "PRACTICE_A_DRILL_RUNS_PAST_ITS_TURN",
+    "chCode": "CH-13180",
+    "meaning": "Practice: a drill runs past its turn",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130503,
+    "page": "P013",
+    "category": 5,
+    "item": 3,
+    "name": "PRACTICE_AN_ALL_DAY_PRACTICE_IN_NEW",
+    "chCode": "CH-13181",
+    "meaning": "Practice: an all-day practice in New plan",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -17059,6 +17114,61 @@
     "name": "RECHECK_FAILS",
     "chCode": "CH-13006",
     "meaning": "Re-check fails or is offline",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130645,
+    "page": "P013",
+    "category": 6,
+    "item": 45,
+    "name": "PRACTICE_THREE_SAVES_IN_A_ROW_FAILED",
+    "chCode": "CH-13080",
+    "meaning": "Practice: three saves in a row failed (the design's CH-17001)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130646,
+    "page": "P013",
+    "category": 6,
+    "item": 46,
+    "name": "PRACTICE_PUBLISH_WENT_THROUGH",
+    "chCode": "CH-13081",
+    "meaning": "Practice: publish went through",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130647,
+    "page": "P013",
+    "category": 6,
+    "item": 47,
+    "name": "PRACTICE_DELETE_DRAFT_REFUSED",
+    "chCode": "CH-13082",
+    "meaning": "Practice: Delete draft refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130648,
+    "page": "P013",
+    "category": 6,
+    "item": 48,
+    "name": "PRACTICE_A_NEW_DRILL_SAVED",
+    "chCode": "CH-13083",
+    "meaning": "Practice: a new drill saved",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130649,
+    "page": "P013",
+    "category": 6,
+    "item": 49,
+    "name": "PRACTICE_OFFLINE_WHILE_EDITING",
+    "chCode": "CH-13084",
+    "meaning": "Practice: offline while editing",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -17988,6 +18098,39 @@
     ]
   },
   {
+    "id": 131101,
+    "page": "P013",
+    "category": 11,
+    "item": 1,
+    "name": "PRACTICE_ANOTHER_COACH_SAVED_FIRST_OR_STARTED",
+    "chCode": "CH-13580",
+    "meaning": "Practice: another coach saved first, or started this practice's plan",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131102,
+    "page": "P013",
+    "category": 11,
+    "item": 2,
+    "name": "PRACTICE_A_BLOCK_DELETED",
+    "chCode": "CH-13581",
+    "meaning": "Practice: a block deleted",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131103,
+    "page": "P013",
+    "category": 11,
+    "item": 3,
+    "name": "PRACTICE_SPLIT_EVENLY",
+    "chCode": "CH-13582",
+    "meaning": "Practice: Split evenly",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 131201,
     "page": "P013",
     "category": 12,
@@ -18477,6 +18620,28 @@
     "name": "READ_THE_READ_DIDNT_LOAD",
     "chCode": "CH-13866",
     "meaning": "Read: the read didn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131822,
+    "page": "P013",
+    "category": 18,
+    "item": 22,
+    "name": "PRACTICE_A_BLOCKS_SHEET_ON_A_PHONE",
+    "chCode": "CH-13895",
+    "meaning": "Practice: a block's sheet on a phone, or Swap",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131823,
+    "page": "P013",
+    "category": 18,
+    "item": 23,
+    "name": "PRACTICE_THE_TIME_RIBBON_CHANGES",
+    "chCode": "CH-13896",
+    "meaning": "Practice: the time ribbon changes",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
