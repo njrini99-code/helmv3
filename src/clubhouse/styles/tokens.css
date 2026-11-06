@@ -180,6 +180,12 @@
   --ch-text-placeholder: #69655d;
   --ch-text-on-accent: #ffffff;
   --ch-accent: var(--ch-green-600);
+  /* Ask's own accent and card (owner, 6 Nov): the design's palette, without moving the app's accent. */
+  --ch-ask-accent: var(--ch-green-600);
+  --ch-ask-on-accent: #fffefb;
+  --ch-ask-card: var(--ch-bubble-theirs-bg);
+  --ch-ask-mine-a: var(--ch-bubble-mine-fill);
+  --ch-ask-mine-b: color-mix(in oklab, var(--ch-bubble-mine-fill) 82%, black);
   --ch-accent-hover: var(--ch-green-700);
   --ch-accent-press: var(--ch-green-800);
   /* Decision 6 (owner, 2026-10-24): a touch darker than 0.07, so a one-device-pixel line still reads (B3). */
@@ -1084,6 +1090,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-selected-pill-ring: rgb(107 187 140 / 0.3);
   --ch-text-on-accent: #f4eedd;
   --ch-accent: #23704a;
+  --ch-ask-accent: #7cc79b;
+  --ch-ask-on-accent: #0e120f;
+  --ch-ask-card: #191e1a;
+  --ch-ask-mine-a: #1f4d35;
+  --ch-ask-mine-b: #173d2a;
   --ch-accent-hover: #2a7d53;
   --ch-accent-press: #1d613f;
   --ch-border-hairline: rgb(237 231 216 / 0.12); /* decision 6, from 0.08 */
