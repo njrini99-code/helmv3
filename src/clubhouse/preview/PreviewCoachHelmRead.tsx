@@ -1,5 +1,6 @@
 'use client';
 
+import { manyHoles, rewriteDeep } from './stress';
 import { toChReadSummary } from '../data/coachhelm-read-view-shape';
 import type { ChViewVoice } from '../data/coachhelm-views-shape';
 import { ReadPage, ReadSkeleton } from '../screens/coachhelm/read/ReadPage';
@@ -11,7 +12,8 @@ const wait = <T,>(v: T) => new Promise<T>((r) => setTimeout(() => r(v), 400));
 /** One read with fake writes. Nothing reaches the server. */
 export function PreviewCoachHelmRead({ state, viewer, q, screen }: { state?: string; viewer?: string; q?: string; screen?: string }) {
   const role = viewer === 'player' ? 'player' : 'coach';
-  const view = previewReadView(q, role, state === 'gone', state);
+  const built = previewReadView(q, role, state === 'gone', state);
+  const view = state === 'stress' ? rewriteDeep(built, manyHoles) : built;
   const voice: ChViewVoice = role === 'coach' ? { role: 'coach', playerId: view.head.playerId ?? '', name: view.head.name, first: view.head.first, line: '' } : { role: 'player' };
   if (state === 'loading') return <ReadSkeleton />;
   if (screen === 'board' && view.read)

@@ -11,6 +11,8 @@ on:
       - 'src/clubhouse/**'
       - 'src/app/clubhouse-preview/**'
       - 'e2e/clubhouse-quality.spec.ts'
+      - 'e2e/clubhouse-gate.spec.ts'
+      - 'e2e/clubhouse-gate/**'
       - 'e2e/clubhouse-playground.spec.ts'
       - 'e2e/clubhouse-quality.setup.ts'
       - 'playwright.clubhouse.config.ts'
@@ -66,7 +68,7 @@ jobs:
     # (`gh workflow run clubhouse-quality.yml --ref <branch>`).
     if: github.event_name != 'pull_request' || (github.event.pull_request.draft != true && github.event.action != 'synchronize')
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
@@ -99,7 +101,17 @@ jobs:
           github-token: ${{ github.token }}
       - name: Smoke normal and reduced motion in Chromium and WebKit
         timeout-minutes: 25
-        run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts
+        run: >-
+          ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts
+          --project chromium-no-preference --project chromium-reduce --project webkit-no-preference --project webkit-reduce
+      # Boxes leaving their card, clipped text, nested cards, small type and targets, contrast, page edge: at 390x844 in WebKit and
+      # 1440x900 in Chromium, light and dark, on stress fixtures. A known failure is marked with its bug and must keep failing until fixed.
+      - name: Presentation gate
+        if: ${{ !inputs.visual }}
+        timeout-minutes: 40
+        env:
+          CH_GATE_REPORT: test-results/clubhouse-quality/gate-report.jsonl
+        run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project gate-phone --project gate-desktop
       - name: Upload diagnostic screenshots, reports and failure traces
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1

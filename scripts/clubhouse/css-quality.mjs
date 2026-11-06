@@ -1,6 +1,6 @@
 /** AST checks across Clubhouse CSS; new shadow declarations compared to an explicit Git base. */
 import { execFileSync } from 'node:child_process';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import postcss from 'postcss';
@@ -77,6 +77,34 @@ export function inspectCSS(css, { file = 'fixture.css', before = '', tokens } = 
   });
   return findings;
 }
+/**
+ * What the redesign sweep's SYS-1 and SYS-3 left behind, counted per file. Main holds plenty of each, so the ratchet is a
+ * count that can only fall: more than the recorded count fails, and so does less until the file is lowered with --ratchet, so a
+ * fix can't quietly make room for a new one. config/clubhouse/css-ratchet.json holds the counts.
+ */
+export const RATCHET_PATH = 'config/clubhouse/css-ratchet.json';
+export function ratchetCounts(css, file = 'fixture.css') {
+  const counts = { hex: 0, 'svg-overflow-visible': 0, 'crh-negative-margin': 0 };
+  parse(css, file).walkDecls((decl) => {
+    const scope = context(decl);
+    if (!/(?:^|\/)tokens\.css$/.test(file)) counts.hex += (decl.value.replace(/url\([^)]*\)/g, '').match(/#[\da-f]{3,8}\b/gi) ?? []).length;
+    if (decl.prop.toLowerCase() === 'overflow' && /visible/i.test(decl.value) && /svg|chart|hole|spark/i.test(scope)) counts['svg-overflow-visible'] += 1;
+    if (/^margin-inline/i.test(decl.prop) && /^\s*-/.test(decl.value) && (/data-ch-crh/.test(scope) || /(?:^|\/)(?:home|roster|classes)\.css$/.test(file))) counts['crh-negative-margin'] += 1;
+  });
+  return counts;
+}
+export function compareRatchet(current, recorded) {
+  const problems = [];
+  for (const file of new Set([...Object.keys(current), ...Object.keys(recorded)])) {
+    for (const rule of ['hex', 'svg-overflow-visible', 'crh-negative-margin']) {
+      const now = current[file]?.[rule] ?? 0;
+      const was = recorded[file]?.[rule] ?? 0;
+      if (now > was) problems.push({ file, rule: `clubhouse/ratchet-${rule}`, reason: `${now} here, ${was} recorded. Use a token or a shared component instead of adding one.` });
+      else if (now < was) problems.push({ file, rule: `clubhouse/ratchet-${rule}`, reason: `${now} here, ${was} recorded. Good: lower the record with npm run clubhouse:css -- --ratchet.` });
+    }
+  }
+  return problems;
+}
 export async function lintCSS(css, file = 'fixture.css') {
   const { default: stylelint } = await import('stylelint');
   const result = await stylelint.lint({ code: css, codeFilename: file, config });
@@ -89,7 +117,9 @@ export async function lintCSS(css, file = 'fixture.css') {
 function cssFiles(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? cssFiles(join(dir, entry.name)) : entry.name.endsWith('.css') ? [join(dir, entry.name)] : []);
 }
-export async function main(argv = process.argv.slice(2)) {
+export async function main(args = process.argv.slice(2)) {
+  const lowering = args.includes('--ratchet');
+  const argv = args.filter((a) => a !== '--ratchet');
   let base, sha;
   try {
     base = argv[0] ?? execFileSync('git', ['merge-base', 'origin/main', 'HEAD'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
@@ -113,6 +143,21 @@ export async function main(argv = process.argv.slice(2)) {
     try { findings.push(...inspectCSS(css, { file, before, tokens })); }
     catch (error) { findings.push({ file, line: error.line, rule: 'css-syntax', reason: error.reason ?? error.message }); }
   }
+  const current = {};
+  for (const { path, css } of sources) {
+    const file = relative(ROOT, path);
+    try {
+      const counts = ratchetCounts(css, file);
+      if (Object.values(counts).some(Boolean)) current[file] = counts;
+    } catch { /* A syntax error is already a finding above. */ }
+  }
+  const recorded = JSON.parse(readFileSync(join(ROOT, RATCHET_PATH), 'utf8'));
+  const ratchet = compareRatchet(current, recorded);
+  if (lowering) {
+    const raised = ratchet.filter((p) => !p.reason.includes('Good:'));
+    if (raised.length) findings.push(...raised);
+    else writeFileSync(join(ROOT, RATCHET_PATH), `${JSON.stringify(Object.fromEntries(Object.entries(current).sort(([a], [b]) => a.localeCompare(b))), null, 2)}\n`);
+  } else findings.push(...ratchet);
   for (const finding of findings) console.error(`${finding.file}:${finding.line ?? 1} ${finding.rule}: ${finding.reason}`);
   console.log(`Clubhouse CSS quality: ${findings.length} findings; shadow comparison ${sha.slice(0, 7)}.`);
   return findings.length ? 1 : 0;

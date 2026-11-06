@@ -1,0 +1,46 @@
+/** Every redesign lane's screens the gate opens, on the fixture preview. Stress states carry staging's real values. */
+/** `tap`: what to press on a phone first, to reach a pushed screen the fixture doesn't open by itself. Lane PRs add these for subpages. */
+export type GateScreen = { id: string; lane: string; path: string; phone?: boolean; desktop?: boolean; tap?: string };
+
+const s = (lane: string, id: string, path: string, only?: 'phone' | 'desktop'): GateScreen => ({ id, lane, path: `/clubhouse-preview/${path}`, phone: only !== 'desktop', desktop: only !== 'phone' });
+
+export const GATE_SCREENS: GateScreen[] = [
+  s('TEAM', 'team', 'coachhelm-team'),
+  s('TEAM', 'team-stress', 'coachhelm-team?state=stress'),
+  s('TEAM', 'team-long', 'coachhelm-team?state=long'),
+  s('TEAM', 'team-empty', 'coachhelm-team?state=empty'),
+  s('TEAM', 'brief', 'coachhelm-coach-brief'),
+  s('CRH', 'home-coach', 'home'),
+  s('CRH', 'home-coach-stress', 'home?state=stress'),
+  s('CRH', 'home-coach-empty', 'home?state=empty'),
+  s('CRH', 'home-player', 'home-player'),
+  s('CRH', 'home-player-empty', 'home-player?state=empty'),
+  s('CRH', 'roster', 'roster'),
+  s('CRH', 'roster-long', 'roster?state=long'),
+  s('CRH', 'roster-player', 'roster-player'),
+  s('CRH', 'classes', 'classes'),
+  s('CRH', 'classes-empty', 'classes?state=empty'),
+  s('ASK', 'ask', 'coachhelm-ask'),
+  s('ASK', 'ask-v2', 'coachhelm-ask-v2'),
+  s('QC', 'quick-chat', 'coachhelm-ask-v2?qc=1'),
+  s('PRAC', 'practice-thread', 'coachhelm-practice-thread'),
+  s('PRAC', 'practice-plan', 'coachhelm-practice-plan'),
+  s('PRAC', 'practice-card-stress', 'coachhelm-practice-plan?state=stress'),
+  s('PRAC', 'practice-format', 'coachhelm-practice-format'),
+  s('PRAC', 'practice-player', 'coachhelm-practice-player'),
+  s('PRAC', 'documents', 'hub?tab=docs'),
+  // state=design is the redesign (data-ch-ms-v2); the plain fixture draws the old screen.
+  s('MSG', 'messages', 'messages?state=design&view=inbox'),
+  s('MSG', 'messages-empty', 'messages?state=design&view=empty'),
+  s('MSG', 'messages-stress', 'messages?state=design&view=stress'),
+  s('RC', 'read', 'coachhelm-read'),
+  s('RC', 'read-stress', 'coachhelm-read?state=stress'),
+  s('RC', 'read-player', 'coachhelm-read?view=player'),
+  s('CVP', 'file', 'coachhelm-player-file'),
+  s('CVP', 'file-long', 'coachhelm-player-file?state=long'),
+  s('CVP', 'file-player', 'coachhelm-player-file?view=player'),
+  s('STATS', 'stats-team', 'stats'),
+  s('STATS', 'stats-team-empty', 'stats?state=empty'),
+  s('STATS', 'stats-player', 'player'),
+  s('STATS', 'stats-player-early', 'player?state=early'),
+];

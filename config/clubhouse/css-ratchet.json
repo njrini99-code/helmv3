@@ -1,0 +1,172 @@
+{
+  "src/clubhouse/styles/auth-tokens.css": {
+    "hex": 1,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/auth.css": {
+    "hex": 14,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/base.css": {
+    "hex": 2,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/calendar.css": {
+    "hex": 12,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/classes.css": {
+    "hex": 55,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 1
+  },
+  "src/clubhouse/styles/coachhelm-ask-v2.css": {
+    "hex": 14,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/coachhelm-ask.css": {
+    "hex": 5,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/coachhelm-dive.css": {
+    "hex": 2,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/coachhelm-file.css": {
+    "hex": 42,
+    "svg-overflow-visible": 1,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/coachhelm-plan.css": {
+    "hex": 50,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/coachhelm-read.css": {
+    "hex": 33,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/coachhelm-standing.css": {
+    "hex": 2,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/coachhelm-team.css": {
+    "hex": 38,
+    "svg-overflow-visible": 2,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/coachhelm-thread.css": {
+    "hex": 1,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/coachhelm.css": {
+    "hex": 6,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/controls.css": {
+    "hex": 20,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/hero-tones.css": {
+    "hex": 10,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/home.css": {
+    "hex": 30,
+    "svg-overflow-visible": 3,
+    "crh-negative-margin": 3
+  },
+  "src/clubhouse/styles/hub.css": {
+    "hex": 4,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/live.css": {
+    "hex": 1,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/messages.css": {
+    "hex": 9,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/onboard.css": {
+    "hex": 66,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/qualifiers.css": {
+    "hex": 10,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/quick-chat.css": {
+    "hex": 51,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/recruiting.css": {
+    "hex": 3,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/roster.css": {
+    "hex": 9,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 2
+  },
+  "src/clubhouse/styles/rounds-setup.css": {
+    "hex": 22,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/rounds-track.css": {
+    "hex": 34,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/rounds.css": {
+    "hex": 58,
+    "svg-overflow-visible": 1,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/shell.css": {
+    "hex": 32,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/stats-redesign.css": {
+    "hex": 4,
+    "svg-overflow-visible": 3,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/stats.css": {
+    "hex": 72,
+    "svg-overflow-visible": 3,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/tournaments-review.css": {
+    "hex": 0,
+    "svg-overflow-visible": 1,
+    "crh-negative-margin": 0
+  },
+  "src/clubhouse/styles/ui.css": {
+    "hex": 102,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0
+  }
+}
