@@ -2,7 +2,7 @@
 
 import { Button } from '../../../ui/Button';
 
-import { Check, ClipboardList, FileText } from 'lucide-react';
+import { ClipboardList, FileText } from 'lucide-react';
 import { useState } from 'react';
 import type { AskBriefData } from '../../../data/coachhelm-chat-thread';
 import { Icon } from '../../../ui/Icon';
@@ -12,25 +12,8 @@ export function PlanIntake({ brief, onSend }: { brief: AskBriefData; onSend: (li
   const [picks, setPicks] = useState<Record<string, string[]>>(() => Object.fromEntries(brief.questions.map((q) => [q.id, (q as { pick?: string[] }).pick ?? []])));
   const [done, setDone] = useState(false);
   const ready = brief.questions.every((q) => (picks[q.id] ?? []).length > 0);
-  // S-ASK.intake-folded: the thread keeps what the coach chose.
-  if (done) {
-    const line = brief.questions.map((q) => q.options.filter((o) => picks[q.id]?.includes(o.id)).map((o) => o.label).join(', ')).filter(Boolean).join(' · ');
-    return (
-      <div className="ch-cpv" data-ch="plan-intake">
-        <section className="art intake is-folded" aria-label={brief.title}>
-          <header className="art-h">
-            <span className="tile">
-              <Icon icon={Check} size={18} />
-            </span>
-            <div className="hd">
-              <span className="t">{brief.title}</span>
-              <span className="m">{line}</span>
-            </div>
-          </header>
-        </section>
-      </div>
-    );
-  }
+  // PB-FLD-01: on press the card becomes the coach's own bubble (the line it sends), so nothing stays here.
+  if (done) return null;
   return (
     <div className="ch-cpv" data-ch="plan-intake">
       <section className="art intake" aria-label={brief.title}>

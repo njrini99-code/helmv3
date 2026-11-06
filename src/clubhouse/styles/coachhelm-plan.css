@@ -1802,8 +1802,6 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* The folded intake: one row with what the coach chose. */
-.ch-cpv .intake.is-folded .m { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 /* The dock's line, beside its buttons. */
 .ch-cpv-full .fdock { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; }
 .ch-cpv-full .fnote { flex: 1 1 100%; margin: 0; font: var(--ch-type-13); letter-spacing: var(--ch-track-13); color: var(--ch-text-secondary); }
