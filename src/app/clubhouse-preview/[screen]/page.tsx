@@ -48,6 +48,8 @@ import {
   PREVIEW_PLAYER_LOOPS,
   PREVIEW_PLAYER_LOOPS_SELF,
   PREVIEW_PLAYER_EARLY,
+  PREVIEW_PLAYER_TOTALS,
+  PREVIEW_TEAM_TOTALS,
   PREVIEW_PLAYER_FILTERED,
   PREVIEW_PLAYER_NINES,
   PREVIEW_PLAYER_SUGGESTED,
@@ -92,7 +94,7 @@ import {
 import {
   PREVIEW_COACH,
   PREVIEW_HOME,
-  PREVIEW_HOME_EARLY, PREVIEW_HOME_TOTALS_ONLY, PREVIEW_HOME_ONE_DAY,
+  PREVIEW_HOME_EARLY, PREVIEW_HOME_TOTALS_ONLY, PREVIEW_HOME_ONE_DAY, PREVIEW_HOME_REAL_SHAPE,
   PREVIEW_HOME_EMPTY,
   PREVIEW_HOME_FAILED,
   PREVIEW_HOME_LEGS_CACHE_FAILED,
@@ -183,7 +185,7 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  * handoff's sample data, with no auth and no database, for comparison with
  * design/handoff/screenshots. 404 in production.
  *
- *   /clubhouse-preview/home   ?state=early | empty | eventsonly | norounds | noevents | failed | loading | error | cachefailed | tourfailed | queuefailed | noholes | unranked | totalsonly | oneday   (empty and eventsonly are the first-run page)
+ *   /clubhouse-preview/home   ?state=early | empty | eventsonly | norounds | noevents | failed | loading | error | cachefailed | tourfailed | queuefailed | noholes | unranked | totalsonly | oneday | realshape   (empty and eventsonly are the first-run page)
  *   any screen &at=HH:MM holds the global light; &round=1 adds a round in progress (the Resume accessory)
  *   /clubhouse-preview/home &live=busy | one | many | finished | event | failed   (the Live now card; P-6)
  *   /clubhouse-preview/live ?state=busy | one | many | finished | starts | event | longnames | empty | failed | denied   (the coach's live view; P-6)
@@ -197,7 +199,7 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  *   /clubhouse-preview/track ?state=approach | putt | holed | checkpointfail | last | meters | exit | card | summary | submitting | posted | submitfail | saved | phone | saving | retrying   (the shot screen; the last four fake the round's save line, CH-11901)
  *   /clubhouse-preview/roster ?state=early | long | big | norequests | onerequest (the lane's flag on, the default here; &crh=0 for main) | empty | failed | partial | availability | helm-failed | helm-off | invite-email | loading   (helm-: the panel's CoachHelm counts didn't load, or CoachHelm is off; invite-email: email invites are on, open the sheet with &invite=1)
  *   /clubhouse-preview/roster-player ?state=empty | failed | noteam | loading   (the player's read-only roster; Theo)
- *   /clubhouse-preview/stats  ?state=empty | failed | partial | crash | loading | filtered | nomatch | earlyfilter | nines | last20 | demo   (the round filter: a filter on, none matching, two rounds, nine-hole rounds in; Last 20)
+ *   /clubhouse-preview/stats  ?state=empty | failed | partial | crash | loading | filtered | nomatch | earlyfilter | nines | last20 | demo | totalsonly   (the round filter: a filter on, none matching, two rounds, nine-hole rounds in; Last 20)
  *   /clubhouse-preview/player ?state=failed | early | self | filtered | nomatch | nines | loading | readsfailed | readsoff   (reads: Game detail's CoachHelm count lines)
  *   /clubhouse-preview/calendar ?state=empty | firstrun | failed | partial | loading, &view=, &date=, &event=
  *   /clubhouse-preview/calendar-player
@@ -283,7 +285,7 @@ export default async function ClubhousePreview({
         ) : (
           <CoachHome
             crh={crh}
-            data={state === 'empty' ? PREVIEW_HOME_EMPTY : state === 'failed' ? PREVIEW_HOME_FAILED : state === 'noevents' ? PREVIEW_HOME_NO_EVENTS : state === 'eventsonly' ? PREVIEW_HOME_EVENTS_ONLY : state === 'norounds' ? PREVIEW_HOME_NO_ROUNDS : state === 'cachefailed' ? PREVIEW_HOME_LEGS_CACHE_FAILED : state === 'tourfailed' ? PREVIEW_HOME_LEGS_TOUR_FAILED : state === 'queuefailed' ? PREVIEW_HOME_QUEUE_FAILED : state === 'noholes' ? PREVIEW_HOME_LEGS_NO_HOLES : state === 'unranked' ? PREVIEW_HOME_LEGS_UNRANKED : state === 'totalsonly' ? PREVIEW_HOME_TOTALS_ONLY : state === 'oneday' ? PREVIEW_HOME_ONE_DAY : state === 'early' ? PREVIEW_HOME_EARLY : PREVIEW_HOME}
+            data={state === 'empty' ? PREVIEW_HOME_EMPTY : state === 'failed' ? PREVIEW_HOME_FAILED : state === 'noevents' ? PREVIEW_HOME_NO_EVENTS : state === 'eventsonly' ? PREVIEW_HOME_EVENTS_ONLY : state === 'norounds' ? PREVIEW_HOME_NO_ROUNDS : state === 'cachefailed' ? PREVIEW_HOME_LEGS_CACHE_FAILED : state === 'tourfailed' ? PREVIEW_HOME_LEGS_TOUR_FAILED : state === 'queuefailed' ? PREVIEW_HOME_QUEUE_FAILED : state === 'noholes' ? PREVIEW_HOME_LEGS_NO_HOLES : state === 'unranked' ? PREVIEW_HOME_LEGS_UNRANKED : state === 'realshape' ? PREVIEW_HOME_REAL_SHAPE : state === 'totalsonly' ? PREVIEW_HOME_TOTALS_ONLY : state === 'oneday' ? PREVIEW_HOME_ONE_DAY : state === 'early' ? PREVIEW_HOME_EARLY : PREVIEW_HOME}
             now={PREVIEW_HOME_NOW}
             // &live=busy | one | many | finished | event | failed: the Live now card (P-6), off unless asked for.
             live={live ? previewLive(live) : undefined}
@@ -462,6 +464,8 @@ export default async function ClubhousePreview({
           <StatsTeam data={PREVIEW_TEAM_NINES} shs={shs} />
         ) : state === 'last20' ? (
           <StatsTeam data={PREVIEW_TEAM_LAST20} shs={shs} />
+        ) : state === 'totalsonly' ? (
+          <StatsTeam data={PREVIEW_TEAM_TOTALS} shs={shs} />
         ) : state === 'demo' ? (
           <StatsTeam data={PREVIEW_TEAM_DEMO} shs={shs} />
         ) : state === 'crash' ? (
@@ -482,6 +486,8 @@ export default async function ClubhousePreview({
           <NotOnTeam coach={false} />
         ) : shs && previewShsPlayer(state) ? (
           <StatsPlayer data={previewShsPlayer(state)!} coachId={null} initialTab={tab} shs />
+        ) : state === 'totalsonly' ? (
+          <StatsPlayer data={PREVIEW_PLAYER_TOTALS} coachId="preview-coach" shs={shs} />
         ) : state === 'filtered' ? (
           <StatsPlayer data={PREVIEW_PLAYER_FILTERED} coachId="preview-coach" shs={shs} />
         ) : state === 'nomatch' ? (

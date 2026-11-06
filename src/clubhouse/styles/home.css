@@ -4838,6 +4838,41 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     font-style: normal;
   }
   /* Latest rounds. */
+  /* The team's game on a phone: one column, so each part reads in whole lines. The part and its figure share the top row, the bar sits
+     under them, and every line after it starts at the card's inset. Two narrow columns broke these into fragments (owner, 5 Nov). */
+  .ch-hm[data-ch-crh='on'] .ch-hm-legs__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-legs__cell {
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 12px;
+    row-gap: 6px;
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-legs__cell > * {
+    grid-column: 1 / -1;
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-legs__cell > .ch-hm-legs__l {
+    grid-column: 1;
+    align-self: center;
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-legs__cell > .ch-hm-legs__sg {
+    grid-column: 2;
+    justify-self: end;
+    font: var(--ch-type-22-strong);
+    letter-spacing: var(--ch-track-22);
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-legs__cell:nth-child(odd) {
+    box-shadow: none;
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-legs__cell + .ch-hm-legs__cell {
+    border-top: 0.66px solid var(--ch-separator);
+  }
+  /* The stat and the Tour's mark: side by side, and if a larger Text Size wraps them no separator starts the line. */
+  .ch-hm[data-ch-crh='on'] .ch-hm-legs__cell > .ch-hm-legs__s {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 12px;
+  }
   /* The row stays inside the card: the older page's negative margins pushed it 12px past the card's edge. */
   .ch-hm[data-ch-crh='on'] .ch-hm-rd {
     margin-inline: 0;
@@ -4852,7 +4887,16 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   /* A name is a small target between two lines of text: its hit area reaches 44 without moving the text. */
   .ch-hm[data-ch-crh='on'] .ch-hm-legs__a {
-    padding-block: 12px;
+    position: relative;
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-legs__a::after {
+    position: absolute;
+    inset: -12px 0;
+    content: '';
+  }
+  /* Team scoring's change reads on one line at phone width. */
+  .ch-hm[data-ch-crh='on'] .ch-hm-form__top .ch-hm-delta em:not(.ch-hm-form__basis) {
+    max-width: none;
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-rd {
     min-height: 64px;

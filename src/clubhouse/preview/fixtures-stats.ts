@@ -686,6 +686,32 @@ export const PREVIEW_TEAM_NOMATCH: ChTeamStats = {
   bests: [],
 };
 /** Two rounds match: the early-read note, and the figures still draw. */
+/**
+ * `?state=totalsonly`: what most real players look like today. Six rounds posted as totals, so a scoring average and a line, and
+ * nothing that needs holes or shots: no greens, putts or strokes gained.
+ */
+export const PREVIEW_PLAYER_TOTALS: ChPlayerProfile = {
+  ...PREVIEW_PLAYER_EARLY,
+  season: { ...season(76.5, [77, 76, 78, 75, 77, 76], null, 6, 'steady'), sgLegs: { tee: null, approach: null, around: null, putting: null } },
+  win: windowSeason({ ...season(76.5, [77, 76, 78, 75, 77, 76], null, 6, 'steady'), sgLegs: { tee: null, approach: null, around: null, putting: null } }),
+  rounds: PREVIEW_PLAYER.rounds.slice(0, 6),
+  extra: { ...PREVIEW_PLAYER_EARLY.extra, holeRounds: 0, series: { ...PREVIEW_PLAYER_EARLY.extra.series, score: PREVIEW_PLAYER.extra.series.score.slice(-6), gir: [], fairway: [] } },
+  comparisons: PREVIEW_PLAYER.comparisons.map((c) => ({ ...c, you: null, team: null })),
+};
+
+/** `?state=totalsonly`: the team, the same way. An average and its line, and every shot figure empty. */
+export const PREVIEW_TEAM_TOTALS: ChTeamStats = {
+  ...PREVIEW_TEAM_STATS,
+  holeRoundCount: 0,
+  roundsEffective: 24,
+  figures: PREVIEW_TEAM_STATS.figures.map((f) => (f.key === 'score' ? f : { ...f, value: null, delta: null, series: f.series.map(() => null) })),
+  team: { ...PREVIEW_TEAM_STATS.team, sg: PREVIEW_TEAM_STATS.team.sg.map(() => null), sgMean: null },
+  players: PREVIEW_TEAM_STATS.players.map((p) => ({ ...p, sg: p.sg.map(() => null) })),
+  legWeeks: Object.fromEntries(Object.keys(PREVIEW_TEAM_STATS.legWeeks).map((k) => [k, []])) as unknown as ChTeamStats['legWeeks'],
+  grid: PREVIEW_TEAM_STATS.grid.map((g) => ({ ...g, legs: g.legs.map(() => null), total: null, change: null })),
+  putting: null as never,
+};
+
 export const PREVIEW_TEAM_EARLY_FILTER: ChTeamStats = { ...PREVIEW_TEAM_STATS, filter: { ...filterFor('last10'), courses: ['Oakmont CC'] }, roundCount: 2 };
 
 /**
