@@ -11,7 +11,6 @@ import { NOTE_TABLE_MISSING_CODES, parseAvailability, type ChAvailability } from
 import { fromUntyped } from '@/lib/supabase/untyped';
 import {
   classYearLabel,
-  countsForScoring,
   displayHandicap,
   fullName,
   groupByPlayer,
@@ -29,6 +28,7 @@ import {
 import { formatFixed } from '../lib/format';
 import { isoDay } from '../lib/dates';
 import { sgBaseline } from '../lib/sg';
+import { roundsForFigures } from './figure-window';
 import { tourForGender } from './stats-common';
 import { QUIET_DAYS, daysBetween as daysBetweenDates } from '../screens/home/model';
 
@@ -232,7 +232,7 @@ export async function loadRoster(input: { teamId: string; coachId: string; /** T
     loadHelm(supabase, input, ids),
     loadAvailabilityNotes(supabase, input.teamId),
   ]);
-  const counted = input.crh ? season.rounds.filter(countsForScoring) : season.rounds;
+  const counted = input.crh ? roundsForFigures(season.rounds) : season.rounds;
   const byPlayer = groupByPlayer(counted);
   // Averages, form and the floors read the cut rounds; Recent rounds and "All N" list every round the player posted (SHARED: Latest rounds lists every round).
   const everyRound = input.crh ? groupByPlayer(season.rounds) : byPlayer;

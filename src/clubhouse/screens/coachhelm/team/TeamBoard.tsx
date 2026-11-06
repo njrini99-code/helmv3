@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { boardPlayerCount, boardPlayerWords, courseReads, stationOrder, readsDrawn, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
-import { formatSigned } from '../../../lib/format';
+import { formatSigned, windowWords } from '../../../lib/format';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
 import { Button } from '../../../ui/Button';
@@ -75,7 +75,7 @@ function Hero({
       <span>
         a round {data.team.baselineLabel}
         <br />
-        This season · {data.teamTotal.rounds} rounds{counted > 0 && ` · ${boardPlayerWords(counted)}`}
+        {windowWords('season', data.teamTotal.rounds)}{counted > 0 && ` · ${boardPlayerWords(counted)}`}
       </span>
     </div>
   );
