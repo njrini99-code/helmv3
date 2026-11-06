@@ -95,6 +95,8 @@ export interface AskComposerProps {
   autoFocus?: boolean;
   /** A new chat (no messages yet): the box invites a first question, whatever its shape (the phone's new chat is the one-row box). */
   fresh?: boolean;
+  /** "Ask about this" from another page (`?q=`): the question waits in the box, unsent. */
+  seed?: string | null;
   /** Who and which chat the unsent text belongs to ("coach:chat"), so it comes back when the coach returns to this page; none, none kept. */
   draftKey?: string | null;
   /**
@@ -164,11 +166,15 @@ function usePickerRoom(anchor: RefObject<HTMLElement | null>, open: boolean, bel
  *  - Offline, Send is refused before anything is sent: an error toast (CH-1903) and the text stays.
  *  - A send that failed puts its text back (once, into an empty box); a card awaiting a decision disables Send.
  */
-export function AskComposer({ scopeOf, variant, phone, players, busy, failed, blocked, onSend, onStop, autoFocus, fresh = false, draftKey = null, roster = true, hint, slash = [] }: AskComposerProps) {
+export function AskComposer({ seed, scopeOf, variant, phone, players, busy, failed, blocked, onSend, onStop, autoFocus, fresh = false, draftKey = null, roster = true, hint, slash = [] }: AskComposerProps) {
   const refuseOffline = useRefuseOffline();
   const finePointer = useFinePointer();
   const hero = variant === 'hero';
   const [value, setValue] = useAskDraft(draftKey);
+  useEffect(() => {
+    if (seed) setValue(seed);
+    // Mount only: it is a starting point, not a value to hold on to.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [range, setRange] = useState<ChAskRange | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [pickIds, setPickIds] = useState<PickerIds>({});

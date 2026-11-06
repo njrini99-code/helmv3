@@ -262,9 +262,19 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
   const lastAsked = [...chat.messages].reverse().find((m) => m.role === 'user')?.parts.flatMap((p) => (p.type === 'text' ? [p.text] : [])).join(' ') ?? '';
   const scopeLine = showHome ? `${player ? 'My rounds' : data.teamName} · this season` : askScope(lastAsked, player ? 'My rounds' : data.teamName, player ? [] : (data.players ?? []).map((p) => p.name));
 
+  // FID-ASK-7: read once, then off the address, so a reload doesn't put it back over what the coach has since typed.
+  const [seededQuestion] = useState(() => (typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('q')));
+  useEffect(() => {
+    if (!seededQuestion) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('q');
+    window.history.replaceState(window.history.state, '', url);
+  }, [seededQuestion]);
+
   const composer = (variant: 'hero' | 'dock') => (
     <SectionBoundary surface="coachhelm.ask.composer" label="The message box" code="CH-13225">
       <AskComposer
+        seed={seededQuestion}
         hint={v2 ? (player ? 'Ask about your game' : 'Ask about your team') : undefined}
         scopeOf={v2 ? (text) => (text.trim() ? askScope(text, player ? 'My rounds' : data.teamName, player ? [] : (data.players ?? []).map((p) => p.name)) : scopeLine).split(' · ') : undefined}
         slash={v2 ? askSlashCommands({ player, plans: !!slashFlags?.plans, lineup: !!slashFlags?.lineup }) : undefined}
