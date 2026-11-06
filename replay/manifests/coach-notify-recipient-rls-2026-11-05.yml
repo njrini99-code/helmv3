@@ -1,0 +1,38 @@
+schema_version: 1
+replay_id: coach-notify-recipient-rls-2026-11-05
+incident_id: /admin/errors/0f4b92c9
+feature_id: player_coachhelm_development
+title: >-
+  Coach-triggered notices (focus area, task, qualifier created, qualifier
+  outcome) read the player's users.email through the coach's session, which
+  RLS answers with nothing, so the player got no email and no bell row; the
+  email read now uses the service role.
+bad_version: 062f8a2c34b37fc08ef34a76e739e4d55b360218
+fixed_version: ee15fe44442ff5e6557a1d7bc910d2aea906f141
+fixture:
+  - source: development.team-id.test.ts
+    target: src/test/golf/actions/development.team-id.test.ts
+  - source: task-notify-recipients.test.ts
+    target: src/test/golf/actions/task-notify-recipients.test.ts
+  - source: player-notify.test.ts
+    target: src/test/coachhelm/v3/player-notify.test.ts
+  - source: create-qualifier-roster-and-rollback.test.ts
+    target: src/app/golf/actions/__tests__/create-qualifier-roster-and-rollback.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/test/golf/actions/development.team-id.test.ts src/test/golf/actions/task-notify-recipients.test.ts src/test/coachhelm/v3/player-notify.test.ts src/app/golf/actions/__tests__/create-qualifier-roster-and-rollback.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic ids and example.com addresses; no production rows, PII, tokens
+    or logs.
+source_incident_status: fixed
+created_at: "2026-11-05"
+notes: >-
+  On bad_version 13 of 37 tests fail: notifyDevPlanAssigned, notifyTaskAssigned
+  and notifyQualifierCreated are never called, and no selection-outcome email or
+  push is sent, because the session mock returns what RLS returns for another
+  user's row.
