@@ -33,11 +33,12 @@ async function requestAskCreditsImpl(note?: string): Promise<{ success: boolean;
     return { success: false, error: 'That didn’t go in. Try again.' };
   }
   const id = (data as { id: string } | null)?.id;
-  if (id) after(() => releaseRequest(id, ctx.team_name));
+  const asker = ctx.roster[0]?.name ?? 'A player';
+  if (id) after(() => releaseRequest(id, ctx.team_name, asker));
   return { success: true, id };
 }
 
-async function releaseRequest(id: string, teamName: string): Promise<void> {
+async function releaseRequest(id: string, teamName: string, asker: string): Promise<void> {
   await new Promise((r) => setTimeout(r, UNDO_MS));
   const admin = createAdminClient();
   const { data, error } = await askTables(admin).from('ask_credit_requests')
@@ -52,7 +53,7 @@ async function releaseRequest(id: string, teamName: string): Promise<void> {
     await logServerError('ask credits request held by the email gate', { action: 'coachhelm.ask.requestCredits', extra: { requestId: id } }, 'warning');
     return;
   }
-  const sent = await sendOpsAlert({ subject: `Ask: more requested (${teamName})`, text: row.note ?? 'A player asked for more Ask this week.' });
+  const sent = await sendOpsAlert({ subject: `Ask: ${asker} asked for more (${teamName})`, text: `${asker} on ${teamName} asked for more Ask this week.${row.note ? `\n\n${row.note}` : ''}` });
   if (sent.sent) await askTables(admin).from('ask_credit_requests').update({ sent_at: new Date().toISOString() } as never).eq('id', id);
 }
 

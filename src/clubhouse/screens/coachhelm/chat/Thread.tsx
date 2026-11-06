@@ -24,6 +24,7 @@ import { useToast } from '../../../ui/Toast';
 import { Tooltip } from '../../../ui/Tooltip';
 import { CoachMark } from './CoachMark';
 import { AnswerCard } from './parts/AnswerCard';
+import { Steps } from './parts/Steps';
 import { PlanVersions } from '../plan/PlanCard';
 import { ConfirmCard, Receipt } from './parts/ConfirmCard';
 import type { AskArtifact } from './parts/artifacts';
@@ -339,9 +340,14 @@ export function AskThread({ v2 = false, team, stoppedTurn = null, onArtifact, me
             <CoachMark working />
             <div className="ch-th-ans__body">
               <span className="ch-th-who">CoachHelm</span>
-              <p className="ch-th-think" aria-live="polite">
-                <span className="ch-th-live">Reading your program</span>
-              </p>
+              {v2 ? (
+                // E-STEPS: the first frame is already the live row, so nothing swaps when the first read names itself.
+                <Steps steps={[{ id: 'first', label: 'Reading your program', state: 'active' }]} active seconds={null} />
+              ) : (
+                <p className="ch-th-think" aria-live="polite">
+                  <span className="ch-th-live">Reading your program</span>
+                </p>
+              )}
             </div>
           </div>
         )}

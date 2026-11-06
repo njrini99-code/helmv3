@@ -57,6 +57,14 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
     }),
     [known, reads],
   );
+  // M-ASK / E-SKEL: when the chart arrives, the skeleton it replaces stays a moment over it and fades.
+  const [ghost, setGhost] = useState<string[] | null>(null);
+  const lastPending = useRef(turn.pendingVisual);
+  useEffect(() => {
+    if (lastPending.current?.length && !turn.pendingVisual?.length) setGhost(lastPending.current);
+    lastPending.current = turn.pendingVisual;
+  }, [turn.pendingVisual]);
+  const lastChart = [...turn.blocks].reverse().find((b) => b.kind === 'composition')?.key;
   const hasBoard = turn.blocks.some((b) => b.kind === 'handoff' && b.handoff.kind === 'board');
   const charts = turn.blocks.filter((b) => b.kind === 'visual' || b.kind === 'composition');
   const boardTiles =
@@ -104,7 +112,19 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
           if (b.kind === 'brief' && b.brief.intake) return <PlanIntake key={b.key} brief={b.brief} onSend={onSend} />;
           if (b.kind === 'brief') return <BriefCard key={b.key} title={b.brief.title} questions={b.brief.questions} onDone={(_a, line) => onSend(line || 'Skip, just build')} />;
           if (b.kind === 'handoff') return <HandoffCard key={b.key} handoff={b.handoff} tiles={b.handoff.kind === 'board' ? boardTiles : undefined} />;
-          if (b.kind === 'composition') return <CoachComposition key={b.key} composition={b.composition} live={turn.active} />;
+          if (b.kind === 'composition') {
+            const drawn = <CoachComposition key={b.key} composition={b.composition} live={turn.active} />;
+            return ghost && b.key === lastChart ? (
+              <div key={b.key} className="ch-ak-swap">
+                <div className="next">{drawn}</div>
+                <div className="ghost" onAnimationEnd={() => setGhost(null)}>
+                  <ToolSkeleton types={ghost} />
+                </div>
+              </div>
+            ) : (
+              drawn
+            );
+          }
           return actions(b);
         })}
         {artifacts.map((a) => (

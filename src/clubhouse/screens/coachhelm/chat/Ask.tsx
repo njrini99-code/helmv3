@@ -196,6 +196,8 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
   const chat = run?.busy && run.conversationId && run.conversationId === data.thread?.id ? run : own;
 
   const out = data.allowance === 'out' || chat.messages.some((m) => m.parts.some((p) => p.type === 'data-allowance'));
+  // It ran out on this visit, in front of the player, rather than before the page opened.
+  const ranOutLive = data.allowance !== 'out';
   const pending = pendingApproval(chat.messages);
   const showHome = chat.messages.length === 0 && !gone && !data.threadFailed;
   const notice = chat.error ? describeChatError(chat.error) : null;
@@ -284,6 +286,7 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
         busy={chat.busy}
         failed={Boolean(chat.error)}
         blocked={Boolean(pending)}
+        paused={player && out ? 'Ask is paused until Monday' : undefined}
         onSend={send}
         onStop={stop}
         // eslint-disable-next-line jsx-a11y/no-autofocus -- a component prop; the composer focuses itself in an effect
@@ -408,13 +411,11 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
               Reading <b>{scopeLine}</b>
             </p>
           )}
-          <div className={'ch-ask-scroll' + (showHome ? ' is-home' : !gone && !data.threadFailed ? ' is-thread' : '')}>{body}</div>
-          {player && out && (
-            <div className="ch-ask-dock">
-              <PlayerOut />
-            </div>
-          )}
-          {docked && !(player && out) && (
+          <div className={'ch-ask-scroll' + (showHome ? ' is-home' : !gone && !data.threadFailed ? ' is-thread' : '')}>
+            {body}
+            {player && out && <PlayerOut live={ranOutLive} from={data.firstName ? `${data.firstName} · ${data.teamName}` : data.teamName} />}
+          </div>
+          {docked && (
             <div className="ch-ask-dock">
               {composer('dock')}
               {!phone && (

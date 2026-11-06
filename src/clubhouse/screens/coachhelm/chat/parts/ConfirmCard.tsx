@@ -221,6 +221,12 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
             <b>{p.summary}</b>
             <span>{receipt ? 'Just now' : 'Draft'}</span>
           </div>
+          {p.neighbours?.map((n) => (
+            <div key={n.title + n.sub} className="hsr">
+              <b>{n.title}</b>
+              <span>{n.sub}</span>
+            </div>
+          ))}
         </div>
       )}
       {undecided &&

@@ -153,14 +153,21 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-miss .w { fill: var(--ch-chart-flat, #6b675f); opacity: 0.55; }
 .ch-ak-miss .w.hi { fill: var(--ch-chart-loss-fill, #b86f0c); opacity: 1; }
 .ch-ak-miss .flag { fill: var(--ch-text-primary); }
+.ch-ak-miss .dot { fill: var(--ch-text-primary); stroke: var(--ch-card-bg); stroke-width: 1; }
 .ch-ak-miss figcaption { font: var(--ch-type-14); color: var(--ch-text-secondary); text-align: center; }
 .ch-ak-putts { display: grid; gap: 8px; }
 .ch-ak-putts > button { width: 100%; display: grid; grid-template-columns: 84px minmax(0, 1fr) 40px 24px; align-items: center; gap: 8px; font: var(--ch-type-14);  color: var(--ch-text-secondary); }
-.ch-ak-putts .t { display: block; height: 10px; border-radius: var(--ch-radius-xs); background: var(--ch-chart-track, #ebe5d8); overflow: hidden; }
+.ch-ak-putts .t { position: relative; display: block; height: 10px; border-radius: var(--ch-radius-xs); background: var(--ch-chart-track, #ebe5d8); overflow: hidden; }
+.ch-ak-putts .t .tick { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--ch-text-primary); }
 .ch-ak-putts .t i { display: block; height: 100%; background: var(--ch-chart-gain-fill, #1f6b45); transform-origin: 0 50%; }
 .ch-ak-putts b { font-weight:var(--ch-fw-600); color: var(--ch-text-primary); text-align: right; }
 .ch-ak-putts small { color: var(--ch-text-tertiary); text-align: right; font: var(--ch-type-13); }
 .ch-ak-season { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ch-ak-season .scale { grid-column: 1 / -1; display: block; width: 100%; height: auto; }
+.ch-ak-season .band { fill: var(--ch-chart-track); }
+.ch-ak-season .last { stroke: var(--ch-text-tertiary); stroke-width: 2; }
+.ch-ak-season .range { stroke: var(--ch-chart-gain-fill); stroke-width: 2; stroke-linecap: round; }
+.ch-ak-season .now { fill: var(--ch-chart-gain-fill); stroke: var(--ch-card-bg); stroke-width: 2; }
 .ch-ak-season .ch-ak-mark { padding: 12px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); }
 .ch-ak-season b { display: block; font: var(--ch-type-22-medium);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-22); }
 .ch-ak-season span { display: block; margin-top: 6px; font: var(--ch-type-13);  color: var(--ch-text-secondary); }
@@ -223,9 +230,22 @@ html[data-fw-theme='dark'] .ch-ak-th {
   --ch-ak-fill: 0%;
 }
 .ch-ak-meter.is-low { color: var(--ch-loss); }
-.ch-ak-out { display: grid; gap: 6px; padding: 16px; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-ask-v2-x1); }
-.ch-ak-out b { font: var(--ch-type-16-strong); letter-spacing: var(--ch-track-16); }
-.ch-ak-out p { margin: 0; font: var(--ch-type-14);  color: var(--ch-text-secondary); }
+.ch-ak-outwrap { display: grid; gap: 12px; margin-top: 12px; }
+/* Out of Ask (E-OUT): why, what's still here, and the one thing to do. */
+.ch-ak-out { display: grid; overflow: hidden; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-ask-v2-x1); }
+.ch-ak-out .top { display: grid; gap: 8px; padding: 16px 16px 12px; }
+.ch-ak-out .ic { display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); color: var(--ch-text-secondary); }
+.ch-ak-out h3 { margin: 0; font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); color: var(--ch-text-primary); }
+.ch-ak-out p { margin: 0; font: var(--ch-type-15); color: var(--ch-text-secondary); }
+.ch-ak-out .rs { display: flex; align-items: center; gap: 8px; font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-ak-out .rs i { flex: 1; height: 4px; border-radius: 999px; background: var(--ch-chart-track); }
+.ch-ak-out .keep { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-top: var(--ch-hairline-w) solid var(--ch-border-hairline); font: var(--ch-type-14); color: var(--ch-text-secondary); }
+.ch-ak-out .keep svg { flex: none; color: var(--ch-accent); }
+.ch-ak-out .ask { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-top: var(--ch-hairline-w) solid var(--ch-border-hairline); font: var(--ch-type-14); color: var(--ch-text-primary); }
+.ch-ak-out .ask.is-off { opacity: 0.5; }
+@media (prefers-reduced-motion: no-preference) {
+  .ch-ak-out .ask.is-late { animation: ch-ak-rise6 var(--ch-dur-base) var(--ch-ease) 900ms backwards; }
+}
 
 /* AK8: tone and CoachHelm knows, under the chats. */
 .ch-ak-settings .ch-ak-knows { border-top: 0; padding: 0; gap: 16px; }
@@ -785,3 +805,8 @@ html[data-fw-theme='dark'] .ch-ak-th {
 
 /* Save draft (E-SAVE): where a report goes. Portaled, so it anchors to its own class. */
 .ch-ak-save { display: grid; gap: 12px; }
+
+/* E-SKEL: the skeleton fades out over the chart that replaces it, in the same place. Opacity only, so Reduced Motion keeps it. */
+.ch-ak-swap { position: relative; }
+.ch-ak-swap > .ghost { position: absolute; inset: 0; overflow: hidden; pointer-events: none; animation: ch-ak-fade-out var(--ch-dur-swap, 180ms) var(--ch-ease) forwards; }
+.ch-ak-swap > .next { animation: ch-ak-fade var(--ch-dur-swap, 180ms) var(--ch-ease) backwards; }

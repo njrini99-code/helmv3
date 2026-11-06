@@ -47,6 +47,7 @@ import { practicePicture } from './practice-pictures';
 import { practiceDraftTool, publishFlow } from './practice-draft';
 import { getSeasonScoring } from './season-reads';
 import { askDraftTools, type AskSurface } from './ask-draft-tools';
+import { landingRows } from './landing-rows';
 import { CREATE_FLOWS, CREATE_TOOL_NAMES, LINEUP_FLOWS, drillFlow, flowCommit, type FlowDef } from './create-tools';
 import { heldCommitFor } from './held-runner';
 import { getProximityByBand, getRoundDetail, getShotPattern } from './shot-reads';
@@ -444,10 +445,11 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
       });
       // The card's own day, so the reply can say it: it is on screen, and the coach confirms it.
       collectActionNumbers(proposal.summary, { facts: proposal.facts, ...(proposal.visual?.kind === 'cal' ? { date: proposal.visual.date } : {}) });
+      const neighbours = askV2 ? await landingRows(sb, ctx, action.toolName, input) : [];
       writer.write({
         type: 'data-action-proposal',
         id: `proposal-${proposal.idempotency_key}`,
-        data: { ...proposal, tool: action.toolName },
+        data: { ...proposal, ...(neighbours.length ? { neighbours } : {}), tool: action.toolName },
       });
     } catch (err) {
       // A plan we cannot build must never produce a Confirm button.
