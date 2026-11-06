@@ -2108,3 +2108,28 @@ html:not([data-fw-theme='dark']) .ch-hl {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }
+
+/* The one head of a CoachHelm view (screens/coachhelm/CoachHelmHead.tsx). */
+.ch-chd {
+  display: grid;
+  gap: 12px;
+}
+.ch-chd__t {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.ch-chd.is-desk {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 24px;
+  width: 100%;
+}
+.ch-chd__sw .ch-ask-tabs,
+.ch-chd__sw .ch-seg {
+  margin: 0;
+}
+.ch-chd.is-phone .ch-chd__sw .ch-seg {
+  display: flex;
+  width: 100%;
+}

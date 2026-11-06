@@ -198,7 +198,7 @@ describe('Calendar keyboard · coach only', () => {
 
   it('A-14 on the phone a new event opens on its heading, so the keyboard does not rise over the sheet', () => {
     const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     try {
       wrap(PREVIEW_CALENDAR, { initialNew: true });
       expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'New event' }));

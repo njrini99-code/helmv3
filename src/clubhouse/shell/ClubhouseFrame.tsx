@@ -1,5 +1,6 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
 import { LazyMotion } from 'motion/react';
 import { createContext, memo, useContext, useEffect, useRef, useState, type ReactNode, Suspense } from 'react';
@@ -305,6 +306,8 @@ function edgeTokens(root: Element): { page: string; green: string } {
 }
 
 function usePhoneEdges(hero: boolean) {
+  // A route can sit on another canvas colour, so the edges read again on each one.
+  const pathname = usePathname();
   useEffect(() => {
     const html = document.documentElement;
     const body = document.body;
@@ -358,7 +361,7 @@ function usePhoneEdges(hero: boolean) {
       cancelAnimationFrame(frame);
       restore?.();
     };
-  }, [hero]);
+  }, [hero, pathname]);
 }
 
 /**

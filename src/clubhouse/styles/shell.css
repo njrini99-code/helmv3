@@ -3603,17 +3603,17 @@ html[data-fw-theme='dark'] .ch-offline {
   /* The handle at the foot of the screen: drag it up (or the heading) to put the drop away. */
   .ch-bst__drag {
     position: absolute;
-    bottom: calc(10px + env(safe-area-inset-bottom));
+    bottom: env(safe-area-inset-bottom);
     left: 50%;
     width: 56px;
-    height: 24px;
+    height: 44px;
     translate: -50% 0;
     touch-action: none;
     cursor: grab;
   }
   /* On the bell's green the handle is an ivory one. */
   .ch-bst__drag > .ch-grab {
-    margin-top: 8px;
+    margin-top: 18px;
     background: rgb(244 238 221 / 0.42);
   }
 
@@ -3664,8 +3664,15 @@ html[data-fw-theme='dark'] .ch-offline {
     content: '';
   }
   .ch-bst-pill--x {
+    position: relative;
     width: 28px;
     padding: 0;
+  }
+  /* The 44 a thumb needs, without touching the next pill's (MOB-SHELL-16). */
+  .ch-bst-pill--x::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
   }
   .ch-bst-pill:focus-visible {
     outline: 2px solid var(--ch-border-focus-on-dark);
@@ -4442,7 +4449,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   max-width: 420px;
   padding: 8px 8px 8px 16px;
   border-radius: var(--ch-radius-lg);
-  background: var(--ch-bg-raised);
+  background: var(--ch-bg-elevated);
   box-shadow: var(--ch-shadow-float);
   font: var(--ch-type-13-medium);
   color: var(--ch-text-primary);

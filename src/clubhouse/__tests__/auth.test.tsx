@@ -392,7 +392,7 @@ describe('the sign-in screen', () => {
   it('CH-15909 the phone layout breaks at the same width as useChPhone, in the same stylesheet as desktop', () => {
     const css = readFileSync('src/clubhouse/styles/auth.css', 'utf8');
     const hook = readFileSync('src/clubhouse/lib/use-phone.ts', 'utf8');
-    expect(hook).toContain("CH_PHONE_QUERY = '(max-width: 820px)'");
+    expect(hook).toContain("CH_PHONE_QUERY = '(max-width: 820px), (max-height: 500px) and (pointer: coarse)'");
     expect(css).toContain('@media (max-width: 820px)');
     // Desktop and phone are one structure: a label over its own rounded box on both, the phone's on Sign in's radius
     // (owner 2026-10-13; the grouped-row sheet is retired), not a second form.

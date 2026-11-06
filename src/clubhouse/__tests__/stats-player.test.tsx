@@ -363,7 +363,7 @@ describe('Stats player · haptics and accessibility', () => {
 describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
   const real = window.matchMedia;
   beforeEach(() => {
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     router.push.mockClear();
   });
   afterEach(() => {
@@ -1059,7 +1059,7 @@ describe('Stats player · the page', () => {
     expect(screen.getByRole('link', { name: 'Message' }).getAttribute('href')).toBe('/golf/dashboard/messages?player=jonah');
     unmount();
     const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     try {
       const phoneView = wrap(
         <PhoneChromeProvider>
@@ -1294,7 +1294,7 @@ describe('Stats player · network', () => {
 
   it('CH-5901 on the phone the window switch is refused offline the same way', async () => {
     const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
     try {
       const user = userEvent.setup();
@@ -1356,7 +1356,7 @@ describe('Stats player · a failed read is never drawn as zero', () => {
 
   it('CH-5201 51402 the phone profile: no round count under the name, no early-read note, no figure or empty section made of nothing', async () => {
     const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     try {
       const profile = await loadAs('coach', OTHER, 'season');
       function Slot() {
@@ -1458,7 +1458,7 @@ describe('Stats player · what the coach chose comes back (PAGE_PERFORMANCE.md r
   it('51404 on the phone the game section chosen comes back; on desktop the section only follows the scroll and is not kept', async () => {
     markAppRunning();
     const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     try {
       const user = userEvent.setup();
       function Slot() {
@@ -1544,7 +1544,7 @@ describe('Stats player · what changed (row 70)', () => {
     window.matchMedia = real;
   });
   const asPhone = () => {
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
   };
   const card = () => screen.queryByRole('region', { name: /^(What changed|No clear change)$/ });
   /** Each line the card states is toned the same way where the page draws that change: the same signed figure in the same ink. */

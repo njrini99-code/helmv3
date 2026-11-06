@@ -34,7 +34,7 @@ vi.mock('../screens/classes/class-status-writes', async (orig) => ({
   deliverHeldNow: () => writes.deliverNow(),
 }));
 const layout = vi.hoisted(() => ({ phone: false }));
-vi.mock('../lib/use-phone', () => ({ useChPhone: () => layout.phone, CH_PHONE_QUERY: '(max-width: 820px)' }));
+vi.mock('../lib/use-phone', () => ({ useChPhone: () => layout.phone, CH_PHONE_QUERY: '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' }));
 import './dialog-polyfill';
 
 import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';

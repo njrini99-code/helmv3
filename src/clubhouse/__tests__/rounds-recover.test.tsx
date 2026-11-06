@@ -28,7 +28,7 @@ vi.mock('next/navigation', () => ({
   },
 }));
 vi.mock('../lib/haptics', () => ({ haptic: mocks.haptic }));
-vi.mock('../lib/use-phone', () => ({ useChPhone: () => mocks.layout.phone, CH_PHONE_QUERY: '(max-width: 820px)' }));
+vi.mock('../lib/use-phone', () => ({ useChPhone: () => mocks.layout.phone, CH_PHONE_QUERY: '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: () => mocks.flag.on }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: () => Promise.resolve(mocks.session.current) }));

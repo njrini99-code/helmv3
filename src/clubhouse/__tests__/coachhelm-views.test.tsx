@@ -21,7 +21,7 @@ vi.mock('next/navigation', () => ({
   },
 }));
 const phoneState = vi.hoisted(() => ({ on: false }));
-vi.mock('../lib/use-phone', () => ({ useChPhone: () => phoneState.on, CH_PHONE_QUERY: '(max-width: 820px)' }));
+vi.mock('../lib/use-phone', () => ({ useChPhone: () => phoneState.on, CH_PHONE_QUERY: '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' }));
 const logServer = vi.hoisted(() => vi.fn());
 vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 const session = vi.hoisted(() => ({ current: null as unknown }));

@@ -1084,7 +1084,7 @@ describe('Calendar · no team', () => {
 describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
   const real = window.matchMedia;
   beforeEach(() => {
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
   });
   afterEach(() => {
     window.matchMedia = real;
@@ -2403,7 +2403,7 @@ describe('Calendar · a player’s own week (wave 7)', () => {
   describe('on the phone', () => {
     const real = window.matchMedia;
     beforeEach(() => {
-      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     });
     afterEach(() => {
       window.matchMedia = real;

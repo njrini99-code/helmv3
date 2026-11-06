@@ -97,7 +97,7 @@ describe('P003 · 30102 the bell’s join-request link (?tab=requests)', () => {
   const realMatchMedia = window.matchMedia;
   beforeEach(() => {
     window.matchMedia = ((q: string) => ({
-      matches: q === '(max-width: 820px)',
+      matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)',
       media: q,
       onchange: null,
       addEventListener: () => {},
@@ -156,7 +156,7 @@ describe('P003 · 30102 Home’s first-run Invite players (?invite=1)', () => {
   const realMatchMedia = window.matchMedia;
   const media = (phone: boolean) =>
     ((q: string) => ({
-      matches: phone && q === '(max-width: 820px)',
+      matches: phone && q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)',
       media: q,
       onchange: null,
       addEventListener: () => {},
