@@ -40,7 +40,8 @@ export function scanPage(args: { phone: boolean }): GateFinding[] {
     if (s.clip === 'rect(0px, 0px, 0px, 0px)' || s.clipPath === 'inset(50%)') return false;
     return true;
   };
-  const skip = (el: Element) => !!el.closest('nextjs-portal, script, style, template, [data-ch-gate-skip], .ch-sr-only:not(:focus)');
+  // A closed <details> keeps its content's boxes, but nobody can see them.
+  const skip = (el: Element) => !!el.closest('nextjs-portal, script, style, template, [data-ch-gate-skip], .ch-sr-only:not(:focus), details:not([open]) > :not(summary)');
   const isCard = (el: Element) => {
     if (el instanceof SVGElement || /^(BUTTON|A|INPUT|SELECT|TEXTAREA|LABEL|IMG|SPAN|LI|TR|TD|TH|DIALOG|MAIN|BODY|HTML)$/.test(el.tagName)) return false;
     if (el.getAttribute('role') === 'button' || el.getAttribute('role') === 'dialog') return false;
@@ -81,7 +82,7 @@ export function scanPage(args: { phone: boolean }): GateFinding[] {
 
     // A drawing's marks stay in the drawing, whatever the figure: a halo past its SVG lands on the caption or the chips while still inside the card (TEAM-1).
     // A transparent hit circle (a thumb's 44) draws nothing, so it can reach past the drawing.
-    if (el instanceof SVGElement && el.tagName !== 'svg' && el.tagName !== 'g' && el.ownerSVGElement && !el.closest('defs, clipPath, mask, symbol') && getComputedStyle(el).fill !== 'transparent') {
+    if (el instanceof SVGElement && el.tagName !== 'svg' && el.tagName !== 'g' && el.ownerSVGElement && !el.closest('defs, clipPath, mask, symbol') && !/^(?:transparent|rgba\(0, 0, 0, 0\))$/.test(getComputedStyle(el).fill)) {
       const o = el.ownerSVGElement.getBoundingClientRect();
       const over = Math.max(o.left - r.left, r.right - o.right, o.top - r.top, r.bottom - o.bottom);
       if (over > 0.5) add('card-escape', el, `${over.toFixed(1)}px past its drawing`);
@@ -108,7 +109,8 @@ export function scanPage(args: { phone: boolean }): GateFinding[] {
         range.selectNodeContents(el);
         const lines = new Set(Array.from(range.getClientRects()).filter((b) => b.width > 0 && b.height > 0).map((b) => Math.round(b.bottom / 4))).size;
         const words = (el.textContent ?? '').trim().split(/\s+/).length;
-        if (lines >= 3 && words >= lines && words / lines < 3) add('cramped-text', el, `${words} words on ${lines} lines, ${r.width.toFixed(0)} wide`);
+        const clamped = getComputedStyle(el).webkitLineClamp !== 'none' && !!getComputedStyle(el).webkitLineClamp;
+        if (!clamped && lines >= 3 && words >= lines && words / lines < 3) add('cramped-text', el, `${words} words on ${lines} lines, ${r.width.toFixed(0)} wide`);
       }
     }
 
@@ -157,10 +159,18 @@ export function scanPage(args: { phone: boolean }): GateFinding[] {
 
     if (card && !freed(el, card) && !(el instanceof SVGElement) && (ownText(el) || el.matches('img, .ch-avatar, [class*="avatar"]'))) {
       const c = card.getBoundingClientRect();
-      const left = r.left - c.left, right = c.right - r.right;
+      // What sits near the edge is the words or the avatar, not a box that pads them in.
+      let box: { left: number; right: number; width: number } = r;
+      if (ownText(el)) {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const b = range.getBoundingClientRect();
+        if (b.width > 0) box = b;
+      }
+      const left = box.left - c.left, right = c.right - box.right;
       const near = Math.min(left, right);
       // A full-width drawing or a divider is meant to touch; a row's name, avatar or score is not.
-      if (near >= -0.5 && near < 11.5 && r.width < c.width - 2) add('row-inset', el, `${near.toFixed(1)}px from ${name(card)}`);
+      if (near >= -0.5 && near < 11.5 && box.width < c.width - 2) add('row-inset', el, `${near.toFixed(1)}px from ${name(card)}`);
     }
   }
 

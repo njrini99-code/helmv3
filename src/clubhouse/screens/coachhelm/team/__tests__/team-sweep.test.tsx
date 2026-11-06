@@ -38,7 +38,7 @@ describe("the hole on staging's real figures", () => {
     expect(c.querySelector('[data-ch-team-station="putting"]')!.getAttribute('class')).not.toMatch(/is-gain|is-even/);
   });
   it('gives every station a 44 target whatever its halo (TEAM-12)', () => {
-    for (const h of hole().querySelectorAll('.stn .hit')) expect(Number(h.getAttribute('r'))).toBe(22);
+    for (const h of hole().querySelectorAll('.stn .hit')) expect(Number(h.getAttribute('r'))).toBeGreaterThanOrEqual(22);
   });
   it('keeps every label inside the drawing, on one name for the spot (TEAM-3, TEAM-31)', () => {
     const c = hole();

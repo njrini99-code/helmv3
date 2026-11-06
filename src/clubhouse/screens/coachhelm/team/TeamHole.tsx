@@ -125,7 +125,7 @@ export function TeamHole({
                 style={{ transformOrigin: `${t.x}px ${t.y}px` }}
               >
                 {/* The 44 a thumb needs, whatever the halo's size (TEAM-12). */}
-                <circle className="hit" cx={t.x} cy={t.y} r={22} fill="transparent" />
+                <circle className="hit" cx={t.x} cy={t.y} r={23 * up} fill="transparent" />
                 {v != null && <circle key={station === s ? 'on' : 'off'} className="pulse" cx={t.x} cy={t.y} r={r} />}
                 {v != null && <circle className="halo" cx={t.x} cy={t.y} r={r} />}
                 {v != null && <circle className="core" cx={t.x} cy={t.y} r={4.5} />}
@@ -164,7 +164,7 @@ export function TeamHole({
                     }
                   }}
                 >
-                  <circle className="hit" cx={moreAt[0]} cy={moreAt[1]} r={22} fill="transparent" />
+                  <circle className="hit" cx={moreAt[0]} cy={moreAt[1]} r={23 * up} fill="transparent" />
                   <circle cx={moreAt[0]} cy={moreAt[1]} r={11 * up} fill="var(--ch-tb-feat)" />
                   <ChartText size={coinSize} weight={600} x={moreAt[0]} y={moreAt[1]}>
                     +{here.length - shown.length}
