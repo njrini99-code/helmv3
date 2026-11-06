@@ -1935,6 +1935,13 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 .ch-htb-desk > .ch-hl-rck {
   margin-top: 16px;
 }
+/* On a phone it sits under the sheet, so it takes the page's edge and clears the home bar itself. */
+.ch-htb.is-phone > .ch-hl-rck {
+  padding: 0 var(--ch-tb-edge) calc(32px + env(safe-area-inset-bottom));
+}
+.ch-htb.is-phone > .sheet:has(+ .ch-hl-rck) {
+  padding-bottom: 24px;
+}
 .ch-htb .ins .lk {
   text-decoration: none;
 }

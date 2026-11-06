@@ -386,6 +386,7 @@ html[data-fw-theme='dark'] .ch-hf {
 @media (min-width: 821px) {
   .ch-hf.ch-hf-sheet .ch-modal__panel {
     height: auto;
+    max-height: calc(100dvh - 48px);
     border-radius: var(--ch-radius-xl);
     overflow: hidden;
   }
