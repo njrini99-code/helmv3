@@ -1437,7 +1437,8 @@ describe('Messages · desktop Schedule and shared files (clickables 10, 13)', ()
 
   it('Details lists a conversation’s files with kind, size and day, and a file opens through its message', async () => {
     const user = userEvent.setup();
-    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const tab = { opener: {} as unknown, location: { href: '' }, close: vi.fn() };
+    const open = vi.spyOn(window, 'open').mockImplementation(() => tab as unknown as Window);
     a.getGolfConversationFiles.mockResolvedValue({ files: [roomList] });
     a.getGolfMessageAttachments.mockResolvedValue({ attachments: [{ id: 'f1', fileName: 'Room list.pdf', fileSize: 49152, mimeType: 'application/pdf', url: 'https://files.example/room-list.pdf' }] });
     show();
@@ -1447,7 +1448,10 @@ describe('Messages · desktop Schedule and shared files (clickables 10, 13)', ()
     expect(row.textContent).toMatch(/PDF · 48 KB · Today/);
     expect(a.getGolfConversationFiles).toHaveBeenCalledWith('team');
     await user.click(row);
-    await waitFor(() => expect(open).toHaveBeenCalledWith('https://files.example/room-list.pdf', '_blank', 'noopener,noreferrer'));
+    // The tab opens inside the tap, or iPhone Safari blocks it; the signed address fills it in.
+    expect(open).toHaveBeenCalledWith('about:blank', '_blank');
+    await waitFor(() => expect(tab.location.href).toBe('https://files.example/room-list.pdf'));
+    expect(tab.opener).toBeNull();
     expect(a.getGolfMessageAttachments).toHaveBeenCalledWith('m1');
     open.mockRestore();
   });
