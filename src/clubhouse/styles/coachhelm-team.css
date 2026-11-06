@@ -568,7 +568,6 @@ html[data-fw-theme='dark'] .ch-htb {
   padding:12px 12px;
   border-radius: var(--ch-radius-md);
   background:var(--ch-tb-well);
-  box-shadow: var(--ch-team-x1);
   display:grid;
   gap:8px;
 }
