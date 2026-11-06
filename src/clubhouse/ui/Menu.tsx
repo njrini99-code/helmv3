@@ -145,7 +145,7 @@ export function Menu({
       cancelAnimationFrame(frame);
       document.removeEventListener('mousedown', onDown);
     };
-  }, [open, close]);
+  }, [open, close, keepFocus]);
 
   const onKey = (e: React.KeyboardEvent) =>
     menuKeyDown(e, list.current, {

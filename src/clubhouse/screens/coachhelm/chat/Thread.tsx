@@ -152,7 +152,6 @@ export function AskThread({ v2 = false, team, stoppedTurn = null, onArtifact, me
       stick.current = true;
       toEnd(reduced ? 'instant' : 'smooth');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- toEnd reads refs
   }, [turnCount, lastRole, reduced]);
   useEffect(() => {
     // Streaming: follow the answer only while the coach is at the bottom.
