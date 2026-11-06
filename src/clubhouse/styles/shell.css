@@ -500,6 +500,7 @@
 /* Placeholder and full-page error: both are the page empty's anatomy (.ch-empty-page), centred in the page. */
 .ch-notyet {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   min-height: calc(100dvh - var(--ch-topbar-h) - 16px);
   padding: 40px var(--ch-gutter);
