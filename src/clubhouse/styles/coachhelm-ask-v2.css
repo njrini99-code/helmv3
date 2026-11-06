@@ -412,17 +412,31 @@ html[data-fw-theme='dark'] .ch-ak-th {
   min-height: 32px;
 }
 .ch-ak-hs {
-  margin: 0 16px 6px;
-  padding: 8px 12px 12px;
-  border-radius: var(--ch-radius-md);
+  display: grid;
+  gap: 6px;
+  margin: 10px 16px 6px;
+  padding: 12px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-well-bg-flat);
+  box-shadow: inset 0 0 0 0.5px var(--ch-ak-ak-hair);
 }
 .ch-ak-hs .hs-h {
   display: flex;
-  align-items: baseline;
-  gap: 6px;
-  margin-bottom: 8px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
   font: var(--ch-type-14);
+  color: var(--ch-text-secondary);
+}
+.ch-ak-hs .hs-h .hi {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-card-bg);
+  box-shadow: 0 0 0 0.5px var(--ch-ak-ak-hair);
   color: var(--ch-text-secondary);
 }
 .ch-ak-hs .hs-h b {
@@ -433,27 +447,58 @@ html[data-fw-theme='dark'] .ch-ak-th {
   margin-left: auto;
   font: var(--ch-type-11-strong);
   letter-spacing: var(--ch-track-11);
+  text-transform: uppercase;
   color: var(--ch-text-tertiary);
 }
 .ch-ak-hs .hsr {
-  display: grid;
-  gap: 2px;
-  padding: 8px 12px;
-  border-radius: var(--ch-radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  min-width: 0;
+  padding: 7px 10px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-card-bg);
-  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
+  box-shadow: 0 0 0 0.5px var(--ch-ak-ak-hair);
 }
 .ch-ak-hs .hsr.nw {
-  box-shadow: inset 0 0 0 2px var(--ch-ask-accent);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--ch-ask-accent) 40%, transparent), var(--ch-card-shadow);
 }
-.ch-ak-hs .hsr b {
-  font: var(--ch-type-14-strong);
-  color: var(--ch-text-primary);
-}
-.ch-ak-hs .hsr span {
-  font: var(--ch-type-13);
+.ch-ak-hs .hsr .ri {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--ch-ak-r-tile);
+  background: var(--ch-well-bg-flat);
   color: var(--ch-text-secondary);
 }
+.ch-ak-hs .hsr.nw .ri { background: var(--ch-ak-ak-tint); color: var(--ch-ask-accent); }
+.ch-ak-hs .hsr .rx { flex: 1; min-width: 0; }
+.ch-ak-hs .hsr .rx b {
+  display: block;
+  overflow: hidden;
+  font: var(--ch-type-14-strong);
+  color: var(--ch-text-primary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ch-ak-hs .hsr .rx small {
+  display: block;
+  overflow: hidden;
+  font: var(--ch-type-12);
+  color: var(--ch-text-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ch-ak-hs .hsr .rt {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font: var(--ch-type-12-strong);
+}
+.ch-ak-hs .hsr .rt.acc { background: var(--ch-ak-ak-tint); color: var(--ch-ask-accent); }
 /* A publish confirm reads as flat rows between hairlines (S-ASK.publish-confirm). */
 .ch-ak-th .conf.is-pub .evd {
   margin: 0 16px;
@@ -822,4 +867,27 @@ html[data-fw-theme='dark'] .ch-ak-th {
   --ch-accent-hover: color-mix(in oklab, var(--ch-ask-accent) 90%, var(--ch-text-primary));
   --ch-accent-press: color-mix(in oklab, var(--ch-ask-accent) 80%, var(--ch-text-primary));
   --ch-text-on-accent: var(--ch-ask-on-accent);
+}
+
+/* The primary key takes Ask's accent at night, flat, with its dark ink (E-BTNS). */
+html[data-fw-theme='dark'] .ch-ak-th .ch-btn--primary,
+html[data-fw-theme='dark'] .ch-ak-pane .ch-btn--primary,
+html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary,
+html[data-fw-theme='dark'] .ch-ak-root .ch-ask-cmp__send:not(.is-stop) {
+  background: var(--ch-ask-accent);
+  color: var(--ch-ask-on-accent);
+  text-shadow: none;
+  box-shadow: none;
+}
+html[data-fw-theme='dark'] .ch-ak-th .ch-btn--primary[data-ch-pressed]:not(:disabled),
+html[data-fw-theme='dark'] .ch-ak-pane .ch-btn--primary[data-ch-pressed]:not(:disabled),
+html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:disabled) {
+  background: var(--ch-accent-press);
+}
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-ak-th .ch-btn--primary:active:not(:disabled),
+  html[data-fw-theme='dark'] .ch-ak-pane .ch-btn--primary:active:not(:disabled),
+  html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary:active:not(:disabled) {
+    background: var(--ch-accent-press);
+  }
 }

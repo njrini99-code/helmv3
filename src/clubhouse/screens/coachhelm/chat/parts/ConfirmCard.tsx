@@ -39,6 +39,7 @@ const FLOWS: Record<string, { verb: string; busy: string; chip: string }> = {
 FLOWS.create_drill = { verb: 'Add to drill bank', busy: 'Adding…', chip: 'Added' };
 FLOWS.publish_practice_plan = { verb: 'Publish', busy: 'Publishing…', chip: 'Published' };
 /** Where a confirmed draft lands (the page's `hs`): the screen and section, with this row on top. Its neighbours would need a read per screen, so only the new row draws. */
+const APP_ICON: Record<string, LucideIcon> = { Calendar: CalendarPlus, Messages: Megaphone, Hub: Flag, Qualifiers: Flag, Tournaments: Flag, Tasks: ClipboardCheck, Stats: Flag, Home: Flag, Rounds: StickyNote, Practice: ClipboardCheck };
 const LANDS: Record<string, { app: string; where: string }> = {
   create_event: { app: 'Calendar', where: 'Wednesday' },
   create_recurring_practice: { app: 'Calendar', where: 'Practices' },
@@ -213,18 +214,32 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
       {!cancelled && visual?.kind !== 'cal' && LANDS[view.tool] && (
         <div className="ch-ak-hs">
           <div className="hs-h">
+            <span className="hi">
+              <Icon icon={APP_ICON[LANDS[view.tool]!.app] ?? ArrowUpRight} size={15} />
+            </span>
             <b>{LANDS[view.tool]!.app}</b>
             <span>{landsWhere(view.tool, visual)}</span>
             <small>Where it lands</small>
           </div>
           <div className={'hsr nw' + (receipt ? ' is-in' : '')}>
-            <b>{p.summary}</b>
-            <span>{receipt ? 'Just now' : 'Draft'}</span>
+            <span className="ri">
+              <Icon icon={HEAD[view.tool]?.icon ?? kind.icon} size={15} />
+            </span>
+            <span className="rx">
+              <b>{p.summary}</b>
+              <small>{receipt ? 'Just now' : 'Draft'}</small>
+            </span>
+            <span className="rt acc">New</span>
           </div>
           {p.neighbours?.map((n) => (
             <div key={n.title + n.sub} className="hsr">
-              <b>{n.title}</b>
-              <span>{n.sub}</span>
+              <span className="ri">
+                <Icon icon={HEAD[view.tool]?.icon ?? kind.icon} size={15} />
+              </span>
+              <span className="rx">
+                <b>{n.title}</b>
+                <small>{n.sub}</small>
+              </span>
             </div>
           ))}
         </div>
