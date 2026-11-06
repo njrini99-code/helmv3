@@ -214,6 +214,17 @@ afterEach(() => {
   layout.phone = false;
 });
 
+// A message is on screen here: attachments sign as they come near it (MOB-MSG-24).
+class InViewObserver {
+  constructor(private cb: (e: Array<{ isIntersecting: boolean }>) => void) {}
+  observe() {
+    this.cb([{ isIntersecting: true }]);
+  }
+  unobserve() {}
+  disconnect() {}
+}
+vi.stubGlobal('IntersectionObserver', InViewObserver);
+
 describe('Messages · actions that fail', () => {
   it('B11 ↓ and ↑ walk the conversation rail, which is one Tab stop; the loading rows never take it (#2361 audit)', async () => {
     live.convs.conversations = [team, { ...team, id: 'travel', title: 'Travel' }, { ...team, id: 'quals', title: 'Qualifier crew' }];

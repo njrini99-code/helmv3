@@ -81,12 +81,15 @@ export function PhoneScreen({
   }, [present, safeToRemove]);
   useEdgeSwipeBack(ref, { enabled: !covered, reduced, exit });
   useKeepDockClear(ref, !immersive);
+  // Read while rendering: a field with autoFocus takes focus at commit, before any effect here runs.
+  const openedFrom = useRef(typeof document === 'undefined' ? null : document.activeElement);
   useEffect(() => {
-    const opener = document.activeElement;
+    const opener = openedFrom.current;
     const title = document.getElementById(labelledBy);
     const inside = title && ref.current?.contains(title) ? title : null;
     const target = inside?.matches('h1, [tabindex]') ? inside : inside?.querySelector<HTMLElement>('[tabindex], h1, button');
-    (target ?? ref.current)?.focus({ preventScroll: true });
+    // A screen whose own field took focus keeps it (New message's To, MOB-MSG-17).
+    if (!ref.current?.contains(document.activeElement)) (target ?? ref.current)?.focus({ preventScroll: true });
     return () => {
       if (!(opener instanceof HTMLElement) || !opener.isConnected) return;
       if (!opener.closest('[inert]')) {
