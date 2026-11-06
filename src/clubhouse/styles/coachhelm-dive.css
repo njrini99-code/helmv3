@@ -884,7 +884,7 @@
    the canvas. The reads and the open read are two columns whose heads share a ruled line, as the Board's do; the
    read's parts follow on soft rules, and only the week's drill keeps its well. The loading shapes flatten the same
    way. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   main[data-canopy] :is(.ch-hd-rail, .ch-hd-dos, .ch-hd-dx, .ch-hd-plan__i, .ch-hd-sk__dos) {
     padding: 0;
     border-radius: 0;
@@ -1011,7 +1011,7 @@
    read ledger is a section flush under the engraved double rule, its reads rows between soft seams. A read's pushed screen opens on its own feature card (the category, the stance,
    the claim), and its parts follow flush under the double rule: no box around the figures, the trend, the diagnosis,
    the drill or the plan, which are rows. The round's to-par key and the stance pills keep their material. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   /* The list: each group a section; its reads rows. */
   :is(.ch-hl.is-phone) .ch-hd-rail {
     align-items: stretch;
@@ -1196,7 +1196,7 @@
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-hd-it__b em,
   .ch-hd-dx__lvl,
   .ch-hd-plan__b em,
@@ -1263,7 +1263,7 @@ main[data-canopy] .ch-hd-it.is-on,
   color: var(--ch-green-700);
 }
 /* On a phone the head is the green feature card, where the field green vanishes: the category takes the on-green ink. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   [data-ui='clubhouse'] .ch-hd-dos__h > :first-child,
   [data-ui='clubhouse'] .ch-hd-dos__h > :first-child span:first-child {
     color: var(--ch-on-green-ink-muted);
@@ -1303,7 +1303,7 @@ main[data-canopy] .ch-hd-it.is-on,
 /* Loading, desktop (WebKit 1280 and 1440, 2026-10-29): the list's heads at the loaded head's 34px (a group's name over its rule)
    and its reads at their 82px (two lines and the state line), so the list does not jump up when it lands; the open read's
    category and stance over its rule, the claim, and What, Why, Next and When as label rows on soft rules, then the actions. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   main[data-canopy] .ch-hd-sk__grp > .ch-skel:first-child {
     margin: 6px 6px 8px;
   }

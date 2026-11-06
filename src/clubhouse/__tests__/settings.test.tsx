@@ -1549,7 +1549,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
   const realMatchMedia = window.matchMedia;
   beforeEach(() => {
     window.matchMedia = ((q: string) => ({
-      matches: q === '(max-width: 820px)',
+      matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)',
       media: q,
       onchange: null,
       addEventListener: () => {},
@@ -3048,7 +3048,7 @@ describe('Settings · P-10 Hold during class (CH-8030, CH-8216)', () => {
 
   it('on the phone it is its own group, away from Quiet mode', () => {
     const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ matches: q === '(max-width: 820px)', media: q, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, onchange: null, dispatchEvent: () => false })) as never;
+    window.matchMedia = ((q: string) => ({ matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)', media: q, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, onchange: null, dispatchEvent: () => false })) as never;
     window.history.replaceState(null, '', '/golf/dashboard/settings');
     show(player(), true, true);
     const group = code('CH-8216');

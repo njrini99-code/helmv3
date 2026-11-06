@@ -500,9 +500,15 @@
 /* Placeholder and full-page error: both are the page empty's anatomy (.ch-empty-page), centred in the page. */
 .ch-notyet {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   place-items: center;
   min-height: calc(100dvh - var(--ch-topbar-h) - 16px);
   padding: 40px var(--ch-gutter);
+}
+/* A crash replaces the shell, so nothing paints the page behind it: on a phone .ch-root is the frame green, and the words sat on it at 1.2:1. */
+.ch-root > .ch-notyet {
+  min-height: 100dvh;
+  background: var(--ch-canvas-wash), var(--ch-bg-page);
 }
 .ch-notyet__dev {
   max-width: 100%;
@@ -676,7 +682,7 @@
   min-height: 0;
   padding: 0;
 }
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   /* In the Ledger a page empty sits under the framed head with its own measured air, not a viewport's height, so the
      medallion and its action stay near the head and above the fold (states audit, 2026-10-08). */
   [data-ui='clubhouse'] main[data-canopy] .ch-empty-page {
@@ -693,7 +699,7 @@
     animation: none !important;
   }
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-empty-page {
     min-height: 0;
     padding: 52px 24px 40px;
@@ -825,7 +831,7 @@
     margin-top: 4px;
   }
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-notice__in {
     grid-template-columns: 16px minmax(0, 1fr);
   }
@@ -873,7 +879,7 @@
 .ch-skel--feature::before {
   background: linear-gradient(100deg, transparent 30%, rgb(244 241 232 / 0.12) 50%, transparent 70%);
 }
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   /* A block in waiting (a fluid Skeleton from 56px tall, or shape="block") is drawn in the Ledger as the Ledger draws
      what it stands for: a rule along its top and two lines of type under it, not a filled card. It keeps its box, so
      nothing moves when the page lands; a real object that loads filled asks for shape="solid". Its two lines breathe
@@ -1196,7 +1202,7 @@ button.ch-more__row[disabled] {
   color: var(--ch-green-700);
 }
 
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-app {
     display: block;
     height: auto;
@@ -1240,7 +1246,7 @@ button.ch-more__row[disabled] {
     white-space: nowrap;
   }
   .ch-topbar[data-phone='page'] {
-    padding-left: 16px;
+    padding-left: var(--ch-page-x-phone);
   }
   /* A page's own top replaces the title and the bell (its action takes the right edge). */
   .ch-topbar[data-phone='page'] .ch-topbar__ptitle,
@@ -1256,7 +1262,7 @@ button.ch-more__row[disabled] {
   }
   /* A tab root that draws its own title (PhoneTop start, no action): its title, and the bell stays. */
   .ch-topbar[data-phone='start'] {
-    padding-left: 16px;
+    padding-left: var(--ch-page-x-phone);
   }
   .ch-topbar[data-phone='start'] .ch-topbar__ptitle {
     display: none;
@@ -1293,9 +1299,10 @@ button.ch-more__row[disabled] {
   /* The address changes as soon as the route's skeleton commits, which ends `switching`; the skeleton's bar is the
      shell's default (the bell), not the page's, so its buttons wait for the page too (the second rule above). */
   .ch-toasts {
-    right: 12px;
-    left: 12px;
-    bottom: calc(12px + env(safe-area-inset-bottom));
+    right: var(--ch-page-x-phone);
+    left: var(--ch-page-x-phone);
+    /* Clear of the Resume pill: a toast sat on it for its whole life (MOB-SHELL-4). */
+    bottom: calc(12px + var(--ch-dock-h, 0px) + env(safe-area-inset-bottom));
   }
   /* CH-1812: inside an open sheet the toasts drop from the top, clear of the sheet's buttons. */
   .ch-root .ch-toasts.ch-toasts--in-dialog {
@@ -1435,10 +1442,22 @@ button.ch-more__row[disabled] {
     align-items: center;
     gap: 8px;
     height: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
-    padding: env(safe-area-inset-top) 8px 6px 16px;
+    padding: env(safe-area-inset-top) 8px 6px var(--ch-page-x-phone);
     box-sizing: border-box;
     border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
     background: var(--ch-light-bar), var(--ch-phone-bar-bg);
+  }
+  /* Pulling down shows more bar, not the page behind it (MOB-SHELL-7). */
+  .ch-pbar::before,
+  .ch-topbar::before {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: 100%;
+    left: 0;
+    height: 100vh;
+    background: var(--ch-phone-bar-bg);
+    pointer-events: none;
   }
   .ch-pbar.is-lead {
     gap: 4px;
@@ -1626,8 +1645,9 @@ button.ch-more__row[disabled] {
   padding: 0 4px;
   border-radius: 999px;
   background: var(--ch-green-fill-600);
-  box-shadow: 0 0 0 2px var(--ch-bg-page);
-  font: 600 11px/1 var(--ch-font-sans);
+  box-shadow: 0 0 0 2px var(--ch-phone-bar-bg, var(--ch-bg-page));
+  font: var(--ch-type-12-strong);
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-on-accent);
 }
@@ -1841,7 +1861,8 @@ button.ch-more__row[disabled] {
 /* Offline banner (CH-1901) */
 .ch-offline {
   position: sticky;
-  top: var(--ch-topbar-h);
+  /* On a phone it rides under the bar, safe area included (MOB-SHELL-5). */
+  top: var(--ch-offline-top, var(--ch-topbar-h));
   z-index: var(--ch-z-sticky);
   display: flex;
   align-items: center;
@@ -1965,7 +1986,7 @@ html[data-ch-tab][data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-o
     transform: translateX(100%);
   }
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   /* The pages are opaque while they slide, so neither shows through the other. */
   html[data-ch-nav] [data-ui='clubhouse'] .ch-frame-route {
     background: var(--ch-bg-page);
@@ -2068,7 +2089,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 }
 .ch-lp__bar {
   position: fixed;
-  inset: 0 0 auto 0;
+  /* Below the clock and island in the home-screen app (MOB-SHELL-13). */
+  inset: env(safe-area-inset-top) 0 auto 0;
   z-index: var(--ch-z-popover);
   height: 2px;
   overflow: hidden;
@@ -2118,7 +2140,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
-@media (min-width: 821px) and (prefers-reduced-transparency: reduce) {
+@media (min-width: 821px) and (prefers-reduced-transparency: reduce) and ((min-height: 501px) or (pointer: fine)) {
   /* :root, to beat the desktop glass rule below it in the file. */
   :root .ch-topbar {
     background: var(--ch-workspace);
@@ -2126,7 +2148,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     backdrop-filter: none;
   }
 }
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   :root[data-reduce-transparency] .ch-topbar {
     background: var(--ch-workspace);
     -webkit-backdrop-filter: none;
@@ -2137,7 +2159,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the bell's count numeral. Keep this block last. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-notyet__dev,
   .ch-more__count {
     font-size: calc(12 * var(--ch-type-k));
@@ -2148,7 +2170,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
    main[data-canopy] and marks its title block data-canopy-head; on desktop the block is the opening of the ivory
    workspace, not a band: a double hairline above, one below, a small engraved date or section line, a heavy sans
    title in forest ink with a letterpress edge, one sentence, and the page's actions on the right. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] {
     position: relative;
     padding: 32px 4px 32px;
@@ -2219,7 +2241,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
    the framed workspace a page's sections sit on the canvas: a reading sheet loses its fill, ring and shadow, and the
    section headings take the head's heavy sans in forest ink. A real object (the scorecard, a well, a form field, a
    dialog) keeps its own material. Phone keeps its approved boards. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   [data-ui='clubhouse'] main[data-canopy] {
     --ch-type-serif-l: 600 34px/1.1 var(--ch-font-sans);
     --ch-type-serif-m: 600 22px/1.15 var(--ch-font-sans);
@@ -2314,7 +2336,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 .ch-identity__meta {
   color: var(--ch-on-green-ink-muted);
 }
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   /* The ivory workspace inset in the frame (the handoff's .h2-canvas): a warmer parchment, the sidebar's green
      bleeding a few pixels into its left edge, a soft green mist at the top left, and a fine edge. */
   .ch-canvas {
@@ -2388,7 +2410,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   align-items: center;
   gap: 8px;
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-hero {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -2438,7 +2460,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 /* The phone chassis (owner, 2026-10-08: the Coach Home "Mobile clubhouse pass" board, carried to every phone screen):
    the bar under the status bar is the frame's green, its type ivory, and the page below is the parchment sheet, its
    top corners rounded into the green the way the board's sheet meets its chassis. Pushed screens' bars follow. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   [data-ui='clubhouse'] {
     --ch-phone-bar-bg: var(--ch-frame);
   }
@@ -2528,7 +2550,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 .ch-ptr {
   display: none;
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-ptr {
     position: fixed;
     top: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
@@ -2664,7 +2686,7 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
   }
 }
 /* The selected row's well (P001-A2) is drawn from the frame, so the night frame darkens it without a rule here. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   /* The frame is darker than the workspace at night: a faint ivory hairline keeps the join reading as an edge. */
   html[data-fw-theme='dark'] .ch-canvas {
     box-shadow: var(--ch-elevation-framed), 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
@@ -2701,7 +2723,7 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
     background: linear-gradient(100deg, var(--ch-skel-base) 42%, var(--ch-skel-sheen) 50%, var(--ch-skel-base) 58%) 0 0 / 200vw 100% fixed;
   }
 }
-@media (min-width: 821px) and (prefers-reduced-transparency: reduce) {
+@media (min-width: 821px) and (prefers-reduced-transparency: reduce) and ((min-height: 501px) or (pointer: fine)) {
   html[data-fw-theme='dark'] .ch-topbar {
     background: var(--ch-workspace);
   }
@@ -2738,7 +2760,7 @@ html[data-fw-theme='dark'] .ch-topbar__actions .ch-iconbtn.is-on {
 html[data-fw-theme='dark'] .ch-offline {
   border-bottom-color: rgb(227 169 79 / 0.25);
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   /* The bar under the status bar is the frame's green at night too, so it meets the sheet's lip (drawn in the frame). */
   html[data-fw-theme='dark'] body [data-ui='clubhouse'] {
     --ch-phone-bar-bg: var(--ch-frame);
@@ -2774,12 +2796,12 @@ html[data-fw-theme='dark'] .ch-offline {
 .ch-next--round .ch-next__k span:last-child {
   color: var(--ch-green-700);
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-dock {
     position: fixed;
-    right: 12px;
+    right: var(--ch-page-x-phone);
     bottom: max(12px, calc(env(safe-area-inset-bottom) - 6px));
-    left: 12px;
+    left: var(--ch-page-x-phone);
     z-index: var(--ch-z-sticky);
     display: flex;
     flex-direction: column;
@@ -2842,12 +2864,14 @@ html[data-fw-theme='dark'] .ch-offline {
     color: inherit;
     text-decoration: none;
   }
+  /* Discard is destructive, and 36 wide beside Resume a thumb can land on it (MOB-SHELL-10). */
   .ch-resume__x {
     display: grid;
     flex: none;
     place-items: center;
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
+    margin-left: 4px;
     border: 0;
     border-radius: 50%;
     background: transparent;
@@ -3015,7 +3039,7 @@ html[data-fw-theme='dark'] .ch-offline {
 .ch-asks .ch-ask-cmp__round[aria-label='Mention a player or stat'] {
   display: none;
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-asks {
     position: fixed;
     inset: auto 0 0;
@@ -3076,7 +3100,7 @@ html[data-fw-theme='dark'] .ch-offline {
    on the large-title role, 34 semibold sans with its 41 leading, the dense width and the forest ink. No screen sets its
    own size, face, tracking or colour for it; a screen's rule only places it (padding, a rule above). A skeleton's
    title block is the same class with a bar in its one line, so the page lands without the title moving (CONS-13). */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   [data-ui='clubhouse'] .ch-large-title {
     margin: 0;
     font: var(--ch-type-large-title);
@@ -3124,7 +3148,7 @@ html[data-fw-theme='dark'] .ch-offline {
     transition: none;
   }
 }
-@media (max-width: 820px) and (prefers-reduced-motion: reduce) {
+@media (max-width: 820px) and (prefers-reduced-motion: reduce), (max-height: 500px) and (pointer: coarse) and (prefers-reduced-motion: reduce) {
   [data-ui='clubhouse'] .ch-topbar::before,
   [data-ui='clubhouse'] .ch-topbar :is(.ch-topbar__ptitle, .ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
     transition: none;
@@ -3134,7 +3158,7 @@ html[data-fw-theme='dark'] .ch-offline {
 /* Row 41: the desktop top bar's edge, light and dark. At rest the bar sits flush on the page, with no line; once the
    canvas has scrolled under it (data-scrolled, shell/large-title.tsx watchCanvasScroll) the one scroll-edge shade shows
    below it, as on the phone, on ::before. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   [data-ui='clubhouse'] .ch-topbar {
     border-bottom-color: transparent;
   }
@@ -3159,12 +3183,12 @@ html[data-fw-theme='dark'] .ch-offline {
 }
 /* Increase Contrast (P001-D7) keeps the desktop bar's line at rest: the raised hairline is what that setting asks for, and
    the scroll-edge shade alone is too faint a boundary there. */
-@media (min-width: 821px) and (prefers-contrast: more) {
+@media (min-width: 821px) and (prefers-contrast: more) and ((min-height: 501px) or (pointer: fine)) {
   [data-ui='clubhouse'] .ch-topbar {
     border-bottom-color: var(--ch-border-hairline);
   }
 }
-@media (min-width: 821px) and (prefers-reduced-motion: reduce) {
+@media (min-width: 821px) and (prefers-reduced-motion: reduce) and ((min-height: 501px) or (pointer: fine)) {
   [data-ui='clubhouse'] .ch-topbar::before {
     transition: none;
   }
@@ -3172,7 +3196,7 @@ html[data-fw-theme='dark'] .ch-offline {
 
 /* A skeleton that serves both widths draws the desktop's own title bar beside the large-title block, which is the phone's
    alone. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   [data-ui='clubhouse'] .ch-large-title--skel {
     display: none;
   }
@@ -3182,7 +3206,7 @@ html[data-fw-theme='dark'] .ch-offline {
    cards on it. Each group is a rounded tint of the sheet with no shadow, the separators are hairlines that start at the
    label (the icon column hangs to their left), and the icons are plain glyphs, not tiles. Who you are is one more
    group. The sheet itself stays: it is a real overlay. Phone only; desktop never opens it. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-more__list,
   .ch-more__me {
     border-radius: var(--ch-radius-md);
@@ -3244,7 +3268,7 @@ html[data-fw-theme='dark'] .ch-offline {
 .ch-strip-catch {
   display: none;
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-sw {
     position: relative;
     display: inline-flex;
@@ -3465,7 +3489,7 @@ html[data-fw-theme='dark'] .ch-offline {
     transition: none;
   }
 }
-@media (max-width: 820px) and (prefers-reduced-motion: reduce) {
+@media (max-width: 820px) and (prefers-reduced-motion: reduce), (max-height: 500px) and (pointer: coarse) and (prefers-reduced-motion: reduce) {
   .ch-sw,
   .ch-strip__pill {
     transition: none;
@@ -3473,7 +3497,7 @@ html[data-fw-theme='dark'] .ch-offline {
 }
 /* The phone top bar carries the section switcher and the bell only (owner 2026-10-12): no Ask CoachHelm key there.
    CoachHelm is a section on the strip; desktop keeps its key. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-topbar .ch-topbar__ask {
     display: none;
   }
@@ -3487,7 +3511,7 @@ html[data-fw-theme='dark'] .ch-offline {
 .ch-bst {
   display: none;
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-bst-veil {
     position: fixed;
     top: 0;
@@ -3585,17 +3609,17 @@ html[data-fw-theme='dark'] .ch-offline {
   /* The handle at the foot of the screen: drag it up (or the heading) to put the drop away. */
   .ch-bst__drag {
     position: absolute;
-    bottom: calc(10px + env(safe-area-inset-bottom));
+    bottom: env(safe-area-inset-bottom);
     left: 50%;
     width: 56px;
-    height: 24px;
+    height: 44px;
     translate: -50% 0;
     touch-action: none;
     cursor: grab;
   }
   /* On the bell's green the handle is an ivory one. */
   .ch-bst__drag > .ch-grab {
-    margin-top: 8px;
+    margin-top: 16px;
     background: rgb(244 238 221 / 0.42);
   }
 
@@ -3642,7 +3666,7 @@ html[data-fw-theme='dark'] .ch-offline {
   }
   .ch-bst-pill::before {
     position: absolute;
-    inset: -8px -2px;
+    inset: -8px;
     content: '';
   }
   .ch-bst-pill--x {
@@ -3856,7 +3880,7 @@ html[data-fw-theme='dark'] .ch-offline {
 /* The sidebar, sorted and clearer (owner, 2026-10-16: "sort the side bar and make it look better", then no shade over
    the groups): each group's name in mint over its rows, the rows a touch taller with brighter ink. Desktop only; the
    phone's strip is its own. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-sidebar .ch-nav {
     gap: 10px;
   }
@@ -4035,7 +4059,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
    rail is exactly as wide as the icons' column. The words leave first and arrive last: folding, they fade out quickly
    before the edge reaches them; opening, they fade in once the edge has passed, drifting the last 4px into place, so
    no label is ever seen squeezed. Reduced motion and Animations off swap at once (the tokens go to 0). Desktop only. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-app {
     position: relative;
   }
@@ -4271,7 +4295,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     transform: none;
   }
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-railtoggle,
   .ch-railtip {
     display: none;
@@ -4304,7 +4328,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 }
 
 /* L10 phone shell — the phone's native-feel pieces (docs/clubhouse/phone/shell-gestures.md). */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   /* A pushed screen that is not immersive (PhoneScreen `data-ch-keeps-dock`) leaves the dock's Resume round accessory up
      over it, as iOS keeps its tab bar for a push. The accessory floats above the screen, the page's own thumb controls
      stand down (they belong to the page under it), and the screen stops short of the accessory by what it covers. */
@@ -4331,7 +4355,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
    page itself. The folded rail (56px) is untouched. 1181px and wider is byte-identical to before. The auth hand-off
    curtain reads the same sidebar token, so it still lands on the canvas's edge. `html` in front outranks the token's
    own rule whatever order the sheets load in. */
-@media (min-width: 821px) and (max-width: 1180px) {
+@media (min-width: 821px) and (max-width: 1180px) and ((min-height: 501px) or (pointer: fine)) {
   html [data-ui='clubhouse'] {
     --ch-sidebar-w: 208px;
     --ch-page-gutter: 28px;
@@ -4350,14 +4374,14 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 }
 
 /* Clubhouse refresh, PR 2 (clubhouse_refresh_v1, off everywhere): the page is one flat colour. Without the attribute every rule above stands. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-app[data-ch-refresh='on'] .ch-canvas {
     background:
       linear-gradient(90deg, rgb(11 58 37 / 0.04), rgb(11 58 37 / 0.012) 90px, transparent 200px) local,
       var(--ch-workspace);
   }
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   [data-ui='clubhouse'] .ch-app[data-ch-refresh='on'],
   [data-ui='clubhouse'] .ch-app[data-ch-refresh='on'] .ch-canvas {
     background: var(--ch-grouped-bg);
@@ -4367,7 +4391,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 /* Clubhouse refresh, PR 3 (clubhouse_refresh_v1, off everywhere): the large title's context line, the title's scroll scale origin
    (shell/large-title.tsx sets scale and opacity from the scroll), and controls that stick under the green bar on the page colour.
    The bar itself is not touched. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-app[data-ch-refresh='on'] .ch-large-title {
     transform-origin: left bottom;
   }
@@ -4384,7 +4408,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     background: var(--ch-grouped-bg);
   }
 }
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-large-title__context {
     display: none;
   }
@@ -4392,7 +4416,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
 
 /* The coach's Home bar and hero are one green (Nick, 31 Oct; 06 §11.1). Only with the lane on, and only over a coach hero; player Home
    follows through data-ch-hero-flat (stats-home PR 6), so a --ch-frame bar never sits over a --ch-green-800 hero. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-root[data-ch-crh='on'][data-phone-hero]:has(.ch-hm[data-ch-crh='on'], [data-ch-hero-flat]) .ch-topbar {
     background: var(--ch-frame);
   }
@@ -4410,4 +4434,55 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
   box-shadow: var(--ch-card-shadow);
+}
+
+/* The new-version notice, in the shell's own material (QA-11, MOB-SHELL-2): StaleDeploymentRecoveryScript appends it to .ch-root. */
+.ch-stale {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: var(--ch-z-popover);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 420px;
+  padding: 8px 8px 8px 16px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-bg-elevated);
+  box-shadow: var(--ch-shadow-float);
+  font: var(--ch-type-13-medium);
+  color: var(--ch-text-primary);
+}
+.ch-stale__go,
+.ch-stale__x {
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  font: inherit;
+  cursor: pointer;
+}
+.ch-stale__go {
+  padding: 0 16px;
+  background: var(--ch-green-fill-600);
+  color: var(--ch-text-on-accent);
+}
+.ch-stale__x {
+  background: none;
+  color: var(--ch-text-secondary);
+}
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  .ch-stale {
+    right: var(--ch-page-x-phone);
+    bottom: calc(12px + var(--ch-dock-h, 0px) + env(safe-area-inset-bottom));
+    left: var(--ch-page-x-phone);
+    max-width: none;
+  }
+  .ch-stale > span {
+    flex: 1;
+    min-width: 0;
+  }
+  .ch-root {
+    --ch-offline-top: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
+  }
 }

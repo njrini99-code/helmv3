@@ -74,7 +74,7 @@ function setOnline(online: boolean) {
 }
 function phoneWidth(phone: boolean) {
   const real = window.matchMedia;
-  window.matchMedia = ((q: string) => ({ ...real(q), matches: phone && q === '(max-width: 820px)' })) as typeof window.matchMedia;
+  window.matchMedia = ((q: string) => ({ ...real(q), matches: phone && q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
   return () => {
     window.matchMedia = real;
   };

@@ -887,7 +887,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   font-size: calc(13 * var(--ch-type-k));
 }
 
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-ask {
     height: calc(100dvh - var(--ch-phone-topbar-h) - env(safe-area-inset-top) - var(--ch-tabbar-h) - env(safe-area-inset-bottom) - var(--keyboard-height, 0px));
   }
@@ -1109,7 +1109,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
    ink on the green); the suggestions are action rows (above), not filled plates; and the note for a roster with no rounds
    is a line under a soft rule, not a box. The thread's bubbles, its evidence, the history drawer and the composer keep
    their material. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-ask-ph__title {
     color: var(--ch-on-green-ink);
   }
@@ -1175,7 +1175,7 @@ html:not([data-fw-theme='dark']) .ch-ask {
 }
 
 /* Phone: touch areas reach 44 x 44 without changing how they are drawn (W4b, 2026-10-19). */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-ask-head__btn,
   .ch-ask-hist__iconbtn,
   .ch-ask-pill,
@@ -1203,7 +1203,7 @@ html:not([data-fw-theme='dark']) .ch-ask {
    "Since you were last here" cards ran a word to a line. The cards now take as many columns as the page can hold, and
    on a narrow canvas the chats panel narrows to 216px and the evidence panel lays over the conversation's right edge, as a side sheet, instead of taking a
    third column from it. The container is the canvas (shell.css). */
-@media screen and (min-width: 821px) and (max-width: 1180px) {
+@media screen and (min-width: 821px) and (max-width: 1180px) and ((min-height: 501px) or (pointer: fine)) {
 
   @container (max-width: 780px) {
     /* The chats panel gives up 64px to the conversation, whose composer needs about 330px to keep its send key. */
@@ -1381,7 +1381,7 @@ html:not([data-fw-theme='dark']) .ch-ask {
   justify-content: center;
   gap: 6px 6px;
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-ask.ch-ask-sk .ch-ask-sk__desk {
     display: none;
   }
@@ -1389,13 +1389,13 @@ html:not([data-fw-theme='dark']) .ch-ask {
 
 /* The Ask view settles in after a switch the same way the board's views do (coachhelm.css, ch-view-enter): its body or its
    plain state rises from the dimmed opacity, desktop only. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-ask[data-ch-enter]:not(.is-phone) > :is(.ch-ask-body, .ch-ask-plain) {
     animation: ch-view-enter var(--ch-dur-quick) var(--ch-ease) backwards;
   }
 }
 /* S-ASKD.pane: the chat narrows beside the plan, so nothing sits under it. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-root:has(> .ch-cpv-full) .ch-ask-body {
     grid-template-columns: minmax(0, 1fr);
   }

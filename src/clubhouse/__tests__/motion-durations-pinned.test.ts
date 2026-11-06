@@ -33,7 +33,7 @@ describe('Clubhouse motion durations (D-64 as built)', () => {
   // Owner decision 3 (Nick, 2026-10-24; OQ-14 / A10): a desktop drill-in crossfades with no gap, out 120ms and in
   // 180ms together. Only the desktop block changes; the phone keeps the fade-through above.
   it('the desktop drill-in crossfade: no gap, 180ms in, over the same 120ms out (decision 3, A10)', () => {
-    const at = css.indexOf('@media (min-width: 821px) {\n  html:has([data-ui=\'clubhouse\']) {');
+    const at = css.indexOf('@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {\n  html:has([data-ui=\'clubhouse\']) {');
     expect(at, 'the desktop vt block').toBeGreaterThan(-1);
     const desk = css.slice(at, css.indexOf('}', at));
     expect(token('ch-dur-vt-gap', desk)).toBe('0ms');

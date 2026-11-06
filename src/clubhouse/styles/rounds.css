@@ -823,7 +823,7 @@ a.ch-rd-sc:focus-visible {
   background: var(--ch-ivory-100);
 }
 /* D18: the score box keeps one width, so a nine-hole row (Holes, Tot) doesn't pull the meters 24px left. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-rd-sc__grid {
     justify-content: flex-end;
     width: 146px;
@@ -1729,7 +1729,7 @@ a.ch-rd-sc:focus-visible {
 .ch-rd.ch-trd .ch-rd-tools .ch-seg {
   margin-left: auto;
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-rd.ch-trd .ch-rd-tools .ch-select {
     width: 100%;
   }
@@ -1785,7 +1785,7 @@ a.ch-rd-sc:focus-visible {
 }
 
 /* Phone: every control's touch area reaches 44 x 44 (Apple's minimum) without changing how it is drawn. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-rv-step button,
 .ch-rd-unf__discard,
 .ch-rd-more__discard,
@@ -1821,7 +1821,7 @@ a.ch-rd-sc:focus-visible {
    course in the 600 sans); its five figures sit between hairlines; strokes gained, the scorecard, the hole, the
    distribution, the recap and the notes are sections under the double rule. Kept as material: the hole strip, the
    scorecard's grid, the search, the grouping control, the hole steps and the notices. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-rd.is-phone {
     gap: var(--ch-gap-section-phone);
     padding: var(--ch-page-top-phone-docked) var(--ch-page-x-phone) var(--ch-page-bottom-phone-docked);
@@ -2431,7 +2431,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block after the screen
    rules it floors; its second part, at the end of this file, comes last. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   /* The 12px pins for numerals in fixed cells moved to the floor's last block, at the end of this file. */
   .ch-rd-season__f dt,
   .ch-rd-season__f dd + dd,
@@ -2448,7 +2448,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
    green slab becomes the framed page head: the date and kind as the eyebrow, the course in the heavy sans, the tee
    line, and the score on the right in forest ink. The figures and the sections sit on the canvas; the scorecard's
    own grid and the green recap keep their material. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-rv[data-canopy] {
     gap: 32px;
   }
@@ -2662,7 +2662,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   font-style: normal;
   color: var(--ch-ink-500);
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-rv.is-phone .ch-rv-cardw {
     padding-right: 40px;
     -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent);
@@ -2713,7 +2713,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 
 /* The review's head on the desktop: the eyebrow set plain, not tracked (doctrine; P001-D5). */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-rv[data-canopy] .ch-rv-hero__k {
     font: var(--ch-type-13-medium);
     letter-spacing: 0.01em;
@@ -2725,7 +2725,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
    two panes on the canvas under engraved rules, split by a soft column rule, and the in-progress hole strip keeps its
    scoreboard; more unfinished rounds and each month are sections, and every posted round is a row between soft seams.
    Kept as material: the hole strip's board, the date key, the Out, In and Tot scorecard and the to-par key. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-rd[data-canopy] {
     gap: 40px;
   }
@@ -3912,7 +3912,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   background: linear-gradient(180deg, var(--ch-green-400), var(--ch-green-700));
   box-shadow: var(--ch-elevation-mark);
 }
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-rd[data-canopy] .ch-rd-season__big {
     flex-direction: column;
     align-items: flex-start;
@@ -4277,7 +4277,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rd-grp__spark i.is-under {
   background: linear-gradient(180deg, #d9665a, #a8372b);
 }
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-rd[data-canopy] .ch-rd-sc {
     grid-template-columns: 56px minmax(160px, 1.1fr) auto minmax(180px, 1fr) 68px;
     gap: 24px;
@@ -4780,7 +4780,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   flex-direction: column;
   gap: 12px;
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-rcard-h {
     padding: 16px 16px 12px;
     gap: 8px;
@@ -4875,7 +4875,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
    label, subtotal and mark sizes. The nine-hole tables on the review's cards drop their 560px minimum width at any
    canvas in the tier so they fit instead of scrolling by a few pixels. The container is the canvas (shell.css); the
    phone has its own card. */
-@media screen and (min-width: 821px) and (max-width: 1180px) {
+@media screen and (min-width: 821px) and (max-width: 1180px) and ((min-height: 501px) or (pointer: fine)) {
   @container (max-width: 760px) {
     .ch-rcard:not(.is-phone) {
       --ch-rcard-lab: 40px;
@@ -6023,7 +6023,7 @@ button.ch-hip__row:focus-visible,
    numbers in the in-progress strip, the fairway and green cells, the putt cells, the hole map, the compare cells).
    Each takes 12px at the default size and still grows with iPhone Text Size, as the hub's floor does, so none is
    smaller than before at any size. Keep this block last. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-rd-rib__t,
   .ch-rd-rib__v,
   .ch-rd-rib__d,

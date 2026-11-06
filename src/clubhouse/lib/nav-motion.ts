@@ -1,5 +1,6 @@
 'use client';
 
+import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
 import { CH_EASE, CH_FADE_MS, chSpringCurve } from './motion';
 import { chMotionModeNow } from './reduced-motion';
 import { markHandPop } from './ua-pop';
@@ -45,7 +46,7 @@ export function classifyNav({ from, to, tabRoots, tabBar = false, back = false }
   return isRoot(b) ? 'fade' : 'push';
 }
 
-const PHONE = '(max-width: 820px)';
+const PHONE = CH_PHONE_QUERY;
 /** How long a kind waits for its navigation to commit before it lapses (a tap that never navigated). */
 const LAPSE_MS = 3000;
 /** How long after the commit the kind stays: past the push's 462ms spring. */

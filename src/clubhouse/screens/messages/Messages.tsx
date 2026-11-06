@@ -1,5 +1,6 @@
 'use client';
 
+import { CH_DESK_QUERY } from '@/clubhouse/lib/phone-query';
 import { useConversationPins } from './use-conversation-pins';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { useRowMutes } from './use-row-mutes';
@@ -178,7 +179,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
   // Desktop opens the newest thread beside the rail without marking it read (the coach hasn't read it yet).
   useEffect(() => {
     if (loading || selectedId || !convs.length || !paramsDone) return;
-    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 821px)').matches) {
+    if (typeof window !== 'undefined' && window.matchMedia(CH_DESK_QUERY).matches) {
       setSelectedId(convs[0]!.id);
       setAutoOpened(convs[0]!.id);
     }

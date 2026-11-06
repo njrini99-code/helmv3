@@ -161,9 +161,9 @@ export function useDialogLifetime(open: boolean, {
       { transform: exitTransform, opacity: direction === 'center' ? 0 : 1 },
     ], thrown
       ? { duration: thrown.ms, easing: thrown.linear, fill: 'forwards' }
-      : { duration: CH_DUR.base * 1000, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' });
+      : { duration: CH_DUR.release * 1000, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' });
     // The dim clears with the panel, over the exit's own duration and curve, from wherever a drag had left it (A9).
-    chSetScrim(dialog, 0, thrown ? thrown.ms : CH_DUR.base * 1000, thrown ? thrown.linear : 'cubic-bezier(.22,1,.36,1)');
+    chSetScrim(dialog, 0, thrown ? thrown.ms : CH_DUR.release * 1000, thrown ? thrown.linear : 'cubic-bezier(.22,1,.36,1)');
     exit.onfinish = finish;
     return () => {
       active = false;

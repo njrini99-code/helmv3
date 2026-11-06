@@ -816,7 +816,7 @@
 /* Desktop loading holds the loaded page's measured heights (WebKit, 1440 and 1000, 2026-10-07): the framed page head
    159px with its sans title and live line, and the pulse section: its 22.8px heading, 12px to its rule, and the rows'
    reserved room (CH-13405; the Ledger, below). */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-hl[aria-busy='true'][data-canopy] > .ch-hl-h {
     min-height: 159px;
   }
@@ -827,7 +827,7 @@
 
 /* Loading, desktop (WebKit 1280 and 1440, 2026-10-29): the shapes the loaded page draws, at its measured heights, so nothing
    moves when the read lands. Each line is its own box at the loaded line height with the bar centred in it (`.ch-skel-ln`). */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   /* The coach's board: By player over its rule, then the players at their row pitch (63px rows, 2px apart, the avatar and two
      lines); beside it the focus: the lit green claim card (201px), its evidence, the reasoning row and the actions. */
   .ch-hl-sk__ph {
@@ -1038,14 +1038,14 @@
 }
 
 /* Phone: the skeleton's fixed-width bars never run past the screen. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-hl[aria-busy='true'] .ch-skel {
     max-width: 100%;
   }
 }
 
 /* Phone: every control's touch area reaches 44 x 44 (Apple's minimum) without changing how it is drawn. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-hl-pl,
   .ch-hl-prop__a .ch-btn {
     min-height: 44px;
@@ -1074,7 +1074,7 @@
   }
 }
 /* Desktop only (the brief is desktop's): the phone keeps its approved swap, and its top bar is drawn inside the same main. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-hl[data-ch-enter]:not(.is-phone) > :not(.ch-hl-h):not([data-ch-strip]) {
     animation: ch-view-enter var(--ch-dur-quick) var(--ch-ease) backwards;
   }
@@ -1091,7 +1091,7 @@
    the focus are two columns whose heads share one ruled line; the evidence is part of the focus, set off by a soft
    rule, and a chosen player is a soft tint, not a lifted plate. The week's drill keeps its well; pills, keys, counts
    and buttons keep their own material. The loading shapes flatten the same way. Phone keeps its approved boards. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-hl[data-canopy] :is(.ch-hl-focus, .ch-hl-ev, .ch-hl-prop, .ch-hl-sk__card) {
     padding: 0;
     border-radius: 0;
@@ -1286,7 +1286,7 @@
    and the other reads are sections flush on the parchment, each under the double rule; and the one green card is the
    focus's claim, with its evidence, the week's drill and the reasoning flush beneath it. Real objects keep their
    material: the view switch, the player chips, the bars and the gauge, the pills, the buttons and the notices. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-hl.is-phone {
     gap: var(--ch-gap-section-phone);
     padding: var(--ch-page-top-phone-docked) var(--ch-page-x-phone) var(--ch-page-bottom-phone-docked);
@@ -1499,7 +1499,7 @@
    evidence is one reading, a large figure over its track, on the canvas under it. Players and rows answer the cursor
    and the press; section heads take a short gold lead on the engraved rule. Flat grounds; gradients only on the small
    things: the bars, the figure, the badge. Phone keeps its approved boards. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-hl[data-canopy] .ch-hl-focus {
     gap: 24px;
   }
@@ -1634,7 +1634,7 @@
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-hl-pl__c {
     font-size: calc(12 * var(--ch-type-k));
   }
@@ -1698,7 +1698,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
 }
 /* On desktop the screen sits on one bright sheet over the parchment, so its copy reads on a white ground (same owner
    note: "coachhelm contrast is the same"). */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   html:not([data-fw-theme='dark']) .ch-hl {
     margin-top: 12px;
     margin-bottom: 24px;
@@ -1728,7 +1728,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
    about 340px wide. On an iPad portrait with the sidebar open the page holds 562px, so the sentence got a 56px column
    and ran a word to a line under the tabs. Under 780px the switch drops under the sentence instead. The container is
    the page (chhl), so this is its own width, not the window's. */
-@media screen and (min-width: 821px) and (max-width: 1180px) {
+@media screen and (min-width: 821px) and (max-width: 1180px) and ((min-height: 501px) or (pointer: fine)) {
   @container chhl (max-width: 780px) {
     .ch-hl-h.has-aside:has(.ch-hv-tabs) {
       grid-template-columns: minmax(0, 1fr);
@@ -1946,7 +1946,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
     background: var(--ch-bg-hover);
   }
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-hl-cx__c,
   .ch-hl-cx__chg {
     min-height: 44px;
@@ -1980,7 +1980,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
   font: var(--ch-type-14);
   color: var(--ch-text-primary);
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-hl-eng > div {
     grid-template-columns: 76px minmax(0, 1fr);
   }
@@ -2107,4 +2107,21 @@ html:not([data-fw-theme='dark']) .ch-hl {
 .ch-hl-note__a:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
+}
+
+/* The one head of a CoachHelm view (screens/coachhelm/CoachHelmHead.tsx). */
+.ch-chd {
+  display: grid;
+  gap: 12px;
+}
+.ch-chd__t {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.ch-chd.is-desk {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 24px;
+  width: 100%;
 }

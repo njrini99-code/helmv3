@@ -46,7 +46,7 @@ describe('P002 · 20103 first run: Invite players opens the invite sheet', () =>
   });
   const media = (phone: boolean) =>
     ((q: string) => ({
-      matches: phone && q === '(max-width: 820px)',
+      matches: phone && q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)',
       media: q,
       onchange: null,
       addEventListener: () => {},

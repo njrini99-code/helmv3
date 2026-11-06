@@ -1125,7 +1125,7 @@ describe('Recruiting · phone', () => {
   const realMatchMedia = window.matchMedia;
   beforeEach(() => {
     window.matchMedia = ((q: string) => ({
-      matches: q === '(max-width: 820px)',
+      matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)',
       media: q,
       onchange: null,
       addEventListener: () => {},
@@ -1531,7 +1531,7 @@ describe('Recruiting · Committed is a moment, once (B1)', () => {
   });
 
   it('on the phone the moment waits under the stage sheet and plays as Done closes it', async () => {
-    window.matchMedia = mediaWith((q) => q === '(max-width: 820px)');
+    window.matchMedia = mediaWith((q) => q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)');
     window.history.replaceState(null, '', '/golf/dashboard/recruiting');
     const user = userEvent.setup();
     const w = fakeWrites();

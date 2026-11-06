@@ -28,7 +28,7 @@ const media = (phone: boolean) =>
   vi.mocked(window.matchMedia).mockImplementation(
     (query: string) =>
       ({
-        matches: (phone && query === '(max-width: 820px)') || query.includes('hover: hover'),
+        matches: (phone && query === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)') || query.includes('hover: hover'),
         media: query,
         onchange: null,
         addListener: vi.fn(),

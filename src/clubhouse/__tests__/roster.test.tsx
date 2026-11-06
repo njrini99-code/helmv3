@@ -707,7 +707,7 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     // The phone's profile links are the production ones (the stats page is rebuilt).
     profile.rebuilt = true;
     window.matchMedia = ((q: string) => ({
-      matches: q === '(max-width: 820px)',
+      matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)',
       media: q,
       onchange: null,
       addEventListener: () => {},

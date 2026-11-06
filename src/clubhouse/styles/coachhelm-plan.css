@@ -789,7 +789,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
   background: var(--ch-card-bg);
   border-top: var(--ch-hairline-w) solid var(--ch-pl-cpv-sep);
 }
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-cpv-full {
     inset: 0 0 0 auto;
     width: 452px;
@@ -1454,7 +1454,7 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 .ch-cpv.is-desk .art > :not(.art-h) {
   display: none;
 }
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-cpv-full .fbar {
     background: var(--ch-card-bg);
     color: var(--ch-text-primary);

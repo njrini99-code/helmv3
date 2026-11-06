@@ -2,9 +2,9 @@
 
 import { createContext, createElement, useContext, useEffect, useSyncExternalStore, type ReactNode } from 'react';
 import { CH_PHONE_COOKIE } from './phone-cookie';
+import { CH_PHONE_QUERY } from './phone-query';
 
-/** The phone layout's width, the same breakpoint as `@media (max-width: 820px)` in the stylesheets. */
-export const CH_PHONE_QUERY = '(max-width: 820px)';
+export { CH_PHONE_QUERY } from './phone-query';
 
 function subscribe(onChange: () => void) {
   const mql = window.matchMedia(CH_PHONE_QUERY);
@@ -37,7 +37,7 @@ export function rememberLayout(): () => void {
 }
 
 /**
- * True at phone width, for a page whose phone structure differs from desktop
+ * True on the phone layout (see phone-query), for a page whose phone structure differs from desktop
  * (a sheet instead of a panel). Layout-only differences stay in CSS. The
  * server snapshot is the device's last layout (ChPhoneHintProvider), desktop
  * when unknown.

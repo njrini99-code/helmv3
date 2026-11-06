@@ -14,7 +14,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => router, useSearchParams: ()
 vi.mock('../lib/use-now', () => ({ useNow: () => null }));
 /** Phone or desktop layout (useChPhone), set per test. */
 const layout = vi.hoisted(() => ({ phone: false }));
-vi.mock('../lib/use-phone', () => ({ useChPhone: () => layout.phone, CH_PHONE_QUERY: '(max-width: 820px)' }));
+vi.mock('../lib/use-phone', () => ({ useChPhone: () => layout.phone, CH_PHONE_QUERY: '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' }));
 
 /** The realtime hooks, as plain state the tests set. */
 const live = vi.hoisted(() => ({

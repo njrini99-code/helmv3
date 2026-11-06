@@ -504,7 +504,7 @@ describe('Calendar parity · one noun for the list view (F-0053, owner default)'
     const desk = views();
     unmount();
     const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     try {
       wrap(cal(PREVIEW_CALENDAR.events));
       const phone = views();

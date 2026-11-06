@@ -117,7 +117,7 @@ describe('Team stats hold their geometry across windows', () => {
 describe('The phone holds its panels across windows', () => {
   const phone = (run: () => void) => {
     const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     try {
       run();
     } finally {

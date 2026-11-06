@@ -15,7 +15,7 @@ vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSessi
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), back: vi.fn(), replace: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router, usePathname: () => '/golf/dashboard/rounds' }));
 const phoneState = vi.hoisted(() => ({ on: false }));
-vi.mock('../lib/use-phone', () => ({ useChPhone: () => phoneState.on, CH_PHONE_QUERY: '(max-width: 820px)' }));
+vi.mock('../lib/use-phone', () => ({ useChPhone: () => phoneState.on, CH_PHONE_QUERY: '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' }));
 // The phone top bar draws into the shell's slot; here it is a button that runs its Back.
 vi.mock('../shell/phone-chrome', () => ({
   PhoneTop: (p: { back?: { label: string; onBack: () => void } }) => (p.back ? <button onClick={p.back.onBack}>{`phone back to ${p.back.label}`}</button> : null),

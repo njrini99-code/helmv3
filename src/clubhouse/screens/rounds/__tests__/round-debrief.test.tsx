@@ -13,7 +13,7 @@ vi.mock('@/hooks/golf/use-appearance-preferences', () => ({ useAppearancePrefere
 vi.mock('../../../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('../../../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn(), back: vi.fn(), replace: vi.fn() }), usePathname: () => '/golf/dashboard/rounds/x' }));
-vi.mock('../../../lib/use-phone', () => ({ useChPhone: () => false, CH_PHONE_QUERY: '(max-width: 820px)' }));
+vi.mock('../../../lib/use-phone', () => ({ useChPhone: () => false, CH_PHONE_QUERY: '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' }));
 vi.mock('../../../shell/phone-chrome', () => ({ PhoneTop: () => null, usePhoneTabsHidden: () => {}, usePhoneImmersive: () => {} }));
 
 import type { ChRoundReview } from '../../../data/round-review-shape';

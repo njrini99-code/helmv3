@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronLeft, type LucideIcon } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from './Icon';
 
 /**
@@ -34,6 +34,36 @@ export interface ChPhoneBarParts {
 }
 
 /**
+ * UINavigationBar's back title: the parent's name while it clears the centred title, then "Back", then the chevron alone
+ * (MOB-SHELL-3). The title's box starts at 24% of the bar (its max-width is 52%, centred).
+ */
+function BackLabel({ label, fits }: { label: string; fits: boolean }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [step, setStep] = useState<0 | 1 | 2>(0);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const bar = el?.closest('.ch-pbar, .ch-topbar');
+    if (!el || !fits || !bar || typeof ResizeObserver === 'undefined') return;
+    const measure = () => {
+      const room = bar.clientWidth * 0.24 - el.getBoundingClientRect().left + bar.getBoundingClientRect().left - 4;
+      const em = parseFloat(getComputedStyle(el).fontSize) || 17;
+      // Character widths at about 0.55em: exact enough to choose a step, and the CSS ellipsis catches what's left.
+      const wide = (t: string) => t.length * em * 0.55;
+      setStep(room <= 0 || wide(label) <= room ? 0 : wide('Back') <= room ? 1 : 2);
+    };
+    measure();
+    const seen = new ResizeObserver(measure);
+    seen.observe(bar);
+    return () => seen.disconnect();
+  }, [label, fits]);
+  return (
+    <span ref={ref} aria-hidden="true">
+      {step === 0 ? label : step === 1 ? 'Back' : ''}
+    </span>
+  );
+}
+
+/**
  * `heading: false` draws the title as plain text, not the page's h1: a page that has its own h1, and the shell's stand-in
  * for a page's own top while the page loads (CH-1402), which leaves the heading to the page.
  */
@@ -51,7 +81,7 @@ export function PhoneBarParts({ back, title, lead = false, start = false, action
           aria-label={back.ariaLabel ?? (!chevron ? back.label : back.label ? `Back to ${back.label}` : 'Back')}
         >
           {chevron && <Icon icon={ChevronLeft} size={20} />}
-          {back.label && <span aria-hidden="true">{back.label}</span>}
+          {back.label && <BackLabel label={back.label} fits={chevron && !lead && !start} />}
         </button>
       )}
       {lead ? (
