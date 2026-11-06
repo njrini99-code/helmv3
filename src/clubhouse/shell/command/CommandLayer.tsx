@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { chTrail } from '../../lib/track';
-import { CH_SETTINGS_ITEM, type ChRole } from '../nav';
+import { CH_SETTINGS_ITEM, type ChNavFeatures, type ChRole } from '../nav';
 import type { ChPerson, ChRecent } from './commands';
 import { getPalettePeople } from '../../data/palette-people';
 import { clearPeople, seedPeople, setPeopleScope, usePeople } from './people';
@@ -25,12 +25,15 @@ import { interpretKey, isApple, isInOverlay, isTypingTarget, itemForDigit, itemF
  */
 export function CommandLayer({
   role,
+  features,
   pathname,
   userId,
   teamId,
   loadPeople = getPalettePeople,
 }: {
   role: ChRole;
+  /** The flagged sections this team has, as the sidebar lists them. */
+  features?: ChNavFeatures | null;
   pathname: string;
   userId: string;
   teamId: string | null;
@@ -53,8 +56,8 @@ export function CommandLayer({
   // G is waiting for its letter: the sections it can reach are shown for as long as it waits.
   const [waiting, setWaiting] = useState(false);
   const waitTimer = useRef<number | undefined>(undefined);
-  const live = useRef({ palette, help, role, router });
-  live.current = { palette, help, role, router };
+  const live = useRef({ palette, help, role, features, router });
+  live.current = { palette, help, role, features, router };
 
   // A layout effect: every layout effect runs before any passive one, so a team switch empties the old team's names before the
   // page (the Roster) publishes the new team's in its own effect, never after it. The scope is the person and the team, so a
@@ -166,7 +169,7 @@ export function CommandLayer({
         }
         case 'section': {
           // Cmd or Ctrl and a digit: the sidebar's sections in order (owner, decision 13).
-          const item = itemForDigit(live.current.role, o.digit);
+          const item = itemForDigit(live.current.role, o.digit, live.current.features);
           if (!item) break;
           e.preventDefault();
           // A jump is navigation, so it is silent (D-70, A14).
@@ -175,7 +178,7 @@ export function CommandLayer({
           break;
         }
         case 'go': {
-          const item = itemForLetter(live.current.role, o.letter);
+          const item = itemForLetter(live.current.role, o.letter, live.current.features);
           if (!item) break;
           e.preventDefault();
           // A jump is navigation, so it is silent (D-70, A14).
@@ -206,19 +209,19 @@ export function CommandLayer({
   const apple = isApple(typeof navigator === 'undefined' ? undefined : navigator);
   return (
     <>
-      {waiting && <GoHint role={role} />}
-      {used.palette && <Palette open={palette} onClose={() => setPalette(false)} role={role} pathname={pathname} people={people} peopleState={peopleState} recent={recent} keyword={opens} />}
-      {used.help && <ShortcutsSheet open={help} onClose={() => setHelp(false)} role={role} apple={apple} />}
+      {waiting && <GoHint role={role} features={features} />}
+      {used.palette && <Palette open={palette} onClose={() => setPalette(false)} role={role} features={features} pathname={pathname} people={people} peopleState={peopleState} recent={recent} keyword={opens} />}
+      {used.help && <ShortcutsSheet open={help} onClose={() => setHelp(false)} role={role} features={features} apple={apple} />}
     </>
   );
 }
 
 /** After G: the letters and where they go, for the second the sequence waits. Decorative: the shortcuts sheet is the record. */
-function GoHint({ role }: { role: ChRole }) {
+function GoHint({ role, features }: { role: ChRole; features?: ChNavFeatures | null }) {
   return (
     <div className="ch-popover ch-cmd-hint" aria-hidden="true">
       <span className="ch-cmd-hint__k">Go to</span>
-      {navLetters(role).map(({ letter, item }) => (
+      {navLetters(role, features).map(({ letter, item }) => (
         <span key={item.id} className="ch-cmd-hint__i">
           <kbd className="ch-cmd-kbd">{letter.toUpperCase()}</kbd>
           {item.label}

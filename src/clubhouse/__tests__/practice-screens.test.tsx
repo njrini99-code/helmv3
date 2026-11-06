@@ -273,9 +273,35 @@ describe('the builder', () => {
     show(data({ body: addBlock(base, makeBlock('team', base, 't')), step: 'review' }));
     fireEvent.click(screen.getAllByRole('button', { name: 'Publish' })[0]!);
     expect(publish).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: /Publish to 3 people/, hidden: true }));
-    await waitFor(() => expect(publish).toHaveBeenCalledWith({ planId: 'plan-1', expectedVersion: 4, notify: 'now' }));
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/golf/dashboard/practice/plan/plan-1'));
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      fireEvent.click(screen.getByRole('button', { name: /Publish to 3 people/, hidden: true }));
+      await screen.findByText('Publishing in 8 seconds');
+      // Nothing is written or sent until the hold runs out.
+      await act(() => vi.advanceTimersByTimeAsync(7000));
+      expect(publish).not.toHaveBeenCalled();
+      await act(() => vi.advanceTimersByTimeAsync(1500));
+      await waitFor(() => expect(publish).toHaveBeenCalledWith({ planId: 'plan-1', expectedVersion: 4, notify: 'now' }));
+      await waitFor(() => expect(push).toHaveBeenCalledWith('/golf/dashboard/practice/plan/plan-1'));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('Undo inside the 8 second hold publishes nothing and tells nobody', async () => {
+    const base = emptyBody('Lakeside', ROSTER.map((r) => r.id), false);
+    show(data({ body: addBlock(base, makeBlock('team', base, 't')), step: 'review' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Publish' })[0]!);
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      fireEvent.click(screen.getByRole('button', { name: /Publish to 3 people/, hidden: true }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Undo' }));
+      await act(() => vi.advanceTimersByTimeAsync(9000));
+      expect(publish).not.toHaveBeenCalled();
+      expect(screen.getByText('Not published. Nobody was told.')).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('CH-13082 Delete draft asks first and stays put when refused; CH-13083 is the bank’s toast', async () => {
