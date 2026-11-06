@@ -561,8 +561,8 @@
         "category": "routes"
       },
       {
-        "id": "routes:src/app/golf/(dashboard)/dashboard/practice/plan/**",
-        "pattern": "src/app/golf/(dashboard)/dashboard/practice/plan/**",
+        "id": "routes:src/app/golf/(dashboard)/dashboard/practice/**",
+        "pattern": "src/app/golf/(dashboard)/dashboard/practice/**",
         "category": "routes"
       },
       {
@@ -825,6 +825,11 @@
       {
         "id": "components:src/clubhouse/screens/messages/**",
         "pattern": "src/clubhouse/screens/messages/**",
+        "category": "components"
+      },
+      {
+        "id": "components:src/clubhouse/screens/practice/**",
+        "pattern": "src/clubhouse/screens/practice/**",
         "category": "components"
       },
       {
@@ -2081,6 +2086,11 @@
       {
         "id": "services:src/clubhouse/data/player-home.ts",
         "pattern": "src/clubhouse/data/player-home.ts",
+        "category": "services"
+      },
+      {
+        "id": "services:src/clubhouse/data/practice-home.ts",
+        "pattern": "src/clubhouse/data/practice-home.ts",
         "category": "services"
       },
       {
@@ -15363,6 +15373,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-ask-artifacts.ts",
+          "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-ask-credits.ts",
           "anchor": "src/lib/admin/observed-action"
         },
@@ -15659,6 +15674,11 @@
       "target": "auth_onboarding_join",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-ask-artifacts.ts",
+          "anchor": "src/lib/supabase/server"
+        },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-ask-credits.ts",
@@ -16408,6 +16428,11 @@
           "kind": "feature_doc_contract",
           "path": "memory/features/coachhelm-ai.md",
           "anchor": "player_coachhelm_development"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-ask-artifacts.ts",
+          "anchor": "src/lib/coachhelm/v3/chat/context"
         },
         {
           "kind": "import_graph",
@@ -21871,6 +21896,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/claims-packet.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/upsert"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/instructions.ts",
           "anchor": "src/lib/coachhelm/v2/insights/upsert"
         },
@@ -22402,6 +22432,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/ask-draft-tools.ts",
+          "anchor": "src/lib/golf/message-polls"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/context.ts",
           "anchor": "src/lib/golf/resolve-team-server"
         },
@@ -22409,6 +22444,16 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/create-tools.ts",
           "anchor": "src/app/golf/actions/round-coach-note"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/create-tools.ts",
+          "anchor": "src/lib/golf/message-polls"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/player-audit.ts",
+          "anchor": "src/lib/golf/timezone"
         },
         {
           "kind": "import_graph",
@@ -22848,6 +22893,16 @@
       "target": "team_operations",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/create-tools.ts",
+          "anchor": "src/app/golf/actions/practice-library"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/create-tools.ts",
+          "anchor": "src/app/golf/actions/documents"
+        },
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/practice-draft.ts",
@@ -27781,6 +27836,18 @@
     },
     {
       "source": "team_operations",
+      "target": "components:src/clubhouse/screens/practice/**",
+      "kind": "feature_component",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/screens/practice/**"
+        }
+      ]
+    },
+    {
+      "source": "team_operations",
       "target": "components:src/components/fairway/pages/tasks/**",
       "kind": "feature_component",
       "evidence": [
@@ -28035,13 +28102,13 @@
     },
     {
       "source": "team_operations",
-      "target": "routes:src/app/golf/(dashboard)/dashboard/practice/plan/**",
+      "target": "routes:src/app/golf/(dashboard)/dashboard/practice/**",
       "kind": "feature_route",
       "evidence": [
         {
           "kind": "registry_glob",
           "path": "memory/registry.yml",
-          "pattern": "src/app/golf/(dashboard)/dashboard/practice/plan/**"
+          "pattern": "src/app/golf/(dashboard)/dashboard/practice/**"
         }
       ]
     },
@@ -28102,6 +28169,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/clubhouse/data/player-home.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_operations",
+      "target": "services:src/clubhouse/data/practice-home.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/data/practice-home.ts"
         }
       ]
     },
