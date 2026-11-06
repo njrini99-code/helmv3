@@ -266,6 +266,35 @@ export const PREVIEW_HOME_EARLY: ChCoachHome = {
   },
 };
 
+/**
+ * `?state=totalsonly`: what most real teams look like today. Rounds posted as totals, one event this week, two round days,
+ * no greens or putts, no holes under the four parts and nobody with a place yet.
+ */
+export const PREVIEW_HOME_TOTALS_ONLY: ChCoachHome = {
+  ...PREVIEW_HOME_EARLY,
+  subline: null,
+  legs: { ...PREVIEW_LEGS, holeRounds: 0 },
+  phone: {
+    ...PREVIEW_HOME.phone,
+    form: {
+      avg: 78.6,
+      delta: null,
+      deltaSe: null,
+      line: [79.2, 78.0],
+      roundsThisWeek: 1,
+      basis: { rounds: 4, from: '2026-10-05', to: '2026-10-12', girRounds: 0, puttsRounds: 0 },
+      gir: { pct: null, delta: null },
+      putts: { avg: null, delta: null },
+    },
+  },
+};
+
+/** `?state=oneday`: totals only, on a single round day, so there is no line to draw. */
+export const PREVIEW_HOME_ONE_DAY: ChCoachHome = {
+  ...PREVIEW_HOME_TOTALS_ONLY,
+  phone: { ...PREVIEW_HOME_TOTALS_ONLY.phone, form: { ...PREVIEW_HOME_TOTALS_ONLY.phone.form!, line: [78.6], roundsThisWeek: 0 } },
+};
+
 /** Rounds with holes but nobody with enough of them to rank (CH-2315). */
 export const PREVIEW_HOME_LEGS_UNRANKED: ChCoachHome = {
   ...PREVIEW_HOME,

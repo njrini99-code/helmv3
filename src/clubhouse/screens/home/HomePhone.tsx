@@ -18,6 +18,7 @@ import { Nine } from '../../ui/Nine';
 import { coachHelmPlayerHref, PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { WeekStrip as DayStrip } from '../../ui/WeekStrip';
+import { weekStripDays } from './HomeDeskCrh';
 import { withPointSpan } from '../../ui/point-span';
 import { formatFixed, formatSigned, changeInk, formatToPar } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
@@ -367,6 +368,11 @@ export function partOf(n: number, of: number): string {
   return n > 0 && n < of ? `${n} of ${of} rounds` : ' ';
 }
 
+/** Under a figure's dash on the card: why there is none, so totals-only rounds read as what they are and not as a gap. */
+export function figureMissing(rounds: number, needs?: string): string {
+  return rounds > 0 ? (needs ?? 'Too few rounds') : 'Totals only so far';
+}
+
 /**
  * The team's scoring form: the average, its change, the line, and three figures. Gains green, losses amber (D-42).
  * The average, greens and putts share one basis, which the strip states (`formBasis`); the week's count is its own.
@@ -412,6 +418,7 @@ export function Form({ form, crh = false }: { form: ChTeamForm; crh?: boolean })
           <circle cx={x(pts.length - 1)} cy={y(pts[pts.length - 1]!)} r="3.6" className="ch-hm-form__dot" />
         </svg>
       )}
+      {crh && pts.length <= 1 && <p className="ch-hm-form__noline">The line starts with a second round day.</p>}
       <dl className="ch-hm-form__figs">
         <div>
           <dt>Rounds</dt>
@@ -420,13 +427,13 @@ export function Form({ form, crh = false }: { form: ChTeamForm; crh?: boolean })
         </div>
         <div>
           <dt>GIR</dt>
-          <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : (form.gir.needs ?? <NoData />)}</dd>
-          <dd className={'ch-num ' + deltaTone(form.gir.delta, form.gir.se, false)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
+          <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : crh ? <NoData /> : (form.gir.needs ?? <NoData />)}</dd>
+          <dd className={'ch-num ' + deltaTone(form.gir.delta, form.gir.se, false)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : crh && form.gir.pct == null ? figureMissing(form.basis.girRounds, form.gir.needs) : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
         </div>
         <div>
           <dt>Putts</dt>
           <dd className="ch-num">{form.putts.avg != null ? formatFixed(form.putts.avg) : <NoData />}</dd>
-          <dd className={'ch-num ' + deltaTone(form.putts.delta, form.putts.se, true)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
+          <dd className={'ch-num ' + deltaTone(form.putts.delta, form.putts.se, true)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : crh && form.putts.avg == null ? figureMissing(form.basis.puttsRounds) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
         </div>
       </dl>
     </section>
@@ -443,16 +450,7 @@ export function WeekStrip({ days, note, children }: { days: ChCoachHome['week'][
       <DayStrip
         label="This week"
         className="ch-hm-week"
-        days={days.map((d) => ({
-          date: d.date,
-          top: d.weekday.slice(0, 1),
-          num: d.dayOfMonth,
-          isToday: d.isToday,
-          dots: d.eventCount,
-          mark: d.hasCompetition ? TYPE_ICON[d.competitionType ?? 'tournament'] : undefined,
-          label: `${d.weekday} ${d.dayOfMonth}${d.isToday ? ', today' : ''}${d.hasCompetition ? ', competition' : ''}, ${plural(d.eventCount, 'event')}`,
-          href: `${CALENDAR}?view=day&date=${d.date}`,
-        }))}
+        days={weekStripDays(days, true)}
       />
       {note && (
         <p className="ch-hm-week__n">
@@ -547,7 +545,7 @@ function Rounds({ years, data, trends, onOpen, covered }: { years?: Record<strin
                     </span>
                     {(trendOf.get(r.playerId)?.length ?? 0) >= 3 && (
                       <span className="ch-hm-rd__spark" aria-hidden="true">
-                        <FormLine data={trendOf.get(r.playerId)!} width={64} height={18} earlyBelow={3} bare label={`${r.playerName}, last ${trendOf.get(r.playerId)!.length} rounds: ${trendOf.get(r.playerId)!.join(', ')}`} />
+                        <FormLine data={trendOf.get(r.playerId)!} width={48} height={18} earlyBelow={3} bare label={`${r.playerName}, last ${trendOf.get(r.playerId)!.length} rounds: ${trendOf.get(r.playerId)!.join(', ')}`} />
                       </span>
                     )}
                     <span className={'ch-hm-score ch-num' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>

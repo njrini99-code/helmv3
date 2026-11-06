@@ -4652,7 +4652,14 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     align-items: center;
     gap: 12px;
     min-height: 56px;
+    margin-inline: 0;
     padding: 8px 16px;
+    border-radius: 0;
+  }
+  /* The title takes the row, so Next and Clash line up on the right however long it is. */
+  .ch-hm[data-ch-crh='on'] .ch-hm-tl__b {
+    flex: 1;
+    min-width: 0;
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-tl__t {
     flex: none;
@@ -4757,6 +4764,13 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     justify-self: stretch;
     text-align: left;
   }
+  /* A phone cell is narrow: the stat and the Tour's mark, and who gains and who loses, each take a line, with no stray dot. */
+  .ch-hm[data-ch-crh='on'] :is(.ch-hm-legs__s, .ch-hm-legs__who) > span {
+    display: block;
+  }
+  .ch-hm[data-ch-crh='on'] :is(.ch-hm-legs__s, .ch-hm-legs__who) > i {
+    display: none;
+  }
   .ch-hm[data-ch-crh='on'] .ch-hm-legs__a {
     padding: 0;
   }
@@ -4820,6 +4834,22 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     font-style: normal;
   }
   /* Latest rounds. */
+  /* The row stays inside the card: the older page's negative margins pushed it 12px past the card's edge. */
+  .ch-hm[data-ch-crh='on'] .ch-hm-rd {
+    margin-inline: 0;
+    width: 100%;
+  }
+  /* The chart keeps the card's inset, as desktop's does, so the line and its last dot don't touch the edge. */
+  .ch-hm[data-ch-crh='on'] .ch-hm-form__svg {
+    display: block;
+    width: calc(100% - 32px);
+    height: auto;
+    margin-inline: 16px;
+  }
+  /* A name is a small target between two lines of text: its hit area reaches 44 without moving the text. */
+  .ch-hm[data-ch-crh='on'] .ch-hm-legs__a {
+    padding-block: 12px;
+  }
   .ch-hm[data-ch-crh='on'] .ch-hm-rd {
     min-height: 64px;
     padding: 8px 16px;
@@ -4962,6 +4992,10 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   background: var(--ch-chip-gain-bg, var(--ch-well-bg-flat));
   color: var(--ch-green-600);
 }
+/* Beside a taller week the three steps share the card's height, so no blank band sits under the last. */
+.ch-dh-card.ch-hm-setup .ch-hm-setup__r {
+  flex: 1;
+}
 .ch-hm-setup__r b {
   display: block;
   font: var(--ch-type-16-medium); letter-spacing: var(--ch-track-16); }
@@ -4974,9 +5008,11 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
   padding: 8px 8px 6px;
-  border-radius: var(--ch-radius-lg);
-  background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+}
+/* The strip and its note sit in This week's own card, the note on the card's inset. */
+.ch-hm[data-ch-crh='on'] .ch-hm-week__n {
+  margin: 0;
+  padding: 4px 16px 12px;
 }
 .ch-root[data-ch-crh='on'] .ch-hm-skel__hero:not(.is-player) {
   background: var(--ch-frame);
@@ -5167,6 +5203,22 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 .ch-dh-card > .ch-es {
   margin-block: auto;
 }
+/* A short week's room goes to its seven days, then the line that says what the list holds. */
+.ch-dh-week.ch-wks {
+  flex: 1 1 auto;
+  align-items: stretch;
+  min-height: 72px;
+  max-height: 128px;
+  padding: 8px 12px;
+}
+.ch-dh-week .ch-wks__d {
+  height: 100%;
+  justify-content: center;
+}
+.ch-dh-card > .ch-dh-week + .ch-dh-rest {
+  flex: 0 0 auto;
+  margin-block-start: auto;
+}
 /* What the rest of a short list means, centred in the room the card keeps beside its partner. */
 .ch-dh-rest {
   position: relative;
@@ -5303,6 +5355,16 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   .ch-h-main[data-ch-crh='on'] .ch-hm-legs__l {
     font: var(--ch-type-16-medium); letter-spacing: var(--ch-track-16); }
+  /* Who gains and who loses, a line each, so a name never breaks and a dot never starts a line. */
+  .ch-h-main[data-ch-crh='on'] .ch-hm-legs__who > span {
+    display: block;
+  }
+  .ch-h-main[data-ch-crh='on'] .ch-hm-legs__who > i {
+    display: none;
+  }
+  .ch-h-main[data-ch-crh='on'] .ch-hm-legs__a {
+    white-space: nowrap;
+  }
   .ch-h-main[data-ch-crh='on'] .ch-hm-legs__sg {
     font: var(--ch-type-28-strong);
     letter-spacing: -0.038em;
@@ -5599,6 +5661,17 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     margin: 0 16px 16px;
     padding-top: 12px;
     border-top: var(--ch-hairline-w) solid var(--ch-separator);
+  }
+  /* No line yet: one quiet sentence where the chart goes, so the figures stay at the foot of the card. */
+  .ch-h-main[data-ch-crh='on'] .ch-hm-form__noline {
+    display: grid;
+    flex: 1;
+    place-content: center;
+    min-height: 72px;
+    margin: 0 16px;
+    font: var(--ch-type-14);
+    color: var(--ch-text-secondary);
+    text-align: center;
   }
   .ch-h-main[data-ch-crh='on'] .ch-hm-form__figs dd {
     margin: 0;

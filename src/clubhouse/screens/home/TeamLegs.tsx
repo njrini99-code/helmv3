@@ -187,11 +187,15 @@ function PeopleLine({ leg }: { leg: ChTeamLeg }) {
   if (!leg.gains) return null;
   return (
     <span className="ch-hm-legs__who">
-      <People p={leg.gains} className="ch-hm-legs__a" /> {verb(leg.gains, 'gains most', 'gain most')}
+      <span>
+        <People p={leg.gains} className="ch-hm-legs__a" /> {verb(leg.gains, 'gains most', 'gain most')}
+      </span>
       {leg.loses && (
         <>
-          {' '}
-          &middot; <People p={leg.loses} className="ch-hm-legs__a" /> {verb(leg.loses, 'loses most', 'lose most')}
+          <i> &middot; </i>
+          <span>
+            <People p={leg.loses} className="ch-hm-legs__a" /> {verb(leg.loses, 'loses most', 'lose most')}
+          </span>
         </>
       )}
     </span>
@@ -209,7 +213,7 @@ export function TeamLegsPhone({ legs, covered = false, crh = false }: { legs: Ch
   const team = rebuiltHref('/golf/dashboard/stats', 'coach');
   if (crh) {
     const worst = [...legs.rows].filter((l) => l.sg != null).sort((a, b) => (a.sg as number) - (b.sg as number)).slice(0, 2).filter((l) => (l.sg as number) < 0).map((l) => l.label);
-    const note = legs.ranked && worst.length ? `${worst.join(' and ')} cost${worst.length === 1 ? 's' : ''} the most. Names open that player’s game on Stats.` : null;
+    const note = legs.ranked && legs.holeRounds > 0 && worst.length ? `${worst.join(' and ')} cost${worst.length === 1 ? 's' : ''} the most. Names open that player’s game on Stats.` : null;
     return (
       <Surface variant="card" level={2} padded={false} title="The team’s game" actions={<span className="ch-hm-meta">SG per round</span>} footerNote={note ?? undefined}>
         <Notices legs={legs} covered={covered} />
@@ -231,7 +235,16 @@ export function TeamLegsPhone({ legs, covered = false, crh = false }: { legs: Ch
                     <i className="ch-hm-legs__bar" aria-hidden="true">
                       <i className={tone + ((leg.sg ?? 0) < 0 ? ' is-neg' : '')} style={{ width: `${legBarWidth(leg.sg)}%` }} />
                     </i>
-                    <span className="ch-hm-legs__s ch-num">{legStatText(leg.stat)}</span>
+                    <span className="ch-hm-legs__s ch-num">
+                      {legStatText(leg.stat)
+                        .split(' · ')
+                        .map((part, i) => (
+                          <Fragment key={part}>
+                            {i > 0 && <i> · </i>}
+                            <span>{part}</span>
+                          </Fragment>
+                        ))}
+                    </span>
                     <em className={'ch-hm-legs__c ' + change.tone}>{change.words}</em>
                     <PeopleLine leg={leg} />
                   </li>

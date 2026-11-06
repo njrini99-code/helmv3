@@ -51,12 +51,12 @@ describe('coach Home desktop, design parity', () => {
 
   it('a short week says what the list holds and never that the week is empty', () => {
     const rows = PREVIEW_HOME.week.agenda.slice(0, 1);
-    render(<DeskAgenda rows={rows} />);
+    render(<DeskAgenda rows={rows} days={PREVIEW_HOME.week.days} />);
     expect(screen.getByText('That’s today and this week’s competitions.')).toBeTruthy();
   });
 
   it('a full week carries no line', () => {
-    render(<DeskAgenda rows={PREVIEW_HOME.week.agenda.slice(0, 4)} />);
+    render(<DeskAgenda rows={PREVIEW_HOME.week.agenda.slice(0, 4)} days={PREVIEW_HOME.week.days} />);
     expect(screen.queryByText(/this week’s competitions/)).toBeNull();
   });
 });

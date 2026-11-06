@@ -15,12 +15,27 @@ import { formatAvg, formatToPar } from '../../lib/format';
 import { Avatar } from '../../ui/Avatar';
 import { leaderPlaces } from './Leaderboard';
 import { rebuiltHref } from '../../shell/nav';
+import { WeekStrip, type WeekStripDay } from '../../ui/WeekStrip';
 
 /** A card with this many rows or fewer leaves room beside Team scoring, and says what the list holds (design parity, 5 Nov). */
 const FEW_AGENDA_ROWS = 3;
 /** The rows these two cards show (06 11). */
 const DESK_ROUNDS = 4;
 const DESK_BOARD = 5;
+
+/** The week's seven days for the shared strip: phone takes the weekday's letter, desktop its short name. */
+export function weekStripDays(days: ChCoachHome['week']['days'], letter: boolean): WeekStripDay[] {
+  return days.map((d) => ({
+    date: d.date,
+    top: letter ? d.weekday.slice(0, 1) : d.weekday,
+    num: d.dayOfMonth,
+    isToday: d.isToday,
+    dots: d.eventCount,
+    mark: d.hasCompetition ? TYPE_ICON[d.competitionType ?? 'tournament'] : undefined,
+    label: `${d.weekday} ${d.dayOfMonth}${d.isToday ? ', today' : ''}${d.hasCompetition ? ', competition' : ''}, ${plural(d.eventCount, 'event')}`,
+    href: `${CALENDAR}?view=day&date=${d.date}`,
+  }));
+}
 
 /** Up next in the hero's right column: glass, no chevron (06 §11.4). */
 export function DeskNext({ e, now }: { e: ChHomeEvent; now: Date | null }) {
@@ -70,9 +85,10 @@ export function DeskHead({ id, title, href, link }: { id: string; title: string;
 
 /**
  * This week: today's rows, then what is coming, rows 56 (06 §11.4). The card matches Team scoring's height, so a short list
- * ends with a quiet line that says what the list holds: later days list competitions only, so it never says the week is empty.
+ * gives the room to the week's seven days (the strip the phone already has, each a link to that day) and a quiet line that says
+ * what the list holds: later days list competitions only, so it never says the week is empty.
  */
-export function DeskAgenda({ rows }: { rows: ChCoachHome['week']['agenda'] }) {
+export function DeskAgenda({ rows, days }: { rows: ChCoachHome['week']['agenda']; days: ChCoachHome['week']['days'] }) {
   const t = useChClockText();
   return (
     <section className="ch-dh-card" aria-labelledby="ch-dh-week">
@@ -94,7 +110,12 @@ export function DeskAgenda({ rows }: { rows: ChCoachHome['week']['agenda'] }) {
           </li>
         ))}
       </ul>
-      {rows.length <= FEW_AGENDA_ROWS && <p className="ch-dh-rest">That’s today and this week’s competitions.</p>}
+      {rows.length <= FEW_AGENDA_ROWS && (
+        <>
+          <WeekStrip label="This week, day by day" className="ch-dh-week" maxDots={4} days={weekStripDays(days, false)} />
+          <p className="ch-dh-rest">That’s today and this week’s competitions.</p>
+        </>
+      )}
       </>
       )}
     </section>

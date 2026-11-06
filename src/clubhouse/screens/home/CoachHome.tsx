@@ -84,7 +84,7 @@ function CoachHomeBody({ data, now, live, crh = false }: { data: ChCoachHome; no
             {data.week.error ? (
               <CrhFailedCard id="ch-dh-week-failed" title="This week" href={CALENDAR} link="Calendar" code="CH-2201" what="This week didn’t load" body="Your events are safe. Try again." />
             ) : (
-              <DeskAgenda rows={data.week.agenda} />
+              <DeskAgenda rows={data.week.agenda} days={data.week.days} />
             )}
           </SectionBoundary>
           {data.phone.form ? (
@@ -217,11 +217,12 @@ function HomeFirstRun({ data, phone, crh = false }: { data: ChCoachHome; phone: 
           <h1>Welcome to Clubhouse</h1>
           <p className="ch-hm-hero__brief">
             <Icon icon={Sparkles} size={14} />
-            Set up your team and your first week shows here.
+            {events ? 'Add your players and this week fills in with who’s going.' : 'Set up your team and your first week shows here.'}
           </p>
+          {/* On the hero's green, as on the loaded page: on the flat page below it the capsules' light ink vanished. */}
+          <CoachQueue queue={data.queue} phone />
         </header>
         <div className="ch-hm-body">
-          <CoachQueue queue={data.queue} phone />
           {events && <WeekStrip days={data.week.days} note={data.phone.weekNote} />}
           <section className="ch-hm-setup" aria-labelledby="ch-hm-setup-t" data-ch-code="CH-2308">
             <h2 id="ch-hm-setup-t">Get your team set up</h2>
@@ -239,10 +240,11 @@ function HomeFirstRun({ data, phone, crh = false }: { data: ChCoachHome; phone: 
             <h1 className="ch-display">Welcome to Clubhouse</h1>
             <p className="ch-h-head__sub ch-dh-brief">
               <Icon icon={Sparkles} size={14} />
-              Set up your team and your first week shows here.
+              {events ? 'Add your players and this week fills in with who’s going.' : 'Set up your team and your first week shows here.'}
             </p>
             <CoachQueue queue={data.queue} phone />
           </div>
+          {data.phone.next && <DeskNext e={data.phone.next} now={null} />}
         </header>
         <div className="ch-h-grid">
           <section className="ch-dh-card ch-hm-setup" aria-labelledby="ch-hm-setup-t" data-ch-code="CH-2308">
@@ -250,7 +252,7 @@ function HomeFirstRun({ data, phone, crh = false }: { data: ChCoachHome; phone: 
             <SetupRows roster={roster} />
           </section>
           {events ? (
-            <DeskAgenda rows={data.week.agenda} />
+            <DeskAgenda rows={data.week.agenda} days={data.week.days} />
           ) : (
             <section className="ch-dh-card" aria-labelledby="ch-dh-week">
               <DeskHead id="ch-dh-week" title="This week" href={CALENDAR} link="Calendar" />
