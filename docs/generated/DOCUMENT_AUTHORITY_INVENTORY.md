@@ -1044,6 +1044,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-06-sweep-numbers.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-06-sweep-shared.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-06-sweep-team.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/auth-onboarding-ground-truth.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/intelligence.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/02_AUTHORITY_MODEL.md` | current | - | - | yes | - |

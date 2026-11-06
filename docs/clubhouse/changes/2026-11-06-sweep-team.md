@@ -6,4 +6,5 @@
 - `.ch-num` holds tabular figures against any `font` shorthand.
 - `lib/chart-geometry`'s `placeLabels` takes a preferred place and obstacles.
 - `shell/phone-chrome`'s `DeskTop` lets a screen use the desk's glass bar.
-- `ui/Modal` is reachable by its own panel for sheets that scroll their content.
+- `ui/Modal`'s `bare` draws no head or Close for a panel that has its own; the
+  title stays for assistive tech.
