@@ -74,6 +74,12 @@ describe('who gets the key', () => {
     expect(key()!.getAttribute('aria-haspopup')).toBe('dialog');
   });
 
+  it('says what it is, beside the mark, and its name is what it says', () => {
+    show('coach');
+    expect(key()!.querySelector('.hkey__label')!.textContent).toBe('CoachHelm');
+    expect(key()!.getAttribute('aria-label')).toContain(key()!.querySelector('.hkey__label')!.textContent!);
+  });
+
   it('on CoachHelm itself: hidden, as today’s key is', () => {
     show('coach', { pathname: '/golf/dashboard/coachhelm' });
     expect(key()).toBeNull();
