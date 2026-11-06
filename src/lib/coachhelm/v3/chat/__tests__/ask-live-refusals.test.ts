@@ -216,6 +216,14 @@ describe('production shapes: 9 of 20 coach_chat turns refused, 2026-10-22 to 202
     expect(audit('Across his last 99-22 logged approaches.', [], [18, 22]).map((c) => c.text)).toEqual(['99']);
   });
 
+  it('a figure has to round to the evidence at the precision it was written', () => {
+    const avg = [figure({ metric_id: 'scoring_average', value: 72.55, entity: ann, sample_size: 23, window_start: '2026-05-01', window_end: '2026-09-30' })];
+    for (const written of ['72.55', '72.5', '72.6', '73']) expect(audit(`Ann Lee averages ${written}.`, avg)).toEqual([]);
+    for (const written of ['72.95', '72.65', '72.7', '74']) expect(audit(`Ann Lee averages ${written}.`, avg).map((c) => c.text)).toEqual([written]);
+    expect(audit('Ann Lee averages about 74.', avg)).toEqual([]);
+    expect(audit('Ann Lee averages 72.550.', avg)).toEqual([]);
+  });
+
   it('a real minus sign still means negative', () => {
     expect(audit('SG approach is -22 here.', [], [22]).map((c) => c.text)).toEqual(['-22']);
     expect(audit('SG approach is 3.83 for Bo Ray.', [sg(-3.83, bo)])).toEqual([]);
