@@ -538,3 +538,108 @@ html[data-fw-theme='dark'] .ch-ak-th {
   opacity: 0.4;
   cursor: default;
 }
+||||||| parent of 32c7e7c5b3 (feat(clubhouse): Ask's Confirm card draws the real week and flies home; fields fill, chip pops, Told coins, per-flow Undo; a held receipt is no longer 'not completed')
+/* Kit ② draft filling (M-ASK-42, 56): one field every 260ms behind a green write head, then the On confirm line and the buttons. A card that was not new draws still. */
+.ch-ak-th .conf.is-fill .evd .f { position: relative; animation: ch-ak-rise6 0.26s var(--ch-ease) both; animation-delay: calc(var(--ch-i, 0) * 260ms); }
+.ch-ak-th .conf.is-fill .evd .f::before { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; border-radius: var(--ch-radius-mark); background: var(--ch-green-600); opacity: 0; transform-origin: 0 50%; animation: ch-ak-wh 0.26s linear both; animation-delay: calc(var(--ch-i, 0) * 260ms); }
+.ch-ak-th .conf.is-fill .oncf, .ch-ak-th .conf.is-fill .btns, .ch-ak-th .conf.is-fill .ch-ak-evlink { animation: ch-ak-rise6 0.26s var(--ch-ease-spring-settle) both; animation-delay: calc(var(--ch-n, 0) * 260ms); }
+@keyframes ch-ak-wh { 0% { opacity: 1; transform: scaleX(0); } 90% { opacity: 1; transform: scaleX(1); } 100% { opacity: 0; } }
+
+/* E-INF: what Ask worked out, each with its source; a tap asks to change it. Pops 70ms apart with the card (M-ASK-40). */
+.ch-ak-worked { display: grid; gap: 6px; margin: 12px 16px 0; }
+.ch-ak-worked small { font: var(--ch-type-13-strong); color: var(--ch-text-secondary); }
+.ch-ak-worked .ipls { display: flex; flex-wrap: wrap; gap: 6px; }
+.ch-ak-worked .ipl { display: grid; gap: 1px; padding: 6px 12px 8px; border: 0; border-radius: var(--ch-radius-md); background: var(--ch-card-bg); box-shadow: 0 0 0 0.5px var(--ch-ak-ak-hair); text-align: left; }
+.ch-ak-worked button.ipl { position: relative; cursor: pointer; }
+.ch-ak-worked button.ipl::after { content: ''; position: absolute; inset: -4px 0; }
+.ch-ak-worked .ipl b { font: var(--ch-type-13-strong); color: var(--ch-text-primary); }
+.ch-ak-worked .ipl span { font: var(--ch-type-12); color: var(--ch-text-tertiary); }
+.ch-ak-th .conf.is-fill .ipl { animation: ch-ak-pop 0.54s var(--ch-ease-spring-pop, var(--ch-ease)) both; animation-delay: calc(var(--ch-i, 0) * 70ms); }
+@keyframes ch-ak-pop { from { opacity: 0; transform: scale(0.9); } }
+
+.ch-ak-th .ch-ak-evlink { position: relative; display: block; margin: 6px 16px 0; padding: 0; border: 0; background: none; font: var(--ch-type-14-strong); color: var(--ch-green-600); cursor: pointer; }
+.ch-ak-th .ch-ak-evlink::after { content: ''; position: absolute; inset: -12px 0; }
+
+/* M-ASK-50: the Draft chip takes the flow's done word. */
+.ch-ak-th .dchip.is-pop { animation: ch-ak-chip 0.54s var(--ch-ease-spring-pop, var(--ch-ease)) both; }
+@keyframes ch-ak-chip { from { transform: scale(0.7); } }
+
+/* M-ASK-51: at the ring's end Undo fades and takes no presses. */
+.ch-ak-th .receipt .undo { transition: opacity 0.26s var(--ch-ease); }
+.ch-ak-th .receipt .undo.gone { opacity: 0; pointer-events: none; }
+.ch-ak-th .receipt.undone:focus { outline: none; }
+
+/* E-TOLD: coins 22 overlapping 5; they light 90ms apart only after a window this visit watched (M-ASK-53). */
+.ch-ak-th .told { display: flex; align-items: center; gap: 8px; }
+.ch-ak-th .told .coins { display: inline-flex; flex: none; }
+.ch-ak-th .told .coin { display: inline-flex; margin-left: -4px; border-radius: 50%; box-shadow: 0 0 0 2px var(--ch-well-bg-flat); }
+.ch-ak-th .told .coin:first-child { margin-left: 0; }
+.ch-ak-th .told.is-live { animation: ch-ak-rise6 0.46s var(--ch-ease-spring-smooth) both; }
+.ch-ak-th .told.is-live .coin { animation: ch-ak-coin 0.54s var(--ch-ease-spring-pop, var(--ch-ease)) both; animation-delay: calc(160ms + var(--ch-i, 0) * 90ms); }
+@keyframes ch-ak-coin { from { opacity: 0.35; filter: saturate(0.3); transform: scale(0.85); } }
+
+/* E-WK: the week the draft lands in. Hour column 30, five days, body 132. */
+.ch-ak-wk { padding: 6px 16px 12px; }
+.ch-ak-wk .wh, .ch-ak-wk .wb { display: grid; grid-template-columns: 30px repeat(5, minmax(0, 1fr)); gap: 4px; }
+.ch-ak-wk .wh > span { display: grid; justify-items: center; gap: 1px; padding-bottom: 4px; color: var(--ch-text-secondary); }
+.ch-ak-wk .wh small { font: var(--ch-type-11-strong); letter-spacing: var(--ch-track-11); }
+.ch-ak-wk .wh b { font: var(--ch-type-15-strong); color: var(--ch-text-primary); }
+.ch-ak-wk .wh .on small, .ch-ak-wk .wh .on b { color: var(--ch-accent); }
+.ch-ak-wk .wh em { width: 7px; height: 7px; border-radius: 50%; background: var(--ch-chart-track); }
+.ch-ak-wk .wh em.is-busy { background: var(--ch-chart-loss-fill); }
+.ch-ak-wk .wh em.is-free { background: var(--ch-chart-gain-fill); }
+.ch-ak-wk .wh em.is-new { background: var(--ch-accent); }
+.ch-ak-wk .wb { position: relative; height: 132px; }
+.ch-ak-wk .hrs { position: relative; }
+.ch-ak-wk .hrs span { position: absolute; right: 0; font: var(--ch-type-11); color: var(--ch-text-tertiary); }
+.ch-ak-wk .col { position: relative; overflow: hidden; border-radius: var(--ch-radius-sm); background-color: var(--ch-well-bg-flat); background-image: linear-gradient(var(--ch-separator) var(--ch-hairline-w), transparent 0); background-size: 100% 30px; }
+.ch-ak-wk .busy, .ch-ak-wk .slot { position: absolute; left: 2px; right: 2px; overflow: hidden; border-radius: var(--ch-radius-tail); }
+.ch-ak-wk .busy { padding: 2px 4px; background: var(--ch-chart-track); font: var(--ch-type-11-strong); color: var(--ch-text-secondary); }
+.ch-ak-wk .slot.is-open { background: var(--ch-selected-tint); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--ch-accent) 35%, transparent); }
+.ch-ak-wk .slot.is-open::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 2px var(--ch-accent); opacity: 0; animation: ch-ak-slot 1.6s ease-in-out infinite; }
+.ch-ak-wk .slot.is-ev { display: grid; align-content: start; padding: 2px 4px; background: var(--ch-accent); color: var(--ch-text-on-accent); }
+.ch-ak-wk .slot.is-ev b { display: block; font: var(--ch-type-11-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ch-ak-wk .slot.is-ev span { font: var(--ch-type-11); }
+.ch-ak-wk .slot.is-landing { animation: ch-ak-land 0.54s var(--ch-ease-spring-pop, var(--ch-ease)) 0.6s both; }
+@keyframes ch-ak-slot { 50% { opacity: 1; } }
+@keyframes ch-ak-land { from { opacity: 0; transform: scale(0.9); } }
+
+/* E-LOCKP: the announcement on a player's lock screen; the banner drops in 200ms after the card (M-ASK-57). */
+.ch-ak-lock { display: grid; justify-items: center; gap: 8px; margin: 12px 16px 4px; padding: 12px; border-radius: var(--ch-radius-lg); background: linear-gradient(165deg, var(--ch-ak-ak-feature), var(--ch-frame)); }
+.ch-ak-lock .tm b { font: var(--ch-type-28-strong); letter-spacing: var(--ch-track-28); color: var(--ch-on-green-ink); }
+.ch-ak-lock .ban { display: flex; gap: 8px; width: 100%; padding: 8px 12px; border-radius: var(--ch-radius-lg); background: rgb(253 251 247 / 0.9); color: #46433d; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.ch-ak-lock .app { display: grid; place-items: center; flex: none; width: 26px; height: 26px; border-radius: var(--ch-radius-sm); background: #155a39; color: #f7f4ea; }
+.ch-ak-lock .tx { display: grid; gap: 1px; min-width: 0; }
+.ch-ak-lock small { display: flex; justify-content: space-between; gap: 8px; font: var(--ch-type-12); }
+.ch-ak-lock small em { font: var(--ch-type-11-strong); font-style: normal; }
+.ch-ak-lock small .is-urgent { color: #8a4c00; font: var(--ch-type-12-strong); }
+.ch-ak-lock .ban b { font: var(--ch-type-14-strong); color: #1c1b18; }
+.ch-ak-lock .bd { font: var(--ch-type-13); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ch-ak-th .conf.is-fill .ch-ak-lock { animation: ch-ak-fade 0.26s var(--ch-ease) both; }
+.ch-ak-th .conf.is-fill .ch-ak-lock .ban { animation: ch-ak-drop 0.54s var(--ch-ease-spring-pop, var(--ch-ease)) 0.2s both; }
+@keyframes ch-ak-drop { from { opacity: 0; transform: translateY(-26px) scale(0.96); } }
+
+/* E-QUAL: round cards and the travel seats. */
+.ch-ak-qual { display: grid; gap: 8px; margin: 12px 16px 0; }
+.ch-ak-qual .rds { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+.ch-ak-qual .rd { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); }
+.ch-ak-qual .tile { display: grid; justify-items: center; flex: none; width: 40px; padding: 4px 0; border-radius: var(--ch-radius-sm); background: var(--ch-card-bg); }
+.ch-ak-qual .tile small { font: var(--ch-type-11-strong); color: var(--ch-accent); }
+.ch-ak-qual .tile b { font: var(--ch-type-17-strong); color: var(--ch-text-primary); }
+.ch-ak-qual .rd > span:last-child b { font: var(--ch-type-14-strong); color: var(--ch-text-primary); }
+.ch-ak-qual .sts { display: flex; align-items: center; gap: 12px; font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-ak-qual .bar { display: inline-flex; gap: 4px; }
+.ch-ak-qual .bar i { width: 24px; height: 6px; border-radius: var(--ch-radius-mark); background: var(--ch-chart-gain-fill); }
+.ch-ak-qual .bar i.pick { background: var(--ch-chart-track); box-shadow: inset 0 0 0 1px var(--ch-chart-gain-fill); }
+.ch-ak-th .conf.is-fill .ch-ak-qual .rd { animation: ch-ak-qr 0.71s var(--ch-ease-spring-send, var(--ch-ease)) both; animation-delay: calc(var(--ch-i, 0) * 90ms); }
+.ch-ak-th .conf.is-fill .ch-ak-qual .bar i { animation: ch-ak-fade 0.08s linear both; animation-delay: calc(var(--ch-i, 0) * 80ms); }
+@keyframes ch-ak-qr { from { opacity: 0; transform: translateX(24px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ch-ak-th .conf.is-fill .evd .f, .ch-ak-th .conf.is-fill .oncf, .ch-ak-th .conf.is-fill .btns, .ch-ak-th .conf.is-fill .ch-ak-evlink, .ch-ak-th .conf.is-fill .ipl, .ch-ak-th .conf.is-fill .ch-ak-lock .ban, .ch-ak-th .conf.is-fill .ch-ak-qual .rd, .ch-ak-th .conf.is-fill .ch-ak-qual .bar i { animation: none; }
+  .ch-ak-th .conf.is-fill .evd .f::before, .ch-ak-wk .slot.is-open::after { display: none; }
+  .ch-ak-th .dchip.is-pop, .ch-ak-th .told.is-live, .ch-ak-th .told.is-live .coin { animation: none; }
+  .ch-ak-wk .slot.is-landing { animation: ch-ak-fade 0.18s linear both; }
+}
+[data-motion='off'] .ch-ak-th .conf.is-fill :is(.evd .f, .oncf, .btns, .ch-ak-evlink, .ipl, .ch-ak-lock .ban, .ch-ak-qual .rd, .ch-ak-qual .bar i), [data-motion='off'] .ch-ak-th :is(.dchip.is-pop, .told.is-live, .told.is-live .coin), [data-motion='off'] .ch-ak-wk .slot.is-landing { animation: none; }
+[data-motion='off'] .ch-ak-th .conf.is-fill .evd .f::before, [data-motion='off'] .ch-ak-wk .slot.is-open::after { display: none; }
