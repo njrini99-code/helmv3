@@ -535,7 +535,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                         }}
                       >
                         <Icon icon={FolderClosed} size={18} className="fi" />
-                        <input className="inp" autoFocus autoCapitalize="words" enterKeyHint="done" aria-label="Folder name" maxLength={FIELD_MAX} value={name} placeholder="Folder name" onChange={(e) => setName(e.target.value)} />
+                        <input ref={(el) => { el?.focus({ preventScroll: true }); }} className="inp" autoCapitalize="words" enterKeyHint="done" aria-label="Folder name" maxLength={FIELD_MAX} value={name} placeholder="Folder name" onChange={(e) => setName(e.target.value)} />
                         <Button variant="secondary" size="sm" type="submit" disabled={!clean || dupe || reserved}>
                           Create
                         </Button>
