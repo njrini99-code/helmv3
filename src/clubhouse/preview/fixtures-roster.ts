@@ -10,7 +10,7 @@ const RAW: Raw[] = [
   ['ava', 'Ava Lindqvist', 'Junior', 2028, 'Gothenburg, SE', 'active', 72.4, 2.4, 19, 0.6, [73, 74, 72, 72, 72, 73, 72], 1, 2, [['Oakmont CC', 'Oct 12', 72, 1], ['Finley GC', 'Oct 8', 73, 1], ['Finley GC', 'Oct 4', 72, 0]], null, null],
   ['jonah', 'Jonah Okafor', 'Sophomore', 2029, 'Charlotte, NC', 'active', 74.1, 3.9, 21, -0.9, [72, 72, 73, 74, 75, 74, 75], 2, 1, [['Pine Needles', 'Oct 11', 76, 4], ['Finley GC', 'Oct 8', 75, 3], ['Finley GC', 'Oct 4', 74, 2]], { tone: 'loss', text: 'Scoring up 2.1' }, null],
   ['eli', 'Eli Brandt', 'Junior', 2028, 'Raleigh, NC', 'active', 74.8, 4.2, 14, -0.4, [74, 75, 74, 75, 75, 74, 75], 0, 0, [['Finley GC', 'Oct 5', 75, 3], ['Finley GC', 'Sep 28', 74, 2], ['Lonnie Poole', 'Sep 27', 75, 3]], { tone: 'warning', text: 'No rounds in 9 days' }, null],
-  ['priya', 'Priya Natarajan', 'Freshman', 2030, 'Cary, NC', 'active', 75.2, 5.1, 16, -1.4, [78, 77, 77, 76, 75, 75, 74], 1, 2, [['Finley GC', 'Oct 10', 74, 2], ['Finley GC', 'Oct 8', 75, 3], ['Finley GC', 'Oct 4', 75, 3]], { tone: 'gain', text: '4 rounds under average' }, null],
+  ['priya', 'Priya Natarajan', 'Freshman', 2030, 'Cary, NC', 'active', 75.2, 5.1, 16, -1.4, [78, 77, 77, 76, 75, 75, 74], 1, 2, [['Finley GC', 'Oct 10', 74, 2], ['Finley GC', 'Oct 8', 75, 3], ['Finley GC', 'Oct 4', 75, 3]], { tone: 'gain', text: '4 rounds under avg' }, null],
   ['luca', 'Luca Ferraro', 'Freshman', 2030, 'Bologna, IT', 'active', 76.3, 6.0, 2, null, [77, 76], 0, 1, [['Finley GC', 'Oct 8', 76, 4], ['Finley GC', 'Oct 1', 77, 5]], null, null],
   ['mia', 'Mia Thornton', 'Junior', 2028, 'Greenville, SC', 'inactive', 73.8, 3.4, 9, -0.2, [74, 73, 74, 74, 73], 0, 0, [['Finley GC', 'Sep 12', 74, 2]], null, null],
 ];

@@ -2919,6 +2919,9 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   /* B10.4: Today, when the page is away from it, at the right of the year's line; out of flow, so nothing moves. */
   .ch-calm-head {
     position: relative;
+    /* The head opens the sheet: a rule above it only drew a stray line under the bar, as on Team Hub. */
+    padding-top: 8px;
+    border-top: 0;
   }
   .ch-calm-today {
     position: absolute;

@@ -2140,7 +2140,8 @@ p.ch-shs-mini-cap {
   font: var(--ch-type-16-strong); letter-spacing: var(--ch-track-16); }
 .ch-shs-leg__m {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  /* A fixed first column: at auto, each leg's chart started at a different x. A long stat ("Greens in regulation") takes two lines. */
+  grid-template-columns: calc(116 * var(--ch-type-k)) minmax(0, 1fr);
   align-items: end;
   gap: 16px;
   margin-top: 8px;
