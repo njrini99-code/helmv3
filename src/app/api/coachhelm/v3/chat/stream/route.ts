@@ -570,6 +570,8 @@ export async function POST(req: NextRequest) {
   // must never disagree. See `instructions.ts`'s `CLAIMS_BLOCK_SECTION` doc
   // comment.
   const claimsBlockEnabled = isFlagEnabled('coachhelm_chat_claim_gate');
+  /** Ask v2: what `write_artifact` wrote this turn. A figure in a report is audited like one in the answer. */
+  const artifactWords: string[] = [];
 
   // Ask v2 only where Clubhouse is on for the team: this route also serves Fairway's chat (coachhelm-ask 02, hard rules).
   const askV2 = isAskV2Enabled() && isClubhouseForTeam(ctx.team_id);
@@ -587,6 +589,7 @@ export async function POST(req: NextRequest) {
         teamTools: isClubhouseForTeam(ctx.team_id),
         askV2,
         surface: parsed.data.surface,
+        onArtifactWords: (words) => artifactWords.push(words),
         practicePlans: isPracticePlansEnabled(),
         defer: (fn) => after(fn),
       });
@@ -948,7 +951,7 @@ export async function POST(req: NextRequest) {
       turnText = (askV2 ? stripReadMarkers(strippedText) : strippedText).trim();
       turnVerdict = computeTurnVerdict({
         streamComplete: !streamErrored,
-        text: turnText,
+        text: artifactWords.length ? [turnText, ...artifactWords].join('\n\n') : turnText,
         measurements,
         series: seriesAll,
         detailNumbers,

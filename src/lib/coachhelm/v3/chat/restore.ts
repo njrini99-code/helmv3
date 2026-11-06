@@ -38,6 +38,8 @@ const REPLAYABLE = new Set([
   'data-brief',
   'data-practice-plan',
   'data-handoff',
+  // A report, lineup or recap the turn wrote: its card and every version come back with the thread.
+  'data-artifact',
   'data-action-proposal',
   'data-action-receipt',
   // The live grounding flag (route.ts's `execute`, N15) is written into the

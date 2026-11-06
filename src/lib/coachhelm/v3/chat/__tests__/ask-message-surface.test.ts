@@ -95,3 +95,27 @@ describe('polls and drills from the Ask tab', () => {
     expect(out.message).toContain('Drill bank comes with the practice builder');
   });
 });
+
+describe('a report beside the chat (FID-ASK-3)', () => {
+  beforeEach(() => write.mockClear());
+
+  it('writes a version the thread can draw, and hands its words to the audit', async () => {
+    const heard: string[] = [];
+    const t = buildCoachTools({ sb: {} as never, ctx, conversationId: null, writer: { write } as never, collect: vi.fn(), askV2: true, onArtifactWords: (w) => heard.push(w) }) as never as Record<string, { execute: (i: unknown, o: never) => Promise<{ artifact_id: string }> }>;
+    const out = await t.write_artifact!.execute({ kind: 'player_report', title: 'Eli, October', body: 'Eli gained 1.2 on approach.' }, {} as never);
+    expect(heard).toEqual(['Eli gained 1.2 on approach.']);
+    expect(write.mock.calls[0]?.[0]).toMatchObject({ type: 'data-artifact', data: { artifactId: out.artifact_id, kind: 'player_report', title: 'Eli, October', body: 'Eli gained 1.2 on approach.' } });
+    await t.write_artifact!.execute({ artifact_id: out.artifact_id, kind: 'player_report', title: 'Eli, October', body: 'Second.' }, {} as never);
+    const [a, b] = write.mock.calls.map((c) => (c[0] as { id: string; data: { artifactId: string; versionId: string } }));
+    expect(b!.data.artifactId).toBe(a!.data.artifactId);
+    expect(b!.data.versionId).not.toBe(a!.data.versionId);
+    expect(b!.id).not.toBe(a!.id);
+  });
+
+  it('stays out of Quick chat, with its publish', () => {
+    const names = Object.keys(tools('quick_chat'));
+    expect(names).not.toContain('write_artifact');
+    expect(names).not.toContain('publish_artifact');
+    expect(Object.keys(tools('ask'))).toContain('publish_artifact');
+  });
+});

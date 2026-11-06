@@ -336,7 +336,7 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
     if (evidenceOpen && narrowDesktop()) setEvidence(null);
   };
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const artifactView = artifact && <ArtifactView key={artifact.id} artifact={artifact} phone={phone} body={(b) => <ArtifactBody body={b} />} onClose={() => setArtifact(null)} />;
+  const artifactView = artifact && <ArtifactView key={artifact.id} artifact={artifact} phone={phone} body={(b) => <ArtifactBody body={b} />} onPublish={(title) => { if (phone) setArtifact(null); ask(`Publish “${title}” for the team.`); }} onClose={() => setArtifact(null)} />;
   // The phone sheet's subject, kept after it closes so its exit still has the content it showed.
   const [sheetEvidence, setSheetEvidence] = useState<EvidenceFocus | null>(null);
   if (phone && evidenceOpen && evidence !== sheetEvidence) setSheetEvidence(evidence);

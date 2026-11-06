@@ -1,11 +1,12 @@
 import 'server-only';
 import { tool, type ToolSet, type UIMessageStreamWriter } from 'ai';
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import type { CoachChatContext } from './context';
 import { buildPollPayload } from '@/lib/golf/message-polls';
-import { DraftBoardInput, DraftMessageInput, DraftPollInput } from './create-tools';
+import { DraftBoardInput, DraftMessageInput, DraftPollInput, WriteArtifactInput } from './create-tools';
 
 /** Which chat is asking: Quick chat's card is the coach's Send, the Ask tab hands words to Messages. */
 export type AskSurface = 'ask' | 'quick_chat';
@@ -38,7 +39,7 @@ const BriefInput = z.object({
 /**
  * Tools that write nothing: the practice brief asks, and the board hands a draft to Messages. Neither is confirm-gated because neither has a write to gate (02 §14.3). `draft_poll` is not registered: it stays off until held `20261028140800` is applied.
  */
-export function askDraftTools({ sb, ctx, writer, practicePlans = false, surface = 'ask' }: { practicePlans?: boolean; surface?: AskSurface; sb: SupabaseClient<Database>; ctx: CoachChatContext; writer: UIMessageStreamWriter }): ToolSet {
+export function askDraftTools({ sb, ctx, writer, practicePlans = false, surface = 'ask', onArtifactWords }: { practicePlans?: boolean; surface?: AskSurface; onArtifactWords?: (words: string) => void; sb: SupabaseClient<Database>; ctx: CoachChatContext; writer: UIMessageStreamWriter }): ToolSet {
   let n = 0;
   return {
     find_thread: tool({
@@ -86,6 +87,16 @@ export function askDraftTools({ sb, ctx, writer, practicePlans = false, surface 
     ...(surface === 'quick_chat'
       ? {}
       : {
+          write_artifact: tool({
+            description: 'Write a long piece the coach will keep (a player report, a lineup, a round recap) as its own document beside the chat, not in the answer. Pass the same artifact_id to revise it: earlier versions stay. Every figure must come from a read this turn. Writes nothing outside this chat.',
+            inputSchema: WriteArtifactInput,
+            execute: async ({ artifact_id, kind, title, body }) => {
+              const artifactId = artifact_id ?? randomUUID();
+              onArtifactWords?.(body);
+              writer.write({ type: 'data-artifact', id: `artifact-${artifactId}-${(n += 1)}`, data: { artifactId, kind, title, versionId: randomUUID(), at: new Date().toISOString(), body } });
+              return { status: 'shown', artifact_id: artifactId, message: 'It is on screen as a card the coach can open. Say one line about it; do not repeat it.' };
+            },
+          }),
           draft_poll: tool({
             description: 'Open a poll in a group thread found with find_thread, in the poll sheet in Messages. Posts nothing: the coach taps Send there. Votes always show names.',
             inputSchema: DraftPollInput,

@@ -15,6 +15,7 @@ import { setPlayerAvailabilityCoachNote } from '@/app/golf/actions/team-manageme
 import { createRecruit } from '@/app/golf/actions/recruiting';
 import { lockTournamentLineup, setTournamentEntries } from '@/app/golf/actions/tournaments';
 import { createTeamDrill } from '@/app/golf/actions/practice-library';
+import { saveTextDocument } from '@/app/golf/actions/documents';
 import { POLL_MAX_OPTIONS, POLL_MIN_OPTIONS, POLL_OPTION_MAX, POLL_QUESTION_MAX } from '@/lib/golf/message-polls';
 import type { CoachChatContext } from './context';
 import { requireRosterPlayer } from './context';
@@ -426,7 +427,27 @@ export const drillFlow: FlowDef<z.infer<typeof drillInput>> = {
   },
 };
 
-export const CREATE_FLOWS: ReadonlyArray<FlowDef<never>> = [messageFlow, eventFlow, tripFlow, qualifierFlow, goalFlow, noteFlow, blockFlow, breakFlow, termFlow, availFlow, recruitFlow] as unknown as ReadonlyArray<FlowDef<never>>;
+const ARTIFACT_MAX = 8000;
+const publishArtifactInput = z.object({ title: z.string().min(1).max(120), body: z.string().min(1).max(ARTIFACT_MAX), players: z.number().int().min(1) });
+/** Publish from the artifact pane (ask/06 E-FPICK): the same hold as every write. The document opens for players; nothing else is sent. */
+const publishArtifactFlow: FlowDef<z.infer<typeof publishArtifactInput>> = {
+  name: 'publish_artifact',
+  description: 'Publish a piece you wrote with write_artifact to Documents, where every player on the team can open it. Use its latest words unchanged. REQUIRES the coach to confirm.',
+  input: publishArtifactInput,
+  plan: (ctx, i) => ({
+    action: `Publish to ${ctx.roster.length} ${ctx.roster.length === 1 ? 'player' : 'players'}`,
+    summary: i.title,
+    facts: [fact('Goes to', 'Documents', false), fact('Words', i.body, false)],
+    notifications: ['Every player on the team can open it in Documents, after an 8 second Undo. Nobody gets a notification.'],
+    key: ['publish_artifact', i.title, createHash('sha256').update(i.body).digest('hex')],
+  }),
+  run: async (ctx, i) => {
+    const res = await saveTextDocument(ctx.team_id, i.title, i.body, { category: 'other', playerVisible: true });
+    return { ok: !!res.data, error: res.data ? undefined : (res.error ?? 'That didn’t publish. Nothing changed.'), summary: `${i.title} is in Documents.`, kind: 'document', label: i.title };
+  },
+};
+
+export const CREATE_FLOWS: ReadonlyArray<FlowDef<never>> = [publishArtifactFlow, messageFlow, eventFlow, tripFlow, qualifierFlow, goalFlow, noteFlow, blockFlow, breakFlow, termFlow, availFlow, recruitFlow] as unknown as ReadonlyArray<FlowDef<never>>;
 export const LINEUP_FLOWS: ReadonlyArray<FlowDef<never>> = [lineupFlow, lockFlow] as unknown as ReadonlyArray<FlowDef<never>>;
 export const CREATE_TOOL_NAMES: readonly string[] = [...CREATE_FLOWS, ...LINEUP_FLOWS, drillFlow as unknown as FlowDef<never>].map((f) => f.name);
 
@@ -447,4 +468,11 @@ export const DraftPollInput = z.object({
   options: z.array(z.string().min(1).max(POLL_OPTION_MAX)).min(POLL_MIN_OPTIONS).max(POLL_MAX_OPTIONS),
   multi: z.boolean().optional(),
   closes_at: z.string().optional().describe('ISO time in the future, at most 30 days out. Leave out to keep it open.'),
+});
+/** A long piece beside the chat (ask/06 E-ACARD, E-APANEL). Its words go through the same number audit as the answer. */
+export const WriteArtifactInput = z.object({
+  artifact_id: z.string().uuid().optional().describe('The id write_artifact returned, to add a version. Leave out for a new piece.'),
+  kind: z.enum(['player_report', 'lineup', 'round_recap']),
+  title: z.string().min(1).max(120),
+  body: z.string().min(1).max(ARTIFACT_MAX),
 });

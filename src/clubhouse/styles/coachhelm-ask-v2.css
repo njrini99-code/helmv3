@@ -782,3 +782,6 @@ html[data-fw-theme='dark'] .ch-ak-th {
 
 /* FID-ASK-15: low is amber, not a shorter green. */
 .ch-ak-meter i.is-low { background-image: linear-gradient(90deg, var(--ch-chart-loss-fill) var(--ch-ak-fill, 20%), transparent 0); }
+
+/* Save draft (E-SAVE): where a report goes. Portaled, so it anchors to its own class. */
+.ch-ak-save { display: grid; gap: 12px; }
