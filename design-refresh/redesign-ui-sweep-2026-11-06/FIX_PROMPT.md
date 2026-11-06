@@ -112,21 +112,21 @@ Before each lane PR, read that lane's `lanes/*.md` files in full, including its 
 - **QA-1 The same player has different numbers on different pages** [P0] data selectors behind `screens/coachhelm/team/TeamBoard.tsx`
 - **QA-2 Ask: a failed chart renders as an empty "Read / Result" placeholder table** [P0] Ask answer visual renderer
 - **QA-3 Ask: the team appears as a player row in "Scoring average, this season"** [P0] Ask team tools
-- **QA-15 Practice desktop: unfinished page** [P0] 
-- **QA-16 Plan format desktop: phone layout shipped on desktop; back goes to the wrong page** [P0] 
+- **QA-15 Practice desktop: unfinished page** [P0]
+- **QA-16 Plan format desktop: phone layout shipped on desktop; back goes to the wrong page** [P0]
 - **QA-4 Ask: triple-nested cards** [P1] Ask answer card > visual card > stat card
-- **QA-5 Ask: composer chip says "last 30 days" while the answer uses the season (96 days)** [P1] 
-- **QA-6 Ask: left rail "CoachHelm knows" heading with an empty list; first table column has a tinted stripe; "Table" toggle clipped under the sticky title** [P1] 
-- **QA-7 Team view: gains and losses coloured the same** [P1] 
-- **QA-8 Team view: This week and Working on show the same three items; This week cards are nested cards with a heavy 2px dark-green outline and grey bars that look like loading skeletons** [P1] 
-- **QA-9 Team view: dead space and empty legends** [P1] 
-- **QA-10 Brief: contradicts Team view and uses a different page frame** [P1] 
-- **QA-11 App: "A new version is available" bar is an unstyled black full-width strip over content** [P1] 
-- **QA-17 Messages desktop: wrong avatar, overhanging card, stray band** [P1] 
-- **QA-12 Home desktop: dead space and unclear figures** [P2] 
-- **QA-13 Roster desktop: three different toggle styles in one toolbar; Last 5 column reads as a skeleton** [P2] 
-- **QA-14 Stats desktop: clipped and floating labels** [P2] 
-- **QA-18 Staging demo data looks like test data (not a code fix)** [P2] 
+- **QA-5 Ask: composer chip says "last 30 days" while the answer uses the season (96 days)** [P1]
+- **QA-6 Ask: left rail "CoachHelm knows" heading with an empty list; first table column has a tinted stripe; "Table" toggle clipped under the sticky title** [P1]
+- **QA-7 Team view: gains and losses coloured the same** [P1]
+- **QA-8 Team view: This week and Working on show the same three items; This week cards are nested cards with a heavy 2px dark-green outline and grey bars that look like loading skeletons** [P1]
+- **QA-9 Team view: dead space and empty legends** [P1]
+- **QA-10 Brief: contradicts Team view and uses a different page frame** [P1]
+- **QA-11 App: "A new version is available" bar is an unstyled black full-width strip over content** [P1]
+- **QA-17 Messages desktop: wrong avatar, overhanging card, stray band** [P1]
+- **QA-12 Home desktop: dead space and unclear figures** [P2]
+- **QA-13 Roster desktop: three different toggle styles in one toolbar; Last 5 column reads as a skeleton** [P2]
+- **QA-14 Stats desktop: clipped and floating labels** [P2]
+- **QA-18 Staging demo data looks like test data (not a code fix)** [P2]
 
 ### Team view (34)
 - **TEAM-1 Station halo radius is uncapped, so real values draw circles bigger than the hole** [P0] `src/clubhouse/screens/coachhelm/team/TeamHole.tsx:51`
@@ -274,9 +274,9 @@ Before each lane PR, read that lane's `lanes/*.md` files in full, including its 
 - **PP-15 PlanFormat Undo ignores failure and leaves the undone format's name as "Current format"** [P1] `src/clubhouse/screens/coachhelm/plan/format/PlanFormat.tsx`
 - **PP-16 PlanFormat draws its own green bar (a local copy of the shell bar)** [P1]  - `src/clubhouse/screens/coachhelm/plan/format/PlanFormat.tsx`
 - **PP-17 Dark-mode drill-kind dots fall below 3:1** [P2] `coachhelm-plan.css`
-- **PP-18 Read-picture labels wrap instead of ellipsizing; cls axis labels collide and hang off the edge** [P2] `src/clubhouse/screens/coachhelm/plan/ReadPicture.tsx`: - `pd` labels are live `metric_label` in a fixed 64px 
+- **PP-18 Read-picture labels wrap instead of ellipsizing; cls axis labels collide and hang off the edge** [P2] `src/clubhouse/screens/coachhelm/plan/ReadPicture.tsx`: - `pd` labels are live `metric_label` in a fixed 64px
 - **PP-19 The cal picture uses a fixed 5-column grid whatever the number of days** [P2] `ReadPicture.tsx` and `coachhelm-plan.css`
-- **PP-20 Rotation grid and meta row don't adapt on phone** [P2] `src/clubhouse/screens/coachhelm/plan/sheet/PracticePlanSheet.tsx` and `coachhelm-plan.css`: - `.pp-rot` uses 
+- **PP-20 Rotation grid and meta row don't adapt on phone** [P2] `src/clubhouse/screens/coachhelm/plan/sheet/PracticePlanSheet.tsx` and `coachhelm-plan.css`: - `.pp-rot` uses
 - **PP-21 11px type in the sheet and tags on phone** [P2] `coachhelm-plan.css`: - `.ch-cp-sheet .gd` defined twice: line 6 is type-11-strong, line 29 is type-11
 - **PP-22 Tap targets under 44 in the plan card and sheets** [P2] `coachhelm-plan.css`: - `.ch-cpv-sheet .ask-in button` 28×28 with no hit slop - `.refine button{min-height:36p
 - **PP-23 "Saving…" sweep and the writing caret are static; the scan line has no CSS** [P2] `coachhelm-plan.css`: - `.sw2` and `.caret` have no animation; the only keyframes in the file are the old `ch-

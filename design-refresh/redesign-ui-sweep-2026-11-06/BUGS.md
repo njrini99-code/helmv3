@@ -89,8 +89,8 @@ Staging (QA site, demo team, desktop 1440x900) plus Nick's two iPhone screenshot
 - [P0] **QA-1 The same player has different numbers on different pages** — Roster, CoachHelm Team view, Stats, Home; desktop and phone; light and dark
 - [P0] **QA-2 Ask: a failed chart renders as an empty "Read / Result" placeholder table** — Ask answer, desktop (and phone), light
 - [P0] **QA-3 Ask: the team appears as a player row in "Scoring average, this season"** — Ask answer table, desktop, light
-- [P0] **QA-15 Practice desktop: unfinished page** — 
-- [P0] **QA-16 Plan format desktop: phone layout shipped on desktop; back goes to the wrong page** — 
+- [P0] **QA-15 Practice desktop: unfinished page** —
+- [P0] **QA-16 Plan format desktop: phone layout shipped on desktop; back goes to the wrong page** —
 - [P1] **QA-4 Ask: triple-nested cards** — Ask answer, desktop
 - [P1] **QA-5 Ask: composer chip says "last 30 days" while the answer uses the season (96 days)** — Ask composer, desktop
 - [P1] **QA-6 Ask: left rail "CoachHelm knows" heading with an empty list; first table column has a tinted stripe; "Table" toggle clipped under the sticky title** — Ask desktop
@@ -99,11 +99,11 @@ Staging (QA site, demo team, desktop 1440x900) plus Nick's two iPhone screenshot
 - [P1] **QA-9 Team view: dead space and empty legends** — Team view desktop
 - [P1] **QA-10 Brief: contradicts Team view and uses a different page frame** — CoachHelm Brief desktop
 - [P1] **QA-11 App: "A new version is available" bar is an unstyled black full-width strip over content** — all pages, desktop
-- [P1] **QA-17 Messages desktop: wrong avatar, overhanging card, stray band** — 
-- [P2] **QA-12 Home desktop: dead space and unclear figures** — 
-- [P2] **QA-13 Roster desktop: three different toggle styles in one toolbar; Last 5 column reads as a skeleton** — 
-- [P2] **QA-14 Stats desktop: clipped and floating labels** — 
-- [P2] **QA-18 Staging demo data looks like test data (not a code fix)** — 
+- [P1] **QA-17 Messages desktop: wrong avatar, overhanging card, stray band** —
+- [P2] **QA-12 Home desktop: dead space and unclear figures** —
+- [P2] **QA-13 Roster desktop: three different toggle styles in one toolbar; Last 5 column reads as a skeleton** —
+- [P2] **QA-14 Stats desktop: clipped and floating labels** —
+- [P2] **QA-18 Staging demo data looks like test data (not a code fix)** —
 
 ## Team view (34) — `lanes/team.md`
 - [P0] **TEAM-1 Station halo radius is uncapped, so real values draw circles bigger than the hole** — Team board, hole card, phone and desktop, light and dark
