@@ -91,7 +91,7 @@ const NO_CLAIM = 'Routine. No claim.';
 /** Ways to change this plan: from its own length, and nothing that names an event it isn't for. */
 export function refineChips(minutes: number): string[] {
   const hours = Math.floor((minutes - 1) / 60);
-  const shorter = hours >= 2 ? `Make it ${hours} hours` : hours === 1 ? 'Make it 1 hour' : `Make it ${minutes + 30} minutes`;
+  const shorter = hours >= 2 ? `Make it ${hours} hours` : hours === 1 ? `Make it ${plural(1, 'hour')}` : `Make it ${minutes + 30} minutes`;
   return [shorter, 'More pressure', 'Less on the range'];
 }
 const keyOf = (d: DrillRef | null | undefined) => (d ? `${d.src}:${d.id}` : '');

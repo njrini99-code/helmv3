@@ -184,16 +184,25 @@ function Schedule({ plan, title }: { plan: PlanSheetModel; title: string }) {
 
 /** A loss in a Why line, in amber: the figure only, with a true minus. */
 function WhyLine({ text }: { text: string }) {
-  const parts = text.split(/((?<![\w.\u2212-])[-\u2212]\d+(?:\.\d+)?)/);
+  // A minus that stands alone is a loss; "1-6" and "10-15 ft" are ranges. No lookbehind: iOS before 16.4 can't parse one.
+  const parts: Array<{ loss: boolean; text: string }> = [];
+  const loss = /(^|[\s(])([-\u2212]\d+(?:\.\d+)?)/g;
+  let at = 0;
+  for (let m = loss.exec(text); m; m = loss.exec(text)) {
+    const start = m.index + m[1]!.length;
+    parts.push({ loss: false, text: text.slice(at, start) }, { loss: true, text: m[2]!.replace('-', '\u2212') });
+    at = start + m[2]!.length;
+  }
+  parts.push({ loss: false, text: text.slice(at) });
   return (
     <>
       {parts.map((p, i) =>
-        i % 2 ? (
+        p.loss ? (
           <span className="neg" key={i}>
-            {p.replace('-', '\u2212')}
+            {p.text}
           </span>
         ) : (
-          p
+          p.text
         ),
       )}
     </>

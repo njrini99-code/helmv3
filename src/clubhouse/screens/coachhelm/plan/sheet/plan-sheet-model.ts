@@ -51,10 +51,11 @@ export function sheetFormat(input: { name: string; sections: Array<{ key: string
 }
 
 const LETTER = 'ABCDEF';
-const NO_DATA = '—';
+/** The printed sheet's empty cell: plain text, because this model is strings for paper. */
+const BLANK = '—';
 // The one clock Practice prints in a column: no AM or PM. The sheet's Time row says the period once.
-const clock = (d: Date | null, zone: string | null) => (d && zone ? formatWith(d, { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: zone }).replace(/\s?[AP]M$/, '') : NO_DATA);
-const clockFull = (d: Date | null, zone: string | null) => (d && zone ? formatWith(d, { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: zone }) : NO_DATA);
+const clock = (d: Date | null, zone: string | null) => (d && zone ? formatWith(d, { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: zone }).replace(/\s?[AP]M$/, '') : BLANK);
+const clockFull = (d: Date | null, zone: string | null) => (d && zone ? formatWith(d, { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: zone }) : BLANK);
 
 /**
  * What the sheet draws. A player's model has no `why` key at all, and of the groups only the viewer's own: another group's names, letters and
@@ -108,14 +109,14 @@ export function toSheetModel(input: { body: PlanBodyV2; why?: Record<string, Pla
     title: input.title,
     focus: body.focus,
     dayWord: (parts.find((p) => p.type === 'weekday')?.value ?? '').toUpperCase(),
-    dayNum: parts.find((p) => p.type === 'day')?.value ?? NO_DATA,
+    dayNum: parts.find((p) => p.type === 'day')?.value ?? BLANK,
     monthWord: (parts.find((p) => p.type === 'month')?.value ?? '').toUpperCase(),
     meta: [
       { label: 'Time', value: input.end ? `${clock(input.start, zone)} to ${clockFull(input.end, zone)}` : clockFull(input.start, zone) },
-      { label: 'Place', value: body.place || NO_DATA },
-      { label: 'Coaches', value: input.coaches.join(', ') || NO_DATA },
+      { label: 'Place', value: body.place || BLANK },
+      { label: 'Coaches', value: input.coaches.join(', ') || BLANK },
     ],
-    groups: body.groups.flatMap((g, i) => (player && g.id !== ownGroup?.id ? [] : [{ letter: LETTER[i] ?? '', names: g.players.map((p) => input.names.get(p) ?? NO_DATA) }])),
+    groups: body.groups.flatMap((g, i) => (player && g.id !== ownGroup?.id ? [] : [{ letter: LETTER[i] ?? '', names: g.players.map((p) => input.names.get(p) ?? BLANK) }])),
     rows,
     playersLine: `${new Set(body.groups.flatMap((g) => g.players)).size} players`.replace(/^1 players$/, '1 player'),
     totalLine: (() => {

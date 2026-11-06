@@ -9,7 +9,7 @@ import { publishPracticePlan } from '@/app/golf/actions/practice-publish';
 import { changeLines, diffVersions, mixMinutes, validatePlan, type PlanBlock, type PlanBodyV2, type PlanWhy } from '@/lib/coachhelm/v3/practice-plan/model';
 import type { ChBankDrill, ChBuilderData } from '../../../data/practice-home-shape';
 import { offsetMinutesFor } from '@/lib/golf/timezone';
-import { formatWallClock, formatWith } from '../../../lib/dates';
+import { formatWallClock, formatWith, isoDay } from '../../../lib/dates';
 import { plural } from '../../../lib/plural';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { useChPhone } from '../../../lib/use-phone';
@@ -59,10 +59,7 @@ type HelperState = { k: 'idle' } | { k: 'running'; request: string } | { k: 'gho
 const PUBLISH_HOLD_MS = 8000;
 
 const zonedClock = (iso: string, zone: string) => formatWith(new Date(iso), { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: zone });
-const zonedDate = (iso: string, zone: string) => {
-  const p = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: zone }).format(new Date(iso));
-  return p;
-};
+const zonedDate = (iso: string, zone: string) => isoDay(iso, zone);
 
 export function Builder({ data, autoFill = false, preview }: { data: ChBuilderData; autoFill?: boolean; preview?: BuilderPreview }) {
   const router = useRouter();

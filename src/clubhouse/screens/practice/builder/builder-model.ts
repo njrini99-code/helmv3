@@ -1,3 +1,4 @@
+import { formatWith } from '../../../lib/dates';
 import { autoGrid, stationsLen, splitEvenly, type CourseBlock, type DrillRef, type PlanBlock, type PlanBodyV2, type PlanDraft, type PlanGroup, type StationsBlock, type PlanWhy } from '@/lib/coachhelm/v3/practice-plan/model';
 
 /** The builder's edits as pure functions over the plan body: no React and no server, so they are tested on their own. Every result stays inside what the save checks. */
@@ -185,7 +186,7 @@ export function ribbon(total: number, window: number | null): { used: string; re
 
 /** The clock at each block, from the practice's start. Times are never stored: reordering moves them. */
 export function clockFor(start: string, zone: string, minutes: number): string {
-  return new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: zone }).format(new Date(Date.parse(start) + minutes * 60_000)).replace(/\s?[AP]M$/, '');
+  return formatWith(new Date(Date.parse(start) + minutes * 60_000), { hour: 'numeric', minute: '2-digit', timeZone: zone }).replace(/\s?[AP]M$/, '');
 }
 
 export function blockSub(b: PlanBlock): string {
