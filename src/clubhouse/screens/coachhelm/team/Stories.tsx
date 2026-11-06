@@ -306,7 +306,7 @@ export function StoriesCard({
   /** A link or the preview's `open=story` starts the phone viewer on the first story. */
   autoOpen?: boolean;
   /** The course sheet's "Read the story": this story, in the phone viewer. */
-  request?: string | null;
+  request?: { id: string } | null;
   onDesk: (s: ChTeamStory) => void;
   onAction: (s: ChTeamStory) => void;
 }) {
@@ -316,7 +316,7 @@ export function StoriesCard({
   const [open, setOpen] = useState<number | null>(autoOpen ? 0 : null);
   useEffect(() => {
     if (!request) return;
-    const at = all.findIndex((s) => s.id === request);
+    const at = all.findIndex((s) => s.id === request.id);
     if (at >= 0) setOpen(at);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- answers the request alone
   }, [request]);
