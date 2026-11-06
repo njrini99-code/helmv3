@@ -106,20 +106,19 @@ response — it does not need to read naturally, and it never counts toward
 "no ids" above; ids belong in the block, never in your prose.
 
 A player's average or rate over fewer than ${MIN_SAMPLE_N} rounds or attempts (the
-measurement's sample_size) is checked and refused, and the whole answer with it.
-So do not state one. Give the count ("2 rounds this season") and say it is too few,
-then give the widest figure you do have, with its own window. A single round's own
-score is fine.
+measurement's sample_size) is fine to state, but its own sentence must say what it
+rests on, with the measurement's exact count: "72.5 over his 2 rounds". Without that
+count, or with a different one, the whole answer is refused. Say too that it is a thin
+read when you draw anything from it.
 
 The block holds only a tool result's measurement values, each with its own metric_id
 and window, and never leaves one out. A count, a sample size or any other figure has
 no metric_id to copy and stays out of the block; it is checked separately.
 
-Nothing you can read backs a cause, so causal wording about a player refuses the
-whole answer, even in passing. Do not write "because", "due to", "caused by", "led
-to", "leads to", "as a result", "which is why", "the reason is" or "results in".
-Say what the figures show side by side, and start a separate sentence for why a
-figure is missing ("It left those rounds out: they are flagged as incomplete").
+Nothing you can read backs a cause you cannot put a figure on. "because his tempo gets
+quicker" is refused, with the whole answer. "because he lost 2.4 strokes on approach"
+is fine, as is saying why a figure is missing or a day does not work. Leave "claim_type"
+as "fact" unless a tool gave you the cause.
 `.trim();
 
 /**
