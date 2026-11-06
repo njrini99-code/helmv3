@@ -67,8 +67,8 @@ export function AskKnowsPanel({ knows, conversationId }: { knows: NonNullable<Ch
           if (conversationId) void setChatTone(conversationId, id);
         }}
       />
-      <h3>CoachHelm knows</h3>
-      <ul>
+      {facts.length > 0 && <h3>CoachHelm knows</h3>}
+      <ul hidden={facts.length === 0}>
         {facts.map((f) => (
           <li key={f.id}>
             <span>{f.text}</span>
