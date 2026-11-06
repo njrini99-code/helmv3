@@ -308,6 +308,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
                         key={turn.id}
                         turn={turn}
                         failed={!!notice && turn.id === turns[turns.length - 1]?.id}
+                        onFull={full}
                         online={online}
                         stopped={stopped}
                         onSend={send}
@@ -466,7 +467,7 @@ function Steps({ turn, stopped, failed = false }: { turn: AskAssistantTurn; stop
   );
 }
 
-function AssistantTurn({ turn, online, stopped, failed = false, onSend, onApprove, onDeny, onOpen }: { turn: AskAssistantTurn; online: boolean; stopped: boolean; failed?: boolean; onSend: (t: string) => void; onApprove: (id: string) => void; onDeny: (id: string) => void; onOpen: (href: string) => void }) {
+function AssistantTurn({ turn, online, stopped, failed = false, onSend, onApprove, onDeny, onOpen, onFull }: { turn: AskAssistantTurn; online: boolean; stopped: boolean; failed?: boolean; onFull: () => void; onSend: (t: string) => void; onApprove: (id: string) => void; onDeny: (id: string) => void; onOpen: (href: string) => void }) {
   return (
     <>
       <Steps turn={turn} stopped={stopped} failed={failed} />
@@ -474,10 +475,28 @@ function AssistantTurn({ turn, online, stopped, failed = false, onSend, onApprov
       {turn.note && <p className="say quiet">{turn.note}</p>}
       {turn.blocks.map((b) => {
         if (b.kind === 'text') return <div className="say" key={b.key}><AskProse text={b.text} playersByName={{}} /></div>;
+        // Quick chat finishes four tasks with their own visuals; anything else carries on in Ask, the same conversation, words and all (FID-QC-1).
+        if (b.kind === 'proposal' && !b.view.proposal.visual)
+          return (
+            <p className="say quiet qc-handoff" key={b.key}>
+              <span>This one’s easier to finish in Ask.</span>
+              <button type="button" onClick={onFull}>
+                Open in Ask
+              </button>
+            </p>
+          );
         if (b.kind === 'proposal') return <TaskCard key={b.key} view={b.view} online={online} onSend={onSend} onApprove={onApprove} onDeny={onDeny} onOpen={onOpen} />;
         if (b.kind === 'plan') return <PlanTask key={b.key} plan={b.plan} online={online} onOpen={onOpen} />;
         if (b.kind === 'brief') return <QuickAsk key={b.key} brief={b.brief} onSend={onSend} />;
-        return null;
+        // A chart or a table the panel doesn't draw isn't dropped silently (QC-1).
+        return (
+          <p className="say quiet qc-handoff" key={b.key}>
+            <span>There’s a chart with this answer.</span>
+            <button type="button" onClick={onFull}>
+              See it in Ask
+            </button>
+          </p>
+        );
       })}
     </>
   );

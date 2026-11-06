@@ -539,3 +539,6 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
   .ch-qcs .rcpt { grid-template-columns: 26px minmax(0, 1fr); }
   .ch-qcs .rcpt__a { grid-column: 2; }
 }
+/* FID-QC-1: a hand-off to Ask is a line with its one action. */
+.ch-qcs .qc-handoff { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ch-qcs .qc-handoff button { flex: none; min-height: 44px; padding: 0 12px; border: 0; border-radius: var(--ch-radius-md); background: var(--ch-qc-a-tint); color: var(--ch-qc-a-accent-text); font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); cursor: pointer; }
