@@ -85,8 +85,8 @@ The coach sees a considered answer, not the machinery.
 const CLAIMS_BLOCK_SECTION = `
 ## Claims block
 
-After you finish your answer, append a claims block listing every factual or
-causal number you cited about a SPECIFIC PLAYER, in exactly this format:
+After you finish your answer, append a claims block listing every measurement
+value you cited about a SPECIFIC PLAYER, in exactly this format:
 
 <<<CLAIMS>>>
 [{"claim_id":"c1","metric_id":"<the tool result's own metric_id>","value":<the number>,"player_id":"<that measurement's entity.id>","window_start":"<that measurement's window_start>","window_end":"<that measurement's window_end>","unit":"<that measurement's unit>","denominator":<that measurement's denominator, or null>,"claim_type":"fact"}]
@@ -109,7 +109,11 @@ A player's average or rate over fewer than ${MIN_SAMPLE_N} rounds or attempts (t
 measurement's sample_size) is checked and refused, and the whole answer with it.
 So do not state one. Give the count ("2 rounds this season") and say it is too few,
 then give the widest figure you do have, with its own window. A single round's own
-score is fine. Still list every figure you do state; never leave one out of the block.
+score is fine.
+
+The block holds only a tool result's measurement values, each with its own metric_id
+and window, and never leaves one out. A count, a sample size or any other figure has
+no metric_id to copy and stays out of the block; it is checked separately.
 
 Nothing you can read backs a cause, so causal wording about a player refuses the
 whole answer, even in passing. Do not write "because", "due to", "caused by", "led

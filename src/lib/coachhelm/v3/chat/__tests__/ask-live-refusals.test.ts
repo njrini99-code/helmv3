@@ -80,7 +80,7 @@ describe('refusal 1: "How many rounds has Owen Carter played this season, and wh
     const ctx: CoachChatContext = { coach_id: 'c', user_id: 'u', team_id: 't', team_name: 'Demo', timezone: TZ, roster: [] };
     const on = buildInstructions(ctx, '2026-11-05T12:00:00Z', true).replace(/\s+/g, ' ');
     expect(on).toContain(`fewer than ${MIN_SAMPLE_N} rounds or attempts`);
-    expect(on).toContain('Still list every figure you do state');
+    expect(on).toContain('A count, a sample size or any other figure has no metric_id to copy and stays out of the block');
     expect(on).toContain('Do not write "because", "due to", "caused by"');
     expect(buildInstructions(ctx, '2026-11-05T12:00:00Z', false).replace(/\s+/g, ' ')).not.toContain(`fewer than ${MIN_SAMPLE_N} rounds or attempts`);
   });
@@ -116,15 +116,22 @@ describe('refusal 2: "What is our team\'s scoring average this season?"', () => 
   ];
   const block = '\n<<<CLAIMS>>>[]<<<END_CLAIMS>>>';
 
-  it('the stored answer: "September 25 and 26" now passes the audit, and its "because" is the next refusal', () => {
+  const claimOf = (m: Measurement) => ({ claim_id: `${m.entity.id}:${m.metric_id}`, metric_id: m.metric_id, value: m.value, player_id: m.entity.id, window_start: m.window_start, window_end: m.window_end, unit: m.unit, denominator: null, claim_type: 'fact' });
+  const fullBlock = (cited: Measurement[]) => `\n<<<CLAIMS>>>${JSON.stringify(cited.map(claimOf))}<<<END_CLAIMS>>>`;
+  const [coleThin, coleAvg, ethanAvg] = reads.flatMap((e) => e.measurements) as [Measurement, Measurement, Measurement];
+
+  it('the stored answer: "September 25 and 26" now passes the audit, and its "because" and 3-round figure are the next refusals', () => {
     const text =
       "I can't give you a reliable team scoring average for this season. Since the season began on August 1, 15 completed rounds are recorded across 6 of your 7 players, and Audit Testplayer has none. The tool left 12 of those 15 out of its averages because it flags them as 9-hole or incomplete. Only 3 rounds, all Cole Bennett's practice rounds at Pebble Beach, went into the average, at 2 under par. That figure describes Cole alone, not the team.\n\nThe 12 excluded rounds are the September 25 and 26 qualifier rounds. They are listed as 18 holes, so the incomplete flag looks like a data issue and I can't explain it from here. If those rounds are complete, they would give you a real team figure. Check them in the round records.\n\nFor a wider view, your six players with rounds have individual scoring averages over windows that start in May and end September 26. Cole is lowest at 72.55 over 23 rounds, and Ethan Park is highest at 76.79 over 15 rounds. Those windows include last season's rounds, so they are not season averages.";
-    // The numeric audit runs first, so it hid this. Chat figures never carry
+    // The numeric audit runs first, so it hid both. Chat figures never carry
     // causal backing, so the typed gate refuses any causal wording (owner
-    // decision, claims-packet.ts); the instructions now warn the model off it.
-    expect(tokensOf(verdictFor(text + block, reads))).toEqual(['(none):unsupported_cause']);
-    const reworded = text.replace('out of its averages because it flags them as 9-hole or incomplete', 'out of its averages and flags them as 9-hole or incomplete');
-    expect(verdictFor(reworded + block, reads).outcome).toBe('accepted');
+    // decision, claims-packet.ts), and Cole's "2 under par" rests on 3 rounds.
+    // The instructions now warn the model off each; the gate is unchanged.
+    expect(tokensOf(verdictFor(text + fullBlock([coleThin, coleAvg, ethanAvg]), reads))).toEqual(['team_rounds_avg_to_par:unsupported_small_number', '(none):unsupported_cause']);
+    const reworded = text
+      .replace('out of its averages because it flags them as 9-hole or incomplete', 'out of its averages and flags them as 9-hole or incomplete')
+      .replace(" Only 3 rounds, all Cole Bennett's practice rounds at Pebble Beach, went into the average, at 2 under par. That figure describes Cole alone, not the team.", ' Only 3 rounds went into the average, too few to report.');
+    expect(verdictFor(reworded + fullBlock([coleAvg, ethanAvg]), reads).outcome).toBe('accepted');
   });
 
   it('accepts the "or" form production refused ("October 20 or 21")', () => {
@@ -181,6 +188,8 @@ describe('refusal 3: "Add a practice next Tuesday at 3pm at the home course call
     expect(coachRequestDates('next Friday', '2026-12-30')).toEqual(['2027-01-01', '2027-01-08']);
     expect(coachRequestDates('Add a practice on Nov 10', today)).toEqual(['2026-11-10']);
     expect(coachRequestDates('Book Jan 8 for the trip', today)).toEqual(['2027-01-08']);
+    expect(coachRequestDates('Practices on Nov 10 and 17', today)).toEqual(['2026-11-10', '2026-11-17']);
+    expect(coachRequestDates('The trip is Nov 10-12', today)).toEqual(['2026-11-10', '2026-11-12']);
     expect(coachRequestDates('What is his scoring average?', today)).toEqual([]);
     expect(coachRequestDates('', today)).toEqual([]);
   });
