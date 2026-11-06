@@ -110,3 +110,20 @@ describe('the Team lane, what the fixtures hid', () => {
     expect(container.querySelector<HTMLElement>('.sheet > .ch-htb-feat')!.style.minHeight).toBe('406px');
   });
 });
+
+describe('sheet and notice styles reach only their own text (owner, 2026-11-06)', () => {
+  const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/coachhelm-team.css'), 'utf8');
+
+  it.each(['.ch-htb .insh span', '.ch-htb .notice span', '.ch-htb .drill span {'])('no loose %s, which would restyle an avatar or a button inside it', (rule) => {
+    expect(css).not.toContain(rule);
+  });
+
+  it('the sheet holds one page edge, its body adding none (TEAM-17)', () => {
+    expect(css).toMatch(/\.ch-htb-sheet \.ch-modal__body \{\s*padding: 0;/);
+    expect(css).toMatch(/\.ch-htb \.ins \{[^}]*padding:8px var\(--ch-tb-edge\)/);
+  });
+
+  it('every bar row is one set of columns on a phone, so the Tour line runs straight (MOB-TEAM-4)', () => {
+    expect(css).toMatch(/\.ch-htb \.br \{\s*min-height:44px;\s*grid-template-columns:calc\(108 \* var\(--ch-tb-k\)\) minmax\(0,1fr\) calc\(52 \* var\(--ch-tb-k\)\);/);
+  });
+});

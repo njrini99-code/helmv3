@@ -50,7 +50,7 @@ function openOf(data: ChTeamBoardData, station: TeamStation, open: string | unde
     return p ? { kind: 'player', id: p.id } : undefined;
   }
   if (open === 'course') {
-    const c = data.course.history?.courses[0];
+    const c = data.course.history?.courses.find((x) => x.id === 'hill') ?? data.course.history?.courses[0];
     return c ? { kind: 'course', id: c.id } : undefined;
   }
   if (open === 'story') {

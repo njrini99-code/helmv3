@@ -25,6 +25,9 @@ import { Chevron, Coin, ReadRow, Notice } from './parts';
 
 const areaName = (r: ChInsight) => (r.area ? STATION_NAME[r.area] : 'Course and scoring');
 
+/** The sheet's line has room for "Jr", not "Junior" (AC-PSHEET). */
+const yearShort = (year: string) => ({ Freshman: 'Fr', Sophomore: 'So', Junior: 'Jr', Senior: 'Sr' })[year] ?? year;
+
 function Head({ lead, name, line, onClose }: { lead: React.ReactNode; name: string; line: string; onClose: () => void }) {
   return (
     <div className="insh">
@@ -220,7 +223,7 @@ export function ReadPanel({
         <div className="acts" data-acts="">
           <FocusActions propose fa={fa} target={{ playerId: player.id, first: player.first, ins: read }} missing={missing} where="board" noDismiss={!dismissible} />
           {ask && (
-            <Button variant="secondary" href={ask}>
+            <Button variant="ghost" href={ask}>
               Ask about this
             </Button>
           )}
@@ -255,7 +258,7 @@ export function PlayerPanel({ player, data, onRead, fileOn, onClose }: { player:
     );
   return (
     <>
-      <Head lead={<Coin player={player} />} name={player.name} line={`${year} · ${player.rounds} rounds this season · ${formatSigned(player.total)} a round to Tour${player.early ? ' · early' : ''}`} onClose={onClose} />
+      <Head lead={<Coin player={player} />} name={player.name} line={`${yearShort(year)} · ${plural(player.rounds, 'round')} · ${formatSigned(player.total)} a round to Tour${player.early ? ' · early' : ''}`} onClose={onClose} />
       <section className="card">
         <div className="ch">
           <h4>Where {player.first} gains and loses</h4>
@@ -277,13 +280,16 @@ export function PlayerPanel({ player, data, onRead, fileOn, onClose }: { player:
                     <i className={`bf ${v < 0 ? 'l' : 'g'}${player.early ? ' early' : ''}`} style={{ transform: `scaleX(${barScale(v)})` }} />
                   </span>
                 )}
-                <span className={'bv' + (v != null && v >= 0 ? ' g' : '')}>{formatSigned(v)}</span>
+                <span className={'bv ch-num' + (v != null && v >= 0 ? ' g' : '')}>{formatSigned(v)}</span>
               </div>
             );
           })}
         </div>
         <div className="axis">
-          <span>Team average dashed</span>
+          <span className="axis__team">
+            <i aria-hidden="true" />
+            Team average
+          </span>
           <span>Tour</span>
         </div>
       </section>

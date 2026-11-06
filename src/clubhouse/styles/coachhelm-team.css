@@ -195,7 +195,7 @@ html[data-fw-theme='dark'] .ch-htb {
   height:auto;
 }
 .ch-htb .tile b {
-  font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
+  font: var(--ch-type-14-strong); letter-spacing: var(--ch-track-14); }
 .ch-htb .tile .tm {
   margin-top:auto;
   display:flex;
@@ -263,7 +263,7 @@ html[data-fw-theme='dark'] .ch-htb {
   fill:rgb(143 211 170/.10);
 }
 .ch-htb .holesvg .grn {
-  fill:rgb(143 211 170/.17);
+  fill:color-mix(in srgb, var(--ch-chart-gain) 17%, transparent);
 }
 .ch-htb .holesvg .bunk {
   fill:rgb(237 184 103/.22);
@@ -330,23 +330,23 @@ html[data-fw-theme='dark'] .ch-htb {
   letter-spacing: -0.02em;}
 /* Gains read green and zero reads as neither, here and on the chips (TEAM-8, D-42). */
 .ch-htb .stn.is-gain .sv {
-  fill:var(--ch-tb-f-gain);
+  fill:var(--ch-chart-gain);
 }
 .ch-htb .stn.is-even .sv {
   fill:var(--ch-tb-f-ink-2);
 }
 .ch-htb .stn.is-gain .halo {
-  fill:rgb(143 211 170/.17);
-  stroke:var(--ch-tb-f-gain);
+  fill:color-mix(in srgb, var(--ch-chart-gain) 17%, transparent);
+  stroke:var(--ch-chart-gain);
 }
 .ch-htb .stn.is-gain.on .halo {
-  fill:rgb(143 211 170/.34);
+  fill:color-mix(in srgb, var(--ch-chart-gain) 34%, transparent);
 }
 .ch-htb .stn.is-gain .core {
-  fill:var(--ch-tb-f-gain);
+  fill:var(--ch-chart-gain);
 }
 .ch-htb .stn.is-gain .pulse {
-  stroke:var(--ch-tb-f-gain);
+  stroke:var(--ch-chart-gain);
 }
 .ch-htb .stn .hit,
 .ch-htb .scn .hit {
@@ -388,7 +388,7 @@ html[data-fw-theme='dark'] .ch-htb {
   transition:background var(--ch-dur-base) var(--ch-tb-ease),color var(--ch-dur-base) var(--ch-tb-ease);
 }
 .ch-htb .stchips button b.is-gain {
-  color:var(--ch-tb-f-gain);
+  color:var(--ch-chart-gain);
 }
 .ch-htb .stchips button b.is-even {
   color:var(--ch-tb-f-ink-2);
@@ -1085,7 +1085,7 @@ html[data-fw-theme='dark'] .ch-htb {
 .ch-htb .lv {
   display:grid;
   min-width:0;
-  grid-template-columns:minmax(0,calc(128 * var(--ch-tb-k))) minmax(40px,1fr) minmax(0,40%);
+  grid-template-columns:minmax(0,calc(128 * var(--ch-tb-k))) minmax(40px,1fr) auto;
   gap:8px;
   align-items:center;
   font: var(--ch-type-14-medium); }
@@ -1181,7 +1181,7 @@ html[data-fw-theme='dark'] .ch-htb {
 .ch-htb .insh b {
   display:block;
   font: var(--ch-type-16-strong); letter-spacing: var(--ch-track-16); }
-.ch-htb .insh span {
+.ch-htb .insh .c > span {
   display:block;
   font: var(--ch-type-14);
   color:var(--ch-tb-ink-2);
@@ -1266,7 +1266,7 @@ html[data-fw-theme='dark'] .ch-htb {
 .ch-htb .drill b {
   display:block;
   font: var(--ch-type-16-strong); letter-spacing: var(--ch-track-16); }
-.ch-htb .drill span {
+.ch-htb .drill span:not(.dicon) {
   display:block;
   font: var(--ch-type-14);
   color:var(--ch-tb-ink-2);
@@ -1530,7 +1530,7 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 .ch-htb .notice b {
   display:block;
   font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
-.ch-htb .notice span {
+.ch-htb .notice div > span:not([class]) {
   display:block;
   font: var(--ch-type-14);
   color:var(--ch-tb-ink-2);
@@ -1848,8 +1848,23 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 
 /* The sheet is ui/Modal; its own head gives way to the panel's (AC-READ-01). */
 
+/* The sheet's own .ins holds the page edge and the foot; the Modal's body adds none (TEAM-17, FID-TEAM-10). */
 .ch-htb-sheet .ch-modal__body {
-  padding-inline: 16px;
+  padding: 0;
+}
+/* Two equal buttons, 44 tall. */
+:is(.ch-htb, .ch-htb-sheet) .acts > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+:is(.ch-htb, .ch-htb-sheet) .acts .ch-btn {
+  width: 100%;
+  min-height: 44px;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-htb-sheet .acts .ch-btn--ghost {
+  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
 }
 .ch-htb-sheet .acts .ch-btn {
   flex: 1;
@@ -1870,7 +1885,7 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
 }
 .ch-htb-sheet .ch-modal__panel {
   border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
-  background: var(--ch-tb-bg);
+  background: var(--ch-grouped-bg);
 }
 .ch-htb.is-desk {
   position: relative;
@@ -2009,7 +2024,7 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   }
 }
 .ch-htb {
-  --ch-team-shadow-1: var(--ch-elevation-reading);
+  --ch-team-shadow-1: var(--ch-elevation-card);
   --ch-team-shadow-2: 0 14px 30px -18px rgba(5,30,18,.6);
   --ch-team-shadow-3: var(--ch-tb-shadow-lg);
   --ch-team-shadow-4: -1px 0 0 var(--ch-tb-sep),var(--ch-tb-shadow-lg);
@@ -2133,9 +2148,26 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   .ch-htb .bars {
     gap:0;
   }
-  .ch-htb .br.tapp {
+  /* One set of columns for every row, so the Tour line runs straight down the card; each row is a 44 target (MOB-TEAM-4, 5). */
+  .ch-htb .br {
     min-height:44px;
-    grid-template-columns:minmax(calc(92 * var(--ch-tb-k)), max-content) minmax(0,1fr) auto;
+    grid-template-columns:calc(108 * var(--ch-tb-k)) minmax(0,1fr) calc(52 * var(--ch-tb-k));
+  }
+  .ch-htb .axis {
+    padding-inline:calc(24px + 108 * var(--ch-tb-k)) calc(24px + 52 * var(--ch-tb-k));
+  }
+  .ch-htb .axis span:last-child {
+    left:calc(24px + 108 * var(--ch-tb-k) + (100% - 48px - 160 * var(--ch-tb-k)) * .84);
+  }
+  /* The last-four chip takes its own row, at the right, as the design draws it. */
+  .ch-htb .cmk {
+    display:grid;
+    grid-template-columns:auto minmax(0,1fr);
+    align-items:end;
+  }
+  .ch-htb .cmk .ch-badge {
+    grid-column:1 / -1;
+    justify-self:end;
   }
 }
 .ch-htb .bn,
@@ -2166,7 +2198,7 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
   pointer-events:all;
 }
 .ch-htb-sheet .ins {
-  padding-bottom:calc(72px + env(safe-area-inset-bottom));
+  padding-bottom:calc(40px + env(safe-area-inset-bottom));
 }
 .ch-htb .insp .ins {
   padding-top:24px;
@@ -2196,6 +2228,11 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
   .ch-htb[data-ch-enter]:not(.is-phone) > * {
     animation: ch-view-enter var(--ch-dur-quick) var(--ch-ease) backwards;
   }
+}
+/* The hole and its chips sit on the green in both themes, so their gain is the on-green one. */
+.ch-htb .stn,
+.ch-htb .stchips {
+  --ch-chart-gain: var(--ch-tb-f-gain);
 }
 /* The viewer owns every gesture on it: a hold pauses, a swipe down closes (MOB-TEAM-2). */
 .ch-htb .story {
@@ -2228,4 +2265,35 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
 }
 .ch-htb .cp .v .e {
   color: var(--ch-tb-ink-3);
+}
+
+/* A ghost on the page wears its outline and the accent, as the design's secondary action does (TEAM-30, FID-TEAM-15). */
+.ch-htb .ch-btn--ghost:not(.ch-btn--on-green),
+.ch-htb-sheet .ch-btn--ghost:not(.ch-btn--on-green) {
+  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+  color: var(--ch-tb-gain);
+}
+.ch-htb .notice .ch-btn {
+  min-height: 44px;
+}
+/* Re-check reads as the footer's link, still a 44 target; its status line, when there is one, wraps under the words. */
+.ch-htb .recfoot > div {
+  justify-content: flex-end;
+}
+.ch-htb .recfoot p:empty {
+  display: none;
+}
+.ch-htb .recfoot .ch-btn {
+  min-height: 44px;
+  padding-inline: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--ch-tb-gain);
+  white-space: nowrap;
+}
+.ch-htb .recfoot .ch-btn > svg:not(.ch-spinner) {
+  display: none;
+}
+.ch-htb .insp {
+  background: var(--ch-grouped-bg);
 }

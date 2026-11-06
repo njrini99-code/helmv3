@@ -32,7 +32,8 @@ export interface HoleGeometry {
 
 /** A station's halo: bigger with what's at stake, and held inside the hole however big the real figure is (TEAM-1). */
 export function stationRadius(strokes: number | null | undefined): number {
-  return clampRadius(strokes, { min: 10, max: 28, full: 2 });
+  // AC-HOLE-04: 10 + 22 for every stroke, held at 28 so it stays inside the drawing (TEAM-1).
+  return clampRadius(strokes, { min: 10, max: 28, full: 18 / 22 });
 }
 
 export const HOLE: Record<'v' | 'h', HoleGeometry> = {

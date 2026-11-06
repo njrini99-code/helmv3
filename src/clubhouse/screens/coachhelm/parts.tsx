@@ -432,7 +432,7 @@ export function FocusActions({ fa, target, missing, where, extra, noDismiss = fa
       ) : statusUnknown ? (
         <RefreshNotice code="CH-13207" title="Assign as focus isn’t offered right now" body={`${focusStatusSaid(missing, first)} Dismiss still works. Try again in a moment.`} />
       ) : stale ? null : (
-        <Button variant="primary" leftIcon={Flag} busy={fa.here('assign', ins.id)} disabled={fa.busy && !fa.here('assign', ins.id)} onClick={() => void fa.assign.run(target)}>
+        <Button variant="primary" leftIcon={propose ? undefined : Flag} busy={fa.here('assign', ins.id)} disabled={fa.busy && !fa.here('assign', ins.id)} onClick={() => void fa.assign.run(target)}>
           {fa.here('assign', ins.id) ? <span data-ch-code="CH-13403">{propose ? 'Proposing…' : 'Assigning…'}</span> : ins.declined ? 'Propose again' : propose ? 'Propose as focus' : 'Assign as focus'}
         </Button>
       )}

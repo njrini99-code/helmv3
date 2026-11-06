@@ -27,7 +27,8 @@ const MAX_TILES = 3;
 
 const nameOf = (s: ChTeamStory) => s.who;
 const whenOf = (s: ChTeamStory, week: string) => (s.kind === 'theme' ? 'This season' : week);
-const shortOf = (s: ChTeamStory) => (s.kind === 'theme' ? `${s.word}: ${s.line}` : s.line);
+/** A tile's headline. A focus area is named by its title: its line is figures, which a two-line headline cuts mid-sentence. */
+const shortOf = (s: ChTeamStory) => (s.kind === 'theme' ? `${s.word}: ${s.line}` : s.kind === 'working' ? s.title : s.line);
 
 const holeTone = (d: number | null) => (d == null ? '' : d < 0 ? ' is-birdie' : d === 1 ? ' is-bogey' : d >= 2 ? ' is-double' : '');
 
@@ -95,6 +96,7 @@ function StoryBody({ story, round }: { story: ChTeamStory; round: ChStoryRound |
         </div>
       )}
       {story.kind === 'read' && story.body && <p>{story.body}</p>}
+      {story.kind === 'working' && story.line !== story.title && <p>{story.line}</p>}
       {story.kind === 'read' && round && (
         <span className="src ch-num">
           {weekdayOf(round.date)}’s round · {round.tracked} of {round.holes.length} holes with shots tracked
@@ -164,7 +166,8 @@ function StoryViewer({
   const next = () => (i < stories.length - 1 ? setI(i + 1) : leave());
   useEffect(() => {
     opener.current = document.activeElement as HTMLElement | null;
-    box.current?.querySelector<HTMLElement>('.xb')?.focus({ preventScroll: true });
+    // The viewer takes focus, not its Close: a screen reader lands on the story, and no ring shows on a button nobody chose.
+    box.current?.focus({ preventScroll: true });
     return () => opener.current?.focus?.({ preventScroll: true });
   }, []);
   useLayoutEffect(() => {
@@ -208,6 +211,7 @@ function StoryViewer({
       }}
       role="dialog"
       aria-modal="true"
+      tabIndex={-1}
       aria-label={`Story, ${nameOf(story)}`}
       onPointerDown={(e) => {
         setHeld(true);

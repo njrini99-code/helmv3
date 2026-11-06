@@ -180,7 +180,7 @@ export function RecordCard({ part, desk = false, recheck = null }: { part: ChTea
               {held} of {checked}
             </b>
           )}
-          <span>{r.program}</span>
+          <span>{held != null ? 'reads held up when re-checked' : r.program}</span>
         </div>
         {r.rungs.map((g) => (
           <div className="lv" key={g.id}>
@@ -195,7 +195,7 @@ export function RecordCard({ part, desk = false, recheck = null }: { part: ChTea
             )}
             <span className="n">
               {/* The rung named "Not enough yet" doesn't say so twice (QA-9). */}
-              {g.line === g.word ? null : g.line}
+              {g.line === g.word ? null : g.line.replace(/ held$/, '')}
               {desk && g.bar ? <b> · {g.sub}</b> : null}
             </span>
           </div>

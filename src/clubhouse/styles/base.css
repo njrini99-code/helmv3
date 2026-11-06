@@ -139,8 +139,9 @@
    to proportional at the same weight; the extra element keeps them even there (row 113). */
 .ch-num,
 svg .ch-num {
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum';
+  /* Important because a screen's `font` shorthand, however specific, resets both to normal, and the figures stop lining up. */
+  font-variant-numeric: tabular-nums !important;
+  font-feature-settings: 'tnum' !important;
 }
 .ch-display {
   font-weight: 600;
