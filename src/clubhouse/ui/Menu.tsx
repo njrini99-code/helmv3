@@ -43,6 +43,7 @@ export function Menu({
   trigger,
   items,
   align = 'end',
+  keepFocus = false,
   label,
   width = W,
   open: controlledOpen,
@@ -51,6 +52,8 @@ export function Menu({
   trigger: (props: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void; 'aria-expanded': boolean; 'aria-haspopup': 'menu'; 'aria-controls': string }) => ReactNode;
   items: MenuItem[];
   align?: 'start' | 'end';
+  /** On touch, don't move focus into the menu: a composer behind it keeps its keyboard (MOB-ASK-11). */
+  keepFocus?: boolean;
   label: string;
   /** The list's width in pixels (232 by default). */
   width?: number;
@@ -137,7 +140,7 @@ export function Menu({
       if (!list.current?.contains(t) && !btn.current?.contains(t)) close(false);
     };
     document.addEventListener('mousedown', onDown);
-    const frame = requestAnimationFrame(() => list.current?.querySelector<HTMLElement>('[role="menuitem"],[role="menuitemradio"]')?.focus({ preventScroll: true }));
+    const frame = requestAnimationFrame(() => (keepFocus && !window.matchMedia('(pointer: fine)').matches ? null : list.current)?.querySelector<HTMLElement>('[role="menuitem"],[role="menuitemradio"]')?.focus({ preventScroll: true }));
     return () => {
       cancelAnimationFrame(frame);
       document.removeEventListener('mousedown', onDown);

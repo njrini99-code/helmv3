@@ -2,8 +2,9 @@
 import { Button } from '../../../../ui/Button';
 
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { PhoneTop } from '../../../../shell/phone-chrome';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { PhoneScreen } from '../../../../shell/PhoneScreen';
+import { PhoneBar } from '../../../../ui/PhoneBar';
 import { Icon } from '../../../../ui/Icon';
 import { AskProse } from '../Prose';
 import { KIND_LABEL, type AskArtifact } from './artifacts';
@@ -106,16 +107,17 @@ export function ArtifactView({ artifact, phone, body, onClose, builderHref = nul
     };
   }, [leaving, onClose]);
   const close = () => setLeaving(true);
+  // A pushed screen: edge swipe back, focus and modality come with it, and its bar is the only one (ASK-3, MOB-ASK-5, MOB-ASK-19, MOT-14).
   if (phone) {
     return (
-      <div ref={root as RefObject<HTMLDivElement>} className={'ch-ak-push' + (leaving ? ' is-leaving' : '')} role="dialog" aria-label={artifact.title}>
-        <PhoneTop back={{ label: 'Ask', onBack: close }} title={artifact.title} />
+      <PhoneScreen labelledBy={`ch-ak-push-${artifact.id}`} className="ch-ak-push">
+        <PhoneBar back={{ label: 'Ask', onBack: onClose }} title={artifact.title} titleId={`ch-ak-push-${artifact.id}`} />
         <div className="apb">{v && body(v.body)}</div>
         <div className="apdock">
           <Versions n={artifact.versions.length} at={at} onGo={setAt} />
           <Actions builderHref={builderHref} />
         </div>
-      </div>
+      </PhoneScreen>
     );
   }
   return (

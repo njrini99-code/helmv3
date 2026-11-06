@@ -39,7 +39,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .step .lb.shim { background-image: linear-gradient(90deg, var(--ch-text-primary) 0%, var(--ch-text-primary) 40%, var(--ch-text-tertiary) 50%, var(--ch-text-primary) 60%, var(--ch-text-primary) 100%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: ch-ak-shim var(--ch-dur-shimmer, 1.9s) linear infinite; }
 .ch-ak-th .cite-wrap { position: relative; display: inline-block; }
 .ch-ak-th .cite { position: relative; display: inline-flex; align-items: center; gap: 4px; vertical-align: 1px; margin-left: 4px; padding: 4px 8px; border: 0; border-radius: 999px; background: var(--ch-well-bg-flat); box-shadow: 0 0 0 0.5px var(--ch-ak-ak-hair); font: var(--ch-type-13-strong);  color: var(--ch-text-secondary); white-space: nowrap; cursor: pointer; }
-.ch-ak-th .cite::after { content: ''; position: absolute; inset: -12px 0; }
+.ch-ak-th .cite::after { content: ''; position: absolute; inset: -4px; }
 .ch-ak-th .cite.on { background: var(--ch-ak-ak-tint); color: var(--ch-green-600); box-shadow: none; }
 .ch-ak-th .cpop { display: block; position: absolute; z-index: var(--ch-z-panel); top: calc(100% + 6px); left: 0; width: 280px; max-width: 72vw; padding: 12px 12px; border-radius: var(--ch-radius-md); background: var(--ch-card-bg); box-shadow: var(--ch-shadow-float); font: var(--ch-type-14); }
 .ch-ak-th .cpop b { display: block; margin-bottom: 8px; font: var(--ch-type-15-strong);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
@@ -140,7 +140,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-pane header small { font: var(--ch-type-14); color: var(--ch-text-secondary); }
 .ch-ak-pane .apb, .ch-ak-push .apb { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; }
 .ch-ak-pane .apf, .ch-ak-push .apf { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 16px; border-top: var(--ch-hairline-w) solid var(--ch-separator); }
-.ch-ak-push { position: fixed; inset: 0; z-index: var(--ch-z-sticky); display: flex; flex-direction: column; padding-top: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top)); background: var(--ch-grouped-bg); }
+.ch-ak-push { display: flex; flex-direction: column; background: var(--ch-grouped-bg); }
 .ch-ak-push .apdock { background: var(--ch-card-bg); padding-bottom: env(safe-area-inset-bottom); }
 @keyframes ch-ak-scan { from { transform: translateY(-100%); } to { transform: translateY(100%); } }
 @media (prefers-reduced-motion: reduce) {
@@ -469,13 +469,13 @@ html[data-fw-theme='dark'] .ch-ak-th {
 @keyframes ch-ak-slide-in { from { transform: translateX(100%); } }
 @keyframes ch-ak-slide-out { to { transform: translateX(100%); } }
 @keyframes ch-ak-fade-out { to { opacity: 0; } }
-.ch-ak-pane, .ch-ak-push { animation: ch-ak-slide-in var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) both; }
-.ch-ak-pane.is-leaving, .ch-ak-push.is-leaving { animation: ch-ak-slide-out var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) both; }
+.ch-ak-pane { animation: ch-ak-slide-in var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) both; }
+.ch-ak-pane.is-leaving { animation: ch-ak-slide-out var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) both; }
 @media (prefers-reduced-motion: reduce) {
-  .ch-ak-pane, .ch-ak-push { --ch-rm-animation: var(--ch-dur-crossfade-rm); animation: ch-ak-fade var(--ch-dur-crossfade-rm) linear both; }
-  .ch-ak-pane.is-leaving, .ch-ak-push.is-leaving { --ch-rm-animation: var(--ch-dur-crossfade-rm); animation: ch-ak-fade-out var(--ch-dur-crossfade-rm) linear both; }
+  .ch-ak-pane { --ch-rm-animation: var(--ch-dur-crossfade-rm); animation: ch-ak-fade var(--ch-dur-crossfade-rm) linear both; }
+  .ch-ak-pane.is-leaving { --ch-rm-animation: var(--ch-dur-crossfade-rm); animation: ch-ak-fade-out var(--ch-dur-crossfade-rm) linear both; }
 }
-[data-motion='off'] .ch-ak-pane, [data-motion='off'] .ch-ak-push { animation: none; }
+[data-motion='off'] .ch-ak-pane { animation: none; }
 
 /* M-ASK-33 to 39: the brief. The card rises, a pane slides on the send spring (Back reverses), the dots and the choice settle. */
 @keyframes ch-ak-rise { from { opacity: 0; transform: translateY(8px); } }
@@ -750,3 +750,16 @@ html[data-fw-theme='dark'] .ch-ak-th {
   box-shadow: 0 0 0 1px currentcolor;
   padding-inline: 4px;
 }
+
+/* MOB-ASK-16: a chip fits the line it sits in. */
+.ch-ak-th .cite { padding: 1px 6px; line-height: var(--ch-lead-tight); vertical-align: baseline; }
+/* MOB-ASK-15: it wraps at XXL rather than cutting off the window. */
+.ch-ak-scope { white-space: normal; text-wrap: balance; }
+/* MOB-ASK-10: with a keyboard up on a small phone, the thread keeps the height. */
+@media (pointer: coarse) and (max-height: 700px) {
+  .ch-ak-root:has(.ch-ask-dock textarea:focus) :is(.ch-ak-top, .ch-ak-scope) { display: none; }
+}
+/* MOB-ASK-12 */
+.ch-ak-push :is(.apb, .apdock) { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+/* MOB-ASK-13: one line of placeholder, whatever the width. */
+.ch-ask-cmp textarea::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

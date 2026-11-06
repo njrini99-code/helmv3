@@ -1571,3 +1571,9 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 .ch-cpv-pub .avs .ch-avatar + .ch-avatar {
   margin-left: -4px;
 }
+
+/* MOB-ASK-4: 16 or larger, or iOS zooms the page on focus. MOB-ASK-17: a ring on the field and a 44 send key. */
+.ch-cpv .fr .inp, .ch-cpv-sheet .ask-in input { font: var(--ch-type-17); letter-spacing: var(--ch-track-17); }
+.ch-cpv-sheet .ask-in:focus-within { box-shadow: 0 0 0 2px var(--ch-border-focus); }
+.ch-cpv-sheet .ask-in button { position: relative; }
+.ch-cpv-sheet .ask-in button::after { position: absolute; inset: -8px; content: ''; }

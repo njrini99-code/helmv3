@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuickChatRun } from '../../../shell/quick-chat/QuickChatProvider';
+import { AnimatePresence } from 'motion/react';
 import { AskKnowsPanel } from './parts/KnowsPanel';
 import { AllowanceMeter, PlayerOut } from './parts/Allowance';
 import { ArtifactBody, ArtifactView } from './parts/Artifact';
@@ -334,8 +335,7 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
     <main className={'ch-ask' + (v2 ? ' ch-ak-root' : '') + (phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || chatSw.pending || undefined} data-switch={sw.pending ? 'view' : chatSw.pending ? 'chat' : undefined} data-ch-code="CH-13820" {...sw.enter}>
       {phone && (
         <>
-          {/* One bar: an open artifact owns it (ASK-3), and two tops portalled into one slot fought over it. */}
-          {!artifact && <PhoneTop
+          <PhoneTop
             lead
             title={
               <>
@@ -353,7 +353,7 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
                 <PhoneIconAction icon={SquarePen} label="New chat" onClick={newChat} />
               </>
             }
-          />}
+          />
           <h1 className="ch-sr-only">Ask CoachHelm</h1>
           {v2 && data.knows && !player && (
             <Modal open={settingsOpen} title="Chat settings" detent={0.62} className="ch-ak-settings" onClose={() => setSettingsOpen(false)}>
@@ -421,7 +421,7 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
           </aside>
         )}
       </div>
-      {artifact && phone && artifactView}
+      <AnimatePresence>{artifact && phone && artifactView}</AnimatePresence>
       {phone && (
         <>
           <HistoryDrawer {...histProps} open={drawer} onClose={() => setDrawer(false)} />

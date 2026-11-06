@@ -120,7 +120,7 @@ html[data-fw-theme='dark'] .ch-qcs {
 .ch-qcs .coin.jr { background: var(--ch-qc-a-yr-jr); }
 .ch-qcs .coin.so { background: var(--ch-qc-a-yr-so); }
 .ch-qcs .coin.fr { background: var(--ch-qc-a-yr-fr); }
-.ch-qcs .coin.more { font: var(--ch-type-12); background: var(--ch-qc-a-card); color: var(--ch-qc-a-ink-2); box-shadow: 0 0 0 2px var(--ch-qc-a-well), inset 0 0 0 var(--ch-hairline-w) var(--ch-qc-a-sep); font: var(--ch-type-11); width: 28px; border-radius: var(--ch-radius-md); letter-spacing: var(--ch-track-11); }
+.ch-qcs .coin.more { background: var(--ch-qc-a-card); color: var(--ch-qc-a-ink-2); box-shadow: 0 0 0 2px var(--ch-qc-a-well), inset 0 0 0 var(--ch-hairline-w) var(--ch-qc-a-sep); font: var(--ch-type-12); width: 28px; border-radius: var(--ch-radius-md); letter-spacing: var(--ch-track-11); }
 .ch-qcs .cal-wk { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
 .ch-qcs .cal-wk i { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0 6px; border-radius: var(--ch-radius-sm); font-style: normal; isolation: isolate; }
 .ch-qcs .cal-wk i::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--ch-qc-a-tint); opacity: 0; transition: opacity 0.2s ease; }
@@ -491,7 +491,7 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 
 /* Quick chat sweep. */
 /* QC-6: Safari's placeholder takes the panel's tertiary ink at full strength. */
-.ch-qcs .cmp__t::placeholder { color: var(--ch-qc-a-ink-3); opacity: 1; }
+.ch-qcs .cmp__t::placeholder { color: var(--ch-text-placeholder); opacity: 1; }
 /* QC-13: a long word stays inside its bubble. */
 .ch-qcs :is(.ub, .mb) { overflow-wrap: anywhere; }
 /* QC-10: looks as off as it is. */
@@ -523,3 +523,19 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 .ch-qcs .rail.is-clash .blk.old { left: 50%; }
 /* QC-4 */
 .ch-qcs .task__h .ch-badge { flex: none; }
+/* MOB-QC-5: the header and the grab own a vertical drag on touch, or the browser takes it and the swipe never fires. */
+.ch-qcs.is-phone .qc__h, .ch-qcs.is-phone .ch-grab { touch-action: none; }
+/* MOB-QC-9: clear of the notch, sideways. */
+.ch-qcs.is-phone .qc { left: max(10px, env(safe-area-inset-left)); right: max(10px, env(safe-area-inset-right)); }
+/* MOB-QC-3: 16 or larger, or iOS zooms the page on focus. */
+.ch-qcs .fnew input { font: var(--ch-type-17-medium); letter-spacing: var(--ch-track-17); }
+/* MOB-QC-11, MOB-QC-12 */
+.ch-qcs .rcpt__a { gap: 8px; }
+.ch-qcs .mtone { row-gap: 14px; }
+.ch-qcs .opts { row-gap: 8px; }
+/* MOB-QC-8: the actions take their own row before the words go to 23 wide. */
+.ch-qcs .task { container-type: inline-size; }
+@container (max-width: 300px) {
+  .ch-qcs .rcpt { grid-template-columns: 26px minmax(0, 1fr); }
+  .ch-qcs .rcpt__a { grid-column: 2; }
+}

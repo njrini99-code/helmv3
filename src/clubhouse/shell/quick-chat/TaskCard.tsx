@@ -154,7 +154,8 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
       <div className="task__h">
         <span className="task__ic">{svg(w.icon)}</span>
         <span className="task__ttl">
-          <b aria-label={title}>{typed}</b>
+          <b aria-hidden="true">{typed}</b>
+          <span className="ch-sr-only">{title}</span>
           <span>{w.sub}</span>
         </span>
         <Badge tone={chipTone}>{chip}</Badge>

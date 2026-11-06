@@ -2022,3 +2022,30 @@ a.ch-th-reads__r:focus-visible {
 .ch-th-list.is-ordered {
   list-style: decimal;
 }
+
+/* The answer's figures at 320 and at XXL: the words get their own row before a track or a name is squeezed to nothing. */
+.ch-th-fig, .ch-th-card { container-type: inline-size; }
+@container (max-width: 260px) {
+  /* MOB-ASK-1 */
+  .ch-th--phone .ch-th-bar { grid-template-columns: minmax(0, 1fr) auto; }
+  .ch-th--phone .ch-th-bar > :nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+  /* MOB-ASK-8 */
+  .ch-th--phone .ch-th-rank li { grid-template-columns: 14px minmax(0, 1fr) auto; }
+  .ch-th--phone .ch-th-rank li > :nth-child(3) { grid-column: 2 / -1; grid-row: 2; }
+}
+@container (max-width: 280px) {
+  /* MOB-ASK-2 */
+  .ch-th--phone .ch-th-va { grid-template-columns: minmax(0, 1fr) var(--ch-th-va-value, 44px); }
+  .ch-th--phone .ch-th-va > :nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+  /* MOB-ASK-7 */
+  .ch-th--phone .ch-th-act__facts > div { grid-template-columns: minmax(0, 1fr); }
+}
+/* MOB-ASK-6: buttons that don't fit stack, Confirm on top; MOB-ASK-7: words break between words. */
+.ch-th--phone .ch-th-act__foot { flex-wrap: wrap; }
+.ch-th--phone .ch-th-act__foot .ch-btn { flex: 1 1 120px; }
+.ch-th--phone .ch-th-act__facts > div > * { overflow-wrap: break-word; }
+/* MOB-ASK-9: the mark goes into the turn's head below 390 so the words get the whole column. */
+@media (max-width: 389px) {
+  .ch-th--phone .ch-th-mark { display: none; }
+  .ch-th--phone .ch-th-card { padding-left: 0; }
+}

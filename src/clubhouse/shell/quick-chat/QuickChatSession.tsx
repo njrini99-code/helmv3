@@ -77,7 +77,14 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
       const kb = window.visualViewport ? window.visualViewport.height + window.visualViewport.offsetTop : window.innerHeight;
       // A keyboard pan moves the visual viewport: the panel follows, so its header stays on screen (QC-9).
       el.style.setProperty('--ch-qc-qc-top', `${(window.visualViewport?.offsetTop ?? 0) + bar + 6}px`);
-      el.style.setProperty('--ch-qc-qc-h', `${Math.min(700, kb - bar - 6 - 8)}px`);
+      // Clear of the home indicator with the keyboard down (MOB-QC-7); with the keyboard up in a short window, the whole height (MOB-QC-2).
+      const vv = window.visualViewport;
+      const keyboardUp = !!vv && vv.height < window.innerHeight - 80;
+      const room = kb - bar - 14;
+      if (keyboardUp && room < 240) {
+        el.style.setProperty('--ch-qc-qc-top', `${(vv?.offsetTop ?? 0) + 4}px`);
+        el.style.setProperty('--ch-qc-qc-h', `${(vv?.height ?? window.innerHeight) - 8}px`);
+      } else el.style.setProperty('--ch-qc-qc-h', keyboardUp ? `${Math.min(700, room)}px` : `min(700px, calc(${room}px - env(safe-area-inset-bottom)))`);
     }
     return { x: key.left + key.width / 2, y: key.top + key.height / 2 };
   }, [keyRef, phone]);
@@ -91,7 +98,8 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
     if (open) {
       const origin = place();
       motion.open(el, scrim.current, origin);
-      if (!phone) field.current?.focus({ preventScroll: true });
+      // A fine pointer only: on a phone turned sideways this would raise a keyboard over the panel (MOB-QC-1).
+      if (!phone && window.matchMedia('(pointer: fine)').matches) field.current?.focus({ preventScroll: true });
     } else if (shown) {
       motion.close(el, scrim.current, () => setShown(false));
       keyRef.current?.querySelector('button')?.focus({ preventScroll: true });
@@ -155,7 +163,9 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
   // Anything added scrolls the body; the panel's own height never moves (M-GROW).
   useEffect(() => {
     const el = body.current;
-    if (el && chat.messages.length) el.scrollTo({ top: el.scrollHeight, behavior: reduced ? 'auto' : 'smooth' });
+    // Only a reader at the bottom is followed, and without a smooth scroll on every token (MOB-QC-4).
+    if (!el || !chat.messages.length) return;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 80) el.scrollTo({ top: el.scrollHeight, behavior: reduced || chat.busy ? 'auto' : 'smooth' });
   }, [chat.messages, reduced]);
 
   // AC-QC-CMP-03, 05: a message written during a run or offline waits, and goes when it can. A pending confirm holds it too.
@@ -225,7 +235,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
     <div className={'ch-qcs' + (phone ? ' is-phone' : ' is-desk') + (reduced ? ' is-reduce' : '')}>
       <div ref={scrim} className="scrim" hidden={!shown} onClick={onClose} aria-hidden="true" />
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- the dialog keeps Tab inside itself (AC-QC-PNL-08) */}
-      <section id="ch-qc-panel" ref={panel} className="qc" role="dialog" aria-label="CoachHelm" hidden={!shown} data-ch-qc-panel="" onKeyDown={onPanelKey}>
+      <section id="ch-qc-panel" ref={panel} className="qc" role="dialog" aria-modal={phone || undefined} aria-label="CoachHelm" hidden={!shown} data-ch-qc-panel="" onKeyDown={onPanelKey}>
         <header className="qc__h" data-qc-rise="" {...swipe}>
           <span className="qc__mark">
             <HelmMark />
@@ -246,7 +256,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
         </header>
         <div className="qc__sheet">
           <div className="qc__body" ref={body} data-qc-rise="">
-            <div className="qc__inner" aria-live="polite">
+            <div className="qc__inner">
               {fresh ? (
                 <div className="hello">
                   <h3 className="hello__t">What should we get done?</h3>
@@ -330,6 +340,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
               <Menu
                 label="Add to your question"
                 align="start"
+                keepFocus
                 items={ASK_STARTERS.filter((s) => s.id !== 'add-player').map((s) => ({
                   label: s.label,
                   onSelect: () => {
@@ -357,8 +368,10 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
                   el.style.height = 'auto';
                   el.style.height = `${Math.min(el.scrollHeight, 4 * parseFloat(getComputedStyle(el).lineHeight || '22'))}px`;
                 }}
+                enterKeyHint="send"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey && !phone) {
+                  // A phone's blue send key sends, as Messages' does.
+                  if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     send(text);
                   }
@@ -391,7 +404,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
               </div>
             )}
           </div>
-          {phone && <i className="ch-grab" aria-hidden="true" {...swipe} />}
+          {phone && <i className="ch-grab ch-grab--hit" aria-hidden="true" {...swipe} />}
         </div>
       </section>
     </div>
@@ -423,7 +436,7 @@ function Steps({ turn, stopped, failed = false }: { turn: AskAssistantTurn; stop
     );
   const folded = more ? 0 : Math.max(0, turn.steps.length - STEPS_SHOWN);
   return (
-    <ol className="steps" aria-live="polite">
+    <ol className="steps">
       {folded > 0 && (
         <li className="step done">
           <button type="button" className="steps-sum" onClick={() => setMore(true)}>

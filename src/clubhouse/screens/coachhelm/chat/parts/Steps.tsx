@@ -66,7 +66,7 @@ export function Steps({ steps, active, seconds, waiting = false, stopped = false
   if (steps.length === 0) return null;
   const last = steps.length - 1;
   const list = (live: boolean) => (
-    <ol id={live ? undefined : id} className={'steps' + (live ? ' is-live' : '')} aria-label="What CoachHelm is doing" aria-live={live ? 'polite' : undefined} aria-relevant={live ? 'additions text' : undefined}>
+    <ol id={live ? undefined : id} className={'steps' + (live ? ' is-live' : '')} aria-label="What CoachHelm is doing">
       {steps.map((s, i) => {
         // Stop freezes the row that was running: its dash stands in for the check it never earned (S-ASK.steps.stopped).
         const cut = stopped && (s.state === 'active' || (!s.state && i === last));

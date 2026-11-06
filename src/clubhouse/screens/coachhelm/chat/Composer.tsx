@@ -339,7 +339,7 @@ export function AskComposer({ scopeOf, variant, phone, players, busy, failed, bl
       opened.current = null;
       return;
     }
-    if (e.key === 'Enter' && !e.shiftKey && finePointer) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       submit();
     }
@@ -355,6 +355,7 @@ export function AskComposer({ scopeOf, variant, phone, players, busy, failed, bl
     <Menu
       label="Add to your question"
       align="start"
+      keepFocus
       items={ASK_STARTERS.map((s) => ({
         label: s.label,
         onSelect: () => {

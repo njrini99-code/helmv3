@@ -41,6 +41,12 @@ export function QuickChatProvider({ plans = false, pathname, search, enabled, ch
   const trail = useCrumbTrail();
   const looking = lookingAt(pathname, search, trail);
   const [open, setOpen] = useState(initialOpen);
+  // A new page closes it, so "Looking at" can't change under a task in progress (MOB-QC-10).
+  const pathnameAt = useRef(pathname);
+  useEffect(() => {
+    if (pathnameAt.current !== pathname) setOpen(false);
+    pathnameAt.current = pathname;
+  }, [pathname]);
   const [loaded, setLoaded] = useState(!!previewState);
   const [run, setRun] = useState<QcRun>({ state: 'idle', label: '' });
   const [flag, setFlag] = useState(false);

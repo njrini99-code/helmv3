@@ -75,7 +75,7 @@ export function BriefCard({ title, questions, onDone }: { title: string; questio
       <div key={q.id} className={'qpane' + (at === 0 && !back ? '' : back ? ' is-back' : ' is-next')}>
         <h5>{q.title}</h5>
         {q.why && <p className="why">{q.why}</p>}
-        <div className="opts" role={q.multi ? 'group' : 'radiogroup'} aria-label={q.title}>
+        <div className="opts" role="group" aria-label={q.title}>
           {q.options.map((o) => (
             <button key={o.id} type="button" className={'opt' + (q.multi ? ' multi' : '')} aria-pressed={chosen.includes(o.id)} onClick={() => toggle(o.id)}>
               <span className="bx" aria-hidden="true">

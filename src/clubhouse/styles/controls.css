@@ -1867,16 +1867,16 @@ main[data-ch-crh='on'] .ch-modal__foot .ch-btn {
   border-radius: var(--ch-radius-md);
 }
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  main[data-ch-crh='on'] .ch-modal[data-ch-detent] .ch-modal__panel {
+  .ch-modal[data-ch-detent] .ch-modal__panel {
     height: min(var(--ch-modal-detent), 92dvh);
   }
   /* The drawn sheets carry their actions under the content, on the sheet's own colour (classes-roster-home 06 §5). */
-  main[data-ch-crh='on'] .ch-modal[data-ch-detent] .ch-modal__foot {
+  .ch-modal[data-ch-detent] .ch-modal__foot {
     background: none;
     box-shadow: none;
     border-top: 0;
   }
-  main[data-ch-crh='on'] .ch-modal[data-ch-detent] .ch-modal__body {
+  .ch-modal[data-ch-detent] .ch-modal__body {
     flex: 1;
   }
   main[data-ch-crh='on'] .ch-modal__panel {
