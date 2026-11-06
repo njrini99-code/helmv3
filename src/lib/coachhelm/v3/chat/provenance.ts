@@ -698,9 +698,12 @@ export function coachRequestDates(text: string | null | undefined, todayIso: str
     if (m[1] === 'may' || m[1] === 'march' || m[1] === 'mar') continue;
     const r = resolveDateMatch(m[1], m[2], m[3], m[7], m[8], m[9]);
     if (!r) continue;
-    const monthDay = `${String(r.month).padStart(2, '0')}-${String(r.day).padStart(2, '0')}`;
-    const thisYear = Number(todayIso.slice(0, 4));
-    out.add(r.year !== null ? `${r.year}-${monthDay}` : `${thisYear}-${monthDay}` >= todayIso ? `${thisYear}-${monthDay}` : `${thisYear + 1}-${monthDay}`);
+    // "Nov 10-12" and "Nov 10 and 17" name both days, in the head's month and year.
+    for (const day of [r.day, ...[m[4], m[6]].filter(Boolean).map(Number)]) {
+      const monthDay = `${String(r.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const thisYear = Number(todayIso.slice(0, 4));
+      out.add(r.year !== null ? `${r.year}-${monthDay}` : `${thisYear}-${monthDay}` >= todayIso ? `${thisYear}-${monthDay}` : `${thisYear + 1}-${monthDay}`);
+    }
   }
   return [...out].sort();
 }
