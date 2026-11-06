@@ -141,6 +141,7 @@ export function PreviewAsk({ state, kind, v2 = false, messages, busy, role }: { 
       init.evidence = t.focus ?? null;
     }
     if (role === 'player') data = { ...data, role: 'player', firstName: 'Jonah', allowance: 'plenty' as ChAskData['allowance'], focus: [{ text: 'Approach from 125 to 150, set by Coach Reyes', ask: 'How is my approach from 125 to 150 doing?' }, { text: 'Putting gained strokes at Hilltop', ask: 'How did my putting go at Hilltop?' }] };
+    if (v2 && role !== 'player') data = { ...data, firstName: 'Maya' };
     if (v2 && !data.knows && role !== 'player') data = { ...data, knows: { tone: 'straight', teamId: 'preview', facts: [{ id: 'k1', text: 'Practice runs 2h 30m on weekdays' }, { id: 'k2', text: 'Team goal: under +2 a round by spring' }] } };
     const load: ChAskLoad = state === 'noroster' ? { status: 'noRoster', teamName: 'Finley University' } : state === 'failed' ? { status: 'failed' } : { status: 'ready', data };
     return { load, chat: fakeChat(start, v2), initial: init };

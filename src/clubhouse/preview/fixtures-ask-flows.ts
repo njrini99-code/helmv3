@@ -60,7 +60,7 @@ export function askFlowMessages(scene: string, stage: string): { messages: UIMes
 }
 
 /** A question's stage on today's answer fixtures. */
-export const ASK_STAGE_STATE: Record<string, string> = { typing: 'thinking', steps: 'working', 'steps-2': 'working', skeleton: 'composelive', chart: 'visual', 'chart-2': 'visual', answer: 'answer', 'steps-open': 'answer', sources: 'reads', popover: 'reads', folded: 'answer' };
+export const ASK_STAGE_STATE: Record<string, string> = { typing: 'thinking', steps: 'working', 'steps-2': 'working', skeleton: 'composelive', chart: 'visual', 'chart-2': 'visual', answer: 'answer', 'steps-open': 'answer', sources: 'chips', popover: 'chips', folded: 'answer' };
 
 const BRIEF = {
   title: 'A few things first',

@@ -2,6 +2,7 @@
 
 import type { UIMessage } from 'ai';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowDown, Check, ChevronDown, CircleAlert, Copy, RotateCw } from 'lucide-react';
 import type { ChatErrorNotice } from '../../../data/coachhelm-chat-error';
 import {
@@ -117,18 +118,24 @@ export function AskThread({ v2 = false, team, stoppedTurn = null, onArtifact, me
   const endRef = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
   // CP-7: Ask v2 follows the answer while the reader is within 0.9 of a screen of the bottom; past that, S-ASK.jump brings them back.
-  const [away, setAway] = useState(false);
+  // It sits in the chat column, not the thread: the thread is its own overflow box, so anything sticky in it travels with the words.
+  const [jump, setJump] = useState<{ host: HTMLElement; bottom: number } | null>(null);
   useEffect(() => {
-    const sp = scrollParentOf(rootRef.current);
-    const target: HTMLElement | Window = sp ?? window;
+    // Read the scroller on each scroll, and listen on the document's capture: at mount the scroller's overflow may not have applied yet, and a
+    // listener left on the window never hears it, so the thread kept following a reader who had scrolled away.
     const onScroll = () => {
+      const sp = scrollParentOf(rootRef.current);
       const { gap, screen } = fromBottom(sp);
       const reach = v2 ? screen * 0.9 : 80;
       stick.current = gap < reach;
-      if (v2) setAway(gap >= reach);
+      if (!v2) return;
+      const host = rootRef.current?.closest<HTMLElement>('.ch-ask-main');
+      const bottom = host && sp ? Math.round(host.getBoundingClientRect().bottom - sp.getBoundingClientRect().bottom) + 12 : 0;
+      const next = gap >= reach && host ? { host, bottom } : null;
+      setJump((j) => (j?.host === next?.host && j?.bottom === next?.bottom ? j : next));
     };
-    target.addEventListener('scroll', onScroll, { passive: true });
-    return () => target.removeEventListener('scroll', onScroll);
+    document.addEventListener('scroll', onScroll, { passive: true, capture: true });
+    return () => document.removeEventListener('scroll', onScroll, { capture: true });
   }, [v2]);
   const turnCount = turns.length;
   const lastRole = last?.role;
@@ -340,21 +347,25 @@ export function AskThread({ v2 = false, team, stoppedTurn = null, onArtifact, me
         {error && <AskError notice={error} offline={offline} changed={failedAnswerChangedNothing(messages)} onRetry={onRetry} onNewChat={onNewChat} />}
         <div ref={endRef} className="ch-th-end" />
       </div>
-      {v2 && away && (
-        <button
-          type="button"
-          className="ch-ak-jump"
-          aria-label="Jump to the latest"
-          data-ch-press=""
-          onClick={() => {
-            stick.current = true;
-            setAway(false);
-            endRef.current?.scrollIntoView?.({ block: 'end', behavior: reduced ? 'instant' : 'smooth' });
-          }}
-        >
-          <Icon icon={ArrowDown} size={19} />
-        </button>
-      )}
+      {v2 &&
+        jump &&
+        createPortal(
+          <button
+            type="button"
+            className="ch-ak-jump"
+            aria-label="Jump to the latest"
+            data-ch-press=""
+            style={{ bottom: jump.bottom }}
+            onClick={() => {
+              stick.current = true;
+              setJump(null);
+              endRef.current?.scrollIntoView?.({ block: 'end', behavior: reduced ? 'instant' : 'smooth' });
+            }}
+          >
+            <Icon icon={ArrowDown} size={19} />
+          </button>,
+          jump.host,
+        )}
     </div>
     </PlanVersions.Provider>
   );

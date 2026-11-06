@@ -41,12 +41,12 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .cite { position: relative; display: inline-flex; align-items: center; gap: 4px; vertical-align: 1px; margin-left: 4px; padding: 4px 8px; border: 0; border-radius: 999px; background: var(--ch-well-bg-flat); box-shadow: 0 0 0 0.5px var(--ch-ak-ak-hair); font: var(--ch-type-13-strong);  color: var(--ch-text-secondary); white-space: nowrap; cursor: pointer; }
 .ch-ak-th .cite::after { content: ''; position: absolute; inset: -12px 0; }
 .ch-ak-th .cite.on { background: var(--ch-ak-ak-tint); color: var(--ch-green-600); box-shadow: none; }
-.ch-ak-th .cpop { position: absolute; z-index: var(--ch-z-panel); top: calc(100% + 6px); left: 0; width: 280px; max-width: 72vw; padding: 12px 12px; border-radius: var(--ch-radius-md); background: var(--ch-card-bg); box-shadow: var(--ch-shadow-float); font: var(--ch-type-14); }
+.ch-ak-th .cpop { display: block; position: absolute; z-index: var(--ch-z-panel); top: calc(100% + 6px); left: 0; width: 280px; max-width: 72vw; padding: 12px 12px; border-radius: var(--ch-radius-md); background: var(--ch-card-bg); box-shadow: var(--ch-shadow-float); font: var(--ch-type-14); }
 .ch-ak-th .cpop b { display: block; margin-bottom: 8px; font: var(--ch-type-15-strong);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
-.ch-ak-th .cpop dl { display: grid; gap: 4px; margin: 0; }
-.ch-ak-th .cpop dl div { display: flex; justify-content: space-between; gap: 12px; }
-.ch-ak-th .cpop dt { color: var(--ch-text-tertiary); }
-.ch-ak-th .cpop dd { margin: 0; color: var(--ch-text-primary); text-align: right; }
+.ch-ak-th .cpop .rows { display: grid; gap: 4px; }
+.ch-ak-th .cpop .row { display: flex; justify-content: space-between; gap: 12px; }
+.ch-ak-th .cpop .k { color: var(--ch-text-tertiary); }
+.ch-ak-th .cpop .v { color: var(--ch-text-primary); text-align: right; }
 .ch-ak-th .acts { display: flex; align-items: center; gap: 2px; color: var(--ch-text-tertiary); }
 .ch-ak-th .acts .sp { flex: 1; }
 .ch-ak-th .acts .sb { position: relative; display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: var(--ch-radius-sm); background: none; color: var(--ch-text-tertiary); cursor: pointer; }
@@ -683,9 +683,9 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-root .ch-ak-cscope span { padding: 2px 8px; border-radius: var(--ch-radius-sm); background: var(--ch-well-bg-flat); box-shadow: 0 0 0 1px var(--ch-card-ring); font: var(--ch-type-13-strong); color: var(--ch-text-secondary); }
 
 /* S-ASK.jump: 40 glass, right 16, 12 above the composer (CP-7). */
-.ch-ak-th { position: relative; }
-.ch-ak-th .ch-ak-jump { position: sticky; z-index: var(--ch-z-sticky); bottom: 12px; display: grid; place-items: center; width: 40px; height: 40px; margin: 0 0 0 auto; border: 0; border-radius: 50%; background: var(--ch-glass-strong); -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%); box-shadow: var(--ch-shadow-float); color: var(--ch-text-primary); cursor: pointer; }
-.ch-ak-th .ch-ak-jump::after { content: ''; position: absolute; inset: -2px; }
+.ch-ak-root .ch-ask-main { position: relative; }
+.ch-ak-root .ch-ak-jump { position: absolute; z-index: var(--ch-z-sticky); right: 16px; display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--ch-glass-strong); -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%); box-shadow: var(--ch-shadow-float); color: var(--ch-text-primary); cursor: pointer; }
+.ch-ak-root .ch-ak-jump::after { content: ''; position: absolute; inset: -2px; }
 
 /* E-QCARD: head with its tile and count; Back stays on the first question, disabled; the free line closes the last. */
 .ch-ak-th .qic { display: grid; place-items: center; flex: none; width: 30px; height: 30px; border-radius: var(--ch-radius-sm); background: var(--ch-ak-ak-tint); color: var(--ch-green-600); }
