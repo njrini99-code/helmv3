@@ -388,8 +388,8 @@
   background: var(--ch-chart-loss-tint);
   color: var(--ch-chart-loss);
 }
-.ch-shs-feat .ch-shs-pill.is-gain { background: var(--ch-shs-s-gain-tint); color: var(--ch-shs-s-gain); }
-.ch-shs-feat .ch-shs-pill.is-loss { background: var(--ch-shs-s-loss-tint); color: var(--ch-shs-s-loss); }
+.ch-shs-feat .ch-shs-pill.is-gain { background: color-mix(in oklab, var(--ch-chart-gain) 12%, transparent); color: var(--ch-chart-gain); }
+.ch-shs-feat .ch-shs-pill.is-loss { background: color-mix(in oklab, var(--ch-chart-loss) 12%, transparent); color: var(--ch-chart-loss); }
 .ch-shs-pill.is-flat {
   background: var(--ch-shs-s-flat-tint);
   color: var(--ch-shs-s-ink-2);
@@ -2273,7 +2273,7 @@ p.ch-shs-mini-cap {
 }
 
 /* STATS-1: a coach's header on a player's Stats sits on the page edge. */
-.ch-spm-head { padding-inline: var(--ch-page-x-phone); }
+.ch-shs .ch-spm-head { padding-inline: var(--ch-page-x-phone); }
 /* STATS-10: the glance tiles go two across before a label would overflow. */
 .ch-shs-card { container-type: inline-size; }
 @container (max-width: 360px) {
