@@ -1,5 +1,5 @@
 /** Every redesign lane's screens the gate opens, on the fixture preview. Stress states carry staging's real values. */
-/** `tap`: what to press on a phone first, to reach a pushed screen the fixture doesn't open by itself. */
+/** `tap`: what to press on a phone first, to reach a pushed screen the fixture doesn't open by itself. Lane PRs add these for subpages. */
 export type GateScreen = { id: string; lane: string; path: string; phone?: boolean; desktop?: boolean; tap?: string };
 
 const s = (lane: string, id: string, path: string, only?: 'phone' | 'desktop'): GateScreen => ({ id, lane, path: `/clubhouse-preview/${path}`, phone: only !== 'desktop', desktop: only !== 'phone' });
@@ -29,9 +29,10 @@ export const GATE_SCREENS: GateScreen[] = [
   s('PRAC', 'practice-format', 'coachhelm-practice-format'),
   s('PRAC', 'practice-player', 'coachhelm-practice-player'),
   s('PRAC', 'documents', 'hub?tab=docs'),
-  s('MSG', 'messages', 'messages'),
-  s('MSG', 'messages-empty', 'messages?state=empty'),
-  { ...s('MSG', 'messages-stress', 'messages?state=stress'), tap: 'button.ch-ms-row' },
+  // state=design is the redesign (data-ch-ms-v2); the plain fixture draws the old screen.
+  s('MSG', 'messages', 'messages?state=design&view=inbox'),
+  s('MSG', 'messages-empty', 'messages?state=design&view=empty'),
+  s('MSG', 'messages-stress', 'messages?state=design&view=stress'),
   s('RC', 'read', 'coachhelm-read'),
   s('RC', 'read-stress', 'coachhelm-read?state=stress'),
   s('RC', 'read-player', 'coachhelm-read?view=player'),
