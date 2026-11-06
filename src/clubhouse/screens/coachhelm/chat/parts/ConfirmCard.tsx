@@ -451,7 +451,8 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
       </div>
       {delivered.length > 0 && (
         <p className={'told' + (watched.current ? ' is-live' : '')}>
-          {coins.length > 0 && (
+          {/* Coins say who, so they show only when they're everyone the count says was told. */}
+          {coins.length > 0 && delivered.some((n) => n.recipients === coins.length) && (
             <span className="coins" aria-hidden="true">
               {coins.slice(0, 4).map((name, i) => (
                 <span key={name} className="coin" style={{ ['--ch-i' as string]: i }}>
