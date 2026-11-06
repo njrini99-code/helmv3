@@ -451,4 +451,21 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 }
 .ch-qcs .fnew .ch-btn {
   flex: none;
+  width: auto;
+}
+/* The pill takes the focus ring, not the field inside it: a square ring in a round composer. */
+.ch-qcs .cmp .cmp__t:focus,
+.ch-qcs .cmp .cmp__t:focus-visible {
+  outline: 0;
+  box-shadow: none;
+}
+.ch-qcs .cmp:focus-within {
+  box-shadow: 0 0 0 2px var(--ch-border-focus), var(--ch-qc-shadow-11);
+}
+/* 06 S-PANEL: the Glass panel's own corners, larger than any card in it. */
+.ch-qcs.is-phone .qc {
+  border-radius: 32px;
+}
+.ch-qcs.is-desk .qc {
+  border-radius: 26px;
 }
