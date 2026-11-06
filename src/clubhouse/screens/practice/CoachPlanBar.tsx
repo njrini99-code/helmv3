@@ -7,7 +7,6 @@ import { postPracticePlanToChat } from '@/app/golf/actions/coachhelm-practice-pl
 import { takeDownPracticePlan } from '@/app/golf/actions/practice-publish';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
-import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
 import { Modal } from '../../ui/Modal';
 import { Switch } from '../../ui/Switch';
@@ -67,10 +66,9 @@ export function CoachPlanBar({ status }: { status: ChPlanStatus }) {
       <Menu
         label="Share"
         trigger={(p) => (
-          <button type="button" className="ch-btn ch-btn--secondary" {...p}>
-            <span>Share</span>
-            <Icon icon={ChevronDown} size={15} />
-          </button>
+          <Button variant="secondary" rightIcon={ChevronDown} menu={p}>
+            Share
+          </Button>
         )}
         items={[
           ...(published ? [{ label: 'Send to team chat', onSelect: () => void toChat() }, { label: 'Copy link', onSelect: () => void copyLink() }] : []),

@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronRight, MoreHorizontal, Plus } from 'lucide-react';
+import { ChevronRight, Ellipsis, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
@@ -339,6 +339,7 @@ export function GroupsPage({ teamId, groups, roster, preview = false }: { teamId
       <LibraryHead tab="groups" title="Groups" actionLabel="New group" onAction={() => open('new')} />
       {groups.length === 0 ? (
         <EmptyState
+          kind="first-run"
           title="No saved groups yet"
           body="Save a group once, and any plan can use it."
           action={
@@ -486,7 +487,7 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
                   <small>{s.line}</small>
                   <BodyGlance body={s.body} />
                 </button>
-                <Menu label={`${s.name}: more`} align="end" trigger={(p) => <IconButton icon={MoreHorizontal} size="sm" label={`${s.name}: more`} menu={p} />} items={[{ label: 'Use', onSelect: () => use(s.id) }, { label: 'Duplicate to your templates', onSelect: () => void duplicate({ name: s.name, minutes: s.minutes, body: s.body, kind: 'session' }) }]} />
+                <Menu label={`${s.name}: more`} align="end" trigger={(p) => <IconButton icon={Ellipsis} size="sm" label={`${s.name}: more`} menu={p} />} items={[{ label: 'Use', onSelect: () => use(s.id) }, { label: 'Duplicate to your templates', onSelect: () => void duplicate({ name: s.name, minutes: s.minutes, body: s.body, kind: 'session' }) }]} />
               </li>
             ))}
           </ul>
@@ -511,7 +512,7 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
                 <Menu
                   label={`${t.name}: more`}
                   align="end"
-                  trigger={(p) => <IconButton icon={MoreHorizontal} size="sm" label={`${t.name}: more`} menu={p} />}
+                  trigger={(p) => <IconButton icon={Ellipsis} size="sm" label={`${t.name}: more`} menu={p} />}
                   items={[
                     { label: 'Use', onSelect: () => use(t.id) },
                     { label: 'Duplicate', onSelect: () => void duplicate({ name: `${t.name} copy`, minutes: t.minutes ?? 60, body: t.body, kind: t.kind === 'block' ? 'block' : 'session' }) },
