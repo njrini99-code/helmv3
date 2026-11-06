@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MIN_SAMPLE_N } from '@/lib/coachhelm/v2/insights/upsert';
-import { extractAndValidateChatClaims } from '../claims-packet';
+import { extractAndValidateChatClaims, thinSampleStated, unbackedCausalSentences } from '../claims-packet';
 import type { CoachChatContext } from '../context';
 import { buildInstructions } from '../instructions';
 import { auditNumericClaims, coachRequestDates, collectDates, collectEnvelopeNumbers, readFigure, type Measurement, type ToolEnvelope } from '../provenance';
@@ -59,15 +59,49 @@ describe('refusal 1: "How many rounds has Owen Carter played this season, and wh
 
   const widerWindow = 'From May 28 to September 26 he averaged 76.14 over 14 completed rounds, which is 4.43 over par. Last season he averaged 5.08 over par per 18 holes across 12 rounds.';
 
-  it('reproduces the refusal: the 2-round figure is right, and the sample floor rejects it', () => {
+  it('the stored answer now passes: the figure is right and its sentence states its 2 rounds', () => {
     const verdict = verdictFor(withBlock(`Owen has 2 recorded rounds this season. Over those 2 rounds his score to par, scaled to 18 holes, is 0.5.\n\n${widerWindow}`, [thisSeason, avg, toPar, lastSeason]), reads);
-    expect(reasonOf(verdict)).toBe('claim_validation_failed');
+    expect(verdict.outcome).toBe('accepted');
+  });
+
+  it('refuses a thin figure whose sentence does not state its sample', () => {
+    const verdict = verdictFor(withBlock(`Owen has 2 recorded rounds this season. His score to par is 0.5.\n\n${widerWindow}`, [thisSeason, avg, toPar, lastSeason]), reads);
     expect(tokensOf(verdict)).toEqual(['score_to_par_per_18:unsupported_small_number']);
   });
 
-  it('accepts the answer the instructions now ask for: the count, no 2-round figure', () => {
-    const verdict = verdictFor(withBlock(`Owen has 2 recorded rounds this season, too few for a season average.\n\n${widerWindow}`, [avg, toPar, lastSeason]), reads);
-    expect(verdict.outcome).toBe('accepted');
+  it('refuses a thin figure with the wrong sample', () => {
+    const verdict = verdictFor(withBlock(`Over his 3 rounds his score to par is 0.5.`, [thisSeason]), reads);
+    expect(tokensOf(verdict)).toEqual(['score_to_par_per_18:unsupported_small_number']);
+  });
+
+  it('refuses a wrong value however well its sample is stated', () => {
+    const verdict = verdictFor(withBlock(`Over his 2 rounds his score to par is 0.9.`, [{ ...thisSeason, value: 0.9 }]), reads);
+    expect(tokensOf(verdict)).toEqual(['0.9']);
+    // A claim that disagrees with prose the audit accepts still fails on its own.
+    const claimOnly = verdictFor(withBlock('Over his 2 rounds his score to par is 0.5.', [{ ...thisSeason, value: 0.9 }]), reads);
+    expect(tokensOf(claimOnly)).toEqual(['score_to_par_per_18:value_mismatch']);
+  });
+
+  it('a thin figure tagged as a cause still needs backing', () => {
+    const tagged = withBlock('Over his 2 rounds his score to par is 0.5.', [thisSeason]).replace('"claim_type":"fact"', '"claim_type":"causal"');
+    expect(tokensOf(verdictFor(tagged, reads))).toEqual(['score_to_par_per_18:unsupported_small_number']);
+  });
+
+  it('a zero-sample figure never passes on a stated sample', () => {
+    const empty = { ...thisSeason, sample_size: 0 };
+    expect(tokensOf(verdictFor(withBlock('Over his 0 rounds his score to par is 0.5.', [empty]), [envelope({ measurements: [empty], detail: { this_season: { mean: 0.5 } } })]))).toEqual(['score_to_par_per_18:unsupported_small_number']);
+  });
+
+  it('thinSampleStated pairs each figure with its nearest count', () => {
+    const line = "Owen's 0.5 over his 2 rounds sits beside his 5.08 over 12 rounds, per 18 holes across 12 rounds.";
+    expect(thinSampleStated(line, 0.5, 2, 'rounds')).toBe(true);
+    expect(thinSampleStated(line, 0.5, 12, 'rounds')).toBe(false);
+    expect(thinSampleStated('He sits at 2 under par over his three rounds.', -2, 3, 'rounds')).toBe(true);
+    expect(thinSampleStated('Owen has 2 rounds. Cole is 2 under over his 3 rounds.', -2, 3, 'rounds')).toBe(true);
+    expect(thinSampleStated('Over 2 rounds he made 40.0% of them.', 40, 2, 'rounds')).toBe(true);
+    expect(thinSampleStated('Nothing stated here, 0.5 only.', 0.5, 2, 'rounds')).toBe(false);
+    expect(thinSampleStated('He is 58.3% over 4 attempts.', 58.3, 4, 'attempts')).toBe(true);
+    expect(thinSampleStated('He is 58.3% over 4 rounds.', 58.3, 4, 'attempts')).toBe(false);
   });
 
   it('still refuses a wrong figure with a good sample', () => {
@@ -80,8 +114,9 @@ describe('refusal 1: "How many rounds has Owen Carter played this season, and wh
     const ctx: CoachChatContext = { coach_id: 'c', user_id: 'u', team_id: 't', team_name: 'Demo', timezone: TZ, roster: [] };
     const on = buildInstructions(ctx, '2026-11-05T12:00:00Z', true).replace(/\s+/g, ' ');
     expect(on).toContain(`fewer than ${MIN_SAMPLE_N} rounds or attempts`);
+    expect(on).toContain('72.5 over his 2 rounds');
     expect(on).toContain('A count, a sample size or any other figure has no metric_id to copy and stays out of the block');
-    expect(on).toContain('Do not write "because", "due to", "caused by"');
+    expect(on).toContain('because his tempo gets quicker');
     expect(buildInstructions(ctx, '2026-11-05T12:00:00Z', false).replace(/\s+/g, ' ')).not.toContain(`fewer than ${MIN_SAMPLE_N} rounds or attempts`);
   });
 
@@ -120,18 +155,11 @@ describe('refusal 2: "What is our team\'s scoring average this season?"', () => 
   const fullBlock = (cited: Measurement[]) => `\n<<<CLAIMS>>>${JSON.stringify(cited.map(claimOf))}<<<END_CLAIMS>>>`;
   const [coleThin, coleAvg, ethanAvg] = reads.flatMap((e) => e.measurements) as [Measurement, Measurement, Measurement];
 
-  it('the stored answer: "September 25 and 26" now passes the audit, and its "because" and 3-round figure are the next refusals', () => {
+  it('the stored answer passes whole: its pair of dates, its "because" about the data, and its 3 rounds stated', () => {
     const text =
       "I can't give you a reliable team scoring average for this season. Since the season began on August 1, 15 completed rounds are recorded across 6 of your 7 players, and Audit Testplayer has none. The tool left 12 of those 15 out of its averages because it flags them as 9-hole or incomplete. Only 3 rounds, all Cole Bennett's practice rounds at Pebble Beach, went into the average, at 2 under par. That figure describes Cole alone, not the team.\n\nThe 12 excluded rounds are the September 25 and 26 qualifier rounds. They are listed as 18 holes, so the incomplete flag looks like a data issue and I can't explain it from here. If those rounds are complete, they would give you a real team figure. Check them in the round records.\n\nFor a wider view, your six players with rounds have individual scoring averages over windows that start in May and end September 26. Cole is lowest at 72.55 over 23 rounds, and Ethan Park is highest at 76.79 over 15 rounds. Those windows include last season's rounds, so they are not season averages.";
-    // The numeric audit runs first, so it hid both. Chat figures never carry
-    // causal backing, so the typed gate refuses any causal wording (owner
-    // decision, claims-packet.ts), and Cole's "2 under par" rests on 3 rounds.
-    // The instructions now warn the model off each; the gate is unchanged.
-    expect(tokensOf(verdictFor(text + fullBlock([coleThin, coleAvg, ethanAvg]), reads))).toEqual(['team_rounds_avg_to_par:unsupported_small_number', '(none):unsupported_cause']);
-    const reworded = text
-      .replace('out of its averages because it flags them as 9-hole or incomplete', 'out of its averages and flags them as 9-hole or incomplete')
-      .replace(" Only 3 rounds, all Cole Bennett's practice rounds at Pebble Beach, went into the average, at 2 under par. That figure describes Cole alone, not the team.", ' Only 3 rounds went into the average, too few to report.');
-    expect(verdictFor(reworded + fullBlock([coleAvg, ethanAvg]), reads).outcome).toBe('accepted');
+    expect(verdictFor(text + fullBlock([coleThin, coleAvg, ethanAvg]), reads).outcome).toBe('accepted');
+    expect(verdictFor(text.replace('Only 3 rounds', 'Only 4 rounds') + fullBlock([coleThin]), reads).outcome).toBe('rejected');
   });
 
   it('accepts the "or" form production refused ("October 20 or 21")', () => {
@@ -158,6 +186,50 @@ describe('refusal 2: "What is our team\'s scoring average this season?"', () => 
 
   it('still flags a wrong team figure', () => {
     expect(tokensOf(verdictFor(`Cole is lowest at 72.25 over 23 rounds.${block}`, reads))).toEqual(['72.25']);
+  });
+});
+
+describe('causal wording: a cause is a claim only when it is about play and names nothing measured', () => {
+  const owen = figure({ metric_id: 'scoring_average', value: 76.14, entity: OWEN, sample_size: 14, window_start: '2026-05-28', window_end: '2026-09-26' });
+  const unbacked = (text: string) => unbackedCausalSentences(text, [owen]).length > 0;
+
+  it.each([
+    'The tool left 12 of those 15 out because it flags them as incomplete.',
+    "I can't give you a season average because the season just started.",
+    'His average is not shown because the rounds are not recorded yet.',
+    'Tuesday does not work because he has class.',
+    'The event moved because of rain.',
+    'His scoring average rose because he lost 2.4 strokes on approach.',
+    'He lost strokes as a result of 4 penalties.',
+    'Practice is at 3 because the bus leaves at 5.',
+  ])('passes: %s', (text) => {
+    expect(unbacked(text)).toBe(false);
+  });
+
+  it.each([
+    'His scores fell because his tempo gets quicker under pressure.',
+    'Owen is struggling because of his grip.',
+    'His scoring average rose due to poor course management.',
+    'Low confidence led to his slump.',
+    'I think he is slipping because of nerves.',
+    'His tempo got quicker over the last 3 rounds, which is why he fell back.',
+    'His scoring fell because his tempo slowed over his 4 rounds.',
+    'Owen missed the cut because of nerves.',
+  ])('refused: %s', (text) => {
+    expect(unbacked(text)).toBe(true);
+  });
+
+  it('refuses the whole answer when an otherwise correct one asserts an unbacked cause', () => {
+    const rawText = `From May 28 to September 26 he averaged 76.14 over 14 completed rounds because his tempo gets quicker.\n<<<CLAIMS>>>${JSON.stringify([{ claim_id: 'c', metric_id: 'scoring_average', value: 76.14, player_id: OWEN.id, window_start: owen.window_start, window_end: owen.window_end, unit: 'score', denominator: null, claim_type: 'fact' }])}<<<END_CLAIMS>>>`;
+    expect(tokensOf(verdictFor(rawText, [envelope({ measurements: [owen] })]))).toEqual(['(none):unsupported_cause']);
+  });
+
+  it('a claim about the team figure beside a player is checked, not called the wrong player', () => {
+    const team = figure({ metric_id: 'season_scoring_average', value: 74.2, entity: { kind: 'team', id: 'team-1', label: 'Demo' }, sample_size: 30, window_start: '2026-08-01', window_end: '2026-11-05' });
+    const block = (value: number) => `\n<<<CLAIMS>>>${JSON.stringify([{ claim_id: 'c', metric_id: 'season_scoring_average', value, player_id: 'team-1', window_start: '2026-08-01', window_end: '2026-11-05', unit: 'score', denominator: null, claim_type: 'fact' }])}<<<END_CLAIMS>>>`;
+    const reads = [envelope({ measurements: [team, owen] })];
+    expect(verdictFor(`The team averages 74.2 over 30 rounds.${block(74.2)}`, reads).outcome).toBe('accepted');
+    expect(tokensOf(verdictFor(`The team averages 74.2 over 30 rounds.${block(75.2)}`, reads))).toEqual(['season_scoring_average:value_mismatch']);
   });
 });
 

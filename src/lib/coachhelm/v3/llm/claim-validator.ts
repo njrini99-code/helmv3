@@ -180,7 +180,7 @@ function valuesMatch(a: number, b: number): boolean {
  * prose independently of what the model DECLARED, closing that gap: the
  * model's own label is not trusted.
  */
-const CAUSAL_LANGUAGE_RE =
+export const CAUSAL_LANGUAGE_RE =
   /\b(because|due to|caused? by|(?:has |have |had )?led to|leads? to|leading to|as a result(?: of)?|which is why|the reason (?:is|for|was)|results? in|resulting in|resulted in)\b/i;
 
 /**
