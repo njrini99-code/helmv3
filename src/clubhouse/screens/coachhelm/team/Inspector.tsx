@@ -7,9 +7,19 @@ import { chFocusQuietly } from '../../../lib/focus-quietly';
 export function Inspector({ open, onClose, children, label }: { open: boolean; onClose: () => void; children: ReactNode; label: string }) {
   const panel = useRef<HTMLElement | null>(null);
   const opener = useRef<HTMLElement | null>(null);
+  // Safari doesn't focus a button on click, so what was tapped is the opener there; the keyboard's focus wins when it's on a control.
+  const tapped = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => {
+      tapped.current = (e.target as Element | null)?.closest?.<HTMLElement>('button, a, [role="button"]') ?? null;
+    };
+    document.addEventListener('pointerdown', onDown, true);
+    return () => document.removeEventListener('pointerdown', onDown, true);
+  }, []);
   useEffect(() => {
     if (!open) return;
-    opener.current = (document.activeElement as HTMLElement | null) ?? null;
+    const active = document.activeElement as HTMLElement | null;
+    opener.current = active?.matches('button, a, [role="button"]') ? active : tapped.current;
     const heading = panel.current?.querySelector<HTMLElement>('h3, h2, b');
     if (heading) {
       heading.tabIndex = -1;

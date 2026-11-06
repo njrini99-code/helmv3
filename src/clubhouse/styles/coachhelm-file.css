@@ -384,7 +384,7 @@ html[data-fw-theme='dark'] .ch-hf {
 }
 /* On a desk the sheet is a centred dialog: it hugs its content with all four corners round. */
 @media (min-width: 821px) {
-  .ch-htb-sheet.ch-hf-sheet .ch-modal__panel {
+  .ch-hf.ch-hf-sheet .ch-modal__panel {
     height: auto;
     border-radius: var(--ch-radius-xl);
     overflow: hidden;
