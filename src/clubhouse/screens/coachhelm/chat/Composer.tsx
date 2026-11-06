@@ -409,7 +409,7 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
     <div className={'ch-ask-cmp is-' + variant + (phone ? ' is-phone' : '')}>
       <div className="ch-ask-cmp__box" ref={frame}>
         {scopeChips.length > 0 && (
-          <div className="ch-ak-cscope" aria-label="What the next answer reads">
+          <div className="ch-ak-cscope" role="group" aria-label="What the next answer reads">
             {scopeChips.map((c) => (
               <span key={c}>{c}</span>
             ))}

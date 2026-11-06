@@ -410,14 +410,14 @@ describe('Messages · runtime audit 2026-10-14 (WebKit)', () => {
     expect(document.activeElement).toBe(more);
   });
 
-  it.each(['coach', 'player'] as const)('A-28 phone New message (%s): focus starts on its title, and a hardware Esc cancels it back to New message', async (role) => {
+  it.each(['coach', 'player'] as const)('A-28 phone New message (%s): focus starts in its To field (MOB-MSG-17), and a hardware Esc cancels it back to New message', async (role) => {
     const user = userEvent.setup();
     showPhone(role === 'coach' ? data : { ...data, role: 'player', viewerPlayerId: 'p-me' }, { inertTop: true });
     const opener = await screen.findByRole('button', { name: 'New message' });
     opener.focus();
     await user.keyboard('{Enter}');
     const screenEl = await screen.findByRole('region', { name: 'New message' });
-    await waitFor(() => expect(document.activeElement).toBe(within(screenEl).getByRole('heading', { name: 'New message' })));
+    await waitFor(() => expect(document.activeElement).toBe(within(screenEl).getByRole('textbox', { name: 'Search people' })));
     await user.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('region', { name: 'New message' })).toBeNull());
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'New message' })));

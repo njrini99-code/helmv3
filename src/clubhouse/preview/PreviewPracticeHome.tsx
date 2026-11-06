@@ -1,5 +1,6 @@
 'use client';
 
+import { TERMS } from '../lib/glossary';
 import type { PlanPartData } from '../screens/coachhelm/plan/PlanCard';
 import { Builder } from '../screens/practice/builder/Builder';
 import { emptyBody } from '../screens/practice/builder/builder-model';
@@ -80,7 +81,7 @@ const DRILLS: ChBuilderData['drills'] = [
   { ref: 'team:2', name: 'Lag ladder, 20 to 40 ft', area: 'Putting', kind: 'skill', minutes: 20, source: 'Your bank' },
   { ref: 'team:3', name: 'Make 7 from 5 feet', area: 'Putting', kind: 'pressure', minutes: 25, source: 'Your bank' },
   { ref: 'lib:4', name: 'Gate drill, 4 feet', area: 'Putting', kind: 'skill', minutes: 15, source: 'GolfHelm' },
-  { ref: 'lib:5', name: 'Up and down ladder', area: 'Short game', kind: 'random', minutes: 20, source: 'GolfHelm' },
+  { ref: 'lib:5', name: 'Up and down ladder', area: TERMS.shortGame.long, kind: 'random', minutes: 20, source: 'GolfHelm' },
 ];
 const PLAN: PlanPartData = PT_PLAN;
 
@@ -121,7 +122,7 @@ export function PreviewPracticeBuilder({ state }: { state?: string }) {
 const LIB_TEAM: ChDrillRow[] = [
   { id: 'd1', source: 'team', name: 'Clock drill, 3 to 5 ft', area: 'putting', areaLabel: 'Putting', kind: 'skill', minutes: 20, players: 'pairs', levels: 'Par 6 of 10 · Birdie 8 · Eagle 10' },
   { id: 'd2', source: 'team', name: 'Make 7 from 5 feet', area: 'putting', areaLabel: 'Putting', kind: 'pressure', minutes: 25, players: 'solo', levels: null },
-  { id: 'd3', source: 'team', name: 'Up and down ladder', area: 'short_game', areaLabel: 'Short game', kind: 'random', minutes: 20, players: 'group', levels: null },
+  { id: 'd3', source: 'team', name: 'Up and down ladder', area: 'short_game', areaLabel: TERMS.shortGame.long, kind: 'random', minutes: 20, players: 'group', levels: null },
 ];
 const LIB_GOLFHELM: ChDrillRow[] = [
   { id: 'l1', source: 'lib', name: 'Gate drill, 4 feet', area: 'putting', areaLabel: 'Putting', kind: 'skill', minutes: 15, players: null, levels: null },

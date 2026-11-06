@@ -1,5 +1,6 @@
 import { formatFixed } from '../lib/format';
 import 'server-only';
+import { TERMS } from '../lib/glossary';
 import { createClient } from '@/lib/supabase/server';
 import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
 import { getTeamStrokesGained } from '@/lib/coachhelm/v3/chat/practice-reads';
@@ -7,7 +8,7 @@ import { isPracticePlansEnabled } from '@/lib/coachhelm/v3/practice-plan/flag';
 import { parsePlanBody, parseVersionBody, type PlanBodyV2, type PlanWhy } from '@/lib/coachhelm/v3/practice-plan/model';
 import { practiceTables, type PracticePlanRow, type PracticePlanVersionRow, type TeamDrillRow } from '@/lib/golf/practice-db';
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
-import { formatWith } from '../lib/dates';
+import { isoDay, formatWith } from '../lib/dates';
 import { loadPlayerPractice } from './practice-plan';
 import type { ChBankDrill, ChBuilderData, ChPlayerPracticeHome, ChPracticeEvent, ChPracticeHome, ChPracticeLoad, ChPracticeRow, ChPracticeState, ChPracticeTile, ChPracticeUpNext } from './practice-home-shape';
 
@@ -29,7 +30,7 @@ const clock = (d: Date, zone: string) => formatWith(d, { hour: 'numeric', minute
 const dayShort = (d: Date, zone: string) => formatWith(d, { weekday: 'short', month: 'short', day: 'numeric', timeZone: zone });
 const dayLong = (d: Date, zone: string) => formatWith(d, { weekday: 'long', month: 'short', day: 'numeric', timeZone: zone });
 /** The team-zone date as yyyy-mm-dd. */
-const dayKey = (d: Date, zone: string) => new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+const dayKey = (d: Date, zone: string) => isoDay(d, zone);
 const span = (e: EventRow, zone: string) => {
   const s = new Date(e.start_time);
   return e.end_time ? `${hhmm(s, zone)} to ${clock(new Date(e.end_time), zone)}` : clock(s, zone);
@@ -220,14 +221,14 @@ export async function loadPlayerPracticeHome(teamId: string, playerId: string, n
 
 const LIB_AREA: Record<string, { area: string; kind: ChBankDrill['kind'] }> = {
   putting: { area: 'Putting', kind: 'skill' },
-  short_game: { area: 'Short game', kind: 'skill' },
+  short_game: { area: TERMS.shortGame.long, kind: 'skill' },
   approach: { area: 'Approach', kind: 'skill' },
   tee: { area: 'Tee', kind: 'skill' },
   course_management: { area: 'Course', kind: 'random' },
   scoring: { area: 'Course', kind: 'random' },
   pressure: { area: 'Mental', kind: 'pressure' },
 };
-const AREA_LABEL: Record<string, string> = { putting: 'Putting', short_game: 'Short game', bunker: 'Bunker', approach: 'Approach', tee: 'Tee', course: 'Course', fitness: 'Fitness', mental: 'Mental' };
+const AREA_LABEL: Record<string, string> = { putting: 'Putting', short_game: TERMS.shortGame.long, bunker: 'Bunker', approach: 'Approach', tee: 'Tee', course: 'Course', fitness: 'Fitness', mental: 'Mental' };
 
 /** Your drills, then GolfHelm's. A team bank that isn't there yet leaves the library. */
 async function drillBank(sb: Sb, teamId: string): Promise<ChBankDrill[]> {
@@ -242,7 +243,7 @@ async function drillBank(sb: Sb, teamId: string): Promise<ChBankDrill[]> {
   ];
 }
 
-const SG_NAMES: Record<string, string> = { tee: 'Off the tee', approach: 'Approach', short: 'Short game', putting: 'Putting' };
+const SG_NAMES: Record<string, string> = { tee: 'Off the tee', approach: 'Approach', short: TERMS.shortGame.long, putting: 'Putting' };
 
 /** What the helper's card leads with: the team's biggest loss and the next event after this practice. Only what was read; a failed read is a line left out. */
 async function helperFacts(sb: Sb, teamId: string, after: Date, zone: string): Promise<Array<{ lead: string; text: string }>> {

@@ -77,10 +77,10 @@ afterEach(() => {
 });
 
 describe('CH-13850 what CoachHelm is doing', () => {
-  it('while it works, the steps are one polite live region, the newest is the current step, and Stop is offered on desktop', async () => {
+  it('while it works, the steps sit inside the thread’s one log, the newest is the current step, and Stop is offered on desktop', async () => {
     const { p } = show({ messages: ASK_MSGS_WORKING, busy: true });
     const list = screen.getByRole('list', { name: 'What CoachHelm is doing' });
-    expect(list.getAttribute('aria-live')).toBe('polite');
+    expect(list.getAttribute('aria-live')).toBeNull(); // The thread's log says each turn once (MOB-ASK-18).
     const items = within(list).getAllByRole('listitem');
     expect(items.map((i) => i.textContent)).toEqual(['Reading your roster', 'Reading the last 38 recorded rounds', 'Comparing putting by distance']);
     expect(items.map((i) => i.getAttribute('aria-current'))).toEqual([null, null, 'step']);

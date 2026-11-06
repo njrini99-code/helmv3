@@ -79,7 +79,7 @@ describe('a player on their own read', () => {
 
   it('the More sheet offers a player no Dismiss and no Message', async () => {
     show(ready('player'), PLAYER);
-    await userEvent.click(screen.getByRole('button', { name: 'More' }));
+    await userEvent.click(screen.getByRole('button', { name: 'More for this read' }));
     expect(screen.queryByText('Dismiss this read')).toBeNull();
     expect(screen.queryByText(/^Message /)).toBeNull();
   });
@@ -124,10 +124,10 @@ describe('a coach on a read', () => {
 
   it('More offers Dismiss, which writes once, and a Message link with an empty body', async () => {
     const writes = show(ready('coach'), COACH);
-    await userEvent.click(screen.getByRole('button', { name: 'More' }));
+    await userEvent.click(screen.getByRole('button', { name: 'More for this read' }));
     const links = screen.getAllByRole('link', { name: 'Message Priya' });
     for (const a of links) expect(a.getAttribute('href')).toBe(`/golf/dashboard/messages?player=${encodeURIComponent(HELM_PLAYERS.priya.id)}`);
-    await userEvent.click(screen.getByRole('button', { name: 'Dismiss this read' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Dismiss this read' }));
     expect(writes.dismiss).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(document.querySelector('[data-ch-code="CH-13901"]')).not.toBeNull());
   });
