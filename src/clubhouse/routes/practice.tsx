@@ -10,7 +10,67 @@ import { PlayerPractice } from '../screens/coachhelm/plan/player/PlayerPractice'
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { PracticePlanSheet } from '../screens/coachhelm/plan/sheet/PracticePlanSheet';
 import { PlanPageActions } from '../screens/coachhelm/plan/PlanPageActions';
+import { NoTeam } from '../ui/NoTeam';
+import { resolveClubhouseTeam } from './team';
+import { loadCoachPracticeHome, loadPlayerPracticeHome, loadPlanForBuilder } from '../data/practice-home';
+import { PracticeHome } from '../screens/practice/PracticeHome';
+import { PlayerPracticeHome } from '../screens/practice/PlayerPracticeHome';
+import { Builder } from '../screens/practice/builder/Builder';
+import { isPracticePlansEnabled } from '@/lib/coachhelm/v3/practice-plan/flag';
 import '../styles/coachhelm-plan.css';
+import '../styles/practice.css';
+
+const OFF = (
+  <main className="ch-page" data-ch="practice">
+    <EmptyState size="page" title="Practice isn’t on yet" body="Practice plans aren’t on for your team yet. Your practices are on the Calendar." action={<Button href="/golf/dashboard/calendar">Go to Calendar</Button>} />
+  </main>
+);
+const FAILED = (
+  <main className="ch-page" data-ch="practice">
+    <EmptyState size="page" tone="danger" title="Practice didn’t load" body="Your plans are safe. Check your connection and try again." action={<Button href="/golf/dashboard/practice">Try again</Button>} />
+  </main>
+);
+
+/** Practice, the tab: the coach's plans with New plan, or the player's published ones. The page checks the flag. */
+export async function PracticeHomeRoute({ newPlan }: { newPlan?: boolean }) {
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/dashboard/calendar');
+  const team = await resolveClubhouseTeam(session);
+  if (!team) {
+    return (
+      <main className="ch-page" data-ch="practice">
+        <NoTeam code="CH-17300" coach={session.role !== 'player'} body="Once you’re on a team, practice plans show here." />
+      </main>
+    );
+  }
+  if (team.role === 'player') {
+    const load = await loadPlayerPracticeHome(team.teamId, team.playerId);
+    if (load.status === 'unavailable') return OFF;
+    if (load.status === 'failed') return FAILED;
+    return <PlayerPracticeHome data={load.data} />;
+  }
+  const load = await loadCoachPracticeHome(team.teamId);
+  if (load.status === 'unavailable') return OFF;
+  if (load.status === 'failed') return FAILED;
+  return <PracticeHome data={load.data} askOn={isPracticePlansEnabled()} openNew={!!newPlan} />;
+}
+
+/** The builder, a coach's. A player on this address gets their own plan page's address; nothing of a draft reaches them. */
+export async function PracticeBuilderRoute({ planId, fill }: { planId: string; fill?: boolean }) {
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/dashboard/calendar');
+  if (session.role === 'player') redirect(`/golf/dashboard/practice/plan/${planId}`);
+  const load = await loadPlanForBuilder(planId);
+  if (load.status === 'unavailable') return OFF;
+  if (load.status !== 'ready') {
+    return (
+      <main className="ch-page" data-ch="practice-plan">
+        <EmptyState size="page" title="This plan isn’t available" body="It may have been removed." action={<Button href="/golf/dashboard/practice">Go to Practice</Button>} />
+      </main>
+    );
+  }
+  return <Builder key={`${planId}:${load.data.version}`} data={load.data} autoFill={!!fill} />;
+}
 
 export async function PracticePlanRoute({ planId }: { planId: string }) {
   const session = await getGolfSessionProfile();
@@ -31,7 +91,7 @@ export async function PracticePlanRoute({ planId }: { planId: string }) {
   }
   return (
     <main className="ch-page" data-ch="practice-plan">
-      <PlanPageActions plan={load.plan} playerPlanId={player ? planId : null} />
+      <PlanPageActions plan={load.plan} playerPlanId={player ? planId : null} editHref={player ? null : `/golf/dashboard/practice/plan/${planId}/edit`} />
       <PracticePlanSheet plan={load.plan} />
     </main>
   );

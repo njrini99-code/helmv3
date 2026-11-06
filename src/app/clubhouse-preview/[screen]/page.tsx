@@ -165,6 +165,8 @@ import '@/clubhouse/styles/coachhelm-read.css';
 import '@/clubhouse/styles/coachhelm-file.css';
 import '@/clubhouse/styles/coachhelm-ask-v2.css';
 import '@/clubhouse/styles/coachhelm-plan.css';
+import '@/clubhouse/styles/practice.css';
+import { PreviewPracticeBuilder, PreviewPracticeHome } from '@/clubhouse/preview/PreviewPracticeHome';
 import { PreviewPracticePlan } from '@/clubhouse/preview/PreviewPracticePlan';
 import { PreviewPracticeThread } from '@/clubhouse/preview/PreviewPracticeThread';
 import { PreviewAskV2 } from '@/clubhouse/preview/PreviewAskV2';
@@ -211,6 +213,8 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  *   /clubhouse-preview/coachhelm ?state=recheck-running | recheck-done | recheck-quiet | recheck-ratelimited | recheck-failed   (Re-check reads answers that way once tapped)
  *   /clubhouse-preview/coachhelm-player ?state=engine   (every engine flag on, CoachHelm surfaces A)
  *   /clubhouse-preview/coachhelm-player ?state=empty | norounds | working | failed | off | loading | proposed | failproposal | proposalsfailed   (Jonah)
+ *   /clubhouse-preview/coachhelm-practice-home ?state=empty | firstrun | new | player | player-empty   (Practice, the tab; synthetic plans, nothing reaches a server)
+ *   /clubhouse-preview/coachhelm-practice-builder ?state=empty | blocks | sheet | ghosts | kept | groups | drills | review | publish | stale | new   (the builder over the design page's plan; nothing reaches a server)
  *   /clubhouse-preview/coachhelm-ask ?state=… &q=…   (the Ask sub-tab; states in src/clubhouse/preview/PreviewAsk.tsx)
  *   /clubhouse-preview/coachhelm-views ?view=standing ?state=early | empty | womens | nobaseline | thin | readsfailed | gamepartial | gameempty | gameedge | gamefailed | failed | off | loading   (the player's Standing, with How you play; Jonah)
  *   /clubhouse-preview/coachhelm-views ?view=profile   (Game profile's old address: Standing, opened at How you play)
@@ -628,6 +632,14 @@ export default async function ClubhousePreview({
     'coachhelm-ask': {
       path: '/golf/dashboard/coachhelm',
       node: <PreviewAsk state={state} kind={q} />,
+    },
+    'coachhelm-practice-home': {
+      path: '/golf/dashboard/practice',
+      node: <PreviewPracticeHome state={state} />,
+    },
+    'coachhelm-practice-builder': {
+      path: '/golf/dashboard/practice/plan/preview/edit',
+      node: <PreviewPracticeBuilder state={state} />,
     },
     'coachhelm-practice-format': {
       path: '/golf/dashboard/practice/format',

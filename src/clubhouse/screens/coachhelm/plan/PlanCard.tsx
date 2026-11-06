@@ -731,7 +731,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
           {error && (state.k === 'failed' || state.k === 'saved') && <p className="fnote is-fail" role="alert">{error}</p>}
           <div className="fdock">
             {state.k === 'saved' ? (
-              <Button variant="secondary" onClick={() => router.push(`/golf/dashboard/practice/plan/${state.planId}`)}>
+              <Button variant="secondary" onClick={() => router.push(`/golf/dashboard/practice/plan/${state.planId}/edit`)}>
                 Edit in builder
               </Button>
             ) : (

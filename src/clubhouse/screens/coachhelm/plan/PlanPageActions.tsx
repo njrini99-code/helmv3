@@ -6,14 +6,21 @@ import { recordPracticePlanOpen } from '@/app/golf/actions/practice-plans';
 import { printPlan } from './PrintPlan';
 import type { PlanSheetModel } from './sheet/plan-sheet-model';
 
-/** Print, and the one open a player's view records after paint. */
-export function PlanPageActions({ plan, playerPlanId }: { plan: PlanSheetModel; playerPlanId: string | null }) {
+/** Edit (a coach's), Print, and the one open a player's view records after paint. */
+export function PlanPageActions({ plan, playerPlanId, editHref = null }: { plan: PlanSheetModel; playerPlanId: string | null; editHref?: string | null }) {
   useEffect(() => {
     if (playerPlanId) void recordPracticePlanOpen({ planId: playerPlanId });
   }, [playerPlanId]);
   return (
-    <Button variant="secondary" onClick={() => void printPlan(plan)}>
-      Print
-    </Button>
+    <div className="ch-prc-planacts">
+      {editHref && (
+        <Button variant="secondary" href={editHref}>
+          Edit
+        </Button>
+      )}
+      <Button variant="secondary" onClick={() => void printPlan(plan)}>
+        Print
+      </Button>
+    </div>
   );
 }
