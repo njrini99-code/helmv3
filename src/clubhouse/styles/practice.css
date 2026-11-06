@@ -962,8 +962,8 @@ html[data-fw-theme='dark'] .ch-prc-group.is-f .ch-prc-disc { background: var(--c
 .ch-prb-head__t {
   display: grid;
   gap: 2px;
-  min-width: 200px;
-  flex: 1;
+  min-width: 0;
+  flex: 1 1 200px;
   font: var(--ch-type-13);
   color: var(--ch-text-secondary);
 }
@@ -984,7 +984,14 @@ html[data-fw-theme='dark'] .ch-prc-group.is-f .ch-prc-disc { background: var(--c
   padding: 0;
   background: none;
   box-shadow: none;
-  min-width: 180px;
+  flex: 0 1 auto;
+  white-space: nowrap;
+}
+/* On a Mac the head is one row, as drawn: Publish never drops to a second line. */
+@media (min-width: 1100px) {
+  .ch-prb-head { flex-wrap: nowrap; }
+  .ch-prb-head > * { flex-shrink: 0; }
+  .ch-prb-head > .ch-prb-head__t { flex-shrink: 1; }
 }
 .ch-prb-body {
   display: grid;

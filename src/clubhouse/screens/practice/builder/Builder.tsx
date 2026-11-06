@@ -826,7 +826,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
               helper.k === 'idle' || helper.k === 'failed' || helper.k === 'dismissed' || helper.k === 'ghosts' ? (
                 featureCard(`For ${data.dayWord}`, 'Fill this plan')
               ) : (
-                <p className="ch-prc-note">{helper.k === 'running' ? 'CoachHelm is building suggestions on the board.' : helper.k === 'ghosts' ? 'Keep what you like on the board. Nothing joins the plan until you do.' : 'Kept. Groups next: split the players or use your own.'}</p>
+                <p className="ch-prc-note">{helper.k === 'running' ? 'CoachHelm is building suggestions on the board.' : 'Kept. Groups next: split the players or use your own.'}</p>
               )
             ) : activeBlock ? (
               <BlockFields block={activeBlock} body={body} onChange={(n) => editBlock(activeBlock.id, n)} onRemove={() => deleteBlock(activeBlock.id)} />
