@@ -773,7 +773,7 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
               </Swap>
             </SectionBoundary>
             <SectionBoundary surface="roster.peek" label="The player panel" code="CH-3206">
-              <RosterPeek p={cur} notesLocked={data.notesError} onClose={() => setSel(null)} onNoteSaved={noteSaved} availability={availability} helm={data.helm} classLine={classNoteFor(cur ?? { availability: 'available' }, cur ? classLines.get(cur.id) : undefined)} crh={crh} clock={data.clock} />
+              <RosterPeek p={cur} statsError={data.statsError} notesLocked={data.notesError} onClose={() => setSel(null)} onNoteSaved={noteSaved} availability={availability} helm={data.helm} classLine={classNoteFor(cur ?? { availability: 'available' }, cur ? classLines.get(cur.id) : undefined)} crh={crh} clock={data.clock} />
             </SectionBoundary>
           </div>
         </>
@@ -988,7 +988,7 @@ function RosterList({
                 <span role="cell" className={'r ch-num ch-rs-sg ' + changeTone(p.sgPerRound, false, 1)}>
                   {p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)}
                 </span>
-                <span role="cell" className="r ch-num ch-rs-num2">{p.rounds}</span>
+                <span role="cell" className="r ch-num ch-rs-num2">{sortableAvg === false ? NO_DATA : p.rounds}</span>
                 <span role="cell" className="r">
                   <Menu
                     label={`Actions for ${p.name}`}

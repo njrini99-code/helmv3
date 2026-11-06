@@ -42,6 +42,7 @@ export function RosterPeek({
   availability,
   helm,
   classLine,
+  statsError = false,
   crh = false,
   clock,
 }: {
@@ -58,6 +59,7 @@ export function RosterPeek({
   helm: ChRosterHelm;
   /** P-10: the class line for the open player, or null/absent. */
   classLine?: RosterClassLine | null;
+  statsError?: boolean;
 }) {
   const reduced = useChReducedMotion();
   const panel = useRef<HTMLElement>(null);
@@ -88,7 +90,7 @@ export function RosterPeek({
           exit={reduced ? { opacity: 0 } : { opacity: 0, transform: 'translateX(12px)' }}
           transition={chTween('base', reduced)}
         >
-          <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} onNoteSaved={onNoteSaved} availability={availability} helm={helm} classLine={classLine} crh={crh} clock={clock} />
+          <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} onNoteSaved={onNoteSaved} availability={availability} helm={helm} classLine={classLine} statsError={statsError} crh={crh} clock={clock} />
         </m.aside>
       )}
     </AnimatePresence>
@@ -108,6 +110,7 @@ function PeekBody({
   availability,
   helm,
   classLine,
+  statsError = false,
   crh = false,
   clock,
 }: {
@@ -121,12 +124,14 @@ function PeekBody({
   helm: ChRosterHelm;
   /** P-10: the class line for this player (a trip, or a class when nothing outranks it), with its source. */
   classLine?: RosterClassLine | null;
+  /** Season stats didn't load: a rounds count of 0 would read as a fact. */
+  statsError?: boolean;
 }) {
   const figs: Array<[string, string]> = [
     ['Scoring avg', formatFixed(p.avg)],
     ['Handicap', formatHcp(p.handicap)],
     [SG_FIGURE, p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)],
-    ['Rounds', String(p.rounds)],
+    ['Rounds', statsError ? NO_DATA : String(p.rounds)],
   ];
   const facts = [
     { icon: MapPin, label: 'Hometown', value: p.hometown },
@@ -228,7 +233,7 @@ function PeekBody({
         (p.trend.length >= PEEK_LINE_FLOOR ? (
           <FormLine data={p.trend} width={292} height={70} earlyBelow={PEEK_LINE_FLOOR} label={`${p.name}, last rounds: ${p.trend.join(', ')}`} />
         ) : (
-          <p className="ch-rs-peek__early">{p.trend.length > 0 ? 'Early read. Form shows at three rounds.' : 'No 18-hole rounds yet this season.'}</p>
+          <p className="ch-rs-peek__early">{statsError ? 'This season’s rounds didn’t load.' : p.trend.length > 0 ? 'Early read. Form shows at three rounds.' : 'No 18-hole rounds yet this season.'}</p>
         ))}
       {/* The rest lives on the full profile (06 7.12: identity, buttons, four figures, chart, the link). */}
       {!crh && <LegsCaption p={p} />}

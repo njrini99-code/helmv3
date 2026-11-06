@@ -174,7 +174,7 @@ export function attentionFor(
   }
   const last4 = s.recent.slice(0, 4).map((r) => r.total_score as number);
   if (s.avg != null && s.rounds >= 8 && last4.length === 4 && last4.every((x) => x < s.avg!)) {
-    return { tone: 'gain', text: '4 rounds under average' };
+    return { tone: 'gain', text: '4 rounds under avg' };
   }
   return null;
 }
