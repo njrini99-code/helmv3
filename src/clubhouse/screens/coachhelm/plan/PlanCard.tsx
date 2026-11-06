@@ -202,6 +202,18 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
     const saved = state.k === 'saved' ? { planId: state.planId, version: state.version } : await save();
     if (saved) onSend(publishRequest(plan.title, saved));
   };
+  const undoSave = () => {
+    if (state.k !== 'saved') return;
+    if (preview) return setState({ k: 'undone' });
+    setUndoing(true);
+    void safeSave(() => undoPracticePlanDraft({ planId: state.planId, created: state.created, savedAt: state.savedAt }))
+      .then((r) => {
+        if (!r.success) return setError('Too late to undo. It’s saved.');
+        forgetSavedPlan(planKey(plan));
+        setState({ k: 'undone' });
+      })
+      .finally(() => setUndoing(false));
+  };
   const setBlock = (id: string, next: (b: PlanBlock) => PlanBlock) => {
     setDraft((d) => ({ ...d, version: d.version + 1, body: { ...d.body, variants: { ...d.body.variants, main: { blocks: d.body.variants.main.blocks.map((b) => (b.id === id ? next(b) : b)) } } } }));
     setChanged((s) => new Set(s).add(id));
@@ -396,21 +408,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
                       Open
                     </button>
                     {undoOpen && (
-                      <button
-                        type="button"
-                        disabled={undoing}
-                        onClick={() => {
-                          if (preview) return setState({ k: 'undone' });
-                          setUndoing(true);
-                          void safeSave(() => undoPracticePlanDraft({ planId: state.planId, created: state.created, savedAt: state.savedAt }))
-                            .then((r) => {
-                              if (!r.success) return setError('Too late to undo. It’s saved.');
-                              forgetSavedPlan(planKey(plan));
-                              setState({ k: 'undone' });
-                            })
-                            .finally(() => setUndoing(false));
-                        }}
-                      >
+                      <button type="button" disabled={undoing} onClick={undoSave}>
                         Undo
                       </button>
                     )}
@@ -687,7 +685,8 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
               {phone && 'Ask'}
             </button>
             <b>{plan.title}</b>
-            {!phone && versions.length > 0 && (
+            {/* One version says nothing on a phone's short bar; the pane draws it from the first, as the design page does. */}
+            {versions.length > (phone ? 1 : 0) && (
               <span className="vsw">
                 <button type="button" aria-label="Earlier version" disabled={(viewing ?? own) <= 0} onClick={() => setViewing((viewing ?? own) - 1)}>
                   <Icon icon={ChevronLeft} size={14} />
@@ -718,15 +717,26 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
               )}
             />
           </div>
+          {state.k === 'saved' && (
+            <p className="fnote" role="status">
+              <span>Saved · Documents › {state.folder}</span>
+              {undoOpen && (
+                <button type="button" disabled={undoing} onClick={undoSave}>
+                  Undo
+                </button>
+              )}
+            </p>
+          )}
+          {state.k === 'undone' && <p className="fnote" role="status">Undone. Nothing was saved.</p>}
+          {error && (state.k === 'failed' || state.k === 'saved') && <p className="fnote is-fail" role="alert">{error}</p>}
           <div className="fdock">
-            {state.k === 'saved' && (
+            {state.k === 'saved' ? (
               <Button variant="secondary" onClick={() => router.push(`/golf/dashboard/practice/plan/${state.planId}`)}>
                 Edit in builder
               </Button>
-            )}
-            {!phone && state.k !== 'saved' && (
+            ) : (
               <Button variant="secondary" busy={state.k === 'saving'} onClick={() => void save()}>
-                {state.k === 'saving' ? 'Saving…' : 'Save draft…'}
+                {state.k === 'saving' ? 'Saving…' : state.k === 'failed' ? 'Try again' : 'Save draft'}
               </Button>
             )}
             <Button variant="primary" onClick={() => { setFull(false); void publish(); }}>

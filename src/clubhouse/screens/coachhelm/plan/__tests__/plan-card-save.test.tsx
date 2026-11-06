@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const save = vi.fn();
@@ -108,5 +108,17 @@ describe('saving and publishing from the card', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
     await waitFor(() => expect(save).toHaveBeenCalledTimes(2));
     expect(save.mock.calls[1]![0]).toMatchObject({ planId: null, version: null });
+  });
+
+  it('the full plan on a phone has Save draft, and says where it went', async () => {
+    save.mockResolvedValue(ok(1, true));
+    show();
+    fireEvent.click(screen.getByRole('button', { name: 'Open' }));
+    const pane = within(await screen.findByRole('dialog'));
+    fireEvent.click(pane.getByRole('button', { name: 'Save draft' }));
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    await pane.findByText(/Saved · Documents › Practice plans/);
+    expect(pane.getByRole('button', { name: 'Edit in builder' })).toBeTruthy();
+    expect(pane.getByRole('button', { name: 'Publish…' })).toBeTruthy();
   });
 });
