@@ -747,7 +747,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 /* ASK-21: under par is marked by a circle as well as its colour. */
 .ch-ak-holes .u b {
   border-radius: 50%;
-  box-shadow: 0 0 0 1px currentcolor;
+  box-shadow: 0 0 0 var(--ch-hairline-w) currentcolor;
   padding-inline: 4px;
 }
 
@@ -762,7 +762,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 /* MOB-ASK-12 */
 .ch-ak-push :is(.apb, .apdock) { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
 /* MOB-ASK-13: one line of placeholder, whatever the width. */
-.ch-ask-cmp textarea::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ch-ask-cmp textarea::placeholder { color: var(--ch-text-placeholder); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* FID-ASK-15: low is amber, not a shorter green. */
 .ch-ak-meter i.is-low { background-image: linear-gradient(90deg, var(--ch-chart-loss-fill) var(--ch-ak-fill, 20%), transparent 0); }
