@@ -14,6 +14,8 @@ const MIN_SCALE = 14 / 17;
  * such font (every other platform, where rem and the browser's own text size do the work).
  */
 export function readDynamicTypeScale(doc: Document = document): number | null {
+  // A Mac's -apple-system-body is 13px whatever the setting, so only a touch screen's says anything about Text Size.
+  if (!doc.defaultView?.matchMedia?.('(pointer: coarse)').matches) return null;
   const probe = doc.createElement('span');
   probe.style.font = '-apple-system-body';
   if (!probe.style.font) return null;
