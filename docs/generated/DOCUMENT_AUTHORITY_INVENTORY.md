@@ -1182,6 +1182,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-11-05-design-parity.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-05-go-live-bug-hunt.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-06-crh-sweep.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-06-one-window.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
@@ -1211,6 +1212,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-05-design-parity.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-05-go-live-bug-hunt.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/changes/2026-11-06-crh-sweep.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-06-one-window.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
@@ -1510,6 +1512,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P012-classes/changes/2026-10-28-visual-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-11-03-crh-classes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P012-classes/changes/2026-11-06-crh-sweep.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/CONTRACT.md` | current | - | - | yes | - |
