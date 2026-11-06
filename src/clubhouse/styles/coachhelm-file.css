@@ -313,8 +313,6 @@
 
 /* CVP-15: three figures on a phone are flat, in the card's own ground, and their labels may wrap. */
 .ch-hf.is-phone .tr3 > *, .ch-hf.is-phone .feat__cmp > * { min-width: 0; overflow-wrap: anywhere; }
-/* CVP-3: the goal's word sits above the line, clear of the newest point. */
-.ch-hf .goal svg { overflow: visible; }
 /* CVP-14: the phone's tap target. */
 .ch-hf .ib { position: relative; }
 .ch-hf .ib::before { content: ''; position: absolute; inset: -4px; }

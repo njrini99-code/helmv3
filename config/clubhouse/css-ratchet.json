@@ -40,7 +40,7 @@
     "crh-negative-margin": 0
   },
   "src/clubhouse/styles/coachhelm-file.css": {
-    "hex": 42,
+    "hex": 0,
     "svg-overflow-visible": 1,
     "crh-negative-margin": 0
   },
@@ -51,11 +51,6 @@
   },
   "src/clubhouse/styles/coachhelm-read.css": {
     "hex": 33,
-    "svg-overflow-visible": 0,
-    "crh-negative-margin": 0
-  },
-  "src/clubhouse/styles/coachhelm-standing.css": {
-    "hex": 2,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0
   },
@@ -95,7 +90,7 @@
     "crh-negative-margin": 0
   },
   "src/clubhouse/styles/messages.css": {
-    "hex": 9,
+    "hex": 6,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0
   },
