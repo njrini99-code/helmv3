@@ -63,12 +63,11 @@ function Fold({ show, children }: { show: boolean; children: ReactNode }) {
       if (!show) setMounted(false);
       return;
     }
-    const h = el.getBoundingClientRect().height;
     const spring = chSpringCurve('smooth');
     const opts = { duration: spring.ms, easing: spring.linear ?? EASE, fill: 'both' as const };
     const fade = { duration: show ? 260 : 180, easing: EASE, fill: 'both' as const };
     el.getAnimations().forEach((a) => a.cancel());
-    const box = el.animate(show ? [{ height: '0px', marginTop: '-24px' }, { height: `${h}px`, marginTop: '0px' }] : [{ height: `${h}px`, marginTop: '0px' }, { height: '0px', marginTop: '-24px' }], opts);
+    const box = el.animate(show ? [{ gridTemplateRows: '0fr' }, { gridTemplateRows: '1fr' }] : [{ gridTemplateRows: '1fr' }, { gridTemplateRows: '0fr' }], opts);
     el.animate(show ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], fade);
     box.onfinish = () => {
       el.getAnimations().forEach((a) => a.cancel());

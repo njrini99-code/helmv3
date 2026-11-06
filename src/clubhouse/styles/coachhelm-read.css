@@ -276,8 +276,8 @@ html[data-fw-theme='dark'] .ch-hr {
 }
 .ch-hr .hero b {
   font: var(--ch-type-figure-44-500);
-  font-variation-settings:'wdth' 92;
-  letter-spacing: -0.04em;
+  font-variation-settings:'wdth' 96;
+  letter-spacing: -0.038em;
 
   white-space:nowrap;
   flex:none;
@@ -290,8 +290,7 @@ html[data-fw-theme='dark'] .ch-hr {
   padding-bottom:2px;
 }
 .ch-hr .ladder {
-  margin-top:calc(12px + 12px*(min(var(--ch-hr-k),1.2) - 1));
-  margin-bottom:calc(40px*(min(var(--ch-hr-k),1.2) - 1));
+  margin-top: 12px;
   display:block;
   width:100%;
   height:auto;
@@ -300,7 +299,6 @@ html[data-fw-theme='dark'] .ch-hr {
 .ch-hr .ladder text {
   font-family:var(--ch-hr-sans);
 
-  font-size:var(--ch-hr-cap-size);
 }
 .ch-hr .cause {
   display:flex;

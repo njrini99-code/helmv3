@@ -289,7 +289,7 @@ function GoalBlock({ goal }: { goal: NonNullable<ChFilePlan['goal']> }) {
           {goal.target != null && (
             <>
               <line x1="0" x2={W} y1={y(goal.target)} y2={y(goal.target)} className="gl" />
-              <text x={W} y={y(goal.target) - 4} textAnchor="end" className="gt">
+              <text x={W} y={y(goal.target) - 8} textAnchor="end" className="gt">
                 Goal {goal.target}
               </text>
             </>
