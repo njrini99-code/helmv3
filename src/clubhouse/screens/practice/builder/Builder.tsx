@@ -517,6 +517,8 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         const drillNames = (b.kind === 'team' ? [b.drill] : b.kind === 'stations' ? b.stations.map((s) => s.drill) : []).flatMap((d) => (d ? [drillOf.get(keyOfDrill(d))?.name ?? ''] : [])).filter(Boolean);
         return (
           <li key={b.id}>
+            {/* The card's own keys are its buttons; these only add Alt+Arrow to reorder from anywhere in it. */}
+            {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
             <div
               className={'ch-prc-block' + (selected === b.id ? ' is-on' : '')}
               style={phone ? undefined : { minHeight: Math.max(56, b.len * 1.2) }}
