@@ -136,7 +136,7 @@ export function HelmKey() {
         <span className="hkey__label" aria-hidden="true">
           CoachHelm
         </span>
-        {desktop && <Keys keys={[modKey(isApple(navigator)), 'J']} />}
+        {desktop && <Keys keys={[modKey(isApple(navigator)), 'J']} className="ch-cmd-keys ch-qc-keys" />}
         <span className="hkey__flag" />
       </button>
       </Tooltip>

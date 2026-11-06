@@ -102,12 +102,20 @@ describe('v2 durations', () => {
 });
 
 describe('animation preference timing', () => {
-  it('finishes tweens immediately when motion is disabled while retaining normal tokens', () => {
+  afterEach(() => {
+    delete document.documentElement.dataset.motion;
+  });
+  it('finishes tweens immediately with Animations off, keeping normal tokens otherwise', () => {
+    document.documentElement.dataset.motion = 'off';
     expect(chTween('base', true).duration).toBe(0);
     expect(chTween('quick', true).duration).toBe(0);
     expect(chTween('base', false).duration).toBe(CH_DUR.base);
   });
-  it('finishes content swaps immediately when motion is disabled', () => {
+  it('is the 180ms fade under Reduce Motion, not a jump (MOT-22)', () => {
+    expect(chTween('base', true).duration).toBe(CH_DUR.quick);
+  });
+  it('finishes content swaps immediately with Animations off', () => {
+    document.documentElement.dataset.motion = 'off';
     expect(chSwap(1, true).transition.duration).toBe(0);
     expect(chSwap(-1, false).transition.duration).toBe(CH_DUR.base);
   });

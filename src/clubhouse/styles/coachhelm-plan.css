@@ -1875,3 +1875,13 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 }
 .ch-cpv .rlinks a .ell { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ch-cpv .rlinks button { display: inline-flex; align-items: center; gap: 6px; }
+
+/* A press answers on every control, and the folder list fades in (MOT-31, M-ASK-17). */
+.ch-cpv .fr[data-ch-pressed],
+.ch-cpv .saverow[data-ch-pressed] {
+  background-color: var(--ch-press-wash, var(--ch-well-bg-flat));
+}
+.ch-cpv .flist { animation: ch-fade var(--ch-dur-quick) var(--ch-ease) backwards; }
+@media (hover: hover) {
+  .ch-cpv .fr:hover { background-color: var(--ch-press-wash, var(--ch-well-bg-flat)); }
+}

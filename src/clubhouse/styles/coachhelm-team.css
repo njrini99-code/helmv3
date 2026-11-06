@@ -74,10 +74,11 @@ html[data-fw-theme='dark'] .ch-htb {
   outline-offset:2px;
   border-radius: var(--ch-radius-sm);}
 .ch-htb .tapp {
-  transition:transform var(--ch-dur-release) var(--ch-tb-ease);
+  transition:background-color var(--ch-dur-release) var(--ch-tb-ease);
 }
+/* Rows tint, they don't scale (lib/press.ts). */
 .ch-htb .tapp[data-ch-pressed] {
-  transform:scale(.97);
+  background-color: var(--ch-press-wash, var(--ch-well-bg-flat));
   transition-duration:var(--ch-dur-press);
 }
 /* Rows tint on press; only keys and tiles scale (MOT-40). */
@@ -313,7 +314,7 @@ html[data-fw-theme='dark'] .ch-htb {
   stroke-width:2.6;
 }
 .ch-htb .stn.on .pulse {
-  animation:ch-htb-pulse 2.4s var(--ch-tb-ease) 2;
+  animation:ch-htb-pulse var(--ch-dur-live) var(--ch-tb-ease) 2;
 }
 @keyframes ch-htb-pulse {0%{opacity:.7;transform:scale(1);}100%{opacity:0;transform:scale(1.35);}}
 .ch-htb .stn .sl {
@@ -1482,7 +1483,7 @@ html[data-fw-theme='dark'] .ch-htb {
   inset:0;
   background:linear-gradient(90deg,transparent,rgb(255 255 255/.45),transparent);
   transform:translateX(-100%);
-  animation:ch-htb-shim 1.4s var(--ch-tb-ease) infinite;
+  animation:ch-htb-shim var(--ch-dur-shimmer) var(--ch-tb-ease) infinite;
 }
 html[data-fw-theme='dark'] .ch-htb .skl::after {
   background:linear-gradient(90deg,transparent,rgb(255 255 255/.06),transparent);

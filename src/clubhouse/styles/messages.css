@@ -5122,7 +5122,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
 [data-ch-ms-v2] .ch-ms-poll__fill {
   transform: scaleX(var(--ch-poll-share));
   transform-origin: 0 50%;
-  transition: transform var(--ch-dur-reveal) var(--ch-ease-spring-smooth);
+  transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
 }
 @media (prefers-reduced-motion: reduce) {
   [data-ch-ms-v2] .ch-ms-poll__fill {

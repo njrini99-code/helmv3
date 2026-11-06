@@ -15,29 +15,29 @@ html[data-fw-theme='dark'] .ch-ak-th {
 }
 .ch-ak-th .ch-th-col { display: flex; flex-direction: column; gap: 20px; }
 .ch-ak-th .ch-ak-turn { display: grid; gap: 12px; min-width: 0; }
-.ch-ak-th .ch-ak-turn.is-new .msg-a { animation: ch-ak-fade 0.26s var(--ch-ease) both; }
+.ch-ak-th .ch-ak-turn.is-new .msg-a { animation: ch-ak-fade var(--ch-dur-base) var(--ch-ease) both; }
 .ch-ak-th .msg-a { display: grid; gap: 16px; min-width: 0; padding: 16px 20px 16px; border-radius: var(--ch-radius-xl); background: var(--ch-ask-card); box-shadow: var(--ch-card-shadow); }
 .ch-ak-th .who { display: flex; align-items: center; gap: 8px; font: var(--ch-type-15-strong);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
 .ch-ak-th .prose { margin: 0; font: var(--ch-type-16);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-16); }
 .ch-ak-th .work .sum { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; border: 0; background: none; padding: 0; text-align: left; font: var(--ch-type-15); color: var(--ch-text-secondary); cursor: pointer; letter-spacing: var(--ch-track-15); }
 .ch-ak-th .work .sum .t { flex: 1; min-width: 0; }
-.ch-ak-th .work .sum .chev { color: var(--ch-text-tertiary); transition: transform 0.26s var(--ch-ease); }
+.ch-ak-th .work .sum .chev { color: var(--ch-text-tertiary); transition: transform var(--ch-dur-base) var(--ch-ease); }
 .ch-ak-th .work.open .sum .chev { transform: rotate(180deg); }
 .ch-ak-th .steps { display: grid; gap: 0; margin: 0; padding: 0 0 8px; list-style: none; }
 .ch-ak-th .step { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 12px; align-items: start; min-height: 32px; padding: 6px 0; }
-.ch-ak-th .step.is-in { animation: ch-ak-rise6 0.26s var(--ch-ease-spring-smooth) both; }
+.ch-ak-th .step.is-in { animation: ch-ak-rise6 var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) both; }
 .ch-ak-th .step .ic { display: grid; place-items: center; width: 20px; height: 20px; margin-top: 1px; }
 .ch-ak-th .step .ic.ok { color: var(--ch-gain); }
 .ch-ak-th .step .ic.is-fail { color: var(--ch-loss); }
-.ch-ak-th .steps.is-live .step.done .ic path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: ch-ak-draw 0.24s var(--ch-ease) forwards; }
-.ch-ak-th .step .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ch-ask-accent); animation: ch-ak-breath 0.6s ease-in-out infinite alternate; }
+.ch-ak-th .steps.is-live .step.done .ic path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: ch-ak-draw var(--ch-dur-base) var(--ch-ease) forwards; }
+.ch-ak-th .step .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ch-ask-accent); animation: ch-ak-breath var(--ch-dur-reveal) ease-in-out infinite alternate; }
 .ch-ak-th .step .dash { width: 10px; height: 2px; border-radius: var(--ch-radius-mark); background: var(--ch-text-tertiary); }
 .ch-ak-th .step .ringa { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--ch-ask-accent); }
 .ch-ak-th .step .tx { min-width: 0; font: var(--ch-type-15);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
 .ch-ak-th .step.done .tx { color: var(--ch-text-secondary); }
 .ch-ak-th .step .tx small { display: block; margin-top: 1px; font: var(--ch-type-14); color: var(--ch-text-secondary); }
 .ch-ak-th .step.done .tx small { color: var(--ch-text-tertiary); }
-.ch-ak-th .step .lb.shim { background-image: linear-gradient(90deg, var(--ch-text-primary) 0%, var(--ch-text-primary) 40%, var(--ch-text-tertiary) 50%, var(--ch-text-primary) 60%, var(--ch-text-primary) 100%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: ch-ak-shim var(--ch-dur-shimmer, 1.9s) linear infinite; }
+.ch-ak-th .step .lb.shim { background-image: linear-gradient(90deg, var(--ch-text-primary) 0%, var(--ch-text-primary) 40%, var(--ch-text-tertiary) 50%, var(--ch-text-primary) 60%, var(--ch-text-primary) 100%); background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: ch-ak-shim var(--ch-dur-shimmer, var(--ch-dur-shimmer)) linear infinite; }
 .ch-ak-th .cite-wrap { position: relative; display: inline-block; }
 .ch-ak-th .cite { position: relative; display: inline-flex; align-items: center; gap: 4px; vertical-align: 1px; margin-left: 4px; padding: 4px 8px; border: 0; border-radius: 999px; background: var(--ch-well-bg-flat); box-shadow: 0 0 0 0.5px var(--ch-ak-ak-hair); font: var(--ch-type-13-strong);  color: var(--ch-text-secondary); white-space: nowrap; cursor: pointer; }
 .ch-ak-th .cite::after { content: ''; position: absolute; inset: -4px; }
@@ -68,7 +68,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .chip svg { color: var(--ch-ask-accent); flex: none; }
 .ch-ak-th .vcard.is-skel { padding: 0; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-ask-shadow-2); }
 .ch-ak-th .sk { display: grid; gap: 8px; padding: 16px; }
-.ch-ak-th .sk i { display: block; height: 12px; border-radius: var(--ch-radius-tail); background: linear-gradient(90deg, var(--ch-ak-ak-track) 0%, var(--ch-well-bg-flat) 50%, var(--ch-ak-ak-track) 100%); background-size: 200% 100%; animation: ch-ak-sweep 1.2s linear infinite; }
+.ch-ak-th .sk i { display: block; height: 12px; border-radius: var(--ch-radius-tail); background: linear-gradient(90deg, var(--ch-ak-ak-track) 0%, var(--ch-well-bg-flat) 50%, var(--ch-ak-ak-track) 100%); background-size: 200% 100%; animation: ch-ak-sweep var(--ch-dur-typing) linear infinite; }
 .ch-ak-th .ch-th-user p { background: linear-gradient(180deg, var(--ch-ask-mine-a), var(--ch-ask-mine-b)); color: var(--ch-on-green-plate); border-radius: var(--ch-radius-xl) var(--ch-radius-xl) var(--ch-radius-tail) var(--ch-radius-xl); padding: 8px 16px; filter: var(--ch-bubble-mine-shadow); box-shadow: inset 0 var(--ch-hairline-w) 0 rgb(255 255 255 / 0.16); }
 @keyframes ch-ak-fade { from { opacity: 0; } }
 @keyframes ch-ak-rise6 { from { opacity: 0; transform: translateY(6px); } }
@@ -103,9 +103,9 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .conf .btns button::after { content: ''; position: absolute; inset: -3px 0; }
 .ch-ak-th .conf .btns .p { margin-left: auto; padding: 8px 12px; border: 0; border-radius: var(--ch-radius-sm); background: var(--ch-accent); color: var(--ch-text-on-accent); font: var(--ch-type-15-strong); overflow: hidden; letter-spacing: var(--ch-track-15); }
 .ch-ak-th .conf .btns .p.cap { padding: 8px 20px; border-radius: 999px; background: var(--ch-ak-ak-tint); color: var(--ch-ask-accent); }
-.ch-ak-th .conf .btns .p.cap::before { content: ''; position: absolute; left: 0; bottom: 0; width: 40%; height: 2px; border-radius: var(--ch-radius-mark); background: var(--ch-ask-accent); animation: ch-ak-capsule 0.9s linear infinite; }
+.ch-ak-th .conf .btns .p.cap::before { content: ''; position: absolute; left: 0; bottom: 0; width: 40%; height: 2px; border-radius: var(--ch-radius-mark); background: var(--ch-ask-accent); animation: ch-ak-capsule var(--ch-dur-sweep) linear infinite; }
 .ch-ak-th .cxl { margin: 0; padding: 12px 16px 12px; font: var(--ch-type-15); color: var(--ch-text-secondary); letter-spacing: var(--ch-track-15); }
-.ch-ak-th .conf.flash::before { content: ''; position: absolute; inset: 0; z-index: 1; border-radius: inherit; box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--ch-ask-accent) 60%, transparent); pointer-events: none; animation: ch-ak-edge 0.9s var(--ch-ease) forwards; }
+.ch-ak-th .conf.flash::before { content: ''; position: absolute; inset: 0; z-index: 1; border-radius: inherit; box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--ch-ask-accent) 60%, transparent); pointer-events: none; animation: ch-ak-edge var(--ch-dur-sweep) var(--ch-ease) forwards; }
 .ch-ak-th .receipt { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: var(--ch-hairline-w) solid var(--ch-separator); }
 .ch-ak-th .receipt > div { min-width: 0; flex: 1; }
 .ch-ak-th .receipt b { display: block; font: var(--ch-type-15-strong); color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
@@ -113,7 +113,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .receipt.undone b { font-weight:var(--ch-fw-500); color: var(--ch-text-secondary); }
 .ch-ak-th .receipt .ck { position: relative; display: grid; place-items: center; flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--ch-ask-accent); color: var(--ch-card-bg); }
 .ch-ak-th .receipt .ck.warn { background: none; color: var(--ch-loss); }
-.ch-ak-th .receipt.in .ck::after { content: ''; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 2px var(--ch-ask-accent); pointer-events: none; animation: ch-ak-ring 0.62s var(--ch-ease) forwards; }
+.ch-ak-th .receipt.in .ck::after { content: ''; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 2px var(--ch-ask-accent); pointer-events: none; animation: ch-ak-ring var(--ch-dur-reveal) var(--ch-ease) forwards; }
 .ch-ak-th .receipt .lk { position: relative; display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 6px; border: 0; background: none; font: var(--ch-type-14-strong);  color: var(--ch-ask-accent); text-decoration: none; white-space: nowrap; cursor: pointer; }
 .ch-ak-th .receipt .lk::after { content: ''; position: absolute; inset: -9px 0; }
 .ch-ak-th .receipt .undo svg { width: 20px; height: 20px; }
@@ -618,9 +618,9 @@ html[data-fw-theme='dark'] .ch-ak-th {
   cursor: default;
 }
 /* Kit ② draft filling (M-ASK-42, 56): one field every 260ms behind a green write head, then the On confirm line and the buttons. A card that was not new draws still. */
-.ch-ak-th .conf.is-fill .evd .f { position: relative; animation: ch-ak-rise6 0.26s var(--ch-ease) both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-base)); }
-.ch-ak-th .conf.is-fill .evd .f::before { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; border-radius: var(--ch-radius-mark); background: var(--ch-ask-accent); opacity: 0; transform-origin: 0 50%; animation: ch-ak-wh 0.26s linear both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-base)); }
-.ch-ak-th .conf.is-fill .oncf, .ch-ak-th .conf.is-fill .btns, .ch-ak-th .conf.is-fill .ch-ak-evlink { animation: ch-ak-rise6 0.26s var(--ch-ease-spring-settle) both; animation-delay: calc(var(--ch-n, 0) * var(--ch-dur-base)); }
+.ch-ak-th .conf.is-fill .evd .f { position: relative; animation: ch-ak-rise6 var(--ch-dur-base) var(--ch-ease) both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-base)); }
+.ch-ak-th .conf.is-fill .evd .f::before { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; border-radius: var(--ch-radius-mark); background: var(--ch-ask-accent); opacity: 0; transform-origin: 0 50%; animation: ch-ak-wh var(--ch-dur-base) linear both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-base)); }
+.ch-ak-th .conf.is-fill .oncf, .ch-ak-th .conf.is-fill .btns, .ch-ak-th .conf.is-fill .ch-ak-evlink { animation: ch-ak-rise6 var(--ch-dur-base) var(--ch-ease-spring-settle) both; animation-delay: calc(var(--ch-n, 0) * var(--ch-dur-base)); }
 @keyframes ch-ak-wh { 0% { opacity: 1; transform: scaleX(0); } 90% { opacity: 1; transform: scaleX(1); } 100% { opacity: 0; } }
 
 /* E-INF: what Ask worked out, each with its source; a tap asks to change it. Pops 70ms apart with the card (M-ASK-40). */
@@ -643,7 +643,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 @keyframes ch-ak-chip { from { transform: scale(0.7); } }
 
 /* M-ASK-51: at the ring's end Undo fades and takes no presses. */
-.ch-ak-th .receipt .undo { transition: opacity 0.26s var(--ch-ease); }
+.ch-ak-th .receipt .undo { transition: opacity var(--ch-dur-base) var(--ch-ease); }
 .ch-ak-th .receipt .undo.gone { opacity: 0; pointer-events: none; }
 .ch-ak-th .receipt.undone:focus { outline: none; }
 
@@ -674,11 +674,11 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-wk .busy, .ch-ak-wk .slot { position: absolute; left: 2px; right: 2px; overflow: hidden; border-radius: var(--ch-radius-tail); }
 .ch-ak-wk .busy { padding: 2px 4px; background: var(--ch-chart-track); font: var(--ch-type-11-strong); letter-spacing: var(--ch-track-11); color: var(--ch-text-secondary); }
 .ch-ak-wk .slot.is-open { background: var(--ch-selected-tint); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--ch-accent) 35%, transparent); }
-.ch-ak-wk .slot.is-open::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 2px var(--ch-accent); opacity: 0; animation: ch-ak-slot 1.6s ease-in-out infinite; }
+.ch-ak-wk .slot.is-open::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 2px var(--ch-accent); opacity: 0; animation: ch-ak-slot var(--ch-dur-shimmer) ease-in-out infinite; }
 .ch-ak-wk .slot.is-ev { display: grid; align-content: start; padding: 2px 4px; background: var(--ch-accent); color: var(--ch-text-on-accent); }
 .ch-ak-wk .slot.is-ev b { display: block; font: var(--ch-type-11-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: var(--ch-track-11); }
 .ch-ak-wk .slot.is-ev span { font: var(--ch-type-11); letter-spacing: var(--ch-track-11); }
-.ch-ak-wk .slot.is-landing { animation: ch-ak-land 0.54s var(--ch-ease-spring-pop, var(--ch-ease)) 0.6s both; }
+.ch-ak-wk .slot.is-landing { animation: ch-ak-land 0.54s var(--ch-ease-spring-pop, var(--ch-ease)) var(--ch-dur-reveal) both; }
 @keyframes ch-ak-slot { 50% { opacity: 1; } }
 @keyframes ch-ak-land { from { opacity: 0; transform: scale(0.9); } }
 
@@ -693,7 +693,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-lock small .is-urgent { color: var(--ch-chart-loss); font: var(--ch-type-12-strong); }
 .ch-ak-lock .ban b { font: var(--ch-type-14-strong); color: var(--ch-ink-900); }
 .ch-ak-lock .bd { font: var(--ch-type-13); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.ch-ak-th .conf.is-fill .ch-ak-lock { animation: ch-ak-fade 0.26s var(--ch-ease) both; }
+.ch-ak-th .conf.is-fill .ch-ak-lock { animation: ch-ak-fade var(--ch-dur-base) var(--ch-ease) both; }
 .ch-ak-th .conf.is-fill .ch-ak-lock .ban { animation: ch-ak-drop 0.54s var(--ch-ease-spring-pop, var(--ch-ease)) 0.2s both; }
 @keyframes ch-ak-drop { from { opacity: 0; transform: translateY(-26px) scale(0.96); } }
 
@@ -717,7 +717,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
   .ch-ak-th .conf.is-fill .evd .f, .ch-ak-th .conf.is-fill .oncf, .ch-ak-th .conf.is-fill .btns, .ch-ak-th .conf.is-fill .ch-ak-evlink, .ch-ak-th .conf.is-fill .ipl, .ch-ak-th .conf.is-fill .ch-ak-lock .ban, .ch-ak-th .conf.is-fill .ch-ak-qual .rd, .ch-ak-th .conf.is-fill .ch-ak-qual .bar i { animation: none; }
   .ch-ak-th .conf.is-fill .evd .f::before, .ch-ak-wk .slot.is-open::after { display: none; }
   .ch-ak-th .dchip.is-pop, .ch-ak-th .told.is-live, .ch-ak-th .told.is-live .coin { animation: none; }
-  .ch-ak-wk .slot.is-landing { animation: ch-ak-fade 0.18s linear both; }
+  .ch-ak-wk .slot.is-landing { animation: ch-ak-fade var(--ch-dur-quick) linear both; }
 }
 [data-motion='off'] .ch-ak-th .conf.is-fill :is(.evd .f, .oncf, .btns, .ch-ak-evlink, .ipl, .ch-ak-lock .ban, .ch-ak-qual .rd, .ch-ak-qual .bar i), [data-motion='off'] .ch-ak-th :is(.dchip.is-pop, .told.is-live, .told.is-live .coin), [data-motion='off'] .ch-ak-wk .slot.is-landing { animation: none; }
 [data-motion='off'] .ch-ak-th .conf.is-fill .evd .f::before, [data-motion='off'] .ch-ak-wk .slot.is-open::after { display: none; }
@@ -735,7 +735,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .cpop-f { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; padding-top: 8px; border-top: var(--ch-hairline-w) solid var(--ch-separator); }
 .ch-ak-th .cpop-f a, .ch-ak-th .cpop-f button { position: relative; padding: 0; border: 0; background: none; font: var(--ch-type-14-strong); color: var(--ch-ask-accent); text-decoration: none; cursor: pointer; }
 .ch-ak-th .cpop-f a::after, .ch-ak-th .cpop-f button::after { content: ''; position: absolute; inset: -12px 0; }
-.ch-ak-th .srcw .in { animation: ch-ak-fade 0.26s var(--ch-ease) both; }
+.ch-ak-th .srcw .in { animation: ch-ak-fade var(--ch-dur-base) var(--ch-ease) both; }
 
 /* S-ASK.turn.stopped: the words stay, the turn says it stopped. */
 .ch-ak-th .ch-ak-stopped { display: flex; align-items: baseline; gap: 8px; margin: 0; font: var(--ch-type-14); color: var(--ch-text-secondary); }
@@ -743,9 +743,9 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .ch-ak-stopped button::after { content: ''; position: absolute; inset: -12px 0; }
 
 /* M-ASK-18, 20: the shot and engine blocks' marks grow once, on an answer this visit watched. */
-[data-live] .ch-ak-putts .t i { animation: ch-ak-growx 0.36s var(--ch-ease-spring-settle) var(--ch-cv-lag, 0s) both; }
-[data-live] .ch-ak-miss .w { animation: ch-ak-wedge 0.36s var(--ch-ease-spring-settle) var(--ch-cv-lag, 0s) both; transform-origin: 90px 90px; }
-[data-live] .ch-ak-season .ch-ak-mark, [data-live] .ch-ak-holes .ch-ak-mark { animation: ch-ak-rise6 0.36s var(--ch-ease-spring-settle) var(--ch-cv-lag, 0s) both; }
+[data-live] .ch-ak-putts .t i { animation: ch-ak-growx var(--ch-dur-marks) var(--ch-ease-spring-settle) var(--ch-cv-lag, 0s) both; }
+[data-live] .ch-ak-miss .w { animation: ch-ak-wedge var(--ch-dur-marks) var(--ch-ease-spring-settle) var(--ch-cv-lag, 0s) both; transform-origin: 90px 90px; }
+[data-live] .ch-ak-season .ch-ak-mark, [data-live] .ch-ak-holes .ch-ak-mark { animation: ch-ak-rise6 var(--ch-dur-marks) var(--ch-ease-spring-settle) var(--ch-cv-lag, 0s) both; }
 @keyframes ch-ak-growx { from { transform: scaleX(0); } }
 @keyframes ch-ak-wedge { from { opacity: 0; transform: scale(0.9); } }
 
@@ -930,3 +930,9 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 .ch-ak-lu .n { min-width: 24px; font: var(--ch-type-13-strong); color: var(--ch-text-secondary); }
 .ch-ak-lu .nm { min-width: 0; font: var(--ch-type-14); color: var(--ch-text-primary); overflow-wrap: anywhere; }
 .ch-ak-lu li.alt .nm { color: var(--ch-text-secondary); }
+
+/* A press answers on every control (MOT-31). */
+.ch-ak-th .opt[data-ch-pressed],
+.ch-ak-th .lk[data-ch-pressed] {
+  background-color: var(--ch-press-wash, var(--ch-well-bg-flat));
+}

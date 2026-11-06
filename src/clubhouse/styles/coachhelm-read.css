@@ -121,7 +121,7 @@ html[data-fw-theme='dark'] .ch-hr {
   white-space:nowrap; letter-spacing: var(--ch-track-17); }
 .ch-hr .shade {
   position:sticky;
-  top:110px;
+  top: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
   height:0;
   z-index: var(--ch-z-raised);}
 .ch-hr .sheet {
@@ -383,7 +383,7 @@ html[data-fw-theme='dark'] .ch-hr {
   border-radius: 50%;
   border:2px solid currentColor;
   border-right-color:transparent;
-  animation:ch-spinner-turn .7s linear infinite;
+  animation:ch-spinner-turn var(--ch-dur-sweep) linear infinite;
 }
 .ch-hr .check path {
   stroke-dasharray:24;
@@ -856,7 +856,7 @@ html[data-fw-theme='dark'] .ch-hr {
   border-radius: var(--ch-radius-lg);
   background:var(--ch-hr-card);
   box-shadow:0 0 0 var(--ch-hairline-w) var(--ch-hr-ring);
-  animation:ch-hr-pulse 1.6s ease-in-out infinite;
+  animation:ch-hr-pulse var(--ch-dur-shimmer) ease-in-out infinite;
 }
 .ch-hr .skel.f {
   background:var(--ch-hr-feat);
