@@ -4894,9 +4894,20 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     inset: -12px 0;
     content: '';
   }
-  /* Team scoring's change reads on one line at phone width. */
+  /* Team scoring's change reads on one line at phone width: the label takes its own row, the figure and the change share the next. */
+  .ch-hm[data-ch-crh='on'] .ch-hm-form__top {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-form__top > span:first-child {
+    display: contents;
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-form__top > span:first-child > em {
+    flex: 0 0 100%;
+  }
   .ch-hm[data-ch-crh='on'] .ch-hm-form__top .ch-hm-delta em:not(.ch-hm-form__basis) {
     max-width: none;
+    white-space: nowrap;
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-rd {
     min-height: 64px;
