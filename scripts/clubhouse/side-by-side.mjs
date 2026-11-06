@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global document -- the wait for the images runs inside the page */
 /**
  * Joins labelled PNGs into one picture, left to right: the merge gate's design | before | after (redesign sweep, rule 11).
  * The script is committed; the images never are. They go on the pr-evidence branch and the PR body links them.
