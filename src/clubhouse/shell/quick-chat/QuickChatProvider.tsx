@@ -135,10 +135,11 @@ export function HelmKey() {
       </button>
       </Tooltip>
       {live && (
-        <button type="button" className="live" aria-live="polite" onClick={toggle} style={{ maxWidth: phone ? 172 : 260 }}>
+        <button type="button" className="live" aria-live="polite" onClick={toggle}>
           <span className="live__ic">
             {run.state === 'work' && <span className="live__spin" />}
             {run.state === 'wait' && <span className="live__dot" />}
+            {run.state === 'failed' && <span className="live__dot is-failed" />}
             {run.state === 'done' && (
               <span className="live__ok">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">

@@ -1,5 +1,6 @@
 'use client';
 import { pluralWord } from '../../lib/plural';
+import { AskProse } from '../../screens/coachhelm/chat/Prose';
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
@@ -74,6 +75,8 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
     el.parentElement?.style.setProperty('--ch-qc-qc-scrim-top', `${bar}px`);
     if (phone) {
       const kb = window.visualViewport ? window.visualViewport.height + window.visualViewport.offsetTop : window.innerHeight;
+      // A keyboard pan moves the visual viewport: the panel follows, so its header stays on screen (QC-9).
+      el.style.setProperty('--ch-qc-qc-top', `${(window.visualViewport?.offsetTop ?? 0) + bar + 6}px`);
       el.style.setProperty('--ch-qc-qc-h', `${Math.min(700, kb - bar - 6 - 8)}px`);
     }
     return { x: key.left + key.width / 2, y: key.top + key.height / 2 };
@@ -99,7 +102,11 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
     const vv = window.visualViewport;
     if (!vv || !open) return;
     vv.addEventListener('resize', place);
-    return () => vv.removeEventListener('resize', place);
+    vv.addEventListener('scroll', place);
+    return () => {
+      vv.removeEventListener('resize', place);
+      vv.removeEventListener('scroll', place);
+    };
   }, [open, place]);
 
   useEffect(() => {
@@ -108,6 +115,11 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
       if (e.key !== 'Escape') return;
       const t = e.target as HTMLElement | null;
       if (t?.tagName === 'INPUT') return;
+      // First Escape leaves a field that has words in it; the next closes (QC-20).
+      if (t?.tagName === 'TEXTAREA' && (t as HTMLTextAreaElement).value) {
+        t.blur();
+        return;
+      }
       onClose();
     };
     window.addEventListener('keydown', onKey);
@@ -285,6 +297,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
                       <AssistantTurn
                         key={turn.id}
                         turn={turn}
+                        failed={!!notice && turn.id === turns[turns.length - 1]?.id}
                         online={online}
                         stopped={stopped}
                         onSend={send}
@@ -337,7 +350,13 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
                 placeholder="Ask CoachHelm or tell it what to do"
                 rows={1}
                 value={text}
-                onChange={(e) => setText(e.target.value)}
+                onChange={(e) => {
+                  setText(e.target.value);
+                  // Grows with the words, up to four lines (QC-8).
+                  const el = e.target;
+                  el.style.height = 'auto';
+                  el.style.height = `${Math.min(el.scrollHeight, 4 * parseFloat(getComputedStyle(el).lineHeight || '22'))}px`;
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey && !phone) {
                     e.preventDefault();
@@ -380,7 +399,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
 }
 
 /** The steps, and their fold once the card is ready: "N steps · Ns", which a tap reopens in place (AC-QC-STP-03, 04). */
-function Steps({ turn, stopped }: { turn: AskAssistantTurn; stopped: boolean }) {
+function Steps({ turn, stopped, failed = false }: { turn: AskAssistantTurn; stopped: boolean; failed?: boolean }) {
   const [opened, setOpened] = useState(false);
   const [more, setMore] = useState(false);
   // Only the browser that watched the run knows how long it took; a reloaded chat folds to the count alone.
@@ -416,7 +435,7 @@ function Steps({ turn, stopped }: { turn: AskAssistantTurn; stopped: boolean }) 
         const last = s === turn.steps[turn.steps.length - 1];
         const active = turn.active && last;
         return (
-          <li key={s.id} className={'step ' + (active ? 'active' : stopped && last ? 'stopped' : 'done')}>
+          <li key={s.id} className={'step ' + (active ? 'active' : failed && last ? 'fail' : stopped && last ? 'stopped' : 'done')}>
             <span className="step__g">
               {active ? (
                 <span className="dot" />
@@ -434,14 +453,14 @@ function Steps({ turn, stopped }: { turn: AskAssistantTurn; stopped: boolean }) 
   );
 }
 
-function AssistantTurn({ turn, online, stopped, onSend, onApprove, onDeny, onOpen }: { turn: AskAssistantTurn; online: boolean; stopped: boolean; onSend: (t: string) => void; onApprove: (id: string) => void; onDeny: (id: string) => void; onOpen: (href: string) => void }) {
+function AssistantTurn({ turn, online, stopped, failed = false, onSend, onApprove, onDeny, onOpen }: { turn: AskAssistantTurn; online: boolean; stopped: boolean; failed?: boolean; onSend: (t: string) => void; onApprove: (id: string) => void; onDeny: (id: string) => void; onOpen: (href: string) => void }) {
   return (
     <>
-      <Steps turn={turn} stopped={stopped} />
+      <Steps turn={turn} stopped={stopped} failed={failed} />
       {stopped && !turn.active && !turn.blocks.length && <p className="say quiet">Stopped. Nothing was saved.</p>}
       {turn.note && <p className="say quiet">{turn.note}</p>}
       {turn.blocks.map((b) => {
-        if (b.kind === 'text') return <p className="say" key={b.key}>{b.text}</p>;
+        if (b.kind === 'text') return <div className="say" key={b.key}><AskProse text={b.text} playersByName={{}} /></div>;
         if (b.kind === 'proposal') return <TaskCard key={b.key} view={b.view} online={online} onSend={onSend} onApprove={onApprove} onDeny={onDeny} onOpen={onOpen} />;
         if (b.kind === 'plan') return <PlanTask key={b.key} plan={b.plan} online={online} onOpen={onOpen} />;
         if (b.kind === 'brief') return <QuickAsk key={b.key} brief={b.brief} onSend={onSend} />;

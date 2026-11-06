@@ -79,7 +79,7 @@ async function landCal(card: HTMLElement, reduced: boolean): Promise<void> {
 async function landMsg(card: HTMLElement, reduced: boolean): Promise<void> {
   const bubble = card.querySelector('.mb.draft');
   const tones = card.querySelector('.mtone');
-  if (tones) tones.animate([{ opacity: 1 }, { opacity: 0.4 }], { duration: reduced ? CH_FADE_MS : 200, easing: 'linear', fill: 'forwards' });
+  if (tones) tones.animate([{ opacity: 1 }, { opacity: 0 }], { duration: reduced ? CH_FADE_MS : 200, easing: 'linear', fill: 'forwards' });
   if (reduced || !bubble) return;
   const settle = chSpringCurve('settle');
   await settled(

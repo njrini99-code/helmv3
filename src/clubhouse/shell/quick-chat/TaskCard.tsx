@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '../../ui/Button';
+import { Badge } from '../../ui/Badge';
 import { pluralWord } from '../../lib/plural';
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -147,7 +148,7 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
   const title = visual?.kind === 'cal' || visual?.kind === 'qual' ? visual.title : visual?.kind === 'msg' ? visual.thread : view.proposal.summary;
   const typed = useTyped(title, 38, typing);
   const chip = shown.k === 'draft' || shown.k === 'busy' ? 'Draft' : phase.k === 'undone' ? 'Undone' : phase.k === 'failed' ? 'Not saved' : phase.k === 'cancelled' ? 'Cancelled' : w.chip;
-  const chipClass = 'chip' + (shown.k === 'held' || shown.k === 'done' ? ' ok' : shown.k === 'failed' ? ' fail' : '');
+  const chipTone = shown.k === 'held' || shown.k === 'done' ? 'positive' : shown.k === 'failed' ? 'warning' : 'neutral';
   return (
     <article ref={card} className={'task' + (shown.k === 'held' ? ' won' : '') + (phase.k === 'cancelled' ? ' cancelled' : '')} data-kind={visual?.kind ?? 'generic'}>
       <div className="task__h">
@@ -156,7 +157,7 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
           <b aria-label={title}>{typed}</b>
           <span>{w.sub}</span>
         </span>
-        <span className={chipClass}>{chip}</span>
+        <Badge tone={chipTone}>{chip}</Badge>
       </div>
       <div className="task__b">
         {visual?.kind === 'cal' && <EventVisual visual={visual} landed={shown.k === 'held' || shown.k === 'done'} removed={phase.k === 'undone'} />}
@@ -274,6 +275,10 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
               <b>{w.failTitle}</b>
               <span>{(phase as { reason: string }).reason}</span>
             </span>
+            {/* QC-3: back to the draft, nothing lost: the same Confirm sends it again. */}
+            <Button variant="secondary" size="sm" onClick={() => setPhase({ k: 'draft' })}>
+              Try again
+            </Button>
           </div>
         )}
       </div>

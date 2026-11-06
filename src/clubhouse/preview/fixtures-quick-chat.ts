@@ -147,6 +147,10 @@ export const QC_FIXTURES: Record<string, QcFixture> = {
   // S-LIVE at work: the panel closed while a step runs.
   'live-work': { messages: [user('u1', ASK.cal), assistant([step(1, 'Finding everyone on the active roster', false)])], busy: true, closed: true },
   // AC-QC-CMP-06: the stream went mid-run.
+  // The states the sweep asked to see (QC-23).
+  error: { messages: [user('u1', ASK.cal), assistant([step(1, 'Checked Thursday · lift ends at 2:45')])], failed: true },
+  'task-failed': { messages: task('cal', 'failed') },
+  'task-cancelled': { messages: task('cal', 'cancelled') },
   'stream-error': { messages: [user('u1', ASK.cal), assistant([step(1, 'Checked Thursday · lift ends at 2:45')])], failed: true },
   cancelled: { messages: task('cal', 'cancelled') },
   asking: { messages: [user('u1', 'Make a practice plan for Tuesday'), assistant([step(1, 'Checked Tuesday · nothing else on the calendar'), askPlan])] },
