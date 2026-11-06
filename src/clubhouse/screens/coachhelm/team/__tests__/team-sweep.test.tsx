@@ -126,4 +126,9 @@ describe('sheet and notice styles reach only their own text (owner, 2026-11-06)'
   it('every bar row is one set of columns on a phone, so the Tour line runs straight (MOB-TEAM-4)', () => {
     expect(css).toMatch(/\.ch-htb \.br \{\s*min-height:44px;\s*grid-template-columns:calc\(108 \* var\(--ch-tb-k\)\) minmax\(0,1fr\) calc\(52 \* var\(--ch-tb-k\)\);/);
   });
+
+  it('the spots go two by two rather than collide, and the sheet buttons stack (320 wide, or largest Text Size)', () => {
+    expect(css).toMatch(/\.ch-htb \.stchips \{\s*grid-template-columns:repeat\(auto-fit,minmax\(clamp\(/);
+    expect(css).toMatch(/\.acts > \* \{\s*flex: 1 1 calc\(160 \* var\(--ch-type-k\)\);/);
+  });
 });
