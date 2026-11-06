@@ -277,10 +277,6 @@ html[data-fw-theme='dark'] .ch-htb {
   stroke-width:1.7;
   stroke-linecap:round;
 }
-.ch-htb .holesvg .ball {
-  fill:#fff;
-  filter:drop-shadow(0 1px 2px rgb(0 0 0/.45));
-}
 .ch-htb .holesvg .pole {
   stroke:rgb(244 241 232/.75);
   stroke-width:1.5;
@@ -292,10 +288,6 @@ html[data-fw-theme='dark'] .ch-htb {
   cursor:pointer;
   transform-box:view-box;
   transition:transform var(--ch-dur-reveal) var(--ch-tb-spring-o),opacity var(--ch-dur-quick) var(--ch-tb-ease);
-}
-.ch-htb .stn.pre {
-  transform:scale(.3);
-  opacity:0;
 }
 .ch-htb .stn .halo {
   fill:rgb(237 184 103/.17);
@@ -415,10 +407,10 @@ html[data-fw-theme='dark'] .ch-htb {
 .ch-htb .stchips button.cm b {
   color:var(--ch-tb-f-ink);
   font-weight:var(--ch-fw-500);}
-.ch-htb .hole .stn:not(.pre) {
+.ch-htb .hole .stn {
   transition:transform var(--ch-dur-reveal) var(--ch-tb-spring-o),opacity var(--ch-dur-base) var(--ch-tb-ease);
 }
-.ch-htb .hole.offh .stn:not(.pre) {
+.ch-htb .hole.offh .stn {
   opacity:.38;
 }
 .ch-htb .hole.offh .scn {

@@ -1889,30 +1889,6 @@ p.ch-shs-mini-cap {
   display: block;
 }
 
-/* Grow once (07 M-STATS-12 to 15): a card waits at zero until a quarter of it is in view. A card with no marker class is at rest, so no script draws it whole. */
-.ch-shs-card.is-waiting:not(.is-seen) [data-ch-grow] {
-  transform: scaleX(0);
-}
-.ch-shs-card.is-waiting:not(.is-seen) [data-ch-grow-y] {
-  transform: scaleY(0);
-}
-.ch-shs-card.is-waiting:not(.is-seen) .ch-shs-rg .rf {
-  stroke-dashoffset: var(--ch-ring-c) !important;
-}
-.ch-shs-card.is-waiting:not(.is-seen) :is(.ch-shs-tour, .ch-shs-rib .dot, .ch-shs-db .track) {
-  opacity: 0;
-}
-.ch-shs-card.is-waiting [data-ch-grow],
-.ch-shs-card.is-waiting [data-ch-grow-y] {
-  transition: transform var(--ch-dur-release) var(--ch-ease);
-}
-.ch-shs-card.is-waiting [data-ch-grow-y] {
-  transform-box: fill-box;
-  transform-origin: 50% 100%;
-}
-.ch-shs-card.is-waiting .ch-shs-rg .rf {
-  transition: stroke-dashoffset var(--ch-dur-release) var(--ch-ease);
-}
 .ch-shs-card.is-waiting :is(.ch-shs-tour, .ch-shs-rib .dot, .ch-shs-db .track) {
   transition: opacity var(--ch-dur-release) var(--ch-ease);
 }

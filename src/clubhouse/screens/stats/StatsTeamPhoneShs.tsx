@@ -28,7 +28,7 @@ import { MiniDiverging } from './MiniCharts';
 import { TeamFeatureChart } from './ScoringFeatureChart';
 import { Ribbon, SHS_HOW } from './ShsBlocks';
 import { divergeBar, filterKey, sgTone, windowShort, type ShsTone } from './shs-figures';
-import { useGrowOnce, useStuck, WindowCrossfade } from './shs-motion';
+import { useStuck, WindowCrossfade } from './shs-motion';
 import { EarlyRead, NineHint } from './StatsFilter';
 import { DetailHero, StatsDetailScreen } from './StatsDetailScreen';
 import { PhoneWindowSwitch, RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty } from './StatsTeamIslands';
@@ -118,7 +118,6 @@ export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
   const root = useRef<HTMLDivElement>(null);
   const hadFailed = useRef(data.roundsError);
   if (data.roundsError) hadFailed.current = true;
-  useGrowOnce(root, reduced || hadFailed.current, [below, data.roundsError, noRounds]);
   const big = useBigText();
   const keyboard = useRef(false);
   const go = (id: StatsDetailId) => open(id);

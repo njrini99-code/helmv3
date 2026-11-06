@@ -12,7 +12,6 @@ import type { ChReadDetail, ChReadView } from '../../../data/coachhelm-read-view
 import { assignStateOf } from '../../../data/coachhelm-read-view-shape';
 import type { ChBoardMissing } from '../../../data/coachhelm-shape';
 import type { ChViewVoice } from '../../../data/coachhelm-views-shape';
-import { useInViewOnce } from '../../../lib/use-in-view';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import type { ChFocusActions } from '../parts';
@@ -72,13 +71,12 @@ export function ReadHeadline({ d, view, coach, assigned }: { d: ChReadDetail; vi
 
 /** The bars scale from the left, once, the first time the card shows (02-PLAN 7.2). */
 export function WhereCard({ funnel, pictures }: { funnel: NonNullable<ChReadDetail['funnel']>; pictures: boolean }) {
-  const [ref, seen] = useInViewOnce<HTMLDivElement>();
   const first = funnel.steps.find((s) => s.n != null)?.n ?? 0;
   const lastBar = funnel.steps.reduce((acc, s, i) => (s.n != null ? i : acc), -1);
   return (
     <Card id="cfun" title="Where it shows up" obs="Observed, not a cause">
       <div className="cb">
-        <div ref={ref} className={'fun' + (seen ? '' : ' pre')}>
+        <div className="fun">
           {funnel.steps.map((s, i) => (
             <div className="fstep" key={`${s.label}-${i}`}>
               <div className="fhead">

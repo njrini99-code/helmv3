@@ -61,8 +61,6 @@
 .ch-cp-card { display: grid; gap: 12px; padding: 12px 16px; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg, var(--ch-bg-surface)); box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline); }
 .ch-cp-card h4 { margin: 0; font: var(--ch-type-17-strong);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-17); }
 .ch-cp-strip { display: flex; gap: 2px; height: 8px; border-radius: var(--ch-radius-xs); overflow: hidden; }
-.ch-cp-strip i { display: block; background: var(--ch-green-600); transform-origin: 0 50%; animation: ch-cp-seg var(--ch-dur-release) var(--ch-ease) both; }
-@keyframes ch-cp-seg { from { transform: scaleX(0); } }
 .ch-cp-row { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-top: var(--ch-hairline-w) solid var(--ch-border-hairline); }
 .ch-cp-row .t { font: var(--ch-type-15-strong);   color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
 .ch-cp-row .t span { display: block; font: var(--ch-type-13); color: var(--ch-text-tertiary); }

@@ -62,7 +62,7 @@ import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { DetailHero, StatsDetailScreen } from './StatsDetailScreen';
 import { ShsArrow, ShsCard, ShsChevron, ShsIcon, ShsPill, SummaryCard, type ShsIconName } from './SummaryCard';
 import { useStatsDetail, type StatsArrivalState } from './use-stats-detail';
-import { useGrowOnce, useStuck, WindowCrossfade } from './shs-motion';
+import { useStuck, WindowCrossfade } from './shs-motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { filterKey } from './shs-figures';
 import { WindowSwitch } from './WindowSwitch';
@@ -182,7 +182,6 @@ export function StatsPlayerPhoneShs({
   // A landing after a failed load or a Try again draws at rest: marks grow once in a session of the page, and that wasn't a first look.
   const hadFailed = useRef(failed);
   if (failed) hadFailed.current = true;
-  useGrowOnce(root, reduced || hadFailed.current, [below, failed, noRounds]);
   // Keys that open a detail move focus to Back; a finger doesn't (07 M-STATS-27).
   const keyboard = useRef(false);
 

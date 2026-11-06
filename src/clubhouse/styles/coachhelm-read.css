@@ -481,10 +481,6 @@ html[data-fw-theme='dark'] .ch-hr {
   font: var(--ch-type-14);
   color:var(--ch-hr-ink-2);
 }
-.ch-hr .fun.pre .fbar {
-  transform:scaleX(0);
-  transition:none;
-}
 .ch-hr .obs {
   display:inline-block;
   font: var(--ch-type-12-strong);
@@ -552,11 +548,6 @@ html[data-fw-theme='dark'] .ch-hr {
 .ch-hr .dots i.f {
   background:var(--ch-hr-loss-fill);
 }
-.ch-hr .dots.pre i.f {
-  opacity:0;
-  transform:scale(.4);
-  transition:none;
-}
 .ch-hr .verdict {
   margin-top:12px;
   padding:12px 12px;
@@ -618,15 +609,6 @@ html[data-fw-theme='dark'] .ch-hr {
 }
 .ch-hr .pn:last-child::after {
   display:none;
-}
-.ch-hr .path.pre .pn::after {
-  transform:scaleX(0);
-  transition:none;
-}
-.ch-hr .path.pre .pn .nd {
-  transform:scale(.7);
-  opacity:0;
-  transition:none;
 }
 .ch-hr .holes {
   display:flex;

@@ -482,7 +482,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 @keyframes ch-ak-pane-next { from { transform: translateX(100%); } }
 @keyframes ch-ak-pane-back { from { transform: translateX(-100%); } }
 @keyframes ch-ak-pill { from { opacity: 0; transform: translateY(6px); } }
-.ch-ak-th .qcard { animation: ch-ak-rise var(--ch-dur-spring-settle) var(--ch-ease-spring-settle) both; }
+.ch-ak-th .ch-ak-turn.is-new .qcard { animation: ch-ak-rise var(--ch-dur-spring-settle) var(--ch-ease-spring-settle) both; }
 .ch-ak-th .qpane.is-next { animation: ch-ak-pane-next var(--ch-dur-spring-send) var(--ch-ease-spring-send) both; }
 .ch-ak-th .qpane.is-back { animation: ch-ak-pane-back var(--ch-dur-spring-send) var(--ch-ease-spring-send) both; }
 .ch-ak-th .qdots i { transition: width var(--ch-dur-spring-settle) var(--ch-ease-spring-settle), background-color var(--ch-dur-base) var(--ch-ease); }
