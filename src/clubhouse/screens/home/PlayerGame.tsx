@@ -470,16 +470,19 @@ function YourGameCard({ legs, tour, covered }: { legs: ChPlayerHome['legs']; tou
         <h2 id="ch-ph-legs">Your game</h2>
         <span>Strokes gained {sgBaseline(tour).vs}</span>
       </div>
-      {legs.cacheError && any && (
+      {legs.cacheError && (
         <div className="ch-shs-yg__notice">
           <RefreshNotice code="CH-2216" title="Some of your figures didn’t load" body="Scores, greens and putts are right; scrambling is missing." covered={covered} />
         </div>
       )}
       {!any ? (
+        // Figures that did not load are not "nothing to break down": the notice above is the whole answer then.
+        legs.cacheError ? null : (
         <div className="ch-shs-yg__none" data-ch-code="CH-2311">
           <b>Nothing to break down yet.</b>
           <span>Fairways, greens, scrambling and putts fill in from rounds posted with those stats.</span>
         </div>
+        )
       ) : (
         <>
           {legs.rows.map((g) => (

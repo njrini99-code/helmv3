@@ -1110,8 +1110,9 @@ describe('Shell · phone chrome', () => {
     // Pages below another go up to it.
     expect(bar(`/golf/dashboard/qualifiers/${uuid}`, 'coach')).toBe('Qualifiers | Qualifier -> /golf/dashboard/qualifiers');
     expect(bar(`/golf/dashboard/qualifiers/${uuid}/selection`, 'coach')).toBe(`Qualifier | Selections -> /golf/dashboard/qualifiers/${uuid}`);
-    expect(bar(`/golf/dashboard/rounds/${uuid}`, 'coach')).toBe('Stats | Round -> /golf/dashboard/stats');
-    expect(bar(`/golf/dashboard/rounds/${uuid}`, 'player')).toBe('Rounds | Round -> /golf/dashboard/rounds');
+    // A round opens from Stats, Rounds, Home or Team: Back returns to whichever it was (D-41, FID-STATS-5).
+    expect(bar(`/golf/dashboard/rounds/${uuid}`, 'coach')).toBe('Back | Round');
+    expect(bar(`/golf/dashboard/rounds/${uuid}`, 'player')).toBe('Back | Round');
     expect(bar('/golf/dashboard/rounds/recover', 'player')).toBe('Rounds | Recover -> /golf/dashboard/rounds');
     // The coach's full-page forms: a plain Cancel back to where they came from (QualifierForm).
     expect(bar('/golf/dashboard/qualifiers/new', 'coach')).toBe('Cancel | New qualifier -> /golf/dashboard/qualifiers (form)');
