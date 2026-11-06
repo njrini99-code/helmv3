@@ -1,5 +1,6 @@
 'use client';
 
+import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
 import { CH_DUR, CH_EASE } from './motion';
 import { CH_RAIL_COOKIE } from './rail-cookie';
 
@@ -24,7 +25,7 @@ const ID = 'ch-handoff-curtain';
 /** On <html> while the curtain is up. */
 const HOLD = 'data-ch-handoff';
 const SAFETY_MS = 4000;
-const PHONE = '(max-width: 820px)';
+const PHONE = CH_PHONE_QUERY;
 
 const ease = `cubic-bezier(${CH_EASE.join(',')})`;
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
 import { LazyMotion } from 'motion/react';
 import { createContext, memo, useContext, useEffect, useRef, useState, type ReactNode, Suspense } from 'react';
 import { useChPhone } from '../lib/use-phone';
@@ -298,8 +299,7 @@ function edgeTokens(root: Element): { page: string; green: string } {
   const theme = `${document.documentElement.getAttribute('data-fw-theme') ?? ''}|${window.matchMedia('(prefers-color-scheme: dark)').matches}`;
   if (edgeCache?.theme !== theme) {
     const css = getComputedStyle(root);
-    const bar = document.documentElement.getAttribute('data-fw-theme') === 'dark' ? '--ch-frame' : '--ch-green-800';
-    edgeCache = { theme, page: css.getPropertyValue('--ch-bg-page').trim(), green: css.getPropertyValue(bar).trim() };
+    edgeCache = { theme, page: css.getPropertyValue('--ch-bg-page').trim(), green: css.getPropertyValue('--ch-frame').trim() };
   }
   return edgeCache;
 }
@@ -308,7 +308,7 @@ function usePhoneEdges(hero: boolean) {
   useEffect(() => {
     const html = document.documentElement;
     const body = document.body;
-    const phone = window.matchMedia('(max-width: 820px)');
+    const phone = window.matchMedia(CH_PHONE_QUERY);
     let restore: (() => void) | undefined;
     const sync = () => {
       restore?.();
@@ -316,7 +316,11 @@ function usePhoneEdges(hero: boolean) {
       if (!phone.matches) return;
       const root = document.querySelector('.ch-root[data-ui="clubhouse"]');
       if (!root) return;
-      const { page, green } = edgeTokens(root);
+      const { page: fallback, green } = edgeTokens(root);
+      // The bounce below the page shows the page's own colour, whichever canvas this route sits on (MOB-SHELL-7, MOB-SHELL-20).
+      const canvas = document.querySelector('.ch-canvas');
+      const seen = canvas ? getComputedStyle(canvas).backgroundColor : '';
+      const page = !seen || seen === 'transparent' || /\/\s*0\)$|,\s*0\)$/.test(seen) ? fallback : seen;
       let meta = document.head.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
       const created = !meta;
       if (!meta) {
@@ -326,9 +330,10 @@ function usePhoneEdges(hero: boolean) {
       }
       const before = meta.content;
       const was = { html: html.style.backgroundColor, body: body.style.backgroundColor };
-      html.style.backgroundColor = hero ? green : page;
+      html.style.backgroundColor = page;
       body.style.backgroundColor = page;
-      meta.content = hero ? green : page;
+      // The status area is always the frame's green; the bar's own ::before carries it up through a pull (owner call, sweep).
+      meta.content = green;
       const tag = meta;
       restore = () => {
         html.style.backgroundColor = was.html;

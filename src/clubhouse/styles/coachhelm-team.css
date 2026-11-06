@@ -1906,14 +1906,14 @@ html[data-fw-theme='dark'] .ch-htb .skl::after {
   .ch-htb .insp {
     opacity: 0;
     transform: none;
-    transition: opacity var(--ch-fade-ms, var(--ch-dur-quick)) linear !important;
+    transition: opacity var(--ch-dur-crossfade-rm) linear !important;
   }
   .ch-htb .insp.on {
     opacity: 1;
     transform: none;
   }
   .ch-htb .story {
-    animation: ch-htb-fade var(--ch-fade-ms, var(--ch-dur-quick)) linear !important;
+    animation: ch-htb-fade var(--ch-dur-crossfade-rm) linear !important;
   }
   .ch-htb .sto-b,
   .ch-htb .wk.is-new,

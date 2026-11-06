@@ -1,5 +1,6 @@
 'use client';
 
+import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
 import { animate, m, useMotionValue, useTransform, type AnimationPlaybackControls, type MotionValue } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
@@ -26,7 +27,7 @@ import { badgeCount } from './badge-count';
  *
  * Desktop never opens it: the strip, the title's chevron and the gestures are phone-only (CSS and PHONE below).
  */
-const PHONE = '(max-width: 820px)';
+const PHONE = CH_PHONE_QUERY;
 
 export interface ChSectionSwitch {
   /** False outside the provider (the dev preview's bare pieces, tests): the title renders as plain text. */

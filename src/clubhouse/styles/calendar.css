@@ -2351,7 +2351,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   transition: border-color var(--ch-dur-quick) var(--ch-ease);
 }
 /* The title field is a full 44 to the finger on the phone (F-0021). */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-ed__title {
     min-height: 44px;
   }
@@ -2387,7 +2387,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
 }
 /* On the phone three across left each time 99px, which clipped "07:00 AM": the date takes its own line, the times share
    the one under it. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-ed__row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2760,7 +2760,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
 .ch-calm-skel {
   display: none;
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   /* The server renders desktop; on a phone it stays hidden until the phone view takes over at hydration. The skeleton
      stays, and so do the whole-page empties (first run, no team), which are the same page on both. */
   .ch-cal:not([data-ch-code]):not(.ch-cal--page) {
@@ -3391,7 +3391,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. Labels follow
    Dynamic Type from the floor up; the grids' cells (week, month, lanes, mini-month) keep a fixed 12px so they hold. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-cal-jump__dow,
   .ch-pp__more,
   .ch-wk__d,
@@ -3414,7 +3414,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
 /* Loading in the framed page head (desktop): the masthead holds the loaded one's measured height (WebKit 1440 and
    1100, 2026-10-07: 136px with the sans range title and the line, less the tight head's 20px), so the toolbar and the
    week don't move on load. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-cal--skel[data-canopy] > .ch-cal-mast {
     box-sizing: border-box;
     min-height: 116px;
@@ -3425,7 +3425,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
    lose their card and sit on the canvas with their own hairlines, set in the ledger's rules; the detail panel is a
    flush column behind one soft rule that runs the body's full height (the panel is sticky and usually shorter than
    the week). Event chips, the next-event plate, the overlap notice and the lanes keep their material. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-cal[data-canopy] .ch-cal-surface {
     border-radius: 0;
     background: none;
@@ -3763,7 +3763,7 @@ html[data-fw-theme='dark'] .ch-ev--busy {
 html[data-fw-theme='dark'] .ch-ev--busy::after {
   background: repeating-linear-gradient(135deg, transparent 0 5px, rgb(201 173 116 / 0.08) 5px 6px);
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   /* The phone's agenda is flush on the parchment: no today ring, no list plate, the press tint for a chosen row. */
   html[data-fw-theme='dark'] .ch-calm .ch-ag__when.is-today,
   html[data-fw-theme='dark'] .ch-calm .ch-ag__day.is-today .ch-ag__list {
@@ -3791,7 +3791,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
     background: var(--ch-green-600);
   }
 }
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   html[data-fw-theme='dark'] .ch-cal[data-canopy] .ch-ag__when.is-today,
   html[data-fw-theme='dark'] .ch-cal[data-canopy] .ch-ag__day.is-today .ch-ag__list {
     box-shadow: none;
@@ -3901,7 +3901,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
 /* P-4 4.7: the phone Day's drag. The row in hand lifts in place; the day unfolds into hours under it (64px an hour,
    blocks from the list's title column, measured into --ch-tl-rail); the strip stays in reach, sticky under the top bar;
    both pagers hold still. The list stays in the document under the timeline (the touch's row must not unmount). */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-calm-dayv {
     position: relative;
     isolation: isolate;

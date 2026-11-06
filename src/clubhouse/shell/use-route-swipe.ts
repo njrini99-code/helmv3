@@ -1,12 +1,13 @@
 'use client';
 
+import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
 import { useEffect } from 'react';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { haptic } from '../lib/haptics';
 import { chHandPop, chPushTiming, cssNum, chShownPath, chUnderLook, grabPush, pageLayer, underFor, type ChUnder } from '../lib/nav-motion';
 import { CH_EDGE_ZONE_PX, claimWebSwipe, createEdgeSwipe, edgeSwipeAllowed, findScreenBack, overlayIsOpen, type EdgeFrame, type EdgeRelease } from './edge-swipe';
 
-const PHONE = '(max-width: 820px)';
+const PHONE = CH_PHONE_QUERY;
 /** How long a committed swipe waits for the page it uncovered to arrive before it lets the copy go anyway. */
 const ARRIVE_MS = 2500;
 

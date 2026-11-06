@@ -110,4 +110,4 @@ export const OPENING_MS = 720;
  */
 export const OPENING_PUSH_MS = 430;
 /** Where the phone's sign-in sheet rises over the keyboard (SignIn's useKeyboardLift): a touch screen at phone width. */
-export const KB_LIFT_QUERY = '(max-width: 820px) and (pointer: coarse)';
+export const KB_LIFT_QUERY = '(max-width: 820px) and (pointer: coarse), (max-height: 500px) and (pointer: coarse)';

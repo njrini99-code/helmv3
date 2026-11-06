@@ -60,7 +60,7 @@
   color: var(--ch-on-fill-100);
 }
 /* On the phone the tag is the 12 step and its box grows with Text Size instead of clipping the letter (F-0024). */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-tour-cmp-tag {
     font: var(--ch-type-12-strong);
     letter-spacing: var(--ch-track-12);
