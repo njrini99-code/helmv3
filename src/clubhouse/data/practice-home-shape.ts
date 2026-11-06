@@ -99,6 +99,10 @@ export interface ChBuilderData {
   status: 'draft' | 'published';
   /** Published with edits the players haven't got. */
   edited: boolean;
+  /** The version players have, for What changed on Republish. Null: not published, or it wouldn't read. */
+  liveBody?: PlanBodyV2 | null;
+  /** This practice is one of a series: moving it says only this one moves. */
+  inSeries?: boolean;
   title: string;
   /** "Thu, Nov 5 · 2:00 to 5:00 PM · Lakeside". */
   meta: string;

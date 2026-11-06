@@ -3,7 +3,7 @@
 import { CH_DESK_QUERY } from '@/clubhouse/lib/phone-query';
 import { Button } from '../../../ui/Button';
 
-import { ArrowUp, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, Ellipsis, FolderClosed, Minus, Plus, Printer, X } from 'lucide-react';
+import { ArrowUp, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, Ellipsis, FolderClosed, Minus, Plus, Printer, Share, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { safeSave } from './safe-save';
@@ -20,7 +20,8 @@ import { Menu } from '../../../ui/Menu';
 import { InlineNotice } from '../../../ui/Notices';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { PracticePlanSheet } from './sheet/PracticePlanSheet';
-import { printPlan } from './PrintPlan';
+import { useToast } from '../../../ui/Toast';
+import { printPlan, sharePlanPdf } from './PrintPlan';
 import { toSheetModel } from './sheet/plan-sheet-model';
 import { useUndoWindow } from './useUndoWindow';
 
@@ -115,6 +116,7 @@ function KindChip({ kind }: { kind: DrillKind | null | undefined }) {
 
 /** The plan in Ask: writes itself block by block, a Why under every block, Save to, Save draft and Publish. Coach only: never imported by a player surface. */
 export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; onSend: (text: string) => void; fresh?: boolean }) {
+  const toast = useToast();
   const preview = useContext(PlanPreview);
   const router = useRouter();
   const reduced = useChReducedMotion();
@@ -758,7 +760,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
               <Menu
                 label="More for this plan"
                 align="end"
-                items={[{ label: phone ? 'Share PDF' : 'Print', icon: Printer, onSelect: () => void printPlan(sheetModel) }]}
+                items={[{ label: 'Print', icon: Printer, onSelect: () => void printPlan(sheetModel) }, { label: 'Share PDF', icon: Share, onSelect: () => void sharePlanPdf(sheetModel).then((ok) => { if (!ok) toast({ tone: 'error', title: 'Couldn’t make the PDF', body: 'Print can still save one.' }); }) }]}
                 trigger={(p) => (
                   <button type="button" className="fmore__b" aria-label="More for this plan" {...p}>
                     <Icon icon={Ellipsis} size={20} />

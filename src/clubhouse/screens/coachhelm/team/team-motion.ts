@@ -44,4 +44,3 @@ export function useContentIn(root: RefObject<HTMLElement | null>, key: string, s
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the key alone
   }, [key]);
 }
-

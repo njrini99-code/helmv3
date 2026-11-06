@@ -49,6 +49,8 @@ export interface ChatContextChip {
 export interface UseCoachHelmChatOptions {
   /** Player Ask's route. Left out, today's. */
   endpoint?: string;
+  /** Quick chat's session says so: its card is the coach's Send. Left out, the Ask tab. */
+  surface?: 'ask' | 'quick_chat';
   conversationId?: string | null;
   /** Messages restored from durable history, already in UI part form. */
   initialMessages?: UIMessage[];
@@ -142,6 +144,7 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
             messages,
             conversation_id: conversationId,
             client_turn_id: turnKey.current,
+            ...(options.surface ? { surface: options.surface } : {}),
           },
         }),
       }),

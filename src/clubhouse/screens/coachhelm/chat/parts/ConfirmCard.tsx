@@ -15,7 +15,7 @@ import { Icon } from '../../../../ui/Icon';
 import { Switch } from '../../../../ui/Switch';
 import { useChReducedMotion } from '../../../../lib/reduced-motion';
 import { flyDraftHome } from '../ask-flight';
-import { LockPreview, QualDraft, WeekDraft } from './DraftVisual';
+import { DateTile, GoalDraft, LineupDraft, NoteDraft, TaskDraft, TripDraft, draftDate, LockPreview, QualDraft, WeekDraft } from './DraftVisual';
 
 const KIND: Record<string, { icon: LucideIcon; verb: (n: number) => string; busy: string; chip: string }> = {
   create_recurring_practice: { icon: CalendarPlus, verb: () => 'Add to calendar', busy: 'Adding…', chip: 'Added' },
@@ -37,8 +37,10 @@ const FLOWS: Record<string, { verb: string; busy: string; chip: string }> = {
   set_availability_note: { verb: 'Save note', busy: 'Saving…', chip: 'Saved' },
   create_recruit: { verb: 'Add recruit', busy: 'Adding…', chip: 'Added' },
 };
+FLOWS.create_drill = { verb: 'Add to drill bank', busy: 'Adding…', chip: 'Added' };
 FLOWS.publish_practice_plan = { verb: 'Publish', busy: 'Publishing…', chip: 'Published' };
 /** Where a confirmed draft lands (the page's `hs`): the screen and section, with this row on top. Its neighbours would need a read per screen, so only the new row draws. */
+const APP_ICON: Record<string, LucideIcon> = { Calendar: CalendarPlus, Messages: Megaphone, Hub: Flag, Qualifiers: Flag, Tournaments: Flag, Tasks: ClipboardCheck, Stats: Flag, Home: Flag, Rounds: StickyNote, Practice: ClipboardCheck };
 const LANDS: Record<string, { app: string; where: string }> = {
   create_event: { app: 'Calendar', where: 'Wednesday' },
   publish_practice_plan: { app: 'Documents', where: 'Practice plans' },
@@ -49,6 +51,7 @@ const LANDS: Record<string, { app: string; where: string }> = {
   create_qualifier: { app: 'Qualifiers', where: 'This season' },
   set_lineup: { app: 'Tournaments', where: 'Lineup' },
   create_task: { app: 'Tasks', where: 'To do' },
+  create_drill: { app: 'Practice', where: 'Drill bank' },
   create_goal: { app: 'Stats', where: 'Goals' },
   create_focus_area: { app: 'Home', where: 'Focus' },
   add_round_note: { app: 'Rounds', where: 'Coach notes' },
@@ -82,6 +85,7 @@ const UNDONE: Record<string, string> = {
   create_trip: 'Undone. The trip was removed.',
   create_qualifier: 'Undone. The qualifier was removed.',
   create_task: 'Undone. The task was removed.',
+  create_drill: 'Undone. The drill was removed.',
   create_goal: 'Undone. The goal was removed.',
   create_focus_area: 'Undone. The focus was removed.',
   add_round_note: 'Undone. Your earlier notes are back as they were.',
@@ -144,6 +148,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
   const rest = allFacts.filter((f) => !worked.includes(f));
   const facts = rest.length ? rest : allFacts;
   const visual = p.visual;
+  const date = p.publish ? null : draftDate(visual);
   const announcement = view.tool === 'create_team_announcement' || view.tool === 'create_announcement';
   return (
     <section ref={cardRef} className={'conf' + (p.publish ? ' is-pub' : '') + (landing && landed ? ' flash' : '') + (filling ? ' is-fill' : '')} style={filling ? { ['--ch-n' as string]: facts.length } : undefined} aria-label={p.action}>
@@ -179,7 +184,13 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
       )}
       {!cancelled && announcement && <LockPreview proposal={p} team={team} />}
       {!cancelled && visual?.kind === 'qual' && <QualDraft visual={visual} />}
-      <div className={'evd' + (cancelled ? ' dim' : '')}>
+      {!cancelled && visual?.kind === 'task' && <TaskDraft visual={visual} today={new Date().toISOString().slice(0, 10)} />}
+      {!cancelled && visual?.kind === 'goal' && <GoalDraft visual={visual} />}
+      {!cancelled && visual?.kind === 'note' && <NoteDraft visual={visual} />}
+      {!cancelled && visual?.kind === 'trip' && <TripDraft visual={visual} />}
+      {!cancelled && visual?.kind === 'lineup' && <LineupDraft visual={visual} />}
+      <div className={'evd' + (cancelled ? ' dim' : '') + (date ? ' has-dt' : '')}>
+        {date && <DateTile date={date} />}
         <div className="ls">
           {facts.map((f, i) =>
             p.publish && f.label === 'Tells' ? (
@@ -213,14 +224,34 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
       {!cancelled && visual?.kind !== 'cal' && LANDS[view.tool] && (
         <div className="ch-ak-hs">
           <div className="hs-h">
+            <span className="hi">
+              <Icon icon={APP_ICON[LANDS[view.tool]!.app] ?? ArrowUpRight} size={15} />
+            </span>
             <b>{LANDS[view.tool]!.app}</b>
             <span>{landsWhere(view.tool, visual)}</span>
             <small>Where it lands</small>
           </div>
           <div className={'hsr nw' + (receipt ? ' is-in' : '')}>
-            <b>{p.summary}</b>
-            <span>{receipt ? 'Just now' : 'Draft'}</span>
+            <span className="ri">
+              <Icon icon={HEAD[view.tool]?.icon ?? kind.icon} size={15} />
+            </span>
+            <span className="rx">
+              <b>{p.summary}</b>
+              <small>{receipt ? 'Just now' : 'Draft'}</small>
+            </span>
+            <span className="rt acc">New</span>
           </div>
+          {p.neighbours?.map((n) => (
+            <div key={n.title + n.sub} className="hsr">
+              <span className="ri">
+                <Icon icon={HEAD[view.tool]?.icon ?? kind.icon} size={15} />
+              </span>
+              <span className="rx">
+                <b>{n.title}</b>
+                <small>{n.sub}</small>
+              </span>
+            </div>
+          ))}
         </div>
       )}
       {undecided &&
@@ -420,13 +451,18 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
       </div>
       {delivered.length > 0 && (
         <p className={'told' + (watched.current ? ' is-live' : '')}>
-          {coins.length > 0 && coins.length === Math.max(...delivered.map((n) => n.recipients)) && (
+          {coins.length > 0 && (
             <span className="coins" aria-hidden="true">
-              {coins.map((name, i) => (
+              {coins.slice(0, 4).map((name, i) => (
                 <span key={name} className="coin" style={{ ['--ch-i' as string]: i }}>
                   <Avatar name={name} size="xs" />
                 </span>
               ))}
+              {coins.length > 4 && (
+                <span className="coin more ch-num" style={{ ['--ch-i' as string]: 4 }}>
+                  +{coins.length - 4}
+                </span>
+              )}
             </span>
           )}
           <span className="tx">

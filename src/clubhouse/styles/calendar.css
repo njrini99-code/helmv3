@@ -4433,3 +4433,8 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
     min-height: 44px;
   }
 }
+
+/* A practice's plan (N-00 4.17): the state on the left, the one action on the right. */
+.ch-in__sec.ch-in__plan { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
+.ch-in__plan-s { font: var(--ch-type-14-medium); color: var(--ch-text-secondary); }
+.ch-ev__warn.ch-ev__plan { background: none; box-shadow: none; color: var(--ch-text-tertiary); }

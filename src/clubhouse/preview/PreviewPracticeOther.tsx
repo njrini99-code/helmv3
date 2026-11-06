@@ -1,5 +1,8 @@
 'use client';
 
+import { CoachPlanBar, type ChPlanStatus } from '../screens/practice/CoachPlanBar';
+import { PlanRun } from '../screens/practice/PlanRun';
+import { PrintStudio, type PrintDrill } from '../screens/practice/PrintStudio';
 import { Button } from '../ui/Button';
 
 import { PracticePlanSheet } from '../screens/coachhelm/plan/sheet/PracticePlanSheet';
@@ -79,12 +82,38 @@ export function PreviewPracticePlayer({ state }: { state?: string }) {
           title: 'Thursday practice',
           when: '2:00 to 5:00 PM · Lakeside Golf Club',
           focus: 'Putts inside 6 feet and speed from long range. Finish under pressure.',
-          group: { name: 'B', mates: ['Eli', 'Owen'] },
+          group: { name: 'B', me: 'Jonah', mates: ['Eli', 'Owen'] },
           stops: STOPS.map(([time, place, line, mark]) => ({ time: time!, place: place!, line: line!, now: mark === 'now', next: mark === 'next' })),
-          documents: 'Team Hub › Practice plans',
+          documents: { label: 'Team Hub › Documents › Practice plans', href: '/clubhouse-preview/hub' },
           planHref: null,
         }}
       />
     </>
+  );
+}
+
+const PRINT_START = new Date('2026-11-05T19:00:00Z');
+const PRINT_DRILLS: PrintDrill[] = [
+  { name: 'Lag ladder, 20 to 40 ft', line: 'Putting · 20 min', area: 'putting', setup: 'Tees at 20, 30 and 40 feet, three balls from each.', goal: 'Leave every putt inside 3 feet.', scoring: [{ label: 'Inside the circle', points: 1 }, { label: 'Holed', points: 2 }], levels: 'Par 6 of 10  Birdie 8  Eagle 10' },
+  { name: 'Make 7 from 5 feet', line: 'Putting · 25 min', area: 'putting', diagram: 'gate', setup: 'Seven balls around the hole at 5 feet.', goal: 'Make all seven; a miss starts it over.' },
+];
+
+/** `coachhelm-practice-print?state=norotation|nodrills`: the print studio on the design's plan. */
+export function PreviewPracticePrint({ state }: { state?: string }) {
+  const body = state === 'norotation' ? { ...PP_PLAN_PART.draft.body, variants: { ...PP_PLAN_PART.draft.body.variants, main: { blocks: PP_PLAN_PART.draft.body.variants.main.blocks.filter((b) => b.kind !== 'stations') } } } : PP_PLAN_PART.draft.body;
+  const plan = toSheetModel({ body, why: PP_PLAN_PART.draft.why, title: PP_PLAN_PART.title, team: 'Demo University Golf', start: PRINT_START, end: new Date('2026-11-05T22:00:00Z'), zone: 'America/New_York', coaches: PP_COACHES, names: PP_NAMES, state: 'Published' }, 'coach');
+  return <PrintStudio plan={plan} drills={state === 'nodrills' ? [] : PRINT_DRILLS} draft={state === 'draft'} planHref="/clubhouse-preview/coachhelm-practice-plan" />;
+}
+
+/** `coachhelm-practice-run?state=draft|edited|down`: the coach's bar and, in its window, the Run card. */
+export function PreviewPracticeRun({ state }: { state?: string }) {
+  const status: ChPlanStatus = { planId: 'preview', title: PP_PLAN_PART.title, version: 3, status: state === 'draft' ? 'draft' : 'published', edited: state === 'edited', seen: state === 'draft' ? null : { names: ['Sofia', 'Maya', 'Lena', 'Eli', 'Jonah', 'Owen'], of: 9 } };
+  // Twenty minutes in, so the first rotation is under way however long the preview has been open.
+  const now = Date.now();
+  return (
+    <main className="ch-page ch-prc" data-ch="practice">
+      <CoachPlanBar status={status} />
+      {state !== 'draft' && <PlanRun planId="preview" title={status.title} version={status.version} body={PP_PLAN_PART.draft.body} start={new Date(now - 20 * 60_000)} zone="America/New_York" serverNow={now} />}
+    </main>
   );
 }

@@ -6,6 +6,7 @@ import { nowIso, unavailableEnvelope, type ToolEnvelope } from './provenance';
 import { practiceTables, type TeamDrillRow } from '@/lib/golf/practice-db';
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
 import { toClassDay } from '@/lib/golf/class-day-shape';
+import { LIBRARY_DRILL_KINDS } from '@/lib/coachhelm/v3/practice-plan/library-kinds';
 import { getShotPattern } from './shot-reads';
 
 type Sb = SupabaseClient<Database>;
@@ -28,9 +29,18 @@ export async function getDrillBank(sb: Sb, ctx: CoachChatContext, input: { categ
   if (input.category) q = q.eq('category', input.category);
   const lib = await q;
   if (lib.error) return unavailableEnvelope('Could not read the drill bank.', 'The library read failed.');
-  const drills = [...teamRows.map((d) => ({ ref: `team:${d.id}`, title: d.name, category: d.area, minutes: d.minutes, kind: d.kind })), ...(lib.data ?? []).map((d) => ({ ref: `lib:${d.id}`, title: d.title, category: d.category, minutes: d.duration_min }))];
+  const drills = [...teamRows.map((d) => ({ ref: `team:${d.id}`, title: d.name, category: d.area, minutes: d.minutes, kind: d.kind })), ...(lib.data ?? []).map((d) => ({ ref: `lib:${d.id}`, title: d.title, category: d.category, minutes: d.duration_min, kind: d.category ? LIBRARY_DRILL_KINDS[d.category]?.kind : undefined }))];
   if (!drills.length) return env('No drills in the bank yet.', { drills: [] }, 'empty');
   return env(`${drills.length} drills in the bank.`, { drills, ids: drills.map((d) => d.ref) });
+}
+
+/** The team's plan format: its sections' names and order. The sheet lays out to it; a draft's wording follows it. */
+export async function getPlanFormat(sb: Sb, ctx: CoachChatContext): Promise<ToolEnvelope> {
+  const { data, error } = await practiceTables(sb).from('golf_practice_plan_formats').select('name, sections').eq('team_id', ctx.team_id).maybeSingle();
+  if (error && !isPracticeMissing(error.code)) return unavailableEnvelope('Could not read the plan format.', 'The format read failed.');
+  if (!data) return env('No format set: plans use the standard sheet.', { sections: [] }, 'empty');
+  const format = data as { name: string; sections: Array<{ key: string; name: string }> };
+  return env(`Plans follow ${format.name}.`, { name: format.name, sections: format.sections });
 }
 
 export async function getTeamStrokesGained(sb: Sb, ctx: CoachChatContext, input: { rounds: number }): Promise<ToolEnvelope> {

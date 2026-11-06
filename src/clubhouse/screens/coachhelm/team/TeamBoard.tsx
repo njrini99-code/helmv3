@@ -1,12 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { boardPlayerCount, boardPlayerWords, courseReads, stationOrder, readsDrawn, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
+import { courseReads, stationOrder, readsDrawn, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
 import { formatSigned, windowWords } from '../../../lib/format';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
 import { Button } from '../../../ui/Button';
 import { useRouter } from 'next/navigation';
+import { useRefresh } from '../../../lib/use-refresh';
 import { CoachHelmHead } from '../CoachHelmHead';
 import { useChSessionState } from '../../../lib/session-state';
 import { plural } from '../../../lib/plural';
@@ -79,14 +80,13 @@ function Hero({
   const list = data.players.list;
   // The hole's figures are each player's season mean, averaged over the players at the shots floor (coachhelm-team-legs.ts):
   // said here because Home's team's game pools every player's last 10 and reads differently.
-  const counted = boardPlayerCount(data.stations);
   const figure = (
     <div className="hn">
       <b className="ch-num">{formatSigned(data.teamTotal.strokes)}</b>
       <span>
         a round {betterOrWorse(data.teamTotal.strokes, data.team.baselineLabel)}
         <br />
-        {windowWords('season', data.teamTotal.rounds)}{counted > 0 && ` · ${boardPlayerWords(counted)}`}
+        {windowWords('season', data.teamTotal.rounds)}
       </span>
     </div>
   );
@@ -168,7 +168,8 @@ function EmptySteps() {
 export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE_COACHHELM_WRITES, readOn = false, fileOn = false, initialOpen, initialAll = false, initialPlayer, initialInsight, initialStation, onRetry }: TeamBoardProps) {
   const router = useRouter();
   // Every failed part offers Try again; the route has no function to pass, so the board refreshes itself (FID-TEAM-1).
-  const retry = onRetry ?? (() => router.refresh());
+  const { refresh } = useRefresh();
+  const retry = onRetry ?? refresh;
   const phone = useChPhone();
   const sw = useViewSwitch<CoachHelmView>('board', (v) => COACHHELM_HREF[v], Object.keys(COACHHELM_HREF) as CoachHelmView[]);
   const leak = useMemo(() => stationOrder(data.stations)[0] ?? 'approach', [data.stations]);
@@ -187,7 +188,8 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
     };
   }, [data.storyRounds]);
   const [weekBrief, setWeekBrief] = useState<ChCoachBrief | null>(null);
-  const [storyAsk, setStoryAsk] = useState<string | null>(null);
+  // A new object each time, so asking for the same story again opens it again.
+  const [storyAsk, setStoryAsk] = useState<{ id: string } | null>(null);
   useEffect(() => {
     let live = true;
     void Promise.resolve(data.brief).then((b) => {
@@ -391,7 +393,7 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
                 open: () => {
                   if (phone) {
                     setOpen(null);
-                    setStoryAsk(from.id);
+                    setStoryAsk({ id: from.id });
                   } else setOpen({ kind: 'story', id: from.id, story: from, week: weekBrief?.week ?? 'This week' });
                 },
               }

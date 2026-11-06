@@ -5,6 +5,9 @@ import { Builder } from '../screens/practice/builder/Builder';
 import { emptyBody } from '../screens/practice/builder/builder-model';
 import { PlayerPracticeHome } from '../screens/practice/PlayerPracticeHome';
 import { PracticeHome } from '../screens/practice/PracticeHome';
+import { DrillPage, DrillsPage, GroupsPage, TemplatesPage } from '../screens/practice/LibraryPages';
+import { PLAN_STARTERS } from '../screens/practice/starters';
+import type { ChDrillRow } from '../data/practice-library-shape';
 import type { ChBuilderData, ChPlayerPracticeHome, ChPracticeHome, ChPracticeTile } from '../data/practice-home-shape';
 import { PP_COACHES, PP_NAMES } from './fixtures-practice-plan';
 import { PT_PLAN } from './fixtures-practice-thread';
@@ -113,4 +116,30 @@ export function PreviewPracticeBuilder({ state }: { state?: string }) {
     ],
   };
   return <Builder data={data} preview={{ ghosts: state === 'ghosts' || state === 'kept' ? PLAN : undefined, kept: state === 'kept', publish: state === 'publish', sheet: state === 'sheet' ? 'block' : undefined, stale: state === 'stale' }} />;
+}
+
+const LIB_TEAM: ChDrillRow[] = [
+  { id: 'd1', source: 'team', name: 'Clock drill, 3 to 5 ft', area: 'putting', areaLabel: 'Putting', kind: 'skill', minutes: 20, players: 'pairs', levels: 'Par 6 of 10 · Birdie 8 · Eagle 10' },
+  { id: 'd2', source: 'team', name: 'Make 7 from 5 feet', area: 'putting', areaLabel: 'Putting', kind: 'pressure', minutes: 25, players: 'solo', levels: null },
+  { id: 'd3', source: 'team', name: 'Up and down ladder', area: 'short_game', areaLabel: 'Short game', kind: 'random', minutes: 20, players: 'group', levels: null },
+];
+const LIB_GOLFHELM: ChDrillRow[] = [
+  { id: 'l1', source: 'lib', name: 'Gate drill, 4 feet', area: 'putting', areaLabel: 'Putting', kind: 'skill', minutes: 15, players: null, levels: null },
+  { id: 'l2', source: 'lib', name: 'Random nine', area: 'course', areaLabel: 'Course', kind: 'random', minutes: 45, players: null, levels: null },
+];
+const ROSTER = Object.entries(PP_NAMES).map(([id, name]) => ({ id, name }));
+
+/** `coachhelm-practice-library?tab=&state=`: Drills, one drill, Groups and Templates, with every press closed. */
+export function PreviewPracticeLibrary({ tab, state }: { tab?: string; state?: string }) {
+  if (tab === 'drill') {
+    const lib = state === 'library';
+    const row = lib ? LIB_GOLFHELM[0]! : LIB_TEAM[0]!;
+    return <DrillPage preview teamId="preview" drill={{ ...row, setup: 'Eight balls in a ring at 3 feet, then 5. Go round the clock.', goal: 'Make 8 of 10', equipment: lib ? [] : [{ item: 'Tees', qty: 8 }], scoring: [], tags: lib ? [] : ['Short putts'], mediaUrl: null, usedIn: lib ? null : 4, archived: false }} />;
+  }
+  if (tab === 'groups') {
+    const ids = ROSTER.map((r) => r.id);
+    return <GroupsPage preview teamId="preview" roster={ROSTER} groups={state === 'empty' ? [] : [{ id: 'g1', name: 'Travel squad', playerIds: ids.slice(0, 5), usedIn: 6 }, { id: 'g2', name: 'Freshmen', playerIds: ids.slice(4), usedIn: 2 }]} />;
+  }
+  if (tab === 'templates') return <TemplatesPage preview teamId="preview" templates={state === 'empty' ? [] : [{ id: 't1', name: 'Tuesday short game', kind: 'session', minutes: 150, body: PLAN_STARTERS[1]!.body }]} />;
+  return <DrillsPage preview teamId="preview" team={state === 'empty' ? [] : LIB_TEAM} library={state === 'empty' ? [] : LIB_GOLFHELM} />;
 }

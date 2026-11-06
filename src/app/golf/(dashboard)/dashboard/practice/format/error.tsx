@@ -1,23 +1,7 @@
 'use client';
 
-import { RouteErrorBoundary } from '@/components/errors';
+import { ClubhouseRouteError } from '@/clubhouse/shell/ClubhouseRouteError';
 
-export default function Error({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
-  return (
-    <RouteErrorBoundary
-      error={error}
-      reset={reset}
-      route="/golf/dashboard/practice/format"
-      component="PlanFormatPage"
-      title="Failed to load Plan format"
-      message="We couldn't load your plan format. Please try again."
-      homePath="/golf/dashboard/practice"
-    />
-  );
+export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  return <ClubhouseRouteError error={error} reset={reset} route="/golf/dashboard/practice/format" />;
 }

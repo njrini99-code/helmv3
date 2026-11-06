@@ -9,7 +9,6 @@ import { haptic } from '../../lib/haptics';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { Avatar } from '../../ui/Avatar';
 import { land, landed, taskIn, toldIn } from './task-motion';
-import type { TaskVisual } from '@/lib/coachhelm/v3/chat/action-types';
 import type { AskProposalView } from '../../data/coachhelm-chat-thread';
 import { EventVisual, MessageVisual, QualifierVisual } from './visuals/visuals';
 import { useQcSeam } from './qc-seam';
@@ -26,7 +25,7 @@ function useTyped(text: string, perSecond: number, on: boolean): string {
   return text.slice(0, n);
 }
 
-const WORDS: Record<TaskVisual['kind'], { icon: string; sub: string; chip: string; busy: string; done: string; failTitle: string }> = {
+const WORDS: Record<'cal' | 'msg' | 'qual', { icon: string; sub: string; chip: string; busy: string; done: string; failTitle: string }> = {
   cal: { icon: 'M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z', sub: 'Team calendar', chip: 'Added', busy: 'Adding…', done: 'Added to calendar', failTitle: 'Couldn’t add the practice' },
   msg: { icon: 'M21 12a8 8 0 0 1-11.8 7L4 20l1-5A8 8 0 1 1 21 12z', sub: 'Messages', chip: 'Sent', busy: 'Sending…', done: 'Sent', failTitle: 'Couldn’t send that' },
   qual: { icon: 'M6 21V4m0 0h11l-2 4 2 4H6', sub: 'Qualifiers', chip: 'Set', busy: 'Setting…', done: 'Qualifier set', failTitle: 'Couldn’t set the qualifier' },
@@ -66,7 +65,9 @@ const toldLine = (n: ReadonlyArray<{ channel: string; recipients: number; status
 
 /** S-TASK: the card, its visual, confirm, busy, receipt with the ring, told, undone, failed, cancelled. Every receipt value is the server's. */
 export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { view: AskProposalView; online: boolean; onSend: (t: string) => void; onApprove: (id: string) => void; onDeny: (id: string) => void; onOpen: (href: string) => void }) {
-  const visual = view.proposal.visual ?? null;
+  // Quick chat draws its three (S-TASK); any other flow's card is generic here, and its picture is Ask's.
+  const drawn = view.proposal.visual;
+  const visual = drawn?.kind === 'cal' || drawn?.kind === 'msg' || drawn?.kind === 'qual' ? drawn : null;
   const w = visual ? WORDS[visual.kind] : { icon: 'M5 12l5 5 9-11', sub: 'CoachHelm', chip: 'Done', busy: 'Working…', done: 'Done', failTitle: 'That didn’t go through' };
   const seam = useQcSeam();
   const [phase, setPhase] = useState<Phase>(() => (seam?.taskPhase === 'undone' ? { k: 'undone' } : phaseOf(view)));

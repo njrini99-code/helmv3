@@ -96,7 +96,7 @@ export function AskKnowsPanel({ knows, conversationId }: { knows: NonNullable<Ch
           }}
         >
           {/* eslint-disable-next-line jsx-a11y/no-autofocus -- the coach just pressed to add a line */}
-          <input autoFocus className="ch-input" aria-label="What CoachHelm should know" maxLength={280} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && setAdding(false)} />
+          <input autoFocus className="ch-input" aria-label="What CoachHelm should know" placeholder="We practice on Tuesdays" maxLength={280} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && setAdding(false)} />
           <span className="acts">
             <Button type="submit" variant="primary" size="sm" disabled={!text.trim()}>
               Save

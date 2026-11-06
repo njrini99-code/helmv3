@@ -7,6 +7,7 @@ import type { AskTurnRead } from '../../../../data/coachhelm-chat-thread';
 import { readBasis, readRows } from '../../../../data/coachhelm-chat-thread';
 import { rebuiltHref } from '../../../../shell/nav';
 import { Icon } from '../../../../ui/Icon';
+import { usePopoverFit } from '../../../../lib/use-popover-fit';
 
 /** Where a read's figures live: this player's Stats, or the team's. Null where Stats isn't rebuilt, and then no link is drawn. */
 export function readStatsHref(read: AskTurnRead): string | null {
@@ -20,6 +21,8 @@ export function ReadChip({ read, onSources }: { read: AskTurnRead; /** Opens thi
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement>(null);
   const pop = useRef<HTMLSpanElement>(null);
+  // ASK-6: beside its chip and inside the screen, flipping above when there's no room below.
+  const fit = usePopoverFit(pop, open);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -48,7 +51,7 @@ export function ReadChip({ read, onSources }: { read: AskTurnRead; /** Opens thi
       </button>
       {/* A chip sits inside the answer's paragraph, so every box in here is a span: a div or a list in a <p> is invalid HTML. */}
       {open && (
-        <span ref={pop} className="cpop" role="dialog" aria-label={read.name}>
+        <span ref={pop} className="cpop" role="dialog" aria-label={read.name} style={fit ? { left: fit.left, top: fit.top, maxHeight: fit.maxHeight } : undefined}>
           <b>{read.name}</b>
           <span className="rows">
             {rows.map((r) => (
