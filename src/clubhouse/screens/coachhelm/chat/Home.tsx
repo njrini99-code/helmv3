@@ -95,6 +95,10 @@ function Pills({ suggestions, onAsk }: { suggestions: ChAskSuggestion[]; onAsk: 
 const TAG: Record<ChAskSuggestion['id'], string> = { brief: 'Team', strokes: 'Strokes gained', trending: 'Season', week: 'Practice plan' };
 const DOT: Record<string, string> = { warn: 'is-warn', loss: 'is-warn', down: 'is-warn', gain: 'is-fine', up: 'is-fine' };
 const greeting = (hour: number) => (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening');
+/** The hour in the team's zone, so the server's render and the browser's say the same words. */
+export function zoneHour(iso: string, timezone: string): number {
+  return Number(new Intl.DateTimeFormat('en-US', { hour: 'numeric', hourCycle: 'h23', timeZone: timezone }).format(new Date(iso)));
+}
 
 /**
  * Ask v2's home (06 E-HOME): the greeting, what moved since Monday from the Board (each line asks about itself), and starter rows with their tag. A player reads their own focus and
@@ -103,7 +107,7 @@ const greeting = (hour: number) => (hour < 12 ? 'Good morning' : hour < 18 ? 'Go
 export function AskHomeV2({ data, phone, heroComposer, onAsk, focus }: { data: ChAskData; phone: boolean; heroComposer: ReactNode; onAsk: (text: string) => void; focus?: ReadonlyArray<{ text: string; ask: string | null }> }) {
   const player = data.role === 'player';
   const findings = data.pulse?.findings ?? [];
-  const hour = new Date(data.nowIso).getHours();
+  const hour = zoneHour(data.nowIso, data.timezone);
   return (
     <div className={'ch-ak-home' + (phone ? ' is-phone' : '')} data-ch="ask-home">
       <div className="hi">
