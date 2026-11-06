@@ -3,16 +3,20 @@ import type { PlanSheetModel } from './plan-sheet-model';
 const Gd = ({ letter }: { letter: string }) => <i className={`gd g-${letter}`}>{letter}</i>;
 
 /** The one printed plan: Ask's pane, the phone's full plan, the plan page, Documents, the PDF. The coach's Why lines are drawn only when the model has them. */
-export function PracticePlanSheet({ plan, density = 'phone' }: { plan: PlanSheetModel; density?: 'pane' | 'phone' | 'print' }) {
+export function PracticePlanSheet({ plan, density = 'phone', part = 'all', draft = false }: { plan: PlanSheetModel; density?: 'pane' | 'phone' | 'print'; part?: 'all' | 'schedule' | 'rest'; draft?: boolean }) {
+  const first = part !== 'rest';
+  const last = part !== 'schedule';
   return (
-    <article className="ch-cp-sheet" data-density={density} data-copy={plan.copy}>
+    <article className="ch-cp-sheet" data-density={density} data-copy={plan.copy} data-part={part === 'all' ? undefined : part}>
+      {first && (
+        <>
       <header className="pp-top">
         <span className="pp-mark" aria-hidden="true">
           {plan.mark}
         </span>
         <span className="pp-org">
           <b>{plan.team}</b>
-          <span>Practice plan · {plan.copy === 'coach' ? 'Coach copy' : 'Player copy'}</span>
+          <span>Practice plan · {plan.copy === 'coach' ? 'Coach copy' : 'Player copy'}{draft ? ' · Draft' : ''}</span>
         </span>
         <span className="pp-date">
           <span>{plan.dayWord}</span>
@@ -102,6 +106,10 @@ export function PracticePlanSheet({ plan, density = 'phone' }: { plan: PlanSheet
           ))}
         </div>
       </section>
+        </>
+      )}
+      {last && (
+        <>
       <div className="pp-two">
         {plan.bring.length > 0 && (
           <section>
@@ -117,17 +125,20 @@ export function PracticePlanSheet({ plan, density = 'phone' }: { plan: PlanSheet
           <h3 className="pp-h">Notes</h3>
           {plan.notes ? <p className="pp-focus">{plan.notes}</p> : (
             <div className="pp-lines" aria-hidden="true">
-              <i />
-              <i />
-              <i />
-              <i />
+              {Array.from({ length: part === 'rest' ? 6 : 4 }, (_, i) => (
+                <i key={i} />
+              ))}
             </div>
           )}
         </section>
       </div>
+      {part === 'all' && (
       <footer className="pp-foot">
         <span>{plan.foot}</span>
       </footer>
+      )}
+        </>
+      )}
     </article>
   );
 }

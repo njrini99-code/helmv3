@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { PP_COACHES, PP_NAMES, PP_PLAN_PART } from '../../../preview/fixtures-practice-plan';
 import { toSheetModel } from '../../coachhelm/plan/sheet/plan-sheet-model';
-import { PrintStudio } from '../PrintStudio';
+import { PrintStudio, qrSvg } from '../PrintStudio';
 
 const print = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
@@ -22,7 +22,7 @@ describe('PrintStudio', () => {
     expect(screen.getByRole('switch', { name: 'Coach copy' })).toHaveProperty('checked', true);
     expect(screen.getByRole('switch', { name: 'Range board' })).toHaveProperty('checked', true);
     expect(screen.getByRole('switch', { name: 'Pocket cards' })).toHaveProperty('checked', false);
-    expect(screen.getAllByText(/Range board$/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/^Range board · Page/).length).toBeGreaterThan(0);
   });
   it('offers no board for a plan with no rotation, and no appendix with no drills', () => {
     render(<PrintStudio plan={model(false)} drills={[]} planHref="/x" />);
@@ -35,7 +35,20 @@ describe('PrintStudio', () => {
     fireEvent.click(screen.getByRole('switch', { name: 'Pocket cards' }));
     expect(container.querySelectorAll('.ch-prt-card').length).toBe(model(true).groups.length);
     fireEvent.click(screen.getByRole('switch', { name: 'Drills appendix' }));
-    expect(container.querySelector('.ch-prt-cols h3')?.textContent).toBe('Lag ladder');
+    expect(container.querySelector('.ch-prt-drills h3')?.textContent).toBe('Lag ladder');
+  });
+  it('numbers the sheets across the pieces, coach copy two pages', () => {
+    const { container } = render(<PrintStudio plan={model(true)} drills={drills} planHref="/x" />);
+    const caps = [...container.querySelectorAll('figcaption')].map((c) => c.textContent);
+    expect(caps[0]).toBe('Coach copy · Page 1 of 3');
+    expect(caps[2]).toBe('Range board · Page 3 of 3');
+  });
+  it('puts Draft on a draft', () => {
+    render(<PrintStudio plan={model(true)} drills={drills} planHref="/x" draft />);
+    expect(screen.getAllByText(/Draft/).length).toBeGreaterThan(0);
+  });
+  it('makes a code that can be scanned', () => {
+    expect(qrSvg('https://example.test/golf/dashboard/practice/plan/p1')).toContain('<svg');
   });
   it('has nothing to print with every switch off', () => {
     render(<PrintStudio plan={model(false)} drills={[]} planHref="/x" />);

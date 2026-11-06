@@ -94,15 +94,15 @@ export function PreviewPracticePlayer({ state }: { state?: string }) {
 
 const PRINT_START = new Date('2026-11-05T19:00:00Z');
 const PRINT_DRILLS: PrintDrill[] = [
-  { name: 'Lag ladder, 20 to 40 ft', line: 'Putting · 20 min', setup: 'Tees at 20, 30 and 40 feet, three balls from each.', goal: 'Leave every putt inside 3 feet.' },
-  { name: 'Make 7 from 5 feet', line: 'Putting · 25 min', setup: 'Seven balls around the hole at 5 feet.', goal: 'Make all seven; a miss starts it over.' },
+  { name: 'Lag ladder, 20 to 40 ft', line: 'Putting · 20 min', area: 'putting', setup: 'Tees at 20, 30 and 40 feet, three balls from each.', goal: 'Leave every putt inside 3 feet.', scoring: [{ label: 'Inside the circle', points: 1 }, { label: 'Holed', points: 2 }], levels: 'Par 6 of 10  Birdie 8  Eagle 10' },
+  { name: 'Make 7 from 5 feet', line: 'Putting · 25 min', area: 'putting', diagram: 'gate', setup: 'Seven balls around the hole at 5 feet.', goal: 'Make all seven; a miss starts it over.' },
 ];
 
 /** `coachhelm-practice-print?state=norotation|nodrills`: the print studio on the design's plan. */
 export function PreviewPracticePrint({ state }: { state?: string }) {
   const body = state === 'norotation' ? { ...PP_PLAN_PART.draft.body, variants: { ...PP_PLAN_PART.draft.body.variants, main: { blocks: PP_PLAN_PART.draft.body.variants.main.blocks.filter((b) => b.kind !== 'stations') } } } : PP_PLAN_PART.draft.body;
   const plan = toSheetModel({ body, why: PP_PLAN_PART.draft.why, title: PP_PLAN_PART.title, team: 'Demo University Golf', start: PRINT_START, end: new Date('2026-11-05T22:00:00Z'), zone: 'America/New_York', coaches: PP_COACHES, names: PP_NAMES, state: 'Published' }, 'coach');
-  return <PrintStudio plan={plan} drills={state === 'nodrills' ? [] : PRINT_DRILLS} planHref="/clubhouse-preview/coachhelm-practice-plan" />;
+  return <PrintStudio plan={plan} drills={state === 'nodrills' ? [] : PRINT_DRILLS} draft={state === 'draft'} planHref="/clubhouse-preview/coachhelm-practice-plan" />;
 }
 
 /** `coachhelm-practice-run?state=draft|edited|down`: the coach's bar and, in its window, the Run card. */

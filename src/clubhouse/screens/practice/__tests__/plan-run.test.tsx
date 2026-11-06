@@ -54,8 +54,9 @@ describe('PlanRun', () => {
   });
   it('says where each group is now and next', () => {
     render(<PlanRun {...props} start={new Date(now - 35 * MIN)} />);
-    expect(screen.getAllByText(/^Now: /).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/^Next: /).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/^Now, until /).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/^Next, /).length).toBeGreaterThan(0);
+    expect(screen.getByText(/^Rotate in \d+ min$/)).toBeTruthy(); // 35 minutes in: the putting rotation
   });
   it('saves and republishes in one step, quietly unless the coach says to tell players', async () => {
     render(<PlanRun {...props} start={new Date(now - 35 * MIN)} />);

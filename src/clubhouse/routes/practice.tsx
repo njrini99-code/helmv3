@@ -139,7 +139,7 @@ export async function PracticePrintRoute({ planId }: { planId: string }) {
       </main>
     );
   }
-  return <PrintStudio plan={load.plan} drills={drills} planHref={`/golf/dashboard/practice/plan/${planId}`} />;
+  return <PrintStudio plan={load.plan} drills={drills} draft={load.coach?.status.status === 'draft'} planHref={`/golf/dashboard/practice/plan/${planId}`} />;
 }
 
 /** The builder, a coach's. A player on this address gets their own plan page's address; nothing of a draft reaches them. */

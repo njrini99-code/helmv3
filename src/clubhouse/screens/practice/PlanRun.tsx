@@ -60,8 +60,13 @@ export function PlanRun({ planId, title, version, body, start, zone, serverNow }
   const rows = (groups.length ? groups : [{ id: 'all', name: 'Everyone', players: body.players.slice(0, 1) }]).map((g) => {
     const stops = g.players[0] ? pathFor(body, g.players[0], start) : [];
     const at = stops.findIndex((s) => now < s.end.getTime());
-    return { id: g.id, name: g.name, now: at >= 0 ? stops[at] : null, next: at >= 0 ? stops[at + 1] : null };
+    return { id: g.id, letter: groups.length ? 'ABCDEF'[body.groups.indexOf(g as (typeof body.groups)[number])] : null, name: g.name, now: at >= 0 ? stops[at] : null, next: at >= 0 ? stops[at + 1] : null };
   });
+  const blocks = body.variants.main.blocks;
+  const index = currentBlockIndex(body, start, now);
+  const startsAt = start.getTime() + blocks.slice(0, index).reduce((n, b) => n + b.len, 0) * 60_000;
+  const nextEnd = Math.min(...rows.flatMap((r) => (r.now ? [r.now.end.getTime()] : [])));
+  const inMin = Number.isFinite(nextEnd) ? Math.max(1, Math.ceil((nextEnd - now) / 60_000)) : null;
   const move = async () => {
     if (!moving) return;
     setBusy(true);
@@ -80,12 +85,32 @@ export function PlanRun({ planId, title, version, body, start, zone, serverNow }
   };
   return (
     <section className="ch-prc-run" aria-label="Run practice">
+      <header className="ch-prc-run__h">
+        <h2>Now</h2>
+        {inMin !== null && now >= start.getTime() && <span className="ch-num">{blocks[index]?.kind === 'stations' ? 'Rotate' : 'Next'} in {inMin} min</span>}
+      </header>
+      <div className="ch-prc-run__now">
+        <b>{blocks[index]?.title}</b>
+        <span className="ch-num">
+          {clock(new Date(startsAt))} to {clock(new Date(startsAt + (blocks[index]?.len ?? 0) * 60_000))}
+        </span>
+      </div>
       <ul>
         {rows.map((r) => (
           <li key={r.id}>
-            <b>{r.name}</b>
-            <span>{r.now ? `Now: ${r.now.place}, until ${clock(r.now.end)}` : 'Done'}</span>
-            {r.next && <small>Next: {r.next.place}, {clock(r.next.start)}</small>}
+            {r.letter ? <i className={`ch-prc-run__g g-${r.letter}`} aria-label={`Group ${r.letter}`}>{r.letter}</i> : <span />}
+            <span>
+              <b>{r.now?.place ?? 'Done'}</b>
+              {r.now && <small className="ch-num">Now, until {clock(r.now.end)}</small>}
+            </span>
+            <span>
+              {r.next && (
+                <>
+                  <b>{r.next.place}</b>
+                  <small className="ch-num">Next, {clock(r.next.start)}</small>
+                </>
+              )}
+            </span>
           </li>
         ))}
       </ul>

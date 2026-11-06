@@ -7,6 +7,7 @@ import { isPracticeMissing } from '@/lib/golf/practice-errors';
 import { toSheetModel, type PlanSheetModel } from '../screens/coachhelm/plan/sheet/plan-sheet-model';
 import type { PlayerPracticeData } from '../screens/coachhelm/plan/player/PlayerPractice';
 import type { ChPlanStatus } from '../screens/practice/CoachPlanBar';
+import type { PrintDrill } from '../screens/practice/PrintStudio';
 
 /** What a coach's plan page draws around the sheet. */
 export interface CoachPlanExtras {
@@ -113,7 +114,7 @@ export async function loadPlayerPractice(planId: string, playerId: string, now: 
 }
 
 /** The print studio's extra read: the plan's drills, by the refs in its body. A failed read prints without the appendix. */
-export async function loadPlanDrills(planId: string): Promise<Array<{ name: string; line: string; setup: string; goal: string }>> {
+export async function loadPlanDrills(planId: string): Promise<PrintDrill[]> {
   const sb = await createClient();
   const db = practiceTables(sb);
   const { data } = await db.from('golf_practice_plans').select('body').eq('id', planId).maybeSingle();
@@ -123,11 +124,20 @@ export async function loadPlanDrills(planId: string): Promise<Array<{ name: stri
   const teamIds = [...new Set(refs.filter((r) => r.src === 'team').map((r) => r.id))];
   const libIds = [...new Set(refs.filter((r) => r.src === 'lib').map((r) => r.id))];
   const [team, lib] = await Promise.all([
-    teamIds.length ? db.from('golf_team_drills').select('name, area, minutes, setup, goal').in('id', teamIds) : Promise.resolve({ data: [] }),
+    teamIds.length ? db.from('golf_team_drills').select('name, area, minutes, setup, goal, diagram, scoring, levels').in('id', teamIds) : Promise.resolve({ data: [] }),
     libIds.length ? sb.from('golf_drills').select('title, category, duration_min, description').in('id', libIds) : Promise.resolve({ data: [] }),
   ]);
   return [
-    ...(((team.data ?? []) as Array<{ name: string; area: string; minutes: number; setup: string; goal: string }>).map((d) => ({ name: d.name, line: `${d.area.replace('_', ' ')} · ${d.minutes} min`, setup: d.setup, goal: d.goal }))),
+    ...(((team.data ?? []) as Array<{ name: string; area: string; minutes: number; setup: string; goal: string; diagram: PrintDrill['diagram']; scoring: PrintDrill['scoring'] | null; levels: { par?: string; birdie?: string; eagle?: string } | null }>).map((d) => ({
+      name: d.name,
+      line: `${d.area.replace('_', ' ')} · ${d.minutes} min`,
+      setup: d.setup,
+      goal: d.goal,
+      area: d.area,
+      diagram: d.diagram,
+      scoring: d.scoring ?? [],
+      levels: [d.levels?.par ? `Par ${d.levels.par}` : null, d.levels?.birdie ? `Birdie ${d.levels.birdie}` : null, d.levels?.eagle ? `Eagle ${d.levels.eagle}` : null].filter(Boolean).join('  ') || null,
+    }))),
     ...(((lib.data ?? []) as Array<{ title: string; category: string | null; duration_min: number | null; description: string | null }>).map((d) => ({ name: d.title, line: [d.category?.replace('_', ' '), d.duration_min ? `${d.duration_min} min` : null].filter(Boolean).join(' · '), setup: d.description ?? '', goal: '' }))),
   ];
 }

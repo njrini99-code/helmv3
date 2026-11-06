@@ -100,7 +100,8 @@
 
 /* The plan in Ask, as drawn (practice-plan 06 S-ASK.plan-card to S-ASK.saved). Scoped to the card and its sheets; values snapped to the scale, listed in the PR. */
 .ch-cpv,
-.ch-cpv-full {
+.ch-cpv-full,
+.ch-prc-run {
   --ch-pl-cpv-track: #ebe5d8;
   --ch-pl-cpv-skill: #3d6787;
   --ch-pl-cpv-random: #6e5487;
@@ -119,7 +120,8 @@
   min-width: 0;
 }
 html[data-fw-theme='dark'] .ch-cpv,
-html[data-fw-theme='dark'] .ch-cpv-full {
+html[data-fw-theme='dark'] .ch-cpv-full,
+html[data-fw-theme='dark'] .ch-prc-run {
   --ch-pl-cpv-track: #2c322d;
   --ch-pl-cpv-skill: #6e9bc0;
   --ch-pl-cpv-random: #b49acb;
