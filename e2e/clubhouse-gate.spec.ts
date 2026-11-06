@@ -30,6 +30,8 @@ async function scan(page: Page, url: string, tap: string | undefined, theme: str
   await page.evaluate(() => document.fonts.ready);
   // Not every lane's screen has a <main> yet (PP-3), so wait for the app rather than for a landmark.
   await expect(page.locator('[data-ui="clubhouse"]').first()).toBeVisible();
+  // Past hydration: a phone's first frame can be the desk's tree until the client reads the width.
+  await page.waitForLoadState('networkidle').catch(() => {});
   await page.waitForTimeout(250);
   // Land every entrance now (TEAM-33's fly-in holds marks at opacity 0 for 2 seconds); loops have no end and are left running.
   await page.evaluate(() => { for (const a of document.getAnimations()) { if (a.effect?.getComputedTiming().iterations !== Infinity) a.finish(); } });
