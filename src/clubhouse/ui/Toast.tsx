@@ -22,6 +22,8 @@ interface ToastItem {
 }
 
 export interface ToastInput {
+  /** How long it stays before it leaves, when an Undo window needs a set length (the 8 second publish hold). */
+  holdMs?: number;
   title: string;
   tone?: ToastItem['tone'];
   body?: string;
@@ -199,7 +201,7 @@ export function ToastProvider({ children, scope = '' }: { children: ReactNode; s
     dismiss(id);
   }, [expiries, dismiss]);
   const show = useCallback<ShowToast>(
-    ({ title, tone = 'done', body, action, code, signal, replace, onExpire }) => {
+    ({ title, tone = 'done', body, action, code, signal, replace, onExpire, holdMs }) => {
       // Async feedback from a prior team never repopulates the new team's stack.
       if (scoped !== currentScope.current || signal?.aborted) return;
       const replaced = replace == null ? undefined : keys.get(replace);
@@ -210,7 +212,7 @@ export function ToastProvider({ children, scope = '' }: { children: ReactNode; s
       if (onExpire) expiries.set(id, onExpire);
       if (replace != null) keys.set(replace, id);
       const abort = () => dismiss(id);
-      const clock: ToastClock = { left: pillOn && tone === 'done' ? PILL_DONE_MS : DISMISS_MS[tone], since: Date.now(), timer: window.setTimeout(() => dismiss(id), DISMISS_MS[tone]), held: false };
+      const clock: ToastClock = { left: holdMs ?? (pillOn && tone === 'done' ? PILL_DONE_MS : DISMISS_MS[tone]), since: Date.now(), timer: window.setTimeout(() => dismiss(id), holdMs ?? DISMISS_MS[tone]), held: false };
       clocks.set(id, clock);
       signal?.addEventListener('abort', abort, { once: true });
       lifetimes.set(id, () => {

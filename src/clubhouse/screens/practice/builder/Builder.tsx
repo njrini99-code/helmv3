@@ -50,6 +50,9 @@ type HelperState = { k: 'idle' } | { k: 'running'; request: string } | { k: 'gho
  * inspector with a CoachHelm tab; on a phone: one column with a sheet per block. CoachHelm's suggestions wait beside the plan as outlined drafts with Keep, Swap and Remove, and
  * nothing joins it until kept. Coach only: the route never hands this to a player.
  */
+/** A publish waits this long with an Undo before anything is written or sent, as Ask's does. */
+const PUBLISH_HOLD_MS = 8000;
+
 export function Builder({ data, autoFill = false, preview }: { data: ChBuilderData; autoFill?: boolean; preview?: BuilderPreview }) {
   const router = useRouter();
   const phone = useChPhone();
@@ -224,17 +227,34 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
     setPublishError(null);
     try {
       const expectedVersion = await save.flush();
+      setConfirm(false);
+      // The 8 second hold: nothing is written or sent until it runs out, so Undo, or closing the page, leaves the draft as it was.
+      toast({
+        title: `${publishLabel === 'Publish' ? 'Publishing' : 'Republishing'} in 8 seconds`,
+        body: `${peopleLine} hear when it goes.`,
+        holdMs: PUBLISH_HOLD_MS,
+        action: { label: 'Undo', run: () => toast({ title: 'Not published. Nobody was told.' }) },
+        onExpire: () => void commitPublish(expectedVersion),
+      });
+    } catch {
+      setPublishError('Couldn’t publish the plan. Nothing was sent.');
+    } finally {
+      setPublishing(false);
+    }
+  };
+  const commitPublish = async (expectedVersion: number) => {
+    try {
       const res = await publishPracticePlan({ planId: data.planId, expectedVersion, notify: 'now' });
       if (!res.success) {
         setPublishError(res.stale ? 'Another coach changed this plan. Load the latest, then publish.' : res.error);
+        setConfirm(true);
         return;
       }
       toast({ title: 'Published', body: `${plural(res.recipients, 'person', 'people')} told`, code: 'CH-13081' });
       router.push(`/golf/dashboard/practice/plan/${data.planId}`);
     } catch {
       setPublishError('Couldn’t publish the plan. Nothing was sent.');
-    } finally {
-      setPublishing(false);
+      setConfirm(true);
     }
   };
   const doDelete = async () => {
