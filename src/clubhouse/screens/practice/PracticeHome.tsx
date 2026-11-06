@@ -2,7 +2,7 @@
 
 import { ChevronRight, Plus } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ChPracticeHome, ChPracticeRow, ChPracticeState, ChPracticeTile } from '../../data/practice-home-shape';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
@@ -21,8 +21,15 @@ export function StateChip({ state }: { state: ChPracticeState }) {
 
 /** This week: seven tiles, Monday to Sunday in the team's zone. A tile with a plan opens it; one without starts New plan on that practice. */
 export function WeekStrip({ week, onPlan }: { week: ChPracticeTile[]; onPlan?: (eventId: string) => void }) {
+  const strip = useRef<HTMLDivElement>(null);
+  // A phone's strip scrolls: today starts in view, without moving the page.
+  useEffect(() => {
+    const box = strip.current;
+    const today = box?.querySelector<HTMLElement>('.is-today');
+    if (box && today && box.scrollWidth > box.clientWidth) box.scrollLeft = Math.max(0, today.offsetLeft - box.offsetLeft - 16);
+  }, []);
   return (
-    <div className="ch-prc-week" role="list" aria-label="This week">
+    <div ref={strip} className="ch-prc-week" role="list" aria-label="This week">
       {week.map((t) => (
         <div key={t.key} role="listitem" className={'ch-prc-tile' + (t.today ? ' is-today' : '')}>
           <span className="ch-prc-tile__d ch-num">
@@ -111,7 +118,7 @@ export function PracticeHome({ data, askOn, openNew = false, previewSheet = fals
       </section>
 
       {data.firstRun ? (
-        <section className="ch-prc-card ch-prc-first" data-ch-code="CH-17301">
+        <section className="ch-prc-card ch-prc-first" data-ch-code="CH-13396">
           <h2>Plan your first practice</h2>
           <p>Add blocks yourself{askOn ? ', or let CoachHelm draft it from your team’s data' : ''}. Players see it when you publish.</p>
           {data.open.length ? (
@@ -155,7 +162,7 @@ export function PracticeHome({ data, askOn, openNew = false, previewSheet = fals
               </div>
             </section>
           ) : (
-            <EmptyState shape="week" title="No practices this week" body="Add one on the calendar, then plan it here." action={<Button href="/golf/dashboard/calendar">Go to Calendar</Button>} code="CH-17301" />
+            <EmptyState shape="week" title="No practices this week" body="Add one on the calendar, then plan it here." action={<Button href="/golf/dashboard/calendar">Go to Calendar</Button>} code="CH-13396" />
           )}
           {data.drafts.length > 0 && (
             <section className="ch-prc-sec" aria-labelledby="ch-prc-drafts">

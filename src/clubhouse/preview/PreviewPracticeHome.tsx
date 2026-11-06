@@ -6,7 +6,8 @@ import { emptyBody } from '../screens/practice/builder/builder-model';
 import { PlayerPracticeHome } from '../screens/practice/PlayerPracticeHome';
 import { PracticeHome } from '../screens/practice/PracticeHome';
 import type { ChBuilderData, ChPlayerPracticeHome, ChPracticeHome, ChPracticeTile } from '../data/practice-home-shape';
-import { PP_COACHES, PP_NAMES, PP_PLAN_PART } from './fixtures-practice-plan';
+import { PP_COACHES, PP_NAMES } from './fixtures-practice-plan';
+import { PT_PLAN } from './fixtures-practice-thread';
 
 const WEEK: ChPracticeTile[] = [
   { key: '2026-11-02', day: 'Mon', date: '2', today: false, items: [] },
@@ -78,7 +79,7 @@ const DRILLS: ChBuilderData['drills'] = [
   { ref: 'lib:4', name: 'Gate drill, 4 feet', area: 'Putting', kind: 'skill', minutes: 15, source: 'GolfHelm' },
   { ref: 'lib:5', name: 'Up and down ladder', area: 'Short game', kind: 'random', minutes: 20, source: 'GolfHelm' },
 ];
-const PLAN = PP_PLAN_PART as unknown as PlanPartData;
+const PLAN: PlanPartData = PT_PLAN;
 
 /** `coachhelm-practice-builder?state=`: the builder, with its save, publish and helper seams closed. */
 export function PreviewPracticeBuilder({ state }: { state?: string }) {

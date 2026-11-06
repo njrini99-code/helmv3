@@ -39,7 +39,7 @@ export async function PracticeHomeRoute({ newPlan }: { newPlan?: boolean }) {
   if (!team) {
     return (
       <main className="ch-page" data-ch="practice">
-        <NoTeam code="CH-17300" coach={session.role !== 'player'} body="Once you’re on a team, practice plans show here." />
+        <NoTeam code="CH-13395" coach={session.role !== 'player'} body="Once you’re on a team, practice plans show here." />
       </main>
     );
   }
@@ -64,7 +64,7 @@ export async function PracticeBuilderRoute({ planId, fill }: { planId: string; f
   if (load.status === 'unavailable') return OFF;
   if (load.status !== 'ready') {
     return (
-      <main className="ch-page" data-ch="practice-plan">
+      <main className="ch-page ch-prc-planpage" data-ch="practice-plan">
         <EmptyState size="page" title="This plan isn’t available" body="It may have been removed." action={<Button href="/golf/dashboard/practice">Go to Practice</Button>} />
       </main>
     );
@@ -80,7 +80,7 @@ export async function PracticePlanRoute({ planId }: { planId: string }) {
   const load = player ? await loadPlayerPlan(planId, player.id) : await loadCoachPlan(planId);
   if (load.status !== 'ready') {
     return (
-      <main className="ch-page" data-ch="practice-plan">
+      <main className="ch-page ch-prc-planpage" data-ch="practice-plan">
         <EmptyState size="page" title="This plan isn’t available" body="It may have been removed, or it isn’t published yet." action={<Button href="/golf/dashboard/calendar">Go to Calendar</Button>} />
       </main>
     );
@@ -90,7 +90,7 @@ export async function PracticePlanRoute({ planId }: { planId: string }) {
     if (practice.status === 'ready') return <PlayerPractice data={practice.data} planId={planId} everyone={<PracticePlanSheet plan={load.plan} />} />;
   }
   return (
-    <main className="ch-page" data-ch="practice-plan">
+    <main className="ch-page ch-prc-planpage" data-ch="practice-plan">
       <PlanPageActions plan={load.plan} playerPlanId={player ? planId : null} editHref={player ? null : `/golf/dashboard/practice/plan/${planId}/edit`} />
       <PracticePlanSheet plan={load.plan} />
     </main>

@@ -144,7 +144,7 @@ export interface DrillSlot {
   head: string;
   sub: string;
   drill: DrillRef | null;
-  /** The minutes this slot has, for "Drill runs 25 min; turn is 20" (CH-17108). */
+  /** The minutes this slot has, for "Drill runs 25 min; turn is 20" (CH-13180). */
   minutes: number;
 }
 export function drillSlots(body: PlanBodyV2): DrillSlot[] {
