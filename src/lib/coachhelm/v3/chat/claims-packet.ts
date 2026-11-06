@@ -224,9 +224,14 @@ function causeSide(sentence: string): string {
   return before ? sentence.slice(0, before.index) : sentence;
 }
 
-/** What a read can say about itself or a calendar: why a figure is missing or thin, or why a day doesn't work. Not a claim about anyone's play. */
+/** What a read can say about itself: why a figure is missing or thin. Not a claim about anyone's play. */
 const DATA_CAUSE =
-  /\b(?:flag(?:s|ged)?|incomplete|excluded|left out|leaves? out|not counted|(?:doesn|don)['’]?t count|no data|no recorded|no rounds|not recorded|not logged|(?:hasn|haven)['’]?t logged|(?:isn|aren)['’]?t available|not available|unavailable|too few|sample size|the (?:tool|read|window|sample|cache)|9-hole|nine-hole|total only|class|exams?|schedule|calendar|conflict|rsvps?|weather|rain)\b/i;
+  /\b(?:flag(?:s|ged)?|incomplete|excluded|left out|leaves? out|not counted|(?:doesn|don)['’]?t count|no data|no recorded|no rounds|not recorded|not logged|(?:hasn|haven)['’]?t logged|(?:isn|aren)['’]?t available|not available|unavailable|too few|sample size|the (?:tool|read|window|sample|cache)|9-hole|nine-hole|total only)\b/i;
+/** Why a day doesn't work or an event moved. A reason for a decision, never for how someone played: nothing here measured that. */
+const CALENDAR_CAUSE = /\b(?:class|exams?|schedule|calendar|conflict|rsvps?|weather|rain)\b/i;
+/** A sentence saying how someone's play went, which a calendar word can't explain. */
+const PLAY_OUTCOME =
+  /\b(?:scor\w*|shot|averag\w*|strokes?|putt\w*|swing|tempo|confidence|form|played|(?:got|getting|gets) (?:worse|better)|struggl\w*|improv\w*|slump\w*|fell|falling|drop\w*|rose|rising|declin\w*|slipp\w*|losing|gaining|lost|gained)\b/i;
 /** A sentence about this answer's limits ("I can't give you that because..."). "I think..." is not one. */
 const ANSWER_LIMIT = /^\s*(?:i|we)\s+(?:can['’]?t|cannot|couldn['’]?t|don['’]?t have|didn['’]?t|left|used|won['’]?t|am not)\b|^\s*i['’]m not\b/i;
 /** A measured part of the game: a cause that names one with its figure is arithmetic on the evidence, and the audit checks the figure. */
@@ -250,6 +255,7 @@ export function unbackedCausalSentences(prose: string, measurements: readonly Me
     if (!CAUSAL_LANGUAGE_RE.test(sentence)) return false;
     const cause = causeSide(sentence);
     if (ANSWER_LIMIT.test(sentence) || DATA_CAUSE.test(cause)) return false;
+    if (CALENDAR_CAUSE.test(cause)) return PLAY_OUTCOME.test(sentence);
     // A bare count ("over the last 3 rounds") is the window, not a measured cause.
     const figures = cause.replace(/\b\d+\s+(?:[a-z'’-]+\s+){0,2}rounds?\b/gi, ' ');
     if (/\d/.test(figures) && MEASURED_CUE.test(cause)) return false;
