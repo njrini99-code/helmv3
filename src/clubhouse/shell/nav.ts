@@ -10,6 +10,7 @@ import {
   Medal,
   MessageSquare,
   Settings,
+  Target,
   Trophy,
   Users,
   type LucideIcon,
@@ -81,7 +82,12 @@ export type ChRole = 'coach' | 'player';
  */
 export interface ChNavFeatures {
   tournaments?: boolean;
+  /** golf_practice_plans: Practice (the coach's plans and the player's). */
+  practice?: boolean;
 }
+
+/** Practice (N-00, practice-plan S-PRC.home): after Calendar for coaches and players, as the design's sidebar draws it; a section on the phone's strip. */
+export const CH_NAV_PRACTICE: ChNavItem = { id: 'practice', label: 'Practice', href: '/golf/dashboard/practice', icon: Target };
 
 /** Tournaments (P016, D-80): the Team group after Qualifiers, for coaches and players; a More row on the phone. */
 export const CH_NAV_TOURNAMENTS: ChNavItem = { id: 'tournaments', label: 'Tournaments', href: '/golf/dashboard/tournaments', icon: Medal, section: 'Team' };
@@ -90,17 +96,21 @@ export const CH_NAV_TOURNAMENTS: ChNavItem = { id: 'tournaments', label: 'Tourna
  * The flagged routes (P016's nine). Both roles: a player on a coach's address (the form, the lineup) gets the page's own
  * coach-only notice, as Qualifiers does, not the not-rebuilt page.
  */
-const CH_FEATURE_ROUTES: Record<keyof ChNavFeatures, { exact: readonly string[]; children: RegExp }> = {
+const CH_FEATURE_ROUTES: Record<'tournaments', { exact: readonly string[]; children: RegExp }> = {
   tournaments: {
     exact: ['/golf/dashboard/tournaments'],
     children: /^\/golf\/dashboard\/tournaments\/(new|compare|history|links|[0-9a-f-]{36}(\/(edit|lineup|live))?)$/i,
   },
 };
 
+const insertAfter = (nav: readonly ChNavItem[], id: string, item: ChNavItem): readonly ChNavItem[] => {
+  const at = nav.findIndex((i) => i.id === id);
+  return at < 0 ? [...nav, item] : [...nav.slice(0, at + 1), item, ...nav.slice(at + 1)];
+};
+
 function withFeatures(nav: readonly ChNavItem[], features: ChNavFeatures | null | undefined): readonly ChNavItem[] {
-  if (!features?.tournaments) return nav;
-  const at = nav.findIndex((i) => i.id === 'qualifiers');
-  return at < 0 ? [...nav, CH_NAV_TOURNAMENTS] : [...nav.slice(0, at + 1), CH_NAV_TOURNAMENTS, ...nav.slice(at + 1)];
+  const practiced = features?.practice ? insertAfter(nav, 'calendar', CH_NAV_PRACTICE) : nav;
+  return features?.tournaments ? insertAfter(practiced, 'qualifiers', CH_NAV_TOURNAMENTS) : practiced;
 }
 
 /**
@@ -211,7 +221,7 @@ const CH_REBUILT_CHILDREN: Record<string, RegExp> = {
   '/golf/dashboard/qualifiers': /^\/golf\/dashboard\/qualifiers\/(new|[0-9a-f-]{36}(\/(edit|selection))?)$/i,
 };
 
-const CH_PRACTICE_PAGES = /^\/golf\/dashboard\/practice\/(format|plan\/[^/]+)$/;
+const CH_PRACTICE_PAGES = /^\/golf\/dashboard\/practice(\/(format|plan\/[^/]+(\/edit)?))?$/;
 
 /**
  * Rebuilt addresses whose parent isn't rebuilt for that role. A player
@@ -220,7 +230,7 @@ const CH_PRACTICE_PAGES = /^\/golf\/dashboard\/practice\/(format|plan\/[^/]+)$/;
  */
 const CH_REBUILT_PATTERNS: Record<ChRole, readonly RegExp[]> = {
   // P-7: a player's history at one course, reached from a round or the library (a coach's from a player's round).
-  // Practice's plan and format pages decide for themselves: flag off goes to Calendar (N-00 §0.2) and a plan that won't load shows its empty state, so the segment must render.
+  // Practice's pages decide for themselves: flag off goes to Calendar (N-00 §0.2) and a plan that won't load shows its empty state, so the segment must render.
   coach: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/course\/[^/]+$/, CH_PRACTICE_PAGES],
   player: [/^\/golf\/dashboard\/rounds\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/continue\/[0-9a-f-]{36}$/i, /^\/golf\/dashboard\/rounds\/course\/[^/]+$/, CH_PRACTICE_PAGES],
 };
@@ -323,7 +333,7 @@ export function withoutCoachParams(pathname: string, search: string, role: ChRol
 export function isRebuilt(pathname: string, role: ChRole = 'coach', features?: ChNavFeatures | null): boolean {
   const path = pathname.replace(/\/$/, '') || '/';
   if (CH_REBUILT_ROUTES[role].includes(path)) return true;
-  for (const [key, routes] of Object.entries(CH_FEATURE_ROUTES) as Array<[keyof ChNavFeatures, (typeof CH_FEATURE_ROUTES)[keyof ChNavFeatures]]>) {
+  for (const [key, routes] of Object.entries(CH_FEATURE_ROUTES) as Array<[keyof typeof CH_FEATURE_ROUTES, (typeof CH_FEATURE_ROUTES)[keyof typeof CH_FEATURE_ROUTES]]>) {
     if (features?.[key] && (routes.exact.includes(path) || routes.children.test(path))) return true;
   }
   if (CH_REBUILT_PATTERNS[role].some((re) => re.test(path))) return true;
@@ -368,6 +378,7 @@ const PUSHED_BELOW: ReadonlyArray<{ path: RegExp; top: (role: ChRole, m: RegExpE
   // No parent: a plan opens from Ask, a push, Documents or Calendar, and Back returns to whichever it was (D-41).
   { path: /^\/golf\/dashboard\/practice\/plan\/[^/]+$/, top: () => ({ back: 'Back', title: 'Practice plan' }) },
   { path: /^\/golf\/dashboard\/practice\/format$/, top: (role) => (role === 'coach' ? { back: 'Back', title: 'Plan format' } : null) },
+  { path: /^\/golf\/dashboard\/practice\/plan\/[^/]+\/edit$/, top: (role) => (role === 'coach' ? { back: 'Practice', title: 'Practice plan', parent: '/golf/dashboard/practice' } : null) },
   // P-7: no parent, so Back steps back to the round or the library it came from (D-41).
   { path: /^\/golf\/dashboard\/rounds\/course\/[^/]+$/, top: (role) => ({ back: role === 'coach' ? 'Round' : 'Rounds', title: 'Course' }) },
 ];

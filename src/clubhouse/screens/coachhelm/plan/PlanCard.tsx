@@ -721,7 +721,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
           </div>
           <div className="fdock">
             {state.k === 'saved' && (
-              <Button variant="secondary" onClick={() => router.push(`/golf/dashboard/practice/plan/${state.planId}`)}>
+              <Button variant="secondary" onClick={() => router.push(`/golf/dashboard/practice/plan/${state.planId}/edit`)}>
                 Edit in builder
               </Button>
             )}

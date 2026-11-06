@@ -32,6 +32,7 @@ export const PREVIEW_SHELL: ChShellData = {
   timezone: 'America/New_York',
   askAvailable: true,
   helmViews: { brief: true, playerAsk: true, team: true },
+  practice: true,
   // Maya is the head coach (the boards' "Head coach · Varsity"); a player's line ignores it.
   viewerIsHeadCoach: true,
 };
