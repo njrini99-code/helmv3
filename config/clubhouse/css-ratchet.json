@@ -20,12 +20,12 @@
     "crh-negative-margin": 0
   },
   "src/clubhouse/styles/classes.css": {
-    "hex": 55,
+    "hex": 54,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 1
   },
   "src/clubhouse/styles/coachhelm-ask-v2.css": {
-    "hex": 14,
+    "hex": 12,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0
   },
@@ -61,11 +61,6 @@
   },
   "src/clubhouse/styles/coachhelm-team.css": {
     "hex": 37,
-    "svg-overflow-visible": 0,
-    "crh-negative-margin": 0
-  },
-  "src/clubhouse/styles/coachhelm-thread.css": {
-    "hex": 1,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0
   },

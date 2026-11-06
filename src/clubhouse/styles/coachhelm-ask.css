@@ -304,8 +304,8 @@
 .ch-ask-hist__row {
   display: block;
   height: 44px;
-  padding: 0 8px;
-  line-height: 44px;
+  /* Centred in its 44 by padding: the row stays a block so its ellipsis holds. */
+  padding: 12px 8px;
   overflow: hidden;
   border-radius: var(--ch-radius-md);
   font: var(--ch-type-14);
