@@ -178,7 +178,7 @@ html[data-fw-theme='dark'] .ch-htb {
 }
 .ch-htb .tv-holes i {
   height:18px;
-  border-radius:var(--ch-radius-xs, 4px);
+  border-radius:var(--ch-radius-xs);
   background:var(--ch-tb-track);
 }
 .ch-htb .tv-holes i.is-birdie {
@@ -1189,7 +1189,7 @@ html[data-fw-theme='dark'] .ch-htb {
 .ch-htb .xb::after {
   content:"";
   position:absolute;
-  inset:-5px;
+  inset:-4px;
 }
 .ch-htb .xb {
   position:relative;
@@ -2177,7 +2177,7 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
   padding-bottom:calc(72px + env(safe-area-inset-bottom));
 }
 .ch-htb .insp .ins {
-  padding-top:22px;
+  padding-top:24px;
 }
 /* A narrow sheet stacks the value under the bar rather than clip it (MOB-TEAM-13). */
 @media (max-width: 340px) {

@@ -1969,7 +1969,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   width: 100%;
   /* Padding, not a fixed box: its own 67 didn't fit in 64, and at XXL the mark fell below the ring (CRH-12). */
   min-height: calc(64 * var(--ch-type-k));
-  padding: 10px 0 8px;
+  padding: 8px 0 8px;
   border: 0;
   border-radius: var(--ch-radius-md);
   background: none;

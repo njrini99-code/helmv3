@@ -18,7 +18,7 @@ describe('Home, Classes and Roster lane', () => {
     expect(reset).toContain('margin-inline: 0');
     expect(reset).toContain('padding: 10px 16px');
   });
-  it("the team's game is one column on a phone and 2 x 2 before four fit (CRH-3, CRH-31)", () => {
+  it("the team’s game is one column on a phone and 2 x 2 before four fit (CRH-3, CRH-31)", () => {
     expect(rule(home, "  .ch-hm[data-ch-crh='on'] .ch-hm-legs__grid")).toContain('grid-template-columns: minmax(0, 1fr)');
     expect(home).toMatch(/max-width: 1180px\) \{\s*\.ch-h-main\[data-ch-crh='on'\] \.ch-hm-legs__grid \{\s*grid-template-columns: repeat\(2/);
   });
