@@ -268,9 +268,11 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
   );
   const huddle = <Huddle data={data} onPlayer={openPlayer} />;
   const roster = <RosterCard players={list} phone={phone} onPlayer={openPlayer} />;
+  // In the record card's footer (AC-RECORD-04), and with no record to sit in, in a card of its own under the board: never loose on the page (QA-9).
+  const recheck = !data.off && data.roster.count > 0 ? <RecheckReads players={data.roster.count} /> : null;
   const record = (
     <Part value={data.record} fallback={skeletonCard}>
-      {(r) => <RecordCard part={r} desk={!phone} />}
+      {(r) => <RecordCard part={r} desk={!phone} recheck={recheck} />}
     </Part>
   );
   const spot =
@@ -422,8 +424,7 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
           {body}
         </div>
       )}
-      {/* W-TEAM-16: today's Re-check, under the board, not in the record card. */}
-      {!data.off && data.roster.count > 0 && <RecheckReads players={data.roster.count} />}
+      {!data.record && recheck && <section className="card recfoot">{recheck}</section>}
       {phone ? (
         <Modal open={!!openPanel} onClose={close} title={panelTitle} className="ch-htb-sheet" bare>
           <div className="ins">{openPanel}</div>

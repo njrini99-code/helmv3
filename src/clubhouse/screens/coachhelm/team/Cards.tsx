@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { ChartText } from '../../../ui/charts/ChartText';
 import { Badge } from '../../../ui/Badge';
 import { pluralWord } from '../../../lib/plural';
@@ -152,13 +153,14 @@ export function WorkingCard({ working, proposed, failed, onRetry }: { working: r
 }
 
 /** The rungs' own words; a rung under 10 rechecked says "Not enough yet", never a share (AC-RECORD-02, 03). */
-export function RecordCard({ part, desk = false }: { part: ChTeamPart<ChTrackRecord>; desk?: boolean }) {
+export function RecordCard({ part, desk = false, recheck = null }: { part: ChTeamPart<ChTrackRecord>; desk?: boolean; recheck?: ReactNode }) {
   const notice = (title: string, body: string) => (
     <section className="card recc" data-ch-team-card="record">
       <div className="ch">
         <h4>How often CoachHelm is right</h4>
       </div>
       <Notice title={title} body={body} />
+      {recheck && <div className="recfoot">{recheck}</div>}
     </section>
   );
   if (part.status === 'failed' || part.value.state === 'unavailable') return notice('Track record unavailable right now', 'It shows again once the check runs. No number is shown in its place.');
@@ -192,7 +194,8 @@ export function RecordCard({ part, desk = false }: { part: ChTeamPart<ChTrackRec
               <span className="t is-none">—</span>
             )}
             <span className="n">
-              {g.line}
+              {/* The rung named "Not enough yet" doesn't say so twice (QA-9). */}
+              {g.line === g.word ? null : g.line}
               {desk && g.bar ? <b> · {g.sub}</b> : null}
             </span>
           </div>
@@ -200,6 +203,7 @@ export function RecordCard({ part, desk = false }: { part: ChTeamPart<ChTrackRec
       </div>
       <div className="recfoot">
         <span>Line: the target for that level</span>
+        {recheck}
       </div>
     </section>
   );
