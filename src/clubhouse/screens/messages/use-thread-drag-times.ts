@@ -9,6 +9,13 @@ const FOLLOW = 0.6;
 const AXIS_SLOP = 10;
 const BACK_SWIPE_EDGE = 24;
 
+/** The Text Size factor, as `--ch-type-k` computes it: the time column is placed by it, so the drag must reach as far. */
+export function readTypeK(el: Element): number {
+  const scale = Number.parseFloat(getComputedStyle(el).getPropertyValue('--ch-type-scale')) || 1;
+  const root = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  return (scale * root) / 16;
+}
+
 /** Where the thread sits for a finger `dx` to the left: 60% of the drag, stopping at `max`. A rightward drag does nothing. */
 export function dragOffset(dx: number, max: number): number {
   return Math.max(-max, Math.min(0, dx * FOLLOW));
@@ -19,11 +26,11 @@ export function dragOffset(dx: number, max: number): number {
  * back on release, starting from where it is if grabbed again. Vertical wins after 10px, so native scroll keeps it. The left 24px
  * stays the back swipe. Reduced: it follows the finger and returns at once. Writes `transform` directly, so no render per move.
  */
-export function useThreadDragTimes(scroller: RefObject<HTMLElement | null>, enabled: boolean, reduced: boolean, k = 1): void {
+export function useThreadDragTimes(scroller: RefObject<HTMLElement | null>, enabled: boolean, reduced: boolean, k?: number): void {
   useEffect(() => {
     const el = scroller.current;
     if (!enabled || !el) return;
-    const max = TIMES_DRAG_PX * k;
+    const max = TIMES_DRAG_PX * (k ?? readTypeK(el));
     let start: { x: number; y: number; from: number } | null = null;
     let locked = false;
     let current = 0;

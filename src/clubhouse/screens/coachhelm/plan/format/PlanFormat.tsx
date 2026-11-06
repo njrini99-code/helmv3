@@ -2,7 +2,7 @@
 
 import { Button } from '../../../../ui/Button';
 
-import { Camera, Check, ChevronLeft, CircleCheck, Clock, FileText, Image as ImageIcon, Users } from 'lucide-react';
+import { Camera, Check, ChevronLeft, CircleCheck, Clock, FileText, Image as ImageIcon, Undo2, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState, type ChangeEvent } from 'react';
@@ -31,21 +31,25 @@ const LINE: Record<FormatSections[number]['key'], string> = {
 };
 
 /** The sample sheet, drawn: a shape of the file, never its contents. */
-function Sample({ found }: { found?: boolean }) {
+function Sample({ found, sections = [] }: { found?: boolean; sections?: Array<{ key: string; name: string }> }) {
+  const tag = (key: string) => {
+    const s = sections.find((x) => x.key === key);
+    return found && s ? <em className="tagr">{s.name}</em> : null;
+  };
   return (
     <div className="smpw">
       <div className={'smp' + (found ? ' found' : '')} aria-hidden="true">
         <div className="sh1">
           <i />
           <i />
-          {found && <em className="tagr">Header</em>}
+          {tag('header')}
         </div>
         <i className="sh2" />
         <div className="sbx">
           <span />
           <span />
           <span />
-          {found && <em className="tagr">Groups</em>}
+          {tag('groups')}
         </div>
         <div className="stb">
           {Array.from({ length: 8 }, (_, r) => (
@@ -55,7 +59,7 @@ function Sample({ found }: { found?: boolean }) {
               ))}
             </div>
           ))}
-          {found && <em className="tagr">Schedule</em>}
+          {tag('schedule')}
         </div>
       </div>
       {!found && <span className="scanl" aria-hidden="true" />}
@@ -173,7 +177,7 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
               <span className="m">{plural(view.sections.length, 'section')}. New plans follow this layout. The drills and times still come from your data.</span>
             </div>
           </header>
-          <Sample found />
+          <Sample found sections={view.sections} />
           {view.sections.map((s) => (
             <div className="fs" key={s.key}>
               <span className="okc">
@@ -207,7 +211,11 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
             </div>
           </div>
           <div className="rlinks">
-            {see && <a href={see.href}>{see.label}</a>}
+            {see && (
+              <a href={see.href}>
+                <span className="ell">{see.label}</span>
+              </a>
+            )}
             {undoOpen && (
               <button
                 type="button"
@@ -222,6 +230,7 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
                     .catch(() => setView({ k: 'failed', message: 'That didn’t undo. Your format is still set.' }));
                 }}
               >
+                <Icon icon={Undo2} size={18} />
                 Undo
               </button>
             )}

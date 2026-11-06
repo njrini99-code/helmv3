@@ -267,8 +267,10 @@ export async function loadPlanForBuilder(planId: string): Promise<{ status: 'rea
   const row = data as PlanRow | null;
   const body = row ? parsePlanBody(row.body) : null;
   if (!row || !body || !row.event_id) return { status: 'gone' };
-  const { data: event, error: eventError } = await sb.from('golf_events').select('id, title, start_time, end_time, location, all_day').eq('id', row.event_id).maybeSingle();
+  const { data: event, error: eventError } = await sb.from('golf_events').select('id, title, start_time, end_time, location, all_day, recurrence_rule, parent_event_id').eq('id', row.event_id).maybeSingle();
   if (eventError || !event) return { status: 'gone' };
+  // What players have now, for What changed on Republish. A version that won't read leaves the plain sheet.
+  const { data: live } = row.status === 'published' && row.published_version != null ? await practiceTables(sb).from('golf_practice_plan_versions').select('body').eq('plan_id', row.id).eq('version', row.published_version).maybeSingle() : { data: null };
   const team = await teamBasics(sb, row.team_id);
   const roster = await activeRoster(sb, row.team_id);
   if (!team || !roster) return { status: 'gone' };
@@ -289,6 +291,8 @@ export async function loadPlanForBuilder(planId: string): Promise<{ status: 'rea
       eventId: row.event_id,
       version: row.version,
       status: row.status,
+      liveBody: live ? parseVersionBody((live as { body: unknown }).body) : null,
+      inSeries: !!event.recurrence_rule || !!event.parent_event_id,
       edited: !!row.edited_after_publish,
       title: row.title ?? event.title,
       meta: [dayShort(start, team.zone), span(event, team.zone), event.location].filter(Boolean).join(' · '),

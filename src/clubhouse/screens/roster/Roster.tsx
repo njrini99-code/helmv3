@@ -1014,6 +1014,7 @@ function RosterList({
                     p.trend.length >= 3 ? <FormBars data={p.trend} mean={mean} /> : (
                       // Grey bars read as loading (QA-13): no form yet is a dash, and it says why.
                       <Tooltip>
+                        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- focusable so a keyboard can open the tooltip that says why */}
                         <span className="ch-num" tabIndex={0} aria-label="Needs 3 rounds">
                           —
                         </span>

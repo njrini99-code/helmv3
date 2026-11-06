@@ -86,7 +86,7 @@ const MissPatternResolved = z.object({
 });
 const PuttProfileResolved = z.object({
   type: z.literal('putt_profile'),
-  buckets: z.array(z.object({ id: z.string(), label: z.string(), attempts: z.number(), made: z.number(), rate: z.number().nullable() })),
+  buckets: z.array(z.object({ id: z.string(), label: z.string(), attempts: z.number(), made: z.number(), rate: z.number().nullable(), season_rate: z.number().nullable().optional() })),
 });
 const SeasonBand = z.object({ mean: z.number(), lo: z.number(), hi: z.number(), n: z.number() }).nullable();
 const SeasonCompareResolved = z.object({ type: z.literal('season_compare'), metric: z.string(), this_season: SeasonBand, last_season: SeasonBand, method: z.string() });

@@ -2,7 +2,7 @@
 
 import { ClipboardList } from 'lucide-react';
 import { Button } from '../../../../ui/Button';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Icon } from '../../../../ui/Icon';
 
 export interface BriefQuestion {
@@ -26,6 +26,7 @@ export function BriefCard({ title, questions, onDone }: { title: string; questio
   };
   const [answers, setAnswers] = useState<Record<string, string[]>>(() => Object.fromEntries(questions.map((q) => [q.id, q.pick ?? []])));
   const [done, setDone] = useState(false);
+  const sent = useRef<string | null>(null);
   // E-QCARD: the last question ends with a free line, for what the options didn't cover.
   const [freeOpen, setFreeOpen] = useState(false);
   const [free, setFree] = useState('');
@@ -33,8 +34,12 @@ export function BriefCard({ title, questions, onDone }: { title: string; questio
   if (!q) return null;
   const summary = () => questions.map((x) => (answers[x.id] ?? []).map((id) => x.options.find((o) => o.id === id)?.label).filter(Boolean).join(', ')).filter(Boolean);
   const finish = () => {
+    const line = [...summary(), free.trim()].filter(Boolean).join(' · ');
+    // S-ASK.brief.change: changed answers go back as a new turn, so the plan is rebuilt on them; the same ones just fold.
+    if (line === sent.current) return setDone(true);
     // Not sent (a reply is still running, or offline): the answers stay open to send again.
-    if (onDone(answers, [...summary(), free.trim()].filter(Boolean).join(' · ')) === false) return;
+    if (onDone(answers, line) === false) return;
+    sent.current = line;
     setDone(true);
   };
   if (done)

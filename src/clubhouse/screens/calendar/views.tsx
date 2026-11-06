@@ -1,6 +1,6 @@
 'use client';
 
-import { Ban, ChevronDown, ChevronUp, TriangleAlert } from 'lucide-react';
+import { Ban, ChevronDown, ChevronUp, Target, TriangleAlert } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type RefObject } from 'react';
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
@@ -237,6 +237,11 @@ export function EventBlock({
       {showWarn && (
         <span className="ch-ev__warn" aria-hidden="true">
           <Icon icon={TriangleAlert} size={10} />
+        </span>
+      )}
+      {!showWarn && !short && (e.plan?.state === 'published' || e.plan?.state === 'edited') && (
+        <span className="ch-ev__warn ch-ev__plan" aria-hidden="true">
+          <Icon icon={Target} size={10} />
         </span>
       )}
       {showChg && (

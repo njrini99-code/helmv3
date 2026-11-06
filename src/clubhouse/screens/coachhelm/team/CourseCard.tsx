@@ -97,7 +97,7 @@ function CourseRow({ row, season, readCount, onCourse }: { row: CourseHistoryRow
         </span>
       </span>
       <span className="cv">
-        <b>{toPar(row.value)}</b>
+        <b className="ch-num">{toPar(row.value)}</b>
         <span className={d > 0 ? 'l' : d < 0 ? 'g' : 'e'}>{d ? `${formatFixed(Math.abs(d), 1)} ${d > 0 ? 'over' : 'under'} season` : 'Level with season'}</span>
       </span>
       <Chevron />
@@ -135,7 +135,7 @@ export function CourseCard({ data, initialAll = false, onRead, onCourse, onRetry
   const historyBlock = history ? (
     <div className="cmh">
       <div className="cmk">
-        <b>{toPar(season)}</b>
+        <b className="ch-num">{toPar(season)}</b>
         <span>
           a round to par
           <br />
