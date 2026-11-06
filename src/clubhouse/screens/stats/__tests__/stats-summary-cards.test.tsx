@@ -35,7 +35,7 @@ describe('SummaryCard', () => {
         </button>
       </SummaryCard>,
     );
-    return { onOpen, el: screen.getByRole('link', { name: /Scoring average 73/ }) };
+    return { onOpen, el: screen.getByRole('button', { name: /Scoring average 73/ }) };
   };
 
   it('a tap opens, with the select haptic', () => {
@@ -45,17 +45,12 @@ describe('SummaryCard', () => {
     expect(hapticSpy).toHaveBeenCalledWith('select');
   });
 
-  it('Enter and Space on the card open it, each once', () => {
-    const { onOpen, el } = one();
-    fireEvent.keyDown(el, { key: 'Enter' });
-    fireEvent.keyDown(el, { key: ' ' });
-    expect(onOpen).toHaveBeenCalledTimes(2);
-  });
-
-  it('another key does nothing', () => {
-    const { onOpen, el } = one();
-    fireEvent.keyDown(el, { key: 'a' });
-    expect(onOpen).not.toHaveBeenCalled();
+  it('its keyboard and VoiceOver path is one real button, and nothing inside is nested in it (STATS-8)', () => {
+    const { el } = one();
+    expect(el.tagName).toBe('BUTTON');
+    expect(el.childElementCount).toBe(0);
+    expect(el.closest('section')?.getAttribute('role')).toBeNull();
+    expect(el.closest('section')?.hasAttribute('tabindex')).toBe(false);
   });
 
   it('a key pressed on something inside the card does not open the card', () => {
@@ -80,7 +75,7 @@ describe('SummaryCard', () => {
 
   it('a plain card draws no chevron button', () => {
     one();
-    expect(screen.queryByRole('button', { name: /details/ })).toBeNull();
+    expect(document.querySelector('.ch-shs-dlink')).toBeNull();
   });
 });
 
@@ -116,9 +111,9 @@ describe('each summary card opens its detail and Back returns', () => {
     expect(window.location.hash).toBe('');
   });
 
-  it('Enter on a focused card opens it', async () => {
+  it('the card’s own key opens it, as Enter on it does', async () => {
     showPlayer(PREVIEW_PLAYER_SHS_SELF);
-    fireEvent.keyDown(await painted('sg'), { key: 'Enter' });
+    fireEvent.click((await painted('sg')).querySelector('.ch-shs-sum__key')!);
     await waitFor(() => expect(detailShown()).toBe('sd-sg'));
   });
 

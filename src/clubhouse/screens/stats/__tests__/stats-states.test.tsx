@@ -26,14 +26,14 @@ afterEach(() => {
 
 /** Stats-home criteria 93 to 95. */
 describe('loading', () => {
-  it('My stats keeps a card per loaded card, each at a fixed height, and is busy with its label', () => {
+  it('My stats keeps a card per loaded card, each at its loaded height for the reader’s Text Size, and is busy with its label', () => {
     render(<ShsPlayerSkeleton />);
     const main = document.querySelector('main')!;
     expect(main.getAttribute('aria-busy')).toBe('true');
     expect(main.getAttribute('aria-label')).toBe('Loading stats');
     const heads = [...document.querySelectorAll('.ch-shs-skel-card h3')].map((h) => h.textContent);
     expect(heads).toEqual(['Scoring average', 'What changed', 'At a glance', 'Strokes gained', 'Off the tee', 'Approach', expect.any(String), 'Putting', 'Round by round', 'Goals and focus areas']);
-    for (const c of document.querySelectorAll<HTMLElement>('.ch-shs-skel-card')) expect(parseFloat(c.style.height)).toBeGreaterThan(100);
+    for (const c of document.querySelectorAll<HTMLElement>('.ch-shs-skel-card')) expect(parseFloat(/calc\((\d+)/.exec(c.style.height)?.[1] ?? '')).toBeGreaterThan(100);
     expect([...document.querySelectorAll('.ch-shs-sech')].map((h) => h.textContent)).toEqual(['Overview', 'Your game', 'Rounds', 'Development']);
   });
 
@@ -68,7 +68,7 @@ describe('My stats failed', () => {
     showPlayer(failed);
     await waitFor(() => expect(code('CH-5201')).not.toBeNull());
     expect(code('CH-5201')!.getAttribute('role')).toBe('alert');
-    expect(code('CH-5201')!.textContent).toContain('Rounds didn’t load.');
+    expect(code('CH-5201')!.textContent).toContain('Rounds didn’t load');
     expect(code('CH-5201')!.textContent).toContain('Posted rounds are safe. Every figure that reads them would be incomplete, so they’re hidden. Try again.');
   });
 
@@ -91,7 +91,7 @@ describe('My stats failed', () => {
     fireEvent.click(retry);
     fireEvent.click(retry);
     expect(router.refresh).toHaveBeenCalledTimes(1);
-    expect(retry.getAttribute('aria-disabled')).toBe('true');
+    expect(retry).toHaveProperty('disabled', true);
   });
 });
 

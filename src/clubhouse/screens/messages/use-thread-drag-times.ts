@@ -2,19 +2,13 @@
 
 import { useEffect, type RefObject } from 'react';
 import { chSpringCurve } from '../../lib/motion';
+import { readTypeK } from '../../lib/type-k';
 
 /** The drag's stop at the default Text Size; it scales with k (SETTLED-4NOV 9). */
 export const TIMES_DRAG_PX = 58;
 const FOLLOW = 0.6;
 const AXIS_SLOP = 10;
 const BACK_SWIPE_EDGE = 24;
-
-/** The Text Size factor, as `--ch-type-k` computes it: the time column is placed by it, so the drag must reach as far. */
-export function readTypeK(el: Element): number {
-  const scale = Number.parseFloat(getComputedStyle(el).getPropertyValue('--ch-type-scale')) || 1;
-  const root = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-  return (scale * root) / 16;
-}
 
 /** Where the thread sits for a finger `dx` to the left: 60% of the drag, stopping at `max`. A rightward drag does nothing. */
 export function dragOffset(dx: number, max: number): number {

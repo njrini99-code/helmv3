@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { readTypeK, TIMES_DRAG_PX } from '../use-thread-drag-times';
+import { readTypeK } from '../../../lib/type-k';
+import { TIMES_DRAG_PX } from '../use-thread-drag-times';
 
 describe('drag for times at the reader’s Text Size (MOB-MSG-8)', () => {
   it('reaches as far as the time column is placed', () => {

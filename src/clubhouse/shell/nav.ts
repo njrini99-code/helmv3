@@ -372,7 +372,8 @@ const PUSHED_BELOW: ReadonlyArray<{ path: RegExp; top: (role: ChRole, m: RegExpE
   },
   {
     path: new RegExp(`^/golf/dashboard/rounds/${UUID}$`, 'i'),
-    top: (role) => (role === 'coach' ? { back: 'Stats', title: 'Round', parent: '/golf/dashboard/stats' } : { back: 'Rounds', title: 'Round', parent: '/golf/dashboard/rounds' }),
+    // No parent: a round opens from Stats, Rounds, Home or Team, and Back returns to whichever it was (D-41, FID-STATS-5).
+    top: () => ({ back: 'Back', title: 'Round' }),
   },
   { path: /^\/golf\/dashboard\/rounds\/recover$/, top: () => ({ back: 'Rounds', title: 'Recover', parent: '/golf/dashboard/rounds' }) },
   // No parent: a plan opens from Ask, a push, Documents or Calendar, and Back returns to whichever it was (D-41).

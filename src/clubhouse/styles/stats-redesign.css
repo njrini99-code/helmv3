@@ -64,6 +64,8 @@
   grid-template-columns: 1fr 1fr 1fr 1.3fr 1.6fr 1.3fr;
   overflow-x: auto;
   scrollbar-width: none;
+}
+.ch-shs-ctl .ch-seg[data-more] {
   -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent);
   mask-image: linear-gradient(90deg, #000 85%, transparent);
 }
@@ -215,8 +217,6 @@
   grid-auto-columns: max-content;
   overflow-x: auto;
   scrollbar-width: none;
-  -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent);
-  mask-image: linear-gradient(90deg, #000 85%, transparent);
 }
 .ch-shs.is-big .ch-shs-ctl .ch-seg__b {
   padding: 0 12px;
@@ -1130,7 +1130,7 @@
 /* The trend ribbon. */
 .ch-shs-rib {
   position: relative;
-  padding-right: 40px;
+  padding-right: calc(40 * var(--ch-type-k));
 }
 .ch-shs-rib__in {
   position: relative;
@@ -1177,7 +1177,7 @@
 }
 .ch-shs-rib .rref {
   position: absolute;
-  right: -42px;
+  right: calc(-42 * var(--ch-type-k));
   padding: 1px 2px;
   transform: translateY(-50%);
   background: var(--ch-shs-s-card);
@@ -1947,7 +1947,7 @@ p.ch-shs-mini-cap {
   right: 0;
   top: 0;
   height: 14px;
-  background: linear-gradient(rgb(0 0 0 / 0.1), transparent);
+  background: var(--ch-scroll-edge-down);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--ch-dur-quick) linear;
@@ -2282,3 +2282,8 @@ p.ch-shs-mini-cap {
 }
 /* STATS-14: Left and Right read apart without colour. */
 .ch-shs-stack > * + * { box-shadow: inset 2px 0 0 var(--ch-card-bg); }
+
+/* A summary card's one key for VoiceOver and the keyboard: nothing to see until focused, and then the card's ring (STATS-8). */
+.ch-shs-sum { position: relative; }
+.ch-shs-sum__key { position: absolute; inset: 0; z-index: 0; padding: 0; border: 0; border-radius: inherit; background: none; pointer-events: none; }
+.ch-shs-sum__key:focus-visible { outline: 2px solid var(--ch-border-focus); outline-offset: 2px; }
