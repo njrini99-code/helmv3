@@ -36,8 +36,7 @@ import {
   splitAtMentions,
   splitInline,
   stepLabel,
-  type AskAssistantTurn,
-} from '../data/coachhelm-chat-thread';
+  type AskAssistantTurn, measurementTable, rankRows } from '../data/coachhelm-chat-thread';
 
 /** Ask CoachHelm (P013), the conversation's pure steps: what a thread of message parts means on screen. */
 
@@ -273,15 +272,21 @@ describe('evidenceBlocks: the shape decides the drawing, and nothing is dropped'
     const omitted = { ...withBench, measurements: [{ ...withBench.measurements[0]!, benchmark: { ...withBench.measurements[0]!.benchmark!, omitted_for_cohort: true } }] };
     expect((evidenceBlocks(omitted)[0] as { bench: string | null }).bench).toBeNull();
   });
-  it('a kind with no chart (a list of records) is its table; an envelope with nothing drawable is still a row, never nothing', () => {
+  it('a kind with no chart (a list of records) is its table; an envelope with nothing drawable draws nothing, not a placeholder table (QA-2)', () => {
     const records = { summary: '2 open signals for Jonah.', measurements: [], series: [], coverage: 'complete' as const, coverage_note: null, as_of: '2026-09-29T00:00:00.000Z', detail: { player: { name: 'Jonah' }, insights: [{ insight_id: 'x', title: 'Downhill putts', value_display: '58%', created_at: '2026-09-01' }, { insight_id: 'y', title: 'Lag putting', value_display: '2.1', created_at: '2026-09-02' }] } };
     const [t] = evidenceBlocks(records);
     expect(t?.kind).toBe('table');
     if (t?.kind === 'table') expect(t.table).toEqual({ caption: '2 open signals for Jonah.', columns: ['Title', 'Value display'], rows: [['Downhill putts', '58%'], ['Lag putting', '2.1']] });
     const nothing = { ...records, detail: undefined };
-    const out = evidenceBlocks(nothing);
-    expect(out).toHaveLength(1);
-    expect(out[0]?.kind).toBe('table');
+    expect(evidenceBlocks(nothing)).toEqual([]);
+  });
+  it('a team figure is the line the players read against, not one more player in the table or the ranking (QA-3)', () => {
+    const m = (kind: string, id: string, label: string, value: number) => ({ entity: { kind, id, label }, metric_id: 'season_scoring_average', metric_label: 'Scoring average', value, unit: 'strokes', sample_size: 8, sample_unit: 'rounds', direction: 'lower_better' }) as never;
+    const ms = [m('player', 'a', 'Cole', 74.2), m('team', 't', 'Demo University Golf', 75.1), m('player', 'b', 'Eli', 76)];
+    const t = measurementTable(ms, 'Scoring average, this season');
+    expect(t.rows.map((r) => r[0])).toEqual(['Cole', 'Eli']);
+    expect(t.caption).toContain('Demo University Golf');
+    expect(rankRows(ms).rows).toHaveLength(2);
   });
   it('detailTable leaves ids, raw timestamps and the timezone out, and caps rows', () => {
     const t = detailTable({ rows: Array.from({ length: 12 }, (_, i) => ({ id: i, player_id: 'p', created_at: 'x', timezone: 'UTC', name: `N${i}` })) }, 'cap');
