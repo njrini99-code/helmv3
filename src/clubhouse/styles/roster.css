@@ -3157,9 +3157,16 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* A step tighter than the card's rows, so "4 rounds under average" reads whole beside the bars at 390. */
+  [data-ch-crh='on'] .ch-rsm-row.ch-rsx-row {
+    gap: 8px;
+  }
+  [data-ch-crh='on'] .ch-rsm-row.ch-rsx-row > .ch-avatar {
+    margin-inline-end: 4px;
+  }
   [data-ch-crh='on'] .ch-rsx-row__b > span {
     overflow: hidden;
-    font: var(--ch-type-meta);
+    font: var(--ch-type-14);
     color: var(--ch-crh-ink2);
     text-overflow: ellipsis;
     white-space: nowrap;
