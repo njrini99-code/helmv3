@@ -47,11 +47,13 @@
 }
 .ch-shs-ctl__row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
 .ch-shs-ctl .ch-seg {
-  flex: 1;
+  /* Room for the filter's 40 and the gap beside it, so a filter's summary starts a line of its own under them. */
+  flex: 1 1 calc(100% - 40 * var(--ch-type-k) - 9px);
   min-width: 0;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1.3fr 1.6fr;
@@ -1611,14 +1613,26 @@ li + li > .ch-shs-rrow::before {
   stroke-width: 1.5;
 }
 
-/* The filter is its icon here; the count is its active state. Its chips stay in the sheet. */
+/* The filter is its icon here; the count is its active state. Its chips stay in the sheet. Its parts join the row, so the icon stays
+   beside the window switch and what the filter holds, with Clear, reads on the next line instead of squeezing the switch. */
 .ch-shs-ctl .ch-sf,
 .ch-shs-ctl .ch-sf__bar {
-  flex: none;
-  display: block;
+  display: contents;
+}
+.ch-shs-ctl .ch-sf__count {
+  order: 2;
+  flex: 1 1 0;
+  min-width: 0;
   margin: 0;
-  padding: 0;
-  border: 0;
+}
+.ch-shs-ctl .ch-sf__clear {
+  order: 3;
+  flex: none;
+}
+.ch-shs-ctl .ch-sf__note {
+  order: 4;
+  flex: 0 0 100%;
+  margin: 0;
 }
 .ch-shs-ctl .ch-sf__open > span:not(.ch-sf__n) {
   position: absolute;
@@ -1847,7 +1861,7 @@ p.ch-shs-mini-cap {
 .ch-shs-prow {
   position: relative;
   display: grid;
-  grid-template-columns: calc(20 * var(--ch-type-k)) calc(104 * var(--ch-type-k)) minmax(0, 1fr) calc(44 * var(--ch-type-k));
+  grid-template-columns: calc(20 * var(--ch-type-k)) calc(128 * var(--ch-type-k)) minmax(0, 1fr) calc(44 * var(--ch-type-k));
   align-items: center;
   gap: 8px;
   min-height: 52px;

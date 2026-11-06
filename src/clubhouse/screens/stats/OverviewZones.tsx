@@ -153,6 +153,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg, shs = false }: {
           </>
         }
         read={
+          sg == null && legs.every((l) => l.value == null) ? undefined : (
           <>
             <Big value={sg == null ? NO_DATA : formatSigned(sg)} tone={changeVerdict(sg)} />
             <div className="ch-znlines">
@@ -168,6 +169,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg, shs = false }: {
               )}
             </div>
           </>
+          )
         }
       >
         {/* No figure at all yet: one line, as the phone says it (CH-5309), not a chart of dashes that reads as broken. */}

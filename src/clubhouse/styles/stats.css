@@ -3778,6 +3778,10 @@
     color: var(--ch-text-tertiary);
   }
   /* A player's head: the avatar in the Ledger's ring beside the name, the page's large title (.ch-large-title, shell.css). */
+  /* The redesign's head sits on the page's gutter, as the window switch under it does: it had none, so the coin met the screen's edge. */
+  .ch-spm-head:has(+ .ch-shs-ctl) {
+    padding: 12px var(--ch-page-x-phone);
+  }
   .ch-stm .ch-spm-head {
     gap: 16px;
     padding: 16px 0 0;

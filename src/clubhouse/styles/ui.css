@@ -1766,6 +1766,19 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   font: var(--ch-type-14);
   color: var(--ch-text-secondary);
 }
+/* A zone with nothing to draw yet (rounds posted as totals): the note fills the picture's place, level with the sentence beside it,
+   so the zone reads as held for its data rather than a blank sheet with a stray line at the top. */
+.ch-zn__vis:has(> .ch-znmiss:only-child) {
+  align-content: stretch;
+}
+.ch-zn__vis > .ch-znmiss:only-child {
+  display: grid;
+  place-content: center;
+  min-height: 96px;
+  padding: 24px;
+  text-align: center;
+  text-wrap: balance;
+}
 /* the wide zone: what the area is on one row above, the picture full width */
 .ch-zn--wide {
   grid-template-columns: minmax(0, 1fr);

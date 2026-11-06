@@ -210,7 +210,7 @@ export function StatsPlayerPhoneShs({
             <Avatar name={data.name} id={data.id} size="lg" />
             <span className="ch-spm-head__id">
               <LargeTitle>{data.name}</LargeTitle>
-              <p className="ch-num">{[data.classYear, failed ? null : `${plural(data.season.rounds, 'round')} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} ${TERMS.handicap.short}`].filter(Boolean).join(' · ')}</p>
+              <p className="ch-num">{[data.classYear, failed ? null : `${plural(data.season.rounds, 'round')}`, data.handicap == null ? null : `${formatHcp(data.handicap)} ${TERMS.handicap.short}`].filter(Boolean).join(' · ')}</p>
             </span>
             {messageHref && (
               <Link href={messageHref} className="ch-spm-head__msg" aria-label={`Message ${first}`} data-ch-press="">
