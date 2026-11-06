@@ -22,7 +22,11 @@ export interface ChCalPerson {
   availability?: ChAvailability;
 }
 
+/** A practice's plan (N-00 4.17). Left out with Practice off; `none` is a practice with no plan yet. */
+export type ChCalPlan = { state: 'none' } | { state: 'draft' | 'published' | 'edited'; id: string };
+
 export interface ChCalEvent {
+  plan?: ChCalPlan;
   id: string;
   type: ChCalType;
   title: string;

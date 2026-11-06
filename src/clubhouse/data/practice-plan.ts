@@ -6,8 +6,16 @@ import { practiceTables, type PracticePlanRow, type PracticePlanVersionRow } fro
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
 import { toSheetModel, type PlanSheetModel } from '../screens/coachhelm/plan/sheet/plan-sheet-model';
 import type { PlayerPracticeData } from '../screens/coachhelm/plan/player/PlayerPractice';
+import type { ChPlanStatus } from '../screens/practice/CoachPlanBar';
 
-export type PlanPageLoad = { status: 'ready'; plan: PlanSheetModel; stops?: ReturnType<typeof toPlayerPlan> } | { status: 'gone' } | { status: 'unavailable' };
+/** What a coach's plan page draws around the sheet. */
+export interface CoachPlanExtras {
+  status: ChPlanStatus;
+  body: PlanBodyV2;
+  start: Date | null;
+  zone: string;
+}
+export type PlanPageLoad = { status: 'ready'; plan: PlanSheetModel; stops?: ReturnType<typeof toPlayerPlan>; coach?: CoachPlanExtras } | { status: 'gone' } | { status: 'unavailable' };
 
 async function context(sb: Awaited<ReturnType<typeof createClient>>, eventId: string | null) {
   if (!eventId) return null;
@@ -39,7 +47,11 @@ export async function loadCoachPlan(planId: string): Promise<PlanPageLoad> {
   if (!row || !body) return { status: 'gone' };
   const ctx = await context(sb, row.event_id);
   if (!ctx) return { status: 'gone' };
-  return { status: 'ready', plan: toSheetModel({ body, why: (row.coach_why ?? {}) as Record<string, PlanWhy>, title: row.title ?? 'Practice plan', team: ctx.team?.name ?? '', start: new Date(ctx.event.start_time), end: ctx.event.end_time ? new Date(ctx.event.end_time) : null, zone: ctx.team?.timezone ?? 'America/New_York', coaches: ctx.coaches, names: ctx.names, state: stateWord(row) }, 'coach') };
+  const opens = row.status === 'published' ? await practiceTables(sb).from('golf_practice_plan_opens').select('player_id').eq('plan_id', planId) : null;
+  const seen = opens && !opens.error ? { names: ((opens.data ?? []) as Array<{ player_id: string }>).map((o) => ctx.names.get(o.player_id)).filter((n): n is string => !!n), of: ctx.names.size } : null;
+  const zone = ctx.team?.timezone ?? 'America/New_York';
+  const coach: CoachPlanExtras = { body, zone, start: new Date(ctx.event.start_time), status: { planId, title: row.title ?? 'Practice plan', version: row.version, status: row.status === 'published' ? 'published' : 'draft', edited: row.published_version != null && row.version !== row.published_version, seen } };
+  return { status: 'ready', coach, plan: toSheetModel({ body, why: (row.coach_why ?? {}) as Record<string, PlanWhy>, title: row.title ?? 'Practice plan', team: ctx.team?.name ?? '', start: new Date(ctx.event.start_time), end: ctx.event.end_time ? new Date(ctx.event.end_time) : null, zone: ctx.team?.timezone ?? 'America/New_York', coaches: ctx.coaches, names: ctx.names, state: stateWord(row) }, 'coach') };
 }
 
 /**
@@ -98,4 +110,24 @@ export async function loadPlayerPractice(planId: string, playerId: string, now: 
       planHref: null,
     },
   };
+}
+
+/** The print studio's extra read: the plan's drills, by the refs in its body. A failed read prints without the appendix. */
+export async function loadPlanDrills(planId: string): Promise<Array<{ name: string; line: string; setup: string; goal: string }>> {
+  const sb = await createClient();
+  const db = practiceTables(sb);
+  const { data } = await db.from('golf_practice_plans').select('body').eq('id', planId).maybeSingle();
+  const body = data ? parsePlanBody((data as { body: unknown }).body) : null;
+  if (!body) return [];
+  const refs = body.variants.main.blocks.flatMap((b) => (b.kind === 'team' ? [b.drill] : b.kind === 'stations' ? b.stations.map((s) => s.drill) : [])).filter((d): d is NonNullable<typeof d> => !!d);
+  const teamIds = [...new Set(refs.filter((r) => r.src === 'team').map((r) => r.id))];
+  const libIds = [...new Set(refs.filter((r) => r.src === 'lib').map((r) => r.id))];
+  const [team, lib] = await Promise.all([
+    teamIds.length ? db.from('golf_team_drills').select('name, area, minutes, setup, goal').in('id', teamIds) : Promise.resolve({ data: [] }),
+    libIds.length ? sb.from('golf_drills').select('title, category, duration_min, description').in('id', libIds) : Promise.resolve({ data: [] }),
+  ]);
+  return [
+    ...(((team.data ?? []) as Array<{ name: string; area: string; minutes: number; setup: string; goal: string }>).map((d) => ({ name: d.name, line: `${d.area.replace('_', ' ')} · ${d.minutes} min`, setup: d.setup, goal: d.goal }))),
+    ...(((lib.data ?? []) as Array<{ title: string; category: string | null; duration_min: number | null; description: string | null }>).map((d) => ({ name: d.title, line: [d.category?.replace('_', ' '), d.duration_min ? `${d.duration_min} min` : null].filter(Boolean).join(' · '), setup: d.description ?? '', goal: '' }))),
+  ];
 }

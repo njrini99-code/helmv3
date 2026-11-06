@@ -41,7 +41,7 @@ describe('Practice library', () => {
   });
   it('Use on a starter opens New plan with it', async () => {
     render(<ToastProvider><TemplatesPage preview teamId="t" templates={[]} /></ToastProvider>);
-    await userEvent.click(screen.getByRole('button', { name: /^Three-station rotation Session/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^Three-station rotation\s*Session/ }));
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/practice?new=1&template=three-stations');
   });
 });

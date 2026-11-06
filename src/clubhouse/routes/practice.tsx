@@ -5,7 +5,10 @@ import { createClient } from '@/lib/supabase/server';
 import { practiceTables } from '@/lib/golf/practice-db';
 import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
 import { PlanFormat } from '../screens/coachhelm/plan/format/PlanFormat';
-import { loadCoachPlan, loadPlayerPlan, loadPlayerPractice } from '../data/practice-plan';
+import { loadCoachPlan, loadPlanDrills, loadPlayerPlan, loadPlayerPractice } from '../data/practice-plan';
+import { PrintStudio } from '../screens/practice/PrintStudio';
+import { CoachPlanBar } from '../screens/practice/CoachPlanBar';
+import { PlanRun } from '../screens/practice/PlanRun';
 import { PlayerPractice } from '../screens/coachhelm/plan/player/PlayerPractice';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { PracticePlanSheet } from '../screens/coachhelm/plan/sheet/PracticePlanSheet';
@@ -36,7 +39,7 @@ const FAILED = (
 );
 
 /** Practice, the tab: the coach's plans with New plan, or the player's published ones. The page checks the flag. */
-export async function PracticeHomeRoute({ newPlan, template }: { newPlan?: boolean; template?: string }) {
+export async function PracticeHomeRoute({ newPlan, template, event }: { newPlan?: boolean; template?: string; event?: string }) {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/dashboard/calendar');
   const team = await resolveClubhouseTeam(session);
@@ -64,7 +67,7 @@ export async function PracticeHomeRoute({ newPlan, template }: { newPlan?: boole
     const hit = saved.status === 'ready' ? saved.data.find((t) => t.id === template) : undefined;
     if (hit) from = { name: hit.name, body: hit.body };
   }
-  return <PracticeHome data={load.data} askOn={isPracticePlansEnabled()} openNew={!!newPlan} template={from} />;
+  return <PracticeHome data={load.data} askOn={isPracticePlansEnabled()} openNew={!!newPlan} newEvent={event ?? null} template={from} />;
 }
 
 /** The coach's team for a Practice tab; a player goes to their own Practice. */
@@ -124,6 +127,21 @@ export async function PracticeTemplatesRoute() {
   return <TemplatesPage teamId={team.teamId} templates={load.data} />;
 }
 
+/** The print studio, a coach's (N-00 4.14). A plan that won't load says so rather than printing nothing. */
+export async function PracticePrintRoute({ planId }: { planId: string }) {
+  const team = await coachTeam();
+  if (!team) return NO_TEAM;
+  const [load, drills] = await Promise.all([loadCoachPlan(planId), loadPlanDrills(planId).catch(() => [])]);
+  if (load.status !== 'ready') {
+    return (
+      <main className="ch-page" data-ch="practice">
+        <EmptyState size="page" title="This plan isn’t available" body="It may have been removed." action={<Button href="/golf/dashboard/practice">Back to Practice</Button>} />
+      </main>
+    );
+  }
+  return <PrintStudio plan={load.plan} drills={drills} planHref={`/golf/dashboard/practice/plan/${planId}`} />;
+}
+
 /** The builder, a coach's. A player on this address gets their own plan page's address; nothing of a draft reaches them. */
 export async function PracticeBuilderRoute({ planId, fill }: { planId: string; fill?: boolean }) {
   const session = await getGolfSessionProfile();
@@ -160,7 +178,8 @@ export async function PracticePlanRoute({ planId }: { planId: string }) {
   }
   return (
     <main className="ch-page ch-prc-planpage" data-ch="practice-plan">
-      <PlanPageActions plan={load.plan} playerPlanId={player ? planId : null} editHref={player ? null : `/golf/dashboard/practice/plan/${planId}/edit`} />
+      <PlanPageActions plan={load.plan} playerPlanId={player ? planId : null} coachBar={!player && load.coach ? <CoachPlanBar status={load.coach.status} /> : null} />
+      {!player && load.coach?.start && load.coach.status.status === 'published' && <PlanRun planId={planId} title={load.coach.status.title} version={load.coach.status.version} body={load.coach.body} start={load.coach.start} zone={load.coach.zone} serverNow={Date.now()} />}
       <PracticePlanSheet plan={load.plan} />
     </main>
   );

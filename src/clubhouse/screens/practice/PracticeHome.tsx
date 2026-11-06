@@ -91,9 +91,9 @@ export function PlanRows({ rows, label }: { rows: ChPracticeRow[]; label: string
  * Practice, the coach's tab (S-PRC.home): the week, what's up next, and every plan. New plan is the page's one primary action; on a phone it is the
  * bar's plus. With no plan ever made, one card with the ways to start (S-PRC.home-first-run), and no empty headers.
  */
-export function PracticeHome({ data, askOn, openNew = false, previewSheet = false, template = null }: { template?: { name: string; body: PlanBodyV2 } | null; data: ChPracticeHome; askOn: boolean; openNew?: boolean; previewSheet?: boolean }) {
+export function PracticeHome({ data, askOn, openNew = false, previewSheet = false, template = null, newEvent = null }: { newEvent?: string | null; template?: { name: string; body: PlanBodyV2 } | null; data: ChPracticeHome; askOn: boolean; openNew?: boolean; previewSheet?: boolean }) {
   const phone = useChPhone();
-  const [sheet, setSheet] = useState<{ event: string | null } | null>(openNew ? { event: null } : null);
+  const [sheet, setSheet] = useState<{ event: string | null } | null>(openNew ? { event: newEvent } : null);
   const [pastOpen, setPastOpen] = useState(false);
   const [pastShown, setPastShown] = useState(20);
   const newPlan = () => setSheet({ event: null });

@@ -4,6 +4,9 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { eventDaySpan, getValidTimezone } from '@/lib/calendar/timezone';
 import { classIdFromDescription, isClassEvent, stripClassTag } from '@/lib/calendar/class-events';
 import { describeRecurrenceRule, parseRecurrenceRule } from '@/lib/golf/recurrence';
+import { isPracticeTabEnabled } from '@/lib/coachhelm/v3/practice-plan/flag';
+import { practiceTables } from '@/lib/golf/practice-db';
+import type { ChCalPlan } from '../screens/calendar/model';
 import { chLogServer } from '../lib/track-server';
 import type { MarkEntries } from '../lib/marks-cookie';
 import { whenPhrase } from '@/lib/calendar/change-mark';
@@ -64,6 +67,24 @@ export interface ChCalendarData {
 type ClassRow = { id: string; player_id: string; instructor: string | null; days: string[] | null; semester: string | null; building: string | null; room: string | null };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function readEventPlans(sb: Awaited<ReturnType<typeof createClient>>, teamId: string, coach: boolean): Promise<Map<string, ChCalPlan> | null> {
+  const db = practiceTables(sb);
+  const out = new Map<string, ChCalPlan>();
+  if (coach) {
+    const { data, error } = await db.from('golf_practice_plans').select('id, event_id, status, version, published_version').eq('team_id', teamId).not('event_id', 'is', null);
+    if (error) return null;
+    for (const p of (data ?? []) as Array<{ id: string; event_id: string; status: string; version: number; published_version: number | null }>) {
+      out.set(p.event_id, { id: p.id, state: p.status !== 'published' ? 'draft' : p.published_version != null && p.version !== p.published_version ? 'edited' : 'published' });
+    }
+    return out;
+  }
+  // A player reads live versions only: RLS holds this to what's published for their team.
+  const { data, error } = await db.from('golf_practice_plan_versions').select('plan_id, event_id').not('event_id', 'is', null);
+  if (error) return null;
+  for (const v of (data ?? []) as Array<{ plan_id: string; event_id: string }>) out.set(v.event_id, { id: v.plan_id, state: 'published' });
+  return out;
+}
 
 const TYPES: ReadonlySet<string> = new Set(['practice', 'qualifier', 'tournament', 'meeting', 'travel', 'class', 'other']);
 
@@ -271,6 +292,8 @@ export async function loadCalendar(input: {
   // read beside the rows: they tell a player that an event asking for replies invites no one, so the whole team may reply
   // (production allows it: golf_event_attendance_insert_self), and, only when the rows failed, whether a meeting invites
   // anyone at all (D2-8, below). Until that function exists (`missing`) the rows answer both, as before.
+  // Practice's plan on each practice: one read beside the events. Off, or the tables not there yet, it's simply absent.
+  const plans = isPracticeTabEnabled() ? await readEventPlans(supabase, input.teamId, input.role === 'coach').catch(() => null) : null;
   const meetingIds = input.role === 'player' ? rows.filter((r) => !isClassEvent(r) && (r.event_type === 'meeting' || r.requires_rsvp === true)).map((r) => r.id) : [];
   // Paged (fetchAllRowsResult): 200 events x a full roster passes PostgREST's 1,000-row cap.
   const [{ data: attendance, error: attendanceError }, meetingCounts] = await Promise.all([
@@ -352,6 +375,7 @@ export async function loadCalendar(input: {
     // nobody is invited to is the coach's own); when the count failed too, no meeting is shown (fail closed).
     if (input.role === 'player' && r.event_type === 'meeting' && !playerSeesMeeting(rsvpError ? null : !!me && invitees.includes(me), invitedCount(r.id))) continue;
     const base = {
+      ...(type === 'practice' && plans ? { plan: plans.get(r.id) ?? (input.role === 'coach' ? ({ state: 'none' } as const) : undefined) } : {}),
       id: r.id,
       type,
       title: r.title,

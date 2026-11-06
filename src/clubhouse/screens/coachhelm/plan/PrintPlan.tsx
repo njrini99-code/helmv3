@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import { PracticePlanSheet } from './sheet/PracticePlanSheet';
@@ -7,16 +8,23 @@ import type { PlanSheetModel } from './sheet/plan-sheet-model';
 
 /** Browser print of the one sheet: a portal root, its paper size, two frames and the fonts, then `window.print()`; all gone on `afterprint`. */
 export async function printPlan(plan: PlanSheetModel): Promise<void> {
+  return printNode(<PracticePlanSheet plan={plan} density="print" />);
+}
+
+/** Any printed pages (the print studio's pick) through the same root and paper. */
+export async function printNode(node: ReactNode): Promise<void> {
   // A second Print replaces the first; iOS often never fires afterprint in the home-screen app.
   document.querySelectorAll('.ch-cp-print-root').forEach((el) => el.remove());
   const host = document.createElement('div');
   host.className = 'ch-cp-print-root';
+  // The print root sits outside the app's tree, and the type and space tokens live on this attribute.
+  host.setAttribute('data-ui', 'clubhouse');
   document.body.appendChild(host);
   const paper = document.createElement('style');
   paper.textContent = '@page { margin: 16mm; }';
   document.head.appendChild(paper);
   const root = createRoot(host);
-  flushSync(() => root.render(<PracticePlanSheet plan={plan} density="print" />));
+  flushSync(() => root.render(node));
   await document.fonts.ready;
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   const done = () => {

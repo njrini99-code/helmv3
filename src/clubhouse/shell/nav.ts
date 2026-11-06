@@ -221,7 +221,7 @@ const CH_REBUILT_CHILDREN: Record<string, RegExp> = {
   '/golf/dashboard/qualifiers': /^\/golf\/dashboard\/qualifiers\/(new|[0-9a-f-]{36}(\/(edit|selection))?)$/i,
 };
 
-const CH_PRACTICE_PAGES = /^\/golf\/dashboard\/practice(\/(format|drills(\/[^/]+)?|groups|templates|plan\/[^/]+(\/edit)?))?$/;
+const CH_PRACTICE_PAGES = /^\/golf\/dashboard\/practice(\/(format|drills(\/[^/]+)?|groups|templates|print\/[^/]+|plan\/[^/]+(\/edit)?))?$/;
 
 /**
  * Rebuilt addresses whose parent isn't rebuilt for that role. A player
@@ -378,6 +378,7 @@ const PUSHED_BELOW: ReadonlyArray<{ path: RegExp; top: (role: ChRole, m: RegExpE
   // No parent: a plan opens from Ask, a push, Documents or Calendar, and Back returns to whichever it was (D-41).
   { path: /^\/golf\/dashboard\/practice\/plan\/[^/]+$/, top: () => ({ back: 'Back', title: 'Practice plan' }) },
   { path: /^\/golf\/dashboard\/practice\/drills\/[^/]+$/, top: () => ({ back: 'Drills', title: 'Drill', parent: '/golf/dashboard/practice/drills' }) },
+  { path: /^\/golf\/dashboard\/practice\/print\/([^/]+)$/, top: (role, m) => (role === 'coach' ? { back: 'Plan', title: 'Print', parent: `/golf/dashboard/practice/plan/${m[1]}` } : null) },
   { path: /^\/golf\/dashboard\/practice\/format$/, top: (role) => (role === 'coach' ? { back: 'Back', title: 'Plan format' } : null) },
   { path: /^\/golf\/dashboard\/practice\/plan\/[^/]+\/edit$/, top: (role) => (role === 'coach' ? { back: 'Practice', title: 'Practice plan', parent: '/golf/dashboard/practice' } : null) },
   // P-7: no parent, so Back steps back to the round or the library it came from (D-41).

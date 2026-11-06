@@ -8,6 +8,8 @@ import { parsePlanBody, type PlanDraft } from '@/lib/coachhelm/v3/practice-plan/
 import { practiceRpc, practiceTables } from '@/lib/golf/practice-db';
 import { isPracticeMissing, practiceErrorOf } from '@/lib/golf/practice-errors';
 import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
+import { sendMessage } from '@/app/actions/messages';
+import { getAppBaseUrl } from '@/lib/app-base-url';
 
 const cleanFolder = (f: string): string | null => {
   const t = f.trim();
@@ -79,4 +81,21 @@ export async function undoPracticePlanDraft(input: Parameters<typeof undoPractic
 }
 export async function listPlanFolders() {
   return obsList();
+}
+
+/** Share › Send to team chat: one text post with the plan's link, no second push. */
+async function postPracticePlanToChatImpl(input: { planId: string }): Promise<{ success: boolean; error?: string }> {
+  const sb = await createClient();
+  const ctx = await resolveCoachChatContext(sb).catch(() => null);
+  if (!ctx) return { success: false, error: 'Unauthorized' };
+  const { data: plan, error: planError } = await practiceTables(sb).from('golf_practice_plans').select('title').eq('id', input.planId).eq('team_id', ctx.team_id).maybeSingle();
+  if (planError || !plan) return { success: false, error: 'That plan is gone.' };
+  const { data: channel, error } = await sb.from('golf_conversations').select('id').eq('team_id', ctx.team_id).eq('is_team_channel', true).limit(1).maybeSingle();
+  if (error || !channel?.id) return { success: false, error: 'Your team has no team chat yet.' };
+  const sent = await sendMessage({ conversationId: channel.id, content: `${(plan as { title: string }).title} ${getAppBaseUrl()}/golf/dashboard/practice/plan/${input.planId}`, sport: 'golf', createNotifications: false });
+  return sent.success ? { success: true } : { success: false, error: 'Couldn’t post to team chat.' };
+}
+const observedPostChat = withAdminObserved('postPracticePlanToChat', { sport: 'golf', feature: 'practice_plans' }, postPracticePlanToChatImpl);
+export async function postPracticePlanToChat(input: { planId: string }) {
+  return observedPostChat(input);
 }

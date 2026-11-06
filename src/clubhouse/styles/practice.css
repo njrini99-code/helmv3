@@ -1191,3 +1191,39 @@ main.ch-prc-planpage {
 .ch-prc-checks { display: grid; margin: 0; padding: 0; list-style: none; }
 .ch-prc-checks label { display: flex; align-items: center; gap: 8px; min-height: 44px; font: var(--ch-type-15); color: var(--ch-text-primary); }
 .ch-prc-checks li + li { border-top: var(--ch-hairline-w) solid var(--ch-separator); }
+
+/* The coach's bar on the plan page, and the Run card (N-00 4.11, 4.12). */
+.ch-prc-seen { min-height: 44px; padding: 0 4px; border: 0; background: none; font: var(--ch-type-14-medium); color: var(--ch-accent); cursor: pointer; }
+.ch-prc-seenlist { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.ch-prc-seenlist li { display: flex; align-items: center; gap: 8px; font: var(--ch-type-15); color: var(--ch-text-primary); }
+.ch-prc-run { display: grid; gap: 12px; margin-block-end: 16px; padding: 16px; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-card-shadow); }
+.ch-prc-run ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.ch-prc-run li { display: grid; gap: 2px; font: var(--ch-type-14); color: var(--ch-text-primary); }
+.ch-prc-run b { font: var(--ch-type-14-strong); }
+.ch-prc-run small { font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-prc-run__a { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Print studio (N-00 4.14): the page's own choices, then paper. */
+.ch-prt-opts { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 0 0 16px; padding: 0; list-style: none; }
+.ch-prt-preview { display: grid; gap: 16px; justify-items: center; }
+.ch-prt-page { display: block; width: 100%; max-width: 816px; padding: 32px; background: var(--ch-print-paper); color: var(--ch-print-ink); box-shadow: var(--ch-card-shadow); break-after: page; }
+.ch-prt-wide { max-width: 1056px; }
+.ch-prt-h { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; margin-block-end: 16px; font: var(--ch-type-13); color: var(--ch-print-soft); }
+.ch-prt-h h2 { flex-basis: 100%; order: 1; margin: 0; font: var(--ch-type-28-strong); letter-spacing: var(--ch-track-28); color: var(--ch-print-ink); }
+.ch-prt-rot { width: 100%; border-collapse: collapse; font: var(--ch-type-20-medium); color: var(--ch-print-ink); }
+.ch-prt-rot th, .ch-prt-rot td { padding: 12px; border-top: var(--ch-hairline-w) solid var(--ch-print-rule); text-align: start; }
+.ch-prt-rot thead th { border-top: 0; font: var(--ch-type-15-strong); }
+.ch-prt-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; }
+.ch-prt-card { padding: 16px; border-inline-end: var(--ch-hairline-w) dashed var(--ch-print-rule); break-inside: avoid; }
+.ch-prt-card header { display: flex; justify-content: space-between; gap: 8px; font: var(--ch-type-13); color: var(--ch-print-soft); }
+.ch-prt-card h3 { margin: 8px 0; font: var(--ch-type-20-strong); color: var(--ch-print-ink); }
+.ch-prt-card ol { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font: var(--ch-type-14); }
+.ch-prt-card li { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 8px; }
+.ch-prt-cols { columns: 2; column-gap: 24px; }
+.ch-prt-cols article { break-inside: avoid; margin-block-end: 16px; }
+.ch-prt-cols h3 { margin: 0; font: var(--ch-type-15-strong); color: var(--ch-print-ink); }
+.ch-prt-cols small { font: var(--ch-type-13); color: var(--ch-print-soft); }
+.ch-prt-cols p { margin: 4px 0 0; font: var(--ch-type-14); color: var(--ch-print-ink); }
+@media print {
+  .ch-prt-page { max-width: none; padding: 0; box-shadow: none; }
+}

@@ -7,6 +7,13 @@
  * tokens is read in here. `npm run clubhouse:check` enforces both directions.
  * Light here; the dark values follow this block (owner, 2026-10-08).
  */
+:root {
+  /* Paper: ink on white in every theme, so a sheet prints the same on any printer (N-00 4.14). */
+  --ch-print-ink: #1c1b18;
+  --ch-print-soft: #46433d;
+  --ch-print-rule: #c9c5ba;
+  --ch-print-paper: #ffffff;
+}
 [data-ui='clubhouse'] {
   /* Ivory neutrals */
   --ch-ivory-0: #ffffff;
