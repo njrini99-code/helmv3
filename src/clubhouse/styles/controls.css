@@ -40,6 +40,7 @@
   height: calc(35 * var(--ch-type-k));
   border-radius: calc(var(--ch-radius-md) - 3px);
   font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
 }
 .ch-seg--sm .ch-seg__b {
   border-radius: max(var(--ch-radius-xs), calc(var(--ch-radius-lg) - var(--ch-space-1)));
