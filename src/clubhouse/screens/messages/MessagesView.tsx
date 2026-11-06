@@ -918,6 +918,7 @@ function ReactionChip({ api, messageId, r, arriving = false }: { api: ChMessages
 /** A photo in a message: shown in the thread, a click opens the full file. One that won't load falls back to the file chip. */
 function ImageAttachment({ f, redesign = false }: { f: ChAttachment; redesign?: boolean }) {
   const [broken, setBroken] = useState(false);
+  const [viewing, setViewing] = useState(false);
   if (broken) {
     return (
       <a className="ch-ms-bub ch-ms-bub--file" href={f.url ?? undefined} target="_blank" rel="noreferrer">
@@ -933,10 +934,21 @@ function ImageAttachment({ f, redesign = false }: { f: ChAttachment; redesign?: 
     );
   }
   return (
-    <a className="ch-ms-img" href={f.url ?? undefined} target="_blank" rel="noreferrer" aria-label={`Open ${f.name}`}>
-      {/* A plain img on purpose: a signed storage URL, sized by the thread, not an optimised asset. */}
-      <img src={f.url ?? undefined} alt={f.name} loading="lazy" decoding="async" onError={() => setBroken(true)} />
-    </a>
+    <>
+      {/* A photo opens here, in the app; the original is one more tap inside it. */}
+      <button type="button" className="ch-ms-img" aria-label={`Open ${f.name}`} onClick={() => setViewing(true)}>
+        {/* A plain img on purpose: a signed storage URL, sized by the thread, not an optimised asset. */}
+        <img src={f.url ?? undefined} alt={f.name} loading="lazy" decoding="async" onError={() => setBroken(true)} />
+      </button>
+      <Modal open={viewing} title={f.name} onClose={() => setViewing(false)}>
+        <div className="ch-ms-imgview">
+          <img src={f.url ?? undefined} alt={f.name} decoding="async" />
+          <a className="ch-ms-imgview__orig" href={f.url ?? undefined} target="_blank" rel="noreferrer">
+            Open original
+          </a>
+        </div>
+      </Modal>
+    </>
   );
 }
 
@@ -1093,11 +1105,26 @@ function useLongPress(onFire: (() => void) | undefined, onSwipe?: (direction: "l
         if (timer.current) window.clearTimeout(timer.current);
         timer.current = null;
         // Vertical movement belongs to the native scroll view.
-        if (Math.abs(e.clientY - o.y) > 24) origin.current = null;
+        if (Math.abs(e.clientY - o.y) > 24) {
+          origin.current = null;
+          (e.currentTarget as HTMLElement).style.transform = '';
+        } else if (o.x >= 24 && onSwipe && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          // The bubble follows the finger up to the distance that replies, so the swipe shows it's working.
+          const dx = e.clientX - o.x;
+          (e.currentTarget as HTMLElement).style.transform = `translateX(${Math.max(-64, Math.min(64, dx))}px)`;
+        }
       }
     },
     onPointerUp: (e: ReactPointerEvent) => {
       const o = origin.current;
+      const el = e.currentTarget as HTMLElement;
+      if (el.style.transform) {
+        el.style.transition = 'transform var(--ch-dur-quick) var(--ch-ease)';
+        el.style.transform = '';
+        window.setTimeout(() => {
+          el.style.transition = '';
+        }, 200);
+      }
       if (o && o.x >= 24 && onSwipe && Math.abs(e.clientX - o.x) >= 60 && Math.abs(e.clientY - o.y) <= 24) {
         haptic("select");
         onSwipe(e.clientX > o.x ? "right" : "left");
@@ -1220,7 +1247,9 @@ export function Bubble({
   const reacts = api.reactions.get(m.id) ?? [];
   // Redesign: two taps within 300ms toggle Like, once (MSG-HOLD-06).
   const lastTap = useRef(0);
-  const toggleLikeOnDouble = () => {
+  const toggleLikeOnDouble = (e: { target: EventTarget | null }) => {
+    // A double tap on a link, a poll or a photo is about that thing, not a like.
+    if (e.target instanceof Element && e.target.closest('a,button,input,label,[role="button"],.ch-ms-poll,.ch-ms-quote,img')) return;
     const now = Date.now();
     if (now - lastTap.current < 300) {
       lastTap.current = 0;

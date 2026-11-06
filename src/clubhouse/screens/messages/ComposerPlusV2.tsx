@@ -26,7 +26,15 @@ export function ComposerPlusV2({ api, conv, disabled, onPick }: { api: ChMessage
   useEffect(() => {
     if (!open) return;
     const onDown = (e: PointerEvent) => {
-      if (!root.current?.contains(e.target as Node)) setClosing(true);
+      if (root.current?.contains(e.target as Node)) return;
+      // The tap that closes the menu does only that: it doesn't also open or like what's under it.
+      setClosing(true);
+      const swallow = (click: Event) => {
+        click.stopPropagation();
+        click.preventDefault();
+      };
+      document.addEventListener('click', swallow, { capture: true, once: true });
+      window.setTimeout(() => document.removeEventListener('click', swallow, { capture: true }), 400);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setClosing(true);
@@ -85,8 +93,8 @@ export function ComposerPlusV2({ api, conv, disabled, onPick }: { api: ChMessage
           )}
         </div>
       )}
-      <input ref={photos} type="file" accept="image/*" multiple hidden disabled={disabled} onChange={(e) => take(e.target)} />
-      <input ref={files} type="file" multiple hidden disabled={disabled} onChange={(e) => take(e.target)} />
+      <input ref={photos} type="file" accept="image/*,video/*" multiple hidden disabled={disabled} onChange={(e) => take(e.target)} />
+      <input ref={files} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,application/*" multiple hidden disabled={disabled} onChange={(e) => take(e.target)} />
       {canPoll && <PollSheet key={conv.id} api={api} conv={conv} open={polling} onClose={() => setPolling(false)} />}
     </div>
   );

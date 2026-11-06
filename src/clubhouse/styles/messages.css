@@ -3281,8 +3281,10 @@ html[data-fw-theme='dark'] .ch-msp-thread .ch-ms-msg.is-mine.is-failed .ch-ms-bu
   cursor: pointer;
   transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-ms-fold:hover {
-  background: color-mix(in srgb, var(--ch-green-fill-600) 7%, transparent);
+@media (hover: hover) {
+  .ch-ms-fold:hover {
+    background: color-mix(in srgb, var(--ch-green-fill-600) 7%, transparent);
+  }
 }
 .ch-ms-fold:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -4518,7 +4520,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 [data-ch-ms-v2] .ch-msv-datepill {
   position: absolute;
   z-index: var(--ch-z-raised);
-  top: 74px;
+  top: calc(env(safe-area-inset-top) + var(--ch-phone-topbar-h) + 8px);
   left: 50%;
   padding: 4px 12px;
   border-radius: 999px;
@@ -5915,3 +5917,28 @@ body:has([data-ch-ms-v2]) .ch-toast {
 /* A photo that wouldn't load says so. */
 .ch-msv-photo-off { display: grid; place-items: center; width: 100%; height: 100%; color: var(--ch-text-tertiary); font: var(--ch-type-12); letter-spacing: var(--ch-track-12); text-align: center; }
 .ch-msv-ptile .ch-msv-sk { display: block; width: 100%; height: 100%; }
+
+/* MOB-MSG-4: Safari's keyboard fit: no home bar under a keyboard. */
+.ch-pscreen[data-ch-vv] .ch-ms-comp { padding-bottom: 8px; }
+/* MOB-MSG-9: on the narrowest phones each said line stays over its own pin. */
+@media (max-width: 400px) {
+  [data-ch-ms-v2] .ch-msv-bubblet,
+  [data-ch-ms-v2] .ch-msv-pin:nth-child(3n) .ch-msv-bubblet { left: 50%; right: auto; max-width: calc(100% - 4px); transform: translateX(-50%); }
+}
+/* MOB-MSG-12: an iPhone on its side: the notch's side stays clear. */
+@media (max-height: 500px) and (pointer: coarse) {
+  [data-ch-ms-v2] .ch-msp-thread .ch-ms-msgs,
+  [data-ch-ms-v2] .ch-msp-thread .ch-ms-comp,
+  [data-ch-ms-v2] .ch-msp-home { padding-inline: max(var(--ch-page-x-phone), env(safe-area-inset-left)) max(var(--ch-page-x-phone), env(safe-area-inset-right)); }
+}
+/* MOB-MSG-19: one page colour down to the dock. */
+.ch-msv-inbox { min-height: 100%; }
+/* MOB-MSG-21: the attach menu stays on screen over a keyboard. */
+[data-ch-ms-v2] .ch-msv-attach-menu { max-height: calc(var(--ch-vv-h, 100dvh) - 120px); overflow: auto; }
+/* MOB-MSG-28 */
+.ch-msv-files { scroll-margin-top: calc(env(safe-area-inset-top) + var(--ch-phone-topbar-h)); }
+/* MOB-MSG-23: a photo, opened. */
+.ch-ms-img { padding: 0; border: 0; background: none; cursor: pointer; }
+.ch-ms-imgview { display: grid; gap: 12px; justify-items: center; }
+.ch-ms-imgview img { max-width: 100%; max-height: 70dvh; border-radius: var(--ch-radius-md); }
+.ch-ms-imgview__orig { display: inline-flex; align-items: center; min-height: 44px; color: var(--ch-accent); font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); }

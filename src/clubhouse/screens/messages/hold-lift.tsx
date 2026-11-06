@@ -85,7 +85,8 @@ export function HoldLift({ messageId, mine, bar, children, onClosed, closeSignal
       menu.current?.animate([{ transform: 'scale(.8)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: lift.ms, easing: lift.linear });
     }
     // The first reaction takes focus, as the page's toolbar (its first control).
-    rbar.current?.querySelector<HTMLElement>('button')?.focus({ preventScroll: true });
+    // Not while typing on a phone: taking focus drops the keyboard, and the thread would move under what was just measured (MOB-MSG-6).
+    if (!(phone && document.activeElement instanceof HTMLTextAreaElement)) rbar.current?.querySelector<HTMLElement>('button')?.focus({ preventScroll: true });
     return () => {
       el.style.visibility = '';
     };

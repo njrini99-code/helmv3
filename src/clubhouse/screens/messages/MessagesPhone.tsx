@@ -328,7 +328,7 @@ function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void })
               <div className="ch-msv-pins">
                 {pinned.map((c) => {
                   const typers = api.typingByConv?.get(c.id);
-                  const said = c.lastSenderId !== api.viewer.userId ? c.lastText : null;
+                  const said = !c.group && c.lastSenderId !== api.viewer.userId ? c.lastText : null;
                   return (
                     <button key={c.id} type="button" className="ch-msv-pin" onClick={() => api.select(c.id)}>
                       {typers?.length ? (
@@ -948,7 +948,7 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
     await api.startDirect(userId);
   };
   return (
-    <PhoneScreen labelledBy={titleId} className="ch-msp-details">
+    <PhoneScreen labelledBy={titleId} className="ch-msp-details" keyboardAware>
       <PhoneBar back={{ label: api.redesign ? "Back" : "Chat", onBack }} title="Details" titleId={titleId} />
       <div className="ch-msp-scroll">
         <SectionBoundary surface="messages.details" label="Details" code="CH-7213">
@@ -968,7 +968,7 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
                   mute={muteV2}
                   profileHref={statsHref && other?.playerId ? `${statsHref}?player=${encodeURIComponent(other.playerId)}` : null}
                   onSearch={() => setSearching((v) => !v)}
-                  onFiles={() => document.querySelector(".ch-msp-details .ch-msv-files")?.scrollIntoView({ block: "start" })}
+                  onFiles={() => document.querySelector(".ch-msp-details .ch-msv-files")?.scrollIntoView({ block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" })}
                   onAdd={() => setAdding(true)}
                   onLeave={() => setLeaving(true)}
                 />
@@ -1389,6 +1389,11 @@ function PhoneNewMessage({
             placeholder={to.length || api.redesign ? "" : "Name or group"}
             aria-label="Search people"
             autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            enterKeyHint="next"
+            autoFocus
           />
         </div>
       </div>

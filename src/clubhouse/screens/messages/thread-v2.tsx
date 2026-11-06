@@ -70,8 +70,12 @@ export function ThreadJumpKey({ scroller, unseen, onJump }: { scroller: RefObjec
       if (!frame) frame = requestAnimationFrame(read);
     };
     el.addEventListener('scroll', onScroll, { passive: true });
+    // The keyboard or a turn changes how far the end is, with no scroll to say so.
+    const resized = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(onScroll);
+    resized?.observe(el);
     read();
     return () => {
+      resized?.disconnect();
       el.removeEventListener('scroll', onScroll);
       if (frame) cancelAnimationFrame(frame);
     };
