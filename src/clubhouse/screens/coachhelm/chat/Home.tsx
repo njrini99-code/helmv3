@@ -1,5 +1,6 @@
 'use client';
 
+import { formatWith } from '../../../lib/dates';
 import { AllowanceMeter } from './parts/Allowance';
 import { ArrowRight, CalendarPlus, ChartLine, Target, Trophy, Users, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -97,7 +98,7 @@ const DOT: Record<string, string> = { warn: 'is-warn', loss: 'is-warn', down: 'i
 const greeting = (hour: number) => (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening');
 /** The hour in the team's zone, so the server's render and the browser's say the same words. */
 export function zoneHour(iso: string, timezone: string): number {
-  return Number(new Intl.DateTimeFormat('en-US', { hour: 'numeric', hourCycle: 'h23', timeZone: timezone }).format(new Date(iso)));
+  return Number(formatWith(new Date(iso), { hour: 'numeric', hourCycle: 'h23', timeZone: timezone }));
 }
 
 /**
