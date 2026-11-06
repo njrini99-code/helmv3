@@ -1299,14 +1299,6 @@ html[data-fw-theme='dark'] .ch-htb {
   stroke-dashoffset:24;
 }
 @keyframes ch-htb-draw {to{stroke-dashoffset:0;}}
-.ch-htb .spin {
-  width:18px;
-  height:18px;
-  border-radius: 50%;
-  border:2px solid currentColor;
-  border-right-color:transparent;
-  animation:spin .7s linear infinite;
-}
 .ch-htb .pbars {
   display:grid;
   gap:8px;
@@ -1383,7 +1375,7 @@ html[data-fw-theme='dark'] .ch-htb {
   flex:1;
   display:flex;
   flex-direction:column;
-  justify-content:center;
+  justify-content:safe center;
   gap:20px;
   position:relative;
 }
@@ -2208,6 +2200,11 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
 /* The viewer owns every gesture on it: a hold pauses, a swipe down closes (MOB-TEAM-2). */
 .ch-htb .story {
   touch-action: none;
+}
+/* Except a body too tall for the screen: a drag there scrolls it (MOB-TEAM-3). */
+.ch-htb .sto-b.is-tall {
+  touch-action: pan-y;
+  overscroll-behavior: contain;
 }
 /* The legend draws the mark it names (QA-9). */
 .ch-htb .axis__team {

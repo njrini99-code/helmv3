@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { storiesOf, type ChStoryRound, type ChTeamPlayer, type ChTeamStory } from '../../../data/coachhelm-team-shape';
@@ -124,6 +124,9 @@ function StoryViewer({
 }) {
   const [i, setI] = useState(start);
   const [held, setHeld] = useState(false);
+  // A body too tall for the screen (320 wide, or the largest Text Size) scrolls, and stays until the reader moves on (MOB-TEAM-3).
+  const body = useRef<HTMLDivElement | null>(null);
+  const [tall, setTall] = useState(false);
   const reduced = useChReducedMotion();
   // The page behind never moves while a story is up (MOB-TEAM-2).
   useOverlayScrollLock();
@@ -164,11 +167,21 @@ function StoryViewer({
     box.current?.querySelector<HTMLElement>('.xb')?.focus({ preventScroll: true });
     return () => opener.current?.focus?.({ preventScroll: true });
   }, []);
+  useLayoutEffect(() => {
+    const el = body.current;
+    if (!el) return;
+    const read = () => setTall(el.scrollHeight > el.clientHeight + 1);
+    read();
+    if (typeof ResizeObserver === 'undefined') return;
+    const seen = new ResizeObserver(read);
+    seen.observe(el);
+    return () => seen.disconnect();
+  }, [i]);
   // What's left of this story, so a hold resumes where the bar stopped instead of starting the full time over (MOT-11).
   const left = useRef({ story: -1, ms: STORY_MS });
   useEffect(() => {
     if (left.current.story !== i) left.current = { story: i, ms: STORY_MS };
-    if (reduced || held) return;
+    if (reduced || held || tall) return;
     const from = performance.now();
     const t = window.setTimeout(next, left.current.ms);
     return () => {
@@ -176,7 +189,7 @@ function StoryViewer({
       left.current.ms = Math.max(0, left.current.ms - (performance.now() - from));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- restarts on the story and the hold alone
-  }, [i, held, reduced]);
+  }, [i, held, reduced, tall]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') leave();
@@ -199,8 +212,8 @@ function StoryViewer({
       onPointerDown={(e) => {
         setHeld(true);
         dragged.current = false;
-        // Not from a button: its press is its own, and a drag off it would close the viewer.
-        drag.current = (e.target as Element).closest?.('button, a') ? null : { y: e.clientY, dy: 0, at: performance.now() };
+        // Not from a button: its press is its own, and a drag off it would close the viewer. A tall body's drag scrolls it.
+        drag.current = (e.target as Element).closest?.(tall ? 'button, a, .sto-b' : 'button, a') ? null : { y: e.clientY, dy: 0, at: performance.now() };
       }}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerEnd}
@@ -242,7 +255,8 @@ function StoryViewer({
       </div>
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- Next, in the footer, is the keyboard's way */}
       <div
-        className="sto-b"
+        ref={body}
+        className={'sto-b' + (tall ? ' is-tall' : '')}
         onClick={() => {
           // The lift of a swipe still clicks.
           if (!dragged.current) next();
