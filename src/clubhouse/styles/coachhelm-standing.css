@@ -380,7 +380,7 @@
    its label and window head it over one engraved rule, and the headline sits beside what is most to gain, a column
    split off by a soft rule. Every group of stats is a section of rows under its heading and rule. The loading shapes
    flatten the same way. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   main[data-canopy] :is(.ch-hs-hero, .ch-hs-g, .ch-hs-sk__hero, .ch-hs-sk__g) {
     padding: 0;
     overflow: visible;
@@ -447,7 +447,7 @@
    one feature card"). On the phone where you stand is the view's one green feature card, with what is most to gain
    as rows on the green in champagne; every group of stats is a section flush on the parchment under the engraved
    double rule, its stats rows between soft seams. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-hs-hero {
     gap: 16px;
     padding: 16px;
@@ -703,7 +703,7 @@
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-hs-ld__r {
     border-top-color: var(--ch-ledger-rule-soft);
   }
@@ -726,7 +726,7 @@
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-hs-r__f dt {
     font-size: calc(12 * var(--ch-type-k));
   }
@@ -865,7 +865,7 @@ main[data-canopy] .ch-hs-r:not(:first-child) .ch-hs-r__f dt {
    window's line over the board's own rule, the two-line headline and its note), with the bars in the board's light ink
    (.ch-sk-on-green), never a flat block that turns green when it lands. Where strokes go loads as its ladder rows: the stat and its
    figure, the bar under them and the "Because" line, 105px each. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   main[data-canopy] .ch-hs-sk__hero.is-board {
     min-height: 237px;
     padding: 32px;

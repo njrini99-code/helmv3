@@ -6,7 +6,7 @@ import { formatSigned } from '../../../lib/format';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
 import { Button } from '../../../ui/Button';
-import { LargeTitle, LargeTitleContext } from '../../../ui/LargeTitle';
+import { CoachHelmHead } from '../CoachHelmHead';
 import { rebuiltHref } from '../../../shell/nav';
 import { CoachHelmOffNotice } from '../CoachBoard';
 import { CoachHelmTabs, COACHHELM_HREF, type CoachHelmView } from '../chat/SubTabs';
@@ -197,12 +197,7 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
   const noRounds = data.teamTotal.rounds === 0;
   const tabs = data.off ? null : <CoachHelmTabs active={sw.shown} onGo={sw.go} boardLabel="Team" />;
   const context = data.off ? 'CoachHelm reads the rounds your players post.' : data.roster.count === 0 ? 'No players yet' : noRounds ? `${data.roster.count} players · no rounds yet this season` : `${data.roster.count} players · ${data.teamTotal.rounds} rounds this season · ${readsDrawn(list)} open reads`;
-  const head = (
-    <header className="lt">
-      <LargeTitle>{data.team.name || 'CoachHelm'}</LargeTitle>
-      <LargeTitleContext>{context}</LargeTitleContext>
-    </header>
-  );
+  const head = <CoachHelmHead title={data.team.name || 'CoachHelm'} context={context} tabs={tabs} />;
   const course = courseReads(list).length;
   const skeletonCard = <span className="skl" style={{ height: 120, borderRadius: 16 }} />;
   const today = (
@@ -361,7 +356,6 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone ? (
         <div className="sheet">
-          {tabs}
           {head}
           {body}
         </div>
@@ -369,7 +363,6 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
         <div className="ch-htb-desk">
           <div className="ch-htb-deskhead">
             {head}
-            {tabs}
           </div>
           {body}
         </div>

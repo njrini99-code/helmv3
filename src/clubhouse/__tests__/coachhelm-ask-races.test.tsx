@@ -18,7 +18,7 @@ vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSessi
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router, usePathname: () => '/golf/dashboard/coachhelm' }));
 const phoneState = vi.hoisted(() => ({ on: false }));
-vi.mock('../lib/use-phone', () => ({ useChPhone: () => phoneState.on, CH_PHONE_QUERY: '(max-width: 820px)' }));
+vi.mock('../lib/use-phone', () => ({ useChPhone: () => phoneState.on, CH_PHONE_QUERY: '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' }));
 vi.mock('../screens/coachhelm/chat/Thread', () => ({
   AskThread: (p: { onNewChat: () => void; onSend: (t: string) => void }) => (
     <div data-testid="thread">

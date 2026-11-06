@@ -97,7 +97,7 @@ describe('CH-3604 Roster phone: a sort change reorders the rows and the figures 
   const realMatchMedia = window.matchMedia;
   beforeEach(() => {
     window.matchMedia = ((q: string) => ({
-      matches: q === '(max-width: 820px)',
+      matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)',
       media: q,
       onchange: null,
       addEventListener: () => {},

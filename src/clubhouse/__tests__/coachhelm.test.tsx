@@ -622,7 +622,7 @@ describe('CoachHelm for the player, on screen', () => {
       await user.click(inList('Also worth knowing').getByRole('button', { name: /Penalty strokes/ }));
       expect(scroll).not.toHaveBeenCalled();
       cleanup();
-      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
       showPlayer(PREVIEW_HELM_PLAYER);
       await user.click(inList('Also worth knowing').getByRole('button', { name: /Penalty strokes/ }));
       expect(scroll).toHaveBeenCalledTimes(1);
@@ -1259,7 +1259,7 @@ describe('CoachHelm for the coach, on screen', () => {
 
   it('on the phone the page is its own layout: the same boards, with the players as a row of pills', () => {
     const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     try {
       showCoach();
       expect(document.querySelector('.ch-hl.is-phone')).not.toBeNull();

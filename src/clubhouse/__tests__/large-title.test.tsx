@@ -208,7 +208,7 @@ describe('the CSS that hides and fades the bar title', () => {
   const block = shell.slice(shell.indexOf('/* Phone large titles'), shell.indexOf('/* The More sheet'));
 
   it("names every large title the hook watches in its first-paint :has(), phone only, never on the hero's bar", () => {
-    expect(block).toMatch(/^\/\* Phone large titles[\s\S]*?\*\/\n@media \(max-width: 820px\) \{/);
+    expect(block).toMatch(/^\/\* Phone large titles[\s\S]*?\*\/\n@media \(max-width: 820px\)[^{]*\{/);
     const has = block.slice(block.indexOf(':has('), block.indexOf('.ch-topbar:not('));
     for (const sel of CH_LARGE_TITLES) expect(has, sel).toContain(sel);
     expect(has).toContain(':not(.ch-sr-only, .ch-pscreen *, dialog *)');
@@ -244,7 +244,7 @@ describe('the CSS that hides and fades the bar title', () => {
     expect(block).toMatch(/transition:\s*opacity var\(--ch-dur-quick\) var\(--ch-ease\),\s*translate var\(--ch-dur-quick\) var\(--ch-ease\);/);
     expect(block).not.toMatch(/transition:[^;]*\b(transform|top|height|visibility|display)\b/);
     expect(block).toMatch(/\[data-ui='clubhouse'\]\[data-motion='off'\] \.ch-topbar :is\([^)]*\) \{\s*transition: none;/);
-    expect(block).toMatch(/@media \(max-width: 820px\) and \(prefers-reduced-motion: reduce\) \{[\s\S]*?transition: none;/);
+    expect(block).toMatch(/@media \(max-width: 820px\) and \(prefers-reduced-motion: reduce\)[^{]*\{[\s\S]*?transition: none;/);
   });
   it("draws the scroll edge on ::before (::after is the sheet's lip), only once scrolled", () => {
     expect(block).toMatch(/\.ch-topbar::before \{[^}]*opacity: 0;/);
@@ -256,7 +256,7 @@ describe('the More sheet is native inset grouped rows on the phone', () => {
   const shell = readFileSync(join(process.cwd(), 'src/clubhouse/styles/shell.css'), 'utf8');
   const block = shell.slice(shell.indexOf('/* The More sheet'));
   it('flat groups, label-inset hairlines and plain icons, phone only', () => {
-    expect(block).toMatch(/^\/\* The More sheet[\s\S]*?\*\/\n@media \(max-width: 820px\) \{/);
+    expect(block).toMatch(/^\/\* The More sheet[\s\S]*?\*\/\n@media \(max-width: 820px\)[^{]*\{/);
     expect(block).toMatch(/\.ch-more__list,\s*\.ch-more__me \{[^}]*box-shadow: none;/);
     expect(block).toMatch(/\.ch-more__row \+ \.ch-more__row::before \{[^}]*left: 54px;/);
     expect(block).toMatch(/\.ch-more__row\[aria-current='true'\] \.ch-more__ic \{[^}]*background: none;/);

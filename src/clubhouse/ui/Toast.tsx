@@ -366,7 +366,7 @@ function ToastCard({
       const throw_ = thrown.current;
       if (reduced) return { opacity: 0, transition: { duration: 0 } };
       if (!throw_ && pillOn) return { opacity: 0, transition: { duration: CH_DUR.quick } };
-      if (!throw_) return { opacity: 0, y: 6, scale: 0.98, transition: chTween('base') };
+      if (!throw_) return { opacity: 0, transform: 'translateY(6px) scale(0.98)', transition: chTween('base') };
       // On from where the finger let go, at the speed it was thrown, for another 48px as it fades.
       const out = chThrownExit(throw_.speed, 48);
       return { y: [out.lead * throw_.edge, 48 * throw_.edge], opacity: 0, transition: { y: { duration: out.ms / 1000, ease: out.ease }, opacity: { duration: CH_DUR.quick } } };

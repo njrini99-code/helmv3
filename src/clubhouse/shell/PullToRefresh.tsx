@@ -1,5 +1,6 @@
 'use client';
 
+import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
 import { useEffect, useRef, useState } from 'react';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { haptic } from '../lib/haptics';
@@ -15,13 +16,18 @@ const PULL_MAX = 180;
 /** The spinner shows at least this long, so a refresh that lands at once still reads as one. */
 const PULL_MIN_SPIN_MS = CH_DUR.reveal * 1000;
 const SPOKES = 8;
-const PHONE = '(max-width: 820px)';
+const PHONE = CH_PHONE_QUERY;
 
 /** UIScrollView's rubber band: the farther the finger goes, the less the page follows (0.55 of the screen's height). */
 const rubber = (raw: number, dim: number) => (1 - 1 / ((raw * 0.55) / dim + 1)) * dim;
 const unrubber = (d: number, dim: number) => (d >= dim ? Infinity : ((d / dim / (1 - d / dim)) * dim) / 0.55);
 
 /** The app on an iPhone (CapacitorProvider marks the body; the bridge says so before it does). Safari keeps its own pull. */
+/** Added to the home screen: no toolbar, so no reload but this one (MOB-SHELL-17). */
+function inHomeScreenApp(): boolean {
+  return window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+}
+
 function inIOSApp(): boolean {
   const body = document.body.classList;
   return body.contains('capacitor-ios') || (isNativeApp() && !body.contains('capacitor-android'));
@@ -65,7 +71,7 @@ export function PullToRefresh({ pathname }: { pathname: string }) {
   useEffect(() => {
     live.current = { reduced, refresh, refreshing };
   });
-  useEffect(() => setOn(inIOSApp()), []);
+  useEffect(() => setOn(inIOSApp() || inHomeScreenApp()), []);
 
   useEffect(() => {
     const el = band.current;

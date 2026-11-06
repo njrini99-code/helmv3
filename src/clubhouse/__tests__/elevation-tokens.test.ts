@@ -113,7 +113,7 @@ describe('elevation tokens (B4)', () => {
 
   it('a phone scroller fades over the edge-fade token', () => {
     expect(css('tokens.css')).toMatch(/--ch-edge-fade: 28px;/);
-    expect(css('ui.css')).toMatch(/@media \(max-width: 820px\) \{\s*\.ch-hscroll \{\s*--ch-hs-fade: var\(--ch-edge-fade\);/);
+    expect(css('ui.css')).toMatch(/@media \(max-width: 820px\)[^{]*\{\s*\.ch-hscroll \{\s*--ch-hs-fade: var\(--ch-edge-fade\);/);
   });
 });
 

@@ -571,7 +571,7 @@ describe('Stats team · loading, haptics, accessibility', () => {
 describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
   const real = window.matchMedia;
   beforeEach(() => {
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
   });
   afterEach(() => {
     window.matchMedia = real;
@@ -1311,7 +1311,7 @@ describe('Stats team · what changed (row 70)', () => {
     window.matchMedia = real;
   });
   const asPhone = () => {
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
   };
   const card = () => screen.queryByRole('region', { name: /^(What changed|No clear change)$/ });
   /** Each line the card states is toned the same way where the page draws that change: the same signed figure in the same ink. */
@@ -1358,7 +1358,7 @@ describe('Stats team · phone putting rates (A2)', () => {
     window.matchMedia = real;
   });
   it('a make rate is amber only when it prints below the Tour’s: 69.6% against 70% is level, 68.8% is below', async () => {
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     const bands = [
       { label: '5–10 ft', made: 87, attempts: 125, bench: 70 },
       { label: '10–15 ft', made: 86, attempts: 125, bench: 70 },

@@ -61,7 +61,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com'),
   icons: {
     icon: '/Helm-Logo-New-Main.png',
-    apple: '/Helm-Logo-New-Main.png',
+    apple: '/apple-touch-icon.png',
   },
   manifest: '/manifest.json',
   appleWebApp: {

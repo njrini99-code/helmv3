@@ -156,7 +156,7 @@ describe('Roster class lines', () => {
 describe('Roster class lines · phone', () => {
   const realMatchMedia = window.matchMedia;
   beforeEach(() => {
-    window.matchMedia = ((q: string) => ({ matches: q === '(max-width: 820px)', media: q, onchange: null, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false })) as never;
+    window.matchMedia = ((q: string) => ({ matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)', media: q, onchange: null, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false })) as never;
   });
   afterEach(() => {
     window.matchMedia = realMatchMedia;

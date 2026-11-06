@@ -1,5 +1,6 @@
 'use client';
 
+import { CH_DESK_QUERY } from '@/clubhouse/lib/phone-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChMessagesApi } from '../screens/messages/MessagesView';
 import { MessagesView } from '../screens/messages/MessagesScreen';
@@ -217,7 +218,7 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
     const id = view === 'stress' ? 'eli' : view ? DESIGN_ROUTE_CONV[view] : undefined;
     if (id) setSelectedId(id);
     // Desktop opens Eli beside the rail on the inbox routes, as the page does.
-    else if (view && ['inbox', 'unread', 'longinbox', 'rowtyping'].includes(view) && window.matchMedia('(min-width: 821px)').matches) setSelectedId('eli');
+    else if (view && ['inbox', 'unread', 'longinbox', 'rowtyping'].includes(view) && window.matchMedia(CH_DESK_QUERY).matches) setSelectedId('eli');
     const add = (senderId: string, text: string) => {
       setSelectedId((open) => {
         const to = open ?? 'team';
@@ -313,7 +314,7 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
   }, [design, view, toast]);
   useEffect(() => {
     if (design || state === 'empty' || state === 'rail' || state === 'announcement') return;
-    if (window.matchMedia('(min-width: 821px)').matches) setSelectedId((id) => id ?? 'team');
+    if (window.matchMedia(CH_DESK_QUERY).matches) setSelectedId((id) => id ?? 'team');
   }, [state, design]);
   const [anns, setAnns] = useState<ChAnnouncement[]>(state === 'empty' || design ? [] : baseAnns);
   const [annId, setAnnId] = useState<string | null>(state === 'announcement' ? 'an1' : null);

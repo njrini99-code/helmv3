@@ -212,7 +212,7 @@ describe('Shell · bell', () => {
 
   it('CH-1811 on the phone the bell drops the stacks as a modal sheet: focus moves in, Tab stays inside, Esc gives focus back', async () => {
     const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     try {
       const user = userEvent.setup();
       bell({});
@@ -703,7 +703,7 @@ describe('Shell · navigation and accessibility', () => {
 
     it('a Modal is a sheet on the phone: its header drags it shut, its Close button stays a button', async () => {
       const real = window.matchMedia;
-      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
       try {
         const onCloseSpy = vi.fn();
         const Harness = () => {
@@ -746,7 +746,7 @@ describe('Shell · navigation and accessibility', () => {
 
     it('the bell drop goes back up under the bar when its header is dragged up past a third of it', async () => {
       const real = window.matchMedia;
-      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
       try {
         const user = userEvent.setup();
         bell({});
@@ -772,7 +772,7 @@ describe('Shell · navigation and accessibility', () => {
     // F-0018 (audit 2026-10-29): Reduce Motion changes how a drag settles, never whether there is one.
     it('with reduced motion a sheet still drags, and a pull past the mark closes it', async () => {
       const real = window.matchMedia;
-      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' || q === '(prefers-reduced-motion: reduce)' })) as typeof window.matchMedia;
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' || q === '(prefers-reduced-motion: reduce)' })) as typeof window.matchMedia;
       try {
         const onClose = vi.fn();
         wrap(
@@ -874,7 +874,7 @@ describe('Shell · phone chrome', () => {
     const realVV = Object.getOwnPropertyDescriptor(window, 'visualViewport');
     const realMM = window.matchMedia;
     Object.defineProperty(window, 'visualViewport', { configurable: true, value: vv });
-    window.matchMedia = ((q: string) => ({ ...realMM(q), matches: q === '(pointer: coarse)' || q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...realMM(q), matches: q === '(pointer: coarse)' || q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     const ch = vi.spyOn(document.documentElement, 'clientHeight', 'get').mockReturnValue(714);
     const ih = vi.spyOn(window, 'innerHeight', 'get').mockImplementation(() => vv.height);
     try {
@@ -1346,7 +1346,7 @@ describe('Shell · behaviour contracts (P001)', () => {
 
   it('on the phone the feed is read once the page settles, so the first open lands on its cards, not the skeleton (Simulator, 2026-10-14)', async () => {
     const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     let opened!: () => void;
     const first = new Promise<void>((r) => (opened = r));
     try {

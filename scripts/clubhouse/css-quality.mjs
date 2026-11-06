@@ -12,7 +12,8 @@ const normalize = (value) => value.replace(/\s+/g, ' ').trim();
 function context(node) {
   const parts = [];
   for (let parent = node.parent; parent && parent.type !== 'root'; parent = parent.parent)
-    parts.unshift(parent.type === 'rule' ? normalize(parent.selector) : `@${parent.name} ${normalize(parent.params)}`);
+    // The landscape clauses (lib/phone-query.ts) are part of what "phone" and "desk" mean, not a new rule to review.
+    parts.unshift(parent.type === 'rule' ? normalize(parent.selector) : `@${parent.name} ${normalize(parent.params).replaceAll(/, (?:\(min-width: 414px\) and )?\(max-height: 500px\) and \(pointer: coarse\)(?: and [^,]+)?/g, '').replaceAll(' and ((min-height: 501px) or (pointer: fine))', '')}`);
   return parts.join(' / ');
 }
 function parse(css, file) { return postcss.parse(css, { from: file }); }

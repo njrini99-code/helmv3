@@ -17,8 +17,8 @@ import { ROOT } from './_scan';
  * rules, and the container-query and print rules.
  */
 const DESK = '';
-const PHONE = '@media (max-width: 820px)';
-const WIDE = '@media (min-width: 821px)';
+const PHONE = '@media (max-width: 820px), (max-height: 500px) and (pointer: coarse)';
+const WIDE = '@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine))';
 
 const ROOTS: [file: string, context: string, selector: string][] = [
   // Desktop page tops

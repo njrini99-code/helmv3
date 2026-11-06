@@ -166,6 +166,6 @@ describe('phone width', () => {
     }) as never;
     expect(renderHook(() => useChPhone()).result.current).toBe(true);
     expect(seen).toContain(CH_PHONE_QUERY);
-    expect(CH_PHONE_QUERY).toBe('(max-width: 820px)');
+    expect(CH_PHONE_QUERY).toBe('(max-width: 820px), (max-height: 500px) and (pointer: coarse)');
   });
 });

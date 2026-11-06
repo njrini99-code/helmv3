@@ -281,7 +281,7 @@ describe('Player Home · desktop (Player - Home.html)', () => {
 describe('Player Home · phone (Player - Home - Mobile.html)', () => {
   const real = window.matchMedia;
   beforeEach(() => {
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
   });
   afterEach(() => {
     window.matchMedia = real;
@@ -671,7 +671,7 @@ describe('Player Home · the page’s own contracts (desktop)', () => {
 describe('Player Home · the phone, the page’s own contracts', () => {
   const real = window.matchMedia;
   beforeEach(() => {
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     document.addEventListener('click', stopNavigation, true);
   });
   afterEach(() => {

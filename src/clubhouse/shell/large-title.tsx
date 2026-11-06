@@ -1,5 +1,6 @@
 'use client';
 
+import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
 import { useEffect, type RefObject } from 'react';
 
 /**
@@ -43,7 +44,7 @@ export function isTucked(entry: Pick<IntersectionObserverEntry, 'isIntersecting'
   return !entry.isIntersecting && entry.boundingClientRect.bottom <= barBottom + 1;
 }
 
-const PHONE = '(max-width: 820px)';
+const PHONE = CH_PHONE_QUERY;
 
 /** Refresh: the shade under the bar waits for 8px of scroll (DESIGN_LANGUAGE 5). */
 const REFRESH_EDGE_AT = 8;

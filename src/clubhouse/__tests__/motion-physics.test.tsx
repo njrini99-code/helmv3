@@ -270,7 +270,7 @@ describe('CH-1611 sheet physics', () => {
 
   it('a Modal thrown shut leaves on the spring at the throw speed; closed by its button it leaves on the same spring from rest', () => {
     const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     vi.stubGlobal('CSS', { supports: () => true });
     vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(400);
     const exits: KeyframeAnimationOptions[] = [];

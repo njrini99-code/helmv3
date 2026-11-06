@@ -24,7 +24,7 @@ html[data-fw-theme='dark'] .ch-qcs {
 .ch-qcs .hkey { position: relative; display: inline-grid; place-items: center; width: 44px; height: 44px; border: 0; padding: 0; border-radius: var(--ch-radius-xl); background: none; cursor: pointer; color: var(--ch-qc-a-frame-icon); }
 .ch-qcs .hkey__disc { position: absolute; inset: 4px; border-radius: var(--ch-radius-lg); background: rgb(244 238 221 / 0.16); opacity: 0; transform: scale(0.82); transition: opacity 0.2s, transform 0.26s var(--ch-ease); }
 .ch-qcs .hkey.is-on .hkey__disc { opacity: 1; transform: none; }
-.ch-qcs.is-reduce .hkey__disc { transform: none; transition: opacity 0.18s linear; }
+.ch-qcs.is-reduce .hkey__disc { transform: none; transition: opacity var(--ch-dur-crossfade-rm) linear; }
 .ch-qcs .hkey__mark { position: relative; width: 24px; height: 24px; }
 .ch-qcs .hkey__mark .wheel, .ch-qcs .qc__mark .wheel { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; transform-origin: 12px 12px; }
 .ch-qcs .hkey__mark .ball, .ch-qcs .qc__mark .ball { fill: currentColor; }
@@ -125,7 +125,7 @@ html[data-fw-theme='dark'] .ch-qcs {
 .ch-qcs .cal-wk i { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0 6px; border-radius: var(--ch-radius-sm); font-style: normal; isolation: isolate; }
 .ch-qcs .cal-wk i::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--ch-qc-a-tint); opacity: 0; transition: opacity 0.2s ease; }
 .ch-qcs .cal-wk i.tgt::before { opacity: 1; }
-.ch-qcs.is-reduce .cal-wk i::before { transition: opacity 0.18s linear; }
+.ch-qcs.is-reduce .cal-wk i::before { transition: opacity var(--ch-dur-crossfade-rm) linear; }
 .ch-qcs .cal-wk i small { font: var(--ch-type-13-medium);  color: var(--ch-qc-a-ink-3); }
 .ch-qcs .cal-wk i b { font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
 .ch-qcs .cal-wk i em { width: 5px; height: 5px; border-radius: 50%; background: var(--ch-qc-a-ink-3); }
@@ -349,7 +349,7 @@ html[data-fw-theme='dark'] .ch-qck { --ch-qc-a-accent-text: #7cc79b; --ch-qc-a-t
 .ch-qck .hkey { position: relative; display: inline-grid; place-items: center; width: 44px; height: 44px; border: 0; padding: 0; border-radius: var(--ch-radius-xl); background: none; cursor: pointer; color: var(--ch-qc-a-frame-icon); }
 .ch-qck .hkey__disc { position: absolute; inset: 4px; border-radius: var(--ch-radius-lg); background: rgb(244 238 221 / 0.16); opacity: 0; transform: scale(0.82); transition: opacity 0.2s, transform 0.26s var(--ch-ease); }
 .ch-qck .hkey.is-on .hkey__disc { opacity: 1; transform: none; }
-.ch-qck.is-reduce .hkey__disc { transform: none; transition: opacity 0.18s linear; }
+.ch-qck.is-reduce .hkey__disc { transform: none; transition: opacity var(--ch-dur-crossfade-rm) linear; }
 .ch-qck .hkey__mark { position: relative; width: 24px; height: 24px; }
 .ch-qck .hkey__mark .wheel, .ch-qck .qc__mark .wheel { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; transform-origin: 12px 12px; }
 .ch-qck .hkey__mark .ball, .ch-qck .qc__mark .ball { fill: currentColor; }
@@ -412,7 +412,7 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 .ch-qcs .earlier__t span, .ch-qcs .earlier__r time { font: var(--ch-type-12); letter-spacing: var(--ch-track-12); color: var(--ch-qc-a-ink-2); }
 /* AC-QC-KEY-01: on the phone the key sits before the bell or the page's own action, on every bar (x 290 to 334 at 390, 06 S-KEY). A page's own
    bar hides the shared actions, so the key alone stays, in its slot. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-topbar[data-phone='page']:has(.ch-qck) .ch-topbar__actions {
     position: absolute;
     right: 56px;

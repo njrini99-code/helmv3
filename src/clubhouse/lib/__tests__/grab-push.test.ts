@@ -26,7 +26,7 @@ beforeEach(() => {
       <nav class="ch-strip"><a href="/golf/dashboard/roster">Roster</a></nav>
       <div id="ch-content" class="ch-frame-route"><a id="go" href="/golf/dashboard/roster/p1">Ava</a></div>
     </div>`;
-  vi.stubGlobal('matchMedia', (q: string) => ({ matches: q === '(max-width: 820px)', addEventListener() {}, removeEventListener() {} }));
+  vi.stubGlobal('matchMedia', (q: string) => ({ matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)', addEventListener() {}, removeEventListener() {} }));
   HTMLElement.prototype.animate = vi.fn(function () {
     const a: Fake = { currentTime: 0, cancel: vi.fn(), finished: new Promise<void>(() => {}) };
     anims.push(a);

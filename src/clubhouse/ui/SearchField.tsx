@@ -33,6 +33,9 @@ export function SearchField({
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => e.key === 'Escape' && value && (e.stopPropagation(), onChange(''))}
         enterKeyHint="search"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
         autoComplete="off"
       />
       {value && (

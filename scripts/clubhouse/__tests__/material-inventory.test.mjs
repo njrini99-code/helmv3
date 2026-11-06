@@ -18,7 +18,7 @@ import { inspectMaterialDeclarations, inspectInlineMaterials, materialInventory,
 
 test('canonical material rows preserve comments, ownership, spatial shapes and focus exceptions', () => {
   const rows = inspectMaterialDeclarations(`/* A chart mark, not a decorative card rail. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
 .ch-chart { border-radius: 50%; background: #fff; }
 .ch-input:focus-visible { box-shadow: 0 0 0 2px #155a39; }
 }`, 'src/clubhouse/styles/chart.css', { ownership: () => ['P004', 'P005'] });

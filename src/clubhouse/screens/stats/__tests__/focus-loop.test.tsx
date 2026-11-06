@@ -37,7 +37,7 @@ const show = (data: ChPlayerProfile, coachId: string | null = 'c1') =>
 
 const real = window.matchMedia;
 const asPhone = () => {
-  window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+  window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
 };
 afterEach(() => {
   window.matchMedia = real;

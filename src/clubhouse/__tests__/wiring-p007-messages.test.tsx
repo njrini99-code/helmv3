@@ -19,7 +19,7 @@ const params = vi.hoisted(() => ({ current: new URLSearchParams() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router, useSearchParams: () => params.current }));
 vi.mock('../lib/use-now', () => ({ useNow: () => null }));
 const layout = vi.hoisted(() => ({ phone: false }));
-vi.mock('../lib/use-phone', () => ({ useChPhone: () => layout.phone, CH_PHONE_QUERY: '(max-width: 820px)' }));
+vi.mock('../lib/use-phone', () => ({ useChPhone: () => layout.phone, CH_PHONE_QUERY: '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' }));
 
 const live = vi.hoisted(() => ({
   convs: { conversations: [] as unknown[], loading: false, error: null as unknown, refetch: vi.fn(async () => {}) },

@@ -17,7 +17,7 @@ afterEach(cleanup);
 const nav = vi.hoisted(() => ({ push: (_href: string) => {} }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: (href: string) => nav.push(href), refresh: () => {}, replace: () => {} }), usePathname: () => '/golf/dashboard/coachhelm' }));
 vi.mock('../lib/haptics', () => ({ haptic: vi.fn() }));
-vi.mock('../lib/use-phone', () => ({ useChPhone: () => false, CH_PHONE_QUERY: '(max-width: 820px)' }));
+vi.mock('../lib/use-phone', () => ({ useChPhone: () => false, CH_PHONE_QUERY: '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' }));
 
 import { PLAYER_HELM_HREF, type PlayerHelmView } from '../data/coachhelm-views-shape';
 import { PlayerHelmTabs } from '../screens/coachhelm/views/PlayerHelmTabs';

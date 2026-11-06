@@ -20,7 +20,7 @@ export const tree = (node: ReactNode) => (
 
 const real = typeof window === 'undefined' ? undefined : window.matchMedia;
 export function asPhone(): void {
-  window.matchMedia = ((q: string) => ({ ...real!(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+  window.matchMedia = ((q: string) => ({ ...real!(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
 }
 export function asDesktop(): void {
   window.matchMedia = real!;

@@ -8,7 +8,7 @@ vi.mock('../../../../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('../../../../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router, usePathname: () => '/golf/dashboard/coachhelm', useSearchParams: () => new URLSearchParams() }));
-vi.mock('../../../../lib/use-phone', () => ({ useChPhone: () => false, CH_PHONE_QUERY: '(max-width: 820px)' }));
+vi.mock('../../../../lib/use-phone', () => ({ useChPhone: () => false, CH_PHONE_QUERY: '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' }));
 vi.mock('../../../../shell/nav', async (orig) => ({ ...(await orig<typeof import('../../../../shell/nav')>()), rebuiltHref: (href: string) => href }));
 vi.mock('@/app/golf/actions/development', () => ({ acceptFocusArea: vi.fn(), createFocusAreaFromInsightV2: vi.fn(), declineFocusArea: vi.fn() }));
 vi.mock('@/app/golf/actions/insights-feed', () => ({ dismissInsight: vi.fn(), reactivateInsight: vi.fn() }));
@@ -48,6 +48,14 @@ afterEach(() => {
 });
 
 describe('the coach file and the lens', () => {
+  it('the read card is not a button wrapped around its actions: the title is the button', () => {
+    render(<PlayerFile load={{ status: 'ready', data: previewPlayerFile('default') }} roster={null} />, { wrapper: Wrap });
+    const card = document.querySelector('[data-ch="file-feature"]') as HTMLElement;
+    expect(card.getAttribute('role')).toBeNull();
+    expect(card.getAttribute('tabindex')).toBeNull();
+    expect(within(card).getByRole('button', { name: /^Open the read:/ }).closest('h3')).not.toBeNull();
+  });
+
   it('the lens has no plan, track record, dismissed read or coach control in the DOM (S-FILE.lens 4)', () => {
     render(<PlayerFile load={{ status: 'ready', data: previewPlayerFile('default') }} roster={null} initialLens="player" />, { wrapper: Wrap });
     const text = document.body.textContent ?? '';
