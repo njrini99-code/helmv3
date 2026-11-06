@@ -3860,8 +3860,27 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   grid-template-columns: 40px minmax(0, 1fr) 84px 120px;
   align-items: center;
   gap: 12px;
-  height: 57px;
-  padding-inline: 12px;
+  height: 64px;
+  padding-inline: 16px;
+}
+/* The table's head row, so the first player lands where it stood. */
+.ch-rs-sk-head {
+  display: flex;
+  align-items: center;
+  height: 42px;
+  padding-inline: 16px;
+}
+/* The season card and leaders at their loaded height, on desktop and phone. */
+[data-ch-crh='on'] .ch-rs-tcard--skel,
+[data-ch-crh='on'] .ch-rs-skel-desk .ch-rs-top > .ch-rs-ldr {
+  min-height: 224px;
+}
+.ch-rs-sk-ldrs {
+  display: flex;
+  gap: 8px;
+  height: 170px;
+  margin-block: 12px;
+  overflow: hidden;
 }
 .ch-rs-sk-row__b {
   display: grid;

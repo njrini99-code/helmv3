@@ -29,16 +29,34 @@ export function RosterSkeleton({ crh = false }: { /** `clubhouse_classes_roster_
             <Skeleton width={130} height={36} radius={10} />
           </div>
         </header>
-        {/* Where the team sits (RosterSpread) in its own frame: the heading's two lines and a one-lane plot with its axis. */}
-        <section className="ch-rs-sp" aria-hidden="true">
-          <div className="ch-rs-sp__h">
-            <SkelLine line={22.8} bar={17} width={190} />
-            <SkelLine line={19.6} bar={12} width={460} />
+        {role === 'player' ? (
+          // A player's page opens on the coaches' list.
+          <div className="ch-rs-list" aria-hidden="true">
+            <div className="ch-rs-sk-head">
+              <Skeleton width={48} height={12} />
+            </div>
+            {[0, 1].map((i) => (
+              <div key={i} className="ch-rs-sk-row">
+                <Skeleton width={40} height={40} radius={20} />
+                <span className="ch-rs-sk-row__b">
+                  <Skeleton width={130} height={15} />
+                  <Skeleton width={110} height={12} />
+                </span>
+              </div>
+            ))}
           </div>
-          <div className="ch-rs-sp__plot" style={{ display: 'flex', alignItems: 'flex-end', height: 104 }}>
-            <Skeleton width="100%" height={12} />
-          </div>
-        </section>
+        ) : (
+          // Where the team sits (RosterSpread) in its own frame: the heading's two lines and a one-lane plot with its axis.
+          <section className="ch-rs-sp" aria-hidden="true">
+            <div className="ch-rs-sp__h">
+              <SkelLine line={22.8} bar={17} width={190} />
+              <SkelLine line={19.6} bar={12} width={460} />
+            </div>
+            <div className="ch-rs-sp__plot" style={{ display: 'flex', alignItems: 'flex-end', height: 104 }}>
+              <Skeleton width="100%" height={12} />
+            </div>
+          </section>
+        )}
         <div className="ch-rs-bar">
           <Skeleton width={320} height={36} radius={10} />
           <Skeleton width={360} height={34} radius={12} />
@@ -94,9 +112,9 @@ function RosterDeskSkeletonCrh() {
     <div className="ch-rs-skel-desk">
       <header className="ch-rs-head">
         <div>
-          <Skeleton width={180} height={14} />
-          <Skeleton width={150} height={40} radius={10} />
-          <Skeleton width={340} height={15} />
+          <Skeleton width={180} height={15} />
+          <Skeleton width={150} height={41} radius={10} />
+          <SkelLine line={19} bar={15} width={340} />
         </div>
         <div className="ch-rs-head__act">
           <Skeleton width={92} height={36} radius={10} />
@@ -125,6 +143,9 @@ function RosterDeskSkeletonCrh() {
       </div>
       <div className="ch-rs-body has-peek" aria-hidden="true">
         <div className="ch-rs-list">
+          <div className="ch-rs-sk-head">
+            <Skeleton width={48} height={12} />
+          </div>
           {Array.from({ length: 7 }, (_, i) => (
             <div key={i} className="ch-rs-sk-row">
               <Skeleton width={40} height={40} radius={20} />
@@ -154,7 +175,7 @@ function RosterPhoneSkeletonCrh() {
     <div className="ch-rsm-skel ch-rsm-page">
       <div className="ch-rsm-head">
         <LargeTitleSkeleton width={128} />
-        <Skeleton width={150} height={15} />
+        <SkelLine line={24} bar={15} width={150} />
       </div>
       <div className="ch-rs-tcard ch-rs-tcard--skel" aria-hidden="true">
         <Skeleton width="44%" height={14} />
@@ -162,6 +183,17 @@ function RosterPhoneSkeletonCrh() {
         <Skeleton width="100%" height={10} />
         <Skeleton width="70%" height={12} />
       </div>
+      {/* The leaders' sideways row and the sort, where the loaded page puts them. */}
+      <div className="ch-rs-sk-ldrs" aria-hidden="true">
+        {[0, 1].map((i) => (
+          <div key={i} className="ch-rs-ldr" style={{ cursor: 'default' }}>
+            <Skeleton width={90} height={13} />
+            <Skeleton width={72} height={30} radius={8} />
+            <Skeleton width={130} height={16} />
+          </div>
+        ))}
+      </div>
+      <Skeleton width="100%" height={44} radius={12} />
       <div className="ch-rsx-sec">
         <div className="ch-surface ch-surface--card" aria-hidden="true">
           {Array.from({ length: 6 }, (_, i) => (

@@ -54,6 +54,41 @@ export function SkeletonPhoneHero() {
   );
 }
 
+/** The lane's green hero in waiting, as tall as the loaded one: the coach's greeting and brief, Waiting on you, then Up next. */
+export function SkeletonCrhHero() {
+  if (useClubhouseRole() === 'player') {
+    return (
+      <div className="ch-hm-sk-crh__hero is-player">
+        <span className="ch-hm-sk-crh__date">
+          <Skeleton width={150} height={13} />
+        </span>
+        <Skeleton width={200} height={24} radius={8} />
+        <span className="ch-hm-sk-crh__next" />
+        <span className="ch-hm-sk-crh__keys">
+          <Skeleton width="100%" height={44} radius={12} />
+          <Skeleton width="100%" height={44} radius={12} />
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className="ch-hm-sk-crh__hero">
+      <span className="ch-hm-sk-crh__date">
+        <Skeleton width={150} height={13} />
+      </span>
+      <Skeleton width={240} height={30} radius={8} />
+      <Skeleton width="86%" height={13} />
+      <Skeleton width="58%" height={13} />
+      <span className="ch-hm-sk-crh__queue">
+        <Skeleton width={110} height={34} radius={8} />
+        <Skeleton width={130} height={34} radius={8} />
+        <Skeleton width={120} height={34} radius={8} />
+      </span>
+      <span className="ch-hm-sk-crh__next" />
+    </div>
+  );
+}
+
 /** The lane's cards in waiting, in the reader's own page: a coach's three, a player's Your game with its four legs. */
 export function SkeletonCrhCards() {
   const player = useClubhouseRole() === 'player';

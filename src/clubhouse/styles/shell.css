@@ -3096,6 +3096,12 @@ html[data-fw-theme='dark'] .ch-offline {
   [data-ui='clubhouse'] .ch-large-title--skel > .ch-skel {
     vertical-align: middle;
   }
+  /* The loaded title's own line (34 on 41), so what sits under it doesn't move when the words land. */
+  [data-ui='clubhouse'] .ch-large-title--skel {
+    display: flex;
+    align-items: center;
+    min-height: calc(41 * var(--ch-type-k));
+  }
   [data-ui='clubhouse'] .ch-topbar :is(.ch-topbar__ptitle, .ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
     transition:
       opacity var(--ch-dur-quick) var(--ch-ease),

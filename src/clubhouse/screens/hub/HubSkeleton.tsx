@@ -28,20 +28,20 @@ export function HubSkeleton() {
       </div>
       {/* Home's widgets in place: the trip and the week, then the second row, on the loaded tiles' own spans. */}
       <div className="ch-hb-bento">
-        <div className="ch-hw ch-hw--dark" style={{ '--ch-hw-span': 7, minHeight: 364 } as CSSProperties} />
-        <div className="ch-hw" style={{ '--ch-hw-span': 5, minHeight: 364 } as CSSProperties}>
+        <div className="ch-hw ch-hw--dark" style={{ '--ch-hw-span': 7, minHeight: 368 } as CSSProperties} />
+        <div className="ch-hw" style={{ '--ch-hw-span': 5, minHeight: 368 } as CSSProperties}>
           <Skeleton width={90} height={14} />
           <Skeleton width="100%" height={60} radius={10} />
           <Skeleton width="80%" height={14} />
           <Skeleton width="60%" height={14} />
         </div>
-        <div className="ch-hw" style={{ '--ch-hw-span': 8, minHeight: 300 } as CSSProperties}>
+        <div className="ch-hw" style={{ '--ch-hw-span': 8, minHeight: 419 } as CSSProperties}>
           <Skeleton width={90} height={14} />
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} width="100%" height={28} radius={6} />
           ))}
         </div>
-        <div className="ch-hw" style={{ '--ch-hw-span': 4, minHeight: 300 } as CSSProperties}>
+        <div className="ch-hw" style={{ '--ch-hw-span': 4, minHeight: 419 } as CSSProperties}>
           <Skeleton width={90} height={14} />
           <Skeleton width="85%" height={18} />
           <Skeleton width={60} height={34} radius={8} />
@@ -52,6 +52,8 @@ export function HubSkeleton() {
           two flush sections with their headings and rows on seams. Switched in CSS, since this renders on the server. */}
       <div className="ch-hb-skelm">
         <HubSkeletonTop />
+        {/* The trip's dark tile leads, as tall as the loaded one, so the sections under it land where they stood. */}
+        <div className="ch-hw ch-hw--dark" style={{ minHeight: 448 }} />
         {[3, 2].map((rows, i) => (
           <section key={i} className="ch-hb-card">
             <div className="ch-hb-card__h">

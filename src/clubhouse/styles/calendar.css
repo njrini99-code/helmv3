@@ -750,6 +750,21 @@
   min-width: 0;
   height: 26px;
 }
+/* One day's chip in a week column: its title takes a second line rather than ending at "Qualifie…", and the lane grows with it. */
+.ch-ev-bar--span.is-narrow {
+  height: auto;
+  min-height: 26px;
+  padding-block: 4px;
+  line-height: 14px;
+  white-space: normal;
+}
+.ch-ev-bar--span.is-narrow > span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  white-space: normal;
+}
 .ch-ev-bar--span > span {
   flex: 1;
   min-width: 0;
@@ -991,6 +1006,26 @@ html[data-fw-theme='dark'] .ch-ev-bar.is-held {
   flex-shrink: 0;
   max-width: calc(100% - 30px);
 }
+/* In a block too narrow for both the title wins: "… 1:30 PM" named nothing. The time is in the peek. */
+@container (max-width: 130px) {
+  .ch-ev--short .ch-ev__m--fit {
+    display: none;
+  }
+  .ch-ev--short .ch-ev__t {
+    flex: 1;
+    min-width: 0;
+  }
+}
+/* A title that needs its second line pushes the time into a column of its own, out of the block's view. */
+.ch-ev--wrap {
+  flex-wrap: wrap;
+}
+.ch-ev--wrap .ch-ev__t {
+  /* Past the block's own padding too, so nothing of the stepped-out time shows in it. */
+  box-sizing: border-box;
+  width: calc(100% + 8px);
+  padding-right: 8px;
+}
 /* P-4 4.1: the time is never faded (0.82 measured 3.6:1 on a class); each type names its own time ink below. */
 /* A block of players' classes: the title is the kind, set apart from the words under it (who, in the body's ink). */
 .ch-ev--group .ch-ev__t {
@@ -1163,12 +1198,24 @@ html[data-fw-theme='dark'] .ch-cg__head {
 /* A cascaded event can be narrow (an overlap steps it in): it measures itself, and under 60px of text its title keeps one line,
    so a one-hour block still shows its time instead of a title cut through its second line. */
 .ch-ev--lane {
-  container-type: inline-size;
+  container-type: size;
 }
 @container (max-width: 60px) {
   .ch-ev--lane .ch-ev__t {
     -webkit-line-clamp: 1;
     line-clamp: 1;
+  }
+}
+/* A narrow cascaded block with height to spare wraps its title down the block, its warning at the foot instead of over the words. */
+@container (max-width: 60px) and (min-height: 64px) {
+  .ch-ev--lane .ch-ev__t {
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+    overflow-wrap: anywhere;
+  }
+  .ch-ev--lane .ch-ev__warn {
+    top: auto;
+    bottom: 4px;
   }
 }
 /* A busy block lies under the events it overlaps (A26), by its class, not an inline z-index, so hover (z-index 4) can

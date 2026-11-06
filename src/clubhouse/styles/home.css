@@ -2586,6 +2586,10 @@
     flex-wrap: nowrap;
     margin: 0;
   }
+  /* A player's head has no sentence: the actions span its two rows, or an empty third row stood 20px on top of the date. */
+  .ch-h-main[aria-busy='true'][data-canopy] > .ch-h-head:not(:has(> :nth-child(4))) > .ch-h-head__actions {
+    grid-row: 1 / span 2;
+  }
   .ch-h-main[aria-busy='true'][data-canopy] > .ch-h-head + .ch-h-sheet {
     margin-top: 32px;
   }
@@ -5709,6 +5713,35 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     --ch-skel-base: rgb(244 238 221 / 0.16);
     --ch-skel-sheen: rgb(244 238 221 / 0.22);
   }
+  .ch-hm-sk-crh__date {
+    display: flex;
+    align-items: flex-end;
+    height: 32px;
+  }
+  .ch-hm-sk-crh__queue {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-block: 24px 12px;
+  }
+  .ch-hm-sk-crh__next {
+    display: block;
+    height: 225px;
+    border-radius: var(--ch-radius-lg);
+    background: rgb(255 255 255 / 0.08);
+  }
+  /* The player's hero: the greeting, Up next, then Message coach and New round. */
+  .ch-hm-sk-crh__hero.is-player {
+    padding-block-end: 80px;
+  }
+  .ch-hm-sk-crh__hero.is-player .ch-hm-sk-crh__next {
+    height: 213px;
+  }
+  .ch-hm-sk-crh__keys {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
   .ch-hm-sk-crh__body {
     display: grid;
     gap: 12px;
@@ -5733,16 +5766,20 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   [data-ch-crh='on'] .ch-h-main[aria-busy='true']:has(> .ch-h-sk-dcrh) > :not(.ch-h-sk-dcrh) {
     display: none;
   }
+  /* The loading main takes the lane page's own insets, so the hero and every card land where they stood (measured against the loaded page in WebKit at 1440). */
+  [data-ch-crh='on'] .ch-h-main[aria-busy='true']:has(> .ch-h-sk-dcrh) {
+    padding: var(--ch-page-top-crh) var(--ch-page-gutter) 40px;
+  }
   [data-ch-crh='on'] .ch-h-main[aria-busy='true'] > .ch-h-sk-dcrh {
     display: grid;
     gap: 16px;
-    /* The loading main keeps the framed page's top inset; the lane's page starts 14px higher. */
-    margin-top: calc(-1 * (var(--ch-space-3) + var(--ch-space-0_5)));
-    /* And its sides, or the page shifts when the data lands: the lane's page runs 32 from the edge. */
-    margin-inline: calc(32px - var(--ch-page-gutter));
   }
   .ch-h-sk-dcrh__hero {
     min-height: 215px;
+  }
+  .ch-h-sk-dcrh__hero > .ch-h-herocard__next {
+    align-self: center;
+    min-height: 155px;
   }
   .ch-h-sk-dcrh__lines {
     display: grid;

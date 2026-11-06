@@ -16,11 +16,10 @@ export function HubSkeletonTop() {
       <div className="ch-hb-h">
         <div className={coach ? undefined : 'is-player'}>
           {coach && <Skeleton width={96} height={24} radius={12} />}
-          <Skeleton width={128} height={10} />
+          <Skeleton width={96} height={coach ? 13 : 8} />
           <LargeTitleSkeleton width={150} />
         </div>
         <HubSkeletonStrip />
-        {coach && <Skeleton width="100%" height={44} radius={10} />}
       </div>
       <div className="ch-hb-tabs" aria-hidden="true">
         {(coach ? [40, 92, 44, 70, 38] : [40, 92, 44, 70]).map((w, i) => (
@@ -59,5 +58,5 @@ export function HubSkeletonStrip() {
 /** A coach's head action, held at the loaded button's size beside the title (a player has none). */
 export function HubSkeletonAction() {
   if (useClubhouseRole() !== 'coach') return null;
-  return <Skeleton width={176} height={40} radius={10} />;
+  return <Skeleton width={187} height={36} radius={10} />;
 }

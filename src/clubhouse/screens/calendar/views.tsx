@@ -181,7 +181,10 @@ export function EventBlock({
   // 90-minute block took a third line and pushed its time out of the bottom (visual pass 2026-10-28).
   // One line keeps the plain cut-off, which shows more of the title than a word-wrapped clamp.
   const fit = Math.min(3, Math.floor((h - 8 - timeLine + 0.5) / titleLine));
-  const lines = short || shared || fit < 2 ? undefined : fit;
+  // An hour holds two title lines or a title and its time. A long title takes the second line and the time steps out of view (it
+  // is in the peek), so "Round review" isn't cut to "Round r…"; a title that fits one line keeps its time.
+  const wrapFirst = !short && !shared && fit === 1 && h >= 6 + 2 * titleLine;
+  const lines = short || shared ? undefined : wrapFirst ? 2 : fit < 2 ? undefined : fit;
   return (
     <button
       type="button"
@@ -373,7 +376,7 @@ export function TimeGrid({
             </button>
           ))}
         </div>
-        <div className="ch-wk__allday" ref={lane} style={{ gridTemplateRows: `repeat(${rows}, 26px)` }}>
+        <div className="ch-wk__allday" ref={lane} style={{ gridTemplateRows: `repeat(${rows}, minmax(26px, auto))` }}>
           <span style={{ gridRow: `1 / span ${rows}` }}>All day</span>
           {bars.map((b) => (
             <LaneBar key={b.e.id} b={b} narrow={b.c0 === b.c1 && dates.length > 1} people={people} viewerId={viewerId} sel={selId === b.e.id} onSelect={onSelect} drag={barEngine.bind(b.e)} state={bd?.e.id === b.e.id ? 'held' : undefined} />
@@ -484,14 +487,15 @@ function LaneBar({
   const clock = useChClock();
   const { e, span } = b;
   const title = eventTitle(e, people, viewerId);
-  const run = !narrow && !e.allDay && e.span?.start != null && e.span.end != null;
+  // A run across two columns has no room for both times and a title ("8:00 AM S… 5:00 PM"): the title comes first, and the times are in the peek.
+  const run = !narrow && (b.c0 === b.c1 || b.c1 - b.c0 >= 2) && !e.allDay && e.span?.start != null && e.span.end != null;
   const days = span.from === span.to ? `${dowOf(span.from)} ${dayNum(span.from)}` : `${dowOf(span.from)} ${dayNum(span.from)} to ${dowOf(span.to)} ${dayNum(span.to)}`;
   return (
     <button
       type="button"
       data-print-visible
       data-ev-id={state === 'card' ? undefined : e.id}
-      className={`ch-ev-bar ch-ev-bar--span ch-ev--${e.type}${e.cancelled ? ' is-cancelled' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${b.clipStart ? ' is-clip-start' : ''}${b.clipEnd ? ' is-clip-end' : ''}`}
+      className={`ch-ev-bar ch-ev-bar--span${narrow ? ' is-narrow' : ''} ch-ev--${e.type}${e.cancelled ? ' is-cancelled' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${b.clipStart ? ' is-clip-start' : ''}${b.clipEnd ? ' is-clip-end' : ''}`}
       style={state === 'card' ? undefined : { gridColumn: `${b.c0 + 2} / ${b.c1 + 3}`, gridRow: b.row + 1 }}
       aria-label={`${roundLabel(e, title).name}${roundLabel(e, title).spoken}, ${days}${e.cancelled ? ', cancelled' : ''}${drag ? '. Alt and the arrow keys move it a day; add Shift to change its last day' : ''}`}
       aria-pressed={sel}

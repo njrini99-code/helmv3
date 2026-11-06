@@ -1992,6 +1992,9 @@ p.ch-shs-mini-cap {
 .ch-shs-skel-sec {
   display: contents;
 }
+.ch-shs-ctl .ch-shs-skel-seg {
+  min-height: 42px;
+}
 .ch-shs-skel-seg {
   flex: 1;
   display: block;

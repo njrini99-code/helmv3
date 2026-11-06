@@ -1279,6 +1279,9 @@
   .ch-hb.ch-hb--skel .ch-hb-skelm .ch-hb-card {
     padding: 0;
   }
+  .ch-hb-skelm > .ch-hw--dark {
+    margin-block-end: 16px;
+  }
   .ch-hb-skelm .ch-hb-card + .ch-hb-card {
     margin-top: 16px;
   }
@@ -1675,7 +1678,13 @@
   .ch-hb-feed__b b {
     font-size: calc(15 * var(--ch-type-k));
   }
+  /* A phone's narrow row keeps the whole line (two at most) rather than "5 of 6 have n…". */
   .ch-hb-feed__b > span {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    white-space: normal;
     font: var(--ch-type-13);
     line-height: var(--ch-lead-caption);
   }
