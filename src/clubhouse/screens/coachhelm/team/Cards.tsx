@@ -9,8 +9,7 @@ import type { ChInsight } from '../../../data/coachhelm-shape';
 import type { ChTeamPart } from '../../../data/coachhelm-team-shape';
 import type { ChTrackRecord } from '../../../data/coachhelm-track-record-shape';
 import { formatSigned } from '../../../lib/format';
-import { Button } from '../../../ui/Button';
-import { Coin } from './parts';
+import { Coin, Notice } from './parts';
 import { STATION_SHORT } from './hole-geometry';
 
 /** Four bars around a zero line: 20pt is 1.1 strokes, loss down, gain up (AC-ROSTER-03). */
@@ -115,16 +114,7 @@ export function WorkingCard({ working, proposed, failed, onRetry }: { working: r
         </span>
       </div>
       {failed ? (
-        <div className="notice">
-          <div>
-            <b>Couldn’t load this part</b>
-            {onRetry && (
-              <Button variant="ghost" size="sm" onClick={onRetry}>
-                Try again
-              </Button>
-            )}
-          </div>
-        </div>
+        <Notice title="Couldn’t load this part" onRetry={onRetry} />
       ) : (
         <div data-work="">
           {working.map((w) => (
@@ -167,12 +157,7 @@ export function RecordCard({ part, desk = false }: { part: ChTeamPart<ChTrackRec
       <div className="ch">
         <h4>How often CoachHelm is right</h4>
       </div>
-      <div className="notice">
-        <div>
-          <b>{title}</b>
-          <span>{body}</span>
-        </div>
-      </div>
+      <Notice title={title} body={body} />
     </section>
   );
   if (part.status === 'failed' || part.value.state === 'unavailable') return notice('Track record unavailable right now', 'It shows again once the check runs. No number is shown in its place.');

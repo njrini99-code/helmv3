@@ -1,5 +1,6 @@
 'use client';
 
+import { Notice } from './parts';
 import { Badge } from '../../../ui/Badge';
 import { formatWith } from '../../../lib/dates';
 import { pluralWord } from '../../../lib/plural';
@@ -21,7 +22,7 @@ export const toPar = (v: number): string => {
 };
 
 /** A calendar day, never moved by the viewer's zone (CP-TEAM-16). */
-const day = (iso: string) => formatWith(new Date(`${iso}T00:00:00Z`), { month: 'short', day: 'numeric', timeZone: 'UTC' });
+export const day = (iso: string) => formatWith(new Date(`${iso}T00:00:00Z`), { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
 /** The weekly line, lowest score on top; it draws once and a Show more doesn't redraw it (AC-COURSE-03, AC-COURSEALL-03). */
 function Trend({ history }: { history: CourseHistory }) {
@@ -115,17 +116,9 @@ export function CourseCard({ data, initialAll = false, onRead, onCourse, onRetry
   const history = data.course.history;
   const season = history?.season ?? 0;
   const failed = (
-    <p className="nordss" role="status">
-      Couldn’t load this part.
-      {onRetry && (
-        <>
-          {' '}
-          <button type="button" className="more is-inline" onClick={onRetry}>
-            Try again
-          </button>
-        </>
-      )}
-    </p>
+    <div role="status">
+      <Notice title="Couldn’t load this part" onRetry={onRetry} />
+    </div>
   );
   const chip =
     history?.last4 == null ? (

@@ -6,7 +6,11 @@ import { formatSigned } from '../../../lib/format';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
 import { Button } from '../../../ui/Button';
+import { useRouter } from 'next/navigation';
 import { CoachHelmHead } from '../CoachHelmHead';
+import { useChSessionState } from '../../../lib/session-state';
+import { plural } from '../../../lib/plural';
+import { Notice } from './parts';
 import { rebuiltHref } from '../../../shell/nav';
 import { CoachHelmOffNotice } from '../CoachBoard';
 import { CoachHelmTabs, COACHHELM_HREF, type CoachHelmView } from '../chat/SubTabs';
@@ -155,10 +159,12 @@ function EmptySteps() {
 
 /** The coach's Team view: the green bar untouched, the switch, the title, then one green feature card (the hole). */
 export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE_COACHHELM_WRITES, readOn = false, fileOn = false, initialOpen, initialAll = false, initialPlayer, initialInsight, initialStation, onRetry }: TeamBoardProps) {
+  const router = useRouter();
   const phone = useChPhone();
   const sw = useViewSwitch<CoachHelmView>('board', (v) => COACHHELM_HREF[v], Object.keys(COACHHELM_HREF) as CoachHelmView[]);
   const leak = useMemo(() => stationOrder(data.stations)[0] ?? 'approach', [data.stations]);
-  const [station, setStation] = useState<TeamStation>(initialStation ?? leak);
+  // Kept across a trip to a player or a read and back (MOB-TEAM-17).
+  const [station, setStation] = useChSessionState<TeamStation>('team.station', initialStation ?? leak);
   const top = useRef<HTMLElement | null>(null);
   const [open, setOpen] = useState<TeamBoardOpen | null>(initialOpen?.kind === 'story' && phone ? null : (initialOpen ?? null));
   const [rounds, setRounds] = useState<Record<string, ChStoryRound> | null>(null);
@@ -191,12 +197,17 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
       setOpen(null);
       document.querySelector('[data-ch-team-card="work"]')?.scrollIntoView({ block: 'start' });
     } else if (s.kind === 'theme') openPlayer(s.playerId);
-    else window.location.assign(s.href);
+    else {
+      // In place, as a coin on the hole does, not a whole page load (FID-TEAM-7).
+      const id = s.id.replace(/^read:/, '');
+      if (data.players.list.some((p) => p.reads.needs.some((r) => r.id === id) || p.reads.working.some((r) => r.id === id))) openRead(id);
+      else router.push(s.href);
+    }
   };
   const list: ChTeamPlayer[] = data.players.list;
   const noRounds = data.teamTotal.rounds === 0;
   const tabs = data.off ? null : <CoachHelmTabs active={sw.shown} onGo={sw.go} boardLabel="Team" />;
-  const context = data.off ? 'CoachHelm reads the rounds your players post.' : data.roster.count === 0 ? 'No players yet' : noRounds ? `${data.roster.count} players · no rounds yet this season` : `${data.roster.count} players · ${data.teamTotal.rounds} rounds this season · ${readsDrawn(list)} open reads`;
+  const context = data.off ? 'CoachHelm reads the rounds your players post.' : data.roster.count === 0 ? 'No players yet' : noRounds ? `${plural(data.roster.count, 'player')} · no rounds yet this season` : `${plural(data.roster.count, 'player')} · ${plural(data.teamTotal.rounds, 'round')} this season · ${plural(readsDrawn(list), 'open read')}`;
   const head = <CoachHelmHead title={data.team.name || 'CoachHelm'} context={context} tabs={tabs} />;
   const course = courseReads(list).length;
   const skeletonCard = <span className="skl" style={{ height: 120, borderRadius: 16 }} />;
@@ -249,17 +260,7 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
     );
   const failedHole = (
     <section className="card ch-htb-failed" role="alert" data-ch-team-card="hole">
-      <div className="notice">
-        <span>
-          <b>The team’s reads didn’t load</b>
-          <span>Nothing here is wrong with your players’ rounds. Try again.</span>
-          {onRetry && (
-            <Button variant="secondary" size="sm" onClick={onRetry}>
-              Try again
-            </Button>
-          )}
-        </span>
-      </div>
+      <Notice title="The team’s reads didn’t load" body="Nothing here is wrong with your players’ rounds. Try again." onRetry={onRetry} />
     </section>
   );
 
@@ -351,8 +352,17 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
     return row ? <CourseSheet row={row} data={data} onPlayer={openPlayer} onRead={openRead} onClose={close} /> : null;
   })();
 
+  const panelTitle =
+    open?.kind === 'player'
+      ? (list.find((p) => p.id === open.id)?.name ?? 'Player')
+      : open?.kind === 'read'
+        ? (list.flatMap((p) => [...p.reads.needs, ...p.reads.working]).find((r) => r.id === open.id)?.title ?? 'Read')
+        : open?.kind === 'course'
+          ? (data.course.history?.courses.find((c) => c.id === open.id)?.name ?? 'Course')
+          : 'Story';
+
   return (
-    <main ref={top} className={'ch-htb ' + (phone ? 'is-phone' : 'is-desk')} aria-busy={sw.pending || undefined} data-ch-screen="coachhelm-team">
+    <main ref={top} {...sw.enter} className={'ch-htb ' + (phone ? 'is-phone' : 'is-desk')} aria-busy={sw.pending || undefined} data-ch-screen="coachhelm-team">
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone ? (
         <div className="sheet">
@@ -370,11 +380,11 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
       {/* W-TEAM-16: today's Re-check, under the board, not in the record card. */}
       {!data.off && data.roster.count > 0 && <RecheckReads players={data.roster.count} />}
       {phone ? (
-        <Modal open={!!openPanel} onClose={close} title="Details" className="ch-htb-sheet">
+        <Modal open={!!openPanel} onClose={close} title={panelTitle} className="ch-htb-sheet" bare>
           <div className="ins">{openPanel}</div>
         </Modal>
       ) : (
-        <Inspector open={!!openPanel} onClose={close} label="Details">
+        <Inspector open={!!openPanel} onClose={close} label={panelTitle}>
           {openPanel}
         </Inspector>
       )}

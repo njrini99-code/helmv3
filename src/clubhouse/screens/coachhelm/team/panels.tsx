@@ -1,5 +1,7 @@
 'use client';
 
+import { plural } from '../../../lib/plural';
+import { day } from './CourseCard';
 import Link from 'next/link';
 import { Badge } from '../../../ui/Badge';
 import { pluralWord } from '../../../lib/plural';
@@ -19,7 +21,7 @@ import { Button } from '../../../ui/Button';
 import { barScale } from './SpotCard';
 import { toPar } from './CourseCard';
 import { STATION_NAME, STATION_SHORT } from './hole-geometry';
-import { Chevron, Coin, ReadRow } from './parts';
+import { Chevron, Coin, ReadRow, Notice } from './parts';
 
 const areaName = (r: ChInsight) => (r.area ? STATION_NAME[r.area] : 'Course and scoring');
 
@@ -65,7 +67,6 @@ function Comparison({ read, first }: { read: ChInsight; first: string }) {
         {c.tour != null && row('Tour', c.tour, 'tour')}
       </div>
       {c.team == null && <p className="nordss ch-htb-ladnote">Team: not measured for this read</p>}
-      {c.tour == null && <p className="nordss ch-htb-ladnote">No Tour figure for single holes, so none is drawn.</p>}
     </section>
   );
 }
@@ -247,12 +248,7 @@ export function PlayerPanel({ player, data, onRead, fileOn, onClose }: { player:
       <>
         <Head lead={<Coin player={player} />} name={player.name} line={`${year} · no rounds yet this season`} onClose={onClose} />
         <section className="card">
-          <div className="notice" style={{ paddingTop: 16 }}>
-            <div>
-              <b>Nothing to show yet</b>
-              <span>{player.first}’s four-area figures show after their first round this season.</span>
-            </div>
-          </div>
+          <Notice title="Nothing to show yet" body={`${player.first}’s four-area figures show after their first round this season.`} />
         </section>
         {page}
       </>
@@ -341,7 +337,7 @@ export function CourseSheet({ row, data, onPlayer, onRead, onClose }: { row: Cou
           </span>
         }
         name={row.name}
-        line={`${row.rounds} rounds this season · last ${row.last}`}
+        line={`${plural(row.rounds, 'round')} this season · last ${day(row.last)}`}
         onClose={onClose}
       />
       <div className="cmk sh">

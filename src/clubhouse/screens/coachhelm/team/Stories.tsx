@@ -14,6 +14,9 @@ import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { Coin } from './parts';
 
+/** A true minus on a negative, and no plus: these are measures, not changes (TEAM-23). */
+const signed = (v: number) => formatFixed(v).replace('-', '\u2212');
+
 const STORY_MS = 5200;
 const MAX_TILES = 3;
 
@@ -70,15 +73,15 @@ function StoryBody({ story, round }: { story: ChTeamStory; round: ChStoryRound |
         <div className="sto-bars">
           <div className="sto-bar">
             <span>Before the focus</span>
-            <b className="ch-num">{formatFixed(p.from)}</b>
+            <b className="ch-num">{signed(p.from)}</b>
             <i style={{ width: `${(Math.abs(p.from) / top) * 100}%` }} />
           </div>
           <div className="sto-bar is-now">
             <span>Now</span>
-            <b className="ch-num">{formatFixed(p.now)}</b>
+            <b className="ch-num">{signed(p.now)}</b>
             <i style={{ width: `${(Math.abs(p.now) / top) * 100}%` }} />
           </div>
-          <span className="src ch-num">Line: the {formatFixed(p.target)} target</span>
+          <span className="src ch-num">Line: the {signed(p.target)} target</span>
         </div>
       )}
       {story.kind === 'read' && story.body && <p>{story.body}</p>}
@@ -121,10 +124,17 @@ function StoryViewer({
     box.current?.querySelector<HTMLElement>('.xb')?.focus({ preventScroll: true });
     return () => opener.current?.focus?.({ preventScroll: true });
   }, []);
+  // What's left of this story, so a hold resumes where the bar stopped instead of starting the full time over (MOT-11).
+  const left = useRef({ story: -1, ms: STORY_MS });
   useEffect(() => {
+    if (left.current.story !== i) left.current = { story: i, ms: STORY_MS };
     if (reduced || held) return;
-    const t = window.setTimeout(next, STORY_MS);
-    return () => window.clearTimeout(t);
+    const from = performance.now();
+    const t = window.setTimeout(next, left.current.ms);
+    return () => {
+      window.clearTimeout(t);
+      left.current.ms = Math.max(0, left.current.ms - (performance.now() - from));
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- restarts on the story and the hold alone
   }, [i, held, reduced]);
   useEffect(() => {
@@ -146,6 +156,23 @@ function StoryViewer({
       onPointerDown={() => setHeld(true)}
       onPointerUp={() => setHeld(false)}
       onPointerCancel={() => setHeld(false)}
+      // A keyboard reader gets the same pause as a held finger (FID-TEAM-6), and Tab stays inside the viewer.
+      onFocusCapture={(e) => {
+        if ((e.target as HTMLElement).matches(':focus-visible')) setHeld(true);
+      }}
+      onBlurCapture={() => setHeld(false)}
+      onKeyDown={(e) => {
+        if (e.key !== 'Tab') return;
+        const keys = Array.from(box.current?.querySelectorAll<HTMLElement>('button, a[href]') ?? []);
+        const first = keys[0], last = keys[keys.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }}
     >
       <div className="prog">
         {stories.map((s, j) => (

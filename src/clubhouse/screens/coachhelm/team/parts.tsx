@@ -1,6 +1,10 @@
 'use client';
 
+import { TriangleAlert } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { Avatar } from '../../../ui/Avatar';
+import { Button } from '../../../ui/Button';
+import { Icon } from '../../../ui/Icon';
 import { Badge } from '../../../ui/Badge';
 import type { ChInsight } from '../../../data/coachhelm-shape';
 import type { ChTeamPlayer } from '../../../data/coachhelm-team-shape';
@@ -36,5 +40,25 @@ export function ReadRow({ player, read, onOpen }: { player: ChTeamPlayer; read: 
       </span>
       <Chevron />
     </button>
+  );
+}
+
+/** One notice for every part of the board, with its icon tile (TEAM-29). */
+export function Notice({ title, body, onRetry }: { title: ReactNode; body?: ReactNode; onRetry?: () => void }) {
+  return (
+    <div className="notice">
+      <span className="ni">
+        <Icon icon={TriangleAlert} size={18} />
+      </span>
+      <div>
+        <b>{title}</b>
+        {body && <span>{body}</span>}
+        {onRetry && (
+          <Button variant="ghost" size="sm" onClick={onRetry}>
+            Try again
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }

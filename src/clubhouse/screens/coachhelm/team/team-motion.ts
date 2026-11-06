@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
-import { CH_FADE_MS, chSpringCurve, CH_DUR, CH_SWEEP_MS } from '../../../lib/motion';
+import { CH_FADE_MS, chSpringCurve, CH_DUR } from '../../../lib/motion';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
-import { useChSessionState } from '../../../lib/session-state';
 
 const EASE = 'cubic-bezier(.22,1,.36,1)';
 
