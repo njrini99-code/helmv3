@@ -43,6 +43,8 @@ import { SectionTrigger } from './section-switch';
 interface Ctx {
   slot: HTMLElement | null;
   setSlot: (el: HTMLElement | null) => void;
+  deskSlot: HTMLElement | null;
+  setDeskSlot: (el: HTMLElement | null) => void;
   pageTop: number;
   setPageTop: (fn: (n: number) => number) => void;
   /** Of those, the tab roots' own titles (`start`, no action): the bell stays beside them. */
@@ -64,6 +66,8 @@ interface Ctx {
 const PhoneChromeCtx = createContext<Ctx>({
   slot: null,
   setSlot: () => {},
+  deskSlot: null,
+  setDeskSlot: () => {},
   pageTop: 0,
   setPageTop: () => {},
   rootTop: 0,
@@ -82,6 +86,7 @@ const PhoneChromeCtx = createContext<Ctx>({
 
 export function PhoneChromeProvider({ children }: { children: ReactNode }) {
   const [slot, setSlot] = useState<HTMLElement | null>(null);
+  const [deskSlot, setDeskSlot] = useState<HTMLElement | null>(null);
   const [pageTop, setPageTop] = useState(0);
   const [rootTop, setRootTop] = useState(0);
   const [immersive, setImmersive] = useState(0);
@@ -90,8 +95,8 @@ export function PhoneChromeProvider({ children }: { children: ReactNode }) {
   const [pushed, setPushed] = useState(0);
   const [covering, setCovering] = useState(0);
   const value = useMemo(
-    () => ({ slot, setSlot, pageTop, setPageTop, rootTop, setRootTop, immersive, setImmersive, noTabs, setNoTabs, hero, setHero, pushed, setPushed, covering, setCovering }),
-    [slot, pageTop, rootTop, immersive, noTabs, hero, pushed, covering],
+    () => ({ slot, setSlot, deskSlot, setDeskSlot, pageTop, setPageTop, rootTop, setRootTop, immersive, setImmersive, noTabs, setNoTabs, hero, setHero, pushed, setPushed, covering, setCovering }),
+    [slot, deskSlot, pageTop, rootTop, immersive, noTabs, hero, pushed, covering],
   );
   return <PhoneChromeCtx.Provider value={value}>{children}</PhoneChromeCtx.Provider>;
 }
@@ -341,6 +346,17 @@ export function PhoneUnderlay() {
  * ("‹ More"), a centred title, and at most one action. Shown below 820px only. CH-1810: the back link is named for
  * where it goes ("Back to More") and takes the bell's place.
  */
+/** A page's controls in the desk's glass top bar, beside its title: the view switch and scope line a design draws up there (FID-TEAM-3). */
+export function DeskTop({ children }: { children: ReactNode }) {
+  const { deskSlot } = useContext(PhoneChromeCtx);
+  return deskSlot ? createPortal(children, deskSlot) : null;
+}
+
+export function DeskSlot() {
+  const { setDeskSlot } = useContext(PhoneChromeCtx);
+  return <div className="ch-topbar__dslot" ref={setDeskSlot} />;
+}
+
 export function PhoneTop(props: ChPhoneBarParts) {
   const { slot, setPageTop, setRootTop } = useContext(PhoneChromeCtx);
   // A tab root's own title (`start`, no action) is still a tab root: the bell stays (CLICKABLES gap 1).

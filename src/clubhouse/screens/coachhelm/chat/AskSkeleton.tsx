@@ -1,4 +1,5 @@
 import { SkelLine, Skeleton } from '../../../ui/States';
+import { PlayerHelmTabs } from '../views/PlayerHelmTabs';
 import { CoachHelmTabs } from './SubTabs';
 
 /**
@@ -12,13 +13,13 @@ import { CoachHelmTabs } from './SubTabs';
  * the control lands), the chats panel's head, New chat, search and two groups of rows; the chat's "New chat" head, then the
  * two-line greeting, the composer, the starter questions and the four capabilities where the new chat draws them.
  */
-export function AskSkeleton({ chained }: { chained?: boolean } = {}) {
+export function AskSkeleton({ chained, player }: { chained?: boolean; player?: boolean } = {}) {
   return (
     <main className="ch-ask ch-ask-sk" aria-busy="true" aria-label="Loading Ask CoachHelm" data-skel={chained ? 'chained' : undefined} data-ch-code="CH-13420">
       {/* The screen's one h1 while it loads, for the page outline (P013 D8). */}
       <h1 className="ch-sr-only">Ask CoachHelm</h1>
       <div className="ch-ask-top">
-        <CoachHelmTabs active="ask" held />
+        {player ? <PlayerHelmTabs active="ask" held /> : <CoachHelmTabs active="ask" held />}
         <span className="ch-ask-team ch-ask-sk__desk" aria-hidden="true">
           <i />
           <Skeleton width={104} height={12} />

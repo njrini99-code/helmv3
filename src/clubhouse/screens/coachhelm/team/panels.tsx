@@ -1,5 +1,7 @@
 'use client';
 
+import { plural } from '../../../lib/plural';
+import { day } from './CourseCard';
 import Link from 'next/link';
 import { Badge } from '../../../ui/Badge';
 import { pluralWord } from '../../../lib/plural';
@@ -19,9 +21,12 @@ import { Button } from '../../../ui/Button';
 import { barScale } from './SpotCard';
 import { toPar } from './CourseCard';
 import { STATION_NAME, STATION_SHORT } from './hole-geometry';
-import { Chevron, Coin, ReadRow } from './parts';
+import { Chevron, Coin, ReadRow, Notice } from './parts';
 
 const areaName = (r: ChInsight) => (r.area ? STATION_NAME[r.area] : 'Course and scoring');
+
+/** The sheet's line has room for "Jr", not "Junior" (AC-PSHEET). */
+const yearShort = (year: string) => ({ Freshman: 'Fr', Sophomore: 'So', Junior: 'Jr', Senior: 'Sr' })[year] ?? year;
 
 function Head({ lead, name, line, onClose }: { lead: React.ReactNode; name: string; line: string; onClose: () => void }) {
   return (
@@ -65,7 +70,6 @@ function Comparison({ read, first }: { read: ChInsight; first: string }) {
         {c.tour != null && row('Tour', c.tour, 'tour')}
       </div>
       {c.team == null && <p className="nordss ch-htb-ladnote">Team: not measured for this read</p>}
-      {c.tour == null && <p className="nordss ch-htb-ladnote">No Tour figure for single holes, so none is drawn.</p>}
     </section>
   );
 }
@@ -217,9 +221,9 @@ export function ReadPanel({
       )}
       {coach && fa && !read.stale && (
         <div className="acts" data-acts="">
-          <FocusActions fa={fa} target={{ playerId: player.id, first: player.first, ins: read }} missing={missing} where="board" noDismiss={!dismissible} />
+          <FocusActions propose fa={fa} target={{ playerId: player.id, first: player.first, ins: read }} missing={missing} where="board" noDismiss={!dismissible} />
           {ask && (
-            <Button variant="secondary" href={ask}>
+            <Button variant="ghost" href={ask}>
               Ask about this
             </Button>
           )}
@@ -245,21 +249,16 @@ export function PlayerPanel({ player, data, onRead, fileOn, onClose }: { player:
   if (player.rounds === 0)
     return (
       <>
-        <Head lead={<Coin player={player} />} name={player.name} line={`${year} · no rounds yet this season`} onClose={onClose} />
+        <Head lead={<Coin player={player} />} name={player.name} line={`${yearShort(year)} · no rounds yet this season`} onClose={onClose} />
         <section className="card">
-          <div className="notice" style={{ paddingTop: 16 }}>
-            <div>
-              <b>Nothing to show yet</b>
-              <span>{player.first}’s four-area figures show after their first round this season.</span>
-            </div>
-          </div>
+          <Notice title="Nothing to show yet" body={`${player.first}’s four-area figures show after their first round this season.`} />
         </section>
         {page}
       </>
     );
   return (
     <>
-      <Head lead={<Coin player={player} />} name={player.name} line={`${year} · ${player.rounds} rounds this season · ${formatSigned(player.total)} a round to Tour${player.early ? ' · early' : ''}`} onClose={onClose} />
+      <Head lead={<Coin player={player} />} name={player.name} line={`${yearShort(year)} · ${plural(player.rounds, 'round')} · ${formatSigned(player.total)} a round to Tour${player.early ? ' · early' : ''}`} onClose={onClose} />
       <section className="card">
         <div className="ch">
           <h4>Where {player.first} gains and loses</h4>
@@ -281,13 +280,16 @@ export function PlayerPanel({ player, data, onRead, fileOn, onClose }: { player:
                     <i className={`bf ${v < 0 ? 'l' : 'g'}${player.early ? ' early' : ''}`} style={{ transform: `scaleX(${barScale(v)})` }} />
                   </span>
                 )}
-                <span className={'bv' + (v != null && v >= 0 ? ' g' : '')}>{formatSigned(v)}</span>
+                <span className={'bv ch-num' + (v != null && v >= 0 ? ' g' : '')}>{formatSigned(v)}</span>
               </div>
             );
           })}
         </div>
         <div className="axis">
-          <span>Team average dashed</span>
+          <span className="axis__team">
+            <i aria-hidden="true" />
+            Team average
+          </span>
           <span>Tour</span>
         </div>
       </section>
@@ -319,7 +321,7 @@ export function PlayerPanel({ player, data, onRead, fileOn, onClose }: { player:
 }
 
 /** One course: players here against their own season (S-TEAM.course-sheet). */
-export function CourseSheet({ row, data, onPlayer, onRead, onClose }: { row: CourseHistoryRow; data: ChTeamBoardData; onPlayer: (id: string) => void; onRead: (id: string) => void; onClose: () => void }) {
+export function CourseSheet({ row, data, onPlayer, onRead, onClose, story = null }: { row: CourseHistoryRow; data: ChTeamBoardData; onPlayer: (id: string) => void; onRead: (id: string) => void; story?: { when: string; open: () => void } | null; onClose: () => void }) {
   const season = data.course.history?.season ?? 0;
   const d = Math.round((row.value - season) * 10) / 10;
   const list = data.players.list;
@@ -341,11 +343,11 @@ export function CourseSheet({ row, data, onPlayer, onRead, onClose }: { row: Cou
           </span>
         }
         name={row.name}
-        line={`${row.rounds} rounds this season · last ${row.last}`}
+        line={`${plural(row.rounds, 'round')} this season · last ${day(row.last)}`}
         onClose={onClose}
       />
       <div className="cmk sh">
-        <b>{toPar(row.value)}</b>
+        <b className="ch-num">{toPar(row.value)}</b>
         <span>
           a round to par here
           <br />
@@ -377,7 +379,8 @@ export function CourseSheet({ row, data, onPlayer, onRead, onClose }: { row: Cou
                   <u className="h" style={{ left: `${at(x.value)}%` }} />
                 </span>
                 <span className="v">
-                  <b>{toPar(x.value)}</b>
+                  <b className="ch-num">{toPar(x.value)}</b>
+                  <span className={dd > 0 ? 'l' : dd < 0 ? 'g' : 'e'}>{dd ? `${formatFixed(Math.abs(dd), 1)} ${dd > 0 ? 'over' : 'under'}` : 'Level'}</span>
                 </span>
               </button>
             );
@@ -407,6 +410,11 @@ export function CourseSheet({ row, data, onPlayer, onRead, onClose }: { row: Cou
             })}
           </div>
         </section>
+      )}
+      {story && (
+        <button type="button" className="lk" onClick={story.open}>
+          Read the story from {story.when} at {row.name} <Chevron />
+        </button>
       )}
       <p className="lede cnote">Every counted round here this season. To par uses the tees each player played.</p>
     </>

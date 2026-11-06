@@ -7,7 +7,7 @@ import { Icon } from '../ui/Icon';
 import { routeLabel, type ChNavItem, type ChPhonePushedTop } from './nav';
 import { Bell } from './Bell';
 import { useCrumbTrail } from './crumbs';
-import { PushedTopStandIn, usePhoneChromeState } from './phone-chrome';
+import { PushedTopStandIn, usePhoneChromeState, DeskSlot } from './phone-chrome';
 import { useClubhouseRole } from './context';
 import { AskSheetButton } from './AskSheet';
 import { HelmKey, useQuickChatPresent } from './quick-chat/QuickChatProvider';
@@ -86,6 +86,7 @@ export function TopBar({
           </span>
         ))}
       </nav>
+      <DeskSlot />
       {/* The phone's tab-root title. Only one of it and the breadcrumbs is displayed at a width. */}
       <b className="ch-topbar__ptitle">
         <SectionTrigger>{crumbs[crumbs.length - 1]}</SectionTrigger>

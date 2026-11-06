@@ -1,7 +1,7 @@
 'use client';
 import { plural } from '../../../lib/plural';
 
-import { formatSigned } from '../../../lib/format';
+import { formatSigned, changeTone } from '../../../lib/format';
 import { STATIONS, type ChStation, type ChTeamBoardData } from '../../../data/coachhelm-team-shape';
 import { STATION_NAME, STATION_SHORT } from './hole-geometry';
 
@@ -27,7 +27,7 @@ export function StationControl({
         return (
           <button key={s} type="button" aria-pressed={value === s} aria-label={`${STATION_NAME[s]}, ${v == null ? 'not measured' : `${formatSigned(v)} a round`}`} onClick={() => onChange(s)}>
             {STATION_SHORT[s]}
-            <b>{v == null ? '—' : formatSigned(v)}</b>
+            <b className={!changeTone(v, false) ? 'is-even' : changeTone(v, false) === 'is-gain' ? 'is-gain' : undefined}>{v == null ? '—' : formatSigned(v)}</b>
           </button>
         );
       })}

@@ -440,6 +440,17 @@
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
+.ch-topbar__dslot {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  margin-left: 16px;
+}
+.ch-topbar__dslot:empty {
+  display: none;
+}
 .ch-topbar__crumb {
   display: inline-flex;
   align-items: center;
@@ -1229,6 +1240,7 @@ button.ch-more__row[disabled] {
     padding: env(safe-area-inset-top) 8px 6px var(--ch-page-x-phone);
     background: var(--ch-light-bar), var(--ch-phone-bar-bg);
   }
+  .ch-topbar__dslot,
   .ch-topbar__crumbs,
   .ch-topbar__settings {
     display: none;

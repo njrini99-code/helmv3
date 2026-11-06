@@ -1,3 +1,4 @@
+import { clampRadius } from '../../../lib/chart-geometry';
 import { TERMS } from '../../../lib/glossary';
 import type { ChStation } from '../../../data/coachhelm-team-shape';
 
@@ -29,6 +30,12 @@ export interface HoleGeometry {
   coins: Record<ChStation, Array<[number, number]>>;
 }
 
+/** A station's halo: bigger with what's at stake, and held inside the hole however big the real figure is (TEAM-1). */
+export function stationRadius(strokes: number | null | undefined): number {
+  // AC-HOLE-04: 10 + 22 for every stroke, held at 28 so it stays inside the drawing (TEAM-1).
+  return clampRadius(strokes, { min: 10, max: 28, full: 18 / 22 });
+}
+
 export const HOLE: Record<'v' | 'h', HoleGeometry> = {
   v: {
     w: 330,
@@ -55,12 +62,14 @@ export const HOLE: Record<'v' | 'h', HoleGeometry> = {
         [64, 292],
         [88, 292],
       ],
+      // Off the bunker at (110, 100), where a hollow coin read as a broken mark (TEAM-11).
       putting: [
-        [118, 98],
-        [142, 112],
+        [128, 118],
+        [152, 124],
+        [104, 124],
       ],
-      tee: [[200, 384]],
-      short_game: [[160, 152]],
+      tee: [[200, 384], [176, 390], [224, 390]],
+      short_game: [[160, 152], [136, 160], [112, 168]],
     },
   },
   h: {
@@ -91,9 +100,10 @@ export const HOLE: Record<'v' | 'h', HoleGeometry> = {
       putting: [
         [604, 152],
         [628, 166],
+        [580, 152],
       ],
-      tee: [[70, 128]],
-      short_game: [[552, 148]],
+      tee: [[70, 128], [96, 128], [122, 128]],
+      short_game: [[552, 148], [526, 148], [500, 148]],
     },
   },
 };
