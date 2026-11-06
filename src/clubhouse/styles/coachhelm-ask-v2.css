@@ -892,7 +892,7 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 
 /* The draft's own picture per flow (06 E-EVD, E-TASK, E-GOAL, E-NOTE, E-TRAVEL, E-LINEUP). */
 .ch-ak-th .evd.has-dt { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 12px; }
-.ch-ak-th .evd .dt { align-self: start; padding: 6px 0 6px; border-radius: 10px; background: var(--ch-card-bg); box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-card-ring, var(--ch-border-hairline)); text-align: center; font: var(--ch-type-12-strong); letter-spacing: 0.04em; color: var(--ch-ask-accent); }
+.ch-ak-th .evd .dt { align-self: start; padding: 6px 0 6px; border-radius: 10px; background: var(--ch-card-bg); box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-card-ring, var(--ch-border-hairline)); text-align: center; font: var(--ch-type-12-strong); letter-spacing: var(--ch-track-12); color: var(--ch-ask-accent); }
 .ch-ak-th .evd .dt b { display: block; font: var(--ch-type-20-strong); letter-spacing: var(--ch-track-20); color: var(--ch-text-primary); }
 .ch-ak-th .told .coin.more { display: inline-grid; place-items: center; min-width: 24px; height: 24px; background: var(--ch-card-bg); font: var(--ch-type-12-strong); color: var(--ch-text-secondary); }
 .ch-ak-tk, .ch-ak-goal, .ch-ak-nb, .ch-ak-route, .ch-ak-lu { margin: 12px 16px 0; padding: 12px; border-radius: var(--ch-radius-lg); background: var(--ch-well-bg-flat); box-shadow: inset 0 0 0 0.5px var(--ch-ak-ak-hair); }
