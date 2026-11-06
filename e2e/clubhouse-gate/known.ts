@@ -100,7 +100,6 @@ export const KNOWN: Record<string, string> = {
   'practice-thread|390|light|nested-surface': 'PP-2',
   'practice-thread|390|light|page-edge': 'PP-25',
   'practice-thread|390|light|tap-target': 'PP-22',
-  'quick-chat|390|dark|contrast': 'QC-6',
   'quick-chat|390|dark|page-edge': 'FID-QC-8',
   'quick-chat|390|dark|tap-target': 'MOB-QC-11',
   'quick-chat|390|light|page-edge': 'FID-QC-8',
