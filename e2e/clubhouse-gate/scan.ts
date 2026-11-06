@@ -80,7 +80,8 @@ export function scanPage(args: { phone: boolean }): GateFinding[] {
     const card = cardOf(el);
 
     // A drawing's marks stay in the drawing, whatever the figure: a halo past its SVG lands on the caption or the chips while still inside the card (TEAM-1).
-    if (el instanceof SVGElement && el.tagName !== 'svg' && el.tagName !== 'g' && el.ownerSVGElement && !el.closest('defs, clipPath, mask, symbol')) {
+    // A transparent hit circle (a thumb's 44) draws nothing, so it can reach past the drawing.
+    if (el instanceof SVGElement && el.tagName !== 'svg' && el.tagName !== 'g' && el.ownerSVGElement && !el.closest('defs, clipPath, mask, symbol') && getComputedStyle(el).fill !== 'transparent') {
       const o = el.ownerSVGElement.getBoundingClientRect();
       const over = Math.max(o.left - r.left, r.right - o.right, o.top - r.top, r.bottom - o.bottom);
       if (over > 0.5) add('card-escape', el, `${over.toFixed(1)}px past its drawing`);
@@ -148,6 +149,9 @@ export function scanPage(args: { phone: boolean }): GateFinding[] {
         w = Math.max(w, r.width - px(p.left) - px(p.right), px(p.width));
         h = Math.max(h, r.height - px(p.top) - px(p.bottom), px(p.height));
       }
+      // A drawing's control measures its own hit circle, not the marks around it.
+      const hit = el.querySelector('.hit');
+      if (hit) { const b = hit.getBoundingClientRect(); w = Math.max(w, b.width); h = Math.max(h, b.height); }
       if (w < 43.5 || h < 43.5) add('tap-target', el, `${w.toFixed(0)}x${h.toFixed(0)}`);
     }
 

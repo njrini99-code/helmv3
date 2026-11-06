@@ -1062,12 +1062,17 @@ html[data-fw-theme='dark'] .ch-htb {
 .ch-htb .rec {
   padding:0 16px 16px;
   display:grid;
+  grid-template-columns:minmax(0,1fr);
   gap:12px;
 }
 .ch-htb .rec .big {
   display:flex;
+  flex-wrap:wrap;
   align-items:baseline;
-  gap:8px;
+  gap:4px 8px;
+}
+.ch-htb .rec .big b {
+  white-space:nowrap;
 }
 .ch-htb .rec .big b {
   font: var(--ch-type-34-medium);
@@ -1080,7 +1085,8 @@ html[data-fw-theme='dark'] .ch-htb {
 }
 .ch-htb .lv {
   display:grid;
-  grid-template-columns:calc(128 * var(--ch-tb-k)) minmax(0,1fr) auto;
+  min-width:0;
+  grid-template-columns:minmax(0,calc(128 * var(--ch-tb-k))) minmax(40px,1fr) minmax(0,max-content);
   gap:8px;
   align-items:center;
   font: var(--ch-type-14-medium); }

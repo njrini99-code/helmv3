@@ -1,5 +1,6 @@
 'use client';
 
+import { ChartText } from '../../../ui/charts/ChartText';
 import { Badge } from '../../../ui/Badge';
 import { pluralWord } from '../../../lib/plural';
 
@@ -21,19 +22,19 @@ export function FingerPrint({ player, labels = false }: { player: ChTeamPlayer; 
   const z = 9;
   const sc = 20 / 1.1;
   return (
-    <svg className="fp" width={w} height={h + (labels ? 10 : 0)} viewBox={`0 0 ${w} ${h + (labels ? 10 : 0)}`} aria-hidden="true">
+    <svg className="fp" width={w} height={h + (labels ? 14 : 0)} viewBox={`0 0 ${w} ${h + (labels ? 14 : 0)}`} aria-hidden="true">
       <line className="z" x1="0" x2={w} y1={z} y2={z} />
       {STATIONS.map((s, i) => {
         const v = player.legs[s].strokes;
         const x = i * (bw + gap);
-        const hh = v == null ? 0 : Math.max(2, Math.min(Math.abs(v) * sc, v < 0 ? h - z : z));
+        const hh = v == null ? 0 : Math.max(2, Math.min(Math.abs(v) * sc, v < 0 ? h - z - 2 : z - 2));
         return (
           <g key={s}>
             {v != null && (v < 0 ? <rect className="l" x={x} y={z + 1} width={bw} height={hh} rx="2.5" /> : <rect className="g" x={x} y={z - 1 - hh} width={bw} height={hh} rx="2.5" />)}
             {labels && (
-              <text className="lab" x={x + bw / 2} y={h + 8}>
+              <ChartText className="lab" size={12} x={x + bw / 2} y={h + 11} textAnchor="middle">
                 {STATION_SHORT[s][0]}
-              </text>
+              </ChartText>
             )}
           </g>
         );
