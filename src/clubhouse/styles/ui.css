@@ -1967,8 +1967,9 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   align-items: center;
   gap: 6px;
   width: 100%;
-  height: 64px;
-  padding: 12px 0 0;
+  /* Padding, not a fixed box: its own 67 didn't fit in 64, and at XXL the mark fell below the ring (CRH-12). */
+  min-height: calc(64 * var(--ch-type-k));
+  padding: 10px 0 8px;
   border: 0;
   border-radius: var(--ch-radius-md);
   background: none;
@@ -2030,7 +2031,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--ch-ink-300);
+  background: var(--ch-green-500);
   transition: background-color var(--ch-dur-base) var(--ch-ease);
 }
 .ch-wks__d.is-today b {

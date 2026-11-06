@@ -42,7 +42,7 @@ import '../../styles/home.css';
  * next and its countdown beside the latest round; then the player's scoring
  * and the four parts of the game. The phone is PlayerHomePhone (v2 board).
  */
-export function PlayerHome(props: { data: ChPlayerHome; /** clubhouse_stats_redesign_v1, read on the server. */ shs?: boolean; /** Preview and tests: a frozen clock (ISO). */ now?: string; /** The player's live round and their team's (P-6); omitted, the own card is not drawn. */ live?: ChPlayerLive; playerId?: string }) {
+export function PlayerHome(props: { data: ChPlayerHome; /** clubhouse_stats_redesign_v1, read on the server. */ shs?: boolean; /** The Classes, Roster and Home lane's flag, read on the server. */ crh?: boolean; /** Preview and tests: a frozen clock (ISO). */ now?: string; /** The player's live round and their team's (P-6); omitted, the own card is not drawn. */ live?: ChPlayerLive; playerId?: string }) {
   return (
     <ChangeMarksProvider marks={props.data.marks ?? []}>
       <PlayerHomeBody {...props} />
@@ -50,7 +50,7 @@ export function PlayerHome(props: { data: ChPlayerHome; /** clubhouse_stats_rede
   );
 }
 
-function PlayerHomeBody({ data, now, live, playerId, shs }: { data: ChPlayerHome; shs?: boolean; now?: string; live?: ChPlayerLive; playerId?: string }) {
+function PlayerHomeBody({ data, now, live, playerId, shs, crh }: { data: ChPlayerHome; shs?: boolean; crh?: boolean; now?: string; live?: ChPlayerLive; playerId?: string }) {
   const phone = useChPhone();
   // A page left open past the team's midnight reads itself again, so "today" is today (desktop and phone).
   useHomeDayRollover(data.clock, now !== undefined);
@@ -64,7 +64,7 @@ function PlayerHomeBody({ data, now, live, playerId, shs }: { data: ChPlayerHome
       </SectionBoundary>
     ) : null;
   if (isPlayerFirstRun(data)) return <PlayerFirstRun data={data} own={own} />;
-  if (phone) return <PlayerHomePhone data={data} now={now} live={live} playerId={playerId} shs={shs} />;
+  if (phone) return <PlayerHomePhone data={data} now={now} live={live} playerId={playerId} shs={shs} crh={crh} />;
   const post = postRoundHref();
   // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
   const failed = playerFailedParts(data);
