@@ -107,3 +107,9 @@ export function initials(name: string): string {
 export function formatWhole(value: number): string {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);
 }
+
+/** What a figure says beside it: its window and the rounds it rests on (SYS-7). */
+export function windowWords(window: 'season' | 'last10', rounds: number): string {
+  const n = `${rounds} ${rounds === 1 ? 'round' : 'rounds'}`;
+  return window === 'season' ? `This season · ${n}` : `Last 10 · ${n}`;
+}

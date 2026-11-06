@@ -33,7 +33,11 @@ export type ChFigures = {
   total: number | null;
 };
 
-const over = (rounds: readonly ChRound[], pick: (r: ChRound) => number | null | undefined) => (effectiveCount(rounds as ChRound[], pick) >= MIN_SG_ROUNDS ? weightedMean(rounds as ChRound[], pick) : null);
+/** One figure over some rounds: the mean, and how many rounds it rests on. Null under the floor, so a page shows no figure rather than a thin one. */
+export function figureOver<T extends ChRound>(rounds: readonly T[], pick: (r: T) => number | null | undefined): { value: number | null; n: number } {
+  const n = effectiveCount(rounds as T[], pick);
+  return { value: n >= MIN_SG_ROUNDS ? weightedMean(rounds as T[], pick) : null, n };
+}
 
 /** Strokes gained and round counts for one player's rounds in one window. Pass rounds already cut to the window. */
 export function figuresOver(rounds: readonly ChRound[]): ChFigures {
@@ -41,15 +45,7 @@ export function figuresOver(rounds: readonly ChRound[]): ChFigures {
   return {
     rounds: rounds.length,
     holeRounds: holes.length,
-    legs: { tee: over(holes, PICK.tee), approach: over(holes, PICK.approach), around: over(holes, PICK.around), putting: over(holes, PICK.putting) },
-    total: over(holes, (r) => r.strokes_gained_total),
+    legs: { tee: figureOver(holes, PICK.tee).value, approach: figureOver(holes, PICK.approach).value, around: figureOver(holes, PICK.around).value, putting: figureOver(holes, PICK.putting).value },
+    total: figureOver(holes, (r) => r.strokes_gained_total).value,
   };
-}
-
-export type ChFigureWindow = 'season' | 'last10';
-
-/** What every figure says beside it: its window, and the rounds it rests on. */
-export function windowWords(window: ChFigureWindow, rounds: number): string {
-  const n = `${rounds} ${rounds === 1 ? 'round' : 'rounds'}`;
-  return window === 'season' ? `This season · ${n}` : `Last 10 · ${n}`;
 }

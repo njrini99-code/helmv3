@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import { formatFixed, formatSigned } from '../lib/format';
 import { sgBaseline, type ChSgTour } from '../lib/sg';
+import { figureOver } from './figure-window';
 import { countsForScoring, currentSeasonLabel, fullName, groupByPlayer, loadSeasonRounds, loadTeamZone, mean, MIN_SG_ROUNDS, seasonStartDate, shortDate, type ChRound } from './season';
 import {
   bandPutts,
@@ -476,7 +477,7 @@ export function teamGrid(players: Array<{ id: string; first_name: string | null;
       const mine = roundsInFilter(byPlayer.get(p.id) ?? [], f, start);
       const mineHoles = holeRounds(mine);
       const s = summarizeWindow(mine);
-      const legs = LEGS.map((_, i) => (effectiveCount(mineHoles, (r) => sgLegs(r)[i]) >= MIN_SG_ROUNDS ? weightedMean(mineHoles, (r) => sgLegs(r)[i]) : null));
+      const legs = LEGS.map((_, i) => figureOver(mineHoles, (r) => sgLegs(r)[i]).value);
       // Late half against early half, both per 18 holes, and needing four whole rounds with shots (a nine-hole round is half).
       const sgMine = mineHoles.filter((r) => r.strokes_gained_total != null).reverse();
       const half = Math.floor(sgMine.length / 2);

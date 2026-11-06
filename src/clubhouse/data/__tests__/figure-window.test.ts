@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { toChTeamLegs } from '../coachhelm-team-legs';
-import { figuresOver, roundsForFigures, windowWords } from '../figure-window';
+import { windowWords } from '../../lib/format';
+import { figuresOver, roundsForFigures } from '../figure-window';
 import { summarizePlayer, type ChRound } from '../season';
 import { filterFor } from '../stats-filter';
 import { teamGrid } from '../stats-team';
@@ -53,6 +54,18 @@ describe('one figure across pages (QA-1)', () => {
     expect(stats.legs[3]).toBeCloseTo(f.legs.putting!, 6);
     expect(team.total).toBeCloseTo(f.total!, 6);
     expect(stats.total).toBeCloseTo(f.total!, 6);
+  });
+
+  it('Home and Team view agree over the same ten rounds, so a difference between them is only the window each names', () => {
+    // Newest first, as the season read returns them. The four oldest are the ones the last 10 leaves out.
+    const season = Array.from({ length: 14 }, (_, i) => round(String(14 - i), { strokes_gained_approach: i >= 10 ? 3 : -1 }));
+    const home = teamGrid(PLAYERS, season, filterFor('last10'))[0]!;
+    const newestTen = season.slice(0, 10);
+    const team = toChTeamLegs(newestTen, ['cole']).get('cole')!;
+    expect(home.rounds).toBe(10);
+    expect(team.rounds).toBe(10);
+    expect(home.legs[1]).toBeCloseTo(team.legs.approach.strokes!, 6);
+    expect(toChTeamLegs(season, ['cole']).get('cole')!.legs.approach.strokes).not.toBeCloseTo(home.legs[1]!, 1);
   });
 
   it('every figure names its window and the rounds it rests on', () => {
