@@ -167,7 +167,8 @@ export function QualifierVisual({ visual, landed = false }: { visual: Qual; land
         {Array.from({ length: visual.rounds }, (_, i) => (
           <div className="qr" key={i}>
             <small>Round {i + 1}</small>
-            <b>{dayLong(nextDay(visual.start, i), { weekday: 'short', day: 'numeric' })}</b>
+            {/* Two reads: WebKit and Node order a joined weekday and day differently, which fails hydration. */}
+            <b>{dayLong(nextDay(visual.start, i), { weekday: 'short' })} {dayLong(nextDay(visual.start, i), { day: 'numeric' })}</b>
           </div>
         ))}
       </div>

@@ -34,7 +34,7 @@ export const useQuickChatRun = (): UseCoachHelmChatResult | null => useContext(Q
 export function QuickChatProvider({ plans = false, pathname, search, enabled, children }: { plans?: boolean; pathname: string; search: string; enabled: boolean; children: ReactNode }) {
   // Preview only: `?qc=<state>` opens the panel at that state with the design page's fixture (QC0).
   const previewState = pathname.startsWith('/clubhouse-preview') || process.env.NODE_ENV !== 'production' ? new URLSearchParams(search).get('qc') : null;
-  const initialOpen = !!previewState && previewState !== 'closed' && previewState !== 'live';
+  const initialOpen = !!previewState && previewState !== 'closed' && previewState !== 'live' && previewState !== 'live-work';
   const role = useClubhouseRole();
   const on = enabled && role === 'coach';
   const onCoachHelm = pathname === '/golf/dashboard/coachhelm' || pathname.startsWith('/golf/dashboard/coachhelm/');
