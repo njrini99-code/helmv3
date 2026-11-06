@@ -1743,7 +1743,7 @@ a.ch-th-reads__r:focus-visible {
   flex-direction: column;
   gap: 4px;
   /* Clear of the expand button in the corner (ASK-4). */
-  padding-right: 44px;
+  padding-right: 48px;
 }
 .ch-th-cv__entity {
   font: var(--ch-type-13-medium);

@@ -283,6 +283,7 @@
 }
 @media (hover: hover) {
   .ch-rs-face:not(.ch-rs-face--static):active {
+    background: var(--ch-ledger-row-press);
     transform: translateY(0);
   }
 }
