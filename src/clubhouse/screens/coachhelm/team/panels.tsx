@@ -347,7 +347,7 @@ export function CourseSheet({ row, data, onPlayer, onRead, onClose, story = null
         onClose={onClose}
       />
       <div className="cmk sh">
-        <b>{toPar(row.value)}</b>
+        <b className="ch-num">{toPar(row.value)}</b>
         <span>
           a round to par here
           <br />
@@ -379,7 +379,7 @@ export function CourseSheet({ row, data, onPlayer, onRead, onClose, story = null
                   <u className="h" style={{ left: `${at(x.value)}%` }} />
                 </span>
                 <span className="v">
-                  <b>{toPar(x.value)}</b>
+                  <b className="ch-num">{toPar(x.value)}</b>
                   <span className={dd > 0 ? 'l' : dd < 0 ? 'g' : 'e'}>{dd ? `${formatFixed(Math.abs(dd), 1)} ${dd > 0 ? 'over' : 'under'}` : 'Level'}</span>
                 </span>
               </button>
@@ -412,9 +412,9 @@ export function CourseSheet({ row, data, onPlayer, onRead, onClose, story = null
         </section>
       )}
       {story && (
-        <Button variant="ghost" size="lg" onClick={story.open}>
-          Read the story from {story.when}
-        </Button>
+        <button type="button" className="lk" onClick={story.open}>
+          Read the story from {story.when} at {row.name} <Chevron />
+        </button>
       )}
       <p className="lede cnote">Every counted round here this season. To par uses the tees each player played.</p>
     </>

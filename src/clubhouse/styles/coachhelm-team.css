@@ -103,6 +103,8 @@ html[data-fw-theme='dark'] .ch-htb {
   font: var(--ch-type-15);
   color:var(--ch-tb-ink-2); letter-spacing: var(--ch-track-15); }
 .ch-htb .card {
+  /* The app's global .card draws a border, bright on dark; the shadow's ring is this card's only edge. */
+  border:0;
   background:var(--ch-tb-card);
   border-radius: var(--ch-radius-lg);
   box-shadow:var(--ch-team-shadow-1);
@@ -2296,4 +2298,7 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
 }
 .ch-htb .insp {
   background: var(--ch-grouped-bg);
+}
+html[data-fw-theme='dark'] .ch-htb {
+  --ch-team-shadow-1: 0 0 0 1px var(--ch-tb-ring);
 }

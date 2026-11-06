@@ -30,19 +30,23 @@ export function TeamBoardSkeleton() {
   const phone = useChPhone();
   if (phone)
     return (
-      <main className="ch-htb is-phone" aria-busy="true">
+      <main className="ch-htb is-phone" aria-busy="true" aria-label="Loading Team view">
         <PhoneTop start title="CoachHelm" />
         <div className="sheet" aria-hidden="true">
           <header className="ch-chd is-phone">
             <div className="ch-chd__t">
               <LargeTitleSkeleton />
+              <span className="skl" style={{ width: '72%', height: 14, margin: '3px 0' }} />
             </div>
             <div className="ch-chd__sw">
               <CoachHelmTabs active="board" held boardLabel="Team" />
             </div>
           </header>
           {/* The loaded cards' heights (06 #loading: 180, 406, 258, 216), so nothing jumps when they land (TEAM-28). */}
-          <span className="skl" style={{ height: 180, borderRadius: 16 }} />
+          <div className="card sklc" style={{ minHeight: 180 }}>
+            <span className="skl" style={{ width: '40%', height: 14 }} />
+            <span className="skl" style={{ height: 130, marginTop: 12, borderRadius: 12 }} />
+          </div>
           {hero(232, 406)}
           {rows(5, 258)}
           {rows(4, 216)}
@@ -50,7 +54,7 @@ export function TeamBoardSkeleton() {
       </main>
     );
   return (
-    <main className="ch-htb is-desk" aria-busy="true">
+    <main className="ch-htb is-desk" aria-busy="true" aria-label="Loading Team view">
       <div className="ch-htb-desk" aria-hidden="true">
         <DeskTop>
           <CoachHelmTabs active="board" held boardLabel="Team" />
