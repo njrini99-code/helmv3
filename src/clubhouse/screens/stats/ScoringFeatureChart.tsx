@@ -282,7 +282,7 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
           </text>
         )}
         {mean != null && (
-          <text className="ch-shs-ax" x="4" y={y(mean) - 6}>
+          <text className="ch-shs-ax" x={width - PAD.r} textAnchor="end" y={Math.max(12, y(mean) - 6)}>
             Mean {formatFixed(mean, 1)}
           </text>
         )}

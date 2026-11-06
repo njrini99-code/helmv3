@@ -16,7 +16,7 @@ describe('Home, Classes and Roster lane', () => {
   it('rows sit 16 inside the card, with their margins reset (CRH-1, CRH-2)', () => {
     const reset = home.slice(home.indexOf("(SYS-3)"), home.indexOf('(SYS-3)') + 400);
     expect(reset).toContain('margin-inline: 0');
-    expect(reset).toContain('padding: 10px 16px');
+    expect(reset).toContain('padding: 8px 16px');
   });
   it("the team’s game is one column on a phone and 2 x 2 before four fit (CRH-3, CRH-31)", () => {
     expect(rule(home, "  .ch-hm[data-ch-crh='on'] .ch-hm-legs__grid")).toContain('grid-template-columns: minmax(0, 1fr)');

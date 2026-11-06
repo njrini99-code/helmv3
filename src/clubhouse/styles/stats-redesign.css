@@ -40,7 +40,7 @@
 /* Sticky window switch: page colour behind it, no blur, no hairline. */
 .ch-shs .ch-shs-ctl {
   position: sticky;
-  top: var(--ch-phone-topbar-h, 0px);
+  top: calc(var(--ch-phone-topbar-h, 0px) + env(safe-area-inset-top));
   z-index: var(--ch-z-raised);
   padding: 2px var(--ch-page-x-phone) 8px;
   background: var(--ch-shs-s-bg);
@@ -125,7 +125,7 @@
 .ch-shs-sech {
   margin: 16px 2px 0;
   font: var(--ch-type-22-strong);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.02em;
   color: var(--ch-shs-s-ink);
 }
@@ -302,7 +302,7 @@
 }
 .ch-shs-fig {
   font: var(--ch-type-figure-40-500);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.038em;
 
 }
@@ -388,6 +388,8 @@
   background: var(--ch-chart-loss-tint);
   color: var(--ch-chart-loss);
 }
+.ch-shs-feat .ch-shs-pill.is-gain { background: var(--ch-shs-s-gain-tint); color: var(--ch-shs-s-gain); }
+.ch-shs-feat .ch-shs-pill.is-loss { background: var(--ch-shs-s-loss-tint); color: var(--ch-shs-s-loss); }
 .ch-shs-pill.is-flat {
   background: var(--ch-shs-s-flat-tint);
   color: var(--ch-shs-s-ink-2);
@@ -515,7 +517,7 @@
   color: var(--ch-shs-s-ink-2); letter-spacing: var(--ch-track-15); }
 .ch-shs-gc .v {
   font: var(--ch-type-22-strong);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.02em;
 
 }
@@ -552,7 +554,7 @@
 }
 .ch-shs-bigv {
   font: var(--ch-type-34-strong);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.038em;
 
 }
@@ -1045,7 +1047,7 @@
 .ch-shs-d-hero__fig {
   display: block;
   font: var(--ch-type-figure-40-500);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.038em;
 
 }
@@ -1116,7 +1118,7 @@
 .ch-shs-m4 .v {
   margin-top: 4px;
   font: var(--ch-type-22-strong);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.02em;
 
 }
@@ -1661,7 +1663,11 @@ li + li > .ch-shs-rrow::before {
   align-items: center;
   justify-content: center;
   font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 /* A figure drawn against its reference, under the hero's caption. */
@@ -1847,7 +1853,7 @@ p.ch-shs-mini-cap {
 .ch-shs-prow {
   position: relative;
   display: grid;
-  grid-template-columns: calc(20 * var(--ch-type-k)) calc(104 * var(--ch-type-k)) minmax(0, 1fr) calc(44 * var(--ch-type-k));
+  grid-template-columns: calc(20 * var(--ch-type-k)) minmax(0, 1.2fr) minmax(64px, 1fr) calc(44 * var(--ch-type-k));
   align-items: center;
   gap: 8px;
   min-height: 52px;
@@ -2033,7 +2039,7 @@ p.ch-shs-mini-cap {
 .ch-shs-hero-top > h1 {
   margin: 4px 0 0;
   font: var(--ch-type-22-strong);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.01em;
   color: var(--ch-on-green-ink);
 }
@@ -2131,7 +2137,7 @@ p.ch-shs-mini-cap {
 .ch-shs-leg__v {
   display: block;
   font: var(--ch-type-28-strong);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.03em;
 
 }
@@ -2265,3 +2271,14 @@ p.ch-shs-mini-cap {
 .ch-shs .ch-gx-tiles > div:nth-child(even) {
   padding-inline-start: 12px;
 }
+
+/* STATS-1: a coach's header on a player's Stats sits on the page edge. */
+.ch-spm-head { padding-inline: var(--ch-page-x-phone); }
+/* STATS-10: the glance tiles go two across before a label would overflow. */
+.ch-shs-card { container-type: inline-size; }
+@container (max-width: 360px) {
+  .ch-shs-glance { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ch-shs-glance > * { min-width: 0; overflow-wrap: anywhere; }
+}
+/* STATS-14: Left and Right read apart without colour. */
+.ch-shs-stack > * + * { box-shadow: inset 2px 0 0 var(--ch-card-bg); }

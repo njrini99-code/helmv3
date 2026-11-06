@@ -583,7 +583,8 @@ function ParDots({ rows }: { rows: Array<{ p: 3 | 4 | 5; you: number | null; tou
 
 /** A green seen from above, its four edges thickened by the share of missed approaches that finish there. */
 export function GreenDiagram({ short, long, left, right, gir }: { short: number; long: number; left: number; right: number; gir: number | null }) {
-  const stroke = (v: number) => 5 + (v / 100) * 28;
+  // Capped, so a thick arc never reaches the label beside it (STATS-2).
+  const stroke = (v: number) => Math.min(18, 5 + (v / 100) * 28);
   const worst = Math.max(short, long, left, right);
   const tone = (v: number) => (v === worst ? 'var(--ch-warning-600)' : 'var(--ch-champagne-500)');
   // The side most misses finish on is the one in bold, by the same test as its colour, never "Short" by default (A8.6).
@@ -597,7 +598,7 @@ export function GreenDiagram({ short, long, left, right, gir }: { short: number;
         <path d="M150 90 l16 6 l-16 6 z" fill="var(--ch-chart-flag)" />
         {gir != null && (
           <>
-            <text x={150} y={132} textAnchor="middle" fontSize={26} fontWeight={700} fill="var(--ch-green-900)" letterSpacing={-1}>{Math.round(gir)}%</text>
+            <text x={150} y={132} textAnchor="middle" fontSize={26} fontWeight={700} fill="var(--ch-forest-900)" letterSpacing={-1}>{Math.round(gir)}%</text>
             <text x={150} y={148} textAnchor="middle" fontSize={11} fill="var(--ch-text-secondary)">greens hit</text>
           </>
         )}

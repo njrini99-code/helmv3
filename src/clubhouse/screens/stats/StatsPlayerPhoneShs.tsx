@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, Flag, MessageSquare, Plus, RotateCw, Share } from 'lucide-react';
+import { Flag, MessageSquare, Plus, Share } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -86,10 +86,10 @@ const DETAIL_TITLE: Readonly<Record<StatsPlayerDetailId, string>> = {
 };
 
 /** Text Size Larger and XXL (1.24 and up) reflow the page (08 criterion 20). */
-function useBigText(): boolean {
+export function useBigText(): boolean {
   const [big, setBig] = useState(false);
   useEffect(() => {
-    const read = () => setBig(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ch-type-scale')) >= 1.24);
+    const read = () => setBig(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ch-type-scale')) >= 1.2);
     read();
     const watch = new MutationObserver(read);
     watch.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
@@ -198,7 +198,7 @@ export function StatsPlayerPhoneShs({
       }}
     >
       {coach ? (
-        <PhoneTop title="Player stats" heading={false} back={{ label: 'Team', onBack: onBackToTeam }} action={<PhoneIconAction icon={Share} label={`Share ${first}’s stats`} onClick={() => void share()} />} />
+        <PhoneTop title="Player stats" heading={false} back={{ label: 'Team', onBack: () => (window.history.length > 1 && document.referrer.startsWith(window.location.origin) ? window.history.back() : onBackToTeam()) }} action={<PhoneIconAction icon={Share} label={`Share ${first}’s stats`} onClick={() => void share()} />} />
       ) : (
         <PhoneTop title="My stats" heading={false} start />
       )}
@@ -220,13 +220,13 @@ export function StatsPlayerPhoneShs({
           </header>
         )}
 
-        <div className={'ch-shs-ctl' + (hasRange(data.filter) ? ' is-custom' : '') + (stuck ? ' is-stuck' : '')}>
+        {!firstRun && <div className={'ch-shs-ctl' + (hasRange(data.filter) ? ' is-custom' : '') + (stuck ? ' is-stuck' : '')}>
           <div className="ch-shs-ctl__row">
             <WindowSwitch value={windowShown ?? rangeOf(data.filter)} onChange={onWindow} custom={hasRange(data.filter)} hook="stats-window-seg" />
             {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={onFilter} codes={{ empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' }} phone hook="stats-filter" />}
           </div>
           {updating}
-        </div>
+        </div>}
 
         <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className="ch-shs-sheet">
           {!filtered && noRounds && !firstRun && <NineHint code="CH-5324" filter={data.filter} options={data.filterOptions} who={coach ? `${first} has` : 'You have'} />}
@@ -325,30 +325,12 @@ function FailedCard({ onRetry, seen }: { onRetry: () => void; /** The page's dat
   const [busy, setBusy] = useState(false);
   useEffect(() => setBusy(false), [seen]);
   return (
-    <section className="ch-shs-card" suppressHydrationWarning role="alert" data-ch-code="CH-5201">
-      <div className="ch-shs-notice">
-        <span className="ch-shs-notice__ic--flag">
-          <Icon icon={AlertTriangle} size={16} />
-        </span>
-        <div>
-          <p className="ch-shs-notice__t">Rounds didn’t load.</p>
-          <p className="ch-shs-notice__b">Posted rounds are safe. Every figure that reads them would be incomplete, so they’re hidden. Try again.</p>
-          <button
-            type="button"
-            className="ch-shs-btn"
-            data-ch="stats-retry"
-            aria-disabled={busy || undefined}
-            onClick={() => {
-              if (busy) return; // A second tap while it loads does nothing.
-              setBusy(true);
-              onRetry();
-            }}
-          >
-            <Icon icon={RotateCw} size={15} />
-            Try again
-          </button>
-        </div>
-      </div>
+    <section className="ch-shs-card" suppressHydrationWarning data-ch-code="CH-5201">
+      <InlineNotice title="Rounds didn’t load" retrying={busy} onRetry={() => {
+        if (busy) return; // A second tap while it loads does nothing.
+        setBusy(true);
+        onRetry();
+      }} body={<>Posted rounds are safe. Every figure that reads them would be incomplete, so they’re hidden. Try again.</>} />
     </section>
   );
 }

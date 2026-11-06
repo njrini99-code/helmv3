@@ -1,7 +1,9 @@
 'use client';
 
-import { AlertTriangle, ChartColumn, Flag, Medal, RotateCw } from 'lucide-react';
+import { AlertTriangle, ChartColumn, Flag, Medal } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
+import { Button } from '../../ui/Button';
+import { useBigText } from './StatsPlayerPhoneShs';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import type { ChTeamStats } from '../../data/stats-team';
@@ -41,9 +43,6 @@ const TITLE: Readonly<Record<StatsTeamDetailId, string>> = { tscore: 'Team scori
 
 const windowDays = (data: ChTeamStats) => (data.window === 'last10' && !isFiltered(data.filter) ? `Last ${data.last} days` : windowShort(data.filter));
 
-function bigText(): boolean {
-  return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ch-type-scale')) >= 1.24;
-}
 
 /** "Sam gains the most; Lee loses the most", and "loses the least" when everyone is below zero (08 criterion 57). */
 export function teamSentence(rows: ReadonlyArray<{ name: string; value: number | null }>): string | null {
@@ -120,8 +119,7 @@ export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
   const hadFailed = useRef(data.roundsError);
   if (data.roundsError) hadFailed.current = true;
   useGrowOnce(root, reduced || hadFailed.current, [below, data.roundsError, noRounds]);
-  const [big, setBig] = useState(false);
-  useEffect(() => setBig(bigText()), []);
+  const big = useBigText();
   const keyboard = useRef(false);
   const go = (id: StatsDetailId) => open(id);
   const days = (data.days ?? []).filter((d): d is { label: string; score: number; n?: number; date?: string } => d.score != null);
@@ -247,11 +245,11 @@ function TeamFailedCard({ seen }: { /** The page's data: a new copy means the re
       </span>
       <h3 className="ch-shs-empty__t">Team rounds didn’t load</h3>
       <p>Every figure would be incomplete, so none is shown.</p>
-      <button
-        type="button"
-        className="ch-shs-btn"
+      <Button
+        variant="secondary"
+        size="sm"
+        busy={busy}
         data-ch="stats-retry"
-        aria-disabled={busy || undefined}
         onClick={() => {
           if (busy) return;
           setBusy(true);
@@ -259,9 +257,8 @@ function TeamFailedCard({ seen }: { /** The page's data: a new copy means the re
           router.refresh();
         }}
       >
-        <Icon icon={RotateCw} size={15} />
         Try again
-      </button>
+      </Button>
     </section>
   );
 }
@@ -368,7 +365,7 @@ function TeamScoringDetail({ data, covered, days, mean }: { data: ChTeamStats; c
   const trend = days.length >= 2 ? teamTrendReading(data, days.length) : null;
   return (
     <>
-      <DetailHero figure={f ? figureValue(f) : <NoData />} caption={['Team scoring average', toPar(data)].filter(Boolean).join(' · ')} chips={<Change data={data} />} />
+      <DetailHero figure={f ? figureValue(f) : <NoData />} caption={['Team scoring average', toPar(data), windowDays(data)].filter(Boolean).join(' · ')} chips={<Change data={data} />} />
       {days.length > 0 && (
         <ShsCard title="By round day" meta={mean == null ? undefined : 'Team mean dashed'}>
           <Ribbon points={days.map((d) => ({ label: d.label, value: d.score }))} lowerIsBetter reference={mean == null ? null : { value: mean, label: 'Mean' }} format={(v) => formatFixed(v, 1)} tone={trend?.tone === 'is-gain' ? 'gain' : trend?.tone === 'is-loss' ? 'loss' : 'flat'} />

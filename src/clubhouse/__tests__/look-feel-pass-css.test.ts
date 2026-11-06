@@ -109,8 +109,9 @@ describe('type roles (B1)', () => {
   });
 
   it('two widths only, 88 for dense numbers and 96 for display, the sign-in pages too, and font-stretch as well', () => {
+    // Stats' condensed figures are 92, the one exception (owner, 2026-11-06).
     const off = [
-      ...hits(/'wdth'\s*\d+/, css).filter((h) => !/'wdth' (88|96)\b/.test(h.text)),
+      ...hits(/'wdth'\s*\d+/, css).filter((h) => !/'wdth' (88|96)\b/.test(h.text) && !(h.file.endsWith('stats-redesign.css') && /'wdth' 92\b/.test(h.text))),
       ...hits(/font-stretch:/, css).filter((h) => !/font-stretch:\s*(88|96)%;/.test(h.text)),
     ];
     expect(off).toEqual([]);
@@ -208,7 +209,7 @@ const RAW_FONT: Record<string, number> = {
   'styles/rounds.css': 23,
   'styles/settings.css': 3,
   'styles/shell.css': 10,
-  'styles/stats.css': 33,
+  'styles/stats.css': 24,
   'styles/ui.css': 5,
 };
 

@@ -388,7 +388,7 @@
   color: var(--ch-text-primary);
 }
 .ch-fg__c--lead .ch-fg__v {
-  font-size: 48px;
+  font-size: calc(48 * var(--ch-type-k));
 }
 /* Team stats reads as one line of figures: every value sits on the lead's 48px line (the supporting values at its foot,
    sharing its baseline), and every gauge follows its words directly, so the six gauges share one line under the words
@@ -536,14 +536,15 @@
   height: auto;
 }
 .ch-tick {
-  font: 500 11px var(--ch-font-sans);
+  font: var(--ch-type-11-medium);
+  letter-spacing: var(--ch-track-11);
   fill: var(--ch-text-tertiary);
 }
 /* The team chart is drawn on a 900 unit canvas about 700px wide at 1280, so its ticks are set in those units: 14.5 reads
    at about 11px there. The phone keeps its own floor (below). */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-sgt__svg .ch-tick {
-    font-size: 15px;
+    font-size: calc(15 * var(--ch-type-k));
   }
 }
 .ch-sgt__ends {
@@ -1022,14 +1023,15 @@
   height: auto;
 }
 .ch-ax {
-  font: 600 11px var(--ch-font-sans);
+  font: var(--ch-type-11-strong);
+  letter-spacing: var(--ch-track-11);
   fill: var(--ch-ink-500);
 }
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   /* Every .ch-ax sits in a 690-unit-wide chart drawn at the phone's width, about half size: 24 units reads at 11.5 to
      14px from 320 to 430 wide (high-fidelity audit F09: it drew at 5.8px). */
   .ch-ax {
-    font-size: 22px;
+    font-size: calc(22 * var(--ch-type-k));
   }
 }
 /* Team view: the handoff's putting page keeps the design system's YardagePage depth. */
@@ -1152,7 +1154,7 @@
   box-shadow: 0 0 0 4px var(--ch-ivory-25), 0 0 0 5px rgb(21 90 57 / 0.28), 0 12px 26px -12px rgb(11 58 37 / 0.45);
 }
 .ch-pf-hero__av .ch-avatar {
-  font-size: 34px;
+  font-size: calc(34 * var(--ch-type-k));
 }
 .ch-pf-hero__id {
   display: flex;
@@ -2012,7 +2014,7 @@
     /* As rows, the value sits beside its words: the wide layout's 48px line does not apply. */
     min-height: 0;
     align-items: baseline;
-    font-size: 28px;
+    font-size: calc(28 * var(--ch-type-k));
   }
   .ch-fg__group .ch-fg__d {
     grid-area: change;
@@ -2274,7 +2276,8 @@
     stroke-width: 2;
   }
   .ch-stm-chart__t {
-    font: 500 11px/1 var(--ch-font-sans);
+    font: var(--ch-type-11-medium);
+    letter-spacing: var(--ch-track-11);
     font-variant-numeric: tabular-nums;
     fill: var(--ch-text-tertiary);
     /* A halo in the panel's ivory, should the line ever pass close by. */
@@ -2486,7 +2489,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 4px 2px 0;
+    padding: 4px var(--ch-page-x-phone) 0;
   }
   .ch-spm-head__id {
     display: flex;
@@ -2676,7 +2679,7 @@
     box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-border-hairline), inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
   }
   .ch-gd.is-phone .ch-gm__figs dd {
-    font-size: 22px;
+    font-size: calc(22 * var(--ch-type-k));
   }
   .ch-gd.is-phone .ch-gm__body {
     grid-template-columns: minmax(0, 1fr);
@@ -3522,7 +3525,8 @@
    its labels wrap): the band, a bar on a track, the exact value and, where the source keeps it, the shots. */
 .ch-brows__axis {
   margin: 0 0 8px;
-  font: 500 13px/18px var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
 .ch-brows ul {
@@ -3638,7 +3642,7 @@
     font-size: calc(12 * var(--ch-type-k));
   }
   .ch-stm-chart__t {
-    font-size: 13px;
+    font-size: calc(13 * var(--ch-type-k));
   }
 }
 
@@ -3671,7 +3675,7 @@
     box-shadow: var(--ch-ledger-avatar-ring);
   }
   .ch-st[data-canopy] .ch-pf-hero__av .ch-avatar {
-    font-size: 28px;
+    font-size: calc(28 * var(--ch-type-k));
   }
   .ch-st[data-canopy] .ch-pf-hero__id {
     padding-top: 0;
@@ -3699,7 +3703,7 @@
   }
   .ch-st[data-canopy] .ch-pf-hero__figs dd:not(.ch-pf-hero__sub,
 .ch-pf-hero__chg) {
-    font-size: 28px;
+    font-size: calc(28 * var(--ch-type-k));
   }
   .ch-st[data-canopy] .ch-pf-tabs {
     border-bottom-color: var(--ch-ledger-rule);
@@ -4399,7 +4403,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   }
   .ch-stm.is-team .ch-stm-hero__v {
     grid-area: v;
-    font: 600 64px/1 var(--ch-font-sans);
+    
     letter-spacing: -0.035em;
     color: var(--ch-text-primary);
   }
@@ -4643,7 +4647,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     padding: 16px 16px 0;
   }
   .ch-stm.is-team .ch-stm-sgfig b {
-    font: 600 40px/1 var(--ch-font-sans);
+    
     letter-spacing: -0.04em;
     color: var(--ch-text-primary);
   }
@@ -4954,7 +4958,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 .ch-st[data-canopy] .ch-tp__v small {
   margin-left: 2px;
-  font-size: 17px;
+  font-size: calc(17 * var(--ch-type-k));
   color: var(--ch-text-secondary);
 }
 .ch-st[data-canopy] .ch-tp__d {
@@ -5398,7 +5402,8 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 .ch-st[data-canopy] .ch-sgt__callout {
   /* SVG chart text (a Text Size pin); tabular through .ch-num on the element, so its digits line up with the axis's. */
-  font: 700 15px var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   fill: var(--ch-ivory-25);
   /* A halo wider than the glyph stems, in the deepest green, so the line and band never show through (F-0037). */
   paint-order: stroke;
@@ -5447,7 +5452,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   background: var(--ch-chart-gain-fill);
 }
 .ch-st[data-canopy] .ch-tp__v {
-  font-size: 38px;
+  font-size: calc(38 * var(--ch-type-k));
 }
 .ch-st[data-canopy] .ch-tp__c::before {
   height: 4px;
@@ -5477,11 +5482,11 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 .ch-st[data-canopy] .ch-sgt__chg {
   padding: 4px 8px 4px 8px;
-  font-size: 15px;
+  font-size: calc(15 * var(--ch-type-k));
 }
 .ch-st[data-canopy] .ch-sgt__k {
   margin-bottom: 2px;
-  font-size: 13px;
+  font-size: calc(13 * var(--ch-type-k));
 }
 .ch-st[data-canopy] .ch-sgt__vs {
   margin-top: 6px;
@@ -5492,7 +5497,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   padding-top: 12px;
 }
 .ch-st[data-canopy] .ch-sgt__facts dd {
-  font-size: 17px;
+  font-size: calc(17 * var(--ch-type-k));
 }
 .ch-st[data-canopy] .ch-sgt__plot {
   grid-template-columns: minmax(0, 1fr) 190px;
@@ -5501,17 +5506,17 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 .ch-st[data-canopy] .ch-sgt__end {
   padding: 4px 6px;
-  font-size: 13px;
+  font-size: calc(13 * var(--ch-type-k));
 }
 .ch-st[data-canopy] .ch-sgt__ends {
   gap: 0;
 }
 .ch-st[data-canopy] .ch-sgt .ch-note {
   margin-top: 6px;
-  font-size: 13px;
+  font-size: calc(13 * var(--ch-type-k));
 }
 .ch-st[data-canopy] .ch-tp__v {
-  font-size: 34px;
+  font-size: calc(34 * var(--ch-type-k));
 }
 .ch-st[data-canopy] .ch-tp__c {
   padding: 16px 16px 12px;
@@ -5559,7 +5564,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   }
   .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero__figs dd:not(.ch-pf-hero__sub,
 .ch-pf-hero__chg) {
-    font-size: 22px;
+    font-size: calc(22 * var(--ch-type-k));
   }
   /* The SG change's words wrap under their chip here instead of holding one line: on one line they made the SG column
      about 265px against the others' 90, which squeezed the name column until its four actions stood in three rows
@@ -6326,7 +6331,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   color: var(--ch-forest-800);
 }
 .ch-st[data-canopy] .ch-zmini > b small {
-  font-size: 14px;
+  font-size: calc(14 * var(--ch-type-k));
   letter-spacing: 0;
   color: var(--ch-text-secondary);
 }
@@ -6451,7 +6456,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   padding-left: 16px;
 }
 .ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__figs dd:not(.ch-gm__sub) {
-  font-size: 34px;
+  font-size: calc(34 * var(--ch-type-k));
   font-weight: 600;
   color: var(--ch-forest-800);
 }
@@ -7028,10 +7033,10 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   color: var(--ch-text-tertiary);
 }
 .ch-sv-pb.is-compact .ch-sv-pb__lab span {
-  font-size: 13px;
+  font-size: calc(13 * var(--ch-type-k));
 }
 .ch-sv-pb.is-compact .ch-sv-pb__lab b {
-  font-size: 14px;
+  font-size: calc(14 * var(--ch-type-k));
 }
 .ch-sv-pb__cap,
 .ch-sv-pb__key {
@@ -7135,7 +7140,8 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
   box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
 }
 .ch-sv-mix-seg b {
-  font: 700 13px/1 var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
+  letter-spacing: var(--ch-track-13);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -7199,7 +7205,8 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
   box-shadow: inset 0 0 0 1px var(--ch-border-strong);
 }
 .ch-sv-mix-key b {
-  font: 700 17px/1 var(--ch-font-sans);
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   color: var(--ch-text-primary);
@@ -7222,7 +7229,7 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
   border-radius: var(--ch-radius-sm);
 }
 .ch-sv-mix.is-compact .ch-sv-mix-seg b {
-  font-size: 12px;
+  font-size: calc(12 * var(--ch-type-k));
 }
 .ch-sv-mix.is-compact .ch-sv-mix-key {
   display: flex;
@@ -7269,14 +7276,14 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
     align-content: center;
   }
   .ch-sv-mix:not(.is-compact) .ch-sv-mix-key b {
-    font-size: 15px;
+    font-size: calc(15 * var(--ch-type-k));
     text-align: right;
   }
   .ch-sv-mix:not(.is-compact) .ch-sv-mix-key small {
     text-align: right;
   }
   .ch-sv-mix:not(.is-compact) .ch-sv-mix-name {
-    font-size: 14px;
+    font-size: calc(14 * var(--ch-type-k));
   }
   .ch-sv-mix:not(.is-compact) > .ch-sv-read {
     min-height: calc(2 * 1.45em);
@@ -7541,7 +7548,7 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
 }
 .ch-sv-tr.is-phone .ch-sv-tr__menu select {
   /* Under 16px, iOS zooms the page when the picker takes focus. */
-  font-size: 16px;
+  font-size: calc(16 * var(--ch-type-k));
 }
 .ch-sv-tr__inset {
   padding: 8px 12px 12px;
@@ -7639,8 +7646,10 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
   line-height: var(--ch-lead-tight);
   cursor: pointer;
 }
-.ch-lb__open:hover {
-  text-decoration: underline;
+@media (hover: hover) {
+  .ch-lb__open:hover {
+    text-decoration: underline;
+  }
 }
 .ch-lb__open:focus-visible {
   outline: 2px solid var(--ch-border-focus);

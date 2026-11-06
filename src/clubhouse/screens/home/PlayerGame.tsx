@@ -470,18 +470,16 @@ function YourGameCard({ legs, tour, covered }: { legs: ChPlayerHome['legs']; tou
         <h2 id="ch-ph-legs">Your game</h2>
         <span>Strokes gained {sgBaseline(tour).vs}</span>
       </div>
-      {legs.cacheError && (
+      {legs.cacheError && any && (
         <div className="ch-shs-yg__notice">
           <RefreshNotice code="CH-2216" title="Some of your figures didn’t load" body="Scores, greens and putts are right; scrambling is missing." covered={covered} />
         </div>
       )}
       {!any ? (
-        legs.cacheError ? null : (
-          <div className="ch-shs-yg__none" data-ch-code="CH-2311">
-            <b>Nothing to break down yet.</b>
-            <span>Fairways, greens, scrambling and putts fill in from rounds posted with those stats.</span>
-          </div>
-        )
+        <div className="ch-shs-yg__none" data-ch-code="CH-2311">
+          <b>Nothing to break down yet.</b>
+          <span>Fairways, greens, scrambling and putts fill in from rounds posted with those stats.</span>
+        </div>
       ) : (
         <>
           {legs.rows.map((g) => (
@@ -505,7 +503,7 @@ function YourGameLeg({ g, tour }: { g: ChPlayerLeg; tour: ChSgTour }) {
       <span className="ch-shs-leg__h">
         <ShsIcon name={LEG_ICON[g.key]} />
         <b>{g.label}</b>
-        {g.sg != null && <ShsPill tone={tone}>{formatSigned(g.sg)} SG</ShsPill>}
+        {g.sg != null && <ShsPill tone={tone}>{formatSigned(g.sg)}</ShsPill>}
       </span>
       <span className="ch-shs-leg__m">
         <span>
