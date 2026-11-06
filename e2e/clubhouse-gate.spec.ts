@@ -30,8 +30,11 @@ async function scan(page: Page, url: string, tap: string | undefined, theme: str
   await page.evaluate(() => document.fonts.ready);
   // Not every lane's screen has a <main> yet (PP-3), so wait for the app rather than for a landmark.
   await expect(page.locator('[data-ui="clubhouse"]').first()).toBeVisible();
-  // Past hydration: a phone's first frame can be the desk's tree until the client reads the width.
+  // Past hydration: a phone's first frame can be the desk's tree until the client reads the width. networkidle alone wasn't enough
+  // (a CI run scanned home-coach-empty's desk queue at 390): the shell marks .ch-root[data-hydrated] once it has hydrated.
   await page.waitForLoadState('networkidle').catch(() => {});
+  await page.locator('.ch-root[data-hydrated]').first().waitFor({ state: 'attached', timeout: 30_000 }).catch(() => {});
+  await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
   await page.waitForTimeout(250);
   // Land every entrance now (TEAM-33's fly-in holds marks at opacity 0 for 2 seconds); loops have no end and are left running.
   await page.evaluate(() => { for (const a of document.getAnimations()) { if (a.effect?.getComputedTiming().iterations !== Infinity) a.finish(); } });
