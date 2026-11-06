@@ -129,7 +129,10 @@ html[data-fw-theme='dark'] .ch-hf {
 .ch-hf .feat__who { display: flex; align-items: center; gap: 8px; font: var(--ch-type-15-medium); color: var(--ch-hf-a-feat-2); letter-spacing: var(--ch-track-15); }
 .ch-hf .feat__who b { color: var(--ch-hf-a-feat-1); font-weight:var(--ch-fw-600); }
 .ch-hf .feat__k { font: var(--ch-type-15-medium); color: var(--ch-hf-a-feat-2); letter-spacing: var(--ch-track-15); }
-.ch-hf .feat__t { margin: 0; color: var(--ch-on-green-plate); font: var(--ch-type-28-strong);  font-stretch: 88%; letter-spacing: -0.03em; text-wrap: balance; }
+.ch-hf :is(.feat__t, .feat__open) { margin: 0; color: var(--ch-on-green-plate); font: var(--ch-type-28-strong);  font-stretch: 88%; letter-spacing: -0.03em; text-wrap: balance; }
+.ch-hf .feat__open { position: relative; display: block; padding: 0; border: 0; background: none; text-align: start; cursor: pointer; }
+.ch-hf .feat__open::after { position: absolute; inset: -8px 0; content: ''; }
+.ch-hf .feat__open:focus-visible { outline: 2px solid var(--ch-border-focus); outline-offset: 2px; border-radius: var(--ch-radius-sm); }
 .ch-hf .feat__cmp { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .ch-hf .feat__cmp div { padding: 8px 12px; border-radius: var(--ch-radius-md); background: rgb(255 255 255 / 0.07); }
 .ch-hf .feat__cmp b { display: block; font: var(--ch-type-22-medium);  font-stretch: 88%; letter-spacing: 0;  }
