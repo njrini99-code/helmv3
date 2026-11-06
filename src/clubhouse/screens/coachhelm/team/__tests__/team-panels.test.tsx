@@ -74,7 +74,7 @@ describe('by viewer (W-LNS-12, AC-READ-07)', () => {
     show();
     expect(screen.getByText('Cause: Likely')).toBeTruthy();
     expect(document.body.textContent).toContain('Eli Stone');
-    expect(screen.getByRole('button', { name: 'Assign as focus' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Propose as focus' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Dismiss/ })).toBeNull();
   });
 
@@ -83,7 +83,7 @@ describe('by viewer (W-LNS-12, AC-READ-07)', () => {
     expect(screen.getByText('Approach from 175')).toBeTruthy();
     expect(document.body.textContent).not.toContain('Cause:');
     expect(document.body.textContent).not.toContain('Eli Stone');
-    expect(screen.queryByRole('button', { name: 'Assign as focus' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Propose as focus' })).toBeNull();
   });
 });
 

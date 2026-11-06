@@ -240,7 +240,7 @@ html[data-fw-theme='dark'] .ch-htb {
   display:block;
   width:100%;
   height:auto;
-  overflow:visible;
+  overflow:hidden;
 }
 .ch-htb .holesvg text {
   font-family:var(--ch-tb-sans);
