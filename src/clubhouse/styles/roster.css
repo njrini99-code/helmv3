@@ -3830,16 +3830,16 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 }
 
 /* The season bar and its legend, one tone a year (the same tokens as the year chips). */
-[data-ch-crh='on'] [data-year='sr'] {
+:is(.ch-rs, .ch-rsm)[data-ch-crh='on'] [data-year='sr'] {
   --ch-rs-y: var(--ch-yr-sr);
 }
-[data-ch-crh='on'] [data-year='jr'] {
+:is(.ch-rs, .ch-rsm)[data-ch-crh='on'] [data-year='jr'] {
   --ch-rs-y: var(--ch-yr-jr);
 }
-[data-ch-crh='on'] [data-year='so'] {
+:is(.ch-rs, .ch-rsm)[data-ch-crh='on'] [data-year='so'] {
   --ch-rs-y: var(--ch-yr-so);
 }
-[data-ch-crh='on'] [data-year='fr'] {
+:is(.ch-rs, .ch-rsm)[data-ch-crh='on'] [data-year='fr'] {
   --ch-rs-y: var(--ch-yr-fr);
 }
 

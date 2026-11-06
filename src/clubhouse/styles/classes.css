@@ -3395,10 +3395,10 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
   }
 }
 
-[data-ch-crh='on'] {
+.ch-cl[data-ch-crh='on'] {
   --ch-cl-team-mark: var(--ch-green-600);
 }
-html[data-fw-theme='dark'] [data-ch-crh='on'] {
+html[data-fw-theme='dark'] .ch-cl[data-ch-crh='on'] {
   --ch-cl-team-mark: var(--ch-hero-mint-strong);
 }
 [data-ch-crh='on'] .ch-cl-ribbon__axis > span {

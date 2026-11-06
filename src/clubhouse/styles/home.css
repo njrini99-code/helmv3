@@ -5791,10 +5791,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     height: auto;
     min-height: 46px;
   }
-  /* One surface below the last card: the page's colour reaches the bottom on a short page (MOB-CRH-9). */
-  .ch-root[data-ch-crh='on'] .ch-canvas:has(.ch-hm[data-ch-crh='on'], .ch-cl[data-ch-crh='on'], .ch-rsm[data-ch-crh='on']) {
-    background: var(--ch-grouped-bg);
-  }
 }
 
 /* The player's Home on the lane's cards (CRH-19). Its sections have no rows of their own to carry the inset, so the card does. */
