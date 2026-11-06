@@ -16,4 +16,9 @@ describe('real Dynamic Type (P008-C1)', () => {
   it('reads nothing where the browser has no -apple-system-body font', () => {
     expect(readDynamicTypeScale()).toBeNull();
   });
+
+  it("reads nothing on a Mac, whose -apple-system-body is 13px whatever the setting (it would shrink every page)", () => {
+    const doc = { defaultView: { matchMedia: () => ({ matches: false }) } } as unknown as Document;
+    expect(readDynamicTypeScale(doc)).toBeNull();
+  });
 });
