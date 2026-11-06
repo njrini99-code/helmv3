@@ -29,6 +29,14 @@ export interface HoleGeometry {
   coins: Record<ChStation, Array<[number, number]>>;
 }
 
+/**
+ * A spot's halo: bigger with the strokes at stake, on a curve that stops growing. A team's figures run past 3 strokes on thin
+ * samples, and a straight scale drew a circle wider than the hole, over the head and the other spots.
+ */
+export function stationRadius(strokes: number | null | undefined): number {
+  return 10 + 18 * Math.min(1, Math.sqrt(Math.abs(strokes ?? 0) / 2));
+}
+
 export const HOLE: Record<'v' | 'h', HoleGeometry> = {
   v: {
     w: 330,
@@ -44,7 +52,7 @@ export const HOLE: Record<'v' | 'h', HoleGeometry> = {
     ],
     flag: { x: 170, y: 76 },
     st: {
-      tee: { x: 150, y: 354, lx: 178, ly: 350, a: 'start' },
+      tee: { x: 150, y: 354, lx: 186, ly: 350, a: 'start' },
       approach: { x: 110, y: 250, lx: 146, ly: 256, a: 'start' },
       short_game: { x: 198, y: 134, lx: 234, ly: 134, a: 'start' },
       putting: { x: 170, y: 76, lx: 252, ly: 58, a: 'start' },

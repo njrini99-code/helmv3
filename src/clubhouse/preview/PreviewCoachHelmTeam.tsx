@@ -26,7 +26,14 @@ function stateData(state: string | undefined): ChTeamBoardData {
     // Rounds with hole scores but no shots for two of them; a total alone for the other four (`scoresOnly`).
     const noFigures: ChTeamPlayer[] = names.map((name, i) => ({ ...proto, id: `pl-sparse-${i}`, name, first: name.split(' ')[0] as string, rounds: i < 2 ? 2 : 0, scoresOnly: i < 2 ? 0 : 3 + i, early: true, reads: { needs: [], working: [] }, total: null, worst: null, legs: Object.fromEntries(STATIONS.map((s) => [s, { strokes: null, rounds: 0, missing: 'Shows from 3 rounds with shots.' }])) as ChTeamPlayer['legs'] }));
     const sparse = [list[3] as ChTeamPlayer, ...noFigures];
-    return { ...base, roster: { count: sparse.length, error: false }, players: { list: sparse, error: false }, stations: stationFigures(sparse), teamTotal: { strokes: sparse[0]?.total ?? null, rounds: 22, scoresOnly: 26 } };
+    return {
+      ...base,
+      roster: { count: sparse.length, error: false },
+      players: { list: sparse, error: false },
+      // One player's early figures run large, as on a real team: this is what the hole must hold without spilling.
+      stations: { tee: { team: 2.5, n: 1 }, approach: { team: 1.9, n: 1 }, short_game: { team: 0, n: 1 }, putting: { team: -3.9, n: 1 } },
+      teamTotal: { strokes: 0.5, rounds: 3, scoresOnly: 12 },
+    };
   }
   if (state === 'failed') return { ...base, brief: { status: 'failed' }, record: { status: 'failed' } } as ChTeamBoardData;
   if (state === 'failed-all') return { ...base, players: { list: [], error: true } };

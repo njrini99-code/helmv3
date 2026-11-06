@@ -6,7 +6,7 @@ import { useFlyIn } from './team-motion';
 import { formatSigned } from '../../../lib/format';
 import { initials as initialsOf } from '../../../lib/names';
 import { STATIONS, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
-import { HOLE, STATION_NAME } from './hole-geometry';
+import { HOLE, stationRadius, STATION_NAME, STATION_SHORT } from './hole-geometry';
 
 const TONE_FILL: Record<string, string> = { sand: '#8A5A2B', stone: '#5E6B3A', sage: '#2F6B4F', mist: '#4B5F8A', clay: '#8A4D3A', heather: '#7A4E6E' };
 export const coinColor = (id: string): string => TONE_FILL[avatarTone(id)] ?? TONE_FILL.sage!;
@@ -48,7 +48,7 @@ export function TeamHole({
         STATIONS.map((s) => {
           const t = H.st[s];
           const v = stations[s].team;
-          const r = 10 + Math.abs(v ?? 0) * 22;
+          const r = stationRadius(v);
           const here = players.filter((p) => p.worst === s);
           const slots = H.coins[s];
           // The drawn slots, then "+N" in the last one (02-PLAN 9.7). A station drawn with fewer slots than three still ends on "+N".
@@ -78,7 +78,8 @@ export function TeamHole({
                 {v != null && <circle className="halo" cx={t.x} cy={t.y} r={r} />}
                 {v != null && <circle className="core" cx={t.x} cy={t.y} r={4.5} />}
                 <text className="sl" x={t.lx} y={t.ly} textAnchor={t.a}>
-                  {STATION_NAME[s]}
+                  {/* The phone's hole is narrow: the longest full name runs off the card. */}
+                  {orientation === 'v' ? STATION_SHORT[s] : STATION_NAME[s]}
                 </text>
                 <text className="sv" x={t.lx} y={t.ly + 21} textAnchor={t.a}>
                   {v == null ? 'Not measured' : formatSigned(v)}

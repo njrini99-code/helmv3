@@ -139,6 +139,8 @@ html[data-fw-theme='dark'] .ch-htb {
   overflow-x:auto;
   scrollbar-width:none;
   padding:2px 16px 16px;
+  /* The snap keeps the first tile on the title's edge, not the card's. */
+  scroll-padding-inline:16px;
   scroll-snap-type:x mandatory;
 }
 .ch-htb .tiles::-webkit-scrollbar {

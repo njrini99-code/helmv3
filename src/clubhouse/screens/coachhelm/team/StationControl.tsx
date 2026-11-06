@@ -2,6 +2,7 @@
 import { plural } from '../../../lib/plural';
 
 import { formatSigned } from '../../../lib/format';
+import { useChPhone } from '../../../lib/use-phone';
 import { STATIONS, type ChStation, type ChTeamBoardData } from '../../../data/coachhelm-team-shape';
 import { STATION_NAME, STATION_SHORT } from './hole-geometry';
 
@@ -19,6 +20,7 @@ export function StationControl({
   courseReads: number;
   courseTab: boolean;
 }) {
+  const phone = useChPhone();
   const words = courseReads === 0 ? 'No reads' : plural(courseReads, 'read');
   return (
     <div className="stchips" role="group" aria-label="Spots on the hole, and Course" style={courseTab ? undefined : { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
@@ -26,7 +28,7 @@ export function StationControl({
         const v = stations[s].team;
         return (
           <button key={s} type="button" aria-pressed={value === s} aria-label={`${STATION_NAME[s]}, ${v == null ? 'not measured' : `${formatSigned(v)} a round`}`} onClick={() => onChange(s)}>
-            {STATION_SHORT[s]}
+            {phone && s === 'short_game' ? 'Short' : STATION_SHORT[s]}
             <b>{v == null ? '—' : formatSigned(v)}</b>
           </button>
         );

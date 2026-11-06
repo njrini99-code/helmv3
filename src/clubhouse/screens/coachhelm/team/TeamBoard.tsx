@@ -76,7 +76,9 @@ function Hero({
       <span>
         a round {data.team.baselineLabel}
         <br />
-        This season · {data.teamTotal.scoresOnly ? `${plural(data.teamTotal.rounds, 'round')} with hole scores` : `${data.teamTotal.rounds} rounds`}{counted > 0 && ` · ${boardPlayerWords(counted)}`}
+        {phone
+          ? `${plural(data.teamTotal.rounds, 'round')}${data.teamTotal.scoresOnly ? ' with hole scores' : ' this season'}${counted > 0 ? ` · ${plural(counted, 'player')}` : ''}`
+          : `This season · ${data.teamTotal.scoresOnly ? `${plural(data.teamTotal.rounds, 'round')} with hole scores` : `${data.teamTotal.rounds} rounds`}${counted > 0 ? ` · ${boardPlayerWords(counted)}` : ''}`}
       </span>
     </div>
   );
