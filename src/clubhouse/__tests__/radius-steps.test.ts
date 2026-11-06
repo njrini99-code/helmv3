@@ -9,7 +9,7 @@ import { hits, ratchet, ROOT, slack, walk } from './_scan';
  * fall.
  */
 const DECL = /border(?:-[a-z]+)*-radius\s*:\s*([^;}]+)/;
-const PART = String.raw`(?:var\(--ch-radius-(?:xs|sm|md|lg|xl|card|sheet|mark|tail)\)|max\(var\(--ch-radius-xs\), calc\(var\(--ch-radius-(?:sm|md|lg|xl|card|sheet)\) - var\(--ch-space-[0-9_]+\)\)\)|0|50%|999px|inherit)`;
+const PART = String.raw`(?:var\(--ch-radius-(?:xs|sm|md|lg|xl|card|sheet|mark|tail|panel|panel-phone)\)|max\(var\(--ch-radius-xs\), calc\(var\(--ch-radius-(?:sm|md|lg|xl|card|sheet)\) - var\(--ch-space-[0-9_]+\)\)\)|0|50%|999px|inherit)`;
 const OK = new RegExp(String.raw`^${PART}(?:\s+${PART})*(?:\s*!important)?$`);
 const sheets = walk(join(ROOT, 'styles'), /\.css$/).filter((f) => !f.endsWith('tokens.css'));
 // The Messages composer fields stay capsules at one line and grow (.ch-ms-comp__field, the pushed thread's textarea).

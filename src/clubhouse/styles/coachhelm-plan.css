@@ -1760,7 +1760,6 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  font-weight: inherit;
 }
 .ch-cpv-vz[data-vz='dr'] .more { position: static; justify-self: end; }
 /* PP-18: labels stay on one line; end ticks stay on the card. */
@@ -1820,7 +1819,7 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 .ch-cpv-pub .avs .more { align-self: center; margin-inline-start: 4px; font: var(--ch-type-12-strong); letter-spacing: var(--ch-track-12); color: var(--ch-text-secondary); }
 /* PP-30: a player's page keeps the page width on a Mac. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  .ch-cpv-ply, .ch-cpv-fmt { max-width: 760px; margin-inline: auto; }
+  .ch-cpv-ply, .ch-cpv-fmt { max-width: var(--ch-measure-reading); margin-inline: auto; }
 }
 /* MOB-PRAC-2: the print copy is for paper, never for the page under the app. */
 @media screen { .ch-cp-print-root { display: none; } }
@@ -1830,8 +1829,8 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   .ch-cp-sheet .pp-rot .c { height: 28px; }
   .ch-cp-sheet .pp-two { grid-template-columns: minmax(0, 1fr); }
 }
-.ch-cp-sheet .pp-h span { font-weight: 400; color: var(--ch-pl-ink-3); }
-.ch-cp-sheet .pp-why .neg { color: var(--ch-pl-loss); font-weight: 600; }
+.ch-cp-sheet .pp-h span { font: var(--ch-type-14); letter-spacing: var(--ch-track-14); color: var(--ch-pl-ink-3); }
+.ch-cp-sheet .pp-why .neg { color: var(--ch-pl-loss); font: var(--ch-type-13-strong); letter-spacing: var(--ch-track-13); }
 .ch-cpv-ply .stop { grid-template-columns: calc(52 * var(--ch-type-k)) minmax(0, 1fr) auto; }
 .ch-cpv .blk { grid-template-columns: calc(54 * var(--ch-type-k)) minmax(0, 1fr); }
 .ch-cpv .rlinks a {

@@ -1,3 +1,4 @@
+import { formatFixed } from '../lib/format';
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
@@ -251,7 +252,7 @@ async function helperFacts(sb: Sb, teamId: string, after: Date, zone: string): P
     const sg = await getTeamStrokesGained(sb, ctx, { rounds: 10 }).catch(() => null);
     const areas = (sg?.detail as { areas?: Record<string, number | null> } | undefined)?.areas;
     const worst = areas ? Object.entries(areas).filter((e): e is [string, number] => typeof e[1] === 'number' && e[1] < 0).sort((a, b) => a[1] - b[1])[0] : undefined;
-    if (worst) facts.push({ lead: SG_NAMES[worst[0]] ?? worst[0], text: `loses ${Math.abs(worst[1]).toFixed(1)} a round, the most of any part of the game` });
+    if (worst) facts.push({ lead: SG_NAMES[worst[0]] ?? worst[0], text: `loses ${formatFixed(Math.abs(worst[1]))} a round, the most of any part of the game` });
   }
   const { data, error } = await sb.from('golf_events').select('title, start_time').eq('team_id', teamId).in('event_type', ['tournament', 'qualifier']).is('cancelled_at', null).gt('start_time', after.toISOString()).lte('start_time', new Date(after.getTime() + 14 * DAY).toISOString()).order('start_time').limit(1).maybeSingle();
   if (!error && data) facts.push({ lead: data.title, text: `starts ${formatWith(new Date(data.start_time), { weekday: 'long', timeZone: zone })}` });

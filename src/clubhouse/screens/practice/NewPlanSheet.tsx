@@ -67,7 +67,7 @@ export function NewPlanSheet({ open, onClose, events, copies, roster, askOn, ini
       }
       router.push(`/golf/dashboard/practice/plan/${res.planId}/edit${start === 'ask' ? '?fill=1' : ''}`);
     } catch {
-      setError('That didn’t go through. Check your connection and try again.');
+      setError('That didn’t go through. Try again.');
     } finally {
       setBusy(false);
     }

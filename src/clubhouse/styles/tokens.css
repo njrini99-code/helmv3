@@ -541,6 +541,9 @@
      corner is the card's less the padding between them, floored at --ch-radius-xs. */
   --ch-radius-card: 16px;
   --ch-radius-sheet: 20px;
+  /* The Quick chat panel, as drawn: its own corner, on a Mac and on a phone. */
+  --ch-radius-panel: 26px;
+  --ch-radius-panel-phone: 32px;
   /* CONS-23: the one sheet grab handle's fill (controls.css .ch-grab). */
   --ch-grab-bg: var(--ch-ivory-300);
   /* B4: how far a sideways scroller's clipped edge fades on a phone (ui.css .ch-hscroll), so the edge reads as more. */

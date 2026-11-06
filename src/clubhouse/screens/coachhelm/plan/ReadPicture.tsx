@@ -89,7 +89,7 @@ export function ReadPicture({ picture }: { picture: ReadPictureData }) {
       <div className="fan">
         {picture.cards.slice(0, 3).map((c, i) => (
           <div className="dc" key={c.name} style={{ ['--ch-fan-i' as string]: i - 1 }}>
-            <b className="dcn">{c.name}</b>
+            <span className="dcn">{c.name}</span>
             <span>
               <i className={`k-${c.kind}`} />
               {KIND[c.kind]}

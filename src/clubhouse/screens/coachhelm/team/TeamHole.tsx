@@ -4,7 +4,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { avatarTone } from '../../../ui/Avatar';
 import { ChartText } from '../../../ui/charts/ChartText';
 import { placeLabels } from '../../../lib/chart-geometry';
-import { formatSigned } from '../../../lib/format';
+import { formatSigned, changeTone } from '../../../lib/format';
 import { initials as initialsOf } from '../../../lib/names';
 import { STATIONS, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
 import { HOLE, stationRadius, STATION_NAME, STATION_SHORT } from './hole-geometry';
@@ -98,7 +98,8 @@ export function TeamHole({
           const r = stationRadius(v);
           const spot = placed.get(s)!;
           const textX = spot.anchor === 'start' ? spot.x : spot.anchor === 'end' ? spot.x + spot.w : spot.x + spot.w / 2;
-          const tone = v == null || Math.abs(v) < 0.05 ? ' is-even' : v > 0 ? ' is-gain' : '';
+          const signed = changeTone(v, false);
+          const tone = !signed ? ' is-even' : signed === 'is-gain' ? ' is-gain' : '';
           const here = players.filter((p) => p.worst === s);
           const slots = H.coins[s];
           // The drawn slots, then "+N" in the last one (02-PLAN 9.7). A station drawn with fewer slots than three still ends on "+N".

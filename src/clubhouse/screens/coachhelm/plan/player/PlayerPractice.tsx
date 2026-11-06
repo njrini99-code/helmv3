@@ -104,7 +104,7 @@ export function PlayerPractice({ data, everyone, planId = null }: { data: Player
         onChange={setTab}
       />
       {tab === 'mine' && stops.length === 0 ? (
-        <EmptyState title="No stops for you in this one" body="Your coach hasn’t put you in a group on this plan yet." />
+        <EmptyState kind="first-run" title="No stops for you in this one" body="Your coach hasn’t put you in a group on this plan yet." />
       ) : tab === 'mine' ? (
         <section className="art" aria-label="Your stops">
           {stops.map((s) => (

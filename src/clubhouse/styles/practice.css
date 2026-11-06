@@ -25,11 +25,13 @@
   .ch-prc-h .ch-large-title:not([hidden]) {
     margin: 0;
     font: var(--ch-type-34-strong);
+    letter-spacing: var(--ch-track-34);
   }
 }
 .ch-prc-h__line {
   margin: 4px 0 0;
   font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
   color: var(--ch-text-secondary);
 }
 .ch-prc-h__a {
@@ -47,6 +49,7 @@
 .ch-prc-card p {
   margin: 0;
   font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
   color: var(--ch-text-secondary);
 }
 .ch-prc-first {
@@ -74,14 +77,17 @@
 }
 .ch-prc-tile__d {
   font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
 .ch-prc-tile__d b {
   font: var(--ch-type-13-strong);
+  letter-spacing: var(--ch-track-13);
   color: var(--ch-text-primary);
 }
 .ch-prc-tile__none {
   font: var(--ch-type-12);
+  letter-spacing: var(--ch-track-12);
   color: var(--ch-text-secondary);
 }
 .ch-prc-tile__it {
@@ -94,6 +100,7 @@
   background: none;
   color: var(--ch-text-primary);
   font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
   text-align: left;
   text-decoration: none;
   cursor: pointer;
@@ -108,6 +115,7 @@ span.ch-prc-tile__it {
   background: var(--ch-well-bg-flat);
   color: var(--ch-text-secondary);
   font: var(--ch-type-12);
+  letter-spacing: var(--ch-track-12);
   white-space: nowrap;
 }
 .ch-prc-chip.is-live {
@@ -120,6 +128,7 @@ span.ch-prc-tile__it {
 /* Up next. */
 .ch-prc-next__k {
   font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
   color: var(--ch-green-600);
 }
 .ch-prc-next h2 a {
@@ -138,6 +147,7 @@ span.ch-prc-tile__it {
   grid-template-columns: 48px minmax(0, 1fr);
   column-gap: 8px;
   font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
   color: var(--ch-text-primary);
 }
 .ch-prc-next__rows li > :first-child {
@@ -146,10 +156,12 @@ span.ch-prc-tile__it {
 }
 .ch-prc-next__rows b {
   font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
 }
 .ch-prc-next__rows li > :nth-child(3) {
   grid-column: 2;
   font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
 .ch-prc-next__rows li.is-now {
@@ -219,6 +231,7 @@ span.ch-prc-tile__it {
 .ch-prc-row__l,
 .ch-prc-row__e {
   font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
 }
 .ch-prc-row__l {
   overflow: hidden;
@@ -237,6 +250,7 @@ span.ch-prc-tile__it {
   box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-separator);
   color: var(--ch-text-primary);
   font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
   cursor: pointer;
 }
 .ch-prc-past[aria-expanded='true'] svg {
@@ -251,16 +265,19 @@ span.ch-prc-tile__it {
 .ch-prc-new h3 {
   margin: 8px 0 0;
   font: var(--ch-type-13-strong);
+  letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
 .ch-prc-new__none {
   margin: 0;
   font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
   color: var(--ch-text-secondary);
 }
 .ch-prc-new__err {
   margin: 0;
   font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
   color: var(--ch-loss);
 }
 .ch-prc-grp {
@@ -295,9 +312,11 @@ span.ch-prc-tile__it {
 }
 .ch-prc-opt__t b {
   font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
 }
 .ch-prc-opt__t span {
   font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
 .ch-prc-opt__r {
@@ -306,11 +325,11 @@ span.ch-prc-tile__it {
   place-items: center;
   width: 24px;
   height: 24px;
-  border-radius: var(--ch-radius-pill, 999px);
+  border-radius: 50%;
   box-shadow: inset 0 0 0 1px var(--ch-border-control);
 }
 .ch-prc-opt.is-on .ch-prc-opt__r {
-  background: var(--ch-accent);
+  background: var(--ch-selected-strong);
   color: var(--ch-text-on-accent);
   box-shadow: none;
 }
@@ -345,10 +364,12 @@ span.ch-prc-tile__it {
   background: var(--ch-card-bg);
   box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-separator);
   font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
   color: var(--ch-text-secondary);
 }
 .ch-prc-ribbon b {
   font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
   color: var(--ch-text-primary);
 }
 .ch-prc-ribbon .is-over {
@@ -378,6 +399,7 @@ span.ch-prc-tile__it {
   min-height: 16px;
   padding: 0 4px;
   font: var(--ch-type-12);
+  letter-spacing: var(--ch-track-12);
   color: var(--ch-text-secondary);
 }
 .ch-prc-save[data-state='failed'] {
@@ -388,7 +410,8 @@ span.ch-prc-tile__it {
   border: 0;
   background: none;
   color: var(--ch-green-600);
-  font: inherit;
+  font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
   cursor: pointer;
 }
 .ch-prc-stale {
@@ -401,11 +424,13 @@ span.ch-prc-tile__it {
   background: var(--ch-card-bg);
   box-shadow: 0 0 0 2px var(--ch-border-focus);
   font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
   color: var(--ch-text-primary);
 }
 .ch-prc-note {
   margin: 0;
   font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
   color: var(--ch-text-secondary);
 }
 .ch-prc-add {
@@ -428,6 +453,7 @@ span.ch-prc-tile__it {
   min-height: 24px;
   opacity: 0;
   font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-prc-add.is-between:hover,
@@ -456,7 +482,7 @@ span.ch-prc-tile__it {
   box-shadow: var(--ch-card-shadow);
 }
 .ch-prc-block.is-on {
-  background: var(--ch-well-bg-flat);
+  background: var(--ch-selected-bg);
   box-shadow: 0 0 0 2px var(--ch-border-focus);
 }
 .ch-prc-block__main {
@@ -477,9 +503,11 @@ span.ch-prc-tile__it {
   display: grid;
   gap: 2px;
   font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
 }
 .ch-prc-block__tm span {
   font: var(--ch-type-12);
+  letter-spacing: var(--ch-track-12);
   color: var(--ch-text-secondary);
 }
 .ch-prc-block__t {
@@ -487,6 +515,7 @@ span.ch-prc-tile__it {
   gap: 2px;
   min-width: 0;
   font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
 .ch-prc-block__t b {
@@ -528,6 +557,7 @@ span.ch-prc-tile__it {
 .ch-prc-feat p {
   margin: 0;
   font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
   color: var(--ch-on-green-ink-soft);
 }
 .ch-prc-feat__facts {
@@ -536,6 +566,7 @@ span.ch-prc-tile__it {
   padding: 0;
   list-style: none;
   font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
   color: var(--ch-on-green-ink-soft);
 }
 .ch-prc-feat__facts li {
@@ -544,6 +575,7 @@ span.ch-prc-tile__it {
 }
 .ch-prc-feat__facts b {
   font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
   color: var(--ch-on-green-ink);
 }
 .ch-prc-feat__fail {
@@ -570,6 +602,7 @@ html[data-fw-theme='dark'] .ch-prc-feat__go {
   background: none;
   color: var(--ch-on-green-ink-soft);
   font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
   cursor: pointer;
 }
 .ch-prc-feat__ask {
@@ -591,6 +624,7 @@ html[data-fw-theme='dark'] .ch-prc-feat__go {
   background: var(--ch-card-bg);
   box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-separator);
   font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
   color: var(--ch-text-secondary);
 }
 .ch-prc-fold__t {
@@ -599,6 +633,7 @@ html[data-fw-theme='dark'] .ch-prc-feat__go {
 }
 .ch-prc-fold__t b {
   font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
   color: var(--ch-text-primary);
 }
 .ch-prc-fold__said {
@@ -634,31 +669,38 @@ html[data-fw-theme='dark'] .ch-prc-feat__go {
   align-items: baseline;
   gap: 8px;
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-prc-gb__top b {
   flex: 1;
   min-width: 0;
   font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
 }
 .ch-prc-gb__tm {
   font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
 }
 .ch-prc-gb__mn {
   font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
 .ch-prc-gb__s {
   font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
   color: var(--ch-green-600);
 }
 .ch-prc-gb p {
   margin: 0;
   font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
   color: var(--ch-text-secondary);
 }
 .ch-prc-gb p b {
   font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
   color: var(--ch-text-primary);
 }
 .ch-prc-gb__a {
@@ -680,6 +722,7 @@ html[data-fw-theme='dark'] .ch-prc-feat__go {
 .ch-prc-fields__len {
   margin: 0;
   font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
 .ch-prc-step {
@@ -706,6 +749,7 @@ html[data-fw-theme='dark'] .ch-prc-feat__go {
 }
 .ch-prc-step output {
   font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
 }
 
 /* The bank. */
@@ -716,6 +760,7 @@ html[data-fw-theme='dark'] .ch-prc-feat__go {
 .ch-prc-bank h4 {
   margin: 8px 0 0;
   font: var(--ch-type-13-strong);
+  letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
 .ch-prc-bank__q {
@@ -741,6 +786,7 @@ html[data-fw-theme='dark'] .ch-prc-feat__go {
 .ch-prc-bank__none {
   margin: 0;
   font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
   color: var(--ch-text-secondary);
 }
 .ch-prc-chipb {
@@ -752,10 +798,11 @@ html[data-fw-theme='dark'] .ch-prc-feat__go {
   box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-separator);
   color: var(--ch-text-secondary);
   font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
   cursor: pointer;
 }
 .ch-prc-chipb.is-on {
-  background: var(--ch-well-bg-flat);
+  background: var(--ch-selected-bg);
   color: var(--ch-green-600);
   box-shadow: 0 0 0 2px var(--ch-border-focus);
 }
@@ -774,9 +821,11 @@ html[data-fw-theme='dark'] .ch-prc-feat__go {
 }
 .ch-prc-drill b {
   font: var(--ch-type-14-medium);
+  letter-spacing: var(--ch-track-14);
 }
 .ch-prc-drill span {
   font: var(--ch-type-12);
+  letter-spacing: var(--ch-track-12);
   color: var(--ch-text-secondary);
 }
 
@@ -802,11 +851,13 @@ html[data-fw-theme='dark'] .ch-prc-feat__go {
   align-items: center;
   gap: 8px;
   font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
 .ch-prc-group header b {
   flex: 1;
   font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-prc-group ul {
@@ -822,10 +873,11 @@ html[data-fw-theme='dark'] .ch-prc-feat__go {
   place-items: center;
   width: 24px;
   height: 24px;
-  border-radius: var(--ch-radius-pill, 999px);
+  border-radius: 50%;
   background: var(--ch-green-600);
   color: var(--ch-text-on-accent);
   font: var(--ch-type-12);
+  letter-spacing: var(--ch-track-12);
 }
 .ch-prc-group.is-b .ch-prc-disc { background: var(--ch-plan-group-b); }
 .ch-prc-group.is-c .ch-prc-disc { background: var(--ch-plan-group-c); }
@@ -845,6 +897,7 @@ html[data-fw-theme='dark'] .ch-prc-group.is-f .ch-prc-disc { background: var(--c
   background: var(--ch-well-bg-flat);
   color: var(--ch-text-primary);
   font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
   cursor: pointer;
 }
 
@@ -863,7 +916,7 @@ html[data-fw-theme='dark'] .ch-prc-group.is-f .ch-prc-disc { background: var(--c
   box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-separator);
 }
 .ch-prc-slot.is-on {
-  background: var(--ch-well-bg-flat);
+  background: var(--ch-selected-bg);
   box-shadow: 0 0 0 2px var(--ch-border-focus);
 }
 .ch-prc-slot__t {
@@ -872,10 +925,12 @@ html[data-fw-theme='dark'] .ch-prc-group.is-f .ch-prc-disc { background: var(--c
   gap: 2px;
   min-width: 0;
   font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
 .ch-prc-slot__t b {
   font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-prc-slot__d {
@@ -892,6 +947,7 @@ html[data-fw-theme='dark'] .ch-prc-group.is-f .ch-prc-disc { background: var(--c
 }
 .ch-prc-strip .is-err {
   font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-loss);
 }
 .ch-prc-probs {
@@ -901,6 +957,7 @@ html[data-fw-theme='dark'] .ch-prc-group.is-f .ch-prc-disc { background: var(--c
   padding: 0;
   list-style: none;
   font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
   color: var(--ch-text-secondary);
 }
 .ch-prc-probs button {
@@ -912,7 +969,8 @@ html[data-fw-theme='dark'] .ch-prc-group.is-f .ch-prc-disc { background: var(--c
   border: 0;
   background: none;
   color: var(--ch-text-primary);
-  font: inherit;
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
   text-align: left;
   cursor: pointer;
 }
@@ -932,6 +990,7 @@ html[data-fw-theme='dark'] .ch-prc-group.is-f .ch-prc-disc { background: var(--c
   grid-template-columns: 72px minmax(0, 1fr);
   gap: 8px;
   font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
 }
 .ch-prc-facts dt {
   color: var(--ch-text-secondary);
@@ -965,6 +1024,7 @@ html[data-fw-theme='dark'] .ch-prc-group.is-f .ch-prc-disc { background: var(--c
   min-width: 0;
   flex: 1 1 200px;
   font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
 .ch-prb-title {
@@ -1032,7 +1092,7 @@ main.ch-prc-planpage {
   display: grid;
   gap: 12px;
   align-content: start;
-  max-width: 860px;
+  max-width: var(--ch-measure-reading);
   margin: 0 auto;
   padding: var(--ch-page-top-coachhelm) var(--ch-page-gutter) var(--ch-page-bottom);
 }

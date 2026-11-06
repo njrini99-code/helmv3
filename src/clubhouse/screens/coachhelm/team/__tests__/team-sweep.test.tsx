@@ -26,7 +26,7 @@ function hole() {
   return render(<TeamHole stations={stationFigures([cole])} players={[cole]} station="putting" onStation={() => {}} orientation="v" />).container;
 }
 
-describe("the hole on staging's real figures", () => {
+describe("the hole on staging’s real figures", () => {
   it('keeps every halo inside the drawing (TEAM-1)', () => {
     expect(stationRadius(-3.9)).toBeLessThanOrEqual(28);
     for (const [s, t] of Object.entries(HOLE.v.st)) {

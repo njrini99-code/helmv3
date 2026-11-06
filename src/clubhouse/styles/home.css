@@ -4994,14 +4994,14 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
-  padding: 10px 10px 6px;
+  padding: 8px 8px 6px;
 }
 .ch-hm[data-ch-crh='on'] .ch-hm-sec:has(> .ch-hm-week) {
   gap: 0;
 }
 .ch-hm[data-ch-crh='on'] .ch-hm-week__n {
   position: relative;
-  padding: 12px 16px 14px;
+  padding: 12px 16px 12px;
 }
 .ch-hm[data-ch-crh='on'] .ch-hm-week__n::before {
   position: absolute;
@@ -5718,7 +5718,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-hm[data-ch-crh='on'] .ch-hm-tl__a {
     width: 100%;
     margin-inline: 0;
-    padding: 10px 16px;
+    padding: 8px 16px;
     border-radius: 0;
   }
   /* Hairlines inset 16, 60 after a coin (04 3); never to the card's edge (CRH-1, CRH-2). */
@@ -5747,7 +5747,8 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     color: var(--ch-text-secondary);
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-score em {
-    font: var(--ch-type-caption);
+    font: var(--ch-type-12);
+    letter-spacing: var(--ch-track-12);
   }
   /* Since you last looked: the section is the card (CRH-6). */
   .ch-hm[data-ch-crh='on'] .ch-hm-since .ch-lgr__row.is-link {
