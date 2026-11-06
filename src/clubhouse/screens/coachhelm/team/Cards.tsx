@@ -1,5 +1,7 @@
 'use client';
 
+import type { ReactNode } from 'react';
+import { ChartText } from '../../../ui/charts/ChartText';
 import { Badge } from '../../../ui/Badge';
 import { pluralWord } from '../../../lib/plural';
 
@@ -9,8 +11,7 @@ import type { ChInsight } from '../../../data/coachhelm-shape';
 import type { ChTeamPart } from '../../../data/coachhelm-team-shape';
 import type { ChTrackRecord } from '../../../data/coachhelm-track-record-shape';
 import { formatSigned } from '../../../lib/format';
-import { Button } from '../../../ui/Button';
-import { Coin } from './parts';
+import { Coin, Notice } from './parts';
 import { STATION_SHORT } from './hole-geometry';
 
 /** Four bars around a zero line: 20pt is 1.1 strokes, loss down, gain up (AC-ROSTER-03). */
@@ -22,19 +23,19 @@ export function FingerPrint({ player, labels = false }: { player: ChTeamPlayer; 
   const z = 9;
   const sc = 20 / 1.1;
   return (
-    <svg className="fp" width={w} height={h + (labels ? 10 : 0)} viewBox={`0 0 ${w} ${h + (labels ? 10 : 0)}`} aria-hidden="true">
+    <svg className="fp" width={w} height={h + (labels ? 14 : 0)} viewBox={`0 0 ${w} ${h + (labels ? 14 : 0)}`} aria-hidden="true">
       <line className="z" x1="0" x2={w} y1={z} y2={z} />
       {STATIONS.map((s, i) => {
         const v = player.legs[s].strokes;
         const x = i * (bw + gap);
-        const hh = v == null ? 0 : Math.max(2, Math.min(Math.abs(v) * sc, v < 0 ? h - z : z));
+        const hh = v == null ? 0 : Math.max(2, Math.min(Math.abs(v) * sc, v < 0 ? h - z - 2 : z - 2));
         return (
           <g key={s}>
             {v != null && (v < 0 ? <rect className="l" x={x} y={z + 1} width={bw} height={hh} rx="2.5" /> : <rect className="g" x={x} y={z - 1 - hh} width={bw} height={hh} rx="2.5" />)}
             {labels && (
-              <text className="lab" x={x + bw / 2} y={h + 8}>
+              <ChartText className="lab" size={12} x={x + bw / 2} y={h + 11} textAnchor="middle">
                 {STATION_SHORT[s][0]}
-              </text>
+              </ChartText>
             )}
           </g>
         );
@@ -64,11 +65,11 @@ export function RosterCard({ players, phone, onPlayer }: { players: readonly ChT
                 {p.heldBack ? ` · ${p.heldBack} held back` : ''}
               </span>
             </span>
-            {!phone && (p.rounds ? p.worst ? <span className="lm"><Badge tone="warning">Loses most: {STATION_SHORT[p.worst]}</Badge></span> : <span /> : <span className="lm chipk">No rounds yet</span>)}
+            {!phone && (p.rounds ? p.worst ? <span className="lm"><Badge tone="warning">{STATION_SHORT[p.worst]}</Badge></span> : <span /> : <span className="lm chipk">No rounds yet</span>)}
             {p.rounds ? (
               <>
                 <FingerPrint player={p} labels={!phone} />
-                <span className={'tot' + (p.total != null && p.total > 0 ? ' g' : '')}>
+                <span className={'tot' + (p.total == null || Math.abs(p.total) < 0.05 ? ' is-even' : p.total > 0 ? ' g' : '')}>
                   {formatSigned(p.total)}
                   <span>{open} open</span>
                 </span>
@@ -110,21 +111,14 @@ export function WorkingCard({ working, proposed, failed, onRetry }: { working: r
     <section className="card work" data-ch-team-card="work" aria-label="Working on">
       <div className="ch">
         <h4>Working on</h4>
-        <span className="meta">
-          {n} focus {pluralWord(n, 'area', 'areas')}
-        </span>
+        {!failed && (
+          <span className="meta">
+            {n} focus {pluralWord(n, 'area', 'areas')}
+          </span>
+        )}
       </div>
       {failed ? (
-        <div className="notice">
-          <div>
-            <b>Couldn’t load this part</b>
-            {onRetry && (
-              <Button variant="ghost" size="sm" onClick={onRetry}>
-                Try again
-              </Button>
-            )}
-          </div>
-        </div>
+        <Notice title="Couldn’t load this part" onRetry={onRetry} />
       ) : (
         <div data-work="">
           {working.map((w) => (
@@ -140,7 +134,7 @@ export function WorkingCard({ working, proposed, failed, onRetry }: { working: r
             </div>
           ))}
           {proposed.map(({ player, read }) => (
-            <div className="wk is-new" key={read.id}>
+            <div className="wk" key={read.id}>
               <Ring v={0} proposed />
               <div>
                 <b>
@@ -161,22 +155,20 @@ export function WorkingCard({ working, proposed, failed, onRetry }: { working: r
 }
 
 /** The rungs' own words; a rung under 10 rechecked says "Not enough yet", never a share (AC-RECORD-02, 03). */
-export function RecordCard({ part, desk = false }: { part: ChTeamPart<ChTrackRecord>; desk?: boolean }) {
+export function RecordCard({ part, desk = false, recheck = null }: { part: ChTeamPart<ChTrackRecord>; desk?: boolean; recheck?: ReactNode }) {
   const notice = (title: string, body: string) => (
     <section className="card recc" data-ch-team-card="record">
       <div className="ch">
         <h4>How often CoachHelm is right</h4>
       </div>
-      <div className="notice">
-        <div>
-          <b>{title}</b>
-          <span>{body}</span>
-        </div>
-      </div>
+      <Notice title={title} body={body} />
+      {/* The way to run the check stays, whatever the record says (the design's failed state draws none; this is the coach's only way). */}
+      {recheck && <div className="recfoot">{recheck}</div>}
     </section>
   );
   if (part.status === 'failed' || part.value.state === 'unavailable') return notice('Track record unavailable right now', 'It shows again once the check runs. No number is shown in its place.');
   const r = part.value;
+  const { held, rechecked: checked } = r;
   if (r.empty) return notice('No reads to check yet', 'Reads are re-checked against new rounds once the team has some.');
   return (
     <section className="card recc" data-ch-team-card="record" aria-label="How often CoachHelm is right">
@@ -185,7 +177,12 @@ export function RecordCard({ part, desk = false }: { part: ChTeamPart<ChTrackRec
       </div>
       <div className="rec">
         <div className="big">
-          <span>{r.program}</span>
+          {checked > 0 && (
+            <b className="ch-num">
+              {held} of {checked}
+            </b>
+          )}
+          <span>{checked > 0 ? 'reads held up when re-checked' : r.program}</span>
         </div>
         {r.rungs.map((g) => (
           <div className="lv" key={g.id}>
@@ -196,17 +193,19 @@ export function RecordCard({ part, desk = false }: { part: ChTeamPart<ChTrackRec
                 {g.bar.target != null && <u style={{ left: `${g.bar.target * 10}%` }} title="target" />}
               </span>
             ) : (
-              <span className="t is-none" />
+              <span className="t is-none">—</span>
             )}
             <span className="n">
-              {g.line}
-              {desk && g.bar ? <b> · {g.sub}</b> : null}
+              {/* The rung named "Not enough yet" doesn't say so twice (QA-9). */}
+              {g.line === g.word ? null : g.line.replace(/ held$/, '')}
+              {desk && g.bar ? <b> · {g.bar.target == null ? 'no target yet' : `target ${/under/i.test(g.sub ?? '') ? 'under ' : ''}${g.bar.target * 10}%`}</b> : null}
             </span>
           </div>
         ))}
       </div>
       <div className="recfoot">
         <span>Line: the target for that level</span>
+        {recheck}
       </div>
     </section>
   );

@@ -141,7 +141,7 @@ const record = async (name, fn) => {
 const DESIGN_STAGE = `.ph{width:412px!important;height:866px!important}.ph.lg{width:452px!important;height:954px!important}
   #desktop .wrap{max-width:none!important}.mast,#directions,#map,#build,#lanes,#research,#calls,footer{display:none!important}`;
 async function openDesign(page, hash) {
-  await page.goto(`${PAGE}#${hash}`);
+  await page.goto(`${PAGE}?n=${Date.now()}#${hash}`);
   await page.addStyleTag({ content: DESIGN_STAGE });
   await page.evaluate(() => window.dispatchEvent(new Event('resize')));
   await page.evaluate(() => document.fonts && document.fonts.ready);
@@ -189,6 +189,9 @@ async function app(browser) {
       const page = await ctx.newPage();
       await record(name, async () => {
         const res = await page.goto(BASE + route, { waitUntil: 'load', timeout: 240_000 });
+        // The app sets the theme attribute after load, and Next's dev badge isn't part of the page.
+        await page.addStyleTag({ content: 'nextjs-portal{display:none!important}' });
+        await page.evaluate((t) => document.documentElement.setAttribute('data-fw-theme', t), theme);
         if (res && res.status() >= 400) throw new Error(`preview route ${route} answered ${res.status()} (add the fixture state)`);
         await page.waitForTimeout(1200);
         if (action?.startsWith('card:')) {

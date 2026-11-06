@@ -300,7 +300,7 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, sectio
     // it off the address is the board. `?section=` names the part an old /intelligence link was for.
     if (view === 'brief' && isMondayBriefEnabled()) {
       return (
-        <Suspense fallback={<CoachHelmSkeleton view="coach" chained />}>
+        <Suspense fallback={<CoachHelmSkeleton view="coach" chained active="brief" />}>
           <CoachBriefView coachId={team.coachId} teamId={team.teamId} section={isBriefSection(section) ? section : null} />
         </Suspense>
       );
@@ -326,7 +326,7 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, sectio
     }
     if (view === 'ask' && isPlayerAskEnabled()) {
       return (
-        <Suspense fallback={<AskSkeleton chained />}>
+        <Suspense fallback={<AskSkeleton chained player />}>
           <PlayerAskView />
         </Suspense>
       );

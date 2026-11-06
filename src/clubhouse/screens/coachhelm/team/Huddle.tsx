@@ -1,5 +1,6 @@
 'use client';
 
+import { ChartText } from '../../../ui/charts/ChartText';
 import { avatarTone } from '../../../ui/Avatar';
 import { formatSigned } from '../../../lib/format';
 import { initials } from '../../../lib/names';
@@ -36,8 +37,11 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
   const X = (v: number) => L + ((v - lo) / (hi - lo)) * (W - L - R);
   const Y = (v: number) => T + ((hi - v) / (hi - lo)) * (H - T - B);
   const st = data.stations;
-  const as = (st.tee.team ?? 0) + (st.approach.team ?? 0);
-  const ac = (st.short_game.team ?? 0) + (st.putting.team ?? 0);
+  // A station nobody has a figure for isn't zero, so its average isn't drawn on the Tour line (FID-TEAM-17).
+  const as = st.tee.team == null || st.approach.team == null ? null : st.tee.team + st.approach.team;
+  const ac = st.short_game.team == null || st.putting.team == null ? null : st.short_game.team + st.putting.team;
+  const labelWide = (t: string) => t.length * 12 * 0.54;
+  const clear = (x: number, y: number, t: string) => !plotted.some(({ at }) => X(at.x) + 13 > x && X(at.x) - 13 < x + labelWide(t) && Y(at.y) + 13 > y && Y(at.y) - 13 < y + 14);
   const firstMissing = (p: ChTeamPlayer): ChStation | undefined => STATIONS.find((s) => p.legs[s].strokes == null);
   return (
     <section className="card huddle" data-ch-team-card="huddle" aria-label="The huddle">
@@ -51,26 +55,33 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
           <line className="ax" x1={L} x2={L} y1={T} y2={H - B} />
           <line className="tour" x1={X(0)} x2={X(0)} y1={T} y2={H - B} />
           <line className="tour" x1={L} x2={W - R} y1={Y(0)} y2={Y(0)} />
-          <text className="tl" x={X(0) - 4} y={Y(0) - 5} textAnchor="end">
+          <ChartText className="tl" size={12} x={X(0) - 4} y={Y(0) - 5} textAnchor="end">
             Tour
-          </text>
-          <line className="avg" x1={X(as)} x2={X(as)} y1={T} y2={H - B} />
-          <line className="avg" x1={L} x2={W - R} y1={Y(ac)} y2={Y(ac)} />
-          <text className="q" x={L + 6} y={T + 28}>
-            Scores well, strikes poorly
-          </text>
-          <text className="q" x={L + 6} y={H - B - 8}>
-            Behind on both
-          </text>
-          <text className="q" x={X(as) + 6} y={H - B - 8}>
-            Strikes well, leaks scoring
-          </text>
-          <text className="axl" x={(L + W - R) / 2} y={H - 10} textAnchor="middle">
+          </ChartText>
+          {as != null && <line className="avg" x1={X(as)} x2={X(as)} y1={T} y2={H - B} />}
+          {ac != null && <line className="avg" x1={L} x2={W - R} y1={Y(ac)} y2={Y(ac)} />}
+          {/* Against the plot's own edges, whatever the averages are, and only where no coin stands (TEAM-14). */}
+          {clear(L + 6, T + 8, 'Scores well, strikes poorly') && (
+            <ChartText className="q" size={12} x={L + 6} y={T + 16}>
+              Scores well, strikes poorly
+            </ChartText>
+          )}
+          {clear(L + 6, H - B - 20, 'Behind on both') && (
+            <ChartText className="q" size={12} x={L + 6} y={H - B - 8}>
+              Behind on both
+            </ChartText>
+          )}
+          {clear(W - R - 6 - labelWide('Strikes well, leaks scoring'), H - B - 20, 'Strikes well, leaks scoring') && (
+            <ChartText className="q" size={12} x={W - R - 6} y={H - B - 8} textAnchor="end">
+              Strikes well, leaks scoring
+            </ChartText>
+          )}
+          <ChartText className="axl" size={12} x={(L + W - R) / 2} y={H - 10} textAnchor="middle">
             Ball striking: tee and approach
-          </text>
-          <text className="axl" transform={`translate(12 ${(T + H - B) / 2}) rotate(-90)`} textAnchor="middle">
-            Scoring: short game and putting
-          </text>
+          </ChartText>
+          <ChartText className="axl" size={12} transform={`translate(12 ${(T + H - B) / 2}) rotate(-90)`} textAnchor="middle">
+            Scoring: short game, putting
+          </ChartText>
           {plotted.map(({ p, at }) => (
             <g
               key={p.id}
@@ -87,10 +98,11 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
                 }
               }}
             >
+              <circle className="hit" cx={X(at.x)} cy={Y(at.y)} r={22} fill="transparent" />
               <circle className="dotc" cx={X(at.x)} cy={Y(at.y)} r={13} fill={coinColor(p.id)} stroke={coinColor(p.id)} />
-              <text x={X(at.x)} y={Y(at.y)}>
+              <ChartText size={12} weight={600} x={X(at.x)} y={Y(at.y)}>
                 {initials(p.name)}
-              </text>
+              </ChartText>
             </g>
           ))}
         </svg>

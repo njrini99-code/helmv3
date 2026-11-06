@@ -5,6 +5,7 @@ import { courseReads, STATIONS, stationFigures, storiesOf } from '../data/coachh
 import { TeamBoard, type TeamBoardOpen, type TeamStation } from '../screens/coachhelm/team/TeamBoard';
 import { TeamBoardSkeleton } from '../screens/coachhelm/team/TeamBoardSkeleton';
 import { PREVIEW_TEAM_BOARD } from './fixtures-coachhelm-team';
+import { PREVIEW_TRACK_RECORD } from './fixtures-coachhelm-track';
 
 const STATION_KEY: Record<string, TeamStation> = { tee: 'tee', app: 'approach', sg: 'short_game', putt: 'putting', course: 'course' };
 
@@ -17,7 +18,7 @@ function stateData(state: string | undefined): ChTeamBoardData {
   }
   if (state === 'empty') {
     const empty: ChTeamPlayer[] = list.map((p) => ({ ...p, rounds: 0, early: true, reads: { needs: [], working: [] }, total: null, worst: null, legs: Object.fromEntries(STATIONS.map((s) => [s, { strokes: null, rounds: 0, missing: 'No rounds yet.' }])) as ChTeamPlayer['legs'] }));
-    return { ...base, players: { list: empty, error: false }, stations: stationFigures(empty), teamTotal: { strokes: null, rounds: 0 }, course: { history: null, reads: [], against: null } };
+    return { ...base, players: { list: empty, error: false }, stations: stationFigures(empty), teamTotal: { strokes: null, rounds: 0 }, course: { history: null, reads: [], against: null }, record: { status: 'ok', value: { ...PREVIEW_TRACK_RECORD, empty: true } as never } };
   }
   if (state === 'failed') return { ...base, brief: { status: 'failed' }, record: { status: 'failed' } } as ChTeamBoardData;
   if (state === 'failed-all') return { ...base, players: { list: [], error: true } };
@@ -30,7 +31,7 @@ function stateData(state: string | undefined): ChTeamBoardData {
   }
   if (state === 'long') {
     const worst: ChStation = 'approach';
-    const many = Array.from({ length: 15 }, (_, i) => ({ ...(list[i % list.length] as ChTeamPlayer), id: `pl-long-${i}`, name: i % 2 ? 'Elijah Brandt-Whitaker' : 'Priyanka Natarajan-Okonkwo', worst }));
+    const many = Array.from({ length: 15 }, (_, i) => ({ ...(list[i % list.length] as ChTeamPlayer), id: `pl-long-${i}`, first: i % 2 ? 'Elijah' : 'Priyanka', name: i % 2 ? 'Elijah Brandt-Whitaker' : 'Priyanka Natarajan-Okonkwo', worst }));
     return { ...base, roster: { count: 15, error: false }, players: { list: many, error: false } };
   }
   return base;
@@ -50,7 +51,7 @@ function openOf(data: ChTeamBoardData, station: TeamStation, open: string | unde
     return p ? { kind: 'player', id: p.id } : undefined;
   }
   if (open === 'course') {
-    const c = data.course.history?.courses[0];
+    const c = data.course.history?.courses.find((x) => x.id === 'hill') ?? data.course.history?.courses[0];
     return c ? { kind: 'course', id: c.id } : undefined;
   }
   if (open === 'story') {

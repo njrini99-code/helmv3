@@ -31,7 +31,10 @@ export function Modal({
   className,
   detent,
   atRest = false,
+  bare = false,
 }: {
+  /** The panel draws its own head and Close: the title stays for assistive tech, and there's no second Close to tab to (TEAM-19). */
+  bare?: boolean;
   /** A control in the head beside Close (the course picker's Add a course). */
   action?: ReactNode;
   /** Catalog number (docs/clubhouse/catalog). */
@@ -89,6 +92,11 @@ export function Modal({
         <div className="ch-modal__panel">
           <div className="ch-grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
           {/* A header, so the phone's chrome rules (no text selection under a drag) apply, but no second banner landmark. */}
+          {bare ? (
+            <h2 id={titleId} tabIndex={-1} className="ch-sr-only">
+              {title}
+            </h2>
+          ) : (
           <header className="ch-modal__head" role="none" onPointerDown={drag.onPointerDown}>
             {icon && (
               <span className="ch-modal__icon ch-well-soft">
@@ -108,6 +116,7 @@ export function Modal({
               </button>
             </Tooltip>
           </header>
+          )}
           {children && <div className="ch-modal__body">{children}</div>}
           {footer && <footer className="ch-modal__foot">{footer}</footer>}
         </div>

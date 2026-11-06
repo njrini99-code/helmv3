@@ -51,6 +51,12 @@ describe('the spot pattern line (W-TEAM-6)', () => {
     );
   const NONE = /No shared pattern here yet/;
 
+  it('with no retry passed in, a failed board refreshes itself: the live route has no function to give it (FID-TEAM-1)', () => {
+    render(ui({ data: { ...PREVIEW_TEAM_BOARD, players: { list: [], error: true } } }));
+    screen.getByRole('button', { name: 'Try again' }).click();
+    expect(router.refresh).toHaveBeenCalledOnce();
+  });
+
   it('a failed read says it did not load, never that there is no pattern', () => {
     spot({ patternsStatus: 'failed' });
     expect(screen.getByText('Couldn’t load this part.')).toBeTruthy();

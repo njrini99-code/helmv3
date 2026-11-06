@@ -46,6 +46,17 @@ describe('placeLabels', () => {
     const placed = placeLabels(marks, box);
     expect(placed.every((l) => l.fits && inside(l))).toBe(true);
   });
+  it("takes the design's place while it's clear, and leaves it when a big halo covers it", () => {
+    const prefer = { x: 60, y: 40, anchor: 'middle' as const };
+    expect(placeLabels([{ id: 'a', x: 100, y: 100, r: 10, w: 40, h: 16, prefer }], box)[0]).toMatchObject({ x: 60, y: 40, anchor: 'middle' });
+    expect(placeLabels([{ id: 'a', x: 80, y: 48, r: 28, w: 40, h: 16, prefer }], box)[0]!.x).not.toBe(60);
+  });
+  it('keeps a label off an obstacle, such as a coin', () => {
+    const coin = { x: 120, y: 100, w: 22, h: 22 };
+    const [l] = placeLabels([{ id: 'a', x: 100, y: 110, r: 10, w: 60, h: 16 }], box, 6, [coin]);
+    expect(l!.fits).toBe(true);
+    expect(l!.x + l!.w <= coin.x || l!.x >= coin.x + coin.w || l!.y + l!.h <= coin.y || l!.y >= coin.y + coin.h).toBe(true);
+  });
   it("says so when nothing is clear, and still stays in the box", () => {
     const [l] = placeLabels([{ id: 'a', x: 20, y: 20, r: 20, w: 40, h: 40 }], { x: 0, y: 0, w: 40, h: 40 });
     expect(l!.fits).toBe(false);

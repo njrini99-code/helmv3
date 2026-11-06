@@ -44,7 +44,7 @@ export function Segmented<V extends string>({
   value: V;
   options: ReadonlyArray<SegOption<V>>;
   onChange: (v: V) => void;
-  size?: 'sm' | 'md';
+  size?: 'sm' | 'md' | 'lg';
   /** The change swaps a whole view: it renders after the chip has moved (see above). */
   redraws?: boolean;
   /** Fill the row: the options share its width equally, as a form field's choice does. */

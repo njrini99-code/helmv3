@@ -1,12 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { boardPlayerCount, boardPlayerWords, courseReads, stationOrder, readsDrawn, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
+import { courseReads, stationOrder, readsDrawn, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
 import { formatSigned, windowWords } from '../../../lib/format';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
 import { Button } from '../../../ui/Button';
+import { useRouter } from 'next/navigation';
+import { useRefresh } from '../../../lib/use-refresh';
 import { CoachHelmHead } from '../CoachHelmHead';
+import { useChSessionState } from '../../../lib/session-state';
+import { plural } from '../../../lib/plural';
+import { Notice } from './parts';
 import { rebuiltHref } from '../../../shell/nav';
 import { CoachHelmOffNotice } from '../CoachBoard';
 import { CoachHelmTabs, COACHHELM_HREF, type CoachHelmView } from '../chat/SubTabs';
@@ -15,13 +20,14 @@ import { Modal } from '../../../ui/Modal';
 import { useFocusActions } from '../parts';
 import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from '../writes';
 import { RecheckReads } from '../Recheck';
-import type { ChStoryRound, ChTeamStory } from '../../../data/coachhelm-team-shape';
+import { storiesOf, type ChStoryRound, type ChTeamStory } from '../../../data/coachhelm-team-shape';
+import type { ChCoachBrief } from '../../../data/coachhelm-coach-brief-shape';
 import type { ChDiveTheme } from '../../../data/coachhelm-dive-shape';
 import { RecordCard, RosterCard, WorkingCard } from './Cards';
 import { CourseCard } from './CourseCard';
 import { Huddle } from './Huddle';
 import { Part } from './Part';
-import { StoriesCard, StoryDeskPanel } from './Stories';
+import { StoriesCard, StoryDeskPanel, weekdayOf } from './Stories';
 import { Inspector } from './Inspector';
 import { CourseSheet, GonePanel, PlayerPanel, ReadPanel } from './panels';
 import { SpotCard } from './SpotCard';
@@ -50,6 +56,12 @@ export interface TeamBoardProps {
   onRetry?: () => void;
 }
 
+/** The figure says which way it points in words as well as colour (QA-7): "+0.5 a round better than Tour". */
+function betterOrWorse(strokes: number | null, baseline: string): string {
+  if (strokes == null || Math.abs(strokes) < 0.05) return baseline;
+  return baseline.replace(/^to /, strokes > 0 ? 'better than ' : 'worse than ');
+}
+
 function Hero({
   data,
   station,
@@ -68,14 +80,13 @@ function Hero({
   const list = data.players.list;
   // The hole's figures are each player's season mean, averaged over the players at the shots floor (coachhelm-team-legs.ts):
   // said here because Home's team's game pools every player's last 10 and reads differently.
-  const counted = boardPlayerCount(data.stations);
   const figure = (
     <div className="hn">
       <b className="ch-num">{formatSigned(data.teamTotal.strokes)}</b>
       <span>
-        a round {data.team.baselineLabel}
+        a round {betterOrWorse(data.teamTotal.strokes, data.team.baselineLabel)}
         <br />
-        {windowWords('season', data.teamTotal.rounds)}{counted > 0 && ` · ${boardPlayerWords(counted)}`}
+        {windowWords('season', data.teamTotal.rounds)}
       </span>
     </div>
   );
@@ -155,10 +166,15 @@ function EmptySteps() {
 
 /** The coach's Team view: the green bar untouched, the switch, the title, then one green feature card (the hole). */
 export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE_COACHHELM_WRITES, readOn = false, fileOn = false, initialOpen, initialAll = false, initialPlayer, initialInsight, initialStation, onRetry }: TeamBoardProps) {
+  const router = useRouter();
+  // Every failed part offers Try again; the route has no function to pass, so the board refreshes itself (FID-TEAM-1).
+  const { refresh } = useRefresh();
+  const retry = onRetry ?? refresh;
   const phone = useChPhone();
   const sw = useViewSwitch<CoachHelmView>('board', (v) => COACHHELM_HREF[v], Object.keys(COACHHELM_HREF) as CoachHelmView[]);
   const leak = useMemo(() => stationOrder(data.stations)[0] ?? 'approach', [data.stations]);
-  const [station, setStation] = useState<TeamStation>(initialStation ?? leak);
+  // Kept across a trip to a player or a read and back (MOB-TEAM-17).
+  const [station, setStation] = useChSessionState<TeamStation>('team.station', initialStation ?? leak);
   const top = useRef<HTMLElement | null>(null);
   const [open, setOpen] = useState<TeamBoardOpen | null>(initialOpen?.kind === 'story' && phone ? null : (initialOpen ?? null));
   const [rounds, setRounds] = useState<Record<string, ChStoryRound> | null>(null);
@@ -171,6 +187,18 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
       live = false;
     };
   }, [data.storyRounds]);
+  const [weekBrief, setWeekBrief] = useState<ChCoachBrief | null>(null);
+  // A new object each time, so asking for the same story again opens it again.
+  const [storyAsk, setStoryAsk] = useState<{ id: string } | null>(null);
+  useEffect(() => {
+    let live = true;
+    void Promise.resolve(data.brief).then((b) => {
+      if (live && b?.status === 'ok') setWeekBrief(b.value);
+    });
+    return () => {
+      live = false;
+    };
+  }, [data.brief]);
   const close = useCallback(() => setOpen(null), []);
   const fa = useFocusActions(writes);
   // `?player=` and `?open=read&insight=`: once, after first paint, and off the address by replace (AC-TEAM-23, W-TEAM-14). An id not on the board opens
@@ -191,13 +219,18 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
       setOpen(null);
       document.querySelector('[data-ch-team-card="work"]')?.scrollIntoView({ block: 'start' });
     } else if (s.kind === 'theme') openPlayer(s.playerId);
-    else window.location.assign(s.href);
+    else {
+      // In place, as a coin on the hole does, not a whole page load (FID-TEAM-7).
+      const id = s.id.replace(/^read:/, '');
+      if (data.players.list.some((p) => p.reads.needs.some((r) => r.id === id) || p.reads.working.some((r) => r.id === id))) openRead(id);
+      else router.push(s.href);
+    }
   };
   const list: ChTeamPlayer[] = data.players.list;
   const noRounds = data.teamTotal.rounds === 0;
   const tabs = data.off ? null : <CoachHelmTabs active={sw.shown} onGo={sw.go} boardLabel="Team" />;
-  const context = data.off ? 'CoachHelm reads the rounds your players post.' : data.roster.count === 0 ? 'No players yet' : noRounds ? `${data.roster.count} players · no rounds yet this season` : `${data.roster.count} players · ${data.teamTotal.rounds} rounds this season · ${readsDrawn(list)} open reads`;
-  const head = <CoachHelmHead title={data.team.name || 'CoachHelm'} context={context} tabs={tabs} />;
+  const context = data.off ? 'CoachHelm reads the rounds your players post.' : data.roster.count === 0 ? 'No players yet' : noRounds ? `${plural(data.roster.count, 'player')} · no rounds yet this season` : `${plural(data.roster.count, 'player')} · ${plural(data.teamTotal.rounds, 'round')} this season · ${plural(readsDrawn(list), 'open read')}`;
+  const head = <CoachHelmHead title={data.team.name || 'CoachHelm'} context={context} scope={data.team.name ? `${data.team.name} · ${plural(data.roster.count, 'player')} · this season` : undefined} tabs={tabs} />;
   const course = courseReads(list).length;
   const skeletonCard = <span className="skl" style={{ height: 120, borderRadius: 16 }} />;
   const today = (
@@ -208,11 +241,12 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
             brief={b.status === 'ok' ? b.value : null}
             themes={themes}
             failed={b.status === 'failed'}
-            onRetry={onRetry}
+            onRetry={retry}
             players={list}
             phone={phone}
             rounds={rounds}
             autoOpen={initialOpen?.kind === 'story'}
+            request={storyAsk}
             onDesk={(s) => setOpen({ kind: 'story', id: s.id, story: s, week: b.status === 'ok' ? b.value.week : 'This week' })}
             onAction={storyAction}
           />
@@ -231,35 +265,27 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
   const proposed = list.flatMap((player) => player.reads.needs.filter((read) => fa.assigned[read.id] || read.assigned === 'proposed').map((read) => ({ player, read })));
   const working = (
     <Part value={data.brief} fallback={skeletonCard}>
-      {(b) => <WorkingCard working={b.status === 'ok' ? b.value.working : []} proposed={proposed} failed={b.status === 'failed'} onRetry={onRetry} />}
+      {(b) => <WorkingCard working={b.status === 'ok' ? b.value.working : []} proposed={proposed} failed={b.status === 'failed'} onRetry={retry} />}
     </Part>
   );
   const huddle = <Huddle data={data} onPlayer={openPlayer} />;
   const roster = <RosterCard players={list} phone={phone} onPlayer={openPlayer} />;
+  // In the record card's footer (AC-RECORD-04), and with no record to sit in, in a card of its own under the board: never loose on the page (QA-9).
+  const recheck = !data.off && data.roster.count > 0 ? <RecheckReads players={data.roster.count} /> : null;
   const record = (
     <Part value={data.record} fallback={skeletonCard}>
-      {(r) => <RecordCard part={r} desk={!phone} />}
+      {(r) => <RecordCard part={r} desk={!phone} recheck={recheck} />}
     </Part>
   );
   const spot =
     station === 'course' ? (
-      <CourseCard data={data} initialAll={initialAll} onRead={openRead} onCourse={openCourse} onRetry={onRetry} />
+      <CourseCard data={data} initialAll={initialAll} onRead={openRead} onCourse={openCourse} onRetry={retry} />
     ) : (
-      <SpotCard data={data} station={station} onRead={openRead} onPlayer={openPlayer} />
+      <SpotCard data={data} station={station} onRead={openRead} onPlayer={openPlayer} onRetry={retry} />
     );
   const failedHole = (
     <section className="card ch-htb-failed" role="alert" data-ch-team-card="hole">
-      <div className="notice">
-        <span>
-          <b>The team’s reads didn’t load</b>
-          <span>Nothing here is wrong with your players’ rounds. Try again.</span>
-          {onRetry && (
-            <Button variant="secondary" size="sm" onClick={onRetry}>
-              Try again
-            </Button>
-          )}
-        </span>
-      </div>
+      <Notice title="The team’s reads didn’t load" body="Nothing here is wrong with your players’ rounds. Try again." onRetry={retry} />
     </section>
   );
 
@@ -346,13 +372,48 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
     }
     // A phone tells its story in the viewer, the tile's own (StoriesCard).
     if (open.kind === 'story' && phone) return null;
-    if (open.kind === 'story') return <StoryDeskPanel story={open.story} week={open.week} round={rounds?.[open.story.who] ?? null} onClose={close} onAction={storyAction} />;
+    if (open.kind === 'story') return <StoryDeskPanel story={open.story} week={open.week} round={rounds?.[open.story.who] ?? null} player={list2.find((p) => p.name === open.story.who) ?? null} onClose={close} onAction={storyAction} />;
     const row = data.course.history?.courses.find((c) => c.id === open.id);
-    return row ? <CourseSheet row={row} data={data} onPlayer={openPlayer} onRead={openRead} onClose={close} /> : null;
+    if (!row) return null;
+    // Only when a This week story came from a round here (AC-CSHEET-05).
+    const named = new Map(list2.map((p) => [p.id, p.name]));
+    const from = storiesOf(weekBrief, null, named).find((s) => s.kind === 'read' && rounds?.[s.who]?.course === row.name);
+    const when = from && rounds?.[from.who];
+    return (
+      <CourseSheet
+        row={row}
+        data={data}
+        onPlayer={openPlayer}
+        onRead={openRead}
+        onClose={close}
+        story={
+          from && when
+            ? {
+                when: weekdayOf(when.date),
+                open: () => {
+                  if (phone) {
+                    setOpen(null);
+                    setStoryAsk({ id: from.id });
+                  } else setOpen({ kind: 'story', id: from.id, story: from, week: weekBrief?.week ?? 'This week' });
+                },
+              }
+            : null
+        }
+      />
+    );
   })();
 
+  const panelTitle =
+    open?.kind === 'player'
+      ? (list.find((p) => p.id === open.id)?.name ?? 'Player')
+      : open?.kind === 'read'
+        ? (list.flatMap((p) => [...p.reads.needs, ...p.reads.working]).find((r) => r.id === open.id)?.title ?? 'Read')
+        : open?.kind === 'course'
+          ? (data.course.history?.courses.find((c) => c.id === open.id)?.name ?? 'Course')
+          : 'Story';
+
   return (
-    <main ref={top} className={'ch-htb ' + (phone ? 'is-phone' : 'is-desk')} aria-busy={sw.pending || undefined} data-ch-screen="coachhelm-team">
+    <main ref={top} {...sw.enter} className={'ch-htb ' + (phone ? 'is-phone' : 'is-desk')} aria-busy={sw.pending || undefined} data-ch-screen="coachhelm-team">
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone ? (
         <div className="sheet">
@@ -361,20 +422,17 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
         </div>
       ) : (
         <div className="ch-htb-desk">
-          <div className="ch-htb-deskhead">
-            {head}
-          </div>
+          {head}
           {body}
         </div>
       )}
-      {/* W-TEAM-16: today's Re-check, under the board, not in the record card. */}
-      {!data.off && data.roster.count > 0 && <RecheckReads players={data.roster.count} />}
+      {!data.record && recheck && <section className="card recfoot">{recheck}</section>}
       {phone ? (
-        <Modal open={!!openPanel} onClose={close} title="Details" className="ch-htb-sheet">
+        <Modal open={!!openPanel} onClose={close} title={panelTitle} className="ch-htb-sheet" bare>
           <div className="ins">{openPanel}</div>
         </Modal>
       ) : (
-        <Inspector open={!!openPanel} onClose={close} label="Details">
+        <Inspector open={!!openPanel} onClose={close} label={panelTitle}>
           {openPanel}
         </Inspector>
       )}

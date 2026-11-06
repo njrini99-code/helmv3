@@ -7,6 +7,10 @@ import { playerMine, playerSeesMeeting, replyClosedAt } from '../screens/calenda
 import { CLASS_EVENT_TYPE, isClassEvent } from '@/lib/calendar/class-events';
 import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { isPlayerAskEnabled } from '@/lib/coachhelm/v3/chat/ask-flag';
+import { isMondayBriefEnabled } from '@/lib/coachhelm/v3/monday-brief/flag';
+import { isTeamBoardEnabled, TEAM_BOARD_FIRST_VIEW } from '@/lib/coachhelm/v3/team-board/flag';
+import type { ChHelmViews } from '../shell/context';
 import { todayIsoInZone } from '@/lib/golf/timezone';
 import { isoDay, weekdayMonthDay } from '../lib/dates';
 import { fullName } from './season';
@@ -51,6 +55,8 @@ export interface ChShellData {
   quickChat?: boolean;
   /** coachhelm_practice_plans_v1: the quick chat offers its plan tile. */
   practicePlans?: boolean;
+  /** Which of CoachHelm's views are on, for its strips (useHelmViews). */
+  helmViews?: ChHelmViews;
   /** The signed-in player's round in progress, touched in the last 12 hours (P001-C1): the Resume accessory. */
   roundInProgress?: ChRoundInProgress | null;
   /** The signed-in coach is this team's head coach: the identity line says "Head coach". False when unread (plain "Coach"). */
@@ -282,6 +288,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     askAvailable: askOn,
     quickChat: askOn && isFlagEnabled('coachhelm_quick_chat_v1'),
     practicePlans: isFlagEnabled('coachhelm_practice_plans_v1') && isFlagEnabled('golf_practice_plans'),
+    helmViews: { brief: isMondayBriefEnabled(), playerAsk: isPlayerAskEnabled(), team: isTeamBoardEnabled() && TEAM_BOARD_FIRST_VIEW === 'hole' },
     classAwareness: isFlagEnabled('class_awareness_v1'),
     crh: isFlagEnabled('clubhouse_classes_roster_home_v1'),
     course: courseOf(courseRes),
