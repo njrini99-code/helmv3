@@ -10,6 +10,7 @@ import { recordPracticePlanOpen } from '@/app/golf/actions/practice-plans';
 import { Icon } from '../../../../ui/Icon';
 import { LargeTitle } from '../../../../ui/LargeTitle';
 import { Segmented } from '../../../../ui/Segmented';
+import { EmptyState } from '../../../../ui/States';
 
 export interface PlayerStop {
   time: string;
@@ -75,7 +76,9 @@ export function PlayerPractice({ data, everyone, planId = null }: { data: Player
         ]}
         onChange={setTab}
       />
-      {tab === 'mine' ? (
+      {tab === 'mine' && data.stops.length === 0 ? (
+        <EmptyState title="No stops for you in this one" body="Your coach hasn’t put you in a group on this plan yet." />
+      ) : tab === 'mine' ? (
         <section className="art" aria-label="Your stops">
           {data.stops.map((s) => (
             <div className="stop" key={s.time + s.place}>

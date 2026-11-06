@@ -42,7 +42,7 @@
   padding: 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-shadow-card, 0 0 0 var(--ch-hairline-w) var(--ch-separator));
+  box-shadow: var(--ch-card-shadow);
 }
 .ch-prc-card p {
   margin: 0;
@@ -453,7 +453,7 @@ span.ch-prc-tile__it {
   align-items: flex-start;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-separator), 0 1px 2px rgb(28 25 18 / 0.05);
+  box-shadow: var(--ch-card-shadow);
 }
 .ch-prc-block.is-on {
   background: var(--ch-well-bg-flat);
@@ -562,7 +562,7 @@ span.ch-prc-tile__it {
   cursor: pointer;
 }
 html[data-fw-theme='dark'] .ch-prc-feat__go {
-  background: #f4eedd;
+  background: var(--ch-on-green-ink);
 }
 .ch-prc-feat__more {
   min-height: 44px;
@@ -827,19 +827,16 @@ html[data-fw-theme='dark'] .ch-prc-feat__go {
   color: var(--ch-text-on-accent);
   font: var(--ch-type-12);
 }
-.ch-prc-group.is-b .ch-prc-disc {
-  background: #2f5f8f;
-}
-.ch-prc-group.is-c .ch-prc-disc {
-  background: #654a7e;
-}
-.ch-prc-group.is-d .ch-prc-disc {
-  background: #4a5a68;
-}
-.ch-prc-group.is-e .ch-prc-disc,
-.ch-prc-group.is-f .ch-prc-disc {
-  background: #5f5c55;
-}
+.ch-prc-group.is-b .ch-prc-disc { background: var(--ch-plan-group-b); }
+.ch-prc-group.is-c .ch-prc-disc { background: var(--ch-plan-group-c); }
+.ch-prc-group.is-d .ch-prc-disc { background: var(--ch-plan-group-d); }
+.ch-prc-group.is-e .ch-prc-disc { background: var(--ch-plan-group-e); }
+.ch-prc-group.is-f .ch-prc-disc { background: var(--ch-plan-group-f); }
+html[data-fw-theme='dark'] .ch-prc-group.is-b .ch-prc-disc { background: var(--ch-plan-group-b-night); }
+html[data-fw-theme='dark'] .ch-prc-group.is-c .ch-prc-disc { background: var(--ch-plan-group-c-night); }
+html[data-fw-theme='dark'] .ch-prc-group.is-d .ch-prc-disc { background: var(--ch-plan-group-d-night); }
+html[data-fw-theme='dark'] .ch-prc-group.is-e .ch-prc-disc { background: var(--ch-plan-group-e-night); }
+html[data-fw-theme='dark'] .ch-prc-group.is-f .ch-prc-disc { background: var(--ch-plan-group-f-night); }
 .ch-prc-player {
   min-height: 44px;
   padding: 0 12px;

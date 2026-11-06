@@ -88,8 +88,8 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
             );
           if (b.kind === 'evidence') return <AskEvidenceView key={b.key} envelope={b.envelope} roster={players} />;
           if (b.kind === 'visual') return <CoachVisualArtifact key={b.key} artifact={b.artifact} />;
-          if (b.kind === 'plan') return <PlanCard key={b.key} plan={b.plan} onSend={onSend} fresh={fresh} />;
-          if (b.kind === 'brief' && b.brief.intake) return <PlanIntake key={b.key} brief={b.brief} onSend={onSend} />;
+          // A plan and its intake sit on the thread, beside this bubble (PP-2).
+          if (b.kind === 'plan' || (b.kind === 'brief' && b.brief.intake)) return null;
           if (b.kind === 'brief') return <BriefCard key={b.key} title={b.brief.title} questions={b.brief.questions} onDone={(_a, line) => onSend(line || 'Skip, just build')} />;
           if (b.kind === 'handoff') return <HandoffCard key={b.key} handoff={b.handoff} />;
           if (b.kind === 'composition') return <CoachComposition key={b.key} composition={b.composition} live={turn.active} />;
@@ -121,6 +121,11 @@ export function AnswerCard({ turn, fresh, showFollowUps, playersByName, players,
           </div>
         )}
       </article>
+      {turn.blocks.map((b) => {
+        if (b.kind === 'plan') return <PlanCard key={b.key} plan={b.plan} onSend={onSend} fresh={fresh} />;
+        if (b.kind === 'brief' && b.brief.intake) return <PlanIntake key={b.key} brief={b.brief} onSend={onSend} />;
+        return null;
+      })}
       {showFollowUps && !stopped && <FollowUps items={turn.followUps} onSend={onSend} />}
     </div>
   );

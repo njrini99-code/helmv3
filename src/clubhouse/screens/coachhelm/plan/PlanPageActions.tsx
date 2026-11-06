@@ -2,6 +2,9 @@
 import { Button } from '../../../ui/Button';
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useChPhone } from '../../../lib/use-phone';
+import { PhoneTop } from '../../../shell/phone-chrome';
 import { recordPracticePlanOpen } from '@/app/golf/actions/practice-plans';
 import { printPlan } from './PrintPlan';
 import type { PlanSheetModel } from './sheet/plan-sheet-model';
@@ -11,8 +14,11 @@ export function PlanPageActions({ plan, playerPlanId, editHref = null }: { plan:
   useEffect(() => {
     if (playerPlanId) void recordPracticePlanOpen({ planId: playerPlanId });
   }, [playerPlanId]);
+  const phone = useChPhone();
+  const router = useRouter();
   return (
     <div className="ch-prc-planacts">
+      {phone && <PhoneTop title="Practice plan" back={{ label: 'Practice', onBack: () => router.back() }} />}
       {editHref && (
         <Button variant="secondary" href={editHref}>
           Edit

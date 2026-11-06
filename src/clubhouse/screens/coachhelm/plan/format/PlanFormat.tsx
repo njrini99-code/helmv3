@@ -4,11 +4,14 @@ import { Button } from '../../../../ui/Button';
 
 import { Camera, Check, ChevronLeft, CircleCheck, Clock, FileText, Image as ImageIcon, Users } from 'lucide-react';
 import Link from 'next/link';
-import { useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useRef, useState, type ChangeEvent } from 'react';
 import { readPlanFormat, setPlanFormat, undoPlanFormat, type FormatSections } from '@/app/golf/actions/coachhelm-plan-format';
 import { createGolfDocument, uploadGolfDocument } from '@/app/golf/actions/documents';
 import { FormSheet } from '../../../../ui/FormSheet';
 import { Icon } from '../../../../ui/Icon';
+import { useChPhone } from '../../../../lib/use-phone';
+import { PhoneTop } from '../../../../shell/phone-chrome';
 import { useUndoWindow } from '../useUndoWindow';
 
 export type FormatView =
@@ -65,7 +68,13 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
   const [sheet, setSheet] = useState(startSheet);
   const [picked] = useState(startPicked);
   const [name, setName] = useState(current);
-  const input = useRef<HTMLInputElement>(null);
+  // Undo puts back the name the page had: the file just undone isn't the current format.
+  const before = useRef(current);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const libraryInput = useRef<HTMLInputElement>(null);
+  const cameraInput = useRef<HTMLInputElement>(null);
+  const phone = useChPhone();
+  const router = useRouter();
   const undoOpen = useUndoWindow(view.k === 'set' ? view.until : null);
   const pick = async (file: File) => {
     setSheet(false);
@@ -79,12 +88,18 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
     if (!res.success) return setView({ k: 'failed', message: res.error });
     setView({ k: 'found', file: file.name, documentId, sections: res.sections });
   };
+  const onFile = (e: ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) void pick(f);
+    e.target.value = '';
+  };
   const use = async () => {
     if (view.k !== 'found') return;
     const until = new Date(Date.now() + 8000).toISOString();
     if (preview) return setView({ k: 'set', file: view.file, id: 'preview', until });
     const res = await setPlanFormat({ documentId: view.documentId, name: view.file.replace(/\.[^.]+$/, ''), sections: view.sections });
     if (!res.success || !res.id) return setView({ k: 'failed', message: res.error ?? 'The format wasn’t set.' });
+    before.current = name;
     setName(view.file.replace(/\.[^.]+$/, ''));
     setView({ k: 'set', file: view.file, id: res.id, until });
   };
@@ -115,13 +130,15 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
   const shownName = view.k === 'set' ? view.file.replace(/\.[^.]+$/, '') : name;
   return (
     <main className="ch-page ch-cpv ch-cpv-fmt" data-ch="plan-format">
-      <div className="fbar is-page">
-        <Link href="/golf/dashboard/calendar" className="back">
-          <Icon icon={ChevronLeft} size={18} />
+      {phone ? (
+        <PhoneTop title="Plan format" back={{ label: 'Practice', onBack: () => router.push('/golf/dashboard/practice') }} />
+      ) : (
+        <Link href="/golf/dashboard/practice" className="ch-cpv-fmt__back">
+          <Icon icon={ChevronLeft} size={16} />
           Practice
         </Link>
-        <b>Plan format</b>
-      </div>
+      )}
+      {!phone && <h1 className="ch-cpv-fmt__t">Plan format</h1>}
       {view.k === 'reading' && (
         <section className="art">
           <header className="art-h">
@@ -191,7 +208,12 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
                 type="button"
                 onClick={() => {
                   if (preview) return setView({ k: 'empty' });
-                  void undoPlanFormat(view.id).then(() => setView({ k: 'empty' }));
+                  void undoPlanFormat(view.id)
+                    .then(() => {
+                      setName(before.current);
+                      setView({ k: 'empty' });
+                    })
+                    .catch(() => setView({ k: 'failed', message: 'That didn’t undo. Your format is still set.' }));
                 }}
               >
                 Undo
@@ -229,7 +251,10 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
         <span>Current format</span>
         <span className="m">{shownName}</span>
       </section>
-      <input ref={input} type="file" accept="application/pdf,image/*,.doc,.docx,.xls,.xlsx" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void pick(f); e.target.value = ''; }} />
+      {/* The three ways in differ: any file, the photo library, the camera itself. */}
+      <input ref={fileInput} type="file" accept="application/pdf,image/*,.doc,.docx,.xls,.xlsx" hidden onChange={onFile} />
+      <input ref={libraryInput} type="file" accept="image/*" hidden onChange={onFile} />
+      <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={onFile} />
       <FormSheet open={sheet} onClose={() => setSheet(false)} title="Upload a plan" actionLabel="Done" onAction={() => setSheet(false)}>
         <div className="ch-cpv ch-cpv-sheet">
           {picked ? (
@@ -248,15 +273,15 @@ export function PlanFormat({ teamId = '', initial = { k: 'empty' }, current = 'G
             </div>
           ) : (
             <div className="grp">
-              <button type="button" className="upopt" onClick={() => input.current?.click()}>
+              <button type="button" className="upopt" onClick={() => fileInput.current?.click()}>
                 <Icon icon={FileText} size={22} />
                 Choose file
               </button>
-              <button type="button" className="upopt" onClick={() => input.current?.click()}>
+              <button type="button" className="upopt" onClick={() => libraryInput.current?.click()}>
                 <Icon icon={ImageIcon} size={22} />
                 Photo library
               </button>
-              <button type="button" className="upopt" onClick={() => input.current?.click()}>
+              <button type="button" className="upopt" onClick={() => cameraInput.current?.click()}>
                 <Icon icon={Camera} size={22} />
                 Take a photo
               </button>

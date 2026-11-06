@@ -54,7 +54,7 @@ export type TaskVisual =
 
 export interface ActionProposal {
   /** A plan's publish: who hears (as coins) and one player's own line, for the card to draw. Every value is also in `facts`. */
-  publish?: { heading: string; coins: Array<{ name: string }>; tellsLine: string; folder: string; teamChat?: boolean; sample?: { player: string; title: string; body: string } | null };
+  publish?: { heading: string; coins: Array<{ name: string }>; coinsMore?: number; tellsLine: string; folder: string; teamChat?: boolean; sample?: { player: string; title: string; body: string } | null };
   /** What the quick chat draws in the card. Every value here is also in `facts`. */
   visual?: TaskVisual;
   /** Human-readable action, e.g. 'Create a recurring practice'. */

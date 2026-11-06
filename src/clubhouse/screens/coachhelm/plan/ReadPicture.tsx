@@ -88,16 +88,16 @@ export function ReadPicture({ picture }: { picture: ReadPictureData }) {
     <div className="ch-cpv-vz" data-vz="dr">
       <div className="fan">
         {picture.cards.slice(0, 3).map((c, i) => (
-          <div className="dc" key={c.name} style={{ transform: `translateX(${(i - 1) * 84}px) rotate(${(i - 1) * 5}deg)` }}>
-            {c.name}
+          <div className="dc" key={c.name} style={{ ['--ch-fan-i' as string]: i - 1 }}>
+            <b className="dcn">{c.name}</b>
             <span>
               <i className={`k-${c.kind}`} />
               {KIND[c.kind]}
             </span>
           </div>
         ))}
-        {picture.more > 0 && <span className="more ch-num">+{picture.more} more</span>}
       </div>
+      {picture.more > 0 && <span className="more ch-num">+{picture.more} more</span>}
     </div>
   );
 }

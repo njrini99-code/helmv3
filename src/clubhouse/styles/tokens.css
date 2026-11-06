@@ -202,6 +202,17 @@
   /* Type on green (hero band, scoreboard): a warm ivory, never white, set with a soft engraved shadow so it sits in
      the surface with depth (owner, 2026-10-06: "more ivory and text depth in the green"). */
   --ch-on-green-ink: #f4eedd;
+  /* Practice groups D to F. A to C live with the printed sheet; the sheet stays light in dark mode, so these don't change there. */
+  --ch-plan-group-b: #2f5b7e;
+  --ch-plan-group-c: #654a7e;
+  --ch-plan-group-d: #4a5a68;
+  --ch-plan-group-e: #5f5c55;
+  --ch-plan-group-f: #7b4b3a;
+  --ch-plan-group-b-night: #6e9bc0;
+  --ch-plan-group-c-night: #b49acb;
+  --ch-plan-group-d-night: #9db0bf;
+  --ch-plan-group-e-night: #b8b3a8;
+  --ch-plan-group-f-night: #d39a83;
   --ch-on-green-ink-soft: rgb(240 233 214 / 0.86);
   /* Meta on a green plate (the Calendar inspector's Next row, F-0039). The plate is green in both themes: no night value. */
   --ch-on-green-ink-meta: #d3e3d7;

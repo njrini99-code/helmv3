@@ -1404,7 +1404,7 @@ html:not([data-fw-theme='dark']) .ch-ask {
     display: none;
   }
   .ch-root:has(> .ch-cpv-full) .ch-ask-main {
-    margin-right: 452px;
+    margin-right: max(380px, min(452px, 45vw));
   }
 }
 

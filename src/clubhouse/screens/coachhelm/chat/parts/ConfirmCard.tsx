@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { AskProposalView } from '../../../../data/coachhelm-chat-thread';
 import { askLinkHref } from '../../../../data/coachhelm-chat-links';
+import { CoachMark } from '../CoachMark';
 import { Avatar } from '../../../../ui/Avatar';
 import { Badge } from '../../../../ui/Badge';
 import { Icon } from '../../../../ui/Icon';
@@ -177,6 +178,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
                     {p.publish.coins.map((c) => (
                       <Avatar key={c.name} name={c.name} size="xs" />
                     ))}
+                    {!!p.publish.coinsMore && <span className="more ch-num">+{p.publish.coinsMore}</span>}
                   </span>
                   <span className="tells">{p.publish.tellsLine}</span>
                   {undecided && onSend && (
@@ -214,7 +216,9 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
           <div className="ch-cpv-sample">
             <small>What {p.publish.sample.player} gets (each player sees their own start)</small>
             <div className="preview">
-              <span className="app" aria-hidden="true" />
+              <span className="app" aria-hidden="true">
+                <CoachMark />
+              </span>
               <span>
                 <b>{p.publish.sample.title}</b>
                 {p.publish.sample.body}
