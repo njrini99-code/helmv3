@@ -4015,10 +4015,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   display: grid;
   grid-template-rows: 0fr;
 }
-/* M12: the rows open 0fr to 1fr on the base beat while the fields fade in. */
-.ch-ms-pollf__custom {
-  transition: grid-template-rows var(--ch-dur-base) var(--ch-ease);
-}
+/* M12: the rows open at once, and the fields fade in; nothing animates a layout property (MOT-17). */
 .ch-ms-pollf__custom.is-open {
   grid-template-rows: 1fr;
 }

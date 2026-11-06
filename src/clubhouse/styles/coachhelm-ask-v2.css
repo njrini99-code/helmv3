@@ -485,7 +485,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .ch-ak-turn.is-new .qcard { animation: ch-ak-rise var(--ch-dur-spring-settle) var(--ch-ease-spring-settle) both; }
 .ch-ak-th .qpane.is-next { animation: ch-ak-pane-next var(--ch-dur-spring-send) var(--ch-ease-spring-send) both; }
 .ch-ak-th .qpane.is-back { animation: ch-ak-pane-back var(--ch-dur-spring-send) var(--ch-ease-spring-send) both; }
-.ch-ak-th .qdots i { transition: width var(--ch-dur-spring-settle) var(--ch-ease-spring-settle), background-color var(--ch-dur-base) var(--ch-ease); }
+.ch-ak-th .qdots i { transition: transform var(--ch-dur-spring-settle) var(--ch-ease-spring-settle), background-color var(--ch-dur-base) var(--ch-ease); }
 .ch-ak-th .opt { transition: background-color var(--ch-dur-base) var(--ch-ease), box-shadow var(--ch-dur-base) var(--ch-ease); }
 .ch-ak-th .opt .bx { display: grid; place-items: center; flex: none; width: 20px; height: 20px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ch-text-tertiary); color: var(--ch-text-on-accent); transition: background-color var(--ch-dur-base) var(--ch-ease), box-shadow var(--ch-dur-base) var(--ch-ease); }
 .ch-ak-th .opt.multi .bx { border-radius: var(--ch-radius-xs); }
@@ -766,3 +766,8 @@ html[data-fw-theme='dark'] .ch-ak-th {
 
 /* FID-ASK-15: low is amber, not a shorter green. */
 .ch-ak-meter i.is-low { background-image: linear-gradient(90deg, var(--ch-chart-loss-fill) var(--ch-ak-fill, 20%), transparent 0); }
+
+/* MOT-20: Undo is live for its whole 8 seconds, Reduce Motion or not: the ring's only job is to show the time left. */
+@media (prefers-reduced-motion: reduce) {
+  .ch-root .ch-ak-th .receipt .undo .drn { animation-duration: 8s !important; }
+}

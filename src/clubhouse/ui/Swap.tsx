@@ -21,7 +21,7 @@ export function Swap({
   dir = 1,
   className,
   inline = false,
-  resize = 'ease',
+  resize = 'instant',
   children,
 }: {
   swapKey: string | number;
