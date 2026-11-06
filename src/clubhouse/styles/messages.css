@@ -5934,7 +5934,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
 /* MOB-MSG-19: one page colour down to the dock. */
 .ch-msv-inbox { min-height: 100%; }
 /* MOB-MSG-21: the attach menu stays on screen over a keyboard. */
-[data-ch-ms-v2] .ch-msv-attach-menu { max-height: calc(var(--ch-vv-h, 100dvh) - 120px); overflow: auto; }
+[data-ch-ms-v2] .ch-msv-attach { max-height: calc(var(--ch-vv-h, 100dvh) - 120px); overflow: auto; }
 /* MOB-MSG-28 */
 .ch-msv-files { scroll-margin-top: calc(env(safe-area-inset-top) + var(--ch-phone-topbar-h)); }
 /* MOB-MSG-23: a photo, opened. */
