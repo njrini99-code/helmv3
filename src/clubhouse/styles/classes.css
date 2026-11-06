@@ -990,6 +990,7 @@
 }
 .ch-cl-read__doc {
   position: relative;
+  container-type: size;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1027,7 +1028,8 @@
     transform: translateY(-34px);
   }
   to {
-    transform: translateY(130px);
+    /* The box's own height, whatever it is (MOT-44). */
+    transform: translateY(100cqh);
   }
 }
 [data-ui='clubhouse'][data-motion='off'] .ch-cl-read__scan,

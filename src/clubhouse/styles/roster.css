@@ -278,6 +278,7 @@
 }
 /* Pressing drops the hover lift. A card never scales: the shell's press is for keys (lib/press.ts, CH-1606). */
 .ch-rs-face:not(.ch-rs-face--static)[data-ch-pressed] {
+  background: var(--ch-ledger-row-press);
   transform: translateY(0);
 }
 @media (hover: hover) {
@@ -2558,7 +2559,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 }
 .ch-rs-sp__coins .ch-avatar {
   box-shadow: 0 0 0 3px var(--ch-ivory-25), var(--ch-elevation-mark-ink);
-  transition: transform var(--ch-dur-quick) var(--ch-ease-spring);
+  transition: transform var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-rs-sp__coins button:hover .ch-avatar {
@@ -3105,6 +3106,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     gap: 12px;
     width: 100%;
     min-height: 64px;
+    margin: 0;
     padding: 8px 16px;
     border: 0;
     border-radius: 0;
@@ -3742,7 +3744,8 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     border: 0;
     border-radius: var(--ch-radius-md);
     background: var(--ch-separator);
-    box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-separator);
+    /* Its outer hairline, drawn as the design's figure grid: an edge, not a lift. */
+    outline: var(--ch-hairline-w) solid var(--ch-separator);
   }
   [data-ch-crh='on'].ch-rsd .ch-rs-peek__figs div,
   [data-ch-crh='on'].ch-rsd .ch-rs-peek__figs div:first-child {

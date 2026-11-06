@@ -5800,7 +5800,15 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-hm--player[data-ch-crh='on'] .ch-hm-sec {
     padding-bottom: 12px;
   }
-  .ch-hm--player[data-ch-crh='on'] .ch-hm-sec > :not(.ch-hm-sec__h, .ch-hm-form__head) {
+  .ch-hm--player[data-ch-crh='on'] .ch-hm-sec > :not(.ch-hm-sec__h, .ch-hm-form__head, .ch-hm-week, .ch-ph-card) {
     margin-inline: 16px;
+  }
+  .ch-hm--player[data-ch-crh='on'] .ch-ph-card > :not(.ch-ph-nines) {
+    margin-inline: 16px;
+  }
+  /* The scorecard is the card's own band, not a card in the card. */
+  .ch-hm--player[data-ch-crh='on'] .ch-ph-nines {
+    border-radius: 0;
+    box-shadow: none;
   }
 }
