@@ -34,7 +34,7 @@
 -- VERIFY: select 1 where (select count(*) from pg_policies where schemaname = 'realtime' and tablename = 'messages' and policyname in ('golf_typing_receive', 'golf_typing_send')) = 2;
 -- VERIFY: select 1 where public.golf_typing_topic_allowed(null) = false and public.golf_typing_topic_allowed('golf-typing:not-a-uuid') = false;
 --
--- ROLLBACK (one transaction; typing then has no private topic, the clients fall back to the public one):
+-- ROLLBACK: (one transaction; typing then has no private topic, the clients fall back to the public one):
 --   drop policy if exists golf_typing_send on realtime.messages;
 --   drop policy if exists golf_typing_receive on realtime.messages;
 --   drop function if exists public.golf_typing_topic_allowed(text);
@@ -59,7 +59,7 @@ RETURNS boolean
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = ''
 AS $$
 DECLARE
   m text[];

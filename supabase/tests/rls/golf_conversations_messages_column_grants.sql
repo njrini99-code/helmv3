@@ -77,13 +77,13 @@ END $$;
 SELECT ok(
   NOT has_table_privilege('authenticated', 'public.golf_conversations', 'UPDATE')
   AND has_column_privilege('authenticated', 'public.golf_conversations', 'updated_at', 'UPDATE')
-  AND has_column_privilege('authenticated', 'public.golf_conversations', 'title', 'UPDATE')
+  AND NOT has_column_privilege('authenticated', 'public.golf_conversations', 'title', 'UPDATE')
   AND NOT has_column_privilege('authenticated', 'public.golf_conversations', 'created_by', 'UPDATE')
   AND NOT has_column_privilege('authenticated', 'public.golf_conversations', 'team_id', 'UPDATE')
   AND NOT has_column_privilege('authenticated', 'public.golf_conversations', 'is_team_chat', 'UPDATE')
   AND NOT has_column_privilege('authenticated', 'public.golf_conversations', 'is_team_channel', 'UPDATE')
   AND NOT has_column_privilege('authenticated', 'public.golf_conversations', 'created_at', 'UPDATE'),
-  'conversations: authenticated may update title and updated_at only'
+  'conversations: authenticated may update updated_at only (review 2026-11-07: no Golf code writes title)'
 );
 SELECT ok(
   NOT has_table_privilege('authenticated', 'public.golf_messages', 'UPDATE')
@@ -91,7 +91,7 @@ SELECT ok(
   AND has_column_privilege('authenticated', 'public.golf_messages', 'edited_at', 'UPDATE')
   AND has_column_privilege('authenticated', 'public.golf_messages', 'is_deleted', 'UPDATE')
   AND has_column_privilege('authenticated', 'public.golf_messages', 'payload', 'UPDATE')
-  AND has_column_privilege('authenticated', 'public.golf_messages', 'read', 'UPDATE')
+  AND NOT has_column_privilege('authenticated', 'public.golf_messages', 'read', 'UPDATE')
   AND has_column_privilege('authenticated', 'public.golf_messages', 'has_attachments', 'UPDATE')
   AND NOT has_column_privilege('authenticated', 'public.golf_messages', 'conversation_id', 'UPDATE')
   AND NOT has_column_privilege('authenticated', 'public.golf_messages', 'sender_id', 'UPDATE')
@@ -135,9 +135,9 @@ SELECT throws_ok(
 SELECT lives_ok(
   $$UPDATE public.golf_conversations SET updated_at = '2026-11-02 12:00:00+00' WHERE id = '00000000-0000-0000-0000-0000000f22a1'$$,
   'B can still bump updated_at (every send does)');
-SELECT lives_ok(
+SELECT throws_ok(
   $$UPDATE public.golf_conversations SET title = 'Renamed' WHERE id = '00000000-0000-0000-0000-0000000f22a1'$$,
-  'B can still set a title (granted; no Golf UI writes it today)');
+  '42501', NULL, 'B cannot rename a conversation (no Golf code writes title)');
 
 SELECT throws_ok(
   $$INSERT INTO public.golf_conversations (created_by, title) VALUES ('00000000-0000-0000-0000-0000000f21a1', 'forged owner')$$,
@@ -201,9 +201,9 @@ SELECT lives_ok(
 SELECT lives_ok(
   $$UPDATE public.golf_messages SET has_attachments = false WHERE id = '00000000-0000-0000-0000-0000000f23b3'$$,
   'the attachment compensation write: has_attachments');
-SELECT lives_ok(
+SELECT throws_ok(
   $$UPDATE public.golf_messages SET read = true WHERE id = '00000000-0000-0000-0000-0000000f23b3'$$,
-  'read stays writable (granted; only the definer RPC writes it today)');
+  '42501', NULL, 'read is not client-writable (only the definer RPC writes it)');
 -- The INVOKER trigger update_message_has_attachments() updates has_attachments as the sender.
 SELECT lives_ok(
   $$INSERT INTO public.golf_message_attachments (message_id, file_name, file_type, mime_type, file_size, storage_path)

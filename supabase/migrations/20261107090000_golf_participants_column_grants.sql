@@ -34,7 +34,7 @@
 -- VERIFY: select 1 where not has_column_privilege('authenticated', 'public.golf_conversation_participants', 'conversation_id', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_conversation_participants', 'user_id', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_conversation_participants', 'id', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_conversation_participants', 'joined_at', 'UPDATE');
 -- VERIFY: select 1 from pg_trigger where tgrelid = 'public.golf_conversation_participants'::regclass and tgname = 'golf_participants_identity_guard' and not tgisinternal;
 --
--- ROLLBACK (one transaction; re-opens the hole, use only to restore a broken writer while a fix is prepared):
+-- ROLLBACK: (one transaction; re-opens the hole, use only to restore a broken writer while a fix is prepared):
 --   drop trigger if exists golf_participants_identity_guard on public.golf_conversation_participants;
 --   drop function if exists public.golf_participants_identity_guard();
 --   grant update on public.golf_conversation_participants to authenticated;

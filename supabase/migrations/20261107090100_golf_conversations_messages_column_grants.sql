@@ -22,7 +22,7 @@
 --   someone else (and make that person the add/remove authority).
 --
 -- The fix:
---   1. Column grants. golf_conversations: UPDATE (title, updated_at). golf_messages: UPDATE (content, edited_at, is_deleted,
+--   1. Column grants. golf_conversations: UPDATE (updated_at). golf_messages: UPDATE (content, edited_at, is_deleted,
 --      payload, read, has_attachments). Everything else becomes read-only to clients. pinned_at / pinned_by / reply_to_id /
 --      kind / notify_anyway* are not writable by clients either (notify_anyway* are also guarded by their own trigger).
 --   2. BEFORE UPDATE guards that freeze identity columns for authenticated and anon sessions even if a grant is widened:
@@ -47,7 +47,7 @@
 -- VERIFY: select 1 where (select count(*) from pg_trigger where not tgisinternal and tgname in ('golf_conversations_identity_guard', 'golf_messages_identity_guard')) = 2;
 -- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_conversations' and policyname = 'golf_conversations_insert_v2' and with_check like '%created_by%';
 --
--- ROLLBACK (one transaction; re-opens the holes, use only to restore a broken writer while a fix is prepared):
+-- ROLLBACK: (one transaction; re-opens the holes, use only to restore a broken writer while a fix is prepared):
 --   drop trigger if exists golf_messages_identity_guard on public.golf_messages;
 --   drop trigger if exists golf_conversations_identity_guard on public.golf_conversations;
 --   drop function if exists public.golf_messages_identity_guard();
@@ -96,10 +96,10 @@ END $$;
 -- 1. Grants ------------------------------------------------------------------
 
 REVOKE UPDATE ON public.golf_conversations FROM PUBLIC, anon, authenticated;
-GRANT UPDATE (title, updated_at) ON public.golf_conversations TO authenticated;
+GRANT UPDATE (updated_at) ON public.golf_conversations TO authenticated;
 
 REVOKE UPDATE ON public.golf_messages FROM PUBLIC, anon, authenticated;
-GRANT UPDATE (content, edited_at, is_deleted, payload, read, has_attachments)
+GRANT UPDATE (content, edited_at, is_deleted, payload, has_attachments)
 ON public.golf_messages TO authenticated;
 
 REVOKE ALL ON public.golf_conversations FROM anon;

@@ -178,8 +178,6 @@ GRANT ALL ON SEQUENCE "public"."golf_conversation_read_marks_id_seq" TO "service
 
 GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."golf_conversations" TO "authenticated";
 
-GRANT UPDATE("title") ON TABLE "public"."golf_conversations" TO "authenticated";
-
 GRANT UPDATE("updated_at") ON TABLE "public"."golf_conversations" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_conversations" TO "service_role";
@@ -375,8 +373,6 @@ GRANT UPDATE("edited_at") ON TABLE "public"."golf_messages" TO "authenticated";
 GRANT UPDATE("is_deleted") ON TABLE "public"."golf_messages" TO "authenticated";
 
 GRANT UPDATE("payload") ON TABLE "public"."golf_messages" TO "authenticated";
-
-GRANT UPDATE("read") ON TABLE "public"."golf_messages" TO "authenticated";
 
 GRANT UPDATE("has_attachments") ON TABLE "public"."golf_messages" TO "authenticated";
 
