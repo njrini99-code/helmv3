@@ -65,7 +65,7 @@
   min-width: 0;
   max-width: var(--ch-measure-reading);
 }
-.ch-tour.is-phone .ch-tour-lu-body {
+.ch-tour-lu.is-phone .ch-tour-lu-body {
   gap: 20px;
 }
 .ch-tour-lu-notes {
@@ -179,14 +179,14 @@
   font: var(--ch-type-13-medium);
   color: var(--ch-text-primary);
 }
-.ch-tour.is-phone .ch-tour-lu-slot,
-.ch-tour.is-phone .ch-tour-lu-r {
+.ch-tour-lu.is-phone .ch-tour-lu-slot,
+.ch-tour-lu.is-phone .ch-tour-lu-r {
   padding: 12px;
 }
-.ch-tour.is-phone .ch-tour-lu-r {
+.ch-tour-lu.is-phone .ch-tour-lu-r {
   flex-wrap: wrap;
 }
-.ch-tour.is-phone .ch-tour-lu-r__act {
+.ch-tour-lu.is-phone .ch-tour-lu-r__act {
   width: 100%;
   justify-content: space-between;
 }

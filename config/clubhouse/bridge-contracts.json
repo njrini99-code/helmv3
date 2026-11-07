@@ -21303,6 +21303,17 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 160422,
+    "page": "P016",
+    "category": 4,
+    "item": 22,
+    "name": "LIVE_ROUND_NOBODY_IS_IN_THE_ROUND",
+    "chCode": "CH-16370",
+    "meaning": "Live round: nobody is in the round (no lineup, no individuals)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
     "id": 160601,
     "page": "P016",
     "category": 6,
@@ -21589,6 +21600,39 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 160627,
+    "page": "P016",
+    "category": 6,
+    "item": 27,
+    "name": "LIVE_ROUND_SAVING_A_SCORE_FAILS_OR",
+    "chCode": "CH-16070",
+    "meaning": "Live round: saving a score fails or is refused (not in the round’s lineup, not signed in, not set up)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160628,
+    "page": "P016",
+    "category": 6,
+    "item": 28,
+    "name": "LIVE_ROUND_STARTING_SUSPENDING_RESUMING_OR_FINISHING",
+    "chCode": "CH-16071",
+    "meaning": "Live round: starting, suspending, resuming or finishing the round fails or is refused (rounds out of order, a state it can’t move to)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160629,
+    "page": "P016",
+    "category": 6,
+    "item": 29,
+    "name": "LIVE_ROUND_THE_HOLES_OF_LINKED_GOLFHELM",
+    "chCode": "CH-16271",
+    "meaning": "Live round: the holes of linked GolfHelm rounds fail to load (`errors.holes`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
     "id": 160701,
     "page": "P016",
     "category": 7,
@@ -21662,6 +21706,17 @@
     "name": "LOCK_THE_LINEUP_FROM_THE_LINEUP_BUILDER",
     "chCode": "CH-16560",
     "meaning": "Lock the lineup, from the lineup builder",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161104,
+    "page": "P016",
+    "category": 11,
+    "item": 4,
+    "name": "FINISH_THE_ROUND_FROM_THE_LIVE_ROUND",
+    "chCode": "CH-16570",
+    "meaning": "Finish the round, from the live round",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },

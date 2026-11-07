@@ -38,7 +38,7 @@ const VIEWS: Array<[string, (load: ChTourLoad) => ReactElement]> = [
   ['player', (load) => <PlayerEvent data={f.player.events.e33!} load={load} />],
 ];
 
-const BUILT = new Set(['home', 'desk', 'review', 'history', 'compare', 'form', 'links', 'lineup']);
+const BUILT = new Set(['home', 'desk', 'review', 'history', 'compare', 'form', 'links', 'lineup', 'live']);
 const BUILT_VIEWS = VIEWS.filter(([v]) => BUILT.has(v));
 const PLACEHOLDERS = VIEWS.filter(([v]) => !BUILT.has(v));
 
@@ -82,9 +82,7 @@ describe('Tournaments views (base placeholders)', () => {
   });
 
   it('reads each view’s own data into its line', () => {
-    const { container } = render(<LiveRound data={f.live} />);
-    expect(container.textContent).toContain('Team −1');
-    cleanup();
+    // The live round reads its own data in tournaments-live.test; the live team line is asserted there.
     expect(render(<EventDesk data={f.desks.e33!} search={{ tab: 'counted', round: 'all', view: 'team', holes: 'to-par' }} />).container.textContent).toContain('Oakmont Fall Classic');
   });
 

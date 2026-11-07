@@ -103,6 +103,7 @@ no rounds to link, and so on) are its lane's rows.
 | 160419 | CH-16338 | `LINK_ROUNDS_NO_GOLFHELM_ROUND_IS_WAITING` | Link rounds: no GolfHelm round is waiting to be linked (the read worked) |
 | 160420 | CH-16362 | `LINEUP_THE_TEAM_HAS_NO_PLAYERS_ON` | Lineup: the team has no players on its roster (the read worked) |
 | 160421 | CH-16363 | `LINEUP_A_PLAYER_IN_THE_DRAFT_IS` | Lineup: a player in the draft is injured, out for academics, not travelling, or has left the team |
+| 160422 | CH-16370 | `LIVE_ROUND_NOBODY_IS_IN_THE_ROUND` | Live round: nobody is in the round (no lineup, no individuals) |
 
 ## 05 — Validation
 
@@ -147,6 +148,9 @@ flags and its lane's rows.
 | 160624 | CH-16063 | `LINEUP_PUBLISHING_FAILS_OR_IS_REFUSED` | Lineup: publishing fails or is refused (the save before it is refused, or the publish itself) |
 | 160625 | CH-16064 | `LINEUP_LOCKING_FAILS_OR_IS_REFUSED` | Lineup: locking fails or is refused |
 | 160626 | CH-16262 | `LINEUP_THE_ROSTER_READ_FAILS` | Lineup: the roster read fails (`errors.roster`) |
+| 160627 | CH-16070 | `LIVE_ROUND_SAVING_A_SCORE_FAILS_OR` | Live round: saving a score fails or is refused (not in the round’s lineup, not signed in, not set up) |
+| 160628 | CH-16071 | `LIVE_ROUND_STARTING_SUSPENDING_RESUMING_OR_FINISHING` | Live round: starting, suspending, resuming or finishing the round fails or is refused (rounds out of order, a state it can’t move to) |
+| 160629 | CH-16271 | `LIVE_ROUND_THE_HOLES_OF_LINKED_GOLFHELM` | Live round: the holes of linked GolfHelm rounds fail to load (`errors.holes`) |
 
 ## 07 — Network / offline
 
@@ -211,6 +215,7 @@ warning haptic. Restore is the safe direction and doesn't ask.
 | 161101 | CH-16550 | `STOP_TRACKING_FROM_THE_DESKS_TOURNAMENT_MENU` | Stop tracking, from the desk's tournament menu (P-5) |
 | 161102 | CH-16551 | `CANCEL_TOURNAMENT_FROM_THE_DESKS_TOURNAMENT_MENU` | Cancel tournament, from the desk's tournament menu (P-5; the calendar's CH-6541) |
 | 161103 | CH-16560 | `LOCK_THE_LINEUP_FROM_THE_LINEUP_BUILDER` | Lock the lineup, from the lineup builder |
+| 161104 | CH-16570 | `FINISH_THE_ROUND_FROM_THE_LIVE_ROUND` | Finish the round, from the live round |
 
 ## 12 — State preservation
 

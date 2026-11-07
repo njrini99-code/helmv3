@@ -43,6 +43,7 @@ import {
   type TourTeamSeasonRow,
 } from '@/lib/golf/tournaments-tables';
 import { candidateStats } from '../screens/tournaments/lineup-model';
+import { buildLive, type LiveHoleRow } from '../screens/tournaments/live-model';
 import { setupGroups } from '../screens/tournaments/setup-groups';
 import type {
   ChTourCompareData,
@@ -1004,18 +1005,35 @@ export async function loadTournamentLineup(ctx: TourCtx, eventId: string): Promi
   });
 }
 
-/** The live round is held file 6 (100500, not written): the snapshot is the event's own state, with no hole feed. */
-export async function loadTournamentLive(ctx: TourCtx, eventId: string): Promise<TourLoad<ChTourLiveSnapshot>> {
+/**
+ * The live round (a round of the event: the one in play, else the next, else the last, or `?round=`). The hole-by-hole
+ * feed, moments and presence are held file 6 (100500, not written), so they stay empty. What is live is real: the entered
+ * and linked totals the event already holds, and the holes a linked GolfHelm round has scored so far (`golf_holes`, the
+ * rows Fairway's round tracker writes), combined by the scoring engine into the team's live line (`live-model.ts`).
+ * Tournament tables are not in the realtime publication, so the screen re-reads this on a timer.
+ */
+export async function loadTournamentLive(ctx: TourCtx, eventId: string, roundNumber: number | null = null): Promise<TourLoad<ChTourLiveSnapshot>> {
   return guard<ChTourLiveSnapshot>('live', async () => {
     const info = await readTeam(ctx);
     const seasonEnd = Number(seasonIdOf(info.today).slice(0, 4)) + 1;
     const [read, players] = await Promise.all([readEvents(ctx, info.team.timezone, { ids: [eventId] }), readPlayers(ctx, seasonEnd)]);
     const event = read.events[0];
     if (!event) return { kind: 'missing' };
-    const round = event.rounds.find((r) => r.status === 'live' || r.status === 'suspended') ?? event.rounds.find((r) => r.status === 'upcoming') ?? event.rounds[event.rounds.length - 1];
+    const round =
+      (roundNumber != null ? event.rounds.find((r) => r.number === roundNumber) : undefined) ??
+      event.rounds.find((r) => r.status === 'live' || r.status === 'suspended') ??
+      event.rounds.find((r) => r.status === 'upcoming') ??
+      event.rounds[event.rounds.length - 1];
     if (!round) return { kind: 'missing' };
-    const team = event.team.rounds.find((r) => r.roundNumber === round.number);
     const course: ChTourCourse = read.courses[round.courseId] ?? { id: round.courseId, name: '', tees: '', par: round.par, rating: null, holes: [] };
+    // Linked GolfHelm rounds with no final total yet are still being played: read the holes they have scored so far.
+    const open = event.playerRounds.filter((p) => p.roundNumber === round.number && p.roundId && p.total == null).map((p) => p.roundId!);
+    const holes = await section('live', 'holes', () =>
+      allIn<TourHoleRow>('liveHoles', open, (chunk, from, to) => ctx.supabase.from('golf_holes').select('round_id, hole_number, par, score').in('round_id', chunk).order('round_id').order('hole_number').range(from, to)),
+    );
+    const byRound = new Map<string, LiveHoleRow[]>();
+    for (const h of holes.ok ? holes.value : []) byRound.set(h.round_id, [...(byRound.get(h.round_id) ?? []), { roundId: h.round_id, hole: h.hole_number, par: h.par, score: h.score }]);
+    const built = buildLive(event, round, byRound);
     return {
       kind: 'ready',
       data: {
@@ -1025,14 +1043,14 @@ export async function loadTournamentLive(ctx: TourCtx, eventId: string): Promise
         round,
         players,
         course,
-        lanes: [],
-        team: team ?? { kind: 'none', total: null, toPar: null, counting: [], dropped: [], tiedAtBoundary: [] },
+        lanes: built.lanes,
+        team: built.team,
         field: event.field,
         presence: [],
         appScoring: 'off',
         moments: [],
         projection: null,
-        errors: {},
+        errors: holes.ok ? {} : { holes: true },
       },
     };
   });
