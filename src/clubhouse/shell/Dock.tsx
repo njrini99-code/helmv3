@@ -190,7 +190,7 @@ function DiscardRoundModal({ round, playerId, open, onClose }: { round: ChRoundI
   );
 }
 
-/** Desktop: the sidebar's card slot while a round is open ("Round in progress · Resume"),  */
+/** Desktop: the sidebar's card slot while a round is open ("Round in progress · Resume"), in place of the next event. */
 export function ResumeRoundCard({ round }: { round: ChRoundInProgress }) {
   const href = resumeRoundHref(round);
   if (!href) return null;
