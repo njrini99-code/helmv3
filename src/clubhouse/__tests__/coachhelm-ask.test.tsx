@@ -227,9 +227,6 @@ describe('CH-13923 the sub-tab strip', () => {
   });
 });
 
-describe('the new chat page (desktop)', () => {
-});
-
 describe('the composer', () => {
   it('Enter sends on a fine pointer, with the press haptic, and the box empties; Shift+Enter is a new line', async () => {
     const { chat } = show();
