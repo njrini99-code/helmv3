@@ -111,15 +111,16 @@ function useSkeletonReveal(frame: RefObject<HTMLDivElement | null>, routeKey: st
       const crossfade = skeleton instanceof HTMLElement && skeleton.dataset.chArrive === 'crossfade';
       const duration = (crossfade ? CH_DUR.quick : CH_DUR.press) * 1000;
       const easing = `cubic-bezier(${CH_EASE.join(', ')})`;
-      for (const n of arrived) {
-        if (arrived.some((o) => o !== n && o.contains(n))) continue;
+      const tops = arrived.filter((n) => !arrived.some((o) => o !== n && o.contains(n)));
+      for (const n of tops) {
         const fade = n.animate?.([{ opacity: 0 }, { opacity: 1 }], { duration, easing });
         // Held at its first frame until the page has painted: a big page can keep the thread busy past the whole fade,
         // and a fade timed from the swap would then be over before anyone saw it.
         fade?.pause();
         requestAnimationFrame(() => fade?.play());
-        if (crossfade && skeleton && performance.now() - since >= VT_DONE_MS + CH_DUR.base * 1000) fadeOutGhost(skeleton, n, duration, easing);
       }
+      // One skeleton left, so one copy, however many nodes took its place.
+      if (crossfade && skeleton && tops[0] && performance.now() - since >= VT_DONE_MS + CH_DUR.base * 1000) fadeOutGhost(skeleton, tops[0], duration, easing);
     });
     watch.observe(el, { childList: true, subtree: true });
     return () => {

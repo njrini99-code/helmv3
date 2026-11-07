@@ -184,7 +184,7 @@ function viewOf(evidence: Record<string, unknown>, role: 'coach' | 'player' = 'c
 }
 
 describe('READ-S1 how sure, in a coach’s words', () => {
-  const LEAK = /recency|variance|not measured|sample-adequacy|adequate|of target|observations;/i;
+  const LEAK = /recency|variance|not measured|sample-adequacy|adequate|of target|observations?[;.]/i;
   const stored = { metric: 'approach_proximity_50_125ft', unit: 'percent', window_basis: undefined, detail: {}, sample_n: 27, confidence: 0.9, confidence_factors: { sample_adequacy: 0.9, recency: 1, variance: 0.5, factors_measured: false } };
   const diagnosis = (confidence_reason: string) => ({ symptom: 'Greens hit', root_cause: 'Long approaches finish short of the green', causality_level: 'observed_sequence', drivers: [], recommended_action: 'Work on carry', confidence_reason });
 
@@ -197,12 +197,17 @@ describe('READ-S1 how sure, in a coach’s words', () => {
     '27 observations; recency/variance not measured (sample-adequacy only); sample 90% of target',
     '27 observations; recency measured 0.80; variance measured 0.60; sample adequate',
     'sample adequate',
+    '27 observations. Enough for a solid read.',
   ])('a row stored with “%s” does not reach the page, on any card', (reason) => {
     show(viewOf({ ...stored, diagnosis: diagnosis(reason) }), COACH);
     const main = screen.getByRole('main');
     // The legacy Why card is what drew it: it is here, with the cause and without the reason.
     expect(main.querySelector('#cwhy')?.textContent).toContain('Long approaches finish short of the green');
     expect(main.textContent).not.toMatch(LEAK);
+    expect(main.querySelector('#cwhy')?.textContent).not.toContain('Enough for');
+    expect(main.querySelector('#cwhy .q')).toBeNull();
+    // The sentence is How sure's, once.
+    expect(main.textContent?.match(/Enough for a solid read/g)).toHaveLength(1);
   });
 
   it('a reason a person wrote still reads', () => {

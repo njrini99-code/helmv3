@@ -39,7 +39,12 @@ export function ReadSkeleton() {
       ) : (
         <div className="ch-hr-desk" aria-hidden="true">
           <Skeleton height={420} radius={16} />
-          <div className="ch-hr-col">{col.slice(0, 2)}</div>
+          <div className="ch-hr-col">
+            <div className="ch-hr-deskbar">
+              <Skeleton width={36} height={36} radius={12} />
+            </div>
+            {col.slice(0, 2)}
+          </div>
           <div className="ch-hr-col is-evidence">{col.slice(2)}</div>
         </div>
       )}
