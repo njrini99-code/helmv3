@@ -2,13 +2,13 @@
 
 Traced on staging against Cole Bennett's rows. Each number is reproduced from
 his rounds by hand, so these are causes, not guesses.
+
 - His Home: −8.1 (tee −1.4, app −4.4). `summarizePlayer`, season from Aug 1,
   his own rows, practice out, 11 rounds with shots.
 - Stats, Last 10: −7.3. `summarizeWindow`, newest 10, his own rows, practice
   out, 8 with shots of 10.
 - Coach Team view (QA build): +0.5 (tee +2.5, app +1.9). `figureOver`, season,
   coach-visible rows, practice in, 3 Aug 2 practice rounds.
-| Coach Team view (QA build) | +0.5 (tee +2.5, app +1.9) | `figureOver` | Season | Coach-visible rows, practice in | 3 Aug 2 practice rounds |
 
 Baseline is not a cause: all three read the stored `strokes_gained_*` columns.
 
