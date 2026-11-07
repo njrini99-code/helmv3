@@ -9,6 +9,29 @@ wins; the stale ones found by this audit are listed at the end. `PROGRESS.md`
 keeps the full history (gates, decisions, questions, data gaps, verification
 log). What is left, and who has it: [QUEUE.md](QUEUE.md).
 
+## Current state (2026-11-07)
+
+- **One version of every page.** The owner decided the redesign replaces the old
+  Clubhouse pages. The 13 redesign flags (`clubhouse_refresh_v1`,
+  `clubhouse_classes_roster_home_v1`, `clubhouse_stats_redesign_v1`,
+  `golf_messages_redesign_v1`, `coachhelm_read_v1`, `coachhelm_ask_v2`,
+  `coachhelm_player_ask_v1`, `coachhelm_quick_chat_v1`, `coachhelm_player_file_v1`,
+  `coachhelm_team_board_v1`, `coachhelm_practice_plans_v1`, `golf_practice_plans`,
+  `golf_documents_library`) are retired: the redesign is the only code path, the old
+  screens, `pre-refresh.css` and the tests that covered only them are deleted, and
+  `src/clubhouse/__tests__/redesign-shared-guards.test.ts` keeps the ids from coming back.
+- **Flags that remain.** `golf_clubhouse_ui` is on in production behind the
+  `HELM_CLUBHOUSE_TEAMS` allowlist. `golf_clubhouse_front_door` is on.
+  `golf_tournaments_v1` is unchanged (Tournaments is the owner's call).
+- **Production** still serves the Oct 21 code (`d0f467a73`) with the held migrations
+  unapplied: nothing in this branch is deployed. Practice and Ask v2 need the
+  held migrations (`supabase/migrations/HELD.md`) applied before a deploy; until then
+  their reads answer "not set up" rather than failing.
+- **Databases.** Vercel Preview and Development use a second Supabase project, "PROSP DATA"
+  (`ybmwektreyrwjscxlogv`), a copy of production from 2026-10-28; production is `qmnssrrolpinvwjjnufo`.
+
+The sections below are the history up to that point.
+
 ## Release plan: owner decisions (2026-10-28)
 
 The owner settled the open release calls on 2026-10-28 ("Go with your

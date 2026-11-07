@@ -189,12 +189,12 @@ describe('Cmd or Ctrl and 1 to 9 (owner, decision 13)', () => {
 
   it('numbers a coach\'s and a player\'s first nine sections; the tenth has only its letter', () => {
     expect([1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => itemForDigit('coach', d)?.id)).toEqual([
-      'home', 'coachhelm', 'calendar', 'messages', 'hub', 'roster', 'stats', 'rounds', 'qualifiers',
+      'home', 'coachhelm', 'calendar', 'practice', 'messages', 'hub', 'roster', 'stats', 'rounds',
     ]);
     expect(digitFor('coach', 'recruiting')).toBeUndefined();
     expect(letterFor('coach', 'recruiting')).toBe('e');
     expect([1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => itemForDigit('player', d)?.id)).toEqual([
-      'home', 'coachhelm', 'calendar', 'messages', 'hub', 'roster', 'qualifiers', 'rounds', 'stats',
+      'home', 'coachhelm', 'calendar', 'practice', 'messages', 'hub', 'roster', 'qualifiers', 'rounds',
     ]);
     expect(digitFor('player', 'classes')).toBeUndefined();
     expect(itemForDigit('coach', 0)).toBeUndefined();

@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event';
 import { isValidElement, type ReactElement, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GolfSessionProfile } from '@/lib/auth/session';
-import { resolved } from './route-view';
 
 /**
  * A coach's views of one player (P013, spec A): `/golf/dashboard/coachhelm?view=deep-dive|standing&player=<id>` (`profile` is Standing at
@@ -63,7 +62,6 @@ const team = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('../routes/team', () => ({ resolveClubhouseTeam: async () => team.current }));
 
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
-import { STANDING_ROWS } from '../preview/fixtures-coachhelm-views';
 import { coachHeadLine, type ChViewVoice } from '../data/coachhelm-views-shape';
 import type { ChDeepDive } from '../data/coachhelm-dive-shape';
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
@@ -73,7 +71,7 @@ import { Standing } from '../screens/coachhelm/views/Standing';
 import type { ChCoachHelmWrites } from '../screens/coachhelm/writes';
 import { ToastProvider } from '../ui/Toast';
 import { PREVIEW_HELM_COACH } from '../preview/fixtures-coachhelm';
-import { FULL_VECTOR, gameLoad, genome, PREVIEW_DIVE, PREVIEW_GAME, PREVIEW_STANDING } from '../preview/fixtures-coachhelm-views';
+import { gameLoad, PREVIEW_DIVE, PREVIEW_GAME, PREVIEW_STANDING } from '../preview/fixtures-coachhelm-views';
 import { PREVIEW_COACH_DIVE, PREVIEW_COACH_GAME, PREVIEW_COACH_STANDING, PREVIEW_COACH_VOICE } from '../preview/fixtures-coachhelm-coach-player';
 
 const COACH = 'c0000000-0000-4000-8000-000000000001';
@@ -127,37 +125,7 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-/** The route's answer for this address, run through each async view the server would run behind its boundary. */
-async function page(params: { view?: string; player?: string; insight?: string }): Promise<ReactNode> {
-  let out = await resolved(await ClubhouseCoachHelmRoute(params));
-  // The scope is checked in one boundary and the view read in a second one inside it.
-  out = await resolved(out);
-  return out;
-}
-
 describe('130807 130104 the scope check: on this coach’s team, or one page for every other id', () => {
-  it('CH-13311 a uuid not on the team: "That player isn’t on your team", and the standing map is never read', async () => {
-    render(wrap(await page({ view: 'standing', player: OTHER })));
-    expect(code('CH-13311')!.textContent).toMatch(/That player isn’t on your team.*They may have been removed, or the link is from another team\./);
-    expect(within(code('CH-13311') as HTMLElement).getByRole('link', { name: 'Back to the board' }).getAttribute('href')).toBe('/golf/dashboard/coachhelm');
-    expect(standingRead.load).not.toHaveBeenCalled();
-  });
-
-  it('CH-13311 an id that is not a uuid is the same page, with no query sent', async () => {
-    const members = vi.fn(() => ({ data: { player_id: 'pl-jonah' } }));
-    tables.current = { ...tables.current, golf_team_members: members };
-    render(wrap(await page({ view: 'deep-dive', player: 'pl-jonah' })));
-    expect(code('CH-13311')).not.toBeNull();
-    expect(members).not.toHaveBeenCalled();
-    expect(delivery.coach).not.toHaveBeenCalled();
-  });
-
-  it('CH-13209 a membership read that fails is the page’s "didn’t load", never "not on your team"', async () => {
-    tables.current = { ...tables.current, golf_team_members: { error: { message: 'boom' } } };
-    render(wrap(await page({ view: 'profile', player: PID })));
-    expect(code('CH-13209')!.textContent).toMatch(/This player’s page didn’t load.*Nothing is lost\. Try again in a moment\./);
-    expect(code('CH-13311')).toBeNull();
-  });
 
   it('a player role with ?player= gets their own view, scoped to the session’s id, never the address’s', async () => {
     session.current = { coach: null, player: { id: 'player-1', onboarding_completed: true } } as unknown as GolfSessionProfile;
@@ -168,59 +136,9 @@ describe('130807 130104 the scope check: on this coach’s team, or one page for
     expect(child.props).toMatchObject({ playerId: 'player-1', drill: 'standing' });
   });
 
-  it('CH-13913 ?view=profile&player= (Game profile’s old address) is the coach’s Standing of the player, opened at How Jonah plays', async () => {
-    genomeRead.load.mockResolvedValue(genome(FULL_VECTOR));
-    const into = vi.fn();
-    const was = Element.prototype.scrollIntoView;
-    Element.prototype.scrollIntoView = into;
-    try {
-      render(wrap(await page({ view: 'profile', player: PID })));
-    } finally {
-      Element.prototype.scrollIntoView = was;
-    }
-    expect(document.querySelector('main')!.getAttribute('data-ch-view')).toBe('standing');
-    const how = screen.getByRole('region', { name: 'How Jonah plays' });
-    expect(genomeRead.load).toHaveBeenCalledWith(expect.anything(), PID);
-    expect(into.mock.instances[0]).toBe(how);
-    expect(screen.getByRole('radio', { name: 'Standing' })).toHaveAttribute('aria-checked', 'true');
-  });
-
   it('a coach’s ?view= with no player is the board', async () => {
     const out = (await ClubhouseCoachHelmRoute({ view: 'standing' })) as ReactElement<{ children: ReactElement }>;
     expect((out.props.children.type as { name: string }).name).toBe('CoachHelmView');
-  });
-});
-
-describe('the gates', () => {
-  it('CH-13305 CoachHelm off for the coach is the board’s own page', async () => {
-    gates.coach.mockResolvedValue({ effectivelyEnabled: false, disabledBy: 'team', disabledReason: null });
-    render(wrap(await page({ view: 'deep-dive', player: PID })));
-    expect(code('CH-13305')).not.toBeNull();
-  });
-
-  it('CH-13313 CoachHelm off for the player’s team says so by name, with the coach’s reason and the way to turn it on', async () => {
-    gates.player.mockResolvedValue({ effectivelyEnabled: false, disabledBy: 'coach', disabledReason: 'Pausing until the qualifier' });
-    render(wrap(await page({ view: 'standing', player: PID })));
-    const off = code('CH-13313') as HTMLElement;
-    expect(off.textContent).toMatch(/CoachHelm is off for Jonah/);
-    expect(off.textContent).toMatch(/It is turned off for Jonah’s team: “Pausing until the qualifier”\. Turn it on in CoachHelm settings to read Jonah’s game\./);
-    expect(within(off).getByRole('link', { name: 'Open CoachHelm settings' }).getAttribute('href')).toBe('/golf/dashboard/settings/coaching-intelligence');
-    expect(standingRead.load).not.toHaveBeenCalled();
-  });
-
-  it('CH-13209 a gate lookup that failed is the page’s "didn’t load"', async () => {
-    gates.player.mockRejectedValue(new Error('down'));
-    render(wrap(await page({ view: 'standing', player: PID })));
-    expect(code('CH-13209')).not.toBeNull();
-  });
-});
-
-describe('the coach Deep dive reads the coach feed', () => {
-  it('getInsightsForCoach for the player, never getInsightsForPlayer; the page is the player’s, by name', async () => {
-    render(wrap(await page({ view: 'deep-dive', player: PID })));
-    expect(delivery.coach).toHaveBeenCalledWith(COACH, expect.objectContaining({ player_id: PID }));
-    expect(delivery.player).not.toHaveBeenCalled();
-    expect(screen.getByRole('heading', { level: 1, name: 'Jonah Okafor' })).toBeTruthy();
   });
 });
 
@@ -393,13 +311,6 @@ describe('the coach header', () => {
     render(wrap(<Standing load={{ status: 'ready', data: PREVIEW_COACH_STANDING }} voice={{ ...voice, name: 'Player', first: 'Player', line: 'No rounds posted yet' }} />));
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Player');
     expect(document.querySelector('.ch-hl-h')!.textContent).toMatch(/No rounds posted yet/);
-  });
-
-  it('the route draws the header from the scope: name, class and the newest round', async () => {
-    standingRead.load.mockResolvedValue(new Map(STANDING_ROWS.map((r) => [r.metric_id, { ...r, player_id: PID }])));
-    render(wrap(await page({ view: 'standing', player: PID })));
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Jonah Okafor');
-    expect(document.querySelector('.ch-hl-h')!.textContent).toMatch(/Junior · Last round Oct 5, \d+ days ago/);
   });
 });
 

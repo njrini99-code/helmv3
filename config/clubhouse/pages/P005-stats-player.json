@@ -158,7 +158,7 @@
     {
       "id": "ACT-P005-SHARE-PLAYER",
       "label": "Share a player's stats link (coach, phone)",
-      "component": "src/clubhouse/screens/stats/StatsPlayerPhone.tsx#StatsPlayerPhone",
+      "component": "src/clubhouse/screens/stats/StatsPlayerPhoneShs.tsx#StatsPlayerPhoneShs",
       "handler": "share",
       "service": null,
       "data": [],

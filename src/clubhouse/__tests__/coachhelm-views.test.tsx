@@ -44,7 +44,6 @@ vi.mock('@/app/golf/actions/insights-feed', () => ({ dismissInsight: vi.fn(), re
 
 import { isCoachHelmEnabledForCoach, isCoachHelmEnabledForPlayer } from '@/lib/coachhelm/v2/gate';
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
-import { CoachHelmSkeleton } from '../screens/coachhelm/CoachHelmSkeleton';
 import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
 import { DiveSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
@@ -56,7 +55,6 @@ import { ToastProvider } from '../ui/Toast';
 const on = { userEnabled: true, teamEnabled: true, effectivelyEnabled: true, disabledReason: null, disabledBy: null } as const;
 const off = { userEnabled: true, teamEnabled: false, effectivelyEnabled: false, disabledReason: 'Back after the qualifier', disabledBy: 'coach' } as const;
 const jonah = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
-const maya = { userId: 'u1', role: 'coach', coach: { id: 'c1', organization_id: 'org1' }, player: null };
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 const wrap = (node: React.ReactNode) => (
@@ -142,40 +140,6 @@ describe.each(VIEWS)('?view=$view ($name): the player’s own, behind the same s
     vi.mocked(isCoachHelmEnabledForPlayer).mockResolvedValue({ ...off, disabledBy: null, disabledReason: 'Lookup failed' });
     const again = await settle((await ClubhouseCoachHelmRoute({ view })) as Gated);
     expect(again.props.load).toEqual({ status: 'failed' });
-  });
-
-  it('a coach is a coach here: the view’s address is their board, no player loader runs, and the player’s gate is never asked (a coach who is also a player is a coach)', async () => {
-    session.current = maya;
-    teamOf.current = { role: 'coach', teamId: 't1', coachId: 'c1' };
-    vi.mocked(isCoachHelmEnabledForCoach).mockResolvedValue({ ...on });
-    board.coach.mockResolvedValue({ off: null, roster: { count: 0, error: false }, pulse: { rows: [], error: false }, players: { list: [], error: false }, withoutSignals: 0 });
-    const el = (await ClubhouseCoachHelmRoute({ view })) as Gated;
-    const out = await settle(el);
-    expect(board.coach).toHaveBeenCalled();
-    for (const r of allReads()) expect(r).not.toHaveBeenCalled();
-    expect(isCoachHelmEnabledForPlayer).not.toHaveBeenCalled();
-    expect(out.type).not.toBe(Screen);
-
-    session.current = { ...maya, player: { id: 'pl-coach-as-player' } };
-    await settle((await ClubhouseCoachHelmRoute({ view })) as Gated);
-    for (const r of allReads()) expect(r).not.toHaveBeenCalled();
-  });
-});
-
-describe('the player’s views and the board', () => {
-  it('no session renders nothing; ?view=insights, no view and any other value are the board, not a view', async () => {
-    session.current = null;
-    expect(await ClubhouseCoachHelmRoute({ view: 'profile' })).toBeNull();
-    expect(await ClubhouseCoachHelmRoute({ view: 'standing' })).toBeNull();
-    expect(await ClubhouseCoachHelmRoute({ view: 'deep-dive' })).toBeNull();
-    session.current = jonah;
-    board.player.mockResolvedValue(PREVIEW_HELM_PLAYER);
-    for (const view of [undefined, 'insights', 'nonsense']) {
-      const el = (await ClubhouseCoachHelmRoute({ view })) as Gated;
-      expect(el.props.fallback.type).toBe(CoachHelmSkeleton);
-      expect((await settle(el)).type).toBe(PlayerBoard);
-    }
-    for (const r of allReads()) expect(r).not.toHaveBeenCalled();
   });
 });
 

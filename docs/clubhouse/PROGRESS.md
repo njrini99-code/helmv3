@@ -1,8 +1,9 @@
 # Clubhouse progress
 
 The from-scratch GolfHelm UI. Code: `src/clubhouse/`. Spec: `design/handoff/`
-(desktop, owner-approved). Flag: `golf_clubhouse_ui` (production off
-since #2188, 2026-10-11; preview and development on). Current state, turn-on,
+(desktop, owner-approved). Flag: `golf_clubhouse_ui` (on in production
+behind the `HELM_CLUBHOUSE_TEAMS` allowlist; the front door is on; the 13
+redesign flags are retired, so each page has one version). Current state, turn-on,
 rollback and remaining work: [`STATUS.md`](STATUS.md). Rules:
 `.claude/rules/clubhouse.md`. Adding a new design: `README.md`. Enforcement:
 `npm run clubhouse:check`, which also validates this file. Audits and plans,

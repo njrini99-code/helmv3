@@ -184,15 +184,6 @@ describe('the delivery actions, once per render, after the gate', () => {
     expect(gateAt).toBeLessThan(pulseRead.read.mock.invocationCallOrder[0]!);
   });
 
-  it('the board that render handed over draws the pulse when it lands, from that render’s own read', async () => {
-    const screenEl = await route();
-    await act(async () => {
-      render(wrap(screenEl as React.ReactElement));
-    });
-    expect(code('CH-13405')).toBeNull();
-    expect(document.querySelector('.ch-hl-since li')).not.toBeNull();
-  });
-
   it('every render is its own: two renders read the top insights twice, not once and not four times', async () => {
     await route();
     cleanup();

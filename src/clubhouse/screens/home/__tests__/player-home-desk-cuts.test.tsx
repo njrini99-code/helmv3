@@ -27,9 +27,4 @@ describe('player Home desktop, the cuts', () => {
     expect(container.textContent).toContain('This week’s schedule didn’t load');
     expect(container.textContent).not.toContain('Nothing scheduled');
   });
-  it('with the flag off keeps the page it had', () => {
-    const { container } = render(<PlayerHome data={PREVIEW_PLAYER_HOME} now={NOW} />);
-    expect(container.querySelector('.ch-ph-desk')).toBeNull();
-    expect([...container.querySelectorAll('h2')].map((h) => h.textContent)).toContain('Scoring');
-  });
 });

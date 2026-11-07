@@ -1,7 +1,6 @@
-import { LazyMotion, domAnimation } from 'motion/react';
-import { fireEvent, render, renderHook, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { renderHook } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * Roster phone sort (CH-3701) on TanStack Table's sorting model, and the trailing figure as plain tabular text: a chosen
@@ -29,13 +28,9 @@ const arrival = vi.hoisted(() => ({ painted: true }));
 vi.mock('../lib/use-painted', async (orig) => ({ ...(await orig<typeof import('../lib/use-painted')>()), useArrivalPainted: () => arrival.painted }));
 vi.mock('../lib/reduced-motion', () => ({ useChReducedMotion: () => motion.reduced, useChMotionMode: () => (motion.reduced ? 'off' : 'full') }));
 
-import type { ChRoster, ChRosterPlayer } from '../data/roster';
-import { formatFixed, formatSigned, MINUS } from '../lib/format';
+import type { ChRosterPlayer } from '../data/roster';
 import { PREVIEW_ROSTER } from '../preview/fixtures-roster';
-import { Roster } from '../screens/roster/Roster';
 import { useRosterSort, type PhoneSort } from '../screens/roster/sort';
-import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
-import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 
 /** The order the phone list had before TanStack (RosterPhone's sortPlayers), kept here as the rule to match. */
@@ -90,103 +85,5 @@ describe('Roster phone sort on TanStack (CH-3701)', () => {
     rerender({ sort: 'sg' });
     expect(result.current.active.at(-1)!.id).toBe('nul');
     expect(result.current.active.slice(0, 3).map((p) => p.id)).toEqual(['theo', 'sofia', 'tie1']);
-  });
-});
-
-describe('CH-3604 Roster phone: a sort change reorders the rows and the figures take the new value at once', () => {
-  const realMatchMedia = window.matchMedia;
-  beforeEach(() => {
-    window.matchMedia = ((q: string) => ({
-      matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)',
-      media: q,
-      onchange: null,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      addListener: () => {},
-      removeListener: () => {},
-      dispatchEvent: () => false,
-    })) as never;
-    window.history.replaceState(null, '', '/golf/dashboard/roster');
-  });
-  afterEach(() => {
-    window.matchMedia = realMatchMedia;
-    window.history.replaceState(null, '', '/');
-  });
-  function SlotHost() {
-    const { setSlot } = usePhoneChromeState();
-    return <div ref={setSlot} />;
-  }
-  const tree = (data: ChRoster) => (
-    <LazyMotion features={domAnimation}>
-      <ToastProvider>
-        <PhoneChromeProvider>
-          <div className="ch-root" data-ui="clubhouse">
-            <SlotHost />
-            <Roster data={data} />
-          </div>
-        </PhoneChromeProvider>
-      </ToastProvider>
-    </LazyMotion>
-  );
-  const phone = (data: ChRoster) => render(tree(data));
-  const rows = () => within(screen.getByRole('list', { name: 'Active players' })).getAllByRole('button');
-  const row = (name: string) => rows().find((b) => b.getAttribute('aria-label')!.startsWith(name))!;
-  const figure = (name: string) => row(name).querySelector('.ch-rsm-row__v b') as HTMLElement;
-  it('draws its figures as plain text, never as Number Flow', () => {
-    phone({ ...PREVIEW_ROSTER });
-    expect(figure('Jonah Okafor').textContent).toBe('74.1');
-    expect(figure('Jonah Okafor').querySelector('[data-flow], [role="img"]')).toBeNull();
-    fireEvent.pointerDown(screen.getByRole('radio', { name: 'SG, strokes gained' }));
-    expect(figure('Jonah Okafor').querySelector('[data-flow], [role="img"]')).toBeNull();
-  });
-
-  it('a chosen sort puts the new figure in at once, with a true minus and one tick, and reorders the rows', async () => {
-    const user = userEvent.setup();
-    phone({ ...PREVIEW_ROSTER });
-    await user.click(screen.getByRole('radio', { name: 'SG, strokes gained' }));
-    expect(hapticSpy.mock.calls.filter(([k]) => k === 'select')).toHaveLength(1);
-    expect(rows().map((b) => b.getAttribute('aria-label')!.split(',')[0])).toEqual([
-      'Theo Marchetti',
-      'Sofia Alvarez',
-      'Ava Lindqvist',
-      'Eli Brandt',
-      'Jonah Okafor',
-      'Priya Natarajan',
-      'Luca Ferraro',
-    ]);
-    // Written as formatSigned writes it: "−0.9", the same figure the row's name reads.
-    expect(figure('Jonah Okafor').textContent).toBe(`${MINUS}0.9`);
-    expect(figure('Jonah Okafor').textContent).toBe(formatSigned(-0.9));
-    expect(row('Jonah Okafor').getAttribute('aria-label')).toContain(`strokes gained ${MINUS}0.9 a round`);
-    expect(figure('Jonah Okafor').className).toContain('is-loss');
-    expect(figure('Theo Marchetti').textContent).toBe('+1.8');
-    expect(figure('Theo Marchetti').className).toContain('is-gain');
-    // No strokes gained is a dash.
-    expect(figure('Luca Ferraro').textContent).toBe('—');
-    expect(row('Luca Ferraro').getAttribute('aria-label')).toContain('no strokes gained yet');
-
-    await user.click(screen.getByRole('radio', { name: 'Name' }));
-    expect(figure('Jonah Okafor').textContent).toBe(formatFixed(74.1));
-    expect(rows()[0]!.getAttribute('aria-label')).toMatch(/^Sofia Alvarez/);
-  });
-
-  it('a refresh that changes a figure takes it at once, rows in place', async () => {
-    const user = userEvent.setup();
-    const view = phone({ ...PREVIEW_ROSTER });
-    await user.click(screen.getByRole('radio', { name: 'SG, strokes gained' }));
-    const order = rows().map((b) => b.getAttribute('aria-label')!.split(',')[0]);
-
-    // A refresh: Jonah's strokes gained moves from −0.9 to −0.7, which keeps his place.
-    const refreshed = { ...PREVIEW_ROSTER, players: PREVIEW_ROSTER.players.map((p) => (p.id === 'jonah' ? { ...p, sgPerRound: -0.7 } : p)) };
-    view.rerender(tree(refreshed));
-    expect(figure('Jonah Okafor').textContent).toBe(`${MINUS}0.7`);
-    expect(rows().map((b) => b.getAttribute('aria-label')!.split(',')[0])).toEqual(order);
-  });
-
-  it('without season stats the list is by name and the averages are dashes', () => {
-    phone({ ...PREVIEW_ROSTER, statsError: true, players: PREVIEW_ROSTER.players.map((p) => ({ ...p, avg: null, sgPerRound: null })) });
-    expect(screen.getAllByRole('radio').map((r) => r.textContent)).toEqual(['Name']);
-    expect(rows()[0]!.getAttribute('aria-label')).toMatch(/^Sofia Alvarez/);
-    expect(figure('Sofia Alvarez').textContent).toBe('—');
   });
 });

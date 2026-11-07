@@ -227,42 +227,6 @@ describe('CH-13923 the sub-tab strip', () => {
   });
 });
 
-describe('the new chat page (desktop)', () => {
-  it('CH-13721 greets with the team, offers the openers as pills that send with the select haptic, and says who the answers cover', async () => {
-    const { chat } = show();
-    expect(screen.getByRole('heading', { name: 'What do you want to know about Finley University?' })).toBeInTheDocument();
-    expect(screen.getByText('Answers come from your recorded rounds, signals and schedule.')).toBeInTheDocument();
-    const pills = within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button');
-    expect(pills.map((b) => b.textContent)).toEqual(['Brief me on Finley University', 'Where is the team losing the most strokes?', 'Who is trending up this month?', "What’s on this week?"]);
-    await userEvent.click(pills[1]!);
-    expect(chat.calls.send).toHaveBeenCalledWith('Where is the team losing the most strokes?');
-    expect(hapticSpy).toHaveBeenCalledWith('select');
-    expect(screen.getByText('6 of 8 players have a round in the last 30 days. Answers cover those 6. As of 2:00 PM.')).toBeInTheDocument();
-  });
-
-  it('D4 the findings block is the Board’s header line now: Ask draws no "Since you were last here", no finding and none of its states', () => {
-    const findings = [{ id: 'a', category: 'Putting', headline: 'Downhill putts dropped to 58%', evidence: 'Uphill is 81%.', tone: 'attention' as const, ask: 'Why are we missing short putts?', link: null }];
-    show(ready({ pulse: { findings, coverage: null, asOfLabel: null } }));
-    expect(screen.queryByRole('region', { name: 'Since you were last here' })).toBeNull();
-    expect(screen.queryByText('Downhill putts dropped to 58%')).toBeNull();
-    cleanup();
-    show(ready({ pulse: { findings: [], coverage: null, asOfLabel: null } }));
-    expect(code('CH-13325')).toBeNull();
-    cleanup();
-    show(ready({ pulse: null }));
-    expect(code('CH-13223')).toBeNull();
-    expect(code('CH-13322')).toBeNull();
-    expect(screen.getByRole('textbox', { name: 'Ask CoachHelm' })).toBeInTheDocument();
-  });
-
-  it('CH-13322 players and no recorded round is "Nothing to report yet", and the chat is still there', () => {
-    show(ready(PREVIEW_ASK_NOROUNDS));
-    expect(code('CH-13322')?.textContent).toMatch(/Nothing to report yet.*No player has a recorded round yet\. You can still ask about your roster and schedule\./);
-    expect(screen.getByRole('textbox', { name: 'Ask CoachHelm' })).toBeInTheDocument();
-    expect(within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button').map((b) => b.textContent)).toEqual(["What’s on this week?"]);
-  });
-});
-
 describe('the composer', () => {
   it('Enter sends on a fine pointer, with the press haptic, and the box empties; Shift+Enter is a new line', async () => {
     const { chat } = show();
@@ -458,14 +422,6 @@ describe('the composer', () => {
     expect(box().value).toBe('Brief me');
   });
 
-  it('CH-13920 a pill tapped offline is refused the same way', async () => {
-    const { chat } = show();
-    setOnline(false);
-    await userEvent.click(screen.getByRole('button', { name: 'Brief me on Finley University' }));
-    expect(chat.calls.send).not.toHaveBeenCalled();
-    await waitFor(() => expect(code('CH-1903')).not.toBeNull());
-  });
-
   it('CH-13120 while an action card awaits Confirm or Cancel, Send is off and Enter sends nothing, and the box says why', async () => {
     const { chat } = show(ready({ thread: { id: 'c-putting', title: 'Putting inside 6 feet', messages: ASK_MSGS_ACTION } }), fakeChat());
     await userEvent.type(box(), 'What about Eli?{Enter}');
@@ -562,26 +518,6 @@ describe('the composer on the phone', () => {
 describe('the new chat page (phone)', () => {
   beforeEach(() => {
     phoneState.on = true;
-  });
-
-  it('draws the greeting and the shortcut cards (three at most), no pills and no findings, and keeps the tab bar', async () => {
-    const { chat } = show();
-    expect(screen.getByRole('heading', { name: 'What do you want to know about Finley University?' })).toBeInTheDocument();
-    const cards = within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button');
-    expect(cards.map((c) => c.textContent)).toEqual(['Brief meon Finley University', 'Losing strokeswhere the team loses most', 'Trending upwho’s improving this month']);
-    expect(document.querySelector('.ch-ask-pills')).toBeNull();
-    expect(screen.queryByRole('region', { name: 'Since you were last here' })).toBeNull();
-    expect(screen.getByTestId('probe')).toHaveAttribute('data-notabs', 'false');
-    await userEvent.click(cards[0]!);
-    expect(chat.calls.send).toHaveBeenCalledWith('Brief me on Finley University');
-  });
-
-  it('the one-row box invites a first question on a new chat, and asks for a follow-up inside a thread', () => {
-    show();
-    expect(screen.getByRole('textbox', { name: 'Ask CoachHelm' })).toHaveAttribute('placeholder', 'Ask about a player, a stat, or the week');
-    cleanup();
-    show(ready({ thread: { id: 'c', title: 't', messages: ASK_MSGS_ANSWER } }), fakeChat());
-    expect(screen.getByRole('textbox', { name: 'Reply to CoachHelm' })).toHaveAttribute('placeholder', 'Ask a follow-up');
   });
 
   it('CH-13322 with no recorded round the greeting carries the nothing-to-report line, and the cards are only what the data supports', () => {

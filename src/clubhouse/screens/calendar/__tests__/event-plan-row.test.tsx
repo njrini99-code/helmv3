@@ -6,8 +6,8 @@ const data = readFileSync('src/clubhouse/data/calendar.ts', 'utf8');
 const views = readFileSync('src/clubhouse/screens/calendar/views.tsx', 'utf8');
 
 describe('the Plan row on a practice (N-00 4.17)', () => {
-  it('reads plans only with Practice on, and a missing table leaves the row out', () => {
-    expect(data).toContain('isPracticeTabEnabled() ? await readEventPlans(');
+  it('reads plans beside the events, and a missing table leaves the row out', () => {
+    expect(data).toContain('await readEventPlans(');
     expect(data).toContain('.catch(() => null)');
   });
   it('offers a coach the builder on the practice itself', () => {

@@ -491,7 +491,7 @@ describe('G then a letter, / and ?', () => {
     expect(push).toHaveBeenLastCalledWith('/golf/dashboard/coachhelm', { scroll: false });
     const field = screen.getByLabelText('Notes');
     field.focus();
-    key('6', { ctrlKey: true }, field);
+    key('7', { ctrlKey: true }, field);
     expect(push).toHaveBeenLastCalledWith('/golf/dashboard/roster', { scroll: false });
     push.mockClear();
     key('?', { shiftKey: true });
@@ -507,7 +507,8 @@ describe('G then a letter, / and ?', () => {
     const row = (label: string) => within(sheet).getByText(label, { selector: 'dt' }).closest('.ch-cmd-row') as HTMLElement;
     const caps = (label: string) => Array.from(row(label).querySelectorAll('kbd')).map((k) => k.textContent);
     expect(caps('Home')).toEqual(['G', 'H', 'Ctrl', '1']);
-    expect(caps('Qualifiers')).toEqual(['G', 'Q', 'Ctrl', '9']);
+    expect(caps('Rounds')).toEqual(['G', 'O', 'Ctrl', '9']);
+    expect(caps('Qualifiers')).toEqual(['G', 'Q']);
     expect(caps('Recruiting')).toEqual(['G', 'E']);
   });
 

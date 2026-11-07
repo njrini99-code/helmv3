@@ -211,7 +211,6 @@ opens Messages plain (20805).
 | 20604 | CH-2204 | `SEASON_ROUNDS_DONT_LOAD_2` | Season rounds don't load (the leaderboard's source) |
 | 20605 | CH-2205 | `THE_WEEK_SECTION_CRASHES_WHILE_DRAWING` | The week section crashes while drawing |
 | 20606 | CH-2206 | `THE_LATEST_ROUND_CRASHES_WHILE_DRAWING` | The latest round crashes while drawing |
-| 20607 | CH-2207 | `THE_LEADERBOARD_CRASHES_WHILE_DRAWING` | The leaderboard crashes while drawing |
 | 20608 | CH-2208 | `THE_TEAM_CHAT_DOESNT_LOAD` | The team chat doesn't load |
 | 20609 | CH-2209 | `EVENT_REPLIES_DONT_LOAD` | Event replies don't load |
 | 20610 | CH-2210 | `THE_TEAMS_TIMEZONE_DOESNT_LOAD` | The team's timezone doesn't load |

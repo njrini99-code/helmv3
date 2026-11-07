@@ -222,9 +222,9 @@ Lines identify the audited source snapshot and can shift as implementation evolv
 | roster | Roster | Modal | [Roster.tsx](../../src/clubhouse/screens/roster/Roster.tsx), line 208 |
 | roster | inline | Menu | [Roster.tsx](../../src/clubhouse/screens/roster/Roster.tsx), line 561 |
 | roster | InviteModal | Modal | [Roster.tsx](../../src/clubhouse/screens/roster/Roster.tsx), line 606 |
-| roster | RosterPhone | PhoneScreen | [RosterPhone.tsx](../../src/clubhouse/screens/roster/RosterPhone.tsx), line 194 |
-| roster | RequestsSheet | Modal | [RosterPhone.tsx](../../src/clubhouse/screens/roster/RosterPhone.tsx), line 349 |
-| roster | PlayerActions | Modal | [RosterPhone.tsx](../../src/clubhouse/screens/roster/RosterPhone.tsx), line 417 |
+| roster | RosterPhone | PhoneScreen | [RosterPhone.tsx](../../src/clubhouse/screens/roster/RosterPhoneCrh.tsx), line 194 |
+| roster | RequestsSheet | Modal | [RosterPhone.tsx](../../src/clubhouse/screens/roster/RosterPhoneCrh.tsx), line 349 |
+| roster | PlayerActions | Modal | [RosterPhone.tsx](../../src/clubhouse/screens/roster/RosterPhoneCrh.tsx), line 417 |
 | rounds | RoundsLibrary | Modal | [RoundsLibrary.tsx](../../src/clubhouse/screens/rounds/RoundsLibrary.tsx), line 268 |
 | rounds | InProgressConflictDialog | Modal | [InProgressConflictDialog.tsx](../../src/clubhouse/screens/rounds/entry/InProgressConflictDialog.tsx), line 93 |
 | rounds | QualifierRoundSheet | Modal | [QualifierRoundSheet.tsx](../../src/clubhouse/screens/rounds/entry/QualifierRoundSheet.tsx), line 45 |

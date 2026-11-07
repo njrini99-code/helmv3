@@ -77,12 +77,6 @@ afterEach(() => {
 });
 
 describe('Practice in the nav', () => {
-  it('flag off: no entry, on either role, on the strip or the sidebar', () => {
-    for (const role of ['coach', 'player'] as const) {
-      expect(navFor(role).some((i) => i.id === 'practice')).toBe(false);
-      expect(phoneSectionsFor(role).some((i) => i.id === 'practice')).toBe(false);
-    }
-  });
   it('flag on: after Calendar, for both roles, beside Tournaments when that is on too', () => {
     for (const role of ['coach', 'player'] as const) {
       const ids = navFor(role, { tournaments: true }).map((i) => i.id);

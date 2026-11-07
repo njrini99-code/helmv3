@@ -1275,11 +1275,9 @@
     "item": 1,
     "name": "COACH_HOME_READY",
     "meaning": "Coach Home opens with the date, the greeting and the brief, Message team and New event, the week beside the latest round in one sheet, and the season leaderboard, all read on the server for the first paint; a team with nothing yet gets the first-run page (CH-2308), and on a phone the same data is drawn as the phone Home (21901).",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/screens/home/CoachHome.tsx#CoachHome; src/clubhouse/data/home.ts#loadCoachHome",
-    "tests": [
-      "src/clubhouse/__tests__/home.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 20102,
@@ -1370,12 +1368,9 @@
     "item": 1,
     "name": "CLOCK_KEEPS_TIME",
     "meaning": "The phone's Up next line (In 50 min, Happening now) is recomputed from the device clock every minute and the player's countdown every second, so neither needs a reload.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/lib/use-now.ts#useNow; src/clubhouse/screens/home/HomePhone.tsx#whenLabel; src/clubhouse/screens/home/Countdown.tsx#Countdown",
-    "tests": [
-      "src/clubhouse/__tests__/home.test.tsx",
-      "src/clubhouse/__tests__/player-home.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 20401,
@@ -1714,8 +1709,8 @@
     "item": 7,
     "name": "THE_LEADERBOARD_CRASHES_WHILE_DRAWING",
     "chCode": "CH-2207",
-    "meaning": "The leaderboard crashes while drawing",
-    "status": "implemented",
+    "meaning": "(retired with the redesign flags, 2026-11-07) The leaderboard crashes while drawing",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
@@ -1973,11 +1968,9 @@
     "item": 3,
     "name": "PLAYER_READS_ONLY_OWN_ROUNDS",
     "meaning": "Player Home asks only for the signed-in player's own rounds (golf_rounds filtered to their player id) and their own player row, reads no roster or teammate's figures, and sets the player against D1 benchmarks, never against teammates.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/data/player-home.ts#loadPlayerHome",
-    "tests": [
-      "src/clubhouse/__tests__/player-home.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 20804,
@@ -2196,11 +2189,9 @@
     "item": 7,
     "name": "COUNTDOWN_IS_A_NAMED_TIMER",
     "meaning": "The player's countdown is a timer named for a screen reader as Starts in N days, N hours and N minutes (singular at one), and its digits, the ticking seconds included, are hidden from a screen reader, so it is heard once, not every second.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/screens/home/Countdown.tsx#Countdown",
-    "tests": [
-      "src/clubhouse/__tests__/player-home.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 21808,
@@ -2223,8 +2214,7 @@
     "status": "implemented",
     "where": "src/clubhouse/screens/home/HomePhone.tsx#HomePhone; src/clubhouse/screens/home/PlayerHomePhone.tsx#PlayerHomePhone; src/clubhouse/lib/use-phone.ts#useChPhone",
     "tests": [
-      "src/clubhouse/__tests__/home.test.tsx",
-      "src/clubhouse/__tests__/player-home.test.tsx"
+      "src/clubhouse/__tests__/home.test.tsx"
     ]
   },
   {
@@ -2234,12 +2224,9 @@
     "item": 1,
     "name": "LOADERS_NEVER_THROW",
     "meaning": "Each Home is read on the server before its first paint, and a failed read is logged through chLogServer('home', {read}) and flagged on its own section instead of throwing, so one failed read never takes the page down.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/data/home.ts#loadCoachHome; src/clubhouse/data/player-home.ts#loadPlayerHome",
-    "tests": [
-      "src/clubhouse/__tests__/home.test.tsx",
-      "src/clubhouse/__tests__/player-home.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 22301,
@@ -2251,8 +2238,7 @@
     "status": "implemented",
     "where": "src/clubhouse/ui/SectionBoundary.tsx; src/clubhouse/data/home.ts; src/clubhouse/data/player-home.ts; src/clubhouse/screens/home/HomeActions.tsx; src/clubhouse/screens/home/HomePhone.tsx",
     "tests": [
-      "src/clubhouse/__tests__/home.test.tsx",
-      "src/clubhouse/__tests__/player-home.test.tsx"
+      "src/clubhouse/__tests__/home.test.tsx"
     ]
   },
   {
@@ -2275,11 +2261,9 @@
     "item": 1,
     "name": "ROSTER_READY",
     "meaning": "Roster opens with the team line, the join requests, Needs a look and the active players as cards by scoring average, all from the server's first render; on the phone, the list screen with the same players as rows.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/screens/roster/Roster.tsx#Roster",
-    "tests": [
-      "src/clubhouse/__tests__/roster.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 30102,
@@ -2357,11 +2341,9 @@
     "item": 3,
     "name": "ROSTER_FOLLOWS_A_REFRESH",
     "meaning": "When the server sends the page again (Try again, or the page a write revalidated), the players and join requests on screen become the new ones: an approved player appears, and a read that failed and now succeeds shows the players, never No players yet.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/screens/roster/Roster.tsx#Roster; src/clubhouse/screens/roster/useJoinRequests.ts#useJoinRequests",
-    "tests": [
-      "src/clubhouse/__tests__/roster.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 30401,
@@ -2669,8 +2651,8 @@
     "item": 15,
     "name": "FOCUS_AREAS_OR_GOALS_DONT_LOAD",
     "chCode": "CH-3208",
-    "meaning": "Focus areas or goals don't load",
-    "status": "implemented",
+    "meaning": "(retired with the redesign flags, 2026-11-07) Focus areas or goals don't load",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -2779,11 +2761,9 @@
     "item": 1,
     "name": "WRITES_REFUSED_OFFLINE",
     "meaning": "Offline, every Roster write (a removal, an approval, a decline, Approve all, a note) is refused before anything is sent, the toast names what did not happen, and nothing on screen changes; Export, Copy and the filters are local and keep working.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/lib/use-action.ts#useAction, used by Roster.tsx#remove, useJoinRequests.ts, RosterPeek.tsx#CoachNote",
-    "tests": [
-      "src/clubhouse/__tests__/roster.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 30780,
@@ -2829,11 +2809,9 @@
     "item": 3,
     "name": "REFUSED_CHANGE_SHOWN_AND_UNDONE",
     "meaning": "When the server refuses a removal, an approval, a decline or a note (not on your team, already processed, a saved round in progress, not authorized), its sentence is shown in the error toast and the screen goes back: the player stays and the dialog stays open, the request returns to its place, and the text stays in the field.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/screens/roster/Roster.tsx#remove; useJoinRequests.ts#decideOne; RosterPeek.tsx#CoachNote",
-    "tests": [
-      "src/clubhouse/__tests__/roster.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 30804,
@@ -2881,11 +2859,9 @@
     "item": 1,
     "name": "CHANGE_LANDED",
     "meaning": "A change that lands names itself in a toast (added, declined, note saved, removed) with one success haptic; a removal also closes the dialog and the player's panel or profile.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/lib/use-action.ts#useAction; Roster.tsx#remove",
-    "tests": [
-      "src/clubhouse/__tests__/roster.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 31101,
@@ -2916,11 +2892,9 @@
     "item": 1,
     "name": "NOTE_KEPT_ON_FAILURE",
     "meaning": "A note that fails to save stays in the field, and the toast says so; leaving the field again or the toast's Retry saves it.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/screens/roster/RosterPeek.tsx#CoachNote",
-    "tests": [
-      "src/clubhouse/__tests__/roster.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 31202,
@@ -2929,11 +2903,9 @@
     "item": 2,
     "name": "LAYOUT_REMEMBERED",
     "meaning": "The cards or list choice is stored on the device (ch-roster-view) and applied when Roster opens; a device that refuses storage still switches for the visit. Search, filter and sort are not kept.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/screens/roster/Roster.tsx#changeView",
-    "tests": [
-      "src/clubhouse/__tests__/roster.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 31203,
@@ -2955,11 +2927,9 @@
     "item": 1,
     "name": "REQUEST_DECISIONS_OPTIMISTIC",
     "meaning": "Approve and Decline take the request off the list at once and put it back in its place if the server refuses or throws, and while one decision is in flight every other Approve and Decline waits; Remove is not optimistic, it waits with the dialog open and the button reading Removing.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/screens/roster/useJoinRequests.ts#decideOne",
-    "tests": [
-      "src/clubhouse/__tests__/roster.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 31401,
@@ -2981,11 +2951,9 @@
     "item": 2,
     "name": "TRY_AGAIN_REFRESHES_THE_PAGE",
     "meaning": "Try again on the roster, season stats, join requests or join code notice asks the server for the whole page again (router.refresh), not one section alone.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/screens/roster/Roster.tsx#Roster (onRetry); RosterPhone.tsx",
-    "tests": [
-      "src/clubhouse/__tests__/roster.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 31403,
@@ -2994,11 +2962,9 @@
     "item": 3,
     "name": "TOAST_RETRY_FINISHES_THE_JOB",
     "meaning": "The Retry on a failed-change toast completes the change on screen as well as on the server: a retried removal removes the player and closes the dialog, a retried approval or decline keeps the request off the list, and a retried note save marks the note saved.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/screens/roster/Roster.tsx#remove; useJoinRequests.ts#decideOne; RosterPeek.tsx#CoachNote",
-    "tests": [
-      "src/clubhouse/__tests__/roster.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 31601,
@@ -3041,7 +3007,7 @@
     "name": "PHONE_CHOOSING_AVG_SG_OR_NAME",
     "chCode": "CH-3604",
     "meaning": "Phone: choosing Avg, SG or Name",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -3084,11 +3050,9 @@
     "item": 4,
     "name": "REMOVE_PLAYER_WARNS",
     "meaning": "Pressing Remove player in the confirm fires the warning haptic (D-70), then the success pattern when the removal lands or the error pattern when it fails; Cancel is silent.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/screens/roster/Roster.tsx#dialogs",
-    "tests": [
-      "src/clubhouse/__tests__/roster.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 31801,
@@ -3220,11 +3184,9 @@
     "item": 1,
     "name": "NOTE_SAVES_ON_LEAVING_THE_FIELD",
     "meaning": "The coach's note saves when the field loses focus, only if its trimmed text changed, and an emptied note saves as no note.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/screens/roster/RosterPeek.tsx#CoachNote",
-    "tests": [
-      "src/clubhouse/__tests__/roster.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 32101,
@@ -3246,11 +3208,9 @@
     "item": 1,
     "name": "FAILURES_REPORTED",
     "meaning": "A failed change is reported through chReport with surface roster and its action name (roster.removePlayer, roster.approveRequest, roster.declineRequest, roster.approveAll, roster.coachNote), a crash with its section surface (roster.requests, roster.list, roster.peek), and a failed server read through chLogServer('roster', ...); each intent leaves a chTrail breadcrumb.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/lib/use-action.ts#useAction; SectionBoundary; data/roster.ts",
-    "tests": [
-      "src/clubhouse/__tests__/roster.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 32401,
@@ -5011,7 +4971,7 @@
     "name": "ON_THE_PHONE_ALL_N_ROUNDS_IS",
     "chCode": "CH-5807",
     "meaning": "On the phone, \"All N rounds\" is a button that says whether the full list is open; Game detail's section chips say which one is showing",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
@@ -6783,11 +6743,9 @@
     "item": 1,
     "name": "MESSAGES_READY",
     "meaning": "Messages is open: the conversation rail, and on desktop the newest thread beside it, opened without marking it read; on the phone the inbox.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "Messages.tsx auto-open effect; MessagesDesktop, MessagesPhone",
-    "tests": [
-      "src/clubhouse/__tests__/messages.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 70102,
@@ -6796,12 +6754,9 @@
     "item": 2,
     "name": "DEEP_LINK_OPENS_CONVERSATION",
     "meaning": "A link with ?conversation=<id> opens that thread, and ?player=<golf_players.id> opens or starts the direct thread with that player; the address is then cleaned. A new link arriving while the page is open is taken too; a thread missing from the list is refetched once before it opens. A search hit opens its thread at the matched message, ringed for a moment; the end-anchor waits while it does.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "Messages.tsx deep-link effect",
-    "tests": [
-      "src/clubhouse/__tests__/messages.test.tsx",
-      "src/clubhouse/__tests__/wiring-p007-messages.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 70201,
@@ -7692,11 +7647,9 @@
     "item": 1,
     "name": "MESSAGE_SEND_LANDED",
     "meaning": "A message sends: it takes its place in the thread with no toast, and the success haptic fires.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "Composer.send, useGolfMessages.sendMessage",
-    "tests": [
-      "src/clubhouse/__tests__/messages.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 70902,
@@ -7705,11 +7658,9 @@
     "item": 2,
     "name": "CHANGE_LANDED",
     "meaning": "A change lands (edited, deleted, group created, member added, left, muted, acknowledged, task done, announcement posted): a toast names what landed, with the success haptic.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "Messages.tsx api handlers",
-    "tests": [
-      "src/clubhouse/__tests__/messages.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 71001,
@@ -7773,11 +7724,9 @@
     "item": 1,
     "name": "DRAFT_KEPT_ON_FAILURE",
     "meaning": "A send that fails puts the text and files back in the composer; nothing the person wrote is lost.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "Composer.send",
-    "tests": [
-      "src/clubhouse/__tests__/messages.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 71202,
@@ -7786,11 +7735,9 @@
     "item": 2,
     "name": "DRAFT_KEPT_ACROSS_THREADS",
     "meaning": "An unsent draft is kept per conversation: switching to another thread and back finds it where it was; a send that lands clears it.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "Messages.tsx drafts map -> Composer",
-    "tests": [
-      "src/clubhouse/__tests__/messages.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 71301,
@@ -7812,11 +7759,9 @@
     "item": 1,
     "name": "RETRY_FAILED_SEND",
     "meaning": "Retry re-sends a refused message under the same id, so pressing it twice can never post twice; Discard removes it.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "useGolfMessages.retryMessage, discardFailedMessage",
-    "tests": [
-      "src/clubhouse/__tests__/messages.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 71402,
@@ -7825,11 +7770,9 @@
     "item": 2,
     "name": "TRY_AGAIN_SECTION_READ",
     "meaning": "Try again on a section that did not load re-reads only that section (conversations, a thread, members, files, announcements) and keeps the rest of the page as it was.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "refetchConvs, refetchMsgs and the section loaders",
-    "tests": [
-      "src/clubhouse/__tests__/messages.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 71501,
@@ -7905,7 +7848,7 @@
     "name": "CHANGING_THE_INBOX_FILTER_ON_THE_PHONE",
     "chCode": "CH-7606",
     "meaning": "Changing the inbox filter on the phone (All, Unread, Groups)",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -8069,11 +8012,9 @@
     "item": 1,
     "name": "PHONE_STACK",
     "meaning": "At 820px and below Messages is the phone stack: Inbox, Thread, Details and New message push and pop as screens, never a shrunken desktop.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "useChPhone -> MessagesPhone",
-    "tests": [
-      "src/clubhouse/__tests__/messages.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 72001,
@@ -8082,11 +8023,9 @@
     "item": 1,
     "name": "ENTER_TO_SEND",
     "meaning": "In the composer Enter sends, Shift+Enter adds a line, and Enter while an IME is composing is left to the IME.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "Composer onKey",
-    "tests": [
-      "src/clubhouse/__tests__/messages.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 72101,
@@ -8108,11 +8047,9 @@
     "item": 1,
     "name": "FAILURES_REPORTED",
     "meaning": "Every client failure is reported through chReport with surface messages.<action>; server reads log through chLogServer(\"messages\", ...); each intent leaves a chTrail breadcrumb.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "Messages.tsx fail/attempt; data/messages.ts",
-    "tests": [
-      "src/clubhouse/__tests__/messages.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 72302,
@@ -14827,11 +14764,9 @@
     "item": 2,
     "name": "A_CLASS_IS_DRAWN_AS_WHAT_IT_IS",
     "meaning": "A class card is drawn from the class's own data: a class in another term is named for that term and left out of this term's credits and overlaps, a class saved with no term counts as the current term, and the week strip has five days, or seven when the class meets on a weekend day. A screen reader gets one button per class, named for its code, name and when it meets (CH-12801), and the strip is hidden (CH-12802).",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/screens/classes/parts.tsx#ClassCard, TermBar; src/clubhouse/data/classes-shape.ts#inTerm, inTermLabel",
-    "tests": [
-      "src/clubhouse/__tests__/classes.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 120103,
@@ -14840,11 +14775,9 @@
     "item": 3,
     "name": "A_CLASS_SHEET_SHOWS_WHEN_AND_WHERE",
     "meaning": "Opening a class shows when and where it meets, its instructor, term and notes, and its next four meetings, each marked when it overlaps a team event. The meetings run from the later of today and the first day of the class's own term to the end of that term, so a class in next term lists next term's first meetings. A class with no time lists none. Nothing the table has no column for (a grade, a deadline, a share switch) is drawn.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/screens/classes/ClassDetail.tsx#ClassDetail; src/clubhouse/data/classes-shape.ts#upcomingMeetings",
-    "tests": [
-      "src/clubhouse/__tests__/classes.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 120201,
@@ -14897,8 +14830,8 @@
     "item": 2,
     "name": "NO_CLASS_MEETS_A_TEAM_EVENT_THIS",
     "chCode": "CH-12302",
-    "meaning": "No class meets a team event this week",
-    "status": "implemented",
+    "meaning": "(retired with the redesign flags, 2026-11-07) No class meets a team event this week",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
   {
@@ -14952,11 +14885,9 @@
     "item": 7,
     "name": "FIRST_RUN_ONLY_WHEN_THE_READ_ANSWERED",
     "meaning": "The first-run page (CH-12301) shows only when the classes read answered and the list is empty. A read that failed shows CH-12201 in its place, and the header keeps Import schedule and Add class (a failed read keeps the head and its primary action, owner decision 2026-10-08). Removing the last class returns to the first-run page.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (nothing, data.classes.error)",
-    "tests": [
-      "src/clubhouse/__tests__/classes.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 120408,
@@ -15457,11 +15388,9 @@
     "item": 3,
     "name": "WRITES_REFUSE_OFFLINE",
     "meaning": "Every write on the page (saving a class, removing one, importing a schedule and putting classes on the calendar) is refused while the browser is offline, before anything is sent, with the shell's toast naming what did not happen (CH-1903) and the error haptic; an edit keeps the form as typed, and the toast's Retry sends it once back online. A class saved just as the connection went stays in the list, flagged as not on the calendar (CH-12002). Reading a screenshot offline is CH-12901; pasted text and a TXT file are read on the device.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (every useAction); src/clubhouse/lib/use-action.ts#useAction",
-    "tests": [
-      "src/clubhouse/__tests__/classes.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 120801,
@@ -15506,11 +15435,9 @@
     "item": 1,
     "name": "CHANGE_LANDED",
     "meaning": "A change that lands names itself in a toast with the success haptic: Class added, Class updated, STAT 201 removed. The calendar sync's landing shows no toast (the header's \"Adding to your calendar…\" goes away, and a class's flag clears), and an import that lands shows the Schedule imported view instead of a toast.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (save, remove, doImport useAction copy)",
-    "tests": [
-      "src/clubhouse/__tests__/classes.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 120902,
@@ -15626,11 +15553,9 @@
     "item": 3,
     "name": "TRY_AGAIN_REREADS_THE_PAGE",
     "meaning": "Try again on the classes' failed-load notice (CH-12201) and on the team events' notice (CH-12202) has the server read the whole page again (router.refresh); classes the server sends afresh replace what the page holds.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (InlineNotice onRetry, the classes effect); src/clubhouse/screens/classes/parts.tsx#OverlapsCard",
-    "tests": [
-      "src/clubhouse/__tests__/classes.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 121404,
@@ -15804,7 +15729,7 @@
     "name": "THE_TERM_OVERVIEW",
     "chCode": "CH-12803",
     "meaning": "The term overview",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
   {
@@ -15857,11 +15782,9 @@
     "item": 1,
     "name": "PHONE_LAYOUT",
     "meaning": "At 820px and below Classes is the phone build, never a shrunken desktop: the shell's top bar reads \"Classes\" with \"‹ More\" going back to More, the page keeps its own header, and the same classes and actions are there; the sheets are bottom sheets. Below a 1000px container the side column goes under the deck, and below 640px the deck is one column, the overview stacks and the two header buttons share the row.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView (phone, PhoneTop); src/clubhouse/lib/use-phone.ts#useChPhone; src/clubhouse/styles/classes.css",
-    "tests": [
-      "src/clubhouse/__tests__/classes.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 122001,
@@ -16086,8 +16009,8 @@
     "item": 8,
     "name": "ASK_AN_ACTION_WAS_CONFIRMED_AND_IS",
     "chCode": "CH-13450",
-    "meaning": "Ask: An action was confirmed and is being carried out",
-    "status": "implemented",
+    "meaning": "(retired with the redesign flags, 2026-11-07) Ask: An action was confirmed and is being carried out",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -16772,8 +16695,8 @@
     "item": 13,
     "name": "ASK_COPY_IS_REFUSED_BY_THE_CLIPBOARD",
     "chCode": "CH-13051",
-    "meaning": "Ask: Copy is refused by the clipboard",
-    "status": "implemented",
+    "meaning": "(retired with the redesign flags, 2026-11-07) Ask: Copy is refused by the clipboard",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -16871,8 +16794,8 @@
     "item": 22,
     "name": "ASK_A_CONFIRMED_ACTION_FAILED_OR_ONLY",
     "chCode": "CH-13253",
-    "meaning": "Ask: A confirmed action failed or only partly completed",
-    "status": "implemented",
+    "meaning": "(retired with the redesign flags, 2026-11-07) Ask: A confirmed action failed or only partly completed",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -16882,8 +16805,8 @@
     "item": 23,
     "name": "ASK_THE_CONVERSATION_MOVED_PAST_A_CARD",
     "chCode": "CH-13254",
-    "meaning": "Ask: The conversation moved past a card that was never answered",
-    "status": "implemented",
+    "meaning": "(retired with the redesign flags, 2026-11-07) Ask: The conversation moved past a card that was never answered",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -17270,7 +17193,7 @@
     "name": "ASK_COPY_AN_ANSWER",
     "chCode": "CH-13950",
     "meaning": "Ask: Copy an answer",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -17281,7 +17204,7 @@
     "name": "ASK_COACHHELM_PROPOSES_AN_ACTION",
     "chCode": "CH-13951",
     "meaning": "Ask: CoachHelm proposes an action",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -17292,7 +17215,7 @@
     "name": "ASK_A_PROPOSED_ACTION_IS_CANCELLED",
     "chCode": "CH-13952",
     "meaning": "Ask: A proposed action is cancelled",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -17303,7 +17226,7 @@
     "name": "ASK_A_CONFIRMED_ACTION_LANDS",
     "chCode": "CH-13953",
     "meaning": "Ask: A confirmed action lands",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -17999,11 +17922,9 @@
     "item": 3,
     "name": "A_PLAYER_READS_ONLY_THEIR_OWN_INSIGHTS",
     "meaning": "A player's board is built from the session's own player id and nothing else: the gate, the feed (up to 30), the dismissal read and the rounds count are that player's, with or without a team, and no team read or teammate's insight reaches it.",
-    "status": "implemented",
+    "status": "reserved",
     "where": "src/clubhouse/data/coachhelm.ts#loadPlayerCoachHelm; src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute",
-    "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
-    ]
+    "tests": []
   },
   {
     "id": 130804,
@@ -18335,7 +18256,7 @@
     "name": "ASK_A_FOLLOW_UP_IS_TAPPED",
     "chCode": "CH-13752",
     "meaning": "Ask: A follow-up is tapped",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {

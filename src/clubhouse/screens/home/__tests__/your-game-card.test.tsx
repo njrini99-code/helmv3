@@ -20,8 +20,4 @@ describe('Your game with the flag on', () => {
     expect(screen.queryByText(/ SG$/)).toBeNull();
     expect(screen.getByText(/starts from the third round/)).toBeTruthy();
   });
-  it('the flag off draws no leg link', () => {
-    render(<PlayerGame data={PREVIEW_PLAYER_HOME} phone />);
-    expect(document.querySelectorAll('a[data-ch="home-leg"]')).toHaveLength(0);
-  });
 });

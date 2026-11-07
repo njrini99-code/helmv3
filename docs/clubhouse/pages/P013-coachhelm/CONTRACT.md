@@ -107,7 +107,6 @@ own after the server render, so there are no section skeletons.
 | 130205 | CH-13404 | `A_PLAYERS_ACCEPT_OR_DECLINE_IS_BEING` | A player's Accept is being sent |
 | 130206 | CH-13420 | `ASK_THE_CHAT_PAGE_LOADS` | Ask: The chat page loads |
 | 130207 | CH-13421 | `ASK_A_REPLY_IS_STREAMING` | Ask: A reply is streaming |
-| 130208 | CH-13450 | `ASK_AN_ACTION_WAS_CONFIRMED_AND_IS` | Ask: An action was confirmed and is being carried out |
 | 130210 | CH-13470 | `STANDING_THE_STANDING_IS_ON_ITS_WAY` | Standing: the standing is on its way |
 | 130211 | CH-13480 | `DEEP_DIVE_THE_INSIGHTS_ARE_ON_THEIR` | Deep dive: the insights are on their way |
 | 130212 | CH-13405 | `COACH_THE_BOARD_IS_DRAWN_AND_THE` | Coach: the board is drawn and the program pulse is still on its way |
@@ -223,7 +222,6 @@ the whole change again, follow-ups included (131401).
 | 130610 | CH-13005 | `A_PLAYERS_DECLINE_OF_A_PROPOSED_FOCUS` | A player's Decline of a proposed focus area fails (written when its Undo toast goes, CH-13912) |
 | 130611 | CH-13205 | `THE_PLAYERS_PROPOSED_FOCUS_AREAS_DONT_LOAD` | The player's proposed focus areas don't load (the read fails, or the team they are read through can't be read) |
 | 130612 | CH-13050 | `ASK_AN_ACTION_COACHHELM_PROPOSED_FAILS_AFTER` | Ask: An action CoachHelm proposed fails after Confirm |
-| 130613 | CH-13051 | `ASK_COPY_IS_REFUSED_BY_THE_CLIPBOARD` | Ask: Copy is refused by the clipboard |
 | 130614 | CH-13221 | `ASK_THE_CHAT_CONTEXT_DOES_NOT_LOAD` | Ask: The chat context (the program) does not load, or its roster read fails |
 | 130615 | CH-13222 | `ASK_THE_CHAT_LIST_DOES_NOT_LOAD` | Ask: The chat list does not load |
 | 130617 | CH-13224 | `ASK_A_CONVERSATION_OR_ITS_MESSAGES_DO` | Ask: A conversation or its messages do not load |
@@ -231,8 +229,6 @@ the whole change again, follow-ups included (131401).
 | 130619 | CH-13250 | `ASK_A_READ_TOOL_BEHIND_AN_ANSWER` | Ask: A read tool behind an answer failed |
 | 130620 | CH-13251 | `ASK_AN_ANSWER_FAILS_WHILE_IT_STREAMS` | Ask: An answer fails while it streams |
 | 130621 | CH-13252 | `ASK_AN_ANSWER_ARRIVES_MALFORMED_AND_IS` | Ask: An answer arrives malformed and is rejected |
-| 130622 | CH-13253 | `ASK_A_CONFIRMED_ACTION_FAILED_OR_ONLY` | Ask: A confirmed action failed or only partly completed |
-| 130623 | CH-13254 | `ASK_THE_CONVERSATION_MOVED_PAST_A_CARD` | Ask: The conversation moved past a card that was never answered |
 | 130624 | CH-13255 | `ASK_THE_EVIDENCE_PANEL_IS_OPENED_FOR` | Ask: The evidence panel is opened for a player the conversation has nothing on |
 | 130625 | CH-13260 | `PROFILE_THE_GAME_PROFILE_DOESNT_LOAD` | Standing: How you play doesn't load (the genome read fails or throws) |
 | 130626 | CH-13270 | `STANDING_THE_STANDING_DOESNT_LOAD` | Standing: the standing doesn't load (the standing read fails or throws) |

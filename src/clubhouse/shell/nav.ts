@@ -37,10 +37,14 @@ export interface ChNavItem {
  * in v2's sidebar and are left out. Rounds (the team's posted rounds) was added after v2: the coach reached them only
  * through Stats before.
  */
+/** Practice (N-00, practice-plan S-PRC.home): after Calendar for coaches and players, as the design's sidebar draws it; a section on the phone's strip. */
+export const CH_NAV_PRACTICE: ChNavItem = { id: 'practice', label: 'Practice', href: '/golf/dashboard/practice', icon: Target };
+
 export const CH_NAV_COACH: readonly ChNavItem[] = [
   { id: 'home', label: 'Home', href: '/golf/dashboard', icon: House },
   { id: 'coachhelm', label: 'CoachHelm', href: '/golf/dashboard/coachhelm', icon: BrainCircuit },
   { id: 'calendar', label: 'Calendar', href: '/golf/dashboard/calendar', icon: CalendarDays },
+  CH_NAV_PRACTICE,
   { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: MessageSquare, badge: 'messages' },
   // Team Hub sits under Team, with the roster (owner, 2026-10-16).
   { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: ClipboardList, badge: 'hub', section: 'Team' },
@@ -63,6 +67,7 @@ export const CH_NAV_PLAYER: readonly ChNavItem[] = [
   { id: 'home', label: 'Home', href: '/golf/dashboard', icon: House },
   { id: 'coachhelm', label: 'CoachHelm', href: '/golf/dashboard/coachhelm', icon: BrainCircuit },
   { id: 'calendar', label: 'Calendar', href: '/golf/dashboard/calendar', icon: CalendarDays },
+  CH_NAV_PRACTICE,
   { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: MessageSquare, badge: 'messages' },
   // Team Hub sits under Team, with the roster (owner, 2026-10-16).
   { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: ClipboardList, badge: 'hub', section: 'Team' },
@@ -84,9 +89,6 @@ export interface ChNavFeatures {
   tournaments?: boolean;
 }
 
-/** Practice (N-00, practice-plan S-PRC.home): after Calendar for coaches and players, as the design's sidebar draws it; a section on the phone's strip. */
-export const CH_NAV_PRACTICE: ChNavItem = { id: 'practice', label: 'Practice', href: '/golf/dashboard/practice', icon: Target };
-
 /** Tournaments (P016, D-80): the Team group after Qualifiers, for coaches and players; a More row on the phone. */
 export const CH_NAV_TOURNAMENTS: ChNavItem = { id: 'tournaments', label: 'Tournaments', href: '/golf/dashboard/tournaments', icon: Medal, section: 'Team' };
 
@@ -107,8 +109,7 @@ const insertAfter = (nav: readonly ChNavItem[], id: string, item: ChNavItem): re
 };
 
 function withFeatures(nav: readonly ChNavItem[], features: ChNavFeatures | null | undefined): readonly ChNavItem[] {
-  const practiced = insertAfter(nav, 'calendar', CH_NAV_PRACTICE);
-  return features?.tournaments ? insertAfter(practiced, 'qualifiers', CH_NAV_TOURNAMENTS) : practiced;
+  return features?.tournaments ? insertAfter(nav, 'qualifiers', CH_NAV_TOURNAMENTS) : nav;
 }
 
 /**

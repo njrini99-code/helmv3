@@ -146,40 +146,6 @@
       ]
     },
     {
-      "id": "ACT-P002-MESSAGE-TEAM",
-      "label": "Message the team (coach)",
-      "component": "src/clubhouse/screens/home/HomeActions.tsx#HomeActions",
-      "handler": "the Message team link",
-      "service": null,
-      "data": [
-        "golf_conversations"
-      ],
-      "bridge": {
-        "links": 20103,
-        "loadFailed": 20608
-      },
-      "tests": [
-        "src/clubhouse/__tests__/home.test.tsx"
-      ]
-    },
-    {
-      "id": "ACT-P002-NEW-EVENT",
-      "label": "Add an event (coach): New event, or N",
-      "component": "src/clubhouse/screens/home/HomeActions.tsx#HomeActions",
-      "handler": "the New event link and the N key handler",
-      "service": null,
-      "data": [],
-      "bridge": {
-        "links": 20103,
-        "keyboard": 21801,
-        "haptic": 21702,
-        "tap": 21703
-      },
-      "tests": [
-        "src/clubhouse/__tests__/home.test.tsx"
-      ]
-    },
-    {
       "id": "ACT-P002-FIRST-RUN-INVITE",
       "label": "Invite players from the coach's first run (desktop and phone)",
       "component": "src/clubhouse/screens/home/CoachHome.tsx#HomeFirstRun",

@@ -16442,11 +16442,6 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-ask-credits.ts",
-          "anchor": "src/lib/coachhelm/v3/chat/ask-flag"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/coachhelm-ask-credits.ts",
           "anchor": "src/lib/coachhelm/v3/chat/player-allowance"
         },
         {
@@ -16458,11 +16453,6 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-ask.ts",
           "anchor": "src/lib/coachhelm/v3/chat/ask-db"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/coachhelm-ask.ts",
-          "anchor": "src/lib/coachhelm/v3/chat/ask-flag"
         },
         {
           "kind": "import_graph",
@@ -16497,17 +16487,7 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-plan-format.ts",
-          "anchor": "src/lib/coachhelm/v3/practice-plan/flag"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/coachhelm-plan-format.ts",
           "anchor": "src/lib/coachhelm/v3/chat/context"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/coachhelm-practice-plans.ts",
-          "anchor": "src/lib/coachhelm/v3/practice-plan/flag"
         },
         {
           "kind": "import_graph",
@@ -21228,11 +21208,6 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/chat/ask-flag.ts",
-          "anchor": "src/lib/flags/is-enabled"
-        },
-        {
-          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/player-allowance.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -21398,22 +21373,7 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/player-file/flag.ts",
-          "anchor": "src/lib/flags/is-enabled"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/practice-plan/flag.ts",
-          "anchor": "src/lib/flags/is-enabled"
-        },
-        {
-          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/ranking/score.ts",
-          "anchor": "src/lib/flags/is-enabled"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/read/flag.ts",
           "anchor": "src/lib/flags/is-enabled"
         },
         {
@@ -21435,11 +21395,6 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/support/run-pass.ts",
           "anchor": "src/lib/supabase/admin"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/team-board/flag.ts",
-          "anchor": "src/lib/flags/is-enabled"
         },
         {
           "kind": "import_graph",
@@ -28083,18 +28038,8 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/app/golf/actions/practice-plans.ts",
-          "anchor": "src/lib/coachhelm/v3/practice-plan/flag"
-        },
-        {
-          "kind": "import_graph",
           "path": "src/app/golf/actions/practice-publish.ts",
           "anchor": "src/lib/coachhelm/v3/practice-plan/model"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/app/golf/actions/practice-publish.ts",
-          "anchor": "src/lib/coachhelm/v3/practice-plan/flag"
         }
       ]
     },

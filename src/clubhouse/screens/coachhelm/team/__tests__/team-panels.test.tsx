@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -90,11 +90,6 @@ describe('by viewer (W-LNS-12, AC-READ-07)', () => {
 describe('Open the full read (W-TEAM-12)', () => {
   const link = () => screen.queryByRole('link', { name: /Open the full read/ })?.getAttribute('href') ?? null;
 
-  it('Read off: today Deep dive address', async () => {
-    show();
-    await waitFor(() => expect(link()).toBe('/golf/dashboard/coachhelm?view=deep-dive&player=p1&insight=i1'));
-  });
-
   it('Read on: the read page, with the player', () => {
     show({ readOn: true });
     expect(link()).toBe('/golf/dashboard/coachhelm?view=read&player=p1&insight=i1');
@@ -102,11 +97,6 @@ describe('Open the full read (W-TEAM-12)', () => {
 
   it('a player not on the loaded roster gets no link', () => {
     show({ roster: [{ id: 'someone-else' }] });
-    expect(link()).toBeNull();
-  });
-
-  it('the Lenses host leaves it out with Read off', () => {
-    show({ fileHost: true });
     expect(link()).toBeNull();
   });
 });
