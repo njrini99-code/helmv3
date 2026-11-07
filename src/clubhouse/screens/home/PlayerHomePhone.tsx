@@ -1,7 +1,8 @@
 'use client';
 
 import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, Flag, MessageSquare, Plus } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useMemo, useState, type ReactNode } from 'react';
 import type { ChPlayerHome } from '../../data/player-home';
 import type { ChPlayerLive } from '../../data/live-rounds';
 import { Button } from '../../ui/Button';
@@ -16,8 +17,12 @@ import { NoData } from '../../ui/NoData';
 import { haptic } from '../../lib/haptics';
 import { useNow } from '../../lib/use-now';
 import { usePhoneHero } from '../../shell/phone-chrome';
-import { CoachAsks } from './CoachAsks';
-import { Today, UpNextRow } from './HomePhone';
+import { CoachAsks, MineBadge } from './CoachAsks';
+import { Today } from './HomePhone';
+import { eventHref, nextLine } from './event-links';
+import { TYPE_LABEL } from '../calendar/model';
+import { Avatar } from '../../ui/Avatar';
+import { useChClockText } from '../../lib/use-clock';
 import { SinceYouLooked } from './DayCard';
 import { noRoundsYet, playerFailedParts } from './model';
 import { OwnLiveCard } from './OwnLiveCard';
@@ -48,45 +53,25 @@ export function PlayerHomePhone({ data, now: frozen, live, playerId }: { data: C
 
   return (
     <main className="ch-hm ch-hm--player" aria-label="Home" data-ch-hero-flat="" data-ch-crh="on">
-      {/* Owner, 2026-10-06: the CoachHelm brief no longer sits between the greeting and Up next on the player's phone. */}
-      <header className="ch-hm-hero is-player">
-        <div className="ch-shs-hero-top">
-            <span>{data.todayLabel}</span>
-            <h1>{data.greeting}</h1>
-          </div>
+      <PlayerHeroTop data={data} now={now} playerId={playerId} />
+
+      <div className="ch-hm-body">
         <PageRefreshNotice parts={failed} />
-        {/* Dashboard cuts, 6: with the redesign, Your game leads under the greeting and Up next is one row. */}
-        <SectionBoundary surface="home.game" label="Your game" code="CH-2217">
-            <YourGameLead data={data} covered={covered} />
-          </SectionBoundary>
-        <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
-          {data.week.error ? (
-            // On the sheet, not in the green card: inside it the notice took the card's ivory ink and its words vanished.
+        {data.week.error && (
+          <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
             <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. Try again." covered={covered} />
-          ) : data.next ? (
-            <UpNextRow e={data.next} now={now} />
-          ) : (
-            <div className="ch-hm-next is-static" data-ch-code="CH-2309">
-              <span className="ch-hm-next__k">
-                <span className="ch-hm-next__type">
-                  <Icon icon={CalendarDays} size={13} />
-                  Up next
-                </span>
-              </span>
-              <div className="ch-hm-none">
-                <span className="ch-hm-none__ic">
-                  <Icon icon={CalendarDays} size={22} />
-                </span>
-                <span>
-                  <h2>No events scheduled</h2>
-                  <p>Your coach’s practices and events will show here with a countdown.</p>
-                </span>
-              </div>
-            </div>
-          )}
+          </SectionBoundary>
+        )}
+        {live && playerId && (
+          <SectionBoundary surface="home.live" label="Round in progress">
+            <OwnLiveCard initial={live.snapshot} playerId={playerId} legs={live.legs} frozen={frozen !== undefined} now={frozen !== undefined ? Date.parse(frozen) : undefined} />
+            <TeammatesLiveCard initial={live.snapshot} playerId={playerId} frozen={frozen !== undefined} now={frozen !== undefined ? Date.parse(frozen) : undefined} />
+          </SectionBoundary>
+        )}
+        <SectionBoundary surface="home.game" label="Your game" code="CH-2217">
+          <YourGameLead data={data} covered={covered} />
         </SectionBoundary>
-        {/* On the parchment the hero's two keys are the shared buttons: Start a round the one primary, Message coach
-            the quiet one beside it (both tap lightly, D-70). */}
+        {/* Message coach the quiet key, New round the one primary (both tap lightly, D-70). */}
         <div className="ch-ph-acts">
           <Button size="lg" leftIcon={MessageSquare} href={messageCoachHref(data.coachUserId)} feel="press">
             Message coach
@@ -98,28 +83,73 @@ export function PlayerHomePhone({ data, now: frozen, live, playerId }: { data: C
           )}
         </div>
         <CoachAsks asks={data.asks} />
-      </header>
-
-      <div className="ch-hm-body">
-        {live && playerId && (
-          <SectionBoundary surface="home.live" label="Round in progress">
-            <OwnLiveCard initial={live.snapshot} playerId={playerId} legs={live.legs} frozen={frozen !== undefined} now={frozen !== undefined ? Date.parse(frozen) : undefined} />
-            <TeammatesLiveCard initial={live.snapshot} playerId={playerId} frozen={frozen !== undefined} now={frozen !== undefined ? Date.parse(frozen) : undefined} />
-          </SectionBoundary>
-        )}
         {/* P-14: what the coach changed on the schedule since this device last looked (changes only; a player sees no teammate's rounds here). */}
         <SinceYouLooked rounds={[]} event={null} changes={data.changes ?? []} onOpenRound={() => {}} />
-        <SectionBoundary surface="home.today" label="Today" code="CH-2214">
-            <Today list={data.today} now={now} failed={data.week.error} quiet={nothingAhead} canPlan={false} />
+        {/* One schedule answer, never two: today's rows when there are any; nothing at all when something is next but not today
+            (the greeting's line says what and when); and one quiet row when there is nothing scheduled. */}
+        {!data.week.error && data.today.length > 0 && (
+          <SectionBoundary surface="home.today" label="Today" code="CH-2214">
+            <Today list={data.today} now={now} failed={false} quiet={nothingAhead} canPlan={false} />
           </SectionBoundary>
-        <>
-            {!noRoundsYet(data) && (
-              <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
-                <Latest data={data.latest} covered={covered} />
-              </SectionBoundary>
-            )}
+        )}
+        {!data.week.error && !data.next && data.today.length === 0 && (
+          <div className="ch-hm-empty" data-ch-code="CH-2309">
+            <Icon icon={CalendarDays} size={20} />
+            <span>
+              <b>No events scheduled</b>
+              <span>Your coach’s practices and events will show here.</span>
+            </span>
+          </div>
+        )}
+        {!noRoundsYet(data) && (
+          <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
+            <Latest data={data.latest} covered={covered} />
+          </SectionBoundary>
+        )}
+      </div>
+    </main>
+  );
+}
 
-          </>
+/**
+ * S-HOMEGAME (stats-home 05/06): the flat green top is one row, the player's coin and the greeting over what is next
+ * ("Practice at 3:30 PM · Lonnie Poole range"). The date line and the second, oversized greeting are gone; Up next lives in
+ * that line, with the player's own reply beside it. Nothing next, or a schedule that didn't load: the greeting alone.
+ */
+function PlayerHeroTop({ data, now, playerId }: { data: ChPlayerHome; now: Date | null; playerId?: string }) {
+  const clock = useChClockText();
+  // The coin carries the first name's initial; a greeting with no name (the loader's firstName was empty) falls back to the whole line.
+  const first = (data.greeting.includes(', ') ? data.greeting.slice(data.greeting.indexOf(', ') + 2).trim() : '') || data.greeting;
+  const line = data.week.error || !data.next ? null : nextLine(data.next, now, TYPE_LABEL[data.next.type], clock);
+  return (
+    <header className="ch-shs-hero-top">
+      <div className="ch-shs-who">
+        <Avatar name={first} id={playerId} size="lg" />
+        <div className="ch-shs-who__t">
+          <h1>{data.greeting}</h1>
+          {line && data.next && (
+            <Link href={eventHref(data.next)} className="ch-shs-who__line">
+              {line}
+              <MineBadge mine={data.next.mine} />
+            </Link>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+}
+
+/** The phone's first-run page (home-light-none): the same green top, and one empty card where the figures will be. */
+export function PlayerFirstRunPhone({ data, now: frozen, own, children }: { data: ChPlayerHome; now?: string; own?: ReactNode; children: ReactNode }) {
+  usePhoneHero(true);
+  const ticking = useNow();
+  const now = useMemo(() => (frozen ? new Date(frozen) : ticking), [frozen, ticking]);
+  return (
+    <main className="ch-hm ch-hm--player" aria-label="Home" data-ch-hero-flat="" data-ch-crh="on">
+      <PlayerHeroTop data={data} now={now} />
+      <div className="ch-hm-body">
+        {own}
+        {children}
       </div>
     </main>
   );

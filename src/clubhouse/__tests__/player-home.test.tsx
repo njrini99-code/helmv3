@@ -171,7 +171,7 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
   it('CH-1209 CH-2201 on the phone the reads that fail are told once under the greeting, with one Try again', () => {
     show(PREVIEW_PLAYER_HOME_FAILED);
     expect(code('CH-1209')!.textContent).toMatch(/This week’s schedule, your latest round and your scoring didn’t load/);
-    expect(code('CH-1209')!.closest('.ch-hm-hero')).not.toBeNull();
+    expect(code('CH-1209')!.closest('.ch-hm-body')).not.toBeNull();
     expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
     expect(code('CH-2201')!.closest('.ch-hm-next')).toBeNull();
   });
@@ -183,14 +183,16 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
   });
 
   it('CH-2309 nothing ahead: the empty card, with no Add event (a player can’t add team events)', () => {
-    show(home({ next: null }));
+    show(home({ next: null, today: [] }));
     expect(code('CH-2309')!.textContent).toMatch(/Your coach’s practices and events will show here/);
     expect(screen.queryByRole('link', { name: /Add event/ })).toBeNull();
   });
 
-  it('CH-2301 an empty day has no Plan button for a player', () => {
+  it('CH-2301 an empty day with something next draws no second empty card, and no Plan button for a player', () => {
+    // One schedule answer, never two (owner, 7 Nov): the greeting's line says what is next, so an empty Today adds nothing.
     show(home({ today: [] }));
-    expect(code('CH-2301')).not.toBeNull();
+    expect(code('CH-2301')).toBeNull();
+    expect(code('CH-2309')).toBeNull();
     expect(screen.queryByRole('link', { name: 'Plan' })).toBeNull();
   });
 
@@ -448,7 +450,7 @@ describe('Player Home · the game card on the redesign', () => {
 
   it('CH-2217 22301 the game card that crashes is contained, reported high as home.game; the rest of Home stays', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
-    show(home({ scoringLast10: { avg: 71, n: 3 }, sgPerRound: {} as never }));
+    show(home({ legs: { ...PREVIEW_PLAYER_HOME.legs!, rows: PREVIEW_PLAYER_HOME.legs!.rows.map((l) => ({ ...l, trend: null as never })) } }));
     expect(document.querySelector('[data-ch-code="CH-2217"]')!.textContent).toMatch(/Your game couldn’t be shown/);
     expect(chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface: 'home.game', severity: 'high' }));
     expect(screen.getByRole('heading', { level: 1 })).toBeTruthy();

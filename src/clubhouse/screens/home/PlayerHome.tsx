@@ -18,7 +18,7 @@ import { noRoundsYet, playerFailedParts } from './model';
 import { OwnLiveCard } from './OwnLiveCard';
 import { TeammatesLiveCard } from './TeammatesLiveCard';
 import { YourGameLead } from './PlayerGame';
-import { PlayerHomePhone } from './PlayerHomePhone';
+import { PlayerFirstRunPhone, PlayerHomePhone } from './PlayerHomePhone';
 import { DeskToday } from './HomeDeskCrh';
 import { messageCoachHref, postRoundHref } from './player-links';
 import { useHomeDayRollover } from './use-day-rollover';
@@ -56,7 +56,7 @@ function PlayerHomeBody({ data, now, live, playerId }: { data: ChPlayerHome; now
         </div>
       </SectionBoundary>
     ) : null;
-  if (isPlayerFirstRun(data)) return <PlayerFirstRun data={data} own={own} />;
+  if (isPlayerFirstRun(data)) return <PlayerFirstRun data={data} own={own} phone={phone} now={now} />;
   if (phone) return <PlayerHomePhone data={data} now={now} live={live} playerId={playerId} />;
   const post = postRoundHref();
   // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
@@ -127,9 +127,40 @@ export function isPlayerFirstRun(data: ChPlayerHome): boolean {
 }
 
 /** The v2 first-run page empty state (gh-states.jsx, EMPTY.home.player; D-71). */
-function PlayerFirstRun({ data, own }: { data: ChPlayerHome; own?: ReactNode }) {
+function PlayerFirstRun({ data, own, phone, now }: { data: ChPlayerHome; own?: ReactNode; phone: boolean; now?: string }) {
   const start = postRoundHref();
   const classes = rebuiltHref('/golf/dashboard/classes', 'player');
+  const empty = (
+    <EmptyState
+      size="page"
+      code="CH-2312"
+      shape="rows"
+      title="Welcome to the team"
+      body="Your stats start with the first round you post. Your coach’s team updates and your schedule show up here too."
+      action={
+        start ? (
+          <Button variant="primary" leftIcon={Plus} href={start}>
+            New round
+          </Button>
+        ) : undefined
+      }
+      secondaryAction={
+        classes ? (
+          <Button leftIcon={GraduationCap} href={classes}>
+            Add classes
+          </Button>
+        ) : undefined
+      }
+    />
+  );
+  // The phone draws the redesign's first-run page: the green top as on the loaded Home, one empty card under it.
+  if (phone) {
+    return (
+      <PlayerFirstRunPhone data={data} now={now} own={own}>
+        {empty}
+      </PlayerFirstRunPhone>
+    );
+  }
   return (
     // `--first`: the framed head on desktop, as the loaded page has (states audit, 2026-10-08), and the Ledger's page
     // intro on the phone (home.css "Player Home on the phone").
@@ -139,27 +170,7 @@ function PlayerFirstRun({ data, own }: { data: ChPlayerHome; own?: ReactNode }) 
         <h1 className="ch-display">{data.greeting}</h1>
       </header>
       {own}
-      <EmptyState
-        size="page"
-        code="CH-2312"
-        shape="rows"
-        title="Welcome to the team"
-        body="Your stats start with the first round you post. Your coach’s team updates and your schedule show up here too."
-        action={
-          start ? (
-            <Button variant="primary" leftIcon={Plus} href={start}>
-              New round
-            </Button>
-          ) : undefined
-        }
-        secondaryAction={
-          classes ? (
-            <Button leftIcon={GraduationCap} href={classes}>
-              Add classes
-            </Button>
-          ) : undefined
-        }
-      />
+      {empty}
     </main>
   );
 }

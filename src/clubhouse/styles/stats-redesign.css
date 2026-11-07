@@ -1993,8 +1993,8 @@ p.ch-shs-mini-cap {
 }
 .ch-shs-hero-top {
   position: relative;
-  margin: 0 calc(-1 * var(--ch-page-x-phone)) 12px;
-  padding: calc(var(--ch-phone-topbar-h, 48px) + 6px) var(--ch-page-x-phone) 32px;
+  margin: 0;
+  padding: 12px var(--ch-page-x-phone) 34px;
   background: var(--ch-frame);
   color: var(--ch-on-green-ink);
 }
@@ -2008,16 +2008,39 @@ p.ch-shs-mini-cap {
   border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
   background: var(--ch-grouped-bg);
 }
-.ch-shs-hero-top > span {
-  display: block;
-  font: var(--ch-type-15);
-  color: var(--ch-feature-ink-2); letter-spacing: var(--ch-track-15); }
-.ch-shs-hero-top > h1 {
-  margin: 4px 0 0;
+/* S-HOMEGAME (06): the top is one row, the player's coin and the greeting over what is next. */
+.ch-shs-who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ch-shs-who .ch-avatar {
+  flex: none;
+}
+.ch-shs-who__t {
+  min-width: 0;
+}
+.ch-shs-who h1 {
+  margin: 0;
   font: var(--ch-type-22-strong);
   font-variation-settings: 'wdth' 92;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
   color: var(--ch-on-green-ink);
+  text-shadow: none;
+  overflow-wrap: anywhere;
+}
+.ch-shs-who__line .ch-badge {
+  margin-inline-start: 8px;
+  vertical-align: 1px;
+}
+.ch-shs-who__line {
+  display: block;
+  margin-top: 2px;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-feature-ink-2);
+  text-decoration: none;
+  overflow-wrap: anywhere;
 }
 
 /* Your game (S-HOMEGAME). */
@@ -2248,40 +2271,13 @@ p.ch-shs-mini-cap {
   padding-inline-start: 12px;
 }
 
-/* Your game's one line over My stats' window (dashboard cuts, 6): the figures' home is My stats, so the line links there. */
-.ch-shs-yg__sum {
-  position: relative;
-  display: flex;
+/* The legs keep one grid so every spark starts at the same x (Approach's bar no longer shifts its own). */
+.ch-shs-home .ch-shs-leg__m {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.ch-shs-bench-k {
   flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 16px;
-  min-height: 44px;
-  padding: 8px 16px;
-  font: var(--ch-type-15);
-  letter-spacing: var(--ch-track-15);
-  color: var(--ch-shs-s-ink-2);
-  text-decoration: none;
-}
-.ch-shs-yg__sum b {
-  font: var(--ch-type-15-strong);
-  letter-spacing: var(--ch-track-15);
-  color: var(--ch-shs-s-ink);
-}
-.ch-shs-yg__sum::after {
-  content: '';
-  position: absolute;
-  left: 16px;
-  right: 0;
-  bottom: 0;
-  height: var(--ch-hairline-w);
-  background: var(--ch-shs-s-sep);
-}
-.ch-shs-yg__go {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  margin-inline-start: auto;
-  color: var(--ch-green-600);
+  gap: 2px 12px;
 }
 /* STATS-1: a coach's header on a player's Stats sits on the page edge. */
 .ch-shs .ch-spm-head { padding-inline: var(--ch-page-x-phone); }

@@ -18,7 +18,11 @@ describe('player Home desktop, the cuts', () => {
     expect(heads.slice(0, 2)).toEqual([PREVIEW_PLAYER_HOME.greeting, 'Your game']);
     expect(heads).not.toContain('Scoring');
     expect(heads).not.toContain('This week');
-    expect(container.querySelector('.ch-shs-yg__sum')).toBeTruthy();
+    // Home has no window switch and no figures line of its own (S-HOMEGAME, fixed 4 Nov): the card is the four legs, and the window lives on My stats.
+    expect(container.querySelector('.ch-shs-yg__sum')).toBeNull();
+    expect(container.textContent).not.toContain('All time');
+    expect(container.querySelector('[role="radiogroup"]')).toBeNull();
+    expect(container.querySelectorAll('[data-ch="home-leg"]')).toHaveLength(4);
     if (PREVIEW_PLAYER_HOME.next) expect(container.querySelector('.ch-hm-nextrow')).toBeTruthy();
   });
   it('a failed schedule read says so, not "Nothing scheduled"', () => {

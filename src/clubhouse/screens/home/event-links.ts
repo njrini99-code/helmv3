@@ -28,3 +28,15 @@ function dayDiff(date: string, now: Date, timezone?: string): number {
 }
 const WD = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' });
 const weekday = (date: string) => WD.format(new Date(`${date}T12:00:00Z`));
+
+/**
+ * The line under the player's greeting (stats-home S-HOMEGAME, `.who`): what is next and where, "Practice at 3:30 PM · Lonnie
+ * Poole range", or with the day when it is not today, "Qualifier Fri at 8:42 AM · Pinehurst No. 2". An all-day event has no time.
+ * `clock` writes the start in the viewer's 12 or 24 hour choice.
+ */
+export function nextLine(e: ChHomeEvent, now: Date | null, label: string, clock: (text: string) => string = (t) => t): string {
+  const days = now ? dayDiff(e.date, now, e.timezone) : 0;
+  const day = days === 0 ? '' : days === 1 ? ' Tomorrow' : ` ${weekday(e.date)}`;
+  const when = e.allDay ? `${day || ' Today'} all day` : `${day} at ${clock(e.startLabel)}`;
+  return `${label}${when}${e.location ? ` · ${e.location}` : ''}`;
+}

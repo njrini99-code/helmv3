@@ -5904,3 +5904,35 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   display: grid;
   gap: 16px;
 }
+
+/* Player Home phone, the sheet under the green top (S-HOMEGAME, stats-home 06): the body climbs 20pt into the top's lip and sits above it,
+   so the first card starts 14pt under the sheet's edge as drawn; everything on the sheet is one 16pt step, and every card is one surface. */
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  [data-ch-hero-flat] .ch-hm-body {
+    position: relative;
+    gap: 16px;
+    padding: 14px var(--ch-page-x-phone) 28px;
+    margin-top: -20px;
+  }
+  [data-ch-hero-flat] .ch-ph-acts,
+  [data-ch-hero-flat] .ch-ph-asks {
+    margin-top: 0;
+  }
+  [data-ch-hero-flat] .ch-ph-asks,
+  [data-ch-hero-flat] .ch-hm-empty {
+    border-radius: var(--ch-radius-lg);
+    background: var(--ch-card-bg);
+    box-shadow: var(--ch-elevation-reading);
+  }
+  [data-ch-hero-flat] .ch-ph-asks {
+    padding: 12px 16px;
+  }
+  [data-ch-hero-flat] .ch-ph-asks[data-ch-pressed] {
+    background: var(--ch-bg-hover);
+  }
+  [data-ch-hero-flat] .ch-hm-empty {
+    flex-direction: row;
+    padding: 16px;
+    text-align: start;
+  }
+}

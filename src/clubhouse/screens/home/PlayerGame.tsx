@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronRight, Pencil } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { useId, type ReactNode } from 'react';
 import type { ChPlayerHome, ChPlayerLeg, ChScoringPoint } from '../../data/player-home';
@@ -9,15 +9,13 @@ import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Segmented } from '../../ui/Segmented';
 import { changeTone, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
-import { plural, pluralWord } from '../../lib/plural';
+import { pluralWord } from '../../lib/plural';
 import { NoData } from '../../ui/NoData';
 import { changeSe, deltaTone, deltaWords, halvesChange } from '../../lib/stats-signal';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
 import { monotonePath } from '../../lib/chart';
 import { useChSessionState } from '../../lib/session-state';
 import { ShsIcon, ShsPill, type ShsIconName } from '../stats/SummaryCard';
-import { MY_STATS } from './player-links';
-import { HomeSpanSwitch } from './HomeSpanSwitch';
 import '../../styles/stats-redesign.css';
 
 type Span = 5 | 10 | 20;
@@ -465,39 +463,24 @@ export const ownLegHref = (key: ChPlayerLeg['key']): string => `/golf/dashboard/
  * My stats' window, which links there. The figures' home is My stats; Home draws no meter of its own for them.
  */
 export function YourGameLead({ data, covered }: { data: ChPlayerHome; covered: boolean }) {
-  // The figures are the loader's, over the window My stats prints them on, never worked out again here.
-  // All time (data/span.ts) sets the average on every 18-hole round the player has posted, practice included, as Fairway's scoring average is.
-  const all = data.span === 'all';
-  const last = all ? data.scoringAll : data.scoringLast10;
-  const sum =
-    !last ? null : (
-      <Link href={MY_STATS} className="ch-shs-yg__sum ch-num">
-        <span>{all ? `All time · ${plural(last.n, 'round')}` : last.n ? `Last ${last.n}` : 'Last 10'}</span>
-        <span>
-          <b>{last.avg == null ? <NoData /> : formatFixed(last.avg)}</b> avg
-        </span>
-        <span>
-          <b>{data.sgPerRound == null ? <NoData /> : formatSigned(data.sgPerRound)}</b> SG per round{all ? ' (last 10)' : ''}
-        </span>
-        <span className="ch-shs-yg__go">
-          My stats
-          <Icon icon={ChevronRight} size={15} />
-        </span>
-      </Link>
-    );
-  return <YourGameCard legs={data.legs} tour={data.tour} covered={covered} summary={sum} always switcher={<HomeSpanSwitch span={data.span ?? 'season'} />} />;
+  // Home has no window switch and no figures line of its own (stats-home S-HOMEGAME, fixed 4 Nov): the card is four legs, each a link into My stats,
+  // where the window (season or all time) is chosen. Home's figures are always the newest ten rounds.
+  // No legs and a failed read: the page's notice is the whole answer, as on every other card.
+  if (!data.legs && (data.scoring.error || data.latest.error)) return null;
+  return <YourGameCard legs={data.legs} tour={data.tour} covered={covered} />;
 }
 
-function YourGameCard({ legs, tour, covered, summary, always = false, switcher }: { legs: ChPlayerHome['legs']; tour: ChSgTour; covered: boolean; summary?: ReactNode; always?: boolean; /** The rounds-shown switch, in the card's head. */ switcher?: ReactNode }) {
-  if (!legs && !always) return null;
+function YourGameCard({ legs, tour, covered }: { legs: ChPlayerHome['legs']; tour: ChSgTour; covered: boolean }) {
   if (!legs) {
     return (
       <section className="ch-shs-home ch-shs-yg" aria-labelledby="ch-ph-legs">
         <div className="ch-shs-yg__h">
           <h2 id="ch-ph-legs">Your game</h2>
-          {switcher}
         </div>
-        {summary}
+        <div className="ch-shs-yg__none" data-ch-code="CH-2311">
+          <b>Nothing to break down yet.</b>
+          <span>Fairways, greens, scrambling and putts fill in from rounds posted with those stats.</span>
+        </div>
       </section>
     );
   }
@@ -514,9 +497,7 @@ function YourGameCard({ legs, tour, covered, summary, always = false, switcher }
       <div className="ch-shs-yg__h">
         <h2 id="ch-ph-legs">Your game</h2>
         <span>Strokes gained {sgBaseline(tour).vs}</span>
-        {switcher}
       </div>
-      {summary}
       {legs.cacheError && (
         <div className="ch-shs-yg__notice">
           <RefreshNotice code="CH-2216" title="Some of your figures didn’t load" body="Scores, greens and putts are right; scrambling is missing." covered={covered} />
