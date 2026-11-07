@@ -158,9 +158,15 @@ GRANT ALL ON TABLE "public"."golf_confidence_calibration" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_confidence_calibration" TO "service_role";
 
-GRANT ALL ON TABLE "public"."golf_conversation_participants" TO "anon";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."golf_conversation_participants" TO "authenticated";
 
-GRANT ALL ON TABLE "public"."golf_conversation_participants" TO "authenticated";
+GRANT UPDATE("last_read_at") ON TABLE "public"."golf_conversation_participants" TO "authenticated";
+
+GRANT UPDATE("notification_level") ON TABLE "public"."golf_conversation_participants" TO "authenticated";
+
+GRANT UPDATE("muted_until") ON TABLE "public"."golf_conversation_participants" TO "authenticated";
+
+GRANT UPDATE("hidden_at") ON TABLE "public"."golf_conversation_participants" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_conversation_participants" TO "service_role";
 
@@ -170,9 +176,11 @@ GRANT ALL ON TABLE "public"."golf_conversation_read_marks" TO "service_role";
 
 GRANT ALL ON SEQUENCE "public"."golf_conversation_read_marks_id_seq" TO "service_role";
 
-GRANT ALL ON TABLE "public"."golf_conversations" TO "anon";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."golf_conversations" TO "authenticated";
 
-GRANT ALL ON TABLE "public"."golf_conversations" TO "authenticated";
+GRANT UPDATE("title") ON TABLE "public"."golf_conversations" TO "authenticated";
+
+GRANT UPDATE("updated_at") ON TABLE "public"."golf_conversations" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_conversations" TO "service_role";
 
@@ -358,9 +366,19 @@ GRANT ALL ON TABLE "public"."golf_message_responses" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_message_responses" TO "service_role";
 
-GRANT ALL ON TABLE "public"."golf_messages" TO "anon";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."golf_messages" TO "authenticated";
 
-GRANT ALL ON TABLE "public"."golf_messages" TO "authenticated";
+GRANT UPDATE("content") ON TABLE "public"."golf_messages" TO "authenticated";
+
+GRANT UPDATE("edited_at") ON TABLE "public"."golf_messages" TO "authenticated";
+
+GRANT UPDATE("is_deleted") ON TABLE "public"."golf_messages" TO "authenticated";
+
+GRANT UPDATE("payload") ON TABLE "public"."golf_messages" TO "authenticated";
+
+GRANT UPDATE("read") ON TABLE "public"."golf_messages" TO "authenticated";
+
+GRANT UPDATE("has_attachments") ON TABLE "public"."golf_messages" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_messages" TO "service_role";
 

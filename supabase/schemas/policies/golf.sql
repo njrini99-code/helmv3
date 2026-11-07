@@ -592,7 +592,7 @@ CREATE POLICY "golf_confidence_calibration_admin_read_all" ON "public"."golf_con
 
 CREATE POLICY "golf_confidence_calibration_service_role_all" ON "public"."golf_confidence_calibration" TO "service_role" USING ((( SELECT "auth"."role"() AS "role") = 'service_role'::"text")) WITH CHECK ((( SELECT "auth"."role"() AS "role") = 'service_role'::"text"));
 
-CREATE POLICY "golf_conversations_insert_v2" ON "public"."golf_conversations" FOR INSERT WITH CHECK ((("team_id" IS NULL) OR "public"."is_golf_team_coach"("team_id") OR "public"."is_golf_team_player"("team_id")));
+CREATE POLICY "golf_conversations_insert_v2" ON "public"."golf_conversations" FOR INSERT TO "authenticated" WITH CHECK ((("created_by" = ( SELECT "auth"."uid"() AS "uid")) AND (("team_id" IS NULL) OR "public"."is_golf_team_coach"("team_id") OR "public"."is_golf_team_player"("team_id"))));
 
 CREATE POLICY "golf_conversations_select_v2" ON "public"."golf_conversations" FOR SELECT USING ((("id" IN ( SELECT "public"."user_conversation_ids"(( SELECT "auth"."uid"() AS "uid")) AS "user_conversation_ids")) OR ((("is_team_chat" = true) OR ("is_team_channel" = true)) AND "public"."is_golf_team_coach"("team_id")) OR ((("is_team_chat" = true) OR ("is_team_channel" = true)) AND "public"."is_golf_team_player"("team_id"))));
 

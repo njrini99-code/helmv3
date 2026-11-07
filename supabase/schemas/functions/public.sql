@@ -3880,24 +3880,68 @@ COMMENT ON FUNCTION "public"."get_feature_health"("p_features" "jsonb") IS 'Helm
 
 CREATE OR REPLACE FUNCTION "public"."get_golf_conversations_with_details"("p_user_id" "uuid") RETURNS TABLE("id" "uuid", "created_at" timestamp with time zone, "updated_at" timestamp with time zone, "creator_id" "uuid", "last_message_content" "text", "last_message_at" timestamp with time zone, "last_message_sender_id" "uuid", "unread_count" bigint, "participant_ids" "uuid"[], "participant_names" "text"[], "is_group" boolean, "title" "text", "participant_count" bigint, "is_team_channel" boolean)
     LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
+    SET "search_path" TO ''
     AS $$
-DECLARE v_uid uuid := auth.uid();
+DECLARE
+  v_uid uuid := auth.uid();
 BEGIN
-  IF v_uid IS NULL THEN RETURN; END IF;
+  IF v_uid IS NULL THEN
+    RETURN;
+  END IF;
   RETURN QUERY
-  SELECT c.id, c.created_at, c.updated_at, c.created_by,
-    (SELECT m.content FROM golf_messages m WHERE m.conversation_id=c.id AND m.is_deleted=FALSE ORDER BY m.created_at DESC LIMIT 1),
-    (SELECT m.created_at FROM golf_messages m WHERE m.conversation_id=c.id AND m.is_deleted=FALSE ORDER BY m.created_at DESC LIMIT 1),
-    (SELECT m.sender_id FROM golf_messages m WHERE m.conversation_id=c.id AND m.is_deleted=FALSE ORDER BY m.created_at DESC LIMIT 1),
-    (SELECT COUNT(*) FROM golf_messages m WHERE m.conversation_id=c.id AND m.read=FALSE AND m.is_deleted=FALSE AND m.sender_id!=v_uid),
-    ARRAY(SELECT cp2.user_id FROM golf_conversation_participants cp2 WHERE cp2.conversation_id=c.id),
-    ARRAY(SELECT COALESCE(u.email,'Unknown') FROM golf_conversation_participants cp2 JOIN users u ON u.id=cp2.user_id WHERE cp2.conversation_id=c.id),
-    COALESCE(c.is_team_chat,FALSE), c.title,
-    (SELECT COUNT(*) FROM golf_conversation_participants cp2 WHERE cp2.conversation_id=c.id),
-    COALESCE(c.is_team_channel,FALSE)
-  FROM golf_conversations c JOIN golf_conversation_participants cp ON cp.conversation_id=c.id
-  WHERE cp.user_id=v_uid
+  SELECT
+    c.id,
+    c.created_at,
+    c.updated_at,
+    c.created_by,
+    (SELECT m.content FROM public.golf_messages m
+      WHERE m.conversation_id = c.id AND m.is_deleted = FALSE
+      ORDER BY m.created_at DESC LIMIT 1),
+    (SELECT m.created_at FROM public.golf_messages m
+      WHERE m.conversation_id = c.id AND m.is_deleted = FALSE
+      ORDER BY m.created_at DESC LIMIT 1),
+    (SELECT m.sender_id FROM public.golf_messages m
+      WHERE m.conversation_id = c.id AND m.is_deleted = FALSE
+      ORDER BY m.created_at DESC LIMIT 1),
+    (SELECT COUNT(*) FROM public.golf_messages m
+      WHERE m.conversation_id = c.id
+        AND m.sender_id <> v_uid
+        AND NOT COALESCE(m.is_deleted, FALSE)
+        AND m.created_at > COALESCE(cp.last_read_at, '-infinity'::timestamptz)),
+    ARRAY(SELECT cp2.user_id
+          FROM public.golf_conversation_participants cp2
+          WHERE cp2.conversation_id = c.id
+          ORDER BY cp2.joined_at, cp2.id),
+    ARRAY(SELECT COALESCE(
+              (SELECT NULLIF(btrim(concat_ws(' ', gp.first_name, gp.last_name)), '')
+                 FROM public.golf_players gp
+                WHERE gp.user_id = cp2.user_id
+                ORDER BY gp.id LIMIT 1),
+              (SELECT NULLIF(btrim(gc.full_name), '')
+                 FROM public.golf_coaches gc
+                WHERE gc.user_id = cp2.user_id
+                ORDER BY gc.id LIMIT 1),
+              'Unknown')
+          FROM public.golf_conversation_participants cp2
+          WHERE cp2.conversation_id = c.id
+          ORDER BY cp2.joined_at, cp2.id),
+    COALESCE(c.is_team_chat, FALSE),
+    c.title,
+    (SELECT COUNT(*) FROM public.golf_conversation_participants cp2
+      WHERE cp2.conversation_id = c.id),
+    COALESCE(c.is_team_channel, FALSE)
+  FROM public.golf_conversations c
+  JOIN public.golf_conversation_participants cp ON cp.conversation_id = c.id
+  WHERE cp.user_id = v_uid
+    AND (
+      cp.hidden_at IS NULL
+      OR EXISTS (
+        SELECT 1 FROM public.golf_messages hm
+        WHERE hm.conversation_id = c.id
+          AND hm.is_deleted = FALSE
+          AND hm.created_at > cp.hidden_at
+      )
+    )
   ORDER BY c.is_team_channel DESC NULLS LAST, c.updated_at DESC;
 END;
 $$;
@@ -15560,3 +15604,94 @@ $$;
 
 
 ALTER FUNCTION "public"."golf_tournament_my_lineup"("p_tournament_id" "uuid") OWNER TO "postgres";
+
+
+-- Messages v2 package M (HELD 20261107090000 / 20261107090100 / 20261107090300)
+CREATE OR REPLACE FUNCTION "public"."golf_participants_identity_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Only client sessions are held to this. service_role, the table owner and
+  -- SECURITY DEFINER functions run as other roles and pass.
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.id IS DISTINCT FROM OLD.id
+     OR NEW.conversation_id IS DISTINCT FROM OLD.conversation_id
+     OR NEW.user_id IS DISTINCT FROM OLD.user_id
+     OR NEW.joined_at IS DISTINCT FROM OLD.joined_at THEN
+    RAISE EXCEPTION 'A participant row cannot be moved' USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+ALTER FUNCTION "public"."golf_participants_identity_guard"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_conversations_identity_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Client sessions only. service_role, the table owner and definer functions pass,
+  -- and so does Postgres's own ON DELETE SET NULL on team_id (it runs as the owner).
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.id IS DISTINCT FROM OLD.id
+     OR NEW.created_by IS DISTINCT FROM OLD.created_by
+     OR NEW.team_id IS DISTINCT FROM OLD.team_id
+     OR NEW.is_team_chat IS DISTINCT FROM OLD.is_team_chat
+     OR NEW.is_team_channel IS DISTINCT FROM OLD.is_team_channel
+     OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+    RAISE EXCEPTION 'A conversation''s owner, team and kind cannot be changed'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+ALTER FUNCTION "public"."golf_conversations_identity_guard"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_messages_identity_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Client sessions only. Postgres's ON DELETE SET NULL on reply_to_id runs as the
+  -- table owner, so deleting a message that has replies still works.
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.id IS DISTINCT FROM OLD.id
+     OR NEW.conversation_id IS DISTINCT FROM OLD.conversation_id
+     OR NEW.sender_id IS DISTINCT FROM OLD.sender_id
+     OR NEW.created_at IS DISTINCT FROM OLD.created_at
+     OR NEW.kind IS DISTINCT FROM OLD.kind
+     OR NEW.reply_to_id IS DISTINCT FROM OLD.reply_to_id THEN
+    RAISE EXCEPTION 'A message cannot be moved, re-attributed, back-dated or re-typed'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+ALTER FUNCTION "public"."golf_messages_identity_guard"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") RETURNS boolean
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  m text[];
+BEGIN
+  IF p_topic IS NULL THEN
+    RETURN false;
+  END IF;
+  m := regexp_match(p_topic,
+    '^golf-typing:([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$');
+  IF m IS NULL THEN
+    RETURN false;
+  END IF;
+  RETURN public.golf_conversation_has_me(m[1]::uuid);
+END $$;
+
+ALTER FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") OWNER TO "postgres";

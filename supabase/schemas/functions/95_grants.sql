@@ -1711,3 +1711,14 @@ REVOKE ALL ON FUNCTION "helm_private"."sync_round_event_fields"() FROM PUBLIC, "
 
 REVOKE ALL ON FUNCTION "public"."golf_tournament_my_lineup"("p_tournament_id" "uuid") FROM PUBLIC, "anon";
 GRANT ALL ON FUNCTION "public"."golf_tournament_my_lineup"("p_tournament_id" "uuid") TO "authenticated";
+
+-- Messages v2 package M
+REVOKE ALL ON FUNCTION "public"."golf_participants_identity_guard"() FROM PUBLIC, "anon";
+
+REVOKE ALL ON FUNCTION "public"."golf_conversations_identity_guard"() FROM PUBLIC, "anon";
+
+REVOKE ALL ON FUNCTION "public"."golf_messages_identity_guard"() FROM PUBLIC, "anon";
+
+REVOKE ALL ON FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") TO "service_role";
