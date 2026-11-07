@@ -2,7 +2,7 @@ import 'server-only';
 import type { ChStation, ChTeamLeg, ChTeamPlayer } from './coachhelm-team-shape';
 import { STATIONS, TEAM_EARLY_ROUNDS, worstOf } from './coachhelm-team-shape';
 import { holeRounds } from './round-scope';
-import { figureOver } from './figure-window';
+import { figureOver, lastTenRounds } from './figure-window';
 import { MIN_SG_ROUNDS, type ChRound } from './season';
 
 const noLeg = (rounds: number, missing: string): ChTeamLeg => ({ strokes: null, rounds, missing });
@@ -14,11 +14,11 @@ const LEG_OF: Record<ChStation, (r: ChRound) => number | null | undefined> = {
   putting: (r) => r.strokes_gained_putting,
 };
 
-/** Each player's four legs and stored total, with Team Stats' filter and mean, so the figures match that page for the same player (W-TEAM-5). */
+/** Each player's four legs and stored total over the shared window (`lastTenRounds`), so the figures match their Home and Stats (QA-1). */
 export function toChTeamLegs(rounds: readonly ChRound[], ids: readonly string[]): Map<string, Pick<ChTeamPlayer, 'legs' | 'total' | 'rounds' | 'early' | 'worst'>> {
   const out = new Map<string, Pick<ChTeamPlayer, 'legs' | 'total' | 'rounds' | 'early' | 'worst'>>();
   for (const id of ids) {
-    const mine = rounds.filter((r) => r.player_id === id);
+    const mine = lastTenRounds(rounds.filter((r) => r.player_id === id));
     const holes = holeRounds(mine);
     const legs = {} as Record<ChStation, ChTeamLeg>;
     for (const s of STATIONS) {

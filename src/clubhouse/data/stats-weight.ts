@@ -123,6 +123,18 @@ export interface ChWindowSeason extends ChPlayerSeason {
   holeRounds: number;
 }
 
+/** Strokes gained over rounds that have their holes: the mean of the stored per-round figures (per 18), null under the floor. The one calculation. */
+export function sgOver(holes: readonly ChRound[]): { total: number | null; effective: number; legs: { tee: number | null; approach: number | null; around: number | null; putting: number | null } } {
+  const list = holes as ChRound[];
+  const leg = (pick: (r: ChRound) => number | null) => (effectiveCount(list, pick) >= MIN_SG_ROUNDS ? weightedMean(list, pick) : null);
+  const effective = effectiveCount(list, (r) => r.strokes_gained_total);
+  return {
+    total: effective >= MIN_SG_ROUNDS ? weightedMean(list, (r) => r.strokes_gained_total) : null,
+    effective,
+    legs: { tee: leg((r) => r.strokes_gained_tee), approach: leg((r) => r.strokes_gained_approach), around: leg((r) => r.strokes_gained_around_green), putting: leg((r) => r.strokes_gained_putting) },
+  };
+}
+
 /**
  * One player's window as `summarizePlayer` reads a season, for eighteen- and nine-hole rounds together: every figure per 18,
  * the floors in whole rounds. `rounds` is newest first and already the filter's.
@@ -135,9 +147,8 @@ export function summarizeWindow(rounds: ChRound[]): ChWindowSeason {
   const trend = list.slice(0, TREND_LENGTH).map(score18).reverse();
   const half = Math.floor(trend.length / 2);
   const m = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
-  const leg = (pick: (r: ChRound) => number | null) => (effectiveCount(holes, pick) >= MIN_SG_ROUNDS ? weightedMean(holes, pick) : null);
+  const sg = sgOver(holes);
   const sgRows = holes.filter((r) => r.strokes_gained_total != null);
-  const effSg = effectiveCount(holes, (r) => r.strokes_gained_total);
   return {
     rounds: list.length,
     effRounds: effectiveRounds(list),
@@ -146,15 +157,10 @@ export function summarizeWindow(rounds: ChRound[]): ChWindowSeason {
     toPar: weightedMean(list, (r) => r.score_to_par),
     trend,
     formChange: trend.length >= 3 ? m(trend.slice(trend.length - half)) - m(trend.slice(0, half)) : null,
-    sgPerRound: effSg >= MIN_SG_ROUNDS ? weightedMean(holes, (r) => r.strokes_gained_total) : null,
+    sgPerRound: sg.total,
     sgRounds: sgRows.length,
-    effSgRounds: effSg,
-    sgLegs: {
-      tee: leg((r) => r.strokes_gained_tee),
-      approach: leg((r) => r.strokes_gained_approach),
-      around: leg((r) => r.strokes_gained_around_green),
-      putting: leg((r) => r.strokes_gained_putting),
-    },
+    effSgRounds: sg.effective,
+    sgLegs: sg.legs,
     status: formStatus(trend),
     recent: list.slice(0, 10),
     lastRoundDate: list[0]?.round_date ?? null,

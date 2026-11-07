@@ -1913,21 +1913,19 @@
 }
 .ch-ph-viz--avg i {
   position: absolute;
-  top: 50%;
+  top: 0;
+  bottom: 0;
   z-index: 1;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  translate: -50% -50%;
+  width: 2px;
+  border-radius: var(--ch-radius-mark);
+  translate: -50% 0;
 }
 .ch-ph-viz--avg i.is-was {
   background: var(--ch-ink-300);
 }
+/* A mark, not a thumb: nothing here looks draggable. No clear change: neutral, darker than the previous window's. */
 .ch-ph-viz--avg i.is-now {
-  width: 10px;
-  height: 10px;
-  box-shadow: 0 0 0 2px var(--ch-sheet-bg);
-  /* No clear change: a neutral mark, darker than the previous window's so the two stay apart. */
+  width: 3px;
   background: var(--ch-ink-500);
 }
 .ch-ph-viz--avg i.is-gain {
@@ -5681,4 +5679,16 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     margin-inline: 0;
     padding-inline: 16px;
   }
+}
+
+/* The bar reached its end: a cap at the far edge says it runs past, and the number beside it is the figure. */
+.ch-ph-viz--sg.is-over::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  border-radius: var(--ch-radius-mark);
+  background: var(--ch-chart-loss);
+  content: '';
 }
