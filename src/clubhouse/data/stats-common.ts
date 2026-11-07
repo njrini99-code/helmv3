@@ -45,8 +45,8 @@ export function roundsInFilter(rounds: ChRound[], f: ChFilter, start: string = s
 }
 
 /** The Stats redesign's default (clubhouse_stats_redesign_v1): practice rounds out, unless the filter names a type or picks rounds by hand ("Only these"). */
-export function practiceCut(shs: boolean | undefined, f: ChFilter): boolean {
-  return !!shs && f.types.length === 0 && f.pick?.mode !== 'only';
+export function practiceCut(f: ChFilter): boolean {
+  return f.types.length === 0 && f.pick?.mode !== 'only';
 }
 
 /** The matching rounds before the newest ten, for "vs previous 10", across seasons like the ten; null when the filter has no previous window or there are fewer than three. */

@@ -19,7 +19,6 @@ vi.mock('@/app/golf/actions/development', () => ({ createFocusArea: vi.fn() }));
 import { StatsTeam } from '../screens/stats/StatsTeam';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
 import { StatsProfileSkeleton, StatsSkeleton } from '../screens/stats/StatsSkeleton';
-import { StatsPlayerPhoneSkeleton, StatsTeamPhoneSkeleton } from '../screens/stats/StatsPhoneSkeleton';
 import { HomeSkeleton } from '../screens/home/HomeSkeleton';
 import { ClubhouseMarker } from '../shell/context';
 import { ToastProvider } from '../ui/Toast';
@@ -194,44 +193,6 @@ describe('Skeletons draw the loaded page\'s lines', () => {
     expect(css).toMatch(/\.ch-pf-hero__figs \.ch-sgchg\s*{\s*flex-wrap: nowrap/);
     // The window switch keeps the loaded one's foot.
     expect(css).toMatch(/\.ch-pf-tabs \.ch-seg,\s*\.ch-pf-tabs > \.ch-skel:last-child\s*{\s*margin-bottom: 8px/);
-  });
-
-  it('the phone skeletons keep the loaded order (a profile: head, the window and filter row, then the figures) and give each figure its second line', () => {
-    const profile = render(<StatsPlayerPhoneSkeleton />);
-    const order = [...profile.container.querySelector('main')!.children].map((c) => c.className.split(' ')[0]);
-    expect(order.slice(0, 3)).toEqual(['ch-spm-head', 'ch-stm-controls', 'ch-stm-overview']);
-    const overview = profile.container.querySelector('.ch-stm-overview')!;
-    expect(overview.getAttribute('aria-hidden')).toBe('true');
-    expect(overview.querySelector('.ch-stm-figs.is-three')).not.toBeNull();
-    expect(overview.querySelector('.ch-stm-figs > div:last-child dd')?.classList.contains('is-words')).toBe(true);
-    expect(overview.querySelector('.ch-stm-overview__meta')).not.toBeNull();
-    expect(overview.textContent).toBe('');
-    expect(profile.container.querySelector('main')?.getAttribute('aria-label')).toBe('Loading player stats');
-    profile.unmount();
-    const teamPhone = render(<StatsTeamPhoneSkeleton />);
-    // Team stats (direction A): the large title, the window row, the hero, its trend, then the round and strokes gained groups.
-    const teamOrder = [...teamPhone.container.querySelector('main')!.children].map((c) => c.className.split(' ')[0]);
-    expect(teamOrder).toEqual(['ch-stm-head', 'ch-stm-controls', 'ch-stm-hero', 'ch-stm-trend', 'ch-stm-panel', 'ch-stm-panel', 'ch-sr-only']);
-    expect(teamPhone.container.querySelector('main')!.className).toBe('ch-stm is-team');
-    // The hero holds the value's line and the comparison's; the groups hold the loaded rows at their fixed heights.
-    expect(teamPhone.container.querySelectorAll('.ch-stm-hero > dd')).toHaveLength(2);
-    expect(teamPhone.container.querySelectorAll('.ch-stm-figrow')).toHaveLength(3);
-    expect(teamPhone.container.querySelectorAll('.ch-stm-sgfig + .ch-stm-legs > .ch-stm-leg')).toHaveLength(5);
-    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-figrow\s*{[^}]*min-height: 60px/);
-    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-sgfig\s*{[^}]*height: 64px/);
-    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-leg\s*{[^}]*height: 44px/);
-    // The trend's hold is the plot's own box (the same bleed), and its reading holds the two lines it wraps to beside the mean's key.
-    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-plot\s*{[^}]*aspect-ratio: 340 \/ 120;\s*margin-inline: -4px/);
-    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-trend \.ch-stm-chart-hold\s*{\s*margin-inline: -4px/);
-    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-trend \.ch-stm-note\s*{[^}]*min-height: calc\(2 \* 1\.4 \* 14px\)/);
-    // A profile's three figures take the stat line and gauge row.
-    const profilePhone = render(<StatsPlayerPhoneSkeleton />);
-    expect(profilePhone.container.querySelector('.ch-stm-overview > .ch-stm-figs.is-three.is-line + .ch-stm-gauges')).not.toBeNull();
-    profilePhone.unmount();
-    expect(css).toMatch(/\.ch-stm-gauges\s*{[^}]*min-height: 39px/);
-    expect(teamPhone.container.querySelector('.ch-stm-cover')?.getAttribute('aria-hidden')).toBe('true');
-    expect(teamPhone.container.querySelector('.ch-stm-chart-hold')).not.toBeNull();
-    expect(teamPhone.container.querySelector('main')?.getAttribute('aria-label')).toBe('Loading stats');
   });
 
   it('Home: the head has its sentence and its two actions, as loaded', () => {

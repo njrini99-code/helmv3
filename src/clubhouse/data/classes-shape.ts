@@ -565,14 +565,6 @@ export function overlapsAmong(draft: Meeting, others: readonly ChClass[]): Array
   return out;
 }
 
-/** The next meetings of a class from `todayIso` through the end of the term, at most `n`. Pass the later of today and the term's first day, so a class in next term starts where it does. */
-export function upcomingMeetings(c: Pick<ChClass, 'days' | 'start'>, todayIso: string, endIso: string, n: number): string[] {
-  if (!c.days.length || c.start == null) return [];
-  const out: string[] = [];
-  for (let d = todayIso; d <= endIso && out.length < n && d <= addDays(todayIso, 400); d = addDays(d, 1)) if (c.days.includes(dayToken(d))) out.push(d);
-  return out;
-}
-
 /** The Monday after `todayIso` (a Monday is the next one, a week on): the importer's default first day, offered per class by `syncStartFor`. */
 export function nextMonday(todayIso: string): string {
   const dow = dateOf(todayIso).getUTCDay();

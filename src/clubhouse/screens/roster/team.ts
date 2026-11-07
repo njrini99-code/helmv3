@@ -14,6 +14,3 @@ export function sortTeammates(list: ChTeammate[], sort: TeamSort): ChTeammate[] 
     sort === 'class' ? nullsLast(a.gradYear, b.gradYear) || byName(a, b) : sort === SORT_HCP ? nullsLast(a.handicap, b.handicap) || byName(a, b) : byName(a, b),
   );
 }
-
-/** "You · Senior": who it is to the signed-in player, then their class. */
-export const teammateLine = (p: ChTeammate) => [p.isYou ? 'You' : null, p.classYear].filter(Boolean).join(' · ');

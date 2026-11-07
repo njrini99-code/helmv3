@@ -30,23 +30,6 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "After one team has run it for a week with no overdue or fail-open signals and every team is on, delete the flag and its checks in their own reviewed change.",
   },
   {
-    feature_id: "clubhouse_stats_redesign_v1",
-    owner: "golf/clubhouse",
-    purpose: "The phone Stats redesign: summary cards and pushed details for My stats and Team Stats, and player Home's Your game card; flag off renders today's screens.",
-    type: "release",
-    status: "active",
-    created_at: "2026-11-03",
-    expires_at: null,
-    default: false,
-    environment: {
-      production: false,
-      preview: true,
-      development: false,
-    },
-    kill_switch_behavior: null,
-    cleanup_plan: "Remove once today's phone Stats long scroll is deleted.",
-  },
-  {
     feature_id: "coachhelm_a4_sequence_attribution_surface",
     owner: "golf/coachhelm",
     purpose: "Gates whether the Round Review page renders the new per-hole sequence-attribution rollup (loadSequenceAttribution + computeSequenceAttribution + SequenceAttributionSection) below the existing stat breakdown; default off pending a design/product review of the section's placement, copy, and the observed-strokes-gained wording against a busy round.",

@@ -183,7 +183,7 @@ export function sgLegs(r: ChRound): Array<number | null> {
   return [r.strokes_gained_tee, r.strokes_gained_approach, r.strokes_gained_around_green, r.strokes_gained_putting];
 }
 
-export async function loadTeamStats(input: { teamId: string; window: ChWindow; filter?: ChFilter; /** clubhouse_stats_redesign_v1: practice rounds leave the default figures. Off, they count as they always have. */ shs?: boolean }): Promise<ChTeamStats> {
+export async function loadTeamStats(input: { teamId: string; window: ChWindow; filter?: ChFilter; }): Promise<ChTeamStats> {
   const f = input.filter ?? filterFor(input.window);
   const supabase = await createClient();
   const [teamRes, membersRes, tz] = await Promise.all([
@@ -211,7 +211,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     ? await loadSeasonRounds(supabase, players.map((p) => p.id), { surface: 'stats', since: loadSince(f, start) })
     : { rounds: [], error: !!membersRes.error };
   // With the redesign on, the team's figures leave practice rounds out unless the filter asks for a type or picks rounds by hand (data/season.ts).
-  const scoringRounds = practiceCut(input.shs, f) ? season.rounds.filter(countsForScoring) : season.rounds;
+  const scoringRounds = practiceCut(f) ? season.rounds.filter(countsForScoring) : season.rounds;
   const byPlayer = groupByPlayer(scoringRounds);
 
   const windowRounds: ChRound[] = [];

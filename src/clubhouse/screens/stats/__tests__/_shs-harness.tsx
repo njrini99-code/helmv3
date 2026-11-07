@@ -34,8 +34,8 @@ export function resetAddress(): void {
   }
 }
 
-export const showPlayer = (data: ChPlayerProfile) => render(tree(<StatsPlayer data={data} coachId={data.viewer === 'coach' ? 'c1' : null} shs />));
-export const showTeam = (data: ChTeamStats) => render(tree(<StatsTeam data={data} shs />));
+export const showPlayer = (data: ChPlayerProfile) => render(tree(<StatsPlayer data={data} coachId={data.viewer === 'coach' ? 'c1' : null} />));
+export const showTeam = (data: ChTeamStats) => render(tree(<StatsTeam data={data} />));
 
 export const card = (go: string, root: ParentNode = document) => root.querySelector<HTMLElement>(`[data-ch="stats-card"][data-go="${go}"]`);
 export const cards = () => [...document.querySelectorAll<HTMLElement>('[data-ch="stats-card"]')].map((c) => c.dataset.go);

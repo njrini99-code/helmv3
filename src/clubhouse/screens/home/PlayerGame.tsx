@@ -29,13 +29,13 @@ const SPANS: Span[] = [5, 10, 20];
  * rounds against par and the player's own mean, four figures, one sentence,
  * then the four parts of the game against the Tour where a benchmark exists.
  */
-export function PlayerGame({ data, phone = false, part, covered = false, shs = false }: { data: ChPlayerHome; phone?: boolean; shs?: boolean; part?: 'scoring' | 'legs'; covered?: boolean }) {
+export function PlayerGame({ data, phone = false, part, covered = false }: { data: ChPlayerHome; phone?: boolean; part?: 'scoring' | 'legs'; covered?: boolean }) {
   // `part`: desktop Home draws Scoring inside its one continuous surface and the parts of the game below it.
   // `covered`: the page's notice (CH-1209) carries the one Try again, so a failed read keeps only its notice's title.
   return (
     <>
       {part !== 'legs' && <Scoring data={data} phone={phone} covered={covered} />}
-      {part !== 'scoring' && (phone && shs ? <YourGameCard legs={data.legs} tour={data.tour} covered={covered} /> : <Legs legs={data.legs} tour={data.tour} phone={phone} covered={covered} />)}
+      {part !== 'scoring' && (phone ? <YourGameCard legs={data.legs} tour={data.tour} covered={covered} /> : <Legs legs={data.legs} tour={data.tour} phone={phone} covered={covered} />)}
     </>
   );
 }

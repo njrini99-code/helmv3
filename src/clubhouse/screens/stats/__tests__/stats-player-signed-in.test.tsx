@@ -27,8 +27,8 @@ const shell = (node: ReactNode) => (
 );
 
 const self = (over: Partial<ChPlayerProfile> = {}): ChPlayerProfile => ({ ...PREVIEW_PLAYER_SUGGESTED, viewer: 'player', ...over });
-const showPlayer = (data: ChPlayerProfile, shs = true) => render(shell(<StatsPlayer data={data} coachId={null} shs={shs} />));
-const showTeam = (data: ChTeamStats, shs = true) => render(shell(<StatsTeam data={data} shs={shs} />));
+const showPlayer = (data: ChPlayerProfile) => render(shell(<StatsPlayer data={data} coachId={null} />));
+const showTeam = (data: ChTeamStats) => render(shell(<StatsTeam data={data} />));
 
 beforeEach(() => {
   window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
@@ -76,38 +76,16 @@ describe('a player signed in, flag on', () => {
   });
 });
 
-/** SHARED-8 and W-STATS-1: flag off is main's tree, on the phone where the two pages differ. */
-describe('the flag decides which phone page draws', () => {
-  it('player off: none of the redesign renders', async () => {
-    showPlayer(self(), false);
-    await waitFor(() => expect(document.querySelector('.ch-st')).not.toBeNull());
-    expect(document.querySelector('.ch-shs')).toBeNull();
-    expect(document.querySelector('[data-ch="stats-card"]')).toBeNull();
-    expect(document.querySelector('[data-ch="stats-window-seg"]')).toBeNull();
-  });
-
-  it('player on: the redesign renders', async () => {
+/** SHARED-8 and W-STATS-1: the phone page is the redesign. */
+describe('the phone page draws the redesign', () => {
+  it('player: the redesign renders', async () => {
     showPlayer(self());
     await waitFor(() => expect(document.querySelector('.ch-shs')).not.toBeNull());
     expect(document.querySelector('[data-ch="stats-window-seg"]')).not.toBeNull();
   });
 
-  it('team off: none of the redesign renders', async () => {
-    showTeam(PREVIEW_TEAM_STATS, false);
-    await waitFor(() => expect(document.querySelector('.ch-st')).not.toBeNull());
-    expect(document.querySelector('.ch-shs')).toBeNull();
-    expect(document.querySelector('[data-ch="stats-card"]')).toBeNull();
-  });
-
-  it('team on: the redesign renders', async () => {
+  it('team: the redesign renders', async () => {
     showTeam(PREVIEW_TEAM_STATS);
     await waitFor(() => expect(document.querySelector('.ch-shs')).not.toBeNull());
-  });
-
-  it('a #sd- hash is ignored with the flag off on desktop, and the tab stays Overview', async () => {
-    window.matchMedia = real;
-    window.location.hash = '#sd-rounds';
-    showPlayer(self(), false);
-    await waitFor(() => expect(screen.getByRole('tab', { name: /Overview/ }).getAttribute('aria-selected')).toBe('true'));
   });
 });

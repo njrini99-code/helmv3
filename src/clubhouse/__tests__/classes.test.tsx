@@ -95,7 +95,6 @@ import {
   toChClasses,
   toImportRow,
   toTeamEvent,
-  upcomingMeetings,
   weekDates,
   type ChClass,
   type ChClassesPage,
@@ -360,12 +359,6 @@ describe('Classes shaping', () => {
     expect(timeRange('11:30', '12:45')).toBe('11:30 AM–12:45 PM');
     expect(timeRange('09:00', '10:15')).toBe('9:00–10:15 AM');
     expect(timeRange('', '10:15')).toBeNull();
-  });
-
-  it('the next meetings run from today to the end of the term, at most as many as asked', () => {
-    expect(upcomingMeetings({ days: ['T', 'Th'], start: '09:00' }, '2026-10-14', '2026-12-15', 3)).toEqual(['2026-10-15', '2026-10-20', '2026-10-22']);
-    expect(upcomingMeetings({ days: ['W'], start: '09:00' }, '2026-10-14', '2026-10-20', 4)).toEqual(['2026-10-14']);
-    expect(upcomingMeetings({ days: [], start: '09:00' }, '2026-10-14', '2026-12-15', 4)).toEqual([]);
   });
 
   it('121502 CH-12002 a class goes on the calendar from next Monday only when that is inside its own term and leaves the term standing; otherwise from the term’s own window', () => {

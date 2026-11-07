@@ -77,7 +77,7 @@ function seasonTables(): import('./supabase-fake').ChFakeTables {
   return {
     golf_teams: { data: { name: 'Varsity', gender: 'men' } },
     golf_team_members: { data: [{ player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti' } }] },
-    golf_rounds: { data: [{ id: 'r1', player_id: 'p1', round_date: day, total_score: 72, score_to_par: 0, front_nine: 36, back_nine: 36, holes_played: 18, status: 'completed', round_type: 'practice' }] },
+    golf_rounds: { data: [{ id: 'r1', player_id: 'p1', round_date: day, total_score: 72, score_to_par: 0, front_nine: 36, back_nine: 36, holes_played: 18, status: 'completed', round_type: 'tournament' }] },
     golf_round_stats_cache: { data: [{ round_id: 'r1', greens_hit: 12, greens_total: 18, total_putts: 30, scramble_attempts: 6, scrambles_converted: 3, birdies: 2, eagles: 0 }] },
     golf_pga_standards: { data: [{ metric_id: 'gir_pct', pga_tour_value: 67 }] },
     golf_shots: { data: [] },
@@ -164,7 +164,7 @@ describe('Stats team · reads that fail', () => {
     const day = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
     tables.current = {
       ...seasonTables(),
-      golf_rounds: { data: [{ id: 'r1', player_id: 'p1', round_date: day, total_score: 72, score_to_par: 0, front_nine: 36, back_nine: 36, holes_played: 18, status: 'completed', round_type: 'practice' }] },
+      golf_rounds: { data: [{ id: 'r1', player_id: 'p1', round_date: day, total_score: 72, score_to_par: 0, front_nine: 36, back_nine: 36, holes_played: 18, status: 'completed', round_type: 'tournament' }] },
       golf_shots: (f) => (isLongest(f) ? { error: { message: 'boom' } } : { data: [{ round_id: 'r1', putt_distance_feet: 8, putt_made: true }] }),
     };
     const data = await load();
@@ -290,7 +290,7 @@ describe('Stats team · reads that fail', () => {
     const day = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
     const twoRounds = {
       ...base,
-      golf_rounds: { data: ['r1', 'r2'].map((id) => ({ id, player_id: 'p1', round_date: day, total_score: 72, score_to_par: 0, front_nine: 36, back_nine: 36, holes_played: 18, status: 'completed', round_type: 'practice' })) },
+      golf_rounds: { data: ['r1', 'r2'].map((id) => ({ id, player_id: 'p1', round_date: day, total_score: 72, score_to_par: 0, front_nine: 36, back_nine: 36, holes_played: 18, status: 'completed', round_type: 'tournament' })) },
       golf_round_stats_cache: { data: ['r1', 'r2'].map((round_id) => ({ round_id, greens_hit: 12, greens_total: 18, total_putts: 30, scramble_attempts: 6, scrambles_converted: 3, birdies: 2, eagles: 0 })) },
     };
     tables.current = twoRounds;
@@ -1165,7 +1165,7 @@ describe('Stats team · the figures by hand (swap audit §10)', () => {
     back_nine: Math.ceil(score / 2),
     holes_played: 18,
     status: 'completed',
-    round_type: 'practice',
+    round_type: 'tournament',
     course_name: 'Home',
     strokes_gained_total: sg,
   });

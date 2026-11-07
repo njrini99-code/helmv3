@@ -46,7 +46,7 @@ function Track({ value, lo = 0, hi = 100, team, tour, bad = false, neutral = fal
   );
 }
 
-export function OverviewZones({ data, coach, ribbon, onOpenLeg, shs = false }: { data: ChPlayerProfile; coach: boolean; ribbon: ReactNode; onOpenLeg?: (label: string) => void; /** clubhouse_stats_redesign_v1: Missed short reads the calculator's own figure. */ shs?: boolean }) {
+export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlayerProfile; coach: boolean; ribbon: ReactNode; onOpenLeg?: (label: string) => void; }) {
   const w = data.win;
   const s: Stats | null = data.stats && !data.statsError ? data.stats : null;
   const cmp = (label: string) => data.comparisons.find((c) => c.label === label);
@@ -108,7 +108,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg, shs = false }: {
 
   // 4 · approach
   const miss = s && s.approachMissTotal > 0 ? s : null;
-  const { short: mShort, long: mLong } = miss ? missSplit(miss, shs) : { short: 0, long: 0 };
+  const { short: mShort, long: mLong } = miss ? missSplit(miss) : { short: 0, long: 0 };
   const mLeft = miss ? (miss.approachMissLeftPct ?? 0) : 0;
   const mRight = miss ? (miss.approachMissRightPct ?? 0) : 0;
   const mSum = Math.max(1, mShort + mLong + mLeft + mRight);

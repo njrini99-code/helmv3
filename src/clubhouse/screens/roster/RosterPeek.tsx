@@ -19,7 +19,7 @@ import { chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { changeTone, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
-import { AVAILABILITY_WORD, legsCaption, relativeAgo, yearKeyOf, yearLineOf, type RosterClock } from './format';
+import { AVAILABILITY_WORD, relativeAgo, yearKeyOf, yearLineOf, type RosterClock } from './format';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { plural } from '../../lib/plural';
 import { ClassStatusLine } from '../../ui/ClassStatusLine';
@@ -188,19 +188,6 @@ function PeekBody({
       )}
       
     </>
-  );
-}
-
-/** The roster's strokes-by-leg caption under the figures (spec D build B); nothing without a season's strokes gained. */
-export function LegsCaption({ p }: { p: ChRosterPlayer }) {
-  const c = legsCaption(p);
-  if (!c) return null;
-  return (
-    <p className="ch-rs-peek__legs">
-      {c.lead}
-      <span className={`ch-num is-${c.tone}`}>{c.figure}</span>
-      {c.tail}
-    </p>
   );
 }
 

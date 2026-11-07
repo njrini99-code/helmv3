@@ -46,23 +46,16 @@ beforeEach(() => {
 });
 
 describe('yearById, by viewer', () => {
-  it('a player Home has no yearById anywhere in its payload, on either stats flag setting', async () => {
-    for (const shs of [false, true]) {
-      const data = await loadPlayerHome({ teamId: 't1', playerId: 'p1', firstName: 'Theo', shs });
-      const keys = keysUnder(data);
-      expect(keys.has('greeting')).toBe(true);
-      expect(keys.has('yearById')).toBe(false);
-      expect(JSON.stringify(data)).not.toContain('mate-1');
-    }
+  it('a player Home has no yearById anywhere in its payload', async () => {
+    const data = await loadPlayerHome({ teamId: 't1', playerId: 'p1', firstName: 'Theo' });
+    const keys = keysUnder(data);
+    expect(keys.has('greeting')).toBe(true);
+    expect(keys.has('yearById')).toBe(false);
+    expect(JSON.stringify(data)).not.toContain('mate-1');
   });
 
-  it('a coach Home with the lane on maps this roster, leaving out a year outside the four', async () => {
+  it('a coach Home maps this roster, leaving out a year outside the four', async () => {
     const data = await loadCoachHome({ teamId: 't1', coachName: 'Maya Reyes' });
     expect(data.yearById).toEqual({ 'mate-1': classYearKey(2028, new Date(), ZONE) });
-  });
-
-  it('with the lane off a coach Home has no yearById either', async () => {
-    const data = await loadCoachHome({ teamId: 't1', coachName: 'Maya Reyes' });
-    expect(keysUnder(data).has('yearById')).toBe(false);
   });
 });

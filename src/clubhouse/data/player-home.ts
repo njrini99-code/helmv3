@@ -102,7 +102,7 @@ function log(read: string, error: unknown) {
 
 const shortDate = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
 
-export async function loadPlayerHome(input: { teamId: string; playerId: string; firstName: string; /** clubhouse_stats_redesign_v1: ten-round sparks and the putt count. */ shs?: boolean; /** The device's seen and cleared change marks (phone-hint.ts `marksHint`). */ marks?: MarkEntries }): Promise<ChPlayerHome> {
+export async function loadPlayerHome(input: { teamId: string; playerId: string; firstName: string; /** The device's seen and cleared change marks (phone-hint.ts `marksHint`). */ marks?: MarkEntries }): Promise<ChPlayerHome> {
   const supabase = await createClient();
   const now = new Date();
 
@@ -121,7 +121,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   const playerRead = Promise.resolve(supabase.from('golf_players').select('handicap_index, handicap').eq('id', input.playerId).maybeSingle());
   const teamRead = Promise.resolve(supabase.from('golf_teams').select('gender, created_by, organization_id').eq('id', input.teamId).maybeSingle());
   // Behind the Stats flag practice rounds stay out of the scores, the legs, the brief and strokes gained, so Home's figures equal My stats' (DATA-CHECKS, SHARED-11).
-  const fullOf = (res: Awaited<typeof roundsRead>) => (res.error ? [] : (input.shs ? res.rounds.filter(countsForScoring) : res.rounds).filter(isFull18));
+  const fullOf = (res: Awaited<typeof roundsRead>) => (res.error ? [] : (res.rounds.filter(countsForScoring)).filter(isFull18));
   // The leg figures are hole-level: the newest rounds with their holes (a round posted as a total only has none, Q-123). The brief and the scoring chart are scores and count every round.
   const windowOf = (res: Awaited<typeof roundsRead>) => holeRounds(fullOf(res)).slice(0, LEG_WINDOW);
   // Latest rounds lists every round, practice included.
@@ -162,7 +162,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
 
   // Strokes gained is the one source (QA-1): the last ten counted rounds, as on Team view and Stats.
   const sg = roundsRes.error ? null : playerStrokesGained(roundsRes.rounds);
-  const legs = roundsRes.error || !sg ? null : { rows: legRows(window, cache.byRound, bench, sg.legs, { shs: input.shs }), cacheError: cache.error, benchError: bench === null || bench.size === 0 };
+  const legs = roundsRes.error || !sg ? null : { rows: legRows(window, cache.byRound, bench, sg.legs, { shs: true }), cacheError: cache.error, benchError: bench === null || bench.size === 0 };
 
   const points: ChScoringPoint[] = full
     .slice(0, SCORING_MAX)

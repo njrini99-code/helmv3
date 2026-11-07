@@ -14,7 +14,7 @@ const NOW = '2026-10-14T15:00:00.000Z';
 describe('player Home, the cuts', () => {
   it('leads with Your game under the greeting, over the newest ten, linking to My stats', () => {
     const data = PREVIEW_PLAYER_HOME as ChPlayerHome;
-    const { container } = render(<PlayerHomePhone data={data} now={NOW} shs />);
+    const { container } = render(<PlayerHomePhone data={data} now={NOW} />);
     const heads = [...container.querySelectorAll('h1, h2')].map((h) => h.textContent);
     expect(heads.slice(0, 2)).toEqual([data.greeting, 'Your game']);
     const sum = container.querySelector('.ch-shs-yg__sum') as HTMLAnchorElement;
@@ -23,7 +23,7 @@ describe('player Home, the cuts', () => {
   });
 
   it('draws no week strip and no separate Scoring card, and Up next as one row', () => {
-    const { container } = render(<PlayerHomePhone data={PREVIEW_PLAYER_HOME as ChPlayerHome} now={NOW} shs />);
+    const { container } = render(<PlayerHomePhone data={PREVIEW_PLAYER_HOME as ChPlayerHome} now={NOW} />);
     expect(container.querySelector('.ch-hm-week')).toBeNull();
     expect(screen.queryByRole('heading', { name: 'Scoring' })).toBeNull();
     expect(container.querySelector('.ch-ph-viz--sg')).toBeNull();

@@ -108,11 +108,6 @@ export async function isTournamentsFor(role: 'coach' | 'player' | null | undefin
   return isClubhouseFor(role);
 }
 
-/** Whether the phone Stats redesign is on (`clubhouse_stats_redesign_v1`): the `shs` prop on Stats and player Home, read here because flags are server only. */
-export function statsRedesignEnabled(): boolean {
-  return isFlagEnabled('clubhouse_stats_redesign_v1');
-}
-
 /** Whether the Practice nav entry may show: the plan pages' own flag (N-00), for coaches and players. */
 export function practiceNavEnabled(): boolean {
   return isFlagEnabled('golf_practice_plans');

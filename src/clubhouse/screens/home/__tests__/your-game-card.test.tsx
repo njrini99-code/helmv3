@@ -12,11 +12,11 @@ describe('Your game with the flag on', () => {
   });
   it('each leg links to its part', () => {
     expect(ownLegHref('tee')).toBe('/golf/dashboard/stats#gm-tee');
-    render(<PlayerGame data={PREVIEW_PLAYER_HOME} phone shs />);
+    render(<PlayerGame data={PREVIEW_PLAYER_HOME} phone />);
     expect(document.querySelectorAll('a[data-ch="home-leg"]')).toHaveLength(4);
   });
   it('shows no pill under the third round', () => {
-    render(<PlayerGame data={previewShsHome('early')!} phone shs />);
+    render(<PlayerGame data={previewShsHome('early')!} phone />);
     expect(screen.queryByText(/ SG$/)).toBeNull();
     expect(screen.getByText(/starts from the third round/)).toBeTruthy();
   });

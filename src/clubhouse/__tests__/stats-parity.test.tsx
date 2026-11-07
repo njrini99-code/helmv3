@@ -115,7 +115,7 @@ const round = (id: string, date: string, over: Partial<ChRound> = {}): ChRound =
   course_name: 'Finley GC',
   tees_played: null,
   round_date: date,
-  round_type: 'practice',
+  round_type: 'tournament',
   total_score: 74,
   score_to_par: 2,
   front_nine: 37,
@@ -348,7 +348,7 @@ describe('approach proximity against the Tour', () => {
 const OWN = 'p1';
 type Filters = Array<[string, unknown[]]>;
 const day = (n: number) => `2026-09-${String(28 - n).padStart(2, '0')}`;
-const rRow = (id: string, n: number, over: Record<string, unknown> = {}) => ({ id, player_id: OWN, round_date: day(n), total_score: 74, score_to_par: 2, front_nine: 37, back_nine: 37, holes_played: 18, status: 'completed', round_type: 'practice', total_putts: 30, total_gir: 9, total_gir_possible: 18, total_fairways_hit: 8, total_fairways: 14, course_name: 'Finley GC', ...over });
+const rRow = (id: string, n: number, over: Record<string, unknown> = {}) => ({ id, player_id: OWN, round_date: day(n), total_score: 74, score_to_par: 2, front_nine: 37, back_nine: 37, holes_played: 18, status: 'completed', round_type: 'tournament', total_putts: 30, total_gir: 9, total_gir_possible: 18, total_fairways_hit: 8, total_fairways: 14, course_name: 'Finley GC', ...over });
 const isMembership = (f: Filters) => f.some(([k]) => k === 'in');
 function loaderTables(rounds: unknown[], over: import('./supabase-fake').ChFakeTables = {}): import('./supabase-fake').ChFakeTables {
   return {

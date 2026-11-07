@@ -18,7 +18,7 @@ type Filters = Array<[string, unknown[]]>;
 const day = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
 const round = (i: number, player: string) => ({
   id: `${player}-r${i}`, player_id: player, round_date: day(i + 1), total_score: 74 + (i % 5), score_to_par: 2 + (i % 5), front_nine: 37, back_nine: 37 + (i % 5), holes_played: 18, status: 'completed',
-  round_type: 'practice', course_name: 'Pines', tees_played: 'White', total_putts: 31, total_gir: 10, total_gir_possible: 18, strokes_gained_total: 0.5,
+  round_type: 'tournament', course_name: 'Pines', tees_played: 'White', total_putts: 31, total_gir: 10, total_gir_possible: 18, strokes_gained_total: 0.5,
 });
 // Sixteen rounds each: ten in the window, six before it (so there is a previous window), all this season.
 const rounds = ['p1', 'p2'].flatMap((p) => Array.from({ length: 16 }, (_, i) => round(i, p)));

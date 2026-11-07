@@ -42,7 +42,6 @@ import type { ChFocusLoop } from '../../data/focus-loop-shape';
 import { FocusLoop } from './FocusLoop';
 import { ProposalAnswer } from './ProposalAnswer';
 import { GoalSetButton, GoalStatus, GoalSuggestions } from './Goals';
-import { StatsPlayerPhone } from './StatsPlayerPhone';
 import { StatsPlayerPhoneShs } from './StatsPlayerPhoneShs';
 import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { useChSessionState } from '../../lib/session-state';
@@ -77,7 +76,7 @@ export function formNote(first: string, scores: number[]): string {
  * `initialTab` is the URL's `tab` (Roster's "All N" opens `tab=rounds`, D-53); anything else opens Overview. `reads` is what CoachHelm
  * sees per Game detail section (data/stats-reads.ts); without it Game detail draws no count line.
  */
-export function StatsPlayer({ data, coachId, initialTab, reads, shs = false }: { data: ChPlayerProfile; coachId: string | null; initialTab?: string; reads?: ChReadsSource; /** clubhouse_stats_redesign_v1, read on the server. Off, this page is main's. */ shs?: boolean }) {
+export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlayerProfile; coachId: string | null; initialTab?: string; reads?: ChReadsSource; }) {
   const router = useRouter();
   const pushOnce = usePushOnce(router);
   const toast = useToast();
@@ -91,7 +90,7 @@ export function StatsPlayer({ data, coachId, initialTab, reads, shs = false }: {
   const named = useRef<Tab | undefined>(TABS.find((t) => t === initialTab));
   // A phone's shared `#sd-rounds` or `#sd-goals` link means something on desktop too: its tab (08 criterion 77). Any other `#sd-*` opens Overview.
   useEffect(() => {
-    if (!shs || phone) return;
+    if (phone) return;
     const t = desktopTabOfHash(window.location.hash);
     if (t) setTab(t);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- read once, as the page opens
@@ -217,7 +216,7 @@ export function StatsPlayer({ data, coachId, initialTab, reads, shs = false }: {
 
   // CH-5903: the figures on screen are dimmed until the new ones land; this says which ones they are.
   const updating = <UpdatingNote from={data.filter} to={loading} code="CH-5903" />;
-  if (phone && shs)
+  if (phone)
     return (
       <main className="ch-st is-phone" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined}>
         <StatsPlayerPhoneShs
@@ -237,28 +236,7 @@ export function StatsPlayer({ data, coachId, initialTab, reads, shs = false }: {
         {sheet}
       </main>
     );
-  if (phone)
-    return (
-      <>
-        <main className="ch-st is-phone" aria-busy={pending} data-ch-code={pending ? 'CH-5402' : undefined}>
-          <StatsPlayerPhone
-            data={data}
-            initialTab={initialTab}
-            reads={reads}
-            playerHref={href(data.id, data.filter)}
-            messageHref={messageHref}
-            windowShown={rangeOf(loading ?? data.filter)}
-            onWindow={changeWindow}
-            onFilter={changeFilter}
-            onBackToTeam={() => go(null, data.filter)}
-            onAddFocus={coach && coachId ? () => setFocusOpen(true) : null}
-            onRetry={() => router.refresh()}
-          />
-          {sheet}
-        </main>
-        {updating}
-      </>
-    );
+  
 
   // `is-desk`: the server renders desktop; at phone width it stays hidden until the phone view takes over at hydration.
   return (
@@ -392,7 +370,7 @@ export function StatsPlayer({ data, coachId, initialTab, reads, shs = false }: {
             {shownTab === 'overview' && !emptyFilter && !failed && (
               <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
                 {data.cacheError && <InlineNotice code="CH-5213" title={CACHE_ERROR.title} body={CACHE_ERROR.body} onRetry={() => router.refresh()} />}
-                <Overview data={data} coach={coach} onOpenLeg={openLeg} shs={shs} />
+                <Overview data={data} coach={coach} onOpenLeg={openLeg} />
               </SectionBoundary>
             )}
 
@@ -406,7 +384,7 @@ export function StatsPlayer({ data, coachId, initialTab, reads, shs = false }: {
                     onRetry={() => router.refresh()}
                   />
                 ) : data.stats && data.stats.roundsPlayed > 0 ? (
-                  <GameDetail s={data.stats} x={data.extra} bench={data.bench} tour={data.tour} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} reads={reads} onRetry={() => router.refresh()} shs={shs} />
+                  <GameDetail s={data.stats} x={data.extra} bench={data.bench} tour={data.tour} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} reads={reads} onRetry={() => router.refresh()} />
                 ) : (
                   <div className="ch-st-card">
                     <EmptyState code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
@@ -456,7 +434,7 @@ export function StatsPlayer({ data, coachId, initialTab, reads, shs = false }: {
  */
 
 /** Memoised: the seven zones are the page's heaviest read, and the tab's own state (the focus sheet, a transition) must not recompute them. */
-const Overview = memo(function Overview({ data, coach, onOpenLeg, shs }: { data: ChPlayerProfile; coach: boolean; onOpenLeg: (label: string) => void; shs: boolean }) {
+const Overview = memo(function Overview({ data, coach, onOpenLeg }: { data: ChPlayerProfile; coach: boolean; onOpenLeg: (label: string) => void; }) {
   const first = data.firstName;
   const trendRounds = [...data.rounds].reverse().slice(-10).map((r) => ({ label: r.date, course: r.course, score: per18(r.score, r.holes), toPar: r.toPar == null ? null : per18(r.toPar, r.holes), holes: r.holes }));
   // Seven zones, one per stat area; the last holds the scoring-form ribbon. Every figure is read from the profile (see OverviewZones).
@@ -465,7 +443,6 @@ const Overview = memo(function Overview({ data, coach, onOpenLeg, shs }: { data:
       data={data}
       coach={coach}
       onOpenLeg={onOpenLeg}
-      shs={shs}
       ribbon={
         <PlayerStage
           rounds={trendRounds.map((r) => ({ label: r.label, course: r.course, score: r.score, toPar: r.toPar, holes: r.holes }))}

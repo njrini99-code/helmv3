@@ -1,38 +1,28 @@
 'use client';
 
 import { GraduationCap, MessageSquare, Plus } from 'lucide-react';
-import Link from 'next/link';
 import { useMemo, type ReactNode } from 'react';
-import type { ChHomeEvent } from '../../data/home';
 import type { ChPlayerHome } from '../../data/player-home';
 import type { ChPlayerLive } from '../../data/live-rounds';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
-import { Icon } from '../../ui/Icon';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useChPhone } from '../../lib/use-phone';
-import { useChClock, useChClockText } from '../../lib/use-clock';
 import { useNow } from '../../lib/use-now';
 import { rebuiltHref } from '../../shell/nav';
-import { LinkPending } from '../../shell/LinkPending';
-import { TYPE_LABEL } from '../calendar/model';
-import { TYPE_ICON } from '../calendar/views';
-import { CoachAsks, MineBadge } from './CoachAsks';
-import { Countdown } from './Countdown';
-import { eventHref, UpNextRow, whenLabel } from './HomePhone';
+import { CoachAsks } from './CoachAsks';
+import { UpNextRow } from './HomePhone';
 import { LatestRound } from './LatestRound';
 import { noRoundsYet, playerFailedParts } from './model';
 import { OwnLiveCard } from './OwnLiveCard';
 import { TeammatesLiveCard } from './TeammatesLiveCard';
-import { PlayerGame, YourGameLead } from './PlayerGame';
-import { NoRoundsYet, PlayerHomePhone } from './PlayerHomePhone';
-import { Week } from './Week';
+import { YourGameLead } from './PlayerGame';
+import { PlayerHomePhone } from './PlayerHomePhone';
 import { DeskToday } from './HomeDeskCrh';
 import { messageCoachHref, postRoundHref } from './player-links';
 import { useHomeDayRollover } from './use-day-rollover';
 import { ChangeMarksProvider } from '../../lib/use-change-marks';
-import { MarkBadge, markSub, useRowMark } from '../calendar/change-note';
 import { NoTeam } from '../../ui/NoTeam';
 import '../../styles/home.css';
 
@@ -43,7 +33,7 @@ import '../../styles/home.css';
  * next and its countdown beside the latest round; then the player's scoring
  * and the four parts of the game. The phone is PlayerHomePhone (v2 board).
  */
-export function PlayerHome(props: { data: ChPlayerHome; /** clubhouse_stats_redesign_v1, read on the server. */ shs?: boolean; /** Preview and tests: a frozen clock (ISO). */ now?: string; /** The player's live round and their team's (P-6); omitted, the own card is not drawn. */ live?: ChPlayerLive; playerId?: string }) {
+export function PlayerHome(props: { data: ChPlayerHome; /** Preview and tests: a frozen clock (ISO). */ now?: string; /** The player's live round and their team's (P-6); omitted, the own card is not drawn. */ live?: ChPlayerLive; playerId?: string }) {
   return (
     <ChangeMarksProvider marks={props.data.marks ?? []}>
       <PlayerHomeBody {...props} />
@@ -51,7 +41,7 @@ export function PlayerHome(props: { data: ChPlayerHome; /** clubhouse_stats_rede
   );
 }
 
-function PlayerHomeBody({ data, now, live, playerId, shs }: { data: ChPlayerHome; shs?: boolean; now?: string; live?: ChPlayerLive; playerId?: string }) {
+function PlayerHomeBody({ data, now, live, playerId }: { data: ChPlayerHome; now?: string; live?: ChPlayerLive; playerId?: string }) {
   const phone = useChPhone();
   const clockNow = useNow();
   const ticking = useMemo(() => (now ? new Date(now) : clockNow), [now, clockNow]);
@@ -67,88 +57,43 @@ function PlayerHomeBody({ data, now, live, playerId, shs }: { data: ChPlayerHome
       </SectionBoundary>
     ) : null;
   if (isPlayerFirstRun(data)) return <PlayerFirstRun data={data} own={own} />;
-  if (phone) return <PlayerHomePhone data={data} now={now} live={live} playerId={playerId} shs={shs} />;
+  if (phone) return <PlayerHomePhone data={data} now={now} live={live} playerId={playerId} />;
   const post = postRoundHref();
   // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
   const failed = playerFailedParts(data);
   const covered = failed.length > 1;
-  if (noRoundsYet(data)) {
-    // Events but no round yet: the week (Up next inside it) stays, and the welcome stands in for three empty blocks.
-    return (
-      <main className="ch-h-main ch-h-main--desk" data-canopy="">
-        <DeskHead data={data} post={post} />
-        <CoachAsks asks={data.asks} />
-        <PageRefreshNotice parts={failed} />
-        {own}
-        <div className="ch-h-sheet ch-sheet is-solo">
-          <SectionBoundary surface="home.week" label="This week" code="CH-2205">
-            <Week week={data.week} between={data.next ? <DeskNext e={data.next} frozen={now} /> : null} covered={covered} />
-          </SectionBoundary>
-        </div>
-        <NoRoundsYet />
-      </main>
-    );
-  }
-  if (shs) {
-    // Dashboard cuts, 6, laid out wider: Your game leads; beside it Up next as one row, the rest of today and the latest round.
-    const todayRest = data.today.filter((e) => e.id !== data.next?.id);
-    return (
-      <main className="ch-h-main ch-h-main--desk" data-canopy="">
-        <DeskHead data={data} post={post} />
-        <CoachAsks asks={data.asks} />
-        <PageRefreshNotice parts={failed} />
-        {own}
-        <div className="ch-ph-desk">
-          <SectionBoundary surface="home.game" label="Your game" code="CH-2217">
-            <YourGameLead data={data} covered={covered} />
-          </SectionBoundary>
-          <div className="ch-ph-desk__side">
-            {data.next && (
-              <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
-                <UpNextRow e={data.next} now={ticking} />
-              </SectionBoundary>
-            )}
-            {data.week.error ? (
-              // A failed schedule read says so, never "Nothing scheduled" (the phone and coach Home do the same).
-              <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. Try again." covered={covered} />
-            ) : (
-              todayRest.length > 0 && (
-                <SectionBoundary surface="home.today" label="Today" code="CH-2214">
-                  <DeskToday events={todayRest} now={ticking} />
-                </SectionBoundary>
-              )
-            )}
-            <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
-              <LatestRound data={data.latest} mine covered={covered} />
-            </SectionBoundary>
-          </div>
-        </div>
-      </main>
-    );
-  }
+  const todayRest = data.today.filter((e) => e.id !== data.next?.id);
   return (
     <main className="ch-h-main ch-h-main--desk" data-canopy="">
       <DeskHead data={data} post={post} />
       <CoachAsks asks={data.asks} />
       <PageRefreshNotice parts={failed} />
       {own}
-      {/* One continuous surface (owner, 2026-10-06): the week and the latest round, then Scoring under a hairline. */}
-      <div className="ch-h-flow ch-sheet">
-        <div className="ch-h-sheet">
-          <SectionBoundary surface="home.week" label="This week" code="CH-2205">
-            <Week week={data.week} covered={covered} />
-          </SectionBoundary>
+      <div className="ch-ph-desk">
+        <SectionBoundary surface="home.game" label="Your game" code="CH-2217">
+          <YourGameLead data={data} covered={covered} />
+        </SectionBoundary>
+        <div className="ch-ph-desk__side">
+          {data.next && (
+            <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
+              <UpNextRow e={data.next} now={ticking} />
+            </SectionBoundary>
+          )}
+          {data.week.error ? (
+            // A failed schedule read says so, never "Nothing scheduled" (the phone and coach Home do the same).
+            <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. Try again." covered={covered} />
+          ) : (
+            todayRest.length > 0 && (
+              <SectionBoundary surface="home.today" label="Today" code="CH-2214">
+                <DeskToday events={todayRest} now={ticking} />
+              </SectionBoundary>
+            )
+          )}
           <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
-            <LatestRound data={data.latest} mine lead={data.next ? <DeskNext e={data.next} frozen={now} /> : null} covered={covered} />
+            <LatestRound data={data.latest} mine covered={covered} />
           </SectionBoundary>
         </div>
-        <SectionBoundary surface="home.game" label="Your scoring" code="CH-2217">
-          <PlayerGame data={data} part="scoring" covered={covered} />
-        </SectionBoundary>
       </div>
-      <SectionBoundary surface="home.game" label="Your game" code="CH-2217">
-        <PlayerGame data={data} part="legs" covered={covered} />
-      </SectionBoundary>
     </main>
   );
 }
@@ -170,36 +115,6 @@ function DeskHead({ data, post }: { data: ChPlayerHome; post: string | null }) {
         )}
       </div>
     </header>
-  );
-}
-
-/** Up next inside the week (Player - Home.html `pv-next`): type, when, where, and the countdown. */
-function DeskNext({ e, frozen }: { e: ChHomeEvent; frozen?: string }) {
-  const t = useChClockText();
-  const clock = useChClock();
-  // P-14: a changed event wears a badge in the kicker and its old value struck under the range, until Got it.
-  const mark = useRowMark()(e);
-  const was = mark && !mark.change.partial ? markSub(e.location, mark.change, clock, false) : null;
-  const ticking = useNow();
-  const now = frozen ? new Date(frozen) : ticking;
-  const when = whenLabel(e, now);
-  return (
-    <Link href={eventHref(e)} className="ch-ph-next">
-      <span className="ch-ph-next__k">
-        <span>
-          <Icon icon={TYPE_ICON[e.type]} size={13} />
-          Up next · {TYPE_LABEL[e.type]}
-          {mark && <MarkBadge change={mark.change} />}
-        </span>
-        <span className={'ch-num' + (when.soon ? ' is-soon' : '')}>{t(when.text)}</span>
-      </span>
-      <span className="ch-ph-next__t">{e.title}</span>
-      <span className="ch-ph-next__m ch-num">{[t(e.rangeLabel), e.location].filter(Boolean).join(' · ')}</span>
-      {was && <span className="ch-ph-next__m ch-num">{was}</span>}
-      <MineBadge mine={e.mine} />
-      {!e.allDay && <Countdown to={e.startIso} frozen={frozen} />}
-      <LinkPending />
-    </Link>
   );
 }
 

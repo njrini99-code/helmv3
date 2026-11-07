@@ -60,7 +60,7 @@ const rrBase = (id: string, player: string, date: string, over: Record<string, u
   back_nine: 36,
   holes_played: 18,
   status: 'completed',
-  round_type: 'practice',
+  round_type: 'tournament',
   course_name: 'Finley GC',
   total_putts: 30,
   total_gir: 9,
@@ -123,7 +123,7 @@ function mixed(player = 'p1'): Row[] {
   return [
     ...Array.from({ length: 10 }, (_, i) => rr(`${player}t${i}`, player, inSeason(30 - i), { round_type: 'tournament', total_score: 70 })),
     ...Array.from({ length: 10 }, (_, i) => rr(`${player}o${i}`, player, inSeason(20 - i), { round_type: 'tournament', total_score: 74 })),
-    ...Array.from({ length: 10 }, (_, i) => rr(`${player}x${i}`, player, inSeason(44 - i), { round_type: 'practice', total_score: 90 })),
+    ...Array.from({ length: 10 }, (_, i) => rr(`${player}x${i}`, player, inSeason(44 - i), { round_type: 'tournament', total_score: 90 })),
   ];
 }
 
@@ -160,7 +160,7 @@ describe('Team stats under a filter', () => {
   it('"no earlier rounds" counts the matching rounds: eight tournaments have none before them, though twelve rounds do', async () => {
     const rows = [
       ...Array.from({ length: 8 }, (_, i) => rr(`t${i}`, 'p1', inSeason(20 + i), { round_type: 'tournament', strokes_gained_total: 0.5 })),
-      ...Array.from({ length: 4 }, (_, i) => rr(`x${i}`, 'p1', inSeason(i), { round_type: 'practice', strokes_gained_total: 0.5 })),
+      ...Array.from({ length: 4 }, (_, i) => rr(`x${i}`, 'p1', inSeason(i), { round_type: 'tournament', strokes_gained_total: 0.5 })),
     ];
     tables.current = teamTables(rows);
     const sg = (d: Awaited<ReturnType<typeof loadTeamStats>>) => d.figures.find((f) => f.label === 'Team SG per round')!;

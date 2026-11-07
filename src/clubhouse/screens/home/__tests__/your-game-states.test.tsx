@@ -11,7 +11,7 @@ import { PlayerGame } from '../PlayerGame';
 
 afterEach(cleanup);
 
-const show = (data: ChPlayerHome, shs = true) => render(<PlayerGame data={data} phone shs={shs} part="legs" />);
+const show = (data: ChPlayerHome) => render(<PlayerGame data={data} phone part="legs" />);
 const legs = () => [...document.querySelectorAll<HTMLElement>('a[data-ch="home-leg"]')];
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 const noneLegs = (d: ChPlayerHome): ChPlayerHome => ({ ...d, legs: { ...d.legs!, cacheError: false, rows: d.legs!.rows.map((r) => ({ ...r, value: null, needs: undefined, sg: null, trend: [], note: null })) } });
@@ -70,13 +70,7 @@ describe('Your game', () => {
     for (const p of PREVIEW_TEAM_STATS.players) expect(html).not.toContain(p.name);
   });
 
-  it('a player’s no-rounds fixture still renders under the flag', () => {
+  it('a player’s no-rounds fixture still renders', () => {
     expect(() => show(PREVIEW_PLAYER_HOME_NO_ROUNDS)).not.toThrow();
-  });
-
-  it('flag off: main’s legs, none of the card', () => {
-    show(PREVIEW_PLAYER_HOME, false);
-    expect(document.querySelector('.ch-shs-yg')).toBeNull();
-    expect(legs()).toHaveLength(0);
   });
 });

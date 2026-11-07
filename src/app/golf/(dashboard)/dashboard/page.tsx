@@ -27,7 +27,7 @@ import { getPlayerHubSummaryData, type PlayerHubSummaryData } from '@/app/golf/a
 import { getTeamJoinRequests, type JoinRequestData } from '@/app/golf/actions/teams';
 import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
-import { isClubhouseFor, statsRedesignEnabled } from '@/clubhouse/gate';
+import { isClubhouseFor } from '@/clubhouse/gate';
 import { loadCoachHome } from '@/clubhouse/data/home';
 import { loadLiveRounds, loadPlayerLive } from '@/clubhouse/data/live-rounds';
 import { CoachHome, CoachHomeNoTeam } from '@/clubhouse/screens/home/CoachHome';
@@ -289,10 +289,10 @@ export default async function GolfDashboardPage({
         const team = await resolveClubhouseTeam(session);
         if (!team || team.role !== 'player') return <PlayerHomeNoTeam />;
         const [home, live] = await Promise.all([
-            marksHint().then((marks) => loadPlayerHome({ shs: statsRedesignEnabled(), teamId: team.teamId, playerId: team.playerId, firstName: player.first_name?.trim() || 'there', marks })),
+            marksHint().then((marks) => loadPlayerHome({ teamId: team.teamId, playerId: team.playerId, firstName: player.first_name?.trim() || 'there', marks })),
             loadPlayerLive({ teamId: team.teamId, playerId: team.playerId }),
         ]);
-        return <PlayerHome data={home} live={live} playerId={team.playerId} shs={statsRedesignEnabled()} />;
+        return <PlayerHome data={home} live={live} playerId={team.playerId} />;
     }
     if (player) {
         // Get team via membership

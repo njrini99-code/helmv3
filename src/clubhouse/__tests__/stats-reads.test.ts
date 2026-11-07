@@ -45,7 +45,7 @@ import { filterFor } from '../data/stats-filter';
 const day = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
 const round = (i: number, player: string) => ({
   id: `r${i}`, player_id: player, round_date: day(i + 1), total_score: 74 + (i % 5), score_to_par: 2 + (i % 5), front_nine: 37, back_nine: 37 + (i % 5), holes_played: 18, status: 'completed',
-  round_type: 'practice', course_name: 'Pines', tees_played: 'White', total_putts: 31, total_gir: 10, total_gir_possible: 18, strokes_gained_total: 0.5,
+  round_type: 'tournament', course_name: 'Pines', tees_played: 'White', total_putts: 31, total_gir: 10, total_gir_possible: 18, strokes_gained_total: 0.5,
 });
 const rounds = Array.from({ length: 24 }, (_, i) => round(i, i % 2 ? 'p1' : 'p2'));
 

@@ -899,7 +899,6 @@ function GameAreaDetail({ id, data, reads, onRetry }: { id: 'scoring' | 'tee' | 
       onRetry={onRetry}
       phone
       only={id}
-      shs
       asDetail={{ hero, bench, before, after, figuresMeta: windowShort(data.filter), figuresFirst: id !== 'scoring' }}
     />
   );

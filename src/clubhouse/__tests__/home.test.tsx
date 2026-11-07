@@ -65,7 +65,6 @@ import { filterFor } from '../data/stats-filter';
 import { weightedMean } from '../data/stats-weight';
 import { formBasis } from '../screens/home/HomePhone';
 import { CoachHome, CoachHomeNoTeam, isFirstRun } from '../screens/home/CoachHome';
-import { HomeActions } from '../screens/home/HomeActions';
 import { HomeSkeleton } from '../screens/home/HomeSkeleton';
 import { LatestRound } from '../screens/home/LatestRound';
 import { Leaderboard } from '../screens/home/Leaderboard';
@@ -193,15 +192,6 @@ describe('Home · reads that fail', () => {
     expect(code('CH-2207')!.textContent).toMatch(/The leaderboard couldn’t be shown/);
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(PREVIEW_HOME.greeting);
     quiet.mockRestore();
-  });
-
-  it('CH-2208 20103 the team chat does not load: Message team opens Messages instead', async () => {
-    tables.current = { golf_conversations: { error: { message: 'boom' } } };
-    const data = await load();
-    expect(data.teamChatId).toBeNull();
-    logged('team chat');
-    wrap(<HomeActions teamChatId={data.teamChatId} />);
-    expect(screen.getByRole('link', { name: /Message team/ }).getAttribute('href')).toBe('/golf/dashboard/messages');
   });
 
   it('CH-2209 replies do not load: the agenda drops who is invited instead of saying 0 players', async () => {
@@ -349,23 +339,6 @@ describe('Home · loading, motion, haptics, accessibility', () => {
     await user.click(screen.getByRole('button', { name: 'Next round' }));
     expect(hapticSpy).toHaveBeenCalledWith('select');
     expect(screen.getByText('2 of 3')).toBeTruthy();
-  });
-
-  it('CH-2702 CH-2801 21703 N opens a new event with the light tap, but not while typing', async () => {
-    const user = userEvent.setup();
-    wrap(
-      <>
-        <input aria-label="Somewhere to type" />
-        <HomeActions teamChatId="c1" />
-      </>,
-    );
-    await user.click(screen.getByRole('textbox', { name: 'Somewhere to type' }));
-    await user.keyboard('n');
-    expect(router.push).not.toHaveBeenCalled();
-    (document.activeElement as HTMLElement).blur();
-    await user.keyboard('n');
-    expect(router.push).toHaveBeenCalledWith('/golf/dashboard/calendar?new=1');
-    expect(hapticSpy).toHaveBeenCalledWith('press');
   });
 
   it('CH-2802 each day says how many events it has, in words', () => {
@@ -1080,7 +1053,6 @@ describe('Home · Coach Home’s own contracts', () => {
   });
 
   it('22301 a section that crashes is reported at high severity under its own surface, and N leaves a breadcrumb', async () => {
-    const user = userEvent.setup();
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const broken = home({
       week: { ...PREVIEW_HOME.week, days: null as never },
@@ -1092,9 +1064,6 @@ describe('Home · Coach Home’s own contracts', () => {
       expect(chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface, severity: 'high' }));
     }
     view.unmount();
-    wrap(<HomeActions teamChatId="c1" />);
-    await user.keyboard('n');
-    expect(chTrail).toHaveBeenCalledWith('home new event (keyboard)');
   });
 });
 

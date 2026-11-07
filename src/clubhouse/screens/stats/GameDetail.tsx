@@ -328,7 +328,6 @@ export function GameDetail({
   onRetry,
   phone = false,
   only,
-  shs = false,
   asDetail,
 }: {
   s: GolfStats;
@@ -353,8 +352,6 @@ export function GameDetail({
   phone?: boolean;
   /** One section alone, for a pushed detail page: no chips, no hash listener, and the session's choice is not read. */
   only?: GameSectionId;
-  /** clubhouse_stats_redesign_v1: Missed short reads the calculator's own figure. */
-  shs?: boolean;
   /** With `only`: draw that section as the redesign's pushed detail. */
   asDetail?: GameAreaDetail;
 }) {
@@ -473,7 +470,7 @@ export function GameDetail({
   ];
   const tourProx = (x.approach ?? []).map((b) => ({ band: b.label.replace('-', '–').replace(' yd', ''), value: b.value, bench: b.bench, n: b.shots, floor: b.floor }));
   const worstProx = tourProx.filter((b) => b.value != null && b.bench != null).sort((a, b) => b.value! - b.bench! - (a.value! - a.bench!))[0];
-  const { short: missShort, long: missLong } = missSplit(s, shs);
+  const { short: missShort, long: missLong } = missSplit(s);
   const hasMiss = s.approachMissTotal > 0;
 
   // Short game

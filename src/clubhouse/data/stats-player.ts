@@ -233,12 +233,10 @@ export async function loadPlayerProfile(input: {
   window: ChWindow;
   /** The round filter; omitted, it is the window alone. */
   filter?: ChFilter;
-  /** clubhouse_stats_redesign_v1: practice rounds leave the default figures (below). Off, they count as they always have. */
-  shs?: boolean;
 }): Promise<ChPlayerProfile | null> {
   const f = input.filter ?? filterFor(input.window);
   // With the redesign on, the figures leave practice rounds out unless the filter asks for a type or picks rounds by hand (data/season.ts).
-  const counted = (rounds: ChRound[]) => (practiceCut(input.shs, f) ? rounds.filter(countsForScoring) : rounds);
+  const counted = (rounds: ChRound[]) => (practiceCut(f) ? rounds.filter(countsForScoring) : rounds);
   const supabase = await createClient();
   const now = new Date();
   const coach = input.viewer === 'coach';
@@ -450,7 +448,7 @@ export async function loadPlayerProfile(input: {
   // a round posted as a total only: restated (stats-weight).
   const perRoundStats = detailFailed || !detail.stats ? null : perEighteen(detail.stats, winRounds);
   // GameMore's by-type row compares practice with tournament play, so its Practice cell keeps the uncut window on purpose.
-  const s = perRoundStats && practiceCut(input.shs, f) ? withPracticeRow(perRoundStats, roundsInFilter(allMine, f, start)) : perRoundStats;
+  const s = perRoundStats && practiceCut(f) ? withPracticeRow(perRoundStats, roundsInFilter(allMine, f, start)) : perRoundStats;
 
   // Strokes gained against the previous 10 matching rounds; only the newest-ten cut has one (not a range, not picked rounds).
   const prevList = previousInFilter(mine, f, start);

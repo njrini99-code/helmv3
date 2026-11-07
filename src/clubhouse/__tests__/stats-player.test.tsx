@@ -771,7 +771,7 @@ function profileTables(over: import('./supabase-fake').ChFakeTables = {}): impor
     golf_teams: { data: { gender: 'men' } },
     golf_players: { data: { id: OTHER, first_name: 'Jonah', last_name: 'Okafor', graduation_year: 2029, hometown: 'Charlotte', state: 'NC', handicap: 3.9, handicap_index: null } },
     golf_team_members: (f) => (isMembership(f) ? { data: { status: 'active' } } : { data: [{ player_id: OTHER }, { player_id: 'p2' }] }),
-    golf_rounds: { data: [{ id: 'r1', player_id: OTHER, round_date: DAY, total_score: 74, score_to_par: 2, front_nine: 37, back_nine: 37, holes_played: 18, status: 'completed', round_type: 'practice' }] },
+    golf_rounds: { data: [{ id: 'r1', player_id: OTHER, round_date: DAY, total_score: 74, score_to_par: 2, front_nine: 37, back_nine: 37, holes_played: 18, status: 'completed', round_type: 'tournament' }] },
     golf_round_stats_cache: { data: [{ round_id: 'r1', greens_hit: 12, greens_total: 18, total_putts: 30, scramble_attempts: 4, scrambles_converted: 2 }] },
     golf_pga_standards: { data: [{ metric_id: 'gir_pct', pga_tour_value: 67 }] },
     golf_player_focus_areas: { data: [] },
@@ -829,7 +829,7 @@ describe('Stats player · the loader', () => {
       golf_team_members: (f) => (isMembership(f) ? { data: { status: 'active' } } : { data: [{ player_id: 'someone-else' }] }),
       golf_rounds: (f) => {
         roundReads.push(f);
-        return { data: [{ id: 'r1', player_id: OWN, round_date: DAY, total_score: 74, score_to_par: 2, front_nine: 37, back_nine: 37, holes_played: 18, status: 'completed', round_type: 'practice' }] };
+        return { data: [{ id: 'r1', player_id: OWN, round_date: DAY, total_score: 74, score_to_par: 2, front_nine: 37, back_nine: 37, holes_played: 18, status: 'completed', round_type: 'tournament' }] };
       },
     });
     const profile = await loadAs('player', OWN);
@@ -945,7 +945,7 @@ describe('Stats player · the loader', () => {
   });
 
   it('50103 a coach pages through the team by scoring average, and past the last player comes the first', async () => {
-    const round = (id: string, player_id: string, score: number) => ({ id, player_id, round_date: DAY, total_score: score, score_to_par: score - 72, front_nine: 37, back_nine: score - 37, holes_played: 18, status: 'completed', round_type: 'practice' });
+    const round = (id: string, player_id: string, score: number) => ({ id, player_id, round_date: DAY, total_score: score, score_to_par: score - 72, front_nine: 37, back_nine: score - 37, holes_played: 18, status: 'completed', round_type: 'tournament' });
     tables.current = profileTables({
       golf_team_members: (f) => (isMembership(f) ? { data: { status: 'active' } } : { data: [{ player_id: 'a' }, { player_id: 'b' }, { player_id: 'c' }] }),
       golf_rounds: { data: [round('r1', 'a', 70), round('r2', 'b', 72), round('r3', 'c', 74)] },

@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -23,7 +23,6 @@ import { briefFor, legRows, loadPlayerHome, type ChPlayerHome } from '../data/pl
 import type { ChRound } from '../data/season';
 import { PlayerHome, PlayerHomeNoTeam, isPlayerFirstRun } from '../screens/home/PlayerHome';
 import { scoringNote } from '../screens/home/PlayerGame';
-import { Countdown } from '../screens/home/Countdown';
 import { chReport, chTrail } from '../lib/track';
 import { PhoneChromeProvider } from '../shell/phone-chrome';
 import { markAppRunning, RouteScope } from '../lib/session-state';
@@ -618,45 +617,6 @@ describe('Player Home · the page’s own contracts (desktop)', () => {
     expect(document.querySelector('a[href*="player="]')).toBeNull();
     await user.keyboard('n');
     expect(router.push).not.toHaveBeenCalled();
-  });
-
-  it('21807 the timer’s name says one day, hour or minute in the singular', () => {
-    wrap(<Countdown to="2026-10-14T19:41:30Z" frozen="2026-10-14T18:40:00Z" />);
-    expect(screen.getByRole('timer', { name: 'Starts in 1 hour and 1 minute' })).toBeTruthy();
-    cleanup();
-    wrap(<Countdown to="2026-10-15T19:41:30Z" frozen="2026-10-14T18:40:00Z" />);
-    expect(screen.getByRole('timer', { name: 'Starts in 1 day and 1 hour' })).toBeTruthy();
-  });
-
-  it('owner item E: two units, the leading one unpadded; hours and minutes inside a day, seconds only inside the hour', () => {
-    const shown = (to: string) => {
-      cleanup();
-      wrap(<Countdown to={to} frozen="2026-10-14T18:40:00Z" />);
-      return screen.getByRole('timer').textContent;
-    };
-    expect(shown('2026-10-16T12:42:00Z')).toBe('1d18h');
-    expect(shown('2026-10-24T20:40:00Z')).toBe('10d02h');
-    expect(shown('2026-10-15T12:42:00Z')).toBe('18h02m');
-    expect(shown('2026-10-14T19:40:00Z')).toBe('1h00m');
-    expect(shown('2026-10-14T19:39:59Z')).toBe('59m59s');
-    expect(shown('2026-10-14T18:40:09Z')).toBe('0m09s');
-    expect(screen.getByRole('timer', { name: 'Starts in less than a minute' })).toBeTruthy();
-  });
-
-  it('20301 inside the hour the countdown ticks every second and is gone once the event has started', () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
-    vi.setSystemTime(new Date('2026-10-14T18:40:00Z'));
-    wrap(<Countdown to="2026-10-14T18:41:30Z" />);
-    const digits = () => [...screen.getByRole('timer').querySelectorAll('b')].map((b) => b.textContent).join(':');
-    expect(digits()).toBe('1:30');
-    act(() => {
-      vi.advanceTimersByTime(1000);
-    });
-    expect(digits()).toBe('1:29');
-    act(() => {
-      vi.advanceTimersByTime(89_000);
-    });
-    expect(screen.queryByRole('timer')).toBeNull();
   });
 
   it('22301 the player’s sections are reported under their own surface, and Coach Home’s controls are not here', () => {
