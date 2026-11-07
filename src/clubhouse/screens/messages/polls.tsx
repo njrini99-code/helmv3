@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ListChecks, Lock, Minus, Plus } from "lucide-react";
+import { ListChecks, Lock, Minus } from "lucide-react";
 import { AnimatePresence, m, useIsPresent } from "motion/react";
 import { createContext, useContext, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type ReactNode } from "react";
 import {
@@ -8,7 +8,6 @@ import {
   POLL_MIN_OPTIONS,
   POLL_OPTION_MAX,
   POLL_QUESTION_MAX,
-  POLL_SUGGESTIONS,
   buildPollPayload,
   customEndOf,
   defaultCustomEnd,
@@ -38,7 +37,6 @@ import { Menu } from "../../ui/Menu";
 import { Modal } from "../../ui/Modal";
 import { ListPresence, PresenceRow } from "../../ui/ListPresence";
 import { InlineNotice } from "../../ui/Notices";
-import { Segmented } from "../../ui/Segmented";
 import { Switch } from "../../ui/Switch";
 import { TimeField } from "../../ui/TimeField";
 import { clock, firstName, untilLabel, type ChConv } from "./model";
@@ -195,15 +193,6 @@ function Crossfade({ k, className, children }: { k: string | number; className?:
         <FadeCopy key={k}>{children}</FadeCopy>
       </AnimatePresence>
     </span>
-  );
-}
-
-/** A part of the sheet that fades out when it leaves and back in when it returns (M11, M17); drawn at once the first time. */
-function FadePart({ className, children }: { className?: string; children: ReactNode }) {
-  return (
-    <FadeCopy as="div" className={className}>
-      {children}
-    </FadeCopy>
   );
 }
 
@@ -369,16 +358,12 @@ export function PollCard({
                 <span className="ch-ms-poll__level" aria-hidden="true" />
                 <span className="ch-ms-poll__mark" aria-hidden="true" data-pop={on && tapped === o.id ? "" : undefined}>
                   {on &&
-                    (api.redesign ? (
-                      <svg className="ch-msv-tick" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                    (<svg className="ch-msv-tick" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
                         <path d="M2.2 6.4 4.9 9l4.9-5.6" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" pathLength={20} strokeDasharray={20} />
-                      </svg>
-                    ) : (
-                      <Icon icon={Check} size={12} />
-                    ))}
+                      </svg>)}
                 </span>
                 <span className="ch-ms-poll__label">{o.label}</span>
-                {api.redesign && tally && (tally.voters[o.id]?.length ?? 0) > 0 && (
+                {tally && (tally.voters[o.id]?.length ?? 0) > 0 && (
                   <span className="ch-msv-pollfaces" aria-hidden="true">
                     {[...(tally.voters[o.id] ?? [])]
                       .sort((a, b) => (a === api.viewer.userId ? 1 : b === api.viewer.userId ? -1 : 0))
@@ -485,14 +470,14 @@ function PollVotesModal({
   const order = (ids: readonly string[]) => [...ids].sort((a, b) => (a === me ? -1 : b === me ? 1 : nameOf(a).localeCompare(nameOf(b))));
   const allWaiting = tally && conv ? order(pollWaiting(tally, [me, ...conv.memberIds])) : [];
   // Redesign: "Hasn't voted" lists players, coaches left out (MSG-VOTES-01).
-  const waiting = api.redesign ? allWaiting.filter((id) => api.directory.find((p) => p.userId === id)?.role !== "coach" && !(id === me && api.viewer.role === "coach")) : allWaiting;
+  const waiting = allWaiting.filter((id) => api.directory.find((p) => p.userId === id)?.role !== "coach" && !(id === me && api.viewer.role === "coach"));
   const totalVotes = poll.options.reduce((sum, o) => sum + (tally?.voters[o.id]?.length ?? 0), 0);
   const row = (id: string) => (
     <li key={id} className="ch-ms-pollv__row">
       <Avatar name={id === me ? api.viewer.name : nameOf(id)} size="sm" />
       <span className="ch-ms-pollv__person">
         <span className="ch-ms-pollv__name">{nameOf(id)}</span>
-        {api.redesign && lineOf(id) ? <small className="ch-ms-pollv__line">{lineOf(id)}</small> : null}
+        {lineOf(id) ? <small className="ch-ms-pollv__line">{lineOf(id)}</small> : null}
       </span>
       {!members.has(id) && <span className="ch-ms-pollv__left">Left the group</span>}
     </li>
@@ -501,23 +486,17 @@ function PollVotesModal({
     <Modal
       open={open}
       onClose={onClose}
-      icon={api.redesign ? undefined : ListChecks}
+      icon={undefined}
       title="Votes"
       description={poll.question}
-      width={api.redesign ? 400 : 440}
-      className={api.redesign ? "ch-msv-sheet ch-msv-votes" : undefined}
+      width={400}
+      className="ch-msv-sheet ch-msv-votes"
       action={closed ? <span className="ch-ms-pollv__final">Final</span> : undefined}
       footer={
         remind ? (
-          api.redesign ? (
-            <button type="button" className="ch-msv-draftrem" onClick={remind.run}>
+          <button type="button" className="ch-msv-draftrem" onClick={remind.run}>
               Draft a reminder
             </button>
-          ) : (
-          <Button variant="primary" onClick={remind.run}>
-            Remind {remind.count}
-          </Button>
-          )
         ) : undefined
       }
     >
@@ -530,14 +509,12 @@ function PollVotesModal({
                 <span>{o.label}</span>
                 <span className="ch-num">
                   {ids.length}
-                  {api.redesign && totalVotes > 0 ? ` · ${Math.round((ids.length / totalVotes) * 100)}%` : ""}
+                  {totalVotes > 0 ? ` · ${Math.round((ids.length / totalVotes) * 100)}%` : ""}
                 </span>
               </h3>
-              {api.redesign && (
-                <span className="ch-msv-votebar" aria-hidden="true">
+              <span className="ch-msv-votebar" aria-hidden="true">
                   <i style={{ width: `${totalVotes ? (ids.length / totalVotes) * 100 : 0}%` }} />
                 </span>
-              )}
               {ids.length ? <ul className="ch-ms-pollv__who">{ids.map(row)}</ul> : <p className="ch-ms-pollv__none">No votes yet</p>}
             </section>
           );
@@ -669,19 +646,6 @@ function endsWords(iso: string, nowIso: string, timeZone: string, hours: "12" | 
   return `${untilLabel(iso, nowIso, timeZone)} at ${clock(iso, timeZone, hours)}`;
 }
 
-/** The composer's poll button: group threads only, where "9 of 12 voted" means something. */
-export function PollButton({ api, conv, disabled }: { api: ChMessagesApi; conv: ChConv; disabled?: boolean }) {
-  const [open, setOpen] = useState(false);
-  const seedKey = usePollSeed(conv.id, () => setOpen(true));
-  if (!api.polls || !conv.group) return null;
-  return (
-    <>
-      <IconButton icon={ListChecks} label="New poll" size="sm" disabled={disabled} onClick={() => setOpen(true)} />
-      <PollSheet key={seedKey} api={api} conv={conv} open={open} onClose={() => setOpen(false)} />
-    </>
-  );
-}
-
 /**
  * Write a poll: a question, two to six choices (a spare row appears as the last one fills, as Reminders adds a row),
  * more than one answer or not, and an optional end. Send writes it into the thread; nothing is saved before that.
@@ -789,24 +753,6 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
     setProblem(null);
   };
 
-  const suggest = (i: number) => {
-    const s = POLL_SUGGESTIONS[i]!;
-    haptic("select");
-    setQuestion(s.question);
-    setRows((prev) => fit(prev, s.options));
-    setPlaceholders(s.placeholders ?? null);
-    setMulti(s.multi);
-    setEnds(s.ends);
-    setProblem(null);
-    // Focus the first empty choice, or the question's end.
-    requestAnimationFrame(() => {
-      const inputs = [...(list.current?.querySelectorAll<HTMLInputElement>("li:not([data-leaving]) input") ?? [])];
-      const target = inputs.find((x) => !x.value) ?? document.querySelector<HTMLInputElement>("#ch-ms-poll-q");
-      target?.focus();
-      if (target === document.querySelector("#ch-ms-poll-q")) target?.setSelectionRange(target.value.length, target.value.length);
-    });
-  };
-
   const send = async (fresh = false) => {
     if (!api.polls || busy) return;
     const draft: PollDraft = { question, options, multi, closesAt: closesAtFor(Date.now()) };
@@ -863,14 +809,14 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
     <Modal
       open={open}
       onClose={onClose}
-      icon={api.redesign ? undefined : ListChecks}
+      icon={undefined}
       title="New poll"
-      description={api.redesign ? undefined : `Everyone in ${conv.title} can vote and see who voted.`}
+      description={undefined}
       initialFocus="#ch-ms-poll-q"
-      width={api.redesign ? 400 : 480}
-      className={api.redesign ? "ch-msv-pollnew" : undefined}
+      width={400}
+      className="ch-msv-pollnew"
       action={
-        api.redesign ? (
+        (
           <>
             <button type="button" className="ch-msv-txtbtn is-cancel" onClick={onClose}>
               Cancel
@@ -879,30 +825,10 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
               {busy ? "Sending…" : "Send"}
             </button>
           </>
-        ) : !empty || multi || ends !== "none" ? (
-          <button
-            type="button"
-            className="ch-ms-pollf__clear"
-            onClick={() => {
-              haptic("warning");
-              reset();
-            }}
-          >
-            Clear
-          </button>
-        ) : undefined
+        )
       }
       footer={
-        api.redesign ? undefined : (
-          <>
-            <Button variant="ghost" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button variant={earlier ? "secondary" : "primary"} busy={busy} disabled={!ready} onClick={() => void send()}>
-              {busy ? "Sending…" : "Send poll"}
-            </Button>
-          </>
-        )
+        undefined
       }
     >
       <form
@@ -946,20 +872,7 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
         </div>
         {/* M11, M17: the chips fade out once there is something to keep, and back in when Clear empties the form. */}
         <AnimatePresence initial={false}>
-          {empty && !api.redesign && (
-            <FadePart key="quick" className="ch-ms-pollf__quick">
-              <span className="ch-ms-pollf__quickl" id="ch-ms-poll-quick">
-                Quick start
-              </span>
-              <div className="ch-ms-pollf__chips" role="group" aria-labelledby="ch-ms-poll-quick">
-                {POLL_SUGGESTIONS.map((sg, i) => (
-                  <button key={sg.chip} type="button" className="ch-ms-pollf__chip" onClick={() => suggest(i)}>
-                    {sg.chip}
-                  </button>
-                ))}
-              </div>
-            </FadePart>
-          )}
+
         </AnimatePresence>
         <fieldset className="ch-ms-pollf__set" aria-invalid={invalid("options")}>
           <legend className="ch-field__label">Choices</legend>
@@ -1008,23 +921,12 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
           </ol>
           {options.length >= POLL_MAX_OPTIONS && options.every((o) => o.trim()) ? (
             <p className="ch-field__help">A poll takes up to 6 choices.</p>
-          ) : (
-            !api.redesign && (
-              <p className="ch-field__help">
-                <Icon icon={Plus} size={12} /> A new row appears as you fill the last one.
-              </p>
-            )
-          )}
+          ) : false}
         </fieldset>
-        <Switch checked={multi} onChange={setMulti} label={api.redesign ? "Allow multiple answers" : "Allow more than one answer"} />
+        <Switch checked={multi} onChange={setMulti} label="Allow multiple answers" />
         <div className="ch-field" aria-invalid={invalid("ends")}>
-          {!api.redesign && (
-            <span className="ch-field__label" id="ch-ms-poll-ends">
-              Voting ends
-            </span>
-          )}
-          {api.redesign ? (
-            <Menu
+
+          <Menu
               label="Closes"
               align="start"
               items={ENDS.map((e) => ({ label: e.label, checked: e.value === ends, onSelect: () => setEnds(e.value) }))}
@@ -1035,22 +937,6 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
                 </button>
               )}
             />
-          ) : endsFit ? (
-            <div ref={endsRow}>
-              <Segmented<Ends> label="Voting ends" value={ends} options={ENDS} onChange={setEnds} block size="sm" />
-            </div>
-          ) : (
-            <Menu
-              label="Voting ends"
-              align="start"
-              items={ENDS.map((e) => ({ label: e.label, checked: e.value === ends, onSelect: () => setEnds(e.value) }))}
-              trigger={(p) => (
-                <button type="button" className="ch-ms-pollf__endsrow" {...p}>
-                  Voting ends · {ENDS.find((e) => e.value === ends)!.label}
-                </button>
-              )}
-            />
-          )}
           <div className={"ch-ms-pollf__custom" + (ends === "custom" ? " is-open" : "")} aria-hidden={ends === "custom" ? undefined : true} inert={ends !== "custom"}>
             <div className="ch-ms-pollf__customin">
               {customShown && (
@@ -1095,5 +981,18 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
         )}
       </form>
     </Modal>
+  );
+}
+
+/** The composer's poll button: group threads only, where "9 of 12 voted" means something. */
+export function PollButton({ api, conv, disabled }: { api: ChMessagesApi; conv: ChConv; disabled?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const seedKey = usePollSeed(conv.id, () => setOpen(true));
+  if (!api.polls || !conv.group) return null;
+  return (
+    <>
+      <IconButton icon={ListChecks} label="New poll" size="sm" disabled={disabled} onClick={() => setOpen(true)} />
+      <PollSheet key={seedKey} api={api} conv={conv} open={open} onClose={() => setOpen(false)} />
+    </>
   );
 }

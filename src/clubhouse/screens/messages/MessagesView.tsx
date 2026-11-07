@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ArrowDown,
   CalendarPlus,
   ChevronLeft,
   Download,
@@ -16,7 +15,6 @@ import {
   Pencil,
   Reply,
   RotateCw,
-  SmilePlus,
   SquarePen,
   ThumbsUp,
   HandHeart,
@@ -70,10 +68,9 @@ import { ThreadJumpKey } from "./thread-v2";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useComposerInset } from "./composer-inset";
 import { useFocusMessage } from "./use-focus-message";
-import { pollCardActions, PollButton, PollCard, PollSheet, PollThreadContext, usePollSeed, type ChPollsApi, type PollThreadActions } from "./polls";
+import { pollCardActions, PollCard, PollSheet, PollThreadContext, usePollSeed, type ChPollsApi, type PollThreadActions } from "./polls";
 import { useChReducedMotion } from "../../lib/reduced-motion";
 import { Avatar } from "../../ui/Avatar";
-import { Badge } from "../../ui/Badge";
 import { Button, IconButton } from "../../ui/Button";
 import { Icon } from "../../ui/Icon";
 import { Menu, type MenuItem } from "../../ui/Menu";
@@ -119,7 +116,6 @@ import {
   linkParts,
   MESSAGE_MAX,
   railTime,
-  sectionOf,
   threadItems,
   untilLabel,
   type ChAttachment,
@@ -141,12 +137,11 @@ import {
 import { HoldSeenRow, SeenByPill, SeenByReceipt, useSeenBy, useSeenByList } from "./seen-by";
 import { receiptCarrierId, SEEN_BY_VISIBILITY } from "@/lib/golf/message-receipts";
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
-import { fileKind, fileMeta, fileSize, useConversationFiles } from "./files";
+import { fileKind, fileSize } from "./files";
 import { subscribeThreadFiles, takeThreadFiles } from "./prefill";
 // Re-exported: MessagesPhone and older callers read it from here.
 export { fileSize } from "./files";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
-import { MessagesHead } from "./MessagesNoTeam";
 import { Tooltip } from '../../ui/Tooltip';
 import { ListPresence, PresenceRow } from '../../ui/ListPresence';
 import { useRovingRows } from "../../lib/roving";
@@ -199,7 +194,6 @@ export interface ChMessagesApi {
   /** golf_messages_redesign_v1, read on the server: the screens branch on it, and the root carries `data-ch-ms-v2`. */
   /** Set once by a handoff from Ask: the phone's back key returns there, the one time (W-MSG-16). */
   leaveToAsk?: () => void;
-  redesign?: boolean;
   /** The design fixture's starting filter (`view=unread`). */
   designFilter?: ChConvFilter;
   /** Redesign only: who is typing in the open thread, one bubble each. */
@@ -362,7 +356,6 @@ function SenderPeek({ api, who, children }: { api: ChMessagesApi; who: ChPerson 
 
 /* Rail */
 
-
 /** One conversation in the list: the desktop rail and the phone inbox. */
 export function ConvRow({ api, c, avatarSize = 36, phone = false }: { api: ChMessagesApi; c: ChConv; avatarSize?: number; phone?: boolean }) {
   const open = () => {
@@ -394,14 +387,14 @@ export function ConvRow({ api, c, avatarSize = 36, phone = false }: { api: ChMes
         : []),
       { label: unread ? "Mark as read" : "Mark as unread", icon: unread ? MailOpen : Mail, onSelect: toggleRead },
       { label: "Mute…", icon: BellOff, onSelect: () => setMuting(true) },
-      ...(askDelete ? [{ kind: "separator" as const }, { label: api.redesign ? "Delete conversation" : "Delete", icon: Trash2, danger: true, onSelect: askDelete }] : []),
+      ...(askDelete ? [{ kind: "separator" as const }, { label: "Delete conversation", icon: Trash2, danger: true, onSelect: askDelete }] : []),
   ];
   const ctx = useContextMenu<ChConv>({
     label: (row) => `Actions for ${row.title}`,
     title: (row) => row.title,
     touchHold: phone,
-    anchored: !!api.redesign,
-    items: () => (api.redesign ? rowItems.map((item) => (item.kind === "separator" ? item : { ...item, icon: undefined })) : rowItems),
+    anchored: true,
+    items: () => (rowItems.map((item) => (item.kind === "separator" ? item : { ...item, icon: undefined }))),
   });
   const sheets = (
     <>
@@ -510,7 +503,7 @@ function RowMuteModal({ api, c, open, onClose }: { api: ChMessagesApi; c: ChConv
 
 /** A direct thread with a player whose year is known: the coin's year colour. */
 export function convYear(api: ChMessagesApi, c: ChConv) {
-  if (!api.redesign || c.group) return null;
+  if (c.group) return null;
   const person = personOf(api, c.memberIds[0] ?? "");
   return person?.gradYear ? classYearKey(person.gradYear, new Date(api.now), api.timeZone) : null;
 }
@@ -545,16 +538,16 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { ap
     <>
       {c.group ? (
         <span className="ch-ms-grp">
-          <Icon icon={api.redesign && c.channel ? Flag : Users} size={15} />
+          <Icon icon={c.channel ? Flag : Users} size={15} />
         </span>
       ) : (
-        <Avatar name={c.title} id={convAvatarId(api, c)} size={avatarSize} year={api.redesign ? convYear(api, c) : null} />
+        <Avatar name={c.title} id={convAvatarId(api, c)} size={avatarSize} year={convYear(api, c)} />
       )}
       <span className="ch-ms-row__main">
         <span className="ch-ms-row__top">
-          {api.redesign && isUnread(c) && <i className="ch-msv-dot" aria-hidden="true" />}
+          {isUnread(c) && <i className="ch-msv-dot" aria-hidden="true" />}
           <b>{c.title}</b>
-          {api.redesign && c.muted && <Icon icon={BellOff} size={13} className="ch-ms-row__mute" aria-label="Muted" />}
+          {c.muted && <Icon icon={BellOff} size={13} className="ch-ms-row__mute" aria-label="Muted" />}
           <span className="ch-num">
             {railTime(c.lastAt, api.now, api.timeZone, api.clock)}
           </span>
@@ -591,28 +584,14 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { ap
                       <Icon icon={ListChecks} size={13} className="ch-ms-row__poll" />
                       {c.lastText.replace(/^Poll: /, "")}
                     </>
-                  ) : (
-                    c.lastText
-                  )}
+                  ) : c.lastText}
                 </>
-              ) : (
-                "No messages yet"
-              )}
+              ) : "No messages yet"}
             </span>
           </span>
-          {api.redesign ? (
+          {(
             isUnread(c) ? <span className="ch-sr-only">{c.unread > 0 ? `${c.unread} unread` : "Marked unread"}</span> : null
-          ) : c.unread > 0 ? (
-            <span role="img"
-              className="ch-ms-count ch-num"
-              aria-label={`${c.unread} unread`}
-            >
-              {c.unread}
-            </span>
-          ) : c.markedUnread ? (
-            // Marked unread with nothing new in it: a dot, not a count it doesn't have.
-            <span role="img" className="ch-ms-count is-dot" aria-label="Marked unread" />
-          ) : null}
+          )}
         </span>
       </span>
     </>
@@ -669,12 +648,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
   const unread = api.convs.filter(isUnread).length;
   const list = filterConvs(api.convs, filter, q);
   // The lane's first run (S-MSG.empty): the rail keeps Messages, New and Search; the card in the pane says the rest.
-  const firstRun = !!api.redesign && isMessagesFirstRun(api);
-  const sections: Array<[ReturnType<typeof sectionOf>, string]> = [
-    ["today", "Today"],
-    ["week", "This week"],
-    ["earlier", "Earlier"],
-  ];
+  const firstRun = isMessagesFirstRun(api);
   return (
     <aside className="ch-ms-rail" aria-label="Conversations">
       <div className="ch-ms-rail__head">
@@ -691,11 +665,11 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
             </button>
           </Tooltip>
         </div>
-        {api.redesign && <p className="ch-ms-rail__ctx ch-num">{firstRun ? "No conversations yet" : (api.convsLoading && !api.convs.length) || api.annLoading ? "Loading conversations" : inboxContextDesktop(unread, api.convs.length)}</p>}
+        <p className="ch-ms-rail__ctx ch-num">{firstRun ? "No conversations yet" : (api.convsLoading && !api.convs.length) || api.annLoading ? "Loading conversations" : inboxContextDesktop(unread, api.convs.length)}</p>
         <SearchField
           value={q}
           onChange={setQ}
-          placeholder={api.redesign ? "Search" : "Search people and messages"}
+          placeholder="Search"
           label="Search conversations and messages"
         />
         {!firstRun && (
@@ -706,7 +680,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
             onChange={setFilter}
             options={[
               { value: "all", label: "All" },
-              { value: "unread", label: api.redesign ? "Unread" : `Unread · ${unread}` },
+              { value: "unread", label: "Unread" },
               { value: "groups", label: "Groups" },
             ]}
           />
@@ -744,35 +718,16 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
           />
         ) : (
           <>
-            {api.redesign && (
-              <PinnedAndRecent
+            <PinnedAndRecent
                 api={api}
                 list={list}
                 row={(c) => <ConvRow key={c.id} api={api} c={c} />}
               />
-            )}
-            {!api.redesign && sections.map(([k, l]) => {
-              const rows = list.filter(
-                (c) => sectionOf(c.lastAt, api.now, api.timeZone) === k,
-              );
-              if (!rows.length) return null;
-              return (
-                <section key={k} className="ch-ms-sec" aria-label={l}>
-                  <div className="ch-ms-sec__l">{l}</div>
-                  <div className="ch-ms-sec__card">
-                    <ListPresence>
-                      {rows.map((c) => (
-                        <ConvRow key={c.id} api={api} c={c} />
-                      ))}
-                    </ListPresence>
-                  </div>
-                </section>
-              );
-            })}
-            {!list.length && !(api.redesign && q.trim()) && <RailEmpty filter={filter} q={q} onClearSearch={() => setQ("")} onShowAll={() => setFilter("all")} />}
+
+            {!list.length && !(q.trim()) && <RailEmpty filter={filter} q={q} onClearSearch={() => setQ("")} onShowAll={() => setFilter("all")} />}
             {/* Messages first; the team's announcements fold under them (owner, 2026-10-16). */}
             {filter !== "groups" && <AnnouncementsSection api={api} q={q} />}
-            <MessageHits api={api} q={q} nameMatches={api.redesign ? list.length : undefined} />
+            <MessageHits api={api} q={q} nameMatches={list.length} />
           </>
         )}
       </div>
@@ -868,7 +823,7 @@ function ReactionChip({ api, messageId, r, arriving = false }: { api: ChMessages
         }}
       >
         <Icon icon={REACTION_ICON[r.key]} size={12} />
-        {!api.redesign || r.count > 1 ? r.count : null}
+        {r.count > 1 ? r.count : null}
       </button>
       {typeof document !== "undefined" &&
         createPortal(
@@ -917,7 +872,7 @@ function ReactionChip({ api, messageId, r, arriving = false }: { api: ChMessages
 }
 
 /** A photo in a message: shown in the thread, a click opens the full file. One that won't load falls back to the file chip. */
-function ImageAttachment({ f, redesign = false }: { f: ChAttachment; redesign?: boolean }) {
+function ImageAttachment({ f }: { f: ChAttachment; }) {
   const [broken, setBroken] = useState(false);
   const [viewing, setViewing] = useState(false);
   if (broken) {
@@ -928,7 +883,7 @@ function ImageAttachment({ f, redesign = false }: { f: ChAttachment; redesign?: 
         </span>
         <span style={{ minWidth: 0 }}>
           <b>{f.name}</b>
-          <span>{redesign ? `${fileKind(f.mime)} · ${fileSize(f.size)}` : fileSize(f.size)}</span>
+          <span>{`${fileKind(f.mime)} · ${fileSize(f.size)}`}</span>
         </span>
         <Icon icon={Download} size={15} />
       </a>
@@ -957,13 +912,10 @@ export function Attachments({
   load,
   id,
   mine,
-  redesign = false,
 }: {
   load: ChMessagesApi["attachments"];
   id: string;
   mine: boolean;
-  /** "{TYPE} · {size}" under the name (MSG-FILE-03). */
-  redesign?: boolean;
 }) {
   const [files, setFiles] = useState<ChAttachment[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -1059,7 +1011,7 @@ export function Attachments({
     <>
       {files.map((f) =>
         f.mime.startsWith("image/") && f.url ? (
-          <ImageAttachment key={f.id} f={f} redesign={redesign} />
+          <ImageAttachment key={f.id} f={f} />
         ) : (
         <a
           key={f.id}
@@ -1074,7 +1026,7 @@ export function Attachments({
           </span>
           <span style={{ minWidth: 0 }}>
             <b>{f.name}</b>
-            <span>{redesign ? `${fileKind(f.mime)} · ${fileSize(f.size)}` : fileSize(f.size)}</span>
+            <span>{`${fileKind(f.mime)} · ${fileSize(f.size)}`}</span>
           </span>
           <Icon icon={Download} size={15} />
           {mine && <span className="ch-sr-only">Sent by you</span>}
@@ -1212,7 +1164,7 @@ export function Bubble({
     document.addEventListener('pointerdown', away);
     return () => document.removeEventListener('pointerdown', away);
   }, [barHeld]);
-  const press = useLongPress(m.failed ? undefined : (onActions ?? (api.redesign ? () => setBarHeld(true) : undefined)), onActions ? (direction) => {
+  const press = useLongPress(m.failed ? undefined : (onActions ?? (() => setBarHeld(true))), onActions ? (direction) => {
     if (direction === "right") onReply?.();
     else setShowTime(true);
   } : undefined);
@@ -1222,8 +1174,7 @@ export function Bubble({
       ? {
           onContextMenu: (e: ReactMouseEvent) => {
             e.preventDefault();
-            if (api.redesign) setLifted(true);
-            else setPicking(true);
+            setLifted(true);
           },
         }
       : {};
@@ -1259,8 +1210,8 @@ export function Bubble({
       ]
     : m.mine
       ? [
-          ...(api.redesign && onReply ? [{ label: "Reply", icon: Reply, onSelect: onReply }] : []),
-          ...(api.redesign && m.text ? [{ label: "Copy", icon: Copy, onSelect: () => void copyText() }] : []),
+          ...(onReply ? [{ label: "Reply", icon: Reply, onSelect: onReply }] : []),
+          ...(m.text ? [{ label: "Copy", icon: Copy, onSelect: () => void copyText() }] : []),
           // An attachment-only message has no text to edit (as the phone's sheet: wave 5 #8).
           ...(m.text ? [{ label: "Edit", icon: Pencil, onSelect: onEdit }] : []),
           ...seenItem,
@@ -1362,22 +1313,16 @@ export function Bubble({
                 name={who?.name ?? "Member"}
                 id={who ? (who.playerId ?? who.userId) : null}
                 size={30}
-                year={api.redesign && who?.gradYear ? classYearKey(who.gradYear, new Date(api.now), api.timeZone) : null}
+                year={who?.gradYear ? classYearKey(who.gradYear, new Date(api.now), api.timeZone) : null}
               />
             </SenderPeek>
           )}
         </span>
       )}
       <div className="ch-ms-msg__col">
-        {!api.redesign && !m.mine && first && group && (
-          <SenderPeek api={api} who={who}>
-            <span className="ch-ms-msg__who">
-              {firstName(who?.name ?? "Member")}
-            </span>
-          </SenderPeek>
-        )}
+
         <div className="ch-ms-msg__line">
-          <div className="ch-ms-msg__stack" {...press} {...rightClick} {...(api.redesign && !m.failed && !m.deleted ? { "data-ch-press-scale": ".97", onClick: toggleLikeOnDouble, onDoubleClick: (e: ReactMouseEvent) => e.preventDefault() } : {})}>
+          <div className="ch-ms-msg__stack" {...press} {...rightClick} {...(!m.failed && !m.deleted ? { "data-ch-press-scale": ".97", onClick: toggleLikeOnDouble, onDoubleClick: (e: ReactMouseEvent) => e.preventDefault() } : {})}>
             {m.replyToId && <ReplyQuote api={api} replyToId={m.replyToId} />}
             {m.poll ? (
               <PollCard api={api} messageId={m.id} poll={m.poll} mine={m.mine} />
@@ -1385,14 +1330,14 @@ export function Bubble({
               m.text && (
                 <div className="ch-ms-bub">
                   {/* Redesign: the sender's name sits inside a run's first bubble (06 S-MSG.team). */}
-                  {api.redesign && !m.mine && first && group && <b className="ch-msv-bname">{firstName(who?.name ?? "Member")}</b>}
+                  {!m.mine && first && group && <b className="ch-msv-bname">{firstName(who?.name ?? "Member")}</b>}
                   <MessageText text={m.text} />
-                  {api.redesign && last && <BubbleTail />}
+                  {last && <BubbleTail />}
                 </div>
               )
             )}
             {m.hasAttachments && (
-              <Attachments load={api.attachments} id={m.id} mine={m.mine} redesign={!!api.redesign} />
+              <Attachments load={api.attachments} id={m.id} mine={m.mine} />
             )}
           </div>
           {onActions && !m.failed && (
@@ -1405,7 +1350,7 @@ export function Bubble({
               Message actions
             </button>
           )}
-          {api.redesign && !m.failed && !m.deleted && !onActions && (
+          {!m.failed && !m.deleted && !onActions && (
             <div className="ch-msv-hoverbar" role="toolbar" aria-label="Message actions">
               {REACTIONS.filter((r) => r.key === "Like" || r.key === "Love" || r.key === "Laugh").map((r) => {
                 const on = reacts.some((x) => x.key === r.key && x.mine);
@@ -1441,58 +1386,7 @@ export function Bubble({
               </button>
             </div>
           )}
-          {!api.redesign && !m.failed && !onActions && (
-            <div className="ch-ms-msg__tools">
-              <Tooltip>
-                <button
-                  ref={reactBtn}
-                  type="button"
-                  className="ch-ms-tool"
-                  aria-label="React"
-                  aria-haspopup="menu"
-                  aria-expanded={picking}
-                  onClick={() => setPicking(!picking)}
-                >
-                  <Icon icon={SmilePlus} size={15} />
-                </button>
-              </Tooltip>
-              {onReply && (
-                <Tooltip>
-                  <button type="button" className="ch-ms-tool" aria-label="Reply" onClick={onReply}>
-                    <Icon icon={Reply} size={15} />
-                  </button>
-                </Tooltip>
-              )}
-              {menuItems.length > 0 && (
-                <Menu
-                  label="Message actions"
-                  align={m.mine ? "end" : "start"}
-                  items={menuItems}
-                  trigger={(p) => (
-                    <Tooltip>
-                      <button
-                        type="button"
-                        className="ch-ms-tool"
-                        aria-label="More message actions"
-                        {...p}
-                        ref={(el) => {
-                          actionsBtn.current = el;
-                          p.ref(el);
-                        }}
-                        onClick={() => {
-                          // A poll's items are its card's live state: read them as the menu opens.
-                          refreshMenu();
-                          p.onClick();
-                        }}
-                      >
-                        <Icon icon={Ellipsis} size={15} />
-                      </button>
-                    </Tooltip>
-                  )}
-                />
-              )}
-            </div>
-          )}
+
           <AnimatePresence>
             {picking && (
               <M.div
@@ -1538,7 +1432,7 @@ export function Bubble({
         {reacts.length > 0 && (
           <div className={"ch-ms-reacts" + (m.mine ? " on-mine" : " on-theirs")}>
             {reacts.map((r) => (
-              <ReactionChip key={r.key} api={api} messageId={m.id} r={r} arriving={!!api.redesign && drawn.current} />
+              <ReactionChip key={r.key} api={api} messageId={m.id} r={r} arriving={drawn.current} />
             ))}
           </div>
         )}
@@ -1563,18 +1457,18 @@ export function Bubble({
           </span>
         ) : (
           // The lane: times live behind the drag (S-MSG.times); only your latest message keeps its receipt, as a pill (S-MSG.seen).
-          api.redesign && group ? (
+          group ? (
             carrier && m.mine && (
               <span className="ch-ms-seen-slot">
                 <SeenByPill api={api} m={m} onOpen={onSeenBy ? (el) => onSeenBy(m, el) : undefined} />
               </span>
             )
-          ) : (api.redesign ? carrier && m.mine && m.seen : last || showTime) && (
-            <span className={"ch-ms-msg__t ch-num" + (api.redesign ? " is-pill" : "")}>
-              {api.redesign ? (m.seen && !group ? `Seen ${clock(m.at, api.timeZone, api.clock)}` : null) : clock(m.at, api.timeZone, api.clock)}
-              {!api.redesign && m.edited ? " · Edited" : ""}
+          ) : (carrier && m.mine && m.seen) && (
+            <span className={"ch-ms-msg__t ch-num" + " is-pill"}>
+              {(m.seen && !group ? `Seen ${clock(m.at, api.timeZone, api.clock)}` : null)}
+              {""}
               {/* OC-3: a direct thread's "Seen" sits on the carrier only (or a time revealed by a swipe), not every run-end. */}
-              {!api.redesign && m.mine && !group && m.seen && (carrier || showTime) ? " · Seen" : ""}
+              {""}
               {/* P-1 M3: when the receipt moves to a newer message, the old one fades out on quick (instant when reduced). */}
               <AnimatePresence initial={false}>
                 {group && (carrier || showTime) && (
@@ -1594,8 +1488,8 @@ export function Bubble({
           </span>
         )}
       </div>
-      {api.redesign && <span className="ch-msv-time ch-num">{clock(m.at, api.timeZone, api.clock)}</span>}
-      {api.redesign && lifted && (
+      <span className="ch-msv-time ch-num">{clock(m.at, api.timeZone, api.clock)}</span>
+      {lifted && (
         <HoldLift
           messageId={m.id}
           mine={m.mine}
@@ -1647,9 +1541,7 @@ function MessageText({ text }: { text: string }) {
   return (
     <>
       {linkParts(text).map((p, i) =>
-        typeof p === "string" ? (
-          p
-        ) : (
+        typeof p === "string" ? p : (
           <a
             key={i}
             className="ch-ms-link"
@@ -1690,11 +1582,7 @@ export function ReplyQuote({ api, replyToId }: { api: ChMessagesApi; replyToId: 
       })}>
       <b>{name}</b>
       <span>
-        {!parent ? (
-          "Original message unavailable"
-        ) : parent.deleted ? (
-          "Message deleted"
-        ) : parent.poll ? (
+        {!parent ? "Original message unavailable" : parent.deleted ? "Message deleted" : parent.poll ? (
           <>
             <Icon icon={ListChecks} size={13} className="ch-ms-row__poll" />
             {parent.poll.question}
@@ -1739,13 +1627,10 @@ export function AttachChips({
   files,
   onRemove,
   disabled = false,
-  redesign = false,
 }: {
   files: File[];
   onRemove: (index: number) => void;
   disabled?: boolean;
-  /** Behind the Messages flag a new chip rises (MSG-FILE-02); flag off, it just appears, as main. */
-  redesign?: boolean;
 }) {
   const reduced = useChReducedMotion();
   const rise = useChipRise(reduced);
@@ -1753,7 +1638,7 @@ export function AttachChips({
   return (
     <div className="ch-ms-to">
       {files.map((f, i) => (
-        <span key={`${f.name}${i}`} className="ch-ms-to__c" title={f.name} ref={redesign ? rise : undefined}>
+        <span key={`${f.name}${i}`} className="ch-ms-to__c" title={f.name} ref={rise}>
           <Icon icon={FileText} size={13} />
           <span className="ch-ms-to__n">{f.name}</span>
           <Tooltip>
@@ -1862,10 +1747,10 @@ export function useAutosize(ta: RefObject<HTMLTextAreaElement | null>, value: st
 }
 
 /** Redesign: the send key's place. Empty field, nothing there at all (computed `display: none`, MSG-ALL-09); otherwise it pops in and out. */
-function SendKeyHolder({ redesign, ready, children }: { redesign: boolean; ready: boolean; children: ReactNode }) {
+function SendKeyHolder({ ready, children }: { ready: boolean; children: ReactNode }) {
   const reduced = useChReducedMotion();
   const { ref, hidden } = useSendKeyPop(ready, reduced);
-  if (!redesign) return <>{children}</>;
+
   return (
     <span ref={ref} className="ch-msv-sendkey" hidden={hidden}>
       {children}
@@ -2157,71 +2042,36 @@ export function Composer({
     <footer ref={footer} className="ch-ms-comp" aria-busy={checking || sending || undefined}>
       {checkFailed && <InlineNotice code="CH-7217" title="Couldn’t check a pending send" body="Try again before sending another message." onRetry={() => setCheckAttempt((n) => n + 1)} />}
       {unconfirmed && <InlineNotice code="CH-7023" title="Couldn’t confirm this send" body="This send is unconfirmed. Retry send checks the original request; editing stays locked until its outcome is known." />}
-      {api.redesign && editing && (
+      {editing && (
         <div className="ch-ms-comp__reply is-edit" ref={chipRise}>
           <Icon icon={Pencil} size={18} />
           Editing message
           <IconButton icon={X} label="Cancel edit" onClick={() => { setDraft(""); onEditDone?.(); }} />
         </div>
       )}
-      {api.redesign && effectiveParent && (
+      {effectiveParent && (
         <div className="ch-ms-comp__reply" ref={chipRise}>
           <Icon icon={Reply} size={18} />
           Replying to {replyName(api, effectiveParent)}
           <IconButton icon={X} label="Cancel reply" onClick={() => { setRecoveredParent(null); onClearReply?.(); }} disabled={sending || unconfirmed || checking || checkFailed} />
         </div>
       )}
-      {!api.redesign && editing && (
-        <div className="ch-ms-comp__reply is-edit">
-          <Icon icon={Pencil} size={18} />
-          <span className="ch-msv-chip__b">
-            <b>Edit message</b>
-            <span>{editing.text}</span>
-          </span>
-          <IconButton icon={X} label="Cancel edit" onClick={() => { setDraft(""); onEditDone?.(); }} />
-        </div>
-      )}
-      {!api.redesign && effectiveParent && (
-        <div className="ch-ms-comp__reply">
-          <ReplyQuote api={api} replyToId={effectiveParent} />
-          <IconButton icon={X} label="Cancel reply" onClick={() => { setRecoveredParent(null); onClearReply?.(); }} disabled={sending || unconfirmed || checking || checkFailed || unavailable} />
-        </div>
-      )}
+
       {resumed && !files.length && <div role="group" className="ch-ms-to" aria-label="Pending attachments">{resumed.filenames.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c"><Icon icon={FileText} size={13} />{name}</span>)}</div>}
       {missingFiles.length > 0 && <div role="status" className="ch-ms-to" aria-label="Attachments to choose again">Choose these files again: {missingFiles.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c">{name}<Tooltip><button type="button" aria-label={`Dismiss ${name}`} onClick={() => setMissingFiles((now) => now.filter((_, j) => j !== i))}><Icon icon={X} size={12} /></button></Tooltip></span>)}</div>}
       {conv.group && api.classDay && <GroupClassLine cls={api.classDay} conv={conv} personOf={(id) => personOf(api, id)} />}
       <AttachChips
-        redesign={!!api.redesign}
         disabled={unconfirmed || checking || checkFailed || unavailable}
         files={files}
         onRemove={(i) => setFiles((s) => s.filter((_, j) => j !== i))}
       />
       <div className="ch-ms-comp__field">
-        {api.redesign ? (
-          <ComposerPlusV2
+        <ComposerPlusV2
             api={api}
             conv={conv}
             disabled={unconfirmed || checking || checkFailed || unavailable}
             onPick={(picked) => { setFiles(addFiles(filesRef.current, picked)); setMissingFiles((names) => names.filter((name) => !picked.some((file) => file.name === name))); }}
           />
-        ) : phone && conv.group && api.polls ? (
-          // D21: on a phone, one "+" with a menu (Photo or file, Poll), as iMessage's; a direct thread keeps the plain "+".
-          <ComposerPlus
-            api={api}
-            conv={conv}
-            disabled={unconfirmed || checking || checkFailed || unavailable}
-            onPick={(picked) => { setFiles(addFiles(filesRef.current, picked)); setMissingFiles((names) => names.filter((name) => !picked.some((file) => file.name === name))); }}
-          />
-        ) : (
-          <>
-            <AttachButton
-              phone={phone}
-              disabled={unconfirmed || checking || checkFailed || unavailable}
-              onPick={(picked) => { setFiles(addFiles(filesRef.current, picked)); setMissingFiles((names) => names.filter((name) => !picked.some((file) => file.name === name))); }}
-            />
-            <PollButton api={api} conv={conv} disabled={unconfirmed || checking || checkFailed || unavailable} />
-          </>
-        )}
         <textarea
           ref={ta}
           rows={1}
@@ -2244,7 +2094,7 @@ export function Composer({
           maxLength={MESSAGE_MAX}
           enterKeyHint={phone ? "enter" : "send"}
         />
-        <SendKeyHolder redesign={!!api.redesign} ready={!!ready || unconfirmed}><SendCluster phone={phone} ready={!!ready} unconfirmed={unconfirmed} notify={notify} mac={mac} onSend={(notifyAnyway) => void send(notifyAnyway)} /></SendKeyHolder>
+        <SendKeyHolder ready={!!ready || unconfirmed}><SendCluster phone={phone} ready={!!ready} unconfirmed={unconfirmed} notify={notify} mac={mac} onSend={(notifyAnyway) => void send(notifyAnyway)} /></SendKeyHolder>
       </div>
       {unavailable ? (
         <span className="ch-ms-comp__hint">
@@ -2296,27 +2146,6 @@ export function NewDivider() {
     <PresenceRow as="div" className="ch-ms-day is-new" role="separator" aria-label="New messages">
       <span>New</span>
     </PresenceRow>
-  );
-}
-
-/**
- * Under the thread, over its end: "N new messages" when some arrived while reading up (audit T25), else Jump to latest
- * once the reader is away from the end with nothing new (wave 5 #17). Either takes them down.
- */
-export function ThreadBelow({ anchor }: { anchor: { unseen: number; atEnd: boolean; toEnd: () => void } }) {
-  if (anchor.unseen > 0) {
-    return (
-      <button type="button" className="ch-ms-below" onClick={anchor.toEnd}>
-        {plural(anchor.unseen, "new message")}
-      </button>
-    );
-  }
-  if (anchor.atEnd) return null;
-  return (
-    <button type="button" className="ch-ms-below is-jump" onClick={anchor.toEnd}>
-      <Icon icon={ArrowDown} size={15} />
-      Jump to latest
-    </button>
   );
 }
 
@@ -2388,7 +2217,7 @@ function Thread({
   const focusing = !!api.focusMessageId || (!!api.foundMessageId && api.msgs.some((m) => m.id === api.foundMessageId));
   const anchor = useThreadAnchor(scroller, { convId: conv.id, count: api.msgs.length, lastMine: !!api.msgs.at(-1)?.mine, typing: api.typing, paused: focusing });
   const reducedMotion = useChReducedMotion();
-  useThreadMakeRoom(scroller, api.msgs.length, !!api.redesign, reducedMotion);
+  useThreadMakeRoom(scroller, api.msgs.length, true, reducedMotion);
   useFocusMessage(scroller, { target: api.focusMessageId ?? null, loading: api.msgsLoading, count: api.msgs.length, reduced: reducedMotion, onDone: (id) => api.messageFocused?.(id), toEnd: anchor.toEnd });
   // The thread eases like the page does, with a longer glide (a conversation is read down a long column); desktop,
   // wheel only: a trackpad stays native.
@@ -2425,12 +2254,12 @@ function Thread({
   const [searching, setSearching] = useState(false);
   useEffect(() => {
     const el = scroller.current;
-    if (!api.redesign || !el) return;
+    if (!el) return;
     const on = () => barEl.current?.classList.toggle("is-under", el.scrollTop >= 2);
     on();
     el.addEventListener("scroll", on, { passive: true });
     return () => el.removeEventListener("scroll", on);
-  }, [api.redesign]);
+  }, []);
 
   const typistId = api.typingUserIds?.[0] ?? api.typingByConv?.get(conv.id)?.[0];
   const typist = typistId ? personOf(api, typistId) : undefined;
@@ -2455,7 +2284,7 @@ function Thread({
               <Icon icon={Users} size={17} />
             </span>
           ) : (
-            <Avatar name={conv.title} id={convAvatarId(api, conv)} size={api.redesign ? 36 : 38} />
+            <Avatar name={conv.title} id={convAvatarId(api, conv)} size={36} />
           )}
           <div style={{ minWidth: 0 }}>
             <b>{conv.title}</b>
@@ -2465,9 +2294,7 @@ function Thread({
           </div>
         </div>
         <div className="ch-ms-th__act">
-          {api.redesign && (
-            <IconButton icon={Search} label="Search this conversation" variant={searching ? "secondary" : "ghost"} pressed={searching} onClick={() => setSearching((v) => !v)} />
-          )}
+          <IconButton icon={Search} label="Search this conversation" variant={searching ? "secondary" : "ghost"} pressed={searching} onClick={() => setSearching((v) => !v)} />
           {calendarHref && api.viewer.role === "coach" && (
             <Tooltip>
               <a
@@ -2498,7 +2325,7 @@ function Thread({
           </Tooltip>
         </div>
       </header>
-      {api.redesign && searching && (
+      {searching && (
         <div className="ch-msv-barsearch">
           <ConversationSearch api={api} conv={conv} onClose={() => setSearching(false)} />
         </div>
@@ -2539,7 +2366,7 @@ function Thread({
               <Skeleton width="38%" height={40} radius={18} />
             </div>
           ) : !api.msgs.length ? (
-            api.redesign && !conv.group ? (
+            !conv.group ? (
               <HelloCard name={conv.title} id={convAvatarId(api, conv)} role={conv.subtitle ?? ""} coach={api.viewer.role === "coach"} year={convYear(api, conv)} onStarter={(text) => setSeed({ text, nonce: Date.now() })} />
             ) : (
             <EmptyState compact code="CH-7304" title="No messages yet" body={`Say hello to ${conv.group ? "the group" : firstName(conv.title)}.`} />
@@ -2553,7 +2380,7 @@ function Thread({
                 it.kind === "day"
                   ? [
                       <PresenceRow as="div" key={it.key} className="ch-ms-day">
-                        <span>{it.label}{api.redesign ? <b className="ch-num"> {clock(it.at, api.timeZone, api.clock)}</b> : null}</span>
+                        <span>{it.label}<b className="ch-num"> {clock(it.at, api.timeZone, api.clock)}</b></span>
                       </PresenceRow>,
                     ]
                   : [
@@ -2582,32 +2409,24 @@ function Thread({
             <div className={"ch-ms-msg is-first" + (conv.group ? " is-group" : "")} /* CH-7602: the typing dots */>
               {/* The realtime hook says someone is typing, not who: a direct thread knows; the redesign's group reads the typers. */}
               <span className="ch-ms-msg__av">
-                {(api.redesign ? conv.group && typist : !conv.group) && <Avatar name={api.redesign && typist ? typist.name : conv.title} id={api.redesign && typist ? (typist.playerId ?? typist.userId) : convAvatarId(api, conv)} size={30} />}
+                {(conv.group && typist) && <Avatar name={typist ? typist.name : conv.title} id={typist ? (typist.playerId ?? typist.userId) : convAvatarId(api, conv)} size={30} />}
               </span>
               <div className="ch-ms-msg__col">
-                {api.redesign ? (
-                  <div className={"ch-msv-typing" + (conv.group ? " has-name" : "")} role="status" aria-label={`${conv.group ? (typist ? firstName(typist.name) : "Someone") : firstName(conv.title)} is typing`}>
+                <div className={"ch-msv-typing" + (conv.group ? " has-name" : "")} role="status" aria-label={`${conv.group ? (typist ? firstName(typist.name) : "Someone") : firstName(conv.title)} is typing`}>
                     {conv.group && typist && <b className="ch-msv-bname">{firstName(typist.name)}</b>}
                     <span className="ch-msv-typing__dots"><i /><i /><i /></span>
                   </div>
-                ) : (
-                  <div className="ch-ms-typing" role="status" aria-label={`${conv.group ? "Someone" : firstName(conv.title)} is typing`}>
-                    <i />
-                    <i />
-                    <i />
-                  </div>
-                )}
               </div>
             </div>
           )}
         </div>
       </div>
-      {api.redesign ? <ThreadJumpKey scroller={scroller} unseen={anchor.unseen} onJump={anchor.toEnd} /> : <ThreadBelow anchor={anchor} />}
+      <ThreadJumpKey scroller={scroller} unseen={anchor.unseen} onJump={anchor.toEnd} />
       <Composer
         key={conv.id}
         api={api}
         conv={conv}
-        editing={api.redesign ? editing : null}
+        editing={editing}
         onEditDone={() => setEditing(null)}
         unavailable={api.msgsError}
         replyToId={replyToId}
@@ -2618,7 +2437,7 @@ function Thread({
         seed={seed}
       />
 
-      <EditMessageModal api={api} message={api.redesign ? null : editing} onClose={() => setEditing(null)} />
+      <EditMessageModal api={api} message={null} onClose={() => setEditing(null)} />
       <DeleteMessageModal api={api} message={deleting} onClose={() => setDeleting(null)} />
       {seenList.render(api, false)}
     </section>
@@ -2981,15 +2800,14 @@ function Details({
             <Icon icon={Users} size={22} />
           </span>
         ) : (
-          <Avatar name={conv.title} id={convAvatarId(api, conv)} size="xl" ring={!api.redesign} year={api.redesign ? convYear(api, conv) : null} />
+          <Avatar name={conv.title} id={convAvatarId(api, conv)} size="xl" ring={false} year={convYear(api, conv)} />
         )}
         <b>{conv.title}</b>
         <span>
-          {api.redesign ? detailsLine(conv, api.teamName) : conv.group ? `Group · ${conv.memberCount} members` : conv.subtitle}
+          {detailsLine(conv, api.teamName)}
         </span>
       </div>
-      {api.redesign && (
-        <QuickActions
+      <QuickActions
           api={api}
           conv={conv}
           mute={mute}
@@ -2999,11 +2817,10 @@ function Details({
           onAdd={() => setAdding(true)}
           onLeave={() => setLeaving(true)}
         />
-      )}
-      {api.redesign && searching && <ConversationSearch api={api} conv={conv} onClose={() => setSearching(false)} />}
-      {api.redesign && mute.choosing && <MuteMenu anchor={mute.anchor} onPick={(h) => void mute.setMute(true, h)} onClose={() => mute.setChoosing(false)} />}
+      {searching && <ConversationSearch api={api} conv={conv} onClose={() => setSearching(false)} />}
+      {mute.choosing && <MuteMenu anchor={mute.anchor} onPick={(h) => void mute.setMute(true, h)} onClose={() => mute.setChoosing(false)} />}
       <MuteControl api={api} />
-      {api.classDay && !conv.group && (!api.redesign || api.viewer.role === "coach") && (
+      {api.classDay && !conv.group && (api.viewer.role === "coach") && (
         <ThreadClassSection
           cls={api.classDay}
           conv={conv}
@@ -3018,21 +2835,8 @@ function Details({
           )}
         />
       )}
-      {!api.redesign && !conv.group &&
-        other?.role === "player" &&
-        other.playerId &&
-        api.viewer.role === "coach" &&
-        statsHref && (
-          <div className="ch-ms-det__sec">
-            <Button
-              size="sm"
-              href={`${statsHref}?player=${encodeURIComponent(other.playerId)}`}
-            >
-              View stats
-            </Button>
-          </div>
-        )}
-      {api.redesign && conv.group && (
+
+      {conv.group && (
         <MembersCard
           api={api}
           conv={conv}
@@ -3040,70 +2844,9 @@ function Details({
           onRemove={mayRemove ? setRemoving : undefined}
         />
       )}
-      {!api.redesign && conv.group && (
-        <div className="ch-ms-det__sec">
-          <div className="ch-ms-det__l">
-            <span>{conv.memberCount} members</span>
-            {mayAdd && (
-              <Button size="sm" variant="ghost" leftIcon={UserPlus} onClick={() => setAdding(true)}>
-                Add
-              </Button>
-            )}
-          </div>
-          {api.membersError ? (
-            <InlineNotice
-              code="CH-7204"
-              title="Members didn’t load"
-              body="Try again."
-              onRetry={api.retryMembers}
-            />
-          ) : !api.members ? (
-            <div
-              style={{ display: "grid", gap: 8 }}
-              aria-busy="true"
-              data-ch-code="CH-7405"
-            >
-              <Skeleton height={30} />
-              <Skeleton height={30} />
-              <Skeleton height={30} />
-            </div>
-          ) : (
-            api.members.map((mb) => (
-              <div key={mb.userId} className="ch-ms-mem">
-                <Avatar name={mb.name} id={personOf(api, mb.userId)?.playerId ?? mb.userId} size={30} />
-                <span style={{ minWidth: 0 }}>
-                  <b>
-                    {mb.name}
-                    {mb.userId === api.viewer.userId ? " (you)" : ""}
-                  </b>
-                  <span>{mb.subtitle}</span>
-                </span>
-                {mb.userId === conv.creatorId ? (
-                  <Badge tone="neutral">Admin</Badge>
-                ) : mayRemove && mb.userId !== api.viewer.userId ? (
-                  <button type="button" className="ch-btn ch-btn--sm ch-btn--ghost" aria-label={`Remove ${mb.name}`} onClick={() => setRemoving(mb)}>
-                    Remove
-                  </button>
-                ) : (
-                  <span />
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      )}
-      {api.redesign ? <PhotosAndFiles api={api} conv={conv} /> : <FilesSection api={api} conv={conv} />}
-      {!api.redesign && conv.group && conv.creatorId !== api.viewer.userId && (
-        <div className="ch-ms-det__sec">
-          <Button
-            variant="danger"
-            leftIcon={LogOut}
-            onClick={() => setLeaving(true)}
-          >
-            Leave group
-          </Button>
-        </div>
-      )}
+
+      <PhotosAndFiles api={api} conv={conv} />
+
       {api.deleteConversation && (
         <div className="ch-ms-det__sec">
           <Button variant="danger" leftIcon={Trash2} onClick={() => setDeleting(true)}>
@@ -3116,56 +2859,6 @@ function Details({
       {mayAdd && <AddMembersModal api={api} conv={conv} open={adding} onClose={() => setAdding(false)} />}
       {mayRemove && <RemoveMemberModal api={api} conv={conv} member={removing} onClose={() => setRemoving(null)} />}
     </aside>
-  );
-}
-
-/**
- * The conversation's shared files (D-48), newest first: loading (CH-7409),
- * didn't load (CH-7214), none yet (CH-7306). A row opens the file (CH-7021 when
- * it will not). The phone's Files panel reads through the same hook.
- */
-function FilesSection({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
-  const { files, failed, retry, open } = useConversationFiles(api, conv);
-  return (
-    <div className="ch-ms-det__sec">
-      <div className="ch-ms-det__l">
-        <span>Files</span>
-        {files && files.length > 0 && <span className="ch-num">{files.length}</span>}
-      </div>
-      {failed ? (
-        <InlineNotice
-          code="CH-7214"
-          title="Files didn’t load"
-          body="Your messages are safe. Try again."
-          onRetry={retry}
-        />
-      ) : !files ? (
-        <div aria-busy="true" data-ch-code="CH-7409">
-          <Skeleton height={34} />
-        </div>
-      ) : !files.length ? (
-        <p className="ch-ms-det__none" data-ch-code="CH-7306">
-          No files shared yet.
-        </p>
-      ) : (
-        files.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            className="ch-ms-fil"
-            onClick={() => void open(f)}
-          >
-            <span className="ch-ms-file__ic">
-              <Icon icon={FileText} size={15} />
-            </span>
-            <span style={{ minWidth: 0 }}>
-              <b>{f.name}</b>
-              <span className="ch-num">{fileMeta(f, api)}</span>
-            </span>
-          </button>
-        ))
-      )}
-    </div>
   );
 }
 
@@ -3565,9 +3258,9 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
   const [details, setDetails] = useState(false);
   const [compose, setCompose] = useState(false);
   const [dialogMode, setDialogMode] = useState<"group" | "announce" | null>(null);
-  const detailsMounted = useDetailsColumn(details, !!api.redesign);
+  const detailsMounted = useDetailsColumn(details);
   // A prefilled message keeps today's dialog: it carries people, a group name and a draft (MSG-NEW-02 draws only the plain start).
-  const newPane = !!api.redesign && compose && !api.prefill && !dialogMode;
+  const newPane = compose && !api.prefill && !dialogMode;
   const conv = api.convs.find((c) => c.id === api.selectedId) ?? null;
   const ann = api.announcements.find((a) => a.id === api.selectedAnnId) ?? null;
   useEffect(() => setDetails(false), [api.selectedId]);
@@ -3584,23 +3277,6 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
   const paneKey = ann ? `a:${ann.id}` : conv ? `c:${conv.id}` : null;
   const [pane, setPane] = useState({ key: paneKey, turn: 0 });
   if (pane.key !== paneKey) setPane({ key: paneKey, turn: pane.key === null ? pane.turn : pane.turn + 1 });
-
-  if (!api.redesign && isMessagesFirstRun(api) && !conv && !ann) {
-    return (
-      // Under the page's framed head, as every page's first-run empty (states audit c4, c9); its one action is the empty's.
-      <main data-view="desktop" className="ch-ms ch-ms--first" data-canopy="">
-        <MessagesHead
-          brief={
-            api.viewer.role === "coach"
-              ? "Conversations with your players and staff, and the team’s announcements."
-              : "Conversations with your coaches and teammates, and the team’s announcements."
-          }
-        />
-        <MessagesFirstRun coach={api.viewer.role === "coach"} onNew={() => setCompose(true)} />
-        <NewMessage api={api} open={compose} onClose={closeCompose} />
-      </main>
-    );
-  }
 
   return (
     <main
@@ -3652,10 +3328,9 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
               onBack={() => api.select(null)}
             />
           </SectionBoundary>
-        ) : api.redesign && isMessagesFirstRun(api) ? (
+        ) : isMessagesFirstRun(api) ? (
           <section className="ch-ms-thread is-empty">
             <MessagesFirstRun
-              redesign
               teamName={api.teamName ?? undefined}
               coach={api.viewer.role === "coach"}
               onNew={() => setCompose(true)}

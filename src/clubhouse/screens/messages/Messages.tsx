@@ -162,7 +162,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     return () => window.clearTimeout(t);
   }, [railUnread]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const msgs = useGolfMessages(selectedId ?? '', data.viewerUserId, { ...(data.redesign ? { typingExpiryMs: 5000 } : {}), deferMarkRead: !!selectedId && selectedId === autoOpened, classAwareness: awareness });
+  const msgs = useGolfMessages(selectedId ?? '', data.viewerUserId, { ...({ typingExpiryMs: 5000 }), deferMarkRead: !!selectedId && selectedId === autoOpened, classAwareness: awareness });
   const liveIds = useMemo(() => msgs.messages.filter((m) => m.conversation_id === selectedId && !m.sendFailed).map((m) => m.id), [msgs.messages, selectedId]);
   const reactions = useMessageReactions(selectedId ?? '', liveIds, data.viewerUserId);
   const { sendMessageWithAttachments, getPendingAttachmentSend, retryPendingAttachmentSend } = useMessageAttachments({ recoverable: true });
@@ -284,7 +284,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         void msgs.markRead();
       } else setAutoOpened(null);
       // Redesign: after a failed deep link, leaving the thread lets the desktop open the newest beside the rail (02 Completeness 11b).
-      if (!id && data.redesign) setParamsDone(true);
+      if (!id) setParamsDone(true);
       if (id) setSelectedAnnId(null);
       // Opening a conversation reads it, so a mark from Mark as unread goes.
       if (id) mark(id, false);
@@ -293,7 +293,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
       setFoundMessageId(null);
       setSelectedId(id);
     },
-    [autoOpened, selectedId, msgs, mark, data.redesign],
+    [autoOpened, selectedId, msgs, mark],
   );
   /** A search hit's message, gone to in the open thread (useFocusMessage), then marked for a moment. */
   const [focusMessageId, setFocusMessageId] = useState<string | null>(null);
@@ -587,7 +587,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         .map((r) => ({ r, text: decodeMessageContent(r.content) }))
         .filter(({ text }) => !(isPollFallbackText(text) && pollHitOnlyInFooter(text, q)))
         // Redesign: a hidden conversation isn't in the list, so the hits leave it out too until a newer message brings it back.
-        .filter(({ r }) => !data.redesign || convIdsRef.current.has(r.conversationId))
+        .filter(({ r }) => convIdsRef.current.has(r.conversationId))
         .map(({ r, text }) => ({
           messageId: r.messageId,
           conversationId: r.conversationId,
@@ -597,7 +597,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
           at: r.createdAt,
         }));
     },
-    [data.teamId, data.redesign],
+    [data.teamId],
   );
 
   // Mute state for the open conversation.
@@ -684,14 +684,13 @@ export function Messages({ data }: { data: ChMessagesData }) {
     return res.attachments.map((a) => ({ id: a.id, name: a.fileName, size: a.fileSize, mime: a.mimeType, url: a.url ?? null }));
   }, []);
 
-  const redesign = data.redesign ?? false;
-  useToastPill(redesign);
+  useToastPill(true);
   convIdsRef.current = new Set(convs.map((c) => c.id));
-  const rowMutes = useRowMutes(data.viewerUserId, redesign);
+  const rowMutes = useRowMutes(data.viewerUserId, true);
   const convIds = useMemo(() => convs.map((c) => c.id), [convs]);
-  const pins = useConversationPins(data.viewerUserId, data.teamId ?? '', convIds, redesign, !loading && !error);
-  const typingByConv = useTypingByConversation(data.viewerUserId, convIds, selectedId, redesign);
-  const shownConvs = useMemo(() => (redesign && rowMutes.muted ? convs.map((c) => ({ ...c, muted: rowMutes.muted!.has(c.id) })) : convs), [redesign, rowMutes.muted, convs]);
+  const pins = useConversationPins(data.viewerUserId, data.teamId ?? '', convIds, true, !loading && !error);
+  const typingByConv = useTypingByConversation(data.viewerUserId, convIds, selectedId, true);
+  const shownConvs = useMemo(() => (rowMutes.muted ? convs.map((c) => ({ ...c, muted: rowMutes.muted!.has(c.id) })) : convs), [rowMutes.muted, convs]);
 
   const api: ChMessagesApi = {
     ...(returnToAsk
@@ -702,8 +701,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
           },
         }
       : {}),
-    redesign,
-    ...(redesign ? { pins, typingByConv } : {}),
+    pins,
+    typingByConv,
     viewer: { userId: data.viewerUserId, role: data.role, name: data.viewerName },
     signers: data.signers,
     timeZone: data.timeZone,
@@ -946,7 +945,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
             mark(id, false);
             if (id === selectedId) setSelectedId(null);
             await refetch();
-            if (redesign) void badges.refetch();
+            void badges.refetch();
           })
       : null,
     addCandidates,
@@ -1013,13 +1012,11 @@ export function Messages({ data }: { data: ChMessagesData }) {
     retryMute: () => setMuteAttempt((n) => n + 1),
     setMute: async (muted, hours) => (selectedId ? muteConversation(selectedId, muted, hours) : false),
     muteOf,
-    muteConversation: redesign
-      ? async (id, muted, hours) => {
+    muteConversation: async (id, muted, hours) => {
           const ok = await muteConversation(id, muted, hours);
           if (ok) rowMutes.refresh();
           return ok;
-        }
-      : muteConversation,
+        },
     setRead: async (id, read) => {
       if (!read) {
         // Nothing to write: the mark is this device's own (marked-unread.ts).
@@ -1039,7 +1036,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
         mark(id, false);
         haptic('success');
         await refetch();
-        if (redesign) void badges.refetch();
+        void badges.refetch();
       });
       return ok;
     },

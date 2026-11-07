@@ -258,20 +258,12 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
     const raw = r!.marks.get(userId) ?? null;
     // A forged future last_read_at is shown as now (changelog P-01): never "Last opened tomorrow".
     const lastOpened = raw && Number.isFinite(nowMs) && Date.parse(raw) > nowMs ? api.now : raw;
-    if (api.redesign) {
-      const meta = section === "notYet" ? "Hasn’t opened this chat" : lastOpened ? railTime(lastOpened, api.now, api.timeZone, api.clock) : "";
-      return { userId, name, role, lastOpened, seenAt: null, meta, label: [name, meta.toLowerCase()].filter(Boolean).join(", ") };
-    }
-    const opened = section === "notYet" ? (lastOpened ? `Last opened ${railTime(lastOpened, api.now, api.timeZone, api.clock)}` : "Hasn’t opened this chat") : "";
-    const meta = [role === "coach" ? "Coach" : "", opened].filter(Boolean).join(" · ");
-    const label = [name, role === "coach" ? "coach" : "", section === "notYet" ? opened.toLowerCase() : ""].filter(Boolean).join(", ");
-    return { userId, name, role, lastOpened, seenAt: null, meta, label };
+    const meta = section === "notYet" ? "Hasn’t opened this chat" : lastOpened ? railTime(lastOpened, api.now, api.timeZone, api.clock) : "";
+    return { userId, name, role, lastOpened, seenAt: null, meta, label: [name, meta.toLowerCase()].filter(Boolean).join(", ") };
   };
   const notYet = orderReceiptRows(s.notYet.map((id) => row(id, "notYet")), "notYet");
   // The lane reads top to bottom in the order they opened it (S-MSG.seen: Maya 7:06, Owen 7:08, ...).
-  const seen = api.redesign
-    ? s.seen.map((id) => row(id, "seen")).sort((a, b) => String(a.lastOpened).localeCompare(String(b.lastOpened)))
-    : orderReceiptRows(s.seen.map((id) => row(id, "seen")), "seen");
+  const seen = s.seen.map((id) => row(id, "seen")).sort((a, b) => String(a.lastOpened).localeCompare(String(b.lastOpened)));
   const offline = typeof navigator !== "undefined" && navigator.onLine === false;
   // M6: a person moving from Not yet to Seen glides to their new place (one layout id across both sections, on smooth,
   // which keeps its velocity when retargeted); the meta and the section counts cross-fade on quick (M1's swap); a section
@@ -296,7 +288,7 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
         transition={chSpring("smooth", reduced)}
       >
         <h3 className="ch-seen-sec__h ch-num">
-          {api.redesign ? <><span>{title}</span>{fade(String(rows.length), String(rows.length))}</> : <>{title} · {fade(String(rows.length), String(rows.length))}</>}
+          <><span>{title}</span>{fade(String(rows.length), String(rows.length))}</>
         </h3>
         <ul className="ch-seen-sec__rows">
           {rows.map((x) => (
@@ -312,27 +304,15 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
       </M.section>
     );
   return (
-    <div ref={listEl} className={"ch-seen-list" + (api.redesign ? " is-v2" : "")} data-ch-code={s.seen.length === 0 ? "CH-7310" : undefined}>
+    <div ref={listEl} className={"ch-seen-list" + " is-v2"} data-ch-code={s.seen.length === 0 ? "CH-7310" : undefined}>
       {offline && <p className="ch-seen-note">You’re offline. This may be out of date.</p>}
       <AnimatePresence initial={false}>
-        {api.redesign ? (
-          <>
+        <>
             {section("seen", "Seen", [...seen].sort((a, b) => Date.parse(b.lastOpened ?? "") - Date.parse(a.lastOpened ?? "")))}
             {section("notYet", "Not seen yet", notYet)}
           </>
-        ) : (
-          <>
-            {section("notYet", "Not yet", notYet)}
-            {section("seen", "Seen", seen)}
-          </>
-        )}
       </AnimatePresence>
-      {!api.redesign && (
-        <p className="ch-seen-note">
-          Seen means they opened this chat after it was sent.
-          {m.poll ? " Voting is in See votes." : ""}
-        </p>
-      )}
+
       <span className="ch-sr-only" role="status">
         {status}
       </span>
@@ -344,18 +324,9 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
 export function SeenBySheet({ api, m, onClose }: { api: ChMessagesApi; m: ChMsg | null; onClose: () => void }) {
   const r = api.receipts;
   const s = m && r && r.marks.size ? seenBy(m.at, m.senderId, r.marks) : null;
-  const all = !!s && s.total > 0 && s.seen.length >= s.total;
-  if (api.redesign) {
-    // One component, phone sheet and desktop card (MSG-SEEN-01); the close key never squeezes (MSG-SEEN-04).
-    const cut = m ? (m.poll ? m.poll.question : m.text || "Attachment").slice(0, 46) : "";
-    return (
-      <Modal code="CH-7609" open={m != null} onClose={onClose} title="Seen by" description={s ? `${s.seen.length} of ${s.total} · ${cut}` : cut} width={400} className="ch-msv-sheet">
-        {m && <SeenByBody api={api} m={m} compact={false} />}
-      </Modal>
-    );
-  }
+  const cut = m ? (m.poll ? m.poll.question : m.text || "Attachment").slice(0, 46) : "";
   return (
-    <Modal code="CH-7609" open={m != null} onClose={onClose} title={listTitle(s)} icon={all ? CheckCheck : undefined} description={m ? quoteOf(m) : undefined} width={440}>
+    <Modal code="CH-7609" open={m != null} onClose={onClose} title="Seen by" description={s ? `${s.seen.length} of ${s.total} · ${cut}` : cut} width={400} className="ch-msv-sheet">
       {m && <SeenByBody api={api} m={m} compact={false} />}
     </Modal>
   );
@@ -471,13 +442,11 @@ export function useSeenByList(): {
   const [state, setState] = useState<{ m: ChMsg; anchor: HTMLElement | null } | null>(null);
   return {
     open: (m, anchor) => setState({ m, anchor }),
-    render: (api, phone) => {
+    render: (api) => {
       // A message deleted while the list is open closes it.
       const live = state ? api.msgs.find((x) => x.id === state.m.id && !x.deleted) ?? null : null;
-      return phone || api.redesign ? (
+      return (
         <SeenBySheet api={api} m={live} onClose={() => setState(null)} />
-      ) : (
-        <SeenByPopover api={api} m={live} anchor={state?.anchor ?? null} onClose={() => setState(null)} />
       );
     },
   };

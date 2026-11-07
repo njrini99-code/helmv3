@@ -334,12 +334,12 @@ export function PhotosAndFiles({ api, conv }: { api: ChMessagesApi; conv: ChConv
  * The details column's life: it stays mounted through the 462ms close, so the track narrows over the panel and nothing reflows, and the
  * thread at its latest message stays on it every frame while the track moves (MSG-DETAILS-03). Under Reduce Motion it goes at once.
  */
-export function useDetailsColumn(open: boolean, redesign: boolean): boolean {
+export function useDetailsColumn(open: boolean): boolean {
   const [mounted, setMounted] = useState(open);
   // M-MSG-20b, the one layout animation the design keeps: set inline as the design's `wsMotion` does, so a close mid-open
-  // turns around where it is. Reduce Motion: the column snaps. Off the redesign, nothing is set.
+  // turns around where it is. Reduce Motion: the column snaps.
   useLayoutEffect(() => {
-    if (!redesign || reduced()) return;
+    if (reduced()) return;
     const grid = document.querySelector<HTMLElement>('.ch-ms');
     if (!grid) return;
     // The owner's drawn motion, on the tokens. Reduce Motion: the column lands, with no reflow every frame.
@@ -348,9 +348,9 @@ export function useDetailsColumn(open: boolean, redesign: boolean): boolean {
     return () => {
       grid.style.transition = '';
     };
-  }, [redesign]);
+  }, []);
   useEffect(() => {
-    if (!redesign) return setMounted(open);
+
     if (open) setMounted(true);
     const scroller = document.querySelector<HTMLElement>('.ch-ms .ch-ms-thread .ch-ms-scroll, .ch-ms .ch-ms-scroll');
     const atEnd = !!scroller && scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 48;
@@ -367,6 +367,6 @@ export function useDetailsColumn(open: boolean, redesign: boolean): boolean {
     };
     frame = requestAnimationFrame(pin);
     return () => cancelAnimationFrame(frame);
-  }, [open, redesign]);
-  return redesign ? mounted || open : open;
+  }, [open]);
+  return mounted || open;
 }

@@ -1,6 +1,4 @@
 import { cleanup, render } from '@testing-library/react';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DESIGN_ROUTE_CONV, DESIGN_ROUTES, DESIGN_THREADS } from '../messages-design-cast';
 
@@ -31,19 +29,5 @@ describe('the Messages design fixture', () => {
   it('marks the demo it is playing', () => {
     const { container } = render(<PreviewMessages state="design" view="thread" play="send" />);
     expect(container.querySelector('[data-ch-preview-play="send"]')).not.toBeNull();
-  });
-
-  it('the older preview states keep today’s DOM, with no redesign root', () => {
-    const { container } = render(<PreviewMessages state="rail" />);
-    expect(container.querySelector('[data-ch-ms-v2]')).toBeNull();
-    expect(window.__chMsgFixture).toBeUndefined();
-  });
-});
-
-describe('the flag', () => {
-  it('is off in production and development, on in Preview (staging)', async () => {
-    const yml = readFileSync(join(process.cwd(), 'config/feature-flags.yml'), 'utf8');
-    const entry = yml.slice(yml.indexOf('feature_id: golf_messages_redesign_v1'));
-    expect(entry.slice(0, entry.indexOf('kill_switch_behavior'))).toMatch(/default: false[\s\S]*production: false\s+preview: true\s+development: false/);
   });
 });

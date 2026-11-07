@@ -2,8 +2,6 @@
 
 import { SquarePen } from 'lucide-react';
 import { Icon } from '../../ui/Icon';
-import { Button } from '../../ui/Button';
-import { EmptyState } from '../../ui/States';
 
 /**
  * CH-7309 (D-71): no conversation and no announcement yet, so the whole page
@@ -11,9 +9,8 @@ import { EmptyState } from '../../ui/States';
  * in the list, the rail's compact empty (CH-7301) and the thread's (CH-7305)
  * take over.
  */
-export function MessagesFirstRun({ coach, onNew, redesign = false, teamName, onTeam }: { coach: boolean; onNew: () => void; /** golf_messages_redesign_v1: one still card (S-MSG.empty). */ redesign?: boolean; teamName?: string; onTeam?: () => void }) {
-  if (redesign)
-    return (
+export function MessagesFirstRun({ onNew, teamName, onTeam }: { coach: boolean; onNew: () => void; teamName?: string; onTeam?: () => void }) {
+  return (
       <section className="ch-msv-empty" data-ch-code="CH-7309">
         <svg className="ch-msv-empty__illo" viewBox="0 0 168 120" aria-hidden="true">
           <ellipse cx="84" cy="111" rx="62" ry="5" fill="var(--ch-well-bg-flat)" />
@@ -40,20 +37,6 @@ export function MessagesFirstRun({ coach, onNew, redesign = false, teamName, onT
         )}
       </section>
     );
-  return (
-    <EmptyState
-      size="page"
-      code="CH-7309"
-      shape="people"
-      title="No conversations yet"
-      body={coach ? 'Start a thread with the whole team or message a player directly.' : 'Message a coach or a teammate. Team announcements show up here too.'}
-      action={
-        <Button variant="primary" leftIcon={SquarePen} onClick={onNew}>
-          New message
-        </Button>
-      }
-    />
-  );
 }
 
 /** Nothing to list at all (the list read, not loading or failed). */

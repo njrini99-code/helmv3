@@ -32,11 +32,9 @@ export function MessagesView({ api }: { api: ChMessagesApi }) {
   }, [api.selectedId, api.convsLoading, api.convs.length, conv, toast]); // eslint-disable-line react-hooks/exhaustive-deps
   const screen = phone ? <MessagesPhone api={api} /> : <MessagesDesktop api={api} />;
   // The redesign's root: every new rule is scoped under this attribute. Off, the DOM is today's, with no wrapper.
-  return api.redesign ? (
+  return (
     <div data-ch-ms-v2="" style={{ display: "contents" }}>
       {screen}
     </div>
-  ) : (
-    screen
   );
 }

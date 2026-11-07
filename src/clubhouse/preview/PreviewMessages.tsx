@@ -336,8 +336,6 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
   const convIds = useMemo(() => convs.map((c) => c.id), [convs]);
   const pins = usePinned('me', 'design', convIds, design, pinSeed);
   const api: ChMessagesApi = {
-    // The preview forces the redesign on for the design fixture, whatever the flag says.
-    redesign: design,
     designFilter: design && view === 'unread' ? 'unread' : undefined,
     ...(design ? { pins, typingByConv: designRowTyping(view), ...(view === 'grouptyping' ? { typingUserIds: ['maya'] } : {}) } : {}),
     viewer: { userId: 'me', role, name: cast.me.name },

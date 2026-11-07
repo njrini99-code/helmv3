@@ -80,11 +80,6 @@ describe('the send key', () => {
     expect(at).toBeGreaterThan(-1);
     expect(css.slice(at, css.indexOf('}', at))).toMatch(/display:\s*none/);
   });
-
-  it('flag off: no holder at all', () => {
-    show(fakeApi({ redesign: false }));
-    expect(sendKey()).toBeNull();
-  });
 });
 
 /** MSG-COMP-03, MSG-COMP-01. */

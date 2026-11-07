@@ -1,11 +1,10 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import './dialog-polyfill';
 import type { ChMsg } from '../screens/messages/model';
 import type { ChMessagesApi } from '../screens/messages/MessagesView';
-import { Bubble } from '../screens/messages/MessagesView';
 import { SeenByReceipt, SeenBySheet } from '../screens/messages/seen-by';
 
 afterEach(cleanup);
@@ -86,36 +85,9 @@ describe('the receipt (P-1 slice 3)', () => {
     const { container } = render(<SeenByReceipt api={player} m={msg({ mine: false })} />);
     expect(container.textContent).toBe('');
   });
-
-  it('only the carrier draws it in a group; a direct thread says "Seen" on the carrier only; no faces', () => {
-    const a = api(half);
-    const props = { api: a, first: true, last: true, picking: false, setPicking: () => {}, onEdit: () => {}, onDelete: () => {} };
-    const { container, rerender } = render(<Bubble {...props} m={msg()} group carrier={false} />);
-    expect(container.querySelector('.ch-ms-seen')).toBeNull();
-    rerender(<Bubble {...props} m={msg()} group carrier onSeenBy={() => {}} />);
-    expect(container.querySelector('.ch-ms-seen')).not.toBeNull();
-    expect(container.querySelector('.ch-ms-msg__t .ch-avatar')).toBeNull();
-    rerender(<Bubble {...props} m={msg({ seen: true })} group={false} carrier={false} />);
-    expect(container.querySelector('.ch-ms-msg__t')!.textContent).not.toContain('Seen');
-    rerender(<Bubble {...props} m={msg({ seen: true })} group={false} carrier />);
-    expect(container.querySelector('.ch-ms-msg__t')!.textContent).toContain(' · Seen');
-  });
 });
 
 describe('the list (P-1 slice 4)', () => {
-  it('CH-7609 Not yet first with when each last opened, then Seen; the footnote says what seen means; no Nudge', () => {
-    render(<SeenBySheet api={api(half)} m={msg()} onClose={() => {}} />);
-    const dialog = screen.getByRole('dialog', { name: 'Seen by 1 of 3' });
-    const notYet = within(dialog).getByRole('region', { name: 'Not yet, 2 people' });
-    // Players before coaches; never opened sorts after an old open, but a coach still goes last.
-    expect([...notYet.querySelectorAll('.ch-seen-row__name')].map((n) => n.textContent)).toEqual(['Eli Brandt', 'Dana Whitfield']);
-    expect(notYet.textContent).toContain('Hasn’t opened this chat');
-    expect(notYet.textContent).toContain('Coach · Last opened Thu');
-    expect(within(dialog).getByRole('region', { name: 'Seen, 1 person' }).textContent).toContain('Ava Lindqvist');
-    expect(dialog.textContent).toContain('Seen means they opened this chat after it was sent.');
-    expect(within(dialog).queryByRole('button', { name: /Nudge/ })).toBeNull();
-    expect(dialog.textContent).toContain('“Bus leaves at 6:15 from the field house”');
-  });
 
   it('CH-7411 a list opened before the read answers shows three skeleton rows', () => {
     render(<SeenBySheet api={api({}, { receipts: { status: 'loading', marks: new Map(), retry: vi.fn() } })} m={msg()} onClose={() => {}} />);
@@ -137,12 +109,5 @@ describe('the list (P-1 slice 4)', () => {
     expect(document.querySelector('[data-ch-code="CH-7218"]')).not.toBeNull();
     await userEvent.setup().click(screen.getByRole('button', { name: /Try again|Retry/ }));
     expect(retry).toHaveBeenCalled();
-  });
-
-  it('CH-7310 nobody seen reads "Not seen yet"; a forged future open shows as now', () => {
-    render(<SeenBySheet api={api({ coach: SENT, ava: '2030-01-01T00:00:00Z', eli: null })} m={msg({ at: '2031-01-01T00:00:00Z' })} onClose={() => {}} />);
-    const dialog = screen.getByRole('dialog', { name: 'Not seen yet' });
-    expect(dialog.querySelector('[data-ch-code="CH-7310"]')).not.toBeNull();
-    expect(dialog.textContent).toContain('Last opened 4:00 PM');
   });
 });

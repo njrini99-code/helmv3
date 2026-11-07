@@ -1,6 +1,6 @@
 import type { ChAvailability, ChRoster, ChRosterPlayer } from '../../data/roster';
 import { classYearKey, classYearLineFor, type ChYearKey } from '../../lib/class-year';
-import { formatSigned, MINUS } from '../../lib/format';
+import { MINUS } from '../../lib/format';
 import type { ChPlayerPeek } from '../../ui/PlayerPeek';
 import { displayPlaces } from '../../lib/rank';
 import { plural } from '../../lib/plural';
@@ -115,24 +115,6 @@ export const LEG_WORD: Record<keyof ChRosterPlayer['sgLegs'], string> = {
   around: 'around the green',
   putting: 'putting',
 };
-
-/**
- * The roster's strokes-by-leg caption (spec D build B), in parts so the figure can take its tone: the leg that loses the most
- * ("Loses most putting, −1.1 a round"), or, with none losing, the leg that gains the most ("Gains in every leg; most on approach,
- * +0.4", or "Gains most on approach, +0.4" when a leg has too few rounds to say "every"). Null with no strokes gained for the season
- * or no leg read. Rule-based on the season's own figures; nothing is estimated.
- */
-export function legsCaption(p: Pick<ChRosterPlayer, 'sgPerRound' | 'sgLegs'>): { lead: string; figure: string; tail: string; tone: 'gain' | 'loss' } | null {
-  if (p.sgPerRound == null) return null;
-  const legs = (Object.entries(p.sgLegs) as Array<[keyof ChRosterPlayer['sgLegs'], number | null]>).filter((e): e is [keyof ChRosterPlayer['sgLegs'], number] => e[1] != null);
-  if (legs.length === 0) return null;
-  const worst = legs.reduce((a, b) => (b[1] < a[1] ? b : a));
-  // A leg that rounds to 0.0 neither loses nor gains in what is drawn.
-  if (Number(worst[1].toFixed(1)) < 0) return { lead: `Loses most ${LEG_WORD[worst[0]]}, `, figure: formatSigned(worst[1]), tail: ' a round', tone: 'loss' };
-  const best = legs.reduce((a, b) => (b[1] > a[1] ? b : a));
-  const every = legs.length === Object.keys(p.sgLegs).length;
-  return { lead: every ? `Gains in every leg; most ${LEG_WORD[best[0]]}, ` : `Gains most ${LEG_WORD[best[0]]}, `, figure: formatSigned(best[1]), tail: '', tone: 'gain' };
-}
 
 /** The team's zone and day, on the roster's data behind the lane's flag; a fixture has none and reads the product default. */
 export type RosterClock = { tz: string; day: string } | undefined;

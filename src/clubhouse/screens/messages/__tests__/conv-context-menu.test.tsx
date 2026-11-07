@@ -104,18 +104,6 @@ describe('Messages conversation row, phone (owner decision 14)', () => {
     expect(base).toMatch(/\.ch-sr-only--focusable:has\(:focus-visible\)\s*\{[^}]*position: static;[^}]*width: auto;/);
   });
 
-  it('a finger held still opens the row\'s actions as a sheet', () => {
-    vi.useFakeTimers();
-    try {
-      render(phoneRow());
-      fireEvent.pointerDown(rowButton(), { ...touch, clientX: 100, clientY: 20 });
-      act(() => vi.advanceTimersByTime(CTX_HOLD_MS));
-      expect(screen.getByRole('dialog', { name: /Actions for Maya Reyes|Maya Reyes/ })).toBeTruthy();
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
   it('a swipe claimed by the row cancels the long press, though the captured pointer never reaches the row button', () => {
     vi.useFakeTimers();
     try {
