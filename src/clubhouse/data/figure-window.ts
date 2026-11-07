@@ -19,9 +19,13 @@ export function roundsForFigures<T extends { round_type: string | null; status?:
 /** The window a strokes-gained figure reads unless a page names another: the newest ten counted rounds, ending on the newest. */
 export const LAST_TEN = 10;
 
-/** The rounds in the default window, newest first. Ties on a date keep a stable order, so two pages never pick different rounds. */
-export function lastTenRounds<T extends { round_type: string | null; status?: string | null; round_date: string; id: string }>(rounds: readonly T[]): T[] {
+/**
+ * The rounds in the default window, newest first: 18-hole rounds, as Stats' default filter reads them (`filterFor`), so a nine-hole round
+ * neither moves the figure nor pushes an older 18 out of the ten. Ties on a date keep a stable order, so two pages never pick different rounds.
+ */
+export function lastTenRounds<T extends { round_type: string | null; status?: string | null; round_date: string; id: string; holes_played?: number | null }>(rounds: readonly T[]): T[] {
   return roundsForFigures(rounds)
+    .filter((r) => (r.holes_played ?? 18) === 18)
     .sort((a, b) => (a.round_date < b.round_date ? 1 : a.round_date > b.round_date ? -1 : a.id.localeCompare(b.id)))
     .slice(0, LAST_TEN);
 }

@@ -45,4 +45,11 @@ describe('class against class', () => {
     expect(classClashes([cls('a', 'A', ['M'], '08:00', '09:00'), cls('b', 'B', ['M'], '08:00', '09:00', 'Spring 2027')])).toEqual([]);
     expect(classClashes([cls('a', 'A', ['M'], null, null), cls('b', 'B', ['M'], '08:00', '09:00')])).toEqual([]);
   });
+  it('reads a class with no term as the current one, and spellings of a term as one', () => {
+    const none = cls('a', 'A', ['M'], '08:00', '09:00', null);
+    const named = cls('b', 'B', ['M'], '08:30', '09:30', 'Fall 2026');
+    expect(classClashes([none, named], 'Fall 2026')).toHaveLength(1);
+    expect(classClashes([none, named], 'Spring 2027')).toEqual([]);
+    expect(classClashes([cls('c', 'C', ['M'], '08:00', '09:00', 'fall  2026'), named], 'Fall 2026')).toHaveLength(1);
+  });
 });

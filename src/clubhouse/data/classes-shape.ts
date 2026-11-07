@@ -228,14 +228,15 @@ export interface ChClassClash {
 }
 
 /** Each pair of classes in the same term that meet at the same time on a shared day (a registrar can't always stop these, and a player can import them). */
-export function classClashes(classes: readonly ChClass[]): ChClassClash[] {
+export function classClashes(classes: readonly ChClass[], currentTerm = ''): ChClassClash[] {
   const out: ChClassClash[] = [];
   classes.forEach((a, i) => {
     const as = toMinutes(a.start);
     const ae = toMinutes(a.end);
     if (as == null || ae == null || ae <= as) return;
     for (const b of classes.slice(i + 1)) {
-      if ((a.semester ?? '') !== (b.semester ?? '')) continue;
+      // A class with no term on it sits in the current one, as `inTerm` draws it.
+      if (!sameTerm(a.semester || currentTerm, b.semester || currentTerm)) continue;
       const bs = toMinutes(b.start);
       const be = toMinutes(b.end);
       if (bs == null || be == null || be <= bs || !(as < be && bs < ae)) continue;

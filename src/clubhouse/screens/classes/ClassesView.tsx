@@ -279,7 +279,7 @@ export function ClassesView({ data, writes, statusWrites, crh = false }: { data:
     [classes, week, term],
   );
   const groups = useMemo(() => groupConflicts(conflicts, classes), [conflicts, classes]);
-  const clashes = useMemo(() => classClashes(classes), [classes]);
+  const clashes = useMemo(() => classClashes(classes, term.label), [classes, term.label]);
   const failedList = classes.filter((c) => failedSync.has(c.id));
   const importedNow = imported && { ...imported, classes: imported.classes.map((c) => classes.find((x) => x.id === c.id) ?? c) };
   const importSync = sync.pending ? 'syncing' : importedNow?.classes.some((c) => failedSync.has(c.id)) ? 'failed' : 'ok';

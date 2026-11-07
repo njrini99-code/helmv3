@@ -62,6 +62,16 @@ describe('one strokes-gained source (QA-1)', () => {
     expect(shared.total).toBeCloseTo(-7.31, 2);
   });
 
+  it('a nine-hole round moves nothing: Home and Stats still read the same ten 18s', () => {
+    const nine = { ...round(COLE[0]!, 99), id: 'nine', round_date: '2026-10-30', holes_played: 9, total_score: 40, strokes_gained_total: -4 } as ChRound;
+    const withNine = [nine, ...rounds];
+    expect(lastTenRounds(withNine).some((r) => r.id === 'nine')).toBe(false);
+    expect(lastTenRounds(withNine)).toHaveLength(10);
+    const stats = summarizeWindow(roundsInFilter(roundsForFigures(withNine), filterFor('last10')));
+    expect(playerStrokesGained(withNine).total).toBeCloseTo(stats.sgPerRound!, 6);
+    expect(playerStrokesGained(withNine).total).toBeCloseTo(shared.total!, 6);
+  });
+
   it('Team view, Home and Stats draw the same number for one player', () => {
     const team = toChTeamLegs(roundsForFigures(rounds), ['cole']).get('cole')!;
     // Home takes `playerStrokesGained` itself (asserted below); Stats' default is the newest ten through `summarizeWindow`.
