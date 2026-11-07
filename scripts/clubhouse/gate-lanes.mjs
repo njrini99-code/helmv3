@@ -4,7 +4,6 @@ export const GATE_LANES = {
   'team-stress': 'TEAM',
   'team-long': 'TEAM',
   'team-empty': 'TEAM',
-  'brief': 'TEAM',
   'home-coach': 'CRH',
   'home-coach-stress': 'CRH',
   'home-coach-empty': 'CRH',

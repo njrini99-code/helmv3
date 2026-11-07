@@ -432,21 +432,11 @@ describe('Shell · network', () => {
 });
 
 const coach = { role: 'coach', name: 'Maya Reyes', teamName: 'Varsity' } as unknown as GolfUserData;
-const upcoming = { id: 'e1', title: 'Pinehurst qualifier', start_time: new Date(Date.now() + 2 * 86_400_000).toISOString(), all_day: false, location: 'Pinehurst' };
 
 describe('Shell · sidebar data', () => {
   beforeEach(() => {
     logServer.mockClear();
     supabaseTables.current = {};
-  });
-
-  it('CH-1207 the next event does not load: the card hides and the failure is logged', async () => {
-    supabaseTables.current = { golf_events: { error: { message: 'boom' } }, golf_team_join_requests: { count: 2 } };
-    const shell = await loadClubhouseShell('t1');
-    expect(shell.nextEvent).toBeNull();
-    expect(logServer).toHaveBeenCalledWith('shell', 'nextEvent', expect.anything(), 'calendar');
-    wrap(<Sidebar userData={coach} shell={shell} pathname="/golf/dashboard" />);
-    expect(document.querySelector('.ch-next')).toBeNull();
   });
 
   it("a coach's Team Hub badge counts overdue tasks that still have open work; a failed read hides it and is logged; a player's shell never reads it", async () => {
@@ -475,53 +465,33 @@ describe('Shell · sidebar data', () => {
     expect(screen.getByRole('link', { name: 'Roster' }).querySelector('.ch-navitem__count')).toBeNull();
   });
 
-  it('CH-1304 nothing upcoming: no card; with one that requires an RSVP, the card shows who has confirmed', async () => {
-    const none = await loadClubhouseShell('t1');
-    expect(none.nextEvent).toBeNull();
-    supabaseTables.current = {
-      golf_events: { data: [{ ...upcoming, requires_rsvp: true }] },
-      golf_event_attendance: { data: [{ status: 'accepted' }, { status: 'accepted' }, { status: 'pending' }] },
-    };
-    const shell = await loadClubhouseShell('t1');
+  it('Dashboard cuts: the rail shows no next event for anyone, and the shell reads no events for it', async () => {
+    const asked: string[] = [];
+    supabaseTables.current = new Proxy({ golf_team_join_requests: { count: 0 } } as Record<string, unknown>, {
+      get(t, k: string) {
+        asked.push(k);
+        return t[k];
+      },
+    }) as typeof supabaseTables.current;
+    const shell = await loadClubhouseShell('t1', null, 'c1');
+    expect(asked).not.toContain('golf_events');
+    expect(shell).not.toHaveProperty('nextEvent');
     wrap(<Sidebar userData={coach} shell={shell} pathname="/golf/dashboard" />);
-    expect(document.querySelector('.ch-next')!.textContent).toMatch(/2 of 3 going/);
-  });
-
-  it('CH-1304 an event that doesn’t require an RSVP shows when and where, with no confirmed count, and its replies are never read (owner, 2026-10-08)', async () => {
-    for (const requires_rsvp of [false, null]) {
-      supabaseTables.current = {
-        golf_events: { data: [{ ...upcoming, requires_rsvp }] },
-        golf_event_attendance: { data: [{ status: 'accepted' }, { status: 'pending' }] },
-      };
-      const shell = await loadClubhouseShell('t1');
-      expect(shell.nextEvent?.ready).toBeNull();
-      const { unmount } = wrap(<Sidebar userData={coach} shell={shell} pathname="/golf/dashboard" />);
-      const card = document.querySelector('.ch-next')!;
-      expect(card.textContent).not.toMatch(/confirmed/);
-      expect(card.querySelector('.ch-next__bar')).toBeNull();
-      expect(card.textContent).toContain(shell.nextEvent!.metaLabel);
-      unmount();
-    }
-  });
-
-  it('F-40 a player\'s synced class is never the team\'s next event', async () => {
-    const klass = { ...upcoming, id: 'c1', title: 'GEOG 110', event_type: 'class', description: null };
-    const tagged = { ...upcoming, id: 'c2', title: 'CHEM 101', event_type: 'practice', description: '[class:abc]' };
-    supabaseTables.current = { golf_events: { data: [klass, tagged, upcoming] }, golf_event_attendance: { data: [] } };
-    const shell = await loadClubhouseShell('t1');
-    expect(shell.nextEvent?.id).toBe('e1');
+    expect(document.querySelector('.ch-next')).toBeNull();
+    expect(document.querySelector('.ch-sidebar__card')).toBeNull();
+    expect(document.body.textContent).not.toMatch(/Next event/);
   });
 
   it('P001 the identity line: a head coach is "Head coach"; an assistant, or a staff role that did not load, is "Coach"', () => {
     for (const [viewerIsHeadCoach, line] of [[true, 'Head coach · Varsity'], [false, 'Coach · Varsity']] as const) {
-      const { unmount } = wrap(<Sidebar userData={coach} shell={{ nextEvent: null, pendingJoinRequests: null, viewerIsHeadCoach }} pathname="/golf/dashboard" />);
+      const { unmount } = wrap(<Sidebar userData={coach} shell={{ pendingJoinRequests: null, viewerIsHeadCoach }} pathname="/golf/dashboard" />);
       expect(document.querySelector('.ch-identity__meta')?.textContent).toBe(line);
       unmount();
     }
   });
 
   it('D-66 10802 the sidebar follows v2 gh-nav.js for each role, sections in order', () => {
-    const shell: ChShellData = { nextEvent: null, pendingJoinRequests: null };
+    const shell: ChShellData = { pendingJoinRequests: null };
     const read = () =>
       [...document.querySelectorAll('.ch-nav__group')].map((g) => [
         g.querySelector('.ch-nav__section')?.textContent ?? '',
@@ -546,7 +516,7 @@ describe('Shell · sidebar data', () => {
 });
 
 describe('Shell · navigation and accessibility', () => {
-  const shell: ChShellData = { nextEvent: null, pendingJoinRequests: 2 };
+  const shell: ChShellData = { pendingJoinRequests: 2 };
 
   it('CH-1801 the first Tab reaches Skip to content, which lands on the page', async () => {
     const user = userEvent.setup();
@@ -847,7 +817,7 @@ describe('Shell · navigation and accessibility', () => {
 });
 
 describe('Shell · phone chrome', () => {
-  const shell: ChShellData = { nextEvent: null, pendingJoinRequests: 2 };
+  const shell: ChShellData = { pendingJoinRequests: 2 };
   afterEach(() => {
     badgeState.messages = 0;
   });
@@ -1216,7 +1186,7 @@ describe('Shell · phone form', () => {
       usePhoneTabsHidden(on);
       return <p>Form</p>;
     }
-    const shell: ChShellData = { nextEvent: null, pendingJoinRequests: null };
+    const shell: ChShellData = { pendingJoinRequests: null };
     const { rerender } = render(
       <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/qualifiers" forceRebuilt>
         <Form on />
@@ -1256,7 +1226,7 @@ describe('Shell · phone back', () => {
 
 /** P001 behaviour contracts with no catalog row (config/clubhouse/bridge-contracts.json, D-69). */
 describe('Shell · behaviour contracts (P001)', () => {
-  const shell: ChShellData = { nextEvent: null, pendingJoinRequests: 2 };
+  const shell: ChShellData = { pendingJoinRequests: 2 };
   const player = { role: 'player', name: 'Theo Marchetti', teamName: 'Varsity' } as unknown as GolfUserData;
 
   it('10102 the frame is the sidebar, the top bar, the page and the phone section strip; 10802 a route not rebuilt for the role shows the notice, never the page', () => {

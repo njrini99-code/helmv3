@@ -9,7 +9,6 @@ export const GATE_SCREENS: GateScreen[] = [
   s('TEAM', 'team-stress', 'coachhelm-team?state=stress'),
   s('TEAM', 'team-long', 'coachhelm-team?state=long'),
   s('TEAM', 'team-empty', 'coachhelm-team?state=empty'),
-  s('TEAM', 'brief', 'coachhelm-coach-brief'),
   s('CRH', 'home-coach', 'home'),
   s('CRH', 'home-coach-stress', 'home?state=stress'),
   s('CRH', 'home-coach-empty', 'home?state=empty'),

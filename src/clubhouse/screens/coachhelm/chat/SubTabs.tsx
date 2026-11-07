@@ -4,11 +4,11 @@ import { useHelmViews } from '../../../shell/context';
 import { Segmented } from '../../../ui/Segmented';
 
 /** The views of the CoachHelm screen for a coach, and where each lives. */
-export const COACHHELM_HREF = { board: '/golf/dashboard/coachhelm', brief: '/golf/dashboard/coachhelm?view=brief', ask: '/golf/dashboard/coachhelm?view=ask' } as const;
+export const COACHHELM_HREF = { board: '/golf/dashboard/coachhelm', ask: '/golf/dashboard/coachhelm?view=ask' } as const;
 export type CoachHelmView = keyof typeof COACHHELM_HREF;
 
 /**
- * The CoachHelm sub-tab: Team (or Board: the program pulse and the players' signals), Brief (with its flag on) and Ask (the chat).
+ * The CoachHelm sub-tab: Team (or Board: the program pulse and the players' signals) and Ask (the chat).
  * Drawn for coaches only, on every view and at both widths. Choosing a view is a route change, so each is a real address that reloads
  * and shares; the segmented control's own select haptic covers the tap. (The owner's chat mockups draw only the chat; this strip is
  * the one addition, so the chat is reachable.)
@@ -29,7 +29,6 @@ export function CoachHelmTabs({ boardLabel, active, onGo, held = false }: { boar
         value={active}
         options={[
           { value: 'board', label: boardLabel ?? (views.team ? 'Team' : 'Board') },
-          ...(views.brief ? [{ value: 'brief' as const, label: 'Brief' }] : []),
           { value: 'ask', label: 'Ask' },
         ]}
         onChange={(v) => onGo?.(v)}

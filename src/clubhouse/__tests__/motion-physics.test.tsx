@@ -379,7 +379,7 @@ describe('CH-1614 a toast swipes away and waits while held', () => {
 });
 
 describe('CH-1907 tapping the tab already open', () => {
-  const shell = { nextEvent: null, pendingJoinRequests: null };
+  const shell = { pendingJoinRequests: null };
 
   it('at its root, scrolls to the top without a tick', () => {
     const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});

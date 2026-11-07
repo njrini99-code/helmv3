@@ -111,8 +111,8 @@
     "item": 4,
     "name": "NOTHING_IS_SCHEDULED",
     "chCode": "CH-1304",
-    "meaning": "Nothing is scheduled",
-    "status": "implemented",
+    "meaning": "Retired 2026-11-07 (Dashboard cuts). Nothing is scheduled",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -232,8 +232,8 @@
     "item": 8,
     "name": "THE_SIDEBARS_NEXT_EVENT_DOESNT_LOAD",
     "chCode": "CH-1207",
-    "meaning": "The sidebar's next event doesn't load",
-    "status": "implemented",
+    "meaning": "Retired 2026-11-07 (Dashboard cuts). The sidebar's next event doesn't load",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -17599,8 +17599,8 @@
     "item": 48,
     "name": "COACH_BOARD_THE_LINK_TO_THE_MONDAY",
     "chCode": "CH-13938",
-    "meaning": "Coach board: the link to the Brief",
-    "status": "implemented",
+    "meaning": "Retired 2026-11-07 (Dashboard cuts). Coach board: the link to the Brief",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -17753,8 +17753,8 @@
     "item": 80,
     "name": "COACH_THE_BRIEF_BEHIND_INTELLIGENCE",
     "chCode": "CH-13983",
-    "meaning": "Coach: the Brief behind /intelligence (`?view=brief`, flag `coachhelm_monday_brief_v1`)",
-    "status": "implemented",
+    "meaning": "Retired 2026-11-07 (Dashboard cuts). Coach: the Brief behind /intelligence (`?view=brief`, flag `coachhelm_monday_brief_v1`)",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -17765,7 +17765,7 @@
     "name": "BRIEF_THIS_WEEKS_OPEN_READS",
     "chCode": "CH-13984",
     "meaning": "Brief: this week's open reads",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -17776,7 +17776,7 @@
     "name": "BRIEF_WHAT_PLAYERS_ARE_WORKING_ON",
     "chCode": "CH-13985",
     "meaning": "Brief: what players are working on",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -17787,7 +17787,7 @@
     "name": "BRIEF_HOW_THE_READS_HAVE_HELD",
     "chCode": "CH-13986",
     "meaning": "Brief: how the reads have held",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -17798,7 +17798,7 @@
     "name": "BRIEF_GOALS_AND_STANDING",
     "chCode": "CH-13987",
     "meaning": "Brief: goals and standing",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -17808,8 +17808,8 @@
     "item": 85,
     "name": "BRIEF_NO_OPEN_READS_THIS_WEEK",
     "chCode": "CH-13988",
-    "meaning": "Brief: no open reads this week",
-    "status": "implemented",
+    "meaning": "Retired 2026-11-07 (Dashboard cuts). Brief: no open reads this week",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -17819,8 +17819,8 @@
     "item": 86,
     "name": "BRIEF_A_SECTIONS_READ_FAILED",
     "chCode": "CH-13989",
-    "meaning": "Brief: a section's read failed",
-    "status": "implemented",
+    "meaning": "Retired 2026-11-07 (Dashboard cuts). Brief: a section's read failed",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -17830,8 +17830,8 @@
     "item": 87,
     "name": "BRIEF_A_READ_IT_IS_MADE_FROM",
     "chCode": "CH-13997",
-    "meaning": "Brief: a read it is made from failed",
-    "status": "implemented",
+    "meaning": "Retired 2026-11-07 (Dashboard cuts). Brief: a read it is made from failed",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -17842,7 +17842,7 @@
     "name": "INTELLIGENCE_AND_ITS_OLD_SUB_LINKS",
     "chCode": "CH-13998",
     "meaning": "/intelligence and its old sub-links",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -17852,8 +17852,8 @@
     "item": 89,
     "name": "BRIEF_COACHHELM_IS_OFF_FOR_THE_TEAM",
     "chCode": "CH-13999",
-    "meaning": "Brief: CoachHelm is off for the team",
-    "status": "implemented",
+    "meaning": "Retired 2026-11-07 (Dashboard cuts). Brief: CoachHelm is off for the team",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {

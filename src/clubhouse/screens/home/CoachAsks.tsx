@@ -48,7 +48,7 @@ export function CoachAsks({ asks }: { asks: ChPlayerAsks | null | undefined }) {
   );
 }
 
-/** The player's own reply on Up next (`ChHomeEvent.mine`, `ChNextEvent.mine`): a positive "You're going", a warning "Reply needed". */
+/** The player's own reply on Up next (`ChHomeEvent.mine`): a positive "You're going", a warning "Reply needed". */
 export function MineBadge({ mine }: { mine: 'going' | 'needed' | null | undefined }) {
   if (mine === 'going') return <Badge tone="positive">You’re going</Badge>;
   if (mine === 'needed') return <Badge tone="warning">Reply needed</Badge>;

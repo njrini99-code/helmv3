@@ -275,5 +275,5 @@ export function CoachHelmRouteSkeleton() {
   }
   if (which === 'standing') return <StandingSkeleton />;
   if (which === 'deep-dive') return <DiveSkeleton />;
-  return <CoachHelmSkeleton view={which} active={params?.get('view') === 'brief' ? 'brief' : undefined} />;
+  return <CoachHelmSkeleton view={which} />;
 }

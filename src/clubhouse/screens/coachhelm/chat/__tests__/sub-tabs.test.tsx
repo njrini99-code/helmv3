@@ -29,13 +29,10 @@ describe('CoachHelm views a coach can reach', () => {
     expect(labels()).toEqual(['Board', 'Ask']);
   });
 
-  it('with the Brief on, it sits between the first view and Ask, and goes to its own address', () => {
-    const onGo = vi.fn();
-    coach({ brief: true, team: true }, onGo);
-    expect(labels()).toEqual(['Team', 'Brief', 'Ask']);
-    fireEvent.click(screen.getByRole('radio', { name: 'Brief' }));
-    expect(onGo).toHaveBeenCalledWith('brief');
-    expect(COACHHELM_HREF.brief).toBe('/golf/dashboard/coachhelm?view=brief');
+  it('the Brief tab is gone: Team and Ask are the views, and the Brief has no address of its own', () => {
+    coach({ team: true });
+    expect(labels()).toEqual(['Team', 'Ask']);
+    expect(Object.keys(COACHHELM_HREF)).toEqual(['board', 'ask']);
   });
 });
 

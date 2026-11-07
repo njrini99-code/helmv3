@@ -183,7 +183,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10401 | CH-1301 | 04 Empty | `A_PAGE_THAT_HASNT_BEEN_REBUILT_IN` | implemented | A page that hasn't been rebuilt in Clubhouse |
 | 10402 | CH-1302 | 04 Empty | `THE_BELL_HAS_NOTHING` | implemented | The bell has nothing |
 | 10403 | CH-1303 | 04 Empty | `THE_BELLS_FILTER_HAS_NOTHING` | implemented | The bell's filter has nothing |
-| 10404 | CH-1304 | 04 Empty | `NOTHING_IS_SCHEDULED` | implemented | Nothing is scheduled |
+| 10404 | CH-1304 | 04 Empty | `NOTHING_IS_SCHEDULED` | deprecated | Retired 2026-11-07 (Dashboard cuts). Nothing is scheduled |
 | 10405 | CH-1305 | 04 Empty | `A_COACH_WITH_ONE_TEAM_A_COACH` | implemented | A coach with one team, a coach who cannot switch (an assistant on several teams), or a player |
 | 10406 | CH-1306 | 04 Empty | `A_DASHBOARD_URL_THAT_MATCHES_NOTHING_OR` | implemented | A dashboard URL that matches nothing, or an id that no longer exists (a deleted round or player), inside the Clubhouse shell |
 | 10407 | CH-1307 | 04 Empty | `MORE_UNREAD_THAN_THE_BELL_LISTS` | implemented | More unread than the bell lists |
@@ -194,7 +194,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10605 | CH-1204 | 06 Server / system error | `THE_SERVER_IS_BUSY` | implemented | The server is busy |
 | 10606 | CH-1205 | 06 Server / system error | `THE_CONNECTION_DROPPED_MID_LOAD` | implemented | The connection dropped mid-load |
 | 10607 | CH-1206 | 06 Server / system error | `ANYTHING_ELSE_CRASHED_THE_PAGE` | implemented | Anything else crashed the page |
-| 10608 | CH-1207 | 06 Server / system error | `THE_SIDEBARS_NEXT_EVENT_DOESNT_LOAD` | implemented | The sidebar's next event doesn't load |
+| 10608 | CH-1207 | 06 Server / system error | `THE_SIDEBARS_NEXT_EVENT_DOESNT_LOAD` | deprecated | Retired 2026-11-07 (Dashboard cuts). The sidebar's next event doesn't load |
 | 10609 | CH-1208 | 06 Server / system error | `THE_ROSTER_BADGES_JOIN_REQUESTS_DONT_LOAD` | implemented | The Roster badge's join requests don't load |
 | 10610 | CH-1002 | 06 Server / system error | `SIGNING_OUT_FROM_THE_PHONES_MORE_SHEET` | implemented | Signing out from the phone's account sheet fails |
 | 10611 | CH-1003 | 06 Server / system error | `SWITCHING_TEAM_FAILS` | implemented | Switching team fails (a head coach on more than one team) |
@@ -1772,7 +1772,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130745 | CH-13943 | 07 Network / offline | `COACH_EVERY_READ_OF_A_PLAYER_IS` | implemented | Coach: every read of a player is Not enough yet |
 | 130746 | CH-13936 | 07 Network / offline | `MONDAY_BRIEF_COACHHELM_IS_OFF_FOR_THE` | implemented | Monday brief: CoachHelm is off for the team |
 | 130747 | CH-13937 | 07 Network / offline | `MONDAY_BRIEF_A_READ_IT_IS_MADE` | implemented | Monday brief: a read it is made from failed |
-| 130748 | CH-13938 | 07 Network / offline | `COACH_BOARD_THE_LINK_TO_THE_MONDAY` | implemented | Coach board: the link to the Brief |
+| 130748 | CH-13938 | 07 Network / offline | `COACH_BOARD_THE_LINK_TO_THE_MONDAY` | deprecated | Retired 2026-11-07 (Dashboard cuts). Coach board: the link to the Brief |
 | 130749 | CH-13939 | 07 Network / offline | `MONDAY_BRIEF_THE_COUNTS_LINE` | implemented | Monday brief: the counts line |
 | 130750 | CH-13932 | 07 Network / offline | `COACH_THE_MONDAY_BRIEF` | implemented | Coach: the Monday brief (`?view=monday-brief`, flag `coachhelm_monday_brief_v1`) |
 | 130751 | CH-13933 | 07 Network / offline | `MONDAY_BRIEF_A_PLAYER_READ_AT_LIKELY` | implemented | Monday brief: a player read at Likely or above |
@@ -1786,16 +1786,16 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130762 | CH-13915 | 07 Network / offline | `STANDING_HOW_YOU_PLAY` | implemented | Standing: How you play (chs-37) |
 | 130763 | CH-13916 | 07 Network / offline | `PLAYER_THEIR_OWN_COURSE_PLAN_OFFERED_BY` | implemented | Player: their own Course plan (chs-21 / par-14, `coachhelm_course_plan_v1`), offered by the loader while the flag is on |
 | 130764 | CH-13917 | 07 Network / offline | `PLAYER_THE_PLAN_FOR_THE_COURSE_THEY` | implemented | Player: the plan for the course they picked |
-| 130780 | CH-13983 | 07 Network / offline | `COACH_THE_BRIEF_BEHIND_INTELLIGENCE` | implemented | Coach: the Brief behind /intelligence (`?view=brief`, flag `coachhelm_monday_brief_v1`) |
-| 130781 | CH-13984 | 07 Network / offline | `BRIEF_THIS_WEEKS_OPEN_READS` | implemented | Brief: this week's open reads |
-| 130782 | CH-13985 | 07 Network / offline | `BRIEF_WHAT_PLAYERS_ARE_WORKING_ON` | implemented | Brief: what players are working on |
-| 130783 | CH-13986 | 07 Network / offline | `BRIEF_HOW_THE_READS_HAVE_HELD` | implemented | Brief: how the reads have held |
-| 130784 | CH-13987 | 07 Network / offline | `BRIEF_GOALS_AND_STANDING` | implemented | Brief: goals and standing |
-| 130785 | CH-13988 | 07 Network / offline | `BRIEF_NO_OPEN_READS_THIS_WEEK` | implemented | Brief: no open reads this week |
-| 130786 | CH-13989 | 07 Network / offline | `BRIEF_A_SECTIONS_READ_FAILED` | implemented | Brief: a section's read failed |
-| 130787 | CH-13997 | 07 Network / offline | `BRIEF_A_READ_IT_IS_MADE_FROM` | implemented | Brief: a read it is made from failed |
-| 130788 | CH-13998 | 07 Network / offline | `INTELLIGENCE_AND_ITS_OLD_SUB_LINKS` | implemented | /intelligence and its old sub-links |
-| 130789 | CH-13999 | 07 Network / offline | `BRIEF_COACHHELM_IS_OFF_FOR_THE_TEAM` | implemented | Brief: CoachHelm is off for the team |
+| 130780 | CH-13983 | 07 Network / offline | `COACH_THE_BRIEF_BEHIND_INTELLIGENCE` | deprecated | Retired 2026-11-07 (Dashboard cuts). Coach: the Brief behind /intelligence (`?view=brief`, flag `coachhelm_monday_brief_v1`) |
+| 130781 | CH-13984 | 07 Network / offline | `BRIEF_THIS_WEEKS_OPEN_READS` | reserved | Brief: this week's open reads |
+| 130782 | CH-13985 | 07 Network / offline | `BRIEF_WHAT_PLAYERS_ARE_WORKING_ON` | reserved | Brief: what players are working on |
+| 130783 | CH-13986 | 07 Network / offline | `BRIEF_HOW_THE_READS_HAVE_HELD` | reserved | Brief: how the reads have held |
+| 130784 | CH-13987 | 07 Network / offline | `BRIEF_GOALS_AND_STANDING` | reserved | Brief: goals and standing |
+| 130785 | CH-13988 | 07 Network / offline | `BRIEF_NO_OPEN_READS_THIS_WEEK` | deprecated | Retired 2026-11-07 (Dashboard cuts). Brief: no open reads this week |
+| 130786 | CH-13989 | 07 Network / offline | `BRIEF_A_SECTIONS_READ_FAILED` | deprecated | Retired 2026-11-07 (Dashboard cuts). Brief: a section's read failed |
+| 130787 | CH-13997 | 07 Network / offline | `BRIEF_A_READ_IT_IS_MADE_FROM` | deprecated | Retired 2026-11-07 (Dashboard cuts). Brief: a read it is made from failed |
+| 130788 | CH-13998 | 07 Network / offline | `INTELLIGENCE_AND_ITS_OLD_SUB_LINKS` | reserved | /intelligence and its old sub-links |
+| 130789 | CH-13999 | 07 Network / offline | `BRIEF_COACHHELM_IS_OFF_FOR_THE_TEAM` | deprecated | Retired 2026-11-07 (Dashboard cuts). Brief: CoachHelm is off for the team |
 | 130801 |  | 08 Permission / authorization | `CONTROLS_FOLLOW_THE_ROLE` | implemented | The coach's controls (Assign as focus, Dismiss, Undo) exist only on the coach's board. The player's board has no write of any kind and is never drawn Assign, Dismiss, Undo or Share, and neither board has a Share button: no action sits behind it. |
 | 130802 |  | 08 Permission / authorization | `A_COACH_READS_ONLY_THE_TEAMS_ACTIVE_PLAYERS` | implemented | A coach's board reads only the active members of the team the shell resolved (golf_team_members, team_id and status active), whichever other teams the coach staffs; only those ids reach the visible-insights read, the top-insight read (one per player) and the focus-area read. A coach session with no resolved team, or one that is not a coach team, gets the no-team page (CH-13308) and no player is read. The program pulse is the coach's own (getCoachProgramPulse, which resolves its team through the coach chat context), not a read of this page's team id. |
 | 130803 |  | 08 Permission / authorization | `A_PLAYER_READS_ONLY_THEIR_OWN_INSIGHTS` | implemented | A player's board is built from the session's own player id and nothing else: the gate, the feed (up to 30), the dismissal read and the rounds count are that player's, with or without a team, and no team read or teammate's insight reaches it. |

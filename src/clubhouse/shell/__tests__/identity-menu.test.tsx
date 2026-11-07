@@ -20,7 +20,7 @@ import { Sidebar } from '../Sidebar';
 import type { ChShellData } from '../../data/shell';
 
 const coach = { role: 'coach', name: 'Maya Reyes', teamName: 'Varsity' } as unknown as GolfUserData;
-const shell = { nextEvent: null, pendingJoinRequests: null, viewerIsHeadCoach: true } as unknown as ChShellData;
+const shell = { pendingJoinRequests: null, viewerIsHeadCoach: true } as unknown as ChShellData;
 
 function mount(teamSwitch: Parameters<typeof Sidebar>[0]['teamSwitch'] = null) {
   return render(

@@ -150,9 +150,6 @@ import { TrackRecord } from '@/clubhouse/screens/coachhelm/views/TrackRecord';
 import { PREVIEW_MONDAY_BRIEF, PREVIEW_MONDAY_BRIEF_EMPTY } from '@/clubhouse/preview/fixtures-coachhelm-brief';
 import { MondayBrief } from '@/clubhouse/screens/coachhelm/views/MondayBrief';
 import { PREVIEW_HELM_COACH_CORRECTIONS, PREVIEW_HELM_COACH_ENGINE, PREVIEW_HELM_COACH_ENGINE_NOT_MOVED, PREVIEW_HELM_PLAYER_ENGINE } from '@/clubhouse/preview/fixtures-coachhelm-engine';
-import { coachBriefLoad } from '@/clubhouse/preview/fixtures-coachhelm-coach-brief';
-import { CoachBrief } from '@/clubhouse/screens/coachhelm/views/CoachBrief';
-import { isBriefSection } from '@/clubhouse/data/coachhelm-coach-brief-shape';
 import '@/clubhouse/styles/coachhelm.css';
 import '@/clubhouse/styles/coachhelm-ask.css';
 import '@/clubhouse/styles/coachhelm-views.css';
@@ -222,7 +219,6 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  *   /clubhouse-preview/coachhelm-read ?view=coach | player &state=loading | failed | off | gone | stale &q=penalties | putts &section=board   (one read, coachhelm_read_v1)
  *   /clubhouse-preview/coachhelm-team ?state=early | empty | failed | failed-all | partial | noplayers | long | loading &open=read | player | story | course &read=assigned | course &all=1 &station=tee | app | sg | putt | course   (the coach's team board, coachhelm_team_board_v1)
  *   /clubhouse-preview/coachhelm-brief ?state=empty | failed | off | loading   (the coach's Monday brief; synthetic reads through computeMondayBrief)
- *   /clubhouse-preview/coachhelm-coach-brief ?state=thin | noreads | partial | failed | off | loading, &section=patterns | working | record | goals   (the coach's Brief behind /intelligence)
  *   /clubhouse-preview/recruiting ?state=empty | nomatch | failed | loading | sparse | noteam | detail | add | edit | delete | docsfailed | failwrites | failstage | slow   (the coach; eight prospects, Mason Reilly first)
  *   /clubhouse-preview/tournaments, tournament-desk, -review, -history, -links, -compare, -lineup, -form, -live, -player ?state=loading | empty | failed | partial | thin | provisional | live, &event=, &tab=, &view=edit   (P016; preview/PreviewTournaments.tsx; tournament-player is Jonah)
  *   any screen &bell=empty | failed | slow   (the top-bar notifications feed)
@@ -669,10 +665,6 @@ export default async function ClubhousePreview({
         ) : (
           <TrackRecord load={trackLoad({ early: PREVIEW_TRACK_RECORD_EARLY, empty: PREVIEW_TRACK_RECORD_EMPTY, unavailable: PREVIEW_TRACK_RECORD_UNAVAILABLE }[state ?? ''] ?? PREVIEW_TRACK_RECORD)} />
         ),
-    },
-    'coachhelm-coach-brief': {
-      path: '/golf/dashboard/coachhelm',
-      node: state === 'loading' ? <CoachHelmSkeleton view="coach" /> : <CoachBrief load={coachBriefLoad(state)} section={isBriefSection(section) ? section : null} />,
     },
     'coachhelm-brief': {
       path: '/golf/dashboard/coachhelm',
