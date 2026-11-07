@@ -42,6 +42,7 @@ import { competitionExtra, DayCard, dayPhase, LaterToday, SinceYouLooked, sunset
 import { useLightPlace } from '../../shell/light';
 
 export { CALENDAR, eventHref, whenLabel } from './event-links';
+export { UpNext } from './UpNext';
 import { CALENDAR, eventHref, whenLabel } from './event-links';
 import { plural } from '../../lib/plural';
 import { ClassHomeLine } from './ClassHomeLine';

@@ -80,7 +80,8 @@ const ALLOW_HAND_ROLLED: Record<string, number> = {
   'screens/recruiting/parts.tsx': 1,
   'screens/rounds/track/RoundTracking.tsx': 1,
   'shell/BellStacks.tsx': 1,
-  'styles/home.css': 9,
+  // 11: player Home was reverted to its 2026-10-28 version by the owner (2026-11-07), with that day's empty classes.
+  'styles/home.css': 11,
   'styles/qualifiers.css': 2,
   'styles/recruiting.css': 10,
   'styles/rounds-track.css': 1,

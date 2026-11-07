@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -116,24 +116,5 @@ describe('spacing the base reset can’t take away', () => {
   it('keeps the window picker’s own labels out of the caption rule', () => {
     expect(css).toMatch(/\.ch-ph-game__h > div > span\s*{/);
     expect(css).not.toMatch(/\.ch-ph-game__h span\s*{/);
-  });
-});
-
-describe('the hero on the phone (wave 7)', () => {
-  it('New round, the player’s own reply beside what is next under the greeting, and From your coach under the keys', () => {
-    show();
-    expect(screen.getByRole('link', { name: 'New round' })).toBeTruthy();
-    expect(screen.queryByRole('link', { name: 'Post a round' })).toBeNull();
-    // The greeting's line is Up next (S-HOMEGAME): the event, when and where, and the player's own reply beside it.
-    const next = screen.getByRole('link', { name: /Qualifier Fri at / });
-    expect(within(next).getByText('You’re going')).toBeTruthy();
-    expect(screen.getByRole('link', { name: /^From your coach/ }).getAttribute('href')).toBe('/golf/dashboard/team-hub');
-    expect(screen.getByRole('heading', { level: 2, name: 'Your latest round' })).toBeTruthy();
-  });
-
-  it('Reply needed in the warning tone when the player still owes one', () => {
-    show({ next: { ...PREVIEW_PLAYER_HOME.next!, mine: 'needed' } });
-    const badge = within(screen.getByRole('link', { name: /Qualifier Fri at / })).getByText('Reply needed');
-    expect(badge.classList.contains('ch-badge--warning')).toBe(true);
   });
 });

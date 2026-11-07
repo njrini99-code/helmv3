@@ -1,28 +1,37 @@
 'use client';
 
 import { GraduationCap, MessageSquare, Plus } from 'lucide-react';
-import { useMemo, type ReactNode } from 'react';
+import Link from 'next/link';
+import type { ReactNode } from 'react';
+import type { ChHomeEvent } from '../../data/home';
 import type { ChPlayerHome } from '../../data/player-home';
 import type { ChPlayerLive } from '../../data/live-rounds';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
-import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
+import { PageRefreshNotice } from '../../ui/RefreshNotice';
+import { Icon } from '../../ui/Icon';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useChPhone } from '../../lib/use-phone';
+import { useChClock, useChClockText } from '../../lib/use-clock';
 import { useNow } from '../../lib/use-now';
 import { rebuiltHref } from '../../shell/nav';
-import { CoachAsks } from './CoachAsks';
-import { UpNextRow } from './HomePhone';
+import { LinkPending } from '../../shell/LinkPending';
+import { TYPE_LABEL } from '../calendar/model';
+import { TYPE_ICON } from '../calendar/views';
+import { CoachAsks, MineBadge } from './CoachAsks';
+import { Countdown } from './Countdown';
+import { eventHref, whenLabel } from './HomePhone';
 import { LatestRound } from './LatestRound';
 import { noRoundsYet, playerFailedParts } from './model';
 import { OwnLiveCard } from './OwnLiveCard';
 import { TeammatesLiveCard } from './TeammatesLiveCard';
-import { YourGameLead } from './PlayerGame';
-import { PlayerFirstRunPhone, PlayerHomePhone } from './PlayerHomePhone';
-import { DeskToday } from './HomeDeskCrh';
+import { PlayerGame } from './PlayerGame';
+import { NoRoundsYet, PlayerHomePhone } from './PlayerHomePhone';
+import { Week } from './Week';
 import { messageCoachHref, postRoundHref } from './player-links';
 import { useHomeDayRollover } from './use-day-rollover';
 import { ChangeMarksProvider } from '../../lib/use-change-marks';
+import { MarkBadge, markSub, useRowMark } from '../calendar/change-note';
 import { NoTeam } from '../../ui/NoTeam';
 import '../../styles/home.css';
 
@@ -43,8 +52,6 @@ export function PlayerHome(props: { data: ChPlayerHome; /** Preview and tests: a
 
 function PlayerHomeBody({ data, now, live, playerId }: { data: ChPlayerHome; now?: string; live?: ChPlayerLive; playerId?: string }) {
   const phone = useChPhone();
-  const clockNow = useNow();
-  const ticking = useMemo(() => (now ? new Date(now) : clockNow), [now, clockNow]);
   // A page left open past the team's midnight reads itself again, so "today" is today (desktop and phone).
   useHomeDayRollover(data.clock, now !== undefined);
   const own =
@@ -56,44 +63,52 @@ function PlayerHomeBody({ data, now, live, playerId }: { data: ChPlayerHome; now
         </div>
       </SectionBoundary>
     ) : null;
-  if (isPlayerFirstRun(data)) return <PlayerFirstRun data={data} own={own} phone={phone} now={now} />;
+  if (isPlayerFirstRun(data)) return <PlayerFirstRun data={data} own={own} />;
   if (phone) return <PlayerHomePhone data={data} now={now} live={live} playerId={playerId} />;
   const post = postRoundHref();
   // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
   const failed = playerFailedParts(data);
   const covered = failed.length > 1;
-  const todayRest = data.today.filter((e) => e.id !== data.next?.id);
+  if (noRoundsYet(data)) {
+    // Events but no round yet: the week (Up next inside it) stays, and the welcome stands in for three empty blocks.
+    return (
+      <main className="ch-h-main ch-h-main--desk" data-canopy="">
+        <DeskHead data={data} post={post} />
+        <CoachAsks asks={data.asks} />
+        <PageRefreshNotice parts={failed} />
+        {own}
+        <div className="ch-h-sheet ch-sheet is-solo">
+          <SectionBoundary surface="home.week" label="This week" code="CH-2205">
+            <Week week={data.week} between={data.next ? <DeskNext e={data.next} frozen={now} /> : null} covered={covered} />
+          </SectionBoundary>
+        </div>
+        <NoRoundsYet />
+      </main>
+    );
+  }
   return (
     <main className="ch-h-main ch-h-main--desk" data-canopy="">
       <DeskHead data={data} post={post} />
       <CoachAsks asks={data.asks} />
       <PageRefreshNotice parts={failed} />
       {own}
-      <div className="ch-ph-desk">
-        <SectionBoundary surface="home.game" label="Your game" code="CH-2217">
-          <YourGameLead data={data} covered={covered} />
-        </SectionBoundary>
-        <div className="ch-ph-desk__side">
-          {data.next && (
-            <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
-              <UpNextRow e={data.next} now={ticking} />
-            </SectionBoundary>
-          )}
-          {data.week.error ? (
-            // A failed schedule read says so, never "Nothing scheduled" (the phone and coach Home do the same).
-            <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. Try again." covered={covered} />
-          ) : (
-            todayRest.length > 0 && (
-              <SectionBoundary surface="home.today" label="Today" code="CH-2214">
-                <DeskToday events={todayRest} now={ticking} />
-              </SectionBoundary>
-            )
-          )}
+      {/* One continuous surface (owner, 2026-10-06): the week and the latest round, then Scoring under a hairline. */}
+      <div className="ch-h-flow ch-sheet">
+        <div className="ch-h-sheet">
+          <SectionBoundary surface="home.week" label="This week" code="CH-2205">
+            <Week week={data.week} covered={covered} />
+          </SectionBoundary>
           <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
-            <LatestRound data={data.latest} mine covered={covered} />
+            <LatestRound data={data.latest} mine lead={data.next ? <DeskNext e={data.next} frozen={now} /> : null} covered={covered} />
           </SectionBoundary>
         </div>
+        <SectionBoundary surface="home.game" label="Your scoring" code="CH-2217">
+          <PlayerGame data={data} part="scoring" covered={covered} />
+        </SectionBoundary>
       </div>
+      <SectionBoundary surface="home.game" label="Your game" code="CH-2217">
+        <PlayerGame data={data} part="legs" covered={covered} />
+      </SectionBoundary>
     </main>
   );
 }
@@ -118,49 +133,48 @@ function DeskHead({ data, post }: { data: ChPlayerHome; post: string | null }) {
   );
 }
 
+/** Up next inside the week (Player - Home.html `pv-next`): type, when, where, and the countdown. */
+function DeskNext({ e, frozen }: { e: ChHomeEvent; frozen?: string }) {
+  const t = useChClockText();
+  const clock = useChClock();
+  // P-14: a changed event wears a badge in the kicker and its old value struck under the range, until Got it.
+  const mark = useRowMark()(e);
+  const was = mark && !mark.change.partial ? markSub(e.location, mark.change, clock, false) : null;
+  const ticking = useNow();
+  const now = frozen ? new Date(frozen) : ticking;
+  const when = whenLabel(e, now);
+  return (
+    <Link href={eventHref(e)} className="ch-ph-next">
+      <span className="ch-ph-next__k">
+        <span>
+          <Icon icon={TYPE_ICON[e.type]} size={13} />
+          Up next · {TYPE_LABEL[e.type]}
+          {mark && <MarkBadge change={mark.change} />}
+        </span>
+        <span className={'ch-num' + (when.soon ? ' is-soon' : '')}>{t(when.text)}</span>
+      </span>
+      <span className="ch-ph-next__t">{e.title}</span>
+      <span className="ch-ph-next__m ch-num">{[t(e.rangeLabel), e.location].filter(Boolean).join(' · ')}</span>
+      {was && <span className="ch-ph-next__m ch-num">{was}</span>}
+      <MineBadge mine={e.mine} />
+      {!e.allDay && <Countdown to={e.startIso} frozen={frozen} />}
+      <LinkPending />
+    </Link>
+  );
+}
+
 /**
- * A player with no round posted yet and every read answered gets the first-run page (the redesign's empty state), whether or not the
- * team has events: the week layout is for a player with rounds. A failed read is never taken for "new" (noRoundsYet, CH-2312).
+ * A player with nothing yet: no rounds, nothing on the calendar, and every read answered. With events and no round,
+ * the loaded page keeps the week and shows the welcome in place of the rounds (NoRoundsYet).
  */
 export function isPlayerFirstRun(data: ChPlayerHome): boolean {
-  return noRoundsYet(data) && !data.week.error;
+  return noRoundsYet(data) && !data.week.error && !data.next && data.week.days.every((d) => d.eventCount === 0);
 }
 
 /** The v2 first-run page empty state (gh-states.jsx, EMPTY.home.player; D-71). */
-function PlayerFirstRun({ data, own, phone, now }: { data: ChPlayerHome; own?: ReactNode; phone: boolean; now?: string }) {
+function PlayerFirstRun({ data, own }: { data: ChPlayerHome; own?: ReactNode }) {
   const start = postRoundHref();
   const classes = rebuiltHref('/golf/dashboard/classes', 'player');
-  const empty = (
-    <EmptyState
-      size="page"
-      code="CH-2312"
-      shape="rows"
-      title="Welcome to the team"
-      body="Your stats start with the first round you post. Your coach’s team updates and your schedule show up here too."
-      action={
-        start ? (
-          <Button variant="primary" leftIcon={Plus} href={start}>
-            New round
-          </Button>
-        ) : undefined
-      }
-      secondaryAction={
-        classes ? (
-          <Button leftIcon={GraduationCap} href={classes}>
-            Add classes
-          </Button>
-        ) : undefined
-      }
-    />
-  );
-  // The phone draws the redesign's first-run page: the green top as on the loaded Home, one empty card under it.
-  if (phone) {
-    return (
-      <PlayerFirstRunPhone data={data} now={now} own={own}>
-        {empty}
-      </PlayerFirstRunPhone>
-    );
-  }
   return (
     // `--first`: the framed head on desktop, as the loaded page has (states audit, 2026-10-08), and the Ledger's page
     // intro on the phone (home.css "Player Home on the phone").
@@ -170,7 +184,27 @@ function PlayerFirstRun({ data, own, phone, now }: { data: ChPlayerHome; own?: R
         <h1 className="ch-display">{data.greeting}</h1>
       </header>
       {own}
-      {empty}
+      <EmptyState
+        size="page"
+        code="CH-2312"
+        shape="rows"
+        title="Welcome to the team"
+        body="Your stats start with the first round you post. Your coach’s team updates and your schedule show up here too."
+        action={
+          start ? (
+            <Button variant="primary" leftIcon={Plus} href={start}>
+              New round
+            </Button>
+          ) : undefined
+        }
+        secondaryAction={
+          classes ? (
+            <Button leftIcon={GraduationCap} href={classes}>
+              Add classes
+            </Button>
+          ) : undefined
+        }
+      />
     </main>
   );
 }

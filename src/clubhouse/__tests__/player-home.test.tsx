@@ -168,14 +168,6 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
     window.matchMedia = real;
   });
 
-  it('CH-1209 CH-2201 on the phone the reads that fail are told once under the greeting, with one Try again', () => {
-    show(PREVIEW_PLAYER_HOME_FAILED);
-    expect(code('CH-1209')!.textContent).toMatch(/This week’s schedule, your latest round and your scoring didn’t load/);
-    expect(code('CH-1209')!.closest('.ch-hm-body')).not.toBeNull();
-    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
-    expect(code('CH-2201')!.closest('.ch-hm-next')).toBeNull();
-  });
-
   it('20103 on the phone Your latest round opens its review once the round has a real id', () => {
     const [first, ...others] = PREVIEW_PLAYER_HOME.latest.rounds;
     show(home({ latest: { ...PREVIEW_PLAYER_HOME.latest, rounds: [{ ...first!, id: '5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c' }, ...others] } }));
@@ -186,14 +178,6 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
     show(home({ next: null, today: [] }));
     expect(code('CH-2309')!.textContent).toMatch(/Your coach’s practices and events will show here/);
     expect(screen.queryByRole('link', { name: /Add event/ })).toBeNull();
-  });
-
-  it('CH-2301 an empty day with something next draws no second empty card, and no Plan button for a player', () => {
-    // One schedule answer, never two (owner, 7 Nov): the greeting's line says what is next, so an empty Today adds nothing.
-    show(home({ today: [] }));
-    expect(code('CH-2301')).toBeNull();
-    expect(code('CH-2309')).toBeNull();
-    expect(screen.queryByRole('link', { name: 'Plan' })).toBeNull();
   });
 
   it('21703 Your latest round pages inline, with a selection tick', async () => {
@@ -541,18 +525,5 @@ describe('Player Home · what the loader reads, on the redesign', () => {
     expect(part.legs).toMatchObject({ benchError: true });
     expect(part.coachUserId).toBeNull();
     for (const r of ['holes', 'tourBenchmarks', 'coaches']) expect(logServer).toHaveBeenCalledWith('home', r, expect.anything());
-  });
-});
-
-describe('Player Home · the phone, on the redesign', () => {
-  const real = window.matchMedia;
-  afterEach(() => {
-    window.matchMedia = real;
-  });
-  it('21901 at 820px and below Player Home is the phone Home, never the desktop page shrunk', () => {
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
-    show();
-    expect(document.querySelector('.ch-h-main--desk')).toBeNull();
-    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['Your game', 'Today', 'Your latest round']);
   });
 });

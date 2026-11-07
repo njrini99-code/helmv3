@@ -5640,10 +5640,10 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   display: none;
 }
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  [data-ch-crh='on'] .ch-h-main[aria-busy='true'] > .ch-hm-skel {
+  [data-ch-crh='on']:not([data-ch-role='player']) .ch-h-main[aria-busy='true'] > .ch-hm-skel {
     display: none;
   }
-  [data-ch-crh='on'] .ch-h-main[aria-busy='true'] > .ch-hm-sk-crh {
+  [data-ch-crh='on']:not([data-ch-role='player']) .ch-h-main[aria-busy='true'] > .ch-hm-sk-crh {
     display: grid;
     gap: 16px;
   }
@@ -5678,10 +5678,10 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   display: none;
 }
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  [data-ch-crh='on'] .ch-h-main[aria-busy='true']:has(> .ch-h-sk-dcrh) > :not(.ch-h-sk-dcrh) {
+  [data-ch-crh='on']:not([data-ch-role='player']) .ch-h-main[aria-busy='true']:has(> .ch-h-sk-dcrh) > :not(.ch-h-sk-dcrh) {
     display: none;
   }
-  [data-ch-crh='on'] .ch-h-main[aria-busy='true'] > .ch-h-sk-dcrh {
+  [data-ch-crh='on']:not([data-ch-role='player']) .ch-h-main[aria-busy='true'] > .ch-h-sk-dcrh {
     display: grid;
     gap: 16px;
     /* The loading main keeps the framed page's top inset; the lane's page starts 14px higher. */

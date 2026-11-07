@@ -78,8 +78,5 @@ describe('each figure matches its home, for one player over one window', () => {
     for (const file of ['data/player-home.ts', 'data/home.ts', 'data/roster.ts']) expect(src(file)).toMatch(/playerStrokesGained\(/);
     expect(src('data/player-home.ts')).toMatch(/scoringLast10: [^\n]*playerScoringAverage\(/);
     expect(src('data/coachhelm-team-legs.ts')).toMatch(/lastTenRounds\(/);
-    const game = src('screens/home/PlayerGame.tsx');
-    expect(game).toMatch(/data\.scoringLast10/);
-    expect(game).toMatch(/data\.sgPerRound/);
   });
 });
