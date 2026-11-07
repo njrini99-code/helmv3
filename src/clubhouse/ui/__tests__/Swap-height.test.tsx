@@ -32,6 +32,6 @@ describe('Swap', () => {
     expect(src('lib/nav-motion.ts')).not.toMatch(/filter:/);
     expect(src('shell/use-route-swipe.ts')).not.toMatch(/filter/);
     expect(src('lib/slide-plate.ts')).not.toMatch(/scale\(/);
-    expect(src('styles/controls.css')).toContain('transition: color 0s linear var(--ch-dur-quick)');
+    expect(src('styles/controls.css')).toContain('transition: color 0s linear var(--ch-dur-press)');
   });
 });

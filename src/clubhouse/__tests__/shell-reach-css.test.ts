@@ -94,7 +94,7 @@ describe('CH-1617 choices and the feature card answer a press without scaling', 
     });
 
   it('the segment tint comes in over the press beat', () => {
-    expect(withProp(controls, '.ch-seg__b', 'transition')).toMatch(/background var\(--ch-dur-press\) var\(--ch-ease\)/);
+    expect(withProp(controls, '.ch-seg__b', 'transition')).toMatch(/background-color var\(--ch-dur-press\) var\(--ch-ease\)/);
   });
 
   it('the linked feature card lays a shade over its green and never scales', () => {
