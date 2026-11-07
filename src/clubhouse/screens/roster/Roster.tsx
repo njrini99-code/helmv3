@@ -121,8 +121,7 @@ export function Roster({ data }: { data: ChRoster; }) {
     if (inviteLink.open) inviteLink.close();
   }, [inviteLink]);
   // The bell's join-request notice links here with `?tab=requests` (createTeamJoinRequest). The phone opens its requests sheet
-  // (RosterPhone). On desktop the requests are the card under the header: the link takes focus there, scrolling it into view if it
-  // is not, and the param is dropped so a reload or Back shows the roster as it is. With no request waiting (the notice was
+  // (RosterPhone). On desktop the requests are the row under the header: the link opens its sheet, and the param is dropped so a reload or Back shows the roster as it is. With no request waiting (the notice was
   // already decided) or the requests not loaded, there is no card and nothing moves. Read from the media query, not `phone`:
   // a first render on the server's guess must not spend a phone's param.
   // The focus waits for the desktop card to be mounted: a stale phone-layout hint mounts the phone copy at hydration, which
@@ -151,11 +150,13 @@ export function Roster({ data }: { data: ChRoster; }) {
   // P-10: the team's class lines (flag off: nothing is fetched and the map is empty). `hold` keeps them still under a finger.
   const { lines: classLines, press: hold } = useRosterClassLines(data.teamId, players);
   usePageKeys('Roster', phone ? null : ROW_KEYS);
+  // On desktop the requests are the row under the header and its sheet: the link opens the sheet (the row is not a focus
+  // target), and only when a request is still waiting; otherwise nothing moves.
   useEffect(() => {
     if (!focusRequests || phone) return;
-    requestsRef.current?.focus();
+    if (!data.requestsError && jr.reqs.length > 0) setRequestsOpen(true);
     setFocusRequests(false);
-  }, [focusRequests, phone]);
+  }, [focusRequests, phone, data.requestsError, jr.reqs.length]);
   // Phone: the open player is a pushed screen (RosterPhone keeps it in the history, CH-1906).
   // A link with ?player= opens that profile once; the param is dropped so a reload shows the list.
   const [openId, setOpenId] = useState<string | null>(null);
