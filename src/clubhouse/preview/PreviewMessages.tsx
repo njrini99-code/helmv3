@@ -271,7 +271,7 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
       pollnew: [plus, named('Poll')],
       hold: [hold(lastTheirs)],
       holdseen: [hold(lastMine)],
-      react: [hold(lastTheirs), click(() => el('.ch-msv-rbar button:nth-child(2)'))],
+      react: [hold(lastTheirs), click(() => el('.ch-mso-rbar button:nth-child(2)'))],
       reply: [hold(lastTheirs), named('Reply')],
       edit: [hold(lastMine), named('Edit')],
       rowmenu: [rowMenu],

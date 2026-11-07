@@ -58,6 +58,20 @@ const isGroup = isGroupRow;
 // A poll's plain-text copy shows as its question; a typed message that merely starts "Poll: " keeps all its lines (D23).
 const railText = (text: string) => (isPollFallbackText(text) ? text.split('\n')[0]! : text);
 
+/** The attachment facts a message payload carries (kind, size, duration), when it carries them; nothing otherwise. */
+function attachmentMeta(payload: unknown): Pick<ChMsg, 'attachmentKind' | 'attachmentWidth' | 'attachmentHeight' | 'durationSeconds'> {
+  const p = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : null;
+  if (!p) return {};
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : undefined);
+  const kind = p.attachment_kind === 'photo' || p.attachment_kind === 'file' || p.attachment_kind === 'video' ? p.attachment_kind : undefined;
+  return {
+    ...(kind ? { attachmentKind: kind } : {}),
+    ...(num(p.width) ? { attachmentWidth: num(p.width) } : {}),
+    ...(num(p.height) ? { attachmentHeight: num(p.height) } : {}),
+    ...(num(p.duration_seconds) ? { durationSeconds: num(p.duration_seconds) } : {}),
+  };
+}
+
 export function Messages({ data }: { data: ChMessagesData }) {
   const hours = useChClock();
   const router = useRouter();
@@ -471,6 +485,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
           // A poll whose payload doesn't parse draws as its plain-text copy (`content`), never as a broken card.
           poll: m.kind === 'poll' && !m.is_deleted ? parsePollPayload(m.payload) : null,
           pending: !!m.pending,
+          ...attachmentMeta(m.payload),
         })),
     [msgs.messages, msgs.currentUserId, selectedId, data.viewerUserId],
   );
@@ -635,8 +650,6 @@ export function Messages({ data }: { data: ChMessagesData }) {
       if (!r.success) throw new Error(r.error);
       if (id === selectedId) setMuteState(r.data);
       haptic('success');
-      // One mute toast at a time: a quick mute, unmute, mute leaves only the last (CH-1910).
-      toast({ title: muted ? 'Conversation muted' : 'Notifications back on', replace: 'mute' });
     });
 
   // Stable, like loadAttachments: the Add sheet and the Files list key their fetch on them.

@@ -1,10 +1,8 @@
 'use client';
 
 import type { ChMessagesApi } from '../api/types';
-import { clock, type ChMsg } from '../model';
-import { SeenByPill, SeenByReceipt } from '../seen-by';
-import { AnimatePresence, m as M } from 'motion/react';
-import { chTween } from '../../../lib/motion';
+import type { ChMsg } from '../model';
+import { DmReceipt, SeenByPill } from '../seen-by';
 import { useToast } from '../../../ui/Toast';
 import { AlertCircle } from 'lucide-react';
 import { Icon } from '../../../ui/Icon';
@@ -16,16 +14,14 @@ export function BubbleReceipt({
   group,
   carrier,
   onSeenBy,
-  showTime,
-  reduced,
 }: {
   api: ChMessagesApi;
   m: ChMsg;
   group: boolean;
   carrier: boolean;
   onSeenBy?: (m: ChMsg, anchor: HTMLElement | null) => void;
-  showTime: boolean;
-  reduced: boolean;
+  showTime?: boolean;
+  reduced?: boolean;
 }) {
   const toast = useToast();
   return (
@@ -61,22 +57,7 @@ export function BubbleReceipt({
               <SeenByPill api={api} m={m} onOpen={onSeenBy ? (el) => onSeenBy(m, el) : undefined} />
             </span>
           )
-        ) : (carrier && m.mine && m.seen) && (
-          <span className={"ch-ms-msg__t ch-num" + " is-pill"}>
-            {(m.seen && !group ? `Seen ${clock(m.at, api.timeZone, api.clock)}` : null)}
-            {""}
-            {/* OC-3: a direct thread's "Seen" sits on the carrier only (or a time revealed by a swipe), not every run-end. */}
-            {""}
-            {/* P-1 M3: when the receipt moves to a newer message, the old one fades out on quick (instant when reduced). */}
-            <AnimatePresence initial={false}>
-              {group && (carrier || showTime) && (
-                <M.span key="seen" className="ch-ms-seen-slot" exit={reduced ? undefined : { opacity: 0 }} transition={chTween("quick", reduced)}>
-                  <SeenByReceipt api={api} m={m} onOpen={onSeenBy ? (el) => onSeenBy(m, el) : undefined} />
-                </M.span>
-              )}
-            </AnimatePresence>
-          </span>
-        )
+        ) : carrier && m.mine && <DmReceipt api={api} m={m} />
       )}
       {/* P-10: "Notified anyway", once a push really went out. A 1:1 shows it to both sides; in a group only a coach sees it (a teammate
           reading it would learn who was in class). */}

@@ -35,20 +35,24 @@ export function joinPrivateTyping(supabase: SupabaseClient, conversationId: stri
       // No session token: the private join below is refused by the server and typing stays on the public topic.
     }
     if (left) return null;
-    channel = supabase
-      .channel(typingTopic(conversationId), { config: { private: true } })
-      .on('broadcast', { event: 'typing' }, (payload) => {
-        const { userId, isTyping } = (payload.payload ?? {}) as Partial<TypingEvent>;
-        if (userId) onEvent({ userId, isTyping: !!isTyping });
-      })
-      .subscribe();
+    try {
+      channel = supabase
+        .channel(typingTopic(conversationId), { config: { private: true } })
+        .on('broadcast', { event: 'typing' }, (payload) => {
+          const { userId, isTyping } = (payload.payload ?? {}) as Partial<TypingEvent>;
+          if (userId) onEvent({ userId, isTyping: !!isTyping });
+        })
+        .subscribe();
+    } catch {
+      return null;
+    }
     return channel;
   })();
   return {
     ready,
     leave: () => {
       left = true;
-      if (channel) void supabase.removeChannel(channel);
+      if (channel) void Promise.resolve(supabase.removeChannel(channel)).catch(() => undefined);
     },
   };
 }
@@ -64,7 +68,13 @@ export function usePrivateTyping(conversationId: string | null, viewerUserId: st
   useEffect(() => {
     setIds([]);
     if (!conversationId || !viewerUserId) return;
-    const supabase = createClient();
+    // The client needs the browser's Supabase env; without it (a test, a preview) typing simply stays on the public topic.
+    let supabase: SupabaseClient;
+    try {
+      supabase = createClient();
+    } catch {
+      return;
+    }
     const timers = new Map<string, number>();
     const drop = (id: string) => {
       window.clearTimeout(timers.get(id));
@@ -80,7 +90,7 @@ export function usePrivateTyping(conversationId: string | null, viewerUserId: st
     });
     void joined.ready.then((c) => {
       channelRef.current = c;
-    });
+    }).catch(() => undefined);
     return () => {
       for (const t of timers.values()) window.clearTimeout(t);
       channelRef.current = null;

@@ -158,7 +158,7 @@ test.describe('phone', () => {
   });
 
   test('3. Hold, then let go mid-lift', async ({ page }) => {
-    await run(page, { 'held bubble': { sel: `${bubble}, .ch-msv-lift__copy` } }, 1100, async () => {
+    await run(page, { 'held bubble': { sel: `${bubble}, .ch-mso-lift__copy` } }, 1100, async () => {
       await hold(page);
       await page.waitForTimeout(90);
       await page.keyboard.press('Escape');
@@ -166,7 +166,7 @@ test.describe('phone', () => {
   });
 
   test('4. Hold again while it settles', async ({ page }) => {
-    await run(page, { 'held bubble': { sel: `${bubble}, .ch-msv-lift__copy` } }, 1800, async () => {
+    await run(page, { 'held bubble': { sel: `${bubble}, .ch-mso-lift__copy` } }, 1800, async () => {
       await hold(page);
       await page.waitForTimeout(420);
       await page.keyboard.press('Escape');

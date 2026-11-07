@@ -266,3 +266,24 @@
     opacity: 0;
   }
 }
+
+/* MSG-301 / MSG-302 Composer pill: glass-strong at blur 24 / saturate 170, float shadow, a 1.5 ring on focus-within; the plus key reads ink-2. */
+[data-ch-ms-v2] .ch-ms-comp__field {
+  gap: 6px;
+  padding: 5px;
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
+  backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
+  box-shadow: var(--ch-shadow-float);
+}
+[data-ch-ms-v2] .ch-ms-comp__field:focus-within {
+  box-shadow: var(--ch-shadow-float), 0 0 0 1.5px color-mix(in oklab, var(--ch-accent-ink) 55%, transparent);
+}
+[data-ch-ms-v2] .ch-msv-plus__key {
+  color: var(--ch-text-tertiary);
+}
+/* MSG-303 The field: padding 8 4 7, no ring of its own (the pill carries it). */
+[data-ch-ms-v2] .ch-ms-comp__field textarea,
+[data-ch-ms-v2] .ch-ms-comp__field textarea:focus {
+  padding: 8px 4px 7px;
+  box-shadow: none;
+}

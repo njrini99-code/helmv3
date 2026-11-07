@@ -43,7 +43,14 @@ export function BubbleBody({
         )
       )}
       {m.hasAttachments && (
-        <Attachments load={api.attachments} id={m.id} mine={m.mine} />
+        <Attachments
+          load={api.attachments}
+          id={m.id}
+          mine={m.mine}
+          from={firstName(who?.name ?? "Member")}
+          caption={m.text || undefined}
+          reserve={m.attachmentKind === "photo" ? "photo" : m.attachmentKind === "file" ? "file" : undefined}
+        />
       )}
     </>
   );

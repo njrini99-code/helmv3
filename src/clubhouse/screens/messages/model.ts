@@ -99,6 +99,11 @@ export interface ChMsg {
   poll?: Poll | null;
   /** Still sending: the server hasn't confirmed it, so it carries no receipt (P-1). */
   pending?: boolean;
+  /** What the attachment is, when the list payload says so, so its frame can be held before the file is signed (MSG-220/221, Q-41). */
+  attachmentKind?: 'photo' | 'file' | 'video';
+  attachmentWidth?: number;
+  attachmentHeight?: number;
+  durationSeconds?: number;
 }
 
 /** P-1 Seen by: every member's last_read_at in the open conversation, from the messages hook. */
