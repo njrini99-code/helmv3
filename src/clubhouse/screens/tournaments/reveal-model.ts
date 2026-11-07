@@ -82,7 +82,13 @@ export function revealOf(
   if (!row) return null;
   const names = (ids: ReadonlyArray<{ player_id: string; slot: number | null }>) =>
     [...ids].sort((a, b) => (a.slot ?? 99) - (b.slot ?? 99)).map((p) => ctx.players.find((x) => x.id === p.player_id)?.name ?? 'A teammate');
-  const first = row.rounds.find((r) => r.players.length > 0);
+  // The top-level role and slot are the published entries and can be stale after a substitution: the per-round my_role and
+  // my_slot (the locked snapshot) decide. Best role across the rounds: a lineup spot beats an individual, which beats the
+  // alternate. With no per-round answer (nothing locked and no rounds) the published entry stands.
+  const rank = { lineup: 3, individual: 2, alternate: 1 } as const;
+  const best = [...row.rounds].filter((r) => r.my_role).sort((a, b) => rank[b.my_role!] - rank[a.my_role!])[0];
+  const status: ChTourReveal['status'] = best?.my_role ?? row.role;
+  const first = row.rounds.find((r) => r.my_role === 'lineup' && r.players.length > 0);
   const counting = row.rounds.map((r) => {
     const round = ctx.rounds.find((x) => x.roundEventId === r.round_event_id);
     const final = round?.status === 'final' || round?.status === 'official';
@@ -90,10 +96,10 @@ export function revealOf(
     return { roundNumber: r.round_number, state: final && scores ? countingIn(ctx.playerId, r, scores, ctx.format, round!.par) : ('pending' as CountState) };
   });
   return {
-    status: row.role,
-    slot: row.role === 'lineup' ? row.slot : null,
+    status,
+    slot: status === 'lineup' ? (best?.my_role === 'lineup' ? best.my_slot : row.slot) : null,
     of: ctx.format.players,
-    lineup: row.role === 'lineup' && first ? names(first.players) : [],
+    lineup: status === 'lineup' && first ? names(first.players) : [],
     privateLine: null,
     qualifying: null,
     next: null,

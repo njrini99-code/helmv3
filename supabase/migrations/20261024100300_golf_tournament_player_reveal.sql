@@ -16,7 +16,9 @@
 --        { published_at, locked_at, role, slot, rounds: [ { round_event_id, round_number, my_role, my_slot, players } ] }
 --      role is the caller's own: lineup | alternate | individual, or not_travelling when they have no entry. my_role and
 --      my_slot are the same per round (the locked snapshot after a substitution, else the entries). players lists the
---      round's lineup (player id and slot, nothing else) ONLY when the caller is in the lineup; otherwise it is []. No
+--      round's lineup (player id and slot, nothing else) ONLY when the caller is in the lineup OF THAT ROUND; otherwise it
+--      is []. The top-level role and slot are the published entries and can be stale after a substitution: clients use the
+--      per-round my_role and my_slot (the app does). No
 --      score, note, reasoning, receipt or other team's row is returned, and nothing from another team: the tournament is
 --      looked up by id and the caller must be on its team.
 --      EXECUTE: revoked from PUBLIC and anon, granted to authenticated only.
@@ -114,8 +116,10 @@ BEGIN
            'round_number', r.round_number,
            'my_role', (SELECT f.role FROM field f WHERE f.round_event_id = r.round_event_id AND f.player_id = v_player),
            'my_slot', (SELECT f.slot FROM field f WHERE f.round_event_id = r.round_event_id AND f.player_id = v_player),
+           -- Gated on the caller's role IN THIS ROUND (the locked snapshot after a substitution, else the entries), never on the
+           -- tournament-level role: a player substituted out must not keep the round's lineup, and one substituted in gets it.
            'players', CASE
-             WHEN v_role = 'lineup' THEN
+             WHEN (SELECT f.role FROM field f WHERE f.round_event_id = r.round_event_id AND f.player_id = v_player) = 'lineup' THEN
                (SELECT coalesce(jsonb_agg(jsonb_build_object('player_id', f.player_id, 'slot', f.slot) ORDER BY f.slot), '[]'::jsonb)
                   FROM field f
                  WHERE f.round_event_id = r.round_event_id AND f.role = 'lineup')

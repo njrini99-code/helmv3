@@ -1134,7 +1134,8 @@ export async function loadPlayerTournaments(ctx: TourCtx, eventId: string | null
       : null;
     // Whether a score counted needs the round's lineup scores, which a teammate may read once the round is final (D-85).
     const scoresByRound = new Map<string, Map<string, FinalScore>>();
-    if (open && myLineup?.ok && myLineup.value?.role === 'lineup') {
+    // Judged on the per-round role (a substitution makes the published role stale), never the tournament-level one.
+    if (open && myLineup?.ok && myLineup.value?.rounds.some((x) => x.my_role === 'lineup')) {
       const finalIds = open.rounds.filter((r) => r.status === 'final' || r.status === 'official').map((r) => r.roundEventId);
       const scored = await section('player', 'finalScores', async () => {
         const rows = await allIn<TourPlayerRoundRow>('finalScores', finalIds, (chunk, from, to) =>

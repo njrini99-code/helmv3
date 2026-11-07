@@ -6,14 +6,13 @@
 -- only to a player in the lineup. The select-own policy lets a player read their own snapshot row after publishing and
 -- nobody else's.
 --
--- Plan: 1 grants + 3 before publish + 1 publish + 4 after publish (lineup player) + 3 alternate + 2 outsiders = 14.
--- The snapshot rows the select-own policy reads exist only after a lock, so its positive case needs a locked tournament;
--- here it is checked from the other side (nobody reads a round lineup row before one exists, and not another's).
+-- Plan: 1 grants + 3 before publish + 1 publish + 4 after publish (lineup player) + 3 alternate + 2 outsiders = 14,
+-- + 10 for a locked tournament with a substitution (the select-own policy reads snapshot rows, which exist only after a lock).
 
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(14);
+SELECT plan(24);
 
 DO $$
 BEGIN
@@ -99,6 +98,45 @@ SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-000000281008",
 SELECT is(public.golf_tournament_my_lineup(current_setting('rv.id')::uuid), NULL, 'another team’s player gets NULL');
 SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-000000999999", "role": "authenticated"}';
 SELECT is(public.golf_tournament_my_lineup(current_setting('rv.id')::uuid), NULL, 'a signed-in user with no player row gets NULL');
+
+-- ============================================================================
+-- A locked tournament with a substitution (10): the per-round role decides, not the published entries.
+--   Entries: 502 lineup 1, 504 lineup 2, 503 alternate. Locked. Round 1: 503 in for 502.
+-- ============================================================================
+SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-000000281001", "role": "authenticated"}';
+SELECT lives_ok($$
+  DO $d$
+  BEGIN
+    PERFORM set_config('rv.sub', public.golf_tournament_create('{"team_id": "00000000-0000-0000-0000-000000281301", "name": "Reveal Subs", "substitutions": true, "start_date": "2026-11-20", "end_date": "2026-11-20", "rounds": [{"date": "2026-11-20"}]}'::jsonb)::text, true);
+    PERFORM public.golf_tournament_set_entries(current_setting('rv.sub')::uuid, '[
+      {"player_id": "00000000-0000-0000-0000-000000281502", "role": "lineup", "slot": 1},
+      {"player_id": "00000000-0000-0000-0000-000000281504", "role": "lineup", "slot": 2},
+      {"player_id": "00000000-0000-0000-0000-000000281503", "role": "alternate"}]'::jsonb, NULL);
+    PERFORM public.golf_tournament_publish(current_setting('rv.sub')::uuid, NULL);
+    PERFORM public.golf_tournament_lock_lineup(current_setting('rv.sub')::uuid);
+    PERFORM public.golf_tournament_substitute(
+      (SELECT round_event_id FROM public.golf_tournament_rounds WHERE tournament_id = current_setting('rv.sub')::uuid AND round_number = 1),
+      '00000000-0000-0000-0000-000000281502', '00000000-0000-0000-0000-000000281503');
+  END $d$ $$, 'the coach publishes, locks and substitutes the alternate in for a lineup player');
+
+-- The player substituted IN (published as the alternate).
+SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-000000281003", "role": "authenticated"}';
+SELECT is(public.golf_tournament_my_lineup(current_setting('rv.sub')::uuid) ->> 'role', 'alternate', 'substituted in: the top-level role is the published entry (stale after the swap)');
+SELECT is(public.golf_tournament_my_lineup(current_setting('rv.sub')::uuid) -> 'rounds' -> 0 ->> 'my_role', 'lineup', 'substituted in: the round says lineup');
+SELECT is(jsonb_array_length(public.golf_tournament_my_lineup(current_setting('rv.sub')::uuid) -> 'rounds' -> 0 -> 'players'), 2, 'substituted in: the round lineup is shown (gated on the round role)');
+SELECT is((SELECT count(*)::int FROM public.golf_tournament_round_lineups), 1, 'substituted in: reads exactly their own round lineup row, not a teammate''s');
+
+-- The player substituted OUT (published as lineup).
+SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-000000281002", "role": "authenticated"}';
+SELECT is(public.golf_tournament_my_lineup(current_setting('rv.sub')::uuid) ->> 'role', 'lineup', 'substituted out: the top-level role is still the published entry (stale)');
+SELECT is(public.golf_tournament_my_lineup(current_setting('rv.sub')::uuid) -> 'rounds' -> 0 ->> 'my_role', 'alternate', 'substituted out: the round says alternate');
+SELECT is(public.golf_tournament_my_lineup(current_setting('rv.sub')::uuid) -> 'rounds' -> 0 -> 'players', '[]'::jsonb, 'substituted out: no round lineup is shown (a stale lineup role does not leak it)');
+
+-- A teammate still in the lineup reads only their own row, and another team's player none.
+SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-000000281004", "role": "authenticated"}';
+SELECT is((SELECT count(*)::int FROM public.golf_tournament_round_lineups), 1, 'a lineup teammate reads only their own round lineup row');
+SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-000000281008", "role": "authenticated"}';
+SELECT is((SELECT count(*)::int FROM public.golf_tournament_round_lineups), 0, 'another team’s player reads none');
 
 SELECT * FROM finish();
 ROLLBACK;

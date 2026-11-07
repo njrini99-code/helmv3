@@ -95,6 +95,15 @@ describe('revealOf', () => {
     expect(r.counting).toEqual([{ roundNumber: 1, state: 'not_playing' }]);
   });
 
+  it('a substitution decides by the round, not the published entry: substituted in is a lineup player, substituted out is the alternate', () => {
+    const subbedIn = revealOf({ ...row('alternate'), rounds: [{ ...lineupRow('lineup'), my_slot: 1 }] }, ctx('final'))!;
+    expect(subbedIn).toMatchObject({ status: 'lineup', slot: 1 });
+    expect(subbedIn.lineup).toHaveLength(5);
+    const subbedOut = revealOf({ ...row('lineup'), rounds: [{ ...lineupRow('alternate'), players: [] }] }, ctx('final'))!;
+    expect(subbedOut).toMatchObject({ status: 'alternate', slot: null, lineup: [] });
+    expect(subbedOut.counting).toEqual([{ roundNumber: 1, state: 'not_playing' }]);
+  });
+
   it('a player who is not travelling is told so', () => {
     expect(revealOf({ ...row('not_travelling'), rounds: [{ ...lineupRow(null), players: [] }] }, ctx('final'))!.status).toBe('not_travelling');
   });
