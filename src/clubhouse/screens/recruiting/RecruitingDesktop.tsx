@@ -27,7 +27,7 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
   const nothing = c.total === 0;
   return (
     <main className="ch-rec" data-canopy="" aria-labelledby="ch-rec-title" data-ch-code="CH-14904">
-      <header className="ch-rec-head" data-canopy-head="tight">
+      <header className="ch-rec-head" data-canopy-head="tight" data-canopy-tight-always="">
         <div>
           <h1 id="ch-rec-title">Recruiting</h1>
           <p>Prospects you’re following, from first look to commitment.</p>

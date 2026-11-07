@@ -298,6 +298,7 @@
   --ch-type-11-medium: 500 calc(11 * var(--ch-type-k))/calc(13 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-type-11-strong: 600 calc(11 * var(--ch-type-k))/calc(13 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-track-11: 0.01em;
+  --ch-track-avatar: 0;
   --ch-type-12: 400 calc(12 * var(--ch-type-k))/calc(16 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-type-12-medium: 500 calc(12 * var(--ch-type-k))/calc(16 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-type-12-strong: 600 calc(12 * var(--ch-type-k))/calc(16 * var(--ch-type-k)) var(--ch-font-sans);
