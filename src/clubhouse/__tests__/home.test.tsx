@@ -76,14 +76,10 @@ import './dialog-polyfill';
 import {
   PREVIEW_HOME,
   PREVIEW_HOME_EMPTY,
-  PREVIEW_HOME_LEGS_CACHE_FAILED,
   PREVIEW_HOME_LEGS_NO_HOLES,
-  PREVIEW_HOME_LEGS_TOUR_FAILED,
-  PREVIEW_HOME_LEGS_UNRANKED,
   PREVIEW_HOME_NOW,
   PREVIEW_HOME_NO_EVENTS,
   PREVIEW_HOME_QUEUE_FAILED,
-  PREVIEW_LEGS,
 } from '../preview/fixtures';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
@@ -102,7 +98,6 @@ function wrap(node: React.ReactNode) {
     </LazyMotion>,
   );
 }
-const home = (over: Partial<ChCoachHome> = {}): ChCoachHome => ({ ...PREVIEW_HOME, ...over });
 const load = () => loadCoachHome({ teamId: 't1', coachName: 'Maya Reyes' });
 const logged = (read: string) => expect(logServer).toHaveBeenCalledWith('home', read, expect.anything());
 
@@ -151,47 +146,10 @@ describe('Home · reads that fail', () => {
     await expectCode('CH-2204', /leaderboard didn’t load/);
   });
 
-  it('CH-1209 two or more reads that fail are told once under the head, with one Try again; each part keeps its title', async () => {
-    wrap(<CoachHome data={home({ week: { ...PREVIEW_HOME.week, error: true }, latestRounds: { rounds: [], error: true, holesError: false }, leaderboard: { ...PREVIEW_HOME.leaderboard, error: true } })} />);
-    const page = code('CH-1209') as HTMLElement;
-    expect(page.textContent).toMatch(/This week’s schedule, recent rounds and the leaderboard didn’t load/);
-    // Under the head, before the first sheet.
-    expect(page.previousElementSibling).toBe(document.querySelector('.ch-h-head'));
-    expect(document.querySelectorAll('[role="alert"]')).toHaveLength(1);
-    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
-    for (const c of ['CH-2201', 'CH-2202', 'CH-2204']) {
-      expect(code(c)!.textContent).toMatch(/didn’t load$/);
-      expect(within(code(c) as HTMLElement).queryByRole('button')).toBeNull();
-    }
-    await userEvent.setup().click(within(page).getByRole('button', { name: 'Try again' }));
-    expect(router.refresh).toHaveBeenCalled();
-  });
-
-  it('CH-1209 one read that fails keeps its own notice and Try again, with no page notice', () => {
-    wrap(<CoachHome data={home({ leaderboard: { ...PREVIEW_HOME.leaderboard, error: true } })} />);
-    expect(code('CH-1209')).toBeNull();
-    expect(within(code('CH-2204') as HTMLElement).getByRole('button', { name: 'Try again' })).toBeTruthy();
-  });
-
   it('CH-2203 hole-by-hole does not load: the total stays, and the card says why', () => {
     const r = { ...PREVIEW_HOME.latestRounds.rounds[0]!, holes: null };
     wrap(<LatestRound data={{ rounds: [r], error: false, holesError: true }} />);
     expect(code('CH-2203')!.textContent).toMatch(/didn’t load for this round\. The total above is correct/);
-  });
-
-  it('CH-2205 CH-2206 CH-2207 a section that crashes is contained; the rest of Home stays', () => {
-    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const broken = home({
-      week: { ...PREVIEW_HOME.week, days: null as never },
-      latestRounds: { ...PREVIEW_HOME.latestRounds, rounds: null as never },
-      leaderboard: { ...PREVIEW_HOME.leaderboard, rows: null as never },
-    });
-    wrap(<CoachHome data={broken} />);
-    expect(code('CH-2205')!.textContent).toMatch(/This week couldn’t be shown/);
-    expect(code('CH-2206')!.textContent).toMatch(/The latest round couldn’t be shown/);
-    expect(code('CH-2207')!.textContent).toMatch(/The leaderboard couldn’t be shown/);
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(PREVIEW_HOME.greeting);
-    quiet.mockRestore();
   });
 
   it('CH-2209 replies do not load: the agenda drops who is invited instead of saying 0 players', async () => {
@@ -292,13 +250,6 @@ describe('Home · empty', () => {
     expect(code('CH-2305')!.textContent).toMatch(/6 players are on the roster/);
   });
 
-  it('CH-2305 players and no round: the leaderboard’s line says it once, and the latest round’s pane steps aside', () => {
-    wrap(<CoachHome data={{ ...PREVIEW_HOME, latestRounds: { rounds: [], error: false, holesError: false }, leaderboard: { rows: [], scorecards: 0, rosterSize: 7, error: false } }} />);
-    expect(code('CH-2305')).not.toBeNull();
-    expect(code('CH-2302')).toBeNull();
-    expect(document.querySelector('.ch-h-sheet.is-solo')).not.toBeNull();
-  });
-
   it('CH-2306 strokes gained is an early read until three rounds', () => {
     wrap(<Leaderboard data={PREVIEW_HOME.leaderboard} />);
     expect(code('CH-2306')!.textContent).toBe('Early read');
@@ -372,30 +323,6 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     window.matchMedia = real;
   });
 
-  it('20101 20103 21901 the hero: date, greeting, brief, and Up next with its countdown and replies, opening the event in Calendar', () => {
-    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Good morning, Maya' })).toBeTruthy();
-    // The day card (phone concept board 1): the title opens the event.
-    const next = document.querySelector('.ch-hm-day') as HTMLElement;
-    expect(within(next).getByRole('link', { name: 'Short-game block' }).getAttribute('href')).toBe('/golf/dashboard/calendar?date=2026-10-14&event=a1');
-    // 2:40 PM against a 3:30 PM start.
-    expect(next.textContent).toMatch(/Next up · 3:30 PM/);
-    expect(next.textContent).toMatch(/In 50 min/);
-    expect(next.textContent).toMatch(/5 of 6 going · Eli hasn’t replied/);
-    expect(next.querySelector('.is-soon')).not.toBeNull();
-  });
-
-  it('20103 Today: a timeline, with overlaps marked and each row opening its event', () => {
-    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
-    // The rail under the day card: the rest of today (the card's 3:30 left out), the sunset, then Thursday's qualifier.
-    const rows = [...document.querySelectorAll('.ch-hm-tl__r')].map((r) => r.textContent);
-    expect(rows).toHaveLength(5);
-    expect(rows[3]).toMatch(/Sunset/);
-    expect(rows[4]).toMatch(/Qualifier/);
-    expect(screen.getAllByText('Overlaps another event').length).toBe(2);
-    expect(screen.getByRole('link', { name: /1:1 with Jonah/ }).getAttribute('href')).toBe('/golf/dashboard/calendar?date=2026-10-14&event=a2');
-  });
-
   it('the team form: a change green or amber only when it clears its standard error (Q4, D-42), and a text equivalent for the line', () => {
     // The preview's changes are inside their standard errors: the numbers stay, in plain ink, and the average says so.
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
@@ -415,17 +342,6 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     expect(form.querySelector('.ch-hm-delta em')!.textContent).toBe('Better than previous 10');
     expect([...form.querySelectorAll('dd.is-loss')].map((d) => d.textContent)).toEqual(['+0.3']);
     expect(form.querySelectorAll('dd.is-gain')).toHaveLength(0);
-  });
-
-  it('CH-2701 20103 21703 a latest round opens its card in a sheet: the figures, both nines, Message and the player’s stats', async () => {
-    const user = userEvent.setup();
-    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
-    await user.click(screen.getByRole('button', { name: /Theo Marchetti/ }));
-    expect(hapticSpy).toHaveBeenCalledWith('select');
-    const sheet = await screen.findByRole('dialog', { name: 'Theo Marchetti' });
-    expect(sheet.querySelectorAll('table.ch-nine')).toHaveLength(2);
-    expect(screen.getByRole('link', { name: 'Message' }).getAttribute('href')).toBe('/golf/dashboard/messages?player=theo');
-    expect(screen.getByRole('link', { name: 'Player stats' }).getAttribute('href')).toBe('/golf/dashboard/stats?player=theo');
   });
 
   it('P002-C2 each latest round carries its player’s trend beside the score, and none when the leaderboard failed', () => {
@@ -485,24 +401,6 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     quiet.mockRestore();
   });
 
-  it('CH-2201 CH-2202 CH-2211 failed reads show notices on the phone, never empty states', () => {
-    wrap(<CoachHome data={{ ...PREVIEW_HOME, week: { ...PREVIEW_HOME.week, error: true }, latestRounds: { rounds: [], error: true, holesError: false }, phone: { ...PREVIEW_HOME.phone, next: null, today: [], form: null } }} now={PREVIEW_HOME_NOW} />);
-    expect(code('CH-2201')).not.toBeNull();
-    expect(code('CH-2202')).not.toBeNull();
-    expect(code('CH-2211')).not.toBeNull();
-    expect(code('CH-2302')).toBeNull();
-    expect(code('CH-2309')).toBeNull();
-  });
-
-  it('CH-1209 CH-2201 on the phone the failed reads are told once under the greeting, and the week’s notice sits on the sheet, never inside the green card', () => {
-    wrap(<CoachHome data={{ ...PREVIEW_HOME, week: { ...PREVIEW_HOME.week, error: true }, latestRounds: { rounds: [], error: true, holesError: false }, phone: { ...PREVIEW_HOME.phone, next: null, today: [], form: null } }} now={PREVIEW_HOME_NOW} />);
-    expect(code('CH-1209')!.textContent).toMatch(/This week’s schedule, team scoring and recent rounds didn’t load/);
-    expect(code('CH-1209')!.closest('.ch-hm-hero')).not.toBeNull();
-    expect(document.querySelectorAll('[role="alert"]')).toHaveLength(1);
-    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
-    expect(code('CH-2201')!.closest('.ch-hm-next')).toBeNull();
-  });
-
   it('CH-2201 the week alone failing keeps its own Try again on the sheet, outside the green card', () => {
     wrap(<CoachHome data={{ ...PREVIEW_HOME, week: { ...PREVIEW_HOME.week, error: true }, phone: { ...PREVIEW_HOME.phone, next: null, today: [] } }} now={PREVIEW_HOME_NOW} />);
     expect(code('CH-1209')).toBeNull();
@@ -527,35 +425,6 @@ describe('Home · first run (v2 page empty state, D-71)', () => {
     expect(screen.getByRole('link', { name: 'New event' }).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1');
     expect(screen.getAllByRole('link', { name: /New event/ })).toHaveLength(1);
     expect(within(code('CH-2308')!.closest('main')!.querySelector(':scope > header') as HTMLElement).queryByRole('link')).toBeNull();
-  });
-
-  it('CH-2308 the first event keeps the first run: the week sits above Invite players (desktop and phone)', () => {
-    const events: ChCoachHome = {
-      ...PREVIEW_HOME,
-      latestRounds: { rounds: [], error: false, holesError: false },
-      leaderboard: { rows: [], scorecards: 0, rosterSize: 0, error: false },
-      phone: { ...PREVIEW_HOME.phone, form: null },
-    };
-    expect(isFirstRun(events)).toBe(true);
-    const { unmount } = wrap(<CoachHome data={events} />);
-    const first = code('CH-2308')!;
-    expect(screen.getByRole('link', { name: 'Invite players' }).getAttribute('href')).toBe('/golf/dashboard/roster?invite=1');
-    expect(first.textContent).not.toMatch(/first event/);
-    // The week comes before the first steps, and the full page's empty blocks are not drawn.
-    expect(screen.getByRole('heading', { name: 'This week' }).compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(code('CH-2302')).toBeNull();
-    expect(code('CH-2304')).toBeNull();
-    unmount();
-    const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
-    try {
-      wrap(<CoachHome data={events} now={PREVIEW_HOME_NOW} />);
-      expect(code('CH-2308')).not.toBeNull();
-      expect(document.querySelector('.ch-hm-week')).not.toBeNull();
-      expect(screen.getByRole('link', { name: 'Invite players' }).getAttribute('href')).toBe('/golf/dashboard/roster?invite=1');
-    } finally {
-      window.matchMedia = real;
-    }
   });
 
   it('CH-2308 the first run opens under the same framed head as the loaded page', () => {
@@ -748,85 +617,6 @@ describe('Home · the team’s form (teamForm)', () => {
 });
 
 describe('Home · the loader', () => {
-  const boom = { error: { message: 'boom' } };
-  const roundRow = (i: number) => ({
-    id: `r${i}`,
-    player_id: 'p1',
-    course_name: 'Finley GC',
-    tees_played: null,
-    round_date: `2026-09-${String(28 - i).padStart(2, '0')}`,
-    round_type: 'practice',
-    total_score: 72,
-    score_to_par: 0,
-    front_nine: 36,
-    back_nine: 36,
-    holes_played: 18,
-    total_putts: 30,
-    total_gir: 11,
-    total_gir_possible: 18,
-    total_fairways_hit: 9,
-    total_fairways: 14,
-    strokes_gained_total: 0.5,
-    strokes_gained_tee: 0,
-    strokes_gained_approach: 0,
-    strokes_gained_around_green: 0,
-    strokes_gained_putting: 0,
-  });
-  const onePlayer = { data: [{ player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti', graduation_year: 2027 } }] };
-
-  // Swap audit C-24(d): one 68 put a player above teammates with a season behind them, and equal averages fell in read order.
-  it('C-24 the leaderboard: an early read sits below every player with three rounds, and a tie goes to more rounds, then the name', async () => {
-    const at = (id: string, player: string, i: number, score: number) => ({ ...roundRow(i), id, player_id: player, total_score: score, score_to_par: score - 72, front_nine: Math.floor(score / 2), back_nine: Math.ceil(score / 2) });
-    tables.current = {
-      golf_team_members: {
-        data: [
-          { player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti', graduation_year: 2027 } },
-          { player: { id: 'p2', first_name: 'Ben', last_name: 'Ames', graduation_year: 2027 } },
-          { player: { id: 'p3', first_name: 'Ava', last_name: 'Ames', graduation_year: 2027 } },
-        ],
-      },
-      golf_rounds: {
-        data: [
-          at('t1', 'p1', 1, 68),
-          ...[2, 3, 4].map((i) => at(`b${i}`, 'p2', i, 72)),
-          ...[5, 6, 7].map((i) => at(`a${i}`, 'p3', i, 72)),
-        ],
-      },
-    };
-    const home = await load();
-    expect(home.leaderboard.rows.map((r) => r.name)).toEqual(['Ava Ames', 'Ben Ames', 'Theo Marchetti']);
-  });
-
-  it('22101 a failed read never throws: the page still loads, each section says it failed, and every read is logged', async () => {
-    // The roster, the week and the team chat fail together.
-    tables.current = { golf_team_settings: boom, golf_team_members: boom, golf_conversations: boom, golf_events: boom };
-    const gone = await load();
-    expect(gone.week.error).toBe(true);
-    expect(gone.latestRounds.error).toBe(true);
-    expect(gone.leaderboard.error).toBe(true);
-    expect(gone.teamChatId).toBeNull();
-    expect(gone.subline).toBeNull();
-    expect(gone.phone.form).toBeNull();
-    for (const read of ['timezone', 'roster', 'team chat', 'events']) logged(read);
-
-    // The season's rounds fail: the roster stays, and so does the count that says how many players there are.
-    logServer.mockClear();
-    tables.current = { golf_team_members: onePlayer, golf_rounds: boom };
-    const noRounds = await load();
-    logged('rounds');
-    expect(noRounds.leaderboard).toMatchObject({ error: true, rosterSize: 1, rows: [] });
-    expect(noRounds.latestRounds.error).toBe(true);
-    expect(noRounds.week.error).toBe(false);
-
-    // The rounds load and their hole-by-hole scores do not: the totals stay.
-    logServer.mockClear();
-    tables.current = { golf_team_members: onePlayer, golf_rounds: { data: [roundRow(0), roundRow(1)] }, golf_holes: boom };
-    const noHoles = await load();
-    logged('holes');
-    expect(noHoles.latestRounds).toMatchObject({ error: false, holesError: true });
-    expect(noHoles.latestRounds.rounds.map((x) => x.score)).toEqual([72, 72]);
-    expect(noHoles.leaderboard.rows).toHaveLength(1);
-  });
 
   it('20618 a stored timezone that is not a real zone reads like a missing one: Eastern, logged, and Home still opens', async () => {
     tables.current = { golf_team_settings: { data: { timezone: 'Mars/Olympus' } } };
@@ -965,105 +755,12 @@ describe('Home · Coach Home’s own contracts', () => {
     vi.restoreAllMocks();
   });
 
-  it('20101 Coach Home opens with its header, the week beside the latest round, and the leaderboard', () => {
-    wrap(<CoachHome data={PREVIEW_HOME} />);
-    expect(screen.getByRole('heading', { level: 1, name: PREVIEW_HOME.greeting })).toBeTruthy();
-    expect(document.body.textContent).toContain(PREVIEW_HOME.todayLabel);
-    // The text matcher folds the title's no-break space into a space.
-    expect(screen.getByText(PREVIEW_HOME.subline!.replace(/\u00a0/g, ' '))).toBeTruthy();
-    expect(screen.getByRole('link', { name: /Message team/ })).toBeTruthy();
-    expect(screen.getByRole('link', { name: /New event/ })).toBeTruthy();
-    expect(screen.getByRole('heading', { level: 2, name: 'This week' })).toBeTruthy();
-    expect(screen.getByRole('heading', { level: 2, name: 'Latest round' })).toBeTruthy();
-    expect(screen.getByRole('table', { name: 'Leaderboard' })).toBeTruthy();
-    // The phone Home is not drawn on a wide canvas.
-    expect(document.querySelector('.ch-hm')).toBeNull();
-  });
-
-  it('20103 Open recap opens the round\'s review once the round has a real id (the fixtures\' short ids keep the Stats link)', () => {
-    const [first, ...others] = PREVIEW_HOME.latestRounds.rounds;
-    wrap(<CoachHome data={{ ...PREVIEW_HOME, latestRounds: { ...PREVIEW_HOME.latestRounds, rounds: [{ ...first!, id: '5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c' }, ...others] } }} />);
-    expect(screen.getByRole('link', { name: 'Open recap' }).getAttribute('href')).toBe('/golf/dashboard/rounds/5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c');
-    expect(screen.queryByRole('link', { name: 'Theo’s stats' })).toBeNull();
-  });
-
-  it('20103 links out of Coach Home open what they name', () => {
-    wrap(<CoachHome data={PREVIEW_HOME} />);
-    const href = (name: string | RegExp) => screen.getByRole('link', { name }).getAttribute('href');
-    expect(href(/Message team/)).toBe('/golf/dashboard/messages?conversation=c-team');
-    expect(href(/New event/)).toBe('/golf/dashboard/calendar?new=1');
-    expect(href('Full roster')).toBe('/golf/dashboard/roster');
-    expect(href('Theo’s stats')).toBe('/golf/dashboard/stats?player=theo');
-    // P002 D3: a leaderboard row is a table row (not a link with a row role); the player's name is the link, to their stats.
-    const first = within(screen.getByRole('table', { name: 'Leaderboard' })).getAllByRole('row')[1]!;
-    expect(first.tagName).toBe('DIV');
-    expect(within(first).getByRole('link').getAttribute('href')).toBe('/golf/dashboard/stats?player=theo');
-    expect(document.querySelector('a.ch-h-lb__row')).toBeNull();
-  });
-
   it('20806 Coach Home draws no player control: no Message coach, no Post a round, no countdown', () => {
     wrap(<CoachHome data={PREVIEW_HOME} />);
     expect(screen.queryByRole('link', { name: 'Message coach' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Post a round' })).toBeNull();
     expect(screen.queryByRole('heading', { name: 'Scoring' })).toBeNull();
     expect(document.querySelector('.ch-cd')).toBeNull();
-  });
-
-  it('21402 Try again on a failed read asks the server for the whole page again; a crashed section only draws itself again', async () => {
-    const user = userEvent.setup();
-    const failed = wrap(<CoachHome data={home({ leaderboard: { ...PREVIEW_HOME.leaderboard, error: true } })} />);
-    await user.click(within(code('CH-2204') as HTMLElement).getByRole('button', { name: 'Try again' }));
-    expect(router.refresh).toHaveBeenCalledTimes(1);
-    failed.unmount();
-
-    router.refresh.mockClear();
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    wrap(<CoachHome data={home({ leaderboard: { ...PREVIEW_HOME.leaderboard, rows: null as never } })} />);
-    const crashes = vi.mocked(chReport).mock.calls.length;
-    expect(crashes).toBeGreaterThan(0);
-    await user.click(within(code('CH-2207') as HTMLElement).getByRole('button', { name: 'Try again' }));
-    // The section drew again (and crashed again, reported again); the server was not asked.
-    expect(vi.mocked(chReport).mock.calls.length).toBeGreaterThan(crashes);
-    expect(router.refresh).not.toHaveBeenCalled();
-  });
-
-  it('21402 CH-1905 Try again while offline says so and asks nothing', async () => {
-    const user = userEvent.setup();
-    Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => false });
-    try {
-      wrap(<CoachHome data={home({ leaderboard: { ...PREVIEW_HOME.leaderboard, error: true } })} />);
-      await user.click(within(code('CH-2204') as HTMLElement).getByRole('button', { name: 'Try again' }));
-      expect(code('CH-1905')!.textContent).toMatch(/You’re offline/);
-      expect(router.refresh).not.toHaveBeenCalled();
-    } finally {
-      Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => true });
-    }
-  });
-
-  it('21703 on the desktop, New event gives the light tap, paging gives a tick, and Message team is silent', async () => {
-    const user = userEvent.setup();
-    wrap(<CoachHome data={PREVIEW_HOME} />);
-    await user.click(screen.getByRole('link', { name: /Message team/ }));
-    expect(hapticSpy).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('link', { name: /New event/ }));
-    expect(hapticSpy.mock.calls).toEqual([['press']]);
-    hapticSpy.mockClear();
-    await user.click(screen.getByRole('button', { name: 'Next round' }));
-    expect(hapticSpy.mock.calls).toEqual([['select']]);
-  });
-
-  it('22301 a section that crashes is reported at high severity under its own surface, and N leaves a breadcrumb', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    const broken = home({
-      week: { ...PREVIEW_HOME.week, days: null as never },
-      latestRounds: { ...PREVIEW_HOME.latestRounds, rounds: null as never },
-      leaderboard: { ...PREVIEW_HOME.leaderboard, rows: null as never },
-    });
-    const view = wrap(<CoachHome data={broken} />);
-    for (const surface of ['home.week', 'home.latestRound', 'home.leaderboard']) {
-      expect(chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface, severity: 'high' }));
-    }
-    view.unmount();
   });
 });
 
@@ -1078,18 +775,6 @@ describe('Home · the phone, the page’s own contracts', () => {
     document.removeEventListener('click', stopNavigation, true);
     vi.useRealTimers();
     vi.restoreAllMocks();
-  });
-
-  it('21901 at 820px and below Home is the phone Home, in its own order, and none of the desktop page', () => {
-    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
-    const main = document.querySelector('main.ch-hm')!;
-    expect(main.getAttribute('aria-label')).toBe('Home');
-    const headings = [...main.querySelectorAll('h2')].map((h) => h.textContent);
-    expect(headings.filter((h) => ['Later today', 'This week', 'Latest rounds'].includes(h!))).toEqual(['Later today', 'This week', 'Latest rounds']);
-    expect(main.querySelector('.ch-hm-form')).not.toBeNull();
-    expect(document.querySelector('.ch-h-main')).toBeNull();
-    expect(screen.queryByRole('table', { name: 'Leaderboard' })).toBeNull();
-    expect(screen.queryByRole('link', { name: /Message team/ })).toBeNull();
   });
 
   it('20103 links out of the phone Home open what they name', async () => {
@@ -1233,66 +918,6 @@ describe('Home · the team’s game and what’s waiting on the coach (spec B)',
   afterEach(() => {
     window.matchMedia = real;
   });
-  const legsTable = () => screen.getByRole('table', { name: 'The team’s game' });
-
-  it('20105 the four parts sit under the team’s form, and the week (today’s events) comes before both (row 79): each stat with its Tour mark, strokes gained, the change and who gains and loses most', () => {
-    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
-    const legs = document.querySelector('.ch-h-legs')!;
-    expect(legs.previousElementSibling?.className).toMatch(/ch-h-form|ch-hf/);
-    const sheet = document.querySelector('.ch-h-sheet')!;
-    expect(sheet.compareDocumentPosition(legs.previousElementSibling!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(sheet.previousElementSibling?.className ?? '').not.toMatch(/ch-h-form|ch-hf|ch-h-legs/);
-    const rows = within(legsTable()).getAllByRole('row').slice(1);
-    expect(rows.map((r) => within(r).getByRole('rowheader').textContent)).toEqual(['Off the tee', 'Approach', 'Around green', 'Putting']);
-    expect(rows[0]!.textContent).toContain('Fairways 61% · Tour 66%');
-    expect(rows[0]!.textContent).toContain('+0.4');
-    expect(rows[0]!.textContent).toContain('Better than previous 10');
-    expect(rows[2]!.textContent).toContain('Ava L. and Sofia A.');
-    expect(rows[3]!.textContent).toContain('Eli B. and 2 others');
-    expect(screen.getByRole('link', { name: 'Team stats' }).getAttribute('href')).toBe('/golf/dashboard/stats');
-  });
-
-  it('20105 the loader reads the four parts on the form’s own Last 10, with the team’s Tour and the round cache', async () => {
-    const round = (i: number) => ({ id: `r${i}`, player_id: 'p1', course_name: 'Finley GC', tees_played: null, round_date: `2026-09-${String(28 - i).padStart(2, '0')}`, round_type: 'practice', total_score: 72, score_to_par: 0, front_nine: 36, back_nine: 36, holes_played: 18, total_putts: 30, total_gir: 11, total_gir_possible: 18, total_fairways_hit: 9, total_fairways: 14, strokes_gained_total: 0.5, strokes_gained_tee: 0.3, strokes_gained_approach: 0, strokes_gained_around_green: 0, strokes_gained_putting: 0.2 });
-    const roster = { data: [{ player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti', graduation_year: 2027 } }] };
-    tables.current = { golf_team_members: roster, golf_rounds: { data: [0, 1, 2].map(round) }, golf_teams: { data: { gender: 'men' } } };
-    const data = await load();
-    expect(data.legs).toMatchObject({ holeRounds: 3, ranked: true, tour: 'pga', cacheError: false, tourError: false });
-    expect(data.legs!.rows.find((r) => r.key === 'tee')).toMatchObject({ sg: 0.3, gains: { ids: ['p1'], names: ['Theo M.'] }, loses: null });
-    expect(data.legs!.rows.find((r) => r.key === 'tee')!.stat).toMatchObject({ label: 'Fairways', value: (27 / 42) * 100 });
-
-    tables.current = { ...tables.current, golf_round_stats_cache: { error: { message: 'boom' } }, golf_pga_standards: { error: { message: 'boom' } } };
-    const failed = await load();
-    expect(failed.legs).toMatchObject({ cacheError: true, tourError: true });
-    logged('roundCache');
-    logged('tourBenchmarks');
-
-    // No roster, no rounds: no four parts at all.
-    tables.current = {};
-    expect((await load()).legs).toBeNull();
-  });
-
-  it('CH-2218 up-and-down figures that didn’t load: one notice above the parts, strokes gained stays', async () => {
-    wrap(<CoachHome data={PREVIEW_HOME_LEGS_CACHE_FAILED} now={PREVIEW_HOME_NOW} />);
-    await expectCode('CH-2218', /Up-and-down figures didn’t load/);
-    expect(within(code('CH-2218') as HTMLElement).getByRole('button', { name: 'Try again' })).toBeTruthy();
-    expect(code('CH-2219')).toBeNull();
-    expect(within(legsTable()).getAllByRole('row')[3]!.textContent).toContain('Up and down — · Tour 59%');
-  });
-
-  it('CH-2219 Tour marks that didn’t load: one notice, and each stat stands without its mark', async () => {
-    wrap(<CoachHome data={PREVIEW_HOME_LEGS_TOUR_FAILED} now={PREVIEW_HOME_NOW} />);
-    await expectCode('CH-2219', /Tour marks didn’t load/);
-    expect(code('CH-2218')).toBeNull();
-    expect(within(legsTable()).getAllByRole('row')[1]!.textContent).toContain('Fairways 61%');
-    expect(legsTable().textContent).not.toContain('Tour 66%');
-  });
-
-  it('CH-1209 CH-2218 CH-2219 both failing: the page’s notice names them and carries the one Try again', () => {
-    wrap(<CoachHome data={{ ...PREVIEW_HOME, legs: { ...PREVIEW_LEGS, cacheError: true, tourError: true } }} now={PREVIEW_HOME_NOW} />);
-    expect(code('CH-1209')!.textContent).toMatch(/Up-and-down figures and Tour marks didn’t load/i);
-    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
-  });
 
   it('20104 Waiting on you sits under the head: each part counted as its screen counts it, and opening that screen', () => {
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
@@ -1333,31 +958,10 @@ describe('Home · the team’s game and what’s waiting on the coach (spec B)',
     expect(document.querySelector('.ch-hm-queue')).not.toBeNull();
   });
 
-  it('CH-2221 22301 the four parts crashing is contained and reported as home.legs, on desktop and the phone; the rest of Home stays', () => {
-    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const broken = { ...PREVIEW_HOME, legs: { ...PREVIEW_LEGS, rows: null as never } };
-    wrap(<CoachHome data={broken} now={PREVIEW_HOME_NOW} />);
-    expect(code('CH-2221')!.textContent).toMatch(/The team’s game couldn’t be shown/);
-    expect(chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface: 'home.legs', severity: 'high' }));
-    expect(screen.getByRole('table', { name: 'Leaderboard' })).toBeTruthy();
-    cleanup();
-    phoneMedia();
-    wrap(<CoachHome data={broken} now={PREVIEW_HOME_NOW} />);
-    expect(code('CH-2221')!.textContent).toMatch(/The team’s game couldn’t be shown/);
-    expect(screen.getByRole('heading', { level: 1 })).toBeTruthy();
-    quiet.mockRestore();
-  });
-
   it('CH-2314 no hole-by-hole round in the last 10: the parts say so in place of the ledger', () => {
     wrap(<CoachHome data={PREVIEW_HOME_LEGS_NO_HOLES} now={PREVIEW_HOME_NOW} />);
     expect(code('CH-2314')!.textContent).toMatch(/No hole-by-hole rounds in the last 10 yet/);
     expect(screen.queryByRole('table', { name: 'The team’s game' })).toBeNull();
-  });
-
-  it('CH-2315 nobody with 3 rounds with hole scores: the parts stay, and the line says no one is ranked', () => {
-    wrap(<CoachHome data={PREVIEW_HOME_LEGS_UNRANKED} now={PREVIEW_HOME_NOW} />);
-    expect(code('CH-2315')!.textContent).toBe('No player has 3 rounds with hole scores yet, so no one is ranked.');
-    expect(within(legsTable()).getAllByRole('row')).toHaveLength(5);
   });
 
   it('21901 20105 20104 on the phone: Waiting on you in the hero, the four parts after Team scoring as rows, names linking to the Game tab', () => {

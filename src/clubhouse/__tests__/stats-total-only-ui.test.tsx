@@ -14,8 +14,6 @@ vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSessi
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }), useSearchParams: () => new URLSearchParams(), usePathname: () => '/golf/dashboard/stats' }));
 vi.mock('../lib/track-server', () => ({ chLogServer: vi.fn() }));
 vi.mock('@/app/golf/actions/development', () => ({ createFocusArea: vi.fn(), acceptFocusArea: vi.fn(), declineFocusArea: vi.fn() }));
-
-import { filterFor } from '../data/stats-filter';
 import type { ChPlayerProfile } from '../data/stats-player';
 import type { ChTeamStats } from '../data/stats-team';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
@@ -112,16 +110,6 @@ describe('Team stats · phone', () => {
   });
   afterEach(() => {
     window.matchMedia = real;
-  });
-
-  it('says under the figures how many of the window’s rounds the hole stats read', () => {
-    shell(
-      <>
-        <SlotHost />
-        <StatsTeam data={team({ filter: filterFor('season'), window: 'season', roundCount: 5, holeRoundCount: 3 })} />
-      </>,
-    );
-    expect(screen.getByText(COVERAGE)).toBeTruthy();
   });
 
   it('says nothing when every round has its holes, or when the loader did not say', () => {

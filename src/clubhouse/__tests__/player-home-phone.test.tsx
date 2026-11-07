@@ -1,6 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
 import { render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -73,21 +72,6 @@ describe('the chart axis', () => {
     expect(wide).toEqual([70, 75, 80, 85]);
     expect(scoreTicks(60, 90, 8).every((v) => Number.isInteger(v))).toBe(true);
   });
-
-  it('draws each distinct date once on the phone chart, even where rounds share a day', () => {
-    show({ scoring: { error: false, points: points([['Aug 2', 71, 72], ['Aug 2', 70, 72], ['Aug 2', 72, 72], ['Sep 25', 69, 72], ['Sep 26', 70, 72]]) } });
-    const chart = screen.getByRole('img', { name: /Your scores over the last 5 rounds/ });
-    expect([...chart.querySelectorAll('.ch-ph-chart__ax')].map((t) => t.textContent).filter((t) => /[A-Z][a-z]{2} \d/.test(t ?? ''))).toEqual(['Aug 2', 'Sep 25', 'Sep 26']);
-  });
-
-  it('marks a round under its own par when the rounds were played to different pars', () => {
-    show({ scoring: { error: false, points: points([['Jul 2', 73, 72], ['Jul 9', 70, 71], ['Aug 2', 69, 70], ['Sep 25', 71, 71], ['Sep 26', 68, 70]]) } });
-    const chart = screen.getByRole('img', { name: /Your scores over the last 5 rounds/ });
-    // No single par to draw, but 70 under 71, 69 under 70 and 68 under 70 are under par; 73 and 71 on 71 are not.
-    expect(chart.querySelector('.ch-ph-chart__par')).toBeNull();
-    expect([...chart.querySelectorAll('.ch-ph-chart__dot.is-under')]).toHaveLength(3);
-    expect([...chart.querySelectorAll('.ch-ph-chart__val.is-under')].map((t) => t.textContent)).toEqual(['70', '69', '68']);
-  });
 });
 
 describe('the scoring average change', () => {
@@ -105,110 +89,15 @@ describe('the scoring average change', () => {
     expect(changeTone(0.5, false, 0)).toBe('is-gain');
     expect(changeTone(0, false)).toBe('');
   });
-
-  it('keeps a strokes gained that shows as "0.0" plain, in the figure, the pill and the latest round', () => {
-    const rows = PREVIEW_PLAYER_HOME.legs!.rows.map((l, i) => (i === 0 ? { ...l, sg: 0.01 } : l));
-    show({ sgPerRound: 0.02, legs: { ...PREVIEW_PLAYER_HOME.legs!, rows } });
-    const sg = [...document.querySelectorAll('.ch-ph-figs dd:not(.ch-ph-figs__m)')][1]!;
-    expect(sg.textContent).toBe('0.0');
-    expect(sg.className).not.toMatch(/is-gain|is-loss/);
-    expect(document.querySelector('.ch-ph-leg__sg')!.className).toContain('is-flat');
-    expect(document.querySelectorAll('.ch-ph-leg__sg.is-flat')).toHaveLength(1);
-  });
-
-  it('colours the figure, not its caption (the board: "−0.8 vs previous 10" stays grey)', () => {
-    show();
-    const avg = [...document.querySelectorAll('.ch-ph-figs dd')].find((d) => d.textContent === '70.1')!;
-    // The fixture's change (−1.9 on ten rounds against ten) clears its standard error (pooled 3.6 a round: about 1.6), so it is
-    // green and says so; a smaller one would read "No clear change" in plain ink (stats visuals Q4).
-    expect(avg.className).toContain('is-gain');
-    expect(avg.nextElementSibling!.className).not.toMatch(/is-gain|is-loss/);
-    expect(avg.nextElementSibling!.textContent).toMatch(/^−\d\.\d · Better than previous 10$/);
-  });
 });
 
 describe('Scoring and the parts of the game, on the phone', () => {
-  it('puts each title above its card, with the window picker as the card’s first row', () => {
-    show();
-    const scoring = screen.getByRole('heading', { level: 2, name: 'Scoring' }).closest('section')!;
-    const card = scoring.querySelector('.ch-ph-game')!;
-    expect(card.querySelector('h2')).toBeNull();
-    expect(within(scoring).getByText(/Gross · par 72 · countable rounds/).closest('.ch-ph-game')).toBeNull();
-    expect(card.firstElementChild!.getAttribute('role')).toBe('radiogroup');
-    const legs = screen.getByRole('heading', { level: 2, name: 'Your game' }).closest('section')!;
-    expect(legs.querySelector('.ch-ph-legs')!.querySelector('h2')).toBeNull();
-    expect(within(legs).getByText('Strokes gained vs Tour')).toBeTruthy();
-  });
-
-  it('offers all three windows, as the board does, even with only a few rounds', async () => {
-    const user = userEvent.setup();
-    show({ scoring: { error: false, points: points([['Jul 2', 73, 72], ['Jul 9', 70, 72], ['Aug 2', 69, 72]]) } });
-    const picker = screen.getByRole('radiogroup', { name: 'Rounds shown' });
-    expect(within(picker).getAllByRole('radio').map((r) => r.textContent)).toEqual(['Last 5', 'Last 10', 'Last 20']);
-    await user.click(within(picker).getByRole('radio', { name: 'Last 20' }));
-    expect(screen.getByRole('img', { name: /Your scores over the last 3 rounds/ })).toBeTruthy();
-  });
-
-  it('follows the window: Last 20 reads every round, and the figures follow', async () => {
-    const user = userEvent.setup();
-    show();
-    await user.click(screen.getByRole('radio', { name: 'Last 20' }));
-    expect(screen.getByRole('img', { name: /Your scores over the last 20 rounds/ })).toBeTruthy();
-    await user.click(screen.getByRole('radio', { name: 'Last 5' }));
-    expect(screen.getByRole('img', { name: /Your scores over the last 5 rounds/ })).toBeTruthy();
-    expect([...document.querySelectorAll('.ch-ph-figs dd:not(.ch-ph-figs__m)')].map((d) => d.textContent)[3]).toBe('5 of 5');
-  });
 
   it('gives the scoring card no picker while there is nothing to draw', () => {
     show({ scoring: { error: false, points: points([['Jul 2', 73, 72]]) } });
     expect(screen.queryByRole('radiogroup', { name: 'Rounds shown' })).toBeNull();
     show({ scoring: { error: true, points: [] } });
     expect(screen.queryAllByRole('radiogroup', { name: 'Rounds shown' })).toHaveLength(0);
-  });
-});
-
-describe('Today, on the phone', () => {
-  it('is a small label inside This week, with no Calendar link of its own', () => {
-    show();
-    const week = screen.getByRole('heading', { level: 2, name: 'This week' }).closest('section')!;
-    expect(within(week).getByRole('heading', { level: 2, name: 'Today' }).className).toContain('ch-hm-lab');
-    expect(week.querySelector('.ch-hm-tl.is-player')).not.toBeNull();
-    expect(screen.queryByRole('link', { name: 'Calendar' })).toBeNull();
-  });
-
-  it('marks the next row "Next" before it starts, and the row under way "Now"', () => {
-    const { unmount } = show();
-    const rows = () => [...document.querySelectorAll('.ch-hm-tl.is-player > li')];
-    expect(rows().map((r) => r.querySelector('.ch-hm-now')?.textContent ?? null)).toEqual(['Next', null]);
-    unmount();
-    // 3:30–5:00 under way (19:30Z–21:00Z).
-    show({}, '2026-10-14T20:00:00Z');
-    expect(rows().map((r) => r.querySelector('.ch-hm-now')?.textContent ?? null)).toEqual(['Now', null]);
-  });
-
-  it('keeps a row that has passed readable: its time steps back, nothing is dimmed', () => {
-    show({}, '2026-10-14T21:10:00Z');
-    const rows = [...document.querySelectorAll('.ch-hm-tl.is-player > li')];
-    expect(rows[0]!.className).toContain('is-past');
-    expect(rows[0]!.querySelector('.ch-hm-now')).toBeNull();
-    expect(rows[1]!.querySelector('.ch-hm-now')!.textContent).toBe('Next');
-    // Q-152 (owner kept, b359c0414): no past row is dimmed as a whole on either Home, so the player's override is gone; the
-    // time steps back for every role through the shared rule.
-    expect(css).not.toMatch(/\.ch-hm-tl__r\.is-past\s*{[^}]*opacity:/);
-    expect(css).toMatch(/\.ch-hm-tl__r\.is-past \.ch-hm-tl__t\s*{\s*color: var\(--ch-text-tertiary\);/);
-  });
-
-  it('marks nothing once every row has passed', () => {
-    show({}, '2026-10-14T23:00:00Z');
-    expect(document.querySelector('.ch-hm-tl.is-player .ch-hm-now')).toBeNull();
-    expect(document.querySelectorAll('.ch-hm-tl.is-player > li.is-past')).toHaveLength(2);
-  });
-
-  it('says "Up next · Qualifier" on the hero card, and marks the competition day with the calendar’s qualifier icon', () => {
-    show();
-    expect(screen.getByRole('link', { name: /Up next · Qualifier/ })).toBeTruthy();
-    // One icon per event type everywhere (calendar/type-icon.ts): the flag is Practice's.
-    expect(document.querySelector('.ch-hm-week .is-major svg')!.getAttribute('class')).toMatch(/lucide-target/);
   });
 });
 

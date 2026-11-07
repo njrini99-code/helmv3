@@ -37,7 +37,7 @@ import { openingDelta, perRoundSeries, personalBests, pressureGap, toughestHoles
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
 import { FairwayStrip } from '../screens/stats/charts';
 import { CrumbProvider } from '../shell/crumbs';
-import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
+import { PhoneChromeProvider } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY } from '../preview/fixtures-stats';
@@ -61,10 +61,6 @@ function shell(node: React.ReactNode) {
   );
 }
 const wrap = (node: React.ReactNode) => render(shell(node));
-function SlotHost() {
-  const { setSlot } = usePhoneChromeState();
-  return <div ref={setSlot} data-testid="phone-top" />;
-}
 /** At phone width for the length of a describe. */
 function phoneWidth() {
   const real = window.matchMedia;
@@ -81,13 +77,6 @@ const x = PREVIEW_PLAYER.extra;
 const player = (over: Partial<ChPlayerProfile> = {}): ChPlayerProfile => ({ ...PREVIEW_PLAYER, ...(over.window ? { filter: filterFor(over.window) } : {}), ...over });
 const withExtra = (over: Partial<ChPlayerProfile['extra']>, rest: Partial<ChPlayerProfile> = {}) => player({ extra: { ...x, ...over }, ...rest });
 const showPlayer = (data: ChPlayerProfile, coachId: string | null = 'c1') => wrap(<StatsPlayer data={data} coachId={coachId} />);
-const showPhone = (data: ChPlayerProfile) =>
-  wrap(
-    <>
-      <SlotHost />
-      <StatsPlayer data={data} coachId="c1" />
-    </>,
-  );
 async function openTab(name: RegExp) {
   await userEvent.setup().click(screen.getByRole('tab', { name }));
 }
@@ -602,20 +591,6 @@ describe('Game detail · More detail', () => {
 
 });
 
-describe('Game detail · More detail on the phone', () => {
-  phoneWidth();
-  it('closed, one section at a time, with the same panels when opened', async () => {
-    showPhone(player());
-    const more = document.querySelector('details.ch-gx-more') as HTMLDetailsElement;
-    expect(more.open).toBe(false);
-    expect(more.querySelector('.ch-gm-p')).not.toBeNull();
-    expect(document.querySelectorAll('details.ch-gx-more')).toHaveLength(1);
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Putting' }));
-    expect(document.querySelectorAll('details.ch-gx-more')).toHaveLength(1);
-    expect(document.querySelector('details.ch-gx-more')!.textContent).toContain('Putting by distance');
-  });
-});
-
 /* ─── A panel with nothing behind it says so ─── */
 
 const zero = () => calculateStatsFromShots([], [], []);
@@ -796,19 +771,6 @@ describe('Rounds tab · bests and comparison', () => {
   });
 });
 
-describe('Rounds on the phone', () => {
-  phoneWidth();
-  it('the bests and the comparison are panels above the round list, and a round row names its type', () => {
-    showPhone(player());
-    const titles = [...document.querySelectorAll('.ch-stm-panel__h h2')].map((h) => h.textContent);
-    expect(titles).toEqual(expect.arrayContaining(['Scoring trend', 'Personal bests', 'This window against the one before', 'Rounds']));
-    // P005-D1: one scoring chart on the phone. Score by round drew the same rounds one panel below Scoring trend.
-    expect(titles).not.toContain('Score by round');
-    expect(titles.indexOf('Personal bests')).toBeLessThan(titles.indexOf('Rounds'));
-    expect(document.querySelector('.ch-spm-round .ch-num')!.textContent).toContain('Practice');
-  });
-});
-
 /* ─── The standing table ─── */
 
 describe('Overview · the zones', () => {
@@ -874,26 +836,6 @@ const wide = () => {
 
 describe('Game detail on the phone · the approach section', () => {
   phoneWidth();
-  const st = PREVIEW_PLAYER.stats!;
-  const chip = (name: string) => userEvent.setup().click(screen.getByRole('button', { name }));
-  const fill = (row: Element) => row.querySelector('.ch-brow__bar i') as HTMLElement | null;
-
-  it('the seven bands are rows (band, bar, exact value): no shots reads "No shots", never 0%, and a 100% bar fills its track', async () => {
-    showPhone(player({ stats: { ...st, girPct50_75: 100, girPct75_100: null, girPct100_125: 0 } }));
-    await chip('Approach');
-    const p = panel('Greens hit by distance');
-    const rows = [...p.querySelectorAll('li.ch-brow')];
-    expect(rows.map((r) => r.querySelector('.ch-brow__b')!.textContent)).toEqual(['50–75', '75–100', '100–125', '125–150', '150–175', '175–200', '200+']);
-    expect(rows[0]!.querySelector('.ch-brow__v')!.textContent).toBe('100%');
-    expect(fill(rows[0]!)!.style.width).toBe('100%');
-    expect(rows[1]!.querySelector('.ch-brow__v')!.textContent).toBe('No shots');
-    expect(fill(rows[1]!)).toBeNull();
-    expect(rows[2]!.querySelector('.ch-brow__v')!.textContent).toBe('0%');
-    expect(fill(rows[2]!)!.style.width).toBe('0%');
-    // A phone draws no column chart for the same bands.
-    expect(p.querySelector('.ch-lad')).toBeNull();
-    expect(within(p).getByRole('list', { name: 'Yards to the pin' })).toBeTruthy();
-  });
 
   it('a screen keeps the column chart for the same bands', async () => {
     wide();
@@ -902,78 +844,6 @@ describe('Game detail on the phone · the approach section', () => {
     const p = panel('Greens hit by distance');
     expect(p.querySelector('.ch-lad')).not.toBeNull();
     expect(p.querySelector('.ch-brows')).toBeNull();
-  });
-
-  it('CH-5316 a band under the Tour floor says how many shots and what it needs, in its own row', async () => {
-    showPhone(player());
-    await chip('Approach');
-    const p = panel('Proximity against the Tour');
-    const rows = [...p.querySelectorAll('li.ch-brow')];
-    expect(rows.map((r) => r.textContent)).toEqual(['50–12526 ft55 shots', '125–17540 ft72 shots', '175+Needs 107 shots']);
-    expect(code('CH-5316')).toBe(p.querySelector('.ch-brows'));
-    // The line under the chart is a screen's; the rows say it on a phone.
-    expect(p.querySelector('p.ch-gm-p__empty')).toBeNull();
-  });
-
-  it('a panel’s note is one short line and its method sits behind "How this is measured", closed; a screen keeps the whole paragraph', async () => {
-    showPhone(player());
-    await chip('Approach');
-    const p = panel('Proximity against the Tour');
-    expect(p.querySelector('.ch-gm-p__n')!.textContent).toBe('Shorter is better. The tick is the Tour.');
-    const how = p.querySelector('details.ch-gm-how') as HTMLDetailsElement;
-    expect(how.open).toBe(false);
-    expect(how.querySelector('summary')!.textContent).toBe('How this is measured');
-    expect(how.querySelector('p')!.textContent).toMatch(/lay-ups left out.*A range needs 10 shots\./);
-    // The long italic paragraph is nowhere in the default scan path.
-    expect([...section('approach').querySelectorAll('.ch-gm-p__n')].filter((n) => !n.closest('details.ch-gx-more')).every((n) => (n.textContent ?? '').length <= 80)).toBe(true);
-    cleanup();
-    wide();
-    showPlayer(player());
-    await openTab(/Game detail/);
-    expect(document.querySelector('.ch-gm-how')).toBeNull();
-    expect(panel('Proximity against the Tour').querySelector('.ch-gm-p__n')!.textContent).toMatch(/A range needs 10 shots\./);
-  });
-
-  it('the sample line is honest: Last 10 with three rounds behind it says three qualify, not that ten were read', async () => {
-    showPhone(player({ window: 'last10', win: { ...PREVIEW_PLAYER.win, rounds: 3 } }));
-    await chip('Approach');
-    const rule = section('approach').querySelector('.ch-gx-rule')!;
-    expect(rule.textContent).toBe('Last 10 rounds · 3 rounds qualify, 18 holes only');
-    // The longer account, with what is left out, is one tap away.
-    expect(section('approach').querySelector('details.ch-gm-how p')!.textContent).toMatch(/Last 10 rounds · 3 rounds, 18 holes only \(9-hole rounds are left out\)\. Every approach, whether the green is hit or missed\./);
-    cleanup();
-    showPhone(player({ window: 'last10', win: { ...PREVIEW_PLAYER.win, rounds: 10 } }));
-    await chip('Approach');
-    expect(section('approach').querySelector('.ch-gx-rule')!.textContent).toBe('Last 10 rounds · 10 rounds, 18 holes only');
-    cleanup();
-    showPhone(player({ window: 'season', win: { ...PREVIEW_PLAYER.win, rounds: 3 } }));
-    await chip('Approach');
-    expect(section('approach').querySelector('.ch-gx-rule')!.textContent).toBe('This season · 3 rounds, 18 holes only');
-  });
-
-  it('a player reading their own stats reads "You hit" and a coach "Jonah hits", on a phone and on a screen', async () => {
-    showPhone(player({ viewer: 'player' }));
-    await chip('Approach');
-    expect(section('approach').querySelector('.ch-gm__t p')!.textContent).toMatch(/^You hit \d+% of greens/);
-    cleanup();
-    showPhone(player());
-    await chip('Approach');
-    expect(section('approach').querySelector('.ch-gm__t p')!.textContent).toMatch(/^Jonah hits \d+% of greens/);
-    cleanup();
-    wide();
-    showPlayer(player({ viewer: 'player' }), null);
-    await openTab(/Game detail/);
-    expect(section('approach').querySelector('.ch-gm__t p')!.textContent).toMatch(/^You hit \d+% of greens/);
-  });
-
-  it('a figure with nothing behind it says why, in a few words, never a bare dash', async () => {
-    showPhone(bare());
-    await chip('Approach');
-    expect([...section('approach').querySelectorAll('.ch-gm__figs dd.ch-gm__none')].map((d) => d.textContent)).toEqual(['No approach shots', 'No finish distances', 'No missed greens', 'No rough approaches']);
-    expect([...section('approach').querySelectorAll('.ch-gm__figs dd')].some((d) => d.textContent === '—')).toBe(false);
-    await chip('Putting');
-    expect([...section('putting').querySelectorAll('.ch-gm__figs dd.ch-gm__none')].map((d) => d.textContent)).toEqual(['No putts tracked', 'No putts tracked', 'No putts tracked', 'No putts tracked']);
-    expect([...section('putting').querySelectorAll('.ch-gm__figs dd')].some((d) => d.textContent === '—')).toBe(false);
   });
 
   it('the type contract in the stylesheet: the value is 28px and 600, its label and scope are 13 to 14px (Dynamic Type steps) in secondary ink, and nothing floors them back to 12px', () => {

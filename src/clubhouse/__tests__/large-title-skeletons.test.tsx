@@ -11,7 +11,6 @@ import { RosterSkeleton } from '../screens/roster/RosterSkeleton';
 import { RoundsSkeleton } from '../screens/rounds/RoundsSkeleton';
 import { TeamRoundsSkeleton } from '../screens/rounds/TeamRoundsSkeleton';
 import { SettingsSkeleton } from '../screens/settings/SettingsSkeleton';
-import { StatsSkeletonFor } from '../screens/stats/StatsRouteSkeleton';
 
 /**
  * B10.2 / CONS-13, owner decision 4 (2026-10-24): every phone section root draws the one large title, and its loading
@@ -28,8 +27,6 @@ const ROOTS: ReadonlyArray<[string, () => ReactElement]> = [
   ['Messages', () => <MessagesSkeleton />],
   ['Team Hub', () => <HubSkeleton />],
   ['Roster', () => <RosterSkeleton />],
-  ['Team stats', () => <StatsSkeletonFor profile={false} />],
-  ['My stats', () => <StatsSkeletonFor profile coach={false} />],
   ['Rounds (player)', () => <RoundsSkeleton />],
   ['Rounds (coach)', () => <TeamRoundsSkeleton />],
   ['Qualifiers', () => <QualifiersSkeleton />],

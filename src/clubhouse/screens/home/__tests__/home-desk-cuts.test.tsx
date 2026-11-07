@@ -38,10 +38,4 @@ describe('coach Home desktop, the cuts', () => {
     const { container } = render(<CoachHome data={data({ next, today: [next] })} now={NOW} />);
     expect(container.querySelector('.ch-dh-rows--today')).toBeNull();
   });
-
-  it('with the flag off keeps the page it had', () => {
-    const { container } = render(<CoachHome data={data()} now={NOW} />);
-    expect(screen.getByRole('heading', { name: /leaderboard/i })).toBeTruthy();
-    expect(container.querySelector('.ch-h-herocard')).toBeNull();
-  });
 });

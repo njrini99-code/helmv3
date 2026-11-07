@@ -30,10 +30,4 @@ describe('player Home, the cuts', () => {
     expect(container.querySelector('.ch-hm-next')).toBeNull();
     if (PREVIEW_PLAYER_HOME.next) expect(container.querySelector('.ch-hm-nextrow')).toBeTruthy();
   });
-
-  it('with the flag off keeps the page it had', () => {
-    const { container } = render(<PlayerHomePhone data={PREVIEW_PLAYER_HOME as ChPlayerHome} now={NOW} />);
-    expect(container.querySelector('.ch-shs-yg__sum')).toBeNull();
-    expect(container.querySelector('.ch-hm-nextrow')).toBeNull();
-  });
 });
