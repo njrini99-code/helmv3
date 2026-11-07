@@ -1715,7 +1715,7 @@
     "name": "THE_LEADERBOARD_CRASHES_WHILE_DRAWING",
     "chCode": "CH-2207",
     "meaning": "The leaderboard crashes while drawing",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
@@ -2670,7 +2670,7 @@
     "name": "FOCUS_AREAS_OR_GOALS_DONT_LOAD",
     "chCode": "CH-3208",
     "meaning": "Focus areas or goals don't load",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -3041,7 +3041,7 @@
     "name": "PHONE_CHOOSING_AVG_SG_OR_NAME",
     "chCode": "CH-3604",
     "meaning": "Phone: choosing Avg, SG or Name",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -5011,7 +5011,7 @@
     "name": "ON_THE_PHONE_ALL_N_ROUNDS_IS",
     "chCode": "CH-5807",
     "meaning": "On the phone, \"All N rounds\" is a button that says whether the full list is open; Game detail's section chips say which one is showing",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
@@ -7905,7 +7905,7 @@
     "name": "CHANGING_THE_INBOX_FILTER_ON_THE_PHONE",
     "chCode": "CH-7606",
     "meaning": "Changing the inbox filter on the phone (All, Unread, Groups)",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -14898,7 +14898,7 @@
     "name": "NO_CLASS_MEETS_A_TEAM_EVENT_THIS",
     "chCode": "CH-12302",
     "meaning": "No class meets a team event this week",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
   {
@@ -15804,7 +15804,7 @@
     "name": "THE_TERM_OVERVIEW",
     "chCode": "CH-12803",
     "meaning": "The term overview",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
   {
@@ -21078,8 +21078,8 @@
     "item": 1,
     "name": "A_VIEW_ITS_LANE_HASNT_BUILT_YET",
     "chCode": "CH-16301",
-    "meaning": "A view its lane hasn't built yet (the edit-event form, lineup builder, link inbox, live round and player view; their routes are wired and draw it with real data)",
-    "status": "implemented",
+    "meaning": "Retired 2026-11-07: a view its lane hasn't built yet. Every Tournaments view is built, so no screen draws it",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
@@ -21266,6 +21266,94 @@
     "name": "HOME_NO_EVENT_IN_THE_SEASON_NOTHING_2",
     "chCode": "CH-16352",
     "meaning": "Home: no event in the season, nothing failed (P-5 4.11.1; replaces CH-16310)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160419,
+    "page": "P016",
+    "category": 4,
+    "item": 19,
+    "name": "LINK_ROUNDS_NO_GOLFHELM_ROUND_IS_WAITING",
+    "chCode": "CH-16338",
+    "meaning": "Link rounds: no GolfHelm round is waiting to be linked (the read worked)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160420,
+    "page": "P016",
+    "category": 4,
+    "item": 20,
+    "name": "LINEUP_THE_TEAM_HAS_NO_PLAYERS_ON",
+    "chCode": "CH-16362",
+    "meaning": "Lineup: the team has no players on its roster (the read worked)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160421,
+    "page": "P016",
+    "category": 4,
+    "item": 21,
+    "name": "LINEUP_A_PLAYER_IN_THE_DRAFT_IS",
+    "chCode": "CH-16363",
+    "meaning": "Lineup: a player in the draft is injured, out for academics, not travelling, or has left the team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160422,
+    "page": "P016",
+    "category": 4,
+    "item": 22,
+    "name": "LIVE_ROUND_NOBODY_IS_IN_THE_ROUND",
+    "chCode": "CH-16370",
+    "meaning": "Live round: nobody is in the round (no lineup, no individuals)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160423,
+    "page": "P016",
+    "category": 4,
+    "item": 23,
+    "name": "PLAYER_NO_TOURNAMENTS_IN_THE_SEASON",
+    "chCode": "CH-16390",
+    "meaning": "Player: no tournaments in the season (the read worked)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160424,
+    "page": "P016",
+    "category": 4,
+    "item": 24,
+    "name": "PLAYER_EVENT_THE_EVENT_HAS_NO_ROUNDS",
+    "chCode": "CH-16391",
+    "meaning": "Player event: the event has no rounds yet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160425,
+    "page": "P016",
+    "category": 4,
+    "item": 25,
+    "name": "PLAYER_EVENT_THE_COACH_HAS_SHARED_NOTHING",
+    "chCode": "CH-16392",
+    "meaning": "Player event: the coach has shared nothing",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160426,
+    "page": "P016",
+    "category": 4,
+    "item": 26,
+    "name": "PLAYER_EVENT_THE_TEAMS_RESULT_IS_NOT",
+    "chCode": "CH-16393",
+    "meaning": "Player event: the team’s result is not on the player’s page (teammates’ scores and the lineup are the coach’s until held file 4)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
@@ -21457,6 +21545,204 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 160618,
+    "page": "P016",
+    "category": 6,
+    "item": 18,
+    "name": "LINK_ROUNDS_LINKING_A_GOLFHELM_ROUND_TO",
+    "chCode": "CH-16038",
+    "meaning": "Link rounds: linking a GolfHelm round to an event round fails or is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160619,
+    "page": "P016",
+    "category": 6,
+    "item": 19,
+    "name": "LINK_ROUNDS_NOT_A_TOURNAMENT_ROUND_FAILS",
+    "chCode": "CH-16039",
+    "meaning": "Link rounds: \"Not a tournament round\" fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160620,
+    "page": "P016",
+    "category": 6,
+    "item": 20,
+    "name": "EDIT_EVENT_THE_SAVE_IS_REFUSED",
+    "chCode": "CH-16060",
+    "meaning": "Edit event: the save is refused (stale, a round with scores, an out-of-order round, not a coach)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160621,
+    "page": "P016",
+    "category": 6,
+    "item": 21,
+    "name": "EDIT_EVENT_THE_CHANGES_ARE_SAVED",
+    "chCode": "CH-16061",
+    "meaning": "Edit event: the changes are saved",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160622,
+    "page": "P016",
+    "category": 6,
+    "item": 22,
+    "name": "LINK_ROUNDS_THE_CANDIDATE_ROUNDS_READ_FAILS",
+    "chCode": "CH-16238",
+    "meaning": "Link rounds: the candidate rounds read fails (`errors.candidates`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160623,
+    "page": "P016",
+    "category": 6,
+    "item": 23,
+    "name": "LINEUP_SAVING_THE_DRAFT_FAILS_OR_IS",
+    "chCode": "CH-16062",
+    "meaning": "Lineup: saving the draft fails or is refused (the event changed, the lineup is locked, too many players)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160624,
+    "page": "P016",
+    "category": 6,
+    "item": 24,
+    "name": "LINEUP_PUBLISHING_FAILS_OR_IS_REFUSED",
+    "chCode": "CH-16063",
+    "meaning": "Lineup: publishing fails or is refused (the save before it is refused, or the publish itself)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160625,
+    "page": "P016",
+    "category": 6,
+    "item": 25,
+    "name": "LINEUP_LOCKING_FAILS_OR_IS_REFUSED",
+    "chCode": "CH-16064",
+    "meaning": "Lineup: locking fails or is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160626,
+    "page": "P016",
+    "category": 6,
+    "item": 26,
+    "name": "LINEUP_THE_ROSTER_READ_FAILS",
+    "chCode": "CH-16262",
+    "meaning": "Lineup: the roster read fails (`errors.roster`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160627,
+    "page": "P016",
+    "category": 6,
+    "item": 27,
+    "name": "LIVE_ROUND_SAVING_A_SCORE_FAILS_OR",
+    "chCode": "CH-16070",
+    "meaning": "Live round: saving a score fails or is refused (not in the round’s lineup, not signed in, not set up)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160628,
+    "page": "P016",
+    "category": 6,
+    "item": 28,
+    "name": "LIVE_ROUND_STARTING_SUSPENDING_RESUMING_OR_FINISHING",
+    "chCode": "CH-16071",
+    "meaning": "Live round: starting, suspending, resuming or finishing the round fails or is refused (rounds out of order, a state it can’t move to)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160629,
+    "page": "P016",
+    "category": 6,
+    "item": 29,
+    "name": "LIVE_ROUND_THE_HOLES_OF_LINKED_GOLFHELM",
+    "chCode": "CH-16271",
+    "meaning": "Live round: the holes of linked GolfHelm rounds fail to load (`errors.holes`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160630,
+    "page": "P016",
+    "category": 6,
+    "item": 30,
+    "name": "PLAYER_SAVING_THEIR_REFLECTION_FAILS_OR_IS",
+    "chCode": "CH-16092",
+    "meaning": "Player: saving their reflection fails or is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160631,
+    "page": "P016",
+    "category": 6,
+    "item": 31,
+    "name": "PLAYER_THE_EVENTS_READ_FAILS",
+    "chCode": "CH-16290",
+    "meaning": "Player: the events read fails (`errors.events`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160632,
+    "page": "P016",
+    "category": 6,
+    "item": 32,
+    "name": "PLAYER_EVENT_THE_COACHS_SHARED_NOTES_READ",
+    "chCode": "CH-16291",
+    "meaning": "Player event: the coach’s shared notes read fails (`errors.notes`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160633,
+    "page": "P016",
+    "category": 6,
+    "item": 33,
+    "name": "PLAYER_EVENT_THE_PLAYERS_REFLECTION_READ_FAILS",
+    "chCode": "CH-16292",
+    "meaning": "Player event: the player’s reflection read fails (`errors.reflection`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160634,
+    "page": "P016",
+    "category": 6,
+    "item": 34,
+    "name": "PLAYER_EVENT_THE_PLAYERS_OWN_SPOT_FAILS",
+    "chCode": "CH-16293",
+    "meaning": "Player event: the player’s own spot (the lineup reveal) fails to load (`errors.reveal`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160635,
+    "page": "P016",
+    "category": 6,
+    "item": 35,
+    "name": "HOLE_BY_HOLE_SAVING_ONE_HOLE_FAILS",
+    "chCode": "CH-16072",
+    "meaning": "Hole by hole: saving one hole fails or is refused (not in the round’s lineup, a total already entered, results official, not set up)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
     "id": 160701,
     "page": "P016",
     "category": 7,
@@ -21519,6 +21805,28 @@
     "name": "CANCEL_TOURNAMENT_FROM_THE_DESKS_TOURNAMENT_MENU",
     "chCode": "CH-16551",
     "meaning": "Cancel tournament, from the desk's tournament menu (P-5; the calendar's CH-6541)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161103,
+    "page": "P016",
+    "category": 11,
+    "item": 3,
+    "name": "LOCK_THE_LINEUP_FROM_THE_LINEUP_BUILDER",
+    "chCode": "CH-16560",
+    "meaning": "Lock the lineup, from the lineup builder",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161104,
+    "page": "P016",
+    "category": 11,
+    "item": 4,
+    "name": "FINISH_THE_ROUND_FROM_THE_LIVE_ROUND",
+    "chCode": "CH-16570",
+    "meaning": "Finish the round, from the live round",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },

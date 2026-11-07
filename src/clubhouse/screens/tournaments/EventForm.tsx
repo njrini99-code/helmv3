@@ -2,10 +2,10 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { updateTournament } from '@/app/golf/actions/tournaments';
 import { createTournamentFromCalendar } from '@/app/golf/actions/tournaments-calendar';
 import { newRequestId } from '../../data/recruiting-shape';
 import { haptic } from '../../lib/haptics';
-import { plural } from '../../lib/plural';
 import { useAction } from '../../lib/use-action';
 import { Button } from '../../ui/Button';
 import { Select } from '../../ui/Select';
@@ -17,7 +17,8 @@ import { refusalNotice, type TournamentRefusal } from './fields/refusals';
 import { initialTourState, receiptSentence, toCreatePayload, validate, type ChTourErrors, type ChTourState } from './fields/rounds-model';
 import { TourCrumb, TourFailed, TourHead, TourLoading, TourMain, TourPhoneTop, tourGate, useTourPhone } from './parts';
 import { useTourPaths } from './paths';
-import { TourPlaceholder } from './TourPlaceholder';
+import { stateFromDraft, toUpdateInput } from './edit-model';
+import { needsReload, refusalText } from './tour-write';
 import type { ChTourFormData, EventFormProps } from './types';
 import '../../styles/tournament-fields.css';
 import '../../styles/tournaments-lineup.css';
@@ -29,21 +30,20 @@ const NO_QUALIFIER = '';
  * New event (plan 4.33, 5.2). The calendar editor's tournament section, on its own page: the same fields
  * (`TournamentFields`) and the same write (`createTournamentFromCalendar`, one calendar entry per round), so a
  * tournament made here and one made from the calendar are the same thing. Coach only; a full page on desktop and on
- * the phone. Editing an event is still the placeholder.
+ * the phone. Edit event is the same page on the event's saved values: the same fields, saved through
+ * `updateTournament` with the version it was opened at (a changed event is refused as stale, never overwritten).
  */
 export function EventForm({ data, load, phone: forced }: EventFormProps) {
   const phone = useTourPhone(forced);
-  if (data.mode === 'edit') {
-    return <TourPlaceholder view="form" eyebrow="Tournaments" title="Edit event" detail={`${data.initial.name || 'An event'} · ${plural(data.initial.rounds.length, 'round')}`} load={load} phone={forced} />;
-  }
+  const title = data.mode === 'edit' ? 'Edit event' : 'New event';
   return tourGate(load, {
     loading: () => (
-      <TourLoading view="form" phone={phone} title="New event" className="ch-tour-lu-form">
+      <TourLoading view="form" phone={phone} title={title} className="ch-tour-lu-form">
         <Skeleton width="100%" height={52} radius={12} />
         <Skeleton width="100%" height={phone ? 420 : 360} radius={16} shape="solid" />
       </TourLoading>
     ),
-    failed: () => <TourFailed view="form" phone={phone} id={TITLE_ID} eyebrow="Tournaments" title="New event" className="ch-tour-lu-form" />,
+    failed: () => <TourFailed view="form" phone={phone} id={TITLE_ID} eyebrow="Tournaments" title={title} className="ch-tour-lu-form" />,
     ready: () => <NewEvent data={data} phone={phone} />,
   });
 }
@@ -68,10 +68,16 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
   const paths = useTourPaths();
   const router = useRouter();
   const toast = useToast();
-  const [state, setState] = useState<ChTourState>(() => initialTourState(data.today, data.today, { name: data.fromCalendar?.title ?? '' }));
+  const editing = data.mode === 'edit' && !!data.eventId;
+  const [state, setState] = useState<ChTourState>(() =>
+    editing ? stateFromDraft(data.initial, data.courses, data.timezone) : initialTourState(data.today, data.today, { name: data.fromCalendar?.title ?? '' }),
+  );
+  // The version the page was opened at, and the one the last save returned: each save compares against it.
+  const version = useRef<number | null>(data.initial.version);
   const [qualifierId, setQualifierId] = useState(NO_QUALIFIER);
   const [touched, setTouched] = useState(false);
   const [said, setSaid] = useState('');
+  const [stale, setStale] = useState(false);
   const [note, setNote] = useState<{ code: string; text: string } | null>(null);
   // One request id per distinct payload: a second tap or a Retry after a lost reply replays the same save.
   const attempt = useRef<{ sig: string; id: string } | null>(null);
@@ -89,10 +95,31 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
   };
 
   const save = useAction<[], unknown>(
-    'tournaments.create',
+    editing ? 'tournaments.update' : 'tournaments.create',
     async () => {
       surfaced.current = false;
       setNote(null);
+      if (editing && data.eventId) {
+        if (version.current == null) {
+          setNote({ code: 'CH-16060', text: refusalText('failed') });
+          surfaced.current = true;
+          return { success: false as const };
+        }
+        const res = await updateTournament(data.eventId, toUpdateInput(state, data.timezone), version.current);
+        if (res.success) {
+          version.current = res.data.version;
+          haptic('success');
+          toast({ title: `${state.name.trim()} is saved`, code: 'CH-16061' });
+          router.push(paths.desk(data.eventId));
+        } else {
+          haptic('error');
+          setNote({ code: 'CH-16060', text: refusalText(res.code) });
+          setStale(needsReload(res.code));
+          requestAnimationFrame(() => document.getElementById('ch-tour-form-error')?.focus());
+        }
+        surfaced.current = true;
+        return res;
+      }
       const payload = toCreatePayload(state, data.timezone, {
         teamId: data.teamId,
         requestId: '',
@@ -118,7 +145,7 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
       surfaced.current = true;
       return res;
     },
-    { done: '', failed: `Couldn’t set up ${state.name.trim() || 'the event'}`, hint: 'Your changes are still on this page. Try again in a moment.', code: 'CH-6001' },
+    { done: '', failed: editing ? `Couldn’t save ${state.name.trim() || 'the event'}` : `Couldn’t set up ${state.name.trim() || 'the event'}`, hint: 'Your changes are still on this page. Try again in a moment.', code: 'CH-6001' },
     // The page draws the outcome it got back itself (the toast with Open, or the notice at the top), so the action stays
     // quiet for those. A thrown or rejected save has nothing on the page: the standard failure toast and haptic stand.
     (_result, c) => ({ ...c, quiet: surfaced.current }),
@@ -135,18 +162,19 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
     await save.run();
   };
 
-  const back = paths.home();
+  const back = editing && data.eventId ? paths.desk(data.eventId) : paths.home();
+  const heading = editing ? 'Edit event' : 'New event';
   return (
     <TourMain view="form" phone={phone} labelledBy={TITLE_ID} className="ch-tour-lu-form">
-      <TourPhoneTop phone={phone} title="New event" back={{ label: 'Tournaments', href: back }} />
+      <TourPhoneTop phone={phone} title={heading} back={{ label: editing ? 'Event' : 'Tournaments', href: back }} />
       <TourHead
         id={TITLE_ID}
         phone={phone}
         // The phone's back label already says Tournaments (F-0054).
         eyebrow={phone ? undefined : 'Tournaments'}
-        title="New event"
-        line="Name it, pick the days and the course. The team’s lineup comes next."
-        crumb={phone ? undefined : <TourCrumb href={back} />}
+        title={heading}
+        line={editing ? 'Change the days, the course or the format. Scores and the lineup stay as they are.' : 'Name it, pick the days and the course. The team’s lineup comes next.'}
+        crumb={phone ? undefined : <TourCrumb href={back}>{editing ? data.initial.name || 'Event' : 'Tournaments'}</TourCrumb>}
       />
       <form
         className="ch-tour-lu-form__body"
@@ -158,9 +186,14 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
       >
         {note && (
           <div className="ch-tfx-note ch-tfx-note--error" role="alert" tabIndex={-1} data-ch-code={note.code} id="ch-tour-form-error">
-            <b>Couldn’t set up the tournament. Nothing was saved.</b>
+            <b>{editing ? 'Couldn’t save the changes. Nothing was changed.' : 'Couldn’t set up the tournament. Nothing was saved.'}</b>
             {/* The generic refusal already is this sentence: say it once (audit 2026-10-31). */}
             {note.text !== 'Couldn’t set up the tournament. Nothing was saved.' && <span>{note.text}</span>}
+            {stale && (
+              <Button size="sm" onClick={() => router.refresh()}>
+                Reload the event
+              </Button>
+            )}
           </div>
         )}
         <div className="ch-tour-lu-form__name">
@@ -186,7 +219,7 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
         <section className="ch-tfx" aria-label="Tournament details">
           <TournamentFields state={state} onChange={setState} errors={errors} showErrors={touched} timezone={data.timezone} courseWrites={LIVE_WRITES} announce={setSaid} />
         </section>
-        {data.qualifiers.length > 0 && (
+        {!editing && data.qualifiers.length > 0 && (
           <div className="ch-tour-lu-form__qual">
             <label htmlFor="ch-tour-form-qual" className="ch-tour-lu-form__lbl">
               Qualifier
@@ -199,9 +232,9 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
             />
           </div>
         )}
-        <p className="ch-tour-lu-form__receipt">
-          {receiptSentence({ state, convert: false, rsvp: false, qualifierName: qualifier?.name })}
-        </p>
+        {!editing && (
+          <p className="ch-tour-lu-form__receipt">{receiptSentence({ state, convert: false, rsvp: false, qualifierName: qualifier?.name })}</p>
+        )}
         <p className="ch-sr-only" role="status" aria-live="polite">
           {said}
         </p>
@@ -210,7 +243,7 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
             Cancel
           </Button>
           <Button variant="primary" type="submit" busy={save.pending}>
-            {save.pending ? 'Creating…' : 'Create tournament'}
+            {editing ? (save.pending ? 'Saving…' : 'Save changes') : save.pending ? 'Creating…' : 'Create tournament'}
           </Button>
         </div>
       </form>

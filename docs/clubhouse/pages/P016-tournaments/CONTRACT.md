@@ -83,7 +83,6 @@ no rounds to link, and so on) are its lane's rows.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 160401 | CH-16301 | `A_VIEW_ITS_LANE_HASNT_BUILT_YET` | A view its lane hasn't built yet (the edit-event form, lineup builder, link inbox, live round and player view; their routes are wired and draw it with real data) |
 | 160403 | CH-16311 | `THE_SEASON_LEDGER_THE_SEASON_HAS_NO` | The season ledger (Home, History): the season has no finished event yet |
 | 160404 | CH-16312 | `HOME_NO_EVENT_IS_UPCOMING_OR_LIVE` | Home: no event is upcoming or live |
 | 160405 | CH-16320 | `EVENT_DESK_THE_EVENT_HAS_NO_SCORES` | Event desk: the event has no scores yet (not played, nothing entered) |
@@ -100,6 +99,14 @@ no rounds to link, and so on) are its lane's rows.
 | 160416 | CH-16305 | `A_PLAYER_ON_A_COACHS_TOURNAMENTS_PAGE` | A player on a coach's Tournaments page (new or edit event, lineup, live, compare, history, link rounds) |
 | 160417 | CH-16619 | `NOBODY_IS_ON_THE_COURSE` | Nobody is on the course |
 | 160418 | CH-16352 | `HOME_NO_EVENT_IN_THE_SEASON_NOTHING_2` | Home: no event in the season, nothing failed (P-5 4.11.1; replaces CH-16310) |
+| 160419 | CH-16338 | `LINK_ROUNDS_NO_GOLFHELM_ROUND_IS_WAITING` | Link rounds: no GolfHelm round is waiting to be linked (the read worked) |
+| 160420 | CH-16362 | `LINEUP_THE_TEAM_HAS_NO_PLAYERS_ON` | Lineup: the team has no players on its roster (the read worked) |
+| 160421 | CH-16363 | `LINEUP_A_PLAYER_IN_THE_DRAFT_IS` | Lineup: a player in the draft is injured, out for academics, not travelling, or has left the team |
+| 160422 | CH-16370 | `LIVE_ROUND_NOBODY_IS_IN_THE_ROUND` | Live round: nobody is in the round (no lineup, no individuals) |
+| 160423 | CH-16390 | `PLAYER_NO_TOURNAMENTS_IN_THE_SEASON` | Player: no tournaments in the season (the read worked) |
+| 160424 | CH-16391 | `PLAYER_EVENT_THE_EVENT_HAS_NO_ROUNDS` | Player event: the event has no rounds yet |
+| 160425 | CH-16392 | `PLAYER_EVENT_THE_COACH_HAS_SHARED_NOTHING` | Player event: the coach has shared nothing |
+| 160426 | CH-16393 | `PLAYER_EVENT_THE_TEAMS_RESULT_IS_NOT` | Player event: the team’s result is not on the player’s page (teammates’ scores and the lineup are the coach’s until held file 4) |
 
 ## 05 — Validation
 
@@ -135,6 +142,24 @@ flags and its lane's rows.
 | 160615 | CH-16052 | `RESTORE_TOURNAMENT_ON_THE_DESK` | Restore tournament on the desk |
 | 160616 | CH-16053 | `STOP_TRACKING_REFUSED_THE_RESULTS_ARE_OFFICIAL` | Stop tracking refused: the results are official |
 | 160617 | CH-16253 | `HOME_THE_READ_OF_THE_CALENDARS_UNTRACKED` | Home (coach): the read of the calendar's untracked tournaments fails (`errors.untracked`, P-5) |
+| 160618 | CH-16038 | `LINK_ROUNDS_LINKING_A_GOLFHELM_ROUND_TO` | Link rounds: linking a GolfHelm round to an event round fails or is refused |
+| 160619 | CH-16039 | `LINK_ROUNDS_NOT_A_TOURNAMENT_ROUND_FAILS` | Link rounds: "Not a tournament round" fails |
+| 160620 | CH-16060 | `EDIT_EVENT_THE_SAVE_IS_REFUSED` | Edit event: the save is refused (stale, a round with scores, an out-of-order round, not a coach) |
+| 160621 | CH-16061 | `EDIT_EVENT_THE_CHANGES_ARE_SAVED` | Edit event: the changes are saved |
+| 160622 | CH-16238 | `LINK_ROUNDS_THE_CANDIDATE_ROUNDS_READ_FAILS` | Link rounds: the candidate rounds read fails (`errors.candidates`) |
+| 160623 | CH-16062 | `LINEUP_SAVING_THE_DRAFT_FAILS_OR_IS` | Lineup: saving the draft fails or is refused (the event changed, the lineup is locked, too many players) |
+| 160624 | CH-16063 | `LINEUP_PUBLISHING_FAILS_OR_IS_REFUSED` | Lineup: publishing fails or is refused (the save before it is refused, or the publish itself) |
+| 160625 | CH-16064 | `LINEUP_LOCKING_FAILS_OR_IS_REFUSED` | Lineup: locking fails or is refused |
+| 160626 | CH-16262 | `LINEUP_THE_ROSTER_READ_FAILS` | Lineup: the roster read fails (`errors.roster`) |
+| 160627 | CH-16070 | `LIVE_ROUND_SAVING_A_SCORE_FAILS_OR` | Live round: saving a score fails or is refused (not in the round’s lineup, not signed in, not set up) |
+| 160628 | CH-16071 | `LIVE_ROUND_STARTING_SUSPENDING_RESUMING_OR_FINISHING` | Live round: starting, suspending, resuming or finishing the round fails or is refused (rounds out of order, a state it can’t move to) |
+| 160629 | CH-16271 | `LIVE_ROUND_THE_HOLES_OF_LINKED_GOLFHELM` | Live round: the holes of linked GolfHelm rounds fail to load (`errors.holes`) |
+| 160630 | CH-16092 | `PLAYER_SAVING_THEIR_REFLECTION_FAILS_OR_IS` | Player: saving their reflection fails or is refused |
+| 160631 | CH-16290 | `PLAYER_THE_EVENTS_READ_FAILS` | Player: the events read fails (`errors.events`) |
+| 160632 | CH-16291 | `PLAYER_EVENT_THE_COACHS_SHARED_NOTES_READ` | Player event: the coach’s shared notes read fails (`errors.notes`) |
+| 160633 | CH-16292 | `PLAYER_EVENT_THE_PLAYERS_REFLECTION_READ_FAILS` | Player event: the player’s reflection read fails (`errors.reflection`) |
+| 160634 | CH-16293 | `PLAYER_EVENT_THE_PLAYERS_OWN_SPOT_FAILS` | Player event: the player’s own spot (the lineup reveal) fails to load (`errors.reveal`) |
+| 160635 | CH-16072 | `HOLE_BY_HOLE_SAVING_ONE_HOLE_FAILS` | Hole by hole: saving one hole fails or is refused (not in the round’s lineup, a total already entered, results official, not set up) |
 
 ## 07 — Network / offline
 
@@ -198,6 +223,8 @@ warning haptic. Restore is the safe direction and doesn't ask.
 | --- | --- | --- | --- |
 | 161101 | CH-16550 | `STOP_TRACKING_FROM_THE_DESKS_TOURNAMENT_MENU` | Stop tracking, from the desk's tournament menu (P-5) |
 | 161102 | CH-16551 | `CANCEL_TOURNAMENT_FROM_THE_DESKS_TOURNAMENT_MENU` | Cancel tournament, from the desk's tournament menu (P-5; the calendar's CH-6541) |
+| 161103 | CH-16560 | `LOCK_THE_LINEUP_FROM_THE_LINEUP_BUILDER` | Lock the lineup, from the lineup builder |
+| 161104 | CH-16570 | `FINISH_THE_ROUND_FROM_THE_LIVE_ROUND` | Finish the round, from the live round |
 
 ## 12 — State preservation
 

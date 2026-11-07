@@ -15462,3 +15462,101 @@ $$;
 
 
 ALTER FUNCTION "public"."golf_tournament_untrack"("p_tournament_id" "uuid", "p_expected_version" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."golf_tournament_my_lineup"("p_tournament_id" "uuid")
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_uid       uuid := (SELECT auth.uid());
+  v_team      uuid;
+  v_published timestamptz;
+  v_locked    timestamptz;
+  v_player    uuid;
+  v_role      text;
+  v_slot      integer;
+  v_rounds    jsonb;
+BEGIN
+  IF v_uid IS NULL OR p_tournament_id IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT t.team_id, t.lineup_published_at, t.lineup_locked_at
+    INTO v_team, v_published, v_locked
+    FROM public.golf_tournaments t
+   WHERE t.id = p_tournament_id;
+
+  -- Unknown tournament, or the coach has not published (or scheduled it for later): nothing to reveal.
+  IF v_team IS NULL OR v_published IS NULL OR v_published > now() THEN
+    RETURN NULL;
+  END IF;
+
+  -- The caller's own player row, active on this team. A coach, an outsider or another team's player gets NULL.
+  SELECT gp.id
+    INTO v_player
+    FROM public.golf_players gp
+    JOIN public.golf_team_members m ON m.player_id = gp.id
+   WHERE gp.user_id = v_uid
+     AND m.team_id = v_team
+     AND m.status = 'active'
+   LIMIT 1;
+  IF v_player IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT e.role, e.slot
+    INTO v_role, v_slot
+    FROM public.golf_tournament_entries e
+   WHERE e.tournament_id = p_tournament_id
+     AND e.player_id = v_player;
+  IF v_role IS NULL THEN
+    v_role := 'not_travelling';
+  END IF;
+
+  WITH field AS (
+    SELECT r.round_event_id, l.player_id, l.role, l.slot
+      FROM public.golf_tournament_rounds r
+      JOIN public.golf_tournament_round_lineups l ON l.round_event_id = r.round_event_id
+     WHERE r.tournament_id = p_tournament_id
+    UNION ALL
+    SELECT r.round_event_id, e.player_id, e.role, e.slot
+      FROM public.golf_tournament_rounds r
+      JOIN public.golf_tournament_entries e ON e.tournament_id = r.tournament_id
+     WHERE r.tournament_id = p_tournament_id
+       AND NOT EXISTS (SELECT 1 FROM public.golf_tournament_round_lineups l2 WHERE l2.round_event_id = r.round_event_id)
+  )
+  SELECT coalesce(jsonb_agg(jsonb_build_object(
+           'round_event_id', r.round_event_id,
+           'round_number', r.round_number,
+           'my_role', (SELECT f.role FROM field f WHERE f.round_event_id = r.round_event_id AND f.player_id = v_player),
+           'my_slot', (SELECT f.slot FROM field f WHERE f.round_event_id = r.round_event_id AND f.player_id = v_player),
+           -- Gated on the caller's role IN THIS ROUND (the locked snapshot after a substitution, else the entries), never on the
+           -- tournament-level role: a player substituted out must not keep the round's lineup, and one substituted in gets it.
+           'players', CASE
+             WHEN (SELECT f.role FROM field f WHERE f.round_event_id = r.round_event_id AND f.player_id = v_player) = 'lineup' THEN
+               (SELECT coalesce(jsonb_agg(jsonb_build_object('player_id', f.player_id, 'slot', f.slot) ORDER BY f.slot), '[]'::jsonb)
+                  FROM field f
+                 WHERE f.round_event_id = r.round_event_id AND f.role = 'lineup')
+             ELSE '[]'::jsonb
+           END
+         ) ORDER BY r.round_number), '[]'::jsonb)
+    INTO v_rounds
+    FROM public.golf_tournament_rounds r
+   WHERE r.tournament_id = p_tournament_id;
+
+  RETURN jsonb_build_object(
+    'published_at', v_published,
+    'locked_at', v_locked,
+    'role', v_role,
+    'slot', v_slot,
+    'rounds', v_rounds
+  );
+END;
+$$;
+
+
+ALTER FUNCTION "public"."golf_tournament_my_lineup"("p_tournament_id" "uuid") OWNER TO "postgres";

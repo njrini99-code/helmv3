@@ -108,7 +108,7 @@ Clubhouse UI (flagged, off in production) · active · criticality medium · own
 
 - **Relations:** 0 doc/structurally-evidenced, 9 import-graph-only (weak)
 - **Tables:** `golf_class_exceptions`, `golf_class_hold_dirty`, `golf_player_class_settings`, `golf_push_hold_heartbeat`, `golf_push_holds`, `golf_saved_comparisons`, `golf_team_seasons`, `golf_team_terms`, `golf_tournament_advice_givers`, `golf_tournament_coach_presence`, `golf_tournament_entries`, `golf_tournament_entry_notes`, `golf_tournament_field_scores`, `golf_tournament_field_teams`, `golf_tournament_link_dismissals`, `golf_tournament_player_notes`, `golf_tournament_player_rounds`, `golf_tournament_reflections`, `golf_tournament_result_marks`, `golf_tournament_reviews`, `golf_tournament_round_lineups`, `golf_tournament_rounds`, `golf_tournaments`
-- **RPCs:** `golf_coachhelm_shown_reads`, `golf_tournament_link_candidates`, `sg_scale_for_player`
+- **RPCs:** `golf_coachhelm_shown_reads`, `golf_tournament_link_candidates`, `golf_tournament_my_lineup`, `sg_scale_for_player`
 - **Test surfaces:** 2
 - **Sentry/admin_events signals:** none
 

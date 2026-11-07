@@ -168,7 +168,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P013 | 7 | 15 |  | 39 | 3 | 50 | 71 | 7 | 3 |  | 3 | 1 |  | 3 | 4 | 4 | 11 | 23 | 1 |  | 1 |  | 1 |  |  | 247 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
-| P016 | 31 | 1 | 1 | 18 |  | 17 | 1 | 1 |  | 2 | 2 | 1 |  |  | 5 | 2 |  | 3 |  |  |  |  |  |  |  | 85 |
+| P016 | 31 | 1 | 1 | 26 |  | 35 | 1 | 1 |  | 2 | 4 | 1 |  |  | 5 | 2 |  | 3 |  |  |  |  |  |  |  | 113 |
 
 ## P001 Shell
 
@@ -330,7 +330,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 20604 | CH-2204 | 06 Server / system error | `SEASON_ROUNDS_DONT_LOAD_2` | implemented | Season rounds don't load (the leaderboard's source) |
 | 20605 | CH-2205 | 06 Server / system error | `THE_WEEK_SECTION_CRASHES_WHILE_DRAWING` | implemented | The week section crashes while drawing |
 | 20606 | CH-2206 | 06 Server / system error | `THE_LATEST_ROUND_CRASHES_WHILE_DRAWING` | implemented | The latest round crashes while drawing |
-| 20607 | CH-2207 | 06 Server / system error | `THE_LEADERBOARD_CRASHES_WHILE_DRAWING` | implemented | The leaderboard crashes while drawing |
+| 20607 | CH-2207 | 06 Server / system error | `THE_LEADERBOARD_CRASHES_WHILE_DRAWING` | reserved | The leaderboard crashes while drawing |
 | 20608 | CH-2208 | 06 Server / system error | `THE_TEAM_CHAT_DOESNT_LOAD` | implemented | The team chat doesn't load |
 | 20609 | CH-2209 | 06 Server / system error | `EVENT_REPLIES_DONT_LOAD` | implemented | Event replies don't load |
 | 20610 | CH-2210 | 06 Server / system error | `THE_TEAMS_TIMEZONE_DOESNT_LOAD` | implemented | The team's timezone doesn't load |
@@ -418,7 +418,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30612 | CH-3205 | 06 Server / system error | `THE_ROSTER_LIST_CRASHES` | implemented | The roster list crashes |
 | 30613 | CH-3206 | 06 Server / system error | `THE_PLAYER_PANEL_CRASHES` | implemented | The player panel crashes |
 | 30614 | CH-3207 | 06 Server / system error | `THE_TEAM_ROW_DOESNT_LOAD` | implemented | The team row doesn't load |
-| 30615 | CH-3208 | 06 Server / system error | `FOCUS_AREAS_OR_GOALS_DONT_LOAD` | implemented | Focus areas or goals don't load |
+| 30615 | CH-3208 | 06 Server / system error | `FOCUS_AREAS_OR_GOALS_DONT_LOAD` | reserved | Focus areas or goals don't load |
 | 30616 | CH-3209 | 06 Server / system error | `THIS_COACHS_NOTES_DONT_LOAD` | implemented | This coach's notes don't load |
 | 30617 | CH-3210 | 06 Server / system error | `THE_PLAYERS_ROSTER_DOESNT_LOAD` | implemented | The player's roster doesn't load (a player's own team's members) |
 | 30618 | CH-3211 | 06 Server / system error | `THE_PLAYERS_ROSTER_LIST_CRASHES` | implemented | The player's roster list crashes |
@@ -449,7 +449,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 31601 | CH-3601 | 16 Micro animation | `OPENING_OR_SWITCHING_A_PLAYER` | implemented | Opening or switching a player (desktop: from a Needs a look chip) |
 | 31602 | CH-3602 | 16 Micro animation | `HOVERING_OR_PRESSING_A_FACE_CARD_OR` | implemented | Hovering or pressing a face card or row |
 | 31603 | CH-3603 | 16 Micro animation | `SWITCHING_BETWEEN_TEAM_VIEW_AND_LIST_VIEW` | implemented | Switching between Team view and List view |
-| 31604 | CH-3604 | 16 Micro animation | `PHONE_CHOOSING_AVG_SG_OR_NAME` | implemented | Phone: choosing Avg, SG or Name |
+| 31604 | CH-3604 | 16 Micro animation | `PHONE_CHOOSING_AVG_SG_OR_NAME` | reserved | Phone: choosing Avg, SG or Name |
 | 31701 | CH-3701 | 17 Haptic | `OPENING_A_PLAYER_CHANGING_A_FILTER_LAYOUT` | implemented | Opening a player; changing a filter, layout or sort |
 | 31702 | CH-3702 | 17 Haptic | `AN_EXPORT_LANDS` | implemented | An export lands |
 | 31703 | CH-3703 | 17 Haptic | `THE_CODE_OR_LINK_IS_COPIED` | implemented | The code or link is copied |
@@ -632,7 +632,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 51804 | CH-5804 | 18 Accessibility | `THE_FOCUS_AREA_FIELDS_NAME_IS_JUST` | reserved | The focus-area field's name is just "What to work on"; its help or error is read as its description |
 | 51805 | CH-5805 | 18 Accessibility | `NO_AXE_VIOLATIONS_ON_EVERY_TAB_AND` | reserved | No axe violations on every tab and state, 1280px and 390px |
 | 51806 | CH-5806 | 18 Accessibility | `ON_A_PHONE_THE_ROUNDS_TABLE_SCROLLS` | reserved | On a phone the rounds table scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it |
-| 51807 | CH-5807 | 18 Accessibility | `ON_THE_PHONE_ALL_N_ROUNDS_IS` | implemented | On the phone, "All N rounds" is a button that says whether the full list is open; Game detail's section chips say which one is showing |
+| 51807 | CH-5807 | 18 Accessibility | `ON_THE_PHONE_ALL_N_ROUNDS_IS` | reserved | On the phone, "All N rounds" is a button that says whether the full list is open; Game detail's section chips say which one is showing |
 | 51808 | CH-5808 | 18 Accessibility | `IN_THE_ROUNDS_TABLE_EACH_COURSE_OPENS` | implemented | In the Rounds table each course opens that round's review (for a coach and the player), named "Finley GC, Oct 14: open the round"; where the review isn't rebuilt, it stays text |
 | 51809 | CH-5809 | 18 Accessibility | `THE_ROUND_FILTER_AS_ON_TEAM_STATS` | reserved | The round filter, as on Team stats (CH-4806): the Filter button opens a labelled dialog, each chip is "Remove filter: …", Clear is "Clear filters", the count line is a polite status region, choices (round type, holes, pick mode) are toggle buttons and courses and rounds are checkboxes, all in labelled groups, and the date fields carry their error as their description |
 | 51810 | CH-5810 | 18 Accessibility | `SHARE_BEST_SCORE_OPENS_A_LABELLED_DIALOG` | implemented | Share best score (P005-C2) opens a labelled dialog with the card as an image whose alt names the score, the player, the course and the date; Share is the one primary. The card shows no school or team name and, unless the player shares it, their first name and last initial |
@@ -897,7 +897,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 71603 | CH-7603 | 16 Micro animation | `OPENING_DETAILS_OR_A_REACTION_BAR` | implemented | Opening details or a reaction bar |
 | 71604 | CH-7604 | 16 Micro animation | `A_LONG_PRESS_ON_A_MESSAGE` | implemented | A long press on a message (phone) |
 | 71605 | CH-7605 | 16 Micro animation | `OPENING_ANOTHER_CONVERSATION_OR_ANNOUNCEMENT` | implemented | Opening another conversation or announcement (desktop) |
-| 71606 | CH-7606 | 16 Micro animation | `CHANGING_THE_INBOX_FILTER_ON_THE_PHONE` | implemented | Changing the inbox filter on the phone (All, Unread, Groups) |
+| 71606 | CH-7606 | 16 Micro animation | `CHANGING_THE_INBOX_FILTER_ON_THE_PHONE` | reserved | Changing the inbox filter on the phone (All, Unread, Groups) |
 | 71607 | CH-7607 | 16 Micro animation | `MUTING_A_CONVERSATION_FROM_ITS_ROW` | implemented | Muting a conversation from its row (owner decision 14) |
 | 71608 | CH-7608 | 16 Micro animation | `A_GROUP_MESSAGES_RECEIPT_CHANGES` | implemented | A group message's receipt changes ("Sent" → "Seen by 4 of 11" → "Seen by everyone") |
 | 71609 | CH-7609 | 16 Micro animation | `THE_SEEN_BY_SHEET_OR_POPOVER_OPENS` | implemented | The Seen by sheet (phone) or popover (desktop) opens and updates live |
@@ -1527,7 +1527,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 120202 | CH-12402 | 02 Initial loading / skeleton | `A_SCHEDULE_IS_BEING_READ` | implemented | A schedule is being read |
 | 120203 | CH-12403 | 02 Initial loading / skeleton | `CLASSES_ARE_BEING_PUT_ON_THE_CALENDAR` | implemented | Classes are being put on the calendar |
 | 120401 | CH-12301 | 04 Empty | `NO_CLASSES_YET` | implemented | No classes yet |
-| 120402 | CH-12302 | 04 Empty | `NO_CLASS_MEETS_A_TEAM_EVENT_THIS` | implemented | No class meets a team event this week |
+| 120402 | CH-12302 | 04 Empty | `NO_CLASS_MEETS_A_TEAM_EVENT_THIS` | reserved | No class meets a team event this week |
 | 120403 | CH-12303 | 04 Empty | `A_CLASS_WITH_NO_FIXED_MEETING` | implemented | A class with no fixed meeting (online or arranged) |
 | 120404 | CH-12304 | 04 Empty | `A_CLASS_WITH_TIMES_BUT_NO_DAYS` | implemented | A class with times but no days |
 | 120405 | CH-12305 | 04 Empty | `A_PLAYER_ON_NO_TEAM` | implemented | A player on no team |
@@ -1606,7 +1606,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 121705 | CH-12704 | 17 Haptic | `DELETE_ALL_CLASSES_IS_TAPPED` | implemented | Delete all classes is tapped |
 | 121801 | CH-12801 | 18 Accessibility | `A_SCREEN_READER_MOVES_THROUGH_THE_DECK` | implemented | A screen reader moves through the deck |
 | 121802 | CH-12802 | 18 Accessibility | `THE_CARDS_WEEK_STRIP` | implemented | The card's week strip |
-| 121803 | CH-12803 | 18 Accessibility | `THE_TERM_OVERVIEW` | implemented | The term overview |
+| 121803 | CH-12803 | 18 Accessibility | `THE_TERM_OVERVIEW` | reserved | The term overview |
 | 121804 | CH-12804 | 18 Accessibility | `A_SAVE_IS_REFUSED` | implemented | A save is refused |
 | 121805 | CH-12805 | 18 Accessibility | `THE_IMPORTS_DROP_ZONE` | implemented | The import's drop zone |
 | 121806 |  | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations on the six preview states (the board's Fall 2026, empty, failed, partial, no team and loading) at 1280px and 390px, run by npm run clubhouse:a11y from the entries in scripts/clubhouse/a11y.mjs. Reserved: it ran clean on 2026-09-30 (12 of 12), but it is a dev-server run, not a test, so no test names it. |
@@ -2100,7 +2100,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 160131 | CH-16606 | 01 Default / core UI | `MORE_LANES_THAN_THE_CARD_SHOWS` | implemented | More lanes than the card shows |
 | 160201 | CH-16401 | 02 Initial loading / skeleton | `A_TOURNAMENTS_VIEW_IS_ON_ITS_WAY` | implemented | A Tournaments view is on its way (`load: 'loading'`) |
 | 160301 | CH-16604 | 03 Background loading / refresh | `A_LIVE_READ_FAILED_OR_THE_FEED` | implemented | A live read failed or the feed dropped |
-| 160401 | CH-16301 | 04 Empty | `A_VIEW_ITS_LANE_HASNT_BUILT_YET` | implemented | A view its lane hasn't built yet (the edit-event form, lineup builder, link inbox, live round and player view; their routes are wired and draw it with real data) |
+| 160401 | CH-16301 | 04 Empty | `A_VIEW_ITS_LANE_HASNT_BUILT_YET` | deprecated | Retired 2026-11-07: a view its lane hasn't built yet. Every Tournaments view is built, so no screen draws it |
 | 160402 | CH-16310 | 04 Empty | `HOME_NO_EVENT_IN_THE_SEASON_NOTHING` | deprecated | Retired 2026-10-25 (P-5 4.11.1): replaced by CH-16352. Home: no event in the season, nothing failed |
 | 160403 | CH-16311 | 04 Empty | `THE_SEASON_LEDGER_THE_SEASON_HAS_NO` | implemented | The season ledger (Home, History): the season has no finished event yet |
 | 160404 | CH-16312 | 04 Empty | `HOME_NO_EVENT_IS_UPCOMING_OR_LIVE` | implemented | Home: no event is upcoming or live |
@@ -2118,6 +2118,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 160416 | CH-16305 | 04 Empty | `A_PLAYER_ON_A_COACHS_TOURNAMENTS_PAGE` | implemented | A player on a coach's Tournaments page (new or edit event, lineup, live, compare, history, link rounds) |
 | 160417 | CH-16619 | 04 Empty | `NOBODY_IS_ON_THE_COURSE` | implemented | Nobody is on the course |
 | 160418 | CH-16352 | 04 Empty | `HOME_NO_EVENT_IN_THE_SEASON_NOTHING_2` | implemented | Home: no event in the season, nothing failed (P-5 4.11.1; replaces CH-16310) |
+| 160419 | CH-16338 | 04 Empty | `LINK_ROUNDS_NO_GOLFHELM_ROUND_IS_WAITING` | implemented | Link rounds: no GolfHelm round is waiting to be linked (the read worked) |
+| 160420 | CH-16362 | 04 Empty | `LINEUP_THE_TEAM_HAS_NO_PLAYERS_ON` | implemented | Lineup: the team has no players on its roster (the read worked) |
+| 160421 | CH-16363 | 04 Empty | `LINEUP_A_PLAYER_IN_THE_DRAFT_IS` | implemented | Lineup: a player in the draft is injured, out for academics, not travelling, or has left the team |
+| 160422 | CH-16370 | 04 Empty | `LIVE_ROUND_NOBODY_IS_IN_THE_ROUND` | implemented | Live round: nobody is in the round (no lineup, no individuals) |
+| 160423 | CH-16390 | 04 Empty | `PLAYER_NO_TOURNAMENTS_IN_THE_SEASON` | implemented | Player: no tournaments in the season (the read worked) |
+| 160424 | CH-16391 | 04 Empty | `PLAYER_EVENT_THE_EVENT_HAS_NO_ROUNDS` | implemented | Player event: the event has no rounds yet |
+| 160425 | CH-16392 | 04 Empty | `PLAYER_EVENT_THE_COACH_HAS_SHARED_NOTHING` | implemented | Player event: the coach has shared nothing |
+| 160426 | CH-16393 | 04 Empty | `PLAYER_EVENT_THE_TEAMS_RESULT_IS_NOT` | implemented | Player event: the team’s result is not on the player’s page (teammates’ scores and the lineup are the coach’s until held file 4) |
 | 160601 | CH-16201 | 06 Server / system error | `A_TOURNAMENTS_VIEWS_ONE_READ_FAILS` | implemented | A Tournaments view's one read fails (any view; `load: 'failed'`) |
 | 160602 | CH-16210 | 06 Server / system error | `HOME_THE_EVENTS_READ_FAILS_WHILE_THE` | implemented | Home: the events read fails while the page itself loads (`errors.events`) |
 | 160603 | CH-16220 | 06 Server / system error | `EVENT_DESK_HOLES_TAB_THE_SCORECARDS_READ` | implemented | Event desk, Holes tab: the scorecards read fails (`errors.holes`) |
@@ -2135,12 +2143,32 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 160615 | CH-16052 | 06 Server / system error | `RESTORE_TOURNAMENT_ON_THE_DESK` | implemented | Restore tournament on the desk |
 | 160616 | CH-16053 | 06 Server / system error | `STOP_TRACKING_REFUSED_THE_RESULTS_ARE_OFFICIAL` | implemented | Stop tracking refused: the results are official |
 | 160617 | CH-16253 | 06 Server / system error | `HOME_THE_READ_OF_THE_CALENDARS_UNTRACKED` | implemented | Home (coach): the read of the calendar's untracked tournaments fails (`errors.untracked`, P-5) |
+| 160618 | CH-16038 | 06 Server / system error | `LINK_ROUNDS_LINKING_A_GOLFHELM_ROUND_TO` | implemented | Link rounds: linking a GolfHelm round to an event round fails or is refused |
+| 160619 | CH-16039 | 06 Server / system error | `LINK_ROUNDS_NOT_A_TOURNAMENT_ROUND_FAILS` | implemented | Link rounds: "Not a tournament round" fails |
+| 160620 | CH-16060 | 06 Server / system error | `EDIT_EVENT_THE_SAVE_IS_REFUSED` | implemented | Edit event: the save is refused (stale, a round with scores, an out-of-order round, not a coach) |
+| 160621 | CH-16061 | 06 Server / system error | `EDIT_EVENT_THE_CHANGES_ARE_SAVED` | implemented | Edit event: the changes are saved |
+| 160622 | CH-16238 | 06 Server / system error | `LINK_ROUNDS_THE_CANDIDATE_ROUNDS_READ_FAILS` | implemented | Link rounds: the candidate rounds read fails (`errors.candidates`) |
+| 160623 | CH-16062 | 06 Server / system error | `LINEUP_SAVING_THE_DRAFT_FAILS_OR_IS` | implemented | Lineup: saving the draft fails or is refused (the event changed, the lineup is locked, too many players) |
+| 160624 | CH-16063 | 06 Server / system error | `LINEUP_PUBLISHING_FAILS_OR_IS_REFUSED` | implemented | Lineup: publishing fails or is refused (the save before it is refused, or the publish itself) |
+| 160625 | CH-16064 | 06 Server / system error | `LINEUP_LOCKING_FAILS_OR_IS_REFUSED` | implemented | Lineup: locking fails or is refused |
+| 160626 | CH-16262 | 06 Server / system error | `LINEUP_THE_ROSTER_READ_FAILS` | implemented | Lineup: the roster read fails (`errors.roster`) |
+| 160627 | CH-16070 | 06 Server / system error | `LIVE_ROUND_SAVING_A_SCORE_FAILS_OR` | implemented | Live round: saving a score fails or is refused (not in the round’s lineup, not signed in, not set up) |
+| 160628 | CH-16071 | 06 Server / system error | `LIVE_ROUND_STARTING_SUSPENDING_RESUMING_OR_FINISHING` | implemented | Live round: starting, suspending, resuming or finishing the round fails or is refused (rounds out of order, a state it can’t move to) |
+| 160629 | CH-16271 | 06 Server / system error | `LIVE_ROUND_THE_HOLES_OF_LINKED_GOLFHELM` | implemented | Live round: the holes of linked GolfHelm rounds fail to load (`errors.holes`) |
+| 160630 | CH-16092 | 06 Server / system error | `PLAYER_SAVING_THEIR_REFLECTION_FAILS_OR_IS` | implemented | Player: saving their reflection fails or is refused |
+| 160631 | CH-16290 | 06 Server / system error | `PLAYER_THE_EVENTS_READ_FAILS` | implemented | Player: the events read fails (`errors.events`) |
+| 160632 | CH-16291 | 06 Server / system error | `PLAYER_EVENT_THE_COACHS_SHARED_NOTES_READ` | implemented | Player event: the coach’s shared notes read fails (`errors.notes`) |
+| 160633 | CH-16292 | 06 Server / system error | `PLAYER_EVENT_THE_PLAYERS_REFLECTION_READ_FAILS` | implemented | Player event: the player’s reflection read fails (`errors.reflection`) |
+| 160634 | CH-16293 | 06 Server / system error | `PLAYER_EVENT_THE_PLAYERS_OWN_SPOT_FAILS` | implemented | Player event: the player’s own spot (the lineup reveal) fails to load (`errors.reveal`) |
+| 160635 | CH-16072 | 06 Server / system error | `HOLE_BY_HOLE_SAVING_ONE_HOLE_FAILS` | implemented | Hole by hole: saving one hole fails or is refused (not in the round’s lineup, a total already entered, results official, not set up) |
 | 160701 | CH-16605 | 07 Network / offline | `THE_DEVICE_IS_OFFLINE_WHILE_THE_CARD` | implemented | The device is offline while the card or the live view is open |
 | 160801 | CH-16609 | 08 Permission / authorization | `THE_COACH_HAS_NO_TEAM_OR_LOST` | implemented | The coach has no team, or lost access to it |
 | 161001 | CH-16920 | 10 Warning | `EVENT_DESK_THE_HOSTS_PUBLISHED_NUMBER_DIFFERS` | implemented | Event desk: the host's published number differs from our scorecard (`officialTotal` set and unequal) |
 | 161002 | CH-16665 | 10 Warning | `A_ROUNDS_SHARING_WAS_CHANGED_30_TIMES` | implemented | A round's sharing was changed 30 times (slice 2) |
 | 161101 | CH-16550 | 11 Destructive | `STOP_TRACKING_FROM_THE_DESKS_TOURNAMENT_MENU` | implemented | Stop tracking, from the desk's tournament menu (P-5) |
 | 161102 | CH-16551 | 11 Destructive | `CANCEL_TOURNAMENT_FROM_THE_DESKS_TOURNAMENT_MENU` | implemented | Cancel tournament, from the desk's tournament menu (P-5; the calendar's CH-6541) |
+| 161103 | CH-16560 | 11 Destructive | `LOCK_THE_LINEUP_FROM_THE_LINEUP_BUILDER` | implemented | Lock the lineup, from the lineup builder |
+| 161104 | CH-16570 | 11 Destructive | `FINISH_THE_ROUND_FROM_THE_LIVE_ROUND` | implemented | Finish the round, from the live round |
 | 161201 | CH-16621 | 12 State preservation | `A_PLAYER_WITH_THEIR_OWN_ROUND_ON` | implemented | A player with their own round on this qualifier (slice 4) |
 | 161501 | CH-16614 | 15 Data freshness / sync | `LANES_WITH_NO_WORD_FOR_90_MINUTES` | implemented | Lanes with no word for 90 minutes |
 | 161502 | CH-16672 | 15 Data freshness / sync | `A_LANE_SILENT_FOR_10_MINUTES_WITH` | implemented | A lane silent for 10 minutes with the last hole at least as old |

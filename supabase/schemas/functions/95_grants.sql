@@ -1708,3 +1708,6 @@ REVOKE ALL ON FUNCTION "helm_private"."sync_tournament_round_from_event"() FROM 
 REVOKE ALL ON FUNCTION "helm_private"."sync_tournament_round_titles"() FROM PUBLIC, "anon", "authenticated";
 
 REVOKE ALL ON FUNCTION "helm_private"."sync_round_event_fields"() FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "public"."golf_tournament_my_lineup"("p_tournament_id" "uuid") FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_tournament_my_lineup"("p_tournament_id" "uuid") TO "authenticated";

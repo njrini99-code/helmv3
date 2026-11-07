@@ -13,7 +13,7 @@ Date:      2026-10-25
 
 | Test | Contract | Result |
 | --- | --- | --- |
-| `screens/tournaments/__tests__/views.test.tsx` | CH-16201, CH-16301, CH-16401 | pass |
+| `screens/tournaments/__tests__/views.test.tsx` | CH-16201, CH-16401 | pass |
 | `screens/tournaments/__tests__/use-changed-wash.test.tsx` | CH-16601 | pass |
 | `preview/__tests__/fixtures-tournaments.test.ts` | Oakmont 287, 286, 285 (858, −6); e32 6 count 5 | pass |
 | `ui/__tests__/delta-chip.test.tsx`, `trust-chip.test.tsx` | CH-16801 | pass |

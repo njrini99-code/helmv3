@@ -1083,6 +1083,7 @@ them would bury everything above.
 | `docs/clubhouse/held/data/roster-availability.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/tournaments-calendar-sync.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/tournaments-from-calendar.md` | current | - | - | - | - |
+| `docs/clubhouse/held/data/tournaments-player-reveal.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/tournaments-rls.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/tournaments-round-write.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/tournaments-rpcs.md` | current | - | - | - | - |
@@ -1670,6 +1671,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-05-page-polish.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P016-tournaments/changes/2026-11-07-first-release-screens.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-07-pre-refresh.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/auth.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |
