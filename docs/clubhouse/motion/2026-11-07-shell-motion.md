@@ -93,7 +93,7 @@ Player Home segments are now 44 tall. No coach Home on staging draws a segment.
 | 1 | Page dim used `filter` | Repaint each frame | High | Overlay opacity |
 | 2 | `height` animated | Layout each frame | High | Removed |
 | 3 | Clone in the tap frame | Late press state | High | Next frame |
-| 4 | Width animated on the pill | Main thread drawing | High | Kept, the bar's |
+| 4 | Width animated on the pill | Main thread | High | Kept, the bar's |
 | 5 | Thread opened by frame loop | 97/133 dropped | High | Rest at open |
 | 6 | Label ink on a fixed delay | 1.3:1 for 100 ms | High | At the crossing |
 
