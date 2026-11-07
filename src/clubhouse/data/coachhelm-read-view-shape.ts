@@ -1,5 +1,7 @@
 import { formatFixed } from '../lib/format';
 import { namesWithheldArm } from '@/lib/coachhelm/reads/player-cause';
+import { confidenceTier } from '@/lib/coachhelm/confidence-label';
+import { sureSentence } from '@/lib/coachhelm/shared/confidence-reason';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { ChReadCalls } from './coachhelm-read-calls';
 import type { ChDeepDive, ChDeepInsight, ChDiveHole, ChDivePlan, ChDiveRound, ChDiveTheme } from './coachhelm-dive-shape';
@@ -189,11 +191,10 @@ export function toChReadDetail(raw: EvidenceInsight, deep: ChDeepInsight, role: 
   const rows: ChReadDetail['sure']['rows'] = [];
   if (sampleN != null && factors?.sample_adequacy != null && factors.sample_adequacy > 0) {
     const need = Math.round(sampleN / Math.min(1, factors.sample_adequacy));
-    // 06 S-READ.sure: a coach reads the bar against the floor; a player reads the count alone.
+    // 06 S-READ.sure: a player reads the count alone. A coach reads whether it is enough (READ-S1: "27 approaches. Enough for a solid read."), in the same tier as the word beside it.
     const noun = (deep.base.evidence.sample ?? '').match(/\d+\s+(.+)$/)?.[1]?.trim() ?? '';
     const said = [String(sampleN), noun].filter(Boolean).join(' ');
-    const floor = Math.ceil(need);
-    rows.push({ k: 'Sample', have: sampleN, need, text: role === 'player' ? said : sampleN >= floor ? `${said}, past the ${floor} it needs` : `${sampleN} of the ${floor} ${noun || 'it counts'} it needs`.replace(' it counts it needs',' it needs') });
+    rows.push({ k: 'Sample', have: sampleN, need, text: role === 'player' ? said : sureSentence(said, confidenceTier(num(ev.confidence))) });
   }
   // 03 §9: a real measure only when the engine says it measured it, and said as a share of its own window.
   if (factors?.factors_measured === true && factors.recency != null) rows.push({ k: 'Recent', have: factors.recency, need: 1, text: factors.recency >= 0.5 ? 'Most rounds in the last 45 days' : 'Few rounds in the last 45 days' });

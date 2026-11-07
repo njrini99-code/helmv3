@@ -22,13 +22,16 @@ import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from '../writes';
 import { DoCard, MovedCard, ReadHeadline, RoundsCard, SureCard, WhereCard, WhyCard } from './cards';
 import { ReadsRail } from './ReadsRail';
 
-/** Card-shaped placeholders in the final order and height. */
+/**
+ * Card-shaped placeholders in the final order and height, in the page's own columns (rail, main, evidence), under the same classes so
+ * the same rule places both. A route skeleton by its mark (RouteFrame): the page crossfades in over it on the quick beat (READ-S4).
+ */
 export function ReadSkeleton() {
   const phone = useChPhone();
   const blocks = [360, 250, 270, 240];
   const col = blocks.map((h, i) => <Skeleton key={i} height={h} radius={16} />);
   return (
-    <main className={'ch-hr ' + (phone ? 'is-phone' : 'is-desk')} aria-busy="true">
+    <main className={'ch-hr ' + (phone ? 'is-phone' : 'is-desk')} aria-busy="true" aria-label="Loading this read" data-ch-arrive="crossfade">
       {phone ? (
         <div className="sheet" aria-hidden="true">
           {col}
@@ -37,7 +40,7 @@ export function ReadSkeleton() {
         <div className="ch-hr-desk" aria-hidden="true">
           <Skeleton height={420} radius={16} />
           <div className="ch-hr-col">{col.slice(0, 2)}</div>
-          <div className="ch-hr-col">{col.slice(2)}</div>
+          <div className="ch-hr-col is-evidence">{col.slice(2)}</div>
         </div>
       )}
     </main>
@@ -121,7 +124,7 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
     const why = <WhyCard d={read} voice={voice} pictures={pictures} />;
     const sure = <SureCard d={read} voice={voice} pictures={pictures} />;
     const moved = <MovedCard d={read} failed={data.failed.themes} pictures={pictures} />;
-    const rounds = <RoundsCard d={read} failed={data.failed.rounds} />;
+    const rounds = <RoundsCard d={read} failed={data.failed.rounds} voice={voice} />;
     const askHref = askAboutReadHref({ insightId: read.insight.id, title: read.insight.title, first: coach ? first : undefined }, askOn);
     const todo = <DoCard d={read} voice={voice} fa={fa} missing={data.missing} messageHref={messageHref} askHref={askHref} practiceHref={null} />;
     body = phone ? (

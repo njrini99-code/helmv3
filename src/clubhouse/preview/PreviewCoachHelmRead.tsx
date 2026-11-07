@@ -13,7 +13,10 @@ const wait = <T,>(v: T) => new Promise<T>((r) => setTimeout(() => r(v), 400));
 export function PreviewCoachHelmRead({ state, viewer, q, screen }: { state?: string; viewer?: string; q?: string; screen?: string }) {
   const role = viewer === 'player' ? 'player' : 'coach';
   const built = previewReadView(q, role, state === 'gone', state);
-  const view = state === 'stress' ? rewriteDeep(built, manyHoles) : built;
+  const stressed = state === 'stress' ? rewriteDeep(built, manyHoles) : built;
+  // READ-S2's two states of the rounds card: a failed read, and a read with no rounds to list.
+  const view: typeof built =
+    state === 'rounds-failed' ? { ...stressed, failed: { ...stressed.failed, rounds: true } } : state === 'no-rounds' && stressed.read ? { ...stressed, read: { ...stressed.read, rounds: { total: 0, list: [] } } } : stressed;
   const voice: ChViewVoice = role === 'coach' ? { role: 'coach', playerId: view.head.playerId ?? '', name: view.head.name, first: view.head.first, line: '' } : { role: 'player' };
   if (state === 'loading') return <ReadSkeleton />;
   if (screen === 'board' && view.read)

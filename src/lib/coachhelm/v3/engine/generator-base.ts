@@ -37,6 +37,7 @@ import type { CounterfactualProjection } from '@/lib/coachhelm/v3/counterfactual
 import { isFloorExemptMetric } from '@/lib/coachhelm/v3/ranking/score';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import { calcConfidence, type InsightConfidenceFactors } from '@/lib/coachhelm/v2/insights/types';
+import { buildConfidenceReason as sharedConfidenceReason } from '@/lib/coachhelm/shared/confidence-reason';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { coachCopyIssues } from '@/lib/coachhelm/v3/engine/coach-voice';
 import { isCoachHelmFlagEnabled } from '@/lib/coachhelm/canary';
@@ -255,27 +256,13 @@ export function enforcePriorityConfidenceGate(
 }
 
 /**
- * P0-05: plain-language confidence reason from the confidence factors. Lets a
- * downstream surface explain WHY a number is trusted (or not) without re-running
- * the blend. Pure + exported.
+ * P0-05: plain-language confidence reason. READ-S1: it reaches coaches, so it says the sample and the read's tier, never the
+ * blend's factors (one implementation, shared/confidence-reason.ts). Pure + exported.
  */
 export function buildConfidenceReason(
-  evidence: Pick<InsightEvidence, 'sample_n' | 'confidence_factors'>,
+  evidence: Pick<InsightEvidence, 'sample_n' | 'confidence_factors'> & { confidence?: number | null },
 ): string {
-  const f = evidence.confidence_factors;
-  const parts: string[] = [`${evidence.sample_n} observations`];
-  if (f.factors_measured === true) {
-    parts.push(`recency measured ${f.recency.toFixed(2)}`);
-    parts.push(`variance measured ${f.variance.toFixed(2)}`);
-  } else if (f.factors_measured === false) {
-    parts.push('recency/variance not measured (sample-adequacy only)');
-  }
-  parts.push(
-    f.sample_adequacy >= 1
-      ? 'sample adequate'
-      : `sample ${(f.sample_adequacy * 100).toFixed(0)}% of target`,
-  );
-  return parts.join('; ');
+  return sharedConfidenceReason(evidence);
 }
 
 /**

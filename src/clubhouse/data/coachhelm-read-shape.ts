@@ -2,6 +2,7 @@ import { splitSentences } from '@/lib/utils/sentences';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import { CAUSAL } from '@/lib/coachhelm/reads/player-cause';
+import { plainConfidenceReason } from '@/lib/coachhelm/shared/confidence-reason';
 import { teamPoolLine } from '@/lib/coachhelm/reads/team-pool-line';
 import type { ChInsight } from './coachhelm-shape';
 import type { ChViewer } from './coachhelm-voice';
@@ -180,10 +181,9 @@ export function causeShown(level: 'observed' | 'hypothesis', role: ChViewer['rol
   return level === 'observed' || role === 'coach';
 }
 
-/** The generators' stock confidence reason ("sample adequate", generator-base.ts buildConfidenceReason) says nothing worth a line. */
+/** The generators' stored bookkeeping ("sample adequate", "recency/variance not measured") says nothing a reader can use (READ-S1). */
 export function meaningfulReason(reason: string | null | undefined): string | null {
-  const r = reason?.trim() ?? '';
-  return r && !/^sample adequate\.?$/i.test(r) ? r : null;
+  return plainConfidenceReason(reason);
 }
 
 function whyOf(d: ChReadInputs['diagnosis'], role: ChViewer['role'], say: (t: string) => string): ChReadWhy {

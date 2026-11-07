@@ -226,6 +226,68 @@ describe('CH-1619 a page fades in over its route skeleton', () => {
     expect(animate).toHaveBeenCalledTimes(1);
   });
 
+  it('READ-S4 a skeleton that asks for it crossfades with the page on the quick beat, in opacity alone', async () => {
+    const { animate } = fadeSpy();
+    let now = 1000;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
+    const asking = (
+      <main key="skeleton" aria-busy="true" aria-label="Loading this read" data-ch-arrive="crossfade">
+        <span className="ch-skel" />
+      </main>
+    );
+    const view = render(
+      <RouteFrame routeKey="home">
+        <main>Home</main>
+      </RouteFrame>,
+    );
+    view.rerender(<RouteFrame routeKey="read">{asking}</RouteFrame>);
+    now += 800;
+    view.rerender(
+      <RouteFrame routeKey="read">
+        <main key="page">Read</main>
+      </RouteFrame>,
+    );
+    await flush();
+    const easing = 'cubic-bezier(0.22, 1, 0.36, 1)';
+    expect(animate.mock.calls).toEqual([
+      [[{ opacity: 0 }, { opacity: 1 }], { duration: 180, easing }],
+      [[{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing, fill: 'forwards' }],
+    ]);
+    // The copy going out is nothing but pixels: off the skeleton's mark, not read, not hit, and gone when it has faded.
+    const ghost = view.container.querySelector('main[aria-hidden="true"]') as HTMLElement;
+    expect(ghost.hasAttribute('aria-busy')).toBe(false);
+    expect(ghost.getAttribute('aria-label')).toBeNull();
+    expect(ghost.style.pointerEvents).toBe('none');
+    expect(ghost.style.position).toBe('absolute');
+    (animate.mock.results[1]!.value as Animation).onfinish?.(new Event('finish') as AnimationPlaybackEvent);
+    expect(view.container.querySelector('main[aria-hidden="true"]')).toBeNull();
+  });
+
+  it('READ-S4 a page that lands while the skeleton is still fading in has no copy to fade out', async () => {
+    const { animate } = fadeSpy();
+    let now = 1000;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
+    const view = render(
+      <RouteFrame routeKey="home">
+        <main>Home</main>
+      </RouteFrame>,
+    );
+    view.rerender(
+      <RouteFrame routeKey="read">
+        <main key="skeleton" aria-busy="true" aria-label="Loading this read" data-ch-arrive="crossfade" />
+      </RouteFrame>,
+    );
+    now += 500;
+    view.rerender(
+      <RouteFrame routeKey="read">
+        <main key="page">Read</main>
+      </RouteFrame>,
+    );
+    await flush();
+    expect(animate).toHaveBeenCalledTimes(1);
+    expect(view.container.querySelector('main[aria-hidden="true"]')).toBeNull();
+  });
+
   it('not at all with reduced motion or Animations off', async () => {
     prefs.showAnimations = false;
     const { animate } = fadeSpy();
