@@ -236,7 +236,8 @@ export async function loadPlayerProfile(input: {
 }): Promise<ChPlayerProfile | null> {
   const f = input.filter ?? filterFor(input.window);
   // With the redesign on, the figures leave practice rounds out unless the filter asks for a type or picks rounds by hand (data/season.ts).
-  const counted = (rounds: ChRound[]) => (practiceCut(f) ? rounds.filter(countsForScoring) : rounds);
+  // All time (span.ts) is Fairway's basis: practice in, and no round posted as a total only (Fairway's isCountableRound reads none).
+  const counted = (rounds: ChRound[]) => (practiceCut(f) ? rounds.filter(countsForScoring) : f.span === 'all' ? holeRounds(rounds) : rounds);
   const supabase = await createClient();
   const now = new Date();
   const coach = input.viewer === 'coach';
@@ -392,7 +393,9 @@ export async function loadPlayerProfile(input: {
   const mine = counted(allMine);
   const winRounds = roundsInFilter(mine, f, start);
   // A custom range, and Last 10, can read rounds from before the season: the season's own figures count this season only.
-  const season = summarizePlayer(seasonOnly(mine, start));
+  // The "This season" block and the Next/Previous order stay the season's own on All time (practice out): only the window's figures change basis.
+  const seasonBasis = (rounds: ChRound[]) => (f.span === 'all' ? rounds.filter(countsForScoring) : counted(rounds));
+  const season = summarizePlayer(seasonOnly(seasonBasis(allMine), start));
   const win = summarizeWindow(winRounds);
   // Q-123: a round posted as a total only is a score and nothing else. Every hole-level figure reads the window's rounds with their holes.
   const holeWin = holeRounds(winRounds);
@@ -558,7 +561,7 @@ export async function loadPlayerProfile(input: {
   let nav: ChPlayerProfile['nav'] = null;
   if (input.viewer === 'coach') {
     const order = teamIds
-      .map((id) => ({ id, avg: summarizePlayer(seasonOnly(counted(byPlayer.get(id) ?? []), start)).avg }))
+      .map((id) => ({ id, avg: summarizePlayer(seasonOnly(seasonBasis(byPlayer.get(id) ?? []), start)).avg }))
       // The same order whichever player is open: ties (and every player with no average yet) break on the id, so Next
       // walks the whole team instead of bouncing between the viewed player and a tie (audit 2026-10-31).
       .sort((a, b) => (a.avg ?? 999) - (b.avg ?? 999) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
