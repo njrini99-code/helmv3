@@ -1,13 +1,14 @@
 'use client';
 
 import { Button } from '../../ui/Button';
+import { Badge } from '../../ui/Badge';
 import { pluralWord } from '../../lib/plural';
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { haptic } from '../../lib/haptics';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { Avatar } from '../../ui/Avatar';
 import { land, landed, taskIn, toldIn } from './task-motion';
-import type { TaskVisual } from '@/lib/coachhelm/v3/chat/action-types';
 import type { AskProposalView } from '../../data/coachhelm-chat-thread';
 import { EventVisual, MessageVisual, QualifierVisual } from './visuals/visuals';
 import { useQcSeam } from './qc-seam';
@@ -24,7 +25,7 @@ function useTyped(text: string, perSecond: number, on: boolean): string {
   return text.slice(0, n);
 }
 
-const WORDS: Record<TaskVisual['kind'], { icon: string; sub: string; chip: string; busy: string; done: string; failTitle: string }> = {
+const WORDS: Record<'cal' | 'msg' | 'qual', { icon: string; sub: string; chip: string; busy: string; done: string; failTitle: string }> = {
   cal: { icon: 'M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z', sub: 'Team calendar', chip: 'Added', busy: 'Adding…', done: 'Added to calendar', failTitle: 'Couldn’t add the practice' },
   msg: { icon: 'M21 12a8 8 0 0 1-11.8 7L4 20l1-5A8 8 0 1 1 21 12z', sub: 'Messages', chip: 'Sent', busy: 'Sending…', done: 'Sent', failTitle: 'Couldn’t send that' },
   qual: { icon: 'M6 21V4m0 0h11l-2 4 2 4H6', sub: 'Qualifiers', chip: 'Set', busy: 'Setting…', done: 'Qualifier set', failTitle: 'Couldn’t set the qualifier' },
@@ -35,14 +36,14 @@ const svg = (d: string) => (
   </svg>
 );
 
-type Phase = { k: 'draft' } | { k: 'busy' } | { k: 'held'; until: string } | { k: 'done'; line: string; told: string | null; href: string | null } | { k: 'undone' } | { k: 'failed'; reason: string } | { k: 'cancelled' };
+type Phase = { k: 'draft' } | { k: 'busy' } | { k: 'held'; until: string } | { k: 'done'; line: string; told: string | null; href: string | null; partial: string | null } | { k: 'undone' } | { k: 'failed'; reason: string } | { k: 'cancelled' };
 
 function phaseOf(view: AskProposalView): Phase {
   const r = view.receipt;
   if (view.status === 'cancelled' || view.status === 'abandoned') return { k: 'cancelled' };
   if (r?.status === 'held' && r.held_until) return { k: 'held', until: r.held_until };
   if (r?.status === 'failed') return { k: 'failed', reason: r.error ?? r.summary };
-  if (r) return { k: 'done', line: r.summary, told: toldLine(r.notifications, view.proposal.visual?.kind), href: r.created[0]?.href ?? null };
+  if (r) return { k: 'done', line: r.summary, told: toldLine(r.notifications, view.proposal.visual?.kind), href: r.created[0]?.href ?? null, partial: r.status === 'partial' ? r.partial_failures.join(' ') || 'Part of this didn’t go through.' : null };
   return view.status === 'confirmed' ? { k: 'busy' } : { k: 'draft' };
 }
 /** The drawn lines (S-RCPT.told), from the receipt's own counts. Who was told and who has seen it stay off this row: a coach can't read another user's notification rows (Can't match as drawn). */
@@ -53,14 +54,20 @@ const toldLine = (n: ReadonlyArray<{ channel: string; recipients: number; status
   if (!most) return null;
   const who = `${most} ${pluralWord(most, 'player', 'players')}`;
   if (kind === 'msg') return `Delivered to ${most}.`;
-  if (kind === 'qual') return `${who} got a push and an email.`;
+  // What was actually sent, from the receipt: a player with email off got a push only.
+  if (kind === 'qual') {
+    const ways = sent.map((x) => (x.channel === 'email' ? 'an email' : x.channel === 'push' ? 'a push' : null)).filter(Boolean);
+    return ways.length ? `${who} got ${ways.join(' and ')}.` : `${who} told.`;
+  }
   if (kind === 'cal') return `${who} got it on their calendar`;
   return `${who} told.`;
 };
 
 /** S-TASK: the card, its visual, confirm, busy, receipt with the ring, told, undone, failed, cancelled. Every receipt value is the server's. */
 export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { view: AskProposalView; online: boolean; onSend: (t: string) => void; onApprove: (id: string) => void; onDeny: (id: string) => void; onOpen: (href: string) => void }) {
-  const visual = view.proposal.visual ?? null;
+  // Quick chat draws its three (S-TASK); any other flow's card is generic here, and its picture is Ask's.
+  const drawn = view.proposal.visual;
+  const visual = drawn?.kind === 'cal' || drawn?.kind === 'msg' || drawn?.kind === 'qual' ? drawn : null;
   const w = visual ? WORDS[visual.kind] : { icon: 'M5 12l5 5 9-11', sub: 'CoachHelm', chip: 'Done', busy: 'Working…', done: 'Done', failTitle: 'That didn’t go through' };
   const seam = useQcSeam();
   const [phase, setPhase] = useState<Phase>(() => (seam?.taskPhase === 'undone' ? { k: 'undone' } : phaseOf(view)));
@@ -143,20 +150,22 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
     onOpen(href);
   };
 
+  const toldNames = view.proposal.affects.filter((a) => a.kind === 'player').map((a) => a.label);
   const shown: Phase = landing ? { k: 'busy' } : phase;
   const title = visual?.kind === 'cal' || visual?.kind === 'qual' ? visual.title : visual?.kind === 'msg' ? visual.thread : view.proposal.summary;
   const typed = useTyped(title, 38, typing);
   const chip = shown.k === 'draft' || shown.k === 'busy' ? 'Draft' : phase.k === 'undone' ? 'Undone' : phase.k === 'failed' ? 'Not saved' : phase.k === 'cancelled' ? 'Cancelled' : w.chip;
-  const chipClass = 'chip' + (shown.k === 'held' || shown.k === 'done' ? ' ok' : shown.k === 'failed' ? ' fail' : '');
+  const chipTone = shown.k === 'held' || shown.k === 'done' ? 'positive' : shown.k === 'failed' ? 'warning' : 'neutral';
   return (
     <article ref={card} className={'task' + (shown.k === 'held' ? ' won' : '') + (phase.k === 'cancelled' ? ' cancelled' : '')} data-kind={visual?.kind ?? 'generic'}>
       <div className="task__h">
         <span className="task__ic">{svg(w.icon)}</span>
         <span className="task__ttl">
-          <b aria-label={title}>{typed}</b>
+          <b aria-hidden="true">{typed}</b>
+          <span className="ch-sr-only">{title}</span>
           <span>{w.sub}</span>
         </span>
-        <span className={chipClass}>{chip}</span>
+        <Badge tone={chipTone}>{chip}</Badge>
       </div>
       <div className="task__b">
         {visual?.kind === 'cal' && <EventVisual visual={visual} landed={shown.k === 'held' || shown.k === 'done'} removed={phase.k === 'undone'} />}
@@ -229,10 +238,10 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
         {shown.k === 'done' && (
           <>
             <div className="rcpt">
-              <span className="rcpt__g">{svg('M5 13l4 4L19 7')}</span>
+              <span className={'rcpt__g' + ((phase as { partial?: string | null }).partial ? ' is-partial' : '')}>{svg((phase as { partial?: string | null }).partial ? 'M12 8v5M12 17h.01' : 'M5 13l4 4L19 7')}</span>
               <span className="rcpt__t">
-                <b>{w.done}</b>
-                <span>{(phase as { line: string }).line}</span>
+                <b>{(phase as { partial?: string | null }).partial ? 'Part of this went through' : w.done}</b>
+                <span>{(phase as { partial?: string | null }).partial ?? (phase as { line: string }).line}</span>
               </span>
               <span className="rcpt__a">
                 {(phase as { href: string | null }).href && (
@@ -244,6 +253,16 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
             </div>
             {(phase as { told: string | null }).told && (
               <div className="told">
+                {toldNames.length > 0 && (
+                  <span className="coins" aria-hidden="true">
+                    {toldNames.slice(0, 4).map((name) => (
+                      <span key={name} className="coin">
+                        <Avatar name={name} size="xs" />
+                      </span>
+                    ))}
+                    {toldNames.length > 4 && <span className="coin more ch-num">+{toldNames.length - 4}</span>}
+                  </span>
+                )}
                 <span>{(phase as { told: string | null }).told}</span>
               </div>
             )}
@@ -274,6 +293,10 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
               <b>{w.failTitle}</b>
               <span>{(phase as { reason: string }).reason}</span>
             </span>
+            {/* QC-3: back to the draft, nothing lost: the same Confirm sends it again. */}
+            <Button variant="secondary" size="sm" onClick={() => setPhase({ k: 'draft' })}>
+              Try again
+            </Button>
           </div>
         )}
       </div>

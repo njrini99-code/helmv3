@@ -6,7 +6,7 @@ import { haptic } from '../../lib/haptics';
 import { Icon } from '../../ui/Icon';
 import type { ChConv } from './model';
 import type { ChMessagesApi } from './MessagesView';
-import { PollSheet } from './polls';
+import { PollSheet, usePollSeed } from './polls';
 
 /**
  * The composer's + (S-MSG.attach): it turns to × and lifts a glass menu of exactly Photos, File and Poll (Nick, 31 Oct: no Camera, no
@@ -16,6 +16,7 @@ export function ComposerPlusV2({ api, conv, disabled, onPick }: { api: ChMessage
   const [open, setOpen] = useState(false);
   const [closing, setClosing] = useState(false);
   const [polling, setPolling] = useState(false);
+  const seedKey = usePollSeed(conv.id, () => setPolling(true));
   const photos = useRef<HTMLInputElement | null>(null);
   const files = useRef<HTMLInputElement | null>(null);
   const root = useRef<HTMLDivElement | null>(null);
@@ -26,7 +27,15 @@ export function ComposerPlusV2({ api, conv, disabled, onPick }: { api: ChMessage
   useEffect(() => {
     if (!open) return;
     const onDown = (e: PointerEvent) => {
-      if (!root.current?.contains(e.target as Node)) setClosing(true);
+      if (root.current?.contains(e.target as Node)) return;
+      // The tap that closes the menu does only that: it doesn't also open or like what's under it.
+      setClosing(true);
+      const swallow = (click: Event) => {
+        click.stopPropagation();
+        click.preventDefault();
+      };
+      document.addEventListener('click', swallow, { capture: true, once: true });
+      window.setTimeout(() => document.removeEventListener('click', swallow, { capture: true }), 400);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setClosing(true);
@@ -74,20 +83,20 @@ export function ComposerPlusV2({ api, conv, disabled, onPick }: { api: ChMessage
             Photos
           </button>
           <button type="button" role="menuitem" onClick={() => { files.current?.click(); close(); }}>
-            <span className="ch-msv-attach__ic"><Icon icon={FileText} size={17} /></span>
+            <span className="ch-msv-attach__ic is-file"><Icon icon={FileText} size={17} /></span>
             File
           </button>
           {canPoll && (
             <button type="button" role="menuitem" onClick={() => { setPolling(true); close(); }}>
-              <span className="ch-msv-attach__ic"><Icon icon={ListChecks} size={17} /></span>
+              <span className="ch-msv-attach__ic is-poll"><Icon icon={ListChecks} size={17} /></span>
               Poll
             </button>
           )}
         </div>
       )}
-      <input ref={photos} type="file" accept="image/*" multiple hidden disabled={disabled} onChange={(e) => take(e.target)} />
-      <input ref={files} type="file" multiple hidden disabled={disabled} onChange={(e) => take(e.target)} />
-      {canPoll && <PollSheet key={conv.id} api={api} conv={conv} open={polling} onClose={() => setPolling(false)} />}
+      <input ref={photos} type="file" accept="image/*,video/*" multiple hidden disabled={disabled} onChange={(e) => take(e.target)} />
+      <input ref={files} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,application/*" multiple hidden disabled={disabled} onChange={(e) => take(e.target)} />
+      {canPoll && <PollSheet key={seedKey} api={api} conv={conv} open={polling} onClose={() => setPolling(false)} />}
     </div>
   );
 }

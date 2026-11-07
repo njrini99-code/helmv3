@@ -113,7 +113,7 @@ export function PlanTask({ plan, online, onOpen }: { plan: PlanPartData; online:
         <div className="pbar" aria-hidden="true">
           {blocks.map((b, i) => (
             <span key={b.id} className={`pseg ${SEG[i % 3]}`} style={{ flex: b.len }}>
-              {b.title}
+              <span>{b.title}</span>
             </span>
           ))}
         </div>

@@ -119,3 +119,20 @@
     min-height: 44px;
   }
 }
+
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  /* The row's Open reaches 44 (MOB-TEAM-9). */
+  .ch-hmb-row__a {
+    position: relative;
+  }
+  .ch-hmb-row__a::after {
+    content: '';
+    position: absolute;
+    inset: -7px -4px;
+  }
+  .ch-hmb a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}

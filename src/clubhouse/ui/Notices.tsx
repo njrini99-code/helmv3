@@ -22,6 +22,7 @@ export function InlineNotice({
   retrying = false,
   covered = false,
   code,
+  retryHook,
 }: {
   title: string;
   body?: ReactNode;
@@ -35,6 +36,8 @@ export function InlineNotice({
   covered?: boolean;
   /** Catalog number (docs/clubhouse/catalog). */
   code?: string;
+  /** A `data-ch` on Try again, for a capture tool or a test to find. */
+  retryHook?: string;
 }) {
   // Try again while offline would fail the same way: say so instead (CH-1905).
   const { retry, offline } = useOfflineRetry(onRetry, retrying);
@@ -58,7 +61,7 @@ export function InlineNotice({
         </div>
         {!covered && onRetry && (
           <div className="ch-notice__act">
-            <Button size="sm" variant="secondary" leftIcon={RotateCw} onClick={retry} busy={retrying}>
+            <Button size="sm" variant="secondary" leftIcon={RotateCw} onClick={retry} busy={retrying} data={retryHook ? { 'data-ch': retryHook } : undefined}>
               {retrying ? 'Trying again…' : 'Try again'}
             </Button>
           </div>

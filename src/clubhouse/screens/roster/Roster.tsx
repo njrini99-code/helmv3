@@ -40,7 +40,7 @@ import { useJoinRequests } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
 import { availabilityCopy, RosterPeek, type AvailabilityControl } from './RosterPeek';
 import { RosterPhone } from './RosterPhone';
-import { FormStubs, RequestsRow, RequestsSheetCrh, RosterPhoneCrh } from './RosterPhoneCrh';
+import { RequestsRow, RequestsSheetCrh, RosterPhoneCrh } from './RosterPhoneCrh';
 import { RosterLeaders } from './RosterLeaders';
 import { RosterTeamCard } from './RosterTeamCard';
 import { useDeepLinkSheet } from '../../shell/use-deep-link-sheet';
@@ -691,6 +691,33 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
           <div className="ch-rs-bar">
             <SearchField className="ch-rs-search" value={q} onChange={setQ} placeholder="Search players by name" label="Search players" />
             <div className="ch-rs-bar__r">
+              {crh ? (
+                // One control for all three (QA-13): three styles side by side read as three kinds of thing.
+                <>
+                  <Segmented<Show>
+                    size="sm"
+                    label="Status"
+                    value={show}
+                    onChange={setShow}
+                    options={[
+                      { value: 'active', label: `Active · ${active.length}` },
+                      { value: 'inactive', label: `Inactive · ${inactiveCount}` },
+                      { value: 'all', label: 'All' },
+                    ]}
+                  />
+                  <Segmented<'faces' | 'list'>
+                    size="sm"
+                    label="Layout"
+                    value={view}
+                    onChange={changeView}
+                    options={[
+                      { value: 'faces', label: <Icon icon={LayoutGrid} size={15} />, aria: 'Team view' },
+                      { value: 'list', label: <Icon icon={List} size={15} />, aria: 'List view' },
+                    ]}
+                  />
+                </>
+              ) : (
+                <>
               <PillGroup<Show>
                 label="Status"
                 value={show}
@@ -725,6 +752,8 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
                   </Tooltip>
                 ))}
               </div>
+                </>
+              )}
               <Segmented<Sort>
                 size="sm"
                 label="Sort players"
@@ -747,6 +776,7 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
               <Swap swapKey={viewTurn}>
                 <RosterList
                   rows={rows}
+                  oneStatus={crh && show !== 'all' && !rows.some((p) => p.status === 'active' && p.availability === 'injured')}
                   standings={standings}
                   view={view}
                   sel={sel}
@@ -795,6 +825,7 @@ const profileHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${
  * roster.list boundary contains everything it computes.
  */
 function RosterList({
+  oneStatus = false,
   rows,
   standings,
   view,
@@ -816,6 +847,8 @@ function RosterList({
   onSelect,
   selected = null,
 }: {
+  /** Filtered to one status with no exception to show: "Active" on every row says nothing, so the column goes (QA-13). */
+  oneStatus?: boolean;
   /** The lane's flag: year coins, the last five rounds as bars, an amber Injured chip and a row that selects instead of leaving. */
   crh?: boolean;
   clock?: RosterClock;
@@ -912,7 +945,7 @@ function RosterList({
           {/* B11: Up and Down walk the table's players (their name buttons), Home and End go to the ends, and the table is
               one Tab stop. Inside the roster.list boundary, so it runs once that has hydrated. */}
           <RovingRows selector=".ch-rs-list .ch-rs-who" within=".ch-rs-body" />
-          <SideScroll className="ch-rs-list ch-sheet" role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
+          <SideScroll className={'ch-rs-list ch-sheet' + (oneStatus ? ' is-one-status' : '')} role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
             <div className={'ch-rs-row ch-rs-row--head' + (crh ? '' : ' ch-well-soft')} role="row">
               <SortHeader k="name" sort={sortBy} onSort={onSort}>
                 Player
@@ -978,7 +1011,15 @@ function RosterList({
                 </span>
                 <span role="cell">
                   {crh ? (
-                    p.trend.length >= 3 ? <FormBars data={p.trend} mean={mean} /> : p.trend.length > 0 ? <FormStubs /> : <span className="ch-num">—</span>
+                    p.trend.length >= 3 ? <FormBars data={p.trend} mean={mean} /> : (
+                      // Grey bars read as loading (QA-13): no form yet is a dash, and it says why.
+                      <Tooltip>
+                        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- focusable so a keyboard can open the tooltip that says why */}
+                        <span className="ch-num" role="img" tabIndex={0} aria-label="Needs 3 rounds">
+                          —
+                        </span>
+                      </Tooltip>
+                    )
                   ) : (
                     <FormLine data={p.trend} width={120} height={30} earlyBelow={3} label={`${p.name} form`} />
                   )}

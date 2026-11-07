@@ -46,8 +46,12 @@ export function EventVisual({ visual, landed, removed }: { visual: Cal; landed: 
   const start = visual.start ? hours(visual.start) : null;
   const end = visual.end ? hours(visual.end) : null;
   const first = start == null ? 8 : Math.max(0, Math.floor(start) - 1);
-  const lines = Array.from({ length: 5 }, (_, i) => first + i);
+  // The rail is as tall as its event, up to 220, with the new block in view (QC-5).
+  const span = Math.max(4, Math.ceil((end ?? first + 4) - first));
+  const shownHours = Math.min(span, 6);
+  const lines = Array.from({ length: shownHours + 1 }, (_, i) => first + i);
   const y = (h: number) => 12 + (h - first) * 32;
+  const railH = Math.min(220, 24 + shownHours * 32);
   return (
     <>
       <div className="cal-wk">
@@ -60,7 +64,7 @@ export function EventVisual({ visual, landed, removed }: { visual: Cal; landed: 
           </i>
         ))}
       </div>
-      <div className="rail">
+      <div className="rail" style={{ ['--ch-qc-rail-h' as string]: `${railH}px` }}>
         {lines.map((h, i) => (
           <div className="hr" key={h} style={{ top: 12 + i * 32 }}>
             <span>{clock(h)}</span>
@@ -71,8 +75,8 @@ export function EventVisual({ visual, landed, removed }: { visual: Cal; landed: 
           const tz = week?.timeZone ?? 'UTC';
           const at = clockIn(it.start, tz);
           const h = at.hours + at.minutes / 60;
-          return h >= first && h <= first + 4 ? (
-            <div className="blk old" key={it.start + it.title} style={{ top: y(h), height: 24, padding: '4px 10px' }}>
+          return h >= first && h <= first + shownHours ? (
+            <div className="blk old" key={it.start + it.title} style={{ top: y(h), padding: '4px 10px' }}>
               <b>
                 {it.title}
                 {it.end && ` · until ${untilClock(it.end, tz)}`}
@@ -81,7 +85,7 @@ export function EventVisual({ visual, landed, removed }: { visual: Cal; landed: 
           ) : null;
         })}
         {start != null && end != null && !removed && (
-          <div className="blk new" style={{ top: y(start), height: Math.max(24, (end - start) * 32 - 2) }}>
+          <div className="blk new" style={{ top: y(start), height: Math.min(railH - y(start) - 4, Math.max(24, (end - start) * 32 - 2)) }}>
             <b>{visual.title}</b>
             {visual.where && <span>{visual.where}</span>}
           </div>
@@ -167,7 +171,8 @@ export function QualifierVisual({ visual, landed = false }: { visual: Qual; land
         {Array.from({ length: visual.rounds }, (_, i) => (
           <div className="qr" key={i}>
             <small>Round {i + 1}</small>
-            <b>{dayLong(nextDay(visual.start, i), { weekday: 'short', day: 'numeric' })}</b>
+            {/* Two reads: WebKit and Node order a joined weekday and day differently, which fails hydration. */}
+            <b>{dayLong(nextDay(visual.start, i), { weekday: 'short' })} {dayLong(nextDay(visual.start, i), { day: 'numeric' })}</b>
           </div>
         ))}
       </div>

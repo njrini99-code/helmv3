@@ -1,5 +1,6 @@
 'use client';
 
+import { formatWith } from '../../../lib/dates';
 import { AllowanceMeter } from './parts/Allowance';
 import { ArrowRight, CalendarPlus, ChartLine, Target, Trophy, Users, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -95,15 +96,19 @@ function Pills({ suggestions, onAsk }: { suggestions: ChAskSuggestion[]; onAsk: 
 const TAG: Record<ChAskSuggestion['id'], string> = { brief: 'Team', strokes: 'Strokes gained', trending: 'Season', week: 'Practice plan' };
 const DOT: Record<string, string> = { warn: 'is-warn', loss: 'is-warn', down: 'is-warn', gain: 'is-fine', up: 'is-fine' };
 const greeting = (hour: number) => (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening');
+/** The hour in the team's zone, so the server's render and the browser's say the same words. */
+export function zoneHour(iso: string, timezone: string): number {
+  return Number(formatWith(new Date(iso), { hour: 'numeric', hourCycle: 'h23', timeZone: timezone }));
+}
 
 /**
  * Ask v2's home (06 E-HOME): the greeting, what moved since Monday from the Board (each line asks about itself), and starter rows with their tag. A player reads their own focus and
  * the Ask this week word instead; the meter is the screen's. The team's or player's scope sits above it, in the screen's scope line.
  */
-export function AskHomeV2({ data, phone, heroComposer, onAsk, focus }: { data: ChAskData; phone: boolean; heroComposer: ReactNode; onAsk: (text: string) => void; focus?: ReadonlyArray<{ text: string; ask: string | null }> }) {
+export function AskHomeV2({ data, phone, heroComposer, onAsk, focus }: { data: ChAskData; phone: boolean; heroComposer: ReactNode; onAsk: (text: string) => void; focus?: ReadonlyArray<{ text: string; ask: string | null; trend?: 'up' | 'warn' }> }) {
   const player = data.role === 'player';
   const findings = data.pulse?.findings ?? [];
-  const hour = new Date(data.nowIso).getHours();
+  const hour = zoneHour(data.nowIso, data.timezone);
   return (
     <div className={'ch-ak-home' + (phone ? ' is-phone' : '')} data-ch="ask-home">
       <div className="hi">
@@ -117,7 +122,7 @@ export function AskHomeV2({ data, phone, heroComposer, onAsk, focus }: { data: C
               <b>Your focus</b>
               {focus.map((l) => (
                 <button type="button" className="rw" key={l.text} disabled={!l.ask} onClick={() => l.ask && onAsk(l.ask)}>
-                  <i className="is-warn" />
+                  <i className={l.trend ? DOT[l.trend] : undefined} />
                   <span>{l.text}</span>
                 </button>
               ))}

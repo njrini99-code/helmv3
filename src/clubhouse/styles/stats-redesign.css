@@ -40,7 +40,7 @@
 /* Sticky window switch: page colour behind it, no blur, no hairline. */
 .ch-shs .ch-shs-ctl {
   position: sticky;
-  top: var(--ch-phone-topbar-h, 0px);
+  top: calc(var(--ch-phone-topbar-h, 0px) + env(safe-area-inset-top));
   z-index: var(--ch-z-raised);
   padding: 2px var(--ch-page-x-phone) 8px;
   background: var(--ch-shs-s-bg);
@@ -64,6 +64,8 @@
   grid-template-columns: 1fr 1fr 1fr 1.3fr 1.6fr 1.3fr;
   overflow-x: auto;
   scrollbar-width: none;
+}
+.ch-shs-ctl .ch-seg[data-more] {
   -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent);
   mask-image: linear-gradient(90deg, #000 85%, transparent);
 }
@@ -125,7 +127,7 @@
 .ch-shs-sech {
   margin: 16px 2px 0;
   font: var(--ch-type-22-strong);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.02em;
   color: var(--ch-shs-s-ink);
 }
@@ -215,8 +217,6 @@
   grid-auto-columns: max-content;
   overflow-x: auto;
   scrollbar-width: none;
-  -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent);
-  mask-image: linear-gradient(90deg, #000 85%, transparent);
 }
 .ch-shs.is-big .ch-shs-ctl .ch-seg__b {
   padding: 0 12px;
@@ -302,7 +302,7 @@
 }
 .ch-shs-fig {
   font: var(--ch-type-figure-40-500);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.038em;
 
 }
@@ -388,6 +388,8 @@
   background: var(--ch-chart-loss-tint);
   color: var(--ch-chart-loss);
 }
+.ch-shs-feat .ch-shs-pill.is-gain { background: color-mix(in oklab, var(--ch-chart-gain) 12%, transparent); color: var(--ch-chart-gain); }
+.ch-shs-feat .ch-shs-pill.is-loss { background: color-mix(in oklab, var(--ch-chart-loss) 12%, transparent); color: var(--ch-chart-loss); }
 .ch-shs-pill.is-flat {
   background: var(--ch-shs-s-flat-tint);
   color: var(--ch-shs-s-ink-2);
@@ -515,7 +517,7 @@
   color: var(--ch-shs-s-ink-2); letter-spacing: var(--ch-track-15); }
 .ch-shs-gc .v {
   font: var(--ch-type-22-strong);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.02em;
 
 }
@@ -552,7 +554,7 @@
 }
 .ch-shs-bigv {
   font: var(--ch-type-34-strong);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.038em;
 
 }
@@ -1045,7 +1047,7 @@
 .ch-shs-d-hero__fig {
   display: block;
   font: var(--ch-type-figure-40-500);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.038em;
 
 }
@@ -1116,7 +1118,7 @@
 .ch-shs-m4 .v {
   margin-top: 4px;
   font: var(--ch-type-22-strong);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.02em;
 
 }
@@ -1128,7 +1130,7 @@
 /* The trend ribbon. */
 .ch-shs-rib {
   position: relative;
-  padding-right: 40px;
+  padding-right: calc(40 * var(--ch-type-k));
 }
 .ch-shs-rib__in {
   position: relative;
@@ -1175,7 +1177,7 @@
 }
 .ch-shs-rib .rref {
   position: absolute;
-  right: -42px;
+  right: calc(-42 * var(--ch-type-k));
   padding: 1px 2px;
   transform: translateY(-50%);
   background: var(--ch-shs-s-card);
@@ -1661,7 +1663,11 @@ li + li > .ch-shs-rrow::before {
   align-items: center;
   justify-content: center;
   font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 /* A figure drawn against its reference, under the hero's caption. */
@@ -1847,7 +1853,7 @@ p.ch-shs-mini-cap {
 .ch-shs-prow {
   position: relative;
   display: grid;
-  grid-template-columns: calc(20 * var(--ch-type-k)) calc(104 * var(--ch-type-k)) minmax(0, 1fr) calc(44 * var(--ch-type-k));
+  grid-template-columns: calc(20 * var(--ch-type-k)) minmax(0, 1.2fr) minmax(64px, 1fr) calc(44 * var(--ch-type-k));
   align-items: center;
   gap: 8px;
   min-height: 52px;
@@ -1883,30 +1889,6 @@ p.ch-shs-mini-cap {
   display: block;
 }
 
-/* Grow once (07 M-STATS-12 to 15): a card waits at zero until a quarter of it is in view. A card with no marker class is at rest, so no script draws it whole. */
-.ch-shs-card.is-waiting:not(.is-seen) [data-ch-grow] {
-  transform: scaleX(0);
-}
-.ch-shs-card.is-waiting:not(.is-seen) [data-ch-grow-y] {
-  transform: scaleY(0);
-}
-.ch-shs-card.is-waiting:not(.is-seen) .ch-shs-rg .rf {
-  stroke-dashoffset: var(--ch-ring-c) !important;
-}
-.ch-shs-card.is-waiting:not(.is-seen) :is(.ch-shs-tour, .ch-shs-rib .dot, .ch-shs-db .track) {
-  opacity: 0;
-}
-.ch-shs-card.is-waiting [data-ch-grow],
-.ch-shs-card.is-waiting [data-ch-grow-y] {
-  transition: transform var(--ch-dur-release) var(--ch-ease);
-}
-.ch-shs-card.is-waiting [data-ch-grow-y] {
-  transform-box: fill-box;
-  transform-origin: 50% 100%;
-}
-.ch-shs-card.is-waiting .ch-shs-rg .rf {
-  transition: stroke-dashoffset var(--ch-dur-release) var(--ch-ease);
-}
 .ch-shs-card.is-waiting :is(.ch-shs-tour, .ch-shs-rib .dot, .ch-shs-db .track) {
   transition: opacity var(--ch-dur-release) var(--ch-ease);
 }
@@ -1941,7 +1923,7 @@ p.ch-shs-mini-cap {
   right: 0;
   top: 0;
   height: 14px;
-  background: linear-gradient(rgb(0 0 0 / 0.1), transparent);
+  background: var(--ch-scroll-edge-down);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--ch-dur-quick) linear;
@@ -2033,7 +2015,7 @@ p.ch-shs-mini-cap {
 .ch-shs-hero-top > h1 {
   margin: 4px 0 0;
   font: var(--ch-type-22-strong);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.01em;
   color: var(--ch-on-green-ink);
 }
@@ -2131,7 +2113,7 @@ p.ch-shs-mini-cap {
 .ch-shs-leg__v {
   display: block;
   font: var(--ch-type-28-strong);
-  font-variation-settings: 'wdth' 96;
+  font-variation-settings: 'wdth' 92;
   letter-spacing: -0.03em;
 
 }
@@ -2301,3 +2283,18 @@ p.ch-shs-mini-cap {
   margin-inline-start: auto;
   color: var(--ch-green-600);
 }
+/* STATS-1: a coach's header on a player's Stats sits on the page edge. */
+.ch-shs .ch-spm-head { padding-inline: var(--ch-page-x-phone); }
+/* STATS-10: the glance tiles go two across before a label would overflow. */
+.ch-shs-card { container-type: inline-size; }
+@container (max-width: 360px) {
+  .ch-shs-glance { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ch-shs-glance > * { min-width: 0; overflow-wrap: anywhere; }
+}
+/* STATS-14: Left and Right read apart without colour. */
+.ch-shs-stack > * + * { box-shadow: inset 2px 0 0 var(--ch-card-bg); }
+
+/* A summary card's one key for VoiceOver and the keyboard: nothing to see until focused, and then the card's ring (STATS-8). */
+.ch-shs-sum { position: relative; }
+.ch-shs-sum__key { position: absolute; inset: 0; z-index: 0; padding: 0; border: 0; border-radius: inherit; background: none; pointer-events: none; }
+.ch-shs-sum__key:focus-visible { outline: 2px solid var(--ch-border-focus); outline-offset: 2px; }

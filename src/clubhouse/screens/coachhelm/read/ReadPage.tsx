@@ -1,21 +1,20 @@
 'use client';
 
 import { useRefresh } from '../../../lib/use-refresh';
-import { Ellipsis } from 'lucide-react';
+import { Ellipsis, Link as LinkIcon, MessageCircle, Sparkles, X } from 'lucide-react';
 import { askAboutReadHref } from '../chat/ask-links';
 import { Icon } from '../../../ui/Icon';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+
 import { readHref, type ChViewLoad, type ChViewVoice, coachBoardFor, PLAYER_HELM_HREF } from '../../../data/coachhelm-views-shape';
 import type { ChReadView } from '../../../data/coachhelm-read-view-shape';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
-import { PhoneIconAction } from '../../../ui/PhoneBar';
 import { usePageCrumbs } from '../../../shell/crumbs';
 import { rebuiltHref } from '../../../shell/nav';
 import { Button } from '../../../ui/Button';
-import { Modal } from '../../../ui/Modal';
+import { Menu } from '../../../ui/Menu';
+import { useToast } from '../../../ui/Toast';
 import { Skeleton } from '../../../ui/States';
 import { useFocusActions } from '../parts';
 import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from '../writes';
@@ -29,6 +28,7 @@ export function ReadSkeleton() {
   const col = blocks.map((h, i) => <Skeleton key={i} height={h} radius={16} />);
   return (
     <main className={'ch-hr ' + (phone ? 'is-phone' : 'is-desk')} aria-busy="true">
+      {phone && <PhoneTop back={{ label: 'CoachHelm', onBack: () => history.back() }} title="CoachHelm" />}
       {phone ? (
         <div className="sheet" aria-hidden="true">
           {col}
@@ -65,7 +65,7 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
   const backHref = coach ? coachBoardFor(voice.playerId) : PLAYER_HELM_HREF.board;
   const first = coach ? voice.first : (fallbackFirst ?? 'CoachHelm');
   const fa = useFocusActions(writes);
-  const [more, setMore] = useState(false);
+  const toast = useToast();
   const data = load.status === 'ready' ? load.data : null;
   usePageCrumbs(data ? (coach ? ['CoachHelm', voice.name, data.area] : ['CoachHelm', data.area]) : ['CoachHelm']);
   const read = data?.read ?? null;
@@ -75,11 +75,27 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
       Back to {coach ? first : 'CoachHelm'}
     </Button>
   );
+  // RC-1, RC-2: what this role can do with this read, and no sheet when that's nothing.
+  const moreAskHref = read ? askAboutReadHref({ insightId: read.insight.id, title: read.insight.title, first: coach ? first : undefined }, askOn) : null;
+  const dismissTarget = read?.insight && coach ? { playerId: voice.playerId, first, ins: read.insight } : null;
+  const moreItems = [
+    ...(dismissTarget ? [{ label: 'Dismiss this read', icon: X, danger: true, onSelect: () => void fa.dismiss.run(dismissTarget) }] : []),
+    ...(coach ? [{ label: `Message ${first}`, icon: MessageCircle, href: rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(voice.playerId)}`, 'coach') ?? undefined }] : []),
+    ...(moreAskHref ? [{ label: 'Ask CoachHelm about this', icon: Sparkles, href: moreAskHref }] : []),
+    {
+      label: 'Copy a link',
+      icon: LinkIcon,
+      onSelect: () => {
+        void navigator.clipboard?.writeText(window.location.href).then(() => toast({ title: 'Link copied' }));
+      },
+    },
+  ];
+  const moreMenu = (trigger: Parameters<typeof Menu>[0]['trigger']) => <Menu label="More for this read" align="end" items={moreItems} trigger={trigger} />;
   const bar = phone && (
     <PhoneTop
       back={{ label: coach ? first : 'CoachHelm', onBack: () => router.push(backHref) }}
       title={data?.area ?? 'CoachHelm'}
-      action={read ? <PhoneIconAction icon={Ellipsis} label="More" onClick={() => setMore(true)} /> : undefined}
+      action={read && moreItems.length ? moreMenu((p) => <button type="button" className="ch-hr-morekey" aria-label="More for this read" {...p}><Icon icon={Ellipsis} size={20} /></button>) : undefined}
     />
   );
   let body: React.ReactNode;
@@ -150,9 +166,7 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
                 Message {first}
               </Button>
             )}
-            <button type="button" className="ib" aria-label="More" onClick={() => setMore(true)}>
-              <Icon icon={Ellipsis} size={18} />
-            </button>
+            {moreItems.length > 0 && moreMenu((p) => <button type="button" className="ib" aria-label="More for this read" {...p}><Icon icon={Ellipsis} size={18} /></button>)}
           </div>
           {notice}
           {head}
@@ -168,8 +182,6 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
       </>
     );
   }
-  const insight = read?.insight ?? null;
-  const target = insight && coach ? { playerId: voice.playerId, first, ins: insight } : null;
   return (
     <main className={'ch-hr ' + (phone ? 'is-phone' : 'is-desk')} data-ch-screen="coachhelm-read" data-ch-hr-page="">
       {bar}
@@ -181,26 +193,6 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
           {body}
         </div>
       )}
-      <Modal open={more} onClose={() => setMore(false)} title="More for this read">
-        <div className="ch-hr-morelist">
-          {target && (
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setMore(false);
-                void fa.dismiss.run(target);
-              }}
-            >
-              Dismiss this read
-            </Button>
-          )}
-          {coach && (
-            <Link className="lk" href={rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(voice.playerId)}`, 'coach') ?? '#'}>
-              Message {first}
-            </Link>
-          )}
-        </div>
-      </Modal>
     </main>
   );
 }

@@ -147,6 +147,8 @@ export interface ChHubFile {
   date: string | null;
   /** Players can open it (`is_public`). A coach-only file is not offered in New announcement: the players it goes to couldn't open it (Q-83). */
   isPublic: boolean;
+  /** A practice plan's row (held 010400): opens the plan page, deletes the plan. Absent for a file. */
+  planId?: string | null;
 }
 
 export interface ChHubUpdate {
@@ -896,13 +898,13 @@ export function fileKind(fileType: string | null, fileUrl: string): string {
 }
 
 /** Folders in first-seen order ("Team" for none), files newest first. */
-export function folders(docs: Array<{ id: string; title: string; folder: string | null; file_type: string | null; file_url: string; file_size: number | null; updated_at: string | null; created_at: string | null; is_public?: boolean | null }>, f: ReturnType<typeof formatters>) {
+export function folders(docs: Array<{ practice_plan_id?: string | null; id: string; title: string; folder: string | null; file_type: string | null; file_url: string; file_size: number | null; updated_at: string | null; created_at: string | null; is_public?: boolean | null }>, f: ReturnType<typeof formatters>) {
   const out = new Map<string, ChHubFile[]>();
   const sorted = [...docs].sort((a, b) => (b.updated_at ?? b.created_at ?? '').localeCompare(a.updated_at ?? a.created_at ?? ''));
   for (const d of sorted) {
     const name = d.folder?.trim() || 'Team';
     // A plan row has no file (N-00 010400): `file_url` may be null once it's applied, and it opens its plan page, not a download.
-    const ext = d.file_url == null ? 'plan' : fileKind(d.file_type, d.file_url);
+    const ext = d.practice_plan_id || d.file_url == null ? 'plan' : fileKind(d.file_type, d.file_url);
     out.set(name, [
       ...(out.get(name) ?? []),
       {
@@ -913,6 +915,7 @@ export function folders(docs: Array<{ id: string; title: string; folder: string 
         date: d.updated_at || d.created_at ? f.short(d.updated_at ?? d.created_at!) : null,
         // The policy reads `is_public = true` for a player: anything else (false, null, not read) is coach-only.
         isPublic: d.is_public === true,
+        planId: d.practice_plan_id ?? null,
       },
     ]);
   }

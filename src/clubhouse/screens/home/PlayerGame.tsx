@@ -519,11 +519,12 @@ function YourGameCard({ legs, tour, covered, summary, always = false }: { legs: 
         </div>
       )}
       {!any ? (
+        // Figures that did not load are not "nothing to break down": the notice above is the whole answer then.
         legs.cacheError ? null : (
-          <div className="ch-shs-yg__none" data-ch-code="CH-2311">
-            <b>Nothing to break down yet.</b>
-            <span>Fairways, greens, scrambling and putts fill in from rounds posted with those stats.</span>
-          </div>
+        <div className="ch-shs-yg__none" data-ch-code="CH-2311">
+          <b>Nothing to break down yet.</b>
+          <span>Fairways, greens, scrambling and putts fill in from rounds posted with those stats.</span>
+        </div>
         )
       ) : (
         <>
@@ -548,7 +549,7 @@ function YourGameLeg({ g, tour }: { g: ChPlayerLeg; tour: ChSgTour }) {
       <span className="ch-shs-leg__h">
         <ShsIcon name={LEG_ICON[g.key]} />
         <b>{g.label}</b>
-        {g.sg != null && <ShsPill tone={tone}>{formatSigned(g.sg)} SG</ShsPill>}
+        {g.sg != null && <ShsPill tone={tone}>{formatSigned(g.sg)}</ShsPill>}
       </span>
       <span className="ch-shs-leg__m">
         <span>

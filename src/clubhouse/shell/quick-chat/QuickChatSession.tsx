@@ -1,5 +1,6 @@
 'use client';
 import { pluralWord } from '../../lib/plural';
+import { AskProse } from '../../screens/coachhelm/chat/Prose';
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
@@ -20,6 +21,9 @@ import { PlanTask } from './visuals/PlanTask';
 import { useEarlierToday } from './earlier-today';
 import { TaskCard } from './TaskCard';
 import { useQcMotion } from './useQcMotion';
+import { useDictation } from './useDictation';
+import { ASK_STARTERS } from '../../data/coachhelm-chat-shape';
+import { Menu } from '../../ui/Menu';
 
 const TURNS_SHOWN = 30;
 /** AC-QC-STP-04: past six rows, the oldest done ones fold. */
@@ -39,15 +43,30 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
   const reduced = useChReducedMotion();
   const online = useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
   const { keyRef, setRun, setFlag, setSession } = useQcCtx();
-  const chat = useChatImpl({ initialContext: looking.playerId ? [{ kind: 'player', id: looking.playerId, label: looking.playerName ?? 'This player' }] : undefined });
+  const chat = useChatImpl({ surface: 'quick_chat', initialContext: looking.playerId ? [{ kind: 'player', id: looking.playerId, label: looking.playerName ?? 'This player' }] : undefined });
   const turns = useMemo(() => buildTurns(chat.messages, { busy: chat.busy }), [chat.messages, chat.busy]);
   const pending = pendingApproval(chat.messages);
   // A fresh object each render: effects key on its id, or setting the key's state re-renders into a loop.
   const pendingId = pending?.approvalId ?? null;
   const notice = chat.error ? describeChatError(chat.error) : null;
   const [text, setText] = useState(initialText);
-  const [stopped, setStopped] = useState(false);
+  const mic = useDictation((words) => setText((t) => (t.trim() ? `${t.trimEnd()} ${words}` : words)));
+  // The turn that was stopped, not the session: an earlier finished turn stays finished.
+  const [stoppedId, setStoppedId] = useState<string | null>(null);
   const panel = useRef<HTMLElement>(null);
+  // MOB-QC-13: one announcement when an answer finishes, not one per streamed word.
+  const finished = useMemo(() => (chat.busy ? '' : ([...turns].reverse().find((t) => t.role === 'assistant') as { answerText?: string } | undefined)?.answerText ?? ''), [chat.busy, turns]);
+  // MOB-QC-14: on the phone the panel is modal for VoiceOver too, which aria-modal alone isn't in Safari.
+  useEffect(() => {
+    if (!phone || !open) return;
+    const root = document.querySelector<HTMLElement>('.ch-root');
+    if (!root) return;
+    const was = root.inert;
+    root.inert = true;
+    return () => {
+      root.inert = was;
+    };
+  }, [phone, open]);
   const scrim = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
   const field = useRef<HTMLTextAreaElement>(null);
@@ -70,7 +89,16 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
     el.parentElement?.style.setProperty('--ch-qc-qc-scrim-top', `${bar}px`);
     if (phone) {
       const kb = window.visualViewport ? window.visualViewport.height + window.visualViewport.offsetTop : window.innerHeight;
-      el.style.setProperty('--ch-qc-qc-h', `${Math.min(700, kb - bar - 6 - 8)}px`);
+      // A keyboard pan moves the visual viewport: the panel follows, so its header stays on screen (QC-9).
+      el.style.setProperty('--ch-qc-qc-top', `${(window.visualViewport?.offsetTop ?? 0) + bar + 6}px`);
+      // Clear of the home indicator with the keyboard down (MOB-QC-7); with the keyboard up in a short window, the whole height (MOB-QC-2).
+      const vv = window.visualViewport;
+      const keyboardUp = !!vv && vv.height < window.innerHeight - 80;
+      const room = kb - bar - 14;
+      if (keyboardUp && room < 240) {
+        el.style.setProperty('--ch-qc-qc-top', `${(vv?.offsetTop ?? 0) + 4}px`);
+        el.style.setProperty('--ch-qc-qc-h', `${(vv?.height ?? window.innerHeight) - 8}px`);
+      } else el.style.setProperty('--ch-qc-qc-h', keyboardUp ? `${Math.min(700, room)}px` : `min(700px, calc(${room}px - env(safe-area-inset-bottom)))`);
     }
     return { x: key.left + key.width / 2, y: key.top + key.height / 2 };
   }, [keyRef, phone]);
@@ -84,7 +112,8 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
     if (open) {
       const origin = place();
       motion.open(el, scrim.current, origin);
-      if (!phone) field.current?.focus({ preventScroll: true });
+      // A fine pointer only: on a phone turned sideways this would raise a keyboard over the panel (MOB-QC-1).
+      if (!phone && window.matchMedia('(pointer: fine)').matches) field.current?.focus({ preventScroll: true });
     } else if (shown) {
       motion.close(el, scrim.current, () => setShown(false));
       keyRef.current?.querySelector('button')?.focus({ preventScroll: true });
@@ -95,7 +124,11 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
     const vv = window.visualViewport;
     if (!vv || !open) return;
     vv.addEventListener('resize', place);
-    return () => vv.removeEventListener('resize', place);
+    vv.addEventListener('scroll', place);
+    return () => {
+      vv.removeEventListener('resize', place);
+      vv.removeEventListener('scroll', place);
+    };
   }, [open, place]);
 
   useEffect(() => {
@@ -104,6 +137,11 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
       if (e.key !== 'Escape') return;
       const t = e.target as HTMLElement | null;
       if (t?.tagName === 'INPUT') return;
+      // First Escape leaves a field that has words in it; the next closes (QC-20).
+      if (t?.tagName === 'TEXTAREA' && (t as HTMLTextAreaElement).value) {
+        t.blur();
+        return;
+      }
       onClose();
     };
     window.addEventListener('keydown', onKey);
@@ -139,7 +177,9 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
   // Anything added scrolls the body; the panel's own height never moves (M-GROW).
   useEffect(() => {
     const el = body.current;
-    if (el && chat.messages.length) el.scrollTo({ top: el.scrollHeight, behavior: reduced ? 'auto' : 'smooth' });
+    // Only a reader at the bottom is followed, and without a smooth scroll on every token (MOB-QC-4).
+    if (!el || !chat.messages.length) return;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 80) el.scrollTo({ top: el.scrollHeight, behavior: reduced || chat.busy ? 'auto' : 'smooth' });
   }, [chat.messages, reduced]);
 
   // AC-QC-CMP-03, 05: a message written during a run or offline waits, and goes when it can. A pending confirm holds it too.
@@ -152,19 +192,19 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
       setQueued((q) => [...q, clean]);
       return;
     }
-    setStopped(false);
+    setStoppedId(null);
     chat.send(clean);
   };
   useEffect(() => {
     if (!queued.length || chat.busy || pending || !online) return;
-    setStopped(false);
+    setStoppedId(null);
     chat.send(queued[0]!);
     setQueued((q) => q.slice(1));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sends when the way clears, keyed on the id (`pending` is new each render)
   }, [queued, chat.busy, pendingId, online]);
   const stop = () => {
     chat.stop();
-    setStopped(true);
+    setStoppedId(turns[turns.length - 1]?.id ?? null);
   };
   const full = () => {
     if (!chat.conversationId) return;
@@ -209,7 +249,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
     <div className={'ch-qcs' + (phone ? ' is-phone' : ' is-desk') + (reduced ? ' is-reduce' : '')}>
       <div ref={scrim} className="scrim" hidden={!shown} onClick={onClose} aria-hidden="true" />
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- the dialog keeps Tab inside itself (AC-QC-PNL-08) */}
-      <section id="ch-qc-panel" ref={panel} className="qc" role="dialog" aria-label="CoachHelm" hidden={!shown} data-ch-qc-panel="" onKeyDown={onPanelKey}>
+      <section id="ch-qc-panel" ref={panel} className="qc" role="dialog" aria-modal={phone || undefined} aria-label="CoachHelm" hidden={!shown} data-ch-qc-panel="" onKeyDown={onPanelKey}>
         <header className="qc__h" data-qc-rise="" {...swipe}>
           <span className="qc__mark">
             <HelmMark />
@@ -230,7 +270,10 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
         </header>
         <div className="qc__sheet">
           <div className="qc__body" ref={body} data-qc-rise="">
-            <div className="qc__inner" aria-live="polite">
+            <p className="ch-sr-only" role="status">
+              {finished}
+            </p>
+            <div className="qc__inner">
               {fresh ? (
                 <div className="hello">
                   <h3 className="hello__t">What should we get done?</h3>
@@ -281,8 +324,10 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
                       <AssistantTurn
                         key={turn.id}
                         turn={turn}
+                        failed={!!notice && turn.id === turns[turns.length - 1]?.id}
+                        onFull={full}
                         online={online}
-                        stopped={stopped}
+                        stopped={stoppedId === turn.id}
                         onSend={send}
                         onApprove={chat.approve}
                         onDeny={chat.deny}
@@ -293,7 +338,16 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
                       />
                     ),
                   )}
-                  {notice && <p className="say quiet">{notice.message ?? 'CoachHelm couldn’t finish that.'}</p>}
+                  {notice && (
+                    <p className="say quiet qc-lost" role="alert">
+                      <span>{notice.message ?? 'Lost the connection. Nothing was saved.'}</span>
+                      {notice.recovery === 'retry' && (
+                        <button type="button" onClick={() => chat.retry()}>
+                          Try again
+                        </button>
+                      )}
+                    </p>
+                  )}
                 </>
               )}
             </div>
@@ -301,6 +355,23 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
           <div className="qc__comp" data-qc-rise="">
             {!online && <p className="say quiet">You’re offline. CoachHelm will send when you’re back.</p>}
             <div className="cmp">
+              <Menu
+                label="Add to your question"
+                align="start"
+                keepFocus
+                items={ASK_STARTERS.filter((s) => s.id !== 'add-player').map((s) => ({
+                  label: s.label,
+                  onSelect: () => {
+                    setText((t) => (t.trim() ? `${t.trimEnd()} ${s.seed}` : s.seed));
+                    field.current?.focus();
+                  },
+                }))}
+                trigger={(t) => (
+                  <button {...t} type="button" className="cmp__plus" aria-label="Add to your question">
+                    <Ico d="M12 5v14M5 12h14" size={18} />
+                  </button>
+                )}
+              />
               <textarea
                 ref={field}
                 className="cmp__t"
@@ -308,14 +379,27 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
                 placeholder="Ask CoachHelm or tell it what to do"
                 rows={1}
                 value={text}
-                onChange={(e) => setText(e.target.value)}
+                onChange={(e) => {
+                  setText(e.target.value);
+                  // Grows with the words, up to four lines (QC-8).
+                  const el = e.target;
+                  el.style.height = 'auto';
+                  el.style.height = `${Math.min(el.scrollHeight, 4 * parseFloat(getComputedStyle(el).lineHeight || '22'))}px`;
+                }}
+                enterKeyHint="send"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey && !phone) {
+                  // A phone's blue send key sends, as Messages' does.
+                  if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     send(text);
                   }
                 }}
               />
+              {mic.available && (
+                <button type="button" className={'cmp__mic' + (mic.on ? ' is-on' : '')} aria-label={mic.on ? 'Stop dictating' : 'Dictate'} aria-pressed={mic.on} onClick={mic.toggle}>
+                  <Ico d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3" size={18} />
+                </button>
+              )}
               {chat.busy ? (
                 <button className="cmp__send stop" type="button" aria-label="Stop" onClick={stop}>
                   <span className="sq" />
@@ -338,7 +422,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
               </div>
             )}
           </div>
-          {phone && <i className="ch-grab" aria-hidden="true" {...swipe} />}
+          {phone && <i className="ch-grab ch-grab--hit" aria-hidden="true" {...swipe} />}
         </div>
       </section>
     </div>
@@ -346,7 +430,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
 }
 
 /** The steps, and their fold once the card is ready: "N steps · Ns", which a tap reopens in place (AC-QC-STP-03, 04). */
-function Steps({ turn, stopped }: { turn: AskAssistantTurn; stopped: boolean }) {
+function Steps({ turn, stopped, failed = false }: { turn: AskAssistantTurn; stopped: boolean; failed?: boolean }) {
   const [opened, setOpened] = useState(false);
   const [more, setMore] = useState(false);
   // Only the browser that watched the run knows how long it took; a reloaded chat folds to the count alone.
@@ -370,7 +454,7 @@ function Steps({ turn, stopped }: { turn: AskAssistantTurn; stopped: boolean }) 
     );
   const folded = more ? 0 : Math.max(0, turn.steps.length - STEPS_SHOWN);
   return (
-    <ol className="steps" aria-live="polite">
+    <ol className="steps">
       {folded > 0 && (
         <li className="step done">
           <button type="button" className="steps-sum" onClick={() => setMore(true)}>
@@ -382,7 +466,7 @@ function Steps({ turn, stopped }: { turn: AskAssistantTurn; stopped: boolean }) 
         const last = s === turn.steps[turn.steps.length - 1];
         const active = turn.active && last;
         return (
-          <li key={s.id} className={'step ' + (active ? 'active' : stopped && last ? 'stopped' : 'done')}>
+          <li key={s.id} className={'step ' + (active ? 'active' : failed && last ? 'fail' : stopped && last ? 'stopped' : 'done')}>
             <span className="step__g">
               {active ? (
                 <span className="dot" />
@@ -392,7 +476,10 @@ function Steps({ turn, stopped }: { turn: AskAssistantTurn; stopped: boolean }) 
                 </svg>
               )}
             </span>
-            <span className="step__l">{s.label}</span>
+            <span className="step__l">
+              {active ? s.label : (s.done ?? s.label)}
+              {!active && s.detail && <span className="step__d"> · {s.detail}</span>}
+            </span>
           </li>
         );
       })}
@@ -400,18 +487,36 @@ function Steps({ turn, stopped }: { turn: AskAssistantTurn; stopped: boolean }) 
   );
 }
 
-function AssistantTurn({ turn, online, stopped, onSend, onApprove, onDeny, onOpen }: { turn: AskAssistantTurn; online: boolean; stopped: boolean; onSend: (t: string) => void; onApprove: (id: string) => void; onDeny: (id: string) => void; onOpen: (href: string) => void }) {
+function AssistantTurn({ turn, online, stopped, failed = false, onSend, onApprove, onDeny, onOpen, onFull }: { turn: AskAssistantTurn; online: boolean; stopped: boolean; failed?: boolean; onFull: () => void; onSend: (t: string) => void; onApprove: (id: string) => void; onDeny: (id: string) => void; onOpen: (href: string) => void }) {
   return (
     <>
-      <Steps turn={turn} stopped={stopped} />
+      <Steps turn={turn} stopped={stopped} failed={failed} />
       {stopped && !turn.active && !turn.blocks.length && <p className="say quiet">Stopped. Nothing was saved.</p>}
       {turn.note && <p className="say quiet">{turn.note}</p>}
       {turn.blocks.map((b) => {
-        if (b.kind === 'text') return <p className="say" key={b.key}>{b.text}</p>;
+        if (b.kind === 'text') return <div className="say" key={b.key}><AskProse text={b.text} playersByName={{}} /></div>;
+        // Quick chat finishes four tasks with their own visuals; anything else carries on in Ask, the same conversation, words and all (FID-QC-1).
+        if (b.kind === 'proposal' && !b.view.proposal.visual)
+          return (
+            <p className="say quiet qc-handoff" key={b.key}>
+              <span>This one’s easier to finish in Ask.</span>
+              <button type="button" onClick={onFull}>
+                Open in Ask
+              </button>
+            </p>
+          );
         if (b.kind === 'proposal') return <TaskCard key={b.key} view={b.view} online={online} onSend={onSend} onApprove={onApprove} onDeny={onDeny} onOpen={onOpen} />;
         if (b.kind === 'plan') return <PlanTask key={b.key} plan={b.plan} online={online} onOpen={onOpen} />;
         if (b.kind === 'brief') return <QuickAsk key={b.key} brief={b.brief} onSend={onSend} />;
-        return null;
+        // A chart or a table the panel doesn't draw isn't dropped silently (QC-1).
+        return (
+          <p className="say quiet qc-handoff" key={b.key}>
+            <span>There’s a chart with this answer.</span>
+            <button type="button" onClick={onFull}>
+              See it in Ask
+            </button>
+          </p>
+        );
       })}
     </>
   );

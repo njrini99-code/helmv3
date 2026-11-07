@@ -342,6 +342,13 @@ export function zonedWallTimeToInstant(date: string, time: string, zone: string)
   return { at: new Date(wall - before).toISOString(), shifted: true };
 }
 
+/** An instant as the sheet's Custom end fields, on the team's clock. */
+export function customEndOf(at: number, zone: string): { date: string; time: string } {
+  const w = wallOf(at, zone);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return { date: `${w.y}-${pad(w.mo)}-${pad(w.d)}`, time: `${pad(w.h)}:${pad(w.mi)}` };
+}
+
 /** The Custom end's default, on the team's clock: today at 9:00 PM before 8:00 PM, else tomorrow at 9:00 PM. */
 export function defaultCustomEnd(now: number, zone: string): { date: string; time: string } {
   const w = wallOf(now, zone);

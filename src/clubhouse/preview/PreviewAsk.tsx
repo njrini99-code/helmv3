@@ -16,7 +16,7 @@ type Part = { type: string; [key: string]: unknown };
  * preview state names, answers a question with a short text after a moment, adopts a conversation id on the first send, and
  * turns Confirm or Cancel into a decided card (Confirm adds the receipt).
  */
-function fakeChat(start: { busy?: boolean; error?: unknown; messages?: UIMessage[] }): ChAskChat {
+function fakeChat(start: { busy?: boolean; error?: unknown; messages?: UIMessage[] }, v2 = false): ChAskChat {
   return function useFakeChat(options: UseCoachHelmChatOptions = {}): UseCoachHelmChatResult {
     const [messages, setMessages] = useState<UIMessage[]>(options.initialMessages ?? start.messages ?? []);
     const [busy, setBusy] = useState(start.busy ?? false);
@@ -31,10 +31,28 @@ function fakeChat(start: { busy?: boolean; error?: unknown; messages?: UIMessage
             const approval = p.approval as { id?: string } | undefined;
             if (!p.type.startsWith('tool-') || approval?.id !== approvalId) return [p];
             const decided: Part = { ...p, state: 'approval-responded', approval: { id: approvalId, approved } };
+            if (v2) return [decided];
             return approved ? [decided, { type: 'data-action-receipt', id: `receipt-${ASK_PROPOSAL.idempotency_key}`, data: ASK_RECEIPT_DONE }] : [decided];
           }) as UIMessage['parts'],
         })),
       );
+    // Ask v2's write answers a moment later, held for its 8 seconds, so the capsule, the flight and the Undo ring all show.
+    const decideV2 = (approvalId: string, approved: boolean) => {
+      decide(approvalId, approved);
+      if (!approved) return;
+      setTimeout(() => {
+        setMessages((all) =>
+          all.map((m) => {
+            const parts = m.parts as Part[];
+            const i = parts.findIndex((p) => (p.approval as { id?: string } | undefined)?.id === approvalId);
+            if (i < 0) return m;
+            const proposal = parts.find((p) => p.type === 'data-action-proposal')?.data as { idempotency_key?: string; summary?: string } | undefined;
+            const key = proposal?.idempotency_key ?? ASK_PROPOSAL.idempotency_key;
+            return { ...m, parts: [...parts, { type: 'data-action-receipt', id: `receipt-${key}`, data: { ...ASK_RECEIPT_DONE, status: 'held', held_until: new Date(Date.now() + 8000).toISOString(), idempotency_key: key, summary: proposal?.summary ?? ASK_RECEIPT_DONE.summary } }] as UIMessage['parts'] };
+          }),
+        );
+      }, 700);
+    };
 
     return {
       messages,
@@ -66,7 +84,7 @@ function fakeChat(start: { busy?: boolean; error?: unknown; messages?: UIMessage
         setError(undefined);
         setBusy(false);
       },
-      approve: (id) => decide(id, true),
+      approve: (id) => (v2 ? decideV2(id, true) : decide(id, true)),
       deny: (id) => decide(id, false),
     };
   };
@@ -123,9 +141,10 @@ export function PreviewAsk({ state, kind, v2 = false, messages, busy, role }: { 
       init.evidence = t.focus ?? null;
     }
     if (role === 'player') data = { ...data, role: 'player', firstName: 'Jonah', allowance: 'plenty' as ChAskData['allowance'], focus: [{ text: 'Approach from 125 to 150, set by Coach Reyes', ask: 'How is my approach from 125 to 150 doing?' }, { text: 'Putting gained strokes at Hilltop', ask: 'How did my putting go at Hilltop?' }] };
+    if (v2 && role !== 'player') data = { ...data, firstName: 'Maya' };
     if (v2 && !data.knows && role !== 'player') data = { ...data, knows: { tone: 'straight', teamId: 'preview', facts: [{ id: 'k1', text: 'Practice runs 2h 30m on weekdays' }, { id: 'k2', text: 'Team goal: under +2 a round by spring' }] } };
     const load: ChAskLoad = state === 'noroster' ? { status: 'noRoster', teamName: 'Finley University' } : state === 'failed' ? { status: 'failed' } : { status: 'ready', data };
-    return { load, chat: fakeChat(start), initial: init };
+    return { load, chat: fakeChat(start, v2), initial: init };
   }, [state, kind, messages, busy, role, v2]);
 
   if (state === 'loading') return <AskSkeleton />;

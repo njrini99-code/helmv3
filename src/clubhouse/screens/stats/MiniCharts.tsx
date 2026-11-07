@@ -128,7 +128,8 @@ export function tickerBars(rounds: readonly TickerRound[], W = 300, H = 64): Arr
   const n = rounds.length;
   if (!n) return [];
   const gap = n > 12 ? 3 : 5;
-  const w = (W - gap * (n - 1)) / n;
+  // A lone round is a short bar, not one full-width block (STATS-17).
+  const w = Math.min(14, (W - gap * (n - 1)) / n);
   const scores = rounds.map((r) => r.score);
   const worst = Math.max(...scores) + 1;
   const low = Math.min(...scores) - 3;

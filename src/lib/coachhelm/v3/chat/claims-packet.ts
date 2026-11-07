@@ -21,6 +21,7 @@
  * most of chat, which is the opposite of what a "slice 1" opt-in gate is for.
  * ========================================================================== */
 
+import { MIN_SAMPLE_N } from '@/lib/coachhelm/v2/insights/upsert';
 import type { Measurement } from './provenance';
 import {
   CAUSAL_LANGUAGE_RE,
@@ -216,6 +217,24 @@ export function thinSampleStated(prose: string, value: number, sampleSize: numbe
   return stated;
 }
 
+/**
+ * A thin figure written in the answer and left out of the block: the block is the model's own word, so leaving a figure out must not
+ * dodge the floor. Only where the figure is plainly this one: the sentence names its player (or, in a one-player turn, says he or she),
+ * no other measurement holds that value, and it is not a small whole number, which the audit treats as a count.
+ */
+function omittedThinFigures(prose: string, measurements: readonly Measurement[], claims: readonly ClaimReference[]): Measurement[] {
+  const players = new Set(measurements.filter((m) => m.entity?.kind === 'player').map((m) => m.entity.id));
+  const thin = measurements.filter((m) => m.entity?.kind === 'player' && m.value !== null && m.sample_size >= 2 && m.sample_size < MIN_SAMPLE_N && !(Number.isInteger(m.value) && Math.abs(m.value) <= 12));
+  return thin.filter((m) => {
+    if (claims.some((c) => c.player_id === m.entity.id && c.metric_id === m.metric_id && c.window_start === m.window_start && c.window_end === m.window_end)) return false;
+    if (measurements.some((o) => o !== m && o.value !== null && Math.abs(Math.abs(o.value) - Math.abs(m.value as number)) < 1e-9)) return false;
+    const parts = m.entity.label.split(/\s+/).filter((n) => n.length > 1);
+    const about = (s: string) => parts.some((n) => s.includes(n)) || (players.size === 1 && /\b(?:he|she|his|her)\b/i.test(s));
+    const named = prose.split(SENTENCE_BREAK).filter((s) => about(s) && valueAt(s, m.value as number).length > 0);
+    return named.length > 0 && !named.some((s) => thinSampleStated(s, m.value as number, m.sample_size, m.sample_unit));
+  });
+}
+
 /** The cause side of a causal sentence: after "because", "due to", "caused by"; before "led to", "which is why", "results in". */
 function causeSide(sentence: string): string {
   const after = /\b(?:because|due to|caused? by|as a result of|the reason (?:is|for|was))\b/i.exec(sentence);
@@ -356,6 +375,13 @@ export function extractAndValidateChatClaims(
         if (r.reason === 'unsupported_small_number' && raw.claim_type !== 'causal' && sampleSize > 0 && unit && thinSampleStated(strippedText, raw.value, sampleSize, unit)) accepted.push(r.claim);
         else rejected.push(r);
       }
+    }
+
+    for (const m of omittedThinFigures(strippedText, measurements, result.data)) {
+      rejected.push({
+        claim: { claim_id: `thin:${m.metric_id}`, metric_id: m.metric_id, value: m.value as number, player_id: m.entity.id, window_start: m.window_start as string, window_end: m.window_end as string },
+        reason: 'unsupported_small_number',
+      });
     }
 
     // Prose-level causal check, once for the turn (see doc comment).

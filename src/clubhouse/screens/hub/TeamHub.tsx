@@ -2,6 +2,7 @@
 
 import { ClipboardList, Plane, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { deletePracticePlan } from '@/app/golf/actions/practice-plans';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChHubUpdate, ChRsvp, ChTeamHub } from '../../data/hub';
@@ -332,7 +333,9 @@ export function TeamHub({
           ? writes.deleteTask(p.t.id)
           : p.kind === 'trip'
             ? writes.deleteTrip(p.t.id)
-            : writes.deleteDocument(p.f.id));
+            : p.f.planId
+              ? deletePracticePlan({ planId: p.f.planId })
+              : writes.deleteDocument(p.f.id));
       if (normalise(res).success) {
         setGone(withId(p.kind === 'ann' ? p.a.id : p.kind === 'task' || p.kind === 'trip' ? p.t.id : p.f.id));
         setConfirm(null);
@@ -376,7 +379,10 @@ export function TeamHub({
   const onReply = reply;
   const onAck = ack;
   const onToggle = toggle;
-  const onOpen = (f: ChHubFile) => void open.run(f);
+  const onOpen = (f: ChHubFile) => {
+    if (f.planId) return router.push(`/golf/dashboard/practice/plan/${f.planId}`);
+    void open.run(f);
+  };
   // A post's attachments: listed on request, each opened like a file in Documents (production's announcement card).
   const attachments = writes.announcementFiles ? { load: writes.announcementFiles, open: onOpen, opening } : undefined;
   const toast = useToast();

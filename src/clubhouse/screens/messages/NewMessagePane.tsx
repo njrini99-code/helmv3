@@ -70,7 +70,7 @@ export function NewMessagePane({ api, onCancel, onDialog }: { api: ChMessagesApi
           <section className="ch-msp-panel ch-msv-suggest" aria-label="Suggested">
             <header className="ch-msv-members__h">
               <b>{term ? 'Results' : 'Suggested'}</b>
-              {!term && <span>Players you haven’t messaged</span>}
+              {!term && <span>People you haven’t messaged</span>}
             </header>
             {people.map((p) => (
               <button key={p.userId} type="button" className="ch-msv-suggest__r" onClick={() => pick(p.userId)}>

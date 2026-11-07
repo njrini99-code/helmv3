@@ -140,8 +140,8 @@
 /* Important because a screen's `font` shorthand, however specific, resets both to normal, and the figures stop lining up. */
 .ch-num,
 svg .ch-num {
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum';
+  font-variant-numeric: tabular-nums !important;
+  font-feature-settings: 'tnum' !important;
 }
 .ch-root:not([data-ch-pre-refresh]) .ch-num,
 .ch-root:not([data-ch-pre-refresh]) svg .ch-num {
@@ -328,7 +328,11 @@ html[data-ch-vt-hold] [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='
   /* Except the one spinner (OQ-18, rubric H19): it keeps turning, as iOS's activity indicator does under Reduce Motion. A
      ring turning in place moves nothing across the screen, and a still ring reads as stuck. Animations off still stops
      it (--ch-dur-sweep is 0 there). */
-  .ch-root .ch-spinner {
+  .ch-root .ch-spinner,
+  .ch-root .ch-qcs .live__spin,
+  .ch-root .ch-qck .live__spin,
+  .ch-root .ch-hr .spin,
+  .ch-root .ch-htb .spin {
     animation-duration: var(--ch-dur-sweep) !important;
     animation-iteration-count: infinite !important;
   }

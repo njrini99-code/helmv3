@@ -11,6 +11,7 @@ import { publishPracticePlan } from '@/app/golf/actions/practice-publish';
 import { sendMessage } from '@/app/actions/messages';
 import { pluralize } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/server';
+import { getAppBaseUrl } from '@/lib/app-base-url';
 
 const Drill = z.string().describe('A ref from get_drill_bank detail.ids, like lib:<id>. Never invent one.').nullable().optional();
 const BlockInput = z.object({
@@ -69,6 +70,35 @@ function toBlock(b: In['blocks'][number], groupIds: string[]): PlanBlock {
 }
 
 /** What the card draws beyond the plan: drill names, swaps, and the figures behind each source chip, all from this turn's reads. */
+/**
+ * What the full plan prints, from the team row, the event and the roster the draft already grouped. Measurements print in house
+ * style here too: U+2212 minus, — for none.
+ */
+async function planSheetFor(ctx: CoachChatContext, eventId: string | null) {
+  const sb = await createClient();
+  const [{ data: event }, { data: team }] = await Promise.all([
+    eventId ? sb.from('golf_events').select('start_time, end_time').eq('id', eventId).eq('team_id', ctx.team_id).maybeSingle() : Promise.resolve({ data: null }),
+    sb.from('golf_teams').select('organization_id').eq('id', ctx.team_id).maybeSingle(),
+  ]);
+  const { data: coaches } = team?.organization_id ? await sb.from('golf_coaches').select('full_name').eq('organization_id', team.organization_id) : { data: [] };
+  return {
+    team: ctx.team_name,
+    start: event?.start_time ?? null,
+    end: event?.end_time ?? null,
+    zone: ctx.timezone,
+    coaches: (coaches ?? []).map((c) => c.full_name).filter((n): n is string => !!n),
+    names: Object.fromEntries(ctx.roster.map((p) => [p.id, p.name])),
+  };
+}
+
+/** A read's figure as the card prints it: at most two places, U+2212 minus, — for no data. Text comes through as it is. */
+export function evidenceValue(value: unknown): string {
+  if (value == null || value === '') return '—';
+  if (typeof value !== 'number' || !Number.isFinite(value)) return String(value).replace(/^-(?=\d)/, '\u2212');
+  const shown = String(Math.round(Math.abs(value) * 100) / 100);
+  return `${value < 0 && shown !== '0' ? '\u2212' : ''}${shown}`;
+}
+
 function planCardMeta(input: In, reads: readonly ToolEnvelope[], byRef: ReadonlyMap<string, ToolEnvelope>) {
   const bank = reads.flatMap((e) => ((e.detail as { drills?: Array<{ ref: string; title: string; minutes?: number | null; kind?: string | null }> } | undefined)?.drills ?? []));
   const kindOf = (k: string | null | undefined): 'skill' | 'random' | 'pressure' => (k === 'random' || k === 'pressure' ? k : 'skill');
@@ -87,7 +117,7 @@ function planCardMeta(input: In, reads: readonly ToolEnvelope[], byRef: Readonly
     if (b.sources.length) sources[b.id] = b.sources.map((x) => ({ ref: x.evidence_ref, label: x.label }));
     for (const x of b.sources) {
       const read = byRef.get(x.evidence_ref);
-      if (read) evidence[x.evidence_ref] = { label: x.label, line: read.summary, rows: read.measurements.slice(0, 8).map((m) => ({ label: m.metric_label, value: m.value == null ? '—' : String(m.value) })) };
+      if (read) evidence[x.evidence_ref] = { label: x.label, line: read.summary, rows: read.measurements.slice(0, 8).map((m) => ({ label: m.metric_label, value: evidenceValue(m.value) })) };
     }
   }
   return { when: input.when, start: input.start, drills, alternatives, sources, evidence };
@@ -126,7 +156,7 @@ export function practiceDraftTool({ ctx, writer, envelopes, evidenceByRef }: { c
         }
         const body: PlanBodyV2 = { v: 2, focus: input.focus, notes: '', place: input.place, arrivalBufferMin: 15, bring: input.bring, players: input.players, groups: input.groups.map((g) => ({ ...g, savedGroupId: null })), variants: { main: { blocks }, rain: null } };
         version += 1;
-        writer.write({ type: 'data-practice-plan', id: `plan-${version}`, data: { version, eventId: input.event_id, title: input.title, draft: { body, why, version }, saveOn: isPracticeTabEnabled(), ...planCardMeta(input, envelopes(), evidenceByRef) } });
+        writer.write({ type: 'data-practice-plan', id: `plan-${version}`, data: { version, eventId: input.event_id, title: input.title, draft: { body, why, version }, saveOn: isPracticeTabEnabled(), sheet: await planSheetFor(ctx, input.event_id), ...planCardMeta(input, envelopes(), evidenceByRef) } });
         return { status: 'shown', message: `A ${Math.round(sum / 60 * 10) / 10} hour plan in ${input.blocks.length} blocks is on the card. Nothing is saved yet.` };
       },
     }),
@@ -159,7 +189,7 @@ export const publishFlow: FlowDef<z.infer<typeof publishInput>> = {
     return {
       action: `Publish to ${i.people} people`,
       summary: i.title,
-      publish: { heading: `Publish ${i.title}?`, coins: players.slice(0, 9).map((p) => ({ name: p.name })), tellsLine, folder: 'Practice plans', teamChat: i.team_chat, ...(first ? { sample: { player: first.name.split(' ')[0] ?? first.name, title: i.title, body: i.first_player_line } } : {}) },
+      publish: { heading: `Publish ${i.title}?`, coins: players.slice(0, 6).map((p) => ({ name: p.name })), coinsMore: Math.max(0, players.length - 6), tellsLine, folder: 'Practice plans', teamChat: i.team_chat, ...(first ? { sample: { player: first.name.split(' ')[0] ?? first.name, title: i.title, body: i.first_player_line } } : {}) },
       facts: [{ label: 'When', value: i.when }, { label: 'Where', value: i.where || 'Not set' }, { label: 'Tells', value: tellsLine }, { label: 'What they get', value: i.first_player_line }],
       notifications: [`It files in Documents and ${i.people} people hear once Undo closes, 8 seconds later.${i.team_chat ? ' The plan posts in Team chat, with no second push.' : ''}`],
       key: ['publish_plan', i.plan_id, String(i.version), i.team_chat ? 'chat' : 'no-chat'],
@@ -167,7 +197,7 @@ export const publishFlow: FlowDef<z.infer<typeof publishInput>> = {
   },
   run: async (ctx, i) => {
     const res = await publishPracticePlan({ planId: i.plan_id, expectedVersion: i.version, notify: 'now' });
-    const chat = res.success && i.team_chat ? await postPlanToTeamChat(ctx, `${i.title} is published. ${i.when}.`) : null;
-    return res.success ? { ok: true, summary: `Published. ${res.recipients} people told.${chat === false ? ' The Team chat post didn’t send.' : ''}`, kind: 'practice_plan', label: i.title, href: `/golf/dashboard/practice/plan/${i.plan_id}` } : { ok: false, error: res.error, summary: res.error, kind: 'practice_plan' };
+    const chat = res.success && i.team_chat ? await postPlanToTeamChat(ctx, `${i.title} is published. ${i.when}. ${getAppBaseUrl()}/golf/dashboard/practice/plan/${i.plan_id}`) : null;
+    return res.success ? { ok: true, summary: `Published. ${res.recipients} people told.${chat === false ? ' The Team chat post didn’t send.' : ''}`, kind: 'practice_plan', label: i.title, href: `/golf/dashboard/practice/plan/${i.plan_id}`, notifications: [{ channel: 'push and bell', recipients: res.recipients, status: 'sent' as const }] } : { ok: false, error: res.error, summary: res.error, kind: 'practice_plan' };
   },
 };

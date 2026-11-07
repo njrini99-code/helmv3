@@ -202,17 +202,23 @@ function PeopleLine({ leg }: { leg: ChTeamLeg }) {
  * The same four parts on the phone (docs/clubhouse/phone/home.md, Q-66 drafting): rows between hairlines after Team
  * scoring. The row is not a link; the names are.
  */
-/** The lane's diverging bar (06 §11.2): from a centre zero, min(50, |sg| / 3.5 x 50)% wide. It grows once, in CSS, when Home is first shown. */
+/** The lane's diverging bar (06 §11.2): from a centre zero, min(50, |sg| / 3.5 x 50)% wide. Drawn, not grown: no motion on first paint. */
 export const legBarWidth = (sg: number | null) => (sg == null ? 0 : Math.min(50, (Math.abs(sg) / 3.5) * 50));
 
 export function TeamLegsPhone({ legs, covered = false, crh = false }: { legs: ChTeamLegs; covered?: boolean; crh?: boolean }) {
   const team = rebuiltHref('/golf/dashboard/stats', 'coach');
   if (crh) {
     const worst = [...legs.rows].filter((l) => l.sg != null).sort((a, b) => (a.sg as number) - (b.sg as number)).slice(0, 2).filter((l) => (l.sg as number) < 0).map((l) => l.label);
-    const note = legs.ranked && worst.length ? `${worst.join(' and ')} cost${worst.length === 1 ? 's' : ''} the most. Names open that player’s game on Stats.` : null;
+    // Promise links only when the names are links (CRH-32); a nobody-ranked team's note is the card's footer too (CRH-10).
+    const namesLink = legs.rows.some((l) => [...(l.gains?.ids ?? []), ...(l.loses?.ids ?? [])].some((id) => legPlayerHref(id) != null));
+    const note = !legs.ranked ? <span data-ch-code="CH-2315">{NOBODY_RANKED}</span> : worst.length ? `${worst.join(' and ')} cost${worst.length === 1 ? 's' : ''} the most.${namesLink ? ' Names open that player’s game on Stats.' : ''}` : null;
     return (
       <Surface variant="card" level={2} padded={false} title="The team’s game" actions={<span className="ch-hm-meta">SG per round · last 10</span>} footerNote={note ?? undefined}>
-        <Notices legs={legs} covered={covered} />
+        {(legs.cacheError || legs.tourError) && (
+          <div className="ch-hm-legs__notices">
+            <Notices legs={legs} covered={covered} />
+          </div>
+        )}
         {legs.holeRounds === 0 ? (
           <NoHoleRounds />
         ) : (
@@ -238,11 +244,6 @@ export function TeamLegsPhone({ legs, covered = false, crh = false }: { legs: Ch
                 );
               })}
             </ul>
-            {!legs.ranked && (
-              <p className="ch-hm-legs__note" data-ch-code="CH-2315">
-                {NOBODY_RANKED}
-              </p>
-            )}
           </>
         )}
       </Surface>

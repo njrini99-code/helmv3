@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, Flag, MessageSquare, Plus, RotateCw, Share } from 'lucide-react';
+import { Flag, MessageSquare, Plus, Share } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -16,6 +16,8 @@ import { sgBaseline, sgScale } from '../../lib/sg';
 import { chTrail } from '../../lib/track';
 import { useArrivalPainted } from '../../lib/use-painted';
 import { rebuiltHref } from '../../shell/nav';
+import { useRefresh } from '../../lib/use-refresh';
+import { useSegFade } from './seg-fade';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -62,7 +64,7 @@ import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { DetailHero, StatsDetailScreen } from './StatsDetailScreen';
 import { ShsArrow, ShsCard, ShsChevron, ShsIcon, ShsPill, SummaryCard, type ShsIconName } from './SummaryCard';
 import { useStatsDetail, type StatsArrivalState } from './use-stats-detail';
-import { useGrowOnce, useStuck, WindowCrossfade } from './shs-motion';
+import { useStuck, WindowCrossfade } from './shs-motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { filterKey } from './shs-figures';
 import { WindowSwitch } from './WindowSwitch';
@@ -86,10 +88,10 @@ const DETAIL_TITLE: Readonly<Record<StatsPlayerDetailId, string>> = {
 };
 
 /** Text Size Larger and XXL (1.24 and up) reflow the page (08 criterion 20). */
-function useBigText(): boolean {
+export function useBigText(): boolean {
   const [big, setBig] = useState(false);
   useEffect(() => {
-    const read = () => setBig(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ch-type-scale')) >= 1.24);
+    const read = () => setBig(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ch-type-scale')) >= 1.2);
     read();
     const watch = new MutationObserver(read);
     watch.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
@@ -135,6 +137,8 @@ export function StatsPlayerPhoneShs({
   const coach = data.viewer === 'coach';
   const toast = useToast();
   const big = useBigText();
+  const ctlRef = useRef<HTMLDivElement | null>(null);
+  useSegFade(ctlRef);
   const below = useArrivalPainted();
   const w = data.win;
   const first = data.firstName;
@@ -182,7 +186,6 @@ export function StatsPlayerPhoneShs({
   // A landing after a failed load or a Try again draws at rest: marks grow once in a session of the page, and that wasn't a first look.
   const hadFailed = useRef(failed);
   if (failed) hadFailed.current = true;
-  useGrowOnce(root, reduced || hadFailed.current, [below, failed, noRounds]);
   // Keys that open a detail move focus to Back; a finger doesn't (07 M-STATS-27).
   const keyboard = useRef(false);
 
@@ -198,7 +201,7 @@ export function StatsPlayerPhoneShs({
       }}
     >
       {coach ? (
-        <PhoneTop title="Player stats" heading={false} back={{ label: 'Team', onBack: onBackToTeam }} action={<PhoneIconAction icon={Share} label={`Share ${first}’s stats`} onClick={() => void share()} />} />
+        <PhoneTop title="Player stats" heading={false} back={{ label: 'Team', onBack: () => (window.history.length > 1 && document.referrer.startsWith(window.location.origin) ? window.history.back() : onBackToTeam()) }} action={<PhoneIconAction icon={Share} label={`Share ${first}’s stats`} onClick={() => void share()} />} />
       ) : (
         <PhoneTop title="My stats" heading={false} start />
       )}
@@ -220,13 +223,13 @@ export function StatsPlayerPhoneShs({
           </header>
         )}
 
-        <div className={'ch-shs-ctl' + (hasRange(data.filter) ? ' is-custom' : '') + (stuck ? ' is-stuck' : '')}>
+        {!firstRun && <div ref={ctlRef} className={'ch-shs-ctl' + (hasRange(data.filter) ? ' is-custom' : '') + (stuck ? ' is-stuck' : '')}>
           <div className="ch-shs-ctl__row">
             <WindowSwitch value={windowShown ?? rangeOf(data.filter)} onChange={onWindow} custom={hasRange(data.filter)} hook="stats-window-seg" />
             {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={onFilter} codes={{ empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' }} phone hook="stats-filter" />}
           </div>
           {updating}
-        </div>
+        </div>}
 
         <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className="ch-shs-sheet">
           {!filtered && noRounds && !firstRun && <NineHint code="CH-5324" filter={data.filter} options={data.filterOptions} who={coach ? `${first} has` : 'You have'} />}
@@ -324,31 +327,21 @@ export function StatsPlayerPhoneShs({
 function FailedCard({ onRetry, seen }: { onRetry: () => void; /** The page's data: a new copy means the retry came back, so Try again works again. */ seen: unknown }) {
   const [busy, setBusy] = useState(false);
   useEffect(() => setBusy(false), [seen]);
+  // The refresh's own transition ends even when the same data comes back, so Try again never goes dead (FID-STATS-4).
+  const { refresh, refreshing } = useRefresh();
+  void onRetry;
+  useEffect(() => {
+    if (!busy || refreshing) return;
+    const t = window.setTimeout(() => setBusy(false), 1000);
+    return () => window.clearTimeout(t);
+  }, [busy, refreshing]);
   return (
-    <section className="ch-shs-card" suppressHydrationWarning role="alert" data-ch-code="CH-5201">
-      <div className="ch-shs-notice">
-        <span className="ch-shs-notice__ic--flag">
-          <Icon icon={AlertTriangle} size={16} />
-        </span>
-        <div>
-          <p className="ch-shs-notice__t">Rounds didn’t load.</p>
-          <p className="ch-shs-notice__b">Posted rounds are safe. Every figure that reads them would be incomplete, so they’re hidden. Try again.</p>
-          <button
-            type="button"
-            className="ch-shs-btn"
-            data-ch="stats-retry"
-            aria-disabled={busy || undefined}
-            onClick={() => {
-              if (busy) return; // A second tap while it loads does nothing.
-              setBusy(true);
-              onRetry();
-            }}
-          >
-            <Icon icon={RotateCw} size={15} />
-            Try again
-          </button>
-        </div>
-      </div>
+    <section className="ch-shs-card" suppressHydrationWarning>
+      <InlineNotice code="CH-5201" title="Rounds didn’t load" retrying={busy || refreshing} retryHook="stats-retry" onRetry={() => {
+        if (busy) return; // A second tap while it loads does nothing.
+        setBusy(true);
+        refresh();
+      }} body={<>Posted rounds are safe. Every figure that reads them would be incomplete, so they’re hidden. Try again.</>} />
     </section>
   );
 }
@@ -367,6 +360,9 @@ function FirstRunCard() {
 
 /** The one green card. A drag on its chart shows that round in the figures; release restores the average. */
 function ScoringCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => void }) {
+  // One course's par across the window labels the dashed line; a mix has no one number to give it.
+  const parValues = new Set(data.rounds.flatMap((r) => (r.toPar == null || r.holes !== 18 ? [] : [r.score - r.toPar])));
+  const par = parValues.size === 1 ? [...parValues][0]! : null;
   const [read, setRead] = useState<number | null>(null);
   const rounds = trendRounds(data.rounds, 'score');
   const shown = rounds.filter((r) => r.value != null);
@@ -425,10 +421,12 @@ function ScoringCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => vo
             5-round average
           </span>
         )}
-        <span>
-          <i className="lp" />
-          Par
-        </span>
+        {par != null && (
+          <span>
+            <i className="lp" />
+            Par {par}
+          </span>
+        )}
       </div>
     </SummaryCard>
   );
@@ -438,9 +436,10 @@ function ScoringCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => vo
 /** The page writes the change as one sentence: "Putts per round are down 0.8; greens in regulation are down 5.6 pts, against the previous 10." */
 function changeSentence(lines: ReadonlyArray<{ subject: string; figure: string; words: string }>): string {
   const parts = lines.map((l, i) => {
-    const subject = i === 0 ? l.subject : l.subject.charAt(0).toLowerCase() + l.subject.slice(1);
+    const said = l.subject === 'Scoring avg' ? 'Scoring average' : l.subject;
+    const subject = i === 0 ? said : said.charAt(0).toLowerCase() + said.slice(1);
     const down = /^[−-]/.test(l.figure);
-    return `${subject} ${(l.subject.startsWith('Putts') || l.subject.endsWith('s')) ? 'are' : 'is'} ${down ? 'down' : 'up'} ${l.figure.replace(/^[−+-]/, '')}`;
+    return `${subject} ${/^(Greens|Fairways|Putts)/.test(said) ? 'are' : 'is'} ${down ? 'down' : 'up'} ${l.figure.replace(/^[−+-]/, '')}`;
   });
   const against = /than (.*)$/.exec(lines[0]?.words ?? '')?.[1];
   return `${parts.join('; ')}${against ? `, against ${against}` : ''}.`;
@@ -1103,6 +1102,10 @@ function GoalsDetail({ data, coach, onAddFocus, onRetry }: { data: ChPlayerProfi
   return (
     <>
       {data.devError && <InlineNotice code="CH-5203" title="Some development items didn’t load." body="Try again." onRetry={onRetry} />}
+      {data.goals[0] && (() => {
+        const lead = data.goals[0]!;
+        return <DetailHero figure={devValue(lead.current, devMetric(lead.title, lead.metric))} caption={[devTitle(lead.title), goalLine(lead)].filter(Boolean).join(' · ')} chips={<GoalStatus id={lead.id} title={devTitle(lead.title)} state={lead.state} coach={coach} />} />;
+      })()}
       <ShsCard title="Goals this season" meta={plural(data.goals.length, 'goal')}>
         {!coach && (
           <>
@@ -1133,7 +1136,7 @@ function GoalsDetail({ data, coach, onAddFocus, onRetry }: { data: ChPlayerProfi
       </ShsCard>
       <ShsCard title="Focus areas" meta={`${active} active${proposed ? ` · ${proposed} waiting on ${coach ? first : 'you'}` : ''}`} flush>
         {data.focusAreas.length === 0 ? (
-          <EmptyState code="CH-5303" kind="first-run" compact title="No focus areas yet." body={coach ? 'Add one from a weak section above.' : 'Your coach adds focus areas; they show here.'} />
+          <EmptyState code="CH-5303" kind="first-run" compact title="No focus areas yet." body={coach ? 'Add one with the button below.' : 'Your coach adds focus areas; they show here.'} />
         ) : (
           <div className="ch-shs-dev">
             {data.focusAreas.map((f) => {

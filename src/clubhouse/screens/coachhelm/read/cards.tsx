@@ -12,7 +12,6 @@ import type { ChReadDetail, ChReadView } from '../../../data/coachhelm-read-view
 import { assignStateOf } from '../../../data/coachhelm-read-view-shape';
 import type { ChBoardMissing } from '../../../data/coachhelm-shape';
 import type { ChViewVoice } from '../../../data/coachhelm-views-shape';
-import { useInViewOnce } from '../../../lib/use-in-view';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import type { ChFocusActions } from '../parts';
@@ -72,13 +71,12 @@ export function ReadHeadline({ d, view, coach, assigned }: { d: ChReadDetail; vi
 
 /** The bars scale from the left, once, the first time the card shows (02-PLAN 7.2). */
 export function WhereCard({ funnel, pictures }: { funnel: NonNullable<ChReadDetail['funnel']>; pictures: boolean }) {
-  const [ref, seen] = useInViewOnce<HTMLDivElement>();
   const first = funnel.steps.find((s) => s.n != null)?.n ?? 0;
   const lastBar = funnel.steps.reduce((acc, s, i) => (s.n != null ? i : acc), -1);
   return (
     <Card id="cfun" title="Where it shows up" obs="Observed, not a cause">
       <div className="cb">
-        <div ref={ref} className={'fun' + (seen ? '' : ' pre')}>
+        <div className="fun">
           {funnel.steps.map((s, i) => (
             <div className="fstep" key={`${s.label}-${i}`}>
               <div className="fhead">
@@ -148,11 +146,18 @@ export function WhyCard({ d, voice, pictures }: { d: ChReadDetail; voice: ChView
                         {a.failures} of {a.n} missed · {Math.round((a.failures / a.n) * 100)}%
                       </span>
                     </div>
-                    <div className="dots" aria-hidden="true">
-                      {Array.from({ length: a.n }, (_, i) => (
-                        <i key={i} className={i < a.failures ? 'f' : ''} />
-                      ))}
-                    </div>
+                    {a.n > 30 ? (
+                      // Too many holes to count by eye: their share, on one track (RC-5).
+                      <div className="dotsbar" aria-hidden="true">
+                        <i style={{ transform: `scaleX(${a.failures / a.n})` }} />
+                      </div>
+                    ) : (
+                      <div className="dots" aria-hidden="true">
+                        {Array.from({ length: a.n }, (_, i) => (
+                          <i key={i} className={i < a.failures ? 'f' : ''} />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -185,7 +190,7 @@ export function WhyCard({ d, voice, pictures }: { d: ChReadDetail; voice: ChView
             </div>
             {cause.holes.length > 0 && (
               <div className="holes">
-                {cause.holes.map((h) =>
+                {cause.holes.slice(0, 5).map((h) =>
                   h.href ? (
                     <Link className="hole" key={h.key} href={h.href}>
                       {h.date} · hole {h.hole}
@@ -196,6 +201,7 @@ export function WhyCard({ d, voice, pictures }: { d: ChReadDetail; voice: ChView
                     </span>
                   ),
                 )}
+                {cause.holes.length > 5 && <span className="holes__more ch-num">+{cause.holes.length - 5} more</span>}
               </div>
             )}
           </>
@@ -204,8 +210,8 @@ export function WhyCard({ d, voice, pictures }: { d: ChReadDetail; voice: ChView
           <>
             {pictures && cause.gap && (
               <div className="meter" aria-hidden="true">
-                {Array.from({ length: cause.gap.need }, (_, i) => (
-                  <i key={i} className={i < cause.gap!.have ? 'f' : ''} />
+                {Array.from({ length: 10 }, (_, i) => (
+                  <i key={i} className={i < Math.round((cause.gap!.have / cause.gap!.need) * 10) ? 'f' : ''} />
                 ))}
               </div>
             )}
@@ -293,7 +299,10 @@ export function MovedCard({ d, failed, pictures }: { d: ChReadDetail; failed: bo
   const min = Math.min(...vals);
   const max = Math.max(...vals);
   const y = (v: number) => 24 + (1 - (v - min) / (max - min || 1)) * (H - 54);
-  const f = (v: number) => String(Math.round(v * 10) / 10);
+  const f = (v: number) => formatFixed(v);
+  const stroke = m.tone === 'good' || m.tone === 'gain' ? 'var(--ch-hr-gain-fill)' : m.tone === 'warn' || m.tone === 'loss' ? 'var(--ch-hr-loss-fill)' : 'var(--ch-hr-neutral-fill)';
+  // The lower figure sits under its point, so the two never meet on a flat line.
+  const below = (a: number, b: number) => a < b && y(a) - y(b) < 24;
   return (
     <Card id="cmoved" title="How it has moved" meta="Last change">
       <div className="cb">
@@ -305,23 +314,21 @@ export function MovedCard({ d, failed, pictures }: { d: ChReadDetail; failed: bo
                 {m.ref.label}
               </text>
             )}
-            <line x1={l} x2={r} y1={y(m.from)} y2={y(m.to)} stroke="var(--ch-hr-loss-fill)" strokeWidth="2.5" strokeLinecap="round" />
+            <line x1={l} x2={r} y1={y(m.from)} y2={y(m.to)} stroke={stroke} strokeWidth="2.5" strokeLinecap="round" />
             <circle cx={l} cy={y(m.from)} r="5" fill="var(--ch-hr-card)" stroke="var(--ch-hr-neutral-fill)" strokeWidth="2.5" />
-            <circle cx={r} cy={y(m.to)} r="6" fill="var(--ch-hr-loss-fill)" />
-            <text x={l} y={y(m.from) - 12} textAnchor="middle" fontSize="13" fontWeight="600" fill="var(--ch-hr-ink)">
+            <circle cx={r} cy={y(m.to)} r="6" fill={stroke} />
+            <text x={l} y={below(m.from, m.to) ? y(m.from) + 20 : y(m.from) - 12} textAnchor="middle" fontSize="13" fontWeight="600" fill="var(--ch-hr-ink)">
               {f(m.from)}
             </text>
-            <text x={r} y={y(m.to) - 12} textAnchor="middle" fontSize="13" fontWeight="600" fill="var(--ch-hr-ink)">
+            <text x={r} y={below(m.to, m.from) ? y(m.to) + 20 : y(m.to) - 12} textAnchor="end" fontSize="13" fontWeight="600" fill="var(--ch-hr-ink)">
               {f(m.to)}
             </text>
             <text x={l} y={H - 4} textAnchor="middle" fontSize="12" fill="var(--ch-hr-ink-3)">
               Before
             </text>
-            {m.through && (
-              <text x={r} y={H - 4} textAnchor="middle" fontSize="12" fill="var(--ch-hr-ink-3)">
-                {m.through}
-              </text>
-            )}
+            <text x={r} y={H - 4} textAnchor="end" fontSize="12" fill="var(--ch-hr-ink-3)">
+              Now
+            </text>
           </svg>
         )}
         <p className={'ch-hr-plainp is-' + m.tone}>{m.text}</p>
@@ -364,26 +371,48 @@ export function RoundsCard({ d, failed }: { d: ChReadDetail; failed: boolean }) 
         </div>
       </Card>
     );
-  const shown = all ? list : list.slice(0, 4);
+  const shown = all ? list.slice(0, 8) : list.slice(0, 4);
   return (
     <Card id="crounds" title="The rounds behind it" meta={`${d.rounds.total} rounds`}>
-      {shown.map((r) => (
-        <div className="row" key={r.id}>
-          <div className="c">
+      {shown.map((r) => {
+        const body = (
+          <>
+            <div className="c">
             <b>
               {r.date}
               {r.course ? ` · ${r.course}` : ''}
             </b>
-            <span>{r.counted ? `${r.counted} counted ${r.counted > 1 ? 'holes' : 'hole'}` : 'Counted in the read'}</span>
+            <span>
+              {r.counted > 0 && (
+                <span className="cdots" aria-hidden="true">
+                  {Array.from({ length: Math.min(r.counted, 9) }, (_, i) => (
+                    <i key={i} />
+                  ))}
+                </span>
+              )}
+              {r.counted ? `${r.counted} counted ${r.counted > 1 ? 'holes' : 'hole'}` : 'Counted in the read'}
+            </span>
           </div>
           <span className="v">
             {r.score} {r.toPar && <span className="ch-hr-topar">{r.toPar}</span>}
           </span>
-          <span className="chev">
-            <Icon icon={ChevronRight} size={14} />
-          </span>
-        </div>
-      ))}
+            {r.href && (
+              <span className="chev">
+                <Icon icon={ChevronRight} size={14} />
+              </span>
+            )}
+          </>
+        );
+        return r.href ? (
+          <Link className="row tap" key={r.id} href={r.href}>
+            {body}
+          </Link>
+        ) : (
+          <div className="row" key={r.id}>
+            {body}
+          </div>
+        );
+      })}
       {list.length > 4 && (
         <button type="button" className="row tap ch-hr-more" aria-expanded={all} onClick={() => setAll((v) => !v)}>
           <span className="c">

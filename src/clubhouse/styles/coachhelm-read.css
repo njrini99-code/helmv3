@@ -121,7 +121,7 @@ html[data-fw-theme='dark'] .ch-hr {
   white-space:nowrap; letter-spacing: var(--ch-track-17); }
 .ch-hr .shade {
   position:sticky;
-  top:110px;
+  top: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
   height:0;
   z-index: var(--ch-z-raised);}
 .ch-hr .sheet {
@@ -290,8 +290,7 @@ html[data-fw-theme='dark'] .ch-hr {
   padding-bottom:2px;
 }
 .ch-hr .ladder {
-  margin-top:calc(12px + 12px*(min(var(--ch-hr-k),1.2) - 1));
-  margin-bottom:calc(40px*(min(var(--ch-hr-k),1.2) - 1));
+  margin-top: 12px;
   display:block;
   width:100%;
   height:auto;
@@ -300,7 +299,6 @@ html[data-fw-theme='dark'] .ch-hr {
 .ch-hr .ladder text {
   font-family:var(--ch-hr-sans);
 
-  font-size:var(--ch-hr-cap-size);
 }
 .ch-hr .cause {
   display:flex;
@@ -385,7 +383,7 @@ html[data-fw-theme='dark'] .ch-hr {
   border-radius: 50%;
   border:2px solid currentColor;
   border-right-color:transparent;
-  animation:ch-spinner-turn .7s linear infinite;
+  animation:ch-spinner-turn var(--ch-dur-sweep) linear infinite;
 }
 .ch-hr .check path {
   stroke-dasharray:24;
@@ -483,10 +481,6 @@ html[data-fw-theme='dark'] .ch-hr {
   font: var(--ch-type-14);
   color:var(--ch-hr-ink-2);
 }
-.ch-hr .fun.pre .fbar {
-  transform:scaleX(0);
-  transition:none;
-}
 .ch-hr .obs {
   display:inline-block;
   font: var(--ch-type-12-strong);
@@ -554,11 +548,6 @@ html[data-fw-theme='dark'] .ch-hr {
 .ch-hr .dots i.f {
   background:var(--ch-hr-loss-fill);
 }
-.ch-hr .dots.pre i.f {
-  opacity:0;
-  transform:scale(.4);
-  transition:none;
-}
 .ch-hr .verdict {
   margin-top:12px;
   padding:12px 12px;
@@ -621,15 +610,6 @@ html[data-fw-theme='dark'] .ch-hr {
 .ch-hr .pn:last-child::after {
   display:none;
 }
-.ch-hr .path.pre .pn::after {
-  transform:scaleX(0);
-  transition:none;
-}
-.ch-hr .path.pre .pn .nd {
-  transform:scale(.7);
-  opacity:0;
-  transition:none;
-}
 .ch-hr .holes {
   display:flex;
   flex-wrap:wrap;
@@ -637,6 +617,10 @@ html[data-fw-theme='dark'] .ch-hr {
   margin-top:12px;
 }
 .ch-hr .hole {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
   font: var(--ch-type-13-medium);
   padding:6px 8px;
   border-radius: var(--ch-radius-sm);
@@ -812,6 +796,8 @@ html[data-fw-theme='dark'] .ch-hr {
   margin-top:12px;
 }
 .ch-hr .lk {
+  position: relative;
+  min-height: 36px;
   appearance:none;
   border:0;
   display:inline-flex;
@@ -870,7 +856,7 @@ html[data-fw-theme='dark'] .ch-hr {
   border-radius: var(--ch-radius-lg);
   background:var(--ch-hr-card);
   box-shadow:0 0 0 var(--ch-hairline-w) var(--ch-hr-ring);
-  animation:ch-hr-pulse 1.6s ease-in-out infinite;
+  animation:ch-hr-pulse var(--ch-dur-shimmer) ease-in-out infinite;
 }
 .ch-hr .skel.f {
   background:var(--ch-hr-feat);
@@ -1098,12 +1084,6 @@ html[data-fw-theme='dark'] .ch-hr {
     grid-column: 2;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .ch-hr * {
-    animation-duration: 1ms !important;
-    transition-duration: 1ms !important;
-  }
-}
 [data-motion='off'] .ch-hr * {
   animation: none !important;
   transition: none !important;
@@ -1217,6 +1197,7 @@ html[data-fw-theme='dark'] .ch-hr {
 
 .ch-hr .ch-hr-deskbar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   align-items: center;
   gap: 8px;
@@ -1268,9 +1249,6 @@ html[data-fw-theme='dark'] .ch-hr {
 .ch-hr .ch-hr-railh:has(.ch-avatar) .ch-avatar {
   grid-row: 1 / span 2;
 }
-.ch-hr .hero b {
-  letter-spacing: 0;
-}
 /* S-READ-DESK: the ladder no wider than 340. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-hr .ladder {
@@ -1294,7 +1272,8 @@ html[data-fw-theme='dark'] .ch-hr {
 .ch-hr-swr .pop {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
+  left: auto;
+  right: 0;
   z-index: 3;
   display: grid;
   width: 250px;
@@ -1322,3 +1301,24 @@ html[data-fw-theme='dark'] .ch-hr {
 .ch-hr .ntc .ch-btn {
   flex: none;
 }
+
+/* 44pt taps on the hole and link chips, without growing what's drawn (RC-11, RC-12). */
+.ch-hr .hole::after,
+.ch-hr .lk::after { content: ''; position: absolute; inset: -4px 0; }
+.ch-hr .holes__more { align-self: center; font: var(--ch-type-13); letter-spacing: var(--ch-track-13); color: var(--ch-hr-ink-2); }
+/* RC-5: a share, not a count. */
+.ch-hr .dotsbar { height: 12px; border-radius: var(--ch-radius-tail); background: var(--ch-hr-well); overflow: hidden; }
+.ch-hr .dotsbar i { display: block; height: 100%; background: var(--ch-hr-loss-fill); transform-origin: left; }
+.ch-hr .dots i:not(.f) { box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-hr-neutral-fill); }
+/* RC-14 */
+.ch-hr .cdots { display: inline-flex; gap: 2px; margin-inline-end: 6px; vertical-align: middle; }
+.ch-hr .cdots i { width: 6px; height: 6px; border-radius: 50%; background: var(--ch-hr-loss-fill); }
+/* RC-4: the switcher's list isn't cut off by its own card. */
+.ch-hr .card:has(.ch-hr-swr) { overflow: visible; }
+/* RC-7: three columns only when this page has room for them, not when the window does. */
+.ch-hr.is-desk { container-type: inline-size; }
+@container (max-width: 1000px) {
+  .ch-hr.is-desk .ch-hr-desk { grid-template-columns: 250px minmax(0, 1fr); }
+}
+/* The bar's ⋯ */
+.ch-hr-morekey { display: inline-grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: none; color: var(--ch-on-green-ink); }

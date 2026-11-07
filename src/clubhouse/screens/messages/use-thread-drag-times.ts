@@ -2,6 +2,7 @@
 
 import { useEffect, type RefObject } from 'react';
 import { chSpringCurve } from '../../lib/motion';
+import { readTypeK } from '../../lib/type-k';
 
 /** The drag's stop at the default Text Size; it scales with k (SETTLED-4NOV 9). */
 export const TIMES_DRAG_PX = 58;
@@ -19,11 +20,11 @@ export function dragOffset(dx: number, max: number): number {
  * back on release, starting from where it is if grabbed again. Vertical wins after 10px, so native scroll keeps it. The left 24px
  * stays the back swipe. Reduced: it follows the finger and returns at once. Writes `transform` directly, so no render per move.
  */
-export function useThreadDragTimes(scroller: RefObject<HTMLElement | null>, enabled: boolean, reduced: boolean, k = 1): void {
+export function useThreadDragTimes(scroller: RefObject<HTMLElement | null>, enabled: boolean, reduced: boolean, k?: number): void {
   useEffect(() => {
     const el = scroller.current;
     if (!enabled || !el) return;
-    const max = TIMES_DRAG_PX * k;
+    const max = TIMES_DRAG_PX * (k ?? readTypeK(el));
     let start: { x: number; y: number; from: number } | null = null;
     let locked = false;
     let current = 0;

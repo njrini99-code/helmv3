@@ -8,6 +8,23 @@
  * Light here; the dark values follow this block (owner, 2026-10-08).
  */
 [data-ui='clubhouse'] {
+  /* Paper: ink on white in every theme, so a sheet prints the same on any printer (N-00 4.14). */
+  /* The composer's attach tiles, the same in both themes (Messages 06, Ruling 15). */
+  --ch-attach-photos: #2f7d4c;
+  --ch-attach-file: #7f612a;
+  --ch-attach-poll: #155a39;
+  --ch-attach-glyph: #fdfcf8;
+  --ch-print-ink: #1c1b18;
+  --ch-print-soft: #46433d;
+  --ch-print-rule: #c9c5ba;
+  --ch-print-paper: #ffffff;
+  /* Paper keeps its size whatever the reader's Text Size (N-00 4.14). */
+  --ch-print-k: 1px;
+  /* A plan's groups A to C on a card, as Ask's full plan draws them (02 C.7). */
+  --ch-run-group-a: #1f6b45;
+  --ch-run-group-b: var(--ch-plan-group-b);
+  --ch-run-group-c: var(--ch-plan-group-c);
+  --ch-run-group-on: #ffffff;
   /* Ivory neutrals */
   --ch-ivory-0: #ffffff;
   --ch-ivory-25: #fdfcf8;
@@ -180,6 +197,18 @@
   --ch-text-placeholder: #69655d;
   --ch-text-on-accent: #ffffff;
   --ch-accent: var(--ch-green-600);
+  /* Ask's own accent and card (owner, 6 Nov): the design's palette, without moving the app's accent. */
+  --ch-ask-accent: var(--ch-green-600);
+  /* Quick chat's live pill and plan bar (coachhelm/06). */
+  --ch-qc-seg-ink: #fff;
+  --ch-qc-live-bg: #06231a;
+  --ch-qc-live-ok: #7cc79b;
+  --ch-qc-live-ok-ink: #0b3a25;
+  --ch-champagne-ink: #725b2c;
+  --ch-ask-on-accent: #fffefb;
+  --ch-ask-card: var(--ch-bubble-theirs-bg);
+  --ch-ask-mine-a: var(--ch-bubble-mine-fill);
+  --ch-ask-mine-b: color-mix(in oklab, var(--ch-bubble-mine-fill) 82%, black);
   --ch-accent-hover: var(--ch-green-700);
   --ch-accent-press: var(--ch-green-800);
   /* Decision 6 (owner, 2026-10-24): a touch darker than 0.07, so a one-device-pixel line still reads (B3). */
@@ -202,6 +231,17 @@
   /* Type on green (hero band, scoreboard): a warm ivory, never white, set with a soft engraved shadow so it sits in
      the surface with depth (owner, 2026-10-06: "more ivory and text depth in the green"). */
   --ch-on-green-ink: #f4eedd;
+  /* Practice groups D to F. A to C live with the printed sheet; the sheet stays light in dark mode, so these don't change there. */
+  --ch-plan-group-b: #2f5b7e;
+  --ch-plan-group-c: #654a7e;
+  --ch-plan-group-d: #4a5a68;
+  --ch-plan-group-e: #5f5c55;
+  --ch-plan-group-f: #7b4b3a;
+  --ch-plan-group-b-night: #6e9bc0;
+  --ch-plan-group-c-night: #b49acb;
+  --ch-plan-group-d-night: #9db0bf;
+  --ch-plan-group-e-night: #b8b3a8;
+  --ch-plan-group-f-night: #d39a83;
   --ch-on-green-ink-soft: rgb(240 233 214 / 0.86);
   /* Meta on a green plate (the Calendar inspector's Next row, F-0039). The plate is green in both themes: no night value. */
   --ch-on-green-ink-meta: #d3e3d7;
@@ -335,6 +375,9 @@
   --ch-type-28-medium: 500 calc(28 * var(--ch-type-k))/calc(34 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-type-28-strong: 600 calc(28 * var(--ch-type-k))/calc(34 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-track-28: -0.03em;
+  /* The range board, read from ten feet (N-00 4.14). */
+  --ch-type-print-title: 600 calc(44 * var(--ch-type-k))/1.05 var(--ch-font-sans);
+  --ch-type-print-figure: 600 calc(56 * var(--ch-type-k))/1 var(--ch-font-sans);
   --ch-type-34: 400 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-type-34-medium: 500 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-type-34-strong: 600 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
@@ -531,6 +574,9 @@
      corner is the card's less the padding between them, floored at --ch-radius-xs. */
   --ch-radius-card: 16px;
   --ch-radius-sheet: 20px;
+  /* The Quick chat panel, as drawn: its own corner, on a Mac and on a phone. */
+  --ch-radius-panel: 26px;
+  --ch-radius-panel-phone: 32px;
   /* CONS-23: the one sheet grab handle's fill (controls.css .ch-grab). */
   --ch-grab-bg: var(--ch-ivory-300);
   /* B4: how far a sideways scroller's clipped edge fades on a phone (ui.css .ch-hscroll), so the edge reads as more. */
@@ -914,6 +960,10 @@
  * recedes. Selector weight (0,2,1) puts this over the light block and the phone block below.
  */
 html[data-fw-theme='dark'] [data-ui='clubhouse'] {
+  --ch-run-group-a: #4fa877;
+  --ch-run-group-b: var(--ch-plan-group-b-night);
+  --ch-run-group-c: var(--ch-plan-group-c-night);
+  --ch-run-group-on: #0e120f;
   color-scheme: dark;
   /* Messages redesign, 11a. */
   --ch-bubble-theirs-bg: #232925;
@@ -1082,6 +1132,13 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-selected-pill-ring: rgb(107 187 140 / 0.3);
   --ch-text-on-accent: #f4eedd;
   --ch-accent: #23704a;
+  --ch-ask-accent: #7cc79b;
+  --ch-qc-seg-ink: #0e120f;
+  --ch-champagne-ink: #cdbb8e;
+  --ch-ask-on-accent: #0e120f;
+  --ch-ask-card: #191e1a;
+  --ch-ask-mine-a: #1f4d35;
+  --ch-ask-mine-b: #173d2a;
   --ch-accent-hover: #2a7d53;
   --ch-accent-press: #1d613f;
   --ch-border-hairline: rgb(237 231 216 / 0.12); /* decision 6, from 0.08 */

@@ -1,5 +1,6 @@
 'use client';
 
+import { LargeTitle } from '../../../ui/LargeTitle';
 import { Button } from '../../../ui/Button';
 
 import { useRefresh } from '../../../lib/use-refresh';
@@ -71,9 +72,7 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
       <div className="dfile">
         <div className="dhead is-week">
           <div>
-            <h1 id="ch-hf-week" className="lt">
-              Your week
-            </h1>
+            <LargeTitle id="ch-hf-week">Your week</LargeTitle>
             <p className="ch-num">{[data.rounds != null ? `${data.rounds} rounds` : null, data.refreshed ? `refreshed ${data.refreshed}` : null].filter(Boolean).join(' · ')}</p>
           </div>
           {!phone && <div className="aseg">{tabs}</div>}

@@ -459,6 +459,8 @@ export function CoachNote({ p, locked, onSaved, onDirty }: { p: ChRosterPlayer; 
         readOnly={locked}
         placeholder={locked ? undefined : `Something to remember about ${p.firstName}`}
         aria-describedby={locked || left <= NOTE_WARN ? helpId : undefined}
+        // Last on a long scroll: the caret stays above the keyboard (MOB-CRH-1).
+        onFocus={(e) => e.currentTarget.scrollIntoView?.({ block: 'nearest' })}
         onChange={(e) => {
           setDraft(e.target.value);
           onDirty?.(e.target.value.trim() !== saved.trim());

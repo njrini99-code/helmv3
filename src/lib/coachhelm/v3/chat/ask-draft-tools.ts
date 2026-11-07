@@ -1,10 +1,23 @@
 import 'server-only';
 import { tool, type ToolSet, type UIMessageStreamWriter } from 'ai';
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import type { CoachChatContext } from './context';
-import { DraftBoardInput } from './create-tools';
+import { buildPollPayload } from '@/lib/golf/message-polls';
+import { DraftBoardInput, DraftMessageInput, DraftPollInput, WriteArtifactInput } from './create-tools';
+
+/** Which chat is asking: Quick chat's card is the coach's Send, the Ask tab hands words to Messages. */
+export type AskSurface = 'ask' | 'quick_chat';
+
+const POLL_PROBLEM: Record<string, string> = {
+  question: 'A poll needs a question.',
+  options: 'A poll needs 2 to 6 choices.',
+  duplicate: 'Two choices say the same thing.',
+  closes: 'The end time has to be in the future.',
+  closes_far: 'The end time has to be within 30 days.',
+};
 
 const BriefInput = z.object({
   title: z.string().min(1).max(120),
@@ -26,11 +39,11 @@ const BriefInput = z.object({
 /**
  * Tools that write nothing: the practice brief asks, and the board hands a draft to Messages. Neither is confirm-gated because neither has a write to gate (02 §14.3). `draft_poll` is not registered: it stays off until held `20261028140800` is applied.
  */
-export function askDraftTools({ sb, ctx, writer, practicePlans = false }: { practicePlans?: boolean; sb: SupabaseClient<Database>; ctx: CoachChatContext; writer: UIMessageStreamWriter }): ToolSet {
+export function askDraftTools({ sb, ctx, writer, practicePlans = false, surface = 'ask', onArtifactWords }: { practicePlans?: boolean; surface?: AskSurface; onArtifactWords?: (words: string) => void; sb: SupabaseClient<Database>; ctx: CoachChatContext; writer: UIMessageStreamWriter }): ToolSet {
   let n = 0;
   return {
     find_thread: tool({
-      description: 'Find a thread the coach is in by its title. Exactly one match: use its id with send_message. Zero or several: ask the coach, never pick.',
+      description: 'Find a thread the coach is in by its title. Exactly one match: write to that thread with its id. Zero or several: ask the coach, never pick.',
       inputSchema: z.object({ title: z.string().min(1).max(120) }),
       execute: async ({ title }) => {
         const { data, error } = await sb.from('golf_conversations').select('id, title, golf_conversation_participants(user_id)').eq('team_id', ctx.team_id).ilike('title', title.replace(/[%_]/g, '')).limit(5);
@@ -50,8 +63,18 @@ export function askDraftTools({ sb, ctx, writer, practicePlans = false }: { prac
           }),
         }
       : {}),
+    // TASK_FIELDS 5.14: until the bank exists the flow says so, and offers the plan block instead of a card it can't keep.
+    ...(practicePlans
+      ? {}
+      : {
+          drill_bank_status: tool({
+            description: 'The coach asked to save a new drill. Call this, and say what it returns, instead of offering to save it.',
+            inputSchema: z.object({}),
+            execute: async () => ({ status: 'unavailable', message: 'Drill bank comes with the practice builder. Offer to put this drill into a practice plan block instead.' }),
+          }),
+        }),
     draft_board: tool({
-      description: 'Open a message to one player in Messages with a short note about the board you just drew. Sends nothing: the coach taps Send there.',
+      description: 'Make a board for one player from the visuals you drew this turn with show_visual: draw them first. It goes in a message to them in Messages as an image, under your short note. Sends nothing: the coach taps Send there.',
       inputSchema: DraftBoardInput,
       execute: async ({ player_id, note }) => {
         const player = ctx.roster.find((p) => p.id === player_id);
@@ -60,5 +83,53 @@ export function askDraftTools({ sb, ctx, writer, practicePlans = false }: { prac
         return { status: 'shown', message: 'The draft is ready to open in Messages. Nothing was sent.' };
       },
     }),
+    // TASK_FIELDS 3 and 5.4: only Quick chat's card is the coach's Send. In the Ask tab a message is words handed to the composer.
+    ...(surface === 'quick_chat'
+      ? {}
+      : {
+          write_artifact: tool({
+            description: 'Write a long piece the coach will keep (a player report, a lineup, a round recap) as its own document beside the chat, not in the answer. Pass the same artifact_id to revise it: earlier versions stay. Every figure must come from a read this turn. Writes nothing outside this chat.',
+            inputSchema: WriteArtifactInput,
+            execute: async ({ artifact_id, kind, title, body }) => {
+              const artifactId = artifact_id ?? randomUUID();
+              onArtifactWords?.(body);
+              writer.write({ type: 'data-artifact', id: `artifact-${artifactId}-${(n += 1)}`, data: { artifactId, kind, title, versionId: randomUUID(), at: new Date().toISOString(), body } });
+              return { status: 'shown', artifact_id: artifactId, message: 'It is on screen as a card the coach can open. Say one line about it; do not repeat it.' };
+            },
+          }),
+          draft_poll: tool({
+            description: 'Open a poll in a group thread found with find_thread, in the poll sheet in Messages. Posts nothing: the coach taps Send there. Votes always show names.',
+            inputSchema: DraftPollInput,
+            execute: async ({ conversation_id, question, options, multi, closes_at }) => {
+              const built = buildPollPayload({ question, options, multi: !!multi, closesAt: closes_at ?? null });
+              if (!built.ok) return { status: 'refused', message: POLL_PROBLEM[built.problem] };
+              const { data, error } = await sb.from('golf_conversations').select('id, title, golf_conversation_participants(user_id)').eq('team_id', ctx.team_id).eq('id', conversation_id).maybeSingle();
+              if (error) return { status: 'failed', message: 'Could not read that thread.' };
+              if (!data) return { status: 'refused', message: 'That thread is not on your team.' };
+              if ((data.golf_conversation_participants?.length ?? 0) < 3) return { status: 'refused', message: 'A poll goes in a group thread.' };
+              const thread = data.title ?? 'this thread';
+              writer.write({ type: 'data-handoff', id: `handoff-${(n += 1)}`, data: { kind: 'poll', players: [], conversationId: data.id, title: `Poll for ${thread}`, thread, draft: '', poll: { question, options, ...(multi ? { multi: true } : {}), ...(closes_at ? { closes: closes_at } : {}) } } });
+              return { status: 'shown', message: 'The poll is ready to open in Messages. Nothing was posted.' };
+            },
+          }),
+          draft_message: tool({
+            description: 'Open a message in Messages with the words already in the composer, for one thread found with find_thread or for named players. Sends nothing: the coach taps Send there.',
+            inputSchema: DraftMessageInput,
+            execute: async ({ conversation_id, player_ids, content }) => {
+              if (conversation_id) {
+                const { data, error } = await sb.from('golf_conversations').select('id, title').eq('team_id', ctx.team_id).eq('id', conversation_id).maybeSingle();
+                if (error) return { status: 'failed', message: 'Could not read that thread.' };
+                if (!data) return { status: 'refused', message: 'That thread is not on your team.' };
+                writer.write({ type: 'data-handoff', id: `handoff-${(n += 1)}`, data: { kind: 'message', players: [], conversationId: data.id, title: data.title ? `Draft for ${data.title}` : 'Draft for this thread', draft: content } });
+                return { status: 'shown', message: 'The draft is ready to open in Messages. Nothing was sent.' };
+              }
+              const people = (player_ids ?? []).map((id) => ctx.roster.find((p) => p.id === id));
+              if (!people.length || people.some((p) => !p)) return { status: 'refused', message: 'Every player must be on your active roster.' };
+              const only = people.length === 1 ? people[0] : null;
+              writer.write({ type: 'data-handoff', id: `handoff-${(n += 1)}`, data: { kind: 'message', players: people.map((p) => p!.id), title: only ? `Draft for ${only.name}` : `Draft for ${people.length} players`, draft: content } });
+              return { status: 'shown', message: 'The draft is ready to open in Messages. Nothing was sent.' };
+            },
+          }),
+        }),
   };
 }

@@ -212,7 +212,8 @@ export interface ChAskData {
   /** The player's first name, for the home's greeting. */
   firstName?: string;
   /** The player's own focus lines on Ask's home. */
-  focus?: Array<{ text: string; ask: string | null }>;
+  /** `trend`: how it's going, when the focus area has an outcome. Left out, its dot says nothing. */
+  focus?: Array<{ text: string; ask: string | null; trend?: 'up' | 'warn' }>;
 }
 
 export type ChAskLoad =

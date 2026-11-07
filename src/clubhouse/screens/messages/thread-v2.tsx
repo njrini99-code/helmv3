@@ -81,10 +81,14 @@ export function ThreadJumpKey({ scroller, unseen, onJump }: { scroller: RefObjec
     const input = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const;
     for (const t of input) el.addEventListener(t, settled, { passive: true, once: true });
     el.addEventListener('scroll', onScroll, { passive: true });
+    // The keyboard or a turn changes how far the end is, with no scroll to say so.
+    const resized = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(onScroll);
+    resized?.observe(el);
     read();
     return () => {
       clearTimeout(timer);
       for (const t of input) el.removeEventListener(t, settled);
+      resized?.disconnect();
       el.removeEventListener('scroll', onScroll);
       if (frame) cancelAnimationFrame(frame);
     };

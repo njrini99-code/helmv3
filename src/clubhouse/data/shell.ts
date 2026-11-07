@@ -39,6 +39,8 @@ export interface ChShellData {
   refresh?: boolean;
   /** golf_tournaments_v1 is on (P016): the Tournaments nav entry and its routes. Set by the dashboard layout, server side. */
   tournaments?: boolean;
+  /** golf_practice_plans is on: the Practice nav entry. Set by the dashboard layout, server side. */
+  practice?: boolean;
   /**
    * P-10: `class_awareness_v1` is on. Read once with the shell and handed to the client by context (useClassAwareness),
    * because the flag registry is server-only. Off or absent: no class RPC is called anywhere and no column is sent.

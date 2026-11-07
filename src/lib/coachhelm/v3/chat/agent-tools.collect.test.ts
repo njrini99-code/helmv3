@@ -39,6 +39,7 @@ const executeAnnouncement = vi.fn();
 
 vi.mock('./action-planners', () => ({
   ActionPlanError: class ActionPlanError extends Error {},
+  keyOf: (parts: unknown[]) => parts.join('|'),
   planFocusArea: (...args: unknown[]) => planFocusArea(...args),
   executeFocusArea: (...args: unknown[]) => executeFocusArea(...args),
   planTask: (...args: unknown[]) => planTask(...args),
@@ -56,7 +57,9 @@ vi.mock('./practice-planner', () => ({
   PracticePlanError: class PracticePlanError extends Error {},
 }));
 
-import { buildCoachTools } from './agent-tools';
+import { buildCoachTools, isConfirmRequired } from './agent-tools';
+import { eventEnd } from './create-tools';
+import { auditNumericClaims, collectDates, collectEnvelopeNumbers } from './provenance';
 
 function ctx(): CoachChatContext {
   return {
@@ -255,5 +258,58 @@ describe('agent-tools — gated-action numbers reach the claim audit', () => {
     // own timestamp digits incidentally containing "47".
     expect(JSON.stringify(envelope.detail)).not.toContain('internal_batch_size');
     expect(JSON.stringify(envelope.detail)).not.toContain('47');
+  });
+
+  describe('quick chat: "Add a practice next Tuesday at 3pm"', () => {
+    const practice = { title: 'QA test practice', event_type: 'practice', date: '2026-11-10', start: '15:00', location: 'Home course', all_day: false, invite_player_ids: [], requires_rsvp: false };
+    const propose = async (input: Record<string, unknown>) => {
+      const writer = { write: vi.fn() };
+      const collect = vi.fn();
+      const tools = buildCoachTools({ sb: {} as never, ctx: ctx(), conversationId: 'conv-1', writer: writer as never, collect, askV2: true });
+      await tools.create_event!.onInputAvailable!({ input } as never);
+      const card = writer.write.mock.calls.map(([c]) => c).find((c) => c.type === 'data-action-proposal');
+      return { card, collect };
+    };
+
+    it('reaches a draft with the usual length on it, marked for the coach to change', async () => {
+      const { card } = await propose(practice);
+      expect(card.data.visual).toMatchObject({ kind: 'cal', date: '2026-11-10', start: '15:00', end: '17:30' });
+      expect(card.data.facts).toContainEqual(expect.objectContaining({ label: 'When', value: '2026-11-10, 15:00 to 17:30' }));
+      expect(card.data.facts).toContainEqual({ label: 'Length', value: '2.5 hours', source: expect.stringContaining('Tell me') });
+    });
+
+    it('writes nothing until the coach confirms', async () => {
+      await propose(practice);
+      expect(isConfirmRequired('create_event')).toBe(true);
+      expect(claimForExecution).not.toHaveBeenCalled();
+    });
+
+    it('the reply can restate the card: its day and its length pass the audit', async () => {
+      const { collect } = await propose({ ...practice, date: '2026-11-17' });
+      const envelope = collect.mock.calls.at(-1)![0];
+      const found = auditNumericClaims('I drafted QA test practice for Tuesday, November 17, from 3:00 to 5:30 PM, the usual 2.5 hours.', [], [], collectEnvelopeNumbers(envelope), collectDates(envelope.detail, 'America/New_York'), 'America/New_York');
+      expect(found).toEqual([]);
+      expect(auditNumericClaims('I drafted it for November 18.', [], [], collectEnvelopeNumbers(envelope), collectDates(envelope.detail, 'America/New_York'), 'America/New_York').map((c) => c.text)).toEqual(['November 18']);
+    });
+
+    it("the coach's own end time stands, with no assumed length", async () => {
+      const { card } = await propose({ ...practice, end: '16:30' });
+      expect(card.data.visual.end).toBe('16:30');
+      expect(card.data.facts.map((f: { label: string }) => f.label)).not.toContain('Length');
+    });
+
+    it('only a practice gets the default: a meeting with no end is a question, and so is a practice that would run past midnight', async () => {
+      expect((await propose({ ...practice, event_type: 'meeting' })).card).toBeUndefined();
+      expect((await propose({ ...practice, start: '22:00' })).card).toBeUndefined();
+    });
+
+    it('eventEnd', () => {
+      expect(eventEnd({ event_type: 'practice', start: '15:00' })).toBe('17:30');
+      expect(eventEnd({ event_type: 'practice', start: '21:29' })).toBe('23:59');
+      expect(eventEnd({ event_type: 'practice', start: '21:30' })).toBeNull();
+      expect(eventEnd({ event_type: 'practice', start: '15:00', all_day: true })).toBeNull();
+      expect(eventEnd({ event_type: 'tournament', start: '15:00' })).toBeNull();
+      expect(eventEnd({ event_type: 'meeting', start: '15:00', end: '16:00' })).toBe('16:00');
+    });
   });
 });

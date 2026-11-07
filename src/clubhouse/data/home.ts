@@ -753,6 +753,7 @@ export async function loadHomeWeek(
 
   // ── Phone: Up next and Today ──
   const clockAmPm = (iso: string) => timeFmt.format(new Date(iso));
+  const meridiemOf = (iso: string) => /[AP]M$/.exec(clockAmPm(iso))?.[0] ?? '';
   const timed = todays.filter((e) => !e.all_day && e.end_time);
   const overlaps = (e: (typeof events)[number]) =>
     !e.all_day && !!e.end_time && timed.some((o) => o.id !== e.id && new Date(o.start_time) < new Date(e.end_time!) && new Date(e.start_time) < new Date(o.end_time!));
@@ -766,7 +767,7 @@ export async function loadHomeWeek(
     endIso: e.end_time,
     allDay: !!e.all_day,
     startLabel: e.all_day ? 'All day' : clockAmPm(e.start_time),
-    rangeLabel: e.all_day ? 'All day' : e.end_time ? `${clock(e.start_time)} – ${clockAmPm(e.end_time)}` : clockAmPm(e.start_time),
+    rangeLabel: e.all_day ? 'All day' : e.end_time ? `${meridiemOf(e.start_time) === meridiemOf(e.end_time) ? clock(e.start_time) : clockAmPm(e.start_time)} – ${clockAmPm(e.end_time)}` : clockAmPm(e.start_time),
     location: e.location,
   });
   /**

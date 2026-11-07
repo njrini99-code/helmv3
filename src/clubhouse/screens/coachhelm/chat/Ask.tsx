@@ -1,13 +1,15 @@
 'use client';
 
 import { useQuickChatRun } from '../../../shell/quick-chat/QuickChatProvider';
+import { AnimatePresence } from 'motion/react';
 import { AskKnowsPanel } from './parts/KnowsPanel';
 import { AllowanceMeter, PlayerOut } from './parts/Allowance';
-import { ArtifactView } from './parts/Artifact';
+import { ArtifactBody, ArtifactView } from './parts/Artifact';
 import { askSlashCommands } from '../../../data/coachhelm-slash';
 import type { AskArtifact } from './parts/artifacts';
 import { MessagesSquare, PanelLeftOpen, Settings2, SquarePen } from 'lucide-react';
 import { Modal } from '../../../ui/Modal';
+import { useSafariKeyboardFit } from '../../../shell/PhoneScreen';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
@@ -99,13 +101,13 @@ function AskFrame({ team, children }: { team?: string; children: ReactNode }) {
  * `load` is what the server read (data/coachhelm-chat.ts): a roster of nobody and a context that did not load are their own
  * pages; everything else is the chat. The conversation itself runs on the production hook and route, unchanged.
  */
-/** The scope line's words: who, from a name in the question, and the window, if the question gave one. Never a figure, so it can't overclaim. */
+/** The scope line's words: who, from a name in the question, and the window only if the question gave one (QA-5: a guessed "last 30 days" contradicted answers read over the season). Never a figure, so it can't overclaim. */
 export function askScope(question: string, team: string, names: readonly string[]): string {
   const q = question.toLowerCase();
   const who = names.find((n) => q.includes(n.toLowerCase()) || q.includes((n.split(' ')[0] ?? n).toLowerCase())) ?? team;
   const rounds = q.match(/last (\d+) rounds/)?.[0];
-  const window = rounds ?? (/this season|this fall|this spring/.exec(q)?.[0]) ?? (/last season|last fall/.exec(q)?.[0]) ?? 'last 30 days';
-  return `${who} · ${window}`;
+  const window = rounds ?? (/this season|this fall|this spring/.exec(q)?.[0]) ?? (/last season|last fall/.exec(q)?.[0]) ?? (/last 30 days/.exec(q)?.[0]);
+  return window ? `${who} · ${window}` : who;
 }
 
 export function Ask({ load, chat = useCoachHelmChat, initial, v2 = false, slashFlags }: { slashFlags?: { plans: boolean; lineup: boolean }; load: ChAskLoad; chat?: ChAskChat; initial?: ChAskInitial; v2?: boolean }) {
@@ -195,13 +197,23 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
   const chat = run?.busy && run.conversationId && run.conversationId === data.thread?.id ? run : own;
 
   const out = data.allowance === 'out' || chat.messages.some((m) => m.parts.some((p) => p.type === 'data-allowance'));
+  // It ran out on this visit, in front of the player, rather than before the page opened.
+  const ranOutLive = data.allowance !== 'out';
   const pending = pendingApproval(chat.messages);
   const showHome = chat.messages.length === 0 && !gone && !data.threadFailed;
   const notice = chat.error ? describeChatError(chat.error) : null;
   // A thread covers the page, so the phone tab bar steps aside; the new-chat home keeps it.
   usePhoneTabsHidden(phone && !showHome);
 
+  // CP-1, CP-3: the turn the coach stopped says so, from its own card, until the next send.
+  const [stoppedTurn, setStoppedTurn] = useState<string | null>(null);
+  const stop = () => {
+    const last = chat.messages[chat.messages.length - 1];
+    setStoppedTurn(last?.role === 'assistant' ? last.id : null);
+    chat.stop();
+  };
   const send = (text: string) => {
+    setStoppedTurn(null);
     lastSent.current = text;
     expecting.current = openId === null ? epoch.current : null;
     setGone(false);
@@ -249,10 +261,25 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
     onOpen: chatSw.go,
   };
 
+  // S-ASK.scope: what the last question is about, in the same words the question used; it changes when a question is sent.
+  const lastAsked = [...chat.messages].reverse().find((m) => m.role === 'user')?.parts.flatMap((p) => (p.type === 'text' ? [p.text] : [])).join(' ') ?? '';
+  const scopeLine = showHome ? `${player ? 'My rounds' : data.teamName} · this season` : askScope(lastAsked, player ? 'My rounds' : data.teamName, player ? [] : (data.players ?? []).map((p) => p.name));
+
+  // FID-ASK-7: read once, then off the address, so a reload doesn't put it back over what the coach has since typed.
+  const [seededQuestion] = useState(() => (typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('q')));
+  useEffect(() => {
+    if (!seededQuestion) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('q');
+    window.history.replaceState(window.history.state, '', url);
+  }, [seededQuestion]);
+
   const composer = (variant: 'hero' | 'dock') => (
     <SectionBoundary surface="coachhelm.ask.composer" label="The message box" code="CH-13225">
       <AskComposer
+        seed={seededQuestion}
         hint={v2 ? (player ? 'Ask about your game' : 'Ask about your team') : undefined}
+        scopeOf={v2 ? (text) => (text.trim() ? askScope(text, player ? 'My rounds' : data.teamName, player ? [] : (data.players ?? []).map((p) => p.name)) : scopeLine).split(' · ') : undefined}
         slash={v2 ? askSlashCommands({ player, plans: !!slashFlags?.plans, lineup: !!slashFlags?.lineup }) : undefined}
         variant={variant}
         phone={phone}
@@ -260,8 +287,9 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
         busy={chat.busy}
         failed={Boolean(chat.error)}
         blocked={Boolean(pending)}
+        paused={player && out ? 'Ask is paused until Monday' : undefined}
         onSend={send}
-        onStop={chat.stop}
+        onStop={stop}
         // eslint-disable-next-line jsx-a11y/no-autofocus -- a component prop; the composer focuses itself in an effect
         autoFocus={variant === 'hero'}
         fresh={showHome}
@@ -281,6 +309,7 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
     <SectionBoundary surface="coachhelm.ask.thread" label="The conversation" code="CH-13225">
       <AskThread
         v2={v2}
+        team={data.teamName}
         onArtifact={setArtifact}
         messages={chat.messages}
         busy={chat.busy}
@@ -291,7 +320,8 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
         onApprove={chat.approve}
         onDeny={chat.deny}
         onSend={ask}
-        onStop={chat.stop}
+        onStop={stop}
+        stoppedTurn={stoppedTurn}
         onRetry={chat.retry}
         onNewChat={newChat}
         evidenceFocus={evidence}
@@ -310,15 +340,16 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
     if (evidenceOpen && narrowDesktop()) setEvidence(null);
   };
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // ASK-2: on Safari the keyboard covers the page without moving it, and --keyboard-height is the app's. The box follows what's visible.
+  const askRoot = useRef<HTMLElement>(null);
+  useSafariKeyboardFit(askRoot, phone);
+  const artifactView = artifact && <ArtifactView key={artifact.id} artifact={artifact} phone={phone} body={(b) => <ArtifactBody body={b} />} onPublish={(title) => { if (phone) setArtifact(null); ask(`Publish “${title}” for the team.`); }} onClose={() => setArtifact(null)} />;
   // The phone sheet's subject, kept after it closes so its exit still has the content it showed.
   const [sheetEvidence, setSheetEvidence] = useState<EvidenceFocus | null>(null);
   if (phone && evidenceOpen && evidence !== sheetEvidence) setSheetEvidence(evidence);
 
-  // S-ASK.scope: what the last question is about, in the same words the question used; it changes when a question is sent.
-  const lastAsked = [...chat.messages].reverse().find((m) => m.role === 'user')?.parts.flatMap((p) => (p.type === 'text' ? [p.text] : [])).join(' ') ?? '';
-  const scopeLine = showHome ? `${player ? 'My rounds' : data.teamName} · this season` : askScope(lastAsked, player ? 'My rounds' : data.teamName, player ? [] : (data.players ?? []).map((p) => p.name));
   return (
-    <main className={'ch-ask' + (v2 ? ' ch-ak-root' : '') + (phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || chatSw.pending || undefined} data-switch={sw.pending ? 'view' : chatSw.pending ? 'chat' : undefined} data-ch-code="CH-13820" {...sw.enter}>
+    <main ref={askRoot} className={'ch-ask' + (v2 ? ' ch-ak-root' : '') + (phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || chatSw.pending || undefined} data-switch={sw.pending ? 'view' : chatSw.pending ? 'chat' : undefined} data-ch-code="CH-13820" {...sw.enter}>
       {phone && (
         <>
           <PhoneTop
@@ -384,13 +415,11 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
               Reading <b>{scopeLine}</b>
             </p>
           )}
-          <div className={'ch-ask-scroll' + (showHome ? ' is-home' : !gone && !data.threadFailed ? ' is-thread' : '')}>{body}</div>
-          {player && out && (
-            <div className="ch-ask-dock">
-              <PlayerOut />
-            </div>
-          )}
-          {docked && !(player && out) && (
+          <div className={'ch-ask-scroll' + (showHome ? ' is-home' : !gone && !data.threadFailed ? ' is-thread' : '')}>
+            {body}
+            {player && out && <PlayerOut live={ranOutLive} from={data.firstName ? `${data.firstName} · ${data.teamName}` : data.teamName} />}
+          </div>
+          {docked && (
             <div className="ch-ask-dock">
               {composer('dock')}
               {!phone && (
@@ -400,13 +429,15 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
           )}
           {showHome && !phone && <p className="ch-ask-foot is-home">CoachHelm reads {data.teamName} data only. Check the numbers before you act on them.</p>}
         </section>
+        {artifact && !phone && artifactView}
         {!phone && evidenceOpen && evidence && (
           <aside className="ch-ask-ev" aria-label="Evidence">
             <AskEvidencePanel focus={evidence} messages={chat.messages} phone={false} onClose={() => setEvidence(null)} />
           </aside>
         )}
       </div>
-      {artifact && <ArtifactView key={artifact.id} artifact={artifact} phone={phone} body={(b) => <pre className="ch-ak-plain">{typeof b === 'string' ? b : JSON.stringify(b, null, 2)}</pre>} onClose={() => setArtifact(null)} />}
+      {/* Only keeps the pane mounted for its exit: ArtifactView honours prefers-reduced-motion itself. */}
+      <AnimatePresence>{artifact && phone && artifactView}</AnimatePresence>
       {phone && (
         <>
           <HistoryDrawer {...histProps} open={drawer} onClose={() => setDrawer(false)} />

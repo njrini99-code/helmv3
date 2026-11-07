@@ -66,10 +66,11 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, m as M } from "motion/react";
 import { CH_FADE_MS, chSpringCurve, chTween } from "../../lib/motion";
 import type { ChClock } from "../../lib/clock-cookie";
+import { ThreadJumpKey } from "./thread-v2";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useComposerInset } from "./composer-inset";
 import { useFocusMessage } from "./use-focus-message";
-import { pollCardActions, PollButton, PollCard, PollSheet, PollThreadContext, type ChPollsApi, type PollThreadActions } from "./polls";
+import { pollCardActions, PollButton, PollCard, PollSheet, PollThreadContext, usePollSeed, type ChPollsApi, type PollThreadActions } from "./polls";
 import { useChReducedMotion } from "../../lib/reduced-motion";
 import { Avatar } from "../../ui/Avatar";
 import { Badge } from "../../ui/Badge";
@@ -141,6 +142,7 @@ import { HoldSeenRow, SeenByPill, SeenByReceipt, useSeenBy, useSeenByList } from
 import { receiptCarrierId, SEEN_BY_VISIBILITY } from "@/lib/golf/message-receipts";
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
 import { fileKind, fileMeta, fileSize, useConversationFiles } from "./files";
+import { subscribeThreadFiles, takeThreadFiles } from "./prefill";
 // Re-exported: MessagesPhone and older callers read it from here.
 export { fileSize } from "./files";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
@@ -917,6 +919,7 @@ function ReactionChip({ api, messageId, r, arriving = false }: { api: ChMessages
 /** A photo in a message: shown in the thread, a click opens the full file. One that won't load falls back to the file chip. */
 function ImageAttachment({ f, redesign = false }: { f: ChAttachment; redesign?: boolean }) {
   const [broken, setBroken] = useState(false);
+  const [viewing, setViewing] = useState(false);
   if (broken) {
     return (
       <a className="ch-ms-bub ch-ms-bub--file" href={f.url ?? undefined} target="_blank" rel="noreferrer">
@@ -932,10 +935,21 @@ function ImageAttachment({ f, redesign = false }: { f: ChAttachment; redesign?: 
     );
   }
   return (
-    <a className="ch-ms-img" href={f.url ?? undefined} target="_blank" rel="noreferrer" aria-label={`Open ${f.name}`}>
-      {/* A plain img on purpose: a signed storage URL, sized by the thread, not an optimised asset. */}
-      <img src={f.url ?? undefined} alt={f.name} loading="lazy" decoding="async" onError={() => setBroken(true)} />
-    </a>
+    <>
+      {/* A photo opens here, in the app; the original is one more tap inside it. */}
+      <button type="button" className="ch-ms-img" aria-label={`Open ${f.name}`} onClick={() => setViewing(true)}>
+        {/* A plain img on purpose: a signed storage URL, sized by the thread, not an optimised asset. */}
+        <img src={f.url ?? undefined} alt={f.name} loading="lazy" decoding="async" onError={() => setBroken(true)} />
+      </button>
+      <Modal open={viewing} title={f.name} onClose={() => setViewing(false)}>
+        <div className="ch-ms-imgview">
+          <img src={f.url ?? undefined} alt={f.name} decoding="async" />
+          <a className="ch-ms-imgview__orig" href={f.url ?? undefined} target="_blank" rel="noreferrer">
+            Open original
+          </a>
+        </div>
+      </Modal>
+    </>
   );
 }
 
@@ -958,7 +972,20 @@ export function Attachments({
   const [refresh, setRefresh] = useState(0);
   const loadedAt = useRef(0);
   const haveFiles = useRef(false);
+  // A long thread doesn't sign every file on open: only what's about to scroll into view (MOB-MSG-24).
+  const spot = useRef<HTMLSpanElement | null>(null);
+  const [near, setNear] = useState(() => typeof IntersectionObserver === "undefined");
   useEffect(() => {
+    const el = spot.current;
+    if (near || !el) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) setNear(true);
+    }, { rootMargin: "800px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [near]);
+  useEffect(() => {
+    if (!near) return;
     let live = true;
     let retry: number | undefined;
     const silent = haveFiles.current;
@@ -988,7 +1015,7 @@ export function Attachments({
       live = false;
       if (retry) window.clearTimeout(retry);
     };
-  }, [load, id, attempt, refresh]);
+  }, [load, id, attempt, refresh, near]);
   useEffect(() => {
     const AGE = 45 * 60_000;
     const stale = () => haveFiles.current && Date.now() - loadedAt.current > AGE;
@@ -1024,7 +1051,7 @@ export function Attachments({
   }
   if (!files)
     return (
-      <span aria-busy="true" data-ch-code="CH-7408">
+      <span ref={spot} aria-busy="true" data-ch-code="CH-7408">
         <Skeleton width={240} height={54} radius={14} />
       </span>
     );
@@ -1092,11 +1119,26 @@ function useLongPress(onFire: (() => void) | undefined, onSwipe?: (direction: "l
         if (timer.current) window.clearTimeout(timer.current);
         timer.current = null;
         // Vertical movement belongs to the native scroll view.
-        if (Math.abs(e.clientY - o.y) > 24) origin.current = null;
+        if (Math.abs(e.clientY - o.y) > 24) {
+          origin.current = null;
+          (e.currentTarget as HTMLElement).style.transform = '';
+        } else if (o.x >= 24 && onSwipe && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          // The bubble follows the finger up to the distance that replies, so the swipe shows it's working.
+          const dx = e.clientX - o.x;
+          (e.currentTarget as HTMLElement).style.transform = `translateX(${Math.max(-64, Math.min(64, dx))}px)`;
+        }
       }
     },
     onPointerUp: (e: ReactPointerEvent) => {
       const o = origin.current;
+      const el = e.currentTarget as HTMLElement;
+      if (el.style.transform) {
+        el.style.transition = 'transform var(--ch-dur-quick) var(--ch-ease)';
+        el.style.transform = '';
+        window.setTimeout(() => {
+          el.style.transition = '';
+        }, 200);
+      }
       if (o && o.x >= 24 && onSwipe && Math.abs(e.clientX - o.x) >= 60 && Math.abs(e.clientY - o.y) <= 24) {
         haptic("select");
         onSwipe(e.clientX > o.x ? "right" : "left");
@@ -1159,7 +1201,18 @@ export function Bubble({
     drawn.current = true;
   }, []);
   const [showTime, setShowTime] = useState(false);
-  const press = useLongPress(m.failed ? undefined : onActions, onActions ? (direction) => {
+  // The desk layout on a finger (a landscape iPhone, an iPad) has no sheet and no hover: a long press holds the bar open.
+  const [barHeld, setBarHeld] = useState(false);
+  const rowRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!barHeld) return;
+    const away = (e: PointerEvent) => {
+      if (!rowRef.current?.contains(e.target as Node)) setBarHeld(false);
+    };
+    document.addEventListener('pointerdown', away);
+    return () => document.removeEventListener('pointerdown', away);
+  }, [barHeld]);
+  const press = useLongPress(m.failed ? undefined : (onActions ?? (api.redesign ? () => setBarHeld(true) : undefined)), onActions ? (direction) => {
     if (direction === "right") onReply?.();
     else setShowTime(true);
   } : undefined);
@@ -1219,7 +1272,9 @@ export function Bubble({
   const reacts = api.reactions.get(m.id) ?? [];
   // Redesign: two taps within 300ms toggle Like, once (MSG-HOLD-06).
   const lastTap = useRef(0);
-  const toggleLikeOnDouble = () => {
+  const toggleLikeOnDouble = (e: { target: EventTarget | null }) => {
+    // A double tap on a link, a poll or a photo is about that thing, not a like.
+    if (e.target instanceof Element && e.target.closest('a,button,input,label,[role="button"],.ch-ms-poll,.ch-ms-quote,img')) return;
     const now = Date.now();
     if (now - lastTap.current < 300) {
       lastTap.current = 0;
@@ -1287,6 +1342,8 @@ export function Bubble({
     <PresenceRow
       as="div"
       id={`ch-ms-message-${m.id}`}
+      ref={rowRef as never}
+      data-ch-bar={barHeld ? "" : undefined}
       className={
         "ch-ms-msg" +
         (group ? " is-group" : "") +
@@ -1760,6 +1817,7 @@ export function AttachButton({
 export function ComposerPlus({ api, conv, disabled, onPick }: { api: ChMessagesApi; conv: ChConv; disabled?: boolean; onPick: (picked: File[]) => void }) {
   const input = useRef<HTMLInputElement | null>(null);
   const [polling, setPolling] = useState(false);
+  const seedKey = usePollSeed(conv.id, () => setPolling(true));
   return (
     <>
       <Menu
@@ -1783,7 +1841,7 @@ export function ComposerPlus({ api, conv, disabled, onPick }: { api: ChMessagesA
           e.target.value = "";
         }}
       />
-      <PollSheet key={conv.id} api={api} conv={conv} open={polling} onClose={() => setPolling(false)} />
+      <PollSheet key={seedKey} api={api} conv={conv} open={polling} onClose={() => setPolling(false)} />
     </>
   );
 }
@@ -1889,6 +1947,15 @@ export function Composer({
   const [files, setFiles] = useState<File[]>(recovery?.files ?? initialFiles ?? []);
   const filesRef = useRef(files);
   filesRef.current = files;
+  // A board from Ask lands here as a file waiting to be sent: the coach presses Send.
+  useEffect(() => {
+    const take = () => {
+      const seeded = takeThreadFiles(conv.id);
+      if (seeded.length) setFiles((f) => [...f, ...seeded]);
+    };
+    take();
+    return subscribeThreadFiles(take);
+  }, [conv.id]);
   const [sending, setSending] = useState(false);
   const sendingRef = useRef(false);
   const ta = useRef<HTMLTextAreaElement | null>(null);
@@ -2535,7 +2602,7 @@ function Thread({
           )}
         </div>
       </div>
-      <ThreadBelow anchor={anchor} />
+      {api.redesign ? <ThreadJumpKey scroller={scroller} unseen={anchor.unseen} onJump={anchor.toEnd} /> : <ThreadBelow anchor={anchor} />}
       <Composer
         key={conv.id}
         api={api}

@@ -89,7 +89,7 @@ export interface AskStep {
   id: string;
   label: string;
   /** Ask v2's replaced progress part; old parts lack them and draw as today. */
-  state?: 'active' | 'done' | 'failed';
+  state?: 'active' | 'done' | 'failed' | 'next';
   /** The past-tense label. */
   done?: string;
   /** One fact the read returned. */
@@ -142,10 +142,16 @@ export interface AskBriefData {
 
 /** A draft that opens Messages; the tool writes nothing and the coach sends. */
 export interface AskHandoffData {
-  kind: 'board';
+  kind: 'board' | 'message' | 'poll';
+  /** Empty when the draft names one thread. */
   players: string[];
+  /** One thread the coach is in, found by find_thread. */
+  conversationId?: string;
   title: string;
+  /** The thread's name, on a poll. */
+  thread?: string;
   draft: string;
+  poll?: { question: string; options: string[]; multi?: boolean; closes?: string };
 }
 
 export type AskBlock =
@@ -378,7 +384,16 @@ const READ_NAME: Record<string, string> = {
   get_team_travel: 'Travel',
 };
 
-function windowWords(m: Measurement | undefined): string | null {
+/** What a read's figures rest on: its first measurement, or its first series (a trend's envelope carries only that). */
+export function readBasis(envelope: ToolEnvelope): (Pick<Measurement, 'entity' | 'window_start' | 'window_end' | 'as_of' | 'sample_size' | 'sample_unit'>) | undefined {
+  const m = envelope.measurements[0];
+  if (m) return m;
+  const s = envelope.series?.[0];
+  // A series' points may be rounds or buckets, so it claims no sample of its own: its window and date are what it knows.
+  return s ? { entity: s.entity, window_start: s.window_start, window_end: s.window_end, as_of: s.as_of, sample_size: 0, sample_unit: 'rounds' } : undefined;
+}
+
+function windowWords(m: Pick<Measurement, 'window_start' | 'window_end' | 'sample_unit' | 'sample_size'> | undefined): string | null {
   if (!m?.window_start || !m.window_end) return m?.sample_unit === 'rounds' && m.sample_size > 0 ? `${m.sample_size} rounds` : null;
   const days = Math.round((Date.parse(m.window_end) - Date.parse(m.window_start)) / 86_400_000);
   return Number.isFinite(days) && days > 0 ? `${days} days` : null;
@@ -392,7 +407,7 @@ function turnReadsOf(parts: ReadonlyArray<Record<string, unknown> & { type: stri
     if (!d?.envelope || !d.ref) continue;
     const tool = d.tool ?? '';
     const name = READ_NAME[tool] ?? 'Read';
-    const win = windowWords(d.envelope.measurements[0]);
+    const win = windowWords(readBasis(d.envelope));
     out.push({ ref: d.ref, tool, name, chip: win ? `${name} · ${win}` : name, envelope: d.envelope });
   }
   return out;
@@ -400,13 +415,13 @@ function turnReadsOf(parts: ReadonlyArray<Record<string, unknown> & { type: stri
 
 /** What a read chip's popover says: only what the envelope holds (AK2). */
 export function readRows(read: AskTurnRead): Array<{ label: string; value: string }> {
-  const m = read.envelope.measurements[0];
+  const m = readBasis(read.envelope);
   if (!m) return [{ label: 'Read', value: read.name }];
   const line = sourceLine(m);
   return [
     ...(m.sample_size > 0 ? [{ label: 'Sample', value: sampleWords(m.sample_size, m.sample_unit) }] : []),
     ...(windowWords(m) ? [{ label: 'Window', value: windowWords(m) as string }] : []),
-    ...(line && !m.sample_size ? [{ label: 'Source', value: line }] : []),
+    ...(line && !m.sample_size && !windowWords(m) ? [{ label: 'Source', value: line }] : []),
     ...(fmtDay(m.as_of) ? [{ label: 'Computed', value: fmtDay(m.as_of) as string }] : []),
   ];
 }
@@ -554,7 +569,8 @@ export function failedAnswerChangedNothing(messages: UIMessage[]): { changedNoth
 
 export type ProseBlock =
   | { kind: 'paragraph'; text: string }
-  | { kind: 'list'; items: string[] }
+  | { kind: 'heading'; text: string }
+  | { kind: 'list'; items: string[]; ordered?: boolean }
   /** A GitHub pipe table. The model is told not to write them; older answers have them, and raw pipes read as broken. */
   | { kind: 'table'; header: string[]; rows: string[][]; numeric: boolean[] };
 
@@ -580,13 +596,15 @@ export function parseProse(text: string): ProseBlock[] {
   const blocks: ProseBlock[] = [];
   let paragraph: string[] = [];
   let list: string[] = [];
+  let ordered = false;
   const flushParagraph = () => {
     if (paragraph.length > 0) blocks.push({ kind: 'paragraph', text: paragraph.join(' ').trim() });
     paragraph = [];
   };
   const flushList = () => {
-    if (list.length > 0) blocks.push({ kind: 'list', items: list });
+    if (list.length > 0) blocks.push({ kind: 'list', items: list, ...(ordered ? { ordered } : {}) });
     list = [];
+    ordered = false;
   };
   const lines = text.split('\n');
   for (let i = 0; i < lines.length; i++) {
@@ -605,16 +623,22 @@ export function parseProse(text: string): ProseBlock[] {
       blocks.push({ kind: 'table', header, rows, numeric });
       continue;
     }
+    const heading = /^#{1,6}\s+(.*)$/.exec(line);
     const bullet = /^\s*(?:[-*•]|\d+[.)])\s+(.*)$/.exec(line);
-    if (bullet) {
+    if (heading) {
       flushParagraph();
+      flushList();
+      blocks.push({ kind: 'heading', text: heading[1] ?? '' });
+    } else if (bullet) {
+      flushParagraph();
+      if (list.length === 0) ordered = /^\s*\d/.test(line);
       list.push(bullet[1] ?? '');
     } else if (line.trim() === '') {
       flushParagraph();
       flushList();
     } else {
       flushList();
-      paragraph.push(line.replace(/^#{1,6}\s*/, ''));
+      paragraph.push(line);
     }
   }
   flushParagraph();
@@ -633,6 +657,8 @@ const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** Bold, then roster names (longest first, on word boundaries: "Nicky" is not Nick; "Wake Forest" is not a player). */
 export function splitInline(text: string, names: string[]): InlineSegment[] {
+  // What a model writes and the page doesn't draw: code ticks, single-star italics and links read as their words (ASK-7).
+  text = text.replace(/`([^`]+)`/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/(^|[^*])\*([^*\s][^*]*?)\*(?!\*)/g, '$1$2');
   const sorted = [...names].filter(Boolean).sort((a, b) => b.length - a.length);
   const bolds: Array<{ text: string; bold: boolean }> = [];
   let last = 0;

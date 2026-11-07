@@ -7,6 +7,7 @@ export interface QcFixture {
   messages: UIMessage[];
   busy?: boolean;
   closed?: boolean;
+  failed?: boolean;
 }
 
 type Kind = 'cal' | 'msg' | 'qual';
@@ -49,7 +50,7 @@ const step = (i: number, label: string, done = true) => ({ type: 'data-progress'
 const STEPS = [step(1, 'Checked Thursday · lift ends at 2:45'), step(2, 'Found 11 active players'), step(3, 'Drafted the practice')];
 const assistant = (parts: unknown[]) => ({ id: 'a1', role: 'assistant', parts }) as unknown as UIMessage;
 
-function task(kind: Kind, phase: 'confirm' | 'held' | 'done' | 'failed' | 'cancelled'): UIMessage[] {
+function task(kind: Kind, phase: 'confirm' | 'busy' | 'held' | 'done' | 'failed' | 'cancelled'): UIMessage[] {
   const p = proposal(kind);
   const approved = phase !== 'confirm' && phase !== 'cancelled';
   const tool = { type: `tool-${TOOL[kind]}`, toolCallId: 'call-1', input: {}, state: phase === 'confirm' ? 'approval-requested' : 'approval-responded', approval: { id: 'approval-1', ...(phase === 'confirm' ? {} : { approved }) } };
@@ -119,7 +120,7 @@ export function seamFor(state: string): QcSeamValue {
   if (state.startsWith('undone-') && state !== 'undone-plan') return { ...base, taskPhase: 'undone' };
   const plan = (phase: NonNullable<QcSeamValue['plan']>['phase'], menu?: 'open' | 'new') => ({ ...base, plan: { phase, menu, folders: FOLDERS } });
   if (state === 'confirm-plan') return plan('draft');
-  if (state === 'folder') return plan('draft', 'open');
+  if (state === 'folder' || state === 'folder-menu') return plan('draft', 'open');
   if (state === 'folder-new') return plan('draft', 'new');
   if (state === 'receipt-plan') return plan('saved');
   if (state === 'told-plan') return plan('told');
@@ -142,8 +143,17 @@ export const QC_FIXTURES: Record<string, QcFixture> = {
     [`failed-${k}`, { messages: task(k, 'failed') }],
     [`undone-${k}`, { messages: task(k, 'held') }],
   ])),
+  ...Object.fromEntries(kinds.map((k) => [`busy-${k}`, { messages: task(k, 'busy') }])),
+  // S-LIVE at work: the panel closed while a step runs.
+  'live-work': { messages: [user('u1', ASK.cal), assistant([step(1, 'Finding everyone on the active roster', false)])], busy: true, closed: true },
+  // AC-QC-CMP-06: the stream went mid-run.
+  // The states the sweep asked to see (QC-23).
+  error: { messages: [user('u1', ASK.cal), assistant([step(1, 'Checked Thursday · lift ends at 2:45')])], failed: true },
+  'task-failed': { messages: task('cal', 'failed') },
+  'task-cancelled': { messages: task('cal', 'cancelled') },
+  'stream-error': { messages: [user('u1', ASK.cal), assistant([step(1, 'Checked Thursday · lift ends at 2:45')])], failed: true },
   cancelled: { messages: task('cal', 'cancelled') },
   asking: { messages: [user('u1', 'Make a practice plan for Tuesday'), assistant([step(1, 'Checked Tuesday · nothing else on the calendar'), askPlan])] },
   'asking-qual': { messages: [user('u1', ASK.qual), assistant([step(1, 'Read the course’s tees'), askQual])] },
-  ...Object.fromEntries(['confirm-plan', 'folder', 'folder-new', 'receipt-plan', 'told-plan', 'undone-plan', 'failed-plan'].map((k) => [k, { messages: planThread() }])),
+  ...Object.fromEntries(['confirm-plan', 'folder', 'folder-menu', 'folder-new', 'receipt-plan', 'told-plan', 'undone-plan', 'failed-plan'].map((k) => [k, { messages: planThread() }])),
 };

@@ -152,6 +152,19 @@ describe('loadAskCoachHelm', () => {
     expect(res.data.suggestions.map((s) => s.id)).toEqual(['week']);
   });
 
+  it('greets the coach by first name, and a name that does not read costs only the name', async () => {
+    tables.current.golf_coaches = { data: { full_name: 'Maya Reyes' } };
+    const named = await load();
+    if (named.status !== 'ready') throw new Error('not ready');
+    expect(named.data.firstName).toBe('Maya');
+    tables.current.golf_coaches = { error: { message: 'boom' } };
+    const unnamed = await load();
+    if (unnamed.status !== 'ready') throw new Error('not ready');
+    expect(unnamed.data.firstName).toBeUndefined();
+    expect(logServer).toHaveBeenCalledWith('coachhelm.ask', 'coach name', expect.anything(), 'coachhelm');
+    delete tables.current.golf_coaches;
+  });
+
   it('a finding whose screen moved opens it in Clubhouse (Tasks is Team Hub’s tab); one with no Clubhouse screen keeps its text and loses its link', async () => {
     ctxState.pulse = pulse({
       items: [

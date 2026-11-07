@@ -165,7 +165,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
 | P011 | 16 | 15 |  | 26 | 11 | 44 | 22 | 5 | 2 |  | 24 | 2 | 1 | 4 | 4 | 4 | 11 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 210 |
 | P012 | 3 | 3 |  | 8 | 19 | 22 | 3 | 3 | 2 |  | 5 | 1 |  | 4 | 4 | 2 | 5 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 96 |
-| P013 | 7 | 15 |  | 36 | 1 | 45 | 71 | 7 | 3 |  |  | 1 |  | 3 | 4 | 4 | 11 | 21 | 1 |  | 1 |  | 1 |  |  | 232 |
+| P013 | 7 | 15 |  | 39 | 3 | 50 | 71 | 7 | 3 |  | 3 | 1 |  | 3 | 4 | 4 | 11 | 23 | 1 |  | 1 |  | 1 |  |  | 247 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
 | P016 | 31 | 1 | 1 | 18 |  | 17 | 1 | 1 |  | 2 | 2 | 1 |  |  | 5 | 2 |  | 3 |  |  |  |  |  |  |  | 85 |
@@ -1678,8 +1678,13 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130433 | CH-13311 | 04 Empty | `COACH_PLAYER_PAGE_PLAYER_NOT_ON_THE` | implemented | Coach player page, player not on the team: the id in the address is not a player on this coach's team (not an id, not on the team, on another team the coach staffs, or no longer active) |
 | 130434 | CH-13313 | 04 Empty | `COACH_PLAYER_PAGE_COACHHELM_OFF_FOR_THE` | implemented | Coach player page, CoachHelm off for the player: it is off for that player's team |
 | 130435 | CH-13374 | 04 Empty | `STANDING_A_PART_OF_THE_ROUND_ON` | implemented | Standing: a part of the round on Where strokes go has no figure (no strokes-gained row for it, or no Tour figure to compare with) |
+| 130436 | CH-13395 | 04 Empty | `PRACTICE_NEW_PLAN_AND_SOMEONE_WITH_NO` | implemented | Practice: New plan, and someone with no team |
+| 130437 | CH-13396 | 04 Empty | `PRACTICE_A_COACHS_FIRST_PLAN_OR_NO` | implemented | Practice: a coach's first plan, or no practice this week |
+| 130438 | CH-13397 | 04 Empty | `PRACTICE_A_PLAYER_WITH_NOTHING_PUBLISHED` | implemented | Practice: a player with nothing published |
 | 130460 | CH-13333 | 04 Empty | `PLAYER_NO_COURSE_HAS_THREE_OF_THEIR` | implemented | Player: no course has three of their countable rounds yet, or the course picked has fewer than three (chs-21) |
 | 130501 | CH-13120 | 05 Validation | `ASK_SEND_WHILE_AN_ACTION_CARD_WAITS` | implemented | Ask: Send while an action card waits for Confirm or Cancel |
+| 130502 | CH-13180 | 05 Validation | `PRACTICE_A_DRILL_RUNS_PAST_ITS_TURN` | implemented | Practice: a drill runs past its turn |
+| 130503 | CH-13181 | 05 Validation | `PRACTICE_AN_ALL_DAY_PRACTICE_IN_NEW` | implemented | Practice: an all-day practice in New plan |
 | 130601 | CH-13001 | 06 Server / system error | `ASSIGN_AS_FOCUS_FAILS` | implemented | Assign as focus fails |
 | 130602 | CH-13002 | 06 Server / system error | `DISMISS_FAILS` | implemented | Dismiss fails |
 | 130603 | CH-13003 | 06 Server / system error | `UNDO_FAILS` | implemented | Undo fails |
@@ -1724,6 +1729,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130642 | CH-13007 | 06 Server / system error | `RECHECK_RATE_LIMITED` | implemented | Re-check rate-limited |
 | 130643 | CH-13273 | 06 Server / system error | `STANDING_THE_OPEN_READS_BEHIND_WHERE_STROKES` | implemented | Standing: the open reads behind Where strokes go don't load |
 | 130644 | CH-13006 | 06 Server / system error | `RECHECK_FAILS` | implemented | Re-check fails or is offline |
+| 130645 | CH-13080 | 06 Server / system error | `PRACTICE_THREE_SAVES_IN_A_ROW_FAILED` | implemented | Practice: three saves in a row failed (the design's CH-17001) |
+| 130646 | CH-13081 | 06 Server / system error | `PRACTICE_PUBLISH_WENT_THROUGH` | implemented | Practice: publish went through |
+| 130647 | CH-13082 | 06 Server / system error | `PRACTICE_DELETE_DRAFT_REFUSED` | implemented | Practice: Delete draft refused |
+| 130648 | CH-13083 | 06 Server / system error | `PRACTICE_A_NEW_DRILL_SAVED` | implemented | Practice: a new drill saved |
+| 130649 | CH-13084 | 06 Server / system error | `PRACTICE_OFFLINE_WHILE_EDITING` | implemented | Practice: offline while editing |
 | 130660 | CH-13233 | 06 Server / system error | `PLAYER_THEIR_OWN_COURSE_PLAN_DOESNT_LOAD` | implemented | Player: their own course plan (chs-21) doesn't load: the courses or the plan read fails or throws |
 | 130701 | CH-13901 | 07 Network / offline | `AN_INSIGHT_IS_DISMISSED` | implemented | An insight is dismissed |
 | 130702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | implemented | Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you’re offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes. |
@@ -1806,6 +1816,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130901 |  | 09 Success | `CHANGE_LANDED` | implemented | A change that lands confirms itself in place with the success haptic and no toast: Assign becomes the chip Assigned as Jonah’s focus, Dismiss becomes the dismissed notice, Undo brings the focus card back. The one toast is the existing-focus outcome (130903). |
 | 130902 |  | 09 Success | `ASSIGN_MAKES_A_PROPOSAL_THE_PLAYER_ACCEPTS` | implemented | Assign as focus sends the insight's own title, first sentence, area type and metric to createFocusAreaFromInsightV2, which makes a proposal (a coach's use is a prescription), not an active focus. The chip says Assigned and the line under it says the player sees it as a proposal and accepts it to start. The player answers it in Stats, Development (Q-77); this board has no Accept or Decline. |
 | 130903 |  | 09 Success | `AN_EXISTING_ACTIVE_FOCUS_IS_THE_OUTCOME_WANTED` | implemented | When the write answers ACTIVE_FOCUS_DUPLICATE_ERROR (the player already has an active focus on that metric), Assign is done, not failed: the chip shows and a toast says the player already has a focus on this, with no failure toast and no error haptic. The proposal line is left out, because it is not known whether they have started it. |
+| 131101 | CH-13580 | 11 Destructive | `PRACTICE_ANOTHER_COACH_SAVED_FIRST_OR_STARTED` | implemented | Practice: another coach saved first, or started this practice's plan |
+| 131102 | CH-13581 | 11 Destructive | `PRACTICE_A_BLOCK_DELETED` | implemented | Practice: a block deleted |
+| 131103 | CH-13582 | 11 Destructive | `PRACTICE_SPLIT_EVENLY` | implemented | Practice: Split evenly |
 | 131201 |  | 12 State preservation | `THIS_VISITS_CHANGES_STAY_WHILE_THE_PAGE_IS_OPEN` | implemented | The Assigned chip, the dismissed notice and the chosen player are held in the page's own state: choosing another player and coming back finds the chip still there. A reload reads the server again and opens on the first player (the chip then comes from the focus-area read). The chosen player or insight is not kept in the address. |
 | 131401 |  | 14 Retry / recovery | `RETRY_FINISHES_THE_JOB` | implemented | The error toast's Retry runs the same write again with the same arguments, and when it lands everything the button would have done follows, because the follow-ups live inside the action: Assign shows the chip, Dismiss the notice, Undo the returned focus card. Every control on the board waits while any of the three is running. |
 | 131402 |  | 14 Retry / recovery | `TRY_AGAIN_REREADS_THE_PAGE` | implemented | Try again on a failed-read notice (CH-13201, CH-13202, CH-13203) has the server read the whole page again (router.refresh); no section re-reads itself and nothing retries a read on its own. |
@@ -1850,6 +1863,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 131819 | CH-13853 | 18 Accessibility | `ASK_A_VALIDATED_VISUAL` | implemented | Ask: A validated visual (strokes gained anatomy) |
 | 131820 | CH-13861 | 18 Accessibility | `READ_THE_LINKS_READ_IS_NO_LONGER` | implemented | Read: the link's read is no longer open |
 | 131821 | CH-13866 | 18 Accessibility | `READ_THE_READ_DIDNT_LOAD` | implemented | Read: the read didn't load |
+| 131822 | CH-13895 | 18 Accessibility | `PRACTICE_A_BLOCKS_SHEET_ON_A_PHONE` | implemented | Practice: a block's sheet on a phone, or Swap |
+| 131823 | CH-13896 | 18 Accessibility | `PRACTICE_THE_TIME_RIBBON_CHANGES` | implemented | Practice: the time ribbon changes |
 | 131901 |  | 19 Responsive layout | `PHONE_LAYOUT` | implemented | At 820px and below CoachHelm is the phone build, never a shrunken desktop: the page takes the phone frame, the shell's top bar reads CoachHelm, and the boards, writes and states are the desktop's. Separately, when the page's container is 640px wide or less the coach's players are a row of pills that scrolls sideways. Choosing an insight on the player's phone brings the focus into view; on a wider screen the page stays where it is. |
 | 132101 |  | 21 Performance | `LOADER_READS_IN_ROUNDS` | implemented | The loaders read on the server before first paint, in a few rounds and never per row. A coach: the gate; the roster, then the players' names; then the program pulse, the visible insights (paginated) and each player's top insight (one per player, so only it counts as shown in the effectiveness ledger) together; then the drills and the focus areas made from those insights together. A player: the gate, the feed (up to 30), then the drills; the dismissal and visible reads and the rounds count are read only when the feed comes back empty. A drill or focus-area read that fails is logged and the board draws without it. |
 | 132301 |  | 23 Logging / observability | `FAILURES_REPORTED` | implemented | A read that fails in a loader is logged through chLogServer('coachhelm', {read}, …) under the coachhelm feature (gate, feed, visible, dismissed, rounds, drills, assigned, roster, players, heads) and named on the page; a write that fails is reported through chReport under the coachhelm surface with its action (coachhelm.assign, coachhelm.dismiss, coachhelm.undo), at low severity when the server refused it, after a chTrail breadcrumb for the intent; a section that crashes reports under its own surface (coachhelm.focus, coachhelm.side, coachhelm.pulse, coachhelm.players). |

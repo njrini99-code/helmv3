@@ -5,7 +5,7 @@ import { ArrowRight, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { chTrail } from '../../lib/track';
-import type { ChRole } from '../nav';
+import type { ChNavFeatures, ChRole } from '../nav';
 import { Avatar } from '../../ui/Avatar';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
@@ -45,6 +45,7 @@ export function Palette({
   open,
   onClose,
   role,
+  features,
   pathname,
   people,
   peopleState = 'idle',
@@ -54,6 +55,7 @@ export function Palette({
   open: boolean;
   onClose: () => void;
   role: ChRole;
+  features?: ChNavFeatures | null;
   pathname: string;
   people: readonly ChPerson[];
   peopleState?: ChPeopleState;
@@ -63,7 +65,7 @@ export function Palette({
 }) {
   return (
     <Modal open={open} onClose={onClose} title="Search Clubhouse" width={580} initialFocus=".ch-cmd-input">
-      <PaletteBody key={keyword} onClose={onClose} role={role} pathname={pathname} people={people} peopleState={peopleState} recent={recent} />
+      <PaletteBody key={keyword} onClose={onClose} role={role} features={features} pathname={pathname} people={people} peopleState={peopleState} recent={recent} />
     </Modal>
   );
 }
@@ -71,6 +73,7 @@ export function Palette({
 function PaletteBody({
   onClose,
   role,
+  features,
   pathname,
   people,
   peopleState,
@@ -78,6 +81,7 @@ function PaletteBody({
 }: {
   onClose: () => void;
   role: ChRole;
+  features?: ChNavFeatures | null;
   pathname: string;
   people: readonly ChPerson[];
   peopleState: ChPeopleState;
@@ -85,7 +89,7 @@ function PaletteBody({
 }) {
   const router = useRouter();
   const [q, setQ] = useState('');
-  const commands = buildCommands({ role, pathname, people, recent });
+  const commands = buildCommands({ role, pathname, people, recent, features });
   const searching = q.trim().length > 0;
   const shown = searching ? SEARCHING : IDLE;
   // Worked out here, not read from cmdk's list: the nearest-section row is itself an item, and a list is never "empty" with it in.
@@ -115,7 +119,7 @@ function PaletteBody({
         <Keys keys={['Esc']} />
       </div>
       <Command.List className="ch-cmd-list">
-        {noMatches && <NoResults query={q} onGo={go} role={role} peopleLine={peopleLine} />}
+        {noMatches && <NoResults query={q} onGo={go} role={role} features={features} peopleLine={peopleLine} />}
         {shown.map((group) => {
           const rows = commands.filter((c) => c.group === group);
           if (!rows.length) return null;
@@ -157,9 +161,9 @@ function PaletteBody({
 /**
  * Nothing matched: said calmly, with the nearest section as a row to take (it is the one item, so Enter takes it).
  */
-function NoResults({ query, role, onGo, peopleLine }: { query: string; role: ChRole; onGo: (c: ChCommand) => void; peopleLine: string | undefined }) {
+function NoResults({ query, role, features, onGo, peopleLine }: { query: string; role: ChRole; features?: ChNavFeatures | null; onGo: (c: ChCommand) => void; peopleLine: string | undefined }) {
   const q = query.trim();
-  const near = nearestSection(q, role);
+  const near = nearestSection(q, role, features);
   return (
     <>
       <div className="ch-cmd-empty" role="status">

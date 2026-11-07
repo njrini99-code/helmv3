@@ -176,6 +176,9 @@ filter, so it has no filtered empty state.
 | 130433 | CH-13311 | `COACH_PLAYER_PAGE_PLAYER_NOT_ON_THE` | Coach player page, player not on the team: the id in the address is not a player on this coach's team (not an id, not on the team, on another team the coach staffs, or no longer active) |
 | 130434 | CH-13313 | `COACH_PLAYER_PAGE_COACHHELM_OFF_FOR_THE` | Coach player page, CoachHelm off for the player: it is off for that player's team |
 | 130435 | CH-13374 | `STANDING_A_PART_OF_THE_ROUND_ON` | Standing: a part of the round on Where strokes go has no figure (no strokes-gained row for it, or no Tour figure to compare with) |
+| 130436 | CH-13395 | `PRACTICE_NEW_PLAN_AND_SOMEONE_WITH_NO` | Practice: New plan, and someone with no team |
+| 130437 | CH-13396 | `PRACTICE_A_COACHS_FIRST_PLAN_OR_NO` | Practice: a coach's first plan, or no practice this week |
+| 130438 | CH-13397 | `PRACTICE_A_PLAYER_WITH_NOTHING_PUBLISHED` | Practice: a player with nothing published |
 | 130460 | CH-13333 | `PLAYER_NO_COURSE_HAS_THREE_OF_THEIR` | Player: no course has three of their countable rounds yet, or the course picked has fewer than three (chs-21) |
 
 ## 05 — Validation
@@ -190,6 +193,8 @@ sent while an action card waits for Confirm or Cancel, and the box says why
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 130501 | CH-13120 | `ASK_SEND_WHILE_AN_ACTION_CARD_WAITS` | Ask: Send while an action card waits for Confirm or Cancel |
+| 130502 | CH-13180 | `PRACTICE_A_DRILL_RUNS_PAST_ITS_TURN` | Practice: a drill runs past its turn |
+| 130503 | CH-13181 | `PRACTICE_AN_ALL_DAY_PRACTICE_IN_NEW` | Practice: an all-day practice in New plan |
 
 ## 06 — Server / system error
 
@@ -247,6 +252,11 @@ the whole change again, follow-ups included (131401).
 | 130642 | CH-13007 | `RECHECK_RATE_LIMITED` | Re-check rate-limited |
 | 130643 | CH-13273 | `STANDING_THE_OPEN_READS_BEHIND_WHERE_STROKES` | Standing: the open reads behind Where strokes go don't load |
 | 130644 | CH-13006 | `RECHECK_FAILS` | Re-check fails or is offline |
+| 130645 | CH-13080 | `PRACTICE_THREE_SAVES_IN_A_ROW_FAILED` | Practice: three saves in a row failed (the design's CH-17001) |
+| 130646 | CH-13081 | `PRACTICE_PUBLISH_WENT_THROUGH` | Practice: publish went through |
+| 130647 | CH-13082 | `PRACTICE_DELETE_DRAFT_REFUSED` | Practice: Delete draft refused |
+| 130648 | CH-13083 | `PRACTICE_A_NEW_DRILL_SAVED` | Practice: a new drill saved |
+| 130649 | CH-13084 | `PRACTICE_OFFLINE_WHILE_EDITING` | Practice: offline while editing |
 | 130660 | CH-13233 | `PLAYER_THEIR_OWN_COURSE_PLAN_DOESNT_LOAD` | Player: their own course plan (chs-21) doesn't load: the courses or the plan read fails or throws |
 
 ## 07 — Network / offline
@@ -384,10 +394,19 @@ Status: N/A — CoachHelm has no non-blocking warnings: the one notice it raises
 
 ## 11 — Destructive
 
-Status: N/A — Dismiss is undoable, so it does not ask: the notice keeps Undo in
+Status: DEFINED
 
-place until the page is left (CH-13901, category 07), and Undo restores the
-state the insight had (131403). Nothing else on the page deletes.
+Dismiss is undoable, so it does not ask: the notice keeps Undo in place until
+the page is left (CH-13901, category 07), and Undo restores the state the
+insight had (131403). Practice's builder deletes: a block goes at once with
+Undo, Split evenly says when it replaces groups, and a plan another coach
+saved is never overwritten.
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 131101 | CH-13580 | `PRACTICE_ANOTHER_COACH_SAVED_FIRST_OR_STARTED` | Practice: another coach saved first, or started this practice's plan |
+| 131102 | CH-13581 | `PRACTICE_A_BLOCK_DELETED` | Practice: a block deleted |
+| 131103 | CH-13582 | `PRACTICE_SPLIT_EVENLY` | Practice: Split evenly |
 
 ## 12 — State preservation
 
@@ -538,6 +557,8 @@ CH-1842, 11825 CH-1816.
 | 131819 | CH-13853 | `ASK_A_VALIDATED_VISUAL` | Ask: A validated visual (strokes gained anatomy) |
 | 131820 | CH-13861 | `READ_THE_LINKS_READ_IS_NO_LONGER` | Read: the link's read is no longer open |
 | 131821 | CH-13866 | `READ_THE_READ_DIDNT_LOAD` | Read: the read didn't load |
+| 131822 | CH-13895 | `PRACTICE_A_BLOCKS_SHEET_ON_A_PHONE` | Practice: a block's sheet on a phone, or Swap |
+| 131823 | CH-13896 | `PRACTICE_THE_TIME_RIBBON_CHANGES` | Practice: the time ribbon changes |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,

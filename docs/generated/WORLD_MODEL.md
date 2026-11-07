@@ -126,7 +126,7 @@ Coach Intelligence Triage · active · criticality high · owner product
 
 CoachHelm AI · active · criticality high · owner product
 
-- **Relations:** 5 doc/structurally-evidenced, 15 import-graph-only (weak)
+- **Relations:** 5 doc/structurally-evidenced, 16 import-graph-only (weak)
 - **Tables:** `ask_credit_requests`, `ask_usage_weekly`, `golf_coachhelm_action_runs`, `golf_coachhelm_coach_facts`, `golf_coachhelm_corrections`, `golf_coachhelm_player_state`, `golf_coachhelm_run_log`, `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`
 - **RPCs:** `claim_round_recap_lock`, `prune_stale_player_standing`, `refresh_player_standing`, `refresh_player_stats_cache`, `release_round_recap_lock`
 - **Test surfaces:** 3
@@ -306,7 +306,7 @@ Team Access Control And RLS · active · criticality high · owner platform
 
 Team Communications · active · criticality high · owner product
 
-- **Relations:** 0 doc/structurally-evidenced, 9 import-graph-only (weak)
+- **Relations:** 0 doc/structurally-evidenced, 10 import-graph-only (weak)
 - **Tables:** `golf_conversation_pins`, `golf_conversation_read_marks`, `golf_message_mentions`, `golf_message_reactions`, `golf_message_responses`
 - **RPCs:** `get_player_hub_announcements`, `golf_message_seen_times`, `golf_pin_conversation`, `mark_golf_messages_read`
 - **Test surfaces:** 16
@@ -434,6 +434,7 @@ Team Operations · active · criticality high · owner product
 | `coachhelm_ai` | `player_coachhelm_development` | feature_doc_contract, import_graph |
 | `coachhelm_ai` | `shot_tracking` | import_graph (weak) |
 | `coachhelm_ai` | `stats_analytics` | import_graph (weak) |
+| `coachhelm_ai` | `team_communications` | import_graph (weak) |
 | `coachhelm_ai` | `team_operations` | import_graph (weak) |
 | `crm_outreach` | `auth_onboarding_join` | import_graph (weak) |
 | `email_outbound` | `admin_platform` | import_graph (weak) |

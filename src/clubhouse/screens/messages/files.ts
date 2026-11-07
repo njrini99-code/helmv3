@@ -40,14 +40,20 @@ export function useConversationFiles(api: ChMessagesApi, conv: ChConv) {
     };
   }, [load, conv.id, attempt]);
   const open = async (f: ChFile) => {
+    // The tab opens inside the tap, or iPhone Safari blocks it as a pop-up; the signed address fills it in.
+    const tab = window.open("about:blank", "_blank");
     const list = await api.attachments(f.messageId).catch(() => null);
     const hit = list?.find((x) => x.id === f.id) ?? null;
     if (!hit?.url) {
+      tab?.close();
       haptic("error");
       toast({ tone: "error", title: `Couldn’t open ${f.name}`, body: "Try again in a moment.", code: "CH-7021" });
       return;
     }
-    window.open(hit.url, "_blank", "noopener,noreferrer");
+    if (tab) {
+      tab.opener = null;
+      tab.location.href = hit.url;
+    } else window.location.assign(hit.url);
   };
   return { files, failed, retry: () => setAttempt((n) => n + 1), open };
 }

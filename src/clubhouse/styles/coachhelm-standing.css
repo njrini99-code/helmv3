@@ -826,7 +826,7 @@ main[data-canopy] .ch-hs-r.is-ahead,
   background: linear-gradient(90deg, var(--ch-green-500), var(--ch-green-fill-600));
 }
 .ch-hs-r.is-behind .ch-hs-tr__gap {
-  background: linear-gradient(90deg, #d9a441, #b8862b);
+  background: var(--ch-chart-loss-fill);
 }
 [data-ui='clubhouse'] .ch-hs-tr__tour {
   z-index: 1;

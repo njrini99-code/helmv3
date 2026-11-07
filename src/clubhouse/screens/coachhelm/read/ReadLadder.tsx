@@ -12,27 +12,23 @@ export function ReadLadder({ ladder, onGreen }: { ladder: ChBenchmarkLadder; onG
   const xs = [x(ladder.you.value), ...ladder.lines.map((l) => x(l.value))];
   const lo = Math.min(...xs);
   const hi = Math.max(...xs);
-  const marks = ladder.lines.map((l) => ({ l, cx: x(l.value), a: 'middle' as 'middle' | 'start' | 'end', tx: x(l.value) })).sort((a, b) => a.cx - b.cx);
+  const marks = ladder.lines.map((l) => ({ l, cx: x(l.value), a: 'middle' as 'middle' | 'start' | 'end', tx: x(l.value), row: 0 })).sort((a, b) => a.cx - b.cx);
   for (const m of marks) m.a = m.cx > W - 60 ? 'end' : m.cx < 60 ? 'start' : 'middle';
   for (let i = 1; i < marks.length; i++) {
     const a = marks[i - 1]!;
     const b = marks[i]!;
-    if (b.cx - a.cx < 76) {
-      a.a = 'end';
-      a.tx = a.cx - 4;
-      b.a = 'start';
-      b.tx = b.cx + 4;
-    }
+    // Close marks take turns on two rows, so three together never collide (RC-8).
+    if (b.cx - a.cx < 76) b.row = a.row === 0 ? 1 : 0;
   }
   const yx = x(ladder.you.value);
   return (
-    <svg className="ladder ch-hr-ladder" viewBox={`0 0 ${W} 78`} role="img" aria-label={`${ladder.you.label} ${ladder.you.display}. ${ladder.lines.map((l) => `${l.label} ${l.display}`).join('. ')}.`}>
+    <svg className="ladder ch-hr-ladder" viewBox={`0 0 ${W} ${marks.some((m) => m.row) ? 110 : 78}`} role="img" aria-label={`${ladder.you.label} ${ladder.you.display}. ${ladder.lines.map((l) => `${l.label} ${l.display}`).join('. ')}.`}>
       <rect x={pad} y="30" width={W - 2 * pad} height="6" rx="3" fill={track} />
       <rect x={lo} y="30" width={hi - lo} height="6" rx="3" fill={loss} opacity=".55" />
       {marks.map((m) => (
         <g key={m.l.label}>
           <line x1={m.cx} x2={m.cx} y1="24" y2="42" stroke={ink2} strokeWidth="2" strokeLinecap="round" />
-          <text x={m.tx} y="58" textAnchor={m.a} fontSize="12.5" fill={ink2}>
+          <text x={m.tx} y={58 + m.row * 32} textAnchor={m.a} fontSize="12.5" fill={ink2}>
             {m.l.label}
             <tspan x={m.tx} dy="1.15em" fontWeight="600" fill={ink}>
               {m.l.display}

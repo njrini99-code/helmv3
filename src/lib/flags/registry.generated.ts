@@ -151,7 +151,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
     feature_id: "coachhelm_chat_claim_gate",
     owner: "golf/coachhelm",
-    purpose: "Gates whether coach chat's turn verdict also engages claim-validator.ts's typed wrong-player/wrong-window/wrong-unit/wrong-denominator/ unsupported-cause checks, on top of the existing numeric-claim audit; default off pending real-world evidence this doesn't over-reject otherwise-good answers. A rejected chat turn collapses the WHOLE turn to a failure note (repair plan 14.10's \"state it, don't hide it\"), so a false-positive rejection here is more visible and more frequent than round-recap's one-shot cached fallback — the uncited-denominator false positive found in review (2026-09-23) is fixed, but this flag stays off until a shadow-log rate confirms no other prose shape trips it.",
+    purpose: "Gates whether coach chat's turn verdict also engages the typed claim gate (chat/claims-packet.ts, on claim-validator.ts) on top of the numeric-claim audit: wrong player, window, metric, value, unit and denominator. On everywhere on main since #2426; production serves it from its next deploy. A rejected chat turn collapses the WHOLE turn to a failure note, so its two softer checks have chat's own rules (2026-11-05): a figure under the sample floor passes when its sentence states its exact sample, and causal wording is refused only when the cause is about play and names nothing measured. The default stays false so an unknown environment fails safe.",
     type: "experiment",
     status: "active",
     created_at: "2026-09-23",

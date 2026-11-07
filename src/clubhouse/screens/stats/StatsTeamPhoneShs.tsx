@@ -1,8 +1,11 @@
 'use client';
 
-import { AlertTriangle, ChartColumn, Flag, Medal, RotateCw } from 'lucide-react';
+import { AlertTriangle, ChartColumn, Flag, Medal } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
-import { useRouter } from 'next/navigation';
+import { Button } from '../../ui/Button';
+import { useBigText } from './StatsPlayerPhoneShs';
+import { useRefresh } from '../../lib/use-refresh';
+import { useSegFade } from './seg-fade';
 import { useEffect, useRef, useState } from 'react';
 import type { ChTeamStats } from '../../data/stats-team';
 import { hasRange, isFiltered, nineRoundsInWindow } from '../../data/stats-filter';
@@ -26,7 +29,7 @@ import { MiniDiverging } from './MiniCharts';
 import { TeamFeatureChart } from './ScoringFeatureChart';
 import { Ribbon, SHS_HOW } from './ShsBlocks';
 import { divergeBar, filterKey, sgTone, windowShort, type ShsTone } from './shs-figures';
-import { useGrowOnce, useStuck, WindowCrossfade } from './shs-motion';
+import { useStuck, WindowCrossfade } from './shs-motion';
 import { EarlyRead, NineHint } from './StatsFilter';
 import { DetailHero, StatsDetailScreen } from './StatsDetailScreen';
 import { PhoneWindowSwitch, RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty } from './StatsTeamIslands';
@@ -41,9 +44,6 @@ const TITLE: Readonly<Record<StatsTeamDetailId, string>> = { tscore: 'Team scori
 
 const windowDays = (data: ChTeamStats) => (data.window === 'last10' && !isFiltered(data.filter) ? `Last ${data.last} days` : windowShort(data.filter));
 
-function bigText(): boolean {
-  return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ch-type-scale')) >= 1.24;
-}
 
 /** "Sam gains the most; Lee loses the most", and "loses the least" when everyone is below zero (08 criterion 57). */
 export function teamSentence(rows: ReadonlyArray<{ name: string; value: number | null }>): string | null {
@@ -111,6 +111,8 @@ export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
     if (data.puttsError) failed.push('team putting');
   }
   const covered = failed.length > 1;
+  const ctlRef = useRef<HTMLDivElement | null>(null);
+  useSegFade(ctlRef);
   const below = useArrivalPainted();
   const arrival: StatsArrivalState = data.roundsError ? 'failed' : noRounds ? 'empty' : 'ready';
   const { detail, open, close } = useStatsDetail({ screen: 'team', state: arrival });
@@ -119,9 +121,7 @@ export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
   const root = useRef<HTMLDivElement>(null);
   const hadFailed = useRef(data.roundsError);
   if (data.roundsError) hadFailed.current = true;
-  useGrowOnce(root, reduced || hadFailed.current, [below, data.roundsError, noRounds]);
-  const [big, setBig] = useState(false);
-  useEffect(() => setBig(bigText()), []);
+  const big = useBigText();
   const keyboard = useRef(false);
   const go = (id: StatsDetailId) => open(id);
   const days = (data.days ?? []).filter((d): d is { label: string; score: number; n?: number; date?: string } => d.score != null);
@@ -143,7 +143,7 @@ export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
         <h1 className="ch-sr-only">Team stats</h1>
         <div inert={detail != null} aria-hidden={detail != null || undefined}>
           {!bare && (
-            <div className={'ch-shs-ctl' + (hasRange(data.filter) ? ' is-custom' : '') + (stuck ? ' is-stuck' : '')}>
+            <div ref={ctlRef} className={'ch-shs-ctl' + (hasRange(data.filter) ? ' is-custom' : '') + (stuck ? ' is-stuck' : '')}>
               <div className="ch-shs-ctl__row">
                 <PhoneWindowSwitch custom={hasRange(data.filter)} hook="stats-window-seg" />
                 {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone hook="stats-filter" />}
@@ -237,9 +237,14 @@ export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
 }
 
 function TeamFailedCard({ seen }: { /** The page's data: a new copy means the retry came back, so Try again works again. */ seen: unknown }) {
-  const router = useRouter();
+  const { refresh, refreshing } = useRefresh();
   const [busy, setBusy] = useState(false);
   useEffect(() => setBusy(false), [seen]);
+  useEffect(() => {
+    if (!busy || refreshing) return;
+    const t = window.setTimeout(() => setBusy(false), 1000);
+    return () => window.clearTimeout(t);
+  }, [busy, refreshing]);
   return (
     <section className="ch-shs-card ch-shs-empty is-danger" suppressHydrationWarning role="alert" data-ch-code="CH-4201">
       <span className="ch-shs-empty__ic">
@@ -247,21 +252,20 @@ function TeamFailedCard({ seen }: { /** The page's data: a new copy means the re
       </span>
       <h3 className="ch-shs-empty__t">Team rounds didn’t load</h3>
       <p>Every figure would be incomplete, so none is shown.</p>
-      <button
-        type="button"
-        className="ch-shs-btn"
-        data-ch="stats-retry"
-        aria-disabled={busy || undefined}
+      <Button
+        variant="secondary"
+        size="sm"
+        busy={busy || refreshing}
+        data={{ 'data-ch': 'stats-retry' }}
         onClick={() => {
           if (busy) return;
           setBusy(true);
           haptic('press');
-          router.refresh();
+          refresh();
         }}
       >
-        <Icon icon={RotateCw} size={15} />
         Try again
-      </button>
+      </Button>
     </section>
   );
 }
@@ -368,7 +372,7 @@ function TeamScoringDetail({ data, covered, days, mean }: { data: ChTeamStats; c
   const trend = days.length >= 2 ? teamTrendReading(data, days.length) : null;
   return (
     <>
-      <DetailHero figure={f ? figureValue(f) : <NoData />} caption={['Team scoring average', toPar(data)].filter(Boolean).join(' · ')} chips={<Change data={data} />} />
+      <DetailHero figure={f ? figureValue(f) : <NoData />} caption={['Team scoring average', toPar(data), windowDays(data)].filter(Boolean).join(' · ')} chips={<Change data={data} />} />
       {days.length > 0 && (
         <ShsCard title="By round day" meta={mean == null ? undefined : 'Team mean dashed'}>
           <Ribbon points={days.map((d) => ({ label: d.label, value: d.score }))} lowerIsBetter reference={mean == null ? null : { value: mean, label: 'Mean' }} format={(v) => formatFixed(v, 1)} tone={trend?.tone === 'is-gain' ? 'gain' : trend?.tone === 'is-loss' ? 'loss' : 'flat'} />

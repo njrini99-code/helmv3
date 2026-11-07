@@ -5,7 +5,7 @@ import type { AskProposalView } from '../../../../../data/coachhelm-chat-thread'
 import type { ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 
 const motion = vi.hoisted(() => ({ reduced: false }));
-vi.mock('../../../../../lib/reduced-motion', () => ({ useChReducedMotion: () => motion.reduced }));
+vi.mock('../../../../../lib/reduced-motion', () => ({ useChReducedMotion: () => motion.reduced, useChMotionMode: () => (motion.reduced ? 'fade' : 'full') }));
 
 import { ConfirmCard } from '../ConfirmCard';
 import { ArtifactView } from '../Artifact';

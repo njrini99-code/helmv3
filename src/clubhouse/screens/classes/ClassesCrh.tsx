@@ -196,7 +196,7 @@ function DayRibbon({ iso, classes, events }: { iso: string; classes: readonly Ch
         {classes.map((c) => {
           const a = toMinutes(c.start);
           const b = toMinutes(c.end);
-          return a != null && b != null ? <i key={c.id} className={`ch-cl-t-${c.tone}`} style={ribbonBox(a, b)} /> : null;
+          return a != null && b != null ? <i key={c.id} className={`ch-cl-t-${c.tone}${b <= RIBBON_FROM || a >= RIBBON_FROM + RIBBON_SPAN ? ' is-out' : ''}`} style={ribbonBox(a, b)} /> : null;
         })}
         {events.map((e) => {
           const w = eventWindowOn(e, iso);
@@ -205,8 +205,12 @@ function DayRibbon({ iso, classes, events }: { iso: string; classes: readonly Ch
       </div>
       <span className="ch-cl-ribbon__axis ch-num" aria-hidden="true">
         <span>7 AM</span>
-        <span>10</span>
-        <span>1 PM</span>
+        <span className="is-at" style={{ left: '30%' }}>
+          10
+        </span>
+        <span className="is-at" style={{ left: '60%' }}>
+          1 PM
+        </span>
         <span>5 PM</span>
       </span>
     </div>

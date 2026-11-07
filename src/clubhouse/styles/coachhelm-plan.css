@@ -3,6 +3,9 @@
 .ch-cp-sheet .g-A { --ch-pl-g: var(--ch-pl-gA); --ch-pl-gt: var(--ch-pl-gA-t); }
 .ch-cp-sheet .g-B { --ch-pl-g: var(--ch-pl-gB); --ch-pl-gt: var(--ch-pl-gB-t); }
 .ch-cp-sheet .g-C { --ch-pl-g: var(--ch-pl-gC); --ch-pl-gt: var(--ch-pl-gC-t); }
+.ch-cp-sheet .g-D { --ch-pl-g: var(--ch-plan-group-d); --ch-pl-gt: color-mix(in srgb, var(--ch-plan-group-d) 12%, var(--ch-pl-g-on)); }
+.ch-cp-sheet .g-E { --ch-pl-g: var(--ch-plan-group-e); --ch-pl-gt: color-mix(in srgb, var(--ch-plan-group-e) 12%, var(--ch-pl-g-on)); }
+.ch-cp-sheet .g-F { --ch-pl-g: var(--ch-plan-group-f); --ch-pl-gt: color-mix(in srgb, var(--ch-plan-group-f) 12%, var(--ch-pl-g-on)); }
 .ch-cp-sheet .gd { display: inline-grid; place-items: center; width: 19px; height: 19px; border-radius: var(--ch-radius-xs); background: var(--ch-pl-g); color: var(--ch-pl-g-on); font: var(--ch-type-11-strong);  flex: none; font-style: normal; letter-spacing: var(--ch-track-11); }
 .ch-cp-sheet {--ch-pl-ink:#1C1B18;--ch-pl-ink-2:#47443D;--ch-pl-ink-3:#5F5C55;--ch-pl-rule:#E6E1D5;--ch-pl-rule-2:#CFC8B8;--ch-pl-accent:#155A39;--ch-pl-loss:#9A5700;--ch-pl-gain:#14613D;--ch-pl-gain-tint:#E8EEE8; --ch-pl-gA:#1F6B45;--ch-pl-gB:#2F5B7E;--ch-pl-gC:#654A7E;--ch-pl-g-on:#FFFFFF;--ch-pl-gA-t:#E4EEE7;--ch-pl-gB-t:#E3EAF2;--ch-pl-gC-t:#ECE7F1; color-scheme:light;background:#FFFEFB;color:var(--ch-pl-ink);border-radius: var(--ch-radius-xs);padding:20px 20px 12px;display:grid;gap:16px;font-family:var(--ch-font-sans); box-shadow:var(--ch-plan-shadow-1);}
 .ch-cp-sheet section {display:grid;gap:0;}
@@ -11,7 +14,7 @@
 .ch-cp-sheet .pp-org b {display:block;font: var(--ch-type-14-strong); }
 .ch-cp-sheet .pp-org span {font: var(--ch-type-13);color:var(--ch-pl-ink-2);}
 .ch-cp-sheet .pp-date {display:grid;justify-items:center;width:48px;border-radius: var(--ch-radius-sm);box-shadow:inset 0 0 0 var(--ch-hairline-w) var(--ch-pl-rule-2);padding:4px 0 6px;}
-.ch-cp-sheet .pp-date span {font: var(--ch-type-11-strong); letter-spacing: 0.01em;color:var(--ch-pl-ink-2);}
+.ch-cp-sheet .pp-date span {font: var(--ch-type-12-strong); letter-spacing: 0.01em;color:var(--ch-pl-ink-2);}
 .ch-cp-sheet .pp-date b {font: var(--ch-type-22-strong); letter-spacing: var(--ch-track-22); }
 .ch-cp-sheet .pp-title {font: var(--ch-type-28-strong); font-stretch: 88%;letter-spacing: -0.03em;margin:0;text-wrap:balance;}
 .ch-cp-sheet .pp-focus {font: var(--ch-type-16); margin-top:-8px;text-wrap:pretty; letter-spacing: var(--ch-track-16); }
@@ -26,9 +29,9 @@
 .ch-cp-sheet .pp-g {background:var(--ch-pl-gt);border-radius: var(--ch-radius-sm);padding:8px 8px 8px;display:grid;gap:6px;align-content:start;}
 .ch-cp-sheet .pp-g .gh {display:flex;align-items:center;gap:6px;font: var(--ch-type-14-strong); }
 .ch-cp-sheet .pp-g ul {list-style:none;margin:0;padding:0;display:grid;gap:2px;font: var(--ch-type-14); }
-.ch-cp-sheet .gd {width:19px;height:19px;border-radius: var(--ch-radius-xs);font: var(--ch-type-11); letter-spacing: var(--ch-track-11); }
+.ch-cp-sheet .gd {width:19px;height:19px;border-radius: var(--ch-radius-xs);font: var(--ch-type-12-strong); letter-spacing: var(--ch-track-12); }
 .ch-cp-sheet .sched {display:grid;}
-.ch-cp-sheet .drow {display:grid;grid-template-columns:46px minmax(0,1fr);gap:8px;padding:8px 0;border-top:var(--ch-hairline-w) solid var(--ch-pl-rule);}
+.ch-cp-sheet .drow {display:grid;grid-template-columns:calc(46 * var(--ch-type-k)) minmax(0,1fr);gap:8px;padding:8px 0;border-top:var(--ch-hairline-w) solid var(--ch-pl-rule);}
 .ch-cp-sheet .drow:first-child {border-top:var(--ch-hairline-w) solid var(--ch-pl-ink-3);}
 .ch-cp-sheet .pt b {display:block;font: var(--ch-type-14-strong); }
 .ch-cp-sheet .pt span {font: var(--ch-type-12);color:var(--ch-pl-ink-2);}
@@ -37,7 +40,7 @@
 .ch-cp-sheet .pp-who {display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;}
 .ch-cp-sheet .pp-who span {display:inline-flex;align-items:center;gap:6px;font: var(--ch-type-13-medium); padding:2px 8px 2px 2px;border-radius: var(--ch-radius-tail);background:#F1EEE6;}
 .ch-cp-sheet .pp-who span.all {padding:4px 8px;}
-.ch-cp-sheet .pp-rot {margin-top:8px;display:grid;grid-template-columns:minmax(0,1fr) repeat(3,40px);gap:4px 6px;align-items:center;}
+.ch-cp-sheet .pp-rot {margin-top:8px;display:grid;grid-template-columns:minmax(0,1fr) repeat(var(--ch-pp-turns,3),calc(40 * var(--ch-type-k)));gap:4px 6px;align-items:center;}
 .ch-cp-sheet .pp-rot .h {font: var(--ch-type-12-medium); color:var(--ch-pl-ink-2);text-align:center;padding-bottom:2px;}
 .ch-cp-sheet .pp-rot .h:first-child {text-align:left;}
 .ch-cp-sheet .pp-rot .s {min-width:0;}
@@ -58,8 +61,6 @@
 .ch-cp-card { display: grid; gap: 12px; padding: 12px 16px; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg, var(--ch-bg-surface)); box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline); }
 .ch-cp-card h4 { margin: 0; font: var(--ch-type-17-strong);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-17); }
 .ch-cp-strip { display: flex; gap: 2px; height: 8px; border-radius: var(--ch-radius-xs); overflow: hidden; }
-.ch-cp-strip i { display: block; background: var(--ch-green-600); transform-origin: 0 50%; animation: ch-cp-seg var(--ch-dur-release) var(--ch-ease) both; }
-@keyframes ch-cp-seg { from { transform: scaleX(0); } }
 .ch-cp-row { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-top: var(--ch-hairline-w) solid var(--ch-border-hairline); }
 .ch-cp-row .t { font: var(--ch-type-15-strong);   color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
 .ch-cp-row .t span { display: block; font: var(--ch-type-13); color: var(--ch-text-tertiary); }
@@ -84,6 +85,8 @@
   /* Only while printPlan has its root on the page: printing anything else stays as it was. */
   body:has(> .ch-cp-print-root) > *:not(.ch-cp-print-root) { display: none !important; }
   .ch-cp-print-root { display: block !important; }
+  /* Paper keeps its size whatever the reader's Text Size. */
+  .ch-cp-print-root[data-ui='clubhouse'] { --ch-type-k: var(--ch-print-k); }
   .ch-cp-print-root .ch-cp-sheet { box-shadow: none; border-radius: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .ch-cp-sheet .drow, .ch-cp-sheet .pp-rot { break-inside: avoid; }
 }
@@ -100,11 +103,14 @@
 .ch-cpv-full {
   --ch-pl-cpv-track: #ebe5d8;
   --ch-pl-cpv-skill: #3d6787;
-  --ch-pl-cpv-random: #8a6a2f;
+  --ch-pl-cpv-random: #6e5487;
   --ch-pl-cpv-pressure: #1f6b45;
   --ch-pl-cpv-ga: #1f6b45;
   --ch-pl-cpv-gb: #2f5b7e;
   --ch-pl-cpv-gc: #654a7e;
+  --ch-pl-cpv-gd: var(--ch-plan-group-d);
+  --ch-pl-cpv-ge: var(--ch-plan-group-e);
+  --ch-pl-cpv-gf: var(--ch-plan-group-f);
   --ch-pl-cpv-gon: #fff;
   --ch-pl-cpv-sep: var(--ch-separator);
   display: grid;
@@ -116,11 +122,14 @@ html[data-fw-theme='dark'] .ch-cpv,
 html[data-fw-theme='dark'] .ch-cpv-full {
   --ch-pl-cpv-track: #2c322d;
   --ch-pl-cpv-skill: #6e9bc0;
-  --ch-pl-cpv-random: #c9a35d;
+  --ch-pl-cpv-random: #b49acb;
   --ch-pl-cpv-pressure: #4fa877;
   --ch-pl-cpv-ga: #4fa877;
   --ch-pl-cpv-gb: #6e9bc0;
   --ch-pl-cpv-gc: #b49acb;
+  --ch-pl-cpv-gd: var(--ch-plan-group-d-night);
+  --ch-pl-cpv-ge: var(--ch-plan-group-e-night);
+  --ch-pl-cpv-gf: var(--ch-plan-group-f-night);
   --ch-pl-cpv-gon: #0e120f;
 }
 .ch-cpv .art {
@@ -263,6 +272,9 @@ html[data-fw-theme='dark'] .ch-cpv-full {
 .ch-cpv .g-A { background: var(--ch-pl-cpv-ga); }
 .ch-cpv .g-B { background: var(--ch-pl-cpv-gb); }
 .ch-cpv .g-C { background: var(--ch-pl-cpv-gc); }
+.ch-cpv .g-D { background: var(--ch-pl-cpv-gd); }
+.ch-cpv .g-E { background: var(--ch-pl-cpv-ge); }
+.ch-cpv .g-F { background: var(--ch-pl-cpv-gf); }
 .ch-cpv .why {
   display: grid;
   gap: 6px;
@@ -760,16 +772,23 @@ html[data-fw-theme='dark'] .ch-cpv-full {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 56px;
-  padding: 0 16px;
+  min-height: calc(56px + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) 88px 0;
   background: var(--ch-frame);
   color: var(--ch-on-green-ink);
   font: var(--ch-type-17-strong);
   letter-spacing: var(--ch-track-17);
 }
+.ch-cpv-full .fbar b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .ch-cpv-full .back {
   position: absolute;
   left: 8px;
+  bottom: 6px;
   display: inline-flex;
   align-items: center;
   min-height: 44px;
@@ -781,18 +800,19 @@ html[data-fw-theme='dark'] .ch-cpv-full {
   letter-spacing: var(--ch-track-17);
 }
 .ch-cpv-full .fbody {
-  padding: 16px;
+  padding: 16px var(--ch-page-x-phone);
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .ch-cpv-full .fdock {
-  padding: 12px 16px;
+  padding: 12px var(--ch-page-x-phone) max(12px, env(safe-area-inset-bottom));
   background: var(--ch-card-bg);
   border-top: var(--ch-hairline-w) solid var(--ch-pl-cpv-sep);
 }
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-cpv-full {
     inset: 0 0 0 auto;
-    width: 452px;
+    width: max(380px, min(452px, 45vw));
     box-shadow: 0 0 0 1px var(--ch-separator);
   }
 }
@@ -816,7 +836,8 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 }
 .ch-cpv-vz .wk {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 0.8fr 0.8fr 2fr;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 4px;
 }
 .ch-cpv-vz .d {
@@ -983,9 +1004,9 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
   height: 8px;
   border-radius: 50%;
 }
-.ch-cpv-vz .k-skill { background: #3d6787; }
-.ch-cpv-vz .k-random { background: #8a6a2f; }
-.ch-cpv-vz .k-pressure { background: #1f6b45; }
+.ch-cpv-vz .k-skill { background: var(--ch-pl-cpv-skill); }
+.ch-cpv-vz .k-random { background: var(--ch-pl-cpv-random); }
+.ch-cpv-vz .k-pressure { background: var(--ch-pl-cpv-pressure); }
 .ch-cpv-vz .more {
   position: absolute;
   right: 0;
@@ -1081,8 +1102,7 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 /* Plan format and a player's Practice page. */
 .ch-cpv-fmt,
 .ch-cpv-ply {
-  padding: 16px;
-  background: var(--ch-grouped-bg);
+  padding: 16px var(--ch-page-x-phone);
 }
 .ch-cpv .fbar.is-page {
   position: relative;
@@ -1538,6 +1558,142 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 .ch-cpv-full .fbar .vsw button:disabled {
   opacity: 0.4;
 }
+.ch-cpv-full .fbar .vsw button {
+  position: relative;
+}
+/* 28pt to the eye, 44pt to the finger. */
+.ch-cpv-full .fbar .vsw button::after {
+  content: "";
+  position: absolute;
+  inset: -8px -2px;
+}
+/* The saved line above the dock: where it went and, for 8 seconds, Undo. */
+.ch-cpv-full .fnote {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 16px;
+  background: var(--ch-card-bg);
+  border-top: var(--ch-hairline-w) solid var(--ch-pl-cpv-sep);
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+}
+.ch-cpv-full .fnote.is-fail {
+  color: var(--ch-loss);
+}
+.ch-cpv-full .fnote button {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--ch-green-600);
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+}
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  /* The green bar: its title stays centred and clears Back and the version switch; the switch reads on green. */
+  .ch-cpv-full .fbar {
+    min-height: calc(56px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 96px 0;
+  }
+  .ch-cpv-full .fbar > b {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ch-cpv-full .back {
+    top: calc(6px + env(safe-area-inset-top));
+  }
+  .ch-cpv-full .fbar .vsw {
+    position: absolute;
+    top: calc(14px + env(safe-area-inset-top));
+    right: 8px;
+    margin: 0;
+    color: var(--ch-on-green-ink);
+  }
+  .ch-cpv-full .fbar .vsw button {
+    background: rgb(255 255 255 / 0.12);
+    color: var(--ch-on-green-ink);
+  }
+  .ch-cpv-full .fdock {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+}
+.ch-cpv-full .fbar .vsw button {
+  position: relative;
+}
+/* 28pt to the eye, 44pt to the finger. */
+.ch-cpv-full .fbar .vsw button::after {
+  content: "";
+  position: absolute;
+  inset: -8px -2px;
+}
+/* The saved line above the dock: where it went and, for 8 seconds, Undo. */
+.ch-cpv-full .fnote {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 16px;
+  background: var(--ch-card-bg);
+  border-top: var(--ch-hairline-w) solid var(--ch-pl-cpv-sep);
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-14);
+  letter-spacing: var(--ch-track-14);
+}
+.ch-cpv-full .fnote.is-fail {
+  color: var(--ch-loss);
+}
+.ch-cpv-full .fnote button {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--ch-green-600);
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+}
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  /* The green bar: its title stays centred and clears Back and the version switch; the switch reads on green. */
+  .ch-cpv-full .fbar {
+    min-height: calc(56px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 16px 0;
+  }
+  .ch-cpv-full .fbar > b {
+    min-width: 0;
+    max-width: calc(100% - 192px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ch-cpv-full .back {
+    inset-block: env(safe-area-inset-top) 0;
+    height: 44px;
+    margin-block: auto;
+  }
+  .ch-cpv-full .fbar .vsw {
+    position: absolute;
+    inset-block: env(safe-area-inset-top) 0;
+    right: 8px;
+    height: 28px;
+    margin: auto 0;
+    color: var(--ch-on-green-ink);
+  }
+  .ch-cpv-full .fbar .vsw button {
+    background: rgb(255 255 255 / 0.12);
+    color: var(--ch-on-green-ink);
+  }
+  .ch-cpv-full .fdock {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+}
 .ch-cpv .rlinks a {
   color: var(--ch-green-600);
   font: var(--ch-type-15-medium);
@@ -1570,4 +1726,162 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 }
 .ch-cpv-pub .avs .ch-avatar + .ch-avatar {
   margin-left: -4px;
+}
+
+/* MOB-ASK-4: 16 or larger, or iOS zooms the page on focus. MOB-ASK-17: a ring on the field and a 44 send key. */
+.ch-cpv .fr .inp, .ch-cpv-sheet .ask-in input { font: var(--ch-type-17); letter-spacing: var(--ch-track-17); }
+.ch-cpv-sheet .ask-in:focus-within { box-shadow: 0 0 0 2px var(--ch-border-focus); }
+.ch-cpv-sheet .ask-in button { position: relative; }
+.ch-cpv-sheet .ask-in button::after { position: absolute; inset: -8px; content: ''; }
+
+/* Plan format: the page edge every other page uses; the desk head. */
+.ch-cpv-fmt { padding-inline: var(--ch-page-x-phone); }
+.ch-cpv-fmt__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  text-decoration: none;
+}
+.ch-cpv-fmt__t {
+  margin: 0;
+  font: var(--ch-type-28-strong);
+  letter-spacing: var(--ch-track-28);
+}
+/* PP-10: the fan fits its card, whatever the width; a title stops at two lines; +N sits under the fan. */
+.ch-cpv-vz[data-vz='dr'] { container-type: inline-size; display: grid; gap: 8px; }
+.ch-cpv-vz .fan { --ch-fan-step: min(84px, calc((100cqi - 96px) / 2)); }
+.ch-cpv-vz .fan .dc { transform: translateX(calc(var(--ch-fan-i) * var(--ch-fan-step))) rotate(calc(var(--ch-fan-i) * 5deg)); }
+.ch-cpv-vz .dcn {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.ch-cpv-vz[data-vz='dr'] .more { position: static; justify-self: end; }
+/* PP-18: labels stay on one line; end ticks stay on the card. */
+.ch-cpv-vz .pdr > span:first-child,
+.ch-cpv-vz .ln > span:first-child,
+.ch-cpv-vz .bx > i {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-cpv-vz .ax > span:first-child { transform: none; }
+.ch-cpv-vz .ax > span:last-child { transform: translateX(-100%); }
+/* PP-20: the rotation grid and meta tighten on a phone. */
+.ch-cp-sheet { container-type: inline-size; }
+/* PP-22: every tap in the card and its sheets reaches 44. */
+.ch-cpv .refine button,
+.ch-cpv .saverow,
+.ch-cpv .qo { min-height: 44px; }
+.ch-cpv .srcb { position: relative; }
+.ch-cpv .srcb::after { content: ''; position: absolute; inset: -12px -4px; }
+.ch-cpv-sheet .ask-in button { position: relative; }
+.ch-cpv-sheet .ask-in button::before { content: ''; position: absolute; inset: -8px; }
+/* PP-23: the things that say it's still working move. Reduced motion holds them still and the words carry it. */
+@media (prefers-reduced-motion: no-preference) {
+  .ch-cpv .caret { animation: ch-cp-blink var(--ch-dur-reveal) steps(2, jump-none) infinite alternate; }
+  .ch-cpv .sw2 { transform-origin: left; animation: ch-cp-sweep var(--ch-dur-reveal) var(--ch-ease) infinite alternate; }
+  .ch-cpv .scanrow .dot { animation: ch-cp-blink var(--ch-dur-reveal) var(--ch-ease) infinite alternate; }
+}
+@keyframes ch-cp-blink { from { opacity: 1; } to { opacity: 0.3; } }
+@keyframes ch-cp-sweep { from { transform: scaleX(0.2); } to { transform: scaleX(1); } }
+/* PP-24: long folder names stop at one line. */
+.ch-cpv .fr .n,
+.ch-cpv .saverow > span,
+.ch-cpv .dstrip .fold b {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The dock's line, beside its buttons. */
+.ch-cpv-full .fdock { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end; }
+.ch-cpv-full .fnote { flex: 1 1 100%; margin: 0; font: var(--ch-type-13); letter-spacing: var(--ch-track-13); color: var(--ch-text-secondary); }
+.ch-cpv-full .fnote.is-saved { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ch-cpv-full .fundo {
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--ch-accent);
+  font: var(--ch-type-13-strong);
+  letter-spacing: var(--ch-track-13);
+}
+/* The sample's app icon carries the mark. */
+.ch-cpv-sample .app { display: inline-grid; place-items: center; overflow: hidden; }
+.ch-cpv-pub .avs .more { align-self: center; margin-inline-start: 4px; font: var(--ch-type-12-strong); letter-spacing: var(--ch-track-12); color: var(--ch-text-secondary); }
+/* PP-30: a player's page keeps the page width on a Mac. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-cpv-ply, .ch-cpv-fmt { max-width: var(--ch-measure-reading); margin-inline: auto; }
+}
+/* MOB-PRAC-2: the print copy is for paper, never for the page under the app. */
+@media screen { .ch-cp-print-root { display: none; } }
+/* Phone: rotation cells tighten, Bring and Notes stack on the narrowest phones and the largest Text Sizes. */
+@container (max-width: 380px) {
+  .ch-cp-sheet .pp-rot { grid-template-columns: minmax(0, 1fr) repeat(var(--ch-pp-turns, 3), calc(32 * var(--ch-type-k))); }
+  .ch-cp-sheet .pp-rot .c { height: 28px; }
+  .ch-cp-sheet .pp-two { grid-template-columns: minmax(0, 1fr); }
+}
+.ch-cp-sheet .pp-h span { font: var(--ch-type-14); letter-spacing: var(--ch-track-14); color: var(--ch-pl-ink-3); }
+.ch-cp-sheet .pp-why .neg { color: var(--ch-pl-loss); font: var(--ch-type-13-strong); letter-spacing: var(--ch-track-13); }
+.ch-cpv-ply .stop { grid-template-columns: calc(52 * var(--ch-type-k)) minmax(0, 1fr) auto; }
+.ch-cpv .blk { grid-template-columns: calc(54 * var(--ch-type-k)) minmax(0, 1fr); }
+.ch-cpv .rlinks a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-cpv .fsum .okc, .ch-cpv .okc { background: var(--ch-gain-tint, var(--ch-accent-tint)); color: var(--ch-gain, var(--ch-green-600)); }
+/* The full plan's body sits on the green bar with the page's rounded top, and the bar's ⋯ opens Share PDF. */
+.ch-cpv-full { background: var(--ch-frame); }
+.ch-cpv-full .fbody {
+  border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
+  background: var(--ch-grouped-bg);
+}
+.ch-cpv-full .fmore { position: absolute; right: 8px; bottom: 6px; }
+.ch-cpv-full .fmore__b {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--ch-champagne-dot);
+}
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-cpv-full .vsw { position: absolute; right: 52px; bottom: 6px; }
+}
+
+.ch-cp-skel__top { display: grid; grid-template-columns: 36px minmax(0, 1fr) 44px; gap: 8px; align-items: center; }
+.ch-cp-skel__cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ch-cp-skel__row { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 8px; }
+.ch-cpv .art.is-docs { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; }
+.ch-cpv .docrow { display: grid; gap: 2px; min-width: 0; min-height: 44px; align-content: center; text-decoration: none; }
+.ch-cpv .docrow .t { font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
+.ch-cpv .docrow .m { font: var(--ch-type-13); color: var(--ch-accent); overflow-wrap: anywhere; }
+@media screen {
+  .ch-cp-print-root.ch-cp-pdf-root { display: block; position: fixed; inset: 0 auto auto -9999px; width: 816px; background: var(--ch-print-paper); }
+}
+.ch-cpv .rlinks a .ell { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-cpv .rlinks button { display: inline-flex; align-items: center; gap: 6px; }
+
+/* A press answers on every control, and the folder list fades in (MOT-31, M-ASK-17). */
+.ch-cpv .fr[data-ch-pressed],
+.ch-cpv .saverow[data-ch-pressed] {
+  background-color: var(--ch-press-wash, var(--ch-well-bg-flat));
+}
+.ch-cpv .flist { animation: ch-fade var(--ch-dur-quick) var(--ch-ease) backwards; }
+@media (hover: hover) {
+  .ch-cpv .fr:hover { background-color: var(--ch-press-wash, var(--ch-well-bg-flat)); }
 }

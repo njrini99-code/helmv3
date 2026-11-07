@@ -50,11 +50,18 @@ export interface ProposalFact {
 export type TaskVisual =
   | { kind: 'cal'; date: string; start: string | null; end: string | null; title: string; where: string | null; who: string; rsvp: boolean }
   | { kind: 'msg'; conversationId: string; thread: string; count: number; last: string | null; draft: string }
-  | { kind: 'qual'; title: string; rounds: number; start: string; total: number; picks: number; field: number; deadline: string | null };
+  | { kind: 'qual'; title: string; rounds: number; start: string; total: number; picks: number; field: number; deadline: string | null }
+  | { kind: 'task'; title: string; due: string | null; who: string[] }
+  | { kind: 'goal'; player: string; stat: string; target: number; days: number }
+  | { kind: 'note'; player: string; note: string }
+  | { kind: 'trip'; from: string | null; to: string; how: string; leave: string; back: string | null }
+  | { kind: 'lineup'; seats: Array<{ slot: number | null; name: string; alternate: boolean }> };
 
 export interface ActionProposal {
   /** A plan's publish: who hears (as coins) and one player's own line, for the card to draw. Every value is also in `facts`. */
-  publish?: { heading: string; coins: Array<{ name: string }>; tellsLine: string; folder: string; teamChat?: boolean; sample?: { player: string; title: string; body: string } | null };
+  publish?: { heading: string; coins: Array<{ name: string }>; coinsMore?: number; tellsLine: string; folder: string; teamChat?: boolean; sample?: { player: string; title: string; body: string } | null };
+  /** The real rows this draft lands between (ask/06 E-HS). Read for the card only; nothing is written from them. */
+  neighbours?: Array<{ title: string; sub: string }>;
   /** What the quick chat draws in the card. Every value here is also in `facts`. */
   visual?: TaskVisual;
   /** Human-readable action, e.g. 'Create a recurring practice'. */

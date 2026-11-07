@@ -7,13 +7,14 @@ import { readRows, type AskTurnRead } from '../../../../data/coachhelm-chat-thre
 import { Icon } from '../../../../ui/Icon';
 
 /** "3 reads" under the answer: every read of the turn, even where the model forgot a marker (02 §5). */
-export function Sources({ reads }: { reads: AskTurnRead[] }) {
-  const [open, setOpen] = useState(false);
+export function Sources({ reads, open: openProp, onToggle }: { reads: AskTurnRead[]; open?: boolean; onToggle?: () => void }) {
+  const [own, setOwn] = useState(false);
+  const open = openProp ?? own;
   const id = useId();
   if (reads.length === 0) return null;
   return (
     <div className="srcw">
-      <button type="button" className="srcs" aria-expanded={open} aria-controls={id} onClick={() => setOpen((v) => !v)}>
+      <button type="button" className="srcs" aria-expanded={open} aria-controls={id} onClick={() => (onToggle ? onToggle() : setOwn((v) => !v))}>
         <span className="stack" aria-hidden="true">
           {reads.slice(0, 3).map((r) => (
             <i key={r.ref}>

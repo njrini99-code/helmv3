@@ -4,7 +4,10 @@ import { lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, us
 import type { UseCoachHelmChatResult } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
 import { haptic } from '../../lib/haptics';
 import { useChPhone } from '../../lib/use-phone';
-import { modKey } from '../command/shortcuts';
+import { Keys } from '../command/Keys';
+import { useCommandDesktop } from '../command/palette-open';
+import { isApple, modKey } from '../command/shortcuts';
+import { Tooltip } from '../../ui/Tooltip';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { AskSheetContext, lookingAt } from '../AskSheet';
 import { useClubhouseRole } from '../context';
@@ -31,13 +34,19 @@ export const useQuickChatRun = (): UseCoachHelmChatResult | null => useContext(Q
 export function QuickChatProvider({ plans = false, pathname, search, enabled, children }: { plans?: boolean; pathname: string; search: string; enabled: boolean; children: ReactNode }) {
   // Preview only: `?qc=<state>` opens the panel at that state with the design page's fixture (QC0).
   const previewState = pathname.startsWith('/clubhouse-preview') || process.env.NODE_ENV !== 'production' ? new URLSearchParams(search).get('qc') : null;
-  const initialOpen = !!previewState && previewState !== 'closed' && previewState !== 'live';
+  const initialOpen = !!previewState && previewState !== 'closed' && previewState !== 'live' && previewState !== 'live-work';
   const role = useClubhouseRole();
   const on = enabled && role === 'coach';
   const onCoachHelm = pathname === '/golf/dashboard/coachhelm' || pathname.startsWith('/golf/dashboard/coachhelm/');
   const trail = useCrumbTrail();
   const looking = lookingAt(pathname, search, trail);
   const [open, setOpen] = useState(initialOpen);
+  // A new page closes it, so "Looking at" can't change under a task in progress (MOB-QC-10).
+  const pathnameAt = useRef(pathname);
+  useEffect(() => {
+    if (pathnameAt.current !== pathname) setOpen(false);
+    pathnameAt.current = pathname;
+  }, [pathname]);
   const [loaded, setLoaded] = useState(!!previewState);
   const [run, setRun] = useState<QcRun>({ state: 'idle', label: '' });
   const [flag, setFlag] = useState(false);
@@ -89,16 +98,22 @@ export function QuickChatProvider({ plans = false, pathname, search, enabled, ch
 
 
 
-/** The key in the bar's 44pt slot, and the live pill that grows from it while a task runs with the panel closed. Hidden on CoachHelm, as today's key is. */
+/**
+ * The key in the bar's 44pt slot, and the live pill that grows from it while a task runs with the panel closed. Hidden on CoachHelm, as today's key is.
+ * It says what it is (owner, 2026-11-05: a wheel alone and a shortcut were no way in): its name beside the mark on a tab root and on a wide desk, with the
+ * chord on the desk. A pushed page's bar, a narrow desk and a very narrow phone keep the design's plain 44pt mark.
+ */
 export function HelmKey() {
   const c = useContext(QcCtx);
   const phone = useChPhone();
   const reduced = useChReducedMotion();
+  const desktop = useCommandDesktop();
   if (!c?.on) return null;
   const { open, toggle, warm, run, flag, keyRef } = c;
   const live = !open && run.state !== 'idle';
   return (
     <span className={'ch-qck keyslot' + (phone ? ' is-phone' : ' is-desk') + (reduced ? ' is-reduce' : '')} ref={keyRef}>
+      <Tooltip shortcut={[modKey(true), 'J']}>
       <button
         type="button"
         className={'hkey' + (open ? ' is-on' : '') + (open && run.state === 'work' ? ' is-working' : '') + (flag ? ' has-flag' : '')}
@@ -106,7 +121,6 @@ export function HelmKey() {
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls="ch-qc-panel"
-        title={`CoachHelm ${modKey(true)}J`}
         data-ch-qc-key=""
         style={live ? { visibility: 'hidden' } : undefined}
         onPointerEnter={warm}
@@ -119,13 +133,19 @@ export function HelmKey() {
       >
         <span className="hkey__disc" />
         <HelmMark className="hkey__mark" />
+        <span className="hkey__label" aria-hidden="true">
+          CoachHelm
+        </span>
+        {desktop && <Keys keys={[modKey(isApple(navigator)), 'J']} className="ch-cmd-keys ch-qc-keys" />}
         <span className="hkey__flag" />
       </button>
+      </Tooltip>
       {live && (
-        <button type="button" className="live" aria-live="polite" onClick={toggle} style={{ maxWidth: phone ? 172 : 260 }}>
+        <button type="button" className="live" aria-live="polite" onClick={toggle}>
           <span className="live__ic">
             {run.state === 'work' && <span className="live__spin" />}
             {run.state === 'wait' && <span className="live__dot" />}
+            {run.state === 'failed' && <span className="live__dot is-failed" />}
             {run.state === 'done' && (
               <span className="live__ok">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">

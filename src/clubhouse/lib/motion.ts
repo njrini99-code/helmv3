@@ -35,8 +35,13 @@ export const CH_DUR = {
  *  sits outside CH_DUR; reduced motion and Animations off turn it off entirely. */
 export const CH_SCROLL_DUR = 0.85;
 
+/** Settings > Animations off, as ThemeScript marks it on <html> before hydration. */
+const animationsOff = () => typeof document !== 'undefined' && document.documentElement.dataset.motion === 'off';
+
+/** Reduced is the 180ms fade, never a jump (MOT-22); with Animations off it is instant. Callers drop their transforms. */
 export function chTween(duration: keyof typeof CH_DUR = 'base', reduced = false): Transition {
-  return { duration: reduced ? 0 : CH_DUR[duration], ease: CH_EASE };
+  if (reduced) return { duration: animationsOff() ? 0 : CH_DUR.quick, ease: CH_EASE };
+  return { duration: CH_DUR[duration], ease: CH_EASE };
 }
 
 /**

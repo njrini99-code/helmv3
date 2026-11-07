@@ -51,7 +51,7 @@ describe('Team Stats, the summary', () => {
     expect(names).toHaveLength(3);
     const ranked = [...TEAM.grid].filter((g) => g.total != null).sort((a, b) => b.total! - a.total!).slice(0, 3).map((g) => g.name);
     expect(names).toEqual(ranked);
-    expect(c.querySelectorAll('a, button')).toHaveLength(0);
+    expect(c.querySelectorAll('a, button:not(.ch-shs-sum__key)')).toHaveLength(0);
   });
 });
 

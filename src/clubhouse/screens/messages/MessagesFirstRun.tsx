@@ -23,9 +23,9 @@ export function MessagesFirstRun({ coach, onNew, redesign = false, teamName, onT
           <rect x="32" y="48" width="32" height="7" rx="3.5" fill="var(--ch-well-bg-flat)" />
           <rect x="64" y="46" width="88" height="50" rx="21" fill="var(--ch-bubble-mine-fill)" />
           <path d="M142 90c2 7 5 11 10 13-8 1-14-2-19-7z" fill="var(--ch-bubble-mine-fill)" />
-          <path d="M98 60v22" stroke="#fdfcf8" strokeWidth="2" strokeLinecap="round" />
-          <path d="M99 60l13 5-13 5z" fill="#d6c08f" />
-          <circle cx="122" cy="80" r="3.2" fill="#fdfcf8" />
+          <path d="M98 60v22" stroke="var(--ch-card-bg)" strokeWidth="2" strokeLinecap="round" />
+          <path d="M99 60l13 5-13 5z" fill="var(--ch-champagne-dot)" />
+          <circle cx="122" cy="80" r="3.2" fill="var(--ch-card-bg)" />
         </svg>
         <h2>No conversations yet</h2>
         <p>{`Message a player, a coach or the whole team. Everything stays inside ${teamName ?? 'your team'}.`}</p>

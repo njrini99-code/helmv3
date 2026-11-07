@@ -1,5 +1,5 @@
 import { ChartColumn, Flag, GraduationCap, Megaphone, MessageSquarePlus, CalendarPlus, Sparkles, Trophy, type LucideIcon } from 'lucide-react';
-import { activeNavItem, CH_SETTINGS_ITEM, navFor, rebuiltHref, type ChNavItem, type ChRole } from '../nav';
+import { activeNavItem, CH_SETTINGS_ITEM, navFor, rebuiltHref, type ChNavFeatures, type ChNavItem, type ChRole } from '../nav';
 import { letterFor } from './shortcuts';
 
 export type ChCmdGroup = 'recent' | 'goto' | 'people' | 'actions';
@@ -75,12 +75,12 @@ export function actionsFor(role: ChRole): ChCommand[] {
 }
 
 /** The sections a role has: its sidebar and Settings, as the shell lists them. */
-export function sectionsFor(role: ChRole): ChNavItem[] {
-  return [...navFor(role), CH_SETTINGS_ITEM];
+export function sectionsFor(role: ChRole, features?: ChNavFeatures | null): ChNavItem[] {
+  return [...navFor(role, features), CH_SETTINGS_ITEM];
 }
 
-function gotoCommand(item: ChNavItem, role: ChRole, group: 'goto' | 'recent'): ChCommand {
-  const letter = letterFor(role, item.id);
+function gotoCommand(item: ChNavItem, role: ChRole, group: 'goto' | 'recent', features?: ChNavFeatures | null): ChCommand {
+  const letter = letterFor(role, item.id, features);
   return {
     id: `${group}:${item.id}`,
     group,
@@ -107,32 +107,34 @@ export interface ChCommandInput {
   pathname: string;
   people: readonly ChPerson[];
   recent: readonly ChRecent[];
+  /** The flagged sections this team has, so the palette lists what the sidebar lists. */
+  features?: ChNavFeatures | null;
 }
 
 /**
  * Everything the palette can show, for one person: Recent (the last five sections they were in, not this one), Go to,
  * People (a coach's players) and Actions. Pure, so what each role is offered is tested, not eyeballed.
  */
-export function buildCommands({ role, pathname, people, recent }: ChCommandInput): ChCommand[] {
-  const sections = sectionsFor(role);
+export function buildCommands({ role, pathname, people, recent, features }: ChCommandInput): ChCommand[] {
+  const sections = sectionsFor(role, features);
   const here = activeNavItem(pathname.replace(/\/$/, '') || '/', role)?.id ?? (pathname.startsWith(CH_SETTINGS_ITEM.href) ? CH_SETTINGS_ITEM.id : undefined);
   const recents = recent
     .map((r) => sections.find((s) => s.id === r.id))
     .filter((s): s is ChNavItem => !!s && s.id !== here)
     .slice(0, 5)
-    .map((s) => gotoCommand(s, role, 'recent'));
+    .map((s) => gotoCommand(s, role, 'recent', features));
   // N starts a new event from Home, and only there (HomeActions): the key is drawn where it works.
   const onHome = (pathname.replace(/\/$/, '') || '/') === '/golf/dashboard';
   const actions = actionsFor(role).map((a) => (onHome && a.id === 'action:new-event' ? { ...a, keys: ['N'] } : a));
-  return [...recents, ...sections.map((s) => gotoCommand(s, role, 'goto')), ...peopleCommands(role, people), ...actions];
+  return [...recents, ...sections.map((s) => gotoCommand(s, role, 'goto', features)), ...peopleCommands(role, people), ...actions];
 }
 
 /** The section that reads closest to a search, for "No results" to offer: the best word-start match, else the fewest edits. */
-export function nearestSection(query: string, role: ChRole): ChNavItem | null {
+export function nearestSection(query: string, role: ChRole, features?: ChNavFeatures | null): ChNavItem | null {
   const q = query.trim().toLowerCase();
   if (!q) return null;
   let best: { item: ChNavItem; score: number } | null = null;
-  for (const item of sectionsFor(role)) {
+  for (const item of sectionsFor(role, features)) {
     const label = item.label.toLowerCase();
     const words = label.split(/\s+/);
     // A shared start beats an edit distance: "rost" is Roster, "stat" is Stats.

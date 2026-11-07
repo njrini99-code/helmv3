@@ -935,10 +935,10 @@
   color: var(--ch-text-secondary);
 }
 .ch-hb-file__ic em {
-  font: var(--ch-type-11-strong);
+  font: var(--ch-type-12-strong);
   line-height: var(--ch-lead-tight);
   font-style: normal;
-  letter-spacing: 0.02em;
+  letter-spacing: var(--ch-track-12);
 }
 .ch-hb-file__ic.is-pdf {
   background: var(--ch-champagne-100);
@@ -4031,4 +4031,10 @@ html[data-fw-theme='dark'] .ch-hw--dark {
   .ch-hb-chip:active {
     background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
   }
+}
+
+/* MOB-PRAC-10: the row's ⋯ reaches 44 on a phone, without pushing the row. */
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  .ch-hb-file .ch-hb-iconbtn { position: relative; }
+  .ch-hb-file .ch-hb-iconbtn::before { content: ''; position: absolute; inset: -6px; }
 }

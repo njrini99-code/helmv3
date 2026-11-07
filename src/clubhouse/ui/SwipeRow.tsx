@@ -133,6 +133,8 @@ export function SwipeRow({
       data-ch-swipe-row=""
       data-side={showing ?? undefined}
       onPointerDown={(e) => {
+        // The left edge belongs to Safari's own back swipe.
+        if (e.pointerType === 'touch' && e.clientX < 24) return;
         if (e.pointerType === 'mouse' && e.button !== 0) return;
         // A press on a revealed action is a fresh tap. The drag that opened the row may have ended with no click to
         // swallow (a touch that moved fires none), so its swallow must not eat this tap.

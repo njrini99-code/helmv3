@@ -174,8 +174,29 @@ export async function loadAskCoachHelm({ conversationId }: { conversationId?: st
     notFound: (!!asked && !wanted) || thread?.kind === 'missing',
     threadFailed: thread?.kind === 'failed',
     knows: await askKnows(sb, ctx, wanted),
+    firstName: await coachFirstName(sb, ctx.coach_id),
   };
   return { status: 'ready', data };
+}
+
+/** The greeting's name, from the coach's own row. A read that fails only costs the name: the greeting says "Coach". */
+async function coachFirstName(sb: Awaited<ReturnType<typeof createClient>>, coachId: string): Promise<string | undefined> {
+  const { data, error } = await sb.from('golf_coaches').select('full_name').eq('id', coachId).maybeSingle();
+  if (error) {
+    log('coach name', error);
+    return undefined;
+  }
+  return data?.full_name?.trim().split(/\s+/)[0] || undefined;
+}
+
+/** A player's own open focus areas for Ask's home; a failed read draws no lines. */
+async function playerFocus(sb: Awaited<ReturnType<typeof createClient>>, playerId: string): Promise<NonNullable<ChAskData['focus']>> {
+  const { data, error } = await sb.from('golf_player_focus_areas').select('title, outcome_status').eq('player_id', playerId).eq('status', 'active').order('priority', { ascending: true }).limit(3);
+  if (error) {
+    log('player focus', error);
+    return [];
+  }
+  return (data ?? []).map((f) => ({ text: f.title, ask: `How is ${f.title} going for me?`, trend: f.outcome_status === 'improved' ? 'up' : f.outcome_status === 'worsened' ? 'warn' : undefined }));
 }
 
 /** Tone and facts, only with Ask v2 on; a missing column or table (HM2 held) is null and the controls stay hidden. */
@@ -213,6 +234,9 @@ export async function loadAskPlayer(): Promise<ChAskLoad> {
       threadFailed: false,
       role: 'player',
       allowance: bucket,
+      // The player's context carries the display name only; 'You' is its stand-in for a profile with no name.
+      firstName: ctx.roster[0]?.name && ctx.roster[0].name !== 'You' ? ctx.roster[0].name.split(' ')[0] : undefined,
+      focus: await playerFocus(sb, ctx.player_id),
     },
   };
 }

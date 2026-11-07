@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { Button } from '../../../ui/Button';
 import { MessagesSquare, PanelLeftClose, SquarePen } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useRef } from 'react';
@@ -58,9 +59,9 @@ function HistoryList({ conversations, openId, nowIso, timezone, onNew, onNavigat
         </span>
         <b>No chats yet</b>
         <span>Ask your first question and it will be kept here.</span>
-        <button type="button" className="ch-ask-hist__emptynew" onClick={onNew}>
+        <Button variant="secondary" onClick={onNew}>
           New chat
-        </button>
+        </Button>
       </div>
     );
   }
