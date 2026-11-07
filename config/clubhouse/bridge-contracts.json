@@ -21732,6 +21732,17 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 160635,
+    "page": "P016",
+    "category": 6,
+    "item": 35,
+    "name": "HOLE_BY_HOLE_SAVING_ONE_HOLE_FAILS",
+    "chCode": "CH-16072",
+    "meaning": "Hole by hole: saving one hole fails or is refused (not in the round’s lineup, a total already entered, results official, not set up)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
     "id": 160701,
     "page": "P016",
     "category": 7,

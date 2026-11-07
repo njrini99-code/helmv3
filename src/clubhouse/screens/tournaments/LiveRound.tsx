@@ -19,6 +19,7 @@ import { Select } from '../../ui/Select';
 import { EmptyState, SkelRows, Skeleton } from '../../ui/States';
 import { TrustChip, type TrustState } from '../../ui/TrustChip';
 import { tourDay } from './format';
+import { HoleSheet, type SheetHole } from './HoleSheet';
 import { emptyForm, formOf, STATUS_OPTIONS, STATUS_WORDS, validateScore, type ScoreErrors, type ScoreForm } from './score-entry';
 import { TourChip, TourCrumb, TourFailed, TourHead, TourLoading, TourMain, TourPhoneTop, ToPar, tourGate, useTourPhone } from './parts';
 import { useTourPaths } from './paths';
@@ -81,6 +82,11 @@ function LivePage({ data, phone }: { data: ChTourLiveSnapshot; phone: boolean })
   const playing = r.status === 'live' || r.status === 'suspended';
   useLiveRefresh(playing);
   const [entering, setEntering] = useState<ChTourLivePlayer | null>(null);
+  const [byHole, setByHole] = useState<ChTourLivePlayer | null>(null);
+  // The course's holes for this round's length: hole-by-hole scoring needs each hole's par, so it is offered only with them.
+  const courseHoles = data.course.holes.filter((h) => h.n <= e.format.holes);
+  const canHole = courseHoles.length === e.format.holes && r.status !== 'official';
+  const sheetHoles = (l: ChTourLivePlayer): SheetHole[] => courseHoles.map((h) => ({ n: h.n, par: h.par, strokes: l.holes.find((x) => x.n === h.n)?.strokes ?? null }));
   const [finishing, setFinishing] = useState(false);
   const player = (id: string) => data.players.find((p) => p.id === id);
   const lineup = data.lanes.filter((l) => l.role === 'lineup');
@@ -184,15 +190,28 @@ function LivePage({ data, phone }: { data: ChTourLiveSnapshot; phone: boolean })
       ) : (
         <div className="ch-tour-live-body">
           <Section id="ch-tour-live-lineup" title="Lineup" meta={`${e.format.counting} of ${e.format.players} count`}>
-            <Lanes lanes={lineup} nameOf={(id) => player(id)?.name ?? 'Player'} phone={phone} onEnter={setEntering} editable={r.status !== 'official'} />
+            <Lanes lanes={lineup} nameOf={(id) => player(id)?.name ?? 'Player'} phone={phone} onEnter={setEntering} onHoles={canHole ? setByHole : undefined} editable={r.status !== 'official'} />
           </Section>
           {individuals.length > 0 && (
             <Section id="ch-tour-live-ind" title="Individuals" meta="Play for themselves; never count toward the team">
-              <Lanes lanes={individuals} nameOf={(id) => player(id)?.name ?? 'Player'} phone={phone} onEnter={setEntering} editable={r.status !== 'official'} />
+              <Lanes lanes={individuals} nameOf={(id) => player(id)?.name ?? 'Player'} phone={phone} onEnter={setEntering} onHoles={canHole ? setByHole : undefined} editable={r.status !== 'official'} />
             </Section>
           )}
           <Field data={data} />
         </div>
+      )}
+      {byHole && (
+        <HoleSheet
+          key={byHole.playerId}
+          open
+          onClose={() => setByHole(null)}
+          name={player(byHole.playerId)?.name ?? 'Player'}
+          roundEventId={r.roundEventId}
+          playerId={byHole.playerId}
+          date={r.date}
+          holes={sheetHoles(byHole)}
+          roundLabel={`round ${r.number}`}
+        />
       )}
       <ScoreSheet key={entering?.playerId ?? 'none'} data={data} lane={entering} name={entering ? (player(entering.playerId)?.name ?? 'Player') : ''} onClose={() => setEntering(null)} />
       <Modal
@@ -254,11 +273,11 @@ function TeamLine({ data }: { data: ChTourLiveSnapshot }) {
   );
 }
 
-function Lanes({ lanes, nameOf, phone, onEnter, editable }: { lanes: ChTourLivePlayer[]; nameOf: (id: string) => string; phone: boolean; onEnter: (l: ChTourLivePlayer) => void; editable: boolean }) {
+function Lanes({ lanes, nameOf, phone, onEnter, onHoles, editable }: { lanes: ChTourLivePlayer[]; nameOf: (id: string) => string; phone: boolean; onEnter: (l: ChTourLivePlayer) => void; onHoles?: (l: ChTourLivePlayer) => void; editable: boolean }) {
   return (
     <ul className="ch-tour-live-lanes">
       {lanes.map((l) => (
-        <Lane key={l.playerId} lane={l} name={nameOf(l.playerId)} phone={phone} onEnter={onEnter} editable={editable} />
+        <Lane key={l.playerId} lane={l} name={nameOf(l.playerId)} phone={phone} onEnter={onEnter} onHoles={onHoles} editable={editable} />
       ))}
     </ul>
   );
@@ -271,7 +290,7 @@ function thruWords(l: ChTourLivePlayer, holes: number): string {
   return l.thru >= holes ? 'F' : `Thru ${l.thru}`;
 }
 
-function Lane({ lane: l, name, phone, onEnter, editable }: { lane: ChTourLivePlayer; name: string; phone: boolean; onEnter: (l: ChTourLivePlayer) => void; editable: boolean }) {
+function Lane({ lane: l, name, phone, onEnter, onHoles, editable }: { lane: ChTourLivePlayer; name: string; phone: boolean; onEnter: (l: ChTourLivePlayer) => void; onHoles?: (l: ChTourLivePlayer) => void; editable: boolean }) {
   const wash = useChangedWash(l.toPar);
   const holes = 18;
   const scored = l.thru != null || l.status !== 'ok';
@@ -294,9 +313,16 @@ function Lane({ lane: l, name, phone, onEnter, editable }: { lane: ChTourLivePla
       </div>
       <div className={'ch-tour-live-lane__v ch-tour-washable' + (wash ? ' ch-tour-changed' : '')}>{l.toPar != null ? <ToPar value={l.toPar} /> : <span className="ch-num">—</span>}</div>
       {editable && (
-        <Button size="sm" variant="secondary" onClick={() => onEnter(l)} aria={{ label: `${scored ? 'Edit' : 'Enter'} score for ${name}` }}>
-          {scored ? 'Edit score' : 'Enter score'}
-        </Button>
+        <div className="ch-tour-live-lane__act">
+          {onHoles && (
+            <Button size="sm" variant="secondary" onClick={() => onHoles(l)} aria={{ label: `Score ${name} by hole` }}>
+              Score by hole
+            </Button>
+          )}
+          <Button size="sm" variant="secondary" onClick={() => onEnter(l)} aria={{ label: `${scored ? 'Edit' : 'Enter'} score for ${name}` }}>
+            {scored ? 'Edit score' : 'Enter score'}
+          </Button>
+        </div>
       )}
     </li>
   );

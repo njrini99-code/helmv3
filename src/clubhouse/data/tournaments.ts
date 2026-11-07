@@ -19,6 +19,7 @@ import {
   shapeHoles,
   type TourCourseInput,
   type TourHoleRow,
+  linkedRoundOf,
   type TourLinkedRound,
   type TourPlayerInput,
   type TourRawEvent,
@@ -308,16 +309,21 @@ async function readEvents(ctx: TourCtx, tz: string, opts: { ids?: string[]; own?
 
   const linkedIds = playerRounds.map((p) => p.round_id).filter((x): x is string => !!x);
   const [linkedRows, holeRounds] = await Promise.all([
-    allIn<{ id: string; status: string | null; total_score: number | null; strokes_gained_total: number | null }>('linkedRounds', linkedIds, (chunk, from, to) =>
-      ctx.supabase.from('golf_rounds').select('id, status, total_score, strokes_gained_total').in('id', chunk).order('id', { ascending: true }).range(from, to),
+    allIn<{ id: string; status: string | null; total_score: number | null; strokes_gained_total: number | null; holes_played: number | null }>('linkedRounds', linkedIds, (chunk, from, to) =>
+      ctx.supabase.from('golf_rounds').select('id, status, total_score, strokes_gained_total, holes_played').in('id', chunk).order('id', { ascending: true }).range(from, to),
     ),
-    allIn<{ round_id: string }>('linkedHoles', linkedIds, (chunk, from, to) =>
-      ctx.supabase.from('golf_holes').select('round_id').in('round_id', chunk).not('score', 'is', null).order('id', { ascending: true }).range(from, to),
+    allIn<{ round_id: string; score: number | null }>('linkedHoles', linkedIds, (chunk, from, to) =>
+      ctx.supabase.from('golf_holes').select('round_id, score').in('round_id', chunk).not('score', 'is', null).order('id', { ascending: true }).range(from, to),
     ),
   ]);
   const withHoles = new Set(holeRounds.map((h) => h.round_id));
+  const scored = new Map<string, { n: number; sum: number }>();
+  for (const h of holeRounds) {
+    const c = scored.get(h.round_id) ?? { n: 0, sum: 0 };
+    scored.set(h.round_id, { n: c.n + 1, sum: c.sum + (h.score ?? 0) });
+  }
   const linked: Record<string, TourLinkedRound> = {};
-  for (const r of linkedRows) linked[r.id] = { total: r.total_score, completed: r.status === 'completed', holes: withHoles.has(r.id), shots: r.strokes_gained_total != null };
+  for (const r of linkedRows) linked[r.id] = linkedRoundOf(r, scored.get(r.id), withHoles.has(r.id));
 
   const courseIds = [...new Set([...ts.map((t) => t.course_id), ...rounds.map((r) => r.course_id)].filter((x): x is string => !!x))];
   const teeIds = [...new Set(rounds.map((r) => r.tee_id).filter((x): x is string => !!x))];
@@ -1028,8 +1034,9 @@ export async function loadTournamentLive(ctx: TourCtx, eventId: string, roundNum
       event.rounds[event.rounds.length - 1];
     if (!round) return { kind: 'missing' };
     const course: ChTourCourse = read.courses[round.courseId] ?? { id: round.courseId, name: '', tees: '', par: round.par, rating: null, holes: [] };
-    // Linked GolfHelm rounds with no final total yet are still being played: read the holes they have scored so far.
-    const open = event.playerRounds.filter((p) => p.roundNumber === round.number && p.roundId && p.total == null).map((p) => p.roundId!);
+    // The holes of every linked GolfHelm round (golf_holes, the rows Fairway's tracker and the hole sheet write): a round
+    // still being played shows its holes so far; a finished card shows all of them.
+    const open = event.playerRounds.filter((p) => p.roundNumber === round.number && p.roundId).map((p) => p.roundId!);
     const holes = await section('live', 'holes', () =>
       allIn<TourHoleRow>('liveHoles', open, (chunk, from, to) => ctx.supabase.from('golf_holes').select('round_id, hole_number, par, score').in('round_id', chunk).order('round_id').order('hole_number').range(from, to)),
     );

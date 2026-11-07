@@ -92,12 +92,18 @@
 .ch-tour-live.is-phone .ch-tour-live-lane__v {
   grid-area: v;
 }
-.ch-tour-live.is-phone .ch-tour-live-lane__chips {
+.ch-tour-live.is-phone .ch-tour-live-lane__act {
+  display: flex;
+  gap: 8px;
+}
+.ch-tour-live-lane__chips {
   grid-area: chips;
 }
-.ch-tour-live.is-phone .ch-tour-live-lane > .ch-btn {
+.ch-tour-live.is-phone .ch-tour-live-lane__act {
   grid-area: act;
-  width: 100%;
+}
+.ch-tour-live.is-phone .ch-tour-live-lane__act .ch-btn {
+  flex: 1 1 0;
   min-height: 44px;
 }
 .ch-tour-live-lane__who {
@@ -145,4 +151,83 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--ch-space-3);
+}
+
+/* The hole-by-hole sheet (HoleSheet): a strip of holes with what is on each, the hole in hand, and the strokes to tap.
+   Every key is at least 44px, so it works with a thumb on the course. */
+.ch-tour-live-hs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-4);
+}
+.ch-tour-live-hs__strip {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 6px;
+}
+.ch-tour-live-hs__h {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 4px 0;
+  border: 0;
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-bg-subtle);
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+  cursor: pointer;
+}
+.ch-tour-live-hs__h.is-done {
+  color: var(--ch-text-primary);
+}
+.ch-tour-live-hs__h.is-cur {
+  background: var(--ch-bg-selected);
+  box-shadow: inset 0 0 0 2px var(--ch-border-focus);
+  color: var(--ch-text-primary);
+}
+.ch-tour-live-hs__h:focus-visible,
+.ch-tour-live-hs__c:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-tour-live-hs__now {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font: var(--ch-type-17-strong);
+  color: var(--ch-text-primary);
+}
+.ch-tour-live-hs__choices {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.ch-tour-live-hs__c {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: 6px 4px;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-bg-subtle);
+  font: var(--ch-type-17-strong);
+  color: var(--ch-text-primary);
+  cursor: pointer;
+}
+.ch-tour-live-hs__c.is-on {
+  background: var(--ch-green-fill-700);
+  color: var(--ch-text-on-accent);
+}
+.ch-tour-live-hs__c:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.ch-tour-live-hs__w {
+  font: var(--ch-type-12);
+  text-align: center;
 }

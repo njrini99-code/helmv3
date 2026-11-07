@@ -168,7 +168,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P013 | 7 | 15 |  | 39 | 3 | 50 | 71 | 7 | 3 |  | 3 | 1 |  | 3 | 4 | 4 | 11 | 23 | 1 |  | 1 |  | 1 |  |  | 247 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
-| P016 | 31 | 1 | 1 | 26 |  | 34 | 1 | 1 |  | 2 | 4 | 1 |  |  | 5 | 2 |  | 3 |  |  |  |  |  |  |  | 112 |
+| P016 | 31 | 1 | 1 | 26 |  | 35 | 1 | 1 |  | 2 | 4 | 1 |  |  | 5 | 2 |  | 3 |  |  |  |  |  |  |  | 113 |
 
 ## P001 Shell
 
@@ -2160,6 +2160,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 160632 | CH-16291 | 06 Server / system error | `PLAYER_EVENT_THE_COACHS_SHARED_NOTES_READ` | implemented | Player event: the coach’s shared notes read fails (`errors.notes`) |
 | 160633 | CH-16292 | 06 Server / system error | `PLAYER_EVENT_THE_PLAYERS_REFLECTION_READ_FAILS` | implemented | Player event: the player’s reflection read fails (`errors.reflection`) |
 | 160634 | CH-16293 | 06 Server / system error | `PLAYER_EVENT_THE_PLAYERS_OWN_SPOT_FAILS` | implemented | Player event: the player’s own spot (the lineup reveal) fails to load (`errors.reveal`) |
+| 160635 | CH-16072 | 06 Server / system error | `HOLE_BY_HOLE_SAVING_ONE_HOLE_FAILS` | implemented | Hole by hole: saving one hole fails or is refused (not in the round’s lineup, a total already entered, results official, not set up) |
 | 160701 | CH-16605 | 07 Network / offline | `THE_DEVICE_IS_OFFLINE_WHILE_THE_CARD` | implemented | The device is offline while the card or the live view is open |
 | 160801 | CH-16609 | 08 Permission / authorization | `THE_COACH_HAS_NO_TEAM_OR_LOST` | implemented | The coach has no team, or lost access to it |
 | 161001 | CH-16920 | 10 Warning | `EVENT_DESK_THE_HOSTS_PUBLISHED_NUMBER_DIFFERS` | implemented | Event desk: the host's published number differs from our scorecard (`officialTotal` set and unequal) |

@@ -53,6 +53,15 @@ describe('buildLive (the lanes and the team line)', () => {
     expect(lanes.find((l) => l.playerId === 'a')!.holes).toHaveLength(3);
   });
 
+  it('keeps the holes of a finished linked card on its lane (so they can be corrected), and does not call it live', () => {
+    const e = event([pr('a', 'lineup', 1, 74, { roundId: 'ga' }), pr('b', 'lineup', 2, 72), pr('c', 'lineup', 3, 73), pr('d', 'lineup', 4, 75)]);
+    const holes = new Map([['ga', Array.from({ length: 18 }, (_, i) => hole('ga', i + 1, 4, i === 0 ? 6 : 4))]]);
+    const { lanes, team } = buildLive(e, round, holes);
+    expect(lanes.find((l) => l.playerId === 'a')).toMatchObject({ thru: 18, toPar: 2 });
+    expect(lanes.find((l) => l.playerId === 'a')!.holes).toHaveLength(18);
+    expect(team.kind).toBe('complete');
+  });
+
   it('keeps a withdrawn or disqualified player out of the count and says so', () => {
     const e = event([pr('a', 'lineup', 1, 70), pr('b', 'lineup', 2, 72), pr('c', 'lineup', 3, 73), pr('d', 'lineup', 4, 74), pr('e', 'lineup', 5, 76, { status: 'dq' })]);
     const { lanes, team } = buildLive(e, round);

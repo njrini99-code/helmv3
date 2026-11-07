@@ -70,8 +70,9 @@ export function buildLive(event: ChTourEvent, round: ChTourRound, holes: Readonl
 
   const progress = field.map((f) => {
     const p = f.row;
-    const prog = p?.roundId && p.total == null ? progressOf(holes.get(p.roundId) ?? []) : null;
-    const live = prog && prog.thru > 0 && prog.toPar != null ? { thru: prog.thru, toPar: prog.toPar } : null;
+    // A linked round's holes are drawn whether or not it is finished; it is "live" only while it has no total.
+    const prog = p?.roundId ? progressOf(holes.get(p.roundId) ?? []) : null;
+    const live = prog && p?.total == null && prog.thru > 0 && prog.toPar != null ? { thru: prog.thru, toPar: prog.toPar } : null;
     return { f, prog, live };
   });
 

@@ -10,11 +10,13 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: nav.refresh, pu
 const enter = vi.hoisted(() => vi.fn());
 const setStatus = vi.hoisted(() => vi.fn());
 vi.mock('@/app/golf/actions/tournaments', () => ({ enterTournamentScore: enter, setTournamentRoundStatus: setStatus }));
+const hole = vi.hoisted(() => vi.fn());
+vi.mock('@/app/golf/actions/tournaments-holes', () => ({ saveTournamentHole: hole }));
 const toast = vi.hoisted(() => vi.fn());
 vi.mock('../ui/Toast', async (orig) => ({ ...(await orig<typeof import('../ui/Toast')>()), useToast: () => toast, useDelayedToast: () => () => () => {} }));
 
 beforeEach(() => {
-  for (const m of [nav.refresh, nav.push, enter, setStatus, toast]) m.mockReset();
+  for (const m of [nav.refresh, nav.push, enter, setStatus, toast, hole]) m.mockReset();
 });
 afterEach(() => {
   cleanup();
@@ -83,6 +85,31 @@ describe('LiveRound', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save score' }));
     await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.objectContaining({ code: 'CH-16070', body: 'That player isn’t in this round’s lineup.' })));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('Score by hole opens the card, and a tap on the strokes saves that hole for that player and moves on (CH-16072 when it fails)', async () => {
+    hole.mockResolvedValue({ success: true, data: { roundId: 'g1', thru: 1 } });
+    draw();
+    const l = fx.lanes.find((x) => x.holes.every((h) => h.strokes == null)) ?? fx.lanes[0]!;
+    fireEvent.click(within(lane(l.playerId)).getByRole('button', { name: /by hole/ }));
+    const dialog = await screen.findByRole('dialog');
+    const firstOpen = l.holes.find((h) => h.strokes == null)!;
+    const par = fx.course.holes.find((h) => h.n === firstOpen.n)!.par;
+    fireEvent.click(within(dialog).getByRole('button', { name: new RegExp(`^${par}\\s*Par$`) }));
+    await waitFor(() => expect(hole).toHaveBeenCalledWith({ roundEventId: fx.round.roundEventId, playerId: l.playerId, date: fx.round.date, hole: firstOpen.n, par, strokes: par }));
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: new RegExp(`Hole ${firstOpen.n}, par ${par}, ${par}$`) })).toBeInTheDocument());
+    hole.mockResolvedValue({ success: false, error: 'That player isn’t in this round’s lineup.', code: 'not_in_lineup' });
+    // The sheet moved on to the next unscored hole, whose par is its own.
+    const next = l.holes.find((h) => h.n > firstOpen.n && h.strokes == null)!;
+    const nextPar = fx.course.holes.find((h) => h.n === next.n)!.par;
+    fireEvent.click(within(dialog).getByRole('button', { name: new RegExp(`^${nextPar + 1}\\s*Bogey$`) }));
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.objectContaining({ code: 'CH-16072', body: 'That player isn’t in this round’s lineup.' })));
+  });
+
+  it('offers no hole-by-hole scoring without the course’s holes (totals still work)', () => {
+    draw({ ...fx, course: { ...fx.course, holes: [] } });
+    expect(screen.queryAllByRole('button', { name: /by hole/ })).toHaveLength(0);
+    expect(screen.getAllByRole('button', { name: /score for/ }).length).toBeGreaterThan(0);
   });
 
   it('a withdrawal needs no total', async () => {

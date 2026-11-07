@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { tourFixture } from '../../preview/fixtures-tournaments';
 import type { ChTourEvent } from '../../screens/tournaments/types';
 import { rowsOf } from '../../__tests__/tournament-rows';
-import { classYear, lineupStateOf, roundStatusOf, seasonIdOf, shapeEvent, shapeHoles } from '../tournaments-shape';
+import { classYear, linkedRoundOf, lineupStateOf, roundStatusOf, seasonIdOf, shapeEvent, shapeHoles } from '../tournaments-shape';
 
 /**
  * The loaders' shaping, fed rows rebuilt from the preview fixture's events: the same scores must come back as the
@@ -148,5 +148,26 @@ describe('the small mappings', () => {
     expect(ledger.cards).toHaveLength(1);
     expect(ledger.cards[0]!.holes.reduce((s, h) => s + (h.strokes ?? 0), 0)).toBe(first.total);
     expect(ledger.totalsOnly.length).toBe(shaped.playerRounds.filter((p) => p.total != null).length - 1);
+  });
+});
+
+describe('linkedRoundOf (a tournament scored hole by hole)', () => {
+  const r = (over: Partial<{ status: string | null; total_score: number | null; holes_played: number | null }> = {}) => ({ status: 'in_progress', total_score: null, strokes_gained_total: null, holes_played: 18, ...over });
+
+  it('a round in progress with every hole scored is a finished card: its total is the holes’ sum', () => {
+    expect(linkedRoundOf(r(), { n: 18, sum: 74 }, true)).toEqual({ total: 74, completed: true, holes: true, shots: false });
+  });
+
+  it('a round with holes still to play has no total yet', () => {
+    expect(linkedRoundOf(r(), { n: 11, sum: 40 }, true)).toMatchObject({ total: null, completed: false });
+    expect(linkedRoundOf(r(), undefined, false)).toMatchObject({ total: null, completed: false, holes: false });
+  });
+
+  it('a nine-hole round is full at nine', () => {
+    expect(linkedRoundOf(r({ holes_played: 9 }), { n: 9, sum: 38 }, true)).toMatchObject({ total: 38, completed: true });
+  });
+
+  it('a completed round keeps its own total, whatever the holes add to', () => {
+    expect(linkedRoundOf(r({ status: 'completed', total_score: 71 }), { n: 18, sum: 99 }, true)).toMatchObject({ total: 71, completed: true });
   });
 });
