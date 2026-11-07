@@ -1177,6 +1177,13 @@ export function tourFixture(state: ChTourPreviewState): ChTourFixture {
                 firstView: false,
                 changedFrom: null,
                 lockedAt: e.lineup.locksAt,
+                counting: e.rounds.map((r) => ({
+                  roundNumber: r.number,
+                  state: (() => {
+                    const mine = e.playerRounds.find((p) => p.playerId === 'jonah' && p.roundNumber === r.number);
+                    return entry.role !== 'lineup' ? ('not_playing' as const) : mine && (r.status === 'final' || r.status === 'official') ? mine.count : ('pending' as const);
+                  })(),
+                })),
               }
             : null,
         trip: e.id === 'e34' && !partial ? PINEHURST_TRIP : null,

@@ -131,7 +131,7 @@ function EventPage({ data, ev, phone }: { data: ChTourPlayerData; ev: ChTourPlay
         }
       />
       <div className="ch-tour-pl-body">
-        <Lineup ev={ev} />
+        {data.errors.reveal ? <InlineNotice code="CH-16293" title="Your spot didn’t load" body="Nothing has changed. Try again in a moment." /> : <Lineup ev={ev} />}
         <Section id="ch-tour-pl-rounds" title="Your rounds" meta="Days, tee times and your own score">
           {e.rounds.length === 0 ? (
             <EmptyState compact kind="first-run" code="CH-16391" title="No rounds set yet" body="Your coach hasn’t added the days. They show here once they do." />
@@ -195,6 +195,16 @@ function EventPage({ data, ev, phone }: { data: ChTourPlayerData; ev: ChTourPlay
   );
 }
 
+const COUNT_WORDS: Record<ChTourReveal['counting'][number]['state'], string> = {
+  counted: 'Your score counted',
+  dropped: 'Your score did not count',
+  tie: 'Tied at the line',
+  individual: 'Individual',
+  none: 'No score',
+  pending: 'Decided when the round is final',
+  not_playing: 'Not playing',
+};
+
 const REVEAL_WORDS: Record<ChTourReveal['status'], string> = { lineup: 'You’re in the lineup', alternate: 'You’re the alternate', individual: 'You’re playing as an individual', not_travelling: 'You’re not travelling' };
 
 /** Whether this player is playing: their spot when the reveal is open to them, else a plain line that it is not shown here. */
@@ -210,6 +220,15 @@ function Lineup({ ev }: { ev: ChTourPlayerEvent }) {
             {r.lockedAt ? ` · locked ${tourDayTime(r.lockedAt)}` : ''}
           </span>
           {r.lineup.length > 0 && <span className="ch-tour-pl-muted">{r.lineup.join(', ')}</span>}
+          {r.counting.some((c) => c.state !== 'not_playing') && (
+            <ul className="ch-tour-pl-count" aria-label="Whether your score counted">
+              {r.counting.map((c) => (
+                <li key={c.roundNumber} data-ch-count-round={c.roundNumber} data-ch-count-state={c.state}>
+                  <span className="ch-tour-pl-muted">Round {c.roundNumber}</span> <TourChip tone={c.state === 'counted' ? 'ok' : undefined}>{COUNT_WORDS[c.state]}</TourChip>
+                </li>
+              ))}
+            </ul>
+          )}
         </>
       ) : (
         <>

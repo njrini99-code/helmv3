@@ -43,6 +43,7 @@ import {
   type TourTeamSeasonRow,
 } from '@/lib/golf/tournaments-tables';
 import { candidateStats } from '../screens/tournaments/lineup-model';
+import { revealOf, type FinalScore, type MyLineupRow } from '../screens/tournaments/reveal-model';
 import { buildLive, type LiveHoleRow } from '../screens/tournaments/live-model';
 import { setupGroups } from '../screens/tournaments/setup-groups';
 import type {
@@ -1111,6 +1112,43 @@ export async function loadPlayerTournaments(ctx: TourCtx, eventId: string | null
           ),
         ])
       : [null, null];
+    // The reveal: the player's own role and spot once the coach has published (held migration 20261024100300). Without it
+    // (not published, or the function not applied yet) there is none, which is the same "not shown" answer.
+    const myLineup = open
+      ? await section('player', 'reveal', async () => {
+          const { data, error } = await ctx.supabase.rpc('golf_tournament_my_lineup' as never, { p_tournament_id: open.id } as never);
+          if (error) {
+            if (isTourSchemaMissing(error)) return null;
+            throw new ReadFailed('myLineup', error);
+          }
+          return (data ?? null) as MyLineupRow | null;
+        })
+      : null;
+    // Whether a score counted needs the round's lineup scores, which a teammate may read once the round is final (D-85).
+    const scoresByRound = new Map<string, Map<string, FinalScore>>();
+    if (open && myLineup?.ok && myLineup.value?.role === 'lineup') {
+      const finalIds = open.rounds.filter((r) => r.status === 'final' || r.status === 'official').map((r) => r.roundEventId);
+      const scored = await section('player', 'finalScores', async () => {
+        const rows = await allIn<TourPlayerRoundRow>('finalScores', finalIds, (chunk, from, to) =>
+          tourTable(ctx.supabase, 'golf_tournament_player_rounds').select(TOUR_COLUMNS.golf_tournament_player_rounds).in('round_event_id', chunk).order('player_id').range(from, to),
+        );
+        const linkedIds = rows.map((r) => r.round_id).filter((x): x is string => !!x);
+        const linked = await allIn<{ id: string; status: string | null; total_score: number | null }>('finalLinked', linkedIds, (chunk, from, to) =>
+          ctx.supabase.from('golf_rounds').select('id, status, total_score').in('id', chunk).order('id').range(from, to),
+        );
+        return { rows, linked };
+      });
+      if (scored.ok) {
+        for (const r of scored.value.rows) {
+          const l = scored.value.linked.find((x) => x.id === r.round_id);
+          const total = r.entered_total ?? (l?.status === 'completed' ? l.total_score : null);
+          const byPlayer = scoresByRound.get(r.round_event_id) ?? new Map<string, FinalScore>();
+          byPlayer.set(r.player_id, { total, status: r.status });
+          scoresByRound.set(r.round_event_id, byPlayer);
+        }
+      }
+    }
+    const reveal = open && myLineup?.ok ? revealOf(myLineup.value, { playerId: ctx.playerId!, format: open.format, rounds: open.rounds, players, scoresByRound }) : null;
     const shared = notes?.ok
       ? notes.value.flatMap((n) =>
           ([['Shot of the day', n.shot_of_day], ['A decision to think about', n.decision], ['Next focus', n.next_focus]] as const)
@@ -1129,8 +1167,8 @@ export async function loadPlayerTournaments(ctx: TourCtx, eventId: string | null
           ? {
               // The player's copy of the event carries no lineup, no receipt and no teammates' scores (D-85).
               event: { ...open, entries: [], playerRounds: ownRounds(open), team: { rounds: [], result: null }, field: null, lineup: { ...open.lineup, seen: null } },
-              // Whether this player is in the lineup is the reveal: held file 4 (20261024100300) opens it to them.
-              reveal: null,
+              // Whether this player is in the lineup is the reveal (golf_tournament_my_lineup, held 20261024100300).
+              reveal,
               trip: null,
               // Teammates' results and the team's are held file 4's too: only the player's own line is drawn.
               results: { visible: false, reason: open.status === 'complete' ? null : 'not_final' },
@@ -1143,7 +1181,7 @@ export async function loadPlayerTournaments(ctx: TourCtx, eventId: string | null
         window: { in: false, until: null, day: null },
         // The player's season line (counted, per 18) is held file 4's: zeros here are never drawn.
         season: { counted: 0, of: 0, rounds: 0, roundsTarget: null, perEighteen: { event: null, qualifier: null, practice: null }, n: { event: 0, qualifier: 0, practice: 0 }, early: true },
-        errors: { ...(open && reflection && !reflection.ok ? { reflection: true as const } : {}), ...(open && notes && !notes.ok ? { notes: true as const } : {}) },
+        errors: { ...(open && reflection && !reflection.ok ? { reflection: true as const } : {}), ...(open && notes && !notes.ok ? { notes: true as const } : {}), ...(open && myLineup && !myLineup.ok ? { reveal: true as const } : {}) },
       },
     };
   });

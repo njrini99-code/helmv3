@@ -880,6 +880,12 @@ export interface ChTourReveal {
   firstView: boolean;
   changedFrom: ChTourReveal['status'] | null;
   lockedAt: string | null;
+  /**
+   * Whether the player's score counted, by round, once the round is final: the scoring engine's answer from the scores
+   * a teammate may read at that point (D-85). `pending` until then; `not_playing` for the alternate and a player who is
+   * not travelling.
+   */
+  counting: Array<{ roundNumber: number; state: ChTourCount | 'pending' | 'not_playing' }>;
 }
 
 export interface ChTourPlayerMoment {
@@ -932,7 +938,7 @@ export interface ChTourPlayerData {
   event: ChTourPlayerEvent | null;
   window: ChTourWindow;
   season: ChTourPlayerSeason;
-  errors: Partial<Record<'events' | 'trip' | 'season' | 'notes' | 'reflection', true>>;
+  errors: Partial<Record<'events' | 'trip' | 'season' | 'notes' | 'reflection' | 'reveal', true>>;
 }
 
 // ── View props (the contract every view keeps) ────────────────────────────────────────────────────────────────

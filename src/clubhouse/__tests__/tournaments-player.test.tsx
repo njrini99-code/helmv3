@@ -74,6 +74,25 @@ describe('PlayerEvent, an event', () => {
     expect(closed.querySelector('[data-ch-reveal="closed"]')?.textContent).toContain('Your spot isn’t shown here yet');
   });
 
+  it('says, round by round, whether the player’s score counted (decided only when the round is final)', () => {
+    const e = oakmont.event!;
+    const reveal = { ...e.reveal!, status: 'lineup' as const, counting: [{ roundNumber: 1, state: 'counted' as const }, { roundNumber: 2, state: 'dropped' as const }, { roundNumber: 3, state: 'pending' as const }] };
+    const c = draw({ ...oakmont, event: { ...e, reveal } });
+    expect(c.querySelector('[data-ch-count-round="1"]')?.textContent).toContain('Your score counted');
+    expect(c.querySelector('[data-ch-count-round="2"]')?.textContent).toContain('Your score did not count');
+    expect(c.querySelector('[data-ch-count-round="3"]')?.textContent).toContain('Decided when the round is final');
+    cleanup();
+    const alt = draw({ ...oakmont, event: { ...e, reveal: { ...reveal, status: 'alternate', counting: [{ roundNumber: 1, state: 'not_playing' }] } } });
+    expect(alt.querySelector('[data-ch-count-round]')).toBeNull();
+    expect(alt.querySelector('[data-ch-reveal="alternate"]')?.textContent).toContain('You’re the alternate');
+  });
+
+  it('says the spot did not load (CH-16293) instead of "not published"', () => {
+    const c = draw({ ...oakmont, event: { ...oakmont.event!, reveal: null }, errors: { reveal: true } });
+    expect(c.querySelector('[data-ch-code="CH-16293"]')?.textContent).toContain('Your spot didn’t load');
+    expect(c.querySelector('[data-ch-reveal]')).toBeNull();
+  });
+
   it('shows nothing about teammates or the team’s counting on a player’s page', () => {
     const c = draw({ ...oakmont, event: { ...oakmont.event!, reveal: null } });
     expect(c.textContent).not.toMatch(/Sofia|Ava Okafor|counted|dropped/);

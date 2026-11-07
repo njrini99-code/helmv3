@@ -91,6 +91,14 @@
   font: var(--ch-type-17-strong);
   color: var(--ch-text-primary);
 }
+.ch-tour-pl-count {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
 .ch-tour-pl-round {
   display: flex;
   align-items: center;

@@ -158,6 +158,7 @@ flags and its lane's rows.
 | 160631 | CH-16290 | `PLAYER_THE_EVENTS_READ_FAILS` | Player: the events read fails (`errors.events`) |
 | 160632 | CH-16291 | `PLAYER_EVENT_THE_COACHS_SHARED_NOTES_READ` | Player event: the coach’s shared notes read fails (`errors.notes`) |
 | 160633 | CH-16292 | `PLAYER_EVENT_THE_PLAYERS_REFLECTION_READ_FAILS` | Player event: the player’s reflection read fails (`errors.reflection`) |
+| 160634 | CH-16293 | `PLAYER_EVENT_THE_PLAYERS_OWN_SPOT_FAILS` | Player event: the player’s own spot (the lineup reveal) fails to load (`errors.reveal`) |
 
 ## 07 — Network / offline
 
