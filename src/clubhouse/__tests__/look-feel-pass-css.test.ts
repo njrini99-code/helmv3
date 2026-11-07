@@ -243,7 +243,7 @@ const RAW_LONGHAND: Record<string, number> = {
   'styles/calendar.css': 20,
   'styles/classes.css': 14,
   'styles/coachhelm-ask.css': 9,
-  'styles/coachhelm-brief.css': 3,
+  'styles/coachhelm-brief.css': 2,
   'styles/coachhelm-dive.css': 11,
   'styles/coachhelm-profile.css': 8,
   'styles/coachhelm-standing.css': 15,

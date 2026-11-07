@@ -472,10 +472,10 @@ export function YourGameLead({ data, covered }: { data: ChPlayerHome; covered: b
       <Link href={MY_STATS} className="ch-shs-yg__sum ch-num">
         <span>{last.n ? `Last ${last.n}` : 'Last 10'}</span>
         <span>
-          <b>{last.avg == null ? NO_DATA : formatFixed(last.avg)}</b> avg
+          <b>{last.avg == null ? <NoData /> : formatFixed(last.avg)}</b> avg
         </span>
         <span>
-          <b>{data.sgPerRound == null ? NO_DATA : formatSigned(data.sgPerRound)}</b> SG per round
+          <b>{data.sgPerRound == null ? <NoData /> : formatSigned(data.sgPerRound)}</b> SG per round
         </span>
         <span className="ch-shs-yg__go">
           My stats
