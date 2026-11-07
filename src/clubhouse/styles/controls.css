@@ -36,8 +36,10 @@
   text-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
   cursor: pointer;
   touch-action: manipulation;
-  transition: color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease),
-    background var(--ch-dur-press) var(--ch-ease);
+  /* The label's ink swaps in one step as the pill crosses it, not fading through the glide (a colour halfway measures under 4.5:1 on either
+     ground). useSlidePlate sets each label's moment from the glide it starts; this delay is only what a change with no glide would wait. */
+  transition: color 0s linear var(--ch-dur-press), transform var(--ch-dur-quick) var(--ch-ease),
+    background-color var(--ch-dur-press) var(--ch-ease);
 }
 .ch-seg--lg .ch-seg__b {
   height: calc(35 * var(--ch-type-k));
@@ -123,7 +125,7 @@
   cursor: pointer;
   touch-action: manipulation;
   transition: color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease),
-    background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+    background-color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-pill:hover {
@@ -664,7 +666,7 @@
   background: transparent;
   text-align: left;
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-pp__row:hover {
@@ -719,7 +721,7 @@
   border-radius: var(--ch-radius-xs);
   box-shadow: inset 0 0 0 1.5px var(--ch-border-strong);
   color: var(--ch-text-on-accent);
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-pp__box.is-on {
   background: var(--ch-green-fill-600);
@@ -756,7 +758,7 @@
   border-radius: 999px;
   background: var(--ch-switch-track-bg);
   box-shadow: var(--ch-switch-track-shadow);
-  transition: background var(--ch-dur-base) var(--ch-ease);
+  transition: background-color var(--ch-dur-base) var(--ch-ease);
   /* The thumb reads the track's width (100cqw) to find the edge it rests on, whatever size a page draws the switch. */
   container-type: inline-size;
 }
@@ -965,7 +967,7 @@
   background: var(--ch-ivory-25);
   box-shadow: inset 0 0 0 1.5px var(--ch-border-strong);
   color: var(--ch-text-on-accent);
-  transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-check__box.is-on {
   background: var(--ch-green-fill-600);

@@ -1754,7 +1754,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     border-radius: var(--ch-radius-md);
     background: none;
     box-shadow: none;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-qual::before,
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-qual::after {
@@ -1938,7 +1938,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     border-radius: var(--ch-radius-md);
     background: none;
     box-shadow: none;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-crs + .ch-rsu-crs {
     border-top: 0;
@@ -2074,7 +2074,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
   font: 600 13px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   transition:
-    background var(--ch-dur-base) var(--ch-ease),
+    background-color var(--ch-dur-base) var(--ch-ease),
     box-shadow var(--ch-dur-base) var(--ch-ease);
 }
 .ch-rsu-band .ch-rsu-spine i::before {
@@ -2131,7 +2131,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     var(--ch-elevation-cast);
 }
 .ch-rsu-band__back {
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-rsu-band__back:hover {
@@ -2263,7 +2263,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     min-height: 44px;
     padding: 0 2px;
     border-bottom: var(--ch-hairline-w) solid var(--ch-board-rule);
-    transition: background var(--ch-dur-quick) var(--ch-ease);
+    transition: background-color var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-rsu .ch-rsu-nine .ch-rsu-hole:last-child {
     border-bottom: 0;
@@ -2293,7 +2293,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     line-height: 28px;
     color: rgb(222 214 190 / 0.78);
     transition:
-      background var(--ch-dur-quick) var(--ch-ease),
+      background-color var(--ch-dur-quick) var(--ch-ease),
       color var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-rsu .ch-rsu-nine .ch-rsu-par button.is-rare:not([aria-checked='true']) {
@@ -2375,7 +2375,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     var(--ch-elevation-control);
   color: var(--ch-green-700);
   transition:
-    background var(--ch-dur-quick) var(--ch-ease),
+    background-color var(--ch-dur-quick) var(--ch-ease),
     color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-rsu-chev {

@@ -235,10 +235,24 @@ export function chPushTiming(spring?: { velocity?: number; rest?: number; hold?:
   return { curve, timing: { duration: curve.ms, easing: linear ? curve.linear : `cubic-bezier(${CH_EASE.join(', ')})` } };
 }
 
-/** The page beneath a push: how far it draws back (--ch-vt-parallax) and how it dims (--ch-vt-push-dim), from tokens.css. */
-export function chUnderLook(): { parallax: string; dim: string } {
+/** The page beneath a push: how far it draws back (--ch-vt-parallax), from tokens.css. */
+export function chUnderLook(): { parallax: string } {
   const css = getComputedStyle(document.documentElement);
-  return { parallax: css.getPropertyValue('--ch-vt-parallax').trim() || '-30%', dim: css.getPropertyValue('--ch-vt-push-dim').trim() || 'brightness(0.9)' };
+  return { parallax: css.getPropertyValue('--ch-vt-parallax').trim() || '-30%' };
+}
+
+/**
+ * The dim on the copy beneath a push: a veil over it whose opacity moves, created on first use. A `filter` on the copy repainted it
+ * every frame; a veil is compositor-only, so a push animates transform and opacity and nothing else.
+ */
+export function underVeil(layer: HTMLElement): HTMLElement {
+  const had = layer.querySelector<HTMLElement>(':scope > .ch-under-veil');
+  if (had) return had;
+  const veil = document.createElement('i');
+  veil.className = 'ch-under-veil';
+  veil.setAttribute('aria-hidden', 'true');
+  layer.appendChild(veil);
+  return veil;
 }
 
 /**
@@ -270,9 +284,23 @@ const UNDERS_MAX = 4;
 let held: { layer: HTMLElement; from: string } | null = null;
 let pushing: { page: HTMLElement; anims: Animation[]; entry: ChUnder; curve: ReturnType<typeof chSpringCurve> } | null = null;
 
+let holdFrame = 0;
+
+/**
+ * The tap frame stays light: the press state paints first, and the copy of the page (a deep clone, 20 to 35 ms on a long page) is taken in the
+ * next frame. The route commits 45 ms or more after the tap even with no network wait (measured 2026-11-07), so the copy is there first; a
+ * commit that somehow beat it would show the page without a slide.
+ */
 function holdForPush(from: string) {
   dropHeld();
   if (document.documentElement.getAttribute('data-ch-nav') !== 'push') return;
+  holdFrame = requestAnimationFrame(() => {
+    holdFrame = 0;
+    if (document.documentElement.getAttribute('data-ch-nav') === 'push' && (shownPath || location.pathname) === from) takeHold(from);
+  });
+}
+
+function takeHold(from: string) {
   const layer = pageLayer('ch-frame-under');
   if (!layer) return;
   // In the document now, hidden, so its style and layout run while the page is fetched rather than in the commit that
@@ -284,6 +312,8 @@ function holdForPush(from: string) {
 
 /** A held copy that no push used goes. */
 function dropHeld() {
+  if (holdFrame) cancelAnimationFrame(holdFrame);
+  holdFrame = 0;
   held?.layer.remove();
   held = null;
 }
@@ -329,11 +359,12 @@ function playPush(from: string, to: string, layer: HTMLElement) {
   if (!layer.isConnected) document.body.appendChild(layer);
   layer.style.visibility = '';
   const { curve, timing } = chPushTiming();
-  const { parallax, dim } = chUnderLook();
+  const { parallax } = chUnderLook();
   page.setAttribute('data-ch-pushing', '');
   const anims = [
     page.animate([{ transform: 'translateX(100%)' }, { transform: 'none' }], timing),
-    layer.animate([{ transform: 'none', filter: 'none' }, { transform: `translateX(${parallax})`, filter: dim }], { ...timing, fill: 'forwards' }),
+    layer.animate([{ transform: 'none' }, { transform: `translateX(${parallax})` }], { ...timing, fill: 'forwards' }),
+    underVeil(layer).animate([{ opacity: 0 }, { opacity: 1 }], { ...timing, fill: 'forwards' }),
   ];
   const run = { page, anims, entry, curve };
   pushing = run;
@@ -365,11 +396,11 @@ export function grabPush(): { entry: ChUnder; offset: number; share: number } | 
   pushing = null;
   const share = pushShare(run);
   const width = run.page.getBoundingClientRect().width || window.innerWidth;
-  const { parallax, dim } = chUnderLook();
+  const { parallax } = chUnderLook();
   for (const a of run.anims) a.cancel();
   run.page.style.translate = `${cssNum((1 - share) * width)}px 0`;
   run.entry.layer.style.transform = `translateX(calc(${parallax} * ${cssNum(share, 4)}))`;
-  run.entry.layer.style.filter = share > 0.5 ? dim : 'none';
+  underVeil(run.entry.layer).style.opacity = cssNum(share, 4);
   return { entry: run.entry, offset: (1 - share) * width, share };
 }
 

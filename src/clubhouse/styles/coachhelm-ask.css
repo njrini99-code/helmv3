@@ -100,7 +100,7 @@
   background: none;
   color: var(--ch-text-secondary);
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ask-head__btn.is-accent {
   color: var(--ch-green-600);
@@ -229,7 +229,7 @@
   background: none;
   color: var(--ch-text-secondary);
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ask-hist__iconbtn.is-accent {
   color: var(--ch-green-600);
@@ -312,7 +312,7 @@
   text-decoration: none;
   text-overflow: ellipsis;
   white-space: nowrap;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-ask-hist__row:hover {
@@ -544,6 +544,9 @@
   box-sizing: border-box;
   width: 100%;
   min-height: 48px;
+  /* Grows with its text with no script writing a height per key; older browsers keep Composer's `fit`. */
+  field-sizing: content;
+  max-height: 168px;
   padding: 0 4px;
   border: 0;
   outline: 0;
@@ -677,7 +680,8 @@
   order: 2;
   flex: 1;
   min-width: 0;
-  min-height: 36px;
+  /* A 44pt target: sized by its content now, one line would otherwise draw 42 tall. */
+  min-height: 44px;
   padding: 8px 6px;
   font-size: calc(16 * var(--ch-type-k));
 }
@@ -1013,7 +1017,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     color: inherit;
     text-align: left;
     cursor: pointer;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-ask-card[data-ch-pressed] {
     background: var(--ch-ledger-row-press);

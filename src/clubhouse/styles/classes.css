@@ -735,7 +735,7 @@
   font: var(--ch-type-14-medium);
   line-height: var(--ch-lead-tight);
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-cl-daypick button[aria-pressed='true'] {
   background: var(--ch-green-fill-700);
@@ -869,7 +869,7 @@
   cursor: pointer;
   transition:
     border-color var(--ch-dur-quick) var(--ch-ease),
-    background var(--ch-dur-quick) var(--ch-ease);
+    background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-cl-drop.is-over {
   border-color: var(--ch-green-600);
@@ -1552,7 +1552,7 @@
     border-radius: 0;
     background: none;
     box-shadow: none;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-cl.is-phone .ch-cl-today__row[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
@@ -1639,7 +1639,7 @@
     background: none;
     color: var(--ch-text-primary);
     box-shadow: none;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-cl.is-phone .ch-cl-card + .ch-cl-card,
   .ch-cl.is-phone .ch-cl-card + .ch-cl-add {
@@ -2420,7 +2420,7 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
     background: none;
     color: var(--ch-text-primary);
     box-shadow: none;
-    transition: background var(--ch-dur-quick) var(--ch-ease);
+    transition: background-color var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-cl[data-canopy] .ch-cl-card + .ch-cl-card::before,
   .ch-cl[data-canopy] .ch-cl-card + .ch-cl-add::before {
@@ -2555,7 +2555,7 @@ html[data-fw-theme='dark'] .ch-cl-tthead__days > span.is-today:not(.is-team) {
     border-radius: var(--ch-radius-md);
     color: var(--ch-green-700);
     text-align: left;
-    transition: background var(--ch-dur-quick) var(--ch-ease);
+    transition: background-color var(--ch-dur-quick) var(--ch-ease);
   }
   @media (hover: hover) {
     .ch-cl[data-canopy] .ch-cl-add:hover {

@@ -233,7 +233,7 @@
   position: relative;
   height: 56px;
   box-shadow: 0 -1px 0 var(--ch-border-hairline);
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-rec-tb tbody tr:first-child {
   box-shadow: none;
@@ -981,7 +981,7 @@
     color: var(--ch-green-600);
     cursor: pointer;
     touch-action: manipulation;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-recm-sort[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
@@ -1020,7 +1020,7 @@
     text-align: left;
     cursor: pointer;
     touch-action: manipulation;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-recm-row[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
@@ -1182,7 +1182,7 @@
     text-align: left;
     cursor: pointer;
     touch-action: manipulation;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-recm-stagerow::before,
   .ch-recm-stagerow::after {
@@ -1273,7 +1273,7 @@
     margin-right: -8px;
     font-size: calc(15 * var(--ch-type-k));
     touch-action: manipulation;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-recm-det .ch-rec-empty__a[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
@@ -1291,7 +1291,7 @@
     margin: -12px -8px -12px 0;
     font-size: calc(14 * var(--ch-type-k));
     touch-action: manipulation;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-recm-det .ch-rec-link[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
@@ -1332,7 +1332,7 @@
     padding-left: 12px;
     border-radius: var(--ch-radius-md);
     touch-action: manipulation;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-recm-det .ch-rec-doc__open[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
@@ -1350,7 +1350,7 @@
     height: 44px;
     margin-right: -8px;
     touch-action: manipulation;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-recm-det .ch-rec-doc__x[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
@@ -1587,7 +1587,7 @@
     box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
   .ch-rec[data-canopy] .ch-rec-pipe__stage {
-    transition: background var(--ch-dur-quick) var(--ch-ease);
+    transition: background-color var(--ch-dur-quick) var(--ch-ease);
   }
   @media (hover: hover) {
     .ch-rec[data-canopy] .ch-rec-pipe__stage:not(:disabled):hover {
@@ -1674,7 +1674,7 @@
     position: absolute;
     z-index: -1;
     inset: 0;
-    transition: background var(--ch-dur-quick) var(--ch-ease);
+    transition: background-color var(--ch-dur-quick) var(--ch-ease);
     content: '';
     pointer-events: none;
   }
@@ -2114,7 +2114,7 @@
   }
 }
 .ch-rec-pipe__seg {
-  transition: background var(--ch-dur-base) var(--ch-ease);
+  transition: background-color var(--ch-dur-base) var(--ch-ease);
 }
 
 /* Phone: touch areas reach 44 x 44 without changing how they are drawn (W4b, 2026-10-19). */

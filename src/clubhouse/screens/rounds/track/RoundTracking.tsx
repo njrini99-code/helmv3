@@ -235,7 +235,7 @@ export function RoundTracking(props: RoundTrackingProps) {
 
         {/* A hole change turns the page: the hole, its map and its entry slide in together (Swap `slide`, the D-64 settle
             spring); the strip above stays put. Reduced motion and Animations off swap at once. */}
-        <Swap kind="slide" dir={holeDir} swapKey={hole.number} resize="instant" className="ch-rt-turn">
+        <Swap kind="slide" dir={holeDir} swapKey={hole.number} className="ch-rt-turn">
         <div className="ch-rt-body">
           <section className="ch-rt-hero" aria-label={`Hole ${hole.number}`}>
             {/* Board 3: the drawn hole is the hero; tapping it opens the course view (board 3b). */}

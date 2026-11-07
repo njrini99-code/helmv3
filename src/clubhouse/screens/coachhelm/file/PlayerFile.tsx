@@ -11,7 +11,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, use
 import type { ChDeepInsight } from '../../../data/coachhelm-dive-shape';
 import type { ChFileCards, ChFileIntent, ChFilePlan, ChFileRosterRow, ChPlayerFile } from '../../../data/coachhelm-file-shape';
 import { FILE_BYPASS, PLAYER_HELM_HREF, coachPlayerHref, playerFileHref, type ChViewLoad, type PlayerFileCard } from '../../../data/coachhelm-views-shape';
-import { CH_FADE_MS, chSpringCurve } from '../../../lib/motion';
+import { CH_DUR, CH_FADE_MS } from '../../../lib/motion';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { useChPhone } from '../../../lib/use-phone';
 import { usePageCrumbs } from '../../../shell/crumbs';
@@ -63,13 +63,12 @@ function Fold({ show, children }: { show: boolean; children: ReactNode }) {
       if (!show) setMounted(false);
       return;
     }
-    const h = el.getBoundingClientRect().height;
-    const spring = chSpringCurve('smooth');
-    const opts = { duration: spring.ms, easing: spring.linear ?? EASE, fill: 'both' as const };
-    const fade = { duration: show ? 260 : 180, easing: EASE, fill: 'both' as const };
-    el.getAnimations().forEach((a) => a.cancel());
-    const box = el.animate(show ? [{ height: '0px', marginTop: '-24px' }, { height: `${h}px`, marginTop: '0px' }] : [{ height: `${h}px`, marginTop: '0px' }, { height: '0px', marginTop: '-24px' }], opts);
-    el.animate(show ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 1 }, { opacity: 0 }], fade);
+    // Transform and opacity only: the card takes its height at once and fades and rises into it, so nothing lays out per frame.
+    const box = el.animate(show ? [{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }] : [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-8px)' }], {
+      duration: show ? CH_DUR.base * 1000 : CH_DUR.quick * 1000,
+      easing: EASE,
+      fill: 'both',
+    });
     box.onfinish = () => {
       el.getAnimations().forEach((a) => a.cancel());
       if (!show) setMounted(false);

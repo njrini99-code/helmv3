@@ -839,7 +839,7 @@ path.ch-rt-map__shot {
   font: var(--ch-type-14-medium);
   line-height: var(--ch-lead-tight);
   color: var(--ch-ink-700);
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 /* A result option's note and the rare options were #8a857a on the well: 3.2:1 (aesthetic audit X-4); tertiary holds 4.7:1. */
 .ch-rt-seg button em {
@@ -2794,7 +2794,7 @@ path.ch-rt-map__shot {
     color: var(--ch-ink-900);
     box-shadow: var(--ch-key-raised-shadow), 0 0 0 1px var(--ch-border-subtle);
     transition:
-      background var(--ch-dur-quick) var(--ch-ease),
+      background-color var(--ch-dur-quick) var(--ch-ease),
       transform var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-rt-seg button:not([aria-checked='true'])[data-ch-pressed] {

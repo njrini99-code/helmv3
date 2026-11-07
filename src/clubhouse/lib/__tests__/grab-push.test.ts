@@ -45,6 +45,8 @@ async function pushed() {
   document.getElementById('go')!.addEventListener('click', (e) => e.preventDefault());
   // The capture listener reads the tap before the link's own handler would.
   document.getElementById('go')!.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
+  // The copy is taken in the frame after the tap, once the press state has painted.
+  await new Promise((r) => requestAnimationFrame(r));
   nav.chNavShown('/golf/dashboard/roster/p1');
   return nav;
 }
@@ -52,7 +54,10 @@ async function pushed() {
 describe('the grabbable push (C1)', () => {
   it('slides the live page in over a copy of the page it left, and keeps the copy beneath it', async () => {
     const nav = await pushed();
-    expect(anims).toHaveLength(2);
+    // The page, the copy, and the veil that dims the copy: transform and opacity, no filter.
+    expect(anims).toHaveLength(3);
+    const frames = vi.mocked(HTMLElement.prototype.animate).mock.calls.flatMap((c) => c[0] as Keyframe[]);
+    expect(new Set(frames.flatMap((f) => Object.keys(f)))).toEqual(new Set(['transform', 'opacity']));
     expect(document.getElementById('ch-content')!.hasAttribute('data-ch-pushing')).toBe(true);
     const under = nav.underFor('/golf/dashboard/roster/p1');
     expect(under).toMatchObject({ over: '/golf/dashboard/roster/p1', under: '/golf/dashboard/roster' });
