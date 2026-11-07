@@ -11,4 +11,6 @@ Data impact:    none
 Held items:     none
 ```
 
-`useThreadMakeRoom` skips a thread's first messages landing and replaces its running move instead of adding to it. The settle hold runs on scroll, and the Jump key waits for it.
+`useThreadMakeRoom` skips a thread's first messages landing and replaces its
+running move instead of adding to it. The settle hold runs on scroll, and the
+Jump key waits for it.

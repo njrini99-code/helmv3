@@ -11,4 +11,6 @@ Data impact:    none
 Held items:     none
 ```
 
-Transitions on this page name `background-color`, not the `background` shorthand, which also animated `background-position` on the main thread. See docs/clubhouse/changes/2026-11-07-shell-motion.md.
+Transitions on this page name `background-color`, not the `background`
+shorthand, which also animated `background-position` on the main thread. See
+docs/clubhouse/changes/2026-11-07-shell-motion.md.
