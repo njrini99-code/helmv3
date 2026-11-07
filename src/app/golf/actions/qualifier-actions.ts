@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { derivePlayerQualifierProgress } from './qualifier-progress';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath, updateTag } from 'next/cache';
@@ -301,10 +302,22 @@ async function createGolfQualifierImpl(data: GolfQualifierInput): Promise<Action
           // golf.ts that already do this. NOT NULL in production today, so this
           // removes nothing yet: that is what lets it ship before the migration.
           const userIds = playerRows.map(p => p.user_id).filter((id): id is string => Boolean(id));
-          const { data: userRows } = await supabase
+          // SERVICE-ROLE, not the caller's client. `public.users` only allows
+          // `users_select_own` and `admin_read_all`, so a coach reading a player's row
+          // gets nothing and the player is never told. Same fix as announcements.ts.
+          // Not a privilege widening: playerIds were checked against this team's
+          // active roster before anything was written.
+          const { data: userRows, error: userRowsError } = await createAdminClient()
             .from('users')
             .select('id, email')
             .in('id', userIds);
+
+          if (userRowsError) {
+            await logServerError(`createGolfQualifier recipient read failed; ${userIds.length} player(s) were NOT notified: ${describeError(userRowsError)}`, {
+              action: 'createGolfQualifier.notifications',
+              featureArea: 'qualifiers',
+            });
+          }
 
           if (userRows) {
             const formattedDate = validatedData.startDate

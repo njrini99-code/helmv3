@@ -36,6 +36,10 @@ vi.mock('@/lib/notifications/push', () => ({
   }),
 }));
 
+// public.users RLS is own-row only: the coach's session (buildFakeSb) has no player's row; only the service role does.
+const adminFake = vi.hoisted(() => ({ client: null as unknown }));
+vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => adminFake.client }));
+
 import { notifyPlayersOfSelectionOutcome } from '@/lib/coachhelm/v3/qualifying/player-notify';
 
 function workspace(): QualifyingWorkspace {
@@ -85,10 +89,7 @@ function buildFakeSb() {
         { id: 'p1', user_id: 'u1' },
         { id: 'p2', user_id: 'u2' },
       ],
-      users: [
-        { id: 'u1', email: 'alice@example.com' },
-        { id: 'u2', email: 'bob@example.com' },
-      ],
+      users: [],
       // Only p1 was actually committed as a selection — p2 was NOT selected.
       golf_qualifier_selections: [
         { qualifier_id: 'q1', player_id: 'p1', selection_type: 'top_score' },
@@ -101,6 +102,21 @@ describe('notifyPlayersOfSelectionOutcome', () => {
   beforeEach(() => {
     emailCalls.length = 0;
     pushCalls.length = 0;
+    adminFake.client = createFakeSupabase({
+      tables: {
+        users: [
+          { id: 'u1', email: 'alice@example.com' },
+          { id: 'u2', email: 'bob@example.com' },
+        ],
+        notifications: [],
+      },
+    });
+  });
+
+  it('a failed recipient read throws, so the coach is told (Q-116) instead of "everyone was told"', async () => {
+    adminFake.client = { from: () => ({ select: () => ({ in: async () => ({ data: null, error: { message: 'boom', code: '08006' } }) }) }) };
+    await expect(notifyPlayersOfSelectionOutcome(buildFakeSb(), workspace())).rejects.toThrow(/recipient read/);
+    expect(emailCalls).toHaveLength(0);
   });
 
   it('notifies the selected candidate with outcome=selected', async () => {

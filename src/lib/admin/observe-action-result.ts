@@ -311,6 +311,20 @@ export function classifySoftFailure(
 }
 
 /**
+ * True when a returned envelope says its impl already wrote the Bridge row for
+ * this outcome: `details.bridgeLogged === true`.
+ */
+function isBridgeLoggedByImpl(result: unknown): boolean {
+  if (!result || typeof result !== 'object') return false;
+  const details = (result as Record<string, unknown>).details;
+  return (
+    !!details &&
+    typeof details === 'object' &&
+    (details as Record<string, unknown>).bridgeLogged === true
+  );
+}
+
+/**
  * Helm Bridge capture class #3 — server actions that return `{ success: false }`
  * instead of throwing. Never changes the action result.
  *
@@ -326,6 +340,15 @@ export function observeActionSoftFailure(
 ): Promise<void> {
   const failure = extractActionSoftFailure(result);
   if (!failure) return Promise.resolve();
+  // The impl already filed this expected empty state under its own fingerprint
+  // (e.g. `round-floor:<player>`); a second envelope row is Bridge noise.
+  // Honored only at 'info' — a real failure is never hidden by the flag.
+  if (
+    severityForSoftFailure(failure.message, failure.code) === 'info' &&
+    isBridgeLoggedByImpl(result)
+  ) {
+    return Promise.resolve();
+  }
 
   const throttleKey = `soft:${context.action}:${failure.code ?? failure.message.slice(0, 120)}`;
   if (!shouldEmit(throttleKey)) return Promise.resolve();

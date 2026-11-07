@@ -510,7 +510,12 @@ async function createTaskImpl(
         }
 
         if (playerRows?.length) {
-          const { data: userRows, error: userRowsError } = await supabase
+          // SERVICE-ROLE, not the caller's client. `public.users` only allows
+          // `users_select_own` and `admin_read_all`, so a coach reading a player's row
+          // gets nothing and the player is never told. Same fix as announcements.ts.
+          // Not a privilege widening: the ids come from assignToPlayerIds, checked
+          // against this team's roster by verifyPlayersOnTeam before the task was written.
+          const { data: userRows, error: userRowsError } = await createAdminClient()
             .from('users')
             .select('id, email')
             // `user_id` is nullable once an account is deleted and the player's history
