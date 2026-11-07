@@ -680,7 +680,8 @@
   order: 2;
   flex: 1;
   min-width: 0;
-  min-height: 36px;
+  /* A 44pt target: sized by its content now, one line would otherwise draw 42 tall. */
+  min-height: 44px;
   padding: 8px 6px;
   font-size: calc(16 * var(--ch-type-k));
 }
