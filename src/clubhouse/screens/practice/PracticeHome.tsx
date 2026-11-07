@@ -91,7 +91,7 @@ export function PlanRows({ rows, label }: { rows: ChPracticeRow[]; label: string
  * Practice, the coach's tab (S-PRC.home): the week, what's up next, and every plan. New plan is the page's one primary action; on a phone it is the
  * bar's plus. With no plan ever made, one card with the ways to start (S-PRC.home-first-run), and no empty headers.
  */
-export function PracticeHome({ data, openNew = false, previewSheet = false, template = null, newEvent = null }: { newEvent?: string | null; template?: { name: string; body: PlanBodyV2 } | null; data: ChPracticeHome; openNew?: boolean; previewSheet?: boolean }) {
+export function PracticeHome({ data, askOn, openNew = false, previewSheet = false, template = null, newEvent = null }: { newEvent?: string | null; template?: { name: string; body: PlanBodyV2 } | null; data: ChPracticeHome; askOn: boolean; openNew?: boolean; previewSheet?: boolean }) {
   const phone = useChPhone();
   const [sheet, setSheet] = useState<{ event: string | null } | null>(openNew ? { event: newEvent } : null);
   const [pastOpen, setPastOpen] = useState(false);
@@ -107,7 +107,7 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
         </div>
         {!phone && (
           <div className="ch-prc-h__a">
-            <Button href="/golf/dashboard/practice/format">Plan format</Button>
+            {askOn && <Button href="/golf/dashboard/practice/format">Plan format</Button>}
             <Button variant="primary" leftIcon={Plus} onClick={newPlan}>
               New plan
             </Button>
@@ -124,7 +124,7 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
       {data.firstRun ? (
         <section className="ch-prc-card ch-prc-first" data-ch-code="CH-13396">
           <h2>Plan your first practice</h2>
-          <p>Add blocks yourself{', or let CoachHelm draft it from your team’s data'}. Players see it when you publish.</p>
+          <p>Add blocks yourself{askOn ? ', or let CoachHelm draft it from your team’s data' : ''}. Players see it when you publish.</p>
           {data.open.length ? (
             <Button variant="primary" onClick={newPlan}>
               New plan
@@ -192,13 +192,13 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
           )}
         </>
       )}
-      {phone && (
+      {phone && askOn && (
         <Link href="/golf/dashboard/practice/format" className="ch-prc-past ch-prc-formatlink">
           Plan format
           <Icon icon={ChevronRight} size={16} />
         </Link>
       )}
-      <NewPlanSheet key={sheet?.event ?? 'new'} template={template} open={!!sheet} onClose={() => setSheet(null)} events={data.open} copies={data.copies} roster={data.roster} initialEvent={sheet?.event} preview={previewSheet} />
+      <NewPlanSheet key={sheet?.event ?? 'new'} template={template} open={!!sheet} onClose={() => setSheet(null)} events={data.open} copies={data.copies} roster={data.roster} askOn={askOn} initialEvent={sheet?.event} preview={previewSheet} />
     </main>
   );
 }

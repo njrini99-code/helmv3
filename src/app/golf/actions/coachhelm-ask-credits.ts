@@ -8,6 +8,7 @@ import { askTables } from '@/lib/coachhelm/v3/chat/ask-db';
 import { logServerError } from '@/lib/server-error-logger';
 import { isCustomerEmailEnabled } from '@/lib/email/outbound-gate';
 import { sendOpsAlert } from '@/lib/admin/digest/transport';
+import { isPlayerAskEnabled } from '@/lib/coachhelm/v3/chat/ask-flag';
 import { weekStart } from '@/lib/coachhelm/v3/chat/player-allowance';
 import { resolvePlayerChatContext } from '@/lib/coachhelm/v3/chat/player-context';
 
@@ -17,6 +18,7 @@ const UNDO_MS = 8_000;
  * Request more: the player's one write. The row is the 8 second hold (HM4): Undo deletes it before `release_at`, and the release alone sends. It follows HELM_CUSTOMER_EMAIL_ENABLED: off means logged, no email (DECISIONS).
  */
 async function requestAskCreditsImpl(note?: string): Promise<{ success: boolean; id?: string; error?: string }> {
+  if (!isPlayerAskEnabled()) return { success: false, error: 'Ask is off.' };
   const sb = await createClient();
   const ctx = await resolvePlayerChatContext(sb).catch(() => null);
   if (!ctx) return { success: false, error: 'Unauthorized' };

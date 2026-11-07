@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { logServerError } from '@/lib/server-error-logger';
 import { parsePlanBody, validatePlan, type PlanBodyV2 } from '@/lib/coachhelm/v3/practice-plan/model';
+import { isPracticeTabEnabled } from '@/lib/coachhelm/v3/practice-plan/flag';
 import { practiceRpc, practiceTables } from '@/lib/golf/practice-db';
 import { isPracticeMissing, practiceErrorOf } from '@/lib/golf/practice-errors';
 
@@ -16,7 +17,7 @@ const fail = (error: { code?: string; message: string }): { success: false; erro
 };
 
 async function savePracticePlanImpl(input: { eventId?: string | null; planId?: string | null; expectedVersion: number | null; title?: string | null; step?: string; body: PlanBodyV2 }): Promise<PracticeResult<{ planId: string; version: number; updatedAt: string | null }>> {
-
+  if (!isPracticeTabEnabled()) return { success: false, error: 'Practice plans aren’t on for your team yet.', unavailable: true };
   const parsed = parsePlanBody(input.body);
   if (!parsed) return { success: false, error: 'That plan couldn’t be saved.', code: 'CH-17001' };
   const limit = validatePlan(parsed).errors.find((e) => e.code === 'CH-17109');
@@ -48,7 +49,7 @@ async function recordPracticePlanOpenImpl(input: { planId: string }): Promise<vo
 
 /** New plan's Copy a past practice: a plan the coach can read, for the sheet to copy. RLS answers coaches of its team only. Saves nothing. */
 async function copyPlanBodyImpl(input: { planId: string }): Promise<PracticeResult<{ body: PlanBodyV2 }>> {
-
+  if (!isPracticeTabEnabled()) return { success: false, error: 'Practice plans aren’t on for your team yet.', unavailable: true };
   const sb = await createClient();
   const { data, error } = await practiceTables(sb).from('golf_practice_plans').select('body').eq('id', input.planId).maybeSingle();
   if (error) return { success: false, error: 'That plan couldn’t be copied.', unavailable: isPracticeMissing(error.code) };

@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { changeLines, diffVersions, parsePlanBody, parseVersionBody, pathFor, validatePlan, type PlanBodyV2 } from '@/lib/coachhelm/v3/practice-plan/model';
+import { isPracticeTabEnabled } from '@/lib/coachhelm/v3/practice-plan/flag';
 import { practiceRpc, practiceTables } from '@/lib/golf/practice-db';
 import { fanOutPracticePlan, type PracticeNotice } from '@/lib/golf/practice-fanout';
 import { isPracticeMissing, practiceErrorOf } from '@/lib/golf/practice-errors';
@@ -39,7 +40,7 @@ interface Recipient {
  * `notify: 'defer'` is the Undo path: the fan-out waits for the caller (the 8 second hold) and Undo's take down tells nobody. Republish with only wording changes sends nothing.
  */
 async function publishPracticePlanImpl(input: { planId: string; expectedVersion: number; notify: 'now' | 'defer' | 'none' }): Promise<PracticeResult<{ version: number; recipients: number; documentId: string | null; firstPublish: boolean }>> {
-
+  if (!isPracticeTabEnabled()) return { success: false, error: 'Practice plans aren’t on for your team yet.', unavailable: true };
   const sb = await createClient();
   const db = practiceTables(sb);
   const { data: plan, error: readError } = await db.from('golf_practice_plans').select('id, title, body, event_id, version, published_version').eq('id', input.planId).maybeSingle();

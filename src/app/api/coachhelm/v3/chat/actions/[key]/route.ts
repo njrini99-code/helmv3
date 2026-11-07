@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { isAskV2Enabled } from '@/lib/coachhelm/v3/chat/ask-flag';
 import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
 import { heldCommitFor } from '@/lib/coachhelm/v3/chat/held-runner';
 import { cancelHeld, commitHeldNow, receiptFor } from '@/lib/coachhelm/v3/chat/undo-hold';
@@ -12,6 +13,7 @@ export const maxDuration = 60;
  * GET also finishes a row whose hold has ended: the client asks exactly when the ring ends, so a release that died in `after()` doesn't leave the card waiting.
  */
 async function coachId(): Promise<{ sb: Awaited<ReturnType<typeof createClient>>; coach: string } | null> {
+  if (!isAskV2Enabled()) return null;
   const sb = await createClient();
   const { data: auth } = await sb.auth.getUser();
   if (!auth.user) return null;

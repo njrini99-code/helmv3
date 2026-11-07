@@ -3,18 +3,27 @@ import { resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
+const flags = vi.hoisted(() => ({ on: new Set<string>() }));
+vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: (f: string) => flags.on.has(f) }));
 
 import { STATIONS, stationFigures, stationOrder, teamTotalOf, worstOf, type ChTeamLeg } from '@/clubhouse/data/coachhelm-team-shape';
-import { COURSE_TAB, TEAM_BOARD_FIRST_VIEW } from '../flag';
+import { COURSE_TAB, isTeamBoardEnabled, TEAM_BOARD_FIRST_VIEW, TEAM_BOARD_FLAG } from '../flag';
 
 const leg = (strokes: number | null): ChTeamLeg => ({ strokes, rounds: strokes == null ? 0 : 10, missing: null });
 const legs = (t: number | null, a: number | null, s: number | null, p: number | null) => ({ tee: leg(t), approach: leg(a), short_game: leg(s), putting: leg(p) });
 
-/** Coachhelm-team AC-TEAM-21 and AC-TEAM-22: the Team board is the coach's first view; the two owner flips are constants. */
+/** Coachhelm-team AC-TEAM-21 and AC-TEAM-22: off is today's board; the two owner flips are constants. */
 describe('the Team board switch', () => {
-  it('the route draws TeamBoard for the hole view', () => {
+  it('follows its flag alone', () => {
+    flags.on = new Set();
+    expect(isTeamBoardEnabled()).toBe(false);
+    flags.on = new Set([TEAM_BOARD_FLAG]);
+    expect(isTeamBoardEnabled()).toBe(true);
+  });
+
+  it('the route draws TeamBoard only behind the flag, and only for the hole view', () => {
     const route = readFileSync(resolve(process.cwd(), 'src/clubhouse/routes/coachhelm.tsx'), 'utf8');
-    expect(route).toMatch(/if \(!ask && TEAM_BOARD_FIRST_VIEW === 'hole'\) return <TeamBoard/);
+    expect(route).toMatch(/if \(!ask && isTeamBoardEnabled\(\) && TEAM_BOARD_FIRST_VIEW === 'hole'\) return <TeamBoard/);
     expect(route).toMatch(/if \(!ask\) return <CoachBoard/);
     expect(route.indexOf('<TeamBoard')).toBeLessThan(route.indexOf('<CoachBoard'));
   });

@@ -82,6 +82,8 @@ export type ChRole = 'coach' | 'player';
  */
 export interface ChNavFeatures {
   tournaments?: boolean;
+  /** golf_practice_plans: Practice (the coach's plans and the player's). */
+  practice?: boolean;
 }
 
 /** Practice (N-00, practice-plan S-PRC.home): after Calendar for coaches and players, as the design's sidebar draws it; a section on the phone's strip. */
@@ -107,7 +109,7 @@ const insertAfter = (nav: readonly ChNavItem[], id: string, item: ChNavItem): re
 };
 
 function withFeatures(nav: readonly ChNavItem[], features: ChNavFeatures | null | undefined): readonly ChNavItem[] {
-  const practiced = insertAfter(nav, 'calendar', CH_NAV_PRACTICE);
+  const practiced = features?.practice ? insertAfter(nav, 'calendar', CH_NAV_PRACTICE) : nav;
   return features?.tournaments ? insertAfter(practiced, 'qualifiers', CH_NAV_TOURNAMENTS) : practiced;
 }
 

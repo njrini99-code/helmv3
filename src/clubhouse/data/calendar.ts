@@ -4,6 +4,7 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { eventDaySpan, getValidTimezone } from '@/lib/calendar/timezone';
 import { classIdFromDescription, isClassEvent, stripClassTag } from '@/lib/calendar/class-events';
 import { describeRecurrenceRule, parseRecurrenceRule } from '@/lib/golf/recurrence';
+import { isPracticeTabEnabled } from '@/lib/coachhelm/v3/practice-plan/flag';
 import { practiceTables } from '@/lib/golf/practice-db';
 import type { ChCalPlan } from '../screens/calendar/model';
 import { chLogServer } from '../lib/track-server';
@@ -292,7 +293,7 @@ export async function loadCalendar(input: {
   // (production allows it: golf_event_attendance_insert_self), and, only when the rows failed, whether a meeting invites
   // anyone at all (D2-8, below). Until that function exists (`missing`) the rows answer both, as before.
   // Practice's plan on each practice: one read beside the events. Off, or the tables not there yet, it's simply absent.
-  const plans = await readEventPlans(supabase, input.teamId, input.role === 'coach').catch(() => null);
+  const plans = isPracticeTabEnabled() ? await readEventPlans(supabase, input.teamId, input.role === 'coach').catch(() => null) : null;
   const meetingIds = input.role === 'player' ? rows.filter((r) => !isClassEvent(r) && (r.event_type === 'meeting' || r.requires_rsvp === true)).map((r) => r.id) : [];
   // Paged (fetchAllRowsResult): 200 events x a full roster passes PostgREST's 1,000-row cap.
   const [{ data: attendance, error: attendanceError }, meetingCounts] = await Promise.all([

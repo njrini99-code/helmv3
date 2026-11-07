@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readHref } from '../../../../data/coachhelm-views-shape';
+import { coachPlayerHref, diveReadHref, readHref } from '../../../../data/coachhelm-views-shape';
 import { assignStateOf, readCauseOf, toChReadDetail, toChReadView, type ChReadDetail } from '../../../../data/coachhelm-read-view-shape';
 import { rangeWords } from '../../../../data/coachhelm-engine-shape';
 import { diveCounts, toChDeepInsight, type ChDeepDive } from '../../../../data/coachhelm-dive-shape';
@@ -117,9 +117,16 @@ describe('the read payload', () => {
 });
 
 describe('readHref (W-READ-3)', () => {
-  it('the read view', () => {
-    expect(readHref('p1', 'i1')).toBe('/golf/dashboard/coachhelm?view=read&player=p1&insight=i1');
-    expect(readHref(null, 'i1')).toBe('/golf/dashboard/coachhelm?view=read&insight=i1');
+  it('off: today’s addresses, byte for byte', () => {
+    expect(readHref('p 1', 'i/1', false)).toBe(`${coachPlayerHref('deep-dive', 'p 1')}&insight=i%2F1`);
+    expect(readHref(null, 'i/1', false)).toBe(diveReadHref('i/1'));
+  });
+  it('on: the read view', () => {
+    expect(readHref('p1', 'i1', true)).toBe('/golf/dashboard/coachhelm?view=read&player=p1&insight=i1');
+    expect(readHref(null, 'i1', true)).toBe('/golf/dashboard/coachhelm?view=read&insight=i1');
+  });
+  it('defaults to off', () => {
+    expect(readHref(null, 'i1')).toBe(diveReadHref('i1'));
   });
 });
 

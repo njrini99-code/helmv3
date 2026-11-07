@@ -1,4 +1,4 @@
-
+import { isAskV2Enabled } from '@/lib/coachhelm/v3/chat/ask-flag';
 import { readAskKnows } from '@/lib/coachhelm/v3/chat/ask-knows';
 import { resolvePlayerChatContext } from '@/lib/coachhelm/v3/chat/player-context';
 import { readBucket } from '@/lib/coachhelm/v3/chat/player-allowance';
@@ -201,7 +201,7 @@ async function playerFocus(sb: Awaited<ReturnType<typeof createClient>>, playerI
 
 /** Tone and facts, only with Ask v2 on; a missing column or table (HM2 held) is null and the controls stay hidden. */
 async function askKnows(sb: Awaited<ReturnType<typeof createClient>>, ctx: { coach_id: string; team_id: string }, conversationId: string | null): Promise<ChAskData['knows']> {
-
+  if (!isAskV2Enabled()) return null;
   const k = await readAskKnows(sb, { coachId: ctx.coach_id, teamId: ctx.team_id, conversationId }).catch(() => null);
   return k ? { ...k, teamId: ctx.team_id } : null;
 }

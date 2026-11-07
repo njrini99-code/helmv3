@@ -131,6 +131,8 @@ export function ReadPanel({
   player,
   fa,
   missing,
+  readOn,
+  askOn = false,
   roster,
   onClose,
   role = 'coach',
@@ -143,6 +145,9 @@ export function ReadPanel({
   player: Pick<ChTeamPlayer, 'id' | 'name' | 'first' | 'rounds' | 'early'>;
   fa?: ChFocusActions;
   missing?: ChTeamBoardData['missing'];
+  readOn: boolean;
+  /** `coachhelm_ask_v2`: the Ask lane's link beside Assign. */
+  askOn?: boolean;
   roster: ReadonlyArray<{ id: string }>;
   onClose: () => void;
   /** A player's sheet: their words, no coin, no footer, no cause (06 CP shared read sheet). */
@@ -159,9 +164,9 @@ export function ReadPanel({
   const coach = role === 'coach';
   const cause = coach ? read.engine?.cause?.word : undefined;
   const word = read.evidence.read?.word;
-  const canLink = fileHost ? true : !!coachReadHref(player.id, read.id, roster);
-  const href = !canLink ? null : coach ? readHref(player.id, read.id) : readHref(null, read.id);
-  const ask = coach ? askAboutReadHref({ insightId: read.id, title: read.title, first: player.first }) : null;
+  const canLink = fileHost ? readOn : !!coachReadHref(player.id, read.id, roster);
+  const href = !canLink ? null : coach ? readHref(player.id, read.id, readOn) : readHref(null, read.id, readOn);
+  const ask = coach ? askAboutReadHref({ insightId: read.id, title: read.title, first: player.first }, askOn) : null;
   const cx = deep?.base.engine?.corrections;
   return (
     <>
@@ -236,13 +241,13 @@ export function ReadPanel({
  * A peek at one player (Dashboard cuts, 2026-11-07): who, their rounds and their strokes gained on one line, and the way into their file,
  * which is the one place the player is drawn. A player with no rounds says so and still opens it.
  */
-export function PlayerPanel({ player, onClose }: { player: ChTeamPlayer; onClose: () => void }) {
+export function PlayerPanel({ player, fileOn, onClose }: { player: ChTeamPlayer; fileOn: boolean; onClose: () => void }) {
   const year = player.classYear ?? 'Player';
   const line = player.rounds === 0 ? `${yearShort(year)} · no rounds yet this season` : `${yearShort(year)} · ${plural(player.rounds, 'round')} · ${formatSigned(player.total)} a round to Tour · last 10${player.early ? ' · early' : ''}`;
   return (
     <>
       <Head lead={<Coin player={player} />} name={player.name} line={line} onClose={onClose} />
-      <Link className="lk" href={playerFileHref(player.id)}>
+      <Link className="lk" href={playerFileHref(player.id, undefined, fileOn)}>
         Open {player.first}’s page <Chevron />
       </Link>
     </>

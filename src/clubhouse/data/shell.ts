@@ -3,7 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
-import { TEAM_BOARD_FIRST_VIEW } from '@/lib/coachhelm/v3/team-board/flag';
+import { isPlayerAskEnabled } from '@/lib/coachhelm/v3/chat/ask-flag';
+import { isTeamBoardEnabled, TEAM_BOARD_FIRST_VIEW } from '@/lib/coachhelm/v3/team-board/flag';
 import type { ChHelmViews } from '../shell/context';
 import { todayIsoInZone } from '@/lib/golf/timezone';
 import { fullName } from './season';
@@ -36,6 +37,8 @@ export interface ChShellData {
   viewerIsHeadCoach?: boolean;
   /** golf_tournaments_v1 is on (P016): the Tournaments nav entry and its routes. Set by the dashboard layout, server side. */
   tournaments?: boolean;
+  /** golf_practice_plans is on: the Practice nav entry. Set by the dashboard layout, server side. */
+  practice?: boolean;
   /**
    * P-10: `class_awareness_v1` is on. Read once with the shell and handed to the client by context (useClassAwareness),
    * because the flag registry is server-only. Off or absent: no class RPC is called anywhere and no column is sent.
@@ -191,9 +194,9 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     ...(coachId ? { overdueTasks } : {}),
     timezone,
     askAvailable: askOn,
-    quickChat: askOn,
-    practicePlans: true,
-    helmViews: { playerAsk: true, team: TEAM_BOARD_FIRST_VIEW === 'hole' },
+    quickChat: askOn && isFlagEnabled('coachhelm_quick_chat_v1'),
+    practicePlans: isFlagEnabled('coachhelm_practice_plans_v1') && isFlagEnabled('golf_practice_plans'),
+    helmViews: { playerAsk: isPlayerAskEnabled(), team: isTeamBoardEnabled() && TEAM_BOARD_FIRST_VIEW === 'hole' },
     classAwareness: isFlagEnabled('class_awareness_v1'),
     course: courseOf(courseRes),
     roundInProgress: round && playerId ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null, toPar: toParOf(round.golf_holes ?? []), playerId } : null,

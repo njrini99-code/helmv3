@@ -6,6 +6,7 @@ import { auditNumericClaims, type ToolEnvelope } from './provenance';
 import { ActionPlanError } from './action-planners';
 import { requireRosterPlayer, type CoachChatContext } from './context';
 import type { FlowDef } from './create-tools';
+import { isPracticeTabEnabled } from '../practice-plan/flag';
 import { publishPracticePlan } from '@/app/golf/actions/practice-publish';
 import { sendMessage } from '@/app/actions/messages';
 import { pluralize } from '@/lib/utils';
@@ -155,7 +156,7 @@ export function practiceDraftTool({ ctx, writer, envelopes, evidenceByRef }: { c
         }
         const body: PlanBodyV2 = { v: 2, focus: input.focus, notes: '', place: input.place, arrivalBufferMin: 15, bring: input.bring, players: input.players, groups: input.groups.map((g) => ({ ...g, savedGroupId: null })), variants: { main: { blocks }, rain: null } };
         version += 1;
-        writer.write({ type: 'data-practice-plan', id: `plan-${version}`, data: { version, eventId: input.event_id, title: input.title, draft: { body, why, version }, saveOn: true, sheet: await planSheetFor(ctx, input.event_id), ...planCardMeta(input, envelopes(), evidenceByRef) } });
+        writer.write({ type: 'data-practice-plan', id: `plan-${version}`, data: { version, eventId: input.event_id, title: input.title, draft: { body, why, version }, saveOn: isPracticeTabEnabled(), sheet: await planSheetFor(ctx, input.event_id), ...planCardMeta(input, envelopes(), evidenceByRef) } });
         return { status: 'shown', message: `A ${Math.round(sum / 60 * 10) / 10} hour plan in ${input.blocks.length} blocks is on the card. Nothing is saved yet.` };
       },
     }),

@@ -71,9 +71,9 @@ const PLAYER: ChPlayerPracticeHome = {
 export function PreviewPracticeHome({ state }: { state?: string }) {
   if (state === 'player') return <PlayerPracticeHome data={PLAYER} />;
   if (state === 'player-empty') return <PlayerPracticeHome data={{ next: null, week: WEEK.map((t) => ({ ...t, items: [] })), upcoming: [], past: [] }} />;
-  if (state === 'empty') return <PracticeHome data={{ ...HOME, upNext: null, drafts: [], published: [], open: [], week: WEEK.map((t) => ({ ...t, items: [] })), weekLine: null }} previewSheet />;
-  if (state === 'firstrun') return <PracticeHome data={{ ...HOME, firstRun: true, upNext: null, drafts: [], published: [], past: [], copies: [] }} previewSheet />;
-  return <PracticeHome data={HOME} openNew={state === 'new'} previewSheet />;
+  if (state === 'empty') return <PracticeHome askOn data={{ ...HOME, upNext: null, drafts: [], published: [], open: [], week: WEEK.map((t) => ({ ...t, items: [] })), weekLine: null }} previewSheet />;
+  if (state === 'firstrun') return <PracticeHome askOn data={{ ...HOME, firstRun: true, upNext: null, drafts: [], published: [], past: [], copies: [] }} previewSheet />;
+  return <PracticeHome askOn data={HOME} openNew={state === 'new'} previewSheet />;
 }
 
 const DRILLS: ChBuilderData['drills'] = [

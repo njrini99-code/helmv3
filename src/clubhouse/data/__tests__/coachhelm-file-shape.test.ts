@@ -3,7 +3,7 @@ import type { FieldDayEntry } from '@/lib/coachhelm/v3/field-day/field';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import { FIELD_PLAYER_FLOOR, teamFigureOf, toChFileField, toChFilePlan, toChFileSg, toChFileTrack, type ChFocusRow } from '../coachhelm-file-shape';
-import { playerFileHref } from '../coachhelm-views-shape';
+import { coachPlayerHref, playerFileHref } from '../coachhelm-views-shape';
 import type { ChLadder } from '../coachhelm-ladder-shape';
 
 /** Lenses W-LNS-2, W-LNS-5, W-LNS-10, W-LNS-11, W-TEAM-13: what the player's file carries, by viewer, and where its links go. */
@@ -119,9 +119,19 @@ describe('toChFileTrack counts only what happened', () => {
   });
 });
 
-describe('playerFileHref (W-LNS-2, W-TEAM-13)', () => {
-  it('the file, with card and insight kept and encoded', () => {
-    expect(playerFileHref('p/1', { card: 'sg', insight: 'i 1' })).toBe('/golf/dashboard/coachhelm?view=player&player=p%2F1&at=sg&insight=i%201');
-    expect(playerFileHref('p1', undefined)).toBe('/golf/dashboard/coachhelm?view=player&player=p1');
+describe('playerFileHref: the off address is today, byte for byte (W-LNS-2, W-TEAM-13)', () => {
+  it('off: deep dive', () => {
+    expect(playerFileHref('p1')).toBe('/golf/dashboard/coachhelm?view=deep-dive&player=p1');
+    expect(coachPlayerHref('deep-dive', 'p1')).toBe('/golf/dashboard/coachhelm?view=deep-dive&player=p1');
+  });
+
+  it('off: a card link to sg goes to standing, and an insight keeps today address', () => {
+    expect(playerFileHref('p1', { card: 'sg' }, false)).toBe('/golf/dashboard/coachhelm?view=standing&player=p1');
+    expect(playerFileHref('p1', { insight: 'i 1' }, false)).toBe('/golf/dashboard/coachhelm?view=deep-dive&player=p1&insight=i%201');
+  });
+
+  it('on: the file, with card and insight kept and encoded', () => {
+    expect(playerFileHref('p/1', { card: 'sg', insight: 'i 1' }, true)).toBe('/golf/dashboard/coachhelm?view=player&player=p%2F1&at=sg&insight=i%201');
+    expect(playerFileHref('p1', undefined, true)).toBe('/golf/dashboard/coachhelm?view=player&player=p1');
   });
 });

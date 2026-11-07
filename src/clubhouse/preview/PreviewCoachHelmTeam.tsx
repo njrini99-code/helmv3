@@ -69,5 +69,5 @@ export function PreviewCoachHelmTeam({ state, station, open, read, all }: { stat
   const data = stateData(state);
   const first = station ? STATION_KEY[station] : undefined;
   const initialStation = first ?? (read === 'course' ? 'course' : undefined);
-  return <TeamBoard data={data} onRetry={() => {}} initialStation={initialStation} initialAll={all} initialOpen={openOf(data, initialStation ?? 'approach', open, read)} />;
+  return <TeamBoard askOn data={data} onRetry={() => {}} initialStation={initialStation} initialAll={all} initialOpen={openOf(data, initialStation ?? 'approach', open, read)} />;
 }

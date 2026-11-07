@@ -7,6 +7,7 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { resolveModelProvider } from '@/lib/ai/model-provider';
 import { MODEL_FOR_TASK } from '@/lib/coachhelm/v3/llm/types';
 import { logServerError } from '@/lib/server-error-logger';
+import { isPracticePlansEnabled } from '@/lib/coachhelm/v3/practice-plan/flag';
 import { practiceTables } from '@/lib/golf/practice-db';
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
 import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
@@ -17,7 +18,7 @@ export type FormatSections = z.infer<typeof Sections>['sections'];
 
 /** Layout only: section names and order. A new plan's drills, times and groups never come from the sample. */
 async function readPlanFormatImpl(documentId: string): Promise<{ success: true; sections: FormatSections } | { success: false; error: string }> {
-
+  if (!isPracticePlansEnabled()) return { success: false, error: 'Comes with the Practice tab.' };
   const preview = await getPreviewUrl(documentId);
   if (!preview.data) return { success: false, error: 'That file couldn’t be read.' };
   try {
@@ -41,7 +42,7 @@ export interface PriorFormat {
 }
 
 async function setPlanFormatImpl(input: { documentId: string; name: string; sections: FormatSections }): Promise<{ success: boolean; error?: string; id?: string; prior?: PriorFormat | null }> {
-
+  if (!isPracticePlansEnabled()) return { success: false, error: 'Comes with the Practice tab.' };
   const sb = await createClient();
   const ctx = await resolveCoachChatContext(sb).catch(() => null);
   if (!ctx) return { success: false, error: 'Unauthorized' };
