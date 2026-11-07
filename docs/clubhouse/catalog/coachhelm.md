@@ -87,9 +87,11 @@ Where things live:
   `?state=young|partsfailed|empty|norounds|failed|off|loading`,
   `&q=in-slope|in-pen|in-brk|in-dbl` for the read it opens on);
   `/clubhouse-preview/coachhelm` (the coach;
-  `?state=assigned|empty|noroster|failed|pulsefailed|quiet|off|loading|failwrites|failundo|duplicate`)
+ 
+`?state=assigned|empty|noroster|failed|pulsefailed|quiet|off|loading|failwrites|failundo|duplicate`)
   and `/clubhouse-preview/coachhelm-player`
-  (`?state=empty|norounds|working|failed|off|loading|proposed|failproposal|proposalsfailed`)
+ 
+(`?state=empty|norounds|working|failed|off|loading|proposed|failproposal|proposalsfailed`)
 
 Accept and Decline (the player's answer to a proposed focus area) go through
 `useAction` as well, and confirm in place: the follow-up (the "Started" or

@@ -11,4 +11,6 @@ Data impact:    none
 Held items:     none
 ```
 
-With the redesign on, the Pinned card always starts with the team's channel, then the viewer's pins, three in all, and the other threads sit in Recent. On a device with no pins the channel was listed under Recent.
+With the redesign on, the Pinned card always starts with the team's channel,
+then the viewer's pins, three in all, and the other threads sit in Recent. On a
+device with no pins the channel was listed under Recent.
