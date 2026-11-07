@@ -132,7 +132,7 @@
 
 /* MSG-210 Floating date pill: glass-strong, blur 16 / saturate 160, float shadow, 13k/500 ink-2, centred 20 px clear of a marker.
    Its spot (74 under the phone bar, 76 under the desktop bar) is measured through an always-mounted anchor. */
-[data-ch-ms-v2] {
+[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) {
   --ch-ms-pill-top: calc(env(safe-area-inset-top) + 74px);
 }
 [data-ch-ms-v2] .ch-msv-datepillspot {
@@ -162,7 +162,7 @@
   transition: none;
 }
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  [data-ch-ms-v2] {
+  [data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) {
     --ch-ms-pill-top: 76px;
   }
 }

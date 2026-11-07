@@ -10,7 +10,7 @@ import { haptic } from '../../../lib/haptics';
  * Part of the `ChMessagesApi` literal that Messages.tsx composes. Add keys here and nowhere else (docs/clubhouse/messages-v2/SEAMS.md).
  */
 export function useThreadApi(ctx: MessagesApiCtx): Pick<ChMessagesApi, 'drafts' | 'attachmentRecovery' | 'classDay' | 'msgs' | 'msgsLoading' | 'msgsError' | 'msgsStale' | 'refetchMsgs' | 'typing' | 'typingUserIds' | 'onTyping' | 'loadPendingAttachmentSend' | 'retryPendingAttachmentSend' | 'send' | 'sendFiles' | 'retry' | 'discard'> {
-  const { data, attachmentRecovery, attempt, autoOpened, chMsgs, classOn, convTeamId, drafts, fail, getPendingAttachmentSend, msgs, retryPendingAttachmentSend, select, selectedId, sendMessageWithAttachments, teamClass, toast } = ctx;
+  const { data, attachmentRecovery, attempt, autoOpened, chMsgs, classOn, convTeamId, drafts, fail, getPendingAttachmentSend, msgs, privateTyping, retryPendingAttachmentSend, select, selectedId, sendMessageWithAttachments, teamClass, toast } = ctx;
   return {
       drafts,
       attachmentRecovery,
@@ -21,9 +21,13 @@ export function useThreadApi(ctx: MessagesApiCtx): Pick<ChMessagesApi, 'drafts' 
       // The read failed but an earlier copy is on screen: it stays, marked as possibly out of date (PAGE_PERFORMANCE.md rule 4).
       msgsStale: !!msgs.error && chMsgs.length > 0,
       refetchMsgs: () => void msgs.refetch(),
-      typing: msgs.isOtherTyping,
-      typingUserIds: msgs.typingUserIds,
-      onTyping: (on) => msgs.sendTypingStatus(on),
+      // M4: typing arrives on the private topic and on the public one (Fairway clients), and goes out on both until Fairway moves.
+      typing: msgs.isOtherTyping || privateTyping.typingUserIds.length > 0,
+      typingUserIds: [...new Set([...(msgs.typingUserIds ?? []), ...privateTyping.typingUserIds])],
+      onTyping: (on) => {
+        msgs.sendTypingStatus(on);
+        privateTyping.send(on);
+      },
       loadPendingAttachmentSend: async () => {
         if (!selectedId) return null;
         const pending = await getPendingAttachmentSend(selectedId);

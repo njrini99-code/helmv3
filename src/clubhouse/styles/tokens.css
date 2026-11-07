@@ -955,6 +955,8 @@
   --ch-reveal-step: 55ms;
   --ch-reveal-rise: 10px;
   --ch-dur-shimmer: 1.9s;
+  /* Messages v2 skeleton pulse (MSG-112, MSG-003): stops under Reduce Motion and with Animations off. */
+  --ch-dur-skeleton: 1.4s;
   /* A live marker's slow breath (the calendar's now line): one cycle, ambient, never a call to act. */
   --ch-dur-live: 2.8s;
   /* The pending hairline's sweep (LinkPending, shell.css). */
@@ -1415,6 +1417,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   /* The loops too, so a skeleton's shimmer, the calendar's live pulse and the pending sweep hold still from the first
      frame: ThemeScript marks <html> before hydration, ahead of the rules that stop them by name. */
   --ch-dur-shimmer: 0ms;
+  --ch-dur-skeleton: 0ms;
   --ch-dur-live: 0ms;
   --ch-dur-sweep: 0ms;
   --ch-dur-marks: 0ms;

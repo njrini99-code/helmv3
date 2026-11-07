@@ -12,6 +12,7 @@ import type { useTeamClassDay } from '../../../lib/use-class-day';
 import type { useConversationPins } from '../use-conversation-pins';
 import type { useRowMutes } from '../use-row-mutes';
 import type { useTypingByConversation } from '../use-typing-by-conversation';
+import type { usePrivateTyping } from '../typing-channel';
 import type { ChAnnouncement, ChConv, ChMember, ChMsg, ChMute } from '../model';
 import type { ChAttachmentRecovery, ChMessagesApi } from './types';
 
@@ -52,6 +53,8 @@ export interface MessagesApiCtx {
 
   // The open thread.
   msgs: ReturnType<typeof useGolfMessages>;
+  /** M4: the open conversation's private typing channel, beside the public one the messages hook holds. */
+  privateTyping: ReturnType<typeof usePrivateTyping>;
   chMsgs: ChMsg[];
   drafts: Map<string, string>;
   attachmentRecovery: Map<string, ChAttachmentRecovery>;

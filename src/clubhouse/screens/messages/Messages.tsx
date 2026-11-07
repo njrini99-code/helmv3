@@ -5,6 +5,7 @@ import { useConversationPins } from './use-conversation-pins';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { useRowMutes } from './use-row-mutes';
 import { useTypingByConversation } from './use-typing-by-conversation';
+import { usePrivateTyping } from './typing-channel';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGolfConversations, useGolfMessages } from '@/hooks/golf/use-golf-messages';
@@ -150,6 +151,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
   }, [railUnread]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const msgs = useGolfMessages(selectedId ?? '', data.viewerUserId, { ...({ typingExpiryMs: 5000 }), deferMarkRead: !!selectedId && selectedId === autoOpened, classAwareness: awareness });
+  const privateTyping = usePrivateTyping(selectedId, data.viewerUserId);
   const liveIds = useMemo(() => msgs.messages.filter((m) => m.conversation_id === selectedId && !m.sendFailed).map((m) => m.id), [msgs.messages, selectedId]);
   const reactions = useMessageReactions(selectedId ?? '', liveIds, data.viewerUserId);
   const { sendMessageWithAttachments, getPendingAttachmentSend, retryPendingAttachmentSend } = useMessageAttachments({ recoverable: true });
@@ -713,6 +715,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     members,
     membersError,
     msgs,
+    privateTyping,
     mute,
     muteConversation,
     muteError,
