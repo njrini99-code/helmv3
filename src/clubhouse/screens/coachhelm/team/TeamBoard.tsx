@@ -368,7 +368,7 @@ export function TeamBoard({ askOn = false, data, courseTab = true, writes = LIVE
     }
     if (open.kind === 'player') {
       const p = list2.find((x) => x.id === open.id);
-      return p ? <PlayerPanel player={p} data={data} onRead={openRead} fileOn={fileOn} onClose={close} /> : null;
+      return p ? <PlayerPanel player={p} fileOn={fileOn} onClose={close} /> : null;
     }
     // A phone tells its story in the viewer, the tile's own (StoriesCard).
     if (open.kind === 'story' && phone) return null;

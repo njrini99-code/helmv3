@@ -100,6 +100,16 @@ describe('addresses that open a sheet (W-TEAM-14)', () => {
     render(ui({ initialPlayer: p.id }));
     expect(await screen.findByRole('link', { name: new RegExp(`Open ${p.first}’s page`) })).toBeTruthy();
   });
+
+  it('the sheet is a peek: one line and the way into the file, with no bars or reads of its own', async () => {
+    const p = PREVIEW_TEAM_BOARD.players.list.find((x) => x.rounds > 0)!;
+    window.history.replaceState(null, '', `${BOARD}?player=${p.id}`);
+    render(ui({ initialPlayer: p.id }));
+    const open = await screen.findByRole('link', { name: new RegExp(`Open ${p.first}’s page`) });
+    expect(open.getAttribute('href')).toContain(p.id);
+    expect(screen.queryByText(`Where ${p.first} gains and loses`)).toBeNull();
+    expect(screen.getByText(new RegExp(`${p.rounds} rounds? · .* a round to Tour`))).toBeTruthy();
+  });
 });
 
 describe('a part off or failed (W-TEAM-15)', () => {

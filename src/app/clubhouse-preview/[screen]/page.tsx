@@ -234,7 +234,7 @@ export default async function ClubhousePreview({
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen } = await params;
   const qc = (await searchParams as { qc?: string }).qc;
-  const { viewer: viewerParam, screen: screenParam, open: openParam, read: readParam, all: allParam, flag, play, station, refresh, crh: crhParam, state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask, live } = await searchParams;
+  const { viewer: viewerParam, open: openParam, read: readParam, all: allParam, flag, play, station, refresh, crh: crhParam, state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask, live } = await searchParams;
   // The phone Stats redesign renders here whatever its flag says; `&flag=off` renders main's components (stats-home 05, flagoff).
   const shs = flag !== 'off';
   // The header lab (/clubhouse-preview/header-lab) renders a page with one of the hero tones.
@@ -567,7 +567,7 @@ export default async function ClubhousePreview({
     },
     'coachhelm-read': {
       path: '/golf/dashboard/coachhelm',
-      node: <PreviewCoachHelmRead state={state} viewer={viewerParam ?? view} q={q} screen={screenParam ?? section} />,
+      node: <PreviewCoachHelmRead state={state} viewer={viewerParam ?? view} q={q} />,
     },
     'coachhelm-team': {
       path: '/golf/dashboard/coachhelm',

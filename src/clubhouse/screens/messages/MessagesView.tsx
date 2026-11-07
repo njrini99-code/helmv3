@@ -135,6 +135,7 @@ import {
   type ChAnnouncementDetail,
   type ChFile,
   type ChReceipts,
+  pinnedThreads,
 } from "./model";
 import { HoldSeenRow, SeenByPill, SeenByReceipt, useSeenBy, useSeenByList } from "./seen-by";
 import { receiptCarrierId, SEEN_BY_VISIBILITY } from "@/lib/golf/message-receipts";
@@ -631,9 +632,8 @@ export function inboxContextDesktop(unread: number, total: number): string {
 
 /** The rail's flat "Pinned" and "Recent" labels over rows (no cards on the rail; the phone draws cards). */
 function PinnedAndRecent({ api, list, row }: { api: ChMessagesApi; list: ChConv[]; row: (c: ChConv) => ReactNode }) {
-  const pinned = api.pins?.ids ?? [];
-  const pinnedRows = pinned.map((id) => list.find((c) => c.id === id)).filter((c): c is ChConv => !!c);
-  const recent = list.filter((c) => !pinned.includes(c.id));
+  const pinnedRows = api.pins ? pinnedThreads(list, api.pins.ids) : [];
+  const recent = list.filter((c) => !pinnedRows.includes(c));
   return (
     <>
       {pinnedRows.length > 0 && (

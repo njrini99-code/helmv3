@@ -283,39 +283,3 @@ export function assignStateOf(ins: ChInsight, flags: { dismissed: boolean; assig
   if (ins.stale) return 'stale';
   return ins.declined ? 'declined' : 'open';
 }
-
-/** The Board's card for one read (S-READ-BOARD; lanes Team and Lenses import it): the headline with the cause in one line. */
-export interface ChReadSummary {
-  id: string;
-  area: string;
-  stance: string;
-  title: string;
-  value: string;
-  valueNote: string | null;
-  ladder: ChBenchmarkLadder | null;
-  tier: { kind: 'counted' | 'likely' | 'plain'; word: string };
-  causeLine: string;
-  worth: string | null;
-  foot: string;
-  stale: string | null;
-}
-
-export function toChReadSummary(d: ChReadDetail, area: string, role: 'coach' | 'player'): ChReadSummary {
-  const c = d.cause;
-  const tier: ChReadSummary['tier'] = c?.state === 'counted' ? { kind: 'counted', word: role === 'coach' ? 'Counted' : 'Seen in your shots' } : c?.state === 'likely' && role === 'coach' ? { kind: 'likely', word: 'Likely' } : { kind: 'plain', word: 'Not traced' };
-  const causeLine = c?.state === 'counted' ? c.path.join(' to ') : c?.state === 'likely' ? (c.verdict ?? '') : d.funnel ? d.funnel.steps.map((s) => s.label).join(' · ') : 'CoachHelm says why once one repeats in the shots.';
-  return {
-    id: d.insight.id,
-    area,
-    stance: d.stance,
-    title: d.headline.title,
-    value: d.headline.value,
-    valueNote: d.headline.valueNote,
-    ladder: d.headline.ladder,
-    tier,
-    causeLine,
-    worth: d.headline.worth?.strokes ?? null,
-    foot: [d.headline.foot.sample, d.headline.foot.firm].filter(Boolean).join(' · '),
-    stale: d.headline.stale,
-  };
-}

@@ -74,6 +74,7 @@ import {
   type ChConvFilter,
   type ChMember,
   type ChMsg,
+  pinnedThreads,
 } from "./model";
 import { AnnouncementPane, AnnouncementsSection } from "./announcements";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
@@ -267,7 +268,7 @@ function PhoneInboxV2({ api, onNew }: { api: ChMessagesApi; onNew: () => void })
   });
   const loading = (api.convsLoading && !api.convs.length) || api.annLoading;
   const context = loading ? "Loading conversations" : [`${unread} unread`, api.teamName].filter(Boolean).join(" · ");
-  const pinned = (api.pins?.ids ?? []).map((id) => api.convs.find((c) => c.id === id)).filter((c): c is ChConv => !!c);
+  const pinned = api.pins ? pinnedThreads(api.convs, api.pins.ids) : [];
   const firstRun = isMessagesFirstRun(api);
   // A pin isn't listed twice (06 S-MSG): the Pinned card holds it unless a search or Groups is asking.
   const pinIds = new Set(pinned.map((c) => c.id));
