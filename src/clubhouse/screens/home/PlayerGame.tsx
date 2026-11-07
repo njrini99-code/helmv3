@@ -39,12 +39,12 @@ export function PlayerGame({ data, phone = false, part, covered = false, shs = f
   );
 }
 
-/** The par every round in the window was played to, or null when they differ (a par line would be wrong for some). */
 const METER_UNDER = 5;
 const METER_OVER = 15;
 /** The strokes-gained bar's reach each side of zero. Past it the bar stops at its end with an overflow mark; the number beside it is the figure. */
 const SG_BAR_RANGE = 10;
 
+/** The par every round in the window was played to, or null when they differ (a par line would be wrong for some). */
 function commonPar(points: ChScoringPoint[]): number | null {
   const pars = points.map((p) => p.par).filter((v): v is number => v != null);
   return pars.length > 0 && pars.length === points.length && pars.every((v) => v === pars[0]) ? pars[0]! : null;
@@ -327,7 +327,7 @@ function Legs({ legs, tour, phone, covered }: { legs: ChPlayerHome['legs']; tour
   return (
     <section className={phone ? 'ch-hm-sec ch-ph-legs-sec is-phone' : 'ch-ph-legs-sec'} aria-labelledby="ch-ph-legs">
       {phone ? (
-        // The board's one-line meta beside the title. The stats are the last 10 rounds and each part's strokes gained is the season's: each pill says so to a screen reader, and the desktop's caption in full.
+        // The board's one-line meta beside the title. The stats and each part's strokes gained are the last 10 rounds: each pill says so to a screen reader, and the desktop's caption in full.
         <div className="ch-hm-sec__h">
           <h2 id="ch-ph-legs">Your game</h2>
           <span className="ch-hm-meta">Strokes gained {sgBaseline(tour).vs}</span>
@@ -336,7 +336,7 @@ function Legs({ legs, tour, phone, covered }: { legs: ChPlayerHome['legs']; tour
         <div className="ch-ph-game__h">
           <div>
             <h2 id="ch-ph-legs">Your game</h2>
-            {/* The stats are the last 10 rounds; each part's strokes gained is the season's, against the Tour; a stat with a Tour average draws it as a mark. */}
+            {/* The stats are the last 10 rounds; each part's strokes gained is theirs too, against the Tour; a stat with a Tour average draws it as a mark. */}
             <span>Last 10 rounds · strokes gained {sgBaseline(tour).vs}</span>
           </div>
         </div>
@@ -456,8 +456,8 @@ const LEG_ICON: Readonly<Record<ChPlayerLeg['key'], ShsIconName>> = { tee: 'tee'
 export const ownLegHref = (key: ChPlayerLeg['key']): string => `/golf/dashboard/stats#gm-${key}`;
 
 /**
- * "Your game" behind clubhouse_stats_redesign_v1 (stats-home S-HOMEGAME): one card, a row per leg that opens its part. Strokes gained is
- * the season's and waits for its third round; the figures and sparks read the last ten rounds. Nothing is coloured until a difference is clear.
+ * "Your game" behind clubhouse_stats_redesign_v1 (stats-home S-HOMEGAME): one card, a row per leg that opens its part. Strokes gained, the
+ * figures and the sparks all read the last ten rounds, and strokes gained waits for its third round with shots. Nothing is coloured until a difference is clear.
  */
 function YourGameCard({ legs, tour, covered }: { legs: ChPlayerHome['legs']; tour: ChSgTour; covered: boolean }) {
   if (!legs) return null;
@@ -467,7 +467,7 @@ function YourGameCard({ legs, tour, covered }: { legs: ChPlayerHome['legs']; tou
   const footnote = anyEarly
     ? 'Each figure shows with an early-read tag and nothing is coloured until a difference is clear. Strokes gained starts from the third round.'
     : anySg
-      ? 'Figures are your last 10 rounds; strokes gained is the season’s. A line turns green or amber only when the newer rounds differ by more than their likely error.'
+      ? 'Figures are your last 10 rounds, strokes gained too. A line turns green or amber only when the newer rounds differ by more than their likely error.'
       : 'Figures are your last 10 rounds; strokes gained shows from the third round with shots. A line turns green or amber only when the newer rounds differ by more than their likely error.';
   return (
     <section className="ch-shs-home ch-shs-yg" aria-labelledby="ch-ph-legs">
@@ -506,7 +506,7 @@ function YourGameLeg({ g, tour }: { g: ChPlayerLeg; tour: ChSgTour }) {
   const against = g.value != null && g.bench != null && !g.early ? (changeTone(g.value - g.bench, g.lowerIsBetter, g.unit === '%' ? 0 : g.digits) === 'is-gain' ? 'gain' : changeTone(g.value - g.bench, g.lowerIsBetter, g.unit === '%' ? 0 : g.digits) === 'is-loss' ? 'loss' : 'flat') : 'flat';
   const note = g.early && g.note ? `Early read · ${g.note}` : g.needs ?? g.note;
   return (
-    <Link href={ownLegHref(g.key)} className="ch-shs-leg" data-ch="home-leg" aria-label={[g.label, g.value == null ? null : `${g.stat} ${fmt(g.value)}`, g.sg == null ? null : `${formatSigned(g.sg)} strokes gained a round this season`].filter(Boolean).join(', ')}>
+    <Link href={ownLegHref(g.key)} className="ch-shs-leg" data-ch="home-leg" aria-label={[g.label, g.value == null ? null : `${g.stat} ${fmt(g.value)}`, g.sg == null ? null : `${formatSigned(g.sg)} strokes gained a round, last 10`].filter(Boolean).join(', ')}>
       <span className="ch-shs-leg__h">
         <ShsIcon name={LEG_ICON[g.key]} />
         <b>{g.label}</b>
