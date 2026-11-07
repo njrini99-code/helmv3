@@ -103,7 +103,7 @@ export function SendCluster({
         data-ch-code={offered ? 'CH-7370' : undefined}
         {...hold}
       >
-        <Icon icon={unconfirmed ? RotateCw : ArrowUp} size={17} />
+        <Icon icon={unconfirmed ? RotateCw : ArrowUp} size={18} />
       </button>
     </Tooltip>
   );

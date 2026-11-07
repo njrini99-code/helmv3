@@ -93,7 +93,7 @@ export function ThreadScroller({
                 it.kind === "day"
                   ? [
                       <PresenceRow as="div" key={it.key} className="ch-ms-day">
-                        <span>{it.label}<b className="ch-num"> {clock(it.at, api.timeZone, api.clock)}</b></span>
+                        <span className="ch-num">{it.label}<b> {clock(it.at, api.timeZone, api.clock)}</b></span>
                       </PresenceRow>,
                     ]
                   : [

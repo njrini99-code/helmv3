@@ -114,11 +114,28 @@ export function resume(root: ParentNode, carried: CarriedMotion[]): number {
 }
 
 /**
+ * The scrollTop of a scroller's real bottom, read from layout: the list may be mid-glide on a transform (useThreadMakeRoom), and a
+ * transform counts as scrollable overflow, so `scrollHeight` would be inflated by the room being made (MOT-JMP-3).
+ */
+export function layoutEnd(node: HTMLElement): number {
+  const list = node.querySelector<HTMLElement>('.ch-ms-msgs');
+  if (list && typeof list.getAnimations === 'function' && list.getAnimations().length) {
+    const moved = new DOMMatrixReadOnly(getComputedStyle(list).transform).m42;
+    if (moved > 0) {
+      const below = parseFloat(getComputedStyle(node).paddingBottom) || 0;
+      const bottom = list.getBoundingClientRect().bottom - moved - node.getBoundingClientRect().top + node.scrollTop;
+      return Math.max(0, bottom + below - node.clientHeight);
+    }
+  }
+  return Math.max(0, node.scrollHeight - node.clientHeight);
+}
+
+/**
  * MOT-JMP-3: glide a scroller to `to` (a scrollTop, or `'end'` for its layout bottom, read each frame because the
  * list grows while it glides) on a spring. A wheel, touch or pointer-down stops it where it is. Returns the cancel.
  */
 export function springScroll(node: HTMLElement, to: number | 'end', kind: MsSpringKind = 'reveal', reduced = false): () => void {
-  const target = () => (to === 'end' ? Math.max(0, node.scrollHeight - node.clientHeight) : to);
+  const target = () => (to === 'end' ? layoutEnd(node) : to);
   if (reduced || typeof requestAnimationFrame !== 'function') {
     node.scrollTop = target();
     return () => undefined;

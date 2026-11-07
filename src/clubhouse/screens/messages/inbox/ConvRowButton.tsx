@@ -7,7 +7,7 @@ import { Icon } from '../../../ui/Icon';
 import { Flag, Users, BellOff, ListChecks } from 'lucide-react';
 import { Avatar } from '../../../ui/Avatar';
 import { convAvatarId, convYear } from '../shared/conv-ui';
-import { TypingMini, typersLine } from './TypingMini';
+import { TypingMini, typingLabel } from './TypingMini';
 import { personOf } from '../person-of';
 import { PresenceRow } from '../../../ui/ListPresence';
 
@@ -31,8 +31,11 @@ export function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false 
       )}
       <span className="ch-ms-row__main">
         <span className="ch-ms-row__top">
-          {isUnread(c) && <i className="ch-msv-dot" aria-hidden="true" />}
-          <b>{c.title}</b>
+          {/* The unread dot sits in the name's line, so a long name still ellipsizes after it (MSG-109, MSG-113). */}
+          <b>
+            {isUnread(c) && <i className="ch-msv-dot" aria-hidden="true" />}
+            {c.title}
+          </b>
           {c.muted && <Icon icon={BellOff} size={13} className="ch-ms-row__mute" aria-label="Muted" />}
           <span className="ch-num">
             {railTime(c.lastAt, api.now, api.timeZone, api.clock)}
@@ -44,11 +47,7 @@ export function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false 
                 keeps the sender, the poll glyph and the text on one line (F-0052). */}
             <span className="ch-ms-row__prev">
               {typers?.length ? (
-                typers.length === 1 ? (
-                  <TypingMini />
-                ) : (
-                  typersLine(api, typers)
-                )
+                <TypingMini label={typingLabel(api, typers)} />
               ) : c.lastText ? (
                 <>
                   {c.lastSenderId &&

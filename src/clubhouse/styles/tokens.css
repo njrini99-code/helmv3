@@ -570,6 +570,7 @@
   --ch-radius-xl: 20px;
   --ch-radius-mark: 2px; /* chart marks, ticks, thin bars */
   --ch-radius-tail: 6px; /* the Messages bubble tail corner */
+  --ch-radius-bubble: 19px; /* the Messages bubble (SPEC MSG-204); the third named shape beside the tail */
   /* B3: a card's corner (X-4: 16, as .ch-surface already drew it) and a bottom sheet's top corners (X-3: 20). An inner
      corner is the card's less the padding between them, floored at --ch-radius-xs. */
   --ch-radius-card: 16px;
@@ -724,6 +725,20 @@
   --ch-bubble-theirs-bg: #fffefb;
   --ch-bubble-mine-fill: #155a39;
   --ch-bubble-radius: 19px;
+  /* Messages v2 thread roles and measures (SPEC MSG-204 to 222): the artifact's own numbers between the type steps and the spacing scale. */
+  --ch-type-msg-bubble: 400 calc(16 * var(--ch-type-k))/1.32 var(--ch-font-sans);
+  --ch-type-msg-bubble-desk: 400 calc(15 * var(--ch-type-k))/1.32 var(--ch-font-sans);
+  --ch-track-msg-bubble: -0.005em;
+  --ch-type-msg-emoji: 400 calc(40 * var(--ch-type-k))/1.1 var(--ch-font-sans);
+  --ch-ms-px-3: 3px;
+  --ch-ms-px-5: 5px;
+  --ch-ms-px-9: 9px;
+  --ch-ms-px-10: 10px;
+  --ch-ms-px-13: 13px;
+  --ch-ms-px-15: 15px;
+  --ch-ms-px-18: 18px;
+  --ch-ms-px-22: 22px;
+  --ch-ms-badge-ring: 0 0 0 2px var(--ch-grouped-bg);
   --ch-bubble-join: 6px;
   --ch-poll-bar: rgb(21 90 57 / 0.1);
   --ch-poll-bar-on: rgb(21 90 57 / 0.2);
@@ -926,6 +941,11 @@
   --ch-ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
   /* Messages v2: the iOS keyboard's ride (MOT-KB-1), on --ch-ease-sheet; lib/motion.ts CH_MS.keyboard. */
   --ch-dur-keyboard: 480ms;
+  /* Messages v2 thread beats (MSG-208, MSG-202, MSG-210, MSG-211): a hover time, the bar's hairline, the date pill out, the jump key out. */
+  --ch-dur-msg-time: 150ms;
+  --ch-dur-msg-rule: 200ms;
+  --ch-dur-msg-pill-out: 250ms;
+  --ch-dur-msg-key-out: 160ms;
   --ch-ease-spring-smooth: var(--ch-ease);
   --ch-dur-spring-smooth: var(--ch-dur-base);
   /* The settle spring for a part CSS moves (a switch thumb): chSpring('settle'). Where linear() is missing, the ease-out over base. */
@@ -1382,6 +1402,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-dur-spring-lift: 0ms;
   --ch-dur-spring-launch: 0ms;
   --ch-dur-keyboard: 0ms;
+  --ch-dur-msg-time: 0ms;
+  --ch-dur-msg-rule: 0ms;
+  --ch-dur-msg-pill-out: 0ms;
+  --ch-dur-msg-key-out: 0ms;
   /* Not zeroed: a reduced transition is an opacity crossfade this long. Equal to CH_FADE_MS (lib/motion.ts). */
   --ch-dur-crossfade-rm: 0ms;
   --ch-reveal-offset: 0ms;

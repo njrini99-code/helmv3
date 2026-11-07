@@ -8,7 +8,9 @@ import { type ChConv, type ChMsg, firstName, MESSAGE_MAX } from '../model';
 import { takeThreadFiles, subscribeThreadFiles } from '../prefill';
 import { useAddAttachments, useAutosize, AttachChips, CharsLeft } from './composer-parts';
 import { useComposerInset } from '../composer-inset';
-import { CH_FADE_MS } from '../../../lib/motion';
+import { CH_MS } from '../../../lib/motion';
+import { msAnimate } from '../motion/messages-motion';
+import { HOUSE_EASE, playArrowLeave, playFieldReturn } from '../motion/messages-beats';
 import { chTrail } from '../../../lib/track';
 import { haptic } from '../../../lib/haptics';
 import { useClassText } from '../../../ui/ClassStatusLine';
@@ -104,8 +106,12 @@ export function Composer({
     take();
     return subscribeThreadFiles(take);
   }, [conv.id]);
+  // Q-33: a plain-text send is allowed while the one before it is still saving, so MC-01 (two sends 140 ms apart) can happen. Edits,
+  // files, recovery and an unconfirmed send stay serialized: `locked` is theirs, `flights` counts the plain ones in the air.
   const [sending, setSending] = useState(false);
+  const [locked, setLocked] = useState(false);
   const sendingRef = useRef(false);
+  const flights = useRef(0);
   const ta = useRef<HTMLTextAreaElement | null>(null);
   const composerReduced = useChReducedMotion();
   // Redesign: Edit fills the field, focused, caret at the end; leaving it empties the field again.
@@ -123,7 +129,7 @@ export function Composer({
   const chipRise = useChipRise(composerReduced);
   const footer = useRef<HTMLElement | null>(null);
   const typingTimer = useRef<number | null>(null);
-  const ready = (draft.trim() || files.length || resumed) && !sending && !checking && !checkFailed && !unavailable;
+  const ready = (draft.trim() || files.length || resumed) && !locked && !checking && !checkFailed && !unavailable;
   const addFiles = useAddAttachments();
   const [replacing, setReplacing] = useState<string | null>(null);
   const applySeed = (text: string) => {
@@ -180,6 +186,8 @@ export function Composer({
 
   const send = async (notifyAnyway = false) => {
     if (!ready || sendingRef.current) return;
+    const plain = !editing && !files.length && !resumed && !unconfirmed;
+    if (!plain && flights.current > 0) return;
     if (editing) {
       const text = draft.trim();
       if (text === editing.text.trim()) {
@@ -188,24 +196,42 @@ export function Composer({
         return;
       }
       sendingRef.current = true;
+      setLocked(true);
       setSending(true);
       const ok = await api.edit(editing.id, text);
       sendingRef.current = false;
+      setLocked(false);
       setSending(false);
       if (ok) {
-        document.getElementById(`ch-ms-message-${editing.id}`)?.querySelector(".ch-ms-bub")?.animate([{ opacity: 0.4 }, { opacity: 1 }], { duration: composerReduced ? CH_FADE_MS : 260, easing: "cubic-bezier(.22,1,.36,1)" });
+        // MOT-X-9: the saved bubble flashes .4 > 1 over 260 ms on the house ease (a crossfade under Reduce Motion).
+        const saved = document.getElementById(`ch-ms-message-${editing.id}`)?.querySelector<HTMLElement>(".ch-ms-bub");
+        if (saved) msAnimate(saved, [{ opacity: 0.4 }, { opacity: 1 }], null, { reduced: composerReduced, timing: { ms: CH_MS.receipt, easing: HOUSE_EASE } });
         setDraft("");
         onEditDone?.();
       }
       return;
     }
-    sendingRef.current = true;
     const text = draft.trim();
     const pending = files;
     const parentId = effectiveParent;
     const recoveredRequest = resumed;
+    if (plain) {
+      flights.current += 1;
+      // The reply belongs to this send; a failed bubble keeps its own parent, so the chip can go now.
+      if (parentId) {
+        setRecoveredParent(null);
+        onClearReply?.();
+      }
+    } else {
+      sendingRef.current = true;
+      setLocked(true);
+    }
     setSending(true);
     onSendingChange?.(true);
+    // MOT-SEND-6, -8: the arrow leaves the key upward, and the field's placeholder fades back last.
+    const arrow = footer.current?.querySelector<HTMLElement>(".ch-msv-sendkey .ch-ms-send svg");
+    if (arrow) playArrowLeave(arrow, composerReduced);
+    if (ta.current) playFieldReturn(ta.current, composerReduced);
     // Recovery retries clear the visible original, while the later ordinary draft stays durable.
     if (unconfirmed || recoveredRequest) setDraftState("");
     else setDraft("");
@@ -220,8 +246,12 @@ export function Composer({
       // P-10: only a plain text send carries the flag (the attachment path has none), and only when the coach chose it.
       ? await api.send(text, parentId ?? null, { notifyAnyway: true })
       : await (parentId ? api.send(text, parentId) : api.send(text));
-    sendingRef.current = false;
-    setSending(false);
+    if (plain) flights.current -= 1;
+    else {
+      sendingRef.current = false;
+      setLocked(false);
+    }
+    setSending(flights.current > 0);
     if (ok === "unknown") {
       if (!unconfirmed) queued.current = { text: api.drafts.get(conv.id) ?? "", files: filesRef.current };
       api.attachmentRecovery?.set(conv.id, { text, files: pending, replyToId: parentId, queuedText: queued.current.text, queuedFiles: queued.current.files, resumed: recoveredRequest });
@@ -248,7 +278,7 @@ export function Composer({
       setFiles(queued.current.files);
       queued.current = { text: "", files: [] };
     }
-    onSendingChange?.(false);
+    if (flights.current === 0) onSendingChange?.(false);
     // Text failures retain their parent in the failed bubble; attachment failures stay in this composer.
     if (ok === true || (!pending.length && !recoveredRequest)) { setRecoveredParent(null); onClearReply?.(); }
     if (ok === true) haptic("success");

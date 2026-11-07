@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { ChMessagesApi } from './MessagesView';
+import type { ChMessagesApi } from './api/types';
+import { RailEmpty } from './RailEmpty';
 import { Search } from 'lucide-react';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
@@ -9,7 +10,7 @@ import { EmptyState, Skeleton } from '../../ui/States';
 import { chTrail } from '../../lib/track';
 import { railTime, searchSnippet, ChSearchHit } from './model';
 
-export function MessageHits({ api, q, nameMatches, conversationId, onPicked }: { api: ChMessagesApi; q: string; /** One conversation's hits only (Details, Search). */ conversationId?: string; onPicked?: () => void; /** Redesign: how many names matched, so an empty search says it once (S-MSG.search). */ nameMatches?: number }) {
+export function MessageHits({ api, q, nameMatches, conversationId, onPicked, layout = 'flat' }: { api: ChMessagesApi; q: string; /** One conversation's hits only (Details, Search). */ conversationId?: string; onPicked?: () => void; /** Redesign: how many names matched, so an empty search says it once (S-MSG.search). */ nameMatches?: number; /** The inbox's empty "Nothing here": the phone's card or the rail's flat label. */ layout?: 'card' | 'flat' }) {
   const [hits, setHits] = useState<ChSearchHit[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -35,13 +36,17 @@ export function MessageHits({ api, q, nameMatches, conversationId, onPicked }: {
     };
   }, [search, term, attempt, conversationId]);
   if (term.length < 2) return null;
-  if (nameMatches != null && hits && !hits.length && !failed)
-    return nameMatches > 0 ? null : (
+  if (nameMatches != null && hits && !hits.length && !failed) {
+    if (nameMatches > 0) return null;
+    // A conversation's own search (Details) keeps its card; the inbox's says it as the "Nothing here" card does (MSG-115).
+    if (!conversationId) return <div role="status"><RailEmpty filter="all" q={term} layout={layout} /></div>;
+    return (
       <section className="ch-msv-card ch-msv-noresults" role="status">
         <b>No results</b>
         <span>Try another name or word.</span>
       </section>
     );
+  }
   return (
     <section
       className="ch-ms-sec"

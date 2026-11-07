@@ -2,5 +2,267 @@
  * Messages v2, package B: the thread, its bubbles, the glass controls and the composer.
  * Loaded after messages.css (docs/clubhouse/messages-v2/SEAMS.md). Every rule is scoped to [data-ch-ms-v2], the redesign
  * flag's root, so the flag-off look (messages.css alone) is untouched. Values come from the artifact through Clubhouse
- * tokens (docs/clubhouse/messages-v2/SPEC.md); the legacy rules this replaces are deleted from messages.css as each piece lands.
+ * tokens (docs/clubhouse/messages-v2/SPEC.md). The legacy phone rules in messages.css reach 0,5,0, so the bubble rules here
+ * name the thread root too (`:is(.ch-ms-thread, .ch-msp-thread)`, the desktop section and the phone screen) to out-rank them
+ * without !important; the replaced v2-scoped rules were deleted from messages.css.
  */
+
+/* MSG-204 Bubble geometry: radius 19, padding 7.5k 13k, 16k/1.32, -0.005em; theirs on recv with the bubble shadow, mine flat sent. */
+[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-msg .ch-ms-bub:not(.ch-ms-bub--file, .is-deleted) {
+  position: relative;
+  padding: calc(7.5 * var(--ch-type-k)) calc(13 * var(--ch-type-k));
+  border-radius: var(--ch-radius-bubble);
+  background: var(--ch-bubble-theirs-bg);
+  box-shadow: none;
+  font: var(--ch-type-msg-bubble);
+  letter-spacing: var(--ch-track-msg-bubble);
+  color: var(--ch-text-primary);
+  filter: var(--ch-bubble-theirs-shadow);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-msg.is-mine .ch-ms-bub:not(.ch-ms-bub--file, .is-deleted) {
+  background: var(--ch-bubble-mine-fill);
+  box-shadow: var(--ch-messages-x4);
+  color: var(--ch-bubble-mine-ink);
+  filter: var(--ch-bubble-mine-shadow);
+}
+/* MSG-205 Join corners 6 on the side facing the run; the last bubble keeps its 19 (the tail draws instead). */
+[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-msg:not(.is-mine, .is-first) .ch-ms-bub:not(.ch-ms-bub--file, .is-deleted) {
+  border-top-left-radius: var(--ch-radius-tail);
+}
+[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-msg:not(.is-mine, .is-last) .ch-ms-bub:not(.ch-ms-bub--file, .is-deleted) {
+  border-bottom-left-radius: var(--ch-radius-tail);
+}
+[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-msg.is-mine:not(.is-first) .ch-ms-bub:not(.ch-ms-bub--file, .is-deleted) {
+  border-top-right-radius: var(--ch-radius-tail);
+}
+[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-msg.is-mine:not(.is-last) .ch-ms-bub:not(.ch-ms-bub--file, .is-deleted) {
+  border-bottom-right-radius: var(--ch-radius-tail);
+}
+/* Desktop bubbles read 15k. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  [data-ch-ms-v2] .ch-ms-thread .ch-ms-msg .ch-ms-bub:not(.ch-ms-bub--file, .is-deleted, .is-emoji) {
+    font: var(--ch-type-msg-bubble-desk);
+    letter-spacing: var(--ch-track-msg-bubble);
+  }
+}
+/* MSG-206 One tail, the drawn SVG, on the last bubble of a run: the legacy clip-path tail is not drawn under the redesign. */
+[data-ch-ms-v2] .ch-msp-thread .ch-ms-msg.is-last .ch-ms-bub::after {
+  content: none;
+}
+/* MSG-204 Emoji only: no bubble, 40k, padding 0. */
+[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-msg .ch-ms-bub.is-emoji {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  filter: none;
+  font: var(--ch-type-msg-emoji);
+  letter-spacing: 0;
+  color: inherit;
+}
+/* MSG-205 Spacing: 2 inside a run, 10 before a run, 16 before a bubble that carries reactions. */
+[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-msg {
+  position: relative;
+  margin-top: 2px;
+}
+[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-msg.is-first {
+  margin-top: var(--ch-ms-px-10);
+}
+[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-msg:has(.ch-ms-reacts) {
+  margin-top: 16px;
+}
+/* MSG-204 The stack is 76% of the column (the phone's older 82% cap no longer compounds with it); desktop min(520, 72%) stays. */
+[data-ch-ms-v2] .ch-msp-thread .ch-ms-msg__col {
+  max-width: 100%;
+}
+[data-ch-ms-v2] .ch-ms-thread .ch-ms-msg__stack {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* MSG-207 Group names: first name inside the first bubble, 13k/600 ink-2, floor 12k on the phone, margin 0 0 1. */
+[data-ch-ms-v2] .ch-msv-bname {
+  display: block;
+  margin: 0 0 1px;
+  font: var(--ch-type-13-strong);
+  color: var(--ch-text-tertiary);
+}
+/* MSG-217 Edited marker: 0.78em, .75, margin-left 6. */
+[data-ch-ms-v2] .ch-ms-bub .ch-msv-edited {
+  margin-left: 6px;
+  font: var(--ch-type-12);
+  letter-spacing: var(--ch-track-12);
+  color: color-mix(in srgb, currentColor 75%, transparent);
+}
+
+/* MSG-208 Hidden times: one line, 13k/400 ink-3 tabular, bottom 6, -64k off the right edge (-68k at 430), a hover time on desktop. */
+[data-ch-ms-v2] .ch-msv-time {
+  top: auto;
+  bottom: 6px;
+  font: var(--ch-type-13);
+  color: var(--ch-crh-ink4);
+  transform: none;
+}
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  [data-ch-ms-v2] .ch-msv-time {
+    transition: opacity var(--ch-dur-msg-time) linear;
+  }
+}
+
+/* MSG-209 Day marker: plain centred text on the page, no chip. Day 12k/600 ink-3, time 400 beside it, margin 22 0 8. */
+[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-day {
+  justify-content: center;
+  margin: var(--ch-ms-px-22) 0 8px;
+  padding: 0;
+  border: 0;
+}
+[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-day > span {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  font: var(--ch-type-12-strong);
+  letter-spacing: 0;
+  color: var(--ch-crh-ink4);
+}
+[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-day > span b {
+  font-weight:var(--ch-fw-400);
+}
+
+/* MSG-210 Floating date pill: glass-strong, blur 16 / saturate 160, float shadow, 13k/500 ink-2, centred 20 px clear of a marker.
+   Its spot (74 under the phone bar, 76 under the desktop bar) is measured through an always-mounted anchor. */
+[data-ch-ms-v2] {
+  --ch-ms-pill-top: calc(env(safe-area-inset-top) + 74px);
+}
+[data-ch-ms-v2] .ch-msv-datepillspot {
+  position: absolute;
+  top: var(--ch-ms-pill-top);
+  left: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+[data-ch-ms-v2] .ch-msv-datepill {
+  top: var(--ch-ms-pill-top);
+  padding: 4px var(--ch-ms-px-10);
+  background: var(--ch-glass-strong);
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--ch-glass-blur)) saturate(160%);
+  font: var(--ch-type-13-medium);
+  color: var(--ch-text-tertiary);
+  transition: opacity var(--ch-dur-msg-pill-out) linear;
+}
+[data-ch-ms-v2] .ch-msv-datepill.is-on {
+  opacity: 1;
+  transition-duration: var(--ch-dur-quick);
+}
+/* Within PILL_GAP of a marker its opacity follows the scroll (set inline), with no transition. */
+[data-ch-ms-v2] .ch-msv-datepill.linked {
+  transition: none;
+}
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  [data-ch-ms-v2] {
+    --ch-ms-pill-top: 76px;
+  }
+}
+
+/* MSG-211 Jump key: 40 glass circle, blur 18, float shadow; badge 12/700 accent with a 2 px page ring. It leaves in 160 ms. */
+[data-ch-ms-v2] .ch-msv-jump {
+  bottom: calc(var(--ch-ms-comp-h, 54px) + 12px);
+  animation: none;
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+  backdrop-filter: blur(var(--ch-glass-blur)) saturate(var(--ch-glass-saturate));
+}
+[data-ch-ms-v2] .ch-msv-jump b {
+  padding: 0 var(--ch-ms-px-5);
+  background: var(--ch-bubble-mine-fill);
+  color: var(--ch-accent-ink);
+  font: var(--ch-type-12-strong);
+  font-weight:var(--ch-fw-700);
+  box-shadow: var(--ch-ms-badge-ring);
+}
+
+/* MSG-212 / MSG-213 Typing bubble: a received bubble, radius 19 and a 6 corner, padding 13 15, 7 px dots; the typer's name sits inside it. */
+[data-ch-ms-v2] .ch-msv-typing {
+  padding: var(--ch-ms-px-13) var(--ch-ms-px-15);
+  border-radius: var(--ch-radius-bubble);
+  border-bottom-left-radius: var(--ch-radius-tail);
+}
+[data-ch-ms-v2] .ch-msv-typing.has-name {
+  gap: var(--ch-ms-px-5);
+  padding: calc(7.5 * var(--ch-type-k)) var(--ch-ms-px-13) 12px;
+}
+
+/* MSG-216 Failed send: the bubble stays as sent; a danger pill under it reads "Not delivered · Try again". */
+[data-ch-ms-v2] .ch-ms-msg.is-failed .ch-ms-bub,
+[data-ch-ms-v2] .ch-ms-msg.is-mine.is-failed .ch-ms-bub {
+  outline: 0;
+}
+[data-ch-ms-v2] .ch-ms-msg__fail {
+  gap: 6px;
+  min-height: 0;
+  margin: 6px 2px 0;
+  padding: var(--ch-ms-px-3) var(--ch-ms-px-9);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow-flat);
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-flag);
+}
+[data-ch-ms-v2] .ch-ms-msg__fail button {
+  border: 0;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  font-size:inherit;
+  font-weight:inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+[data-ch-ms-v2] .ch-ms-msg__fail button:first-of-type {
+  font-weight:var(--ch-fw-700);
+}
+[data-ch-ms-v2] .ch-ms-msg__fail button + button {
+  color: var(--ch-text-tertiary);
+}
+
+/* MSG-218 Reply quote: a chip above the bubble, margin 0 4 4, padding 5 10, radius 12, surface and card shadow, 13k ink-2, one line. */
+[data-ch-ms-v2] .ch-ms-quote {
+  max-width: 100%;
+  margin: 0 4px 4px;
+  padding: var(--ch-ms-px-5) var(--ch-ms-px-10);
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow-flat);
+  font: var(--ch-type-13);
+  color: var(--ch-text-tertiary);
+}
+
+/* MSG-222 Empty thread: card padding 22 16 18, margin 16 0 12, name 19k/700, sub 15k ink-2. */
+[data-ch-ms-v2] .ch-msv-hello {
+  margin: 16px 0 12px;
+  padding: var(--ch-ms-px-22) 16px var(--ch-ms-px-18);
+  box-shadow: var(--ch-card-shadow-flat);
+}
+[data-ch-ms-v2] .ch-msv-hello > b {
+  font: var(--ch-type-20-strong);
+  letter-spacing: var(--ch-track-20);
+}
+[data-ch-ms-v2] .ch-msv-hello > small {
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-tertiary);
+}
+
+/* MOT-R: under Reduce Motion the typing bubble fades in instead of growing; its dots hold still at full opacity (MSG-003). */
+@media (prefers-reduced-motion: reduce) {
+  [data-ch-ms-v2] .ch-msv-typing {
+    animation: ch-msv-fade var(--ch-dur-crossfade-rm) linear both;
+  }
+}
+@keyframes ch-msv-fade {
+  from {
+    opacity: 0;
+  }
+}

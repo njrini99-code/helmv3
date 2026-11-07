@@ -12,7 +12,7 @@ import { personOf } from '../person-of';
 import { rebuiltHref } from '../../../shell/nav';
 import { useThreadAnchor } from '../use-thread-anchor';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
-import { useThreadMakeRoom, ThreadJumpKey } from '../thread-v2';
+import { useThreadMakeRoom, useSpringToEnd, useReplyFromTyping, useSendRise, ThreadDatePill, ThreadJumpKey } from '../thread-v2';
 import { useFocusMessage } from '../use-focus-message';
 import { usePanelSmoothScroll } from '../../../lib/smooth-scroll';
 import { IconButton } from '../../../ui/Button';
@@ -26,6 +26,7 @@ import { ConversationSearch } from '../details-v2';
 import { ThreadScroller } from './ThreadScroller';
 import { Bubble } from './Bubble';
 import { Composer } from './Composer';
+import { TypingRows } from './TypingRows';
 import { EditMessageModal, DeleteMessageModal } from '../overlays/message-modals';
 
 /** The thread's glide, longer than the page's (a conversation is read down a long column). */
@@ -100,6 +101,10 @@ export function Thread({
   const anchor = useThreadAnchor(scroller, { convId: conv.id, count: api.msgs.length, lastMine: !!api.msgs.at(-1)?.mine, typing: api.typing, paused: focusing });
   const reducedMotion = useChReducedMotion();
   useThreadMakeRoom(scroller, api.msgs.length, true, reducedMotion);
+  // The same send, arrival and jump hooks as the phone (MOT-SEND-7, -12, MOT-JMP-3): the artifact runs them on both devices.
+  const jumpToEnd = useSpringToEnd(scroller, anchor.toEnd, reducedMotion);
+  useReplyFromTyping(scroller, api.msgs.length, !!api.typing, true, reducedMotion);
+  useSendRise(scroller, api.msgs.length, true, reducedMotion);
   useFocusMessage(scroller, { target: api.focusMessageId ?? null, loading: api.msgsLoading, count: api.msgs.length, reduced: reducedMotion, onDone: (id) => api.messageFocused?.(id), toEnd: anchor.toEnd });
   // The thread eases like the page does, with a longer glide (a conversation is read down a long column); desktop,
   // wheel only: a trackpad stays native.
@@ -143,8 +148,6 @@ export function Thread({
     return () => el.removeEventListener("scroll", on);
   }, []);
 
-  const typistId = api.typingUserIds?.[0] ?? api.typingByConv?.get(conv.id)?.[0];
-  const typist = typistId ? personOf(api, typistId) : undefined;
   return (
     <PollThreadContext.Provider value={pollThread}>
     <section
@@ -237,22 +240,10 @@ export function Thread({
             onSeenBy={conv.group ? (m, el) => seenList.open(m, el) : undefined}
           />
         )}
-        renderTyping={() => (
-          <div className={"ch-ms-msg is-first" + (conv.group ? " is-group" : "")} /* CH-7602: the typing dots */>
-            {/* The realtime hook says someone is typing, not who: a direct thread knows; the redesign's group reads the typers. */}
-            <span className="ch-ms-msg__av">
-              {(conv.group && typist) && <Avatar name={typist ? typist.name : conv.title} id={typist ? (typist.playerId ?? typist.userId) : convAvatarId(api, conv)} size={30} />}
-            </span>
-            <div className="ch-ms-msg__col">
-              <div className={"ch-msv-typing" + (conv.group ? " has-name" : "")} role="status" aria-label={`${conv.group ? (typist ? firstName(typist.name) : "Someone") : firstName(conv.title)} is typing`}>
-                  {conv.group && typist && <b className="ch-msv-bname">{firstName(typist.name)}</b>}
-                  <span className="ch-msv-typing__dots"><i /><i /><i /></span>
-                </div>
-            </div>
-          </div>
-        )}
+        renderTyping={() => <TypingRows api={api} conv={conv} />}
       />
-      <ThreadJumpKey scroller={scroller} unseen={anchor.unseen} onJump={anchor.toEnd} />
+      <ThreadDatePill scroller={scroller} />
+      <ThreadJumpKey scroller={scroller} unseen={anchor.unseen} onJump={jumpToEnd} />
       <Composer
         key={conv.id}
         api={api}

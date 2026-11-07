@@ -178,6 +178,11 @@ function showPhone(d: ChMessagesData = data) {
 }
 type User = ReturnType<typeof userEvent.setup>;
 const openDetails = (user: User) => user.click(screen.getByRole('button', { name: 'Details' }));
+/** MSG-604 / Q-31: the Mute quick action opens a menu; this picks "For 8 hours" (or another length) and returns the item. */
+const chooseMute = async (user: User, label = 'For 8 hours') => {
+  await user.click(await screen.findByRole('button', { name: 'Mute this conversation' }));
+  return screen.findByRole('menuitem', { name: label });
+};
 const setOnline = (v: boolean) => Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => v });
 
 beforeEach(() => {
@@ -334,7 +339,7 @@ describe('Messages · actions that fail', () => {
       a.setGolfConversationMute.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
       show();
       await openDetails(user);
-      await user.click(await screen.findByRole('button', { name: 'Mute 8 hours' }));
+      await user.click(await chooseMute(user));
       expect(a.setGolfConversationMute).toHaveBeenCalledTimes(1);
       act(() => vi.advanceTimersByTime(5001));
       await expectCode('CH-1902', /Still saving/);
@@ -353,7 +358,7 @@ describe('Messages · actions that fail', () => {
     a.setGolfConversationMute.mockResolvedValue({ success: false, error: 'nope' });
     show();
     await openDetails(user);
-    await user.click(await screen.findByRole('button', { name: 'Mute 8 hours' }));
+    await user.click(await chooseMute(user));
     await expectCode('CH-7011', /Couldn’t mute the conversation/);
   });
 
@@ -361,7 +366,7 @@ describe('Messages · actions that fail', () => {
     const user = userEvent.setup();
     show();
     await openDetails(user);
-    const mute = await screen.findByRole('button', { name: 'Mute 8 hours' });
+    const mute = await chooseMute(user);
     setOnline(false);
     await user.click(mute);
     await expectCode('CH-1903', /Couldn’t mute the conversation: you’re offline/);
@@ -471,7 +476,7 @@ describe('Messages · validation, haptics, accessibility', () => {
     const user = userEvent.setup();
     live.msgs.messages = [{ ...mine, id: 'f1', sendFailed: true, sendOutcome: 'refused' }, { ...mine, id: 'f2', content: 'Second', sendFailed: true, sendOutcome: 'unknown' }];
     show();
-    await expectCode('CH-7016', /Not sent/);
+    await expectCode('CH-7016', /Not delivered/);
     await expectCode('CH-7017', /Couldn’t confirm this message sent\. Check before sending again\./);
     await user.click(within(code('CH-7016') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(live.msgs.retryMessage).toHaveBeenCalledWith('f1');
@@ -481,7 +486,7 @@ describe('Messages · validation, haptics, accessibility', () => {
     const user = userEvent.setup();
     live.msgs.messages = [{ ...mine, id: 'f1', sendFailed: true, sendOutcome: 'refused' }];
     show();
-    await expectCode('CH-7016', /Not sent/);
+    await expectCode('CH-7016', /Not delivered/);
     setOnline(false);
     await user.click(within(code('CH-7016') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-1903', /offline/);
@@ -493,7 +498,7 @@ describe('Messages · validation, haptics, accessibility', () => {
     live.msgs.retryMessage.mockResolvedValueOnce(false);
     live.msgs.messages = [{ ...mine, id: 'f1', sendFailed: true, sendOutcome: 'refused' }];
     show();
-    await expectCode('CH-7016', /Not sent/);
+    await expectCode('CH-7016', /Not delivered/);
     await user.click(within(code('CH-7016') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-7004', /Couldn’t send the message/);
   });
@@ -834,7 +839,7 @@ describe('Messages · phone', () => {
     showPhone();
     const thread = await openThread(user);
     await user.click(within(thread).getByRole('button', { name: 'Message actions' }));
-    await user.click(within(code('CH-7604') as HTMLElement).getByRole('button', { name: 'Reply' }));
+    await user.click(within(code('CH-7604') as HTMLElement).getByRole('menuitem', { name: 'Reply' }));
     await user.type(within(thread).getByRole('textbox', { name: /Message Varsity team/ }), 'Half written');
     await user.click(within(thread).getByRole('button', { name: 'Back to Messages' }));
     const reopened = await openThread(user);
@@ -1249,7 +1254,9 @@ describe('Messages · wave 5 feedback', () => {
     live.msgs.messages = [];
     show();
     await user.click(await screen.findByRole('radio', { name: 'Groups' }));
-    await expectCode('CH-7302', /^No group conversations yet$/);
+    // Messages v2 (MSG-108): the artifact's "Nothing here" card with its one line, still never "caught up".
+    await expectCode('CH-7302', /Nothing hereNo groups right now\.$/);
+    expect(screen.queryByText(/caught up/i)).toBeNull();
   });
 
   it('#6 CH-7106 more than ten files: ten are kept and the rest are said, not dropped silently', async () => {
@@ -1389,8 +1396,9 @@ describe('Messages · polls (premium features P-2)', () => {
   it('a poll message draws as its card, never as its plain-text copy, with the thread’s count', async () => {
     show();
     const card = await screen.findByRole('group', { name: 'Which van?' });
-    expect(within(card).getByRole('radio', { name: 'Van B, 1 vote' })).toBeTruthy();
-    expect(card.querySelector('.ch-ms-poll__count')!.textContent).toBe('1 of 3 voted');
+    // MSG-501: the footer counts the votes cast; a sole leader is marked at any time (Q-34).
+    expect(within(card).getByRole('radio', { name: 'Van B, 1 vote, most votes' })).toBeTruthy();
+    expect(card.querySelector('.ch-msd-poll__count')!.textContent).toBe('1 vote');
     expect(screen.queryByText(/Vote in GolfHelm/)).toBeNull();
   });
 
@@ -1400,7 +1408,7 @@ describe('Messages · polls (premium features P-2)', () => {
     const card = await screen.findByRole('group', { name: 'Which van?' });
     const box = (await screen.findByRole('textbox', { name: /Message Varsity team/ })) as HTMLTextAreaElement;
     await user.click(within(card).getByRole('button', { name: /^Remind \d$/ }));
-    await waitFor(() => expect(box.value).toMatch(/can you vote in the poll when you get a chance\?$/));
+    await waitFor(() => expect(box.value).toMatch(/^Reminder: vote in the “Which van\?” poll/));
     expect(document.querySelector('.ch-ms-comp__reply')).not.toBeNull();
     await user.clear(box);
     await user.type(box, 'My own words');
@@ -1482,7 +1490,7 @@ describe('Messages · actions that fail, on the redesign', () => {
     live.reactions.setReaction.mockRejectedValue(new Error('refused'));
     show();
     await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
-    await user.click(screen.getAllByRole('button', { name: 'React like' })[0]!);
+    await user.click(screen.getAllByRole('button', { name: 'Like' })[0]!);
     await expectCode('CH-7009', /Couldn’t save the reaction/);
   });
 });

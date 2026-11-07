@@ -5,6 +5,9 @@ import { clock, type ChMsg } from '../model';
 import { SeenByPill, SeenByReceipt } from '../seen-by';
 import { AnimatePresence, m as M } from 'motion/react';
 import { chTween } from '../../../lib/motion';
+import { useToast } from '../../../ui/Toast';
+import { AlertCircle } from 'lucide-react';
+import { Icon } from '../../../ui/Icon';
 
 /** Under a bubble: Not sent / Try again, the Seen receipt on the carrier, and "Notified anyway". */
 export function BubbleReceipt({
@@ -24,6 +27,7 @@ export function BubbleReceipt({
   showTime: boolean;
   reduced: boolean;
 }) {
+  const toast = useToast();
   return (
     <>
       {m.failed ? (
@@ -32,12 +36,16 @@ export function BubbleReceipt({
           role="alert"
           data-ch-code={m.failed === "unknown" ? "CH-7017" : "CH-7016"}
         >
+          <Icon icon={AlertCircle} size={14} />
           {m.failed === "unknown"
             ? "Couldn’t confirm this message sent. Check before sending again."
-            : "Not sent."}
+            : "Not delivered ·"}
           <button
             type="button"
-            onClick={() => api.retry(m.id)}
+            onClick={() => {
+              toast({ title: "Sending again" });
+              api.retry(m.id);
+            }}
           >
             Try again
           </button>

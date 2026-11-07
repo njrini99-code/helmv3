@@ -3,10 +3,11 @@
 import { type ChPageKey, usePageKeys } from '../../../shell/command/page-keys';
 import { plural } from '../../../lib/plural';
 import type { ChMessagesApi } from '../api/types';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePanelSmoothScroll } from '../../../lib/smooth-scroll';
 import { useRovingRows } from '../../../lib/roving';
-import { type ChConvFilter, isUnread, filterConvs } from '../model';
+import { type ChConvFilter, INBOX_FILTERS, isUnread, filterConvs } from './model';
+import { RailEmpty } from '../RailEmpty';
 import { isMessagesFirstRun } from '../MessagesFirstRun';
 import { Tooltip } from '../../../ui/Tooltip';
 import { Icon } from '../../../ui/Icon';
@@ -14,10 +15,10 @@ import { SquarePen, MessageSquare } from 'lucide-react';
 import { SearchField } from '../../../ui/SearchField';
 import { Segmented } from '../../../ui/Segmented';
 import { InlineNotice } from '../../../ui/Notices';
-import { Skeleton, EmptyState } from '../../../ui/States';
+import { EmptyState } from '../../../ui/States';
 import { PinnedAndRecent } from './PinnedAndRecent';
 import { ConvRow } from './ConvRow';
-import { RailEmpty } from '../RailEmpty';
+import { InboxSkeleton } from './InboxSkeleton';
 import { AnnouncementsSection } from '../announcements';
 import { MessageHits } from '../message-hits';
 
@@ -39,21 +40,23 @@ export function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) 
   const [q, setQ] = useState("");
   const unread = api.convs.filter(isUnread).length;
   const list = filterConvs(api.convs, filter, q);
+  // A filter or search change cuts its leaving rows in one frame; rows that stay glide (MOT-LIST-4).
+  const scope = `${filter}\u0000${q}`;
+  const lastScope = useRef(scope);
+  const changedScope = lastScope.current !== scope;
+  useEffect(() => {
+    lastScope.current = scope;
+  });
   // The lane's first run (S-MSG.empty): the rail keeps Messages, New and Search; the card in the pane says the rest.
   const firstRun = isMessagesFirstRun(api);
   return (
-    <aside className="ch-ms-rail" aria-label="Conversations">
+    <aside className="ch-ms-rail ch-inb ch-inb--rail" aria-label="Conversations">
       <div className="ch-ms-rail__head">
         <div className="ch-ms-rail__title">
           <h1>Messages</h1>
           <Tooltip>
-            <button
-              type="button"
-              className="ch-btn ch-btn--secondary ch-iconbtn"
-              aria-label="New message"
-              onClick={onNew}
-            >
-              <Icon icon={SquarePen} size={16} />
+            <button type="button" className="ch-msv-new" aria-label="New message" onClick={onNew}>
+              <Icon icon={SquarePen} size={19} />
             </button>
           </Tooltip>
         </div>
@@ -64,19 +67,7 @@ export function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) 
           placeholder="Search"
           label="Search conversations and messages"
         />
-        {!firstRun && (
-          <Segmented<ChConvFilter> redraws
-            size="sm"
-            label="Filter conversations"
-            value={filter}
-            onChange={setFilter}
-            options={[
-              { value: "all", label: "All" },
-              { value: "unread", label: "Unread" },
-              { value: "groups", label: "Groups" },
-            ]}
-          />
-        )}
+        {!firstRun && <Segmented<ChConvFilter> redraws block plate="thumb" size="sm" label="Filter conversations" value={filter} onChange={setFilter} options={INBOX_FILTERS} />}
       </div>
       <div className="ch-ms-rail__body" ref={body}>
         {api.convsError ? (
@@ -90,17 +81,7 @@ export function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) 
             />
           </div>
         ) : (api.convsLoading && !api.convs.length) || api.annLoading ? (
-          <div className="ch-ms-sec__card" aria-busy="true" data-ch-code="CH-7402">
-            {Array.from({ length: 5 }, (_, i) => (
-              <div key={i} className="ch-ms-row" style={{ cursor: "default" }}>
-                <Skeleton width={36} height={36} radius={18} />
-                <span style={{ display: "grid", gap: 8 }}>
-                  <Skeleton width="60%" height={13} />
-                  <Skeleton width="85%" height={12} />
-                </span>
-              </div>
-            ))}
-          </div>
+          <InboxSkeleton layout="rail" />
         ) : firstRun ? null : !api.convs.length ? (
           <EmptyState
             code="CH-7301"
@@ -114,9 +95,9 @@ export function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) 
                 api={api}
                 list={list}
                 row={(c) => <ConvRow key={c.id} api={api} c={c} />}
+                cut={changedScope}
               />
-
-            {!list.length && !(q.trim()) && <RailEmpty filter={filter} q={q} onClearSearch={() => setQ("")} onShowAll={() => setFilter("all")} />}
+            {!list.length && !q.trim() && filter !== "all" && <RailEmpty filter={filter} layout="flat" />}
             {/* Messages first; the team's announcements fold under them (owner, 2026-10-16). */}
             {filter !== "groups" && <AnnouncementsSection api={api} q={q} />}
             <MessageHits api={api} q={q} nameMatches={list.length} />

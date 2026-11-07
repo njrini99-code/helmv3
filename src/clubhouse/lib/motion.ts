@@ -82,6 +82,9 @@ export const CH_SPRINGS = {
   /** The quick chat panel pouring out of the Helm key (2026-10-31): a native sheet's settle, no bounce. */
   pour: { visualDuration: 0.42, bounce: 0 },
 } as const;
+/** Messages v2 send easings (MOT-SEND-6): the green fill coming up under the typed words, and the arrow leaving the send key. */
+export const CH_FILL_EASE_POINTS = [0.3, 0, 0.5, 1] as const;
+export const CH_ARROW_EASE_POINTS = [0.4, 0, 0.9, 0.3] as const;
 /** The iOS sheet curve: the quick chat's close, live pill out, and the down half of press dips. */
 export const CH_EASE_SHEET = [0.32, 0.72, 0, 1] as const;
 export type ChSpringKind = keyof typeof CH_SPRINGS;

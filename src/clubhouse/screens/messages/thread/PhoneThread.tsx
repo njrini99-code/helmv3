@@ -26,7 +26,9 @@ import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { ThreadScroller } from './ThreadScroller';
 import { Bubble } from './Bubble';
 import { Composer } from './Composer';
+import { TypingRows } from './TypingRows';
 import { HoldLift } from '../hold-lift';
+import { HoldReactKeys } from '../overlays/HoldKeys';
 import { REACTIONS } from '../overlays/reactions';
 import { Icon } from '../../../ui/Icon';
 import { PollSheetRows, SheetRow, SeenSheetRow, ActingSeenMeta } from '../overlays/sheet-rows';
@@ -174,24 +176,7 @@ export function PhoneThread({
             onSeenBy={conv.group ? (m) => seenList.open(m, null) : undefined}
           />
           )}
-          renderTyping={() =>
-          (api.typingUserIds?.length ? api.typingUserIds : conv.group ? [""] : [conv.memberIds[0] ?? ""]).map((id) => {
-            const who = id ? personOf(api, id) : null;
-            // No typer known in a group: say so, never a member who isn't typing (MSG-4).
-            const name = !id ? "Someone" : firstName(who?.name ?? conv.title);
-            return (
-              <div key={id} className={"ch-ms-msg is-first" + (conv.group ? " is-group" : "")}>
-                <span className="ch-ms-msg__av">{<Avatar name={who?.name ?? conv.title} id={who ? (who.playerId ?? who.userId) : convAvatarId(api, conv)} size="sm" />}</span>
-                <div className="ch-ms-msg__col">
-                  <div className={"ch-msv-typing" + (conv.group ? " has-name" : "")} role="status" aria-label={`${name} is typing`}>
-                    {conv.group && <b className="ch-msv-bname">{name}</b>}
-                    <span className="ch-msv-typing__dots"><i /><i /><i /></span>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-          }
+          renderTyping={() => <TypingRows api={api} conv={conv} />}
         />
       </SectionBoundary>
       <>
@@ -232,24 +217,7 @@ export function PhoneThread({
             setActing(null);
             then?.();
           }}
-          bar={REACTIONS.map((r) => {
-            const on = (api.reactions.get(acting.id) ?? []).some((x) => x.key === r.key && x.mine);
-            return (
-              <button
-                key={r.key}
-                type="button"
-                className={on ? "is-on" : undefined}
-                aria-label={`${on ? "Remove" : "React"} ${r.key.toLowerCase()}`}
-                aria-pressed={on}
-                onClick={() => {
-                  haptic("select");
-                  pickHold(() => api.react(acting.id, r.key, !on));
-                }}
-              >
-                <Icon icon={r.icon} size={22} />
-              </button>
-            );
-          })}
+          bar={<HoldReactKeys reacts={api.reactions.get(acting.id) ?? []} onPick={(key, on) => pickHold(() => api.react(acting.id, key, on))} />}
         >
           {acting.poll && <PollSheetRows hold id={acting.id} done={() => pickHold(() => undefined)} />}
           <SheetRow hold icon={Reply} label="Reply" disabled={replySending} onClick={() => pickHold(() => reply(acting))} />

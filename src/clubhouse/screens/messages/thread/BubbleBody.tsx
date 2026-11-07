@@ -6,6 +6,7 @@ import { PollCard } from '../polls';
 import { MessageText, ReplyQuote } from './MessageText';
 import { BubbleTail } from '../thread-v2';
 import { Attachments } from './Attachments';
+import { isEmojiOnly } from './model';
 
 /** A message's content: the quote it replies to, then the poll, the words or the photos and files. */
 export function BubbleBody({
@@ -23,6 +24,8 @@ export function BubbleBody({
   group: boolean;
   who: ChPerson | undefined;
 }) {
+  // MSG-204: one to three emoji and nothing else draws bare, at 40k, with no tail.
+  const emoji = !m.poll && !m.edited && isEmojiOnly(m.text);
   return (
     <>
       {m.replyToId && <ReplyQuote api={api} replyToId={m.replyToId} />}
@@ -30,11 +33,12 @@ export function BubbleBody({
         <PollCard api={api} messageId={m.id} poll={m.poll} mine={m.mine} />
       ) : (
         m.text && (
-          <div className="ch-ms-bub" data-ch-bubble="">
+          <div className={"ch-ms-bub" + (emoji ? " is-emoji" : "")} data-ch-bubble="">
             {/* Redesign: the sender's name sits inside a run's first bubble (06 S-MSG.team). */}
             {!m.mine && first && group && <b className="ch-msv-bname">{firstName(who?.name ?? "Member")}</b>}
             <MessageText text={m.text} />
-            {last && <BubbleTail />}
+            {m.edited && <span className="ch-msv-edited">Edited</span>}
+            {last && !emoji && <BubbleTail />}
           </div>
         )
       )}

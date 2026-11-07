@@ -19,8 +19,12 @@ import { Button } from '../../../ui/Button';
 
 /* Rail */
 
-/** One conversation in the list: the desktop rail and the phone inbox. */
-export function ConvRow({ api, c, avatarSize = 36, phone = false }: { api: ChMessagesApi; c: ChConv; avatarSize?: number; phone?: boolean }) {
+/**
+ * One conversation's actions (owner decision 14, MSG-111, Q-39), for a list row and for a pinned tile: the menu's items,
+ * the context-menu binding that opens them, and the row's own sheets. The team's channel is always pinned and the server
+ * refuses to hide it, so it is offered neither Pin nor Delete.
+ */
+export function useConvActions(api: ChMessagesApi, c: ChConv, phone: boolean) {
   const open = () => {
     // D-70: opening a conversation is plain navigation, so it is silent (F-0071).
     chTrail("messages open conversation");
@@ -34,14 +38,15 @@ export function ConvRow({ api, c, avatarSize = 36, phone = false }: { api: ChMes
     chTrail(unread ? "messages mark read" : "messages mark unread");
     void api.setRead(c.id, unread);
   };
-  const askDelete = api.deleteConversation ? () => setDeleting(true) : null;
+  const askDelete = api.deleteConversation && !c.channel ? () => setDeleting(true) : null;
   // Owner decision 14: the row's actions, each on this row's conversation whether or not it is the open one. Right-click
   // and Shift+F10 on the desktop; on the phone a 500ms long press, a keyboard's Shift+F10 or the VoiceOver button below
   // open the same rows as a sheet (ui/ContextMenu.tsx). The phone's swipes repeat Mark as read/unread and Delete.
   const rowItems: MenuItem[] = [
       { label: "Open conversation", icon: MessageSquare, onSelect: open },
       // Redesign: Pin after Open (drawn order). At three pins it stays in the menu, dimmed, saying why (PIN-SYNC D7).
-      ...(api.pins
+      // The channel is pinned first for everyone (Q-11), so it has no row for it.
+      ...(api.pins && !c.channel
         ? [
             api.pins.has(c.id)
               ? { label: "Unpin", icon: PinOff, onSelect: () => api.pins!.toggle(c.id) }
@@ -66,6 +71,12 @@ export function ConvRow({ api, c, avatarSize = 36, phone = false }: { api: ChMes
       {deleting != null && <DeleteConversationModal api={api} conv={c} open={deleting} onClose={() => setDeleting(false)} onDeleted={() => {}} />}
     </>
   );
+  return { ctx, sheets, open, unread, toggleRead, askDelete };
+}
+
+/** One conversation in the list: the desktop rail and the phone inbox. */
+export function ConvRow({ api, c, avatarSize = 40, phone = false }: { api: ChMessagesApi; c: ChConv; avatarSize?: number; phone?: boolean }) {
+  const { ctx, sheets, open, unread, toggleRead, askDelete } = useConvActions(api, c, phone);
   if (!phone) {
     return (
       <>

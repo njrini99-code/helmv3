@@ -1,6 +1,7 @@
 import type { ChMessagesApi } from './types';
 import type { MessagesApiCtx } from './ctx';
 import { haptic } from '../../../lib/haptics';
+import { pinsWithChannel } from '../inbox/model';
 import { markGolfMessagesAsRead } from '@/app/golf/actions/messages';
 import { getPreviewUrl } from '@/app/golf/actions/documents';
 import { chReport, chTrail } from '../../../lib/track';
@@ -14,7 +15,8 @@ import { completeAnnouncementTask, createEnrichedAnnouncement } from '@/app/golf
 export function useInboxApi(ctx: MessagesApiCtx): Pick<ChMessagesApi, 'pins' | 'typingByConv' | 'convs' | 'convsLoading' | 'convsError' | 'refetchConvs' | 'selectedId' | 'select' | 'searchMessages' | 'openHit' | 'focusMessageId' | 'foundMessageId' | 'messageFocused' | 'muteOf' | 'muteConversation' | 'setRead' | 'announcements' | 'annLoading' | 'annError' | 'refetchAnns' | 'selectedAnnId' | 'selectAnn' | 'announcementDetail' | 'openAnnouncementDocument' | 'acknowledge' | 'completeTask' | 'createAnnouncement'> {
   const { data, annError, annLoaded, announcementDetail, anns, attempt, badges, conversations, convs, error, focusMessageId, foundMessageId, loadAnns, loading, mark, muteConversation, muteOf, pins, refetch, rowMutes, searchMessages, select, selectedAnnId, selectedId, setAutoOpened, setFocusMessageId, setFoundMessageId, setSelectedAnnId, setSelectedId, shownConvs, toast, typingByConv } = ctx;
   return {
-      pins,
+      // The team's channel is pinned first and takes one of the three places (Q-11).
+      pins: pinsWithChannel(pins, shownConvs),
       typingByConv,
       convs: shownConvs,
       convsLoading: loading,

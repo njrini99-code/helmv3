@@ -39,6 +39,7 @@ export function Segmented<V extends string>({
   redraws = false,
   block = false,
   hook,
+  plate,
 }: {
   label: string;
   value: V;
@@ -51,6 +52,8 @@ export function Segmented<V extends string>({
   block?: boolean;
   /** A capture hook on each option (`data-ch`, with `data-v`); absent, none is drawn. */
   hook?: string;
+  /** `thumb` (Messages' filter, MOT-X-2): the chip slides for 360 ms on the overshooting CSS spring instead of the settle spring. */
+  plate?: 'thumb';
 }) {
   const reduced = useChReducedMotion();
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -58,7 +61,7 @@ export function Segmented<V extends string>({
   const [changing, startChange] = useTransition();
   const [chosen, setChosen] = useState<V | null>(null);
   const shown = changing && chosen !== null ? chosen : value;
-  useSlidePlate(well, '.is-on > .ch-seg__pill', shown, { reduced, ink: '.ch-seg__b' });
+  useSlidePlate(well, '.is-on > .ch-seg__pill', shown, { reduced, ink: '.ch-seg__b', tween: plate });
   const pick = (v: V) => {
     if (v === shown) return;
     haptic('select');
