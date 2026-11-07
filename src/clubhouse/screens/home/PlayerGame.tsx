@@ -1,6 +1,6 @@
 'use client';
 
-import { Pencil } from 'lucide-react';
+import { ChevronRight, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { useId, type ReactNode } from 'react';
 import type { ChPlayerHome, ChPlayerLeg, ChScoringPoint } from '../../data/player-home';
@@ -16,6 +16,7 @@ import { sgBaseline, type ChSgTour } from '../../lib/sg';
 import { monotonePath } from '../../lib/chart';
 import { useChSessionState } from '../../lib/session-state';
 import { ShsIcon, ShsPill, type ShsIconName } from '../stats/SummaryCard';
+import { MY_STATS } from './player-links';
 import '../../styles/stats-redesign.css';
 
 type Span = 5 | 10 | 20;
@@ -454,8 +455,49 @@ export const ownLegHref = (key: ChPlayerLeg['key']): string => `/golf/dashboard/
  * "Your game" behind clubhouse_stats_redesign_v1 (stats-home S-HOMEGAME): one card, a row per leg that opens its part. Strokes gained is
  * the season's and waits for its third round; the figures and sparks read the last ten rounds. Nothing is coloured until a difference is clear.
  */
-function YourGameCard({ legs, tour, covered }: { legs: ChPlayerHome['legs']; tour: ChSgTour; covered: boolean }) {
-  if (!legs) return null;
+/** The newest ten scores' mean, as My stats' default window reads it; null under two rounds. */
+export function lastTenAverage(points: readonly ChScoringPoint[]): { avg: number | null; n: number } {
+  const shown = points.slice(-10);
+  return { avg: shown.length >= 2 ? shown.reduce((a, p) => a + p.score, 0) / shown.length : null, n: shown.length };
+}
+
+/**
+ * Player Home's lead (dashboard cuts, 6): Your game under the greeting, opening on one line of scoring average and strokes gained over
+ * My stats' window, which links there. The figures' home is My stats; Home draws no meter of its own for them.
+ */
+export function YourGameLead({ data, covered }: { data: ChPlayerHome; covered: boolean }) {
+  const { avg, n } = lastTenAverage(data.scoring.points);
+  const sum =
+    data.scoring.error ? null : (
+      <Link href={MY_STATS} className="ch-shs-yg__sum ch-num">
+        <span>{n ? `Last ${n}` : 'Last 10'}</span>
+        <span>
+          <b>{avg == null ? NO_DATA : formatFixed(avg)}</b> avg
+        </span>
+        <span>
+          <b>{data.sgPerRound == null ? NO_DATA : formatSigned(data.sgPerRound)}</b> SG per round
+        </span>
+        <span className="ch-shs-yg__go">
+          My stats
+          <Icon icon={ChevronRight} size={15} />
+        </span>
+      </Link>
+    );
+  return <YourGameCard legs={data.legs} tour={data.tour} covered={covered} summary={sum} always />;
+}
+
+function YourGameCard({ legs, tour, covered, summary, always = false }: { legs: ChPlayerHome['legs']; tour: ChSgTour; covered: boolean; summary?: ReactNode; always?: boolean }) {
+  if (!legs && !always) return null;
+  if (!legs) {
+    return (
+      <section className="ch-shs-home ch-shs-yg" aria-labelledby="ch-ph-legs">
+        <div className="ch-shs-yg__h">
+          <h2 id="ch-ph-legs">Your game</h2>
+        </div>
+        {summary}
+      </section>
+    );
+  }
   const any = legs.rows.some((l) => l.value != null || l.needs);
   const anyEarly = legs.rows.some((l) => l.early);
   const anySg = legs.rows.some((l) => l.sg != null);
@@ -470,6 +512,7 @@ function YourGameCard({ legs, tour, covered }: { legs: ChPlayerHome['legs']; tou
         <h2 id="ch-ph-legs">Your game</h2>
         <span>Strokes gained {sgBaseline(tour).vs}</span>
       </div>
+      {summary}
       {legs.cacheError && (
         <div className="ch-shs-yg__notice">
           <RefreshNotice code="CH-2216" title="Some of your figures didn’t load" body="Scores, greens and putts are right; scrambling is missing." covered={covered} />

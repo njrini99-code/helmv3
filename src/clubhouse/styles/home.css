@@ -5678,3 +5678,57 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     padding-inline: 16px;
   }
 }
+
+/* Up next as one row on the player's Home (dashboard cuts, 6). */
+.ch-hm-nextrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 12px 8px 16px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+  color: var(--ch-text-primary);
+  text-decoration: none;
+}
+.ch-hm-nextrow__ic {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--ch-selected-tint);
+  color: var(--ch-green-600);
+}
+.ch-hm-nextrow__b {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.ch-hm-nextrow__b b {
+  overflow: hidden;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-hm-nextrow__k {
+  font: var(--ch-type-12);
+  letter-spacing: var(--ch-track-12);
+  color: var(--ch-text-secondary);
+}
+.ch-hm-nextrow__when {
+  flex: none;
+  font: var(--ch-type-13-medium);
+  letter-spacing: var(--ch-track-13);
+  color: var(--ch-text-secondary);
+}
+.ch-hm-nextrow__when.is-soon {
+  color: var(--ch-green-600);
+}
+.ch-hm-nextrow > svg {
+  flex: none;
+  color: var(--ch-text-tertiary);
+}

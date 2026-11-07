@@ -19,12 +19,12 @@ import { usePhoneHero } from '../../shell/phone-chrome';
 import { rebuiltHref } from '../../shell/nav';
 import { CoachAsks } from './CoachAsks';
 import { Countdown } from './Countdown';
-import { Today, UpNext, WeekStrip } from './HomePhone';
+import { Today, UpNext, UpNextRow, WeekStrip } from './HomePhone';
 import { SinceYouLooked } from './DayCard';
 import { noRoundsYet, playerFailedParts } from './model';
 import { OwnLiveCard } from './OwnLiveCard';
 import { TeammatesLiveCard } from './TeammatesLiveCard';
-import { PlayerGame } from './PlayerGame';
+import { PlayerGame, YourGameLead } from './PlayerGame';
 import { messageCoachHref, MY_STATS, postRoundHref, roundHref } from './player-links';
 import { GirViz, PuttsViz, SgViz } from './RoundViz';
 
@@ -65,10 +65,18 @@ export function PlayerHomePhone({ data, now: frozen, live, playerId, shs = false
           </>
         )}
         <PageRefreshNotice parts={failed} />
+        {/* Dashboard cuts, 6: with the redesign, Your game leads under the greeting and Up next is one row. */}
+        {shs && (
+          <SectionBoundary surface="home.game" label="Your game" code="CH-2217">
+            <YourGameLead data={data} covered={covered} />
+          </SectionBoundary>
+        )}
         <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
           {data.week.error ? (
             // On the sheet, not in the green card: inside it the notice took the card's ivory ink and its words vanished.
             <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. Try again." covered={covered} />
+          ) : data.next && shs ? (
+            <UpNextRow e={data.next} now={now} />
           ) : data.next ? (
             <UpNext e={data.next} now={now} kicker="Up next">
               {!data.next.allDay && <Countdown to={data.next.startIso} frozen={frozen} />}
@@ -117,7 +125,7 @@ export function PlayerHomePhone({ data, now: frozen, live, playerId, shs = false
         )}
         {/* P-14: what the coach changed on the schedule since this device last looked (changes only; a player sees no teammate's rounds here). */}
         <SinceYouLooked rounds={[]} event={null} changes={data.changes ?? []} onOpenRound={() => {}} />
-        {!data.week.error && !nothingAhead ? (
+        {!shs && !data.week.error && !nothingAhead ? (
           <SectionBoundary surface="home.week" label="This week" code="CH-2205">
             {/* The board's Today is a small label inside This week, not a section of its own. */}
             <WeekStrip days={data.week.days} note={data.weekNote}>
@@ -140,9 +148,11 @@ export function PlayerHomePhone({ data, now: frozen, live, playerId, shs = false
                 <Latest data={data.latest} covered={covered} />
               </SectionBoundary>
             )}
-            <SectionBoundary surface="home.game" label="Your scoring" code="CH-2217">
-              <PlayerGame data={data} phone covered={covered} shs={shs} />
-            </SectionBoundary>
+            {!shs && (
+              <SectionBoundary surface="home.game" label="Your scoring" code="CH-2217">
+                <PlayerGame data={data} phone covered={covered} shs={shs} />
+              </SectionBoundary>
+            )}
           </>
         )}
       </div>

@@ -233,6 +233,26 @@ export function UpNext({ e, now, children, kicker }: { e: ChHomeEvent; now: Date
   );
 }
 
+/** Up next as one row (dashboard cuts, 6): the type, the title, when. The event opens on Calendar; Today lists the rest of the day. */
+export function UpNextRow({ e, now }: { e: ChHomeEvent; now: Date | null }) {
+  const t = useChClockText();
+  const when = whenLabel(e, now);
+  return (
+    <Link href={eventHref(e)} className="ch-hm-nextrow" onClick={() => chTrail('home open next event')}>
+      <span className="ch-hm-nextrow__ic" aria-hidden="true">
+        <Icon icon={TYPE_ICON[e.type]} size={16} />
+      </span>
+      <span className="ch-hm-nextrow__b">
+        <span className="ch-hm-nextrow__k">Up next · {TYPE_LABEL[e.type]}</span>
+        <b>{e.title}</b>
+      </span>
+      <span className={'ch-hm-nextrow__when ch-num' + (when.soon ? ' is-soon' : '')}>{t(when.text)}</span>
+      <Icon icon={ChevronRight} size={17} />
+      <LinkPending />
+    </Link>
+  );
+}
+
 const QUICK: Array<ChHomeEvent['type']> = ['practice', 'qualifier', 'tournament', 'meeting'];
 
 /** Nothing ahead: what the card will hold, and the quickest way to add the first event. */
