@@ -45,7 +45,7 @@
   cursor: pointer;
   scroll-snap-align: center;
   touch-action: manipulation;
-  transition: background var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
 }
 /* The tap area reaches 44 x 44 without changing how the chip is drawn. */
 .ch-hv-chip::after {

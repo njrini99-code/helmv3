@@ -588,7 +588,7 @@
   line-height: var(--ch-lead-tight);
   text-align: left;
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 /* On the green card: a champagne ring, as the sidebar's (the global green one is 1.25:1 here), drawn 2px in: the rows
    stack 2px apart. */
@@ -668,7 +668,7 @@
   color: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-sgm + .ch-sgm::before {
   position: absolute;
@@ -754,7 +754,7 @@
   box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
   color: inherit;
   text-align: left;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-lg__r > * {
   align-self: center;
@@ -2363,7 +2363,7 @@
     margin: 0 -6px;
     padding: 0 6px;
     border-radius: var(--ch-radius-md);
-    transition: background var(--ch-dur-quick) var(--ch-ease);
+    transition: background-color var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-stm-leg.ch-sv-row[data-pinned] {
     background: var(--ch-bg-inset);
@@ -3036,7 +3036,7 @@
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.28);
   cursor: pointer;
   touch-action: manipulation;
-  transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-sf__chip:hover {
@@ -3916,7 +3916,7 @@
     margin-inline: -12px;
     padding: 8px 12px;
     border-radius: var(--ch-radius-md);
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   /* The tint waits a beat after the finger lands, so a scroll that starts on a row never flashes it (CH-1606). */
   .ch-stm .ch-stm-row[data-ch-pressed] {
@@ -3957,7 +3957,7 @@
     align-self: flex-start;
     margin-left: -16px;
     border-radius: var(--ch-radius-md);
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   /* All N rounds and the Message key answer a press as a ghost button and a key do: a tint, and the shrink every
      button takes (`data-ch-press`, CH-1606). */
@@ -3972,7 +3972,7 @@
     }
   }
   .ch-stm .ch-spm-head__msg {
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-stm .ch-spm-head__msg[data-ch-pressed] {
     background: var(--ch-green-50);
@@ -4057,7 +4057,7 @@
     margin-inline: -12px;
     padding-inline: 12px;
     border-radius: var(--ch-radius-md);
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-stm .ch-gd.is-phone .ch-gm-how > summary[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
@@ -4679,7 +4679,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-stm.is-team .ch-stm-leg > span:first-child {
     overflow: hidden;
@@ -6535,7 +6535,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   }
 }
 .ch-st[data-canopy] .ch-zt .ch-tr:not(.ch-tr--h) {
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 
 /* Development: each focus area or goal as a track from where it started to its target, with the current value marked on it. */
@@ -6679,7 +6679,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 .ch-st[data-canopy] .ch-lb__r,
 .ch-st[data-canopy] .ch-zrow {
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
   border-radius: var(--ch-radius-md);
 }
 @media (hover: hover) {
@@ -6904,7 +6904,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   border-radius: var(--ch-radius-md);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-sv-pb__col[data-active] {
   background: color-mix(in srgb, var(--ch-champagne-500) 12%, transparent);
@@ -7172,7 +7172,7 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
   border-radius: var(--ch-radius-sm);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-sv-mix-key li[data-active] {
   background: var(--ch-bg-hover);
@@ -7392,7 +7392,7 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
   margin-top: var(--ch-tr-none-gap);
 }
 .ch-sv-tr__r.ch-sv-row {
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-sv-tr__r.ch-sv-row[data-active] {
   background: color-mix(in srgb, var(--ch-champagne-500) 12%, transparent);

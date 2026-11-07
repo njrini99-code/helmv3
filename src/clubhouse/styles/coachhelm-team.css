@@ -387,7 +387,7 @@ html[data-fw-theme='dark'] .ch-htb {
   text-align:center!important;
   font: var(--ch-type-13-medium);
   color:var(--ch-tb-f-ink-2);
-  transition:background var(--ch-dur-base) var(--ch-tb-ease),color var(--ch-dur-base) var(--ch-tb-ease);
+  transition:background-color var(--ch-dur-base) var(--ch-tb-ease),color var(--ch-dur-base) var(--ch-tb-ease);
 }
 .ch-htb .stchips button b.is-gain {
   color:var(--ch-chart-gain);

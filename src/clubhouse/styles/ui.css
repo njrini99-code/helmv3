@@ -21,7 +21,7 @@
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
-  transition: background-color var(--ch-dur-quick) var(--ch-ease), background-position var(--ch-dur-base) var(--ch-ease),
+  transition: background-color var(--ch-dur-quick) var(--ch-ease),
     box-shadow var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-root .ch-btn:focus-visible {
@@ -760,7 +760,7 @@
   font: var(--ch-type-13-medium);
   color: var(--ch-green-700);
   text-decoration: none;
-  transition: background var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-backlink:hover {
@@ -821,7 +821,7 @@
   padding-inline: 12px;
   border-radius: var(--ch-radius-md);
   cursor: pointer;
-  transition: background var(--ch-dur-press) var(--ch-ease);
+  transition: background-color var(--ch-dur-press) var(--ch-ease);
 }
 /* The tint waits a beat after the finger lands, so a scroll that starts on a row never flashes it; letting go clears it
    at once, since only the pressed state carries the delay (CH-1606). */

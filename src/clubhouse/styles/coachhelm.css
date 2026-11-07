@@ -523,7 +523,7 @@
   align-items: center;
   padding: 16px 4px;
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 /* CH-13602: hovering a row or a player tints it (quick). */
 @media (hover: hover) {
@@ -667,7 +667,7 @@
   align-items: center;
   padding: 12px;
   border-radius: var(--ch-radius-lg);
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-hl-pl:hover {
@@ -2037,7 +2037,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
   color: var(--ch-text-primary);
   text-align: start;
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-hl-plan__c b {
   font: var(--ch-type-14-strong);

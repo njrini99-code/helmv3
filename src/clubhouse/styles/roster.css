@@ -221,7 +221,7 @@
   background: transparent;
   color: var(--ch-text-tertiary);
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-rs-vt__b:hover {
@@ -529,7 +529,7 @@
   padding: 8px 12px;
   border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
   border-radius: var(--ch-radius-md);
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-rs-row:last-child {
   border-bottom: 0;
@@ -1056,7 +1056,7 @@ a.ch-rs-peek__dev:focus-visible,
   color: inherit;
   cursor: pointer;
   opacity: 0.7;
-  transition: background var(--ch-dur-quick) var(--ch-ease), opacity var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease), opacity var(--ch-dur-quick) var(--ch-ease);
 }
 /* H10: the 22px disc keeps its look; a 44pt hit area centred on it takes the tap (it overhangs the chip's padding). */
 .ch-rs-em__x::after {
@@ -1300,7 +1300,7 @@ a.ch-rs-peek__dev:focus-visible,
     text-align: left;
     cursor: pointer;
     touch-action: manipulation;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-rsm-row[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
@@ -1532,7 +1532,7 @@ a.ch-rs-peek__dev:focus-visible,
     font-variant-numeric: tabular-nums;
     color: var(--ch-green-700);
     text-decoration: none;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-rsm-panel__link[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
@@ -1705,7 +1705,7 @@ a.ch-rs-peek__dev:focus-visible,
     text-align: left;
     cursor: pointer;
     touch-action: manipulation;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-rsm-banner::before,
   .ch-rsm-banner::after {
@@ -1927,7 +1927,7 @@ a.ch-rs-peek__dev:focus-visible,
     text-decoration: none;
     cursor: pointer;
     touch-action: manipulation;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-rsm-act + .ch-rsm-act::before {
     position: absolute;
@@ -2120,7 +2120,7 @@ a.ch-rs-peek__dev:focus-visible,
       inset 0 1px 0 var(--ch-light-rim-soft),
       inset var(--ch-light-rim-x) 0 0 var(--ch-light-rim-soft);
     transform: none;
-    transition: background var(--ch-dur-quick) var(--ch-ease);
+    transition: background-color var(--ch-dur-quick) var(--ch-ease);
   }
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
@@ -2133,7 +2133,7 @@ a.ch-rs-peek__dev:focus-visible,
         inset 0 1px 0 var(--ch-light-rim-soft),
         inset var(--ch-light-rim-x) 0 0 var(--ch-light-rim-soft);
       transform: none;
-      transition: background var(--ch-dur-quick) var(--ch-ease);
+      transition: background-color var(--ch-dur-quick) var(--ch-ease);
     }
   }
   @media (hover: hover) {
@@ -2180,7 +2180,7 @@ a.ch-rs-peek__dev:focus-visible,
     transition:
       box-shadow var(--ch-dur-base) var(--ch-ease),
       transform var(--ch-dur-base) var(--ch-ease),
-      background var(--ch-dur-quick) var(--ch-ease);
+      background-color var(--ch-dur-quick) var(--ch-ease);
   }
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {

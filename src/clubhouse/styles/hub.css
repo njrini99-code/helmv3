@@ -910,7 +910,7 @@
   color: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-hb-file__open:hover {
@@ -2460,7 +2460,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 }
 .ch-hb-rsvp__list li {
   border-radius: var(--ch-radius-md);
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-hb-rsvp__list li:hover {

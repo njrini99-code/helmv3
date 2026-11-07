@@ -4,6 +4,7 @@ import { ArrowDown } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { CH_FADE_MS, chSpringCurve, CH_EASE, chSpringAt, CH_DUR, CH_SPRING_SETTLE_MS } from '../../lib/motion';
 import { Icon } from '../../ui/Icon';
+import { THREAD_SETTLE_MS } from './use-thread-anchor';
 
 const DATE_PILL_HIDE_MS = 1000;
 
@@ -62,16 +63,28 @@ export function ThreadJumpKey({ scroller, unseen, onJump }: { scroller: RefObjec
     const el = scroller.current;
     if (!el) return;
     let frame = 0;
+    // While a thread opens its messages land and it pins itself to its end (useThreadAnchor's settle), so being far from the end then means
+    // nothing, and the key flashed in on every open. It reads once the settle is over, or as soon as the reader touches the thread.
+    let settling = el.scrollTop === 0 && el.scrollHeight <= el.clientHeight;
     const read = () => {
       frame = 0;
-      setFar(el.scrollHeight - el.clientHeight - el.scrollTop > el.clientHeight * 0.9);
+      if (!settling) setFar(el.scrollHeight - el.clientHeight - el.scrollTop > el.clientHeight * 0.9);
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(read);
     };
+    const settled = () => {
+      settling = false;
+      read();
+    };
+    const timer = settling ? window.setTimeout(settled, THREAD_SETTLE_MS) : 0;
+    const input = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const;
+    for (const t of input) el.addEventListener(t, settled, { passive: true, once: true });
     el.addEventListener('scroll', onScroll, { passive: true });
     read();
     return () => {
+      clearTimeout(timer);
+      for (const t of input) el.removeEventListener(t, settled);
       el.removeEventListener('scroll', onScroll);
       if (frame) cancelAnimationFrame(frame);
     };
@@ -149,8 +162,10 @@ export function useSpringToEnd(scroller: RefObject<HTMLElement | null>, toEnd: (
 
 /**
  * The thread making room (M-MSG-07b, B7): whatever the commit added to the list (the new row, and a date pill or a receipt with
- * it, or the typing row) has its full height at frame one, and the thread moves up by that much by transform only. Each change adds
- * its own animation, so two in a row stack rather than restart. Only for a reader at the end: anyone reading further up stays put.
+ * it, or the typing row) has its full height at frame one, and the thread moves up by that much by transform only. Two in a row fold:
+ * the new move starts from where the running one has the list, one animation at a time, so it stays on the compositor (an additive
+ * animation can't). Only for a reader at the end: anyone reading further up stays put. A thread's first messages landing are not room to
+ * make: the thread opens at rest.
  * Skipped when reduced. Runs after useThreadAnchor, which has already pinned the thread, in the same commit.
  */
 export function useThreadMakeRoom(scroller: RefObject<HTMLElement | null>, count: number, enabled: boolean, reduced: boolean): void {
@@ -175,7 +190,7 @@ export function useThreadMakeRoom(scroller: RefObject<HTMLElement | null>, count
     const now = list.offsetHeight;
     const was = height.current;
     height.current = now;
-    if (reduced || !list.animate || was == null) return;
+    if (reduced || !list.animate || was == null || before === 0) return;
     const d = Math.max(-s.clientHeight, Math.min(s.clientHeight, now - was));
     if (Math.abs(d) < 1) return;
     const moved = list.getAnimations?.().length ? new DOMMatrixReadOnly(getComputedStyle(list).transform).m42 : 0;
@@ -185,7 +200,8 @@ export function useThreadMakeRoom(scroller: RefObject<HTMLElement | null>, count
     const row = list.lastElementChild as HTMLElement | null;
     // The spring follows the cause (07b): your send on `send`, a reply on `reveal`, a typing row on `pop`, a removal on `smooth`.
     const curve = chSpringCurve(count > before ? (row?.classList.contains('is-mine') ? 'send' : 'reveal') : d > 0 ? 'pop' : 'smooth');
-    list.animate([{ transform: `translateY(${d}px)` }, { transform: 'none' }], { duration: curve.ms, easing: curve.linear, composite: 'add' });
+    for (const running of list.getAnimations?.() ?? []) running.cancel();
+    list.animate([{ transform: `translateY(${d + moved}px)` }, { transform: 'none' }], { duration: curve.ms, easing: curve.linear });
   });
 }
 

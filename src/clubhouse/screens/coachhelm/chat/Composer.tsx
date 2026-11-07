@@ -191,7 +191,8 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
   // Grows with the text, up to the cap.
   const fit = useCallback(() => {
     const el = box.current;
-    if (!el) return;
+    // Where the browser sizes a field to its text (`field-sizing`, ask CSS), nothing is written per key. Never animated either way.
+    if (!el || CSS.supports?.('field-sizing', 'content')) return;
     el.style.height = 'auto';
     el.style.height = `${Math.min(el.scrollHeight, MAX_HEIGHT)}px`;
   }, []);

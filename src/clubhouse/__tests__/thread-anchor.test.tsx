@@ -145,17 +145,38 @@ describe('useThreadAnchor · layout changes', () => {
   });
 
   it('P007 D1: a thread whose scroll is reset while it settles (a push during hydration) goes back to its end, until the reader touches it', () => {
-    vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'requestAnimationFrame', 'cancelAnimationFrame'] });
     try {
       render(<Thread convId="a" count={10} />);
+      act(() => void vi.advanceTimersByTime(20));
       geometry(2000, 0);
+      act(() => void el.dispatchEvent(new Event('scroll')));
       act(() => void vi.advanceTimersByTime(50));
       expect(el.scrollTop).toBe(2000);
       act(() => void el.dispatchEvent(new Event('wheel')));
       geometry(2000, 300);
+      act(() => void el.dispatchEvent(new Event('scroll')));
       act(() => void vi.advanceTimersByTime(50));
       expect(el.scrollTop).toBe(300);
     } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('P007 D1: the settle ends on its own, and runs no frame loop while it lasts', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'requestAnimationFrame', 'cancelAnimationFrame'] });
+    const raf = vi.spyOn(window, 'requestAnimationFrame');
+    try {
+      render(<Thread convId="a" count={10} />);
+      act(() => void vi.advanceTimersByTime(300));
+      expect(raf.mock.calls.length).toBeLessThanOrEqual(1);
+      act(() => void vi.advanceTimersByTime(500));
+      geometry(2000, 300);
+      act(() => void el.dispatchEvent(new Event('scroll')));
+      act(() => void vi.advanceTimersByTime(50));
+      expect(el.scrollTop).toBe(300);
+    } finally {
+      raf.mockRestore();
       vi.useRealTimers();
     }
   });
