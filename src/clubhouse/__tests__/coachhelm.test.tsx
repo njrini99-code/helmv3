@@ -1968,6 +1968,14 @@ describe('CoachHelm route', () => {
     expect(getTopInsightsForPlayers).not.toHaveBeenCalled();
   });
 
+  it('130803 a player needs no team: their Your week is built from the session’s own player id', async () => {
+    session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
+    teamOf.current = null;
+    const out = (await ClubhouseCoachHelmRoute()) as { props: { children: { props: { playerId?: string } } } } | null;
+    expect(out).not.toBeNull();
+    expect(JSON.stringify(out)).toContain('pl-jonah');
+  });
+
   const noView = { searchParams: Promise.resolve({}) };
   it('130805 the page gives a Clubhouse coach or player the new screen, and Fairway’s page is unchanged everywhere else', async () => {
     const isRoute = (el: unknown) => (el as { type?: unknown } | null)?.type === ClubhouseCoachHelmRoute;

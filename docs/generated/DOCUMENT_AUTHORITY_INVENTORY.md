@@ -373,16 +373,16 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | Dead |
 | --- | --- | --- | --- | --- | --- |
-| `design-refresh/ask/02-PLAN.md` | current | - | - | - | - |
+| `design-refresh/ask/02-PLAN.md` | current | - | - | - | 1 |
 | `design-refresh/classes-roster-home/02-PLAN.md` | current | - | - | - | - |
-| `design-refresh/coachhelm-lenses/02-PLAN.md` | current | - | - | - | 4 |
-| `design-refresh/coachhelm-read/02-PLAN.md` | current | - | - | - | 1 |
+| `design-refresh/coachhelm-lenses/02-PLAN.md` | current | - | - | - | 5 |
+| `design-refresh/coachhelm-read/02-PLAN.md` | current | - | - | - | 2 |
 | `design-refresh/coachhelm-team/02-PLAN.md` | current | - | - | - | 2 |
 | `design-refresh/coachhelm/02-PLAN.md` | current | - | - | - | 2 |
 | `design-refresh/completeness/practice-plan.md` | current | - | - | - | - |
 | `design-refresh/completeness/wiring-practice-plan.md` | current | - | - | - | - |
 | `design-refresh/messages/02-PLAN.md` | current | - | - | - | - |
-| `design-refresh/practice-plan/02-PLAN.md` | current | - | - | - | 3 |
+| `design-refresh/practice-plan/02-PLAN.md` | current | - | - | - | 4 |
 | `design-refresh/practice-plan/COACHHELM_PRACTICE_PLAN.md` | current | - | - | - | - |
 | `design-refresh/prerequisites/N-00-practice-plan-builder.md` | current | - | - | yes | 13 |
 | `design-refresh/stats-home/02-PLAN.md` | current | - | - | - | - |
@@ -746,7 +746,7 @@ them would bury everything above.
 | `design-refresh/coachhelm-lenses/03-DATA-CHECKS.md` | current | - | - | - | - |
 | `design-refresh/coachhelm-lenses/04-FIDELITY-SPEC.md` | current | - | - | yes | - |
 | `design-refresh/coachhelm-lenses/05-SCREENS.md` | current | - | - | - | - |
-| `design-refresh/coachhelm-lenses/06-SCREEN-SPECS.md` | current | - | - | - | - |
+| `design-refresh/coachhelm-lenses/06-SCREEN-SPECS.md` | current | - | - | - | 1 |
 | `design-refresh/coachhelm-lenses/07-MOTION.md` | current | - | - | - | - |
 | `design-refresh/coachhelm-lenses/08-ACCEPTANCE.md` | current | - | - | - | - |
 | `design-refresh/coachhelm-lenses/capture/contrast-table.md` | current | - | - | - | - |
@@ -754,7 +754,7 @@ them would bury everything above.
 | `design-refresh/coachhelm-read/03-DATA-CHECKS.md` | current | - | - | - | - |
 | `design-refresh/coachhelm-read/04-FIDELITY-SPEC.md` | current | - | - | - | - |
 | `design-refresh/coachhelm-read/05-SCREENS.md` | current | - | - | - | - |
-| `design-refresh/coachhelm-read/06-SCREEN-SPECS.md` | current | - | - | - | - |
+| `design-refresh/coachhelm-read/06-SCREEN-SPECS.md` | current | - | - | - | 1 |
 | `design-refresh/coachhelm-read/07-MOTION.md` | current | - | - | - | - |
 | `design-refresh/coachhelm-read/08-ACCEPTANCE.md` | current | - | - | - | - |
 | `design-refresh/coachhelm-team/01-BRIEF.md` | current | - | - | - | - |
@@ -1047,6 +1047,8 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-06-sweep-numbers.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-06-sweep-shared.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-06-sweep-team.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-07-coachhelm-flags.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-07-consolidate-lanes.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-07-pre-refresh.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-07-slide-plate.md` | current | - | - | - | - |
@@ -1693,7 +1695,7 @@ them would bury everything above.
 | `docs/clubhouse/phone/settings.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/shell-gestures.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/staff-invite.md` | current | - | - | - | - |
-| `docs/clubhouse/phone/stats-player.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/stats-player.md` | current | - | - | - | 1 |
 | `docs/clubhouse/phone/stats-team.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/team-hub.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/tournaments.md` | current | - | - | - | - |

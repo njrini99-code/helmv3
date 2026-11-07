@@ -20,6 +20,7 @@ import {
   ASK_MSGS_LONG,
   ASK_MSGS_PARTIAL,
   ASK_MSGS_READFAIL,
+  ASK_MSGS_REJECTED,
   ASK_MSGS_RECEIPT,
   ASK_MSGS_RECEIPT_FAILED,
   ASK_MSGS_THINKING,
@@ -379,6 +380,13 @@ describe('a thread as it opens', () => {
 });
 
 /** The Ask v2 answer card is the only card: its Confirm and Cancel answer the approval by its id (the old action card is retired with coachhelm_ask_v2). */
+describe('CH-13252 a rejected answer', () => {
+  it('shows its one note on the answer card', () => {
+    show({ messages: ASK_MSGS_REJECTED });
+    expect(code('CH-13252')).not.toBeNull();
+  });
+});
+
 describe('CH-13951 the confirm card inside the thread', () => {
   it('Confirm answers the approval by its id, once, and Cancel answers it as denied', async () => {
     const { p } = show({ messages: ASK_MSGS_ACTION });
