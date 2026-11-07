@@ -2,11 +2,12 @@
 
 Traced on staging against Cole Bennett's rows. Each number is reproduced from
 his rounds by hand, so these are causes, not guesses.
-
-| Screen | Showed | Helper | Window | Round filter | Rounds behind it |
-| --- | --- | --- | --- | --- | --- |
-| His Home | −8.1 (tee −1.4, app −4.4) | `summarizePlayer` | Season, from Aug 1 | His own rows, practice out | 11 with shots |
-| Stats, Last 10 | −7.3 | `summarizeWindow` | Newest 10 | His own rows, practice out | 8 with shots of 10 |
+- His Home: −8.1 (tee −1.4, app −4.4). `summarizePlayer`, season from Aug 1,
+  his own rows, practice out, 11 rounds with shots.
+- Stats, Last 10: −7.3. `summarizeWindow`, newest 10, his own rows, practice
+  out, 8 with shots of 10.
+- Coach Team view (QA build): +0.5 (tee +2.5, app +1.9). `figureOver`, season,
+  coach-visible rows, practice in, 3 Aug 2 practice rounds.
 | Coach Team view (QA build) | +0.5 (tee +2.5, app +1.9) | `figureOver` | Season | Coach-visible rows, practice in | 3 Aug 2 practice rounds |
 
 Baseline is not a cause: all three read the stored `strokes_gained_*` columns.
@@ -16,7 +17,8 @@ Baseline is not a cause: all three read the stored `strokes_gained_*` columns.
 1. **Three windows.** Home was the season, Stats the newest ten, Team view the
    season as a coach could see it. Now `lastTenRounds` in `figure-window.ts`.
 2. **Three filters and three calculations.** The QA build's Team view kept
-   practice. Now `roundsForFigures` everywhere and `sgOver` in `stats-weight.ts`.
+   practice. Now `roundsForFigures` everywhere and `sgOver` in
+`stats-weight.ts`.
 3. **Two sets of rows, which is why coach screens stop at Sep 26.** It is not a
    `round_type` filter. Coach and player screens both load by `player_id`
    (`loadSeasonRounds`), so RLS decides what each sees. 17 of Cole's completed
@@ -29,7 +31,8 @@ Baseline is not a cause: all three read the stored `strokes_gained_*` columns.
    reads only the Demo rows.
 
    Staging had lost the Guilford team, so its rounds pointed at nothing. It was
-   restored on staging on 2026-11-07 (the team, its 3 qualifiers and Nick's staff
+   restored on staging on 2026-11-07 (the team, its 3 qualifiers and Nick's
+staff
    row, row ids in the audit kit's `runs/tonight/writes.jsonl`) rather than
    re-stamping the rounds. Completed rounds are protected from edits by a
    database trigger in any case.

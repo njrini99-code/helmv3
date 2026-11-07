@@ -12,5 +12,6 @@ Held items:     none
 ```
 
 `useSlidePlate` moves a plate with a translate and its width. The scale it used
-squashed the segmented pill's corners mid-glide. It serves Segmented, the section
+squashed the segmented pill's corners mid-glide. It serves Segmented, the
+section
 strip, the hole map, Team Hub's tabs and the Stats tabs.
