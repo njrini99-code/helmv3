@@ -5125,16 +5125,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   background: var(--ch-separator);
   content: '';
 }
-.ch-dh-rows--board {
-  --ch-dh-inset: 56px;
-}
-.ch-dh-rows--board.is-unplaced {
-  --ch-dh-inset: 16px;
-}
-.ch-dh-rows--board > li > .ch-num:last-child {
-  font: var(--ch-type-15-strong);
-  letter-spacing: var(--ch-track-15);
-}
 .ch-dh-rows--rounds > li {
   min-height: 64px;
 }
@@ -5212,22 +5202,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   font: var(--ch-type-12);
   letter-spacing: var(--ch-track-12);
   color: var(--ch-text-secondary);
-}
-.ch-dh-time {
-  flex: none;
-  min-width: 48px;
-  font: var(--ch-type-15-strong);
-  letter-spacing: var(--ch-track-15);
-  color: var(--ch-text-primary);
-  white-space: nowrap;
-}
-.ch-dh-rank {
-  flex: none;
-  width: 22px;
-  text-align: center;
-  font: var(--ch-type-13-strong);
-  letter-spacing: var(--ch-track-13);
-  color: var(--ch-crh-ink4);
 }
 /* Later today and Since you last looked sit in the card that holds them, as every other section on the lane's Home (06 11). */
 [data-ch-crh='on'] :is(.ch-hm-later .ch-hm-tl, .ch-hm-since__l) {
@@ -5406,9 +5380,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     font: var(--ch-type-13-strong);
     color: var(--ch-green-600);
   }
-  .ch-dh-rows--agenda li > .ch-hm-now {
-    margin-inline-start: auto;
-  }
   .ch-h-main[data-ch-crh='on'] {
     gap: 16px;
     padding: 24px 32px 40px;
@@ -5490,19 +5461,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     height: var(--ch-hairline-w);
     background: var(--ch-separator);
     content: '';
-  }
-  .ch-dh-rows--agenda li {
-    min-height: 56px;
-  }
-  .ch-dh-rows--agenda i {
-    flex: none;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    box-shadow: inset 0 0 0 2px var(--ch-green-500);
-  }
-  .ch-dh-rows--agenda i.is-next {
-    background: var(--ch-green-500);
   }
   .ch-h-main[data-ch-crh='on'] .ch-hm-form,
   .ch-h-main[data-ch-crh='on'] .ch-dh-failed {
