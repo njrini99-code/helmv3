@@ -58,7 +58,7 @@ export function Segmented<V extends string>({
   const [changing, startChange] = useTransition();
   const [chosen, setChosen] = useState<V | null>(null);
   const shown = changing && chosen !== null ? chosen : value;
-  useSlidePlate(well, '.is-on > .ch-seg__pill', shown, { reduced });
+  useSlidePlate(well, '.is-on > .ch-seg__pill', shown, { reduced, ink: '.ch-seg__b' });
   const pick = (v: V) => {
     if (v === shown) return;
     haptic('select');

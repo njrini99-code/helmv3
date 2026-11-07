@@ -2347,7 +2347,8 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 2px;
-  height: 42px;
+  /* Each segment a thumb's height (44pt) inside the well's 4px padding. */
+  height: 52px;
   padding: 4px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-well-soft-bg);

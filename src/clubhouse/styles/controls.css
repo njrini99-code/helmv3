@@ -36,8 +36,9 @@
   text-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
   cursor: pointer;
   touch-action: manipulation;
-  /* The label's colour swaps as the pill lands, not during the glide: a colour halfway measured under 4.5:1 on either ground. */
-  transition: color 0s linear var(--ch-dur-quick), transform var(--ch-dur-quick) var(--ch-ease),
+  /* The label's ink swaps in one step as the pill crosses it, not fading through the glide (a colour halfway measures under 4.5:1 on either
+     ground). useSlidePlate sets each label's moment from the glide it starts; this delay is only what a change with no glide would wait. */
+  transition: color 0s linear var(--ch-dur-press), transform var(--ch-dur-quick) var(--ch-ease),
     background-color var(--ch-dur-press) var(--ch-ease);
 }
 .ch-seg--lg .ch-seg__b {
