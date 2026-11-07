@@ -87,11 +87,9 @@ Where things live:
   `?state=young|partsfailed|empty|norounds|failed|off|loading`,
   `&q=in-slope|in-pen|in-brk|in-dbl` for the read it opens on);
   `/clubhouse-preview/coachhelm` (the coach;
- 
-`?state=assigned|empty|noroster|failed|pulsefailed|quiet|off|loading|failwrites|failundo|duplicate`)
+  `?state=assigned|empty|noroster|failed|pulsefailed|quiet|off|loading|failwrites|failundo|duplicate`)
   and `/clubhouse-preview/coachhelm-player`
- 
-(`?state=empty|norounds|working|failed|off|loading|proposed|failproposal|proposalsfailed`)
+  (`?state=empty|norounds|working|failed|off|loading|proposed|failproposal|proposalsfailed`)
 
 Accept and Decline (the player's answer to a proposed focus area) go through
 `useAction` as well, and confirm in place: the follow-up (the "Started" or
@@ -350,7 +348,7 @@ in place.
 | CH-13989 | Retired 2026-11-07 (Dashboard cuts). Brief: a section's read failed | "Part of the brief didn't load" naming the sections; the rest draws, never an empty section | `CoachBrief`, `loadCoachBrief` | coachhelm-coach-brief.test › CH-13989 |
 | CH-13999 | Retired 2026-11-07 (Dashboard cuts). Brief: CoachHelm is off for the team | The off page with the team's reason when it gave one; nothing is read | `CoachBrief`, `briefGate` | coachhelm-coach-brief.test › CH-13999 |
 | CH-13997 | Retired 2026-11-07 (Dashboard cuts). Brief: a read it is made from failed | The didn't-load notice, never an empty brief | `CoachBrief`, `loadCoachBrief` | coachhelm-coach-brief.test › CH-13997 |
-| CH-13998 | /intelligence and its old sub-links | With the flag on: Signals on This week, patterns on Team patterns, Players on Working on, Effectiveness on the track record; `?player=` the board on that player, `view=chat` Ask. Off: the board | `intelligence/layout.tsx`, `intelligenceTarget` | alias.test › CH-13998 |
+| CH-13998 | /intelligence and its old sub-links | The board, flag on or off, since the Brief went (Dashboard cuts, 2026-11-07); `?player=` the board on that player, `view=chat` Ask. Before: with the flag on, the Brief's parts. Off: the board | `intelligence/layout.tsx`, `intelligenceTarget` | alias.test › CH-13998 |
 | CH-13995 | Coach: Team patterns (flag `coachhelm_team_pattern_v1`) | Under the program pulse, up to four rows: a read shared by at least 3 players and 30% of the players with enough rounds, each at Likely or above, with how many players, the team strokes a round at stake and the practice block; a row opens to each player's number and ladder word. A counted line says how many more reads are shared by too few players. No row: "No read is shared by enough players to call a team pattern." Off, or a failed read: no card. Coach only | `TeamPatterns` in `CoachBoard`, `toChTeamPatterns` | coachhelm-team-pattern.test › draws the rows |
 | CH-13916 | Player: their own Course plan (chs-21 / par-14, `coachhelm_course_plan_v1`), offered by the loader while the flag is on | A flush section at the foot of the Board's side column (under the board's empty state when there are no reads): "Course plan", "A plan from your own rounds on a course you’ve played three times or more." and Pick a course (secondary). Nothing is read until it is tapped; then their courses with three or more rounds, as chips. The reads take no player id: the server reads the signed-in player's own `golf_players` row (a coach, or a user with no player row, is refused). Read only | `MyCoursePlan`, `listMyCoursePlanCourses`, `getMyCoursePlan`, `loadPlayerCoachHelm` (`coursePlan`) | my-course-plan.test; coachhelm-course-plan.test (actions) |
 | CH-13917 | Player: the plan for the course they picked | "At Pine Hollow", up to three lines in their voice ("4 and 11: aim at the left half off the tee. All 6 tee shots there missed right."), or "Nothing here has cost you a stroke a round yet across your 3 rounds.", and below six rounds "From your 3 rounds here, so take it as a reminder, not a read." Never the coach's copy (no "Plan:" lines, no Copy), no ladder word, never a club | `PlanLines` in `MyCoursePlan`, `buildCoursePlan` (`player`) | my-course-plan.test; build-plan.test |
