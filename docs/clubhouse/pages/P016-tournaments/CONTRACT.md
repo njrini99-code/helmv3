@@ -101,6 +101,8 @@ no rounds to link, and so on) are its lane's rows.
 | 160417 | CH-16619 | `NOBODY_IS_ON_THE_COURSE` | Nobody is on the course |
 | 160418 | CH-16352 | `HOME_NO_EVENT_IN_THE_SEASON_NOTHING_2` | Home: no event in the season, nothing failed (P-5 4.11.1; replaces CH-16310) |
 | 160419 | CH-16338 | `LINK_ROUNDS_NO_GOLFHELM_ROUND_IS_WAITING` | Link rounds: no GolfHelm round is waiting to be linked (the read worked) |
+| 160420 | CH-16362 | `LINEUP_THE_TEAM_HAS_NO_PLAYERS_ON` | Lineup: the team has no players on its roster (the read worked) |
+| 160421 | CH-16363 | `LINEUP_A_PLAYER_IN_THE_DRAFT_IS` | Lineup: a player in the draft is injured, out for academics, not travelling, or has left the team |
 
 ## 05 — Validation
 
@@ -141,6 +143,10 @@ flags and its lane's rows.
 | 160620 | CH-16060 | `EDIT_EVENT_THE_SAVE_IS_REFUSED` | Edit event: the save is refused (stale, a round with scores, an out-of-order round, not a coach) |
 | 160621 | CH-16061 | `EDIT_EVENT_THE_CHANGES_ARE_SAVED` | Edit event: the changes are saved |
 | 160622 | CH-16238 | `LINK_ROUNDS_THE_CANDIDATE_ROUNDS_READ_FAILS` | Link rounds: the candidate rounds read fails (`errors.candidates`) |
+| 160623 | CH-16062 | `LINEUP_SAVING_THE_DRAFT_FAILS_OR_IS` | Lineup: saving the draft fails or is refused (the event changed, the lineup is locked, too many players) |
+| 160624 | CH-16063 | `LINEUP_PUBLISHING_FAILS_OR_IS_REFUSED` | Lineup: publishing fails or is refused (the save before it is refused, or the publish itself) |
+| 160625 | CH-16064 | `LINEUP_LOCKING_FAILS_OR_IS_REFUSED` | Lineup: locking fails or is refused |
+| 160626 | CH-16262 | `LINEUP_THE_ROSTER_READ_FAILS` | Lineup: the roster read fails (`errors.roster`) |
 
 ## 07 — Network / offline
 
@@ -204,6 +210,7 @@ warning haptic. Restore is the safe direction and doesn't ask.
 | --- | --- | --- | --- |
 | 161101 | CH-16550 | `STOP_TRACKING_FROM_THE_DESKS_TOURNAMENT_MENU` | Stop tracking, from the desk's tournament menu (P-5) |
 | 161102 | CH-16551 | `CANCEL_TOURNAMENT_FROM_THE_DESKS_TOURNAMENT_MENU` | Cancel tournament, from the desk's tournament menu (P-5; the calendar's CH-6541) |
+| 161103 | CH-16560 | `LOCK_THE_LINEUP_FROM_THE_LINEUP_BUILDER` | Lock the lineup, from the lineup builder |
 
 ## 12 — State preservation
 

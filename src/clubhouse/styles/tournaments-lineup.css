@@ -44,3 +44,149 @@
 .ch-tour-lu-form.is-phone .ch-tour-lu-form__actions .ch-btn {
   width: 100%;
 }
+
+/* Lineup builder: the spots, the alternate and individuals, and the roster with each player's form. A single column on
+   the page's measure; on the phone every key is 44px and the rows stack. */
+.ch-tour-lu-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ch-space-2);
+  margin-top: var(--ch-space-2);
+}
+.ch-tour-lu-hint {
+  margin: 0;
+  font: var(--ch-type-14);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-lu-body {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  min-width: 0;
+  max-width: var(--ch-measure-reading);
+}
+.ch-tour.is-phone .ch-tour-lu-body {
+  gap: 20px;
+}
+.ch-tour-lu-notes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ch-tour-lu-note {
+  padding: 10px 14px;
+  border-radius: var(--ch-radius-md);
+  font: var(--ch-type-13);
+  background: var(--ch-warning-100);
+  color: var(--ch-text-primary);
+}
+.ch-tour-lu-note.is-block {
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-warning-600);
+}
+.ch-tour-lu-slots,
+.ch-tour-lu-roster {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-elevation-reading);
+}
+.ch-tour-lu-slot,
+.ch-tour-lu-r {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+.ch-tour-lu-slot + .ch-tour-lu-slot,
+.ch-tour-lu-r + .ch-tour-lu-r {
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
+}
+.ch-tour-lu-slot__n {
+  flex: none;
+  width: 24px;
+  font: var(--ch-type-14-strong);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-lu-slot__who,
+.ch-tour-lu-r__who {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ch-tour-lu-r__n {
+  font: var(--ch-type-14-strong);
+  color: var(--ch-text-primary);
+}
+.ch-tour-lu-r__act {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.ch-tour-lu-muted {
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-lu-lbl {
+  font: var(--ch-type-13-medium);
+  color: var(--ch-text-secondary);
+}
+.ch-tour-lu-form-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+.ch-tour-lu-strip {
+  display: inline-flex;
+  gap: 8px;
+  font: var(--ch-type-13);
+  color: var(--ch-text-primary);
+}
+.ch-tour-lu-strip .is-out {
+  color: var(--ch-text-tertiary);
+}
+.ch-tour-lu-extra {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ch-tour-lu-extra__row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ch-tour-lu-extra__ind {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ch-tour-lu-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 12px;
+  border-radius: 999px;
+  background: var(--ch-bg-selected);
+  font: var(--ch-type-13-medium);
+  color: var(--ch-text-primary);
+}
+.ch-tour.is-phone .ch-tour-lu-slot,
+.ch-tour.is-phone .ch-tour-lu-r {
+  padding: 12px;
+}
+.ch-tour.is-phone .ch-tour-lu-r {
+  flex-wrap: wrap;
+}
+.ch-tour.is-phone .ch-tour-lu-r__act {
+  width: 100%;
+  justify-content: space-between;
+}

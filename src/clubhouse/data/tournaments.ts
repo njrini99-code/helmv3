@@ -42,6 +42,7 @@ import {
   type TourRow,
   type TourTeamSeasonRow,
 } from '@/lib/golf/tournaments-tables';
+import { candidateStats } from '../screens/tournaments/lineup-model';
 import { setupGroups } from '../screens/tournaments/setup-groups';
 import type {
   ChTourCompareData,
@@ -974,9 +975,11 @@ export async function loadTournamentLineup(ctx: TourCtx, eventId: string): Promi
   return guard<ChTourLineupData>('lineup', async () => {
     const info = await readTeam(ctx);
     const seasonEnd = Number(seasonIdOf(info.today).slice(0, 4)) + 1;
-    const [read, players] = await Promise.all([readEvents(ctx, info.team.timezone, { ids: [eventId] }), readPlayers(ctx, seasonEnd)]);
-    const event = read.events[0];
+    // Every event of the team: a player's form and how often they counted come from the other events.
+    const [read, players] = await Promise.all([readEvents(ctx, info.team.timezone), readPlayers(ctx, seasonEnd)]);
+    const event = read.events.find((e) => e.id === eventId);
     if (!event) return { kind: 'missing' };
+    const raw = read.raws.find((r) => r.t.id === eventId);
     const lineup = event.entries.filter((x) => x.role === 'lineup');
     return {
       kind: 'ready',
@@ -984,15 +987,16 @@ export async function loadTournamentLineup(ctx: TourCtx, eventId: string): Promi
         now: ctx.now,
         event,
         players,
-        // Count chance, form and the projection are the lineup lane's engines (D-93: never below the gate): the roster
-        // with its availability only until that view is built.
-        candidates: players.filter((p) => !p.alumni).map((p) => ({ playerId: p.id, availability: p.availability, form: [], qualifying: null, countRate: null, countRounds: 0, chance: null, chancePct: null, eligibleRounds: 0, course: { rounds: 0, avgToPar: null } })),
+        // Form, count rate and the count-chance band come from the finished events (D-93: no band under six rounds).
+        // The projected range is the projection engine's, which is not built: null, never an invented figure.
+        candidates: players.filter((p) => !p.alumni).map((p) => ({ playerId: p.id, availability: p.availability, qualifying: null, ...candidateStats(p.id, read.events, eventId, event.courseIds) })),
         slots: Array.from({ length: event.format.players }, (_, i) => ({ slot: i + 1, playerId: lineup.find((x) => x.slot === i + 1)?.playerId ?? null, reason: null, squad: 'A' as const })),
         alternate: event.entries.find((x) => x.role === 'alternate')?.playerId ?? null,
         individuals: event.entries.filter((x) => x.role === 'individual').map((x) => x.playerId),
         projection: null,
         projectionShort: [],
         lineup: event.lineup,
+        version: raw?.t.version ?? null,
         qualifier: null,
         errors: {},
       },

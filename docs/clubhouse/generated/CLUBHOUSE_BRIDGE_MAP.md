@@ -168,7 +168,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P013 | 7 | 15 |  | 39 | 3 | 50 | 71 | 7 | 3 |  | 3 | 1 |  | 3 | 4 | 4 | 11 | 23 | 1 |  | 1 |  | 1 |  |  | 247 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
-| P016 | 31 | 1 | 1 | 19 |  | 22 | 1 | 1 |  | 2 | 2 | 1 |  |  | 5 | 2 |  | 3 |  |  |  |  |  |  |  | 91 |
+| P016 | 31 | 1 | 1 | 21 |  | 26 | 1 | 1 |  | 2 | 3 | 1 |  |  | 5 | 2 |  | 3 |  |  |  |  |  |  |  | 98 |
 
 ## P001 Shell
 
@@ -2119,6 +2119,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 160417 | CH-16619 | 04 Empty | `NOBODY_IS_ON_THE_COURSE` | implemented | Nobody is on the course |
 | 160418 | CH-16352 | 04 Empty | `HOME_NO_EVENT_IN_THE_SEASON_NOTHING_2` | implemented | Home: no event in the season, nothing failed (P-5 4.11.1; replaces CH-16310) |
 | 160419 | CH-16338 | 04 Empty | `LINK_ROUNDS_NO_GOLFHELM_ROUND_IS_WAITING` | implemented | Link rounds: no GolfHelm round is waiting to be linked (the read worked) |
+| 160420 | CH-16362 | 04 Empty | `LINEUP_THE_TEAM_HAS_NO_PLAYERS_ON` | implemented | Lineup: the team has no players on its roster (the read worked) |
+| 160421 | CH-16363 | 04 Empty | `LINEUP_A_PLAYER_IN_THE_DRAFT_IS` | implemented | Lineup: a player in the draft is injured, out for academics, not travelling, or has left the team |
 | 160601 | CH-16201 | 06 Server / system error | `A_TOURNAMENTS_VIEWS_ONE_READ_FAILS` | implemented | A Tournaments view's one read fails (any view; `load: 'failed'`) |
 | 160602 | CH-16210 | 06 Server / system error | `HOME_THE_EVENTS_READ_FAILS_WHILE_THE` | implemented | Home: the events read fails while the page itself loads (`errors.events`) |
 | 160603 | CH-16220 | 06 Server / system error | `EVENT_DESK_HOLES_TAB_THE_SCORECARDS_READ` | implemented | Event desk, Holes tab: the scorecards read fails (`errors.holes`) |
@@ -2141,12 +2143,17 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 160620 | CH-16060 | 06 Server / system error | `EDIT_EVENT_THE_SAVE_IS_REFUSED` | implemented | Edit event: the save is refused (stale, a round with scores, an out-of-order round, not a coach) |
 | 160621 | CH-16061 | 06 Server / system error | `EDIT_EVENT_THE_CHANGES_ARE_SAVED` | implemented | Edit event: the changes are saved |
 | 160622 | CH-16238 | 06 Server / system error | `LINK_ROUNDS_THE_CANDIDATE_ROUNDS_READ_FAILS` | implemented | Link rounds: the candidate rounds read fails (`errors.candidates`) |
+| 160623 | CH-16062 | 06 Server / system error | `LINEUP_SAVING_THE_DRAFT_FAILS_OR_IS` | implemented | Lineup: saving the draft fails or is refused (the event changed, the lineup is locked, too many players) |
+| 160624 | CH-16063 | 06 Server / system error | `LINEUP_PUBLISHING_FAILS_OR_IS_REFUSED` | implemented | Lineup: publishing fails or is refused (the save before it is refused, or the publish itself) |
+| 160625 | CH-16064 | 06 Server / system error | `LINEUP_LOCKING_FAILS_OR_IS_REFUSED` | implemented | Lineup: locking fails or is refused |
+| 160626 | CH-16262 | 06 Server / system error | `LINEUP_THE_ROSTER_READ_FAILS` | implemented | Lineup: the roster read fails (`errors.roster`) |
 | 160701 | CH-16605 | 07 Network / offline | `THE_DEVICE_IS_OFFLINE_WHILE_THE_CARD` | implemented | The device is offline while the card or the live view is open |
 | 160801 | CH-16609 | 08 Permission / authorization | `THE_COACH_HAS_NO_TEAM_OR_LOST` | implemented | The coach has no team, or lost access to it |
 | 161001 | CH-16920 | 10 Warning | `EVENT_DESK_THE_HOSTS_PUBLISHED_NUMBER_DIFFERS` | implemented | Event desk: the host's published number differs from our scorecard (`officialTotal` set and unequal) |
 | 161002 | CH-16665 | 10 Warning | `A_ROUNDS_SHARING_WAS_CHANGED_30_TIMES` | implemented | A round's sharing was changed 30 times (slice 2) |
 | 161101 | CH-16550 | 11 Destructive | `STOP_TRACKING_FROM_THE_DESKS_TOURNAMENT_MENU` | implemented | Stop tracking, from the desk's tournament menu (P-5) |
 | 161102 | CH-16551 | 11 Destructive | `CANCEL_TOURNAMENT_FROM_THE_DESKS_TOURNAMENT_MENU` | implemented | Cancel tournament, from the desk's tournament menu (P-5; the calendar's CH-6541) |
+| 161103 | CH-16560 | 11 Destructive | `LOCK_THE_LINEUP_FROM_THE_LINEUP_BUILDER` | implemented | Lock the lineup, from the lineup builder |
 | 161201 | CH-16621 | 12 State preservation | `A_PLAYER_WITH_THEIR_OWN_ROUND_ON` | implemented | A player with their own round on this qualifier (slice 4) |
 | 161501 | CH-16614 | 15 Data freshness / sync | `LANES_WITH_NO_WORD_FOR_90_MINUTES` | implemented | Lanes with no word for 90 minutes |
 | 161502 | CH-16672 | 15 Data freshness / sync | `A_LANE_SILENT_FOR_10_MINUTES_WITH` | implemented | A lane silent for 10 minutes with the last hole at least as old |

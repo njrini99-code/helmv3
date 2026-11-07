@@ -805,6 +805,8 @@ export interface ChTourLineupData {
   } | null;
   projectionShort: Array<{ playerId: string; have: number; need: number }>;
   lineup: ChTourLineupState;
+  /** The event's version, the compare-and-set `setTournamentEntries` sends back (null if unknown). */
+  version: number | null;
   qualifier: { id: string; name: string } | null;
   errors: Partial<Record<'roster' | 'qualifier' | 'projection', true>>;
 }

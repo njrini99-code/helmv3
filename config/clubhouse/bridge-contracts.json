@@ -21281,6 +21281,28 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 160420,
+    "page": "P016",
+    "category": 4,
+    "item": 20,
+    "name": "LINEUP_THE_TEAM_HAS_NO_PLAYERS_ON",
+    "chCode": "CH-16362",
+    "meaning": "Lineup: the team has no players on its roster (the read worked)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160421,
+    "page": "P016",
+    "category": 4,
+    "item": 21,
+    "name": "LINEUP_A_PLAYER_IN_THE_DRAFT_IS",
+    "chCode": "CH-16363",
+    "meaning": "Lineup: a player in the draft is injured, out for academics, not travelling, or has left the team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
     "id": 160601,
     "page": "P016",
     "category": 6,
@@ -21523,6 +21545,50 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 160623,
+    "page": "P016",
+    "category": 6,
+    "item": 23,
+    "name": "LINEUP_SAVING_THE_DRAFT_FAILS_OR_IS",
+    "chCode": "CH-16062",
+    "meaning": "Lineup: saving the draft fails or is refused (the event changed, the lineup is locked, too many players)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160624,
+    "page": "P016",
+    "category": 6,
+    "item": 24,
+    "name": "LINEUP_PUBLISHING_FAILS_OR_IS_REFUSED",
+    "chCode": "CH-16063",
+    "meaning": "Lineup: publishing fails or is refused (the save before it is refused, or the publish itself)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160625,
+    "page": "P016",
+    "category": 6,
+    "item": 25,
+    "name": "LINEUP_LOCKING_FAILS_OR_IS_REFUSED",
+    "chCode": "CH-16064",
+    "meaning": "Lineup: locking fails or is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160626,
+    "page": "P016",
+    "category": 6,
+    "item": 26,
+    "name": "LINEUP_THE_ROSTER_READ_FAILS",
+    "chCode": "CH-16262",
+    "meaning": "Lineup: the roster read fails (`errors.roster`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
     "id": 160701,
     "page": "P016",
     "category": 7,
@@ -21585,6 +21651,17 @@
     "name": "CANCEL_TOURNAMENT_FROM_THE_DESKS_TOURNAMENT_MENU",
     "chCode": "CH-16551",
     "meaning": "Cancel tournament, from the desk's tournament menu (P-5; the calendar's CH-6541)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161103,
+    "page": "P016",
+    "category": 11,
+    "item": 3,
+    "name": "LOCK_THE_LINEUP_FROM_THE_LINEUP_BUILDER",
+    "chCode": "CH-16560",
+    "meaning": "Lock the lineup, from the lineup builder",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },

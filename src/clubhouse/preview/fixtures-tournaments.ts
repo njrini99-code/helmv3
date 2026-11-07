@@ -1068,6 +1068,7 @@ export function tourFixture(state: ChTourPreviewState): ChTourFixture {
     projection: null,
     projectionShort: [],
     lineup: empty ? { ...e34.lineup, status: 'none', set: 0 } : e34.lineup,
+    version: 3,
     qualifier: empty ? null : { id: 'q-pinehurst', name: 'Pinehurst qualifier' },
     errors: partial ? { qualifier: true } : {},
   };
