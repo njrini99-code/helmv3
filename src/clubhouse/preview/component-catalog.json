@@ -20223,7 +20223,8 @@
         "ch-tsw__ic",
         "ch-tsw__name",
         "ch-tsw__opt",
-        "ch-tsw__tick"
+        "ch-tsw__tick",
+        "ch-under-veil"
       ],
       "tokens": [
         {
@@ -26272,11 +26273,6 @@
         {
           "name": "--ch-push-dim",
           "value": "rgb(20 18 12 / 0.1)",
-          "scope": "html:has([data-ui='clubhouse'])"
-        },
-        {
-          "name": "--ch-vt-push-dim",
-          "value": "brightness(0.9)",
           "scope": "html:has([data-ui='clubhouse'])"
         },
         {

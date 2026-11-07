@@ -160,7 +160,7 @@ section.ch-lv-card {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-lv-hit.is-static {
   cursor: default;

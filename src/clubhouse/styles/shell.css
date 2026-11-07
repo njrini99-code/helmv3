@@ -118,7 +118,7 @@
   background: none;
   text-align: left;
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-nav__team--switch > span {
   min-width: 0;
@@ -253,7 +253,7 @@
   font: 500 14px/1 var(--ch-font-sans);
   letter-spacing: var(--ch-track-14);
   text-decoration: none;
-  transition: background var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease),
+  transition: background-color var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease),
     box-shadow var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-navitem svg {
@@ -1085,7 +1085,7 @@
   font: var(--ch-type-15-medium);
   letter-spacing: var(--ch-track-15);
   text-decoration: none;
-  transition: background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-more__row:first-child {
   border-top: 0;
@@ -1561,7 +1561,7 @@ button.ch-more__row[disabled] {
     background: none;
     color: var(--ch-text-secondary);
     cursor: pointer;
-    transition: background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+    transition: background-color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-pbar__icon[data-ch-pressed] {
     background: rgb(28 25 18 / 0.06);
@@ -1766,7 +1766,7 @@ button.ch-more__row[disabled] {
   background: transparent;
   text-align: left;
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
 /* B8: a long feed draws only the rows near the panel's view; an off-screen row keeps the height it last drew. What a
    row paints (its tint, its inset focus well) stays inside its box. */
@@ -1985,12 +1985,11 @@ html[data-ch-tab][data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-o
 }
 /* A drill-in pushes and Back pops (P1-1, P1-2; lib/nav-motion.ts sets data-ch-nav), as a pushed phone screen does
    (PhoneScreen): the new page slides in from the right edge on the smooth spring while the one under it draws back by
-   a parallax share and dims as a pushed screen's page does (B16, --ch-vt-push-dim), and Back plays it in reverse with
-   the leaving page on top. Transform and a filter on the snapshot, no layout. Phone only: desktop keeps the crossfade. */
+   a parallax share, and Back plays it in reverse with the leaving page on top. Transform on the snapshot, no layout and
+   no filter. Phone only: desktop keeps the crossfade. */
 @keyframes ch-vt-pop-in {
   from {
     transform: translateX(var(--ch-vt-parallax));
-    filter: var(--ch-vt-push-dim);
   }
 }
 @keyframes ch-vt-pop-out {
@@ -2458,7 +2457,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 .ch-nav--plate .ch-navitem {
   position: relative;
   z-index: 1;
-  transition: background var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-base) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-base) var(--ch-ease);
 }
 .ch-nav--plate .ch-navitem[aria-current='page'],
 .ch-nav--plate .ch-navitem:has(.ch-lp) {
@@ -4497,4 +4496,14 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   .ch-root {
     --ch-offline-top: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
   }
+}
+
+/* The dim on the copy beneath a push: only its opacity moves (lib/nav-motion.ts). */
+.ch-under-veil {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: var(--ch-push-dim);
+  opacity: 0;
+  pointer-events: none;
 }

@@ -968,7 +968,7 @@ a.ch-th-reads__r:focus-visible {
   background: none;
   cursor: pointer;
   color: var(--ch-text-tertiary);
-  transition: background var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-th-icobtn:hover {
@@ -998,7 +998,7 @@ a.ch-th-reads__r:focus-visible {
   box-shadow: 0 0 0 1px rgb(28 25 18 / 0.12);
   font: var(--ch-type-14);
   color: var(--ch-text-primary);
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-th-pill:hover {

@@ -36,7 +36,7 @@
   background: transparent;
   color: var(--ch-text-primary);
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-cal-title:hover {
@@ -131,7 +131,7 @@
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-cal-jump__d:hover {
@@ -1374,7 +1374,7 @@ html[data-fw-theme='dark'] .ch-cg__head {
   background: transparent;
   text-align: left;
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-mo__gc:last-child .ch-mo__cell {
   border-right: 0;
@@ -1645,7 +1645,7 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
   background: transparent;
   text-align: left;
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ag__row:first-child {
   border-top: 0;
@@ -2456,7 +2456,7 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   /* The shared switch's track (controls.css), so its edge holds 3:1 in both themes. */
   background: var(--ch-switch-track-bg);
   box-shadow: var(--ch-switch-track-shadow);
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-switch__t::after {
   content: '';

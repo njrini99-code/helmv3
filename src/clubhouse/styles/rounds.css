@@ -1967,7 +1967,7 @@ a.ch-rd-sc:focus-visible {
     border-radius: 0;
     background: none;
     box-shadow: none;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-rd.is-phone .ch-rd-sc + .ch-rd-sc {
     box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
@@ -2461,7 +2461,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     box-shadow: none;
     font: var(--ch-type-13-medium);
     color: var(--ch-green-700);
-    transition: background var(--ch-dur-quick) var(--ch-ease);
+    transition: background-color var(--ch-dur-quick) var(--ch-ease);
   }
   @media (hover: hover) {
     .ch-rv[data-canopy] .ch-rv-back:hover {
@@ -2954,7 +2954,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     border-radius: var(--ch-radius-md);
     background: none;
     box-shadow: none;
-    transition: background var(--ch-dur-quick) var(--ch-ease);
+    transition: background-color var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-rd[data-canopy] .ch-rd-sc + .ch-rd-sc::before {
     position: absolute;
@@ -3668,7 +3668,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     var(--ch-elevation-mark-ink);
 }
 .ch-rv .ch-rzcost button {
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 
 /* the hero and its figures */
@@ -3779,7 +3779,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rzcost button {
   transition:
-    background var(--ch-dur-quick) var(--ch-ease),
+    background-color var(--ch-dur-quick) var(--ch-ease),
     transform var(--ch-dur-release) var(--ch-ease);
 }
 @media (hover: hover) {
@@ -3791,7 +3791,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rzcost__n {
   transition:
-    background var(--ch-dur-quick) var(--ch-ease),
+    background-color var(--ch-dur-quick) var(--ch-ease),
     color var(--ch-dur-quick) var(--ch-ease);
 }
 
@@ -4242,7 +4242,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rd .ch-rd-more__go {
   transition:
-    background var(--ch-dur-quick) var(--ch-ease),
+    background-color var(--ch-dur-quick) var(--ch-ease),
     box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 

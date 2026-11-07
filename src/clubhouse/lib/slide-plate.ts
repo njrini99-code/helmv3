@@ -6,7 +6,7 @@ import { CH_DUR, CH_EASE, chSpringCurve, type ChSpringKind } from './motion';
 /**
  * A selected plate that slides from the option it left to the one chosen (a segmented chip, the strip's plate, a tab
  * bar's underline). The plate is rendered inside the chosen option only; when `key` changes this reads the new
- * option's box once and plays the move from the old box as a compositor transform (WAAPI, transform-origin left top).
+ * option's box once and plays the move from the old box (WAAPI): a translate, and the width between the two options.
  *
  * It replaces Motion's shared layout (`layoutId`), which measured the plate, its ancestors and the document's scroll
  * on every render of the component, mid-frame, so a section switch re-laid the incoming page out several times on the
@@ -50,22 +50,19 @@ export function useSlidePlate(
     const start = live?.box ?? from;
     if (reduced || !to.w || !to.h) return undefined;
     if (start.x === to.x && start.y === to.y && start.w === to.w && start.h === to.h) return undefined;
+    // Centre to centre: the plate's width lands in one step, so its middle is what travels.
+    const offX = start.x + start.w / 2 - (to.x + to.w / 2);
+    const offY = start.y + start.h / 2 - (to.y + to.h / 2);
     // Its speed toward the new mark, in progress per second over the distance left (chSpringCurve's units).
-    const dx = to.x - start.x;
-    const dy = to.y - start.y;
-    const left = Math.hypot(dx, dy);
-    const velocity = live && left > 0 ? (live.vx * dx + live.vy * dy) / (left * left) : 0;
+    const left = Math.hypot(offX, offY);
+    const velocity = live && left > 0 ? (live.vx * -offX + live.vy * -offY) / (left * left) : 0;
     // A tween where the plate's design gives one (CH_DUR on CH_EASE), otherwise the spring.
     const curve = tween
       ? { ms: CH_DUR[tween] * 1000, linear: `cubic-bezier(${CH_EASE.join(', ')})`, ease: tweenEase }
       : chSpringCurve(kind, { velocity });
-    const anim = el.animate?.(
-      [
-        { transformOrigin: 'left top', transform: `translate(${start.x - to.x}px, ${start.y - to.y}px) scale(${start.w / to.w}, ${start.h / to.h})` },
-        { transformOrigin: 'left top', transform: 'none' },
-      ],
-      { duration: curve.ms, easing: curve.linear },
-    );
+    // Translate only, centre to centre, so the glide stays on the compositor. The plate's width lands in one step at the tap: an animated
+    // width ran on the main thread (48 of 104 frames counted dropped on Rounds, 2026-11-07), and a scale squashed its rounded corners.
+    const anim = el.animate?.([{ transform: `translate(${offX}px, ${offY}px)` }, { transform: 'none' }], { duration: curve.ms, easing: curve.linear });
     if (anim) running.current = { anim, from: start, to, ms: curve.ms, ease: curve.ease };
     return undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the move is per choice; `still` is read when it happens
@@ -94,9 +91,11 @@ function liveOf(r: { anim: Animation; from: Box; to: Box; ms: number; ease: (p: 
   const t = Number(r.anim.currentTime ?? 0);
   if (!(t > 0) || t >= r.ms) return null;
   const p = r.ease(t / r.ms);
-  const lerp = (a: number, b: number) => a + (b - a) * p;
-  const box = { x: lerp(r.from.x, r.to.x), y: lerp(r.from.y, r.to.y), w: lerp(r.from.w, r.to.w), h: lerp(r.from.h, r.to.h) };
+  const dx = r.to.x + r.to.w / 2 - (r.from.x + r.from.w / 2);
+  const dy = r.to.y + r.to.h / 2 - (r.from.y + r.from.h / 2);
+  // The width landed at the tap, so the plate is the mark's size, on the way there centre to centre.
+  const box = { x: r.to.x - dx * (1 - p), y: r.to.y - dy * (1 - p), w: r.to.w, h: r.to.h };
   // The spring's slope at t, from two samples 4 ms either side, in progress per second.
   const dp = (r.ease(Math.min(1, (t + 4) / r.ms)) - r.ease(Math.max(0, (t - 4) / r.ms))) / 0.008;
-  return { box, vx: (r.to.x - r.from.x) * dp, vy: (r.to.y - r.from.y) * dp };
+  return { box, vx: dx * dp, vy: dy * dp };
 }

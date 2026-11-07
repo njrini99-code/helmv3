@@ -124,33 +124,40 @@ export function useThreadAnchor(
 
   // First paint of a thread: its end, held there while the thread settles (P007 D1). A thread pushed during hydration
   // slides in and has its layout and scroll reset under it, which left it at its oldest message; until the reader
-  // touches it, each frame of the settle puts it back at the end. Scroll events in that window are the reset's,
+  // touches it, the settle puts it back at the end. Scroll events in that window are the reset's,
   // not the reader's, so they don't decide `nearEnd`.
   useLayoutEffect(() => {
     if (!held.current) toEnd();
     const s = scroller.current;
-    if (!s || typeof requestAnimationFrame === 'undefined') return;
-    const until = performance.now() + SETTLE_MS;
-    let frame = 0;
+    if (!s) return;
     let stopped = false;
-    const stop = () => {
-      stopped = true;
-      cancelAnimationFrame(frame);
-    };
-    const hold = () => {
-      if (stopped || !s.isConnected) return;
-      // A search hit took the thread (paused): the settle hold stops for good, so it can't pull the reader off it.
-      if (held.current) return stop();
-      if (s.scrollHeight - s.scrollTop - s.clientHeight > 1) toEnd();
-      if (performance.now() < until) frame = requestAnimationFrame(hold);
-    };
-    frame = requestAnimationFrame(hold);
+    let timer = 0;
+    let frame = 0;
     const input = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const;
-    for (const t of input) s.addEventListener(t, stop, { passive: true });
-    return () => {
-      stop();
+    const stop = () => {
+      if (stopped) return;
+      stopped = true;
+      clearTimeout(timer);
+      cancelAnimationFrame(frame);
+      s.removeEventListener('scroll', onScroll);
       for (const t of input) s.removeEventListener(t, stop);
     };
+    // Checked in the frame after a scroll, not in every frame: a frame loop kept the main thread drawing through the push (2026-11-07), and the reset it watches for fires this event.
+    function onScroll() {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(hold);
+    }
+    function hold() {
+      if (stopped || !s!.isConnected) return;
+      // A search hit took the thread (paused): the settle hold stops for good, so it can't pull the reader off it.
+      if (held.current) return stop();
+      if (s!.scrollHeight - s!.scrollTop - s!.clientHeight > 1) toEnd();
+    }
+    s.addEventListener('scroll', onScroll, { passive: true });
+    for (const t of input) s.addEventListener(t, stop, { passive: true });
+    timer = window.setTimeout(stop, SETTLE_MS);
+    frame = requestAnimationFrame(hold);
+    return stop;
     // Once per mount; conversation changes are handled above.
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

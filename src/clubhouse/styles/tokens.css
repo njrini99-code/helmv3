@@ -1348,7 +1348,6 @@ html:has([data-ui='clubhouse']) {
   /* The dim on the page beneath a push (B16, CH-1618): PhoneScreen's scrim, and the same depth as a filter for a route
      push, whose page beneath is a view-transition snapshot that cannot take an overlay. */
   --ch-push-dim: rgb(20 18 12 / 0.1);
-  --ch-vt-push-dim: brightness(0.9);
 }
 /* The desktop drill-in (a player row into a profile) crossfades with no gap: the old page fades out over 120ms while
    the new one fades in over 180ms, both from the first frame, so there is no blank beat between them (owner decision
