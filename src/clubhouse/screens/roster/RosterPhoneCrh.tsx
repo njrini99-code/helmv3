@@ -278,7 +278,7 @@ export function RosterPhoneCrh({
 
       <ProfilePresence atRest={arrivedAtRest}>
         {open && (
-          <PhoneScreen key={`player-${open.id}`} labelledBy="ch-rsm-prof-title" className="ch-rsm-screen ch-rsx-screen">
+          <PhoneScreen key={`player-${open.id}`} keyboardAware immersive={false} labelledBy="ch-rsm-prof-title" className="ch-rsm-screen ch-rsx-screen">
             <PhoneBar back={{ label: 'Roster', onBack: guardedClose }} title={open.name} titleId="ch-rsm-prof-title" action={<PhoneIconAction icon={Ellipsis} label="Player actions" onClick={() => setActing(true)} />} />
             <div className="ch-rsm-scroll" onClickCapture={onProfileClick}>
               <SectionBoundary surface="roster.peek" label="The player panel" code="CH-3206">

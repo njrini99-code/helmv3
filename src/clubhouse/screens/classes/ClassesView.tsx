@@ -472,7 +472,7 @@ export function ClassesView({ data, writes, statusWrites, crh = false }: { data:
               </SectionBoundary>
               {crhOverlaps}
               <SectionBoundary surface="classes.deck" label="Your classes" code="CH-12203">
-                <div className="ch-cl-deck">{deck}</div>
+                {deck}
               </SectionBoundary>
               {crhStatus}
             </>

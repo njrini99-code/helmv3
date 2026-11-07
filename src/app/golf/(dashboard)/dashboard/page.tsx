@@ -293,7 +293,7 @@ export default async function GolfDashboardPage({
             marksHint().then((marks) => loadPlayerHome({ shs: statsRedesignEnabled(), teamId: team.teamId, playerId: team.playerId, firstName: player.first_name?.trim() || 'there', marks })),
             loadPlayerLive({ teamId: team.teamId, playerId: team.playerId }),
         ]);
-        return <PlayerHome data={home} live={live} playerId={team.playerId} shs={statsRedesignEnabled()} />;
+        return <PlayerHome data={home} live={live} playerId={team.playerId} shs={statsRedesignEnabled()} crh={isFlagEnabled('clubhouse_classes_roster_home_v1')} />;
     }
     if (player) {
         // Get team via membership

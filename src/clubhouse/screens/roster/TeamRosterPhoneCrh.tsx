@@ -64,21 +64,6 @@ export function TeamRosterPhoneCrh({ data, onRetry }: { data: ChPlayerRoster; on
         ) : (
           <>
             <RosterTeamCard viewer="player" season={data.season} players={data.players} clock={clock} />
-            {!solo && (
-              <div className="ch-stickybar ch-rsx-sort">
-                <Segmented<TeamSort>
-                  block
-                  label="Sort by"
-                  value={sort}
-                  onChange={choose}
-                  options={[
-                    { value: 'name', label: 'Name' },
-                    { value: 'class', label: 'Class' },
-                    { value: SORT_HCP, label: TERMS.handicap.short, aria: `${TERMS.handicap.short}, ${TERMS.handicap.long.toLowerCase()}` },
-                  ]}
-                />
-              </div>
-            )}
             {!!data.coaches?.length && (
               <div className="ch-rsx-sec is-tight">
                 <Surface variant="card" level={2} padded={false} title="Coaches" actions={<span className="ch-rsx-meta ch-num">{data.coaches.length}</span>}>
@@ -94,6 +79,22 @@ export function TeamRosterPhoneCrh({ data, onRetry }: { data: ChPlayerRoster; on
                     ))}
                   </GroupList>
                 </Surface>
+              </div>
+            )}
+            {/* Directly above the players it sorts, not riding over the coaches (CRH-30). */}
+            {!solo && (
+              <div className="ch-stickybar ch-rsx-sort">
+                <Segmented<TeamSort>
+                  block
+                  label="Sort by"
+                  value={sort}
+                  onChange={choose}
+                  options={[
+                    { value: 'name', label: 'Name' },
+                    { value: 'class', label: 'Class' },
+                    { value: SORT_HCP, label: TERMS.handicap.short, aria: `${TERMS.handicap.short}, ${TERMS.handicap.long.toLowerCase()}` },
+                  ]}
+                />
               </div>
             )}
             <SectionBoundary surface="roster.team" label="The roster" code="CH-3211">

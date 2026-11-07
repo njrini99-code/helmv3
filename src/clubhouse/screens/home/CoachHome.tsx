@@ -92,7 +92,7 @@ function CoachHomeBody({ data, now, live, crh = false }: { data: ChCoachHome; no
               <Form form={data.phone.form} crh />
             </SectionBoundary>
           ) : data.latestRounds.error ? (
-            <CrhFailedCard id="ch-dh-form-failed" title="Team scoring" href={rebuiltHref('/golf/dashboard/stats') ?? '#'} link="Team stats" code="CH-2211" what="Scoring didn’t load" body="Your rounds are safe. Try again in a moment." />
+            <CrhFailedCard id="ch-dh-form-failed" title="Team scoring" href={rebuiltHref('/golf/dashboard/stats')} link="Team stats" code="CH-2211" what="Scoring didn’t load" body="Your rounds are safe. Try again in a moment." />
           ) : null}
         </div>
         {data.phone.form && data.legs && !noRounds && (
@@ -108,7 +108,7 @@ function CoachHomeBody({ data, now, live, crh = false }: { data: ChCoachHome; no
           )}
           <SectionBoundary surface="home.leaderboard" label="The leaderboard" code="CH-2207">
             {data.leaderboard.error ? (
-              <CrhFailedCard id="ch-dh-board-failed" title="Leaderboard" href={rebuiltHref('/golf/dashboard/roster') ?? '#'} link="Roster" code="CH-2204" what="The leaderboard didn’t load" body="Scores are safe. Try again." />
+              <CrhFailedCard id="ch-dh-board-failed" title="Leaderboard" href={rebuiltHref('/golf/dashboard/roster')} link="Roster" code="CH-2204" what="The leaderboard didn’t load" body="Scores are safe. Try again." />
             ) : data.leaderboard.rows.length === 0 ? (
               <Leaderboard data={data.leaderboard} covered={covered} rounds={data.latestRounds.rounds} />
             ) : (
@@ -195,10 +195,11 @@ function HomeFirstRun({ data, phone, crh = false }: { data: ChCoachHome; phone: 
             <Icon icon={Sparkles} size={14} />
             Set up your team and your first week shows here.
           </p>
+          {/* On the hero's green, as every other Home draws it: on the page its ivory words measured 1.01:1 (CRH-5). */}
+          <CoachQueue queue={data.queue} phone />
         </header>
         <div className="ch-hm-body">
-          <CoachQueue queue={data.queue} phone />
-          {events && <WeekStrip days={data.week.days} note={data.phone.weekNote} />}
+          {events && <WeekStrip calendar days={data.week.days} note={data.phone.weekNote} />}
           <section className="ch-hm-setup" aria-labelledby="ch-hm-setup-t" data-ch-code="CH-2308">
             <h2 id="ch-hm-setup-t">Get your team set up</h2>
             {[
@@ -231,7 +232,7 @@ function HomeFirstRun({ data, phone, crh = false }: { data: ChCoachHome; phone: 
       <CoachQueue queue={data.queue} phone={phone} />
       {events &&
         (phone ? (
-          <WeekStrip days={data.week.days} note={data.phone.weekNote} />
+          <WeekStrip calendar days={data.week.days} note={data.phone.weekNote} />
         ) : (
           <div className="ch-h-sheet ch-sheet is-solo">
             <Week week={data.week} />

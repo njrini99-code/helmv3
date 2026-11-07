@@ -114,7 +114,7 @@ export function HomePhone({ data, now: frozen, live, crh = false }: { crh?: bool
             <Form form={phone.form} crh={crh} />
           </SectionBoundary>
         ) : data.latestRounds.error && crh ? (
-          <CrhFailedCard id="ch-hm-form-failed" title="Team scoring" href={rebuiltHref('/golf/dashboard/stats') ?? '#'} link="Team stats" code="CH-2211" what="Scoring didn’t load" body="Your rounds are safe. Try again in a moment." />
+          <CrhFailedCard id="ch-hm-form-failed" title="Team scoring" href={rebuiltHref('/golf/dashboard/stats')} link="Team stats" code="CH-2211" what="Scoring didn’t load" body="Your rounds are safe. Try again in a moment." />
         ) : data.latestRounds.error ? (
           <FailedSec id="ch-hm-form-failed" title="Team scoring">
             <RefreshNotice code="CH-2211" title="Team scoring didn’t load" body="Posted rounds are safe. Try again." covered={covered} />
@@ -129,7 +129,7 @@ export function HomePhone({ data, now: frozen, live, crh = false }: { crh?: bool
 
         {!data.week.error && !nothingAhead && (
           <SectionBoundary surface="home.week" label="This week" code="CH-2205">
-            <WeekStrip days={data.week.days} note={phone.weekNote} />
+            <WeekStrip calendar days={data.week.days} note={phone.weekNote} />
           </SectionBoundary>
         )}
 
@@ -317,7 +317,7 @@ export function Today({ list, now, failed, quiet, canPlan = true, inline = false
               {e.conflict ? (
                 <span className="ch-hm-tl__w" title="Overlaps another event">
                   <Icon icon={TriangleAlert} size={13} />
-                  {card ? <span>Clash</span> : <span className="ch-sr-only">Overlaps another event</span>}
+                  <span>Clash</span>
                 </span>
               ) : mark ? (
                 <span className="ch-hm-now">{live ? 'Now' : 'Next'}</span>
@@ -388,15 +388,17 @@ export function Form({ form, crh = false }: { form: ChTeamForm; crh?: boolean })
       {crh && (
         <div className="ch-hm-form__head">
           <h2>Team scoring</h2>
-          <Link href={rebuiltHref('/golf/dashboard/stats') ?? '#'} className="ch-hm-link">
-            Team stats
-          </Link>
+          {rebuiltHref('/golf/dashboard/stats') && (
+            <Link href={rebuiltHref('/golf/dashboard/stats') as string} className="ch-hm-link">
+              Team stats
+            </Link>
+          )}
         </div>
       )}
       <div className="ch-hm-form__top">
         <span>
           {/* The lane: the label is real text, not the old rule's ::after (06 §11.2). */}
-          <em id="ch-hm-form">{crh ? 'Average · last 10 rounds' : 'Team scoring average'}</em>
+          <em id="ch-hm-form">{crh ? 'Average · each player’s last 10' : 'Team scoring average'}</em>
           <b className="ch-num">{withPointSpan(formatFixed(form.avg))}</b>
         </span>
         <span className={'ch-hm-delta ch-num ' + avgTone}>
@@ -434,11 +436,16 @@ export function Form({ form, crh = false }: { form: ChTeamForm; crh?: boolean })
 }
 
 /** `children`: what follows the week inside its section (the player's Today). A competition day carries its type's mark, the one the calendar draws. */
-export function WeekStrip({ days, note, children }: { days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote']; children?: ReactNode }) {
+export function WeekStrip({ days, note, children, calendar = false }: { calendar?: boolean; days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote']; children?: ReactNode }) {
   return (
     <section className="ch-hm-sec" aria-labelledby="ch-hm-week">
       <div className="ch-hm-sec__h">
         <h2 id="ch-hm-week">This week</h2>
+        {calendar && (
+          <Link className="ch-hm-link" href={CALENDAR}>
+            Calendar
+          </Link>
+        )}
       </div>
       <DayStrip
         label="This week"
@@ -474,15 +481,17 @@ export function WeekStrip({ days, note, children }: { days: ChCoachHome['week'][
  */
 /** The drawn failed state (06 §11.3): the page says so under the greeting, each card keeps its head and offers its own Try again. */
 export const CRH_PART_FAILED = 'Some of today didn’t load. What did is below.';
-export function CrhFailedCard({ id, title, href, link, code, what, body }: { id: string; title: string; href: string; link: string; code: string; what: string; body: string }) {
+export function CrhFailedCard({ id, title, href, link, code, what, body }: { id: string; title: string; href?: string | null; link: string; code: string; what: string; body: string }) {
   const { refresh, refreshing } = useRefresh();
   return (
     <section className="ch-hm-sec ch-dh-failed" aria-labelledby={id}>
       <div className="ch-hm-sec__h">
         <h2 id={id}>{title}</h2>
-        <Link href={href} className="ch-hm-link">
-          {link}
-        </Link>
+        {href && (
+          <Link href={href} className="ch-hm-link">
+            {link}
+          </Link>
+        )}
       </div>
       <CrhStateBlock kind="failed" code={code} title={what} body={body}>
         <Button leftIcon={RotateCw} busy={refreshing} onClick={refresh}>
@@ -540,7 +549,7 @@ function Rounds({ years, data, trends, onOpen, covered }: { years?: Record<strin
                       onOpen(r);
                     }}
                   >
-                    <Avatar name={r.playerName} id={r.playerId} size={38} year={years?.[r.playerId] ?? null} />
+                    <Avatar name={r.playerName} id={r.playerId} size="md" year={years?.[r.playerId] ?? null} />
                     <span className="ch-hm-rd__b">
                       <b>{r.playerName}</b>
                       <RoundMeta meta={r.meta} />

@@ -171,7 +171,7 @@ export function ClassForm({
               <label htmlFor={id('code')} className="ch-field__label">
                 Course code
               </label>
-              <input
+              <input enterKeyHint="next"
                 id={id('code')}
                 className="ch-input"
                 value={v.code}
@@ -189,7 +189,7 @@ export function ClassForm({
               <label htmlFor={id('credits')} className="ch-field__label">
                 Credits <span className="ch-field__opt">Optional</span>
               </label>
-              <input
+              <input enterKeyHint="next"
                 id={id('credits')}
                 className="ch-input"
                 value={v.credits}
@@ -207,7 +207,7 @@ export function ClassForm({
             <label htmlFor={id('name')} className="ch-field__label">
               Course name
             </label>
-            <input
+            <input enterKeyHint="next"
               id={id('name')}
               className="ch-input"
               value={v.name}
@@ -224,7 +224,7 @@ export function ClassForm({
             <label htmlFor={id('prof')} className="ch-field__label">
               Instructor <span className="ch-field__opt">Optional</span>
             </label>
-            <input id={id('prof')} className="ch-input" value={v.instructor} onChange={(e) => set('instructor', e.target.value)} placeholder="e.g. Dr. J. Alvarez" maxLength={80} autoComplete="off" />
+            <input enterKeyHint="next" id={id('prof')} className="ch-input" value={v.instructor} onChange={(e) => set('instructor', e.target.value)} placeholder="e.g. Dr. J. Alvarez" maxLength={80} autoComplete="off" />
           </div>
           <div className="ch-field">
             <span className="ch-field__label" id={id('days-l')}>
@@ -295,13 +295,13 @@ export function ClassForm({
               <label htmlFor={id('building')} className="ch-field__label">
                 Building <span className="ch-field__opt">Optional</span>
               </label>
-              <input id={id('building')} className="ch-input" value={v.building} onChange={(e) => set('building', e.target.value)} placeholder="e.g. Carroll Hall" maxLength={80} autoComplete="off" />
+              <input enterKeyHint="next" id={id('building')} className="ch-input" value={v.building} onChange={(e) => set('building', e.target.value)} placeholder="e.g. Carroll Hall" maxLength={80} autoComplete="off" />
             </div>
             <div className="ch-field">
               <label htmlFor={id('room')} className="ch-field__label">
                 Room <span className="ch-field__opt">Optional</span>
               </label>
-              <input id={id('room')} className="ch-input" value={v.room} onChange={(e) => set('room', e.target.value)} placeholder="e.g. 111" maxLength={40} autoComplete="off" />
+              <input enterKeyHint="done" id={id('room')} className="ch-input" value={v.room} onChange={(e) => set('room', e.target.value)} placeholder="e.g. 111" maxLength={40} autoComplete="off" />
             </div>
           </div>
           <div className="ch-field">
