@@ -15,6 +15,20 @@ import { plural } from '../../lib/plural';
 /** A player with no countable round (any length) for this many days reads "No rounds N days". */
 export const QUIET_DAYS = 7;
 
+/**
+ * The leaderboard's order, the one Fairway's Top performers uses: an early read (fewer than three 18-hole rounds) last, then the
+ * average AT THE PRECISION THE ROW PRINTS (one decimal), so two players who both read 74.8 are level and the player with more
+ * rounds ranks first, then the name. Ordering on the hidden second decimal put a 20-round 74.8 behind a 19-round 74.8 for no reason
+ * anyone could see (parity check, staging 2026-11-07).
+ */
+export function compareLeaderRows(
+  a: { status: string; avg: number; rounds: number; name: string },
+  b: { status: string; avg: number; rounds: number; name: string },
+): number {
+  const early = (r: { status: string }) => (r.status === 'early' ? 1 : 0);
+  return early(a) - early(b) || Math.round(a.avg * 10) - Math.round(b.avg * 10) || b.rounds - a.rounds || a.name.localeCompare(b.name);
+}
+
 /** Whole days from one YYYY-MM-DD to another (negative when `to` is earlier). */
 export function daysBetween(from: string, to: string): number {
   const t = (s: string) => Date.UTC(Number(s.slice(0, 4)), Number(s.slice(5, 7)) - 1, Number(s.slice(8, 10)));

@@ -23,7 +23,7 @@ import { rsvpOf } from './calendar';
 import { parseAvailability, type ChAvailability } from './availability';
 import { playerMine, playerSeesMeeting, replyClosedAt, type ChRsvp } from '../screens/calendar/model';
 import { loadAttendanceCounts, loadInvitedCounts, type ChAttendanceCounts } from './attendance-counts';
-import { confirmedLine, daysBetween, homeSubline, inviteDetail } from '../screens/home/model';
+import { compareLeaderRows, confirmedLine, daysBetween, homeSubline, inviteDetail } from '../screens/home/model';
 import { firstName } from '../lib/names';
 import { weekdayMonthDay } from '../lib/dates';
 import type { MarkEntries } from '../lib/marks-cookie';
@@ -458,8 +458,8 @@ export async function loadCoachHome(input: {
     });
   }
   // C-24(d): an early read (fewer than three 18-hole rounds) never outranks a player with a sample; ties go to more rounds, then the name.
-  const early = (r: ChLeaderRow) => (r.status === 'early' ? 1 : 0);
-  rows.sort((a, b) => early(a) - early(b) || a.avg - b.avg || b.rounds - a.rounds || a.name.localeCompare(b.name));
+  // Ties are read at the printed precision, as Fairway's Top performers does (compareLeaderRows).
+  rows.sort(compareLeaderRows);
 
   // ── Phone: the team's form ──
   const form = roundsError ? null : teamForm(full, rounds.filter((r) => r.round_date.slice(0, 10) >= weekStart && r.round_date.slice(0, 10) <= weekEnd).length);
