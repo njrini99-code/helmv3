@@ -76,9 +76,9 @@ export function useLocalHour(): number | null {
 }
 
 /** Today's date in the viewer's locale and zone ("Tuesday, October 14"), or null on the server and during hydration. */
-export function useLocalDateLabel(): string | null {
+export function useLocalDateLabel(tz?: string | null): string | null {
   const now = useNowSnapshot();
-  return useSyncExternalStore(subscribe, () => formatWelcomeDate(now()), () => null);
+  return useSyncExternalStore(subscribe, () => formatWelcomeDate(now(), tz), () => null);
 }
 
 /** When the person was last here, worded against their own clock ("Sunday at 9:12 pm"), or null (no record, the server, hydration). */

@@ -1329,6 +1329,13 @@ button.ch-more__row[disabled] {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
+  /* Coach Home's bar and hero are one green, a 44 row under the status bar: 98 with the design's 54 inset (04 Home). */
+  .ch-root[data-phone-hero]:has(.ch-hm[data-ch-crh='on']:not(.ch-hm--player)) .ch-topbar {
+    height: calc(44px + env(safe-area-inset-top));
+    padding-right: 6px;
+    padding-bottom: 0;
+    background: var(--ch-frame);
+  }
   /* The bar stays green in both themes, so its title takes the on-green ink: ivory-100 turns dark in the dark theme. */
   .ch-root[data-phone-hero] .ch-topbar__ptitle {
     color: var(--ch-on-green-ink);
@@ -4504,4 +4511,9 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   .ch-root[data-ch-crh='on'] .ch-canvas:has(.ch-hm[data-ch-crh='on'], .ch-cl[data-ch-crh='on'], .ch-rsm[data-ch-crh='on']) {
     background: var(--ch-grouped-bg);
   }
+}
+
+/* Show an event once on Home: the hero owns Up next, so the sidebar's card steps aside (HOME-S3). */
+.ch-root:has(.ch-h-main--desk[data-ch-crh='on']) .ch-sidebar__card:has(> .ch-next) {
+  display: none;
 }

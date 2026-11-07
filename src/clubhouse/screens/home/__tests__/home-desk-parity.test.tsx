@@ -7,11 +7,11 @@ import { FormBars } from '../../../ui/FormLine';
 afterEach(cleanup);
 
 describe('coach Home desktop, design parity', () => {
-  it('a board where nobody has a place drops the rank column and says why', () => {
+  it('a board where nobody has a place shows a dash in the rank column and says why (HOME-S8)', () => {
     const { container } = render(<DeskBoard rows={PREVIEW_HOME_EARLY.leaderboard.rows} rosterSize={8} />);
-    expect(container.querySelectorAll('.ch-dh-rank')).toHaveLength(0);
-    expect(screen.getByText(/Places start at three 18-hole rounds/)).toBeTruthy();
-    expect(container.textContent).not.toContain('—');
+    const ranks = [...container.querySelectorAll('.ch-dh-rank')].map((n) => n.textContent);
+    expect(new Set(ranks)).toEqual(new Set(['—']));
+    expect(screen.getByText(/no place until three rounds/)).toBeTruthy();
   });
 
   it('a board with places keeps its ranks, and a player still early keeps the dash', () => {
@@ -19,7 +19,6 @@ describe('coach Home desktop, design parity', () => {
     const { container } = render(<DeskBoard rows={rows} rosterSize={8} />);
     const ranks = [...container.querySelectorAll('.ch-dh-rank')].map((n) => n.textContent);
     expect(ranks).toEqual(['1', '2', '3', '4', '—']);
-    expect(screen.queryByText(/Places start at/)).toBeNull();
   });
 
   it('a short board says players are still to join only when some are', () => {

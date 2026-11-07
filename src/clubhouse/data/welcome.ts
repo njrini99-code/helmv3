@@ -1,7 +1,10 @@
 import 'server-only';
 import { getUnifiedNotifications } from '@/app/golf/actions/unified-notifications';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
+import { getGolfSessionProfile } from '@/lib/auth/session';
+import { getValidTimezone } from '@/lib/calendar/timezone';
 import { createClient } from '@/lib/supabase/server';
+import { resolveClubhouseTeam } from '../routes/team';
 import { isClubhouseFor } from '../gate';
 import { chLogServer } from '../lib/track-server';
 import { resolveWelcomeName, shapeWelcomeNews, type ChWelcome } from './welcome-shape';
@@ -22,6 +25,21 @@ const UNREADABLE: ChWelcome = { name: { status: 'anonymous' }, news: { items: []
  * in (an unreachable auth server falls back to the local session, which is what
  * `getUserResilient` is for, so a slow moment never signs someone out).
  */
+/** The team's zone for the date line (HOME-S10). Cosmetic like every read here: no team or a failed read is the viewer's own clock. */
+async function welcomeTeamZone(supabase: Awaited<ReturnType<typeof createClient>>): Promise<string | null> {
+  try {
+    const session = await getGolfSessionProfile();
+    const team = session ? await resolveClubhouseTeam(session) : null;
+    if (!team) return null;
+    const { data, error } = await supabase.from('golf_team_settings').select('timezone').eq('team_id', team.teamId).maybeSingle();
+    if (error) throw error;
+    return getValidTimezone(data?.timezone);
+  } catch (error) {
+    chLogServer(SURFACE, 'welcome.timezone', error, AREA);
+    return null;
+  }
+}
+
 export async function loadWelcome(): Promise<WelcomeLoad> {
   const supabase = await createClient();
   let user;
@@ -33,12 +51,13 @@ export async function loadWelcome(): Promise<WelcomeLoad> {
   }
   if (!user) return { kind: 'signedOut' };
 
-  const [coach, player, account, feed] = await Promise.all([
+  const [coach, player, account, feed, teamTimeZone] = await Promise.all([
     supabase.from('golf_coaches').select('full_name').eq('user_id', user.id).maybeSingle(),
     supabase.from('golf_players').select('first_name').eq('user_id', user.id).maybeSingle(),
     // `last_seen` is read before anything on the dashboard can beat it: it is the previous visit.
     supabase.from('users').select('role, last_seen').eq('id', user.id).maybeSingle(),
     getUnifiedNotifications({ limit: 20 }).catch(() => null),
+    welcomeTeamZone(supabase),
   ]);
 
   // CH-15908: a failed read is logged and said on the card, never drawn as nothing new.
@@ -61,6 +80,7 @@ export async function loadWelcome(): Promise<WelcomeLoad> {
       }),
       news: shapeWelcomeNews({ feed: items, lastSeenAt }),
       lastSeenAt,
+      teamTimeZone,
       isAdmin: (account.data?.role as string | undefined) === 'admin',
       clubhouseDashboard: (await isClubhouseFor(role)),
     },

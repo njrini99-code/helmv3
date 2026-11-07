@@ -4518,8 +4518,9 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-hero {
     display: grid;
-    padding: 8px var(--ch-page-x-phone) 20px;
-    border-radius: 0 0 var(--ch-radius-xl) var(--ch-radius-xl);
+    /* One green with the bar above it: 54 of status bar and the 44 row are the bar's, the rest is here (04 Home). */
+    padding: 16px var(--ch-page-x-phone) 20px;
+    border-radius: 0 0 var(--ch-radius-hero) var(--ch-radius-hero);
     background: var(--ch-frame);
     box-shadow: var(--ch-home-shadow-1);
     color: var(--ch-on-green-plate);
@@ -4532,7 +4533,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     font: var(--ch-type-15);
     color: var(--ch-on-green-3); letter-spacing: var(--ch-track-15); }
   .ch-hm[data-ch-crh='on'] .ch-hm-hero h1 {
-    margin: 8px 0 8px;
+    margin: 8px 0 12px;
     font: var(--ch-type-34-strong);
     font-variation-settings: 'wdth' 88;
     letter-spacing: -0.038em;
@@ -4541,10 +4542,12 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-hm[data-ch-crh='on'] .ch-hm-hero__brief {
     display: flex;
     gap: 8px;
+    max-width: 60ch;
     margin: 0 0 16px;
-    font: var(--ch-type-15);
+    font: var(--ch-type-brief);
     color: var(--ch-on-green-2);
-    text-wrap: pretty; letter-spacing: var(--ch-track-15); }
+    hyphens: manual;
+    text-wrap: pretty; }
   .ch-hm[data-ch-crh='on'] .ch-hm-hero__brief svg {
     flex: none;
     margin-top: 2px;
@@ -4610,10 +4613,14 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     color: var(--ch-countdown-on-green);
   }
   /* Cards on the flat page. */
+  /* The design's rhythm: Today, Team scoring and The team's game read as one group, 12 apart; This week starts the next, 24 down. */
   .ch-hm[data-ch-crh='on'] .ch-hm-body {
     display: grid;
-    gap: 24px;
+    gap: 12px;
     padding: 24px var(--ch-page-x-phone) 48px;
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-sec:has(> .ch-hm-week) {
+    margin-top: 12px;
   }
   .ch-hm[data-ch-crh='on'] :is(.ch-hm-sec, .ch-hm-form) {
     overflow: hidden;
@@ -4627,18 +4634,37 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     align-items: baseline;
     justify-content: space-between;
     gap: 8px;
+    position: relative;
     padding: 12px 16px 12px;
     border: 0;
-    box-shadow: var(--ch-home-x3);
+    box-shadow: none;
+  }
+  .ch-hm[data-ch-crh='on'] :is(.ch-hm-sec__h, .ch-hm-form__head)::after {
+    position: absolute;
+    inset: auto 0 0 16px;
+    height: var(--ch-hairline-w);
+    background: var(--ch-separator);
+    content: '';
   }
   .ch-hm[data-ch-crh='on'] :is(.ch-hm-sec__h, .ch-hm-form__head) h2 {
     margin: 0;
     font: var(--ch-type-card-title);
     color: var(--ch-text-primary);
   }
+  /* The old pass reached 44 with a negative margin; the reach is a layer now, and the link sits on the card's 16. */
   .ch-hm[data-ch-crh='on'] .ch-hm-link {
+    position: relative;
+    display: inline;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
     font: var(--ch-type-meta);
     color: var(--ch-green-600);
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-link::after {
+    position: absolute;
+    inset: -14px -8px;
+    content: '';
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-meta {
     font: var(--ch-type-meta);
@@ -4652,8 +4678,10 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     display: flex;
     align-items: center;
     gap: 12px;
-    min-height: 56px;
-    padding: 8px 16px;
+    min-height: 52px;
+    margin-inline: 0;
+    padding: 4px 16px;
+    border-radius: 0;
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-tl__t {
     flex: none;
@@ -4685,10 +4713,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-hm[data-ch-crh='on'] .ch-hm-form__top > span:first-child em {
     display: block;
   }
-  .ch-hm[data-ch-crh='on'] .ch-hm-form__top > span:first-child {
-    display: grid;
-    gap: 4px;
-  }
   .ch-hm[data-ch-crh='on'] .ch-hm-tl__w {
     display: inline-flex;
     flex: none;
@@ -4707,11 +4731,33 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-hm[data-ch-crh='on'] .ch-hm-form::after {
     display: none;
   }
+  /* The label's own line, then the figure with its change beside it. */
   .ch-hm[data-ch-crh='on'] .ch-hm-form__top {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 4px 12px;
     padding: 12px 16px;
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-form__top > span:first-child {
+    display: contents;
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-form__top > span:first-child em {
+    grid-column: 1 / -1;
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-form__top .ch-hm-delta em:not(.ch-hm-form__basis) {
+    max-width: none;
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-form__basis {
+    display: block;
+    font: var(--ch-type-13);
+    letter-spacing: var(--ch-track-13);
+    color: var(--ch-text-secondary);
+    text-align: right;
+  }
+  /* The soft fill under the line, as drawn; the flag-off page hides it. */
+  .ch-hm[data-ch-crh='on'] .ch-hm-form__svg path:first-of-type {
+    display: block;
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-form__top em {
     font: var(--ch-type-15);
@@ -4719,7 +4765,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     color: var(--ch-text-secondary); letter-spacing: var(--ch-track-15); }
   .ch-hm[data-ch-crh='on'] .ch-hm-form__top b {
     display: block;
-    font: var(--ch-type-figure-hero);
+    font: var(--ch-type-34-strong);
     font-variation-settings: 'wdth' 96;
     letter-spacing: -0.038em;
     color: var(--ch-text-primary);
@@ -4734,9 +4780,14 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-hm[data-ch-crh='on'] .ch-hm-form__figs {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    margin: 0;
-    padding: 12px 16px 12px;
-    border-top: 0.66px solid var(--ch-separator);
+    margin: 0 16px;
+    padding: 12px 0 16px;
+    border-top: var(--ch-hairline-w) solid var(--ch-separator);
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-form__figs > div + div {
+    padding-left: 0;
+    border-left: 0;
+    box-shadow: none;
   }
   /* The team's game: one column on a phone (CRH-3), where the design's 2 x 2 left 147 for real names. Bars from a centre zero. */
   .ch-hm[data-ch-crh='on'] .ch-hm-legs__grid {
@@ -4776,7 +4827,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     text-decoration-color: color-mix(in srgb, currentcolor 45%, transparent);
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-legs__a::after {
-    inset: -12px min(0px, calc(50% - 22px));
+    inset: -14px min(0px, calc(50% - 22px));
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-legs__notices {
     padding: 12px 16px 0;
@@ -4853,10 +4904,14 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     place-content: center;
     width: 54px;
     height: 48px;
-    border-radius: var(--ch-radius-md);
+    border-radius: var(--ch-radius-well);
     background: var(--ch-well-bg-flat);
     box-shadow: var(--ch-well-shadow);
     text-align: center;
+  }
+  .ch-hm[data-ch-crh='on'] .ch-hm-score b {
+    font: var(--ch-type-20-strong);
+    letter-spacing: var(--ch-track-20);
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-score.is-under em {
     color: var(--ch-score-under);
@@ -4886,6 +4941,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     padding: 20px 24px;
     border-radius: var(--ch-radius-lg);
     background: var(--ch-frame);
+    box-shadow: var(--ch-home-shadow-1);
     color: var(--ch-on-green-plate);
   }
   .ch-h-main[data-ch-crh='on'] .ch-h-herocard h1 {
@@ -4898,9 +4954,14 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-h-main[data-ch-crh='on'] .ch-h-herocard :is(.ch-h-head__date, .ch-h-head__sub) {
     color: var(--ch-on-green-2);
   }
+  .ch-h-main[data-ch-crh='on'] {
+    --ch-crh-card-shadow: 0 0 0 1px var(--ch-card-ring);
+  }
   .ch-h-main[data-ch-crh='on'] .ch-dh-brief {
     display: flex;
     gap: 8px;
+    max-width: 60ch;
+    hyphens: manual;
     text-wrap: pretty;
   }
   .ch-dh-brief > svg {
@@ -5032,11 +5093,12 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   font: var(--ch-type-20-strong); letter-spacing: var(--ch-track-20); }
 .ch-app {
   --ch-home-shadow-1: 0 18px 40px -24px rgb(11 58 37 / 0.6);
-  --ch-home-shadow-2: inset 0 0 0 var(--ch-hairline-w) rgb(255 255 255 / 0.13), inset 0 var(--ch-hairline-w) 0 rgb(255 255 255 / 0.14), 0 10px 24px -14px rgb(0 0 0 / 0.5);
+  --ch-home-shadow-2: inset 0 0 0 1px rgb(255 255 255 / 0.13), inset 0 var(--ch-hairline-w) 0 rgb(255 255 255 / 0.14), 0 10px 24px -14px rgb(0 0 0 / 0.5);
 }
 [data-ui='clubhouse'] {
   --ch-home-x1: inset 0 0 0 var(--ch-hairline-w) rgb(255 255 255 / 0.14);
-  --ch-home-x2: var(--ch-elevation-reading);
+  /* One shadow level: the green hero alone casts one; every other card is a ring (HOME-S1). */
+  --ch-home-x2: 0 0 0 1px var(--ch-card-ring);
   --ch-home-x3: inset 0 -0.66px 0 var(--ch-separator);
   --ch-home-x4: inset -0.66px 0 0 var(--ch-separator);
 }
@@ -5169,13 +5231,21 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 .ch-dh-rows--board {
   --ch-dh-inset: 56px;
 }
-.ch-dh-rows--board.is-unplaced {
-  --ch-dh-inset: 16px;
-}
 .ch-dh-rows--board > li > .ch-num:last-child {
+  padding: 4px 8px;
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-accent-tint);
   font: var(--ch-type-15-strong);
   letter-spacing: var(--ch-track-15);
 }
+/* Year colour on the coin, on this board only (HOME-S8). Over the shared neutral coin; tones from the class bar's tokens. */
+.ch-dh-coin {
+  display: contents;
+}
+.ch-dh-coin[data-year='fr'] .ch-avatar { background: var(--ch-yr-fr); color: var(--ch-on-fill-100); }
+.ch-dh-coin[data-year='so'] .ch-avatar { background: var(--ch-yr-so); color: var(--ch-on-fill-100); }
+.ch-dh-coin[data-year='jr'] .ch-avatar { background: var(--ch-yr-jr); color: var(--ch-on-fill-100); }
+.ch-dh-coin[data-year='sr'] .ch-avatar { background: var(--ch-yr-sr); color: var(--ch-on-fill-100); }
 .ch-dh-rows--rounds > li {
   min-height: 64px;
 }
@@ -5188,9 +5258,8 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   gap: 2px;
   min-width: 54px;
   height: 48px;
-  border-radius: var(--ch-radius-md);
-  background: var(--ch-well-bg-flat);
-  box-shadow: inset 0 var(--ch-hairline-w) 2px var(--ch-separator);
+  border-radius: var(--ch-radius-well);
+  background: var(--ch-accent-tint);
 }
 .ch-dh-score b {
   font: var(--ch-type-17-strong);
@@ -5204,23 +5273,27 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 .ch-dh-score.is-under em {
   color: var(--ch-chart-flag);
 }
-/* An empty week sits in the middle of the room the card keeps beside its partner. */
-.ch-dh-card > .ch-es {
-  margin-block: auto;
+/* An empty week: one line and one quiet shape; the card shrinks to it (HOME-S2). */
+.ch-dh-none {
+  display: grid;
+  gap: 8px;
+  padding: 12px 16px 16px;
 }
-/* What the rest of a short list means, centred in the room the card keeps beside its partner. */
+.ch-dh-none p {
+  margin: 0;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-secondary);
+}
+/* The footnote: left, under the last row (HOME-S4). */
 .ch-dh-rest {
   position: relative;
-  display: grid;
-  flex: 1;
-  place-content: center;
-  min-height: 52px;
   margin: 0;
   padding: 12px 16px;
-  font: var(--ch-type-14);
+  font: var(--ch-type-13);
+  letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
-  text-align: center;
-  text-wrap: balance;
+  text-wrap: pretty;
 }
 .ch-dh-rest::before {
   position: absolute;
@@ -5816,4 +5889,19 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   .ch-hm[data-ch-crh='on'] .ch-hm-tl__b {
     flex: 1 1 auto;
   }
+}
+
+/* The change in words takes its tone from the row: loss colour only when the change is clear (HOME-S7). */
+[data-ch-crh='on'] .ch-hm-delta .ch-hm-delta__w {
+  color: inherit;
+  font-style: normal;
+}
+[data-ch-crh='on'] .ch-hm-delta:not(.is-gain, .is-loss) {
+  color: var(--ch-text-tertiary);
+}
+
+/* The team's game is a Surface: one ring like every other Home card, and the sections' rhythm (HOME-S1). */
+:is(.ch-hm, .ch-h-main)[data-ch-crh='on'] > * .ch-surface,
+:is(.ch-hm, .ch-h-main)[data-ch-crh='on'] > .ch-surface {
+  box-shadow: 0 0 0 1px var(--ch-card-ring);
 }

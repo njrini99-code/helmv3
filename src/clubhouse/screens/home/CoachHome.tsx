@@ -84,7 +84,7 @@ function CoachHomeBody({ data, now, live, crh = false }: { data: ChCoachHome; no
             {data.week.error ? (
               <CrhFailedCard id="ch-dh-week-failed" title="This week" href={CALENDAR} link="Calendar" code="CH-2201" what="This week didn’t load" body="Your events are safe. Try again." />
             ) : (
-              <DeskAgenda rows={data.week.agenda} />
+              <DeskAgenda rows={data.week.agenda} heroId={data.phone.next?.id ?? null} />
             )}
           </SectionBoundary>
           {data.phone.form ? (
@@ -103,7 +103,7 @@ function CoachHomeBody({ data, now, live, crh = false }: { data: ChCoachHome; no
         <div className="ch-h-grid">
           {!noRounds && !data.latestRounds.error && (
             <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
-              {data.latestRounds.error || data.latestRounds.rounds.length === 0 ? <LatestRound data={data.latestRounds} covered={covered} /> : <DeskRounds rounds={data.latestRounds.rounds} />}
+              {data.latestRounds.error || data.latestRounds.rounds.length === 0 ? <LatestRound data={data.latestRounds} covered={covered} /> : <DeskRounds years={data.yearById} rounds={data.latestRounds.rounds} />}
             </SectionBoundary>
           )}
           <SectionBoundary surface="home.leaderboard" label="The leaderboard" code="CH-2207">
@@ -112,7 +112,7 @@ function CoachHomeBody({ data, now, live, crh = false }: { data: ChCoachHome; no
             ) : data.leaderboard.rows.length === 0 ? (
               <Leaderboard data={data.leaderboard} covered={covered} rounds={data.latestRounds.rounds} />
             ) : (
-              <DeskBoard rows={data.leaderboard.rows} rosterSize={data.leaderboard.rosterSize} />
+              <DeskBoard rows={data.leaderboard.rows} rosterSize={data.leaderboard.rosterSize} years={data.yearById} />
             )}
           </SectionBoundary>
         </div>

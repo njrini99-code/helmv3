@@ -1,3 +1,4 @@
+import { teamDateLabel } from '../lib/team-date';
 import type { NotificationCategoryId, UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
 import { resolveAdminPostLoginPath } from '@/lib/golf/admin-redirect';
 import { extractFirstName, extractLastName } from '@/lib/utils/names';
@@ -35,6 +36,8 @@ export interface ChWelcome {
   news: ChWelcomeNews;
   /** When the person was last here (`users.last_seen`, written by the dashboard's heartbeat), or null. */
   lastSeenAt: string | null;
+  /** The team's zone, for the date line; null with no team or a failed read, and the viewer's clock then. */
+  teamTimeZone?: string | null;
   /** The legacy `users.role = 'admin'` flag: with no `next`, the welcome hands over to the admin console. */
   isAdmin: boolean;
   /** The destination's dashboard is Clubhouse for this person, so the hand-off can fold into its canvas. */
@@ -100,6 +103,5 @@ export function formatLastHere(iso: string, now: Date): string | null {
   return `${at.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} at ${time}`;
 }
 
-/** The date line above the greeting, in the viewer's locale ("Tuesday, October 14"). */
-/** P015 D4: one Clubhouse date style, as Home's (en-GB, "Tuesday 14 October"), in the viewer's own zone. */
-export const formatWelcomeDate = (now: Date): string => new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(now);
+/** The date line above the greeting: the team's day, as Home's hero says it (HOME-S10). */
+export const formatWelcomeDate = (now: Date, tz?: string | null): string => teamDateLabel(now, tz);

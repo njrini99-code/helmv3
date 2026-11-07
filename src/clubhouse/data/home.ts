@@ -7,7 +7,8 @@ import { eventDaySpan } from '@/lib/calendar/timezone';
 import { chLogServer } from '../lib/track-server';
 import { homeClock, ymd } from './home-clock';
 import { classYearKey, type ChYearKey } from '../lib/class-year';
-import { classYearLabel, countsForScoring, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, MIN_SG_ROUNDS, seasonStartDate, summarizePlayer, type ChForm, type ChRound } from './season';
+import { roundsForFigures } from './figure-window';
+import { classYearLabel, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, MIN_SG_ROUNDS, seasonStartDate, summarizePlayer, type ChForm, type ChRound } from './season';
 import { LEGS, sgLegs, teamGrid, type ChLeg } from './stats-team';
 import { legRows } from './leg-rows';
 import { loadCoachQueue, type ChCoachQueue } from './home-queue';
@@ -414,7 +415,7 @@ export async function loadCoachHome(input: {
   // ── Season rounds ──
   const { rounds: readRounds, error: roundsError } = seasonRead;
   // Behind the lane's flag, practice rounds stay out of every scoring figure below (DECISIONS); Latest rounds is read apart and lists them.
-  const rounds = input.crh ? readRounds.filter(countsForScoring) : readRounds;
+  const rounds = input.crh ? roundsForFigures(readRounds) : readRounds;
   const full = rounds.filter(isFull18);
   const start = seasonStartDate(now, tz);
   const seasonRounds = seasonOnly(rounds, start);

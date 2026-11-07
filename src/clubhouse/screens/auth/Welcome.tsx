@@ -82,7 +82,7 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
   const phone = useChPhone();
   const hour = useLocalHour();
   const sky = useSkyHour();
-  const dateLabel = useLocalDateLabel();
+  const dateLabel = useLocalDateLabel(data.teamTimeZone);
   const lastHere = useLastHereLabel(data.lastSeenAt);
   const [armed, setArmed] = useState(false);
   const [leaving, setLeaving] = useState(false);

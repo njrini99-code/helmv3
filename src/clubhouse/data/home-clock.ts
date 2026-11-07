@@ -1,3 +1,4 @@
+import { teamDateLabel } from '../lib/team-date';
 import 'server-only';
 import type { createClient } from '@/lib/supabase/server';
 import { getValidTimezone } from '@/lib/calendar/timezone';
@@ -38,6 +39,6 @@ export async function homeClock(
   } catch {
     /* unknown zone: the time-neutral phrase is never wrong */
   }
-  const todayLabel = new Intl.DateTimeFormat('en-GB', { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long' }).format(now);
+  const todayLabel = teamDateLabel(now, tz);
   return { tz, greeting, todayLabel, day: ymd(now, tz) };
 }

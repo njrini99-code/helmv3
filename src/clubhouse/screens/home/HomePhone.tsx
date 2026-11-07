@@ -31,7 +31,7 @@ import { LinkPending } from '../../shell/LinkPending';
 import { usePhoneHero } from '../../shell/phone-chrome';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
-import { coachFailedParts } from './model';
+import { changeInWords, coachFailedParts } from './model';
 import { CoachQueue } from './CoachQueue';
 import { LiveNowCard } from './LiveNowCard';
 import type { LiveSnapshot } from '../../live/model';
@@ -402,8 +402,14 @@ export function Form({ form, crh = false }: { form: ChTeamForm; crh?: boolean })
           <b className="ch-num">{withPointSpan(formatFixed(form.avg))}</b>
         </span>
         <span className={'ch-hm-delta ch-num ' + avgTone}>
-          {form.delta != null && formatSigned(form.delta)}
-          {form.delta != null && <em>{deltaWords(form.delta, avgTone, 'vs previous 10')}</em>}
+          {crh ? (
+            form.delta != null && <em className="ch-hm-delta__w">{changeInWords(form.delta, 'previous 10')}</em>
+          ) : (
+            <>
+              {form.delta != null && formatSigned(form.delta)}
+              {form.delta != null && <em>{deltaWords(form.delta, avgTone, 'vs previous 10')}</em>}
+            </>
+          )}
           <em className="ch-hm-form__basis">{formBasis(form.basis)}</em>
         </span>
       </div>
@@ -549,7 +555,9 @@ function Rounds({ years, data, trends, onOpen, covered }: { years?: Record<strin
                       onOpen(r);
                     }}
                   >
-                    <Avatar name={r.playerName} id={r.playerId} size="md" year={years?.[r.playerId] ?? null} />
+                    <span className="ch-dh-coin" data-year={years?.[r.playerId]}>
+                      <Avatar name={r.playerName} id={r.playerId} size="md" />
+                    </span>
                     <span className="ch-hm-rd__b">
                       <b>{r.playerName}</b>
                       <RoundMeta meta={r.meta} />
