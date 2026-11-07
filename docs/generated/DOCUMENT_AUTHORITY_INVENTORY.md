@@ -1155,6 +1155,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-06-coachhelm-head-in-bar.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-07-dashboard-cuts.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-07-pre-refresh.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
@@ -1191,6 +1192,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-06-one-window.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-07-dash-cuts-home.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-07-dashboard-cuts.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-07-one-sg-source.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-07-pre-refresh.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
@@ -1263,6 +1266,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-06-one-window.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-07-dash-cuts.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-07-one-sg-source.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
@@ -1302,6 +1306,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-05-page-polish.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-07-dash-cuts.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-07-one-sg-source.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
@@ -1379,6 +1384,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-05-go-live-bug-hunt.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-11-07-dashboard-cuts.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-07-one-to-one-title.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
@@ -1587,6 +1593,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-06-one-window.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-06-team-lane.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-07-dashboard-cuts.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-07-one-sg-source.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-07-pre-refresh.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |

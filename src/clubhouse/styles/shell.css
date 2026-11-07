@@ -345,19 +345,6 @@
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
-.ch-next__bar {
-  height: 4px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--ch-ivory-200);
-  box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.08);
-}
-.ch-next__bar > span {
-  display: block;
-  height: 100%;
-  border-radius: var(--ch-radius-mark);
-  background: var(--ch-green-fill-600);
-}
 /* The identity is the account menu's key (B11): reset as a button, it keeps the block's look, and its hover and open
    wash is a ring drawn outside it (box-shadow), so the foot's layout never moves. */
 .ch-identity {
@@ -4333,11 +4320,6 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   .ch-app[data-ch-rail='folded'] .ch-navitem__count {
     animation: none;
   }
-}
-
-/* Wave 7: a player's reply still owed on the sidebar's next event (NextEventCard), held to its own width. */
-.ch-next > .ch-badge {
-  align-self: flex-start;
 }
 
 /* L10 phone shell — the phone's native-feel pieces (docs/clubhouse/phone/shell-gestures.md). */

@@ -309,7 +309,6 @@ its own.
 | 130745 | CH-13943 | `COACH_EVERY_READ_OF_A_PLAYER_IS` | Coach: every read of a player is Not enough yet |
 | 130746 | CH-13936 | `MONDAY_BRIEF_COACHHELM_IS_OFF_FOR_THE` | Monday brief: CoachHelm is off for the team |
 | 130747 | CH-13937 | `MONDAY_BRIEF_A_READ_IT_IS_MADE` | Monday brief: a read it is made from failed |
-| 130748 | CH-13938 | `COACH_BOARD_THE_LINK_TO_THE_MONDAY` | Coach board: the link to the Brief |
 | 130749 | CH-13939 | `MONDAY_BRIEF_THE_COUNTS_LINE` | Monday brief: the counts line |
 | 130750 | CH-13932 | `COACH_THE_MONDAY_BRIEF` | Coach: the Monday brief (`?view=monday-brief`, flag `coachhelm_monday_brief_v1`) |
 | 130751 | CH-13933 | `MONDAY_BRIEF_A_PLAYER_READ_AT_LIKELY` | Monday brief: a player read at Likely or above |
@@ -323,16 +322,11 @@ its own.
 | 130762 | CH-13915 | `STANDING_HOW_YOU_PLAY` | Standing: How you play (chs-37) |
 | 130763 | CH-13916 | `PLAYER_THEIR_OWN_COURSE_PLAN_OFFERED_BY` | Player: their own Course plan (chs-21 / par-14, `coachhelm_course_plan_v1`), offered by the loader while the flag is on |
 | 130764 | CH-13917 | `PLAYER_THE_PLAN_FOR_THE_COURSE_THEY` | Player: the plan for the course they picked |
-| 130780 | CH-13983 | `COACH_THE_BRIEF_BEHIND_INTELLIGENCE` | Coach: the Brief behind /intelligence (`?view=brief`, flag `coachhelm_monday_brief_v1`) |
 | 130781 | CH-13984 | `BRIEF_THIS_WEEKS_OPEN_READS` | Brief: this week's open reads |
 | 130782 | CH-13985 | `BRIEF_WHAT_PLAYERS_ARE_WORKING_ON` | Brief: what players are working on |
 | 130783 | CH-13986 | `BRIEF_HOW_THE_READS_HAVE_HELD` | Brief: how the reads have held |
 | 130784 | CH-13987 | `BRIEF_GOALS_AND_STANDING` | Brief: goals and standing |
-| 130785 | CH-13988 | `BRIEF_NO_OPEN_READS_THIS_WEEK` | Brief: no open reads this week |
-| 130786 | CH-13989 | `BRIEF_A_SECTIONS_READ_FAILED` | Brief: a section's read failed |
-| 130787 | CH-13997 | `BRIEF_A_READ_IT_IS_MADE_FROM` | Brief: a read it is made from failed |
 | 130788 | CH-13998 | `INTELLIGENCE_AND_ITS_OLD_SUB_LINKS` | /intelligence and its old sub-links |
-| 130789 | CH-13999 | `BRIEF_COACHHELM_IS_OFF_FOR_THE_TEAM` | Brief: CoachHelm is off for the team |
 
 ## 08 — Permission / authorization
 

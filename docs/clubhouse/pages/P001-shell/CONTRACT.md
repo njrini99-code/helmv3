@@ -104,7 +104,6 @@ first-run and filtered empties are in its contract.
 | 10401 | CH-1301 | `A_PAGE_THAT_HASNT_BEEN_REBUILT_IN` | A page that hasn't been rebuilt in Clubhouse |
 | 10402 | CH-1302 | `THE_BELL_HAS_NOTHING` | The bell has nothing |
 | 10403 | CH-1303 | `THE_BELLS_FILTER_HAS_NOTHING` | The bell's filter has nothing |
-| 10404 | CH-1304 | `NOTHING_IS_SCHEDULED` | Nothing is scheduled |
 | 10405 | CH-1305 | `A_COACH_WITH_ONE_TEAM_A_COACH` | A coach with one team, a coach who cannot switch (an assistant on several teams), or a player |
 | 10406 | CH-1306 | `A_DASHBOARD_URL_THAT_MATCHES_NOTHING_OR` | A dashboard URL that matches nothing, or an id that no longer exists (a deleted round or player), inside the Clubhouse shell |
 | 10407 | CH-1307 | `MORE_UNREAD_THAN_THE_BELL_LISTS` | More unread than the bell lists |
@@ -137,7 +136,6 @@ one read fails (10614, `EmptyState size="page" tone="danger"`).
 | 10605 | CH-1204 | `THE_SERVER_IS_BUSY` | The server is busy |
 | 10606 | CH-1205 | `THE_CONNECTION_DROPPED_MID_LOAD` | The connection dropped mid-load |
 | 10607 | CH-1206 | `ANYTHING_ELSE_CRASHED_THE_PAGE` | Anything else crashed the page |
-| 10608 | CH-1207 | `THE_SIDEBARS_NEXT_EVENT_DOESNT_LOAD` | The sidebar's next event doesn't load |
 | 10609 | CH-1208 | `THE_ROSTER_BADGES_JOIN_REQUESTS_DONT_LOAD` | The Roster badge's join requests don't load |
 | 10610 | CH-1002 | `SIGNING_OUT_FROM_THE_PHONES_MORE_SHEET` | Signing out from the phone's account sheet fails |
 | 10611 | CH-1003 | `SWITCHING_TEAM_FAILS` | Switching team fails (a head coach on more than one team) |

@@ -7,7 +7,7 @@ import { Badge } from '../../../ui/Badge';
 import { pluralWord } from '../../../lib/plural';
 
 import { X } from 'lucide-react';
-import { STATIONS, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
+import type { ChTeamBoardData, ChTeamPlayer } from '../../../data/coachhelm-team-shape';
 import type { ChInsight } from '../../../data/coachhelm-shape';
 import { coachReadHref, playerFileHref, readHref } from '../../../data/coachhelm-views-shape';
 import type { CourseHistoryRow } from '@/lib/coachhelm/v3/team-board/course-shape';
@@ -18,10 +18,9 @@ import { CorrectionChips } from '../Corrections';
 import { FocusActions, type ChFocusActions } from '../parts';
 import { askAboutReadHref } from '../chat/ask-links';
 import { Button } from '../../../ui/Button';
-import { barScale } from './SpotCard';
 import { toPar } from './CourseCard';
-import { STATION_NAME, STATION_SHORT } from './hole-geometry';
-import { Chevron, Coin, ReadRow, Notice } from './parts';
+import { STATION_NAME } from './hole-geometry';
+import { Chevron, Coin, ReadRow } from './parts';
 
 const areaName = (r: ChInsight) => (r.area ? STATION_NAME[r.area] : 'Course and scoring');
 
@@ -238,84 +237,19 @@ export function ReadPanel({
   );
 }
 
-export function PlayerPanel({ player, data, onRead, fileOn, onClose }: { player: ChTeamPlayer; data: ChTeamBoardData; onRead: (id: string) => void; fileOn: boolean; onClose: () => void }) {
-  const reads = [...player.reads.needs, ...player.reads.working];
-  const page = (
-    <Link className="lk" href={playerFileHref(player.id, undefined, fileOn)}>
-      Open {player.first}’s page <Chevron />
-    </Link>
-  );
+/**
+ * A peek at one player (Dashboard cuts, 2026-11-07): who, their rounds and their strokes gained on one line, and the way into their file,
+ * which is the one place the player is drawn. A player with no rounds says so and still opens it.
+ */
+export function PlayerPanel({ player, fileOn, onClose }: { player: ChTeamPlayer; fileOn: boolean; onClose: () => void }) {
   const year = player.classYear ?? 'Player';
-  if (player.rounds === 0)
-    return (
-      <>
-        <Head lead={<Coin player={player} />} name={player.name} line={`${yearShort(year)} · no rounds yet this season`} onClose={onClose} />
-        <section className="card">
-          <Notice title="Nothing to show yet" body={`${player.first}’s four-area figures show after their first round this season.`} />
-        </section>
-        {page}
-      </>
-    );
+  const line = player.rounds === 0 ? `${yearShort(year)} · no rounds yet this season` : `${yearShort(year)} · ${plural(player.rounds, 'round')} · ${formatSigned(player.total)} a round to Tour · last 10${player.early ? ' · early' : ''}`;
   return (
     <>
-      <Head lead={<Coin player={player} />} name={player.name} line={`${yearShort(year)} · ${plural(player.rounds, 'round')} · ${formatSigned(player.total)} a round to Tour${player.early ? ' · early' : ''}`} onClose={onClose} />
-      <section className="card">
-        <div className="ch">
-          <h4>Where {player.first} gains and loses</h4>
-          <span className="meta">Last 10</span>
-        </div>
-        <div className="bars">
-          {STATIONS.map((s) => {
-            const v = player.legs[s].strokes;
-            const team = data.stations[s].team;
-            return (
-              <div className="br" key={s}>
-                <span className="bn">{STATION_SHORT[s]}</span>
-                {v == null ? (
-                  <span className="bmiss">{player.legs[s].missing}</span>
-                ) : (
-                  <span className="bt">
-                    <i className="z" />
-                    {team != null && <i className="avg" style={{ left: `${84 - (Math.min(Math.abs(team), 1.3) / 1.3) * 84}%` }} />}
-                    <i className={`bf ${v < 0 ? 'l' : 'g'}${player.early ? ' early' : ''}`} style={{ transform: `scaleX(${barScale(v)})` }} />
-                  </span>
-                )}
-                <span className={'bv ch-num' + (v != null && v >= 0 ? ' g' : '')}>{formatSigned(v)}</span>
-              </div>
-            );
-          })}
-        </div>
-        <div className="axis">
-          <span className="axis__team">
-            <i aria-hidden="true" />
-            Team average
-          </span>
-          <span>Tour</span>
-        </div>
-      </section>
-      <section className="card">
-        <div className="ch">
-          <h4>Open reads</h4>
-          <span className="meta">{reads.length}</span>
-        </div>
-        <div className="rds">
-          {reads.map((r) => (
-            <button type="button" className="rd tapp" key={r.id} onClick={() => onRead(r.id)}>
-              <Coin player={player} />
-              <span>
-                <b>{r.title}</b>
-                <span className="ev">
-                  {r.stakes && <Badge tone="warning">{r.stakes} a round</Badge>}
-                  {r.evidence.sample && <span>{r.evidence.sample}</span>}
-                </span>
-              </span>
-              <Chevron />
-            </button>
-          ))}
-          {!reads.length && <p className="nopat">No open reads.</p>}
-        </div>
-      </section>
-      {page}
+      <Head lead={<Coin player={player} />} name={player.name} line={line} onClose={onClose} />
+      <Link className="lk" href={playerFileHref(player.id, undefined, fileOn)}>
+        Open {player.first}’s page <Chevron />
+      </Link>
     </>
   );
 }

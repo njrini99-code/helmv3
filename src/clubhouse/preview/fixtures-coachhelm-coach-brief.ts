@@ -4,7 +4,6 @@ import { computeMondayBrief, type MondayBriefRead, type MondayBriefRound } from 
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import type { TeamPattern, TeamPatternResult } from '@/lib/coachhelm/v3/team-pattern/pattern';
 import { toChCoachBrief, type BriefFocusRow, type ChCoachBrief, type CoachBriefInputs } from '../data/coachhelm-coach-brief-shape';
-import type { ChViewLoad } from '../data/coachhelm-views-shape';
 import { PREVIEW_TRACK_RECORD } from './fixtures-coachhelm-track';
 
 /**
@@ -210,10 +209,3 @@ export const PREVIEW_COACH_BRIEF_NO_READS = brief({
 
 /** The goals read failed: the rest draws and the notice names what is missing. */
 export const PREVIEW_COACH_BRIEF_PARTIAL = brief({ goals: null });
-
-export function coachBriefLoad(state: string | undefined): ChViewLoad<ChCoachBrief> {
-  if (state === 'failed') return { status: 'failed' };
-  if (state === 'off') return { status: 'off', reason: 'We are pausing AI insights until after the spring qualifier' };
-  const data = { thin: PREVIEW_COACH_BRIEF_THIN, noreads: PREVIEW_COACH_BRIEF_NO_READS, partial: PREVIEW_COACH_BRIEF_PARTIAL }[state ?? ''] ?? PREVIEW_COACH_BRIEF;
-  return { status: 'ready', data };
-}

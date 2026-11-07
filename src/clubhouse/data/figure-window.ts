@@ -38,6 +38,15 @@ export function playerStrokesGained(rounds: readonly ChRound[]): ChFigures {
   return figuresOver(lastTenRounds(rounds));
 }
 
+/**
+ * A player's scoring average over the same window (dashboard cuts: one place per number). My stats' default draws it; Home's Your game
+ * line reads this, so the two print one value. Per-18 weighted, as Stats' mean is.
+ */
+export function playerScoringAverage(rounds: readonly ChRound[]): { avg: number | null; n: number } {
+  const last = lastTenRounds(rounds).filter((r) => r.total_score != null);
+  return { avg: last.length ? weightedMean(last as ChRound[], (r) => r.total_score) : null, n: last.length };
+}
+
 export type ChLegKey = 'tee' | 'approach' | 'around' | 'putting';
 export type ChFigures = {
   /** Every round the window holds, the number a page prints beside the figures. */

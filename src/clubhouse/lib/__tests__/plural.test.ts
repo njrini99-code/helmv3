@@ -6,7 +6,6 @@ import { plural, pluralWord } from '../plural';
 const ALLOW_TERNARY: Record<string, number> = {
   'data/classes-shape.ts': 1,
   'data/coachhelm-monday-brief-shape.ts': 1,
-  'data/shell.ts': 1,
   'data/stats-filter.ts': 1,
   'screens/classes/ImportSchedule.tsx': 1,
   'screens/coachhelm/PlayerBoard.tsx': 1,

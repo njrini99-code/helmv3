@@ -27,11 +27,10 @@ export const PREVIEW_PLAYER: GolfUserData = {
 };
 
 export const PREVIEW_SHELL: ChShellData = {
-  nextEvent: { id: 'e-pinehurst', title: 'Pinehurst qualifier', whenLabel: 'In 2 days', metaLabel: 'Fri, Oct 16 · 8:42 AM · Pinehurst No. 2', ready: { accepted: 5, invited: 6 } },
   pendingJoinRequests: 2,
   timezone: 'America/New_York',
   askAvailable: true,
-  helmViews: { brief: true, playerAsk: true, team: true },
+  helmViews: { playerAsk: true, team: true },
   // Maya is the head coach (the boards' "Head coach · Varsity"); a player's line ignores it.
   viewerIsHeadCoach: true,
 };

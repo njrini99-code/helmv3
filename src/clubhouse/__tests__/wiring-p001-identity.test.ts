@@ -68,8 +68,8 @@ describe('Shell identity line, head coach', () => {
     tables.current = { golf_team_coach_staff: { data: [{ role: 'head_coach' }] } };
     const shell = loadClubhouseShell('t1', null, 'c1');
     await new Promise((resolve) => setTimeout(resolve, 0));
-    // Nothing has answered yet, and the staff read is already out beside the next event's.
-    expect(started).toEqual(expect.arrayContaining(['golf_events', 'golf_team_join_requests', 'golf_team_coach_staff']));
+    // Nothing has answered yet, and the staff read is already out beside the join requests' (the next event's read went with the sidebar card).
+    expect(started).toEqual(expect.arrayContaining(['golf_team_join_requests', 'golf_team_coach_staff']));
     release();
     expect((await shell).viewerIsHeadCoach).toBe(true);
   });

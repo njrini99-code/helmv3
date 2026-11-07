@@ -2,13 +2,13 @@
 
 import { GraduationCap, MessageSquare, Plus } from 'lucide-react';
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import type { ChHomeEvent } from '../../data/home';
 import type { ChPlayerHome } from '../../data/player-home';
 import type { ChPlayerLive } from '../../data/live-rounds';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
-import { PageRefreshNotice } from '../../ui/RefreshNotice';
+import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
 import { Icon } from '../../ui/Icon';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useChPhone } from '../../lib/use-phone';
@@ -20,14 +20,15 @@ import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
 import { CoachAsks, MineBadge } from './CoachAsks';
 import { Countdown } from './Countdown';
-import { eventHref, whenLabel } from './HomePhone';
+import { eventHref, UpNextRow, whenLabel } from './HomePhone';
 import { LatestRound } from './LatestRound';
 import { noRoundsYet, playerFailedParts } from './model';
 import { OwnLiveCard } from './OwnLiveCard';
 import { TeammatesLiveCard } from './TeammatesLiveCard';
-import { PlayerGame } from './PlayerGame';
+import { PlayerGame, YourGameLead } from './PlayerGame';
 import { NoRoundsYet, PlayerHomePhone } from './PlayerHomePhone';
 import { Week } from './Week';
+import { DeskToday } from './HomeDeskCrh';
 import { messageCoachHref, postRoundHref } from './player-links';
 import { useHomeDayRollover } from './use-day-rollover';
 import { ChangeMarksProvider } from '../../lib/use-change-marks';
@@ -52,6 +53,8 @@ export function PlayerHome(props: { data: ChPlayerHome; /** clubhouse_stats_rede
 
 function PlayerHomeBody({ data, now, live, playerId, shs }: { data: ChPlayerHome; shs?: boolean; now?: string; live?: ChPlayerLive; playerId?: string }) {
   const phone = useChPhone();
+  const clockNow = useNow();
+  const ticking = useMemo(() => (now ? new Date(now) : clockNow), [now, clockNow]);
   // A page left open past the team's midnight reads itself again, so "today" is today (desktop and phone).
   useHomeDayRollover(data.clock, now !== undefined);
   const own =
@@ -83,6 +86,43 @@ function PlayerHomeBody({ data, now, live, playerId, shs }: { data: ChPlayerHome
           </SectionBoundary>
         </div>
         <NoRoundsYet />
+      </main>
+    );
+  }
+  if (shs) {
+    // Dashboard cuts, 6, laid out wider: Your game leads; beside it Up next as one row, the rest of today and the latest round.
+    const todayRest = data.today.filter((e) => e.id !== data.next?.id);
+    return (
+      <main className="ch-h-main ch-h-main--desk" data-canopy="">
+        <DeskHead data={data} post={post} />
+        <CoachAsks asks={data.asks} />
+        <PageRefreshNotice parts={failed} />
+        {own}
+        <div className="ch-ph-desk">
+          <SectionBoundary surface="home.game" label="Your game" code="CH-2217">
+            <YourGameLead data={data} covered={covered} />
+          </SectionBoundary>
+          <div className="ch-ph-desk__side">
+            {data.next && (
+              <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
+                <UpNextRow e={data.next} now={ticking} />
+              </SectionBoundary>
+            )}
+            {data.week.error ? (
+              // A failed schedule read says so, never "Nothing scheduled" (the phone and coach Home do the same).
+              <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. Try again." covered={covered} />
+            ) : (
+              todayRest.length > 0 && (
+                <SectionBoundary surface="home.today" label="Today" code="CH-2214">
+                  <DeskToday events={todayRest} now={ticking} />
+                </SectionBoundary>
+              )
+            )}
+            <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
+              <LatestRound data={data.latest} mine covered={covered} />
+            </SectionBoundary>
+          </div>
+        </div>
       </main>
     );
   }

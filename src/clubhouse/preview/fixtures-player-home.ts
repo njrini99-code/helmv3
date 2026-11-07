@@ -103,6 +103,7 @@ export const PREVIEW_PLAYER_HOME: ChPlayerHome = {
   },
   scoring: { error: false, points: SCORES.map(([label, score], i) => ({ id: `s${i}`, label, score, par: 72 })) },
   sgPerRound: 1.8,
+  scoringLast10: { avg: 70.1, n: 10 },
   tour: 'pga',
   handicap: -0.8,
   legs: {
@@ -141,6 +142,7 @@ export const PREVIEW_PLAYER_HOME_EMPTY: ChPlayerHome = {
   latest: { rounds: [], error: false, holesError: false },
   scoring: { points: [], error: false },
   sgPerRound: null,
+  scoringLast10: null,
   legs: { rows: PREVIEW_PLAYER_HOME.legs!.rows.map((l) => ({ ...l, value: null, sg: null, trend: [], note: null })), cacheError: false, benchError: false },
 };
 
@@ -151,6 +153,7 @@ export const PREVIEW_PLAYER_HOME_NO_ROUNDS: ChPlayerHome = {
   latest: { rounds: [], error: false, holesError: false },
   scoring: { points: [], error: false },
   sgPerRound: null,
+  scoringLast10: null,
   legs: PREVIEW_PLAYER_HOME_EMPTY.legs,
 };
 

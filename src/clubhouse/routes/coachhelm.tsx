@@ -28,8 +28,6 @@ import { loadPlayerGame } from '../data/coachhelm-profile';
 import { loadPlayerStanding } from '../data/coachhelm-standing';
 import { loadCoachTrackRecord } from '../data/coachhelm-track-record';
 import { loadCoachMondayBrief } from '../data/coachhelm-monday-brief';
-import { loadCoachBrief } from '../data/coachhelm-coach-brief';
-import { COACH_BRIEF_HREF, isBriefSection, type ChBriefSection } from '../data/coachhelm-coach-brief-shape';
 import { COACH_TRACK_RECORD_HREF } from '../data/coachhelm-track-record-shape';
 import { landsOnGame, PLAYER_HELM_DEVELOPMENT_HREF, playerHelmDrill, type ChViewLoad, type ChViewVoice, type CoachPlayerView as CoachPlayerViewName, type PlayerHelmView } from '../data/coachhelm-views-shape';
 import { Ask } from '../screens/coachhelm/chat/Ask';
@@ -43,7 +41,6 @@ import { DiveSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skele
 import { Standing } from '../screens/coachhelm/views/Standing';
 import { TrackRecord } from '../screens/coachhelm/views/TrackRecord';
 import { MondayBrief } from '../screens/coachhelm/views/MondayBrief';
-import { CoachBrief } from '../screens/coachhelm/views/CoachBrief';
 import { resolveClubhouseTeam } from './team';
 import { NoTeam } from '../ui/NoTeam';
 import '../styles/coachhelm.css';
@@ -83,7 +80,7 @@ async function PlayerAskView() {
 
 async function CoachHelmView({ coachId, teamId, ask, conversationId, initialPlayer, initialInsight }: { initialInsight?: string; coachId: string; teamId: string; ask: boolean; conversationId?: string; initialPlayer?: string }) {
   if (!ask && isTeamBoardEnabled() && TEAM_BOARD_FIRST_VIEW === 'hole') return <TeamBoard askOn={isAskV2Enabled()} fileOn={isPlayerFileEnabled()} data={await loadCoachTeamBoard({ coachId, teamId })} initialPlayer={initialPlayer} initialInsight={initialInsight} courseTab={COURSE_TAB} readOn={isReadEnabled()} />;
-  if (!ask) return <CoachBoard data={await loadCoachCoachHelm({ coachId, teamId })} initialPlayer={initialPlayer} trackRecordHref={isTrackRecordEnabled() ? COACH_TRACK_RECORD_HREF : undefined} briefHref={isMondayBriefEnabled() ? COACH_BRIEF_HREF : undefined} />;
+  if (!ask) return <CoachBoard data={await loadCoachCoachHelm({ coachId, teamId })} initialPlayer={initialPlayer} trackRecordHref={isTrackRecordEnabled() ? COACH_TRACK_RECORD_HREF : undefined} />;
   // Ask is CoachHelm's, so it is off when CoachHelm is off for this coach, their team or GolfHelm, as the board is: the
   // address that led here is answered with the board's own "CoachHelm is off" page, and a lookup that failed with Ask's own
   // "did not load" notice, never with a chat that runs against a switch that is off.
@@ -149,11 +146,6 @@ async function CoachTrackRecordView({ coachId, teamId }: { coachId: string; team
 /** The coach's Monday brief (`?view=monday-brief`, flag `coachhelm_monday_brief_v1`; the route checks the flag). Its loader checks the CoachHelm gate. */
 async function CoachMondayBriefView({ coachId, teamId }: { coachId: string; teamId: string }) {
   return <MondayBrief load={await loadCoachMondayBrief({ coachId, teamId })} />;
-}
-
-/** The coach's Brief (`?view=brief`, behind `coachhelm_monday_brief_v1`; the route checks the flag): the team view `/intelligence` lands on. Its loader checks the CoachHelm gate. */
-async function CoachBriefView({ coachId, teamId, section }: { coachId: string; teamId: string; section: ChBriefSection | null }) {
-  return <CoachBrief load={await loadCoachBrief({ coachId, teamId })} section={section} />;
 }
 
 /**
@@ -235,9 +227,9 @@ function viewSkeleton(view: PlayerHelmView): ReactNode {
  * `?player=<golf_players.id>` opens a coach's board on that player; an id not on the board is ignored. `?view=deep-dive|standing`
  * with `?player=` is a coach's view of that player (spec A; Roster's View insights lands on the Deep dive), and the player's own view
  * for a player, whose `?player=` means nothing. `?view=profile` is Game profile's old address: Standing, opened at "How you play"
- * (CH-13913), for either. `?view=ask` (with `?c=`) is the coach's Ask sub-tab. `?view=brief` (with `&section=`) is the coach's Brief.
+ * (CH-13913), for either. `?view=ask` (with `?c=`) is the coach's Ask sub-tab.
  */
-export async function ClubhouseCoachHelmRoute({ view, player, c, insight, section, open, at: atCard, from }: { at?: string; from?: string; open?: string; view?: string; player?: string; c?: string; insight?: string; section?: string } = {}) {
+export async function ClubhouseCoachHelmRoute({ view, player, c, insight, open, at: atCard, from }: { at?: string; from?: string; open?: string; view?: string; player?: string; c?: string; insight?: string; section?: string } = {}) {
   if (view === 'development') redirect(PLAYER_HELM_DEVELOPMENT_HREF);
   const session = await getGolfSessionProfile();
   if (!session) return null;
@@ -293,15 +285,6 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight, sectio
       return (
         <Suspense fallback={<CoachHelmSkeleton view="coach" chained />}>
           <CoachMondayBriefView coachId={team.coachId} teamId={team.teamId} />
-        </Suspense>
-      );
-    }
-    // The Brief (the team view behind /intelligence) is the coach's alone and grows the Monday brief, so it shares that flag; with
-    // it off the address is the board. `?section=` names the part an old /intelligence link was for.
-    if (view === 'brief' && isMondayBriefEnabled()) {
-      return (
-        <Suspense fallback={<CoachHelmSkeleton view="coach" chained active="brief" />}>
-          <CoachBriefView coachId={team.coachId} teamId={team.teamId} section={isBriefSection(section) ? section : null} />
         </Suspense>
       );
     }

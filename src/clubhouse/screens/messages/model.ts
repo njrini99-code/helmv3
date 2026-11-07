@@ -373,3 +373,10 @@ export interface ChMute {
 
 /** An announcement still needs this player when it asks for acknowledgement and they haven't given it. */
 export const needsMyAck = (a: ChAnnouncement, role: 'coach' | 'player') => role === 'player' && a.requiresAck && !a.acknowledgedByMe;
+
+/** The Pinned card's threads (06 S-MSG): the team's channel is always first, then the viewer's own pins, three faces in all. */
+export function pinnedThreads<T extends { id: string; channel?: boolean }>(convs: readonly T[], pinIds: readonly string[]): T[] {
+  const channel = convs.find((c) => c.channel);
+  const own = pinIds.map((id) => convs.find((c) => c.id === id)).filter((c): c is T => !!c && c !== channel);
+  return (channel ? [channel, ...own] : own).slice(0, 3);
+}
