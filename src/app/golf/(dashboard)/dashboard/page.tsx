@@ -35,6 +35,7 @@ import { loadPlayerHome } from '@/clubhouse/data/player-home';
 import { PlayerHome, PlayerHomeNoTeam } from '@/clubhouse/screens/home/PlayerHome';
 import { resolveClubhouseTeam } from '@/clubhouse/routes/team';
 import { marksHint } from '@/clubhouse/lib/phone-hint';
+import { parseSpan } from '@/clubhouse/data/span';
 
 export const dynamic = 'force-dynamic';
 
@@ -170,6 +171,8 @@ export default async function GolfDashboardPage({
 }) {
     const params = await searchParams;
     const dateRange: DashboardDateRange = VALID_RANGES.has(params.range ?? '') ? (params.range as DashboardDateRange) : 'all';
+    // Clubhouse Home's own switch (This season, All time): the same `range` key, but its default is the season, not Fairway's all.
+    const span = parseSpan(params.range);
 
     // React.cache() dedupes getUser() + profile queries across render tree
     // Eliminates 4-6 redundant Supabase round-trips vs ad-hoc getUser()
@@ -208,7 +211,7 @@ export default async function GolfDashboardPage({
             // Who is on the course rides beside Home's own reads and never fails them (loadLiveRounds catches its own).
             // The marks hint feeds Home's loader only: the live read starts beside it rather than after it (F-0032).
             const [home, live] = await Promise.all([
-                marksHint().then((marks) => loadCoachHome({ teamId, coachName: coach.full_name || 'Coach', userId, coachId: coach.id, marks })),
+                marksHint().then((marks) => loadCoachHome({ teamId, coachName: coach.full_name || 'Coach', userId, coachId: coach.id, marks, span })),
                 loadLiveRounds({ teamId, viewer: { role: 'coach', playerId: null } }),
             ]);
             return <CoachHome data={home} live={live} />;
@@ -289,7 +292,7 @@ export default async function GolfDashboardPage({
         const team = await resolveClubhouseTeam(session);
         if (!team || team.role !== 'player') return <PlayerHomeNoTeam />;
         const [home, live] = await Promise.all([
-            marksHint().then((marks) => loadPlayerHome({ teamId: team.teamId, playerId: team.playerId, firstName: player.first_name?.trim() || 'there', marks })),
+            marksHint().then((marks) => loadPlayerHome({ teamId: team.teamId, playerId: team.playerId, firstName: player.first_name?.trim() || 'there', marks, span })),
             loadPlayerLive({ teamId: team.teamId, playerId: team.playerId }),
         ]);
         return <PlayerHome data={home} live={live} playerId={team.playerId} />;

@@ -24,8 +24,10 @@ export const QUIET_DAYS = 7;
 export function compareLeaderRows(
   a: { status: string; avg: number; rounds: number; name: string },
   b: { status: string; avg: number; rounds: number; name: string },
+  /** False on All time (span.ts): Fairway has no floor, so a short sample ranks on its average like any other. */
+  floor = true,
 ): number {
-  const early = (r: { status: string }) => (r.status === 'early' ? 1 : 0);
+  const early = (r: { status: string }) => (floor && r.status === 'early' ? 1 : 0);
   return early(a) - early(b) || Math.round(a.avg * 10) - Math.round(b.avg * 10) || b.rounds - a.rounds || a.name.localeCompare(b.name);
 }
 

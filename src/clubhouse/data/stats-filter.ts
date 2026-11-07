@@ -377,7 +377,7 @@ export function filterSummary(f: ChFilter, count: number, year = new Date().getU
 }
 
 /** The window's own label under a figure ("Last 20 rounds"). */
-export const windowBasis = (f: Pick<ChFilter, 'window' | 'last'>): string => (f.window === 'last10' ? `Last ${f.last} rounds` : f.window === 'season' ? 'This season' : 'Qualifier rounds');
+export const windowBasis = (f: Pick<ChFilter, 'window' | 'last' | 'span'>): string => (f.span === 'all' ? 'All time' : f.window === 'last10' ? `Last ${f.last} rounds` : f.window === 'season' ? 'This season' : 'Qualifier rounds');
 
 /** What a change is against: "vs previous 10" (5 or 20 on those cuts). */
 export const previousWords = (last: number): string => `vs previous ${last}`;

@@ -8,7 +8,9 @@ import { createContext, useContext, useEffect, useId, useMemo, useState, useTran
 import { useRouter } from 'next/navigation';
 import type { ChHalves, ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
-import { basisWords, clearFilters, filterFor, isFiltered, isWindowChange, hasRange, statsHref, rangeOf, withScope, type ChFilter, type ChRange } from '../../data/stats-filter';
+import { basisWords, clearFilters, filterFor, isFiltered, isWindowChange, hasRange, statsHref, rangeOf, withScope, withSpan, type ChFilter, type ChRange } from '../../data/stats-filter';
+import type { ChSpan } from '../../data/span';
+import { SpanSwitch } from '../../ui/SpanSwitch';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -59,12 +61,18 @@ const asText = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
 export type ChTeamCharts = Pick<ChTeamStats, 'window' | 'filter' | 'weeks' | 'weekStarts' | 'team' | 'players' | 'legWeeks' | 'legHalves' | 'legTotals' | 'grid' | 'tour' | 'roundCount' | 'figures'>;
 
 /** The filter in force and the one way to change it: the frame's offline refusal and slow notice, then the new address. */
-const GoFilter = createContext<{ filter: ChFilter; go: (next: ChFilter) => void; shown: ChRange }>({ filter: filterFor(), go: () => {}, shown: 'last10' });
+const GoFilter = createContext<{ filter: ChFilter; go: (next: ChFilter) => void; shown: ChRange; span: ChSpan }>({ filter: filterFor(), go: () => {}, shown: 'last10', span: 'season' });
 
 /** The frame's window change (offline refusal, slow notice, then the new window), for the phone view. */
 export function useGoWindow() {
   const { filter, go } = useContext(GoFilter);
   return (r: ChRange) => go(withScope(filter, r));
+}
+
+/** The span the figures are on (This season, All time): the one being loaded, from the tap, as the window is, and the way to change it. */
+export function useSpan(): [ChSpan, (s: ChSpan) => void] {
+  const { filter, go, span } = useContext(GoFilter);
+  return [span, (s) => go(withSpan(filter, s))];
 }
 
 /** The window the switch shows: the one being loaded, from the tap, not from when its figures land (F-55). */
@@ -78,7 +86,15 @@ export function useShownWindow(): ChRange {
  */
 export function PhoneWindowSwitch({ custom, hook }: { custom: boolean; hook?: string }) {
   const go = useGoWindow();
-  return <WindowSwitch value={useShownWindow()} onChange={go} custom={custom} hook={hook} />;
+  const [span, setSpan] = useSpan();
+  const shown = useShownWindow();
+  return (
+    <>
+      <SpanSwitch value={span} onChange={setSpan} hook={hook ? `${hook}-span` : undefined} />
+      {/* All time is no window: the switch comes back with the season. */}
+      {span === 'season' && <WindowSwitch value={shown} onChange={go} custom={custom} hook={hook} />}
+    </>
+  );
 }
 
 /** The page frame: changing the window or the filter dims the page and marks it busy until the new rounds land. */
@@ -121,7 +137,7 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
     start(() => pushOnce(statsHref('/golf/dashboard/stats', next), { scroll: false }));
   };
   return (
-    <GoFilter.Provider value={{ filter: current, go, shown: rangeOf(loading ?? current) }}>
+    <GoFilter.Provider value={{ filter: current, go, shown: rangeOf(loading ?? current), span: (loading ?? current).span ?? 'season' }}>
       <main className={'ch-st' + (isPhone ? ' is-phone' : '')} aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined} data-canopy={isPhone || tone !== 'canopy' ? undefined : ''} data-hero-tone={tone}>
         {/* The server renders desktop; at phone width it stays hidden until the phone view takes over at hydration. */}
         {isPhone ? phone : <div className="ch-st-desk">{children}</div>}
@@ -135,6 +151,8 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
 /** The header's window switch and Export. */
 export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; teamName: string; grid: ChTeamStats['grid'] | null }) {
   const go = useGoWindow();
+  const [span, setSpan] = useSpan();
+  const shown = useShownWindow();
   const toast = useToast();
   const exportCsv = (rows: ChTeamStats['grid']) => {
     const head = ['Player', 'Rounds', ...LEGS_LIST.map((l) => `SG ${l}`), 'SG total'];
@@ -155,7 +173,9 @@ export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; 
   };
   return (
     <div className="ch-st-head__act">
-      <WindowSwitch value={useShownWindow()} onChange={go} custom={hasRange(filter)} />
+      <SpanSwitch value={span} onChange={setSpan} />
+      {/* All time is no window: the switch comes back with the season. */}
+      {span === 'season' && <WindowSwitch value={shown} onChange={go} custom={hasRange(filter)} />}
       {/* Never export a half-loaded window: the page passes no grid then. */}
       {grid && grid.length > 0 && (
         <Button variant="ghost" leftIcon={Download} onClick={() => exportCsv(grid)} className="ch-btn--flush-end">

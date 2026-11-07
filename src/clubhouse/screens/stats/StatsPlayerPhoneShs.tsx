@@ -5,7 +5,8 @@ import { AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
-import { basisWords, clearFilters, hasRange, isFiltered, rangeOf, type ChFilter, type ChRange } from '../../data/stats-filter';
+import { basisWords, clearFilters, hasRange, isFiltered, rangeOf, withSpan, type ChFilter, type ChRange } from '../../data/stats-filter';
+import { SpanSwitch } from '../../ui/SpanSwitch';
 import { playerInsight } from '../../data/stats-insight';
 import { formatAvg, formatFixed, formatHcp, formatSigned, formatToPar } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
@@ -113,6 +114,7 @@ export function StatsPlayerPhoneShs({
   playerHref,
   messageHref,
   windowShown,
+  spanShown,
   onWindow,
   onFilter,
   onBackToTeam,
@@ -126,6 +128,8 @@ export function StatsPlayerPhoneShs({
   playerHref: string;
   messageHref: string | null;
   windowShown?: ChRange;
+  /** The span being loaded (This season, All time), from the tap, as `windowShown` is. */
+  spanShown?: 'season' | 'all';
   onWindow: (r: ChRange) => void;
   onFilter: (next: ChFilter) => void;
   onBackToTeam: () => void;
@@ -225,7 +229,11 @@ export function StatsPlayerPhoneShs({
 
         {!firstRun && <div ref={ctlRef} className={'ch-shs-ctl' + (hasRange(data.filter) ? ' is-custom' : '') + (stuck ? ' is-stuck' : '')}>
           <div className="ch-shs-ctl__row">
-            <WindowSwitch value={windowShown ?? rangeOf(data.filter)} onChange={onWindow} custom={hasRange(data.filter)} hook="stats-window-seg" />
+            <SpanSwitch value={spanShown ?? data.filter.span ?? 'season'} onChange={(v) => onFilter(withSpan(data.filter, v))} hook="stats-span-seg" />
+          </div>
+          <div className="ch-shs-ctl__row">
+            {/* All time is no window: the switch comes back with the season. */}
+            {(spanShown ?? data.filter.span ?? 'season') === 'season' && <WindowSwitch value={windowShown ?? rangeOf(data.filter)} onChange={onWindow} custom={hasRange(data.filter)} hook="stats-window-seg" />}
             {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={onFilter} codes={{ empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' }} phone hook="stats-filter" />}
           </div>
           {updating}

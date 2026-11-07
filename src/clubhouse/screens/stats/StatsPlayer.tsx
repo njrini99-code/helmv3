@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import type { ChReadsSource } from './GameDetail';
-import { basisWords, clearFilters, HOLES_ADJ, hasRange, per18, type ChHoles, isFiltered, isWindowChange, statsHref, rangeOf, withScope, type ChFilter, type ChRange } from '../../data/stats-filter';
+import { basisWords, clearFilters, HOLES_ADJ, hasRange, per18, type ChHoles, isFiltered, isWindowChange, statsHref, rangeOf, withScope, withSpan, type ChFilter, type ChRange } from '../../data/stats-filter';
+import { SpanSwitch } from '../../ui/SpanSwitch';
 import { Avatar } from '../../ui/Avatar';
 import { Button, IconButton } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -226,6 +227,7 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
           playerHref={href(data.id, data.filter)}
           messageHref={messageHref}
           windowShown={rangeOf(loading ?? data.filter)}
+          spanShown={(loading ?? data.filter).span ?? 'season'}
           onWindow={changeWindow}
           onFilter={changeFilter}
           onBackToTeam={() => go(null, data.filter)}
@@ -332,7 +334,9 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
             ))}
           </div>
           {/* The switch moves on the tap: the window being loaded, not the one whose figures are still showing (F-55). */}
-          <WindowSwitch value={rangeOf(loading ?? data.filter)} onChange={changeWindow} custom={hasRange(data.filter)} />
+          <SpanSwitch value={(loading ?? data.filter).span ?? 'season'} onChange={(v) => changeFilter(withSpan(data.filter, v))} />
+          {/* All time is no window: the switch comes back with the season. */}
+          {(loading ?? data.filter).span !== 'all' && <WindowSwitch value={rangeOf(loading ?? data.filter)} onChange={changeWindow} custom={hasRange(data.filter)} />}
         </div>
 
         {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={changeFilter} codes={filterCodes} />}

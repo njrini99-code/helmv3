@@ -5,6 +5,7 @@ import { Segmented } from '../../ui/Segmented';
 
 /** Each window in a sentence ("the figures shown are still the last 10 rounds"). */
 export function windowWords(f: ChFilter): string {
+  if (f.span === 'all') return 'all time';
   return f.window === 'last10' ? `the last ${f.last} rounds` : f.window === 'season' ? 'the season' : 'qualifier rounds';
 }
 
@@ -46,9 +47,12 @@ export function WindowSwitch({ value, onChange, custom = false, hook }: { value:
  * What a change of window or filter says while it is refused offline or slow (CH-4901, CH-4902, CH-5901, CH-5902):
  * a plain window change keeps its own words, anything else talks about the filter.
  */
+/** The switch between This season and All time changes the basis the way a window change does, so it says the same kind of thing. */
+const spanChange = (from: ChFilter, to: ChFilter): boolean => (from.span ?? 'season') !== (to.span ?? 'season');
+
 export function changeWords(from: ChFilter, to: ChFilter): { slow: string; offline: string; still: string } {
   const still = isFiltered(from) ? 'The figures shown are still the rounds you had.' : `The figures shown are still ${windowWords(from)}.`;
-  if (isWindowChange(from, to)) {
+  if (isWindowChange(from, to) || spanChange(from, to)) {
     return { slow: `Still loading ${windowWords(to)}…`, offline: `Couldn’t open ${windowWords(to)}: you’re offline`, still };
   }
   return { slow: 'Still loading the filtered rounds…', offline: 'Couldn’t apply the filter: you’re offline', still };
@@ -57,7 +61,7 @@ export function changeWords(from: ChFilter, to: ChFilter): { slow: string; offli
 /** What a change in flight says it is showing and loading ("Showing the season, loading the last 10 rounds"). */
 export function updatingWords(from: ChFilter, to: ChFilter): string {
   const showing = isFiltered(from) ? 'the rounds you had' : windowWords(from);
-  return isWindowChange(from, to) ? `Showing ${showing}, loading ${windowWords(to)}` : `Showing ${showing}, applying the filter`;
+  return isWindowChange(from, to) || spanChange(from, to) ? `Showing ${showing}, loading ${windowWords(to)}` : `Showing ${showing}, applying the filter`;
 }
 
 /**
