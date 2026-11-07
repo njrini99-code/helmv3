@@ -148,19 +148,19 @@ describe('the strokes gained baseline', () => {
     });
   });
 
-  it('Home: the season’s strokes gained is vs Tour, and the legs’ header says the strokes gained are the season’s', () => {
+  it('Home: strokes gained over the last 10 is vs Tour, and the legs’ header says the same window', () => {
     wrap(<PlayerHome data={PREVIEW_PLAYER_HOME} now={PREVIEW_HOME_NOW} />);
     const sg = [...document.querySelectorAll('.ch-ph-figs > div')].find((d) => d.querySelector('dt')!.textContent === 'Strokes gained')!;
-    expect(sg.textContent).toContain('Season, per round vs Tour');
+    expect(sg.textContent).toContain('Last 10, per round vs Tour');
     const legs = document.getElementById('ch-ph-legs')!.closest('section')!;
-    expect(legs.querySelector('.ch-ph-game__h span')!.textContent).toBe('Last 10 rounds · strokes gained this season vs Tour');
+    expect(legs.querySelector('.ch-ph-game__h span')!.textContent).toBe('Last 10 rounds · strokes gained vs Tour');
     expect(document.body.textContent).not.toMatch(/strokes gained vs D1|Per round vs D1/);
   });
 
   it('Home: a women’s team reads the women’s Tour baseline', () => {
     wrap(<PlayerHome data={{ ...PREVIEW_PLAYER_HOME, tour: 'lpga' }} now={PREVIEW_HOME_NOW} />);
-    expect(document.body.textContent).toContain("Season, per round vs the women's Tour baseline");
-    expect(document.body.textContent).toContain("strokes gained this season vs the women's Tour baseline");
+    expect(document.body.textContent).toContain("Last 10, per round vs the women's Tour baseline");
+    expect(document.body.textContent).toContain("strokes gained vs the women's Tour baseline");
   });
 });
 

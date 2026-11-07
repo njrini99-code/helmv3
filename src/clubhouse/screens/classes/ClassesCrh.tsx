@@ -16,10 +16,12 @@ import {
   longDay,
   shortDay,
   tabParts,
+  timeRange,
   toMinutes,
   DAY_LONG,
   DAY_SHORT,
   type ChClass,
+  type ChClassClash,
   type ChConflictGroup,
   type ChTeamEvent,
   type ChTerm,
@@ -251,15 +253,32 @@ export function TodayCard({ classes, term, todayIso, week, onOpen }: { classes: 
 }
 
 /** Overlaps (06 §4.4): only when this week has one, or the read failed. A plain card, no tint, no edge. */
-export function OverlapsCardCrh({ groups, error, onRetry }: { groups: readonly ChConflictGroup[]; error: boolean; onRetry: () => void }) {
+export function OverlapsCardCrh({ groups, clashes = [], error, onRetry }: { groups: readonly ChConflictGroup[]; /** Two of the player's own classes at once. */ clashes?: readonly ChClassClash[]; error: boolean; onRetry: () => void }) {
   const hours = useChClock();
   if (error) {
     return <InlineNotice code="CH-12202" title="The team’s events didn’t load" body="Overlaps with practice and travel can’t be checked right now. Nothing has changed. Try again in a moment." onRetry={onRetry} />;
   }
-  if (!groups.length) return null;
+  if (!groups.length && !clashes.length) return null;
   return (
-    <Surface variant="card" level={2} padded={false} title="Overlaps" actions={<span className="ch-cl-chip is-warn ch-num">{groups.length} this week</span>} footerNote="Your coach sees this overlap too.">
+    <Surface variant="card" level={2} padded={false} title="Overlaps" actions={<span className="ch-cl-chip is-warn ch-num">{groups.length + clashes.length}{groups.length ? ' this week' : ''}</span>} footerNote="Your coach sees this overlap too.">
       <GroupList inset="16px">
+        {clashes.map((x) => (
+          <li key={x.key} className="ch-cl-ov" data-ch="class-clash">
+            <div className="ch-group__row ch-cl-ov__lead">
+              <span className="ch-cl-ov__ic">
+                <Icon icon={AlertTriangle} size={18} />
+              </span>
+              <span className="ch-cl-tr__b is-wrap">
+                <b>
+                  {x.a.code || x.a.name} and {x.b.code || x.b.name} meet at the same time
+                </b>
+                <span className="ch-num">
+                  {x.days.map((d) => DAY_SHORT[d] ?? d).join(', ')} · {timeRange(x.start, x.end, hours)}
+                </span>
+              </span>
+            </div>
+          </li>
+        ))}
         {groups.map((g) => (
           <li key={g.key} className="ch-cl-ov">
             <div className="ch-group__row ch-cl-ov__lead">

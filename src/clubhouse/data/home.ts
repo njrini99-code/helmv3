@@ -7,6 +7,7 @@ import { eventDaySpan } from '@/lib/calendar/timezone';
 import { chLogServer } from '../lib/track-server';
 import { homeClock, ymd } from './home-clock';
 import { classYearKey, type ChYearKey } from '../lib/class-year';
+import { playerStrokesGained } from './figure-window';
 import { classYearLabel, countsForScoring, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, MIN_SG_ROUNDS, seasonStartDate, summarizePlayer, type ChForm, type ChRound } from './season';
 import { LEGS, sgLegs, teamGrid, type ChLeg } from './stats-team';
 import { legRows } from './leg-rows';
@@ -425,6 +426,8 @@ export async function loadCoachHome(input: {
 
   // ── Leaderboard ──
   const byPlayer = groupByPlayer(seasonFull);
+  // Strokes gained: the one source, each player's last ten (QA-1).
+  const wideByPlayer = groupByPlayer(readRounds);
   // Recency counts any countable round, nine holes included.
   const lastPlayed = new Map<string, string>();
   for (const r of seasonRounds) if (!lastPlayed.has(r.player_id)) lastPlayed.set(r.player_id, r.round_date.slice(0, 10));
@@ -447,7 +450,7 @@ export async function loadCoachHome(input: {
       avg: season.avg ?? 0,
       toPar: season.toPar,
       trend: season.trend,
-      sgPerRound: season.sgPerRound,
+      sgPerRound: playerStrokesGained(wideByPlayer.get(p.id) ?? []).total,
       status: season.status,
       quietDays: lastPlayed.has(p.id) ? Math.max(0, daysBetween(lastPlayed.get(p.id)!, today)) : null,
       lastRound: lastScored.get(p.id) ?? null,

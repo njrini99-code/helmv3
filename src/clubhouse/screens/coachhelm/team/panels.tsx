@@ -262,7 +262,7 @@ export function PlayerPanel({ player, data, onRead, fileOn, onClose }: { player:
       <section className="card">
         <div className="ch">
           <h4>Where {player.first} gains and loses</h4>
-          <span className="meta">This season</span>
+          <span className="meta">Last 10</span>
         </div>
         <div className="bars">
           {STATIONS.map((s) => {

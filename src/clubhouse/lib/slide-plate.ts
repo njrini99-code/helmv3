@@ -6,7 +6,7 @@ import { CH_DUR, CH_EASE, chSpringCurve, type ChSpringKind } from './motion';
 /**
  * A selected plate that slides from the option it left to the one chosen (a segmented chip, the strip's plate, a tab
  * bar's underline). The plate is rendered inside the chosen option only; when `key` changes this reads the new
- * option's box once and plays the move from the old box as a compositor transform (WAAPI, transform-origin left top).
+ * option's box once and plays the move from the old box (WAAPI): a translate, and the width between the two options.
  *
  * It replaces Motion's shared layout (`layoutId`), which measured the plate, its ancestors and the document's scroll
  * on every render of the component, mid-frame, so a section switch re-laid the incoming page out several times on the
@@ -59,10 +59,12 @@ export function useSlidePlate(
     const curve = tween
       ? { ms: CH_DUR[tween] * 1000, linear: `cubic-bezier(${CH_EASE.join(', ')})`, ease: tweenEase }
       : chSpringCurve(kind, { velocity });
+    // Translate and width only: a scale squashed the pill's rounded corners mid-glide (owner, 2026-11-07). The plate may be narrower than its option (an underline), so its width goes by the options' ratio.
+    const plateW = el.offsetWidth;
     const anim = el.animate?.(
       [
-        { transformOrigin: 'left top', transform: `translate(${start.x - to.x}px, ${start.y - to.y}px) scale(${start.w / to.w}, ${start.h / to.h})` },
-        { transformOrigin: 'left top', transform: 'none' },
+        { transform: `translate(${start.x - to.x}px, ${start.y - to.y}px)`, width: `${(plateW * start.w) / to.w}px` },
+        { transform: 'none', width: `${plateW}px` },
       ],
       { duration: curve.ms, easing: curve.linear },
     );
