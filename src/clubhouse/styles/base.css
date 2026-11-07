@@ -140,7 +140,11 @@
 /* Important because a screen's `font` shorthand, however specific, resets both to normal, and the figures stop lining up. */
 .ch-num,
 svg .ch-num {
-  font-variant-numeric: tabular-nums !important;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+.ch-root:not([data-ch-pre-refresh]) .ch-num,
+.ch-root:not([data-ch-pre-refresh]) svg .ch-num {
   font-feature-settings: 'tnum' !important;
 }
 .ch-display {

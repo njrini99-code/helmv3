@@ -1362,11 +1362,11 @@
   }
   .ch-hm-empty {
     display: flex;
-    flex-direction: column;
+    flex-direction: var(--ch-pre-hm-empty-dir, column);
     align-items: center;
-    gap: 8px;
-    padding: 24px 16px;
-    text-align: center;
+    gap: var(--ch-pre-hm-empty-gap, 8px);
+    padding: var(--ch-pre-hm-empty-pad, 24px 16px);
+    text-align: var(--ch-pre-hm-empty-align, center);
     border-radius: var(--ch-radius-lg);
     background: var(--ch-bg-surface);
     box-shadow: var(--ch-elevation-reading);
@@ -2347,12 +2347,15 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 2px;
-  /* Each segment a thumb's height (44pt) inside the well's 4px padding. */
-  height: 52px;
+  height: 42px;
   padding: 4px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
+}
+/* Each segment a thumb's height (44pt) inside the well's 4px padding; with the redesign off it keeps its old height. */
+.ch-root:not([data-ch-pre-refresh]) .ch-ph-game.is-phone .ch-seg {
+  height: 52px;
 }
 .ch-ph-game.is-phone .ch-seg .ch-seg__b {
   height: auto;
