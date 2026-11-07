@@ -12,7 +12,7 @@ import { firstName, directWith } from '../model';
  * Part of the `ChMessagesApi` literal that Messages.tsx composes. Add keys here and nowhere else (docs/clubhouse/messages-v2/SEAMS.md).
  */
 export function useDetailsApi(ctx: MessagesApiCtx): Pick<ChMessagesApi, 'attachments' | 'polls' | 'members' | 'membersError' | 'retryMembers' | 'leave' | 'deleteConversation' | 'addCandidates' | 'addMember' | 'removeMember' | 'files' | 'directory' | 'directoryError' | 'retryDirectory' | 'startDirect' | 'createGroup' | 'prefill' | 'clearPrefill' | 'mute' | 'muteError' | 'retryMute' | 'setMute'> {
-  const { data, addCandidates, attempt, badges, canHide, convs, createGroup, landDraft, loadAttachments, loadFiles, mark, members, membersError, msgs, mute, muteConversation, muteError, pendingDraft, prefill, quietMembers, refetch, responses, router, selected, selectedId, setMembers, setMembersAttempt, setMuteAttempt, setPrefill, setSelectedId, setStarted, startDirect, toast } = ctx;
+  const { data, addCandidates, attempt, badges, canHide, convs, createGroup, landDraft, loadAttachments, loadFiles, mark, members, membersError, msgs, mute, muteConversation, muteError, pendingDraft, prefill, quietMembers, refetch, responses, router, rowMutes, selected, selectedId, setMembers, setMembersAttempt, setMuteAttempt, setPrefill, setSelectedId, setStarted, startDirect, toast } = ctx;
   return {
       attachments: loadAttachments,
       polls: {
@@ -146,7 +146,16 @@ export function useDetailsApi(ctx: MessagesApiCtx): Pick<ChMessagesApi, 'attachm
       },
       mute,
       muteError,
-      retryMute: () => setMuteAttempt((n) => n + 1),
-      setMute: async (muted, hours) => (selectedId ? muteConversation(selectedId, muted, hours) : false)
+      // The inbox row's bell-off glyph follows the open thread's mute (MSG-608): a re-read after a change, and after an expiry.
+      retryMute: () => {
+        setMuteAttempt((n) => n + 1);
+        rowMutes.refresh();
+      },
+      setMute: async (muted, hours) => {
+        if (!selectedId) return false;
+        const ok = await muteConversation(selectedId, muted, hours);
+        if (ok) rowMutes.refresh();
+        return ok;
+      }
   };
 }

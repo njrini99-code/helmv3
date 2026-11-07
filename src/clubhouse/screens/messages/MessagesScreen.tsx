@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { useChPhone } from "../../lib/use-phone";
 import { useToast } from "../../ui/Toast";
+import "../../styles/messages.css";
+import "../../styles/messages-details.css";
 import { MessagesDesktop, type ChMessagesApi } from "./MessagesView";
 import { MessagesPhone } from "./MessagesPhone";
 

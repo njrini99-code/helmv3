@@ -8,7 +8,8 @@ import { useComposerInset } from '../composer-inset';
 import { groupLacksPlayer, firstName, MESSAGE_MAX } from '../model';
 import { haptic } from '../../../lib/haptics';
 import { chTrail } from '../../../lib/track';
-import { tokenBeat, popIn } from '../details-v2';
+import { tokenBeat, usePopIn } from '../details-v2';
+import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { useIsPresent } from 'motion/react';
 import { personOf } from '../person-of';
 import { Icon } from '../../../ui/Icon';
@@ -55,6 +56,8 @@ export function PhoneNewMessage({
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState(false);
   const nameInput = useRef<HTMLInputElement | null>(null);
+  const reduced = useChReducedMotion();
+  const pop = usePopIn();
   // The first message box grows as the thread's does (wave 5 #4), and toasts sit above it (#1).
   const box = useRef<HTMLTextAreaElement | null>(null);
   const footer = useRef<HTMLElement | null>(null);
@@ -66,7 +69,10 @@ export function PhoneNewMessage({
   const needsPlayer = group && groupLacksPlayer(api.viewer.role, to, api.directory);
   // The lane's Suggested: people with no direct thread yet; a search looks through everyone (d64).
   const direct = new Set(api.convs.filter((c) => !c.group).map((c) => c.memberIds[0]));
-  const people = api.directory.filter((p) => (q.trim() ? p.name.toLowerCase().includes(q.trim().toLowerCase()) : !direct.has(p.userId) || to.includes(p.userId)));
+  // As you type, the ones that no longer match dim to .35 (MSG-702) instead of leaving; a search still reaches everyone.
+  const term = q.trim().toLowerCase();
+  const matches = (name: string) => !term || name.toLowerCase().includes(term);
+  const people = api.directory.filter((p) => !direct.has(p.userId) || to.includes(p.userId) || (!!term && matches(p.name)));
   const players = api.directory.filter((p) => p.role === "player");
   const coaches = api.directory.filter((p) => p.role === "coach");
   const seniors = players.filter((p) => p.subtitle === "Senior");
@@ -79,7 +85,7 @@ export function PhoneNewMessage({
       window.setTimeout(() => {
         chTrail("messages start direct");
         void api.startDirect(id).then(() => setBusy(false));
-      }, tokenBeat());
+      }, tokenBeat(reduced));
       return;
     }
     // Players start direct threads only (D-15): a second pick replaces the first.
@@ -194,7 +200,8 @@ export function PhoneNewMessage({
         </span>
         <div className="ch-msp-to__f">
           {to.map((id) => (
-            <button key={id} type="button" className="ch-msp-tok" ref={(el) => popIn(el, 0.8, true)} aria-label={`Remove ${personOf(api, id)?.name ?? "person"}`} onClick={() => toggle(id)}>
+            <button key={id} type="button" className="ch-msp-tok ch-msd-tok" ref={(el) => void pop(el, 0.8, { once: true, fade: true })} aria-label={`Remove ${personOf(api, id)?.name ?? "person"}`} onClick={() => toggle(id)}>
+              <Avatar name={personOf(api, id)?.name ?? "Member"} id={personOf(api, id)?.playerId ?? id} size={22} />
               {firstName(personOf(api, id)?.name ?? "Member")}
               <Icon icon={X} size={12} />
             </button>
@@ -249,7 +256,7 @@ export function PhoneNewMessage({
           )}
 
           {!api.directoryError && !people.length && !q ? null : (
-            <h2 className="ch-msv-suggest__h">{q ? "Results" : "Suggested"}</h2>
+            <h2 className="ch-msv-suggest__h">Suggested</h2>
           )}
           {api.directoryError ? (
             <InlineNotice code="CH-7205" title="Your team list didn’t load" body="Try again." onRetry={api.retryDirectory} />
@@ -258,7 +265,7 @@ export function PhoneNewMessage({
               {people.map((p) => {
                 const on = to.includes(p.userId);
                 return (
-                  <button key={p.userId} type="button" role="option" aria-selected={on} className="ch-msp-row is-btn" onClick={() => toggle(p.userId)}>
+                  <button key={p.userId} type="button" role="option" aria-selected={on} className={"ch-msp-row is-btn ch-msd-sug" + (matches(p.name) ? "" : " is-dim")} onClick={() => toggle(p.userId)}>
                     <Avatar name={p.name} id={p.playerId ?? p.userId} size="md" />
                     <span className="ch-msp-row__b">
                       <b>{p.name}</b>

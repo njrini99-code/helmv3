@@ -1,8 +1,7 @@
 "use client";
 
 import { ListChecks, Lock, Minus } from "lucide-react";
-import { AnimatePresence, m, useIsPresent } from "motion/react";
-import { createContext, useContext, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import {
   POLL_MAX_OPTIONS,
   POLL_MIN_OPTIONS,
@@ -14,10 +13,9 @@ import {
   encodeChoice,
   isPollClosed,
   nextPollCheckDelay,
-  pollEligibleCount,
   pollState,
   pollShare,
-  pollRemindDraft,
+  pollReminderLine,
   pollResultDraft,
   pollWaiting,
   zonedWallTimeToInstant,
@@ -26,9 +24,9 @@ import {
   type PollTally,
 } from "@/lib/golf/message-polls";
 import { haptic } from "../../lib/haptics";
-import { CH_DUR, chTween } from "../../lib/motion";
 import { plural } from "../../lib/plural";
-import { useChReducedMotion } from "../../lib/reduced-motion";
+import { CH_DUR } from "../../lib/motion";
+import { useToast } from "../../ui/Toast";
 import { Avatar } from "../../ui/Avatar";
 import { Button, IconButton } from "../../ui/Button";
 import { DateField } from "../../ui/DateField";
@@ -39,7 +37,7 @@ import { ListPresence, PresenceRow } from "../../ui/ListPresence";
 import { InlineNotice } from "../../ui/Notices";
 import { Switch } from "../../ui/Switch";
 import { TimeField } from "../../ui/TimeField";
-import { clock, firstName, untilLabel, type ChConv } from "./model";
+import { clock, untilLabel, type ChConv } from "./model";
 import type { ChMessagesApi } from "./MessagesView";
 
 /**
@@ -73,18 +71,6 @@ export interface ChPollsApi {
     priorClientId?: string,
   ) => Promise<{ ok: true } | { ok: false; error: string; threw?: true; earlierCopy?: true }>;
   close: (messageId: string) => Promise<boolean>;
-}
-
-/** The head's second part: "Final", the end ("Ends tomorrow at 6:00 PM", the last hour counting down), or nothing. */
-function endsLabel(poll: Poll, closed: boolean, now: string, timeZone: string, hours: "12" | "24", nowMs: number) {
-  if (closed) return "Final";
-  if (!poll.closesAt) return null;
-  // The last hour counts down, so a tap just before the end never looks like it landed after it.
-  const left = Date.parse(poll.closesAt) - nowMs;
-  if (left < 60_000) return "Ends in under a minute";
-  if (left < 3_600_000) return `Ends in ${Math.ceil(left / 60_000)} min`;
-  const day = untilLabel(poll.closesAt, now, timeZone);
-  return `Ends ${day === "today" ? "" : day === "tomorrow" ? "tomorrow " : `${day} `}at ${clock(poll.closesAt, timeZone, hours)}`;
 }
 
 /** When a long press last opened a message's actions (MessagesPhone), so the release that ends it isn't a vote. */
@@ -148,52 +134,40 @@ const cardActions = new Map<string, PollCardActions>();
 /** The live actions of a drawn poll card, or null when the card isn't on screen. */
 export const pollCardActions = (messageId: string): PollCardActions | null => cardActions.get(messageId) ?? null;
 
-/** First names, with a last initial when two share one ("Sam C."). */
-function shortNames(ids: readonly string[], nameOf: (id: string) => string): string[] {
-  const full = ids.map(nameOf);
-  const firsts = full.map((n) => firstName(n));
-  return full.map((n, i) => {
-    if (firsts.filter((f) => f === firsts[i]).length < 2) return firsts[i]!;
-    const last = n.trim().split(/\s+/).slice(1).pop();
-    return last ? `${firsts[i]} ${last[0]!.toUpperCase()}.` : firsts[i]!;
-  });
+/**
+ * The footer's second part (MSG-501): "Closes tomorrow at 6:00 PM", the last hour counting down ("Closes in 12 min"), "Final" once
+ * closed by hand or "Voting ended" when its time ran out. Nothing when the poll has no end.
+ */
+export function closesLabel(poll: Poll, state: ReturnType<typeof pollState>, now: string, timeZone: string, hours: "12" | "24", nowMs: number): string | null {
+  if (state === "closed") return "Final";
+  if (state === "ended") return "Voting ended";
+  if (!poll.closesAt) return null;
+  // The last hour counts down, so a tap just before the end never looks like it landed after it.
+  const left = Date.parse(poll.closesAt) - nowMs;
+  if (left < 60_000) return "Closes in under a minute";
+  if (left < 3_600_000) return `Closes in ${Math.ceil(left / 60_000)} min`;
+  return `Closes ${endsWords(poll.closesAt, now, timeZone, hours)}`;
 }
 
-/**
- * One copy of a crossfade (M5, M7, M8, M11): the new copy fades in over the base beat, the old one out over the quick
- * one, and the leaving copy drops out of assistive tech and focus at once. Instant under reduced motion and Animations off.
- */
-function FadeCopy({ as = "span", className, children }: { as?: "span" | "div"; className?: string; children: ReactNode }) {
-  const reduced = useChReducedMotion();
-  const present = useIsPresent();
-  const Item = as === "div" ? m.div : m.span;
-  return (
-    <Item
-      className={className}
-      aria-hidden={present ? undefined : true}
-      inert={!present}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1, transition: chTween("base", reduced) }}
-      exit={{ opacity: 0, transition: chTween("quick", reduced) }}
-    >
-      {children}
-    </Item>
-  );
+/** Header words (MSG-501): "Poll · Choose one", "Poll · Choose any", and "Poll · Final" once it is over (Q-08). */
+export const pollHeadWords = (poll: Poll, closed: boolean): string => `Poll · ${closed ? "Final" : poll.multi ? "Choose any" : "Choose one"}`;
+
+/** The footer's first part: the votes cast (a vote per choice picked), "No votes yet" while there are none. */
+export function votesWords(tally: PollTally | null, failed: boolean, closed: boolean): string {
+  if (!tally) return failed ? "Votes didn’t load" : "Loading votes…";
+  const votes = Object.values(tally.counts).reduce((sum, n) => sum + n, 0);
+  if (votes === 0) return closed ? "No one voted" : "No votes yet";
+  return plural(votes, "vote");
 }
 
-/**
- * A figure or line that changes in place: the copies stack in one grid cell (messages.css `.ch-ms-poll__x`), so the old
- * and the new share the spot while they cross. Keyed by what it shows; first paint never animates. A caller draws a
- * plain element until the votes have loaded, so the first figures arrive without motion.
- */
-function Crossfade({ k, className, children }: { k: string | number; className?: string; children: ReactNode }) {
-  return (
-    <span className={"ch-ms-poll__x" + (className ? ` ${className}` : "")}>
-      <AnimatePresence initial={false}>
-        <FadeCopy key={k}>{children}</FadeCopy>
-      </AnimatePresence>
-    </span>
-  );
+/** Whose face goes where in a choice's stack: yours first, then the others, up to three (MSG-502). */
+export function faceOrder(voters: readonly string[], me: string): string[] {
+  return [...voters].sort((a, b) => (a === me ? -1 : b === me ? 1 : 0)).slice(0, 3);
+}
+
+/** The one choice with the most votes, or null when none, or two or more tie (Q-34: any time, open or final). */
+export function soleLeader(tally: PollTally | null): string | null {
+  return tally && tally.voterCount > 0 && tally.leaders.length === 1 ? tally.leaders[0]! : null;
 }
 
 export function PollCard({
@@ -210,6 +184,7 @@ export function PollCard({
 }) {
   const polls = api.polls;
   const thread = useContext(PollThreadContext);
+  const toast = useToast();
   const qid = useId();
   const [votesOpen, setVotesOpen] = useState(false);
   const [closing, setClosing] = useState(false);
@@ -219,9 +194,6 @@ export function PollCard({
   const nowMs = usePollClock(poll.closesAt, api.now);
   const closed = isPollClosed(poll, nowMs);
   const conv = api.convs.find((c) => c.id === api.selectedId) ?? null;
-  // Everyone in the thread can vote, the sender too (memberIds are the others), and anyone who voted and then left
-  // still counts, so the footer never reads "9 of 8".
-  const eligible = conv && tally ? pollEligibleCount(tally, [...conv.memberIds, api.viewer.userId]) : conv ? conv.memberIds.length + 1 : null;
   const busy = polls?.pending.has(messageId) ?? false;
   const mineIds = tally?.mine ?? [];
   const nameOf = (id: string) => api.directory.find((p) => p.userId === id)?.name ?? "Member";
@@ -236,8 +208,10 @@ export function PollCard({
           run: () => {
             haptic("select");
             setVotesOpen(false);
-            const endsPhrase = poll.closesAt ? endsWords(poll.closesAt, api.now, api.timeZone, api.clock ?? "12") : null;
-            thread.replyWith(messageId, pollRemindDraft({ firstNames: shortNames(waiting, nameOf), endsPhrase }));
+            const by = poll.closesAt ? endsWords(poll.closesAt, api.now, api.timeZone, api.clock ?? "12") : null;
+            // Q-09: the reminder names the poll and when it closes; it fills the composer and never sends itself.
+            thread.replyWith(messageId, pollReminderLine({ question: poll.question, by }));
+            toast({ title: "Reminder drafted. It sends only when you tap Send" });
           },
         }
       : null;
@@ -275,25 +249,10 @@ export function PollCard({
     polls.vote(messageId, poll, ordered);
   };
 
-  const countText = !tally
-    ? polls?.error
-      ? "Votes didn’t load"
-      : "Loading votes…"
-    : tally.voterCount === 0
-      ? closed
-        ? "No one voted"
-        : "No votes yet"
-      : eligible
-        ? tally.voterCount >= eligible
-          ? "Everyone voted"
-          : `${tally.voterCount} of ${eligible} voted`
-        : tally.voterCount === 1
-          ? "1 vote"
-          : `${tally.voterCount} voted`;
-  const ends = endsLabel(poll, closed, api.now, api.timeZone, api.clock ?? "12", nowMs);
   const state = pollState(poll, nowMs);
-  const soon = !closed && !!poll.closesAt && Date.parse(poll.closesAt) - nowMs < 3_600_000;
-  const tied = !!tally && tally.leaders.length > 1;
+  const closes = closesLabel(poll, state, api.now, api.timeZone, api.clock ?? "12", nowMs);
+  const footWords = [votesWords(tally, !!polls?.error, closed), tally ? closes : null].filter(Boolean).join(" · ");
+  const leader = soleLeader(tally);
   // Single answer: one tab stop on the picked choice (or the first); arrows move focus only, never a vote, and Space or
   // Enter votes. Several answers: each checkbox is its own stop.
   const stop = poll.multi ? null : (mineIds[0] ?? poll.options[0]!.id);
@@ -309,32 +268,26 @@ export function PollCard({
     all[to]?.focus();
   };
   return (
-    <div className={"ch-ms-poll" + (closed ? " is-closed" : "")} data-ch-bubble="" role="group" aria-labelledby={qid} aria-busy={busy || undefined}>
-      <div className="ch-ms-poll__head">
-        {/* D12: says what happened: the sender closed it, or its time ran out. M8: the glyph and words cross when it closes live. */}
-        <Crossfade k={state}>
-          <Icon icon={closed ? Lock : ListChecks} size={14} />
-          <span>{state === "closed" ? "Poll closed" : state === "ended" ? "Voting ended" : "Poll"}</span>
-        </Crossfade>
-        {ends && (
-          <>
-            <span className="ch-ms-poll__dot" aria-hidden="true">
-              ·
-            </span>
-            <span className={"ch-ms-poll__ends" + (soon ? " is-soon" : "")}>{ends}</span>
-          </>
-        )}
+    <div
+      className={"ch-ms-poll ch-msd-poll" + (closed ? " is-closed" : "") + (mine ? " is-mine" : " is-theirs")}
+      data-ch-bubble=""
+      role="group"
+      aria-labelledby={qid}
+      aria-busy={busy || undefined}
+    >
+      <div className="ch-msd-poll__head">
+        <Icon icon={closed ? Lock : ListChecks} size={14} />
+        <span>{pollHeadWords(poll, closed)}</span>
       </div>
-      <p id={qid} className="ch-ms-poll__q">
+      <p id={qid} className="ch-msd-poll__q">
         {poll.question}
       </p>
-      {poll.multi && !closed && <p className="ch-ms-poll__sub">Choose any that work</p>}
-      <ul className="ch-ms-poll__opts" role={poll.multi ? "group" : "radiogroup"} aria-labelledby={qid}>
+      <ul className="ch-msd-poll__opts" role={poll.multi ? "group" : "radiogroup"} aria-labelledby={qid}>
         {poll.options.map((o) => {
           const n = tally?.counts[o.id] ?? 0;
           const share = tally ? pollShare(tally, o.id) : 0;
           const on = mineIds.includes(o.id);
-          const lead = !!tally && tally.leaders.includes(o.id) && tally.voterCount > 0;
+          const lead = leader === o.id;
           return (
             <li key={o.id} role="none">
               <button
@@ -344,104 +297,85 @@ export function PollCard({
                 tabIndex={stop == null || stop === o.id ? 0 : -1}
                 onKeyDown={onKey}
                 aria-disabled={closed || !tally || undefined}
-                aria-label={`${o.label}, ${plural(n, "vote")}${on ? ", your vote" : ""}${lead && closed ? ", most votes" : ""}`}
-                className={
-                  "ch-ms-poll__opt" + (on ? " is-on" : "") + (lead ? " is-lead" : "") + (poll.multi ? " is-multi" : "")
-                }
+                aria-label={`${o.label}, ${plural(n, "vote")}${on ? ", your vote" : ""}${lead ? ", most votes" : ""}`}
+                className={"ch-msd-poll__opt" + (on ? " is-on" : "") + (lead ? " is-lead" : "") + (poll.multi ? " is-multi" : "")}
                 style={{ ["--ch-poll-share" as string]: String(share) }}
                 onPointerDown={() => {
                   pressAt.current = Date.now();
                 }}
                 onClick={(e) => pick(o.id, e.detail === 0)}
               >
-                <span className="ch-ms-poll__fill" aria-hidden="true" />
-                <span className="ch-ms-poll__level" aria-hidden="true" />
-                <span className="ch-ms-poll__mark" aria-hidden="true" data-pop={on && tapped === o.id ? "" : undefined}>
-                  {on &&
-                    (<svg className="ch-msv-tick" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-                        <path d="M2.2 6.4 4.9 9l4.9-5.6" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" pathLength={20} strokeDasharray={20} />
-                      </svg>)}
+                <span className="ch-msd-poll__fill" aria-hidden="true" />
+                <span className="ch-msd-poll__mark" aria-hidden="true" data-pop={on && tapped === o.id ? "" : undefined}>
+                  {on && (
+                    <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                      <path d="M2.2 6.4 4.9 9l4.9-5.6" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" pathLength={20} strokeDasharray={20} strokeDashoffset={0} />
+                    </svg>
+                  )}
                 </span>
-                <span className="ch-ms-poll__label">{o.label}</span>
-                {tally && (tally.voters[o.id]?.length ?? 0) > 0 && (
-                  <span className="ch-msv-pollfaces" aria-hidden="true">
-                    {[...(tally.voters[o.id] ?? [])]
-                      .sort((a, b) => (a === api.viewer.userId ? 1 : b === api.viewer.userId ? -1 : 0))
-                      .slice(-3)
-                      .map((id) => (
+                <span className="ch-msd-poll__label">
+                  {o.label}
+                  {lead && <span className="ch-msd-poll__chip">Most votes</span>}
+                </span>
+                <span className="ch-msd-poll__side" aria-hidden="true">
+                  {tally && (tally.voters[o.id]?.length ?? 0) > 0 && (
+                    <span className="ch-msd-poll__faces">
+                      {faceOrder(tally.voters[o.id] ?? [], api.viewer.userId).map((id) => (
                         <span key={id} data-pop={id === api.viewer.userId && tapped === o.id ? "" : undefined}>
-                          <Avatar name={api.directory.find((p) => p.userId === id)?.name ?? (id === api.viewer.userId ? api.viewer.name : "Member")} size={18} />
+                          <Avatar name={id === api.viewer.userId ? api.viewer.name : nameOf(id)} size={18} />
                         </span>
                       ))}
-                  </span>
-                )}
-                {/* M8: the leader's tag fades in when the poll closes live (nothing animates on a card drawn final). */}
-                <AnimatePresence initial={false}>
-                  {lead && closed && <FadeCopy key="tag" className="ch-ms-poll__tag">{tied ? "Tied" : "Most votes"}</FadeCopy>}
-                </AnimatePresence>
-                {/* An honest "0" (tertiary ink) open or final; "—" only while the votes load or failed to. M5: a changed count crosses in place. */}
-                {tally ? (
-                  <span className={"ch-ms-poll__n ch-num" + (n === 0 ? " is-zero" : "")} aria-hidden="true">
-                    <Crossfade k={n}>{n}</Crossfade>
-                  </span>
-                ) : (
-                  <span className="ch-ms-poll__n ch-num" aria-hidden="true">
-                    —
-                  </span>
-                )}
+                    </span>
+                  )}
+                  {/* The count changes at once while its bar glides (no count-up, MOTION house rules). */}
+                  <span className="ch-msd-poll__n ch-num">{tally ? n : "—"}</span>
+                </span>
               </button>
             </li>
           );
         })}
       </ul>
-      <div className="ch-ms-poll__foot">
+      <div className="ch-msd-poll__foot">
         {/* No live region: a thread with several polls would read out every vote on every card. A voter hears their own
             pick through the option's checked state. */}
-        {/* M5, M7: a changed line (and "Everyone voted") crosses in place once the votes are in. */}
-        {tally ? (
-          <Crossfade k={countText} className="ch-ms-poll__count ch-num">
-            {countText}
-          </Crossfade>
-        ) : (
-          <span className="ch-ms-poll__count ch-num">{countText}</span>
-        )}
+        <span className="ch-msd-poll__count ch-num">{footWords}</span>
         {!tally && polls?.error ? (
-          <button type="button" className="ch-ms-poll__link" onClick={polls.retry}>
+          <button type="button" className="ch-msd-poll__link" onClick={polls.retry}>
             Retry
           </button>
         ) : (
           tally && (
-            <button type="button" className="ch-ms-poll__link" onClick={() => setVotesOpen(true)}>
+            <button type="button" className="ch-msd-poll__link" onClick={() => setVotesOpen(true)}>
               See votes
             </button>
           )
         )}
         {remind && (
-          <button type="button" className="ch-ms-poll__link" onClick={remind.run}>
+          <button type="button" className="ch-msd-poll__link" onClick={remind.run}>
             Remind {remind.count}
           </button>
         )}
         {mine && !closed && tally && (
-          <button type="button" className="ch-ms-poll__link" onClick={() => setClosing(true)}>
+          <button type="button" className="ch-msd-poll__link" onClick={() => setClosing(true)}>
             Close poll
           </button>
         )}
         {share && (
-          <button type="button" className="ch-ms-poll__link" onClick={share}>
+          <button type="button" className="ch-msd-poll__link" onClick={share}>
             Share result
           </button>
         )}
       </div>
-      <PollVotesModal api={api} conv={conv} poll={poll} tally={tally} closed={closed} remind={remind} open={votesOpen} onClose={() => setVotesOpen(false)} />
+      <PollVotesModal api={api} conv={conv} poll={poll} tally={tally} closed={closed} remind={remind} author={mine} open={votesOpen} onClose={() => setVotesOpen(false)} />
       <ClosePollModal api={api} messageId={messageId} open={closing} onClose={() => setClosing(false)} />
     </div>
   );
 }
 
 /**
- * D29: who picked what, and who hasn't answered yet. Votes are visible to everyone in the thread, so this hides nothing.
- * No vote times in v1 (a vote's time would come from a device clock until the held updated_at trigger is applied):
- * "You" first, then by name. Someone who voted and has since left reads "Left the group".
+ * D29, MSG-505: who picked what, and who hasn't answered yet. Votes are visible to everyone in the thread (RLS), so the choices
+ * hide nothing. "Hasn't voted" is a tool for whoever asked the question and for coaches (Q-09, Q-16), so a player who did not
+ * send the poll does not see who is still out. A card per choice, its share as a 3 px bar along the foot; "You" first.
  */
 function PollVotesModal({
   api,
@@ -450,6 +384,7 @@ function PollVotesModal({
   tally,
   closed,
   remind,
+  author,
   open,
   onClose,
 }: {
@@ -459,6 +394,8 @@ function PollVotesModal({
   tally: PollTally | null;
   closed: boolean;
   remind: PollCardActions["remind"];
+  /** The viewer sent the poll. */
+  author: boolean;
   open: boolean;
   onClose: () => void;
 }) {
@@ -468,18 +405,19 @@ function PollVotesModal({
   // MSG-VOTES-01: rows carry the person's line under the name.
   const lineOf = (id: string) => (id === me ? "" : (api.directory.find((p) => p.userId === id)?.subtitle ?? ""));
   const order = (ids: readonly string[]) => [...ids].sort((a, b) => (a === me ? -1 : b === me ? 1 : nameOf(a).localeCompare(nameOf(b))));
-  const allWaiting = tally && conv ? order(pollWaiting(tally, [me, ...conv.memberIds])) : [];
+  const showWaiting = api.viewer.role === "coach" || author;
+  const allWaiting = showWaiting && tally && conv ? order(pollWaiting(tally, [me, ...conv.memberIds])) : [];
   // Redesign: "Hasn't voted" lists players, coaches left out (MSG-VOTES-01).
   const waiting = allWaiting.filter((id) => api.directory.find((p) => p.userId === id)?.role !== "coach" && !(id === me && api.viewer.role === "coach"));
   const totalVotes = poll.options.reduce((sum, o) => sum + (tally?.voters[o.id]?.length ?? 0), 0);
   const row = (id: string) => (
-    <li key={id} className="ch-ms-pollv__row">
-      <Avatar name={id === me ? api.viewer.name : nameOf(id)} size="sm" />
-      <span className="ch-ms-pollv__person">
-        <span className="ch-ms-pollv__name">{nameOf(id)}</span>
-        {lineOf(id) ? <small className="ch-ms-pollv__line">{lineOf(id)}</small> : null}
+    <li key={id} className="ch-msd-vg__row">
+      <Avatar name={id === me ? api.viewer.name : nameOf(id)} size={32} />
+      <span className="ch-msd-vg__person">
+        <span className="ch-msd-vg__name">{nameOf(id)}</span>
+        {lineOf(id) ? <small className="ch-msd-vg__line">{lineOf(id)}</small> : null}
       </span>
-      {!members.has(id) && <span className="ch-ms-pollv__left">Left the group</span>}
+      {!members.has(id) && <span className="ch-msd-vg__left">Left the group</span>}
     </li>
   );
   return (
@@ -490,42 +428,38 @@ function PollVotesModal({
       title="Votes"
       description={poll.question}
       width={400}
-      className="ch-msv-sheet ch-msv-votes"
+      className="ch-msv-sheet ch-msv-votes ch-msd-votes"
       action={closed ? <span className="ch-ms-pollv__final">Final</span> : undefined}
       footer={
         remind ? (
-          <button type="button" className="ch-msv-draftrem" onClick={remind.run}>
-              Draft a reminder
-            </button>
+          <button type="button" className="ch-msd-draft" onClick={remind.run}>
+            Draft a reminder
+          </button>
         ) : undefined
       }
     >
-      <div className="ch-ms-pollv">
+      <div className="ch-msd-vgs">
         {poll.options.map((o) => {
           const ids = order(tally?.voters[o.id] ?? []);
+          const pct = totalVotes ? Math.round((ids.length / totalVotes) * 100) : 0;
           return (
-            <section key={o.id} className="ch-ms-pollv__opt" aria-label={o.label}>
-              <h3 className="ch-ms-pollv__h">
+            <section key={o.id} className="ch-msd-vg" aria-label={o.label}>
+              <h3 className="ch-msd-vg__h">
                 <span>{o.label}</span>
-                <span className="ch-num">
-                  {ids.length}
-                  {totalVotes > 0 ? ` · ${Math.round((ids.length / totalVotes) * 100)}%` : ""}
-                </span>
+                <small className="ch-num">{totalVotes > 0 ? `${ids.length} · ${pct}%` : ids.length}</small>
+                <i className="ch-msd-vg__bar" aria-hidden="true" style={{ ["--ch-msd-w" as string]: `${pct}%` }} />
               </h3>
-              <span className="ch-msv-votebar" aria-hidden="true">
-                  <i style={{ width: `${totalVotes ? (ids.length / totalVotes) * 100 : 0}%` }} />
-                </span>
-              {ids.length ? <ul className="ch-ms-pollv__who">{ids.map(row)}</ul> : <p className="ch-ms-pollv__none">No votes yet</p>}
+              {ids.length ? <ul className="ch-msd-vg__who">{ids.map(row)}</ul> : <p className="ch-msd-vg__none">No votes yet</p>}
             </section>
           );
         })}
         {waiting.length > 0 && (
-          <section className="ch-ms-pollv__opt is-waiting" aria-label="Hasn’t voted">
-            <h3 className="ch-ms-pollv__h">
+          <section className="ch-msd-vg is-waiting" aria-label="Hasn’t voted">
+            <h3 className="ch-msd-vg__h">
               <span>Hasn’t voted</span>
-              <span className="ch-num">{waiting.length}</span>
+              <small className="ch-num">{waiting.length}</small>
             </h3>
-            <ul className="ch-ms-pollv__who">{waiting.map(row)}</ul>
+            <ul className="ch-msd-vg__who">{waiting.map(row)}</ul>
           </section>
         )}
       </div>
@@ -870,10 +804,6 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
             </p>
           )}
         </div>
-        {/* M11, M17: the chips fade out once there is something to keep, and back in when Clear empties the form. */}
-        <AnimatePresence initial={false}>
-
-        </AnimatePresence>
         <fieldset className="ch-ms-pollf__set" aria-invalid={invalid("options")}>
           <legend className="ch-field__label">Choices</legend>
           <ol ref={list} className="ch-ms-pollf__opts">
@@ -923,7 +853,10 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
             <p className="ch-field__help">A poll takes up to 6 choices.</p>
           ) : false}
         </fieldset>
-        <Switch checked={multi} onChange={setMulti} label="Allow multiple answers" />
+        {/* MOT-X-7: 44 x 26, a 22 knob travelling 18 on a 320 ms spring, the track in 250 ms (messages-details.css). */}
+        <div className="ch-msd-sw">
+          <Switch checked={multi} onChange={setMulti} label="Allow multiple answers" />
+        </div>
         <div className="ch-field" aria-invalid={invalid("ends")}>
 
           <Menu

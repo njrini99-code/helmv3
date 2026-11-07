@@ -44,7 +44,7 @@ export function MessagesDesktop({ api }: { api: ChMessagesApi }) {
     <main
       data-view="desktop"
       className={
-        "ch-ms" +
+        "ch-ms ch-msd-ms" +
         (conv || ann ? " has-open" : "") +
         (details && conv ? " has-details" : "")
       }

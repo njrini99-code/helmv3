@@ -5,7 +5,7 @@ import type { ChMessagesApi } from '../api/types';
 import type { ChConv, ChMember } from '../model';
 import { personOf } from '../person-of';
 import { rebuiltHref } from '../../../shell/nav';
-import { useMuteAction, detailsLine, QuickActions, ConversationSearch, MembersCard, PhotosAndFiles, MuteMenu } from '../details-v2';
+import { useMuteAction, detailsLine, QuickActions, ConversationSearch, MembersCard, PhotosAndFiles, MuteMenu, ClassStatusCard } from '../details-v2';
 import { PhoneScreen } from '../../../shell/PhoneScreen';
 import { PhoneBar } from '../../../ui/PhoneBar';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
@@ -14,12 +14,10 @@ import { Avatar } from '../../../ui/Avatar';
 import { ThreadClassSection } from '../ThreadClassSection';
 import Link from 'next/link';
 import { Icon } from '../../../ui/Icon';
-import { CalendarPlus, ChevronRight, BellOff, Clock, CalendarDays } from 'lucide-react';
+import { CalendarPlus, ChevronRight } from 'lucide-react';
 import { InlineNotice } from '../../../ui/Notices';
 import { Skeleton } from '../../../ui/States';
 import { muteLabel } from './mute-label';
-import { Modal } from '../../../ui/Modal';
-import { SheetRow } from '../overlays/sheet-rows';
 import { LeaveGroupModal, DeleteConversationModal, AddMembersModal, RemoveMemberModal } from './group-modals';
 
 /* Details */
@@ -44,7 +42,6 @@ export function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: 
   const [deleting, setDeleting] = useState(false);
   const [adding, setAdding] = useState(false);
   const [removing, setRemoving] = useState<ChMember | null>(null);
-  const [muteBusy, setMuteBusy] = useState(false);
   const titleId = `ch-msp-details-${conv.id}`;
   const mine = conv.creatorId === api.viewer.userId;
   const other = !conv.group ? personOf(api, conv.memberIds[0] ?? "") : undefined;
@@ -56,16 +53,6 @@ export function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: 
     : null;
   const statsHref = coach && other?.role === "player" && other.playerId ? rebuiltHref("/golf/dashboard/stats", api.viewer.role) : null;
   const muted = !!api.mute?.muted;
-  // The Mute tile offers desktop's three choices (8 hours, a week, until turned back on); muted, it turns notifications
-  // back on. It is the one control: the duplicate switch went (owner decision, wave 5).
-  const [choosing, setChoosing] = useState(false);
-  const setMute = async (on: boolean, hours: number | null) => {
-    setChoosing(false);
-    if (!api.mute || muteBusy) return;
-    setMuteBusy(true);
-    await api.setMute(on, hours);
-    setMuteBusy(false);
-  };
   const muteV2 = useMuteAction(api);
   const [searching, setSearching] = useState(false);
   const message = async (userId: string) => {
@@ -74,7 +61,7 @@ export function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: 
   };
   return (
     <PhoneScreen labelledBy={titleId} className="ch-msp-details" keyboardAware>
-      <PhoneBar back={{ label: "Back", onBack }} title="Details" titleId={titleId} />
+      <PhoneBar back={{ label: "Back", ariaLabel: "Back to conversation", onBack }} title="Details" titleId={titleId} />
       <div className="ch-msp-scroll">
         <SectionBoundary surface="messages.details" label="Details" code="CH-7213">
           <div className="ch-msp-page">
@@ -82,7 +69,7 @@ export function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: 
               {conv.group ? <GroupMark size="lg" flag={!!conv.channel} /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={84} year={convYear(api, conv)} />}
               <h2>{conv.title}</h2>
               <p className="ch-num">
-                {detailsLine(conv, api.teamName)}
+                {detailsLine(conv, api.teamName, muted)}
               </p>
               <QuickActions
                   api={api}
@@ -103,11 +90,7 @@ export function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: 
                 cls={api.classDay}
                 conv={conv}
                 other={personOf(api, conv.memberIds[0] ?? "")}
-                wrap={(content) => (
-                  <Panel title="Class status">
-                    <div className="ch-msp-pad">{content}</div>
-                  </Panel>
-                )}
+                wrap={(content) => <ClassStatusCard>{content}</ClassStatusCard>}
               />
             )}
 
@@ -159,19 +142,6 @@ export function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: 
         </SectionBoundary>
       </div>
       {muteV2.choosing && <MuteMenu anchor={muteV2.anchor} onPick={(h) => void muteV2.setMute(true, h)} onClose={() => muteV2.setChoosing(false)} />}
-      <Modal
-        open={choosing}
-        onClose={() => setChoosing(false)}
-        icon={BellOff}
-        title="Mute this conversation"
-        description="No email, push or bell for it. Unread messages still show here."
-      >
-        <div className="ch-msp-panel">
-          <SheetRow icon={Clock} label="Mute 8 hours" onClick={() => void setMute(true, 8)} />
-          <SheetRow icon={CalendarDays} label="Mute a week" onClick={() => void setMute(true, 24 * 7)} />
-          <SheetRow icon={BellOff} label="Until I turn it on" onClick={() => void setMute(true, null)} />
-        </div>
-      </Modal>
       <LeaveGroupModal api={api} conv={conv} open={leaving} onClose={() => setLeaving(false)} onLeft={() => {}} />
       <DeleteConversationModal api={api} conv={conv} open={deleting} onClose={() => setDeleting(false)} onDeleted={() => {}} />
       {mine && conv.group && <AddMembersModal api={api} conv={conv} open={adding} onClose={() => setAdding(false)} />}

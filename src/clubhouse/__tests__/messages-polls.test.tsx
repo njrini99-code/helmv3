@@ -88,13 +88,15 @@ describe('PollCard', () => {
     const group = screen.getByRole('radiogroup');
     const [a, b] = within(group).getAllByRole('radio');
     expect(a!.getAttribute('aria-label')).toBe('Van A, 0 votes');
-    expect(b!.getAttribute('aria-label')).toBe('Van B, 1 vote');
+    // A sole leader is marked at any time (Q-34).
+    expect(b!.getAttribute('aria-label')).toBe('Van B, 1 vote, most votes');
     expect(b!.style.getPropertyValue('--ch-poll-share')).toBe('1');
     // The count is plain text: a live region per card would announce every poll in the thread on each vote.
-    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('1 of 4 voted');
+    // MSG-501: the footer counts the votes cast ("{n} vote(s)"), no "n of m voted".
+    expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('1 vote');
     expect(screen.queryByRole('status')).toBeNull();
-    // One answer, no end: the head is just "Poll" (P-2 4.1).
-    expect(document.querySelector('.ch-ms-poll__head')!.textContent).toBe('Poll');
+    // One answer: the head says so (MSG-501), no end phrase in it.
+    expect(document.querySelector('.ch-msd-poll__head')!.textContent).toBe('Poll · Choose one');
   });
 
   it('a tap votes, a second tap on the same choice takes it back', async () => {
@@ -109,7 +111,7 @@ describe('PollCard', () => {
     rerender(<PollCard api={a2} messageId="m1" poll={poll()} mine={false} />);
     const mine = screen.getByRole('radio', { name: /Van A/ });
     expect(mine.getAttribute('aria-checked')).toBe('true');
-    expect(mine.getAttribute('aria-label')).toBe('Van A, 1 vote, your vote');
+    expect(mine.getAttribute('aria-label')).toBe('Van A, 1 vote, your vote, most votes');
     await user.click(mine);
     expect(a2.polls!.vote).toHaveBeenLastCalledWith('m1', expect.anything(), []);
   });
@@ -120,7 +122,7 @@ describe('PollCard', () => {
     const a = api([{ message_id: 'm1', user_id: 'me', choice: 'o3' }]);
     render(<PollCard api={a} messageId="m1" poll={p} mine={false} />);
     expect(screen.getAllByRole('checkbox')).toHaveLength(3);
-    expect(screen.getByText('Choose any that work')).toBeTruthy();
+    expect(document.querySelector('.ch-msd-poll__head')!.textContent).toBe('Poll · Choose any');
     await user.click(screen.getByRole('checkbox', { name: /Tue/ }));
     expect(a.polls!.vote).toHaveBeenLastCalledWith('m1', expect.anything(), ['o1', 'o3']);
   });
@@ -129,9 +131,9 @@ describe('PollCard', () => {
     const user = userEvent.setup();
     const a = api([{ message_id: 'm1', user_id: 'ana', choice: 'o2' }]);
     render(<PollCard api={a} messageId="m1" poll={poll({ closedAt: '2026-10-24T14:00:00Z' })} mine />);
-    expect(screen.getByText('Poll closed')).toBeTruthy();
-    expect(screen.getByText('Final')).toBeTruthy();
-    expect(screen.getByRole('radio', { name: /Van B/ }).getAttribute('aria-label')).toBe('Van B, 1 vote, most votes');
+    expect(document.querySelector('.ch-msd-poll__head')!.textContent).toBe('Poll · Final');
+    expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('1 vote · Final');
+    expect(screen.getByRole('radio', { name: /Van B/ }).getAttribute('aria-label')).toBe('Van B, 1 vote, your vote'.replace(', your vote', ', most votes'));
     await user.click(screen.getByRole('radio', { name: /Van A/ }));
     expect(a.polls!.vote).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: 'Close poll' })).toBeNull();
@@ -139,16 +141,16 @@ describe('PollCard', () => {
 
   it('a poll past its end time is closed too', () => {
     render(<PollCard api={api([])} messageId="m1" poll={poll({ closesAt: '2026-10-24T14:59:00Z' })} mine />);
-    expect(screen.getByText('Voting ended')).toBeTruthy();
+    expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('No one voted · Voting ended');
   });
 
-  it('says when an open poll ends, in the viewer’s clock', () => {
+  it('says when an open poll closes, in the viewer’s clock', () => {
     // "tomorrow" is read against the clock, so pin it: the day before the poll closes.
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-10-24T15:00:00Z'));
     try {
       render(<PollCard api={api([])} messageId="m1" poll={poll({ closesAt: '2026-10-25T23:00:00Z' })} mine={false} />);
-      expect(screen.getByText('Ends tomorrow at 6:00 PM')).toBeTruthy();
+      expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('No votes yet · Closes tomorrow at 6:00 PM');
     } finally {
       vi.useRealTimers();
     }
@@ -158,7 +160,7 @@ describe('PollCard', () => {
     const user = userEvent.setup();
     const loading = api(null);
     const { rerender } = render(<PollCard api={loading} messageId="m1" poll={poll()} mine={false} />);
-    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('Loading votes…');
+    expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('Loading votes…');
     await user.click(screen.getByRole('radio', { name: /Van A/ }));
     expect(loading.polls!.vote).not.toHaveBeenCalled();
 
@@ -174,11 +176,30 @@ describe('PollCard', () => {
     await user.click(screen.getByRole('button', { name: 'See votes' }));
     const dialog = await screen.findByRole('dialog');
     const vanA = within(dialog).getByRole('region', { name: 'Van A' });
-    // D29: no vote times; "You" first, then by name.
-    expect([...vanA.querySelectorAll('.ch-ms-pollv__name')].map((n) => n.textContent)).toEqual(['You', 'Ana Ruiz']);
-    const waiting = within(dialog).getByRole('region', { name: 'Hasn’t voted' });
-    expect([...waiting.querySelectorAll('.ch-ms-pollv__name')].map((n) => n.textContent)).toEqual(['Ben Cho', 'Cal Park']);
+    // D29: no vote times; "You" first, then by name. A card per choice with its share (MSG-505).
+    expect([...vanA.querySelectorAll('.ch-msd-vg__name')].map((n) => n.textContent)).toEqual(['You', 'Ana Ruiz']);
+    expect(vanA.querySelector('.ch-msd-vg__h small')!.textContent).toBe('2 · 100%');
+    expect((vanA.querySelector('.ch-msd-vg__bar') as HTMLElement).style.getPropertyValue('--ch-msd-w')).toBe('100%');
+    expect(within(dialog).getByRole('region', { name: 'Van B' }).textContent).toContain('No votes yet');
+    // Q-09 / Q-16: who has not voted is for whoever asked and for coaches; a player who did not send the poll does not see it.
+    expect(within(dialog).queryByRole('region', { name: 'Hasn’t voted' })).toBeNull();
     expect(dialog.textContent).not.toMatch(/\d:\d\d/);
+  });
+
+  it('See votes: the sender, and a coach, also see who has not voted (coaches left out)', async () => {
+    const user = userEvent.setup();
+    const rows = [{ message_id: 'm1', user_id: 'ana', choice: 'o1' }];
+    for (const viewer of ['sender', 'coach'] as const) {
+      const a = viewer === 'coach' ? (() => { const x = api(rows) as ChMessagesApi & { viewer: { role: string } }; x.viewer.role = 'coach'; return x; })() : api(rows);
+      render(<PollCard api={a} messageId="m1" poll={poll()} mine={viewer === 'sender'} />);
+      await user.click(screen.getByRole('button', { name: 'See votes' }));
+      const dialog = await screen.findByRole('dialog');
+      const waiting = within(dialog).getByRole('region', { name: 'Hasn’t voted' });
+      // The coach is out of the list; a player who sent the poll is in it as "You" until they vote.
+      const names = [...waiting.querySelectorAll('.ch-msd-vg__name')].map((n) => n.textContent);
+      expect(names).toEqual(viewer === 'coach' ? ['Ben Cho', 'Cal Park'] : ['You', 'Ben Cho', 'Cal Park']);
+      cleanup();
+    }
   });
 
   it('See votes marks someone who voted and left, and a final poll says Final', async () => {
@@ -215,17 +236,18 @@ describe('PollButton and the New poll sheet', () => {
 });
 
 describe('PollCard, slice 1 of the follow-up plan (P-2 0.2)', () => {
-  it('D11: counts a voter who has left, so it never reads more voted than could; all in reads "Everyone voted"', () => {
+  it('D11 / MSG-501: the footer counts the votes cast, a voter who has left included', () => {
     const rows = [
       { message_id: 'm1', user_id: 'gone', choice: 'o1' },
       { message_id: 'm1', user_id: 'ana', choice: 'o1' },
     ];
     render(<PollCard api={api(rows, {}, { memberIds: ['ana'] })} messageId="m1" poll={poll()} mine={false} />);
-    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('2 of 3 voted');
+    expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('2 votes');
     cleanup();
-    const all = [...rows, { message_id: 'm1', user_id: 'me', choice: 'o2' }];
-    render(<PollCard api={api(all, {}, { memberIds: ['ana'] })} messageId="m1" poll={poll()} mine={false} />);
-    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('Everyone voted');
+    // A multi-answer poll counts a vote per choice picked.
+    const multi = poll({ multi: true });
+    render(<PollCard api={api([{ message_id: 'm1', user_id: 'ana', choice: 'o1,o2' }], {}, { memberIds: ['ana'] })} messageId="m1" poll={multi} mine={false} />);
+    expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('2 votes');
   });
 
   it('D13: counts down the last hour and turns final at its exact end', () => {
@@ -233,11 +255,13 @@ describe('PollCard, slice 1 of the follow-up plan (P-2 0.2)', () => {
     try {
       const closesAt = new Date(Date.parse(NOW) + 42 * 60_000).toISOString();
       render(<PollCard api={api([])} messageId="m1" poll={poll({ closesAt })} mine={false} />);
-      expect(screen.getByText('Ends in 42 min')).toBeTruthy();
+      const foot = () => document.querySelector('.ch-msd-poll__count')!.textContent;
+      expect(foot()).toBe('No votes yet · Closes in 42 min');
       act(() => { vi.advanceTimersByTime(41 * 60_000 + 30_000); });
-      expect(screen.getByText('Ends in under a minute')).toBeTruthy();
+      expect(foot()).toBe('No votes yet · Closes in under a minute');
       act(() => { vi.advanceTimersByTime(31_000); });
-      expect(screen.getByText('Final')).toBeTruthy();
+      expect(foot()).toBe('No one voted · Voting ended');
+      expect(document.querySelector('.ch-msd-poll__head')!.textContent).toBe('Poll · Final');
       expect(screen.getByRole('radio', { name: /Van A/ }).getAttribute('aria-disabled')).toBe('true');
     } finally {
       vi.useRealTimers();
@@ -250,12 +274,12 @@ describe('PollCard, slice 1 of the follow-up plan (P-2 0.2)', () => {
     try {
       const closesAt = new Date(Date.parse(NOW) + 30 * 24 * 3_600_000).toISOString();
       render(<PollCard api={api([])} messageId="m1" poll={poll({ closesAt })} mine={false} />);
-      expect(screen.queryByText('Voting ended')).toBeNull();
+      expect(document.querySelector('.ch-msd-poll__head')!.textContent).toBe('Poll · Choose one');
       expect(Math.max(...spy.mock.calls.map((c) => Number(c[1] ?? 0)))).toBeLessThanOrEqual(6 * 3_600_000);
       // The device slept past the end (iOS pauses timers): showing the page again turns it final at once.
       vi.setSystemTime(Date.parse(closesAt) + 1_000);
       act(() => { window.dispatchEvent(new Event('pageshow')); });
-      expect(screen.getByText('Final')).toBeTruthy();
+      expect(document.querySelector('.ch-msd-poll__head')!.textContent).toBe('Poll · Final');
     } finally {
       spy.mockRestore();
       vi.useRealTimers();
@@ -292,43 +316,74 @@ describe('PollCard, slice 1 of the follow-up plan (P-2 0.2)', () => {
   });
 });
 
-describe('PollCard, slice 2: the visual spec and its states (P-2 4.1, 4.2)', () => {
-  const n = (label: RegExp) => screen.getByRole('radio', { name: label }).querySelector('.ch-ms-poll__n')!.textContent;
+describe('PollCard, MSG-501 to MSG-503: the Nov 7 card and its states', () => {
+  const n = (label: RegExp) => screen.getByRole('radio', { name: label }).querySelector('.ch-msd-poll__n')!.textContent;
 
-  it('open: an honest 0 in tertiary, a level line under every fill, no leader marked, "No votes yet"', () => {
+  it('open: an honest 0, one fill per row and no level line, no leader marked, "No votes yet"', () => {
     render(<PollCard api={api([])} messageId="m1" poll={poll()} mine={false} />);
     expect(n(/Van A/)).toBe('0');
-    expect(document.querySelector('.ch-ms-poll__n')!.className).toContain('is-zero');
-    expect(document.querySelectorAll('.ch-ms-poll__level')).toHaveLength(2);
-    expect(document.querySelector('.ch-ms-poll__tag')).toBeNull();
-    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('No votes yet');
+    expect(document.querySelectorAll('.ch-msd-poll__fill')).toHaveLength(2);
+    expect(document.querySelector('.ch-ms-poll__level, .ch-msd-poll__level')).toBeNull();
+    expect(document.querySelector('.ch-msd-poll__chip')).toBeNull();
+    expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('No votes yet');
   });
 
-  it('closed by its sender: "Poll closed · Final", zeros shown, the leader tagged', () => {
-    render(<PollCard api={api([{ message_id: 'm1', user_id: 'ana', choice: 'o2' }])} messageId="m1" poll={poll({ closedAt: '2026-10-24T14:00:00Z' })} mine />);
-    expect(document.querySelector('.ch-ms-poll__head')!.textContent).toBe('Poll closed·Final');
+  it('"Most votes" shows on a sole leader with a vote, open or final; a tie marks nobody (Q-34)', () => {
+    const open = [{ message_id: 'm1', user_id: 'ana', choice: 'o2' }];
+    render(<PollCard api={api(open)} messageId="m1" poll={poll()} mine={false} />);
+    expect(screen.getByRole('radio', { name: /Van B/ }).querySelector('.ch-msd-poll__chip')!.textContent).toBe('Most votes');
+    expect(screen.getByRole('radio', { name: /Van B/ }).getAttribute('aria-label')).toContain('most votes');
+    cleanup();
+    render(<PollCard api={api(open)} messageId="m1" poll={poll({ closedAt: '2026-10-24T14:00:00Z' })} mine />);
+    expect(document.querySelector('.ch-msd-poll__head')!.textContent).toBe('Poll · Final');
     expect(n(/Van A/)).toBe('0');
-    expect(screen.getByRole('radio', { name: /Van B/ }).querySelector('.ch-ms-poll__tag')!.textContent).toBe('Most votes');
-  });
-
-  it('ended on time, two leaders tied, and a final poll nobody voted on', () => {
-    const rows = [
+    expect(screen.getByRole('radio', { name: /Van B/ }).querySelector('.ch-msd-poll__chip')!.textContent).toBe('Most votes');
+    cleanup();
+    const tie = [
       { message_id: 'm1', user_id: 'ana', choice: 'o1' },
       { message_id: 'm1', user_id: 'ben', choice: 'o2' },
     ];
-    render(<PollCard api={api(rows)} messageId="m1" poll={poll({ closesAt: '2026-10-24T14:59:00Z' })} mine={false} />);
-    expect(document.querySelector('.ch-ms-poll__head')!.textContent).toBe('Voting ended·Final');
-    expect([...document.querySelectorAll('.ch-ms-poll__tag')].map((t) => t.textContent)).toEqual(['Tied', 'Tied']);
+    render(<PollCard api={api(tie)} messageId="m1" poll={poll({ closesAt: '2026-10-24T14:59:00Z' })} mine={false} />);
+    expect(document.querySelector('.ch-msd-poll__head')!.textContent).toBe('Poll · Final');
+    expect(document.querySelector('.ch-msd-poll__chip')).toBeNull();
     cleanup();
     render(<PollCard api={api([])} messageId="m1" poll={poll({ closesAt: '2026-10-24T14:59:00Z' })} mine={false} />);
-    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('No one voted');
+    expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('No one voted · Voting ended');
   });
 
-  it('a multi-answer poll says so under its question while open; a failed read says so', () => {
+  it('the bottom-right corner is tight on mine only (the class the CSS keys on)', () => {
+    const { rerender } = render(<PollCard api={api([])} messageId="m1" poll={poll()} mine />);
+    expect(document.querySelector('.ch-msd-poll')!.className).toContain('is-mine');
+    rerender(<PollCard api={api([])} messageId="m1" poll={poll()} mine={false} />);
+    expect(document.querySelector('.ch-msd-poll')!.className).toContain('is-theirs');
+    expect(document.querySelector('[data-ch-bubble]')).toBe(document.querySelector('.ch-msd-poll'));
+  });
+
+  it('a failed read says so and offers Retry', () => {
     render(<PollCard api={api(null, { error: 'Votes could not be loaded. Tap to retry.' })} messageId="m1" poll={poll({ multi: true })} mine={false} />);
-    expect(screen.getByText('Choose any that work')).toBeTruthy();
-    expect(document.querySelector('.ch-ms-poll__count')!.textContent).toBe('Votes didn’t load');
+    expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('Votes didn’t load');
     expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
+  });
+
+  it('voter faces: yours first, up to three, and counts render at once with no crossfade copy', () => {
+    const rows = ['ana', 'ben', 'cal', 'me'].map((user_id) => ({ message_id: 'm1', user_id, choice: 'o1' }));
+    render(<PollCard api={api(rows)} messageId="m1" poll={poll()} mine={false} />);
+    const faces = [...screen.getByRole('radio', { name: /Van A/ }).querySelectorAll('.ch-msd-poll__faces > span')];
+    expect(faces).toHaveLength(3);
+    expect(faces[0]!.textContent).toMatch(/NR|N/);
+    expect(screen.getByRole('radio', { name: /Van A/ }).querySelectorAll('.ch-msd-poll__n')).toHaveLength(1);
+    expect(n(/Van A/)).toBe('4');
+  });
+
+  it('MOT-POLL-1/3: only the tapped row plays the check and your face pop', async () => {
+    const user = userEvent.setup();
+    const a = api([{ message_id: 'm1', user_id: 'me', choice: 'o1' }]);
+    render(<PollCard api={a} messageId="m1" poll={poll()} mine={false} />);
+    // Drawn voted: at rest, nothing pops.
+    expect(document.querySelector('.ch-msd-poll__mark[data-pop]')).toBeNull();
+    expect(document.querySelector('.ch-msd-poll__faces > span[data-pop]')).toBeNull();
+    await user.click(screen.getByRole('radio', { name: /Van B/ }));
+    expect(a.polls!.vote).toHaveBeenLastCalledWith('m1', expect.anything(), ['o2']);
   });
 });
 
@@ -345,7 +400,8 @@ describe('poll actions (P-2 slice 5)', () => {
     const t = withThread(<PollCard api={coachApi([{ message_id: 'm1', user_id: 'ana', choice: 'o1' }])} messageId="m1" poll={poll()} mine />);
     render(t.ui);
     await user.click(screen.getByRole('button', { name: 'Remind 2' }));
-    expect(t.replyWith).toHaveBeenCalledWith('m1', 'Ben and Cal, can you vote in the poll when you get a chance?');
+    // Q-09: the reminder names the poll (and when it closes); it fills the composer and never sends.
+    expect(t.replyWith).toHaveBeenCalledWith('m1', 'Reminder: vote in the “Which van are you riding in?” poll.');
     cleanup();
     render(withThread(<PollCard api={api([])} messageId="m1" poll={poll()} mine={false} />).ui);
     expect(screen.queryByRole('button', { name: /^Remind/ })).toBeNull();
@@ -379,10 +435,5 @@ describe('poll actions (P-2 slice 5)', () => {
     expect(acts.share).toBeNull();
     unmount();
     expect(pollCardActions('m1')).toBeNull();
-  });
-
-  it('draws no faces on a row (owner call, default B: the count only)', () => {
-    render(<PollCard api={api([{ message_id: 'm1', user_id: 'ana', choice: 'o1' }])} messageId="m1" poll={poll()} mine={false} />);
-    expect(document.querySelector('.ch-ms-poll__faces')).toBeNull();
   });
 });

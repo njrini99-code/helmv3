@@ -371,6 +371,14 @@ export function pollRemindDraft(input: { firstNames: readonly string[]; endsPhra
 }
 
 /**
+ * Draft a reminder (Messages v2, Q-09): `Reminder: vote in the "{question}" poll by {when}.`, `by` being the closing time as the
+ * card words it ("tomorrow at 6:00 PM"); no end, no "by". Prefilled only: the person presses Send.
+ */
+export function pollReminderLine(input: { question: string; by: string | null }): string {
+  return `Reminder: vote in the “${input.question.trim()}” poll${input.by ? ` by ${input.by}` : ''}.`;
+}
+
+/**
  * Share result (P-2 4.7): the final result as the sender's or the coach's own words, counts out of the people who voted
  * ("of the 8 who voted"). The top three choices with votes, then "Others had fewer."
  */

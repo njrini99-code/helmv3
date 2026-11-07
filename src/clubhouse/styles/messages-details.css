@@ -1,0 +1,750 @@
+/* Messages v2, package D: the desktop three-pane layout, polls, file and photo bubbles, Details, empty states and New message.
+   Loaded after messages.css (MessagesScreen), so these rules win a tie; where a legacy rule has a higher specificity the
+   legacy rule is deleted from messages.css in the same change. Classes are `ch-msd-*` so this sheet anchors its own
+   (scripts/clubhouse/css-owners.mjs). Values come from the artifact (design-refresh/messages/redesign) through Clubhouse
+   tokens: radii snap to the four-step scale and spacing off the scale is written as a step plus a nudge. */
+
+/* Off-scale steps the artifact draws (9, 10, 11, 14, 18, 26 px), built from the scale so the spacing gates see steps. */
+[data-ch-ms-v2] :is(.ch-msd-ms, .ch-msd-poll, .ch-msd-file, .ch-msd-photo, .ch-msd-empty, .ch-msd-hello, .ch-msd-newpane, .ch-msp-details, .ch-msp-new) {
+  --ch-msd-s3: calc(var(--ch-space-1) - 1px);
+  --ch-msd-s7: calc(var(--ch-space-1_5) + 1px);
+  --ch-msd-s9: calc(var(--ch-space-2) + 1px);
+  --ch-msd-s10: calc(var(--ch-space-2) + var(--ch-space-0_5));
+  --ch-msd-s11: calc(var(--ch-space-3) - 1px);
+  --ch-msd-s14: calc(var(--ch-space-3) + var(--ch-space-0_5));
+  --ch-msd-s18: calc(var(--ch-space-4) + var(--ch-space-0_5));
+  --ch-msd-s22: calc(var(--ch-space-5) + var(--ch-space-0_5));
+  --ch-msd-neg5: calc(var(--ch-space-1_5) * -1 + 1px);
+  --ch-msd-s26: calc(var(--ch-space-6) + var(--ch-space-0_5));
+  --ch-msd-sw-travel: var(--ch-dur-word);
+  --ch-msd-sw-track: var(--ch-dur-msg-pill-out);
+}
+
+/* ---------------------------------------------------------------------------------------------------------------------
+   MSG-801 / MSG-602: three panes at the drawn 1280. The canvas is 1032 wide there (viewport less the 240 sidebar and the 8 px
+   margin), so the grid applies from 1000: rail 320 + thread + details 300 (the thread keeps 380 at the floor). The old
+   float over the thread (container max 1100) stays for 721 to 999. */
+@container (min-width: 1000px) {
+  [data-ch-ms-v2] .ch-msd-ms {
+    grid-template-columns: 320px minmax(0, 1fr) 0px;
+    overflow: clip;
+  }
+  [data-ch-ms-v2] .ch-msd-ms.has-details {
+    grid-template-columns: 320px minmax(0, 1fr) 300px;
+  }
+  /* The details panel is a track, not a float: in flow, clipped by its own column (the legacy rule floats it up to 1100). */
+  [data-ch-ms-v2] .ch-msd-det {
+    position: relative;
+    inset: auto;
+    z-index: auto;
+    width: auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+}
+@container (min-width: 721px) {
+  /* MSG-602: the content is 300 wide and pinned to the column's right edge, so the track opening reveals it from the window's
+     edge instead of dragging it along. */
+  [data-ch-ms-v2] .ch-msd-det__in {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 300px;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+}
+[data-ch-ms-v2] .ch-msd-det {
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-messages-x6);
+  animation: none;
+}
+[data-ch-ms-v2] .ch-msd-det__in {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-3);
+  padding: var(--ch-space-5) var(--ch-msd-s14) var(--ch-space-8);
+}
+/* Direct children keep the column's width and lose the old 272 px sizing. */
+[data-ch-ms-v2] .ch-msd-det__in > .ch-msp-tiles,
+[data-ch-ms-v2] .ch-msd-det__in > .ch-msp-panel,
+[data-ch-ms-v2] .ch-msd-det__in > .ch-msv-consearch {
+  width: auto;
+  margin: 0;
+}
+[data-ch-ms-v2] .ch-msd-det__x {
+  position: absolute;
+  top: var(--ch-space-2);
+  right: var(--ch-space-2);
+  z-index: 1;
+}
+/* MSG-603: header block, desktop 64 face, 18k name, 15k sub. */
+[data-ch-ms-v2] .ch-msd-hero {
+  gap: var(--ch-space-1);
+  padding: var(--ch-space-2) 0 var(--ch-space-1);
+}
+[data-ch-ms-v2] .ch-msd-hero > b {
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+  font-weight: var(--ch-fw-700);
+}
+[data-ch-ms-v2] .ch-msd-hero > span {
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-tertiary);
+}
+
+/* MSG-604: four quick actions, radius 14 (snapped to 12), padding 10 2 9, icon 20 accent-text, label 13 ink-2. */
+[data-ch-ms-v2] .ch-msd-tile {
+  gap: var(--ch-space-1);
+  padding: var(--ch-msd-s10) var(--ch-space-0_5) var(--ch-msd-s9);
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-13-medium);
+  cursor: pointer;
+}
+[data-ch-ms-v2] .ch-msd-tile svg {
+  color: var(--ch-accent-ink);
+}
+/* The muted state: accent fill, ink accent-ink's counterpart on a green tile. */
+[data-ch-ms-v2] .ch-msd-tile[aria-pressed='true'] {
+  background: var(--ch-bubble-mine-fill);
+  color: var(--ch-bubble-mine-ink);
+}
+[data-ch-ms-v2] .ch-msd-tile[aria-pressed='true'] svg {
+  color: var(--ch-bubble-mine-ink);
+}
+[data-ch-ms-v2] .ch-msd-tile:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-msd-menu {
+  transform-origin: 0 0;
+}
+
+/* MSG-605 / MSG-606 / MSG-607: the one card style, header 17k/600 with a hairline under it from x = 16. */
+[data-ch-ms-v2] .ch-msd-lcard {
+  overflow: hidden;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+[data-ch-ms-v2] .ch-msd-lcard__h {
+  position: relative;
+  align-items: baseline;
+  padding: var(--ch-msd-s14) var(--ch-space-4) var(--ch-space-2);
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+  color: var(--ch-text-primary);
+}
+[data-ch-ms-v2] .ch-msd-lcard__h > b {
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+}
+[data-ch-ms-v2] .ch-msd-lcard__h > .ch-num {
+  font: var(--ch-type-15);
+  color: var(--ch-accent-ink);
+}
+[data-ch-ms-v2] .ch-msd-lcard__h::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 var(--ch-space-4);
+  height: var(--ch-hairline-w);
+  background: var(--ch-separator);
+}
+[data-ch-ms-v2] .ch-msd-link {
+  min-height: 44px;
+  margin: -12px 0;
+  padding: 0 var(--ch-space-1);
+  border: 0;
+  background: none;
+  color: var(--ch-accent-ink);
+  font: var(--ch-type-15-medium);
+  cursor: pointer;
+}
+[data-ch-ms-v2] .ch-msd-member {
+  min-height: 52px;
+  padding: 0 var(--ch-space-4) 0 0;
+}
+[data-ch-ms-v2] .ch-msd-member .ch-msv-member__to {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--ch-space-3);
+  min-width: 0;
+  min-height: 52px;
+  padding: var(--ch-space-1_5) 0 var(--ch-space-1_5) var(--ch-space-4);
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+}
+[data-ch-ms-v2] .ch-msd-chip {
+  padding: var(--ch-space-0_5) var(--ch-space-2);
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-accent-tint);
+  color: var(--ch-accent-ink);
+  font: var(--ch-type-12-strong);
+}
+[data-ch-ms-v2] .ch-msd-seeall {
+  color: var(--ch-accent-ink);
+  font: var(--ch-type-15-medium);
+}
+/* MSG-607: three columns, gap 4, padding 12, square tiles, radius 10 (snapped to 8). */
+[data-ch-ms-v2] .ch-msd-ptiles {
+  gap: var(--ch-space-1);
+  padding: var(--ch-space-3);
+}
+[data-ch-ms-v2] .ch-msd-ptiles .ch-msv-ptile {
+  border-radius: var(--ch-radius-sm);
+}
+[data-ch-ms-v2] .ch-msd-frow {
+  min-height: 52px;
+}
+/* MSG-606: a green status dot, one block of words. */
+[data-ch-ms-v2] .ch-msd-class__b {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ch-space-3);
+  padding: var(--ch-space-3) var(--ch-space-4) var(--ch-space-4);
+}
+[data-ch-ms-v2] .ch-msd-class__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: var(--ch-space-1_5);
+  border-radius: 50%;
+  background: var(--ch-accent-ink);
+}
+[data-ch-ms-v2] .ch-msd-class__t {
+  min-width: 0;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+[data-ch-ms-v2] .ch-msd-class__t p {
+  margin: 0;
+}
+[data-ch-ms-v2] .ch-msd-class__t .ch-ca-thread__line {
+  font: var(--ch-type-13);
+  color: var(--ch-text-tertiary);
+}
+/* MSG-601: the phone page's profile block and the bottom padding. */
+[data-ch-ms-v2] .ch-msp-details .ch-msp-page {
+  padding-bottom: var(--ch-space-10);
+}
+
+/* ---------------------------------------------------------------------------------------------------------------------
+   MSG-501 to MSG-503: the poll card. Their bubble's paper, radius 20, bottom-right 6 on mine only, no tail, no receipt. */
+[data-ch-ms-v2] .ch-msd-poll {
+  width: 272px;
+  padding: var(--ch-msd-s14) var(--ch-msd-s14) var(--ch-space-3);
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-bubble-theirs-bg);
+  color: var(--ch-text-primary);
+  box-shadow: none;
+  filter: var(--ch-bubble-theirs-shadow);
+}
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  [data-ch-ms-v2] .ch-msd-poll {
+    width: 330px;
+  }
+}
+/* mine: the legacy card gave theirs a flat bottom-left too; only mine has the 6. */
+[data-ch-ms-v2] .ch-msd-poll.is-theirs,
+[data-ch-ms-v2] .ch-msd-poll.is-mine {
+  border-radius: var(--ch-radius-xl);
+}
+[data-ch-ms-v2] .ch-msd-poll.is-mine {
+  border-bottom-right-radius: var(--ch-radius-tail);
+}
+[data-ch-ms-v2] .ch-msd-poll__head {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+  margin-bottom: var(--ch-space-1);
+  font: var(--ch-type-13-strong);
+  line-height: var(--ch-lead-label);
+  color: var(--ch-text-tertiary);
+}
+[data-ch-ms-v2] .ch-msd-poll__head svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--ch-text-tertiary);
+}
+[data-ch-ms-v2] .ch-msd-poll__q {
+  margin: 0 0 var(--ch-msd-s10);
+  font: var(--ch-type-17-strong);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+[data-ch-ms-v2] .ch-msd-poll__opts {
+  display: block;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* MSG-502: grid 22 | 1fr | auto, gap 10, min 44, padding 8 10, margin 0 0 6, radius 12, the page-2 well. */
+[data-ch-ms-v2] .ch-msd-poll__opt {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--ch-msd-s10);
+  width: 100%;
+  min-height: 44px;
+  margin: 0 0 var(--ch-space-1_5);
+  padding: var(--ch-space-2) var(--ch-msd-s10);
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-well-bg-flat);
+  box-shadow: inset 0 var(--ch-hairline-w) 2px rgb(28 25 18 / 0.06);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-14-medium);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+[data-ch-ms-v2] .ch-msd-poll__opt[aria-disabled='true'] {
+  cursor: default;
+}
+[data-ch-ms-v2] .ch-msd-poll__opt:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+/* The share of the voters: one bar per option at its scale, origin left, accent 10% (yours 20%). Interruptible: a CSS
+   transition on transform retargets from where the bar is (MC-08), on the smooth spring. */
+[data-ch-ms-v2] .ch-msd-poll__fill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--ch-poll-bar);
+  transform: scaleX(var(--ch-poll-share, 0));
+  transform-origin: 0 50%;
+  transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+}
+[data-ch-ms-v2] .ch-msd-poll__opt.is-on .ch-msd-poll__fill {
+  background: var(--ch-poll-bar-on);
+}
+[data-ch-ms-v2] .ch-msd-poll__mark {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--ch-text-tertiary);
+  color: var(--ch-bubble-mine-ink);
+}
+[data-ch-ms-v2] .ch-msd-poll__opt.is-multi .ch-msd-poll__mark {
+  border-radius: var(--ch-radius-xs);
+}
+[data-ch-ms-v2] .ch-msd-poll__opt.is-on .ch-msd-poll__mark {
+  background: var(--ch-bubble-mine-fill);
+  box-shadow: none;
+}
+[data-ch-ms-v2] .ch-msd-poll__mark svg {
+  width: 12px;
+  height: 12px;
+}
+/* MOT-POLL-1: the disc pops .6 > 1 and the check draws (stroke offset 20 > 0, 260 ms on the house ease); only the tapped row
+   (data-pop), so a card that loads voted shows the check at rest. */
+[data-ch-ms-v2] .ch-msd-poll__mark[data-pop] {
+  animation: ch-msd-ring-pop var(--ch-dur-spring-pop) var(--ch-ease-spring-pop);
+}
+[data-ch-ms-v2] .ch-msd-poll__mark[data-pop] path {
+  animation: ch-msd-tick-draw var(--ch-dur-base) var(--ch-ease);
+}
+@keyframes ch-msd-ring-pop {
+  from {
+    transform: scale(0.6);
+  }
+}
+@keyframes ch-msd-tick-draw {
+  from {
+    stroke-dashoffset: 20;
+  }
+}
+[data-ch-ms-v2] .ch-msd-poll__label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+/* MSG-502 / Q-34: "Most votes" on a sole leader with a vote, open or final. */
+[data-ch-ms-v2] .ch-msd-poll__chip {
+  margin-left: var(--ch-space-1_5);
+  padding: var(--ch-space-0_5) var(--ch-msd-s7);
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-accent-tint);
+  color: var(--ch-accent-ink);
+  font: var(--ch-type-12-strong);
+  line-height: var(--ch-lead-label);
+  white-space: nowrap;
+}
+[data-ch-ms-v2] .ch-msd-poll__side {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ch-space-1_5);
+  font: var(--ch-type-13-strong);
+  color: var(--ch-text-tertiary);
+}
+/* Voter faces: 18, overlap -5, a 1.5 px ring in the well's colour; yours first. MOT-POLL-3: yours pops in .4 > 1. */
+[data-ch-ms-v2] .ch-msd-poll__faces {
+  display: inline-flex;
+}
+[data-ch-ms-v2] .ch-msd-poll__faces > span {
+  display: inline-flex;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px var(--ch-well-bg-flat);
+}
+[data-ch-ms-v2] .ch-msd-poll__faces > span + span {
+  margin-left: var(--ch-msd-neg5);
+}
+[data-ch-ms-v2] .ch-msd-poll__faces > span[data-pop] {
+  animation: ch-msd-face-pop var(--ch-dur-spring-pop) var(--ch-ease-spring-pop);
+}
+@keyframes ch-msd-face-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+[data-ch-ms-v2] .ch-msd-poll__n {
+  min-width: 1ch;
+  text-align: right;
+}
+[data-ch-ms-v2] .ch-msd-poll__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ch-space-1) var(--ch-space-4);
+  margin-top: var(--ch-space-1);
+  font: var(--ch-type-13);
+  color: var(--ch-text-tertiary);
+}
+[data-ch-ms-v2] .ch-msd-poll__count {
+  margin-right: auto;
+}
+/* A text key: 12.5k/600 accent-text, a 44 px target, 28 in the layout. */
+[data-ch-ms-v2] .ch-msd-poll__link {
+  min-height: 44px;
+  margin: -8px 0;
+  padding: var(--ch-space-2) var(--ch-space-0_5);
+  border: 0;
+  background: none;
+  color: var(--ch-accent-ink);
+  font: var(--ch-type-13-strong);
+  cursor: pointer;
+}
+[data-ch-ms-v2] .ch-msd-poll__link:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--ch-radius-xs);
+}
+/* A final poll's rows are results, not keys. */
+[data-ch-ms-v2] .ch-msd-poll.is-closed .ch-msd-poll__opt {
+  cursor: default;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* MOT-POLL-1..3, MOT-R-1: the bars land, the check appears, your face appears. */
+  [data-ch-ms-v2] .ch-msd-poll__fill {
+    transition: none;
+  }
+  [data-ch-ms-v2] .ch-msd-poll__mark[data-pop],
+  [data-ch-ms-v2] .ch-msd-poll__mark[data-pop] path,
+  [data-ch-ms-v2] .ch-msd-poll__faces > span[data-pop] {
+    animation: none;
+  }
+}
+[data-motion='off'] .ch-msd-poll__fill {
+  transition: none;
+}
+[data-motion='off'] .ch-msd-poll__mark[data-pop],
+[data-motion='off'] .ch-msd-poll__mark[data-pop] path,
+[data-motion='off'] .ch-msd-poll__faces > span[data-pop] {
+  animation: none;
+}
+
+/* MSG-505: the Votes sheet. One card per choice (radius 16, hairline), a 3 px accent bar along its foot at the share. */
+.ch-msd-votes .ch-modal__panel {
+  max-height: 78%;
+}
+@media (min-width: 821px) {
+  .ch-msd-votes .ch-modal__panel {
+    max-height: 82%;
+  }
+}
+.ch-msd-vgs {
+  display: grid;
+  gap: var(--ch-space-3);
+}
+.ch-msd-vg {
+  overflow: hidden;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow-flat);
+}
+.ch-msd-vg__h {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ch-space-2);
+  margin: 0;
+  padding: var(--ch-space-3) var(--ch-space-4) var(--ch-space-2);
+  overflow: hidden;
+  font: var(--ch-type-14-strong);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-msd-vg__h > small {
+  font: var(--ch-type-13-strong);
+  color: var(--ch-text-tertiary);
+}
+.ch-msd-vg__bar {
+  position: absolute;
+  inset: auto auto 0 0;
+  width: var(--ch-msd-w, 0%);
+  height: 3px;
+  border-radius: 0 var(--ch-radius-mark) var(--ch-radius-mark) 0;
+  background: var(--ch-accent-ink);
+}
+.ch-msd-vg__who {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-msd-vg__row {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-3);
+  min-height: 52px;
+  padding: var(--ch-space-1_5) var(--ch-space-4);
+}
+.ch-msd-vg__person {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.ch-msd-vg__name {
+  overflow: hidden;
+  font: var(--ch-type-15-strong);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-msd-vg__line {
+  overflow: hidden;
+  font: var(--ch-type-13);
+  color: var(--ch-text-tertiary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-msd-vg__none {
+  margin: 0;
+  padding: var(--ch-space-1) var(--ch-space-4) var(--ch-space-3);
+  font: var(--ch-type-14);
+  color: var(--ch-text-tertiary);
+}
+.ch-msd-vg__left {
+  font: var(--ch-type-13);
+  color: var(--ch-text-tertiary);
+}
+.ch-msd-draft {
+  min-height: 44px;
+  border: 0;
+  background: none;
+  color: var(--ch-accent-ink);
+  font: var(--ch-type-17-medium);
+  cursor: pointer;
+}
+
+/* MSG-504 / MOT-X-7: the poll form's switch, 44 x 26 with a 22 knob travelling 18 on a 320 ms spring, the track in 250 ms. */
+.ch-msd-sw .ch-switch__track {
+  width: 44px;
+  height: 26px;
+  transition: background-color var(--ch-msd-sw-track, var(--ch-dur-msg-pill-out)) var(--ch-ease);
+}
+.ch-msd-sw .ch-switch__thumb {
+  width: 22px;
+  height: 22px;
+  transition: transform var(--ch-msd-sw-travel, var(--ch-dur-word)) var(--ch-ease-spring), scale var(--ch-dur-press) var(--ch-ease);
+}
+.ch-msd-sw .ch-switch input:checked + .ch-switch__track .ch-switch__thumb {
+  transform: translateX(18px);
+}
+.ch-msd-sw .ch-switch input:not(:checked) + .ch-switch__track {
+  box-shadow: var(--ch-messages-x5);
+}
+.ch-msd-lcard.is-form {
+  display: grid;
+}
+.ch-msd-lcard.is-form > * + * {
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-separator);
+}
+
+/* ---------------------------------------------------------------------------------------------------------------------
+   MSG-220 / MSG-221: the photo and the file bubble. */
+.ch-msd-photo {
+  width: 242px;
+  height: 176px;
+  padding: var(--ch-msd-s3);
+  border-radius: var(--ch-radius-xl);
+  overflow: hidden;
+}
+.ch-msd-photo img {
+  display: block;
+  width: 236px;
+  height: 170px;
+  max-width: 100%;
+  border-radius: var(--ch-radius-lg);
+  object-fit: cover;
+}
+/* The frame is held before the signed address arrives, so a photo does not grow the thread (Q-41). */
+.ch-msd-photo-frame {
+  display: block;
+  width: 242px;
+  height: 176px;
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-well-bg-flat);
+}
+[data-ch-ms-v2] .ch-msd-file {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-msd-s11);
+  min-width: 230px;
+  padding: var(--ch-msd-s10) var(--ch-msd-s14) var(--ch-msd-s10) var(--ch-msd-s10);
+  text-decoration: none;
+}
+[data-ch-ms-v2] .ch-msd-file__ic {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 46px;
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-accent-tint);
+  color: var(--ch-accent-ink);
+  font: var(--ch-type-12-strong);
+  letter-spacing: 0.02em;
+}
+[data-ch-ms-v2] .ch-msd-file__t {
+  display: grid;
+  min-width: 0;
+}
+[data-ch-ms-v2] .ch-msd-file__t > b {
+  overflow: hidden;
+  font: var(--ch-type-14-strong);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-ch-ms-v2] .ch-msd-file__t > span {
+  font: var(--ch-type-12);
+  color: inherit;
+  opacity: 0.72;
+}
+/* Mine is the green bubble: the tile is white at .14 and its ink is the bubble's. */
+[data-ch-ms-v2] .ch-msd-file.is-mine {
+  background: var(--ch-bubble-mine-fill);
+  color: var(--ch-bubble-mine-ink);
+  filter: var(--ch-bubble-mine-shadow);
+}
+[data-ch-ms-v2] .ch-msd-file.is-mine .ch-msd-file__ic {
+  background: rgb(255 255 255 / 0.14);
+  color: var(--ch-bubble-mine-ink);
+}
+
+/* ---------------------------------------------------------------------------------------------------------------------
+   MSG-701 / MSG-222 / MSG-702: first run, the hello card, New message. */
+[data-ch-ms-v2] .ch-msd-empty {
+  gap: var(--ch-msd-s10);
+  padding: var(--ch-msd-s26) var(--ch-space-5) var(--ch-space-5);
+  border-radius: var(--ch-radius-lg);
+}
+[data-ch-ms-v2] .ch-msd-empty h2 {
+  margin: var(--ch-space-1) 0 0;
+  font: var(--ch-type-20-strong);
+  letter-spacing: -0.015em;
+}
+[data-ch-ms-v2] .ch-msd-empty p {
+  max-width: 280px;
+}
+[data-ch-ms-v2] .ch-msd-empty .ch-msv-empty__cta {
+  padding: 0 var(--ch-msd-s18);
+}
+[data-ch-ms-v2] .ch-msd-empty .ch-msv-empty__ghost {
+  font: var(--ch-type-14-strong);
+}
+[data-ch-ms-v2] .ch-msd-hello {
+  max-width: none;
+  margin: var(--ch-space-4) 0 var(--ch-space-3);
+  padding: var(--ch-msd-s22) var(--ch-space-4) var(--ch-msd-s18);
+  border-radius: var(--ch-radius-lg);
+}
+[data-ch-ms-v2] .ch-msd-hello > b {
+  font: var(--ch-type-20-strong);
+  font-weight: var(--ch-fw-700);
+  letter-spacing: -0.015em;
+}
+[data-ch-ms-v2] .ch-msd-hello > small {
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-tertiary);
+}
+[data-ch-ms-v2] .ch-msd-hello .ch-msv-hello__s {
+  gap: var(--ch-space-1_5);
+  max-width: 320px;
+  margin-top: var(--ch-space-3);
+}
+[data-ch-ms-v2] .ch-msd-hello .ch-msv-hello__s button {
+  background: var(--ch-well-bg-flat);
+  box-shadow: inset 0 var(--ch-hairline-w) 2px rgb(28 25 18 / 0.06);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-14);
+}
+/* The To field: min 52, padding 12 16; a token is the face (22) + the name on a 10% tint, accent ink, 600, a pill. */
+[data-ch-ms-v2] .ch-msd-tok {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ch-space-1_5);
+  height: auto;
+  padding: var(--ch-msd-s3) var(--ch-msd-s9) var(--ch-msd-s3) var(--ch-msd-s3);
+  border: 0;
+  border-radius: 999px;
+  background: var(--ch-accent-tint);
+  color: var(--ch-accent-ink);
+  font: var(--ch-type-14-strong);
+  cursor: pointer;
+}
+[data-ch-ms-v2] .ch-msd-to {
+  min-height: 52px;
+  padding: var(--ch-space-3) var(--ch-space-4);
+}
+/* The caret blinks `steps(1)` 1 s (MOT-X-16); Reduce Motion keeps it blinking, as the artifact does. */
+[data-ch-ms-v2] .ch-msd-to input,
+[data-ch-ms-v2] .ch-msp-to__in {
+  caret-color: var(--ch-accent-ink);
+}
+/* Suggestions that no longer match dim to .35 over 180 ms instead of leaving (the list does not re-lay out). */
+[data-ch-ms-v2] .ch-msd-sug {
+  transition: opacity var(--ch-dur-quick) linear;
+}
+[data-ch-ms-v2] .ch-msd-sug.is-dim {
+  opacity: 0.35;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-ch-ms-v2] .ch-msd-sug {
+    transition: none;
+  }
+}
+
+[data-ch-ms-v2] .ch-msd-mutenote {
+  margin: 0;
+  font: var(--ch-type-13);
+  color: var(--ch-text-tertiary);
+  text-align: center;
+}

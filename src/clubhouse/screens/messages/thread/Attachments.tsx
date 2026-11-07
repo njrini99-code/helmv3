@@ -4,14 +4,14 @@ import type { ChAttachment } from '../model';
 import { useState, useRef, useEffect } from 'react';
 import { Icon } from '../../../ui/Icon';
 import { FileText, Download, RotateCw } from 'lucide-react';
-import { fileKind, fileSize } from '../files';
+import { fileKind, fileSize, fileSubline, fileTypeLabel } from '../files';
 import { Modal } from '../../../ui/Modal';
 import type { ChMessagesApi } from '../api/types';
 import { chReport } from '../../../lib/track';
 import { Skeleton } from '../../../ui/States';
 
 /** A photo in a message: shown in the thread, a click opens the full file. One that won't load falls back to the file chip. */
-function ImageAttachment({ f }: { f: ChAttachment; }) {
+function ImageAttachment({ f, from, caption }: { f: ChAttachment; from?: string; caption?: string }) {
   const [broken, setBroken] = useState(false);
   const [viewing, setViewing] = useState(false);
   if (broken) {
@@ -31,9 +31,9 @@ function ImageAttachment({ f }: { f: ChAttachment; }) {
   return (
     <>
       {/* A photo opens here, in the app; the original is one more tap inside it. */}
-      <button type="button" className="ch-ms-img" data-ch-bubble="" aria-label={`Open ${f.name}`} onClick={() => setViewing(true)}>
-        {/* A plain img on purpose: a signed storage URL, sized by the thread, not an optimised asset. */}
-        <img src={f.url ?? undefined} alt={f.name} loading="lazy" decoding="async" onError={() => setBroken(true)} />
+      <button type="button" className="ch-ms-img ch-msd-photo" data-ch-bubble="" aria-label={from ? `Photo from ${from}` : `Open ${f.name}`} onClick={() => setViewing(true)}>
+        {/* A plain img on purpose: a signed storage URL, sized by the thread, not an optimised asset. MSG-220: alt reads "Photo of ..." from the message. */}
+        <img src={f.url ?? undefined} alt={caption ? `Photo of ${caption}` : f.name} loading="lazy" decoding="async" onError={() => setBroken(true)} />
       </button>
       <Modal open={viewing} title={f.name} onClose={() => setViewing(false)}>
         <div className="ch-ms-imgview">
@@ -51,10 +51,19 @@ export function Attachments({
   load,
   id,
   mine,
+  from,
+  caption,
+  reserve,
 }: {
   load: ChMessagesApi["attachments"];
   id: string;
   mine: boolean;
+  /** The sender's first name: the photo bubble reads "Photo from {First}" (MSG-220). */
+  from?: string;
+  /** The message's own words: the photo's alt reads "Photo of {caption}". */
+  caption?: string;
+  /** What the message carries, when the list payload says so: the frame is held at its size before the file is signed (Q-41, B7). */
+  reserve?: "photo" | "file";
 }) {
   const [files, setFiles] = useState<ChAttachment[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -144,32 +153,32 @@ export function Attachments({
   if (!files)
     return (
       <span ref={spot} aria-busy="true" data-ch-code="CH-7408">
-        <Skeleton width={240} height={54} radius={14} />
+        {reserve === "photo" ? <span className="ch-msd-photo-frame" /> : <Skeleton width={240} height={54} radius={14} />}
       </span>
     );
   return (
     <>
       {files.map((f) =>
         f.mime.startsWith("image/") && f.url ? (
-          <ImageAttachment key={f.id} f={f} />
+          <ImageAttachment key={f.id} f={f} from={from} caption={caption} />
         ) : (
         <a
           key={f.id}
-          className="ch-ms-bub ch-ms-bub--file"
+          className={"ch-ms-bub ch-ms-bub--file ch-msd-file" + (mine ? " is-mine" : "")}
           data-ch-bubble=""
           href={f.url ?? undefined}
           target="_blank"
           rel="noreferrer"
           aria-disabled={!f.url}
         >
-          <span className="ch-ms-file__ic">
-            <Icon icon={FileText} size={16} />
+          {/* MSG-221: a tile with the type in words, the title, and the kind with its size or length. */}
+          <span className="ch-msd-file__ic" aria-hidden="true">
+            {fileTypeLabel(f.name, f.mime)}
           </span>
-          <span style={{ minWidth: 0 }}>
+          <span className="ch-msd-file__t">
             <b>{f.name}</b>
-            <span>{`${fileKind(f.mime)} · ${fileSize(f.size)}`}</span>
+            <span>{fileSubline(f as ChAttachment & { durationSeconds?: number | null })}</span>
           </span>
-          <Icon icon={Download} size={15} />
           {mine && <span className="ch-sr-only">Sent by you</span>}
         </a>
         ),

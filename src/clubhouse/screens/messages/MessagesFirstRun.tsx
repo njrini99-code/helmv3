@@ -11,7 +11,7 @@ import { Icon } from '../../ui/Icon';
  */
 export function MessagesFirstRun({ onNew, teamName, onTeam }: { coach: boolean; onNew: () => void; teamName?: string; onTeam?: () => void }) {
   return (
-      <section className="ch-msv-empty" data-ch-code="CH-7309">
+      <section className="ch-msv-empty ch-msd-empty" data-ch-code="CH-7309">
         <svg className="ch-msv-empty__illo" viewBox="0 0 168 120" aria-hidden="true">
           <ellipse cx="84" cy="111" rx="62" ry="5" fill="var(--ch-well-bg-flat)" />
           <rect x="16" y="16" width="92" height="56" rx="22" fill="var(--ch-card-bg)" stroke="var(--ch-border-hairline)" />
