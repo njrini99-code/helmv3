@@ -22,6 +22,8 @@ export function BubbleHoverBar({
   /** Opens the message's lift (refreshes its menu first). */
   onMore: () => void;
 }) {
+  // MSG-224: a poll takes its taps itself; the bar is for text, photos and files.
+  if (m.poll) return null;
   return (
     <div className="ch-msv-hoverbar" role="toolbar" aria-label="Message actions">
       {REACTIONS.filter((r) => r.key === "Like" || r.key === "Love" || r.key === "Laugh").map((r) => {
@@ -30,30 +32,30 @@ export function BubbleHoverBar({
           <button
             key={r.key}
             type="button"
-            aria-label={`${on ? "Remove" : "React"} ${r.key.toLowerCase()}`}
+            aria-label={r.key}
             aria-pressed={on}
             onClick={() => {
               haptic("select");
               api.react(m.id, r.key, !on);
             }}
           >
-            <Icon icon={r.icon} size={14.4} />
+            <Icon icon={r.icon} size={15} />
           </button>
         );
       })}
       {onReply && (
         <button type="button" aria-label="Reply" onClick={onReply}>
-          <Icon icon={Reply} size={14.4} />
+          <Icon icon={Reply} size={15} />
         </button>
       )}
       <button
         type="button"
-        aria-label="More message actions"
+        aria-label="More actions"
         onClick={() => {
           onMore();
         }}
       >
-        <Icon icon={Ellipsis} size={14.4} />
+        <Icon icon={Ellipsis} size={15} />
       </button>
     </div>
   );

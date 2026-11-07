@@ -11,19 +11,20 @@ import { useChMotionMode, useChReducedMotion } from "../../lib/reduced-motion";
 import { Avatar, avatarTone } from "../../ui/Avatar";
 import { initials as initialsOf } from "../../lib/format";
 import { Icon } from "../../ui/Icon";
-import { Modal } from "../../ui/Modal";
+import { MsSheet } from "./overlays/MsSheet";
 import { InlineNotice } from "../../ui/Notices";
 import { Skeleton } from "../../ui/States";
-import { railTime, type ChMsg } from "./model";
+import { clock, railTime, type ChMsg } from "./model";
 import type { ChMessagesApi } from "./MessagesView";
 
 /** The directory lookup MessagesView exports as personOf, kept here so this file only takes types from it (no import cycle). */
 const personOf = (api: ChMessagesApi, userId: string) => api.directory.find((p) => p.userId === userId);
 
 /**
- * Seen by (premium features P-1, handoff 4.34.1): the receipt on a group message's time line, "Seen by 9 of 11".
- * Seen means the person opened this chat after the message was sent (`message-receipts.ts`). No faces anywhere (the
- * owner declined the Seen-by facepile, P007-A3), and no Nudge (owner, 2026-10-25).
+ * Seen by (premium features P-1, handoff 4.34.1): the receipt under a group message, "Seen by 9 of 11".
+ * Seen means the person opened this chat after the message was sent (`message-receipts.ts`). Messages v2 draws faces on the
+ * receipt pill and in the message menu (MSG-215, MSG-404), but only for the viewer who may open the list (a coach, QUESTIONS
+ * Q-15): a player sender sees the count and no names or faces. No Nudge (owner, 2026-10-25).
  */
 
 /** The receipt for one message, or null when the viewer may not see a count or the read state isn't known. */
@@ -128,10 +129,10 @@ export function HoldSeenRow({ api, m, onOpen }: { api: ChMessagesApi; m: ChMsg; 
   return (
     <>
       <hr />
-      <button type="button" className="ch-msv-seenrow" onClick={onOpen}>
+      <button type="button" role="menuitem" className="ch-msv-seenrow" onClick={onOpen}>
         <span className="ch-msv-seenrow__t">
           Seen by
-          <Icon icon={Eye} size={18} />
+          <Icon icon={Eye} size={19} />
         </span>
         <SeenFaces api={api} ids={seen.s.seen} size={20} max={6} />
         <small className="ch-num">{seen.s.seen.length} of {seen.s.total} · {seen.s.notYet.length} not yet</small>
@@ -140,24 +141,54 @@ export function HoldSeenRow({ api, m, onOpen }: { api: ChMessagesApi; m: ChMsg; 
   );
 }
 
-/** The lane's receipt (S-MSG.team): a paper pill under your latest message in a group, faces and a count; a tap opens the list. */
+/**
+ * The receipt under your latest message in a group (MSG-215): a paper pill with up to five overlapping 16 px faces and "Seen by n of
+ * m" or "Seen by everyone"; a tap opens the list (a coach). Nobody has read it yet: a plain "Delivered" pill, not a button. A viewer
+ * who may not open the list (a player) sees the count and no faces.
+ */
 export function SeenByPill({ api, m, onOpen }: { api: ChMessagesApi; m: ChMsg; onOpen?: (anchor: HTMLElement) => void }) {
   const seen = useSeenBy(api, m);
   if (!seen) return null;
   const n = seen.s.seen.length;
-  const words = n > 0 && n < seen.s.total ? <>Seen by <b className="ch-num">{n}</b> of {seen.s.total}</> : seen.label;
-  const open = seen.canOpen && onOpen ? onOpen : null;
+  const words = n === 0 ? "Delivered" : n < seen.s.total ? <>Seen by <b className="ch-num">{n}</b> of {seen.s.total}</> : "Seen by everyone";
+  const open = n > 0 && seen.canOpen && onOpen ? onOpen : null;
   const name = seenByAccessibleName(seen.s, !!open);
+  const faces = seen.canOpen ? <SeenFaces api={api} ids={seen.s.seen} size={16} max={5} /> : null;
   return open ? (
     <button type="button" className="ch-msv-seen" aria-label={name} data-ch-code="CH-7608" onClick={(e) => open(e.currentTarget)}>
-      <SeenFaces api={api} ids={seen.s.seen} size={16} max={5} />
+      {faces}
       <span aria-hidden="true">{words}</span>
     </button>
   ) : (
     <span className="ch-msv-seen" data-ch-code="CH-7608">
-      <SeenFaces api={api} ids={seen.s.seen} size={16} max={5} />
+      {faces}
       <span className="ch-sr-only" data-ch-code="CH-7805">{name}</span>
       <span aria-hidden="true">{words}</span>
+    </span>
+  );
+}
+
+/**
+ * The receipt under your latest message in a direct thread (MSG-214, MOT-SEND-10): "Delivered", then "Seen 8:15 AM", the words
+ * crossfading over 180 ms. The time is the reader's, shown to a coach from the read marks; a player (or no mark yet) reads plain "Seen"
+ * (Q-44). Renders nothing for a pending, failed, deleted or poll message.
+ */
+export function DmReceipt({ api, m }: { api: ChMessagesApi; m: ChMsg }) {
+  const reduced = useChReducedMotion();
+  if (m.pending || m.failed || m.deleted || m.poll) return null;
+  let label = "Delivered";
+  if (m.seen) {
+    const marks = api.receipts?.marks;
+    const readAt = marks && api.viewer.role === "coach" ? (seenBy(m.at, m.senderId, marks).seen.map((id) => marks.get(id)).find((t): t is string => !!t) ?? null) : null;
+    label = readAt ? `Seen ${clock(readAt, api.timeZone, api.clock)}` : "Seen";
+  }
+  return (
+    <span className="ch-msv-seen is-dm" data-ch-code="CH-7608" role="status">
+      <AnimatePresence initial={false} mode="popLayout">
+        <M.span key={label} initial={reduced ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={reduced ? undefined : { opacity: 0 }} transition={chTween("quick", reduced)}>
+          {label}
+        </M.span>
+      </AnimatePresence>
     </span>
   );
 }
@@ -258,11 +289,11 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
     const raw = r!.marks.get(userId) ?? null;
     // A forged future last_read_at is shown as now (changelog P-01): never "Last opened tomorrow".
     const lastOpened = raw && Number.isFinite(nowMs) && Date.parse(raw) > nowMs ? api.now : raw;
-    const meta = section === "notYet" ? "Hasn’t opened this chat" : lastOpened ? railTime(lastOpened, api.now, api.timeZone, api.clock) : "";
+    const meta = section === "notYet" ? "Hasn’t opened this chat" : lastOpened ? railTime(lastOpened, api.now, api.timeZone, api.clock) : "Just now";
     return { userId, name, role, lastOpened, seenAt: null, meta, label: [name, meta.toLowerCase()].filter(Boolean).join(", ") };
   };
   const notYet = orderReceiptRows(s.notYet.map((id) => row(id, "notYet")), "notYet");
-  // The lane reads top to bottom in the order they opened it (S-MSG.seen: Maya 7:06, Owen 7:08, ...).
+  // The list reads top to bottom in the order they opened it (MSG-405: Maya 7:06, Owen 7:08, ...).
   const seen = s.seen.map((id) => row(id, "seen")).sort((a, b) => String(a.lastOpened).localeCompare(String(b.lastOpened)));
   const offline = typeof navigator !== "undefined" && navigator.onLine === false;
   // M6: a person moving from Not yet to Seen glides to their new place (one layout id across both sections, on smooth,
@@ -293,11 +324,12 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
         <ul className="ch-seen-sec__rows">
           {rows.map((x) => (
             <li key={x.userId} data-user={x.userId} className="ch-seen-row" aria-label={x.label}>
-              {compact ? <Avatar name={x.name} size="sm" /> : <Avatar name={x.name} size="md" />}
+              {compact ? <Avatar name={x.name} size="sm" /> : <Avatar name={x.name} size={32} />}
               <span className="ch-seen-row__body">
                 <span className="ch-seen-row__name">{x.name}</span>
-                {x.meta && <span className="ch-seen-row__meta">{fade(x.meta, x.meta)}</span>}
+                {x.role !== "member" && <small className="ch-seen-row__role">{x.role === "coach" ? "Coach" : "Player"}</small>}
               </span>
+              {x.meta && <span className="ch-seen-row__meta">{fade(x.meta, x.meta)}</span>}
             </li>
           ))}
         </ul>
@@ -308,7 +340,7 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
       {offline && <p className="ch-seen-note">You’re offline. This may be out of date.</p>}
       <AnimatePresence initial={false}>
         <>
-            {section("seen", "Seen", [...seen].sort((a, b) => Date.parse(b.lastOpened ?? "") - Date.parse(a.lastOpened ?? "")))}
+            {section("seen", "Seen", seen)}
             {section("notYet", "Not seen yet", notYet)}
           </>
       </AnimatePresence>
@@ -324,11 +356,12 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
 export function SeenBySheet({ api, m, onClose }: { api: ChMessagesApi; m: ChMsg | null; onClose: () => void }) {
   const r = api.receipts;
   const s = m && r && r.marks.size ? seenBy(m.at, m.senderId, r.marks) : null;
-  const cut = m ? (m.poll ? m.poll.question : m.text || "Attachment").slice(0, 46) : "";
+  const full = m ? (m.poll ? m.poll.question : m.text || "Attachment") : "";
+  const cut = full.length > 46 ? `${full.slice(0, 46)}…` : full;
   return (
-    <Modal code="CH-7609" open={m != null} onClose={onClose} title="Seen by" description={s ? `${s.seen.length} of ${s.total} · ${cut}` : cut} width={400} className="ch-msv-sheet">
+    <MsSheet code="CH-7609" open={m != null} onClose={onClose} title="Seen by" description={s ? `${s.seen.length} of ${s.total} · ${cut}` : cut} className="ch-msv-sheet">
       {m && <SeenByBody api={api} m={m} compact={false} />}
-    </Modal>
+    </MsSheet>
   );
 }
 

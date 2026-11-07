@@ -1,6 +1,7 @@
 'use client';
 
-import { CH_FADE_MS, chSpringCurve, chTween } from '../../../lib/motion';
+import { chTween } from '../../../lib/motion';
+import { msAnimate } from '../motion/messages-motion';
 import type { ChMessagesApi } from '../api/types';
 import type { ChMsg, ChReaction } from '../model';
 import { type KeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, useEffect, useLayoutEffect, useReducer, useRef, useState } from 'react';
@@ -19,6 +20,8 @@ import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { AnimatePresence, m as M } from 'motion/react';
 import { Tooltip } from '../../../ui/Tooltip';
 import { HoldLift } from '../hold-lift';
+import { HoldReactKeys } from './HoldKeys';
+import '../../../styles/messages-overlays.css';
 
 /* Thread */
 
@@ -26,19 +29,15 @@ import { HoldLift } from '../hold-lift';
  * A reaction on a message (owner, 2026-10-08): the chip is the opposite colour of the bubble it sits under (ivory under
  * a green one, green under an ivory one), and a click opens who reacted, with a row to add or take back your own.
  */
-/** M-MSG-13: 0.4 to 1 on `pop`, from the corner the CSS sets; a fade under Reduce Motion. Once per badge. */
-function popBadge(el: HTMLElement | null) {
+/** MOT-RX-1: scale 0.4 to 1 on `pop` from the corner the CSS sets, once per badge. Reduce Motion: it appears (no fade). */
+export function popBadge(el: HTMLElement | null, reduced = false) {
   if (!el || el.dataset.chPopped) return;
   el.dataset.chPopped = "1";
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: CH_FADE_MS, easing: "linear" });
-    return;
-  }
-  const c = chSpringCurve("pop");
-  el.animate([{ transform: "scale(.4)" }, { transform: "scale(1)" }], { duration: c.ms, easing: c.linear });
+  msAnimate(el, [{ transform: "scale(.4)" }, { transform: "scale(1)" }], "pop", { reduced });
 }
 
 export function ReactionChip({ api, messageId, r, arriving = false }: { api: ChMessagesApi; messageId: string; r: ChReaction; /** Redesign: a badge added after the bubble drew pops from its corner (M-MSG-13). */ arriving?: boolean }) {
+  const reduced = useChReducedMotion();
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement | null>(null);
@@ -95,10 +94,11 @@ export function ReactionChip({ api, messageId, r, arriving = false }: { api: ChM
       <button
         ref={(el) => {
           btn.current = el;
-          if (arriving) popBadge(el);
+          if (arriving) popBadge(el, reduced);
         }}
         type="button"
         className={"ch-ms-react ch-num" + (r.mine ? " is-mine" : "")}
+        title={people.length ? `${label}: ${people.map((p) => p.name).join(", ")}` : label}
         aria-label={`${label}, ${r.count}${r.mine ? ", including you" : ""}. Show who reacted`}
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -107,7 +107,7 @@ export function ReactionChip({ api, messageId, r, arriving = false }: { api: ChM
           setOpen((o) => !o);
         }}
       >
-        <Icon icon={REACTION_ICON[r.key]} size={12} />
+        <Icon icon={REACTION_ICON[r.key]} size={14} />
         {r.count > 1 ? r.count : null}
       </button>
       {typeof document !== "undefined" &&
@@ -161,6 +161,10 @@ export function ReactionChip({ api, messageId, r, arriving = false }: { api: ChM
  * moving opens the message's actions, with a press tick (CH-7704). A right
  * click or the context-menu key does the same.
  */
+export const HOLD_MS = 450;
+/** MOT-HOLD-1: a finger that moves more than this many px before the hold lets the bubble go (the press returns in 280 ms). */
+export const HOLD_SLOP_PX = 8;
+
 export function useLongPress(onFire: (() => void) | undefined, onSwipe?: (direction: "left" | "right") => void) {
   const timer = useRef<number | null>(null);
   const origin = useRef<{ x: number; y: number } | null>(null);
@@ -176,17 +180,19 @@ export function useLongPress(onFire: (() => void) | undefined, onSwipe?: (direct
   return {
     onPointerDown: (e: ReactPointerEvent) => {
       if (e.pointerType === "mouse" && e.button !== 0) return;
+      // MSG-401: the hold is a phone gesture. A mouse on the desktop layout right-clicks, or uses Enter, Space and the hover bar.
+      if (e.pointerType === "mouse" && !onSwipe) return;
       clear();
       origin.current = { x: e.clientX, y: e.clientY };
       timer.current = window.setTimeout(() => {
         clear();
         haptic("press");
         onFire();
-      }, 450);
+      }, HOLD_MS);
     },
     onPointerMove: (e: ReactPointerEvent) => {
       const o = origin.current;
-      if (o && Math.hypot(e.clientX - o.x, e.clientY - o.y) > 10) {
+      if (o && Math.hypot(e.clientX - o.x, e.clientY - o.y) > HOLD_SLOP_PX) {
         if (timer.current) window.clearTimeout(timer.current);
         timer.current = null;
         // Vertical movement belongs to the native scroll view.
@@ -271,10 +277,32 @@ export function useBubbleActions({ api, m, group, picking, setPicking, onEdit, o
     document.addEventListener('pointerdown', away);
     return () => document.removeEventListener('pointerdown', away);
   }, [barHeld]);
-  const press = useLongPress(m.failed ? undefined : (onActions ?? (() => setBarHeld(true))), onActions ? (direction) => {
+  const longPress = useLongPress(m.failed ? undefined : (onActions ?? (() => setBarHeld(true))), onActions ? (direction) => {
     if (direction === "right") onReply?.();
     else setShowTime(true);
   } : undefined);
+  // MSG-008, MSG-401: the bubble is a tab stop. Enter or Space (or the menu key) on it opens the same lift a hold or a right click
+  // does; focus comes back to it when the lift closes. Only when the key is the bubble's own, never a link or a button inside it.
+  const press = m.failed || m.deleted
+    ? longPress
+    : {
+        ...longPress,
+        tabIndex: 0,
+        role: "group" as const,
+        "aria-haspopup": "dialog" as const,
+        "data-ch-msg-focus": "",
+        onKeyDown: (e: KeyboardEvent<HTMLElement>) => {
+          if (e.target !== e.currentTarget) return;
+          if (e.key === "Enter" || e.key === " " || e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) {
+            e.preventDefault();
+            if (onActions) onActions();
+            else {
+              refreshMenu();
+              setLifted(true);
+            }
+          }
+        },
+      };
   // Desktop (no actions sheet): a right click opens the reaction bar, as the React button does (the board's gesture).
   const rightClick =
     !onActions && !m.failed
@@ -476,9 +504,9 @@ export function BubbleHoldLift({
 }) {
   const { liftClose, liftAfter, liftPick, setLifted, reacts, holdRows, actionsBtn } = act;
   const holdRow = (item: (typeof holdRows)[number]) => (
-    <button key={item.label} type="button" className={item.danger ? "is-danger" : undefined} onClick={() => { if (item.onSelect) liftPick(item.onSelect); }}>
+    <button key={item.label} type="button" role="menuitem" className={item.danger ? "is-danger" : undefined} onClick={() => { if (item.onSelect) liftPick(item.onSelect); }}>
       <span>{item.label}</span>
-      {item.icon && <Icon icon={item.icon} size={18} />}
+      {item.icon && <Icon icon={item.icon} size={19} />}
     </button>
   );
   return (
@@ -495,24 +523,7 @@ export function BubbleHoldLift({
         setLifted(false);
         then?.();
       }}
-      bar={REACTIONS.map((r) => {
-        const on = reacts.some((x) => x.key === r.key && x.mine);
-        return (
-          <button
-            key={r.key}
-            type="button"
-            className={on ? "is-on" : undefined}
-            aria-label={`${on ? "Remove" : "React"} ${r.key.toLowerCase()}`}
-            aria-pressed={on}
-            onClick={() => {
-              haptic("select");
-              liftPick(() => api.react(m.id, r.key, !on));
-            }}
-          >
-            <Icon icon={r.icon} size={22} />
-          </button>
-        );
-      })}
+      bar={<HoldReactKeys reacts={reacts} onPick={(key, on) => liftPick(() => api.react(m.id, key, on))} />}
     >
       {holdRows.filter((item) => !item.danger).map(holdRow)}
       {/* S-MSG.holdseen: your own message in a group gets who read it, faces and all, between hairlines. */}

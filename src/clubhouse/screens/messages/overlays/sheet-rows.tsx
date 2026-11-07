@@ -42,9 +42,9 @@ export function PollSheetRows({ id, done, hold }: { id: string; done: () => void
 export function SheetRow({ icon, label, onClick, danger, disabled, hold }: { icon: typeof Copy; label: string; onClick: () => void; danger?: boolean; disabled?: boolean; /** The redesign's glass menu: the word, then the icon (S-MSG.hold). */ hold?: boolean }) {
   if (hold)
     return (
-      <button type="button" className={danger ? "is-danger" : undefined} onClick={onClick} disabled={disabled}>
+      <button type="button" role="menuitem" className={danger ? "is-danger" : undefined} onClick={onClick} disabled={disabled}>
         <span>{label}</span>
-        <Icon icon={icon} size={18} />
+        <Icon icon={icon} size={19} />
       </button>
     );
   return (
