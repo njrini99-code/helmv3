@@ -22,10 +22,10 @@ Nothing here blocks the build. Each question has the default the implementers us
 | Q-07 | Inbox search. Only the resting search well is drawn; no results state. | Typing filters conversations by name and lists message hits (today's `message-hits.tsx`) as rows in the Recent card; empty result says "No results for {query}" in the "Nothing here" style (MSG-108). |
 | Q-08 | Polls: multi-select ("Choose any"), closed state, creating rights. The prototype's `vote()` is single-choice and the closed state is not drawn. | Per-poll `multi` flag: tap toggles in multi, switches in single; tapping your own single choice clears it. Closed polls keep today's "Final" label, options disabled, no See-votes change. Poll creation stays as today (coaches). |
 | Q-09 | "Draft a reminder" text. The HTML hard-codes "Reminder: vote in the practice round poll by Sunday 8 PM." | `Reminder: vote in the "{question}" poll by {closes without 'Closes'}.` The Hasn't-voted card and the reminder are for the poll's author / coaches only (privacy, see DATA.md). |
-| Q-10 | Where desktop becomes phone. The three-pane layout is drawn at 1280 x 800 only. | Keep today's `useChPhone` breakpoint. |
-| Q-11 | Pin limit. Chapter: "The team channel is always pinned first, and you can pin up to two more people" and the row menu says "Pin up to 3". | 3 pins per user per team INCLUDING the team channel; the team channel is always first and cannot be unpinned; people fill slots 2 and 3. At 3, Pin is dimmed with "Pin up to 3". Needs `golf_conversation_pins` in production (DATA.md). |
+| Q-10 | SUPERSEDED by Q-32. Where desktop becomes phone. The three-pane layout is drawn at 1280 x 800 only. | Keep today's `useChPhone` phone breakpoint; the three-pane threshold changes per Q-32. |
+| Q-11 | Pin limit. Chapter: "The team channel is always pinned first, and you can pin up to two more people" and the row menu says "Pin up to 3". DATA.md Q1 proposes an ordinary pin that the client sorts first; the prototype's `rowmenu` route does remove a pin to get below 3, but it never removes the channel's. | One rule for everyone: 3 pins per user per team INCLUDING the team channel. The client always shows the channel first and offers no Unpin on it; it is stored as an ordinary pin (pre-pinned once) so the server limit of 3 stays unchanged. At 3, Pin is dimmed with "Pin up to 3". Needs `golf_conversation_pins` in production (DATA.md M5). |
 | Q-12 | Group typing in an inbox row / pin bubblet. The HTML draws dots only. The Nov 4 note had "Maya and Owen are typing" / "Several people are typing". | Dots only, with an aria-label naming the typers ("Maya and Owen are typing", "Several people are typing"). |
-| Q-13 | Mute toast strings. The prototype lower-cases the choice ("Muted until i turn it on"). Ruling 19 pins today's mute strings. | Keep today's mute strings and the three labels "For 8 hours", "For a week", "Until I turn it on". |
+| Q-13 | SUPERSEDED by Q-31. Mute toast strings. The prototype lower-cases the choice ("Muted until i turn it on"). Ruling 19 pins today's mute strings, but today's labels are "Mute 8 hours" / "Mute a week", not the HTML's "For 8 hours" / "For a week". | See Q-31. |
 | Q-14 | The drawn fake iOS keyboard. | Not built (device simulation). Build only the behaviour in MSG-307 / MOT-KB-1 from the real keyboard events. |
 | Q-22 | Phone details title. In the HTML "Details" is always visible on the green bar (no fade on scroll). | As drawn. |
 | Q-23 | Opening a photo or file bubble (viewer, download, share). Not drawn. | Keep today's behaviour. |
@@ -42,7 +42,7 @@ Nothing here blocks the build. Each question has the default the implementers us
 | Q-17 | Class status in a DM's details ("No classes today. Next: Monday 9:05 AM, Statistics"). | Shown to a coach viewing a player's DM only. Never to another player. |
 | Q-18 | "Profile" quick action in DM details. | Coach viewer only (ruling 20): for a player it would link to a teammate's stats (SHARED-11). |
 
-DATA.md has its own numbered questions (its Q1-Q10, e.g. private per-person state table, Captain tag, DM receipt toggle). Their defaults agree with the rows above: no toggle in v2, no Captain chip, coach-only Hasn't voted.
+DATA.md has its own numbered questions (its Q1-Q10, e.g. private per-person state table, Captain tag, DM receipt toggle). Defaults agree on: no toggle in v2, no Captain chip, coach-only Hasn't voted, and the channel-counts-as-a-pin rule (Q-11 now matches DATA.md Q1).
 
 ## Raised by the code survey (GAP.md)
 
