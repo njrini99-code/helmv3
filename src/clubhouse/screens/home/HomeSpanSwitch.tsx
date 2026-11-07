@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { SPAN_PARAM, type ChSpan } from '../../data/span';
 import { usePushOnce } from '../../lib/nav-once';
 import { SpanSwitch } from '../../ui/SpanSwitch';
@@ -21,8 +21,6 @@ export function spanHref(pathname: string, search: string, span: ChSpan): string
  */
 export function HomeSpanSwitch({ span }: { span: ChSpan }) {
   const router = useRouter();
-  const pathname = usePathname() ?? '/';
-  const search = useSearchParams()?.toString() ?? '';
   const pushOnce = usePushOnce(router);
   const [pending, start] = useTransition();
   const [chosen, setChosen] = useState<ChSpan | null>(null);
@@ -32,7 +30,8 @@ export function HomeSpanSwitch({ span }: { span: ChSpan }) {
       value={pending && chosen ? chosen : span}
       onChange={(v) => {
         setChosen(v);
-        start(() => pushOnce(spanHref(pathname, search, v), { scroll: false }));
+        // The address as it is when the tap lands (this page's own path and params), read here, not at render, so the switch needs nothing but the router.
+        start(() => pushOnce(spanHref(window.location.pathname, window.location.search, v), { scroll: false }));
       }}
     />
   );
