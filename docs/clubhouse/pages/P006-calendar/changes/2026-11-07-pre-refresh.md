@@ -11,4 +11,5 @@ Data impact:    none
 Held items:     none
 ```
 
-With `clubhouse_refresh_v1` off, the week view keeps its tints and its loading head height from before the redesign.
+With `clubhouse_refresh_v1` off, the week view keeps its tints and its loading
+head height from before the redesign.

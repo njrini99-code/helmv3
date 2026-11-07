@@ -11,4 +11,6 @@ Data impact:    none
 Held items:     none
 ```
 
-This page's head was tight before the redesign, so it carries `data-canopy-tight-always` and stays tight with `clubhouse_refresh_v1` off (docs/clubhouse/changes/2026-11-07-pre-refresh.md).
+This page's head was tight before the redesign, so it carries
+`data-canopy-tight-always` and stays tight with `clubhouse_refresh_v1` off
+(docs/clubhouse/changes/2026-11-07-pre-refresh.md).

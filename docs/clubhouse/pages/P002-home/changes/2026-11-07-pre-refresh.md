@@ -11,4 +11,5 @@ Data impact:    none
 Held items:     none
 ```
 
-With the flag off, coach Home's phone empty row is the row it was before the redesign.
+With the flag off, coach Home's phone empty row is the row it was before the
+redesign.
