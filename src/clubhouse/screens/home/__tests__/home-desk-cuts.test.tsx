@@ -36,7 +36,7 @@ describe('coach Home desktop, the cuts', () => {
   it('leaves Today out when the next event is all of it', () => {
     const next = PREVIEW_HOME.phone.next ?? PREVIEW_HOME.phone.today[0]!;
     const { container } = render(<CoachHome crh data={data({ next, today: [next] })} now={NOW} />);
-    expect(container.querySelector('.ch-hm-tl')).toBeNull();
+    expect(container.querySelector('.ch-dh-rows--today')).toBeNull();
   });
 
   it('with the flag off keeps the page it had', () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { DeskNext, DeskRounds } from './HomeDeskCrh';
+import { DeskNext, DeskRounds, DeskToday } from './HomeDeskCrh';
 import { CALENDAR } from './event-links';
 import { CalendarPlus, ChevronRight, Flag, Sparkles, UserPlus } from 'lucide-react';
 import Link from 'next/link';
@@ -19,7 +19,7 @@ import { Week } from './Week';
 import { LatestRound } from './LatestRound';
 import { Leaderboard } from './Leaderboard';
 import { HomeActions } from './HomeActions';
-import { CRH_PART_FAILED, CrhFailedCard, Form, HomePhone, Today, WeekStrip } from './HomePhone';
+import { CRH_PART_FAILED, CrhFailedCard, Form, HomePhone, WeekStrip } from './HomePhone';
 import { coachFailedParts } from './model';
 import { CoachQueue } from './CoachQueue';
 import { ClassHomeLine } from './ClassHomeLine';
@@ -92,7 +92,7 @@ function CoachHomeBody({ data, now, live, crh = false }: { data: ChCoachHome; no
               {data.week.error ? (
                 <CrhFailedCard id="ch-dh-today-failed" title="Today" href={CALENDAR} link="Calendar" code="CH-2201" what="Today didn’t load" body="Your events are safe. Try again." />
               ) : (
-                <Today card list={todayRest} now={ticking} failed={false} quiet={false} />
+                <DeskToday events={todayRest} now={ticking} />
               )}
             </SectionBoundary>
           )}

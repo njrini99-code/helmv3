@@ -1,11 +1,13 @@
 'use client';
 
+import { TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import type { ChCoachHome, ChHomeEvent } from '../../data/home';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
-import { eventHref, whenLabel } from './event-links';
+import { CALENDAR, eventHref, whenLabel } from './event-links';
 import { Icon } from '../../ui/Icon';
+import { EmptyState } from '../../ui/States';
 import { useChClockText } from '../../lib/use-clock';
 import { formatToPar } from '../../lib/format';
 import { Avatar } from '../../ui/Avatar';
@@ -57,6 +59,48 @@ function DeskHead({ id, title, href, link }: { id: string; title: string; href: 
         </Link>
       )}
     </div>
+  );
+}
+
+/**
+ * Today: the rest of the day, with Up next in the hero, so no event is drawn twice. Each row opens its event. A day with nothing on it
+ * says so; the week lives on Calendar.
+ */
+export function DeskToday({ events, now }: { events: readonly ChHomeEvent[]; now: Date | null }) {
+  const t12 = useChClockText();
+  const t = now?.getTime();
+  return (
+    <section className="ch-dh-card" aria-labelledby="ch-dh-today">
+      <DeskHead id="ch-dh-today" title="Today" href={CALENDAR} link="Calendar" />
+      {events.length === 0 ? (
+        <EmptyState compact kind="first-run" code="CH-2301" title="Nothing scheduled" body="Players can still post rounds from the course." />
+      ) : (
+        <ul className="ch-dh-rows ch-dh-rows--today">
+          {events.map((e) => {
+            const live = !e.allDay && t != null && Date.parse(e.startIso) <= t && Date.parse(e.endIso ?? e.startIso) > t;
+            return (
+              <li key={e.id}>
+                <Link href={eventHref(e)} className="ch-dh-rows__a">
+                  <span className="ch-dh-time ch-num">{e.allDay ? 'All day' : t12(e.startLabel)}</span>
+                  <span className="ch-dh-rows__b">
+                    <b>{e.title}</b>
+                    {e.location && <span>{e.location}</span>}
+                  </span>
+                  {e.conflict ? (
+                    <span className="ch-dh-clash" title="Overlaps another event">
+                      <Icon icon={TriangleAlert} size={13} />
+                      Clash
+                    </span>
+                  ) : live ? (
+                    <span className="ch-hm-now">Now</span>
+                  ) : null}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }
 
