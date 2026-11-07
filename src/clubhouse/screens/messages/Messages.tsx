@@ -8,35 +8,19 @@ import { useTypingByConversation } from './use-typing-by-conversation';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGolfConversations, useGolfMessages } from '@/hooks/golf/use-golf-messages';
-import { MESSAGE_REACTIONS, summarizeReactions, useMessageReactions } from '@/hooks/golf/use-message-reactions';
+import { summarizeReactions, useMessageReactions } from '@/hooks/golf/use-message-reactions';
 import { useMessageAttachments } from '@/hooks/golf/use-message-attachments';
 import { useMessageResponses } from '@/hooks/golf/use-message-responses';
-import { encodeChoice, isPollFallbackText, parsePollPayload, pollHitOnlyInFooter, pollSearchSnippet, tallyPoll } from '@/lib/golf/message-polls';
-import { closeGolfPoll, sendGolfPoll } from '@/app/golf/actions/message-polls';
-import {
-  addGolfGroupMember,
-  createGolfConversation,
-  createGolfTeamBroadcast,
-  getGolfConversationParticipantIdentities,
-  getGolfGroupAddCandidates,
-  getGolfMessageAttachments,
-  leaveGolfGroup,
-  markGolfMessagesAsRead,
-  removeGolfGroupMember,
-  searchGolfMessages,
-} from '@/app/golf/actions/messages';
+import { isPollFallbackText, parsePollPayload, pollHitOnlyInFooter, pollSearchSnippet } from '@/lib/golf/message-polls';
+import { addGolfGroupMember, createGolfConversation, createGolfTeamBroadcast, getGolfConversationParticipantIdentities, getGolfGroupAddCandidates, getGolfMessageAttachments, searchGolfMessages } from '@/app/golf/actions/messages';
 import { getGolfConversationFiles } from '@/app/golf/actions/message-attachments';
-import { canHideGolfConversations, hideGolfConversation } from '@/app/golf/actions/conversation-hide';
+import { canHideGolfConversations } from '@/app/golf/actions/conversation-hide';
 import { getGolfConversationMute, setGolfConversationMute } from '@/app/golf/actions/message-mute';
-import { completeAnnouncementTask, createEnrichedAnnouncement, getAnnouncementDetail, getAnnouncementsWithMeta } from '@/app/golf/actions/announcements';
-import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
-import { getPreviewUrl } from '@/app/golf/actions/documents';
-import { validateFile, type PendingAttachment } from '@/lib/storage/attachments';
+import { getAnnouncementDetail, getAnnouncementsWithMeta } from '@/app/golf/actions/announcements';
 import { useChClock } from '../../lib/use-clock';
 import { useClassAwareness } from '../../shell/context';
 import { useTeamClassDay } from '../../lib/use-class-day';
 import { useConversationTeam } from '../../lib/use-conversation-team';
-import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type { ChMessagesData } from '../../data/messages';
 import { useDelayedToast, useToast, useToastPill } from '../../ui/Toast';
@@ -44,8 +28,13 @@ import { useNow } from '../../lib/use-now';
 import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, friendlyReason, isOffline } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
-import type { ChAttachmentRecovery, ChMessagesApi } from './MessagesView';
+import type { ChAttachmentRecovery, ChMessagesApi } from './api/types';
 import { MessagesView } from './MessagesScreen';
+import type { MessagesApiCtx } from './api/ctx';
+import { useInboxApi } from './api/use-inbox-api';
+import { useThreadApi } from './api/use-thread-api';
+import { useOverlayApi, KEY_BY_EMOJI } from './api/use-overlay-api';
+import { useDetailsApi } from './api/use-details-api';
 import { DraftStore } from './drafts';
 import { readMarkedUnread, withMark, writeMarkedUnread } from './marked-unread';
 import { FOUND_FOR_MS } from './use-focus-message';
@@ -54,8 +43,6 @@ import { seedPollDraft } from './polls';
 import { directWith, firstName, groupLacksPlayer, isDirect, isGroupRow, isNamedForOneOfTwo, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
 const isGroup = isGroupRow;
-const EMOJI_BY_KEY = Object.fromEntries(MESSAGE_REACTIONS.map((r) => [r.label, r.emoji])) as Record<ChReactionKey, string>;
-const KEY_BY_EMOJI = Object.fromEntries(MESSAGE_REACTIONS.map((r) => [r.emoji, r.label])) as Record<string, ChReactionKey>;
 
 /**
  * Live Messages: the existing realtime hooks and server actions, mapped onto
@@ -692,6 +679,82 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const typingByConv = useTypingByConversation(data.viewerUserId, convIds, selectedId, true);
   const shownConvs = useMemo(() => (rowMutes.muted ? convs.map((c) => ({ ...c, muted: rowMutes.muted!.has(c.id) })) : convs), [rowMutes.muted, convs]);
 
+  const ctx: MessagesApiCtx = {
+    data,
+    addCandidates,
+    annError,
+    annLoaded,
+    announcementDetail,
+    anns,
+    attachmentRecovery,
+    attempt,
+    autoOpened,
+    badges,
+    canHide,
+    chMsgs,
+    classOn,
+    convTeamId,
+    conversations,
+    convs,
+    createGroup,
+    drafts,
+    error,
+    fail,
+    focusMessageId,
+    foundMessageId,
+    getPendingAttachmentSend,
+    hours,
+    landDraft,
+    loadAnns,
+    loadAttachments,
+    loadFiles,
+    loading,
+    mark,
+    members,
+    membersError,
+    msgs,
+    mute,
+    muteConversation,
+    muteError,
+    muteOf,
+    pendingDraft,
+    pins,
+    prefill,
+    quietMembers,
+    reactionMap,
+    reactions,
+    refetch,
+    responses,
+    retryPendingAttachmentSend,
+    router,
+    rowMutes,
+    searchMessages,
+    select,
+    selected,
+    selectedAnnId,
+    selectedId,
+    sendMessageWithAttachments,
+    setAutoOpened,
+    setFocusMessageId,
+    setFoundMessageId,
+    setMembers,
+    setMembersAttempt,
+    setMuteAttempt,
+    setPrefill,
+    setSelectedAnnId,
+    setSelectedId,
+    setStarted,
+    shownConvs,
+    startDirect,
+    teamClass,
+    toast,
+    typingByConv,
+  };
+  // The api is composed from one slice per package (api/use-*-api.ts); `ChMessagesApi` stays one interface.
+  const inboxApi = useInboxApi(ctx);
+  const threadApi = useThreadApi(ctx);
+  const overlayApi = useOverlayApi(ctx);
+  const detailsApi = useDetailsApi(ctx);
   const api: ChMessagesApi = {
     ...(returnToAsk
       ? {
@@ -701,393 +764,16 @@ export function Messages({ data }: { data: ChMessagesData }) {
           },
         }
       : {}),
-    pins,
-    typingByConv,
     viewer: { userId: data.viewerUserId, role: data.role, name: data.viewerName },
     signers: data.signers,
     timeZone: data.timeZone,
     clock: hours,
     now,
     teamName: data.teamName,
-    convs: shownConvs,
-    convsLoading: loading,
-    convsError: !!error && !conversations.length,
-    refetchConvs: () => void refetch(),
-    drafts,
-    attachmentRecovery,
-    classDay: classOn ? { day: teamClass.day, now: teamClass.now, teamId: data.teamId, convTeamId } : null,
-    selectedId,
-    select,
-    msgs: chMsgs,
-    msgsLoading: msgs.loading,
-    msgsError: !!msgs.error && !chMsgs.length,
-    // The read failed but an earlier copy is on screen: it stays, marked as possibly out of date (PAGE_PERFORMANCE.md rule 4).
-    msgsStale: !!msgs.error && chMsgs.length > 0,
-    refetchMsgs: () => void msgs.refetch(),
-    typing: msgs.isOtherTyping,
-    typingUserIds: msgs.typingUserIds,
-    onTyping: (on) => msgs.sendTypingStatus(on),
-    loadPendingAttachmentSend: async () => {
-      if (!selectedId) return null;
-      const pending = await getPendingAttachmentSend(selectedId);
-      return pending ? { id: pending.clientMessageId, text: pending.content, replyToId: pending.replyToId, filenames: pending.attachments.map((file) => file.fileName) } : null;
-    },
-    retryPendingAttachmentSend: async () => {
-      if (!selectedId) return 'unknown';
-      if (isOffline()) {
-        toast({ tone: 'error', title: "Couldn’t check this send: you’re offline", body: 'Reconnect, then retry the same send.', code: 'CH-1903' });
-        return 'unknown';
-      }
-      try {
-        const result = await retryPendingAttachmentSend(selectedId);
-        if (result.sendOutcome === 'unknown') return 'unknown';
-        if (result.attachmentsFailed) {
-          toast({ tone: 'error', title: 'Message sent; attachments not saved', body: 'Your text was delivered. Choose the files again if they are no longer in this composer.', code: 'CH-7022' });
-          return 'partial';
-        }
-        return result.success;
-      } catch {
-        return 'unknown';
-      }
-    },
-    send: async (text, replyToId, sendOptions) => {
-      try {
-        if (selectedId === autoOpened) select(selectedId);
-        if (sendOptions?.notifyAnyway) await msgs.sendMessage(text, replyToId ?? null, { notifyAnyway: true });
-        else if (replyToId) await msgs.sendMessage(text, replyToId);
-        else await msgs.sendMessage(text);
-        return true;
-      } catch (err) {
-        // The bubble's state comes from the hook's classifySendFailure, which is this same test: the toast and the bubble
-        // tell one story (audit A-06: WebKit's "Load failed" read "Couldn’t send" over a "Couldn’t confirm" bubble).
-        if (isTransientNetworkErrorMessage(err instanceof Error ? err.message : String(err))) {
-          fail('send', err, "Couldn’t confirm this message sent", 'It is in the thread: check it, then Retry from there if it did not arrive.', 'CH-7005', false);
-        } else {
-          fail('send', err, "Couldn’t send the message", 'It is in the thread, marked Not sent. Retry from there.', 'CH-7004');
-        }
-        return false;
-      }
-    },
-    sendFiles: async (text, files, replyToId) => {
-      if (!selectedId) return false;
-      const bad = files.map((f) => ({ f, v: validateFile(f) })).find((x) => !x.v.valid);
-      if (bad) {
-        haptic('warning');
-        toast({ tone: 'error', title: `Can’t attach ${bad.f.name}`, body: bad.v.error ?? 'That file type or size isn’t supported.', code: 'CH-7101' });
-        return false;
-      }
-      const pending: PendingAttachment[] = files.map((file, i) => ({
-        id: `ch-${Date.now()}-${i}`,
-        file,
-        previewUrl: '',
-        metadata: {
-          fileName: file.name,
-          fileType: file.type.startsWith('image/') ? 'image' : file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'document',
-          mimeType: file.type,
-          fileSize: file.size,
-        },
-        status: 'pending',
-        uploadProgress: 0,
-      }));
-      let partial = false;
-      let unknown = false;
-      let checked = false;
-      const ok = await attempt('sendFiles', { failed: "Couldn’t send the attachment", hint: 'Your message and files are still in the box. Try again.', code: 'CH-7006' }, async () => {
-        let res: Awaited<ReturnType<typeof sendMessageWithAttachments>>;
-        try {
-          res = await sendMessageWithAttachments({ conversationId: selectedId, content: text, attachments: pending, ...(replyToId ? { replyToId } : {}) });
-        } catch (err) {
-          // No answer while the composer holds this attempt: the send reads as unconfirmed (CH-7023 in the composer), so
-          // the toast says the same rather than "Try again" (audit A-06).
-          if (!attachmentRecovery.has(selectedId)) throw err;
-          unknown = true;
-          fail('sendFiles', err, "Couldn’t confirm this send", 'Your draft and files are kept. Retry send checks the same attempt before sending again.', 'CH-7023', false);
-          return true;
-        }
-        if (res.cancelled) return false;
-        checked = true;
-        if (res.sendOutcome === 'unknown') {
-          unknown = true;
-          toast({ tone: 'error', title: "Couldn’t confirm this send", body: 'Your draft and files are kept. Retry send checks the same attempt before sending again.', code: 'CH-7023' });
-          return true;
-        }
-        if (!res.success) throw new Error(res.error || 'Attachment send failed');
-        if (res.attachmentsFailed) {
-          partial = true;
-          toast({ tone: 'error', title: 'Message sent; attachments not saved', body: 'Your text was delivered. The files are still in the composer; send them again when ready.', code: 'CH-7022' });
-        }
-        return true;
-      });
-      return (ok && unknown) || (!ok && !checked && attachmentRecovery.has(selectedId)) ? 'unknown' : ok && partial ? 'partial' : ok;
-    },
-    // Through attempt() like every other change: offline it refuses with the shared notice (nothing is sent), and a
-    // retry that fails again says so; the hook clears the row's pending mark when it lands.
-    retry: (id) =>
-      void attempt('retry', { failed: "Couldn’t send the message", hint: 'It is still in the thread, marked Not sent. Try again.', code: 'CH-7004' }, async () => {
-        const sent = await msgs.retryMessage(id);
-        if (!sent) {
-          haptic('error');
-          toast({ tone: 'error', title: "Couldn’t send the message", body: 'It is still in the thread, marked Not sent. Try again.', code: 'CH-7004' });
-          return false;
-        }
-        return true;
-      }),
-    discard: (id) => msgs.discardFailedMessage(id),
-    edit: (id, text) =>
-      attempt('edit', { failed: "Couldn’t edit the message", hint: 'Your edit is still in the box. Try again.', code: 'CH-7007' }, async () => {
-        await msgs.editMessage(id, text);
-        haptic('success');
-        toast({ title: 'Message edited' });
-        // The rail's preview may be this message.
-        void refetch().catch(() => undefined);
-      }),
-    remove: async (id) => {
-      const ok = await attempt('remove', { failed: "Couldn’t delete the message", hint: 'It’s back in the thread. Try again in a moment.', code: 'CH-7008' }, async () => {
-        await msgs.removeMessage(id);
-        haptic('success');
-        toast({ title: 'Message deleted' });
-        void refetch().catch(() => undefined);
-      });
-      if (!ok) void msgs.refetch();
-      return ok;
-    },
-    reactions: reactionMap,
-    react: (messageId, key, active) => {
-      const emoji = EMOJI_BY_KEY[key];
-      // The hook takes one reaction at a time; a tap while one is saving is dropped, not reported as a failure.
-      if (!emoji || reactions.pending) return;
-      void attempt('react', { failed: "Couldn’t save the reaction", hint: 'Try again in a moment.', code: 'CH-7009' }, async () => {
-        // setReaction answers false (session gone, write refused) and never throws: that is a failure too.
-        if ((await reactions.setReaction(messageId, emoji, active)) === false) throw new Error('Reaction was not saved');
-      });
-    },
-    attachments: loadAttachments,
-    // P-1 Seen by: the open conversation's read map, from the thread's hook.
-    receipts: msgs.readMarks ? { status: msgs.readMarks.status, marks: msgs.readMarks.byUser, retry: () => void msgs.refetchReadMarks?.() } : undefined,
-    polls: {
-      tally: (messageId, poll) => (responses.ready ? tallyPoll(poll, responses.rows, messageId, data.viewerUserId) : null),
-      vote: (messageId, poll, optionIds) => {
-        // A tap while this poll's vote is saving is not dropped: the hook writes the latest one when the first lands.
-        const choice = optionIds.length ? encodeChoice(poll, optionIds) : null;
-        if (optionIds.length && !choice) return;
-        void attempt('vote', { failed: 'Your vote wasn’t saved', hint: 'Try again in a moment.', code: 'CH-7029' }, async () => {
-          const res = await responses.vote(messageId, choice);
-          if (res.ok) return;
-          if (res.reason === 'closed' || res.reason === 'deleted') {
-            // CH-7030: the poll ended (or its sender deleted it) between the tap and the write; the vote is put back.
-            // A former member's 42501 is `member`, which throws below to the CH-7029 toast.
-            haptic('error');
-            toast({ tone: 'error', title: 'Voting has ended', body: res.reason === 'deleted' ? 'This poll was deleted.' : 'Your vote wasn’t counted. The result is final.', code: 'CH-7030' });
-            return false;
-          }
-          throw new Error(res.reason === 'session' ? 'Sign in again to vote' : 'Vote was not saved');
-        });
-      },
-      pending: responses.pending,
-      error: responses.error,
-      retry: () => void responses.refresh(),
-      send: async (conversationId, draft, clientId, priorClientId) => {
-        let reason = 'Try again in a moment.';
-        let answered = false;
-        let earlierCopy = false;
-        const ok = await attempt('sendPoll', { failed: 'Couldn’t send the poll', hint: 'Try again in a moment.', code: 'CH-7028' }, async () => {
-          const res = await sendGolfPoll(conversationId, draft, clientId, priorClientId);
-          answered = true;
-          if (!res.success) {
-            reason = res.error;
-            earlierCopy = res.earlierCopy === true;
-            return false;
-          }
-          // D27: the saved row lands the card at once (deduped by id against the realtime insert that follows); a
-          // background refetch still covers a channel that is reconnecting.
-          if (res.row && conversationId === selectedId) msgs.insertConfirmed(res.row as Parameters<typeof msgs.insertConfirmed>[0]);
-          void msgs.refetch();
-          void refetch();
-          return true;
-        });
-        // No answer at all (it threw, or offline): the sheet keeps the id so an edited retry can ask about it (D19).
-        if (ok) return { ok: true };
-        if (earlierCopy) return { ok: false, error: reason, earlierCopy: true };
-        return answered ? { ok: false, error: reason } : { ok: false, error: reason, threw: true };
-      },
-      close: (messageId) =>
-        attempt('closePoll', { failed: 'Couldn’t close the poll', hint: 'Try again in a moment.', code: 'CH-7027' }, async () => {
-          const res = await closeGolfPoll(messageId);
-          if (!res.success) throw new Error(res.error);
-          void msgs.refetch();
-        }),
-    },
-    members,
-    membersError,
-    retryMembers: () => setMembersAttempt((n) => n + 1),
-    leave: async () => {
-      if (!selectedId) return false;
-      return attempt('leave', { failed: "Couldn’t leave the group", hint: 'Try again in a moment.', code: 'CH-7010' }, async () => {
-        const res = await leaveGolfGroup(selectedId);
-        if ('error' in res) throw new Error(res.error);
-        haptic('success');
-        toast({ title: 'You left the group' });
-        // A thread started here stays pinned to the list until it loads; it must not outlive leaving it.
-        setStarted((s) => (s?.id === selectedId ? null : s));
-        setSelectedId(null);
-        await refetch();
-      });
-    },
-    // By id: the open conversation's details and any row's menu or swipe (owner decision 14).
-    deleteConversation: canHide
-      ? async (id) =>
-          attempt('deleteConversation', { failed: "Couldn’t delete the conversation", hint: 'Try again in a moment.', code: 'CH-7025' }, async () => {
-            const res = await hideGolfConversation(id);
-            if (!res.success) throw new Error(res.error);
-            haptic('success');
-            toast({ title: 'Conversation deleted' });
-            setStarted((s) => (s?.id === id ? null : s));
-            mark(id, false);
-            if (id === selectedId) setSelectedId(null);
-            await refetch();
-            void badges.refetch();
-          })
-      : null,
-    addCandidates,
-    addMember: (userId, name) =>
-      attempt('addMember', { failed: `Couldn’t add ${firstName(name)}`, hint: 'Try again in a moment.', code: 'CH-7018' }, async () => {
-        if (!selectedId) throw new Error('No conversation open');
-        const res = await addGolfGroupMember(selectedId, userId);
-        if ('error' in res) throw new Error(res.error);
-        haptic('success');
-        toast({ title: `Added ${firstName(name)} to ${selected?.title ?? 'the group'}` });
-        setMembersAttempt((n) => n + 1);
-        await refetch();
-      }),
-    removeMember: async (userId, name) => {
-      if (!selectedId) return false;
-      // The row leaves at once; a refusal puts the list back as it was (removeGolfGroupMember: the creator only, never
-      // their own row, a team group only).
-      const before = members;
-      setMembers((list) => list?.filter((m) => m.userId !== userId) ?? list);
-      const ok = await attempt('removeMember', { failed: `Couldn’t remove ${firstName(name)}`, hint: 'They’re still in the group. Try again in a moment.', code: 'CH-7024' }, async () => {
-        const res = await removeGolfGroupMember(selectedId, userId);
-        if ('error' in res) throw new Error(res.error);
-        haptic('success');
-        toast({ title: `Removed ${firstName(name)} from ${selected?.title ?? 'the group'}` });
-        // As Fairway does after a removal: the list and the group's members are read again.
-        quietMembers.current = true;
-        setMembersAttempt((n) => n + 1);
-        await refetch();
-      });
-      if (!ok) setMembers(before);
-      return ok;
-    },
-    files: loadFiles,
-    directory: data.directory,
-    directoryError: data.directoryError,
-    retryDirectory: () => router.refresh(),
-    startDirect: async (userId) => {
-      const existing = directWith(convs, userId);
-      if (existing) landDraft(existing.id);
-      return startDirect(userId);
-    },
-    createGroup,
-    prefill,
-    clearPrefill: () => {
-      pendingDraft.current = null;
-      setPrefill(null);
-    },
-
-    searchMessages,
-    // As Fairway's search does: open the thread, then go to the matched message (useFocusMessage) and mark it.
-    openHit: (h) => {
-      select(h.conversationId);
-      setFocusMessageId(h.messageId);
-    },
-    focusMessageId,
-    foundMessageId,
-    messageFocused: (id) => {
-      setFocusMessageId(null);
-      setFoundMessageId(id);
-    },
-
-    mute,
-    muteError,
-    retryMute: () => setMuteAttempt((n) => n + 1),
-    setMute: async (muted, hours) => (selectedId ? muteConversation(selectedId, muted, hours) : false),
-    muteOf,
-    muteConversation: async (id, muted, hours) => {
-          const ok = await muteConversation(id, muted, hours);
-          if (ok) rowMutes.refresh();
-          return ok;
-        },
-    setRead: async (id, read) => {
-      if (!read) {
-        // Nothing to write: the mark is this device's own (marked-unread.ts).
-        mark(id, true);
-        haptic('success');
-        return true;
-      }
-      const had = convs.find((c) => c.id === id)?.unread ?? 0;
-      if (!had) {
-        mark(id, false);
-        haptic('success');
-        return true;
-      }
-      const ok = await attempt('markRead', { failed: "Couldn’t mark the conversation read", hint: 'It still shows as unread. Try again in a moment.', code: 'CH-7026' }, async () => {
-        const r: unknown = await markGolfMessagesAsRead(id);
-        if ((r as { success?: boolean } | null)?.success !== true) throw new Error('Mark read was not saved');
-        mark(id, false);
-        haptic('success');
-        await refetch();
-        void badges.refetch();
-      });
-      return ok;
-    },
-
-    announcements: anns,
-    annLoading: !annLoaded,
-    annError,
-    refetchAnns: () => void loadAnns(),
-    selectedAnnId,
-    selectAnn: (id) => {
-      setSelectedAnnId(id);
-      if (id) {
-        setSelectedId(null);
-        setAutoOpened(null);
-      }
-    },
-    announcementDetail,
-    // A short-lived signed link per tap, as Fairway's announcement card and the Team Hub open a document (#1259).
-    openAnnouncementDocument: async (documentId) => {
-      const res = await getPreviewUrl(documentId);
-      if (res.data?.url) return { url: res.data.url };
-      chReport(new Error(res.error || 'announcement document link failed'), { surface: 'messages.announcementDocument', severity: 'low' });
-      return { url: null, noContent: !!res.noContent };
-    },
-    acknowledge: (id) =>
-      attempt('acknowledge', { failed: "Couldn’t send your acknowledgement", hint: 'Try again in a moment.', code: 'CH-7012' }, async () => {
-        const r = await acknowledgeAnnouncement(id);
-        if (!r.success) throw new Error(r.error || 'acknowledge failed');
-        haptic('success');
-        toast({ title: 'Acknowledged · coach can see you read it' });
-        await loadAnns();
-      }),
-    completeTask: (_announcementId, taskId) =>
-      attempt('completeTask', { failed: "Couldn’t mark the task done", hint: 'Try again in a moment.', code: 'CH-7013' }, async () => {
-        const r = await completeAnnouncementTask(taskId);
-        if (!r.success) throw new Error(r.error || 'task update failed');
-        haptic('success');
-        toast({ title: 'Task marked done' });
-        await loadAnns();
-      }),
-    createAnnouncement: ({ title, body, urgent, ack }) =>
-      attempt('createAnnouncement', { failed: "Couldn’t post the announcement", hint: 'Your text is still here. Try again.', code: 'CH-7014' }, async () => {
-        chTrail('messages post announcement');
-        const r = await createEnrichedAnnouncement({ title, body, urgency: urgent ? 'urgent' : 'normal', requiresAcknowledgement: ack, recipientPlayerIds: null, documentIds: [], inlineTasks: [] });
-        if (!r.success || !r.data) throw new Error(r.error || 'announcement failed');
-        haptic('success');
-        toast({ title: `Posted to ${data.teamName ?? 'the team'} · ${title}` });
-        await loadAnns();
-        setSelectedId(null);
-        setSelectedAnnId(r.data.announcementId);
-      }),
+    ...inboxApi,
+    ...threadApi,
+    ...overlayApi,
+    ...detailsApi,
   };
 
   return <MessagesView api={api} />;
