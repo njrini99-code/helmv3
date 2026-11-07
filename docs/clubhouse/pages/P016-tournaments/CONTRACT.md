@@ -83,7 +83,6 @@ no rounds to link, and so on) are its lane's rows.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 160401 | CH-16301 | `A_VIEW_ITS_LANE_HASNT_BUILT_YET` | A view its lane hasn't built yet (the edit-event form, lineup builder, link inbox, live round and player view; their routes are wired and draw it with real data) |
 | 160403 | CH-16311 | `THE_SEASON_LEDGER_THE_SEASON_HAS_NO` | The season ledger (Home, History): the season has no finished event yet |
 | 160404 | CH-16312 | `HOME_NO_EVENT_IS_UPCOMING_OR_LIVE` | Home: no event is upcoming or live |
 | 160405 | CH-16320 | `EVENT_DESK_THE_EVENT_HAS_NO_SCORES` | Event desk: the event has no scores yet (not played, nothing entered) |
@@ -104,6 +103,10 @@ no rounds to link, and so on) are its lane's rows.
 | 160420 | CH-16362 | `LINEUP_THE_TEAM_HAS_NO_PLAYERS_ON` | Lineup: the team has no players on its roster (the read worked) |
 | 160421 | CH-16363 | `LINEUP_A_PLAYER_IN_THE_DRAFT_IS` | Lineup: a player in the draft is injured, out for academics, not travelling, or has left the team |
 | 160422 | CH-16370 | `LIVE_ROUND_NOBODY_IS_IN_THE_ROUND` | Live round: nobody is in the round (no lineup, no individuals) |
+| 160423 | CH-16390 | `PLAYER_NO_TOURNAMENTS_IN_THE_SEASON` | Player: no tournaments in the season (the read worked) |
+| 160424 | CH-16391 | `PLAYER_EVENT_THE_EVENT_HAS_NO_ROUNDS` | Player event: the event has no rounds yet |
+| 160425 | CH-16392 | `PLAYER_EVENT_THE_COACH_HAS_SHARED_NOTHING` | Player event: the coach has shared nothing |
+| 160426 | CH-16393 | `PLAYER_EVENT_THE_TEAMS_RESULT_IS_NOT` | Player event: the team’s result is not on the player’s page (teammates’ scores and the lineup are the coach’s until held file 4) |
 
 ## 05 — Validation
 
@@ -151,6 +154,10 @@ flags and its lane's rows.
 | 160627 | CH-16070 | `LIVE_ROUND_SAVING_A_SCORE_FAILS_OR` | Live round: saving a score fails or is refused (not in the round’s lineup, not signed in, not set up) |
 | 160628 | CH-16071 | `LIVE_ROUND_STARTING_SUSPENDING_RESUMING_OR_FINISHING` | Live round: starting, suspending, resuming or finishing the round fails or is refused (rounds out of order, a state it can’t move to) |
 | 160629 | CH-16271 | `LIVE_ROUND_THE_HOLES_OF_LINKED_GOLFHELM` | Live round: the holes of linked GolfHelm rounds fail to load (`errors.holes`) |
+| 160630 | CH-16092 | `PLAYER_SAVING_THEIR_REFLECTION_FAILS_OR_IS` | Player: saving their reflection fails or is refused |
+| 160631 | CH-16290 | `PLAYER_THE_EVENTS_READ_FAILS` | Player: the events read fails (`errors.events`) |
+| 160632 | CH-16291 | `PLAYER_EVENT_THE_COACHS_SHARED_NOTES_READ` | Player event: the coach’s shared notes read fails (`errors.notes`) |
+| 160633 | CH-16292 | `PLAYER_EVENT_THE_PLAYERS_REFLECTION_READ_FAILS` | Player event: the player’s reflection read fails (`errors.reflection`) |
 
 ## 07 — Network / offline
 

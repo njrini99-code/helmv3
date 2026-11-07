@@ -331,7 +331,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/README.md` | generated | - | - | yes | - |
 | `memory/context/golfhelm-database.md` | generated | yes | yes | yes | - |
 | `memory/glossary.md` | current | yes | yes | yes | - |
-| `memory/projects/golfhelm.md` | current | yes | yes | - | - |
+| `memory/projects/golfhelm.md` | current | yes | yes | - | 1 |
 | `tools/ux-flow-auditor/TODO.md` | generated | - | - | - | - |
 
 ### `PROCESS_CONTRACT`
@@ -1047,6 +1047,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-06-sweep-numbers.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-06-sweep-shared.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-06-sweep-team.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-07-consolidate-lanes.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-07-pre-refresh.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-07-slide-plate.md` | current | - | - | - | - |
@@ -1668,6 +1669,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-05-page-polish.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P016-tournaments/changes/2026-11-07-first-release-screens.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-07-pre-refresh.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/auth.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |
@@ -1693,7 +1695,7 @@ them would bury everything above.
 | `docs/clubhouse/phone/settings.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/shell-gestures.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/staff-invite.md` | current | - | - | - | - |
-| `docs/clubhouse/phone/stats-player.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/stats-player.md` | current | - | - | - | 1 |
 | `docs/clubhouse/phone/stats-team.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/team-hub.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/tournaments.md` | current | - | - | - | - |

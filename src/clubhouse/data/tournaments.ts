@@ -64,6 +64,7 @@ import type {
   ChTourNextUp,
   ChTourPlayer,
   ChTourPlayerData,
+  ChTourPlayerRound,
   ChTourReview,
   ChTourTeam,
 } from '../screens/tournaments/types';
@@ -1071,12 +1072,52 @@ export async function loadPlayerTournaments(ctx: TourCtx, eventId: string | null
     const me = players.find((p) => p.id === ctx.playerId);
     if (!me) return { kind: 'missing' };
     const season = seasonIdOf(info.today);
+    // The player reads their own rows only (D-85), and who plays is not theirs to read (entries and round lineups are the
+    // coach's until held file 4), so the event shape carries no field: their scores come straight from their own rows.
+    const ownRounds = (e: ChTourEvent): ChTourPlayerRound[] => {
+      const raw = read.raws.find((r) => r.t.id === e.id);
+      if (!raw) return [];
+      return raw.playerRounds.flatMap((row): ChTourPlayerRound[] => {
+        const r = e.rounds.find((x) => x.roundEventId === row.round_event_id);
+        if (!r) return [];
+        const linked = row.round_id ? raw.linked[row.round_id] : undefined;
+        const total = row.entered_total ?? (linked?.completed ? linked.total : null);
+        return [{ eventId: e.id, roundEventId: r.roundEventId, roundNumber: r.number, playerId: ctx.playerId!, role: 'lineup', slot: null, squad: 'A', total, toPar: total != null ? total - r.par : null, status: row.status, source: row.entered_total != null ? 'coach' : 'card', trust: e.trust, roundId: row.round_id, holesKnown: false, shotData: false, officialTotal: null, count: 'none' }];
+      });
+    };
+    const mineOf = (e: ChTourEvent) => {
+      const scored = ownRounds(e).filter((p) => p.total != null);
+      return scored.length ? { place: null, total: scored.reduce((s, p) => s + (p.total ?? 0), 0), rounds: scored.length } : null;
+    };
     const list = read.events
-      .filter((e) => e.seasonId === season)
+      .filter((e) => e.seasonId === season && !e.cancelled)
       .sort((a, b) => (a.status === 'complete') === (b.status === 'complete') ? (a.status === 'complete' ? b.startDate.localeCompare(a.startDate) : a.startDate.localeCompare(b.startDate)) : a.status === 'complete' ? 1 : -1)
-      .map((e) => ({ eventId: e.id, name: e.name, startDate: e.startDate, endDate: e.endDate, courseName: read.courses[e.courseIds[0] ?? '']?.name ?? '', status: e.status, mine: null }));
+      .map((e) => ({ eventId: e.id, name: e.name, startDate: e.startDate, endDate: e.endDate, courseName: read.courses[e.courseIds[0] ?? '']?.name ?? '', status: e.status, mine: mineOf(e) }));
     const open = eventId ? read.events.find((e) => e.id === eventId) : null;
     if (eventId && !open) return { kind: 'missing' };
+    // Their reflection and the notes their coach shared with them (the policies return only those).
+    const [reflection, notes] = open
+      ? await Promise.all([
+          section('player', 'reflection', async () => {
+            const rows = await all<TourReflectionRow>('reflection', (from, to) =>
+              tourTable(ctx.supabase, 'golf_tournament_reflections').select(TOUR_COLUMNS.golf_tournament_reflections).eq('tournament_id', open.id).eq('player_id', ctx.playerId!).order('player_id').range(from, to),
+            );
+            return rows[0] ?? null;
+          }),
+          section('player', 'notes', () =>
+            all<TourPlayerNoteRow>('sharedNotes', (from, to) =>
+              tourTable(ctx.supabase, 'golf_tournament_player_notes').select(TOUR_COLUMNS.golf_tournament_player_notes).eq('tournament_id', open.id).eq('player_id', ctx.playerId!).order('player_id').range(from, to),
+            ),
+          ),
+        ])
+      : [null, null];
+    const shared = notes?.ok
+      ? notes.value.flatMap((n) =>
+          ([['Shot of the day', n.shot_of_day], ['A decision to think about', n.decision], ['Next focus', n.next_focus]] as const)
+            .filter(([, text]) => !!text?.trim())
+            .map(([label, text]) => ({ label, text: text!.trim(), author: 'Your coach', updatedAt: n.updated_at })),
+        )
+      : [];
     return {
       kind: 'ready',
       data: {
@@ -1086,21 +1127,23 @@ export async function loadPlayerTournaments(ctx: TourCtx, eventId: string | null
         list,
         event: open
           ? {
-              // The player's copy of the event carries no lineup and no teammates' scores (D-85).
-              event: { ...open, entries: [], playerRounds: open.playerRounds.filter((p) => p.playerId === ctx.playerId), team: { rounds: [], result: null }, field: null },
+              // The player's copy of the event carries no lineup, no receipt and no teammates' scores (D-85).
+              event: { ...open, entries: [], playerRounds: ownRounds(open), team: { rounds: [], result: null }, field: null, lineup: { ...open.lineup, seen: null } },
+              // Whether this player is in the lineup is the reveal: held file 4 (20261024100300) opens it to them.
               reveal: null,
               trip: null,
+              // Teammates' results and the team's are held file 4's too: only the player's own line is drawn.
               results: { visible: false, reason: open.status === 'complete' ? null : 'not_final' },
-              sharedNotes: [],
-              reflection: null,
+              sharedNotes: shared,
+              reflection: reflection?.ok ? { state: reflection.value ? 'saved' : 'unwritten', body: reflection.value?.body ?? '', updatedAt: reflection.value?.updated_at ?? null } : null,
               moments: [],
               following: false,
             }
           : null,
         window: { in: false, until: null, day: null },
+        // The player's season line (counted, per 18) is held file 4's: zeros here are never drawn.
         season: { counted: 0, of: 0, rounds: 0, roundsTarget: null, perEighteen: { event: null, qualifier: null, practice: null }, n: { event: 0, qualifier: 0, practice: 0 }, early: true },
-        // The player's season line (counted, per 18) is held file 4's: zeros here are never drawn (the view is a placeholder).
-        errors: {},
+        errors: { ...(open && reflection && !reflection.ok ? { reflection: true as const } : {}), ...(open && notes && !notes.ok ? { notes: true as const } : {}) },
       },
     };
   });

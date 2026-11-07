@@ -342,13 +342,9 @@
   text-align: right;
 }
 
-/* The base's placeholder for a view its lane hasn't built (TourPlaceholder): the head stacks, and the one line read from
-   the data. */
+/* The page-level notices (TourNotice): the head stacks above the notice. */
 .ch-tour-ph .ch-tour-head {
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
-}
-.ch-tour-ph__detail {
-  color: var(--ch-text-primary);
 }

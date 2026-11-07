@@ -21078,8 +21078,8 @@
     "item": 1,
     "name": "A_VIEW_ITS_LANE_HASNT_BUILT_YET",
     "chCode": "CH-16301",
-    "meaning": "A view its lane hasn't built yet (the edit-event form, lineup builder, link inbox, live round and player view; their routes are wired and draw it with real data)",
-    "status": "implemented",
+    "meaning": "Retired 2026-11-07: a view its lane hasn't built yet. Every Tournaments view is built, so no screen draws it",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
@@ -21310,6 +21310,50 @@
     "name": "LIVE_ROUND_NOBODY_IS_IN_THE_ROUND",
     "chCode": "CH-16370",
     "meaning": "Live round: nobody is in the round (no lineup, no individuals)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160423,
+    "page": "P016",
+    "category": 4,
+    "item": 23,
+    "name": "PLAYER_NO_TOURNAMENTS_IN_THE_SEASON",
+    "chCode": "CH-16390",
+    "meaning": "Player: no tournaments in the season (the read worked)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160424,
+    "page": "P016",
+    "category": 4,
+    "item": 24,
+    "name": "PLAYER_EVENT_THE_EVENT_HAS_NO_ROUNDS",
+    "chCode": "CH-16391",
+    "meaning": "Player event: the event has no rounds yet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160425,
+    "page": "P016",
+    "category": 4,
+    "item": 25,
+    "name": "PLAYER_EVENT_THE_COACH_HAS_SHARED_NOTHING",
+    "chCode": "CH-16392",
+    "meaning": "Player event: the coach has shared nothing",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160426,
+    "page": "P016",
+    "category": 4,
+    "item": 26,
+    "name": "PLAYER_EVENT_THE_TEAMS_RESULT_IS_NOT",
+    "chCode": "CH-16393",
+    "meaning": "Player event: the team’s result is not on the player’s page (teammates’ scores and the lineup are the coach’s until held file 4)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
@@ -21629,6 +21673,50 @@
     "name": "LIVE_ROUND_THE_HOLES_OF_LINKED_GOLFHELM",
     "chCode": "CH-16271",
     "meaning": "Live round: the holes of linked GolfHelm rounds fail to load (`errors.holes`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160630,
+    "page": "P016",
+    "category": 6,
+    "item": 30,
+    "name": "PLAYER_SAVING_THEIR_REFLECTION_FAILS_OR_IS",
+    "chCode": "CH-16092",
+    "meaning": "Player: saving their reflection fails or is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160631,
+    "page": "P016",
+    "category": 6,
+    "item": 31,
+    "name": "PLAYER_THE_EVENTS_READ_FAILS",
+    "chCode": "CH-16290",
+    "meaning": "Player: the events read fails (`errors.events`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160632,
+    "page": "P016",
+    "category": 6,
+    "item": 32,
+    "name": "PLAYER_EVENT_THE_COACHS_SHARED_NOTES_READ",
+    "chCode": "CH-16291",
+    "meaning": "Player event: the coach’s shared notes read fails (`errors.notes`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160633,
+    "page": "P016",
+    "category": 6,
+    "item": 33,
+    "name": "PLAYER_EVENT_THE_PLAYERS_REFLECTION_READ_FAILS",
+    "chCode": "CH-16292",
+    "meaning": "Player event: the player’s reflection read fails (`errors.reflection`)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },

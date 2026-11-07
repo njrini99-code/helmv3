@@ -896,7 +896,8 @@ export interface ChTourPlayerEvent {
   /** Teammates' scores, only once a round is Final and outside the player's window (D-85). */
   results: { visible: boolean; reason: 'not_final' | 'in_window' | null };
   sharedNotes: Array<{ label: string; text: string; author: string; updatedAt: string }>;
-  reflection: { state: 'unwritten' | 'draft' | 'saved'; went: string; strokes: string; next: string; shot: string } | null;
+  /** The player’s own reflection (`golf_tournament_reflections.body`, one text the coach reads in the review). */
+  reflection: { state: 'unwritten' | 'saved'; body: string; updatedAt: string | null } | null;
   moments: ChTourPlayerMoment[];
   following: boolean;
 }
@@ -924,13 +925,14 @@ export interface ChTourPlayerData {
     endDate: string;
     courseName: string;
     status: ChTourEvent['status'];
-    mine: { place: string | null; total: number | null; counted: number; of: number } | null;
+    /** The player’s own line: their total over `rounds` scored rounds. Team counting is not theirs to read (D-85). */
+    mine: { place: string | null; total: number | null; rounds: number } | null;
   }>;
   /** The open event; null on the list. */
   event: ChTourPlayerEvent | null;
   window: ChTourWindow;
   season: ChTourPlayerSeason;
-  errors: Partial<Record<'events' | 'trip' | 'season', true>>;
+  errors: Partial<Record<'events' | 'trip' | 'season' | 'notes' | 'reflection', true>>;
 }
 
 // ── View props (the contract every view keeps) ────────────────────────────────────────────────────────────────

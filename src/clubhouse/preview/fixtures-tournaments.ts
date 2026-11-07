@@ -1125,7 +1125,7 @@ export function tourFixture(state: ChTourPreviewState): ChTourFixture {
   const mineIn = (e: ChTourEvent) => {
     const rows = e.playerRounds.filter((p) => p.playerId === 'jonah');
     if (!rows.length) return null;
-    return { place: null, total: sum(rows.map((p) => p.total ?? 0)), counted: rows.filter((p) => p.count === 'counted').length, of: rows.length };
+    return { place: null, total: sum(rows.map((p) => p.total ?? 0)), rounds: rows.length };
   };
   const list = [...all]
     .filter((e) => e.seasonId === '2026-27')
@@ -1182,7 +1182,7 @@ export function tourFixture(state: ChTourPreviewState): ChTourFixture {
         trip: e.id === 'e34' && !partial ? PINEHURST_TRIP : null,
         results: e.status === 'complete' ? { visible: true, reason: null } : live && e.id === 'e34' ? { visible: false, reason: 'in_window' } : { visible: false, reason: 'not_final' },
         sharedNotes: e.id === 'e33' ? [{ label: 'Next block focus', text: 'Par 3 club selection: middle of the green, every time.', author: 'Maya Reyes', updatedAt: '2026-10-09T16:20:00-04:00' }] : [],
-        reflection: e.id === 'e33' ? { state: 'saved', went: 'Stopped aiming at flags on the par 3s on day two.', strokes: 'Two penalty strokes on 13 in round 1.', next: 'Commit to the safe side off the tee.', shot: '' } : null,
+        reflection: e.id === 'e33' ? { state: 'saved', body: 'Stopped aiming at flags on the par 3s on day two. Two penalty strokes on 13 in round 1. Next time: commit to the safe side off the tee.', updatedAt: '2026-10-09T18:00:00-04:00' } : { state: 'unwritten', body: '', updatedAt: null },
         moments: [],
         following: true,
       },
