@@ -15695,3 +15695,217 @@ BEGIN
 END $$;
 
 ALTER FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") OWNER TO "postgres";
+
+-- Messages v2 package M, M5 (HELD 20261031150000)
+CREATE OR REPLACE FUNCTION "public"."golf_pin_conversation"("p_conversation_id" "uuid", "p_pinned" boolean) RETURNS jsonb
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  v_user uuid := auth.uid();
+  v_team uuid;
+  v_count integer;
+  v_changed boolean := false;
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'not_signed_in' USING ERRCODE = 'P0001';
+  END IF;
+  IF p_conversation_id IS NULL OR p_pinned IS NULL THEN
+    RAISE EXCEPTION 'invalid_arguments' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT c.team_id INTO v_team
+  FROM public.golf_conversations c
+  JOIN public.golf_conversation_participants p
+    ON p.conversation_id = c.id AND p.user_id = v_user
+  WHERE c.id = p_conversation_id AND p.hidden_at IS NULL;
+  IF NOT FOUND THEN
+    -- Unpinning something you can no longer see still clears it.
+    IF NOT p_pinned THEN
+      DELETE FROM public.golf_conversation_pins
+      WHERE user_id = v_user AND conversation_id = p_conversation_id
+      RETURNING team_id INTO v_team;
+      IF FOUND THEN
+        PERFORM helm_private.golf_pins_lock(v_user, v_team);
+        PERFORM helm_private.golf_pins_compact(v_user, v_team);
+        PERFORM helm_private.golf_pins_broadcast(v_user, v_team);
+      END IF;
+      RETURN jsonb_build_object('team_id', v_team, 'pins',
+          to_jsonb(helm_private.golf_pins_list(v_user, v_team)));
+    END IF;
+    RAISE EXCEPTION 'not_a_member' USING ERRCODE = 'P0001';
+  END IF;
+
+  PERFORM helm_private.golf_pins_lock(v_user, v_team);
+
+  IF p_pinned THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM public.golf_conversation_pins
+      WHERE user_id = v_user AND conversation_id = p_conversation_id
+    ) THEN
+      SELECT count(*) INTO v_count FROM public.golf_conversation_pins
+      WHERE user_id = v_user AND team_id IS NOT DISTINCT FROM v_team;
+      IF v_count >= helm_private.golf_pin_limit() THEN
+        RAISE EXCEPTION 'pin_limit' USING ERRCODE = 'P0001',
+          DETAIL = to_jsonb(helm_private.golf_pins_list(v_user, v_team))::text;
+      END IF;
+      INSERT INTO public.golf_conversation_pins (user_id, conversation_id,
+          team_id, position)
+      VALUES (v_user, p_conversation_id, v_team, v_count);
+      v_changed := true;
+    END IF;
+  ELSE
+    DELETE FROM public.golf_conversation_pins
+    WHERE user_id = v_user AND conversation_id = p_conversation_id;
+    IF FOUND THEN
+      PERFORM helm_private.golf_pins_compact(v_user, v_team);
+      v_changed := true;
+    END IF;
+  END IF;
+
+  IF v_changed THEN
+    PERFORM helm_private.golf_pins_broadcast(v_user, v_team);
+  END IF;
+  RETURN jsonb_build_object('team_id', v_team, 'pins',
+      to_jsonb(helm_private.golf_pins_list(v_user, v_team)));
+END $$;
+
+ALTER FUNCTION "public"."golf_pin_conversation"("p_conversation_id" "uuid", "p_pinned" boolean) OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_reorder_conversation_pins"("p_team_id" "uuid", "p_order" "uuid"[]) RETURNS jsonb
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  v_user uuid := auth.uid();
+  v_current uuid[];
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'not_signed_in' USING ERRCODE = 'P0001';
+  END IF;
+  IF p_order IS NULL
+      OR cardinality(p_order) <> (SELECT count(DISTINCT x)
+          FROM unnest(p_order) x) THEN
+    RAISE EXCEPTION 'invalid_arguments' USING ERRCODE = '22023';
+  END IF;
+
+  PERFORM helm_private.golf_pins_lock(v_user, p_team_id);
+  v_current := helm_private.golf_pins_list(v_user, p_team_id);
+
+  IF cardinality(v_current) <> cardinality(p_order)
+     OR EXISTS (SELECT 1 FROM unnest(p_order) x
+         WHERE NOT x = ANY (v_current)) THEN
+    RAISE EXCEPTION 'pins_changed'
+        USING ERRCODE = 'P0001', DETAIL = to_jsonb(v_current)::text;
+  END IF;
+
+  IF v_current IS DISTINCT FROM p_order THEN
+    UPDATE public.golf_conversation_pins p
+    SET position = o.ord - 1
+    FROM unnest(p_order) WITH ORDINALITY AS o(conversation_id, ord)
+    WHERE p.user_id = v_user AND p.conversation_id = o.conversation_id;
+    PERFORM helm_private.golf_pins_broadcast(v_user, p_team_id);
+  END IF;
+  RETURN jsonb_build_object('team_id', p_team_id, 'pins',
+      to_jsonb(helm_private.golf_pins_list(v_user, p_team_id)));
+END $$;
+
+ALTER FUNCTION "public"."golf_reorder_conversation_pins"("p_team_id" "uuid", "p_order" "uuid"[]) OWNER TO "postgres";
+
+
+-- Messages v2 package M (HELD 20261107090400 / 20261107090500)
+CREATE OR REPLACE FUNCTION "public"."golf_player_next_class"("p_team_id" "uuid", "p_player_id" "uuid", "p_from" timestamp with time zone DEFAULT "now"()) RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  v_from    timestamptz := coalesce(p_from, now());
+  v_team_tz text;
+  v_term    public.golf_team_terms;
+  v_zone    text;
+  v_start   date;
+  v_block   record;
+  i         integer;
+BEGIN
+  IF p_team_id IS NULL OR p_player_id IS NULL OR NOT public.is_golf_team_coach(p_team_id) THEN
+    RAISE EXCEPTION 'not a coach of this team' USING ERRCODE = '42501';
+  END IF;
+
+  IF v_from < now() - interval '7 days' OR v_from > now() + interval '14 days' THEN
+    RAISE EXCEPTION 'time out of range' USING ERRCODE = '22023';
+  END IF;
+
+  -- Not shared, not an active member of this team, or not a player at all: nothing to say.
+  IF NOT public.golf_player_shares_class_status(p_team_id, p_player_id) THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT public.golf_safe_time_zone(s.timezone) INTO v_team_tz
+  FROM public.golf_team_settings s WHERE s.team_id = p_team_id LIMIT 1;
+  v_team_tz := coalesce(v_team_tz, 'America/New_York');
+
+  -- The date rule of golf_team_class_day: the zone of the term covering the instant, else the team zone.
+  v_term := public.golf_class_term_at(p_team_id, v_from);
+  v_zone := coalesce(v_term.time_zone, v_team_tz);
+  v_start := (v_from AT TIME ZONE v_zone)::date;
+
+  FOR i IN 0..14 LOOP
+    SELECT bl.starts_at, bl.ends_at, bl.label, bl.kind
+    INTO v_block
+    FROM public.golf_class_blocks_internal(p_team_id, v_start + i, p_player_id) bl
+    WHERE bl.starts_at > v_from
+    ORDER BY bl.starts_at
+    LIMIT 1;
+    IF FOUND THEN
+      RETURN jsonb_build_object(
+        'starts_at', v_block.starts_at,
+        'ends_at', v_block.ends_at,
+        'label', v_block.label,
+        'kind', v_block.kind,
+        'time_zone', v_zone
+      );
+    END IF;
+  END LOOP;
+
+  RETURN NULL;
+END $$;
+
+ALTER FUNCTION "public"."golf_player_next_class"("p_team_id" "uuid", "p_player_id" "uuid", "p_from" timestamp with time zone) OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_search_messages"("p_query" "text", "p_conversation_id" "uuid" DEFAULT NULL::"uuid", "p_limit" integer DEFAULT 50) RETURNS TABLE("message_id" "uuid", "conversation_id" "uuid", "sender_id" "uuid", "content" "text", "created_at" timestamp with time zone)
+    LANGUAGE "plpgsql" STABLE
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  v_q       text := btrim(coalesce(p_query, ''));
+  v_pattern text;
+  v_limit   integer := least(greatest(coalesce(p_limit, 50), 1), 100);
+BEGIN
+  IF char_length(v_q) < 2 THEN
+    RETURN;
+  END IF;
+  v_pattern := '%' || replace(replace(replace(v_q, '\', '\\'), '%', '\%'), '_', '\_') || '%';
+
+  RETURN QUERY
+  SELECT m.id, m.conversation_id, m.sender_id, m.content, m.created_at
+  FROM public.golf_messages m
+  JOIN public.golf_conversation_participants cp
+    ON cp.conversation_id = m.conversation_id
+   AND cp.user_id = (SELECT auth.uid())
+  WHERE NOT COALESCE(m.is_deleted, FALSE)
+    AND (p_conversation_id IS NULL OR m.conversation_id = p_conversation_id)
+    AND m.content ILIKE v_pattern ESCAPE '\'
+    AND (
+      cp.hidden_at IS NULL
+      OR EXISTS (
+        SELECT 1 FROM public.golf_messages hm
+        WHERE hm.conversation_id = m.conversation_id
+          AND NOT COALESCE(hm.is_deleted, FALSE)
+          AND hm.created_at > cp.hidden_at
+      )
+    )
+  ORDER BY m.created_at DESC
+  LIMIT v_limit;
+END $$;
+
+ALTER FUNCTION "public"."golf_search_messages"("p_query" "text", "p_conversation_id" "uuid", "p_limit" integer) OWNER TO "postgres";

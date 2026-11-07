@@ -2678,3 +2678,15 @@ CREATE TABLE IF NOT EXISTS "public"."golf_class_hold_dirty" (
 );
 
 ALTER TABLE "public"."golf_class_hold_dirty" OWNER TO "postgres";
+
+-- Messages v2 package M, M5 (HELD 20261031150000): Clubhouse Messages pins
+CREATE TABLE IF NOT EXISTS "public"."golf_conversation_pins" (
+    "user_id" "uuid" NOT NULL,
+    "conversation_id" "uuid" NOT NULL,
+    "team_id" "uuid",
+    "position" smallint NOT NULL,
+    "pinned_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_conversation_pins_position_check" CHECK ((("position" >= 0) AND ("position" <= 8)))
+);
+
+ALTER TABLE "public"."golf_conversation_pins" OWNER TO "postgres";

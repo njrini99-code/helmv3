@@ -806,3 +806,8 @@ CREATE INDEX "golf_round_live_player_idx" ON "public"."golf_round_live" USING "b
 CREATE INDEX "golf_round_live_qualifier_idx" ON "public"."golf_round_live" USING "btree" ("qualifier_id") WHERE ("qualifier_id" IS NOT NULL);
 
 CREATE INDEX "golf_round_live_team_date_idx" ON "public"."golf_round_live" USING "btree" ("team_id", "round_date" DESC);
+
+-- Messages v2 package M, M5 (HELD 20261031150000)
+CREATE INDEX "golf_conversation_pins_scope_idx" ON "public"."golf_conversation_pins" USING "btree" ("user_id", "team_id", "position");
+
+CREATE INDEX "golf_conversation_pins_conversation_idx" ON "public"."golf_conversation_pins" USING "btree" ("conversation_id");

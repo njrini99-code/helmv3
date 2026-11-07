@@ -1381,3 +1381,6 @@ CREATE POLICY "golf_trev_coach" ON "public"."golf_tournament_reviews" TO "authen
 CREATE POLICY "golf_trm_coach_insert" ON "public"."golf_tournament_result_marks" FOR INSERT TO "authenticated" WITH CHECK (("public"."is_golf_team_coach"("team_id") AND ("created_by" = ( SELECT "auth"."uid"() AS "uid"))));
 
 CREATE POLICY "golf_trm_select" ON "public"."golf_tournament_result_marks" FOR SELECT TO "authenticated" USING (("public"."is_golf_team_coach"("team_id") OR "public"."is_golf_team_player"("team_id")));
+
+-- Messages v2 package M, M5 (HELD 20261031150000)
+CREATE POLICY "golf_conversation_pins_select_own" ON "public"."golf_conversation_pins" FOR SELECT TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));

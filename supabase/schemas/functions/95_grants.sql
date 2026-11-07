@@ -1722,3 +1722,34 @@ REVOKE ALL ON FUNCTION "public"."golf_messages_identity_guard"() FROM PUBLIC, "a
 REVOKE ALL ON FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") FROM PUBLIC, "anon";
 GRANT ALL ON FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") TO "service_role";
+
+-- Messages v2 package M, M5 (HELD 20261031150000)
+REVOKE ALL ON FUNCTION "helm_private"."golf_pin_limit"() FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_pins_lock"("p_user" "uuid", "p_team" "uuid") FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_pins_compact"("p_user" "uuid", "p_team" "uuid") FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_pins_broadcast"("p_user" "uuid", "p_team" "uuid") FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_pins_list"("p_user" "uuid", "p_team" "uuid") FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_unpin_on_participant_change"() FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "public"."golf_pin_conversation"("p_conversation_id" "uuid", "p_pinned" boolean) FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_pin_conversation"("p_conversation_id" "uuid", "p_pinned" boolean) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_pin_conversation"("p_conversation_id" "uuid", "p_pinned" boolean) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_reorder_conversation_pins"("p_team_id" "uuid", "p_order" "uuid"[]) FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_reorder_conversation_pins"("p_team_id" "uuid", "p_order" "uuid"[]) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_reorder_conversation_pins"("p_team_id" "uuid", "p_order" "uuid"[]) TO "service_role";
+
+
+-- Messages v2 package M (HELD 20261107090400 / 20261107090500)
+REVOKE ALL ON FUNCTION "public"."golf_player_next_class"("p_team_id" "uuid", "p_player_id" "uuid", "p_from" timestamp with time zone) FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_player_next_class"("p_team_id" "uuid", "p_player_id" "uuid", "p_from" timestamp with time zone) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_player_next_class"("p_team_id" "uuid", "p_player_id" "uuid", "p_from" timestamp with time zone) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_search_messages"("p_query" "text", "p_conversation_id" "uuid", "p_limit" integer) FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_search_messages"("p_query" "text", "p_conversation_id" "uuid", "p_limit" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_search_messages"("p_query" "text", "p_conversation_id" "uuid", "p_limit" integer) TO "service_role";

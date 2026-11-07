@@ -196,3 +196,8 @@ CREATE OR REPLACE TRIGGER "golf_participants_identity_guard" BEFORE UPDATE ON "p
 CREATE OR REPLACE TRIGGER "golf_conversations_identity_guard" BEFORE UPDATE ON "public"."golf_conversations" FOR EACH ROW WHEN ((("old"."id" IS DISTINCT FROM "new"."id") OR ("old"."created_by" IS DISTINCT FROM "new"."created_by") OR ("old"."team_id" IS DISTINCT FROM "new"."team_id") OR ("old"."is_team_chat" IS DISTINCT FROM "new"."is_team_chat") OR ("old"."is_team_channel" IS DISTINCT FROM "new"."is_team_channel") OR ("old"."created_at" IS DISTINCT FROM "new"."created_at"))) EXECUTE FUNCTION "public"."golf_conversations_identity_guard"();
 
 CREATE OR REPLACE TRIGGER "golf_messages_identity_guard" BEFORE UPDATE ON "public"."golf_messages" FOR EACH ROW WHEN ((("old"."id" IS DISTINCT FROM "new"."id") OR ("old"."conversation_id" IS DISTINCT FROM "new"."conversation_id") OR ("old"."sender_id" IS DISTINCT FROM "new"."sender_id") OR ("old"."created_at" IS DISTINCT FROM "new"."created_at") OR ("old"."kind" IS DISTINCT FROM "new"."kind") OR ("old"."reply_to_id" IS DISTINCT FROM "new"."reply_to_id"))) EXECUTE FUNCTION "public"."golf_messages_identity_guard"();
+
+-- Messages v2 package M, M5 (HELD 20261031150000): leaving or hiding a conversation unpins it
+CREATE OR REPLACE TRIGGER "golf_participants_unpin_on_leave" AFTER DELETE ON "public"."golf_conversation_participants" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_unpin_on_participant_change"();
+
+CREATE OR REPLACE TRIGGER "golf_participants_unpin_on_hide" AFTER UPDATE OF "hidden_at" ON "public"."golf_conversation_participants" FOR EACH ROW WHEN ((("new"."hidden_at" IS NOT NULL) AND ("old"."hidden_at" IS NULL))) EXECUTE FUNCTION "helm_private"."golf_unpin_on_participant_change"();

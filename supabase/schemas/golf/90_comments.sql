@@ -311,3 +311,6 @@ COMMENT ON COLUMN "public"."golf_travel_itineraries"."is_test" IS 'QA/demo row: 
 COMMENT ON TABLE "public"."golf_tournament_player_rounds" IS 'P016 Tournaments (D-82): one row per player per tournament round, linking a golf_rounds row or holding an entered score. golf_rounds is never updated by tournaments. HELD 20261024100000.';
 
 COMMENT ON TABLE "public"."golf_tournaments" IS 'P016 Tournaments (D-81): one tournament edition for one GolfHelm team. Each competition round is a golf_events row linked through golf_tournament_rounds. version is bumped on every update (compare-and-set). HELD 20261024100000.';
+
+-- Messages v2 package M, M5 (HELD 20261031150000)
+COMMENT ON TABLE "public"."golf_conversation_pins" IS 'Clubhouse Messages pins, per person per team, in order (position 0 first). Private: only the owner reads them; every write goes through golf_pin_conversation and golf_reorder_conversation_pins.';

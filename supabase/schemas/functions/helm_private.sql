@@ -1308,3 +1308,89 @@ $$;
 
 
 ALTER FUNCTION "helm_private"."sync_round_event_fields"() OWNER TO "postgres";
+
+-- Messages v2 package M, M5 (HELD 20261031150000)
+CREATE OR REPLACE FUNCTION "helm_private"."golf_pin_limit"() RETURNS integer
+    LANGUAGE "sql" IMMUTABLE
+    AS $$ SELECT 3 $$;
+
+ALTER FUNCTION "helm_private"."golf_pin_limit"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_pins_lock"("p_user" "uuid", "p_team" "uuid") RETURNS void
+    LANGUAGE "sql"
+    AS $$
+  SELECT pg_advisory_xact_lock(
+    hashtextextended('golf-pins:' || p_user::text || ':'
+        || coalesce(p_team::text, 'none'), 0)
+  );
+$$;
+
+ALTER FUNCTION "helm_private"."golf_pins_lock"("p_user" "uuid", "p_team" "uuid") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_pins_compact"("p_user" "uuid", "p_team" "uuid") RETURNS void
+    LANGUAGE "sql" SECURITY DEFINER
+    SET "search_path" TO 'pg_catalog', 'public'
+    AS $$
+  UPDATE public.golf_conversation_pins p
+  SET position = r.rn - 1
+  FROM (
+    SELECT conversation_id,
+           row_number() OVER (ORDER BY position, pinned_at,
+               conversation_id) AS rn
+    FROM public.golf_conversation_pins
+    WHERE user_id = p_user AND team_id IS NOT DISTINCT FROM p_team
+  ) r
+  WHERE p.user_id = p_user
+    AND p.conversation_id = r.conversation_id
+    AND p.position <> r.rn - 1;
+$$;
+
+ALTER FUNCTION "helm_private"."golf_pins_compact"("p_user" "uuid", "p_team" "uuid") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_pins_broadcast"("p_user" "uuid", "p_team" "uuid") RETURNS void
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+  PERFORM realtime.send(
+    jsonb_build_object('team_id', p_team), 'pins', 'golf-pins:'
+        || p_user::text, true
+  );
+EXCEPTION WHEN OTHERS THEN
+  -- A failed nudge must never undo the pin; the app also refetches on focus.
+  RAISE WARNING 'golf pins broadcast failed for %: % (%)', p_user, SQLERRM,
+      SQLSTATE;
+END $$;
+
+ALTER FUNCTION "helm_private"."golf_pins_broadcast"("p_user" "uuid", "p_team" "uuid") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_pins_list"("p_user" "uuid", "p_team" "uuid") RETURNS "uuid"[]
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+  SELECT coalesce(array_agg(conversation_id ORDER BY position), '{}')
+  FROM public.golf_conversation_pins
+  WHERE user_id = p_user AND team_id IS NOT DISTINCT FROM p_team;
+$$;
+
+ALTER FUNCTION "helm_private"."golf_pins_list"("p_user" "uuid", "p_team" "uuid") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_unpin_on_participant_change"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  v_team uuid;
+BEGIN
+  DELETE FROM public.golf_conversation_pins
+  WHERE user_id = old.user_id AND conversation_id = old.conversation_id
+  RETURNING team_id INTO v_team;
+  IF FOUND THEN
+    PERFORM helm_private.golf_pins_lock(old.user_id, v_team);
+    PERFORM helm_private.golf_pins_compact(old.user_id, v_team);
+    PERFORM helm_private.golf_pins_broadcast(old.user_id, v_team);
+  END IF;
+  RETURN NULL;
+END $$;
+
+ALTER FUNCTION "helm_private"."golf_unpin_on_participant_change"() OWNER TO "postgres";

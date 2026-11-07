@@ -689,3 +689,5 @@ ALTER TABLE "public"."golf_push_holds" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."golf_push_hold_heartbeat" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."golf_class_hold_dirty" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "public"."golf_conversation_pins" ENABLE ROW LEVEL SECURITY;
