@@ -2,10 +2,8 @@ import { LazyMotion, domAnimation } from 'motion/react';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Suspense } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { pulseLanded } from './coachhelm-pulse';
-import { resolved } from './route-view';
 
 /** CoachHelm (P013): every numbered state in docs/clubhouse/catalog/coachhelm.md, found by its number. */
 
@@ -54,7 +52,6 @@ import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
 import { CoachBoard } from '../screens/coachhelm/CoachBoard';
 import { CoachHelmRouteSkeleton, CoachHelmSkeleton, routeSkeletonFor } from '../screens/coachhelm/CoachHelmSkeleton';
 import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
-import { DiveSkeleton } from '../screens/coachhelm/views/Skeletons';
 import { LIVE_COACHHELM_WRITES, LIVE_PLAYER_WRITES, type ChCoachHelmWrites, type ChPlayerWrites } from '../screens/coachhelm/writes';
 import { PreviewCoachHelmPlayer } from '../preview/PreviewCoachHelmPlayer';
 import { ClubhouseMarker } from '../shell/context';
@@ -1945,49 +1942,6 @@ describe('CoachHelm route', () => {
     };
   });
 
-  it('a coach gets their board for the team the shell resolved; a player gets their own', async () => {
-    session.current = { userId: 'u1', role: 'coach', coach: { id: 'c1', organization_id: 'org1' }, player: null };
-    teamOf.current = { role: 'coach', teamId: 't1', coachId: 'c1' };
-    let askedTeam: unknown;
-    tables.current = {
-      ...tables.current,
-      golf_team_members: (f) => {
-        askedTeam = f.find(([k, a]) => k === 'eq' && a[0] === 'team_id')?.[1][1];
-        return { data: [{ player_id: 'pl-jonah' }] };
-      },
-    };
-    const coach = await resolved(await ClubhouseCoachHelmRoute());
-    render(wrap(coach));
-    // The players read is the resolved team's, not every team the coach staffs.
-    expect(askedTeam).toBe('t1');
-    expect(screen.getByText('Coach')).toBeTruthy();
-    expect(screen.getByRole('region', { name: 'By player' })).toBeTruthy();
-    expect(isCoachHelmEnabledForCoach).toHaveBeenCalledWith('c1');
-    expect(getTopInsightsForPlayers).toHaveBeenCalledWith(['pl-jonah'], { limit: 1 });
-
-    document.body.innerHTML = '';
-    session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
-    render(wrap(await resolved(await ClubhouseCoachHelmRoute())));
-    expect(screen.getByText('One thing to work on this week, based on the rounds you’ve posted.')).toBeTruthy();
-    expect(screen.queryByRole('region', { name: 'By player' })).toBeNull();
-    expect(screen.queryByRole('button', { name: /Assign|Dismiss/ })).toBeNull();
-    expect(isCoachHelmEnabledForPlayer).toHaveBeenCalledWith('pl-jonah');
-    expect(getInsightsForPlayer).toHaveBeenCalledWith('pl-jonah', { limit: 30, drawnLater: expect.any(Function), includeMore: true });
-  });
-
-  it('CH-1301 no CoachHelm address says "hasn’t been rebuilt yet" any more: ?view=deep-dive is the Deep dive (coachhelm-dive.test), ?view=insights is the board', async () => {
-    session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
-    // The Deep dive is drawn inside the one Suspense every view shares (not keyed by view), whose fallback is the Deep dive's own skeleton.
-    const dive = (await ClubhouseCoachHelmRoute({ view: 'deep-dive' })) as { key?: string | null; type?: unknown; props?: { fallback?: { type?: unknown } } } | null;
-    expect(dive?.type).toBe(Suspense);
-    expect(dive?.key).toBeNull();
-    expect(dive?.props?.fallback?.type).toBe(DiveSkeleton);
-    document.body.innerHTML = '';
-    render(wrap(await resolved(await ClubhouseCoachHelmRoute({ view: 'insights' }))));
-    expect(code('CH-1301')).toBeNull();
-    expect(screen.getByText('One thing to work on this week, based on the rounds you’ve posted.')).toBeTruthy();
-  });
-
   it('?view=development (every stored dev-plan notification) lands on Stats Development, not a placeholder (swap audit §14 D4)', async () => {
     session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
     await expect(ClubhouseCoachHelmRoute({ view: 'development' })).rejects.toThrow('redirect:/golf/dashboard/stats?tab=dev');
@@ -2012,13 +1966,6 @@ describe('CoachHelm route', () => {
     render(wrap(await ClubhouseCoachHelmRoute()));
     expect(code('CH-13308')).not.toBeNull();
     expect(getTopInsightsForPlayers).not.toHaveBeenCalled();
-  });
-
-  it('130803 a player needs no team: their insights are their own', async () => {
-    session.current = { userId: 'u2', role: 'player', coach: null, player: { id: 'pl-jonah' } };
-    teamOf.current = null;
-    render(wrap(await resolved(await ClubhouseCoachHelmRoute())));
-    expect(focusHeading()).toBe('Downhill putts from 4–6\u00a0ft: a real penalty');
   });
 
   const noView = { searchParams: Promise.resolve({}) };

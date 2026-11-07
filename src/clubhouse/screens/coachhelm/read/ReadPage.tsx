@@ -65,7 +65,7 @@ function Failed({ title, body, code, action }: { title: string; body: string; co
 }
 
 /** One read, in full (S-READ). The bar and the sidebar are today's. */
-export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallbackFirst, askOn = false }: { /** coachhelm_ask_v2: the Ask link appears only with it (CP-READ-20). */ askOn?: boolean; load: ChViewLoad<ChReadView>; voice: ChViewVoice; writes?: ChCoachHelmWrites; fallbackFirst?: string }) {
+export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallbackFirst }: { load: ChViewLoad<ChReadView>; voice: ChViewVoice; writes?: ChCoachHelmWrites; fallbackFirst?: string }) {
   const phone = useChPhone();
   const router = useRouter();
   const { refresh } = useRefresh();
@@ -84,7 +84,7 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
     </Button>
   );
   // RC-1, RC-2: what this role can do with this read, and no sheet when that's nothing.
-  const moreAskHref = read ? askAboutReadHref({ insightId: read.insight.id, title: read.insight.title, first: coach ? first : undefined }, askOn) : null;
+  const moreAskHref = read ? askAboutReadHref({ insightId: read.insight.id, title: read.insight.title, first: coach ? first : undefined }) : null;
   const dismissTarget = read?.insight && coach ? { playerId: voice.playerId, first, ins: read.insight } : null;
   const moreItems = [
     ...(dismissTarget ? [{ label: 'Dismiss this read', icon: X, danger: true, onSelect: () => void fa.dismiss.run(dismissTarget) }] : []),
@@ -146,7 +146,7 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
     const sure = <SureCard d={read} voice={voice} pictures={pictures} />;
     const moved = <MovedCard d={read} failed={data.failed.themes} pictures={pictures} />;
     const rounds = <RoundsCard d={read} failed={data.failed.rounds} voice={voice} />;
-    const askHref = askAboutReadHref({ insightId: read.insight.id, title: read.insight.title, first: coach ? first : undefined }, askOn);
+    const askHref = askAboutReadHref({ insightId: read.insight.id, title: read.insight.title, first: coach ? first : undefined });
     const todo = <DoCard d={read} voice={voice} fa={fa} missing={data.missing} messageHref={messageHref} askHref={askHref} practiceHref={null} />;
     body = phone ? (
       <>
@@ -197,7 +197,7 @@ export function ReadPage({ load, voice, writes = LIVE_COACHHELM_WRITES, fallback
         <div className="sheet">{body}</div>
       ) : (
         <div className="ch-hr-desk">
-          {data ? <ReadsRail view={data} current={read?.insight.id ?? ''} voice={voice} hrefOf={(id) => readHref(coach ? voice.playerId : null, id, true)} /> : <span />}
+          {data ? <ReadsRail view={data} current={read?.insight.id ?? ''} voice={voice} hrefOf={(id) => readHref(coach ? voice.playerId : null, id)} /> : <span />}
           {body}
         </div>
       )}

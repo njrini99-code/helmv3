@@ -9,8 +9,7 @@ import { Bell } from './Bell';
 import { useCrumbTrail } from './crumbs';
 import { PushedTopStandIn, usePhoneChromeState, DeskSlot } from './phone-chrome';
 import { useClubhouseRole } from './context';
-import { AskSheetButton } from './AskSheet';
-import { HelmKey, useQuickChatPresent } from './quick-chat/QuickChatProvider';
+import { HelmKey } from './quick-chat/QuickChatProvider';
 import { usePhoneLargeTitle } from './large-title';
 import { SectionTrigger, useSectionGestures, useSectionSwitch } from './section-switch';
 import { SearchPill } from './command/SearchPill';
@@ -103,7 +102,7 @@ export function TopBar({
       )}
       <div className="ch-topbar__actions">
         <SearchPill />
-        <AskKey />
+        <HelmKey />
         <Bell />
         <Link
           href={pageSettings ? `/golf/dashboard/settings?section=${pageSettings.section}` : '/golf/dashboard/settings'}
@@ -117,9 +116,4 @@ export function TopBar({
       </div>
     </header>
   );
-}
-
-/** Flag on, the Helm key; off, today's sparkle. */
-function AskKey() {
-  return useQuickChatPresent() ? <HelmKey /> : <AskSheetButton />;
 }

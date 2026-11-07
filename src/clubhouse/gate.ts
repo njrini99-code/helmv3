@@ -108,11 +108,6 @@ export async function isTournamentsFor(role: 'coach' | 'player' | null | undefin
   return isClubhouseFor(role);
 }
 
-/** Whether the Practice nav entry may show: the plan pages' own flag (N-00), for coaches and players. */
-export function practiceNavEnabled(): boolean {
-  return isFlagEnabled('golf_practice_plans');
-}
-
 /** Whether the Tournaments nav entry may show: the flag only (the shell that draws it is already Clubhouse's). */
 export function tournamentsNavEnabled(): boolean {
   return isFlagEnabled('golf_tournaments_v1');

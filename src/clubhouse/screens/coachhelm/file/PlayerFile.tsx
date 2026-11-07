@@ -117,7 +117,7 @@ export function FileFailed({ who, onRetry }: { who: string; onRetry: () => void 
   );
 }
 
-/** A coach's file on one player (S-FILE, coachhelm_player_file_v1). */
+/** A coach's file on one player (S-FILE). */
 export function PlayerFile({ load, at, insight, roster, writes = LIVE_COACHHELM_WRITES, saveIntent = LIVE_SAVE_INTENT, initialLens = 'coach' }: FileHostProps) {
   const router = useRouter();
   const { refresh } = useRefresh();
@@ -340,7 +340,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
               </div>
               <div className="rows">
                 {roster.map((r) => (
-                  <Link key={r.id} replace prefetch={false} href={playerFileHref(r.id, undefined, true)} className={'r' + (r.id === head.playerId ? ' is-sel' : '')} aria-current={r.id === head.playerId ? 'page' : undefined} data-ch-hf-open="">
+                  <Link key={r.id} replace prefetch={false} href={playerFileHref(r.id)} className={'r' + (r.id === head.playerId ? ' is-sel' : '')} aria-current={r.id === head.playerId ? 'page' : undefined} data-ch-hf-open="">
                     <Avatar name={r.name} size="md" />
                     <span className="r__t">
                       <b>{r.name}</b>
@@ -380,7 +380,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
         <div className="ins">
           {openRead &&
             (deepOpen ? (
-              <ReadPanel read={deepOpen.base} deep={deepOpen} penalties={penalties} player={sheetPlayer} fa={lens === 'coach' ? fa : undefined} role={lens} missing={undefined} readOn={data.readOn} roster={[{ id: head.playerId }]} dismissible fileHost onClose={() => setOpenRead(null)} />
+              <ReadPanel read={deepOpen.base} deep={deepOpen} penalties={penalties} player={sheetPlayer} fa={lens === 'coach' ? fa : undefined} role={lens} missing={undefined} roster={[{ id: head.playerId }]} dismissible fileHost onClose={() => setOpenRead(null)} />
             ) : (
               <GonePanel onClose={() => setOpenRead(null)} />
             ))}

@@ -19,7 +19,6 @@ import { loadCoachPracticeHome, loadPlayerPracticeHome, loadPlanForBuilder } fro
 import { PracticeHome } from '../screens/practice/PracticeHome';
 import { PlayerPracticeHome } from '../screens/practice/PlayerPracticeHome';
 import { Builder } from '../screens/practice/builder/Builder';
-import { isPracticePlansEnabled } from '@/lib/coachhelm/v3/practice-plan/flag';
 import type { PlanBodyV2 } from '@/lib/coachhelm/v3/practice-plan/model';
 import { loadDrill, loadDrills, loadGroups, loadTemplates } from '../data/practice-library';
 import { DrillPage, DrillsPage, GroupsPage, TemplatesPage } from '../screens/practice/LibraryPages';
@@ -67,7 +66,7 @@ export async function PracticeHomeRoute({ newPlan, template, event }: { newPlan?
     const hit = saved.status === 'ready' ? saved.data.find((t) => t.id === template) : undefined;
     if (hit) from = { name: hit.name, body: hit.body };
   }
-  return <PracticeHome data={load.data} askOn={isPracticePlansEnabled()} openNew={!!newPlan} newEvent={event ?? null} template={from} />;
+  return <PracticeHome data={load.data} openNew={!!newPlan} newEvent={event ?? null} template={from} />;
 }
 
 /** The coach's team for a Practice tab; a player goes to their own Practice. */

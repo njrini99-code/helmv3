@@ -1,4 +1,4 @@
-/* Ask v2 (coachhelm_ask_v2, off everywhere). Ported from design-refresh/ask/redesign/coachhelm-ask.html; every rule sits under [data-v2], so flag off matches nothing. */
+/* Ask v2. Ported from design-refresh/ask/redesign/coachhelm-ask.html; every rule sits under [data-v2], which the thread always sets. */
 .ch-ak-th {
   --ch-ak-k: var(--ch-type-k, 1);
   --ch-ak-ak-hair: rgb(28 27 24 / 0.14);

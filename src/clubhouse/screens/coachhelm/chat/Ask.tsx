@@ -26,7 +26,7 @@ import { AskComposer, useRefuseOffline } from './Composer';
 import { askDraftKey, useAskKept } from './drafts';
 import { AskEvidencePanel } from './EvidencePanel';
 import { conversationHref, HistoryDrawer, HistoryPanel } from './History';
-import { AskHome, AskHomeV2 } from './Home';
+import { AskHomeV2 } from './Home';
 import { AskInputsFailed, AskNoRoster, AskThreadFailed, AskUnavailable } from './States';
 import { useViewSwitch } from '../use-view-switch';
 import { PLAYER_HELM_HREF } from '../../../data/coachhelm-views-shape';
@@ -110,7 +110,7 @@ export function askScope(question: string, team: string, names: readonly string[
   return window ? `${who} · ${window}` : who;
 }
 
-export function Ask({ load, chat = useCoachHelmChat, initial, v2 = false, slashFlags }: { slashFlags?: { plans: boolean; lineup: boolean }; load: ChAskLoad; chat?: ChAskChat; initial?: ChAskInitial; v2?: boolean }) {
+export function Ask({ load, chat = useCoachHelmChat, initial, slashFlags }: { slashFlags?: { plans: boolean; lineup: boolean }; load: ChAskLoad; chat?: ChAskChat; initial?: ChAskInitial }) {
   if (load.status === 'noRoster') {
     return (
       <AskFrame team={load.teamName}>
@@ -126,10 +126,10 @@ export function Ask({ load, chat = useCoachHelmChat, initial, v2 = false, slashF
     );
   }
   // A different conversation is a different chat: the hook reads its starting messages once.
-  return <AskChat key={load.data.notFound ? 'gone' : (load.data.thread?.id ?? 'new')} data={load.data} useChatImpl={chat} initial={initial} v2={v2} slashFlags={slashFlags} />;
+  return <AskChat key={load.data.notFound ? 'gone' : (load.data.thread?.id ?? 'new')} data={load.data} useChatImpl={chat} initial={initial} slashFlags={slashFlags} />;
 }
 
-function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskData; useChatImpl: ChAskChat; initial?: ChAskInitial; v2: boolean; slashFlags?: { plans: boolean; lineup: boolean } }) {
+function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; useChatImpl: ChAskChat; initial?: ChAskInitial; slashFlags?: { plans: boolean; lineup: boolean } }) {
   const phone = useChPhone();
   // A switch to the Board moves the strip at once and dims the chat (aria-busy) until the Board is ready.
   const sw = useViewSwitch<CoachHelmView>('ask', (v) => COACHHELM_HREF[v]);
@@ -252,7 +252,7 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
   const player = data.role === 'player';
   const histProps = {
     // Desktop: at the foot of the rail. Phone: the settings sheet (S-ASK.settings.sheet).
-    footer: v2 && data.knows && !player && !phone ? <AskKnowsPanel knows={data.knows} conversationId={openId} /> : undefined,
+    footer: data.knows && !player && !phone ? <AskKnowsPanel knows={data.knows} conversationId={openId} /> : undefined,
     conversations,
     openId: chatSw.shown === NEW_CHAT ? null : chatSw.shown,
     nowIso: data.nowIso,
@@ -278,9 +278,9 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
     <SectionBoundary surface="coachhelm.ask.composer" label="The message box" code="CH-13225">
       <AskComposer
         seed={seededQuestion}
-        hint={v2 ? (player ? 'Ask about your game' : 'Ask about your team') : undefined}
-        scopeOf={v2 ? (text) => (text.trim() ? askScope(text, player ? 'My rounds' : data.teamName, player ? [] : (data.players ?? []).map((p) => p.name)) : scopeLine).split(' · ') : undefined}
-        slash={v2 ? askSlashCommands({ player, plans: !!slashFlags?.plans, lineup: !!slashFlags?.lineup }) : undefined}
+        hint={player ? 'Ask about your game' : 'Ask about your team'}
+        scopeOf={(text) => (text.trim() ? askScope(text, player ? 'My rounds' : data.teamName, player ? [] : (data.players ?? []).map((p) => p.name)) : scopeLine).split(' · ')}
+        slash={askSlashCommands({ player, plans: !!slashFlags?.plans, lineup: !!slashFlags?.lineup })}
         variant={variant}
         phone={phone}
         players={data.players}
@@ -304,11 +304,10 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
   ) : data.threadFailed ? (
     <AskThreadFailed onNew={newChat} />
   ) : showHome ? (
-    v2 ? <AskHomeV2 data={data} phone={phone} heroComposer={composer('hero')} onAsk={ask} focus={data.focus} /> : <AskHome data={data} phone={phone} heroComposer={composer('hero')} onAsk={ask} />
+    <AskHomeV2 data={data} phone={phone} heroComposer={composer('hero')} onAsk={ask} focus={data.focus} />
   ) : (
     <SectionBoundary surface="coachhelm.ask.thread" label="The conversation" code="CH-13225">
       <AskThread
-        v2={v2}
         team={data.teamName}
         onArtifact={setArtifact}
         messages={chat.messages}
@@ -349,7 +348,7 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
   if (phone && evidenceOpen && evidence !== sheetEvidence) setSheetEvidence(evidence);
 
   return (
-    <main ref={askRoot} className={'ch-ask' + (v2 ? ' ch-ak-root' : '') + (phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || chatSw.pending || undefined} data-switch={sw.pending ? 'view' : chatSw.pending ? 'chat' : undefined} data-ch-code="CH-13820" {...sw.enter}>
+    <main ref={askRoot} className={'ch-ask ch-ak-root' +(phone ? ' is-phone' : '') + (showHome ? ' is-home' : '')} aria-label="Ask CoachHelm" aria-busy={sw.pending || chatSw.pending || undefined} data-switch={sw.pending ? 'view' : chatSw.pending ? 'chat' : undefined} data-ch-code="CH-13820" {...sw.enter}>
       {phone && (
         <>
           <PhoneTop
@@ -366,13 +365,13 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
             }
             action={
               <>
-                {v2 && data.knows && !player && <PhoneIconAction icon={Settings2} label="Chat settings" onClick={() => setSettingsOpen(true)} />}
+                {data.knows && !player && <PhoneIconAction icon={Settings2} label="Chat settings" onClick={() => setSettingsOpen(true)} />}
                 <PhoneIconAction icon={SquarePen} label="New chat" onClick={newChat} />
               </>
             }
           />
           <h1 className="ch-sr-only">Ask CoachHelm</h1>
-          {v2 && data.knows && !player && (
+          {data.knows && !player && (
             <Modal open={settingsOpen} title="Chat settings" detent={0.62} className="ch-ak-settings" onClose={() => setSettingsOpen(false)}>
               <AskKnowsPanel knows={data.knows} conversationId={openId} />
             </Modal>
@@ -381,7 +380,7 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
       )}
       <div className="ch-ask-top">
         {player ? <PlayerAskTabs /> : <CoachHelmTabs active={sw.shown} onGo={sw.go} />}
-        {player && data.allowance && !(v2 && showHome) && <AllowanceMeter bucket={data.allowance} />}
+        {player && data.allowance && !showHome && <AllowanceMeter bucket={data.allowance} />}
         {!phone && <TeamLabel name={data.teamName} />}
       </div>
       <div className={'ch-ask-body' + (!phone && chatsShown ? ' has-panel' : '') + (!phone && evidenceOpen ? ' has-evidence' : '')}>
@@ -410,7 +409,7 @@ function AskChat({ data, useChatImpl, initial, v2, slashFlags }: { data: ChAskDa
               <h1 className="ch-ask-head__t">{heading}</h1>
             </header>
           )}
-          {v2 && phone && !gone && (
+          {phone && !gone && (
             <p className="ch-ak-scope">
               Reading <b>{scopeLine}</b>
             </p>

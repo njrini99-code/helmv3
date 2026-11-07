@@ -8,9 +8,9 @@ const ClassAwareness = createContext(false);
 
 /** Which of CoachHelm's views are on: the flag registry is server-only, so the shell reads them once and hands them down. Outside the shell, none. */
 export interface ChHelmViews {
-  /** coachhelm_player_ask_v1: the player's Ask is a view of the page. */
+  /** The player's Ask is a view of the page. */
   playerAsk?: boolean;
-  /** coachhelm_team_board_v1, Team first: the coach's first view is Team, not Board. */
+  /** Team first: the coach's first view is Team, not Board. */
   team?: boolean;
 }
 const HelmViews = createContext<ChHelmViews>({});

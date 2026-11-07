@@ -669,19 +669,17 @@ the motion; dev only).
 ## Clubhouse redesign behind flags (all off, migrations held)
 
 <!-- schema-drift-absent: golf_coachhelm_coach_facts, golf_practice_plans -->
-Every flag below is off in every environment (`config/feature-flags.yml`). Every
-migration named here is written and not applied. `supabase/migrations/HELD.md` is
-authoritative for them. With the flags off, today's CoachHelm renders unchanged.
+These features are always on (their flags were retired 2026-11-07, see
+`docs/clubhouse/changes/2026-11-07-coachhelm-flags.md`). Every migration named here is written and not
+applied. `supabase/migrations/HELD.md` is authoritative for them.
 
-| Flag | What it turns on |
-| --- | --- |
-| `coachhelm_ask_v2` | The redesigned Ask: answer card, live steps, read chips, artifacts, create flows, Undo hold. |
-| `coachhelm_read_v1` | The read as its own view (`?view=read`). Read only. Off, the address falls through to the board. |
-| `coachhelm_player_file_v1` | One file per player for a coach (`?view=player`). No new writes. Off, the address is the board. |
-| `coachhelm_team_board_v1` | The coach's Team view in Clubhouse. Read only. |
-| `coachhelm_quick_chat_v1` | The top-bar Helm key and Glass quick chat. Off, the sparkle Ask sheet stays. |
-| `coachhelm_player_ask_v1` | A player's own read-only Ask. Works only with `coachhelm_ask_v2` also on. |
-| `coachhelm_practice_plans_v1` | Ask drafts, files and publishes practice plans. Off, Ask has no plan tools. |
+- The redesigned Ask: answer card, live steps, read chips, artifacts, create flows, Undo hold.
+- The read as its own view (`?view=read`). Read only.
+- One file per player for a coach (`?view=player`). No new writes.
+- The coach's Team view in Clubhouse. Read only.
+- The top-bar Helm key and Glass quick chat.
+- A player's own read-only Ask.
+- Ask drafts, files and publishes practice plans.
 
 Screens and data:
 
@@ -726,8 +724,8 @@ New server actions:
 - `src/app/golf/actions/coachhelm-ask.ts`: `saveCoachFact`, `deleteCoachFact`,
   `setChatTone`, `readQuickChatWeek`.
 - `src/app/golf/actions/coachhelm-practice-plans.ts`: `savePracticePlanDraft`,
-  `undoPracticePlanDraft`, `listPlanFolders`. Saving needs both
-  `coachhelm_practice_plans_v1` and `golf_practice_plans`.
+  `undoPracticePlanDraft`, `listPlanFolders`. Saving needs
+  the plan tables.
 - `src/app/golf/actions/coachhelm-plan-format.ts`: `readPlanFormat`,
   `setPlanFormat`, `undoPlanFormat`. A format is layout only. A new plan's drills,
   times and groups never come from the sample.

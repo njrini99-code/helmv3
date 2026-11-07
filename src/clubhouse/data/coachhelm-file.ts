@@ -2,7 +2,6 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { isFlagEnabled } from '@/lib/flags';
-import { isReadEnabled } from '@/lib/coachhelm/v3/read/flag';
 import { buildFieldDayContext } from '@/lib/coachhelm/v3/field-day/field';
 import { loadTeamFieldRounds } from '@/lib/coachhelm/v3/field-day/loader';
 import { readAttributionForPlayer } from '@/lib/coachhelm/v3/effectiveness/attribution-read';
@@ -254,7 +253,7 @@ export async function loadCoachPlayerFile(input: { scope: ChCoachPlayerScope }):
       ...(intent === undefined ? { intent: true as const } : {}),
       ...(track === undefined ? { track: true as const } : {}),
     };
-    return { status: 'ready', data: { head: scope.head, cards, lens: lensCards, failed, rounds: load.data.rounds ?? st?.rounds ?? null, roundsToGo: toGo, readOn: isReadEnabled(), penalties } };
+    return { status: 'ready', data: { head: scope.head, cards, lens: lensCards, failed, rounds: load.data.rounds ?? st?.rounds ?? null, roundsToGo: toGo, readOn: true, penalties } };
   } catch (err) {
     log('load', err);
     return { status: 'failed' };
@@ -303,7 +302,7 @@ export async function loadPlayerYourWeek(input: { playerId: string }): Promise<{
     const coach = proposals.list[0]?.coachName ?? 'Your coach';
     const plan = toChFilePlan(last, null, null, null, coach, zone);
     const cards: ChFileCards = { ...playerCards(list, rows), sg, plan, field: field ?? null };
-    return { load: { status: 'ready', data: { cards, proposals, rounds: load.data.rounds ?? st?.rounds ?? null, roundsToGo: toGo, readOn: isReadEnabled(), penalties, refreshed: st?.refreshed ?? null, failed: { ...(st ? {} : { sg: true as const }), ...(field === undefined ? { field: true as const } : {}) } } } };
+    return { load: { status: 'ready', data: { cards, proposals, rounds: load.data.rounds ?? st?.rounds ?? null, roundsToGo: toGo, readOn: true, penalties, refreshed: st?.refreshed ?? null, failed: { ...(st ? {} : { sg: true as const }), ...(field === undefined ? { field: true as const } : {}) } } } };
   } catch (err) {
     log('week', err);
     return { load: { status: 'failed' } };

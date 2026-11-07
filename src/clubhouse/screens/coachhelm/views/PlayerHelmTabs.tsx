@@ -15,7 +15,7 @@ import { Segmented } from '../../../ui/Segmented';
 import { useHScroll } from '../../../ui/use-hscroll';
 
 const VIEWS: readonly PlayerHelmView[] = ['board', 'standing', 'deep-dive'];
-/** The player's Ask (coachhelm_player_ask_v1): a view of this page with its own address, and no read of its own for the strip to wait on. */
+/** The player's Ask: a view of this page with its own address, and no read of its own for the strip to wait on. */
 const PLAYER_ASK_HREF = '/golf/dashboard/coachhelm?view=ask';
 type PlayerTab = PlayerHelmView | 'ask';
 

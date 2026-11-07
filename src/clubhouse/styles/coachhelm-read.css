@@ -1,4 +1,4 @@
-/* CoachHelm read (coachhelm_read_v1, off everywhere). Ported from design-refresh/coachhelm-read/redesign/coachhelm-read.html; every rule sits under .ch-hr. */
+/* CoachHelm read. Ported from design-refresh/coachhelm-read/redesign/coachhelm-read.html; every rule sits under .ch-hr. */
 .ch-hr {
   --ch-hr-bg: var(--ch-bg-page);
   --ch-hr-card: var(--ch-card-bg);

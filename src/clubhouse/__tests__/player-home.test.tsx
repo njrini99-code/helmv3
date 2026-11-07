@@ -256,14 +256,13 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     expect(code('CH-2312')!.textContent).toMatch(/Welcome to the team/);
   });
 
-  it('CH-2312 the team’s events but no round: the week and Up next stay, and one welcome stands in for the empty blocks', () => {
-    expect(isPlayerFirstRun(PREVIEW_PLAYER_HOME_NO_ROUNDS)).toBe(false);
+  it('CH-2312 the team’s events but no round: still the first-run page, never the week layout', () => {
+    expect(isPlayerFirstRun(PREVIEW_PLAYER_HOME_NO_ROUNDS)).toBe(true);
     show(PREVIEW_PLAYER_HOME_NO_ROUNDS);
     const welcome = code('CH-2312') as HTMLElement;
     expect(welcome.textContent).toMatch(/Welcome to the team/);
-    expect(document.querySelector('.ch-ph-next')).not.toBeNull();
-    expect(screen.getByRole('heading', { name: 'This week' })).toBeTruthy();
-    // The head carries New round, so the welcome keeps only Add classes; no "No rounds posted yet" twice over.
+    expect(document.querySelector('.ch-ph-next')).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'This week' })).toBeNull();
     expect(screen.getAllByRole('link', { name: 'New round' })).toHaveLength(1);
     expect(within(welcome).getByRole('link', { name: 'Add classes' })).toBeTruthy();
     for (const c of ['CH-2302', 'CH-2310', 'CH-2311']) expect(code(c)).toBeNull();
@@ -286,11 +285,10 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
     window.matchMedia = real;
   });
 
-  it('CH-2312 on the phone too: the team’s events but no round keep Up next and the week, with the welcome under them', () => {
+  it('CH-2312 on the phone too: events but no round is the first-run page, not the week', () => {
     show(PREVIEW_PLAYER_HOME_NO_ROUNDS);
-    expect(code('CH-2312')!.closest('.ch-hm-body')).not.toBeNull();
-    expect(document.querySelector('.ch-hm-week')).not.toBeNull();
-    expect(screen.getAllByRole('link', { name: 'New round' })).toHaveLength(1);
+    expect(code('CH-2312')!.textContent).toMatch(/Welcome to the team/);
+    expect(document.querySelector('.ch-hm-week')).toBeNull();
     for (const c of ['CH-2302', 'CH-2310']) expect(code(c)).toBeNull();
   });
 

@@ -119,11 +119,11 @@ function DeskHead({ data, post }: { data: ChPlayerHome; post: string | null }) {
 }
 
 /**
- * A player with nothing yet: no rounds, nothing on the calendar, and every read answered. With events and no round,
- * the loaded page keeps the week and shows the welcome in place of the rounds (NoRoundsYet).
+ * A player with no round posted yet and every read answered gets the first-run page (the redesign's empty state), whether or not the
+ * team has events: the week layout is for a player with rounds. A failed read is never taken for "new" (noRoundsYet, CH-2312).
  */
 export function isPlayerFirstRun(data: ChPlayerHome): boolean {
-  return noRoundsYet(data) && !data.week.error && !data.next && data.week.days.every((d) => d.eventCount === 0);
+  return noRoundsYet(data) && !data.week.error;
 }
 
 /** The v2 first-run page empty state (gh-states.jsx, EMPTY.home.player; D-71). */

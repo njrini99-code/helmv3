@@ -102,14 +102,6 @@ change:
 - `clubhouse_classes_roster_home_v1`
 - `clubhouse_stats_redesign_v1`
 - `golf_messages_redesign_v1`
-- `coachhelm_read_v1`
-- `coachhelm_team_board_v1`
-- `coachhelm_ask_v2`
-- `coachhelm_quick_chat_v1`
-- `coachhelm_player_ask_v1`
-- `coachhelm_player_file_v1`
-- `coachhelm_practice_plans_v1`
-- `golf_practice_plans`
 - `golf_documents_library`
 
 Run `npm run flags:generate`, then `npm run flags:check`, and ship through a PR

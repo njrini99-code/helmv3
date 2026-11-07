@@ -77,18 +77,12 @@ afterEach(() => {
 });
 
 describe('Practice in the nav', () => {
-  it('flag off: no entry, on either role, on the strip or the sidebar', () => {
-    for (const role of ['coach', 'player'] as const) {
-      expect(navFor(role).some((i) => i.id === 'practice')).toBe(false);
-      expect(phoneSectionsFor(role).some((i) => i.id === 'practice')).toBe(false);
-    }
-  });
   it('flag on: after Calendar, for both roles, beside Tournaments when that is on too', () => {
     for (const role of ['coach', 'player'] as const) {
-      const ids = navFor(role, { practice: true, tournaments: true }).map((i) => i.id);
+      const ids = navFor(role, { tournaments: true }).map((i) => i.id);
       expect(ids[ids.indexOf('calendar') + 1]).toBe('practice');
       expect(ids).toContain('tournaments');
-      expect(phoneSectionsFor(role, { practice: true }).some((i) => i.id === 'practice')).toBe(true);
+      expect(phoneSectionsFor(role, { }).some((i) => i.id === 'practice')).toBe(true);
     }
     expect(CH_NAV_PRACTICE.href).toBe('/golf/dashboard/practice');
   });
@@ -104,13 +98,13 @@ const HOME: ChPracticeHome = { teamName: 'Demo', week: [], weekLine: null, upNex
 
 describe('the landing', () => {
   it('CH-13396 first run: one card, no empty headers, New plan on the page', () => {
-    render(<PracticeHome data={{ ...HOME, open: [{ id: 'e', label: 'Thursday, Nov 5', detail: '2:00 to 5:00 PM', title: 'Practice', place: '', allDay: false }] }} askOn />);
+    render(<PracticeHome data={{ ...HOME, open: [{ id: 'e', label: 'Thursday, Nov 5', detail: '2:00 to 5:00 PM', title: 'Practice', place: '', allDay: false }] }} />);
     expect(screen.getByText('Plan your first practice')).toBeTruthy();
     expect(screen.queryByText('Drafts')).toBeNull();
     expect(screen.getAllByRole('button', { name: /New plan/ }).length).toBeGreaterThan(0);
   });
   it('CH-13396 a coach with plans and no practice this week is told so, and the plans still list', () => {
-    render(<PracticeHome askOn data={{ ...HOME, firstRun: false, past: [{ id: 'a', day: 'Tue', title: 'Old', time: '3:00', line: '', state: 'Done', href: '/x' }] }} />);
+    render(<PracticeHome data={{ ...HOME, firstRun: false, past: [{ id: 'a', day: 'Tue', title: 'Old', time: '3:00', line: '', state: 'Done', href: '/x' }] }} />);
     expect(screen.getByText(/No practices this week/)).toBeTruthy();
     expect(screen.getByRole('button', { name: /Past plans \(1\)/ })).toBeTruthy();
   });
@@ -126,7 +120,7 @@ describe('New plan (CH-13395)', () => {
     { id: 'e1', label: 'Thursday, Nov 5', detail: '2:00 to 5:00 PM · Lakeside', title: 'Thursday practice', place: 'Lakeside', allDay: false },
     { id: 'e2', label: 'Monday, Nov 9', detail: 'All day', title: 'Monday practice', place: '', allDay: true },
   ];
-  const sheet = (askOn = true) => render(<NewPlanSheet open onClose={vi.fn()} events={events} copies={[]} roster={ROSTER.map((r) => r.id)} askOn={askOn} />);
+  const sheet = () => render(<NewPlanSheet open onClose={vi.fn()} events={events} copies={[]} roster={ROSTER.map((r) => r.id)} />);
 
   it('CH-13181 an all-day practice is listed and can’t be picked', () => {
     sheet();
@@ -134,26 +128,16 @@ describe('New plan (CH-13395)', () => {
     expect(row.disabled).toBe(true);
     expect(row.textContent).toContain('Give this practice a start and end time');
   });
-  it('flag off: no Ask CoachHelm, and Blank starts from a Warm-up', async () => {
-    save.mockResolvedValue({ success: true, planId: 'p', version: 1, updatedAt: null });
-    sheet(false);
-    expect(screen.queryByRole('radio', { name: /Ask CoachHelm/, hidden: true })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Create plan', hidden: true }));
-    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
-    expect(save.mock.calls[0]![0]).toMatchObject({ eventId: 'e1', expectedVersion: null, title: 'Thursday practice' });
-    expect(save.mock.calls[0]![0].body.variants.main.blocks.map((b: { title: string }) => b.title)).toEqual(['Warm-up']);
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/golf/dashboard/practice/plan/p/edit'));
-  });
   it('Ask CoachHelm saves an empty plan and opens the builder filling', async () => {
     save.mockResolvedValue({ success: true, planId: 'p', version: 1, updatedAt: null });
-    sheet(true);
+    sheet();
     fireEvent.click(screen.getByRole('button', { name: 'Create plan', hidden: true }));
     await waitFor(() => expect(push).toHaveBeenCalledWith('/golf/dashboard/practice/plan/p/edit?fill=1'));
     expect(save.mock.calls[0]![0].body.variants.main.blocks).toEqual([]);
   });
   it('CH-13580 another coach got there first: says so and opens nothing', async () => {
     save.mockResolvedValue({ success: false, error: 'stale', stale: true });
-    sheet(true);
+    sheet();
     fireEvent.click(screen.getByRole('button', { name: 'Create plan', hidden: true }));
     await waitFor(() => expect(save).toHaveBeenCalled());
     expect(push).not.toHaveBeenCalled();

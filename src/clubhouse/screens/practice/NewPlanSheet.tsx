@@ -32,12 +32,12 @@ function Option({ on, title, line, disabled, onPick }: { on: boolean; title: str
  * Ask CoachHelm saves an empty plan and opens the builder filling: its suggestions wait there, and nothing joins the plan until kept.
  * `preview`: a press closes the sheet and reaches no server.
  */
-export function NewPlanSheet({ open, onClose, events, copies, roster, askOn, initialEvent, preview = false, template = null }: { template?: { name: string; body: PlanBodyV2 } | null; open: boolean; onClose: () => void; events: ChPracticeEvent[]; copies: Array<{ id: string; label: string }>; roster: string[]; askOn: boolean; initialEvent?: string | null; preview?: boolean }) {
+export function NewPlanSheet({ open, onClose, events, copies, roster, initialEvent, preview = false, template = null }: { template?: { name: string; body: PlanBodyV2 } | null; open: boolean; onClose: () => void; events: ChPracticeEvent[]; copies: Array<{ id: string; label: string }>; roster: string[]; initialEvent?: string | null; preview?: boolean }) {
   const router = useRouter();
   const toast = useToast();
   const firstOpen = events.find((e) => !e.allDay)?.id ?? null;
   const [eventId, setEventId] = useState<string | null>(initialEvent ?? firstOpen);
-  const [start, setStart] = useState<Start>(template ? 'template' : askOn ? 'ask' : 'blank');
+  const [start, setStart] = useState<Start>(template ? 'template' : 'ask');
   const [copyId, setCopyId] = useState<string | null>(copies[0]?.id ?? null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +54,7 @@ export function NewPlanSheet({ open, onClose, events, copies, roster, askOn, ini
         setError(copied?.error ?? 'That plan couldn’t be copied.');
         return;
       }
-      const body = start === 'template' && template ? { ...template.body, place: event.place.slice(0, 80), players: [...roster] } : copied?.success ? copyBody(copied.body, roster) : emptyBody(event.place, roster, start === 'blank' && !askOn);
+      const body = start === 'template' && template ? { ...template.body, place: event.place.slice(0, 80), players: [...roster] } : copied?.success ? copyBody(copied.body, roster) : emptyBody(event.place, roster, false);
       const res = await savePracticePlan({ eventId: event.id, expectedVersion: null, title: event.title, step: 'blocks', body });
       if (!res.success) {
         if (res.stale) {
@@ -97,7 +97,7 @@ export function NewPlanSheet({ open, onClose, events, copies, roster, askOn, ini
           {template && <Option on={start === 'template'} title={template.name} line="Template. Groups stay empty until you fill them" onPick={() => setStart('template')} />}
           <Option on={start === 'blank'} title="Blank" line="Add blocks yourself" onPick={() => setStart('blank')} />
           {copies.length > 0 && <Option on={start === 'copy'} title="Copy a past practice" line="Keeps blocks, drills and groups" onPick={() => setStart('copy')} />}
-          {askOn && <Option on={start === 'ask'} title="Ask CoachHelm" line="It drafts from your team’s data. You keep what you like." onPick={() => setStart('ask')} />}
+          <Option on={start === 'ask'} title="Ask CoachHelm" line="It drafts from your team’s data. You keep what you like." onPick={() => setStart('ask')} />
         </div>
         {start === 'copy' && (
           <>

@@ -39,7 +39,6 @@ import { LightProvider } from './light';
 import { DockProvider, PhoneDock } from './Dock';
 import { PushAsk } from './PushAsk';
 import { useQuietRefresh } from './use-quiet-refresh';
-import { AskSheetProvider } from './AskSheet';
 import { QuickChatProvider } from './quick-chat/QuickChatProvider';
 import { CrumbProvider } from './crumbs';
 import { PhoneChromeProvider, PhoneUnderlay, usePhoneChromeState } from './phone-chrome';
@@ -177,7 +176,7 @@ export function ClubhouseFrame({
             <FrameRoot motionOff={!showAnimations} fullScreen={fullScreen} homeRoot={rebuilt && pathname.replace(/\/$/, '') === '/golf/dashboard'}>
               <ToastProvider scope={userData.teamId ?? ''}>
                 <CrumbProvider>
-                  <MaybeQuickChat on={shell.quickChat ?? false} plans={shell.practicePlans ?? false} pathname={pathname} search={search} enabled={shell.askAvailable ?? false}>
+                  <QuickChatProvider plans pathname={pathname} search={search} enabled={shell.askAvailable ?? false}>
                     <DockProvider>
                       {/* The first Tab on any page: jump past the navigation to the page itself (CH-1607: it slides into view). */}
                       <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
@@ -224,7 +223,7 @@ export function ClubhouseFrame({
                       {/* The iPhone app's push ask, once, at a calm moment (CH-1911); nothing in a browser. */}
                       <PushAsk pathname={pathname} role={role} screenKey={screenParam(search)} />
                     </DockProvider>
-                  </MaybeQuickChat>
+                  </QuickChatProvider>
                 </CrumbProvider>
               </ToastProvider>
             </FrameRoot>
@@ -374,17 +373,4 @@ function useReloadFromBackForwardCache(): void {
     window.addEventListener('pageshow', onShow);
     return () => window.removeEventListener('pageshow', onShow);
   }, []);
-}
-
-/** Flag off, today's Ask sheet; on, the Helm key and Glass panel. */
-function MaybeQuickChat({ on, plans, pathname, search, enabled, children }: { on: boolean; plans: boolean; pathname: string; search: string; enabled: boolean; children: ReactNode }) {
-  return on ? (
-    <QuickChatProvider plans={plans} pathname={pathname} search={search} enabled={enabled}>
-      {children}
-    </QuickChatProvider>
-  ) : (
-    <AskSheetProvider pathname={pathname} search={search} enabled={enabled}>
-      {children}
-    </AskSheetProvider>
-  );
 }

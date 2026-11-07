@@ -1,4 +1,4 @@
-/* CoachHelm team board (coachhelm_team_board_v1, off everywhere). Ported from design-refresh/coachhelm-team/redesign/redesign.css; the page's tokens
+/* CoachHelm team board. Ported from design-refresh/coachhelm-team/redesign/redesign.css; the page's tokens
    map here, scoped, never into tokens.css. Every rule sits under .ch-htb. */
 .ch-htb {
   --ch-tb-bg: var(--ch-bg-page);

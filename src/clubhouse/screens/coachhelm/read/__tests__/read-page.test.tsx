@@ -149,12 +149,6 @@ describe('a coach on a read', () => {
     expect(text).toContain(HELM_PLAYERS.jonah.name);
   });
 
-  it('no Ask link while Ask is off', () => {
-    show(ready('coach'), COACH);
-    expect(screen.queryByText(/Ask about this read/)).toBeNull();
-    expect(screen.queryByText(/Add to practice plan/)).toBeNull();
-  });
-
 });
 
 describe('the states around a read (W-READ-6)', () => {

@@ -129,7 +129,8 @@ afterEach(cleanup);
 
 /** The route's answer for this address, run through each async view the server would run behind its boundary. */
 async function page(params: { view?: string; player?: string; insight?: string }): Promise<ReactNode> {
-  let out = await resolved(await ClubhouseCoachHelmRoute(params));
+  // `from: 'file'` is the old views' own address (the file's "Full standing" link): without it a coach's drill address redirects to the player file.
+  let out = await resolved(await ClubhouseCoachHelmRoute({ from: 'file', ...params }));
   // The scope is checked in one boundary and the view read in a second one inside it.
   out = await resolved(out);
   return out;

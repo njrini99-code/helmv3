@@ -9,22 +9,17 @@ vi.mock('../../AskSheet', async () => {
   const React = await import('react');
   return {
     AskSheetContext: React.createContext(null),
-    AskSheetButton: () => <button type="button">Ask sparkle</button>,
     lookingAt: () => 'Looking at Calendar',
   };
 });
 
-import { AskSheetButton } from '../../AskSheet';
 import { ClubhouseMarker } from '../../context';
-import { HelmKey, QuickChatProvider, useQuickChatPresent } from '../QuickChatProvider';
+import { HelmKey, QuickChatProvider } from '../QuickChatProvider';
 import { quickStarts } from '../starts';
 
 const CAL = '/golf/dashboard/calendar';
 
-/** As `TopBar` picks: the Helm key inside the provider, today's sparkle outside it. */
-function Slot() {
-  return useQuickChatPresent() ? <HelmKey /> : <AskSheetButton />;
-}
+const Slot = HelmKey;
 const show = (role: 'coach' | 'player', opts: { provider?: boolean; enabled?: boolean; pathname?: string } = {}) => {
   const { provider = true, enabled = true, pathname = CAL } = opts;
   return render(
@@ -46,13 +41,7 @@ afterEach(cleanup);
 
 /** Quick chat AC-QC-KEY-07 and 08: SHARED-8 and SHARED-11. */
 describe('who gets the key', () => {
-  it('flag off (no provider): today’s sparkle, and no key', () => {
-    show('coach', { provider: false });
-    expect(screen.getByRole('button', { name: 'Ask sparkle' })).toBeTruthy();
-    expect(key()).toBeNull();
-  });
-
-  it('a player: no key node, no session, and ⌘J does nothing', async () => {
+    it('a player: no key node, no session, and ⌘J does nothing', async () => {
     show('player');
     expect(key()).toBeNull();
     fireEvent.keyDown(window, { key: 'j', metaKey: true });

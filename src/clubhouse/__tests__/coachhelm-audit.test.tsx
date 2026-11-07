@@ -331,16 +331,6 @@ describe('CH13-20 the Ask address respects the CoachHelm switch, as the board do
     expect(loadAskCoachHelm).not.toHaveBeenCalled();
   });
 
-  it('a player’s ?view=ask is still their own board, and reads no coach gate', async () => {
-    session.current = { userId: 'u2', role: 'player', coach: null, player: { id: jonah.id } };
-    vi.mocked(isCoachHelmEnabledForPlayer).mockResolvedValue({ ...on });
-    vi.mocked(getInsightsForPlayer).mockResolvedValue([slope(jonah.id)]);
-    tables.current = { golf_team_members: { data: null }, golf_drills: { data: [] }, golf_player_focus_areas: { data: [] } };
-    render(wrap(await resolved(await ClubhouseCoachHelmRoute({ view: 'ask' }))));
-    expect(screen.getByText('One thing to work on this week, based on the rounds you’ve posted.')).toBeTruthy();
-    expect(isCoachHelmEnabledForCoach).not.toHaveBeenCalled();
-  });
-
   it('CH-13923 the board with CoachHelm off draws no Board and Ask strip, and the board with it on does', () => {
     render(wrap(<CoachBoard data={emptyCoachHelm({ by: 'user', reason: null })} />));
     expect(code('CH-13923')).toBeNull();

@@ -1,4 +1,4 @@
-/* CoachHelm practice plans (coachhelm_practice_plans_v1, off everywhere). Sheet ported from design-refresh/practice-plan/coachhelm-practice.html; stays light in dark mode, like the PDF it prints to. */
+/* CoachHelm practice plans. Sheet ported from design-refresh/practice-plan/coachhelm-practice.html; stays light in dark mode, like the PDF it prints to. */
 .ch-cp-sheet { --ch-pl-k: 1; }
 .ch-cp-sheet .g-A { --ch-pl-g: var(--ch-pl-gA); --ch-pl-gt: var(--ch-pl-gA-t); }
 .ch-cp-sheet .g-B { --ch-pl-g: var(--ch-pl-gB); --ch-pl-gt: var(--ch-pl-gB-t); }

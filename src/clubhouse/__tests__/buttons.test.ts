@@ -23,7 +23,6 @@ const ALLOW: Record<string, number> = {
   'screens/rounds/track/ShotEntry.tsx': 2,
   'screens/rounds/track/round-sheets.tsx': 2,
   'screens/stats/StatsFilter.tsx': 1,
-  'shell/AskSheet.tsx': 1,
   'shell/AskSheetBody.tsx': 2,
   'shell/Bell.tsx': 2,
   'shell/TopBar.tsx': 1,

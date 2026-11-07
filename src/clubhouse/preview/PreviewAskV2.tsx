@@ -62,7 +62,7 @@ export function PreviewAskV2({ id, state, kind, scene, stage, viewer }: { id?: s
   useFakeActions();
   const flow = route?.flow ?? (scene && stage ? askFlowMessages(scene, stage) : null);
   const mapped = !state && stage ? ASK_STAGE_STATE[stage] : undefined;
-  const page = <PreviewAsk v2 state={flow ? undefined : (state ?? (stage === 'home' ? undefined : mapped))} kind={kind} messages={flow?.messages} busy={flow?.busy} role={viewer === 'player' ? 'player' : undefined} />;
+  const page = <PreviewAsk state={flow ? undefined : (state ?? (stage === 'home' ? undefined : mapped))} kind={kind} messages={flow?.messages} busy={flow?.busy} role={viewer === 'player' ? 'player' : undefined} />;
   return (
     <div data-ch-ak-ready="1" style={{ display: 'contents' }}>
       <QcSeam.Provider value={{ week: ASK_PREVIEW_WEEK }}>{route?.plan ? <PlanPreview.Provider value={route.plan}>{page}</PlanPreview.Provider> : page}</QcSeam.Provider>

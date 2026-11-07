@@ -239,13 +239,13 @@ export interface BuildToolsArgs {
    * src/clubhouse may not import the gate. Left out, the whole-team tools stay off.
    */
   teamTools?: boolean;
-  /** Ask v2 (`coachhelm_ask_v2` and Clubhouse on for the team): steps update in place, and new tools join. Fairway's chat never sets it. */
+  /** Ask v2 (Clubhouse on for the team): steps update in place, and new tools join. Fairway's chat never sets it. */
   askV2?: boolean;
   /** Ask v2's surface. `send_message` is registered only for Quick chat; left out, the Ask tab, which never sends. */
   surface?: AskSurface;
   /** Ask v2: an artifact's words, so the turn's number audit reads them with the answer. */
   onArtifactWords?: (words: string) => void;
-  /** coachhelm_practice_plans_v1: the four reads, the brief, the draft and publish. */
+  /** The four reads, the brief, the draft and publish. */
   practicePlans?: boolean;
   /** Ask v2: runs after the response is sent (`after` in the route), for the Undo hold's release. */
   defer?: (fn: () => Promise<unknown>) => void;
@@ -754,7 +754,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
         }
       : {}),
 
-    // Ask v2's reads: only with `coachhelm_ask_v2` and Clubhouse on for the team, so Fairway's tool set is what it was.
+    // Ask v2's reads: only with Clubhouse on for the team, so Fairway's tool set is what it was.
     ...(askV2
       ? {
         get_shot_pattern: tool({

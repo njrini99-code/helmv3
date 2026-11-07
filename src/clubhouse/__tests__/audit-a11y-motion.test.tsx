@@ -122,14 +122,6 @@ describe('A-18: three sheets leave on their exit instead of unmounting', () => {
   });
 });
 
-describe('A-29: the Ask sheet is ready before it is asked for', () => {
-  const src = readFileSync(join(__dirname, '../shell/AskSheet.tsx'), 'utf8');
-  it('loads its chunk when the page is idle and mounts closed when the key is approached', () => {
-    expect(src).toMatch(/requestIdleCallback\(\(\) => void loadAskSheetBody\(\)/);
-    expect(src).toMatch(/onPointerEnter=\{warm\}\s+onFocus=\{warm\}\s+onPointerDown=\{warm\}/);
-  });
-});
-
 describe('review 2026-10-15: a section change fades through, and a faded bar hides its buttons', () => {
   it('the new page waits for the whole fade out, so the two snapshots never overlap', () => {
     const tokens = css('tokens.css');

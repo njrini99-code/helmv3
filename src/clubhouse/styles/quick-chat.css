@@ -1,4 +1,4 @@
-/* CoachHelm quick chat (coachhelm_quick_chat_v1, off everywhere). Ported from design-refresh/coachhelm/redesign/quick-chat.html by script; values are the page's. */
+/* CoachHelm quick chat. Ported from design-refresh/coachhelm/redesign/quick-chat.html by script; values are the page's. */
 .ch-qcs {
   --ch-qc-k: 1;
   --ch-qc-a-page: var(--ch-bg-page); --ch-qc-a-card: #fffefb; --ch-qc-a-well: #f6f4ee; --ch-qc-a-ink: var(--ch-text-primary); --ch-qc-a-ink-2: #46433d; --ch-qc-a-ink-3: #5f5c55;

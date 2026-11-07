@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildAssistantTurn, detailTable, evidenceBlocks, formatValue, headingOf, humanCell, parseProse, workReceipt } from '../data/coachhelm-chat-thread';
+import { buildAssistantTurn, detailTable, evidenceBlocks, formatValue, headingOf, humanCell, parseProse } from '../data/coachhelm-chat-thread';
 import { ASK_EV_EVENTS, ASK_EV_ROSTER, ASK_EV_TASKS, ASK_EV_TEAM_COMPARE, ASK_EV_TEAM_SG, ASK_MSGS_STAGING } from '../preview/fixtures-ask-thread';
 
 /** The 2026-10-29 staging transcript (owner: "its the coachhelm chat. its ass"), item by item. */
@@ -68,12 +68,6 @@ describe('5. a roster count says its figure once', () => {
     if (!tiles || tiles.kind !== 'tiles') throw new Error('tiles expected');
     expect(tiles.tiles[0]).toMatchObject({ label: 'Active roster', value: '5', sub: null });
     expect(tiles.source ?? '').not.toMatch(/players/);
-  });
-
-  it('the work receipt is one quiet line: how long and how many steps', () => {
-    expect(workReceipt(6, 52.7)).toBe('Worked for 53s · 6 steps');
-    expect(workReceipt(3, 6.04)).toBe('Worked for 6.0s · 3 steps');
-    expect(workReceipt(1, null)).toBe('1 step');
   });
 });
 
