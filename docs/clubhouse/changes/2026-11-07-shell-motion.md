@@ -19,3 +19,8 @@ composer sizes with `field-sizing: content` where the browser has it. Segmented
 labels change colour as the pill lands, so they hold contrast for the whole glide,
 and the pill moves with a translate and its width, no scale. Home's segments are
 44px tall.
+
+Tap to first moving frame: the copy of the page is taken a frame after the tap, so the press state paints first. A thread's settle hold runs on scroll, not a frame loop. Transitions name `background-color`, not the `background` shorthand, and the buttons no longer transition `background-position`. The sliding plate moves by transform alone and its width lands in one step, centre to centre, because an animated width kept the main thread drawing.
+
+Messages: the thread no longer runs its make-room animation when its first messages land, and a new message folds into the running move instead of adding a second animation, so it stays on the compositor. The Jump key no longer flashes in while a thread opens.
+

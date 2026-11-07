@@ -6,7 +6,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObje
 export const NEAR_END_PX = 120;
 
 /** How long a newly shown thread is held at its end while a push or hydration settles (P007 D1). */
-const SETTLE_MS = 700;
+export const THREAD_SETTLE_MS = 700;
 
 /**
  * Where a thread sits as messages arrive (high-fidelity audit §6.6, T25). A conversation opens at its end. A new
@@ -155,7 +155,7 @@ export function useThreadAnchor(
     }
     s.addEventListener('scroll', onScroll, { passive: true });
     for (const t of input) s.addEventListener(t, stop, { passive: true });
-    timer = window.setTimeout(stop, SETTLE_MS);
+    timer = window.setTimeout(stop, THREAD_SETTLE_MS);
     frame = requestAnimationFrame(hold);
     return stop;
     // Once per mount; conversation changes are handled above.
