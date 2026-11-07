@@ -1093,6 +1093,8 @@ them would bury everything above.
 | `docs/clubhouse/live-rounds/CHANGES.md` | current | - | - | - | - |
 | `docs/clubhouse/live-rounds/HANDOFFS.md` | current | - | - | - | - |
 | `docs/clubhouse/live-rounds/WIRING.md` | current | - | - | - | - |
+| `docs/clubhouse/messages-v2/MOTION.md` | current | - | - | - | - |
+| `docs/clubhouse/messages-v2/SPEC.md` | current | - | - | yes | - |
 | `docs/clubhouse/motion/2026-10-20-auth.md` | current | - | - | - | - |
 | `docs/clubhouse/motion/2026-10-20-calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/motion/2026-10-20-classes.md` | current | - | - | - | - |
