@@ -4403,7 +4403,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   }
   .ch-stm.is-team .ch-stm-hero__v {
     grid-area: v;
-    
+
     letter-spacing: -0.035em;
     color: var(--ch-text-primary);
   }
@@ -4647,7 +4647,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     padding: 16px 16px 0;
   }
   .ch-stm.is-team .ch-stm-sgfig b {
-    
+
     letter-spacing: -0.04em;
     color: var(--ch-text-primary);
   }
