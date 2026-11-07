@@ -1,13 +1,13 @@
 'use client';
 
 import type { ChMessagesApi } from '../api/types';
-import { type ChConv, type ChMsg, threadItems, firstName, clock } from '../model';
+import { type ChConv, type ChMsg, threadItems, firstName } from '../model';
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { haptic } from '../../../lib/haptics';
 import { receiptCarrierId, SEEN_BY_VISIBILITY } from '@/lib/golf/message-receipts';
 import { useSeenByList } from '../seen-by';
 import { type PollThreadActions, PollThreadContext } from '../polls';
-import { useNewDivider, NewDivider } from './NewDivider';
+import { useNewDivider } from './NewDivider';
 import { personOf } from '../person-of';
 import { rebuiltHref } from '../../../shell/nav';
 import { useThreadAnchor } from '../use-thread-anchor';
@@ -19,14 +19,11 @@ import { IconButton } from '../../../ui/Button';
 import { ChevronLeft, Users, Search, CalendarPlus, Info } from 'lucide-react';
 import { Icon } from '../../../ui/Icon';
 import { Avatar } from '../../../ui/Avatar';
-import { convAvatarId, convYear } from '../shared/conv-ui';
+import { convAvatarId } from '../shared/conv-ui';
 import { ThreadClassSub } from '../ThreadClassSub';
 import { Tooltip } from '../../../ui/Tooltip';
 import { ConversationSearch } from '../details-v2';
-import { InlineNotice } from '../../../ui/Notices';
-import { Skeleton, EmptyState } from '../../../ui/States';
-import { HelloCard } from '../HelloCard';
-import { ListPresence, PresenceRow } from '../../../ui/ListPresence';
+import { ThreadScroller } from './ThreadScroller';
 import { Bubble } from './Bubble';
 import { Composer } from './Composer';
 import { EditMessageModal, DeleteMessageModal } from '../overlays/message-modals';
@@ -215,97 +212,46 @@ export function Thread({
           <ConversationSearch api={api} conv={conv} onClose={() => setSearching(false)} />
         </div>
       )}
-      <div
+      <ThreadScroller
+        api={api}
+        conv={conv}
+        scroller={scroller}
         className="ch-ms-scroll"
-        ref={scroller}
-        // CH-7601: a message that arrives or is sent eases in at the end of the thread, and is announced.
-        aria-live="polite"
-        aria-relevant="additions"
-      >
-        <div className="ch-ms-msgs">
-          {api.msgsStale && (
-            <InlineNotice
-              code="CH-7216"
-              title="This conversation may be out of date"
-              body="It didn’t refresh. What’s here is what was last loaded. Try again."
-              onRetry={api.refetchMsgs}
-            />
-          )}
-          {api.msgsError ? (
-            <InlineNotice
-              code="CH-7202"
-              title="This conversation didn’t load"
-              body="Nothing was lost. Try again."
-              onRetry={api.refetchMsgs}
-            />
-          ) : api.msgsLoading && !api.msgs.length ? (
-            <div
-              style={{ display: "grid", gap: 12, paddingTop: 24 }}
-              aria-busy="true"
-              data-ch-code="CH-7403"
-            >
-              <Skeleton width="46%" height={40} radius={18} />
-              <div style={{ justifySelf: "end", width: "52%" }}>
-                <Skeleton width="100%" height={40} radius={18} />
-              </div>
-              <Skeleton width="38%" height={40} radius={18} />
+        items={items}
+        newId={newId}
+        onStarter={(text) => setSeed({ text, nonce: Date.now() })}
+        renderBubble={(it) => (
+          <Bubble
+            key={it.key}
+            api={api}
+            m={it.m}
+            first={it.first}
+            last={it.last}
+            group={conv.group}
+            picking={picking === it.m.id}
+            setPicking={(v) => setPicking(v ? it.m.id : null)}
+            onEdit={() => setEditing(it.m)}
+            onDelete={() => setDeleting(it.m)}
+            onReply={() => reply(it.m)}
+            carrier={it.m.id === carrierId}
+            onSeenBy={conv.group ? (m, el) => seenList.open(m, el) : undefined}
+          />
+        )}
+        renderTyping={() => (
+          <div className={"ch-ms-msg is-first" + (conv.group ? " is-group" : "")} /* CH-7602: the typing dots */>
+            {/* The realtime hook says someone is typing, not who: a direct thread knows; the redesign's group reads the typers. */}
+            <span className="ch-ms-msg__av">
+              {(conv.group && typist) && <Avatar name={typist ? typist.name : conv.title} id={typist ? (typist.playerId ?? typist.userId) : convAvatarId(api, conv)} size={30} />}
+            </span>
+            <div className="ch-ms-msg__col">
+              <div className={"ch-msv-typing" + (conv.group ? " has-name" : "")} role="status" aria-label={`${conv.group ? (typist ? firstName(typist.name) : "Someone") : firstName(conv.title)} is typing`}>
+                  {conv.group && typist && <b className="ch-msv-bname">{firstName(typist.name)}</b>}
+                  <span className="ch-msv-typing__dots"><i /><i /><i /></span>
+                </div>
             </div>
-          ) : !api.msgs.length ? (
-            !conv.group ? (
-              <HelloCard name={conv.title} id={convAvatarId(api, conv)} role={conv.subtitle ?? ""} coach={api.viewer.role === "coach"} year={convYear(api, conv)} onStarter={(text) => setSeed({ text, nonce: Date.now() })} />
-            ) : (
-            <EmptyState compact code="CH-7304" title="No messages yet" body={`Say hello to ${conv.group ? "the group" : firstName(conv.title)}.`} />
-            )
-          ) : (
-            // B7: a deleted message closes in place; one that arrives rises in at its full height, so the thread above it
-            // never moves (owner, 2026-10-31, as Fairway's thread does). The scroll stays with useThreadAnchor (no FLIP), and
-            // another conversation is a new list, whose messages never arrive.
-            <ListPresence key={conv.id} flip={false} arrive="rise">
-              {items.flatMap((it) =>
-                it.kind === "day"
-                  ? [
-                      <PresenceRow as="div" key={it.key} className="ch-ms-day">
-                        <span>{it.label}<b className="ch-num"> {clock(it.at, api.timeZone, api.clock)}</b></span>
-                      </PresenceRow>,
-                    ]
-                  : [
-                      ...(it.m.id === newId ? [<NewDivider key={`new-${it.key}`} />] : []),
-                      <Bubble
-                        key={it.key}
-                        api={api}
-                        m={it.m}
-                        first={it.first}
-                        last={it.last}
-                        group={conv.group}
-                        picking={picking === it.m.id}
-                        setPicking={(v) => setPicking(v ? it.m.id : null)}
-                        onEdit={() => setEditing(it.m)}
-                        onDelete={() => setDeleting(it.m)}
-                        onReply={() => reply(it.m)}
-                        carrier={it.m.id === carrierId}
-                        onSeenBy={conv.group ? (m, el) => seenList.open(m, el) : undefined}
-                      />,
-                    ],
-              )}
-            </ListPresence>
-          )}
-          {/* No dots under a thread that didn't load or is still loading (states audit c9): nothing to type into yet. */}
-          {api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (
-            <div className={"ch-ms-msg is-first" + (conv.group ? " is-group" : "")} /* CH-7602: the typing dots */>
-              {/* The realtime hook says someone is typing, not who: a direct thread knows; the redesign's group reads the typers. */}
-              <span className="ch-ms-msg__av">
-                {(conv.group && typist) && <Avatar name={typist ? typist.name : conv.title} id={typist ? (typist.playerId ?? typist.userId) : convAvatarId(api, conv)} size={30} />}
-              </span>
-              <div className="ch-ms-msg__col">
-                <div className={"ch-msv-typing" + (conv.group ? " has-name" : "")} role="status" aria-label={`${conv.group ? (typist ? firstName(typist.name) : "Someone") : firstName(conv.title)} is typing`}>
-                    {conv.group && typist && <b className="ch-msv-bname">{firstName(typist.name)}</b>}
-                    <span className="ch-msv-typing__dots"><i /><i /><i /></span>
-                  </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+          </div>
+        )}
+      />
       <ThreadJumpKey scroller={scroller} unseen={anchor.unseen} onJump={anchor.toEnd} />
       <Composer
         key={conv.id}

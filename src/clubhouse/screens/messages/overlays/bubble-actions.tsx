@@ -1,15 +1,24 @@
 'use client';
 
-import { CH_FADE_MS, chSpringCurve } from '../../../lib/motion';
+import { CH_FADE_MS, chSpringCurve, chTween } from '../../../lib/motion';
 import type { ChMessagesApi } from '../api/types';
-import type { ChReaction } from '../model';
-import { useState, useRef, useLayoutEffect, useEffect, type PointerEvent as ReactPointerEvent, type MouseEvent as ReactMouseEvent } from 'react';
+import type { ChMsg, ChReaction } from '../model';
+import { type KeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, useEffect, useLayoutEffect, useReducer, useRef, useState } from 'react';
 import { REACTIONS, REACTION_ICON } from './reactions';
 import { personOf } from '../person-of';
 import { haptic } from '../../../lib/haptics';
 import { Icon } from '../../../ui/Icon';
 import { createPortal } from 'react-dom';
 import { Avatar } from '../../../ui/Avatar';
+import { useToast } from '../../../ui/Toast';
+import { pollCardActions } from '../polls';
+import { HoldSeenRow, useSeenBy } from '../seen-by';
+import type { MenuItem } from '../../../ui/Menu';
+import { BellRing, CheckCheck, Copy, ListChecks, Lock, Pencil, Reply, Share, Trash2 } from 'lucide-react';
+import { useChReducedMotion } from '../../../lib/reduced-motion';
+import { AnimatePresence, m as M } from 'motion/react';
+import { Tooltip } from '../../../ui/Tooltip';
+import { HoldLift } from '../hold-lift';
 
 /* Thread */
 
@@ -215,4 +224,301 @@ export function useLongPress(onFire: (() => void) | undefined, onSwipe?: (direct
       onFire();
     },
   };
+}
+
+export interface BubbleActionArgs {
+  api: ChMessagesApi;
+  m: ChMsg;
+  group: boolean;
+  picking: boolean;
+  setPicking: (v: boolean) => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  /** Phone: the message's actions open in a sheet on a long press, in place of the hover tools. */
+  onActions?: () => void;
+  onReply?: () => void;
+  /** P-1: open the Seen by list for this message (coaches), anchored to the element that asked. */
+  onSeenBy?: (m: ChMsg, anchor: HTMLElement | null) => void;
+}
+
+/**
+ * Everything a message does when it is held, right-clicked, hovered or double-tapped (package C's half of the old
+ * Bubble): the lift, the long press, the menu rows, the reaction bar's keyboard, double-tap Like. Its hooks run in the
+ * order they always did; Bubble calls it once, unconditionally, before its deleted early return.
+ */
+export function useBubbleActions({ api, m, group, picking, setPicking, onEdit, onDelete, onActions, onReply, onSeenBy }: BubbleActionArgs) {
+  // Redesign, desktop: right click and More open the same lift the phone's hold does (MSG-HOLD, MSG-THREAD-13).
+  const [lifted, setLifted] = useState(false);
+  const [liftClose, setLiftClose] = useState(0);
+  const liftAfter = useRef<(() => void) | null>(null);
+  const liftPick = (then: () => void) => {
+    liftAfter.current = then;
+    setLiftClose((n) => n + 1);
+  };
+  const drawn = useRef(false);
+  useEffect(() => {
+    drawn.current = true;
+  }, []);
+  const [showTime, setShowTime] = useState(false);
+  // The desk layout on a finger (a landscape iPhone, an iPad) has no sheet and no hover: a long press holds the bar open.
+  const [barHeld, setBarHeld] = useState(false);
+  const rowRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!barHeld) return;
+    const away = (e: PointerEvent) => {
+      if (!rowRef.current?.contains(e.target as Node)) setBarHeld(false);
+    };
+    document.addEventListener('pointerdown', away);
+    return () => document.removeEventListener('pointerdown', away);
+  }, [barHeld]);
+  const press = useLongPress(m.failed ? undefined : (onActions ?? (() => setBarHeld(true))), onActions ? (direction) => {
+    if (direction === "right") onReply?.();
+    else setShowTime(true);
+  } : undefined);
+  // Desktop (no actions sheet): a right click opens the reaction bar, as the React button does (the board's gesture).
+  const rightClick =
+    !onActions && !m.failed
+      ? {
+          onContextMenu: (e: ReactMouseEvent) => {
+            e.preventDefault();
+            setLifted(true);
+          },
+        }
+      : {};
+  // D26 (changelog: one menu for every message): own messages keep Edit and Delete; a poll offers See votes, Remind,
+  // Close poll and Share result by role and state, then Reply, Copy poll and Delete; anyone else's text, Reply and Copy.
+  const toast = useToast();
+  const [, refreshMenu] = useReducer((n: number) => n + 1, 0);
+  const copyText = async () => {
+    try {
+      await navigator.clipboard.writeText(m.text);
+      haptic("success");
+      toast({ title: "Copied" });
+    } catch {
+      haptic("error");
+      toast({ tone: "error", title: "Couldn’t copy the message", body: "Try again in a moment.", code: "CH-7020" });
+    }
+  };
+  const pollActs = m.poll ? pollCardActions(m.id) : null;
+  // P-1 slice 6: "Seen by" for a coach on any message in a group (theirs or anyone's).
+  const actionsBtn = useRef<HTMLButtonElement | null>(null);
+  const seenInfo = useSeenBy(api, m);
+  const seenItem: MenuItem[] = group && onSeenBy && seenInfo?.canOpen ? [{ label: "Seen by", icon: CheckCheck, onSelect: () => onSeenBy(m, actionsBtn.current) }] : [];
+  const menuItems: MenuItem[] = m.poll
+    ? [
+        ...(pollActs?.seeVotes ? [{ label: "See votes", icon: ListChecks, onSelect: pollActs.seeVotes }] : []),
+        ...(pollActs?.remind ? [{ label: `Remind ${pollActs.remind.count}`, icon: BellRing, onSelect: pollActs.remind.run }] : []),
+        ...(pollActs?.close ? [{ label: "Close poll", icon: Lock, onSelect: pollActs.close }] : []),
+        ...(pollActs?.share ? [{ label: "Share result", icon: Share, onSelect: pollActs.share }] : []),
+        ...seenItem,
+        ...(onReply ? [{ label: "Reply", icon: Reply, onSelect: onReply }] : []),
+        { label: "Copy poll", icon: Copy, onSelect: () => void copyText() },
+        ...(m.mine ? [{ label: "Delete", icon: Trash2, danger: true, onSelect: onDelete }] : []),
+      ]
+    : m.mine
+      ? [
+          ...(onReply ? [{ label: "Reply", icon: Reply, onSelect: onReply }] : []),
+          ...(m.text ? [{ label: "Copy", icon: Copy, onSelect: () => void copyText() }] : []),
+          // An attachment-only message has no text to edit (as the phone's sheet: wave 5 #8).
+          ...(m.text ? [{ label: "Edit", icon: Pencil, onSelect: onEdit }] : []),
+          ...seenItem,
+          { label: "Delete", icon: Trash2, danger: true, onSelect: onDelete },
+        ]
+      : m.text
+        ? [...seenItem, ...(onReply ? [{ label: "Reply", icon: Reply, onSelect: onReply }] : []), { label: "Copy", icon: Copy, onSelect: () => void copyText() }]
+        : seenItem;
+  const reacts = api.reactions.get(m.id) ?? [];
+  // Redesign: two taps within 300ms toggle Like, once (MSG-HOLD-06).
+  const lastTap = useRef(0);
+  const toggleLikeOnDouble = (e: { target: EventTarget | null }) => {
+    // A double tap on a link, a poll or a photo is about that thing, not a like.
+    if (e.target instanceof Element && e.target.closest('a,button,input,label,[role="button"],.ch-ms-poll,.ch-ms-quote,img')) return;
+    const now = Date.now();
+    if (now - lastTap.current < 300) {
+      lastTap.current = 0;
+      haptic("select");
+      api.react(m.id, "Like", !reacts.some((r) => r.key === "Like" && r.mine));
+    } else lastTap.current = now;
+  };
+  const reduced = useChReducedMotion();
+  const reactBtn = useRef<HTMLButtonElement | null>(null);
+  const bar = useRef<HTMLDivElement | null>(null);
+  // CH-7603: the bar takes focus as it opens, so the keyboard lands on its first reaction (audit A-26).
+  useEffect(() => {
+    if (picking) bar.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus({ preventScroll: true });
+  }, [picking]);
+  const closeBar = (refocus: boolean) => {
+    setPicking(false);
+    if (refocus) reactBtn.current?.focus({ preventScroll: true });
+  };
+  const onBarKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const items = Array.from(bar.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
+    const i = items.indexOf(document.activeElement as HTMLElement);
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeBar(true);
+    } else if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      items[(i + (e.key === "ArrowRight" ? 1 : -1) + items.length) % items.length]?.focus();
+    } else if (e.key === "Home" || e.key === "End") {
+      e.preventDefault();
+      items[e.key === "Home" ? 0 : items.length - 1]?.focus();
+    } else if (e.key === "Tab") {
+      // As the shared Menu does (A-27): focus goes back to React first, so Tab or Shift+Tab carries on from there in
+      // the thread's order (Shift+Tab landed on the filter at the top of the page).
+      closeBar(true);
+    }
+  };
+  const holdRows = menuItems.flatMap((item) => (item.kind === "separator" || (group && m.mine && item.label === "Seen by") ? [] : [item]));
+  return {
+    lifted,
+    setLifted,
+    liftClose,
+    liftAfter,
+    liftPick,
+    drawn,
+    showTime,
+    barHeld,
+    rowRef,
+    press,
+    rightClick,
+    refreshMenu,
+    actionsBtn,
+    reacts,
+    toggleLikeOnDouble,
+    reduced,
+    bar,
+    onBarKey,
+    closeBar,
+    holdRows,
+  };
+}
+
+export type BubbleActions = ReturnType<typeof useBubbleActions>;
+
+/** The reaction bar a desktop bubble pops from its edge (CH-7603). */
+export function BubbleReactBar({ api, m, picking, act }: { api: ChMessagesApi; m: ChMsg; picking: boolean; act: BubbleActions }) {
+  const { bar, onBarKey, closeBar, reduced, reacts } = act;
+  return (
+    <AnimatePresence>
+      {picking && (
+        <M.div
+          ref={bar}
+          className="ch-ms-reactbar"
+          role="menu"
+          aria-label="Reactions"
+          aria-orientation="horizontal"
+          onKeyDown={onBarKey}
+          /* CH-7603: it pops from the bubble, rising from its edge (quick; a fade alone when motion is reduced). */
+          style={{ transformOrigin: m.mine ? "bottom right" : "bottom left" }}
+          initial={reduced ? { opacity: 0 } : { opacity: 0, transform: "translateY(4px) scale(0.96)" }}
+          animate={reduced ? { opacity: 1 } : { opacity: 1, transform: "translateY(0px) scale(1)" }}
+          exit={reduced ? { opacity: 0 } : { opacity: 0, transform: "translateY(2px) scale(0.98)" }}
+          transition={chTween("quick", reduced)}
+        >
+          {REACTIONS.map((r, i) => {
+            const on = reacts.some((x) => x.key === r.key && x.mine);
+            return (
+              <Tooltip key={r.key}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  tabIndex={i === 0 ? 0 : -1}
+                  className={"ch-ms-reactbar__b" + (on ? " is-on" : "")}
+                  aria-label={`${on ? "Remove" : "React"} ${r.key.toLowerCase()}`}
+                  onClick={() => {
+                    haptic("select");
+                    api.react(m.id, r.key, !on);
+                    // Focus goes back to React, not to <body> as the bar leaves.
+                    closeBar(true);
+                  }}
+                >
+                  <Icon icon={r.icon} size={16} />
+                </button>
+              </Tooltip>
+            );
+          })}
+        </M.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/** The reaction badges under a bubble. */
+export function BubbleReactions({ api, m, act }: { api: ChMessagesApi; m: ChMsg; act: BubbleActions }) {
+  const { reacts, drawn } = act;
+  return (
+    <>
+      {reacts.length > 0 && (
+        <div className={"ch-ms-reacts" + (m.mine ? " on-mine" : " on-theirs")}>
+          {reacts.map((r) => (
+            <ReactionChip key={r.key} api={api} messageId={m.id} r={r} arriving={drawn.current} />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+/** The held bubble's lift: reaction bar, menu rows, Seen by. */
+export function BubbleHoldLift({
+  api,
+  m,
+  group,
+  onSeenBy,
+  act,
+}: {
+  api: ChMessagesApi;
+  m: ChMsg;
+  group: boolean;
+  onSeenBy?: (m: ChMsg, anchor: HTMLElement | null) => void;
+  act: BubbleActions;
+}) {
+  const { liftClose, liftAfter, liftPick, setLifted, reacts, holdRows, actionsBtn } = act;
+  const holdRow = (item: (typeof holdRows)[number]) => (
+    <button key={item.label} type="button" className={item.danger ? "is-danger" : undefined} onClick={() => { if (item.onSelect) liftPick(item.onSelect); }}>
+      <span>{item.label}</span>
+      {item.icon && <Icon icon={item.icon} size={18} />}
+    </button>
+  );
+  return (
+    <HoldLift
+      messageId={m.id}
+      mine={m.mine}
+      closeSignal={liftClose}
+      onReopen={() => {
+        liftAfter.current = null;
+      }}
+      onClosed={() => {
+        const then = liftAfter.current;
+        liftAfter.current = null;
+        setLifted(false);
+        then?.();
+      }}
+      bar={REACTIONS.map((r) => {
+        const on = reacts.some((x) => x.key === r.key && x.mine);
+        return (
+          <button
+            key={r.key}
+            type="button"
+            className={on ? "is-on" : undefined}
+            aria-label={`${on ? "Remove" : "React"} ${r.key.toLowerCase()}`}
+            aria-pressed={on}
+            onClick={() => {
+              haptic("select");
+              liftPick(() => api.react(m.id, r.key, !on));
+            }}
+          >
+            <Icon icon={r.icon} size={22} />
+          </button>
+        );
+      })}
+    >
+      {holdRows.filter((item) => !item.danger).map(holdRow)}
+      {/* S-MSG.holdseen: your own message in a group gets who read it, faces and all, between hairlines. */}
+      {group && m.mine && onSeenBy && <HoldSeenRow api={api} m={m} onOpen={() => liftPick(() => onSeenBy(m, actionsBtn.current))} />}
+      {holdRows.some((item) => item.danger) && <hr />}
+      {holdRows.filter((item) => item.danger).map(holdRow)}
+    </HoldLift>
+  );
 }

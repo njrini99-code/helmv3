@@ -9,7 +9,7 @@ import { useState, useRef, useMemo, useEffect } from 'react';
 import { receiptCarrierId, SEEN_BY_VISIBILITY, seenByAccess } from '@/lib/golf/message-receipts';
 import { useSeenByList, HoldSeenRow } from '../seen-by';
 import { type PollThreadActions, PollThreadContext, notePollHold } from '../polls';
-import { useNewDivider, NewDivider } from './NewDivider';
+import { useNewDivider } from './NewDivider';
 import { useThreadAnchor } from '../use-thread-anchor';
 import { useFocusMessage } from '../use-focus-message';
 import { useThreadDragTimes } from '../use-thread-drag-times';
@@ -23,10 +23,7 @@ import { ThreadClassSub } from '../ThreadClassSub';
 import { personOf } from '../person-of';
 import { Info, Reply, Copy, Pencil, Trash2 } from 'lucide-react';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
-import { InlineNotice } from '../../../ui/Notices';
-import { Skeleton, EmptyState } from '../../../ui/States';
-import { HelloCard } from '../HelloCard';
-import { ListPresence, PresenceRow } from '../../../ui/ListPresence';
+import { ThreadScroller } from './ThreadScroller';
 import { Bubble } from './Bubble';
 import { Composer } from './Composer';
 import { HoldLift } from '../hold-lift';
@@ -151,99 +148,51 @@ export function PhoneThread({
         action={<PhoneIconAction icon={Info} label="Details" onClick={onDetails} />}
       />
       <SectionBoundary surface="messages.thread" label="This conversation" code="CH-7212">
-        <div className="ch-msp-scroll ch-ms-scroll" ref={scroller} aria-live="polite" aria-relevant="additions">
-          <div className="ch-ms-msgs">
-            {api.msgsStale && (
-              <InlineNotice
-                code="CH-7216"
-                title="This conversation may be out of date"
-                body="It didn’t refresh. What’s here is what was last loaded. Try again."
-                onRetry={api.refetchMsgs}
-              />
-            )}
-            {api.msgsError ? (
-              <InlineNotice
-                code="CH-7202"
-                title="This conversation didn’t load"
-                body="Nothing was lost. Try again."
-                onRetry={api.refetchMsgs}
-              />
-            ) : api.msgsLoading && !api.msgs.length ? (
-              <div style={{ display: "grid", gap: 12, paddingTop: 24 }} aria-busy="true" data-ch-code="CH-7403">
-                <Skeleton width="46%" height={40} radius={18} />
-                <div style={{ justifySelf: "end", width: "52%" }}>
-                  <Skeleton width="100%" height={40} radius={18} />
-                </div>
-                <Skeleton width="38%" height={40} radius={18} />
-              </div>
-            ) : !api.msgs.length ? (
-              !conv.group ? (
-                <HelloCard
-                  name={conv.title}
-                  id={convAvatarId(api, conv)}
-                  role={conv.subtitle ?? ""}
-                  coach={api.viewer.role === "coach"}
-                  year={convYear(api, conv)}
-                  onStarter={(text) => setSeed({ text, nonce: Date.now() })}
-                />
-              ) : (
-              <EmptyState compact code="CH-7304" title="No messages yet" body={`Say hello to ${conv.group ? "the group" : firstName(conv.title)}.`} />
-              )
-            ) : (
-              // B7, as on desktop: a deletion closes in place and an arrival rises in at its full height, so the thread above
-              // never moves (owner, 2026-10-31, as Fairway); the scroll stays with useThreadAnchor.
-              <ListPresence key={conv.id} flip={false} arrive="rise">
-                {items.flatMap((it) =>
-                  it.kind === "day"
-                    ? [
-                        <PresenceRow as="div" key={it.key} className="ch-ms-day">
-                          <span>{it.label}<b className="ch-num"> {clock(it.at, api.timeZone, api.clock)}</b></span>
-                        </PresenceRow>,
-                      ]
-                    : [
-                        ...(it.m.id === newId ? [<NewDivider key={`new-${it.key}`} />] : []),
-                        <Bubble
-                          key={it.key}
-                          api={api}
-                          m={it.m}
-                          first={it.first}
-                          last={it.last}
-                          group={conv.group}
-                          picking={false}
-                          setPicking={() => {}}
-                          onEdit={() => setEditing(it.m)}
-                          onDelete={() => setDeleting(it.m)}
-                          onActions={it.m.deleted ? undefined : () => (notePollHold(), setActing(it.m))}
-                          onReply={() => reply(it.m)}
-                          carrier={it.m.id === carrierId}
-                          onSeenBy={conv.group ? (m) => seenList.open(m, null) : undefined}
-                        />,
-                      ],
-                )}
-              </ListPresence>
-            )}
-            {/* CH-7602, as on desktop: no dots under a thread that didn't load or is still loading. */}
-            {api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (
-              (api.typingUserIds?.length ? api.typingUserIds : conv.group ? [""] : [conv.memberIds[0] ?? ""]).map((id) => {
-                const who = id ? personOf(api, id) : null;
-                // No typer known in a group: say so, never a member who isn't typing (MSG-4).
-                const name = !id ? "Someone" : firstName(who?.name ?? conv.title);
-                return (
-                  <div key={id} className={"ch-ms-msg is-first" + (conv.group ? " is-group" : "")}>
-                    <span className="ch-ms-msg__av">{<Avatar name={who?.name ?? conv.title} id={who ? (who.playerId ?? who.userId) : convAvatarId(api, conv)} size="sm" />}</span>
-                    <div className="ch-ms-msg__col">
-                      <div className={"ch-msv-typing" + (conv.group ? " has-name" : "")} role="status" aria-label={`${name} is typing`}>
-                        {conv.group && <b className="ch-msv-bname">{name}</b>}
-                        <span className="ch-msv-typing__dots"><i /><i /><i /></span>
-                      </div>
-                    </div>
+        <ThreadScroller
+          api={api}
+          conv={conv}
+          scroller={scroller}
+          className="ch-msp-scroll ch-ms-scroll"
+          items={items}
+          newId={newId}
+          onStarter={(text) => setSeed({ text, nonce: Date.now() })}
+          renderBubble={(it) => (
+          <Bubble
+            key={it.key}
+            api={api}
+            m={it.m}
+            first={it.first}
+            last={it.last}
+            group={conv.group}
+            picking={false}
+            setPicking={() => {}}
+            onEdit={() => setEditing(it.m)}
+            onDelete={() => setDeleting(it.m)}
+            onActions={it.m.deleted ? undefined : () => (notePollHold(), setActing(it.m))}
+            onReply={() => reply(it.m)}
+            carrier={it.m.id === carrierId}
+            onSeenBy={conv.group ? (m) => seenList.open(m, null) : undefined}
+          />
+          )}
+          renderTyping={() =>
+          (api.typingUserIds?.length ? api.typingUserIds : conv.group ? [""] : [conv.memberIds[0] ?? ""]).map((id) => {
+            const who = id ? personOf(api, id) : null;
+            // No typer known in a group: say so, never a member who isn't typing (MSG-4).
+            const name = !id ? "Someone" : firstName(who?.name ?? conv.title);
+            return (
+              <div key={id} className={"ch-ms-msg is-first" + (conv.group ? " is-group" : "")}>
+                <span className="ch-ms-msg__av">{<Avatar name={who?.name ?? conv.title} id={who ? (who.playerId ?? who.userId) : convAvatarId(api, conv)} size="sm" />}</span>
+                <div className="ch-ms-msg__col">
+                  <div className={"ch-msv-typing" + (conv.group ? " has-name" : "")} role="status" aria-label={`${name} is typing`}>
+                    {conv.group && <b className="ch-msv-bname">{name}</b>}
+                    <span className="ch-msv-typing__dots"><i /><i /><i /></span>
                   </div>
-                );
-              })
-            )}
-
-          </div>
-        </div>
+                </div>
+              </div>
+            );
+          })
+          }
+        />
       </SectionBoundary>
       <>
           <ThreadDatePill scroller={scroller} />

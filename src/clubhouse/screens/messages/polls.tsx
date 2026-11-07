@@ -309,7 +309,7 @@ export function PollCard({
     all[to]?.focus();
   };
   return (
-    <div className={"ch-ms-poll" + (closed ? " is-closed" : "")} role="group" aria-labelledby={qid} aria-busy={busy || undefined}>
+    <div className={"ch-ms-poll" + (closed ? " is-closed" : "")} data-ch-bubble="" role="group" aria-labelledby={qid} aria-busy={busy || undefined}>
       <div className="ch-ms-poll__head">
         {/* D12: says what happened: the sender closed it, or its time ran out. M8: the glyph and words cross when it closes live. */}
         <Crossfade k={state}>

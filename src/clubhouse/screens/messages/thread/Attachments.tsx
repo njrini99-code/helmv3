@@ -16,7 +16,7 @@ function ImageAttachment({ f }: { f: ChAttachment; }) {
   const [viewing, setViewing] = useState(false);
   if (broken) {
     return (
-      <a className="ch-ms-bub ch-ms-bub--file" href={f.url ?? undefined} target="_blank" rel="noreferrer">
+      <a className="ch-ms-bub ch-ms-bub--file" data-ch-bubble="" href={f.url ?? undefined} target="_blank" rel="noreferrer">
         <span className="ch-ms-file__ic">
           <Icon icon={FileText} size={16} />
         </span>
@@ -31,7 +31,7 @@ function ImageAttachment({ f }: { f: ChAttachment; }) {
   return (
     <>
       {/* A photo opens here, in the app; the original is one more tap inside it. */}
-      <button type="button" className="ch-ms-img" aria-label={`Open ${f.name}`} onClick={() => setViewing(true)}>
+      <button type="button" className="ch-ms-img" data-ch-bubble="" aria-label={`Open ${f.name}`} onClick={() => setViewing(true)}>
         {/* A plain img on purpose: a signed storage URL, sized by the thread, not an optimised asset. */}
         <img src={f.url ?? undefined} alt={f.name} loading="lazy" decoding="async" onError={() => setBroken(true)} />
       </button>
@@ -127,6 +127,7 @@ export function Attachments({
       <button
         type="button"
         className="ch-ms-bub ch-ms-bub--file"
+        data-ch-bubble=""
         data-ch-code="CH-7209"
         onClick={() => setAttempt((a) => a + 1)}
       >
@@ -155,6 +156,7 @@ export function Attachments({
         <a
           key={f.id}
           className="ch-ms-bub ch-ms-bub--file"
+          data-ch-bubble=""
           href={f.url ?? undefined}
           target="_blank"
           rel="noreferrer"
