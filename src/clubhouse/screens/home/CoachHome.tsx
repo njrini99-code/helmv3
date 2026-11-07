@@ -105,7 +105,7 @@ function CoachHomeBody({ data, now, live, crh = false }: { data: ChCoachHome; no
                 <Form form={data.phone.form} crh />
               </SectionBoundary>
             ) : data.latestRounds.error ? (
-              <CrhFailedCard id="ch-dh-form-failed" title="Team scoring" href={rebuiltHref('/golf/dashboard/stats') ?? '#'} link="Team stats" code="CH-2211" what="Scoring didn’t load" body="Your rounds are safe. Try again in a moment." />
+              <CrhFailedCard id="ch-dh-form-failed" title="Team scoring" href={rebuiltHref('/golf/dashboard/stats')} link="Team stats" code="CH-2211" what="Scoring didn’t load" body="Your rounds are safe. Try again in a moment." />
             ) : null}
             </div>
             <div className="ch-h-grid">
@@ -129,7 +129,7 @@ function CoachHomeBody({ data, now, live, crh = false }: { data: ChCoachHome; no
                 <Form form={data.phone.form} crh />
               </SectionBoundary>
             ) : data.latestRounds.error ? (
-              <CrhFailedCard id="ch-dh-form-failed" title="Team scoring" href={rebuiltHref('/golf/dashboard/stats') ?? '#'} link="Team stats" code="CH-2211" what="Scoring didn’t load" body="Your rounds are safe. Try again in a moment." />
+              <CrhFailedCard id="ch-dh-form-failed" title="Team scoring" href={rebuiltHref('/golf/dashboard/stats')} link="Team stats" code="CH-2211" what="Scoring didn’t load" body="Your rounds are safe. Try again in a moment." />
             ) : null}
             {!noRounds && !data.latestRounds.error && (
               <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">

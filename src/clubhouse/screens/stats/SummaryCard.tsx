@@ -86,13 +86,13 @@ export function SummaryCard({
     open();
   };
   return (
+    // A press anywhere opens the card; VoiceOver and the keyboard get the one real button inside it (STATS-8).
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- the button below is the keyboard path
     <section
       className={'ch-shs-card ch-shs-sum' + (feature ? ' ch-shs-feature' : '')} suppressHydrationWarning
       data-go={go}
       data-ch="stats-card"
       data-ch-press-scale=".97"
-      // A press anywhere opens it; VoiceOver and the keyboard get the one real button, so the chart and the links inside stay their own controls (STATS-8).
-      // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- the button below is the keyboard path
       onClick={onClick}
     >
       <button type="button" className="ch-shs-sum__key" data-ch-no-open aria-label={ariaLabel} onClick={open} />

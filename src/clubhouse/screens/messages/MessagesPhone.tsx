@@ -1400,6 +1400,7 @@ function PhoneNewMessage({
             autoCapitalize="none"
             spellCheck={false}
             enterKeyHint="next"
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- New message opens on its To field; the page was opened to type a name
             autoFocus
           />
         </div>
