@@ -564,7 +564,7 @@ export function Roster({ data, crh = false }: { data: ChRoster; /** `clubhouse_c
   return (
     <main className={'ch-rs' + (crh ? ' ch-rsd' : '')} data-canopy={crh ? undefined : ''} data-ch-crh={crh ? 'on' : undefined}>
       {crh && <RosterDayRollover clock={data.clock} />}
-      <header className="ch-rs-head" data-canopy-head={crh ? undefined : 'tight'}>
+      <header className="ch-rs-head" data-canopy-head={crh ? undefined : 'tight'} data-canopy-tight-always={crh ? undefined : ''}>
         <div>
           <span className="ch-rs-team">
             <span className="ch-rs-team__name">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>

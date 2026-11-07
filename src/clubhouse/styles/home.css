@@ -1362,11 +1362,11 @@
   }
   .ch-hm-empty {
     display: flex;
-    flex-direction: column;
+    flex-direction: var(--ch-pre-hm-empty-dir, column);
     align-items: center;
-    gap: 8px;
-    padding: 24px 16px;
-    text-align: center;
+    gap: var(--ch-pre-hm-empty-gap, 8px);
+    padding: var(--ch-pre-hm-empty-pad, 24px 16px);
+    text-align: var(--ch-pre-hm-empty-align, center);
     border-radius: var(--ch-radius-lg);
     background: var(--ch-bg-surface);
     box-shadow: var(--ch-elevation-reading);

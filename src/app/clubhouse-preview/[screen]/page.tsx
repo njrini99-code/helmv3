@@ -705,8 +705,8 @@ export default async function ClubhousePreview({
       <ClubhouseFrame
         userData={screen === 'coachhelm-player' || screen === 'coachhelm-views' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : user}
         // &round=1: the player has a round in progress (P001-C1: the dock's Resume accessory, the sidebar's card).
-        // &refresh=on: the refresh foundation (clubhouse_refresh_v1), for lane captures; the flag itself stays off.
-        shell={{ ...PREVIEW_SHELL, ...(round ? { roundInProgress: PREVIEW_ROUND_IN_PROGRESS } : {}), ...(qc ? { quickChat: true, askAvailable: true } : {}), ...(refresh === 'on' ? { refresh: true } : {}), crh }}
+        // &refresh=on: the refresh foundation (clubhouse_refresh_v1), for lane captures; the flag itself stays off. &refresh=off: as the live site draws with the flag off (styles/pre-refresh.css).
+        shell={{ ...PREVIEW_SHELL, ...(round ? { roundInProgress: PREVIEW_ROUND_IN_PROGRESS } : {}), ...(qc ? { quickChat: true, askAvailable: true } : {}), ...(refresh === 'on' ? { refresh: true } : refresh === 'off' ? { refresh: false } : {}), crh }}
         pathname={entry.path}
         // The preview's own query, as the live shell hands the frame the address's: `&section=` and a coach's `&player=` decide the phone bar (CH-1402).
         search={new URLSearchParams(Object.entries(await searchParams).filter((kv): kv is [string, string] => typeof kv[1] === 'string')).toString()}

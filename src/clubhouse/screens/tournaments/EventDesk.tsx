@@ -187,6 +187,7 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
     <TourMain view="desk" phone={phone} labelledBy={TITLE_ID} className="ch-tour-desk">
       <TourPhoneTop phone={phone} title={e.short} back={{ label: 'Tournaments', href: paths.home() }} />
       <TourHead
+        tightAlways
         id={TITLE_ID}
         phone={phone}
         // The phone bar carries Back (TourPhoneTop); a second crumb under it said the same thing twice.

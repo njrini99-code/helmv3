@@ -1,0 +1,115 @@
+/* With clubhouse_refresh_v1 off (`.ch-root[data-ch-pre-refresh]`, set from the live flag only), Clubhouse keeps its look from before the
+   redesign (owner, 2026-11-07). The rules here are that look, for the parts the redesign changed in shared CSS without a flag.
+   Delete this file when the flag retires. */
+
+/* Empty states: the left-aligned row with its action on the right, and the shape under it. */
+.ch-root[data-ch-pre-refresh] .ch-empty {
+  justify-items: start;
+  padding: 16px 0 8px;
+  text-align: left;
+}
+.ch-root[data-ch-pre-refresh] .ch-empty--icon {
+  grid-template-columns: 16px minmax(0, 1fr);
+  column-gap: 12px;
+}
+.ch-root[data-ch-pre-refresh] .ch-empty > :not(.ch-empty__icon) {
+  grid-column: -2 / -1;
+}
+.ch-root[data-ch-pre-refresh] .ch-empty--compact {
+  padding: 12px 0 6px;
+}
+.ch-root[data-ch-pre-refresh] .ch-empty__icon {
+  grid-row: 1;
+  grid-column: 1;
+  margin-top: 2px;
+  margin-bottom: 0;
+}
+.ch-root[data-ch-pre-refresh] .ch-empty__action {
+  justify-content: flex-start;
+}
+.ch-root[data-ch-pre-refresh] .ch-empty-page:not(.ch-empty-page--danger, .ch-notyet *) {
+  min-height: calc(100vh - 140px);
+  padding: 56px 24px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-root[data-ch-pre-refresh] .ch-es {
+  text-align: left;
+}
+.ch-root[data-ch-pre-refresh] .ch-es--page:not(.ch-surface *, .ch-sheet *) {
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-root[data-ch-pre-refresh] .ch-es__copy {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px 24px;
+  padding: 16px 0;
+}
+.ch-root[data-ch-pre-refresh] .ch-es--page > .ch-es__copy {
+  padding: 32px 0 24px;
+}
+.ch-root[data-ch-pre-refresh] .ch-es--line > .ch-es__copy {
+  gap: 12px 24px;
+  padding: 8px 0;
+}
+.ch-root[data-ch-pre-refresh] .ch-es--shaped > .ch-es__copy {
+  border-bottom: var(--ch-hairline-w) solid var(--ch-ledger-rule-soft);
+}
+.ch-root[data-ch-pre-refresh] .ch-es__text {
+  flex: 1 1 0;
+  width: auto;
+  justify-items: stretch;
+}
+.ch-root[data-ch-pre-refresh] .ch-es--page .ch-es__title {
+  font: var(--ch-type-28-strong);
+  line-height: var(--ch-lead-tight);
+  font-variation-settings: 'wdth' 96;
+  letter-spacing: var(--ch-track-28);
+}
+.ch-root[data-ch-pre-refresh] .ch-es__a {
+  justify-content: flex-end;
+}
+.ch-root[data-ch-pre-refresh] .ch-es--page > .ch-es__copy > .ch-es__a {
+  align-self: center;
+}
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  .ch-root[data-ch-pre-refresh] .ch-es--page > .ch-es__copy {
+    padding: 24px 0 20px;
+  }
+  .ch-root[data-ch-pre-refresh] .ch-es--page .ch-es__title {
+    font: var(--ch-type-22-strong);
+    line-height: var(--ch-lead-tight);
+    font-variation-settings: 'wdth' 96;
+    letter-spacing: var(--ch-track-28);
+  }
+  .ch-root[data-ch-pre-refresh] .ch-es__copy {
+    flex-direction: column;
+  }
+  .ch-root[data-ch-pre-refresh] .ch-es__text {
+    flex: none;
+    width: 100%;
+  }
+  .ch-root[data-ch-pre-refresh] .ch-es__a,
+  .ch-root[data-ch-pre-refresh] .ch-es--page > .ch-es__copy > .ch-es__a {
+    align-self: stretch;
+    justify-content: flex-start;
+  }
+}
+
+/* Avatar initials and the bell's count. */
+.ch-root[data-ch-pre-refresh] {
+  --ch-track-avatar: 0.04em;
+  --ch-pre-hm-empty-dir: row;
+  --ch-pre-hm-empty-gap: 12px;
+  --ch-pre-hm-empty-pad: 16px;
+  --ch-pre-hm-empty-align: left;
+}
+.ch-root[data-ch-pre-refresh] .ch-bell__count {
+  box-shadow: 0 0 0 2px var(--ch-bg-page);
+  font: var(--ch-type-11-strong);
+  line-height: var(--ch-lead-tight);
+  letter-spacing: var(--ch-track-11);
+}
