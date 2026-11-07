@@ -460,24 +460,19 @@ export const ownLegHref = (key: ChPlayerLeg['key']): string => `/golf/dashboard/
  * "Your game" behind clubhouse_stats_redesign_v1 (stats-home S-HOMEGAME): one card, a row per leg that opens its part. Strokes gained, the
  * figures and the sparks all read the last ten rounds, and strokes gained waits for its third round with shots. Nothing is coloured until a difference is clear.
  */
-/** The newest ten scores' mean, as My stats' default window reads it; null under two rounds. */
-export function lastTenAverage(points: readonly ChScoringPoint[]): { avg: number | null; n: number } {
-  const shown = points.slice(-10);
-  return { avg: shown.length >= 2 ? shown.reduce((a, p) => a + p.score, 0) / shown.length : null, n: shown.length };
-}
-
 /**
  * Player Home's lead (dashboard cuts, 6): Your game under the greeting, opening on one line of scoring average and strokes gained over
  * My stats' window, which links there. The figures' home is My stats; Home draws no meter of its own for them.
  */
 export function YourGameLead({ data, covered }: { data: ChPlayerHome; covered: boolean }) {
-  const { avg, n } = lastTenAverage(data.scoring.points);
+  // The figures are the loader's, over the window My stats prints them on, never worked out again here.
+  const last = data.scoringLast10;
   const sum =
-    data.scoring.error ? null : (
+    !last ? null : (
       <Link href={MY_STATS} className="ch-shs-yg__sum ch-num">
-        <span>{n ? `Last ${n}` : 'Last 10'}</span>
+        <span>{last.n ? `Last ${last.n}` : 'Last 10'}</span>
         <span>
-          <b>{avg == null ? NO_DATA : formatFixed(avg)}</b> avg
+          <b>{last.avg == null ? NO_DATA : formatFixed(last.avg)}</b> avg
         </span>
         <span>
           <b>{data.sgPerRound == null ? NO_DATA : formatSigned(data.sgPerRound)}</b> SG per round

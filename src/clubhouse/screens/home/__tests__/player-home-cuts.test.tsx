@@ -5,7 +5,6 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: 
 
 import { PREVIEW_PLAYER_HOME } from '../../../preview/fixtures-player-home';
 import { PlayerHomePhone } from '../PlayerHomePhone';
-import { lastTenAverage } from '../PlayerGame';
 import type { ChPlayerHome } from '../../../data/player-home';
 
 afterEach(cleanup);
@@ -20,8 +19,7 @@ describe('player Home, the cuts', () => {
     expect(heads.slice(0, 2)).toEqual([data.greeting, 'Your game']);
     const sum = container.querySelector('.ch-shs-yg__sum') as HTMLAnchorElement;
     expect(sum.getAttribute('href')).toMatch(/\/golf\/dashboard\/stats$/);
-    const { avg } = lastTenAverage(data.scoring.points);
-    expect(sum.textContent).toContain(avg!.toFixed(1));
+    expect(sum.textContent).toContain(data.scoringLast10!.avg!.toFixed(1));
   });
 
   it('draws no week strip and no separate Scoring card, and Up next as one row', () => {
@@ -37,10 +35,5 @@ describe('player Home, the cuts', () => {
     const { container } = render(<PlayerHomePhone data={PREVIEW_PLAYER_HOME as ChPlayerHome} now={NOW} />);
     expect(container.querySelector('.ch-shs-yg__sum')).toBeNull();
     expect(container.querySelector('.ch-hm-nextrow')).toBeNull();
-  });
-
-  it('the line averages the newest ten scores only', () => {
-    const pts = Array.from({ length: 12 }, (_, i) => ({ score: i < 2 ? 100 : 70 })) as never;
-    expect(lastTenAverage(pts)).toEqual({ avg: 70, n: 10 });
   });
 });

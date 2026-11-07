@@ -6,7 +6,7 @@ import { homeClock, latestWithHoles, loadHomeWeek, type ChHomeClock, type ChHome
 import type { MarkEntries } from '../lib/marks-cookie';
 import type { ChHomeChange } from '../screens/home/change-rows';
 import { loadHomeChanges, withChange, withWas } from './home-changes';
-import { playerStrokesGained } from './figure-window';
+import { playerScoringAverage, playerStrokesGained } from './figure-window';
 import { countsForScoring, isFull18, lastTenFloor, loadSeasonRounds, mean, type ChRound } from './season';
 import { holeRounds } from './round-scope';
 import { legRows, type ChPlayerLeg } from './leg-rows';
@@ -67,6 +67,8 @@ export interface ChPlayerHome {
   /** Oldest to newest, 18-hole countable rounds, up to SCORING_MAX. */
   scoring: { points: ChScoringPoint[]; error: boolean };
   sgPerRound: number | null;
+  /** Scoring average over the same newest ten, as My stats' default prints it; null when the rounds didn't load. */
+  scoringLast10: { avg: number | null; n: number } | null;
   /** What the strokes gained here is measured against; null when the team's own row didn't load (no baseline is claimed). */
   tour: ChSgTour;
   handicap: number | null;
@@ -187,6 +189,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     latest: { rounds: latest.rounds, error: roundsRes.error, holesError: latest.holesError },
     scoring: { points, error: roundsRes.error },
     sgPerRound: sg?.total ?? null,
+    scoringLast10: roundsRes.error ? null : playerScoringAverage(roundsRes.rounds),
     tour: teamRes.data ? tourForGender(teamRes.data.gender) : null,
     handicap: playerRes.data?.handicap_index ?? playerRes.data?.handicap ?? null,
     legs,
