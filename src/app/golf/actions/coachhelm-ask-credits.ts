@@ -8,7 +8,6 @@ import { askTables } from '@/lib/coachhelm/v3/chat/ask-db';
 import { logServerError } from '@/lib/server-error-logger';
 import { isCustomerEmailEnabled } from '@/lib/email/outbound-gate';
 import { sendOpsAlert } from '@/lib/admin/digest/transport';
-import { isClubhouseForTeam } from '@/clubhouse/gate';
 import { weekStart } from '@/lib/coachhelm/v3/chat/player-allowance';
 import { resolvePlayerChatContext } from '@/lib/coachhelm/v3/chat/player-context';
 
@@ -21,8 +20,6 @@ async function requestAskCreditsImpl(note?: string): Promise<{ success: boolean;
   const sb = await createClient();
   const ctx = await resolvePlayerChatContext(sb).catch(() => null);
   if (!ctx) return { success: false, error: 'Unauthorized' };
-  // Player Ask is a Clubhouse screen: a Fairway player's team has no Ask to request more for.
-  if (!isClubhouseForTeam(ctx.team_id)) return { success: false, error: 'Unauthorized' };
   const admin = createAdminClient();
   const { data, error } = await askTables(admin).from('ask_credit_requests')
     .insert({ player_id: ctx.player_id, team_id: ctx.team_id, week_start: weekStart(new Date(), ctx.timezone), note: note?.trim().slice(0, 280) || null, release_at: new Date(Date.now() + UNDO_MS).toISOString() } as never)

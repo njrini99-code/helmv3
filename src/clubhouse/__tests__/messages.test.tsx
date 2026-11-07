@@ -178,10 +178,6 @@ function showPhone(d: ChMessagesData = data) {
 }
 type User = ReturnType<typeof userEvent.setup>;
 const openDetails = (user: User) => user.click(screen.getByRole('button', { name: 'Details' }));
-const messageMenu = async (user: User, item: string) => {
-  await user.click(screen.getByRole('button', { name: 'More message actions' }));
-  await user.click(await screen.findByRole('menuitem', { name: item }));
-};
 const setOnline = (v: boolean) => Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => v });
 
 beforeEach(() => {
@@ -531,12 +527,6 @@ const openAnnouncement = async (user: User) => {
   await user.click(await screen.findByRole('button', { name: /^Announcements/, expanded: false }));
   await user.click(screen.getByRole('button', { name: /^Bus times/ }));
 };
-const newMessage = async (user: User, kind: RegExp) => {
-  await user.click(screen.getAllByRole('button', { name: 'New message' })[0]!);
-  const dlg = within(screen.getByRole('heading', { name: 'New message' }).closest('dialog') as HTMLElement);
-  await user.click(dlg.getByRole('radio', { name: kind }));
-  return dlg;
-};
 const never = () => new Promise(() => {});
 
 describe('Messages · more actions that fail', () => {
@@ -692,7 +682,6 @@ describe('Messages · more loading', () => {
 });
 
 const nora = { userId: 'nora', name: 'Nora Castillo', avatarUrl: null, subtitle: 'Freshman', type: 'player' };
-const dan = { userId: 'dan', name: 'Dan Whitfield', role: 'coach' as const, subtitle: 'Assistant coach', playerId: null };
 const deferred = <T,>() => {
   let resolve: (v: T) => void = () => {};
   const promise = new Promise<T>((r) => (resolve = r));
@@ -1302,13 +1291,6 @@ describe('Messages · wave 5 feedback', () => {
   });
 
   describe('phone', () => {
-    const openThread = async (user: User) => {
-      // A thread popped by Back is still on screen until its exit settles, slower on a loaded runner.
-      await waitFor(() => expect(screen.getAllByRole('button', { name: /^(?!Actions for ).*Varsity team/ })).toHaveLength(1), { timeout: 5000 });
-      await user.click(screen.getByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
-      return screen.findByRole('region', { name: /Varsity team/ });
-    };
-
     it('#4 #7 #18 New message: Return adds a line, the first message survives Cancel, and Next says Starting… while it works', async () => {
       const user = userEvent.setup();
       let finish!: (v: unknown) => void;
@@ -1480,13 +1462,6 @@ describe('F-0004 · coach Start conversation opens the one-to-one thread, never 
   // The Team Channel is the newest thread, so desktop opens it beside the rail.
   const channel = { id: 'channel', title: 'Team Channel', is_team_channel: true, participant_ids: ['me', 'jonah', 'eli', 'dan', 'dana', 'x'], participant_count: 6, unread_count: 0, last_message: { content: 'Practice moved', created_at: '2026-10-14T18:30:00Z', sender_id: 'me' }, creator_id: 'me' };
   const dmEliNew = { id: 'dm-eli', title: null, participant_ids: ['me', 'eli'], participant_count: 2, unread_count: 0, other_participant: { id: 'eli', name: 'Eli Brandt' }, last_message: null, creator_id: 'me' };
-
-  async function startWithEli(user: User) {
-    await screen.findByRole('textbox', { name: /Message Team Channel/ });
-    const dlg = await newMessage(user, /Direct/);
-    await user.click(dlg.getByRole('option', { name: /Eli Brandt/ }));
-    await user.click(dlg.getByRole('button', { name: 'Start conversation' }));
-  }
 
   it('?player= with the channel open beside the rail opens the player’s thread', async () => {
     live.convs.conversations = [channel, team];
