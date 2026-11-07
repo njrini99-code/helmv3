@@ -1715,7 +1715,7 @@
     "name": "THE_LEADERBOARD_CRASHES_WHILE_DRAWING",
     "chCode": "CH-2207",
     "meaning": "The leaderboard crashes while drawing",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
@@ -2670,7 +2670,7 @@
     "name": "FOCUS_AREAS_OR_GOALS_DONT_LOAD",
     "chCode": "CH-3208",
     "meaning": "Focus areas or goals don't load",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -3041,7 +3041,7 @@
     "name": "PHONE_CHOOSING_AVG_SG_OR_NAME",
     "chCode": "CH-3604",
     "meaning": "Phone: choosing Avg, SG or Name",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -5011,7 +5011,7 @@
     "name": "ON_THE_PHONE_ALL_N_ROUNDS_IS",
     "chCode": "CH-5807",
     "meaning": "On the phone, \"All N rounds\" is a button that says whether the full list is open; Game detail's section chips say which one is showing",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
@@ -7905,7 +7905,7 @@
     "name": "CHANGING_THE_INBOX_FILTER_ON_THE_PHONE",
     "chCode": "CH-7606",
     "meaning": "Changing the inbox filter on the phone (All, Unread, Groups)",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -14898,7 +14898,7 @@
     "name": "NO_CLASS_MEETS_A_TEAM_EVENT_THIS",
     "chCode": "CH-12302",
     "meaning": "No class meets a team event this week",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
   {
@@ -15804,7 +15804,7 @@
     "name": "THE_TERM_OVERVIEW",
     "chCode": "CH-12803",
     "meaning": "The term overview",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
   {
@@ -21270,6 +21270,17 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 160419,
+    "page": "P016",
+    "category": 4,
+    "item": 19,
+    "name": "LINK_ROUNDS_NO_GOLFHELM_ROUND_IS_WAITING",
+    "chCode": "CH-16338",
+    "meaning": "Link rounds: no GolfHelm round is waiting to be linked (the read worked)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
     "id": 160601,
     "page": "P016",
     "category": 6,
@@ -21453,6 +21464,61 @@
     "name": "HOME_THE_READ_OF_THE_CALENDARS_UNTRACKED",
     "chCode": "CH-16253",
     "meaning": "Home (coach): the read of the calendar's untracked tournaments fails (`errors.untracked`, P-5)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160618,
+    "page": "P016",
+    "category": 6,
+    "item": 18,
+    "name": "LINK_ROUNDS_LINKING_A_GOLFHELM_ROUND_TO",
+    "chCode": "CH-16038",
+    "meaning": "Link rounds: linking a GolfHelm round to an event round fails or is refused",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160619,
+    "page": "P016",
+    "category": 6,
+    "item": 19,
+    "name": "LINK_ROUNDS_NOT_A_TOURNAMENT_ROUND_FAILS",
+    "chCode": "CH-16039",
+    "meaning": "Link rounds: \"Not a tournament round\" fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160620,
+    "page": "P016",
+    "category": 6,
+    "item": 20,
+    "name": "EDIT_EVENT_THE_SAVE_IS_REFUSED",
+    "chCode": "CH-16060",
+    "meaning": "Edit event: the save is refused (stale, a round with scores, an out-of-order round, not a coach)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160621,
+    "page": "P016",
+    "category": 6,
+    "item": 21,
+    "name": "EDIT_EVENT_THE_CHANGES_ARE_SAVED",
+    "chCode": "CH-16061",
+    "meaning": "Edit event: the changes are saved",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160622,
+    "page": "P016",
+    "category": 6,
+    "item": 22,
+    "name": "LINK_ROUNDS_THE_CANDIDATE_ROUNDS_READ_FAILS",
+    "chCode": "CH-16238",
+    "meaning": "Link rounds: the candidate rounds read fails (`errors.candidates`)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },

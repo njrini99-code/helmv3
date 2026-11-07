@@ -100,6 +100,7 @@ no rounds to link, and so on) are its lane's rows.
 | 160416 | CH-16305 | `A_PLAYER_ON_A_COACHS_TOURNAMENTS_PAGE` | A player on a coach's Tournaments page (new or edit event, lineup, live, compare, history, link rounds) |
 | 160417 | CH-16619 | `NOBODY_IS_ON_THE_COURSE` | Nobody is on the course |
 | 160418 | CH-16352 | `HOME_NO_EVENT_IN_THE_SEASON_NOTHING_2` | Home: no event in the season, nothing failed (P-5 4.11.1; replaces CH-16310) |
+| 160419 | CH-16338 | `LINK_ROUNDS_NO_GOLFHELM_ROUND_IS_WAITING` | Link rounds: no GolfHelm round is waiting to be linked (the read worked) |
 
 ## 05 — Validation
 
@@ -135,6 +136,11 @@ flags and its lane's rows.
 | 160615 | CH-16052 | `RESTORE_TOURNAMENT_ON_THE_DESK` | Restore tournament on the desk |
 | 160616 | CH-16053 | `STOP_TRACKING_REFUSED_THE_RESULTS_ARE_OFFICIAL` | Stop tracking refused: the results are official |
 | 160617 | CH-16253 | `HOME_THE_READ_OF_THE_CALENDARS_UNTRACKED` | Home (coach): the read of the calendar's untracked tournaments fails (`errors.untracked`, P-5) |
+| 160618 | CH-16038 | `LINK_ROUNDS_LINKING_A_GOLFHELM_ROUND_TO` | Link rounds: linking a GolfHelm round to an event round fails or is refused |
+| 160619 | CH-16039 | `LINK_ROUNDS_NOT_A_TOURNAMENT_ROUND_FAILS` | Link rounds: "Not a tournament round" fails |
+| 160620 | CH-16060 | `EDIT_EVENT_THE_SAVE_IS_REFUSED` | Edit event: the save is refused (stale, a round with scores, an out-of-order round, not a coach) |
+| 160621 | CH-16061 | `EDIT_EVENT_THE_CHANGES_ARE_SAVED` | Edit event: the changes are saved |
+| 160622 | CH-16238 | `LINK_ROUNDS_THE_CANDIDATE_ROUNDS_READ_FAILS` | Link rounds: the candidate rounds read fails (`errors.candidates`) |
 
 ## 07 — Network / offline
 

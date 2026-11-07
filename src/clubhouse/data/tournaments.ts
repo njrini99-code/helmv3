@@ -876,10 +876,10 @@ export async function loadTournamentLinks(ctx: TourCtx): Promise<TourLoad<ChTour
             courseName: row.course_name,
             score: row.total_score ?? 0,
             toPar: row.score_to_par,
-            suggestion: s.match ? { eventId: eventOf.get(s.match.eventRound.roundEventId) ?? s.match.eventRound.tournamentId, roundNumber: s.match.eventRound.roundNumber, confidence: s.match.confidence } : null,
+            suggestion: s.match ? { eventId: eventOf.get(s.match.eventRound.roundEventId) ?? s.match.eventRound.tournamentId, roundEventId: s.match.eventRound.roundEventId, roundNumber: s.match.eventRound.roundNumber, confidence: s.match.confidence } : null,
           };
         }),
-        events: read.events.map((e) => ({ id: e.id, name: e.name, rounds: e.rounds.map((r) => ({ number: r.number, date: r.date, courseName: courseName(r.courseId) })) })),
+        events: read.events.map((e) => ({ id: e.id, name: e.name, rounds: e.rounds.map((r) => ({ number: r.number, roundEventId: r.roundEventId, date: r.date, courseName: courseName(r.courseId) })) })),
         // Lineup players with no score in a round that has started.
         missing: read.events.flatMap((e) =>
           e.rounds

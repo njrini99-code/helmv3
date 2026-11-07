@@ -618,14 +618,14 @@ export interface ChTourLinkCandidate {
   courseName: string | null;
   score: number;
   toPar: number | null;
-  suggestion: { eventId: string; roundNumber: number; confidence: 'high' | 'medium' | 'low' } | null;
+  suggestion: { eventId: string; roundEventId: string; roundNumber: number; confidence: 'high' | 'medium' | 'low' } | null;
 }
 
 export interface ChTourLinksData {
   now: string;
   players: ChTourPlayer[];
   candidates: ChTourLinkCandidate[];
-  events: Array<{ id: string; name: string; rounds: Array<{ number: number; date: string; courseName: string }> }>;
+  events: Array<{ id: string; name: string; rounds: Array<{ number: number; roundEventId: string; date: string; courseName: string }> }>;
   /** Lineup players with no round for an event round ("1 lineup player has no round linked for R2"). */
   missing: Array<{ eventId: string; roundNumber: number; playerId: string }>;
   dismissed: number;

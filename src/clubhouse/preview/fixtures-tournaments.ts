@@ -998,17 +998,18 @@ export function tourFixture(state: ChTourPreviewState): ChTourFixture {
     history.splits = [];
   }
 
+  const roundEventOf = (e: string, n: number) => complete.find((x) => x.id === e)?.rounds.find((r) => r.number === n)?.roundEventId ?? `${e}-r${n}`;
   const links: ChTourLinksData = {
     now,
     players: PLAYERS,
     candidates: empty
       ? []
       : [
-          { roundId: 'g-eli-0923', playerId: 'eli', date: '2026-09-23', courseName: 'Dogwood Lakes', score: 72, toPar: 0, suggestion: { eventId: 'e32', roundNumber: 3, confidence: 'high' } },
-          { roundId: 'g-priya-1006', playerId: 'priya', date: '2026-10-06', courseName: null, score: 74, toPar: 2, suggestion: { eventId: 'e33', roundNumber: 2, confidence: 'medium' } },
-          { roundId: 'g-theo-1008', playerId: 'theo', date: '2026-10-08', courseName: 'Oakmont CC', score: 70, toPar: -2, suggestion: { eventId: 'e33', roundNumber: 3, confidence: 'low' } },
+          { roundId: 'g-eli-0923', playerId: 'eli', date: '2026-09-23', courseName: 'Dogwood Lakes', score: 72, toPar: 0, suggestion: { eventId: 'e32', roundEventId: roundEventOf('e32', 3), roundNumber: 3, confidence: 'high' } },
+          { roundId: 'g-priya-1006', playerId: 'priya', date: '2026-10-06', courseName: null, score: 74, toPar: 2, suggestion: { eventId: 'e33', roundEventId: roundEventOf('e33', 2), roundNumber: 2, confidence: 'medium' } },
+          { roundId: 'g-theo-1008', playerId: 'theo', date: '2026-10-08', courseName: 'Oakmont CC', score: 70, toPar: -2, suggestion: { eventId: 'e33', roundEventId: roundEventOf('e33', 3), roundNumber: 3, confidence: 'low' } },
         ],
-    events: complete.map((e) => ({ id: e.id, name: e.name, rounds: e.rounds.map((r) => ({ number: r.number, date: r.date, courseName: COURSES[r.courseId]?.name ?? '' })) })),
+    events: complete.map((e) => ({ id: e.id, name: e.name, rounds: e.rounds.map((r) => ({ number: r.number, roundEventId: r.roundEventId, date: r.date, courseName: COURSES[r.courseId]?.name ?? '' })) })),
     missing: empty ? [] : [{ eventId: 'e32', roundNumber: 3, playerId: 'eli' }],
     dismissed: empty ? 0 : 2,
     errors: partial ? { candidates: true } : {},
