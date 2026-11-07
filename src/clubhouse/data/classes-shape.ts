@@ -85,6 +85,9 @@ export function parseClassName(className: string): { code: string; name: string 
   if (at > 0) {
     const head = className.slice(0, at).trim();
     const tail = className.slice(at + 3).trim();
+    // A registrar's department in words ("English and Creative Writing 101") is a code too: its first four letters and the number.
+    const worded = /^([A-Za-z]+)(?: [A-Za-z&]+)* (\d{3,4}[A-Za-z]?)$/.exec(head);
+    if (worded && worded[1]!.length > 4 && tail) return { code: `${worded[1]!.slice(0, 4).toUpperCase()} ${worded[2]}`, name: tail };
     if (CODE_RE.test(head) && tail) return { code: head, name: tail };
   }
   return { code: '', name: className.trim() };
@@ -186,6 +189,21 @@ export function cleanRegistrarField(raw: string | null | undefined): string {
 }
 
 /**
+ * A registrar's place as a person reads it: "Guilford Building King Hall Room" and "B26" is King Hall and B26; "Duke Memorial Room LEAK"
+ * is Duke Memorial and LEAK. The campus prefix goes when a building's own name follows it.
+ */
+export function cleanPlace(building: string | null | undefined, room: string | null | undefined): { building: string; room: string } {
+  let b = cleanRegistrarField(building).replace(/^\S+ Building (?=\S+ \S)/, '').replace(/\b(?:Cntr|Ctr)\b/g, 'Center');
+  let r = cleanRegistrarField(room);
+  const m = /^(.*\S) Room(?: (\S+))?$/.exec(b);
+  if (m) {
+    b = m[1]!;
+    r = r || m[2] || '';
+  }
+  return { building: b, room: r };
+}
+
+/**
  * An instructor as a person reads it, from a registrar's "Daniels, Wess (Primary); Williams, LaKeisha": "Wess Daniels and LaKeisha
  * Williams". Filler goes, a role in brackets goes, "Last, First" turns round, and past two names the rest are counted.
  */
@@ -232,8 +250,9 @@ export function classClashes(classes: readonly ChClass[]): ChClassClash[] {
 
 export function toChClass(row: ChClassRow, tone: ChTone): ChClass {
   const { code, name } = parseClassName(row.class_name);
-  const building = cleanRegistrarField(row.building) || null;
-  const room = cleanRegistrarField(row.room) || null;
+  const place = cleanPlace(row.building, row.room);
+  const building = place.building || null;
+  const room = place.room || null;
   return {
     id: row.id,
     code,
@@ -687,7 +706,8 @@ export function lookAt(p: Pick<ParsedClass, 'days' | 'start_time'>): string | nu
 export function toImportRow(p: ParsedClass): ChImportRow {
   const code = p.course_code.trim();
   const location = cleanRegistrarField(p.location);
-  const building = cleanRegistrarField(p.building) || (!cleanRegistrarField(p.room) ? location : '');
+  const place = cleanPlace(p.building, p.room);
+  const building = place.building || (!place.room ? cleanPlace(location, '').building : '');
   return {
     key: p.id,
     code,
@@ -697,7 +717,7 @@ export function toImportRow(p: ParsedClass): ChImportRow {
     start: toHHMM(p.start_time) ?? '',
     end: toHHMM(p.end_time) ?? '',
     building,
-    room: cleanRegistrarField(p.room),
+    room: place.room,
     credits: p.credits,
     semester: p.semester.trim(),
     notes: '',
