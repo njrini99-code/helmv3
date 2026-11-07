@@ -47,7 +47,8 @@ import { ToastProvider } from '../ui/Toast';
 import { unsignedTones } from './_tone-sign';
 import { CrumbProvider, useCrumbTrail } from '../shell/crumbs';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
-import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY } from '../preview/fixtures-stats';
+import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_READS_FAILED } from '../preview/fixtures-stats';
+import { GameDetail } from '../screens/stats/GameDetail';
 import { filterFor } from '../data/stats-filter';
 import { ClubhouseMarker } from '../shell/context';
 import StatsLoading from '@/app/golf/(dashboard)/dashboard/stats/loading';
@@ -1156,5 +1157,28 @@ describe('My stats · landmark names (F-0064)', () => {
       const all = names();
       expect(all.filter((n, i) => all.indexOf(n) !== i), t).toEqual([]);
     }
+  });
+});
+
+describe('Stats player · Game detail on the redesign', () => {
+  const draw = (reads: Parameters<typeof GameDetail>[0]['reads'], phone = false) =>
+    render(
+      <div className="ch-root" data-ui="clubhouse">
+        <GameDetail s={PREVIEW_PLAYER.stats!} x={PREVIEW_PLAYER.extra} bench={PREVIEW_PLAYER.bench} first="Jonah" rounds={PREVIEW_PLAYER.win.rounds} window={PREVIEW_PLAYER.window} reads={reads} phone={phone} />
+      </div>,
+    );
+  it('CH-5215 CoachHelm’s reads that do not load: one notice under the section chips with Try again, and no section line', () => {
+    draw(PREVIEW_READS_FAILED);
+    const failed = document.querySelectorAll('[data-ch-code="CH-5215"]');
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.querySelector('.ch-notice__title')!.textContent).toBe('CoachHelm’s reads didn’t load');
+    expect(within(failed[0] as HTMLElement).getByRole('button', { name: 'Try again' })).toBeTruthy();
+    expect(document.querySelectorAll('.ch-gm__reads')).toHaveLength(0);
+  });
+  it('CH-5807 Game detail’s section chips say which one is showing', () => {
+    draw(undefined);
+    const chips = Array.from(document.querySelectorAll<HTMLElement>('.ch-pill[aria-pressed]'));
+    expect(chips.length).toBeGreaterThan(1);
+    expect(chips.filter((c) => c.getAttribute('aria-pressed') === 'true')).toHaveLength(1);
   });
 });

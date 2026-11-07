@@ -88,7 +88,8 @@ import {
 import { extractAndValidateChatClaims } from '@/lib/coachhelm/v3/chat/claims-packet';
 import { CLAIMS_OPEN, CLAIMS_CLOSE, extractAndValidateClaimsSafe } from '@/lib/coachhelm/v3/llm/claims-block';
 import { isFlagEnabled } from '@/lib/flags';
-import { isClubhouseFor, isClubhouseForTeam } from '@/clubhouse/gate';
+import { isClubhouseForTeam } from '@/clubhouse/gate';
+import { isClubhouseFor } from '@/clubhouse/gate';
 import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
 import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
 import {

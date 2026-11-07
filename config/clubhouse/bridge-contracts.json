@@ -5005,7 +5005,7 @@
     "item": 7,
     "name": "ON_THE_PHONE_ALL_N_ROUNDS_IS",
     "chCode": "CH-5807",
-    "meaning": "On the phone, \"All N rounds\" is a button that says whether the full list is open; Game detail's section chips say which one is showing",
+    "meaning": "Game detail's section chips say which one is showing (the phone's \"All N rounds\" button went with the old rounds list)",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
