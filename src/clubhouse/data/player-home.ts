@@ -7,7 +7,8 @@ import type { MarkEntries } from '../lib/marks-cookie';
 import type { ChHomeChange } from '../screens/home/change-rows';
 import { loadHomeChanges, withChange, withWas } from './home-changes';
 import { playerScoringAverage, playerStrokesGained } from './figure-window';
-import { countsForScoring, isFull18, lastTenFloor, loadSeasonRounds, mean, type ChRound } from './season';
+import { countsForScoring, isFull18, lastTenFloor, loadSeasonRounds, mean, roundsForSpan, type ChRound } from './season';
+import { spanSince, type ChSpan } from './span';
 import { holeRounds } from './round-scope';
 import { legRows, type ChPlayerLeg } from './leg-rows';
 import { replyClosedAt } from '../screens/calendar/model';
@@ -69,6 +70,13 @@ export interface ChPlayerHome {
   sgPerRound: number | null;
   /** Scoring average over the same newest ten, as My stats' default prints it; null when the rounds didn't load. */
   scoringLast10: { avg: number | null; n: number } | null;
+  /**
+   * The basis the scoring figures are read on: `all` is every 18-hole round the player has posted, practice included, on Fairway's rules
+   * (span.ts). Absent: the newest rounds, practice out, as before.
+   */
+  span?: ChSpan;
+  /** All time only: the scoring average over every such round and how many (Fairway's scoring average). Null when the rounds didn't load. */
+  scoringAll?: { avg: number | null; n: number } | null;
   /** What the strokes gained here is measured against; null when the team's own row didn't load (no baseline is claimed). */
   tour: ChSgTour;
   handicap: number | null;
@@ -102,7 +110,7 @@ function log(read: string, error: unknown) {
 
 const shortDate = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
 
-export async function loadPlayerHome(input: { teamId: string; playerId: string; firstName: string; /** The device's seen and cleared change marks (phone-hint.ts `marksHint`). */ marks?: MarkEntries }): Promise<ChPlayerHome> {
+export async function loadPlayerHome(input: { teamId: string; playerId: string; firstName: string; /** The device's seen and cleared change marks (phone-hint.ts `marksHint`). */ marks?: MarkEntries; /** `all`: the scoring on Fairway's rules, every round ever posted (span.ts). Absent: as before. */ span?: ChSpan }): Promise<ChPlayerHome> {
   const supabase = await createClient();
   const now = new Date();
 
@@ -117,13 +125,17 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   // Its reads start now; only the tasks' "due this week" waits for the team's day.
   const asksRead = loadPlayerAsks(supabase, { teamId: input.teamId, playerId: input.playerId, now, today: clockRead.then((c) => c.day) });
   // The scoring card's Last 5 / 10 / 20, the leg figures and the brief are the player's newest rounds in any season, as Stats' Last 10 is (Q-122); the season's own figures are cut below.
-  const roundsRead = loadSeasonRounds(supabase, [input.playerId], { surface: 'home', since: lastTenFloor() });
+  const roundsRead = loadSeasonRounds(supabase, [input.playerId], { surface: 'home', since: spanSince(input.span, lastTenFloor()) });
   const playerRead = Promise.resolve(supabase.from('golf_players').select('handicap_index, handicap').eq('id', input.playerId).maybeSingle());
   const teamRead = Promise.resolve(supabase.from('golf_teams').select('gender, created_by, organization_id').eq('id', input.teamId).maybeSingle());
   // Behind the Stats flag practice rounds stay out of the scores, the legs, the brief and strokes gained, so Home's figures equal My stats' (DATA-CHECKS, SHARED-11).
-  const fullOf = (res: Awaited<typeof roundsRead>) => (res.error ? [] : (res.rounds.filter(countsForScoring)).filter(isFull18));
+  // All time (span.ts) is Fairway's basis for the scores: every round type, and no round posted as a total only.
+  const fullOf = (res: Awaited<typeof roundsRead>) => (res.error ? [] : roundsForSpan(res.rounds, input.span).filter(isFull18));
+  // The leg figures and strokes gained are the newest ten whichever basis the scores are on, so they keep the default basis and the year it reads.
+  const yearOf = (res: Awaited<typeof roundsRead>) => (input.span === 'all' ? res.rounds.filter((r) => r.round_date.slice(0, 10) >= lastTenFloor(now)) : res.rounds);
+  const legFullOf = (res: Awaited<typeof roundsRead>) => (res.error ? [] : yearOf(res).filter(countsForScoring).filter(isFull18));
   // The leg figures are hole-level: the newest rounds with their holes (a round posted as a total only has none, Q-123). The brief and the scoring chart are scores and count every round.
-  const windowOf = (res: Awaited<typeof roundsRead>) => holeRounds(fullOf(res)).slice(0, LEG_WINDOW);
+  const windowOf = (res: Awaited<typeof roundsRead>) => holeRounds(legFullOf(res)).slice(0, LEG_WINDOW);
   // Latest rounds lists every round, practice included.
   const latestRead = roundsRead.then((res) => latestWithHoles(supabase, res.error ? [] : res.rounds.filter(isFull18), () => input.firstName));
   const cacheRead = roundsRead.then((res) => {
@@ -161,7 +173,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   const window = windowOf(roundsRes);
 
   // Strokes gained is the one source (QA-1): the last ten counted rounds, as on Team view and Stats.
-  const sg = roundsRes.error ? null : playerStrokesGained(roundsRes.rounds);
+  const sg = roundsRes.error ? null : playerStrokesGained(yearOf(roundsRes));
   const legs = roundsRes.error || !sg ? null : { rows: legRows(window, cache.byRound, bench, sg.legs, { shs: true }), cacheError: cache.error, benchError: bench === null || bench.size === 0 };
 
   const points: ChScoringPoint[] = full
@@ -189,7 +201,10 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     latest: { rounds: latest.rounds, error: roundsRes.error, holesError: latest.holesError },
     scoring: { points, error: roundsRes.error },
     sgPerRound: sg?.total ?? null,
-    scoringLast10: roundsRes.error ? null : playerScoringAverage(roundsRes.rounds),
+    scoringLast10: roundsRes.error ? null : playerScoringAverage(yearOf(roundsRes)),
+    ...(input.span === 'all'
+      ? { span: input.span, scoringAll: roundsRes.error ? null : { avg: mean(full.map((r) => r.total_score as number)), n: full.length } }
+      : {}),
     tour: teamRes.data ? tourForGender(teamRes.data.gender) : null,
     handicap: playerRes.data?.handicap_index ?? playerRes.data?.handicap ?? null,
     legs,

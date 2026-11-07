@@ -45,6 +45,7 @@ export { CALENDAR, eventHref, whenLabel } from './event-links';
 import { CALENDAR, eventHref, whenLabel } from './event-links';
 import { plural } from '../../lib/plural';
 import { ClassHomeLine } from './ClassHomeLine';
+import { HomeSpanSwitch } from './HomeSpanSwitch';
 const newEventHref = (type?: ChHomeEvent['type']) => `${CALENDAR}?new=1${type ? `&type=${type}` : ''}`;
 
 /**
@@ -357,6 +358,7 @@ export function Form({ form }: { form: ChTeamForm; }) {
     <section className="ch-hm-form" aria-labelledby="ch-hm-form">
       <div className="ch-hm-form__head">
           <h2>Team scoring</h2>
+          <HomeSpanSwitch span={form.span ?? 'season'} />
           {rebuiltHref('/golf/dashboard/stats') && (
             <Link href={rebuiltHref('/golf/dashboard/stats') as string} className="ch-hm-link">
               Team stats
@@ -366,7 +368,7 @@ export function Form({ form }: { form: ChTeamForm; }) {
       <div className="ch-hm-form__top">
         <span>
           {/* The lane: the label is real text, not the old rule's ::after (06 §11.2). */}
-          <em id="ch-hm-form">{'Average · each player’s last 10'}</em>
+          <em id="ch-hm-form">{form.span === 'all' ? 'Average · every round, all time' : 'Average · each player’s last 10'}</em>
           <b className="ch-num">{withPointSpan(formatFixed(form.avg))}</b>
         </span>
         <span className={'ch-hm-delta ch-num ' + avgTone}>

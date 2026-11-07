@@ -15,12 +15,14 @@ export type ShsTone = 'gain' | 'loss' | 'flat';
 /** "Last 10 rounds", "This season", "Qualifiers"; a filter says its own words. */
 export function windowLabel(f: ChFilter): string {
   if (isFiltered(f)) return basisWords(f);
+  if (f.span === 'all') return 'All time';
   if (f.window === 'last10') return `Last ${f.last} rounds`;
   return f.window === 'season' ? 'This season' : 'Qualifiers';
 }
 
 export function windowShort(f: ChFilter): string {
   if (isFiltered(f)) return 'Filtered';
+  if (f.span === 'all') return 'All time';
   if (f.window === 'last10') return `Last ${f.last}`;
   return f.window === 'season' ? 'Season' : 'Qualifiers';
 }

@@ -46,7 +46,8 @@ export function roundsInFilter(rounds: ChRound[], f: ChFilter, start: string = s
 
 /** The Stats redesign's default (clubhouse_stats_redesign_v1): practice rounds out, unless the filter names a type or picks rounds by hand ("Only these"). */
 export function practiceCut(f: ChFilter): boolean {
-  return f.types.length === 0 && f.pick?.mode !== 'only';
+  // All time is Fairway's basis (span.ts): every round type counts, practice too.
+  return f.types.length === 0 && f.pick?.mode !== 'only' && f.span !== 'all';
 }
 
 /** The matching rounds before the newest ten, for "vs previous 10", across seasons like the ten; null when the filter has no previous window or there are fewer than three. */
@@ -70,6 +71,8 @@ export function seasonOnly(rounds: ChRound[], start: string = seasonStartDate())
  * the range has no start). Undefined is `loadSeasonRounds`' own default, the season.
  */
 export function loadSince(f: ChFilter, start?: string): string | null | undefined {
+  // All time reads every round there is, whatever window the address names (span.ts).
+  if (f.span === 'all') return null;
   // `start`, the season's first day in the team's zone, stands for the season when given (owner decision 9); else the loader's default.
   if (hasRange(f)) {
     if (!f.from) return null;

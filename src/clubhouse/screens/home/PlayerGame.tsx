@@ -9,7 +9,7 @@ import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Segmented } from '../../ui/Segmented';
 import { changeTone, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
-import { pluralWord } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 import { NoData } from '../../ui/NoData';
 import { changeSe, deltaTone, deltaWords, halvesChange } from '../../lib/stats-signal';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
@@ -17,6 +17,7 @@ import { monotonePath } from '../../lib/chart';
 import { useChSessionState } from '../../lib/session-state';
 import { ShsIcon, ShsPill, type ShsIconName } from '../stats/SummaryCard';
 import { MY_STATS } from './player-links';
+import { HomeSpanSwitch } from './HomeSpanSwitch';
 import '../../styles/stats-redesign.css';
 
 type Span = 5 | 10 | 20;
@@ -465,16 +466,18 @@ export const ownLegHref = (key: ChPlayerLeg['key']): string => `/golf/dashboard/
  */
 export function YourGameLead({ data, covered }: { data: ChPlayerHome; covered: boolean }) {
   // The figures are the loader's, over the window My stats prints them on, never worked out again here.
-  const last = data.scoringLast10;
+  // All time (data/span.ts) sets the average on every 18-hole round the player has posted, practice included, as Fairway's scoring average is.
+  const all = data.span === 'all';
+  const last = all ? data.scoringAll : data.scoringLast10;
   const sum =
     !last ? null : (
       <Link href={MY_STATS} className="ch-shs-yg__sum ch-num">
-        <span>{last.n ? `Last ${last.n}` : 'Last 10'}</span>
+        <span>{all ? `All time · ${plural(last.n, 'round')}` : last.n ? `Last ${last.n}` : 'Last 10'}</span>
         <span>
           <b>{last.avg == null ? <NoData /> : formatFixed(last.avg)}</b> avg
         </span>
         <span>
-          <b>{data.sgPerRound == null ? <NoData /> : formatSigned(data.sgPerRound)}</b> SG per round
+          <b>{data.sgPerRound == null ? <NoData /> : formatSigned(data.sgPerRound)}</b> SG per round{all ? ' (last 10)' : ''}
         </span>
         <span className="ch-shs-yg__go">
           My stats
@@ -482,16 +485,17 @@ export function YourGameLead({ data, covered }: { data: ChPlayerHome; covered: b
         </span>
       </Link>
     );
-  return <YourGameCard legs={data.legs} tour={data.tour} covered={covered} summary={sum} always />;
+  return <YourGameCard legs={data.legs} tour={data.tour} covered={covered} summary={sum} always switcher={<HomeSpanSwitch span={data.span ?? 'season'} />} />;
 }
 
-function YourGameCard({ legs, tour, covered, summary, always = false }: { legs: ChPlayerHome['legs']; tour: ChSgTour; covered: boolean; summary?: ReactNode; always?: boolean }) {
+function YourGameCard({ legs, tour, covered, summary, always = false, switcher }: { legs: ChPlayerHome['legs']; tour: ChSgTour; covered: boolean; summary?: ReactNode; always?: boolean; /** The rounds-shown switch, in the card's head. */ switcher?: ReactNode }) {
   if (!legs && !always) return null;
   if (!legs) {
     return (
       <section className="ch-shs-home ch-shs-yg" aria-labelledby="ch-ph-legs">
         <div className="ch-shs-yg__h">
           <h2 id="ch-ph-legs">Your game</h2>
+          {switcher}
         </div>
         {summary}
       </section>
@@ -510,6 +514,7 @@ function YourGameCard({ legs, tour, covered, summary, always = false }: { legs: 
       <div className="ch-shs-yg__h">
         <h2 id="ch-ph-legs">Your game</h2>
         <span>Strokes gained {sgBaseline(tour).vs}</span>
+        {switcher}
       </div>
       {summary}
       {legs.cacheError && (

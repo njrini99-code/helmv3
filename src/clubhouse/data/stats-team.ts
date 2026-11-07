@@ -211,7 +211,8 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     ? await loadSeasonRounds(supabase, players.map((p) => p.id), { surface: 'stats', since: loadSince(f, start) })
     : { rounds: [], error: !!membersRes.error };
   // With the redesign on, the team's figures leave practice rounds out unless the filter asks for a type or picks rounds by hand (data/season.ts).
-  const scoringRounds = practiceCut(f) ? season.rounds.filter(countsForScoring) : season.rounds;
+  // All time (span.ts) is Fairway's basis: practice in, and no round posted as a total only (Fairway's isCountableRound reads none).
+  const scoringRounds = practiceCut(f) ? season.rounds.filter(countsForScoring) : f.span === 'all' ? holeRounds(season.rounds) : season.rounds;
   const byPlayer = groupByPlayer(scoringRounds);
 
   const windowRounds: ChRound[] = [];

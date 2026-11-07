@@ -8,7 +8,8 @@ import { chLogServer } from '../lib/track-server';
 import { homeClock, ymd } from './home-clock';
 import { classYearKey, type ChYearKey } from '../lib/class-year';
 import { playerStrokesGained } from './figure-window';
-import { classYearLabel, countsForScoring, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, MIN_SG_ROUNDS, seasonStartDate, summarizePlayer, type ChForm, type ChRound } from './season';
+import { classYearLabel, countsForScoring, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, MIN_SG_ROUNDS, roundsForSpan, seasonStartDate, summarizePlayer, type ChForm, type ChRound } from './season';
+import { spanFloorsLeaderboard, spanSince, spanStart, type ChSpan } from './span';
 import { LEGS, sgLegs, teamGrid, type ChLeg } from './stats-team';
 import { legRows } from './leg-rows';
 import { loadCoachQueue, type ChCoachQueue } from './home-queue';
@@ -167,6 +168,8 @@ export interface ChHomeEvent {
  * rounds this season against each player's ten before (`teamForm`).
  */
 export interface ChTeamForm {
+  /** `all`: every 18-hole round, practice included, on Fairway's rules (span.ts); no previous window to set it against. Absent is each player's last 10. */
+  span?: ChSpan;
   avg: number;
   /** Against each player's previous ten; null when no player has three rounds before their newest ten. */
   delta: number | null;
@@ -254,7 +257,9 @@ export interface ChCoachHome {
   week: { days: ChHomeDay[]; agenda: ChAgendaRow[]; error: boolean };
   /** holesError: the rounds loaded but their hole-by-hole detail didn't. */
   latestRounds: { rounds: ChLatestRound[]; error: boolean; holesError: boolean };
-  leaderboard: { rows: ChLeaderRow[]; scorecards: number; rosterSize: number; error: boolean };
+  leaderboard: { rows: ChLeaderRow[]; scorecards: number; rosterSize: number; error: boolean; /** The basis the rows are read on (span.ts). Absent is the season. */ span?: ChSpan };
+  /** The basis Home's team figures are read on (`?range=all` is All time). Absent is the default: the figures' own windows. */
+  span?: ChSpan;
   /** Behind the lane's flag: each rostered player's class year, for the coins. */
   yearById?: Record<string, ChYearKey>;
   /** The phone Home's extra reads (docs/clubhouse/phone/home.md). Each follows its source's error flag. */
@@ -325,6 +330,8 @@ export async function loadCoachHome(input: {
   coachId?: string | null;
   /** The device's seen and cleared change marks (phone-hint.ts `marksHint`). */
   marks?: MarkEntries;
+  /** `all`: the team's scoring on Fairway's rules, every round ever posted (span.ts). Absent: as before. */
+  span?: ChSpan;
 }): Promise<ChCoachHome> {
   const supabase = await createClient();
   const now = new Date();
@@ -355,7 +362,8 @@ export async function loadCoachHome(input: {
     const players = rosterOf(res);
     if (res.error || players.length === 0) return { rounds: [], error: !!res.error };
     // The team's form is Stats' Last 10, which reaches back across seasons (Q-122): read as far as it does; the rest of Home is this season.
-    return loadSeasonRounds(supabase, players.map((p) => p.id), { surface: 'home', since: lastTenFloor() });
+    // All time reads every round there is.
+    return loadSeasonRounds(supabase, players.map((p) => p.id), { surface: 'home', since: spanSince(input.span, lastTenFloor()) });
   });
   const playerById = rosterRead.then((res) => new Map(rosterOf(res).map((p) => [p.id, p])));
   // The season turns on 1 August in the team's zone (owner decision 9), the clock's.
@@ -413,9 +421,10 @@ export async function loadCoachHome(input: {
   // ── Season rounds ──
   const { rounds: readRounds, error: roundsError } = seasonRead;
   // Behind the lane's flag, practice rounds stay out of every scoring figure below (DECISIONS); Latest rounds is read apart and lists them.
-  const rounds = readRounds.filter(countsForScoring);
+  // All time (span.ts) is Fairway's basis instead: every round type, and no round posted as a total only.
+  const rounds = roundsForSpan(readRounds, input.span);
   const full = rounds.filter(isFull18);
-  const start = seasonStartDate(now, tz);
+  const start = spanStart(input.span, seasonStartDate(now, tz));
   const seasonRounds = seasonOnly(rounds, start);
   const seasonFull = seasonOnly(full, start);
 
@@ -457,12 +466,17 @@ export async function loadCoachHome(input: {
   }
   // C-24(d): an early read (fewer than three 18-hole rounds) never outranks a player with a sample; ties go to more rounds, then the name.
   // Ties are read at the printed precision, as Fairway's Top performers does (compareLeaderRows).
-  rows.sort(compareLeaderRows);
+  const floor = spanFloorsLeaderboard(input.span);
+  rows.sort((a, b) => compareLeaderRows(a, b, floor));
 
   // ── Phone: the team's form ──
-  const form = roundsError ? null : teamForm(full, rounds.filter((r) => r.round_date.slice(0, 10) >= weekStart && r.round_date.slice(0, 10) <= weekEnd).length);
+  const week = rounds.filter((r) => r.round_date.slice(0, 10) >= weekStart && r.round_date.slice(0, 10) <= weekEnd).length;
+  const form = roundsError ? null : teamForm(full, week, input.span);
   // ── The team's four parts, on the form's rounds ──
-  const legs = form ? teamLegs({ full, players: roster, cache, bench, tour: teamRes.error || !teamRes.data ? null : tourForGender(teamRes.data.gender) }) : null;
+  // The parts are each player's last ten (Stats' Last 10, across seasons within the read's year) whichever basis the average is on: All time reads
+  // further back and keeps practice, so the parts are cut back to the rounds and the year they are read on by default.
+  const partsFull = input.span === 'all' ? readRounds.filter(countsForScoring).filter(isFull18).filter((r) => r.round_date.slice(0, 10) >= lastTenFloor(now)) : full;
+  const legs = form ? teamLegs({ full: partsFull, players: roster, cache, bench, tour: teamRes.error || !teamRes.data ? null : tourForGender(teamRes.data.gender) }) : null;
 
   return {
     teamId: input.teamId,
@@ -477,7 +491,8 @@ export async function loadCoachHome(input: {
     clock: { tz, day },
     week: { ...wk.week, agenda: withWas(wk.week.agenda, changes.byEvent) },
     latestRounds: { rounds: latestRounds, error: roundsError, holesError },
-    leaderboard: { rows, scorecards: seasonFull.length, rosterSize: roster.length, error: roundsError },
+    leaderboard: { rows, scorecards: seasonFull.length, rosterSize: roster.length, error: roundsError, ...(input.span === 'all' ? { span: input.span } : {}) },
+    ...(input.span === 'all' ? { span: input.span } : {}),
     phone: { next: withChange(wk.next, changes.byEvent), today: wk.todayEvents.map((e) => withChange(e, changes.byEvent)), form, weekNote: wk.weekNote },
     legs,
     yearById: Object.fromEntries(roster.flatMap((p) => { const y = classYearKey(p.graduation_year, now, tz); return y ? [[p.id, y]] : []; })),
@@ -863,8 +878,9 @@ export function teamWindows(full: ChRound[]): { last: ChRound[]; prev: ChRound[]
  * (as Stats' scoring trend draws it), oldest to newest: one point a day, not one a round. `basis` says how many rounds and which dates the figures rest on, so a strip built on three August
  * rounds says so. Exported for the tests.
  */
-export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | null {
-  const { last, prev, lastPaired } = teamWindows(full);
+export function teamForm(full: ChRound[], roundsThisWeek: number, span?: ChSpan): ChTeamForm | null {
+  // All time (span.ts) is every round the team has posted, with no previous window to set it against; the default is each player's last ten.
+  const { last, prev, lastPaired } = span === 'all' ? { last: full, prev: [] as ChRound[], lastPaired: [] as ChRound[] } : teamWindows(full);
   if (!last.length) return null;
   // Greens and putts are hole-level: a round posted as a total only has none (Q-123), whatever its row holds.
   const hasGir = (r: ChRound) => hasHoleScores(r) && r.total_gir != null && !!r.total_gir_possible;
@@ -899,6 +915,7 @@ export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | 
   const line = [...byDay.values()].slice(-10).map((scores) => mean(scores) as number);
   const dates = last.map((r) => r.round_date.slice(0, 10)).sort();
   return {
+    ...(span === 'all' ? { span } : {}),
     avg,
     delta: prevAvg != null && pairedAvg != null ? pairedAvg - prevAvg : null,
     deltaSe: comparable ? windowChangeSe(lastPaired, prev, scoreOf, 'score') : null,

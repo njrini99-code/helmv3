@@ -1927,3 +1927,9 @@ main[data-ch-crh='on'] .ch-modal__foot .ch-btn {
     grid-column: 1 / -1;
   }
 }
+
+/* The rounds-shown switch (SpanSwitch, "This season | All time"): sits where the surface's head or action row puts it and never stretches. */
+.ch-span {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
