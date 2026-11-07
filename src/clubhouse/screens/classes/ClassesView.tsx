@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { GraduationCap, Plus, RotateCw, Trash2, TriangleAlert, Upload } from 'lucide-react';
-import { classNameOf, conflictsOf, dayToken, groupConflicts, inTerm, orderClasses, shortDay, syncStartFor, toChClass, type ChClass, type ChClassesPage, type ChClassInput, type ChImportRow } from '../../data/classes-shape';
+import { classClashes, classNameOf, conflictsOf, dayToken, groupConflicts, inTerm, orderClasses, shortDay, syncStartFor, toChClass, type ChClass, type ChClassesPage, type ChClassInput, type ChImportRow } from '../../data/classes-shape';
 import { chTrail } from '../../lib/track';
 import { friendlyReason, normalise, useAction, type ServerResult } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
@@ -279,6 +279,7 @@ export function ClassesView({ data, writes, statusWrites, crh = false }: { data:
     [classes, week, term],
   );
   const groups = useMemo(() => groupConflicts(conflicts, classes), [conflicts, classes]);
+  const clashes = useMemo(() => classClashes(classes), [classes]);
   const failedList = classes.filter((c) => failedSync.has(c.id));
   const importedNow = imported && { ...imported, classes: imported.classes.map((c) => classes.find((x) => x.id === c.id) ?? c) };
   const importSync = sync.pending ? 'syncing' : importedNow?.classes.some((c) => failedSync.has(c.id)) ? 'failed' : 'ok';
@@ -362,7 +363,7 @@ export function ClassesView({ data, writes, statusWrites, crh = false }: { data:
   const crhOverlaps = (
     <SectionBoundary surface="classes.side" label="This week’s overlaps" code="CH-12203">
             <div id="ch-cl-overlaps" className="ch-cl-overanchor">
-              <OverlapsCardCrh groups={groups} error={week.error} onRetry={() => router.refresh()} />
+              <OverlapsCardCrh groups={groups} clashes={clashes} error={week.error} onRetry={() => router.refresh()} />
             </div>
           </SectionBoundary>
   );
@@ -463,7 +464,7 @@ export function ClassesView({ data, writes, statusWrites, crh = false }: { data:
       ) : crh ? (
         <>
           <SectionBoundary surface="classes.term" label="The term overview" code="CH-12203">
-            <TermCard desk={!phone} term={term} classes={classes} week={week} todayIso={todayIso} overlaps={conflicts.length} overlapsError={week.error} onOverlaps={() => chScrollIntoView(document.getElementById('ch-cl-overlaps'), reduced)} />
+            <TermCard desk={!phone} term={term} classes={classes} week={week} todayIso={todayIso} overlaps={conflicts.length + clashes.length} overlapsError={week.error} onOverlaps={() => chScrollIntoView(document.getElementById('ch-cl-overlaps'), reduced)} />
           </SectionBoundary>
           {phone ? (
             <>
