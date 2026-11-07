@@ -118,7 +118,7 @@ export function PlayerHomePhone({ data, now: frozen, live, playerId }: { data: C
                 <Latest data={data.latest} covered={covered} />
               </SectionBoundary>
             )}
-            
+
           </>
       </div>
     </main>

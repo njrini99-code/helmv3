@@ -117,7 +117,7 @@ function PeekBody({
 
   return (
     <>
-      
+
       <div className="ch-rs-peek__hero">
         <span className="ch-rs-peek__av">
           <Avatar name={p.name} id={p.id} size={76} year={yearKeyOf(p.gradYear, clock)} dim={p.status === 'inactive'} />
@@ -149,8 +149,6 @@ function PeekBody({
         )}
       </div>
 
-      
-
       <dl className="ch-rs-peek__figs">
         {figs.map(([l, v]) => (
           <div key={l}>
@@ -165,19 +163,6 @@ function PeekBody({
           <p className="ch-rs-peek__early">{p.trend.length > 0 ? 'Early read. Form shows at three rounds.' : 'No 18-hole rounds yet this season.'}</p>
         ))}
       {/* The rest lives on the full profile (06 7.12: identity, buttons, four figures, chart, the link). */}
-      
-
-      
-
-      
-
-      
-
-      
-
-      
-
-      
 
       {profileHref && (
         <div className="ch-rs-peek__foot">
@@ -186,7 +171,7 @@ function PeekBody({
           </Button>
         </div>
       )}
-      
+
     </>
   );
 }

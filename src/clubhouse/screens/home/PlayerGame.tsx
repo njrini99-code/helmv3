@@ -22,7 +22,6 @@ import '../../styles/stats-redesign.css';
 type Span = 5 | 10 | 20;
 const SPANS: Span[] = [5, 10, 20];
 
-
 /**
  * The player's game on Home (Player - Home.html `DetailedStats`, and the phone's
  * Scoring and "Your game"): the scoring line for the last 5, 10 or 20

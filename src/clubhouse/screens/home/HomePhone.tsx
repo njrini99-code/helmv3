@@ -82,7 +82,7 @@ export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?
           </p>
         )}
         <CoachQueue queue={data.queue} covered={covered} phone />
-        
+
         <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
           {data.week.error ? null : data.week.error ? (
             // On the sheet, not in the green card: inside it the notice took the card's ivory ink and its words vanished.

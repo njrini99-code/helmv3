@@ -84,7 +84,6 @@ export function TeamRoster({ data }: { data: ChPlayerRoster; }) {
       </>
     );
   }
-  
 
   return (
     // The coach's page material (P003 #1): the framed head and the Ledger, so player and coach read as one product.

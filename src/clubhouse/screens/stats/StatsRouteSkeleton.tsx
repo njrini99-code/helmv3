@@ -14,7 +14,7 @@ export function StatsRouteSkeleton() {
   // The phone draws the phone page's own skeleton (F-44), never the desktop one.
   const phone = useChPhone();
   if (phone) return profile ? <ShsPlayerSkeleton /> : <ShsTeamSkeleton />;
-  
+
   return profile ? <StatsProfileSkeleton coach={role === 'coach'} /> : <StatsSkeleton />;
 }
 
@@ -22,6 +22,6 @@ export function StatsRouteSkeleton() {
 export function StatsSkeletonFor({ profile, coach = true }: { profile: boolean; coach?: boolean; }) {
   const phone = useChPhone();
   if (phone) return profile ? <ShsPlayerSkeleton /> : <ShsTeamSkeleton />;
-  
+
   return profile ? <StatsProfileSkeleton coach={coach} /> : <StatsSkeleton />;
 }

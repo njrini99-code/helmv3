@@ -174,7 +174,7 @@ export function Roster({ data }: { data: ChRoster; }) {
   // profile at rest over the list; a desktop selects the row and scrolls it into view. Not on this team: the list and a toast that names
   // nobody (CP-8), since the id may be another team's player.
   useEffect(() => {
-    
+
     const url = new URL(window.location.href);
     const id = url.searchParams.get('player') ?? linkedPlayer;
     if (!id) return;
@@ -496,8 +496,6 @@ export function Roster({ data }: { data: ChRoster; }) {
     );
   }
 
-  
-
   // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
   const failed = rosterFailedParts(data);
   const covered = failed.length > 1;
@@ -582,8 +580,6 @@ export function Roster({ data }: { data: ChRoster; }) {
         />
       )}
 
-      
-
       {data.playersError ? (
         <InlineNotice
           code="CH-3201"
@@ -614,7 +610,7 @@ export function Roster({ data }: { data: ChRoster; }) {
         />
       ) : (
         <>
-          
+
           <div className="ch-rs-bar">
             <SearchField className="ch-rs-search" value={q} onChange={setQ} placeholder="Search players by name" label="Search players" />
             <div className="ch-rs-bar__r">

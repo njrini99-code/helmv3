@@ -202,7 +202,7 @@ export function ClassDetail({
                 ))}
               </GroupList>
             </Surface>
-          
+
         </div>
       )}
     </Modal>

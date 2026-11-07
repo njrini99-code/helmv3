@@ -27,7 +27,6 @@ import { filterFor } from '../data/stats-filter';
 import type { ChTeamStats } from '../data/stats-team';
 import type { ChPlayerProfile } from '../data/stats-player';
 
-
 const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/stats.css'), 'utf8');
 const shell = (node: React.ReactNode) => (
   <LazyMotion features={domAnimation}>

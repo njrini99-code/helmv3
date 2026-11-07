@@ -236,7 +236,6 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
         {sheet}
       </main>
     );
-  
 
   // `is-desk`: the server renders desktop; at phone width it stays hidden until the phone view takes over at hydration.
   return (

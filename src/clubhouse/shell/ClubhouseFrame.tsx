@@ -278,7 +278,6 @@ function FrameRoot({ motionOff, fullScreen, homeRoot, children }: { motionOff: b
   );
 }
 
-
 /**
  * The phone's top and bottom edges carry the app's colour (F-49): the hero bar's green under the
  * status bar on the hero Home, the phone ivory elsewhere. theme-color tints the browser chrome; the
