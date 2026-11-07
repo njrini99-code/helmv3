@@ -193,6 +193,8 @@
   --ch-seam-ink: rgb(28 25 18 / 0.15);
   --ch-seam-light: rgb(255 255 255 / 0.9);
   --ch-seam-x: inset 0 1px 0 var(--ch-seam-ink), inset 0 2px 0 var(--ch-seam-light);
+  /* The sidebar Next event card's going bar (redesign off only, dashboard cut 3): the same hairline in both themes. */
+  --ch-next-bar-inset: inset 0 1px 1px rgb(28 25 18 / 0.08);
   --ch-seam-y: inset 1px 0 0 var(--ch-seam-ink), inset 2px 0 0 var(--ch-seam-light);
   /* The scoreboard (owner, 2026-10-06): a scorecard set as a tournament board, deep green with ivory numerals, so
      scores never sit ivory on ivory. A recessed green panel with a lit lower lip. */

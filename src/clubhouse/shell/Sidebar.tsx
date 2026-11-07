@@ -9,6 +9,7 @@ import { Icon } from "../ui/Icon";
 import type { ChShellData } from "../data/shell";
 import { activeNavItem, CH_NAV_SECTIONS, navFor } from "./nav";
 import { NavPlate } from "./NavPlate";
+import { NextEventCard } from "./NextEventCard";
 import { ResumeRoundCard } from "./Dock";
 import { badgeCount } from "./badge-count";
 import { LifeBuoy, LogOut, Settings, Users } from "lucide-react";
@@ -109,10 +110,11 @@ export function Sidebar({
 
       {/* On the rail the card folds away (inert while it is hidden) and the avatar stays. */}
       <div className="ch-sidebar__foot">
-        {/* A player's round in progress. The week's events live on Home (Up next and Today), so the rail repeats none of them. */}
-        {shell.roundInProgress && (
+        {/* A player's round in progress takes the card slot (P001-C1); otherwise, with the redesign off, the team's next event.
+            With it on (dashboard cut 3, lib/redesign-cuts) the week's events live on Home, so the rail repeats none of them. */}
+        {(shell.roundInProgress || shell.refresh === false) && (
           <div className="ch-sidebar__card" inert={folded || undefined}>
-            <ResumeRoundCard round={shell.roundInProgress} />
+            {shell.roundInProgress ? <ResumeRoundCard round={shell.roundInProgress} /> : shell.nextEvent && <NextEventCard event={shell.nextEvent} />}
           </div>
         )}
         {teamSwitch ? (

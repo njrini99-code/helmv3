@@ -26,10 +26,15 @@ export const PREVIEW_PLAYER: GolfUserData = {
   teamId: 'preview-team',
 };
 
+/** The sidebar's Next event card, which only the redesign-off preview (`&refresh=off`) shows (dashboard cut 3, lib/redesign-cuts). */
+export const PREVIEW_NEXT_EVENT: ChShellData['nextEvent'] = { id: 'e-pinehurst', title: 'Pinehurst qualifier', whenLabel: 'In 2 days', metaLabel: 'Fri, Oct 16 · 8:42 AM · Pinehurst No. 2', ready: { accepted: 5, invited: 6 } };
+
 export const PREVIEW_SHELL: ChShellData = {
+  nextEvent: null,
   pendingJoinRequests: 2,
   timezone: 'America/New_York',
   askAvailable: true,
+  // The Brief tab is the redesign-off preview's only (dashboard cut 1).
   helmViews: { playerAsk: true, team: true },
   // Maya is the head coach (the boards' "Head coach · Varsity"); a player's line ignores it.
   viewerIsHeadCoach: true,
