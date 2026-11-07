@@ -601,6 +601,14 @@
   /* Glass is for the floating navigation only (top bar, tab bar); 20px reads as frosted without the muddy edge. */
   --ch-glass-blur: 20px;
   --ch-glass-saturate: 110%;
+  /* Messages v2 (docs/clubhouse/messages-v2/SPEC.md tokens): bars, composer and pills blur 24 and saturate 170%; the overlay
+     behind a lifted bubble blurs 14 and saturates 120%. A Messages rule writes blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))),
+     so the elevation test still finds var(--ch-glass-blur) and a browser without the token falls back to the shared glass.
+     Reduce Transparency and Increase Contrast zero all four below. */
+  --ch-glass-blur-msg: 24px;
+  --ch-glass-saturate-msg: 170%;
+  --ch-scrim-blur-msg: 14px;
+  --ch-scrim-saturate-msg: 120%;
 
   /* Depth follows role. Owner review, October 6: remove the broad, muddy shadows
      under ordinary fields/cards. Reading surfaces are quiet; floating controls
@@ -728,6 +736,11 @@
   --ch-typing-dot: #7a766c;
   --ch-ring-own: #8c703a;
   --ch-switch-off-ring: #8e8a80;
+  /* Messages v2: the lifted-bubble scrim, the one flat card style, and the ivory ink on a sent bubble (the artifact's
+     scrim, card-shadow and sent-ink; --ch-scrim, --ch-card-shadow and --ch-text-on-accent are shared app-wide and stay). */
+  --ch-scrim-msg: rgb(28 30 24 / 0.22);
+  --ch-card-shadow-flat: 0 0 0 1px rgb(28 27 24 / 0.07), 0 1px 2px rgb(28 25 18 / 0.05), 0 8px 20px -12px rgb(28 25 18 / 0.12);
+  --ch-bubble-mine-ink: #fdfcf8;
   --ch-chart-line: #3f7556;
   --ch-countdown-on-green: #e3f5e9;
   --ch-coin-bg: #e9e3d3;
@@ -911,6 +924,8 @@
   --ch-ease-spring-pour: var(--ch-ease);
   --ch-dur-spring-pour: 420ms;
   --ch-ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
+  /* Messages v2: the iOS keyboard's ride (MOT-KB-1), on --ch-ease-sheet; lib/motion.ts CH_MS.keyboard. */
+  --ch-dur-keyboard: 480ms;
   --ch-ease-spring-smooth: var(--ch-ease);
   --ch-dur-spring-smooth: var(--ch-dur-base);
   /* The settle spring for a part CSS moves (a switch thumb): chSpring('settle'). Where linear() is missing, the ease-out over base. */
@@ -979,6 +994,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-typing-dot: #827d71;
   --ch-ring-own: #c9ad74;
   --ch-switch-off-ring: #827d71;
+  --ch-scrim-msg: rgb(0 0 0 / 0.45);
+  --ch-card-shadow-flat: 0 0 0 1px rgb(255 255 255 / 0.06), inset 0 1px 0 rgb(255 255 255 / 0.04);
+  --ch-bubble-mine-ink: #f4eedd;
   /* Clubhouse refresh, PR 1. Dark Sophomore is #8B6B30 (DECISIONS: white reads 4.95:1; the language table's #8F6E31 gives 4.7). */
   --ch-grouped-bg: #0e120f;
   --ch-card-bg: #191e1a;
@@ -1340,6 +1358,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     --ch-dur-spring-pop: 496ms;
     --ch-ease-spring-lift: linear(0, 0.0388, 0.1306, 0.2476, 0.3711, 0.4898, 0.5971, 0.6899, 0.7675, 0.8304, 0.88, 0.9182, 0.9469, 0.9678, 0.9826, 0.9926, 0.9991, 1.0031, 1.0053, 1.0062, 1.0063, 1.0059, 1.0052, 1.0045, 1.0037, 1.003, 1.0023, 1.0018, 1.0013, 1);
     --ch-dur-spring-lift: 471ms;
+    --ch-ease-spring-launch: linear(0, 0.0127, 0.0465, 0.0957, 0.1553, 0.2216, 0.2913, 0.3619, 0.4316, 0.4988, 0.5624, 0.6219, 0.6766, 0.7263, 0.7711, 0.811, 0.8461, 0.8768, 0.9033, 0.9259, 0.945, 0.961, 0.9742, 0.9849, 0.9935, 1.0003, 1.0054, 1.0092, 1.0119, 1.0137, 1.0147, 1.0151, 1.0151, 1.0147, 1.014, 1.0132, 1.0122, 1.0112, 1.0101, 1.009, 1.008, 1.007, 1.0061, 1.0052, 1.0044, 1.0037, 1.0031, 1.0025, 1.002, 1.0016, 1.0012, 1);
+    --ch-dur-spring-launch: 812ms;
     --ch-ease-spring-settle: linear(0, 0.0429, 0.1419, 0.2645, 0.3907, 0.509, 0.6136, 0.7024, 0.7754, 0.8338, 0.8795, 0.9145, 0.9408, 0.9601, 0.974, 0.9839, 0.9906, 0.9952, 0.9981, 0.9998, 1.0008, 1.0013, 1.0015, 1.0015, 1.0014, 1.0012, 1);
     --ch-dur-spring-settle: 417ms;
   }
@@ -1360,6 +1380,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-dur-spring-send: 0ms;
   --ch-dur-spring-pop: 0ms;
   --ch-dur-spring-lift: 0ms;
+  --ch-dur-spring-launch: 0ms;
+  --ch-dur-keyboard: 0ms;
   /* Not zeroed: a reduced transition is an opacity crossfade this long. Equal to CH_FADE_MS (lib/motion.ts). */
   --ch-dur-crossfade-rm: 0ms;
   --ch-reveal-offset: 0ms;
@@ -1477,12 +1499,20 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
   [data-ui='clubhouse'] {
     --ch-glass-bg: var(--ch-bg-page);
     --ch-glass-blur: 0px;
+    --ch-glass: var(--ch-bg-page);
+    --ch-glass-strong: var(--ch-bg-page);
+    --ch-glass-blur-msg: 0px;
+    --ch-scrim-blur-msg: 0px;
     --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
     --ch-phone-composer-bg: var(--ch-bg-surface);
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     --ch-glass-bg: var(--ch-bg-page);
     --ch-glass-blur: 0px;
+    --ch-glass: var(--ch-bg-page);
+    --ch-glass-strong: var(--ch-bg-page);
+    --ch-glass-blur-msg: 0px;
+    --ch-scrim-blur-msg: 0px;
     --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
     --ch-phone-composer-bg: var(--ch-bg-surface);
   }
@@ -1491,6 +1521,10 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
 :root[data-reduce-transparency][data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-glass-bg: var(--ch-bg-page);
   --ch-glass-blur: 0px;
+  --ch-glass: var(--ch-bg-page);
+  --ch-glass-strong: var(--ch-bg-page);
+  --ch-glass-blur-msg: 0px;
+  --ch-scrim-blur-msg: 0px;
   --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
   --ch-phone-composer-bg: var(--ch-bg-surface);
 }
@@ -1532,6 +1566,10 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-text-tertiary: var(--ch-ink-600);
     --ch-glass-bg: var(--ch-bg-page);
     --ch-glass-blur: 0px;
+    --ch-glass: var(--ch-bg-page);
+    --ch-glass-strong: var(--ch-bg-page);
+    --ch-glass-blur-msg: 0px;
+    --ch-scrim-blur-msg: 0px;
     --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
     --ch-light-rim: transparent;
     --ch-light-rim-soft: transparent;
@@ -1558,6 +1596,10 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-text-tertiary: var(--ch-ink-600);
     --ch-glass-bg: var(--ch-bg-page);
     --ch-glass-blur: 0px;
+    --ch-glass: var(--ch-bg-page);
+    --ch-glass-strong: var(--ch-bg-page);
+    --ch-glass-blur-msg: 0px;
+    --ch-scrim-blur-msg: 0px;
     --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
     --ch-light-rim: transparent;
     --ch-light-rim-soft: transparent;
