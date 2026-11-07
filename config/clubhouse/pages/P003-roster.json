@@ -147,7 +147,7 @@
     {
       "id": "ACT-P003-APPROVE-ALL",
       "label": "Approve every join request (phone)",
-      "component": "src/clubhouse/screens/roster/RosterPhone.tsx#RequestsSheet",
+      "component": "src/clubhouse/screens/roster/RosterPhoneCrh.tsx#RequestsSheetCrh",
       "handler": "jr.approveAll",
       "service": "src/app/golf/actions/teams.ts#acceptJoinRequest",
       "data": [

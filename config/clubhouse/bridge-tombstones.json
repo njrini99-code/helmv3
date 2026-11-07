@@ -22,5 +22,25 @@
     "removedAt": "2026-10-07",
     "reason": "CH-15922 was minted in category 07 before its category override existed; re-minted in its own category the same day",
     "replacement": 151203
+  },
+  {
+    "id": 130208,
+    "removedAt": "2026-11-07",
+    "reason": "CH-13450 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes"
+  },
+  {
+    "id": 130613,
+    "removedAt": "2026-11-07",
+    "reason": "CH-13051 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes"
+  },
+  {
+    "id": 130622,
+    "removedAt": "2026-11-07",
+    "reason": "CH-13253 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes"
+  },
+  {
+    "id": 130623,
+    "removedAt": "2026-11-07",
+    "reason": "CH-13254 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes"
   }
 ]

@@ -165,7 +165,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
 | P011 | 16 | 15 |  | 26 | 11 | 44 | 22 | 5 | 2 |  | 24 | 2 | 1 | 4 | 4 | 4 | 11 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 210 |
 | P012 | 3 | 3 |  | 8 | 19 | 22 | 3 | 3 | 2 |  | 5 | 1 |  | 4 | 4 | 2 | 5 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 96 |
-| P013 | 7 | 15 |  | 39 | 3 | 50 | 71 | 7 | 3 |  | 3 | 1 |  | 3 | 4 | 4 | 11 | 23 | 1 |  | 1 |  | 1 |  |  | 247 |
+| P013 | 7 | 14 |  | 39 | 3 | 47 | 71 | 7 | 3 |  | 3 | 1 |  | 3 | 4 | 4 | 11 | 23 | 1 |  | 1 |  | 1 |  |  | 243 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
 | P016 | 31 | 1 | 1 | 26 |  | 35 | 1 | 1 |  | 2 | 4 | 1 |  |  | 5 | 2 |  | 3 |  |  |  |  |  |  |  | 113 |
@@ -270,7 +270,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 11819 | CH-1830 | 18 Accessibility | `ON_A_TOUCH_SCREEN_HOLDING_A_PEEKABLE` | implemented | On a touch screen, holding a peekable object (a player's name) for about 450ms ticks once and raises its card over the dimmed, softened page where the row was, its actions listed under it (the native context menu's anatomy); the tap the hold ends with does not open the row, a scroll or drag past 8px cancels the hold, and iOS's link callout stays out of it. Esc, a tap outside or an action closes it, but not the lift that ends the hold; focus returns to the row |
 | 11820 | CH-1831 | 18 Accessibility | `ON_A_DESKTOP_RESTING_THE_POINTER_ON` | implemented | On a desktop, resting the pointer on it for 400ms (or focusing it from the keyboard for 600ms) opens a hover card beside it with the same actions as small keys; leaving the target and the card, Esc, or a scroll that moves the target closes it |
 | 11821 | CH-1832 | 18 Accessibility | `THE_PLAYER_PEEK_NAME_AND_CLASS_WHY` | implemented | The player peek: name and class, why they need a look (ink, the amber on its icon), the last round, the average and a word-sized line of the last scores; Message opens Messages with the player as the recipient (never sends), View stats and Plan 1:1 open their pages, and CoachHelm the player's deep dive (`coachhelm?view=deep-dive&player=`, not drawn until CoachHelm is rebuilt for coaches). Wired on Home's leaderboard; other pages wrap their names in `PlayerPeek` |
-| 11822 | CH-1840 | 18 Accessibility | `A_COACHS_TOP_BAR_CARRIES_AN_ASK` | implemented | A coach's top bar carries an Ask key (desktop and phone; only while CoachHelm is on for the coach, not on CoachHelm itself, and never for a player): it opens the Ask sheet over the page |
+| 11822 | CH-1840 | 18 Accessibility | `A_COACHS_TOP_BAR_CARRIES_AN_ASK` | reserved | A coach's top bar carries an Ask key (desktop and phone; only while CoachHelm is on for the coach, not on CoachHelm itself, and never for a player): it opens the Ask sheet over the page |
 | 11823 | CH-1841 | 18 Accessibility | `THE_ASK_SHEET_IS_COACHHELMS_ASK_OVER` | implemented | The Ask sheet is CoachHelm's Ask over any screen: the same chat hook and route (no new model or spend), the thread and the message box, saved like any chat; Open in CoachHelm goes to it there. Phone: a bottom sheet that opens at half height with the page in view and grows to full when a thread starts (the grab or the chevron toggles); desktop: a centred sheet. Its heading takes focus, Esc, Close or the backdrop close it, and a new page (or another player) closes it and starts the next one fresh; in the app it sits above the keyboard |
 | 11824 | CH-1842 | 18 Accessibility | `THE_SHEET_NAMES_WHAT_THE_COACH_IS` | implemented | The sheet names what the coach is looking at (“Looking at: Stats · Jonah Okafor”, from the page's trail or the navigation); a page about one player (`?player=`) also hands the chat that player as its context chip |
 | 11825 | CH-1816 | 18 Accessibility | `ON_THE_PHONE_THE_SECTIONS_NAME_IN` | implemented | On the phone the section's name in the top bar is the section switcher: a button with a chevron (`aria-expanded`, `aria-controls="ch-strip"`) that opens the section strip, with a dot and a spoken note while another section has something new; on a section's own page a pull down on the bar draws the strip and a sideways swipe steps to the next section |
@@ -292,14 +292,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Bridge ID | Code | Category | Name | Status | Meaning |
 | --- | --- | --- | --- | --- | --- |
-| 20101 |  | 01 Default / core UI | `COACH_HOME_READY` | implemented | Coach Home opens with the date, the greeting and the brief, Message team and New event, the week beside the latest round in one sheet, and the season leaderboard, all read on the server for the first paint; a team with nothing yet gets the first-run page (CH-2308), and on a phone the same data is drawn as the phone Home (21901). |
+| 20101 |  | 01 Default / core UI | `COACH_HOME_READY` | implemented | Coach Home opens with the date, the greeting and the brief, Up next beside the hero, Today and the team's scoring form, the team's four parts and the latest round, all read on the server for the first paint; a team with nothing yet gets the first-run page. The leaderboard and the week are not on Home (Roster, Stats and Calendar). |
 | 20102 |  | 01 Default / core UI | `PLAYER_HOME_READY` | implemented | Player Home opens with the date and the greeting (no brief line: owner, 2026-10-06), Message coach, the week beside Up next and Your latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901). |
 | 20103 |  | 01 Default / core UI | `LINKS_OPEN_WHAT_THEY_NAME` | implemented | Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, Message coach the coach's thread (?user=), the first run's Invite players Roster with its invite sheet open (/golf/dashboard/roster?invite=1), each part of the coach's "Waiting on you" the screen that holds it (join requests Roster, replies that event in Calendar when one event holds them and Calendar when more do, overdue tasks Team Hub's Tasks ?tab=tasks, posts awaiting acknowledgement its Announcements ?tab=ann), a name in the team's four parts that player's Game tab on Stats on the same Last 10 (?player=&tab=game) and Team stats Stats, the coach's Next row Nudge Messages prefilled for who hasn't replied (the phone day card's own link, never sent), and CoachHelm in the player peek and the phone's round sheet that player's deep dive (/golf/dashboard/coachhelm?view=deep-dive&player=); a link to a screen not yet rebuilt for the viewer's role is not drawn. |
 | 20104 |  | 01 Default / core UI | `COACH_QUEUE_COUNTS_AS_ITS_SCREEN` | implemented | Coach Home's "Waiting on you" (under the head on desktop, in the phone's hero, and on the first run) counts each part with the read and rule of the screen that holds it, so the two show one number: pending join requests as the sidebar's Roster badge counts them, replies missing on this week's events that still take one as Team Hub's RSVPs count "no reply" (rsvpQueue), overdue tasks as Team Hub's Tasks (taskStatus, overdueTaskCount) and posts awaiting an acknowledgement as its Announcements (unackedPostCount). Only parts above zero are drawn, in that order; with nothing waiting the row is not drawn. Each part reads on its own: one that fails is null, logged and left out, never 0 (CH-2220). |
 | 20105 |  | 01 Default / core UI | `TEAM_PARTS_ON_THE_FORMS_LAST_10` | implemented | Coach Home's four parts (The team's game; under the team's form on desktop, after Team scoring on the phone) read the form's own Last 10 rounds of the active roster, hole-level only (Q-123): strokes gained per round in each part from 3 rounds with hole scores (else none), its change against the same players' previous ten (Q-112) coloured only when it clears its standard error, the part's plain stat (Fairways, Greens, Up and down, Putts) with the Tour's mark from the team's tour, and who gains and loses most from Team Stats' ranking (ties share a place and are named together; one ranked player, or everyone in one place, loses nothing). No other player's round reaches the figures. |
 | 20201 | CH-2401 | 02 Initial loading / skeleton | `HOME_IS_LOADING` | implemented | Home is loading |
 | 20202 | CH-2470 | 02 Initial loading / skeleton | `THE_SHEET_OPENS_BEFORE_THE_CLASS_DAY` | implemented | The sheet opens before the class day has arrived |
-| 20301 |  | 03 Background loading / refresh | `CLOCK_KEEPS_TIME` | implemented | The phone's Up next line (In 50 min, Happening now) is recomputed from the device clock every minute and the player's countdown every second, so neither needs a reload. |
+| 20301 |  | 03 Background loading / refresh | `CLOCK_KEEPS_TIME` | implemented | The phone's Up next line (In 50 min, Happening now) is recomputed from the device clock every minute, so it needs no reload. |
 | 20401 | CH-2301 | 04 Empty | `NOTHING_IS_ON_THE_CALENDAR_TODAY` | implemented | Nothing is on the calendar today |
 | 20402 | CH-2302 | 04 Empty | `NO_ROUNDS_THIS_SEASON` | implemented | No rounds this season |
 | 20403 | CH-2303 | 04 Empty | `THE_NEWEST_ROUND_WAS_POSTED_AS_A` | implemented | The newest round was posted as a total |
@@ -330,8 +330,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 20604 | CH-2204 | 06 Server / system error | `SEASON_ROUNDS_DONT_LOAD_2` | implemented | Season rounds don't load (the leaderboard's source) |
 | 20605 | CH-2205 | 06 Server / system error | `THE_WEEK_SECTION_CRASHES_WHILE_DRAWING` | implemented | The week section crashes while drawing |
 | 20606 | CH-2206 | 06 Server / system error | `THE_LATEST_ROUND_CRASHES_WHILE_DRAWING` | implemented | The latest round crashes while drawing |
-| 20607 | CH-2207 | 06 Server / system error | `THE_LEADERBOARD_CRASHES_WHILE_DRAWING` | reserved | The leaderboard crashes while drawing |
-| 20608 | CH-2208 | 06 Server / system error | `THE_TEAM_CHAT_DOESNT_LOAD` | implemented | The team chat doesn't load |
+| 20607 | CH-2207 | 06 Server / system error | `THE_LEADERBOARD_CRASHES_WHILE_DRAWING` | deprecated | (retired 2026-11-07, with the Home leaderboard) The leaderboard crashes while drawing |
+| 20608 | CH-2208 | 06 Server / system error | `THE_TEAM_CHAT_DOESNT_LOAD` | deprecated | (retired 2026-11-07, with Message team) The team chat doesn't load |
 | 20609 | CH-2209 | 06 Server / system error | `EVENT_REPLIES_DONT_LOAD` | implemented | Event replies don't load |
 | 20610 | CH-2210 | 06 Server / system error | `THE_TEAMS_TIMEZONE_DOESNT_LOAD` | implemented | The team's timezone doesn't load |
 | 20611 | CH-2211 | 06 Server / system error | `THE_TEAMS_FORM_DOESNT_LOAD` | implemented | The team's form doesn't load (phone) |
@@ -372,7 +372,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 21804 | CH-2804 | 18 Accessibility | `THE_ROUND_PAGER_ANNOUNCES_2_OF_3` | reserved | The round pager announces "2 of 3"; each form line has a text equivalent ("last 7 rounds: 72, 71…") |
 | 21805 | CH-2805 | 18 Accessibility | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | reserved | No axe violations in any preview state, 1280px and 390px |
 | 21806 | CH-2806 | 18 Accessibility | `ON_A_PHONE_THE_SCORECARD_SCROLLS_SIDEWAYS` | reserved | On a phone the scorecard scrolls sideways; it is a named region that takes focus, so the arrow keys scroll it |
-| 21807 |  | 18 Accessibility | `COUNTDOWN_IS_A_NAMED_TIMER` | implemented | The player's countdown is a timer named for a screen reader as Starts in N days, N hours and N minutes (singular at one), and its digits, the ticking seconds included, are hidden from a screen reader, so it is heard once, not every second. |
+| 21807 |  | 18 Accessibility | `COUNTDOWN_IS_A_NAMED_TIMER` | deprecated | Retired 2026-11-07 (Dashboard cuts: the player Home has no countdown). The player's countdown is a timer named for a screen reader as Starts in N days, N hours and N minutes (singular at one), and its digits, the ticking seconds included, are hidden from a screen reader, so it is heard once, not every second. |
 | 21808 | CH-2870 | 18 Accessibility | `THE_HOME_CLASS_LINE` | implemented | The Home class line |
 | 21901 |  | 19 Responsive layout | `PHONE_HOME` | implemented | At 820px and below both roles get the phone Home, never the desktop page shrunk: a hero with Up next, then for a coach Today, the team's scoring form, This week and Latest rounds, and for a player This week, Today, Your latest round, Scoring and the parts of the game; wider canvases get the desktop Home. |
 | 22101 |  | 21 Performance | `LOADERS_NEVER_THROW` | implemented | Each Home is read on the server before its first paint, and a failed read is logged through chLogServer('home', {read}) and flagged on its own section instead of throwing, so one failed read never takes the page down. |
@@ -418,7 +418,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30612 | CH-3205 | 06 Server / system error | `THE_ROSTER_LIST_CRASHES` | implemented | The roster list crashes |
 | 30613 | CH-3206 | 06 Server / system error | `THE_PLAYER_PANEL_CRASHES` | implemented | The player panel crashes |
 | 30614 | CH-3207 | 06 Server / system error | `THE_TEAM_ROW_DOESNT_LOAD` | implemented | The team row doesn't load |
-| 30615 | CH-3208 | 06 Server / system error | `FOCUS_AREAS_OR_GOALS_DONT_LOAD` | reserved | Focus areas or goals don't load |
+| 30615 | CH-3208 | 06 Server / system error | `FOCUS_AREAS_OR_GOALS_DONT_LOAD` | deprecated | (retired 2026-11-07, the roster peek no longer shows Development counts) Focus areas or goals don't load |
 | 30616 | CH-3209 | 06 Server / system error | `THIS_COACHS_NOTES_DONT_LOAD` | implemented | This coach's notes don't load |
 | 30617 | CH-3210 | 06 Server / system error | `THE_PLAYERS_ROSTER_DOESNT_LOAD` | implemented | The player's roster doesn't load (a player's own team's members) |
 | 30618 | CH-3211 | 06 Server / system error | `THE_PLAYERS_ROSTER_LIST_CRASHES` | implemented | The player's roster list crashes |
@@ -1527,7 +1527,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 120202 | CH-12402 | 02 Initial loading / skeleton | `A_SCHEDULE_IS_BEING_READ` | implemented | A schedule is being read |
 | 120203 | CH-12403 | 02 Initial loading / skeleton | `CLASSES_ARE_BEING_PUT_ON_THE_CALENDAR` | implemented | Classes are being put on the calendar |
 | 120401 | CH-12301 | 04 Empty | `NO_CLASSES_YET` | implemented | No classes yet |
-| 120402 | CH-12302 | 04 Empty | `NO_CLASS_MEETS_A_TEAM_EVENT_THIS` | reserved | No class meets a team event this week |
+| 120402 | CH-12302 | 04 Empty | `NO_CLASS_MEETS_A_TEAM_EVENT_THIS` | deprecated | (retired 2026-11-07, the overlaps card has no empty line in the redesign) No class meets a team event this week |
 | 120403 | CH-12303 | 04 Empty | `A_CLASS_WITH_NO_FIXED_MEETING` | implemented | A class with no fixed meeting (online or arranged) |
 | 120404 | CH-12304 | 04 Empty | `A_CLASS_WITH_TIMES_BUT_NO_DAYS` | implemented | A class with times but no days |
 | 120405 | CH-12305 | 04 Empty | `A_PLAYER_ON_NO_TEAM` | implemented | A player on no team |
@@ -1635,7 +1635,6 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130205 | CH-13404 | 02 Initial loading / skeleton | `A_PLAYERS_ACCEPT_OR_DECLINE_IS_BEING` | implemented | A player's Accept is being sent |
 | 130206 | CH-13420 | 02 Initial loading / skeleton | `ASK_THE_CHAT_PAGE_LOADS` | implemented | Ask: The chat page loads |
 | 130207 | CH-13421 | 02 Initial loading / skeleton | `ASK_A_REPLY_IS_STREAMING` | implemented | Ask: A reply is streaming |
-| 130208 | CH-13450 | 02 Initial loading / skeleton | `ASK_AN_ACTION_WAS_CONFIRMED_AND_IS` | implemented | Ask: An action was confirmed and is being carried out |
 | 130209 | CH-13460 | 02 Initial loading / skeleton | `PROFILE_THE_GAME_PROFILE_IS_ON_ITS` | deprecated | (retired with the Game profile, chs-37) Profile: the Game profile is on its way |
 | 130210 | CH-13470 | 02 Initial loading / skeleton | `STANDING_THE_STANDING_IS_ON_ITS_WAY` | implemented | Standing: the standing is on its way |
 | 130211 | CH-13480 | 02 Initial loading / skeleton | `DEEP_DIVE_THE_INSIGHTS_ARE_ON_THEIR` | implemented | Deep dive: the insights are on their way |
@@ -1697,7 +1696,6 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130610 | CH-13005 | 06 Server / system error | `A_PLAYERS_DECLINE_OF_A_PROPOSED_FOCUS` | implemented | A player's Decline of a proposed focus area fails (written when its Undo toast goes, CH-13912) |
 | 130611 | CH-13205 | 06 Server / system error | `THE_PLAYERS_PROPOSED_FOCUS_AREAS_DONT_LOAD` | implemented | The player's proposed focus areas don't load (the read fails, or the team they are read through can't be read) |
 | 130612 | CH-13050 | 06 Server / system error | `ASK_AN_ACTION_COACHHELM_PROPOSED_FAILS_AFTER` | implemented | Ask: An action CoachHelm proposed fails after Confirm |
-| 130613 | CH-13051 | 06 Server / system error | `ASK_COPY_IS_REFUSED_BY_THE_CLIPBOARD` | implemented | Ask: Copy is refused by the clipboard |
 | 130614 | CH-13221 | 06 Server / system error | `ASK_THE_CHAT_CONTEXT_DOES_NOT_LOAD` | implemented | Ask: The chat context (the program) does not load, or its roster read fails |
 | 130615 | CH-13222 | 06 Server / system error | `ASK_THE_CHAT_LIST_DOES_NOT_LOAD` | implemented | Ask: The chat list does not load |
 | 130616 | CH-13223 | 06 Server / system error | `ASK_THE_PULSE_DOES_NOT_LOAD` | deprecated | Ask: The pulse does not load |
@@ -1706,8 +1704,6 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130619 | CH-13250 | 06 Server / system error | `ASK_A_READ_TOOL_BEHIND_AN_ANSWER` | implemented | Ask: A read tool behind an answer failed |
 | 130620 | CH-13251 | 06 Server / system error | `ASK_AN_ANSWER_FAILS_WHILE_IT_STREAMS` | implemented | Ask: An answer fails while it streams |
 | 130621 | CH-13252 | 06 Server / system error | `ASK_AN_ANSWER_ARRIVES_MALFORMED_AND_IS` | implemented | Ask: An answer arrives malformed and is rejected |
-| 130622 | CH-13253 | 06 Server / system error | `ASK_A_CONFIRMED_ACTION_FAILED_OR_ONLY` | implemented | Ask: A confirmed action failed or only partly completed |
-| 130623 | CH-13254 | 06 Server / system error | `ASK_THE_CONVERSATION_MOVED_PAST_A_CARD` | implemented | Ask: The conversation moved past a card that was never answered |
 | 130624 | CH-13255 | 06 Server / system error | `ASK_THE_EVIDENCE_PANEL_IS_OPENED_FOR` | implemented | Ask: The evidence panel is opened for a player the conversation has nothing on |
 | 130625 | CH-13260 | 06 Server / system error | `PROFILE_THE_GAME_PROFILE_DOESNT_LOAD` | implemented | Standing: How you play doesn't load (the genome read fails or throws) |
 | 130626 | CH-13270 | 06 Server / system error | `STANDING_THE_STANDING_DOESNT_LOAD` | implemented | Standing: the standing doesn't load (the standing read fails or throws) |
@@ -1742,10 +1738,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130705 | CH-13921 | 07 Network / offline | `ASK_A_SEND_FAILS` | implemented | Ask: A send fails |
 | 130706 | CH-13922 | 07 Network / offline | `ASK_A_NEW_THREAD_STARTS` | implemented | Ask: A new thread starts |
 | 130707 | CH-13923 | 07 Network / offline | `ASK_THE_SUB_TAB_STRIP` | implemented | Ask: The sub-tab strip |
-| 130708 | CH-13950 | 07 Network / offline | `ASK_COPY_AN_ANSWER` | implemented | Ask: Copy an answer |
-| 130709 | CH-13951 | 07 Network / offline | `ASK_COACHHELM_PROPOSES_AN_ACTION` | implemented | Ask: CoachHelm proposes an action |
-| 130710 | CH-13952 | 07 Network / offline | `ASK_A_PROPOSED_ACTION_IS_CANCELLED` | implemented | Ask: A proposed action is cancelled |
-| 130711 | CH-13953 | 07 Network / offline | `ASK_A_CONFIRMED_ACTION_LANDS` | implemented | Ask: A confirmed action lands |
+| 130708 | CH-13950 | 07 Network / offline | `ASK_COPY_AN_ANSWER` | reserved | Ask: Copy an answer |
+| 130709 | CH-13951 | 07 Network / offline | `ASK_COACHHELM_PROPOSES_AN_ACTION` | reserved | Ask: CoachHelm proposes an action |
+| 130710 | CH-13952 | 07 Network / offline | `ASK_A_PROPOSED_ACTION_IS_CANCELLED` | reserved | Ask: A proposed action is cancelled |
+| 130711 | CH-13953 | 07 Network / offline | `ASK_A_CONFIRMED_ACTION_LANDS` | reserved | Ask: A confirmed action lands |
 | 130712 | CH-13930 | 07 Network / offline | `PLAYER_THE_SUB_NAVIGATION` | implemented | Player: the sub-navigation |
 | 130713 | CH-13931 | 07 Network / offline | `PLAYER_DEVELOPMENT` | reserved | Player: Development |
 | 130714 | CH-13980 | 07 Network / offline | `DEEP_DIVE_A_READ_IS_OPENED_ON` | implemented | Deep dive: a read is opened on the phone |
@@ -1836,7 +1832,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 131703 | CH-13703 | 17 Haptic | `DISMISS_IS_TAPPED` | implemented | Dismiss is tapped |
 | 131704 | CH-13704 | 17 Haptic | `ACCEPT_OR_DECLINE_IS_TAPPED` | reserved | Accept or Decline is tapped |
 | 131705 | CH-13721 | 17 Haptic | `ASK_AN_OPENER_PILL_OR_SHORTCUT_CARD` | implemented | Ask: An opener pill or shortcut card is tapped |
-| 131706 | CH-13752 | 17 Haptic | `ASK_A_FOLLOW_UP_IS_TAPPED` | implemented | Ask: A follow-up is tapped |
+| 131706 | CH-13752 | 17 Haptic | `ASK_A_FOLLOW_UP_IS_TAPPED` | reserved | Ask: A follow-up is tapped |
 | 131707 | CH-13780 | 17 Haptic | `DEEP_DIVE_A_READ_IN_THE_LIST` | implemented | Deep dive: a read in the list, or a round or a plan under it, is tapped |
 | 131708 | CH-13705 | 17 Haptic | `RECHECK_TAPPED` | implemented | Re-check tapped |
 | 131709 | CH-13760 | 17 Haptic | `PLAYER_FILE_SAVING_A_COACHS_PLAN_FAILS` | implemented | Player File: saving a coach's plan fails |
@@ -2187,3 +2183,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 - 150702: CH-15920 was minted in category 07 before its category override existed; re-minted in its own category the same day (2026-10-07, replaced by 151202)
 - 150703: CH-15921 was minted in category 07 before its category override existed; re-minted in its own category the same day (2026-10-07, replaced by 150902)
 - 150704: CH-15922 was minted in category 07 before its category override existed; re-minted in its own category the same day (2026-10-07, replaced by 151203)
+- 130208: CH-13450 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes (2026-11-07)
+- 130613: CH-13051 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes (2026-11-07)
+- 130622: CH-13253 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes (2026-11-07)
+- 130623: CH-13254 belonged to the old Ask action card, deleted when coachhelm_ask_v2 was retired; the Ask v2 card has its own codes (2026-11-07)

@@ -1083,7 +1083,7 @@
     "name": "A_COACHS_TOP_BAR_CARRIES_AN_ASK",
     "chCode": "CH-1840",
     "meaning": "A coach's top bar carries an Ask key (desktop and phone; only while CoachHelm is on for the coach, not on CoachHelm itself, and never for a player): it opens the Ask sheet over the page",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -1713,8 +1713,8 @@
     "item": 7,
     "name": "THE_LEADERBOARD_CRASHES_WHILE_DRAWING",
     "chCode": "CH-2207",
-    "meaning": "The leaderboard crashes while drawing",
-    "status": "reserved",
+    "meaning": "(retired 2026-11-07, with the Home leaderboard) The leaderboard crashes while drawing",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
@@ -1724,8 +1724,8 @@
     "item": 8,
     "name": "THE_TEAM_CHAT_DOESNT_LOAD",
     "chCode": "CH-2208",
-    "meaning": "The team chat doesn't load",
-    "status": "implemented",
+    "meaning": "(retired 2026-11-07, with Message team) The team chat doesn't load",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
@@ -2664,8 +2664,8 @@
     "item": 15,
     "name": "FOCUS_AREAS_OR_GOALS_DONT_LOAD",
     "chCode": "CH-3208",
-    "meaning": "Focus areas or goals don't load",
-    "status": "reserved",
+    "meaning": "(retired 2026-11-07, the roster peek no longer shows Development counts) Focus areas or goals don't load",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -14892,8 +14892,8 @@
     "item": 2,
     "name": "NO_CLASS_MEETS_A_TEAM_EVENT_THIS",
     "chCode": "CH-12302",
-    "meaning": "No class meets a team event this week",
-    "status": "reserved",
+    "meaning": "(retired 2026-11-07, the overlaps card has no empty line in the redesign) No class meets a team event this week",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
   {
@@ -16075,17 +16075,6 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
-    "id": 130208,
-    "page": "P013",
-    "category": 2,
-    "item": 8,
-    "name": "ASK_AN_ACTION_WAS_CONFIRMED_AND_IS",
-    "chCode": "CH-13450",
-    "meaning": "Ask: An action was confirmed and is being carried out",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
     "id": 130209,
     "page": "P013",
     "category": 2,
@@ -16761,17 +16750,6 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
-    "id": 130613,
-    "page": "P013",
-    "category": 6,
-    "item": 13,
-    "name": "ASK_COPY_IS_REFUSED_BY_THE_CLIPBOARD",
-    "chCode": "CH-13051",
-    "meaning": "Ask: Copy is refused by the clipboard",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
     "id": 130614,
     "page": "P013",
     "category": 6,
@@ -16856,28 +16834,6 @@
     "name": "ASK_AN_ANSWER_ARRIVES_MALFORMED_AND_IS",
     "chCode": "CH-13252",
     "meaning": "Ask: An answer arrives malformed and is rejected",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 130622,
-    "page": "P013",
-    "category": 6,
-    "item": 22,
-    "name": "ASK_A_CONFIRMED_ACTION_FAILED_OR_ONLY",
-    "chCode": "CH-13253",
-    "meaning": "Ask: A confirmed action failed or only partly completed",
-    "status": "implemented",
-    "catalog": "docs/clubhouse/catalog/coachhelm.md"
-  },
-  {
-    "id": 130623,
-    "page": "P013",
-    "category": 6,
-    "item": 23,
-    "name": "ASK_THE_CONVERSATION_MOVED_PAST_A_CARD",
-    "chCode": "CH-13254",
-    "meaning": "Ask: The conversation moved past a card that was never answered",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -17265,7 +17221,7 @@
     "name": "ASK_COPY_AN_ANSWER",
     "chCode": "CH-13950",
     "meaning": "Ask: Copy an answer",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -17276,7 +17232,7 @@
     "name": "ASK_COACHHELM_PROPOSES_AN_ACTION",
     "chCode": "CH-13951",
     "meaning": "Ask: CoachHelm proposes an action",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -17287,7 +17243,7 @@
     "name": "ASK_A_PROPOSED_ACTION_IS_CANCELLED",
     "chCode": "CH-13952",
     "meaning": "Ask: A proposed action is cancelled",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -17298,7 +17254,7 @@
     "name": "ASK_A_CONFIRMED_ACTION_LANDS",
     "chCode": "CH-13953",
     "meaning": "Ask: A confirmed action lands",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -18330,7 +18286,7 @@
     "name": "ASK_A_FOLLOW_UP_IS_TAPPED",
     "chCode": "CH-13752",
     "meaning": "Ask: A follow-up is tapped",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {

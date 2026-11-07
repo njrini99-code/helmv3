@@ -101,7 +101,6 @@ filtered empty state.
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 120401 | CH-12301 | `NO_CLASSES_YET` | No classes yet |
-| 120402 | CH-12302 | `NO_CLASS_MEETS_A_TEAM_EVENT_THIS` | No class meets a team event this week |
 | 120403 | CH-12303 | `A_CLASS_WITH_NO_FIXED_MEETING` | A class with no fixed meeting (online or arranged) |
 | 120404 | CH-12304 | `A_CLASS_WITH_TIMES_BUT_NO_DAYS` | A class with times but no days |
 | 120405 | CH-12305 | `A_PLAYER_ON_NO_TEAM` | A player on no team |
