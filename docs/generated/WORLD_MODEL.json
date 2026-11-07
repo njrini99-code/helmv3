@@ -16758,6 +16758,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/focus-areas/target-metric.ts",
           "anchor": "src/lib/coachhelm/v3/metrics/registry"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/shared/__tests__/confidence-reason.test.ts",
+          "anchor": "src/lib/coachhelm/v3/engine/generator-base"
         }
       ]
     },
@@ -22187,6 +22192,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/corrections/flag.ts",
           "anchor": "src/lib/coachhelm/canary"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/engine/generator-base.ts",
+          "anchor": "src/lib/coachhelm/shared/confidence-reason"
         },
         {
           "kind": "import_graph",
