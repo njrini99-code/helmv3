@@ -77,7 +77,7 @@
   gap: 6px;
 }
 .ch-tour-lu-note {
-  padding: 10px 14px;
+  padding: 12px 16px;
   border-radius: var(--ch-radius-md);
   font: var(--ch-type-13);
   background: var(--ch-warning-100);

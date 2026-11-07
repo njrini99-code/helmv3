@@ -5,6 +5,7 @@
  * and saving it unchanged sends the same days, courses and tee times.
  */
 import type { TourEventInput } from '@/app/golf/actions/tournaments';
+import { zoneWallParts } from '../../lib/dates';
 import {
   formatToColumns,
   nextRoundId,
@@ -31,14 +32,8 @@ export function wallTime(instant: string | null, timeZone: string): string | nul
   if (!instant) return null;
   const ms = Date.parse(instant);
   if (Number.isNaN(ms)) return null;
-  try {
-    const parts = new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(ms));
-    const h = parts.find((p) => p.type === 'hour')?.value;
-    const m = parts.find((p) => p.type === 'minute')?.value;
-    return h && m ? `${h}:${m}` : null;
-  } catch {
-    return null;
-  }
+  const wall = zoneWallParts(ms, timeZone);
+  return wall ? `${String(wall.hour).padStart(2, '0')}:${String(wall.minute).padStart(2, '0')}` : null;
 }
 
 /**

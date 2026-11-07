@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { saveTournamentReflection } from '@/app/golf/actions/tournaments-player';
 import { formatClock } from '../../lib/dates';
 import { haptic } from '../../lib/haptics';
+import { plural } from '../../lib/plural';
 import { useAction } from '../../lib/use-action';
 import { useRefresh } from '../../lib/use-refresh';
 import { Button } from '../../ui/Button';
@@ -64,7 +65,7 @@ function ListPage({ data, phone }: { data: ChTourPlayerData; phone: boolean }) {
       ) : (
         <div className="ch-tour-pl-body">
           {upcoming.length > 0 && (
-            <Section id="ch-tour-pl-up" title="Coming up" meta={`${upcoming.length} ${upcoming.length === 1 ? 'event' : 'events'}`}>
+            <Section id="ch-tour-pl-up" title="Coming up" meta={plural(upcoming.length, 'event')}>
               <EventRows rows={upcoming} now={data.now} href={paths.player} />
             </Section>
           )}
@@ -97,7 +98,7 @@ function EventRows({ rows, now, href }: { rows: ChTourPlayerData['list']; now: s
               {x.status === 'live' && <TrustChip state="live" />}
               {x.mine ? (
                 <span className="ch-num ch-tour-pl-row__v">
-                  {x.mine.total} <span className="ch-tour-pl-muted">in {x.mine.rounds} {x.mine.rounds === 1 ? 'round' : 'rounds'}</span>
+                  {x.mine.total} <span className="ch-tour-pl-muted">in {plural(x.mine.rounds, 'round')}</span>
                 </span>
               ) : null}
               <Icon icon={ChevronRight} size={16} />

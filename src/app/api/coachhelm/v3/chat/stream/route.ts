@@ -88,7 +88,7 @@ import {
 import { extractAndValidateChatClaims } from '@/lib/coachhelm/v3/chat/claims-packet';
 import { CLAIMS_OPEN, CLAIMS_CLOSE, extractAndValidateClaimsSafe } from '@/lib/coachhelm/v3/llm/claims-block';
 import { isFlagEnabled } from '@/lib/flags';
-import { isClubhouseForTeam } from '@/clubhouse/gate';
+import { isClubhouseFor, isClubhouseForTeam } from '@/clubhouse/gate';
 import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
 import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
 import {
@@ -340,7 +340,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     // A player has no coach row: their own read-only Ask, on this route, with the role from the session. Only that denial comes here (any other
     // stays what it was), and the player turn confirms a player row and runs the team gate itself.
-    if (err instanceof CoachContextError && err.reason === 'not_a_coach') {
+    if (err instanceof CoachContextError && err.reason === 'not_a_coach' && (await isClubhouseFor('player'))) {
       const body = Body.safeParse(await req.json().catch(() => null));
       if (!body.success) return NextResponse.json({ error: 'Bad request' }, { status: 400 });
       return runPlayerTurn(supabase, { messages: body.data.messages }, req.signal);

@@ -71,7 +71,7 @@
   display: flex;
   align-items: center;
   flex: none;
-  gap: 10px;
+  gap: 8px;
   color: var(--ch-text-secondary);
 }
 .ch-tour-pl-row__v {
@@ -89,6 +89,7 @@
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
   font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
   color: var(--ch-text-primary);
 }
 .ch-tour-pl-card {

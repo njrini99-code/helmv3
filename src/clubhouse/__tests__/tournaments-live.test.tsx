@@ -150,7 +150,7 @@ describe('LiveRound', () => {
   it('starts an upcoming round, and a refused change says why (CH-16071)', async () => {
     setStatus.mockResolvedValue({ success: false, error: 'Start or finish the rounds in order.', code: 'round_order' });
     draw(withStatus('upcoming'));
-    fireEvent.click(screen.getByRole('button', { name: 'Start round' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Go live' }));
     await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.objectContaining({ code: 'CH-16071', title: 'Couldn’t start the round', body: 'Start or finish the rounds in order.' })));
   });
 

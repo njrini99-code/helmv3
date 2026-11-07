@@ -112,7 +112,7 @@ function LivePage({ data, phone }: { data: ChTourLiveSnapshot; phone: boolean })
   const primary =
     r.status === 'upcoming' ? (
       <Button variant="primary" busy={status.pending} onClick={() => void status.run('live')}>
-        Start round
+        Go live
       </Button>
     ) : r.status === 'live' ? (
       <Button variant="primary" leftIcon={Flag} busy={status.pending} onClick={() => setFinishing(true)}>

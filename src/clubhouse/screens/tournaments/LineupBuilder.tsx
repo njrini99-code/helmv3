@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useRef, useState } from 'react';
 import { lockTournamentLineup, publishTournamentLineup, setTournamentEntries } from '@/app/golf/actions/tournaments';
 import { haptic } from '../../lib/haptics';
+import { plural } from '../../lib/plural';
 import { useAction } from '../../lib/use-action';
 import { useRefresh } from '../../lib/use-refresh';
 import { Avatar } from '../../ui/Avatar';
@@ -368,7 +369,7 @@ function Form({ candidate: c, showCourse = false }: { candidate: ChTourCandidate
       <span className="ch-tour-lu-muted">{c.chance ? CHANCE_WORDS[c.chance] : c.countRounds > 0 ? 'Counts: not enough rounds yet' : ''}</span>
       {showCourse && c.course.rounds > 0 && (
         <span className="ch-tour-lu-muted">
-          {c.course.rounds} {c.course.rounds === 1 ? 'round' : 'rounds'} here{c.course.avgToPar != null ? `, ${formatToPar(c.course.avgToPar)} avg` : ''}
+          {plural(c.course.rounds, 'round')} here{c.course.avgToPar != null ? `, ${formatToPar(c.course.avgToPar)} avg` : ''}
         </span>
       )}
     </div>

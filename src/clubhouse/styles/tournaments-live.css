@@ -46,6 +46,7 @@
 }
 .ch-tour-live.is-phone .ch-tour-live-team__v {
   font: var(--ch-type-28-strong);
+  letter-spacing: var(--ch-track-28);
 }
 .ch-tour-live-team__t {
   display: flex;
@@ -125,6 +126,7 @@
   padding: 2px 8px;
   border-radius: var(--ch-radius-sm);
   font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
   color: var(--ch-text-primary);
 }
 .ch-tour-live-field__row {
@@ -132,7 +134,7 @@
   grid-template-columns: 40px minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
-  padding: 10px 16px;
+  padding: 12px 16px;
   font: var(--ch-type-14);
   color: var(--ch-text-primary);
 }
@@ -197,6 +199,7 @@
   flex-direction: column;
   gap: 2px;
   font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
   color: var(--ch-text-primary);
 }
 .ch-tour-live-hs__choices {
@@ -216,11 +219,12 @@
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-subtle);
   font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
   color: var(--ch-text-primary);
   cursor: pointer;
 }
 .ch-tour-live-hs__c.is-on {
-  background: var(--ch-green-fill-700);
+  background: var(--ch-selected-strong);
   color: var(--ch-text-on-accent);
 }
 .ch-tour-live-hs__c:disabled {

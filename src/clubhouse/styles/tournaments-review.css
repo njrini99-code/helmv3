@@ -296,7 +296,7 @@
   grid-template-columns: minmax(180px, 1fr) minmax(0, 1.4fr) auto;
   align-items: center;
   gap: 16px;
-  padding: 14px 16px;
+  padding: 12px 16px;
 }
 .ch-tour-links-row + .ch-tour-links-row,
 .ch-tour-links-miss__row + .ch-tour-links-miss__row {
