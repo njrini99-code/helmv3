@@ -1500,3 +1500,14 @@ describe('F-0004 · coach Start conversation opens the one-to-one thread, never 
     expect(a.createGolfConversation).toHaveBeenCalledWith(['eli'], 't1');
   });
 });
+
+describe('Messages · actions that fail, on the redesign', () => {
+  it('CH-7009 a reaction that fails says so', async () => {
+    const user = userEvent.setup();
+    live.reactions.setReaction.mockRejectedValue(new Error('refused'));
+    show();
+    await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
+    await user.click(screen.getAllByRole('button', { name: 'React like' })[0]!);
+    await expectCode('CH-7009', /Couldn’t save the reaction/);
+  });
+});
