@@ -1,0 +1,6 @@
+/*
+ * Messages v2, package B: the thread, its bubbles, the glass controls and the composer.
+ * Loaded after messages.css (docs/clubhouse/messages-v2/SEAMS.md). Every rule is scoped to [data-ch-ms-v2], the redesign
+ * flag's root, so the flag-off look (messages.css alone) is untouched. Values come from the artifact through Clubhouse
+ * tokens (docs/clubhouse/messages-v2/SPEC.md); the legacy rules this replaces are deleted from messages.css as each piece lands.
+ */

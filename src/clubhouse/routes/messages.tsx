@@ -11,6 +11,7 @@ import { MessagesNoTeam } from '../screens/messages/MessagesNoTeam';
 import { chLogServer } from '../lib/track-server';
 import { resolveClubhouseTeam } from './team';
 import '../styles/messages.css';
+import '../styles/messages-thread.css';
 
 /**
  * /golf/dashboard/messages in Clubhouse, for coaches and players. The thread

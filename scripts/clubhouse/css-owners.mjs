@@ -35,6 +35,13 @@ export function anchorsOf(css, shared = new Set()) {
   return out;
 }
 
+/**
+ * Stylesheets that are one page's, split by work package: Messages keeps `messages.css` (legacy and shared) and one file
+ * per package (`messages-thread.css`, ...), all loaded together, so they own their classes as one family
+ * (docs/clubhouse/messages-v2/SEAMS.md).
+ */
+const ownerFamily = (name) => (/^messages(?:-[a-z]+)?\.css$/.test(name) ? 'messages.css' : name);
+
 /** `sheets` maps a stylesheet's file name to its text. */
 export function checkClassOwners(sheets, dir = 'src/clubhouse/styles') {
   const shared = new Set();
@@ -42,7 +49,11 @@ export function checkClassOwners(sheets, dir = 'src/clubhouse/styles') {
   const owners = new Map();
   for (const [name, css] of Object.entries(sheets)) {
     if (SHARED_STYLESHEETS.has(name)) continue;
-    for (const k of anchorsOf(css, shared)) owners.set(k, [...(owners.get(k) ?? []), name]);
+    for (const k of anchorsOf(css, shared)) {
+      const family = ownerFamily(name);
+      const seen = owners.get(k) ?? [];
+      if (!seen.some((n) => ownerFamily(n) === family)) owners.set(k, [...seen, name]);
+    }
   }
   return [...owners]
     .filter(([, names]) => names.length > 1)

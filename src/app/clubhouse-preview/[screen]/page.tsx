@@ -68,6 +68,7 @@ import '@/clubhouse/styles/stats-redesign.css';
 import '@/clubhouse/styles/calendar.css';
 import '@/clubhouse/styles/tournament-fields.css';
 import '@/clubhouse/styles/messages.css';
+import '@/clubhouse/styles/messages-thread.css';
 import { PreviewMessages } from '@/clubhouse/preview/PreviewMessages';
 import { PreviewBell } from '@/clubhouse/preview/PreviewBell';
 import { PreviewSettings } from '@/clubhouse/preview/PreviewSettings';
