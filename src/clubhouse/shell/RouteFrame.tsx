@@ -27,7 +27,8 @@ import { useRouteSwipe } from './use-route-swipe';
  * A Back that iOS already played with its own edge swipe swaps at once too, rather than fade a second time (CH-1908).
  * A section switch (the tab bar, a sidebar item) swaps at once as well, with the same hold onto a skeleton (mot-03:
  * lib/nav-motion.ts marks it `data-ch-tab`, shell.css drops the keyframes).
- * A page that arrives after its route skeleton fades in over it (useSkeletonReveal, CH-1619).
+ * A page that arrives after its route skeleton fades in over it (useSkeletonReveal, CH-1619); a skeleton marked
+ * data-ch-arrive="crossfade" crossfades with it on the quick beat instead (READ-S4).
  * On a phone a drill-in pushes and Back pops instead of crossfading (lib/nav-motion.ts, shell.css); the top bar and tab
  * bar are their own view-transition groups and never fade or move.
  */
@@ -44,6 +45,25 @@ export const CH_VT_HOLD_MS = 300;
 /** When a held navigation's crossfade is over: the hold, then the old page's fade (--ch-dur-vt-out). It also outlasts a push (462ms). */
 const VT_DONE_MS = CH_VT_HOLD_MS + 180;
 const HOLD = 'data-ch-vt-hold';
+
+/** A copy of a skeleton that has left, in the place of the page taking over, fading out over it. It is nothing but pixels: not read, not hit. */
+function fadeOutGhost(skeleton: Element, page: HTMLElement, duration: number, easing: string): void {
+  const ghost = skeleton.cloneNode(true) as HTMLElement;
+  // Off the route skeleton's mark, or base.css would fade it in and RouteFrame would take it for one.
+  ghost.removeAttribute('aria-busy');
+  ghost.removeAttribute('aria-label');
+  ghost.removeAttribute('data-ch-arrive');
+  ghost.setAttribute('aria-hidden', 'true');
+  ghost.inert = true;
+  Object.assign(ghost.style, { position: 'absolute', left: `${page.offsetLeft}px`, top: `${page.offsetTop}px`, width: `${page.offsetWidth}px`, margin: '0', pointerEvents: 'none' });
+  page.parentElement?.append(ghost);
+  const fade = ghost.animate?.([{ opacity: 1 }, { opacity: 0 }], { duration, easing, fill: 'forwards' });
+  if (!fade) return ghost.remove();
+  fade.onfinish = () => ghost.remove();
+  fade.oncancel = () => ghost.remove();
+  fade.pause();
+  requestAnimationFrame(() => fade.play());
+}
 
 /**
  * A navigation onto a route skeleton (native-feel audit 2026-10-08, P0-2 and P0-3). While the page crossfade runs,
@@ -87,13 +107,18 @@ function useSkeletonReveal(frame: RefObject<HTMLDivElement | null>, routeKey: st
       const arrived = records
         .flatMap((r) => Array.from(r.addedNodes))
         .filter((n): n is HTMLElement => n instanceof HTMLElement && n.isConnected);
+      // A skeleton that asks for it (data-ch-arrive="crossfade", READ-S4) stays up and fades as the page does, on the quick beat, once its own fade in has finished. Opacity only, so it never moves anything.
+      const crossfade = skeleton instanceof HTMLElement && skeleton.dataset.chArrive === 'crossfade';
+      const duration = (crossfade ? CH_DUR.quick : CH_DUR.press) * 1000;
+      const easing = `cubic-bezier(${CH_EASE.join(', ')})`;
       for (const n of arrived) {
         if (arrived.some((o) => o !== n && o.contains(n))) continue;
-        const fade = n.animate?.([{ opacity: 0 }, { opacity: 1 }], { duration: CH_DUR.press * 1000, easing: `cubic-bezier(${CH_EASE.join(', ')})` });
+        const fade = n.animate?.([{ opacity: 0 }, { opacity: 1 }], { duration, easing });
         // Held at its first frame until the page has painted: a big page can keep the thread busy past the whole fade,
         // and a fade timed from the swap would then be over before anyone saw it.
         fade?.pause();
         requestAnimationFrame(() => fade?.play());
+        if (crossfade && skeleton && performance.now() - since >= VT_DONE_MS + CH_DUR.base * 1000) fadeOutGhost(skeleton, n, duration, easing);
       }
     });
     watch.observe(el, { childList: true, subtree: true });

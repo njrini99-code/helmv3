@@ -307,7 +307,7 @@ the outcome after it was worked on, the category's trend in words, and a line of
 the scores in the rounds listed); the rounds behind it (the newest eight of the
 total it names, each a link to its review once that screen is rebuilt); why
 CoachHelm thinks so (the drivers with their counts, why the confidence is what
-it is unless it is the stock "sample adequate", then the full write-up, its
+it is unless it is the engine's own bookkeeping, then the full write-up, its
 first sentence included); where it happened, only when the stored evidence
 carries a counted path with example holes (up to five, each with its round's day
 and course, the hole and the path in shot-type words; a hole on a round the

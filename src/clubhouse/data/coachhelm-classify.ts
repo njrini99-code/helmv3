@@ -1,6 +1,7 @@
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { InsightComparisonSource, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import { deriveTone, isNegativePolarityMetric } from '@/components/golf/coachhelm/insight-card/tone-derivation';
+import { getMetricDefinition, isGolfMetricId } from '@/lib/golf/metrics/display-registry';
 import type { ChKind, ChTourBaseline } from './coachhelm-shape';
 
 /**
@@ -43,6 +44,21 @@ export const COLLEGE_SOURCES: ReadonlySet<InsightComparisonSource> = new Set<Ins
  */
 export const COLLEGE_NO_TOUR: ReadonlySet<InsightComparisonSource> = new Set<InsightComparisonSource>(['d1_avg', 'd2_avg', 'd3_avg', 'naia_avg', 'juco_avg', 'estimated_target']);
 
+/** A row's unit in the metric registry's words. */
+const REGISTRY_UNIT: Readonly<Record<string, string>> = { percent: 'percent', strokes: 'strokes', count: 'count', yards: 'yd', feet: 'ft' };
+
+/**
+ * The Tour's value for this row's metric, or none where its unit is not the row's. The Tour row belongs to the metric id, and a row can
+ * carry that id with a figure in another unit (TEAM-S1: greens hit, 67%, under `approach_proximity_50_125ft`, whose Tour row is 18 ft).
+ * An id the registry doesn't know can't be confirmed, so it draws none.
+ */
+export function tourValueFor(ev: Pick<InsightEvidence, 'metric' | 'unit'>, tour: ChTourBaseline | null): number | null {
+  const id = ev.metric ?? '';
+  const value = tour?.values.get(id) ?? null;
+  if (value == null || !isGolfMetricId(id)) return null;
+  return getMetricDefinition(id).unit === REGISTRY_UNIT[ev.unit] ? value : null;
+}
+
 /**
  * The comparison the card draws for its number: the Tour's value for the metric where the generator carried a college comparison
  * (the LPGA's for a women's team), the generator's own comparison otherwise, and none where the page draws none (a college figure
@@ -50,7 +66,7 @@ export const COLLEGE_NO_TOUR: ReadonlySet<InsightComparisonSource> = new Set<Ins
  */
 export function drawnComparison(ev: InsightEvidence, tour: ChTourBaseline | null): number | null {
   if (COLLEGE_NO_TOUR.has(ev.comparison_source)) return null;
-  if (COLLEGE_SOURCES.has(ev.comparison_source)) return tour?.values.get(ev.metric ?? '') ?? null;
+  if (COLLEGE_SOURCES.has(ev.comparison_source)) return tourValueFor(ev, tour);
   return num(ev.comparison_value);
 }
 

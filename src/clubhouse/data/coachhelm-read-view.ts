@@ -24,16 +24,17 @@ async function teamForSwitcher(teamId: string): Promise<Array<{ id: string; name
 }
 
 export async function loadCoachRead(input: { scope: ChCoachPlayerScope; insightId: string }): Promise<ChViewLoad<ChReadView>> {
-  const { load, raw } = await coachDiveCore({ scope: input.scope }, { exampleRounds: true });
+  // READ-S4: nothing here waits on anything else. The scope was checked before this ran; the switcher's read needs only its team.
+  const [{ load, raw }, team] = await Promise.all([coachDiveCore({ scope: input.scope }, { exampleRounds: true, behind: input.insightId }), teamForSwitcher(input.scope.teamId).catch(() => null)]);
   if (load.status !== 'ready') return load;
   const { head } = input.scope;
   const view = toChReadView(load.data, raw, input.insightId, 'coach', { playerId: input.scope.playerId, name: head.name, first: head.name.split(' ')[0] ?? head.name }, calls());
-  return { status: 'ready', data: { ...view, team: (await teamForSwitcher(input.scope.teamId)) ?? [] } };
+  return { status: 'ready', data: { ...view, team: team ?? [] } };
 }
 
 /** A player's own read: exactly the read it shows is recorded as shown (R2). The id is the session's. */
 export async function loadPlayerRead(input: { playerId: string; insightId: string }): Promise<ChViewLoad<ChReadView>> {
-  const { load, raw } = await playerDiveCore({ playerId: input.playerId }, { drawn: () => [input.insightId] });
+  const { load, raw } = await playerDiveCore({ playerId: input.playerId }, { drawn: () => [input.insightId], behind: input.insightId });
   if (load.status !== 'ready') return load;
   return { status: 'ready', data: toChReadView(load.data, raw, input.insightId, 'player', { playerId: null, name: 'You', first: 'You' }, calls()) };
 }

@@ -4,6 +4,7 @@ import { CH_DUR } from '../../../lib/motion';
 import { Badge } from '../../../ui/Badge';
 import { CorrectionChips } from '../Corrections';
 import { formatFixed } from '../../../lib/format';
+import { plural } from '../../../lib/plural';
 
 import { useEffect, useRef, useState } from 'react';
 import { CalendarDays, ChevronRight, Flag, MessageSquare, Target, Check } from 'lucide-react';
@@ -346,7 +347,7 @@ export function MovedCard({ d, failed, pictures }: { d: ChReadDetail; failed: bo
   );
 }
 
-export function RoundsCard({ d, failed }: { d: ChReadDetail; failed: boolean }) {
+export function RoundsCard({ d, failed, voice }: { d: ChReadDetail; failed: boolean; voice: ChViewVoice }) {
   const [all, setAll] = useState(false);
   if (failed)
     return (
@@ -361,19 +362,22 @@ export function RoundsCard({ d, failed }: { d: ChReadDetail; failed: boolean }) 
       </Card>
     );
   const list = d.rounds.list;
+  const coach = voice.role === 'coach';
   if (!list.length)
     return (
       <Card id="crounds" title="The rounds behind it">
         <div className="cb">
           <p className="ch-hr-plainp" data-ch-code="CH-13382">
-            No rounds listed for this read.
+            {d.rounds.total > 0
+              ? `This read was made from ${plural(d.rounds.total, 'round')}, but none of them can be listed here. They may be rounds ${coach ? `${voice.first} has` : 'you have'} since removed.`
+              : `This read does not name the rounds it was made from. It uses ${coach ? `${voice.first}’s` : 'your'} stats over its window, so there is no list to show.`}
           </p>
         </div>
       </Card>
     );
   const shown = all ? list.slice(0, 8) : list.slice(0, 4);
   return (
-    <Card id="crounds" title="The rounds behind it" meta={`${d.rounds.total} rounds`}>
+    <Card id="crounds" title="The rounds behind it" meta={plural(d.rounds.total, 'round')}>
       {shown.map((r) => {
         const body = (
           <>
@@ -404,7 +408,7 @@ export function RoundsCard({ d, failed }: { d: ChReadDetail; failed: boolean }) 
           </>
         );
         return r.href ? (
-          <Link className="row tap" key={r.id} href={r.href}>
+          <Link className="row tap" key={r.id} href={r.href} aria-label={`Review the round on ${r.date}${r.course ? ` at ${r.course}` : ''}`}>
             {body}
           </Link>
         ) : (

@@ -22,7 +22,16 @@ import { HELM_PLAYERS } from '../../../../preview/fixtures-coachhelm';
 import type { ChViewLoad, ChViewVoice } from '../../../../data/coachhelm-views-shape';
 import type { ChReadView } from '../../../../data/coachhelm-read-view-shape';
 import type { ChCoachHelmWrites } from '../../writes';
-import { ReadPage } from '../ReadPage';
+import { ReadPage, ReadSkeleton } from '../ReadPage';
+import { RoundsCard } from '../cards';
+import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+import { penalties } from '../../../../preview/fixtures-coachhelm';
+import { toChInsight } from '../../../../data/coachhelm-map';
+import { toChDeepInsight, diveCounts, type ChDeepDive } from '../../../../data/coachhelm-dive-shape';
+import { toChReadView } from '../../../../data/coachhelm-read-view-shape';
+import { READ_CALLS } from '../../../../data/coachhelm-read-calls';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import '../../../../__tests__/dialog-polyfill';
 
 /** W-READ-2, W-READ-6, W-READ-8, W-READ-13, S-READ.do 4, S-READ.sure 5, S-READ.gone: the read page as each viewer gets it, from the real shapers. */
@@ -161,5 +170,105 @@ describe('the states around a read (W-READ-6)', () => {
     show({ status: 'off', reason: 'CoachHelm is off for this team.' }, PLAYER);
     expect(document.querySelector('[data-ch-code="CH-13313"]')).not.toBeNull();
     expect(screen.getByText('CoachHelm is off for this team.')).toBeTruthy();
+  });
+});
+
+/** A row as production stores it, through the real shapers: `diagnosis` with no `cause`, so the Why card is the legacy branch. */
+function viewOf(evidence: Record<string, unknown>, role: 'coach' | 'player' = 'coach'): ChViewLoad<ChReadView> {
+  const base = penalties(HELM_PLAYERS.priya.id, 'in-27');
+  const raw = { ...base, evidence: { ...base.evidence, ...evidence } } as EvidenceInsight;
+  const viewer = role === 'coach' ? ({ role: 'coach', first: 'Priya' } as const) : ({ role: 'player' } as const);
+  const deep = toChDeepInsight(raw, toChInsight(raw, { viewer } as never), { rounds: new Map(), focusAreas: [], goals: [], themes: null }, (t) => t, role);
+  const dive: ChDeepDive = { list: [deep], tour: 'Tour', rounds: 21 as never, themes: {}, roundsFailed: false, plansFailed: false, themesFailed: false, counts: diveCounts([deep]) };
+  return { status: 'ready', data: toChReadView(dive, new Map([[raw.id, raw]]), raw.id, role, { playerId: role === 'coach' ? raw.player_id : null, name: 'Priya Natarajan', first: 'Priya' }, { ...READ_CALLS, teamPool: false }) };
+}
+
+describe('READ-S1 how sure, in a coach’s words', () => {
+  const LEAK = /recency|variance|not measured|sample-adequacy|adequate|of target|observations;/i;
+  const stored = { metric: 'approach_proximity_50_125ft', unit: 'percent', window_basis: undefined, detail: {}, sample_n: 27, confidence: 0.9, confidence_factors: { sample_adequacy: 0.9, recency: 1, variance: 0.5, factors_measured: false } };
+  const diagnosis = (confidence_reason: string) => ({ symptom: 'Greens hit', root_cause: 'Long approaches finish short of the green', causality_level: 'observed_sequence', drivers: [], recommended_action: 'Work on carry', confidence_reason });
+
+  it('reads “27 approaches. Enough for a solid read.”', () => {
+    show(viewOf(stored), COACH);
+    expect(document.querySelector('#csure')?.textContent).toContain('27 approaches. Enough for a solid read.');
+  });
+
+  it.each([
+    '27 observations; recency/variance not measured (sample-adequacy only); sample 90% of target',
+    '27 observations; recency measured 0.80; variance measured 0.60; sample adequate',
+    'sample adequate',
+  ])('a row stored with “%s” does not reach the page, on any card', (reason) => {
+    show(viewOf({ ...stored, diagnosis: diagnosis(reason) }), COACH);
+    const main = screen.getByRole('main');
+    // The legacy Why card is what drew it: it is here, with the cause and without the reason.
+    expect(main.querySelector('#cwhy')?.textContent).toContain('Long approaches finish short of the green');
+    expect(main.textContent).not.toMatch(LEAK);
+  });
+
+  it('a reason a person wrote still reads', () => {
+    show(viewOf({ ...stored, diagnosis: diagnosis('Both groups have enough approaches to compare') }), COACH);
+    expect(document.querySelector('#cwhy')?.textContent).toContain('Both groups have enough approaches to compare');
+  });
+
+  it('a player reads the count alone', () => {
+    show(viewOf(stored, 'player'), PLAYER);
+    const sure = document.querySelector('#csure')?.textContent ?? '';
+    expect(sure).toContain('27 approaches');
+    expect(sure).not.toContain('Enough for');
+  });
+});
+
+describe('READ-S2 the rounds card', () => {
+  const detail = (rounds: Partial<ReturnType<typeof previewReadView>['read'] extends infer D ? (D extends { rounds: infer R } ? R : never) : never>) => ({ ...previewReadView(undefined, 'coach').read!, rounds: { total: 0, list: [], ...rounds } });
+  const round = (id: string, date: string) => ({ id, date, course: 'Hilltop', score: '76', toPar: '+4', toPar18: 4, nine: false, href: `/golf/dashboard/rounds/${id}`, counted: 0 });
+  const paint = (el: ReactNode) => render(el, { wrapper: ({ children }) => <LazyMotion features={domAnimation}>{children}</LazyMotion> });
+
+  it('lists the rounds it joined, each a link to its review', () => {
+    paint(<RoundsCard d={detail({ total: 2, list: [round('r2', 'Oct 15'), round('r1', 'Oct 8')] })} failed={false} voice={COACH} />);
+    const links = screen.getAllByRole('link');
+    expect(links.map((l) => l.getAttribute('href'))).toEqual(['/golf/dashboard/rounds/r2', '/golf/dashboard/rounds/r1']);
+    expect(document.querySelector('#crounds')?.textContent).toContain('2 rounds');
+    expect(document.querySelector('[data-ch-code="CH-13382"]')).toBeNull();
+  });
+
+  it('one round is one round', () => {
+    paint(<RoundsCard d={detail({ total: 1, list: [round('r1', 'Oct 8')] })} failed={false} voice={COACH} />);
+    expect(document.querySelector('#crounds .meta')?.textContent).toBe('1 round');
+  });
+
+  it('a failed read is CH-13281, whatever the list holds', () => {
+    paint(<RoundsCard d={detail({ total: 0, list: [] })} failed voice={COACH} />);
+    expect(document.querySelector('[data-ch-code="CH-13281"]')?.textContent).toContain('didn’t load');
+    expect(document.querySelector('[data-ch-code="CH-13382"]')).toBeNull();
+  });
+
+  it('nothing to list says why, by name, and never “no rounds”', () => {
+    paint(<RoundsCard d={detail({ total: 0, list: [] })} failed={false} voice={COACH} />);
+    expect(document.querySelector('[data-ch-code="CH-13382"]')?.textContent).toBe('This read does not name the rounds it was made from. It uses Priya’s stats over its window, so there is no list to show.');
+    cleanup();
+    paint(<RoundsCard d={detail({ total: 14, list: [] })} failed={false} voice={PLAYER} />);
+    expect(document.querySelector('[data-ch-code="CH-13382"]')?.textContent).toBe('This read was made from 14 rounds, but none of them can be listed here. They may be rounds you have since removed.');
+  });
+});
+
+describe('READ-S4 the skeleton is the page’s shape', () => {
+  const columns = (root: Element) => [...root.querySelector('.ch-hr-desk')!.children].map((c) => (c.classList.contains('ch-hr-col') ? [...c.classList].filter((x) => x.startsWith('ch-hr-col') || x === 'is-evidence').join(' ') : 'rail'));
+
+  it('its three columns are the page’s, placed by one rule: 250, main, 320', () => {
+    const skeleton = render(<ReadSkeleton />);
+    const held = columns(skeleton.container);
+    skeleton.unmount();
+    show(ready('coach'), COACH);
+    expect(held).toEqual(['rail', 'ch-hr-col', 'ch-hr-col is-evidence']);
+    expect(columns(document.body)).toEqual(held);
+    const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/coachhelm-read.css'), 'utf8');
+    expect(css).toMatch(/\.ch-hr\.is-desk \.ch-hr-desk \{[^}]*grid-template-columns: 250px minmax\(0, 1fr\) 320px;/);
+  });
+
+  it('it is a route skeleton by the mark RouteFrame and base.css look for, and asks to crossfade', () => {
+    const { container } = render(<ReadSkeleton />);
+    const main = container.querySelector("main[aria-busy='true'][aria-label^='Loading']") as HTMLElement;
+    expect(main).toBeTruthy();
+    expect(main.dataset.chArrive).toBe('crossfade');
   });
 });
