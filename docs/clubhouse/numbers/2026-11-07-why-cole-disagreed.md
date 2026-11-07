@@ -18,15 +18,21 @@ Baseline is not a cause: all three read the stored `strokes_gained_*` columns.
 2. **Three filters and three calculations.** The QA build's Team view kept
    practice. Now `roundsForFigures` everywhere and `sgOver` in `stats-weight.ts`.
 3. **Two sets of rows, which is why coach screens stop at Sep 26.** It is not a
-   `round_type` filter. 17 of Cole's completed rounds, the three Oct 21
-   Springfield tournaments among them, carry `team_id` `59527e92…`. No team with
-   that id exists on staging, and he is the only player with rows stamped with
-   it. RLS (`golf_rounds_select`) lets a player read his own rows whatever their
-   stamp, but lets a coach read only rows stamped with the coach's team. So Cole
-   sees 37 rounds and his coach sees 20.
+   `round_type` filter. Coach and player screens both load by `player_id`
+   (`loadSeasonRounds`), so RLS decides what each sees. 17 of Cole's completed
+   rounds, the three Oct 21 Springfield tournaments among them, carry `team_id`
+   `59527e92…`, Guilford College Men's Golf (Test Copy). His other 38 carry
+   Demo University Golf. Production has the same split, and Nick Rini is head
+   coach on both teams there. RLS lets a player read his own rows whatever their
+   stamp, and lets a coach read only rows stamped with a team the coach is on.
+   So Nick can read all of Cole's rounds, and a coach on Demo University alone
+   reads only the Demo rows.
 
-Cause 3 is a staging data problem, so no code change can make the coach see
-those rows short of widening the policy, which is a migration.
+   Staging had lost the Guilford team, so its rounds pointed at nothing. It was
+   restored on staging on 2026-11-07 (the team, its 3 qualifiers and Nick's staff
+   row, row ids in the audit kit's `runs/tonight/writes.jsonl`) rather than
+   re-stamping the rounds. Completed rounds are protected from edits by a
+   database trigger in any case.
 
 ## Also found
 
