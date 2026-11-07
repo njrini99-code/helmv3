@@ -5713,6 +5713,10 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   white-space: nowrap;
 }
 .ch-hm-nextrow__k {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
   font: var(--ch-type-12);
   letter-spacing: var(--ch-track-12);
   color: var(--ch-text-secondary);
@@ -5741,4 +5745,16 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   border-radius: var(--ch-radius-mark);
   background: var(--ch-chart-loss);
   content: '';
+}
+
+/* Player Home on a desk with the redesign (dashboard cuts, 6): Your game leads, the day beside it. */
+.ch-ph-desk {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+.ch-ph-desk__side {
+  display: grid;
+  gap: 16px;
 }

@@ -20,3 +20,8 @@ With `clubhouse_stats_redesign_v1` on, the player's phone Home leads with Your
 game under the greeting. It opens on one line, average and strokes gained over
 the newest ten, which links to My stats. The week strip and the separate Scoring
 card go. Up next is one row, and Today stays.
+
+On a desk the player's Home is the same page, wider: Your game on the left, Up
+next, the rest of today and the latest round beside it. A one-row Up next keeps
+the player's Reply needed. Desktop coach Home with no Today card sets Latest
+rounds beside Team scoring, so no card stretches across the page alone.

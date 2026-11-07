@@ -243,7 +243,10 @@ export function UpNextRow({ e, now }: { e: ChHomeEvent; now: Date | null }) {
         <Icon icon={TYPE_ICON[e.type]} size={16} />
       </span>
       <span className="ch-hm-nextrow__b">
-        <span className="ch-hm-nextrow__k">Up next · {TYPE_LABEL[e.type]}</span>
+        <span className="ch-hm-nextrow__k">
+          Up next · {TYPE_LABEL[e.type]}
+          <MineBadge mine={e.mine} />
+        </span>
         <b>{e.title}</b>
       </span>
       <span className={'ch-hm-nextrow__when ch-num' + (when.soon ? ' is-soon' : '')}>{t(when.text)}</span>
