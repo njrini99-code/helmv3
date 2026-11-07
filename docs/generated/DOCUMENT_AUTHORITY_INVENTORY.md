@@ -1047,6 +1047,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-06-sweep-team.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-07-pre-refresh.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-07-slide-plate.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/auth-onboarding-ground-truth.md` | current | - | - | - | - |
 | `docs/clubhouse/drafts/intelligence.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/02_AUTHORITY_MODEL.md` | current | - | - | yes | - |
@@ -1105,6 +1106,7 @@ them would bury everything above.
 | `docs/clubhouse/motion/2026-10-20-stats.md` | current | - | - | - | - |
 | `docs/clubhouse/motion/2026-11-07-shell-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/motion/TEMPLATE.md` | current | - | - | - | - |
+| `docs/clubhouse/numbers/2026-11-07-why-cole-disagreed.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P001-shell/DESIGN.md` | current | - | - | - | - |
@@ -1189,6 +1191,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-06-one-window.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-07-one-sg-source.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-07-pre-refresh.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
@@ -1220,6 +1223,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-06-one-window.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/changes/2026-11-07-one-sg-source.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-07-pre-refresh.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
@@ -1259,6 +1263,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-06-one-window.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-07-one-sg-source.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CONTRACT.md` | current | - | - | yes | - |
@@ -1297,6 +1302,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-05-page-polish.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-07-one-sg-source.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CONTRACT.md` | current | - | - | yes | - |
@@ -1373,6 +1379,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-05-go-live-bug-hunt.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-11-07-one-to-one-title.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | yes | - |
@@ -1529,6 +1536,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P012-classes/changes/2026-11-03-crh-classes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-11-05-redesign-followups.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P012-classes/changes/2026-11-07-registrar-and-clashes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/CONTRACT.md` | current | - | - | yes | - |
@@ -1579,6 +1587,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-06-one-window.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-06-team-lane.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-07-one-sg-source.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-07-pre-refresh.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |

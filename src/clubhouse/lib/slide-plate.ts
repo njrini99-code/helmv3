@@ -60,22 +60,27 @@ export function useSlidePlate(
       inkAt(0, 0);
       return undefined;
     }
-    // Centre to centre: the plate's width lands in one step, so its middle is what travels.
-    const offX = start.x + start.w / 2 - (to.x + to.w / 2);
-    const offY = start.y + start.h / 2 - (to.y + to.h / 2);
     // Its speed toward the new mark, in progress per second over the distance left (chSpringCurve's units).
-    const left = Math.hypot(offX, offY);
-    const velocity = live && left > 0 ? (live.vx * -offX + live.vy * -offY) / (left * left) : 0;
+    const dx = to.x - start.x;
+    const dy = to.y - start.y;
+    const left = Math.hypot(dx, dy);
+    const velocity = live && left > 0 ? (live.vx * dx + live.vy * dy) / (left * left) : 0;
     // A tween where the plate's design gives one (CH_DUR on CH_EASE), otherwise the spring.
     const curve = tween
       ? { ms: CH_DUR[tween] * 1000, linear: `cubic-bezier(${CH_EASE.join(', ')})`, ease: tweenEase }
       : chSpringCurve(kind, { velocity });
-    // Translate only, centre to centre, so the glide stays on the compositor. The plate's width lands in one step at the tap: an animated
-    // width ran on the main thread (48 of 104 frames counted dropped on Rounds, 2026-11-07), and a scale squashed its rounded corners.
-    const anim = el.animate?.([{ transform: `translate(${offX}px, ${offY}px)` }, { transform: 'none' }], { duration: curve.ms, easing: curve.linear });
+    // Translate and width only: a scale squashed the pill's rounded corners mid-glide (owner, 2026-11-07). The plate may be narrower than its option (an underline), so its width goes by the options' ratio.
+    const plateW = el.offsetWidth;
+    const anim = el.animate?.(
+      [
+        { transform: `translate(${start.x - to.x}px, ${start.y - to.y}px)`, width: `${(plateW * start.w) / to.w}px` },
+        { transform: 'none', width: `${plateW}px` },
+      ],
+      { duration: curve.ms, easing: curve.linear },
+    );
     if (anim) running.current = { anim, from: start, to, ms: curve.ms, ease: curve.ease };
     // Each label takes its new ink as the plate crosses it, so it reads on the ground under it the whole way (at least 4.5:1).
-    const cross = plateCrossing(curve.ease, curve.ms, left, start.w, to.w);
+    const cross = plateCrossing(curve.ease, curve.ms, Math.hypot(start.x + start.w / 2 - (to.x + to.w / 2), start.y + start.h / 2 - (to.y + to.h / 2)), start.w, to.w);
     inkAt(cross.leaving, cross.arriving);
     return undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the move is per choice; `still` is read when it happens
@@ -119,11 +124,9 @@ function liveOf(r: { anim: Animation; from: Box; to: Box; ms: number; ease: (p: 
   const t = Number(r.anim.currentTime ?? 0);
   if (!(t > 0) || t >= r.ms) return null;
   const p = r.ease(t / r.ms);
-  const dx = r.to.x + r.to.w / 2 - (r.from.x + r.from.w / 2);
-  const dy = r.to.y + r.to.h / 2 - (r.from.y + r.from.h / 2);
-  // The width landed at the tap, so the plate is the mark's size, on the way there centre to centre.
-  const box = { x: r.to.x - dx * (1 - p), y: r.to.y - dy * (1 - p), w: r.to.w, h: r.to.h };
+  const lerp = (a: number, b: number) => a + (b - a) * p;
+  const box = { x: lerp(r.from.x, r.to.x), y: lerp(r.from.y, r.to.y), w: lerp(r.from.w, r.to.w), h: lerp(r.from.h, r.to.h) };
   // The spring's slope at t, from two samples 4 ms either side, in progress per second.
   const dp = (r.ease(Math.min(1, (t + 4) / r.ms)) - r.ease(Math.max(0, (t - 4) / r.ms))) / 0.008;
-  return { box, vx: dx * dp, vy: dy * dp };
+  return { box, vx: (r.to.x - r.from.x) * dp, vy: (r.to.y - r.from.y) * dp };
 }

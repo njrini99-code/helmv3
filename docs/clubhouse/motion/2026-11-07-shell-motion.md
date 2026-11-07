@@ -93,7 +93,7 @@ Player Home segments are now 44 tall. No coach Home on staging draws a segment.
 | 1 | Page dim used `filter` | Repaint each frame | High | Overlay opacity |
 | 2 | `height` animated | Layout each frame | High | Removed |
 | 3 | Clone in the tap frame | Late press state | High | Next frame |
-| 4 | Width animated on the pill | Main thread drawing | High | Translate only |
+| 4 | Width animated on the pill | Main thread drawing | High | Kept, the bar's |
 | 5 | Thread opened by frame loop | 97/133 dropped | High | Rest at open |
 | 6 | Label ink on a fixed delay | 1.3:1 for 100 ms | High | At the crossing |
 
@@ -101,7 +101,9 @@ Player Home segments are now 44 tall. No coach Home on staging draws a segment.
 
 - Most remaining drops are React drawing the new page during the slide's first
   frames (long tasks of 18 to 40 ms). Reaching zero needs a structural change.
-- The pill's width lands in one step at the tap. The bar asked for translate and
-  width; an animated width kept the main thread drawing. The owner's call.
+- The pill animates translate and width, as the bar asks (main since #2493). The
+  lab ran translate only, with the width landing at the tap. An animated width
+  runs on the main thread: 48 of 104 frames counted dropped on a Rounds segment
+  tap. Segment rows in the table above are from translate only. The owner's call.
 - No Safari frame timing and no iPhone run. Traces are in
   `~/clubhouse-audit/runs/tonight/motion/`.

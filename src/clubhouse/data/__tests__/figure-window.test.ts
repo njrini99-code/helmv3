@@ -67,7 +67,7 @@ describe('one figure across pages (QA-1)', () => {
     expect(stats.total).toBeCloseTo(f.total!, 6);
   });
 
-  it('Home and Team view agree over the same ten rounds, so a difference between them is only the window each names', () => {
+  it('Home and Team view agree: Team legs read the newest ten whatever they are handed, so the older rounds cannot move them', () => {
     // Newest first, as the season read returns them. The four oldest are the ones the last 10 leaves out.
     const season = Array.from({ length: 14 }, (_, i) => round(String(14 - i), { strokes_gained_approach: i >= 10 ? 3 : -1 }));
     const home = teamGrid(PLAYERS, season, filterFor('last10'))[0]!;
@@ -76,7 +76,7 @@ describe('one figure across pages (QA-1)', () => {
     expect(home.rounds).toBe(10);
     expect(team.rounds).toBe(10);
     expect(home.legs[1]).toBeCloseTo(team.legs.approach.strokes!, 6);
-    expect(toChTeamLegs(season, ['cole']).get('cole')!.legs.approach.strokes).not.toBeCloseTo(home.legs[1]!, 1);
+    expect(toChTeamLegs(season, ['cole']).get('cole')!.legs.approach.strokes).toBeCloseTo(home.legs[1]!, 6);
   });
 
   it('every figure names its window and the rounds it rests on', () => {

@@ -50,7 +50,7 @@ import { DraftStore } from './drafts';
 import { readMarkedUnread, withMark, writeMarkedUnread } from './marked-unread';
 import { FOUND_FOR_MS } from './use-focus-message';
 import { onRoster, takePrefill } from './prefill';
-import { directWith, firstName, groupLacksPlayer, isDirect, isGroupRow, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
+import { directWith, firstName, groupLacksPlayer, isDirect, isGroupRow, isNamedForOneOfTwo, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
 const isGroup = isGroupRow;
 const EMOJI_BY_KEY = Object.fromEntries(MESSAGE_REACTIONS.map((r) => [r.label, r.emoji])) as Record<ChReactionKey, string>;
@@ -116,16 +116,18 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const loadedConvs: ChConv[] = useMemo(
     () =>
       conversations.map((c) => {
-        const group = isGroup(c);
         const other = c.other_participant;
-        const dir = other ? people.get(other.id) : undefined;
+        const otherId = other?.id ?? (c.participant_ids ?? []).find((id) => id !== data.viewerUserId);
+        const dir = otherId ? people.get(otherId) : undefined;
+        // A player's 1:1 with the coach reads as the coach, never "Cole Bennett · 2 members" and the group mark.
+        const group = isGroup(c) && !isNamedForOneOfTwo(c, [data.viewerName, dir?.name, other?.name]);
         return {
           id: c.id,
           group,
           channel: c.is_team_channel === true,
           title: group ? c.title?.trim() || 'Group' : dir?.name ?? other?.name ?? 'Conversation',
           subtitle: group ? '' : dir?.subtitle ?? other?.subtitle ?? '',
-          memberIds: group ? (c.participant_ids ?? []).filter((id) => id !== data.viewerUserId) : other ? [other.id] : [],
+          memberIds: group ? (c.participant_ids ?? []).filter((id) => id !== data.viewerUserId) : otherId ? [otherId] : [],
           memberCount: c.participant_count ?? c.participant_ids?.length ?? 2,
           unread: c.unread_count ?? 0,
           markedUnread: marked.has(c.id),
@@ -137,7 +139,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
           creatorId: c.creator_id ?? null,
         };
       }),
-    [conversations, people, data.viewerUserId, marked],
+    [conversations, people, data.viewerUserId, data.viewerName, marked],
   );
   // A one-to-one thread just made, shown at once until the list's next read carries it (F-0045).
   const [started, setStarted] = useState<ChConv | null>(null);
