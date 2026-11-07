@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, CalendarPlus, GraduationCap, Hash, MapPin, MessageSquare, School, X } from 'lucide-react';
+import { ArrowRight, MessageSquare } from 'lucide-react';
 import { AnimatePresence, m } from 'motion/react';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -10,28 +10,20 @@ import { AVAILABILITY_NOTE_MAX } from '../../data/availability';
 import { coachPlayerHref } from '../../data/coachhelm-views-shape';
 import type { ChAvailability, ChRosterHelm, ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
-import { Button, IconButton } from '../../ui/Button';
+import { Button } from '../../ui/Button';
 import { FormLine } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { Segmented } from '../../ui/Segmented';
 import { useAction, type ActionCopy } from '../../lib/use-action';
 import { chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
-import { changeTone, formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
-import { NoData } from '../../ui/NoData';
+import { changeTone, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
 import { AVAILABILITY_WORD, legsCaption, relativeAgo, yearKeyOf, yearLineOf, type RosterClock } from './format';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
-import { plural, pluralWord } from '../../lib/plural';
+import { plural } from '../../lib/plural';
 import { ClassStatusLine } from '../../ui/ClassStatusLine';
 import type { RosterClassLine } from './class-line';
-
-const FORM_NOTE: Record<ChRosterPlayer['form'], string> = {
-  improving: 'Scoring is coming down.',
-  steady: 'Holding steady.',
-  slipping: 'Scoring is creeping up.',
-  early: 'Early read. Form appears after three rounds.',
-};
 
 /** The player drawer. Esc closes it; the coach's note saves when the field loses focus. */
 export function RosterPeek({
@@ -42,11 +34,8 @@ export function RosterPeek({
   availability,
   helm,
   classLine,
-  crh = false,
   clock,
 }: {
-  /** The lane's flag: year coin and chip, no repeated class line. */
-  crh?: boolean;
   clock?: RosterClock;
   p: ChRosterPlayer | undefined;
   notesLocked: boolean;
@@ -88,7 +77,7 @@ export function RosterPeek({
           exit={reduced ? { opacity: 0 } : { opacity: 0, transform: 'translateX(12px)' }}
           transition={chTween('base', reduced)}
         >
-          <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} onNoteSaved={onNoteSaved} availability={availability} helm={helm} classLine={classLine} crh={crh} clock={clock} />
+          <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} onNoteSaved={onNoteSaved} availability={availability} helm={helm} classLine={classLine} clock={clock} />
         </m.aside>
       )}
     </AnimatePresence>
@@ -102,16 +91,9 @@ const PEEK_LINE_FLOOR = 3;
 
 function PeekBody({
   p,
-  notesLocked,
-  onClose,
-  onNoteSaved,
-  availability,
-  helm,
   classLine,
-  crh = false,
   clock,
 }: {
-  crh?: boolean;
   clock?: RosterClock;
   p: ChRosterPlayer;
   notesLocked: boolean;
@@ -128,58 +110,23 @@ function PeekBody({
     [SG_FIGURE, p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)],
     ['Rounds', String(p.rounds)],
   ];
-  const facts = [
-    { icon: MapPin, label: 'Hometown', value: p.hometown },
-    { icon: School, label: 'High school', value: p.highSchool },
-    // The year chip says it behind the flag, so it isn't said twice.
-    { icon: GraduationCap, label: 'Class of', value: !crh && p.gradYear ? String(p.gradYear) : null },
-    { icon: Hash, label: 'Jersey', value: p.jersey },
-  ].filter((f) => f.value);
   const messageHref = rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(p.id)}`);
   // The board's Schedule 1:1: Calendar's editor with only this player invited (D-52), as the phone's Plan 1:1.
   const planHref = rebuiltHref(`/golf/dashboard/calendar?new=1&with=${p.id}`);
   const profileHref = rebuiltHref(`/golf/dashboard/stats?player=${p.id}`);
-  // The Development counts open the player's Development tab.
-  const devHref = rebuiltHref(`/golf/dashboard/stats?player=${encodeURIComponent(p.id)}&tab=dev`);
-  const devCode = p.focusAreas == null || p.goals == null ? 'CH-3208' : undefined;
-  const devCounts = (
-    <>
-      <span>
-        <b className="ch-num">{p.focusAreas ?? <NoData />}</b> focus {pluralWord(p.focusAreas ?? 0, 'area')}
-      </span>
-      <span>
-        <b className="ch-num">{p.goals ?? <NoData />}</b> {pluralWord(p.goals ?? 0, 'goal')}
-      </span>
-    </>
-  );
 
   return (
     <>
-      {!crh && (
-        <div className="ch-rs-peek__top">
-          <span className={`ch-rs-status is-${p.status}`}>
-            <i aria-hidden="true" />
-            {p.status === 'active' ? 'Active' : 'Inactive'}
-          </span>
-          <IconButton icon={X} label="Close" size="sm" onClick={onClose} />
-        </div>
-      )}
+      
       <div className="ch-rs-peek__hero">
         <span className="ch-rs-peek__av">
-          <Avatar name={p.name} id={p.id} size={crh ? 76 : 96} year={crh ? yearKeyOf(p.gradYear, clock) : null} dim={crh && p.status === 'inactive'} />
+          <Avatar name={p.name} id={p.id} size={76} year={yearKeyOf(p.gradYear, clock)} dim={p.status === 'inactive'} />
         </span>
         <h2 className="ch-display">{p.name}</h2>
-        {crh ? (
-          <span className="ch-rs-ychip" data-year={yearKeyOf(p.gradYear, clock) ?? undefined}>
+        <span className="ch-rs-ychip" data-year={yearKeyOf(p.gradYear, clock) ?? undefined}>
             <i aria-hidden="true" />
             {[yearLineOf(p.gradYear, clock), p.availability !== 'available' ? AVAILABILITY_WORD[p.availability] : null].filter(Boolean).join(' · ') || 'Player'}
           </span>
-        ) : (
-          <span className="ch-rs-peek__sub">
-            {[p.classYear, p.gradYear ? `Class of ${p.gradYear}` : null, p.availability !== 'available' ? AVAILABILITY_WORD[p.availability] : null].filter(Boolean).join(' · ') ||
-              'Player'}
-          </span>
-        )}
         {classLine && (
           <span className="ch-rs-peek__class">
             <ClassStatusLine kind={classLine.kind} text={classLine.text} />
@@ -189,12 +136,12 @@ function PeekBody({
         {(messageHref || planHref) && (
           <div className="ch-rs-peek__quick">
             {messageHref && (
-              <Button size={crh ? 'md' : 'sm'} variant={crh ? 'primary' : 'secondary'} leftIcon={MessageSquare} href={messageHref}>
+              <Button size="md" variant="primary" leftIcon={MessageSquare} href={messageHref}>
                 Message
               </Button>
             )}
             {planHref && (
-              <Button size={crh ? 'md' : 'sm'} leftIcon={crh ? undefined : CalendarPlus} href={planHref}>
+              <Button size="md" leftIcon={undefined} href={planHref}>
                 Schedule 1:1
               </Button>
             )}
@@ -202,99 +149,44 @@ function PeekBody({
         )}
       </div>
 
-      {!crh && facts.length > 0 && (
-        <dl className="ch-rs-peek__facts">
-          {facts.map((f) => (
-            <div key={f.label}>
-              <dt>
-                <Icon icon={f.icon} size={13} />
-                {f.label}
-              </dt>
-              <dd>{f.value}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
+      
 
       <dl className="ch-rs-peek__figs">
         {figs.map(([l, v]) => (
           <div key={l}>
             <dt>{l}</dt>
-            <dd className={'ch-num' + (crh && l === SG_FIGURE ? ' ' + changeTone(p.sgPerRound, false, 1) : '')}>{v}</dd>
+            <dd className={'ch-num' + (l === SG_FIGURE ? ' ' + changeTone(p.sgPerRound, false, 1) : '')}>{v}</dd>
           </div>
         ))}
       </dl>
-      {crh &&
-        (p.trend.length >= PEEK_LINE_FLOOR ? (
+      {(p.trend.length >= PEEK_LINE_FLOOR ? (
           <FormLine data={p.trend} width={292} height={70} earlyBelow={PEEK_LINE_FLOOR} label={`${p.name}, last rounds: ${p.trend.join(', ')}`} />
         ) : (
           <p className="ch-rs-peek__early">{p.trend.length > 0 ? 'Early read. Form shows at three rounds.' : 'No 18-hole rounds yet this season.'}</p>
         ))}
       {/* The rest lives on the full profile (06 7.12: identity, buttons, four figures, chart, the link). */}
-      {!crh && <LegsCaption p={p} />}
+      
 
-      {!crh && <div className="ch-rs-peek__sec">
-        <div className="ch-rs-peek__l">
-          <b>Form</b>
-          <span>
-            {p.trend.length ? `Last ${p.trend.length} rounds · dashed line is the average` : 'No 18-hole rounds this season'}
-          </span>
-        </div>
-        <FormLine data={p.trend} width={292} height={64} earlyBelow={3} label={`${p.name}, last rounds: ${p.trend.join(', ') || 'none'}`} />
-        <p className="ch-rs-peek__note" data-ch-code={p.trend.length ? undefined : 'CH-3305'}>
-          {p.trend.length ? FORM_NOTE[p.form] : 'Form appears once rounds are posted.'}
-        </p>
-      </div>}
+      
 
-      {!crh && p.recent.length > 0 && (
-        <div className="ch-rs-peek__sec">
-          <div className="ch-rs-peek__l">
-            <b>Recent rounds</b>
-            <span>Countable 18-hole rounds</span>
-          </div>
-          {p.recent.map((r) => (
-            <div key={r.id} className="ch-rs-peek__rd">
-              <span>
-                <b>{r.course}</b>
-                <span>{r.date}</span>
-              </span>
-              <span className="ch-num">{r.score}</span>
-              <span className={'ch-num ch-rs-topar' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>{formatToPar(r.toPar)}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      
 
-      {!crh && <div className="ch-rs-peek__sec">
-        <div className="ch-rs-peek__l">
-          <b>Development</b>
-        </div>
-        {/* A count that didn't load shows as a dash, never 0 (CH-3208). */}
-        {devHref ? (
-          <Link className="ch-rs-peek__dev" href={devHref} data-ch-code={devCode}>
-            {devCounts}
-          </Link>
-        ) : (
-          <div className="ch-rs-peek__dev" data-ch-code={devCode}>
-            {devCounts}
-          </div>
-        )}
-      </div>}
+      
 
-      {!crh && <HelmBlock p={p} helm={helm} />}
+      
 
-      {!crh && <AvailabilityPanel key={`avail-${p.id}`} p={p} control={availability} />}
+      
 
-      {!crh && <CoachNote key={p.id} p={p} locked={notesLocked} onSaved={onNoteSaved} />}
+      
 
       {profileHref && (
         <div className="ch-rs-peek__foot">
-          <Button variant={crh ? 'secondary' : 'primary'} rightIcon={crh ? undefined : ArrowRight} href={profileHref}>
+          <Button variant="secondary" rightIcon={undefined} href={profileHref}>
             Open full profile
           </Button>
         </div>
       )}
-      {!crh && p.joined && <span className="ch-rs-peek__since">{p.joined}</span>}
+      
     </>
   );
 }
@@ -325,33 +217,6 @@ function HelmCounts({ p, helm }: { p: ChRosterPlayer; helm: Exclude<ChRosterHelm
 
 /** Where View insights goes: the coach's Deep dive of this player, once that view is rebuilt. */
 const insightsHref = (p: ChRosterPlayer) => rebuiltHref(coachPlayerHref('deep-dive', p.id), 'coach');
-
-/**
- * CoachHelm in the player panel (spec D build B): how many of the player's current reads are costing strokes and how many are
- * working, counted as the Board counts them, and View insights. Off for the coach: not drawn.
- */
-function HelmBlock({ p, helm }: { p: ChRosterPlayer; helm: ChRosterHelm }) {
-  const press = usePressPrefetch();
-  if (helm.status === 'off') return null;
-  const href = insightsHref(p);
-  return (
-    <div className="ch-rs-peek__sec">
-      <div className="ch-rs-peek__l">
-        <b>CoachHelm</b>
-        <span>What it reads in {p.firstName}&rsquo;s rounds</span>
-      </div>
-      <div className="ch-rs-peek__dev" data-ch-code={helm.status === 'failed' ? 'CH-3212' : undefined}>
-        <HelmCounts p={p} helm={helm} />
-        {href && (
-          <Link className="ch-rs-peek__go" href={href} {...press(href)}>
-            View insights <Icon icon={ArrowRight} size={14} />
-          </Link>
-        )}
-      </div>
-      {helm.status === 'failed' && <p className="ch-rs-peek__cap">Didn&rsquo;t load. Refresh to try again.</p>}
-    </div>
-  );
-}
 
 /** The same counts as a panel on the phone profile, after Recent rounds; View insights is the panel's 44px link. */
 export function HelmPanel({ p, helm }: { p: ChRosterPlayer; helm: ChRosterHelm }) {

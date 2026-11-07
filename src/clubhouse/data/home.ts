@@ -317,8 +317,6 @@ export function wideEventWindow(now: Date): { from: string; to: string } {
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export async function loadCoachHome(input: {
-  /** `clubhouse_classes_roster_home_v1`: practice rounds leave the averages, and each player's year reaches the coins. */
-  crh?: boolean;
   teamId: string;
   coachName: string;
   /** For Team Hub's announcements read (the queue); it reads the session itself. */
@@ -415,7 +413,7 @@ export async function loadCoachHome(input: {
   // ── Season rounds ──
   const { rounds: readRounds, error: roundsError } = seasonRead;
   // Behind the lane's flag, practice rounds stay out of every scoring figure below (DECISIONS); Latest rounds is read apart and lists them.
-  const rounds = input.crh ? readRounds.filter(countsForScoring) : readRounds;
+  const rounds = readRounds.filter(countsForScoring);
   const full = rounds.filter(isFull18);
   const start = seasonStartDate(now, tz);
   const seasonRounds = seasonOnly(rounds, start);
@@ -482,7 +480,7 @@ export async function loadCoachHome(input: {
     leaderboard: { rows, scorecards: seasonFull.length, rosterSize: roster.length, error: roundsError },
     phone: { next: withChange(wk.next, changes.byEvent), today: wk.todayEvents.map((e) => withChange(e, changes.byEvent)), form, weekNote: wk.weekNote },
     legs,
-    ...(input.crh ? { yearById: Object.fromEntries(roster.flatMap((p) => { const y = classYearKey(p.graduation_year, now, tz); return y ? [[p.id, y]] : []; })) } : {}),
+    yearById: Object.fromEntries(roster.flatMap((p) => { const y = classYearKey(p.graduation_year, now, tz); return y ? [[p.id, y]] : []; })),
     queue,
     changes: changes.rows,
     marks: input.marks ?? [],

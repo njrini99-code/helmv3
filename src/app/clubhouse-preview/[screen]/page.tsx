@@ -236,12 +236,12 @@ export default async function ClubhousePreview({
   searchParams,
 }: {
   params: Promise<{ screen: string }>;
-  searchParams: Promise<{ viewer?: string; screen?: string; open?: string; read?: string; all?: string; station?: string; flag?: string; play?: string; crh?: string; state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string; round?: string; ask?: string; live?: string }>;
+  searchParams: Promise<{ viewer?: string; screen?: string; open?: string; read?: string; all?: string; station?: string; flag?: string; play?: string; state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string; round?: string; ask?: string; live?: string }>;
 }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen } = await params;
   const qc = (await searchParams as { qc?: string }).qc;
-  const { viewer: viewerParam, open: openParam, read: readParam, all: allParam, flag, play, station, crh: crhParam, state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask, live } = await searchParams;
+  const { viewer: viewerParam, open: openParam, read: readParam, all: allParam, flag, play, station, state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask, live } = await searchParams;
   // The phone Stats redesign renders here whatever its flag says; `&flag=off` renders main's components (stats-home 05, flagoff).
   const shs = flag !== 'off';
   // The header lab (/clubhouse-preview/header-lab) renders a page with one of the hero tones.
@@ -268,10 +268,6 @@ export default async function ClubhousePreview({
     return f;
   };
   const calView = view === 'day' || view === 'month' || view === 'agenda' ? view : 'week';
-
-  // `&crh=0|1`: the Classes, Roster and Home lane, on by default in this preview only (classes-roster-home 05 CP.1), so a capture shoots the
-  // redesign and `crh=0` shoots main for the flag-off proof. Deploys read only the real flag.
-  const crh = crhParam !== '0';
   const screens: Record<string, { path: string; node: React.ReactNode }> = {
     home: {
       path: '/golf/dashboard',
@@ -282,7 +278,6 @@ export default async function ClubhousePreview({
           <PreviewError kind="unknown" />
         ) : (
           <CoachHome
-            crh={crh}
             data={state === 'stress' ? rewriteDeep(PREVIEW_HOME, longNames) : state === 'empty' ? PREVIEW_HOME_EMPTY : state === 'failed' ? PREVIEW_HOME_FAILED : state === 'noevents' ? PREVIEW_HOME_NO_EVENTS : state === 'eventsonly' ? PREVIEW_HOME_EVENTS_ONLY : state === 'norounds' ? PREVIEW_HOME_NO_ROUNDS : state === 'cachefailed' ? PREVIEW_HOME_LEGS_CACHE_FAILED : state === 'tourfailed' ? PREVIEW_HOME_LEGS_TOUR_FAILED : state === 'queuefailed' ? PREVIEW_HOME_QUEUE_FAILED : state === 'noholes' ? PREVIEW_HOME_LEGS_NO_HOLES : state === 'unranked' ? PREVIEW_HOME_LEGS_UNRANKED : state === 'early' ? PREVIEW_HOME_EARLY : PREVIEW_HOME}
             now={PREVIEW_HOME_NOW}
             // &live=busy | one | many | finished | event | failed: the Live now card (P-6), off unless asked for.
@@ -298,7 +293,6 @@ export default async function ClubhousePreview({
         ) : (
           <PlayerHome
             shs={shs}
-            crh={crh}
             data={(shs ? previewShsHome(state) : null) ?? (state === 'empty' ? PREVIEW_PLAYER_HOME_EMPTY : state === 'failed' ? PREVIEW_PLAYER_HOME_FAILED : state === 'noevents' ? PREVIEW_PLAYER_HOME_NO_EVENTS : state === 'norounds' ? PREVIEW_PLAYER_HOME_NO_ROUNDS : PREVIEW_PLAYER_HOME)}
             now={PREVIEW_HOME_NOW}
             // &live=practice | qualifier | stale | none: the player's own live card (P-6), off unless asked for.
@@ -352,7 +346,6 @@ export default async function ClubhousePreview({
           <ClassesNoTeam />
         ) : (
           <PreviewClasses
-            crh={crh}
             state={state}
             data={{ long: PREVIEW_CLASSES_LONG, clear: PREVIEW_CLASSES_CLEAR, empty: PREVIEW_CLASSES_EMPTY, failed: PREVIEW_CLASSES_FAILED, partial: PREVIEW_CLASSES_PARTIAL, mixed: PREVIEW_CLASSES_MIXED }[state ?? ''] ?? PREVIEW_CLASSES}
           />
@@ -394,22 +387,21 @@ export default async function ClubhousePreview({
       path: '/golf/dashboard/roster',
       node:
         state === 'loading' ? (
-          <RosterSkeleton crh={crh} />
+          <RosterSkeleton />
         ) : (
           <Roster
-            crh={crh}
             data={
-              crh && state === 'early'
+              state === 'early'
                 ? PREVIEW_ROSTER_EARLY
-                : crh && state === 'long'
+                : state === 'long'
                   ? PREVIEW_ROSTER_LONG
-                  : crh && state === 'big'
+                  : state === 'big'
                     ? PREVIEW_ROSTER_BIG
-                    : crh && state === 'norequests'
+                    : state === 'norequests'
                       ? PREVIEW_ROSTER_NO_REQUESTS
-                      : crh && state === 'onerequest'
+                      : state === 'onerequest'
                         ? PREVIEW_ROSTER_ONE_REQUEST
-                        : crh && state === undefined
+                        : state === undefined
                           ? PREVIEW_ROSTER_CRH
                           : state === 'empty'
                 ? PREVIEW_ROSTER_EMPTY
@@ -434,11 +426,11 @@ export default async function ClubhousePreview({
       path: '/golf/dashboard/roster',
       node:
         state === 'loading' ? (
-          <RosterSkeleton crh={crh} />
+          <RosterSkeleton />
         ) : state === 'noteam' ? (
           <RosterNoTeam viewer="player" />
         ) : (
-          <TeamRoster crh={crh} data={state === 'empty' ? PREVIEW_PLAYER_ROSTER_EMPTY : state === 'failed' ? PREVIEW_PLAYER_ROSTER_FAILED : PREVIEW_PLAYER_ROSTER} />
+          <TeamRoster data={state === 'empty' ? PREVIEW_PLAYER_ROSTER_EMPTY : state === 'failed' ? PREVIEW_PLAYER_ROSTER_FAILED : PREVIEW_PLAYER_ROSTER} />
         ),
     },
     stats: {
@@ -725,7 +717,7 @@ export default async function ClubhousePreview({
       <ClubhouseFrame
         userData={screen === 'coachhelm-player' || screen === 'coachhelm-views' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : user}
         // &round=1: the player has a round in progress (P001-C1: the dock's Resume accessory, the sidebar's card).
-        shell={{ ...PREVIEW_SHELL, ...(round ? { roundInProgress: PREVIEW_ROUND_IN_PROGRESS } : {}), ...(qc ? { quickChat: true, askAvailable: true } : {}), crh }}
+        shell={{ ...PREVIEW_SHELL, ...(round ? { roundInProgress: PREVIEW_ROUND_IN_PROGRESS } : {}), ...(qc ? { quickChat: true, askAvailable: true } : {}) }}
         pathname={entry.path}
         // The preview's own query, as the live shell hands the frame the address's: `&section=` and a coach's `&player=` decide the phone bar (CH-1402).
         search={new URLSearchParams(Object.entries(await searchParams).filter((kv): kv is [string, string] => typeof kv[1] === 'string')).toString()}

@@ -179,7 +179,7 @@ export function attentionFor(
   return null;
 }
 
-export async function loadRoster(input: { teamId: string; coachId: string; /** The lane's flag: practice rounds leave every figure (DECISIONS). Off counts as today. */ crh?: boolean }): Promise<ChRoster> {
+export async function loadRoster(input: { teamId: string; coachId: string; }): Promise<ChRoster> {
   const supabase = await createClient();
   const now = new Date();
 
@@ -237,16 +237,16 @@ export async function loadRoster(input: { teamId: string; coachId: string; /** T
   const seasonFrom = seasonStartDate(now, tz);
   const season = { ...wide, rounds: wide.rounds.filter((r) => r.round_date.slice(0, 10) >= seasonFrom) };
   const wideByPlayer = groupByPlayer(wide.rounds);
-  const counted = input.crh ? roundsForFigures(season.rounds) : season.rounds;
+  const counted = roundsForFigures(season.rounds);
   const byPlayer = groupByPlayer(counted);
   // Averages, form and the floors read the cut rounds; Recent rounds and "All N" list every round the player posted (SHARED: Latest rounds lists every round).
-  const everyRound = input.crh ? groupByPlayer(season.rounds) : byPlayer;
+  const everyRound = groupByPlayer(season.rounds);
   const teamPosting = season.rounds.some((r) => quietDaysSince(r.round_date, now, tz) < QUIET_DAYS);
 
   const players: ChRosterPlayer[] = members.map((m) => {
     const p = m.player;
     const s = summarizePlayer(byPlayer.get(p.id) ?? []);
-    const every = input.crh ? summarizePlayer(everyRound.get(p.id) ?? []) : s;
+    const every = summarizePlayer(everyRound.get(p.id) ?? []);
     const sg = playerStrokesGained(wideByPlayer.get(p.id) ?? []);
     const status = m.status === 'inactive' ? 'inactive' : 'active';
     const availability: ChAvailability = parseAvailability(m.availability);
@@ -334,7 +334,8 @@ export async function loadRoster(input: { teamId: string; coachId: string; /** T
     requests,
     requestsError: !requestsRes.success,
     helm,
-    ...(input.crh ? { clock: { tz, day: isoDay(now, tz) }, sgVs: sgBaseline(tourForGender(teamRes.data?.gender)).vs } : {}),
+    clock: { tz, day: isoDay(now, tz) },
+    sgVs: sgBaseline(tourForGender(teamRes.data?.gender)).vs,
   };
 }
 

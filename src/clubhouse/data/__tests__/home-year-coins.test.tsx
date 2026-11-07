@@ -57,7 +57,7 @@ describe('yearById, by viewer', () => {
   });
 
   it('a coach Home with the lane on maps this roster, leaving out a year outside the four', async () => {
-    const data = await loadCoachHome({ teamId: 't1', coachName: 'Maya Reyes', crh: true });
+    const data = await loadCoachHome({ teamId: 't1', coachName: 'Maya Reyes' });
     expect(data.yearById).toEqual({ 'mate-1': classYearKey(2028, new Date(), ZONE) });
   });
 

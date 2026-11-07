@@ -205,72 +205,36 @@ function PeopleLine({ leg }: { leg: ChTeamLeg }) {
 /** The lane's diverging bar (06 §11.2): from a centre zero, min(50, |sg| / 3.5 x 50)% wide. Drawn, not grown: no motion on first paint. */
 export const legBarWidth = (sg: number | null) => (sg == null ? 0 : Math.min(50, (Math.abs(sg) / 3.5) * 50));
 
-export function TeamLegsPhone({ legs, covered = false, crh = false }: { legs: ChTeamLegs; covered?: boolean; crh?: boolean }) {
-  const team = rebuiltHref('/golf/dashboard/stats', 'coach');
-  if (crh) {
-    const worst = [...legs.rows].filter((l) => l.sg != null).sort((a, b) => (a.sg as number) - (b.sg as number)).slice(0, 2).filter((l) => (l.sg as number) < 0).map((l) => l.label);
-    // Promise links only when the names are links (CRH-32); a nobody-ranked team's note is the card's footer too (CRH-10).
-    const namesLink = legs.rows.some((l) => [...(l.gains?.ids ?? []), ...(l.loses?.ids ?? [])].some((id) => legPlayerHref(id) != null));
-    const note = !legs.ranked ? <span data-ch-code="CH-2315">{NOBODY_RANKED}</span> : worst.length ? `${worst.join(' and ')} cost${worst.length === 1 ? 's' : ''} the most.${namesLink ? ' Names open that player’s game on Stats.' : ''}` : null;
-    return (
-      <Surface variant="card" level={2} padded={false} title="The team’s game" actions={<span className="ch-hm-meta">SG per round · last 10</span>} footerNote={note ?? undefined}>
-        {(legs.cacheError || legs.tourError) && (
-          <div className="ch-hm-legs__notices">
-            <Notices legs={legs} covered={covered} />
-          </div>
-        )}
-        {legs.holeRounds === 0 ? (
-          <NoHoleRounds />
-        ) : (
-          <>
-            <ul className="ch-hm-legs__grid" aria-label={`Strokes gained per round ${sgBaseline(legs.tour).vs}, last 10 rounds`}>
-              {legs.rows.map((leg) => {
-                const change = legChange(leg);
-                const tone = changeTone(leg.sg, false);
-                return (
-                  <li key={leg.key} className="ch-hm-legs__cell">
-                    <b className="ch-hm-legs__l">{leg.label}</b>
-                    <span className={'ch-hm-legs__sg ch-num ' + tone}>
-                      {formatSigned(leg.sg)}
-                      <small>SG</small>
-                    </span>
-                    <i className="ch-hm-legs__bar" aria-hidden="true">
-                      <i className={tone + ((leg.sg ?? 0) < 0 ? ' is-neg' : '')} style={{ width: `${legBarWidth(leg.sg)}%` }} />
-                    </i>
-                    <span className="ch-hm-legs__s ch-num">{legStatText(leg.stat)}</span>
-                    <em className={'ch-hm-legs__c ' + change.tone}>{change.words}</em>
-                    <PeopleLine leg={leg} />
-                  </li>
-                );
-              })}
-            </ul>
-          </>
-        )}
-      </Surface>
-    );
-  }
+export function TeamLegsPhone({ legs, covered = false }: { legs: ChTeamLegs; covered?: boolean; }) {
+  const worst = [...legs.rows].filter((l) => l.sg != null).sort((a, b) => (a.sg as number) - (b.sg as number)).slice(0, 2).filter((l) => (l.sg as number) < 0).map((l) => l.label);
+  // Promise links only when the names are links (CRH-32); a nobody-ranked team's note is the card's footer too (CRH-10).
+  const namesLink = legs.rows.some((l) => [...(l.gains?.ids ?? []), ...(l.loses?.ids ?? [])].some((id) => legPlayerHref(id) != null));
+  const note = !legs.ranked ? <span data-ch-code="CH-2315">{NOBODY_RANKED}</span> : worst.length ? `${worst.join(' and ')} cost${worst.length === 1 ? 's' : ''} the most.${namesLink ? ' Names open that player’s game on Stats.' : ''}` : null;
   return (
-    <section className="ch-hm-sec ch-hm-legs" aria-labelledby="ch-hm-legs-t">
-      <div className="ch-hm-sec__h">
-        <h2 id="ch-hm-legs-t">The team’s game</h2>
-        {team && (
-          <Link href={team} className="ch-hm-link">
-            Team stats
-          </Link>
-        )}
-      </div>
-      <Notices legs={legs} covered={covered} />
+    <Surface variant="card" level={2} padded={false} title="The team’s game" actions={<span className="ch-hm-meta">SG per round · last 10</span>} footerNote={note ?? undefined}>
+      {(legs.cacheError || legs.tourError) && (
+        <div className="ch-hm-legs__notices">
+          <Notices legs={legs} covered={covered} />
+        </div>
+      )}
       {legs.holeRounds === 0 ? (
         <NoHoleRounds />
       ) : (
         <>
-          <ul className="ch-hm-legs__list" aria-label={`Strokes gained per round ${sgBaseline(legs.tour).vs}, last 10 rounds`}>
+          <ul className="ch-hm-legs__grid" aria-label={`Strokes gained per round ${sgBaseline(legs.tour).vs}, last 10 rounds`}>
             {legs.rows.map((leg) => {
               const change = legChange(leg);
+              const tone = changeTone(leg.sg, false);
               return (
-                <li key={leg.key} className="ch-hm-legs__r">
+                <li key={leg.key} className="ch-hm-legs__cell">
                   <b className="ch-hm-legs__l">{leg.label}</b>
-                  <b className={'ch-hm-legs__sg ch-num ' + changeTone(leg.sg, false)}>{formatSigned(leg.sg)}</b>
+                  <span className={'ch-hm-legs__sg ch-num ' + tone}>
+                    {formatSigned(leg.sg)}
+                    <small>SG</small>
+                  </span>
+                  <i className="ch-hm-legs__bar" aria-hidden="true">
+                    <i className={tone + ((leg.sg ?? 0) < 0 ? ' is-neg' : '')} style={{ width: `${legBarWidth(leg.sg)}%` }} />
+                  </i>
                   <span className="ch-hm-legs__s ch-num">{legStatText(leg.stat)}</span>
                   <em className={'ch-hm-legs__c ' + change.tone}>{change.words}</em>
                   <PeopleLine leg={leg} />
@@ -278,13 +242,8 @@ export function TeamLegsPhone({ legs, covered = false, crh = false }: { legs: Ch
               );
             })}
           </ul>
-          {!legs.ranked && (
-            <p className="ch-hm-legs__note" data-ch-code="CH-2315">
-              {NOBODY_RANKED}
-            </p>
-          )}
         </>
       )}
-    </section>
+    </Surface>
   );
 }

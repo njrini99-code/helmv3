@@ -38,7 +38,7 @@ import { GirViz, PuttsViz, SgViz } from './RoundViz';
  * scorecard inline), scoring and the parts of the game. Same loader and
  * catalog as desktop.
  */
-export function PlayerHomePhone({ data, now: frozen, live, playerId, shs = false, crh = false }: { data: ChPlayerHome; crh?: boolean; /** clubhouse_stats_redesign_v1: the flat hero and the Your game card. */ shs?: boolean; now?: string; /** The player's live round and their team's (P-6); omitted, the own card is not drawn. */ live?: ChPlayerLive; playerId?: string }) {
+export function PlayerHomePhone({ data, now: frozen, live, playerId, shs = false }: { data: ChPlayerHome; /** clubhouse_stats_redesign_v1: the flat hero and the Your game card. */ shs?: boolean; now?: string; /** The player's live round and their team's (P-6); omitted, the own card is not drawn. */ live?: ChPlayerLive; playerId?: string }) {
   usePhoneHero(true);
   const ticking = useNow();
   const now = useMemo(() => (frozen ? new Date(frozen) : ticking), [frozen, ticking]);
@@ -49,7 +49,7 @@ export function PlayerHomePhone({ data, now: frozen, live, playerId, shs = false
   const covered = failed.length > 1;
 
   return (
-    <main className="ch-hm ch-hm--player" aria-label="Home" data-ch-hero-flat={shs ? '' : undefined} data-ch-crh={crh ? 'on' : undefined}>
+    <main className="ch-hm ch-hm--player" aria-label="Home" data-ch-hero-flat={shs ? '' : undefined} data-ch-crh="on">
       {/* Owner, 2026-10-06: the CoachHelm brief no longer sits between the greeting and Up next on the player's phone. */}
       <header className="ch-hm-hero is-player">
         {shs ? (

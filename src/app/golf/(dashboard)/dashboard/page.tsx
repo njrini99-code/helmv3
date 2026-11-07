@@ -1,4 +1,4 @@
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
+
 import { redirect } from 'next/navigation';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
@@ -205,14 +205,13 @@ export default async function GolfDashboardPage({
         // Clubhouse Home: its own loader and screen, no Fairway payload.
         if (clubhouse) {
             if (!teamId) return <CoachHomeNoTeam />;
-            const crh = isFlagEnabled('clubhouse_classes_roster_home_v1');
             // Who is on the course rides beside Home's own reads and never fails them (loadLiveRounds catches its own).
             // The marks hint feeds Home's loader only: the live read starts beside it rather than after it (F-0032).
             const [home, live] = await Promise.all([
-                marksHint().then((marks) => loadCoachHome({ crh, teamId, coachName: coach.full_name || 'Coach', userId, coachId: coach.id, marks })),
+                marksHint().then((marks) => loadCoachHome({ teamId, coachName: coach.full_name || 'Coach', userId, coachId: coach.id, marks })),
                 loadLiveRounds({ teamId, viewer: { role: 'coach', playerId: null } }),
             ]);
-            return <CoachHome crh={crh} data={home} live={live} />;
+            return <CoachHome data={home} live={live} />;
         }
 
         if (teamId) {
@@ -293,7 +292,7 @@ export default async function GolfDashboardPage({
             marksHint().then((marks) => loadPlayerHome({ shs: statsRedesignEnabled(), teamId: team.teamId, playerId: team.playerId, firstName: player.first_name?.trim() || 'there', marks })),
             loadPlayerLive({ teamId: team.teamId, playerId: team.playerId }),
         ]);
-        return <PlayerHome data={home} live={live} playerId={team.playerId} shs={statsRedesignEnabled()} crh={isFlagEnabled('clubhouse_classes_roster_home_v1')} />;
+        return <PlayerHome data={home} live={live} playerId={team.playerId} shs={statsRedesignEnabled()} />;
     }
     if (player) {
         // Get team via membership

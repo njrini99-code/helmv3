@@ -19,5 +19,5 @@ export async function ClubhouseClassesRoute() {
   const team = await resolveClubhouseTeam(session);
   if (!team || team.role !== 'player') return <ClassesNoTeam />;
   const data = await loadClasses({ playerId: session.player.id, teamId: team.teamId, classAwareness: isFlagEnabled('class_awareness_v1') });
-  return <Classes data={data} playerId={session.player.id} teamId={team.teamId} crh={isFlagEnabled('clubhouse_classes_roster_home_v1')} />;
+  return <Classes data={data} playerId={session.player.id} teamId={team.teamId} />;
 }

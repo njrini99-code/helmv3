@@ -1,6 +1,6 @@
 'use client';
 
-import { RotateCw, Sparkles, ArrowRight, ChartColumn, BrainCircuit, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
+import { RotateCw, Sparkles, ArrowRight, ChartColumn, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../data/home';
@@ -13,8 +13,7 @@ import { EmptyState } from '../../ui/States';
 import { FormLine, FormRange } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
-import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
-import { Nine } from '../../ui/Nine';
+import { RefreshNotice } from '../../ui/RefreshNotice';
 import { coachHelmPlayerHref, PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { WeekStrip as DayStrip } from '../../ui/WeekStrip';
@@ -57,7 +56,7 @@ const newEventHref = (type?: ChHomeEvent['type']) => `${CALENDAR}?new=1${type ? 
  * phone's extra figures come from `data.phone`. `now` freezes the clock for
  * the preview and the tests.
  */
-export function HomePhone({ data, now: frozen, live, crh = false }: { crh?: boolean; data: ChCoachHome; now?: string; /** Who is on the course now (P-6); omitted, the card is not drawn. */ live?: LiveSnapshot }) {
+export function HomePhone({ data, now: frozen, live }: { data: ChCoachHome; now?: string; /** Who is on the course now (P-6); omitted, the card is not drawn. */ live?: LiveSnapshot }) {
   usePhoneHero(true);
   const ticking = useNow();
   const now = useMemo(() => (frozen ? new Date(frozen) : ticking), [frozen, ticking]);
@@ -73,26 +72,26 @@ export function HomePhone({ data, now: frozen, live, crh = false }: { crh?: bool
   const rounds = data.latestRounds.error ? [] : data.latestRounds.rounds;
 
   return (
-    <main className="ch-hm" aria-label="Home" data-ch-crh={crh ? 'on' : undefined}>
+    <main className="ch-hm" aria-label="Home" data-ch-crh="on">
       <header className="ch-hm-hero">
         <span className="ch-hm-hero__date">{data.todayLabel}</span>
         <h1>{data.greeting}</h1>
-        {(data.subline || (crh && failed.length > 0)) && (
+        {(data.subline || (failed.length > 0)) && (
           <p className="ch-hm-hero__brief">
-            {crh && <Icon icon={Sparkles} size={14} />}
-            {crh && failed.length > 0 ? CRH_PART_FAILED : data.subline}
+            <Icon icon={Sparkles} size={14} />
+            {failed.length > 0 ? CRH_PART_FAILED : data.subline}
           </p>
         )}
         <CoachQueue queue={data.queue} covered={covered} phone />
-        {!crh && <PageRefreshNotice parts={failed} />}
+        
         <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
-          {data.week.error && crh ? null : data.week.error ? (
+          {data.week.error ? null : data.week.error ? (
             // On the sheet, not in the green card: inside it the notice took the card's ivory ink and its words vanished.
             <FailedSec id="ch-hm-upnext-failed" title="Up next">
               <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. Try again." covered={covered} />
             </FailedSec>
           ) : (
-            <Day crh={crh} phone={phone} rounds={rounds} now={now} today={today} onOpenRound={setOpen} years={crh ? data.yearById : undefined} />
+            <Day phone={phone} rounds={rounds} now={now} today={today} onOpenRound={setOpen} years={data.yearById} />
           )}
         </SectionBoundary>
       </header>
@@ -106,14 +105,14 @@ export function HomePhone({ data, now: frozen, live, crh = false }: { crh?: bool
           </SectionBoundary>
         )}
         <SectionBoundary surface="home.today" label="Today" code="CH-2214">
-          <Later crh={crh} data={data} rounds={rounds} now={now} today={today} quiet={nothingAhead} onOpenRound={setOpen} />
+          <Later data={data} rounds={rounds} now={now} today={today} quiet={nothingAhead} onOpenRound={setOpen} />
         </SectionBoundary>
 
         {phone.form ? (
           <SectionBoundary surface="home.form" label="Team scoring" code="CH-2212">
-            <Form form={phone.form} crh={crh} />
+            <Form form={phone.form} />
           </SectionBoundary>
-        ) : data.latestRounds.error && crh ? (
+        ) : data.latestRounds.error ? (
           <CrhFailedCard id="ch-hm-form-failed" title="Team scoring" href={rebuiltHref('/golf/dashboard/stats')} link="Team stats" code="CH-2211" what="Scoring didn’t load" body="Your rounds are safe. Try again in a moment." />
         ) : data.latestRounds.error ? (
           <FailedSec id="ch-hm-form-failed" title="Team scoring">
@@ -123,7 +122,7 @@ export function HomePhone({ data, now: frozen, live, crh = false }: { crh?: bool
 
         {phone.form && data.legs && (
           <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
-            <TeamLegsPhone legs={data.legs} covered={covered} crh={crh} />
+            <TeamLegsPhone legs={data.legs} covered={covered} />
           </SectionBoundary>
         )}
 
@@ -133,12 +132,12 @@ export function HomePhone({ data, now: frozen, live, crh = false }: { crh?: bool
           </SectionBoundary>
         )}
 
-        {!(crh && data.latestRounds.error) && <SectionBoundary surface="home.latestRound" label="Latest rounds" code="CH-2206">
-          <Rounds years={crh ? data.yearById : undefined} data={data.latestRounds} trends={data.leaderboard.error ? null : data.leaderboard.rows} onOpen={setOpen} covered={covered} />
+        {!data.latestRounds.error && <SectionBoundary surface="home.latestRound" label="Latest rounds" code="CH-2206">
+          <Rounds years={data.yearById} data={data.latestRounds} trends={data.leaderboard.error ? null : data.leaderboard.rows} onOpen={setOpen} covered={covered} />
         </SectionBoundary>}
       </div>
 
-      <RoundSheet crh={crh} round={open} holesError={data.latestRounds.holesError} onClose={() => setOpen(null)} />
+      <RoundSheet round={open} holesError={data.latestRounds.holesError} onClose={() => setOpen(null)} />
     </main>
   );
 }
@@ -146,22 +145,22 @@ export function HomePhone({ data, now: frozen, live, crh = false }: { crh?: bool
 type DayProps = { rounds: ChLatestRound[]; now: Date | null; today: string | null; onOpenRound: (r: ChLatestRound) => void };
 
 /** Up next's place: the day card, or how to add the first event. */
-function Day({ phone, rounds, now, today, onOpenRound, years, crh = false }: DayProps & { crh?: boolean; phone: ChCoachHome['phone']; years?: Record<string, ChYearKey> }) {
+function Day({ phone, rounds, now, today, onOpenRound, years }: DayProps & { phone: ChCoachHome['phone']; years?: Record<string, ChYearKey> }) {
   const phase = dayPhase(phone.next, phone.today, rounds, now, today);
-  return phase ? <DayCard crh={crh} years={years} phase={phase} now={now} today={today} onOpenRound={onOpenRound} /> : <NoEvents />;
+  return phase ? <DayCard years={years} phase={phase} now={now} today={today} onOpenRound={onOpenRound} /> : <NoEvents />;
 }
 
 /**
  * Today's place: an empty day keeps Today's own empty state (with Plan); otherwise the rail of what's left after the
  * card, and what changed since the coach last looked.
  */
-function Later({ crh = false, data, rounds, now, today, quiet, onOpenRound }: DayProps & { crh?: boolean; data: ChCoachHome; quiet: boolean }) {
+function Later({ data, rounds, now, today, quiet, onOpenRound }: DayProps & { data: ChCoachHome; quiet: boolean }) {
   const { phone } = data;
   const place = useLightPlace();
   const clock = useChClock();
   // The lane: one Today card with every event of the day, the next one marked (06 §11.2); "Later today" is the flag-off page's rail.
-  if (crh && data.week.error) return <CrhFailedCard id="ch-hm-today-failed" title="Today" href={CALENDAR} link="Calendar" code="CH-2201" what="Today didn’t load" body="Your events are safe. Try again." />;
-  if (crh && phone.today.length) {
+  if (data.week.error) return <CrhFailedCard id="ch-hm-today-failed" title="Today" href={CALENDAR} link="Calendar" code="CH-2201" what="Today didn’t load" body="Your events are safe. Try again." />;
+  if (phone.today.length) {
     return (
       <>
         <Today card list={phone.today} now={now} failed={false} quiet={quiet} />
@@ -170,7 +169,7 @@ function Later({ crh = false, data, rounds, now, today, quiet, onOpenRound }: Da
     );
   }
   if (!data.week.error && !phone.today.length && quiet) return null;
-  if (data.week.error || !phone.today.length) return <Today card={crh} list={phone.today} now={now} failed={data.week.error} quiet={quiet} />;
+  if (data.week.error || !phone.today.length) return <Today card={true} list={phone.today} now={now} failed={data.week.error} quiet={quiet} />;
   const phase = dayPhase(phone.next, phone.today, rounds, now, today);
   const card = phase?.kind === 'event' ? phase.e : null;
   const later = data.week.agenda.find((a) => a.when === 'later' && a.id !== card?.id);
@@ -394,7 +393,7 @@ export function partOf(n: number, of: number): string {
  * The team's scoring form: the average, its change, the line, and three figures. Gains green, losses amber (D-42).
  * The average, greens and putts share one basis, which the strip states (`formBasis`); the week's count is its own.
  */
-export function Form({ form, crh = false }: { form: ChTeamForm; crh?: boolean }) {
+export function Form({ form }: { form: ChTeamForm; }) {
   const W = 320;
   const H = 64;
   const pts = form.line;
@@ -408,8 +407,7 @@ export function Form({ form, crh = false }: { form: ChTeamForm; crh?: boolean })
   const avgTone = deltaTone(form.delta, form.deltaSe, true);
   return (
     <section className="ch-hm-form" aria-labelledby="ch-hm-form">
-      {crh && (
-        <div className="ch-hm-form__head">
+      <div className="ch-hm-form__head">
           <h2>Team scoring</h2>
           {rebuiltHref('/golf/dashboard/stats') && (
             <Link href={rebuiltHref('/golf/dashboard/stats') as string} className="ch-hm-link">
@@ -417,11 +415,10 @@ export function Form({ form, crh = false }: { form: ChTeamForm; crh?: boolean })
             </Link>
           )}
         </div>
-      )}
       <div className="ch-hm-form__top">
         <span>
           {/* The lane: the label is real text, not the old rule's ::after (06 §11.2). */}
-          <em id="ch-hm-form">{crh ? 'Average · each player’s last 10' : 'Team scoring average'}</em>
+          <em id="ch-hm-form">{'Average · each player’s last 10'}</em>
           <b className="ch-num">{withPointSpan(formatFixed(form.avg))}</b>
         </span>
         <span className={'ch-hm-delta ch-num ' + avgTone}>
@@ -668,7 +665,7 @@ function CrhScorecard({ holes }: { holes: NonNullable<ChLatestRound['holes']> })
   );
 }
 
-function RoundSheet({ crh = false, round, holesError, onClose }: { crh?: boolean; round: ChLatestRound | null; holesError: boolean; onClose: () => void }) {
+function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | null; holesError: boolean; onClose: () => void }) {
   const message = round ? rebuiltHref(`/golf/dashboard/messages?player=${round.playerId}`) : null;
   const recap = round ? roundHref(round.id, 'coach') : null;
   const stats = round ? rebuiltHref(`/golf/dashboard/stats?player=${round.playerId}`) : null;
@@ -678,7 +675,7 @@ function RoundSheet({ crh = false, round, holesError, onClose }: { crh?: boolean
     <Modal
       open={!!round}
       onClose={onClose}
-      detent={crh ? 0.74 : undefined}
+      detent={0.74}
       title={round?.playerName ?? ''}
       description={round?.meta}
       footer={
@@ -701,22 +698,17 @@ function RoundSheet({ crh = false, round, holesError, onClose }: { crh?: boolean
                 </Button>
               )
             )}
-            {helm && !crh && (
-              <Button leftIcon={BrainCircuit} href={helm}>
-                CoachHelm
-              </Button>
-            )}
           </>
         )
       }
     >
       {round && (
-        <div className={'ch-hm-sheet' + (crh ? ' is-crh' : '')}>
+        <div className={'ch-hm-sheet' + ' is-crh'}>
           <dl className="ch-hm-strip ch-well-soft">
             <div>
               <dt>Score</dt>
               <dd className="ch-num">
-                {round.score} <span className={crh && (round.toPar ?? 0) < 0 ? 'is-under' : undefined}>{formatToPar(round.toPar)}</span>
+                {round.score} <span className={(round.toPar ?? 0) < 0 ? 'is-under' : undefined}>{formatToPar(round.toPar)}</span>
               </dd>
             </div>
             <div>
@@ -729,7 +721,7 @@ function RoundSheet({ crh = false, round, holesError, onClose }: { crh?: boolean
             </div>
             <div>
               <dt>SG</dt>
-              <dd className={'ch-num' + (crh && round.sg != null ? ` ${changeInk(round.sg)}` : '')}>{round.sg != null ? formatSigned(round.sg) : <NoData />}</dd>
+              <dd className={'ch-num' + (round.sg != null ? ` ${changeInk(round.sg)}` : '')}>{round.sg != null ? formatSigned(round.sg) : <NoData />}</dd>
             </div>
           </dl>
           {holesError ? (
@@ -737,12 +729,7 @@ function RoundSheet({ crh = false, round, holesError, onClose }: { crh?: boolean
               Hole-by-hole scores didn’t load for this round. The total is right.
             </p>
           ) : round.holes ? (
-            crh ? (
-              <CrhScorecard holes={round.holes} />
-            ) : <>
-              <Nine label="Out" holes={round.holes.filter((h) => h.n <= 9)} caption="Front nine" />
-              <Nine label="In" holes={round.holes.filter((h) => h.n > 9)} caption="Back nine" />
-            </>
+            <CrhScorecard holes={round.holes} />
           ) : (
             <p className="ch-hm-muted" data-ch-code="CH-2303">
               Posted as a total. Hole-by-hole scores weren’t recorded for this round.
