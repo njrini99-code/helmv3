@@ -17,7 +17,7 @@ export function RosterSkeleton({ crh = false }: { /** `clubhouse_classes_roster_
   return (
     <main className={'ch-rs' + (crh ? ' ch-rsx' : '') + (coachCrh ? ' ch-rsd' : '')} data-canopy={coachCrh ? undefined : ''} aria-busy="true" aria-label="Loading roster" data-ch-code="CH-3401" data-ch-crh={crh ? 'on' : undefined}>
       {coachCrh ? <RosterDeskSkeletonCrh /> : <div className="ch-rs-skel-desk">
-        <header className="ch-rs-head" data-canopy-head="tight">
+        <header className="ch-rs-head" data-canopy-head="tight" data-canopy-tight-always="">
           <div>
             <Skeleton width={180} height={30} radius={15} />
             <Skeleton width={280} height={40} radius={10} />

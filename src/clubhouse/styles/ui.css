@@ -214,7 +214,7 @@
      is a flat 12px (Q-141, aesthetic audit M-T1). */
   font: 600 max(var(--ch-av-type, 13px), var(--ch-av-floor, 0px)) / 1 var(--ch-font-sans);
   /* Tracking adds space after the last letter, which pushes the pair off centre and past a 24px coin. */
-  letter-spacing: 0;
+  letter-spacing: var(--ch-track-avatar);
   white-space: nowrap;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.45), 0 0 0 1px var(--ch-av-ring), 0 1px 2px rgb(28 25 18 / 0.14);
 }
@@ -2529,7 +2529,7 @@ html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
   padding: 16px 12px;
 }
 /* The owner's call (4 Nov): rings and rules under an empty read as a page stuck loading. */
-.ch-es--shaped > .ch-es-shape {
+.ch-root:not([data-ch-pre-refresh]) .ch-es--shaped > .ch-es-shape {
   display: none;
 }
 .ch-es__text {

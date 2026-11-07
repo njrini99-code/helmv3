@@ -91,7 +91,7 @@ export function TeamRoster({ data, crh = false }: { data: ChPlayerRoster; /** `c
     // The coach's page material (P003 #1): the framed head and the Ledger, so player and coach read as one product.
     <main className="ch-rs" data-canopy="" data-ch-crh={crh ? 'on' : undefined}>
       {crh && <TeamDayRollover clock={data.clock} />}
-      <header className="ch-rs-head" data-canopy-head="tight">
+      <header className="ch-rs-head" data-canopy-head="tight" data-canopy-tight-always="">
         <div>
           <span className="ch-rs-team">
             <span className="ch-rs-team__name">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>

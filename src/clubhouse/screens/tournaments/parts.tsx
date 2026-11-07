@@ -64,7 +64,7 @@ export function TourMain({ view, phone, labelledBy, className, busy, label, chil
  * The view's head. Desktop: the canopy head (an eyebrow, the title, one line, then `meta` such as a row of chips, and the
  * actions on the right). Phone: the kit's PageIntro, `meta`, and the actions at full width.
  */
-export function TourHead({ id, phone, eyebrow, title, line, meta, actions, crumb }: { id: string; phone: boolean; eyebrow: ReactNode; title: ReactNode; line?: ReactNode; meta?: ReactNode; actions?: ReactNode; crumb?: ReactNode }) {
+export function TourHead({ id, phone, eyebrow, title, line, meta, actions, crumb, tightAlways = false }: { id: string; phone: boolean; tightAlways?: boolean; eyebrow: ReactNode; title: ReactNode; line?: ReactNode; meta?: ReactNode; actions?: ReactNode; crumb?: ReactNode }) {
   if (phone)
     return (
       <>
@@ -77,7 +77,7 @@ export function TourHead({ id, phone, eyebrow, title, line, meta, actions, crumb
   return (
     <>
       {crumb}
-      <header className="ch-tour-head" data-canopy-head="tight">
+      <header className="ch-tour-head" data-canopy-head="tight" data-canopy-tight-always={tightAlways ? '' : undefined}>
         <div className="ch-tour-head__t">
           <span className="ch-tour-head__k ch-num">{eyebrow}</span>
           <h1 id={id}>{title}</h1>

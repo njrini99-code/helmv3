@@ -300,7 +300,7 @@ export default async function GolfDashboardLayout({
         {/* A15: the app's splash comes down on the first painted frame, not after hydration. */}
         <SplashHide />
         {/* Tournaments (golf_tournaments_v1) rides in the shell's data: the nav is drawn on the client, the flag is read here. */}
-        <ClubhouseShell userData={userData} shell={{ ...shell, ...(tournamentsNavEnabled() ? { tournaments: true } : {}), ...(refreshEnabled() ? { refresh: true } : {}) }} phone={phone} folded={folded} clock={clock}>
+        <ClubhouseShell userData={userData} shell={{ ...shell, ...(tournamentsNavEnabled() ? { tournaments: true } : {}), refresh: refreshEnabled() }} phone={phone} folded={folded} clock={clock}>
           {children}
         </ClubhouseShell>
       </>
