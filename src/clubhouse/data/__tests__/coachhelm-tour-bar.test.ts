@@ -41,7 +41,9 @@ describe('the Tour bar beside a read', () => {
   });
 
   it('another comparison is never called Tour', () => {
-    const row = read({ comparison_source: 'your_baseline', comparison_value: 1.4 });
+    // Penalties against the player's own 1.4: the Tour bar is the Tour's 0.3, in the same unit, not the 1.4. With no Tour known, none.
+    const row = read({ metric: 'penalty_rate_per_round', unit: 'count', comparison_source: 'your_baseline', comparison_value: 1.4 });
+    expect(toChInsight(row, { tour: TOUR }).compare!.tour).toBe(0.3);
     expect(toChInsight(row, { tour: null }).compare!.tour).toBeNull();
   });
 

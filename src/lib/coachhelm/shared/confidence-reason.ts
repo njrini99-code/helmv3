@@ -20,8 +20,11 @@ export function buildConfidenceReason(evidence: { sample_n: number; confidence_f
   return sureSentence(`${n} observation${n === 1 ? '' : 's'}`, confidenceTier(evidence.confidence ?? evidence.confidence_factors.sample_adequacy));
 }
 
-/** What generators stored before READ-S1: "30 observations; recency/variance not measured (sample-adequacy only); sample 90% of target". */
-const ENGINE_TEXT = /\brecency\b|\bvariance\b|sample[- ]adequa|% of target/i;
+/**
+ * What generators store. Before READ-S1: "30 observations; recency/variance not measured (sample-adequacy only); sample 90% of target".
+ * Since: `buildConfidenceReason`'s own sentence, which says nothing How sure doesn't, in that card's words and from the row's live tier.
+ */
+const ENGINE_TEXT = /\brecency\b|\bvariance\b|sample[- ]adequa|% of target|^\d+ observations?\./i;
 
 /**
  * A stored reason a coach or player may read, or null. Rows keep the text they were written with until they are next refreshed, so

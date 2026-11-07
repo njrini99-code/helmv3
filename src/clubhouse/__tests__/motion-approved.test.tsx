@@ -263,6 +263,32 @@ describe('CH-1619 a page fades in over its route skeleton', () => {
     expect(view.container.querySelector('main[aria-hidden="true"]')).toBeNull();
   });
 
+  it('READ-S4 one skeleton leaves one copy, however many nodes take its place', async () => {
+    const { animate } = fadeSpy();
+    let now = 1000;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
+    const view = render(
+      <RouteFrame routeKey="home">
+        <main>Home</main>
+      </RouteFrame>,
+    );
+    view.rerender(
+      <RouteFrame routeKey="read">
+        <main key="skeleton" aria-busy="true" aria-label="Loading this read" data-ch-arrive="crossfade" />
+      </RouteFrame>,
+    );
+    now += 800;
+    view.rerender(
+      <RouteFrame routeKey="read">
+        <main key="page">Read</main>
+        <aside key="more">More</aside>
+      </RouteFrame>,
+    );
+    await flush();
+    expect(view.container.querySelectorAll('main[aria-hidden="true"]')).toHaveLength(1);
+    expect(animate).toHaveBeenCalledTimes(3);
+  });
+
   it('READ-S4 a page that lands while the skeleton is still fading in has no copy to fade out', async () => {
     const { animate } = fadeSpy();
     let now = 1000;
