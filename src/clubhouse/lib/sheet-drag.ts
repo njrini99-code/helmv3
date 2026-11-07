@@ -37,6 +37,20 @@ function unband(shown: number): number {
   return shown >= BAND_D ? 4 * BAND_D : (BAND_D / BAND_C) * (1 / (1 - shown / BAND_D) - 1);
 }
 
+/**
+ * The Messages sheets' own feel (MSG-407, MOT-X-6): pulled up past rest the sheet gives `sqrt(|d|) * 2.2`, and it closes past one
+ * third of its height. Opt-in (`variant: 'messages'`); every other sheet keeps UIKit's band and the 80 px threshold.
+ */
+export const MS_BAND_K = 2.2;
+export const MS_CLOSE_FRACTION = 1 / 3;
+export function msRubberBand(over: number): number {
+  return Math.sqrt(Math.max(0, over)) * MS_BAND_K;
+}
+/** The finger travel that put a Messages sheet `shown` pixels past its open position (the inverse of `msRubberBand`). */
+function msUnband(shown: number): number {
+  return (shown / MS_BAND_K) ** 2;
+}
+
 const flings = new WeakMap<Element, { speed: number; at: number }>();
 /** A throw is handed to the exit that follows it; one whose close was refused (unsaved changes) lapses after this. */
 const FLING_TTL_MS = 1000;
@@ -136,7 +150,7 @@ export function chScrimAt(offset: number, size: number): number {
 export function useSheetDrag(
   sheet: RefObject<HTMLElement | null>,
   onClose: () => void,
-  { enabled = true, direction = 'down', reduced = false }: { enabled?: boolean; direction?: 'down' | 'left'; reduced?: boolean } = {},
+  { enabled = true, direction = 'down', reduced = false, variant = 'default' }: { enabled?: boolean; direction?: 'down' | 'left'; reduced?: boolean; variant?: 'default' | 'messages' } = {},
 ) {
   const reducedRef = useRef(reduced);
   reducedRef.current = reduced;
@@ -175,7 +189,8 @@ export function useSheetDrag(
       const shown = settling.current ? offsetNow(el, direction) : 0;
       settling.current?.();
       // Mid spring-back above its open position, the finger takes it from where the band had it.
-      const from = shown >= 0 ? shown : -unband(-shown);
+      const messages = variant === 'messages';
+      const from = shown >= 0 ? shown : -(messages ? msUnband(-shown) : unband(-shown));
       let floored = false;
       /** Above its open position: the sheet's own colour reaches under it, so no gap opens at the foot of the screen. */
       const floor = () => {
@@ -203,7 +218,7 @@ export function useSheetDrag(
         if (ev.pointerId !== pointerId) return;
         const raw = from + coordinate(ev) - at;
         // Only a sheet rising from the bottom has a floor to stretch over; a drawer stops at its open edge.
-        dy = raw >= 0 ? raw : direction === 'down' ? -rubberBand(-raw) : 0;
+        dy = raw >= 0 ? raw : direction === 'down' ? -(messages ? msRubberBand(-raw) : rubberBand(-raw)) : 0;
         put(dy);
         samples.push([ev.timeStamp, dy]);
         if (samples.length > 12) samples.shift();
@@ -251,7 +266,7 @@ export function useSheetDrag(
         if (ev.pointerId !== pointerId) return;
         stop.current?.();
         const speed = releaseSpeed(samples, ev.timeStamp);
-        if (ev.type === 'pointerup' && (dy > CH_SHEET_CLOSE_PX || (dy > 10 && speed > FLICK_PX_PER_MS))) {
+        if (ev.type === 'pointerup' && (dy > (messages ? size * MS_CLOSE_FRACTION : CH_SHEET_CLOSE_PX) || (dy > 10 && speed > FLICK_PX_PER_MS))) {
           if (floored) el.style.boxShadow = '';
           flings.set(el, { speed: Math.max(0, speed), at: performance.now() });
           haptic('commit');
@@ -272,7 +287,7 @@ export function useSheetDrag(
       window.addEventListener('pointerup', end);
       window.addEventListener('pointercancel', end);
     },
-    [direction],
+    [direction, variant],
   );
 
   const onPointerDown = useCallback(
