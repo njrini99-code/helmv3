@@ -398,7 +398,7 @@ export async function loadCoachHome(input: {
     changesRead,
   ]);
   if (teamRes.error) log('team', teamRes.error);
-  // CH-2208: without the team chat, Message team opens Messages instead.
+  // Home has no Message team action now; the read stays logged so a failing chat read is still seen.
   if (chatRes.error) log('team chat', chatRes.error);
 
   // ── Roster ──

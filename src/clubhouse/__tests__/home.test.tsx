@@ -76,6 +76,8 @@ import './dialog-polyfill';
 import {
   PREVIEW_HOME,
   PREVIEW_HOME_EMPTY,
+  PREVIEW_HOME_LEGS_CACHE_FAILED,
+  PREVIEW_HOME_LEGS_TOUR_FAILED,
   PREVIEW_HOME_LEGS_NO_HOLES,
   PREVIEW_HOME_NOW,
   PREVIEW_HOME_NO_EVENTS,
@@ -871,7 +873,7 @@ describe('Home · this file', () => {
     const all = ['home.test.tsx', 'player-home.test.tsx', 'class-awareness.test.tsx'].map((f) => readFileSync(join(root, 'src/clubhouse/__tests__', f), 'utf8')).join('\n');
     const titles = all.split('\n').filter((l) => /^\s*(it|describe)(\.each\(.*\))?\(/.test(l));
     const catalog = readFileSync(join(root, 'docs/clubhouse/catalog/home.md'), 'utf8');
-    const forced = [...catalog.matchAll(/^\|\s*(CH-2[0-5]\d\d)\s*\|.*$/gm)].filter((m) => !/\|\s*preview\s*\|\s*$/.test(m[0].trim())).map((m) => m[1]!);
+    const forced = [...catalog.matchAll(/^\|\s*(CH-2[0-5]\d\d)\s*\|.*$/gm)].filter((m) => !/\|\s*preview\s*\|\s*$/.test(m[0].trim()) && !/retired/i.test(m[0])).map((m) => m[1]!);
     // A floor, so an unreadable catalog can't pass by finding nothing (2201 to 2217, 2301 to 2313 and 2401).
     expect(forced.length).toBeGreaterThanOrEqual(31);
     expect(forced.filter((c) => !titles.some((l) => l.includes(c)))).toEqual([]);
@@ -974,5 +976,110 @@ describe('Home · the team’s game and what’s waiting on the coach (spec B)',
     expect(within(list).getAllByRole('listitem')[2]!.textContent).toContain('Ava L. and Sofia A. gain most');
     expect(within(list).getAllByRole('link', { name: 'Theo M.' })[0]!.getAttribute('href')).toBe('/golf/dashboard/stats?player=theo&tab=game');
     expect(screen.queryByRole('table', { name: 'The team’s game' })).toBeNull();
+  });
+});
+
+/** The redesign is the only Home: its sections each contain their own crash, and a failed read is told where it landed. */
+describe('Home · a section that crashes, and a form that does not load', () => {
+  const real = window.matchMedia;
+  const PHONE = '(max-width: 820px), (max-height: 500px) and (pointer: coarse)';
+  const asPhone = (on: boolean) => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: on && q === PHONE })) as typeof window.matchMedia;
+  };
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+
+  it('CH-2205 CH-2206 CH-2221 on the phone, a week, a latest round or the team’s game that crashes is contained; the rest of Home stays', () => {
+    asPhone(true);
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const days = PREVIEW_HOME.week.days;
+    const broken = {
+      ...PREVIEW_HOME,
+      week: { ...PREVIEW_HOME.week, days: [{ ...days[0]!, weekday: null as never }, ...days.slice(1)] },
+      latestRounds: { ...PREVIEW_HOME.latestRounds, rounds: null as never },
+      legs: { ...PREVIEW_HOME.legs!, rows: null as never },
+    };
+    wrap(<CoachHome data={broken} now={PREVIEW_HOME_NOW} />);
+    expect(code('CH-2206')!.textContent).toMatch(/couldn’t be shown/);
+    expect(code('CH-2221')!.textContent).toMatch(/The team’s game couldn’t be shown/);
+    expect(code('CH-2205')!.textContent).toMatch(/This week couldn’t be shown/);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(PREVIEW_HOME.greeting);
+    quiet.mockRestore();
+  });
+
+  it('CH-2206 CH-2221 22301 on the desktop, a latest round or the team’s game that crashes is contained, reported high under its own surface', () => {
+    asPhone(false);
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const broken = { ...PREVIEW_HOME, latestRounds: { ...PREVIEW_HOME.latestRounds, rounds: null as never }, legs: { ...PREVIEW_HOME.legs!, rows: null as never } };
+    wrap(<CoachHome data={broken} now={PREVIEW_HOME_NOW} />);
+    expect(code('CH-2206')!.textContent).toMatch(/The latest round couldn’t be shown/);
+    expect(code('CH-2221')!.textContent).toMatch(/The team’s game couldn’t be shown/);
+    for (const surface of ['home.latestRound', 'home.legs']) {
+      expect(chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface, severity: 'high' }));
+    }
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(PREVIEW_HOME.greeting);
+    quiet.mockRestore();
+  });
+
+  it('CH-2211 the team’s form does not load: the card says so with Try again, never an empty form', () => {
+    asPhone(true);
+    const failed = { ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: null }, latestRounds: { ...PREVIEW_HOME.latestRounds, rounds: [], error: true } };
+    wrap(<CoachHome data={failed} now={PREVIEW_HOME_NOW} />);
+    expect(code('CH-2211')!.textContent).toMatch(/Scoring didn’t load|Team scoring didn’t load/);
+    expect(document.querySelector('.ch-hm-form')).toBeNull();
+  });
+});
+
+describe('Home · the team’s four parts that did not load, and a team nobody is ranked on', () => {
+  it('CH-2218 up-and-down figures that didn’t load: one notice above the parts, strokes gained stays', () => {
+    wrap(<CoachHome data={PREVIEW_HOME_LEGS_CACHE_FAILED} now={PREVIEW_HOME_NOW} />);
+    expect(code('CH-2218')!.textContent).toMatch(/Up-and-down figures didn’t load.*Strokes gained is right/);
+    expect(code('CH-2219')).toBeNull();
+  });
+  it('CH-2219 Tour marks that didn’t load: one notice, and the stats stand without their marks', () => {
+    wrap(<CoachHome data={PREVIEW_HOME_LEGS_TOUR_FAILED} now={PREVIEW_HOME_NOW} />);
+    expect(code('CH-2219')!.textContent).toMatch(/Tour marks didn’t load/);
+    expect(document.body.textContent).not.toMatch(/· Tour/);
+  });
+  it('CH-2315 nobody with 3 rounds with hole scores: the parts stay, and the line says no one is ranked', () => {
+    wrap(<CoachHome data={{ ...PREVIEW_HOME, legs: { ...PREVIEW_HOME.legs!, ranked: false } }} now={PREVIEW_HOME_NOW} />);
+    expect(code('CH-2315')!.textContent).toMatch(/No player has 3 rounds with hole scores yet, so no one is ranked\./);
+  });
+});
+
+describe('Home · the page’s contracts on the redesign', () => {
+  const real = window.matchMedia;
+  const PHONE = '(max-width: 820px), (max-height: 500px) and (pointer: coarse)';
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+
+  it('20101 Coach Home opens with its date and greeting, Up next, the team’s scoring and the latest round, from the server’s first read', () => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: false })) as typeof window.matchMedia;
+    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(PREVIEW_HOME.greeting);
+    expect(document.body.textContent).toContain(PREVIEW_HOME.todayLabel);
+    expect(document.querySelector('.ch-h-main--desk')).not.toBeNull();
+    expect(document.querySelector('.ch-hm-form')).not.toBeNull();
+    // The leaderboard and the week left Home: they live on Roster, Stats and Calendar.
+    expect(screen.queryByRole('table', { name: 'Leaderboard' })).toBeNull();
+  });
+
+  it('21901 20301 at 820px and below Home is the phone Home, in its own order, and none of the desktop page', () => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === PHONE })) as typeof window.matchMedia;
+    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
+    expect(document.querySelector('.ch-h-main--desk')).toBeNull();
+    const heads = screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent);
+    expect(heads).toEqual(['Short-game block', 'Today', 'Team scoring', 'The team’s game', 'This week', 'Latest rounds']);
+  });
+
+  it('22101 a failed read never throws: the page still loads, each section says it failed, and every read is logged', async () => {
+    tables.current = { golf_events: { error: { message: 'boom' } }, golf_team_members: { error: { message: 'boom' } } };
+    const data = await load();
+    expect(data.week.error).toBe(true);
+    expect(data.latestRounds.error).toBe(true);
+    logged('events');
+    logged('roster');
   });
 });

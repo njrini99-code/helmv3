@@ -22,6 +22,7 @@ vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).f
 import { briefFor, legRows, loadPlayerHome, type ChPlayerHome } from '../data/player-home';
 import type { ChRound } from '../data/season';
 import { PlayerHome, PlayerHomeNoTeam, isPlayerFirstRun } from '../screens/home/PlayerHome';
+import { PlayerGame } from '../screens/home/PlayerGame';
 import { scoringNote } from '../screens/home/PlayerGame';
 import { chReport, chTrail } from '../lib/track';
 import { PhoneChromeProvider } from '../shell/phone-chrome';
@@ -433,5 +434,123 @@ describe('Player Home · what the coach is waiting on, and the player’s own re
     const short = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' });
     for (const d of PREVIEW_PLAYER_HOME.week.days) expect(d.weekday, d.date).toBe(short.format(new Date(`${d.date}T12:00:00Z`)));
     expect(short.format(new Date(`${PREVIEW_PLAYER_HOME.next!.date}T12:00:00Z`))).toBe(PREVIEW_PLAYER_HOME.week.agenda.find((r) => r.when === 'later')!.timeLabel);
+  });
+});
+
+describe('Player Home · the game card on the redesign', () => {
+  it('CH-2310 fewer than two 18-hole rounds: the scoring card says how many there are and when the line starts', () => {
+    wrap(<PlayerGame data={home({ scoring: { points: PREVIEW_PLAYER_HOME.scoring.points.slice(0, 1), error: false } })} part="scoring" />);
+    expect(document.querySelector('[data-ch-code="CH-2310"]')!.textContent).toMatch(/One round so far.*second 18-hole round/);
+    cleanup();
+    wrap(<PlayerGame data={home({ scoring: { points: [], error: false } })} part="scoring" />);
+    expect(document.querySelector('[data-ch-code="CH-2310"]')!.textContent).toMatch(/No rounds posted yet this season/);
+  });
+
+  it('CH-2217 22301 the game card that crashes is contained, reported high as home.game; the rest of Home stays', () => {
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    show(home({ scoringLast10: { avg: 71, n: 3 }, sgPerRound: {} as never }));
+    expect(document.querySelector('[data-ch-code="CH-2217"]')!.textContent).toMatch(/Your game couldn’t be shown/);
+    expect(chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface: 'home.game', severity: 'high' }));
+    expect(screen.getByRole('heading', { level: 1 })).toBeTruthy();
+    quiet.mockRestore();
+  });
+});
+
+describe('Player Home · what the loader reads, on the redesign', () => {
+  it('20803 20805 reads only the player’s own rounds, names no other invitee, and finds the coach', async () => {
+    const roundsQueries: Filters[] = [];
+    tables.current = {
+      golf_team_settings: { data: { timezone: 'America/New_York' } },
+      golf_events: { data: [] },
+      golf_rounds: (f) => {
+        roundsQueries.push(f);
+        return { data: [round(0), round(1), round(2), round(3)] };
+      },
+      golf_players: { data: { handicap_index: 2.1, handicap: null } },
+      // created_by is a golf_coaches.id (not a user id), as on every live team.
+      golf_teams: { data: { gender: 'men', created_by: 'c-head', organization_id: 'o1' } },
+      golf_coaches: { data: [{ id: 'c-asst', user_id: 'u-asst' }, { id: 'c-head', user_id: 'u-head' }] },
+      golf_holes: { data: [] },
+      golf_pga_standards: { data: [{ metric_id: 'gir_pct', pga_tour_value: 60 }] },
+    };
+    const data = await loadPlayerHome(player);
+    expect(roundsQueries[0]).toContainEqual(['in', ['player_id', ['p1']]]);
+    expect(data.coachUserId).toBe('u-head');
+    expect(data.handicap).toBe(2.1);
+    expect(data.greeting).toMatch(/, Theo$/);
+  });
+
+  it('20803 the tables read are exactly the player’s own and the team’s calendar: no roster, and every round id is theirs', async () => {
+    const seen: Array<{ table: string; filters: Filters }> = [];
+    const answers: Record<string, object> = {
+      golf_team_settings: { data: { timezone: 'America/New_York' } },
+      golf_events: { data: [] },
+      golf_rounds: { data: [round(0), round(1)] },
+      golf_players: { data: { handicap_index: 2.1, handicap: null } },
+      golf_teams: { data: { gender: 'men', created_by: 'c1', organization_id: 'o1' } },
+      golf_coaches: { data: [{ id: 'c1', user_id: 'u1' }] },
+    };
+    // Any table not listed still answers (empty) and is written down, so a new read cannot slip by.
+    tables.current = new Proxy({} as import('./supabase-fake').ChFakeTables, {
+      get: (_t, table: string) => (filters: Filters) => {
+        seen.push({ table, filters: [...filters] });
+        return answers[table] ?? { data: [] };
+      },
+    });
+    await loadPlayerHome(player);
+    const read = [...new Set(seen.map((s) => s.table))].sort();
+    expect(read).toEqual(['golf_coaches', 'golf_event_attendance', 'golf_events', 'golf_holes', 'golf_pga_standards', 'golf_players', 'golf_rounds', 'golf_task_assignments', 'golf_team_settings', 'golf_teams', 'rpc:get_player_hub_events'].sort());
+    expect(read).not.toContain('golf_team_members');
+    const filtersOf = (table: string) => seen.filter((s) => s.table === table).flatMap((s) => s.filters);
+    // Their own replies and their own tasks: never a teammate's.
+    for (const table of ['golf_event_attendance', 'golf_task_assignments']) {
+      for (const r of seen.filter((s) => s.table === table)) expect(r.filters).toContainEqual(['eq', ['player_id', 'p1']]);
+    }
+    expect(filtersOf('golf_rounds')).toContainEqual(['in', ['player_id', ['p1']]]);
+    expect(filtersOf('golf_players')).toContainEqual(['eq', ['id', 'p1']]);
+  });
+
+  it('22101 a failed read never throws: the page loads, each section says it failed, and every read is logged', async () => {
+    const boom = { error: { message: 'boom' } };
+    tables.current = { golf_team_settings: boom, golf_events: boom, golf_rounds: boom, golf_players: boom, golf_teams: boom };
+    const gone = await loadPlayerHome(player);
+    expect(gone.week.error).toBe(true);
+    expect(gone.latest.error).toBe(true);
+    expect(gone.scoring.error).toBe(true);
+    expect(gone.legs).toBeNull();
+    expect(gone.brief).toBeNull();
+    expect(gone.coachUserId).toBeNull();
+    expect(gone.handicap).toBeNull();
+    for (const r of ['timezone', 'events', 'rounds', 'player', 'team']) expect(logServer).toHaveBeenCalledWith('home', r, expect.anything());
+
+    // The rounds load; the hole-by-hole scores, the Tour benchmarks and the coaches do not.
+    logServer.mockClear();
+    tables.current = {
+      golf_team_settings: { data: { timezone: 'America/New_York' } },
+      golf_events: { data: [] },
+      golf_rounds: { data: [round(0), round(1), round(2)] },
+      golf_teams: { data: { gender: 'men', created_by: 'c1', organization_id: 'o1' } },
+      golf_holes: boom,
+      golf_pga_standards: boom,
+      golf_coaches: boom,
+    };
+    const part = await loadPlayerHome(player);
+    expect(part.latest).toMatchObject({ error: false, holesError: true });
+    expect(part.legs).toMatchObject({ benchError: true });
+    expect(part.coachUserId).toBeNull();
+    for (const r of ['holes', 'tourBenchmarks', 'coaches']) expect(logServer).toHaveBeenCalledWith('home', r, expect.anything());
+  });
+});
+
+describe('Player Home · the phone, on the redesign', () => {
+  const real = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+  it('21901 at 820px and below Player Home is the phone Home, never the desktop page shrunk', () => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
+    show();
+    expect(document.querySelector('.ch-h-main--desk')).toBeNull();
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['Your game', 'Today', 'Your latest round']);
   });
 });

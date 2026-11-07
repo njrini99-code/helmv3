@@ -27,6 +27,11 @@ import { ChangeMarksProvider } from '../../lib/use-change-marks';
 import { NoTeam } from '../../ui/NoTeam';
 import '../../styles/home.css';
 
+/** The latest round's pane. Its own component, so a malformed read throws inside the section's boundary (CH-2206) and not in the page above it. */
+function DeskLatest({ data, covered }: { data: ChCoachHome['latestRounds']; covered: boolean }) {
+  return data.rounds.length === 0 ? <LatestRound data={data} covered={covered} /> : <DeskRounds rounds={data.rounds} />;
+}
+
 /**
  * Coach Home (handoff: Coach Home v3). The coach's day at a glance: the week
  * and the latest round in one lit sheet, then the season leaderboard. Calm
@@ -111,7 +116,7 @@ function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; l
             )}
             {!noRounds && !data.latestRounds.error && (
               <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
-                {data.latestRounds.rounds.length === 0 ? <LatestRound data={data.latestRounds} covered={covered} /> : <DeskRounds rounds={data.latestRounds.rounds} />}
+                <DeskLatest data={data.latestRounds} covered={covered} />
               </SectionBoundary>
             )}
             </div>
@@ -128,7 +133,7 @@ function CoachHomeBody({ data, now, live }: { data: ChCoachHome; now?: string; l
             ) : null}
             {!noRounds && !data.latestRounds.error && (
               <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
-                {data.latestRounds.rounds.length === 0 ? <LatestRound data={data.latestRounds} covered={covered} /> : <DeskRounds rounds={data.latestRounds.rounds} />}
+                <DeskLatest data={data.latestRounds} covered={covered} />
               </SectionBoundary>
             )}
             </div>

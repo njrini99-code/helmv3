@@ -1274,7 +1274,7 @@
     "category": 1,
     "item": 1,
     "name": "COACH_HOME_READY",
-    "meaning": "Coach Home opens with the date, the greeting and the brief, Message team and New event, the week beside the latest round in one sheet, and the season leaderboard, all read on the server for the first paint; a team with nothing yet gets the first-run page (CH-2308), and on a phone the same data is drawn as the phone Home (21901).",
+    "meaning": "Coach Home opens with the date, the greeting and the brief, Up next beside the hero, Today and the team's scoring form, the team's four parts and the latest round, all read on the server for the first paint; a team with nothing yet gets the first-run page. The leaderboard and the week are not on Home (Roster, Stats and Calendar).",
     "status": "implemented",
     "where": "src/clubhouse/screens/home/CoachHome.tsx#CoachHome; src/clubhouse/data/home.ts#loadCoachHome",
     "tests": [
@@ -1369,12 +1369,11 @@
     "category": 3,
     "item": 1,
     "name": "CLOCK_KEEPS_TIME",
-    "meaning": "The phone's Up next line (In 50 min, Happening now) is recomputed from the device clock every minute and the player's countdown every second, so neither needs a reload.",
+    "meaning": "The phone's Up next line (In 50 min, Happening now) is recomputed from the device clock every minute, so it needs no reload.",
     "status": "implemented",
-    "where": "src/clubhouse/lib/use-now.ts#useNow; src/clubhouse/screens/home/HomePhone.tsx#whenLabel; src/clubhouse/screens/home/Countdown.tsx#Countdown",
+    "where": "src/clubhouse/lib/use-now.ts#useNow; src/clubhouse/screens/home/HomePhone.tsx#whenLabel",
     "tests": [
-      "src/clubhouse/__tests__/home.test.tsx",
-      "src/clubhouse/__tests__/player-home.test.tsx"
+      "src/clubhouse/__tests__/home.test.tsx"
     ]
   },
   {
@@ -2195,12 +2194,8 @@
     "category": 18,
     "item": 7,
     "name": "COUNTDOWN_IS_A_NAMED_TIMER",
-    "meaning": "The player's countdown is a timer named for a screen reader as Starts in N days, N hours and N minutes (singular at one), and its digits, the ticking seconds included, are hidden from a screen reader, so it is heard once, not every second.",
-    "status": "implemented",
-    "where": "src/clubhouse/screens/home/Countdown.tsx#Countdown",
-    "tests": [
-      "src/clubhouse/__tests__/player-home.test.tsx"
-    ]
+    "meaning": "Retired 2026-11-07 (Dashboard cuts: the player Home has no countdown). The player's countdown is a timer named for a screen reader as Starts in N days, N hours and N minutes (singular at one), and its digits, the ticking seconds included, are hidden from a screen reader, so it is heard once, not every second.",
+    "status": "deprecated"
   },
   {
     "id": 21808,
