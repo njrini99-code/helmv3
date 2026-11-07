@@ -8,7 +8,7 @@ import type { ChPlayerHome } from '../../data/player-home';
 import type { ChPlayerLive } from '../../data/live-rounds';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
-import { PageRefreshNotice } from '../../ui/RefreshNotice';
+import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
 import { Icon } from '../../ui/Icon';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useChPhone } from '../../lib/use-phone';
@@ -108,10 +108,15 @@ function PlayerHomeBody({ data, now, live, playerId, shs }: { data: ChPlayerHome
                 <UpNextRow e={data.next} now={ticking} />
               </SectionBoundary>
             )}
-            {(data.week.error || todayRest.length > 0) && (
-              <SectionBoundary surface="home.today" label="Today" code="CH-2214">
-                <DeskToday events={todayRest} now={ticking} />
-              </SectionBoundary>
+            {data.week.error ? (
+              // A failed schedule read says so, never "Nothing scheduled" (the phone and coach Home do the same).
+              <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. Try again." covered={covered} />
+            ) : (
+              todayRest.length > 0 && (
+                <SectionBoundary surface="home.today" label="Today" code="CH-2214">
+                  <DeskToday events={todayRest} now={ticking} />
+                </SectionBoundary>
+              )
             )}
             <SectionBoundary surface="home.latestRound" label="Your latest round" code="CH-2206">
               <LatestRound data={data.latest} mine covered={covered} />

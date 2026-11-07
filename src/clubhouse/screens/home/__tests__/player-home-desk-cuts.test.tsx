@@ -21,6 +21,12 @@ describe('player Home desktop, the cuts', () => {
     expect(container.querySelector('.ch-shs-yg__sum')).toBeTruthy();
     if (PREVIEW_PLAYER_HOME.next) expect(container.querySelector('.ch-hm-nextrow')).toBeTruthy();
   });
+  it('a failed schedule read says so, not "Nothing scheduled"', () => {
+    const data = { ...PREVIEW_PLAYER_HOME, week: { ...PREVIEW_PLAYER_HOME.week, error: true }, today: [], next: null };
+    const { container } = render(<PlayerHome data={data} now={NOW} shs />);
+    expect(container.textContent).toContain('This week’s schedule didn’t load');
+    expect(container.textContent).not.toContain('Nothing scheduled');
+  });
   it('with the flag off keeps the page it had', () => {
     const { container } = render(<PlayerHome data={PREVIEW_PLAYER_HOME} now={NOW} />);
     expect(container.querySelector('.ch-ph-desk')).toBeNull();
