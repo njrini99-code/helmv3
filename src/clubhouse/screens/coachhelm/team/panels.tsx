@@ -243,7 +243,7 @@ export function ReadPanel({
  */
 export function PlayerPanel({ player, fileOn, onClose }: { player: ChTeamPlayer; fileOn: boolean; onClose: () => void }) {
   const year = player.classYear ?? 'Player';
-  const line = player.rounds === 0 ? `${yearShort(year)} · no rounds yet this season` : `${yearShort(year)} · ${plural(player.rounds, 'round')} · ${formatSigned(player.total)} a round to Tour`;
+  const line = player.rounds === 0 ? `${yearShort(year)} · no rounds yet this season` : `${yearShort(year)} · ${plural(player.rounds, 'round')} · ${formatSigned(player.total)} a round to Tour · last 10${player.early ? ' · early' : ''}`;
   return (
     <>
       <Head lead={<Coin player={player} />} name={player.name} line={line} onClose={onClose} />

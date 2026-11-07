@@ -6,14 +6,15 @@ import { homeClock, latestWithHoles, loadHomeWeek, type ChHomeClock, type ChHome
 import type { MarkEntries } from '../lib/marks-cookie';
 import type { ChHomeChange } from '../screens/home/change-rows';
 import { loadHomeChanges, withChange, withWas } from './home-changes';
-import { countsForScoring, isFull18, lastTenFloor, loadSeasonRounds, mean, seasonStartDate, summarizePlayer, type ChRound } from './season';
+import { playerStrokesGained } from './figure-window';
+import { countsForScoring, isFull18, lastTenFloor, loadSeasonRounds, mean, type ChRound } from './season';
 import { holeRounds } from './round-scope';
 import { legRows, type ChPlayerLeg } from './leg-rows';
 import { replyClosedAt } from '../screens/calendar/model';
 import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
 import { parsePlayerHubEvents } from '@/lib/golf/player-hub-events';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
-import { loadRoundCache, loadTourBenchmarks, seasonOnly, tourForGender, type ChRoundCache } from './stats-common';
+import { loadRoundCache, loadTourBenchmarks, tourForGender, type ChRoundCache } from './stats-common';
 import { formatFixed } from '../lib/format';
 
 export { legRows } from './leg-rows';
@@ -157,10 +158,9 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   const full = fullOf(roundsRes);
   const window = windowOf(roundsRes);
 
-  // Strokes gained is the season's ("Season, per round"; each leg's "this season").
-  // The season turns on 1 August in the team's zone (owner decision 9).
-  const season = summarizePlayer(seasonOnly(full, seasonStartDate(now, tz)));
-  const legs = roundsRes.error ? null : { rows: legRows(window, cache.byRound, bench, season.sgLegs, { shs: input.shs }), cacheError: cache.error, benchError: bench === null || bench.size === 0 };
+  // Strokes gained is the one source (QA-1): the last ten counted rounds, as on Team view and Stats.
+  const sg = roundsRes.error ? null : playerStrokesGained(roundsRes.rounds);
+  const legs = roundsRes.error || !sg ? null : { rows: legRows(window, cache.byRound, bench, sg.legs, { shs: input.shs }), cacheError: cache.error, benchError: bench === null || bench.size === 0 };
 
   const points: ChScoringPoint[] = full
     .slice(0, SCORING_MAX)
@@ -186,7 +186,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     weekNote: wk.weekNote,
     latest: { rounds: latest.rounds, error: roundsRes.error, holesError: latest.holesError },
     scoring: { points, error: roundsRes.error },
-    sgPerRound: season.sgPerRound,
+    sgPerRound: sg?.total ?? null,
     tour: teamRes.data ? tourForGender(teamRes.data.gender) : null,
     handicap: playerRes.data?.handicap_index ?? playerRes.data?.handicap ?? null,
     legs,
