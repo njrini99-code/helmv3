@@ -4434,28 +4434,6 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   }
 }
 
-/* With clubhouse_refresh_v1 off, the week's tints as they were before the redesign (styles/pre-refresh.css). */
-.ch-root[data-ch-pre-refresh] .ch-wk__col.is-today {
-  background-color: rgb(21 90 57 / 0.025);
-}
-.ch-root[data-ch-pre-refresh] .ch-wk__col.is-past,
-.ch-root[data-ch-pre-refresh] .ch-wk__gone {
-  background-color: color-mix(in oklab, var(--ch-text-primary) 3.5%, transparent);
-}
-.ch-root[data-ch-pre-refresh] .ch-wk__sky > i.is-night {
-  background: rgb(46 58 92 / 0.055);
-}
-html[data-fw-theme='dark'] .ch-root[data-ch-pre-refresh] .ch-wk__col.is-today {
-  background-color: rgb(107 187 140 / 0.04);
-}
-html[data-fw-theme='dark'] .ch-root[data-ch-pre-refresh] .ch-wk__sky > i.is-night {
-  background: rgb(0 0 0 / 0.18);
-}
-@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  .ch-root[data-ch-pre-refresh] .ch-cal--skel[data-canopy] > .ch-cal-mast {
-    min-height: 136px;
-  }
-}
 /* A practice's plan (N-00 4.17): the state on the left, the one action on the right. */
 .ch-in__sec.ch-in__plan { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; }
 .ch-in__plan-s { font: var(--ch-type-14-medium); color: var(--ch-text-secondary); }

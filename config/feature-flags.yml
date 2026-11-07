@@ -932,28 +932,6 @@ flags:
     cleanup_plan: >-
       Once the owner has turned it on in production, delete the old rules and
       --ch-bubble-mine-bg in the cleanup PR 02-PLAN names, then remove the flag.
-  # The Clubhouse refresh foundation (design-refresh/ PR 2 and 3). Off everywhere
-  # until the owner turns it on.
-  - feature_id: clubhouse_refresh_v1
-    owner: golf/clubhouse
-    purpose: >-
-      Sets data-ch-refresh="on" on the Clubhouse app root. Every rule the
-      refresh foundation adds is scoped under it: the flat page, Section heads
-      as card headers on phone, the refreshed Surface, flat feature cards and
-      large titles under the green bar. Off, every screen renders as main.
-    type: release
-    status: active
-    created_at: "2026-11-03"
-    expires_at: null
-    default: false
-    environment:
-      production: false
-      preview: true
-      development: false
-    kill_switch_behavior: null
-    cleanup_plan: >-
-      Remove the flag and inline the scoped rules once the owner has turned it
-      on in production and the nine redesigned pages have shipped.
   - feature_id: clubhouse_stats_redesign_v1
     owner: golf/clubhouse
     purpose: >-
@@ -1327,22 +1305,6 @@ flags:
     kill_switch_behavior: null
     cleanup_plan: >-
       Remove once production has run with it on for a full month with no practice errors. The pages stay; only the gate goes.
-  - feature_id: golf_documents_library
-    owner: golf/clubhouse
-    purpose: >-
-      The Documents library (N-10). Off in this build: today's Documents keeps rendering, plan rows only.
-    type: release
-    status: active
-    created_at: "2026-11-04"
-    expires_at: null
-    default: false
-    environment:
-      production: false
-      preview: true
-      development: false
-    kill_switch_behavior: null
-    cleanup_plan: >-
-      Remove with N-10's library release.
   - feature_id: coachhelm_practice_plans_v1
     owner: golf/coachhelm
     purpose: >-

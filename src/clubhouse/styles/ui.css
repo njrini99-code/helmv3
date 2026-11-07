@@ -2208,7 +2208,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   }
 }
 
-/* Clubhouse refresh, PR 2 (clubhouse_refresh_v1, off everywhere). The feature card is flat (SHARED-2). A Surface takes the card's
+/* Clubhouse refresh, PR 2. The feature card is flat (SHARED-2). A Surface takes the card's
    surface, ring and shadow; its head is title plus meta over a hairline inset 16, and its note is a band inside the card. */
 .ch-app[data-ch-refresh='on'] {
   --ch-feature-bg: var(--ch-green-800);
@@ -2531,7 +2531,7 @@ html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
   padding: 16px 12px;
 }
 /* The owner's call (4 Nov): rings and rules under an empty read as a page stuck loading. */
-.ch-root:not([data-ch-pre-refresh]) .ch-es--shaped > .ch-es-shape {
+.ch-root[data-ui] .ch-es--shaped > .ch-es-shape {
   display: none;
 }
 .ch-es__text {

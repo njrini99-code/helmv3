@@ -2352,7 +2352,7 @@
   box-shadow: var(--ch-well-soft-shadow);
 }
 /* Each segment a thumb's height (44pt) inside the well's 4px padding; with the redesign off it keeps its old height. */
-.ch-root:not([data-ch-pre-refresh]) .ch-ph-game.is-phone .ch-seg {
+.ch-root[data-ui] .ch-ph-game.is-phone .ch-seg {
   height: 52px;
 }
 .ch-ph-game.is-phone .ch-seg .ch-seg__b {

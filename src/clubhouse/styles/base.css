@@ -143,8 +143,8 @@ svg .ch-num {
   font-variant-numeric: tabular-nums !important;
   font-feature-settings: 'tnum' !important;
 }
-.ch-root:not([data-ch-pre-refresh]) .ch-num,
-.ch-root:not([data-ch-pre-refresh]) svg .ch-num {
+.ch-root[data-ui] .ch-num,
+.ch-root[data-ui] svg .ch-num {
   font-feature-settings: 'tnum' !important;
 }
 .ch-display {

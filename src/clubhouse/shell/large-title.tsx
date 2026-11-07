@@ -100,13 +100,11 @@ export function watchLargeTitle(bar: HTMLElement, canvas: HTMLElement): () => vo
     io.observe(next);
   };
   let frame = 0;
-  // clubhouse_refresh_v1 (PR 3): the root's attribute, read once here; off, nothing below touches the title and the edge shows at 0.
-  const refresh = !!canvas.closest("[data-ch-refresh='on']");
   const edgeNow = () => {
     frame = 0;
     const y = window.scrollY;
-    bar.toggleAttribute('data-scrolled', y > (refresh ? REFRESH_EDGE_AT : 0));
-    if (refresh && target) {
+    bar.toggleAttribute('data-scrolled', y > REFRESH_EDGE_AT);
+    if (target) {
       const { scale, opacity } = titleOnScroll(y, !motionAllowed(canvas));
       target.style.scale = scale === 1 ? '' : String(scale);
       target.style.opacity = opacity === 1 ? '' : String(opacity);
@@ -128,7 +126,7 @@ export function watchLargeTitle(bar: HTMLElement, canvas: HTMLElement): () => vo
     if (frame) cancelAnimationFrame(frame);
     bar.removeAttribute('data-large-title');
     bar.removeAttribute('data-scrolled');
-    if (refresh && target) {
+    if (target) {
       target.style.scale = '';
       target.style.opacity = '';
     }

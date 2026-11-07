@@ -47,7 +47,6 @@ import '../styles/tokens.css';
 import '../styles/base.css';
 import '../styles/ui.css';
 import '../styles/shell.css';
-import '../styles/pre-refresh.css';
 import '../styles/controls.css';
 import '../styles/command.css';
 import { useCanvasSmoothScroll, useSmoothWheelEverywhere } from '../lib/smooth-scroll';
@@ -175,7 +174,7 @@ export function ClubhouseFrame({
         <PhoneChromeProvider>
           <SectionSwitchProvider pathname={pathname} role={role} shell={shell}>
             {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
-            <FrameRoot crh={shell.crh ?? false} preRefresh={shell.refresh === false} motionOff={!showAnimations} fullScreen={fullScreen} homeRoot={rebuilt && pathname.replace(/\/$/, '') === '/golf/dashboard'}>
+            <FrameRoot crh={shell.crh ?? false} motionOff={!showAnimations} fullScreen={fullScreen} homeRoot={rebuilt && pathname.replace(/\/$/, '') === '/golf/dashboard'}>
               <ToastProvider scope={userData.teamId ?? ''}>
                 <CrumbProvider>
                   <MaybeQuickChat on={shell.quickChat ?? false} plans={shell.practicePlans ?? false} pathname={pathname} search={search} enabled={shell.askAvailable ?? false}>
@@ -184,7 +183,7 @@ export function ClubhouseFrame({
                       <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
                         Skip to content
                       </a>
-                      <div className="ch-app" data-ch-rail={folded ? 'folded' : undefined} data-ch-refresh={shell.refresh ? 'on' : undefined}>
+                      <div className="ch-app" data-ch-rail={folded ? 'folded' : undefined} data-ch-refresh="on">
                         <Sidebar userData={userData} shell={shell} pathname={pathname} teamSwitch={teamSwitch} folded={folded} />
                         <RailToggle folded={folded} onFold={setFolded} />
                         <div className="ch-canvas" id="ch-canvas">
@@ -240,7 +239,7 @@ export function ClubhouseFrame({
 }
 
 /** `.ch-root`, marked while a pushed phone screen covers the page, so toasts sit above its composer instead of the hidden tab bar. */
-function FrameRoot({ crh, preRefresh, motionOff, fullScreen, homeRoot, children }: { crh: boolean; preRefresh: boolean; motionOff: boolean; fullScreen: boolean; homeRoot: boolean; children: ReactNode }) {
+function FrameRoot({ crh, motionOff, fullScreen, homeRoot, children }: { crh: boolean; motionOff: boolean; fullScreen: boolean; homeRoot: boolean; children: ReactNode }) {
   const { immersive, noTabs, hero: pageHero } = usePhoneChromeState();
   const sections = useSectionSwitch();
   // P001-D4: Home's phone bar is the green hero's from the server's first paint (the device's last layout, F-36), not
@@ -266,7 +265,6 @@ function FrameRoot({ crh, preRefresh, motionOff, fullScreen, homeRoot, children 
       ref={rootRef}
       className={`ch-root ${clubhouseFontVariables}`}
       data-ch-crh={crh ? 'on' : undefined}
-      data-ch-pre-refresh={preRefresh ? '' : undefined}
       data-ui="clubhouse"
       data-motion={motionOff ? 'off' : undefined}
       data-phone-immersive={immersive ? '' : undefined}

@@ -236,12 +236,12 @@ export default async function ClubhousePreview({
   searchParams,
 }: {
   params: Promise<{ screen: string }>;
-  searchParams: Promise<{ viewer?: string; screen?: string; open?: string; read?: string; all?: string; station?: string; flag?: string; play?: string; refresh?: string; crh?: string; state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string; round?: string; ask?: string; live?: string }>;
+  searchParams: Promise<{ viewer?: string; screen?: string; open?: string; read?: string; all?: string; station?: string; flag?: string; play?: string; crh?: string; state?: string; view?: string; date?: string; event?: string; bell?: string; new?: string; section?: string; q?: string; tab?: string; teams?: string; tone?: string; at?: string; round?: string; ask?: string; live?: string }>;
 }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { screen } = await params;
   const qc = (await searchParams as { qc?: string }).qc;
-  const { viewer: viewerParam, open: openParam, read: readParam, all: allParam, flag, play, station, refresh, crh: crhParam, state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask, live } = await searchParams;
+  const { viewer: viewerParam, open: openParam, read: readParam, all: allParam, flag, play, station, crh: crhParam, state, view, date, event, bell, new: isNew, section, q, tab, teams, tone, at, round, ask, live } = await searchParams;
   // The phone Stats redesign renders here whatever its flag says; `&flag=off` renders main's components (stats-home 05, flagoff).
   const shs = flag !== 'off';
   // The header lab (/clubhouse-preview/header-lab) renders a page with one of the hero tones.
@@ -725,8 +725,7 @@ export default async function ClubhousePreview({
       <ClubhouseFrame
         userData={screen === 'coachhelm-player' || screen === 'coachhelm-views' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : user}
         // &round=1: the player has a round in progress (P001-C1: the dock's Resume accessory, the sidebar's card).
-        // &refresh=on: the refresh foundation (clubhouse_refresh_v1), for lane captures; the flag itself stays off. &refresh=off: as the live site draws with the flag off (styles/pre-refresh.css).
-        shell={{ ...PREVIEW_SHELL, ...(round ? { roundInProgress: PREVIEW_ROUND_IN_PROGRESS } : {}), ...(qc ? { quickChat: true, askAvailable: true } : {}), ...(refresh === 'on' ? { refresh: true } : refresh === 'off' ? { refresh: false } : {}), crh }}
+        shell={{ ...PREVIEW_SHELL, ...(round ? { roundInProgress: PREVIEW_ROUND_IN_PROGRESS } : {}), ...(qc ? { quickChat: true, askAvailable: true } : {}), crh }}
         pathname={entry.path}
         // The preview's own query, as the live shell hands the frame the address's: `&section=` and a coach's `&player=` decide the phone bar (CH-1402).
         search={new URLSearchParams(Object.entries(await searchParams).filter((kv): kv is [string, string] => typeof kv[1] === 'string')).toString()}
