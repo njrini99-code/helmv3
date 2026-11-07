@@ -4,7 +4,6 @@ import { TERMS } from '../lib/glossary';
 import { createClient } from '@/lib/supabase/server';
 import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
 import { getTeamStrokesGained } from '@/lib/coachhelm/v3/chat/practice-reads';
-import { isPracticePlansEnabled } from '@/lib/coachhelm/v3/practice-plan/flag';
 import { parsePlanBody, parseVersionBody, type PlanBodyV2, type PlanWhy } from '@/lib/coachhelm/v3/practice-plan/model';
 import { practiceTables, type PracticePlanRow, type PracticePlanVersionRow, type TeamDrillRow } from '@/lib/golf/practice-db';
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
@@ -276,7 +275,7 @@ export async function loadPlanForBuilder(planId: string): Promise<{ status: 'rea
   const roster = await activeRoster(sb, row.team_id);
   if (!team || !roster) return { status: 'gone' };
   const start = new Date(event.start_time);
-  const helperOn = isPracticePlansEnabled();
+  const helperOn = true;
   const [drills, facts, coaches, filed] = await Promise.all([
     drillBank(sb, row.team_id),
     helperOn ? helperFacts(sb, row.team_id, start, team.zone) : Promise.resolve([]),

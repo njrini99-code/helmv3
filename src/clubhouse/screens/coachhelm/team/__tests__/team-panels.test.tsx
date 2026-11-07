@@ -44,7 +44,7 @@ const read = (over: Partial<ChInsight> = {}): ChInsight =>
 
 function Host(props: { role?: 'coach' | 'player'; ins?: ChInsight; readOn?: boolean; roster?: ReadonlyArray<{ id: string }>; fileHost?: boolean }) {
   const fa = useFocusActions(writes);
-  return <ReadPanel read={props.ins ?? read()} player={PLAYER} fa={fa} readOn={props.readOn ?? false} roster={props.roster ?? [{ id: 'p1' }]} onClose={() => {}} role={props.role ?? 'coach'} fileHost={props.fileHost} />;
+  return <ReadPanel read={props.ins ?? read()} player={PLAYER} fa={fa} roster={props.roster ?? [{ id: 'p1' }]} onClose={() => {}} role={props.role ?? 'coach'} fileHost={props.fileHost} />;
 }
 const Wrap = ({ children }: { children: ReactNode }) => (
   <LazyMotion features={domAnimation}>

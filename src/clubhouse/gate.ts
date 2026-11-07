@@ -2,6 +2,7 @@ import 'server-only';
 import * as Sentry from '@sentry/nextjs';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { resolveClubhouseTeam } from './routes/team';
 
 /**
@@ -108,9 +109,12 @@ export async function isTournamentsFor(role: 'coach' | 'player' | null | undefin
   return isClubhouseFor(role);
 }
 
-/** Whether the Practice nav entry may show: the plan pages' own flag (N-00), for coaches and players. */
-export function practiceNavEnabled(): boolean {
-  return isFlagEnabled('golf_practice_plans');
+/**
+ * Whether the Practice pages (N-00) may open for the signed-in user: they are Clubhouse's, so a user on Fairway is sent to
+ * Calendar. The plan pages used to sit behind their own flag; the Clubhouse gate is what keeps them off Fairway now.
+ */
+export async function practiceAvailable(): Promise<boolean> {
+  return isClubhouseFor(await getGolfDashboardRole());
 }
 
 /** Whether the Tournaments nav entry may show: the flag only (the shell that draws it is already Clubhouse's). */

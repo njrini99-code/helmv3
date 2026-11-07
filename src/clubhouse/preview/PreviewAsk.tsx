@@ -16,7 +16,7 @@ type Part = { type: string; [key: string]: unknown };
  * preview state names, answers a question with a short text after a moment, adopts a conversation id on the first send, and
  * turns Confirm or Cancel into a decided card (Confirm adds the receipt).
  */
-function fakeChat(start: { busy?: boolean; error?: unknown; messages?: UIMessage[] }, v2 = false): ChAskChat {
+function fakeChat(start: { busy?: boolean; error?: unknown; messages?: UIMessage[] }): ChAskChat {
   return function useFakeChat(options: UseCoachHelmChatOptions = {}): UseCoachHelmChatResult {
     const [messages, setMessages] = useState<UIMessage[]>(options.initialMessages ?? start.messages ?? []);
     const [busy, setBusy] = useState(start.busy ?? false);
@@ -31,8 +31,7 @@ function fakeChat(start: { busy?: boolean; error?: unknown; messages?: UIMessage
             const approval = p.approval as { id?: string } | undefined;
             if (!p.type.startsWith('tool-') || approval?.id !== approvalId) return [p];
             const decided: Part = { ...p, state: 'approval-responded', approval: { id: approvalId, approved } };
-            if (v2) return [decided];
-            return approved ? [decided, { type: 'data-action-receipt', id: `receipt-${ASK_PROPOSAL.idempotency_key}`, data: ASK_RECEIPT_DONE }] : [decided];
+            return [decided];
           }) as UIMessage['parts'],
         })),
       );
@@ -84,7 +83,7 @@ function fakeChat(start: { busy?: boolean; error?: unknown; messages?: UIMessage
         setError(undefined);
         setBusy(false);
       },
-      approve: (id) => (v2 ? decideV2(id, true) : decide(id, true)),
+      approve: (id) => (decideV2(id, true)),
       deny: (id) => decide(id, false),
     };
   };
@@ -100,7 +99,7 @@ function fakeChat(start: { busy?: boolean; error?: unknown; messages?: UIMessage
  * rejected | readfail | partial | long | reads (an answer that names Jonah's reads, each a link to his Deep dive) | readsother
  * (the same reads for a player not on the team: no links). Nothing reaches the server.
  */
-export function PreviewAsk({ state, kind, v2 = false, messages, busy, role }: { state?: string; kind?: string; v2?: boolean; messages?: UIMessage[]; busy?: boolean; role?: 'player' }) {
+export function PreviewAsk({ state, kind, messages, busy, role }: { state?: string; kind?: string; messages?: UIMessage[]; busy?: boolean; role?: 'player' }) {
   const offline = state === 'offline';
   useEffect(() => {
     if (!offline) return;
@@ -141,12 +140,12 @@ export function PreviewAsk({ state, kind, v2 = false, messages, busy, role }: { 
       init.evidence = t.focus ?? null;
     }
     if (role === 'player') data = { ...data, role: 'player', firstName: 'Jonah', allowance: 'plenty' as ChAskData['allowance'], focus: [{ text: 'Approach from 125 to 150, set by Coach Reyes', ask: 'How is my approach from 125 to 150 doing?' }, { text: 'Putting gained strokes at Hilltop', ask: 'How did my putting go at Hilltop?' }] };
-    if (v2 && role !== 'player') data = { ...data, firstName: 'Maya' };
-    if (v2 && !data.knows && role !== 'player') data = { ...data, knows: { tone: 'straight', teamId: 'preview', facts: [{ id: 'k1', text: 'Practice runs 2h 30m on weekdays' }, { id: 'k2', text: 'Team goal: under +2 a round by spring' }] } };
+    if (role !== 'player') data = { ...data, firstName: 'Maya' };
+    if (!data.knows && role !== 'player') data = { ...data, knows: { tone: 'straight', teamId: 'preview', facts: [{ id: 'k1', text: 'Practice runs 2h 30m on weekdays' }, { id: 'k2', text: 'Team goal: under +2 a round by spring' }] } };
     const load: ChAskLoad = state === 'noroster' ? { status: 'noRoster', teamName: 'Finley University' } : state === 'failed' ? { status: 'failed' } : { status: 'ready', data };
-    return { load, chat: fakeChat(start, v2), initial: init };
-  }, [state, kind, messages, busy, role, v2]);
+    return { load, chat: fakeChat(start), initial: init };
+  }, [state, kind, messages, busy, role]);
 
   if (state === 'loading') return <AskSkeleton />;
-  return <Ask v2={v2} load={load} chat={chat} initial={initial} />;
+  return <Ask load={load} chat={chat} initial={initial} />;
 }

@@ -44,7 +44,7 @@ import { CoachBoard } from '../screens/coachhelm/CoachBoard';
 import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
 import { Standing } from '../screens/coachhelm/views/Standing';
-import { AskHome } from '../screens/coachhelm/chat/Home';
+import { AskHomeV2 } from '../screens/coachhelm/chat/Home';
 import { bigNumber, HELM_PLAYERS, penalties, slope } from '../preview/fixtures-coachhelm';
 import { PREVIEW_STANDING } from '../preview/fixtures-coachhelm-views';
 import { ToastProvider } from '../ui/Toast';
@@ -470,7 +470,7 @@ describe('Ask, with a read failed', () => {
     expect(d.pulse?.missing).toEqual(['rounds']);
     expect(d.suggestions.map((s) => s.id)).toContain('brief');
     expect(d.suggestions.map((s) => s.id)).not.toContain('strokes');
-    render(wrap(<AskHome data={d} phone={false} heroComposer={null} onAsk={vi.fn()} />));
+    render(wrap(<AskHomeV2 data={d} phone={false} heroComposer={null} onAsk={vi.fn()} />));
     expect(code('CH-13322')).toBeNull();
     expect(code('CH-13325')).toBeNull();
     expect(code('CH-13226')).toBeNull();
@@ -490,14 +490,14 @@ describe('Ask, with a read failed', () => {
     const res = await loadAskCoachHelm();
     if (res.status !== 'ready') throw new Error('not ready');
     expect(res.data.pulse).toBeNull();
-    render(wrap(<AskHome data={res.data} phone heroComposer={null} onAsk={vi.fn()} />));
+    render(wrap(<AskHomeV2 data={res.data} phone heroComposer={null} onAsk={vi.fn()} />));
     expect(code('CH-13322')).toBeNull();
   });
 
   it('the phone with a pulse that loaded draws no notice', async () => {
     const res = await loadAskCoachHelm();
     if (res.status !== 'ready') throw new Error('not ready');
-    render(wrap(<AskHome data={res.data} phone heroComposer={null} onAsk={vi.fn()} />));
+    render(wrap(<AskHomeV2 data={res.data} phone heroComposer={null} onAsk={vi.fn()} />));
     expect(code('CH-13223')).toBeNull();
   });
 });

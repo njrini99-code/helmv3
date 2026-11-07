@@ -308,15 +308,6 @@ export function pairProposals(parts: Part[], ctx: { isLast: boolean; busy: boole
   return out;
 }
 
-/**
- * The finished turn's receipt, one quiet line (playbook §4): "Worked for 6s · 3 steps", or "3 steps" for a turn this
- * browser did not watch (a reloaded thread has no honest duration). What was read is said inside, when it is opened.
- */
-export function workReceipt(steps: number, seconds: number | null): string {
-  const n = plural(steps, 'step');
-  return seconds === null ? n : `Worked for ${seconds < 10 ? formatFixed(seconds) : Math.round(seconds)}s · ${n}`;
-}
-
 /** "Read 38 rounds across 8 players": the largest sample per unit, never a sum of overlapping windows. */
 export function describeWork(steps: AskStep[], envelopes: ToolEnvelope[]): string | null {
   if (steps.length === 0) return null;
@@ -813,7 +804,6 @@ function strokesGainedLegs(ms: Measurement[]): Measurement[] | null {
   const sg = ms.filter((m) => m.unit === 'strokes' && m.metric_id.startsWith('sg_') && m.value !== null);
   return sg.length >= 2 ? sg : null;
 }
-
 
 const isPlain = (v: unknown): v is string | number | boolean => ['string', 'number', 'boolean'].includes(typeof v);
 
