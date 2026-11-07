@@ -224,7 +224,7 @@
 }
 .ch-mso-rbar > button.is-on,
 .ch-mso-rbar > button.is-on:hover {
-  background: var(--ch-bubble-mine-fill);
+  background: var(--ch-selected-strong);
   color: var(--ch-bubble-mine-ink);
 }
 .ch-mso-rbar > button:focus-visible {
@@ -347,7 +347,6 @@
   border-radius: 999px;
   font: var(--ch-type-12-strong);
   line-height: var(--ch-lead-tight);
-  font-variant-numeric: tabular-nums;
   cursor: pointer;
 }
 /* Under their (paper) bubble the badge is the accent green; under yours it is ivory with a pale ring. */
@@ -493,7 +492,7 @@ button.ch-msv-seen::before {
   inset: -12px 0;
 }
 .ch-msv-seen b {
-  font-weight: var(--ch-fw-600);
+  font: var(--ch-type-13-strong);
   color: var(--ch-text-primary);
 }
 .ch-msv-seen:focus-visible {
@@ -547,6 +546,7 @@ button.ch-msv-seen::before {
 .ch-mss .ch-seen-sec__h > :last-child {
   color: var(--ch-text-secondary);
   font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
 }
 .ch-mss .ch-seen-row {
   grid-template-columns: 32px minmax(0, 1fr) auto;
@@ -563,6 +563,7 @@ button.ch-msv-seen::before {
 }
 .ch-mss .ch-seen-row__name {
   font: var(--ch-type-16-medium);
+  letter-spacing: var(--ch-track-16);
 }
 .ch-mss .ch-seen-row__role {
   color: var(--ch-text-tertiary);

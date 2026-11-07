@@ -6,7 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { createPortal } from 'react-dom';
 import { Icon } from './Icon';
 import { Tooltip } from './Tooltip';
-import { CH_DUR, chSpringCurve, chTween } from '../lib/motion';
+import { CH_DUR, CH_MS, chSpringCurve, chTween } from '../lib/motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { chSupportsLinear, chThrownExit } from '../lib/sheet-drag';
 
@@ -207,12 +207,13 @@ export function ToastProvider({ children, scope = '' }: { children: ReactNode; s
       const replaced = replace == null ? undefined : keys.get(replace);
       if (replaced != null) dismiss(replaced);
       // The stack holds at most three notices; an evicted notice owns no future timer/listener.
+      if (pillOn) for (const old of [...lifetimes.keys()]) expire(old);
       if (lifetimes.size >= 3) expire(lifetimes.keys().next().value!);
       const id = nextId.current++;
       if (onExpire) expiries.set(id, onExpire);
       if (replace != null) keys.set(replace, id);
       const abort = () => dismiss(id);
-      const clock: ToastClock = { left: holdMs ?? (pillOn && tone === 'done' ? PILL_DONE_MS : DISMISS_MS[tone]), since: Date.now(), timer: window.setTimeout(() => dismiss(id), holdMs ?? DISMISS_MS[tone]), held: false };
+      const clock: ToastClock = { left: holdMs ?? (pillOn && tone === 'done' ? PILL_DONE_MS : DISMISS_MS[tone]), since: Date.now(), timer: window.setTimeout(() => dismiss(id), holdMs ?? (pillOn && tone === 'done' ? PILL_DONE_MS : DISMISS_MS[tone])), held: false };
       clocks.set(id, clock);
       signal?.addEventListener('abort', abort, { once: true });
       lifetimes.set(id, () => {
@@ -367,7 +368,7 @@ function ToastCard({
     gone: () => {
       const throw_ = thrown.current;
       if (reduced) return { opacity: 0, transition: { duration: 0 } };
-      if (!throw_ && pillOn) return { opacity: 0, transition: { duration: CH_DUR.quick } };
+      if (!throw_ && pillOn) return { opacity: 0, transition: { duration: CH_MS.arrow / 1000 } };
       if (!throw_) return { opacity: 0, transform: 'translateY(6px) scale(0.98)', transition: chTween('base') };
       // On from where the finger let go, at the speed it was thrown, for another 48px as it fades.
       const out = chThrownExit(throw_.speed, 48);
