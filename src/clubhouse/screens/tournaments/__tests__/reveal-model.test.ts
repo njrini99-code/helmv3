@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countingIn, revealOf, type FinalScore, type MyLineupRow } from '../reveal-model';
+import { cardOf, countingIn, revealOf, type FinalScore, type MyLineupRow } from '../reveal-model';
 import type { ChTourPlayer, ChTourRound, TourFormat } from '../types';
 
 const F: TourFormat = { kind: '5c4', players: 5, counting: 4, holes: 18 };
@@ -40,6 +40,32 @@ describe('countingIn (did my score count, by the scoring engine’s rule)', () =
     expect(countingIn('x', lineupRow('alternate'), scores({}), F, 72)).toBe('not_playing');
     expect(countingIn('x', lineupRow('individual'), scores({}), F, 72)).toBe('individual');
     expect(countingIn('x', lineupRow(null), scores({}), F, 72)).toBe('not_playing');
+  });
+});
+
+describe('cardOf (the player’s own card for the round in play)', () => {
+  const holes = Array.from({ length: 18 }, (_, i) => ({ n: i + 1, par: 4 }));
+  const mine = (role: 'lineup' | 'alternate' | 'individual' | null) => ({ ...lineupRow(role), my_role: role });
+
+  it('is the course’s holes with what is scored, for a live round the player plays', () => {
+    const card = cardOf(round('live'), mine('lineup'), holes, 18, new Map([[1, 4], [2, null]]), false)!;
+    expect(card.holes).toHaveLength(18);
+    expect(card.holes[0]).toEqual({ n: 1, par: 4, strokes: 4 });
+    expect(card.holes[1]!.strokes).toBeNull();
+    expect(cardOf(round('live'), mine('individual'), holes, 18, new Map(), false)).not.toBeNull();
+  });
+
+  it('is nothing unless the round is live, they play it, the holes are known and no total is entered', () => {
+    expect(cardOf(round('upcoming'), mine('lineup'), holes, 18, new Map(), false)).toBeNull();
+    expect(cardOf(round('final'), mine('lineup'), holes, 18, new Map(), false)).toBeNull();
+    expect(cardOf(round('live'), mine('alternate'), holes, 18, new Map(), false)).toBeNull();
+    expect(cardOf(round('live'), undefined, holes, 18, new Map(), false)).toBeNull();
+    expect(cardOf(round('live'), mine('lineup'), holes.slice(0, 12), 18, new Map(), false)).toBeNull();
+    expect(cardOf(round('live'), mine('lineup'), holes, 18, new Map(), true)).toBeNull();
+  });
+
+  it('a nine-hole event takes the first nine holes', () => {
+    expect(cardOf(round('live'), mine('lineup'), holes, 9, new Map(), false)!.holes).toHaveLength(9);
   });
 });
 

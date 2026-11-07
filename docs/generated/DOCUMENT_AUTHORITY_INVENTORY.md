@@ -299,7 +299,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/AUDITS.md` | generated | - | - | - | - |
 | `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md` | generated | - | - | - | - |
 | `docs/clubhouse/generated/CLUBHOUSE_BRIDGE_MAP.md` | generated | - | - | yes | - |
-| `docs/clubhouse/generated/CLUBHOUSE_HELD_MAP.md` | generated | - | - | - | - |
+| `docs/clubhouse/generated/CLUBHOUSE_HELD_MAP.md` | generated | - | - | - | 1 |
 | `docs/clubhouse/generated/CLUBHOUSE_PAGE_MAP.md` | generated | - | - | - | - |
 | `docs/clubhouse/generated/CLUBHOUSE_STATUS.md` | generated | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/PAGE.md` | generated | - | - | yes | - |
@@ -331,7 +331,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/README.md` | generated | - | - | yes | - |
 | `memory/context/golfhelm-database.md` | generated | yes | yes | yes | - |
 | `memory/glossary.md` | current | yes | yes | yes | - |
-| `memory/projects/golfhelm.md` | current | yes | yes | - | 1 |
+| `memory/projects/golfhelm.md` | current | yes | yes | - | - |
 | `tools/ux-flow-auditor/TODO.md` | generated | - | - | - | - |
 
 ### `PROCESS_CONTRACT`

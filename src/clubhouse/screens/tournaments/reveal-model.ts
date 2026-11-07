@@ -54,6 +54,26 @@ export function countingIn(
   return result.counting.includes(playerId) ? 'counted' : 'dropped';
 }
 
+/**
+ * The player's own card for the round in play: only a live round they play (a lineup player or an individual), with the
+ * course's holes for the format's length, and no total entered by the coach for it (a total and holes would disagree).
+ * `strokes` are what their linked round already has. Null means the page offers no scoring.
+ */
+export function cardOf(
+  round: ChTourRound | undefined,
+  mine: MyLineupRow['rounds'][number] | undefined,
+  courseHoles: ReadonlyArray<{ n: number; par: number }>,
+  holesPerRound: number,
+  strokes: ReadonlyMap<number, number | null>,
+  enteredTotal: boolean,
+): { roundEventId: string; roundNumber: number; date: string; holes: Array<{ n: number; par: number; strokes: number | null }> } | null {
+  if (!round || round.status !== 'live' || enteredTotal) return null;
+  if (mine?.my_role !== 'lineup' && mine?.my_role !== 'individual') return null;
+  const holes = courseHoles.filter((h) => h.n <= holesPerRound);
+  if (holes.length !== holesPerRound) return null;
+  return { roundEventId: round.roundEventId, roundNumber: round.number, date: round.date, holes: holes.map((h) => ({ n: h.n, par: h.par, strokes: strokes.get(h.n) ?? null })) };
+}
+
 /** The reveal for the view, or null when the coach has not published (the function answered nothing). */
 export function revealOf(
   row: MyLineupRow | null,

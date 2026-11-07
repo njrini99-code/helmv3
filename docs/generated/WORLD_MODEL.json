@@ -4603,6 +4603,10 @@
         "definedIn": "supabase/migrations/20261024100200_golf_tournaments_rpcs.sql"
       },
       {
+        "id": "golf_tournament_my_lineup",
+        "definedIn": "supabase/migrations/20261024100300_golf_tournament_player_reveal.sql"
+      },
+      {
         "id": "golf_tournament_publish",
         "definedIn": "supabase/migrations/20261024100200_golf_tournaments_rpcs.sql"
       },
@@ -13549,6 +13553,26 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/tournaments-holes.ts",
+          "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/tournaments-holes.ts",
+          "anchor": "src/lib/flags"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/tournaments-player.ts",
+          "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/tournaments-player.ts",
+          "anchor": "src/lib/flags"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/tournaments.ts",
           "anchor": "src/lib/admin/observed-action"
         },
@@ -13578,6 +13602,36 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/tournaments-calendar.ts",
           "anchor": "src/lib/auth/verify-player-access"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/tournaments-holes.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/tournaments-holes.ts",
+          "anchor": "src/lib/auth/session"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/tournaments-holes.ts",
+          "anchor": "src/lib/auth/get-golf-dashboard-role"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/tournaments-player.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/tournaments-player.ts",
+          "anchor": "src/lib/auth/session"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/tournaments-player.ts",
+          "anchor": "src/lib/auth/get-golf-dashboard-role"
         },
         {
           "kind": "import_graph",
@@ -13814,6 +13868,16 @@
       "evidence": [
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/tournaments-holes.ts",
+          "anchor": "src/lib/golf/dashboard-request-cache"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/tournaments-player.ts",
+          "anchor": "src/lib/golf/dashboard-request-cache"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/tournaments.ts",
           "anchor": "src/lib/golf/dashboard-request-cache"
         }
@@ -13938,6 +14002,18 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20261024100000_golf_tournaments.sql"
+        }
+      ]
+    },
+    {
+      "source": "clubhouse",
+      "target": "golf_tournament_my_lineup",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/clubhouse/data/tournaments.ts",
+          "anchor": "golf_tournament_my_lineup"
         }
       ]
     },

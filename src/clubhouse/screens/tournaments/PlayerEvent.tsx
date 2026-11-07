@@ -16,6 +16,7 @@ import { Section } from '../../ui/Section';
 import { EmptyState, SkelRows, Skeleton } from '../../ui/States';
 import { TrustChip } from '../../ui/TrustChip';
 import { inDays, tourDay, tourDayTime, tourRange } from './format';
+import { cardLine, HoleSheet } from './HoleSheet';
 import { STATUS_WORDS } from './score-entry';
 import { TourChip, TourCrumb, TourFailed, TourHead, TourLoading, TourMain, TourPhoneTop, ToPar, tourGate, useTourPhone } from './parts';
 import { useTourPaths } from './paths';
@@ -165,6 +166,7 @@ function EventPage({ data, ev, phone }: { data: ChTourPlayerData; ev: ChTourPlay
             </ul>
           )}
         </Section>
+        {ev.card && <MyCard me={data.me} card={ev.card} />}
         {data.errors.notes ? (
           <InlineNotice code="CH-16291" title="Your coach’s notes didn’t load" body="Nothing has changed. Try again." />
         ) : (
@@ -192,6 +194,25 @@ function EventPage({ data, ev, phone }: { data: ChTourPlayerData; ev: ChTourPlay
         </Section>
       </div>
     </TourMain>
+  );
+}
+
+/** The player's own card for the round in play: hole by hole, on the same rows Fairway's round tracker keeps. */
+function MyCard({ me, card }: { me: ChTourPlayerData['me']; card: NonNullable<ChTourPlayerEvent['card']> }) {
+  const [open, setOpen] = useState(false);
+  const line = cardLine(card.holes);
+  return (
+    <Section id="ch-tour-pl-card" title="Your card" meta={`Round ${card.roundNumber} is being played`}>
+      <div className="ch-tour-pl-card" data-ch-card="">
+        <span className="ch-tour-pl-muted">
+          {line.thru === 0 ? 'Nothing scored yet.' : <>Through <span className="ch-num">{line.thru}</span> of <span className="ch-num">{card.holes.length}</span>{line.toPar != null && <> · <ToPar value={line.toPar} /></>}</>}
+        </span>
+        <Button variant="primary" onClick={() => setOpen(true)}>
+          {line.thru === 0 ? 'Score your round' : line.thru >= card.holes.length ? 'Check your card' : 'Continue your card'}
+        </Button>
+      </div>
+      {open && <HoleSheet key={card.roundEventId} open onClose={() => setOpen(false)} name={me.first} roundLabel={`round ${card.roundNumber}`} roundEventId={card.roundEventId} playerId={me.id} date={card.date} holes={card.holes} />}
+    </Section>
   );
 }
 

@@ -91,6 +91,19 @@
   font: var(--ch-type-17-strong);
   color: var(--ch-text-primary);
 }
+.ch-tour-pl-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ch-space-3);
+}
+.ch-tour-pl.is-phone .ch-tour-pl-card {
+  flex-direction: column;
+  align-items: stretch;
+}
+.ch-tour-pl.is-phone .ch-tour-pl-card .ch-btn {
+  min-height: 44px;
+}
 .ch-tour-pl-count {
   display: flex;
   flex-direction: column;

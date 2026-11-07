@@ -902,6 +902,11 @@ export interface ChTourPlayerEvent {
   /** Teammates' scores, only once a round is Final and outside the player's window (D-85). */
   results: { visible: boolean; reason: 'not_final' | 'in_window' | null };
   sharedNotes: Array<{ label: string; text: string; author: string; updatedAt: string }>;
+  /**
+   * The player’s own card for the round in play, when they play it and no total is entered for it: the course’s holes with
+   * what they have scored (`golf_holes` on their own round). Null otherwise, and the page offers no scoring.
+   */
+  card: { roundEventId: string; roundNumber: number; date: string; holes: Array<{ n: number; par: number; strokes: number | null }> } | null;
   /** The player’s own reflection (`golf_tournament_reflections.body`, one text the coach reads in the review). */
   reflection: { state: 'unwritten' | 'saved'; body: string; updatedAt: string | null } | null;
   moments: ChTourPlayerMoment[];

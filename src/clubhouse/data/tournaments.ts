@@ -44,7 +44,7 @@ import {
   type TourTeamSeasonRow,
 } from '@/lib/golf/tournaments-tables';
 import { candidateStats } from '../screens/tournaments/lineup-model';
-import { revealOf, type FinalScore, type MyLineupRow } from '../screens/tournaments/reveal-model';
+import { cardOf, revealOf, type FinalScore, type MyLineupRow } from '../screens/tournaments/reveal-model';
 import { buildLive, type LiveHoleRow } from '../screens/tournaments/live-model';
 import { setupGroups } from '../screens/tournaments/setup-groups';
 import type {
@@ -66,6 +66,7 @@ import type {
   ChTourNextUp,
   ChTourPlayer,
   ChTourPlayerData,
+  ChTourPlayerEvent,
   ChTourPlayerRound,
   ChTourReview,
   ChTourTeam,
@@ -1156,6 +1157,20 @@ export async function loadPlayerTournaments(ctx: TourCtx, eventId: string | null
       }
     }
     const reveal = open && myLineup?.ok ? revealOf(myLineup.value, { playerId: ctx.playerId!, format: open.format, rounds: open.rounds, players, scoresByRound }) : null;
+    // Their own card for the round in play (hole-by-hole scoring): the course's holes and what their linked round has.
+    let card: ChTourPlayerEvent['card'] = null;
+    const playing = open?.rounds.find((r) => r.status === 'live');
+    if (open && playing && myLineup?.ok) {
+      const ownRow = read.raws.find((r) => r.t.id === open.id)?.playerRounds.find((p) => p.round_event_id === playing.roundEventId);
+      const strokes = new Map<number, number | null>();
+      if (ownRow?.round_id) {
+        const holes = await section('player', 'cardHoles', () =>
+          all<{ hole_number: number; score: number | null }>('cardHoles', (from, to) => ctx.supabase.from('golf_holes').select('hole_number, score').eq('round_id', ownRow.round_id!).order('hole_number').range(from, to)),
+        );
+        for (const h of holes.ok ? holes.value : []) strokes.set(h.hole_number, h.score);
+      }
+      card = cardOf(playing, myLineup.value?.rounds.find((x) => x.round_event_id === playing.roundEventId), read.courses[playing.courseId]?.holes ?? [], open.format.holes, strokes, ownRow?.entered_total != null);
+    }
     const shared = notes?.ok
       ? notes.value.flatMap((n) =>
           ([['Shot of the day', n.shot_of_day], ['A decision to think about', n.decision], ['Next focus', n.next_focus]] as const)
@@ -1180,6 +1195,7 @@ export async function loadPlayerTournaments(ctx: TourCtx, eventId: string | null
               // Teammates' results and the team's are held file 4's too: only the player's own line is drawn.
               results: { visible: false, reason: open.status === 'complete' ? null : 'not_final' },
               sharedNotes: shared,
+              card,
               reflection: reflection?.ok ? { state: reflection.value ? 'saved' : 'unwritten', body: reflection.value?.body ?? '', updatedAt: reflection.value?.updated_at ?? null } : null,
               moments: [],
               following: false,

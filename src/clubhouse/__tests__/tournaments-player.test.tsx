@@ -8,11 +8,14 @@ const nav = vi.hoisted(() => ({ refresh: vi.fn(), push: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: nav.refresh, push: nav.push, replace: vi.fn() }) }));
 const reflect = vi.hoisted(() => vi.fn());
 vi.mock('@/app/golf/actions/tournaments-player', () => ({ saveTournamentReflection: reflect }));
+const hole = vi.hoisted(() => vi.fn());
+vi.mock('@/app/golf/actions/tournaments-holes', () => ({ saveTournamentHole: hole }));
+import './dialog-polyfill';
 const toast = vi.hoisted(() => vi.fn());
 vi.mock('../ui/Toast', async (orig) => ({ ...(await orig<typeof import('../ui/Toast')>()), useToast: () => toast, useDelayedToast: () => () => () => {} }));
 
 beforeEach(() => {
-  for (const m of [nav.refresh, nav.push, reflect, toast]) m.mockReset();
+  for (const m of [nav.refresh, nav.push, reflect, toast, hole]) m.mockReset();
 });
 afterEach(cleanup);
 
@@ -110,6 +113,31 @@ describe('PlayerEvent, an event', () => {
   it('says no rounds are set (CH-16391)', () => {
     const c = draw({ ...oakmont, event: { ...oakmont.event!, event: { ...oakmont.event!.event, rounds: [] } } });
     expect(c.querySelector('[data-ch-code="CH-16391"]')).not.toBeNull();
+  });
+});
+
+describe('PlayerEvent, their own card (hole by hole)', () => {
+  const card = { roundEventId: 're-1', roundNumber: 1, date: '2026-11-12', holes: [1, 2, 3, 4].map((n) => ({ n, par: 4, strokes: n === 1 ? 4 : null })) };
+  const withCard = (c: typeof card | null): ChTourPlayerData => ({ ...oakmont, event: { ...oakmont.event!, card: c } });
+
+  it('offers the card for the round in play, with where they are, and nothing otherwise', () => {
+    const c = draw(withCard(card));
+    expect(c.querySelector('[data-ch-card]')?.textContent).toContain('Through 1 of 4');
+    expect(screen.getByRole('button', { name: 'Continue your card' })).toBeInTheDocument();
+    cleanup();
+    expect(draw(withCard(null)).querySelector('[data-ch-card]')).toBeNull();
+  });
+
+  it('opens the hole sheet and saves their own hole for themselves (CH-16072 when it fails)', async () => {
+    hole.mockResolvedValue({ success: true, data: { roundId: 'g1', thru: 2 } });
+    draw(withCard(card));
+    fireEvent.click(screen.getByRole('button', { name: 'Continue your card' }));
+    const dialog = await screen.findByRole('dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: /^4\s*Par$/ }));
+    await waitFor(() => expect(hole).toHaveBeenCalledWith({ roundEventId: 're-1', playerId: oakmont.me.id, date: '2026-11-12', hole: 2, par: 4, strokes: 4 }));
+    hole.mockResolvedValue({ success: false, error: 'Your coach has this round open. Ask them to score it or to clear it.', code: 'invalid' });
+    fireEvent.click(within(dialog).getByRole('button', { name: /^5\s*Bogey$/ }));
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.objectContaining({ code: 'CH-16072', title: 'Couldn’t save hole 3' })));
   });
 });
 

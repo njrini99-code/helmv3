@@ -1190,6 +1190,10 @@ export function tourFixture(state: ChTourPreviewState): ChTourFixture {
         results: e.status === 'complete' ? { visible: true, reason: null } : live && e.id === 'e34' ? { visible: false, reason: 'in_window' } : { visible: false, reason: 'not_final' },
         sharedNotes: e.id === 'e33' ? [{ label: 'Next block focus', text: 'Par 3 club selection: middle of the green, every time.', author: 'Maya Reyes', updatedAt: '2026-10-09T16:20:00-04:00' }] : [],
         reflection: e.id === 'e33' ? { state: 'saved', body: 'Stopped aiming at flags on the par 3s on day two. Two penalty strokes on 13 in round 1. Next time: commit to the safe side off the tee.', updatedAt: '2026-10-09T18:00:00-04:00' } : { state: 'unwritten', body: '', updatedAt: null },
+        card:
+          live && e.id === 'e34' && entry?.role === 'lineup'
+            ? { roundEventId: e.rounds[0]!.roundEventId, roundNumber: e.rounds[0]!.number, date: e.rounds[0]!.date, holes: COURSES.pin!.holes.map((h, i) => ({ n: h.n, par: h.par, strokes: i < 5 ? h.par : null })) }
+            : null,
         moments: [],
         following: true,
       },
