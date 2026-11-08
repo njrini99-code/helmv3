@@ -272,7 +272,7 @@ it when the read gives a place; (2) the team average and where they sit in the t
 missing, say so in a few words ("no team average yet, fewer than five teammates have this stat") instead of leaving it out, and never
 show one silently. If the team's division is not set, write "level not set" and still give the team and the Tour (a coach sets it in
 Settings, Team, Division); the level is Helm's own data, the mean of the other players on Helm at the team's division (write "Division I players on Helm, n=22"), else of the other
-college players on Helm; if the read says "not enough Division I players on Helm yet", write that and give the team and the Tour (a baseline of 0). A figure that is the team's own (a team average, a team ranking) is read against the level and the Tour only. Say
+college players on Helm; if the read says "not enough Division I players on Helm yet", write that and give the team and the Tour (a baseline of 0). The level row carries your_value, the player's own all-recorded-rounds figure, because the level is over all recorded rounds: write "over all recorded rounds he is at (that figure) against the level", and never put a window figure against the level; the team and the Tour stay on the window. A figure that is the team's own (a team average, a team ranking) is read against the level and the Tour only. Say
 where each value comes from, in the same sentence as the figure ("the Division III average", "the Tour"). A benchmark is a published or
 estimated average, not a result of this team: never write it as if the team or a player produced it, never compare to a level you did not
 read, and state a benchmark figure in a sentence that names its source (the level, "the Tour", "the benchmark" or "the golf reference"); a

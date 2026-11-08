@@ -195,12 +195,17 @@ describe('the prompts', () => {
     // The level is Helm's own cohort now (145001c828): a coach is told to name it and to say when too few others have the figure.
     expect(c).toMatch(/Division I players on Helm, n=22/);
     expect(c).toMatch(/not enough Division I players on Helm yet/);
+    // The level row's your_value is the all-rounds figure: the window figure is never put against the level (d484fbeeee).
+    expect(c).toMatch(/your_value, the player's own all-recorded-rounds figure/);
+    expect(c).toMatch(/never put a window figure against the level/);
     expect(c).not.toMatch(/write "no college figure"/);
     expect(c).toMatch(/Settings, Team, Division/);
     const pl = PLAYER_INSTRUCTIONS('Owen', 'Varsity', 'UTC');
     expect(pl).toMatch(/level not set/);
     // The level is Helm's own cohort now: a player is told to say when too few others have the figure.
     expect(pl).toMatch(/not enough Division I players on Helm yet/);
+    expect(pl).toMatch(/your_value, your own all-recorded-rounds figure/);
+    expect(pl).toMatch(/never put a window figure against the level/);
   });
   it('describe the benchmark tool as returning all three for both roles', () => {
     const c = coach(true).tools.get_benchmarks!.description!;
