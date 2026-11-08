@@ -373,6 +373,23 @@ const READ_NAME: Record<string, string> = {
   get_upcoming_events: 'Schedule',
   get_open_tasks: 'Tasks',
   get_team_travel: 'Travel',
+  get_season_scoring: 'Season scoring',
+  get_shot_pattern: 'Shots',
+  get_proximity_by_band: 'Proximity',
+  get_round_detail: 'Round',
+  get_root_causes: 'Causes',
+  get_calendar: 'Calendar',
+  get_course: 'Course',
+  compare_seasons: 'Seasons',
+  get_team_patterns: 'Team patterns',
+  get_practice: 'Practice',
+  get_documents: 'Documents',
+  get_class_times: 'Classes',
+  get_drill_bank: 'Drills',
+  get_plan_format: 'Plan format',
+  get_team_strokes_gained: 'Strokes gained',
+  get_team_putting_profile: 'Team putts',
+  get_my_reads: 'Your reads',
 };
 
 /** What a read's figures rest on: its first measurement, or its first series (a trend's envelope carries only that). */

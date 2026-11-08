@@ -4,6 +4,7 @@ import type { Database } from '@/lib/types/database';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { requireRosterPlayer, type CoachChatContext } from './context';
 import { nowIso, readFigure, unavailableEnvelope, type ToolEnvelope } from './provenance';
+import { attendanceByEvent, classConflicts } from './ask-reads';
 import { inSeasonAverage, loadCountedRounds, seasonStartDate } from './season-rule';
 
 type Sb = SupabaseClient<Database>;
@@ -20,12 +21,34 @@ export async function getRootCauses(sb: Sb, ctx: CoachChatContext, input: { play
   return { summary: `${player.name}: ${causes.length} open cause${causes.length === 1 ? '' : 's'}.`, measurements: [], series: [], detail: { player_id: player.id, player: player.name, causes }, coverage: causes.length ? 'complete' : 'empty', coverage_note: causes.length ? null : 'No stored cause for this player.', as_of: nowIso() };
 }
 
-/** Events in a window on the team's clock, with the shape the free-slot logic needs. */
+/**
+ * Events in a window on the team's clock, with who replied and checked in, and who is in class during each timed event. Class meetings themselves stay out
+ * of the list (they are one player's semester); a class conflict is named on the event it overlaps.
+ */
 export async function getCalendar(sb: Sb, ctx: CoachChatContext, input: { from: string; to: string }): Promise<ToolEnvelope> {
   const zone = ctx.timezone;
-  const { data, error } = await sb.from('golf_events').select('id, title, event_type, start_time, end_time, location, status').eq('team_id', ctx.team_id).neq('event_type', 'class').gte('start_time', input.from).lte('start_time', input.to).order('start_time').limit(200);
+  const { data, error } = await sb.from('golf_events').select('id, title, event_type, start_time, end_time, all_day, location, status, requires_rsvp').eq('team_id', ctx.team_id).neq('event_type', 'class').gte('start_time', input.from).lte('start_time', input.to).order('start_time').limit(200);
   if (error) return unavailableEnvelope('Could not read the calendar.', 'The events query failed. This is not the same as a free week.');
-  return { summary: `${(data ?? []).length} events on the team calendar.`, measurements: [], series: [], detail: { zone, events: data ?? [], from: input.from, to: input.to }, coverage: 'complete', coverage_note: null, as_of: nowIso() };
+  const rows = data ?? [];
+  const [attendance, conflicts] = rows.length ? await Promise.all([attendanceByEvent(sb, rows.map((e) => e.id)), classConflicts(sb, ctx, rows)]) : [null, null];
+  const events = rows.map((e) => ({
+    id: e.id,
+    title: e.title,
+    event_type: e.event_type,
+    start_time: e.start_time,
+    end_time: e.end_time,
+    location: e.location,
+    status: e.status,
+    ...(e.requires_rsvp === true && attendance && !attendance.failed ? { replies: attendance.counts.get(e.id) } : {}),
+    ...(conflicts && !conflicts.failed ? { in_class: conflicts.byEvent.get(e.id) ?? [] } : {}),
+  }));
+  const notes = [
+    attendance?.failed ? 'Replies could not be read, so none are shown.' : null,
+    conflicts?.failed ? 'Class times could not be read for some days, so class conflicts are missing.' : null,
+    conflicts?.capped ? 'Class conflicts are shown for the first 14 days with events only.' : null,
+    rows.length >= 200 ? 'Only the first 200 events are listed.' : null,
+  ].filter((n): n is string => !!n);
+  return { summary: `${rows.length} events on the team calendar.`, measurements: [], series: [], detail: { zone, events, from: input.from, to: input.to }, coverage: notes.length ? 'partial' : 'complete', coverage_note: notes.length ? notes.join(' ') : null, as_of: nowIso() };
 }
 
 /** Par, yardage and handicap by hole, and this team's scoring to par by hole from its rounds. */

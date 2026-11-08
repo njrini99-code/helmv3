@@ -52,6 +52,8 @@ import { CREATE_FLOWS, CREATE_TOOL_NAMES, LINEUP_FLOWS, drillFlow, flowCommit, t
 import { heldCommitFor } from './held-runner';
 import { getProximityByBand, getRoundDetail, getShotPattern } from './shot-reads';
 import { compareSeasons, getCalendar, getCourse, getRootCauses } from './engine-reads';
+import { getDocuments, getPractice, getTeamPatterns } from './ask-reads';
+import { teamPatternEnabled } from '@/lib/coachhelm/v3/team-pattern/flag';
 import { holdForExecution, releaseHeld, sweepHeld } from './undo-hold';
 import { tool } from 'ai';
 import type { ToolSet, UIMessageStreamWriter } from 'ai';
@@ -175,7 +177,10 @@ const PROGRESS_LABEL: Record<string, (input: Record<string, unknown>) => string>
   get_proximity_by_band: () => 'Reading proximity by band',
   get_round_detail: () => 'Reading the round hole by hole',
   get_root_causes: () => 'Reading the open causes',
-  get_calendar: () => 'Reading the team calendar',
+  get_calendar: () => 'Reading the team calendar, replies and classes',
+  get_team_patterns: () => 'Looking for what the team shares',
+  get_practice: () => 'Reading practice plans and sessions',
+  get_documents: () => 'Reading Documents',
   get_course: () => 'Reading the course',
   compare_seasons: () => 'Comparing the seasons',
   show_visual: () => 'Building the visual',
@@ -210,7 +215,10 @@ const PROGRESS_DONE: Record<string, string> = {
   get_proximity_by_band: 'Read proximity by band',
   get_round_detail: 'Read the round hole by hole',
   get_root_causes: 'Read the open causes',
-  get_calendar: 'Read the team calendar',
+  get_calendar: 'Read the team calendar, replies and classes',
+  get_team_patterns: 'Looked for what the team shares',
+  get_practice: 'Read practice plans and sessions',
+  get_documents: 'Read Documents',
   get_course: 'Read the course',
   compare_seasons: 'Compared the seasons',
   find_player: 'Found that player on your roster',
@@ -778,7 +786,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
           execute: read('get_root_causes', (input) => getRootCauses(sb, ctx, input)),
         }),
         get_calendar: tool({
-          description: 'Team events between two instants, on the team\'s clock.',
+          description: 'Team events between two instants, on the team\'s clock, each with who replied and checked in (events that ask for a reply) and which players are in class during it. Past or future, any window.',
           inputSchema: z.object({ from: z.string(), to: z.string() }),
           execute: read('get_calendar', (input) => getCalendar(sb, ctx, input)),
         }),
@@ -792,6 +800,26 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
           inputSchema: z.object({ player_id: z.string().uuid().optional() }),
           execute: read('compare_seasons', (input) => compareSeasons(sb, ctx, input)),
         }),
+        get_practice: tool({
+          description: 'Practices held, practice plans (draft or published) and the sessions players logged in a window. No shot data. Use it for any question about practice.',
+          inputSchema: z.object({ since_days: z.number().int().min(1).max(180).default(30) }),
+          execute: read('get_practice', (input) => getPractice(sb, ctx, input)),
+        }),
+        get_documents: tool({
+          description: 'Document titles and folders, and whether players can see each. Never a file\'s contents.',
+          inputSchema: z.object({ folder: z.string().max(60).optional(), limit: z.number().int().min(1).max(60).default(30) }),
+          execute: read('get_documents', (input) => getDocuments(sb, ctx, input)),
+        }),
+        // Only where the Board shows team patterns: Ask never says what the Board hides (coachhelm_team_pattern_v1, off).
+        ...(teamPatternEnabled()
+          ? {
+              get_team_patterns: tool({
+                description: 'What several players share: the same cause family in enough of the roster, with the players and strokes a round it costs.',
+                inputSchema: z.object({}),
+                execute: read('get_team_patterns', () => getTeamPatterns(sb, ctx)),
+              }),
+            }
+          : {}),
         }
       : {}),
 
