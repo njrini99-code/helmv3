@@ -1555,6 +1555,13 @@ li + li > .ch-shs-rrow::before {
   border-radius: var(--ch-radius-mark);
   background: var(--ch-shs-s-ink);
 }
+/* The mean's label keeps a halo of the card under it, so a line crossing it can't strike through the words. */
+.ch-shs-mean-label {
+  paint-order: stroke;
+  stroke: var(--ch-shs-s-card);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
 .ch-shs-early-key {
   margin-top: 6px;
 }

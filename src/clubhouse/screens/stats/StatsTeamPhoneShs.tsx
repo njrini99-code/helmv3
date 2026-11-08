@@ -42,7 +42,7 @@ import { useStatsDetail, type StatsArrivalState } from './use-stats-detail';
 
 const TITLE: Readonly<Record<StatsTeamDetailId, string>> = { tscore: 'Team scoring', tgame: 'Team game', tplayers: 'Players' };
 
-const windowDays = (data: ChTeamStats) => (data.window === 'last10' && !isFiltered(data.filter) ? `Last ${data.last} days` : windowShort(data.filter));
+const windowDays = (data: ChTeamStats) => (data.window === 'last10' && !isFiltered(data.filter) ? `Last ${data.last} round days` : windowShort(data.filter));
 
 
 /** "Sam gains the most; Lee loses the most", and "loses the least" when everyone is below zero (08 criterion 57). */
@@ -144,10 +144,12 @@ export function StatsTeamPhoneShs({ data, initialArea }: { data: ChTeamStats; /*
         <div inert={detail != null} aria-hidden={detail != null || undefined}>
           {!bare && (
             <div ref={ctlRef} className={'ch-shs-ctl' + (hasRange(data.filter) ? ' is-custom' : '') + (stuck ? ' is-stuck' : '')}>
-              <div className="ch-shs-ctl__row">
-                <PhoneWindowSwitch custom={hasRange(data.filter)} hook="stats-window-seg" />
-                {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone hook="stats-filter" />}
-              </div>
+              <PhoneWindowSwitch
+                custom={hasRange(data.filter)}
+                hook="stats-window-seg"
+                rows
+                beside={showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone hook="stats-filter" />}
+              />
             </div>
           )}
           <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className="ch-shs-sheet">

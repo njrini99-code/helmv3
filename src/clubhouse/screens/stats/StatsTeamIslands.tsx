@@ -84,15 +84,29 @@ export function useShownWindow(): ChRange {
  * The phone's window switch, reading the frame itself: a tap moves the pill at once and re-renders only this, not the
  * whole page (the page re-rendered every chart in the click, 40ms in the Simulator audit, 2026-10-14).
  */
-export function PhoneWindowSwitch({ custom, hook }: { custom: boolean; hook?: string }) {
+export function PhoneWindowSwitch({ custom, hook, rows, beside }: { custom: boolean; hook?: string; rows?: boolean; beside?: ReactNode }) {
   const go = useGoWindow();
   const [span, setSpan] = useSpan();
   const shown = useShownWindow();
+  const spanSwitch = <SpanSwitch value={span} onChange={setSpan} hook={hook ? `${hook}-span` : undefined} />;
+  // All time is no window: the switch comes back with the season.
+  const windowSwitch = span === 'season' && <WindowSwitch value={shown} onChange={go} custom={custom} hook={hook} />;
+  // The summary stacks them (as My stats does): one row each, or the five windows run off a phone beside the span switch.
+  if (rows)
+    return (
+      <>
+        <div className="ch-shs-ctl__row">{spanSwitch}</div>
+        <div className="ch-shs-ctl__row">
+          {windowSwitch}
+          {beside}
+        </div>
+      </>
+    );
   return (
     <>
-      <SpanSwitch value={span} onChange={setSpan} hook={hook ? `${hook}-span` : undefined} />
-      {/* All time is no window: the switch comes back with the season. */}
-      {span === 'season' && <WindowSwitch value={shown} onChange={go} custom={custom} hook={hook} />}
+      {spanSwitch}
+      {windowSwitch}
+      {beside}
     </>
   );
 }
