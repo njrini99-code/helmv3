@@ -1555,6 +1555,16 @@ li + li > .ch-shs-rrow::before {
   border-radius: var(--ch-radius-mark);
   background: var(--ch-shs-s-ink);
 }
+.ch-shs-early-key {
+  margin-top: 6px;
+}
+.ch-shs-early-key i {
+  width: 16px;
+  height: 8px;
+  border-radius: var(--ch-radius-xs);
+  background: none;
+  box-shadow: var(--ch-stats-redesign-x5);
+}
 .ch-shs-skey {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(calc(96 * var(--ch-type-k)), 1fr));
