@@ -110,6 +110,7 @@ export function useBigText(): boolean {
 export function StatsPlayerPhoneShs({
   data,
   initialTab,
+  initialArea,
   reads,
   playerHref,
   messageHref,
@@ -124,6 +125,8 @@ export function StatsPlayerPhoneShs({
 }: {
   data: ChPlayerProfile;
   initialTab?: string;
+  /** The address's production `?area=`: opens that area's detail, like a hash. */
+  initialArea?: string;
   reads?: ChReadsSource;
   playerHref: string;
   messageHref: string | null;
@@ -157,7 +160,7 @@ export function StatsPlayerPhoneShs({
   const showFilter = !failed && (data.filterOptions.total > 0 || filtered);
   const arrivalState: StatsArrivalState = failed ? 'failed' : noRounds ? 'empty' : 'ready';
 
-  const { detail, open, close, replace, saveScroll, detailScroll, restoreTo } = useStatsDetail({ screen: 'player', tab: initialTab, state: arrivalState });
+  const { detail, open, close, replace, saveScroll, detailScroll, restoreTo } = useStatsDetail({ screen: 'player', tab: initialTab, area: initialArea, state: arrivalState });
   const backLabel = coach ? 'Player stats' : 'My stats';
 
   const share = async () => {

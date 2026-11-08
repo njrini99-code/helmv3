@@ -98,7 +98,7 @@ const toPar = (data: ChTeamStats): string | null => {
  * No large title, as drawn. A coach's page only: the route never serves it to a player (`routes/stats.tsx`). `StatsTeamPhone` stays for
  * the flag off, and its Players list and Team putting render here unchanged.
  */
-export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
+export function StatsTeamPhoneShs({ data, initialArea }: { data: ChTeamStats; /** The address's production `?area=`. */ initialArea?: string }) {
   const noRounds = !data.roundsError && data.roundCount === 0;
   const nineOnly = noRounds && nineRoundsInWindow(data.filter, data.filterOptions);
   const filtered = isFiltered(data.filter);
@@ -115,7 +115,7 @@ export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
   useSegFade(ctlRef);
   const below = useArrivalPainted();
   const arrival: StatsArrivalState = data.roundsError ? 'failed' : noRounds ? 'empty' : 'ready';
-  const { detail, open, close } = useStatsDetail({ screen: 'team', state: arrival });
+  const { detail, open, close } = useStatsDetail({ screen: 'team', area: initialArea, state: arrival });
   const reduced = useChReducedMotion();
   const stuck = useStuck();
   const root = useRef<HTMLDivElement>(null);

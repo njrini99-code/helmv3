@@ -54,7 +54,8 @@ export function ShsIcon({ name }: { name: ShsIconName }) {
 }
 
 /**
- * A summary card: the whole card pushes its detail (Enter and Space too), and presses at 0.97 with the wash (08 CP-131). A chart inside
+ * A summary card: the whole card pushes its detail (Enter and Space too). A press deepens the surface (the pressed wash, `data-ch-pressed`)
+ * and never scales the card (CH-1606; the owner's newest design: "presses deepen the surface and never scale"). A chart inside
  * marks itself `data-ch-no-open`, so a drag reads the chart and never opens the page.
  */
 export function SummaryCard({
@@ -92,7 +93,7 @@ export function SummaryCard({
       className={'ch-shs-card ch-shs-sum' + (feature ? ' ch-shs-feature' : '')} suppressHydrationWarning
       data-go={go}
       data-ch="stats-card"
-      data-ch-press-scale=".97"
+      data-ch-pressable=""
       onClick={onClick}
     >
       <button type="button" className="ch-shs-sum__key" data-ch-no-open aria-label={ariaLabel} onClick={open} />

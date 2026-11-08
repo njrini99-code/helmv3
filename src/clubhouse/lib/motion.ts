@@ -20,6 +20,8 @@ export const CH_SPRING = [0.34, 1.3, 0.64, 1] as const;
 /** How long the shared springs take to settle, in ms: a spring's length is its physics, not a step on the scale. */
 export const CH_SPRING_SETTLE_MS = 462;
 export const CH_SPRING_POP_MS = 507;
+/** A chart's marks settling on a changed value, in ms (--ch-dur-marks): the Stats scoring line's morph on a window change. */
+export const CH_MARKS_MS = 360;
 /** One pass of the progress sweep, in ms (--ch-dur-sweep). */
 export const CH_SWEEP_MS = 900;
 

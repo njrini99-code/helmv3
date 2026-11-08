@@ -61,6 +61,21 @@ describe('the stats route', () => {
     expect(el.props.coachId).toBeNull();
   });
 
+  it("production's ?area= reaches the screen: the player's and the team's, and never the loader", async () => {
+    asPlayer();
+    const mine = (await ClubhouseStatsRoute({ area: 'putting' })) as unknown as El;
+    expect(mine.props.initialArea).toBe('putting');
+    expect(JSON.stringify(vi.mocked(loadPlayerProfile).mock.calls[0]![0])).not.toContain('putting');
+    asCoach();
+    const team = (await ClubhouseStatsRoute({ area: 'game' })) as unknown as El;
+    expect(team.type).toBe(StatsTeam);
+    expect(team.props.initialArea).toBe('game');
+    vi.mocked(loadPlayerProfile).mockResolvedValue({ id: TEAMMATE } as never);
+    const theirs = (await ClubhouseStatsRoute({ player: TEAMMATE, area: 'standing' })) as unknown as El;
+    expect(theirs.type).toBe(StatsPlayer);
+    expect(theirs.props.initialArea).toBe('standing');
+  });
+
   it('a coach with no player gets the team page', async () => {
     asCoach();
     const el = (await ClubhouseStatsRoute({})) as unknown as El;

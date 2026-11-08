@@ -222,7 +222,7 @@
   padding: 0 12px;
 }
 
-/* A card that opens a detail: the pressed wash; data-ch-press-scale carries the 0.97 (lib/press.ts). */
+/* A card that opens a detail: the pressed wash (data-ch-pressable, lib/press.ts). The card never scales. */
 .ch-shs-sum {
   cursor: pointer;
   transition: box-shadow var(--ch-dur-release) var(--ch-ease);
@@ -2024,7 +2024,7 @@ p.ch-shs-mini-cap {
   margin: 0;
   font: var(--ch-type-22-strong);
   font-variation-settings: 'wdth' 92;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.02em;
   color: var(--ch-on-green-ink);
   text-shadow: none;
   overflow-wrap: anywhere;

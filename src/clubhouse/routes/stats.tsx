@@ -21,10 +21,11 @@ import '../styles/stats-redesign.css';
  *   coach  - team stats, or ?player=<id> for any player on their team
  *   player - always their own profile; ?player= is ignored, never trusted
  * The team is always the caller's own (resolveClubhouseTeam), never one named in the address.
- * `?tab=` opens a profile tab (overview, game, rounds, dev). The round filter (window, type, from, to, course, only, skip) is
+ * `?tab=` opens a profile tab (overview, game, rounds, dev). `?area=` is production's stats-board address (scoring, driving, approach, short-game,
+ * putting, standing, rounds for a player; scoring, game, players for the team): on the phone it opens that area's detail, so a saved production link lands. The round filter (window, type, from, to, course, only, skip) is
  * read from `query` by `parseFilter`, which drops anything unusable; `window` alone is the older, narrower way in.
  */
-export async function ClubhouseStatsRoute({ player, window, tab, query }: { player?: string; window?: string; tab?: string; query?: ChFilterQuery }) {
+export async function ClubhouseStatsRoute({ player, window, tab, area, query }: { player?: string; window?: string; tab?: string; area?: string; query?: ChFilterQuery }) {
   const session = await getGolfSessionProfile();
   if (!session) return null;
   const team = await resolveClubhouseTeam(session);
@@ -38,7 +39,7 @@ export async function ClubhouseStatsRoute({ player, window, tab, query }: { play
       loadPlayerProfile({ viewer: 'player', teamId: team.teamId, playerId: team.playerId, window: win, filter }),
       loadStatsReads({ role: 'player', playerId: team.playerId }),
     ]);
-    return profile ? <StatsPlayer data={profile} coachId={null} initialTab={tab} reads={reads} /> : <NotOnTeam coach={false} />;
+    return profile ? <StatsPlayer data={profile} coachId={null} initialTab={tab} initialArea={area} reads={reads} /> : <NotOnTeam coach={false} />;
   }
 
   if (player) {
@@ -51,9 +52,9 @@ export async function ClubhouseStatsRoute({ player, window, tab, query }: { play
       .then(readsForScope)
       .catch((): ChStatsReads => ({ status: 'failed' }));
     const profile = await loadPlayerProfile({ viewer: 'coach', teamId: team.teamId, playerId: player, window: win, filter });
-    return profile ? <StatsPlayer data={profile} coachId={team.coachId} initialTab={tab} reads={reads} /> : <NotOnTeam coach />;
+    return profile ? <StatsPlayer data={profile} coachId={team.coachId} initialTab={tab} initialArea={area} reads={reads} /> : <NotOnTeam coach />;
   }
-  return <StatsTeam data={await loadTeamStats({ teamId: team.teamId, window: win, filter })} />;
+  return <StatsTeam data={await loadTeamStats({ teamId: team.teamId, window: win, filter })} initialArea={area} />;
 }
 
 export function StatsNoTeam({ coach }: { coach: boolean }) {

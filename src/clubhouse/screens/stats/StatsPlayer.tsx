@@ -34,7 +34,7 @@ import { TERMS } from '../../lib/glossary';
 import { sgBaseline } from '../../lib/sg';
 import { rebuiltHref } from '../../shell/nav';
 import { usePageCrumbs } from '../../shell/crumbs';
-import { gameSectionFromHash, LEGS_LIST, LEG_SECTION } from './legs';
+import { GAME_SECTION_IDS, gameSectionFromHash, LEGS_LIST, LEG_SECTION } from './legs';
 import { SgChangeChip } from './charts';
 import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
@@ -57,7 +57,7 @@ import { pluralWord } from '../../lib/plural';
 import { PlayerInsight } from './StatsInsight';
 import { NoData } from '../../ui/NoData';
 import { usePushOnce } from '../../lib/nav-once';
-import { desktopTabOfHash } from './detail-route';
+import { areaDetail, desktopTabOfHash, tabOfDetail } from './detail-route';
 
 type Tab = 'overview' | 'game' | 'rounds' | 'dev';
 const TABS: readonly Tab[] = ['overview', 'game', 'rounds', 'dev'];
@@ -74,10 +74,11 @@ export function formNote(first: string, scores: number[]): string {
 }
 
 /**
- * `initialTab` is the URL's `tab` (Roster's "All N" opens `tab=rounds`, D-53); anything else opens Overview. `reads` is what CoachHelm
+ * `initialTab` is the URL's `tab` (Roster's "All N" opens `tab=rounds`, D-53); anything else opens Overview. `initialArea` is production's
+ * `?area=`: on the phone it opens that area's detail, on desktop the tab (and, for a game part, the section) it lives under. `reads` is what CoachHelm
  * sees per Game detail section (data/stats-reads.ts); without it Game detail draws no count line.
  */
-export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlayerProfile; coachId: string | null; initialTab?: string; reads?: ChReadsSource; }) {
+export function StatsPlayer({ data, coachId, initialTab, initialArea, reads }: { data: ChPlayerProfile; coachId: string | null; initialTab?: string; initialArea?: string; reads?: ChReadsSource; }) {
   const router = useRouter();
   const pushOnce = usePushOnce(router);
   const toast = useToast();
@@ -88,7 +89,8 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
   // The tab comes back when the coach returns to the page (PAGE_PERFORMANCE.md rule 1); an address that names one (Roster's "All N" opens
   // `?tab=rounds`, D-53) wins until a tab is chosen.
   const [keptTab, setKeptTab] = useChSessionState<Tab>('profile-tab', 'overview');
-  const named = useRef<Tab | undefined>(TABS.find((t) => t === initialTab));
+  const areaTarget = areaDetail(initialArea, 'player');
+  const named = useRef<Tab | undefined>(TABS.find((t) => t === initialTab) ?? (areaTarget ? tabOfDetail(areaTarget) : undefined));
   // A phone's shared `#sd-rounds` or `#sd-goals` link means something on desktop too: its tab (08 criterion 77). Any other `#sd-*` opens Overview.
   useEffect(() => {
     if (phone) return;
@@ -114,6 +116,8 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
   // On the phone the hash picks the section Game detail draws (GameDetail reads it itself), so this scroll is the desktop's.
   useEffect(() => {
     if (!wantSection.current && !phone && gameSectionFromHash(window.location.hash)) wantSection.current = window.location.hash.slice(1);
+    // `?area=putting` on desktop: the Game detail tab, scrolled to that part (Scoring lives on Overview, Strokes gained has no section).
+    else if (!wantSection.current && !phone && areaTarget && tabOfDetail(areaTarget) === 'game' && (GAME_SECTION_IDS as readonly string[]).includes(areaTarget)) wantSection.current = `gm-${areaTarget}`;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps -- read once, as the page opens
   useEffect(() => {
     const id = wantSection.current;
@@ -223,6 +227,7 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
         <StatsPlayerPhoneShs
           data={data}
           initialTab={initialTab}
+          initialArea={initialArea}
           reads={reads}
           playerHref={href(data.id, data.filter)}
           messageHref={messageHref}
