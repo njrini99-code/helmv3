@@ -217,3 +217,38 @@ Summary of the 112 rows at this commit: DONE 56, PARTIAL 39, MISSING 17.
 4. Left PARTIAL with the reason: Seen by on the Told row (no RLS-safe source), board flight into Messages (M-ASK-62), publish and focus fan-out homes (M-ASK-80 to 82), drill draft visual, Lock card as its own surface, history paging.
 
 No schema change is planned: folders are free text on `golf_documents.folder`, the allowance, tone and facts tables are HM2 to HM4 and already written.
+
+## Built on this branch (after the survey)
+
+| Row | Was | Now | Evidence |
+|---|---|---|---|
+| Engine: team patterns | MISSING | DONE (only while `coachhelm_team_pattern_v1` is on) | `src/lib/coachhelm/v3/chat/ask-reads.ts` `getTeamPatterns`, `agent-tools.ts` registration |
+| Practice reviews and plans | MISSING | DONE for plans, practices and logged sessions; golf has no practice reviews table | `ask-reads.ts` `getPractice` |
+| Documents | MISSING | DONE | `ask-reads.ts` `getDocuments` |
+| Calendar and classes | PARTIAL | DONE: replies, check-ins and class conflicts | `engine-reads.ts` `getCalendar`, `ask-reads.ts` `classConflicts`, `attendanceByEvent` |
+| In-app "What Ask can see" | PARTIAL | DONE | `parts/KnowsPanel.tsx` |
+| Read chip names for the newer reads | (not in survey) | DONE: they read "Read" before | `src/clubhouse/data/coachhelm-chat-thread.ts` `READ_NAME` |
+| Spec item 12 and M-ASK-73 to 78 for reports, lineups, recaps | PARTIAL | DONE: docked card, in-card list, flight and squash, receipt, Undo | `parts/SaveCard.tsx`, `src/app/golf/actions/coachhelm-ask-artifacts.ts` `undoAskArtifact` |
+| M-ASK-25 follow-ups | MISSING | DONE | `coachhelm-ask-v2.css` (Motion that every answer and every draft owns) |
+| M-ASK-100 jump key | MISSING | DONE | same block |
+| M-ASK-59 trip route | MISSING | PARTIAL: route draws, flag pops; no van | same block |
+| M-ASK-61, 63 board and poll | MISSING | DONE for tile and option entrances | same block |
+| M-ASK-65 lineup | MISSING | PARTIAL: seats rise in order; no coin flight, no tied wobble | same block |
+| M-ASK-67 task | MISSING | PARTIAL: ring sweeps, assignees pop; no bell | same block |
+| M-ASK-70 note | MISSING | PARTIAL: note pops; no 18 bars or pin (the draft carries no hole data) | same block |
+| Literal `0.54s`, `0.46s`, `0.71s`, `0.2s`, `0.08s`, `1.1s` | off-token | on `--ch-dur-*` tokens (the 8 second Undo window stays a literal on purpose) | `coachhelm-ask-v2.css` |
+
+## Still open, with the reason
+
+| Row | Reason |
+|---|---|
+| Seen by on the Told row | a coach cannot read another user's `notifications` rows; needs an RLS-safe aggregate (a database function), not written here |
+| Track record and corrections reads | the engine modules need the Board's loaders; no cheap read exists, so not added |
+| M-ASK-62 board flies into Messages | the hand-off is a prefill and a route change; there is no mock composer in the card to land in |
+| M-ASK-68, 69 goal line, band, Accepted tag | the goal draft carries the target only and acceptance is not read |
+| M-ASK-71 drill draft visual | no green/gate/ball visual; the flow itself exists and waits on N-00 `20261026010100` |
+| M-ASK-80 to 82 publish and focus fan-out homes | the homes (avatar row, player card) are not mocked in the card |
+| M-ASK-89 Lock lineup as its own card | Lock is a flow without Undo; it has no separate card or lock pops |
+| M-ASK-111 history paging | History lists every chat; there is no more row |
+| M-ASK-96, 97, 98, 103, 104, 105 to 109 | small fades, rotations and overlays on states that already work; not drawn |
+| M-ASK-28, 36, 38, 74, 75 | the design animates height or width; the house lint bans it, so these stay transform or clip ("can't match as drawn") |

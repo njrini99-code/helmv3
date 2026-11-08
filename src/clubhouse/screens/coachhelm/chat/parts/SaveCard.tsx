@@ -244,7 +244,7 @@ export function SaveCard({ title, body, onClose }: { title: string; body: string
       {phase.k === 'undone' && <p className="cxl">Removed. Nothing was saved.</p>}
       {done && (
         <div className="btns">
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="primary" onClick={onClose}>
             Done
           </Button>
         </div>
