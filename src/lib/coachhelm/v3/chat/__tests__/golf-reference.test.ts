@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { GOLF_REFERENCE_SECTIONS } from '../golf-reference.generated';
 import { splitGolfReference } from '../golf-reference-split';
 import { getGolfReference, searchGolfReference } from '../golf-reference';
-import { auditNumericClaims, collectEnvelopeNumbers } from '../provenance';
+import { auditNumericClaims, collectEnvelopeNumbers, readFigure } from '../provenance';
 
 const doc = readFileSync(resolve(process.cwd(), 'docs/v3-research-golf-domain.md'), 'utf8');
 
@@ -68,5 +68,31 @@ describe('get_golf_reference', () => {
     const e = getGolfReference({ topic: 'putting 47' });
     const found = auditNumericClaims('Players make 47 percent of them.', e.measurements, e.series, collectEnvelopeNumbers(e));
     expect(found.map((c) => c.value)).toContain(47);
+  });
+
+  describe('reference figures ground only a sentence that names the reference', () => {
+    // "amateur 15-HCP ≈ 25-30%" is in the returned text; 62 is not in it anywhere.
+    const e = getGolfReference({ topic: 'lag putting 3-putt' });
+    const players = [{ id: 'p1', name: 'Owen Carter' }];
+    const audit = (text: string, extra: Array<ReturnType<typeof readFigure>> = []) => auditNumericClaims(text, extra, [], collectEnvelopeNumbers(e), [], 'America/New_York', { players }).map((c) => c.value);
+
+    it('a team claim that uses a number only the reference holds is refused', () => {
+      expect(audit('Owen Carter three-putts 25% of the time.')).toEqual([25]);
+      expect(audit('The team three-putts 30% of its holes.')).toEqual([30]);
+    });
+
+    it('the same figure is accepted when its sentence names the reference or its source', () => {
+      expect(audit('The golf reference puts a 15-handicap at 25-30% three-putts from long range.')).toEqual([]);
+      expect(audit('Research on amateurs has them near 25-30%.')).toEqual([]);
+    });
+
+    it('is judged sentence by sentence: a sourced sentence does not cover the next one', () => {
+      expect(audit('The golf reference has an amateur near 25%. Owen Carter three-putts 25% of the time.')).toEqual([25]);
+    });
+
+    it('a number the team’s own read returned still grounds a team claim with no source named', () => {
+      const own = readFigure({ metric_id: 'three_putt_pct', metric_label: 'Three-putt %', unit: 'percent', value: 25, entity: { kind: 'player', id: 'p1', label: 'Owen Carter' }, window_start: null, window_end: null, sample_size: 40, sample_unit: 'rounds', source: 'rounds', method: 'm' });
+      expect(audit('Owen Carter three-putts 25% of the time.', [own])).toEqual([]);
+    });
   });
 });

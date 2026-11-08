@@ -290,7 +290,20 @@ export interface ScopedNumber {
   metric_key: string | null;
   /** A team-level figure (`team_scope: true` on the payload): beside a name it needs a team cue, like a team `Measurement`. */
   team?: boolean;
+  /**
+   * A reference or benchmark figure (golf-reference text, a metric definition, a benchmark's levels and sources): it is no one's result, so it
+   * may ground a claim only in a sentence that names a source ({@link REFERENCE_CUE}). Otherwise any number printed anywhere in the
+   * reference text could back a made-up figure about the team.
+   */
+  reference?: boolean;
 }
+
+/**
+ * Words that mark a sentence as citing a reference, a benchmark or a level: its source, the Tour, a college level, "the benchmark".
+ * A figure from {@link ScopedNumber.reference} grounds a claim only where this matches in the claim's own sentence.
+ */
+export const REFERENCE_CUE =
+  /\b(?:reference|research|published|studies|study|sources?|sourced|benchmarks?|tour|pga|lpga|korn ferry|division\s+(?:i{1,3}|[123])|d[123]|high[- ]school|level(?:'s)? average|average (?:for|at) (?:the |their |your )?level|handicap|hcp|scratch|broadie|shotlink|shot scope|arccos|golftec|hickman|ncsa|clippd|dethier)\b/i;
 
 /** A roster member the audit can recognise by name in the model's text. */
 export interface AuditPlayer {
@@ -862,6 +875,8 @@ interface AnchorScope {
   team: boolean;
   family: MetricFamily | null;
   parent: MetricFamily | null;
+  /** A reference or benchmark figure: it grounds a claim only in a sentence that names a source (see {@link REFERENCE_CUE}). */
+  reference?: boolean;
 }
 interface Anchor extends AnchorScope {
   value: number;
@@ -887,6 +902,8 @@ interface Binding {
   /** Players the number is explicitly NOT about (the named ones, when the clause says "the others"). */
   excluding?: ReadonlySet<string>;
   teamCue: boolean;
+  /** The number's own sentence names a reference, a benchmark, the Tour or a level. */
+  refCue: boolean;
   families: ReadonlySet<MetricFamily> | null;
 }
 
@@ -1089,6 +1106,7 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
       players: aboutOthers ? null : players,
       ...(aboutOthers && players ? { excluding: players } : {}),
       teamCue: TEAM_CUE.test(text.slice(sentence[0], sentence[1])),
+      refCue: REFERENCE_CUE.test(text.slice(sentence[0], sentence[1])),
       families: familiesByToken.get(index) ?? null,
     };
   };
@@ -1243,7 +1261,7 @@ export function auditNumericClaims(
     add(m.sample_size, { ...who, family: null, parent: null });
     add(m.denominator, { ...who, family: null, parent: null });
     // A benchmark is an external baseline, not anyone on this roster.
-    add(m.benchmark?.value, { player: null, team: false, ...fam }, m.metric_id);
+    add(m.benchmark?.value, { player: null, team: false, ...fam, reference: true }, m.metric_id);
     // A stated delta between a value and its benchmark is itself supported.
     if (typeof m.value === 'number' && typeof m.benchmark?.value === 'number') {
       add(m.value - m.benchmark.value, { ...who, ...fam });
@@ -1255,9 +1273,10 @@ export function auditNumericClaims(
   for (const n of extraSupported) {
     if (typeof n === 'number') add(n, UNSCOPED);
     else if (n && typeof n.value === 'number') {
-      const scope = { player: n.player_id ?? null, team: n.team === true, ...familyOf(n.metric_key) };
+      const scope = { player: n.player_id ?? null, team: n.team === true, ...familyOf(n.metric_key), ...(n.reference ? { reference: true } : {}) };
       add(n.value, scope);
-      if (n.metric_key) {
+      // A reference's field names are its own: means and differences of them say nothing about a team.
+      if (n.metric_key && !n.reference) {
         const id = `${scope.player ?? ''}|${scope.team}|${n.metric_key}`;
         const group = detailGroups.get(id) ?? { scope, values: [] };
         if (group.values.length < PAIRWISE_ANCHOR_CAP * 2) group.values.push(n.value);
@@ -1357,7 +1376,7 @@ export function auditNumericClaims(
 
     const near = (a: Anchor) => Math.abs(a.value - value) <= tolerance;
     const binding = bind.bindingFor(index);
-    if (!anchors.some((a) => near(a) && playerCompatible(a, binding) && metricCompatible(a, binding))) {
+    if (!anchors.some((a) => near(a) && playerCompatible(a, binding) && metricCompatible(a, binding) && (!a.reference || binding.refCue))) {
       seen.add(raw);
       found.push(anchors.some(near) ? { text: raw, value, misattributed: true } : { text: raw, value });
     }
@@ -1410,15 +1429,15 @@ export function collectScopedNumbers(
   playerId: string | null = null,
   key: string | null = null,
   depth = 0,
-  inherited: { team?: boolean; metric?: string } = {},
+  inherited: { team?: boolean; metric?: string; reference?: boolean } = {},
 ): ScopedNumber[] {
   if (depth > 6 || value === null || value === undefined) return [];
   const team = inherited.team && playerId === null ? { team: true } : {};
   if (typeof value === 'number') {
-    return Number.isFinite(value) ? [{ value, player_id: playerId, metric_key: inherited.metric ?? key, ...team }] : [];
+    return Number.isFinite(value) ? [{ value, player_id: playerId, metric_key: inherited.metric ?? key, ...team, ...(inherited.reference ? { reference: true } : {}) }] : [];
   }
   if (typeof value === 'string') {
-    return numbersInText(value).map((n) => ({ value: n, player_id: playerId, metric_key: null, ...team }));
+    return numbersInText(value).map((n) => ({ value: n, player_id: playerId, metric_key: null, ...team, ...(inherited.reference ? { reference: true } : {}) }));
   }
   if (Array.isArray(value)) return value.flatMap((v) => collectScopedNumbers(v, playerId, key, depth + 1, inherited));
   if (typeof value === 'object') {
@@ -1426,7 +1445,9 @@ export function collectScopedNumbers(
     const nested = obj.player && typeof obj.player === 'object' ? (obj.player as Record<string, unknown>).player_id : undefined;
     const own = typeof obj.player_id === 'string' ? obj.player_id : typeof nested === 'string' ? nested : null;
     const scope = own ?? playerId;
-    const next = { team: obj.team_scope === true || inherited.team, metric: typeof obj.metric_scope === 'string' ? obj.metric_scope : inherited.metric };
+    // A payload tagged `kind: 'reference' | 'definition' | 'benchmark'` is no one's result; everything beneath it needs a sourced sentence.
+    const refKind = obj.kind === 'reference' || obj.kind === 'definition' || obj.kind === 'benchmark';
+    const next = { team: obj.team_scope === true || inherited.team, metric: typeof obj.metric_scope === 'string' ? obj.metric_scope : inherited.metric, reference: refKind || inherited.reference };
     return Object.entries(obj).flatMap(([k, v]) => collectScopedNumbers(v, scope, k, depth + 1, next));
   }
   return [];
