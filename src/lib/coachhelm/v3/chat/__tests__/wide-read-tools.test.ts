@@ -196,7 +196,8 @@ describe('the prompts', () => {
     expect(c).toMatch(/Settings, Team, Division/);
     const pl = PLAYER_INSTRUCTIONS('Owen', 'Varsity', 'UTC');
     expect(pl).toMatch(/level not set/);
-    expect(pl).toMatch(/no college figure/);
+    // The level is Helm's own cohort now: a player is told to say when too few others have the figure.
+    expect(pl).toMatch(/not enough Division I players on Helm yet/);
   });
   it('describe the benchmark tool as returning all three for both roles', () => {
     const c = coach(true).tools.get_benchmarks!.description!;

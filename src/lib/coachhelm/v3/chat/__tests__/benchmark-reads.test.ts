@@ -5,7 +5,7 @@ vi.mock('server-only', () => ({}));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(async () => {}) }));
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => { throw new Error('the service client must not be used'); } }));
 
-import { applyComparisons, benchmarkSource, getBenchmarks, getMetricDefinitions, levelFromDivision, STANDING_ID_BY_CHAT_ID, tourForGender } from '../benchmark-reads';
+import { applyComparisons, benchmarkSource, SOURCED_LEVEL_FIGURES, getBenchmarks, getMetricDefinitions, levelFromDivision, STANDING_ID_BY_CHAT_ID, tourForGender } from '../benchmark-reads';
 import { auditNumericClaims, collectEnvelopeNumbers, readFigure, type ToolEnvelope } from '../provenance';
 import { person, pgrst, type Tables } from './pgrst-double';
 import { withSourcedLevels } from './level-figures-fixture';
@@ -118,7 +118,7 @@ describe('get_benchmarks (coach)', () => {
     const r = row(e, 'gir_pct');
     expect(kinds(r)).toEqual(['level', 'team', 'tour']);
     expect(r.comparisons).toEqual([
-      { kind: 'level', label: 'Division III average', value: 50, place_percent: 30, place: null, place_of: 70, note: 'Source: test fixture. Place is among college players on helm over all recorded rounds.', missing_reason: null },
+      { kind: 'level', label: 'Division III average', value: 50, place_percent: 30, place: null, place_of: 70, note: 'Source: test fixture. Place is among 70 college players on helm over all recorded rounds.', missing_reason: null },
       // The team is the roster's values over the figure's own window: here the stats cache's (all recorded rounds), mean 54.6, Owen 3rd of 7.
       { kind: 'team', label: 'Team average of the players’ figures, all rounds on record', value: 54.6, place_percent: null, place: 3, place_of: 7, note: 'Rank 3 of 7 players with a figure; 1 is best.', missing_reason: null },
       { kind: 'tour', label: 'PGA Tour', value: 66, place_percent: null, place: null, place_of: null, note: null, missing_reason: null },
@@ -129,6 +129,30 @@ describe('get_benchmarks (coach)', () => {
     expect(standingOf(e).player).toBe('Owen Carter');
     // The teammate’s row is not in it.
     expect(JSON.stringify(e.detail)).not.toContain('71.9');
+  });
+
+  // Owner, 2026-11-08: the level is Helm's own data. Owen is in the cohort (his 58.123 is in the Division III mean), so the figure shown is the others'.
+  it('with no sourced college figure the level is the other Division III players on Helm, Owen left out, and no teammate’s figure appears', async () => {
+    const t = tables();
+    t.golf_division_cohort = { rows: [
+      { gender: 'mens', level: 'd3', metric_id: 'gir_pct', cohort_avg: 50.2, cohort_n: 24, computed_at: 'x' },
+      { gender: 'mens', level: 'd1', metric_id: 'gir_pct', cohort_avg: 80, cohort_n: 40, computed_at: 'x' },
+    ] };
+    const saved = SOURCED_LEVEL_FIGURES.gir_pct;
+    delete SOURCED_LEVEL_FIGURES.gir_pct;
+    try {
+      const { sb } = pgrst(t);
+      const e = await getBenchmarks(sb, ctx, benchmarkSource(sb, 'team-1', { ctx }), { metric_ids: ['gir_pct'], player_id: 'p1' }, { role: 'coach' });
+      const level = row(e, 'gir_pct').comparisons.find((c) => c.kind === 'level')!;
+      // (50.2 * 24 - 58.123) / 23 = 49.855
+      expect(level).toMatchObject({ label: 'Division III players on Helm (n=23)', value: 49.86, place_percent: 30, place_of: 70, missing_reason: null });
+      expect(row(e, 'gir_pct').gaps.vs_level).toBe(8.44);
+      // The cohort of another level is not used, and nobody else's figure is in what came back.
+      expect(JSON.stringify(e.detail)).not.toContain('71.9');
+      expect(JSON.stringify(e.detail)).not.toContain('80');
+    } finally {
+      SOURCED_LEVEL_FIGURES.gir_pct = saved!;
+    }
   });
 
   it('lists the team’s level and the Tour by default (only the Tour, and says the level is not set, with no division), and the levels asked for', async () => {
@@ -180,8 +204,9 @@ describe('get_benchmarks (coach)', () => {
     const e = await getBenchmarks(sb, ctx, benchmarkSource(sb, 'team-1', { ctx }), { metric_ids: ['sg_putting', 'approach_proximity_50_125ft'], player_id: 'p1' }, { role: 'coach' });
     const sg = row(e, 'sg_putting');
     expect(kinds(sg)).toEqual(['level', 'team', 'tour']);
-    expect(sg.comparisons[0]).toMatchObject({ kind: 'level', value: null, missing_reason: 'no college figure' });
-    expect(sg.comparisons[0]!.note).toMatch(/no college figure/i);
+    // The player has a standing row but fewer than 8 other Division III players on Helm have the figure: said so, with the place kept.
+    expect(sg.comparisons[0]).toMatchObject({ kind: 'level', value: null, missing_reason: 'not enough Division III players on Helm yet' });
+    expect(sg.comparisons[0]!.note).toMatch(/not enough Division III players on Helm/i);
     expect(sg.comparisons[1]).toMatchObject({ kind: 'team', value: null, missing_reason: 'fewer than 5 players' });
     expect(sg.comparisons[1]!.note).toMatch(/Fewer than 5 players/);
     expect(sg.comparisons[2]).toMatchObject({ kind: 'tour', value: 0 });

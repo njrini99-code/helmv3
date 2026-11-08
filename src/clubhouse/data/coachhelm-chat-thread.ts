@@ -1371,7 +1371,7 @@ const ordinal = (n: number): string => {
 export function comparisonWords(comparisons: ReadonlyArray<{ kind: RefKind; value: number | null; place_percent?: number | null; place?: number | null; place_of?: number | null; note?: string | null; missing_reason?: string | null }>, unit: Measurement['unit']): string[] {
   const ordered = (['level', 'team', 'tour'] as const).flatMap((k) => comparisons.filter((c) => c.kind === k));
   return ordered.map((c) => {
-    if (c.value === null) return `${REF_WORD[c.kind]}: ${c.missing_reason ?? 'not available'}${c.kind === 'team' && c.place != null && c.place_of != null ? ` · ${ordinal(c.place)} of ${c.place_of}` : ''}`;
+    if (c.value === null) return `${REF_WORD[c.kind]}: ${c.missing_reason ?? 'not available'}${c.kind === 'team' && c.place != null && c.place_of != null ? ` · ${ordinal(c.place)} of ${c.place_of}` : c.kind === 'level' && c.place_percent != null ? ` · ahead of ${c.place_percent}% of ${c.place_of ?? ''} college players on Helm (all rounds)`.replace(/ {2}/g, ' ') : ''}`;
     // The team: the rank among the players with a figure over the same window ("6th of 7"). The level: the share of the college players on Helm the
     // player is ahead of, over all recorded rounds (said so). A team rank never becomes a percent.
     const place =
@@ -1381,7 +1381,7 @@ export function comparisonWords(comparisons: ReadonlyArray<{ kind: RefKind; valu
           ? ''
           : c.kind === 'team'
             ? ` · ahead of ${c.place_percent}% of the team (all rounds)`
-            : ` · ahead of ${c.place_percent}% of ${c.place_of ?? ''} players (all rounds)`.replace(/ {2}/g, ' ');
+            : ` · ahead of ${c.place_percent}% of ${c.place_of ?? ''} college players on Helm (all rounds)`.replace(/ {2}/g, ' ');
     return `${REF_WORD[c.kind]} ${formatValue(c.value, unit)}${place}`;
   });
 }
@@ -1469,6 +1469,7 @@ export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { k
   const tableRows: string[][] = [];
   const missing: string[] = [];
   const windowed: string[] = [];
+  const levelNames = new Set<string>();
   const out = rows.map((r) => {
     const cfg = METRIC_RENDER_CONFIG[r.metric_id as MetricId];
     const unit = BENCH_UNIT[cfg.unit] ?? 'count';
@@ -1483,6 +1484,8 @@ export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { k
     // The standing is over all recorded rounds; when the figure shown is the answer's window, the places still come from the standing.
     if (num(r.standing_value) && fmt(r.standing_value) !== fmt(you)) windowed.push(r.window_label ?? 'the window');
     // Plain sentences, one per missing reference: "No college figure for SG Putting." / "No team figure for GIR % (fewer than 5 teammates)."
+    const levelRef = refs.find((c) => c.kind === 'level');
+    if (levelRef && levelRef.value !== null && /players on Helm \(n=\d+\)/.test(levelRef.label ?? '')) levelNames.add((levelRef.label as string).replace(/\s*\(n=\d+\)/, ''));
     for (const k of ['level', 'team', 'tour'] as const) {
       if (val(k) !== null) continue;
       const reason = (refs.find((c) => c.kind === k)?.missing_reason ?? 'not available').replace(/\.$/, '');
@@ -1506,7 +1509,7 @@ export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { k
     title: `${who} against the level, the team and the Tour`,
     rows: out,
     source: null,
-    note: [windowed.length ? `${who === 'You' ? 'Your' : 'The'} figure is over ${windowed[0]!.replace(/^(last )/, 'the $1')}. The level’s place is over all recorded rounds.` : '', ...missing.slice(0, 3)].filter(Boolean).join(' ') || null,
+    note: [windowed.length ? `${who === 'You' ? 'Your' : 'The'} figure is over ${windowed[0]!.replace(/^(last )/, 'the $1')}. The level’s figure and place are over all recorded rounds.` : '', levelNames.size ? `Level is the mean of the other ${[...levelNames].map((n) => n.toLowerCase().replace(/^division/, 'Division').replace(/^college/, 'college').replace(/^women’s/, 'women’s')).join(' and ')}, you left out.`.replace('you left out', who === 'You' ? 'you left out' : 'this player left out') : '', ...missing.slice(0, 3)].filter(Boolean).join(' ') || null,
     bench: null,
     table: { caption: `${who} against the level, the team and the Tour`, columns: ['Metric', who === 'You' ? 'You' : 'Value', 'Level', 'Team', 'Tour'], rows: tableRows },
   };

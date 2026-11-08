@@ -150,6 +150,12 @@ export interface BenchmarkSource {
   standing(playerIds: readonly string[], metricIds: readonly string[]): Promise<Map<string, StandingLite>>;
   /** The team's level, or null when no division is on record or it could not be read. Nothing is compared with a level the team is not known to play at. */
   level(): Promise<TeamLevel | null>;
+  /**
+   * The mean of each metric over the players on Helm whose team plays at `level`, same gender as the Tour says, over all recorded rounds (the
+   * stats cache), by standards metric id; only cohorts of 8 or more players exist. Aggregates only: no player's own figure comes back. Null when
+   * it could not be read (the table is not there yet): the caller falls back to the gender-wide college cohort on the standing row.
+   */
+  divisionCohort(level: TeamLevel, tour: Tour, metricIds: readonly string[]): Promise<Map<string, { avg: number; n: number }> | null>;
   /** The team's tour, or null when its gender could not be read (no benchmark is claimed then: a women's team is never graded on the men's). */
   tour(): Promise<Tour | null>;
   /** The newest season's row per metric for that tour; null when the read failed. */
@@ -223,6 +229,27 @@ export function benchmarkSource(sb: Sb, teamId: string, opts: { ctx?: CoachChatC
     }
     return out;
   };
+  const divisionReads = new Map<string, Promise<Map<string, { avg: number; n: number }> | null>>();
+  const divisionCohort = (level: TeamLevel, t: Tour, metricIds: readonly string[]) => {
+    const ids = [...new Set(metricIds)].sort();
+    const key = `${level}|${t}|${ids.join(',')}`;
+    let hit = divisionReads.get(key);
+    if (!hit) {
+      hit = (async () => {
+        if (ids.length === 0) return new Map<string, { avg: number; n: number }>();
+        const { data, error } = await sb.from('golf_division_cohort' as never).select('metric_id, cohort_avg, cohort_n').eq('level', level).eq('gender', t === 'lpga' ? 'womens' : 'mens').in('metric_id', ids);
+        if (error) return null;
+        const out = new Map<string, { avg: number; n: number }>();
+        for (const r of (data ?? []) as unknown as Array<{ metric_id: string; cohort_avg: number | string; cohort_n: number }>) {
+          const avg = Number(r.cohort_avg);
+          if (Number.isFinite(avg) && r.cohort_n >= COHORT_FLOOR) out.set(r.metric_id, { avg, n: r.cohort_n });
+        }
+        return out;
+      })();
+      divisionReads.set(key, hit);
+    }
+    return hit;
+  };
   const cohort = (chatMetricId: string, window: CohortWindow): Promise<Cohort | null> => {
     const ctx = opts.ctx;
     if (!ctx) return Promise.resolve(null);
@@ -245,9 +272,12 @@ export function benchmarkSource(sb: Sb, teamId: string, opts: { ctx?: CoachChatC
     }
     return hit;
   };
-  return { level, tour, standards, standing, cohort, role: opts.role ?? 'coach' };
+  return { level, tour, standards, standing, cohort, divisionCohort, role: opts.role ?? 'coach' };
 }
 
+/** The fewest other players a level cohort may rest on: under it, no level figure is stated. */
+const COHORT_FLOOR = 8;
+const DIVISION_WORD: Record<TeamLevel, string> = { d1: 'Division I', d2: 'Division II', d3: 'Division III' };
 const LEVEL_NOT_SET_NOTE = 'Level not set: the team’s division is not on record. A coach sets it in Settings, Team, Division.';
 const round2 = (n: number): number => Math.round(n * 100) / 100;
 
@@ -304,20 +334,31 @@ const rankWords = (rank: number, n: number): string => `Rank ${rank} of ${n} pla
  * the level is the published division average (or missing) and the team is missing. The Tour is withheld where it is not measured the way
  * the player's figure is. `teamFigure`: the figure is the team's own, so it carries the level and the Tour only.
  */
-export function comparisonsFor(a: { metricId: string; std: StandardRow | undefined; tour: Tour; teamLevel: TeamLevel | null; standing: StandingLite | null; team: TeamRef; teamFigure: boolean }): Comparison[] {
+export function comparisonsFor(a: { metricId: string; std: StandardRow | undefined; tour: Tour; teamLevel: TeamLevel | null; standing: StandingLite | null; team: TeamRef; teamFigure: boolean; divisionCohort?: { avg: number; n: number } | null }): Comparison[] {
   const { std, tour, teamLevel, standing } = a;
   const out: Comparison[] = [];
 
-  // 1. The level: the published average for the team's division, with the place among the college players of the same gender on Helm. With no
-  //    division on record the level is "not set" and says where to set it; a metric with no college figure (strokes gained) says so. Neither
-  //    is filled with the players-on-Helm average: that is not the team's level.
+  // 1. The level, from the best real data there is. A published or estimated college figure with a stated source (none today); else Helm's own
+  //    cohort: the mean of the OTHER players on Helm at the team's division (Division I players on Helm), else of the other college players on Helm
+  //    of the same gender; each only if at least 8 others rest behind it. The place is among the college players on Helm of the same gender, over all
+  //    recorded rounds. With no division on record the level is "not set" and says where to set it.
   const figure = teamLevel ? levelFigure(std, teamLevel) : null;
   const published = figure?.value ?? null;
   const cohortLabel = tour === 'lpga' ? 'Women’s college players on Helm' : 'College players on Helm';
   const cohort = standing && standing.level_avg != null && standing.level_n > 0 ? standing : null;
   const place = cohort && cohort.level_pct != null ? { place_percent: Math.round(cohort.level_pct), place_of: cohort.level_n } : { place_percent: null, place_of: null };
-  if (typeof published === 'number') out.push({ kind: 'level', label: levelName(teamLevel as TeamLevel, figure!.basis), value: published, ...place, place: null, note: [figure!.basis === 'estimate' ? `An estimate: ${figure!.source}.` : `Source: ${figure!.source}.`, place.place_percent === null ? '' : `Place is among ${cohortLabel.toLowerCase()} over all recorded rounds.`].filter(Boolean).join(' '), missing_reason: null });
+  const placeNote = place.place_percent === null ? '' : `Place is among ${place.place_of} ${cohortLabel.toLowerCase()} over all recorded rounds.`;
+  // The player's own value is in the cohort's mean (it is built from the same standing rows), so the mean of the others is exact.
+  const own = standing?.player_value;
+  const without = (avg: number, n: number) => (typeof own === 'number' && n - 1 >= COHORT_FLOOR ? { avg: round2((avg * n - own) / (n - 1)), n: n - 1 } : null);
+  const division = !a.teamFigure && teamLevel && a.divisionCohort ? without(a.divisionCohort.avg, a.divisionCohort.n) : null;
+  const college = !a.teamFigure && cohort && cohort.level_avg != null ? without(cohort.level_avg, cohort.level_n) : null;
+  const others = (n: number, who: string) => `Mean of the other ${n} ${who} players on Helm over all recorded rounds; this player is left out.`;
+  if (typeof published === 'number') out.push({ kind: 'level', label: levelName(teamLevel as TeamLevel, figure!.basis), value: published, ...place, place: null, note: [figure!.basis === 'estimate' ? `An estimate: ${figure!.source}.` : `Source: ${figure!.source}.`, placeNote].filter(Boolean).join(' '), missing_reason: null });
   else if (!teamLevel) out.push({ kind: 'level', label: 'Level', value: null, place_percent: null, place: null, place_of: null, note: LEVEL_NOT_SET_NOTE, missing_reason: 'not set' });
+  else if (division) out.push({ kind: 'level', label: `${DIVISION_WORD[teamLevel]} players on Helm (n=${division.n})`, value: division.avg, ...place, place: null, note: [others(division.n, DIVISION_WORD[teamLevel]), placeNote].filter(Boolean).join(' '), missing_reason: null });
+  else if (college) out.push({ kind: 'level', label: `${cohortLabel} (n=${college.n})`, value: college.avg, ...place, place: null, note: [others(college.n, tour === 'lpga' ? 'women’s college' : 'college'), `There are not yet ${COHORT_FLOOR} other ${DIVISION_WORD[teamLevel]} players on Helm with this figure, so the mean is across divisions.`, placeNote].filter(Boolean).join(' '), missing_reason: null });
+  else if (!a.teamFigure && standing) out.push({ kind: 'level', label: LEVEL_LABEL[teamLevel], value: null, ...place, place: null, note: `Not enough ${DIVISION_WORD[teamLevel]} players on Helm yet: a level figure needs at least ${COHORT_FLOOR} others with this stat.${placeNote ? ` ${placeNote}` : ''}`, missing_reason: `not enough ${DIVISION_WORD[teamLevel]} players on Helm yet` });
   else out.push({ kind: 'level', label: LEVEL_LABEL[teamLevel], value: null, place_percent: null, place: null, place_of: null, note: 'There is no college figure for this metric.', missing_reason: 'no college figure' });
 
   // 2. The team average and the place in the team, over the figure's own window (the standing's, over all recorded rounds, for a player).
@@ -387,6 +428,7 @@ export async function applyComparisons(envelope: ToolEnvelope, source: Benchmark
     const ids = [...new Set(candidates.flatMap((x) => (x.entity.kind === 'player' ? [STANDING_ID_BY_CHAT_ID(x.metric_id) as string] : [])))];
     const players = [...new Set(candidates.filter((x) => x.entity.kind === 'player').map((x) => x.entity.id))];
     const standing = players.length && ids.length ? await source.standing(players, ids) : new Map<string, StandingLite>();
+    const divisions = teamLevel && ids.length ? await source.divisionCohort(teamLevel, tour, ids) : null;
     const detailWindow = (envelope.detail as { window?: CohortWindow } | undefined)?.window ?? null;
     // A value from the stats cache is over all recorded rounds whatever window the read was asked for; any other is over the read's window.
     const windowOf = (m: Measurement | MeasurementSeries): CohortWindow | null => ('source' in m && m.source === 'stats cache' ? 'cache' : detailWindow);
@@ -397,7 +439,7 @@ export async function applyComparisons(envelope: ToolEnvelope, source: Benchmark
       const w = windowOf(x);
       const local = w && w === detailWindow ? cohortOfRanking(envelope, x.metric_id) : null;
       const team = x.entity.kind === 'player' ? await teamRefFor(source, x.metric_id, w, x.entity.id, row, local) : NO_WINDOW;
-      return { std, list: comparisonsFor({ metricId: id, std, tour, teamLevel, standing: row, team, teamFigure: x.entity.kind !== 'player' }) };
+      return { std, list: comparisonsFor({ metricId: id, std, tour, teamLevel, standing: row, team, teamFigure: x.entity.kind !== 'player', divisionCohort: divisions?.get(id) ?? null }) };
     };
     const measurements = await Promise.all(
       envelope.measurements.map(async (m) => {
@@ -477,6 +519,7 @@ export async function getBenchmarks(sb: Sb, ctx: CoachChatContext, source: Bench
   const levels: BenchmarkLevel[] = input.levels?.length ? [...new Set(input.levels)] : teamLevel ? [teamLevel, 'pga'] : ['pga'];
   if (!tour) return unavailableEnvelope('Could not tell which Tour applies to this team.', 'The team read failed, so no benchmark is claimed.');
   if (!standards) return unavailableEnvelope('Could not read the benchmarks.', 'The benchmarks query failed.');
+  const divisions = teamLevel && playerId ? await source.divisionCohort(teamLevel, tour, wanted) : null;
 
   const benchmarks = wanted.flatMap((id) => {
     const std = standards.get(id);
@@ -541,7 +584,7 @@ export async function getBenchmarks(sb: Sb, ctx: CoachChatContext, source: Bench
             const window: CohortWindow = useCohort ? (cohort as Cohort).window : 'cache';
             const lite = r ? ({ ...r, player_id: playerId } as StandingLite) : null;
             const team = await teamRefFor(source, chatId, window, playerId, lite, useCohort ? cohort : null);
-            const comparisons = comparisonsFor({ metricId: id, std, tour, teamLevel, standing: lite, team, teamFigure: false });
+            const comparisons = comparisonsFor({ metricId: id, std, tour, teamLevel, standing: lite, team, teamFigure: false, divisionCohort: divisions?.get(id) ?? null });
             const gap = (kind: Comparison['kind']) => {
               const v = comparisons.find((c) => c.kind === kind)?.value;
               return typeof v === 'number' ? round2(value - v) : null;

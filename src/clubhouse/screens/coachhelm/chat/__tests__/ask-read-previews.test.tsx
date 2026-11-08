@@ -129,7 +129,7 @@ describe('a benchmark read draws a picture of where the player stands, or nothin
 
 describe('comparison words (the chip and the card say the same three things)', () => {
   it('lead with the level and its place, then the team and its place, then the Tour', () => {
-    expect(comparisonWords(allThree as never, 'percent')).toEqual(['Level 62% · ahead of 30% of 70 players (all rounds)', 'Team 57% · 6th of 9', 'Tour 66%']);
+    expect(comparisonWords(allThree as never, 'percent')).toEqual(['Level 62% · ahead of 30% of 70 college players on Helm (all rounds)', 'Team 57% · 6th of 9', 'Tour 66%']);
   });
 
   it('say a team place as a rank with its ordinal, never a percent, and say the old nightly share is over all rounds', () => {
@@ -208,7 +208,7 @@ describe('the card’s "you" is the answer’s window figure', () => {
     const out = withWindowFigures(bench, [bench, windowRead(29)]);
     const b = benchmarkBlock(out)!;
     expect(b.rows[0]!.display).toBe('29%');
-    expect(b.note).toMatch(/Your figure is over your last 10 rounds\. The level’s place is over all recorded rounds\./);
+    expect(b.note).toMatch(/Your figure is over your last 10 rounds\. The level’s figure and place are over all recorded rounds\./);
     // The envelope the model read is not changed.
     expect((bench.detail as { standing: { rows: Array<{ player_value: number }> } }).standing.rows[0]!.player_value).toBe(28);
   });
@@ -220,7 +220,7 @@ describe('the card’s "you" is the answer’s window figure', () => {
     expect(withWindowFigures(bench, [bench])).toBe(bench);
     const named = withWindowFigures(bench, [bench, windowRead(31, 'p1')]);
     expect(benchmarkBlock(named)!.rows[0]!.display).toBe('31%');
-    expect(benchmarkBlock(named)!.note).toMatch(/^The figure is over your last 10 rounds\. The level’s place is over all recorded rounds/);
+    expect(benchmarkBlock(named)!.note).toMatch(/^The figure is over your last 10 rounds\. The level’s figure and place are over all recorded rounds/);
   });
 });
 
@@ -365,7 +365,7 @@ describe('a benchmark row the server read over a window is not replaced by anoth
     expect(withWindowFigures(bench, [bench, other])).toBe(bench);
     const b = benchmarkBlock(bench)!;
     expect(b.rows[0]!.display).toBe('29%');
-    expect(b.note).toBe('Your figure is over the last 10 rounds. The level’s place is over all recorded rounds.');
+    expect(b.note).toBe('Your figure is over the last 10 rounds. The level’s figure and place are over all recorded rounds.');
   });
 });
 
