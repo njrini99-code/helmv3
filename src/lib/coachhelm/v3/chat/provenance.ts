@@ -100,6 +100,8 @@ export const Comparison = z.object({
   /** How many players the place is among. */
   place_of: z.number().nullable().default(null),
   note: z.string().nullable().default(null),
+  /** When `value` is null, the short reason the card and chip print: "not set", "no college figure", "no team average yet". */
+  missing_reason: z.string().nullable().default(null),
 });
 export type Comparison = z.infer<typeof Comparison>;
 

@@ -186,6 +186,15 @@ describe('the prompts', () => {
     expect(p).toMatch(/never a teammate's name or figure/);
     expect(p).toMatch(/keep the level first/);
   });
+  it('tell both roles how to say a level that is not set and a strokes gained with no college figure', () => {
+    const c = buildInstructions(ctx, now, false, { askV2: true });
+    expect(c).toMatch(/level not set/);
+    expect(c).toMatch(/no college figure/);
+    expect(c).toMatch(/Settings, Team, Division/);
+    const pl = PLAYER_INSTRUCTIONS('Owen', 'Varsity', 'UTC');
+    expect(pl).toMatch(/level not set/);
+    expect(pl).toMatch(/no college figure/);
+  });
   it('describe the benchmark tool as returning all three for both roles', () => {
     const c = coach(true).tools.get_benchmarks!.description!;
     expect(c).toMatch(/level/i);

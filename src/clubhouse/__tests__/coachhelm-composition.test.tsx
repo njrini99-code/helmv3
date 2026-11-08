@@ -156,12 +156,12 @@ describe('CoachComposition: the headline chip compares with the level, the team 
   });
 
   it('states a missing figure instead of dropping it or showing one alone', () => {
-    const m = gir([girRef('level', null, { note: 'No average is published for this metric.' }), girRef('team', null), girRef('tour', 66)], { source: 'PGA Tour 2024', version: '2024', value: 66, omitted_for_cohort: false });
+    const m = gir([girRef('level', null, { missing_reason: 'not set' }), girRef('team', null, { missing_reason: 'no team average yet' }), girRef('tour', 66)], { source: 'PGA Tour 2024', version: '2024', value: 66, omitted_for_cohort: false });
     render(<CoachComposition composition={headline(m)} />);
     const l = lines();
     expect(l).toHaveLength(3);
-    expect(l[0]).toMatch(/^Level.*not available/);
-    expect(l[1]).toMatch(/^Team.*not available/);
+    expect(l[0]).toBe('Level: not set');
+    expect(l[1]).toBe('Team: no team average yet');
     expect(l[2]).toBe('Tour 66%');
   });
 

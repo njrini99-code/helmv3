@@ -56,7 +56,7 @@ describe('a benchmark read draws a picture of where the player stands, or nothin
   });
 
   it('states a missing reference in the card, never drops it and never shows one in place of another', () => {
-    const row = { ...standingRow, comparisons: [ref('level', null, { note: 'No average is published for this metric.' }), ref('team', null, { note: 'Fewer than 5 teammates have this figure.' }), ref('tour', 66)] };
+    const row = { ...standingRow, comparisons: [ref('level', null, { missing_reason: 'not set' }), ref('team', null, { missing_reason: 'fewer than 5 teammates' }), ref('tour', 66)] };
     const b = benchmarkBlock(benchmark([row]))!;
     expect(b.rows[0]!.ticks!.map((t) => t.kind)).toEqual(['tour']);
     expect(b.rows[0]!.tone).toBe('neutral');
@@ -64,7 +64,7 @@ describe('a benchmark read draws a picture of where the player stands, or nothin
     expect(b.table.rows[0]![2]).not.toMatch(/\d/);
     expect(b.table.rows[0]![3]).not.toMatch(/\d/);
     expect(b.table.rows[0]![4]).toBe('66%');
-    expect(b.note).toMatch(/level no average is published/i);
+    expect(b.note).toMatch(/level not set/i);
     expect(b.note).toMatch(/team fewer than 5 teammates/i);
     // A row with no references at all still says so for all three.
     const bare = benchmarkBlock(benchmark([{ ...standingRow, comparisons: [] }]))!;
@@ -108,11 +108,16 @@ describe('comparison words (the chip and the card say the same three things)', (
     expect(comparisonWords(allThree as never, 'percent')).toEqual(['Level 62% · ahead of 30% of 70 players', 'Team 57% · ahead of 56% of the team', 'Tour 66%']);
   });
 
+  it('say why a level is missing: "not set" with no division, "no college figure" for strokes gained, with the team and the Tour still shown', () => {
+    expect(comparisonWords([ref('level', null, { missing_reason: 'not set' }), ref('team', 57.2), ref('tour', 66)] as never, 'percent')).toEqual(['Level: not set', 'Team 57%', 'Tour 66%']);
+    expect(comparisonWords([ref('level', null, { missing_reason: 'no college figure' }), ref('team', 0.3), ref('tour', 0)] as never, 'strokes')).toEqual(['Level: no college figure', expect.stringMatching(/^Team /), expect.stringMatching(/^Tour /)]);
+  });
+
   it('say what is missing, in the same order', () => {
     const words = comparisonWords([ref('level', null), ref('team', null), ref('tour', 66)] as never, 'percent');
     expect(words).toHaveLength(3);
-    expect(words[0]).toMatch(/^Level.*not available/);
-    expect(words[1]).toMatch(/^Team.*not available/);
+    expect(words[0]).toBe('Level: not available');
+    expect(words[1]).toBe('Team: not available');
     expect(words[2]).toBe('Tour 66%');
   });
 });

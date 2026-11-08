@@ -82,8 +82,13 @@ const STANDARD_COLUMNS = 'metric_id, season, display_label, pga_tour_value, korn
 export type TeamLevel = 'd1' | 'd2' | 'd3';
 /** "d1", "D1", "Division I", "div 2", "III": the level, or null for a division with no published average (NAIA, junior college, unset). */
 export function levelFromDivision(division: string | null | undefined): TeamLevel | null {
-  const t = (division ?? '').toLowerCase().replace(/[^a-z0-9]/g, '').replace(/^(division|div|d)/, '');
-  return t === '1' || t === 'i' ? 'd1' : t === '2' || t === 'ii' ? 'd2' : t === '3' || t === 'iii' ? 'd3' : null;
+  const t = (division ?? '').toLowerCase();
+  // Another association's divisions (NAIA, junior college) have no published college average.
+  if (/naia|njcaa|juco|junior|ccca|cccaa|nccaa/.test(t)) return null;
+  // "d1", "NCAA D1", "NCAA Division III", "div 2", "D-II", or a bare "1" / "iii".
+  const m = t.match(/(?:division|div|d)[\s._-]*(iii|ii|i|1|2|3)(?![a-z0-9])/) ?? t.trim().match(/^(iii|ii|i|1|2|3)$/);
+  const v = m?.[1];
+  return v === '1' || v === 'i' ? 'd1' : v === '2' || v === 'ii' ? 'd2' : v === '3' || v === 'iii' ? 'd3' : null;
 }
 const LEVEL_COLUMN: Record<TeamLevel, 'div1_avg_value' | 'div2_avg_value' | 'div3_avg_value'> = { d1: 'div1_avg_value', d2: 'div2_avg_value', d3: 'div3_avg_value' };
 
@@ -120,8 +125,15 @@ export function benchmarkSource(sb: Sb, teamId: string): BenchmarkSource {
   let levelRead: Promise<TeamLevel | null> | undefined;
   const level = () =>
     (levelRead ??= (async () => {
+      // The newest season row's division; failing that, the program's Division on Settings, Team (organizations.division, readable by any signed-in user).
       const { data, error } = await sb.from('golf_team_seasons').select('division').eq('team_id', teamId).order('season', { ascending: false }).limit(1).maybeSingle();
-      return error || !data ? null : levelFromDivision(data.division);
+      const fromSeason = error || !data ? null : levelFromDivision(data.division);
+      if (fromSeason) return fromSeason;
+      const team = await sb.from('golf_teams').select('organization_id').eq('id', teamId).maybeSingle();
+      const orgId = (team.data as { organization_id?: string | null } | null)?.organization_id;
+      if (team.error || !orgId) return null;
+      const org = await sb.from('organizations').select('division').eq('id', orgId).maybeSingle();
+      return org.error || !org.data ? null : levelFromDivision((org.data as { division: string | null }).division);
     })());
   const tour = () =>
     (tourRead ??= (async () => {
@@ -152,6 +164,7 @@ export function benchmarkSource(sb: Sb, teamId: string): BenchmarkSource {
   return { level, tour, standards, standing };
 }
 
+const LEVEL_NOT_SET_NOTE = 'Level not set: the team’s division is not on record. A coach sets it in Settings, Team, Division.';
 const round2 = (n: number): number => Math.round(n * 100) / 100;
 
 /**
@@ -163,26 +176,28 @@ export function comparisonsFor(a: { metricId: string; std: StandardRow | undefin
   const { std, tour, teamLevel, standing } = a;
   const out: Comparison[] = [];
 
-  // 1. The level. The published average for the team's division, else the college players of the same gender on Helm; the place is among the latter.
+  // 1. The level: the published average for the team's division, with the place among the college players of the same gender on Helm. With no
+  //    division on record the level is "not set" and says where to set it; a metric with no college figure (strokes gained) says so. Neither
+  //    is filled with the players-on-Helm average: that is not the team's level.
   const published = teamLevel && std ? std[LEVEL_COLUMN[teamLevel]] : null;
   const cohortLabel = tour === 'lpga' ? 'Women’s college players on Helm' : 'College players on Helm';
   const cohort = standing && standing.level_avg != null && standing.level_n > 0 ? standing : null;
   const place = cohort && cohort.level_pct != null ? { place_percent: Math.round(cohort.level_pct), place_of: cohort.level_n } : { place_percent: null, place_of: null };
-  if (typeof published === 'number') out.push({ kind: 'level', label: LEVEL_LABEL[teamLevel as TeamLevel], value: published, ...place, note: place.place_percent === null ? null : `Place is among ${cohortLabel.toLowerCase()}.` });
-  else if (cohort) out.push({ kind: 'level', label: cohortLabel, value: round2(cohort.level_avg as number), ...place, note: null });
-  else out.push({ kind: 'level', label: 'Level average', value: null, place_percent: null, place_of: null, note: teamLevel ? 'No average is published for this metric at the team’s level, and no players at the level have this stat yet.' : 'The team’s division is not on record and no players at the level have this stat yet, so there is no level average.' });
+  if (typeof published === 'number') out.push({ kind: 'level', label: LEVEL_LABEL[teamLevel as TeamLevel], value: published, ...place, note: place.place_percent === null ? null : `Place is among ${cohortLabel.toLowerCase()}.`, missing_reason: null });
+  else if (!teamLevel) out.push({ kind: 'level', label: 'Level', value: null, place_percent: null, place_of: null, note: LEVEL_NOT_SET_NOTE, missing_reason: 'not set' });
+  else out.push({ kind: 'level', label: LEVEL_LABEL[teamLevel], value: null, place_percent: null, place_of: null, note: 'There is no college figure for this metric.', missing_reason: 'no college figure' });
 
   // 2. The team average and the place in the team, from five teammates.
   if (!a.teamFigure) {
-    if (standing && standing.team_avg != null && standing.team_n >= TEAM_MARKER_MIN_N) out.push({ kind: 'team', label: 'Team average', value: round2(standing.team_avg), place_percent: standing.team_pct == null ? null : Math.round(standing.team_pct), place_of: standing.team_n, note: null });
-    else out.push({ kind: 'team', label: 'Team average', value: null, place_percent: null, place_of: null, note: standing ? `Fewer than ${TEAM_MARKER_MIN_N} teammates have this stat, so there is no team average.` : 'There is no team average for this metric yet.' });
+    if (standing && standing.team_avg != null && standing.team_n >= TEAM_MARKER_MIN_N) out.push({ kind: 'team', label: 'Team average', value: round2(standing.team_avg), place_percent: standing.team_pct == null ? null : Math.round(standing.team_pct), place_of: standing.team_n, note: null, missing_reason: null });
+    else out.push({ kind: 'team', label: 'Team average', value: null, place_percent: null, place_of: null, note: standing ? `Fewer than ${TEAM_MARKER_MIN_N} teammates have this stat, so there is no team average.` : 'There is no team average for this metric yet.', missing_reason: standing ? `fewer than ${TEAM_MARKER_MIN_N} teammates` : 'no team average yet' });
   }
 
   // 3. The Tour, where it is measured the way the player's figure is.
   const tourValue = std?.pga_tour_value;
-  if (typeof tourValue !== 'number') out.push({ kind: 'tour', label: tourLabel(tour), value: null, place_percent: null, place_of: null, note: `The ${tourLabel(tour)} publishes no value for this metric.` });
-  else if (!isStandingTourComparable(a.metricId, (standing?.basis ?? null) as 'on_green' | 'all_shot' | null)) out.push({ kind: 'tour', label: tourLabel(tour), value: null, place_percent: null, place_of: null, note: `The ${tourLabel(tour)} value is not measured the way this figure is, so it is not compared.` });
-  else out.push({ kind: 'tour', label: tourLabel(tour), value: tourValue, place_percent: null, place_of: null, note: null });
+  if (typeof tourValue !== 'number') out.push({ kind: 'tour', label: tourLabel(tour), value: null, place_percent: null, place_of: null, note: `The ${tourLabel(tour)} publishes no value for this metric.`, missing_reason: 'no Tour figure' });
+  else if (!isStandingTourComparable(a.metricId, (standing?.basis ?? null) as 'on_green' | 'all_shot' | null)) out.push({ kind: 'tour', label: tourLabel(tour), value: null, place_percent: null, place_of: null, note: `The ${tourLabel(tour)} value is not measured the way this figure is, so it is not compared.`, missing_reason: 'not compared' });
+  else out.push({ kind: 'tour', label: tourLabel(tour), value: tourValue, place_percent: null, place_of: null, note: null, missing_reason: null });
   return out;
 }
 
@@ -283,8 +298,8 @@ export async function getBenchmarks(sb: Sb, ctx: CoachChatContext, source: Bench
   const playerId = who.role === 'player' ? who.playerId : input.player_id ? requireRosterPlayer(ctx, input.player_id).id : null;
 
   const [tour, standards, meta, teamLevel] = await Promise.all([source.tour(), source.standards(), readMetricMeta(sb, wanted), source.level()]);
-  // The team's own level and then the Tour by default; with no division on record, every college level is shown rather than a guess.
-  const levels: BenchmarkLevel[] = input.levels?.length ? [...new Set(input.levels)] : teamLevel ? [teamLevel, 'pga'] : ['d1', 'd2', 'd3', 'pga'];
+  // The team's own level and then the Tour by default; with no division on record the level is "not set" and only the Tour is listed (never a guessed level).
+  const levels: BenchmarkLevel[] = input.levels?.length ? [...new Set(input.levels)] : teamLevel ? [teamLevel, 'pga'] : ['pga'];
   if (!tour) return unavailableEnvelope('Could not tell which Tour applies to this team.', 'The team read failed, so no benchmark is claimed.');
   if (!standards) return unavailableEnvelope('Could not read the benchmarks.', 'The benchmarks query failed.');
 
@@ -356,7 +371,7 @@ export async function getBenchmarks(sb: Sb, ctx: CoachChatContext, source: Bench
   const standingRows = (standing?.rows as unknown[] | undefined)?.length ?? 0;
   const noteParts: string[] = [];
   if (withoutValue.length) noteParts.push(`No published value at the requested level for ${withoutValue.length} of ${wanted.length} metrics.`);
-  if (!teamLevel && !input.levels?.length) noteParts.push('The team’s division is not on record, so the Division I, II and III averages are all shown.');
+  if (!teamLevel && !input.levels?.length) noteParts.push(LEVEL_NOT_SET_NOTE);
   if (standingFailed) noteParts.push('The player’s standing could not be read.');
   if (playerId && !standingFailed && standingRows === 0) noteParts.push('No standing rows yet for this player on these metrics.');
   const coverage: ToolEnvelope['coverage'] = benchmarks.length === 0 ? 'empty' : withoutValue.length || standingFailed ? 'partial' : 'complete';

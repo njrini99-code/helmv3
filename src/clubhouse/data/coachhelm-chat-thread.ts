@@ -1130,10 +1130,10 @@ const REF_WORD: Record<RefKind, string> = { level: 'Level', team: 'Team', tour: 
  * The three references of a figure in words, level first, team second, Tour third, each with where the player sits among them and a missing
  * one stated: "Level 62% · ahead of 30% of 71 players", "Team: no average yet", "Tour 66%". What the headline chip shows under its verdict.
  */
-export function comparisonWords(comparisons: ReadonlyArray<{ kind: RefKind; value: number | null; place_percent?: number | null; place_of?: number | null; note?: string | null }>, unit: Measurement['unit']): string[] {
+export function comparisonWords(comparisons: ReadonlyArray<{ kind: RefKind; value: number | null; place_percent?: number | null; place_of?: number | null; note?: string | null; missing_reason?: string | null }>, unit: Measurement['unit']): string[] {
   const ordered = (['level', 'team', 'tour'] as const).flatMap((k) => comparisons.filter((c) => c.kind === k));
   return ordered.map((c) => {
-    if (c.value === null) return `${REF_WORD[c.kind]}: not available`;
+    if (c.value === null) return `${REF_WORD[c.kind]}: ${c.missing_reason ?? 'not available'}`;
     const place = c.place_percent == null ? '' : c.kind === 'team' ? ` · ahead of ${c.place_percent}% of the team` : ` · ahead of ${c.place_percent}% of ${c.place_of ?? ''} players`.replace(/ {2}/g, ' ');
     return `${REF_WORD[c.kind]} ${formatValue(c.value, unit)}${place}`;
   });
@@ -1145,7 +1145,7 @@ export function comparisonWords(comparisons: ReadonlyArray<{ kind: RefKind; valu
  * without a standing (a bare table of benchmark values is not a picture of anyone), and at most six metrics.
  */
 export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { kind: 'bars' }> | null {
-  type Ref = { kind: RefKind; label?: string; value: number | null; place_percent?: number | null; place_of?: number | null; note?: string | null };
+  type Ref = { kind: RefKind; label?: string; value: number | null; place_percent?: number | null; place_of?: number | null; note?: string | null; missing_reason?: string | null };
   type Row = { metric_id?: string; metric_label?: string; player_value?: number; comparisons?: Ref[] };
   const d = envelope.detail as { standing?: { player?: string; rows?: Row[] } } | undefined;
   const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -1164,7 +1164,7 @@ export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { k
     const fmt = (v: number) => formatValue(v, unit);
     const better = level === null ? null : cfg.direction === 'higher_better' ? you > level : you < level;
     const label = (r.metric_label ?? cfg.display_label).replace(/^SG:\s*/, 'SG ');
-    for (const k of ['level', 'team', 'tour'] as const) if (val(k) === null) missing.push(`${label}: ${REF_WORD[k].toLowerCase()} ${refs.find((c) => c.kind === k)?.note?.replace(/\.$/, '').toLowerCase() ?? 'not available'}`);
+    for (const k of ['level', 'team', 'tour'] as const) if (val(k) === null) missing.push(`${label}: ${REF_WORD[k].toLowerCase()} ${refs.find((c) => c.kind === k)?.missing_reason ?? 'not available'}`);
     tableRows.push([label, fmt(you), ...(['level', 'team', 'tour'] as const).map((k) => { const v = val(k); return v === null ? NO_DATA : fmt(v); })]);
     return {
       label,
