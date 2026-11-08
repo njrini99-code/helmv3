@@ -2,7 +2,7 @@ import 'server-only';
 import type { createClient } from '@/lib/supabase/server';
 import type { PlayerFigures, FigureWindow } from '@/lib/coachhelm/v3/chat/read-tools';
 import { holeRounds, recordedPutts } from './round-scope';
-import { countsForScoring, loadSeasonRounds, seasonStartDate, type ChRound } from './season';
+import { countsForScoring, groupByPlayer, loadSeasonRounds, seasonStartDate, type ChRound } from './season';
 import { loadSince, practiceCut, roundsInFilter } from './stats-common';
 import { filterFor, type ChFilter } from './stats-filter';
 import { summarizeWindow, weightedMean } from './stats-weight';
@@ -15,7 +15,27 @@ import { summarizeWindow, weightedMean } from './stats-weight';
  * player it said 27.1 putts a round beside Stats' 32.6.
  */
 export function filterForFigureWindow(window: FigureWindow): ChFilter {
-  return window === 'season' ? filterFor('season') : filterFor('last10');
+  return window === 'season' ? filterFor('season') : filterFor('last10', window === 'last5' ? 5 : window === 'last20' ? 20 : 10);
+}
+
+/** Greens and fairways pooled over the holes of the rounds that have them, as Stats' rates are. */
+function pooled(holes: readonly ChRound[]) {
+  const rate = (made: (r: ChRound) => number | null, total: (r: ChRound) => number | null) => {
+    let m = 0;
+    let t = 0;
+    for (const r of holes) {
+      const a = made(r);
+      const b = total(r);
+      if (a != null && b != null && b > 0) {
+        m += a;
+        t += b;
+      }
+    }
+    return { pct: t > 0 ? (m / t) * 100 : null, holes: t };
+  };
+  const gir = rate((r) => r.total_gir, (r) => r.total_gir_possible);
+  const fw = rate((r) => r.total_fairways_hit, (r) => r.total_fairways);
+  return { gir_pct: gir.pct, gir_holes: gir.holes, fairway_pct: fw.pct, fairway_holes: fw.holes };
 }
 
 export function playerFiguresOver(rounds: readonly ChRound[], f: ChFilter, seasonStart: string): PlayerFigures {
@@ -32,6 +52,7 @@ export function playerFiguresOver(rounds: readonly ChRound[], f: ChFilter, seaso
     scoring_average: s.avg,
     putts_per_round: puttRounds >= 1 ? putts : null,
     putt_rounds: puttRounds,
+    ...pooled(holes),
     sg_total: s.sgPerRound,
     sg_rounds: s.sgRounds,
     legs: s.sgLegs,
@@ -42,10 +63,13 @@ export function playerFiguresOver(rounds: readonly ChRound[], f: ChFilter, seaso
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
-/** Ask's player-figures source. Null when the rounds could not be read. The route hands it in; CoachHelm's own code does not import Clubhouse. */
-export async function loadPlayerFigures(sb: Supabase, who: { playerId: string; timezone: string }, window: FigureWindow): Promise<PlayerFigures | null> {
+/** Ask's players-figures source: one read of the rounds for all the players asked about. Null when the rounds could not be read. The route hands it in; CoachHelm's own code does not import Clubhouse. */
+export async function loadPlayersFigures(sb: Supabase, who: { timezone: string }, playerIds: readonly string[], window: FigureWindow): Promise<Map<string, PlayerFigures> | null> {
   const f = filterForFigureWindow(window);
   const start = seasonStartDate(new Date(), who.timezone);
-  const loaded = await loadSeasonRounds(sb, [who.playerId], { surface: 'ask.player_figures', since: loadSince(f, start) });
-  return loaded.error ? null : playerFiguresOver(loaded.rounds, f, start);
+  if (playerIds.length === 0) return new Map();
+  const loaded = await loadSeasonRounds(sb, [...playerIds], { surface: 'ask.player_figures', since: loadSince(f, start) });
+  if (loaded.error) return null;
+  const byPlayer = groupByPlayer(loaded.rounds);
+  return new Map(playerIds.map((id) => [id, playerFiguresOver(byPlayer.get(id) ?? [], f, start)]));
 }

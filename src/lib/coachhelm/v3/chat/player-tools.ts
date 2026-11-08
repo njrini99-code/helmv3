@@ -5,6 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { METRIC_IDS } from './metrics-catalog';
 import type { CoachChatContext } from './context';
+import { WINDOW_NOTE } from './agent-tools';
 import { FIGURE_WINDOWS, getFocusAreas, getPlayerMetric, type PlayerFiguresSource, getPlayerTrend, getRecentRounds, readUpcomingEventRows, replyOf } from './read-tools';
 import { getRoundDetail, getShotPattern } from './shot-reads';
 import { compareSeasons } from './engine-reads';
@@ -107,7 +108,7 @@ export function buildPlayerTools({ sb, ctx, playerId, writer, collect, playerFig
       return { ...envelope, evidence_ref: ref };
     };
   return {
-    get_player_metrics: tool({ description: 'Your computed statistics. Window: "last10" is the default (each player\'s newest ten rounds, the figures the Stats page shows first); "season" when the question says this season; "cache" for the whole recorded history (the cache can lag a few weeks, and says its own window). Scoring, putts per round and strokes gained come from the rounds in that window; greens, fairways and putt makes are shot-level and always the cache\'s.', inputSchema: z.object({ metric_ids: z.array(z.enum(METRIC_IDS)).min(1).max(8), window: z.enum(FIGURE_WINDOWS).default('last10') }), execute: read('get_player_metrics', 'Reading your statistics', 'Read your statistics', (i: { metric_ids: Array<(typeof METRIC_IDS)[number]>; window: (typeof FIGURE_WINDOWS)[number] }) => getPlayerMetric(sb, ctx, { player_id: playerId, metric_ids: i.metric_ids, window: i.window }, playerFigures)) }),
+    get_player_metrics: tool({ description: `Your computed statistics. ${WINDOW_NOTE}`, inputSchema: z.object({ metric_ids: z.array(z.enum(METRIC_IDS)).min(1).max(8), window: z.enum(FIGURE_WINDOWS).default('last10') }), execute: read('get_player_metrics', 'Reading your statistics', 'Read your statistics', (i: { metric_ids: Array<(typeof METRIC_IDS)[number]>; window: (typeof FIGURE_WINDOWS)[number] }) => getPlayerMetric(sb, ctx, { player_id: playerId, metric_ids: i.metric_ids, window: i.window }, playerFigures)) }),
     get_player_trend: tool({ description: 'Your movement on one metric over rounds.', inputSchema: z.object({ metric_id: z.enum(METRIC_IDS), last_n: z.number().int().min(3).max(30).default(10) }), execute: read('get_player_trend', 'Reading your recent rounds', 'Read your recent rounds', (i: { metric_id: string; last_n: number }) => getPlayerTrend(sb, ctx, { player_id: playerId, metric_id: i.metric_id, last_n: i.last_n })) }),
     get_recent_rounds: tool({ description: 'Your recent rounds.', inputSchema: z.object({ last_n: z.number().int().min(1).max(20).default(5) }), execute: read('get_recent_rounds', 'Reading your rounds', 'Read your rounds', (i: { last_n: number }) => getRecentRounds(sb, ctx, { player_id: playerId, last_n: i.last_n })) }),
     get_focus_areas: tool({ description: 'Your focus areas.', inputSchema: z.object({}), execute: read('get_focus_areas', 'Checking your focus areas', 'Checked your focus areas', () => getFocusAreas(sb, ctx, { player_id: playerId })) }),

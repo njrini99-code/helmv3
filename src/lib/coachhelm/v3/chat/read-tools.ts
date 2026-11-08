@@ -296,9 +296,9 @@ function measurementFromCache(
 }
 
 /** One metric for one player, fully sourced. */
-/** The window a round-based figure names: Stats' default (each player's newest ten rounds), or this season. `cache` is the stats cache's own, lagging, window. */
-export const FIGURE_WINDOWS = ['last10', 'season', 'cache'] as const;
-export type FigureWindow = 'last10' | 'season';
+/** The window a round-based figure names: each player's newest 5, 10 (Stats' default) or 20 rounds, or this season. `cache` is the stats cache's own, lagging, window. */
+export const FIGURE_WINDOWS = ['last5', 'last10', 'last20', 'season', 'cache'] as const;
+export type FigureWindow = 'last5' | 'last10' | 'last20' | 'season';
 
 /** What the stats pages print for one player in a window (Clubhouse's `playerFiguresOver`). */
 export type PlayerFigures = {
@@ -310,14 +310,21 @@ export type PlayerFigures = {
   sg_total: number | null;
   sg_rounds: number;
   legs: { tee: number | null; approach: number | null; around: number | null; putting: number | null };
+  /** Greens in regulation and fairways, pooled over the holes (never a mean of percentages), as Stats prints them. */
+  gir_pct: number | null;
+  gir_holes: number;
+  fairway_pct: number | null;
+  fairway_holes: number;
   window_start: string | null;
   window_end: string | null;
 };
-/** Reads a player's figures for a window; null when the rounds could not be read. Handed in by the route, which may import Clubhouse. */
-export type PlayerFiguresSource = (playerId: string, window: FigureWindow) => Promise<PlayerFigures | null>;
+/** Reads these players' figures for a window, one read for the lot; null when the rounds could not be read. Handed in by the route, which may import Clubhouse. */
+export type PlayerFiguresSource = (playerIds: string[], window: FigureWindow) => Promise<Map<string, PlayerFigures> | null>;
 
 /** The metrics a round holds, and where in {@link PlayerFigures} each one is. The rest are shot-level and stay on the cache. */
-const FIGURE_OF: Record<string, (f: PlayerFigures) => { value: number | null; n: number }> = {
+const FIGURE_OF: Record<string, (f: PlayerFigures) => { value: number | null; n: number; unit?: 'holes' }> = {
+  gir_pct: (f) => ({ value: f.gir_pct, n: f.gir_holes, unit: 'holes' }),
+  driving_accuracy_pct: (f) => ({ value: f.fairway_pct, n: f.fairway_holes, unit: 'holes' }),
   scoring_average: (f) => ({ value: f.scoring_average, n: f.rounds }),
   putts_per_round: (f) => ({ value: f.putts_per_round, n: f.putt_rounds }),
   sg_total: (f) => ({ value: f.sg_total, n: f.sg_rounds }),
@@ -331,7 +338,7 @@ function measurementFromFigures(f: PlayerFigures, metricId: string, entity: Meas
   const spec = getMetricSpec(metricId);
   const pick = FIGURE_OF[metricId];
   if (!spec || !pick) return null;
-  const { value, n } = pick(f);
+  const { value, n, unit } = pick(f);
   const hundredth = value === null ? null : Number(value.toFixed(2));
   return {
     metric_id: spec.id,
@@ -342,16 +349,22 @@ function measurementFromFigures(f: PlayerFigures, metricId: string, entity: Meas
     window_start: f.window_start,
     window_end: f.window_end,
     sample_size: n,
-    sample_unit: 'rounds',
+    sample_unit: unit ?? 'rounds',
     as_of: nowIso(),
     coverage: hundredth === null ? 'empty' : 'complete',
-    coverage_note: hundredth === null ? `Not enough rounds in this window for ${spec.blurb}.` : n < 5 ? `Only ${n} ${n === 1 ? 'round' : 'rounds'}, so this is a lean read.` : null,
+    coverage_note: hundredth === null ? `Not enough rounds in this window for ${spec.blurb}.` : !unit && n < 5 ? `Only ${n} ${n === 1 ? 'round' : 'rounds'}, so this is a lean read.` : null,
     source: 'rounds',
     method: `${spec.id}_per_18_over_the_window_as_stats_reads_it`,
-    denominator: null,
+    denominator: unit ? n : null,
     benchmark: null,
     direction: spec.direction,
   };
+}
+
+/** A metric for one player: from the rounds in the window when a round holds it and the window was read, else the cache's own, saying its window. */
+function measurementFor(row: StatsRow | null, figures: PlayerFigures | null | undefined, metricId: string, entity: Measurement['entity']): Measurement | null {
+  if (figures && metricId in FIGURE_OF) return measurementFromFigures(figures, metricId, entity);
+  return row ? measurementFromCache(row, metricId, entity) : null;
 }
 
 export async function getPlayerMetric(
@@ -364,17 +377,18 @@ export async function getPlayerMetric(
   const entity = { kind: 'player' as const, id: player.id, label: player.name };
 
   // The figures a round holds come from the rounds, in the window the question names, as Stats reads them; the shot-level ones
-  // (greens, fairways, putt makes) stay on the stats cache and say its window.
+  // (putt makes, distance bands) stay on the stats cache and say its window.
   const window = input.window ?? 'last10';
-  const fromRounds = figures && window !== 'cache' && input.metric_ids.some((id) => id in FIGURE_OF) ? await figures(player.id, window) : null;
+  const asked = figures && window !== 'cache' && input.metric_ids.some((id) => id in FIGURE_OF) ? await figures([player.id], window) : null;
+  const fromRounds = asked?.get(player.id) ?? null;
   const row = await loadStatsRow(sb, player.id);
   if (fromRounds) {
     const measurements = input.metric_ids
-      .map((id) => (id in FIGURE_OF ? measurementFromFigures(fromRounds, id, entity) : row ? measurementFromCache(row, id, entity) : null))
+      .map((id) => measurementFor(row, fromRounds, id, entity))
       .filter((m): m is Measurement => m !== null);
     const usable = measurements.filter((m) => m.value !== null).length;
     return {
-      summary: `${measurements.length} metric${measurements.length === 1 ? '' : 's'} for ${player.name}, ${window === 'season' ? 'this season' : 'over the newest ten rounds'}.`,
+      summary: `${measurements.length} metric${measurements.length === 1 ? '' : 's'} for ${player.name}, ${window === 'season' ? 'this season' : window === 'last5' ? 'over the newest five rounds' : window === 'last20' ? 'over the newest twenty rounds' : 'over the newest ten rounds'}.`,
       measurements,
       series: [],
       coverage: coverageFor(usable, measurements.length),
@@ -424,7 +438,8 @@ export async function getPlayerMetric(
 export async function getTeamMetricRanking(
   sb: Sb,
   ctx: CoachChatContext,
-  input: { metric_id: string },
+  input: { metric_id: string; window?: (typeof FIGURE_WINDOWS)[number] },
+  figures?: PlayerFiguresSource,
 ): Promise<ToolEnvelope> {
   const spec = getMetricSpec(input.metric_id);
   if (!spec) return unavailableEnvelope('Unknown metric.', `No metric named ${input.metric_id}.`);
@@ -456,14 +471,18 @@ export async function getTeamMetricRanking(
   const byPlayer = new Map(((data as unknown as StatsRow[] | null) ?? []).map((r) => [String(r.player_id), r]));
   const measurements: Measurement[] = [];
   const missing: string[] = [];
+  // A figure a round holds is read for every player over the same window; the rest are the cache's.
+  const window = input.window ?? 'last10';
+  const byFigures = figures && window !== 'cache' && spec.id in FIGURE_OF ? await figures(ctx.roster.map((p) => p.id), window) : null;
 
   for (const p of ctx.roster) {
     const row = byPlayer.get(p.id);
-    if (!row) {
+    const fig = byFigures?.get(p.id) ?? null;
+    if (!row && !fig) {
       missing.push(p.name);
       continue;
     }
-    const m = measurementFromCache(row, spec.id, { kind: 'player', id: p.id, label: p.name });
+    const m = measurementFor(row ?? null, fig, spec.id, { kind: 'player', id: p.id, label: p.name });
     if (!m) continue;
     if (m.value === null) missing.push(p.name);
     measurements.push(m);
@@ -477,7 +496,7 @@ export async function getTeamMetricRanking(
   );
 
   return {
-    summary: `${spec.label} across ${ctx.team_name}.`,
+    summary: `${spec.label} across ${ctx.team_name}${byFigures ? (window === 'season' ? ', this season' : window === 'last5' ? ', over each player’s newest five rounds' : window === 'last20' ? ', over each player’s newest twenty rounds' : ', over each player’s newest ten rounds') : ''}.`,
     measurements: [...withValue, ...measurements.filter((m) => m.value === null)],
     series: [],
     detail: { metric_id: spec.id, metric_label: spec.label, direction: spec.direction },
@@ -768,7 +787,8 @@ export async function getPuttingDistanceProfile(
 export async function comparePlayers(
   sb: Sb,
   ctx: CoachChatContext,
-  input: { player_ids: string[]; metric_ids: string[] },
+  input: { player_ids: string[]; metric_ids: string[]; window?: (typeof FIGURE_WINDOWS)[number] },
+  figures?: PlayerFiguresSource,
 ): Promise<ToolEnvelope> {
   const players = input.player_ids.map((id) => requireRosterPlayer(ctx, id));
   if (players.length < 2) {
@@ -789,17 +809,22 @@ export async function comparePlayers(
   const byPlayer = new Map(((data as unknown as StatsRow[] | null) ?? []).map((r) => [String(r.player_id), r]));
   const measurements: Measurement[] = [];
   const coverageNotes: string[] = [];
+  const window = input.window ?? 'last10';
+  const byFigures = figures && window !== 'cache' && input.metric_ids.some((id) => id in FIGURE_OF) ? await figures(players.map((p) => p.id), window) : null;
 
   for (const p of players) {
     const row = byPlayer.get(p.id);
-    if (!row) {
+    const fig = byFigures?.get(p.id) ?? null;
+    if (!row && !fig) {
       coverageNotes.push(`${p.name} has no computed statistics`);
       continue;
     }
-    const rounds = int(row.rounds_in_calculation) || int(row.rounds_played);
-    if (rounds === 0) coverageNotes.push(`${p.name} has no rounds in the computed window`);
+    if (row && !fig) {
+      const rounds = int(row.rounds_in_calculation) || int(row.rounds_played);
+      if (rounds === 0) coverageNotes.push(`${p.name} has no rounds in the computed window`);
+    }
     for (const metricId of input.metric_ids) {
-      const m = measurementFromCache(row, metricId, { kind: 'player', id: p.id, label: p.name });
+      const m = measurementFor(row ?? null, fig, metricId, { kind: 'player', id: p.id, label: p.name });
       if (m) measurements.push(m);
     }
   }

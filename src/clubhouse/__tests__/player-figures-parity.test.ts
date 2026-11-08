@@ -5,8 +5,10 @@ vi.mock('../lib/track-server', () => ({ chLogServer: vi.fn() }));
 
 import { seasonScoringEnvelope } from '@/lib/coachhelm/v3/chat/season-reads';
 import { playerFiguresOver } from '../data/player-figures';
-import type { ChRound } from '../data/season';
+import { countsForScoring, type ChRound } from '../data/season';
+import { roundsInFilter } from '../data/stats-common';
 import { filterFor } from '../data/stats-filter';
+import { summarizeWindow } from '../data/stats-weight';
 
 // Player Ask, staging, 2026-11-08: "How many putts did I average this season?" said 27 from the stats cache (a window of 131 days that
 // ended in September, nine-hole rounds counted as full ones) while Stats said 32.6 for Last 10, and the season's scoring read was a
@@ -35,6 +37,17 @@ const rounds: ChRound[] = [
 ];
 
 describe('Ask reads a player’s round-based figures as Stats does', () => {
+  it('Last 10 strokes gained, greens and fairways are the figures Stats prints for those rounds', () => {
+    const f = playerFiguresOver(rounds, filterFor('last10'), START);
+    const stats = summarizeWindow(roundsInFilter(rounds.filter(countsForScoring), filterFor('last10'), START));
+    expect(f.legs).toEqual(stats.sgLegs);
+    expect(f.sg_total).toBe(stats.sgPerRound);
+    // Pooled over the holes (every round here is 9 of 18 greens and 8 of 14 fairways), never a mean of percentages.
+    expect(f.gir_pct).toBeCloseTo(50, 9);
+    expect(f.gir_holes).toBe(10 * 18);
+    expect(f.fairway_pct).toBeCloseTo((8 / 14) * 100, 9);
+  });
+
   const last10 = playerFiguresOver(rounds, filterFor('last10'), START);
   const season = playerFiguresOver(rounds, filterFor('season'), START);
 

@@ -235,6 +235,9 @@ function detailFor(envelope: ToolEnvelope): string | undefined {
   return `${m.sample_size} ${unit}`;
 }
 
+/** What every tool that reads a round-based figure tells the model about `window`, so the window follows the question. */
+export const WINDOW_NOTE = 'Window: "last10" is the default (each player\'s newest ten rounds, the figures the Stats page shows first); "last5" and "last20" likewise; "season" when the question says this season; "cache" for the whole recorded history (the cache can lag a few weeks, and says its own window). Scoring, putts per round, greens, fairways and strokes gained come from the rounds in that window; putt makes and distance bands are shot-level and always the cache\'s.';
+
 export interface BuildToolsArgs {
   sb: Sb;
   ctx: CoachChatContext;
@@ -654,13 +657,13 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
 
     get_player_metrics: tool({
       description:
-        'Computed statistics for one player. Every value comes back with its unit, window, sample size and the timestamp it was computed at. window: "last10" is the default (each of the newest ten rounds, the figures the Stats page shows first); "season" when the question says this season; "cache" for the whole recorded history (the cache can lag a few weeks, and says its own window). Scoring, putts per round and strokes gained come from the rounds in that window; greens, fairways and putt makes are shot-level and always the cache\'s.',
+        `Computed statistics for one player. Every value comes back with its unit, window, sample size and the timestamp it was computed at. ${WINDOW_NOTE}`,
       inputSchema: z.object({
         player_id: PlayerId,
         metric_ids: z.array(z.enum(METRIC_IDS)).min(1).max(8),
         window: z.enum(FIGURE_WINDOWS).default('last10'),
       }),
-      execute: read('get_player_metrics', (input) => getPlayerMetric(sb, ctx, input, playerFigures ? (id, w) => playerFigures(id, w) : undefined)),
+      execute: read('get_player_metrics', (input) => getPlayerMetric(sb, ctx, input, playerFigures)),
     }),
 
     get_player_trend: tool({
@@ -685,19 +688,20 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
 
     compare_players: tool({
       description:
-        'Compare two or more players on the same metrics over the same window definition. Reports per-player coverage so an unequal basis is visible.',
+        `Compare two or more players on the same metrics over the same window definition. Reports per-player coverage so an unequal basis is visible. ${WINDOW_NOTE}`,
       inputSchema: z.object({
         player_ids: z.array(PlayerId).min(2).max(6),
         metric_ids: z.array(z.enum(METRIC_IDS)).min(1).max(6),
+        window: z.enum(FIGURE_WINDOWS).default('last10'),
       }),
-      execute: read('compare_players', (input) => comparePlayers(sb, ctx, input)),
+      execute: read('compare_players', (input) => comparePlayers(sb, ctx, input, playerFigures)),
     }),
 
     get_team_metric_ranking: tool({
       description:
-        'Rank the active roster on one metric, with each player\'s sample size. Returns measured values and the metric direction — never a verdict about a player.',
-      inputSchema: z.object({ metric_id: z.enum(METRIC_IDS) }),
-      execute: read('get_team_metric_ranking', (input) => getTeamMetricRanking(sb, ctx, input)),
+        `Rank the active roster on one metric, with each player's sample size. Returns measured values and the metric direction — never a verdict about a player. ${WINDOW_NOTE}`,
+      inputSchema: z.object({ metric_id: z.enum(METRIC_IDS), window: z.enum(FIGURE_WINDOWS).default('last10') }),
+      execute: read('get_team_metric_ranking', (input) => getTeamMetricRanking(sb, ctx, input, playerFigures)),
     }),
 
     get_player_weakest_areas: tool({
