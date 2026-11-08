@@ -523,7 +523,7 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
       texts.push(plainText(text));
     } else if (p.type === 'data-evidence') {
       const data = dataOf<{ envelope?: ToolEnvelope; ref?: string }>(p);
-      if (data?.envelope && !(data.ref && coveredRefs.has(data.ref))) blocks.push({ kind: 'evidence', key: `e-${String(p.id ?? i)}`, envelope: data.envelope });
+      if (data?.envelope && !(data.ref && coveredRefs.has(data.ref))) blocks.push({ kind: 'evidence', key: `e-${String(p.id ?? i)}`, envelope: withWindowFigures(data.envelope, envelopes) });
     } else if (p.type === 'data-visual-artifact') {
       const artifact = artifacts.get(String(p.id ?? `v-${i}`));
       if (artifact) blocks.push({ kind: 'visual', key: `v-${artifact.artifactId}`, artifact });
@@ -755,7 +755,7 @@ export type AskEvidence =
   | { kind: 'unavailable'; note: string }
   | { kind: 'empty'; note: string }
   | (EvBase & { kind: 'trend'; unit: Measurement['unit']; points: Array<{ label: string; value: number; n: number }>; reference: { label: string; value: number } | null; summary: string; goodDirection: 'up' | 'down' | null; toPar?: boolean })
-  | (EvBase & { kind: 'bars'; rows: Array<{ label: string; pct: number; display: string; of: string | null; tone: 'good' | 'loss' | 'neutral'; highlight?: boolean; /** Marks on the track: the level's average, and the Tour where it was asked for. */ ticks?: Array<{ at: number; kind: 'level' | 'team' | 'tour'; text: string }> }> })
+  | (EvBase & { kind: 'bars'; rows: Array<{ label: string; pct: number; display: string; of: string | null; tone: 'good' | 'loss' | 'neutral'; highlight?: boolean; /** Marks on the track: the level's average, and the Tour where it was asked for. */ ticks?: Array<{ at: number; kind: 'level' | 'team' | 'tour'; text: string; /** The tag and value printed under the track: "D1 50%", "Team 33%", "Tour 66%". */ short?: string }> }> })
   | (EvBase & { kind: 'ranking'; rows: AskRankRow[]; signed: boolean })
   | (EvBase & { kind: 'compare'; team: AskTeamTable })
   | (EvBase & { kind: 'legs'; rows: Array<{ label: string; value: number; display: string }>; takeaway: string })
@@ -1139,6 +1139,53 @@ export function comparisonWords(comparisons: ReadonlyArray<{ kind: RefKind; valu
   });
 }
 
+/** The row label on a phone: a putt band is "5–10 ft makes", not the standards' "Putts Made 5-10 ft". */
+function benchLabel(metricId: string, label: string): string {
+  const m = metricId.match(/^putts_made_(\d+)_(?:(\d+)ft|plus_ft)_pct$/);
+  return m ? (m[2] ? `${m[1]}–${m[2]} ft makes` : `${m[1]}+ ft makes`) : label;
+}
+
+/** The tag printed with a reference's value: "D1", "Team", "Tour". */
+function refTag(kind: RefKind, label?: string): string {
+  if (kind === 'team') return 'Team';
+  if (kind === 'tour') return 'Tour';
+  const d = label?.match(/Division (I{1,3})\b/)?.[1];
+  return d ? `D${d.length}` : 'Level';
+}
+
+/** The standards name a putt band `putts_made_5_10ft_pct`; the putting read names it `putt_make_pct_5-10 ft` (`25+ ft` for the last). Both reduce to `putt510`. */
+function normMetric(id: string): string {
+  const std = id.match(/^putts_made_(\d+)_(?:(\d+)ft|plus_ft)_pct$/);
+  if (std) return `putt${std[1]}${std[2] ?? 'plus'}`;
+  const read = id.match(/^putt_make_pct_(\d+)(?:-(\d+)| ?\+) ?ft$/);
+  if (read) return `putt${read[1]}${read[2] ?? 'plus'}`;
+  return id.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+const METRIC_ALIAS: Record<string, string> = { sgtee: 'sgott', sandsavepct: 'scramblingpctsand', penaltiesperround: 'penaltyrateperround' };
+const sameMetric = (a: string, b: string) => { const x = normMetric(a); const y = normMetric(b); return (METRIC_ALIAS[x] ?? x) === (METRIC_ALIAS[y] ?? y); };
+
+/**
+ * A benchmark read's "you" is the answer's own window when another read in the same turn measured that metric for that player (the standing is
+ * over all recorded rounds, nightly): the row takes the window figure, keeps the standing figure as `standing_value`, and names the window.
+ * Places in the level and the team stay the standing's.
+ */
+export function withWindowFigures(envelope: ToolEnvelope, all: readonly ToolEnvelope[]): ToolEnvelope {
+  const d = envelope.detail as { kind?: string; standing?: { player_id?: string; player?: string; rows?: Array<Record<string, unknown>> } } | undefined;
+  const rows = d?.standing?.rows;
+  if (d?.kind !== 'benchmark_read' || !rows?.length) return envelope;
+  const mine = d.standing?.player === 'You';
+  const next = rows.map((r) => {
+    const id = String(r.metric_id ?? '');
+    for (const e of all) {
+      if (e === envelope) continue;
+      const m = e.measurements.find((x) => x.entity.kind === 'player' && (mine || x.entity.id === d.standing?.player_id) && x.value !== null && sameMetric(x.metric_id, id));
+      if (m && m.value !== null) return { ...r, standing_value: r.player_value, player_value: m.value, window_label: (e as { window_label?: string }).window_label ?? null };
+    }
+    return r;
+  });
+  return next.every((r, i) => r === rows[i]) ? envelope : { ...envelope, detail: { ...d, standing: { ...d.standing, rows: next } } };
+}
+
 /**
  * A benchmark read for one player as a compact figure: a track per metric with the player's value, a tick for the level average, one for the
  * team average (a player sees the team's, never a teammate) and one for the Tour; a reference with no value is said so under the figure. Nothing
@@ -1146,13 +1193,14 @@ export function comparisonWords(comparisons: ReadonlyArray<{ kind: RefKind; valu
  */
 export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { kind: 'bars' }> | null {
   type Ref = { kind: RefKind; label?: string; value: number | null; place_percent?: number | null; place_of?: number | null; note?: string | null; missing_reason?: string | null };
-  type Row = { metric_id?: string; metric_label?: string; player_value?: number; comparisons?: Ref[] };
+  type Row = { metric_id?: string; metric_label?: string; player_value?: number; comparisons?: Ref[]; standing_value?: number; window_label?: string };
   const d = envelope.detail as { standing?: { player?: string; rows?: Row[] } } | undefined;
   const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
   const rows = (d?.standing?.rows ?? []).filter((r) => num(r.player_value) && r.metric_id && r.metric_id in METRIC_RENDER_CONFIG).slice(0, 6);
   if (rows.length === 0) return null;
   const tableRows: string[][] = [];
   const missing: string[] = [];
+  const windowed: string[] = [];
   const out = rows.map((r) => {
     const cfg = METRIC_RENDER_CONFIG[r.metric_id as MetricId];
     const unit = BENCH_UNIT[cfg.unit] ?? 'count';
@@ -1163,7 +1211,9 @@ export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { k
     const scale = fitScale(cfg.default_scale, [you, level, val('team'), val('tour')]);
     const fmt = (v: number) => formatValue(v, unit);
     const better = level === null ? null : cfg.direction === 'higher_better' ? you > level : you < level;
-    const label = (r.metric_label ?? cfg.display_label).replace(/^SG:\s*/, 'SG ');
+    const label = benchLabel(r.metric_id as string, (r.metric_label ?? cfg.display_label).replace(/^SG:\s*/, 'SG '));
+    // The standing is over all recorded rounds; when the figure shown is the answer's window, the places still come from the standing.
+    if (num(r.standing_value) && fmt(r.standing_value) !== fmt(you)) windowed.push(r.window_label ?? 'the window');
     for (const k of ['level', 'team', 'tour'] as const) if (val(k) === null) missing.push(`${label}: ${REF_WORD[k].toLowerCase()} ${refs.find((c) => c.kind === k)?.missing_reason ?? 'not available'}`);
     tableRows.push([label, fmt(you), ...(['level', 'team', 'tour'] as const).map((k) => { const v = val(k); return v === null ? NO_DATA : fmt(v); })]);
     return {
@@ -1172,7 +1222,7 @@ export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { k
       display: fmt(you),
       of: null,
       tone: better === null || you === level ? ('neutral' as const) : better ? ('good' as const) : ('loss' as const),
-      ticks: (['level', 'team', 'tour'] as const).flatMap((k) => { const v = val(k); return v === null ? [] : [{ at: toScalePct(v, scale), kind: k, text: `${REF_WORD[k]} ${fmt(v)}` }]; }),
+      ticks: (['level', 'team', 'tour'] as const).flatMap((k) => { const v = val(k); return v === null ? [] : [{ at: toScalePct(v, scale), kind: k, text: `${REF_WORD[k]} ${fmt(v)}`, short: `${refTag(k, refs.find((c) => c.kind === k)?.label)} ${fmt(v)}` }]; }),
     };
   });
   const who = d?.standing?.player === 'You' ? 'You' : (d?.standing?.player ?? 'The player');
@@ -1181,7 +1231,7 @@ export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { k
     title: `${who} against the level, the team and the Tour`,
     rows: out,
     source: null,
-    note: ['Ticks, longest first: the level average, the team average, the Tour.', ...missing.slice(0, 3)].join(' '),
+    note: [windowed.length ? `${who === 'You' ? 'Your' : 'The'} figure is ${windowed[0]}. Place in the level and in the team is over all ${who === 'You' ? 'your' : 'their'} recorded rounds.` : '', ...missing.slice(0, 3)].filter(Boolean).join(' ') || null,
     bench: null,
     table: { caption: `${who} against the level, the team and the Tour`, columns: ['Metric', who === 'You' ? 'You' : 'Value', 'Level', 'Team', 'Tour'], rows: tableRows },
   };

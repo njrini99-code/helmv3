@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 
-import { benchmarkBlock, comparisonWords, detailTable, evidenceBlocks, fitToPhone, PHONE_TABLE_PX, type AskTable } from '../../../../data/coachhelm-chat-thread';
+import { benchmarkBlock, comparisonWords, detailTable, evidenceBlocks, withWindowFigures, fitToPhone, PHONE_TABLE_PX, type AskTable } from '../../../../data/coachhelm-chat-thread';
 import { AskEvidenceView } from '../Evidence';
 import { lastTurnIsGeneral } from '../ask-scope-window';
 import type { ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
@@ -50,9 +50,29 @@ describe('a benchmark read draws a picture of where the player stands, or nothin
     expect(b.rows[0]).toMatchObject({ label: 'GIR %', display: '58%', tone: 'loss' });
     expect(b.rows[0]!.ticks!.map((t) => t.kind)).toEqual(['level', 'team', 'tour']);
     expect(b.rows[0]!.ticks!.map((t) => t.text)).toEqual(['Level 62%', 'Team 57%', 'Tour 66%']);
-    expect(b.note).toMatch(/level average, the team average, the Tour/);
+    expect(b.rows[0]!.ticks!.map((t) => t.short)).toEqual(['Level 62%', 'Team 57%', 'Tour 66%']);
+    expect(b.note).toBeNull();
     expect(b.table.columns).toEqual(['Metric', 'Value', 'Level', 'Team', 'Tour']);
     expect(b.table.rows).toEqual([['GIR %', '58%', '62%', '57%', '66%']]);
+  });
+
+  it('tags the level by its division ("D3 50%"), and prints the three in words under the track with a mark that matches each tick', () => {
+    const div = { ...standingRow, comparisons: [ref('level', 50, { label: 'Division III average' }), ref('team', 33), ref('tour', 66)] };
+    const b = benchmarkBlock(benchmark([div]))!;
+    expect(b.rows[0]!.ticks!.map((t) => t.short)).toEqual(['D3 50%', 'Team 33%', 'Tour 66%']);
+    const { container } = render(<AskEvidenceView envelope={benchmark([div])} />);
+    const refs = Array.from(container.querySelectorAll('.ch-th-bar__refs li'));
+    expect(refs.map((li) => li.textContent)).toEqual(['D3 50%', 'Team 33%', 'Tour 66%']);
+    expect(refs.map((li) => li.getAttribute('data-kind'))).toEqual(['level', 'team', 'tour']);
+    expect(container.querySelectorAll('.ch-th-bar__swatch')).toHaveLength(3);
+    expect(container.querySelector('.ch-th-bar--bench')).not.toBeNull();
+  });
+
+  it('labels a putt band short, in one line: "5–10 ft makes", not "Putts Made 5-10 ft"', () => {
+    const putt = { metric_id: 'putts_made_5_10ft_pct', metric_label: 'Putts Made 5-10 ft', player_value: 28, comparisons: allThree };
+    expect(benchmarkBlock(benchmark([putt]))!.rows[0]!.label).toBe('5–10 ft makes');
+    expect(benchmarkBlock(benchmark([{ ...putt, metric_id: 'putts_made_25_plus_ft_pct' }]))!.rows[0]!.label).toBe('25+ ft makes');
+    expect(benchmarkBlock(benchmark([{ ...putt, metric_id: 'putts_made_3_5ft_pct' }]))!.rows[0]!.label).toBe('3–5 ft makes');
   });
 
   it('states a missing reference in the card, never drops it and never shows one in place of another', () => {
@@ -162,5 +182,34 @@ describe('the scope line on a general-knowledge turn', () => {
     expect(lastTurnIsGeneral(turn('get_golf_reference', 'get_benchmarks'))).toBe(false);
     expect(lastTurnIsGeneral(turn('get_player_metrics'))).toBe(false);
     expect(lastTurnIsGeneral([user])).toBe(false);
+  });
+});
+
+describe('the card’s "you" is the answer’s window figure', () => {
+  const putt = { metric_id: 'putts_made_5_10ft_pct', metric_label: 'Putts Made 5-10 ft', player_value: 28, comparisons: allThree };
+  const windowRead = (value: number, id = 'p1') => ({
+    ...env('Make rate by putt distance over the last 10 rounds.', undefined),
+    window_label: 'your last 10 rounds',
+    measurements: [{ metric_id: 'putt_make_pct_5-10 ft', metric_label: 'Make rate 5-10 ft', unit: 'percent', value, entity: { kind: 'player', id, label: 'Cole' }, window_start: null, window_end: null, sample_size: 40, sample_unit: 'attempts', source: 'rounds', method: 'm', benchmark: null, direction: 'higher_better', denominator: null }],
+  }) as unknown as ToolEnvelope;
+
+  it('takes the window figure for "you", keeps the standing for places, and says so when they differ', () => {
+    const bench = benchmark([putt], { standing: { player: 'You', player_id: 'p1', rows: [putt] } });
+    const out = withWindowFigures(bench, [bench, windowRead(29)]);
+    const b = benchmarkBlock(out)!;
+    expect(b.rows[0]!.display).toBe('29%');
+    expect(b.note).toMatch(/Your figure is your last 10 rounds\. Place in the level and in the team is over all your recorded rounds\./);
+    // The envelope the model read is not changed.
+    expect((bench.detail as { standing: { rows: Array<{ player_value: number }> } }).standing.rows[0]!.player_value).toBe(28);
+  });
+
+  it('says nothing when the two agree, and leaves a row alone when no other read measured it or it is another player', () => {
+    const bench = benchmark([putt], { standing: { player: 'Owen Carter', player_id: 'p1', rows: [putt] } });
+    expect(benchmarkBlock(withWindowFigures(bench, [bench, windowRead(28.2)]))!.note).toBeNull();
+    expect(withWindowFigures(bench, [bench, windowRead(29, 'p2')])).toBe(bench);
+    expect(withWindowFigures(bench, [bench])).toBe(bench);
+    const named = withWindowFigures(bench, [bench, windowRead(31, 'p1')]);
+    expect(benchmarkBlock(named)!.rows[0]!.display).toBe('31%');
+    expect(benchmarkBlock(named)!.note).toMatch(/^The figure is your last 10 rounds\. Place in the level and in the team is over all their recorded rounds/);
   });
 });

@@ -138,7 +138,7 @@ export function Drawing({ block, roster = [] }: { block: Exclude<AskEvidence, { 
       return (
         <div className="ch-th-bars" role="list" aria-label={block.title}>
           {block.rows.map((r, i) => (
-            <div key={r.label} style={{ '--ch-i': i } as CSSProperties} className={'ch-th-bar' + (r.highlight ? ' is-on' : '')} role="listitem" data-tone={r.tone} aria-label={r.ticks?.length ? `${r.label}: ${r.display}. ${r.ticks.map((t) => t.text).join('. ')}` : undefined}>
+            <div key={r.label} style={{ '--ch-i': i } as CSSProperties} className={'ch-th-bar' + (r.highlight ? ' is-on' : '') + (r.ticks?.length ? ' ch-th-bar--bench' : '')} role="listitem" data-tone={r.tone} aria-label={r.ticks?.length ? `${r.label}: ${r.display}. ${r.ticks.map((t) => t.text).join('. ')}` : undefined}>
               <span className="ch-th-bar__label">{r.label}</span>
               <span className="ch-th-bar__track" aria-hidden="true">
                 <span style={{ width: `${r.pct}%` }} />
@@ -150,6 +150,17 @@ export function Drawing({ block, roster = [] }: { block: Exclude<AskEvidence, { 
                 {r.display}
                 {r.of && <span> {r.of}</span>}
               </span>
+              {r.ticks?.length ? (
+                // The three references in words, each with the mark it has on the track, so no tick has to be decoded from a legend.
+                <ul className="ch-th-bar__refs" aria-hidden="true">
+                  {r.ticks.map((t) => (
+                    <li key={t.kind} data-kind={t.kind}>
+                      <i className="ch-th-bar__swatch" data-kind={t.kind} />
+                      {t.short ?? t.text}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </div>
           ))}
         </div>
