@@ -60,6 +60,15 @@
   border-radius: var(--ch-radius-lg);
   min-height: calc(40 * var(--ch-type-k));
 }
+/* The span switch (This season | All time) shares the row styling but has two choices, not the window's five. */
+.ch-shs-ctl .ch-span {
+  flex: 1;
+  min-width: 0;
+}
+.ch-shs .ch-shs-ctl .ch-span .ch-seg {
+  grid-template-columns: 1fr 1fr;
+  overflow-x: visible;
+}
 .ch-shs-ctl.is-custom .ch-seg {
   grid-template-columns: 1fr 1fr 1fr 1.3fr 1.6fr 1.3fr;
   overflow-x: auto;

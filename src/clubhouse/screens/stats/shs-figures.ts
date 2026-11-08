@@ -154,25 +154,30 @@ export interface ShsCompareBar {
   /** Width, 0 to 100: 30% plus 70% of the scaled value (04 "What changed"). */
   width: number;
   tone: ShsTone | 'was';
+  /** '%' when the bars compare a rate (the sentence named fairways, greens...). */
+  unit?: string;
 }
 
 /** The two bars under What changed, with a real pair only; none under four rounds (criterion CP-126). */
-export function changeBars(data: ChPlayerProfile): ShsCompareBar[] {
+export function changeBars(data: ChPlayerProfile, subject?: string): ShsCompareBar[] {
   const list = scores(data);
   if (list.length < 4) return [];
-  const pair = (nowLabel: string, now: number, wasLabel: string, was: number, tone: ShsTone): ShsCompareBar[] => {
-    const lo = Math.min(now, was) - 6;
+  const pair = (nowLabel: string, now: number, wasLabel: string, was: number, tone: ShsTone, unit = ''): ShsCompareBar[] => {
+    // A rate's bars share a 0 floor; a score's start 6 strokes under the lower one, so a stroke still reads.
+    const lo = unit === '%' ? 0 : Math.min(now, was) - 6;
     const hi = Math.max(now, was);
     const width = (v: number) => 30 + (70 * (v - lo)) / (hi - lo || 1);
     return [
-      { label: nowLabel, value: now, width: width(now), tone },
-      { label: wasLabel, value: was, width: width(was), tone: 'was' },
+      { label: nowLabel, value: now, width: width(now), tone, unit },
+      { label: wasLabel, value: was, width: width(was), tone: 'was', unit },
     ];
   };
   if (hasPrevious(data)) {
     const c = data.extra.compare!;
-    const row = c.rows.find((r) => r.lowerIsBetter && /scor/i.test(r.label));
-    if (row?.last != null && row.previous != null) return pair(`Last ${c.lastRounds}`, row.last, `${c.previousRounds} before`, row.previous, changeTone(row.last - row.previous, row.se, true));
+    // The bars show what the sentence above them names (its largest change), and scoring when it names nothing.
+    const named = subject ? c.rows.find((r) => r.label === subject) : undefined;
+    const row = named ?? c.rows.find((r) => r.lowerIsBetter && /scor/i.test(r.label));
+    if (row?.last != null && row.previous != null) return pair(`Last ${c.lastRounds}`, row.last, `${c.previousRounds} before`, row.previous, changeTone(row.last - row.previous, row.se, row.lowerIsBetter), row.unit ?? '');
   }
   const half = Math.floor(list.length / 2);
   const first = mean(list.slice(0, half));
