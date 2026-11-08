@@ -1,5 +1,6 @@
 import { Skeleton } from '../../ui/States';
 import '../../styles/messages.css';
+import '../../styles/messages-thread.css';
 import '../../styles/messages-inbox.css';
 import { InboxSkeleton } from './inbox/InboxSkeleton';
 
