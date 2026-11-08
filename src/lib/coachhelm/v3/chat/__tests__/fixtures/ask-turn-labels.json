@@ -34,8 +34,7 @@
  },
  "30518f0c": {
   "expect": "rejected",
-  "why": "Says the Spring Preview Tournament starts \"Wednesday (July 30...\". July 30, 2026 is a Thursday; every other figure matches. A weekday that contradicts its date is a wrong claim the audit cannot see.",
-  "knownWrongAccept": true
+  "why": "Says the Spring Preview Tournament starts \"Wednesday (July 30...\". July 30, 2026 is a Thursday; every other figure matches. A weekday that contradicts its date is a wrong claim the audit cannot see."
  },
  "3e677059": {
   "expect": "accepted",
@@ -146,8 +145,7 @@
  },
  "368318ea": {
   "expect": "accepted",
-  "why": "Known case 2: approach SG -4.16 over 8 rounds (June 9 to September 26), team -2.33, Ethan Park -4.40 the only lower, GIR 61.11% over 144 holes, Division I 60%, team 66.25%, Tour 66%: all match the reads. The in-progress rank-claims code rejects \"second-lowest approach figure of the seven players\", which is true (6th of 7); the committed audit accepts the answer.",
-  "knownWrongBlock": true
+  "why": "Known case 2: approach SG -4.16 over 8 rounds (June 9 to September 26), team -2.33, Ethan Park -4.40 the only lower, GIR 61.11% over 144 holes, Division I 60%, team 66.25%, Tour 66%: all match the reads."
  },
  "8e12f58e": {
   "expect": "accepted",
@@ -260,8 +258,7 @@
  },
  "6da3a6b2": {
   "expect": "rejected",
-  "why": "Says \"8 of those came in two rounds on Oct 21\"; two rounds with 3 three-putts each make 6. The 10 in total (0+3+3+2+2) and the per-round figures are right. Parent-supplied wrong accept.",
-  "knownWrongAccept": true
+  "why": "Says \"8 of those came in two rounds on Oct 21\"; two rounds with 3 three-putts each make 6. The 10 in total (0+3+3+2+2) and the per-round figures are right. Parent-supplied wrong accept."
  },
  "7c3ff223": {
   "expect": "accepted",
@@ -326,8 +323,7 @@
  },
  "cite-verified": {
   "expect": "accepted",
-  "why": "The cite -4.16 for Owen in e3 is confirmed by the read. (Same text as 368318ea: the in-progress rank-claims code rejects its true \"second-lowest\" sentence.)",
-  "knownWrongBlock": true
+  "why": "The cite -4.16 for Owen in e3 is confirmed by the read."
  },
  "cite-mismatch-subject": {
   "expect": "rejected",
@@ -339,7 +335,6 @@
  },
  "cite-unresolved": {
   "expect": "accepted",
-  "why": "An unresolved cite adds nothing and removes nothing: the figure is judged by the text heuristics, which pass it. (Same text as 368318ea: the in-progress rank-claims code rejects its true \"second-lowest\" sentence.)",
-  "knownWrongBlock": true
+  "why": "An unresolved cite adds nothing and removes nothing: the figure is judged by the text heuristics, which pass it."
  }
 }
