@@ -414,6 +414,11 @@
     left: 0;
   }
 }
+/* It opens inside the composer field, whose own backdrop-filter makes the field its backdrop root: the menu's blur has
+   nothing behind it to soften, and the thread read straight through it. So the surface is the opaque glass colour. */
+.ch-ms-comp__field .ch-msv-attach {
+  background: var(--ch-bubble-theirs-bg, var(--ch-glass-strong));
+}
 .ch-msv-attach > button {
   display: flex;
   align-items: center;

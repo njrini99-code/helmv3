@@ -323,7 +323,8 @@ export function PollCard({
                     <span className="ch-msd-poll__faces">
                       {faceOrder(tally.voters[o.id] ?? [], api.viewer.userId).map((id) => (
                         <span key={id} data-pop={id === api.viewer.userId && tapped === o.id ? "" : undefined}>
-                          <Avatar name={id === api.viewer.userId ? api.viewer.name : nameOf(id)} size={18} />
+                          {/* One letter: at 18 px the next coin overlaps the right of this one, which cut a second initial in half. */}
+                          <Avatar name={(id === api.viewer.userId ? api.viewer.name : nameOf(id)).trim().split(/\s+/)[0] ?? ""} size={18} />
                         </span>
                       ))}
                     </span>
