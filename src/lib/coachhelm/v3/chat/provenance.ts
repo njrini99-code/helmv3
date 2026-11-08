@@ -101,6 +101,11 @@ export const Comparison = z.object({
   place: z.number().nullable().default(null),
   /** How many players the place is among. */
   place_of: z.number().nullable().default(null),
+  /**
+   * The player's own figure on this reference's basis, when that is not the measurement's value: the level is over all recorded rounds, so beside it
+   * stands the player's all-rounds figure and never the window one. Level only; null elsewhere.
+   */
+  your_value: z.number().nullable().optional(),
   note: z.string().nullable().default(null),
   /** When `value` is null, the short reason the card and chip print: "not set", "no college figure", "no team average yet". */
   missing_reason: z.string().nullable().default(null),
@@ -1465,7 +1470,12 @@ export function auditNumericClaimsDetailed(
       add(c.place_percent, { ...who, family: null, parent: null });
       add(c.place, { ...who, family: null, parent: null });
       add(c.place_of, { ...who, family: null, parent: null });
-      if (typeof m.value === 'number' && typeof c.value === 'number') add(m.value - c.value, { ...who, ...fam });
+      // The count the comparison names in its own words ("Division I players on Helm (n=22)", "the other 22 ... players").
+      for (const words of [c.label, c.note]) if (typeof words === 'string') for (const n of numbersInText(words)) add(n, { ...who, family: null, parent: null });
+      // The level is over all recorded rounds: its figure and its gap are the player's all-rounds ones, not the window's.
+      add(c.your_value, { ...who, ...fam });
+      const mine = typeof c.your_value === 'number' ? c.your_value : m.value;
+      if (typeof mine === 'number' && typeof c.value === 'number') add(mine - c.value, { ...who, ...fam });
     }
     // A stated delta between a value and its benchmark is itself supported.
     if (typeof m.value === 'number' && typeof m.benchmark?.value === 'number') {

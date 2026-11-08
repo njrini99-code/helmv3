@@ -256,13 +256,13 @@ function causeSide(sentence: string): string {
 /** Words that describe what a measure counts or how it is built. */
 const MEASURE_WORDS = /\b(?:accounts? for|measures?|counts?|includes?|excludes?|is (?:calculated|computed|based on|measured)|reflects?|rewards?|penali[sz]es?|compares?|weights?)\b/i;
 /** A cause that is only a comparison of two figures ("because it is close to average"). */
-const COMPARISON_WORDS = /\b(?:close to|near|similar to|in line with|above|below|higher than|lower than|better than|worse than|compared (?:to|with)|relative to|average)\b/i;
+const COMPARISON_WORDS = /\b(?:close to|near|similar to|in line with|above|below|higher than|lower than|better than|worse than|compared (?:to|with)|relative to|average|(?:sits?|sitting|ranks?|ranking|falls?|is|are|was|were|stays?|remains?) (?:well |far |just |slightly |still )?(?:behind|ahead of|ahead|trailing)|trail(?:s|ing)?|leads?|lead(?:ing)?)\b/i;
 /** Causes nothing measured backs: how someone feels or what they do, not what a number is. */
 const UNMEASURED_CAUSE = /\b(?:tempo|confidence|nerves?|pressure|swing|focus|mindset|fatigue|tired|effort|motivation|attitude|rhythm|technique|mechanics|habits?|practice(?:d|s)? (?:more|less)|lazy|careless)\b/i;
 
 /** What a read can say about itself: why a figure is missing or thin. Not a claim about anyone's play. */
 const DATA_CAUSE =
-  /\b(?:flag(?:s|ged)?|incomplete|totals? only|posted as|no (?:college |published )?(?:figure|value|baseline|benchmark|average)|rests? on|resting on|based on|no other players? (?:has|have)|(?:has|have) [a-z ]{0,30}recorded|(?:carry|carries|have|has|with|had) no (?:shot|stat)[- ]?(?:level )?(?:data|lines?)|missing|excluded|left out|leaves? out|not counted|(?:doesn|don)['’]?t count|no data|no recorded|no rounds|not recorded|not logged|(?:hasn|haven)['’]?t logged|(?:isn|aren)['’]?t available|not available|unavailable|too few|sample size|the (?:tool|read|window|sample|cache)|9-hole|nine-hole|total only)\b/i;
+  /\b(?:flag(?:s|ged)?|incomplete|totals? only|posted as|no (?:[a-z]+ ){0,3}(?:figure|value|baseline|benchmark|average)|rests? on|resting on|based on|no other players? (?:has|have)|(?:has|have) [a-z ]{0,30}recorded|(?:carry|carries|have|has|with|had) no (?:shot|stat)[- ]?(?:level )?(?:data|lines?)|missing|excluded|left out|leaves? out|not counted|(?:doesn|don)['’]?t count|no data|no recorded|no rounds|not recorded|not logged|(?:hasn|haven)['’]?t logged|(?:isn|aren)['’]?t available|not available|unavailable|too few|sample size|the (?:[a-z]+ )?(?:tool|read|window|sample|cache)|9-hole|nine-hole|total only)\b/i;
 /** Why a day doesn't work or an event moved. A reason for a decision, never for how someone played: nothing here measured that. */
 const CALENDAR_CAUSE = /\b(?:class|exams?|schedule|calendar|conflict|rsvps?|weather|rain)\b/i;
 /** A sentence saying how someone's play went, which a calendar word can't explain. */

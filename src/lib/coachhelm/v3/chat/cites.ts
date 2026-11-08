@@ -129,7 +129,7 @@ export const sameSubject = (subject: string, id: string) => id === subject || (s
 const subjectIs = (subject: string, entity: Measurement['entity']) => (subject === 'team' ? entity.kind === 'team' : sameSubject(subject, entity.id));
 
 /** Every number of one measurement a figure in the answer can be: its value, its sample, its denominator, its benchmark and the places beside it. */
-function numbersOfMeasurement(m: Measurement & { comparisons?: Array<{ kind?: string; value: number | null; place?: number | null; place_of: number | null; place_percent: number | null }> }): Candidate[] {
+function numbersOfMeasurement(m: Measurement & { comparisons?: Array<{ kind?: string; value: number | null; your_value?: number | null; place?: number | null; place_of: number | null; place_percent: number | null }> }): Candidate[] {
   const window = [m.window_start, m.window_end] as const;
   const out: Candidate[] = [];
   const add = (v: unknown) => {
@@ -145,7 +145,11 @@ function numbersOfMeasurement(m: Measurement & { comparisons?: Array<{ kind?: st
     add(c.place);
     add(c.place_of);
     add(c.place_percent);
-    if (typeof m.value === 'number' && typeof c.value === 'number') add(m.value - c.value);
+    // The count the comparison names in its own words ("Division I players on Helm (n=22)").
+    for (const words of [c.label, c.note]) if (typeof words === 'string') for (const n of collectEnvelopeNumbers({ summary: words, detail: undefined })) add(n.value);
+    add(c.your_value);
+    const mine = typeof c.your_value === 'number' ? c.your_value : m.value;
+    if (typeof mine === 'number' && typeof c.value === 'number') add(mine - c.value);
   }
   return out;
 }

@@ -114,3 +114,22 @@ describe('count cites', () => {
     expect(status('7', 'list_length')).toBe('unresolved');
   });
 });
+
+// Live Q2 (ask-perf's final 12), "How does Owen Carter's approach play compare with his level, the team and the Tour": refused as unsupported_cause on a sentence
+// that says why a comparison is missing ("because the benchmark read has no Division I figure"), with "sits behind on every measure" beside it. Neither is a cause of play.
+describe('a comparison or a missing figure is not a cause', () => {
+  const OWEN = { id: 'p-owen', kind: 'player' as const, label: 'Owen Carter' };
+  const m = { metric_id: 'sg_approach', metric_label: 'x', unit: 'strokes', value: -4.16, entity: OWEN, window_start: null, window_end: null, sample_size: 8, sample_unit: 'rounds', as_of: '2026-11-08T00:00:00.000Z', coverage: 'complete', coverage_note: null, source: 'x', method: 'x', denominator: null, benchmark: null, direction: null } as unknown as Measurement;
+  it('the live sentence passes', () => {
+    expect(unbackedCausalSentences("Owen Carter's approach play has no college level to compare against, because the benchmark read has no Division I figure for strokes gained, greens in regulation or approach proximity. Against his teammates and the Tour, it sits behind on every measure I could read.", [m])).toEqual([]);
+  });
+  it('a comparison verb is not a cause: "he trails the team because ..." is only a cause if the because-side is about play', () => {
+    expect(unbackedCausalSentences('Owen sits well behind the team average because the team average is -3.09.', [m])).toEqual([]);
+    expect(unbackedCausalSentences('Owen trails the team because his tempo gets quicker under pressure.', [m])).toHaveLength(1);
+    expect(unbackedCausalSentences('Owen leads the team because he lacks nerves.', [m])).toHaveLength(1);
+  });
+  it('a missing figure with a name in it still passes, and an unmeasured reason for play is still refused', () => {
+    expect(unbackedCausalSentences('There is no Division I figure for him because the read has no college figure.', [m])).toEqual([]);
+    expect(unbackedCausalSentences('He is behind because his confidence is low.', [m])).toHaveLength(1);
+  });
+});
