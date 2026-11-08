@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { collectEnvelopeNumbers, collectScopedNumbers, roundingTolerance, teamDataCounts, type Measurement, type ScopedNumber, type ToolEnvelope } from './provenance';
+import { auditNumericClaims, collectEnvelopeNumbers, collectScopedNumbers, roundingTolerance, teamDataCounts, type AuditDetail, type Measurement, type ScopedNumber, type ToolEnvelope, type UnsupportedClaim } from './provenance';
 
 /**
  * Per-figure citations (structural grounding).
@@ -199,4 +199,47 @@ export interface CitationStats {
   /** Blocks found, and the items in them that did not parse. */
   blocks: number;
   invalid: number;
+}
+
+/** A turn's citations and the reads they point at, as the audit takes them. */
+export interface CiteInput {
+  cites: readonly Cite[];
+  evidence: ReadonlyMap<string, ToolEnvelope>;
+  /** Blocks found and items that did not parse (`extractCites`), for the counts. */
+  blocks?: number;
+  invalid?: number;
+}
+
+type AuditArgs = Parameters<typeof auditNumericClaims>;
+
+/**
+ * The audit of one answer with its citations, for a coach's turn and a player's alike: verified figures stand on their own, a cite the
+ * read it names contradicts is a misattribution whatever the words around it say, and everything else (no cite, an unresolved one) is
+ * audited by the text heuristics exactly as without citations. `citations` is absent when the turn had no citation input at all.
+ */
+export function auditCited(args: { base: [text: AuditArgs[0], measurements: AuditArgs[1], series: AuditArgs[2], detailNumbers: AuditArgs[3], detailDates: AuditArgs[4], timezone: AuditArgs[5]]; options?: NonNullable<AuditArgs[6]>; cites?: CiteInput }): { unsupported: UnsupportedClaim[]; citations?: CitationStats } {
+  const checked = args.cites ? verifyCites(args.cites.cites, args.cites.evidence) : [];
+  const verified = checked.filter((c) => c.status === 'verified');
+  const mismatched = checked.filter((c) => c.status === 'mismatch');
+  let detail: AuditDetail = { unsupported: [], figures: 0, cited: 0, heuristicPassed: 0 };
+  const flagged = auditNumericClaims(...args.base, { ...args.options, citedValues: verified.map((c) => c.cite.v), report: (d) => (detail = d) });
+  const citations: CitationStats | undefined = args.cites
+    ? {
+        figures: detail.figures,
+        cited: detail.cited,
+        fallback_passed: detail.heuristicPassed,
+        cites: checked.length,
+        verified: verified.length,
+        unresolved: checked.filter((c) => c.status === 'unresolved').length,
+        mismatched: mismatched.length,
+        blocks: args.cites.blocks ?? (checked.length > 0 ? 1 : 0),
+        invalid: args.cites.invalid ?? 0,
+      }
+    : undefined;
+  // A cited figure the evidence it names does not hold is a misattribution however the words around it read, even when the text heuristics would have passed it.
+  const unsupported = [
+    ...mismatched.map((c): UnsupportedClaim => ({ text: c.cite.v, value: c.value ?? 0, misattributed: true })),
+    ...flagged.filter((u) => !mismatched.some((c) => c.cite.v === u.text)),
+  ];
+  return { unsupported, ...(citations ? { citations } : {}) };
 }

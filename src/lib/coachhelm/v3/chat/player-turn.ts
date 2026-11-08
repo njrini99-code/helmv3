@@ -1,19 +1,21 @@
 import 'server-only';
 import { NextResponse } from 'next/server';
-import { convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, stepCountIs, streamText, type UIMessage } from 'ai';
+import { convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, stepCountIs, streamText, type UIMessage, type UIMessageStreamWriter } from 'ai';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/auth/rate-limit';
 import { isCoachHelmEnabledForPlayer } from '@/lib/coachhelm/v2/gate';
 import { resolveModelProvider } from '@/lib/ai/model-provider';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { estimateCachedCostUsd, MODEL_FOR_TASK } from '@/lib/coachhelm/v3/llm/types';
 import { resolvePlayerChatContext } from './player-context';
 import { CoachContextError } from './context';
 import { buildPlayerTools, PLAYER_INSTRUCTIONS } from './player-tools';
 import { readBucket, recordPlayerSpend } from './player-allowance';
-import { auditPlayerAnswer, playerLedgerRow } from './player-audit';
+import { auditPlayerAnswerCited, playerLedgerRow } from './player-audit';
+import { CITES_CLOSE, CITES_OPEN, extractCites } from './cites';
+import { withholdBlocks } from './stream-blocks';
 import type { ToolEnvelope } from './provenance';
 import type { PlayerFiguresSource, PuttBandsSource } from './read-tools';
 import { stripReadMarkers } from './read-markers';
@@ -45,9 +47,10 @@ export async function runPlayerTurn(sb: SupabaseClient<Database>, body: { messag
   const uiMessages = body.messages as UIMessage[];
   const first = ctx.roster[0]?.name.split(' ')[0] ?? 'there';
   const envelopes: ToolEnvelope[] = [];
+  const evidenceRefs = new Map<string, ToolEnvelope>();
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
-      const tools = buildPlayerTools({ sb, ctx, playerId: ctx.player_id, writer, collect: (e) => envelopes.push(e), playerFigures: playerFigures?.(ctx.timezone), puttBands: puttBands?.(ctx.timezone) });
+      const tools = buildPlayerTools({ sb, ctx, playerId: ctx.player_id, writer, collect: (e) => envelopes.push(e), playerFigures: playerFigures?.(ctx.timezone), puttBands: puttBands?.(ctx.timezone), evidenceRefs });
       const result = streamText({
         model: resolveModelProvider(MODEL_FOR_TASK.coach_chat),
         abortSignal: signal,
@@ -57,16 +60,22 @@ export async function runPlayerTurn(sb: SupabaseClient<Database>, body: { messag
         stopWhen: stepCountIs(6),
         experimental_telemetry: { isEnabled: true, functionId: 'coachhelm.chat.player', recordInputs: false, recordOutputs: false },
       });
-      writer.merge(result.toUIMessageStream({ sendReasoning: false, onError: () => 'CoachHelm couldn’t finish that answer.' }));
-      const text = stripReadMarkers(await result.text);
-      const unsupported = auditPlayerAnswer({ text, envelopes, messages: uiMessages, timezone: ctx.timezone, roster: ctx.roster });
+      // The citations block the model appends is machine-readable: the player never sees it, live or in a saved part.
+      // The SDK's overload does not carry the chunk type through (the coach route casts it the same way); the writer's own parameter type is the source of truth.
+      type Chunk = Parameters<UIMessageStreamWriter['write']>[0];
+      const uiStream = result.toUIMessageStream({ sendReasoning: false, onError: () => 'CoachHelm couldn’t finish that answer.' }) as unknown as ReadableStream<Chunk>;
+      writer.merge(uiStream.pipeThrough(withholdBlocks<Chunk>([[CITES_OPEN, CITES_CLOSE]])));
+      const extracted = extractCites(await result.text);
+      const text = stripReadMarkers(extracted.text);
+      const { unsupported, citations } = auditPlayerAnswerCited({ text, envelopes, messages: uiMessages, timezone: ctx.timezone, roster: ctx.roster, cites: { cites: extracted.cites, evidence: evidenceRefs, blocks: extracted.blocks, invalid: extracted.invalid } });
+      if (citations) await logServerEvent('player ask: citation coverage', { action: 'v3.chat.stream.citations', featureArea: 'coachhelm', skipSentry: true, extra: { ...citations, surface: 'player', outcome: unsupported.length === 0 ? 'accepted' : 'flagged' } }, 'info');
       const usage = await result.usage;
       const input = usage.inputTokens ?? 0;
       const output = usage.outputTokens ?? 0;
       const usd = estimateCachedCostUsd(MODEL_FOR_TASK.coach_chat, input, output, usage.inputTokenDetails);
       await recordPlayerSpend({ playerId: ctx.player_id, teamId: ctx.team_id, zone: ctx.timezone, usd });
       try {
-        const { error } = await createAdminClient().from('golf_coachhelm_llm_calls').insert(playerLedgerRow({ playerId: ctx.player_id, promptTokens: input, completionTokens: output, costUsd: usd, unsupported }));
+        const { error } = await createAdminClient().from('golf_coachhelm_llm_calls').insert(playerLedgerRow({ playerId: ctx.player_id, promptTokens: input, completionTokens: output, costUsd: usd, unsupported, citations }));
         if (error) throw new Error(error.message);
       } catch (err) {
         void logServerError(`player ask: llm ledger failed: ${err instanceof Error ? err.message : 'unknown'}`, { action: 'coachhelm.ask.player' }, 'warning');

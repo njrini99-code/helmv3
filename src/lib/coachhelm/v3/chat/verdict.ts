@@ -27,9 +27,8 @@
  * above only, same as before this gate existed.
  * ========================================================================== */
 
-import { auditNumericClaims } from './provenance';
 import type { AuditPlayer, Measurement, MeasurementSeries, ScopedNumber, ToolEnvelope, UnsupportedClaim } from './provenance';
-import { verifyCites, type Cite, type CitationStats } from './cites';
+import { auditCited, type Cite, type CitationStats } from './cites';
 import type { RejectedClaim } from '../llm/claim-validator';
 import type { TypedClaimAttempt } from '../llm/claims-block';
 
@@ -120,39 +119,11 @@ export function computeTurnVerdict(args: {
     return { outcome: 'rejected', reason: 'stream_incomplete', note: STREAM_INCOMPLETE_NOTE, unsupported: [] };
   }
 
-  const checked = args.cites ? verifyCites(args.cites.cites, args.cites.evidence) : [];
-  const verified = checked.filter((c) => c.status === 'verified');
-  const mismatched = checked.filter((c) => c.status === 'mismatch');
-  let detail = { figures: 0, cited: 0, heuristicPassed: 0 };
-  const flagged = auditNumericClaims(
-    args.text,
-    args.measurements,
-    args.series,
-    args.detailNumbers,
-    args.detailDates,
-    args.timezone,
-    { players: args.players, requestedSpans: args.requestedSpans, citedValues: verified.map((c) => c.cite.v), report: (d) => (detail = d) },
-  );
-  const audit = { ...detail, unsupported: flagged };
-  const citations: CitationStats | undefined = args.cites
-    ? {
-        figures: audit.figures,
-        cited: audit.cited,
-        fallback_passed: audit.heuristicPassed,
-        cites: checked.length,
-        verified: verified.length,
-        unresolved: checked.filter((c) => c.status === 'unresolved').length,
-        mismatched: mismatched.length,
-        blocks: args.cites.blocks ?? (checked.length > 0 ? 1 : 0),
-        invalid: args.cites.invalid ?? 0,
-      }
-    : undefined;
-  // A cited figure the evidence it names does not hold is a misattribution however the words around it read: withhold, even when the
-  // text heuristics would have passed it.
-  const unsupported = [
-    ...mismatched.map((c): UnsupportedClaim => ({ text: c.cite.v, value: c.value ?? 0, misattributed: true })),
-    ...audit.unsupported.filter((u) => !mismatched.some((c) => c.cite.v === u.text)),
-  ];
+  const { unsupported, citations } = auditCited({
+    base: [args.text, args.measurements, args.series, args.detailNumbers, args.detailDates, args.timezone],
+    options: { players: args.players, requestedSpans: args.requestedSpans },
+    cites: args.cites,
+  });
   if (unsupported.length > 0) {
     return { outcome: 'rejected', reason: 'ungrounded_claims', note: UNGROUNDED_NOTE, unsupported, ...(citations ? { citations } : {}) };
   }

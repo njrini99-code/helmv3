@@ -74,3 +74,27 @@ export class BlockWithholder {
     return out;
   }
 }
+
+/**
+ * `BlockWithholder` as a stream stage, for a UI message stream that is merged as it is: text deltas lose the blocks, a part's held tail
+ * is released just before its `text-end` (a delta after its part has ended is rejected by the ai SDK), every other chunk passes untouched.
+ * `onText` sees each raw delta, blocks included, for the caller that audits the whole text.
+ */
+export function withholdBlocks<T extends { type?: string; id?: string; delta?: unknown }>(pairs: ReadonlyArray<readonly [open: string, close: string]>, onText?: (delta: string) => void): TransformStream<T, T> {
+  const held = new BlockWithholder(pairs);
+  return new TransformStream<T, T>({
+    transform(chunk, controller) {
+      if (chunk.type === 'text-delta' && typeof chunk.delta === 'string') {
+        onText?.(chunk.delta);
+        const shown = held.push(chunk.delta);
+        if (shown) controller.enqueue({ ...chunk, delta: shown });
+        return;
+      }
+      if (chunk.type === 'text-end') {
+        const tail = held.flush();
+        if (tail) controller.enqueue({ type: 'text-delta', id: chunk.id, delta: tail } as T);
+      }
+      controller.enqueue(chunk);
+    },
+  });
+}
