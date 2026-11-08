@@ -88,7 +88,7 @@ describe('SummaryCard', () => {
   });
 });
 
-describe("production's ?area= deep links on the phone", () => {
+describe("production’s ?area= deep links on the phone", () => {
   const arrive = (area: string) => {
     window.history.replaceState(null, '', `/golf/dashboard/stats?area=${area}`);
     return render(tree(<StatsPlayer data={PREVIEW_PLAYER_SHS_SELF} coachId={null} initialArea={area} />));

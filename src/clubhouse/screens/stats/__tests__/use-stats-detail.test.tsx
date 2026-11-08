@@ -71,7 +71,7 @@ describe('useStatsDetail', () => {
     expect(window.location.search).toBe('?player=p1');
   });
 
-  it("production's ?area= opens that area's detail, then one Back reaches the summary with the area gone", async () => {
+  it("production’s ?area= opens that area’s detail, then one Back reaches the summary with the area gone", async () => {
     at('/golf/dashboard/stats?player=p1&area=putting&window=last10');
     const pushed = vi.spyOn(window.history, 'pushState');
     const { result } = hook({ area: 'putting' });

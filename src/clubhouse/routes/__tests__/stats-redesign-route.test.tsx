@@ -61,7 +61,7 @@ describe('the stats route', () => {
     expect(el.props.coachId).toBeNull();
   });
 
-  it("production's ?area= reaches the screen: the player's and the team's, and never the loader", async () => {
+  it("production’s ?area= reaches the screen: the player's and the team's, and never the loader", async () => {
     asPlayer();
     const mine = (await ClubhouseStatsRoute({ area: 'putting' })) as unknown as El;
     expect(mine.props.initialArea).toBe('putting');

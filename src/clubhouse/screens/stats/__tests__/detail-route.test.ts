@@ -52,7 +52,7 @@ describe('detail-route', () => {
     ['__proto__', null],
     ['', null],
     [undefined, null],
-  ] as const)("production's ?area=%s opens %s on the player screen", (area, want) => {
+  ] as const)("production’s ?area=%s opens %s on the player screen", (area, want) => {
     expect(areaDetail(area, 'player')).toBe(want);
   });
 

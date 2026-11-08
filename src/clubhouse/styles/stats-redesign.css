@@ -1994,7 +1994,7 @@ p.ch-shs-mini-cap {
 .ch-shs-hero-top {
   position: relative;
   margin: 0;
-  padding: 12px var(--ch-page-x-phone) 34px;
+  padding: var(--ch-space-3) var(--ch-page-x-phone) var(--ch-space-8);
   background: var(--ch-frame);
   color: var(--ch-on-green-ink);
 }

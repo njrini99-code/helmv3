@@ -21,7 +21,7 @@ afterEach(() => {
   asDesktop();
 });
 
-describe("production's ?area= on Team Stats", () => {
+describe("production’s ?area= on Team Stats", () => {
   it.each([
     ['scoring', 'sd-team-score'],
     ['game', 'sd-team-game'],

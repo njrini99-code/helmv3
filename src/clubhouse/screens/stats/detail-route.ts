@@ -41,7 +41,7 @@ const TEAM_AREA: Readonly<Record<string, StatsTeamDetailId>> = { scoring: 'tscor
 export function areaDetail(area: string | null | undefined, screen: StatsScreen): StatsDetailId | null {
   if (!area) return null;
   const table: Readonly<Record<string, StatsDetailId>> = screen === 'player' ? PLAYER_AREA : TEAM_AREA;
-  return Object.hasOwn(table, area) ? table[area]! : null;
+  return Object.prototype.hasOwnProperty.call(table, area) ? table[area]! : null;
 }
 
 export const PLAYER_DETAIL_IDS: readonly StatsPlayerDetailId[] = [...GAME_SECTION_IDS, 'sg', 'rounds', 'goals'];
