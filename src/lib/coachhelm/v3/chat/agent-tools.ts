@@ -55,6 +55,7 @@ import { compareSeasons, getCalendar, getCourse, getRootCauses } from './engine-
 import { getDocuments, getPractice, getTeamPatterns } from './ask-reads';
 import { applyComparisons, benchmarkSource } from './benchmark-reads';
 import { benchmarkTools, coachWideReadTools } from './wide-read-tools';
+import { coachSummariseTools, SUMMARISE_STEP } from './summarise-tools';
 import { WIDE_READ_STEPS } from './wide-read-names';
 import { withWindowLabel } from './window-label';
 import { teamPatternEnabled } from '@/lib/coachhelm/v3/team-pattern/flag';
@@ -163,6 +164,7 @@ export interface CoachChatDataParts extends Record<string, unknown> {
 
 /** Coach-readable progress copy. Raw tool names never reach the interface. */
 const PROGRESS_LABEL: Record<string, (input: Record<string, unknown>) => string> = {
+  summarise_data: () => SUMMARISE_STEP.doing,
   get_team_overview: () => 'Reading your roster',
   get_player_metrics: () => 'Reading recorded statistics',
   get_player_trend: (i) => `Reading the last ${Number(i.last_n) || 5} recorded rounds`,
@@ -206,6 +208,7 @@ const PROGRESS_DONE: Record<string, string> = {
   get_player_metrics: 'Read recorded statistics',
   get_player_trend: 'Read the recorded rounds',
   get_putting_distance_profile: 'Compared putting by distance',
+  summarise_data: SUMMARISE_STEP.done,
   compare_players: 'Compared players on the same window',
   get_team_metric_ranking: 'Ranked the team',
   get_player_weakest_areas: 'Found where the gap is largest',
@@ -777,6 +780,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
     // Ask v2's wider reads: benchmarks, definitions and the golf reference, the typed reads for the rest of the program, and the allowlisted reader for the long tail.
     ...(askV2 && benchSource ? benchmarkTools({ sb, ctx, read, source: benchSource, who: { role: 'coach' } }) : {}),
     ...(askV2 ? coachWideReadTools({ sb, ctx, read, tournamentsOn: isFlagEnabled('golf_tournaments_v1') }) : {}),
+    ...(askV2 ? coachSummariseTools({ sb, ctx, read, evidence: evidenceByRef, tournamentsOn: isFlagEnabled('golf_tournaments_v1') }) : {}),
 
     ...(askV2 && practicePlans ? { [drillFlow.name]: flowTool(drillFlow as unknown as FlowDef<never>) } : {}),
     ...(askV2 ? askDraftTools({ sb, ctx, writer, practicePlans, surface, onArtifactWords }) : {}),

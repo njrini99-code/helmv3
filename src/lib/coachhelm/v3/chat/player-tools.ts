@@ -17,6 +17,7 @@ import { compileComposition } from './visuals/compile-composition';
 import { CompositionSpecV2, ShowVisualInputV2 } from './visuals/composition';
 import { applyComparisons, benchmarkSource } from './benchmark-reads';
 import { benchmarkTools } from './wide-read-tools';
+import { playerSummariseTools, SUMMARISE_STEP } from './summarise-tools';
 import { PLAYER_BENCHMARK_STEP, WIDE_READ_STEPS } from './wide-read-names';
 import { withWindowLabel } from './window-label';
 
@@ -120,6 +121,7 @@ export function buildPlayerTools({ sb, ctx, playerId, writer, collect, playerFig
   };
   return {
     ...benchmarkTools({ sb, ctx, read: wide, source: benchSource, who: { role: 'player', playerId } }),
+    ...playerSummariseTools({ ctx, evidence: evidenceByRef, read: (name, run) => read(name, SUMMARISE_STEP.playerDoing, SUMMARISE_STEP.playerDone, run) }),
     get_player_metrics: tool({ description: `Your computed statistics. ${WINDOW_NOTE}`, inputSchema: z.object({ metric_ids: z.array(z.enum(METRIC_IDS)).min(1).max(8), window: z.enum(FIGURE_WINDOWS).default('last10') }), execute: read('get_player_metrics', 'Reading your statistics', 'Read your statistics', (i: { metric_ids: Array<(typeof METRIC_IDS)[number]>; window: (typeof FIGURE_WINDOWS)[number] }) => getPlayerMetric(sb, ctx, { player_id: playerId, metric_ids: i.metric_ids, window: i.window }, playerFigures)) }),
     get_player_trend: tool({ description: 'Your movement on one metric over rounds.', inputSchema: z.object({ metric_id: z.enum(METRIC_IDS), last_n: z.number().int().min(3).max(30).default(10) }), execute: read('get_player_trend', 'Reading your recent rounds', 'Read your recent rounds', (i: { metric_id: string; last_n: number }) => getPlayerTrend(sb, ctx, { player_id: playerId, metric_id: i.metric_id, last_n: i.last_n })) }),
     get_putting_distance_profile: tool({ description: `Your make rate by putt distance, with the attempt count behind every band, in the bands the Stats page draws (0-3 up to 25+ ft), from your rounds in the window. Use for any question about your putting from a distance. ${WINDOW_NOTE}`, inputSchema: z.object({ window: z.enum(FIGURE_WINDOWS).default('last10') }), execute: read('get_putting_distance_profile', 'Reading your putting by distance', 'Read your putting by distance', (i: { window: (typeof FIGURE_WINDOWS)[number] }) => getPuttingDistanceProfile(sb, ctx, { player_id: playerId, window: i.window }, puttBands)) }),
@@ -149,6 +151,7 @@ export function buildPlayerTools({ sb, ctx, playerId, writer, collect, playerFig
 export const PLAYER_INSTRUCTIONS = (first: string, team: string, zone: string) => `You are CoachHelm, talking with ${first}, a player on ${team}. Their timezone is ${zone}.
 
 Say "you". In a visual's title, lede and notes too: "Your last round", never their name. Be encouraging and plain. Use only your tools; every figure must come from a read this turn, followed by that read's evidence_ref in square brackets, like [e2].
+Never count, add, subtract, average or rank in your head: for any count, total, average, place in a ranking or difference between two of your figures, call summarise_data over the reads you made and quote what it returns, citing its evidence_ref.
 Never name another player, even if asked. You can only read this player's own data. You are always read against three things, in this order, and you state all three: (1) your level (the Division I, II or III average for your team's division) and where you sit in it; (2) the team average and where you sit in your team; (3) the Tour. Never who on the team did what, and never a teammate's name or figure.
 To compare, read the benchmarks first: they return all three with their source, your value and how far you are from each. If one is missing, say so in a few words instead of leaving it out: "level not set" when your team's division is not set (tell them to ask their coach), "no college figure" for strokes gained (then give the team and the Tour). Say where each value comes from in the same sentence as the figure. A benchmark is an average, not anyone's result: never write it as if it were yours or a teammate's. The Tour is a professional yardstick: being behind it is expected, so keep the level first.
 For golf knowledge (what a stat means, how putting or approach play affects scoring, what is typical), read the golf reference. Its figures are published research: say where they come from in the same sentence, keep them apart from your numbers, and never invent a distance, count of reps or target that no read returned. If a read has nothing, say so.
