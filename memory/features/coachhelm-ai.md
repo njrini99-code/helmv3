@@ -75,6 +75,11 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 
 ## Business Rules
 
+- Calibration cron (`src/app/api/cron/coachhelm-calibration/route.ts`,
+  nightly `40 3 * * *`) reads every `golf_prediction_validations` row in its
+  90-day window, paged by `id` through `fetchAllRowsResult` (2026-11-08: a
+  single capped read kept 1000 of 1253 and skewed the curve), and fetches the
+  parent `golf_predictions` in 200-id `.in()` chunks.
 - One-team canary (`src/lib/coachhelm/canary.ts`, env `HELM_COACHHELM_TEAMS`,
   2026-10-21): the v3 flags `coachhelm_reads_v1_copy`,
   `coachhelm_data_gap_prompt_v1`, `coachhelm_data_prompts_v2` (the Slice 8b
