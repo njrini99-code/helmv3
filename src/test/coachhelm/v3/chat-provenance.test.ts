@@ -512,12 +512,10 @@ describe('auditNumericClaims', () => {
     // timestamped date, the two-digit year pivot, and one documented (not
     // fixed) residual risk.
 
-    it('accepts a no-year date strictly inside a window, not just at its boundary', () => {
-      // MUST-fix: the boundary-only check (`evidenceMonthDays`, built from
-      // window_start/window_end THEMSELVES) matched only Aug 16 and Sep 15 —
-      // a real in-window date like Aug 25 was flagged even though the whole
-      // window is real evidence for it.
-      const claims = auditNumericClaims(
+    it('a no-year date strictly inside a window is not supported by the window; its bounds are (owner, 2026-11-08)', () => {
+      // Earlier rule: a window counted for every date inside it. Replay: a stated date shifted to another day inside a read's window passed
+      // 12 of 22 times, so the window now grounds its two bounds only; a date strictly between them must be a date some read returned.
+      const inside = auditNumericClaims(
         'He played well on Aug 25.',
         [
           measurement({
@@ -529,16 +527,14 @@ describe('auditNumericClaims', () => {
           }),
         ],
       );
-      expect(claims).toEqual([]);
+      expect(inside.map((c) => c.text)).toEqual(['Aug 25']);
+      const bound = auditNumericClaims('The window ran from Aug 16 to Sep 15.', [measurement({ metric_id: 'penalties_per_round', value: 0.09, sample_size: 11, window_start: '2026-08-16', window_end: '2026-09-15' })]);
+      expect(bound).toEqual([]);
     });
 
-    it('accepts a no-year date inside a window that crosses a year boundary', () => {
-      // The window's own start/end years (2025 and 2026) are the candidate
-      // years tried for containment — "Dec 28" resolves against 2025-12-28,
-      // which falls inside the window even though the window's END year is
-      // 2026.
+    it('a window that crosses a year boundary grounds its bounds in their own years, and nothing between', () => {
       const claims = auditNumericClaims(
-        'He played well on Dec 28.',
+        'He played well on Dec 20.',
         [
           measurement({
             metric_id: 'penalties_per_round',
@@ -550,6 +546,7 @@ describe('auditNumericClaims', () => {
         ],
       );
       expect(claims).toEqual([]);
+      expect(auditNumericClaims('He played well on Dec 28.', [measurement({ metric_id: 'penalties_per_round', value: 0.09, sample_size: 11, window_start: '2025-12-20', window_end: '2026-01-10' })]).map((c) => c.text)).toEqual(['Dec 28']);
     });
 
     it('accepts a date whose UTC calendar day differs from the timezone-converted day, via collectDates', () => {
@@ -650,12 +647,12 @@ describe('auditNumericClaims', () => {
     });
 
     it('leaves a date-only window bound unaffected by a given timezone (no time component, nothing to convert)', () => {
-      // Same window-containment case as the no-year-date test above, but
+      // Same window-bound case as the no-year-date test above, but
       // with a timezone threaded through anyway — window_start/window_end
       // are date-only strings here, so isoDaysOf's early return (no time
       // component) means the timezone argument changes nothing.
       const claims = auditNumericClaims(
-        'He played well on Aug 25.',
+        'He played well on Aug 16.',
         [
           measurement({
             metric_id: 'penalties_per_round',
@@ -683,8 +680,8 @@ describe('auditNumericClaims', () => {
           window_end: '2026-09-30',
         }),
       ];
-      // "9/6/26" -> 2026, inside the window -> accepted.
-      expect(auditNumericClaims('Played 9/6/26.', evidence)).toEqual([]);
+      // "9/6/26" -> 2026; the window does not return that day (it only bounds Sep 1 and Sep 30) -> rejected as a shifted date; "9/1/26" is its bound.
+      expect(auditNumericClaims('Played 9/1/26.', evidence)).toEqual([]);
       // "9/6/78" -> pivots to 1978 (>=70), which matches no evidence at all
       // -> rejected. (Before the pivot this resolved to 2078, an equally
       // unsupported but differently-wrong year.)

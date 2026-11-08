@@ -1451,9 +1451,6 @@ export function auditNumericClaimsDetailed(
    * justified by subtracting two putt counts; deliberately player-free,
    * because a comparison spans players by definition.
    */
-  const written = [...text.matchAll(NUMERIC_TOKEN_RE)].map((m) => m[0].replace(/^-/, ''));
-  /** Whether the text states this figure (to the precision it is written at, sign aside). */
-  const stated = (n: number) => written.some((w) => Math.abs(Math.abs(n) - Number(w)) <= roundingTolerance(w));
   for (const [key, group] of byMetric.entries()) {
     // `add()` above never lets a group exceed PAIRWISE_ANCHOR_CAP; the upper
     // check is kept as a direct guarantee against this loop's own O(n²) cost
@@ -1468,11 +1465,7 @@ export function auditNumericClaimsDetailed(
     }
     const values = [...group];
     for (const [i, left] of values.entries()) {
-      for (const right of values.slice(i + 1)) {
-        // A difference is a stated comparison, so one of its two figures is stated beside it. Every pair of a long list (a roster's goals)
-        // would otherwise cover a whole range of values (replay f334ec07: any 19.9 to 40.2 passed in place of 15.3).
-        if (stated(left) || stated(right)) add(left - right, { player: null, team: false, ...fam });
-      }
+      for (const right of values.slice(i + 1)) add(left - right, { player: null, team: false, ...fam });
     }
   }
 
