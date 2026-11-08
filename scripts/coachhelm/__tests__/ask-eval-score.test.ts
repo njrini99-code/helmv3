@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error -- plain .mjs helper, scripts/ is outside tsconfig.
-import { applyStreamLine, citationsFromLedger, citationsFromLog, dateRe, newStreamState, score } from '../ask-eval-score.mjs';
+import { applyStreamLine, captureFixture, citationsFromLedger, citationsFromLog, dateRe, newStreamState, score } from '../ask-eval-score.mjs';
 
 const owen = {
   facts: [
@@ -91,5 +91,17 @@ describe('ask-eval tools and citations', () => {
     ].join('\n');
     expect(citationsFromLog(log, 'abc-123')).toMatchObject({ figures: 7, cited: 4, cites: 5, verified: 4, unresolved: 1, mismatched: 0 });
     expect(citationsFromLog(log, 'missing')).toBeNull();
+  });
+});
+
+describe('ask-eval capture', () => {
+  it('keeps the reads and tool calls of a turn and shapes them as a fixture', () => {
+    const state = newStreamState();
+    applyStreamLine(state, 'data: {"type":"tool-input-available","toolCallId":"c","toolName":"get_player_metrics","input":{"window":"last5"}}');
+    applyStreamLine(state, 'data: {"type":"data-evidence","id":"e","data":{"tool":"get_player_metrics","ref":"e1","envelope":{"summary":"s","measurements":[]}}}');
+    applyStreamLine(state, 'data: {"type":"text-delta","id":"t","delta":"73.0"}');
+    const f = captureFixture({ id: 'player-x', surface: 'player', team: 'T', timezone: 'America/New_York', roster: [{ id: 'p', name: 'A B', first_name: 'A', last_name: 'B' }], ask: 'q', askedAt: '2026-11-08T00:00:00Z', answeredAt: '2026-11-08T00:00:30Z', text: state.text, state, verdict: 'accepted', flagged: [], cost: 0.04, base: 'http://localhost:3101' });
+    expect(f).toMatchObject({ surface: 'player', userMessage: { content: 'q' }, turn: { content: '73.0', status: 'complete', recorded: { outcome: 'accepted' }, tools: [{ name: 'get_player_metrics', input: { window: 'last5' } }], evidence: [{ tool: 'get_player_metrics', ref: 'e1' }] } });
+    expect(captureFixture({ id: 'c', surface: 'coach', team: 'T', timezone: 'z', roster: [], ask: 'q', askedAt: 'a', answeredAt: 'b', text: '', state, verdict: 'rejected', flagged: ['23'], base: 'x' }).turn.recorded).toMatchObject({ outcome: 'rejected', reason: 'ungrounded_claims', unmatchedTokens: ['23'] });
   });
 });

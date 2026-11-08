@@ -31,7 +31,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { cliGuard } from '../lib/cli-guard.mjs';
 import { readFileSync } from 'node:fs';
-import { applyStreamLine, citationsFromLedger, citationsFromLog, newStreamState, score } from './ask-eval-score.mjs';
+import { applyStreamLine, captureFixture, citationsFromLedger, citationsFromLog, newStreamState, score } from './ask-eval-score.mjs';
 
 const STAGING_REF = 'ybmwektreyrwjscxlogv';
 const DEMO_TEAM_ID = '6ecdd1a6-63fe-4beb-b094-00118f334163';
@@ -42,11 +42,12 @@ const cli = cliGuard({
   name: 'scripts/coachhelm/ask-eval.mjs',
   summary:
     'Ask CoachHelm Ask ~21 real questions on the local dev server against the staging demo team, score each answer against an expected answer computed from staging data, and write a markdown report. Dry run by default (free); --apply spends model budget.',
-  usage: '[--base-url <url>] [--only <id,id>] [--out <file>] [--server-log <file>] [--cookie <header>] [--player-cookie <header>] [--list]',
+  usage: '[--base-url <url>] [--only <id,id>] [--out <file>] [--server-log <file>] [--capture-dir <dir>] [--cookie <header>] [--player-cookie <header>] [--list]',
   options: [
     ['--base-url <url>', `Dev server (default ${DEFAULT_BASE}). It must run on the staging env and have Clubhouse on for the demo team.`],
     ['--only <ids>', 'Comma-separated question ids (see --list).'],
     ['--out <file>', 'Report path (default: <tmpdir>/ask-eval/ask-eval-<timestamp>.md).'],
+    ['--capture-dir <dir>', "Also write each turn as a replay-suite fixture (JSON: question, answer text, the reads' envelopes, tool calls, verdict) to <dir>/<question id>.json. A player's turn is stored nowhere else until HM3. Copy the files you want into src/lib/coachhelm/v3/chat/__tests__/fixtures/ask-turns-player/ and label them."],
     ['--server-log <file>', "The dev server's log. An accepted turn's citation counts (cited, verified, unresolved, mismatched, invalid) exist only in its v3.chat.stream.citations event; a rejected turn's are in the ledger."],
     ['--cookie <header>', 'Cookie header of a signed-in demo coach (or ASK_EVAL_COOKIE). Skips the magic-link sign-in.'],
     ['--player-cookie <header>', 'Cookie header of a signed-in Cole Bennett (or ASK_EVAL_PLAYER_COOKIE).'],
@@ -522,6 +523,7 @@ async function ledgerCost(viewerKey, id, since) {
   return { cost: rows.reduce((a, r) => a + Number(r.cost_usd ?? 0), 0), rows };
 }
 
+const captureDir = flag('--capture-dir');
 const serverLogPath = flag('--server-log');
 const serverLog = serverLogPath ? readFileSync(serverLogPath, 'utf8') : null;
 const report = [];
@@ -536,6 +538,7 @@ for (const question of picked) {
   let flagged = [];
   let tools = [];
   let citations = null;
+  let state = newStreamState();
   try {
     const res = await fetch(`${base}/api/coachhelm/v3/chat/stream`, {
       method: 'POST',
@@ -550,6 +553,7 @@ for (const question of picked) {
       const streamed = await readStream(res);
       text = streamed.text;
       tools = streamed.tools;
+      state = streamed;
       if (streamed.flag) {
         verdict = 'rejected';
         flagged = streamed.flag.unmatched_tokens ?? [];
@@ -587,6 +591,16 @@ for (const question of picked) {
   if (!citations && serverLog) citations = citationsFromLog(serverLog, conversationId);
   const scored = verdict === 'error' ? null : score(question, text);
   report.push({ question, verdict, text, flagged, seconds, cost, scored, note, tools, citations });
+  if (captureDir && verdict !== 'error') {
+    const who = question.viewer === 'player' ? [byName('Cole Bennett')] : roster;
+    const fixture = captureFixture({
+      id: `${question.viewer}-${question.id}`, surface: question.viewer, team: team.name, timezone: team.timezone,
+      roster: who.map((p) => ({ id: p.id, name: p.name, first_name: p.first, last_name: p.name.slice(p.first.length).trim() || null })),
+      ask: question.ask, askedAt: startedAt.toISOString(), answeredAt: new Date().toISOString(), text, state, verdict, flagged, cost, base,
+    });
+    mkdirSync(captureDir, { recursive: true });
+    writeFileSync(join(captureDir, `${fixture.id}.json`), `${JSON.stringify(fixture, null, 1)}\n`);
+  }
   console.log(`${verdict.padEnd(10)} ${question.id}  ${citations ? `cites ${citations.cites}/ok ${citations.verified}/mismatch ${citations.mismatched}  ` : ''}correct ${scored?.correct ?? '-'} wrong ${scored?.wrong ?? '-'} missing ${scored?.missing ?? '-'}  ${seconds.toFixed(1)}s  $${cost.toFixed(3)}`);
 }
 

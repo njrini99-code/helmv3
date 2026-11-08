@@ -19,7 +19,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { loadFixtures, loadLabels, replayVerdict, VERDICT_ARGS, type AskFixture, type AskLabel } from './ask-replay-harness';
+import { loadFixtures, loadLabels, PLAYER_AUDIT_ARGS, replayVerdict, VERDICT_ARGS, type AskFixture, type AskLabel } from './ask-replay-harness';
 import { answerText, corruptionsFor, type Corruption, type CorruptionKind } from './ask-replay-corruptions';
 
 const STRICT = process.env.ASK_REPLAY_STRICT === '1';
@@ -173,43 +173,53 @@ describe('Ask replay: corrupted copies of true answers', () => {
   });
 });
 
-describe('Ask replay: matches the route', () => {
-  it('passes computeTurnVerdict the same arguments as chat/stream/route.ts', () => {
-    const source = readFileSync(join(__dirname, '..', '..', '..', '..', '..', 'app', 'api', 'coachhelm', 'v3', 'chat', 'stream', 'route.ts'), 'utf8');
-    const start = source.indexOf('computeTurnVerdict({');
-    expect(start).toBeGreaterThan(0);
-    // Walk to the matching brace, then read the top-level keys of the object literal with comments removed.
-    let depth = 0;
-    let end = start + 'computeTurnVerdict('.length;
-    for (let i = end; i < source.length; i += 1) {
-      const ch = source[i];
-      if (ch === '{' || ch === '(' || ch === '[') depth += 1;
-      else if (ch === '}' || ch === ')' || ch === ']') {
-        depth -= 1;
-        if (depth === 0) {
-          end = i + 1;
-          break;
-        }
+/** The top-level argument names of the first `callName({ ... })` in a source file, comments removed; a conditional spread contributes the key inside it. */
+function callArgNames(source: string, callName: string): string[] {
+  const start = source.indexOf(`${callName}({`);
+  expect(start, `${callName}({ not found`).toBeGreaterThan(0);
+  let depth = 0;
+  let end = start + callName.length;
+  for (let i = end; i < source.length; i += 1) {
+    const ch = source[i];
+    if (ch === '{' || ch === '(' || ch === '[') depth += 1;
+    else if (ch === '}' || ch === ')' || ch === ']') {
+      depth -= 1;
+      if (depth === 0) {
+        end = i + 1;
+        break;
       }
     }
-    const body = source
-      .slice(start + 'computeTurnVerdict('.length + 1, end - 1)
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/^\s*\/\/.*$/gm, '');
-    const keys: string[] = [];
-    let d = 0;
-    let piece = '';
-    for (const ch of body) {
-      if (ch === '{' || ch === '(' || ch === '[') d += 1;
-      if (ch === '}' || ch === ')' || ch === ']') d -= 1;
-      if (ch === ',' && d === 0) {
-        keys.push(piece);
-        piece = '';
-      } else piece += ch;
-    }
-    if (piece.trim()) keys.push(piece);
-    // A conditional spread (`...(askV2 ? { cites: ... } : {})`) contributes the key inside its object.
-    const names = keys.map((k) => (/^\s*\.\.\./.test(k) ? /\{\s*([A-Za-z_]\w*)\s*:/.exec(k)?.[1] : /^\s*([A-Za-z_]\w*)/.exec(k)?.[1])).filter(Boolean);
-    expect(names, 'route.ts changed what it passes computeTurnVerdict: update replayVerdict in ask-replay-harness.ts and VERDICT_ARGS').toEqual([...VERDICT_ARGS]);
+  }
+  const body = source
+    .slice(start + callName.length + 2, end - 1)
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+  const pieces: string[] = [];
+  let d = 0;
+  let piece = '';
+  for (const ch of body) {
+    if (ch === '{' || ch === '(' || ch === '[') d += 1;
+    if (ch === '}' || ch === ')' || ch === ']') d -= 1;
+    if (ch === ',' && d === 0) {
+      pieces.push(piece);
+      piece = '';
+    } else piece += ch;
+  }
+  if (piece.trim()) pieces.push(piece);
+  return pieces
+    .map((k) => (/^\s*\.\.\./.test(k) ? /\{\s*([A-Za-z_]\w*)\s*:/.exec(k)?.[1] : /^\s*([A-Za-z_]\w*)/.exec(k)?.[1]))
+    .filter((n): n is string => Boolean(n));
+}
+
+describe('Ask replay: matches the route', () => {
+  const chat = join(__dirname, '..');
+  it('passes computeTurnVerdict the same arguments as chat/stream/route.ts', () => {
+    const source = readFileSync(join(chat, '..', '..', '..', '..', 'app', 'api', 'coachhelm', 'v3', 'chat', 'stream', 'route.ts'), 'utf8');
+    expect(callArgNames(source, 'computeTurnVerdict'), 'route.ts changed what it passes computeTurnVerdict: update replayVerdict in ask-replay-harness.ts and VERDICT_ARGS').toEqual([...VERDICT_ARGS]);
+  });
+
+  it('passes auditPlayerAnswerCited the same arguments as player-turn.ts', () => {
+    const source = readFileSync(join(chat, 'player-turn.ts'), 'utf8');
+    expect(callArgNames(source, 'auditPlayerAnswerCited'), 'player-turn.ts changed what it passes the audit: update replayPlayerVerdict and PLAYER_AUDIT_ARGS in ask-replay-harness.ts').toEqual([...PLAYER_AUDIT_ARGS]);
   });
 });

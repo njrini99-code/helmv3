@@ -76,7 +76,7 @@ export function score(question, text) {
 
 
 /** What the answer stream has said so far: the text, and whether the route flagged or broke the turn. */
-export const newStreamState = () => ({ text: '', flag: null, incomplete: false, error: null, evidence: 0, tools: [] });
+export const newStreamState = () => ({ text: '', flag: null, incomplete: false, error: null, evidence: 0, tools: [], evidenceParts: [], toolCalls: [] });
 
 /** Fold one server-sent-event line of the UI message stream into the state. Lines that are not `data:` JSON are ignored. */
 export function applyStreamLine(state, rawLine) {
@@ -93,9 +93,12 @@ export function applyStreamLine(state, rawLine) {
   if (ev.type === 'text-delta') state.text += ev.delta ?? '';
   else if (ev.type === 'data-grounding-flag') state.flag = ev.data ?? {};
   else if (ev.type === 'data-turn-incomplete') state.incomplete = true;
-  else if (ev.type === 'data-evidence') state.evidence += 1;
-  else if (ev.type === 'tool-input-available' || ev.type === 'tool-input-start') {
+  else if (ev.type === 'data-evidence') {
+    state.evidence += 1;
+    if (ev.data?.envelope) state.evidenceParts.push({ tool: ev.data.tool ?? null, ref: ev.data.ref ?? null, envelope: ev.data.envelope });
+  } else if (ev.type === 'tool-input-available' || ev.type === 'tool-input-start') {
     if (ev.toolName && !state.tools.includes(ev.toolName)) state.tools.push(ev.toolName);
+    if (ev.type === 'tool-input-available' && ev.toolName) state.toolCalls.push({ name: ev.toolName, input: ev.input ?? null });
   }
   else if (ev.type === 'error') state.error = ev.errorText ?? 'stream error';
   return state;
@@ -125,4 +128,31 @@ export function citationsFromLog(logText, conversationId) {
     out[key] = m ? Number(m[1]) : 0;
   }
   return out;
+}
+
+/**
+ * A finished turn in the replay suite's fixture shape (src/lib/coachhelm/v3/chat/__tests__/fixtures), so a captured turn, a player's above all
+ * (player answers are not stored until HM3), can be committed as a fixture. `surface: 'player'` replays through the player's audit.
+ * The model's cites block is withheld from the stream, so a captured turn has none.
+ */
+export function captureFixture({ id, surface, team, timezone, roster, ask, askedAt, answeredAt, text, state, verdict, flagged, cost, base }) {
+  return {
+    id,
+    messageId: `captured-${id}`,
+    ...(surface === 'player' ? { surface: 'player' } : {}),
+    source: { project: 'staging', team, exportedBy: 'scripts/coachhelm/ask-eval.mjs --capture-dir', server: base },
+    timezone,
+    roster,
+    userMessage: { content: ask, createdAt: askedAt },
+    priorMessages: [],
+    turn: {
+      createdAt: answeredAt,
+      status: verdict === 'accepted' ? 'complete' : 'failed',
+      costUsd: cost ?? null,
+      content: text,
+      tools: state.toolCalls,
+      evidence: state.evidenceParts,
+      recorded: verdict === 'accepted' ? { outcome: 'accepted' } : { outcome: 'rejected', reason: verdict === 'incomplete' ? 'stream_incomplete' : 'ungrounded_claims', unmatchedTokens: flagged ?? [], misattributedTokens: [] },
+    },
+  };
 }
