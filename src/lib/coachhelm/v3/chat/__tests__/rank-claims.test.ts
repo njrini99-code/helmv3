@@ -78,3 +78,20 @@ describe('direction and value', () => {
     expect(flagged('Owen has the lowest putts per round on the team.', [putts])).toEqual(['lowest putts per round on the team']);
   });
 });
+
+describe('places counted from an end', () => {
+  // Staging 368318ea: "By value he has the second-lowest approach figure of the seven players with data. Only Ethan Park is lower" is true.
+  it('second-lowest, next-to-last and second from the bottom are the same place, and are checked, not read as the lowest', () => {
+    expect(flagged('By value Owen has the second-lowest approach figure of the seven players with data. Only Ethan Park is lower, at -4.40.')).toEqual([]);
+    expect(flagged('Owen is next-to-last on the team on approach.')).toEqual([]);
+    expect(flagged('Owen is second from the bottom of the seven players on approach.')).toEqual([]);
+    expect(flagged('Jackson is the third-highest of the seven players on approach.')).toEqual([]);
+  });
+  it('and a wrong one is flagged', () => {
+    expect(flagged('By value Owen has the third-lowest approach figure of the seven players.')).toEqual(['third-lowest approach figure of the seven players']);
+    expect(flagged('Ethan is next-to-last on the team on approach.')).toEqual(['next-to-last on the team']);
+    expect(flagged('Owen is second from the top of the seven players on approach.')).toEqual(['second from the top of the seven players']);
+    expect(flagged('Owen has the second-best approach figure of the seven players.')).toEqual(['second-best approach figure of the seven players']);
+    expect(flagged('Mason is the second-best on the team on approach.')).toEqual([]);
+  });
+});

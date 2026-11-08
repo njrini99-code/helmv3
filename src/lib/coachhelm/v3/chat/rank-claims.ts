@@ -23,14 +23,17 @@ const WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five:
 const NUM = String.raw`(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)`;
 const PLACE_ORDINAL = new RegExp(String.raw`\b(\d{1,2})(?:st|nd|rd|th)\s+(?:of|out of|among)\s+(?:the\s+|all\s+|our\s+|your\s+)?${NUM}\b`, 'gi');
 const PLACE_RANKED = new RegExp(String.raw`\b(?:rank(?:s|ed|ing)?|place[sd]?|sits?|sitting|comes?)\s+(?:#|number\s+|no\.\s*)?(\d{1,2})\s+(?:of|out of|among)\s+(?:the\s+|all\s+|our\s+|your\s+)?${NUM}\b`, 'gi');
-const SUPERLATIVE = new RegExp(
-  String.raw`\b(weakest|worst|lowest|bottom|last|strongest|best|highest|top|first)\b((?:\s+[\p{L}'-]+){0,3}?)\s+(?:on|of|in|among|within)\s+(?:the\s+|your\s+|this\s+|our\s+)?(?:team|roster|squad|group|${NUM}\s+players|players)\b`,
-  'giu',
-);
+const TAIL = String.raw`\s+(?:on|of|in|among|within)\s+(?:the\s+|your\s+|this\s+|our\s+)?(?:team|roster|squad|group|${NUM}\s+players|players)\b`;
+const ORD = String.raw`(second|third|fourth|fifth|2nd|3rd|4th|5th)`;
+/** "weakest", "second-lowest", "third-best" on the team: group 1 the optional ordinal, 2 the superlative, 3 the words between it and the group. */
+const SUPERLATIVE = new RegExp(String.raw`\b(?:${ORD}[- ])?(weakest|worst|lowest|bottom|last|strongest|best|highest|top|first)\b((?:\s+[\p{L}'-]+){0,3}?)${TAIL}`, 'giu');
+/** "next-to-last", "second from the bottom", "third from the top" on the team: group 1 the ordinal, 2 which end, 3 the words between. */
+const FROM_END = new RegExp(String.raw`\b(?:${ORD}|next)[- ](?:to[- ](last)|from (?:the )?(bottom|last|end|top|front))\b((?:\s+[\p{L}'-]+){0,3}?)${TAIL}`, 'giu');
 /** A noun between the superlative and "on the team" that makes it about something other than the player ("his best round on the team"). */
 const NOT_ABOUT_THE_PLAYER = /\b(?:rounds?|scores?|holes?|days?|games?|finish(?:es)?|shots?|weeks?|starts?|events?|tournaments?|qualifiers?)\b/i;
 
 type Worst = 'worst' | 'best' | 'lowest' | 'highest';
+const ORDINAL_K: Record<string, number> = { next: 2, second: 2, '2nd': 2, third: 3, '3rd': 3, fourth: 4, '4th': 4, fifth: 5, '5th': 5 };
 const SUPERLATIVE_KIND: Record<string, Worst> = { weakest: 'worst', worst: 'worst', bottom: 'worst', last: 'worst', strongest: 'best', best: 'best', top: 'best', first: 'best', lowest: 'lowest', highest: 'highest' };
 
 const MIN_SET = 3;
@@ -137,6 +140,8 @@ export interface RankClaim {
   of?: number | null;
   /** Superlatives: which end. */
   end?: Worst;
+  /** Superlatives counted from an end: 2 for "second-lowest" or "next-to-last" (1 when not said). */
+  k?: number;
 }
 
 /** The place and superlative claims in one sentence. */
@@ -148,10 +153,19 @@ export function rankClaimsIn(sentence: string): RankClaim[] {
       if (place >= 1) out.push({ text: m[0], kind: 'place', place, of: wordOrNumber(m[2]) });
     }
   }
+  const plain = (words: string | undefined) => NOT_ABOUT_THE_PLAYER.test((words ?? '').replace(/\b(?:per|a|each)\s+(?:round|day|hole|week)s?\b/gi, ''));
   for (const m of sentence.matchAll(SUPERLATIVE)) {
-    if (NOT_ABOUT_THE_PLAYER.test((m[2] ?? '').replace(/\b(?:per|a|each)\s+(?:round|day|hole|week)s?\b/gi, ''))) continue;
-    const end = SUPERLATIVE_KIND[(m[1] ?? '').toLowerCase()];
-    if (end) out.push({ text: m[0], kind: 'superlative', end });
+    if (plain(m[3])) continue;
+    // "second from the top" and "next-to-last" are the from-end forms below, not a plain top or last.
+    if (/(?:from\s+(?:the\s+)?|to[- ])$/i.test(sentence.slice(0, m.index ?? 0))) continue;
+    const end = SUPERLATIVE_KIND[(m[2] ?? '').toLowerCase()];
+    if (end) out.push({ text: m[0], kind: 'superlative', end, k: m[1] ? ORDINAL_K[m[1].toLowerCase()] : 1 });
+  }
+  for (const m of sentence.matchAll(FROM_END)) {
+    if (plain(m[4])) continue;
+    const word = (m[1] ?? 'next').toLowerCase();
+    const from = (m[2] ?? m[3] ?? '').toLowerCase();
+    out.push({ text: m[0], kind: 'superlative', end: from === 'top' || from === 'front' ? 'best' : 'worst', k: ORDINAL_K[word] ?? 2 });
   }
   return out;
 }
@@ -166,17 +180,21 @@ function agrees(claim: RankClaim, set: PlayerSet, id: string): boolean {
     const n = claim.place as number;
     return placeRanges(set, id).some(([from, to]) => n >= from && n <= to);
   }
-  const lo = Math.min(...values);
-  const hi = Math.max(...values);
+  const k = claim.k ?? 1;
+  const below = values.filter((v) => v < mine).length;
+  const above = values.filter((v) => v > mine).length;
+  const tied = values.filter((v) => v === mine).length;
+  const fromLow = k >= below + 1 && k <= below + tied;
+  const fromHigh = k >= above + 1 && k <= above + tied;
   switch (claim.end) {
     case 'lowest':
-      return mine === lo;
+      return fromLow;
     case 'highest':
-      return mine === hi;
+      return fromHigh;
     default: {
       if (!set.direction) return true;
       const wantsHigh = (claim.end === 'best') === (set.direction === 'higher_better');
-      return mine === (wantsHigh ? hi : lo);
+      return wantsHigh ? fromHigh : fromLow;
     }
   }
 }

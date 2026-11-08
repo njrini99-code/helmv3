@@ -76,6 +76,13 @@ describe('player Ask: per-figure citations', () => {
     expect(r.citations).toBeUndefined();
   });
 
+  it('the ledger row of an accepted turn carries its counts too', () => {
+    const r = audit('Your putting is losing 1.21 strokes a round.', [cite('1.21')]);
+    const row = playerLedgerRow({ playerId: 'player-uuid-0123456789', promptTokens: 1, completionTokens: 1, costUsd: 0, unsupported: r.unsupported, citations: r.citations });
+    expect(row.verified).toBe(true);
+    expect(row.citations).toMatchObject({ reason: 'grounded', unmatched_tokens: [], citation_stats: { verified: 1 } });
+  });
+
   it('the ledger row carries the counts of a flagged turn', () => {
     const r = audit('Your putting is losing 3.1 strokes a round.', [cite('3.1')]);
     const row = playerLedgerRow({ playerId: 'player-uuid-0123456789', promptTokens: 1, completionTokens: 1, costUsd: 0, unsupported: r.unsupported, citations: r.citations });

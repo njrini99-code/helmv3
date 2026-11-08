@@ -385,6 +385,26 @@ function blankCalendarYears(text: string): string {
   return text.replace(CALENDAR_YEAR, (match, prefix: string) => prefix + ' '.repeat(match.length - prefix.length));
 }
 
+/**
+ * "8 of those came in two rounds", "three of them": a number counting some of the things the sentence before named. The things counted are
+ * not said here, so it is a subset count unless a count noun follows ("8 of those rounds" is a number of rounds).
+ */
+const SUBSET_COUNT_AFTER = /^\s+of\s+(?:those|them|these)\b(?!\s+(?:\d+|rounds?|holes?|players?|shots?|attempts?|events?|games?|days?|weeks?|tournaments?|qualifiers?|sessions?|drills?|goals?|tasks?|practices|practice)\b)/i;
+
+/** The metric family of the cue nearest before `at` in its paragraph, or null when the paragraph has named none yet. */
+function lastFamilyBefore(text: string, at: number): MetricFamily | null {
+  const start = text.lastIndexOf('\n\n', at) + 1;
+  const before = text.slice(Math.max(0, start), at);
+  let best: { end: number; family: MetricFamily } | null = null;
+  for (const [re, family] of METRIC_CUES) {
+    for (const m of before.matchAll(re)) {
+      const end = (m.index ?? 0) + m[0].length;
+      if (!best || end > best.end) best = { end, family };
+    }
+  }
+  return best?.family ?? null;
+}
+
 /** The single pattern used both to find a claim in prose and to read a number out of tool text. */
 const NUMERIC_TOKEN_RE = /-?\d+(?:\.\d+)?/g;
 
@@ -582,58 +602,50 @@ function auditDateExpressions(
   evidenceDates: ReadonlySet<string>,
   evidenceWindows: ReadonlyArray<readonly [string, string]>,
 ): { scrubbed: string; claims: UnsupportedClaim[] } {
-  const evidenceMonthDays = new Set<string>();
-  for (const iso of evidenceDates) evidenceMonthDays.add(iso.slice(5, 10));
-
-  // Every year a window's own bounds touch — the candidates tried when a
-  // no-year expression ("Aug 25") needs a year to test for CONTAINMENT
-  // (rather than exact membership) against that window. A window spanning a
-  // year boundary (2025-12-20..2026-01-10) contributes BOTH 2025 and 2026,
-  // so "Dec 28" resolves against 2025-12-28 and is correctly seen to fall
-  // inside the window even though the window's END year is 2026.
-  const candidateYears = new Set<number>();
+  // A window grounds its own two bounds and nothing between them: "May 27" inside a window that starts May 18 is a date the reads never
+  // returned (replay: 12 of 22 shifted dates passed this way). The bounds are dates the reads stated, so they join the exact pool.
+  const exactDates = new Set<string>(evidenceDates);
   for (const [start, end] of evidenceWindows) {
-    const startYear = Number(start.slice(0, 4));
-    const endYear = Number(end.slice(0, 4));
-    if (Number.isInteger(startYear)) candidateYears.add(startYear);
-    if (Number.isInteger(endYear)) candidateYears.add(endYear);
+    exactDates.add(start);
+    exactDates.add(end);
   }
+  const evidenceMonthDays = new Set<string>();
+  for (const iso of exactDates) evidenceMonthDays.add(iso.slice(5, 10));
 
   const isSupported = (month: number, day: number, year: number | null): boolean => {
     const monthDay = `${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     if (year === null) {
-      // Exact-day membership, independent of year or window — deliberately
-      // GLOBAL across every evidence date in the turn, not scoped to a
-      // specific metric/window/entity. That is a real residual risk (an
-      // unrelated measurement's window boundary sharing a month-day, e.g.
-      // "ends Dec 31", would let a fabricated "wrapped up on Dec 31"
-      // elsewhere in the same turn pass) rather than a fabrication this
-      // check is meant to catch. Narrowing this to the claim's own
-      // entity/window is a possible follow-up, not done here — the fix this
-      // block makes is the CONTAINMENT check below, which is what actually
-      // closes the reported false-positive gap for a real, in-window date.
-      //
-      // The containment check itself, once added, carries a related and
-      // wider version of the same risk: it is scoped to a WINDOW, not an
-      // entity, so any evidence window spanning most or all of a year
-      // supports nearly every bare month-day inside it — an unrelated
-      // season-long measurement makes containment almost as permissive as
-      // the exact-day pool above, for a different reason. Neither is fixed
-      // here; both are the same "no-year dates aren't scoped to the claim's
-      // own subject" gap the note above already describes.
-      if (evidenceMonthDays.has(monthDay)) return true;
-      for (const candidateYear of candidateYears) {
-        const iso = `${candidateYear}-${monthDay}`;
-        if (evidenceWindows.some(([start, end]) => iso >= start && iso <= end)) return true;
-      }
-      return false;
+      // Exact-day membership, independent of year: a month and day some read returned (a round, an event, a window bound). Global across the
+      // turn's evidence, not scoped to the claim's own subject: an unrelated read's date sharing a month-day still passes, a residual gap.
+      // Falling inside a window grounds nothing (2026-11-08).
+      return evidenceMonthDays.has(monthDay);
     }
     const iso = `${year}-${monthDay}`;
-    return evidenceDates.has(iso) || evidenceWindows.some(([start, end]) => iso >= start && iso <= end);
+    return exactDates.has(iso);
   };
 
   const claims: UnsupportedClaim[] = [];
   const seen = new Set<string>();
+  // "Wednesday (July 30", "Thu, Oct 21": the weekday has to be the date's. A date with no year is tried in every year the reads touch, and
+  // flagged only when none of them makes it that weekday (replay 30518f0c: July 30, 2026 is a Thursday).
+  const evidenceYears = new Set<number>([...exactDates].map((iso) => Number(iso.slice(0, 4))).filter((y) => Number.isInteger(y) && y > 1900));
+  for (const m of text.matchAll(WEEKDAY_DATE_RE)) {
+    const weekday = WEEKDAY_INDEX[(m[1] ?? '').toLowerCase()];
+    const month = MONTH_NAMES[(m[2] ?? '').toLowerCase()];
+    const day = Number(m[3]);
+    if (weekday === undefined || month === undefined || !Number.isInteger(day) || day < 1 || day > 31) continue;
+    const years = m[4] ? [Number(m[4])] : [...evidenceYears];
+    if (years.length === 0) continue;
+    const real = years.filter((y) => new Date(Date.UTC(y, month - 1, day)).getUTCMonth() === month - 1);
+    if (real.length === 0) continue;
+    if (!real.some((y) => new Date(Date.UTC(y, month - 1, day)).getUTCDay() === weekday)) {
+      const label = m[0].trim();
+      if (!seen.has(label)) {
+        seen.add(label);
+        claims.push({ text: label, value: day, misattributed: true });
+      }
+    }
+  }
   const flag = (label: string, day: number) => {
     if (seen.has(label)) return;
     seen.add(label);
@@ -704,8 +716,10 @@ function auditDateExpressions(
 const BARE_ORDINAL_DAY_RE =
   /(\b(?:on|since|from|until|till|through|by|before|after)\s+the\s+)(\d{1,2})(?:st|nd|rd|th)\b(?!\s+(?!(?:of|and|or|at|to|through|when|with|but)\b)[a-z])/gi;
 
-const WEEKDAY_INDEX: Record<string, number> = { sunday: 0, monday: 1, tuesday: 2, tues: 2, wednesday: 3, thursday: 4, thurs: 4, friday: 5, saturday: 6 };
+const WEEKDAY_INDEX: Record<string, number> = { sunday: 0, sun: 0, monday: 1, mon: 1, tuesday: 2, tues: 2, tue: 2, wednesday: 3, wed: 3, thursday: 4, thurs: 4, thur: 4, thu: 4, friday: 5, fri: 5, saturday: 6, sat: 6 };
 const WEEKDAY_WORDS_RE = /\b(?:(next|this)\s+)?(sunday|monday|tuesday|tues|wednesday|thursday|thurs|friday|saturday)\b/gi;
+/** A weekday straight before a month and day: "Wednesday, July 30", "Thu Oct 21", "Tue (Sep 9, 2026". Groups: weekday, month, day, year. */
+const WEEKDAY_DATE_RE = new RegExp(`\\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tues?|wed|thu(?:rs?)?|fri|sat)\\b\\.?,?\\s*\\(?\\s*(${MONTH_NAME_ALT})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s*(\\d{4}))?`, 'gi');
 const NEAR_DAY_WORDS_RE = /\b(today|tomorrow)\b/gi;
 
 function addDays(iso: string, days: number): string {
@@ -783,6 +797,10 @@ export function roundingTolerance(raw: string): number {
  */
 const HEDGE_BEFORE =
   /(?:\b(?:about|around|roughly|approximately|nearly|almost|over|under|above|below|more than|less than|fewer than|greater than|at least|at most|upwards of|north of|shy of)|~)\s*[-−]?$/i;
+
+/** A hedge that says the figure is a floor (the real one is larger) or a ceiling (the real one is smaller). */
+const HEDGE_ABOVE = /\b(?:more than|over|above|at least|greater than|upwards of|north of)\b/i;
+const HEDGE_BELOW = /\b(?:less than|fewer than|under|below|at most|shy of)\b/i;
 
 /** Proportional slack granted to a hedged number. 10% catches rounding, not invention. */
 const HEDGED_RELATIVE_TOLERANCE = 0.1;
@@ -1431,6 +1449,9 @@ export function auditNumericClaimsDetailed(
    * justified by subtracting two putt counts; deliberately player-free,
    * because a comparison spans players by definition.
    */
+  const written = [...text.matchAll(NUMERIC_TOKEN_RE)].map((m) => m[0].replace(/^-/, ''));
+  /** Whether the text states this figure (to the precision it is written at, sign aside). */
+  const stated = (n: number) => written.some((w) => Math.abs(Math.abs(n) - Number(w)) <= roundingTolerance(w));
   for (const [key, group] of byMetric.entries()) {
     // `add()` above never lets a group exceed PAIRWISE_ANCHOR_CAP; the upper
     // check is kept as a direct guarantee against this loop's own O(n²) cost
@@ -1445,7 +1466,11 @@ export function auditNumericClaimsDetailed(
     }
     const values = [...group];
     for (const [i, left] of values.entries()) {
-      for (const right of values.slice(i + 1)) add(left - right, { player: null, team: false, ...fam });
+      for (const right of values.slice(i + 1)) {
+        // A difference is a stated comparison, so one of its two figures is stated beside it. Every pair of a long list (a roster's goals)
+        // would otherwise cover a whole range of values (replay f334ec07: any 19.9 to 40.2 passed in place of 15.3).
+        if (stated(left) || stated(right)) add(left - right, { player: null, team: false, ...fam });
+      }
     }
   }
 
@@ -1470,8 +1495,11 @@ export function auditNumericClaimsDetailed(
     const raw = match.raw;
     const value = Number(raw);
     if (!Number.isFinite(value)) continue;
-    // Ordinals, counts of rounds/weeks/players — not statistical assertions.
-    if (Number.isInteger(value) && Math.abs(value) <= 12) continue;
+    // Ordinals, counts of rounds/weeks/players — not statistical assertions. A count of some of the things just talked about
+    // ("8 of those came in two rounds") is one: it is a sum over a subset, and no sample size or denominator stands for it.
+    const smallInteger = Number.isInteger(value) && Math.abs(value) <= 12;
+    const subsetCount = smallInteger && value >= 2 && SUBSET_COUNT_AFTER.test(scrubbed.slice(match.end, match.end + 40));
+    if (smallInteger && !subsetCount) continue;
     if (seen.has(raw)) continue;
     if (spans.has(value) && TIME_UNIT_AFTER.test(scrubbed.slice(match.end, match.end + 24))) continue;
     figures += 1;
@@ -1483,15 +1511,26 @@ export function auditNumericClaimsDetailed(
     }
 
     const at = match.start;
-    const hedged = HEDGE_BEFORE.test(scrubbed.slice(Math.max(0, at - 24), at));
+    const hedge = HEDGE_BEFORE.exec(scrubbed.slice(Math.max(0, at - 24), at));
     const exact = roundingTolerance(raw);
-    const tolerance = hedged ? Math.max(exact, Math.abs(value) * HEDGED_RELATIVE_TOLERANCE) : exact;
-
-    const near = (a: Anchor) => Math.abs(a.value - value) <= tolerance;
+    const room = Math.abs(value) * HEDGED_RELATIVE_TOLERANCE;
+    // "more than 7.5" is rounded outward from a larger real figure, "less than 30" from a smaller: the slack runs one way. An approximation
+    // ("about 26.6") gets half of it either way (28 is not "about 26.6" because 10% of it reaches).
+    const near = (a: Anchor) => {
+      const diff = Math.abs(a.value) - Math.abs(value);
+      if (!hedge) return Math.abs(a.value - value) <= exact;
+      if (HEDGE_ABOVE.test(hedge[0])) return diff >= -exact && diff <= Math.max(exact, room);
+      if (HEDGE_BELOW.test(hedge[0])) return -diff >= -exact && -diff <= Math.max(exact, room);
+      return Math.abs(a.value - value) <= Math.max(exact, room / 2);
+    };
     const binding = bind.bindingFor(index);
-    if (!anchors.some((a) => near(a) && playerCompatible(a, binding) && metricCompatible(a, binding) && (!a.reference || binding.refCue))) {
+    // A subset count is grounded by a figure of a metric (a per-round count, a stated total), never by a count of rounds, holes or players.
+    // What it counts is what the paragraph was last talking about ("three-putted … 8 of those"), when it said.
+    const counted = subsetCount ? lastFamilyBefore(scrubbed, match.start) : null;
+    const pool = subsetCount ? anchors.filter((a) => (counted ? a.family === counted || a.parent === counted : a.family !== null)) : anchors;
+    if (!pool.some((a) => near(a) && playerCompatible(a, binding) && metricCompatible(a, binding) && (!a.reference || binding.refCue))) {
       seen.add(raw);
-      found.push(anchors.some(near) ? { text: raw, value, misattributed: true } : { text: raw, value });
+      found.push(pool.some(near) ? { text: raw, value, misattributed: true } : { text: raw, value });
     } else {
       heuristicPassed += 1;
     }

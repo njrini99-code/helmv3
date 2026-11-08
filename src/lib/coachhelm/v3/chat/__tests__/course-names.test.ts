@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { auditNumericClaims, collectEnvelopeNumbers, type ToolEnvelope } from '../provenance';
+import { auditNumericClaims, collectEnvelopeDates, collectEnvelopeNumbers, type ToolEnvelope } from '../provenance';
 
 // Staging 2026-11-08 (message 6da3a6b2): a round list naming "Bryan Park Champs" read "Park" as Ethan Park, and every figure in that
 // bullet and the ones after it was withheld as another player's. A first or last name inside a longer capitalised phrase is a course.
@@ -28,5 +28,27 @@ describe('a name inside a course name is not the player', () => {
     expect(audit('Park shot 82 on Oct 6.')).toEqual(['82']);
     expect(audit('Ethan Park shot 82 on Oct 6.')).toEqual(['82']);
     expect(audit('On Tuesday Park shot 82.')).toEqual(['82']);
+  });
+});
+
+// Replay 30518f0c: "Wednesday (July 30" when July 30, 2026 is a Thursday. A shifted date inside a window passed 12 of 22 times, because
+// falling inside a window counted as a date the reads returned.
+describe('dates and weekdays', () => {
+  const dated = {
+    summary: 'x', measurements: [], series: [], coverage: 'complete', coverage_note: null, as_of: '2026-11-08T00:00:00.000Z',
+    detail: { rounds: [{ date: '2026-07-30', total_score: 74 }, { date: '2026-10-21', total_score: 71 }], window_start: '2026-05-18', window_end: '2026-09-26' },
+  } as unknown as ToolEnvelope;
+  const dates = collectEnvelopeDates(dated, 'America/New_York');
+  const windows = (text: string) => auditNumericClaims(text, [dated.measurements as never].flat(), [], collectEnvelopeNumbers(dated), dates, 'America/New_York', { players: roster }).map((c) => c.text);
+  it('a weekday has to be its date’s', () => {
+    expect(windows('He shot 74 on Thursday, July 30.')).toEqual([]);
+    expect(windows('He shot 74 on Wednesday (July 30).')).toEqual(['Wednesday (July 30']);
+    expect(windows('He shot 71 on Wed, Oct 21 and Wednesday, October 21, 2026.')).toEqual([]);
+    expect(windows('He shot 71 on Thu Oct 21.')).toEqual(['Thu Oct 21']);
+  });
+  it('a date strictly inside a read’s window is not a date the read returned; its own bounds and dates are', () => {
+    expect(windows('The window runs from May 18 to September 26.')).toEqual([]);
+    expect(windows('A round on July 30 and one on October 21.')).toEqual([]);
+    expect(windows('A round on May 27.')).toEqual(['May 27']);
   });
 });

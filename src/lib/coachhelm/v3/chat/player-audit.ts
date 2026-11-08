@@ -42,7 +42,7 @@ export function playerLedgerRow(args: { playerId: string; promptTokens: number; 
     prompt_tokens: args.promptTokens,
     completion_tokens: args.completionTokens,
     cost_usd: args.costUsd,
-    citations: grounded ? null : { reason: 'verification_failed', verdict_reason: 'ungrounded_claims', unmatched_tokens: args.unsupported.map((c) => c.text), ...(args.citations ? { citation_stats: { ...args.citations } } : {}) },
+    citations: grounded ? (args.citations ? { reason: 'grounded', unmatched_tokens: [] as string[], citation_stats: { ...args.citations } } : null) : { reason: 'verification_failed', verdict_reason: 'ungrounded_claims', unmatched_tokens: args.unsupported.map((c) => c.text), ...(args.citations ? { citation_stats: { ...args.citations } } : {}) },
     verified: grounded,
     fallback_to_template: false,
   };

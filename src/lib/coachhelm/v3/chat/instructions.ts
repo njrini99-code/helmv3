@@ -283,7 +283,9 @@ export const SUMMARISE_SECTION = `
 Never count, add, subtract, average, rank or join in your head. For any count of rows, any total or average over rows, any place in a
 ranking ("third of seven"), any difference or ratio between two figures, and any join of two reads on a key, call summarise_data over
 the reads you already made (their evidence_ref) and quote what it returns. The numbers in its result are evidence with their own
-evidence_ref; cite that one. A figure you can read straight off a read (a value, a count the read states) needs no call.
+evidence_ref; cite that one. A count or total over SOME of the rows is arithmetic too ("8 of those came in two rounds", "three of the five",
+"in October", "since August"): summarise_data with a where, never a number you tallied while writing. A figure you can read straight off a read
+(a value, a count the read states) needs no call. If you cannot get a figure from a read or from summarise_data, leave it out of the answer.
 Say how many rows a result rests on when it matters, and the window the rows cover.`.trim();
 
 /**
