@@ -264,6 +264,8 @@ export interface BuildToolsArgs {
   teamTools?: boolean;
   /** The team's strokes gained for a window, from the one source Team Stats reads. The route hands it in (code outside src/clubhouse may not import it); left out, that read says it could not be read. */
   teamStrokesGained?: TeamSgSource;
+  /** The map the turn's reads are kept in by evidence_ref, when the caller wants it (the route's citation check reads it). */
+  evidenceRefs?: Map<string, ToolEnvelope>;
   /** One player's scoring, putts and strokes gained for a window, from the rounds as Stats reads them. Handed in by the route, like `teamStrokesGained`. */
   playerFigures?: PlayerFiguresSource;
   /** One player's putts in the Stats page's bands for a window, from the rounds and shots as Stats reads them. Handed in by the route. */
@@ -354,7 +356,7 @@ function scopedKey(key: string, conversationId: string | null, plan: unknown): s
   return `${key.slice(0, 110)}:${h.toString(36)}`;
 }
 
-export function buildCoachTools({ sb, ctx, conversationId, writer, collect: collectOuter, teamStrokesGained, playerFigures, puttBands, teamTools = false, practicePlans = false, askV2 = false, surface = 'ask', onArtifactWords, defer }: BuildToolsArgs): ToolSet {
+export function buildCoachTools({ sb, ctx, conversationId, writer, collect: collectOuter, evidenceRefs, teamStrokesGained, playerFigures, puttBands, teamTools = false, practicePlans = false, askV2 = false, surface = 'ask', onArtifactWords, defer }: BuildToolsArgs): ToolSet {
   const scope = <P extends { idempotency_key: string }>(proposal: P, plan: unknown): P => ({ ...proposal, idempotency_key: scopedKey(proposal.idempotency_key, conversationId, plan) });
   // The next chat request finishes what a cut-off function left held (TASK_FIELDS §3 step 5). It has to be a request: the writes read the coach from the session.
   if (askV2 && defer) defer(() => sweepHeld(sb, { coach_id: ctx.coach_id, team_id: ctx.team_id, resolve: (row) => heldCommitFor(sb, ctx, row) }));
@@ -389,7 +391,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
   const benchSource = askV2 ? benchmarkSource(sb, ctx.team_id) : null;
 
   /** Every read this turn, by the `evidence_ref` the model is handed, for show_visual to resolve. Server memory only. */
-  const evidenceByRef = new Map<string, ToolEnvelope>();
+  const evidenceByRef = evidenceRefs ?? new Map<string, ToolEnvelope>();
   const evidence = (toolName: string, envelope: ToolEnvelope, ref?: string) => {
     writer.write({
       type: 'data-evidence',

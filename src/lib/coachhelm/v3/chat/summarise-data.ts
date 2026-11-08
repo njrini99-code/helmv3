@@ -80,7 +80,7 @@ const body = <S extends z.ZodTypeAny>(source: S) =>
   });
 export const SummariseInputCoach = body(SourceCoach);
 export const SummariseInputPlayer = body(SourcePlayer);
-export type SummariseInput = z.infer<typeof SummariseInputCoach>;
+export type SummariseInput = z.input<typeof SummariseInputCoach>;
 
 type Row = Record<string, unknown>;
 type Evidence = ReadonlyMap<string, ToolEnvelope>;

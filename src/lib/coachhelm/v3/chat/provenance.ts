@@ -764,7 +764,7 @@ export function coachRequestDates(text: string | null | undefined, todayIso: str
  * Half a unit at the precision the number was written to: "72.5" and "72.6" both round 72.55 and "73" does too, while "72.95",
  * written to the hundredth, claims 72.95. A flat tolerance on top of the rounded evidence let that one through (73 minus 0.05).
  */
-function roundingTolerance(raw: string): number {
+export function roundingTolerance(raw: string): number {
   const dot = raw.indexOf('.');
   const decimals = dot === -1 ? 0 : raw.length - dot - 1;
   return 0.5 * 10 ** -decimals + 1e-9;
@@ -1172,7 +1172,21 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
  * counts of rounds, weeks or players that appear in the surrounding sentence
  * rather than standalone statistical claims.
  */
-export function auditNumericClaims(
+export function auditNumericClaims(...args: Parameters<typeof auditNumericClaimsDetailed>): UnsupportedClaim[] {
+  const detail = auditNumericClaimsDetailed(...args);
+  args[6]?.report?.(detail);
+  return detail.unsupported;
+}
+
+/** What the audit did with a turn's numbers: the ones it flagged, and how many it examined, how many a verified citation stood for, how many the text heuristics passed. */
+export interface AuditDetail {
+  unsupported: UnsupportedClaim[];
+  figures: number;
+  cited: number;
+  heuristicPassed: number;
+}
+
+export function auditNumericClaimsDetailed(
   text: string,
   measurements: readonly Measurement[],
   series: readonly MeasurementSeries[] = [],
@@ -1220,9 +1234,16 @@ export function auditNumericClaims(
      * number is let through when a unit of time follows it ("30 days"), and only then.
      */
     requestedSpans?: readonly number[];
+    /**
+     * Figures a verified citation stands for (`cites.ts`), as written: a number in the answer equal to one of these, at the precision it
+     * is written to, is the model's own named figure from its own named evidence and is not matched against names. Left out, nothing changes.
+     */
+    citedValues?: readonly string[];
+    /** Called with what the audit did with the turn's numbers (for the citation counts); the return value is unchanged. */
+    report?: (detail: AuditDetail) => void;
   },
-): UnsupportedClaim[] {
-  if (!text) return [];
+): AuditDetail {
+  if (!text) return { unsupported: [], figures: 0, cited: 0, heuristicPassed: 0 };
 
   /**
    * Every value a tool actually produced, at any precision the prose might
@@ -1412,6 +1433,10 @@ export function auditNumericClaims(
   const seen = new Set<string>();
   const bind = buildBinder(scrubbed, nameSources);
   const spans = new Set(options?.requestedSpans ?? []);
+  const cited = (options?.citedValues ?? []).map((raw) => ({ value: Number(raw.trim().replace(/[−–]/g, '-').replace(/[%,+]/g, '')), raw: raw.trim().replace(/[−–]/g, '-').replace(/[%,+]/g, '') }));
+  let figures = 0;
+  let citedCount = 0;
+  let heuristicPassed = 0;
 
   for (const [index, match] of bind.tokens.entries()) {
     const raw = match.raw;
@@ -1421,6 +1446,13 @@ export function auditNumericClaims(
     if (Number.isInteger(value) && Math.abs(value) <= 12) continue;
     if (seen.has(raw)) continue;
     if (spans.has(value) && TIME_UNIT_AFTER.test(scrubbed.slice(match.end, match.end + 24))) continue;
+    figures += 1;
+    // A figure the model cited, and the server verified against the read it named, is not matched against names.
+    if (cited.some((c) => Number.isFinite(c.value) && Math.abs(Math.abs(c.value) - Math.abs(value)) <= Math.max(roundingTolerance(raw.replace(/^-/, '')), roundingTolerance(c.raw.replace(/^-/, ''))))) {
+      citedCount += 1;
+      seen.add(raw);
+      continue;
+    }
 
     const at = match.start;
     const hedged = HEDGE_BEFORE.test(scrubbed.slice(Math.max(0, at - 24), at));
@@ -1432,10 +1464,12 @@ export function auditNumericClaims(
     if (!anchors.some((a) => near(a) && playerCompatible(a, binding) && metricCompatible(a, binding) && (!a.reference || binding.refCue))) {
       seen.add(raw);
       found.push(anchors.some(near) ? { text: raw, value, misattributed: true } : { text: raw, value });
+    } else {
+      heuristicPassed += 1;
     }
   }
 
-  return found;
+  return { unsupported: found, figures, cited: citedCount, heuristicPassed };
 }
 
 /**

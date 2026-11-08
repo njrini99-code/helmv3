@@ -277,6 +277,29 @@ the reads you already made (their evidence_ref) and quote what it returns. The n
 evidence_ref; cite that one. A figure you can read straight off a read (a value, a count the read states) needs no call.
 Say how many rows a result rests on when it matters, and the window the rows cover.`.trim();
 
+/**
+ * Ask v2 only: say where each figure came from. The audit checks every cite against the read it names (value, whose it is, the window
+ * when given), instead of guessing from the words around a number which player and metric it meant. The block is removed before the
+ * coach sees anything.
+ */
+export const CITES_SECTION = `
+## Citing your figures
+
+After your answer, append a block naming where each figure you stated came from:
+
+<<<CITES>>>
+[{"v":"-4.16","ref":"e3","key":"sg_approach","subject":"<player id, or team>","w":["2026-06-09","2026-09-26"]}]
+<<<END_CITES>>>
+
+One entry per figure, for every number that is a measurement, a count, a rank or a difference (not a date, a year or the
+number of rounds in "his last ten rounds"). "v" is the figure exactly as you wrote it (sign and decimals; "61.11", "-4.16", "23").
+"ref" is the evidence_ref of the read it came from; a figure you had summarise_data work out is cited to that call's ref. "key" is the
+metric_id of the measurement in that read (for example sg_approach, gir_pct, summary:place), or the field name in its detail. "subject"
+is the player_id the figure is about, or "team" for the team's. "w" is optional: the measurement's window_start and window_end,
+copied. A comparison value beside a figure (the team average, the Division I average, the Tour, a place such as 7 of 7) belongs to
+the same measurement as that figure: cite it with that measurement's key and subject. Copy refs, keys and ids from the reads; never invent
+them. The block is removed before the coach reads your answer.`.trim();
+
 export function buildInstructions(
   ctx: CoachChatContext,
   nowIso: string,
@@ -303,7 +326,7 @@ export function buildInstructions(
     // and leaves the prefix before it identical (prompt caching).
     ...(claimsBlockEnabled ? [CLAIMS_BLOCK_SECTION] : []),
     ACTIONS_SECTION,
-    ...(opts.askV2 ? [READ_MARKER_SECTION, ASK_READS_SECTION, SUMMARISE_SECTION] : []),
+    ...(opts.askV2 ? [READ_MARKER_SECTION, ASK_READS_SECTION, SUMMARISE_SECTION, CITES_SECTION] : []),
     ...(opts.askV2 && opts.knows ? [opts.knows] : []),
   ];
 

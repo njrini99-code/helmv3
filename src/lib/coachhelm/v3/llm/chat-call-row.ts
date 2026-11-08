@@ -63,6 +63,8 @@ export interface ChatLlmCallRow {
      */
     verdict_reason?: ChatVerdictReason;
     unmatched_tokens: string[];
+    /** Counts of the turn's per-figure citations (cites.ts): figures examined, cited, verified, unresolved, mismatched and the fallback. A grounded turn's go to the log; this column stays null for it. */
+    citation_stats?: Record<string, number>;
   } | null;
   verified: boolean;
   /**
@@ -89,6 +91,8 @@ export function buildChatLlmCallRow(args: {
   unmatchedTokens?: string[];
   /** Which verdict check rejected the turn. Ignored when grounded. */
   verdictReason?: ChatVerdictReason;
+  /** The turn's citation counts, recorded with a rejection. */
+  citationStats?: Record<string, number>;
 }): ChatLlmCallRow {
   return {
     task: 'coach_chat',
@@ -110,6 +114,7 @@ export function buildChatLlmCallRow(args: {
           reason: 'verification_failed',
           ...(args.verdictReason ? { verdict_reason: args.verdictReason } : {}),
           unmatched_tokens: args.unmatchedTokens ?? [],
+          ...(args.citationStats ? { citation_stats: args.citationStats } : {}),
         },
     verified: args.grounded,
     fallback_to_template: false,

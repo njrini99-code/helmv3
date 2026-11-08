@@ -88,6 +88,8 @@ import {
 } from '@/lib/coachhelm/v3/chat/verdict';
 import { extractAndValidateChatClaims } from '@/lib/coachhelm/v3/chat/claims-packet';
 import { CLAIMS_OPEN, CLAIMS_CLOSE, extractAndValidateClaimsSafe } from '@/lib/coachhelm/v3/llm/claims-block';
+import { CITES_OPEN, CITES_CLOSE, extractCites, type CitationStats } from '@/lib/coachhelm/v3/chat/cites';
+import { BlockWithholder } from '@/lib/coachhelm/v3/chat/stream-blocks';
 import { isFlagEnabled } from '@/lib/flags';
 import { isClubhouseForTeam } from '@/clubhouse/gate';
 import { isClubhouseFor } from '@/clubhouse/gate';
@@ -593,6 +595,7 @@ export async function POST(req: NextRequest) {
         writer,
         collect,
         // Ask's whole-team tools follow Clubhouse for this team (flag, then allowlist).
+  const evidenceRefs = new Map<string, ToolEnvelope>();
         teamTools: isClubhouseForTeam(ctx.team_id),
         // The team's strokes gained is Team Stats' own figure for the window (QA-1), so it is read there and handed in.
         playerFigures: (ids, window) => loadPlayersFigures(supabase, { timezone: ctx.timezone }, ids, window),
@@ -603,6 +606,8 @@ export async function POST(req: NextRequest) {
         onArtifactWords: (words) => artifactWords.push(words),
         practicePlans: true,
         defer: (fn) => after(fn),
+        // This turn's reads by evidence_ref, so the audit can check each cited figure against the read it names.
+        evidenceRefs,
       });
 
       const result = streamText({
@@ -827,59 +832,28 @@ export async function POST(req: NextRequest) {
       // itself (via `remaining`) so an opener and closer landing in the
       // SAME delta — or a closer immediately followed by a second opener —
       // are each handled without waiting for the next chunk.
-      let pendingText = '';
-      let insideBlockBuffer = '';
-      let claimsBlockStarted = false;
+      // The two blocks the model appends after its prose, `<<<CLAIMS>>>` and `<<<CITES>>>` (per-figure citations), are held back by one
+      // helper (`stream-blocks.ts`, tested at every chunk size) so neither reaches the coach live, in the stored `content` or in a saved
+      // `ui_parts` text part. It keeps the behaviour described above: a tail held in case an opener is split across deltas, text after a
+      // closer resumed, nothing shown from an unterminated opener on.
+      const withheld = new BlockWithholder([[CLAIMS_OPEN, CLAIMS_CLOSE], [CITES_OPEN, CITES_CLOSE]]);
       let lastTextDeltaChunk: StreamChunk | null = null;
       for await (const chunk of uiStream) {
         const c = chunk as { type?: string; delta?: unknown };
         if (c.type === 'text-delta' && typeof c.delta === 'string') {
           rawText += c.delta;
           lastTextDeltaChunk = chunk;
-          let remaining: string | null = c.delta;
-          while (remaining !== null) {
-            if (!claimsBlockStarted) {
-              pendingText += remaining;
-              remaining = null;
-              const openIdx = pendingText.indexOf(CLAIMS_OPEN);
-              if (openIdx !== -1) {
-                const toForward = pendingText.slice(0, openIdx);
-                if (toForward) writer.write({ ...chunk, delta: toForward } as StreamChunk);
-                claimsBlockStarted = true;
-                insideBlockBuffer = pendingText.slice(openIdx + CLAIMS_OPEN.length);
-                pendingText = '';
-                remaining = ''; // re-enter below to scan the leftover for a closer immediately
-                continue;
-              }
-              const safeLen = Math.max(0, pendingText.length - (CLAIMS_OPEN.length - 1));
-              if (safeLen > 0) {
-                writer.write({ ...chunk, delta: pendingText.slice(0, safeLen) } as StreamChunk);
-                pendingText = pendingText.slice(safeLen);
-              }
-            } else {
-              insideBlockBuffer += remaining;
-              remaining = null;
-              const closeIdx = insideBlockBuffer.indexOf(CLAIMS_CLOSE);
-              if (closeIdx !== -1) {
-                // Block content itself (`<<<CLAIMS>>>...<<<END_CLAIMS>>>`) is
-                // small JSON — no length bound needed on `insideBlockBuffer`
-                // the way `pendingText` needs one while forwarding live.
-                claimsBlockStarted = false;
-                remaining = insideBlockBuffer.slice(closeIdx + CLAIMS_CLOSE.length);
-                insideBlockBuffer = '';
-                continue; // re-enter above to forward/scan whatever followed the closer
-              }
-            }
-          }
+          const shown = withheld.push(c.delta);
+          if (shown) writer.write({ ...chunk, delta: shown } as StreamChunk);
           continue;
         }
         // The withheld tail belongs to the text part that `text-end` is
         // about to close, so flush it first: a delta written after its
         // part's `text-end` is rejected by the ai SDK ("text-delta for
         // missing text part") and the tail would never reach the coach.
-        if (c.type === 'text-end' && !claimsBlockStarted && pendingText && lastTextDeltaChunk) {
-          writer.write({ ...lastTextDeltaChunk, delta: pendingText } as StreamChunk);
-          pendingText = '';
+        if (c.type === 'text-end' && lastTextDeltaChunk) {
+          const tail = withheld.flush();
+          if (tail) writer.write({ ...lastTextDeltaChunk, delta: tail } as StreamChunk);
         }
         if (c.type === 'error') {
           streamErrored = true;
@@ -890,16 +864,11 @@ export async function POST(req: NextRequest) {
         }
         writer.write(chunk);
       }
-      // No claims block ever started (or the one that did already closed
-      // and we're back outside it) — the withheld tail is ordinary text
-      // (the common case: most turns end after "…" with nothing to hold
-      // back at all), so flush it now that we know it was never the start
-      // of a delimiter. An UNTERMINATED opener (`claimsBlockStarted` still
-      // true at stream end) intentionally flushes nothing — matches
-      // `stripAllClaimsDelimiters`'s "strip from the opener onward" for that
-      // case.
-      if (!claimsBlockStarted && pendingText && lastTextDeltaChunk) {
-        writer.write({ ...lastTextDeltaChunk, delta: pendingText } as StreamChunk);
+      // The withheld tail is ordinary text when no block was open (the common case): flush it now that it can never become an opener.
+      // An UNTERMINATED opener intentionally flushes nothing, matching `stripAllClaimsDelimiters`'s "strip from the opener onward".
+      {
+        const tail = withheld.flush();
+        if (tail && lastTextDeltaChunk) writer.write({ ...lastTextDeltaChunk, delta: tail } as StreamChunk);
       }
       // The stream ended without ever emitting a `finish` chunk — the
       // connection was aborted mid-generation rather than completing
@@ -956,8 +925,8 @@ export async function POST(req: NextRequest) {
       // before this gate existed. Either way `strippedText` is the text with
       // any `<<<CLAIMS>>>` block removed, and the numeric audit is unaffected.
       const { strippedText, claims } = claimsBlockEnabled
-        ? extractAndValidateChatClaims(rawText, measurements)
-        : extractAndValidateClaimsSafe(rawText, null);
+        ? extractAndValidateChatClaims(extractedCites.text, measurements)
+        : extractAndValidateClaimsSafe(extractedCites.text, null);
       // Read markers are the UI's: the "2" in `e2` is not a claim, and the stored `content` never carries one. The parts keep them.
       turnText = (askV2 ? stripReadMarkers(strippedText) : strippedText).trim();
       turnVerdict = computeTurnVerdict({
@@ -968,6 +937,10 @@ export async function POST(req: NextRequest) {
         detailNumbers,
         // Rebase reconciliation (#1997 vs. a since-merged main commit): main
         // grew `auditNumericClaims` two more params (date-claim checking and
+      //
+      // Per-figure citations (`<<<CITES>>>`, cites.ts) come out first, whatever the turn: a block never reaches the audit as text or the
+      // stored `content`. Only an Ask v2 turn is asked for them, and only its cites are checked.
+      const extractedCites = extractCites(rawText);
         // timezone-correct WINDOW/SERIES-POINT conversion) after this
         // module was written against the 4-arg shape. Threaded through here
         // so `computeTurnVerdict` gets the same accuracy the inline
@@ -996,7 +969,17 @@ export async function POST(req: NextRequest) {
         });
       }
       if (finishChunk) writer.write(finishChunk);
+        ...(askV2 ? { cites: { cites: extractedCites.cites, evidence: evidenceRefs, blocks: extractedCites.blocks, invalid: extractedCites.invalid } } : {}),
     },
+      // How much of the answer the citations carried and how much fell back to the text heuristics: the rate that decides when the
+      // heuristics can retire. Counts only (no prose, no names, no values), at info level, off Sentry.
+      if (turnVerdict.citations) {
+        await logServerEvent(
+          'chat/stream: citation coverage',
+          { action: 'v3.chat.stream.citations', featureArea: 'coachhelm', skipSentry: true, extra: { ...turnVerdict.citations, outcome: turnVerdict.outcome, conversationId: convId, coachId: ctx.coach_id } },
+          'info',
+        );
+      }
 
     /**
      * Persist the finished turn.
@@ -1209,6 +1192,7 @@ export async function POST(req: NextRequest) {
           model: MODEL_FOR_TASK.coach_chat,
           outcome: 'success',
           durationMs: Date.now() - startedAt,
+          citationStats: verdict.citations,
           inputTokens: usage?.inputTokens,
           outputTokens: usage?.outputTokens,
           runtime: process.env.NEXT_RUNTIME ?? 'nodejs',
@@ -1269,7 +1253,7 @@ async function recordTurnCost(args: {
   /** Which verdict check rejected the turn (audit row 47c). */
   verdictReason?: TurnVerdictReason;
 }): Promise<void> {
-  const { admin, ctx, conversationId, usagePromise, grounded, unmatchedTokens, verdictReason } = args;
+  const { admin, ctx, conversationId, usagePromise, grounded, unmatchedTokens, verdictReason, citationStats } = args;
   try {
     const usage = usagePromise ? await usagePromise : undefined;
     const promptTokens = usage?.inputTokens ?? 0;
@@ -1282,6 +1266,8 @@ async function recordTurnCost(args: {
     // freshly processed.
     const cost =
       promptTokens + completionTokens > 0
+  /** The turn's citation counts, recorded with a rejection (an accepted turn's go to the log). */
+  citationStats?: CitationStats;
         ? estimateCachedCostUsd(
             MODEL_FOR_TASK.coach_chat,
             promptTokens,
@@ -1308,3 +1294,4 @@ async function recordTurnCost(args: {
     // Never fail a coach's answer because accounting hiccuped.
   }
 }
+        citationStats: citationStats ? { ...citationStats } : undefined,

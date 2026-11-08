@@ -1135,6 +1135,37 @@ describe('POST /coachhelm/v3/chat/stream — #1999 review follow-ups (claims-blo
     expect((persisted.content as string).trim()).toBe(forwardedText().trim());
   });
 
+  it('a <<<CITES>>> block, split across chunks, never reaches the wire or the stored content', async () => {
+    mocks.streamText.mockImplementation(() => ({
+      usage: Promise.resolve({ inputTokens: 10, outputTokens: 10 }),
+      toUIMessageStream: () =>
+        fakeUiMessageStream([
+          { type: 'text-start', id: 's1' },
+          { type: 'text-delta', id: 's1', delta: 'His putts total is 28. <<<CI' },
+          { type: 'text-delta', id: 's1', delta: 'TES>>>\n[{"v":"28","ref":"e1","key":"total_putts","subject":"p1"}]<<<END_CI' },
+          { type: 'text-delta', id: 's1', delta: 'TES>>> Next, the tee shots.' },
+          { type: 'text-end', id: 's1' },
+          { type: 'finish' },
+        ]),
+    }));
+
+    await runPostAndSettle(baseBody);
+
+    expect(forwardedText()).toBe('His putts total is 28.  Next, the tee shots.');
+    for (const call of mocks.lastWriter!.write.mock.calls) {
+      const delta = (call[0] as FakeChunk).delta;
+      if (typeof delta === 'string') {
+        expect(delta).not.toContain('<<<CI');
+        expect(delta).not.toContain('total_putts');
+      }
+    }
+    const persisted = mocks.appendMessage.mock.calls[0]![1];
+    expect(persisted.content as string).not.toContain('CITES');
+    expect(persisted.content as string).not.toContain('total_putts');
+    // The numbers in the block are not audited as the answer's own: the audit saw the prose only.
+    expect(mocks.auditNumericClaims.mock.calls[0]![0]).not.toContain('total_putts');
+  });
+
   it('a partial opener that never completes is still flushed at EOF — nothing is silently lost', async () => {
     const original = 'Great round overall.<<<CLA';
     mocks.streamText.mockImplementation(() => ({
