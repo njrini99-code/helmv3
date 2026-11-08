@@ -32,6 +32,9 @@ const FROM_END = new RegExp(String.raw`\b(?:${ORD}|next)[- ](?:to[- ](last)|from
 /** A noun between the superlative and "on the team" that makes it about something other than the player ("his best round on the team"). */
 const NOT_ABOUT_THE_PLAYER = /\b(?:rounds?|scores?|holes?|days?|games?|finish(?:es)?|shots?|weeks?|starts?|events?|tournaments?|qualifiers?)\b/i;
 
+/** A negation straight before a superlative: "not the highest", "isn't the best", "never the worst". */
+const NEGATED = /(?:\bnot|n['’]t|\bnever|\bnor)\s+(?:quite\s+|necessarily\s+|even\s+|always\s+)?(?:the\s+|a\s+)?$/i;
+
 type Worst = 'worst' | 'best' | 'lowest' | 'highest';
 const ORDINAL_K: Record<string, number> = { next: 2, second: 2, '2nd': 2, third: 3, '3rd': 3, fourth: 4, '4th': 4, fifth: 5, '5th': 5 };
 const SUPERLATIVE_KIND: Record<string, Worst> = { weakest: 'worst', worst: 'worst', bottom: 'worst', last: 'worst', strongest: 'best', best: 'best', top: 'best', first: 'best', lowest: 'lowest', highest: 'highest' };
@@ -156,6 +159,7 @@ export function rankClaimsIn(sentence: string): RankClaim[] {
   const plain = (words: string | undefined) => NOT_ABOUT_THE_PLAYER.test((words ?? '').replace(/\b(?:per|a|each)\s+(?:round|day|hole|week)s?\b/gi, ''));
   for (const m of sentence.matchAll(SUPERLATIVE)) {
     if (plain(m[3])) continue;
+    if (NEGATED.test(sentence.slice(Math.max(0, (m.index ?? 0) - 24), m.index ?? 0))) continue; // "not the highest on the team" says where he is not
     // "second from the top" and "next-to-last" are the from-end forms below, not a plain top or last.
     if (/(?:from\s+(?:the\s+)?|to[- ])$/i.test(sentence.slice(0, m.index ?? 0))) continue;
     const end = SUPERLATIVE_KIND[(m[2] ?? '').toLowerCase()];

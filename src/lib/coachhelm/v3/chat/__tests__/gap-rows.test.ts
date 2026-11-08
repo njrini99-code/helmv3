@@ -36,3 +36,20 @@ describe('where a player stands against a reference', () => {
     expect(audit2('He leaves the ball 23.77 ft away, against the Division I average of 28 ft. That is the 79th percentile among 78 college players.')).toEqual(['79']);
   });
 });
+
+// Replay c504139c: a scoring average written against a player no read has any figure for, passing on an untagged 76.0 in the reads.
+describe('a figure written against a player with nothing to stand on', () => {
+  const roster2 = [{ id: 'p-owen', name: 'Owen Carter' }, { id: 'p-audit', name: 'Audit Testplayer' }];
+  const read2 = {
+    summary: 'Scoring across the team.', measurements: [], series: [], coverage: 'complete', coverage_note: null, as_of: '2026-11-08T00:00:00.000Z',
+    detail: { player: { name: 'Owen Carter', player_id: 'p-owen' }, scoring_average: 76, team_scoring_average: 76.4, rounds_recorded: 26 },
+  } as unknown as ToolEnvelope;
+  const run3 = (text: string) => auditNumericClaims(text, [], [], collectEnvelopeNumbers(read2), [], 'America/New_York', { players: roster2 }).map((c) => c.text);
+  it('is withheld, and the same figure for the player the read is about is not', () => {
+    expect(run3('Owen Carter has a scoring average of 76.')).toEqual([]);
+    expect(run3('Audit Testplayer has a scoring average of 76.')).toEqual(['76']);
+  });
+  it('a count near the name, with no metric cue, is untouched', () => {
+    expect(run3('Audit Testplayer has none of the 26 rounds.')).toEqual([]);
+  });
+});

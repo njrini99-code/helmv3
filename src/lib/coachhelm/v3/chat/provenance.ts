@@ -1024,6 +1024,21 @@ function insideForeignPhrase(text: string, start: number, end: number, known: Re
   return false;
 }
 
+/** The header row of the markdown table the line at `at` belongs to, or "" when that line is not a table row. */
+function tableHeaderOf(text: string, at: number): string {
+  const lineAt = (start: number) => text.slice(start, (text.indexOf('\n', start) + 1 || text.length + 1) - 1);
+  const isRow = (start: number) => /^\s*\|/.test(lineAt(start));
+  const lineStart = text.lastIndexOf('\n', at - 1) + 1;
+  if (!isRow(lineStart)) return '';
+  let start = lineStart;
+  while (start > 0) {
+    const prevStart = text.lastIndexOf('\n', start - 2) + 1;
+    if (!isRow(prevStart)) break;
+    start = prevStart;
+  }
+  return lineAt(start);
+}
+
 interface Occurrence {
   start: number;
   end: number;
@@ -1196,7 +1211,8 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
       players: aboutOthers ? null : players,
       ...(aboutOthers && players ? { excluding: players } : {}),
       teamCue: TEAM_CUE.test(text.slice(sentence[0], sentence[1])),
-      refCue: REFERENCE_CUE.test(text.slice(sentence[0], sentence[1])),
+      // A row of a markdown table is named by its header row ("| Distance band | Owen | Division I average | Tour |").
+      refCue: REFERENCE_CUE.test(text.slice(sentence[0], sentence[1])) || REFERENCE_CUE.test(tableHeaderOf(text, sentence[0])),
       families: familiesByToken.get(index) ?? null,
     };
   };
@@ -1482,6 +1498,7 @@ export function auditNumericClaimsDetailed(
   const bind = buildBinder(scrubbed, nameSources);
   const spans = new Set(options?.requestedSpans ?? []);
   const cited = (options?.citedValues ?? []).map((raw) => ({ value: Number(raw.trim().replace(/[−–]/g, '-').replace(/[%,+]/g, '')), raw: raw.trim().replace(/[−–]/g, '-').replace(/[%,+]/g, '') }));
+  const taggedPlayers = new Set(anchors.map((a) => a.player).filter((p): p is string => p !== null));
   let figures = 0;
   let citedCount = 0;
   let heuristicPassed = 0;
@@ -1492,7 +1509,9 @@ export function auditNumericClaimsDetailed(
     if (!Number.isFinite(value)) continue;
     // Ordinals, counts of rounds/weeks/players — not statistical assertions. A count of some of the things just talked about
     // ("8 of those came in two rounds") is one: it is a sum over a subset, and no sample size or denominator stands for it.
-    const smallInteger = Number.isInteger(value) && Math.abs(value) <= 12;
+    // "the last 20 rounds" is a window the reads can be asked for (5, 10 or 20), not a figure.
+    const asWindow = value === 20 && /\b(?:last|newest|past|previous|recent)\s+$/i.test(scrubbed.slice(Math.max(0, match.start - 12), match.start)) && /^\s*rounds?\b/i.test(scrubbed.slice(match.end, match.end + 10));
+    const smallInteger = (Number.isInteger(value) && Math.abs(value) <= 12) || asWindow;
     const subsetCount = smallInteger && value >= 2 && SUBSET_COUNT_AFTER.test(scrubbed.slice(match.end, match.end + 40));
     if (smallInteger && !subsetCount) continue;
     if (seen.has(raw)) continue;
@@ -1523,7 +1542,10 @@ export function auditNumericClaimsDetailed(
     // What it counts is what the paragraph was last talking about ("three-putted … 8 of those"), when it said.
     const counted = subsetCount ? lastFamilyBefore(scrubbed, match.start) : null;
     const pool = subsetCount && options?.strictSubsetCounts ? [] : subsetCount ? anchors.filter((a) => (counted ? a.family === counted || a.parent === counted : a.family !== null)) : anchors;
-    if (!pool.some((a) => near(a) && playerCompatible(a, binding) && metricCompatible(a, binding) && (!a.reference || binding.refCue))) {
+    // A figure about a metric, written against a player no read this turn has any figure for, has nothing of that player's to stand on: an
+    // untagged number (a roster-wide detail value) that happens to match does not make it theirs.
+    const hasNothing = !!binding.players && binding.players.size > 0 && !!binding.families?.size && !binding.teamCue && [...binding.players].every((p) => !taggedPlayers.has(p));
+    if (!pool.some((a) => near(a) && playerCompatible(a, binding) && metricCompatible(a, binding) && (!a.reference || binding.refCue) && !(hasNothing && a.player === null && !a.team && !a.reference))) {
       seen.add(raw);
       found.push(pool.some(near) ? { text: raw, value, misattributed: true } : { text: raw, value });
     } else {

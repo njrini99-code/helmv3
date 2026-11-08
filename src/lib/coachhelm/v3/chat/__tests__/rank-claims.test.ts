@@ -95,3 +95,15 @@ describe('places counted from an end', () => {
     expect(flagged('Mason is the second-best on the team on approach.')).toEqual([]);
   });
 });
+
+describe('what a sentence says he is not', () => {
+  // Replay 3f1c1439: "His putts per round (33.13) are not the highest on the team." flagged as a claim that he is the highest.
+  it('a negated superlative is not a claim', () => {
+    expect(flagged('Owen’s putting is not the best on the team.')).toEqual([]);
+    expect(flagged('Owen isn’t the weakest on the team on approach.')).toEqual([]);
+    expect(flagged('Owen is never the worst on the team on approach.')).toEqual([]);
+  });
+  it('and the same sentence without the negation still is', () => {
+    expect(flagged('Owen is the weakest on the team on approach.')).toEqual(['weakest on the team']);
+  });
+});
