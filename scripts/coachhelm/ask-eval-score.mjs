@@ -76,7 +76,7 @@ export function score(question, text) {
 
 
 /** What the answer stream has said so far: the text, and whether the route flagged or broke the turn. */
-export const newStreamState = () => ({ text: '', flag: null, incomplete: false, error: null, evidence: 0, tools: [], evidenceParts: [], toolCalls: [] });
+export const newStreamState = () => ({ text: '', flag: null, incomplete: false, error: null, evidence: 0, tools: [], evidenceParts: [], toolCalls: [], repair: null });
 
 /** Fold one server-sent-event line of the UI message stream into the state. Lines that are not `data:` JSON are ignored. */
 export function applyStreamLine(state, rawLine) {
@@ -93,6 +93,7 @@ export function applyStreamLine(state, rawLine) {
   if (ev.type === 'text-delta') state.text += ev.delta ?? '';
   else if (ev.type === 'data-grounding-flag') state.flag = ev.data ?? {};
   else if (ev.type === 'data-turn-incomplete') state.incomplete = true;
+  else if (ev.type === 'data-progress' && ev.data?.tool === 'repair') state.repair = ev.data.state ?? 'running';
   else if (ev.type === 'data-evidence') {
     state.evidence += 1;
     if (ev.data?.envelope) state.evidenceParts.push({ tool: ev.data.tool ?? null, ref: ev.data.ref ?? null, envelope: ev.data.envelope });
@@ -183,4 +184,33 @@ export function citesFromLog(logText, answerText, surface, turnId) {
   // With a turn id only that turn's line counts: two turns can open with the same 60 characters and cite different reads.
   const hit = turnId ? parsedLines.find((p) => p.turn === turnId) : parsedLines[0];
   return hit ? hit.cites.filter(Array.isArray).map(([v, ref, key, subject, flag]) => ({ v: String(v), ref, key, subject, ...(flag === 'c' ? { c: 1 } : {}) })) : null;
+}
+
+/**
+ * What the dev server printed while one question ran (the log text appended between its start and its end; questions run one at a time).
+ * `[ask:citations]` is printed once per audited pass, so two lines mean the repair pass ran. `[ask:cites-not-verified]` lists the cites that
+ * did not verify, with the reason. The `[ServerErrorLogger]` blocks name an action (`v3.chat.stream.repair`, `.ungrounded`,
+ * `.claim_validation`) but not its extra fields: the off-prod logger does not print them.
+ */
+export function summariseLogSlice(slice) {
+  const citationLines = [];
+  const notVerified = [];
+  let repairActions = 0;
+  let ungroundedActions = 0;
+  let claimActions = 0;
+  for (const line of String(slice ?? '').split('\n')) {
+    try {
+      if (line.startsWith('[ask:citations] ')) citationLines.push(JSON.parse(line.slice(line.indexOf('{'))));
+      else if (line.startsWith('[ask:cites-not-verified] ')) {
+        const parsed = JSON.parse(line.slice('[ask:cites-not-verified] '.length));
+        notVerified.push(...(Array.isArray(parsed) ? parsed : (parsed.cites ?? [])));
+      }
+    } catch {
+      /* a truncated or foreign line */
+    }
+    if (line.includes("'v3.chat.stream.repair'")) repairActions += 1;
+    if (line.includes("'v3.chat.stream.ungrounded'")) ungroundedActions += 1;
+    if (line.includes("'v3.chat.stream.claim_validation'")) claimActions += 1;
+  }
+  return { citationLines, notVerified, repairActions, ungroundedActions, claimActions };
 }

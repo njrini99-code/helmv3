@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error -- plain .mjs helper, scripts/ is outside tsconfig.
-import { applyStreamLine, captureFixture, citationsFromLedger, citationsFromLog, citesFromLog, dateRe, newStreamState, score } from '../ask-eval-score.mjs';
+import { applyStreamLine, captureFixture, citationsFromLedger, citationsFromLog, citesFromLog, dateRe, summariseLogSlice, newStreamState, score } from '../ask-eval-score.mjs';
 
 const owen = {
   facts: [
@@ -123,5 +123,27 @@ describe('ask-eval cites from the dev log', () => {
     expect(citesFromLog(log.replace('"surface":"coach",', '"surface":"coach","turn":"conv-1",'), 'Owen is at -4.16 per round over his last ten rounds, and more', 'coach', 'conv-2')).toBeNull();
     expect(citesFromLog(log.replace('"surface":"coach",', '"surface":"coach","turn":"conv-1",'), 'Owen is at -4.16 per round over his last ten rounds, and more', 'coach', 'conv-1')).toHaveLength(3);
     expect(citesFromLog(log, 'Owen is at -4.16 per round over his last ten rounds, and more text after sixty chars ...', 'player')).toBeNull();
+  });
+});
+
+describe('ask-eval dev-log slice', () => {
+  it('reads the passes, the cites that did not verify and the logged actions of one question', () => {
+    const slice = [
+      '[ask:citations] {"surface":"coach","says":"a","figures":9,"cited":5,"fallback_passed":4,"cites":6,"verified":5,"unresolved":0,"mismatched":1,"blocks":1,"invalid":0}',
+      '[ask:cites-not-verified] {"surface":"coach","says":"a","cites":[{"v":"7","ref":"e2","key":"active_roster_count","subject":"team","status":"mismatch","why":"says something else"}]}',
+      "[ServerErrorLogger] not persisted off-prod {\n  severity: 'info',\n  action: 'v3.chat.stream.repair'\n}",
+      '[ask:citations] {"surface":"coach","says":"a","figures":9,"cited":9,"fallback_passed":0,"cites":9,"verified":9,"unresolved":0,"mismatched":0,"blocks":1,"invalid":0}',
+    ].join('\n');
+    const s = summariseLogSlice(slice);
+    expect(s.citationLines).toHaveLength(2);
+    expect(s.citationLines[0]).toMatchObject({ mismatched: 1 });
+    expect(s.notVerified).toEqual([expect.objectContaining({ key: 'active_roster_count', status: 'mismatch' })]);
+    expect(s.repairActions).toBe(1);
+  });
+
+  it('records a repair progress row in the stream', () => {
+    const state = newStreamState();
+    applyStreamLine(state, 'data: {"type":"data-progress","id":"progress-repair","data":{"label":"Checking the figures again","tool":"repair","state":"done"}}');
+    expect(state.repair).toBe('done');
   });
 });

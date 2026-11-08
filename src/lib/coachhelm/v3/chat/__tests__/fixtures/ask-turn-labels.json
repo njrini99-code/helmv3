@@ -283,8 +283,7 @@
  },
  "a2d53134": {
   "expect": "accepted",
-  "why": "Owen 6th of 7 on approach SG, -4.16, only Ethan Park lower at -4.40, mean of the seven -3.09, gap 1.07, and the ranking read's own -2.33 named as not matching: all true. The audit rejects \"-2.33\", which the answer states about the read.",
-  "knownWrongBlock": true
+  "why": "Owen 6th of 7 on approach SG, -4.16, only Ethan Park lower at -4.40, mean of the seven -3.09, gap 1.07, and the ranking read's own -2.33 named as not matching: all true. The audit rejects \"-2.33\", which the answer states about the read."
  },
  "b286e525": {
   "expect": "rejected",
@@ -519,8 +518,7 @@
  },
  "f210d104": {
   "expect": "accepted",
-  "why": "Owen summary: total -6.74 (5th of 7), approach 6th, putting 2nd, off the tee -0.32 (6th), GIR 5th: recomputed from the rounds. The audit rejects \"-0.32\", true and in the reads.",
-  "knownWrongBlock": true
+  "why": "Owen summary: total -6.74 (5th of 7), approach 6th, putting 2nd, off the tee -0.32 (6th), GIR 5th: recomputed from the rounds. The audit rejects \"-0.32\", true and in the reads."
  },
  "f2ca8d34": {
   "expect": "accepted",

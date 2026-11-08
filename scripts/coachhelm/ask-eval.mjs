@@ -30,8 +30,8 @@ import { config } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { cliGuard } from '../lib/cli-guard.mjs';
-import { readFileSync } from 'node:fs';
-import { applyStreamLine, captureFixture, citationsFromLedger, citationsFromLog, citesFromLog, newStreamState, score } from './ask-eval-score.mjs';
+import { readFileSync, statSync } from 'node:fs';
+import { applyStreamLine, captureFixture, citationsFromLedger, citationsFromLog, citesFromLog, newStreamState, score, summariseLogSlice } from './ask-eval-score.mjs';
 
 const STAGING_REF = 'ybmwektreyrwjscxlogv';
 const DEMO_TEAM_ID = '6ecdd1a6-63fe-4beb-b094-00118f334163';
@@ -532,6 +532,7 @@ for (const question of picked) {
   const cookie = question.viewer === 'player' ? playerCookie : coachCookie;
   const startedAt = new Date();
   const t0 = Date.now();
+  const logStart = serverLogPath ? statSync(serverLogPath).size : 0;
   let verdict;
   let text = '';
   let note = '';
@@ -591,8 +592,13 @@ for (const question of picked) {
   }
   const serverLog = readServerLog();
   if (!citations && serverLog) citations = citationsFromLog(serverLog, conversationId);
+  const logged = serverLog ? summariseLogSlice(Buffer.from(serverLog).subarray(logStart).toString()) : null;
+  // Final-pass counts: the last [ask:citations] line of the question (a repair prints a second one).
+  const finalCounts = logged?.citationLines.at(-1) ?? null;
+  const repairRan = Boolean(state.repair) || (logged?.repairActions ?? 0) > 0 || (logged?.citationLines.length ?? 0) > 1;
+  const path = verdict === 'accepted' ? (repairRan ? 'repaired' : 'first pass') : verdict === 'error' ? 'error' : repairRan ? 'rejected after repair' : verdict;
   const scored = verdict === 'error' ? null : score(question, text);
-  report.push({ question, verdict, text, flagged, seconds, cost, scored, note, tools, citations });
+  report.push({ question, verdict, text, flagged, seconds, cost, scored, note, tools, citations, logged, finalCounts, repairRan, path });
   if (captureDir && verdict !== 'error') {
     const who = question.viewer === 'player' ? [byName('Cole Bennett')] : roster;
     const fixture = captureFixture({
@@ -604,7 +610,7 @@ for (const question of picked) {
     mkdirSync(captureDir, { recursive: true });
     writeFileSync(join(captureDir, `${fixture.id}.json`), `${JSON.stringify(fixture, null, 1)}\n`);
   }
-  console.log(`${verdict.padEnd(10)} ${question.id}  ${citations ? `cites ${citations.cites}/ok ${citations.verified}/mismatch ${citations.mismatched}  ` : ''}correct ${scored?.correct ?? '-'} wrong ${scored?.wrong ?? '-'} missing ${scored?.missing ?? '-'}  ${seconds.toFixed(1)}s  $${cost.toFixed(3)}`);
+  console.log(`${path.padEnd(22)} ${question.id}  ${citations ? `cites ${citations.cites}/ok ${citations.verified}/mismatch ${citations.mismatched}  ` : ''}correct ${scored?.correct ?? '-'} wrong ${scored?.wrong ?? '-'} missing ${scored?.missing ?? '-'}  ${seconds.toFixed(1)}s  $${cost.toFixed(3)}`);
 }
 
 // ------------------------- report -------------------------
@@ -616,9 +622,13 @@ const lines = [];
 lines.push(`# Ask evaluation, ${new Date().toISOString()}`, '');
 lines.push(`Server ${base}, staging ${ref}, team ${team.name}. ${report.length} questions, total cost $${report.reduce((a, r) => a + r.cost, 0).toFixed(2)}, total time ${report.reduce((a, r) => a + r.seconds, 0).toFixed(0)}s.`, '');
 lines.push(`Verdicts: accepted ${count((r) => r.verdict === 'accepted')}, rejected ${count((r) => r.verdict === 'rejected')}, incomplete ${count((r) => r.verdict === 'incomplete')}, error ${count((r) => r.verdict === 'error')}.`);
+const coachTurns = report.filter((r) => r.question.viewer === 'coach' && r.finalCounts);
+const sum = (k) => coachTurns.reduce((a, r) => a + Number(r.finalCounts[k] ?? 0), 0);
+lines.push(`Paths: first pass ${count((r) => r.path === 'first pass')}, repaired ${count((r) => r.path === 'repaired')}, rejected after repair ${count((r) => r.path === 'rejected after repair')}, rejected without repair ${count((r) => r.path === 'rejected')}. Repair ran on ${count((r) => r.repairRan)} questions.`);
+if (coachTurns.length) lines.push(`Cite coverage over ${coachTurns.length} coach turns (final pass): ${sum('cited')} of ${sum('figures')} figures cited (${sum('figures') ? ((100 * sum('cited')) / sum('figures')).toFixed(1) : 'n/a'}%), ${sum('fallback_passed')} passed by the text heuristics, ${sum('cites')} cites: ${sum('verified')} verified, ${sum('unresolved')} unresolved, ${sum('mismatched')} mismatched, ${sum('invalid')} invalid.`);
 lines.push(`Fully right answers: ${count((r) => r.scored?.allRight)} of ${report.length}. Wrong rejections (rejected, every fact right): ${wrongRejections.length}. Accepted but not fully right: ${wrongAccepts.length}.`, '');
-lines.push('| Question | Category | Viewer | Verdict | Correct | Wrong | Missing | Time | Cost | Cited | Verified | Unresolved | Mismatched | Invalid | summarise_data |', '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|');
-for (const r of report) lines.push(`| ${r.question.id} | ${r.question.category} | ${r.question.viewer} | ${r.verdict} | ${r.scored?.correct ?? '-'} | ${r.scored?.wrong ?? '-'} | ${r.scored?.missing ?? '-'} | ${r.seconds.toFixed(1)}s | $${r.cost.toFixed(3)} | ${r.citations ? `${r.citations.cited} | ${r.citations.verified} | ${r.citations.unresolved} | ${r.citations.mismatched} | ${r.citations.invalid}` : 'n/a | n/a | n/a | n/a | n/a'} | ${r.tools.includes('summarise_data') ? 'yes' : 'no'} |`);
+lines.push('| Question | Category | Viewer | Path | Verdict | Correct | Wrong | Missing | Time | Cost | Cited | Verified | Unresolved | Mismatched | Invalid | summarise_data |', '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|');
+for (const r of report) lines.push(`| ${r.question.id} | ${r.question.category} | ${r.question.viewer} | ${r.path} | ${r.verdict} | ${r.scored?.correct ?? '-'} | ${r.scored?.wrong ?? '-'} | ${r.scored?.missing ?? '-'} | ${r.seconds.toFixed(1)}s | $${r.cost.toFixed(3)} | ${r.citations ? `${r.citations.cited} | ${r.citations.verified} | ${r.citations.unresolved} | ${r.citations.mismatched} | ${r.citations.invalid}` : 'n/a | n/a | n/a | n/a | n/a'} | ${r.tools.includes('summarise_data') ? 'yes' : 'no'} |`);
 lines.push('', "Citation counts: a rejected turn's are read from the ledger; an accepted turn's only from the server log (pass --server-log), otherwise n/a. Cited = figures a verified cite stood for; Verified, Unresolved, Mismatched and Invalid count the cites by outcome.");
 if (wrongRejections.length) {
   lines.push('', '## Wrong rejections', '');
@@ -636,6 +646,10 @@ for (const r of report) {
   if (r.flagged.length) lines.push(`Audit flagged: ${JSON.stringify(r.flagged)}`, '');
   if (r.tools.length) lines.push(`Tools: ${r.tools.join(', ')}`, '');
   if (r.citations) lines.push(`Citations: ${JSON.stringify(r.citations)}`, '');
+  if (r.repairRan) {
+    const first = r.logged?.citationLines[0];
+    lines.push(`Repair ran (${r.path}). First pass, from the dev log: ${first ? `${first.figures} figures, ${first.cited} cited, ${first.fallback_passed} by heuristics, ${first.cites} cites (${first.verified} verified, ${first.unresolved} unresolved, ${first.mismatched} mismatched)` : 'no [ask:citations] line'}. Cites not verified: ${r.logged?.notVerified.length ? r.logged.notVerified.map((c) => `${c.v} ${c.key} for ${c.subject}: ${c.status}${c.why ? ` (${c.why})` : ''}`).join('; ') : 'none logged'}. The dev logger does not print the refused figures; they are in the withheld first answer only.`, '');
+  }
   for (const x of r.scored?.results ?? []) lines.push(`- ${x.status}${x.optional ? ' (optional)' : ''}: ${x.label}${x.detail ? ` [${x.detail}]` : ''}`);
   lines.push('', '> ' + (r.text.trim().replace(/\n/g, '\n> ') || '(no text)'), '');
 }
