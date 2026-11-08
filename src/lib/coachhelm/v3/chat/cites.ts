@@ -246,7 +246,12 @@ export function auditCited(args: { base: [text: AuditArgs[0], measurements: Audi
       }
     : undefined;
   // In development the counts are printed: the off-prod logger drops `extra`, and how much of an answer the citations carried is what a developer is looking for.
-  if (citations && process.env.NODE_ENV === 'development') console.info('[ask:citations]', JSON.stringify(citations));
+  if (citations && process.env.NODE_ENV === 'development') {
+    console.info('[ask:citations]', JSON.stringify(citations));
+    // The cites that did not verify, with why: a mismatch withholds the turn, so a developer needs to see whether the model or the matching was wrong.
+    const bad = checked.filter((c) => c.status !== 'verified').map((c) => ({ v: c.cite.v, ref: c.cite.ref, key: c.cite.key, subject: c.cite.subject.slice(0, 8), w: c.cite.w, status: c.status, why: c.reason }));
+    if (bad.length > 0) console.info('[ask:cites-not-verified]', JSON.stringify(bad));
+  }
   // A cited figure the evidence it names does not hold is a misattribution however the words around it read, even when the text heuristics would have passed it.
   // A place or superlative ("7th of 7", "the weakest on the team") is recomputed from the per-player values the turn read, never from a place field.
   const reads = args.cites ? [...args.cites.evidence.values()].map((e) => e.measurements) : [args.base[1]];
