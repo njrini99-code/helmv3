@@ -106,6 +106,8 @@
   -webkit-backdrop-filter: blur(var(--ch-scrim-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-scrim-saturate-msg, 120%));
   backdrop-filter: blur(var(--ch-scrim-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-scrim-saturate-msg, 120%));
   background: var(--ch-scrim-msg);
+  /* The dim follows the sheet's drag like every dialog's (A9): .ch-modal's transition drives it. */
+  opacity: var(--ch-scrim-a, 1);
 }
 .ch-mss .ch-modal__panel {
   border-radius: var(--ch-radius-xl);

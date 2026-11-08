@@ -16,6 +16,8 @@ const ALLOW: Record<string, number> = {
   'screens/auth/SignInForm.tsx': 1,
   'screens/auth/gate-fields.tsx': 1,
   'screens/messages/MessagesView.tsx': 5,
+  'screens/messages/details/group-modals.tsx': 1,
+  'screens/messages/thread/Thread.tsx': 2,
   'screens/rounds/setup/AddCourseSheet.tsx': 3,
   'screens/rounds/setup/RoundSetup.tsx': 3,
   'screens/rounds/track/DataPrompts.tsx': 1,

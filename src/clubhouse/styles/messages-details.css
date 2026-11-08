@@ -135,16 +135,17 @@
   position: relative;
   align-items: baseline;
   padding: var(--ch-msd-s14) var(--ch-space-4) var(--ch-space-2);
-  font: var(--ch-type-17-strong);
-  letter-spacing: var(--ch-track-17);
+  font: var(--ch-type-card-title);
+  letter-spacing: var(--ch-track-card-title);
   color: var(--ch-text-primary);
 }
 [data-ch-ms-v2] .ch-msd-lcard__h > b {
-  font: var(--ch-type-17-strong);
-  letter-spacing: var(--ch-track-17);
+  font: var(--ch-type-card-title);
+  letter-spacing: var(--ch-track-card-title);
 }
 [data-ch-ms-v2] .ch-msd-lcard__h > .ch-num {
   font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-accent-ink);
 }
 [data-ch-ms-v2] .ch-msd-lcard__h::after {
@@ -162,6 +163,7 @@
   background: none;
   color: var(--ch-accent-ink);
   font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
   cursor: pointer;
 }
 [data-ch-ms-v2] .ch-msd-member {
@@ -191,6 +193,7 @@
 [data-ch-ms-v2] .ch-msd-seeall {
   color: var(--ch-accent-ink);
   font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
 }
 /* MSG-607: three columns, gap 4, padding 12, square tiles, radius 10 (snapped to 8). */
 [data-ch-ms-v2] .ch-msd-ptiles {
@@ -534,6 +537,7 @@
 .ch-msd-vg__name {
   overflow: hidden;
   font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -560,6 +564,7 @@
   background: none;
   color: var(--ch-accent-ink);
   font: var(--ch-type-17-medium);
+  letter-spacing: var(--ch-track-17);
   cursor: pointer;
 }
 
@@ -644,8 +649,7 @@
 }
 [data-ch-ms-v2] .ch-msd-file__t > span {
   font: var(--ch-type-12);
-  color: inherit;
-  opacity: 0.72;
+  color: color-mix(in srgb, currentColor 72%, transparent);
 }
 /* Mine is the green bubble: the tile is white at .14 and its ink is the bubble's. */
 [data-ch-ms-v2] .ch-msd-file.is-mine {

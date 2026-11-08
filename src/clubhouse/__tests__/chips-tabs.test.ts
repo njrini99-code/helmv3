@@ -28,7 +28,6 @@ const ALLOW: Record<keyof typeof GROUPS, Record<string, number>> = {
     'styles/coachhelm-thread.css': 10,
     'styles/coachhelm-views.css': 10,
     'styles/hub.css': 7,
-    'styles/messages.css': 8,
     'styles/qualifiers.css': 22,
     'styles/rounds-track.css': 10,
     'styles/settings.css': 7,

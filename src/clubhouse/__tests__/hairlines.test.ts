@@ -25,7 +25,7 @@ const ALLOW_LINES: Record<string, number> = {
   'styles/controls.css': 2,
   'styles/home.css': 3,
   'styles/hub.css': 3,
-  'styles/messages.css': 4,
+  'styles/messages.css': 3,
   'styles/onboard.css': 5,
   'styles/qualifiers.css': 2,
   'styles/recruiting.css': 2,

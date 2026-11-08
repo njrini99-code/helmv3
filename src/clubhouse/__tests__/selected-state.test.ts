@@ -36,6 +36,7 @@ const ALLOW_SELECTED_PAINT: Record<string, number> = {
   'styles/controls.css': 3,
   'styles/hub.css': 3,
   'styles/messages.css': 3,
+  'styles/messages-details.css': 3,
   'styles/qualifiers.css': 1,
   'styles/recruiting.css': 3,
   'styles/rounds-setup.css': 2,

@@ -65,6 +65,7 @@ const ALLOW: Record<string, number> = {
   'styles/home.css': 10,
   'styles/hub.css': 1,
   'styles/messages.css': 9,
+  'styles/messages-thread.css': 4,
   'styles/recruiting.css': 1,
   'styles/roster.css': 1,
   'styles/rounds-recover.css': 1,

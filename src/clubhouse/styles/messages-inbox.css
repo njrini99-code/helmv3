@@ -71,7 +71,7 @@
   letter-spacing: var(--ch-track-16);
 }
 [data-ch-ms-v2] .ch-inb .ch-search input::placeholder {
-  color: var(--ch-text-tertiary);
+  color: var(--ch-text-placeholder);
   opacity: 1;
 }
 [data-ch-ms-v2] .ch-inb .ch-msv-new {
@@ -297,6 +297,7 @@
   [data-ch-ms-v2] .ch-inb .ch-ms-row:not(.is-ann):hover,
   [data-ch-ms-v2] .ch-inb .ch-ms-row:not(.is-ann):active {
     background: var(--ch-press-wash);
+    box-shadow: none;
   }
 }
 /* Seams: a hairline from x = 16 to the right edge between rows, none under the last. */

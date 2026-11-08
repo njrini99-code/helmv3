@@ -471,13 +471,6 @@
   overflow: auto;
   overscroll-behavior: contain;
 }
-/* Scrolled off its top, the thread fades into the header rather than being cut off under it (use-thread-anchor
-   toggles the class; the shell's canopy fades the same way). 40px, a timestamp line and its gap: at 16px a half-cut
-   "1:44 AM" still read as clipped under the header. */
-.ch-ms-scroll.is-scrolled {
-  -webkit-mask-image: linear-gradient(180deg, transparent, #000 40px);
-  mask-image: linear-gradient(180deg, transparent, #000 40px);
-}
 /* The composer's measure (816 with the same 32px inset), so bubbles and the field share both edges: one width, set on
    the page roots. */
 .ch-ms,
@@ -1736,11 +1729,6 @@
   }
 
   /* Thread */
-  .ch-msp-thread .ch-ms-scroll {
-    display: flex;
-    flex-direction: column;
-    padding: 8px 0 16px;
-  }
   .ch-msp-thread .ch-ms-msgs {
     flex: 1;
     justify-content: flex-end;
@@ -1821,7 +1809,6 @@
     background: var(--ch-phone-composer-bg);
     box-shadow: 0 -1px 0 var(--ch-border-hairline);
   }
-  body.keyboard-open .ch-msp-thread .ch-ms-comp,
   body.keyboard-open .ch-msp-new .ch-ms-comp {
     padding-bottom: 8px;
   }
@@ -4493,9 +4480,6 @@ body:has([data-ch-ms-v2]) .ch-toast {
     opacity: 0;
     transition: opacity var(--ch-dur-quick) ease;
   }
-  [data-ch-ms-v2] .ch-ms-th.is-under::after {
-    opacity: 1;
-  }
   [data-ch-ms-v2] .ch-ms-thread > .ch-ms-scroll {
     padding-top: 48px;
   }
@@ -4600,8 +4584,6 @@ body:has([data-ch-ms-v2]) .ch-toast {
     background: none;
     box-shadow: none;
   }
-  /* MOB-MSG-4: the keyboard covers the home bar, so none of its padding stays. */
-  body.keyboard-open [data-ch-ms-v2] .ch-msp-thread .ch-ms-comp { padding-bottom: 8px; }
   /* MOB-MSG-13: the thread's sides follow the page edge. */
   [data-ch-ms-v2] .ch-msp-scroll .ch-ms-msgs { padding-inline: var(--ch-page-x-phone); }
   /* MOB-MSG-15: the bubble column, as drawn. */
@@ -4626,7 +4608,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
 .ch-msv-ptile .ch-msv-sk { display: block; width: 100%; height: 100%; }
 
 /* MOB-MSG-4: Safari's keyboard fit: no home bar under a keyboard. */
-.ch-pscreen[data-ch-vv] .ch-ms-comp { padding-bottom: 8px; }
+.ch-pscreen[data-ch-vv]:not(.ch-msp-thread) .ch-ms-comp { padding-bottom: 8px; }
 /* MOB-MSG-9: on the narrowest phones each said line stays over its own pin. */
 @media (max-width: 400px) {
   [data-ch-ms-v2] .ch-msv-bubblet,
