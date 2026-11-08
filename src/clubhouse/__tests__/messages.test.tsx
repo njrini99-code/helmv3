@@ -1507,3 +1507,47 @@ describe('Messages · actions that fail, on the redesign', () => {
     await expectCode('CH-7009', /Couldn’t save the reaction/);
   });
 });
+
+describe('MSG-406 reactions appear at once (messages-v2 fix 1)', () => {
+  /** jsdom has no Web Animations: every animation here finishes on the next microtask, as it would in a browser. */
+  const finishing = () => {
+    HTMLElement.prototype.animate = (() => {
+      const anim = { cancel: () => {}, finish: () => {}, reverse: () => {}, finished: Promise.resolve() };
+      Object.defineProperty(anim, 'onfinish', { configurable: true, set(fn: (() => void) | null) { if (fn) queueMicrotask(fn); }, get: () => null });
+      return anim;
+    }) as never;
+  };
+  it('right-click, then a key in the lift bar: the badge shows before the server has answered', async () => {
+    finishing();
+    live.msgs.messages = [{ ...mine, sender_id: 'jonah' }];
+    let save!: () => void;
+    live.reactions.setReaction.mockImplementation(() => new Promise<boolean>((resolve) => { save = () => resolve(true); }) as never);
+    show();
+    const bubble = await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
+    fireEvent.contextMenu(bubble, { clientX: 100, clientY: 100 });
+    fireEvent.click(await screen.findByRole('button', { name: 'Love' }));
+    await waitFor(() => expect(live.reactions.setReaction).toHaveBeenCalledWith('m1', '❤️', true));
+    await waitFor(() => expect(document.querySelectorAll('.ch-ms-reacts .ch-ms-react')).toHaveLength(1));
+    save();
+  });
+
+  it('taking your reaction back removes the badge before the server has answered', async () => {
+    finishing();
+    live.msgs.messages = [{ ...mine, sender_id: 'jonah' }];
+    live.reactions.rows = [{ id: 'r1', message_id: 'm1', user_id: 'me', emoji: '❤️' }];
+    live.reactions.setReaction.mockImplementation(() => new Promise<boolean>(() => {}) as never);
+    try {
+      show();
+      const bubble = await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
+      expect(document.querySelectorAll('.ch-ms-reacts .ch-ms-react')).toHaveLength(1);
+      fireEvent.contextMenu(bubble, { clientX: 100, clientY: 100 });
+      const love = await screen.findByRole('button', { name: 'Love' });
+      expect(love.getAttribute('aria-pressed')).toBe('true');
+      fireEvent.click(love);
+      await waitFor(() => expect(live.reactions.setReaction).toHaveBeenCalledWith('m1', '❤️', false));
+      await waitFor(() => expect(document.querySelectorAll('.ch-ms-reacts .ch-ms-react')).toHaveLength(0));
+    } finally {
+      live.reactions.rows = [];
+    }
+  });
+});
