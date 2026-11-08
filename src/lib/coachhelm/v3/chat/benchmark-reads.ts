@@ -6,7 +6,8 @@ import { METRIC_IDS as STANDING_METRIC_IDS } from '@/lib/coachhelm/v3/metrics/re
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { isStandingTourComparable } from '@/lib/coachhelm/v3/standing/tour-basis';
 import { logServerError } from '@/lib/server-error-logger';
-import { ALL_METRIC_SPECS } from './metrics-catalog';
+import { ALL_METRIC_SPECS, getMetricSpec } from './metrics-catalog';
+import { getTeamMetricRanking, type FigureWindow, type PlayerFiguresSource } from './read-tools';
 import { requireRosterPlayer, type CoachChatContext } from './context';
 import { nowIso, unavailableEnvelope, type BenchmarkRef, type Comparison, type Measurement, type MeasurementSeries, type ToolEnvelope } from './provenance';
 
@@ -44,6 +45,10 @@ export const STANDING_ID_BY_CHAT_ID = (id: string): string | null => {
   const mapped = CHAT_TO_STANDING[base] ?? base;
   return (STANDING_METRIC_IDS as readonly string[]).includes(mapped) ? mapped : null;
 };
+
+const CHAT_ID_BY_STANDING: Record<string, string> = Object.fromEntries(Object.entries(CHAT_TO_STANDING).map(([chat, standing]) => [standing, chat]));
+/** Ask's own name for a standards metric (the name its reads and the ranking use); the standards' name when they are the same. */
+const chatIdOf = (standingId: string): string => CHAT_ID_BY_STANDING[standingId] ?? standingId;
 
 /** What the model may ask for: every standards metric, plus the two Ask names that differ (`sg_tee`, `sand_save_pct`, `penalties_per_round`). */
 export const BENCHMARK_METRIC_IDS = [...STANDING_METRIC_IDS, 'sg_tee', 'sand_save_pct', 'penalties_per_round'] as unknown as [string, ...string[]];
@@ -116,10 +121,29 @@ export interface BenchmarkSource {
   tour(): Promise<Tour | null>;
   /** The newest season's row per metric for that tour; null when the read failed. */
   standards(): Promise<Map<string, StandardRow> | null>;
+  /**
+   * Every roster player's value on one metric over one window, by the same computation as `get_team_metric_ranking` (so a comparison and the
+   * ranking can never disagree); null when it could not be read or this source has no roster to read. The window it reports is the one the values
+   * were read over: a metric a round does not hold is the stats cache's ('cache'), whatever window was asked for.
+   */
+  cohort(chatMetricId: string, window: CohortWindow): Promise<Cohort | null>;
+  /** Whose comparison this is: a coach sees the whole roster's figures, a player only the team average over all recorded rounds. */
+  role: 'coach' | 'player';
 }
 
+/** The window a figure was read over: a round count, the season, or the stats cache's own (all recorded rounds, nightly). */
+export type CohortWindow = FigureWindow | 'cache';
+export interface Cohort {
+  window: CohortWindow;
+  direction: 'higher_better' | 'lower_better' | null;
+  values: Map<string, number>;
+}
+
+export const windowWords = (w: CohortWindow): string => (w === 'cache' ? 'over all recorded rounds' : w === 'season' ? 'this season' : w === 'last5' ? 'over the last 5 rounds' : w === 'last20' ? 'over the last 20 rounds' : 'over the last 10 rounds');
+
 /** One team's tour and standards, each read at most once per turn. `teamId` comes from the session's context, never from the model. */
-export function benchmarkSource(sb: Sb, teamId: string): BenchmarkSource {
+export function benchmarkSource(sb: Sb, teamId: string, opts: { ctx?: CoachChatContext; figures?: PlayerFiguresSource; role?: 'coach' | 'player' } = {}): BenchmarkSource {
+  const cohorts = new Map<string, Promise<Cohort | null>>();
   let tourRead: Promise<Tour | null> | undefined;
   let standardsRead: Promise<Map<string, StandardRow> | null> | undefined;
   let levelRead: Promise<TeamLevel | null> | undefined;
@@ -161,18 +185,75 @@ export function benchmarkSource(sb: Sb, teamId: string): BenchmarkSource {
     }
     return out;
   };
-  return { level, tour, standards, standing };
+  const cohort = (chatMetricId: string, window: CohortWindow): Promise<Cohort | null> => {
+    const ctx = opts.ctx;
+    if (!ctx) return Promise.resolve(null);
+    const key = `${chatMetricId}|${window}`;
+    let hit = cohorts.get(key);
+    if (!hit) {
+      hit = (async () => {
+        try {
+          const e = await getTeamMetricRanking(sb, ctx, { metric_id: chatMetricId, window }, opts.figures);
+          if (e.coverage === 'unavailable') return null;
+          const d = e.detail as { window?: CohortWindow; direction?: Cohort['direction'] } | undefined;
+          const values = new Map<string, number>();
+          for (const m of e.measurements) if (m.entity.kind === 'player' && typeof m.value === 'number') values.set(m.entity.id, m.value);
+          return { window: d?.window ?? 'cache', direction: d?.direction ?? null, values };
+        } catch {
+          return null;
+        }
+      })();
+      cohorts.set(key, hit);
+    }
+    return hit;
+  };
+  return { level, tour, standards, standing, cohort, role: opts.role ?? 'coach' };
 }
 
 const LEVEL_NOT_SET_NOTE = 'Level not set: the team’s division is not on record. A coach sets it in Settings, Team, Division.';
 const round2 = (n: number): number => Math.round(n * 100) / 100;
 
 /**
- * The three references for one figure, level first, team second, Tour third. `standing` is the player's row when one exists; without it the
- * level is the published division average (or missing), the team average is missing, and the Tour is withheld where it is not measured
- * the way the player's figure is. `teamFigure`: the figure is the team's own, so it carries the level and the Tour only.
+ * The team average and where a player sits in the team, over ONE window. Never a mix: the average, the place and the player's own value all
+ * come from the same per-player values.
+ *  - `cohort`: every player's value over the window (the ranking's own computation): the average is their mean, the place is 1 plus the players
+ *    strictly better (direction applied), among the players who have a figure.
+ *  - `standing`: the nightly standing's team average and percentile over all recorded rounds. A player's only source (a player cannot read the
+ *    team's windowed figures), and only ever paired with a figure over all recorded rounds.
+ *  - `missing`: no team figure, and why.
  */
-export function comparisonsFor(a: { metricId: string; std: StandardRow | undefined; tour: Tour; teamLevel: TeamLevel | null; standing: StandingLite | null; teamFigure: boolean }): Comparison[] {
+export type TeamRef =
+  | { kind: 'cohort'; avg: number; rank: number | null; n: number; window: CohortWindow }
+  | { kind: 'standing'; avg: number; n: number; percent: number | null }
+  | { kind: 'missing'; reason: string; note: string };
+
+/** The team reference for one player from a cohort of per-player values over a window. Pure. */
+export function teamRefFromCohort(cohort: Cohort | null, playerId: string | null, window: CohortWindow): TeamRef {
+  if (!cohort) return { kind: 'missing', reason: 'not available', note: `The team’s figures ${windowWords(window)} could not be read.` };
+  const values = [...cohort.values.values()];
+  const n = values.length;
+  if (n < TEAM_MARKER_MIN_N) return { kind: 'missing', reason: `fewer than ${TEAM_MARKER_MIN_N} players`, note: `Fewer than ${TEAM_MARKER_MIN_N} players have this figure ${windowWords(cohort.window)}, so there is no team average.` };
+  const own = playerId ? cohort.values.get(playerId) : undefined;
+  const better = (v: number) => (cohort.direction === 'lower_better' ? v < (own as number) : v > (own as number));
+  const rank = typeof own === 'number' && cohort.direction ? 1 + values.filter(better).length : null;
+  return { kind: 'cohort', avg: round2(values.reduce((a, b) => a + b, 0) / n), rank, n, window: cohort.window };
+}
+
+/** The team reference from the nightly standing, over all recorded rounds. */
+export function teamRefFromStanding(standing: StandingLite | null): TeamRef {
+  if (standing && standing.team_avg != null && standing.team_n >= TEAM_MARKER_MIN_N) return { kind: 'standing', avg: round2(standing.team_avg), n: standing.team_n, percent: standing.team_pct == null ? null : Math.round(standing.team_pct) };
+  return { kind: 'missing', reason: standing ? `fewer than ${TEAM_MARKER_MIN_N} teammates` : 'no team average yet', note: standing ? `Fewer than ${TEAM_MARKER_MIN_N} teammates have this stat, so there is no team average.` : 'There is no team average for this metric yet.' };
+}
+
+const rankWords = (rank: number, n: number): string => `Rank ${rank} of ${n} players with a figure; 1 is best.`;
+
+/**
+ * The three references for one figure, level first, team second, Tour third. `standing` is the player's row when one exists (the level's
+ * place comes from it, over all recorded rounds); `team` is the team average and place over the SAME window as the figure; without them
+ * the level is the published division average (or missing) and the team is missing. The Tour is withheld where it is not measured the way
+ * the player's figure is. `teamFigure`: the figure is the team's own, so it carries the level and the Tour only.
+ */
+export function comparisonsFor(a: { metricId: string; std: StandardRow | undefined; tour: Tour; teamLevel: TeamLevel | null; standing: StandingLite | null; team: TeamRef; teamFigure: boolean }): Comparison[] {
   const { std, tour, teamLevel, standing } = a;
   const out: Comparison[] = [];
 
@@ -183,21 +264,23 @@ export function comparisonsFor(a: { metricId: string; std: StandardRow | undefin
   const cohortLabel = tour === 'lpga' ? 'Women’s college players on Helm' : 'College players on Helm';
   const cohort = standing && standing.level_avg != null && standing.level_n > 0 ? standing : null;
   const place = cohort && cohort.level_pct != null ? { place_percent: Math.round(cohort.level_pct), place_of: cohort.level_n } : { place_percent: null, place_of: null };
-  if (typeof published === 'number') out.push({ kind: 'level', label: LEVEL_LABEL[teamLevel as TeamLevel], value: published, ...place, note: place.place_percent === null ? null : `Place is among ${cohortLabel.toLowerCase()}.`, missing_reason: null });
-  else if (!teamLevel) out.push({ kind: 'level', label: 'Level', value: null, place_percent: null, place_of: null, note: LEVEL_NOT_SET_NOTE, missing_reason: 'not set' });
-  else out.push({ kind: 'level', label: LEVEL_LABEL[teamLevel], value: null, place_percent: null, place_of: null, note: 'There is no college figure for this metric.', missing_reason: 'no college figure' });
+  if (typeof published === 'number') out.push({ kind: 'level', label: LEVEL_LABEL[teamLevel as TeamLevel], value: published, ...place, place: null, note: place.place_percent === null ? null : `Place is among ${cohortLabel.toLowerCase()} over all recorded rounds.`, missing_reason: null });
+  else if (!teamLevel) out.push({ kind: 'level', label: 'Level', value: null, place_percent: null, place: null, place_of: null, note: LEVEL_NOT_SET_NOTE, missing_reason: 'not set' });
+  else out.push({ kind: 'level', label: LEVEL_LABEL[teamLevel], value: null, place_percent: null, place: null, place_of: null, note: 'There is no college figure for this metric.', missing_reason: 'no college figure' });
 
-  // 2. The team average and the place in the team, from five teammates.
+  // 2. The team average and the place in the team, over the figure's own window (the standing's, over all recorded rounds, for a player).
   if (!a.teamFigure) {
-    if (standing && standing.team_avg != null && standing.team_n >= TEAM_MARKER_MIN_N) out.push({ kind: 'team', label: 'Team average', value: round2(standing.team_avg), place_percent: standing.team_pct == null ? null : Math.round(standing.team_pct), place_of: standing.team_n, note: null, missing_reason: null });
-    else out.push({ kind: 'team', label: 'Team average', value: null, place_percent: null, place_of: null, note: standing ? `Fewer than ${TEAM_MARKER_MIN_N} teammates have this stat, so there is no team average.` : 'There is no team average for this metric yet.', missing_reason: standing ? `fewer than ${TEAM_MARKER_MIN_N} teammates` : 'no team average yet' });
+    const t = a.team;
+    if (t.kind === 'cohort') out.push({ kind: 'team', label: `Team average ${windowWords(t.window)}`, value: t.avg, place_percent: null, place: t.rank, place_of: t.n, note: t.rank === null ? null : rankWords(t.rank, t.n), missing_reason: null });
+    else if (t.kind === 'standing') out.push({ kind: 'team', label: 'Team average over all recorded rounds', value: t.avg, place_percent: t.percent, place: null, place_of: t.n, note: 'The nightly standing: over all recorded rounds, as a share of the team the player is ahead of.', missing_reason: null });
+    else out.push({ kind: 'team', label: 'Team average', value: null, place_percent: null, place: null, place_of: null, note: t.note, missing_reason: t.reason });
   }
 
   // 3. The Tour, where it is measured the way the player's figure is.
   const tourValue = std?.pga_tour_value;
-  if (typeof tourValue !== 'number') out.push({ kind: 'tour', label: tourLabel(tour), value: null, place_percent: null, place_of: null, note: `The ${tourLabel(tour)} publishes no value for this metric.`, missing_reason: 'no Tour figure' });
-  else if (!isStandingTourComparable(a.metricId, (standing?.basis ?? null) as 'on_green' | 'all_shot' | null)) out.push({ kind: 'tour', label: tourLabel(tour), value: null, place_percent: null, place_of: null, note: `The ${tourLabel(tour)} value is not measured the way this figure is, so it is not compared.`, missing_reason: 'not compared' });
-  else out.push({ kind: 'tour', label: tourLabel(tour), value: tourValue, place_percent: null, place_of: null, note: null, missing_reason: null });
+  if (typeof tourValue !== 'number') out.push({ kind: 'tour', label: tourLabel(tour), value: null, place_percent: null, place: null, place_of: null, note: `The ${tourLabel(tour)} publishes no value for this metric.`, missing_reason: 'no Tour figure' });
+  else if (!isStandingTourComparable(a.metricId, (standing?.basis ?? null) as 'on_green' | 'all_shot' | null)) out.push({ kind: 'tour', label: tourLabel(tour), value: null, place_percent: null, place: null, place_of: null, note: `The ${tourLabel(tour)} value is not measured the way this figure is, so it is not compared.`, missing_reason: 'not compared' });
+  else out.push({ kind: 'tour', label: tourLabel(tour), value: tourValue, place_percent: null, place: null, place_of: null, note: null, missing_reason: null });
   return out;
 }
 
@@ -205,6 +288,30 @@ export function comparisonsFor(a: { metricId: string; std: StandardRow | undefin
 function gradeAgainst(comparisons: readonly Comparison[], season: string): BenchmarkRef | null {
   const c = comparisons.find((x) => x.kind === 'level' && x.value !== null) ?? comparisons.find((x) => x.kind === 'tour' && x.value !== null);
   return c && c.value !== null ? { source: c.label.endsWith('Helm') ? c.label : `${c.label} ${season}`, version: season, value: c.value, omitted_for_cohort: false } : null;
+}
+
+const NO_WINDOW: TeamRef = { kind: 'missing', reason: 'window not stated', note: 'The window this figure was read over is not stated, so no team comparison is made.' };
+
+/**
+ * The team reference for one figure over its own window. A coach's comes from the roster's values over that window (`local` is the read's own
+ * when the read is the team ranking, so the comparison uses the very values the ranking printed). A player cannot read teammates' windowed
+ * figures, so theirs is the standing's, and only beside a figure over all recorded rounds.
+ */
+async function teamRefFor(source: BenchmarkSource, chatId: string, window: CohortWindow | null, playerId: string | null, standing: StandingLite | null, local: Cohort | null): Promise<TeamRef> {
+  if (!window) return NO_WINDOW;
+  if (source.role === 'player') {
+    return window === 'cache' ? teamRefFromStanding(standing) : { kind: 'missing', reason: 'all rounds only', note: `A team average ${windowWords(window)} is not available to a player: the team’s figure covers all recorded rounds only.` };
+  }
+  return teamRefFromCohort(local ?? (await source.cohort(chatId, window)), playerId, window);
+}
+
+/** The roster's values from a team-ranking read itself, so a comparison on it and the ranking can never disagree. */
+function cohortOfRanking(envelope: ToolEnvelope, metricId: string): Cohort | null {
+  const d = envelope.detail as { team_ranking?: boolean; window?: CohortWindow; direction?: Cohort['direction'] } | undefined;
+  if (!d?.team_ranking || !d.window) return null;
+  const values = new Map<string, number>();
+  for (const m of envelope.measurements) if (m.metric_id === metricId && m.entity.kind === 'player' && typeof m.value === 'number') values.set(m.entity.id, m.value);
+  return { window: d.window, direction: d.direction ?? null, values };
 }
 
 /**
@@ -224,22 +331,32 @@ export async function applyComparisons(envelope: ToolEnvelope, source: Benchmark
     const ids = [...new Set(candidates.flatMap((x) => (x.entity.kind === 'player' ? [STANDING_ID_BY_CHAT_ID(x.metric_id) as string] : [])))];
     const players = [...new Set(candidates.filter((x) => x.entity.kind === 'player').map((x) => x.entity.id))];
     const standing = players.length && ids.length ? await source.standing(players, ids) : new Map<string, StandingLite>();
-    const comparisonsOf = (x: Measurement | MeasurementSeries) => {
+    const detailWindow = (envelope.detail as { window?: CohortWindow } | undefined)?.window ?? null;
+    // A value from the stats cache is over all recorded rounds whatever window the read was asked for; any other is over the read's window.
+    const windowOf = (m: Measurement | MeasurementSeries): CohortWindow | null => ('source' in m && m.source === 'stats cache' ? 'cache' : detailWindow);
+    const comparisonsOf = async (x: Measurement | MeasurementSeries) => {
       const id = STANDING_ID_BY_CHAT_ID(x.metric_id) as string;
       const std = standards.get(id);
       const row = x.entity.kind === 'player' ? (standing.get(`${x.entity.id}|${id}`) ?? null) : null;
-      return { std, list: comparisonsFor({ metricId: id, std, tour, teamLevel, standing: row, teamFigure: x.entity.kind !== 'player' }) };
+      const w = windowOf(x);
+      const local = w && w === detailWindow ? cohortOfRanking(envelope, x.metric_id) : null;
+      const team = x.entity.kind === 'player' ? await teamRefFor(source, x.metric_id, w, x.entity.id, row, local) : NO_WINDOW;
+      return { std, list: comparisonsFor({ metricId: id, std, tour, teamLevel, standing: row, team, teamFigure: x.entity.kind !== 'player' }) };
     };
-    const measurements = envelope.measurements.map((m) => {
-      if (!mapped(m)) return m;
-      const { std, list } = comparisonsOf(m);
-      return { ...m, comparisons: list, benchmark: m.benchmark ?? gradeAgainst(list, std?.season ?? '') };
-    });
-    const series = envelope.series.map((x) => {
-      if (!mapped(x) || x.benchmark) return x;
-      const { std, list } = comparisonsOf(x);
-      return { ...x, benchmark: gradeAgainst(list, std?.season ?? '') };
-    });
+    const measurements = await Promise.all(
+      envelope.measurements.map(async (m) => {
+        if (!mapped(m)) return m;
+        const { std, list } = await comparisonsOf(m);
+        return { ...m, comparisons: list, benchmark: m.benchmark ?? gradeAgainst(list, std?.season ?? '') };
+      }),
+    );
+    const series = await Promise.all(
+      envelope.series.map(async (x) => {
+        if (!mapped(x) || x.benchmark) return x;
+        const { std, list } = await comparisonsOf(x);
+        return { ...x, benchmark: gradeAgainst(list, std?.season ?? '') };
+      }),
+    );
     return { ...envelope, measurements, series };
   } catch {
     return envelope;
@@ -287,6 +404,8 @@ export interface BenchmarkInput {
   levels?: BenchmarkLevel[];
   /** Coach only: a roster player whose standing is read as well. A player's own read ignores it. */
   player_id?: string;
+  /** The window the player's figure and the team's are read over (default: the last 10 rounds). The level's place is always over all recorded rounds. */
+  window?: CohortWindow;
 }
 
 /**
@@ -331,6 +450,9 @@ export async function getBenchmarks(sb: Sb, ctx: CoachChatContext, source: Bench
   });
   const withoutValue = wanted.filter((id) => !benchmarks.some((b) => b.metric_id === id && Object.keys(b.levels).length > 0));
 
+  // The player's figure is read over the window asked for, by the same computation as the ranking; the standing (all recorded rounds, nightly)
+  // gives the level's place and is the fallback for a metric the rounds do not hold. Every row says which window its figure is over.
+  const askedWindow: CohortWindow = input.window ?? 'last10';
   let standing: Record<string, unknown> | null = null;
   let standingFailed = false;
   if (playerId) {
@@ -344,27 +466,47 @@ export async function getBenchmarks(sb: Sb, ctx: CoachChatContext, source: Bench
       void logServerError(`getBenchmarks standing failed: ${error.message}`, { action: 'coachhelm.ask.benchmarks', feature: 'coachhelm_chat', userId: ctx.coach_id || ctx.user_id, handled: true });
     } else {
       const name = who.role === 'player' ? 'You' : (ctx.roster.find((p) => p.id === playerId)?.name ?? 'The player');
-      const rows = ((data ?? []) as unknown as StandingRow[]).map((r) => {
-        const std = standards.get(r.metric_id);
-        const comparisons = comparisonsFor({ metricId: r.metric_id, std, tour, teamLevel, standing: { ...r, player_id: playerId } as StandingLite, teamFigure: false });
-        const gap = (kind: Comparison['kind']) => {
-          const v = comparisons.find((c) => c.kind === kind)?.value;
-          return typeof v === 'number' ? round2(r.player_value - v) : null;
-        };
-        return {
-          metric_id: r.metric_id,
-          metric_scope: scopeKey(r.metric_id),
-          metric_label: meta?.get(r.metric_id)?.label ?? std?.display_label ?? r.metric_id,
-          ...(meta?.get(r.metric_id) ? { direction: meta.get(r.metric_id)!.direction } : {}),
-          player_value: round2(r.player_value),
-          // Level, then team, then Tour; one with no value is still here, with the reason.
-          comparisons: comparisons.map((c) => ({ ...c, kind: c.kind })),
-          // How far the player is from each, signed (their value minus the reference), so the answer never subtracts the rounded figures itself.
-          gaps: { vs_level: gap('level'), vs_team: gap('team'), vs_tour: gap('tour') },
-          computed_at: r.computed_at,
-        };
-      });
-      standing = { player_id: playerId, player: name, window: 'all recorded rounds, refreshed nightly', rows };
+      const byMetric = new Map(((data ?? []) as unknown as StandingRow[]).map((r) => [r.metric_id, r]));
+      const rows = (
+        await Promise.all(
+          wanted.map(async (id) => {
+            const r = byMetric.get(id);
+            const std = standards.get(id);
+            const chatId = chatIdOf(id);
+            const cohort = getMetricSpec(chatId) ? await source.cohort(chatId, askedWindow) : null;
+            const windowed = cohort?.values.get(playerId) ?? null;
+            if (windowed === null && !r) return null;
+            // The window figure when the rounds hold it; otherwise the standing's own, which is over all recorded rounds.
+            const useCohort = windowed !== null && cohort !== null;
+            const value = useCohort ? (windowed as number) : (r as StandingRow).player_value;
+            const window: CohortWindow = useCohort ? (cohort as Cohort).window : 'cache';
+            const lite = r ? ({ ...r, player_id: playerId } as StandingLite) : null;
+            const team = await teamRefFor(source, chatId, window, playerId, lite, useCohort ? cohort : null);
+            const comparisons = comparisonsFor({ metricId: id, std, tour, teamLevel, standing: lite, team, teamFigure: false });
+            const gap = (kind: Comparison['kind']) => {
+              const v = comparisons.find((c) => c.kind === kind)?.value;
+              return typeof v === 'number' ? round2(value - v) : null;
+            };
+            return {
+              metric_id: id,
+              metric_scope: scopeKey(id),
+              metric_label: meta?.get(id)?.label ?? std?.display_label ?? id,
+              ...(meta?.get(id) ? { direction: meta.get(id)!.direction } : {}),
+              player_value: round2(value),
+              // The window every figure on this row is over: the player's, the team's and the gaps. Levels and the Tour are not windowed.
+              window,
+              window_label: windowWords(window).replace(/^over /, ''),
+              ...(r && useCohort && round2(r.player_value) !== round2(value) ? { standing_value: round2(r.player_value) } : {}),
+              // Level, then team, then Tour; one with no value is still here, with the reason.
+              comparisons,
+              // How far the player is from each, signed (their value minus the reference), so the answer never subtracts the rounded figures itself.
+              gaps: { vs_level: gap('level'), vs_team: gap('team'), vs_tour: gap('tour') },
+              computed_at: r?.computed_at ?? nowIso(),
+            };
+          }),
+        )
+      ).filter((row): row is NonNullable<typeof row> => row !== null);
+      standing = { player_id: playerId, player: name, window: `${windowWords(askedWindow)}; the level's place is over all recorded rounds, refreshed nightly`, rows };
     }
   }
 

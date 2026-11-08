@@ -148,9 +148,9 @@ describe('CoachComposition: the headline chip compares with the level, the team 
   const lines = () => Array.from(document.querySelectorAll('.ch-th-cv__refs li')).map((li) => li.textContent);
 
   it('lists all three, level first and the Tour last, each with where the player sits', () => {
-    const m = gir([girRef('level', 61.5, { place_percent: 30, place_of: 70 }), girRef('team', 57.2, { place_percent: 56, place_of: 9 }), girRef('tour', 66)], { source: 'Division III average 2024', version: '2024', value: 61.5, omitted_for_cohort: false });
+    const m = gir([girRef('level', 61.5, { place_percent: 30, place_of: 70 }), girRef('team', 57.2, { place: 6, place_of: 9 }), girRef('tour', 66)], { source: 'Division III average 2024', version: '2024', value: 61.5, omitted_for_cohort: false });
     render(<CoachComposition composition={headline(m)} />);
-    expect(lines()).toEqual(['Level 62% · ahead of 30% of 70 players', 'Team 57% · ahead of 56% of the team', 'Tour 66%']);
+    expect(lines()).toEqual(['Level 62% · ahead of 30% of 70 players (all rounds)', 'Team 57% · 6th of 9', 'Tour 66%']);
     expect(screen.getByText('Behind Division III average 2024')).toBeTruthy();
     expect(document.querySelector('.ch-th-cv__refs')!.getAttribute('aria-label')).toBe('Compared with');
   });

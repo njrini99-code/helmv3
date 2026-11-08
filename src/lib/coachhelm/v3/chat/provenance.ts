@@ -97,6 +97,8 @@ export const Comparison = z.object({
   label: z.string(),
   value: z.number().nullable(),
   place_percent: z.number().nullable().default(null),
+  /** The team's rank, 1 best (direction applied), among the `place_of` players who have a figure over the same window. Team only. */
+  place: z.number().nullable().default(null),
   /** How many players the place is among. */
   place_of: z.number().nullable().default(null),
   note: z.string().nullable().default(null),
@@ -1358,6 +1360,7 @@ export function auditNumericClaimsDetailed(
       }
     }
   }
+      add(c.place, { ...who, family: null, parent: null });
   for (const { scope, values } of detailGroups.values()) {
     if (values.length >= 2) add(values.reduce((a, b) => a + b, 0) / values.length, scope);
   }

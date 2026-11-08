@@ -404,6 +404,8 @@ export async function getPlayerMetric(
       summary: `${measurements.length} metric${measurements.length === 1 ? '' : 's'} for ${player.name}, ${windowWords(window as FigureWindow)}.`,
       measurements,
       series: [],
+      // The window the round-based figures were read over: a comparison with the team is made over the same one.
+      detail: { window },
       coverage: coverageFor(usable, measurements.length),
       coverage_note: usable < measurements.length ? `${measurements.length - usable} of the requested metrics have no recorded data for ${player.name}.` : null,
       as_of: nowIso(),
@@ -430,6 +432,7 @@ export async function getPlayerMetric(
     summary: `${measurements.length} metric${measurements.length === 1 ? '' : 's'} for ${player.name}.`,
     measurements,
     series: [],
+    detail: { window: 'cache' },
     coverage: coverageFor(usable, measurements.length),
     coverage_note:
       usable < measurements.length
@@ -512,7 +515,8 @@ export async function getTeamMetricRanking(
     summary: `${spec.label} across ${ctx.team_name}${byFigures ? (window === 'season' ? ', this season' : window === 'last5' ? ', over each player’s newest five rounds' : window === 'last20' ? ', over each player’s newest twenty rounds' : ', over each player’s newest ten rounds') : ''}.`,
     measurements: [...withValue, ...measurements.filter((m) => m.value === null)],
     series: [],
-    detail: { metric_id: spec.id, metric_label: spec.label, direction: spec.direction },
+    // `window` is the one every value was read over ('cache' when the figures were the stats cache's own); `team_ranking` marks the values as the whole roster's, so a comparison uses them as the team.
+    detail: { metric_id: spec.id, metric_label: spec.label, direction: spec.direction, window: byFigures ? window : 'cache', team_ranking: true },
     coverage: coverageFor(withValue.length, ctx.roster.length),
     coverage_note:
       missing.length > 0
@@ -933,6 +937,7 @@ export async function comparePlayers(
     detail: {
       players: players.map((p) => ({ player_id: p.id, name: p.name })),
       metric_ids: input.metric_ids,
+      window: byFigures ? window : 'cache',
     },
     coverage: coverageNotes.length > 0 ? coverageFor(withValue, measurements.length) : 'complete',
     coverage_note: coverageNotes.length > 0 ? coverageNotes.join('; ') : null,

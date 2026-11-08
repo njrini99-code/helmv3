@@ -18,7 +18,7 @@ const env = (summary: string, detail: unknown, over: Partial<ToolEnvelope> = {})
 const reference = env('3 reference sections found. General golf knowledge, not this team’s data.', { kind: 'reference', not_team_data: true, reference: [{ kind: 'reference', section: '1-the-strokes-gained-framework/what-it-is', heading: 'How it works', text: 'x', source: 'CoachHelm golf reference' }] });
 const definition = env('1 metric definition.', { kind: 'definition', definitions: [{ kind: 'definition', metric_id: 'sg_putting', label: 'SG: Putting', category: 'sg', unit: 'strokes' }] });
 const ref = (kind: 'level' | 'team' | 'tour', value: number | null, over: Record<string, unknown> = {}) => ({ kind, label: kind, value, place_percent: null, place_of: null, note: null, ...over });
-const allThree = [ref('level', 61.5, { place_percent: 30, place_of: 70 }), ref('team', 57.2, { place_percent: 56, place_of: 9 }), ref('tour', 66)];
+const allThree = [ref('level', 61.5, { place_percent: 30, place_of: 70 }), ref('team', 57.2, { place: 6, place_of: 9 }), ref('tour', 66)];
 const standingRow = { metric_id: 'gir_pct', metric_label: 'GIR %', direction: 'higher_better', player_value: 58.1, comparisons: allThree };
 const benchmark = (rows: unknown[], over: Record<string, unknown> = {}) => env('Division III average for 1 metric, with 1 standing row.', { kind: 'benchmark_read', team_level: 'Division III average', benchmarks: [{ kind: 'benchmark', metric_id: 'gir_pct', levels: { d3: { value: 50 } } }], standing: { player_id: 'p1', player: 'Owen Carter', rows }, ...over });
 
@@ -125,7 +125,13 @@ describe('a benchmark read draws a picture of where the player stands, or nothin
 
 describe('comparison words (the chip and the card say the same three things)', () => {
   it('lead with the level and its place, then the team and its place, then the Tour', () => {
-    expect(comparisonWords(allThree as never, 'percent')).toEqual(['Level 62% · ahead of 30% of 70 players', 'Team 57% · ahead of 56% of the team', 'Tour 66%']);
+    expect(comparisonWords(allThree as never, 'percent')).toEqual(['Level 62% · ahead of 30% of 70 players (all rounds)', 'Team 57% · 6th of 9', 'Tour 66%']);
+  });
+
+  it('say a team place as a rank with its ordinal, never a percent, and say the old nightly share is over all rounds', () => {
+    const rank = (n: number) => comparisonWords([ref('team', 1, { place: n, place_of: 12 })] as never, 'strokes')[0];
+    expect([1, 2, 3, 4, 11, 12, 13, 21, 22].map(rank)).toEqual(['Team +1.0 · 1st of 12', 'Team +1.0 · 2nd of 12', 'Team +1.0 · 3rd of 12', 'Team +1.0 · 4th of 12', 'Team +1.0 · 11th of 12', 'Team +1.0 · 12th of 12', 'Team +1.0 · 13th of 12', 'Team +1.0 · 21st of 12', 'Team +1.0 · 22nd of 12']);
+    expect(comparisonWords([ref('team', 57.2, { place_percent: 56, place_of: 9 })] as never, 'percent')).toEqual(['Team 57% · ahead of 56% of the team (all rounds)']);
   });
 
   it('say why a level is missing: "not set" with no division, "no college figure" for strokes gained, with the team and the Tour still shown', () => {
@@ -198,7 +204,7 @@ describe('the card’s "you" is the answer’s window figure', () => {
     const out = withWindowFigures(bench, [bench, windowRead(29)]);
     const b = benchmarkBlock(out)!;
     expect(b.rows[0]!.display).toBe('29%');
-    expect(b.note).toMatch(/Your figure is your last 10 rounds\. Place in the level and in the team is over all your recorded rounds\./);
+    expect(b.note).toMatch(/Your figure is over your last 10 rounds\. The level’s place is over all recorded rounds\./);
     // The envelope the model read is not changed.
     expect((bench.detail as { standing: { rows: Array<{ player_value: number }> } }).standing.rows[0]!.player_value).toBe(28);
   });
@@ -210,7 +216,7 @@ describe('the card’s "you" is the answer’s window figure', () => {
     expect(withWindowFigures(bench, [bench])).toBe(bench);
     const named = withWindowFigures(bench, [bench, windowRead(31, 'p1')]);
     expect(benchmarkBlock(named)!.rows[0]!.display).toBe('31%');
-    expect(benchmarkBlock(named)!.note).toMatch(/^The figure is your last 10 rounds\. Place in the level and in the team is over all their recorded rounds/);
+    expect(benchmarkBlock(named)!.note).toMatch(/^The figure is over your last 10 rounds\. The level’s place is over all recorded rounds/);
   });
 });
 
@@ -337,5 +343,17 @@ describe('a table says the unit of its columns', () => {
     const e = env('1 row of career statistics.', { kind: 'team_data', rows: [{ player: 'Cole', approach_proximity_average: 15.3, gir_percentage: 61.2 }], units: { approach_proximity_average: 'feet', gir_percentage: 'percent' } });
     const t = detailTable(e.detail, e.summary)!;
     expect(t.columns).toEqual(['Player', 'GIR percentage (%)', 'Approach proximity average (ft)']);
+  });
+});
+
+describe('a benchmark row the server read over a window is not replaced by another read', () => {
+  it('keeps the row’s own figure and window, and says the level’s place is over all recorded rounds', () => {
+    const row = { metric_id: 'putts_made_5_10ft_pct', metric_label: 'Putts Made 5-10 ft', player_value: 29, window: 'last10', window_label: 'the last 10 rounds', standing_value: 28, comparisons: allThree };
+    const bench = benchmark([row], { standing: { player: 'You', player_id: 'p1', rows: [row] } });
+    const other = { ...env('Make rate by putt distance.', undefined), measurements: [{ metric_id: 'putt_make_pct_5-10 ft', unit: 'percent', value: 31, entity: { kind: 'player', id: 'p1', label: 'Cole' }, window_start: null, window_end: null, sample_size: 40, sample_unit: 'attempts', source: 'rounds', method: 'm', benchmark: null, direction: 'higher_better', denominator: null, metric_label: 'x' }] } as unknown as ToolEnvelope;
+    expect(withWindowFigures(bench, [bench, other])).toBe(bench);
+    const b = benchmarkBlock(bench)!;
+    expect(b.rows[0]!.display).toBe('29%');
+    expect(b.note).toBe('Your figure is over the last 10 rounds. The level’s place is over all recorded rounds.');
   });
 });

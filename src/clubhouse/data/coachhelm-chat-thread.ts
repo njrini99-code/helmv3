@@ -1175,11 +1175,25 @@ const REF_WORD: Record<RefKind, string> = { level: 'Level', team: 'Team', tour: 
  * The three references of a figure in words, level first, team second, Tour third, each with where the player sits among them and a missing
  * one stated: "Level 62% · ahead of 30% of 71 players", "Team: no average yet", "Tour 66%". What the headline chip shows under its verdict.
  */
-export function comparisonWords(comparisons: ReadonlyArray<{ kind: RefKind; value: number | null; place_percent?: number | null; place_of?: number | null; note?: string | null; missing_reason?: string | null }>, unit: Measurement['unit']): string[] {
+const ordinal = (n: number): string => {
+  const v = n % 100;
+  return `${n}${v >= 11 && v <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[n % 10] ?? 'th'}`;
+};
+
+export function comparisonWords(comparisons: ReadonlyArray<{ kind: RefKind; value: number | null; place_percent?: number | null; place?: number | null; place_of?: number | null; note?: string | null; missing_reason?: string | null }>, unit: Measurement['unit']): string[] {
   const ordered = (['level', 'team', 'tour'] as const).flatMap((k) => comparisons.filter((c) => c.kind === k));
   return ordered.map((c) => {
     if (c.value === null) return `${REF_WORD[c.kind]}: ${c.missing_reason ?? 'not available'}`;
-    const place = c.place_percent == null ? '' : c.kind === 'team' ? ` · ahead of ${c.place_percent}% of the team` : ` · ahead of ${c.place_percent}% of ${c.place_of ?? ''} players`.replace(/ {2}/g, ' ');
+    // The team: the rank among the players with a figure over the same window ("6th of 7"). The level: the share of the college players on Helm the
+    // player is ahead of, over all recorded rounds (said so). A team rank never becomes a percent.
+    const place =
+      c.kind === 'team' && c.place != null && c.place_of != null
+        ? ` · ${ordinal(c.place)} of ${c.place_of}`
+        : c.place_percent == null
+          ? ''
+          : c.kind === 'team'
+            ? ` · ahead of ${c.place_percent}% of the team (all rounds)`
+            : ` · ahead of ${c.place_percent}% of ${c.place_of ?? ''} players (all rounds)`.replace(/ {2}/g, ' ');
     return `${REF_WORD[c.kind]} ${formatValue(c.value, unit)}${place}`;
   });
 }
@@ -1240,6 +1254,8 @@ export function withWindowFigures(envelope: ToolEnvelope, all: readonly ToolEnve
   const mine = d.standing?.player === 'You';
   const next = rows.map((r) => {
     const id = String(r.metric_id ?? '');
+    // A row the server already read over a window says so itself; another read's figure never replaces it.
+    if (typeof r.window_label === 'string') return r;
     for (const e of all) {
       if (e === envelope) continue;
       const m = e.measurements.find((x) => x.entity.kind === 'player' && (mine || x.entity.id === d.standing?.player_id) && x.value !== null && sameMetric(x.metric_id, id));
@@ -1296,7 +1312,7 @@ export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { k
     title: `${who} against the level, the team and the Tour`,
     rows: out,
     source: null,
-    note: [windowed.length ? `${who === 'You' ? 'Your' : 'The'} figure is ${windowed[0]}. Place in the level and in the team is over all ${who === 'You' ? 'your' : 'their'} recorded rounds.` : '', ...missing.slice(0, 3)].filter(Boolean).join(' ') || null,
+    note: [windowed.length ? `${who === 'You' ? 'Your' : 'The'} figure is over ${windowed[0]!.replace(/^(last )/, 'the $1')}. The level’s place is over all recorded rounds.` : '', ...missing.slice(0, 3)].filter(Boolean).join(' ') || null,
     bench: null,
     table: { caption: `${who} against the level, the team and the Tour`, columns: ['Metric', who === 'You' ? 'You' : 'Value', 'Level', 'Team', 'Tour'], rows: tableRows },
   };

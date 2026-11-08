@@ -388,7 +388,8 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
   };
 
   /** Ask v2: the team's Tour and standards, each read once for the turn. */
-  const benchSource = askV2 ? benchmarkSource(sb, ctx.team_id) : null;
+  // The roster's windowed figures come from the same source the ranking uses, so a comparison and the ranking cannot disagree.
+  const benchSource = askV2 ? benchmarkSource(sb, ctx.team_id, { ctx, figures: playerFigures, role: 'coach' }) : null;
 
   /** Every read this turn, by the `evidence_ref` the model is handed, for show_visual to resolve. Server memory only. */
   const evidenceByRef = evidenceRefs ?? new Map<string, ToolEnvelope>();

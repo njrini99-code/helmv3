@@ -22520,6 +22520,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/__tests__/ask-replay-harness.ts",
+          "anchor": "src/lib/golf/timezone"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/ask-draft-tools.ts",
           "anchor": "src/lib/golf/message-polls"
         },

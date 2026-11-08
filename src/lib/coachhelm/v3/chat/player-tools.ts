@@ -95,7 +95,7 @@ export function buildPlayerTools({ sb, ctx, playerId, writer, collect, playerFig
   // The turn's reads by evidence_ref: the caller passes the map when it audits the answer's citations against them.
   const evidenceByRef = evidenceRefs ?? new Map<string, ToolEnvelope>();
   // The player's team's Tour and standards, read once for the turn: a measurement a read returns carries the Tour's value where there is one.
-  const benchSource = benchmarkSource(sb, ctx.team_id);
+  const benchSource = benchmarkSource(sb, ctx.team_id, { ctx, figures: playerFigures, role: 'player' });
   let n = 0;
   const read =
     <I extends object>(name: string, label: string, done: string, run: (input: I) => Promise<ToolEnvelope>) =>
