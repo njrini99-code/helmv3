@@ -116,9 +116,8 @@
   "why": "Cole Bennett putting over 23 rounds, 2.93 strokes lost, 27.07 putts, 8.15% three-putts, by-distance makes: match the reads."
  },
  "e4c7825e": {
-  "expect": "accepted",
-  "why": "Re-answers from the earlier turn's reads: every SG putting figure is true. Rejected because this turn made no fresh read (prior player evidence is held back by design) and because \"20-40ft\" is a practice distance, not a result.",
-  "knownWrongBlock": true
+  "expect": "rejected",
+  "why": "Re-answers from the earlier turn's reads (every SG putting figure is true, and now grounded), but adds \"lag putting from 20-40ft\", a practice distance that appears in no read, like 2b09aa74's \"15-30ft\": invented, so the withhold of \"20\" and \"40\" is correct."
  },
  "fbb2cf63": {
   "expect": "accepted",
@@ -134,8 +133,7 @@
  },
  "d47b26de": {
   "expect": "accepted",
-  "why": "Repeats \"nothing scheduled for the next 60 days\" from the previous turn's read. True, but that read has no player scope and this turn made no fresh read, so the audit drops it.",
-  "knownWrongBlock": true
+  "why": "Repeats \"nothing scheduled for the next 60 days\" from the previous turn's read: true, and the re-answer now gets the earlier read's evidence because it names no player the earlier reads do not cover."
  },
  "0eced936": {
   "expect": "accepted",

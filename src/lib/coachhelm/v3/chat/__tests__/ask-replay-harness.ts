@@ -28,6 +28,7 @@ import {
   type ScopedNumber,
 } from '../provenance';
 import type { Cite } from '../cites';
+import { deferredForNamedPlayers, namedPlayerIds, placePriorEnvelope } from '../prior-evidence';
 import { computeTurnVerdict, type TurnVerdict } from '../verdict';
 import { todayIsoInZone } from '@/lib/golf/timezone';
 
@@ -110,15 +111,14 @@ function priorTurnEvidence(prior: AskFixture['priorMessages'], timezone: string)
     for (const raw of message.evidence) {
       const parsed = ToolEnvelope.safeParse(raw);
       if (!parsed.success) continue;
-      const envelope = parsed.data;
-      const entities = [...envelope.measurements, ...envelope.series].map((m) => m.entity);
-      const playerIdsHere = entities.filter((e) => e.kind === 'player').map((e) => e.id);
-      const target = playerIdsHere.length > 0 || entities.length === 0 ? deferred : shared;
-      target.measurements.push(...envelope.measurements);
-      target.series.push(...envelope.series);
-      target.detailNumbers.push(...collectEnvelopeNumbers(envelope));
-      target.detailDates.push(...collectEnvelopeDates(envelope, timezone));
-      for (const id of playerIdsHere) deferred.playerIds.add(id);
+      const placed = placePriorEnvelope(parsed.data, timezone);
+      for (const [from, to] of [[placed.shared, shared], [placed.deferred, deferred]] as const) {
+        to.measurements.push(...from.measurements);
+        to.series.push(...from.series);
+        to.detailNumbers.push(...from.detailNumbers);
+        to.detailDates.push(...from.detailDates);
+      }
+      for (const id of placed.playerIds) deferred.playerIds.add(id);
     }
   }
   return { shared, deferred };
@@ -182,6 +182,13 @@ export function replayVerdict(fixture: AskFixture, options: ReplayOptions = {}):
     series.push(...seeded.deferred.series);
     detailNumbers.push(...seeded.deferred.detailNumbers);
     detailDates.push(...seeded.deferred.detailDates);
+  } else if (currentTurnPlayerIds.size === 0) {
+    // Route: a re-answer made no fresh read, so it gets the held-back evidence of exactly the players the answer names.
+    const named = deferredForNamedPlayers(seeded.deferred, namedPlayerIds(options.text ?? fixture.turn.content, fixture.roster));
+    measurements.push(...named.measurements);
+    series.push(...named.series);
+    detailNumbers.push(...named.detailNumbers);
+    detailDates.push(...named.detailDates);
   }
 
   // Route: `evidenceRefs`, the turn's reads by the `evidence_ref` the model cites.
