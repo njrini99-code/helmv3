@@ -46,6 +46,18 @@ describe('the data dictionary', () => {
     expect(noteFor('golf_round_stats_cache', 'updated_at')!.means).toMatch(/NOT the day the round was played/);
   });
 
+  it('describes the stats cache as production runs it today, and calls the countable-round rule pending', () => {
+    for (const col of ['rounds_played', 'scoring_average', 'best_round', 'putts_per_round', 'three_putt_percentage']) {
+      expect(noteFor('golf_player_stats_cache', col)!.means, col).toMatch(/pending owner apply/);
+    }
+    expect(noteFor('golf_player_stats_cache', 'rounds_played')!.means).toMatch(/every one of them/);
+    expect(noteFor('golf_player_stats_cache', 'putts_per_round')!.means).toMatch(/every completed round/);
+    expect(noteFor('golf_player_standing', 'team_pct')!.null_when).toMatch(/fewer than three teammates/);
+    expect(DATA_QUIRKS.join(' ')).toMatch(/pending owner apply: do not describe it as live/);
+    // Nothing says the rule filters today.
+    expect(JSON.stringify(DATA_DICTIONARY.golf_player_stats_cache)).not.toMatch(/countable rounds? only|only countable/i);
+  });
+
   it('records the known quirks of the data', () => {
     const q = DATA_QUIRKS.join(' ');
     expect(q).toMatch(/several rounds on one day/);

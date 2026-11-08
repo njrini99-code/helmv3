@@ -105,20 +105,12 @@ Sources: [PGA Tour Stats](https://www.pgatour.com/stats), [Data Golf 2026 SG](ht
 
 Sources: [NCSA Recruiting Guidelines](https://www.ncsasports.org/mens-golf/recruiting-guidelines); [Golf Globally / Clippd 2024](https://www.golfglobally.com/college-golf-scoring-averages); courses typically 6,600-7,000 yards.
 
-### Typical College Stat Profile (D1)
-*No single published source for these ranges (see "Published College Baselines" below): indicative only.*
-- FW%: ~62-68% (above Tour, courses set up easier)
-- GIR%: ~58-65%
-- Putts/round: 29.5-30.5
-- Scrambling: ~50-55%
-- 3-putt rate: ~5-7%
-- Driving distance: 285-310 (top D1 averages ~295)
-
 ### Where College Differs from Tour
-1. **Pin positions less brutal** — proximity numbers closer to Tour than scoring suggests
-2. **Short putt make % is the biggest invisible gap** — even +2 player makes ~92% from 3 ft vs Tour 99.4%; that's 1-2 strokes per round in pressure putts
-3. **Penalty avoidance dominates college variance** — top teams <0.5 penalties/round; struggling teams 2+
-4. **Wedge proximity from 75-125** is the single biggest D1 vs Tour gap (~28 ft vs 19 ft)
+*Qualitative only: no college figure is quoted here without a source (see the next section for the few that have one).*
+1. **Pin positions less brutal** — approach proximity is closer to the Tour's than scoring suggests
+2. **Short putt make % is the biggest invisible gap** — even a +2 player makes noticeably fewer 3-footers than the Tour's 99.4%, which costs strokes in pressure putts
+3. **Penalty avoidance dominates college variance** — top teams take few penalties; struggling teams take many
+4. **Wedge proximity from 75-125** is the largest D1 vs Tour gap
 
 ### Published College Baselines — and What Is Not Published
 *Checked 2026-11-08. Only figures with a citable source are listed. The Division II, Division III, NAIA and JUCO columns for every statistic below are not published anywhere we could find: leave them unset and say "no college figure" rather than filling them from the D1 numbers or from the Tour.*
@@ -134,7 +126,7 @@ Sources: [NCSA Recruiting Guidelines](https://www.ncsasports.org/mens-golf/recru
 **Not published (no college figure):**
 - Strokes gained by category (off the tee, approach, around the green, putting) in strokes, for any college division. Only the Clippd index above exists, and it is not strokes.
 - Strokes gained, total, for Division II, Division III, NAIA and JUCO.
-- Greens in regulation, scrambling, putts per round, putts per GIR, three-putt rate and proximity by distance band for any college division. The searches behind this section found only team scoring and championship scorecards (NCAA, Golfstat, Clippd), no division-level averages for them. The "Typical College Stat Profile (D1)" ranges above carry no single published source: treat them as indicative, never as a quoted baseline.
+- Greens in regulation, scrambling, putts per round, putts per GIR, three-putt rate and proximity by distance band for any college division. The searches behind this section found only team scoring and championship scorecards (NCAA, Golfstat, Clippd), no division-level averages for them. An earlier "Typical College Stat Profile (D1)" table (fairway %, GIR %, putts per round, scrambling, 3-putt rate, driving distance) had no single published source and was removed: do not reintroduce those ranges.
 - Division II, Division III, NAIA and JUCO scoring averages beyond the recruiting ranges in the table above.
 
 ### Junior / AJGA Benchmarks

@@ -115,8 +115,10 @@ describe('get_golf_reference', () => {
       expect(t).toMatch(/leave them unset/);
     });
 
-    it('marks the old D1 profile as indicative, not a quoted baseline', () => {
-      expect(text('typical college stat profile D1 FW GIR putts')).toMatch(/No single published source/);
+    it('quotes no unsourced D1 range: the old typical-profile table is gone', () => {
+      const all = JSON.stringify(GOLF_REFERENCE_SECTIONS);
+      expect(all).not.toMatch(/Typical College Stat Profile \(D1\)\*\*|FW%: ~62-68%|GIR%: ~58-65%|Putts\/round: 29\.5-30\.5|~28 ft vs 19 ft/);
+      expect(text('typical college stat profile D1 FW GIR putts')).not.toMatch(/62-68%|58-65%|29\.5-30\.5/);
     });
   });
 });
