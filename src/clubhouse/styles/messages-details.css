@@ -478,7 +478,7 @@
 .ch-msd-votes .ch-modal__panel {
   max-height: 78%;
 }
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-msd-votes .ch-modal__panel {
     max-height: 82%;
   }

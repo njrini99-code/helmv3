@@ -19,8 +19,8 @@ describe('the poll card styles', () => {
     expect(rule('[data-ch-ms-v2] .ch-msd-poll__mark')).toMatch(/inset 0 0 0 1\.5px var\(--ch-text-tertiary\)/);
     expect(rule('[data-ch-ms-v2] .ch-msd-poll__fill')).toMatch(/transform var\(--ch-dur-spring-smooth\) var\(--ch-ease-spring-smooth\)/);
     expect(rule('[data-ch-ms-v2] .ch-msd-poll__fill')).not.toMatch(/transform var\(--ch-dur-base\)/);
-    expect(rule('[data-ch-ms-v2] .ch-msd-poll')).toMatch(/border-radius: var\(--ch-radius-xl\);/);
-    expect(rule('[data-ch-ms-v2] .ch-msd-poll.is-mine')).toMatch(/border-bottom-right-radius: var\(--ch-radius-tail\);/);
+    expect(details.slice(details.indexOf('[data-ch-ms-v2] .ch-msd-poll {'), details.indexOf('}', details.indexOf('[data-ch-ms-v2] .ch-msd-poll {')))).toMatch(/border-radius: var\(--ch-radius-xl\);/);
+    expect(details).toMatch(/\.ch-msd-poll\.is-mine \{\s*border-bottom-right-radius: var\(--ch-radius-tail\);/);
     expect(poll).not.toMatch(/border-radius: 6px/);
   });
 

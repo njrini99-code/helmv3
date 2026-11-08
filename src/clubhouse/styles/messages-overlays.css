@@ -135,7 +135,7 @@
     padding-top: 12px;
   }
 }
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-mss .ch-modal__panel {
     animation-name: ch-mss-pop;
   }
@@ -404,7 +404,7 @@
   pointer-events: none;
 }
 /* On desktop the menu's left edge is the + key's own. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-msv-attach {
     left: 0;
   }

@@ -1173,6 +1173,10 @@ features:
         # Polls in Messages (held): the vote guard and the payload freeze carry
         # "poll" but not "messag" in their names.
         - supabase/migrations/*golf_poll_*.sql
+        # Messages v2 (held M1-M4): neither "messag" nor "conversation" in these names.
+        - supabase/migrations/20261107090000_golf_participants_column_grants.sql
+        - supabase/migrations/20261107090300_golf_typing_private_topic.sql
+        - supabase/migrations/20261107090400_golf_player_next_class.sql
       tests:
         - e2e/messages.spec.ts
         - src/clubhouse/__tests__/messages*.test.*
