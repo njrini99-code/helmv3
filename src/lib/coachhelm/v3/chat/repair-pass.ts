@@ -17,10 +17,10 @@ export function isRepairable(verdict: TurnVerdict): verdict is RejectedVerdict {
 
 const MAX_LISTED = 8;
 
-/** What the model is told: the audit's own feedback (`repair-feedback.ts`), and a plain list of the refused figures if that cannot be built. */
+/** What the model is told: the audit's own feedback (`repair-feedback.ts`), and a plain list of the refused figures if that returns nothing or throws. */
 export function repairMessage(verdict: RejectedVerdict): string | null {
   try {
-    return repairFeedback(verdict);
+    return repairFeedback(verdict) ?? plainRepairMessage(verdict);
   } catch {
     return plainRepairMessage(verdict);
   }
