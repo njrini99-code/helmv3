@@ -121,6 +121,7 @@ import {
   publishableParts,
 } from '@/lib/coachhelm/v3/chat/ui-parts';
 import { describeError } from '@/lib/utils/describe-error';
+import { deferredForNamedPlayers, namedPlayerIds, placePriorEnvelope } from '@/lib/coachhelm/v3/chat/prior-evidence';
 import { buildChatLlmCallRow } from '@/lib/coachhelm/v3/llm/chat-call-row';
 import { AskPerf, askPerfEnabled, askPerfProviderOptions } from '@/lib/coachhelm/v3/chat/ask-perf';
 
@@ -321,18 +322,12 @@ function priorTurnEvidence(messages: readonly ChatMessage[], timezone: string): 
       if (!parsed.success) continue;
       const envelope = parsed.data;
 
-      const entities = [...envelope.measurements, ...envelope.series].map((m) => m.entity);
-      const playerIdsHere = entities.filter((e) => e.kind === 'player').map((e) => e.id);
-      // No entity anywhere in the envelope is treated the same as a player
-      // entity, not the same as team/round: its scope is genuinely unknown,
-      // not positively team-level.
-      const target = playerIdsHere.length > 0 || entities.length === 0 ? deferred : shared;
-
-      target.measurements.push(...envelope.measurements);
-      target.series.push(...envelope.series);
-      target.detailNumbers.push(...collectEnvelopeNumbers(envelope));
-      target.detailDates.push(...collectEnvelopeDates(envelope, timezone));
-      for (const id of playerIdsHere) deferred.playerIds.add(id);
+      const placed = placePriorEnvelope(envelope, timezone);
+      for (const key of ['measurements', 'series', 'detailNumbers', 'detailDates'] as const) {
+        (shared[key] as unknown[]).push(...placed.shared[key]);
+        (deferred[key] as unknown[]).push(...placed.deferred[key]);
+      }
+      for (const id of placed.playerIds) deferred.playerIds.add(id);
     }
   }
 
@@ -930,6 +925,13 @@ export async function POST(req: NextRequest) {
         seriesAll.push(...priorDeferred.series);
         detailNumbers.push(...priorDeferred.detailNumbers);
         detailDates.push(...priorDeferred.detailDates);
+      } else if (currentTurnPlayerIds.size === 0) {
+        // A re-answer read nothing fresh: it gets the earlier evidence of exactly the players its answer names (never Alice's for an answer about Bob).
+        const folded = deferredForNamedPlayers(priorDeferred, namedPlayerIds(extractCites(rawText).text, ctx.roster));
+        measurements.push(...folded.measurements);
+        seriesAll.push(...folded.series);
+        detailNumbers.push(...folded.detailNumbers);
+        detailDates.push(...folded.detailDates);
       }
 
       // Addendum A7 slice 1 / audit row 47(a): the typed claim gate. With
