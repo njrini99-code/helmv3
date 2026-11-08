@@ -588,6 +588,70 @@ describe('POST /coachhelm/v3/chat/stream — grounding audit over the full strea
     expect(types[types.length - 1]).toBe('finish');
   });
 
+  describe('the one repair pass for a rejected turn', () => {
+    const answer = (text: string) => () => ({
+      usage: Promise.resolve({ inputTokens: 10, outputTokens: 10 }),
+      response: Promise.resolve({ messages: [{ role: 'assistant', content: [{ type: 'text', text }] }] }),
+      toUIMessageStream: () =>
+        fakeUiMessageStream([
+          { type: 'start-step' },
+          { type: 'text-start', id: 's1' },
+          { type: 'text-delta', id: 's1', delta: text },
+          { type: 'text-end', id: 's1' },
+          { type: 'finish-step' },
+          { type: 'finish' },
+        ]),
+    });
+    const emitted = () => mocks.lastWriter!.write.mock.calls.map((call) => call[0] as FakeChunk);
+    const shownText = () => emitted().filter((c) => c.type === 'text-delta').map((c) => c.delta).join('');
+
+    it('a rejected then repaired turn releases only the repaired text', async () => {
+      mocks.streamText.mockReset();
+      mocks.streamText.mockImplementationOnce(answer('His make rate is 71%.')).mockImplementationOnce(answer('His make rate is 64%.'));
+      mocks.auditNumericClaims.mockReset().mockReturnValueOnce([{ text: '71%', value: 71 }]).mockReturnValue([]);
+
+      await runPostAndSettle(baseBody);
+
+      expect(mocks.streamText).toHaveBeenCalledTimes(2);
+      // The second call is told what was refused, after the first answer.
+      const second = mocks.streamText.mock.calls[1]![0] as { messages: Array<{ role: string; content: unknown }> };
+      const last = second.messages[second.messages.length - 1]!;
+      expect(last.role).toBe('user');
+      expect(String(last.content)).toContain('71%');
+      expect(shownText()).toBe('His make rate is 64%.');
+      expect(JSON.stringify(emitted())).not.toContain('71%');
+      expect(emitted().some((c) => c.type === 'data-grounding-flag')).toBe(false);
+      expect(emitted().filter((c) => c.type === 'finish')).toHaveLength(1);
+    });
+
+    it('a twice rejected turn releases no answer text, only the withheld card', async () => {
+      mocks.streamText.mockReset();
+      mocks.streamText.mockImplementationOnce(answer('His make rate is 71%.')).mockImplementationOnce(answer('His make rate is 72%.'));
+      mocks.auditNumericClaims.mockReset().mockReturnValue([{ text: '71%', value: 71 }]);
+
+      await runPostAndSettle(baseBody);
+
+      expect(mocks.streamText).toHaveBeenCalledTimes(2);
+      expect(shownText()).toBe('');
+      expect(emitted().filter((c) => c.type === 'data-grounding-flag')).toHaveLength(1);
+      expect(emitted().filter((c) => c.type === 'finish')).toHaveLength(1);
+    });
+
+    it('a turn that never finished is not repaired', async () => {
+      mocks.streamText.mockReset();
+      mocks.streamText.mockImplementation(() => ({
+        usage: Promise.resolve({ inputTokens: 10, outputTokens: 10 }),
+        toUIMessageStream: () => fakeUiMessageStream([{ type: 'text-start', id: 's1' }, { type: 'text-delta', id: 's1', delta: 'Half an ans' }]),
+      }));
+      mocks.auditNumericClaims.mockReset().mockReturnValue([]);
+
+      await runPostAndSettle(baseBody);
+
+      expect(mocks.streamText).toHaveBeenCalledTimes(1);
+      expect(shownText()).toBe('');
+    });
+  });
+
   it('seeds the audit with team-scoped evidence already shown to the coach, even on a zero-tool-call turn', async () => {
     // Team/round-level ("shared") evidence carries no cross-player risk, so
     // it must carry over unconditionally — including on a turn where the

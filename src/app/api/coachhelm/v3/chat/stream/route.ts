@@ -123,6 +123,8 @@ import {
 } from '@/lib/coachhelm/v3/chat/ui-parts';
 import { describeError } from '@/lib/utils/describe-error';
 import { deferredForNamedPlayers, namedPlayerIds, placePriorEnvelope } from '@/lib/coachhelm/v3/chat/prior-evidence';
+import { addUsage, isRepairable, repairMessage } from '@/lib/coachhelm/v3/chat/repair-pass';
+import type { ModelMessage } from 'ai';
 import { buildChatLlmCallRow } from '@/lib/coachhelm/v3/llm/chat-call-row';
 import { AskPerf, askPerfEnabled, askPerfProviderOptions } from '@/lib/coachhelm/v3/chat/ask-perf';
 
@@ -626,6 +628,14 @@ export async function POST(req: NextRequest) {
       });
 
       perf.mark('tools_built');
+      const systemPrompt = systemBlocks(buildInstructionBlocks(ctx, new Date().toISOString(), claimsBlockEnabled, { askV2, knows: knows ? knowsSection(knows) : null }));
+      const modelMessages = await convertToModelMessages(
+        denyAbandonedApprovals(uiMessages).map((m) => ({
+          ...m,
+          parts: m.parts.filter((p) => !isIncompleteToolPart(p)),
+        })),
+        { tools },
+      );
       const result = streamText({
         model,
         // A client disconnect should stop generation and spend, not just the
@@ -654,7 +664,7 @@ export async function POST(req: NextRequest) {
         // string is ever edited.
         // Two blocks, three breakpoints (prompt-cache.ts): the policy and tool definitions are shared by every team for an hour; the team's own
         // block and the conversation so far are cached behind it.
-        instructions: systemBlocks(buildInstructionBlocks(ctx, new Date().toISOString(), claimsBlockEnabled, { askV2, knows: knows ? knowsSection(knows) : null })),
+        instructions: systemPrompt,
         prepareStep: ({ messages }) => ({ messages: withTailBreakpoint(messages) }),
         providerOptions: askPerfProviderOptions(req),
         // Pass the tool set so tool parts from earlier turns convert correctly —
@@ -706,13 +716,7 @@ export async function POST(req: NextRequest) {
         // ai 7.0.37 rejected the whole request ("Tool result is missing for
         // tool call …") for every later question in the thread; ai 7.0.128
         // drops the card silently, so the model is never told it was declined.
-        messages: await convertToModelMessages(
-          denyAbandonedApprovals(uiMessages).map((m) => ({
-            ...m,
-            parts: m.parts.filter((p) => !isIncompleteToolPart(p)),
-          })),
-          { tools },
-        ),
+        messages: modelMessages,
         tools,
         // Every mutating tool suspends for an explicit coach decision. This is
         // the gate the whole action framework rests on — a model cannot reach
@@ -814,7 +818,7 @@ export async function POST(req: NextRequest) {
         sendReasoning: false,
         onError: sanitiseStreamError,
       }) as AsyncIterable<StreamChunk>;
-      let finishChunk: StreamChunk | null = null;
+      let finishChunk = null as StreamChunk | null;
       // The COMPLETE text the model streamed, claims block included — never
       // forwarded to the client as-is; only `extractAndValidateClaims`
       // (after this loop) reads it. `turnText`/the persisted `content` come
@@ -854,13 +858,14 @@ export async function POST(req: NextRequest) {
       // helper (`stream-blocks.ts`, tested at every chunk size) so neither reaches the coach live, in the stored `content` or in a saved
       // `ui_parts` text part. It keeps the behaviour described above: a tail held in case an opener is split across deltas, text after a
       // closer resumed, nothing shown from an unterminated opener on.
-      const withheld = new BlockWithholder([[CLAIMS_OPEN, CLAIMS_CLOSE], [CITES_OPEN, CITES_CLOSE]]);
-      let lastTextDeltaChunk: StreamChunk | null = null;
+      let withheld = new BlockWithholder([[CLAIMS_OPEN, CLAIMS_CLOSE], [CITES_OPEN, CITES_CLOSE]]);
+      let lastTextDeltaChunk = null as StreamChunk | null;
       // The answer's text is held here until the verdict is known and released only for an accepted turn: a rejected turn used to be shown and then
       // hidden, so a coach could read a figure the audit had refused. The cost is the time from the model's first output to its last, which is
       // under 50 ms on most questions (the API delivers the answer in one lump). Progress, reads and cards still stream meanwhile.
       const heldText: StreamChunk[] = [];
-      for await (const chunk of uiStream) {
+      const forwardPass = async (passStream: AsyncIterable<StreamChunk>) => {
+      for await (const chunk of passStream) {
         const c = chunk as { type?: string; delta?: unknown };
         if (c.type === 'text-delta' && typeof c.delta === 'string') {
           rawText += c.delta;
@@ -901,6 +906,8 @@ export async function POST(req: NextRequest) {
       // normally. Whatever text made it through is a fragment, not an
       // answer, however clean it audits.
       if (!finishChunk) streamErrored = true;
+      };
+      await forwardPass(uiStream);
 
       // Fold in `priorDeferred` (player-scoped, or of unknown scope, prior
       // evidence) only now — `measurements`/`seriesAll` already carry every
@@ -911,6 +918,7 @@ export async function POST(req: NextRequest) {
       // player(s) is this turn actually about" is knowable. A prior turn's
       // number about a player never mentioned this turn must not be allowed
       // to "support" a claim about whichever player IS being discussed now.
+      const audit = async (): Promise<TurnVerdict> => {
       const currentTurnPlayerIds = new Set(
         [...measurements, ...seriesAll]
           .map((m) => m.entity)
@@ -1006,11 +1014,81 @@ export async function POST(req: NextRequest) {
       // appended alongside it — so ChatThread (live) and restoreUIMessages
       // (reload) both hide the text parts whenever this part is present. See
       // ChatThread.tsx's `MessageTurn` and restore.ts's per-row filter.
-      if (turnVerdict.outcome === 'rejected') {
+      return turnVerdict;
+      };
+      let verdict = await audit();
+      // ONE automatic repair pass (repair-pass.ts). A rejected answer is never shown; before the withheld card is, the model is told what was refused
+      // and asked once more, and the new answer is audited exactly like the first. Accepted: it is released as the turn's answer. Otherwise the
+      // withheld card is shown as before (for the first rejection's reason if the repair did not finish). The coach sees the progress row meanwhile.
+      const repairNote = verdict.outcome === 'rejected' && isRepairable(verdict) && !req.signal?.aborted ? repairMessage(verdict) : null;
+      if (verdict.outcome === 'rejected' && repairNote) {
+        const first = { verdict, text: turnText };
+        const repairStarted = Date.now();
+        perf.mark('repair_start');
+        writer.write({ type: 'data-progress', id: 'progress-repair', data: { label: 'Checking the figures again', tool: 'repair' } } as StreamChunk);
+        const firstResponse = (await (result as unknown as { response: Promise<{ messages?: ModelMessage[] }> }).response)?.messages ?? [];
+        const repair = streamText({
+          model,
+          abortSignal: req.signal,
+          instructions: systemPrompt,
+          messages: [...modelMessages, ...firstResponse, { role: 'user', content: repairNote }],
+          tools,
+          // Reads only: a repair never proposes a change.
+          activeTools: Object.keys(tools).filter((name) => !isConfirmRequired(name)),
+          stopWhen: stepCountIs(4),
+          prepareStep: ({ messages }) => ({ messages: withTailBreakpoint(messages) }),
+          onLanguageModelCallStart: (e) => perf.modelRequest(e),
+          onLanguageModelCallEnd: (e) => perf.modelCall(e),
+          onError: ({ error }) => {
+            logStreamModelError(error);
+          },
+          experimental_telemetry: { isEnabled: true, functionId: 'coachhelm.chat.repair', recordInputs: false, recordOutputs: false },
+        });
+        usagePromise = Promise.all([result.usage, repair.usage]).then(([a, b]) => addUsage(a, b));
+        // A fresh pass: its text is held and audited on its own; its reads and progress stream like any other.
+        rawText = '';
+        streamErrored = false;
+        finishChunk = null;
+        lastTextDeltaChunk = null;
+        heldText.length = 0;
+        withheld = new BlockWithholder([[CLAIMS_OPEN, CLAIMS_CLOSE], [CITES_OPEN, CITES_CLOSE]]);
+        await forwardPass(repair.toUIMessageStream({ sendStart: false, sendFinish: true, sendReasoning: false, onError: sanitiseStreamError }) as AsyncIterable<StreamChunk>);
+        const second = await audit();
+        const repaired = second.outcome === 'accepted';
+        // A repair that did not finish leaves the first rejection standing; its own incompleteness says nothing about the answer.
+        if (!repaired && second.outcome === 'rejected' && second.reason === 'stream_incomplete') {
+          turnVerdict = first.verdict;
+          turnText = first.text;
+          verdict = first.verdict;
+        } else {
+          verdict = second;
+        }
+        writer.write({ type: 'data-progress', id: 'progress-repair', data: { label: 'Checking the figures again', tool: 'repair', state: repaired ? 'done' : 'failed', done: 'Checked the figures again' } } as StreamChunk);
+        perf.mark('repair_end');
+        const repairUsage = await repair.usage.catch(() => null);
+        await logServerEvent(
+          'chat/stream: repair pass',
+          {
+            action: 'v3.chat.stream.repair',
+            featureArea: 'coachhelm',
+            skipSentry: true,
+            extra: {
+              reason: first.verdict.reason,
+              outcome: repaired ? 'repaired' : 'still_rejected',
+              addedMs: Date.now() - repairStarted,
+              costUsd: repairUsage ? estimateCachedCostUsd(MODEL_FOR_TASK.coach_chat, repairUsage.inputTokens ?? 0, repairUsage.outputTokens ?? 0, repairUsage.inputTokenDetails) : null,
+              conversationId: convId,
+              coachId: ctx.coach_id,
+            },
+          },
+          'info',
+        );
+      }
+      if (verdict.outcome === 'rejected') {
         writer.write({
-          type: verdictPartType(turnVerdict.reason),
+          type: verdictPartType(verdict.reason),
           id: 'turn-verdict',
-          data: { note: turnVerdict.note },
+          data: { note: verdict.note },
         });
       } else {
         for (const held of heldText) writer.write(held);
