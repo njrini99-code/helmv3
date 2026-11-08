@@ -19,3 +19,24 @@ export function lastTurnWindow(messages: readonly Pick<UIMessage, 'role' | 'part
   const distinct = [...new Set(labels.reverse())].slice(0, 2);
   return distinct.length ? distinct.join(', ') : null;
 }
+
+/** Reads that are about golf in general, not about this team or player. */
+const GENERAL_READS = new Set(['get_golf_reference', 'get_metric_definitions']);
+
+/**
+ * True when every read of the last turn was general golf knowledge (the golf reference, a metric's definition): the answer is not about the
+ * team or the player, so the scope line says so instead of "Reading My rounds".
+ */
+export function lastTurnIsGeneral(messages: readonly Pick<UIMessage, 'role' | 'parts'>[]): boolean {
+  const lastUser = messages.map((m) => m.role).lastIndexOf('user');
+  const tools: string[] = [];
+  for (const m of messages.slice(lastUser + 1)) {
+    if (m.role !== 'assistant') continue;
+    for (const p of m.parts) {
+      if (p.type !== 'data-evidence') continue;
+      const tool = (p as { data?: { tool?: unknown } }).data?.tool;
+      tools.push(typeof tool === 'string' ? tool : '');
+    }
+  }
+  return tools.length > 0 && tools.every((t) => GENERAL_READS.has(t));
+}

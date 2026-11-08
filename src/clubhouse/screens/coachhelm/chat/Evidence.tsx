@@ -23,6 +23,7 @@ type Roster = ReadonlyArray<{ id: string }>;
  */
 export function AskEvidenceView({ envelope, roster = [] }: { envelope: ToolEnvelope; roster?: Roster }) {
   const blocks = evidenceBlocks(envelope);
+  if (blocks.length === 0) return null;
   return (
     <div className="ch-th-evidence">
       {blocks.map((block, i) => (
@@ -137,10 +138,13 @@ export function Drawing({ block, roster = [] }: { block: Exclude<AskEvidence, { 
       return (
         <div className="ch-th-bars" role="list" aria-label={block.title}>
           {block.rows.map((r, i) => (
-            <div key={r.label} style={{ '--ch-i': i } as CSSProperties} className={'ch-th-bar' + (r.highlight ? ' is-on' : '')} role="listitem" data-tone={r.tone}>
+            <div key={r.label} style={{ '--ch-i': i } as CSSProperties} className={'ch-th-bar' + (r.highlight ? ' is-on' : '')} role="listitem" data-tone={r.tone} aria-label={r.ticks?.length ? `${r.label}: ${r.display}. ${r.ticks.map((t) => t.text).join('. ')}` : undefined}>
               <span className="ch-th-bar__label">{r.label}</span>
               <span className="ch-th-bar__track" aria-hidden="true">
                 <span style={{ width: `${r.pct}%` }} />
+                {r.ticks?.map((t) => (
+                  <i key={t.kind} className="ch-th-bar__tick" data-kind={t.kind} style={{ left: `${t.at}%` }} />
+                ))}
               </span>
               <span className="ch-th-bar__val">
                 {r.display}

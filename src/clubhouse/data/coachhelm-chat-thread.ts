@@ -9,6 +9,9 @@ import { ValidatedVisualArtifact } from '@/lib/coachhelm/v3/chat/visuals/schema'
 import { changeTone, formatFixed, formatSG, formatToPar, MINUS, NO_DATA } from '../lib/format';
 import { formatWallClock, zoneWallParts } from '../lib/dates';
 import { plural } from '../lib/plural';
+import { fitScale, toScalePct } from '@/components/golf/coachhelm/v3/StandingBar/utils';
+import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
+import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 
 /**
  * Ask CoachHelm, the conversation (Clubhouse P013): what a thread of AI SDK message parts means on
@@ -752,7 +755,7 @@ export type AskEvidence =
   | { kind: 'unavailable'; note: string }
   | { kind: 'empty'; note: string }
   | (EvBase & { kind: 'trend'; unit: Measurement['unit']; points: Array<{ label: string; value: number; n: number }>; reference: { label: string; value: number } | null; summary: string; goodDirection: 'up' | 'down' | null; toPar?: boolean })
-  | (EvBase & { kind: 'bars'; rows: Array<{ label: string; pct: number; display: string; of: string | null; tone: 'good' | 'loss' | 'neutral'; highlight?: boolean }> })
+  | (EvBase & { kind: 'bars'; rows: Array<{ label: string; pct: number; display: string; of: string | null; tone: 'good' | 'loss' | 'neutral'; highlight?: boolean; /** Marks on the track: the level's average, and the Tour where it was asked for. */ ticks?: Array<{ at: number; kind: 'level' | 'tour'; text: string }> }> })
   | (EvBase & { kind: 'ranking'; rows: AskRankRow[]; signed: boolean })
   | (EvBase & { kind: 'compare'; team: AskTeamTable })
   | (EvBase & { kind: 'legs'; rows: Array<{ label: string; value: number; display: string }>; takeaway: string })
@@ -900,6 +903,20 @@ export function humanCell(v: string | number | boolean, timezone?: string | null
  * events...): the fallback for an evidence kind this screen has no chart for. Ids and raw
  * timestamps are left out; at most four columns and eight rows.
  */
+/**
+ * A table drawn without being asked for has to fit a phone (393 px, less the page gutters) without a sideways scroll or a clipped column:
+ * columns are dropped from the right until they fit, and a column that cannot is not drawn. A column is estimated at its longest cell (a long
+ * cell wraps, so it counts at most 18 characters) at 6 px a character plus 12 px of padding.
+ */
+export const PHONE_TABLE_PX = 361;
+export function fitToPhone(table: AskTable | null): AskTable | null {
+  if (!table) return null;
+  const wide = (i: number) => Math.min(18, Math.max(table.columns[i]?.length ?? 0, ...table.rows.map((r) => (r[i] ?? '').length))) * 6 + 12;
+  let n = table.columns.length;
+  while (n > 0 && Array.from({ length: n }, (_, i) => wide(i)).reduce((a, b) => a + b, 0) > PHONE_TABLE_PX) n -= 1;
+  return n < 1 ? null : { ...table, columns: table.columns.slice(0, n), rows: table.rows.map((r) => r.slice(0, n)) };
+}
+
 export function detailTable(detail: unknown, caption: string): AskTable | null {
   if (!detail || typeof detail !== 'object') return null;
   const lists = Object.values(detail as Record<string, unknown>).filter((v): v is Array<Record<string, unknown>> => Array.isArray(v) && v.length > 0 && v.every((r) => r && typeof r === 'object' && !Array.isArray(r)));
@@ -912,7 +929,7 @@ export function detailTable(detail: unknown, caption: string): AskTable | null {
     .filter((k) => !(rows.every((r) => typeof r[k] === 'boolean') && rows.every((r) => r[k] === false)))
     .slice(0, 4);
   if (keys.length === 0) return null;
-  return { caption, columns: keys.map(headingOf), rows: rows.slice(0, 8).map((r) => keys.map((k) => (isPlain(r[k]) && r[k] !== '' ? humanCell(r[k] as string | number | boolean, timezone) : NO_DATA))) };
+  return fitToPhone({ caption, columns: keys.map(headingOf), rows: rows.slice(0, 8).map((r) => keys.map((k) => (isPlain(r[k]) && r[k] !== '' ? humanCell(r[k] as string | number | boolean, timezone) : NO_DATA))) });
 }
 
 /**
@@ -1104,10 +1121,66 @@ export function teamTable(all: Measurement[]): AskTeamTable {
   return { players, metrics, cells, best, playersAsRows: players.length > metrics.length };
 }
 
+const BENCH_UNIT: Record<string, Measurement['unit']> = { strokes: 'strokes', percent: 'percent', feet: 'feet', count: 'count' };
+
+/**
+ * A benchmark read for one player as a compact figure: a track per metric with the player's value, a tick for the average of players at their
+ * level, and one for the Tour only when it was asked for. Nothing without a standing (a bare table of benchmark values is not a picture
+ * of anyone), and at most six metrics.
+ */
+export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { kind: 'bars' }> | null {
+  type Row = { metric_id?: string; metric_label?: string; player_value?: number; level_average?: number; tour_value?: number; level_value?: number };
+  const d = envelope.detail as { team_level?: string | null; standing?: { player?: string; rows?: Row[] } } | undefined;
+  const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+  const rows = (d?.standing?.rows ?? []).filter((r) => num(r.player_value) && r.metric_id && r.metric_id in METRIC_RENDER_CONFIG).slice(0, 6);
+  if (rows.length === 0) return null;
+  const hasTour = rows.some((r) => num(r.tour_value));
+  const tableRows: string[][] = [];
+  const out = rows.map((r) => {
+    const cfg = METRIC_RENDER_CONFIG[r.metric_id as MetricId];
+    const unit = BENCH_UNIT[cfg.unit] ?? 'count';
+    const level = num(r.level_average) ? r.level_average : null;
+    const tour = num(r.tour_value) ? r.tour_value : null;
+    const you = r.player_value as number;
+    const scale = fitScale(cfg.default_scale, [you, level, tour]);
+    const fmt = (v: number) => formatValue(v, unit);
+    const better = level === null ? null : cfg.direction === 'higher_better' ? you > level : you < level;
+    const label = (r.metric_label ?? cfg.display_label).replace(/^SG:\s*/, 'SG ');
+    tableRows.push([label, fmt(you), level === null ? NO_DATA : fmt(level), ...(hasTour ? [tour === null ? NO_DATA : fmt(tour)] : [])]);
+    return {
+      label,
+      pct: toScalePct(you, scale),
+      display: fmt(you),
+      of: null,
+      tone: better === null || you === level ? ('neutral' as const) : better ? ('good' as const) : ('loss' as const),
+      ticks: [...(level === null ? [] : [{ at: toScalePct(level, scale), kind: 'level' as const, text: `Level ${fmt(level)}` }]), ...(tour === null ? [] : [{ at: toScalePct(tour, scale), kind: 'tour' as const, text: `Tour ${fmt(tour)}` }])],
+    };
+  });
+  const who = d?.standing?.player === 'You' ? 'You' : (d?.standing?.player ?? 'The player');
+  const level = d?.team_level ? d.team_level.replace(/ average$/, '') : 'their level';
+  return {
+    kind: 'bars',
+    title: `${who} against ${who === 'You' ? 'your level' : level}`,
+    rows: out,
+    source: null,
+    note: `Long tick: the average of players at the level.${hasTour ? ' Short tick: the Tour.' : ''}`,
+    bench: null,
+    table: { caption: `${who} against the level average`, columns: ['Metric', who === 'You' ? 'You' : 'Value', 'Level', ...(hasTour ? ['Tour'] : [])], rows: tableRows },
+  };
+}
+
 /** One tool's output as the block this screen draws. The choice is made from the SHAPE of the evidence, never from what the model asked for. */
 export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
   // A failed read is never "no data": it is the honest "could not read this".
   if (envelope.coverage === 'unavailable') return [{ kind: 'unavailable', note: envelope.coverage_note?.trim() || envelope.summary || 'The read did not come back.' }];
+  // Golf knowledge and metric definitions are words, not figures: they show as the step that read them and as chips in the answer's prose, never as a card.
+  const kind = (envelope.detail as { kind?: unknown } | undefined)?.kind;
+  if (kind === 'reference' || kind === 'definition') return [];
+  // A benchmark read draws only as a picture of where one player stands, or not at all.
+  if (kind === 'benchmark_read') {
+    const b = benchmarkBlock(envelope);
+    return b ? [b] : [];
+  }
   if (envelope.coverage === 'empty') return [{ kind: 'empty', note: envelope.coverage_note?.trim() || envelope.summary || 'Nothing is recorded for this yet.' }];
 
   const blocks: AskEvidence[] = [];

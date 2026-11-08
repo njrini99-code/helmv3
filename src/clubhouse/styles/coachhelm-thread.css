@@ -524,6 +524,20 @@
 .ch-th-bar[data-tone='loss'] .ch-th-bar__track > span {
   background: var(--ch-chart-loss);
 }
+/* A tick on a track: the average of players at the level (long) and the Tour where it was asked for (short). */
+.ch-th-bar__tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ch-text-primary);
+}
+.ch-th-bar__tick[data-kind='tour'] {
+  top: 25%;
+  bottom: 25%;
+  background: var(--ch-text-tertiary);
+}
 .ch-th-bar__val,
 .ch-th-va__val {
   font: var(--ch-type-14-strong);

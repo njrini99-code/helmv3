@@ -2,7 +2,7 @@
 
 import { useQuickChatRun } from '../../../shell/quick-chat/QuickChatProvider';
 import { AnimatePresence } from 'motion/react';
-import { lastTurnWindow } from './ask-scope-window';
+import { lastTurnIsGeneral, lastTurnWindow } from './ask-scope-window';
 import { AskKnowsPanel } from './parts/KnowsPanel';
 import { AllowanceMeter, PlayerOut } from './parts/Allowance';
 import { ArtifactBody, ArtifactView } from './parts/Artifact';
@@ -268,7 +268,7 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
 
   // S-ASK.scope: what the last question is about, in the same words the question used; it changes when a question is sent.
   const lastAsked = [...chat.messages].reverse().find((m) => m.role === 'user')?.parts.flatMap((p) => (p.type === 'text' ? [p.text] : [])).join(' ') ?? '';
-  const scopeLine = showHome ? `${player ? 'My rounds' : data.teamName} · this season` : askScope(lastAsked, player ? 'My rounds' : data.teamName, player ? [] : (data.players ?? []).map((p) => p.name), lastTurnWindow(chat.messages));
+  const scopeLine = showHome ? `${player ? 'My rounds' : data.teamName} · this season` : lastTurnIsGeneral(chat.messages) ? 'Golf reference' : askScope(lastAsked, player ? 'My rounds' : data.teamName, player ? [] : (data.players ?? []).map((p) => p.name), lastTurnWindow(chat.messages));
 
   // FID-ASK-7: read once, then off the address, so a reload doesn't put it back over what the coach has since typed.
   useEffect(() => {
