@@ -15,14 +15,14 @@ import { buildPlayerTools, PLAYER_INSTRUCTIONS } from './player-tools';
 import { readBucket, recordPlayerSpend } from './player-allowance';
 import { auditPlayerAnswer, playerLedgerRow } from './player-audit';
 import type { ToolEnvelope } from './provenance';
-import type { PlayerFiguresSource } from './read-tools';
+import type { PlayerFiguresSource, PuttBandsSource } from './read-tools';
 import { stripReadMarkers } from './read-markers';
 import { isIncompleteToolPart } from './ui-parts';
 
 /**
  * A player's turn on the same stream route (02 §13.1: the role comes from the session, never the request). No conversation is saved until HM3; the allowance is read before the model and written after, so no bucket means no ask (02 §16: no cap, no ship).
  */
-export async function runPlayerTurn(sb: SupabaseClient<Database>, body: { messages: unknown[] }, signal: AbortSignal, playerFigures?: (timezone: string) => PlayerFiguresSource): Promise<Response> {
+export async function runPlayerTurn(sb: SupabaseClient<Database>, body: { messages: unknown[] }, signal: AbortSignal, playerFigures?: (timezone: string) => PlayerFiguresSource, puttBands?: (timezone: string) => PuttBandsSource): Promise<Response> {
   let ctx: Awaited<ReturnType<typeof resolvePlayerChatContext>>;
   try {
     ctx = await resolvePlayerChatContext(sb);
@@ -47,7 +47,7 @@ export async function runPlayerTurn(sb: SupabaseClient<Database>, body: { messag
   const envelopes: ToolEnvelope[] = [];
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
-      const tools = buildPlayerTools({ sb, ctx, playerId: ctx.player_id, writer, collect: (e) => envelopes.push(e), playerFigures: playerFigures?.(ctx.timezone) });
+      const tools = buildPlayerTools({ sb, ctx, playerId: ctx.player_id, writer, collect: (e) => envelopes.push(e), playerFigures: playerFigures?.(ctx.timezone), puttBands: puttBands?.(ctx.timezone) });
       const result = streamText({
         model: resolveModelProvider(MODEL_FOR_TASK.coach_chat),
         abortSignal: signal,

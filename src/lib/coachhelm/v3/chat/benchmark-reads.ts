@@ -3,24 +3,29 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { TEAM_MARKER_MIN_N } from '@/components/golf/coachhelm/v3/StandingBar/types';
 import { METRIC_IDS as STANDING_METRIC_IDS } from '@/lib/coachhelm/v3/metrics/registry';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { isStandingTourComparable } from '@/lib/coachhelm/v3/standing/tour-basis';
 import { logServerError } from '@/lib/server-error-logger';
 import { ALL_METRIC_SPECS } from './metrics-catalog';
 import { requireRosterPlayer, type CoachChatContext } from './context';
-import { nowIso, unavailableEnvelope, type BenchmarkRef, type Measurement, type MeasurementSeries, type ToolEnvelope } from './provenance';
+import { nowIso, unavailableEnvelope, type BenchmarkRef, type Comparison, type Measurement, type MeasurementSeries, type ToolEnvelope } from './provenance';
 
 type Sb = SupabaseClient<Database>;
 
 /**
  * Benchmarks, metric definitions and where a player stands: `get_benchmarks` and `get_metric_definitions` (coach and player), plus
- * `applyLevelBenchmarks`, which fills `benchmark` on the measurements other reads return with the team's OWN level (Division I, II or III) where
- * the team's division is on record. The Tour is a secondary reference: it is returned when a coach asks for it (`levels: ['pga']`), never drawn by default.
+ * `applyComparisons`, which puts the three references on the measurements other reads return.
+ *
+ * A figure is always read against three things, in this order (owner, 2026-11-08): the player's LEVEL (the published Division I, II or III
+ * average, or the college players of the same gender on Helm), the TEAM average, and the TOUR (PGA or LPGA by the team's gender). Each comes
+ * with where the player sits among them when a standing exists. A missing one is listed with the reason, never dropped, and a team-level
+ * figure carries the level and the Tour only (the team average is the figure itself). A player sees the team average and their own place in
+ * the team, never a teammate.
  *
  * The values are `golf_pga_standards` (Tour, Korn Ferry, college and high-school averages, Tour percentiles, each with its source)
- * and `golf_player_standing` (the player's value, the team average and the level average). Both are read through the caller's own
+ * and `golf_player_standing` (the player's value, the team average and the level cohort). Both are read through the caller's own
  * session: `golf_pga_standards` and `golf_metrics` are readable by any signed-in user, `golf_player_standing` by the player and by
- * their team's coaches. A player's read names no teammate: their row, the team average and their place in the team, nothing else.
- * Every figure sits in `detail` (or `measurements`), because the audit accepts nothing outside an envelope.
+ * their team's coaches. Every figure sits in `detail` (or `measurements`), because the audit accepts nothing outside an envelope.
  */
 
 export const BENCHMARK_LEVELS = ['pga', 'korn_ferry', 'd1', 'd2', 'd3', 'hs'] as const;
@@ -82,7 +87,24 @@ export function levelFromDivision(division: string | null | undefined): TeamLeve
 }
 const LEVEL_COLUMN: Record<TeamLevel, 'div1_avg_value' | 'div2_avg_value' | 'div3_avg_value'> = { d1: 'div1_avg_value', d2: 'div2_avg_value', d3: 'div3_avg_value' };
 
+/** A `golf_player_standing` row, as the comparisons need it. */
+export interface StandingLite {
+  player_id: string;
+  metric_id: string;
+  player_value: number;
+  level_avg: number | null;
+  level_n: number;
+  level_pct: number | null;
+  team_avg: number | null;
+  team_n: number;
+  team_pct: number | null;
+  basis: string | null;
+}
+const STANDING_COLUMNS = 'player_id, metric_id, player_value, level_avg, level_n, level_pct, team_avg, team_n, team_pct, basis';
+
 export interface BenchmarkSource {
+  /** These players' standing on these metrics (standards ids), keyed `player_id|metric_id`; empty when none or unreadable. Row-level security decides whose rows come back. */
+  standing(playerIds: readonly string[], metricIds: readonly string[]): Promise<Map<string, StandingLite>>;
   /** The team's level, or null when no division is on record or it could not be read. Nothing is compared with a level the team is not known to play at. */
   level(): Promise<TeamLevel | null>;
   /** The team's tour, or null when its gender could not be read (no benchmark is claimed then: a women's team is never graded on the men's). */
@@ -118,36 +140,92 @@ export function benchmarkSource(sb: Sb, teamId: string): BenchmarkSource {
       for (const row of (data ?? []) as unknown as StandardRow[]) if (!map.has(row.metric_id)) map.set(row.metric_id, row);
       return map;
     })());
-  return { level, tour, standards };
+  const standing = async (playerIds: readonly string[], metricIds: readonly string[]) => {
+    const out = new Map<string, StandingLite>();
+    for (const chunk of chunkIds([...new Set(playerIds)])) {
+      const { data, error } = await sb.from('golf_player_standing').select(STANDING_COLUMNS).in('player_id', chunk).in('metric_id', [...new Set(metricIds)]);
+      if (error) return new Map<string, StandingLite>();
+      for (const r of (data ?? []) as unknown as StandingLite[]) out.set(`${r.player_id}|${r.metric_id}`, r);
+    }
+    return out;
+  };
+  return { level, tour, standards, standing };
 }
 
-const benchmarkFor = (std: StandardRow | undefined, level: TeamLevel): BenchmarkRef | null => {
-  const value = std?.[LEVEL_COLUMN[level]];
-  return std && typeof value === 'number' ? { source: `${LEVEL_LABEL[level]} ${std.season}`, version: std.season, value, omitted_for_cohort: false } : null;
-};
+const round2 = (n: number): number => Math.round(n * 100) / 100;
 
 /**
- * Fill `benchmark` on the measurements and series a read returned with the team's own level (the Division I, II or III average) where the
- * standards publish one for that metric. Not the Tour: comparing a college player with the Tour on every figure is the wrong yardstick, so
- * the Tour comes only from `get_benchmarks` when asked. No division on record, or no value for the metric (there is no college strokes
- * gained), leaves the envelope as it was.
+ * The three references for one figure, level first, team second, Tour third. `standing` is the player's row when one exists; without it the
+ * level is the published division average (or missing), the team average is missing, and the Tour is withheld where it is not measured
+ * the way the player's figure is. `teamFigure`: the figure is the team's own, so it carries the level and the Tour only.
  */
-export async function applyLevelBenchmarks(envelope: ToolEnvelope, source: BenchmarkSource): Promise<ToolEnvelope> {
+export function comparisonsFor(a: { metricId: string; std: StandardRow | undefined; tour: Tour; teamLevel: TeamLevel | null; standing: StandingLite | null; teamFigure: boolean }): Comparison[] {
+  const { std, tour, teamLevel, standing } = a;
+  const out: Comparison[] = [];
+
+  // 1. The level. The published average for the team's division, else the college players of the same gender on Helm; the place is among the latter.
+  const published = teamLevel && std ? std[LEVEL_COLUMN[teamLevel]] : null;
+  const cohortLabel = tour === 'lpga' ? 'Women’s college players on Helm' : 'College players on Helm';
+  const cohort = standing && standing.level_avg != null && standing.level_n > 0 ? standing : null;
+  const place = cohort && cohort.level_pct != null ? { place_percent: Math.round(cohort.level_pct), place_of: cohort.level_n } : { place_percent: null, place_of: null };
+  if (typeof published === 'number') out.push({ kind: 'level', label: LEVEL_LABEL[teamLevel as TeamLevel], value: published, ...place, note: place.place_percent === null ? null : `Place is among ${cohortLabel.toLowerCase()}.` });
+  else if (cohort) out.push({ kind: 'level', label: cohortLabel, value: round2(cohort.level_avg as number), ...place, note: null });
+  else out.push({ kind: 'level', label: 'Level average', value: null, place_percent: null, place_of: null, note: teamLevel ? 'No average is published for this metric at the team’s level, and no players at the level have this stat yet.' : 'The team’s division is not on record and no players at the level have this stat yet, so there is no level average.' });
+
+  // 2. The team average and the place in the team, from five teammates.
+  if (!a.teamFigure) {
+    if (standing && standing.team_avg != null && standing.team_n >= TEAM_MARKER_MIN_N) out.push({ kind: 'team', label: 'Team average', value: round2(standing.team_avg), place_percent: standing.team_pct == null ? null : Math.round(standing.team_pct), place_of: standing.team_n, note: null });
+    else out.push({ kind: 'team', label: 'Team average', value: null, place_percent: null, place_of: null, note: standing ? `Fewer than ${TEAM_MARKER_MIN_N} teammates have this stat, so there is no team average.` : 'There is no team average for this metric yet.' });
+  }
+
+  // 3. The Tour, where it is measured the way the player's figure is.
+  const tourValue = std?.pga_tour_value;
+  if (typeof tourValue !== 'number') out.push({ kind: 'tour', label: tourLabel(tour), value: null, place_percent: null, place_of: null, note: `The ${tourLabel(tour)} publishes no value for this metric.` });
+  else if (!isStandingTourComparable(a.metricId, (standing?.basis ?? null) as 'on_green' | 'all_shot' | null)) out.push({ kind: 'tour', label: tourLabel(tour), value: null, place_percent: null, place_of: null, note: `The ${tourLabel(tour)} value is not measured the way this figure is, so it is not compared.` });
+  else out.push({ kind: 'tour', label: tourLabel(tour), value: tourValue, place_percent: null, place_of: null, note: null });
+  return out;
+}
+
+/** What a chip grades against: the level where there is a value, else the Tour. */
+function gradeAgainst(comparisons: readonly Comparison[], season: string): BenchmarkRef | null {
+  const c = comparisons.find((x) => x.kind === 'level' && x.value !== null) ?? comparisons.find((x) => x.kind === 'tour' && x.value !== null);
+  return c && c.value !== null ? { source: c.label.endsWith('Helm') ? c.label : `${c.label} ${season}`, version: season, value: c.value, omitted_for_cohort: false } : null;
+}
+
+/**
+ * Put the three references on the measurements a read returned, and `benchmark` (the level, else the Tour) for a chip or a trend line to grade
+ * against. Series carry `benchmark` only. A metric the standards do not cover is left alone; a failed read of the team's level, tour or
+ * standards leaves the envelope as it was.
+ */
+export async function applyComparisons(envelope: ToolEnvelope, source: BenchmarkSource): Promise<ToolEnvelope> {
   try {
     if (envelope.coverage === 'unavailable' || (envelope.measurements.length === 0 && envelope.series.length === 0)) return envelope;
-    const candidates = [...envelope.measurements, ...envelope.series].filter((x) => !x.benchmark && x.entity.kind !== 'round' && STANDING_ID_BY_CHAT_ID(x.metric_id));
+    const mapped = (x: Measurement | MeasurementSeries) => x.entity.kind !== 'round' && STANDING_ID_BY_CHAT_ID(x.metric_id);
+    const candidates = [...envelope.measurements, ...envelope.series].filter(mapped);
     if (candidates.length === 0) return envelope;
-    const level = await source.level();
-    if (!level) return envelope;
-    const standards = await source.standards();
-    if (!standards) return envelope;
-    const fill = <T extends Measurement | MeasurementSeries>(x: T): T => {
-      if (x.benchmark || x.entity.kind === 'round') return x;
-      const id = STANDING_ID_BY_CHAT_ID(x.metric_id);
-      const b = id ? benchmarkFor(standards.get(id), level) : null;
-      return b ? { ...x, benchmark: b } : x;
+    const [teamLevel, standards] = await Promise.all([source.level(), source.standards()]);
+    const tour = standards ? await source.tour() : null;
+    if (!tour || !standards) return envelope;
+    const ids = [...new Set(candidates.flatMap((x) => (x.entity.kind === 'player' ? [STANDING_ID_BY_CHAT_ID(x.metric_id) as string] : [])))];
+    const players = [...new Set(candidates.filter((x) => x.entity.kind === 'player').map((x) => x.entity.id))];
+    const standing = players.length && ids.length ? await source.standing(players, ids) : new Map<string, StandingLite>();
+    const comparisonsOf = (x: Measurement | MeasurementSeries) => {
+      const id = STANDING_ID_BY_CHAT_ID(x.metric_id) as string;
+      const std = standards.get(id);
+      const row = x.entity.kind === 'player' ? (standing.get(`${x.entity.id}|${id}`) ?? null) : null;
+      return { std, list: comparisonsFor({ metricId: id, std, tour, teamLevel, standing: row, teamFigure: x.entity.kind !== 'player' }) };
     };
-    return { ...envelope, measurements: envelope.measurements.map(fill), series: envelope.series.map(fill) };
+    const measurements = envelope.measurements.map((m) => {
+      if (!mapped(m)) return m;
+      const { std, list } = comparisonsOf(m);
+      return { ...m, comparisons: list, benchmark: m.benchmark ?? gradeAgainst(list, std?.season ?? '') };
+    });
+    const series = envelope.series.map((x) => {
+      if (!mapped(x) || x.benchmark) return x;
+      const { std, list } = comparisonsOf(x);
+      return { ...x, benchmark: gradeAgainst(list, std?.season ?? '') };
+    });
+    return { ...envelope, measurements, series };
   } catch {
     return envelope;
   }
@@ -188,8 +266,6 @@ interface StandingRow {
   computed_at: string;
 }
 
-const round2 = (n: number): number => Math.round(n * 100) / 100;
-const round1 = (n: number): number => Math.round(n * 10) / 10;
 
 export interface BenchmarkInput {
   metric_ids: string[];
@@ -207,8 +283,8 @@ export async function getBenchmarks(sb: Sb, ctx: CoachChatContext, source: Bench
   const playerId = who.role === 'player' ? who.playerId : input.player_id ? requireRosterPlayer(ctx, input.player_id).id : null;
 
   const [tour, standards, meta, teamLevel] = await Promise.all([source.tour(), source.standards(), readMetricMeta(sb, wanted), source.level()]);
-  // The team's own level by default; the Tour only when asked for. With no division on record, every college level is shown rather than a guess.
-  const levels: BenchmarkLevel[] = input.levels?.length ? [...new Set(input.levels)] : teamLevel ? [teamLevel] : ['d1', 'd2', 'd3'];
+  // The team's own level and then the Tour by default; with no division on record, every college level is shown rather than a guess.
+  const levels: BenchmarkLevel[] = input.levels?.length ? [...new Set(input.levels)] : teamLevel ? [teamLevel, 'pga'] : ['d1', 'd2', 'd3', 'pga'];
   if (!tour) return unavailableEnvelope('Could not tell which Tour applies to this team.', 'The team read failed, so no benchmark is claimed.');
   if (!standards) return unavailableEnvelope('Could not read the benchmarks.', 'The benchmarks query failed.');
 
@@ -255,21 +331,21 @@ export async function getBenchmarks(sb: Sb, ctx: CoachChatContext, source: Bench
       const name = who.role === 'player' ? 'You' : (ctx.roster.find((p) => p.id === playerId)?.name ?? 'The player');
       const rows = ((data ?? []) as unknown as StandingRow[]).map((r) => {
         const std = standards.get(r.metric_id);
-        const tourValue = levels.includes('pga') && std && typeof std.pga_tour_value === 'number' && isStandingTourComparable(r.metric_id, r.basis as 'on_green' | 'all_shot' | null) ? std.pga_tour_value : null;
-        const levelCol = teamLevel ? std?.[LEVEL_COLUMN[teamLevel]] : null;
-        const levelValue = typeof levelCol === 'number' ? levelCol : null;
-        const teamShown = r.team_avg != null && r.team_n >= TEAM_MARKER_MIN_N;
-        const levelShown = r.level_avg != null && r.level_n > 0;
+        const comparisons = comparisonsFor({ metricId: r.metric_id, std, tour, teamLevel, standing: { ...r, player_id: playerId } as StandingLite, teamFigure: false });
+        const gap = (kind: Comparison['kind']) => {
+          const v = comparisons.find((c) => c.kind === kind)?.value;
+          return typeof v === 'number' ? round2(r.player_value - v) : null;
+        };
         return {
           metric_id: r.metric_id,
           metric_scope: scopeKey(r.metric_id),
           metric_label: meta?.get(r.metric_id)?.label ?? std?.display_label ?? r.metric_id,
           ...(meta?.get(r.metric_id) ? { direction: meta.get(r.metric_id)!.direction } : {}),
           player_value: round2(r.player_value),
-          ...(levelValue !== null ? { level_value: levelValue, vs_level: round2(r.player_value - levelValue), level_label: LEVEL_LABEL[teamLevel as TeamLevel] } : {}),
-          ...(tourValue !== null ? { tour_value: tourValue, vs_tour: round2(r.player_value - tourValue), tour: tourLabel(tour) } : {}),
-          ...(teamShown ? { team_average: round2(r.team_avg as number), team_size: r.team_n, ...(r.team_pct != null ? { team_percentile: round1(r.team_pct) } : {}) } : {}),
-          ...(levelShown ? { level_average: round2(r.level_avg as number), level_size: r.level_n, ...(r.level_pct != null ? { level_percentile: round1(r.level_pct) } : {}) } : {}),
+          // Level, then team, then Tour; one with no value is still here, with the reason.
+          comparisons: comparisons.map((c) => ({ ...c, kind: c.kind })),
+          // How far the player is from each, signed (their value minus the reference), so the answer never subtracts the rounded figures itself.
+          gaps: { vs_level: gap('level'), vs_team: gap('team'), vs_tour: gap('tour') },
           computed_at: r.computed_at,
         };
       });

@@ -21608,6 +21608,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/benchmark-reads.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/persistence.ts",
           "anchor": "src/lib/supabase/untyped"
         },

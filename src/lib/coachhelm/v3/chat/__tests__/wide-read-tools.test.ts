@@ -124,8 +124,12 @@ describe('the player’s benchmark reads', () => {
     const { tools, written, collected, db } = player();
     const out = await tools.get_benchmarks!.execute!({ metric_ids: ['gir_pct'] } as never, {} as never);
     const wire = JSON.stringify([out, written, collected]);
-    expect(wire).toContain('"team_average":57');
     expect(wire).toContain('"player":"You"');
+    // All three references travel, level first, team second, Tour last; the team's place is a number, never a name.
+    const detail = (out as { detail: { standing: { rows: Array<{ comparisons: Array<{ kind: string; value: number | null; place_of: number | null }> }> } } }).detail;
+    const refs = detail.standing.rows[0]!.comparisons;
+    expect(refs.map((c) => c.kind)).toEqual(['level', 'team', 'tour']);
+    expect(refs[1]).toMatchObject({ value: 57, place_of: 9 });
     expect(wire).not.toContain('Cole');
     expect(wire).not.toContain('"player_id":"p2"');
     expect(wire).not.toMatch(/83\.4|\b99\b/);
@@ -161,6 +165,37 @@ describe('the prompts', () => {
     expect(p).toMatch(/Never blend a reference figure/);
     expect(p).toMatch(/every distance, count of reps or target comes from a read/i);
     expect(p).toMatch(/never obeyed/);
+  });
+  it('make the coach state the level, the team and the Tour, in that order, say what is missing, and read a team figure against the level and the Tour only', () => {
+    const p = buildInstructions(ctx, now, false, { askV2: true });
+    expect(p).toMatch(/three things, in this order/);
+    expect(p.indexOf('(1) their level')).toBeGreaterThan(-1);
+    expect(p.indexOf('(1) their level')).toBeLessThan(p.indexOf('(2) the team average'));
+    expect(p.indexOf('(2) the team average')).toBeLessThan(p.indexOf('(3) the Tour'));
+    expect(p).toMatch(/Level first, Tour last/);
+    expect(p).toMatch(/If one is\s+missing, say so/);
+    expect(p).toMatch(/team's own[^.]*level and the Tour only/);
+  });
+  it('make the player state the same three, with their place in the team and never a teammate', () => {
+    const p = PLAYER_INSTRUCTIONS('Owen', 'Varsity', 'UTC');
+    expect(p).toMatch(/three things, in this order/);
+    expect(p.indexOf('(1) your level')).toBeLessThan(p.indexOf('(2) the team average'));
+    expect(p.indexOf('(2) the team average')).toBeLessThan(p.indexOf('(3) the Tour'));
+    expect(p).toMatch(/where you sit in your team/);
+    expect(p).toMatch(/If one is missing, say so/);
+    expect(p).toMatch(/never a teammate's name or figure/);
+    expect(p).toMatch(/keep the level first/);
+  });
+  it('describe the benchmark tool as returning all three for both roles', () => {
+    const c = coach(true).tools.get_benchmarks!.description!;
+    expect(c).toMatch(/level/i);
+    expect(c).toMatch(/team/i);
+    expect(c).toMatch(/Tour/);
+    const me = { ...ctx, coach_id: '', roster: [person('p1', 'Owen Carter')] };
+    const pl = buildPlayerTools({ sb: pgrst(tables).sb, ctx: me, playerId: 'p1', writer: { write: () => {} } as never, collect: () => {} }).get_benchmarks!.description!;
+    expect(pl).toMatch(/level/i);
+    expect(pl).toMatch(/team/i);
+    expect(pl).toMatch(/Tour/);
   });
   it('leave the old Ask exactly as it was', () => {
     expect(buildInstructions(ctx, now, false)).not.toContain('## Where to look');

@@ -755,7 +755,7 @@ export type AskEvidence =
   | { kind: 'unavailable'; note: string }
   | { kind: 'empty'; note: string }
   | (EvBase & { kind: 'trend'; unit: Measurement['unit']; points: Array<{ label: string; value: number; n: number }>; reference: { label: string; value: number } | null; summary: string; goodDirection: 'up' | 'down' | null; toPar?: boolean })
-  | (EvBase & { kind: 'bars'; rows: Array<{ label: string; pct: number; display: string; of: string | null; tone: 'good' | 'loss' | 'neutral'; highlight?: boolean; /** Marks on the track: the level's average, and the Tour where it was asked for. */ ticks?: Array<{ at: number; kind: 'level' | 'tour'; text: string }> }> })
+  | (EvBase & { kind: 'bars'; rows: Array<{ label: string; pct: number; display: string; of: string | null; tone: 'good' | 'loss' | 'neutral'; highlight?: boolean; /** Marks on the track: the level's average, and the Tour where it was asked for. */ ticks?: Array<{ at: number; kind: 'level' | 'team' | 'tour'; text: string }> }> })
   | (EvBase & { kind: 'ranking'; rows: AskRankRow[]; signed: boolean })
   | (EvBase & { kind: 'compare'; team: AskTeamTable })
   | (EvBase & { kind: 'legs'; rows: Array<{ label: string; value: number; display: string }>; takeaway: string })
@@ -1123,49 +1123,67 @@ export function teamTable(all: Measurement[]): AskTeamTable {
 
 const BENCH_UNIT: Record<string, Measurement['unit']> = { strokes: 'strokes', percent: 'percent', feet: 'feet', count: 'count' };
 
+type RefKind = 'level' | 'team' | 'tour';
+const REF_WORD: Record<RefKind, string> = { level: 'Level', team: 'Team', tour: 'Tour' };
+
 /**
- * A benchmark read for one player as a compact figure: a track per metric with the player's value, a tick for the average of players at their
- * level, and one for the Tour only when it was asked for. Nothing without a standing (a bare table of benchmark values is not a picture
- * of anyone), and at most six metrics.
+ * The three references of a figure in words, level first, team second, Tour third, each with where the player sits among them and a missing
+ * one stated: "Level 62% · ahead of 30% of 71 players", "Team: no average yet", "Tour 66%". What the headline chip shows under its verdict.
+ */
+export function comparisonWords(comparisons: ReadonlyArray<{ kind: RefKind; value: number | null; place_percent?: number | null; place_of?: number | null; note?: string | null }>, unit: Measurement['unit']): string[] {
+  const ordered = (['level', 'team', 'tour'] as const).flatMap((k) => comparisons.filter((c) => c.kind === k));
+  return ordered.map((c) => {
+    if (c.value === null) return `${REF_WORD[c.kind]}: not available`;
+    const place = c.place_percent == null ? '' : c.kind === 'team' ? ` · ahead of ${c.place_percent}% of the team` : ` · ahead of ${c.place_percent}% of ${c.place_of ?? ''} players`.replace(/ {2}/g, ' ');
+    return `${REF_WORD[c.kind]} ${formatValue(c.value, unit)}${place}`;
+  });
+}
+
+/**
+ * A benchmark read for one player as a compact figure: a track per metric with the player's value, a tick for the level average, one for the
+ * team average (a player sees the team's, never a teammate) and one for the Tour; a reference with no value is said so under the figure. Nothing
+ * without a standing (a bare table of benchmark values is not a picture of anyone), and at most six metrics.
  */
 export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { kind: 'bars' }> | null {
-  type Row = { metric_id?: string; metric_label?: string; player_value?: number; level_average?: number; tour_value?: number; level_value?: number };
-  const d = envelope.detail as { team_level?: string | null; standing?: { player?: string; rows?: Row[] } } | undefined;
+  type Ref = { kind: RefKind; label?: string; value: number | null; place_percent?: number | null; place_of?: number | null; note?: string | null };
+  type Row = { metric_id?: string; metric_label?: string; player_value?: number; comparisons?: Ref[] };
+  const d = envelope.detail as { standing?: { player?: string; rows?: Row[] } } | undefined;
   const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
   const rows = (d?.standing?.rows ?? []).filter((r) => num(r.player_value) && r.metric_id && r.metric_id in METRIC_RENDER_CONFIG).slice(0, 6);
   if (rows.length === 0) return null;
-  const hasTour = rows.some((r) => num(r.tour_value));
   const tableRows: string[][] = [];
+  const missing: string[] = [];
   const out = rows.map((r) => {
     const cfg = METRIC_RENDER_CONFIG[r.metric_id as MetricId];
     const unit = BENCH_UNIT[cfg.unit] ?? 'count';
-    const level = num(r.level_average) ? r.level_average : null;
-    const tour = num(r.tour_value) ? r.tour_value : null;
+    const refs = r.comparisons ?? [];
+    const val = (k: RefKind) => refs.find((c) => c.kind === k)?.value ?? null;
     const you = r.player_value as number;
-    const scale = fitScale(cfg.default_scale, [you, level, tour]);
+    const level = val('level');
+    const scale = fitScale(cfg.default_scale, [you, level, val('team'), val('tour')]);
     const fmt = (v: number) => formatValue(v, unit);
     const better = level === null ? null : cfg.direction === 'higher_better' ? you > level : you < level;
     const label = (r.metric_label ?? cfg.display_label).replace(/^SG:\s*/, 'SG ');
-    tableRows.push([label, fmt(you), level === null ? NO_DATA : fmt(level), ...(hasTour ? [tour === null ? NO_DATA : fmt(tour)] : [])]);
+    for (const k of ['level', 'team', 'tour'] as const) if (val(k) === null) missing.push(`${label}: ${REF_WORD[k].toLowerCase()} ${refs.find((c) => c.kind === k)?.note?.replace(/\.$/, '').toLowerCase() ?? 'not available'}`);
+    tableRows.push([label, fmt(you), ...(['level', 'team', 'tour'] as const).map((k) => { const v = val(k); return v === null ? NO_DATA : fmt(v); })]);
     return {
       label,
       pct: toScalePct(you, scale),
       display: fmt(you),
       of: null,
       tone: better === null || you === level ? ('neutral' as const) : better ? ('good' as const) : ('loss' as const),
-      ticks: [...(level === null ? [] : [{ at: toScalePct(level, scale), kind: 'level' as const, text: `Level ${fmt(level)}` }]), ...(tour === null ? [] : [{ at: toScalePct(tour, scale), kind: 'tour' as const, text: `Tour ${fmt(tour)}` }])],
+      ticks: (['level', 'team', 'tour'] as const).flatMap((k) => { const v = val(k); return v === null ? [] : [{ at: toScalePct(v, scale), kind: k, text: `${REF_WORD[k]} ${fmt(v)}` }]; }),
     };
   });
   const who = d?.standing?.player === 'You' ? 'You' : (d?.standing?.player ?? 'The player');
-  const level = d?.team_level ? d.team_level.replace(/ average$/, '') : 'their level';
   return {
     kind: 'bars',
-    title: `${who} against ${who === 'You' ? 'your level' : level}`,
+    title: `${who} against the level, the team and the Tour`,
     rows: out,
     source: null,
-    note: `Long tick: the average of players at the level.${hasTour ? ' Short tick: the Tour.' : ''}`,
+    note: ['Ticks, longest first: the level average, the team average, the Tour.', ...missing.slice(0, 3)].join(' '),
     bench: null,
-    table: { caption: `${who} against the level average`, columns: ['Metric', who === 'You' ? 'You' : 'Value', 'Level', ...(hasTour ? ['Tour'] : [])], rows: tableRows },
+    table: { caption: `${who} against the level, the team and the Tour`, columns: ['Metric', who === 'You' ? 'You' : 'Value', 'Level', 'Team', 'Tour'], rows: tableRows },
   };
 }
 

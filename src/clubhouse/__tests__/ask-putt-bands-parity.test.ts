@@ -5,6 +5,7 @@ vi.mock('../lib/track-server', () => ({ chLogServer: vi.fn() }));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(async () => {}) }));
 
 import { getPuttingDistanceProfile } from '@/lib/coachhelm/v3/chat/read-tools';
+import { buildPlayerTools } from '@/lib/coachhelm/v3/chat/player-tools';
 import { PUTT_DISTANCE_BUCKETS } from '@/lib/coachhelm/v3/chat/metrics-catalog';
 import { loadPlayerPuttBands, playerPuttBandsOver, puttScopeRounds } from '../data/player-figures';
 import { countsForScoring, type ChRound } from '../data/season';
@@ -125,5 +126,53 @@ describe('loadPlayerPuttBands', () => {
     const out = await loadPlayerPuttBands(sb, { timezone: 'America/New_York' }, 'cole', 'last5');
     expect(out!.rounds).toBe(0);
     expect(asked.some((a) => a.table === 'golf_shots')).toBe(false);
+  });
+});
+
+describe('the player’s own putting-by-distance tool', () => {
+  const f = filterFor('last10');
+  const scope = puttScopeRounds(rounds, f, START);
+  const putts = puttsFor(scope.map((r) => r.id));
+  const ctx = { coach_id: '', user_id: 'u', team_id: 't', team_name: 'T', timezone: 'America/New_York', roster: [{ id: 'cole', name: 'Cole', first_name: 'Cole', last_name: null, graduation_year: null }] };
+
+  function toolsWith(puttBands: (id: string, window: string) => Promise<unknown>) {
+    const collected: Array<{ measurements: Array<{ value: number | null; sample_size: number | null }> }> = [];
+    const tools = buildPlayerTools({
+      sb: { from: vi.fn() } as never, ctx: ctx as never, playerId: 'cole', writer: { write: vi.fn() } as never,
+      collect: (e: never) => collected.push(e), puttBands: puttBands as never,
+    } as never);
+    return { tools, collected };
+  }
+
+  it('is offered, takes the same window input and no player_id to forge', () => {
+    const { tools } = toolsWith(async () => null);
+    expect(Object.keys(tools)).toContain('get_putting_distance_profile');
+    const schema = (tools.get_putting_distance_profile as unknown as { inputSchema: { safeParse: (v: unknown) => { success: boolean; data?: Record<string, unknown> } } }).inputSchema;
+    expect(schema.safeParse({}).data).toEqual({ window: 'last10' });
+    const forged = schema.safeParse({ window: 'season', player_id: 'someone-else' });
+    expect(forged.data).toEqual({ window: 'season' });
+    expect(schema.safeParse({ window: 'nonsense' }).success).toBe(false);
+  });
+
+  it('reads the session player only, in the window asked, and states the rates the Stats chart draws', async () => {
+    const asked: Array<[string, string]> = [];
+    const { tools, collected } = toolsWith(async (id, window) => (asked.push([id, window]), playerPuttBandsOver(puttScopeRounds(rounds, filterFor(window as 'last10'), START), puttsFor(puttScopeRounds(rounds, filterFor(window as 'last10'), START).map((r) => r.id)))));
+    const out = (await tools.get_putting_distance_profile!.execute!({ window: 'last10', player_id: 'someone-else' } as never, {} as never)) as { measurements: Array<{ value: number; sample_size: number }> };
+    expect(asked).toEqual([['cole', 'last10']]);
+    const views = puttBandViews(playerPuttBandsOver(scope, putts).bands.map((b) => ({ ...b, bench: null })));
+    expect(out.measurements).toHaveLength(6);
+    out.measurements.forEach((m, i) => {
+      expect(m.sample_size).toBe(views[i]!.attempts);
+      expect(m.value).toBe(Math.round(views[i]!.rate! * 10) / 10);
+    });
+    expect(collected).toHaveLength(1);
+  });
+
+  it('a different window reads a different cut of the same player', async () => {
+    const asked: string[] = [];
+    const { tools } = toolsWith(async (id, window) => (asked.push(`${id}:${window}`), null));
+    await tools.get_putting_distance_profile!.execute!({ window: 'last5' } as never, {} as never);
+    await tools.get_putting_distance_profile!.execute!({ window: 'season' } as never, {} as never);
+    expect(asked).toEqual(['cole:last5', 'cole:season']);
   });
 });

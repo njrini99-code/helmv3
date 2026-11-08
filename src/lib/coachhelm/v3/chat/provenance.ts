@@ -87,6 +87,23 @@ const BenchmarkRef = z.object({
 export type BenchmarkRef = z.infer<typeof BenchmarkRef>;
 
 /**
+ * One of the three things a figure is read against, always in this order: the player's level (college players of the same gender, or the
+ * published division average), the team average, the Tour. A reference with no value is still listed, with `note` saying why, so a missing
+ * one is stated and never silently dropped. `place_percent` is where the player sits among them (higher is better, whichever way the metric runs).
+ */
+export const Comparison = z.object({
+  kind: z.enum(['level', 'team', 'tour']),
+  /** What the value is the average of, in words: "Division III average", "College players on Helm", "Team average", "PGA Tour". */
+  label: z.string(),
+  value: z.number().nullable(),
+  place_percent: z.number().nullable().default(null),
+  /** How many players the place is among. */
+  place_of: z.number().nullable().default(null),
+  note: z.string().nullable().default(null),
+});
+export type Comparison = z.infer<typeof Comparison>;
+
+/**
  * The one baseline this product is allowed to cite, with its real provenance.
  *
  * Sourced from Mark Broadie's expected-strokes model (ShotLink), recalibrated
@@ -157,8 +174,11 @@ export const Measurement = z.object({
   /** Denominator when the value is a rate, so "58%" can be shown as 25/43. */
   denominator: z.number().nullable().default(null),
 
-  /** Only present when a real, versioned benchmark was retrieved. */
+  /** Only present when a real, versioned benchmark was retrieved. The level when there is one, else the Tour: what a chip grades against. */
   benchmark: BenchmarkRef.nullable().default(null),
+
+  /** The level, the team average and the Tour, in that order, for a metric the standards cover; absent for any other. A team-level figure carries level and Tour only. */
+  comparisons: z.array(Comparison).optional(),
 
   /**
    * 'higher_better' | 'lower_better'. Charts read this instead of assuming up
@@ -303,7 +323,7 @@ export interface ScopedNumber {
  * A figure from {@link ScopedNumber.reference} grounds a claim only where this matches in the claim's own sentence.
  */
 export const REFERENCE_CUE =
-  /\b(?:reference|research|published|studies|study|sources?|sourced|benchmarks?|tour|pga|lpga|korn ferry|division\s+(?:i{1,3}|[123])|d[123]|high[- ]school|level(?:'s)? average|average (?:for|at) (?:the |their |your )?level|handicap|hcp|scratch|broadie|shotlink|shot scope|arccos|golftec|hickman|ncsa|clippd|dethier)\b/i;
+  /\b(?:reference|research|published|studies|study|sources?|sourced|benchmarks?|tour|pga|lpga|korn ferry|division\s+(?:i{1,3}|[123])|d[123]|high[- ]school|level(?:'s)? average|average (?:for|at|of) (?:the |their |your |his |her )?level|(?:at|against|to|for|of) (?:the |their |your |his |her |that )level|handicap|hcp|scratch|broadie|shotlink|shot scope|arccos|golftec|hickman|ncsa|clippd|dethier)\b/i;
 
 /** A roster member the audit can recognise by name in the model's text. */
 export interface AuditPlayer {
@@ -1262,6 +1282,14 @@ export function auditNumericClaims(
     add(m.denominator, { ...who, family: null, parent: null });
     // A benchmark is an external baseline, not anyone on this roster.
     add(m.benchmark?.value, { player: null, team: false, ...fam, reference: true }, m.metric_id);
+    // The three references: the level and the Tour are no one's result (a sentence must name them); the team average is the team's figure.
+    for (const c of m.comparisons ?? []) {
+      if (c.kind === 'team') add(c.value, { player: null, team: true, ...fam });
+      else add(c.value, { player: null, team: false, ...fam, reference: true });
+      add(c.place_percent, { ...who, family: null, parent: null });
+      add(c.place_of, { ...who, family: null, parent: null });
+      if (typeof m.value === 'number' && typeof c.value === 'number') add(m.value - c.value, { ...who, ...fam });
+    }
     // A stated delta between a value and its benchmark is itself supported.
     if (typeof m.value === 'number' && typeof m.benchmark?.value === 'number') {
       add(m.value - m.benchmark.value, { ...who, ...fam });
@@ -1446,7 +1474,7 @@ export function collectScopedNumbers(
     const own = typeof obj.player_id === 'string' ? obj.player_id : typeof nested === 'string' ? nested : null;
     const scope = own ?? playerId;
     // A payload tagged `kind: 'reference' | 'definition' | 'benchmark'` is no one's result; everything beneath it needs a sourced sentence.
-    const refKind = obj.kind === 'reference' || obj.kind === 'definition' || obj.kind === 'benchmark';
+    const refKind = obj.kind === 'reference' || obj.kind === 'definition' || obj.kind === 'benchmark' || obj.kind === 'level' || obj.kind === 'tour';
     const next = { team: obj.team_scope === true || inherited.team, metric: typeof obj.metric_scope === 'string' ? obj.metric_scope : inherited.metric, reference: refKind || inherited.reference };
     return Object.entries(obj).flatMap(([k, v]) => collectScopedNumbers(v, scope, k, depth + 1, next));
   }

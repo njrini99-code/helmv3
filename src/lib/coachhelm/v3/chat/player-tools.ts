@@ -6,7 +6,7 @@ import type { Database } from '@/lib/types/database';
 import { METRIC_IDS } from './metrics-catalog';
 import type { CoachChatContext } from './context';
 import { WINDOW_NOTE } from './agent-tools';
-import { FIGURE_WINDOWS, getFocusAreas, getPlayerMetric, type PlayerFiguresSource, getPlayerTrend, getRecentRounds, readUpcomingEventRows, replyOf } from './read-tools';
+import { FIGURE_WINDOWS, getFocusAreas, getPlayerMetric, getPuttingDistanceProfile, type PlayerFiguresSource, type PuttBandsSource, getPlayerTrend, getRecentRounds, readUpcomingEventRows, replyOf } from './read-tools';
 import { getRoundDetail, getShotPattern } from './shot-reads';
 import { compareSeasons } from './engine-reads';
 import { getSeasonScoring } from './season-reads';
@@ -15,7 +15,7 @@ import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { playerTitle } from '@/lib/coachhelm/reads/player-cause';
 import { compileComposition } from './visuals/compile-composition';
 import { CompositionSpecV2, ShowVisualInputV2 } from './visuals/composition';
-import { applyLevelBenchmarks, benchmarkSource } from './benchmark-reads';
+import { applyComparisons, benchmarkSource } from './benchmark-reads';
 import { benchmarkTools } from './wide-read-tools';
 import { PLAYER_BENCHMARK_STEP, WIDE_READ_STEPS } from './wide-read-names';
 import { withWindowLabel } from './window-label';
@@ -90,7 +90,7 @@ export function inSecondPerson<E extends ToolEnvelope>(envelope: E, name: string
   };
 }
 
-export function buildPlayerTools({ sb, ctx, playerId, writer, collect, playerFigures }: { sb: Sb; ctx: CoachChatContext; playerId: string; writer: UIMessageStreamWriter; collect: (e: ToolEnvelope) => void; playerFigures?: PlayerFiguresSource }): ToolSet {
+export function buildPlayerTools({ sb, ctx, playerId, writer, collect, playerFigures, puttBands }: { sb: Sb; ctx: CoachChatContext; playerId: string; writer: UIMessageStreamWriter; collect: (e: ToolEnvelope) => void; playerFigures?: PlayerFiguresSource; puttBands?: PuttBandsSource }): ToolSet {
   const evidenceByRef = new Map<string, ToolEnvelope>();
   // The player's team's Tour and standards, read once for the turn: a measurement a read returns carries the Tour's value where there is one.
   const benchSource = benchmarkSource(sb, ctx.team_id);
@@ -102,7 +102,7 @@ export function buildPlayerTools({ sb, ctx, playerId, writer, collect, playerFig
       writer.write({ type: 'data-progress', id, data: { label, tool: name } });
       let envelope: ToolEnvelope;
       try {
-        envelope = withWindowLabel(name, input, inSecondPerson(await applyLevelBenchmarks(await run(input), benchSource), ctx.roster.find((p) => p.id === playerId)?.name ?? ''));
+        envelope = withWindowLabel(name, input, inSecondPerson(await applyComparisons(await run(input), benchSource), ctx.roster.find((p) => p.id === playerId)?.name ?? ''));
       } catch {
         envelope = unavailableEnvelope('Could not complete that read.', 'That read could not be completed.');
       }
@@ -122,6 +122,7 @@ export function buildPlayerTools({ sb, ctx, playerId, writer, collect, playerFig
     ...benchmarkTools({ sb, ctx, read: wide, source: benchSource, who: { role: 'player', playerId } }),
     get_player_metrics: tool({ description: `Your computed statistics. ${WINDOW_NOTE}`, inputSchema: z.object({ metric_ids: z.array(z.enum(METRIC_IDS)).min(1).max(8), window: z.enum(FIGURE_WINDOWS).default('last10') }), execute: read('get_player_metrics', 'Reading your statistics', 'Read your statistics', (i: { metric_ids: Array<(typeof METRIC_IDS)[number]>; window: (typeof FIGURE_WINDOWS)[number] }) => getPlayerMetric(sb, ctx, { player_id: playerId, metric_ids: i.metric_ids, window: i.window }, playerFigures)) }),
     get_player_trend: tool({ description: 'Your movement on one metric over rounds.', inputSchema: z.object({ metric_id: z.enum(METRIC_IDS), last_n: z.number().int().min(3).max(30).default(10) }), execute: read('get_player_trend', 'Reading your recent rounds', 'Read your recent rounds', (i: { metric_id: string; last_n: number }) => getPlayerTrend(sb, ctx, { player_id: playerId, metric_id: i.metric_id, last_n: i.last_n })) }),
+    get_putting_distance_profile: tool({ description: `Your make rate by putt distance, with the attempt count behind every band, in the bands the Stats page draws (0-3 up to 25+ ft), from your rounds in the window. Use for any question about your putting from a distance. ${WINDOW_NOTE}`, inputSchema: z.object({ window: z.enum(FIGURE_WINDOWS).default('last10') }), execute: read('get_putting_distance_profile', 'Reading your putting by distance', 'Read your putting by distance', (i: { window: (typeof FIGURE_WINDOWS)[number] }) => getPuttingDistanceProfile(sb, ctx, { player_id: playerId, window: i.window }, puttBands)) }),
     get_recent_rounds: tool({ description: 'Your recent rounds.', inputSchema: z.object({ last_n: z.number().int().min(1).max(20).default(5) }), execute: read('get_recent_rounds', 'Reading your rounds', 'Read your rounds', (i: { last_n: number }) => getRecentRounds(sb, ctx, { player_id: playerId, last_n: i.last_n })) }),
     get_focus_areas: tool({ description: 'Your focus areas.', inputSchema: z.object({}), execute: read('get_focus_areas', 'Checking your focus areas', 'Checked your focus areas', () => getFocusAreas(sb, ctx, { player_id: playerId })) }),
     get_upcoming_events: tool({ description: 'Your team schedule.', inputSchema: z.object({ days_ahead: z.number().int().min(1).max(60).default(14) }), execute: read('get_upcoming_events', 'Checking the schedule', 'Checked the schedule', (i: { days_ahead: number }) => myUpcomingEvents(sb, ctx, playerId, i)) }),
@@ -148,7 +149,7 @@ export function buildPlayerTools({ sb, ctx, playerId, writer, collect, playerFig
 export const PLAYER_INSTRUCTIONS = (first: string, team: string, zone: string) => `You are CoachHelm, talking with ${first}, a player on ${team}. Their timezone is ${zone}.
 
 Say "you". In a visual's title, lede and notes too: "Your last round", never their name. Be encouraging and plain. Use only your tools; every figure must come from a read this turn, followed by that read's evidence_ref in square brackets, like [e2].
-Never name another player, even if asked. You can only read this player's own data. The comparisons you can make are your team's level (the Division I, II or III average), the team average and the average at your level, and never who on the team did what; the Tour only if they ask about it.
-To compare, read the benchmarks first: they return your level's average with its source, and your standing (your value, your level, the team average, the level average). Compare with your level, not the Tour, unless asked. Say which level and where the value comes from, in the same sentence as the figure. A benchmark is an average, not anyone's result: never write it as if it were yours or a teammate's.
+Never name another player, even if asked. You can only read this player's own data. You are always read against three things, in this order, and you state all three: (1) your level (the Division I, II or III average, or the college players of your gender on Helm) and where you sit in it; (2) the team average and where you sit in your team; (3) the Tour. Never who on the team did what, and never a teammate's name or figure.
+To compare, read the benchmarks first: they return all three with their source, your value and how far you are from each. If one is missing, say so in a few words instead of leaving it out. Say where each value comes from in the same sentence as the figure. A benchmark is an average, not anyone's result: never write it as if it were yours or a teammate's. The Tour is a professional yardstick: being behind it is expected, so keep the level first.
 For golf knowledge (what a stat means, how putting or approach play affects scoring, what is typical), read the golf reference. Its figures are published research: say where they come from in the same sentence, keep them apart from your numbers, and never invent a distance, count of reps or target that no read returned. If a read has nothing, say so.
 You cannot change anything. If asked to write or send something, say to ask their coach.`;

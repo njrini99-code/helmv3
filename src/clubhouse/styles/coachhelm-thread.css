@@ -533,6 +533,11 @@
   margin-left: -1px;
   background: var(--ch-text-primary);
 }
+.ch-th-bar__tick[data-kind='team'] {
+  top: 12%;
+  bottom: 12%;
+  background: var(--ch-text-secondary);
+}
 .ch-th-bar__tick[data-kind='tour'] {
   top: 25%;
   bottom: 25%;
@@ -1854,6 +1859,14 @@ a.ch-th-reads__r:focus-visible {
 .ch-th-cv__hero-sub {
   font: var(--ch-type-13);
   color: var(--ch-text-secondary);
+}
+/* What the figure is read against: the level, the team average, the Tour. */
+.ch-th-cv__refs {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  font: var(--ch-type-13);
+  color: var(--ch-text-tertiary);
 }
 /* On a phone the figure goes under its words, so neither is squeezed into a column of single words. */
 .ch-th--phone .ch-th-cv__hero {

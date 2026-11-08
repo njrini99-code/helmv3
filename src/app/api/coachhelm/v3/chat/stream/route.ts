@@ -347,7 +347,7 @@ export async function POST(req: NextRequest) {
     if (err instanceof CoachContextError && err.reason === 'not_a_coach' && (await isClubhouseFor('player'))) {
       const body = Body.safeParse(await req.json().catch(() => null));
       if (!body.success) return NextResponse.json({ error: 'Bad request' }, { status: 400 });
-      return runPlayerTurn(supabase, { messages: body.data.messages }, req.signal, (timezone) => (ids, window) => loadPlayersFigures(supabase, { timezone }, ids, window));
+      return runPlayerTurn(supabase, { messages: body.data.messages }, req.signal, (timezone) => (ids, window) => loadPlayersFigures(supabase, { timezone }, ids, window), (timezone) => (id, window) => loadPlayerPuttBands(supabase, { timezone }, id, window));
     }
     if (err instanceof CoachContextError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
