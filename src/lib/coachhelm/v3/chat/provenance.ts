@@ -597,10 +597,14 @@ function resolveDateMatch(
  * rejected date is reported once, as the whole expression ("Oct 3"), not
  * once for the whole thing and again for its day-of-month.
  */
+/** What leads a date that is the far edge of a window: "through July 25", "(to July 25)", "between July 11 and July 25", "the next 14 days, until". */
+const WINDOW_LEAD = /(?:\b(?:next|coming|upcoming|through|thru|until|till|to|window|ahead|between|within|period|span|ends?|ending|deadline|by|as of|today|now|currently|updated|checked)\b|[–—-])[,:]?\s*(?:(?:is|was|being)\s+)?(?:and\s+)?(?:(?:mon|tues?|wed(?:nes)?|thu(?:rs?)?|fri|sat(?:ur)?|sun)(?:day)?\.?,?\s+)?$/i;
+
 function auditDateExpressions(
   text: string,
   evidenceDates: ReadonlySet<string>,
   evidenceWindows: ReadonlyArray<readonly [string, string]>,
+  edgeDates: ReadonlySet<string> = new Set(),
 ): { scrubbed: string; claims: UnsupportedClaim[] } {
   // A window grounds its own two bounds and nothing between them: "May 27" inside a window that starts May 18 is a date the reads never
   // returned (replay: 12 of 22 shifted dates passed this way). The bounds are dates the reads stated, so they join the exact pool.
@@ -612,8 +616,10 @@ function auditDateExpressions(
   const evidenceMonthDays = new Set<string>();
   for (const iso of exactDates) evidenceMonthDays.add(iso.slice(5, 10));
 
-  const isSupported = (month: number, day: number, year: number | null): boolean => {
+  const isSupported = (month: number, day: number, year: number | null, aboutWindow = false): boolean => {
     const monthDay = `${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    // The far edge of a window the read was asked for ("the next 14 days"), in a sentence that speaks of the window.
+    if (aboutWindow && [...edgeDates].some((iso) => iso.slice(5, 10) === monthDay && (year === null || Number(iso.slice(0, 4)) === year))) return true;
     if (year === null) {
       // Exact-day membership, independent of year: a month and day some read returned (a round, an event, a window bound). Global across the
       // turn's evidence, not scoped to the claim's own subject: an unrelated read's date sharing a month-day still passes, a residual gap.
@@ -654,13 +660,14 @@ function auditDateExpressions(
 
   const scrubbed = text.replace(
     DATE_EXPRESSION_RE,
-    (whole, monthName, dayA, yearA, rangeEndDay, listTail, listDay, monthNumStr, dayNumStr, yearNumStr, dayFirst, monthFirst, yearDayFirst) => {
+    (whole, monthName, dayA, yearA, rangeEndDay, listTail, listDay, monthNumStr, dayNumStr, yearNumStr, dayFirst, monthFirst, yearDayFirst, offset: number) => {
       // "26 September", "9th of June": the day first. A lower-case "may" or "march" after a number is the verb ("4 may improve").
       if (dayFirst !== undefined && /^(?:may|march)$/.test(monthFirst)) return whole;
       const resolved = dayFirst !== undefined ? resolveDateMatch(monthFirst, dayFirst, yearDayFirst, undefined, undefined, undefined) : resolveDateMatch(monthName, dayA, yearA, monthNumStr, dayNumStr, yearNumStr);
       if (!resolved) return whole; // Not a real calendar date — leave for the numeric scan.
 
-      if (!isSupported(resolved.month, resolved.day, resolved.year)) {
+      const aboutWindow = WINDOW_LEAD.test(text.slice(Math.max(0, offset - 40), offset));
+      if (!isSupported(resolved.month, resolved.day, resolved.year, aboutWindow)) {
         // With a range tail, `whole` includes the second day too ("Aug
         // 27-28") — flag just the head so the two days can be reported (and
         // individually deduped) independently.
@@ -673,7 +680,7 @@ function auditDateExpressions(
       if (rangeEndDay) {
         const endDay = Number(rangeEndDay);
         if (Number.isInteger(endDay) && endDay >= 1 && endDay <= 31) {
-          if (!isSupported(resolved.month, endDay, resolved.year)) {
+          if (!isSupported(resolved.month, endDay, resolved.year, aboutWindow)) {
             flag(`${monthName} ${rangeEndDay}`, endDay);
           }
         }
@@ -932,12 +939,17 @@ interface AnchorScope {
   reference?: boolean;
   /** A difference between two metrics' figures: it grounds a claim only in a sentence that says it is a gap (see {@link GAP_CUE}). */
   gap?: boolean;
+  /** A mean of a group's figures: it grounds a claim only in a sentence that says it is an average or about the group (see {@link AGGREGATE_CUE}). */
+  aggregate?: boolean;
 }
 interface Anchor extends AnchorScope {
   value: number;
 }
 /** "If you use ", "should you go with ": the figure after it is one already on the table. */
 const USE_CLAUSE = /\b(?:if|when|should)\s+(?:you|we|I)\s+(?:use|used|take|took|go with|went with|count|counted|prefer|choose)\s+(?:the\s+|that\s+)?$/i;
+
+/** A sentence that calls a number an average of a group's figures, or is about the group. */
+const AGGREGATE_CUE = /\b(?:averages?|averaged|averaging|mean|across|combined|together|overall|total|team|roster|squad|everyone|group|pooled|collective|typical|midpoint)\b/i;
 
 /** A sentence that calls a number a difference between two things. */
 const GAP_CUE = /\b(?:gaps?|ahead|behind|difference|differs?|apart|margin|lead(?:s|ing)?|trails?|more than|less than|than|between|separates?|split)\b/i;
@@ -966,6 +978,8 @@ interface Binding {
   refCue: boolean;
   /** The number's own sentence calls it a gap, a lead or a margin. */
   gapCue: boolean;
+  /** The number's own sentence says average, mean, combined or names the group. */
+  aggCue: boolean;
   families: ReadonlySet<MetricFamily> | null;
 }
 
@@ -1262,6 +1276,7 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
       // A row of a markdown table is named by its header row ("| Distance band | Owen | Division I average | Tour |").
       refCue: REFERENCE_CUE.test(text.slice(sentence[0], sentence[1])) || REFERENCE_CUE.test(tableHeaderOf(text, sentence[0])),
       gapCue: GAP_CUE.test(text.slice(sentence[0], sentence[1])),
+      aggCue: AGGREGATE_CUE.test(text.slice(sentence[0], sentence[1])) || AGGREGATE_CUE.test(tableHeaderOf(text, sentence[0])),
       families: familiesByToken.get(index) ?? null,
     };
   };
@@ -1406,7 +1421,8 @@ export function auditNumericClaimsDetailed(
   // Evidence dates, kept separate from `anchors` — see
   // `auditDateExpressions`'s doc comment for why a date is matched against
   // its own evidence set rather than this number pool.
-  const evidenceDates = new Set<string>(extraSupportedDates);
+  const evidenceDates = new Set<string>(extraSupportedDates.filter((d) => !d.startsWith('~')));
+  const edgeDates = new Set<string>(extraSupportedDates.filter((d) => d.startsWith('~')).map((d) => d.slice(1)));
   const evidenceWindows: Array<[string, string]> = [];
   const addWindow = (start: string | null, end: string | null) => {
     // For a timestamped bound, the exact-date evidence set accepts only the
@@ -1474,7 +1490,7 @@ export function auditNumericClaimsDetailed(
     }
   }
   for (const { scope, values } of detailGroups.values()) {
-    if (values.length >= 2) add(values.reduce((a, b) => a + b, 0) / values.length, scope);
+    if (values.length >= 2) add(values.reduce((a, b) => a + b, 0) / values.length, { ...scope, aggregate: true });
   }
   for (const s of series) {
     addWindow(s.window_start, s.window_end);
@@ -1528,7 +1544,7 @@ export function auditNumericClaimsDetailed(
     // like the differences below, and a coach asking about "the team" is asking for it. Staging turns were withheld for
     // a mean of seven ranked players that no tool returns.
     for (const list of [[...group], allByMetric.get(key) ?? []]) {
-      if (list.length >= 2) add(list.reduce((a, b) => a + b, 0) / list.length, { player: null, team: false, ...fam });
+      if (list.length >= 2) add(list.reduce((a, b) => a + b, 0) / list.length, { player: null, team: false, ...fam, aggregate: true });
     }
     const values = [...group];
     for (const [i, left] of values.entries()) {
@@ -1557,7 +1573,7 @@ export function auditNumericClaimsDetailed(
   // either way, so a date's own digits are never re-examined as a bare
   // number (matched or not — a rejected date is reported once, as the
   // whole expression, not again for its day-of-month).
-  const { scrubbed: dateScrubbed, claims: dateClaims } = auditDateExpressions(exempt, evidenceDates, evidenceWindows);
+  const { scrubbed: dateScrubbed, claims: dateClaims } = auditDateExpressions(exempt, evidenceDates, evidenceWindows, edgeDates);
   // A year that survives the date audit is a plain label ("in 2026").
   const scrubbed = blankCalendarYears(dateScrubbed);
   const found: UnsupportedClaim[] = [...dateClaims];
@@ -1630,7 +1646,7 @@ export function auditNumericClaimsDetailed(
     // A figure about a metric, written against a player no read this turn has any figure for, has nothing of that player's to stand on: an
     // untagged number (a roster-wide detail value) that happens to match does not make it theirs.
     const hasNothing = !!binding.players && binding.players.size > 0 && !binding.teamCue && (([...binding.players].every((p) => noDataPlayers.has(p))) || (!!binding.families?.size && [...binding.players].every((p) => !taggedPlayers.has(p))));
-    if (!pool.some((a) => near(a) && playerCompatible(a, binding) && metricCompatible(a, binding) && (!a.reference || binding.refCue) && (!a.gap || binding.gapCue) && !(hasNothing && a.player === null && !a.team && !a.reference))) {
+    if (!pool.some((a) => near(a) && playerCompatible(a, binding) && metricCompatible(a, binding) && (!a.reference || binding.refCue) && (!a.gap || binding.gapCue) && (!a.aggregate || binding.aggCue || binding.teamCue) && !(hasNothing && a.player === null && !a.team && !a.reference))) {
       seen.add(raw);
       found.push(pool.some(near) ? { text: raw, value, misattributed: true } : { text: raw, value });
     } else {
@@ -1738,10 +1754,12 @@ export function readFigure(f: Pick<Measurement, 'metric_id' | 'metric_label' | '
 export function collectEnvelopeDates(envelope: Pick<ToolEnvelope, 'detail' | 'as_of' | 'measurements' | 'series'> & { summary?: string }, timezone?: string): string[] {
   const asOfDays = typeof envelope.as_of === 'string' ? isoDaysOf(envelope.as_of, timezone) : [];
   // "Nothing scheduled in the next 8 days": the read's own window ends 8 days after the day it was read, and the answer says "through November 15".
-  const ahead = [...(envelope.summary ?? '').matchAll(/\b(?:next|coming|upcoming)\s+(\d{1,3})\s+days?\b/gi)].flatMap((m) => (asOfDays[0] ? [addDays(asOfDays[0], Number(m[1]))] : []));
+  // Marked with a leading `~`: an edge of a window grounds a date only where the sentence is about the window ("through July 25"), not "data from July 25".
+  const ahead = [...(envelope.summary ?? '').matchAll(/\b(?:next|coming|upcoming)\s+(\d{1,3})\s+days?\b/gi)].flatMap((m) => (asOfDays[0] ? [`~${addDays(asOfDays[0], Number(m[1]))}`] : []));
   return [
     ...(envelope.detail === undefined ? [] : collectDates(envelope.detail, timezone)),
-    ...[envelope.as_of, ...(envelope.measurements ?? []).map((m) => m.as_of), ...(envelope.series ?? []).map((s) => s.as_of)].flatMap((at) => (typeof at === 'string' ? isoDaysOf(at, timezone) : [])),
+    // The day a read was made is today's date, not a date in the data: it is marked like a window edge.
+    ...[envelope.as_of, ...(envelope.measurements ?? []).map((m) => m.as_of), ...(envelope.series ?? []).map((s) => s.as_of)].flatMap((at) => (typeof at === 'string' ? isoDaysOf(at, timezone).map((d) => `~${d}`) : [])),
     ...ahead,
   ];
 }

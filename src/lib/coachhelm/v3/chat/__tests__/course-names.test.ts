@@ -54,10 +54,22 @@ describe('dates and weekdays', () => {
   it('a read of "the next 8 days" ends 8 days after the day it was read, in the team’s zone', () => {
     const calendar = { summary: 'Nothing scheduled in the next 8 days.', measurements: [], series: [], coverage: 'complete', coverage_note: null, as_of: '2026-11-08T02:15:22.247Z', detail: { events: [] } } as unknown as ToolEnvelope;
     const days = collectEnvelopeDates(calendar, 'America/New_York');
-    expect(days).toContain('2026-11-15');
+    // Marked as an edge (`~`): it grounds a date only where the sentence speaks of the window (replay 28f917e1: "data from July 25" was accepted on the edge of "the next 14 days").
+    expect(days).toContain('~2026-11-15');
     const run = (text: string) => auditNumericClaims(text, [], [], [], days, 'America/New_York', { players: roster }).map((c) => c.text);
     expect(run('Nothing is on the calendar through Sunday, November 15.')).toEqual([]);
     expect(run('Nothing is on the calendar through Sunday, November 22.')).toEqual(['November 22']);
+    expect(run('The window runs from today to November 15.')).toEqual([]);
+    expect(run('Dylan Brooks last played on November 15.')).toEqual(['November 15']);
+    expect(run('Most recent data is from November 15 (Dylan Brooks).')).toEqual(['November 15']);
+  });
+  it('the day a read was made is today, and grounds a date only beside "today" or "as of"', () => {
+    const calendar = { summary: 'x', measurements: [], series: [], coverage: 'complete', coverage_note: null, as_of: '2026-11-08T14:00:00.000Z', detail: { events: [] } } as unknown as ToolEnvelope;
+    const days = collectEnvelopeDates(calendar, 'America/New_York');
+    const run = (text: string) => auditNumericClaims(text, [], [], [], days, 'America/New_York', { players: roster }).map((c) => c.text);
+    expect(run('As of today, November 8, nothing is scheduled.')).toEqual([]);
+    expect(run('Today is November 8, and nothing is scheduled.')).toEqual([]);
+    expect(run('Cole last played on November 8.')).toEqual(['November 8']);
   });
 });
 
