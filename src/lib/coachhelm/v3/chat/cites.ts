@@ -28,15 +28,27 @@ export const CITES_OPEN = '<<<CITES>>>';
 export const CITES_CLOSE = '<<<END_CITES>>>';
 const BLOCK = /<<<CITES>>>([\s\S]*?)<<<END_CITES>>>/g;
 
-export const CiteSchema = z.object({
+/** A subject is a player id, an unambiguous prefix of one (the first 8 characters), or "team". */
+const ObjectCite = z.object({
   v: z.union([z.string().max(40), z.number()]).transform((x) => String(x)),
   ref: z.string().regex(/^e\d+$/),
   key: z.string().min(1).max(120),
   subject: z.string().min(1).max(64),
   /** The window of the evidence, copied from it, when the model gives one: [window_start, window_end]. */
   w: z.tuple([z.string().max(12), z.string().max(12)]).optional(),
+  /** 1 when the sentence asserts the figure as a cause. */
+  c: z.literal(1).optional(),
 });
-export type Cite = z.infer<typeof CiteSchema>;
+/**
+ * The compact form the model is asked for, one array per figure: [value, ref, key, subject] or [value, ref, key, subject, "c"] for a cause.
+ * The object form (with "w") is still read.
+ */
+export const CiteSchema = z.preprocess((x) => {
+  if (!Array.isArray(x)) return x;
+  const [v, ref, key, subject, flag] = x as unknown[];
+  return { v, ref, key, subject, ...(flag === 'c' ? { c: 1 } : {}) };
+}, ObjectCite);
+export type Cite = z.infer<typeof ObjectCite>;
 
 export interface ExtractedCites {
   /** The text with every cites block out. An unterminated opener removes everything from it on. */
@@ -90,7 +102,7 @@ export interface CiteVerdict {
   reason?: string;
 }
 
-const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9:]+/g, '_').replace(/^_+|_+$/g, '');
+export const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9:]+/g, '_').replace(/^_+|_+$/g, '');
 
 /** A number as written: "-4.16", "−4.16", "61.11%", "+0.5", "1,200". */
 export function parseWritten(raw: string): number | null {
@@ -103,14 +115,16 @@ export function parseWritten(raw: string): number | null {
 /** Digits as written, for the precision a figure claims. */
 const digitsOf = (raw: string) => raw.trim().replace(/[−–]/g, '-').replace(/[%,+]/g, '');
 
-const matchesValue = (candidate: number, written: number, raw: string) => {
+export const matchesValue = (candidate: number, written: number, raw: string) => {
   const tol = roundingTolerance(digitsOf(raw));
   return Math.abs(candidate - written) <= tol || Math.abs(Math.abs(candidate) - Math.abs(written)) <= tol;
 };
 
 type Candidate = { value: number; window: readonly [string | null, string | null] | null };
 
-const subjectIs = (subject: string, entity: Measurement['entity']) => (subject === 'team' ? entity.kind === 'team' : entity.id === subject);
+/** A subject names an id by the whole id or by a prefix of at least 6 characters (the model is given ids to copy, and a short form costs it fewer tokens). */
+export const sameSubject = (subject: string, id: string) => id === subject || (subject.length >= 6 && subject !== 'team' && id.startsWith(subject));
+const subjectIs = (subject: string, entity: Measurement['entity']) => (subject === 'team' ? entity.kind === 'team' : sameSubject(subject, entity.id));
 
 /** Every number of one measurement a figure in the answer can be: its value, its sample, its denominator, its benchmark and the places beside it. */
 function numbersOfMeasurement(m: Measurement & { comparisons?: Array<{ kind?: string; value: number | null; place?: number | null; place_of: number | null; place_percent: number | null }> }): Candidate[] {
@@ -180,7 +194,7 @@ function candidatesFor(cite: Cite, env: ToolEnvelope, anySubject = false): Candi
   const scoped: ScopedNumber[] = [...(env.detail === undefined ? [] : collectScopedNumbers(env.detail)), ...teamDataCounts(env.detail)];
   for (const n of scoped) {
     if (!n.metric_key || norm(n.metric_key) !== key) continue;
-    const mine = anySubject || (cite.subject === 'team' ? n.team === true || n.player_id === null : n.player_id === cite.subject || n.player_id === null);
+    const mine = anySubject || (cite.subject === 'team' ? n.team === true || n.player_id === null : (n.player_id !== null && sameSubject(cite.subject, n.player_id)) || n.player_id === null);
     if (!mine) continue;
     resolved = true;
     found.push({ value: n.value, window: null });
@@ -196,7 +210,7 @@ function candidatesFor(cite: Cite, env: ToolEnvelope, anySubject = false): Candi
   // A row of a read that names its metric (a goal, a benchmark standing row, a gap): "approach_proximity_50_125ft" is the key, and its baseline,
   // current, target, player value and the places beside it are the figures. The model reads the metric off the row, not the field's name.
   for (const row of metricRows(env.detail, key)) {
-    if (!anySubject && !(cite.subject === 'team' ? row.player === null : row.player === cite.subject || row.player === null)) continue;
+    if (!anySubject && !(cite.subject === 'team' ? row.player === null : (row.player !== null && sameSubject(cite.subject, row.player)) || row.player === null)) continue;
     resolved = true;
     found.push(...collectNumbers(row.object).map((value) => ({ value, window: null })));
   }

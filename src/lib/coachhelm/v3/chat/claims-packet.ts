@@ -290,6 +290,78 @@ function stripOnly(rawText: string): string {
 }
 
 /**
+ * The checks of {@link extractAndValidateChatClaims} over a list of claims already in hand, whether the model wrote them in a `<<<CLAIMS>>>`
+ * block or they were derived from its per-figure citations (`cite-claims.ts`).
+ */
+function validateClaimList(claimList: readonly ClaimReference[], strippedText: string, measurements: readonly Measurement[], packets: readonly EvidencePacket[], claimable: readonly EvidencePacket[]): TypedClaimAttempt {
+  const accepted: ClaimReference[] = [];
+  const rejected: RejectedClaim[] = [];
+  for (const raw of claimList) {
+    const forPlayer = claimable.filter((p) => p.player_id === raw.player_id);
+    if (forPlayer.length === 0) {
+      rejected.push({ claim: raw, reason: 'wrong_player' });
+      continue;
+    }
+    const packet = forPlayer.find((p) => p.window_start === raw.window_start && p.window_end === raw.window_end);
+    if (!packet) {
+      rejected.push({ claim: raw, reason: 'wrong_window' });
+      continue;
+    }
+    // Empty prose: this call judges the CLAIM only (see the doc comment for
+    // why prose-level `uncited_number` is not applied).
+    const verdict = validateClaims([snapToEntry(raw, packet)], packet, '');
+    accepted.push(...verdict.accepted);
+    for (const r of verdict.rejected) {
+      const sampleSize = packet.entries.find((e) => e.metric_id === raw.metric_id)?.sample_n ?? 0;
+      const unit = measurements.find((m) => m.entity?.id === raw.player_id && m.metric_id === raw.metric_id && m.window_start === raw.window_start && m.window_end === raw.window_end)?.sample_unit;
+      if (r.reason === 'unsupported_small_number' && raw.claim_type !== 'causal' && sampleSize > 0 && unit && thinSampleStated(strippedText, raw.value, sampleSize, unit)) accepted.push(r.claim);
+      else rejected.push(r);
+    }
+  }
+
+  for (const m of omittedThinFigures(strippedText, measurements, claimList)) {
+    rejected.push({
+      claim: { claim_id: `thin:${m.metric_id}`, metric_id: m.metric_id, value: m.value as number, player_id: m.entity.id, window_start: m.window_start as string, window_end: m.window_end as string },
+      reason: 'unsupported_small_number',
+    });
+  }
+
+  // Prose-level causal check, once for the turn (see doc comment).
+  const causallyBacked = accepted.some((c) => c.claim_type === 'causal');
+  const alreadyFlagged = rejected.some((r) => r.reason === 'unsupported_cause');
+  if (!causallyBacked && !alreadyFlagged) {
+    const prose = validateClaims([], packets[0] as EvidencePacket, unbackedCausalSentences(strippedText, measurements).join('. '));
+    rejected.push(...prose.rejected.filter((r) => r.reason === 'unsupported_cause'));
+  }
+
+  return { accepted, rejected, malformed: false };
+}
+
+/**
+ * The chat claim gate for an Ask v2 turn, whose claims come from its citations instead of a second block. Returns `claims: null` (the gate does
+ * not engage) when the turn has no player-scoped measurement, as {@link extractAndValidateChatClaims} does. A turn whose figures all went
+ * uncited has an empty claim list, not a malformed one: the numeric audit still binds every figure, and a thin-sample figure left out of the
+ * list is still refused (`omittedThinFigures`).
+ */
+export function validateCitedChatClaims(rawText: string, measurements: readonly Measurement[], claimList: readonly ClaimReference[]): { strippedText: string; claims: TypedClaimAttempt | null } {
+  // A model that writes the old block anyway must not leave it in the answer.
+  const text = rawText.includes(CLAIMS_OPEN) || rawText.includes(CLAIMS_CLOSE) ? stripAllClaimsDelimiters(rawText) : rawText;
+  let packets: EvidencePacket[];
+  try {
+    packets = buildPlayerPackets(measurements);
+  } catch {
+    return { strippedText: text, claims: MALFORMED };
+  }
+  if (packets.length === 0) return { strippedText: text, claims: null };
+  const claimable = [...packets, ...packetsFor(measurements, 'team')];
+  try {
+    return { strippedText: text, claims: validateClaimList(claimList, text, measurements, packets, claimable) };
+  } catch {
+    return { strippedText: text, claims: MALFORMED };
+  }
+}
+
+/**
  * The chat claim gate (flag `coachhelm_chat_claim_gate`), audit row 47(a).
  *
  * Strips the claims block and validates EVERY claim in it against the packet
@@ -352,47 +424,7 @@ export function extractAndValidateChatClaims(
     const result = ClaimsBlockSchema.safeParse(parsed);
     if (!result.success) return { strippedText, claims: MALFORMED };
 
-    const accepted: ClaimReference[] = [];
-    const rejected: RejectedClaim[] = [];
-    for (const raw of result.data) {
-      const forPlayer = claimable.filter((p) => p.player_id === raw.player_id);
-      if (forPlayer.length === 0) {
-        rejected.push({ claim: raw, reason: 'wrong_player' });
-        continue;
-      }
-      const packet = forPlayer.find((p) => p.window_start === raw.window_start && p.window_end === raw.window_end);
-      if (!packet) {
-        rejected.push({ claim: raw, reason: 'wrong_window' });
-        continue;
-      }
-      // Empty prose: this call judges the CLAIM only (see the doc comment for
-      // why prose-level `uncited_number` is not applied).
-      const verdict = validateClaims([snapToEntry(raw, packet)], packet, '');
-      accepted.push(...verdict.accepted);
-      for (const r of verdict.rejected) {
-        const sampleSize = packet.entries.find((e) => e.metric_id === raw.metric_id)?.sample_n ?? 0;
-        const unit = measurements.find((m) => m.entity?.id === raw.player_id && m.metric_id === raw.metric_id && m.window_start === raw.window_start && m.window_end === raw.window_end)?.sample_unit;
-        if (r.reason === 'unsupported_small_number' && raw.claim_type !== 'causal' && sampleSize > 0 && unit && thinSampleStated(strippedText, raw.value, sampleSize, unit)) accepted.push(r.claim);
-        else rejected.push(r);
-      }
-    }
-
-    for (const m of omittedThinFigures(strippedText, measurements, result.data)) {
-      rejected.push({
-        claim: { claim_id: `thin:${m.metric_id}`, metric_id: m.metric_id, value: m.value as number, player_id: m.entity.id, window_start: m.window_start as string, window_end: m.window_end as string },
-        reason: 'unsupported_small_number',
-      });
-    }
-
-    // Prose-level causal check, once for the turn (see doc comment).
-    const causallyBacked = accepted.some((c) => c.claim_type === 'causal');
-    const alreadyFlagged = rejected.some((r) => r.reason === 'unsupported_cause');
-    if (!causallyBacked && !alreadyFlagged) {
-      const prose = validateClaims([], packets[0] as EvidencePacket, unbackedCausalSentences(strippedText, measurements).join('. '));
-      rejected.push(...prose.rejected.filter((r) => r.reason === 'unsupported_cause'));
-    }
-
-    return { strippedText, claims: { accepted, rejected, malformed: false } };
+    return { strippedText, claims: validateClaimList(result.data, strippedText, measurements, packets, claimable) };
   } catch {
     return { strippedText, claims: MALFORMED };
   }
