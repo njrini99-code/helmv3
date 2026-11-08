@@ -216,3 +216,12 @@ describe('detail.sources', () => {
     expect((e.detail as { sources: string[] }).sources).toEqual(['e5']);
   });
 });
+
+describe('the team figure a ranking states in its detail', () => {
+  const owen = { metric_id: 'sg_approach', metric_label: 'Strokes gained approach', unit: 'strokes' as const, value: -4.16, entity: { kind: 'player' as const, id: 'p-owen', label: 'Owen Carter' }, window_start: '2026-06-09', window_end: '2026-09-26', sample_size: 8, sample_unit: 'rounds' as const, as_of: '2026-11-08T00:00:00.000Z', coverage: 'complete' as const, coverage_note: null, source: 'rounds', method: 'm', denominator: null, benchmark: null, direction: 'higher_better' as const };
+  const ranking = env({ metric_id: 'sg_approach', team_figure: { value: -2.4, window: 'last10', method: 'pooled', players: 7, rounds: 58 } }, { measurements: [owen] });
+  it('is the "team" subject, with its method and sample', async () => {
+    const e = await run({ ops: [{ op: 'difference', id: 'gap', a: { ref: 'e1', metric_id: 'sg_approach', subject: 'p-owen' }, b: { ref: 'e1', metric_id: 'sg_approach', subject: 'team' } }] }, { evidence: new Map([['e1', ranking]]) });
+    expect(e.measurements[0]).toMatchObject({ metric_id: 'summary:gap', value: -1.76, unit: 'strokes' });
+  });
+});

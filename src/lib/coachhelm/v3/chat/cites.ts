@@ -186,6 +186,13 @@ function candidatesFor(cite: Cite, env: ToolEnvelope, anySubject = false): Candi
     found.push({ value: n.value, window: null });
   }
 
+  // The team figure a ranking states in its detail ({ value, window, method, players, rounds }), as the figure of the metric the ranking is of.
+  const d = env.detail as { metric_id?: unknown; team_figure?: { value?: unknown } } | null | undefined;
+  if ((anySubject || cite.subject === 'team') && typeof d?.metric_id === 'string' && norm(d.metric_id) === key && typeof d.team_figure?.value === 'number') {
+    resolved = true;
+    found.push({ value: d.team_figure.value, window: null });
+  }
+
   // A row of a read that names its metric (a goal, a benchmark standing row, a gap): "approach_proximity_50_125ft" is the key, and its baseline,
   // current, target, player value and the places beside it are the figures. The model reads the metric off the row, not the field's name.
   for (const row of metricRows(env.detail, key)) {

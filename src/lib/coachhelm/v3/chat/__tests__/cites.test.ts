@@ -282,3 +282,12 @@ describe('citing a metric by the row it sits in', () => {
     expect(v.status).toBe('unresolved');
   });
 });
+
+describe('the team figure a ranking states in its detail', () => {
+  it('verifies a team-subject cite under the ranking’s metric', () => {
+    const ranking2 = env({ measurements: [m('sg_approach', -4.16, owenEntity)], detail: { metric_id: 'sg_approach', team_figure: { value: -2.4, window: 'last10', method: 'pooled', players: 7, rounds: 58 } } });
+    const all = new Map<string, ToolEnvelope>([['e1', ranking2]]);
+    expect(verifyCite(cite('-2.4', 'e1', 'sg_approach', 'team'), all).status).toBe('verified');
+    expect(verifyCite(cite('-2.5', 'e1', 'sg_approach', 'team'), all).status).toBe('unresolved');
+  });
+});

@@ -262,7 +262,14 @@ function resolveFigure(f: Figure, evidence: Evidence, made: ReadonlyMap<string, 
   const hits = ofMetric.filter(isSubject);
   if (hits.length === 1) return hits[0]!;
   if (hits.length > 1) return `Read ${f.ref} has ${hits.length} figures ${f.metric_id}; name the subject (a player id or name, or "team").`;
-  // "team" on a read of the roster's figures (a ranking, a comparison): the team average that read states beside them.
+  // "team" on a read of the roster's figures (a ranking, a comparison): the team figure that read states in its detail, else the team average beside the players.
+  const stated = (env.detail as { metric_id?: unknown; team_figure?: { value?: unknown; method?: unknown; players?: unknown; rounds?: unknown; window?: unknown } } | null | undefined) ?? undefined;
+  if (subject?.toLowerCase() === 'team' && stated && stated.metric_id === f.metric_id && typeof stated.team_figure?.value === 'number') {
+    const sample = ofMetric[0];
+    const tf = stated.team_figure;
+    const how = typeof tf.method === 'string' ? tf.method : 'stated by the read';
+    return { ...(sample ?? ({} as Measurement)), metric_id: f.metric_id, metric_label: `Team figure (${how}): ${sample?.metric_label ?? f.metric_id}`, unit: sample?.unit ?? 'strokes', entity: team, value: tf.value as number, sample_size: typeof tf.rounds === 'number' ? tf.rounds : typeof tf.players === 'number' ? tf.players : 0, sample_unit: typeof tf.rounds === 'number' ? 'rounds' : 'players', method: how, source: 'summarised reads', benchmark: null, comparisons: undefined, window_start: sample?.window_start ?? null, window_end: sample?.window_end ?? null, as_of: sample?.as_of ?? nowIso(), coverage: 'complete', coverage_note: null, denominator: null, direction: sample?.direction ?? null } as Measurement;
+  }
   if (subject?.toLowerCase() === 'team') {
     const refs = ofMetric.flatMap((m) => (m.comparisons ?? []).filter((c) => c.kind === 'team' && typeof c.value === 'number').map((c) => ({ m, c })));
     const values = new Set(refs.map((r) => r.c.value));
