@@ -356,11 +356,14 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
             lead
             title={
               <>
-                <Tooltip>
-                  <button type="button" className="ch-pbar__icon" aria-label="Chats" onClick={() => setDrawer(true)}>
-                    <Icon icon={MessagesSquare} size={20} />
-                  </button>
-                </Tooltip>
+                {/* A player's Ask keeps no history until HM3 (02 §AK10a), so there is no Chats list to open, as on desktop. */}
+                {!player && (
+                  <Tooltip>
+                    <button type="button" className="ch-pbar__icon" aria-label="Chats" onClick={() => setDrawer(true)}>
+                      <Icon icon={MessagesSquare} size={20} />
+                    </button>
+                  </Tooltip>
+                )}
                 <span className="ch-ask-ph__title">{showHome && !gone ? 'CoachHelm' : heading}</span>
               </>
             }
@@ -381,7 +384,9 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
       )}
       <div className="ch-ask-top">
         {player ? <PlayerAskTabs /> : <CoachHelmTabs active={sw.shown} onGo={sw.go} />}
-        {player && data.allowance && !showHome && <AllowanceMeter bucket={data.allowance} />}
+        {/* Desktop keeps the meter beside the tabs in a thread. On the phone it sat off screen in the tab row and its height
+            opened an empty band above and below the tabs; the phone shows it on Ask's home only. */}
+        {player && data.allowance && !showHome && !phone && <AllowanceMeter bucket={data.allowance} />}
         {!phone && <TeamLabel name={data.teamName} />}
       </div>
       <div className={'ch-ask-body' + (!phone && chatsShown ? ' has-panel' : '') + (!phone && evidenceOpen ? ' has-evidence' : '')}>
@@ -440,7 +445,7 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
       <AnimatePresence>{artifact && phone && artifactView}</AnimatePresence>
       {phone && (
         <>
-          <HistoryDrawer {...histProps} open={drawer} onClose={() => setDrawer(false)} />
+          {!player && <HistoryDrawer {...histProps} open={drawer} onClose={() => setDrawer(false)} />}
           {/* On the phone the evidence panel is its own sheet (EvidencePanel, CH-13851); wrapping it in a second Modal here
               stacked an empty Evidence sheet in front of the real one. */}
           {/* Kept mounted after its first opening, so it slides out when closed rather than vanishing (audit A-18). */}
