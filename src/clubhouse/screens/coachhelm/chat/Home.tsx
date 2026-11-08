@@ -65,7 +65,7 @@ export function AskHomeV2({ data, phone, heroComposer, onAsk, focus }: { data: C
               <b>Since Monday</b>
               {findings.slice(0, 3).map((f) => (
                 // "Tap any line to ask" holds for every line: a finding with no question of its own asks about its headline.
-                <button type="button" className="rw" key={f.id} onClick={() => onAsk(f.ask ?? `${f.headline}. What's behind it, and what should I do?`)}>
+                <button type="button" className="rw" key={f.id} onClick={() => onAsk(f.ask ?? `${f.headline}. What’s behind it, and what should I do?`)}>
                   <i className={DOT[String(f.tone)] ?? 'is-flat'} />
                   <span>{f.headline}</span>
                 </button>
