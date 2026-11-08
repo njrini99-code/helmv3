@@ -553,6 +553,41 @@ describe('POST /coachhelm/v3/chat/stream — grounding audit over the full strea
     expect(flagIndex).toBeLessThan(finishIndex);
   });
 
+  it('a rejected turn never emits its answer text; an accepted one releases it, in order, before the finish chunk', async () => {
+    const stream = () => ({
+      usage: Promise.resolve({ inputTokens: 10, outputTokens: 10 }),
+      toUIMessageStream: () =>
+        fakeUiMessageStream([
+          { type: 'start-step' },
+          { type: 'text-start', id: 's1' },
+          { type: 'text-delta', id: 's1', delta: 'His make rate is ' },
+          { type: 'text-delta', id: 's1', delta: '71%.' },
+          { type: 'text-end', id: 's1' },
+          { type: 'finish-step' },
+          { type: 'finish' },
+        ]),
+    });
+    const emitted = () => mocks.lastWriter!.write.mock.calls.map((call) => call[0] as FakeChunk);
+
+    mocks.streamText.mockImplementation(stream);
+    mocks.auditNumericClaims.mockReturnValue([{ text: '71%', value: 71 }]);
+    await runPostAndSettle(baseBody);
+    const rejected = emitted();
+    expect(rejected.some((c) => c.type === 'text-start' || c.type === 'text-delta' || c.type === 'text-end')).toBe(false);
+    expect(JSON.stringify(rejected)).not.toContain('71%');
+    expect(rejected.some((c) => c.type === 'data-grounding-flag')).toBe(true);
+
+    mocks.streamText.mockImplementation(stream);
+    mocks.auditNumericClaims.mockReturnValue([]);
+    await runPostAndSettle(baseBody);
+    const accepted = emitted();
+    const types = accepted.map((c) => c.type);
+    expect(accepted.filter((c) => c.type === 'text-delta').map((c) => c.delta).join('')).toBe('His make rate is 71%.');
+    expect(types.indexOf('text-start')).toBeLessThan(types.indexOf('text-delta'));
+    expect(types.lastIndexOf('text-end')).toBeLessThan(types.indexOf('finish'));
+    expect(types[types.length - 1]).toBe('finish');
+  });
+
   it('seeds the audit with team-scoped evidence already shown to the coach, even on a zero-tool-call turn', async () => {
     // Team/round-level ("shared") evidence carries no cross-player risk, so
     // it must carry over unconditionally — including on a turn where the

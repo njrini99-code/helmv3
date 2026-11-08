@@ -856,13 +856,17 @@ export async function POST(req: NextRequest) {
       // closer resumed, nothing shown from an unterminated opener on.
       const withheld = new BlockWithholder([[CLAIMS_OPEN, CLAIMS_CLOSE], [CITES_OPEN, CITES_CLOSE]]);
       let lastTextDeltaChunk: StreamChunk | null = null;
+      // The answer's text is held here until the verdict is known and released only for an accepted turn: a rejected turn used to be shown and then
+      // hidden, so a coach could read a figure the audit had refused. The cost is the time from the model's first output to its last, which is
+      // under 50 ms on most questions (the API delivers the answer in one lump). Progress, reads and cards still stream meanwhile.
+      const heldText: StreamChunk[] = [];
       for await (const chunk of uiStream) {
         const c = chunk as { type?: string; delta?: unknown };
         if (c.type === 'text-delta' && typeof c.delta === 'string') {
           rawText += c.delta;
           lastTextDeltaChunk = chunk;
           const shown = withheld.push(c.delta);
-          if (shown) writer.write({ ...chunk, delta: shown } as StreamChunk);
+          if (shown) heldText.push({ ...chunk, delta: shown } as StreamChunk);
           continue;
         }
         // The withheld tail belongs to the text part that `text-end` is
@@ -871,7 +875,11 @@ export async function POST(req: NextRequest) {
         // missing text part") and the tail would never reach the coach.
         if (c.type === 'text-end' && lastTextDeltaChunk) {
           const tail = withheld.flush();
-          if (tail) writer.write({ ...lastTextDeltaChunk, delta: tail } as StreamChunk);
+          if (tail) heldText.push({ ...lastTextDeltaChunk, delta: tail } as StreamChunk);
+        }
+        if (c.type === 'text-start' || c.type === 'text-end') {
+          heldText.push(chunk);
+          continue;
         }
         if (c.type === 'error') {
           streamErrored = true;
@@ -886,7 +894,7 @@ export async function POST(req: NextRequest) {
       // An UNTERMINATED opener intentionally flushes nothing, matching `stripAllClaimsDelimiters`'s "strip from the opener onward".
       {
         const tail = withheld.flush();
-        if (tail && lastTextDeltaChunk) writer.write({ ...lastTextDeltaChunk, delta: tail } as StreamChunk);
+        if (tail && lastTextDeltaChunk) heldText.push({ ...lastTextDeltaChunk, delta: tail } as StreamChunk);
       }
       // The stream ended without ever emitting a `finish` chunk — the
       // connection was aborted mid-generation rather than completing
@@ -1004,6 +1012,8 @@ export async function POST(req: NextRequest) {
           id: 'turn-verdict',
           data: { note: turnVerdict.note },
         });
+      } else {
+        for (const held of heldText) writer.write(held);
       }
       if (perf.enabled) writer.write({ type: 'data-ask-perf', data: perf.snapshot(), transient: true } as StreamChunk);
       if (finishChunk) writer.write(finishChunk);
