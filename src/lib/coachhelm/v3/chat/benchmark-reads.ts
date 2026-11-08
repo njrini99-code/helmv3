@@ -137,6 +137,11 @@ export interface Cohort {
   window: CohortWindow;
   direction: 'higher_better' | 'lower_better' | null;
   values: Map<string, number>;
+  /**
+   * The team's own figure for the window: Team Stats' pooled one (every player's newest rounds pooled, practice cut as Stats cuts it) when the rounds
+   * were read, else the mean of the players' stats-cache figures. Null when the read did not state one.
+   */
+  team: { value: number | null; method: 'pooled' | 'mean' } | null;
 }
 
 export const windowWords = (w: CohortWindow): string => (w === 'cache' ? 'over all recorded rounds' : w === 'season' ? 'this season' : w === 'last5' ? 'over the last 5 rounds' : w === 'last20' ? 'over the last 20 rounds' : 'over the last 10 rounds');
@@ -195,10 +200,10 @@ export function benchmarkSource(sb: Sb, teamId: string, opts: { ctx?: CoachChatC
         try {
           const e = await getTeamMetricRanking(sb, ctx, { metric_id: chatMetricId, window }, opts.figures);
           if (e.coverage === 'unavailable') return null;
-          const d = e.detail as { window?: CohortWindow; direction?: Cohort['direction'] } | undefined;
+          const d = e.detail as { window?: CohortWindow; direction?: Cohort['direction']; team_figure?: { value: number | null; method: 'pooled' | 'mean' } } | undefined;
           const values = new Map<string, number>();
           for (const m of e.measurements) if (m.entity.kind === 'player' && typeof m.value === 'number') values.set(m.entity.id, m.value);
-          return { window: d?.window ?? 'cache', direction: d?.direction ?? null, values };
+          return { window: d?.window ?? 'cache', direction: d?.direction ?? null, values, team: d?.team_figure ? { value: d.team_figure.value, method: d.team_figure.method } : null };
         } catch {
           return null;
         }
@@ -223,11 +228,15 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
  *  - `missing`: no team figure, and why.
  */
 export type TeamRef =
-  | { kind: 'cohort'; avg: number; rank: number | null; n: number; window: CohortWindow }
+  | { kind: 'cohort'; avg: number | null; rank: number | null; n: number; window: CohortWindow; method: 'pooled' | 'mean' }
   | { kind: 'standing'; avg: number; n: number; percent: number | null }
   | { kind: 'missing'; reason: string; note: string };
 
-/** The team reference for one player from a cohort of per-player values over a window. Pure. */
+/**
+ * The team reference for one player from a cohort of per-player values over a window. Pure. The average is the team's own figure for the window
+ * (Team Stats' pooled one when the rounds were read, else the mean of the players' cache figures); the place is a rank among the players' own
+ * values, a separate thing.
+ */
 export function teamRefFromCohort(cohort: Cohort | null, playerId: string | null, window: CohortWindow): TeamRef {
   if (!cohort) return { kind: 'missing', reason: 'not available', note: `The team’s figures ${windowWords(window)} could not be read.` };
   const values = [...cohort.values.values()];
@@ -236,8 +245,17 @@ export function teamRefFromCohort(cohort: Cohort | null, playerId: string | null
   const own = playerId ? cohort.values.get(playerId) : undefined;
   const better = (v: number) => (cohort.direction === 'lower_better' ? v < (own as number) : v > (own as number));
   const rank = typeof own === 'number' && cohort.direction ? 1 + values.filter(better).length : null;
-  return { kind: 'cohort', avg: round2(values.reduce((a, b) => a + b, 0) / n), rank, n, window: cohort.window };
+  const method = cohort.team?.method ?? 'mean';
+  const avg = cohort.team ? cohort.team.value : round2(values.reduce((a, b) => a + b, 0) / n);
+  return { kind: 'cohort', avg: avg === null ? null : round2(avg), rank, n, window: cohort.window, method };
 }
+
+/** The team figure in plain words: what was averaged, over what. */
+export const teamLabel = (window: CohortWindow, method: 'pooled' | 'mean'): string => {
+  if (window === 'cache') return 'Team average of the players’ figures, all rounds on record';
+  const rounds = window === 'season' ? 'rounds this season' : `last ${window.replace('last', '')} rounds`;
+  return method === 'pooled' ? `Team, all players’ ${rounds} pooled` : `Team average of the players’ figures, ${windowWords(window).replace(/^over /, '')}`;
+};
 
 /** The team reference from the nightly standing, over all recorded rounds. */
 export function teamRefFromStanding(standing: StandingLite | null): TeamRef {
@@ -271,7 +289,11 @@ export function comparisonsFor(a: { metricId: string; std: StandardRow | undefin
   // 2. The team average and the place in the team, over the figure's own window (the standing's, over all recorded rounds, for a player).
   if (!a.teamFigure) {
     const t = a.team;
-    if (t.kind === 'cohort') out.push({ kind: 'team', label: `Team average ${windowWords(t.window)}`, value: t.avg, place_percent: null, place: t.rank, place_of: t.n, note: t.rank === null ? null : rankWords(t.rank, t.n), missing_reason: null });
+    if (t.kind === 'cohort') {
+      const lab = teamLabel(t.window, t.method);
+      if (t.avg === null) out.push({ kind: 'team', label: lab, value: null, place_percent: null, place: t.rank, place_of: t.n, note: 'The team figure needs at least three whole rounds with their holes in the window.', missing_reason: 'under the 3-round floor' });
+      else out.push({ kind: 'team', label: lab, value: t.avg, place_percent: null, place: t.rank, place_of: t.n, note: t.rank === null ? null : rankWords(t.rank, t.n), missing_reason: null });
+    }
     else if (t.kind === 'standing') out.push({ kind: 'team', label: 'Team average over all recorded rounds', value: t.avg, place_percent: t.percent, place: null, place_of: t.n, note: 'The nightly standing: over all recorded rounds, as a share of the team the player is ahead of.', missing_reason: null });
     else out.push({ kind: 'team', label: 'Team average', value: null, place_percent: null, place: null, place_of: null, note: t.note, missing_reason: t.reason });
   }
@@ -307,11 +329,11 @@ async function teamRefFor(source: BenchmarkSource, chatId: string, window: Cohor
 
 /** The roster's values from a team-ranking read itself, so a comparison on it and the ranking can never disagree. */
 function cohortOfRanking(envelope: ToolEnvelope, metricId: string): Cohort | null {
-  const d = envelope.detail as { team_ranking?: boolean; window?: CohortWindow; direction?: Cohort['direction'] } | undefined;
+  const d = envelope.detail as { team_ranking?: boolean; window?: CohortWindow; direction?: Cohort['direction']; team_figure?: { value: number | null; method: 'pooled' | 'mean' } } | undefined;
   if (!d?.team_ranking || !d.window) return null;
   const values = new Map<string, number>();
   for (const m of envelope.measurements) if (m.metric_id === metricId && m.entity.kind === 'player' && typeof m.value === 'number') values.set(m.entity.id, m.value);
-  return { window: d.window, direction: d.direction ?? null, values };
+  return { window: d.window, direction: d.direction ?? null, values, team: d.team_figure ? { value: d.team_figure.value, method: d.team_figure.method } : null };
 }
 
 /**

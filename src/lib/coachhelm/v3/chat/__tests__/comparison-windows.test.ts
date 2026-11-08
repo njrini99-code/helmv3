@@ -6,7 +6,7 @@ vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(async () => 
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => { throw new Error('the service client must not be used'); } }));
 
 import { applyComparisons, benchmarkSource, getBenchmarks, teamRefFromCohort } from '../benchmark-reads';
-import { getPlayerMetric, getTeamMetricRanking, type PlayerFigures, type PlayerFiguresSource } from '../read-tools';
+import { getPlayerMetric, getTeamMetricRanking, TEAM_FIGURES_KEY, type PlayerFigures, type PlayerFiguresSource } from '../read-tools';
 import { person, pgrst, type Tables } from './pgrst-double';
 
 // The staging bug (Owen, last 10): a team place read off the nightly all-history standing sat beside window values, so Cole (-3.60) was "100%" while
@@ -26,7 +26,14 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 
 const figs = (sg: number): PlayerFigures => ({ rounds: 10, hole_rounds: 10, scoring_average: 75, putts_per_round: 30, putt_rounds: 10, sg_total: sg, sg_rounds: 10, legs: { tee: null, approach: null, around: null, putting: null }, gir_pct: null, gir_holes: 0, fairway_pct: null, fairway_holes: 0, window_start: '2026-09-01', window_end: '2026-10-20' });
 /** The rounds in a window: last 10 differs from the five, the season and all-history values. */
-const figures: PlayerFiguresSource = async (ids, window) => new Map(ids.map((id) => [id, figs((PLAYERS.find((p) => p.id === id) as (typeof PLAYERS)[number])[window === 'last10' ? 'last10' : 'all'] + (window === 'last5' ? 0.5 : 0))]));
+// The team's figure for a window is Team Stats' POOLED one (every player's rounds pooled), not the mean of the players' figures: they differ here on purpose.
+const POOLED = { last10: -2.5, all: -2.2 } as const;
+const withTeam = (opts: { team: boolean }): PlayerFiguresSource => async (ids, window) => {
+  const out = new Map<string, PlayerFigures>(ids.map((id) => [id, figs((PLAYERS.find((p) => p.id === id) as (typeof PLAYERS)[number])[window === 'last10' ? 'last10' : 'all'] + (window === 'last5' ? 0.5 : 0))]));
+  if (opts.team && ids.length >= 2) out.set(TEAM_FIGURES_KEY, figs(POOLED[window === 'last10' ? 'last10' : 'all']));
+  return out;
+};
+const figures = withTeam({ team: true });
 
 const std = (metric: string, v: Record<string, number | null> = {}) => ({ tour: 'pga', metric_id: metric, season: '2024', display_label: metric, pga_tour_value: 0, korn_ferry_value: null, div1_avg_value: null, div2_avg_value: null, div3_avg_value: null, hs_avg_value: null, pga_p25: null, pga_p50: null, pga_p75: null, source: 'src', ...v });
 const tables = (): Tables => ({
@@ -66,10 +73,11 @@ describe('a comparison is made over the same window, with the same per-player va
     const { sb } = pgrst(tables());
     const ranking = await getTeamMetricRanking(sb, ctx, { metric_id: 'sg_total', window: 'last10' }, figures);
     const out = await applyComparisons(ranking, benchmarkSource(sb, 'team-1', { ctx, figures }));
-    const avg = r2(mean(PLAYERS.map((p) => p.last10)));
-    expect(new Set(out.measurements.map((m) => comparisonOf(m, 'team').value))).toEqual(new Set([avg]));
-    expect(avg).toBe(-2.13);
-    expect(comparisonOf(out.measurements[0]!, 'team').label).toBe('Team average over the last 10 rounds');
+    // The team value is the pooled figure Stats prints, not the mean of the seven players (-2.13).
+    expect(new Set(out.measurements.map((m) => comparisonOf(m, 'team').value))).toEqual(new Set([POOLED.last10]));
+    expect(r2(mean(PLAYERS.map((p) => p.last10)))).toBe(-2.13);
+    expect(comparisonOf(out.measurements[0]!, 'team').label).toBe('Team, all players’ last 10 rounds pooled');
+    expect((ranking.detail as { team_figure: unknown }).team_figure).toMatchObject({ value: POOLED.last10, method: 'pooled', window: 'last10', players: 7 });
     // The values are the ranking's own: the printed list and the places are in the same order.
     expect(out.measurements.map((m) => comparisonOf(m, 'team').place)).toEqual([1, 2, 3, 4, 5, 6, 7]);
     expect(ranking.measurements.map((m) => m.entity.id)).toEqual(bestFirst('last10'));
@@ -81,7 +89,7 @@ describe('a comparison is made over the same window, with the same per-player va
     const out = await applyComparisons(one, benchmarkSource(sb, 'team-1', { ctx, figures }));
     const m = out.measurements[0]!;
     expect(m.value).toBe(-4.16);
-    expect(comparisonOf(m, 'team')).toMatchObject({ value: -2.13, place: 6, place_of: 7, place_percent: null });
+    expect(comparisonOf(m, 'team')).toMatchObject({ value: POOLED.last10, place: 6, place_of: 7, place_percent: null });
     // The standing says -2.33 and 0%: that is all-history and not what this figure is over.
     expect(JSON.stringify(m.comparisons)).not.toMatch(/-2\.33/);
   });
@@ -91,12 +99,20 @@ describe('a comparison is made over the same window, with the same per-player va
     const src = benchmarkSource(sb, 'team-1', { ctx, figures });
     const last10 = await applyComparisons(await getPlayerMetric(sb, ctx, { player_id: 'owen', metric_ids: ['sg_total'], window: 'last10' }, figures), src);
     const all = await applyComparisons(await getPlayerMetric(sb, ctx, { player_id: 'owen', metric_ids: ['sg_total'], window: 'cache' }, figures), src);
-    expect(comparisonOf(last10.measurements[0]!, 'team').value).toBe(r2(mean(PLAYERS.map((p) => p.last10))));
+    expect(comparisonOf(last10.measurements[0]!, 'team').value).toBe(POOLED.last10);
     expect(comparisonOf(all.measurements[0]!, 'team').value).toBe(r2(mean(PLAYERS.map((p) => p.all))));
     expect(comparisonOf(last10.measurements[0]!, 'team').value).not.toBe(comparisonOf(all.measurements[0]!, 'team').value);
-    expect(comparisonOf(all.measurements[0]!, 'team').label).toBe('Team average over all recorded rounds');
+    expect(comparisonOf(all.measurements[0]!, 'team').label).toBe('Team average of the players’ figures, all rounds on record');
     // All-history place: Owen -3.83 is 6th of 7 there as well, from the cache values, not the standing's percent.
     expect(comparisonOf(all.measurements[0]!, 'team')).toMatchObject({ place: bestFirst('all').indexOf('owen') + 1, place_of: 7, place_percent: null });
+  });
+
+  it('without a pooled team figure the average is the players’ mean and the label says so', async () => {
+    const { sb } = pgrst(tables());
+    const noTeam = withTeam({ team: false });
+    const one = await getPlayerMetric(sb, ctx, { player_id: 'owen', metric_ids: ['sg_total'], window: 'last10' }, noTeam);
+    const out = await applyComparisons(one, benchmarkSource(sb, 'team-1', { ctx, figures: noTeam }));
+    expect(comparisonOf(out.measurements[0]!, 'team')).toMatchObject({ value: -2.13, label: 'Team average of the players’ figures, the last 10 rounds' });
   });
 
   it('a figure whose window is not stated gets no team comparison, never one from another window', async () => {
@@ -132,8 +148,8 @@ describe('get_benchmarks reads the window', () => {
     const row = standing.rows[0]!;
     expect(row).toMatchObject({ player_value: -4.16, window: 'last10', window_label: 'the last 10 rounds', standing_value: -3.83 });
     const team = row.comparisons.find((c) => c.kind === 'team')!;
-    expect(team).toMatchObject({ value: -2.13, place: 6, place_of: 7, label: 'Team average over the last 10 rounds' });
-    expect(row.gaps.vs_team).toBe(r2(-4.16 - -2.13));
+    expect(team).toMatchObject({ value: POOLED.last10, place: 6, place_of: 7, label: 'Team, all players’ last 10 rounds pooled' });
+    expect(row.gaps.vs_team).toBe(r2(-4.16 - POOLED.last10));
     expect(row.gaps.vs_tour).toBe(r2(-4.16 - 0));
     expect(standing.window).toMatch(/last 10 rounds/);
     expect(standing.window).toMatch(/level's place is over all recorded rounds/);

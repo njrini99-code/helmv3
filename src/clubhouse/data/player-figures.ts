@@ -1,6 +1,6 @@
 import 'server-only';
 import type { createClient } from '@/lib/supabase/server';
-import type { PlayerFigures, FigureWindow, PuttBandsRead } from '@/lib/coachhelm/v3/chat/read-tools';
+import { TEAM_FIGURES_KEY, type PlayerFigures, type FigureWindow, type PuttBandsRead } from '@/lib/coachhelm/v3/chat/read-tools';
 import { holeRounds, recordedPutts } from './round-scope';
 import { countsForScoring, groupByPlayer, loadSeasonRounds, seasonStartDate, type ChRound } from './season';
 import { bandPutts, loadPutts, loadSince, practiceCut, roundsInFilter, type ChPuttRow } from './stats-common';
@@ -39,14 +39,14 @@ function pooled(holes: readonly ChRound[]) {
   return { gir_pct: gir.pct, gir_holes: gir.holes, fairway_pct: fw.pct, fairway_holes: fw.holes };
 }
 
-export function playerFiguresOver(rounds: readonly ChRound[], f: ChFilter, seasonStart: string): PlayerFigures {
-  const scoring = practiceCut(f) ? rounds.filter(countsForScoring) : [...rounds];
-  const window = roundsInFilter(scoring, f, seasonStart);
-  const s = summarizeWindow(window);
-  const holes = holeRounds(window);
+/** The figures of a window of rounds that is already cut (one player's, or every player's pooled): the one calculation behind a player's and a team's. */
+function figuresOfWindow(window: readonly ChRound[]): PlayerFigures {
+  const list = [...window];
+  const s = summarizeWindow(list);
+  const holes = holeRounds(list);
   const putts = weightedMean(holes, (r) => recordedPutts(r.total_putts));
   const puttRounds = holes.filter((r) => recordedPutts(r.total_putts) !== null).length;
-  const dates = window.map((r) => r.round_date.slice(0, 10)).sort();
+  const dates = list.map((r) => r.round_date.slice(0, 10)).sort();
   return {
     rounds: s.rounds,
     hole_rounds: s.holeRounds,
@@ -62,6 +62,24 @@ export function playerFiguresOver(rounds: readonly ChRound[], f: ChFilter, seaso
   };
 }
 
+export function playerFiguresOver(rounds: readonly ChRound[], f: ChFilter, seasonStart: string): PlayerFigures {
+  const scoring = practiceCut(f) ? rounds.filter(countsForScoring) : [...rounds];
+  return figuresOfWindow(roundsInFilter(scoring, f, seasonStart));
+}
+
+/**
+ * The team's figures for a window, the way Team Stats pools them: each player's rounds in the filter (so "Last 10" is every player's newest ten),
+ * practice left out as Stats leaves it, all those rounds pooled, and the same calculation a player's own figures use over the pool. Its strokes
+ * gained legs are `teamStrokesGainedOver`'s (the same rounds through the same `sgOver`), so Ask's team value is the number Stats prints.
+ */
+export function teamFiguresOver(rounds: readonly ChRound[], playerIds: readonly string[], f: ChFilter, seasonStart: string): PlayerFigures & { players: number } {
+  const scoring = practiceCut(f) ? rounds.filter(countsForScoring) : [...rounds];
+  const byPlayer = groupByPlayer(scoring);
+  const window: ChRound[] = [];
+  for (const id of playerIds) window.push(...roundsInFilter(byPlayer.get(id) ?? [], f, seasonStart));
+  return { ...figuresOfWindow(window), players: new Set(holeRounds(window).map((r) => r.player_id)).size };
+}
+
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
 /** Ask's players-figures source: one read of the rounds for all the players asked about. Null when the rounds could not be read. The route hands it in; CoachHelm's own code does not import Clubhouse. */
@@ -72,7 +90,10 @@ export async function loadPlayersFigures(sb: Supabase, who: { timezone: string }
   const loaded = await loadSeasonRounds(sb, [...playerIds], { surface: 'ask.player_figures', since: loadSince(f, start) });
   if (loaded.error) return null;
   const byPlayer = groupByPlayer(loaded.rounds);
-  return new Map(playerIds.map((id) => [id, playerFiguresOver(byPlayer.get(id) ?? [], f, start)]));
+  const figures = new Map(playerIds.map((id) => [id, playerFiguresOver(byPlayer.get(id) ?? [], f, start)]));
+  // The team's pooled figures ride beside the players' under a key no player id can be, for a comparison with the team (see `TEAM_FIGURES_KEY`).
+  if (playerIds.length >= 2) figures.set(TEAM_FIGURES_KEY, teamFiguresOver(loaded.rounds, playerIds, f, start));
+  return figures;
 }
 
 /**

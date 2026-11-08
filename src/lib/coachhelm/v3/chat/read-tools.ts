@@ -318,6 +318,11 @@ export type PlayerFigures = {
   window_start: string | null;
   window_end: string | null;
 };
+/**
+ * The key under which a figures source also returns the TEAM's pooled figures (all the asked players' rounds in the window, as Team Stats pools them),
+ * beside the players' own. It is not a player id; a caller that walks its own ids never meets it.
+ */
+export const TEAM_FIGURES_KEY = '__team__';
 /** Reads these players' figures for a window, one read for the lot; null when the rounds could not be read. Handed in by the route, which may import Clubhouse. */
 export type PlayerFiguresSource = (playerIds: string[], window: FigureWindow) => Promise<Map<string, PlayerFigures> | null>;
 
@@ -442,6 +447,19 @@ export async function getPlayerMetric(
   };
 }
 
+/** The team's figure on one metric for a window: pooled as Team Stats does when the rounds were read, else the mean of the players' own cache figures. */
+function teamFigure(metricId: string, byFigures: Map<string, PlayerFigures> | null, listed: readonly Measurement[], window: string) {
+  const pick = FIGURE_OF[metricId];
+  const team = byFigures?.get(TEAM_FIGURES_KEY) ?? null;
+  if (team && pick) {
+    const { value } = pick(team);
+    return { value: value === null ? null : Number(value.toFixed(2)), window, method: 'pooled' as const, players: listed.length, rounds: team.hole_rounds };
+  }
+  const values = listed.flatMap((m) => (typeof m.value === 'number' ? [m.value] : []));
+  const mean = values.length ? Number((values.reduce((a, b) => a + b, 0) / values.length).toFixed(2)) : null;
+  return { value: mean, window: 'cache', method: 'mean' as const, players: values.length, rounds: null as number | null };
+}
+
 /**
  * Rank the whole roster on one metric.
  *
@@ -515,8 +533,10 @@ export async function getTeamMetricRanking(
     summary: `${spec.label} across ${ctx.team_name}${byFigures ? (window === 'season' ? ', this season' : window === 'last5' ? ', over each player’s newest five rounds' : window === 'last20' ? ', over each player’s newest twenty rounds' : ', over each player’s newest ten rounds') : ''}.`,
     measurements: [...withValue, ...measurements.filter((m) => m.value === null)],
     series: [],
-    // `window` is the one every value was read over ('cache' when the figures were the stats cache's own); `team_ranking` marks the values as the whole roster's, so a comparison uses them as the team.
-    detail: { metric_id: spec.id, metric_label: spec.label, direction: spec.direction, window: byFigures ? window : 'cache', team_ranking: true },
+    // `window` is the one every value was read over ('cache' when the figures were the stats cache's own); `team_ranking` marks the values as the whole roster's,
+    // so a comparison uses them as the team. `team_figure` is the team's own number for the window: Team Stats' pooled one (every player's newest rounds
+    // pooled, practice cut as Stats cuts it) when the rounds were read, else the mean of the players' stats-cache figures.
+    detail: { metric_id: spec.id, metric_label: spec.label, direction: spec.direction, window: byFigures ? window : 'cache', team_ranking: true, team_figure: teamFigure(spec.id, byFigures, withValue, window) },
     coverage: coverageFor(withValue.length, ctx.roster.length),
     coverage_note:
       missing.length > 0

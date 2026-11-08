@@ -117,7 +117,7 @@ describe('get_benchmarks (coach)', () => {
     expect(r.comparisons).toEqual([
       { kind: 'level', label: 'Division III average', value: 50, place_percent: 30, place: null, place_of: 70, note: 'Place is among college players on helm over all recorded rounds.', missing_reason: null },
       // The team is the roster's values over the figure's own window: here the stats cache's (all recorded rounds), mean 54.6, Owen 3rd of 7.
-      { kind: 'team', label: 'Team average over all recorded rounds', value: 54.6, place_percent: null, place: 3, place_of: 7, note: 'Rank 3 of 7 players with a figure; 1 is best.', missing_reason: null },
+      { kind: 'team', label: 'Team average of the players’ figures, all rounds on record', value: 54.6, place_percent: null, place: 3, place_of: 7, note: 'Rank 3 of 7 players with a figure; 1 is best.', missing_reason: null },
       { kind: 'tour', label: 'PGA Tour', value: 66, place_percent: null, place: null, place_of: null, note: null, missing_reason: null },
     ]);
     expect(r.gaps).toEqual({ vs_level: 8.3, vs_team: 3.7, vs_tour: -7.7 });

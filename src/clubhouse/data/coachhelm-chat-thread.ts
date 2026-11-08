@@ -1241,7 +1241,7 @@ const ordinal = (n: number): string => {
 export function comparisonWords(comparisons: ReadonlyArray<{ kind: RefKind; value: number | null; place_percent?: number | null; place?: number | null; place_of?: number | null; note?: string | null; missing_reason?: string | null }>, unit: Measurement['unit']): string[] {
   const ordered = (['level', 'team', 'tour'] as const).flatMap((k) => comparisons.filter((c) => c.kind === k));
   return ordered.map((c) => {
-    if (c.value === null) return `${REF_WORD[c.kind]}: ${c.missing_reason ?? 'not available'}`;
+    if (c.value === null) return `${REF_WORD[c.kind]}: ${c.missing_reason ?? 'not available'}${c.kind === 'team' && c.place != null && c.place_of != null ? ` · ${ordinal(c.place)} of ${c.place_of}` : ''}`;
     // The team: the rank among the players with a figure over the same window ("6th of 7"). The level: the share of the college players on Helm the
     // player is ahead of, over all recorded rounds (said so). A team rank never becomes a percent.
     const place =
