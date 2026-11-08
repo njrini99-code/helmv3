@@ -70,7 +70,7 @@ function summary() {
   const falseAnswers = stored.filter((r) => r.label.expect === 'rejected');
   const wrongBlocks = trueAnswers.filter((r) => r.actual === 'rejected');
   const wrongAccepts = falseAnswers.filter((r) => r.actual === 'accepted');
-  const kinds: CorruptionKind[] = ['changed-count', 'changed-figure', 'moved-figure', 'figure-to-no-data-player', 'invented-date', 'shifted-date-in-window'];
+  const kinds: CorruptionKind[] = ['cite-to-other-player', 'figure-finer-than-cite', 'changed-count', 'changed-figure', 'moved-figure', 'figure-to-no-data-player', 'invented-date', 'shifted-date-in-window'];
   const byKind = Object.fromEntries(
     kinds.map((k) => {
       const set = corruptions.filter((c) => c.corruption.kind === k);

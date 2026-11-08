@@ -6,6 +6,8 @@
  *  - `moved-figure`     a figure that belongs to one player is written against another player who has figures of their own;
  *  - `figure-to-no-data-player`  the same, written against a roster player the turn read nothing for;
  *  - `invented-date`    a date outside everything the turn read and the coach said (a replaced date, or a new sentence);
+ *  - `cite-to-other-player`  a figure a cite stands for, written against a different roster player than the cite names (cited fixtures only);
+ *  - `figure-finer-than-cite`  a figure written one decimal finer than its cite and a little off it ("57.8" beside a cite of 58; cited fixtures only);
  *  - `changed-count`   a stated count of things ("14 qualifier rounds") moved by one or two, in a hand-written fixture that carries citations,
  *    where a coach turn's counts must be ones a read states (made only for those fixtures);
  *  - `shifted-date-in-window`  a stated date moved to another day inside a window a read covered, a day no read names.
@@ -18,7 +20,7 @@ import { statedCounts } from '../count-claims';
 import { ToolEnvelope } from '../provenance';
 import type { AskFixture } from './ask-replay-harness';
 
-export type CorruptionKind = 'changed-count' | 'changed-figure' | 'moved-figure' | 'figure-to-no-data-player' | 'invented-date' | 'shifted-date-in-window';
+export type CorruptionKind = 'cite-to-other-player' | 'figure-finer-than-cite' | 'changed-count' | 'changed-figure' | 'moved-figure' | 'figure-to-no-data-player' | 'invented-date' | 'shifted-date-in-window';
 
 export interface Corruption {
   /** Stable id: `<fixture>:<kind>:<n>`. */
@@ -329,6 +331,59 @@ function changedCounts(fixture: AskFixture, text: string): Corruption[] {
   return out;
 }
 
+/** The cited figures of a fixture: each text figure equal to a cite's value, with the roster player the cite names (an id prefix) when it names one. */
+function citedFigures(fixture: AskFixture, text: string) {
+  const cites = fixture.turn.cites ?? [];
+  if (cites.length === 0) return [];
+  const out: Array<{ token: Token; cite: (typeof cites)[number]; player: AskFixture['roster'][number] | null }> = [];
+  for (const token of figureTokens(text)) {
+    const cite = cites.find((c) => Number.isFinite(Number(c.v)) && Math.abs(Number(c.v)) === Math.abs(token.value) && (c.v.split('.')[1] ?? '').length === token.decimals);
+    if (!cite) continue;
+    out.push({ token, cite, player: fixture.roster.find((p) => cite.subject !== 'team' && cite.subject.length >= 6 && p.id.startsWith(cite.subject)) ?? null });
+  }
+  return out;
+}
+
+/** A cited figure written against another roster player, and a cited figure written finer than its cite. Cited fixtures only (stored turns that carry cites, and authored ones). */
+function citedCorruptions(fixture: AskFixture, text: string, ev: Evidence): Corruption[] {
+  const out: Corruption[] = [];
+  const cited = citedFigures(fixture, text);
+  // 1. The figure on another player: the line that states it names the cited player; write another name there.
+  const lines = text.split('\n');
+  let offset = 0;
+  const moved: Corruption[] = [];
+  for (const line of lines) {
+    const start = offset;
+    offset += line.length + 1;
+    for (const c of cited) {
+      if (!c.player || c.token.index < start || c.token.index >= start + line.length) continue;
+      const from = c.player;
+      if (!(line.includes(from.name) || (from.first_name && new RegExp(`\\b${from.first_name}\\b`).test(line)))) continue;
+      const to = [...fixture.roster].sort((a, b) => a.name.localeCompare(b.name)).find((p) => p.id !== from.id && !line.includes(p.name) && !inPool(c.token.value, c.token.decimals, ev.byPlayer.get(p.id) ?? []));
+      if (!to) continue;
+      const swapped = line.split(from.name).join(to.name).replace(new RegExp(`\\b${from.first_name}\\b`, 'g'), to.first_name ?? to.name);
+      moved.push({ id: '', fixtureId: fixture.id, kind: 'cite-to-other-player', detail: `${c.token.text} (cited for ${from.name}) written against ${to.name}`, text: text.slice(0, start) + swapped + text.slice(start + line.length) });
+      break;
+    }
+  }
+  pick(moved, 3).forEach((m, n) => out.push({ ...m, id: `${fixture.id}:cite-to-other-player:${n}` }));
+  // 2. A figure one decimal finer than its cite and a little off it.
+  const finer: Corruption[] = [];
+  for (const c of cited) {
+    if (c.token.decimals > 1) continue;
+    const step = 0.4 * 10 ** -c.token.decimals;
+    for (const sign of [-1, 1]) {
+      const next = Math.round((Math.abs(c.token.value) + sign * step) * 10 ** (c.token.decimals + 1)) / 10 ** (c.token.decimals + 1);
+      if (next <= 12 || inPool(next, c.token.decimals + 1, ev.all)) continue;
+      const written = (c.token.value < 0 ? '-' : '') + next.toFixed(c.token.decimals + 1);
+      finer.push({ id: '', fixtureId: fixture.id, kind: 'figure-finer-than-cite', detail: `${c.token.text} -> ${written} (cite ${c.cite.v})`, text: text.slice(0, c.token.index) + written + text.slice(c.token.index + c.token.text.length) });
+      break;
+    }
+  }
+  pick(finer, 3).forEach((m, n) => out.push({ ...m, id: `${fixture.id}:figure-finer-than-cite:${n}` }));
+  return out;
+}
+
 /** Corrupted copies of one stored answer. */
 export function corruptionsFor(fixture: AskFixture): Corruption[] {
   const text = answerText(fixture);
@@ -340,5 +395,6 @@ export function corruptionsFor(fixture: AskFixture): Corruption[] {
     ...movedFigures(fixture, text, ev, false),
     ...inventedDates(fixture, text, ev),
     ...shiftedDates(fixture, text, ev),
+    ...(fixture.turn.cites?.length ? citedCorruptions(fixture, text, ev) : []),
   ];
 }
