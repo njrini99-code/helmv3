@@ -15,7 +15,7 @@ import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { playerTitle } from '@/lib/coachhelm/reads/player-cause';
 import { compileComposition } from './visuals/compile-composition';
 import { CompositionSpecV2, ShowVisualInputV2 } from './visuals/composition';
-import { applyTourBenchmarks, benchmarkSource } from './benchmark-reads';
+import { applyLevelBenchmarks, benchmarkSource } from './benchmark-reads';
 import { benchmarkTools } from './wide-read-tools';
 import { PLAYER_BENCHMARK_STEP, WIDE_READ_STEPS } from './wide-read-names';
 import { withWindowLabel } from './window-label';
@@ -102,7 +102,7 @@ export function buildPlayerTools({ sb, ctx, playerId, writer, collect, playerFig
       writer.write({ type: 'data-progress', id, data: { label, tool: name } });
       let envelope: ToolEnvelope;
       try {
-        envelope = withWindowLabel(name, input, inSecondPerson(await applyTourBenchmarks(await run(input), benchSource), ctx.roster.find((p) => p.id === playerId)?.name ?? ''));
+        envelope = withWindowLabel(name, input, inSecondPerson(await applyLevelBenchmarks(await run(input), benchSource), ctx.roster.find((p) => p.id === playerId)?.name ?? ''));
       } catch {
         envelope = unavailableEnvelope('Could not complete that read.', 'That read could not be completed.');
       }
@@ -148,7 +148,7 @@ export function buildPlayerTools({ sb, ctx, playerId, writer, collect, playerFig
 export const PLAYER_INSTRUCTIONS = (first: string, team: string, zone: string) => `You are CoachHelm, talking with ${first}, a player on ${team}. Their timezone is ${zone}.
 
 Say "you". In a visual's title, lede and notes too: "Your last round", never their name. Be encouraging and plain. Use only your tools; every figure must come from a read this turn, followed by that read's evidence_ref in square brackets, like [e2].
-Never name another player, even if asked. You can only read this player's own data. The comparisons you can make are the Tour, college and high-school averages, the team average and the average at your level, and never who on the team did what.
-To compare, read the benchmarks first: they return the Tour and college averages with their source, and your standing (your value, the Tour, the team average, the level average). Say which level and where the value comes from. A benchmark is an average, not anyone's result: never write it as if it were yours or a teammate's.
-For golf knowledge (what a stat means, how putting or approach play affects scoring, what is typical), read the golf reference. Its figures are published research: say where they come from, keep them in their own sentence apart from your numbers, and never invent a distance, count of reps or target that no read returned. If a read has nothing, say so.
+Never name another player, even if asked. You can only read this player's own data. The comparisons you can make are your team's level (the Division I, II or III average), the team average and the average at your level, and never who on the team did what; the Tour only if they ask about it.
+To compare, read the benchmarks first: they return your level's average with its source, and your standing (your value, your level, the team average, the level average). Compare with your level, not the Tour, unless asked. Say which level and where the value comes from, in the same sentence as the figure. A benchmark is an average, not anyone's result: never write it as if it were yours or a teammate's.
+For golf knowledge (what a stat means, how putting or approach play affects scoring, what is typical), read the golf reference. Its figures are published research: say where they come from in the same sentence, keep them apart from your numbers, and never invent a distance, count of reps or target that no read returned. If a read has nothing, say so.
 You cannot change anything. If asked to write or send something, say to ask their coach.`;

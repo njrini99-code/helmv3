@@ -53,7 +53,7 @@ import { heldCommitFor } from './held-runner';
 import { getProximityByBand, getRoundDetail, getShotPattern } from './shot-reads';
 import { compareSeasons, getCalendar, getCourse, getRootCauses } from './engine-reads';
 import { getDocuments, getPractice, getTeamPatterns } from './ask-reads';
-import { applyTourBenchmarks, benchmarkSource } from './benchmark-reads';
+import { applyLevelBenchmarks, benchmarkSource } from './benchmark-reads';
 import { benchmarkTools, coachWideReadTools } from './wide-read-tools';
 import { WIDE_READ_STEPS } from './wide-read-names';
 import { withWindowLabel } from './window-label';
@@ -403,7 +403,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
       // HELM_COACHHELM_TEAMS canary: every roster player is on ctx.team_id, so
       // the chat's team is the scope (no read).
       // Ask v2: where the Tour has a value for a metric a read returned, the measurement carries it, so a visual and the audit see the benchmark.
-      const guardedEnvelope = await guarded(() => runWithCoachHelmTeams([ctx.team_id], async () => (benchSource ? applyTourBenchmarks(await run(input), benchSource) : run(input))), collect, name, ctx);
+      const guardedEnvelope = await guarded(() => runWithCoachHelmTeams([ctx.team_id], async () => (benchSource ? applyLevelBenchmarks(await run(input), benchSource) : run(input))), collect, name, ctx);
       // The window the read actually used, for the scope line (Ask v2).
       const envelope = askV2 ? withWindowLabel(name, input, guardedEnvelope) : guardedEnvelope;
       progressEnd(step, name, envelope, envelope.coverage === 'unavailable');

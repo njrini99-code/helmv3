@@ -13,7 +13,8 @@ type Sb = SupabaseClient<Database>;
 
 /**
  * Benchmarks, metric definitions and where a player stands: `get_benchmarks` and `get_metric_definitions` (coach and player), plus
- * `applyTourBenchmarks`, which fills `benchmark` on the measurements other reads return.
+ * `applyLevelBenchmarks`, which fills `benchmark` on the measurements other reads return with the team's OWN level (Division I, II or III) where
+ * the team's division is on record. The Tour is a secondary reference: it is returned when a coach asks for it (`levels: ['pga']`), never drawn by default.
  *
  * The values are `golf_pga_standards` (Tour, Korn Ferry, college and high-school averages, Tour percentiles, each with its source)
  * and `golf_player_standing` (the player's value, the team average and the level average). Both are read through the caller's own
@@ -72,7 +73,18 @@ interface StandardRow {
 }
 const STANDARD_COLUMNS = 'metric_id, season, display_label, pga_tour_value, korn_ferry_value, div1_avg_value, div2_avg_value, div3_avg_value, hs_avg_value, pga_p25, pga_p50, pga_p75, source';
 
+/** The college level a team plays at, from the division on its newest season row. */
+export type TeamLevel = 'd1' | 'd2' | 'd3';
+/** "d1", "D1", "Division I", "div 2", "III": the level, or null for a division with no published average (NAIA, junior college, unset). */
+export function levelFromDivision(division: string | null | undefined): TeamLevel | null {
+  const t = (division ?? '').toLowerCase().replace(/[^a-z0-9]/g, '').replace(/^(division|div|d)/, '');
+  return t === '1' || t === 'i' ? 'd1' : t === '2' || t === 'ii' ? 'd2' : t === '3' || t === 'iii' ? 'd3' : null;
+}
+const LEVEL_COLUMN: Record<TeamLevel, 'div1_avg_value' | 'div2_avg_value' | 'div3_avg_value'> = { d1: 'div1_avg_value', d2: 'div2_avg_value', d3: 'div3_avg_value' };
+
 export interface BenchmarkSource {
+  /** The team's level, or null when no division is on record or it could not be read. Nothing is compared with a level the team is not known to play at. */
+  level(): Promise<TeamLevel | null>;
   /** The team's tour, or null when its gender could not be read (no benchmark is claimed then: a women's team is never graded on the men's). */
   tour(): Promise<Tour | null>;
   /** The newest season's row per metric for that tour; null when the read failed. */
@@ -83,6 +95,12 @@ export interface BenchmarkSource {
 export function benchmarkSource(sb: Sb, teamId: string): BenchmarkSource {
   let tourRead: Promise<Tour | null> | undefined;
   let standardsRead: Promise<Map<string, StandardRow> | null> | undefined;
+  let levelRead: Promise<TeamLevel | null> | undefined;
+  const level = () =>
+    (levelRead ??= (async () => {
+      const { data, error } = await sb.from('golf_team_seasons').select('division').eq('team_id', teamId).order('season', { ascending: false }).limit(1).maybeSingle();
+      return error || !data ? null : levelFromDivision(data.division);
+    })());
   const tour = () =>
     (tourRead ??= (async () => {
       const { data, error } = await sb.from('golf_teams').select('gender').eq('id', teamId).maybeSingle();
@@ -100,29 +118,39 @@ export function benchmarkSource(sb: Sb, teamId: string): BenchmarkSource {
       for (const row of (data ?? []) as unknown as StandardRow[]) if (!map.has(row.metric_id)) map.set(row.metric_id, row);
       return map;
     })());
-  return { tour, standards };
+  return { level, tour, standards };
 }
 
-const benchmarkFor = (std: StandardRow | undefined, tour: Tour): BenchmarkRef | null =>
-  std && typeof std.pga_tour_value === 'number' ? { source: `${tourLabel(tour)} ${std.season}`, version: std.season, value: std.pga_tour_value, omitted_for_cohort: false } : null;
+const benchmarkFor = (std: StandardRow | undefined, level: TeamLevel): BenchmarkRef | null => {
+  const value = std?.[LEVEL_COLUMN[level]];
+  return std && typeof value === 'number' ? { source: `${LEVEL_LABEL[level]} ${std.season}`, version: std.season, value, omitted_for_cohort: false } : null;
+};
 
 /**
- * Fill `benchmark` on the measurements and series a read returned, where the Tour has a value for that metric. Only the Tour: a
- * college average is for `get_benchmarks`, which names its level and source. A failed or unknown read leaves the envelope as it was.
+ * Fill `benchmark` on the measurements and series a read returned with the team's own level (the Division I, II or III average) where the
+ * standards publish one for that metric. Not the Tour: comparing a college player with the Tour on every figure is the wrong yardstick, so
+ * the Tour comes only from `get_benchmarks` when asked. No division on record, or no value for the metric (there is no college strokes
+ * gained), leaves the envelope as it was.
  */
-export async function applyTourBenchmarks(envelope: ToolEnvelope, source: BenchmarkSource): Promise<ToolEnvelope> {
-  if (envelope.coverage === 'unavailable' || (envelope.measurements.length === 0 && envelope.series.length === 0)) return envelope;
-  const candidates = [...envelope.measurements, ...envelope.series].filter((x) => !x.benchmark && x.entity.kind !== 'round' && STANDING_ID_BY_CHAT_ID(x.metric_id));
-  if (candidates.length === 0) return envelope;
-  const [tour, standards] = await Promise.all([source.tour(), source.standards()]);
-  if (!tour || !standards) return envelope;
-  const fill = <T extends Measurement | MeasurementSeries>(x: T): T => {
-    if (x.benchmark || x.entity.kind === 'round') return x;
-    const id = STANDING_ID_BY_CHAT_ID(x.metric_id);
-    const b = id ? benchmarkFor(standards.get(id), tour) : null;
-    return b ? { ...x, benchmark: b } : x;
-  };
-  return { ...envelope, measurements: envelope.measurements.map(fill), series: envelope.series.map(fill) };
+export async function applyLevelBenchmarks(envelope: ToolEnvelope, source: BenchmarkSource): Promise<ToolEnvelope> {
+  try {
+    if (envelope.coverage === 'unavailable' || (envelope.measurements.length === 0 && envelope.series.length === 0)) return envelope;
+    const candidates = [...envelope.measurements, ...envelope.series].filter((x) => !x.benchmark && x.entity.kind !== 'round' && STANDING_ID_BY_CHAT_ID(x.metric_id));
+    if (candidates.length === 0) return envelope;
+    const level = await source.level();
+    if (!level) return envelope;
+    const standards = await source.standards();
+    if (!standards) return envelope;
+    const fill = <T extends Measurement | MeasurementSeries>(x: T): T => {
+      if (x.benchmark || x.entity.kind === 'round') return x;
+      const id = STANDING_ID_BY_CHAT_ID(x.metric_id);
+      const b = id ? benchmarkFor(standards.get(id), level) : null;
+      return b ? { ...x, benchmark: b } : x;
+    };
+    return { ...envelope, measurements: envelope.measurements.map(fill), series: envelope.series.map(fill) };
+  } catch {
+    return envelope;
+  }
 }
 
 /**
@@ -176,10 +204,11 @@ export interface BenchmarkInput {
 export async function getBenchmarks(sb: Sb, ctx: CoachChatContext, source: BenchmarkSource, input: BenchmarkInput, who: { role: 'coach' } | { role: 'player'; playerId: string }): Promise<ToolEnvelope> {
   const wanted = [...new Set(input.metric_ids.map((m) => STANDING_ID_BY_CHAT_ID(m)).filter((m): m is string => !!m))];
   if (wanted.length === 0) return { summary: 'None of those metrics has a benchmark.', measurements: [], series: [], detail: { benchmarks: [] }, coverage: 'empty', coverage_note: 'Benchmarks exist for strokes gained, putting by distance, approach proximity, scrambling, penalties, scoring by par, GIR and the pressure gaps.', as_of: nowIso() };
-  const levels = input.levels?.length ? [...new Set(input.levels)] : (['pga', 'd1'] as BenchmarkLevel[]);
   const playerId = who.role === 'player' ? who.playerId : input.player_id ? requireRosterPlayer(ctx, input.player_id).id : null;
 
-  const [tour, standards, meta] = await Promise.all([source.tour(), source.standards(), readMetricMeta(sb, wanted)]);
+  const [tour, standards, meta, teamLevel] = await Promise.all([source.tour(), source.standards(), readMetricMeta(sb, wanted), source.level()]);
+  // The team's own level by default; the Tour only when asked for. With no division on record, every college level is shown rather than a guess.
+  const levels: BenchmarkLevel[] = input.levels?.length ? [...new Set(input.levels)] : teamLevel ? [teamLevel] : ['d1', 'd2', 'd3'];
   if (!tour) return unavailableEnvelope('Could not tell which Tour applies to this team.', 'The team read failed, so no benchmark is claimed.');
   if (!standards) return unavailableEnvelope('Could not read the benchmarks.', 'The benchmarks query failed.');
 
@@ -202,7 +231,7 @@ export async function getBenchmarks(sb: Sb, ctx: CoachChatContext, source: Bench
         unit: m?.unit ?? null,
         direction: m?.direction ?? null,
         season: std.season,
-        source_label: `${tourLabel(tour)} ${std.season} reference table`,
+        source_label: `${std.season} reference table`,
         source: std.source ?? `${tourLabel(tour)} ${std.season}`,
         levels: byLevel,
         ...(levels.includes('pga') && typeof std.pga_p25 === 'number' && typeof std.pga_p50 === 'number' && typeof std.pga_p75 === 'number' ? { tour_percentiles: { p25: std.pga_p25, p50: std.pga_p50, p75: std.pga_p75 } } : {}),
@@ -226,7 +255,9 @@ export async function getBenchmarks(sb: Sb, ctx: CoachChatContext, source: Bench
       const name = who.role === 'player' ? 'You' : (ctx.roster.find((p) => p.id === playerId)?.name ?? 'The player');
       const rows = ((data ?? []) as unknown as StandingRow[]).map((r) => {
         const std = standards.get(r.metric_id);
-        const tourValue = std && typeof std.pga_tour_value === 'number' && isStandingTourComparable(r.metric_id, r.basis as 'on_green' | 'all_shot' | null) ? std.pga_tour_value : null;
+        const tourValue = levels.includes('pga') && std && typeof std.pga_tour_value === 'number' && isStandingTourComparable(r.metric_id, r.basis as 'on_green' | 'all_shot' | null) ? std.pga_tour_value : null;
+        const levelCol = teamLevel ? std?.[LEVEL_COLUMN[teamLevel]] : null;
+        const levelValue = typeof levelCol === 'number' ? levelCol : null;
         const teamShown = r.team_avg != null && r.team_n >= TEAM_MARKER_MIN_N;
         const levelShown = r.level_avg != null && r.level_n > 0;
         return {
@@ -235,6 +266,7 @@ export async function getBenchmarks(sb: Sb, ctx: CoachChatContext, source: Bench
           metric_label: meta?.get(r.metric_id)?.label ?? std?.display_label ?? r.metric_id,
           ...(meta?.get(r.metric_id) ? { direction: meta.get(r.metric_id)!.direction } : {}),
           player_value: round2(r.player_value),
+          ...(levelValue !== null ? { level_value: levelValue, vs_level: round2(r.player_value - levelValue), level_label: LEVEL_LABEL[teamLevel as TeamLevel] } : {}),
           ...(tourValue !== null ? { tour_value: tourValue, vs_tour: round2(r.player_value - tourValue), tour: tourLabel(tour) } : {}),
           ...(teamShown ? { team_average: round2(r.team_avg as number), team_size: r.team_n, ...(r.team_pct != null ? { team_percentile: round1(r.team_pct) } : {}) } : {}),
           ...(levelShown ? { level_average: round2(r.level_avg as number), level_size: r.level_n, ...(r.level_pct != null ? { level_percentile: round1(r.level_pct) } : {}) } : {}),
@@ -248,16 +280,18 @@ export async function getBenchmarks(sb: Sb, ctx: CoachChatContext, source: Bench
   const standingRows = (standing?.rows as unknown[] | undefined)?.length ?? 0;
   const noteParts: string[] = [];
   if (withoutValue.length) noteParts.push(`No published value at the requested level for ${withoutValue.length} of ${wanted.length} metrics.`);
+  if (!teamLevel && !input.levels?.length) noteParts.push('The team’s division is not on record, so the Division I, II and III averages are all shown.');
   if (standingFailed) noteParts.push('The player’s standing could not be read.');
   if (playerId && !standingFailed && standingRows === 0) noteParts.push('No standing rows yet for this player on these metrics.');
   const coverage: ToolEnvelope['coverage'] = benchmarks.length === 0 ? 'empty' : withoutValue.length || standingFailed ? 'partial' : 'complete';
   return {
-    summary: `${tourLabel(tour)} and college benchmarks for ${benchmarks.length} metric${benchmarks.length === 1 ? '' : 's'}${playerId ? `, with ${standingRows === 0 ? 'no standing rows' : `${standingRows} standing row${standingRows === 1 ? '' : 's'}`}` : ''}.`,
+    summary: `${levels.map((l) => (l === 'pga' ? tourLabel(tour) : LEVEL_LABEL[l])).join(', ')} for ${benchmarks.length} metric${benchmarks.length === 1 ? '' : 's'}${playerId ? `, with ${standingRows === 0 ? 'no standing rows' : `${standingRows} standing row${standingRows === 1 ? '' : 's'}`}` : ''}.`,
     measurements: [],
     series: [],
     detail: {
-      kind: 'benchmark',
-      tour: tourLabel(tour),
+      // Not 'benchmark': that tag marks a benchmark's own entries (reference figures); the standing beside them is the player's.
+      kind: 'benchmark_read',
+      team_level: teamLevel ? LEVEL_LABEL[teamLevel] : null,
       note: 'Benchmarks are published or estimated averages, never this team’s results. Name the level and the source when you use one.',
       benchmarks,
       ...(standing ? { standing } : {}),

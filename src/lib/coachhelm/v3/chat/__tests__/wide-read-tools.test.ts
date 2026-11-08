@@ -22,6 +22,7 @@ const tables: Tables = {
   golf_metrics: { rows: [{ metric_id: 'gir_pct', display_label: 'GIR %', unit: 'percent', direction: 'higher_better', category: 'approach', description: 'Greens in regulation rate.', active: true }] },
   golf_player_standing: { rows: [{ player_id: 'p1', metric_id: 'gir_pct', player_value: 58, level_avg: 61, level_n: 70, level_pct: 30, team_avg: 57, team_n: 9, team_pct: 55, basis: null, computed_at: '2026-11-07T02:00:00Z' }, { player_id: 'p2', metric_id: 'gir_pct', player_value: 83.4, level_avg: 61, level_n: 70, level_pct: 90, team_avg: 57, team_n: 9, team_pct: 99, basis: null, computed_at: '2026-11-07T02:00:00Z' }] },
   golf_events: { rows: [{ team_id: 'team-1', title: 'Range', start_time: '2026-11-03T20:00:00Z' }] },
+  golf_team_seasons: { rows: [{ team_id: 'team-1', season: '2026-27', division: 'D1' }] },
 };
 
 function coach(askV2: boolean, db = pgrst(tables)) {
@@ -139,14 +140,14 @@ describe('the player’s benchmark reads', () => {
     expect(p.at(-1)?.data?.done).toBe('Looked up how you compare');
   });
 
-  it('fills the Tour value on a measurement a player’s own read returns', async () => {
+  it('fills the team’s level on a measurement a player’s own read returns', async () => {
     const stats = { ...tables, golf_player_stats_cache: { rows: [{ player_id: 'p1', rounds_played: 12, gir_percentage: 58.3, greens_hit: 100, greens_total: 171, updated_at: '2026-11-07T00:00:00Z', calculation_period_start: null, calculation_period_end: null, is_stale: false }] } };
     const { tools, collected } = player(pgrst(stats));
     await tools.get_player_metrics!.execute!({ metric_ids: ['gir_pct'], window: 'cache' } as never, {} as never);
     const env = collected.at(-1) as { measurements: Array<{ metric_id: string; benchmark: { value: number; source: string } | null }> };
     const gir = env.measurements.find((m) => m.metric_id === 'gir_pct');
     expect(gir).toBeDefined();
-    expect(gir!.benchmark).toMatchObject({ value: 66, source: 'PGA Tour 2024' });
+    expect(gir!.benchmark).toMatchObject({ value: 60, source: 'Division I average 2024' });
   });
 });
 

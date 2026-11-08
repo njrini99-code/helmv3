@@ -5,7 +5,7 @@ vi.mock('server-only', () => ({}));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(async () => {}) }));
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => { throw new Error('the service client must not be used'); } }));
 
-import { applyTourBenchmarks, benchmarkSource, getBenchmarks, getMetricDefinitions, STANDING_ID_BY_CHAT_ID, tourForGender } from '../benchmark-reads';
+import { applyLevelBenchmarks, benchmarkSource, getBenchmarks, getMetricDefinitions, levelFromDivision, STANDING_ID_BY_CHAT_ID, tourForGender } from '../benchmark-reads';
 import { auditNumericClaims, collectEnvelopeNumbers, readFigure, type ToolEnvelope } from '../provenance';
 import { person, pgrst, type Tables } from './pgrst-double';
 
@@ -29,8 +29,9 @@ const std = (tour: string, metric: string, v: Partial<Record<string, number | nu
   ...v,
 });
 
-const tables = (gender = 'mens'): Tables => ({
+const tables = (gender = 'mens', division: string | null = 'D3'): Tables => ({
   golf_teams: { rows: [{ id: 'team-1', gender }] },
+  golf_team_seasons: { rows: division ? [{ team_id: 'team-1', season: '2026-27', division }, { team_id: 'team-1', season: '2024-25', division: 'd1' }] : [] },
   golf_pga_standards: {
     rows: [
       std('pga', 'gir_pct', { pga_tour_value: 66, div1_avg_value: 60, div3_avg_value: 50, hs_avg_value: 40, pga_p25: 62, pga_p50: 66, pga_p75: 72 }),
@@ -68,14 +69,42 @@ describe('tourForGender', () => {
   });
 });
 
+describe('levelFromDivision', () => {
+  it('reads the divisions teams write, and nothing that has no published average', () => {
+    expect(['d1', 'D1', 'Division I', 'div 1', '1'].map(levelFromDivision)).toEqual(['d1', 'd1', 'd1', 'd1', 'd1']);
+    expect(['d2', 'Division II'].map(levelFromDivision)).toEqual(['d2', 'd2']);
+    expect(['d3', 'Division III', 'DIII'].map(levelFromDivision)).toEqual(['d3', 'd3', 'd3']);
+    expect([null, '', 'NAIA', 'JUCO'].map(levelFromDivision)).toEqual([null, null, null, null]);
+  });
+});
+
 describe('get_benchmarks (coach)', () => {
+  it('compares with the team’s own level by default, and leaves the Tour out unless it is asked for', async () => {
+    const { sb } = pgrst(tables());
+    const e = await getBenchmarks(sb, ctx, benchmarkSource(sb, 'team-1'), { metric_ids: ['gir_pct'] }, { role: 'coach' });
+    const d = e.detail as { team_level: string; benchmarks: Array<{ levels: Record<string, { value: number; label: string }>; tour_percentiles?: unknown }> };
+    expect(d.team_level).toBe('Division III average');
+    expect(d.benchmarks[0]!.levels).toEqual({ d3: { label: 'Division III average', value: 50 } });
+    expect(d.benchmarks[0]!.tour_percentiles).toBeUndefined();
+    expect(e.summary).toBe('Division III average for 1 metric.');
+    expect(JSON.stringify(e)).not.toMatch(/PGA Tour/);
+  });
+
+  it('shows the three college levels, saying so, when the team’s division is not on record', async () => {
+    const { sb } = pgrst(tables('mens', null));
+    const e = await getBenchmarks(sb, ctx, benchmarkSource(sb, 'team-1'), { metric_ids: ['gir_pct'] }, { role: 'coach' });
+    expect(Object.keys((e.detail as { benchmarks: Array<{ levels: object }> }).benchmarks[0]!.levels)).toEqual(['d1', 'd3']);
+    expect((e.detail as { team_level: unknown }).team_level).toBeNull();
+    expect(e.coverage_note).toMatch(/division is not on record/);
+  });
+
   it('returns the Tour, college and high-school values with percentiles and the source, for the metrics asked', async () => {
     const { sb } = pgrst(tables());
     const e = await getBenchmarks(sb, ctx, benchmarkSource(sb, 'team-1'), { metric_ids: ['gir_pct', 'sg_putting'], levels: ['pga', 'd1', 'd3', 'hs'] }, { role: 'coach' });
     expect(e.coverage).toBe('complete');
-    const d = e.detail as { tour: string; benchmarks: Array<{ metric_id: string; levels: Record<string, { value: number }>; tour_percentiles?: Record<string, number>; source: string }> };
-    expect(d.tour).toBe('PGA Tour');
+    const d = e.detail as { benchmarks: Array<{ metric_id: string; levels: Record<string, { value: number; label: string }>; tour_percentiles?: Record<string, number>; source: string }> };
     const gir = d.benchmarks.find((b) => b.metric_id === 'gir_pct')!;
+    expect(gir.levels.pga!.label).toBe('PGA Tour');
     expect(gir.levels).toMatchObject({ pga: { value: 66 }, d1: { value: 60 }, d3: { value: 50 }, hs: { value: 40 } });
     expect(gir.tour_percentiles).toEqual({ p25: 62, p50: 66, p75: 72 });
     expect(gir.source).toBe('pga gir_pct source');
@@ -86,8 +115,8 @@ describe('get_benchmarks (coach)', () => {
     const { sb, of } = pgrst(tables('womens'));
     const e = await getBenchmarks(sb, ctx, benchmarkSource(sb, 'team-1'), { metric_ids: ['gir_pct', 'sg_ott'], levels: ['pga', 'd1'] }, { role: 'coach' });
     expect(of('golf_pga_standards').some((c) => c.method === 'eq' && c.args[0] === 'tour' && c.args[1] === 'lpga')).toBe(true);
-    const d = e.detail as { tour: string; benchmarks: Array<{ metric_id: string; levels: Record<string, { value: number }> }> };
-    expect(d.tour).toBe('LPGA Tour');
+    const d = e.detail as { benchmarks: Array<{ metric_id: string; levels: Record<string, { value: number; label: string }> }> };
+    expect(d.benchmarks.find((b) => b.metric_id === 'gir_pct')!.levels.pga!.label).toBe('LPGA Tour');
     expect(d.benchmarks.find((b) => b.metric_id === 'gir_pct')!.levels.pga!.value).toBe(70);
     // sg_ott has no LPGA row in this table: it is absent, not the men's 0.
     expect(d.benchmarks.find((b) => b.metric_id === 'sg_ott')).toBeUndefined();
@@ -103,13 +132,19 @@ describe('get_benchmarks (coach)', () => {
 
   it('reads one roster player’s standing, and refuses anyone off the roster before any query', async () => {
     const { sb, of } = pgrst(tables());
-    const e = await getBenchmarks(sb, ctx, benchmarkSource(sb, 'team-1'), { metric_ids: ['gir_pct'], player_id: 'p1' }, { role: 'coach' });
+    const e = await getBenchmarks(sb, ctx, benchmarkSource(sb, 'team-1'), { metric_ids: ['gir_pct'], player_id: 'p1', levels: ['pga'] }, { role: 'coach' });
     const standing = (e.detail as { standing: { player_id: string; player: string; rows: Array<Record<string, unknown>> } }).standing;
     expect(standing.player_id).toBe('p1');
     expect(standing.player).toBe('Owen Carter');
     expect(standing.rows).toHaveLength(1);
-    expect(standing.rows[0]).toMatchObject({ metric_id: 'gir_pct', player_value: 58.12, tour_value: 66, vs_tour: -7.88, team_average: 57.2, team_size: 9, team_percentile: 55.5, level_average: 61.5 });
+    expect(standing.rows[0]).toMatchObject({ metric_id: 'gir_pct', player_value: 58.12, level_value: 50, vs_level: 8.12, level_label: 'Division III average', tour_value: 66, vs_tour: -7.88, team_average: 57.2, team_size: 9, team_percentile: 55.5, level_average: 61.5 });
     expect(JSON.stringify(e.detail)).not.toContain('71.9');
+    // Without the Tour asked for, the standing is against the level alone.
+    const byLevel = await getBenchmarks(sb, ctx, benchmarkSource(sb, 'team-1'), { metric_ids: ['gir_pct'], player_id: 'p1' }, { role: 'coach' });
+    const row0 = (byLevel.detail as { standing: { rows: Array<Record<string, unknown>> } }).standing.rows[0]!;
+    expect(row0).toMatchObject({ level_value: 50, vs_level: 8.12 });
+    expect(row0.tour_value).toBeUndefined();
+    expect(row0.vs_tour).toBeUndefined();
     expect(of('golf_player_standing').some((c) => c.method === 'eq' && c.args[0] === 'player_id' && c.args[1] === 'p1')).toBe(true);
 
     const other = pgrst(tables());
@@ -119,7 +154,7 @@ describe('get_benchmarks (coach)', () => {
 
   it('withholds a team average under five teammates, and a Tour comparison that is not like for like', async () => {
     const { sb } = pgrst(tables());
-    const e = await getBenchmarks(sb, ctx, benchmarkSource(sb, 'team-1'), { metric_ids: ['approach_proximity_50_125ft'], player_id: 'p1' }, { role: 'coach' });
+    const e = await getBenchmarks(sb, ctx, benchmarkSource(sb, 'team-1'), { metric_ids: ['approach_proximity_50_125ft'], player_id: 'p1', levels: ['pga'] }, { role: 'coach' });
     const row = (e.detail as { standing: { rows: Array<Record<string, unknown>> } }).standing.rows[0]!;
     expect(row.player_value).toBe(29);
     expect(row.team_average).toBeUndefined();
@@ -188,52 +223,70 @@ describe('benchmarks in the audit', () => {
     expect(audit('Owen putts to 50% inside ten feet.')).toEqual([50]);
   });
 
-  it('grounds the Tour value a measurement carries, and the gap to it', async () => {
+  it('grounds the level value a measurement carries, and the gap to it, only in a sentence that names the level', async () => {
     const { sb } = pgrst(tables());
     const src = benchmarkSource(sb, 'team-1');
     const m = readFigure({ metric_id: 'gir_pct', metric_label: 'GIR %', unit: 'percent', value: 58.3, entity: { kind: 'player', id: 'p1', label: 'Owen Carter' }, window_start: null, window_end: null, sample_size: 40, sample_unit: 'rounds', source: 'rounds', method: 'm' });
-    const filled = await applyTourBenchmarks({ summary: 'ok', measurements: [m], series: [], coverage: 'complete', coverage_note: null, as_of: '2026-11-07T00:00:00Z' }, src);
-    expect(filled.measurements[0]!.benchmark).toEqual({ source: 'PGA Tour 2024', version: '2024', value: 66, omitted_for_cohort: false });
-    const claims = auditNumericClaims('Owen hits 58.3% of greens, 66% on the Tour, 7.7 short of it.', filled.measurements, [], [], [], 'America/New_York', { players: [{ id: 'p1', name: 'Owen Carter' }] });
-    expect(claims).toEqual([]);
-    const bare = auditNumericClaims('Owen hits 58.3% of greens, 66% on the Tour.', [m], [], [], [], 'America/New_York', { players: [{ id: 'p1', name: 'Owen Carter' }] });
-    expect(bare.map((c) => c.value)).toEqual([66]);
+    const filled = await applyLevelBenchmarks({ summary: 'ok', measurements: [m], series: [], coverage: 'complete', coverage_note: null, as_of: '2026-11-07T00:00:00Z' }, src);
+    expect(filled.measurements[0]!.benchmark).toEqual({ source: 'Division III average 2024', version: '2024', value: 50, omitted_for_cohort: false });
+    const players = [{ id: 'p1', name: 'Owen Carter' }];
+    const audit = (text: string, ms = filled.measurements) => auditNumericClaims(text, ms, [], [], [], 'America/New_York', { players }).map((c) => c.value);
+    expect(audit('Owen hits 58.3% of greens, against 50% for the Division III average, 8.3 above it.')).toEqual([]);
+    // The level’s 50 is no one’s result: stated as if it were Owen’s or the team’s, with no source in the sentence, it is refused.
+    expect(audit('Owen hits 58.3% of greens, and the team hits 50%.')).toEqual([50]);
+    expect(audit('Owen hits 58.3% of greens, 50% for the Division III average.', [m])).toEqual([50]);
   });
-});
+})
 
-describe('applyTourBenchmarks', () => {
+describe('applyLevelBenchmarks', () => {
   const base = (over: Partial<ToolEnvelope>): ToolEnvelope => ({ summary: 'ok', measurements: [], series: [], coverage: 'complete', coverage_note: null, as_of: '2026-11-07T00:00:00Z', ...over });
   const fig = (metric_id: string, kind: 'player' | 'team' | 'round' = 'player') => readFigure({ metric_id, metric_label: metric_id, unit: 'strokes', value: 1, entity: { kind, id: 'x', label: 'X' }, window_start: null, window_end: null, sample_size: 5, sample_unit: 'rounds', source: 'rounds', method: 'm' });
 
-  it('fills the Tour value where one exists, through Ask’s own names, and nowhere else', async () => {
+  it('fills the team’s own level where the standards publish one, and nowhere else', async () => {
     const { sb } = pgrst(tables());
-    const out = await applyTourBenchmarks(base({ measurements: [fig('sg_putting'), fig('sg_tee'), fig('putts_per_round'), fig('sg_putting', 'round'), fig('sg_putting_mean', 'team')] }), benchmarkSource(sb, 'team-1'));
-    expect(out.measurements.map((m) => m.benchmark?.value ?? null)).toEqual([0, 0, null, null, 0]);
+    const out = await applyLevelBenchmarks(base({ measurements: [fig('gir_pct'), fig('sg_putting'), fig('sand_save_pct'), fig('putts_per_round'), fig('gir_pct', 'round'), fig('gir_pct_mean', 'team')] }), benchmarkSource(sb, 'team-1'));
+    // GIR has a Division III value; strokes gained has no college value (there is no college strokes gained), nor does the sand-save rate here.
+    expect(out.measurements.map((m) => m.benchmark?.value ?? null)).toEqual([50, null, null, null, null, 50]);
+    expect(out.measurements[0]!.benchmark!.source).toBe('Division III average 2024');
+  });
+
+  it('uses the newest season’s division, and the Division I value for a Division I team', async () => {
+    const { sb } = pgrst(tables('mens', 'd1'));
+    const out = await applyLevelBenchmarks(base({ measurements: [fig('gir_pct')] }), benchmarkSource(sb, 'team-1'));
+    expect(out.measurements[0]!.benchmark).toMatchObject({ value: 60, source: 'Division I average 2024' });
+  });
+
+  it('never falls back to the Tour: with no division on record, or one with no average, nothing is drawn', async () => {
+    for (const division of [null, 'NAIA']) {
+      const { sb } = pgrst(tables('mens', division));
+      const out = await applyLevelBenchmarks(base({ measurements: [fig('gir_pct')] }), benchmarkSource(sb, 'team-1'));
+      expect(out.measurements[0]!.benchmark).toBeNull();
+    }
   });
 
   it('keeps a benchmark a read already carried and leaves an unavailable read alone', async () => {
     const { sb, of } = pgrst(tables());
     const own = { ...fig('sg_putting'), benchmark: { source: 'x', version: '1', value: 9, omitted_for_cohort: false } };
-    const kept = await applyTourBenchmarks(base({ measurements: [own] }), benchmarkSource(sb, 'team-1'));
+    const kept = await applyLevelBenchmarks(base({ measurements: [own] }), benchmarkSource(sb, 'team-1'));
     expect(kept.measurements[0]!.benchmark!.value).toBe(9);
     const down = base({ coverage: 'unavailable', measurements: [fig('sg_putting')] });
-    expect(await applyTourBenchmarks(down, benchmarkSource(sb, 'team-1'))).toBe(down);
-    expect(of('golf_teams')).toEqual([]);
+    expect(await applyLevelBenchmarks(down, benchmarkSource(sb, 'team-1'))).toBe(down);
+    expect(of('golf_team_seasons')).toEqual([]);
   });
 
   it('reads the tour and standards once for the whole turn', async () => {
     const { sb, of } = pgrst(tables());
     const src = benchmarkSource(sb, 'team-1');
-    await applyTourBenchmarks(base({ measurements: [fig('sg_putting')] }), src);
-    await applyTourBenchmarks(base({ measurements: [fig('gir_pct')] }), src);
+    await applyLevelBenchmarks(base({ measurements: [fig('gir_pct')] }), src);
+    await applyLevelBenchmarks(base({ measurements: [fig('gir_pct')] }), src);
     expect(of('golf_pga_standards').filter((c) => c.method === 'select')).toHaveLength(1);
-    expect(of('golf_teams').filter((c) => c.method === 'select')).toHaveLength(1);
+    expect(of('golf_team_seasons').filter((c) => c.method === 'select')).toHaveLength(1);
   });
 
   it('draws no benchmark when the team’s tour is unknown', async () => {
     const { sb } = pgrst({ ...tables(), golf_teams: { error: { message: 'down' } } });
-    const env = base({ measurements: [fig('sg_putting')] });
-    expect((await applyTourBenchmarks(env, benchmarkSource(sb, 'team-1'))).measurements[0]!.benchmark).toBeNull();
+    const env = base({ measurements: [fig('gir_pct')] });
+    expect((await applyLevelBenchmarks(env, benchmarkSource(sb, 'team-1'))).measurements[0]!.benchmark).toBeNull();
   });
 });
 
