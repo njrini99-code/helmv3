@@ -94,6 +94,26 @@ function namedPlayers(text: string, roster: readonly AuditPlayer[]): number {
   return n;
 }
 
+const NUMBER_LIST = /^\s*[,:(–—-]?\s*((?:\d+(?:\.\d+)?%?)(?:\s*,\s*(?:and\s+)?\d+(?:\.\d+)?%?|\s+and\s+\d+(?:\.\d+)?%?)+)/;
+const NAME_LIST = /^\s*[,:(–—-]?\s*((?:\p{Lu}[\p{L}'’-]+(?:\s\p{Lu}[\p{L}'’-]+)?)(?:\s*,\s*(?:and\s+)?\p{Lu}[\p{L}'’-]+(?:\s\p{Lu}[\p{L}'’-]+)?|\s+and\s+\p{Lu}[\p{L}'’-]+(?:\s\p{Lu}[\p{L}'’-]+)?)+)/u;
+
+/**
+ * Whether the text lists exactly `n` of what it counts: the numbers or names written straight after the counted noun, or (players) a recent line that names
+ * exactly `n` roster players. A count the answer writes out in full is its own evidence; the audit has checked the items.
+ */
+function enumerates(text: string, afterNoun: number, n: number, players: boolean, roster: readonly AuditPlayer[]): boolean {
+  const tail = text.slice(afterNoun, afterNoun + 160).split(/[.!?](?=\s|$)|\n/)[0] ?? '';
+  const items = (list: string) => list.split(/\s*,\s*(?:and\s+)?|\s+and\s+/).filter(Boolean).length;
+  const numbers = NUMBER_LIST.exec(tail);
+  if (numbers && items(numbers[1] as string) === n) return true;
+  const names = NAME_LIST.exec(tail);
+  if (names && items(names[1] as string) === n) return true;
+  if (!players || roster.length === 0) return false;
+  const lines = text.slice(0, afterNoun).split('\n').map((l) => l.trim()).filter(Boolean);
+  const same = lines.pop() ?? '';
+  return [same, ...lines.slice(-4)].some((line) => roster.filter((p) => p.name.split(/\s+/).some((x) => x.length > 2 && new RegExp(`(^|[^\\p{L}])${x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\p{L}])`, 'u').test(line))).length === n);
+}
+
 function isComplement(text: string, at: number, length: number, n: number, stated: ReadonlySet<number>, cited: readonly number[], rosterSize: number): boolean {
   let from = 0;
   const bounds = [...text.slice(0, at).matchAll(/[.!?](?=\s|$)/g)].map((b) => (b.index ?? 0) + 1);
@@ -140,6 +160,8 @@ export function auditCountClaims(text: string, stated: ReadonlySet<number>, cite
       // "Six other players have rounds": the roster less the players the answer has named so far (live Q4: eight, less Cole and Audit Testplayer).
       if (/^(?:other|remaining)\s*$/i.test(m[3] ?? '') && rosterSize - n >= 1 && rosterSize - n === namedPlayers(text.slice(0, at), roster)) continue;
     }
+    // A count that the sentence itself enumerates ("the three worst rounds, 82, 79 and 80", "the six players" after a line naming six) states itself.
+    if (enumerates(text, at + (m[0].length - (m[1]?.length ?? 0)), n, /^players?$/i.test(m[4] ?? ''), roster)) continue;
     const isCited = cited.some((c) => Math.abs(Math.abs(c) - n) < 1e-9);
     // "The other 5 rounds" is what is left of a group once the ones just named are taken out, so it is the group's size less theirs; a 5 that is only the size of the window does not stand for it (staging 21a4a215: two of five named, "the other 5").
     const complement = /\b(?:other|remaining|rest)\s+$/i.test(text.slice(Math.max(0, at - 14), at));

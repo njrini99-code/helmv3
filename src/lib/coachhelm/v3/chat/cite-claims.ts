@@ -22,6 +22,8 @@ export function claimsFromCites(cites: readonly Cite[], evidence: ReadonlyMap<st
     const hits = env.measurements.filter(
       (m) =>
         m.value !== null &&
+        // A count (goals per player, rows of a state) is a tally the count rules audit, not a rate over a sample that a floor could call thin (live Q1: "Cole Bennett (2) and Owen Carter (3)").
+        m.unit !== 'count' &&
         m.window_start !== null &&
         m.window_end !== null &&
         norm(m.metric_id) === key &&

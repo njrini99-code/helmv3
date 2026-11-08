@@ -84,3 +84,14 @@ describe('a model that still writes the old block', () => {
     expect(v.strippedText).toBe('Owen is behind.');
   });
 });
+
+describe('a count is not a claim the thin-sample floor judges', () => {
+  it('goals per player (2 and 3 goals) make no claim, a rate over 2 rounds still does', () => {
+    const meas = (id: string, unit: string, value: number, n: number) => ({ metric_id: id, metric_label: id, unit, value, entity: { kind: 'player', id: 'p-cole', label: 'Cole Bennett' }, window_start: '2026-06-01', window_end: '2026-07-31', sample_size: n, sample_unit: 'rounds', as_of: '2026-11-08T00:00:00.000Z', coverage: 'complete', coverage_note: null, source: 'x', method: 'x', denominator: null, benchmark: null, direction: null });
+    const env = { summary: 'x', measurements: [meas('summary:by_player:cole_bennett', 'count', 2, 2), meas('season_scoring_to_par', 'strokes', 1.5, 2)], series: [], coverage: 'complete', coverage_note: null, as_of: '2026-11-08T00:00:00.000Z' } as never;
+    const evidence = new Map<string, never>([['e1', env]]);
+    const cite = (v: string, key: string) => ({ v, ref: 'e1', key, subject: 'p-cole' });
+    expect(claimsFromCites([cite('2', 'summary:by_player:cole_bennett')], evidence)).toEqual([]);
+    expect(claimsFromCites([cite('1.5', 'season_scoring_to_par')], evidence).map((c) => c.metric_id)).toEqual(['season_scoring_to_par']);
+  });
+});

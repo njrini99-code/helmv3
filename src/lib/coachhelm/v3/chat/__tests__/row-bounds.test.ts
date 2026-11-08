@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { auditRowBounds, roundSets } from '../row-bounds';
 import { auditCountClaims, statedCounts } from '../count-claims';
-import { collectEnvelopeDates, collectEnvelopeNumbers, type ToolEnvelope } from '../provenance';
+import { auditNumericClaims, collectEnvelopeDates, collectEnvelopeNumbers, type ToolEnvelope } from '../provenance';
 import { computeTurnVerdict } from '../verdict';
 
 // Staging 21a4a215, "Cole's last 5 rounds with putts and three-putts": the answer said "The other 5 rounds had 30 putts or fewer, with 0 to 2
@@ -116,5 +116,37 @@ describe('"N other players" is the roster less the players named so far', () => 
   });
   it('with nobody named before it, it is still a count a read has to state', () => {
     expect(auditCountClaims('Six other players have rounds.', new Set([8]), [], 8, roster8).map((u) => u.text)).toEqual(['Six']);
+  });
+});
+
+// Live Q3 (first pass): "Only 9 of the 26 rounds in the window have three-putt counts recorded. The other 17 either have no putting data or are unfinished." 26 less 9.
+describe('"the other 17" over a group the reads state', () => {
+  const run = (text: string) => auditNumericClaims(text, [], [], [{ value: 26, player_id: null, metric_key: 'row_count' }, { value: 9, player_id: null, metric_key: 'row_count' }], [], 'America/New_York', { players: [] }).map((c) => c.text);
+  it('26 less the 9 just written is 17', () => {
+    expect(run('Only 9 of the 26 rounds in the window have three-putt counts recorded. The other 17 either have no putting data or are unfinished.')).toEqual([]);
+  });
+  it('another number is not, and a bare 17 is not', () => {
+    expect(run('Only 9 of the 26 rounds in the window have three-putt counts recorded. The other 16 have none.')).toEqual(['16']);
+    expect(run('Only 9 of the 26 rounds in the window have three-putt counts recorded. 17 have none.')).toEqual(['17']);
+  });
+});
+
+// Live Q9 and Q11 (first pass): "The six players whose last round was September 26" after a bullet naming six players, and "The three worst rounds, 82, 79 and 80".
+describe('a count the answer enumerates in full', () => {
+  const roster8 = ['Cole Bennett', 'Owen Carter', 'Ethan Park', 'Mason Rivers', 'Dylan Brooks', 'Tyler Hayes', 'Jackson Hale', 'Audit Testplayer'].map((name, i) => ({ id: `p${i}`, name }));
+  const q9 = (n: string) => `- **Cole Bennett:** last round October 21.\n- **Dylan Brooks, Mason Rivers, Jackson Hale, Ethan Park, Tyler Hayes and Owen Carter:** each last logged a round on September 26.\n- **Audit Testplayer:** has 0 recorded rounds.\n\nThe ${n} players whose last round was September 26 have the longest gap.`;
+  it('six players after a bullet that names six pass; seven do not', () => {
+    expect(auditCountClaims(q9('six'), new Set([8]), [], 8, roster8)).toEqual([]);
+    expect(auditCountClaims(q9('seven'), new Set([8]), [], 8, roster8).map((u) => u.text)).toEqual(['seven']);
+  });
+  it('three worst rounds followed by three numbers pass; four do not', () => {
+    expect(auditCountClaims('The three worst rounds, 82, 79 and 80, came in July.', new Set(), [])).toEqual([]);
+    expect(auditCountClaims('The four worst rounds, 82, 79 and 80, came in July.', new Set(), []).map((u) => u.text)).toEqual(['four']);
+  });
+  it('a list of names after the noun counts too', () => {
+    expect(auditCountClaims('The three best players, Ethan Park, Owen Carter and Mason Rivers, lead.', new Set(), [], 8, roster8)).toEqual([]);
+  });
+  it('no list, no evidence', () => {
+    expect(auditCountClaims('The six players whose last round was September 26 have the longest gap.', new Set([8]), [], 8, roster8).map((u) => u.text)).toEqual(['six']);
   });
 });

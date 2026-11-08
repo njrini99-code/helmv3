@@ -950,6 +950,25 @@ interface AnchorScope {
 interface Anchor extends AnchorScope {
   value: number;
 }
+/** "the other 17", "the remaining 4": the number straight after is what is left of a group. */
+const OTHER_BEFORE = /\b(?:other|remaining|rest of the)\s+$/i;
+
+/** Whether `value` plus a whole number written in this sentence or the one before it is a whole number some read states (the group the subset was taken from). */
+function complementOfStated(text: string, start: number, end: number, value: number, anchors: ReadonlyArray<{ value: number }>): boolean {
+  const stops = [...text.slice(0, start).matchAll(/[.!?](?=\s|$)/g)].map((b) => (b.index ?? 0) + 1);
+  const from = stops.length >= 2 ? (stops[stops.length - 2] as number) : 0;
+  const next = /[.!?](?=\s|$)/.exec(text.slice(end));
+  const near = text.slice(from, next ? end + (next.index ?? 0) + 1 : text.length);
+  const here = start - from;
+  for (const m of near.matchAll(/(?:^|[^\d.])(\d{1,3})(?![\d.]\d|%)/g)) {
+    const at = (m.index ?? 0) + m[0].length - (m[1] as string).length;
+    if (at >= here && at < here + (end - start)) continue;
+    const s = Number(m[1]);
+    if (s >= 1 && anchors.some((a) => Math.abs(a.value - (value + s)) < 1e-9)) return true;
+  }
+  return false;
+}
+
 /** "If you use ", "should you go with ": the figure after it is one already on the table. */
 const USE_CLAUSE = /\b(?:if|when|should)\s+(?:you|we|I)\s+(?:use|used|take|took|go with|went with|count|counted|prefer|choose)\s+(?:the\s+|that\s+)?$/i;
 
@@ -1620,6 +1639,11 @@ export function auditNumericClaimsDetailed(
     const subsetCount = smallInteger && value >= 2 && SUBSET_COUNT_AFTER.test(scrubbed.slice(match.end, match.end + 40));
     if (smallInteger && !subsetCount) continue;
     if (seen.has(raw)) continue;
+    // "Only 9 of the 26 rounds have a count. The other 17 have none": what is left of a group some read states, once the subset just written is taken out.
+    if (Number.isInteger(value) && OTHER_BEFORE.test(scrubbed.slice(Math.max(0, match.start - 14), match.start)) && complementOfStated(scrubbed, match.start, match.end, value, anchors)) {
+      heuristicPassed += 1;
+      continue;
+    }
     // "If you use -2.33, Owen's gap is larger": a figure picked up again as the alternative being weighed is the same claim the earlier sentence made
     // (and the audit made of it there), not a new one about the player named after it.
     if (USE_CLAUSE.test(scrubbed.slice(Math.max(0, match.start - 40), match.start)) && scrubbed.slice(0, match.start).includes(raw)) continue;
