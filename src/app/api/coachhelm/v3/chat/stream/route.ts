@@ -63,7 +63,8 @@ import { buildCoachTools, isConfirmRequired } from '@/lib/coachhelm/v3/chat/agen
 import { buildInstructions } from '@/lib/coachhelm/v3/chat/instructions';
 import {
   coachRequestDates,
-  collectDates,
+  coachRequestedSpans,
+  collectEnvelopeDates,
   collectEnvelopeNumbers,
   // Imported as a value, not `type`-only: `priorTurnEvidence` runs it as a
   // zod schema (`ToolEnvelope.safeParse`) to validate a stored `ui_parts`
@@ -324,7 +325,7 @@ function priorTurnEvidence(messages: readonly ChatMessage[], timezone: string): 
       target.measurements.push(...envelope.measurements);
       target.series.push(...envelope.series);
       target.detailNumbers.push(...collectEnvelopeNumbers(envelope));
-      if (envelope.detail !== undefined) target.detailDates.push(...collectDates(envelope.detail, timezone));
+      target.detailDates.push(...collectEnvelopeDates(envelope, timezone));
       for (const id of playerIdsHere) deferred.playerIds.add(id);
     }
   }
@@ -497,10 +498,12 @@ export async function POST(req: NextRequest) {
     measurements.push(...envelope.measurements);
     seriesAll.push(...envelope.series);
     detailNumbers.push(...collectEnvelopeNumbers(envelope));
-    if (envelope.detail !== undefined) detailDates.push(...collectDates(envelope.detail, ctx.timezone));
+    detailDates.push(...collectEnvelopeDates(envelope, ctx.timezone));
   };
   // A date the coach's own words name ("next Tuesday") is theirs to have restated, with or without a tool run.
   detailDates.push(...coachRequestDates(userText, todayIsoInZone(ctx.timezone)));
+  // So is a span of time they asked about ("the last 30 days"): the answer saying it was not 30 days of data repeats the question.
+  const requestedSpans = coachRequestedSpans(userText);
 
   // Seed the audit with evidence THIS conversation already produced (see
   // priorTurnEvidence's doc comment) — a fresh conversation has none to load.
@@ -524,7 +527,10 @@ export async function POST(req: NextRequest) {
     );
     // The draft usually lands a turn after the date was said ("next Tuesday", then "5pm"), so earlier asks count, each from its own day.
     for (const m of priorMessages) {
-      if (m.role === 'user') detailDates.push(...coachRequestDates(m.content, todayIsoInZone(ctx.timezone, new Date(m.created_at))));
+      if (m.role === 'user') {
+        detailDates.push(...coachRequestDates(m.content, todayIsoInZone(ctx.timezone, new Date(m.created_at))));
+        requestedSpans.push(...coachRequestedSpans(m.content));
+      }
     }
     const prior = priorTurnEvidence(priorMessages, ctx.timezone);
     measurements.push(...prior.shared.measurements);
@@ -969,6 +975,7 @@ export async function POST(req: NextRequest) {
         // Audit row 47b: the roster lets the numeric audit recognise a
         // player named in the answer and bind the number to them.
         players: ctx.roster,
+        requestedSpans,
         claims,
       });
       // A rejected verdict's note replaces the streamed text — not a note

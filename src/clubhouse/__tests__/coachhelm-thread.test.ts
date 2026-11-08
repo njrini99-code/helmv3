@@ -133,6 +133,22 @@ describe('buildTurns: a thread as it is drawn', () => {
     expect(t.envelopes).toEqual([]);
     expect(t.answerText).toBe(t.note);
   });
+  it('a rejected turn keeps its steps (they fold above the note) and still hides what it claimed', () => {
+    // Staging, 2026-11-07: "What's on this week?" lost its whole list of steps along with the answer.
+    const m = msg('a', 'assistant', [
+      { type: 'data-progress', id: 'progress-1', data: { tool: 'get_team_travel', label: 'Checking team travel', done: 'Checked team travel', state: 'done' } },
+      { type: 'data-progress', id: 'progress-2', data: { tool: 'get_open_tasks', label: 'Reading your tasks', state: 'done' } },
+      { type: 'data-evidence', id: 'evidence-1', data: { ref: 'e1', tool: 'get_team_travel', envelope: { summary: 'No trips.', measurements: [], series: [], coverage: 'empty', coverage_note: null, as_of: '2026-11-08T02:15:22.123Z' } } },
+      { type: 'text', text: 'Nothing is on the calendar.' },
+      { type: 'data-grounding-flag', id: 'turn-verdict', data: { note: REJECTED_TURN_NOTE, reason: 'ungrounded_claims', unmatched_tokens: ['November 15'] } },
+    ]);
+    const t = asst(buildTurns([m], { busy: false }));
+    expect(t.steps.map((s) => s.label)).toEqual(['Checking team travel', 'Reading your tasks']);
+    expect(t.note).toBe(REJECTED_TURN_NOTE);
+    expect(t.envelopes).toEqual([]);
+    expect(t.blocks).toEqual([]);
+    expect(t.answerText).toBe(t.note);
+  });
   it('a verdict part with no note still says it, with the production sentence', () => {
     const m = msg('a', 'assistant', [{ type: 'text', text: 'made up' }, { type: 'data-turn-incomplete', id: 'x', data: {} }]);
     expect(asst(buildTurns([m], { busy: false })).note).toBe(REJECTED_TURN_NOTE);

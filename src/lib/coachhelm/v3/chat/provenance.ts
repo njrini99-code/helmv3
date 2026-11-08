@@ -471,7 +471,7 @@ const MONTH_NAME_ALT = Object.keys(MONTH_NAMES)
  * ("September 25 and 26 putts" is a count); see {@link auditDateExpressions}.
  */
 const DATE_EXPRESSION_RE = new RegExp(
-  `\\b(?:(${MONTH_NAME_ALT})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s*(\\d{4}))?(?:\\s*[-–—]\\s*(\\d{1,2})(?:st|nd|rd|th)?\\b)?(\\s+(?:and|or|&)\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b(?![.,]\\d|\\s*%|-\\d|\\s+(?:STAT_NOUNS)\\b))?|(\\d{1,2})\\/(\\d{1,2})\\/(\\d{2}|\\d{4}))\\b`.replace(
+  `\\b(?:(${MONTH_NAME_ALT})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s*(\\d{4}))?(?:\\s*[-–—]\\s*(\\d{1,2})(?:st|nd|rd|th)?\\b(?!\\s+(?:days?|weeks?|months?|years?|hours?|hrs?|minutes?|mins?|nights?)\\b))?(\\s+(?:and|or|&)\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b(?![.,]\\d|\\s*%|-\\d|\\s+(?:STAT_NOUNS)\\b))?|(\\d{1,2})\\/(\\d{1,2})\\/(\\d{2}|\\d{4}))\\b`.replace(
     'STAT_NOUNS',
     'putts?|strokes?|shots?|rounds?|holes?|attempts?|birdies|birdie|pars?|bogeys?|eagles?|greens?|fairways?|yards?|yds?|feet|foot|ft|meters?|metres?|percent|pct|points?|players?|events?|tournaments?|times|total|more|fewer|over|under',
   ),
@@ -670,6 +670,17 @@ const NEAR_DAY_WORDS_RE = /\b(today|tomorrow)\b/gi;
 function addDays(iso: string, days: number): string {
   const [y, m, d] = iso.split('-').map(Number) as [number, number, number];
   return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
+/** A span of time the coach wrote with its unit: "over the last 30 days", "past 6 weeks", "3-month". */
+const REQUESTED_SPAN_RE = /\b(\d{1,3})[\s-]*(?:calendar\s+)?(?:days?|weeks?|months?|years?)\b/gi;
+/** What follows a number in the answer when it is naming a span of time. */
+const TIME_UNIT_AFTER = /^[\s-]*(?:calendar\s+)?(?:days?|weeks?|months?|years?)\b/i;
+
+/** The spans of time a coach's message names, for {@link auditNumericClaims}' `requestedSpans`. */
+export function coachRequestedSpans(text: string | null | undefined): number[] {
+  if (!text) return [];
+  return [...new Set([...text.matchAll(REQUESTED_SPAN_RE)].map((m) => Number(m[1])))];
 }
 
 /**
@@ -1021,6 +1032,18 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
     return null;
   };
 
+  /** The names of the clause before a parenthesis, when that parenthesis opens straight after a name ("Wise's (28 and 27 rounds)"). */
+  const namesBeforeParenthesis = (clause: Span): Array<Occurrence & { ids: ReadonlySet<string> }> => {
+    if (clause[0] < 1 || text[clause[0] - 1] !== '(') return [];
+    const at = spanIndexAt(playerClauses, clause[0]) - 1;
+    const previous = at >= 0 ? (playerClauses[at] as Span) : null;
+    if (!previous) return [];
+    const here = names.filter((n) => within(previous, n));
+    const last = here[here.length - 1];
+    // Straight after a name, with at most "'s" and a space between it and the bracket.
+    return last && clause[0] - 1 - last.end <= 4 ? here : [];
+  };
+
   const bindingFor = (index: number): Binding => {
     const t = tokens[index] as Occurrence;
     const sentenceIndex = spanIndexAt(sentences, t.start);
@@ -1028,6 +1051,7 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
     const clause = playerClauses[spanIndexAt(playerClauses, t.start)] as Span;
 
     let players: Set<string> | null;
+    let listed: Array<Occurrence & { ids: ReadonlySet<string> }>;
     // "-3.83 (Bo Ray)": a name in brackets straight after a number is whose number it is, whatever name came before it.
     const bracket = /^\s*%?\s*\(\s*/.exec(text.slice(t.end, t.end + 8));
     const bracketed = bracket ? names.find((n) => n.start === t.end + bracket[0].length) : undefined;
@@ -1036,6 +1060,10 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
       players = new Set(bracketed.ids);
     } else if (inClause.length > 0) {
       players = union(inClause);
+    } else if ((listed = namesBeforeParenthesis(clause)).length > 0) {
+      // "…smaller than Braeden Gillen's or Luke Wise's (28 and 27 rounds)": the figures in the brackets belong to the
+      // names just ahead of them, all of them, not only the last.
+      players = union(listed);
     } else {
       const inSentence = names.filter((n) => within(sentence, n));
       const before = inSentence.filter((n) => n.end <= t.start);
@@ -1119,7 +1147,15 @@ export function auditNumericClaims(
    * evidence this turn ("Bob averages 74" when only Alice was read must fail).
    * Omitted, only the evidence's own player entity labels are recognised.
    */
-  options?: { players?: readonly AuditPlayer[] },
+  options?: {
+    players?: readonly AuditPlayer[];
+    /**
+     * Spans of time the coach's own words named ({@link coachRequestedSpans}: "over the last 30 days" gives 30). The answer
+     * restating one — "not the full last 30 calendar days" — is repeating the question, not reporting a figure, so the
+     * number is let through when a unit of time follows it ("30 days"), and only then.
+     */
+    requestedSpans?: readonly number[];
+  },
 ): UnsupportedClaim[] {
   if (!text) return [];
 
@@ -1133,6 +1169,8 @@ export function auditNumericClaims(
   const anchors: Anchor[] = [];
   /** Anchors grouped by metric, so a delta only spans figures of one kind. */
   const byMetric = new Map<string, Set<number>>();
+  /** The same values with repeats kept: a mean counts two players on one figure twice. */
+  const allByMetric = new Map<string, number[]>();
 
   const add = (n: number | null | undefined, scope: AnchorScope, metricId?: string) => {
     if (typeof n !== 'number' || !Number.isFinite(n)) return;
@@ -1153,6 +1191,9 @@ export function auditNumericClaims(
       // iteration order is insertion order) keeps the group at the cap while
       // preferring the most recently seen values — the ones most likely to
       // still be relevant to the current question.
+      const all = allByMetric.get(key) ?? [];
+      if (all.length < PAIRWISE_ANCHOR_CAP * 2) all.push(n);
+      allByMetric.set(key, all);
       if (!group.has(n) && group.size >= PAIRWISE_ANCHOR_CAP) {
         const oldest = group.values().next().value;
         if (oldest !== undefined) group.delete(oldest);
@@ -1190,6 +1231,11 @@ export function auditNumericClaims(
     const fam = familyOf(m.metric_id);
     if (m.entity?.kind === 'player') nameSources.push({ id: m.entity.id, name: m.entity.label });
     add(m.value, { ...who, ...fam }, m.metric_id);
+    // "88.9% (48/54 holes)": the count behind a rate is the rate times its denominator, the same figure the tool's own
+    // numerator would be, so the count is as sourced as the rate.
+    if (m.unit === 'percent' && typeof m.value === 'number' && typeof m.denominator === 'number' && m.denominator > 0) {
+      add(Math.round((m.value / 100) * m.denominator), { ...who, family: null, parent: null });
+    }
     // A sample size or denominator is a count of attempts/rounds, not a
     // reading of the metric — it binds to the player, never to a metric.
     add(m.sample_size, { ...who, family: null, parent: null });
@@ -1202,11 +1248,23 @@ export function auditNumericClaims(
     }
     addWindow(m.window_start, m.window_end);
   }
+  /** A detail field's values per player, so "averaging +3.01 a round" over the rounds a read listed can be checked. */
+  const detailGroups = new Map<string, { scope: AnchorScope; values: number[] }>();
   for (const n of extraSupported) {
     if (typeof n === 'number') add(n, UNSCOPED);
     else if (n && typeof n.value === 'number') {
-      add(n.value, { player: n.player_id ?? null, team: n.team === true, ...familyOf(n.metric_key) });
+      const scope = { player: n.player_id ?? null, team: n.team === true, ...familyOf(n.metric_key) };
+      add(n.value, scope);
+      if (n.metric_key) {
+        const id = `${scope.player ?? ''}|${scope.team}|${n.metric_key}`;
+        const group = detailGroups.get(id) ?? { scope, values: [] };
+        if (group.values.length < PAIRWISE_ANCHOR_CAP * 2) group.values.push(n.value);
+        detailGroups.set(id, group);
+      }
     }
+  }
+  for (const { scope, values } of detailGroups.values()) {
+    if (values.length >= 2) add(values.reduce((a, b) => a + b, 0) / values.length, scope);
   }
   for (const s of series) {
     addWindow(s.window_start, s.window_end);
@@ -1256,6 +1314,12 @@ export function auditNumericClaims(
     // rather than trusting that invariant silently.
     if (group.size < 2 || group.size > PAIRWISE_ANCHOR_CAP) continue;
     const fam = familyOf(key);
+    // "The team average is about -2.35": the mean of the players a ranking listed is arithmetic on published values,
+    // like the differences below, and a coach asking about "the team" is asking for it. Staging turns were withheld for
+    // a mean of seven ranked players that no tool returns.
+    for (const list of [[...group], allByMetric.get(key) ?? []]) {
+      if (list.length >= 2) add(list.reduce((a, b) => a + b, 0) / list.length, { player: null, team: false, ...fam });
+    }
     const values = [...group];
     for (const [i, left] of values.entries()) {
       for (const right of values.slice(i + 1)) add(left - right, { player: null, team: false, ...fam });
@@ -1273,6 +1337,7 @@ export function auditNumericClaims(
   const found: UnsupportedClaim[] = [...dateClaims];
   const seen = new Set<string>();
   const bind = buildBinder(scrubbed, nameSources);
+  const spans = new Set(options?.requestedSpans ?? []);
 
   for (const [index, match] of bind.tokens.entries()) {
     const raw = match.raw;
@@ -1281,6 +1346,7 @@ export function auditNumericClaims(
     // Ordinals, counts of rounds/weeks/players — not statistical assertions.
     if (Number.isInteger(value) && Math.abs(value) <= 12) continue;
     if (seen.has(raw)) continue;
+    if (spans.has(value) && TIME_UNIT_AFTER.test(scrubbed.slice(match.end, match.end + 24))) continue;
 
     const at = match.start;
     const hedged = HEDGE_BEFORE.test(scrubbed.slice(Math.max(0, at - 24), at));
@@ -1374,6 +1440,18 @@ export function collectScopedNumbers(
 /** A figure a read computed itself, in the envelope's own shape: who it measured, the window, and the sample behind it. */
 export function readFigure(f: Pick<Measurement, 'metric_id' | 'metric_label' | 'unit' | 'value' | 'entity' | 'window_start' | 'window_end' | 'sample_size' | 'sample_unit' | 'source' | 'method'> & Partial<Pick<Measurement, 'denominator' | 'direction'>>): Measurement {
   return { denominator: null, direction: null, ...f, as_of: nowIso(), coverage: 'complete', coverage_note: null, benchmark: null };
+}
+
+/**
+ * Every date an envelope supports: the ISO dates in its `detail` and the day it was read ("as of July 23"), which the
+ * answer may name. Staging, 2026-11-08: an answer saying coverage was "complete as of July 23, 2026" was withheld
+ * because only `detail` was read for dates.
+ */
+export function collectEnvelopeDates(envelope: Pick<ToolEnvelope, 'detail' | 'as_of' | 'measurements' | 'series'>, timezone?: string): string[] {
+  return [
+    ...(envelope.detail === undefined ? [] : collectDates(envelope.detail, timezone)),
+    ...[envelope.as_of, ...(envelope.measurements ?? []).map((m) => m.as_of), ...(envelope.series ?? []).map((s) => s.as_of)].flatMap((at) => (typeof at === 'string' ? isoDaysOf(at, timezone) : [])),
+  ];
 }
 
 export function collectEnvelopeNumbers(envelope: Pick<ToolEnvelope, 'summary' | 'detail'>): ScopedNumber[] {

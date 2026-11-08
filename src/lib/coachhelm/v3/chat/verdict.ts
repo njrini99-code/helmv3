@@ -97,6 +97,8 @@ export function computeTurnVerdict(args: {
    *  the text and bind the number to them (audit row 47b). Optional; omitted,
    *  only the evidence's own entity labels are recognised. */
   players?: readonly AuditPlayer[];
+  /** Spans of time the coach's own words named — see {@link auditNumericClaims}' `requestedSpans`. */
+  requestedSpans?: readonly number[];
   /**
    * The typed claim gate's result for this turn, or `null` when it did not
    * engage (no single-player packet — see `chat/claims-packet.ts`) or the
@@ -116,7 +118,7 @@ export function computeTurnVerdict(args: {
     args.detailNumbers,
     args.detailDates,
     args.timezone,
-    { players: args.players },
+    { players: args.players, requestedSpans: args.requestedSpans },
   );
   if (unsupported.length > 0) {
     return { outcome: 'rejected', reason: 'ungrounded_claims', note: UNGROUNDED_NOTE, unsupported };

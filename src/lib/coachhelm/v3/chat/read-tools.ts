@@ -841,6 +841,8 @@ export async function getPlayerWeakestAreas(
         metric_label: g.measurement.metric_label,
         player_value: g.measurement.value,
         team_average: Math.round(g.teamMean * 100) / 100,
+        // The size of the gap the answer is about. Left to the model it subtracts the two rounded figures itself.
+        gap: Math.round(g.gap * 100) / 100,
         team_peers_compared: g.teamN,
         unit: g.measurement.unit,
         direction: g.measurement.direction,
@@ -1137,12 +1139,17 @@ export async function getUpcomingEvents(
   const read = await readUpcomingEventRows(sb, ctx, days);
   if (!read) return unavailableEnvelope('Could not read the calendar.', 'The events query failed.');
   const { rows, capped } = read;
+  // The window as calendar days in the team's zone. An answer says "through Sunday, November 15" for the last day of the
+  // window it asked for, and that date is computed here, not read from any row, so nothing else could support it
+  // (staging, 2026-11-07: "What's on this week?" with an empty calendar was withheld for exactly that date).
+  const from = todayIsoInZone(ctx.timezone);
+  const window = { from, to: new Date(Date.parse(`${from}T00:00:00Z`) + days * 86400_000).toISOString().slice(0, 10), days };
   if (rows.length === 0) {
     return {
       summary: `Nothing scheduled in the next ${days} days.`,
       measurements: [],
       series: [],
-      detail: { events: [] },
+      detail: { events: [], window },
       coverage: 'empty',
       coverage_note: null,
       as_of: nowIso(),
@@ -1178,6 +1185,7 @@ export async function getUpcomingEvents(
     series: [],
     detail: {
       timezone: ctx.timezone,
+      window,
       events: rows.map((e) => {
         const b = byEvent.get(e.id)!;
         const base = {

@@ -197,6 +197,9 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
     expect(envelope.summary).toContain('greens in regulation');
     expect(envelope.measurements.map((measurement) => measurement.metric_id)).toContain('gir_pct');
     expect((envelope.detail as { gaps: Array<{ team_peers_compared: number }> }).gaps[0]?.team_peers_compared).toBe(3);
+    // The gap itself is stated (65 team average minus his 40), so the answer never subtracts two rounded figures: staging
+    // withheld "a gap of roughly 0.36" for exactly that.
+    expect((envelope.detail as { gaps: Array<{ gap: number }> }).gaps[0]?.gap).toBe(25);
   });
 
   it('maps recent rounds into the bounded coach-facing detail shape', async () => {

@@ -487,10 +487,12 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
   };
 
   // The checks rejected this turn: one note, and the cards stay (a card is a fact about an action, not a claim the audit judges).
+  // The steps stay too: they say what was read, not what was claimed, and they fold to "N steps · Ns" above the note (design:
+  // staging, 2026-11-07, dropped the whole list when the note replaced the answer).
   const verdict = parts.find((p) => p.type === 'data-grounding-flag' || p.type === 'data-turn-incomplete');
   if (verdict) {
     const note = String(dataOf<{ note?: string }>(verdict)?.note ?? '').trim() || REJECTED_TURN_NOTE;
-    return { role: 'assistant', id: message.id, steps: [], envelopes: [], blocks: actionBlocks(), note, answerText: note, work: null, followUps: [], active };
+    return { role: 'assistant', id: message.id, steps, envelopes: [], blocks: actionBlocks(), note, answerText: note, work: null, followUps: [], active };
   }
 
   const blocks: AskBlock[] = [];
