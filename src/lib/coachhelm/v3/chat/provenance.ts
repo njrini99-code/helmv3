@@ -884,6 +884,11 @@ const METRIC_CUES: ReadonlyArray<readonly [RegExp, MetricFamily]> = [
   [/\b(?:shot|shoots|shooting|carded|posted|fired)\b(?=\s+(?:an?\s+)?[-+]?\d)/gi, 'scoring'],
 ];
 
+/** A sentence that refers to a person without naming them. */
+const PERSON_PRONOUN = /\b(?:he|his|him|himself|she|her|hers|herself)\b/i;
+/** How many named sentences back a pronoun may reach for its antecedent when the paragraph names several players. */
+const PRONOUN_LOOKBACK = 3;
+
 /** A sentence that talks about the group, so a team figure may sit next to a name. */
 const TEAM_CUE = /\b(?:team|squad|roster|program|everyone|teammates)\b/i;
 
@@ -1063,18 +1068,32 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
     return out;
   };
 
-  /** The players a sentence names, walking back through its paragraph for a pronoun sentence. */
-  const sentencePlayers = (sentenceIndex: number): Set<string> | null => {
+  /**
+   * The players a sentence names, walking back through its paragraph for a pronoun sentence. A sentence that says "he" or "she" when the
+   * paragraph has named several players has no single antecedent: "…and Owen is below it. Only Ethan Park is lower, at -4.40. Audit
+   * Testplayer has no approach strokes gained. The Tour baseline is 0, so he is behind it by -4.16" is about Owen, the subject of the
+   * list, and the nearest name is the one with no figure. For such a sentence (`ambiguous`) the names of up to the three nearest named
+   * sentences are all candidates; a figure that belongs to none of them is still misattributed.
+   */
+  const sentencePlayers = (sentenceIndex: number, ambiguous = false): Set<string> | null => {
     const paragraph = spanIndexAt(paragraphs, (sentences[sentenceIndex] as Span)[0]);
+    const found = new Set<string>();
+    let namedSentences = 0;
     for (let i = sentenceIndex; i >= 0; i -= 1) {
       const span = sentences[i] as Span;
       if (spanIndexAt(paragraphs, span[0]) !== paragraph) break;
       const here = names.filter((n) => within(span, n));
-      if (here.length > 0) return union(here);
+      if (here.length > 0) {
+        if (!ambiguous) return union(here);
+        for (const id of union(here)) found.add(id);
+        namedSentences += 1;
+        if (namedSentences >= PRONOUN_LOOKBACK) break;
+        continue;
+      }
       // A sentence about the group, with no name, ends the pronoun chain.
-      if (TEAM_CUE.test(text.slice(span[0], span[1]))) return null;
+      if (TEAM_CUE.test(text.slice(span[0], span[1]))) return found.size > 0 ? found : null;
     }
-    return null;
+    return found.size > 0 ? found : null;
   };
 
   /** The names of the clause before a parenthesis, when that parenthesis opens straight after a name ("Wise's (28 and 27 rounds)"). */
@@ -1114,7 +1133,7 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
       const before = inSentence.filter((n) => n.end <= t.start);
       const after = inSentence.filter((n) => n.start >= t.end);
       const nearest = before[before.length - 1] ?? after[0];
-      players = nearest ? new Set(nearest.ids) : sentenceIndex > 0 ? sentencePlayers(sentenceIndex - 1) : null;
+      players = nearest ? new Set(nearest.ids) : sentenceIndex > 0 ? sentencePlayers(sentenceIndex - 1, PERSON_PRONOUN.test(text.slice(sentence[0], sentence[1]))) : null;
       // The chain only carries within a paragraph and stops at a team sentence.
       if (!nearest && TEAM_CUE.test(text.slice(sentence[0], sentence[1]))) players = null;
       if (!nearest && players && sentenceIndex > 0) {

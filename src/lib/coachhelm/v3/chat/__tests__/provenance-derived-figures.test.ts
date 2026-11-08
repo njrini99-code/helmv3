@@ -231,3 +231,48 @@ describe('the counts a query_team_data read holds', () => {
     expect(audit('Owen Carter has 14 rounds on the list.', [two], { players: people })).toEqual(['14']);
   });
 });
+
+describe('"he" in a list that names several players', () => {
+  // Staging, 2026-11-08, conversation 1438b916: the Owen Carter approach comparison was withheld for `-4.16`, flagged as another
+  // player's. "…so he is behind it by the full -4.16" followed a line that named Ethan Park and one that named Audit Testplayer
+  // (who has no figure), so "he" was bound to the nearest name. It is Owen, the subject of the whole list.
+  const OWEN = 'p-owen';
+  const read = envelope({
+    measurements: [
+      m('sg_approach', -4.16, { entity: player(OWEN, 'Owen Carter'), sample_size: 8 }),
+      m('sg_approach', -4.4, { entity: player('p-ethan', 'Ethan Park'), sample_size: 9 }),
+      m('sg_approach', -2.33, { entity: team, sample_size: 7 }),
+    ],
+  });
+  const people = [{ id: OWEN, name: 'Owen Carter' }, { id: 'p-ethan', name: 'Ethan Park' }, { id: 'p-audit', name: 'Audit Testplayer' }];
+  const say = (tour: string) =>
+    audit(
+      [
+        'Owen’s approach play is well behind the team and the Tour. His strokes gained on approach is -4.16 per round over his last ten rounds.',
+        '',
+        '- **Level:** There is no Division I figure for strokes gained, so I can’t place him against his level.',
+        '- **Team:** The team average is -2.33 per round, and Owen is below it. Only Ethan Park is lower, at -4.40. Audit Testplayer has no approach strokes gained in this window.',
+        `- **Tour:** ${tour}`,
+      ].join('\n'),
+      [read],
+      { players: people },
+    );
+
+  it('accepts the answer: the pronoun reaches back over the list to its subject', () => {
+    expect(say('The Tour baseline is 0, so he is behind it by the full -4.16.')).toEqual([]);
+  });
+  it('still rejects a figure that belongs to none of the players the list names', () => {
+    expect(say('The Tour baseline is 0, so he is behind it by the full -9.99.')).toEqual(['-9.99']);
+  });
+  it('still rejects a figure that is another player’s when the sentence names its subject', () => {
+    expect(say('The Tour baseline is 0, so Audit Testplayer is behind it by the full -4.16.')).toEqual(['-4.16']);
+  });
+  it('does not reach past three named sentences', () => {
+    const far = audit(
+      ['Owen Carter has a lot to work on.', 'Ethan Park is lower than the team, at -4.40.', 'Audit Testplayer has none.', 'Ethan Park is the one to watch.', 'He is behind the Tour by -4.16.'].join('\n'),
+      [read],
+      { players: people },
+    );
+    expect(far).toEqual(['-4.16']);
+  });
+});
