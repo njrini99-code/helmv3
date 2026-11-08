@@ -357,3 +357,96 @@ describe('a benchmark row the server read over a window is not replaced by anoth
     expect(b.note).toBe('Your figure is over the last 10 rounds. The level’s place is over all recorded rounds.');
   });
 });
+
+describe('the answer leads with the worked-out result, and a recovered failure stays out of it', () => {
+  const rounds = (n: number) =>
+    env(`${n} rows of rounds.`, { kind: 'team_data', rows: Array.from({ length: n }, (_, i) => ({ player: i % 2 ? 'Owen Carter' : 'Cole Bennett', player_id: `p${i % 2}`, status: 'completed', round_date: `2026-10-${String(10 + i).padStart(2, '0')}`, round_type: 'tournament', course_name: 'Pines', total_score: 74 + i })), row_count: n, limit: 200 });
+  const failedSummary = env('That query was not run.', { refused: true, reason: 'There is no field "right_three_putts" in these rows. They have: id, round_date, player.' }, { coverage: 'unavailable', coverage_note: 'There is no field "right_three_putts" in these rows. They have: id, round_date, player.' });
+  const listed = env('3 figures worked out from 26 rows.', {
+    kind: 'summary',
+    rows_used: 26,
+    results: [{ id: 'summary:l', op: 'list', rows: 2, shown: 2 }],
+    rows: [{ player: 'Cole Bennett', round_date: '2026-10-21', course_name: 'Pines', total_score: 74, three_putts: 3 }, { player: 'Owen Carter', round_date: '2026-10-21', course_name: 'Pines', total_score: 78, three_putts: 3 }],
+    row_count: 2,
+    matching_rows: 2,
+  }, { measurements: [{ metric_id: 'summary:l', metric_label: 'Rows listed', unit: 'count', value: 2, entity: { kind: 'team', id: 'team-1', label: 'Varsity' }, window_start: null, window_end: null, sample_size: 2, sample_unit: 'rows', source: 'summary', method: 'summary_list', benchmark: null, direction: null, denominator: null }] as never });
+  const count = env('1 figure worked out from 26 rows.', { kind: 'summary', rows_used: 26, results: [{ id: 'summary:c', op: 'count', value: 7 }] }, { measurements: [{ metric_id: 'summary:c', metric_label: 'Rows', unit: 'count', value: 7, entity: { kind: 'team', id: 'team-1', label: 'Varsity' }, window_start: null, window_end: null, sample_size: 7, sample_unit: 'rows', source: 'summary', method: 'summary_count', benchmark: null, direction: null, denominator: null }] as never });
+
+  const ev = (id: string, tool: string, envelope: ToolEnvelope) => ({ type: 'data-evidence', id: `ev-${id}`, data: { tool, envelope, ref: id } });
+  const step = (id: string, tool: string, state: 'done' | 'failed') => ({ type: 'data-progress', id: `st-${id}`, data: { label: 'Working out the figures', tool, state, done: 'Worked out the figures', ...(state === 'failed' ? { detail: 'There is no field "right_three_putts"' } : {}) } });
+  const turn = (...parts: unknown[]) => {
+    const t = buildAssistantTurn({ id: 'a1', role: 'assistant', parts } as never, { isLast: false, busy: false });
+    if (t.role !== 'assistant') throw new Error('assistant turn expected');
+    return t;
+  };
+  const shown = (t: ReturnType<typeof turn>) => t.blocks.filter((b) => b.kind === 'evidence').flatMap((b) => (b.kind === 'evidence' ? evidenceBlocks(b.envelope) : []));
+  const text = (t: ReturnType<typeof turn>) => t.blocks.filter((b) => b.kind === 'evidence').map((b) => (b.kind === 'evidence' ? render(<AskEvidenceView envelope={b.envelope} />).container.textContent : '')).join(' ');
+
+  it('hides a failed call the model recovered from; the steps say so plainly, with no field names', () => {
+    const t = turn(step('1', 'summarise_data', 'failed'), ev('e1', 'summarise_data', failedSummary), step('2', 'summarise_data', 'done'), ev('e2', 'summarise_data', listed));
+    expect(JSON.stringify(shown(t))).not.toMatch(/right_three_putts|Could not read|not run/i);
+    expect(text(t)).not.toMatch(/right_three_putts|field/);
+    expect(t.steps.map((s) => s.done)).toEqual(['One calculation was retried', 'Worked out the figures']);
+    expect(JSON.stringify(t.steps)).not.toMatch(/right_three_putts/);
+    // Both are still reads in the disclosure.
+    expect(t.reads!.map((r) => r.ref)).toEqual(['e1', 'e2']);
+    expect(t.reads!.every((r) => r.name === 'Worked out the figures')).toBe(true);
+  });
+
+  it('still tells the coach when nothing recovered, in a plain sentence', () => {
+    const t = turn(step('1', 'summarise_data', 'failed'), ev('e1', 'summarise_data', failedSummary));
+    expect(text(t)).toMatch(/could not be completed/);
+    expect(text(t)).not.toMatch(/right_three_putts|field/);
+    expect(t.steps[0]!.state).toBe('failed');
+    // Another tool's failure is told as it was, if nothing came after it.
+    const other = turn(ev('e1', 'query_team_data', env('Could not read rounds.', undefined, { coverage: 'unavailable', coverage_note: 'That read failed.' })));
+    expect(shown(other)[0]).toMatchObject({ kind: 'unavailable' });
+  });
+
+  it('a list result is the answer’s table, and the raw record lists it was built from are reads, not tables above it', () => {
+    const t = turn(ev('e1', 'query_team_data', rounds(26)), ev('e2', 'query_team_data', rounds(25)), ev('e3', 'summarise_data', listed));
+    const blocks = shown(t);
+    expect(blocks).toHaveLength(1);
+    const table = blocks[0]!;
+    if (table.kind !== 'table') throw new Error('table expected');
+    expect(table.table.columns).toEqual(['Player', 'Date', '3-putts', 'Course', 'Score']);
+    expect(table.table.rows).toHaveLength(2);
+    // The "Rows listed: 2" figure is the table's own: no second card for it.
+    expect(blocks.some((b) => b.kind === 'tiles')).toBe(false);
+    expect(t.reads!).toHaveLength(3);
+    expect(t.reads!.map((r) => r.ref)).toEqual(['e1', 'e2', 'e3']);
+    expect(t.reads![2]!.name).toBe('Worked out the figures');
+  });
+
+  it('a figure result (a count, a rank, a difference) is one compact figure card', () => {
+    const t = turn(ev('e1', 'query_team_data', rounds(26)), ev('e2', 'summarise_data', count));
+    const blocks = shown(t);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toMatchObject({ kind: 'tiles' });
+  });
+
+  it('the raw lists stay when no result was worked out from them', () => {
+    expect(shown(turn(ev('e1', 'query_team_data', rounds(26))))).toHaveLength(1);
+    // A summary that came first does not hide a list read after it.
+    expect(shown(turn(ev('e1', 'summarise_data', count), ev('e2', 'query_team_data', rounds(3)))).map((b) => b.kind)).toEqual(['tiles', 'table']);
+  });
+
+  it('a raw rounds table picks the columns the question asked for first, then who, when and how, and never leads with status', () => {
+    const t = detailTable({ kind: 'team_data', rows: rounds(4).detail && (rounds(4).detail as { rows: object[] }).rows.map((r) => ({ ...r, total_putts: 31, three_putts: 2 })) }, '4 rows of rounds')!;
+    expect(t.columns[0]).toBe('Player');
+    expect(t.columns).toContain('Putts');
+    expect(t.columns).toContain('3-putts');
+    expect(t.columns).not.toContain('Status');
+    expect(t.columns).not.toContain('Round type');
+    // Only the generic labels: they are the last resort, after every real column.
+    const labelsOnly = detailTable({ rows: [{ player: 'Cole', status: 'completed', round_type: 'tournament', total_score: 74 }] }, 'x')!;
+    expect(labelsOnly.columns).toEqual(['Player', 'Score', 'Status', 'Round type']);
+  });
+
+  it('draws the same table after a reload (jsonb hands the keys back shortest first)', () => {
+    const jsonb = (v: unknown): unknown => (Array.isArray(v) ? v.map(jsonb) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v as object).sort(([a], [b]) => a.length - b.length || (a < b ? -1 : 1)).map(([k, x]) => [k, jsonb(x)])) : v);
+    const live = evidenceBlocks(listed)[0];
+    const back = evidenceBlocks({ ...listed, detail: jsonb(listed.detail) } as ToolEnvelope)[0];
+    expect(live && back && live.kind === 'table' && back.kind === 'table' && back.table).toEqual(live && live.kind === 'table' ? live.table : null);
+  });
+});

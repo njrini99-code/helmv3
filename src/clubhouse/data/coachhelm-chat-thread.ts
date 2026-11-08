@@ -404,6 +404,7 @@ const READ_NAME: Record<string, string> = {
   get_team_strokes_gained: 'Strokes gained',
   get_team_putting_profile: 'Team putts',
   get_my_reads: 'Your reads',
+  summarise_data: 'Worked out the figures',
   ...WIDE_READ_CHIPS,
 };
 
@@ -459,10 +460,35 @@ function pendingVisualOf(parts: ReadonlyArray<Record<string, unknown> & { type: 
 /** One assistant message as the thread draws it. */
 export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; busy: boolean }): AskAssistantTurn {
   const parts = partsOf(message);
+  // A read that failed and was made again with success is the model's own recovery: the coach is not shown the failure (its field names mean
+  // nothing to them). It stays in the steps, worded plainly. A failure nothing recovered from is still shown, as a plain sentence.
+  const evidence = parts.flatMap((p, i) => {
+    if (p.type !== 'data-evidence') return [];
+    const d = dataOf<{ tool?: string; envelope?: ToolEnvelope }>(p);
+    return d?.envelope ? [{ i, tool: d.tool ?? '', envelope: d.envelope }] : [];
+  });
+  const failed = (e: ToolEnvelope) => e.coverage === 'unavailable';
+  const recovered = new Set<number>();
+  const retriedTools = new Map<string, number>();
+  for (const ev of evidence) {
+    if (failed(ev.envelope) && evidence.some((later) => later.i > ev.i && later.tool === ev.tool && !failed(later.envelope))) {
+      recovered.add(ev.i);
+      retriedTools.set(ev.tool, (retriedTools.get(ev.tool) ?? 0) + 1);
+    }
+  }
+  // Once the worked-out result exists, the raw record lists it was built from are reads, not tables above the answer.
+  const lastSummary = Math.max(-1, ...evidence.filter((ev) => ev.tool === 'summarise_data' && !failed(ev.envelope)).map((ev) => ev.i));
+  const collapsed = new Set<number>(evidence.filter((ev) => ev.i < lastSummary && !failed(ev.envelope) && (ev.envelope.detail as { kind?: unknown } | undefined)?.kind === 'team_data').map((ev) => ev.i));
+  const retriedWords = (tool: string) => (tool === 'summarise_data' ? 'One calculation was retried' : 'One read was retried');
   const steps: AskStep[] = parts
     .filter((p) => p.type === 'data-progress')
     .map((p, i) => {
-      const d = dataOf<{ label?: string; state?: AskStep['state']; done?: string; detail?: string; picture?: ReadPictureData }>(p);
+      const d = dataOf<{ label?: string; tool?: string; state?: AskStep['state']; done?: string; detail?: string; picture?: ReadPictureData }>(p);
+      const left = d?.tool ? (retriedTools.get(d.tool) ?? 0) : 0;
+      if (d?.state === 'failed' && d.tool && left > 0) {
+        retriedTools.set(d.tool, left - 1);
+        return { id: String(p.id ?? `step-${i}`), label: stepLabel(d.label), state: 'done' as const, done: retriedWords(d.tool) };
+      }
       return { id: String(p.id ?? `step-${i}`), label: stepLabel(d?.label), ...(d?.state ? { state: d.state } : {}), ...(d?.done ? { done: stepLabel(d.done) } : {}), ...(d?.picture ? { picture: d.picture } : {}), ...(d?.detail ? { detail: d.detail } : {}) };
     });
   const envelopes = parts
@@ -522,7 +548,13 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
       lead = false;
       texts.push(plainText(text));
     } else if (p.type === 'data-evidence') {
-      const data = dataOf<{ envelope?: ToolEnvelope; ref?: string }>(p);
+      const data = dataOf<{ tool?: string; envelope?: ToolEnvelope; ref?: string }>(p);
+      if (recovered.has(i) || collapsed.has(i)) return;
+      if (data?.envelope && data.tool === 'summarise_data' && failed(data.envelope)) {
+        // No field names or row counts for a coach: the calculation did not finish.
+        blocks.push({ kind: 'evidence', key: `e-${String(p.id ?? i)}`, envelope: { ...data.envelope, summary: 'Could not work out the figures.', coverage_note: 'That calculation could not be completed.', detail: undefined } });
+        return;
+      }
       if (data?.envelope && !(data.ref && coveredRefs.has(data.ref))) {
         // An empty read says so once: a second one with the same words (the same read made twice) adds a card and no information.
         const note = data.envelope.coverage === 'empty' ? emptyNote(data.envelope) : null;
@@ -869,6 +901,15 @@ const HEADINGS: Record<string, string> = {
   rsvp_pending_count: 'No reply',
   rsvp_accepted: 'Going',
   rsvp_declined: 'Not going',
+  // A round's columns, short enough for five on a phone.
+  round_date: 'Date',
+  course_name: 'Course',
+  total_score: 'Score',
+  score_to_par: 'To par',
+  total_putts: 'Putts',
+  three_putts: '3-putts',
+  total_gir: 'GIR',
+  total_penalties: 'Penalties',
 };
 
 /** A column heading from a key: "target_value" is "Target value", "requires_rsvp" is "RSVP required". */
@@ -932,16 +973,33 @@ const INTERNAL_COLUMN = /^(?:set_by|source|origin|method|metric|metric_id|record
 
 /**
  * The order a generic record table lists its fields in. A stored turn comes back from a jsonb column, which hands an object's keys back
- * shortest first (not in the order the tool wrote them), so the live table and the reloaded one disagreed. Reading a row by this fixed
- * priority, then by jsonb's own order for anything not listed, gives both paths the same columns in the same order.
+ * shortest first (not in the order the tool wrote them), so the live table and the reloaded one disagreed. Fields are read by a fixed
+ * priority instead, so both paths draw the same columns in the same order:
+ *   1. who or what the row is, and when (player, title, date),
+ *   2. the figure the question asked for: any field that is not one of the generic ones (three-putts, putts, a make rate),
+ *   3. where and how it went (course, location, score),
+ *   4. the plain labels last (status, round type, hole count): never what a table is picked for.
+ * Within a step, jsonb's own order breaks ties.
  */
-const COLUMN_PRIORITY = ['player', 'name', 'title', 'category', 'event_type', 'kind', 'state', 'starts_at', 'start_time', 'start_date', 'ends_at', 'end_time', 'end_date', 'due_date', 'date', 'status', 'priority', 'location'];
+const COLUMNS_WHO_WHEN = ['player', 'name', 'title', 'category', 'event_type', 'kind', 'state', 'round_date', 'date', 'day', 'starts_at', 'start_time', 'start_date', 'ends_at', 'end_time', 'end_date', 'due_date', 'target_date'];
+const COLUMNS_WHERE_HOW = ['course_name', 'location', 'total_score', 'score_to_par'];
+const COLUMNS_LABELS = ['status', 'priority', 'round_type', 'holes_played', 'type'];
 const jsonbOrder = (a: string, b: string) => a.length - b.length || (a < b ? -1 : a > b ? 1 : 0);
+function columnRank(k: string): [number, number] {
+  let i = COLUMNS_WHO_WHEN.indexOf(k);
+  if (i !== -1) return [0, i];
+  i = COLUMNS_WHERE_HOW.indexOf(k);
+  if (i !== -1) return [2, i];
+  i = COLUMNS_LABELS.indexOf(k);
+  return i !== -1 ? [3, i] : [1, 0];
+}
 const columnOrder = (a: string, b: string) => {
-  const ia = COLUMN_PRIORITY.indexOf(a);
-  const ib = COLUMN_PRIORITY.indexOf(b);
-  return ia !== -1 || ib !== -1 ? (ia === -1 ? 1 : ib === -1 ? -1 : ia - ib) : jsonbOrder(a, b);
+  const [ca, ia] = columnRank(a);
+  const [cb, ib] = columnRank(b);
+  return ca - cb || ia - ib || jsonbOrder(a, b);
 };
+/** How many columns a generic record table starts from; `fitToPhone` then drops the rightmost until it fits 393 px. */
+const TABLE_COLUMNS = 5;
 
 export function detailTable(detail: unknown, caption: string): AskTable | null {
   if (!detail || typeof detail !== 'object') return null;
@@ -954,7 +1012,7 @@ export function detailTable(detail: unknown, caption: string): AskTable | null {
     .filter((k) => !/(^id$|_id$|^type$|^created_at$|^updated_at$|^timezone$)/.test(k) && !INTERNAL_COLUMN.test(k) && rows.some((r) => isPlain(r[k]) && r[k] !== ''))
     .filter((k) => !(rows.every((r) => typeof r[k] === 'boolean') && rows.every((r) => r[k] === false)))
     .sort(columnOrder)
-    .slice(0, 4);
+    .slice(0, TABLE_COLUMNS);
   if (keys.length === 0) return null;
   // A read that carries the unit of its columns (query_team_data) puts it in the heading: "Approach proximity (ft)", never a bare 15.3.
   const units = (detail as { units?: Record<string, string> }).units ?? {};
@@ -1321,6 +1379,29 @@ export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { k
 /** What an empty read says, in its own words (trimmed); the empty string when it says nothing. */
 export const emptyNote = (envelope: ToolEnvelope): string => (envelope.coverage_note?.trim() || envelope.summary?.trim() || '').replace(/\s+/g, ' ');
 
+/**
+ * A `summarise_data` result. Its `detail` holds the operations' results and, for a list, the rows: the rows are the table (columns picked as any
+ * record table's), and the figures that are not the list's own count go to the same figure card any read gets. Nothing is drawn twice.
+ */
+function summaryBlocks(envelope: ToolEnvelope): AskEvidence[] {
+  const d = envelope.detail as { rows?: unknown; matching_rows?: unknown; row_count?: unknown; timezone?: unknown } | undefined;
+  const blocks: AskEvidence[] = [];
+  const rows = Array.isArray(d?.rows) ? (d?.rows as unknown[]).filter((r): r is Record<string, unknown> => !!r && typeof r === 'object' && !Array.isArray(r)) : [];
+  const total = typeof d?.matching_rows === 'number' ? d.matching_rows : rows.length;
+  if (rows.length > 0) {
+    const table = detailTable({ rows, ...(typeof d?.timezone === 'string' ? { timezone: d.timezone } : {}) }, total > rows.length ? `${rows.length} of ${total} rows` : plural(rows.length, 'row'));
+    if (table) blocks.push({ kind: 'table', title: table.caption, source: null, note: total > rows.length ? `Showing the first ${rows.length} of ${total} rows.` : partialNote(envelope), bench: null, table });
+  }
+  // The "Rows listed" count is the table's own: it is not a figure to draw again.
+  const figures = envelope.measurements.filter((m) => m.method !== 'summary_list');
+  if (figures.length > 0) {
+    const rest = evidenceBlocks({ ...envelope, detail: undefined, measurements: figures });
+    blocks.push(...rest.filter((b) => b.kind !== 'empty'));
+  }
+  if (blocks.length === 0) return envelope.coverage === 'empty' ? [{ kind: 'empty', note: envelope.coverage_note?.trim() || 'No rows matched.' }] : [];
+  return blocks;
+}
+
 /** One tool's output as the block this screen draws. The choice is made from the SHAPE of the evidence, never from what the model asked for. */
 export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
   // A failed read is never "no data": it is the honest "could not read this".
@@ -1328,6 +1409,8 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
   // Golf knowledge and metric definitions are words, not figures: they show as the step that read them and as chips in the answer's prose, never as a card.
   const kind = (envelope.detail as { kind?: unknown } | undefined)?.kind;
   if (kind === 'reference' || kind === 'definition') return [];
+  // A worked-out result (summarise_data) is the answer's own figures: a list of rows is the table, a count, rank or difference is one compact figure card.
+  if (kind === 'summary') return summaryBlocks(envelope);
   // A benchmark read draws only as a picture of where one player stands, or not at all.
   if (kind === 'benchmark_read') {
     const b = benchmarkBlock(envelope);
