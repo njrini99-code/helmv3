@@ -125,6 +125,14 @@ export async function applyTourBenchmarks(envelope: ToolEnvelope, source: Benchm
   return { ...envelope, measurements: envelope.measurements.map(fill), series: envelope.series.map(fill) };
 }
 
+/**
+ * The metric a benchmark's numbers are about, in the words the audit reads (`metric_scope`): a Tour GIR of 66 then supports "66% of greens" and
+ * not "66" in a putting sentence. The audit tells metrics apart by name, so the two standards ids whose names it would read as another family
+ * (the sand-save rate is a `scrambling_pct_` id; off the tee is `sg_ott`) carry Ask's own name for the same metric.
+ */
+const SCOPE_KEY: Record<string, string> = { scrambling_pct_sand: 'sand_save_pct', sg_ott: 'sg_tee' };
+const scopeKey = (standingId: string): string => SCOPE_KEY[standingId] ?? standingId;
+
 const levelValues = (s: StandardRow): Record<BenchmarkLevel, number | null> => ({ pga: s.pga_tour_value, korn_ferry: s.korn_ferry_value, d1: s.div1_avg_value, d2: s.div2_avg_value, d3: s.div3_avg_value, hs: s.hs_avg_value });
 
 interface MetricMeta {
@@ -189,6 +197,7 @@ export async function getBenchmarks(sb: Sb, ctx: CoachChatContext, source: Bench
       {
         kind: 'benchmark' as const,
         metric_id: id,
+        metric_scope: scopeKey(id),
         metric_label: m?.label ?? std.display_label,
         unit: m?.unit ?? null,
         direction: m?.direction ?? null,
@@ -222,6 +231,7 @@ export async function getBenchmarks(sb: Sb, ctx: CoachChatContext, source: Bench
         const levelShown = r.level_avg != null && r.level_n > 0;
         return {
           metric_id: r.metric_id,
+          metric_scope: scopeKey(r.metric_id),
           metric_label: meta?.get(r.metric_id)?.label ?? std?.display_label ?? r.metric_id,
           ...(meta?.get(r.metric_id) ? { direction: meta.get(r.metric_id)!.direction } : {}),
           player_value: round2(r.player_value),

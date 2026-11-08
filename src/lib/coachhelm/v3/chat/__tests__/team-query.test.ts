@@ -71,6 +71,17 @@ describe('query_team_data scoping', () => {
     await expect(queryTeamData(sb, ctx, parse({ table: 'golf_events', columns: ['title'] }), on)).resolves.toBeDefined();
   });
 
+  it('merges slices by an order column that was not asked for, and does not return it', async () => {
+    const roster = Array.from({ length: 250 }, (_, i) => person(`p${i}`, `Player ${i}`));
+    const many: Tables = { golf_rounds: { rows: [{ player_id: 'p0', round_date: '2026-10-01', total_score: 70, is_test: false }, { player_id: 'p240', round_date: '2026-10-09', total_score: 71, is_test: false }] } };
+    const { sb, of } = pgrst(many);
+    const e = await queryTeamData(sb, { ...ctx, roster }, parse({ table: 'golf_rounds', columns: ['total_score'], limit: 5 }), on);
+    expect(of('golf_rounds').find((c) => c.method === 'select')!.args[0]).toBe('total_score, player_id, round_date');
+    const rows = (e.detail as { rows: Array<Record<string, unknown>> }).rows;
+    expect(rows.map((r) => r.total_score)).toEqual([71, 70]);
+    expect(rows.every((r) => !('round_date' in r))).toBe(true);
+  });
+
   it('runs a big roster in slices of 200 and merges them in the requested order', async () => {
     const roster = Array.from({ length: 450 }, (_, i) => person(`p${i}`, `Player ${i}`));
     const many: Tables = { golf_rounds: { rows: [{ player_id: 'p0', round_date: '2026-10-01', total_score: 70, is_test: false }, { player_id: 'p250', round_date: '2026-10-09', total_score: 71, is_test: false }, { player_id: 'p449', round_date: '2026-10-05', total_score: 72, is_test: false }] } };

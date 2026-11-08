@@ -136,7 +136,7 @@ export async function getGoals(sb: Sb, ctx: CoachChatContext, input: { player_id
     };
   });
   const capped = rows.length > limit;
-  const visibility = 'Goals a coach set or a player shared with the coach. A goal a player keeps private is not visible here.';
+  const visibility = 'Goals a coach set or a player shared with the coach, recorded against this team. A goal a player keeps private, or one with no team on it, is not visible here.';
   if (goals.length === 0) return envelope(player ? `No ${input.state === 'all' ? '' : `${input.state} `}goals visible for ${player.name}.` : `No ${input.state === 'all' ? '' : `${input.state} `}goals visible for the team.`, { goals: [], visibility }, 'empty');
   return envelope(`${goals.length} goal${goals.length === 1 ? '' : 's'}${player ? ` for ${player.name}` : ''}.`, { goals, visibility }, capped ? 'partial' : 'complete', capped ? `Only the ${limit} soonest-due are listed.` : null);
 }

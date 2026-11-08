@@ -21658,6 +21658,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/team-query.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/team-reads.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/composite/hole-sequence-loader.ts",
           "anchor": "src/lib/supabase/untyped"
         },
@@ -22607,6 +22617,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/shot-reads.ts",
           "anchor": "src/lib/golf/putt-distance-buckets"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/team-reads.ts",
+          "anchor": "src/lib/golf/timezone"
         },
         {
           "kind": "import_graph",

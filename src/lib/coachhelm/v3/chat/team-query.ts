@@ -113,7 +113,9 @@ export async function queryTeamData(sb: Sb, ctx: CoachChatContext, input: TeamQu
   const empty = (): ToolEnvelope => ({ summary: `No ${rule.label} found.`, measurements: [], series: [], detail: { rows: [], row_count: 0, limit }, coverage: 'empty', coverage_note: null, as_of: nowIso() });
   if (rule.scope === 'player' && (playerIds.length === 0 || rosterIds.length === 0)) return empty();
 
-  const selectList = [...columns, ...(rule.scope === 'player' ? ['player_id'] : [])].join(', ');
+  // Slices merge in memory by the order column, so across more than one slice it is selected even when not asked for (and dropped again below).
+  const sliced = rule.scope === 'player' && chunkIds(playerIds).length > 1;
+  const selectList = [...columns, ...(rule.scope === 'player' ? ['player_id'] : []), ...(sliced && !columns.includes(order.column) ? [order.column] : [])].join(', ');
   const base = () => {
     let q = (sb as unknown as { from: (t: string) => LooseBuilder }).from(input.table).select(selectList);
     for (const [col, val] of Object.entries(rule.forced ?? {})) q = q.eq(col, val);

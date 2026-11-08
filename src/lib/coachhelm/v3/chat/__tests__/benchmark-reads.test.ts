@@ -40,6 +40,7 @@ const tables = (gender = 'mens'): Tables => ({
       std('pga', 'sg_ott', { pga_tour_value: 0 }),
       std('pga', 'approach_proximity_50_125ft', { pga_tour_value: 18, div1_avg_value: 28 }),
       std('pga', 'putt_miss_bias_high_pct'),
+      std('pga', 'scrambling_pct_sand', { pga_tour_value: 50, div1_avg_value: 40 }),
     ],
   },
   golf_metrics: {
@@ -169,9 +170,22 @@ describe('benchmarks in the audit', () => {
     const named = [{ id: 'p1', name: 'Owen Carter' }];
     expect(auditNumericClaims(text, e.measurements, e.series, collectEnvelopeNumbers(e), [], 'America/New_York', { players: named })).toEqual([]);
     // A Division I figure no read returned is refused.
-    const invented = 'The Division I average is 44%.';
-    expect(auditNumericClaims(invented, e.measurements, e.series, collectEnvelopeNumbers(e), [], 'America/New_York', { players: named }).map((c) => c.value)).toEqual([44]);
-    expect(auditNumericClaims(invented, [], [], [], [], 'America/New_York', { players: named }).map((c) => c.value)).toEqual([44]);
+    const invented = 'The Division I average is 37%.';
+    expect(auditNumericClaims(invented, e.measurements, e.series, collectEnvelopeNumbers(e), [], 'America/New_York', { players: named }).map((c) => c.value)).toEqual([37]);
+    expect(auditNumericClaims(invented, [], [], [], [], 'America/New_York', { players: named }).map((c) => c.value)).toEqual([37]);
+  });
+
+  it('binds each benchmark to its own metric: a Tour GIR does not ground a number in a putting sentence', async () => {
+    const { sb } = pgrst(tables());
+    const e = await getBenchmarks(sb, ctx, benchmarkSource(sb, 'team-1'), { metric_ids: ['gir_pct', 'sg_putting', 'sand_save_pct'], levels: ['pga', 'd1'], player_id: 'p1' }, { role: 'coach' });
+    const named = [{ id: 'p1', name: 'Owen Carter' }];
+    const audit = (text: string) => auditNumericClaims(text, e.measurements, e.series, collectEnvelopeNumbers(e), [], 'America/New_York', { players: named }).map((c) => c.value);
+    expect(audit('The PGA Tour hits 66% of greens in regulation.')).toEqual([]);
+    expect(audit('Owen’s strokes gained putting is 66.')).toEqual([66]);
+    // The sand-save rate is a scrambling_pct_ id in the table; it still binds to a sand-save sentence, and not to a putting one.
+    expect(audit('The PGA Tour saves 50% of its bunker shots.')).toEqual([]);
+    expect(audit('The Division I average for sand saves is 40%.')).toEqual([]);
+    expect(audit('Owen putts to 50% inside ten feet.')).toEqual([50]);
   });
 
   it('grounds the Tour value a measurement carries, and the gap to it', async () => {
