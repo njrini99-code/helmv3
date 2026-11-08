@@ -151,6 +151,15 @@ export function playFieldReturn(field: HTMLElement, reduced: boolean): Animation
   return msAnimate(field, [{ opacity: 0 }, { opacity: 1 }], null, { delay: FIELD_RETURN_DELAY_MS, fill: 'backwards', reduced, timing: { ms: CH_MS.field, easing: 'linear' } });
 }
 
+/**
+ * MOT-SEND-8: how long Delivered still waits when it mounts `elapsedMs` after the send began. The receipt mounts when the
+ * server confirms (DmReceipt renders nothing while pending), which can be late or early, so the 70% mark is counted from the
+ * send, never from the mount: a slow confirm rises at once, a fast one waits for the bubble to land.
+ */
+export function receiptDelayAfter(elapsedMs: number): number {
+  return Math.max(0, Math.round(chSpringCurve('launch').ms * LAUNCH_RECEIPT_SHARE) - Math.max(0, elapsedMs));
+}
+
 /** MOT-SEND-8: Delivered rises 4 px into place once the bubble has landed. Reduce Motion: it appears. */
 export function playReceiptRise(receipt: HTMLElement, plan: Pick<SendRisePlan, 'receiptDelayMs'>, reduced: boolean): Animation | null {
   if (reduced) return null;

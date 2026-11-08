@@ -3,7 +3,7 @@
 import type { ChMessagesApi } from '../api/types';
 import { clock, type ChMsg } from '../model';
 import { personOf } from '../person-of';
-import type { MouseEvent as ReactMouseEvent } from 'react';
+import { useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { PresenceRow } from '../../../ui/ListPresence';
 import { SenderPeek } from '../shared/conv-ui';
 import { Avatar } from '../../../ui/Avatar';
@@ -12,6 +12,7 @@ import { BubbleHoldLift, BubbleReactBar, BubbleReactions, useBubbleActions } fro
 import { BubbleBody } from './BubbleBody';
 import { BubbleHoverBar } from './BubbleHoverBar';
 import { BubbleReceipt } from './BubbleReceipt';
+import { typingRecentlyShown } from './TypingRows';
 
 export function Bubble({
   api,
@@ -46,6 +47,9 @@ export function Bubble({
   onReply?: () => void;
 }) {
   const who = personOf(api, m.senderId);
+  // Your own message flies out of the field (useSendRise) and a reply grows out of the typing bubble (useReplyFromTyping): each
+  // has its own arrival, so the list's 8 px rise is skipped. Decided when the row mounts; a deleted message still closes in place.
+  const [ownArrival] = useState(() => m.mine || typingRecentlyShown());
   const act = useBubbleActions({ api, m, group, picking, setPicking, onEdit, onDelete, onActions, onReply, onSeenBy });
   if (m.deleted) {
     return (
@@ -72,6 +76,7 @@ export function Bubble({
       as="div"
       id={`ch-ms-message-${m.id}`}
       ref={act.rowRef as never}
+      noArrival={ownArrival}
       data-ch-bar={act.barHeld ? "" : undefined}
       className={
         "ch-ms-msg" +

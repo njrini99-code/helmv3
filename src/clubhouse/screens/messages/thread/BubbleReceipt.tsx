@@ -5,6 +5,9 @@ import type { ChMsg } from '../model';
 import { DmReceipt, SeenByPill } from '../seen-by';
 import { useToast } from '../../../ui/Toast';
 import { AlertCircle } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { playReceiptRise, receiptDelayAfter } from '../motion/messages-beats';
+import { takeSendStamp } from './send-stamps';
 import { Icon } from '../../../ui/Icon';
 
 /** Under a bubble: Not sent / Try again, the Seen receipt on the carrier, and "Notified anyway". */
@@ -24,6 +27,16 @@ export function BubbleReceipt({
   reduced?: boolean;
 }) {
   const toast = useToast();
+  // MOT-SEND-8: a receipt that arrives for a message you just sent rises 4 px, 70% of the launch after the send began.
+  const rise = useRef<HTMLSpanElement | null>(null);
+  const receipt = !group && carrier && m.mine && !m.failed && !m.pending && !m.deleted && !m.poll;
+  useEffect(() => {
+    if (!receipt) return;
+    const at = takeSendStamp(m.id);
+    const pill = rise.current?.firstElementChild;
+    if (at === null || !(pill instanceof HTMLElement)) return;
+    playReceiptRise(pill, { receiptDelayMs: receiptDelayAfter(performance.now() - at) }, !!reduced);
+  }, [receipt, m.id, reduced]);
   return (
     <>
       {m.failed ? (
@@ -57,7 +70,12 @@ export function BubbleReceipt({
               <SeenByPill api={api} m={m} onOpen={onSeenBy ? (el) => onSeenBy(m, el) : undefined} />
             </span>
           )
-        ) : carrier && m.mine && <DmReceipt api={api} m={m} />
+        ) : carrier && m.mine && (
+          // `display: contents`: the wrapper only finds the pill; it takes no box of its own.
+          <span ref={rise} style={{ display: "contents" }}>
+            <DmReceipt api={api} m={m} />
+          </span>
+        )
       )}
       {/* P-10: "Notified anyway", once a push really went out. A 1:1 shows it to both sides; in a group only a coach sees it (a teammate
           reading it would learn who was in class). */}

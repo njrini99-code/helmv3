@@ -7,6 +7,7 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { Icon } from '../../ui/Icon';
 import { THREAD_SETTLE_MS } from './use-thread-anchor';
 import { msAnimate, springScroll } from './motion/messages-motion';
+import { stampSend } from './thread/send-stamps';
 import { HOUSE_EASE, JUMP_FAR, JUMP_SCALE, PILL_GAP, PILL_HIDE_MS, SEND_KEY_SCALE_FROM, planSendRise, playSendRise } from './motion/messages-beats';
 
 /** One day marker's box, in viewport px, for the floating date pill. */
@@ -365,6 +366,7 @@ export function useSendRise(scroller: RefObject<HTMLElement | null>, count: numb
     const f = field?.getBoundingClientRect();
     fresh.forEach((row, n) => {
       if (!row.classList.contains('is-mine')) return;
+      stampSend(row.id.replace(/^ch-ms-message-/, ''));
       const bub = row.querySelector<HTMLElement>('.ch-ms-bub, .ch-ms-img');
       if (!bub?.animate) return;
       if (reduced || !f) {
