@@ -87,7 +87,8 @@ import {
   type TurnVerdict,
   type TurnVerdictReason,
 } from '@/lib/coachhelm/v3/chat/verdict';
-import { extractAndValidateChatClaims } from '@/lib/coachhelm/v3/chat/claims-packet';
+import { extractAndValidateChatClaims, validateCitedChatClaims } from '@/lib/coachhelm/v3/chat/claims-packet';
+import { claimsFromCites } from '@/lib/coachhelm/v3/chat/cite-claims';
 import { CLAIMS_OPEN, CLAIMS_CLOSE, extractAndValidateClaimsSafe } from '@/lib/coachhelm/v3/llm/claims-block';
 import { CITES_OPEN, CITES_CLOSE, extractCites, type CitationStats } from '@/lib/coachhelm/v3/chat/cites';
 import { BlockWithholder } from '@/lib/coachhelm/v3/chat/stream-blocks';
@@ -953,7 +954,9 @@ export async function POST(req: NextRequest) {
       // stored `content`. Only an Ask v2 turn is asked for them, and only its cites are checked.
       const extractedCites = extractCites(rawText);
       const { strippedText, claims } = claimsBlockEnabled
-        ? extractAndValidateChatClaims(extractedCites.text, measurements)
+        ? askV2
+          ? validateCitedChatClaims(extractedCites.text, measurements, claimsFromCites(extractedCites.cites, evidenceRefs))
+          : extractAndValidateChatClaims(extractedCites.text, measurements)
         : extractAndValidateClaimsSafe(extractedCites.text, null);
       // Read markers are the UI's: the "2" in `e2` is not a claim, and the stored `content` never carries one. The parts keep them.
       turnText = (askV2 ? stripReadMarkers(strippedText) : strippedText).trim();

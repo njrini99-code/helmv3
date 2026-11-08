@@ -129,6 +129,27 @@ as "fact" unless a tool gave you the cause.
 `.trim();
 
 /**
+ * The Ask v2 version of the claims section: the same thin-sample and cause rules, with no second block to write (the typed claims are derived from
+ * the citations, `cite-claims.ts`).
+ */
+const CLAIMS_RULES_SECTION = `
+## Claims
+
+A player's average or rate over fewer than ${MIN_SAMPLE_N} rounds or attempts (the
+measurement's sample_size) is fine to state, but its own sentence must say what it
+rests on, with the measurement's exact count: "72.5 over his 2 rounds". Without that
+count, or with a different one, the whole answer is refused. Say too that it is a thin
+read when you draw anything from it.
+
+Every measurement value you state about a player is cited in your citations block (a count or a sample size is checked separately).
+
+Nothing you can read backs a cause you cannot put a figure on. "because his tempo gets
+quicker" is refused, with the whole answer. "because he lost 2.4 strokes on approach"
+is fine, as is saying why a figure is missing or a day does not work. Mark a citation
+as a cause ("c") only when a tool gave you the cause.
+`.trim();
+
+/**
  * The visual playbook: how the model designs a visual with `show_visual`.
  * Mirrored for people in `docs/architecture/coachhelm-visual-playbook.md`.
  */
@@ -296,22 +317,20 @@ Say how many rows a result rests on when it matters, and the window the rows cov
 export const CITES_SECTION = `
 ## Citing your figures
 
-After your answer, append a block naming where each figure you stated came from:
+After your answer, append ONE block naming where each figure you stated came from, one short array per figure:
 
-<<<CITES>>>
-[{"v":"-4.16","ref":"e3","key":"sg_approach","subject":"<player id, or team>","w":["2026-06-09","2026-09-26"]}]
-<<<END_CITES>>>
+<<<CITES>>>[["-4.16","e3","sg_approach","1a2b3c4d"],["-2.33","e3","sg_approach","team"]]<<<END_CITES>>>
 
-One entry per figure, for every number that is a measurement, a count, a rank or a difference (not a date, a year or the
-number of rounds in "his last ten rounds"). "v" is the figure exactly as you wrote it (sign and decimals; "61.11", "-4.16", "23").
-"ref" is the evidence_ref of the read it came from; a figure you had summarise_data work out is cited to that call's ref. "key" is the
-metric_id of the measurement in that read (for example sg_approach, gir_pct, summary:place), the metric_id of the row it sits in (a goal, a
-benchmark row: approach_proximity_50_125ft), or the field name in its detail. "subject"
-is the player_id the figure is about, or "team" for the team's. "w" is optional: the measurement's window_start and window_end,
-copied. A comparison value beside a figure (the team average, the Division I average, the Tour, a place such as 7 of 7) belongs to
-the same measurement as that figure: cite it with that measurement's key and subject. Copy refs, keys and ids from the reads; never invent
-them. Every answer that states a figure ends with this block; without it your figures are checked by guesswork and the answer may be withheld.
-The block is removed before the coach reads your answer.`.trim();
+An entry is [value, ref, key, subject]: for every number that is a measurement, a count, a rank or a difference (not a date, a year or the
+number of rounds in "his last ten rounds"). value is the figure exactly as you wrote it (sign and decimals: "61.11", "-4.16", "23"). ref is
+the evidence_ref of the read it came from; a figure you had summarise_data work out is cited to that call's ref. key is the metric_id of the
+measurement in that read (sg_approach, gir_pct, summary:place), the metric_id of the row it sits in (a goal or a benchmark row:
+approach_proximity_50_125ft), or the field name in its detail. subject is the first 8 characters of the player_id the figure is about
+(copy them from the roster or the read), or "team" for the team's. Add a fifth item, "c", when the sentence asserts the figure as the cause of
+something. A comparison value beside a figure (the team average, the Division I average, the Tour, a place such as 7 of 7) belongs to the
+same measurement as that figure: cite it with that measurement's key and subject. Copy refs, keys and ids from the reads; never invent them.
+This block is the only structured block you write: window, unit and sample are taken from the read. Every answer that states a figure ends
+with it; without it your figures are checked by guesswork and the answer may be withheld. The block is removed before the coach reads your answer.`.trim();
 
 /**
  * The prompt in the two halves prompt caching wants. `stable` is the same bytes for every team and coach on a given flag state, so one cache entry
@@ -349,7 +368,7 @@ export function buildInstructionBlocks(
     VISUALS_SECTION,
     // Last before Actions, so toggling the claim gate splices one section in
     // and leaves the prefix before it identical (prompt caching).
-    ...(claimsBlockEnabled ? [CLAIMS_BLOCK_SECTION] : []),
+    ...(claimsBlockEnabled ? [opts.askV2 ? CLAIMS_RULES_SECTION : CLAIMS_BLOCK_SECTION] : []),
     ACTIONS_SECTION,
     ...(opts.askV2 ? [READ_MARKER_SECTION, ASK_READS_SECTION, SUMMARISE_SECTION, CITES_SECTION] : []),
   ];
