@@ -64,11 +64,10 @@ export class AskPerf {
   }
 }
 
-/** Development only, with the trace on: `x-ask-effort: low|medium|high|off` picks the model's effort or turns thinking off, to compare them on the same questions. */
+/** Development only, with the trace on: `x-ask-effort: low|medium|high` picks the model's effort, to compare them on the same questions (thinking cannot be disabled on claude-sonnet-5-5). */
 export function askPerfProviderOptions(req: Request): { anthropic: Record<string, unknown> } | undefined {
   if (!askPerfEnabled(req)) return undefined;
   const v = req.headers?.get('x-ask-effort');
-  if (v === 'off') return { anthropic: { thinking: { type: 'disabled' } } };
   if (v === 'low' || v === 'medium' || v === 'high') return { anthropic: { effort: v } };
   return undefined;
 }
