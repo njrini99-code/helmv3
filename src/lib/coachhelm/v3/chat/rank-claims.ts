@@ -67,7 +67,7 @@ function nameHits(sentence: string, people: readonly AuditPlayer[], token: (p: A
 }
 
 /** The players a sentence names: full names win over a shared first or last name. */
-function playersNamed(sentence: string, people: readonly AuditPlayer[]): Set<string> {
+export function playersNamed(sentence: string, people: readonly AuditPlayer[]): Set<string> {
   const full = nameHits(sentence, people, (p) => [p.name]);
   if (full.size > 0) return full;
   return nameHits(sentence, people, (p) => {

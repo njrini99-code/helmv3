@@ -95,14 +95,12 @@ export async function resolveCoachChatContext(sb: Sb): Promise<CoachChatContext>
   const teamId = await resolveCoachTeamIdWithCookie(sb, coach.organization_id, coach.id);
   if (!teamId) throw new CoachContextError('No active team for this coach', 404);
 
-  const { data: team } = await sb
-    .from('golf_teams')
-    .select('id, name, timezone')
-    .eq('id', teamId)
-    .maybeSingle();
+  // The team row and the roster only need the team id, so they are read together (a missing team still answers 404; the roster read is then discarded).
+  const [{ data: team }, { roster, failed }] = await Promise.all([
+    sb.from('golf_teams').select('id, name, timezone').eq('id', teamId).maybeSingle(),
+    loadActiveRosterResult(sb, teamId),
+  ]);
   if (!team) throw new CoachContextError('Active team not found', 404);
-
-  const { roster, failed } = await loadActiveRosterResult(sb, teamId);
 
   return {
     coach_id: coach.id,

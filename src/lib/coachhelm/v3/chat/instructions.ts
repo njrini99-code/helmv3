@@ -305,18 +305,25 @@ After your answer, append a block naming where each figure you stated came from:
 One entry per figure, for every number that is a measurement, a count, a rank or a difference (not a date, a year or the
 number of rounds in "his last ten rounds"). "v" is the figure exactly as you wrote it (sign and decimals; "61.11", "-4.16", "23").
 "ref" is the evidence_ref of the read it came from; a figure you had summarise_data work out is cited to that call's ref. "key" is the
-metric_id of the measurement in that read (for example sg_approach, gir_pct, summary:place), or the field name in its detail. "subject"
+metric_id of the measurement in that read (for example sg_approach, gir_pct, summary:place), the metric_id of the row it sits in (a goal, a
+benchmark row: approach_proximity_50_125ft), or the field name in its detail. "subject"
 is the player_id the figure is about, or "team" for the team's. "w" is optional: the measurement's window_start and window_end,
 copied. A comparison value beside a figure (the team average, the Division I average, the Tour, a place such as 7 of 7) belongs to
 the same measurement as that figure: cite it with that measurement's key and subject. Copy refs, keys and ids from the reads; never invent
-them. The block is removed before the coach reads your answer.`.trim();
+them. Every answer that states a figure ends with this block; without it your figures are checked by guesswork and the answer may be withheld.
+The block is removed before the coach reads your answer.`.trim();
 
-export function buildInstructions(
+/**
+ * The prompt in the two halves prompt caching wants. `stable` is the same bytes for every team and coach on a given flag state, so one cache entry
+ * serves them all (with the tool definitions ahead of it, the bulk of every turn's input). `dynamic` is what differs per team and coach: their
+ * standing notes, the team, the date, the roster. `buildInstructions` is the two joined, byte for byte what the single prompt was.
+ */
+export function buildInstructionBlocks(
   ctx: CoachChatContext,
   nowIso: string,
   claimsBlockEnabled: boolean,
   opts: { askV2?: boolean; knows?: string | null } = {},
-): string {
+): { stable: string; dynamic: string } {
   const today = new Intl.DateTimeFormat('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -330,6 +337,13 @@ export function buildInstructions(
       ? 'This team has no active players yet.'
       : `Active roster (${ctx.roster.length}): ${ctx.roster.map((p) => p.name).join(', ')}.`;
 
+  // Ask v2: the ids the player tools take, so a named player is read in the same step instead of after a find_player round trip. They are the
+  // coach's own roster (the tools still refuse an id that is not on it); the policy above already keeps them out of every answer.
+  const rosterIds =
+    opts.askV2 && ctx.roster.length > 0
+      ? `\n\nPlayer ids, for the tools' player_id and never to be written in an answer: ${ctx.roster.map((p) => `${p.name} = ${p.id}`).join('; ')}. A player listed here needs no find_player; use find_player only for a name that is not in the list.`
+      : '';
+
   const sections = [
     POLICY,
     VISUALS_SECTION,
@@ -338,19 +352,24 @@ export function buildInstructions(
     ...(claimsBlockEnabled ? [CLAIMS_BLOCK_SECTION] : []),
     ACTIONS_SECTION,
     ...(opts.askV2 ? [READ_MARKER_SECTION, ASK_READS_SECTION, SUMMARISE_SECTION, CITES_SECTION] : []),
-    ...(opts.askV2 && opts.knows ? [opts.knows] : []),
   ];
 
-  return `${sections.join('\n\n')}
-
-## This program
+  return {
+    stable: sections.join('\n\n'),
+    dynamic: `${opts.askV2 && opts.knows ? `${opts.knows}\n\n` : ''}## This program
 
 You are working with ${ctx.team_name}. Today is ${today} in the team's timezone
 (${ctx.timezone}); use that when the coach says "Tuesday" or "next week".
 
-${roster}
+${roster}${rosterIds}
 
 That roster count is authoritative. If a tool reports fewer players than this,
 it is telling you about a coverage gap — report the gap, do not quietly adopt
-the smaller number as the size of the team.`;
+the smaller number as the size of the team.`,
+  };
+}
+
+export function buildInstructions(ctx: CoachChatContext, nowIso: string, claimsBlockEnabled: boolean, opts: { askV2?: boolean; knows?: string | null } = {}): string {
+  const { stable, dynamic } = buildInstructionBlocks(ctx, nowIso, claimsBlockEnabled, opts);
+  return `${stable}\n\n${dynamic}`;
 }

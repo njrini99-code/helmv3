@@ -59,10 +59,10 @@ describe('player Ask: per-figure citations', () => {
     expect(r.citations).toMatchObject({ cites: 1, verified: 1, mismatched: 0, cited: 1 });
   });
 
-  it('a figure cited to a read that says something else is flagged, however it is worded', () => {
+  it('a figure that is not in the read it is cited to is judged by the text check, and flagged when no read holds it', () => {
     const r = audit('Your putting is losing 3.1 strokes a round.', [cite('3.1')]);
     expect(r.unsupported.map((c) => c.text)).toContain('3.1');
-    expect(r.citations).toMatchObject({ mismatched: 1 });
+    expect(r.citations).toMatchObject({ unresolved: 1, mismatched: 0 });
   });
 
   it('an unresolved cite changes nothing: the text heuristics decide as before', () => {
@@ -86,6 +86,6 @@ describe('player Ask: per-figure citations', () => {
   it('the ledger row carries the counts of a flagged turn', () => {
     const r = audit('Your putting is losing 3.1 strokes a round.', [cite('3.1')]);
     const row = playerLedgerRow({ playerId: 'player-uuid-0123456789', promptTokens: 1, completionTokens: 1, costUsd: 0, unsupported: r.unsupported, citations: r.citations });
-    expect(row.citations).toMatchObject({ unmatched_tokens: expect.arrayContaining(['3.1']), citation_stats: { mismatched: 1, verified: 0 } });
+    expect(row.citations).toMatchObject({ unmatched_tokens: expect.arrayContaining(['3.1']), citation_stats: { unresolved: 1, verified: 0 } });
   });
 });

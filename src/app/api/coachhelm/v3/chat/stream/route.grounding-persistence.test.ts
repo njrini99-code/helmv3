@@ -127,7 +127,7 @@ vi.mock('@/lib/coachhelm/v3/chat/agent-tools', () => ({
   buildCoachTools: mocks.buildCoachTools,
   isConfirmRequired: () => false,
 }));
-vi.mock('@/lib/coachhelm/v3/chat/instructions', () => ({ buildInstructions: mocks.buildInstructions }));
+vi.mock('@/lib/coachhelm/v3/chat/instructions', () => ({ buildInstructions: mocks.buildInstructions, buildInstructionBlocks: vi.fn(() => ({ stable: 'system prompt', dynamic: 'this program' })) }));
 // Keep the REAL provenance module (ToolEnvelope, collectDates, etc.) — only
 // the two audit entrypoints are swapped for a deterministic verdict.
 vi.mock('@/lib/coachhelm/v3/chat/provenance', async (importOriginal) => {

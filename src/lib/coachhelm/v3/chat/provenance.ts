@@ -1286,6 +1286,8 @@ export function auditNumericClaimsDetailed(
     citedValues?: readonly string[];
     /** Called with what the audit did with the turn's numbers (for the citation counts); the return value is unchanged. */
     report?: (detail: AuditDetail) => void;
+    /** A subset count ("8 of those") is grounded by a verified cite only, never by a figure in the reads. */
+    strictSubsetCounts?: boolean;
   },
 ): AuditDetail {
   if (!text) return { unsupported: [], figures: 0, cited: 0, heuristicPassed: 0 };
@@ -1527,7 +1529,7 @@ export function auditNumericClaimsDetailed(
     // A subset count is grounded by a figure of a metric (a per-round count, a stated total), never by a count of rounds, holes or players.
     // What it counts is what the paragraph was last talking about ("three-putted … 8 of those"), when it said.
     const counted = subsetCount ? lastFamilyBefore(scrubbed, match.start) : null;
-    const pool = subsetCount ? anchors.filter((a) => (counted ? a.family === counted || a.parent === counted : a.family !== null)) : anchors;
+    const pool = subsetCount && options?.strictSubsetCounts ? [] : subsetCount ? anchors.filter((a) => (counted ? a.family === counted || a.parent === counted : a.family !== null)) : anchors;
     if (!pool.some((a) => near(a) && playerCompatible(a, binding) && metricCompatible(a, binding) && (!a.reference || binding.refCue))) {
       seen.add(raw);
       found.push(pool.some(near) ? { text: raw, value, misattributed: true } : { text: raw, value });

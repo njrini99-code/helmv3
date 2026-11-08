@@ -1,5 +1,5 @@
 import 'server-only';
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, stepCountIs, streamText, type UIMessage, type UIMessageStreamWriter } from 'ai';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
@@ -20,6 +20,7 @@ import type { ToolEnvelope } from './provenance';
 import type { PlayerFiguresSource, PuttBandsSource } from './read-tools';
 import { stripReadMarkers } from './read-markers';
 import { isIncompleteToolPart } from './ui-parts';
+import { systemCached, withTailBreakpoint } from './prompt-cache';
 
 /**
  * A player's turn on the same stream route (02 §13.1: the role comes from the session, never the request). No conversation is saved until HM3; the allowance is read before the model and written after, so no bucket means no ask (02 §16: no cap, no ship).
@@ -35,9 +36,9 @@ export async function runPlayerTurn(sb: SupabaseClient<Database>, body: { messag
   // CoachHelm switched off for the player or their team answers nothing here, as for a coach (CH13-20). The gate fails closed on a lookup error.
   const helmGate = await isCoachHelmEnabledForPlayer(ctx.player_id);
   if (!helmGate.effectivelyEnabled) return NextResponse.json({ error: 'CoachHelm is off for your team.' }, { status: 403 });
-  const rl = await checkRateLimit(`coachhelm:chat:player:${ctx.player_id}`, RATE_LIMITS.API_GENERAL);
+  // The rate limit and the allowance do not depend on each other: one wait, not two (and still nothing is read for a team that is off).
+  const [rl, bucket] = await Promise.all([checkRateLimit(`coachhelm:chat:player:${ctx.player_id}`, RATE_LIMITS.API_GENERAL), readBucket(ctx.player_id, ctx.timezone)]);
   if (!rl.allowed) return NextResponse.json({ error: 'Too many requests. Please slow down.' }, { status: 429 });
-  const bucket = await readBucket(ctx.player_id, ctx.timezone);
   if (!bucket) return NextResponse.json({ error: 'Ask is off for your team.' }, { status: 403 });
   if (bucket === 'out') {
     return createUIMessageStreamResponse({
@@ -54,7 +55,9 @@ export async function runPlayerTurn(sb: SupabaseClient<Database>, body: { messag
       const result = streamText({
         model: resolveModelProvider(MODEL_FOR_TASK.coach_chat),
         abortSignal: signal,
-        system: PLAYER_INSTRUCTIONS(first, ctx.team_name, ctx.timezone),
+        // The prompt and the conversation so far are cached (prompt-cache.ts): a step pays only for what the step before it added.
+        instructions: systemCached(PLAYER_INSTRUCTIONS(first, ctx.team_name, ctx.timezone)),
+        prepareStep: ({ messages }) => ({ messages: withTailBreakpoint(messages) }),
         messages: await convertToModelMessages(uiMessages.map((m) => ({ ...m, parts: m.parts.filter((p) => !isIncompleteToolPart(p)) })), { tools }),
         tools,
         stopWhen: stepCountIs(6),
@@ -68,17 +71,27 @@ export async function runPlayerTurn(sb: SupabaseClient<Database>, body: { messag
       const extracted = extractCites(await result.text);
       const text = stripReadMarkers(extracted.text);
       const { unsupported, citations } = auditPlayerAnswerCited({ text, envelopes, messages: uiMessages, timezone: ctx.timezone, roster: ctx.roster, cites: { cites: extracted.cites, evidence: evidenceRefs, blocks: extracted.blocks, invalid: extracted.invalid } });
-      if (citations) await logServerEvent('player ask: citation coverage', { action: 'v3.chat.stream.citations', featureArea: 'coachhelm', skipSentry: true, extra: { ...citations, surface: 'player', outcome: unsupported.length === 0 ? 'accepted' : 'flagged' } }, 'info');
       const usage = await result.usage;
       const input = usage.inputTokens ?? 0;
       const output = usage.outputTokens ?? 0;
       const usd = estimateCachedCostUsd(MODEL_FOR_TASK.coach_chat, input, output, usage.inputTokenDetails);
-      await recordPlayerSpend({ playerId: ctx.player_id, teamId: ctx.team_id, zone: ctx.timezone, usd });
+      // The allowance, the ledger row and the log line run after the response is sent: the stream stays open until `execute` returns, and the
+      // player was waiting on bookkeeping that is theirs only in the sense of a counter.
+      const bookkeeping = async () => {
+        if (citations) await logServerEvent('player ask: citation coverage', { action: 'v3.chat.stream.citations', featureArea: 'coachhelm', skipSentry: true, extra: { ...citations, surface: 'player', outcome: unsupported.length === 0 ? 'accepted' : 'flagged' } }, 'info').catch(() => undefined);
+        await recordPlayerSpend({ playerId: ctx.player_id, teamId: ctx.team_id, zone: ctx.timezone, usd }).catch(() => undefined);
+        try {
+          const { error } = await createAdminClient().from('golf_coachhelm_llm_calls').insert(playerLedgerRow({ playerId: ctx.player_id, promptTokens: input, completionTokens: output, costUsd: usd, unsupported, citations }));
+          if (error) throw new Error(error.message);
+        } catch (err) {
+          void logServerError(`player ask: llm ledger failed: ${err instanceof Error ? err.message : 'unknown'}`, { action: 'coachhelm.ask.player' }, 'warning');
+        }
+      };
+      // `after` only exists inside a request; anywhere else (a script, a test) the work is simply awaited, as it was before.
       try {
-        const { error } = await createAdminClient().from('golf_coachhelm_llm_calls').insert(playerLedgerRow({ playerId: ctx.player_id, promptTokens: input, completionTokens: output, costUsd: usd, unsupported, citations }));
-        if (error) throw new Error(error.message);
-      } catch (err) {
-        void logServerError(`player ask: llm ledger failed: ${err instanceof Error ? err.message : 'unknown'}`, { action: 'coachhelm.ask.player' }, 'warning');
+        after(bookkeeping);
+      } catch {
+        await bookkeeping();
       }
     },
   });

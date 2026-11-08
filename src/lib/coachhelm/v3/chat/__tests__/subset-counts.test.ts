@@ -33,3 +33,14 @@ describe('a count of some of the things just talked about is a derived figure', 
     expect(audit('Cole three-putted 10 times. 3 of those came in one round.')).toEqual([]);
   });
 });
+
+describe('strict: in a coach turn a subset count must be cited', () => {
+  const strict = (text: string, cited: string[] = []) => auditNumericClaims(text, [], [], [rounds, sums].flatMap(collectEnvelopeNumbers), ['2026-10-21'], 'America/New_York', { players: roster, citedValues: cited, strictSubsetCounts: true }).map((c) => c.text);
+  it('a count that happens to equal a per-round figure is not enough', () => {
+    expect(strict('Cole three-putted 10 times. 3 of those came in one round.')).toEqual(['3']);
+    expect(strict('Cole three-putted 10 times. 3 of those came in one round.', ['3'])).toEqual([]);
+  });
+  it('totals, per-row figures and counts of rounds are not subset counts and are unchanged', () => {
+    expect(strict('Cole took 165 putts over the five rounds and three-putted 10 times. Only 8 of those rounds have a stat line.')).toEqual([]);
+  });
+});

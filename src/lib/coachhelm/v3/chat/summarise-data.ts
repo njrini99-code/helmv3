@@ -300,6 +300,18 @@ async function sourceRows(src: Source, deps: SummariseDeps): Promise<{ rows: Row
   return { rows: got?.rows ?? [], partial: env.coverage === 'partial', note: env.coverage_note ?? undefined };
 }
 
+/** The evidence refs a summary rests on: its source, its join, and the reads its differences and ratios took figures from. */
+function sourceRefs(spec: z.infer<typeof SummariseInputCoach>): string[] {
+  const refs = new Set<string>();
+  if (spec.source && 'ref' in spec.source) refs.add(spec.source.ref);
+  if (spec.join?.with && 'ref' in spec.join.with) refs.add(spec.join.with.ref);
+  for (const op of spec.ops) {
+    if (op.op !== 'difference' && op.op !== 'ratio') continue;
+    for (const f of [op.a, op.b]) if ('ref' in f) refs.add(f.ref);
+  }
+  return [...refs];
+}
+
 export async function summariseData(ctx: CoachChatContext, input: SummariseInput, deps: SummariseDeps): Promise<ToolEnvelope> {
   const parsed = SummariseInputCoach.safeParse(input);
   if (!parsed.success) return refused('That summary is not in a shape I can work out.');
@@ -467,6 +479,8 @@ export async function summariseData(ctx: CoachChatContext, input: SummariseInput
     series: [],
     detail: {
       kind: 'summary',
+      // The reads of this turn the figures were worked out from, so a renderer can fold exactly those and not every read before it.
+      sources: sourceRefs(spec),
       rows_used: rows.length,
       results,
       ...(listed ? { rows: listed.rows, row_count: listed.rows.length, matching_rows: listed.total } : {}),

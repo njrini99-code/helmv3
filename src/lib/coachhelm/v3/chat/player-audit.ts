@@ -15,6 +15,7 @@ export function auditPlayerAnswerCited(args: { text: string; envelopes: readonly
   const today = todayIsoInZone(args.timezone, args.now ?? new Date());
   const dates = [...args.envelopes.flatMap((e) => collectDates(e.detail, args.timezone)), ...args.messages.flatMap((m) => coachRequestDates(askedText(m), today))];
   return auditCited({
+    surface: 'player',
     base: [args.text, args.envelopes.flatMap((e) => e.measurements), args.envelopes.flatMap((e) => e.series), args.envelopes.flatMap(collectEnvelopeNumbers), dates, args.timezone],
     options: { players: args.roster },
     cites: args.cites,

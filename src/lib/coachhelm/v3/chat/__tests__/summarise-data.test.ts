@@ -201,3 +201,18 @@ describe('the names and units the model reaches for', () => {
     expect(lowest.measurements.map((m) => m.unit)).toEqual(['strokes', 'strokes']);
   });
 });
+
+describe('detail.sources', () => {
+  it('names the reads a summary was worked out from: source, join and the figures of a difference', async () => {
+    const e = await run({ source: { ref: 'e2' }, join: { with: { ref: 'e1' }, left_key: 'round_id', right_key: 'id', keep: 'matched' }, ops: [{ op: 'count', id: 'n' }] });
+    expect((e.detail as { sources: string[] }).sources).toEqual(['e2', 'e1']);
+    const read = env(null, { measurements: [] });
+    const d = await run({ ops: [{ op: 'difference', a: { ref: 'e5', metric_id: 'x' }, b: { ref: 'e6', metric_id: 'x' } }] }, { evidence: new Map([['e5', read], ['e6', read]]) });
+    expect(d.coverage_note).toMatch(/has no figure x/);
+  });
+  it('a result carries sources even for a difference of earlier ops', async () => {
+    const read = env(null, { measurements: [{ metric_id: 'x', metric_label: 'X', unit: 'strokes' as const, value: 3, entity: { kind: 'player' as const, id: 'p-owen', label: 'Owen Carter' }, window_start: null, window_end: null, sample_size: 1, sample_unit: 'rounds' as const, as_of: '2026-11-08T00:00:00.000Z', coverage: 'complete' as const, coverage_note: null, source: 'rounds', method: 'm', denominator: null, benchmark: null, direction: null }] });
+    const e = await run({ ops: [{ op: 'difference', id: 'd', a: { ref: 'e5', metric_id: 'x' }, b: { ref: 'e5', metric_id: 'x' } }] }, { evidence: new Map([['e5', read]]) });
+    expect((e.detail as { sources: string[] }).sources).toEqual(['e5']);
+  });
+});

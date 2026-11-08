@@ -168,7 +168,7 @@ vi.mock('@/lib/coachhelm/v3/chat/agent-tools', () => ({
   buildCoachTools: mocks.buildCoachTools,
   isConfirmRequired: () => false,
 }));
-vi.mock('@/lib/coachhelm/v3/chat/instructions', () => ({ buildInstructions: mocks.buildInstructions }));
+vi.mock('@/lib/coachhelm/v3/chat/instructions', () => ({ buildInstructions: mocks.buildInstructions, buildInstructionBlocks: vi.fn(() => ({ stable: 'system prompt', dynamic: 'this program' })) }));
 // The real `ToolEnvelope` zod schema (and everything else in the module) is
 // kept: `priorTurnEvidence` (route.ts) validates stored evidence with it, and
 // a test asserting that a malformed envelope is dropped rather than crashing

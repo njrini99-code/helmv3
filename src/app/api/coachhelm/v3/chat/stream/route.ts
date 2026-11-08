@@ -44,7 +44,7 @@ import { resolveModelProvider } from '@/lib/ai/model-provider';
 import { recordAi } from '@/lib/observability/metrics';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent, logServerError as logServerErrorNow, logServerEvent as logServerEventNow } from '@/lib/server-error-logger';
 import { classifyProviderFault, providerFaultSeverity } from '@/lib/admin/provider-fault';
 import { drainCollapsedCount, shouldEmit } from '@/lib/admin/emit-throttle';
 import {
@@ -60,7 +60,8 @@ import {
   type CoachChatContext,
 } from '@/lib/coachhelm/v3/chat/context';
 import { buildCoachTools, isConfirmRequired } from '@/lib/coachhelm/v3/chat/agent-tools';
-import { buildInstructions } from '@/lib/coachhelm/v3/chat/instructions';
+import { buildInstructionBlocks } from '@/lib/coachhelm/v3/chat/instructions';
+import { systemBlocks, withTailBreakpoint } from '@/lib/coachhelm/v3/chat/prompt-cache';
 import {
   coachRequestDates,
   coachRequestedSpans,
@@ -121,6 +122,7 @@ import {
 } from '@/lib/coachhelm/v3/chat/ui-parts';
 import { describeError } from '@/lib/utils/describe-error';
 import { buildChatLlmCallRow } from '@/lib/coachhelm/v3/llm/chat-call-row';
+import { AskPerf, askPerfEnabled, askPerfProviderOptions } from '@/lib/coachhelm/v3/chat/ask-perf';
 
 export const maxDuration = 120;
 
@@ -338,6 +340,7 @@ function priorTurnEvidence(messages: readonly ChatMessage[], timezone: string): 
 }
 
 export async function POST(req: NextRequest) {
+  const perf = new AskPerf(askPerfEnabled(req), req.headers?.get('x-ask-perf') === 'capture');
   let ctx: CoachChatContext;
   const supabase = await createClient();
 
@@ -361,12 +364,29 @@ export async function POST(req: NextRequest) {
   // CoachHelm switched off (globally, for the coach or for the team) answers nothing here either: the Ask tab and route
   // are gated, and the endpoint must not be the way around them (swap audit CH13-20). The gate fails closed on a
   // lookup error.
-  const helmGate = await isCoachHelmEnabledForCoach(ctx.coach_id);
+  perf.mark('ctx');
+  // One wave of independent reads, not eight round trips in a row: the gate, the rate limit, the conversation (ownership, the answered turn,
+  // the prior evidence) and the budget do not depend on each other, only on who is asking. They are READS (the rate limit's own counter
+  // aside), so a request any of them turns away has changed nothing; every write below still waits for all of them. The verdicts are applied
+  // in the order they always were, so a coach is told the same thing for the same fault.
+  const parsed = Body.safeParse(await req.json().catch(() => null));
+  const earlyConversationId = parsed.success ? (parsed.data.conversation_id ?? null) : null;
+  const admin = createAdminClient();
+  const [helmGate, rl, existing, done, earlyGate, priorMessages] = await Promise.all([
+    isCoachHelmEnabledForCoach(ctx.coach_id),
+    checkRateLimit(`coachhelm:chat:${ctx.coach_id}`, RATE_LIMITS.API_GENERAL),
+    earlyConversationId ? getConversation(supabase, earlyConversationId) : null,
+    earlyConversationId && parsed.success ? findAssistantTurn(supabase, earlyConversationId, parsed.data.client_turn_id) : null,
+    // A new conversation cannot have an answered turn, so its budget is read with the rest; a continued one reads it only once it is known the
+    // turn is not a retry (a retry runs neither the model nor the budget gate).
+    earlyConversationId ? null : checkBudget(admin, ctx.coach_id, CHAT_TURN_COST_ESTIMATE_USD),
+    earlyConversationId ? listRecentMessages(supabase, earlyConversationId, PRIOR_EVIDENCE_ROW_LIMIT) : [],
+  ]);
+  perf.mark('gate_wave');
   if (!helmGate.effectivelyEnabled) {
     return NextResponse.json({ error: 'CoachHelm is off for your team.' }, { status: 403 });
   }
 
-  const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: 'Bad request' }, { status: 400 });
   }
@@ -395,7 +415,6 @@ export async function POST(req: NextRequest) {
   // below — this is what actually shrinks the check-then-act race window on
   // the daily budget (checkBudget/recordSpend are a read-then-upsert pair,
   // not an atomic reservation; see budget.ts).
-  const rl = await checkRateLimit(`coachhelm:chat:${ctx.coach_id}`, RATE_LIMITS.API_GENERAL);
   if (!rl.allowed) {
     return NextResponse.json({ error: 'Too many requests. Please slow down.' }, { status: 429 });
   }
@@ -404,7 +423,6 @@ export async function POST(req: NextRequest) {
   let conversationId = parsed.data.conversation_id ?? null;
   let needsNewConversation = false;
   if (conversationId) {
-    const existing = await getConversation(supabase, conversationId);
     if (!existing || existing.coach_id !== ctx.coach_id) {
       return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
     }
@@ -412,7 +430,6 @@ export async function POST(req: NextRequest) {
     // as the same kind of stream a fresh answer is: the client reads a stream,
     // and the JSON this used to send parsed as an empty one, so a retry that
     // landed here ended with no answer and no error.
-    const done = await findAssistantTurn(supabase, conversationId, clientTurnId);
     if (done) {
       return createUIMessageStreamResponse({
         stream: createUIMessageStream({
@@ -431,8 +448,7 @@ export async function POST(req: NextRequest) {
   // The conversation row itself must not be created before this passes —
   // creating it first left an orphaned `golf_coachhelm_chat_conversations`
   // row (no messages) on every gated request.
-  const admin = createAdminClient();
-  const gate = await checkBudget(admin, ctx.coach_id, CHAT_TURN_COST_ESTIMATE_USD);
+  const gate = earlyGate ?? (await checkBudget(admin, ctx.coach_id, CHAT_TURN_COST_ESTIMATE_USD));
   if (!gate.allowed) {
     // "Reached your daily limit" is the wrong sentence for a coach whose team
     // was switched off, and both are the wrong sentence for an account we
@@ -464,13 +480,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 
-  if (userText && !isApprovalContinuation) {
-    await upsertUserTurn(supabase, {
-      conversation_id: conversationId,
-      content: userText,
-      client_turn_id: clientTurnId,
-    });
-  }
+  // Ask v2 only where Clubhouse is on for the team: this route also serves Fairway's chat (coachhelm-ask 02, hard rules).
+  const askV2 = isClubhouseForTeam(ctx.team_id);
+  // The user turn and the coach's standing notes are independent; a conversation made a moment ago has no tone set yet, so it skips that read.
+  const [, knows] = await Promise.all([
+    userText && !isApprovalContinuation
+      ? upsertUserTurn(supabase, {
+          conversation_id: conversationId,
+          content: userText,
+          client_turn_id: clientTurnId,
+        })
+      : null,
+    askV2
+      ? readAskKnows(supabase, { coachId: ctx.coach_id, teamId: ctx.team_id, conversationId: needsNewConversation ? null : conversationId }).catch(() => null)
+      : null,
+  ]);
 
   // Provider selection stays behind one abstraction: the coach's own Anthropic
   // key when present, else the gateway model string. No provider name appears
@@ -482,6 +506,7 @@ export async function POST(req: NextRequest) {
   // moved the gateway path and left the direct path on the old model, with
   // nothing to catch the split. Everything downstream (cost estimate, telemetry,
   // the slow-first-token log) already keys off MODEL_FOR_TASK.coach_chat.
+  perf.mark('user_turn_saved');
   const model = resolveModelProvider(MODEL_FOR_TASK.coach_chat);
 
   const startedAt = Date.now();
@@ -524,11 +549,6 @@ export async function POST(req: NextRequest) {
     playerIds: Set<string>;
   } = { measurements: [], series: [], detailNumbers: [], detailDates: [], playerIds: new Set() };
   if (!needsNewConversation) {
-    const priorMessages = await listRecentMessages(
-      supabase,
-      conversationId,
-      PRIOR_EVIDENCE_ROW_LIMIT,
-    );
     // The draft usually lands a turn after the date was said ("next Tuesday", then "5pm"), so earlier asks count, each from its own day.
     for (const m of priorMessages) {
       if (m.role === 'user') {
@@ -544,6 +564,7 @@ export async function POST(req: NextRequest) {
     priorDeferred = prior.deferred;
   }
 
+  perf.mark('prior_evidence');
   const convId = conversationId;
   // Opaque, server-generated (gen_random_uuid() — golf_coachhelm_chat_conversations.id
   // default, prod_public_baseline.sql), never derived from coach_id/player
@@ -582,20 +603,20 @@ export async function POST(req: NextRequest) {
   /** Ask v2: what `write_artifact` wrote this turn. A figure in a report is audited like one in the answer. */
   const artifactWords: string[] = [];
 
-  // Ask v2 only where Clubhouse is on for the team: this route also serves Fairway's chat (coachhelm-ask 02, hard rules).
-  const askV2 = isClubhouseForTeam(ctx.team_id);
-  const knows = askV2 ? await readAskKnows(supabase, { coachId: ctx.coach_id, teamId: ctx.team_id, conversationId: convId }).catch(() => null) : null;
-
+  const evidenceRefs = new Map<string, ToolEnvelope>();
+  perf.mark('knows');
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
+      perf.mark('execute');
       const tools = buildCoachTools({
         sb: supabase,
         ctx,
         conversationId: convId,
         writer,
         collect,
+        // This turn's reads by evidence_ref, so the audit can check each cited figure against the read it names.
+        evidenceRefs,
         // Ask's whole-team tools follow Clubhouse for this team (flag, then allowlist).
-  const evidenceRefs = new Map<string, ToolEnvelope>();
         teamTools: isClubhouseForTeam(ctx.team_id),
         // The team's strokes gained is Team Stats' own figure for the window (QA-1), so it is read there and handed in.
         playerFigures: (ids, window) => loadPlayersFigures(supabase, { timezone: ctx.timezone }, ids, window),
@@ -606,10 +627,9 @@ export async function POST(req: NextRequest) {
         onArtifactWords: (words) => artifactWords.push(words),
         practicePlans: true,
         defer: (fn) => after(fn),
-        // This turn's reads by evidence_ref, so the audit can check each cited figure against the read it names.
-        evidenceRefs,
       });
 
+      perf.mark('tools_built');
       const result = streamText({
         model,
         // A client disconnect should stop generation and spend, not just the
@@ -636,11 +656,11 @@ export async function POST(req: NextRequest) {
         // `new Date().toISOString()` would change on every request and could
         // never produce a cache hit — worth preserving deliberately if that
         // string is ever edited.
-        instructions: {
-          role: 'system',
-          content: buildInstructions(ctx, new Date().toISOString(), claimsBlockEnabled, { askV2, knows: knows ? knowsSection(knows) : null }),
-          providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } },
-        },
+        // Two blocks, three breakpoints (prompt-cache.ts): the policy and tool definitions are shared by every team for an hour; the team's own
+        // block and the conversation so far are cached behind it.
+        instructions: systemBlocks(buildInstructionBlocks(ctx, new Date().toISOString(), claimsBlockEnabled, { askV2, knows: knows ? knowsSection(knows) : null })),
+        prepareStep: ({ messages }) => ({ messages: withTailBreakpoint(messages) }),
+        providerOptions: askPerfProviderOptions(req),
         // Pass the tool set so tool parts from earlier turns convert correctly —
         // without it, a resumed approval loses the call it belongs to.
         //
@@ -707,6 +727,8 @@ export async function POST(req: NextRequest) {
         onChunk: () => {
           if (firstTokenMs === null) firstTokenMs = Date.now() - startedAt;
         },
+        onLanguageModelCallStart: (e) => perf.modelRequest(e),
+        onLanguageModelCallEnd: (e) => perf.modelCall(e),
         onError: ({ error }) => {
           logStreamModelError(error);
         },
@@ -924,6 +946,10 @@ export async function POST(req: NextRequest) {
       // third verdict check never engages and behavior is unchanged from
       // before this gate existed. Either way `strippedText` is the text with
       // any `<<<CLAIMS>>>` block removed, and the numeric audit is unaffected.
+      //
+      // Per-figure citations (`<<<CITES>>>`, cites.ts) come out first, whatever the turn: a block never reaches the audit as text or the
+      // stored `content`. Only an Ask v2 turn is asked for them, and only its cites are checked.
+      const extractedCites = extractCites(rawText);
       const { strippedText, claims } = claimsBlockEnabled
         ? extractAndValidateChatClaims(extractedCites.text, measurements)
         : extractAndValidateClaimsSafe(extractedCites.text, null);
@@ -937,10 +963,6 @@ export async function POST(req: NextRequest) {
         detailNumbers,
         // Rebase reconciliation (#1997 vs. a since-merged main commit): main
         // grew `auditNumericClaims` two more params (date-claim checking and
-      //
-      // Per-figure citations (`<<<CITES>>>`, cites.ts) come out first, whatever the turn: a block never reaches the audit as text or the
-      // stored `content`. Only an Ask v2 turn is asked for them, and only its cites are checked.
-      const extractedCites = extractCites(rawText);
         // timezone-correct WINDOW/SERIES-POINT conversion) after this
         // module was written against the 4-arg shape. Threaded through here
         // so `computeTurnVerdict` gets the same accuracy the inline
@@ -956,7 +978,17 @@ export async function POST(req: NextRequest) {
         players: ctx.roster,
         requestedSpans,
         claims,
+        ...(askV2 ? { cites: { cites: extractedCites.cites, evidence: evidenceRefs, blocks: extractedCites.blocks, invalid: extractedCites.invalid } } : {}),
       });
+      // How much of the answer the citations carried and how much fell back to the text heuristics: the rate that decides when the
+      // heuristics can retire. Counts only (no prose, no names, no values), at info level, off Sentry.
+      if (turnVerdict.citations) {
+        await logServerEvent(
+          'chat/stream: citation coverage',
+          { action: 'v3.chat.stream.citations', featureArea: 'coachhelm', skipSentry: true, extra: { ...turnVerdict.citations, outcome: turnVerdict.outcome, conversationId: convId, coachId: ctx.coach_id } },
+          'info',
+        );
+      }
       // A rejected verdict's note replaces the streamed text — not a note
       // appended alongside it — so ChatThread (live) and restoreUIMessages
       // (reload) both hide the text parts whenever this part is present. See
@@ -968,18 +1000,9 @@ export async function POST(req: NextRequest) {
           data: { note: turnVerdict.note },
         });
       }
+      if (perf.enabled) writer.write({ type: 'data-ask-perf', data: perf.snapshot(), transient: true } as StreamChunk);
       if (finishChunk) writer.write(finishChunk);
-        ...(askV2 ? { cites: { cites: extractedCites.cites, evidence: evidenceRefs, blocks: extractedCites.blocks, invalid: extractedCites.invalid } } : {}),
     },
-      // How much of the answer the citations carried and how much fell back to the text heuristics: the rate that decides when the
-      // heuristics can retire. Counts only (no prose, no names, no values), at info level, off Sentry.
-      if (turnVerdict.citations) {
-        await logServerEvent(
-          'chat/stream: citation coverage',
-          { action: 'v3.chat.stream.citations', featureArea: 'coachhelm', skipSentry: true, extra: { ...turnVerdict.citations, outcome: turnVerdict.outcome, conversationId: convId, coachId: ctx.coach_id } },
-          'info',
-        );
-      }
 
     /**
      * Persist the finished turn.
@@ -989,6 +1012,21 @@ export async function POST(req: NextRequest) {
      * the first is what made a reload throw away every chart.
      */
     onFinish: async ({ messages }) => {
+      // The stream stays open until this returns, so everything awaited here is time the coach waits after the last word (about a second a turn).
+      // Only the answer's own row is written before the stream closes (a reload and the next question's prior evidence read it); the log lines,
+      // the conversation's touch, the proposal links and the cost ledger run after the response is sent.
+      const deferred: Array<() => Promise<unknown>> = [];
+      const later = (fn: () => Promise<unknown>) => {
+        deferred.push(fn);
+      };
+      const logServerEvent = (...args: Parameters<typeof logServerEventNow>) => {
+        later(() => logServerEventNow(...args));
+        return Promise.resolve();
+      };
+      const logServerError = (...args: Parameters<typeof logServerErrorNow>) => {
+        later(() => logServerErrorNow(...args));
+        return Promise.resolve();
+      };
       try {
         const assistant = [...messages].reverse().find((m) => m.role === 'assistant');
         if (!assistant) return;
@@ -1141,19 +1179,22 @@ export async function POST(req: NextRequest) {
           // (reason kind + unmatched tokens), appended if none was streamed.
           ui_parts: withVerdictPart(publishableParts(assistant.parts), verdict) as unknown,
         });
-        await touchConversation(supabase, convId);
+        later(() => touchConversation(supabase, convId));
 
         // Audit row 50(b): tie every action this turn proposed to the message
         // that carries its card. `message_id` was NULL on every production
         // run — the audit trail could not say which answer proposed what.
         // Best-effort: a failure here never costs the coach their answer.
         const proposalKeys = proposalKeysFromParts(assistant.parts);
-        if (persistedAssistant?.id && proposalKeys.length > 0) {
-          await linkProposalsToMessage(supabase, {
-            coach_id: ctx.coach_id,
-            message_id: persistedAssistant.id,
-            idempotency_keys: proposalKeys,
-          }).catch(() => {});
+        const persistedId = persistedAssistant?.id;
+        if (persistedId && proposalKeys.length > 0) {
+          later(() =>
+            linkProposalsToMessage(supabase, {
+              coach_id: ctx.coach_id,
+              message_id: persistedId,
+              idempotency_keys: proposalKeys,
+            }).catch(() => {}),
+          );
         }
 
         // Latency telemetry: first token and total. No player name, prompt
@@ -1170,7 +1211,7 @@ export async function POST(req: NextRequest) {
         // worst-case estimate instead (which an earlier revision of this route
         // did) over-charges every short answer several times over and
         // exhausts a coach's daily budget long before they have spent it.
-        await recordTurnCost({
+        later(() => recordTurnCost({
           admin,
           ctx,
           conversationId: convId,
@@ -1178,30 +1219,43 @@ export async function POST(req: NextRequest) {
           grounded: verdict.outcome === 'accepted',
           unmatchedTokens: verdictRecord(verdict)?.unmatched_tokens ?? [],
           verdictReason: verdict.outcome === 'rejected' ? verdict.reason : undefined,
-        });
+          citationStats: verdict.citations,
+        }));
 
         // helm.ai.* — the call reached this point, so the model responded and
         // was billed; an ungrounded/failed-audit turn is still a successful
         // AI SDK call (recordAi's outcome is about the call itself, not
         // content quality — that has its own logServerEvent above).
         // usagePromise is already settled by recordTurnCost's own await.
-        const usage = usagePromise ? await usagePromise.catch(() => null) : null;
-        recordAi({
-          feature: 'coachhelm_chat',
-          action: 'v3.chat.stream.model',
-          model: MODEL_FOR_TASK.coach_chat,
-          outcome: 'success',
-          durationMs: Date.now() - startedAt,
-          citationStats: verdict.citations,
-          inputTokens: usage?.inputTokens,
-          outputTokens: usage?.outputTokens,
-          runtime: process.env.NEXT_RUNTIME ?? 'nodejs',
+        const durationMs = Date.now() - startedAt;
+        later(async () => {
+          const usage = usagePromise ? await usagePromise.catch(() => null) : null;
+          recordAi({
+            feature: 'coachhelm_chat',
+            action: 'v3.chat.stream.model',
+            model: MODEL_FOR_TASK.coach_chat,
+            outcome: 'success',
+            durationMs,
+            inputTokens: usage?.inputTokens,
+            outputTokens: usage?.outputTokens,
+            runtime: process.env.NEXT_RUNTIME ?? 'nodejs',
+          });
         });
       } catch (err) {
         await logServerError(
           `chat/stream: persistence failed — ${describeError(err)}`,
           { action: 'v3.chat.stream.persist' },
         );
+      } finally {
+        const runDeferred = async () => {
+          await Promise.all(deferred.map((fn) => fn().catch(() => undefined)));
+        };
+        // `after` only exists inside a request; anywhere else (a script, a test) the work is simply awaited, as it was before.
+        try {
+          after(runDeferred);
+        } catch {
+          await runDeferred();
+        }
       }
     },
 
@@ -1252,6 +1306,8 @@ async function recordTurnCost(args: {
   unmatchedTokens: string[];
   /** Which verdict check rejected the turn (audit row 47c). */
   verdictReason?: TurnVerdictReason;
+  /** The turn's citation counts, recorded with a rejection (an accepted turn's go to the log). */
+  citationStats?: CitationStats;
 }): Promise<void> {
   const { admin, ctx, conversationId, usagePromise, grounded, unmatchedTokens, verdictReason, citationStats } = args;
   try {
@@ -1266,8 +1322,6 @@ async function recordTurnCost(args: {
     // freshly processed.
     const cost =
       promptTokens + completionTokens > 0
-  /** The turn's citation counts, recorded with a rejection (an accepted turn's go to the log). */
-  citationStats?: CitationStats;
         ? estimateCachedCostUsd(
             MODEL_FOR_TASK.coach_chat,
             promptTokens,
@@ -1287,6 +1341,7 @@ async function recordTurnCost(args: {
         grounded,
         unmatchedTokens,
         verdictReason,
+        citationStats: citationStats ? { ...citationStats } : undefined,
       }),
     );
     await recordSpend(admin, { coach_id: ctx.coach_id, task: 'coach_chat', cost_usd: cost });
@@ -1294,4 +1349,3 @@ async function recordTurnCost(args: {
     // Never fail a coach's answer because accounting hiccuped.
   }
 }
-        citationStats: citationStats ? { ...citationStats } : undefined,

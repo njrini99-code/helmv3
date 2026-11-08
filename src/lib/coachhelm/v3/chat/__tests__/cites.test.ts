@@ -84,10 +84,12 @@ describe('verifying one cite', () => {
       expect(verifyCite(cite(v, 'e3', key, OWEN), refs).status, `${v} ${key}`).toBe('verified');
     }
   });
-  it('mismatch: the read holds the key for the subject and says something else', () => {
+  it('mismatch: the figure is cited to the wrong subject or window (the read holds it, for someone else or over another window)', () => {
     expect(verifyCite(cite('-4.16', 'e4', 'sg_approach', ETHAN), refs).status).toBe('mismatch');
-    expect(verifyCite(cite('-3.5', 'e3', 'sg_approach', OWEN), refs).status).toBe('mismatch');
     expect(verifyCite(cite('-4.16', 'e3', 'sg_approach', OWEN, ['2026-01-01', '2026-09-26']), refs)).toMatchObject({ status: 'mismatch', reason: expect.stringMatching(/window/) });
+  });
+  it('a figure the read holds for nobody under that key is unresolved, not a mismatch: the text check decides, as with no cite', () => {
+    expect(verifyCite(cite('-3.5', 'e3', 'sg_approach', OWEN), refs)).toMatchObject({ status: 'unresolved', reason: expect.stringMatching(/does not hold/) });
   });
   it('unresolved: nothing is learned from a ref, key or subject the read does not hold, or from a value that is not a number', () => {
     expect(verifyCite(cite('-4.16', 'e9', 'sg_approach', OWEN), refs).status).toBe('unresolved');
@@ -98,7 +100,7 @@ describe('verifying one cite', () => {
   it('a figure in a read’s detail is found by its field name and its player', () => {
     const detail = env({ detail: { player: { player_id: OWEN, name: 'Owen Carter' }, rounds: [{ date: '2026-09-26', putts: 33 }] } });
     expect(verifyCite(cite('33', 'e1', 'putts', OWEN), new Map([['e1', detail]])).status).toBe('verified');
-    expect(verifyCite(cite('34', 'e1', 'putts', OWEN), new Map([['e1', detail]])).status).toBe('mismatch');
+    expect(verifyCite(cite('34', 'e1', 'putts', OWEN), new Map([['e1', detail]])).status).toBe('unresolved');
   });
 });
 
@@ -201,9 +203,9 @@ describe('the three-putt turn (efd480a1), cited as the model would', () => {
     expect(v.outcome).toBe('accepted');
     expect(v.citations).toMatchObject({ verified: 4, mismatched: 0 });
   });
-  it('a count the data does not make is a mismatch against the very read it names', async () => {
+  it('a count the data does not make is not verified by the read it names', async () => {
     const out = await summariseData(ctx, { source: { ref: 'e2' }, ops: [{ op: 'count_by', id: 'status', field: 'status' }] }, { evidence: new Map([['e2', rounds]]) });
-    expect(verifyCite(cite('24', 'e3', 'summary:status:completed', 'team'), new Map([['e3', out]])).status).toBe('mismatch');
+    expect(verifyCite(cite('24', 'e3', 'summary:status:completed', 'team'), new Map([['e3', out]])).status).toBe('unresolved');
   });
 });
 
@@ -258,5 +260,25 @@ describe('the team ranking turns', () => {
     // The true version is accepted.
     const ok = verdictFor('Owen’s approach play is 6th of the 7 players with data. His strokes gained on approach is -4.16 per round. Only Ethan Park is lower.', [cite('-4.16', 'e1', 'sg_approach', OWEN)], all);
     expect(ok.outcome).toBe('accepted');
+  });
+});
+
+// Live (dev log, 2026-11-08): 13 figures cited to "approach_proximity_50_125ft" were all unresolved, because the goals read keys its numbers by
+// field (current_value) and the model reads the metric off the row; and a "7" cited to the roster count (8) withheld a turn whose 7 was the
+// players with rounds.
+describe('citing a metric by the row it sits in', () => {
+  const goals = env({ detail: { goals: [{ title: 'Wedge distance control', metric_id: 'approach_proximity_50_125ft', player_id: OWEN, baseline_value: 28, current_value: 15.285714, target_value: 18, progress_percent: 127 }, { title: 'Putting', metric_id: 'make_pct_3_6ft', player_id: ETHAN, baseline_value: 82, current_value: 46.5, target_value: 92 }] } });
+  const all = new Map<string, ToolEnvelope>([['e5', goals]]);
+  it('the row’s figures verify under the metric, for its player', () => {
+    for (const v of ['28', '15.29', '18', '127']) expect(verifyCite(cite(v, 'e5', 'approach_proximity_50_125ft', OWEN), all).status, v).toBe('verified');
+  });
+  it('and another player’s row, or another metric’s, does not verify them', () => {
+    expect(verifyCite(cite('46.5', 'e5', 'approach_proximity_50_125ft', OWEN), all).status).toBe('unresolved');
+    expect(verifyCite(cite('28', 'e5', 'make_pct_3_6ft', ETHAN), all).status).toBe('unresolved');
+  });
+  it('a roster count cited for a different 7 is the text check’s to judge, not a withheld turn', () => {
+    const overview = env({ measurements: [m('active_roster_count', 8, { kind: 'team', id: 'team-1', label: 'Demo' }, { unit: 'count' })] });
+    const v = verifyCite(cite('7', 'e2', 'active_roster_count', 'team'), new Map([['e2', overview]]));
+    expect(v.status).toBe('unresolved');
   });
 });

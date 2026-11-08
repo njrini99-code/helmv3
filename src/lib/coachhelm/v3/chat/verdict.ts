@@ -120,6 +120,8 @@ export function computeTurnVerdict(args: {
   }
 
   const { unsupported, citations } = auditCited({
+    surface: 'coach',
+    strictCounts: true,
     base: [args.text, args.measurements, args.series, args.detailNumbers, args.detailDates, args.timezone],
     options: { players: args.players, requestedSpans: args.requestedSpans },
     cites: args.cites,

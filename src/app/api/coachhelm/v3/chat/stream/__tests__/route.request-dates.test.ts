@@ -58,7 +58,7 @@ vi.mock('@/lib/coachhelm/v3/chat/context', () => ({
   resolveCoachChatContext: vi.fn(async () => ({ coach_id: 'coach-1', user_id: 'user-1', team_id: 'team-1', team_name: 'Test Team', timezone: 'America/New_York', roster: [] })),
 }));
 vi.mock('@/lib/coachhelm/v3/chat/agent-tools', () => ({ buildCoachTools: vi.fn(() => ({})), isConfirmRequired: () => false }));
-vi.mock('@/lib/coachhelm/v3/chat/instructions', () => ({ buildInstructions: vi.fn(() => 'system prompt') }));
+vi.mock('@/lib/coachhelm/v3/chat/instructions', () => ({ buildInstructions: vi.fn(() => 'system prompt'), buildInstructionBlocks: vi.fn(() => ({ stable: 'system prompt', dynamic: 'this program' })) }));
 vi.mock('@/lib/coachhelm/v3/chat/provenance', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/coachhelm/v3/chat/provenance')>()),
   auditNumericClaims: mocks.auditNumericClaims,
