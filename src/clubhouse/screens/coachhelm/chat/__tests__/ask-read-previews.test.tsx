@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 
-import { benchmarkBlock, comparisonWords, detailTable, evidenceBlocks, withWindowFigures, fitToPhone, PHONE_TABLE_PX, type AskTable } from '../../../../data/coachhelm-chat-thread';
+import { zeroBasedDomain, benchmarkBlock, comparisonWords, detailTable, evidenceBlocks, withWindowFigures, fitToPhone, PHONE_TABLE_PX, type AskTable } from '../../../../data/coachhelm-chat-thread';
 import { AskEvidenceView } from '../Evidence';
 import { lastTurnIsGeneral } from '../ask-scope-window';
 import type { ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
@@ -211,5 +211,46 @@ describe('the card’s "you" is the answer’s window figure', () => {
     const named = withWindowFigures(bench, [bench, windowRead(31, 'p1')]);
     expect(benchmarkBlock(named)!.rows[0]!.display).toBe('31%');
     expect(benchmarkBlock(named)!.note).toMatch(/^The figure is your last 10 rounds\. Place in the level and in the team is over all their recorded rounds/);
+  });
+});
+
+describe('the track never starts above zero (a fill under a truncated baseline overstates every gap)', () => {
+  const putt = (v: number) => ({ metric_id: 'putts_made_5_10ft_pct', metric_label: 'Putts Made 5-10 ft', player_value: v, comparisons: [ref('level', 50, { label: 'Division I average' }), ref('team', 33), ref('tour', 62)] });
+
+  it('a rate runs from 0 to its largest value rounded up: the fill and every tick are value over that domain', () => {
+    const b = benchmarkBlock(benchmark([putt(29)]))!;
+    const row = b.rows[0]!;
+    // Largest value 62 rounds up to 80 (a nice step), so the domain is 0 to 80.
+    expect(row.zero).toBe(0);
+    expect(row.pct).toBeCloseTo((29 / 80) * 100, 6);
+    expect(row.ticks!.map((t) => [t.kind, t.at])).toEqual([['level', (50 / 80) * 100], ['team', (33 / 80) * 100], ['tour', (62 / 80) * 100]]);
+    expect(zeroBasedDomain('percent', [29, 50, 33, 62], false)).toEqual({ min: 0, max: 80 });
+  });
+
+  it('is drawn from the left edge at that width, not as a sliver', () => {
+    const { container } = render(<AskEvidenceView envelope={benchmark([putt(29)])} />);
+    const fill = container.querySelector<HTMLElement>('.ch-th-bar__track > span')!;
+    expect(parseFloat(fill.style.width)).toBeCloseTo(36.25, 2);
+    expect(container.querySelector('.ch-th-bar__zero')).toBeNull();
+  });
+
+  it('a rate is never given a domain past 100, and a distance or a count starts at zero too', () => {
+    expect(zeroBasedDomain('percent', [97, 99], false)).toEqual({ min: 0, max: 100 });
+    expect(zeroBasedDomain('feet', [24, 27, 30], false)).toEqual({ min: 0, max: 30 });
+    expect(zeroBasedDomain('count', [0.4, 1.2], false)).toEqual({ min: 0, max: 1.5 });
+  });
+
+  it('strokes gained is centred on zero with a zero rule, and the fill runs from it', () => {
+    const sg = { metric_id: 'sg_putting', metric_label: 'SG: Putting', player_value: -0.4, comparisons: [ref('level', null, { missing_reason: 'no college figure' }), ref('team', 0.3), ref('tour', 0)] };
+    const b = benchmarkBlock(benchmark([sg]))!;
+    const row = b.rows[0]!;
+    expect(row.zero).toBe(50);
+    expect(row.pct).toBeLessThan(50);
+    expect(row.ticks!.find((t) => t.kind === 'tour')!.at).toBe(50);
+    const { container } = render(<AskEvidenceView envelope={benchmark([sg])} />);
+    const fill = container.querySelector<HTMLElement>('.ch-th-bar__track > span')!;
+    expect(parseFloat(fill.style.left)).toBeCloseTo(row.pct, 6);
+    expect(parseFloat(fill.style.width)).toBeCloseTo(50 - row.pct, 6);
+    expect(container.querySelector('.ch-th-bar__zero')).not.toBeNull();
   });
 });

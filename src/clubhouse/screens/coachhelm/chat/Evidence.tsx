@@ -141,7 +141,8 @@ export function Drawing({ block, roster = [] }: { block: Exclude<AskEvidence, { 
             <div key={r.label} style={{ '--ch-i': i } as CSSProperties} className={'ch-th-bar' + (r.highlight ? ' is-on' : '') + (r.ticks?.length ? ' ch-th-bar--bench' : '')} role="listitem" data-tone={r.tone} aria-label={r.ticks?.length ? `${r.label}: ${r.display}. ${r.ticks.map((t) => t.text).join('. ')}` : undefined}>
               <span className="ch-th-bar__label">{r.label}</span>
               <span className="ch-th-bar__track" aria-hidden="true">
-                <span style={{ width: `${r.pct}%` }} />
+                {typeof r.zero === 'number' ? <span style={{ left: `${Math.min(r.zero, r.pct)}%`, width: `${Math.abs(r.pct - r.zero)}%` }} /> : <span style={{ width: `${r.pct}%` }} />}
+                {r.zero ? <b className="ch-th-bar__zero" style={{ left: `${r.zero}%` }} /> : null}
                 {r.ticks?.map((t) => (
                   <i key={t.kind} className="ch-th-bar__tick" data-kind={t.kind} style={{ left: `${t.at}%` }} />
                 ))}

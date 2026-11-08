@@ -553,6 +553,14 @@
   background: transparent;
   transform: rotate(45deg);
 }
+/* Zero on a signed track: a thin rule, with the fill running from it. */
+.ch-th-bar__zero {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--ch-text-tertiary);
+}
 /* A benchmark row stacks: the label and the value, the track across the card, the three references in words. */
 .ch-th-bar--bench,
 .ch-th--phone .ch-th-bar--bench {

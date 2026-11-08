@@ -9,7 +9,6 @@ import { ValidatedVisualArtifact } from '@/lib/coachhelm/v3/chat/visuals/schema'
 import { changeTone, formatFixed, formatSG, formatToPar, MINUS, NO_DATA } from '../lib/format';
 import { formatWallClock, zoneWallParts } from '../lib/dates';
 import { plural } from '../lib/plural';
-import { fitScale, toScalePct } from '@/components/golf/coachhelm/v3/StandingBar/utils';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 
@@ -755,7 +754,7 @@ export type AskEvidence =
   | { kind: 'unavailable'; note: string }
   | { kind: 'empty'; note: string }
   | (EvBase & { kind: 'trend'; unit: Measurement['unit']; points: Array<{ label: string; value: number; n: number }>; reference: { label: string; value: number } | null; summary: string; goodDirection: 'up' | 'down' | null; toPar?: boolean })
-  | (EvBase & { kind: 'bars'; rows: Array<{ label: string; pct: number; display: string; of: string | null; tone: 'good' | 'loss' | 'neutral'; highlight?: boolean; /** Marks on the track: the level's average, and the Tour where it was asked for. */ ticks?: Array<{ at: number; kind: 'level' | 'team' | 'tour'; text: string; /** The tag and value printed under the track: "D1 50%", "Team 33%", "Tour 66%". */ short?: string }> }> })
+  | (EvBase & { kind: 'bars'; rows: Array<{ label: string; pct: number; /** Where zero sits on the track (percent from the left); a fill runs from it to `pct`. Absent: the fill starts at the left edge. */ zero?: number; display: string; of: string | null; tone: 'good' | 'loss' | 'neutral'; highlight?: boolean; /** Marks on the track: the level's average, and the Tour where it was asked for. */ ticks?: Array<{ at: number; kind: 'level' | 'team' | 'tour'; text: string; /** The tag and value printed under the track: "D1 50%", "Team 33%", "Tour 66%". */ short?: string }> }> })
   | (EvBase & { kind: 'ranking'; rows: AskRankRow[]; signed: boolean })
   | (EvBase & { kind: 'compare'; team: AskTeamTable })
   | (EvBase & { kind: 'legs'; rows: Array<{ label: string; value: number; display: string }>; takeaway: string })
@@ -1139,6 +1138,25 @@ export function comparisonWords(comparisons: ReadonlyArray<{ kind: RefKind; valu
   });
 }
 
+/**
+ * The track's domain: a fill starts at zero, never at a truncated baseline. Rates, distances and counts run 0 to the largest value rounded up
+ * (a rate to at most 100); strokes gained and other signed figures run either side of zero, with the zero rule in the middle.
+ */
+export function zeroBasedDomain(unit: string, values: ReadonlyArray<number | null>, signed: boolean): { min: number; max: number } {
+  const v = values.filter((x): x is number => typeof x === 'number' && Number.isFinite(x));
+  const biggest = Math.max(0, ...v.map(Math.abs));
+  const nice = (x: number): number => {
+    if (x <= 0) return 1;
+    const p = 10 ** Math.floor(Math.log10(x));
+    const n = [1, 1.5, 2, 3, 4, 5, 6, 8, 10].find((c) => c * p >= x - 1e-9) ?? 10;
+    return n * p;
+  };
+  if (signed || v.some((x) => x < 0)) return { min: -nice(biggest), max: nice(biggest) };
+  const max = nice(biggest);
+  return { min: 0, max: unit === 'percent' ? Math.min(100, max) : max };
+}
+const domainPct = (v: number, d: { min: number; max: number }) => Math.max(0, Math.min(100, ((v - d.min) / (d.max - d.min)) * 100));
+
 /** The row label on a phone: a putt band is "5–10 ft makes", not the standards' "Putts Made 5-10 ft". */
 function benchLabel(metricId: string, label: string): string {
   const m = metricId.match(/^putts_made_(\d+)_(?:(\d+)ft|plus_ft)_pct$/);
@@ -1208,7 +1226,7 @@ export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { k
     const val = (k: RefKind) => refs.find((c) => c.kind === k)?.value ?? null;
     const you = r.player_value as number;
     const level = val('level');
-    const scale = fitScale(cfg.default_scale, [you, level, val('team'), val('tour')]);
+    const scale = zeroBasedDomain(cfg.unit, [you, level, val('team'), val('tour')], cfg.default_scale.min < 0);
     const fmt = (v: number) => formatValue(v, unit);
     const better = level === null ? null : cfg.direction === 'higher_better' ? you > level : you < level;
     const label = benchLabel(r.metric_id as string, (r.metric_label ?? cfg.display_label).replace(/^SG:\s*/, 'SG '));
@@ -1218,11 +1236,12 @@ export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { k
     tableRows.push([label, fmt(you), ...(['level', 'team', 'tour'] as const).map((k) => { const v = val(k); return v === null ? NO_DATA : fmt(v); })]);
     return {
       label,
-      pct: toScalePct(you, scale),
+      pct: domainPct(you, scale),
+      zero: domainPct(0, scale),
       display: fmt(you),
       of: null,
       tone: better === null || you === level ? ('neutral' as const) : better ? ('good' as const) : ('loss' as const),
-      ticks: (['level', 'team', 'tour'] as const).flatMap((k) => { const v = val(k); return v === null ? [] : [{ at: toScalePct(v, scale), kind: k, text: `${REF_WORD[k]} ${fmt(v)}`, short: `${refTag(k, refs.find((c) => c.kind === k)?.label)} ${fmt(v)}` }]; }),
+      ticks: (['level', 'team', 'tour'] as const).flatMap((k) => { const v = val(k); return v === null ? [] : [{ at: domainPct(v, scale), kind: k, text: `${REF_WORD[k]} ${fmt(v)}`, short: `${refTag(k, refs.find((c) => c.kind === k)?.label)} ${fmt(v)}` }]; }),
     };
   });
   const who = d?.standing?.player === 'You' ? 'You' : (d?.standing?.player ?? 'The player');
