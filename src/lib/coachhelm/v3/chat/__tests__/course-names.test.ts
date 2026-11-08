@@ -51,4 +51,12 @@ describe('dates and weekdays', () => {
     expect(windows('A round on July 30 and one on October 21.')).toEqual([]);
     expect(windows('A round on May 27.')).toEqual(['May 27']);
   });
+  it('a read of "the next 8 days" ends 8 days after the day it was read, in the team’s zone', () => {
+    const calendar = { summary: 'Nothing scheduled in the next 8 days.', measurements: [], series: [], coverage: 'complete', coverage_note: null, as_of: '2026-11-08T02:15:22.247Z', detail: { events: [] } } as unknown as ToolEnvelope;
+    const days = collectEnvelopeDates(calendar, 'America/New_York');
+    expect(days).toContain('2026-11-15');
+    const run = (text: string) => auditNumericClaims(text, [], [], [], days, 'America/New_York', { players: roster }).map((c) => c.text);
+    expect(run('Nothing is on the calendar through Sunday, November 15.')).toEqual([]);
+    expect(run('Nothing is on the calendar through Sunday, November 22.')).toEqual(['November 22']);
+  });
 });

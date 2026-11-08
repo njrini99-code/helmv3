@@ -1602,7 +1602,14 @@ export function collectScopedNumbers(
     // A payload tagged `kind: 'reference' | 'definition' | 'benchmark'` is no one's result; everything beneath it needs a sourced sentence.
     const refKind = obj.kind === 'reference' || obj.kind === 'definition' || obj.kind === 'benchmark' || obj.kind === 'level' || obj.kind === 'tour';
     const next = { team: obj.team_scope === true || inherited.team, metric: typeof obj.metric_scope === 'string' ? obj.metric_scope : inherited.metric, reference: refKind || inherited.reference };
-    return Object.entries(obj).flatMap(([k, v]) => collectScopedNumbers(v, scope, k, depth + 1, next));
+    const own2 = Object.entries(obj).flatMap(([k, v]) => collectScopedNumbers(v, scope, k, depth + 1, next));
+    // A gap row states both of its figures ("player_value", "team_average"); the gap between them is arithmetic on the row, said as "a gap of 0.36".
+    const pv = obj.player_value;
+    const ta = obj.team_average;
+    if (typeof pv === 'number' && typeof ta === 'number' && Number.isFinite(pv) && Number.isFinite(ta) && !next.reference) {
+      own2.push({ value: Math.round((pv - ta) * 1e6) / 1e6, player_id: scope, metric_key: typeof obj.metric_id === 'string' ? obj.metric_id : 'gap', ...(next.team ? { team: true } : {}) } as ScopedNumber);
+    }
+    return own2;
   }
   return [];
 }
@@ -1624,10 +1631,14 @@ export function readFigure(f: Pick<Measurement, 'metric_id' | 'metric_label' | '
  * answer may name. Staging, 2026-11-08: an answer saying coverage was "complete as of July 23, 2026" was withheld
  * because only `detail` was read for dates.
  */
-export function collectEnvelopeDates(envelope: Pick<ToolEnvelope, 'detail' | 'as_of' | 'measurements' | 'series'>, timezone?: string): string[] {
+export function collectEnvelopeDates(envelope: Pick<ToolEnvelope, 'detail' | 'as_of' | 'measurements' | 'series'> & { summary?: string }, timezone?: string): string[] {
+  const asOfDays = typeof envelope.as_of === 'string' ? isoDaysOf(envelope.as_of, timezone) : [];
+  // "Nothing scheduled in the next 8 days": the read's own window ends 8 days after the day it was read, and the answer says "through November 15".
+  const ahead = [...(envelope.summary ?? '').matchAll(/\b(?:next|coming|upcoming)\s+(\d{1,3})\s+days?\b/gi)].flatMap((m) => (asOfDays[0] ? [addDays(asOfDays[0], Number(m[1]))] : []));
   return [
     ...(envelope.detail === undefined ? [] : collectDates(envelope.detail, timezone)),
     ...[envelope.as_of, ...(envelope.measurements ?? []).map((m) => m.as_of), ...(envelope.series ?? []).map((s) => s.as_of)].flatMap((at) => (typeof at === 'string' ? isoDaysOf(at, timezone) : [])),
+    ...ahead,
   ];
 }
 
