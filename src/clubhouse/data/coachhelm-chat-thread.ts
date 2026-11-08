@@ -435,6 +435,17 @@ function windowWords(m: Pick<Measurement, 'window_start' | 'window_end' | 'sampl
   return Number.isFinite(days) && days > 0 ? `${days} days` : null;
 }
 
+/** "Jun 9–Sep 26": the dates a read covers, with the year when the window crosses one. Null when the read names no window. */
+export function windowDates(m: Pick<Measurement, 'window_start' | 'window_end'> | undefined): string | null {
+  const a = fmtDay(m?.window_start);
+  const b = fmtDay(m?.window_end);
+  if (!a || !b) return null;
+  const yearA = m?.window_start?.slice(0, 4);
+  const yearB = m?.window_end?.slice(0, 4);
+  if (a === b) return a;
+  return yearA !== yearB ? `${a}, ${yearA}–${b}, ${yearB}` : `${a}–${b}`;
+}
+
 function turnReadsOf(parts: ReadonlyArray<Record<string, unknown> & { type: string }>): AskTurnRead[] {
   const out: AskTurnRead[] = [];
   for (const p of parts) {
@@ -443,7 +454,8 @@ function turnReadsOf(parts: ReadonlyArray<Record<string, unknown> & { type: stri
     if (!d?.envelope || !d.ref) continue;
     const tool = d.tool ?? '';
     const name = READ_NAME[tool] ?? 'Read';
-    const win = windowWords(readBasis(d.envelope));
+    // The dates the read covers, never a count of days ("By player · 111 days" said nothing a coach could check); no window, just the read's name.
+    const win = windowDates(readBasis(d.envelope));
     out.push({ ref: d.ref, tool, name, chip: win ? `${name} · ${win}` : name, envelope: d.envelope });
   }
   return out;
@@ -456,7 +468,7 @@ export function readRows(read: AskTurnRead): Array<{ label: string; value: strin
   const line = sourceLine(m);
   return [
     ...(m.sample_size > 0 ? [{ label: 'Sample', value: sampleWords(m.sample_size, m.sample_unit) }] : []),
-    ...(windowWords(m) ? [{ label: 'Window', value: windowWords(m) as string }] : []),
+    ...(windowDates(m) ? [{ label: 'Window', value: windowDates(m) as string }] : windowWords(m) ? [{ label: 'Window', value: windowWords(m) as string }] : []),
     ...(line && !m.sample_size && !windowWords(m) ? [{ label: 'Source', value: line }] : []),
     ...(fmtDay(m.as_of) ? [{ label: 'Computed', value: fmtDay(m.as_of) as string }] : []),
   ];
@@ -469,6 +481,26 @@ function pendingVisualOf(parts: ReadonlyArray<Record<string, unknown> & { type: 
   return Array.isArray(blocks) ? blocks.map((b) => String(b?.type ?? '')).filter(Boolean) : [];
 }
 
+/** The rounds a read lists, as "player|day": a recent-rounds list, or rows of a records read that carry a round date and a player. */
+function roundKeys(envelope: ToolEnvelope): Set<string> {
+  const d = envelope.detail as { kind?: unknown; player?: { player_id?: unknown }; rounds?: unknown; rows?: unknown } | undefined;
+  const keys = new Set<string>();
+  if (Array.isArray(d?.rounds) && typeof d?.player?.player_id === 'string') {
+    for (const r of d.rounds as Array<{ date?: unknown }>) if (typeof r?.date === 'string') keys.add(`${d.player.player_id}|${r.date.slice(0, 10)}`);
+  } else if (d?.kind === 'team_data' && Array.isArray(d.rows)) {
+    for (const r of d.rows as Array<{ round_date?: unknown; player_id?: unknown }>) if (typeof r?.round_date === 'string' && typeof r.player_id === 'string') keys.add(`${r.player_id}|${r.round_date.slice(0, 10)}`);
+  }
+  return keys;
+}
+
+/** How much of what a coach asks a rounds list for it holds: three-putts, then putts, then the other columns. */
+function roundsListScore(envelope: ToolEnvelope): number {
+  const d = envelope.detail as { rounds?: unknown; rows?: unknown } | undefined;
+  const rows = (Array.isArray(d?.rounds) ? d.rounds : Array.isArray(d?.rows) ? d.rows : []) as Array<Record<string, unknown>>;
+  const has = (k: string) => rows.some((r) => typeof r[k] === 'number' && (r[k] as number) > 0);
+  return (has('three_putts') ? 100 : 0) + (has('total_putts') || has('putts') ? 10 : 0) + new Set(rows.flatMap((r) => Object.keys(r))).size / 100;
+}
+
 /** One assistant message as the thread draws it. */
 export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; busy: boolean }): AskAssistantTurn {
   const parts = partsOf(message);
@@ -476,8 +508,8 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
   // nothing to them). It stays in the steps, worded plainly. A failure nothing recovered from is still shown, as a plain sentence.
   const evidence = parts.flatMap((p, i) => {
     if (p.type !== 'data-evidence') return [];
-    const d = dataOf<{ tool?: string; envelope?: ToolEnvelope }>(p);
-    return d?.envelope ? [{ i, tool: d.tool ?? '', envelope: d.envelope }] : [];
+    const d = dataOf<{ tool?: string; envelope?: ToolEnvelope; ref?: string }>(p);
+    return d?.envelope ? [{ i, tool: d.tool ?? '', envelope: d.envelope, ref: d.ref ?? null }] : [];
   });
   const failed = (e: ToolEnvelope) => e.coverage === 'unavailable';
   const recovered = new Set<number>();
@@ -488,9 +520,29 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
       retriedTools.set(ev.tool, (retriedTools.get(ev.tool) ?? 0) + 1);
     }
   }
-  // Once the worked-out result exists, the raw record lists it was built from are reads, not tables above the answer.
-  const lastSummary = Math.max(-1, ...evidence.filter((ev) => ev.tool === 'summarise_data' && !failed(ev.envelope)).map((ev) => ev.i));
-  const collapsed = new Set<number>(evidence.filter((ev) => ev.i < lastSummary && !failed(ev.envelope) && (ev.envelope.detail as { kind?: unknown } | undefined)?.kind === 'team_data').map((ev) => ev.i));
+  // Once the worked-out result exists, the raw reads it was built from are reads, not tables above the answer. A summary names the reads it took
+  // figures from (`detail.sources`, by evidence ref): exactly those fold, and any other read stays drawn. One that names none (an older turn)
+  // folds every record list read before it.
+  const collapsed = new Set<number>();
+  for (const sum of evidence.filter((ev) => ev.tool === 'summarise_data' && !failed(ev.envelope))) {
+    const named = (sum.envelope.detail as { sources?: unknown } | undefined)?.sources;
+    const refs = Array.isArray(named) ? new Set(named.filter((r): r is string => typeof r === 'string')) : null;
+    for (const ev of evidence) {
+      if (ev.i >= sum.i || failed(ev.envelope)) continue;
+      if (refs ? ev.ref != null && refs.has(ev.ref) : (ev.envelope.detail as { kind?: unknown } | undefined)?.kind === 'team_data') collapsed.add(ev.i);
+    }
+  }
+  // Two reads that list the same player's same rounds are one table: the one with the most of the figures a coach asks for (three-putts, then putts).
+  const shadowed = new Set<number>();
+  const lists = evidence.filter((ev) => !failed(ev.envelope) && !recovered.has(ev.i) && !collapsed.has(ev.i)).map((ev) => ({ ev, keys: roundKeys(ev.envelope), score: roundsListScore(ev.envelope) })).filter((l) => l.keys.size > 0);
+  for (const [n, a] of lists.entries()) {
+    for (const b of lists.slice(n + 1)) {
+      if (shadowed.has(a.ev.i) || shadowed.has(b.ev.i)) continue;
+      const shared = [...a.keys].filter((k) => b.keys.has(k)).length;
+      if (shared * 2 < Math.min(a.keys.size, b.keys.size)) continue;
+      shadowed.add((a.score > b.score ? b : a).ev.i);
+    }
+  }
   const retriedWords = (tool: string) => (tool === 'summarise_data' ? 'One calculation was retried' : 'One read was retried');
   const steps: AskStep[] = parts
     .filter((p) => p.type === 'data-progress')
@@ -561,7 +613,7 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
       texts.push(plainText(text));
     } else if (p.type === 'data-evidence') {
       const data = dataOf<{ tool?: string; envelope?: ToolEnvelope; ref?: string }>(p);
-      if (recovered.has(i) || collapsed.has(i)) return;
+      if (recovered.has(i) || collapsed.has(i) || shadowed.has(i)) return;
       if (data?.envelope && data.tool === 'summarise_data' && failed(data.envelope)) {
         // No field names or row counts for a coach: the calculation did not finish.
         blocks.push({ kind: 'evidence', key: `e-${String(p.id ?? i)}`, envelope: { ...data.envelope, summary: 'Could not work out the figures.', coverage_note: 'That calculation could not be completed.', detail: undefined } });
@@ -867,11 +919,34 @@ export interface EvidenceTile {
 /** Fewer points than this is a change, not a trend: drawn as a table. */
 export const MIN_TREND_POINTS = 3;
 
-const benchOf = (b: Measurement['benchmark'] | MeasurementSeries['benchmark'], unit: Measurement['unit']): string | null =>
-  b && !b.omitted_for_cohort ? `${b.source}, ${b.version}: ${formatValue(b.value, unit)}` : null;
+/** "PGA Tour (2024)": a source that already names its year (the standards' "PGA Tour 2024") is not given the version again. */
+export function benchName(source: string, version: string): string {
+  const src = source.trim();
+  const v = version.trim();
+  if (!v) return src;
+  if (!src.includes(v)) return `${src} (${v})`;
+  const bare = src.replace(v, '').replace(/\s+/g, ' ').replace(/[\s,(-]+$/, '').trim();
+  return bare ? `${bare} (${v})` : src;
+}
 
-const partialNote = (e: { coverage: string; coverage_note: string | null }): string | null =>
-  e.coverage === 'partial' && e.coverage_note ? e.coverage_note : null;
+const benchOf = (b: Measurement['benchmark'] | MeasurementSeries['benchmark'], unit: Measurement['unit']): string | null =>
+  b && !b.omitted_for_cohort ? `${benchName(b.source, b.version)}: ${formatValue(b.value, unit)}` : null;
+
+/**
+ * What a coach is told about a cut list: "Newest 5 of 127 rounds". A read of records carries its own words for the model in `coverage_note`
+ * (column names, what to do next); that is never the coach's caption.
+ */
+export function rowsCaption(detail: unknown): string | null {
+  const d = detail as { kind?: unknown; truncated?: unknown; row_count?: unknown; total_rows?: unknown; ordered_by?: unknown; newest_first?: unknown; noun?: unknown } | null | undefined;
+  if (d?.kind !== 'team_data' || d.truncated !== true || typeof d.row_count !== 'number') return null;
+  const noun = typeof d.noun === 'string' && d.noun ? d.noun : 'rows';
+  const byDate = d.newest_first === true && typeof d.ordered_by === 'string' && /(?:^|_)(?:date|day|at|time)$/.test(d.ordered_by);
+  const lead = byDate ? 'Newest' : 'First';
+  return typeof d.total_rows === 'number' ? `${lead} ${d.row_count} of ${d.total_rows} ${noun}` : `${lead} ${d.row_count} ${noun}, and there may be more`;
+}
+
+const partialNote = (e: { coverage: string; coverage_note: string | null; detail?: unknown }): string | null =>
+  e.coverage !== 'partial' ? null : (rowsCaption(e.detail) ?? (e.coverage_note || null));
 
 /** "of 44", or the sample in words. */
 function ofSample(m: Measurement): string | null {
@@ -1030,7 +1105,23 @@ export function detailTable(detail: unknown, caption: string): AskTable | null {
   const units = (detail as { units?: Record<string, string> }).units ?? {};
   const unitWord: Record<string, string> = { feet: 'ft', yards: 'yd', percent: '%' };
   const heading = (k: string) => (unitWord[units[k] ?? ''] ? `${headingOf(k)} (${unitWord[units[k] as string]})` : headingOf(k));
-  return fitToPhone({ caption, columns: keys.map(heading), rows: rows.slice(0, 8).map((r) => keys.map((k) => (isPlain(r[k]) && r[k] !== '' ? humanCell(r[k] as string | number | boolean, timezone) : NO_DATA))) });
+  return fitToPhone({
+    caption,
+    columns: keys.map(heading),
+    rows: rows.slice(0, 8).map((r) => keys.map((k) => puttCell(r, k) ?? (isPlain(r[k]) && r[k] !== '' ? humanCell(r[k] as string | number | boolean, timezone) : NO_DATA))),
+  });
+}
+
+/**
+ * Putts and three-putts of a round that has none recorded. A round still being played has no putt count yet, and a stat line with no putts holds
+ * 0, which is "not recorded" and never a round holed in no putts (`cachedPutts`): the cell says "In progress", or is empty, never "0".
+ * Undefined for any other column, or a figure that is a real count.
+ */
+function puttCell(r: Record<string, unknown>, k: string): string | undefined {
+  if (k !== 'total_putts' && k !== 'three_putts' && k !== 'putts') return undefined;
+  if (/^in[ _-]?progress$/i.test(String(r.status ?? ''))) return 'In progress';
+  const none = k === 'three_putts' ? r.total_putts === 0 : r[k] === 0;
+  return none ? formatValue(null, 'count') : undefined;
 }
 
 /**
@@ -1065,7 +1156,8 @@ export function roundsTable(detail: unknown, caption: string): AskTable | null {
     ['Course', (r) => textOf(r.course)],
     ['Score', (r) => (num(r.total_score) === null ? null : formatValue(num(r.total_score), 'score'))],
     ['To par', (r) => (num(r.to_par) === null ? null : formatToPar(num(r.to_par) as number, 0))],
-    ['Putts', (r) => (num(r.putts) === null ? null : formatValue(num(r.putts), 'count'))],
+    // A 0 is a round with no putts recorded (a round still being played), never a round holed in none.
+    ['Putts', (r) => (num(r.putts) === null || num(r.putts) === 0 ? null : formatValue(num(r.putts), 'count'))],
     ['Strokes gained', (r) => (num(r.sg_total) === null ? null : formatValue(num(r.sg_total), 'strokes'))],
   ];
   const shown = columns.filter(([, cell]) => list.some((r) => cell(r) !== null));
@@ -1405,7 +1497,11 @@ function summaryBlocks(envelope: ToolEnvelope): AskEvidence[] {
     if (table) blocks.push({ kind: 'table', title: table.caption, source: null, note: total > rows.length ? `Showing the first ${rows.length} of ${total} rows.` : partialNote(envelope), bench: null, table });
   }
   // The "Rows listed" count is the table's own: it is not a figure to draw again.
-  const figures = envelope.measurements.filter((m) => m.method !== 'summary_list');
+  const titles = (envelope.detail as { titles?: Record<string, unknown> } | undefined)?.titles;
+  // Each figure's card title as the summary states it ("Owen Carter vs team (pooled), strokes gained approach"), not the label the model reads.
+  const figures = envelope.measurements
+    .filter((m) => m.method !== 'summary_list')
+    .map((m) => (typeof titles?.[m.metric_id] === 'string' ? { ...m, metric_label: titles[m.metric_id] as string } : m));
   if (figures.length > 0) {
     const rest = evidenceBlocks({ ...envelope, detail: undefined, measurements: figures });
     blocks.push(...rest.filter((b) => b.kind !== 'empty'));
@@ -1509,7 +1605,7 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
         tiles: ms.map((m) => {
           const t = m.unit === 'strokes' ? changeTone(m.value, false, 1) : '';
           return {
-            label: many ? `${m.entity.label}, ${m.metric_label}` : m.metric_label,
+            label: many && !m.metric_label.startsWith(m.entity.label) ? `${m.entity.label}, ${m.metric_label}` : m.metric_label,
             value: formatValue(m.value, m.unit, m),
             sub: restates(m) ? null : madeOf(m),
             tone: t === 'is-loss' ? 'loss' : t === 'is-gain' ? 'gain' : 'plain',

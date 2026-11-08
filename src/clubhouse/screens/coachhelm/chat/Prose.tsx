@@ -19,9 +19,18 @@ export const playerStatsHref = (id: string) => rebuiltHref(`/golf/dashboard/stat
 export function AskProse({ text, lead = false, playersByName, streaming = false, chip }: { /** Ask v2: draws `[e2]` as a read chip. */ chip?: { known: ReadonlySet<string>; draw: (ref: string) => ReactNode }; text: string; lead?: boolean; playersByName: Record<string, string>; streaming?: boolean }) {
   const names = useMemo(() => Object.keys(playersByName), [playersByName]);
   const blocks = useMemo(() => parseProse(text), [text]);
-  const inline = (s: string): ReactNode => {
+  // A read's chip is drawn once in a paragraph, list or table: six bullets from one read are one source, not six chips. `drawn` is rebuilt on every render.
+  const drawn = new Map<number, Set<string>>();
+  const inline = (s: string, block: number): ReactNode => {
     if (!chip) return plainInline(s);
-    return splitReadMarkers(s, chip.known).map((seg, i) => ('ref' in seg ? <Fragment key={`r${i}`}>{chip.draw(seg.ref)}</Fragment> : <Fragment key={`t${i}`}>{plainInline(seg.text)}</Fragment>));
+    const seen = drawn.get(block) ?? new Set<string>();
+    drawn.set(block, seen);
+    return splitReadMarkers(s, chip.known).map((seg, i) => {
+      if (!('ref' in seg)) return <Fragment key={`t${i}`}>{plainInline(seg.text)}</Fragment>;
+      if (seen.has(seg.ref)) return null;
+      seen.add(seg.ref);
+      return <Fragment key={`r${i}`}>{chip.draw(seg.ref)}</Fragment>;
+    });
   };
   // Ask v2, while it streams: each word fades in as it arrives (M-ASK-14). The keys hold, so a word already in never replays.
   const words = (t: string): ReactNode =>
@@ -51,7 +60,7 @@ export function AskProse({ text, lead = false, playersByName, streaming = false,
                 <tr>
                   {b.header.map((h, c) => (
                     <th key={c} scope="col" className={b.numeric[c] ? 'is-num' : undefined}>
-                      {inline(h)}
+                      {inline(h, i)}
                     </th>
                   ))}
                 </tr>
@@ -62,11 +71,11 @@ export function AskProse({ text, lead = false, playersByName, streaming = false,
                     {r.map((cell, c) =>
                       c === 0 ? (
                         <th key={c} scope="row">
-                          {inline(cell)}
+                          {inline(cell, i)}
                         </th>
                       ) : (
                         <td key={c} className={b.numeric[c] ? 'is-num' : undefined}>
-                          {inline(cell)}
+                          {inline(cell, i)}
                         </td>
                       ),
                     )}
@@ -77,26 +86,26 @@ export function AskProse({ text, lead = false, playersByName, streaming = false,
           </ScrollRegion>
         ) : b.kind === 'heading' ? (
           <h4 key={i} className="ch-th-h">
-            {inline(b.text)}
+            {inline(b.text, i)}
           </h4>
         ) : b.kind === 'list' ? (
           b.ordered ? (
             <ol key={i} className="ch-th-list is-ordered">
               {b.items.map((item, j) => (
-                <li key={j}>{inline(item)}</li>
+                <li key={j}>{inline(item, i)}</li>
               ))}
             </ol>
           ) : (
             <ul key={i} className="ch-th-list">
               {b.items.map((item, j) => (
-                <li key={j}>{inline(item)}</li>
+                <li key={j}>{inline(item, i)}</li>
               ))}
             </ul>
           )
         ) : (
           // Only the first paragraph of a lead block is the takeaway: a lead that runs to four paragraphs is an answer, not a headline.
           <p key={i} className={lead && i === 0 ? 'ch-th-p ch-th-p--lead' : 'ch-th-p'}>
-            {inline(b.text)}
+            {inline(b.text, i)}
           </p>
         ),
       )}

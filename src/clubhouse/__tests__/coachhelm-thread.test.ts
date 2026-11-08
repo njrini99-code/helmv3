@@ -284,7 +284,7 @@ describe('evidenceBlocks: the shape decides the drawing, and nothing is dropped'
   it('a benchmark shows only with its source and version, and never when it is omitted for the cohort', () => {
     const m = ASK_EV_PARTIAL.measurements[0]!;
     const withBench = { ...ASK_EV_PARTIAL, coverage: 'complete' as const, measurements: [{ ...m, benchmark: { source: 'PGA Tour expected strokes', version: '2026-06-06', value: 29, omitted_for_cohort: false } }] };
-    expect(evidenceBlocks(withBench)[0] && 'bench' in evidenceBlocks(withBench)[0]! ? (evidenceBlocks(withBench)[0] as { bench: string | null }).bench : null).toBe('PGA Tour expected strokes, 2026-06-06: 29');
+    expect(evidenceBlocks(withBench)[0] && 'bench' in evidenceBlocks(withBench)[0]! ? (evidenceBlocks(withBench)[0] as { bench: string | null }).bench : null).toBe('PGA Tour expected strokes (2026-06-06): 29');
     const omitted = { ...withBench, measurements: [{ ...withBench.measurements[0]!, benchmark: { ...withBench.measurements[0]!.benchmark!, omitted_for_cohort: true } }] };
     expect((evidenceBlocks(omitted)[0] as { bench: string | null }).bench).toBeNull();
   });

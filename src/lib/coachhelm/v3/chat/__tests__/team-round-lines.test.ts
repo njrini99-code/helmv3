@@ -45,7 +45,7 @@ describe('round_lines', () => {
     const owen = rows.filter((r) => r.player === 'Owen Carter');
     expect(owen.map((r) => [r.round_type, r.three_putts, r.total_score])).toEqual([['tournament', 2, 74], ['practice', 0, 71]]);
     expect(Object.keys(owen[0]!).sort()).toEqual(['player', 'player_id', ...columns].sort());
-    expect(e.detail).toMatchObject({ kind: 'team_data', row_count: 4, total_rows: 4, truncated: false, ordered_by: 'round_date', newest_first: true });
+    expect(e.detail).toMatchObject({ kind: 'team_data', row_count: 4, total_rows: 4, truncated: false, ordered_by: 'round_date', newest_first: true, noun: 'rounds' });
     expect(e.coverage).toBe('complete');
   });
 

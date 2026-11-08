@@ -62,6 +62,8 @@ export function rowsEnvelope(a: { label: string; table: string; columns: readonl
       limit: a.limit,
       ...(total !== null ? { total_rows: total } : {}),
       truncated: cut,
+      // What the rows are, in the coach's words ('rounds'), for the caption under the table; the model-facing note is `coverage_note`.
+      noun: a.label,
       ordered_by: a.order.column,
       newest_first: !a.order.ascending,
       units,

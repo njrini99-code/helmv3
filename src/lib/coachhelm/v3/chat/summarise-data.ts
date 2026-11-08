@@ -201,6 +201,24 @@ function figureLabel(op: 'sum' | 'mean' | 'min' | 'max', field: string, rows: re
   return `${word} ${subject}${of}${by ? ` for ${by}` : ''}`;
 }
 
+/** The metric a worked-out figure is over, in words: the read's own label when every row carries the one, else the field. */
+function metricWords(field: string, rows: readonly Row[]): string {
+  const labels = new Set(rows.map((r) => r.metric_label).filter((l): l is string => typeof l === 'string'));
+  return field === 'value' && labels.size === 1 ? [...labels][0]! : field;
+}
+
+/**
+ * The card title of a total, mean, lowest or highest: the metric, and for a mean of the players' own figures how many ("Average of 7 players,
+ * strokes gained approach"). A group's own name is the card's subject, so it is not repeated in the title.
+ */
+function figureTitle(op: 'sum' | 'mean' | 'min' | 'max', field: string, rows: readonly Row[], by: string | null, grouped: boolean): string {
+  const word = op === 'mean' ? 'Average' : op === 'sum' ? 'Total' : op === 'min' ? 'Lowest' : 'Highest';
+  const metric = lowerFirst(metricWords(field, rows));
+  const players = new Set(rows.map((r) => r['entity.id']).filter((id) => typeof id === 'string' && rows.some((r) => r['entity.kind'] === 'player')));
+  if (field === 'value' && op === 'mean' && players.size > 1) return `${word} of ${players.size} players, ${metric}`;
+  return `${word} ${metric}${by && !grouped ? ` for ${by}` : ''}`;
+}
+
 type Ctx = { team: Measurement['entity']; people: ReadonlyMap<string, string> };
 
 /** The rows' window: the span of the first date-like field they carry. */
@@ -252,6 +270,24 @@ function figure(args: { id: string; label: string; unit: Measurement['unit']; va
   };
 }
 
+/**
+ * What a resolved figure is called on a card: its subject (a player, "team (pooled)") and its metric, kept apart so a difference reads
+ * "Owen Carter vs team (pooled), strokes gained approach" with the metric once. Beside the figure, never on it: the labels the model reads stay.
+ */
+const NAMES = new WeakMap<Measurement, { subject: string; metric: string }>();
+const lowerFirst = (s: string) => (/^[A-Z][a-z]/.test(s) ? `${s[0]!.toLowerCase()}${s.slice(1)}` : s);
+const namesOf = (m: Measurement) => NAMES.get(m) ?? { subject: m.entity.label, metric: m.metric_label };
+const titleOfFigure = (m: Measurement) => {
+  const n = namesOf(m);
+  return n.metric ? `${n.subject}, ${lowerFirst(n.metric)}` : n.subject;
+};
+/** A difference's or ratio's card title: "Owen Carter vs team (pooled), strokes gained approach"; two different metrics each keep their own. */
+export function pairTitle(a: Measurement, b: Measurement): string {
+  const x = namesOf(a);
+  const y = namesOf(b);
+  return x.metric && x.metric === y.metric ? `${x.subject} vs ${y.subject}, ${lowerFirst(x.metric)}` : `${titleOfFigure(a)} vs ${titleOfFigure(b)}`;
+}
+
 function resolveFigure(f: Figure, evidence: Evidence, made: ReadonlyMap<string, Measurement>, team: Measurement['entity']): Measurement | string {
   if ('op' in f) return made.get(f.op) ?? `There is no earlier op "${f.op}" in this call.`;
   const env = evidence.get(f.ref);
@@ -268,7 +304,9 @@ function resolveFigure(f: Figure, evidence: Evidence, made: ReadonlyMap<string, 
     const sample = ofMetric[0];
     const tf = stated.team_figure;
     const how = typeof tf.method === 'string' ? tf.method : 'stated by the read';
-    return { ...(sample ?? ({} as Measurement)), metric_id: f.metric_id, metric_label: `Team figure (${how}): ${sample?.metric_label ?? f.metric_id}`, unit: sample?.unit ?? 'strokes', entity: team, value: tf.value as number, sample_size: typeof tf.rounds === 'number' ? tf.rounds : typeof tf.players === 'number' ? tf.players : 0, sample_unit: typeof tf.rounds === 'number' ? 'rounds' : 'players', method: how, source: 'summarised reads', benchmark: null, comparisons: undefined, window_start: sample?.window_start ?? null, window_end: sample?.window_end ?? null, as_of: sample?.as_of ?? nowIso(), coverage: 'complete', coverage_note: null, denominator: null, direction: sample?.direction ?? null } as Measurement;
+    const figureOut = { ...(sample ?? ({} as Measurement)), metric_id: f.metric_id, metric_label: `Team figure (${how}): ${sample?.metric_label ?? f.metric_id}`, unit: sample?.unit ?? 'strokes', entity: team, value: tf.value as number, sample_size: typeof tf.rounds === 'number' ? tf.rounds : typeof tf.players === 'number' ? tf.players : 0, sample_unit: typeof tf.rounds === 'number' ? 'rounds' : 'players', method: how, source: 'summarised reads', benchmark: null, comparisons: undefined, window_start: sample?.window_start ?? null, window_end: sample?.window_end ?? null, as_of: sample?.as_of ?? nowIso(), coverage: 'complete', coverage_note: null, denominator: null, direction: sample?.direction ?? null } as Measurement;
+    NAMES.set(figureOut, { subject: `team (${how})`, metric: sample?.metric_label ?? f.metric_id });
+    return figureOut;
   }
   if (subject?.toLowerCase() === 'team') {
     const refs = ofMetric.flatMap((m) => (m.comparisons ?? []).filter((c) => c.kind === 'team' && typeof c.value === 'number').map((c) => ({ m, c })));
@@ -277,7 +315,9 @@ function resolveFigure(f: Figure, evidence: Evidence, made: ReadonlyMap<string, 
       const { m, c } = refs[0]!;
       const starts = ofMetric.map((x) => x.window_start).filter((x): x is string => !!x).sort();
       const ends = ofMetric.map((x) => x.window_end).filter((x): x is string => !!x).sort();
-      return { ...m, entity: team, value: c.value, metric_label: `${c.label}: ${m.metric_label}`, window_start: starts[0] ?? null, window_end: ends[ends.length - 1] ?? null, sample_size: c.place_of ?? ofMetric.length, sample_unit: 'players', method: c.label, source: 'summarised reads', benchmark: null, comparisons: undefined };
+      const figureOut: Measurement = { ...m, entity: team, value: c.value, metric_label: `${c.label}: ${m.metric_label}`, window_start: starts[0] ?? null, window_end: ends[ends.length - 1] ?? null, sample_size: c.place_of ?? ofMetric.length, sample_unit: 'players', method: c.label, source: 'summarised reads', benchmark: null, comparisons: undefined };
+      NAMES.set(figureOut, { subject: c.label.toLowerCase(), metric: m.metric_label });
+      return figureOut;
     }
     if (values.size > 1) return `Read ${f.ref} states more than one team average for ${f.metric_id} (${[...values].join(', ')}); use a figure from a read that states one.`;
     return `Read ${f.ref} states no team average for ${f.metric_id}. Read it with get_team_metric_ranking or get_team_strokes_gained, or name two figures you do have.`;
@@ -378,6 +418,8 @@ export async function summariseData(ctx: CoachChatContext, input: SummariseInput
 
   const measurements: Measurement[] = [];
   const made = new Map<string, Measurement>();
+  // The title each figure carries on its card (`detail.titles`, by metric_id); a figure not listed is drawn under its own label.
+  const titles: Record<string, string> = {};
   const results: Array<Record<string, unknown>> = [];
   let listed: { rows: Row[]; total: number } | null = null;
   const used = new Set<string>();
@@ -403,6 +445,9 @@ export async function summariseData(ctx: CoachChatContext, input: SummariseInput
       const value = op.op === 'difference' ? a.value - b.value : b.value === 0 ? null : a.value / b.value;
       const m: Measurement = { ...figure({ id, label: `${op.op === 'difference' ? 'Difference' : 'Ratio'}: ${a.metric_label} and ${b.metric_label}`, unit: op.op === 'ratio' ? 'ratio' : a.unit, value, entity: a.entity, n: Math.min(a.sample_size, b.sample_size), rows: [], method: `summary_${op.op}`, direction: op.op === 'difference' ? a.direction : null }), window_start: a.window_start, window_end: a.window_end, sample_unit: a.sample_unit };
       push(id, m);
+      const title = pairTitle(a, b);
+      titles[m.metric_id] = title;
+      NAMES.set(m, { subject: title, metric: '' });
       results.push({ id: `summary:${id}`, op: op.op, a: `${a.metric_id}=${a.value}`, b: `${b.metric_id}=${b.value}`, value: m.value });
       continue;
     }
@@ -449,6 +494,7 @@ export async function summariseData(ctx: CoachChatContext, input: SummariseInput
         const gid = op.by ? `${id}:${slug(value)}` : id;
         const m = figure({ id: gid, label: figureLabel(op.op, op.field, grp, op.by ? value : null), unit: unitOver(op.field, grp), value: v, entity: e, n: nums.length, rows: grp, method: `summary_${op.op}` });
         push(gid, m);
+        titles[m.metric_id] = figureTitle(op.op, op.field, grp, op.by ? value : null, e.kind === 'player' && e !== entity);
         out.push({ ...(op.by ? { [op.by]: value } : {}), value: m.value, rows: nums.length });
       }
       results.push({ id: `summary:${id}`, op: op.op, field: op.field, ...(op.by ? { by: op.by } : {}), results: out });
@@ -466,8 +512,10 @@ export async function summariseData(ctx: CoachChatContext, input: SummariseInput
       const e: Measurement['entity'] = c.people.has(pid) ? { kind: 'player', id: pid, label: c.people.get(pid)! } : entity;
       const m = figure({ id, label: `Place by ${op.field}, ${op.order === 'high_first' ? 'highest first' : 'lowest first'}`, unit: 'count', value: place, entity: e, n: values.length, of: values.length, rows: scored, method: 'summary_rank_competition', direction: null });
       push(id, m);
+      titles[m.metric_id] = `Place by ${lowerFirst(metricWords(op.field, scored))}, ${op.order === 'high_first' ? 'highest first' : 'lowest first'}`;
       const vm = figure({ id: `${id}_value`, label: `${op.field} of the row placed`, unit: unitOver(op.field, scored), value: mineValue, entity: e, n: values.length, rows: scored, method: 'summary_value' });
       push(`${id}_value`, vm);
+      titles[vm.metric_id] = `${metricWords(op.field, scored)} of the row placed`;
       results.push({ id: `summary:${id}`, op: 'rank', place, of: values.length, tied: tied > 1 ? tied : undefined, value: mineValue });
     } else if (op.op === 'list') {
       const bad = missingField([...op.fields, op.order_by]);
@@ -488,6 +536,7 @@ export async function summariseData(ctx: CoachChatContext, input: SummariseInput
       kind: 'summary',
       // The reads of this turn the figures were worked out from, so a renderer can fold exactly those and not every read before it.
       sources: sourceRefs(spec),
+      titles,
       rows_used: rows.length,
       results,
       ...(listed ? { rows: listed.rows, row_count: listed.rows.length, matching_rows: listed.total } : {}),

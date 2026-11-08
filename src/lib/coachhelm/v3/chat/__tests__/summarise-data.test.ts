@@ -225,3 +225,36 @@ describe('the team figure a ranking states in its detail', () => {
     expect(e.measurements[0]).toMatchObject({ metric_id: 'summary:gap', value: -1.76, unit: 'strokes' });
   });
 });
+
+// Staging, 2026-11-08 (conversation 4268fbfd): a difference's card said "Difference: Strokes gained approach and Team figure (pooled): Strokes
+// gained approach". A card names its subjects and the metric once, in `detail.titles`; the labels the model reads are unchanged.
+describe('the title a figure carries on its card', () => {
+  const owen = { metric_id: 'sg_approach', metric_label: 'Strokes gained approach', unit: 'strokes' as const, value: -4.16, entity: { kind: 'player' as const, id: 'p-owen', label: 'Owen Carter' }, window_start: '2026-06-09', window_end: '2026-09-26', sample_size: 8, sample_unit: 'rounds' as const, as_of: '2026-11-08T00:00:00.000Z', coverage: 'complete' as const, coverage_note: null, source: 'rounds', method: 'm', denominator: null, benchmark: null, direction: 'higher_better' as const };
+  const ranking = env({ metric_id: 'sg_approach', team_figure: { value: -2.4, window: 'last10', method: 'pooled', players: 7, rounds: 58 } }, { measurements: [owen, { ...owen, value: -3.6, entity: { kind: 'player' as const, id: 'p-cole', label: 'Cole Bennett' } }] });
+  const titles = (e: ToolEnvelope) => (e.detail as { titles: Record<string, string> }).titles;
+
+  it('a difference reads "Owen Carter vs team (pooled), strokes gained approach": the subjects, the metric once', async () => {
+    const e = await run({ ops: [{ op: 'difference', id: 'gap', a: { ref: 'e1', metric_id: 'sg_approach', subject: 'p-owen' }, b: { ref: 'e1', metric_id: 'sg_approach', subject: 'team' } }] }, { evidence: new Map([['e1', ranking]]) });
+    expect(titles(e)['summary:gap']).toBe('Owen Carter vs team (pooled), strokes gained approach');
+    // What the model reads is not renamed.
+    expect(e.measurements[0]!.metric_label).toMatch(/^Difference: /);
+  });
+
+  it('a ratio is titled the same way', async () => {
+    const e = await run({ ops: [{ op: 'ratio', id: 'times', a: { ref: 'e1', metric_id: 'sg_approach', subject: 'p-owen' }, b: { ref: 'e1', metric_id: 'sg_approach', subject: 'team' } }] }, { evidence: new Map([['e1', ranking]]) });
+    expect(titles(e)['summary:times']).toBe('Owen Carter vs team (pooled), strokes gained approach');
+  });
+
+  it('two players of one metric are named, not "figure and figure"', async () => {
+    const e = await run({ ops: [{ op: 'difference', id: 'gap', a: { ref: 'e1', metric_id: 'sg_approach', subject: 'p-owen' }, b: { ref: 'e1', metric_id: 'sg_approach', subject: 'p-cole' } }] }, { evidence: new Map([['e1', ranking]]) });
+    expect(titles(e)['summary:gap']).toBe('Owen Carter vs Cole Bennett, strokes gained approach');
+  });
+
+  it('a mean of the players’ figures says how many, a rank says its order, and a highest names the metric', async () => {
+    const e = await run({ source: { ref: 'e1', list: 'measurements' }, ops: [{ op: 'mean', id: 'avg', field: 'value' }, { op: 'max', id: 'hi', field: 'value' }, { op: 'rank', id: 'place', field: 'value', subject: { field: 'entity.id', equals: 'p-owen' }, order: 'high_first' }] }, { evidence: new Map([['e1', ranking]]) });
+    expect(titles(e)['summary:avg']).toBe('Average of 2 players, strokes gained approach');
+    expect(titles(e)['summary:hi']).toBe('Highest strokes gained approach');
+    expect(titles(e)['summary:place']).toBe('Place by strokes gained approach, highest first');
+    expect(titles(e)['summary:place_value']).toBe('Strokes gained approach of the row placed');
+  });
+});

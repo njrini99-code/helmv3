@@ -5,6 +5,8 @@ vi.mock('server-only', () => ({}));
 
 import { buildAssistantTurn, goalsTable, zeroBasedDomain, benchmarkBlock, comparisonWords, detailTable, evidenceBlocks, withWindowFigures, fitToPhone, PHONE_TABLE_PX, type AskTable } from '../../../../data/coachhelm-chat-thread';
 import { AskEvidenceView } from '../Evidence';
+import { AskProse } from '../Prose';
+import { benchName, formatValue, rowsCaption, windowDates } from '../../../../data/coachhelm-chat-thread';
 import { lastTurnIsGeneral } from '../ask-scope-window';
 import type { ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
 
@@ -418,6 +420,23 @@ describe('the answer leads with the worked-out result, and a recovered failure s
     expect(t.reads![2]!.name).toBe('Worked out the figures');
   });
 
+  it('a summary that names its sources folds exactly those reads; an unrelated read before it stays drawn', () => {
+    const attendance = env('3 rows of attendance.', { kind: 'team_data', rows: [{ player: 'Cole Bennett', event: 'Practice', status: 'present' }], row_count: 1 });
+    const named = env(listed.summary, { ...(listed.detail as object), sources: ['e1'] }, { measurements: listed.measurements });
+    const t = turn(ev('e1', 'query_team_data', rounds(26)), ev('e2', 'query_team_data', attendance), ev('e3', 'summarise_data', named));
+    const kinds = shown(t).map((b) => b.kind);
+    // The rounds it was built from are folded; the attendance table is not.
+    expect(kinds).toEqual(['table', 'table']);
+    expect(shown(t).map((b) => (b.kind === 'table' ? b.table.columns[0] : null))).toEqual(['Player', 'Player']);
+    expect(JSON.stringify(shown(t))).toContain('Practice');
+    expect(shown(t).map((b) => (b.kind === 'table' ? b.table.rows.length : 0))).toEqual([1, 2]);
+    expect(t.reads!.map((r) => r.ref)).toEqual(['e1', 'e2', 'e3']);
+    // Sources that name nothing (a summary of a query) fold nothing; with no `sources` at all the earlier rule folds every record list before it.
+    const none = env(listed.summary, { ...(listed.detail as object), sources: [] }, { measurements: listed.measurements });
+    expect(shown(turn(ev('e1', 'query_team_data', rounds(26)), ev('e2', 'summarise_data', none)))).toHaveLength(2);
+    expect(shown(turn(ev('e1', 'query_team_data', rounds(26)), ev('e2', 'query_team_data', attendance), ev('e3', 'summarise_data', listed)))).toHaveLength(1);
+  });
+
   it('a figure result (a count, a rank, a difference) is one compact figure card', () => {
     const t = turn(ev('e1', 'query_team_data', rounds(26)), ev('e2', 'summarise_data', count));
     const blocks = shown(t);
@@ -450,3 +469,98 @@ describe('the answer leads with the worked-out result, and a recovered failure s
     expect(live && back && live.kind === 'table' && back.kind === 'table' && back.table).toEqual(live && live.kind === 'table' ? live.table : null);
   });
 });
+
+// Staging, 2026-11-08, conversations 4268fbfd and 9c74f095 (Cole's last 5 rounds with putts and three-putts).
+describe('what a read says about itself, in a coach’s words', () => {
+  const ev = (id: string, tool: string, envelope: ToolEnvelope) => ({ type: 'data-evidence', id: `ev-${id}`, data: { tool, envelope, ref: id } });
+  const turn = (...parts: unknown[]) => {
+    const t = buildAssistantTurn({ id: 'a1', role: 'assistant', parts } as never, { isLast: false, busy: false });
+    if (t.role !== 'assistant') throw new Error('assistant turn expected');
+    return t;
+  };
+  const drawn = (t: ReturnType<typeof turn>) => t.blocks.filter((b) => b.kind === 'evidence').flatMap((b) => (b.kind === 'evidence' ? evidenceBlocks(b.envelope) : []));
+  const teamData = (rows: Array<Record<string, unknown>>, over: Record<string, unknown> = {}, e: Partial<ToolEnvelope> = {}) => env(`${rows.length} rows of rounds.`, { kind: 'team_data', rows, row_count: rows.length, ...over }, e);
+
+  it('the benchmark line names the year once: "PGA Tour (2024)", not "PGA Tour 2024, 2024"', () => {
+    expect(benchName('PGA Tour 2024', '2024')).toBe('PGA Tour (2024)');
+    expect(benchName('PGA Tour', '2024')).toBe('PGA Tour (2024)');
+    expect(benchName('LPGA Tour 2025', '2025')).toBe('LPGA Tour (2025)');
+    expect(benchName('PGA Tour 2024', '')).toBe('PGA Tour 2024');
+    const m = { metric_id: 'sg_total', metric_label: 'Strokes gained', unit: 'strokes', value: -1, entity: { kind: 'player', id: 'p', label: 'Owen Carter' }, window_start: null, window_end: null, sample_size: 8, sample_unit: 'rounds', as_of: '2026-11-08T00:00:00Z', coverage: 'complete', coverage_note: null, source: 'rounds', method: 'm', denominator: null, direction: 'higher_better', benchmark: { source: 'PGA Tour 2024', version: '2024', value: 0, omitted_for_cohort: false } };
+    const blocks = evidenceBlocks({ ...env('x', undefined), measurements: [m] } as unknown as ToolEnvelope);
+    expect(JSON.stringify(blocks)).toContain('PGA Tour (2024): 0.0');
+    expect(JSON.stringify(blocks)).not.toContain('2024, 2024');
+  });
+
+  it('a read chip names the dates it covers, not a count of days', () => {
+    const m = { metric_id: 'sg_total', metric_label: 'Strokes gained', unit: 'strokes', value: -1, entity: { kind: 'player', id: 'p', label: 'Owen Carter' }, window_start: '2026-06-09', window_end: '2026-09-26', sample_size: 8, sample_unit: 'rounds', as_of: '2026-11-08T00:00:00Z', coverage: 'complete', coverage_note: null, source: 'rounds', method: 'm', denominator: null, direction: 'higher_better', benchmark: null };
+    const t = turn(ev('e1', 'get_player_metrics', { ...env('x', undefined), measurements: [m] } as unknown as ToolEnvelope));
+    expect(t.reads![0]!.chip).toMatch(/ · Jun 9–Sep 26$/);
+    expect(t.reads![0]!.chip).not.toMatch(/days/);
+    expect(windowDates({ window_start: '2025-10-01', window_end: '2026-03-02' })).toBe('Oct 1, 2025–Mar 2, 2026');
+    expect(windowDates({ window_start: null, window_end: null })).toBeNull();
+    // No window: just the read's name.
+    expect(turn(ev('e1', 'get_player_metrics', env('x', undefined))).reads![0]!.chip).toBe(turn(ev('e1', 'get_player_metrics', env('x', undefined))).reads![0]!.name);
+  });
+
+  it('a cut list is captioned "Newest 5 of 127 rounds"; the model’s note about columns and filters never reaches the coach', () => {
+    const rows = Array.from({ length: 5 }, (_, i) => ({ player: 'Cole Bennett', player_id: 'p-cole', round_date: `2026-10-${String(21 - i).padStart(2, '0')}`, total_score: 74 + i }));
+    const note = 'Showing the first 5 of 127 rows, ordered by round_date (newest first). The other 122 are not shown: say so, and narrow the filters for the rest.';
+    const e = teamData(rows, { total_rows: 127, truncated: true, ordered_by: 'round_date', newest_first: true, noun: 'rounds' }, { coverage: 'partial', coverage_note: note });
+    const block = evidenceBlocks(e)[0]!;
+    expect(block).toMatchObject({ kind: 'table', note: 'Newest 5 of 127 rounds' });
+    const { container } = render(<AskEvidenceView envelope={e} />);
+    expect(container.textContent).toContain('Newest 5 of 127 rounds');
+    expect(container.textContent).not.toMatch(/round_date|narrow the filters|say so|ordered by/);
+    expect(rowsCaption({ kind: 'team_data', truncated: true, row_count: 50, ordered_by: 'total_score', newest_first: true, noun: 'rounds' })).toBe('First 50 rounds, and there may be more');
+    expect(rowsCaption({ kind: 'team_data', truncated: false, row_count: 5 })).toBeNull();
+  });
+
+  it('two reads of the same rounds are one table, the one with three-putts and putts; a read of other rounds stays', () => {
+    const recent = env('Cole’s last 5 recorded rounds.', {
+      player: { player_id: 'p-cole', name: 'Cole Bennett' },
+      rounds: Array.from({ length: 5 }, (_, i) => ({ round_id: `r${i}`, date: `2026-10-${String(21 - i).padStart(2, '0')}`, course: 'Pines', round_type: 'tournament', holes: 18, total_score: 74 + i, to_par: 2 + i, putts: 31, sg_total: -1 })),
+    });
+    const lines = teamData(Array.from({ length: 5 }, (_, i) => ({ player: 'Cole Bennett', player_id: 'p-cole', round_date: `2026-10-${String(21 - i).padStart(2, '0')}`, total_putts: 30 + i, three_putts: 2 })));
+    const other = teamData([{ player: 'Owen Carter', player_id: 'p-owen', round_date: '2026-09-02', total_putts: 29, three_putts: 1 }]);
+    const t = turn(ev('e1', 'get_recent_rounds', recent), ev('e2', 'query_team_data', lines), ev('e3', 'query_team_data', other));
+    const tables = drawn(t).filter((b) => b.kind === 'table');
+    expect(tables).toHaveLength(2);
+    expect(tables[0]!.kind === 'table' && tables[0]!.table.columns).toContain('3-putts');
+    expect(tables[1]!.kind === 'table' && tables[1]!.table.rows[0]).toContain('Owen Carter');
+    // The order they came in does not matter.
+    expect(drawn(turn(ev('e2', 'query_team_data', lines), ev('e1', 'get_recent_rounds', recent))).filter((b) => b.kind === 'table')).toHaveLength(1);
+    // Both are still reads in the disclosure.
+    expect(t.reads!.map((r) => r.ref)).toEqual(['e1', 'e2', 'e3']);
+  });
+
+  it('a round still being played shows "In progress", and a round with no putts recorded never shows 0', () => {
+    const rows = [
+      { player: 'Cole Bennett', status: 'in_progress', round_date: '2026-10-22', total_putts: 0, three_putts: 0 },
+      { player: 'Cole Bennett', status: 'completed', round_date: '2026-10-21', total_putts: 0, three_putts: 0 },
+      { player: 'Cole Bennett', status: 'completed', round_date: '2026-10-20', total_putts: 31, three_putts: 0 },
+    ];
+    const t = detailTable({ kind: 'team_data', rows }, 'rounds')!;
+    const col = (name: string) => t.rows.map((r) => r[t.columns.indexOf(name)]);
+    expect(col('Putts')).toEqual(['In progress', formatNone(), '31']);
+    expect(col('3-putts')).toEqual(['In progress', formatNone(), '0']);
+    // The recent-rounds table the same.
+    const recent = evidenceBlocks(env('Cole’s last 2 recorded rounds.', { player: { player_id: 'p-cole' }, rounds: [{ date: '2026-10-21', course: 'Pines', total_score: 74, to_par: 2, putts: 0, sg_total: -1 }, { date: '2026-10-20', course: 'Pines', total_score: 75, to_par: 3, putts: 31, sg_total: -2 }] }))[0]!;
+    if (recent.kind !== 'table') throw new Error('table expected');
+    expect(recent.table.rows.map((r) => r[recent.table.columns.indexOf('Putts')])).toEqual([formatNone(), '31']);
+  });
+
+  it('a read’s chip is drawn once in a paragraph or list, not after every bullet', () => {
+    const known = new Set(['e1', 'e2']);
+    const chip = { known, draw: (ref: string) => <span data-chip={ref}>chip {ref}</span> };
+    const text = 'The newest rounds. [e1]\n\n- 74, 31 putts. [e1]\n- 75, 33 putts. [e1]\n- 77, 30 putts. [e2]\n- 79, 35 putts. [e2]\n\nAll of it. [e1] And more. [e1]';
+    const { container } = render(<AskProse text={text} playersByName={{}} chip={chip} />);
+    const chips = Array.from(container.querySelectorAll('[data-chip]')).map((c) => c.getAttribute('data-chip'));
+    // paragraph 1: e1; the list: e1 once, e2 once; the last paragraph: e1 once.
+    expect(chips).toEqual(['e1', 'e1', 'e2', 'e1']);
+    expect(container.textContent).not.toMatch(/\[e\d\]/);
+    expect(container.textContent).toContain('75, 33 putts.');
+  });
+});
+
+const formatNone = () => formatValue(null, 'count');
