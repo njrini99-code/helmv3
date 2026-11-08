@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { auditCountClaims, statedCounts } from './count-claims';
 import { auditRankClaims } from './rank-claims';
 import { auditNumericClaims, collectNumbers, collectEnvelopeNumbers, collectScopedNumbers, roundingTolerance, teamDataCounts, type AuditDetail, type Measurement, type ScopedNumber, type ToolEnvelope, type UnsupportedClaim } from './provenance';
 
@@ -318,10 +319,13 @@ export function auditCited(args: { surface?: 'coach' | 'player'; /** Derived cou
   // A place or superlative ("7th of 7", "the weakest on the team") is recomputed from the per-player values the turn read, never from a place field.
   const reads = args.cites ? [...args.cites.evidence.values()].map((e) => e.measurements) : [args.base[1]];
   const ranks = auditRankClaims(args.base[0], reads, args.options?.players ?? []);
+  // Counts of things ("12 qualifier rounds") in a coach turn: a tally the model made while writing is withheld unless a read states it or a cite stands for it.
+  const counts = args.strictCounts && args.cites ? auditCountClaims(args.base[0], statedCounts(args.cites.evidence.values(), args.options?.players ?? [], args.base[3]), verified.map((c) => c.cite.v)) : [];
   const unsupported = [
     ...mismatched.map((c): UnsupportedClaim => ({ text: c.cite.v, value: c.value ?? 0, misattributed: true })),
     ...flagged.filter((u) => !mismatched.some((c) => c.cite.v === u.text)),
     ...ranks,
+    ...counts.filter((c) => !flagged.some((u) => u.text === c.text)),
   ];
   return { unsupported, ...(citations ? { citations } : {}) };
 }

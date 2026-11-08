@@ -113,7 +113,7 @@ export function computeTurnVerdict(args: {
    * cited to evidence that says something else withholds the turn, a verified one stands on its own, an unresolved one is ignored and
    * its figure is audited by the text heuristics. Left out (a turn stored before citations, a caller that has none), nothing changes.
    */
-  cites?: { cites: readonly Cite[]; evidence: ReadonlyMap<string, ToolEnvelope>; blocks?: number; invalid?: number };
+  cites?: { cites: readonly Cite[]; evidence: ReadonlyMap<string, ToolEnvelope>; blocks?: number; invalid?: number; /** Names the turn in the development log. */ label?: string };
 }): TurnVerdict {
   if (!args.streamComplete) {
     return { outcome: 'rejected', reason: 'stream_incomplete', note: STREAM_INCOMPLETE_NOTE, unsupported: [] };
