@@ -1,5 +1,6 @@
 "use client";
 
+import { personOf } from "./person-of";
 import { ListChecks, Lock, Minus } from "lucide-react";
 import { createContext, useContext, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import {
@@ -196,7 +197,7 @@ export function PollCard({
   const conv = api.convs.find((c) => c.id === api.selectedId) ?? null;
   const busy = polls?.pending.has(messageId) ?? false;
   const mineIds = tally?.mine ?? [];
-  const nameOf = (id: string) => api.directory.find((p) => p.userId === id)?.name ?? "Member";
+  const nameOf = (id: string) => personOf(api, id)?.name ?? "Member";
   // Remind: a coach, an open poll, the votes in, and someone left. `memberIds` are the others, so the viewer is out of
   // both the condition and the count, and a coach is never named in their own reminder; never "Remind 0".
   const waiting = tally && conv ? pollWaiting(tally, conv.memberIds) : [];
@@ -400,15 +401,15 @@ function PollVotesModal({
   onClose: () => void;
 }) {
   const me = api.viewer.userId;
-  const nameOf = (id: string) => (id === me ? "You" : (api.directory.find((p) => p.userId === id)?.name ?? "Member"));
+  const nameOf = (id: string) => (id === me ? "You" : (personOf(api, id)?.name ?? "Member"));
   const members = new Set([me, ...(conv?.memberIds ?? [])]);
   // MSG-VOTES-01: rows carry the person's line under the name.
-  const lineOf = (id: string) => (id === me ? "" : (api.directory.find((p) => p.userId === id)?.subtitle ?? ""));
+  const lineOf = (id: string) => (id === me ? "" : (personOf(api, id)?.subtitle ?? ""));
   const order = (ids: readonly string[]) => [...ids].sort((a, b) => (a === me ? -1 : b === me ? 1 : nameOf(a).localeCompare(nameOf(b))));
   const showWaiting = api.viewer.role === "coach" || author;
   const allWaiting = showWaiting && tally && conv ? order(pollWaiting(tally, [me, ...conv.memberIds])) : [];
   // Redesign: "Hasn't voted" lists players, coaches left out (MSG-VOTES-01).
-  const waiting = allWaiting.filter((id) => api.directory.find((p) => p.userId === id)?.role !== "coach" && !(id === me && api.viewer.role === "coach"));
+  const waiting = allWaiting.filter((id) => personOf(api, id)?.role !== "coach" && !(id === me && api.viewer.role === "coach"));
   const totalVotes = poll.options.reduce((sum, o) => sum + (tally?.voters[o.id]?.length ?? 0), 0);
   const row = (id: string) => (
     <li key={id} className="ch-msd-vg__row">

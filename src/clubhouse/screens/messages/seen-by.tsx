@@ -1,5 +1,6 @@
 "use client";
 
+import { personOf } from "./person-of";
 import { CheckCheck, Eye } from "lucide-react";
 import { AnimatePresence, m as M } from "motion/react";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
@@ -18,7 +19,6 @@ import { clock, railTime, type ChMsg } from "./model";
 import type { ChMessagesApi } from "./MessagesView";
 
 /** The directory lookup MessagesView exports as personOf, kept here so this file only takes types from it (no import cycle). */
-const personOf = (api: ChMessagesApi, userId: string) => api.directory.find((p) => p.userId === userId);
 
 /**
  * Seen by (premium features P-1, handoff 4.34.1): the receipt under a group message, "Seen by 9 of 11".
