@@ -815,7 +815,7 @@ function metricGroup(metricId: string): string {
 // would make that worse, not better.
 
 /** A metric family the prose can name. SG areas carry `sg` as their parent. */
-type MetricFamily =
+export type MetricFamily =
   | 'putting'
   | 'three_putt'
   | 'one_putt'
@@ -856,7 +856,7 @@ const FAMILY_BY_KEY: ReadonlyArray<readonly [RegExp, MetricFamily, MetricFamily 
   [/scor|to_par|total_score|best_round/, 'scoring', null],
 ];
 
-function familyOf(key: string | null | undefined): { family: MetricFamily | null; parent: MetricFamily | null } {
+export function familyOf(key: string | null | undefined): { family: MetricFamily | null; parent: MetricFamily | null } {
   if (!key) return { family: null, parent: null };
   const k = key.toLowerCase();
   for (const [re, family, parent] of FAMILY_BY_KEY) if (re.test(k)) return { family, parent };
@@ -867,7 +867,7 @@ function familyOf(key: string | null | undefined): { family: MetricFamily | null
  * Words in the model's prose that name a metric. Never bare "strokes" or "%":
  * both appear next to almost every golf number and would bind everything.
  */
-const METRIC_CUES: ReadonlyArray<readonly [RegExp, MetricFamily]> = [
+export const METRIC_CUES: ReadonlyArray<readonly [RegExp, MetricFamily]> = [
   [/\b(?:three|3)[- ]?putt\w*/gi, 'three_putt'],
   [/\b(?:one|1)[- ]?putt\w*/gi, 'one_putt'],
   [/\bputt(?:s|ing|ed|er)?\b/gi, 'putting'],
@@ -984,6 +984,28 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+const DAY_OR_MONTH = /^(?:Mon|Tue|Tues|Wed|Thu|Thur|Thurs|Fri|Sat|Sun|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|January|February|March|April|June|July|August|September|October|November|December)$/;
+
+/**
+ * True when the single-word name at [start, end) sits beside a capitalised word that is neither another name nor a sentence's first word
+ * nor a day or month: "Bryan Park Champs" is a course, and "Park" in it is not Ethan Park. One-sided: it can only lose a name, so a number
+ * beside it is audited less strictly, never more.
+ */
+function insideForeignPhrase(text: string, start: number, end: number, known: ReadonlyMap<string, unknown>): boolean {
+  const word = /[\p{Lu}][\p{L}'’-]*/u;
+  const foreign = (w: string | undefined, atSentenceStart: boolean) => !!w && !atSentenceStart && !known.has(w) && !DAY_OR_MONTH.test(w);
+  const before = /(^|[\s(*_-])([\p{Lu}][\p{L}'’-]*)\s$/u.exec(text.slice(Math.max(0, start - 40), start));
+  if (before) {
+    const wordStart = start - (before[0].length - before[1]!.length);
+    const lead = text.slice(0, wordStart).replace(/[\s*_-]+$/, '');
+    const sentenceFirst = lead === '' || /[.!?:\n]$/.test(lead) || /\n\s*[-*\d.]*\s*$/.test(text.slice(0, wordStart));
+    if (foreign(before[2], sentenceFirst)) return true;
+  }
+  const after = new RegExp(`^\\s([\\p{Lu}][\\p{L}'’-]*)`, 'u').exec(text.slice(end, end + 40));
+  if (after && word.test(after[1]!) && foreign(after[1], false)) return true;
+  return false;
+}
+
 interface Occurrence {
   start: number;
   end: number;
@@ -1026,7 +1048,10 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
     const re = new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp(name)}(?![\\p{L}\\p{N}])`, 'gu');
     for (const m of text.matchAll(re)) {
       const start = (m.index ?? 0) + (m[1]?.length ?? 0);
-      names.push({ start, end: (m.index ?? 0) + m[0].length, ids });
+      const end = (m.index ?? 0) + m[0].length;
+      // "Bryan Park Champs (practice)": a first or last name inside a longer capitalised phrase of other words is a place or a course, not the player.
+      if (!/\s/.test(name) && insideForeignPhrase(text, start, end, idsByName)) continue;
+      names.push({ start, end, ids });
     }
   }
   names.sort((a, b) => a.start - b.start);
@@ -1335,6 +1360,7 @@ export function auditNumericClaimsDetailed(
       if (c.kind === 'team') add(c.value, { player: null, team: true, ...fam });
       else add(c.value, { player: null, team: false, ...fam, reference: true });
       add(c.place_percent, { ...who, family: null, parent: null });
+      add(c.place, { ...who, family: null, parent: null });
       add(c.place_of, { ...who, family: null, parent: null });
       if (typeof m.value === 'number' && typeof c.value === 'number') add(m.value - c.value, { ...who, ...fam });
     }
@@ -1360,7 +1386,6 @@ export function auditNumericClaimsDetailed(
       }
     }
   }
-      add(c.place, { ...who, family: null, parent: null });
   for (const { scope, values } of detailGroups.values()) {
     if (values.length >= 2) add(values.reduce((a, b) => a + b, 0) / values.length, scope);
   }

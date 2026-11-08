@@ -16,7 +16,10 @@ const DESCRIPTION =
   'Every number it returns is evidence with its own evidence_ref. USE IT for any count, rank, average, total, join or difference you would otherwise work out yourself: never add, subtract, count rows or average in your head. ' +
   'source: { ref } is the evidence_ref of a read you made (its rows, or its first list of records; { ref, list: "measurements" } treats a ranking\'s figures as rows). ' +
   'Several ops in one call: give each a short id, and a difference or ratio can name an earlier op by { op: id } or a figure of a read by { ref, metric_id, subject }. ' +
-  'It refuses a field the rows do not have, and tells you which they do.';
+  'Field names: a ranking read as { ref, list: "measurements" } has rows with value, unit, player, player_id, entity.id, entity.label, metric_id, window_start, window_end and sample_size. ' +
+  'A join keeps every field of the first read under its own name; every field of the second read is also there as right_<field> (a field only the second read has is also there under its own name), so use right_<field> when both reads have it. ' +
+  'In a difference or ratio, subject is a player id or name, or "team": the team average a read of the roster\'s figures states beside the players (a ranking, a comparison); a mean over the figures is "an average of those N players\' figures", a different number from it. ' +
+  'The unit of a result is the unit of the figures it was worked on. It refuses a field the rows do not have, naming the ones they do, and a figure a read does not hold, naming the ones it does: read the message and try again.';
 
 type Sb = SupabaseClient<Database>;
 type Read = <I extends Record<string, unknown>>(name: string, run: (input: I) => Promise<ToolEnvelope>) => (input: I) => Promise<unknown>;

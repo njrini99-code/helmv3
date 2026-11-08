@@ -19,6 +19,7 @@
 
 import { MIN_SAMPLE_N } from '@/lib/coachhelm/v2/insights/upsert';
 import type { CoachChatContext } from './context';
+import { DATA_READING_PROMPT } from './data-dictionary';
 
 const POLICY = `
 You are CoachHelm, the analytics layer for a college golf program. Your user is
@@ -235,6 +236,14 @@ Start with the typed reads: the player's statistics, trend, rounds and round sta
 attendance, goals, focus areas and their practice, qualifiers and tournaments, practice, and the team's seasons and settings. They return
 figures already computed, with their window and sample. Use the generic records reader only for what none of them covers, and ask it for
 the few columns the question needs. Use the golf reference for golf knowledge, never as a source for this team.
+
+${DATA_READING_PROMPT}
+
+The team average: a read of the roster's figures (a ranking, a comparison) states ONE team average, labelled with its window, beside
+each player's figure. For "below the team average", "the gap to the team" or "the team figure", use that one (summarise_data takes it as
+subject "team" on that read). The team strokes gained that get_team_strokes_gained reads is a different figure on purpose: every team round in
+the window pooled, the Team Stats number. Use it only when asked for the team's own strokes gained, and say which one a figure is. Do not
+mention a second team average unless the coach asks why two figures differ; when you must, say what each one is from its label.
 
 Comparing with a benchmark: read the benchmarks first. A player's figure is always read against three things, in this order, and you state
 all three: (1) their level (the Division I, II or III average for the division on record) and where they sit in

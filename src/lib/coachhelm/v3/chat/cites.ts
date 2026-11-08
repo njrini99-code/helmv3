@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { auditRankClaims } from './rank-claims';
 import { auditNumericClaims, collectEnvelopeNumbers, collectScopedNumbers, roundingTolerance, teamDataCounts, type AuditDetail, type Measurement, type ScopedNumber, type ToolEnvelope, type UnsupportedClaim } from './provenance';
 
 /**
@@ -112,7 +113,7 @@ type Candidate = { value: number; window: readonly [string | null, string | null
 const subjectIs = (subject: string, entity: Measurement['entity']) => (subject === 'team' ? entity.kind === 'team' : entity.id === subject);
 
 /** Every number of one measurement a figure in the answer can be: its value, its sample, its denominator, its benchmark and the places beside it. */
-function numbersOfMeasurement(m: Measurement & { comparisons?: Array<{ value: number | null; place_of: number | null; place_percent: number | null }> }): Candidate[] {
+function numbersOfMeasurement(m: Measurement & { comparisons?: Array<{ kind?: string; value: number | null; place?: number | null; place_of: number | null; place_percent: number | null }> }): Candidate[] {
   const window = [m.window_start, m.window_end] as const;
   const out: Candidate[] = [];
   const add = (v: unknown) => {
@@ -125,6 +126,7 @@ function numbersOfMeasurement(m: Measurement & { comparisons?: Array<{ value: nu
   if (typeof m.value === 'number' && typeof m.benchmark?.value === 'number') add(m.value - m.benchmark.value);
   for (const c of m.comparisons ?? []) {
     add(c.value);
+    add(c.place);
     add(c.place_of);
     add(c.place_percent);
     if (typeof m.value === 'number' && typeof c.value === 'number') add(m.value - c.value);
@@ -139,7 +141,14 @@ function candidatesFor(cite: Cite, env: ToolEnvelope): Candidate[] | null {
   let resolved = false;
 
   for (const m of [...env.measurements]) {
-    if (norm(m.metric_id) !== key || !subjectIs(cite.subject, m.entity)) continue;
+    if (norm(m.metric_id) !== key) continue;
+    if (!subjectIs(cite.subject, m.entity)) {
+      // The team average a read of the roster's figures states beside them is the team's, whoever's figure it sits on.
+      if (cite.subject === 'team') {
+        for (const c of m.comparisons ?? []) if (c.kind === 'team' && typeof c.value === 'number') { resolved = true; found.push({ value: c.value, window: null }); }
+      }
+      continue;
+    }
     resolved = true;
     found.push(...numbersOfMeasurement(m));
   }
@@ -237,9 +246,13 @@ export function auditCited(args: { base: [text: AuditArgs[0], measurements: Audi
       }
     : undefined;
   // A cited figure the evidence it names does not hold is a misattribution however the words around it read, even when the text heuristics would have passed it.
+  // A place or superlative ("7th of 7", "the weakest on the team") is recomputed from the per-player values the turn read, never from a place field.
+  const reads = args.cites ? [...args.cites.evidence.values()].map((e) => e.measurements) : [args.base[1]];
+  const ranks = auditRankClaims(args.base[0], reads, args.options?.players ?? []);
   const unsupported = [
     ...mismatched.map((c): UnsupportedClaim => ({ text: c.cite.v, value: c.value ?? 0, misattributed: true })),
     ...flagged.filter((u) => !mismatched.some((c) => c.cite.v === u.text)),
+    ...ranks,
   ];
   return { unsupported, ...(citations ? { citations } : {}) };
 }

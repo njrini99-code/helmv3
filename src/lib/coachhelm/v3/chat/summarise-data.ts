@@ -41,7 +41,7 @@ type Source = z.infer<typeof SourceCoach>;
 
 /** A figure an arithmetic op reads: a measurement of a read of this turn, or an earlier op of this same call. */
 const Figure = z.union([
-  z.object({ ref: z.string().regex(/^e\d+$/), metric_id: z.string().max(80), subject: z.string().max(60).optional().describe('A player id, or "team".') }),
+  z.object({ ref: z.string().regex(/^e\d+$/), metric_id: z.string().max(80), subject: z.string().max(60).optional().describe('A player id or name, or "team" (the team average that read states beside the players\' figures).') }),
   z.object({ op: z.string().max(30).describe('The id of an earlier op in this call.') }),
 ]);
 type Figure = z.infer<typeof Figure>;
@@ -74,7 +74,7 @@ const Join = <S extends z.ZodTypeAny>(source: S) =>
 const body = <S extends z.ZodTypeAny>(source: S) =>
   z.object({
     source: source.optional().describe('The rows to work on. Left out when every op is a difference or a ratio of figures you already have.'),
-    join: Join(source).optional().describe('Join a second read to the first on a key, e.g. stat lines (round_id) to rounds (id). A field both have keeps the left one; the right one is named "right_<field>".'),
+    join: Join(source).optional().describe('Join a second read to the first on a key, e.g. stat lines (round_id) to rounds (id). Every field of the second read is available as "right_<field>"; a field only the second read has is also available under its own name; a field both have keeps the left one under its own name.'),
     where: z.array(Where).max(6).optional().describe('Applies to the (joined) rows before every op.'),
     ops: z.array(Ops).min(1).max(SUMMARISE_OPS_MAX),
   });
@@ -118,9 +118,16 @@ export function rowsOfEnvelope(envelope: ToolEnvelope, list?: string): { rows: R
 function measurementRows(envelope: ToolEnvelope): Row[] {
   return envelope.measurements.map((m) => ({
     ...(m.entity.kind === 'player' ? { player: m.entity.label, player_id: m.entity.id } : { [m.entity.kind]: m.entity.label }),
+    // The same entity under the names a model reaches for: the nested path as written in the read, and flat forms.
+    'entity.id': m.entity.id,
+    'entity.label': m.entity.label,
+    'entity.kind': m.entity.kind,
+    entity_id: m.entity.id,
+    entity_label: m.entity.label,
     metric_id: m.metric_id,
     metric_label: m.metric_label,
     value: m.value,
+    unit: m.unit,
     sample_size: m.sample_size,
     window_start: m.window_start,
     window_end: m.window_end,
@@ -166,10 +173,33 @@ function unitOf(field: string): Measurement['unit'] {
   return 'count';
 }
 
+const UNITS: readonly Measurement['unit'][] = ['percent', 'strokes', 'yards', 'feet', 'count', 'score', 'ratio'];
+
+/** The unit of a figure over these rows: the unit the rows carry when they all share one (a read's measurements do), else the field's own. */
+function unitOver(field: string, rows: readonly Row[]): Measurement['unit'] {
+  const carried = new Set(rows.map((r) => r.unit).filter((u): u is string => typeof u === 'string'));
+  const only = carried.size === 1 ? [...carried][0] : undefined;
+  if (field === 'value' && only && (UNITS as readonly string[]).includes(only)) return only as Measurement['unit'];
+  return unitOf(field);
+}
+
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 30) || 'x';
 
 /** Two decimals, the precision the rest of Ask's figures carry and the answer can round down from. */
 const hundredth = (n: number) => Number(n.toFixed(2));
+
+/**
+ * What a worked-out figure is, in words. Over a read's measurements it names the metric and, for a mean, says what is averaged: the
+ * players' own figures ("average of 7 players' figures"), which is a different number from a pooled team figure.
+ */
+function figureLabel(op: 'sum' | 'mean' | 'min' | 'max', field: string, rows: readonly Row[], by: string | null): string {
+  const word = op === 'mean' ? 'Average' : op === 'sum' ? 'Total' : op === 'min' ? 'Lowest' : 'Highest';
+  const labels = new Set(rows.map((r) => r.metric_label).filter((l): l is string => typeof l === 'string'));
+  const subject = field === 'value' && labels.size === 1 ? [...labels][0]! : field;
+  const players = new Set(rows.map((r) => r['entity.id']).filter((id) => typeof id === 'string' && rows.some((r) => r['entity.kind'] === 'player')));
+  const of = field === 'value' && op === 'mean' && players.size > 1 ? ` (average of ${players.size} players' figures)` : '';
+  return `${word} ${subject}${of}${by ? ` for ${by}` : ''}`;
+}
 
 type Ctx = { team: Measurement['entity']; people: ReadonlyMap<string, string> };
 
@@ -222,14 +252,31 @@ function figure(args: { id: string; label: string; unit: Measurement['unit']; va
   };
 }
 
-function resolveFigure(f: Figure, evidence: Evidence, made: ReadonlyMap<string, Measurement>): Measurement | string {
+function resolveFigure(f: Figure, evidence: Evidence, made: ReadonlyMap<string, Measurement>, team: Measurement['entity']): Measurement | string {
   if ('op' in f) return made.get(f.op) ?? `There is no earlier op "${f.op}" in this call.`;
   const env = evidence.get(f.ref);
   if (!env) return `No read named ${f.ref} in this answer.`;
-  const hits = env.measurements.filter((m) => m.metric_id === f.metric_id && m.value !== null && (!f.subject || (f.subject === 'team' ? m.entity.kind === 'team' : m.entity.id === f.subject)));
-  if (hits.length === 0) return `Read ${f.ref} has no figure ${f.metric_id}${f.subject ? ` for ${f.subject}` : ''}.`;
-  if (hits.length > 1) return `Read ${f.ref} has ${hits.length} figures ${f.metric_id}; name the subject (a player id, or "team").`;
-  return hits[0]!;
+  const ofMetric = env.measurements.filter((m) => m.metric_id === f.metric_id && m.value !== null);
+  const subject = f.subject?.trim();
+  const isSubject = (m: Measurement) => !subject || (subject.toLowerCase() === 'team' ? m.entity.kind === 'team' : m.entity.id === subject || m.entity.label.toLowerCase() === subject.toLowerCase());
+  const hits = ofMetric.filter(isSubject);
+  if (hits.length === 1) return hits[0]!;
+  if (hits.length > 1) return `Read ${f.ref} has ${hits.length} figures ${f.metric_id}; name the subject (a player id or name, or "team").`;
+  // "team" on a read of the roster's figures (a ranking, a comparison): the team average that read states beside them.
+  if (subject?.toLowerCase() === 'team') {
+    const refs = ofMetric.flatMap((m) => (m.comparisons ?? []).filter((c) => c.kind === 'team' && typeof c.value === 'number').map((c) => ({ m, c })));
+    const values = new Set(refs.map((r) => r.c.value));
+    if (values.size === 1) {
+      const { m, c } = refs[0]!;
+      const starts = ofMetric.map((x) => x.window_start).filter((x): x is string => !!x).sort();
+      const ends = ofMetric.map((x) => x.window_end).filter((x): x is string => !!x).sort();
+      return { ...m, entity: team, value: c.value, metric_label: `${c.label}: ${m.metric_label}`, window_start: starts[0] ?? null, window_end: ends[ends.length - 1] ?? null, sample_size: c.place_of ?? ofMetric.length, sample_unit: 'players', method: c.label, source: 'summarised reads', benchmark: null, comparisons: undefined };
+    }
+    if (values.size > 1) return `Read ${f.ref} states more than one team average for ${f.metric_id} (${[...values].join(', ')}); use a figure from a read that states one.`;
+    return `Read ${f.ref} states no team average for ${f.metric_id}. Read it with get_team_metric_ranking or get_team_strokes_gained, or name two figures you do have.`;
+  }
+  const have = [...new Set(env.measurements.filter((m) => m.metric_id === f.metric_id).map((m) => `${m.entity.label} (${m.entity.id})`))];
+  return `Read ${f.ref} has no figure ${f.metric_id}${subject ? ` for ${subject}` : ''}.${have.length > 0 ? ` It has it for: ${have.slice(0, 12).join(', ')}.` : ` Its figures are: ${[...new Set(env.measurements.map((m) => m.metric_id))].slice(0, 12).join(', ') || 'none'}.`}`;
 }
 
 /** Competition ranking: 1, 2, 2, 4. */
@@ -287,7 +334,13 @@ export async function summariseData(ctx: CoachChatContext, input: SummariseInput
         const match = k === null || k === undefined ? undefined : byKey.get(String(k));
         if (!match && spec.join.keep === 'matched') continue;
         const merged: Row = { ...l };
-        if (match) for (const [name, v] of Object.entries(match)) merged[name in merged ? `right_${name}` : name] = v;
+        if (match) {
+          // Every right-hand field is reachable as "right_<field>"; one that does not clash with a left field is also reachable bare.
+          for (const [name, v] of Object.entries(match)) {
+            merged[`right_${name}`] = v;
+            if (!(name in l)) merged[name] = v;
+          }
+        }
         joined.push(merged);
       }
       rows = joined;
@@ -323,9 +376,9 @@ export async function summariseData(ctx: CoachChatContext, input: SummariseInput
   for (const [i, op] of spec.ops.entries()) {
     const id = nameFor(op, i);
     if (op.op === 'difference' || op.op === 'ratio') {
-      const a = resolveFigure(op.a, deps.evidence, made);
+      const a = resolveFigure(op.a, deps.evidence, made, c.team);
       if (typeof a === 'string') return refused(a);
-      const b = resolveFigure(op.b, deps.evidence, made);
+      const b = resolveFigure(op.b, deps.evidence, made, c.team);
       if (typeof b === 'string') return refused(b);
       if (a.value === null || b.value === null) return refused('One of those figures has no value, so there is nothing to subtract or divide.');
       const value = op.op === 'difference' ? a.value - b.value : b.value === 0 ? null : a.value / b.value;
@@ -375,7 +428,7 @@ export async function summariseData(ctx: CoachChatContext, input: SummariseInput
         const v = nums.length === 0 ? null : op.op === 'sum' ? nums.reduce((a, b) => a + b, 0) : op.op === 'mean' ? nums.reduce((a, b) => a + b, 0) / nums.length : op.op === 'min' ? Math.min(...nums) : Math.max(...nums);
         const e: Measurement['entity'] = op.by === 'player' && grp[0]?.player_id && c.people.has(String(grp[0].player_id)) ? { kind: 'player', id: String(grp[0].player_id), label: value } : entity;
         const gid = op.by ? `${id}:${slug(value)}` : id;
-        const m = figure({ id: gid, label: `${op.op === 'mean' ? 'Average' : op.op === 'sum' ? 'Total' : op.op === 'min' ? 'Lowest' : 'Highest'} ${op.field}${op.by ? ` for ${value}` : ''}`, unit: unitOf(op.field), value: v, entity: e, n: nums.length, rows: grp, method: `summary_${op.op}` });
+        const m = figure({ id: gid, label: figureLabel(op.op, op.field, grp, op.by ? value : null), unit: unitOver(op.field, grp), value: v, entity: e, n: nums.length, rows: grp, method: `summary_${op.op}` });
         push(gid, m);
         out.push({ ...(op.by ? { [op.by]: value } : {}), value: m.value, rows: nums.length });
       }
@@ -394,7 +447,7 @@ export async function summariseData(ctx: CoachChatContext, input: SummariseInput
       const e: Measurement['entity'] = c.people.has(pid) ? { kind: 'player', id: pid, label: c.people.get(pid)! } : entity;
       const m = figure({ id, label: `Place by ${op.field}, ${op.order === 'high_first' ? 'highest first' : 'lowest first'}`, unit: 'count', value: place, entity: e, n: values.length, of: values.length, rows: scored, method: 'summary_rank_competition', direction: null });
       push(id, m);
-      const vm = figure({ id: `${id}_value`, label: `${op.field} of the row placed`, unit: unitOf(op.field), value: mineValue, entity: e, n: values.length, rows: scored, method: 'summary_value' });
+      const vm = figure({ id: `${id}_value`, label: `${op.field} of the row placed`, unit: unitOver(op.field, scored), value: mineValue, entity: e, n: values.length, rows: scored, method: 'summary_value' });
       push(`${id}_value`, vm);
       results.push({ id: `summary:${id}`, op: 'rank', place, of: values.length, tied: tied > 1 ? tied : undefined, value: mineValue });
     } else if (op.op === 'list') {

@@ -159,3 +159,45 @@ describe('what the audit makes of a result', () => {
     expect(audit('Those five rounds add up to 367 strokes.', [rounds, out])).toEqual(['367']);
   });
 });
+
+// Staging, 2026-11-08 (conversation d1b3e917, 221a34d4): the model could not predict the join's field names, could not address the team
+// average a ranking states, and a mean of strokes came back as a count.
+describe('the names and units the model reaches for', () => {
+  it('a join offers every right-hand field as right_<field>, and a field only the right has also by its own name', async () => {
+    const join = { source: { ref: 'e2' }, join: { with: { ref: 'e1' }, left_key: 'round_id', right_key: 'id', keep: 'matched' as const } };
+    const e = await run({ ...join, ops: [{ op: 'list', fields: ['three_putts', 'right_total_score', 'total_score', 'right_player', 'right_round_date', 'round_date'], limit: 1 }] });
+    expect((e.detail as { rows: Array<Record<string, unknown>> }).rows[0]).toEqual({ three_putts: 3, right_total_score: 74, total_score: 74, right_player: 'Cole Bennett', right_round_date: '2026-10-21', round_date: '2026-10-21' });
+    // "three_putts" is the stat line's own; the model's "right_three_putts" is no field, and the refusal says what to ask for.
+    const wrong = await run({ ...join, ops: [{ op: 'list', fields: ['right_three_putts'] }] });
+    expect(wrong.coverage).toBe('unavailable');
+    expect(wrong.coverage_note).toMatch(/no field "right_three_putts"/);
+    expect(wrong.coverage_note).toMatch(/three_putts/);
+  });
+
+  const player = (id: string, label: string, v: number | null, team: number | null) => ({ metric_id: 'sg_approach', metric_label: 'Strokes gained approach', unit: 'strokes' as const, value: v, entity: { kind: 'player' as const, id, label }, window_start: '2026-06-09', window_end: '2026-09-26', sample_size: 8, sample_unit: 'rounds' as const, as_of: '2026-11-08T00:00:00.000Z', coverage: 'complete' as const, coverage_note: null, source: 'rounds', method: 'm', denominator: null, benchmark: null, direction: 'higher_better' as const, comparisons: [{ kind: 'team' as const, label: 'Team average', value: team, place_of: 7, place_percent: null, place: null, note: null, missing_reason: null }] });
+  const ranking = env({ metric_id: 'sg_approach' }, { measurements: [player('p-cole', 'Cole Bennett', -3.6, -2.33), player('p-owen', 'Owen Carter', -4.16, -2.33), player('p-ethan', 'Ethan Park', -4.4, -2.33)] });
+
+  it('"team" on a ranking is the team average that read states beside the players, with its sample and method in words', async () => {
+    const e = await run({ ops: [{ op: 'difference', id: 'gap', a: { ref: 'e1', metric_id: 'sg_approach', subject: 'p-owen' }, b: { ref: 'e1', metric_id: 'sg_approach', subject: 'team' } }] }, { evidence: new Map([['e1', ranking]]) });
+    expect(e.measurements[0]).toMatchObject({ metric_id: 'summary:gap', value: -1.83, unit: 'strokes', entity: { id: 'p-owen' } });
+    expect(e.coverage).toBe('complete');
+  });
+  it('a player can be named by name, and two different team averages in one read are refused, not guessed', async () => {
+    const byName = await run({ ops: [{ op: 'difference', id: 'gap', a: { ref: 'e1', metric_id: 'sg_approach', subject: 'Owen Carter' }, b: { ref: 'e1', metric_id: 'sg_approach', subject: 'team' } }] }, { evidence: new Map([['e1', ranking]]) });
+    expect(value(byName, 'gap')).toBe(-1.83);
+    const mixed = env(null, { measurements: [player('p-cole', 'Cole Bennett', -3.6, -2.33), player('p-owen', 'Owen Carter', -4.16, -3.09)] });
+    const refused = await run({ ops: [{ op: 'difference', a: { ref: 'e1', metric_id: 'sg_approach', subject: 'p-owen' }, b: { ref: 'e1', metric_id: 'sg_approach', subject: 'team' } }] }, { evidence: new Map([['e1', mixed]]) });
+    expect(refused.coverage_note).toMatch(/more than one team average/);
+    const none = await run({ ops: [{ op: 'difference', a: { ref: 'e1', metric_id: 'sg_approach', subject: 'p-owen' }, b: { ref: 'e1', metric_id: 'sg_approach', subject: 'team' } }] }, { evidence: new Map([['e1', env(null, { measurements: [player('p-owen', 'Owen Carter', -4.16, null)] })]]) });
+    expect(none.coverage_note).toMatch(/states no team average/);
+  });
+  it('a read of measurements is a list with entity.id and entity.label, and a mean of strokes is in strokes', async () => {
+    const e = await run({ source: { ref: 'e1', list: 'measurements' }, ops: [{ op: 'mean', id: 'avg', field: 'value' }, { op: 'rank', id: 'place', field: 'value', subject: { field: 'entity.id', equals: 'p-owen' }, order: 'high_first' }, { op: 'count', id: 'ethan', where: [{ field: 'entity.label', op: 'eq', value: 'Ethan Park' }] }] }, { evidence: new Map([['e1', ranking]]) });
+    expect(e.measurements.find((m) => m.metric_id === 'summary:avg')).toMatchObject({ value: -4.05, unit: 'strokes', metric_label: "Average Strokes gained approach (average of 3 players' figures)" });
+    expect(e.measurements.find((m) => m.metric_id === 'summary:place')).toMatchObject({ value: 2, denominator: 3 });
+    expect(e.measurements.find((m) => m.metric_id === 'summary:place_value')).toMatchObject({ unit: 'strokes' });
+    expect(value(e, 'ethan')).toBe(1);
+    const lowest = await run({ source: { ref: 'e1', list: 'measurements' }, ops: [{ op: 'min', id: 'lo', field: 'value' }, { op: 'sum', id: 'tot', field: 'value' }] }, { evidence: new Map([['e1', ranking]]) });
+    expect(lowest.measurements.map((m) => m.unit)).toEqual(['strokes', 'strokes']);
+  });
+});

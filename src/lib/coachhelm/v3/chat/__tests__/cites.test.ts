@@ -206,3 +206,57 @@ describe('the three-putt turn (efd480a1), cited as the model would', () => {
     expect(verifyCite(cite('24', 'e3', 'summary:status:completed', 'team'), new Map([['e3', out]])).status).toBe('mismatch');
   });
 });
+
+// Staging 2026-11-08, the rank and difference question (a2d53134) and the wrong-accept (6a787fb4): the same seven-player ranking.
+describe('the team ranking turns', () => {
+  const ctx = { coach_id: 'c', user_id: 'u', team_id: 'team-1', team_name: 'Demo University Golf', timezone: 'America/New_York', roster: roster.map((r) => ({ ...r, first_name: r.name.split(' ')[0], last_name: null, graduation_year: null })) } as unknown as CoachChatContext;
+  const others = [['Dylan Brooks', -2.03], ['Mason Rivers', -2.28], ['Jackson Hale', -2.43], ['Tyler Hayes', -2.72], ['Cole Bennett', -3.6]].map(([name, v]) => m('sg_approach', v as number, { kind: 'player', id: `p-${String(name).split(' ')[0]!.toLowerCase()}`, label: String(name) }, { comparisons: comparisons(null, -2.33, 0, 7, 50) }));
+  const ranked = env({
+    summary: 'Strokes gained approach across Demo University Golf, over each player’s newest ten rounds.',
+    measurements: [...others, m('sg_approach', -4.16, owenEntity, { comparisons: comparisons(null, -2.33, 0, 7, 0) }), m('sg_approach', -4.4, ethanEntity, { comparisons: comparisons(null, -2.33, 0, 7, 17) }), m('sg_approach', null, { kind: 'player', id: AUDIT, label: 'Audit Testplayer' }, { coverage: 'empty' })],
+  });
+  const players = [...roster, ...others.map((o) => ({ id: o.entity.id, name: o.entity.label }))];
+
+  const verdictFor = (text: string, cites: Cite[], all: Map<string, ToolEnvelope>) =>
+    computeTurnVerdict({
+      streamComplete: true,
+      text,
+      measurements: [...all.values()].flatMap((e) => e.measurements),
+      series: [],
+      detailNumbers: [...all.values()].flatMap((e) => collectEnvelopeNumbers(e)),
+      detailDates: [...all.values()].flatMap((e) => collectEnvelopeDates(e, 'America/New_York')),
+      timezone: 'America/New_York',
+      players,
+      cites: { cites, evidence: all },
+    });
+
+  it('the answer that was withheld for naming the ranking’s own team average, cited as the team’s, is accepted', async () => {
+    const e1 = ranked;
+    const sum = await summariseData(ctx, { source: { ref: 'e1', list: 'measurements' }, ops: [{ op: 'mean', id: 'team_avg', field: 'value' }, { op: 'rank', id: 'owen_rank', field: 'value', order: 'high_first', subject: { field: 'entity.id', equals: OWEN } }, { op: 'difference', id: 'gap', a: { ref: 'e1', metric_id: 'sg_approach', subject: OWEN }, b: { op: 'team_avg' } }] }, { evidence: new Map([['e1', e1]]) });
+    expect(sum.measurements.map((x) => [x.metric_id, x.value, x.unit])).toEqual([['summary:team_avg', -3.09, 'strokes'], ['summary:owen_rank', 6, 'count'], ['summary:owen_rank_value', -4.16, 'strokes'], ['summary:gap', -1.07, 'strokes']]);
+    const all = new Map<string, ToolEnvelope>([['e1', e1], ['e2', sum]]);
+    const text = [
+      'Owen Carter ranks 6th of 7 on approach strokes gained over his last ten rounds. His figure is -4.16 strokes per round. Only Ethan Park is lower, at -4.40.',
+      '',
+      'Against the average of those seven players’ figures, Owen is 1.07 strokes per round below, because the average works out to -3.09. The ranking read also printed its own team average of -2.33. If you use -2.33, Owen’s gap is larger.',
+    ].join('\n');
+    const cites = [cite('-4.16', 'e1', 'sg_approach', OWEN), cite('-4.40', 'e1', 'sg_approach', ETHAN), cite('6', 'e2', 'summary:owen_rank', OWEN), cite('1.07', 'e2', 'summary:gap', OWEN), cite('-3.09', 'e2', 'summary:team_avg', 'team'), cite('-2.33', 'e1', 'sg_approach', 'team')];
+    expect(cites.map((c) => verifyCite(c, all).status)).toEqual(['verified', 'verified', 'verified', 'verified', 'verified', 'verified']);
+    const v = verdictFor(text, cites, all);
+    expect(v.outcome).toBe('accepted');
+    expect(v.citations).toMatchObject({ verified: 6, mismatched: 0 });
+    // A team average the read does not state, cited as the team’s, is a mismatch against the very read it names, and the turn is withheld.
+    expect(verdictFor(text, [...cites.slice(0, 5), cite('-2.5', 'e1', 'sg_approach', 'team')], all).outcome).toBe('rejected');
+  });
+
+  it('"7th of the 7 … the weakest on the team" with Ethan below Owen is withheld, even with every figure cited correctly', () => {
+    const all = new Map<string, ToolEnvelope>([['e1', ranked]]);
+    const text = 'Owen’s approach play is the weakest on the team. His strokes gained on approach is -4.16 per round. That puts him 7th of the 7 players with data.';
+    const v = verdictFor(text, [cite('-4.16', 'e1', 'sg_approach', OWEN)], all);
+    expect(v.outcome).toBe('rejected');
+    if (v.outcome === 'rejected') expect(v.unsupported.map((u) => u.text)).toEqual(['weakest on the team', '7th of the 7']);
+    // The true version is accepted.
+    const ok = verdictFor('Owen’s approach play is 6th of the 7 players with data. His strokes gained on approach is -4.16 per round. Only Ethan Park is lower.', [cite('-4.16', 'e1', 'sg_approach', OWEN)], all);
+    expect(ok.outcome).toBe('accepted');
+  });
+});
