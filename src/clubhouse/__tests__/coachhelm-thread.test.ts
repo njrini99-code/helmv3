@@ -403,3 +403,25 @@ describe('prose: paragraphs, lists, bold and roster names', () => {
     expect(splitAtMentions('hello', [])).toEqual([{ text: 'hello' }]);
   });
 });
+
+import { answerNeverCame } from '../data/coachhelm-chat-thread';
+
+describe('answerNeverCame', () => {
+  const user = (text = 'Who should play?') => ({ id: 'u1', role: 'user', parts: [{ type: 'text', text }] }) as never;
+  const assistant = (...parts: unknown[]) => ({ id: 'a1', role: 'assistant', parts }) as never;
+  it('is true when the question is the last thing: the stream died before an answer was stored', () => {
+    expect(answerNeverCame([user()])).toBe(true);
+    expect(answerNeverCame([user('One'), assistant({ type: 'text', text: 'Done.' }), user('Two')])).toBe(true);
+  });
+  it('is true for an answer that holds only progress steps, false once it holds anything to show', () => {
+    expect(answerNeverCame([user(), assistant()])).toBe(true);
+    expect(answerNeverCame([user(), assistant({ type: 'data-progress', id: 's', data: {} }, { type: 'step-start' })])).toBe(true);
+    expect(answerNeverCame([user(), assistant({ type: 'data-progress', id: 's', data: {} }, { type: 'text', text: 'Owen is 6th.' })])).toBe(false);
+    expect(answerNeverCame([user(), assistant({ type: 'data-evidence', id: 'e', data: {} })])).toBe(false);
+    expect(answerNeverCame([user(), assistant({ type: 'data-action-proposal', id: 'p', data: {} })])).toBe(false);
+  });
+  it('is false for an empty thread and a question with no text (an approval resubmit)', () => {
+    expect(answerNeverCame([])).toBe(false);
+    expect(answerNeverCame([{ id: 'u', role: 'user', parts: [] } as never])).toBe(false);
+  });
+});

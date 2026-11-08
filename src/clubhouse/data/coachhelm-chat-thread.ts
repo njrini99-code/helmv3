@@ -359,6 +359,18 @@ export function followUpsFor(envelopes: ToolEnvelope[]): string[] {
  * verdict that arrives without it: word for word, straight apostrophes included, as what the server sends is shown as sent. */
 export const REJECTED_TURN_NOTE = "This answer didn't finish coming through, so it isn't being shown. Please ask again.";
 
+/**
+ * Whether the last turn ended with nothing to show: the question is there and no answer followed (the stream died, a timeout or a reload cut it
+ * before any text was stored), or the answer holds only progress steps. The thread then says so and offers Retry, never just the question.
+ */
+export function answerNeverCame(messages: readonly UIMessage[]): boolean {
+  const last = messages[messages.length - 1];
+  if (!last) return false;
+  if (last.role === 'user') return Boolean(userText(last));
+  if (last.role !== 'assistant') return false;
+  return partsOf(last).every((p) => p.type === 'data-progress' || p.type === 'step-start');
+}
+
 /** Bold markers and list markers out, for Copy. */
 export function plainText(text: string): string {
   return text.replace(/\*\*(.+?)\*\*/g, '$1').trim();

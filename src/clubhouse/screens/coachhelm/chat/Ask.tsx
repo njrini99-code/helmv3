@@ -14,9 +14,9 @@ import { useSafariKeyboardFit } from '../../../shell/PhoneScreen';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
-import { describeChatError } from '../../../data/coachhelm-chat-error';
+import { CHAT_ERROR_DID_NOT_FINISH, describeChatError } from '../../../data/coachhelm-chat-error';
 import { titleFromQuestion, type ChAskConversation, type ChAskData, type ChAskLoad } from '../../../data/coachhelm-chat-shape';
-import { pendingApproval, type EvidenceFocus } from '../../../data/coachhelm-chat-thread';
+import { answerNeverCame, pendingApproval, type EvidenceFocus } from '../../../data/coachhelm-chat-thread';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneIconAction } from '../../../ui/PhoneBar';
 import { Icon } from '../../../ui/Icon';
@@ -203,7 +203,10 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
   const ranOutLive = data.allowance !== 'out';
   const pending = pendingApproval(chat.messages);
   const showHome = chat.messages.length === 0 && !gone && !data.threadFailed;
-  const notice = chat.error ? describeChatError(chat.error) : null;
+  // A turn whose stream ended with no error and no answer (a dev reload, a timeout, a crash) is not an idle thread: it says the answer didn't
+  // finish and offers Retry, which sends the same question again (`regenerate` appends nothing).
+  const noAnswer = !chat.busy && !chat.error && !showHome && !gone && !data.threadFailed && !out && answerNeverCame(chat.messages);
+  const notice = chat.error ? describeChatError(chat.error) : noAnswer ? CHAT_ERROR_DID_NOT_FINISH : null;
   // A thread covers the page, so the phone tab bar steps aside; the new-chat home keeps it.
   usePhoneTabsHidden(phone && !showHome);
 

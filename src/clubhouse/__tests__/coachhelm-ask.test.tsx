@@ -472,6 +472,40 @@ describe('the composer', () => {
   });
 });
 
+describe('a stream that ends with no answer', () => {
+  const asked: UIMessage[] = [{ id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Who should play Saturday?' }] } as UIMessage];
+  const noticeOf = () => JSON.parse(screen.getByTestId('thread-props').textContent ?? '{}').error as { message: string; recovery: string } | null;
+
+  it('says the answer did not finish and offers Retry, instead of showing the question alone', () => {
+    show(ready({ thread: { id: 'c', title: 't', messages: asked } }), fakeChat());
+    expect(noticeOf()).toEqual({ message: "This answer didn't finish coming through.", recovery: 'retry' });
+  });
+
+  it('Retry asks the same question again through the hook, once', async () => {
+    const { chat } = show(ready({ thread: { id: 'c', title: 't', messages: asked } }), fakeChat());
+    await userEvent.click(screen.getByRole('button', { name: 'stub retry' }));
+    expect(chat.calls.retry).toHaveBeenCalledTimes(1);
+    expect(chat.calls.send).not.toHaveBeenCalled();
+  });
+
+  it('is also said when the answer holds only progress steps', () => {
+    const steps: UIMessage[] = [...asked, { id: 'a1', role: 'assistant', parts: [{ type: 'data-progress', id: 's1', data: { label: 'Reading the team', state: 'active' } }] } as unknown as UIMessage];
+    show(ready({ thread: { id: 'c', title: 't', messages: steps } }), fakeChat());
+    expect(noticeOf()?.message).toBe("This answer didn't finish coming through.");
+  });
+
+  it('is not said while the reply is still streaming, after an answer, or when a real error is showing', () => {
+    show(ready({ thread: { id: 'c', title: 't', messages: asked } }), fakeChat({ busy: true }));
+    expect(noticeOf()).toBeNull();
+    cleanup();
+    show(ready({ thread: { id: 'c', title: 't', messages: ASK_MSGS_ANSWER } }), fakeChat());
+    expect(noticeOf()).toBeNull();
+    cleanup();
+    show(ready({ thread: { id: 'c', title: 't', messages: asked } }), fakeChat({ error: new Error('Something went wrong') }));
+    expect(noticeOf()?.message).toBe('Something went wrong');
+  });
+});
+
 describe('the composer on the phone', () => {
   beforeEach(() => {
     phoneState.on = true;
