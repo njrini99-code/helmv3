@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { bubbletLine, INBOX_FILTERS, nothingHere, pinLabel, pinsWithChannel } from '../inbox/model';
+import { bubbletLine, hasNoMessages, INBOX_FILTERS, nothingHere, pinLabel, pinsWithChannel, withoutEmptyThreads } from '../inbox/model';
 import { InboxSkeleton, INBOX_SKELETON_WIDTHS } from '../inbox/InboxSkeleton';
 import { TypingMini, typingLabel } from '../inbox/TypingMini';
 import { MessagesSkeleton } from '../MessagesSkeleton';
@@ -48,6 +48,30 @@ describe('the Pinned card', () => {
     expect(bubbletLine({ lastText: 'Poll: Range day?', lastSenderId: 'eli' }, 'me')).toBe('Range day?');
     expect(bubbletLine({ lastText: 'mine', lastSenderId: 'me' }, 'me')).toBeNull();
     expect(bubbletLine({ lastText: '', lastSenderId: 'eli' }, 'me')).toBeNull();
+  });
+});
+
+describe('threads with no messages stay out of the list', () => {
+  const full = { lastText: 'Bus at 6', lastSenderId: 'eli' };
+  const empty = { lastText: '', lastSenderId: null };
+  const list = [
+    { id: 'team', channel: true, ...empty },
+    { id: 'talked', ...full },
+    { id: 'blank', ...empty },
+    { id: 'made', ...empty },
+  ];
+  it('hasNoMessages is true only with no last message, and never for the team channel', () => {
+    expect(hasNoMessages({ ...empty })).toBe(true);
+    expect(hasNoMessages({ ...full })).toBe(false);
+    expect(hasNoMessages({ ...empty, channel: true })).toBe(false);
+    expect(hasNoMessages({ lastText: 'Sent an attachment', lastSenderId: 'me' })).toBe(false);
+  });
+  it('drops the empty one, keeps the channel and anything with a message', () => {
+    expect(withoutEmptyThreads(list, () => false).map((c) => c.id)).toEqual(['team', 'talked']);
+  });
+  it('keeps an empty one the viewer is in (open, made or opened this session, pinned)', () => {
+    expect(withoutEmptyThreads(list, (id) => id === 'made').map((c) => c.id)).toEqual(['team', 'talked', 'made']);
+    expect(withoutEmptyThreads(list, (id) => id === 'blank' || id === 'made').map((c) => c.id)).toEqual(['team', 'talked', 'blank', 'made']);
   });
 });
 

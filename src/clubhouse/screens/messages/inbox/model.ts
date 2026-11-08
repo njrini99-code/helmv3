@@ -33,6 +33,20 @@ export function filterConvs(convs: ChConv[], filter: ChConvFilter, q: string): C
   return convs.filter((c) => (filter === 'unread' ? isUnread(c) : filter === 'groups' ? c.group : true) && (!s || c.title.toLowerCase().includes(s) || c.lastText.toLowerCase().includes(s)));
 }
 
+/** A thread nobody has written in: no last message at all. The team's channel is never one (it is always listed). */
+export function hasNoMessages(c: Pick<ChConv, 'lastText' | 'lastSenderId' | 'channel'>): boolean {
+  return !c.channel && !c.lastText && c.lastSenderId === null;
+}
+
+/**
+ * The list without threads that have no messages ("Test Assistant · No messages yet" is not a conversation; MSG-703 makes one
+ * only so the viewer can write the first line). `keep` holds the ones that stay: the open thread, one made or opened this
+ * session, a pinned one. They are listed with the "No messages yet" line, as the design's rail draws a new thread.
+ */
+export function withoutEmptyThreads<T extends Pick<ChConv, 'id' | 'lastText' | 'lastSenderId' | 'channel'>>(convs: readonly T[], keep: (id: string) => boolean): T[] {
+  return convs.filter((c) => !hasNoMessages(c) || keep(c.id));
+}
+
 /** The Pinned card's threads (06 S-MSG): the team's channel is always first, then the viewer's own pins, three faces in all. */
 export function pinnedThreads<T extends { id: string; channel?: boolean }>(convs: readonly T[], pinIds: readonly string[]): T[] {
   const channel = convs.find((c) => c.channel);

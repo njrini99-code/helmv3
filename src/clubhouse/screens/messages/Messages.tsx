@@ -36,6 +36,7 @@ import { useInboxApi } from './api/use-inbox-api';
 import { useThreadApi } from './api/use-thread-api';
 import { useOverlayApi, KEY_BY_EMOJI } from './api/use-overlay-api';
 import { useDetailsApi } from './api/use-details-api';
+import { hasNoMessages, withoutEmptyThreads } from './inbox/model';
 import { DraftStore } from './drafts';
 import { readMarkedUnread, withMark, writeMarkedUnread } from './marked-unread';
 import { FOUND_FOR_MS } from './use-focus-message';
@@ -135,6 +136,11 @@ export function Messages({ data }: { data: ChMessagesData }) {
   );
   // A one-to-one thread just made, shown at once until the list's next read carries it (F-0045).
   const [started, setStarted] = useState<ChConv | null>(null);
+  // Threads with no messages stay out of the list unless the viewer made or opened them this session (inbox/model.ts).
+  const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set());
+  useEffect(() => {
+    if (selectedId) setOpened((ids) => (ids.has(selectedId) ? ids : new Set(ids).add(selectedId)));
+  }, [selectedId]);
   const convs = useMemo(() => (started && !loadedConvs.some((c) => c.id === started.id) ? [started, ...loadedConvs] : loadedConvs), [started, loadedConvs]);
   // The nav badge follows the rail: it polls every 45 s, so reading a thread left the tab's count up for that long, and
   // a new message raised the rail long before the badge (audit 2026-10-31). A beat after the rail's total moves, after
@@ -174,9 +180,11 @@ export function Messages({ data }: { data: ChMessagesData }) {
   // Desktop opens the newest thread beside the rail without marking it read (the coach hasn't read it yet).
   useEffect(() => {
     if (loading || selectedId || !convs.length || !paramsDone) return;
-    if (typeof window !== 'undefined' && window.matchMedia(CH_DESK_QUERY).matches) {
-      setSelectedId(convs[0]!.id);
-      setAutoOpened(convs[0]!.id);
+    // The newest thread that has something in it: an empty one is not in the list, so it is not the one to open.
+    const first = convs.find((c) => !hasNoMessages(c));
+    if (first && typeof window !== 'undefined' && window.matchMedia(CH_DESK_QUERY).matches) {
+      setSelectedId(first.id);
+      setAutoOpened(first.id);
     }
   }, [loading, selectedId, convs, paramsDone]);
 
@@ -683,7 +691,11 @@ export function Messages({ data }: { data: ChMessagesData }) {
   const convIds = useMemo(() => convs.map((c) => c.id), [convs]);
   const pins = useConversationPins(data.viewerUserId, data.teamId ?? '', convIds, true, !loading && !error);
   const typingByConv = useTypingByConversation(data.viewerUserId, convIds, selectedId, true);
-  const shownConvs = useMemo(() => (rowMutes.muted ? convs.map((c) => ({ ...c, muted: rowMutes.muted!.has(c.id) })) : convs), [rowMutes.muted, convs]);
+  const listedConvs = useMemo(
+    () => withoutEmptyThreads(convs, (id) => id === selectedId || id === started?.id || opened.has(id) || pins.has(id)),
+    [convs, selectedId, started, opened, pins],
+  );
+  const shownConvs = useMemo(() => (rowMutes.muted ? listedConvs.map((c) => ({ ...c, muted: rowMutes.muted!.has(c.id) })) : listedConvs), [rowMutes.muted, listedConvs]);
 
   const ctx: MessagesApiCtx = {
     data,

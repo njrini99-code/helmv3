@@ -1044,6 +1044,20 @@ describe('Messages · behaviour contracts (P007, docs/clubhouse/pages/P007-messa
     expect(router.replace).toHaveBeenCalledWith('/golf/dashboard/messages', { scroll: false });
   });
 
+  it('a thread nobody has written in is not listed, and does not take the desktop’s opening; opened by link it stays listed', async () => {
+    const blank = { id: 'blank', title: null, participant_ids: ['me', 'eli'], participant_count: 2, unread_count: 0, other_participant: { id: 'eli', name: 'Eli Brandt' }, last_message: null, creator_id: 'me' };
+    live.convs.conversations = [blank, team];
+    const { unmount } = show();
+    expect(await screen.findByRole('textbox', { name: /Message Varsity team/ })).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/No messages yet/);
+    expect(screen.queryByRole('button', { name: /^(?!Actions for ).*Eli Brandt/ })).toBeNull();
+    unmount();
+    params.current = new URLSearchParams('conversation=blank');
+    show();
+    expect(await screen.findByRole('textbox', { name: /Message Eli$/ })).toBeTruthy();
+    expect(document.querySelector('.ch-ms-rail')?.textContent).toMatch(/Eli Brandt/);
+  });
+
   it('A16 a ?compose=1 link (the palette’s New message) opens New message and cleans the address', async () => {
     live.convs.conversations = [team, dm];
     params.current = new URLSearchParams('compose=1');
@@ -1351,7 +1365,8 @@ describe('Messages · wave 5 feedback', () => {
 
 /** P-10 Notify anyway: the "Notified anyway" caption keys on the delivery stamp, never on the coach's request. */
 describe('Messages: CH-7271 Notified anyway caption', () => {
-  const dm = { id: 'dm', title: null, participant_ids: ['me', 'jonah'], participant_count: 2, unread_count: 0, other_participant: { id: 'jonah', name: 'Jonah Okafor' }, last_message: null, creator_id: 'me' };
+  // A thread with messages has a last message (one without is not listed, messages-v2 fix 3).
+  const dm = { id: 'dm', title: null, participant_ids: ['me', 'jonah'], participant_count: 2, unread_count: 0, other_participant: { id: 'jonah', name: 'Jonah Okafor' }, last_message: { content: 'Bus at 6:15', created_at: '2026-10-14T18:00:00Z', sender_id: 'me' }, creator_id: 'me' };
   const stamped = { ...mine, notify_anyway: true, notify_anyway_pushed_at: '2026-10-14T18:00:02Z' };
   const caption = () => document.querySelector('.ch-ms-msg__na');
 
