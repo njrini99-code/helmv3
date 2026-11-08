@@ -97,6 +97,39 @@ export function levelFromDivision(division: string | null | undefined): TeamLeve
 }
 const LEVEL_COLUMN: Record<TeamLevel, 'div1_avg_value' | 'div2_avg_value' | 'div3_avg_value'> = { d1: 'div1_avg_value', d2: 'div2_avg_value', d3: 'div3_avg_value' };
 
+/** The levels whose figures sit in `golf_pga_standards`' division columns. */
+type TableLevel = TeamLevel | 'hs';
+const TABLE_COLUMN: Record<TableLevel, 'div1_avg_value' | 'div2_avg_value' | 'div3_avg_value' | 'hs_avg_value'> = { ...LEVEL_COLUMN, hs: 'hs_avg_value' };
+
+/**
+ * The level figures in the standards table that have a traceable basis, by standards metric id and level. A figure in `golf_pga_standards`' division
+ * columns is a level figure only if it is listed here with where it comes from: `published` (a citable source: the published college average) or
+ * `estimate` (a stated basis, drawn and worded as an estimate, never as an average). Everything else in those columns is not a figure Ask may state.
+ *
+ * Audit, 2026-11-08, of the seed rows (`20260610040300_seed_golf_pga_standards.sql`, `20260610170000_seed_lpga_standards.sql`): none qualifies.
+ * Their notes cite an internal research document's "§3 college trend" (no published source behind it; its unsourced D1 profile was removed from
+ * the golf reference for that reason), Shot Scope's 0-handicap amateurs (scratch golfers, not a college population), or nothing at all (every
+ * Division II, Division III and high school value, and the Division I approach proximity, big-number, opening hole, penalty and practice-gap
+ * values). `docs/v3-research-golf-domain.md` ("Published College Baselines") lists what college figures are published: strokes gained against
+ * the Tour field, not these. So every level is "no college figure" until a figure is added here with its source.
+ */
+export interface LevelFigureSource {
+  basis: 'published' | 'estimate';
+  /** Where it comes from, in the words the card shows. */
+  source: string;
+}
+export const SOURCED_LEVEL_FIGURES: Record<string, Partial<Record<TableLevel, LevelFigureSource>>> = {};
+
+/** A level's figure for a metric: its value and where it comes from, or null when the table holds none or holds one with no traceable basis. */
+export function levelFigure(std: StandardRow | undefined, level: TableLevel): { value: number; basis: LevelFigureSource['basis']; source: string } | null {
+  const v = std ? std[TABLE_COLUMN[level]] : null;
+  const src = std ? SOURCED_LEVEL_FIGURES[std.metric_id]?.[level] : undefined;
+  return typeof v === 'number' && src ? { value: v, basis: src.basis, source: src.source } : null;
+}
+
+/** "Division I average" for a published figure, "Division I estimate" for an estimate. */
+const levelName = (level: Exclude<BenchmarkLevel, 'pga'>, basis: LevelFigureSource['basis']): string => (basis === 'estimate' ? LEVEL_LABEL[level].replace(/ average$/, ' estimate') : LEVEL_LABEL[level]);
+
 /** A `golf_player_standing` row, as the comparisons need it. */
 export interface StandingLite {
   player_id: string;
@@ -278,11 +311,12 @@ export function comparisonsFor(a: { metricId: string; std: StandardRow | undefin
   // 1. The level: the published average for the team's division, with the place among the college players of the same gender on Helm. With no
   //    division on record the level is "not set" and says where to set it; a metric with no college figure (strokes gained) says so. Neither
   //    is filled with the players-on-Helm average: that is not the team's level.
-  const published = teamLevel && std ? std[LEVEL_COLUMN[teamLevel]] : null;
+  const figure = teamLevel ? levelFigure(std, teamLevel) : null;
+  const published = figure?.value ?? null;
   const cohortLabel = tour === 'lpga' ? 'Women’s college players on Helm' : 'College players on Helm';
   const cohort = standing && standing.level_avg != null && standing.level_n > 0 ? standing : null;
   const place = cohort && cohort.level_pct != null ? { place_percent: Math.round(cohort.level_pct), place_of: cohort.level_n } : { place_percent: null, place_of: null };
-  if (typeof published === 'number') out.push({ kind: 'level', label: LEVEL_LABEL[teamLevel as TeamLevel], value: published, ...place, place: null, note: place.place_percent === null ? null : `Place is among ${cohortLabel.toLowerCase()} over all recorded rounds.`, missing_reason: null });
+  if (typeof published === 'number') out.push({ kind: 'level', label: levelName(teamLevel as TeamLevel, figure!.basis), value: published, ...place, place: null, note: [figure!.basis === 'estimate' ? `An estimate: ${figure!.source}.` : `Source: ${figure!.source}.`, place.place_percent === null ? '' : `Place is among ${cohortLabel.toLowerCase()} over all recorded rounds.`].filter(Boolean).join(' '), missing_reason: null });
   else if (!teamLevel) out.push({ kind: 'level', label: 'Level', value: null, place_percent: null, place: null, place_of: null, note: LEVEL_NOT_SET_NOTE, missing_reason: 'not set' });
   else out.push({ kind: 'level', label: LEVEL_LABEL[teamLevel], value: null, place_percent: null, place: null, place_of: null, note: 'There is no college figure for this metric.', missing_reason: 'no college figure' });
 
@@ -393,7 +427,7 @@ export async function applyComparisons(envelope: ToolEnvelope, source: Benchmark
 const SCOPE_KEY: Record<string, string> = { scrambling_pct_sand: 'sand_save_pct', sg_ott: 'sg_tee' };
 const scopeKey = (standingId: string): string => SCOPE_KEY[standingId] ?? standingId;
 
-const levelValues = (s: StandardRow): Record<BenchmarkLevel, number | null> => ({ pga: s.pga_tour_value, korn_ferry: s.korn_ferry_value, d1: s.div1_avg_value, d2: s.div2_avg_value, d3: s.div3_avg_value, hs: s.hs_avg_value });
+const levelValues = (s: StandardRow): Record<BenchmarkLevel, number | null> => ({ pga: s.pga_tour_value, korn_ferry: s.korn_ferry_value, d1: levelFigure(s, 'd1')?.value ?? null, d2: levelFigure(s, 'd2')?.value ?? null, d3: levelFigure(s, 'd3')?.value ?? null, hs: levelFigure(s, 'hs')?.value ?? null });
 
 interface MetricMeta {
   label: string;
@@ -449,10 +483,12 @@ export async function getBenchmarks(sb: Sb, ctx: CoachChatContext, source: Bench
     const m = meta?.get(id);
     if (!std) return [];
     const values = levelValues(std);
-    const byLevel: Record<string, { label: string; value: number }> = {};
+    const byLevel: Record<string, { label: string; value: number; basis?: 'published' | 'estimate'; source?: string }> = {};
     for (const lv of levels) {
       const v = values[lv];
-      if (typeof v === 'number') byLevel[lv] = { label: lv === 'pga' ? tourLabel(tour) : LEVEL_LABEL[lv], value: v };
+      if (typeof v !== 'number') continue;
+      const fig = lv === 'd1' || lv === 'd2' || lv === 'd3' || lv === 'hs' ? levelFigure(std, lv) : null;
+      byLevel[lv] = lv === 'pga' ? { label: tourLabel(tour), value: v } : { label: levelName(lv, fig?.basis ?? 'published'), value: v, ...(fig ? { basis: fig.basis, source: fig.source } : {}) };
     }
     return [
       {
@@ -464,7 +500,8 @@ export async function getBenchmarks(sb: Sb, ctx: CoachChatContext, source: Bench
         direction: m?.direction ?? null,
         season: std.season,
         source_label: `${std.season} reference table`,
-        source: std.source ?? `${tourLabel(tour)} ${std.season}`,
+        // The table's own note also carries unsourced college estimates; the Tour value is the row's, each level states its own source.
+        source: `${tourLabel(tour)} ${std.season}`,
         levels: byLevel,
         ...(levels.includes('pga') && typeof std.pga_p25 === 'number' && typeof std.pga_p50 === 'number' && typeof std.pga_p75 === 'number' ? { tour_percentiles: { p25: std.pga_p25, p50: std.pga_p50, p75: std.pga_p75 } } : {}),
       },

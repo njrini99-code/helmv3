@@ -57,6 +57,8 @@ import { filterFor, type ChFilter } from '../data/stats-filter';
 import { parityState } from './parity-state';
 import { teamFiguresOver } from '../data/player-figures';
 import { loadSeasonRounds, seasonStartDate } from '../data/season';
+import { loadPlayersFigures } from '../data/player-figures';
+import { getRecentRounds } from '@/lib/coachhelm/v3/chat/read-tools';
 import { loadSince } from '../data/stats-common';
 import type { EvalDb, Row } from './supabase-eval-fake';
 import { clubhousePlayer, clubhouseTeam, fairwayDetail, fairwayTeam, holeRoundIds, playerPairs, sameOnScreen, standingPairs, subsetDb, teamPairs, teamWindowRoundIds, type Pair } from './stats-parity-harness';
@@ -264,6 +266,34 @@ describe('Ask’s team figures are the numbers Team Stats prints, same rounds', 
     expect(ask.scoring_average).toBe(fig('score'));
     expect(ask.putts_per_round).toBe(fig('putts'));
     expect(ask.gir_pct).toBe(fig('gir'));
+  });
+});
+
+// Player Ask, staging, 2026-11-08 ("How did my approach play and scoring look over my last 5 rounds?"): Stats' last-5 scoring figure was 73.0
+// (practice left out) and the recent-rounds read listed the newest five including practice (76.2); the model trusted the wrong one.
+describe('the recent-rounds read lists the rounds Stats counts for the same window', () => {
+  it.each([5, 10] as const)('last %i: the same rounds, and their scoring average is the figure Stats prints', async (n) => {
+    vi.useFakeTimers({ now: NOW, toFake: ['Date'] });
+    const db = teamFixture();
+    const f = filterFor('last10', n);
+    const prof = await clubhousePlayer(db, 't1', 'pA', f);
+    const { evalClient } = await import('./supabase-eval-fake');
+    const sb = evalClient({ get current() { return parityState.db; } }) as never;
+    const figures = (ids: string[], window: Parameters<typeof loadPlayersFigures>[3]) => loadPlayersFigures(sb, { timezone: 'America/Chicago' }, ids, window);
+    const ctx = { coach_id: 'c', user_id: 'u', team_id: 't1', team_name: 'T', timezone: 'America/Chicago', roster: [{ id: 'pA', name: 'Player A' }] } as never;
+    const e = await getRecentRounds(sb, ctx, { player_id: 'pA', last_n: n }, figures);
+    const listed = (e.detail as { rounds: Array<{ round_id: string; round_type: string | null; total_score: number | null; holes: number }> }).rounds;
+    expect(listed).toHaveLength(n);
+    // Practice is not in the list, as it is not in Stats' window.
+    expect(listed.every((r) => r.round_type !== 'practice')).toBe(true);
+    expect(new Set(listed.map((r) => r.round_id))).toEqual(new Set(prof!.rounds.map((r) => r.id)));
+    const per18 = listed.reduce((a, r) => a + (r.total_score as number), 0) / listed.reduce((a, r) => a + r.holes / 18, 0);
+    expect(per18).toBeCloseTo(prof!.win.avg as number, 9);
+    // Without a figures source every round is listed and each says whether Stats counts it.
+    const raw = await getRecentRounds(sb, ctx, { player_id: 'pA', last_n: n });
+    const rawRounds = (raw.detail as { rounds: Array<{ round_type: string | null; counts_for_stats: boolean }> }).rounds;
+    expect(rawRounds.some((r) => r.round_type === 'practice')).toBe(true);
+    expect(rawRounds.every((r) => r.counts_for_stats === (r.round_type !== 'practice'))).toBe(true);
   });
 });
 

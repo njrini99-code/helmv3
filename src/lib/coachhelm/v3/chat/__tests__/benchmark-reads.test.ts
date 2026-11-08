@@ -8,6 +8,9 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => { throw new Er
 import { applyComparisons, benchmarkSource, getBenchmarks, getMetricDefinitions, levelFromDivision, STANDING_ID_BY_CHAT_ID, tourForGender } from '../benchmark-reads';
 import { auditNumericClaims, collectEnvelopeNumbers, readFigure, type ToolEnvelope } from '../provenance';
 import { person, pgrst, type Tables } from './pgrst-double';
+import { withSourcedLevels } from './level-figures-fixture';
+
+withSourcedLevels(['gir_pct', 'approach_proximity_50_125ft', 'scrambling_pct_sand']);
 
 const ctx: CoachChatContext = { coach_id: 'c1', user_id: 'u1', team_id: 'team-1', team_name: 'Varsity', timezone: 'America/New_York', roster: [person('p1', 'Owen Carter'), person('p2', 'Cole Bennett'), person('p3', 'Dylan Reed'), person('p4', 'Ethan Park'), person('p5', 'Max Hill'), person('p6', 'Leo Marsh'), person('p7', 'Sam Cole')] };
 
@@ -115,7 +118,7 @@ describe('get_benchmarks (coach)', () => {
     const r = row(e, 'gir_pct');
     expect(kinds(r)).toEqual(['level', 'team', 'tour']);
     expect(r.comparisons).toEqual([
-      { kind: 'level', label: 'Division III average', value: 50, place_percent: 30, place: null, place_of: 70, note: 'Place is among college players on helm over all recorded rounds.', missing_reason: null },
+      { kind: 'level', label: 'Division III average', value: 50, place_percent: 30, place: null, place_of: 70, note: 'Source: test fixture. Place is among college players on helm over all recorded rounds.', missing_reason: null },
       // The team is the roster's values over the figure's own window: here the stats cache's (all recorded rounds), mean 54.6, Owen 3rd of 7.
       { kind: 'team', label: 'Team average of the players’ figures, all rounds on record', value: 54.6, place_percent: null, place: 3, place_of: 7, note: 'Rank 3 of 7 players with a figure; 1 is best.', missing_reason: null },
       { kind: 'tour', label: 'PGA Tour', value: 66, place_percent: null, place: null, place_of: null, note: null, missing_reason: null },
@@ -145,7 +148,8 @@ describe('get_benchmarks (coach)', () => {
     const asked = await getBenchmarks(sb, ctx, benchmarkSource(sb, 'team-1', { ctx }), { metric_ids: ['gir_pct'], levels: ['pga', 'd1', 'd3', 'hs'] }, { role: 'coach' });
     const gir = (asked.detail as { benchmarks: Array<{ levels: Record<string, { value: number; label: string }>; source: string }> }).benchmarks[0]!;
     expect(gir.levels).toMatchObject({ pga: { value: 66 }, d1: { value: 60 }, d3: { value: 50 }, hs: { value: 40 } });
-    expect(gir.source).toBe('pga gir_pct source');
+    // The row's own note also carries unsourced college estimates, so the benchmark's source is the Tour's; each level states its own.
+    expect(gir.source).toBe('PGA Tour 2024');
   });
 
   it('says the level is not set when no division is on record, and still gives the team and the Tour; a women’s team gets the LPGA', async () => {

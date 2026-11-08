@@ -532,6 +532,12 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
       if (refs ? ev.ref != null && refs.has(ev.ref) : (ev.envelope.detail as { kind?: unknown } | undefined)?.kind === 'team_data') collapsed.add(ev.i);
     }
   }
+  // A record list longer than the table can draw is the model's working set, not the answer: the table would show the first few of them while the
+  // answer is about some others (staging, 2026-11-08: 8 of 26 rounds drawn under an answer about 2). It stays a read in the disclosure.
+  for (const ev of evidence) {
+    const d = ev.envelope.detail as { kind?: unknown; rows?: unknown } | undefined;
+    if (!failed(ev.envelope) && d?.kind === 'team_data' && Array.isArray(d.rows) && d.rows.length > TABLE_ROWS) collapsed.add(ev.i);
+  }
   // Two reads that list the same player's same rounds are one table: the one with the most of the figures a coach asks for (three-putts, then putts).
   const shadowed = new Set<number>();
   const lists = evidence.filter((ev) => !failed(ev.envelope) && !recovered.has(ev.i) && !collapsed.has(ev.i)).map((ev) => ({ ev, keys: roundKeys(ev.envelope), score: roundsListScore(ev.envelope) })).filter((l) => l.keys.size > 0);
@@ -1056,6 +1062,10 @@ export function fitToPhone(table: AskTable | null): AskTable | null {
 /**
  * Fields the tool keeps for itself: who set a goal, where a figure came from, which metric a row is about. They are not for a coach to read.
  */
+/** The rows a record table draws. */
+const TABLE_ROWS = 8;
+/** A recent-rounds table draws every round the read lists (the read's own cap). */
+const ROUNDS_TABLE_ROWS = 20;
 const INTERNAL_COLUMN = /^(?:set_by|source|origin|method|metric|metric_id|record_type|visibility|version)$/;
 
 /**
@@ -1108,7 +1118,7 @@ export function detailTable(detail: unknown, caption: string): AskTable | null {
   return fitToPhone({
     caption,
     columns: keys.map(heading),
-    rows: rows.slice(0, 8).map((r) => keys.map((k) => puttCell(r, k) ?? (isPlain(r[k]) && r[k] !== '' ? humanCell(r[k] as string | number | boolean, timezone) : NO_DATA))),
+    rows: rows.slice(0, TABLE_ROWS).map((r) => keys.map((k) => puttCell(r, k) ?? (isPlain(r[k]) && r[k] !== '' ? humanCell(r[k] as string | number | boolean, timezone) : NO_DATA))),
   });
 }
 
@@ -1147,7 +1157,7 @@ export function goalsTable(detail: unknown, caption: string): AskTable | null {
 export function roundsTable(detail: unknown, caption: string): AskTable | null {
   const rounds = (detail as { rounds?: unknown } | null | undefined)?.rounds;
   if (!Array.isArray(rounds) || rounds.length === 0) return null;
-  type R = { date?: unknown; course?: unknown; total_score?: unknown; to_par?: unknown; putts?: unknown; sg_total?: unknown };
+  type R = { date?: unknown; course?: unknown; total_score?: unknown; to_par?: unknown; putts?: unknown; three_putts?: unknown; sg_total?: unknown };
   const list = rounds.filter((r): r is R => !!r && typeof r === 'object');
   const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
   if (!list.some((r) => num(r.total_score) !== null)) return null;
@@ -1158,10 +1168,12 @@ export function roundsTable(detail: unknown, caption: string): AskTable | null {
     ['To par', (r) => (num(r.to_par) === null ? null : formatToPar(num(r.to_par) as number, 0))],
     // A 0 is a round with no putts recorded (a round still being played), never a round holed in none.
     ['Putts', (r) => (num(r.putts) === null || num(r.putts) === 0 ? null : formatValue(num(r.putts), 'count'))],
+    ['3-putts', (r) => (num(r.three_putts) === null ? null : formatValue(num(r.three_putts), 'count'))],
     ['Strokes gained', (r) => (num(r.sg_total) === null ? null : formatValue(num(r.sg_total), 'strokes'))],
   ];
   const shown = columns.filter(([, cell]) => list.some((r) => cell(r) !== null));
-  return { caption, columns: shown.map(([name]) => name), rows: list.slice(0, 8).map((r) => shown.map(([, cell]) => cell(r) ?? formatValue(null, 'count'))) };
+  // Every round the read lists (at most 20): the title says how many, so the table shows that many.
+  return fitToPhone({ caption, columns: shown.map(([name]) => name), rows: list.slice(0, ROUNDS_TABLE_ROWS).map((r) => shown.map(([, cell]) => cell(r) ?? formatValue(null, 'count'))) });
 }
 
 function seriesTable(s: MeasurementSeries): AskTable {
@@ -1456,7 +1468,9 @@ export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { k
     const label = benchLabel(r.metric_id as string, (r.metric_label ?? cfg.display_label).replace(/^SG:\s*/, 'SG '));
     // The standing is over all recorded rounds; when the figure shown is the answer's window, the places still come from the standing.
     if (num(r.standing_value) && fmt(r.standing_value) !== fmt(you)) windowed.push(r.window_label ?? 'the window');
-    for (const k of ['level', 'team', 'tour'] as const) if (val(k) === null) missing.push(`${label}: ${REF_WORD[k].toLowerCase()} ${refs.find((c) => c.kind === k)?.missing_reason ?? 'not available'}`);
+    // One plain sentence per metric, the references it lacks each with its reason: "SG Putting: no level figure (no college figure), no team figure (all rounds only)."
+    const lacking = (['level', 'team', 'tour'] as const).filter((k) => val(k) === null).map((k) => `no ${REF_WORD[k].toLowerCase()} figure (${(refs.find((c) => c.kind === k)?.missing_reason ?? 'not available').replace(/\.$/, '')})`);
+    if (lacking.length > 0) missing.push(`${label}: ${lacking.join(', ')}.`);
     tableRows.push([label, fmt(you), ...(['level', 'team', 'tour'] as const).map((k) => { const v = val(k); return v === null ? formatValue(null, unit) : fmt(v); })]);
     return {
       label,

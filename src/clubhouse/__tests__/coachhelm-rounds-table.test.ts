@@ -43,6 +43,26 @@ describe('a list of rounds is a table of what the rounds scored', () => {
     expect(t.rows[1]![2]).not.toBe('73');
   });
 
+  // Player Ask, staging, 2026-11-08: "Your last 10 recorded rounds." drew 8 rows; and "How many three-putts did I have?" had no column to answer from.
+  it('draws every round the read lists, so a title of 10 rounds has 10 rows', () => {
+    const ten = Array.from({ length: 10 }, (_, i) => row({ date: `2026-10-${String(21 - i).padStart(2, '0')}`, sg_total: i < 2 ? null : -1 }));
+    const t = roundsTable(detail(ten), 'Your last 10 rounds that count in Stats.')!;
+    expect(t.rows).toHaveLength(10);
+    const [block] = evidenceBlocks(envelope(ten));
+    expect((block as { table: { rows: unknown[] } }).table.rows).toHaveLength(10);
+  });
+
+  it('has a 3-putts column when the rounds carry it, a round with none recorded shows missing, and a round with 0 putts never shows 0', () => {
+    const t = roundsTable(detail([row({ three_putts: 2 }), row({ date: '2026-10-06', putts: 0, three_putts: null })]), 'x')!;
+    expect(t.columns).toContain('3-putts');
+    const col = (name: string) => t.rows.map((r) => r[t.columns.indexOf(name)]);
+    expect(col('3-putts')[0]).toBe('2');
+    expect(col('3-putts')[1]).not.toBe('0');
+    expect(col('Putts')[1]).not.toBe('0');
+    // No round has it: no column.
+    expect(roundsTable(detail([row()]), 'x')!.columns).not.toContain('3-putts');
+  });
+
   it('is not a rounds table without scores, and falls back to the record table', () => {
     expect(roundsTable(detail([{ date: '2026-10-21', course: 'Pines' }]), 'x')).toBeNull();
     expect(roundsTable({ events: [{ title: 'a' }] }, 'x')).toBeNull();

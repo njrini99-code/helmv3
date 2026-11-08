@@ -59,6 +59,7 @@ function figuresOfWindow(window: readonly ChRound[]): PlayerFigures {
     legs: s.sgLegs,
     window_start: dates[0] ?? null,
     window_end: dates[dates.length - 1] ?? null,
+    round_ids: [...list].sort((a, b) => (a.round_date === b.round_date ? (a.id < b.id ? -1 : 1) : a.round_date < b.round_date ? 1 : -1)).map((r) => r.id),
   };
 }
 

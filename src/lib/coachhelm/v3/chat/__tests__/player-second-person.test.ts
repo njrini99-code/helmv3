@@ -18,7 +18,7 @@ const oneRound = {
 };
 function sbWith(rows: unknown[]) {
   const chain: Record<string, unknown> = {};
-  for (const m of ['select', 'eq', 'order', 'limit']) chain[m] = () => chain;
+  for (const m of ['select', 'eq', 'in', 'order', 'limit']) chain[m] = () => chain;
   chain.then = (resolve: (v: unknown) => unknown) => Promise.resolve({ data: rows, error: null }).then(resolve);
   return { from: () => chain } as never;
 }

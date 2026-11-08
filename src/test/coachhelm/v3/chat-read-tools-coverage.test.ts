@@ -116,6 +116,17 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
     });
   });
 
+  // Player Ask, staging, 2026-11-08: "8% three-putts from a sample of 23 holes". The 23 was the cache's rounds; a rate with no hole count
+  // beside it is sampled over rounds, and says so.
+  it('a rate over holes with no hole count in the cache is sampled over rounds, not holes', async () => {
+    const envelope = await getPlayerMetric(
+      sbWith({ golf_player_stats_cache: [{ data: { player_id: 'p1', three_putt_percentage: 8.15, rounds_in_calculation: 23, updated_at: '2026-08-17T12:00:00.000Z', is_stale: false } }] }),
+      ctx,
+      { player_id: 'p1', metric_ids: ['three_putt_pct'], window: 'cache' },
+    );
+    expect(envelope.measurements[0]).toMatchObject({ metric_id: 'three_putt_pct', sample_size: 23, sample_unit: 'rounds' });
+  });
+
   it('orders a higher-is-better team metric and reports missing teammates', async () => {
     const envelope = await getTeamMetricRanking(
       sbWith({
@@ -233,6 +244,7 @@ describe('CoachHelm read tools — sourced envelope contracts', () => {
         round_type: 'tournament',
         holes: 18,
         counts_in_averages: true,
+        counts_for_stats: true,
         total_score: 72,
         to_par: 1,
         putts: 29,

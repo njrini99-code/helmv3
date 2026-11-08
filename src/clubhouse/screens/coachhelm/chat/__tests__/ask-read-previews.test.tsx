@@ -86,8 +86,8 @@ describe('a benchmark read draws a picture of where the player stands, or nothin
     expect(b.table.rows[0]![2]).not.toMatch(/\d/);
     expect(b.table.rows[0]![3]).not.toMatch(/\d/);
     expect(b.table.rows[0]![4]).toBe('66%');
-    expect(b.note).toMatch(/level not set/i);
-    expect(b.note).toMatch(/team fewer than 5 teammates/i);
+    // Plain sentences, one per metric (staging, 2026-11-08: "SG Putting: level no college figure SG Putting: team all rounds only").
+    expect(b.note).toBe('GIR %: no level figure (not set), no team figure (fewer than 5 teammates).');
     // A row with no references at all still says so for all three.
     const bare = benchmarkBlock(benchmark([{ ...standingRow, comparisons: [] }]))!;
     expect(bare.table.rows[0]!.slice(2).every((c) => !/\d/.test(c))).toBe(true);
@@ -246,6 +246,13 @@ describe('the track never starts above zero (a fill under a truncated baseline o
     expect(zeroBasedDomain('percent', [97, 99], false)).toEqual({ min: 0, max: 100 });
     expect(zeroBasedDomain('feet', [24, 27, 30], false)).toEqual({ min: 0, max: 30 });
     expect(zeroBasedDomain('count', [0.4, 1.2], false)).toEqual({ min: 0, max: 1.5 });
+  });
+
+  it('says what is missing for each metric as one sentence, not run-together labels', () => {
+    const sg = { metric_id: 'sg_putting', metric_label: 'SG: Putting', player_value: -0.4, comparisons: [ref('level', null, { missing_reason: 'no college figure' }), ref('team', null, { missing_reason: 'all rounds only' }), ref('tour', 0)] };
+    const gir = { ...standingRow, comparisons: [ref('level', 61.5), ref('team', null, { missing_reason: 'fewer than 5 teammates' }), ref('tour', 66)] };
+    const note = benchmarkBlock(benchmark([sg, gir]))!.note;
+    expect(note).toBe('SG Putting: no level figure (no college figure), no team figure (all rounds only). GIR %: no team figure (fewer than 5 teammates).');
   });
 
   it('strokes gained is centred on zero with a zero rule, and the fill runs from it', () => {
@@ -423,7 +430,7 @@ describe('the answer leads with the worked-out result, and a recovered failure s
   it('a summary that names its sources folds exactly those reads; an unrelated read before it stays drawn', () => {
     const attendance = env('3 rows of attendance.', { kind: 'team_data', rows: [{ player: 'Cole Bennett', event: 'Practice', status: 'present' }], row_count: 1 });
     const named = env(listed.summary, { ...(listed.detail as object), sources: ['e1'] }, { measurements: listed.measurements });
-    const t = turn(ev('e1', 'query_team_data', rounds(26)), ev('e2', 'query_team_data', attendance), ev('e3', 'summarise_data', named));
+    const t = turn(ev('e1', 'query_team_data', rounds(6)), ev('e2', 'query_team_data', attendance), ev('e3', 'summarise_data', named));
     const kinds = shown(t).map((b) => b.kind);
     // The rounds it was built from are folded; the attendance table is not.
     expect(kinds).toEqual(['table', 'table']);
@@ -433,8 +440,8 @@ describe('the answer leads with the worked-out result, and a recovered failure s
     expect(t.reads!.map((r) => r.ref)).toEqual(['e1', 'e2', 'e3']);
     // Sources that name nothing (a summary of a query) fold nothing; with no `sources` at all the earlier rule folds every record list before it.
     const none = env(listed.summary, { ...(listed.detail as object), sources: [] }, { measurements: listed.measurements });
-    expect(shown(turn(ev('e1', 'query_team_data', rounds(26)), ev('e2', 'summarise_data', none)))).toHaveLength(2);
-    expect(shown(turn(ev('e1', 'query_team_data', rounds(26)), ev('e2', 'query_team_data', attendance), ev('e3', 'summarise_data', listed)))).toHaveLength(1);
+    expect(shown(turn(ev('e1', 'query_team_data', rounds(6)), ev('e2', 'summarise_data', none)))).toHaveLength(2);
+    expect(shown(turn(ev('e1', 'query_team_data', rounds(6)), ev('e2', 'query_team_data', attendance), ev('e3', 'summarise_data', listed)))).toHaveLength(1);
   });
 
   it('a figure result (a count, a rank, a difference) is one compact figure card', () => {
@@ -445,7 +452,10 @@ describe('the answer leads with the worked-out result, and a recovered failure s
   });
 
   it('the raw lists stay when no result was worked out from them', () => {
-    expect(shown(turn(ev('e1', 'query_team_data', rounds(26))))).toHaveLength(1);
+    expect(shown(turn(ev('e1', 'query_team_data', rounds(6))))).toHaveLength(1);
+    // A list longer than the table draws is the model's working set: the table would show 8 of 26 under an answer about 2 of them.
+    expect(shown(turn(ev('e1', 'query_team_data', rounds(26))))).toHaveLength(0);
+    expect(turn(ev('e1', 'query_team_data', rounds(26))).reads!.map((r) => r.ref)).toEqual(['e1']);
     // A summary that came first does not hide a list read after it.
     expect(shown(turn(ev('e1', 'summarise_data', count), ev('e2', 'query_team_data', rounds(3)))).map((b) => b.kind)).toEqual(['tiles', 'table']);
   });

@@ -12,6 +12,9 @@ import { buildPlayerTools, PLAYER_INSTRUCTIONS } from '../player-tools';
 import { buildInstructions } from '../instructions';
 import { WIDE_READ_CHIPS, WIDE_READ_STEPS } from '../wide-read-names';
 import { person, pgrst, type Tables } from './pgrst-double';
+import { withSourcedLevels } from './level-figures-fixture';
+
+withSourcedLevels(['gir_pct']);
 
 const ctx: CoachChatContext = { coach_id: 'c1', user_id: 'u1', team_id: 'team-1', team_name: 'Varsity', timezone: 'America/New_York', roster: [person('p1', 'Owen Carter'), person('p2', 'Cole Bennett')] };
 const NEW_COACH_TOOLS = ['get_benchmarks', 'get_metric_definitions', 'get_golf_reference', 'get_attendance_summary', 'get_goals', 'get_focus_practice', 'get_round_stats', 'get_qualifier_entries', 'get_team_season_settings', 'query_team_data'];

@@ -275,7 +275,9 @@ function measurementFromCache(
     window_start: str(row.calculation_period_start) ?? str(row.first_round_date),
     window_end: str(row.calculation_period_end) ?? str(row.last_round_date),
     sample_size: sampleSize,
-    sample_unit: spec.sampleUnit,
+    // What the sample counts: the attempts when the cache holds them, else the rounds it covers. A rate over holes with no hole count beside it
+    // (three-putt rate) is sampled over rounds: 23 "holes" was 23 rounds (staging, 2026-11-08).
+    sample_unit: spec.attemptsColumn ? spec.sampleUnit : 'rounds',
     // The cache's timestamp, not the request's.
     as_of: str(row.updated_at) ?? nowIso(),
     coverage,
@@ -317,6 +319,8 @@ export type PlayerFigures = {
   fairway_holes: number;
   window_start: string | null;
   window_end: string | null;
+  /** The rounds the window holds, newest first: what a list of "the last N rounds" must be, so the list and the figure are the same rounds. */
+  round_ids?: string[];
 };
 /**
  * The key under which a figures source also returns the TEAM's pooled figures (all the asked players' rounds in the window, as Team Stats pools them),
@@ -1094,44 +1098,86 @@ export async function getPlayerWeakestAreas(
 // Rounds, insights, focus areas
 // ===========================================================================
 
+/** The stat-line fields a list of rounds carries, by round. */
+const ROUND_LINE_COLUMNS = 'round_id, total_putts, three_putts, greens_hit, greens_total, fairways_hit, fairways_total, scrambles_converted, scramble_attempts';
+
+/** The smallest of the figure windows that holds `n` rounds (the newest `n` of a bigger window are that window's newest `n`). */
+const windowFor = (n: number): FigureWindow => (n <= 5 ? 'last5' : n <= 10 ? 'last10' : 'last20');
+
+/**
+ * A player's last N rounds, the rounds the stats pages count for "Last N": the figures source names them (practice left out as Stats leaves it),
+ * so the list and the scoring figure for the same window are the same rounds. Each round carries its stat line (three-putts, putts, greens,
+ * fairways, up-and-downs), empty and never 0 where no putts were entered. Without a figures source the newest completed rounds are listed, each
+ * marked `counts_for_stats`, and the rule is said in the detail.
+ */
 export async function getRecentRounds(
   sb: Sb,
   ctx: CoachChatContext,
   input: { player_id: string; last_n: number },
+  figures?: PlayerFiguresSource,
 ): Promise<ToolEnvelope> {
   const player = requireRosterPlayer(ctx, input.player_id);
   const limit = Math.min(Math.max(input.last_n, 1), 20);
+  const columns = `id, round_date, course_name, round_type, total_score, score_to_par, total_putts, strokes_gained_total, ${COUNTABLE_COLUMNS}`;
 
-  const { data, error } = await sb
-    .from('golf_rounds')
-    .select(`id, round_date, course_name, round_type, total_score, score_to_par, total_putts, strokes_gained_total, ${COUNTABLE_COLUMNS}`)
-    .eq('player_id', player.id)
-    .eq('is_test', false)
-    .eq('status', 'completed')
-    .order('round_date', { ascending: false })
-    .limit(limit);
+  // The window's own rounds, when the figures source can name them.
+  const window = figures ? ((await figures([player.id], windowFor(limit)))?.get(player.id)?.round_ids ?? null) : null;
+  const ids = window ? window.slice(0, limit) : null;
+  const query = sb.from('golf_rounds').select(columns).eq('player_id', player.id).eq('is_test', false).eq('status', 'completed');
+  const { data, error } = ids ? await (ids.length > 0 ? query.in('id', ids) : query.limit(0)) : await query.order('round_date', { ascending: false }).limit(limit);
   if (error) return unavailableEnvelope(`Could not read ${player.name}'s rounds.`, 'The rounds query failed.');
 
-  const rounds = data ?? [];
+  const byNewest = (a: { round_date: string; id: string }, b: { round_date: string; id: string }) => (a.round_date === b.round_date ? (a.id < b.id ? -1 : 1) : a.round_date < b.round_date ? 1 : -1);
+  const rounds = [...(data ?? [])].sort(byNewest);
+
+  // Each round's stat line. A failed read leaves them out; the round list stands.
+  const lines = new Map<string, Record<string, unknown>>();
+  if (rounds.length > 0) {
+    const { data: stat } = await sb.from('golf_round_stats_cache').select(ROUND_LINE_COLUMNS).in('round_id', rounds.map((r) => r.id));
+    for (const row of (stat ?? []) as unknown as Array<Record<string, unknown>>) lines.set(String(row.round_id), row);
+  }
+  const count = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+
+  const rule = ids
+    ? 'These are the rounds the stats pages count for this window: practice rounds are left out, as Stats leaves them out, so the list and the scoring average for the window are the same rounds.'
+    : 'The newest completed rounds, practice included. counts_for_stats says whether Stats counts a round in a window; practice rounds are left out of its figures.';
   return {
-    summary: rounds.length === 1 ? `${player.name}'s last round.` : `${player.name}'s last ${rounds.length} recorded rounds.`,
+    summary: rounds.length === 1 ? `${player.name}'s last round.` : `${player.name}'s last ${rounds.length} ${ids ? 'rounds that count in Stats' : 'recorded rounds'}.`,
     measurements: [],
     series: [],
     detail: {
       player: { player_id: player.id, name: player.name },
-      rounds: rounds.map((r) => ({
-        round_id: r.id,
-        date: r.round_date,
-        course: r.course_name,
-        round_type: r.round_type,
-        holes: r.holes_played ?? 18,
-        // False for a 9-hole, half-entered or implausible round: the stats pages leave it out of every average.
-        counts_in_averages: averagedRound(r),
-        total_score: r.total_score,
-        to_par: r.score_to_par,
-        putts: r.total_putts,
-        sg_total: r.strokes_gained_total,
-      })),
+      window_rule: rule,
+      rounds: rounds.map((r) => {
+        const line = lines.get(r.id);
+        // A stat line with no putts entered writes 0 three-putts: that is not recorded, never "no three-putts".
+        const puttsRecorded = [r.total_putts, line?.total_putts].some((v) => typeof v === 'number' && v > 0);
+        return {
+          round_id: r.id,
+          date: r.round_date,
+          course: r.course_name,
+          round_type: r.round_type,
+          holes: r.holes_played ?? 18,
+          // False for a 9-hole, half-entered or implausible round: the stats pages leave it out of every average.
+          counts_in_averages: averagedRound(r),
+          counts_for_stats: r.round_type == null || r.round_type !== 'practice',
+          total_score: r.total_score,
+          to_par: r.score_to_par,
+          putts: r.total_putts !== null && r.total_putts > 0 ? r.total_putts : puttsRecorded ? count(line?.total_putts) : null,
+          sg_total: r.strokes_gained_total,
+          ...(line
+            ? {
+                three_putts: puttsRecorded ? count(line.three_putts) : null,
+                greens_hit: count(line.greens_hit),
+                greens_total: count(line.greens_total),
+                fairways_hit: count(line.fairways_hit),
+                fairways_total: count(line.fairways_total),
+                up_and_downs: count(line.scrambles_converted),
+                up_and_down_chances: count(line.scramble_attempts),
+              }
+            : {}),
+        };
+      }),
     },
     coverage: rounds.length === 0 ? 'empty' : 'complete',
     coverage_note: rounds.length === 0 ? `${player.name} has no completed rounds on record.` : null,

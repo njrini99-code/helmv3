@@ -733,12 +733,12 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
     }),
 
     get_recent_rounds: tool({
-      description: 'Recent completed rounds for one player: date, course, score, putts.',
+      description: 'Recent completed rounds for one player: date, course, score, putts. Gives the player\'s last N rounds that count in Stats (practice left out, so the list and the scoring figure for the window are the same rounds), each with score, putts, three-putts, greens, fairways and up-and-downs; a round with no putts recorded has them empty. Use it to count three-putts or list rounds.',
       inputSchema: z.object({
         player_id: PlayerId,
         last_n: z.number().int().min(1).max(20).default(5),
       }),
-      execute: read('get_recent_rounds', (input) => getRecentRounds(sb, ctx, input)),
+      execute: read('get_recent_rounds', (input) => getRecentRounds(sb, ctx, input, playerFigures)),
     }),
 
     // Visual artifacts (docs/architecture/coachhelm-agentic-visuals.md): the model designs the visual and names the

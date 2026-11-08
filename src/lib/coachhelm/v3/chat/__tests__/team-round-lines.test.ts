@@ -49,6 +49,20 @@ describe('round_lines', () => {
     expect(e.coverage).toBe('complete');
   });
 
+  // Staging, 2026-11-08 (conversation 9c9c279d): 14 qualifier rounds with no putts entered read three_putts 0 (the stat line counts holes of
+  // three or more over holes that have none), and the model had to guess that 0 meant "not recorded". The read says so itself.
+  it('a round with no putts recorded has no three-putts and no putts: empty, never 0', async () => {
+    const t = tables();
+    t.golf_rounds!.rows!.push(round('r7', 'p1', '2026-09-25', { round_type: 'qualifier', total_putts: null }), round('r8', 'p1', '2026-09-26', { round_type: 'qualifier', total_putts: 0 }));
+    t.golf_round_stats_cache!.rows!.push(line('r7', { three_putts: 0, total_putts: null }), line('r8', { three_putts: 0, total_putts: 0 }));
+    const { sb } = pgrst(t);
+    const rows = rowsOf(await queryTeamData(sb, ctx, parse({ table: 'round_lines', columns: ['round_date', 'round_type', 'total_putts', 'three_putts'], filters: [{ column: 'round_type', op: 'eq', value: 'qualifier' }] }), on));
+    expect(rows.map((r) => [r.round_date, r.total_putts, r.three_putts])).toEqual([['2026-09-26', null, null], ['2026-09-25', null, null]]);
+    // A round whose putts are recorded keeps a real 0: no three-putts is a fact there.
+    const real = rowsOf(await queryTeamData(pgrst(tables()).sb, ctx, parse({ table: 'round_lines', columns: ['round_date', 'round_type', 'total_putts', 'three_putts'], filters: [{ column: 'round_type', op: 'eq', value: 'practice' }] }), on));
+    expect(real[0]).toMatchObject({ total_putts: 31, three_putts: 0 });
+  });
+
   it('keeps a round with no stat line, and fills a figure its own row lacks from the stat line, empty never zero', async () => {
     const { sb } = pgrst(tables());
     const rows = rowsOf(await queryTeamData(sb, ctx, parse({ table: 'round_lines', columns: ['round_date', 'status', 'total_score', 'total_putts', 'total_gir', 'three_putts'] }), on));

@@ -81,7 +81,7 @@ export async function queryRoundLines(sb: Sb, ctx: CoachChatContext, input: Team
   if (playerIds.length === 0 || rosterIds.length === 0) return empty();
 
   // What the round row has to give: the columns asked for that it holds, the order and the day (the tie-break), and the ids that join.
-  const own = [...new Set([...columns.filter((c) => NATIVE_SET.has(c)), order.column, 'round_date', ...columns.flatMap((c) => (CACHE_FALLBACK[c as RoundLinesColumn] ? [c] : []))])];
+  const own = [...new Set([...columns.filter((c) => NATIVE_SET.has(c)), order.column, 'round_date', ...(columns.includes('three_putts') ? ['total_putts'] : []), ...columns.flatMap((c) => (CACHE_FALLBACK[c as RoundLinesColumn] ? [c] : []))])];
   const selectList = ['id', 'player_id', ...own].join(', ');
   const base = () => {
     let q = (sb as unknown as { from: (t: string) => LooseBuilder }).from('golf_rounds').select(selectList, { count: 'exact' }).eq('is_test', false);
@@ -129,11 +129,15 @@ export async function queryRoundLines(sb: Sb, ctx: CoachChatContext, input: Team
   const rows = page.map((r) => {
     const line = lines.get(String(r.id));
     const out: Row = {};
+    // The stat line writes 0 three-putts for a round with no putts entered (it counts holes of three or more over holes that have none), so a
+    // round with no putts recorded has no putting figures: null, never 0 (the same rule as `cachedPutts`).
+    const recorded = [r.total_putts, line?.total_putts].some((v) => typeof v === 'number' && v > 0);
     for (const col of columns) {
-      if (col === 'three_putts') out[col] = line ? (line.three_putts ?? null) : null;
+      if (col === 'three_putts') out[col] = line && recorded ? (line.three_putts ?? null) : null;
       else {
         const fallback = CACHE_FALLBACK[col as RoundLinesColumn];
-        out[col] = r[col] ?? (fallback && line ? (line[fallback] ?? null) : null);
+        const value = r[col] ?? (fallback && line ? (line[fallback] ?? null) : null);
+        out[col] = col === 'total_putts' && !recorded ? null : value;
       }
     }
     return { player: who.get(String(r.player_id)) ?? 'A player', player_id: r.player_id, ...out };
