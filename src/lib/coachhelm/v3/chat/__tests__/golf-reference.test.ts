@@ -1,0 +1,72 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { GOLF_REFERENCE_SECTIONS } from '../golf-reference.generated';
+import { splitGolfReference } from '../golf-reference-split';
+import { getGolfReference, searchGolfReference } from '../golf-reference';
+import { auditNumericClaims, collectEnvelopeNumbers } from '../provenance';
+
+const doc = readFileSync(resolve(process.cwd(), 'docs/v3-research-golf-domain.md'), 'utf8');
+
+describe('the golf reference module', () => {
+  it('is in sync with docs/v3-research-golf-domain.md (run: npm run coachhelm:golf-reference)', () => {
+    expect(GOLF_REFERENCE_SECTIONS).toEqual(splitGolfReference(doc));
+  });
+
+  it('splits by section and leaves out the engine’s own constraints and the internal planning pointer', () => {
+    const chapters = new Set(GOLF_REFERENCE_SECTIONS.map((s) => s.chapter));
+    expect([...chapters].some((c) => /ENGINE IMPLICATIONS/i.test(c))).toBe(false);
+    expect(GOLF_REFERENCE_SECTIONS.some((s) => s.text.includes('v3-master-plan'))).toBe(false);
+    expect(GOLF_REFERENCE_SECTIONS.length).toBeGreaterThan(40);
+    expect(new Set(GOLF_REFERENCE_SECTIONS.map((s) => s.id)).size).toBe(GOLF_REFERENCE_SECTIONS.length);
+  });
+});
+
+describe('get_golf_reference', () => {
+  it('returns the matching sections tagged as reference, each with its source, apart from any team data', () => {
+    const e = getGolfReference({ topic: 'lag putting and 3-putts' });
+    expect(e.coverage).toBe('complete');
+    const d = e.detail as { kind: string; not_team_data: boolean; reference: Array<{ kind: string; source: string; heading: string; text: string }> };
+    expect(d.kind).toBe('reference');
+    expect(d.not_team_data).toBe(true);
+    expect(d.reference.length).toBeGreaterThan(0);
+    expect(d.reference.length).toBeLessThanOrEqual(3);
+    expect(d.reference.every((r) => r.kind === 'reference' && r.source.startsWith('CoachHelm golf reference'))).toBe(true);
+    expect(d.reference.some((r) => /lag/i.test(r.heading))).toBe(true);
+    expect(e.summary).toMatch(/not this team’s data/);
+    expect(e.measurements).toEqual([]);
+  });
+
+  it('finds college baselines and the pressure gap by their own words', () => {
+    expect(searchGolfReference('college scoring averages')[0]?.section.chapter).toMatch(/College/);
+    expect(searchGolfReference('tournament pressure')[0]?.section.chapter).toMatch(/Pressure|Causal/);
+  });
+
+  it('says so, with the chapters, when it has nothing', () => {
+    const e = getGolfReference({ topic: 'zzzz qqqq' });
+    expect(e.coverage).toBe('empty');
+    expect((e.detail as { reference: unknown[]; chapters: string[] }).reference).toEqual([]);
+    expect((e.detail as { chapters: string[] }).chapters.length).toBeGreaterThan(5);
+  });
+
+  it('caps a long section', () => {
+    const e = getGolfReference({ topic: 'wedge gapping' });
+    for (const r of (e.detail as { reference: Array<{ text: string }> }).reference) expect(r.text.length).toBeLessThanOrEqual(3300);
+  });
+
+  it('grounds a reference figure in the audit only because it was returned', () => {
+    const e = getGolfReference({ topic: 'lag putting 3-putt' });
+    const text = 'The golf reference puts a 15-handicap at 25-30% three-putts from long range.';
+    const grounded = auditNumericClaims(text, e.measurements, e.series, collectEnvelopeNumbers(e));
+    expect(grounded).toEqual([]);
+    // The same sentence with no read behind it is refused.
+    const bare = auditNumericClaims(text, [], [], []);
+    expect(bare.map((c) => c.value).sort((a, b) => a - b)).toEqual([15, 25, 30]);
+  });
+
+  it('does not let the model’s own topic ground a number', () => {
+    const e = getGolfReference({ topic: 'putting 47' });
+    const found = auditNumericClaims('Players make 47 percent of them.', e.measurements, e.series, collectEnvelopeNumbers(e));
+    expect(found.map((c) => c.value)).toContain(47);
+  });
+});
