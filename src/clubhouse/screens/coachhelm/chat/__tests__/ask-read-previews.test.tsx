@@ -250,6 +250,18 @@ describe('the track never starts above zero (a fill under a truncated baseline o
     expect(zeroBasedDomain('count', [0.4, 1.2], false)).toEqual({ min: 0, max: 1.5 });
   });
 
+  // Team lead, 2026-11-08: the level compared the last-10 figure with an all-rounds mean. The card says what the level row is over.
+  it('the level row names the player’s all-rounds figure against the cohort mean, and the track grades that, not the window figure', () => {
+    const level = ref('level', -2.9, { label: 'Division I players on Helm (n=22)', your_value: -3.83, place_percent: 40, place_of: 71 });
+    const sg = { metric_id: 'sg_approach', metric_label: 'SG: Approach', player_value: -4.16, window_label: 'the last 10 rounds', standing_value: -3.83, comparisons: [level, ref('team', -2.5, { place: 6, place_of: 7 }), ref('tour', 0)] };
+    const b = benchmarkBlock(benchmark([sg], { standing: { player: 'You', player_id: 'p1', rows: [sg] } }))!;
+    expect(b.note).toContain('SG Approach: over all recorded rounds you’re at −3.8 against −2.9 for Division I players on Helm (n=22) (you’re ahead of 40% of 71 college players on Helm).');
+    expect(b.note).toContain('The level’s figure and place are over all recorded rounds.');
+    // The tone compares the all-rounds figure (-3.83) with the level (-2.9): behind it.
+    expect(b.rows[0]!.tone).toBe('loss');
+    expect(comparisonWords([level, ref('tour', 0)] as never, 'strokes')[0]).toMatch(/^Level .*2\.9 \(you .*3\.8, all rounds\) · ahead of 40% of 71 college players on Helm/);
+  });
+
   it('says what is missing for each metric as one sentence, not run-together labels', () => {
     const sg = { metric_id: 'sg_putting', metric_label: 'SG: Putting', player_value: -0.4, comparisons: [ref('level', null, { missing_reason: 'no college figure' }), ref('team', null, { missing_reason: 'all rounds only' }), ref('tour', 0)] };
     const gir = { ...standingRow, comparisons: [ref('level', 61.5), ref('team', null, { missing_reason: 'fewer than 5 teammates' }), ref('tour', 66)] };

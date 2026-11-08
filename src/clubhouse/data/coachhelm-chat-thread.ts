@@ -1368,7 +1368,7 @@ const ordinal = (n: number): string => {
   return `${n}${v >= 11 && v <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[n % 10] ?? 'th'}`;
 };
 
-export function comparisonWords(comparisons: ReadonlyArray<{ kind: RefKind; value: number | null; place_percent?: number | null; place?: number | null; place_of?: number | null; note?: string | null; missing_reason?: string | null }>, unit: Measurement['unit']): string[] {
+export function comparisonWords(comparisons: ReadonlyArray<{ kind: RefKind; value: number | null; your_value?: number | null; place_percent?: number | null; place?: number | null; place_of?: number | null; note?: string | null; missing_reason?: string | null }>, unit: Measurement['unit']): string[] {
   const ordered = (['level', 'team', 'tour'] as const).flatMap((k) => comparisons.filter((c) => c.kind === k));
   return ordered.map((c) => {
     if (c.value === null) return `${REF_WORD[c.kind]}: ${c.missing_reason ?? 'not available'}${c.kind === 'team' && c.place != null && c.place_of != null ? ` · ${ordinal(c.place)} of ${c.place_of}` : c.kind === 'level' && c.place_percent != null ? ` · ahead of ${c.place_percent}% of ${c.place_of ?? ''} college players on Helm (all rounds)`.replace(/ {2}/g, ' ') : ''}`;
@@ -1382,7 +1382,9 @@ export function comparisonWords(comparisons: ReadonlyArray<{ kind: RefKind; valu
           : c.kind === 'team'
             ? ` · ahead of ${c.place_percent}% of the team (all rounds)`
             : ` · ahead of ${c.place_percent}% of ${c.place_of ?? ''} college players on Helm (all rounds)`.replace(/ {2}/g, ' ');
-    return `${REF_WORD[c.kind]} ${formatValue(c.value, unit)}${place}`;
+    // The level is over all recorded rounds: beside it is the player's own all-rounds figure, never the window's.
+    const yours = c.kind === 'level' && typeof c.your_value === 'number' ? ` (you ${formatValue(c.your_value, unit)}, all rounds)` : '';
+    return `${REF_WORD[c.kind]} ${formatValue(c.value, unit)}${yours}${place}`;
   });
 }
 
@@ -1460,7 +1462,7 @@ export function withWindowFigures(envelope: ToolEnvelope, all: readonly ToolEnve
  * without a standing (a bare table of benchmark values is not a picture of anyone), and at most six metrics.
  */
 export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { kind: 'bars' }> | null {
-  type Ref = { kind: RefKind; label?: string; value: number | null; place_percent?: number | null; place_of?: number | null; note?: string | null; missing_reason?: string | null };
+  type Ref = { kind: RefKind; label?: string; value: number | null; your_value?: number | null; place_percent?: number | null; place_of?: number | null; note?: string | null; missing_reason?: string | null };
   type Row = { metric_id?: string; metric_label?: string; player_value?: number; comparisons?: Ref[]; standing_value?: number; window_label?: string };
   const d = envelope.detail as { standing?: { player?: string; rows?: Row[] } } | undefined;
   const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -1469,7 +1471,8 @@ export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { k
   const tableRows: string[][] = [];
   const missing: string[] = [];
   const windowed: string[] = [];
-  const levelNames = new Set<string>();
+  const who0 = d?.standing?.player === 'You' ? 'You' : (d?.standing?.player ?? 'The player');
+  const levelSentences: string[] = [];
   const out = rows.map((r) => {
     const cfg = METRIC_RENDER_CONFIG[r.metric_id as MetricId];
     const unit = BENCH_UNIT[cfg.unit] ?? 'count';
@@ -1479,13 +1482,18 @@ export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { k
     const level = val('level');
     const scale = zeroBasedDomain(cfg.unit, [you, level, val('team'), val('tour')], cfg.default_scale.min < 0);
     const fmt = (v: number) => formatValue(v, unit);
-    const better = level === null ? null : cfg.direction === 'higher_better' ? you > level : you < level;
+    // The level is over all recorded rounds, so the player's side of it is their all-rounds figure (the standing's), not the window's.
+    const levelRef = refs.find((c) => c.kind === 'level');
+    const youLevel = typeof levelRef?.your_value === 'number' ? levelRef.your_value : you;
+    const better = level === null ? null : cfg.direction === 'higher_better' ? youLevel > level : youLevel < level;
     const label = benchLabel(r.metric_id as string, (r.metric_label ?? cfg.display_label).replace(/^SG:\s*/, 'SG '));
     // The standing is over all recorded rounds; when the figure shown is the answer's window, the places still come from the standing.
     if (num(r.standing_value) && fmt(r.standing_value) !== fmt(you)) windowed.push(r.window_label ?? 'the window');
     // Plain sentences, one per missing reference: "No college figure for SG Putting." / "No team figure for GIR % (fewer than 5 teammates)."
-    const levelRef = refs.find((c) => c.kind === 'level');
-    if (levelRef && levelRef.value !== null && /players on Helm \(n=\d+\)/.test(levelRef.label ?? '')) levelNames.add((levelRef.label as string).replace(/\s*\(n=\d+\)/, ''));
+    if (levelRef && levelRef.value !== null && typeof levelRef.your_value === 'number') {
+      const ahead = levelRef.place_percent == null ? '' : ` (${who0 === 'You' ? 'you’re ' : ''}ahead of ${levelRef.place_percent}% of ${levelRef.place_of ?? ''} college players on Helm)`.replace(/ {2}/g, ' ');
+      levelSentences.push(`${label}: over all recorded rounds ${who0 === 'You' ? 'you’re' : 'they’re'} at ${fmt(levelRef.your_value)} against ${fmt(levelRef.value)} for ${levelRef.label ?? 'the level'}${ahead}.`);
+    }
     for (const k of ['level', 'team', 'tour'] as const) {
       if (val(k) !== null) continue;
       const reason = (refs.find((c) => c.kind === k)?.missing_reason ?? 'not available').replace(/\.$/, '');
@@ -1499,7 +1507,7 @@ export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { k
       zero: domainPct(0, scale),
       display: fmt(you),
       of: null,
-      tone: better === null || you === level ? ('neutral' as const) : better ? ('good' as const) : ('loss' as const),
+      tone: better === null || youLevel === level ? ('neutral' as const) : better ? ('good' as const) : ('loss' as const),
       ticks: (['level', 'team', 'tour'] as const).flatMap((k) => { const v = val(k); return v === null ? [] : [{ at: domainPct(v, scale), kind: k, text: `${REF_WORD[k]} ${fmt(v)}`, short: `${refTag(k, refs.find((c) => c.kind === k)?.label)} ${fmt(v)}` }]; }),
     };
   });
@@ -1509,7 +1517,7 @@ export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { k
     title: `${who} against the level, the team and the Tour`,
     rows: out,
     source: null,
-    note: [windowed.length ? `${who === 'You' ? 'Your' : 'The'} figure is over ${windowed[0]!.replace(/^(last )/, 'the $1')}. The level’s figure and place are over all recorded rounds.` : '', levelNames.size ? `Level is the mean of the other ${[...levelNames].map((n) => n.toLowerCase().replace(/^division/, 'Division').replace(/^college/, 'college').replace(/^women’s/, 'women’s')).join(' and ')}, you left out.`.replace('you left out', who === 'You' ? 'you left out' : 'this player left out') : '', ...missing.slice(0, 3)].filter(Boolean).join(' ') || null,
+    note: [windowed.length ? `${who === 'You' ? 'Your' : 'The'} figure is over ${windowed[0]!.replace(/^(last )/, 'the $1')}. The level’s figure and place are over all recorded rounds.` : '', ...levelSentences.slice(0, 2), ...missing.slice(0, 3)].filter(Boolean).join(' ') || null,
     bench: null,
     table: { caption: `${who} against the level, the team and the Tour`, columns: ['Metric', who === 'You' ? 'You' : 'Value', 'Level', 'Team', 'Tour'], rows: tableRows },
   };

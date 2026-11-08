@@ -48,7 +48,8 @@ describe('the level is Helm’s own cohort, the player left out', () => {
   it('the division cohort’s mean leaves the player out, names its n, and keeps the place among college players on Helm', () => {
     // 23 players average 50 with this player at 60: the other 22 average (50 * 23 - 60) / 22.
     const c = levelOf({ divisionCohort: { avg: 50, n: 23 } });
-    expect(c).toMatchObject({ label: 'Division I players on Helm (n=22)', value: 49.55, missing_reason: null, place_percent: 90, place_of: 71 });
+    // The level carries the player's own all-rounds figure (the standing's player_value), the basis the mean is over.
+    expect(c).toMatchObject({ label: 'Division I players on Helm (n=22)', value: 49.55, your_value: 60, missing_reason: null, place_percent: 90, place_of: 71 });
     expect(c.note).toContain('Mean of the other 22 Division I players on Helm');
     expect(c.note).toContain('this player is left out');
     expect(c.note).toContain('Place is among 71 college players on helm');

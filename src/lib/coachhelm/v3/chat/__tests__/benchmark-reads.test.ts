@@ -145,8 +145,12 @@ describe('get_benchmarks (coach)', () => {
       const e = await getBenchmarks(sb, ctx, benchmarkSource(sb, 'team-1', { ctx }), { metric_ids: ['gir_pct'], player_id: 'p1' }, { role: 'coach' });
       const level = row(e, 'gir_pct').comparisons.find((c) => c.kind === 'level')!;
       // (50.2 * 24 - 58.123) / 23 = 49.855
-      expect(level).toMatchObject({ label: 'Division III players on Helm (n=23)', value: 49.86, place_percent: 30, place_of: 70, missing_reason: null });
-      expect(row(e, 'gir_pct').gaps.vs_level).toBe(8.44);
+      // Owen's row is over the window (58.3); the level is over all recorded rounds, so beside it is his standing's own figure (58.12), never 58.3.
+      expect(row(e, 'gir_pct')).toMatchObject({ player_value: 58.3, standing_value: 58.12 });
+      expect(level).toMatchObject({ label: 'Division III players on Helm (n=23)', value: 49.86, your_value: 58.12, place_percent: 30, place_of: 70, missing_reason: null });
+      expect(row(e, 'gir_pct').gaps.vs_level).toBe(8.26);
+      // The team and the Tour stay on the window figure.
+      expect(row(e, 'gir_pct').gaps).toMatchObject({ vs_team: 3.7, vs_tour: -7.7 });
       // The cohort of another level is not used, and nobody else's figure is in what came back.
       expect(JSON.stringify(e.detail)).not.toContain('71.9');
       expect(JSON.stringify(e.detail)).not.toContain('80');
@@ -271,6 +275,20 @@ describe('benchmarks in the audit', () => {
     const e = await getBenchmarks(sb, ctx, benchmarkSource(sb, 'team-1', { ctx }), { metric_ids: ['gir_pct'], player_id: 'p1' }, { role: 'coach' });
     expect(audit(e, 'Owen hits 58.3% of greens, 8.3 above the Division III average of 50%, 3.7 above the team average of 54.6%, and 7.7 behind the 66% PGA Tour mark.')).toEqual([]);
     expect(audit(e, 'He is ahead of 30% of 70 college players at his level.')).toEqual([]);
+  });
+
+  it('grounds the all-rounds figure and its gap to the cohort mean, and not the window figure beside the level', async () => {
+    const t = tables();
+    t.golf_division_cohort = { rows: [{ gender: 'mens', level: 'd3', metric_id: 'gir_pct', cohort_avg: 50.2, cohort_n: 24, computed_at: 'x' }] };
+    const saved = SOURCED_LEVEL_FIGURES.gir_pct;
+    delete SOURCED_LEVEL_FIGURES.gir_pct;
+    try {
+      const { sb } = pgrst(t);
+      const e = await getBenchmarks(sb, ctx, benchmarkSource(sb, 'team-1', { ctx }), { metric_ids: ['gir_pct'], player_id: 'p1' }, { role: 'coach' });
+      expect(audit(e, 'Over all recorded rounds Owen hits 58.12% of greens against 49.86% for Division III players on Helm, 8.26 ahead.')).toEqual([]);
+    } finally {
+      SOURCED_LEVEL_FIGURES.gir_pct = saved!;
+    }
   });
 
   it('refuses a level or Tour figure with no source named, and one no read returned', async () => {

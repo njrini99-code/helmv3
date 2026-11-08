@@ -350,14 +350,15 @@ export function comparisonsFor(a: { metricId: string; std: StandardRow | undefin
   const placeNote = place.place_percent === null ? '' : `Place is among ${place.place_of} ${cohortLabel.toLowerCase()} over all recorded rounds.`;
   // The player's own value is in the cohort's mean (it is built from the same standing rows), so the mean of the others is exact.
   const own = standing?.player_value;
+  const yours = typeof own === 'number' ? round2(own) : null;
   const without = (avg: number, n: number) => (typeof own === 'number' && n - 1 >= COHORT_FLOOR ? { avg: round2((avg * n - own) / (n - 1)), n: n - 1 } : null);
   const division = !a.teamFigure && teamLevel && a.divisionCohort ? without(a.divisionCohort.avg, a.divisionCohort.n) : null;
   const college = !a.teamFigure && cohort && cohort.level_avg != null ? without(cohort.level_avg, cohort.level_n) : null;
   const others = (n: number, who: string) => `Mean of the other ${n} ${who} players on Helm over all recorded rounds; this player is left out.`;
   if (typeof published === 'number') out.push({ kind: 'level', label: levelName(teamLevel as TeamLevel, figure!.basis), value: published, ...place, place: null, note: [figure!.basis === 'estimate' ? `An estimate: ${figure!.source}.` : `Source: ${figure!.source}.`, placeNote].filter(Boolean).join(' '), missing_reason: null });
   else if (!teamLevel) out.push({ kind: 'level', label: 'Level', value: null, place_percent: null, place: null, place_of: null, note: LEVEL_NOT_SET_NOTE, missing_reason: 'not set' });
-  else if (division) out.push({ kind: 'level', label: `${DIVISION_WORD[teamLevel]} players on Helm (n=${division.n})`, value: division.avg, ...place, place: null, note: [others(division.n, DIVISION_WORD[teamLevel]), placeNote].filter(Boolean).join(' '), missing_reason: null });
-  else if (college) out.push({ kind: 'level', label: `${cohortLabel} (n=${college.n})`, value: college.avg, ...place, place: null, note: [others(college.n, tour === 'lpga' ? 'women’s college' : 'college'), `There are not yet ${COHORT_FLOOR} other ${DIVISION_WORD[teamLevel]} players on Helm with this figure, so the mean is across divisions.`, placeNote].filter(Boolean).join(' '), missing_reason: null });
+  else if (division) out.push({ kind: 'level', label: `${DIVISION_WORD[teamLevel]} players on Helm (n=${division.n})`, value: division.avg, your_value: yours, ...place, place: null, note: [others(division.n, DIVISION_WORD[teamLevel]), placeNote].filter(Boolean).join(' '), missing_reason: null });
+  else if (college) out.push({ kind: 'level', label: `${cohortLabel} (n=${college.n})`, value: college.avg, your_value: yours, ...place, place: null, note: [others(college.n, tour === 'lpga' ? 'women’s college' : 'college'), `There are not yet ${COHORT_FLOOR} other ${DIVISION_WORD[teamLevel]} players on Helm with this figure, so the mean is across divisions.`, placeNote].filter(Boolean).join(' '), missing_reason: null });
   else if (!a.teamFigure && standing) out.push({ kind: 'level', label: LEVEL_LABEL[teamLevel], value: null, ...place, place: null, note: `Not enough ${DIVISION_WORD[teamLevel]} players on Helm yet: a level figure needs at least ${COHORT_FLOOR} others with this stat.${placeNote ? ` ${placeNote}` : ''}`, missing_reason: `not enough ${DIVISION_WORD[teamLevel]} players on Helm yet` });
   else out.push({ kind: 'level', label: LEVEL_LABEL[teamLevel], value: null, place_percent: null, place: null, place_of: null, note: 'There is no college figure for this metric.', missing_reason: 'no college figure' });
 
@@ -382,8 +383,10 @@ export function comparisonsFor(a: { metricId: string; std: StandardRow | undefin
 }
 
 /** What a chip grades against: the level where there is a value, else the Tour. */
-function gradeAgainst(comparisons: readonly Comparison[], season: string): BenchmarkRef | null {
-  const c = comparisons.find((x) => x.kind === 'level' && x.value !== null) ?? comparisons.find((x) => x.kind === 'tour' && x.value !== null);
+function gradeAgainst(comparisons: readonly Comparison[], season: string, ownValue: number | null): BenchmarkRef | null {
+  // The level is over all recorded rounds: a figure over a window is not graded against it (the Tour is the yardstick then).
+  const sameBasis = (x: Comparison) => x.your_value === null || x.your_value === undefined || (ownValue !== null && round2(ownValue) === x.your_value);
+  const c = comparisons.find((x) => x.kind === 'level' && x.value !== null && sameBasis(x)) ?? comparisons.find((x) => x.kind === 'tour' && x.value !== null);
   return c && c.value !== null ? { source: c.label.endsWith('Helm') ? c.label : `${c.label} ${season}`, version: season, value: c.value, omitted_for_cohort: false } : null;
 }
 
@@ -445,14 +448,14 @@ export async function applyComparisons(envelope: ToolEnvelope, source: Benchmark
       envelope.measurements.map(async (m) => {
         if (!mapped(m)) return m;
         const { std, list } = await comparisonsOf(m);
-        return { ...m, comparisons: list, benchmark: m.benchmark ?? gradeAgainst(list, std?.season ?? '') };
+        return { ...m, comparisons: list, benchmark: m.benchmark ?? gradeAgainst(list, std?.season ?? '', m.value) };
       }),
     );
     const series = await Promise.all(
       envelope.series.map(async (x) => {
         if (!mapped(x) || x.benchmark) return x;
         const { std, list } = await comparisonsOf(x);
-        return { ...x, benchmark: gradeAgainst(list, std?.season ?? '') };
+        return { ...x, benchmark: gradeAgainst(list, std?.season ?? '', null) };
       }),
     );
     return { ...envelope, measurements, series };
@@ -586,8 +589,9 @@ export async function getBenchmarks(sb: Sb, ctx: CoachChatContext, source: Bench
             const team = await teamRefFor(source, chatId, window, playerId, lite, useCohort ? cohort : null);
             const comparisons = comparisonsFor({ metricId: id, std, tour, teamLevel, standing: lite, team, teamFigure: false, divisionCohort: divisions?.get(id) ?? null });
             const gap = (kind: Comparison['kind']) => {
-              const v = comparisons.find((c) => c.kind === kind)?.value;
-              return typeof v === 'number' ? round2(value - v) : null;
+              const c = comparisons.find((x) => x.kind === kind);
+              // The level is over all recorded rounds: the gap to it is the player's all-rounds figure's, not the window's.
+              return typeof c?.value === 'number' ? round2((typeof c.your_value === 'number' ? c.your_value : value) - c.value) : null;
             };
             return {
               metric_id: id,

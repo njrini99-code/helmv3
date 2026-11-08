@@ -3478,6 +3478,12 @@
         ]
       },
       {
+        "id": "golf_division_cohort",
+        "definedIn": [
+          "supabase/migrations/20261108100000_golf_division_cohort.sql"
+        ]
+      },
+      {
         "id": "golf_focus_area_criteria",
         "definedIn": [
           "supabase/migrations/20260923110000_golf_focus_area_practice_log.sql"
@@ -4121,6 +4127,10 @@
       {
         "id": "coach_organization_is_claimable",
         "definedIn": "supabase/migrations/20261016200000_coach_organization_pin.sql"
+      },
+      {
+        "id": "college_level_of",
+        "definedIn": "supabase/migrations/20261108100000_golf_division_cohort.sql"
       },
       {
         "id": "find_baseball_player_by_email_for_roster",
@@ -4953,6 +4963,10 @@
       {
         "id": "refresh_crm_coach_engagement",
         "definedIn": "supabase/migrations/20260801053000_refresh_engagement_xact_lock.sql"
+      },
+      {
+        "id": "refresh_division_cohort",
+        "definedIn": "supabase/migrations/20261108100000_golf_division_cohort.sql"
       },
       {
         "id": "refresh_player_standing",
@@ -26029,6 +26043,17 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/components/golf/stats/**"
+        }
+      ]
+    },
+    {
+      "source": "stats_analytics",
+      "target": "golf_division_cohort",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261108100000_golf_division_cohort.sql"
         }
       ]
     },
