@@ -104,3 +104,17 @@ describe('the staging answer', () => {
     expect(statedCounts([read, teamRows], roster).has(5)).toBe(true);
   });
 });
+
+// Live Q4 (ask-perf): "Audit Testplayer has no recorded rounds. Six other players have rounds but no season strokes gained, so only one player's figures are in the season read."
+// Eight on the roster, less Cole (the one in the read) and Audit, is six. It is true; "Seven other players" is not.
+describe('"N other players" is the roster less the players named so far', () => {
+  const roster8 = ['Cole Bennett', 'Owen Carter', 'Ethan Park', 'Mason Rivers', 'Dylan Brooks', 'Tyler Hayes', 'Jackson Hale', 'Audit Testplayer'].map((name, i) => ({ id: `p${i}`, name }));
+  const text = (n: string) => `All 11 rounds were played by Cole Bennett. Audit Testplayer has no rounds at all. ${n} other players have rounds but no season figures.`;
+  it('six passes, seven does not', () => {
+    expect(auditCountClaims(text('Six'), new Set([8, 11]), [], 8, roster8)).toEqual([]);
+    expect(auditCountClaims(text('Seven'), new Set([8, 11]), [], 8, roster8).map((u) => u.text)).toEqual(['Seven']);
+  });
+  it('with nobody named before it, it is still a count a read has to state', () => {
+    expect(auditCountClaims('Six other players have rounds.', new Set([8]), [], 8, roster8).map((u) => u.text)).toEqual(['Six']);
+  });
+});

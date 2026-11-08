@@ -84,6 +84,16 @@ const ONE_NAMED = /\b(?:best|worst|lowest|highest|biggest|smallest|only|single|f
  * Whether "the other N" is the group less a subset the nearby words name: some number S in this sentence or the one before it (a date, a
  * decimal, a window and the count itself aside), or one for a single named item, with N + S a count the reads state or a cite carries.
  */
+/** How many different roster players the text names, by full name, first name or last name. */
+function namedPlayers(text: string, roster: readonly AuditPlayer[]): number {
+  let n = 0;
+  for (const p of roster) {
+    const parts = p.name.trim().split(/\s+/).filter((x) => x.length > 2);
+    if (parts.some((x) => new RegExp(`(^|[^\\p{L}])${x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\p{L}])`, 'u').test(text))) n += 1;
+  }
+  return n;
+}
+
 function isComplement(text: string, at: number, length: number, n: number, stated: ReadonlySet<number>, cited: readonly number[], rosterSize: number): boolean {
   let from = 0;
   const bounds = [...text.slice(0, at).matchAll(/[.!?](?=\s|$)/g)].map((b) => (b.index ?? 0) + 1);
@@ -109,7 +119,7 @@ function isComplement(text: string, at: number, length: number, n: number, state
 }
 
 /** The counts in `text` that no verified cite and no read stands for. */
-export function auditCountClaims(text: string, stated: ReadonlySet<number>, citedValues: readonly string[], rosterSize = 0): UnsupportedClaim[] {
+export function auditCountClaims(text: string, stated: ReadonlySet<number>, citedValues: readonly string[], rosterSize = 0, roster: readonly AuditPlayer[] = []): UnsupportedClaim[] {
   const cited = citedValues.map((c) => Number(c.replace(/[−–]/g, '-').replace(/[%,+]/g, ''))).filter(Number.isFinite);
   const flagged: UnsupportedClaim[] = [];
   const seen = new Set<string>();
@@ -127,6 +137,8 @@ export function auditCountClaims(text: string, stated: ReadonlySet<number>, cite
       const whole = part ? (/^\d+$/.test(part[1] as string) ? Number(part[1]) : (WORDS[(part[1] as string).toLowerCase()] ?? NaN)) : NaN;
       if (Number.isFinite(whole) && n < whole && (stated.has(whole) || whole <= rosterSize)) continue;
       if (/\b(?:other|remaining|rest)\s+$/i.test(text.slice(Math.max(0, at - 14), at))) continue;
+      // "Six other players have rounds": the roster less the players the answer has named so far (live Q4: eight, less Cole and Audit Testplayer).
+      if (/^(?:other|remaining)\s*$/i.test(m[3] ?? '') && rosterSize - n >= 1 && rosterSize - n === namedPlayers(text.slice(0, at), roster)) continue;
     }
     const isCited = cited.some((c) => Math.abs(Math.abs(c) - n) < 1e-9);
     // "The other 5 rounds" is what is left of a group once the ones just named are taken out, so it is the group's size less theirs; a 5 that is only the size of the window does not stand for it (staging 21a4a215: two of five named, "the other 5").
