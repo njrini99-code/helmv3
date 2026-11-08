@@ -6,15 +6,19 @@
  *  - `moved-figure`     a figure that belongs to one player is written against another player who has figures of their own;
  *  - `figure-to-no-data-player`  the same, written against a roster player the turn read nothing for;
  *  - `invented-date`    a date outside everything the turn read and the coach said (a replaced date, or a new sentence);
+ *  - `changed-count`   a stated count of things ("14 qualifier rounds") moved by one or two, in a hand-written fixture that carries citations,
+ *    where a coach turn's counts must be ones a read states (made only for those fixtures);
  *  - `shifted-date-in-window`  a stated date moved to another day inside a window a read covered, a day no read names.
  *
  * Generation is deterministic (the first eligible spots, no randomness), and a corruption is only produced when
  * its new text is checked to be unsupported by the evidence, so a rejection can be attributed to the corruption and
  * an acceptance is a real miss by the audit, not a harness artefact.
  */
+import { statedCounts } from '../count-claims';
+import { ToolEnvelope } from '../provenance';
 import type { AskFixture } from './ask-replay-harness';
 
-export type CorruptionKind = 'changed-figure' | 'moved-figure' | 'figure-to-no-data-player' | 'invented-date' | 'shifted-date-in-window';
+export type CorruptionKind = 'changed-count' | 'changed-figure' | 'moved-figure' | 'figure-to-no-data-player' | 'invented-date' | 'shifted-date-in-window';
 
 export interface Corruption {
   /** Stable id: `<fixture>:<kind>:<n>`. */
@@ -291,9 +295,44 @@ function shiftedDates(fixture: AskFixture, text: string, ev: Evidence): Corrupti
   return [];
 }
 
+const COUNT_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+const COUNTED = String.raw`(?:[\p{L}'’-]+\s+){0,3}?(?:rounds?|players?|goals?|events?|sessions?|tasks?|practices|tournaments?|qualifiers?|trips?|meetings?)\b`;
+
+/** A stated count of things moved by one or two to a count no read states. Only for a hand-written fixture that carries citations. */
+function changedCounts(fixture: AskFixture, text: string): Corruption[] {
+  if (!fixture.authored || !fixture.turn.cites) return [];
+  const envelopes = fixture.turn.evidence.flatMap((e) => {
+    const parsed = ToolEnvelope.safeParse(e.envelope);
+    return parsed.success ? [parsed.data] : [];
+  });
+  const stated = statedCounts(envelopes, fixture.roster);
+  const re = new RegExp(String.raw`(^|[^\p{L}\p{N}.-])(\d{1,2}|${COUNT_WORDS.slice(3).join('|')})(\s+${COUNTED})`, 'giu');
+  const out: Corruption[] = [];
+  for (let m = re.exec(text); m; m = re.exec(text)) {
+    const written = m[2] as string;
+    const value = /^\d/.test(written) ? Number(written) : COUNT_WORDS.indexOf(written.toLowerCase());
+    if (value < 3) continue;
+    // A window or a position ("his last ten rounds", "the top 5 players") is not a tally.
+    if (/\b(?:last|past|previous|recent|latest|next|first|final|top|bottom|every|each|over|across|within|through|following|prior)\s+(?:(?:the|his|her|their|your|these|those)\s+)?$/i.test(text.slice(Math.max(0, m.index - 24), m.index + (m[1] as string).length))) continue;
+    const next = [1, -1, 2, -2].map((d) => value + d).find((n) => n >= 3 && n <= 12 && !stated.has(n));
+    if (next === undefined) continue;
+    const word = /^\d/.test(written) ? String(next) : written[0] === (written[0] as string).toUpperCase() ? (COUNT_WORDS[next] as string).replace(/^./, (c) => c.toUpperCase()) : (COUNT_WORDS[next] as string);
+    const at = m.index + (m[1] as string).length;
+    out.push({
+      id: `${fixture.id}:changed-count:${out.length}`,
+      fixtureId: fixture.id,
+      kind: 'changed-count',
+      detail: `${written} -> ${word} (${(m[3] as string).trim().split(/\s+/).slice(-2).join(' ')})`,
+      text: text.slice(0, at) + word + text.slice(at + written.length),
+    });
+  }
+  return out;
+}
+
 /** Corrupted copies of one stored answer. */
 export function corruptionsFor(fixture: AskFixture): Corruption[] {
   const text = answerText(fixture);
+  if (fixture.authored) return changedCounts(fixture, text);
   const ev = evidenceOf(fixture);
   return [
     ...changedFigures(fixture, text, ev),

@@ -55,7 +55,7 @@ interface CorruptionResult {
   actual: 'accepted' | 'rejected';
 }
 // A corruption is only attributable when the clean answer passes: start from labelled-true answers the audit accepts.
-const corruptions: CorruptionResult[] = stored
+const corruptions: CorruptionResult[] = real
   .filter((r) => r.label.expect === 'accepted' && replayVerdict(r.fixture, { text: answerText(r.fixture) }).outcome === 'accepted')
   .flatMap((r) => corruptionsFor(r.fixture))
   .map((corruption) => {
@@ -70,7 +70,7 @@ function summary() {
   const falseAnswers = stored.filter((r) => r.label.expect === 'rejected');
   const wrongBlocks = trueAnswers.filter((r) => r.actual === 'rejected');
   const wrongAccepts = falseAnswers.filter((r) => r.actual === 'accepted');
-  const kinds: CorruptionKind[] = ['changed-figure', 'moved-figure', 'figure-to-no-data-player', 'invented-date', 'shifted-date-in-window'];
+  const kinds: CorruptionKind[] = ['changed-count', 'changed-figure', 'moved-figure', 'figure-to-no-data-player', 'invented-date', 'shifted-date-in-window'];
   const byKind = Object.fromEntries(
     kinds.map((k) => {
       const set = corruptions.filter((c) => c.corruption.kind === k);
