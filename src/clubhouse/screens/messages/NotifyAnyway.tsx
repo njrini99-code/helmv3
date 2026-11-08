@@ -60,6 +60,8 @@ export function useSendHold(onFire: () => void, enabled: boolean) {
   };
 }
 
+/** MSG-304: the send key's up-arrow is 18 px at a 2.4 stroke, heavier than its size's usual weight. */
+export const SEND_ARROW_STROKE = 2.4;
 const HOLD_HINT_ID = 'ch-ms-send-hint';
 
 /**
@@ -103,7 +105,7 @@ export function SendCluster({
         data-ch-code={offered ? 'CH-7370' : undefined}
         {...hold}
       >
-        <Icon icon={unconfirmed ? RotateCw : ArrowUp} size={18} />
+        <Icon icon={unconfirmed ? RotateCw : ArrowUp} size={18} stroke={SEND_ARROW_STROKE} />
       </button>
     </Tooltip>
   );

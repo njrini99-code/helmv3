@@ -41,6 +41,7 @@ import { readMarkedUnread, withMark, writeMarkedUnread } from './marked-unread';
 import { FOUND_FOR_MS } from './use-focus-message';
 import { onRoster, seedThreadFiles, takePrefill } from './prefill';
 import { seedPollDraft } from './polls';
+import { attachmentKindOf, useAttachmentFacts } from './attachment-facts';
 import { directWith, firstName, groupLacksPlayer, isDirect, isGroupRow, isNamedForOneOfTwo, toChAnnouncement, type ChAnnouncement, type ChAnnouncementDetail, type ChConv, type ChFile, type ChMember, type ChMsg, type ChMute, type ChReaction, type ChReactionKey } from './model';
 
 const isGroup = isGroupRow;
@@ -57,20 +58,6 @@ const isGroup = isGroupRow;
  */
 // A poll's plain-text copy shows as its question; a typed message that merely starts "Poll: " keeps all its lines (D23).
 const railText = (text: string) => (isPollFallbackText(text) ? text.split('\n')[0]! : text);
-
-/** The attachment facts a message payload carries (kind, size, duration), when it carries them; nothing otherwise. */
-function attachmentMeta(payload: unknown): Pick<ChMsg, 'attachmentKind' | 'attachmentWidth' | 'attachmentHeight' | 'durationSeconds'> {
-  const p = payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : null;
-  if (!p) return {};
-  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : undefined);
-  const kind = p.attachment_kind === 'photo' || p.attachment_kind === 'file' || p.attachment_kind === 'video' ? p.attachment_kind : undefined;
-  return {
-    ...(kind ? { attachmentKind: kind } : {}),
-    ...(num(p.width) ? { attachmentWidth: num(p.width) } : {}),
-    ...(num(p.height) ? { attachmentHeight: num(p.height) } : {}),
-    ...(num(p.duration_seconds) ? { durationSeconds: num(p.duration_seconds) } : {}),
-  };
-}
 
 export function Messages({ data }: { data: ChMessagesData }) {
   const hours = useChClock();
@@ -464,6 +451,10 @@ export function Messages({ data }: { data: ChMessagesData }) {
     };
   }, [selected?.id, selected?.group, people, membersAttempt]);
 
+  // The open thread's attachment facts (kind, size, length) from golf_message_attachments: the message row carries none (attachment-facts.ts).
+  const attachmentIds = useMemo(() => msgs.messages.filter((m) => m.conversation_id === selectedId && m.has_attachments && !m.pending && !m.is_deleted).map((m) => m.id), [msgs.messages, selectedId]);
+  const attachmentFacts = useAttachmentFacts(attachmentIds, !!selectedId);
+
   const chMsgs: ChMsg[] = useMemo(
     () =>
       msgs.messages
@@ -485,9 +476,9 @@ export function Messages({ data }: { data: ChMessagesData }) {
           // A poll whose payload doesn't parse draws as its plain-text copy (`content`), never as a broken card.
           poll: m.kind === 'poll' && !m.is_deleted ? parsePollPayload(m.payload) : null,
           pending: !!m.pending,
-          ...attachmentMeta(m.payload),
+          ...attachmentFacts.get(m.id),
         })),
-    [msgs.messages, msgs.currentUserId, selectedId, data.viewerUserId],
+    [msgs.messages, msgs.currentUserId, selectedId, data.viewerUserId, attachmentFacts],
   );
 
   // Votes on the thread's polls (P-2): one read and one realtime channel for all of them, as reactions do.
@@ -683,7 +674,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
       chReport(new Error(res.error || 'attachments read failed'), { surface: 'messages.attachments', severity: 'low' });
       return null;
     }
-    return res.attachments.map((a) => ({ id: a.id, name: a.fileName, size: a.fileSize, mime: a.mimeType, url: a.url ?? null }));
+    return res.attachments.map((a) => ({ id: a.id, name: a.fileName, size: a.fileSize, mime: a.mimeType, url: a.url ?? null, kind: attachmentKindOf(a.fileType), width: a.width, height: a.height, durationSeconds: a.durationSeconds }));
   }, []);
 
   useToastPill(true);

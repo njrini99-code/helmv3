@@ -13,6 +13,7 @@ import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { useIsPresent } from 'motion/react';
 import { personOf } from '../person-of';
 import { Icon } from '../../../ui/Icon';
+import { SEND_ARROW_STROKE } from '../NotifyAnyway';
 import { Megaphone, ChevronRight, Users, UserRound, X, Check, ArrowUp } from 'lucide-react';
 import { pluralWord } from '../../../lib/plural';
 import { PhoneScreen } from '../../../shell/PhoneScreen';
@@ -309,7 +310,7 @@ export function PhoneNewMessage({
             disabled={!to.length || !(draft.trim() || files.length) || busy}
             aria-label="Send"
           >
-            <Icon icon={ArrowUp} size={17} />
+            <Icon icon={ArrowUp} size={18} stroke={SEND_ARROW_STROKE} />
           </button>
         </div>
         <CharsLeft text={draft} />

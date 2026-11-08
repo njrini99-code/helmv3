@@ -119,6 +119,11 @@ export interface ChAttachment {
   size: number;
   mime: string;
   url: string | null;
+  /** From `golf_message_attachments.file_type` (image | video | document | audio) and its measured `width`, `height`, `duration_seconds`; null where the upload did not measure. */
+  kind?: 'photo' | 'file' | 'video';
+  width?: number | null;
+  height?: number | null;
+  durationSeconds?: number | null;
 }
 
 export type ChReactionKey = 'Like' | 'Love' | 'Laugh' | 'Celebrate' | 'Surprised' | 'Thanks';
