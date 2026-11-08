@@ -322,6 +322,17 @@ export function describeWork(steps: AskStep[], envelopes: ToolEnvelope[]): strin
   return `Read ${bits.join(' across ')}`;
 }
 
+/**
+ * A player's own next steps: read-only and about their own game, never a write (focus areas, practices, reminders) and never
+ * a teammate comparison, which the player Ask can't do (01-BRIEF decision 1: stats and visuals only, Tour and team averages).
+ */
+export function playerFollowUps(followUps: readonly string[], envelopes: ToolEnvelope[]): string[] {
+  if (followUps.length === 0) return [];
+  const putting = envelopes.some((e) => e.coverage !== 'unavailable' && e.measurements.some((m) => /putt/i.test(m.metric_id)));
+  const out = putting ? ['Break my putting down by distance', 'How does my putting compare with the Tour?'] : ['How does this compare with the Tour?', 'How has this changed over my last 10 rounds?'];
+  return out.slice(0, 3);
+}
+
 /** At most three next steps, each one only when the evidence supports it: a row of always-there buttons teaches people to stop reading them. */
 export function followUpsFor(envelopes: ToolEnvelope[]): string[] {
   const out: string[] = [];

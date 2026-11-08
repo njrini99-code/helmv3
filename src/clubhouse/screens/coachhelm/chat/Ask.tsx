@@ -308,6 +308,7 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
   ) : (
     <SectionBoundary surface="coachhelm.ask.thread" label="The conversation" code="CH-13225">
       <AskThread
+        viewer={data.role === 'player' ? 'player' : 'coach'}
         team={data.teamName}
         onArtifact={setArtifact}
         messages={chat.messages}
