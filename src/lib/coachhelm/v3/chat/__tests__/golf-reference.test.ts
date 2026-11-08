@@ -95,4 +95,28 @@ describe('get_golf_reference', () => {
       expect(audit('Owen Carter three-putts 25% of the time.', [own])).toEqual([]);
     });
   });
+
+  describe('the college baselines are only what a source supports', () => {
+    const text = (topic: string) => JSON.stringify(getGolfReference({ topic }).detail);
+
+    it('lists the figures that have a citable source, with the source named', () => {
+      const t = text('published college baselines strokes gained NCAA D1 championship field');
+      expect(t).toMatch(/Published College Baselines/);
+      expect(t).toMatch(/2\.3 strokes per round better/);
+      expect(t).toMatch(/datagolf\.com\/true-strokes-gained-am/);
+      expect(t).toMatch(/shot-quality index/i);
+      expect(t).toMatch(/mikkelgolf\.substack\.com/);
+    });
+
+    it('says plainly what is not published, so no division fills a missing figure from another or from the Tour', () => {
+      const t = text('published college baselines not published no college figure');
+      expect(t).toMatch(/Not published \(no college figure\)/);
+      expect(t).toMatch(/Division II, Division III, NAIA and JUCO/);
+      expect(t).toMatch(/leave them unset/);
+    });
+
+    it('marks the old D1 profile as indicative, not a quoted baseline', () => {
+      expect(text('typical college stat profile D1 FW GIR putts')).toMatch(/No single published source/);
+    });
+  });
 });

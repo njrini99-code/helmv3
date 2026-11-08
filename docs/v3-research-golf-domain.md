@@ -106,6 +106,7 @@ Sources: [PGA Tour Stats](https://www.pgatour.com/stats), [Data Golf 2026 SG](ht
 Sources: [NCSA Recruiting Guidelines](https://www.ncsasports.org/mens-golf/recruiting-guidelines); [Golf Globally / Clippd 2024](https://www.golfglobally.com/college-golf-scoring-averages); courses typically 6,600-7,000 yards.
 
 ### Typical College Stat Profile (D1)
+*No single published source for these ranges (see "Published College Baselines" below): indicative only.*
 - FW%: ~62-68% (above Tour, courses set up easier)
 - GIR%: ~58-65%
 - Putts/round: 29.5-30.5
@@ -118,6 +119,23 @@ Sources: [NCSA Recruiting Guidelines](https://www.ncsasports.org/mens-golf/recru
 2. **Short putt make % is the biggest invisible gap** — even +2 player makes ~92% from 3 ft vs Tour 99.4%; that's 1-2 strokes per round in pressure putts
 3. **Penalty avoidance dominates college variance** — top teams <0.5 penalties/round; struggling teams 2+
 4. **Wedge proximity from 75-125** is the single biggest D1 vs Tour gap (~28 ft vs 19 ft)
+
+### Published College Baselines — and What Is Not Published
+*Checked 2026-11-08. Only figures with a citable source are listed. The Division II, Division III, NAIA and JUCO columns for every statistic below are not published anywhere we could find: leave them unset and say "no college figure" rather than filling them from the D1 numbers or from the Tour.*
+
+**Citable:**
+
+| Statistic | Population | Figure | Source (year) |
+|---|---|---|---|
+| Strokes gained, total: college field against the Tour field | NCAA D1 Championship field, men | The average PGA Tour field is **2.3 strokes per round better** than the typical NCAA D1 Championship field (so the D1 Championship field averages about −2.3 SG per round against the Tour field) | [Data Golf — True Strokes Gained, amateur (page defines its amateur baseline as "the average player in the NCAA D1 Championship"; accessed 2026)](https://datagolf.com/true-strokes-gained-am?dg_id=23950) |
+| Shot-quality index by category (100 = PGA Tour shot quality; an index, not strokes) | Male D1 college averages, season not stated | Around the green **86**, approach **93**, putting **94**, off the tee **103** (the author questions the off-the-tee figure: players enter default starting yardages) | [Mikkel Bjerch-Andresen, "What separates college and tour players" (Clippd shot-quality model, published 2024-04-06)](https://mikkelgolf.substack.com/p/what-separates-college-and-tour-players) |
+| Strokes gained, Tour field average | PGA Tour field | 0 per round in every category by definition (SG is measured against the field); the Tour's own elite thresholds are in section 2 | Section 2 sources |
+
+**Not published (no college figure):**
+- Strokes gained by category (off the tee, approach, around the green, putting) in strokes, for any college division. Only the Clippd index above exists, and it is not strokes.
+- Strokes gained, total, for Division II, Division III, NAIA and JUCO.
+- Greens in regulation, scrambling, putts per round, putts per GIR, three-putt rate and proximity by distance band for any college division. The searches behind this section found only team scoring and championship scorecards (NCAA, Golfstat, Clippd), no division-level averages for them. The "Typical College Stat Profile (D1)" ranges above carry no single published source: treat them as indicative, never as a quoted baseline.
+- Division II, Division III, NAIA and JUCO scoring averages beyond the recruiting ranges in the table above.
 
 ### Junior / AJGA Benchmarks
 - AJGA-invitational: 73-75 scoring on 6,800-yard setups
@@ -383,6 +401,8 @@ Three causes: (1) **technique ceiling** — without video/launch monitor feedbac
 - [NCSA Sports — Men's college golf recruiting](https://www.ncsasports.org/mens-golf/recruiting-guidelines)
 - [Golf Globally — 2024 college scoring averages (Clippd)](https://www.golfglobally.com/college-golf-scoring-averages)
 - [Clippd College Scoreboard](https://scoreboard.clippd.com/)
+- [Data Golf — True Strokes Gained (amateur)](https://datagolf.com/true-strokes-gained-am?dg_id=23950)
+- [Mikkel Bjerch-Andresen — What separates college and tour players (Clippd shot-quality model, 2024)](https://mikkelgolf.substack.com/p/what-separates-college-and-tour-players)
 - [Golfstat — College golf stats](https://golfstat.com/)
 - [Golf.com — 3-putt rate by handicap](https://golf.com/instruction/how-likely-you-are-3-putt-based-handicap/)
 - [Golf Monthly — 3-putt vs 1-putt distance precipice](https://www.golfmonthly.com/features/golfs-putting-precipice-at-what-distance-is-a-3-putt-more-likely-than-a-1-putt)
