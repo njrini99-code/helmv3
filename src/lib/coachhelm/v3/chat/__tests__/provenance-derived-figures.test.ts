@@ -159,3 +159,24 @@ describe('figures in brackets belong to the names just ahead of them', () => {
     expect(audit('Their sample is smaller than Braeden Gillen’s or Luke Wise’s (29 and 27 rounds).', [rounds], { players })).toEqual(['29']);
   });
 });
+
+describe('a date written day first', () => {
+  // Staging, 2026-11-08: "Owen Carter's approach play compared with his level, the team and the Tour" was withheld for `26`, the day in
+  // "9 June to 26 September". The rest of the answer (gaps, percentile, place, holes) was grounded.
+  const owen = envelope({
+    measurements: [m('sg_approach', -4.16, { entity: player('o', 'Owen Carter'), window_start: '2026-06-09', window_end: '2026-09-26', sample_size: 8 })],
+  });
+  const say = (text: string) => audit(text, [owen], { players: [{ id: 'o', name: 'Owen Carter' }] });
+
+  it('is checked against the window like "June 9" is', () => {
+    expect(say('That window holds only 8 recorded rounds (9 June to 26 September), so it is a thin read.')).toEqual([]);
+    expect(say('Over the 26th of September round, Owen Carter sat at -4.16.')).toEqual([]);
+  });
+  it('still flags a day-first date the evidence does not hold', () => {
+    expect(say('That window holds only 8 recorded rounds (9 June to 27 November).')).toEqual(['27 November']);
+    expect(say('That window holds only 8 recorded rounds (9 June to 26 September 2025).')).toEqual(['26 September 2025']);
+  });
+  it('does not read "may" or "march" after a number as a month', () => {
+    expect(say('Owen Carter has 40 may be a thin read.')).toEqual(['40']);
+  });
+});

@@ -508,7 +508,7 @@ const MONTH_NAME_ALT = Object.keys(MONTH_NAMES)
  * ("September 25 and 26 putts" is a count); see {@link auditDateExpressions}.
  */
 const DATE_EXPRESSION_RE = new RegExp(
-  `\\b(?:(${MONTH_NAME_ALT})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s*(\\d{4}))?(?:\\s*[-–—]\\s*(\\d{1,2})(?:st|nd|rd|th)?\\b(?!\\s+(?:days?|weeks?|months?|years?|hours?|hrs?|minutes?|mins?|nights?)\\b))?(\\s+(?:and|or|&)\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b(?![.,]\\d|\\s*%|-\\d|\\s+(?:STAT_NOUNS)\\b))?|(\\d{1,2})\\/(\\d{1,2})\\/(\\d{2}|\\d{4}))\\b`.replace(
+  `\\b(?:(${MONTH_NAME_ALT})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s*(\\d{4}))?(?:\\s*[-–—]\\s*(\\d{1,2})(?:st|nd|rd|th)?\\b(?!\\s+(?:days?|weeks?|months?|years?|hours?|hrs?|minutes?|mins?|nights?)\\b))?(\\s+(?:and|or|&)\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b(?![.,]\\d|\\s*%|-\\d|\\s+(?:STAT_NOUNS)\\b))?|(\\d{1,2})\\/(\\d{1,2})\\/(\\d{2}|\\d{4})|(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?(${MONTH_NAME_ALT})(?:,?\\s*(\\d{4}))?)\\b`.replace(
     'STAT_NOUNS',
     'putts?|strokes?|shots?|rounds?|holes?|attempts?|birdies|birdie|pars?|bogeys?|eagles?|greens?|fairways?|yards?|yds?|feet|foot|ft|meters?|metres?|percent|pct|points?|players?|events?|tournaments?|times|total|more|fewer|over|under',
   ),
@@ -640,8 +640,10 @@ function auditDateExpressions(
 
   const scrubbed = text.replace(
     DATE_EXPRESSION_RE,
-    (whole, monthName, dayA, yearA, rangeEndDay, listTail, listDay, monthNumStr, dayNumStr, yearNumStr) => {
-      const resolved = resolveDateMatch(monthName, dayA, yearA, monthNumStr, dayNumStr, yearNumStr);
+    (whole, monthName, dayA, yearA, rangeEndDay, listTail, listDay, monthNumStr, dayNumStr, yearNumStr, dayFirst, monthFirst, yearDayFirst) => {
+      // "26 September", "9th of June": the day first. A lower-case "may" or "march" after a number is the verb ("4 may improve").
+      if (dayFirst !== undefined && /^(?:may|march)$/.test(monthFirst)) return whole;
+      const resolved = dayFirst !== undefined ? resolveDateMatch(monthFirst, dayFirst, yearDayFirst, undefined, undefined, undefined) : resolveDateMatch(monthName, dayA, yearA, monthNumStr, dayNumStr, yearNumStr);
       if (!resolved) return whole; // Not a real calendar date — leave for the numeric scan.
 
       if (!isSupported(resolved.month, resolved.day, resolved.year)) {
@@ -744,7 +746,9 @@ export function coachRequestDates(text: string | null | undefined, todayIso: str
   for (const m of text.matchAll(DATE_EXPRESSION_RE)) {
     // Lower-case "may" and "march" are ordinary English ("he may 10 putt it"); other months are not ("nov 10").
     if (m[1] === 'may' || m[1] === 'march' || m[1] === 'mar') continue;
-    const r = resolveDateMatch(m[1], m[2], m[3], m[7], m[8], m[9]);
+    // "14 November": the day first.
+    if (m[10] !== undefined && /^(?:may|march|mar)$/.test(m[11] ?? '')) continue;
+    const r = m[10] !== undefined ? resolveDateMatch(m[11], m[10], m[12], undefined, undefined, undefined) : resolveDateMatch(m[1], m[2], m[3], m[7], m[8], m[9]);
     if (!r) continue;
     // "Nov 10-12" and "Nov 10 and 17" name both days, in the head's month and year.
     for (const day of [r.day, ...[m[4], m[6]].filter(Boolean).map(Number)]) {
