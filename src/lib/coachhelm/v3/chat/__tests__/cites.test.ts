@@ -248,7 +248,8 @@ describe('the team ranking turns', () => {
     expect(v.outcome).toBe('accepted');
     expect(v.citations).toMatchObject({ verified: 6, mismatched: 0 });
     // A team average the read does not state, cited as the team’s, is a mismatch against the very read it names, and the turn is withheld.
-    expect(verdictFor(text, [...cites.slice(0, 5), cite('-2.5', 'e1', 'sg_approach', 'team')], all).outcome).toBe('rejected');
+    // (The wrong figure has to be the one written: a cite for a figure the text never states changes nothing, and "If you use -2.33" restates the earlier, audited -2.33.)
+    expect(verdictFor(text.replaceAll('-2.33', '-2.5'), [...cites.slice(0, 5), cite('-2.5', 'e1', 'sg_approach', 'team')], all).outcome).toBe('rejected');
   });
 
   it('"7th of the 7 … the weakest on the team" with Ethan below Owen is withheld, even with every figure cited correctly', () => {

@@ -936,6 +936,9 @@ interface AnchorScope {
 interface Anchor extends AnchorScope {
   value: number;
 }
+/** "If you use ", "should you go with ": the figure after it is one already on the table. */
+const USE_CLAUSE = /\b(?:if|when|should)\s+(?:you|we|I)\s+(?:use|used|take|took|go with|went with|count|counted|prefer|choose)\s+(?:the\s+|that\s+)?$/i;
+
 /** A sentence that calls a number a difference between two things. */
 const GAP_CUE = /\b(?:gaps?|ahead|behind|difference|differs?|apart|margin|lead(?:s|ing)?|trails?|more than|less than|than|between|separates?|split)\b/i;
 const UNSCOPED: AnchorScope = { player: null, team: false, family: null, parent: null };
@@ -1112,9 +1115,38 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
   // putts 31.5" binds GIR→58 and putts→31.5); a tie goes to the number
   // written before the cue ("31 putts").
   const familiesByToken = new Map<number, Set<MetricFamily>>();
+  // "Off the tee and around the green: -0.32 and -0.20": a list of areas followed by a list of numbers in the same order, area by area. Each cue
+  // takes the number at its own place in the list instead of the nearest one (which gave "around the green" the figure for the tee).
+  const inList = new Set<number>();
+  const cueHits = METRIC_CUES.flatMap(([re, family]) => [...text.matchAll(re)].map((m) => ({ start: m.index ?? 0, end: (m.index ?? 0) + m[0].length, family }))).sort((a, b) => a.start - b.start);
+  for (let i = 0; i < cueHits.length; i += 1) {
+    const group = [cueHits[i] as (typeof cueHits)[number]];
+    while (i + 1 < cueHits.length && /^\s*(?:,|&|and|,\s*and)\s+$/i.test(text.slice((group[group.length - 1] as (typeof cueHits)[number]).end, (cueHits[i + 1] as (typeof cueHits)[number]).start) + ' ')) {
+      group.push(cueHits[i + 1] as (typeof cueHits)[number]);
+      i += 1;
+    }
+    if (group.length < 2) continue;
+    const afterGroup = (group[group.length - 1] as (typeof cueHits)[number]).end;
+    const first = tokens.findIndex((t) => t.start >= afterGroup && t.start - afterGroup <= 24 && /^[^.\n]*$/.test(text.slice(afterGroup, t.start)));
+    if (first === -1) continue;
+    let ok = true;
+    for (let k = 1; k < group.length; k += 1) {
+      const prev = tokens[first + k - 1];
+      const next = tokens[first + k];
+      if (!prev || !next || !/^\s*(?:%|[a-z/ ]{0,16})?\s*(?:,|&|and|,\s*and)\s+$/i.test(text.slice(prev.end, next.start) + ' ')) ok = false;
+    }
+    if (!ok) continue;
+    for (const [k, cue] of group.entries()) {
+      const set = familiesByToken.get(first + k) ?? new Set<MetricFamily>();
+      set.add(cue.family);
+      familiesByToken.set(first + k, set);
+      inList.add(cue.start);
+    }
+  }
   for (const [re, family] of METRIC_CUES) {
     for (const m of text.matchAll(re)) {
       const cs = m.index ?? 0;
+      if (inList.has(cs)) continue;
       const ce = cs + m[0].length;
       const clause = spanIndexAt(metricClauses, cs);
       let best = -1;
@@ -1562,6 +1594,9 @@ export function auditNumericClaimsDetailed(
     const subsetCount = smallInteger && value >= 2 && SUBSET_COUNT_AFTER.test(scrubbed.slice(match.end, match.end + 40));
     if (smallInteger && !subsetCount) continue;
     if (seen.has(raw)) continue;
+    // "If you use -2.33, Owen's gap is larger": a figure picked up again as the alternative being weighed is the same claim the earlier sentence made
+    // (and the audit made of it there), not a new one about the player named after it.
+    if (USE_CLAUSE.test(scrubbed.slice(Math.max(0, match.start - 40), match.start)) && scrubbed.slice(0, match.start).includes(raw)) continue;
     if (spans.has(value) && TIME_UNIT_AFTER.test(scrubbed.slice(match.end, match.end + 24))) continue;
     figures += 1;
     // A figure the model cited, and the server verified against the read it named, is not matched against names. It stands for the figure only at
