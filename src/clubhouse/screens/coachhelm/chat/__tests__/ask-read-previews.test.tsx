@@ -6,9 +6,11 @@ vi.mock('server-only', () => ({}));
 import { buildAssistantTurn, goalsTable, zeroBasedDomain, benchmarkBlock, comparisonWords, detailTable, evidenceBlocks, withWindowFigures, fitToPhone, PHONE_TABLE_PX, type AskTable } from '../../../../data/coachhelm-chat-thread';
 import { AskEvidenceView } from '../Evidence';
 import { AskProse } from '../Prose';
-import { benchName, formatValue, rowsCaption, windowDates } from '../../../../data/coachhelm-chat-thread';
+import { benchName, formatValue, windowDates } from '../../../../data/coachhelm-chat-thread';
+import { rowsCaption } from '@/lib/coachhelm/v3/chat/rows-caption';
 import { lastTurnIsGeneral } from '../ask-scope-window';
 import type { ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
+import { ValidatedComposition } from '@/lib/coachhelm/v3/chat/visuals/composition';
 
 afterEach(cleanup);
 
@@ -87,7 +89,7 @@ describe('a benchmark read draws a picture of where the player stands, or nothin
     expect(b.table.rows[0]![3]).not.toMatch(/\d/);
     expect(b.table.rows[0]![4]).toBe('66%');
     // Plain sentences, one per metric (staging, 2026-11-08: "SG Putting: level no college figure SG Putting: team all rounds only").
-    expect(b.note).toBe('GIR %: no level figure (not set), no team figure (fewer than 5 teammates).');
+    expect(b.note).toBe('The team’s level is not set. No team figure for GIR % (fewer than 5 teammates).');
     // A row with no references at all still says so for all three.
     const bare = benchmarkBlock(benchmark([{ ...standingRow, comparisons: [] }]))!;
     expect(bare.table.rows[0]!.slice(2).every((c) => !/\d/.test(c))).toBe(true);
@@ -252,7 +254,7 @@ describe('the track never starts above zero (a fill under a truncated baseline o
     const sg = { metric_id: 'sg_putting', metric_label: 'SG: Putting', player_value: -0.4, comparisons: [ref('level', null, { missing_reason: 'no college figure' }), ref('team', null, { missing_reason: 'all rounds only' }), ref('tour', 0)] };
     const gir = { ...standingRow, comparisons: [ref('level', 61.5), ref('team', null, { missing_reason: 'fewer than 5 teammates' }), ref('tour', 66)] };
     const note = benchmarkBlock(benchmark([sg, gir]))!.note;
-    expect(note).toBe('SG Putting: no level figure (no college figure), no team figure (all rounds only). GIR %: no team figure (fewer than 5 teammates).');
+    expect(note).toBe('No college figure for SG Putting. No team figure for SG Putting (all rounds only). No team figure for GIR % (fewer than 5 teammates).');
   });
 
   it('strokes gained is centred on zero with a zero rule, and the fill runs from it', () => {
@@ -574,3 +576,50 @@ describe('what a read says about itself, in a coach’s words', () => {
 });
 
 const formatNone = () => formatValue(null, 'count');
+
+// Staging, 2026-11-08, conversations 21a4a215 and 4aa35b53 (86ced837cd).
+describe('a coach never reads the model’s notes, and a visual stands in for the chart it repeats', () => {
+  const modelNote = 'Showing the first 5 of 124 rows, ordered by round_date (newest first). The other 119 are not shown: say so, and narrow the filters for the rest.';
+  const m = (id: string, label: string, value: number | null) => ({ metric_id: 'sg_approach', metric_label: 'Strokes gained approach', unit: 'strokes', value, entity: { kind: 'player', id, label }, window_start: '2026-06-09', window_end: '2026-09-26', sample_size: 8, sample_unit: 'rounds', as_of: '2026-11-08T00:00:00Z', coverage: 'complete', coverage_note: null, source: 'rounds', method: 'm', denominator: null, benchmark: null, direction: 'higher_better' });
+  const ev = (id: string, tool: string, envelope: ToolEnvelope) => ({ type: 'data-evidence', id: `ev-${id}`, data: { tool, envelope, ref: id } });
+  const turn = (...parts: unknown[]) => {
+    const t = buildAssistantTurn({ id: 'a1', role: 'assistant', parts } as never, { isLast: false, busy: false });
+    if (t.role !== 'assistant') throw new Error('assistant turn expected');
+    return t;
+  };
+
+  it('a summary cut short by its source is captioned in words ("Worked out from the newest 5 of 124 rounds"), never with the source’s note', () => {
+    const summary = env('1 figure worked out from 5 rows.', { kind: 'summary', rows_used: 5, results: [], sources: ['e1'], caption: 'Worked out from the newest 5 of 124 rounds' }, {
+      coverage: 'partial',
+      coverage_note: modelNote,
+      measurements: [{ ...m('p', 'Cole Bennett', 10), metric_id: 'summary:t', metric_label: 'Three-putts, total, all 5 rounds', unit: 'count', method: 'summary_sum' }] as never,
+    });
+    const blocks = evidenceBlocks(summary);
+    expect(JSON.stringify(blocks)).toContain('Worked out from the newest 5 of 124 rounds');
+    const { container } = render(<AskEvidenceView envelope={summary} />);
+    expect(container.textContent).not.toMatch(/round_date|narrow the filters|say so|ordered by/);
+    // A cut read that carries no caption of its own draws no note at all, rather than the model’s.
+    const bare = evidenceBlocks({ ...summary, detail: undefined });
+    expect(JSON.stringify(bare)).not.toMatch(/round_date|narrow the filters|say so/);
+    // A note written for the coach still shows.
+    expect(JSON.stringify(evidenceBlocks({ ...summary, detail: undefined, coverage_note: '6 of 8 players have a round in the last 30 days. The other 2 are left out.' }))).toContain('6 of 8 players');
+  });
+
+  it('an unavailable or empty read says it in plain words when its note is the model’s', () => {
+    const failed = env('Could not read the rounds.', undefined, { coverage: 'unavailable', coverage_note: 'There is no field "right_three_putts" in these rows. They have: id, round_date.' });
+    expect(JSON.stringify(evidenceBlocks(failed))).not.toMatch(/right_three_putts|round_date/);
+    const empty = env('No rounds matched.', undefined, { coverage: 'empty', coverage_note: 'No rows for status = in_progress and round_type.' });
+    expect(JSON.stringify(evidenceBlocks(empty))).not.toMatch(/round_type|in_progress/);
+  });
+
+  it('a model visual that plots the same metric for the same players folds the ranking read’s own chart; a different one does not', () => {
+    const players = Array.from({ length: 7 }, (_, i) => m(`p${i}`, `Player ${i}`, -1 - i / 10));
+    // Seven plotted, one more with no figure: the read still has a subject the visual could not plot, and that is not a reason to draw the bars twice.
+    const ranking = { ...env('Strokes gained approach, 8 players.', { metric_id: 'sg_approach', team_ranking: true }), measurements: [...players, m('p8', 'Player 8', null)] } as unknown as ToolEnvelope;
+    const composition = (ms: unknown[]) => ValidatedComposition.parse({ artifactId: 'vc-x', schemaVersion: 1, kind: 'compose', title: 'Owen sits sixth of seven', lede: null, layout: 'stack', blocks: [{ type: 'ranking', measurements: ms, order: 'as_read', highlight: null }], evidenceRefs: [], coverageNotes: [], dataHash: 'x', createdAt: '2026-11-08T00:00:00Z' });
+    const kinds = (c: unknown) => turn(ev('e1', 'get_team_metric_ranking', ranking), { type: 'data-visual-composition', id: 'v', data: c }).blocks.map((b) => b.kind);
+    expect(kinds(composition(players))).toEqual(['composition']);
+    // A visual of three of the seven leaves the read’s chart in place.
+    expect(kinds(composition(players.slice(0, 3)))).toEqual(['evidence', 'composition']);
+  });
+});

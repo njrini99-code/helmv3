@@ -2,6 +2,8 @@ import { z } from 'zod';
 import type { CoachChatContext } from './context';
 import { nowIso, type Measurement, type ToolEnvelope } from './provenance';
 import { TeamQueryInput } from './team-query';
+import { rowsCaption } from './rows-caption';
+import { coverWords, opWords } from './summary-labels';
 
 /**
  * `summarise_data`: arithmetic done by the server, over rows the turn has already read. A count, a rank, an average, a join or a
@@ -208,15 +210,21 @@ function metricWords(field: string, rows: readonly Row[]): string {
 }
 
 /**
- * The card title of a total, mean, lowest or highest: the metric, and for a mean of the players' own figures how many ("Average of 7 players,
- * strokes gained approach"). A group's own name is the card's subject, so it is not repeated in the title.
+ * The card title of a total, mean, lowest or highest: the field in a coach's words and what it covers ("Putts per round, 3 tournament rounds",
+ * "Three-putts, total, all 5 rounds"), so two figures of one field over different rounds do not share a title. Over a read's own figures it names
+ * the metric, and for a mean of the players' figures how many ("Average of 7 players, strokes gained approach"). A group's own name is the
+ * card's subject, so it is not repeated in the title.
  */
-function figureTitle(op: 'sum' | 'mean' | 'min' | 'max', field: string, rows: readonly Row[], by: string | null, grouped: boolean): string {
-  const word = op === 'mean' ? 'Average' : op === 'sum' ? 'Total' : op === 'min' ? 'Lowest' : 'Highest';
-  const metric = lowerFirst(metricWords(field, rows));
+function figureTitle(op: 'sum' | 'mean' | 'min' | 'max', field: string, rows: readonly Row[], by: string | null, grouped: boolean, where: readonly Where[], covered: number): string {
   const players = new Set(rows.map((r) => r['entity.id']).filter((id) => typeof id === 'string' && rows.some((r) => r['entity.kind'] === 'player')));
-  if (field === 'value' && op === 'mean' && players.size > 1) return `${word} of ${players.size} players, ${metric}`;
-  return `${word} ${metric}${by && !grouped ? ` for ${by}` : ''}`;
+  if (field === 'value') {
+    const metric = lowerFirst(metricWords(field, rows));
+    const word = op === 'mean' ? 'Average' : op === 'sum' ? 'Total' : op === 'min' ? 'Lowest' : 'Highest';
+    if (op === 'mean' && players.size > 1) return `${word} of ${players.size} players, ${metric}`;
+    return `${word} ${metric}${by && !grouped ? ` for ${by}` : ''}`;
+  }
+  const noun = sampleUnitOf(rows) === 'rounds' ? 'rounds' : 'rows';
+  return `${opWords(op, field)}${by && !grouped ? ` for ${by}` : ''}, ${coverWords(where, covered, noun)}`;
 }
 
 type Ctx = { team: Measurement['entity']; people: ReadonlyMap<string, string> };
@@ -331,14 +339,14 @@ export function competitionRank(values: readonly number[], mine: number, order: 
   return 1 + values.filter((v) => (order === 'high_first' ? v > mine : v < mine)).length;
 }
 
-async function sourceRows(src: Source, deps: SummariseDeps): Promise<{ rows: Row[]; partial: boolean; note?: string } | string> {
+async function sourceRows(src: Source, deps: SummariseDeps): Promise<{ rows: Row[]; partial: boolean; note?: string; caption?: string } | string> {
   if ('ref' in src) {
     const env = deps.evidence.get(src.ref);
     if (!env) return `No read named ${src.ref} in this answer. Use the evidence_ref of a read you made.`;
     if (env.coverage === 'unavailable') return `Read ${src.ref} did not come back, so there is nothing to work on.`;
     const got = rowsOfEnvelope(env, src.list);
     if (!got) return `Read ${src.ref} has no ${src.list ? `list "${src.list}"` : 'list of rows'} to work on.`;
-    return { rows: got.rows.slice(0, JOIN_ROWS_MAX), partial: env.coverage === 'partial', note: env.coverage_note ?? undefined };
+    return { rows: got.rows.slice(0, JOIN_ROWS_MAX), partial: env.coverage === 'partial', note: env.coverage_note ?? undefined, caption: rowsCaption(env.detail) ?? undefined };
   }
   if (!deps.query) return 'This tool cannot run a query; name the evidence_ref of a read you made.';
   const env = await deps.query(src.query);
@@ -369,17 +377,21 @@ export async function summariseData(ctx: CoachChatContext, input: SummariseInput
   let rows: Row[] = [];
   let partial = false;
   const notes: string[] = [];
+  // What a coach reads under the card when a source was cut short (the notes above are for the model).
+  const captions: string[] = [];
   if (spec.source) {
     const left = await sourceRows(spec.source, deps);
     if (typeof left === 'string') return refused(left);
     rows = left.rows;
     partial = left.partial;
     if (left.note) notes.push(left.note);
+    if (left.caption) captions.push(left.caption);
     if (spec.join) {
       const right = await sourceRows(spec.join.with, deps);
       if (typeof right === 'string') return refused(right);
       partial = partial || right.partial;
       if (right.note) notes.push(right.note);
+      if (right.caption) captions.push(right.caption);
       if (!fieldsOf(rows).includes(spec.join.left_key)) return refused(`The first read has no field "${spec.join.left_key}". It has: ${fieldsOf(rows).join(', ')}.`);
       if (!fieldsOf(right.rows).includes(spec.join.right_key)) return refused(`The second read has no field "${spec.join.right_key}". It has: ${fieldsOf(right.rows).join(', ')}.`);
       const byKey = new Map<string, Row>();
@@ -494,7 +506,7 @@ export async function summariseData(ctx: CoachChatContext, input: SummariseInput
         const gid = op.by ? `${id}:${slug(value)}` : id;
         const m = figure({ id: gid, label: figureLabel(op.op, op.field, grp, op.by ? value : null), unit: unitOver(op.field, grp), value: v, entity: e, n: nums.length, rows: grp, method: `summary_${op.op}` });
         push(gid, m);
-        titles[m.metric_id] = figureTitle(op.op, op.field, grp, op.by ? value : null, e.kind === 'player' && e !== entity);
+        titles[m.metric_id] = figureTitle(op.op, op.field, grp, op.by ? value : null, e.kind === 'player' && e !== entity, [...(spec.where ?? []), ...where], nums.length);
         out.push({ ...(op.by ? { [op.by]: value } : {}), value: m.value, rows: nums.length });
       }
       results.push({ id: `summary:${id}`, op: op.op, field: op.field, ...(op.by ? { by: op.by } : {}), results: out });
@@ -537,6 +549,7 @@ export async function summariseData(ctx: CoachChatContext, input: SummariseInput
       // The reads of this turn the figures were worked out from, so a renderer can fold exactly those and not every read before it.
       sources: sourceRefs(spec),
       titles,
+      ...(captions.length > 0 ? { caption: `Worked out from the ${captions.map((x) => x.charAt(0).toLowerCase() + x.slice(1)).join(' and the ')}` } : {}),
       rows_used: rows.length,
       results,
       ...(listed ? { rows: listed.rows, row_count: listed.rows.length, matching_rows: listed.total } : {}),

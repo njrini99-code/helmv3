@@ -258,3 +258,36 @@ describe('the title a figure carries on its card', () => {
     expect(titles(e)['summary:place_value']).toBe('Strokes gained approach of the row placed');
   });
 });
+
+// Staging, 2026-11-08 (conversation 21a4a215, Cole's last 5): the figure card read "Total three_putts 10", "Average total_putts 33" and
+// "Average total_putts 34.7", with the source read's note for the model under it.
+describe('a figure card for rows says what it is and what it covers', () => {
+  const r = (i: number, type: string, putts: number, three: number) => ({ player: 'Cole Bennett', player_id: 'p-cole', round_date: `2026-10-${String(21 - i).padStart(2, '0')}`, round_type: type, total_putts: putts, three_putts: three, total_score: 74 });
+  const cut = env({ kind: 'team_data', rows: [r(0, 'tournament', 30, 2), r(1, 'practice', 38, 4), r(2, 'tournament', 33, 1), r(3, 'qualifier', 35, 2), r(4, 'tournament', 36, 1)], row_count: 5, total_rows: 124, truncated: true, ordered_by: 'round_date', newest_first: true, noun: 'rounds' }, {
+    coverage: 'partial',
+    coverage_note: 'Showing the first 5 of 124 rows, ordered by round_date (newest first). The other 119 are not shown: say so, and narrow the filters for the rest.',
+  });
+  const titles = (e: ToolEnvelope) => (e.detail as { titles: Record<string, string>; caption?: string }).titles;
+
+  it('names the field as a coach does and the rounds it covers, so two means of one field are told apart', async () => {
+    const e = await run({ source: { ref: 'e1' }, ops: [
+      { op: 'sum', id: 'threes', field: 'three_putts' },
+      { op: 'mean', id: 'putts_all', field: 'total_putts' },
+      { op: 'mean', id: 'putts_t', field: 'total_putts', where: [{ field: 'round_type', op: 'eq', value: 'tournament' }] },
+      { op: 'mean', id: 'score', field: 'total_score' },
+    ] }, { evidence: new Map([['e1', cut]]) });
+    const t = titles(e);
+    expect(t['summary:threes']).toBe('Three-putts, total, all 5 rounds');
+    expect(t['summary:putts_all']).toBe('Putts per round, all 5 rounds');
+    expect(t['summary:putts_t']).toBe('Putts per round, 3 tournament rounds');
+    expect(t['summary:score']).toBe('Scoring average, all 5 rounds');
+    expect(Object.values(t).join(' ')).not.toMatch(/_/);
+  });
+
+  it('a source cut short gives the coach a caption in words; the model keeps its note', async () => {
+    const e = await run({ source: { ref: 'e1' }, ops: [{ op: 'count', id: 'n' }] }, { evidence: new Map([['e1', cut]]) });
+    expect((e.detail as { caption?: string }).caption).toBe('Worked out from the newest 5 of 124 rounds');
+    expect(e.coverage).toBe('partial');
+    expect(e.coverage_note).toMatch(/say so/);
+  });
+});

@@ -1,3 +1,4 @@
+import { MODEL_FACING_NOTE, rowsCaption } from '@/lib/coachhelm/v3/chat/rows-caption';
 import { artifactsOf, type AskArtifact } from '../screens/coachhelm/chat/parts/artifacts';
 import type { UIMessage } from 'ai';
 import type { ReadPictureData } from '../screens/coachhelm/plan/ReadPicture';
@@ -582,7 +583,24 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
     const parsed = ValidatedComposition.safeParse(dataOf<unknown>(p));
     if (parsed.success) compositions.set(String(p.id ?? `c-${i}`), parsed.data);
   });
+  // A model's visual that plots the same metric for the same subjects as a read's own chart stands in for it (the title and the point are the
+  // visual's; the same bars twice are noise). A figure the read could not give (no value) is not a subject the visual could plot.
+  const plotted = new Set<string>();
+  for (const c of compositions.values()) {
+    for (const b of c.blocks as Array<{ measurement?: Measurement; measurements?: Measurement[] }>) {
+      for (const m of [...(b.measurement ? [b.measurement] : []), ...(b.measurements ?? [])]) plotted.add(`${m.entity.id}|${m.metric_id}`);
+    }
+  }
+  const drawnByVisual = (e: ToolEnvelope) => {
+    const valued = e.measurements.filter((m) => m.value !== null);
+    return plotted.size > 0 && e.series.length === 0 && valued.length > 0 && valued.every((m) => plotted.has(`${m.entity.id}|${m.metric_id}`));
+  };
   const coveredRefs = new Set([...[...artifacts.values()].flatMap((a) => a.evidenceRefs), ...[...compositions.values()].flatMap((c) => c.evidenceRefs)]);
+  for (const p of parts) {
+    if (p.type !== 'data-evidence') continue;
+    const d = dataOf<{ ref?: string; envelope?: ToolEnvelope }>(p);
+    if (d?.ref && d.envelope && drawnByVisual(d.envelope)) coveredRefs.add(d.ref);
+  }
 
   const actionBlocks = (): AskBlock[] => {
     const out: AskBlock[] = [];
@@ -939,20 +957,16 @@ const benchOf = (b: Measurement['benchmark'] | MeasurementSeries['benchmark'], u
   b && !b.omitted_for_cohort ? `${benchName(b.source, b.version)}: ${formatValue(b.value, unit)}` : null;
 
 /**
- * What a coach is told about a cut list: "Newest 5 of 127 rounds". A read of records carries its own words for the model in `coverage_note`
- * (column names, what to do next); that is never the coach's caption.
+ * The line under a card when its read was cut short. A coach reads a caption, never the model's note: a note written for the model (it names
+ * columns, says "say so" and "narrow the filters") is replaced by the caption the read's detail yields, and with none it is not drawn.
  */
-export function rowsCaption(detail: unknown): string | null {
-  const d = detail as { kind?: unknown; truncated?: unknown; row_count?: unknown; total_rows?: unknown; ordered_by?: unknown; newest_first?: unknown; noun?: unknown } | null | undefined;
-  if (d?.kind !== 'team_data' || d.truncated !== true || typeof d.row_count !== 'number') return null;
-  const noun = typeof d.noun === 'string' && d.noun ? d.noun : 'rows';
-  const byDate = d.newest_first === true && typeof d.ordered_by === 'string' && /(?:^|_)(?:date|day|at|time)$/.test(d.ordered_by);
-  const lead = byDate ? 'Newest' : 'First';
-  return typeof d.total_rows === 'number' ? `${lead} ${d.row_count} of ${d.total_rows} ${noun}` : `${lead} ${d.row_count} ${noun}, and there may be more`;
-}
-
-const partialNote = (e: { coverage: string; coverage_note: string | null; detail?: unknown }): string | null =>
-  e.coverage !== 'partial' ? null : (rowsCaption(e.detail) ?? (e.coverage_note || null));
+const partialNote = (e: { coverage: string; coverage_note: string | null; detail?: unknown }): string | null => {
+  if (e.coverage !== 'partial') return null;
+  const d = e.detail as { caption?: unknown } | undefined;
+  const caption = rowsCaption(e.detail) ?? (typeof d?.caption === 'string' && d.caption ? d.caption : null);
+  if (caption) return caption;
+  return e.coverage_note && !MODEL_FACING_NOTE.test(e.coverage_note) ? e.coverage_note : null;
+};
 
 /** "of 44", or the sample in words. */
 function ofSample(m: Measurement): string | null {
@@ -1468,9 +1482,13 @@ export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { k
     const label = benchLabel(r.metric_id as string, (r.metric_label ?? cfg.display_label).replace(/^SG:\s*/, 'SG '));
     // The standing is over all recorded rounds; when the figure shown is the answer's window, the places still come from the standing.
     if (num(r.standing_value) && fmt(r.standing_value) !== fmt(you)) windowed.push(r.window_label ?? 'the window');
-    // One plain sentence per metric, the references it lacks each with its reason: "SG Putting: no level figure (no college figure), no team figure (all rounds only)."
-    const lacking = (['level', 'team', 'tour'] as const).filter((k) => val(k) === null).map((k) => `no ${REF_WORD[k].toLowerCase()} figure (${(refs.find((c) => c.kind === k)?.missing_reason ?? 'not available').replace(/\.$/, '')})`);
-    if (lacking.length > 0) missing.push(`${label}: ${lacking.join(', ')}.`);
+    // Plain sentences, one per missing reference: "No college figure for SG Putting." / "No team figure for GIR % (fewer than 5 teammates)."
+    for (const k of ['level', 'team', 'tour'] as const) {
+      if (val(k) !== null) continue;
+      const reason = (refs.find((c) => c.kind === k)?.missing_reason ?? 'not available').replace(/\.$/, '');
+      const sentence = k === 'level' && reason === 'no college figure' ? `No college figure for ${label}.` : k === 'level' && reason === 'not set' ? 'The team’s level is not set.' : `No ${REF_WORD[k].toLowerCase()} figure for ${label} (${reason}).`;
+      if (!missing.includes(sentence)) missing.push(sentence);
+    }
     tableRows.push([label, fmt(you), ...(['level', 'team', 'tour'] as const).map((k) => { const v = val(k); return v === null ? formatValue(null, unit) : fmt(v); })]);
     return {
       label,
@@ -1495,7 +1513,16 @@ export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { k
 }
 
 /** What an empty read says, in its own words (trimmed); the empty string when it says nothing. */
-export const emptyNote = (envelope: ToolEnvelope): string => (envelope.coverage_note?.trim() || envelope.summary?.trim() || '').replace(/\s+/g, ' ');
+/** A note a coach can read: the model's own words (column names, instructions) are replaced by `fallback`. */
+const coachWords = (text: string | null | undefined, fallback: string): string => {
+  const t = (text ?? '').trim();
+  return t && !MODEL_FACING_NOTE.test(t) ? t : fallback;
+};
+
+export const emptyNote = (envelope: ToolEnvelope): string => {
+  const note = (envelope.coverage_note?.trim() || envelope.summary?.trim() || '').replace(/\s+/g, ' ');
+  return MODEL_FACING_NOTE.test(note) ? (envelope.summary?.trim() && !MODEL_FACING_NOTE.test(envelope.summary) ? envelope.summary.trim() : '') : note;
+};
 
 /**
  * A `summarise_data` result. Its `detail` holds the operations' results and, for a list, the rows: the rows are the table (columns picked as any
@@ -1517,17 +1544,18 @@ function summaryBlocks(envelope: ToolEnvelope): AskEvidence[] {
     .filter((m) => m.method !== 'summary_list')
     .map((m) => (typeof titles?.[m.metric_id] === 'string' ? { ...m, metric_label: titles[m.metric_id] as string } : m));
   if (figures.length > 0) {
-    const rest = evidenceBlocks({ ...envelope, detail: undefined, measurements: figures });
+    const caption = (envelope.detail as { caption?: unknown } | undefined)?.caption;
+    const rest = evidenceBlocks({ ...envelope, detail: typeof caption === 'string' ? { caption } : undefined, measurements: figures });
     blocks.push(...rest.filter((b) => b.kind !== 'empty'));
   }
-  if (blocks.length === 0) return envelope.coverage === 'empty' ? [{ kind: 'empty', note: envelope.coverage_note?.trim() || 'No rows matched.' }] : [];
+  if (blocks.length === 0) return envelope.coverage === 'empty' ? [{ kind: 'empty', note: coachWords(envelope.coverage_note, 'No rows matched.') }] : [];
   return blocks;
 }
 
 /** One tool's output as the block this screen draws. The choice is made from the SHAPE of the evidence, never from what the model asked for. */
 export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
   // A failed read is never "no data": it is the honest "could not read this".
-  if (envelope.coverage === 'unavailable') return [{ kind: 'unavailable', note: envelope.coverage_note?.trim() || envelope.summary || 'The read did not come back.' }];
+  if (envelope.coverage === 'unavailable') return [{ kind: 'unavailable', note: coachWords(envelope.coverage_note, coachWords(envelope.summary, 'The read did not come back.')) }];
   // Golf knowledge and metric definitions are words, not figures: they show as the step that read them and as chips in the answer's prose, never as a card.
   const kind = (envelope.detail as { kind?: unknown } | undefined)?.kind;
   if (kind === 'reference' || kind === 'definition') return [];

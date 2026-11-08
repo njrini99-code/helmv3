@@ -1972,13 +1972,18 @@ a.ch-th-reads__r:focus-visible {
 }
 /* A note, labelled for the kind of claim it is. */
 .ch-th-cv__note {
+  /* The kind pill sits on its own line above the sentence: beside it, "Measured" read as the sentence's first word. */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
   font: var(--ch-type-15);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-th-cv__kind {
   display: inline-block;
-  margin-right: 6px;
+  margin-right: 0;
   padding: 1px 8px;
   border-radius: 999px;
   font: var(--ch-type-12-strong);
