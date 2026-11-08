@@ -21598,6 +21598,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/ask-reads.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/ask-reads.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/persistence.ts",
           "anchor": "src/lib/supabase/untyped"
         },
@@ -21889,6 +21899,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/__tests__/season-reads.test.ts",
           "anchor": "src/clubhouse/data/season"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/__tests__/team-strokes-gained-read.test.ts",
+          "anchor": "src/clubhouse/data/team-sg"
         },
         {
           "kind": "import_graph",
@@ -22490,6 +22505,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/ask-reads.ts",
+          "anchor": "src/lib/golf/class-day-shape"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/ask-reads.ts",
+          "anchor": "src/lib/golf/timezone"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/context.ts",
           "anchor": "src/lib/golf/resolve-team-server"
         },
@@ -22946,6 +22971,16 @@
       "target": "team_operations",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/ask-reads.ts",
+          "anchor": "src/lib/golf/practice-db"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/ask-reads.ts",
+          "anchor": "src/lib/golf/practice-errors"
+        },
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/create-tools.ts",
