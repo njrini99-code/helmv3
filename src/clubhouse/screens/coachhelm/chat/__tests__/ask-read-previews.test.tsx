@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 
-import { zeroBasedDomain, benchmarkBlock, comparisonWords, detailTable, evidenceBlocks, withWindowFigures, fitToPhone, PHONE_TABLE_PX, type AskTable } from '../../../../data/coachhelm-chat-thread';
+import { buildAssistantTurn, goalsTable, zeroBasedDomain, benchmarkBlock, comparisonWords, detailTable, evidenceBlocks, withWindowFigures, fitToPhone, PHONE_TABLE_PX, type AskTable } from '../../../../data/coachhelm-chat-thread';
 import { AskEvidenceView } from '../Evidence';
 import { lastTurnIsGeneral } from '../ask-scope-window';
 import type { ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
@@ -252,5 +252,82 @@ describe('the track never starts above zero (a fill under a truncated baseline o
     expect(parseFloat(fill.style.left)).toBeCloseTo(row.pct, 6);
     expect(parseFloat(fill.style.width)).toBeCloseTo(50 - row.pct, 6);
     expect(container.querySelector('.ch-th-bar__zero')).not.toBeNull();
+  });
+});
+
+describe('an empty read draws one card, once', () => {
+  const empty = (summary: string, over: Partial<ToolEnvelope> = {}) => env(summary, { rows: [] }, { coverage: 'empty', ...over });
+  const evidence = (id: string, envelope: ToolEnvelope) => ({ type: 'data-evidence', id, data: { tool: 'get_attendance_summary', envelope, ref: id } });
+  const blocksOf = (...envelopes: ToolEnvelope[]) => {
+    const turn = buildAssistantTurn({ id: 'a1', role: 'assistant', parts: envelopes.map((e, i) => evidence(`x${i}`, e)) } as never, { isLast: false, busy: false });
+    if (turn.role !== 'assistant') throw new Error('assistant turn expected');
+    return turn.blocks.filter((b) => b.kind === 'evidence');
+  };
+
+  it('the same empty read made twice is one card, and a read that says nothing at all is none', () => {
+    expect(blocksOf(empty('No attendance on record.'), empty('No attendance on record.'))).toHaveLength(1);
+    expect(blocksOf(empty('No attendance on record.'), empty('  No attendance  on record. '))).toHaveLength(1);
+    expect(blocksOf(empty('')).length).toBe(0);
+    expect(blocksOf(empty('No attendance on record.'), empty('No goals set.'))).toHaveLength(2);
+  });
+
+  it('draws the note as the card, not the generic lead-in on top of a note that already says it', () => {
+    const { container } = render(<AskEvidenceView envelope={empty('No attendance on record.')} />);
+    expect(container.textContent).toBe('No attendance on record.');
+    const other = render(<AskEvidenceView envelope={empty('Cole has 0 rounds in the window.')} />);
+    expect(other.container.textContent).toBe('Nothing recorded for this yet. Cole has 0 rounds in the window.');
+  });
+
+  it('keeps the default line only when an empty read is drawn directly; the thread drops a wordless one (above), and one card is one .ch-th-read', () => {
+    expect(evidenceBlocks(empty(''))).toEqual([{ kind: 'empty', note: 'Nothing is recorded for this yet.' }]);
+    const { container } = render(<AskEvidenceView envelope={empty('No attendance on record.')} />);
+    expect(container.querySelectorAll('.ch-th-read')).toHaveLength(1);
+  });
+});
+
+describe('a reloaded turn draws the same table as the live one', () => {
+  // Postgres jsonb hands an object's keys back shortest first, not in the order they were written: the stored turn is the live one reordered.
+  const jsonb = (v: unknown): unknown =>
+    Array.isArray(v) ? v.map(jsonb) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v as object).sort(([a], [b]) => a.length - b.length || (a < b ? -1 : 1)).map(([k, x]) => [k, jsonb(x)])) : v;
+  const goal = (n: number, over: Record<string, unknown> = {}) => ({
+    goal_id: `g${n}`, player_id: `p${n}`, player: ['Cole Bennett', 'Owen Carter', 'Eli Brandt'][n % 3], title: `Goal ${n}`, category: ['putting', 'approach'][n % 2], metric_id: 'sg_putting',
+    state: 'active', set_by: 'manual', baseline_value: 1, current_value: 2, target_value: 3, started_at: '2026-10-01', ends_at: '2026-12-01', ...over,
+  });
+  const goals = env('5 active goals.', { goals: [0, 1, 2, 3, 4].map((n) => goal(n)) });
+  const columns = (e: ToolEnvelope) => {
+    const b = evidenceBlocks(e).find((x) => x.kind === 'table');
+    return b && b.kind === 'table' ? b.table.columns : null;
+  };
+  const stored = (e: ToolEnvelope) => ({ ...e, detail: jsonb(e.detail) }) as ToolEnvelope;
+
+  it('the goals table is Player, Title, Category, State, live and stored, and never an internal field', () => {
+    expect(columns(goals)).toEqual(['Player', 'Title', 'Category', 'State']);
+    expect(columns(stored(goals))).toEqual(['Player', 'Title', 'Category', 'State']);
+    expect(Object.keys((stored(goals).detail as { goals: object[] }).goals[0]!).slice(0, 2)).not.toEqual(['player_id', 'player']);
+  });
+
+  it('shows the words a coach reads, and the same cells in the same order after the reload', () => {
+    const live = evidenceBlocks(goals).find((x) => x.kind === 'table');
+    const back = evidenceBlocks(stored(goals)).find((x) => x.kind === 'table');
+    expect(live && back && live.kind === 'table' && back.kind === 'table' && back.table.rows).toEqual(live && live.kind === 'table' ? live.table.rows : null);
+    const all = JSON.stringify(evidenceBlocks(stored(goals)));
+    expect(all).not.toMatch(/Manual|Set by|manual/);
+  });
+
+  it('draws the same through the thread builder, from a stored turn', () => {
+    const turn = buildAssistantTurn({ id: 'a1', role: 'assistant', parts: [{ type: 'data-evidence', id: 'x', data: { tool: 'get_goals', envelope: stored(goals), ref: 'e1' } }] } as never, { isLast: false, busy: false });
+    if (turn.role !== 'assistant') throw new Error('assistant turn expected');
+    const ev = turn.blocks.find((b) => b.kind === 'evidence');
+    if (!ev || ev.kind !== 'evidence') throw new Error('evidence block expected');
+    const { container } = render(<AskEvidenceView envelope={ev.envelope} />);
+    expect(Array.from(container.querySelectorAll('thead th')).map((h) => h.textContent)).toEqual(['Player', 'Title', 'Category', 'State']);
+  });
+
+  it('a goalsTable leaves out a column nobody has, and the generic record table keeps one order whichever way the keys arrive', () => {
+    expect(goalsTable({ goals: [goal(0, { category: null })] }, 'x')!.columns).toEqual(['Player', 'Title', 'State']);
+    const tasks = env('2 open tasks.', { tasks: [{ task_id: 't1', title: 'Book bus', due_date: '2026-10-29', status: 'pending', priority: 'high' }, { task_id: 't2', title: 'Order balls', due_date: '2026-10-31', status: 'pending', priority: 'low' }] });
+    expect(columns(tasks)).toEqual(columns(stored(tasks)));
+    const sourced = env('rows', { rows: [{ player: 'Cole', title: 'x', source: 'stats cache', set_by: 'manual', state: 'active' }] });
+    expect(columns(sourced)).toEqual(['Player', 'Title', 'State']);
   });
 });

@@ -558,7 +558,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 1px;
+  width: var(--ch-hairline-w, 1px);
   background: var(--ch-text-tertiary);
 }
 /* A benchmark row stacks: the label and the value, the track across the card, the three references in words. */

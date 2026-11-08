@@ -14,6 +14,8 @@ import { Line } from '../../../ui/charts/Line';
 import { changeTone, formatToPar } from '../../../lib/format';
 import { plural } from '../../../lib/plural';
 
+const SAYS_NONE = /\b(?:on record|recorded|nothing|no [a-z ]+ (?:yet|found))\b/i;
+
 /** Who is on the coach's team: a read about anyone else is drawn, never linked. */
 type Roster = ReadonlyArray<{ id: string }>;
 
@@ -85,7 +87,12 @@ export function AskEvidenceBlock({ block, bare = false, roster = [] }: { block: 
     return (
       <div className="ch-th-read" data-ch-code="CH-13350">
         <p>
-          <b>Nothing recorded for this yet.</b> {block.note}
+          {/* A note that already says nothing is recorded is the card; the generic lead-in would say it twice. */}
+          {SAYS_NONE.test(block.note) ? block.note : (
+            <>
+              <b>Nothing recorded for this yet.</b> {block.note}
+            </>
+          )}
         </p>
       </div>
     );

@@ -470,6 +470,7 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
     .map((p) => dataOf<{ envelope?: ToolEnvelope }>(p)?.envelope)
     .filter((e): e is ToolEnvelope => Boolean(e));
   const paired = pairProposals(parts, ctx);
+  const emptySeen = new Set<string>();
   const active = ctx.isLast && ctx.busy;
   // A validated visual stands in for the generic blocks of the reads it was built from: the same figures drawn twice is noise.
   const artifacts = new Map<string, ValidatedVisualArtifact>();
@@ -522,7 +523,15 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
       texts.push(plainText(text));
     } else if (p.type === 'data-evidence') {
       const data = dataOf<{ envelope?: ToolEnvelope; ref?: string }>(p);
-      if (data?.envelope && !(data.ref && coveredRefs.has(data.ref))) blocks.push({ kind: 'evidence', key: `e-${String(p.id ?? i)}`, envelope: withWindowFigures(data.envelope, envelopes) });
+      if (data?.envelope && !(data.ref && coveredRefs.has(data.ref))) {
+        // An empty read says so once: a second one with the same words (the same read made twice) adds a card and no information.
+        const note = data.envelope.coverage === 'empty' ? emptyNote(data.envelope) : null;
+        if (note !== null) {
+          if (!note || emptySeen.has(note)) return;
+          emptySeen.add(note);
+        }
+        blocks.push({ kind: 'evidence', key: `e-${String(p.id ?? i)}`, envelope: withWindowFigures(data.envelope, envelopes) });
+      }
     } else if (p.type === 'data-visual-artifact') {
       const artifact = artifacts.get(String(p.id ?? `v-${i}`));
       if (artifact) blocks.push({ kind: 'visual', key: `v-${artifact.artifactId}`, artifact });
@@ -916,6 +925,24 @@ export function fitToPhone(table: AskTable | null): AskTable | null {
   return n < 1 ? null : { ...table, columns: table.columns.slice(0, n), rows: table.rows.map((r) => r.slice(0, n)) };
 }
 
+/**
+ * Fields the tool keeps for itself: who set a goal, where a figure came from, which metric a row is about. They are not for a coach to read.
+ */
+const INTERNAL_COLUMN = /^(?:set_by|source|origin|method|metric|metric_id|record_type|visibility|version)$/;
+
+/**
+ * The order a generic record table lists its fields in. A stored turn comes back from a jsonb column, which hands an object's keys back
+ * shortest first (not in the order the tool wrote them), so the live table and the reloaded one disagreed. Reading a row by this fixed
+ * priority, then by jsonb's own order for anything not listed, gives both paths the same columns in the same order.
+ */
+const COLUMN_PRIORITY = ['player', 'name', 'title', 'category', 'event_type', 'kind', 'state', 'starts_at', 'start_time', 'start_date', 'ends_at', 'end_time', 'end_date', 'due_date', 'date', 'status', 'priority', 'location'];
+const jsonbOrder = (a: string, b: string) => a.length - b.length || (a < b ? -1 : a > b ? 1 : 0);
+const columnOrder = (a: string, b: string) => {
+  const ia = COLUMN_PRIORITY.indexOf(a);
+  const ib = COLUMN_PRIORITY.indexOf(b);
+  return ia !== -1 || ib !== -1 ? (ia === -1 ? 1 : ib === -1 ? -1 : ia - ib) : jsonbOrder(a, b);
+};
+
 export function detailTable(detail: unknown, caption: string): AskTable | null {
   if (!detail || typeof detail !== 'object') return null;
   const lists = Object.values(detail as Record<string, unknown>).filter((v): v is Array<Record<string, unknown>> => Array.isArray(v) && v.length > 0 && v.every((r) => r && typeof r === 'object' && !Array.isArray(r)));
@@ -924,11 +951,26 @@ export function detailTable(detail: unknown, caption: string): AskTable | null {
   const timezone = textOf((detail as Record<string, unknown>).timezone);
   // A start and end time say when; ids, record stamps and a flag that is the same on every row say nothing.
   const keys = Object.keys(rows[0] ?? {})
-    .filter((k) => !/(^id$|_id$|^type$|^created_at$|^updated_at$|^timezone$)/.test(k) && rows.some((r) => isPlain(r[k]) && r[k] !== ''))
+    .filter((k) => !/(^id$|_id$|^type$|^created_at$|^updated_at$|^timezone$)/.test(k) && !INTERNAL_COLUMN.test(k) && rows.some((r) => isPlain(r[k]) && r[k] !== ''))
     .filter((k) => !(rows.every((r) => typeof r[k] === 'boolean') && rows.every((r) => r[k] === false)))
+    .sort(columnOrder)
     .slice(0, 4);
   if (keys.length === 0) return null;
   return fitToPhone({ caption, columns: keys.map(headingOf), rows: rows.slice(0, 8).map((r) => keys.map((k) => (isPlain(r[k]) && r[k] !== '' ? humanCell(r[k] as string | number | boolean, timezone) : NO_DATA))) });
+}
+
+/**
+ * The team's goals (`get_goals`: `detail.goals`) as Player, Title, Category, State, in that order whether the turn is live or read back from
+ * storage. A column no goal has a value for is left out; the tool's internal fields (who set it, the metric id) are never columns.
+ */
+export function goalsTable(detail: unknown, caption: string): AskTable | null {
+  const goals = (detail as { goals?: unknown } | null | undefined)?.goals;
+  if (!Array.isArray(goals) || goals.length === 0) return null;
+  const list = goals.filter((g): g is Record<string, unknown> => !!g && typeof g === 'object');
+  const columns: Array<[string, string]> = [['Player', 'player'], ['Title', 'title'], ['Category', 'category'], ['State', 'state']];
+  const shown = columns.filter(([, k]) => list.some((g) => isPlain(g[k]) && g[k] !== ''));
+  if (shown.length === 0) return null;
+  return fitToPhone({ caption, columns: shown.map(([name]) => name), rows: list.slice(0, 8).map((g) => shown.map(([, k]) => (isPlain(g[k]) && g[k] !== '' ? humanCell(g[k] as string | number | boolean, null) : formatValue(null, 'count')))) });
 }
 
 /**
@@ -953,7 +995,7 @@ export function roundsTable(detail: unknown, caption: string): AskTable | null {
     ['Strokes gained', (r) => (num(r.sg_total) === null ? null : formatValue(num(r.sg_total), 'strokes'))],
   ];
   const shown = columns.filter(([, cell]) => list.some((r) => cell(r) !== null));
-  return { caption, columns: shown.map(([name]) => name), rows: list.slice(0, 8).map((r) => shown.map(([, cell]) => cell(r) ?? NO_DATA)) };
+  return { caption, columns: shown.map(([name]) => name), rows: list.slice(0, 8).map((r) => shown.map(([, cell]) => cell(r) ?? formatValue(null, 'count'))) };
 }
 
 function seriesTable(s: MeasurementSeries): AskTable {
@@ -1233,7 +1275,7 @@ export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { k
     // The standing is over all recorded rounds; when the figure shown is the answer's window, the places still come from the standing.
     if (num(r.standing_value) && fmt(r.standing_value) !== fmt(you)) windowed.push(r.window_label ?? 'the window');
     for (const k of ['level', 'team', 'tour'] as const) if (val(k) === null) missing.push(`${label}: ${REF_WORD[k].toLowerCase()} ${refs.find((c) => c.kind === k)?.missing_reason ?? 'not available'}`);
-    tableRows.push([label, fmt(you), ...(['level', 'team', 'tour'] as const).map((k) => { const v = val(k); return v === null ? NO_DATA : fmt(v); })]);
+    tableRows.push([label, fmt(you), ...(['level', 'team', 'tour'] as const).map((k) => { const v = val(k); return v === null ? formatValue(null, unit) : fmt(v); })]);
     return {
       label,
       pct: domainPct(you, scale),
@@ -1256,6 +1298,9 @@ export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { k
   };
 }
 
+/** What an empty read says, in its own words (trimmed); the empty string when it says nothing. */
+export const emptyNote = (envelope: ToolEnvelope): string => (envelope.coverage_note?.trim() || envelope.summary?.trim() || '').replace(/\s+/g, ' ');
+
 /** One tool's output as the block this screen draws. The choice is made from the SHAPE of the evidence, never from what the model asked for. */
 export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
   // A failed read is never "no data": it is the honest "could not read this".
@@ -1268,7 +1313,7 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
     const b = benchmarkBlock(envelope);
     return b ? [b] : [];
   }
-  if (envelope.coverage === 'empty') return [{ kind: 'empty', note: envelope.coverage_note?.trim() || envelope.summary || 'Nothing is recorded for this yet.' }];
+  if (envelope.coverage === 'empty') return [{ kind: 'empty', note: emptyNote(envelope) || 'Nothing is recorded for this yet.' }];
 
   const blocks: AskEvidence[] = [];
   const ms = envelope.measurements;
@@ -1378,7 +1423,7 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
   // Nothing above drew it (a tool whose output is a list of records, or a kind added later): its real table, or no block at all. A
   // placeholder table read as a broken chart, one row saying "Read" under the headings Read and Result (QA-2).
   if (blocks.length === 0) {
-    const table = roundsTable(envelope.detail, envelope.summary) ?? detailTable(envelope.detail, envelope.summary);
+    const table = roundsTable(envelope.detail, envelope.summary) ?? goalsTable(envelope.detail, envelope.summary) ?? detailTable(envelope.detail, envelope.summary);
     if (table) blocks.push({ kind: 'table', title: envelope.summary, source: null, note: partialNote(envelope), bench: null, table });
   }
   return blocks;
