@@ -256,7 +256,6 @@
  "6a787fb4": {
   "expect": "rejected",
   "why": "Says Owen is \"7th of the 7 players\" and \"the weakest on the team\" on approach SG. Ethan Park (-4.40) is lower, so he is 6th of 7. Parent-supplied wrong accept.",
-  "knownWrongAccept": true,
   "evidenceHeldWrong": "Same all-rounds place attached to a last-10 measurement."
  },
  "6da3a6b2": {
