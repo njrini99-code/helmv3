@@ -314,6 +314,8 @@ export function auditCited(args: { surface?: 'coach' | 'player'; /** Derived cou
     console.info('[ask:citations]', JSON.stringify({ surface: args.surface ?? 'coach', ...(args.cites?.label ? { turn: args.cites.label } : {}), says: args.base[0].replace(/\s+/g, ' ').slice(0, 60), ...citations }));
     // The cites that did not verify, with why: a mismatch withholds the turn, so a developer needs to see whether the model or the matching was wrong.
     const bad = checked.filter((c) => c.status !== 'verified').map((c) => ({ v: c.cite.v, ref: c.cite.ref, key: c.cite.key, subject: c.cite.subject.slice(0, 8), w: c.cite.w, status: c.status, why: c.reason }));
+    // Every cite the model wrote, for the eval capture (the block is withheld from the stream, so a captured turn would replay without it).
+    console.info('[ask:cites]', JSON.stringify({ surface: args.surface ?? 'coach', ...(args.cites?.label ? { turn: args.cites.label } : {}), says: args.base[0].replace(/\s+/g, ' ').slice(0, 60), cites: checked.map((c) => (c.cite.c ? [c.cite.v, c.cite.ref, c.cite.key, c.cite.subject, 'c'] : [c.cite.v, c.cite.ref, c.cite.key, c.cite.subject])) }));
     if (bad.length > 0) console.info('[ask:cites-not-verified]', JSON.stringify({ surface: args.surface ?? 'coach', says: args.base[0].replace(/\s+/g, ' ').slice(0, 60), cites: bad }));
   }
   // A cited figure the evidence it names does not hold is a misattribution however the words around it read, even when the text heuristics would have passed it.
