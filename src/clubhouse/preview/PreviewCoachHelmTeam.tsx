@@ -5,6 +5,7 @@ import { courseReads, STATIONS, stationFigures, storiesOf } from '../data/coachh
 import { TeamBoard, type TeamBoardOpen, type TeamStation } from '../screens/coachhelm/team/TeamBoard';
 import { TeamBoardSkeleton } from '../screens/coachhelm/team/TeamBoardSkeleton';
 import { PREVIEW_TEAM_BOARD } from './fixtures-coachhelm-team';
+import { PREVIEW_TRACK_RECORD } from './fixtures-coachhelm-track';
 
 const STATION_KEY: Record<string, TeamStation> = { tee: 'tee', app: 'approach', sg: 'short_game', putt: 'putting', course: 'course' };
 
@@ -17,15 +18,20 @@ function stateData(state: string | undefined): ChTeamBoardData {
   }
   if (state === 'empty') {
     const empty: ChTeamPlayer[] = list.map((p) => ({ ...p, rounds: 0, early: true, reads: { needs: [], working: [] }, total: null, worst: null, legs: Object.fromEntries(STATIONS.map((s) => [s, { strokes: null, rounds: 0, missing: 'No rounds yet.' }])) as ChTeamPlayer['legs'] }));
-    return { ...base, players: { list: empty, error: false }, stations: stationFigures(empty), teamTotal: { strokes: null, rounds: 0 }, course: { history: null, reads: [], against: null } };
+    return { ...base, players: { list: empty, error: false }, stations: stationFigures(empty), teamTotal: { strokes: null, rounds: 0 }, course: { history: null, reads: [], against: null }, record: { status: 'ok', value: { ...PREVIEW_TRACK_RECORD, empty: true } as never } };
   }
   if (state === 'failed') return { ...base, brief: { status: 'failed' }, record: { status: 'failed' } } as ChTeamBoardData;
   if (state === 'failed-all') return { ...base, players: { list: [], error: true } };
   if (state === 'partial') return { ...base, players: { list: [], error: true } };
   if (state === 'noplayers') return { ...base, roster: { count: 0, error: false }, players: { list: [], error: false } };
+  // The figures staging really produced, which sank the hole's halos and labels: one early player carrying the whole board (TEAM-1 to TEAM-5).
+  if (state === 'stress') {
+    const stress: ChTeamPlayer = { ...(list[3] as ChTeamPlayer), id: 'pl-stress', name: 'Cole Bennett', first: 'Cole', rounds: 3, early: true, total: 0.5, worst: 'putting', legs: { tee: { strokes: 2.5, rounds: 3, missing: null }, approach: { strokes: 1.9, rounds: 3, missing: null }, short_game: { strokes: 0, rounds: 3, missing: null }, putting: { strokes: -3.9, rounds: 3, missing: null } } };
+    return { ...base, team: { ...base.team, name: 'Demo University Golf' }, roster: { count: 1, error: false }, players: { list: [stress], error: false }, stations: stationFigures([stress]), teamTotal: { strokes: 0.5, rounds: 3 } };
+  }
   if (state === 'long') {
     const worst: ChStation = 'approach';
-    const many = Array.from({ length: 15 }, (_, i) => ({ ...(list[i % list.length] as ChTeamPlayer), id: `pl-long-${i}`, name: i % 2 ? 'Elijah Brandt-Whitaker' : 'Priyanka Natarajan-Okonkwo', worst }));
+    const many = Array.from({ length: 15 }, (_, i) => ({ ...(list[i % list.length] as ChTeamPlayer), id: `pl-long-${i}`, first: i % 2 ? 'Elijah' : 'Priyanka', name: i % 2 ? 'Elijah Brandt-Whitaker' : 'Priyanka Natarajan-Okonkwo', worst }));
     return { ...base, roster: { count: 15, error: false }, players: { list: many, error: false } };
   }
   return base;
@@ -45,7 +51,7 @@ function openOf(data: ChTeamBoardData, station: TeamStation, open: string | unde
     return p ? { kind: 'player', id: p.id } : undefined;
   }
   if (open === 'course') {
-    const c = data.course.history?.courses[0];
+    const c = data.course.history?.courses.find((x) => x.id === 'hill') ?? data.course.history?.courses[0];
     return c ? { kind: 'course', id: c.id } : undefined;
   }
   if (open === 'story') {

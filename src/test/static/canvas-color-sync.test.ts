@@ -74,7 +74,7 @@ const darkToken = parseOklch(tokens.slice(darkStart).match(canvasDecl)![1]!);
 /** Clubhouse's page at phone width (the app is always phone width): the light value in the phone block, the dark in the dark theme. */
 const ch = read('src/clubhouse/styles/tokens.css');
 const chPage = /--ch-bg-page:\s*(#[0-9a-fA-F]{6});/;
-const chPhone = ch.slice(ch.search(/@media \(max-width: 820px\) \{\s*\[data-ui='clubhouse'\] \{/));
+const chPhone = ch.slice(ch.search(/@media \(max-width: 820px\)[^{]*\{\s*\[data-ui='clubhouse'\] \{/));
 const chDark = ch.slice(ch.search(/html\[data-fw-theme='dark'\] \[data-ui='clubhouse'\] \{/));
 const chLightToken = hexToRgb(chPhone.match(chPage)![1]!);
 const chDarkToken = hexToRgb(chDark.match(chPage)![1]!);

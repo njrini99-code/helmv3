@@ -257,7 +257,7 @@ describe('P009-A1 standings on hand-hung plates', () => {
 
   it('phone: one header for the board, then a row a player with Pos, Player, the plate over its Total (row 75) and Thru; no labels repeated in the rows', () => {
     const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     try {
       wrap(<QualifierDetail data={live()} writes={fakeWrites()} live={false} />);
       const heads = document.querySelectorAll('.ch-qfm-lbhead');

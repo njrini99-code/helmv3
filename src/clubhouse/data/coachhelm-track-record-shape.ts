@@ -82,6 +82,9 @@ export type ChTrackRecord =
       since: string;
       /** The program line, 02 §9. */
       program: string;
+      /** Every rechecked read in the window, level or no level: the headline's figures, which the rungs' bars can't add up to. */
+      held: number;
+      rechecked: number;
       /** Reads shown before the claim ladder, counted in the program line and in no level; null when none. */
       unrated: string | null;
       /** The staff's corrections, 03 §7.3; null when corrections are not recorded yet. */
@@ -184,6 +187,8 @@ export function toChTrackRecord(tr: TrackRecord, opts: { since: string; correcti
     state: 'ready',
     since,
     program: programLine(tr, since),
+    held: tr.program.held,
+    rechecked: tr.program.rechecked,
     unrated:
       unratedShown > 0
         ? `${plural(unratedShown, 'read')} ${unratedShown === 1 ? 'was' : 'were'} shown before reads carried a level, so ${unratedShown === 1 ? 'it counts' : 'they count'} above and in no level below.`

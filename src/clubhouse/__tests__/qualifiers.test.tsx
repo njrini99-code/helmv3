@@ -189,7 +189,7 @@ describe('Qualifiers · the standings model', () => {
       expect(card!.querySelector('.ch-qf-you-line__me b')!.textContent).toBe(`Place ${(me.tied ? 'T' : '') + me.position}`);
       cleanup();
       const real = window.matchMedia;
-      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
       try {
         wrap(<QualifierDetail data={previewDetail(0, 'player')} writes={fakeWrites()} live={false} />);
         expect(code('CH-09908')).not.toBeNull();
@@ -259,7 +259,7 @@ describe('Qualifiers · the standings model', () => {
       expect(code('CH-09908')!.textContent).not.toMatch(/Inside|Outside|Top-score line/);
       cleanup();
       const real = window.matchMedia;
-      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
       try {
         wrap(<QualifierDetail data={data} writes={fakeWrites()} live={false} />);
         expect(code('CH-09908')!.textContent).toContain(`${words.label} ${words.text}`);
@@ -1204,7 +1204,7 @@ describe('Qualifiers · a refresh that fails keeps the standings it had (owner r
 
   it('CH-09220 CH-09304 the same on the phone: an empty last-good board keeps the notice', () => {
     const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     try {
       const d = detail('upcoming');
       const { rerender } = render(tree(d));
@@ -1220,7 +1220,7 @@ describe('Qualifiers · a refresh that fails keeps the standings it had (owner r
 
   it('CH-09220 the same on the phone: the cards of the last good standings stay, with the notice', () => {
     const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     try {
       const d = detail();
       const { rerender } = render(tree(d));
@@ -1341,7 +1341,7 @@ describe('Qualifiers · the courses and the cards stream behind the standings (o
 
   it('CH-09410 on the phone the sheet of a round has its head and total at once and the nines when they land', async () => {
     const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     try {
       const user = userEvent.setup();
       const { core, secondary } = split(detail());
@@ -1418,7 +1418,7 @@ describe('Qualifiers · the list comes back as it was left, and Back is a real B
   const backLink = (name = 'Qualifiers') => screen.getByRole('link', { name });
   const asPhone = () => {
     const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     return () => {
       window.matchMedia = real;
     };
@@ -2349,7 +2349,7 @@ describe('Qualifiers · races and pending scope (owner rules 2 and 4, 2026-10-01
   describe('on the phone', () => {
     const real = window.matchMedia;
     beforeEach(() => {
-      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     });
     afterEach(() => {
       window.matchMedia = real;
@@ -2767,7 +2767,7 @@ describe('Qualifiers · Manage selections', () => {
 describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
   const real = window.matchMedia;
   beforeEach(() => {
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
   });
   afterEach(() => {
     window.matchMedia = real;

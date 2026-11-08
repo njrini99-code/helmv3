@@ -622,7 +622,7 @@ describe('CoachHelm for the player, on screen', () => {
       await user.click(inList('Also worth knowing').getByRole('button', { name: /Penalty strokes/ }));
       expect(scroll).not.toHaveBeenCalled();
       cleanup();
-      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
       showPlayer(PREVIEW_HELM_PLAYER);
       await user.click(inList('Also worth knowing').getByRole('button', { name: /Penalty strokes/ }));
       expect(scroll).toHaveBeenCalledTimes(1);
@@ -871,17 +871,6 @@ describe('CoachHelm for the coach, on screen', () => {
     cleanup();
     render(wrap(<CoachBoard data={PREVIEW_HELM_COACH_OFF} writes={okWrites()} trackRecordHref="/golf/dashboard/coachhelm?view=track-record" />));
     expect(code('CH-13969')).toBeNull();
-  });
-
-  it('CH-13938 the Brief link is drawn only when the route hands its address over (flag on), and never with CoachHelm off', () => {
-    showCoach();
-    expect(code('CH-13938')).toBeNull();
-    cleanup();
-    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH} writes={okWrites()} briefHref="/golf/dashboard/coachhelm?view=brief" />));
-    expect(within(code('CH-13938') as HTMLElement).getByRole('link', { name: 'Brief' }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=brief');
-    cleanup();
-    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH_OFF} writes={okWrites()} briefHref="/golf/dashboard/coachhelm?view=brief" />));
-    expect(code('CH-13938')).toBeNull();
   });
 
   it('CH13-4 D4 the header counts the players with an open signal, never the rows behind them; the pulse is one collapsed line in it, up to three items, in their own words', async () => {
@@ -1259,7 +1248,7 @@ describe('CoachHelm for the coach, on screen', () => {
 
   it('on the phone the page is its own layout: the same boards, with the players as a row of pills', () => {
     const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     try {
       showCoach();
       expect(document.querySelector('.ch-hl.is-phone')).not.toBeNull();

@@ -213,7 +213,8 @@ export function CapacitorProvider() {
     if (!viewport || !window.matchMedia('(pointer: coarse)').matches) return undefined;
     const publish = () => {
       const inset =
-        viewport.scale > 1.01 ? 0 : Math.max(0, Math.round(window.innerHeight - viewport.height - viewport.offsetTop));
+        // clientHeight, not innerHeight: Safari 26 shrinks innerHeight with the visible area, so that sum read 0 with the keyboard up and every sheet's Save sat under the keys (MOB-SHELL-1, ASK-2).
+        viewport.scale > 1.01 ? 0 : Math.max(0, Math.round(document.documentElement.clientHeight - viewport.height));
       document.documentElement.style.setProperty('--keyboard-height', `${inset}px`);
       document.body.classList.toggle('keyboard-open', inset > 120);
     };

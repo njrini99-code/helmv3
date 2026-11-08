@@ -21,45 +21,18 @@ import { plural } from '../lib/plural';
  * priority word; a section whose read failed is named in `missing`, never drawn as empty.
  */
 
-export const COACH_BRIEF_HREF = '/golf/dashboard/coachhelm?view=brief';
 const BOARD = '/golf/dashboard/coachhelm';
-
-/** The Brief's sections, in order. `?section=` (from an old /intelligence link) scrolls to one. */
-export const BRIEF_SECTIONS = ['week', 'patterns', 'working', 'record', 'goals'] as const;
-export type ChBriefSection = (typeof BRIEF_SECTIONS)[number];
-
-export function isBriefSection(v: unknown): v is ChBriefSection {
-  return typeof v === 'string' && (BRIEF_SECTIONS as readonly string[]).includes(v);
-}
-
-/** The DOM id of a section, so the screen and an old link agree on where it is. */
-export const briefSectionId = (s: ChBriefSection) => `ch-hbr-${s}`;
-
-/** The Brief's address, on one section. */
-export function briefHref(section?: ChBriefSection | null): string {
-  return section && section !== 'week' ? `${COACH_BRIEF_HREF}&section=${section}` : COACH_BRIEF_HREF;
-}
 
 /**
  * Where an old `/intelligence` address goes in Clubhouse (swap audit §14 D6). `?view=chat` is Ask; `?player=` opens the board on
- * that player, as it always has (a coach following a player link wants that player's read and Assign). With the Brief on, the rest
- * lands on the matching section: Signals' alerts and insights on this week's reads, Signals' patterns on the team pattern, Players
- * (the old Development plans) on what players are working on, Effectiveness on the track record, and anything else at the top.
- * With it off, every one of them is the board, as before (CH-13998).
+ * that player, as it always has; anything else is the board. The Brief tab is gone (Dashboard cuts, 2026-11-07), and these loaders feed the Team board.
  */
-export function intelligenceTarget(q: URLSearchParams, briefOn: boolean, player: string | null): string {
-  const view = q.get('view');
-  if (view === 'chat' || player || !briefOn) {
-    const next = new URLSearchParams();
-    if (player) next.set('player', player);
-    if (view === 'chat') next.set('view', 'ask');
-    const query = next.toString();
-    return query ? `${BOARD}?${query}` : BOARD;
-  }
-  if (view === 'signals') return briefHref(q.get('filter') === 'patterns' ? 'patterns' : 'week');
-  if (view === 'players') return briefHref('working');
-  if (view === 'effectiveness') return briefHref('record');
-  return briefHref(null);
+export function intelligenceTarget(q: URLSearchParams, player: string | null): string {
+  const next = new URLSearchParams();
+  if (player) next.set('player', player);
+  if (q.get('view') === 'chat') next.set('view', 'ask');
+  const query = next.toString();
+  return query ? `${BOARD}?${query}` : BOARD;
 }
 
 /** One focus area as the loader reads it (stable `golf_player_focus_areas` columns only). */

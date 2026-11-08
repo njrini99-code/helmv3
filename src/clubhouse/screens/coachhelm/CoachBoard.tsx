@@ -76,7 +76,6 @@ export function CoachHelmOffNotice({ off }: { off: NonNullable<ChCoachHelmData['
  */
 /**
  * `trackRecordHref`: the Track record's address, handed over only with `coachhelm_track_record_v1` on (the route checks it); without it no link is drawn.
- * `briefHref`: the Brief's (the team view behind /intelligence, which holds the Monday brief), likewise with `coachhelm_monday_brief_v1` on.
  * `recheck`: Re-check reads (CH-13944), the team re-run; preview and tests pass their own.
  */
 export function CoachBoard({
@@ -85,7 +84,6 @@ export function CoachBoard({
   coursePlanReads = LIVE_COURSE_PLAN_READS,
   initialPlayer,
   trackRecordHref,
-  briefHref,
   recheck = LIVE_RECHECK_WRITES,
 }: {
   data: ChCoachHelmData;
@@ -93,7 +91,6 @@ export function CoachBoard({
   coursePlanReads?: ChCoursePlanReads;
   initialPlayer?: string;
   trackRecordHref?: string;
-  briefHref?: string;
   recheck?: ChRecheckWrites;
 }) {
   const phone = useChPhone();
@@ -309,13 +306,6 @@ export function CoachBoard({
         {players.length > 0 && !data.off ? playersLine(playersOpen) : 'CoachHelm reads the rounds your players post.'}
       </Head>
       {body}
-      {briefHref && !data.off && (
-        <p className="ch-hmb-link" data-ch-code="CH-13938">
-          <Button variant="secondary" href={briefHref}>
-            Brief
-          </Button>
-        </p>
-      )}
       {/* CH-13944: the team re-run, a quiet secondary action under the board. Not with CoachHelm off or with no players to read. */}
       {!data.off && (data.roster.error || data.roster.count > 0) && <RecheckReads players={data.roster.error ? null : data.roster.count} writes={recheck} />}
       {trackRecordHref && !data.off && (

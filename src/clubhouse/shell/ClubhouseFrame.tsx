@@ -1,5 +1,7 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
+import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
 import { LazyMotion } from 'motion/react';
 import { createContext, memo, useContext, useEffect, useRef, useState, type ReactNode, Suspense } from 'react';
 import { useChPhone } from '../lib/use-phone';
@@ -45,6 +47,7 @@ import '../styles/tokens.css';
 import '../styles/base.css';
 import '../styles/ui.css';
 import '../styles/shell.css';
+import '../styles/pre-refresh.css';
 import '../styles/controls.css';
 import '../styles/command.css';
 import { useCanvasSmoothScroll, useSmoothWheelEverywhere } from '../lib/smooth-scroll';
@@ -167,12 +170,12 @@ export function ClubhouseFrame({
   // The live shell renders the animation features above the frame (ChMotionFeatures, below); a preview renders the frame alone.
   const scoped = useContext(ChMotionScope);
   const frame = (
-    <ClubhouseMarker role={role} classAwareness={shell.classAwareness ?? false}>
+    <ClubhouseMarker role={role} classAwareness={shell.classAwareness ?? false} helmViews={shell.helmViews}>
       <LightProvider course={shell.course ?? null} timeZone={shell.timezone ?? null} at={lightAt}>
         <PhoneChromeProvider>
           <SectionSwitchProvider pathname={pathname} role={role} shell={shell}>
             {/* The toast region renders inside .ch-root so it gets the Clubhouse tokens and fonts. */}
-            <FrameRoot crh={shell.crh ?? false} motionOff={!showAnimations} fullScreen={fullScreen} homeRoot={rebuilt && pathname.replace(/\/$/, '') === '/golf/dashboard'}>
+            <FrameRoot crh={shell.crh ?? false} preRefresh={shell.refresh === false} motionOff={!showAnimations} fullScreen={fullScreen} homeRoot={rebuilt && pathname.replace(/\/$/, '') === '/golf/dashboard'}>
               <ToastProvider scope={userData.teamId ?? ''}>
                 <CrumbProvider>
                   <MaybeQuickChat on={shell.quickChat ?? false} plans={shell.practicePlans ?? false} pathname={pathname} search={search} enabled={shell.askAvailable ?? false}>
@@ -237,7 +240,7 @@ export function ClubhouseFrame({
 }
 
 /** `.ch-root`, marked while a pushed phone screen covers the page, so toasts sit above its composer instead of the hidden tab bar. */
-function FrameRoot({ crh, motionOff, fullScreen, homeRoot, children }: { crh: boolean; motionOff: boolean; fullScreen: boolean; homeRoot: boolean; children: ReactNode }) {
+function FrameRoot({ crh, preRefresh, motionOff, fullScreen, homeRoot, children }: { crh: boolean; preRefresh: boolean; motionOff: boolean; fullScreen: boolean; homeRoot: boolean; children: ReactNode }) {
   const { immersive, noTabs, hero: pageHero } = usePhoneChromeState();
   const sections = useSectionSwitch();
   // P001-D4: Home's phone bar is the green hero's from the server's first paint (the device's last layout, F-36), not
@@ -263,6 +266,7 @@ function FrameRoot({ crh, motionOff, fullScreen, homeRoot, children }: { crh: bo
       ref={rootRef}
       className={`ch-root ${clubhouseFontVariables}`}
       data-ch-crh={crh ? 'on' : undefined}
+      data-ch-pre-refresh={preRefresh ? '' : undefined}
       data-ui="clubhouse"
       data-motion={motionOff ? 'off' : undefined}
       data-phone-immersive={immersive ? '' : undefined}
@@ -298,17 +302,18 @@ function edgeTokens(root: Element): { page: string; green: string } {
   const theme = `${document.documentElement.getAttribute('data-fw-theme') ?? ''}|${window.matchMedia('(prefers-color-scheme: dark)').matches}`;
   if (edgeCache?.theme !== theme) {
     const css = getComputedStyle(root);
-    const bar = document.documentElement.getAttribute('data-fw-theme') === 'dark' ? '--ch-frame' : '--ch-green-800';
-    edgeCache = { theme, page: css.getPropertyValue('--ch-bg-page').trim(), green: css.getPropertyValue(bar).trim() };
+    edgeCache = { theme, page: css.getPropertyValue('--ch-bg-page').trim(), green: css.getPropertyValue('--ch-frame').trim() };
   }
   return edgeCache;
 }
 
 function usePhoneEdges(hero: boolean) {
+  // A route can sit on another canvas colour, so the edges read again on each one.
+  const pathname = usePathname();
   useEffect(() => {
     const html = document.documentElement;
     const body = document.body;
-    const phone = window.matchMedia('(max-width: 820px)');
+    const phone = window.matchMedia(CH_PHONE_QUERY);
     let restore: (() => void) | undefined;
     const sync = () => {
       restore?.();
@@ -316,7 +321,11 @@ function usePhoneEdges(hero: boolean) {
       if (!phone.matches) return;
       const root = document.querySelector('.ch-root[data-ui="clubhouse"]');
       if (!root) return;
-      const { page, green } = edgeTokens(root);
+      const { page: fallback, green } = edgeTokens(root);
+      // The bounce below the page shows the page's own colour, whichever canvas this route sits on (MOB-SHELL-7, MOB-SHELL-20).
+      const canvas = document.querySelector('.ch-canvas');
+      const seen = canvas ? getComputedStyle(canvas).backgroundColor : '';
+      const page = !seen || seen === 'transparent' || /\/\s*0\)$|,\s*0\)$/.test(seen) ? fallback : seen;
       let meta = document.head.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
       const created = !meta;
       if (!meta) {
@@ -326,9 +335,10 @@ function usePhoneEdges(hero: boolean) {
       }
       const before = meta.content;
       const was = { html: html.style.backgroundColor, body: body.style.backgroundColor };
-      html.style.backgroundColor = hero ? green : page;
+      html.style.backgroundColor = page;
       body.style.backgroundColor = page;
-      meta.content = hero ? green : page;
+      // The status area is always the frame's green; the bar's own ::before carries it up through a pull (owner call, sweep).
+      meta.content = green;
       const tag = meta;
       restore = () => {
         html.style.backgroundColor = was.html;
@@ -353,7 +363,7 @@ function usePhoneEdges(hero: boolean) {
       cancelAnimationFrame(frame);
       restore?.();
     };
-  }, [hero]);
+  }, [hero, pathname]);
 }
 
 /**

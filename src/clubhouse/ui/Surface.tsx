@@ -1,4 +1,9 @@
-import type { ReactNode } from 'react';
+'use client';
+
+import { createContext, useContext, type ReactNode } from 'react';
+
+/** True inside a Surface: a card in a card is always wrong (SYS-3), so development says so. */
+const InSurface = createContext(false);
 
 /**
  * The design system's Surface (design/handoff/design-system/components/surfaces):
@@ -34,6 +39,8 @@ export function Surface({
   level?: 2 | 3;
   children?: ReactNode;
 }) {
+  const nested = useContext(InSurface);
+  if (nested && process.env.NODE_ENV !== 'production') console.warn('Clubhouse: a Surface inside a Surface. Use a section or a Ledger row inside the outer card (SYS-3).', title ?? id ?? '');
   const head = title || actions;
   const H = level === 2 ? 'h2' : 'h3';
   return (
@@ -52,7 +59,7 @@ export function Surface({
         </div>
       )}
       {head && rule && <div className="ch-surface__rule" />}
-      {padded ? <div className="ch-surface__body">{children}</div> : children}
+      <InSurface.Provider value={true}>{padded ? <div className="ch-surface__body">{children}</div> : children}</InSurface.Provider>
       {(footer || footerNote) && (
         <div className="ch-surface__foot">
           <span className="ch-surface__note">{footerNote}</span>

@@ -31,7 +31,7 @@ const showPlayer = (data: ChPlayerProfile, shs = true) => render(shell(<StatsPla
 const showTeam = (data: ChTeamStats, shs = true) => render(shell(<StatsTeam data={data} shs={shs} />));
 
 beforeEach(() => {
-  window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+  window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
   window.location.hash = '';
 });
 afterEach(() => {

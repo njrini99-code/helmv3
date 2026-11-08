@@ -35,14 +35,17 @@
 }
 /* No scrollbars inside the app (owner, 2026-10-16): with "always show scroll bars" (or a mouse) a long page took the
    bar's width and a short one gave it back, so a switch between them moved the shell sideways. Everything still scrolls
-   by trackpad, wheel, touch and keyboard. The browser's chrome is outside this scope; forced colours bring them back. */
-[data-ui='clubhouse'],
-[data-ui='clubhouse'] * {
-  scrollbar-width: none;
-}
-[data-ui='clubhouse']::-webkit-scrollbar,
-[data-ui='clubhouse'] *::-webkit-scrollbar {
-  display: none;
+   by trackpad, wheel, touch and keyboard. The browser's chrome is outside this scope; forced colours bring them back. A
+   touch screen keeps iOS's thin overlay indicator, which takes no width and says a sheet scrolls (MOB-SHELL-18). */
+@media (pointer: fine) {
+  [data-ui='clubhouse'],
+  [data-ui='clubhouse'] * {
+    scrollbar-width: none;
+  }
+  [data-ui='clubhouse']::-webkit-scrollbar,
+  [data-ui='clubhouse'] *::-webkit-scrollbar {
+    display: none;
+  }
 }
 @media (forced-colors: active) {
   [data-ui='clubhouse'] {
@@ -134,10 +137,15 @@
 
 /* `svg .ch-num`: chart text sets its font shorthand in its screen's sheet, which loads later and would reset the figures
    to proportional at the same weight; the extra element keeps them even there (row 113). */
+/* Important because a screen's `font` shorthand, however specific, resets both to normal, and the figures stop lining up. */
 .ch-num,
 svg .ch-num {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
+}
+.ch-root:not([data-ch-pre-refresh]) .ch-num,
+.ch-root:not([data-ch-pre-refresh]) svg .ch-num {
+  font-feature-settings: 'tnum' !important;
 }
 .ch-display {
   font-weight: 600;
@@ -304,11 +312,16 @@ html[data-ch-vt-hold] [data-ui='clubhouse'] main[aria-busy='true'][aria-label^='
   [data-ui='clubhouse'] main[aria-busy='true'] {
     animation: none !important;
   }
+  /* Reduce Motion is a 180ms opacity fade (OQ-15, MOT-01): every transition narrows to opacity, so a slide lands at once and a
+     fade still fades. A keyframe animation can't be narrowed, so it runs in 1ms unless its rule opts in with
+     --ch-rm-animation: var(--ch-dur-crossfade-rm), which a reduced-motion rule that only fades sets. */
   .ch-root *,
   .ch-root *::before,
   .ch-root *::after {
-    transition-duration: 1ms !important;
-    animation-duration: 1ms !important;
+    transition-property: opacity !important;
+    transition-duration: var(--ch-dur-crossfade-rm) !important;
+    transition-timing-function: linear !important;
+    animation-duration: var(--ch-rm-animation, 1ms) !important;
     /* A looping animation at 1ms would strobe: run it once and stop. */
     animation-iteration-count: 1 !important;
   }

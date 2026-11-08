@@ -298,6 +298,7 @@
   --ch-type-11-medium: 500 calc(11 * var(--ch-type-k))/calc(13 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-type-11-strong: 600 calc(11 * var(--ch-type-k))/calc(13 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-track-11: 0.01em;
+  --ch-track-avatar: 0;
   --ch-type-12: 400 calc(12 * var(--ch-type-k))/calc(16 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-type-12-medium: 500 calc(12 * var(--ch-type-k))/calc(16 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-type-12-strong: 600 calc(12 * var(--ch-type-k))/calc(16 * var(--ch-type-k)) var(--ch-font-sans);
@@ -880,7 +881,7 @@
   /* The mockups' own beats: chart marks settling (360), a story's body (420), a typing dot's cycle and its step, a story. */
   --ch-dur-marks: 360ms;
   --ch-dur-word: 320ms;
-  --ch-dur-rm-fade: 120ms;
+  --ch-dur-crossfade-rm: 180ms;
   --ch-dur-story-body: 420ms;
   --ch-dur-typing: 1200ms;
   --ch-dur-typing-step: 160ms;
@@ -1241,7 +1242,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 
 /* Phone: warm ivory with the layered surfaces in the supplied design boards.
    The October 1 Safari review supersedes the darker, flat phone treatment. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   [data-ui='clubhouse'] {
     /* Keep warm ivory faces while restoring the handoff's light and shade. */
     --ch-ivory-0: #fdfbf7;
@@ -1303,7 +1304,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-dur-spring-pop: 0ms;
   --ch-dur-spring-lift: 0ms;
   /* Not zeroed: a reduced transition is an opacity crossfade this long. Equal to CH_FADE_MS (lib/motion.ts). */
-  --ch-dur-crossfade-rm: 180ms;
+  --ch-dur-crossfade-rm: 0ms;
   --ch-reveal-offset: 0ms;
   --ch-reveal-step: 0ms;
   --ch-reveal-rise: 0px;
@@ -1348,12 +1349,11 @@ html:has([data-ui='clubhouse']) {
   /* The dim on the page beneath a push (B16, CH-1618): PhoneScreen's scrim, and the same depth as a filter for a route
      push, whose page beneath is a view-transition snapshot that cannot take an overlay. */
   --ch-push-dim: rgb(20 18 12 / 0.1);
-  --ch-vt-push-dim: brightness(0.9);
 }
 /* The desktop drill-in (a player row into a profile) crossfades with no gap: the old page fades out over 120ms while
    the new one fades in over 180ms, both from the first frame, so there is no blank beat between them (owner decision
    3, 2026-10-24, OQ-14 / A10). The phone keeps its fade through above. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   html:has([data-ui='clubhouse']) {
     --ch-dur-vt-in: 180ms;
     --ch-dur-vt-gap: 0ms;
@@ -1376,7 +1376,7 @@ html:has([data-ui='clubhouse']) body {
 }
 /* The phone page itself (--ch-bg-page at phone width), so a rubber-band past either end shows no paler band under the
    page (visual pass 2026-10-28; it was #f4f1e8). The sign-in and onboarding screens keep their own lighter ivory. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   html:has([data-ui='clubhouse']),
   html:has([data-ui='clubhouse']) body {
     background: #ede9df;
@@ -1390,7 +1390,7 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']),
 html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
   background: #08150e;
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   html[data-fw-theme='dark']:has([data-ui='clubhouse']),
   html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     background: #111512;
@@ -1400,7 +1400,7 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
 /* Phone reading sizes (owner 2026-10-01, high-fidelity audit F09: "Phone 16 / 14"). Per role, never a page scale:
    reading text 16px, important secondary text 14px, labels 13-14px; captions only to 13px, because chart axes and chips
    use them. Desktop keeps the compact board sizes for dense tables. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   [data-ui='clubhouse'] {
     --ch-type-title: 600 calc(16 * var(--ch-type-k))/1.35 var(--ch-font-sans);
     --ch-type-body-l: 400 calc(17 * var(--ch-type-k))/1.5 var(--ch-font-sans);

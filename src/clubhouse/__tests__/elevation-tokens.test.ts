@@ -113,7 +113,7 @@ describe('elevation tokens (B4)', () => {
 
   it('a phone scroller fades over the edge-fade token', () => {
     expect(css('tokens.css')).toMatch(/--ch-edge-fade: 28px;/);
-    expect(css('ui.css')).toMatch(/@media \(max-width: 820px\) \{\s*\.ch-hscroll \{\s*--ch-hs-fade: var\(--ch-edge-fade\);/);
+    expect(css('ui.css')).toMatch(/@media \(max-width: 820px\)[^{]*\{\s*\.ch-hscroll \{\s*--ch-hs-fade: var\(--ch-edge-fade\);/);
   });
 });
 
@@ -140,7 +140,7 @@ const RAW_SHADOW: Record<string, number> = {
   'styles/rounds-track.css': 17,
   'styles/rounds.css': 22,
   'styles/settings.css': 3,
-  'styles/shell.css': 21,
+  'styles/shell.css': 20,
   'styles/stats.css': 30,
   'styles/ui.css': 19,
 };

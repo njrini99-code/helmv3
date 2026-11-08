@@ -6,7 +6,7 @@ import { CH_DUR, CH_EASE, chSpringCurve, type ChSpringKind } from './motion';
 /**
  * A selected plate that slides from the option it left to the one chosen (a segmented chip, the strip's plate, a tab
  * bar's underline). The plate is rendered inside the chosen option only; when `key` changes this reads the new
- * option's box once and plays the move from the old box as a compositor transform (WAAPI, transform-origin left top).
+ * option's box once and plays the move from the old box (WAAPI): a translate, and the width between the two options.
  *
  * It replaces Motion's shared layout (`layoutId`), which measured the plate, its ancestors and the document's scroll
  * on every render of the component, mid-frame, so a section switch re-laid the incoming page out several times on the
@@ -16,7 +16,7 @@ export function useSlidePlate(
   container: RefObject<HTMLElement | null>,
   plate: string,
   key: string | null,
-  { reduced = false, still, kind = 'settle', tween }: { reduced?: boolean; still?: () => boolean; kind?: ChSpringKind; tween?: keyof typeof CH_DUR } = {},
+  { reduced = false, still, kind = 'settle', tween, ink }: { ink?: string; reduced?: boolean; still?: () => boolean; kind?: ChSpringKind; tween?: keyof typeof CH_DUR } = {},
 ): void {
   const last = useRef<Box | null>(null);
   // The move in flight, so a choice mid-glide starts from where the plate is, at its speed (F-0017).
@@ -48,8 +48,18 @@ export function useSlidePlate(
     running.current?.anim.cancel?.();
     running.current = null;
     const start = live?.box ?? from;
-    if (reduced || !to.w || !to.h) return undefined;
-    if (start.x === to.x && start.y === to.y && start.w === to.w && start.h === to.h) return undefined;
+    const inkAt = (leaving: number, arriving: number) => {
+      if (!ink) return;
+      for (const option of container.current?.querySelectorAll<HTMLElement>(ink) ?? []) {
+        for (const a of option.getAnimations?.() ?? []) {
+          if ((a as CSSTransition).transitionProperty === 'color') a.effect?.updateTiming({ delay: option === host ? arriving : leaving });
+        }
+      }
+    };
+    if (reduced || !to.w || !to.h || (start.x === to.x && start.y === to.y && start.w === to.w && start.h === to.h)) {
+      inkAt(0, 0);
+      return undefined;
+    }
     // Its speed toward the new mark, in progress per second over the distance left (chSpringCurve's units).
     const dx = to.x - start.x;
     const dy = to.y - start.y;
@@ -59,20 +69,40 @@ export function useSlidePlate(
     const curve = tween
       ? { ms: CH_DUR[tween] * 1000, linear: `cubic-bezier(${CH_EASE.join(', ')})`, ease: tweenEase }
       : chSpringCurve(kind, { velocity });
+    // Translate and width only: a scale squashed the pill's rounded corners mid-glide (owner, 2026-11-07). The plate may be narrower than its option (an underline), so its width goes by the options' ratio.
+    const plateW = el.offsetWidth;
     const anim = el.animate?.(
       [
-        { transformOrigin: 'left top', transform: `translate(${start.x - to.x}px, ${start.y - to.y}px) scale(${start.w / to.w}, ${start.h / to.h})` },
-        { transformOrigin: 'left top', transform: 'none' },
+        { transform: `translate(${start.x - to.x}px, ${start.y - to.y}px)`, width: `${(plateW * start.w) / to.w}px` },
+        { transform: 'none', width: `${plateW}px` },
       ],
       { duration: curve.ms, easing: curve.linear },
     );
     if (anim) running.current = { anim, from: start, to, ms: curve.ms, ease: curve.ease };
+    // Each label takes its new ink as the plate crosses it, so it reads on the ground under it the whole way (at least 4.5:1).
+    const cross = plateCrossing(curve.ease, curve.ms, Math.hypot(start.x + start.w / 2 - (to.x + to.w / 2), start.y + start.h / 2 - (to.y + to.h / 2)), start.w, to.w);
+    inkAt(cross.leaving, cross.arriving);
     return undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the move is per choice; `still` is read when it happens
   }, [key, reduced]);
 }
 
 type Box = { x: number; y: number; w: number; h: number };
+
+/**
+ * When a plate on `ease` over `ms`, travelling `distance` from a mark `fromW` wide to one `toW` wide, covers half of each label: it has
+ * left the old one after half the two widths' mean, and reaches the new one that far short of the end. Next-door options cross at the
+ * halfway point; farther ones leave sooner and arrive later.
+ */
+export function plateCrossing(ease: (p: number) => number, ms: number, distance: number, fromW: number, toW: number): { leaving: number; arriving: number } {
+  const share = distance > 0 ? Math.min(0.5, (fromW + toW) / 4 / distance) : 0.5;
+  const at = (target: number) => {
+    const steps = 64;
+    for (let i = 1; i <= steps; i++) if (ease(i / steps) >= target) return Math.round((ms * i) / steps);
+    return Math.round(ms);
+  };
+  return { leaving: at(share), arriving: at(1 - share) };
+}
 
 /** CH_EASE as a function, close enough to place a tweened plate mid-move: a cubic bezier solved for x by bisection. */
 function tweenEase(p: number): number {

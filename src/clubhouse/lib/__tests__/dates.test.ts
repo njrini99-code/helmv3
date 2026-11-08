@@ -59,7 +59,6 @@ const ALLOW_DATES: Record<string, number> = {
   'data/roster.ts': 1,
   'data/round-review-shape.ts': 1,
   'data/season.ts': 2,
-  'data/shell.ts': 2,
   'data/stats-common.ts': 1,
   'data/welcome-shape.ts': 3,
   'data/whats-new-shape.ts': 3,

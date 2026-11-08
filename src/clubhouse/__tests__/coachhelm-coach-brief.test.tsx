@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup } from '@testing-library/react';
 
 vi.mock('server-only', () => ({}));
 vi.mock('../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 vi.mock('../lib/track-server', () => ({ chLogServer: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.fn() }), usePathname: () => '/golf/dashboard/coachhelm' }));
-vi.mock('../lib/use-phone', () => ({ useChPhone: () => false, CH_PHONE_QUERY: '(max-width: 820px)' }));
+vi.mock('../lib/use-phone', () => ({ useChPhone: () => false, CH_PHONE_QUERY: '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' }));
 
 // The loader's reads, each replaceable per test.
 const reads = vi.hoisted(() => ({
@@ -33,13 +33,11 @@ vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayersStandingMap: r
 vi.mock('@/lib/coachhelm/v3/track-record/flag', () => ({ isTrackRecordEnabled: () => reads.recordOn.value }));
 vi.mock('../data/coachhelm-track-record', () => ({ loadCoachTrackRecord: reads.record }));
 
-import { briefHref, intelligenceTarget, toChCoachBrief } from '../data/coachhelm-coach-brief-shape';
+import { intelligenceTarget, toChCoachBrief } from '../data/coachhelm-coach-brief-shape';
 import { loadCoachBrief } from '../data/coachhelm-coach-brief';
-import { PREVIEW_COACH_BRIEF, PREVIEW_COACH_BRIEF_NO_READS, PREVIEW_COACH_BRIEF_PARTIAL, PREVIEW_COACH_BRIEF_THIN } from '../preview/fixtures-coachhelm-coach-brief';
+import { PREVIEW_COACH_BRIEF, PREVIEW_COACH_BRIEF_PARTIAL, PREVIEW_COACH_BRIEF_THIN } from '../preview/fixtures-coachhelm-coach-brief';
 import { PREVIEW_TRACK_RECORD } from '../preview/fixtures-coachhelm-track';
-import { CoachBrief } from '../screens/coachhelm/views/CoachBrief';
 
-const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 
 afterEach(cleanup);
 
@@ -106,62 +104,13 @@ describe('the coach Brief behind /intelligence (par-05): what it says', () => {
     expect(failed.missing).toBe('What players are working on and the track record did not load. The rest of the brief is current; try again in a moment.');
   });
 
-  it('CH-13998 an old /intelligence address lands on its part of the Brief with the flag on, and on the board with it off', () => {
-    const q = (s: string) => new URLSearchParams(s);
-    expect(intelligenceTarget(q('view=signals&filter=patterns'), true, null)).toBe(briefHref('patterns'));
-    expect(intelligenceTarget(q('view=players'), true, null)).toBe('/golf/dashboard/coachhelm?view=brief&section=working');
-    expect(intelligenceTarget(q('view=effectiveness'), true, null)).toBe('/golf/dashboard/coachhelm?view=brief&section=record');
-    expect(intelligenceTarget(q('view=home'), true, null)).toBe('/golf/dashboard/coachhelm?view=brief');
-    expect(intelligenceTarget(q('view=players&player=p1'), true, 'p1')).toBe('/golf/dashboard/coachhelm?player=p1');
-    expect(intelligenceTarget(q('view=chat&player=p1'), true, 'p1')).toBe('/golf/dashboard/coachhelm?player=p1&view=ask');
-    expect(intelligenceTarget(q('view=effectiveness'), false, null)).toBe('/golf/dashboard/coachhelm');
-  });
-});
-
-describe('the coach Brief on screen', () => {
-  it('CH-13983 draws the five sections in order, each read with one Open action, and no confidence percent on a read', () => {
-    render(<CoachBrief load={{ status: 'ready', data: PREVIEW_COACH_BRIEF }} />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Brief' })).toBeTruthy();
-    const ids = [...document.querySelectorAll('.ch-hbr-sec')].map((s) => s.id);
-    expect(ids).toEqual(['ch-hbr-week', 'ch-hbr-patterns', 'ch-hbr-working', 'ch-hbr-record', 'ch-hbr-goals']);
-    const week = code('CH-13984') as HTMLElement;
-    expect(within(week).getAllByRole('link', { name: 'Open' })).toHaveLength(6);
-    expect(week.textContent).not.toMatch(/\d%/);
-    expect(within(code('CH-13986') as HTMLElement).getByRole('link', { name: 'Track record' }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=track-record');
-    expect(code('CH-13989')).toBeNull();
-  });
-
-  it('CH-13988 no reads: says so in the week, and the team sections still draw', () => {
-    render(<CoachBrief load={{ status: 'ready', data: PREVIEW_COACH_BRIEF_NO_READS }} />);
-    expect(code('CH-13988')).not.toBeNull();
-    expect(screen.getByText('No open reads this week')).toBeTruthy();
-    expect(code('CH-13985')).not.toBeNull();
-    expect(code('CH-13987')).not.toBeNull();
-    expect(document.getElementById('ch-hbr-patterns')).toBeNull();
-  });
-
-  it('CH-13989 a section that did not load is named above the rest', () => {
-    render(<CoachBrief load={{ status: 'ready', data: PREVIEW_COACH_BRIEF_PARTIAL }} />);
-    expect(within(code('CH-13989') as HTMLElement).getByText(/Goals did not load/)).toBeTruthy();
-    expect(code('CH-13987')).toBeNull();
-  });
-
-  it('opens on the section an old link named', () => {
-    const into = vi.fn();
-    Element.prototype.scrollIntoView = into;
-    render(<CoachBrief load={{ status: 'ready', data: PREVIEW_COACH_BRIEF }} section="record" />);
-    expect(into).toHaveBeenCalledTimes(1);
-    expect(into.mock.contexts[0]).toBe(document.getElementById('ch-hbr-record'));
-  });
-
-  it('CH-13999 CH-13997 off and failed are their own pages, never an empty brief', () => {
-    const { unmount } = render(<CoachBrief load={{ status: 'failed' }} />);
-    expect(code('CH-13997')).not.toBeNull();
-    expect(screen.getByText('The brief didn’t load')).toBeTruthy();
-    unmount();
-    render(<CoachBrief load={{ status: 'off', reason: 'Paused for exams' }} />);
-    expect(code('CH-13999')).not.toBeNull();
-    expect(screen.getByText(/Paused for exams/)).toBeTruthy();
+  it('CH-13998 an old /intelligence address lands on the board: the player it named, or Ask for a chat link', () => {
+    const t = (q: string, player: string | null = null) => intelligenceTarget(new URLSearchParams(q), player);
+    expect(t('')).toBe('/golf/dashboard/coachhelm');
+    expect(t('view=signals&filter=patterns')).toBe('/golf/dashboard/coachhelm');
+    expect(t('view=effectiveness')).toBe('/golf/dashboard/coachhelm');
+    expect(t('view=chat')).toBe('/golf/dashboard/coachhelm?view=ask');
+    expect(t('', 'p1')).toBe('/golf/dashboard/coachhelm?player=p1');
   });
 });
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { CH_DESK_QUERY } from '@/clubhouse/lib/phone-query';
 import { Button } from '../../../ui/Button';
 
 import { ArrowUp, Check, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, FolderClosed, Minus, Plus, X } from 'lucide-react';
@@ -229,7 +230,7 @@ export function PlanCard({ plan, onSend, fresh = false }: { plan: PlanPartData; 
   // Only as this plan finishes writing: a chat reopened with plans in it doesn't open a pane for each one.
   const wasWriting = useRef(writingNow);
   useEffect(() => {
-    if (preview?.full || (wasWriting.current && !writingNow && window.matchMedia('(min-width: 821px)').matches)) setFull(true);
+    if (preview?.full || (wasWriting.current && !writingNow && window.matchMedia(CH_DESK_QUERY).matches)) setFull(true);
     wasWriting.current = writingNow;
   }, [preview?.full, writingNow]);
   const swapSlot =

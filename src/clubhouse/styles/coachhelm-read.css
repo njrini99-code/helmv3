@@ -1272,7 +1272,7 @@ html[data-fw-theme='dark'] .ch-hr {
   letter-spacing: 0;
 }
 /* S-READ-DESK: the ladder no wider than 340. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-hr .ladder {
     max-width: 340px;
   }

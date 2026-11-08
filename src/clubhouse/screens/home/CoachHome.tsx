@@ -1,9 +1,10 @@
 'use client';
 
-import { DeskAgenda, DeskBoard, DeskNext, DeskRounds } from './HomeDeskCrh';
+import { DeskNext, DeskRounds, DeskToday } from './HomeDeskCrh';
 import { CALENDAR } from './event-links';
 import { CalendarPlus, ChevronRight, Flag, Sparkles, UserPlus } from 'lucide-react';
 import Link from 'next/link';
+import { useMemo } from 'react';
 import type { ChCoachHome } from '../../data/home';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -11,6 +12,7 @@ import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { Icon } from '../../ui/Icon';
 import { TeamForm } from './TeamForm';
 import { useChPhone } from '../../lib/use-phone';
+import { useNow } from '../../lib/use-now';
 import { rebuiltHref } from '../../shell/nav';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Week } from './Week';
@@ -44,13 +46,18 @@ export function CoachHome(props: { crh?: boolean; data: ChCoachHome; /** Preview
 
 function CoachHomeBody({ data, now, live, crh = false }: { data: ChCoachHome; now?: string; live?: LiveSnapshot; crh?: boolean }) {
   const phone = useChPhone();
+  const clockNow = useNow();
+  const ticking = useMemo(() => (now ? new Date(now) : clockNow), [now, clockNow]);
   // A page left open past the team's midnight reads itself again, so "today" is today (desktop and phone).
   useHomeDayRollover(data.clock, now !== undefined);
   if (isFirstRun(data)) return <HomeFirstRun data={data} phone={phone} crh={crh} />;
   if (phone) return <HomePhone data={data} now={now} live={live} crh={crh} />;
   // Two or more failed reads are told once under the head, with one Try again; each part keeps its title (CH-1209).
-  const failed = coachFailedParts(data, false);
+  const failed = coachFailedParts(data, crh);
   const covered = failed.length > 1;
+  // Up next is the hero's; Today lists the rest of the day, so one event isn't drawn twice.
+  const todayRest = data.phone.today.filter((e) => e.id !== data.phone.next?.id);
+  const showToday = data.week.error || todayRest.length > 0 || !data.phone.next;
   // Players but no round yet: the leaderboard's line says so (CH-2305), so the latest round's pane steps aside. A
   // malformed read is left to its section's boundary (CH-2206), so this never throws above it.
   const noRounds = !data.latestRounds.error && Array.isArray(data.latestRounds.rounds) && data.latestRounds.rounds.length === 0 && !data.leaderboard.error && data.leaderboard.rosterSize > 0;
@@ -79,43 +86,64 @@ function CoachHomeBody({ data, now, live, crh = false }: { data: ChCoachHome; no
             </div>
           </SectionBoundary>
         )}
-        <div className="ch-h-grid">
-          <SectionBoundary surface="home.week" label="This week" code="CH-2205">
-            {data.week.error ? (
-              <CrhFailedCard id="ch-dh-week-failed" title="This week" href={CALENDAR} link="Calendar" code="CH-2201" what="This week didn’t load" body="Your events are safe. Try again." />
-            ) : (
-              <DeskAgenda rows={data.week.agenda} />
+        {/* The phone's design laid out wider: the day, then the team, then the rounds. Leaderboards live on Roster and Stats, the week on Calendar.
+            With no Today card (Up next is the whole day) the latest rounds sit beside Team scoring, so no card stretches the width alone. */}
+        {showToday ? (
+          <>
+            <div className="ch-h-grid">
+            {(data.week.error || todayRest.length > 0 || !data.phone.next) && (
+              <SectionBoundary surface="home.today" label="Today" code="CH-2214">
+                {data.week.error ? (
+                  <CrhFailedCard id="ch-dh-today-failed" title="Today" href={CALENDAR} link="Calendar" code="CH-2201" what="Today didn’t load" body="Your events are safe. Try again." />
+                ) : (
+                  <DeskToday events={todayRest} now={ticking} />
+                )}
+              </SectionBoundary>
             )}
-          </SectionBoundary>
-          {data.phone.form ? (
-            <SectionBoundary surface="home.form" label="Team scoring" code="CH-2212">
-              <Form form={data.phone.form} crh />
-            </SectionBoundary>
-          ) : data.latestRounds.error ? (
-            <CrhFailedCard id="ch-dh-form-failed" title="Team scoring" href={rebuiltHref('/golf/dashboard/stats') ?? '#'} link="Team stats" code="CH-2211" what="Scoring didn’t load" body="Your rounds are safe. Try again in a moment." />
-          ) : null}
-        </div>
-        {data.phone.form && data.legs && !noRounds && (
-          <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
-            <TeamLegsPhone legs={data.legs} covered={covered} crh />
-          </SectionBoundary>
-        )}
-        <div className="ch-h-grid">
-          {!noRounds && !data.latestRounds.error && (
-            <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
-              {data.latestRounds.error || data.latestRounds.rounds.length === 0 ? <LatestRound data={data.latestRounds} covered={covered} /> : <DeskRounds rounds={data.latestRounds.rounds} />}
+            {data.phone.form ? (
+              <SectionBoundary surface="home.form" label="Team scoring" code="CH-2212">
+                <Form form={data.phone.form} crh />
+              </SectionBoundary>
+            ) : data.latestRounds.error ? (
+              <CrhFailedCard id="ch-dh-form-failed" title="Team scoring" href={rebuiltHref('/golf/dashboard/stats') ?? '#'} link="Team stats" code="CH-2211" what="Scoring didn’t load" body="Your rounds are safe. Try again in a moment." />
+            ) : null}
+            </div>
+            <div className="ch-h-grid">
+            {data.phone.form && data.legs && !noRounds && (
+              <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
+                <TeamLegsPhone legs={data.legs} covered={covered} crh />
+              </SectionBoundary>
+            )}
+            {!noRounds && !data.latestRounds.error && (
+              <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
+                {data.latestRounds.rounds.length === 0 ? <LatestRound data={data.latestRounds} covered={covered} /> : <DeskRounds rounds={data.latestRounds.rounds} />}
+              </SectionBoundary>
+            )}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="ch-h-grid">
+            {data.phone.form ? (
+              <SectionBoundary surface="home.form" label="Team scoring" code="CH-2212">
+                <Form form={data.phone.form} crh />
+              </SectionBoundary>
+            ) : data.latestRounds.error ? (
+              <CrhFailedCard id="ch-dh-form-failed" title="Team scoring" href={rebuiltHref('/golf/dashboard/stats') ?? '#'} link="Team stats" code="CH-2211" what="Scoring didn’t load" body="Your rounds are safe. Try again in a moment." />
+            ) : null}
+            {!noRounds && !data.latestRounds.error && (
+              <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
+                {data.latestRounds.rounds.length === 0 ? <LatestRound data={data.latestRounds} covered={covered} /> : <DeskRounds rounds={data.latestRounds.rounds} />}
+              </SectionBoundary>
+            )}
+            </div>
+          {data.phone.form && data.legs && !noRounds && (
+            <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
+              <TeamLegsPhone legs={data.legs} covered={covered} crh />
             </SectionBoundary>
           )}
-          <SectionBoundary surface="home.leaderboard" label="The leaderboard" code="CH-2207">
-            {data.leaderboard.error ? (
-              <CrhFailedCard id="ch-dh-board-failed" title="Leaderboard" href={rebuiltHref('/golf/dashboard/roster') ?? '#'} link="Roster" code="CH-2204" what="The leaderboard didn’t load" body="Scores are safe. Try again." />
-            ) : data.leaderboard.rows.length === 0 ? (
-              <Leaderboard data={data.leaderboard} covered={covered} rounds={data.latestRounds.rounds} />
-            ) : (
-              <DeskBoard rows={data.leaderboard.rows} rosterSize={data.leaderboard.rosterSize} />
-            )}
-          </SectionBoundary>
-        </div>
+          </>
+        )}
       </main>
     );
   return (

@@ -3,10 +3,12 @@
 import { PracticePlanSheet } from '../screens/coachhelm/plan/sheet/PracticePlanSheet';
 import { PlanCard } from '../screens/coachhelm/plan/PlanCard';
 import { toSheetModel } from '../screens/coachhelm/plan/sheet/plan-sheet-model';
+import { longDrills, rewriteDeep } from './stress';
 import { PP_NAMES, PP_PLAN_PART, PP_COACHES } from './fixtures-practice-plan';
 
 /** `?state=card` draws the card in Ask; anything else the printed sheet at `?copy=coach|player`. */
 export function PreviewPracticePlan({ state, copy }: { state?: string; copy: 'coach' | 'player' }) {
+  if (state === 'stress') return <PlanCard plan={rewriteDeep(PP_PLAN_PART, longDrills)} onSend={() => {}} />;
   if (state === 'card') return <PlanCard plan={PP_PLAN_PART} onSend={() => {}} />;
   const start = new Date('2026-11-05T19:00:00Z');
   const end = new Date('2026-11-05T22:00:00Z');

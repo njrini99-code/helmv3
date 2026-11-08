@@ -4,6 +4,7 @@ import type { Database } from '@/lib/types/database';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { requireRosterPlayer, type CoachChatContext } from './context';
 import { nowIso, readFigure, unavailableEnvelope, type ToolEnvelope } from './provenance';
+import { inSeasonAverage, loadCountedRounds, seasonStartDate } from './season-rule';
 
 type Sb = SupabaseClient<Database>;
 
@@ -53,8 +54,6 @@ export async function getCourse(sb: Sb, ctx: CoachChatContext, input: { course_i
   return { summary: `Course read: ${list.length} holes, ${ids.length} team rounds.`, measurements: [], series, detail: { kind: 'hole_strip', holes: list }, coverage: list.length ? 'complete' : 'empty', coverage_note: list.length ? null : 'No hole data for this course.', as_of: nowIso() };
 }
 
-const seasonOf = (d: Date) => (d.getUTCMonth() >= 7 ? d.getUTCFullYear() : d.getUTCFullYear() - 1);
-
 /** This season against last, with last season's usual range: mean plus or minus one standard deviation of round values. The method is in the note. */
 export function seasonBand(values: readonly number[]): { mean: number; lo: number; hi: number; n: number } | null {
   if (values.length === 0) return null;
@@ -66,13 +65,13 @@ export function seasonBand(values: readonly number[]): { mean: number; lo: numbe
 
 export async function compareSeasons(sb: Sb, ctx: CoachChatContext, input: { player_id?: string }): Promise<ToolEnvelope> {
   const player = input.player_id ? requireRosterPlayer(ctx, input.player_id) : null;
-  const now = new Date();
-  const start = seasonOf(now);
-  let q = sb.from('golf_rounds').select('round_date, score_to_par, total_putts, holes_played').eq('team_id', ctx.team_id).eq('status', 'completed').eq('is_test', false).gte('round_date', `${start - 1}-08-01`);
-  if (player) q = q.eq('player_id', player.id);
-  const { data, error } = await q;
+  const seasonStart = seasonStartDate(new Date(), ctx.timezone);
+  const start = Number(seasonStart.slice(0, 4));
+  // Roster's rule, like get_season_scoring and get_team_rounds: a full 18-hole round that counts, practice left out, the active roster.
+  const { rounds, error } = await loadCountedRounds(sb, player ? [player.id] : ctx.roster.map((p) => p.id), `${start - 1}-08-01`);
   if (error) return unavailableEnvelope('Could not compare the seasons.', 'The rounds query failed.');
-  const split = (y: number) => (data ?? []).filter((r) => seasonOf(new Date(`${r.round_date}T12:00:00Z`)) === y && r.score_to_par != null).map((r) => ((r.score_to_par as number) * 18) / ((r.holes_played as number) > 0 ? (r.holes_played as number) : 18));
+  const counted = rounds.filter((r) => inSeasonAverage(r) && r.score_to_par != null);
+  const split = (y: number) => counted.filter((r) => (y === start ? r.round_date >= seasonStart : r.round_date < seasonStart)).map((r) => r.score_to_par as number);
   const thisYear = seasonBand(split(start));
   const last = seasonBand(split(start - 1));
   const entity = player ? { kind: 'player' as const, id: player.id, label: player.name } : { kind: 'team' as const, id: ctx.team_id, label: ctx.team_name };

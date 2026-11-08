@@ -49,7 +49,7 @@ function wrap(node: React.ReactNode) {
 
 const MEN = { id: 't-men', name: "UNCW Men's Golf", gender: 'mens' };
 const WOMEN = { id: 't-women', name: "UNCW Women's Golf", gender: 'womens' };
-const shell: ChShellData = { nextEvent: null, pendingJoinRequests: null };
+const shell: ChShellData = { pendingJoinRequests: null };
 const head = (over: Partial<GolfUserData> = {}): GolfUserData =>
   ({ role: 'coach', userId: 'u1', name: 'Maya Reyes', teamName: MEN.name, coachId: 'c1', teamId: MEN.id, coachTeams: [MEN, WOMEN], canSwitchTeams: true, ...over }) as GolfUserData;
 

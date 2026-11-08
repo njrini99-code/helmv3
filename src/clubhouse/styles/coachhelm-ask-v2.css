@@ -473,8 +473,8 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-pane, .ch-ak-push { animation: ch-ak-slide-in var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) both; }
 .ch-ak-pane.is-leaving, .ch-ak-push.is-leaving { animation: ch-ak-slide-out var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) both; }
 @media (prefers-reduced-motion: reduce) {
-  .ch-ak-pane, .ch-ak-push { animation: ch-ak-fade var(--ch-dur-rm-fade) linear both; }
-  .ch-ak-pane.is-leaving, .ch-ak-push.is-leaving { animation: ch-ak-fade-out var(--ch-dur-rm-fade) linear both; }
+  .ch-ak-pane, .ch-ak-push { --ch-rm-animation: var(--ch-dur-crossfade-rm); animation: ch-ak-fade var(--ch-dur-crossfade-rm) linear both; }
+  .ch-ak-pane.is-leaving, .ch-ak-push.is-leaving { --ch-rm-animation: var(--ch-dur-crossfade-rm); animation: ch-ak-fade-out var(--ch-dur-crossfade-rm) linear both; }
 }
 [data-motion='off'] .ch-ak-pane, [data-motion='off'] .ch-ak-push { animation: none; }
 
@@ -495,7 +495,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .opt[aria-pressed='true'] .bx path { stroke-dashoffset: 0; }
 .ch-ak-th .qsum .pills span { animation: ch-ak-pill var(--ch-dur-base) var(--ch-ease) both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-press) / 2.75); }
 @media (prefers-reduced-motion: reduce) {
-  .ch-ak-th .qcard, .ch-ak-th .qpane.is-next, .ch-ak-th .qpane.is-back, .ch-ak-th .qsum .pills span { --ch-i: 0; animation: ch-ak-fade var(--ch-dur-rm-fade) linear both; }
+  .ch-ak-th .qcard, .ch-ak-th .qpane.is-next, .ch-ak-th .qpane.is-back, .ch-ak-th .qsum .pills span { --ch-i: 0; --ch-rm-animation: var(--ch-dur-crossfade-rm); animation: ch-ak-fade var(--ch-dur-crossfade-rm) linear both; }
   .ch-ak-th .qdots i, .ch-ak-th .opt, .ch-ak-th .opt .bx, .ch-ak-th .opt .bx path { transition: none; }
 }
 [data-motion='off'] .ch-ak-th :is(.qcard, .qpane, .qsum .pills span) { animation: none; }

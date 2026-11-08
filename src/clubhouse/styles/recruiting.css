@@ -233,7 +233,7 @@
   position: relative;
   height: 56px;
   box-shadow: 0 -1px 0 var(--ch-border-hairline);
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-rec-tb tbody tr:first-child {
   box-shadow: none;
@@ -796,7 +796,7 @@
   padding: 0 20px;
   box-shadow: 0 -1px 0 var(--ch-border-hairline);
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   /* The server renders desktop. On a phone it stays hidden until the phone view takes over at hydration. */
   .ch-rec:not([aria-busy='true']) {
     visibility: hidden;
@@ -981,7 +981,7 @@
     color: var(--ch-green-600);
     cursor: pointer;
     touch-action: manipulation;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-recm-sort[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
@@ -1020,7 +1020,7 @@
     text-align: left;
     cursor: pointer;
     touch-action: manipulation;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-recm-row[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
@@ -1182,7 +1182,7 @@
     text-align: left;
     cursor: pointer;
     touch-action: manipulation;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-recm-stagerow::before,
   .ch-recm-stagerow::after {
@@ -1273,7 +1273,7 @@
     margin-right: -8px;
     font-size: calc(15 * var(--ch-type-k));
     touch-action: manipulation;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-recm-det .ch-rec-empty__a[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
@@ -1291,7 +1291,7 @@
     margin: -12px -8px -12px 0;
     font-size: calc(14 * var(--ch-type-k));
     touch-action: manipulation;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-recm-det .ch-rec-link[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
@@ -1332,7 +1332,7 @@
     padding-left: 12px;
     border-radius: var(--ch-radius-md);
     touch-action: manipulation;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-recm-det .ch-rec-doc__open[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
@@ -1350,7 +1350,7 @@
     height: 44px;
     margin-right: -8px;
     touch-action: manipulation;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-recm-det .ch-rec-doc__x[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
@@ -1507,7 +1507,7 @@
 /* Loading in the framed page head (desktop): the recruiting head holds the loaded head's measured height (WebKit 1440 and 1100,
    2026-10-08: 152px in the tight head with the one-line subtitle and the recruiting calendar line), so nothing under it
    moves on load. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-rec[aria-busy='true'][data-canopy] .ch-rec-head {
     box-sizing: border-box;
     min-height: 152px;
@@ -1519,7 +1519,7 @@
    split by hairlines (each still a filter); the table is rows and seams; the prospect is a column beside it, split
    off by a hairline. Coins, stage chips, the search field, segmented controls and dialogs keep their material. The
    loading screen draws the same head and stage heights, so the list doesn't move when the data lands. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-rec[data-canopy] .ch-rec-head p {
     text-wrap: pretty;
   }
@@ -1587,7 +1587,7 @@
     box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
   .ch-rec[data-canopy] .ch-rec-pipe__stage {
-    transition: background var(--ch-dur-quick) var(--ch-ease);
+    transition: background-color var(--ch-dur-quick) var(--ch-ease);
   }
   @media (hover: hover) {
     .ch-rec[data-canopy] .ch-rec-pipe__stage:not(:disabled):hover {
@@ -1674,7 +1674,7 @@
     position: absolute;
     z-index: -1;
     inset: 0;
-    transition: background var(--ch-dur-quick) var(--ch-ease);
+    transition: background-color var(--ch-dur-quick) var(--ch-ease);
     content: '';
     pointer-events: none;
   }
@@ -1859,7 +1859,7 @@
   outline-offset: 2px;
 }
 /* In the framed page head the shell sets every p as the page's sentence; the calendar line stays the quieter caption. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-rec[data-canopy] .ch-rec-head .ch-rec-cal {
     min-height: 24px;
     max-width: none;
@@ -2007,7 +2007,7 @@
     padding-block: 8px;
   }
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-rec-cal.is-phone {
     margin: -4px 0 12px;
     font-size: calc(14 * var(--ch-type-k));
@@ -2086,7 +2086,7 @@
 :where(html[data-fw-theme='dark']) .ch-rec-drop {
   background: rgb(21 36 27 / 0.94);
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   :where(html[data-fw-theme='dark']) .ch-rec-form.is-phone .ch-textarea {
     box-shadow: 0 0 0 1px var(--ch-border-control);
   }
@@ -2114,11 +2114,11 @@
   }
 }
 .ch-rec-pipe__seg {
-  transition: background var(--ch-dur-base) var(--ch-ease);
+  transition: background-color var(--ch-dur-base) var(--ch-ease);
 }
 
 /* Phone: touch areas reach 44 x 44 without changing how they are drawn (W4b, 2026-10-19). */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-rec-link,
   .ch-rec-doc__x {
     position: relative;

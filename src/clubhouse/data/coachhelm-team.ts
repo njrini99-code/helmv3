@@ -7,7 +7,6 @@ import { teamPatternEnabled } from '@/lib/coachhelm/v3/team-pattern/flag';
 import { isTrackRecordEnabled } from '@/lib/coachhelm/v3/track-record/flag';
 import { toCourseHistory } from '@/lib/coachhelm/v3/team-board/course-shape';
 import { loadPlayersStandingMap } from '@/lib/coachhelm/v3/standing/loader';
-import { isCountableRound } from '@/lib/golf/round-countable';
 import { chLogServer } from '../lib/track-server';
 import { isOpenFinding } from './coachhelm-classify';
 import { loadCoachBrief } from './coachhelm-coach-brief';
@@ -46,8 +45,9 @@ import {
   type ChTeamPlayer,
   type ChTourRow,
 } from './coachhelm-team-shape';
+import { roundsForFigures } from './figure-window';
 import { toChTeamLegs } from './coachhelm-team-legs';
-import { classYearLabel, loadSeasonRounds, loadTeamZone, seasonStartDate } from './season';
+import { classYearLabel, lastTenFloor, loadSeasonRounds, loadTeamZone, seasonStartDate } from './season';
 import { NEEDS_MAX, WORKING_MAX } from './coachhelm-shape';
 
 const log = (what: string, err: unknown) => chLogServer('coachhelm.team', what, err, 'coachhelm');
@@ -139,7 +139,7 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
   );
 
   const zone = await zoneRead;
-  const roundsRead = handled(loadSeasonRounds(supabase, ids, { surface: 'coachhelm.team', since: seasonStartDate(now, zone) }));
+  const roundsRead = handled(loadSeasonRounds(supabase, ids, { surface: 'coachhelm.team', since: lastTenFloor(now) }));
   const [visible, heads] = await Promise.all([loadVisible(supabase, ids), topInsights(ids, { limit: NEEDS_MAX + WORKING_MAX, drawnLater: () => drawn })]);
   const rankedAny = [...heads.values()].some((l) => l.length > 0);
   if (visible.error || (visible.rows.length > 0 && !rankedAny)) {
@@ -183,7 +183,7 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
   const tour = tourResult.baseline;
   const iso = now.toISOString();
 
-  const countable = seasonRounds.rounds.filter((r) => isCountableRound(r as never));
+  const countable = roundsForFigures(seasonRounds.rounds);
   const legs = toChTeamLegs(countable, ids);
   const list: ChTeamPlayer[] = roster.map((p) => {
     const first = p.name === NO_NAME ? NO_NAME : firstName(p.name);
@@ -223,7 +223,9 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
   // Counted as shown: what the board draws, at most 3 and 1 a player, no note, no measured zero (W-TEAM-4).
   settleDrawn(list.flatMap((p) => [...p.reads.needs, ...p.reads.working].map((r) => r.id)));
 
-  const history = seasonRounds.error ? null : toCourseHistory(countable as never, ids, iso.slice(0, 10));
+  // The legs read each player's last ten across seasons; "Courses this season" stays the season's.
+  const seasonStart = seasonStartDate(now, zone);
+  const history = seasonRounds.error ? null : toCourseHistory(countable.filter((r) => r.round_date.slice(0, 10) >= seasonStart) as never, ids, iso.slice(0, 10));
   const standings = await loadPlayersStandingMap(ids).catch((err: unknown) => {
     log('standing', err);
     return null;

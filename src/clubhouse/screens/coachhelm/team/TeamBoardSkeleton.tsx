@@ -1,12 +1,12 @@
 'use client';
 
 import { useChPhone } from '../../../lib/use-phone';
-import { PhoneTop } from '../../../shell/phone-chrome';
+import { DeskTop, PhoneTop } from '../../../shell/phone-chrome';
 import { LargeTitleSkeleton } from '../../../ui/LargeTitle';
 import { CoachHelmTabs } from '../chat/SubTabs';
 
-const rows = (n: number) => (
-  <div className="card sklc">
+const rows = (n: number, height?: number) => (
+  <div className="card sklc" style={height ? { minHeight: height } : undefined}>
     {Array.from({ length: n }, (_, i) => (
       <div className="sklrow" key={i}>
         <span className="skl" style={{ width: 30, height: 30, borderRadius: 15 }} />
@@ -17,8 +17,8 @@ const rows = (n: number) => (
   </div>
 );
 
-const hero = (h: number) => (
-  <div className="feat ch-htb-feat">
+const hero = (h: number, height?: number) => (
+  <div className="feat ch-htb-feat" style={height ? { minHeight: height } : undefined}>
     <span className="skl" style={{ width: '54%', height: 14 }} />
     <span className="skl" style={{ width: '38%', height: 40, marginTop: 8 }} />
     <span className="skl" style={{ width: '100%', height: h, borderRadius: 14, marginTop: 12 }} />
@@ -30,21 +30,35 @@ export function TeamBoardSkeleton() {
   const phone = useChPhone();
   if (phone)
     return (
-      <main className="ch-htb is-phone" aria-busy="true">
+      <main className="ch-htb is-phone" aria-busy="true" aria-label="Loading Team view">
         <PhoneTop start title="CoachHelm" />
-        <CoachHelmTabs active="board" held boardLabel="Team" />
         <div className="sheet" aria-hidden="true">
-          <LargeTitleSkeleton />
-          <span className="skl" style={{ height: 120, borderRadius: 16 }} />
-          {hero(300)}
-          {rows(5)}
-          {rows(4)}
+          <header className="ch-chd is-phone">
+            <div className="ch-chd__t">
+              <LargeTitleSkeleton />
+              <span className="skl" style={{ width: '72%', height: 16, margin: '2px 0' }} />
+            </div>
+            <div className="ch-chd__sw">
+              <CoachHelmTabs active="board" held boardLabel="Team" />
+            </div>
+          </header>
+          {/* The loaded cards' heights (06 #loading: 180, 406, 258, 216), so nothing jumps when they land (TEAM-28). */}
+          <div className="card sklc" style={{ minHeight: 180 }}>
+            <span className="skl" style={{ width: '40%', height: 14 }} />
+            <span className="skl" style={{ height: 130, marginTop: 12, borderRadius: 12 }} />
+          </div>
+          {hero(232, 406)}
+          {rows(5, 258)}
+          {rows(4, 216)}
         </div>
       </main>
     );
   return (
-    <main className="ch-htb is-desk" aria-busy="true">
+    <main className="ch-htb is-desk" aria-busy="true" aria-label="Loading Team view">
       <div className="ch-htb-desk" aria-hidden="true">
+        <DeskTop>
+          <CoachHelmTabs active="board" held boardLabel="Team" />
+        </DeskTop>
         <div className="dgrid">
           <div className="dcol">
             {hero(250)}

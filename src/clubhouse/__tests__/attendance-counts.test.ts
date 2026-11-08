@@ -16,7 +16,6 @@ vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).f
 
 import { createClient } from '@/lib/supabase/server';
 import { loadAttendanceCounts } from '../data/attendance-counts';
-import { loadClubhouseShell } from '../data/shell';
 import { loadHomeWeek } from '../data/home';
 import { loadPlayerHome } from '../data/player-home';
 import { loadCalendar } from '../data/calendar';
@@ -100,41 +99,6 @@ describe('Home lines from a count (no identities)', () => {
     }
     expect(inviteDetail({ location: null, title: 'Film', invitees: 1, names: none })).toBe('1 player');
     expect(confirmedLine(0, 0)).toBeNull();
-  });
-});
-
-describe('Shell next-event card', () => {
-  const next = { data: [{ id: 'e1', title: 'Qualifier', start_time: '2026-10-16T14:00:00Z', all_day: false, location: 'Pines', event_type: 'qualifier', requires_rsvp: true }] };
-  const rows = { data: [{ status: 'accepted' }, { status: 'accepted' }, { status: 'pending' }] };
-
-  it('a player: the confirmed count comes from the function, and the only attendance read is their own reply', async () => {
-    const asked = serve({ golf_events: next, golf_event_attendance: rows, 'rpc:golf_event_attendance_counts': counts([{ event_id: 'e1', invited: 6, accepted: 5 }]) });
-    const shell = await loadClubhouseShell('t1', 'p1', null);
-    expect(shell.nextEvent?.ready).toEqual({ accepted: 5, invited: 6 });
-    expect(asked.golf_event_attendance).toHaveLength(1);
-    expect(ownOnly(asked.golf_event_attendance)).toBe(true);
-  });
-
-  it('a player, before the migration: the rows are read as before, beside their own reply', async () => {
-    const asked = serve({ golf_events: next, golf_event_attendance: rows });
-    const shell = await loadClubhouseShell('t1', 'p1', null);
-    expect(shell.nextEvent?.ready).toEqual({ accepted: 2, invited: 3 });
-    expect(asked.golf_event_attendance).toHaveLength(2);
-  });
-
-  it('a player whose count fails: no confirmed line, logged, and no fallback read of the rows', async () => {
-    const asked = serve({ golf_events: next, golf_event_attendance: rows, 'rpc:golf_event_attendance_counts': { error: { code: '57014', message: 'timeout' } } });
-    const shell = await loadClubhouseShell('t1', 'p1', null);
-    expect(shell.nextEvent?.ready).toBeNull();
-    expect(logServer).toHaveBeenCalledWith('shell', 'nextEventAttendance', expect.anything(), 'calendar');
-    expect(ownOnly(asked.golf_event_attendance)).toBe(true);
-  });
-
-  it('a coach keeps the direct read even when the function exists', async () => {
-    const asked = serve({ golf_events: next, golf_event_attendance: rows, 'rpc:golf_event_attendance_counts': counts([{ event_id: 'e1', invited: 9, accepted: 9 }]) });
-    const shell = await loadClubhouseShell('t1', null, 'c1');
-    expect(shell.nextEvent?.ready).toEqual({ accepted: 2, invited: 3 });
-    expect(asked['rpc:golf_event_attendance_counts']).toBeUndefined();
   });
 });
 

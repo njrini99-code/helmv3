@@ -85,6 +85,9 @@ export function parseClassName(className: string): { code: string; name: string 
   if (at > 0) {
     const head = className.slice(0, at).trim();
     const tail = className.slice(at + 3).trim();
+    // A registrar's department in words ("English and Creative Writing 101") is a code too: its first four letters and the number.
+    const worded = /^([A-Za-z]+)(?: [A-Za-z&]+)* (\d{3,4}[A-Za-z]?)$/.exec(head);
+    if (worded && worded[1]!.length > 4 && tail) return { code: `${worded[1]!.slice(0, 4).toUpperCase()} ${worded[2]}`, name: tail };
     if (CODE_RE.test(head) && tail) return { code: head, name: tail };
   }
   return { code: '', name: className.trim() };
@@ -177,15 +180,85 @@ function meetingKey(c: Pick<ChClass, 'days' | 'start'>): number {
   return day * 1440 + start;
 }
 
+const REGISTRAR_BLANK = /^(no specified instructor|no instructor|instructor tba|staff|tba|tbd|to be announced|n\/a|none|unassigned)$/i;
+
+/** A registrar's filler ("TBA", "Staff") is no answer: blank, so the row leaves it out. */
+export function cleanRegistrarField(raw: string | null | undefined): string {
+  const t = (raw ?? '').replace(/\s+/g, ' ').trim();
+  return REGISTRAR_BLANK.test(t) ? '' : t;
+}
+
+/**
+ * A registrar's place as a person reads it: "Guilford Building King Hall Room" and "B26" is King Hall and B26; "Duke Memorial Room LEAK"
+ * is Duke Memorial and LEAK. The campus prefix goes when a building's own name follows it.
+ */
+export function cleanPlace(building: string | null | undefined, room: string | null | undefined): { building: string; room: string } {
+  let b = cleanRegistrarField(building).replace(/^\S+ Building (?=\S+ \S)/, '').replace(/\b(?:Cntr|Ctr)\b/g, 'Center');
+  let r = cleanRegistrarField(room);
+  const m = /^(.*\S) Room(?: (\S+))?$/.exec(b);
+  if (m) {
+    b = m[1]!;
+    r = r || m[2] || '';
+  }
+  return { building: b, room: r };
+}
+
+/**
+ * An instructor as a person reads it, from a registrar's "Daniels, Wess (Primary); Williams, LaKeisha": "Wess Daniels and LaKeisha
+ * Williams". Filler goes, a role in brackets goes, "Last, First" turns round, and past two names the rest are counted.
+ */
+export function cleanInstructor(raw: string | null | undefined): string {
+  const names = (raw ?? '')
+    .split(';')
+    .map((part) => cleanRegistrarField(part.replace(/\([^)]*\)/g, ' ')))
+    .filter(Boolean)
+    .map((n) => (/^[^,]+,[^,]+$/.test(n) ? n.split(',').map((x) => x.trim()).reverse().join(' ') : n));
+  if (names.length <= 2) return names.join(' and ');
+  return `${names[0]} and ${names.length - 1} others`;
+}
+
+/** Two classes in one term that meet at once: on which days, and when they overlap. */
+export interface ChClassClash {
+  key: string;
+  a: ChClass;
+  b: ChClass;
+  days: string[];
+  start: string;
+  end: string;
+}
+
+/** Each pair of classes in the same term that meet at the same time on a shared day (a registrar can't always stop these, and a player can import them). */
+export function classClashes(classes: readonly ChClass[], currentTerm = ''): ChClassClash[] {
+  const out: ChClassClash[] = [];
+  classes.forEach((a, i) => {
+    const as = toMinutes(a.start);
+    const ae = toMinutes(a.end);
+    if (as == null || ae == null || ae <= as) return;
+    for (const b of classes.slice(i + 1)) {
+      // A class with no term on it sits in the current one, as `inTerm` draws it.
+      if (!sameTerm(a.semester || currentTerm, b.semester || currentTerm)) continue;
+      const bs = toMinutes(b.start);
+      const be = toMinutes(b.end);
+      if (bs == null || be == null || be <= bs || !(as < be && bs < ae)) continue;
+      const days = a.days.filter((d) => b.days.includes(d));
+      if (!days.length) continue;
+      const hh = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+      out.push({ key: `${a.id}:${b.id}`, a, b, days, start: hh(Math.max(as, bs)), end: hh(Math.min(ae, be)) });
+    }
+  });
+  return out;
+}
+
 export function toChClass(row: ChClassRow, tone: ChTone): ChClass {
   const { code, name } = parseClassName(row.class_name);
-  const building = row.building?.trim() || null;
-  const room = row.room?.trim() || null;
+  const place = cleanPlace(row.building, row.room);
+  const building = place.building || null;
+  const room = place.room || null;
   return {
     id: row.id,
     code,
     name,
-    instructor: row.instructor?.trim() || null,
+    instructor: cleanInstructor(row.instructor) || null,
     days: sortDays(Array.isArray(row.days) ? row.days : []),
     start: toHHMM(row.start_time),
     end: toHHMM(row.end_time),
@@ -633,18 +706,19 @@ export function lookAt(p: Pick<ParsedClass, 'days' | 'start_time'>): string | nu
 
 export function toImportRow(p: ParsedClass): ChImportRow {
   const code = p.course_code.trim();
-  const location = p.location.trim();
-  const building = p.building.trim() || (!p.room.trim() ? location : '');
+  const location = cleanRegistrarField(p.location);
+  const place = cleanPlace(p.building, p.room);
+  const building = place.building || (!place.room ? cleanPlace(location, '').building : '');
   return {
     key: p.id,
     code,
     name: p.course_name.trim() || code || 'Untitled class',
-    instructor: p.instructor.trim(),
+    instructor: cleanInstructor(p.instructor),
     days: sortDays(p.days),
     start: toHHMM(p.start_time) ?? '',
     end: toHHMM(p.end_time) ?? '',
     building,
-    room: p.room.trim(),
+    room: place.room,
     credits: p.credits,
     semester: p.semester.trim(),
     notes: '',

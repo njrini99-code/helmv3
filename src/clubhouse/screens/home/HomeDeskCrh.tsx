@@ -1,5 +1,6 @@
 'use client';
 
+import { TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import type { ChCoachHome, ChHomeEvent } from '../../data/home';
 import { TYPE_LABEL } from '../calendar/model';
@@ -8,16 +9,12 @@ import { CALENDAR, eventHref, whenLabel } from './event-links';
 import { Icon } from '../../ui/Icon';
 import { EmptyState } from '../../ui/States';
 import { useChClockText } from '../../lib/use-clock';
-import { formatAvg, formatToPar } from '../../lib/format';
+import { formatToPar } from '../../lib/format';
 import { Avatar } from '../../ui/Avatar';
-import { leaderPlaces } from './Leaderboard';
 import { rebuiltHref } from '../../shell/nav';
 
-/** A card with this many rows or fewer leaves room beside Team scoring, and says what the list holds (design parity, 5 Nov). */
-const FEW_AGENDA_ROWS = 3;
-/** The rows these two cards show (06 11). */
+/** The rows Latest rounds shows (06 11). */
 const DESK_ROUNDS = 4;
-const DESK_BOARD = 5;
 
 /** Up next in the hero's right column: glass, no chevron (06 §11.4). */
 export function DeskNext({ e, now }: { e: ChHomeEvent; now: Date | null }) {
@@ -66,33 +63,42 @@ function DeskHead({ id, title, href, link }: { id: string; title: string; href: 
 }
 
 /**
- * This week: today's rows, then what is coming, rows 56 (06 §11.4). The card matches Team scoring's height, so a short list
- * ends with a quiet line that says what the list holds: later days list competitions only, so it never says the week is empty.
+ * Today: the rest of the day, with Up next in the hero, so no event is drawn twice. Each row opens its event. A day with nothing on it
+ * says so; the week lives on Calendar.
  */
-export function DeskAgenda({ rows }: { rows: ChCoachHome['week']['agenda'] }) {
-  const t = useChClockText();
+export function DeskToday({ events, now }: { events: readonly ChHomeEvent[]; now: Date | null }) {
+  const t12 = useChClockText();
+  const t = now?.getTime();
   return (
-    <section className="ch-dh-card" aria-labelledby="ch-dh-week">
-      <DeskHead id="ch-dh-week" title="This week" href={CALENDAR} link="Calendar" />
-      {rows.length === 0 ? (
-        <EmptyState compact kind="first-run" code="CH-2301" title="Nothing on the calendar this week" body="Practices, qualifiers and travel show up here." />
+    <section className="ch-dh-card" aria-labelledby="ch-dh-today">
+      <DeskHead id="ch-dh-today" title="Today" href={CALENDAR} link="Calendar" />
+      {events.length === 0 ? (
+        <EmptyState compact kind="first-run" code="CH-2301" title="Nothing scheduled" body="Players can still post rounds from the course." />
       ) : (
-      <>
-      <ul className="ch-dh-rows ch-dh-rows--agenda">
-        {rows.map((r) => (
-          <li key={r.id}>
-            <span className="ch-dh-time ch-num">{t(r.timeLabel)}</span>
-            <i className={r.isNext ? 'is-next' : ''} aria-hidden="true" />
-            <span className="ch-dh-rows__b">
-              <b>{r.title}</b>
-              {r.detail && <span>{r.detail}</span>}
-            </span>
-            {r.isNext && <span className="ch-hm-now">Next</span>}
-          </li>
-        ))}
-      </ul>
-      {rows.length <= FEW_AGENDA_ROWS && <p className="ch-dh-rest">That’s today and this week’s competitions.</p>}
-      </>
+        <ul className="ch-dh-rows ch-dh-rows--today">
+          {events.map((e) => {
+            const live = !e.allDay && t != null && Date.parse(e.startIso) <= t && Date.parse(e.endIso ?? e.startIso) > t;
+            return (
+              <li key={e.id}>
+                <Link href={eventHref(e)} className="ch-dh-rows__a">
+                  <span className="ch-dh-time ch-num">{e.allDay ? 'All day' : t12(e.startLabel)}</span>
+                  <span className="ch-dh-rows__b">
+                    <b>{e.title}</b>
+                    {e.location && <span>{e.location}</span>}
+                  </span>
+                  {e.conflict ? (
+                    <span className="ch-dh-clash" title="Overlaps another event">
+                      <Icon icon={TriangleAlert} size={13} />
+                      Clash
+                    </span>
+                  ) : live ? (
+                    <span className="ch-hm-now">Now</span>
+                  ) : null}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </section>
   );
@@ -100,7 +106,7 @@ export function DeskAgenda({ rows }: { rows: ChCoachHome['week']['agenda'] }) {
 
 /**
  * Latest rounds: the newest four, not tappable (06 11), the score in a well over its to-par. A failed or empty read takes today's
- * section, in the caller. No sparkline: a round row carries no per-round line of its own, and the leaderboard's trend counts other rounds.
+ * section, in the caller. No sparkline: a round row carries no per-round line of its own, and a trend counts other rounds.
  */
 export function DeskRounds({ rounds }: { rounds: ChCoachHome['latestRounds']['rounds'] }) {
   return (
@@ -122,38 +128,6 @@ export function DeskRounds({ rounds }: { rounds: ChCoachHome['latestRounds']['ro
         ))}
       </ul>
       {rounds.length < DESK_ROUNDS && <p className="ch-dh-rest">New rounds show here as players post them.</p>}
-    </section>
-  );
-}
-
-/**
- * Leaderboard: the top five, rank, coin, average; rows 52, inset 56 (06 11). The rank rule stays leaderPlaces' (B13). When nobody has a
- * place yet there is no rank column to fill: a column of dashes reads as broken, so the rows drop it and a quiet line says why.
- */
-export function DeskBoard({ rows, rosterSize }: { rows: ChCoachHome['leaderboard']['rows']; rosterSize: number }) {
-  const shown = rows.slice(0, DESK_BOARD);
-  const places = leaderPlaces(rows);
-  const unplaced = shown.every((_, i) => places[i]!.place == null);
-  return (
-    <section className="ch-dh-card" aria-labelledby="ch-dh-board">
-      <DeskHead id="ch-dh-board" title="Leaderboard" href={rebuiltHref('/golf/dashboard/roster')} link="Roster" />
-      <ol className={'ch-dh-rows ch-dh-rows--board' + (unplaced ? ' is-unplaced' : '')}>
-        {shown.map((p, i) => (
-          <li key={p.playerId}>
-            {!unplaced && <span className="ch-dh-rank ch-num">{places[i]!.label}</span>}
-            <Avatar name={p.name} id={p.playerId} size="sm" />
-            <span className="ch-dh-rows__b">
-              <b>{p.name}</b>
-            </span>
-            <b className="ch-num">{formatAvg(p.avg)}</b>
-          </li>
-        ))}
-      </ol>
-      {unplaced ? (
-        <p className="ch-dh-rest">Early reads. Places start at three 18-hole rounds.</p>
-      ) : (
-        shown.length < DESK_BOARD && rosterSize > rows.length && <p className="ch-dh-rest">Players join the board with their first 18-hole round.</p>
-      )}
     </section>
   );
 }

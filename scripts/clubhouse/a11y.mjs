@@ -43,10 +43,10 @@ export const CH_A11Y_PAGES = [
   ['roster', '/clubhouse-preview/roster?state=empty'],
   ['roster', '/clubhouse-preview/roster?state=failed'],
   ['roster', '/clubhouse-preview/roster?state=loading'],
-  ['roster', '/clubhouse-preview/roster?state=partial', { wide: '.ch-rs-face', phone: '.ch-rsm-row' }],
+  ['roster', '/clubhouse-preview/roster?state=partial', { wide: '.ch-rs-who', phone: '.ch-rsm-row' }],
   ['roster', '/clubhouse-preview/roster', { wide: '[aria-label="List view"]' }],
-  ['roster', '/clubhouse-preview/roster?player=jonah', { phone: '.ch-pbar__icon[aria-label="More actions"]' }],
-  ['roster', '/clubhouse-preview/roster', { phone: '.ch-rsm-banner' }],
+  ['roster', '/clubhouse-preview/roster?player=jonah', { phone: '.ch-pbar__icon[aria-label="Player actions"]' }],
+  ['roster', '/clubhouse-preview/roster', { phone: '.ch-rsx-req' }],
   ['roster', '/clubhouse-preview/roster?player=luca'],
   ['stats-team', '/clubhouse-preview/stats'],
   ['stats-team', '/clubhouse-preview/stats?state=empty'],
@@ -74,7 +74,8 @@ export const CH_A11Y_PAGES = [
   ['stats-player', '/clubhouse-preview/player', { wide: '#tab-rounds' }],
   ['stats-player', '/clubhouse-preview/player', { wide: '#tab-dev' }],
   // The phone shows one Game detail section at a time with More detail closed: open each section's detail.
-  ...[1, 2, 3, 4, 5].map((n) => ['stats-player', '/clubhouse-preview/player', { phone: [...(n > 1 ? [`.ch-gd__nav .ch-pill:nth-child(${n})`] : []), '.ch-gd .ch-gx-more > summary'] }]),
+  ['stats-player', '/clubhouse-preview/player', { phone: '.ch-shs-gc' }],
+  ['stats-player', '/clubhouse-preview/player', { phone: '.ch-shs-dlink' }],
   ['calendar', '/clubhouse-preview/calendar'],
   ['calendar', '/clubhouse-preview/calendar?view=month'],
   ['calendar', '/clubhouse-preview/calendar?view=agenda'],
@@ -94,13 +95,13 @@ export const CH_A11Y_PAGES = [
   ['messages', '/clubhouse-preview/messages?state=announcement'],
   ['messages', '/clubhouse-preview/messages?state=ann-failed'],
   // The phone Messages board opens on the conversation list: open the first thread before its Details.
-  ['messages', '/clubhouse-preview/messages', { wide: 'button[aria-label="Details"]', phone: ['.ch-msp-list .ch-ms-sec.is-date button', 'button[aria-label="Details"]'] }],
+  ['messages', '/clubhouse-preview/messages', { wide: 'button[aria-label="Details"]', phone: ['.ch-msp-list .ch-ms-row', 'button[aria-label="Details"]'] }],
   ['messages', '/clubhouse-preview/messages?state=rail'],
   ['messages', '/clubhouse-preview/messages?state=rail', { wide: 'button[aria-label="New message"]', phone: 'button[aria-label="New message"]' }],
   ['messages', '/clubhouse-preview/messages?state=rail', { phone: ['button[aria-label="New message"]', '.ch-msp-new button:has-text("Announcement")'] }],
   ['messages', '/clubhouse-preview/messages-player?state=rail', { phone: 'button[aria-label="New message"]' }],
-  ['messages', '/clubhouse-preview/messages?state=files-failed', { phone: ['.ch-msp-list .ch-ms-sec.is-date button', 'button[aria-label="Details"]'] }],
-  ['messages', '/clubhouse-preview/messages', { phone: ['.ch-msp-list .ch-ms-sec.is-date button', 'button[aria-label="Details"]', '.ch-msp-details .ch-msp-link:has-text("Add")'] }],
+  ['messages', '/clubhouse-preview/messages?state=files-failed', { phone: ['.ch-msp-list .ch-ms-row', 'button[aria-label="Details"]'] }],
+  ['messages', '/clubhouse-preview/messages', { phone: ['.ch-msp-list .ch-ms-row', 'button[aria-label="Details"]', '.ch-msp-details .ch-msp-link:has-text("Add")'] }],
   ['settings', '/clubhouse-preview/settings'],
   ['settings', '/clubhouse-preview/settings?section=notifications'],
   ['settings', '/clubhouse-preview/settings?section=team'],
@@ -267,7 +268,8 @@ async function main() {
       let response = await tab.goto(BASE + path, { waitUntil: 'networkidle', timeout: 240_000 });
       // A dev server's first render of a route can fail while it compiles (a 500 that a reload clears): one retry.
       if (!response?.ok()) response = await tab.goto(BASE + path, { waitUntil: 'networkidle', timeout: 240_000 });
-      if (!response?.ok()) throw new Error(`Preview unavailable: ${path} (${response?.status() ?? 'no response'}). Use next dev; production previews return 404.`);
+      // ?state=crash throws on purpose, so its 500 is the error page this row is here to scan.
+      if (!response?.ok() && !path.endsWith('state=crash')) throw new Error(`Preview unavailable: ${path} (${response?.status() ?? 'no response'}). Use next dev; production previews return 404.`);
       const opener = open?.[width < 600 ? 'phone' : 'wide'];
       if (open && !opener) {
         await tab.close();

@@ -839,7 +839,7 @@ path.ch-rt-map__shot {
   font: var(--ch-type-14-medium);
   line-height: var(--ch-lead-tight);
   color: var(--ch-ink-700);
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 /* A result option's note and the rare options were #8a857a on the well: 3.2:1 (aesthetic audit X-4); tertiary holds 4.7:1. */
 .ch-rt-seg button em {
@@ -1793,14 +1793,14 @@ path.ch-rt-map__shot {
    root and makes the bar inert), so the shot screen's own bar (Exit, the round, Card) is the top of the screen, under
    the status bar. The rule keys on the screen being in the page, not on the flag, so the server's first paint is
    already full screen. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-root:has(.ch-rt-q) .ch-topbar {
     display: none;
   }
 }
 
 /* Phone: every control's touch area reaches 44 x 44 (Apple's minimum) without changing how it is drawn. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-rt-pill {
     position: relative;
   }
@@ -2237,7 +2237,7 @@ path.ch-rt-map__shot {
   font: var(--ch-type-14);
   color: var(--ch-ink-500);
 }
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-rtcv-d {
     width: 430px;
     height: min(880px, calc(100dvh - 48px));
@@ -2794,7 +2794,7 @@ path.ch-rt-map__shot {
     color: var(--ch-ink-900);
     box-shadow: var(--ch-key-raised-shadow), 0 0 0 1px var(--ch-border-subtle);
     transition:
-      background var(--ch-dur-quick) var(--ch-ease),
+      background-color var(--ch-dur-quick) var(--ch-ease),
       transform var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-rt-seg button:not([aria-checked='true'])[data-ch-pressed] {
@@ -3038,7 +3038,7 @@ path.ch-rt-map__shot {
 /* The page is what scrolls the shot screen on a phone, under the sticky action bar (96px tall with its hint): whatever
    is brought into view (Tap in, a focused box, the undo question) lands clear of the bar, not under it (wave 9, E). The
    undo question's own margin then only needs a breath. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   html:has(.ch-rt-q) {
     scroll-padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
@@ -3050,7 +3050,7 @@ path.ch-rt-map__shot {
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-rt-strip__h em,
   .ch-rt-strip__tot em,
   .ch-rt-hno em,
@@ -3075,7 +3075,7 @@ path.ch-rt-map__shot {
 }
 
 /* Phone: touch areas reach 44 x 44 without changing how they are drawn (W4b, 2026-10-19). */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-rt-quick button {
     position: relative;
   }

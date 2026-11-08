@@ -66,6 +66,22 @@ export function isGroupRow(c: { is_group?: boolean | null; participant_count?: n
   return n > 2;
 }
 
+/**
+ * A two-person thread stored as a team chat and named for one of the two (a coach's broadcast to one player carries `is_team_chat`
+ * and that player's name). It is a one-to-one thread: each side sees the other person. A coach's group with its own name that happens
+ * to hold one player stays a group (audit L4), and so does the team's channel.
+ */
+export function isNamedForOneOfTwo(
+  c: { is_team_channel?: boolean | null; title?: string | null; participant_count?: number | null; participant_ids?: readonly string[] | null },
+  names: ReadonlyArray<string | null | undefined>,
+): boolean {
+  if (c.is_team_channel) return false;
+  if ((c.participant_count ?? c.participant_ids?.length ?? 0) !== 2) return false;
+  const title = c.title?.trim().toLowerCase();
+  if (!title) return true;
+  return names.some((n) => n?.trim().toLowerCase() === title);
+}
+
 /** A one-to-one thread: not a group, not the channel, two members. */
 export function isDirect(c: ChConv): boolean {
   return !c.group && !c.channel && c.memberCount === 2;
@@ -357,3 +373,10 @@ export interface ChMute {
 
 /** An announcement still needs this player when it asks for acknowledgement and they haven't given it. */
 export const needsMyAck = (a: ChAnnouncement, role: 'coach' | 'player') => role === 'player' && a.requiresAck && !a.acknowledgedByMe;
+
+/** The Pinned card's threads (06 S-MSG): the team's channel is always first, then the viewer's own pins, three faces in all. */
+export function pinnedThreads<T extends { id: string; channel?: boolean }>(convs: readonly T[], pinIds: readonly string[]): T[] {
+  const channel = convs.find((c) => c.channel);
+  const own = pinIds.map((id) => convs.find((c) => c.id === id)).filter((c): c is T => !!c && c !== channel);
+  return (channel ? [channel, ...own] : own).slice(0, 3);
+}

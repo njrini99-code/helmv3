@@ -183,7 +183,7 @@ test('a z-index is a ladder step, a step plus or minus 1 to 5, or a local -1 to 
     assert.ok(checkSource('src/clubhouse/styles/x.css', `.ch-a { z-index: ${bad}; }`).some((x) => x.includes('CONS-35')), bad);
   }
   // In a media block too.
-  assert.ok(checkSource('src/clubhouse/styles/x.css', '@media (max-width: 820px) {\n  .ch-a {\n    z-index: 70;\n  }\n}').some((x) => x.includes('z-index 70')));
+  assert.ok(checkSource('src/clubhouse/styles/x.css', '@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {\n  .ch-a {\n    z-index: 70;\n  }\n}').some((x) => x.includes('z-index 70')));
 });
 
 test('a card, panel or tile takes its corner from the radius scale; its children do not count (CONS-32)', () => {

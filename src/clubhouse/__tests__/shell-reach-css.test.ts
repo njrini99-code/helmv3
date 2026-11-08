@@ -31,7 +31,7 @@ describe('CH-1815 every phone key reaches 44 by 44', () => {
   it("a pushed screen's bar has the shell bar's 44px row, so its back link and text action sit in it", () => {
     // 50px under the status bar with 6px below the row and no hairline: a 44px row, as the shell bar's.
     expect(Number(/--ch-phone-topbar-h:\s*(\d+)px/.exec(tokens)?.[1])).toBe(50);
-    expect(withProp(shell, '  .ch-pbar', 'padding')).toMatch(/padding:\s*env\(safe-area-inset-top\) 8px 6px 16px/);
+    expect(withProp(shell, '  .ch-pbar', 'padding')).toMatch(/padding:\s*env\(safe-area-inset-top\) 8px 6px var\(--ch-page-x-phone\)/);
     expect(withProp(shell, "[data-ui='clubhouse'] .ch-pbar", 'border-bottom')).toMatch(/border-bottom:\s*0/);
     expect(withProp(shell, "[data-ui='clubhouse'] .ch-topbar", 'border-bottom')).toMatch(/border-bottom:\s*0/);
     expect(px(withProp(shell, '.ch-pbar__back', 'height'), 'height')).toBe(44);
@@ -94,7 +94,7 @@ describe('CH-1617 choices and the feature card answer a press without scaling', 
     });
 
   it('the segment tint comes in over the press beat', () => {
-    expect(withProp(controls, '.ch-seg__b', 'transition')).toMatch(/background var\(--ch-dur-press\) var\(--ch-ease\)/);
+    expect(withProp(controls, '.ch-seg__b', 'transition')).toMatch(/background-color var\(--ch-dur-press\) var\(--ch-ease\)/);
   });
 
   it('the linked feature card lays a shade over its green and never scales', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { coachPlayerHref, diveReadHref, readHref } from '../../../../data/coachhelm-views-shape';
-import { assignStateOf, readCauseOf, toChReadDetail, toChReadSummary, toChReadView, type ChReadDetail } from '../../../../data/coachhelm-read-view-shape';
+import { assignStateOf, readCauseOf, toChReadDetail, toChReadView, type ChReadDetail } from '../../../../data/coachhelm-read-view-shape';
 import { rangeWords } from '../../../../data/coachhelm-engine-shape';
 import { diveCounts, toChDeepInsight, type ChDeepDive } from '../../../../data/coachhelm-dive-shape';
 import { toChInsight } from '../../../../data/coachhelm-map';
@@ -91,12 +91,6 @@ describe('the read payload', () => {
     expect(json).not.toContain('175+');
     expect(json).not.toContain('times as often');
     expect(json).not.toContain(RANGE);
-  });
-
-  it('the player’s summary card never says Likely', () => {
-    const player = toChReadSummary(detail('player'), 'Approach', 'player');
-    expect(player.tier).toEqual({ kind: 'plain', word: 'Not traced' });
-    expect(toChReadSummary(detail('coach'), 'Approach', 'coach').tier).toEqual({ kind: 'likely', word: 'Likely' });
   });
 
   it('the funnel reaches a player only when the lane’s call allows it', () => {

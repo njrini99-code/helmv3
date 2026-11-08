@@ -88,6 +88,8 @@
 }
 .ch-hl-tp__row ul {
   margin: 0 0 12px 40px;
+  padding: 0;
+  min-width: 0;
 }
 .ch-hl-tp__row ul li {
   display: grid;

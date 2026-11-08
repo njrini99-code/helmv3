@@ -155,7 +155,7 @@ describe('an old address keeps its query when it moves (the proxy hands layouts 
     await expect(IntelligenceLayout({ children: null })).rejects.toThrow(new RegExp('REDIRECT /golf/dashboard/coachhelm$'));
   });
 
-  it('CH-13998 with the coach Brief on, /intelligence and its old sub-links open the Brief at the part they were for', async () => {
+  it('CH-13998 the Brief is gone (dashboard cuts, 1): with its flag on, /intelligence and its old sub-links open the board', async () => {
     const { default: IntelligenceLayout } = await import('@/app/golf/(dashboard)/dashboard/intelligence/layout');
     briefOn = true;
     const lands = async (q: string) => {
@@ -164,15 +164,10 @@ describe('an old address keeps its query when it moves (the proxy hands layouts 
       await IntelligenceLayout({ children: null }).catch(() => {});
       return redirect.mock.calls[0]?.[0];
     };
-    const BRIEF = '/golf/dashboard/coachhelm?view=brief';
-    expect(await lands('')).toBe(BRIEF);
-    // /alerts and /insights (Signals) land on this week's reads; /patterns on the team pattern.
-    expect(await lands('?view=signals&filter=alerts')).toBe(BRIEF);
-    expect(await lands('?view=signals&filter=insights&id=in-1')).toBe(BRIEF);
-    expect(await lands('?view=signals&filter=patterns')).toBe(`${BRIEF}&section=patterns`);
-    // /development (Players) on what players are working on; /analytics/coachhelm (Effectiveness) on the track record.
-    expect(await lands('?view=players')).toBe(`${BRIEF}&section=working`);
-    expect(await lands('?view=effectiveness')).toBe(`${BRIEF}&section=record`);
+    const BOARD = '/golf/dashboard/coachhelm';
+    for (const q of ['', '?view=signals&filter=alerts', '?view=signals&filter=patterns', '?view=players', '?view=effectiveness']) {
+      expect(await lands(q)).toBe(BOARD);
+    }
     // A player link still opens the board on that player, and chat is still Ask.
     expect(await lands(`?view=players&player=${TID}`)).toBe(`/golf/dashboard/coachhelm?player=${TID}`);
     expect(await lands('?view=chat')).toBe('/golf/dashboard/coachhelm?view=ask');

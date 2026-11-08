@@ -42,7 +42,7 @@
 .ch-hg-game {
   scroll-margin-top: calc(var(--ch-topbar-h) + 16px);
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-hg-game {
     scroll-margin-top: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top) + 12px);
   }
@@ -312,7 +312,7 @@
 }
 
 /* Phone: a disclosure's tap area reaches 44. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-hg-m__how summary {
     min-height: 44px;
   }
@@ -321,7 +321,7 @@
 /* The Ledger (owner, 2026-10-07: "flush, not so card heavy"). On desktop How you play is a section on the canvas:
    its heading over the engraved rule, the persona's sentence and its window, then every measure in one ruled table:
    no card per measure and no stance wash; a measure's stance stays in its word, its tag and its scale. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   main[data-canopy] .ch-hg-m {
     padding: 0;
     overflow: visible;
@@ -377,7 +377,7 @@
 /* The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy"). On the phone the measures are one section under
    the engraved double rule, each a row between soft seams with no card and no stance wash (a measure's stance stays
    in its word, its tag and its scale). */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   /* An early read: one line led by a gilt dot, not a box and not a rule at its edge (no side rails, 2026-10-19). */
   .ch-hg-early {
     padding: 0;
@@ -451,7 +451,7 @@
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-hg-tag,
   .ch-hg-sc__e {
     font-size: calc(12 * var(--ch-type-k));
@@ -483,7 +483,7 @@
 }
 /* On the phone a measure is a row with no stance wash at night too (the phone's light rule has the same specificity and comes
    earlier). */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   :where(html[data-fw-theme='dark']) .ch-hg-grid > .ch-hg-m {
     background: none;
   }

@@ -11,7 +11,6 @@ import { NOTE_TABLE_MISSING_CODES, parseAvailability, type ChAvailability } from
 import { fromUntyped } from '@/lib/supabase/untyped';
 import {
   classYearLabel,
-  countsForScoring,
   displayHandicap,
   fullName,
   groupByPlayer,
@@ -21,6 +20,7 @@ import {
   SEASON_DEFAULT_TZ,
   mean,
   currentSeasonLabel,
+  lastTenFloor,
   seasonStartDate,
   shortDate,
   summarizePlayer,
@@ -29,6 +29,7 @@ import {
 import { formatFixed } from '../lib/format';
 import { isoDay } from '../lib/dates';
 import { sgBaseline } from '../lib/sg';
+import { playerStrokesGained, roundsForFigures } from './figure-window';
 import { tourForGender } from './stats-common';
 import { QUIET_DAYS, daysBetween as daysBetweenDates } from '../screens/home/model';
 
@@ -221,8 +222,8 @@ export async function loadRoster(input: { teamId: string; coachId: string; /** T
   const ids = members.map((m) => m.player.id);
 
   // Rounds, focus areas, goals, this coach's notes and CoachHelm's counts, in parallel.
-  const [season, focus, goals, notes, helm, availNotes] = await Promise.all([
-    ids.length ? loadSeasonRounds(supabase, ids, { surface: 'roster', since: seasonStartDate(now, tz) /* the team's zone, owner decision 9 */ }) : Promise.resolve({ rounds: [], error: false }),
+  const [wide, focus, goals, notes, helm, availNotes] = await Promise.all([
+    ids.length ? loadSeasonRounds(supabase, ids, { surface: 'roster', since: lastTenFloor(now) /* the legs' last ten can start before the season */ }) : Promise.resolve({ rounds: [], error: false }),
     // Open focus areas are `active` or `in_progress`, as Fairway's roster counts them (wiring audit, 2026-10-17).
     countBy('golf_player_focus_areas', ids, (chunk) =>
       supabase.from('golf_player_focus_areas').select('player_id').in('player_id', chunk).in('status', ['active', 'in_progress']),
@@ -232,7 +233,11 @@ export async function loadRoster(input: { teamId: string; coachId: string; /** T
     loadHelm(supabase, input, ids),
     loadAvailabilityNotes(supabase, input.teamId),
   ]);
-  const counted = input.crh ? season.rounds.filter(countsForScoring) : season.rounds;
+  // The season turns in the team's zone (owner decision 9); strokes gained reads the last ten across it (QA-1).
+  const seasonFrom = seasonStartDate(now, tz);
+  const season = { ...wide, rounds: wide.rounds.filter((r) => r.round_date.slice(0, 10) >= seasonFrom) };
+  const wideByPlayer = groupByPlayer(wide.rounds);
+  const counted = input.crh ? roundsForFigures(season.rounds) : season.rounds;
   const byPlayer = groupByPlayer(counted);
   // Averages, form and the floors read the cut rounds; Recent rounds and "All N" list every round the player posted (SHARED: Latest rounds lists every round).
   const everyRound = input.crh ? groupByPlayer(season.rounds) : byPlayer;
@@ -242,6 +247,7 @@ export async function loadRoster(input: { teamId: string; coachId: string; /** T
     const p = m.player;
     const s = summarizePlayer(byPlayer.get(p.id) ?? []);
     const every = input.crh ? summarizePlayer(everyRound.get(p.id) ?? []) : s;
+    const sg = playerStrokesGained(wideByPlayer.get(p.id) ?? []);
     const status = m.status === 'inactive' ? 'inactive' : 'active';
     const availability: ChAvailability = parseAvailability(m.availability);
     return {
@@ -261,8 +267,8 @@ export async function loadRoster(input: { teamId: string; coachId: string; /** T
       rounds: s.rounds,
       roundsAll: every.rounds,
       avg: s.avg,
-      sgPerRound: s.sgPerRound,
-      sgLegs: s.sgLegs,
+      sgPerRound: sg.total,
+      sgLegs: sg.legs,
       trend: s.trend,
       form: s.status,
       recent: every.recent.slice(0, 3).map((r) => ({

@@ -61,7 +61,7 @@
   pointer-events: none;
   animation: ch-fade var(--ch-dur-quick) var(--ch-ease) var(--ch-dur-press) backwards;
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-st-updating {
     top: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top) + 8px);
   }
@@ -541,7 +541,7 @@
 }
 /* The team chart is drawn on a 900 unit canvas about 700px wide at 1280, so its ticks are set in those units: 14.5 reads
    at about 11px there. The phone keeps its own floor (below). */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-sgt__svg .ch-tick {
     font-size: 15px;
   }
@@ -588,7 +588,7 @@
   line-height: var(--ch-lead-tight);
   text-align: left;
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 /* On the green card: a champagne ring, as the sidebar's (the global green one is 1.25:1 here), drawn 2px in: the rows
    stack 2px apart. */
@@ -668,7 +668,7 @@
   color: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-sgm + .ch-sgm::before {
   position: absolute;
@@ -754,7 +754,7 @@
   box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
   color: inherit;
   text-align: left;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-lg__r > * {
   align-self: center;
@@ -1025,7 +1025,7 @@
   font: 600 11px var(--ch-font-sans);
   fill: var(--ch-ink-500);
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   /* Every .ch-ax sits in a 690-unit-wide chart drawn at the phone's width, about half size: 24 units reads at 11.5 to
      14px from 320 to 430 wide (high-fidelity audit F09: it drew at 5.8px). */
   .ch-ax {
@@ -2082,7 +2082,7 @@
 .ch-stm {
   display: none;
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   /* The server renders desktop; on a phone it stays hidden until the phone view takes over at hydration. */
   .ch-st-desk,
 .ch-st.is-desk > * {
@@ -2363,7 +2363,7 @@
     margin: 0 -6px;
     padding: 0 6px;
     border-radius: var(--ch-radius-md);
-    transition: background var(--ch-dur-quick) var(--ch-ease);
+    transition: background-color var(--ch-dur-quick) var(--ch-ease);
   }
   .ch-stm-leg.ch-sv-row[data-pinned] {
     background: var(--ch-bg-inset);
@@ -2469,7 +2469,7 @@
 }
 
 /* Player stats on the phone (m-stats.jsx `Player`) */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-stm-figs.is-three dd:first-of-type {
     font-size: calc(20 * var(--ch-type-k));
   }
@@ -2690,7 +2690,7 @@
 /* P005-A2: one surface in Game detail on desktop (the phone pass's rule, "never a card inside a card"). Each section
    is the one card; inside it the tiles lose their boxes and sit between hairlines, divided by soft rules, as the
    phone's ledger tiles. Each tile draws the rule to its left and above it, and the grid clips the outer ones. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-gd:not(.is-phone) :is(.ch-gx-tiles,
 .ch-par3,
 .ch-gx-pars) {
@@ -2972,7 +2972,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-gx-rule {
     padding: 8px 16px 0;
   }
@@ -3036,7 +3036,7 @@
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.28);
   cursor: pointer;
   touch-action: manipulation;
-  transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {
   .ch-sf__chip:hover {
@@ -3149,7 +3149,7 @@
   flex: none;
   margin-left: 0;
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-sf.is-phone .ch-sf__bar {
     row-gap: 8px;
   }
@@ -3185,7 +3185,7 @@
 
 /* Phone: the window switch and the filter on one row (F-42). The filter is an icon button until a filter is on;
    then its chips take the full row below. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-stm-controls {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -3237,7 +3237,7 @@
 /* Player stats on the phone, to the board (m-stats.jsx Player, m.css, qual-mobile.css .qm-panel), F-54: each game
    section is one panel with a 15.5px title, its lead as the green italic note, the figures as a hairline-split strip
    with 20px values and 11.5px captions (the old rule sized the captions as values), and the panels' titles plain. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-stm-figs.is-three dd.is-words {
     font-size: calc(15 * var(--ch-type-k));
     letter-spacing: -0.01em;
@@ -3305,7 +3305,7 @@
 }
 
 /* Phone overview: figure baselines and a shared sample/comparison footer. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   /* On the stat line, as Team stats (owner, 2026-10-07: no sheet around figures): no surface, the gauge row's rule
      under the figures, the window's words beneath. */
   .ch-stm-overview {
@@ -3380,7 +3380,7 @@
   letter-spacing: 0;
   color: var(--ch-text-secondary);
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-gd.is-phone .ch-gm__figs dt {
     font: var(--ch-type-14-medium);
     color: var(--ch-text-secondary);
@@ -3455,7 +3455,7 @@
 .ch-gx-rule + .ch-gm-how {
   padding: 0 24px;
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-gd.is-phone .ch-gx-rule + .ch-gm-how {
     padding: 0 16px;
   }
@@ -3500,7 +3500,7 @@
 .ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm .ch-gm__reads {
   padding: 0;
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-gm__reads {
     padding: 6px 16px 0;
   }
@@ -3615,7 +3615,7 @@
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-tick,
   .ch-tab-t__n,
   .ch-sf__n {
@@ -3645,7 +3645,7 @@
 /* The Ledger (owner, 2026-10-07: "flush, not so card heavy"; sub-screens take the page head). On desktop the profile's
    striped banner card becomes the framed page head: the avatar beside a heavy sans name, the actions under it, and
    the four figures on the canvas under an engraved rule. Stats sections lose their card and sit on the canvas. */
-@media (min-width: 821px) {
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-st[data-canopy] .ch-st-back {
     margin: -8px 0 -16px;
   }
@@ -3760,7 +3760,7 @@
    engraved double rule); the figures sit between hairlines as the Ledger's figure row; every panel is a section flush
    under its double rule (ui/Section.tsx on the phone); lists are rows on seams that tint on press. Real objects keep
    their material: the window switch, the filter, the sort, the chips and the avatar. Phone only, under `.ch-stm`. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-stm {
     gap: 16px;
     padding: 26px var(--ch-page-x-phone) 36px;
@@ -3916,7 +3916,7 @@
     margin-inline: -12px;
     padding: 8px 12px;
     border-radius: var(--ch-radius-md);
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   /* The tint waits a beat after the finger lands, so a scroll that starts on a row never flashes it (CH-1606). */
   .ch-stm .ch-stm-row[data-ch-pressed] {
@@ -3957,7 +3957,7 @@
     align-self: flex-start;
     margin-left: -16px;
     border-radius: var(--ch-radius-md);
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   /* All N rounds and the Message key answer a press as a ghost button and a key do: a tint, and the shrink every
      button takes (`data-ch-press`, CH-1606). */
@@ -3972,7 +3972,7 @@
     }
   }
   .ch-stm .ch-spm-head__msg {
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-stm .ch-spm-head__msg[data-ch-pressed] {
     background: var(--ch-green-50);
@@ -4057,7 +4057,7 @@
     margin-inline: -12px;
     padding-inline: 12px;
     border-radius: var(--ch-radius-md);
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-stm .ch-gd.is-phone .ch-gm-how > summary[data-ch-pressed] {
     background: var(--ch-ledger-row-press);
@@ -4344,7 +4344,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   border-radius: var(--ch-radius-sm);
   box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-reading);
 }
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-bestcard__act .ch-btn {
     min-height: 44px;
   }
@@ -4355,7 +4355,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
    pages are cardless), hairlines inset to the text, small sentence-case headers over each group. Scoped to
    `.ch-stm.is-team`: a player's phone page shares the `.ch-stm-*` names and keeps its own look. Every height here is
    fixed, so the loading skeleton (StatsTeamPhoneSkeleton) draws the same geometry without measuring. */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-stm.is-team {
     gap: 16px;
     padding: 18px var(--ch-page-x-phone) 40px;
@@ -4679,7 +4679,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
-    transition: background var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
   .ch-stm.is-team .ch-stm-leg > span:first-child {
     overflow: hidden;
@@ -6535,7 +6535,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   }
 }
 .ch-st[data-canopy] .ch-zt .ch-tr:not(.ch-tr--h) {
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 
 /* Development: each focus area or goal as a track from where it started to its target, with the current value marked on it. */
@@ -6679,7 +6679,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 .ch-st[data-canopy] .ch-lb__r,
 .ch-st[data-canopy] .ch-zrow {
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
   border-radius: var(--ch-radius-md);
 }
 @media (hover: hover) {
@@ -6793,7 +6793,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
    between them. The leg grid forced 760px of minimum width, which scrolled sideways when the canvas could hold it with
    narrower leg columns. The container is the canvas (shell.css). The media query keeps it to a tablet on screen: the
    phone has its own tree, 1181px and wider is untouched, and paper keeps the desktop view as it is. */
-@media screen and (min-width: 821px) and (max-width: 1180px) {
+@media screen and (min-width: 821px) and (max-width: 1180px) and ((min-height: 501px) or (pointer: fine)) {
   @container (max-width: 720px) {
     .ch-st[data-canopy] .ch-tp {
       grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -6904,7 +6904,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   border-radius: var(--ch-radius-md);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-sv-pb__col[data-active] {
   background: color-mix(in srgb, var(--ch-champagne-500) 12%, transparent);
@@ -7172,7 +7172,7 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
   border-radius: var(--ch-radius-sm);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-sv-mix-key li[data-active] {
   background: var(--ch-bg-hover);
@@ -7310,7 +7310,7 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
   height: 34px;
 }
 /* On the phone the window select is a full 44 to the finger, like every select (F-0021). */
-@media (max-width: 820px) {
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-sv-tr__menu .ch-select select {
     height: 44px;
   }
@@ -7392,7 +7392,7 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
   margin-top: var(--ch-tr-none-gap);
 }
 .ch-sv-tr__r.ch-sv-row {
-  transition: background var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-sv-tr__r.ch-sv-row[data-active] {
   background: color-mix(in srgb, var(--ch-champagne-500) 12%, transparent);

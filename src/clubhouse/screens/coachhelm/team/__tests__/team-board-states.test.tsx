@@ -7,7 +7,7 @@ vi.mock('../../../../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('../../../../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 const router = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => router, usePathname: () => '/golf/dashboard/coachhelm', useSearchParams: () => new URLSearchParams() }));
-vi.mock('../../../../lib/use-phone', () => ({ useChPhone: () => false, CH_PHONE_QUERY: '(max-width: 820px)' }));
+vi.mock('../../../../lib/use-phone', () => ({ useChPhone: () => false, CH_PHONE_QUERY: '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' }));
 vi.mock('@/app/golf/actions/development', () => ({ acceptFocusArea: vi.fn(), createFocusAreaFromInsightV2: vi.fn(), declineFocusArea: vi.fn() }));
 vi.mock('@/app/golf/actions/insights-feed', () => ({ dismissInsight: vi.fn(), reactivateInsight: vi.fn() }));
 vi.mock('@/app/golf/actions/coachhelm-corrections', () => ({ recordCoachHelmCorrection: vi.fn(async () => ({ ok: true })) }));
@@ -51,6 +51,12 @@ describe('the spot pattern line (W-TEAM-6)', () => {
     );
   const NONE = /No shared pattern here yet/;
 
+  it('with no retry passed in, a failed board refreshes itself: the live route has no function to give it (FID-TEAM-1)', () => {
+    render(ui({ data: { ...PREVIEW_TEAM_BOARD, players: { list: [], error: true } } }));
+    screen.getByRole('button', { name: 'Try again' }).click();
+    expect(router.refresh).toHaveBeenCalledOnce();
+  });
+
   it('a failed read says it did not load, never that there is no pattern', () => {
     spot({ patternsStatus: 'failed' });
     expect(screen.getByText('Couldn’t load this part.')).toBeTruthy();
@@ -93,6 +99,16 @@ describe('addresses that open a sheet (W-TEAM-14)', () => {
     window.history.replaceState(null, '', `${BOARD}?player=${p.id}`);
     render(ui({ initialPlayer: p.id }));
     expect(await screen.findByRole('link', { name: new RegExp(`Open ${p.first}’s page`) })).toBeTruthy();
+  });
+
+  it('the sheet is a peek: one line and the way into the file, with no bars or reads of its own', async () => {
+    const p = PREVIEW_TEAM_BOARD.players.list.find((x) => x.rounds > 0)!;
+    window.history.replaceState(null, '', `${BOARD}?player=${p.id}`);
+    render(ui({ initialPlayer: p.id }));
+    const open = await screen.findByRole('link', { name: new RegExp(`Open ${p.first}’s page`) });
+    expect(open.getAttribute('href')).toContain(p.id);
+    expect(screen.queryByText(`Where ${p.first} gains and loses`)).toBeNull();
+    expect(screen.getByText(new RegExp(`${p.rounds} rounds? · .* a round to Tour`))).toBeTruthy();
   });
 });
 

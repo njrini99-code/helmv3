@@ -177,7 +177,7 @@ describe('the marks the loader builds', () => {
 describe('on the phone', () => {
   const real = window.matchMedia;
   beforeEach(() => {
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
   });
   afterEach(() => {
     window.matchMedia = real;
@@ -375,7 +375,7 @@ describe('on the phone', () => {
 describe('the change panel for several fields', () => {
   const real = window.matchMedia;
   beforeEach(() => {
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
   });
   afterEach(() => {
     window.matchMedia = real;

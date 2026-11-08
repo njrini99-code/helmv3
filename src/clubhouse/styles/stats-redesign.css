@@ -1289,7 +1289,7 @@
   text-align: left;
   text-decoration: none;
   cursor: pointer;
-  transition: background var(--ch-dur-press);
+  transition: background-color var(--ch-dur-press);
 }
 .ch-shs-rrow[data-ch-pressed] {
   background: var(--ch-shs-s-press);
@@ -2101,7 +2101,7 @@ p.ch-shs-mini-cap {
   padding: 12px 16px 16px;
   color: inherit;
   text-decoration: none;
-  transition: background var(--ch-dur-press);
+  transition: background-color var(--ch-dur-press);
   -webkit-tap-highlight-color: transparent;
 }
 .ch-shs-leg[data-ch-pressed] {
@@ -2264,4 +2264,40 @@ p.ch-shs-mini-cap {
 }
 .ch-shs .ch-gx-tiles > div:nth-child(even) {
   padding-inline-start: 12px;
+}
+
+/* Your game's one line over My stats' window (dashboard cuts, 6): the figures' home is My stats, so the line links there. */
+.ch-shs-yg__sum {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  min-height: 44px;
+  padding: 8px 16px;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-shs-s-ink-2);
+  text-decoration: none;
+}
+.ch-shs-yg__sum b {
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-shs-s-ink);
+}
+.ch-shs-yg__sum::after {
+  content: '';
+  position: absolute;
+  left: 16px;
+  right: 0;
+  bottom: 0;
+  height: var(--ch-hairline-w);
+  background: var(--ch-shs-s-sep);
+}
+.ch-shs-yg__go {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-inline-start: auto;
+  color: var(--ch-green-600);
 }

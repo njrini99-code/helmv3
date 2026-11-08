@@ -270,7 +270,7 @@ describe('CH-1611 sheet physics', () => {
 
   it('a Modal thrown shut leaves on the spring at the throw speed; closed by its button it leaves on the same spring from rest', () => {
     const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     vi.stubGlobal('CSS', { supports: () => true });
     vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(400);
     const exits: KeyframeAnimationOptions[] = [];
@@ -379,7 +379,7 @@ describe('CH-1614 a toast swipes away and waits while held', () => {
 });
 
 describe('CH-1907 tapping the tab already open', () => {
-  const shell = { nextEvent: null, pendingJoinRequests: null };
+  const shell = { pendingJoinRequests: null };
 
   it('at its root, scrolls to the top without a tick', () => {
     const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});

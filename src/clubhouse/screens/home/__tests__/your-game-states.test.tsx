@@ -24,9 +24,9 @@ describe('Your game', () => {
     expect(screen.getByText(/^Figures are your last 10 rounds/)).toBeTruthy();
   });
 
-  it('a new season: the words say strokes gained waits for its third round', () => {
+  it('a new season: the words say strokes gained waits for its third round with shots', () => {
     show(previewShsHome('newseason')!);
-    expect(screen.getByText(/shows from this season’s third round/)).toBeTruthy();
+    expect(screen.getByText(/shows from the third round with shots/)).toBeTruthy();
     expect(screen.queryByText(/ SG$/)).toBeNull();
   });
 

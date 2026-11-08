@@ -70,21 +70,14 @@ export function FeatureCard({
   const mine = lens === 'coach';
   const anchor = d.closes?.anchor === 'team' && team != null ? 'the team’s average' : 'the Tour';
   return (
+    // A tap anywhere on the card opens the read; the title is the real button, so the actions aren't nested in one.
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- the title button is the keyboard path
     <section
       className="feat tap"
       data-ch-hf-read="top"
       data-ch="file-feature"
-      // eslint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role -- the whole card is the button (lenses 06); its inner links stay real
-      role="button"
-      tabIndex={0}
-      aria-label={`Open the read: ${b.title}`}
       onClick={(e) => {
         if ((e.target as Element).closest?.('button, a')) return;
-        onOpen();
-      }}
-      onKeyDown={(e) => {
-        if (e.target !== e.currentTarget || (e.key !== 'Enter' && e.key !== ' ')) return;
-        e.preventDefault();
         onOpen();
       }}
     >
@@ -98,7 +91,11 @@ export function FeatureCard({
       ) : (
         <div className="feat__k">{playerKicker(stage, coach)}</div>
       )}
-      <h3 className="feat__t">{b.title}</h3>
+      <h3 className="feat__t">
+        <button type="button" className="feat__open" aria-label={`Open the read: ${b.title}`} onClick={onOpen}>
+          {b.title}
+        </button>
+      </h3>
       <div className="feat__cmp">
         <div>
           <b className={'ch-num' + (cells.youLoses ? ' loss' : '')}>{cells.you}</b>

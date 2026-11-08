@@ -45,16 +45,32 @@ const deploymentPollScript = `
           staleNotified = true;
           var banner = document.createElement('div');
           banner.id = 'stale-deploy-banner';
-          banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1c1917;color:white;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;font-size:14px;font-family:system-ui;';
+          banner.setAttribute('role', 'status');
+          var host = document.querySelector('.ch-root');
           var text = document.createElement('span');
           text.textContent = 'A new version is available.';
           var btn = document.createElement('button');
-          btn.textContent = 'Update Now';
-          btn.style.cssText = 'background:#16a34a;color:white;border:none;padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;';
+          btn.type = 'button';
+          btn.textContent = 'Update';
           btn.onclick = function() { window.location.reload(); };
           banner.appendChild(text);
           banner.appendChild(btn);
-          document.body.appendChild(banner);
+          if (host) {
+            banner.className = 'ch-stale';
+            btn.className = 'ch-stale__go';
+            var close = document.createElement('button');
+            close.type = 'button';
+            close.className = 'ch-stale__x';
+            close.setAttribute('aria-label', 'Not now');
+            close.textContent = '\u00d7';
+            close.onclick = function() { banner.remove(); };
+            banner.appendChild(close);
+            host.appendChild(banner);
+          } else {
+            banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1c1917;color:white;padding:12px 16px calc(12px + env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;font-size:0.875rem;font-family:system-ui;';
+            btn.style.cssText = 'background:#16a34a;color:white;border:none;min-height:44px;padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.875rem;';
+            document.body.appendChild(banner);
+          }
         }
       } catch {}
     }

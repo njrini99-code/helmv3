@@ -393,7 +393,7 @@ describe('Home · loading, motion, haptics, accessibility', () => {
 describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
   const real = window.matchMedia;
   beforeEach(() => {
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
   });
   afterEach(() => {
     window.matchMedia = real;
@@ -574,7 +574,7 @@ describe('Home · first run (v2 page empty state, D-71)', () => {
     expect(code('CH-2304')).toBeNull();
     unmount();
     const real = window.matchMedia;
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     try {
       wrap(<CoachHome data={events} now={PREVIEW_HOME_NOW} />);
       expect(code('CH-2308')).not.toBeNull();
@@ -620,7 +620,7 @@ describe('Home · first run (v2 page empty state, D-71)', () => {
 describe('Home · the team’s form (teamForm)', () => {
   const real = window.matchMedia;
   beforeEach(() => {
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
   });
   afterEach(() => {
     window.matchMedia = real;
@@ -1101,7 +1101,7 @@ describe('Home · Coach Home’s own contracts', () => {
 describe('Home · the phone, the page’s own contracts', () => {
   const real = window.matchMedia;
   beforeEach(() => {
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
     document.addEventListener('click', stopNavigation, true);
   });
   afterEach(() => {
@@ -1259,7 +1259,7 @@ describe('Home · phone round rows peek (P003-C1)', () => {
 describe('Home · the team’s game and what’s waiting on the coach (spec B)', () => {
   const real = window.matchMedia;
   const phoneMedia = () => {
-    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
   };
   afterEach(() => {
     window.matchMedia = real;

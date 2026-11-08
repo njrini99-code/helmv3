@@ -1,38 +1,16 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
-import { rsvpOf } from './calendar';
-import { loadAttendanceCounts, loadInvitedCounts, loadOwnRows } from './attendance-counts';
-import { playerMine, playerSeesMeeting, replyClosedAt } from '../screens/calendar/model';
-import { CLASS_EVENT_TYPE, isClassEvent } from '@/lib/calendar/class-events';
 import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { isPlayerAskEnabled } from '@/lib/coachhelm/v3/chat/ask-flag';
+import { isTeamBoardEnabled, TEAM_BOARD_FIRST_VIEW } from '@/lib/coachhelm/v3/team-board/flag';
+import type { ChHelmViews } from '../shell/context';
 import { todayIsoInZone } from '@/lib/golf/timezone';
-import { isoDay, weekdayMonthDay } from '../lib/dates';
 import { fullName } from './season';
 import { toParOf } from '../live/model';
 
-export interface ChNextEvent {
-  id: string;
-  title: string;
-  /** "Today", "Tomorrow", "In 3 days", resolved in the team's timezone. */
-  whenLabel: string;
-  /** "Thu, Oct 16 · 8:42 AM · Pinehurst No. 2" */
-  metaLabel: string;
-  /**
-   * Accepted RSVPs of those invited; null with no invitees, when the read failed, or when the event doesn't ask for
-   * replies (owner, 2026-10-08: the card then shows when and where, never a confirmed count).
-   */
-  ready: { accepted: number; invited: number } | null;
-  /**
-   * A player's card only: `needed` when the event asks for replies, they are invited and haven't answered, and the server
-   * would still take one; `going` when they said yes. Null otherwise, and when their own reply didn't load.
-   */
-  mine?: 'going' | 'needed' | null;
-}
-
 export interface ChShellData {
-  nextEvent: ChNextEvent | null;
   /** Null when the read failed: the badge hides rather than claiming zero. */
   pendingJoinRequests: number | null;
   /**
@@ -51,11 +29,13 @@ export interface ChShellData {
   quickChat?: boolean;
   /** coachhelm_practice_plans_v1: the quick chat offers its plan tile. */
   practicePlans?: boolean;
+  /** Which of CoachHelm's views are on, for its strips (useHelmViews). */
+  helmViews?: ChHelmViews;
   /** The signed-in player's round in progress, touched in the last 12 hours (P001-C1): the Resume accessory. */
   roundInProgress?: ChRoundInProgress | null;
   /** The signed-in coach is this team's head coach: the identity line says "Head coach". False when unread (plain "Coach"). */
   viewerIsHeadCoach?: boolean;
-  /** clubhouse_refresh_v1 is on: the app root carries `data-ch-refresh="on"`, which scopes the refresh's rules. Set by the dashboard layout, server only. */
+  /** clubhouse_refresh_v1: on, the app root carries `data-ch-refresh="on"`, which scopes the refresh's rules; explicitly false (the live flag off), `.ch-root` carries `data-ch-pre-refresh` (styles/pre-refresh.css). Set by the dashboard layout, server only. */
   refresh?: boolean;
   /** golf_tournaments_v1 is on (P016): the Tournaments nav entry and its routes. Set by the dashboard layout, server side. */
   tournaments?: boolean;
@@ -141,25 +121,11 @@ export async function loadPalettePeople(supabase: Awaited<ReturnType<typeof crea
 }
 
 export async function loadClubhouseShell(teamId: string | undefined, playerId?: string | null, coachId?: string | null): Promise<ChShellData> {
-  if (!teamId) return { nextEvent: null, pendingJoinRequests: null };
+  if (!teamId) return { pendingJoinRequests: null };
   const supabase = await createClient();
   // The team's zone is read once and shared: the coach's overdue count needs today's date in it, and runs beside the rest.
   const zoneRead = Promise.resolve(supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle());
-  const [eventRes, joinRes, tzRes, roundRes, askOn, courseRes, staffRes, overdueTasks] = await Promise.all([
-    supabase
-      .from('golf_events')
-      .select('id, title, start_time, all_day, location, event_type, description, requires_rsvp, rsvp_deadline')
-      .eq('team_id', teamId)
-      // A player's synced class is never "the team's next event" (F-40): it would show one player's timetable to the
-      // whole roster. Both class markers are checked, as every team-schedule read does (lib/calendar/class-events).
-      .neq('event_type', CLASS_EVENT_TYPE)
-      // A day back: an all-day event is stored at midnight UTC of its day, so "from now" dropped it from 8 PM the
-      // evening before (Eastern) and for the whole day itself (audit 2026-10-31). Past timed events are filtered below.
-      .gte('start_time', new Date(Date.now() - 86_400_000).toISOString())
-      .is('cancelled_at', null)
-      .order('start_time', { ascending: true })
-      // Room for the meetings a player isn't invited to, which are passed over (Decision B).
-      .limit(40),
+  const [joinRes, tzRes, roundRes, askOn, courseRes, staffRes, overdueTasks] = await Promise.all([
     supabase
       .from('golf_team_join_requests')
       .select('id', { count: 'exact', head: true })
@@ -212,10 +178,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
   // A failed timezone read falls back to the product default, same as dashboard-data.
   const timezone = (!tzRes.error && tzRes.data?.timezone) || 'America/New_York';
 
-  // CH-1207: the next-event card hides; CH-1208: the Roster badge hides. Both are logged.
-  if (eventRes.error) {
-    chLogServer('shell', 'nextEvent', eventRes.error, 'calendar');
-  }
+  // CH-1208: the Roster badge hides. Logged.
   if (joinRes.error) {
     chLogServer('shell', 'joinRequests', joinRes.error, 'teams');
   }
@@ -228,99 +191,20 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
   }
   const round = roundRes && !roundRes.error ? roundRes.data : null;
 
-  // Still ahead: a timed event from now on, an all-day event through the end of its own date (team-local today).
-  const todayN = dayNumber(new Date(), timezone);
-  const nowMs = Date.now();
-  const upcoming = eventRes.error
-    ? []
-    : (eventRes.data ?? []).filter(
-        (row) => !isClassEvent(row) && (row.all_day ? isoDayNumber(row.start_time.slice(0, 10)) >= todayN : Date.parse(row.start_time) >= nowMs),
-      );
-  const forPlayer = !!playerId && !coachId;
-  // Decision B (owner, wave 7), as the player's Calendar has it: a player's next event is never a meeting they aren't
-  // invited to (their own attendance row, which they read before and after migration 20261017102000); the card would
-  // count down to it, by name, and open a calendar that doesn't show it. Only when that read failed does D2-8 decide (a
-  // meeting nobody is invited to is the coach's own); when that failed too, no meeting is a player's next event.
-  const ownRows = forPlayer && upcoming.length ? await loadOwnRows(supabase, upcoming.map((row) => row.id), playerId, (err) => chLogServer('shell', 'nextEventOwnReply', err, 'calendar')) : null;
-  const own = ownRows ? new Map([...ownRows].map(([id, status]) => [id, rsvpOf(status)])) : null;
-  const meetingIds = forPlayer && !own ? upcoming.filter((row) => row.event_type === 'meeting').map((row) => row.id) : [];
-  const invited = meetingIds.length ? await loadInvitedCounts(supabase, meetingIds, (err) => chLogServer('shell', 'nextEventInvites', err, 'calendar')) : null;
-  const e =
-    upcoming.find((row) => row.event_type !== 'meeting' || !forPlayer || playerSeesMeeting(own ? own.has(row.id) : null, invited ? (invited.get(row.id) ?? null) : null)) ?? null;
-  let ready: ChNextEvent['ready'] = null;
-  /** Rows the coach's invitation wrote, for whether the whole team may reply; null when unread. */
-  let coachInvited: number | null = null;
-  // Only an event that asks for replies has a confirmed count; null (older rows) reads as off.
-  if (e && e.requires_rsvp === true) {
-    // A player reads the counts, never teammates' rows (migration 20261017102000); until that function exists, and for
-    // a coach, the rows are read directly as before.
-    const counts = forPlayer ? await loadAttendanceCounts(supabase, [e.id]) : null;
-    if (counts?.kind === 'error') chLogServer('shell', 'nextEventAttendance', counts.error, 'calendar');
-    else if (counts?.kind === 'ok') {
-      const c = counts.byEvent.get(e.id);
-      if (c && c.invited > 0) ready = { accepted: c.accepted, invited: c.invited };
-      coachInvited = c?.coachInvited ?? 0;
-    } else {
-      // One event's invitees: at most a roster, well under the row cap.
-      const { data, error } = await supabase.from('golf_event_attendance').select('status, notified_at').eq('event_id', e.id).limit(1000);
-      if (error) chLogServer('shell', 'nextEventAttendance', error, 'calendar');
-      else {
-        if (data.length > 0) ready = { accepted: data.filter((a) => rsvpOf(a.status) === 'accepted').length, invited: data.length };
-        coachInvited = data.filter((a) => a.notified_at).length;
-      }
-    }
-  }
-  // The player's own reply, by Home's rule (playerMine), so the card and Up next never disagree: an event open to the
-  // whole team (the coach invited no one) asks them too.
-  const mine: ChNextEvent['mine'] = e && own && e.requires_rsvp === true ? playerMine(own.get(e.id), replyClosedAt(e, Date.now()), coachInvited === null ? null : coachInvited === 0) : null;
-  // CH-1304: nothing upcoming, so the sidebar shows no card.
   return {
-    nextEvent: e ? { ...describeEvent(e, timezone), ready, ...(forPlayer ? { mine } : {}) } : null,
     pendingJoinRequests: joinRes.error ? null : (joinRes.count ?? 0),
     ...(coachId ? { overdueTasks } : {}),
     timezone,
     askAvailable: askOn,
     quickChat: askOn && isFlagEnabled('coachhelm_quick_chat_v1'),
     practicePlans: isFlagEnabled('coachhelm_practice_plans_v1') && isFlagEnabled('golf_practice_plans'),
+    helmViews: { playerAsk: isPlayerAskEnabled(), team: isTeamBoardEnabled() && TEAM_BOARD_FIRST_VIEW === 'hole' },
     classAwareness: isFlagEnabled('class_awareness_v1'),
     crh: isFlagEnabled('clubhouse_classes_roster_home_v1'),
     course: courseOf(courseRes),
     roundInProgress: round && playerId ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null, toPar: toParOf(round.golf_holes ?? []), playerId } : null,
     viewerIsHeadCoach: !!staffRes && !staffRes.error && (staffRes.data ?? []).some((row) => row.role === 'head_coach'),
   };
-}
-
-/** A yyyy-mm-dd date as a day number, on the same scale as dayNumber. */
-function isoDayNumber(iso: string): number {
-  const [y, m, day] = iso.split('-').map(Number);
-  return Date.UTC(y ?? 1970, (m ?? 1) - 1, day ?? 1) / 86_400_000;
-}
-
-function dayNumber(d: Date, timezone: string): number {
-  const [y, m, day] = isoDay(d, timezone)
-    .split('-')
-    .map(Number);
-  return Date.UTC(y ?? 1970, (m ?? 1) - 1, day ?? 1) / 86_400_000;
-}
-
-function describeEvent(
-  e: { id: string; title: string; start_time: string; all_day: boolean | null; location: string | null },
-  timezone: string,
-): Omit<ChNextEvent, 'ready'> {
-  const start = new Date(e.start_time);
-  // An all-day event is its stored date, never zoned: at midnight UTC it read as the day before in the US.
-  const allDayDate = e.all_day ? e.start_time.slice(0, 10) : null;
-  const startDay = allDayDate ? isoDayNumber(allDayDate) : dayNumber(start, timezone);
-  const days = startDay - dayNumber(new Date(), timezone);
-  const whenLabel = days <= 0 ? 'Today' : days === 1 ? 'Tomorrow' : `In ${days} days`;
-  const date = allDayDate
-    ? weekdayMonthDay(allDayDate)
-    : new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short', month: 'short', day: 'numeric' }).format(start);
-  const time = e.all_day
-    ? 'All day'
-    : new Intl.DateTimeFormat('en-US', { timeZone: timezone, hour: 'numeric', minute: '2-digit' }).format(start);
-  const metaLabel = [date, time, e.location].filter(Boolean).join(' \u00b7 ');
-  return { id: e.id, title: e.title, whenLabel, metaLabel };
 }
 
 type CourseRow = { course_latitude: number | null; course_longitude: number | null };

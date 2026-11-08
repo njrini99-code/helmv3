@@ -1,5 +1,7 @@
 'use client';
 
+import { useChPhone } from '../../../lib/use-phone';
+import { Notice } from './parts';
 import { Badge } from '../../../ui/Badge';
 import { formatWith } from '../../../lib/dates';
 import { pluralWord } from '../../../lib/plural';
@@ -9,7 +11,7 @@ import { courseReads, type ChTeamBoardData, type ChTeamPlayer, type ChTourRow } 
 import type { CourseHistory, CourseHistoryRow } from '@/lib/coachhelm/v3/team-board/course-shape';
 import { formatFixed, MINUS } from '../../../lib/format';
 import { Chevron, ReadRow } from './parts';
-import { useContentIn, useTrendDraw } from './team-motion';
+import { useContentIn } from './team-motion';
 
 const COURSE_CAP = 4;
 const READ_CAP = 3;
@@ -21,7 +23,7 @@ export const toPar = (v: number): string => {
 };
 
 /** A calendar day, never moved by the viewer's zone (CP-TEAM-16). */
-const day = (iso: string) => formatWith(new Date(`${iso}T00:00:00Z`), { month: 'short', day: 'numeric', timeZone: 'UTC' });
+export const day = (iso: string) => formatWith(new Date(`${iso}T00:00:00Z`), { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
 /** The weekly line, lowest score on top; it draws once and a Show more doesn't redraw it (AC-COURSE-03, AC-COURSEALL-03). */
 function Trend({ history }: { history: CourseHistory }) {
@@ -95,7 +97,7 @@ function CourseRow({ row, season, readCount, onCourse }: { row: CourseHistoryRow
         </span>
       </span>
       <span className="cv">
-        <b>{toPar(row.value)}</b>
+        <b className="ch-num">{toPar(row.value)}</b>
         <span className={d > 0 ? 'l' : d < 0 ? 'g' : 'e'}>{d ? `${formatFixed(Math.abs(d), 1)} ${d > 0 ? 'over' : 'under'} season` : 'Level with season'}</span>
       </span>
       <Chevron />
@@ -105,8 +107,8 @@ function CourseRow({ row, season, readCount, onCourse }: { row: CourseHistoryRow
 
 /** The Course tab: scoring history, the reads with no spot, team against Tour, courses (S-TEAM.course). */
 export function CourseCard({ data, initialAll = false, onRead, onCourse, onRetry }: { initialAll?: boolean; data: ChTeamBoardData; onRead: (id: string) => void; onCourse: (id: string) => void; onRetry?: () => void }) {
+  const phone = useChPhone();
   const card = useRef<HTMLElement | null>(null);
-  useTrendDraw(card);
   useContentIn(card, 'course', '.ch, .cmh, .crsw, .cmr, .shpw');
   const [allCourses, setAllCourses] = useState(initialAll);
   const [allReads, setAllReads] = useState(initialAll);
@@ -116,17 +118,9 @@ export function CourseCard({ data, initialAll = false, onRead, onCourse, onRetry
   const history = data.course.history;
   const season = history?.season ?? 0;
   const failed = (
-    <p className="nordss" role="status">
-      Couldn’t load this part.
-      {onRetry && (
-        <>
-          {' '}
-          <button type="button" className="more is-inline" onClick={onRetry}>
-            Try again
-          </button>
-        </>
-      )}
-    </p>
+    <div role="status">
+      <Notice title="Couldn’t load this part" onRetry={onRetry} />
+    </div>
   );
   const chip =
     history?.last4 == null ? (
@@ -141,7 +135,7 @@ export function CourseCard({ data, initialAll = false, onRead, onCourse, onRetry
   const historyBlock = history ? (
     <div className="cmh">
       <div className="cmk">
-        <b>{toPar(season)}</b>
+        <b className="ch-num">{toPar(season)}</b>
         <span>
           a round to par
           <br />
@@ -209,7 +203,7 @@ export function CourseCard({ data, initialAll = false, onRead, onCourse, onRetry
             return (
               <div key={row.id}>
                 <span className="sl">{w.label}</span>
-                <span className="sv">{row.team == null ? 'Not measured yet' : w.fmt(row.team)}</span>
+                <span className="sv">{row.team == null ? '—' : w.fmt(row.team)}</span>
                 {row.team != null && (
                   <span className="st">
                     {w.unit}
@@ -231,22 +225,26 @@ export function CourseCard({ data, initialAll = false, onRead, onCourse, onRetry
         <h4>Course and scoring</h4>
         <span className="meta">Not on the hole · {reads.length ? `${reads.length} open ${pluralWord(reads.length, 'read', 'reads')}` : 'No open reads yet'}</span>
       </div>
-      <div className="ch-htb-coursephone">
-        {historyBlock}
-        {readsBlock}
-        {against}
-        {coursesBlock}
-      </div>
-      <div className="spl ch-htb-coursedesk">
-        <div className="spl-l">
+      {/* One layout in the DOM (FID-TEAM-20). */}
+      {phone ? (
+        <div className="ch-htb-coursephone">
           {historyBlock}
-          {coursesBlock}
-        </div>
-        <div className="spl-r">
           {readsBlock}
           {against}
+          {coursesBlock}
         </div>
-      </div>
+      ) : (
+        <div className="spl ch-htb-coursedesk">
+          <div className="spl-l">
+            {historyBlock}
+            {coursesBlock}
+          </div>
+          <div className="spl-r">
+            {readsBlock}
+            {against}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

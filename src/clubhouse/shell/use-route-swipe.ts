@@ -1,12 +1,13 @@
 'use client';
 
+import { CH_PHONE_QUERY } from '@/clubhouse/lib/phone-query';
 import { useEffect } from 'react';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { haptic } from '../lib/haptics';
-import { chHandPop, chPushTiming, cssNum, chShownPath, chUnderLook, grabPush, pageLayer, underFor, type ChUnder } from '../lib/nav-motion';
+import { chHandPop, chPushTiming, cssNum, chShownPath, chUnderLook, grabPush, pageLayer, underFor, underVeil, type ChUnder } from '../lib/nav-motion';
 import { CH_EDGE_ZONE_PX, claimWebSwipe, createEdgeSwipe, edgeSwipeAllowed, findScreenBack, overlayIsOpen, type EdgeFrame, type EdgeRelease } from './edge-swipe';
 
-const PHONE = '(max-width: 820px)';
+const PHONE = CH_PHONE_QUERY;
 /** How long a committed swipe waits for the page it uncovered to arrive before it lets the copy go anyway. */
 const ARRIVE_MS = 2500;
 
@@ -14,13 +15,6 @@ const ARRIVE_MS = 2500;
 function routeBack(): HTMLButtonElement | null {
   const bar = document.querySelector('.ch-topbar');
   return bar ? findScreenBack(bar) : null;
-}
-
-/** `brightness(x)` eased toward none as the page beneath comes home; any other dim holds until halfway. */
-function dimAt(dim: string, drawnBack: number): string {
-  const m = /brightness\(\s*([\d.]+)\s*\)/.exec(dim);
-  if (m) return `brightness(${cssNum(1 - (1 - Number(m[1])) * drawnBack, 4)})`;
-  return drawnBack > 0.5 ? dim : 'none';
 }
 
 /**
@@ -62,7 +56,7 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
       if (page) page.style.translate = `${cssNum(f.offset)}px 0`;
       if (entry) {
         entry.layer.style.transform = `translateX(calc(${look.parallax} * ${cssNum(1 - f.progress, 4)}))`;
-        entry.layer.style.filter = dimAt(look.dim, 1 - f.progress);
+        underVeil(entry.layer).style.opacity = cssNum(1 - f.progress, 4);
       }
     };
     /** The page and the copy beneath, ready to move: the copy in the document under the page, the page above it. */
@@ -72,7 +66,7 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
       page.style.transition = 'none';
       if (!entry.layer.isConnected) {
         entry.layer.style.transform = `translateX(${look.parallax})`;
-        entry.layer.style.filter = look.dim;
+        underVeil(entry.layer).style.opacity = '1';
         document.body.appendChild(entry.layer);
       }
     };
@@ -86,7 +80,7 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
       if (entry) {
         entry.pinned = false;
         entry.layer.style.transform = '';
-        entry.layer.style.filter = '';
+        underVeil(entry.layer).style.opacity = '';
         entry.layer.remove();
       }
       machine = null;
@@ -104,7 +98,8 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
       p.style.translate = '';
       const anims = [
         p.animate([{ translate: `${cssNum(r.offset)}px 0` }, { translate: '0px 0' }], timing),
-        u.layer.animate([{ transform: u.layer.style.transform || 'none', filter: u.layer.style.filter || 'none' }, { transform: `translateX(${look.parallax})`, filter: look.dim }], { ...timing, fill: 'forwards' }),
+        u.layer.animate([{ transform: u.layer.style.transform || 'none' }, { transform: `translateX(${look.parallax})` }], { ...timing, fill: 'forwards' }),
+        underVeil(u.layer).animate([{ opacity: underVeil(u.layer).style.opacity || '0' }, { opacity: 1 }], { ...timing, fill: 'forwards' }),
       ];
       machine = null;
       let done = false;
@@ -136,7 +131,8 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
       const { curve, timing } = chPushTiming({ velocity: Math.max(0, r.speed) * (1000 / travel), rest: 0.5 / travel, hold: true });
       const anims = [
         overlay.animate([{ transform: `translateX(${cssNum(r.offset)}px)` }, { transform: `translateX(${width}px)` }], { ...timing, fill: 'forwards' }),
-        u.layer.animate([{ transform: u.layer.style.transform || 'none', filter: u.layer.style.filter || 'none' }, { transform: 'none', filter: 'none' }], { ...timing, fill: 'forwards' }),
+        u.layer.animate([{ transform: u.layer.style.transform || 'none' }, { transform: 'none' }], { ...timing, fill: 'forwards' }),
+        underVeil(u.layer).animate([{ opacity: underVeil(u.layer).style.opacity || '1' }, { opacity: 0 }], { ...timing, fill: 'forwards' }),
       ];
       machine = null;
       let arrived = false;

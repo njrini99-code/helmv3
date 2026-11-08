@@ -44,7 +44,7 @@ export function Segmented<V extends string>({
   value: V;
   options: ReadonlyArray<SegOption<V>>;
   onChange: (v: V) => void;
-  size?: 'sm' | 'md';
+  size?: 'sm' | 'md' | 'lg';
   /** The change swaps a whole view: it renders after the chip has moved (see above). */
   redraws?: boolean;
   /** Fill the row: the options share its width equally, as a form field's choice does. */
@@ -58,7 +58,7 @@ export function Segmented<V extends string>({
   const [changing, startChange] = useTransition();
   const [chosen, setChosen] = useState<V | null>(null);
   const shown = changing && chosen !== null ? chosen : value;
-  useSlidePlate(well, '.is-on > .ch-seg__pill', shown, { reduced });
+  useSlidePlate(well, '.is-on > .ch-seg__pill', shown, { reduced, ink: '.ch-seg__b' });
   const pick = (v: V) => {
     if (v === shown) return;
     haptic('select');
