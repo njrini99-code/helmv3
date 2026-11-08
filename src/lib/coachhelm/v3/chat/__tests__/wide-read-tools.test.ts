@@ -192,7 +192,10 @@ describe('the prompts', () => {
   it('tell both roles how to say a level that is not set and a strokes gained with no college figure', () => {
     const c = buildInstructions(ctx, now, false, { askV2: true });
     expect(c).toMatch(/level not set/);
-    expect(c).toMatch(/no college figure/);
+    // The level is Helm's own cohort now (145001c828): a coach is told to name it and to say when too few others have the figure.
+    expect(c).toMatch(/Division I players on Helm, n=22/);
+    expect(c).toMatch(/not enough Division I players on Helm yet/);
+    expect(c).not.toMatch(/write "no college figure"/);
     expect(c).toMatch(/Settings, Team, Division/);
     const pl = PLAYER_INSTRUCTIONS('Owen', 'Varsity', 'UTC');
     expect(pl).toMatch(/level not set/);
