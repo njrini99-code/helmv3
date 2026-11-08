@@ -1,21 +1,25 @@
 'use client';
 
 import type { ChMessagesApi } from '../api/types';
-import { type ChConv, isUnread, type ChMute } from '../model';
+import { type ChConv, isUnread } from '../model';
 import { chTrail } from '../../../lib/track';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { MenuItem } from '../../../ui/Menu';
-import { MessageSquare, PinOff, Pin, MailOpen, Mail, BellOff, Trash2 } from 'lucide-react';
-import { useContextMenu } from '../../../ui/ContextMenu';
+import { MessageSquare, PinOff, Pin, MailOpen, Mail, BellOff, Bell, Trash2 } from 'lucide-react';
+import { useToast } from '../../../ui/Toast';
 import { DeleteConversationModal } from '../details/group-modals';
 import { ConvRowButton } from './ConvRowButton';
 import { SwipeRow } from '../../../ui/SwipeRow';
-import { Modal } from '../../../ui/Modal';
-import { InlineNotice } from '../../../ui/Notices';
-import { Skeleton } from '../../../ui/States';
-import { Icon } from '../../../ui/Icon';
-import { muteLabel } from '../details/mute-label';
-import { Button } from '../../../ui/Button';
+import { MuteMenu, muteAnchor, muteToast } from '../details-v2';
+import { useRowMenu } from './row-menu';
+import type { GlassAnchor } from '../overlays/GlassMenu';
+
+/** A menu anchor as a rectangle: an element's box, or a point (a right click) with no size. */
+function boxOf(a: GlassAnchor): { left: number; top: number; bottom: number } {
+  if (typeof HTMLElement !== 'undefined' && a instanceof HTMLElement) return a.getBoundingClientRect();
+  if ('x' in a && 'y' in a && !('width' in a)) return { left: a.x, top: a.y, bottom: a.y };
+  return a as DOMRect;
+}
 
 /* Rail */
 
@@ -32,8 +36,15 @@ export function useConvActions(api: ChMessagesApi, c: ChConv, phone: boolean) {
   };
   const unread = isUnread(c);
   // The row's own sheets, mounted once first asked for, so a long inbox doesn't hold two dialogs per row.
-  const [muting, setMuting] = useState<boolean | null>(null);
+  const toast = useToast();
+  const [muting, setMuting] = useState<{ left: number; top: number; above: boolean } | null>(null);
   const [deleting, setDeleting] = useState<boolean | null>(null);
+  /** One toast per mute change, replacing a live one (MSG-604). A failure toasts through the container's own `attempt`. */
+  const setMute = async (on: boolean, hours: number | null) => {
+    setMuting(null);
+    const ok = await api.muteConversation(c.id, on, hours);
+    if (ok !== false) toast({ title: muteToast(on, hours), replace: 'mute' });
+  };
   const toggleRead = () => {
     chTrail(unread ? "messages mark read" : "messages mark unread");
     void api.setRead(c.id, unread);
@@ -41,8 +52,8 @@ export function useConvActions(api: ChMessagesApi, c: ChConv, phone: boolean) {
   const askDelete = api.deleteConversation && !c.channel ? () => setDeleting(true) : null;
   // Owner decision 14: the row's actions, each on this row's conversation whether or not it is the open one. Right-click
   // and Shift+F10 on the desktop; on the phone a 500ms long press, a keyboard's Shift+F10 or the VoiceOver button below
-  // open the same rows as a sheet (ui/ContextMenu.tsx). The phone's swipes repeat Mark as read/unread and Delete.
-  const rowItems: MenuItem[] = [
+  // open the same rows in C's glass menu (MSG-111, row-menu.tsx). The phone's swipes repeat Mark as read/unread and Delete.
+  const itemsAt = (anchor: GlassAnchor): MenuItem[] => [
       { label: "Open conversation", icon: MessageSquare, onSelect: open },
       // Redesign: Pin after Open (drawn order). At three pins it stays in the menu, dimmed, saying why (PIN-SYNC D7).
       // The channel is pinned first for everyone (Q-11), so it has no row for it.
@@ -54,20 +65,19 @@ export function useConvActions(api: ChMessagesApi, c: ChConv, phone: boolean) {
           ]
         : []),
       { label: unread ? "Mark as read" : "Mark as unread", icon: unread ? MailOpen : Mail, onSelect: toggleRead },
-      { label: "Mute…", icon: BellOff, onSelect: () => setMuting(true) },
+      // D's mute menu opens under the row (MSG-604); a muted conversation just unmutes.
+      c.muted ? { label: "Unmute", icon: Bell, onSelect: () => void setMute(false, null) } : { label: "Mute…", icon: BellOff, onSelect: () => setMuting(muteAnchor(boxOf(anchor))) },
       ...(askDelete ? [{ kind: "separator" as const }, { label: "Delete conversation", icon: Trash2, danger: true, onSelect: askDelete }] : []),
   ];
-  const ctx = useContextMenu<ChConv>({
+  const ctx = useRowMenu<ChConv>({
     label: (row) => `Actions for ${row.title}`,
-    title: (row) => row.title,
+    items: (_row, anchor) => itemsAt(anchor),
     touchHold: phone,
-    anchored: true,
-    items: () => (rowItems.map((item) => (item.kind === "separator" ? item : { ...item, icon: undefined }))),
   });
   const sheets = (
     <>
       {ctx.menu}
-      {muting != null && <RowMuteModal api={api} c={c} open={muting} onClose={() => setMuting(false)} />}
+      {muting && <MuteMenu anchor={muting} onPick={(hours) => void setMute(true, hours)} onClose={() => setMuting(null)} />}
       {deleting != null && <DeleteConversationModal api={api} conv={c} open={deleting} onClose={() => setDeleting(false)} onDeleted={() => {}} />}
     </>
   );
@@ -96,81 +106,12 @@ export function ConvRow({ api, c, avatarSize = 40, phone = false }: { api: ChMes
         <ConvRowButton api={api} c={c} avatarSize={avatarSize} onOpen={open} bind={ctx.bind(c)} plain />
         {/* VoiceOver and a keyboard can't swipe or hold: the same actions, one control away (shown when focused). */}
         <span className="ch-sr-only ch-sr-only--focusable">
-          <button type="button" onClick={() => ctx.openSheet(c)}>
+          <button type="button" onClick={(e) => ctx.openAt(c, e.currentTarget)}>
             Actions for {c.title}
           </button>
         </span>
       </SwipeRow>
       {sheets}
     </>
-  );
-}
-
-/**
- * Mute or unmute one conversation from its row (owner decision 14): reads that conversation's mute as it opens, then
- * offers desktop's three lengths, or Unmute when it is already muted.
- */
-function RowMuteModal({ api, c, open, onClose }: { api: ChMessagesApi; c: ChConv; open: boolean; onClose: () => void }) {
-  const [state, setState] = useState<ChMute | "failed" | null>(null);
-  const [attempt, setAttempt] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const muteOf = api.muteOf;
-  useEffect(() => {
-    if (!open) return;
-    let live = true;
-    setState(null);
-    void muteOf(c.id).then((m) => {
-      if (live) setState(m ?? "failed");
-    });
-    return () => {
-      live = false;
-    };
-  }, [open, attempt, c.id, muteOf]);
-  const set = async (muted: boolean, hours: number | null) => {
-    setBusy(true);
-    const ok = await api.muteConversation(c.id, muted, hours);
-    setBusy(false);
-    if (ok) onClose();
-  };
-  const muted = state != null && state !== "failed" && state.muted;
-  return (
-    <Modal
-      code="CH-7607"
-      open={open}
-      onClose={onClose}
-      icon={BellOff}
-      title={muted ? `${c.title} is muted` : `Mute ${c.title}`}
-      description={muted ? undefined : "No email, push or bell for it. Unread messages still show here."}
-    >
-      {state === "failed" ? (
-        <InlineNotice code="CH-7208" title="The mute setting didn’t load" body="Try again." onRetry={() => setAttempt((n) => n + 1)} />
-      ) : !state ? (
-        <div aria-busy="true" data-ch-code="CH-7407">
-          <Skeleton height={30} />
-        </div>
-      ) : state.muted ? (
-        <div className="ch-ms-mute">
-          <span>
-            <Icon icon={BellOff} size={15} />
-            {muteLabel(state, api)}
-          </span>
-          <Button size="sm" busy={busy} onClick={() => void set(false, null)}>
-            Unmute
-          </Button>
-        </div>
-      ) : (
-        <div className="ch-ms-mute__opts">
-          <Button size="sm" disabled={busy} onClick={() => void set(true, 8)}>
-            Mute 8 hours
-          </Button>
-          <Button size="sm" disabled={busy} onClick={() => void set(true, 24 * 7)}>
-            Mute a week
-          </Button>
-          <Button size="sm" variant="ghost" disabled={busy} onClick={() => void set(true, null)}>
-            Until I turn it on
-          </Button>
-        </div>
-      )}
-    </Modal>
   );
 }

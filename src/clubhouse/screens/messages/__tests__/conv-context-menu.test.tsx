@@ -8,6 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../../../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('../../../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 vi.mock('@/hooks/golf/use-appearance-preferences', () => ({ useAppearancePreferences: () => ({ showAnimations: false }) }));
+const toastSpy = vi.hoisted(() => vi.fn());
+vi.mock('../../../ui/Toast', async (original) => ({ ...(await original<typeof import('../../../ui/Toast')>()), useToast: () => toastSpy }));
 
 import '../../../__tests__/dialog-polyfill';
 import { CTX_HOLD_MS } from '../../../ui/ContextMenu';
@@ -58,22 +60,42 @@ describe('Messages conversation row, right-click', () => {
   });
 });
 
-describe('Messages conversation row, Mute (owner decision 14)', () => {
-  it('CH-7607 Mute… opens the row\'s mute sheet on that conversation, reading its mute as it opens', async () => {
-    const user = userEvent.setup();
-    const muteOf = vi.fn(async () => ({ muted: false, until: null }));
-    const muteApi = { ...api, muteOf, muteConversation: vi.fn(async () => true) } as unknown as ChMessagesApi;
+describe('Messages conversation row, Mute (owner decision 14, MSG-604)', () => {
+  const mountMute = (c: ChConv = conv) => {
+    const muteConversation = vi.fn(async () => true);
+    const muteApi = { ...api, muteConversation } as unknown as ChMessagesApi;
     render(
       <LazyMotion features={domAnimation}>
         <div className="ch-root" data-ui="clubhouse">
-          <ConvRow api={muteApi} c={conv} />
+          <ConvRow api={muteApi} c={c} />
         </div>
       </LazyMotion>,
     );
     fireEvent.contextMenu(screen.getByRole('button', { name: /Maya Reyes/ }), { clientX: 120, clientY: 120 });
+    return muteConversation;
+  };
+
+  it('Mute… opens the mute menu of D under that row, and a length mutes that conversation with the one toast', async () => {
+    const user = userEvent.setup();
+    toastSpy.mockClear();
+    const muteConversation = mountMute();
     await user.click(within(screen.getByRole('menu', { name: 'Actions for Maya Reyes' })).getByRole('menuitem', { name: 'Mute…' }));
-    await waitFor(() => expect(document.querySelector('[data-ch-code="CH-7607"]')).not.toBeNull());
-    expect(muteOf).toHaveBeenCalledWith('c1');
+    const menu = await screen.findByRole('menu', { name: 'Mute this conversation' });
+    expect(within(menu).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['For 8 hours', 'For a week', 'Until I turn it on']);
+    await user.click(within(menu).getByRole('menuitem', { name: 'For a week' }));
+    await waitFor(() => expect(muteConversation).toHaveBeenCalledWith('c1', true, 24 * 7));
+    await waitFor(() => expect(toastSpy).toHaveBeenCalledWith({ title: 'Muted for a week', replace: 'mute' }));
+  });
+
+  it('a muted conversation offers Unmute, which unmutes at once and toasts once', async () => {
+    const user = userEvent.setup();
+    toastSpy.mockClear();
+    const muteConversation = mountMute({ ...conv, muted: true });
+    const menu = screen.getByRole('menu', { name: 'Actions for Maya Reyes' });
+    expect(within(menu).queryByRole('menuitem', { name: 'Mute…' })).toBeNull();
+    await user.click(within(menu).getByRole('menuitem', { name: 'Unmute' }));
+    await waitFor(() => expect(muteConversation).toHaveBeenCalledWith('c1', false, null));
+    await waitFor(() => expect(toastSpy).toHaveBeenCalledWith({ title: 'Unmuted', replace: 'mute' }));
   });
 });
 
@@ -91,15 +113,15 @@ describe('Messages conversation row, phone (owner decision 14)', () => {
   const touch = { pointerId: 1, pointerType: 'touch', isPrimary: true };
 
   // F-0048 (by design): the hidden "Actions for …" control is the screen reader and keyboard path; a finger uses the hold or
-  // the swipe. Pin that it stays in the tree, shows when focused, and opens the same sheet with Enter.
-  it('the Actions control is reachable without a finger and opens the actions sheet with Enter', async () => {
+  // the swipe. Pin that it stays in the tree, shows when focused, and opens the same menu with Enter (MSG-111).
+  it('the Actions control is reachable without a finger and opens the actions menu with Enter', async () => {
     const user = userEvent.setup();
     render(phoneRow());
     const actions = screen.getByRole('button', { name: 'Actions for Maya Reyes' });
     expect(actions.parentElement!.classList.contains('ch-sr-only--focusable')).toBe(true);
     actions.focus();
     await user.keyboard('{Enter}');
-    expect(screen.getByRole('dialog', { name: /Actions for Maya Reyes|Maya Reyes/ })).toBeTruthy();
+    expect(screen.getByRole('menu', { name: 'Actions for Maya Reyes' })).toBeTruthy();
     const base = readFileSync(join(process.cwd(), 'src/clubhouse/styles/base.css'), 'utf8');
     expect(base).toMatch(/\.ch-sr-only--focusable:has\(:focus-visible\)\s*\{[^}]*position: static;[^}]*width: auto;/);
   });

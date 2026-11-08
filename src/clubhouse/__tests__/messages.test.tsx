@@ -340,7 +340,8 @@ describe('Messages · actions that fail', () => {
       show();
       await openDetails(user);
       await user.click(await chooseMute(user));
-      expect(a.setGolfConversationMute).toHaveBeenCalledTimes(1);
+      // The menu fades out for 160 ms before it picks (MOT-DET-3).
+      await waitFor(() => expect(a.setGolfConversationMute).toHaveBeenCalledTimes(1));
       act(() => vi.advanceTimersByTime(5001));
       await expectCode('CH-1902', /Still saving/);
       await act(async () => finish({ success: false, error: 'nope' }));
@@ -348,9 +349,21 @@ describe('Messages · actions that fail', () => {
       await waitFor(() => expect(code('CH-1902')).toBeNull());
       expect(a.setGolfConversationMute).toHaveBeenCalledTimes(1);
       expect(code('CH-7011')).not.toBeNull();
+      // D's mute action owns the success toast; a refused mute makes none.
+      expect(screen.queryByText('Muted for 8 hours')).toBeNull();
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('MSG-604 a mute that lands says so once, in the menu\u2019s words', async () => {
+    const user = userEvent.setup();
+    a.setGolfConversationMute.mockResolvedValue({ success: true, data: { muted: true, until: '2026-10-19T02:00:00Z' } });
+    show();
+    await openDetails(user);
+    await user.click(await chooseMute(user));
+    expect(await screen.findByText('Muted for 8 hours')).toBeTruthy();
+    expect(screen.getAllByText('Muted for 8 hours')).toHaveLength(1);
   });
 
   it('CH-7011 muting fails', async () => {

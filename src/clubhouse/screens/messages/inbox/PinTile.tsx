@@ -41,7 +41,7 @@ export function PinTile({ api, c, place }: { api: ChMessagesApi; c: ChConv; plac
           <span className="ch-msv-pin__l">{pinLabel(c)}</span>
         </button>
         <span className="ch-sr-only ch-sr-only--focusable">
-          <button type="button" onClick={() => ctx.openSheet(c)}>
+          <button type="button" onClick={(e) => ctx.openAt(c, e.currentTarget)}>
             Actions for {c.title}
           </button>
         </span>

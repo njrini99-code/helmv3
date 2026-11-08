@@ -13,14 +13,14 @@ import { ConvRow, type ChMessagesApi } from '../MessagesView';
 import type { ChConv } from '../model';
 
 /**
- * The phone inbox's seams (lane B leftover, "ConvRow seams"). A conversation's sheets (its long-press menu, Mute,
- * Delete) are <dialog>s rendered in place after its swipe frame, and they stay mounted once opened so they can ease
- * out. The seam between frames was `.ch-ms-swipe + .ch-ms-swipe`, so once a row's sheet had opened, the dialog sat
+ * The phone inbox's seams (lane B leftover, "ConvRow seams"). A conversation's sheets (Delete's confirmation; the long-press
+ * and mute menus are portaled popovers now, MSG-111) are <dialog>s rendered in place after its swipe frame, and they stay mounted
+ * once opened so they can ease out. The seam between frames was `.ch-ms-swipe + .ch-ms-swipe`, so once a row's sheet had opened, the dialog sat
  * between that frame and the next and the seam under the row was gone for good. The seam reads any earlier frame
  * (`~`), and a pressed or swiped row's neighbour steps its seam aside across those dialogs too.
  */
 const css = readFileSync(join(__dirname, '../../../styles/messages.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
-const api = { selectedId: null, select: vi.fn(), now: new Date('2026-10-18T12:00:00Z'), timeZone: 'America/New_York', viewer: { userId: 'me' }, directory: [], setRead: vi.fn(async () => true) } as unknown as ChMessagesApi;
+const api = { selectedId: null, select: vi.fn(), now: new Date('2026-10-18T12:00:00Z'), timeZone: 'America/New_York', viewer: { userId: 'me' }, directory: [], setRead: vi.fn(async () => true), deleteConversation: vi.fn(async () => true) } as unknown as ChMessagesApi;
 const conv = (id: string, title: string): ChConv => ({ id, group: false, title, subtitle: 'Player', memberIds: [`u-${id}`], memberCount: 2, unread: 0, lastAt: '2026-10-18T11:00:00Z', lastSenderId: null, lastText: 'See you at 3', creatorId: null });
 
 afterEach(cleanup);
@@ -51,6 +51,7 @@ describe('phone inbox seams across a row’s sheets', () => {
       </LazyMotion>,
     );
     fireEvent.click(screen.getByRole('button', { name: 'Actions for Maya Reyes' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete conversation' }));
     const frames = [...document.querySelectorAll<HTMLElement>('.ch-ms-swipe')];
     expect(frames).toHaveLength(3);
     // The sheet is in place, between the first frame and the second.

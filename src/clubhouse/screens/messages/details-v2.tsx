@@ -2,9 +2,11 @@
 
 import { Bell, BellOff, FileText, LogOut, Paperclip, Search, UserMinus, UserPlus, UserRound, ImageOff } from 'lucide-react';
 import Link from 'next/link';
+import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { MS_BEATS, chSpringCurve, msAnimate } from './motion/messages-motion';
+import '../../styles/messages-overlays.css';
 import { haptic } from '../../lib/haptics';
 import { Avatar } from '../../ui/Avatar';
 import { Icon } from '../../ui/Icon';
@@ -57,6 +59,12 @@ export const MUTE_CHOICES: ReadonlyArray<{ label: string; hours: number | null }
 
 const MAX_TIMER = 2_147_000_000;
 
+/** Where the mute menu hangs from a rectangle (a tile, an inbox row): under it with 8 px between, or above where the screen ends; clear of the edge. */
+export function muteAnchor(r: { left: number; top: number; bottom: number }): { left: number; top: number; above: boolean } {
+  const roomBelow = window.innerHeight - r.bottom > 240;
+  return { left: Math.max(8, Math.min(r.left, window.innerWidth - 236 - 8)), top: roomBelow ? r.bottom + 8 : Math.max(16, r.top - 8 - 200), above: !roomBelow };
+}
+
 /**
  * The mute action, phone and desktop (MSG-604, MSG-608): a menu of three lengths, one toast, the inbox glyph following, and an
  * 8-hour or one-week mute going back to unmuted by itself when its time comes, with the page open or when it comes back to the front.
@@ -67,11 +75,7 @@ export function useMuteAction(api: ChMessagesApi) {
   const [anchor, setAnchor] = useState<{ left: number; top: number; above?: boolean } | null>(null);
   /** Opens under the key that asked (MSG-410), or above it where the screen ends; clear of the edge. */
   const setChoosing = (on: boolean, from?: HTMLElement) => {
-    if (on && from) {
-      const r = from.getBoundingClientRect();
-      const roomBelow = window.innerHeight - r.bottom > 240;
-      setAnchor({ left: Math.max(8, Math.min(r.left, window.innerWidth - 236 - 8)), top: roomBelow ? r.bottom + 8 : Math.max(16, r.top - 8 - 200), above: !roomBelow });
-    }
+    if (on && from) setAnchor(muteAnchor(from.getBoundingClientRect()));
     setChoosingOn(on);
   };
   const [busy, setBusy] = useState(false);
@@ -147,18 +151,21 @@ export function MuteMenu({ onPick, onClose, anchor }: { onPick: (hours: number |
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   });
-  return (
-    <div className="ch-msv-lift ch-msd-lift" data-ch-ms-v2="on">
+  if (typeof document === 'undefined') return null;
+  return createPortal(
+    <div className="ch-mso-pop ch-msd-lift" data-ch-ms-v2="on">
       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- Esc is the keyboard's way out */}
-      <div className="ch-msv-lift__scrim is-light" onClick={() => leave(onClose)} />
-      <div ref={menu} className="ch-msv-holdmenu is-mute ch-msd-menu" role="menu" aria-label="Mute this conversation" style={anchor ? { left: anchor.left, top: anchor.top } : undefined}>
+      <div className="ch-mso-pop__scrim" onClick={() => leave(onClose)} />
+      <div ref={menu} className="ch-mso-menu ch-msd-menu" role="menu" aria-label="Mute this conversation" style={anchor ? { left: anchor.left, top: anchor.top } : undefined}>
         {MUTE_CHOICES.map((c) => (
           <button key={c.label} type="button" role="menuitem" onClick={() => leave(() => onPick(c.hours))}>
-            <span>{c.label}</span>
+            <span className="ch-mso-menu__t">{c.label}</span>
           </button>
         ))}
       </div>
-    </div>
+    </div>,
+    // Portaled like the message menu: a row in a scrolling list must not clip or offset it.
+    document.querySelector('.ch-root') ?? document.body,
   );
 }
 

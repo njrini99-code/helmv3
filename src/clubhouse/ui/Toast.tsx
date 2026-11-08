@@ -207,7 +207,8 @@ export function ToastProvider({ children, scope = '' }: { children: ReactNode; s
       const replaced = replace == null ? undefined : keys.get(replace);
       if (replaced != null) dismiss(replaced);
       // The stack holds at most three notices; an evicted notice owns no future timer/listener.
-      if (pillOn) for (const old of [...lifetimes.keys()]) expire(old);
+      // The pill is one notice at a time: the live ones leave the stack (dismiss), not only their clocks (expire), or they hang on.
+      if (pillOn) for (const old of [...lifetimes.keys()]) dismiss(old);
       if (lifetimes.size >= 3) expire(lifetimes.keys().next().value!);
       const id = nextId.current++;
       if (onExpire) expiries.set(id, onExpire);
