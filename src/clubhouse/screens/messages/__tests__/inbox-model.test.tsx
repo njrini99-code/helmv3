@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { bubbletLine, hasNoMessages, INBOX_FILTERS, nothingHere, pinLabel, pinsWithChannel, withoutEmptyThreads } from '../inbox/model';
+import { bubbletLine, hasNoMessages, INBOX_FILTERS, nothingHere, pinLabel, pinsWithChannel, titleHints, withoutEmptyThreads } from '../inbox/model';
 import { InboxSkeleton, INBOX_SKELETON_WIDTHS } from '../inbox/InboxSkeleton';
 import { TypingMini, typingLabel } from '../inbox/TypingMini';
 import { MessagesSkeleton } from '../MessagesSkeleton';
@@ -72,6 +72,28 @@ describe('threads with no messages stay out of the list', () => {
   it('keeps an empty one the viewer is in (open, made or opened this session, pinned)', () => {
     expect(withoutEmptyThreads(list, (id) => id === 'made').map((c) => c.id)).toEqual(['team', 'talked', 'made']);
     expect(withoutEmptyThreads(list, (id) => id === 'blank' || id === 'made').map((c) => c.id)).toEqual(['team', 'talked', 'blank', 'made']);
+  });
+});
+
+describe('groups that share a title tell themselves apart', () => {
+  const g = (id: string, memberCount: number, creatorId: string | null = null, title = '26-27 Group Chat') => ({ id, title, group: true, memberCount, creatorId });
+  const names: Record<string, string> = { maya: 'Maya Reyes', owen: 'Owen Hart' };
+  const nameOf = (id: string) => names[id];
+  it('says the member count when the counts differ', () => {
+    const h = titleHints([g('a', 11), g('b', 2), g('c', 5, null, 'Travel')], nameOf);
+    expect([...h]).toEqual([['a', '11 members'], ['b', '2 members']]);
+  });
+  it('falls back to who started each when the counts match', () => {
+    const h = titleHints([g('a', 4, 'maya'), g('b', 4, 'owen')], nameOf);
+    expect([...h]).toEqual([['a', 'started by Maya'], ['b', 'started by Owen']]);
+  });
+  it('falls back to a number in list order when nothing else differs', () => {
+    const h = titleHints([g('a', 4, 'maya'), g('b', 4, 'maya')], nameOf);
+    expect([...h]).toEqual([['a', '4 members, 1 of 2'], ['b', '4 members, 2 of 2']]);
+  });
+  it('matches titles ignoring case and spaces, and leaves a lone group, the channel and a person alone', () => {
+    const h = titleHints([g('a', 3, null, 'Travel'), g('b', 6, null, ' travel '), g('c', 8, null, 'Solo'), { ...g('d', 9, null, 'Travel'), channel: true }, { ...g('e', 2, null, 'Travel'), group: false }], nameOf);
+    expect([...h.keys()]).toEqual(['a', 'b']);
   });
 });
 

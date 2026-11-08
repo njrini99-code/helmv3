@@ -1058,6 +1058,16 @@ describe('Messages · behaviour contracts (P007, docs/clubhouse/pages/P007-messa
     expect(document.querySelector('.ch-ms-rail')?.textContent).toMatch(/Eli Brandt/);
   });
 
+  it('two groups with one title are told apart in the rail by their member counts; a lone title gets nothing', async () => {
+    const grp = (id: string, n: number) => ({ id, title: '26-27 Group Chat', participant_ids: ['me', 'jonah', ...Array.from({ length: n - 2 }, (_, i) => `x${i}`)], participant_count: n, unread_count: 0, last_message: { content: 'Hi', created_at: '2026-10-14T17:00:00Z', sender_id: 'jonah' }, creator_id: 'jonah' });
+    live.convs.conversations = [grp('g1', 11), grp('g2', 4), team];
+    show();
+    await screen.findByRole('textbox', { name: /Message/ });
+    const rail = document.querySelector('.ch-ms-rail')!;
+    expect([...rail.querySelectorAll('.ch-ms-row__hint')].map((h) => h.textContent?.trim())).toEqual(['· 11 members', '· 4 members']);
+    expect(within(rail as HTMLElement).getByText('Varsity team').querySelector('.ch-ms-row__hint')).toBeNull();
+  });
+
   it('A16 a ?compose=1 link (the palette’s New message) opens New message and cleans the address', async () => {
     live.convs.conversations = [team, dm];
     params.current = new URLSearchParams('compose=1');

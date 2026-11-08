@@ -8,6 +8,7 @@ import { Flag, Users, BellOff, ListChecks } from 'lucide-react';
 import { Avatar } from '../../../ui/Avatar';
 import { convAvatarId, convYear } from '../shared/conv-ui';
 import { TypingMini, typingLabel } from './TypingMini';
+import { titleHints } from './model';
 import { personOf } from '../person-of';
 import { PresenceRow } from '../../../ui/ListPresence';
 
@@ -20,6 +21,8 @@ export function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false 
     ...bind,
   };
   const typers = api.typingByConv?.get(c.id);
+  // Groups in the list that share this one's title say how they differ (inbox/model.ts).
+  const hint = titleHints(api.convs ?? [],(id) => personOf(api, id)?.name).get(c.id);
   const body = (
     <>
       {c.group ? (
@@ -35,6 +38,7 @@ export function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false 
           <b>
             {isUnread(c) && <i className="ch-msv-dot" aria-hidden="true" />}
             {c.title}
+            {hint && <span className="ch-ms-row__hint"> · {hint}</span>}
           </b>
           {c.muted && <Icon icon={BellOff} size={13} className="ch-ms-row__mute" aria-label="Muted" />}
           <span className="ch-num">

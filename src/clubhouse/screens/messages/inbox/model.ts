@@ -33,6 +33,35 @@ export function filterConvs(convs: ChConv[], filter: ChConvFilter, q: string): C
   return convs.filter((c) => (filter === 'unread' ? isUnread(c) : filter === 'groups' ? c.group : true) && (!s || c.title.toLowerCase().includes(s) || c.lastText.toLowerCase().includes(s)));
 }
 
+type ChTitled = Pick<ChConv, 'id' | 'title' | 'group' | 'channel' | 'memberCount' | 'creatorId'>;
+
+/**
+ * A second line for groups in the list that share a title ("26-27 Group Chat" twice): the member count, else who started
+ * each, else a number in list order. Only the rows that collide get one, and only groups (a person's name is their own).
+ * Returns id to hint; the row draws it after the title as " · {hint}".
+ */
+export function titleHints(convs: readonly ChTitled[], nameOf: (userId: string) => string | undefined): Map<string, string> {
+  const out = new Map<string, string>();
+  const byTitle = new Map<string, ChTitled[]>();
+  for (const c of convs) {
+    if (!c.group || c.channel) continue;
+    const key = c.title.trim().toLowerCase();
+    byTitle.set(key, [...(byTitle.get(key) ?? []), c]);
+  }
+  for (const same of byTitle.values()) {
+    if (same.length < 2) continue;
+    const members = same.map((c) => `${c.memberCount} members`);
+    const makers = same.map((c) => {
+      const name = c.creatorId ? nameOf(c.creatorId) : undefined;
+      return name ? `started by ${firstName(name)}` : '';
+    });
+    const distinct = (xs: string[]) => xs.every((x) => x) && new Set(xs).size === xs.length;
+    const hints = distinct(members) ? members : distinct(makers) ? makers : members.map((m, i) => `${m}, ${i + 1} of ${same.length}`);
+    same.forEach((c, i) => out.set(c.id, hints[i]!));
+  }
+  return out;
+}
+
 /** A thread nobody has written in: no last message at all. The team's channel is never one (it is always listed). */
 export function hasNoMessages(c: Pick<ChConv, 'lastText' | 'lastSenderId' | 'channel'>): boolean {
   return !c.channel && !c.lastText && c.lastSenderId === null;

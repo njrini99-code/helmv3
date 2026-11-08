@@ -202,6 +202,12 @@
   font-weight: 600;
   color: var(--ch-green-700);
 }
+/* Two groups with one title tell themselves apart by a quiet tail (" · 11 members"), after the name and not bold. */
+.ch-ms-row__top b .ch-ms-row__hint {
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--ch-text-tertiary);
+}
 .ch-ms-row__top > span {
   flex: none;
   font: var(--ch-type-13);
