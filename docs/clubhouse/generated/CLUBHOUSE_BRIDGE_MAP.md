@@ -209,7 +209,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10703 | CH-1903 | 07 Network / offline | `SOMEONE_SAVES_WHILE_OFFLINE` | implemented | Someone saves while offline |
 | 10704 | CH-1905 | 07 Network / offline | `SOMEONE_PRESSES_TRY_AGAIN_ON_A_NOTICE` | implemented | Someone presses Try again on a notice, or on a page that didn't load, while offline |
 | 10705 | CH-1909 | 07 Network / offline | `IN_THE_IPHONE_APP_PULLING_A_PHONE` | implemented | In the iPhone app, pulling a phone page down from its top |
-| 10706 | CH-1910 | 07 Network / offline | `TWO_NOTICES_ABOUT_THE_SAME_THING_IN` | implemented | Two notices about the same thing in a row (Conversation muted, then Notifications back on) |
+| 10706 | CH-1910 | 07 Network / offline | `TWO_NOTICES_ABOUT_THE_SAME_THING_IN` | reserved | Two notices about the same thing in a row (Conversation muted, then Notifications back on) |
 | 10801 |  | 08 Permission / authorization | `CLUBHOUSE_GATE` | implemented | Clubhouse renders only for a coach or a player, and only with golf_clubhouse_ui on (isClubhouseFor); everyone else gets the existing GolfHelm pages, and held server actions refuse through the same check. |
 | 10802 |  | 08 Permission / authorization | `ROLE_SCOPED_NAV` | implemented | Each role sees only its own navigation (D-66), and an address not rebuilt for the viewer's role shows the not-rebuilt notice inside the Clubhouse frame, never another role's page or a Fairway page. |
 | 10803 |  | 08 Permission / authorization | `TEAM_SWITCH_IS_A_HEAD_COACHS` | implemented | Only a head coach staffed on more than one team is offered the team switch (canSwitchTeams and two or more teams), the same gate setActiveTeam enforces: a coach on one team, an assistant on several, and a player see the team as a plain label, and a forged or unstaffed team id is refused by the server, so the switch can never be wider than the server's answer. |
@@ -893,12 +893,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 71402 |  | 14 Retry / recovery | `TRY_AGAIN_SECTION_READ` | implemented | Try again on a section that did not load re-reads only that section (conversations, a thread, members, files, announcements) and keeps the rest of the page as it was. |
 | 71501 | CH-7017 | 15 Data freshness / sync | `A_MESSAGES_SEND_CANT_BE_CONFIRMED` | implemented | A message's send can't be confirmed |
 | 71601 | CH-7601 | 16 Micro animation | `A_MESSAGE_ARRIVES_OR_IS_SENT` | implemented | A message arrives or is sent |
-| 71602 | CH-7602 | 16 Micro animation | `SOMEONE_IS_TYPING` | implemented | Someone is typing |
+| 71602 | CH-7602 | 16 Micro animation | `SOMEONE_IS_TYPING` | reserved | Someone is typing |
 | 71603 | CH-7603 | 16 Micro animation | `OPENING_DETAILS_OR_A_REACTION_BAR` | implemented | Opening details or a reaction bar |
 | 71604 | CH-7604 | 16 Micro animation | `A_LONG_PRESS_ON_A_MESSAGE` | implemented | A long press on a message (phone) |
 | 71605 | CH-7605 | 16 Micro animation | `OPENING_ANOTHER_CONVERSATION_OR_ANNOUNCEMENT` | implemented | Opening another conversation or announcement (desktop) |
 | 71606 | CH-7606 | 16 Micro animation | `CHANGING_THE_INBOX_FILTER_ON_THE_PHONE` | reserved | Changing the inbox filter on the phone (All, Unread, Groups) |
-| 71607 | CH-7607 | 16 Micro animation | `MUTING_A_CONVERSATION_FROM_ITS_ROW` | implemented | Muting a conversation from its row (owner decision 14) |
+| 71607 | CH-7607 | 16 Micro animation | `MUTING_A_CONVERSATION_FROM_ITS_ROW` | reserved | Muting a conversation from its row (owner decision 14) |
 | 71608 | CH-7608 | 16 Micro animation | `A_GROUP_MESSAGES_RECEIPT_CHANGES` | implemented | A group message's receipt changes ("Sent" → "Seen by 4 of 11" → "Seen by everyone") |
 | 71609 | CH-7609 | 16 Micro animation | `THE_SEEN_BY_SHEET_OR_POPOVER_OPENS` | implemented | The Seen by sheet (phone) or popover (desktop) opens and updates live |
 | 71701 | CH-7701 | 17 Haptic | `A_CHANGE_FAILS` | implemented | A change fails |

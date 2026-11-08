@@ -398,7 +398,7 @@
     "name": "TWO_NOTICES_ABOUT_THE_SAME_THING_IN",
     "chCode": "CH-1910",
     "meaning": "Two notices about the same thing in a row (Conversation muted, then Notifications back on)",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
   {
@@ -7856,7 +7856,7 @@
     "name": "SOMEONE_IS_TYPING",
     "chCode": "CH-7602",
     "meaning": "Someone is typing",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
@@ -7911,7 +7911,7 @@
     "name": "MUTING_A_CONVERSATION_FROM_ITS_ROW",
     "chCode": "CH-7607",
     "meaning": "Muting a conversation from its row (owner decision 14)",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
