@@ -624,6 +624,21 @@ describe('POST /coachhelm/v3/chat/stream — grounding audit over the full strea
       expect(emitted().filter((c) => c.type === 'finish')).toHaveLength(1);
     });
 
+    it('a refused count is rewritten with no reads; a figure no read holds may read', async () => {
+      mocks.streamText.mockReset();
+      mocks.streamText.mockImplementationOnce(answer('Six players have a figure.')).mockImplementationOnce(answer('Every player has a figure.'));
+      mocks.auditNumericClaims.mockReset().mockReturnValueOnce([{ text: 'Six', value: 6 }]).mockReturnValue([]);
+      await runPostAndSettle(baseBody);
+      expect((mocks.streamText.mock.calls[1]![0] as { toolChoice?: string }).toolChoice).toBe('none');
+      expect(shownText()).toBe('Every player has a figure.');
+
+      mocks.streamText.mockReset();
+      mocks.streamText.mockImplementationOnce(answer('His make rate is 71%.')).mockImplementationOnce(answer('His make rate is 64%.'));
+      mocks.auditNumericClaims.mockReset().mockReturnValueOnce([{ text: '71%', value: 71 }]).mockReturnValue([]);
+      await runPostAndSettle(baseBody);
+      expect((mocks.streamText.mock.calls[1]![0] as { toolChoice?: string }).toolChoice).toBe('auto');
+    });
+
     it('a twice rejected turn releases no answer text, only the withheld card', async () => {
       mocks.streamText.mockReset();
       mocks.streamText.mockImplementationOnce(answer('His make rate is 71%.')).mockImplementationOnce(answer('His make rate is 72%.'));

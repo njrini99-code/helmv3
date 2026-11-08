@@ -17,13 +17,34 @@ export function isRepairable(verdict: TurnVerdict): verdict is RejectedVerdict {
 
 const MAX_LISTED = 8;
 
+const MONTH = /\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\b/i;
+const WORD_COUNT = /^(?:three|four|five|six|seven|eight|nine|ten|eleven|twelve)$/i;
+
+/**
+ * How the repair is made. `rewrite` (the default): the model is handed its own answer and what was refused, may read nothing, and writes one
+ * corrected version (a refused figure fixed from the reads already in front of it, or left out), which is one short step. `read`: only when a
+ * refusal is a figure no read holds (not a date, a count, a moved figure, a small sample or a cause), where the honest repair may need a source.
+ */
+export type RepairMode = 'rewrite' | 'read';
+
+export function repairMode(verdict: RejectedVerdict): RepairMode {
+  const needsSource = verdict.unsupported.some((u) => !u.misattributed && !MONTH.test(u.text) && !WORD_COUNT.test(u.text) && !(/^\d{1,2}$/.test(u.text) && Number.isInteger(u.value) && u.value >= 3 && u.value <= 12));
+  return needsSource ? 'read' : 'rewrite';
+}
+
+const READ_SENTENCE = 'If you need a figure you do not have, read it first; if you cannot get it, say so instead of estimating.';
+const REWRITE_SENTENCE = 'You cannot read anything more now: use only the figures already in your reads above, and where you do not have one, leave it out or say you do not have it.';
+
 /** What the model is told: the audit's own feedback (`repair-feedback.ts`), and a plain list of the refused figures if that returns nothing or throws. */
-export function repairMessage(verdict: RejectedVerdict): string | null {
+export function repairMessage(verdict: RejectedVerdict, mode: RepairMode = 'read'): string | null {
+  let text: string | null;
   try {
-    return repairFeedback(verdict) ?? plainRepairMessage(verdict);
+    text = repairFeedback(verdict) ?? plainRepairMessage(verdict);
   } catch {
-    return plainRepairMessage(verdict);
+    text = plainRepairMessage(verdict);
   }
+  if (text === null || mode === 'read') return text;
+  return text.includes(READ_SENTENCE) ? text.replace(READ_SENTENCE, REWRITE_SENTENCE) : `${text}\n${REWRITE_SENTENCE}`;
 }
 
 /** Names the refused figures and claims, never ids or tool names. */

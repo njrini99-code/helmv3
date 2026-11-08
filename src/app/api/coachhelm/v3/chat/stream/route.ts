@@ -123,7 +123,7 @@ import {
 } from '@/lib/coachhelm/v3/chat/ui-parts';
 import { describeError } from '@/lib/utils/describe-error';
 import { deferredForNamedPlayers, namedPlayerIds, placePriorEnvelope } from '@/lib/coachhelm/v3/chat/prior-evidence';
-import { addUsage, isRepairable, repairMessage } from '@/lib/coachhelm/v3/chat/repair-pass';
+import { addUsage, isRepairable, repairMessage, repairMode } from '@/lib/coachhelm/v3/chat/repair-pass';
 import type { ModelMessage } from 'ai';
 import { buildChatLlmCallRow } from '@/lib/coachhelm/v3/llm/chat-call-row';
 import { AskPerf, askPerfEnabled, askPerfProviderOptions } from '@/lib/coachhelm/v3/chat/ask-perf';
@@ -1020,11 +1020,15 @@ export async function POST(req: NextRequest) {
       // ONE automatic repair pass (repair-pass.ts). A rejected answer is never shown; before the withheld card is, the model is told what was refused
       // and asked once more, and the new answer is audited exactly like the first. Accepted: it is released as the turn's answer. Otherwise the
       // withheld card is shown as before (for the first rejection's reason if the repair did not finish). The coach sees the progress row meanwhile.
-      const repairNote = verdict.outcome === 'rejected' && isRepairable(verdict) && !req.signal?.aborted ? repairMessage(verdict) : null;
+      const mode = verdict.outcome === 'rejected' && isRepairable(verdict) ? repairMode(verdict) : 'read';
+      const repairNote = verdict.outcome === 'rejected' && isRepairable(verdict) && !req.signal?.aborted ? repairMessage(verdict, mode) : null;
       if (verdict.outcome === 'rejected' && repairNote) {
         const first = { verdict, text: turnText };
         const repairStarted = Date.now();
         perf.mark('repair_start');
+        if (perf.enabled) {
+          writer.write({ type: 'data-ask-perf-repair', data: { mode, reason: verdict.reason, unmatched: verdict.unsupported.map((u) => u.text), rejectedClaims: (verdict.rejectedClaims ?? []).map((r) => ({ metric: r.claim.metric_id, reason: r.reason })), citations: verdict.citations ?? null, firstAnswer: turnText }, transient: true } as StreamChunk);
+        }
         writer.write({ type: 'data-progress', id: 'progress-repair', data: { label: 'Checking the figures again', tool: 'repair' } } as StreamChunk);
         const firstResponse = (await (result as unknown as { response: Promise<{ messages?: ModelMessage[] }> }).response)?.messages ?? [];
         const repair = streamText({
@@ -1036,7 +1040,9 @@ export async function POST(req: NextRequest) {
           // Reads only: a repair never proposes a change. The tool definitions stay exactly the first pass's (a smaller set is a different prefix, so
           // the repair call wrote the whole 39k-token prefix again: $0.10 on one turn), and a change tool is refused instead of offered.
           toolApproval: ({ toolCall }: { toolCall: { toolName: string } }) => (isConfirmRequired(toolCall.toolName) ? 'denied' : 'not-applicable'),
-          stopWhen: stepCountIs(4),
+          // A rewrite is one step with no reads (the definitions stay, so the cached prefix is read, not written); a figure no read holds may read.
+          toolChoice: mode === 'rewrite' ? 'none' : 'auto',
+          stopWhen: stepCountIs(mode === 'rewrite' ? 1 : 4),
           prepareStep: ({ messages }) => ({ messages: withTailBreakpoint(messages) }),
           onLanguageModelCallStart: (e) => perf.modelRequest(e),
           onLanguageModelCallEnd: (e) => perf.modelCall(e),
@@ -1075,6 +1081,8 @@ export async function POST(req: NextRequest) {
             skipSentry: true,
             extra: {
               reason: first.verdict.reason,
+              mode,
+              refused: first.verdict.unsupported.slice(0, 10).map((u) => u.text),
               outcome: repaired ? 'repaired' : 'still_rejected',
               addedMs: Date.now() - repairStarted,
               costUsd: repairUsage ? estimateCachedCostUsd(MODEL_FOR_TASK.coach_chat, repairUsage.inputTokens ?? 0, repairUsage.outputTokens ?? 0, repairUsage.inputTokenDetails) : null,
