@@ -913,6 +913,31 @@ export function detailTable(detail: unknown, caption: string): AskTable | null {
   return { caption, columns: keys.map(headingOf), rows: rows.slice(0, 8).map((r) => keys.map((k) => (isPlain(r[k]) && r[k] !== '' ? humanCell(r[k] as string | number | boolean, timezone) : NO_DATA))) };
 }
 
+/**
+ * A list of rounds (`get_recent_rounds`: `detail.rounds`) as a table with the figures the question is about: score, to par, putts and
+ * strokes gained, each straight from the round's own row. The generic record table keeps the first four fields it meets, which for a
+ * round are the date, the course, the type and the holes, and left the score out (staging, 2026-11-08: "What did I shoot in my last
+ * round?"). A column no round has a value for is left out.
+ */
+export function roundsTable(detail: unknown, caption: string): AskTable | null {
+  const rounds = (detail as { rounds?: unknown } | null | undefined)?.rounds;
+  if (!Array.isArray(rounds) || rounds.length === 0) return null;
+  type R = { date?: unknown; course?: unknown; total_score?: unknown; to_par?: unknown; putts?: unknown; sg_total?: unknown };
+  const list = rounds.filter((r): r is R => !!r && typeof r === 'object');
+  const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+  if (!list.some((r) => num(r.total_score) !== null)) return null;
+  const columns: Array<[string, (r: R) => string | null]> = [
+    ['Date', (r) => (typeof r.date === 'string' ? fmtDay(r.date) : null)],
+    ['Course', (r) => textOf(r.course)],
+    ['Score', (r) => (num(r.total_score) === null ? null : formatValue(num(r.total_score), 'score'))],
+    ['To par', (r) => (num(r.to_par) === null ? null : formatToPar(num(r.to_par) as number, 0))],
+    ['Putts', (r) => (num(r.putts) === null ? null : formatValue(num(r.putts), 'count'))],
+    ['Strokes gained', (r) => (num(r.sg_total) === null ? null : formatValue(num(r.sg_total), 'strokes'))],
+  ];
+  const shown = columns.filter(([, cell]) => list.some((r) => cell(r) !== null));
+  return { caption, columns: shown.map(([name]) => name), rows: list.slice(0, 8).map((r) => shown.map(([, cell]) => cell(r) ?? NO_DATA)) };
+}
+
 function seriesTable(s: MeasurementSeries): AskTable {
   return {
     caption: `${s.metric_label} for ${s.entity.label}`,
@@ -1191,7 +1216,7 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
   // Nothing above drew it (a tool whose output is a list of records, or a kind added later): its real table, or no block at all. A
   // placeholder table read as a broken chart, one row saying "Read" under the headings Read and Result (QA-2).
   if (blocks.length === 0) {
-    const table = detailTable(envelope.detail, envelope.summary);
+    const table = roundsTable(envelope.detail, envelope.summary) ?? detailTable(envelope.detail, envelope.summary);
     if (table) blocks.push({ kind: 'table', title: envelope.summary, source: null, note: partialNote(envelope), bench: null, table });
   }
   return blocks;

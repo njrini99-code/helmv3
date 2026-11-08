@@ -91,6 +91,7 @@ import { CLAIMS_OPEN, CLAIMS_CLOSE, extractAndValidateClaimsSafe } from '@/lib/c
 import { isFlagEnabled } from '@/lib/flags';
 import { isClubhouseForTeam } from '@/clubhouse/gate';
 import { isClubhouseFor } from '@/clubhouse/gate';
+import { loadPlayerFigures } from '@/clubhouse/data/player-figures';
 import { loadTeamStrokesGained } from '@/clubhouse/data/team-sg';
 import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
 import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
@@ -346,7 +347,7 @@ export async function POST(req: NextRequest) {
     if (err instanceof CoachContextError && err.reason === 'not_a_coach' && (await isClubhouseFor('player'))) {
       const body = Body.safeParse(await req.json().catch(() => null));
       if (!body.success) return NextResponse.json({ error: 'Bad request' }, { status: 400 });
-      return runPlayerTurn(supabase, { messages: body.data.messages }, req.signal);
+      return runPlayerTurn(supabase, { messages: body.data.messages }, req.signal, (timezone) => (playerId, window) => loadPlayerFigures(supabase, { playerId, timezone }, window));
     }
     if (err instanceof CoachContextError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
@@ -594,6 +595,7 @@ export async function POST(req: NextRequest) {
         // Ask's whole-team tools follow Clubhouse for this team (flag, then allowlist).
         teamTools: isClubhouseForTeam(ctx.team_id),
         // The team's strokes gained is Team Stats' own figure for the window (QA-1), so it is read there and handed in.
+        playerFigures: (playerId, window) => loadPlayerFigures(supabase, { playerId, timezone: ctx.timezone }, window),
         teamStrokesGained: (window) => loadTeamStrokesGained(supabase, { timezone: ctx.timezone, playerIds: ctx.roster.map((p) => p.id) }, window),
         askV2,
         surface: parsed.data.surface,

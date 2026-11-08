@@ -77,6 +77,8 @@ import {
   getTeamTravel,
   getPlayerInsights,
   getPlayerMetric,
+  FIGURE_WINDOWS,
+  type PlayerFiguresSource,
   getPlayerTrend,
   getPlayerWeakestAreas,
   getPuttingDistanceProfile,
@@ -249,6 +251,8 @@ export interface BuildToolsArgs {
   teamTools?: boolean;
   /** The team's strokes gained for a window, from the one source Team Stats reads. The route hands it in (code outside src/clubhouse may not import it); left out, that read says it could not be read. */
   teamStrokesGained?: TeamSgSource;
+  /** One player's scoring, putts and strokes gained for a window, from the rounds as Stats reads them. Handed in by the route, like `teamStrokesGained`. */
+  playerFigures?: PlayerFiguresSource;
   /** Ask v2 (Clubhouse on for the team): steps update in place, and new tools join. Fairway's chat never sets it. */
   askV2?: boolean;
   /** Ask v2's surface. `send_message` is registered only for Quick chat; left out, the Ask tab, which never sends. */
@@ -335,7 +339,7 @@ function scopedKey(key: string, conversationId: string | null, plan: unknown): s
   return `${key.slice(0, 110)}:${h.toString(36)}`;
 }
 
-export function buildCoachTools({ sb, ctx, conversationId, writer, collect: collectOuter, teamStrokesGained, teamTools = false, practicePlans = false, askV2 = false, surface = 'ask', onArtifactWords, defer }: BuildToolsArgs): ToolSet {
+export function buildCoachTools({ sb, ctx, conversationId, writer, collect: collectOuter, teamStrokesGained, playerFigures, teamTools = false, practicePlans = false, askV2 = false, surface = 'ask', onArtifactWords, defer }: BuildToolsArgs): ToolSet {
   const scope = <P extends { idempotency_key: string }>(proposal: P, plan: unknown): P => ({ ...proposal, idempotency_key: scopedKey(proposal.idempotency_key, conversationId, plan) });
   // The next chat request finishes what a cut-off function left held (TASK_FIELDS §3 step 5). It has to be a request: the writes read the coach from the session.
   if (askV2 && defer) defer(() => sweepHeld(sb, { coach_id: ctx.coach_id, team_id: ctx.team_id, resolve: (row) => heldCommitFor(sb, ctx, row) }));
@@ -650,12 +654,13 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
 
     get_player_metrics: tool({
       description:
-        'Computed statistics for one player. Every value comes back with its unit, window, sample size and the timestamp it was computed at.',
+        'Computed statistics for one player. Every value comes back with its unit, window, sample size and the timestamp it was computed at. window: "last10" is the default (each of the newest ten rounds, the figures the Stats page shows first); "season" when the question says this season; "cache" for the whole recorded history (the cache can lag a few weeks, and says its own window). Scoring, putts per round and strokes gained come from the rounds in that window; greens, fairways and putt makes are shot-level and always the cache\'s.',
       inputSchema: z.object({
         player_id: PlayerId,
         metric_ids: z.array(z.enum(METRIC_IDS)).min(1).max(8),
+        window: z.enum(FIGURE_WINDOWS).default('last10'),
       }),
-      execute: read('get_player_metrics', (input) => getPlayerMetric(sb, ctx, input)),
+      execute: read('get_player_metrics', (input) => getPlayerMetric(sb, ctx, input, playerFigures ? (id, w) => playerFigures(id, w) : undefined)),
     }),
 
     get_player_trend: tool({

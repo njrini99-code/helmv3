@@ -296,15 +296,92 @@ function measurementFromCache(
 }
 
 /** One metric for one player, fully sourced. */
+/** The window a round-based figure names: Stats' default (each player's newest ten rounds), or this season. `cache` is the stats cache's own, lagging, window. */
+export const FIGURE_WINDOWS = ['last10', 'season', 'cache'] as const;
+export type FigureWindow = 'last10' | 'season';
+
+/** What the stats pages print for one player in a window (Clubhouse's `playerFiguresOver`). */
+export type PlayerFigures = {
+  rounds: number;
+  hole_rounds: number;
+  scoring_average: number | null;
+  putts_per_round: number | null;
+  putt_rounds: number;
+  sg_total: number | null;
+  sg_rounds: number;
+  legs: { tee: number | null; approach: number | null; around: number | null; putting: number | null };
+  window_start: string | null;
+  window_end: string | null;
+};
+/** Reads a player's figures for a window; null when the rounds could not be read. Handed in by the route, which may import Clubhouse. */
+export type PlayerFiguresSource = (playerId: string, window: FigureWindow) => Promise<PlayerFigures | null>;
+
+/** The metrics a round holds, and where in {@link PlayerFigures} each one is. The rest are shot-level and stay on the cache. */
+const FIGURE_OF: Record<string, (f: PlayerFigures) => { value: number | null; n: number }> = {
+  scoring_average: (f) => ({ value: f.scoring_average, n: f.rounds }),
+  putts_per_round: (f) => ({ value: f.putts_per_round, n: f.putt_rounds }),
+  sg_total: (f) => ({ value: f.sg_total, n: f.sg_rounds }),
+  sg_tee: (f) => ({ value: f.legs.tee, n: f.sg_rounds }),
+  sg_approach: (f) => ({ value: f.legs.approach, n: f.sg_rounds }),
+  sg_around_green: (f) => ({ value: f.legs.around, n: f.sg_rounds }),
+  sg_putting: (f) => ({ value: f.legs.putting, n: f.sg_rounds }),
+};
+
+function measurementFromFigures(f: PlayerFigures, metricId: string, entity: Measurement['entity']): Measurement | null {
+  const spec = getMetricSpec(metricId);
+  const pick = FIGURE_OF[metricId];
+  if (!spec || !pick) return null;
+  const { value, n } = pick(f);
+  const hundredth = value === null ? null : Number(value.toFixed(2));
+  return {
+    metric_id: spec.id,
+    metric_label: spec.label,
+    unit: spec.unit,
+    value: hundredth,
+    entity,
+    window_start: f.window_start,
+    window_end: f.window_end,
+    sample_size: n,
+    sample_unit: 'rounds',
+    as_of: nowIso(),
+    coverage: hundredth === null ? 'empty' : 'complete',
+    coverage_note: hundredth === null ? `Not enough rounds in this window for ${spec.blurb}.` : n < 5 ? `Only ${n} ${n === 1 ? 'round' : 'rounds'}, so this is a lean read.` : null,
+    source: 'rounds',
+    method: `${spec.id}_per_18_over_the_window_as_stats_reads_it`,
+    denominator: null,
+    benchmark: null,
+    direction: spec.direction,
+  };
+}
+
 export async function getPlayerMetric(
   sb: Sb,
   ctx: CoachChatContext,
-  input: { player_id: string; metric_ids: string[] },
+  input: { player_id: string; metric_ids: string[]; window?: (typeof FIGURE_WINDOWS)[number] },
+  figures?: PlayerFiguresSource,
 ): Promise<ToolEnvelope> {
   const player = requireRosterPlayer(ctx, input.player_id);
   const entity = { kind: 'player' as const, id: player.id, label: player.name };
 
+  // The figures a round holds come from the rounds, in the window the question names, as Stats reads them; the shot-level ones
+  // (greens, fairways, putt makes) stay on the stats cache and say its window.
+  const window = input.window ?? 'last10';
+  const fromRounds = figures && window !== 'cache' && input.metric_ids.some((id) => id in FIGURE_OF) ? await figures(player.id, window) : null;
   const row = await loadStatsRow(sb, player.id);
+  if (fromRounds) {
+    const measurements = input.metric_ids
+      .map((id) => (id in FIGURE_OF ? measurementFromFigures(fromRounds, id, entity) : row ? measurementFromCache(row, id, entity) : null))
+      .filter((m): m is Measurement => m !== null);
+    const usable = measurements.filter((m) => m.value !== null).length;
+    return {
+      summary: `${measurements.length} metric${measurements.length === 1 ? '' : 's'} for ${player.name}, ${window === 'season' ? 'this season' : 'over the newest ten rounds'}.`,
+      measurements,
+      series: [],
+      coverage: coverageFor(usable, measurements.length),
+      coverage_note: usable < measurements.length ? `${measurements.length - usable} of the requested metrics have no recorded data for ${player.name}.` : null,
+      as_of: nowIso(),
+    };
+  }
   if (!row) {
     return {
       summary: `${player.name} has no computed statistics yet.`,
@@ -881,7 +958,7 @@ export async function getRecentRounds(
 
   const rounds = data ?? [];
   return {
-    summary: `${player.name}'s last ${rounds.length} recorded round${rounds.length === 1 ? '' : 's'}.`,
+    summary: rounds.length === 1 ? `${player.name}'s last round.` : `${player.name}'s last ${rounds.length} recorded rounds.`,
     measurements: [],
     series: [],
     detail: {
