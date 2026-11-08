@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { LanguageModelUsage } from 'ai';
-import { addUsage, isRepairable, repairMessage, type RejectedVerdict } from '../repair-pass';
+import { addUsage, isRepairable, plainRepairMessage as repairMessage, type RejectedVerdict } from '../repair-pass';
 import type { TurnVerdict } from '../verdict';
 
 const ungrounded = (texts: string[]): RejectedVerdict => ({ outcome: 'rejected', reason: 'ungrounded_claims', note: 'n', unsupported: texts.map((text) => ({ text, value: 1 })) } as RejectedVerdict);

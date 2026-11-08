@@ -1,5 +1,6 @@
 import type { LanguageModelUsage } from 'ai';
 import type { TurnVerdict } from './verdict';
+import { repairFeedback } from './repair-feedback';
 
 /**
  * The one automatic repair pass for a coach turn the audit rejected.
@@ -16,8 +17,17 @@ export function isRepairable(verdict: TurnVerdict): verdict is RejectedVerdict {
 
 const MAX_LISTED = 8;
 
-/** What the model is told. Names the refused figures and claims, never ids or tool names. */
+/** What the model is told: the audit's own feedback (`repair-feedback.ts`), and a plain list of the refused figures if that cannot be built. */
 export function repairMessage(verdict: RejectedVerdict): string | null {
+  try {
+    return repairFeedback(verdict);
+  } catch {
+    return plainRepairMessage(verdict);
+  }
+}
+
+/** Names the refused figures and claims, never ids or tool names. */
+export function plainRepairMessage(verdict: RejectedVerdict): string | null {
   const items: string[] = [];
   for (const u of verdict.unsupported.slice(0, MAX_LISTED)) items.push(`"${u.text}" is in no read from this turn`);
   for (const r of (verdict.rejectedClaims ?? []).slice(0, MAX_LISTED)) items.push(`the claim on ${r.claim.metric_id} was refused: ${r.reason}`);
