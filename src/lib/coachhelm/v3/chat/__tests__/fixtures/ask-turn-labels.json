@@ -1,8 +1,7 @@
 {
  "4eb455e5": {
   "expect": "accepted",
-  "why": "Mason Rivers SG around the green -0.45 vs team -0.09; the 0.36 gap is their difference (derived). Every figure is true to the read.",
-  "knownWrongBlock": true
+  "why": "Mason Rivers SG around the green -0.45 vs team -0.09; the 0.36 gap is their difference (derived). Every figure is true to the read."
  },
  "6305ae75": {
   "expect": "accepted",
@@ -170,8 +169,7 @@
  },
  "fb4a0134": {
   "expect": "accepted",
-  "why": "Nothing on the calendar for the next eight days, \"through Sunday, November 15\": the read covered 8 days from Saturday November 7, so the date is derived and correct; tasks and due dates match the read.",
-  "knownWrongBlock": true
+  "why": "Nothing on the calendar for the next eight days, \"through Sunday, November 15\": the read covered 8 days from Saturday November 7, so the date is derived and correct; tasks and due dates match the read."
  },
  "0022b134": {
   "expect": "rejected",
@@ -308,8 +306,7 @@
  },
  "d8b1d11e": {
   "expect": "accepted",
-  "why": "Proximity and GIR figures, the 74th percentile among 78 college players (place_percent 74, place_of 78 in the read), 22nd and 13th: all in the reads. The audit rejects \"74\" and \"78\", which are the read's own place figures.",
-  "knownWrongBlock": true
+  "why": "Proximity and GIR figures, the 74th percentile among 78 college players (place_percent 74, place_of 78 in the read), 22nd and 13th: all in the reads. The audit rejects \"74\" and \"78\", which are the read's own place figures."
  },
  "e2a04053": {
   "expect": "accepted",
