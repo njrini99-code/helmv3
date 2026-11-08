@@ -180,3 +180,54 @@ describe('a date written day first', () => {
     expect(say('Owen Carter has 40 may be a thin read.')).toEqual(['40']);
   });
 });
+
+describe('the counts a query_team_data read holds', () => {
+  // Staging, 2026-11-08, conversation c4236ea7: "Which rounds since September 1 had three or more three-putts?" Two reads: 25 stat
+  // lines with three_putts >= 3, and 26 rounds since September 1 (23 completed, 3 in progress). The answer was exact; "the other 23
+  // rounds" was the only figure no tool returned.
+  const COLE = 'p-cole';
+  const stat = (n: number, three: number, score: number) => ({ player: 'Cole Bennett', round_id: `stat-${'abcdefghijklmnopqrstuvwxyz'[n % 26]}${'abcdefghijklmnopqrstuvwxyz'[Math.floor(n / 26)]}`, player_id: COLE, three_putts: three, total_putts: 34, total_score: score });
+  const stats = envelope({
+    summary: '25 rows of round stat lines.',
+    detail: { kind: 'team_data', rows: [stat(1, 3, 74), stat(2, 3, 77), ...Array.from({ length: 23 }, (_, i) => stat(i + 3, 3, 78 + (i % 6)))] },
+  });
+  const round = (n: number, status: string, score: number | null, date: string) => ({ id: `round-${'abcdefghijklmnopqrstuvwxyz'[n % 26]}${'abcdefghijklmnopqrstuvwxyz'[Math.floor(n / 26)]}`, player: 'Cole Bennett', player_id: COLE, status, round_date: date, round_type: 'tournament', course_name: 'Springfield Country Club', total_score: score });
+  const rounds = envelope({
+    summary: '26 rows of rounds.',
+    detail: {
+      kind: 'team_data',
+      rows: [
+        round(1, 'completed', 74, '2026-10-21'), round(2, 'completed', 77, '2026-10-21'), round(3, 'completed', 73, '2026-10-21'),
+        ...Array.from({ length: 20 }, (_, i) => round(i + 4, 'completed', 80 + (i % 5), `2026-09-${String((i % 28) + 1).padStart(2, '0')}`)),
+        ...[0, 1, 2].map((i) => round(i + 30, 'in_progress', null, '2026-10-21')),
+      ],
+    },
+  });
+  const said = [
+    'Two rounds since September 1 had three or more three-putts. Both were Cole Bennett’s, on the same day.',
+    '- Cole Bennett, Oct 21, Springfield Country Club, 74 with three three-putts (tournament round).',
+    '- Cole Bennett, Oct 21, Springfield Country Club, 77 with three three-putts (tournament round).',
+    'The other 23 rounds on the full list are all from before September 1. The 26 rounds recorded since September 1 include three Cole Bennett practice rounds still marked in progress.',
+    'Cole also had a third round at Springfield that day, a 73.',
+  ].join('\n');
+  const everyone = [{ id: COLE, name: 'Cole Bennett' }];
+
+  it('accepts the answer: its rows, dates, scores and counts', () => {
+    expect(audit(said, [stats, rounds], { players: everyone })).toEqual([]);
+  });
+  it('a count of the rows left when a value is taken out is a count the read holds', () => {
+    // 26 rows less 3 in progress, and 25 rows less nothing taken out.
+    expect(audit('There were 23 completed rounds.', [rounds])).toEqual([]);
+    expect(audit('There are 25 stat lines.', [stats])).toEqual([]);
+  });
+  it('still rejects a count the rows do not make', () => {
+    expect(audit('The other 24 rounds on the full list are from before September 1.', [stats, rounds], { players: everyone })).toEqual(['24']);
+    expect(audit('Cole Bennett has 40 rounds on the full list.', [stats, rounds], { players: everyone })).toEqual(['40']);
+  });
+  it('a player’s own count is theirs, not anyone else’s', () => {
+    const two = envelope({ detail: { kind: 'team_data', rows: [...Array.from({ length: 14 }, (_, i) => ({ player: 'Cole Bennett', player_id: COLE, id: `a-${'abcdefghijklmnopqrstuvwxyz'[i]}` })), ...Array.from({ length: 13 }, (_, i) => ({ player: 'Owen Carter', player_id: 'p-owen', id: `b-${'abcdefghijklmnopqrstuvwxyz'[i]}` }))] } });
+    const people = [{ id: COLE, name: 'Cole Bennett' }, { id: 'p-owen', name: 'Owen Carter' }];
+    expect(audit('Owen Carter has 13 rounds on the list.', [two], { players: people })).toEqual([]);
+    expect(audit('Owen Carter has 14 rounds on the list.', [two], { players: people })).toEqual(['14']);
+  });
+});

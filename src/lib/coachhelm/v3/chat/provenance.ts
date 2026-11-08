@@ -1310,7 +1310,7 @@ export function auditNumericClaims(
       const scope = { player: n.player_id ?? null, team: n.team === true, ...familyOf(n.metric_key), ...(n.reference ? { reference: true } : {}) };
       add(n.value, scope);
       // A reference's field names are its own: means and differences of them say nothing about a team.
-      if (n.metric_key && !n.reference) {
+      if (n.metric_key && n.metric_key !== 'row_count' && !n.reference) {
         const id = `${scope.player ?? ''}|${scope.team}|${n.metric_key}`;
         const group = detailGroups.get(id) ?? { scope, values: [] };
         if (group.values.length < PAIRWISE_ANCHOR_CAP * 2) group.values.push(n.value);
@@ -1511,9 +1511,42 @@ export function collectEnvelopeDates(envelope: Pick<ToolEnvelope, 'detail' | 'as
   ];
 }
 
+/** A string field with this few distinct values is a category (status, round type, player), and a count of each is a figure the data states. */
+const CATEGORY_MAX = 8;
+
+/**
+ * The counts a list of rows holds, for a `team_data` read (`query_team_data`): how many rows, how many of each value of a field
+ * with few values (23 completed, 3 in progress; 7 rounds for Cole), and the rows left when one value is taken out. A coach asking
+ * "which rounds…" is answered with "the other 23 rounds", and nothing returns that number. Staging, 2026-11-08: such an answer,
+ * otherwise exact, was withheld for it. Only a count of what the read returned, never a number the rows do not make.
+ */
+export function teamDataCounts(detail: unknown): ScopedNumber[] {
+  const d = detail as { kind?: unknown; rows?: unknown } | null | undefined;
+  if (!d || d.kind !== 'team_data' || !Array.isArray(d.rows) || d.rows.length === 0) return [];
+  const rows = d.rows.filter((r): r is Record<string, unknown> => !!r && typeof r === 'object');
+  const out: ScopedNumber[] = [{ value: rows.length, player_id: null, metric_key: 'row_count' }];
+  const fields = new Set(rows.flatMap((r) => Object.keys(r)));
+  for (const field of fields) {
+    if (/(^id$|_id$)/.test(field)) continue;
+    const values = rows.map((r) => r[field]);
+    if (!values.every((v) => v === null || v === undefined || typeof v === 'string')) continue;
+    const counts = new Map<string, number>();
+    for (const v of values) if (typeof v === 'string' && v !== '') counts.set(v, (counts.get(v) ?? 0) + 1);
+    if (counts.size === 0 || counts.size > CATEGORY_MAX) continue;
+    for (const [value, n] of counts) {
+      // A count of one player's rows is that player's: it must not stand for anyone else's.
+      const owner = field === 'player' ? rows.find((r) => r[field] === value && typeof r.player_id === 'string')?.player_id : null;
+      const player_id = typeof owner === 'string' ? owner : null;
+      out.push({ value: n, player_id, metric_key: 'row_count' });
+      if (player_id === null && rows.length - n > 0) out.push({ value: rows.length - n, player_id: null, metric_key: 'row_count' });
+    }
+  }
+  return out;
+}
+
 export function collectEnvelopeNumbers(envelope: Pick<ToolEnvelope, 'summary' | 'detail'>): ScopedNumber[] {
   const top = (envelope.detail && typeof envelope.detail === 'object' ? envelope.detail : {}) as { player_id?: unknown; team_scope?: unknown };
   const who = typeof top.player_id === 'string' ? { player_id: top.player_id } : { player_id: null, ...(top.team_scope === true ? { team: true } : {}) };
   const fromSummary = numbersInText(envelope.summary).map((value) => ({ value, ...who, metric_key: null }));
-  return [...(envelope.detail === undefined ? [] : collectScopedNumbers(envelope.detail)), ...fromSummary];
+  return [...(envelope.detail === undefined ? [] : collectScopedNumbers(envelope.detail)), ...teamDataCounts(envelope.detail), ...fromSummary];
 }
