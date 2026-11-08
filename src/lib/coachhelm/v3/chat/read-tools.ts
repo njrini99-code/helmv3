@@ -321,6 +321,19 @@ export type PlayerFigures = {
 /** Reads these players' figures for a window, one read for the lot; null when the rounds could not be read. Handed in by the route, which may import Clubhouse. */
 export type PlayerFiguresSource = (playerIds: string[], window: FigureWindow) => Promise<Map<string, PlayerFigures> | null>;
 
+/** One player's putts counted into the Stats page's six bands for a window (Clubhouse's `loadPlayerPuttBands`). `label` is the band as Stats names it ("3–5 ft"). */
+export type PuttBandsRead = {
+  bands: Array<{ label: string; attempts: number; made: number }>;
+  rounds: number;
+  window_start: string | null;
+  window_end: string | null;
+};
+/** Reads one player's putting bands for a window as Stats does; null when the rounds or shots could not be read. Handed in by the route, like {@link PlayerFiguresSource}. */
+export type PuttBandsSource = (playerId: string, window: FigureWindow) => Promise<PuttBandsRead | null>;
+
+/** A window in the words a summary uses. */
+const windowWords = (w: FigureWindow): string => (w === 'season' ? 'this season' : w === 'last5' ? 'over the newest five rounds' : w === 'last20' ? 'over the newest twenty rounds' : 'over the newest ten rounds');
+
 /** The metrics a round holds, and where in {@link PlayerFigures} each one is. The rest are shot-level and stay on the cache. */
 const FIGURE_OF: Record<string, (f: PlayerFigures) => { value: number | null; n: number; unit?: 'holes' }> = {
   gir_pct: (f) => ({ value: f.gir_pct, n: f.gir_holes, unit: 'holes' }),
@@ -388,7 +401,7 @@ export async function getPlayerMetric(
       .filter((m): m is Measurement => m !== null);
     const usable = measurements.filter((m) => m.value !== null).length;
     return {
-      summary: `${measurements.length} metric${measurements.length === 1 ? '' : 's'} for ${player.name}, ${window === 'season' ? 'this season' : window === 'last5' ? 'over the newest five rounds' : window === 'last20' ? 'over the newest twenty rounds' : 'over the newest ten rounds'}.`,
+      summary: `${measurements.length} metric${measurements.length === 1 ? '' : 's'} for ${player.name}, ${windowWords(window as FigureWindow)}.`,
       measurements,
       series: [],
       coverage: coverageFor(usable, measurements.length),
@@ -675,9 +688,17 @@ export async function getPlayerTrend(
 export async function getPuttingDistanceProfile(
   sb: Sb,
   ctx: CoachChatContext,
-  input: { player_id: string },
+  input: { player_id: string; window?: (typeof FIGURE_WINDOWS)[number] },
+  puttBands?: PuttBandsSource,
 ): Promise<ToolEnvelope> {
   const player = requireRosterPlayer(ctx, input.player_id);
+  const window = input.window ?? 'last10';
+  const entity = { kind: 'player' as const, id: player.id, label: player.name };
+  const asked = puttBands && window !== 'cache' ? await puttBands(player.id, window) : null;
+  if (asked) return puttingFromBands(player.name, entity, asked, window as FigureWindow);
+
+  // The cache: asked for, or the rounds could not be read. Its window is its own and the answer says so.
+  const readFailed = !!puttBands && window !== 'cache';
   const row = await loadStatsRow(sb, player.id);
   if (!row) {
     return {
@@ -690,7 +711,6 @@ export async function getPuttingDistanceProfile(
     };
   }
 
-  const entity = { kind: 'player' as const, id: player.id, label: player.name };
   const points: MeasurementSeries['points'] = [];
   const thin: string[] = [];
 
@@ -725,6 +745,7 @@ export async function getPuttingDistanceProfile(
   }
 
   const asOf = str(row.updated_at) ?? nowIso();
+  const cacheNote = `${readFailed ? 'The rounds could not be read, so this is' : 'This is'} the stats cache, which can lag a few weeks and covers its own window (shown on each figure), not the newest rounds.`;
   const series: MeasurementSeries = {
     metric_id: 'putt_make_pct_by_distance',
     metric_label: 'Make rate by distance',
@@ -734,9 +755,8 @@ export async function getPuttingDistanceProfile(
     window_start: str(row.calculation_period_start) ?? str(row.first_round_date),
     window_end: str(row.calculation_period_end) ?? str(row.last_round_date),
     as_of: asOf,
-    coverage: coverageFor(points.length, PUTT_DISTANCE_BUCKETS.length),
-    coverage_note:
-      thin.length > 0 ? `Small samples in ${thin.join(', ')} — read those buckets with care.` : null,
+    coverage: readFailed ? 'partial' : coverageFor(points.length, PUTT_DISTANCE_BUCKETS.length),
+    coverage_note: [cacheNote, thin.length > 0 ? `Small samples in ${thin.join(', ')} — read those buckets with care.` : null].filter(Boolean).join(' '),
     source: 'stats cache',
     method: 'putts_made_over_attempts_by_distance_bucket',
     benchmark: null,
@@ -744,7 +764,7 @@ export async function getPuttingDistanceProfile(
   };
 
   return {
-    summary: `${player.name}'s make rate by putt distance.`,
+    summary: `${player.name}'s make rate by putt distance, from the stats cache.`,
     measurements: points.map((p) => ({
       metric_id: `putt_make_pct_${p.bucket}`,
       metric_label: `Make rate ${p.bucket}`,
@@ -760,6 +780,66 @@ export async function getPuttingDistanceProfile(
       coverage_note: p.sample_size < 10 ? `Only ${p.sample_size} attempts recorded.` : null,
       source: 'stats cache',
       method: 'putts_made_over_attempts_by_distance_bucket',
+      denominator: p.sample_size,
+      benchmark: null,
+      direction: 'higher_better' as const,
+    })),
+    series: [series],
+    coverage: series.coverage,
+    coverage_note: series.coverage_note,
+    as_of: asOf,
+  };
+}
+
+/** The make rate by distance from the window's own rounds and shots, in the bands Stats draws (0–3 up to 25+ ft). */
+function puttingFromBands(name: string, entity: Measurement['entity'], read: PuttBandsRead, window: FigureWindow): ToolEnvelope {
+  const asOf = nowIso();
+  const points: MeasurementSeries['points'] = [];
+  const thin: string[] = [];
+  read.bands.forEach((b, i) => {
+    const bucket = PUTT_DISTANCE_BUCKETS[i]?.bucket ?? b.label;
+    if (b.attempts === 0) return;
+    // One decimal, as the Stats page prints it; the count behind it travels with it.
+    points.push({ at: bucket, value: Math.round((b.made / b.attempts) * 1000) / 10, bucket, sample_size: b.attempts });
+    if (b.attempts < 10) thin.push(`${bucket} (${b.attempts} attempts)`);
+  });
+  if (points.length === 0) {
+    return { summary: `${name} has no putts with a distance ${windowWords(window)}.`, measurements: [], series: [], coverage: 'empty', coverage_note: 'No putts with a distance were logged in this window.', as_of: asOf };
+  }
+  const note = [`From ${read.rounds} ${read.rounds === 1 ? 'round' : 'rounds'} with holes, the rounds Stats counts for this window.`, thin.length > 0 ? `Small samples in ${thin.join(', ')} — read those buckets with care.` : null].filter(Boolean).join(' ');
+  const series: MeasurementSeries = {
+    metric_id: 'putt_make_pct_by_distance',
+    metric_label: 'Make rate by distance',
+    unit: 'percent',
+    entity,
+    points,
+    window_start: read.window_start,
+    window_end: read.window_end,
+    as_of: asOf,
+    coverage: coverageFor(points.length, PUTT_DISTANCE_BUCKETS.length),
+    coverage_note: note,
+    source: 'shots',
+    method: 'putts_made_over_attempts_by_stats_band',
+    benchmark: null,
+    direction: 'higher_better',
+  };
+  return {
+    summary: `${name}'s make rate by putt distance ${windowWords(window)}.`,
+    measurements: points.map((p) => ({
+      metric_id: `putt_make_pct_${p.bucket}`,
+      metric_label: `Make rate ${p.bucket}`,
+      unit: 'percent' as const,
+      value: p.value,
+      entity,
+      window_start: read.window_start,
+      window_end: read.window_end,
+      sample_size: p.sample_size,
+      sample_unit: 'attempts' as const,
+      as_of: asOf,
+      coverage: p.sample_size >= 10 ? ('complete' as const) : ('partial' as const),
+      coverage_note: p.sample_size < 10 ? `Only ${p.sample_size} attempts recorded.` : null,
+      source: 'shots',
+      method: 'putts_made_over_attempts_by_stats_band',
       denominator: p.sample_size,
       benchmark: null,
       direction: 'higher_better' as const,
@@ -874,9 +954,15 @@ export async function comparePlayers(
 export async function getPlayerWeakestAreas(
   sb: Sb,
   ctx: CoachChatContext,
-  input: { player_id: string },
+  input: { player_id: string; window?: (typeof FIGURE_WINDOWS)[number] },
+  figures?: PlayerFiguresSource,
 ): Promise<ToolEnvelope> {
   const player = requireRosterPlayer(ctx, input.player_id);
+  const window = input.window ?? 'last10';
+  // The figures a round holds are read from the rounds in the window, as Stats reads them, for the whole roster at once. The shot-level
+  // ones (putt makes, scrambling, sand saves, three-putts, penalties) have no round-level source here and stay on the stats cache.
+  const byFigures = figures && window !== 'cache' ? await figures(ctx.roster.map((p) => p.id), window) : null;
+  const ownFig = byFigures?.get(player.id) ?? null;
 
   const { data, error } = await sb
     .from('golf_player_stats_cache')
@@ -885,11 +971,11 @@ export async function getPlayerWeakestAreas(
       'player_id',
       ctx.roster.map((p) => p.id),
     );
-  if (error) return unavailableEnvelope('Could not read statistics.', 'The statistics query failed.');
+  if (error && !ownFig) return unavailableEnvelope('Could not read statistics.', 'The statistics query failed.');
 
-  const rows = (data as unknown as StatsRow[] | null) ?? [];
+  const rows = error ? [] : ((data as unknown as StatsRow[] | null) ?? []);
   const own = rows.find((r) => String(r.player_id) === player.id);
-  if (!own) {
+  if (!own && !(ownFig && ownFig.rounds > 0)) {
     return {
       summary: `${player.name} has no computed statistics yet.`,
       measurements: [],
@@ -901,16 +987,27 @@ export async function getPlayerWeakestAreas(
   }
 
   const entity = { kind: 'player' as const, id: player.id, label: player.name };
-  const gaps: { measurement: Measurement; gap: number; teamMean: number; teamN: number }[] = [];
+  const gaps: { measurement: Measurement; gap: number; teamMean: number; teamN: number; from: 'rounds' | 'cache' }[] = [];
 
   for (const spec of ALL_METRIC_SPECS) {
-    const m = measurementFromCache(own, spec.id, entity);
+    const fromRounds = !!ownFig && spec.id in FIGURE_OF;
+    const m = fromRounds ? measurementFromFigures(ownFig, spec.id, entity) : own ? measurementFromCache(own, spec.id, entity) : null;
     if (!m || m.value === null || m.sample_size === 0) continue;
 
-    const peers = rows
-      .filter((r) => String(r.player_id) !== player.id)
-      .map((r) => num(r[spec.column]))
-      .filter((v): v is number => v !== null);
+    // Peers on the same basis as the player: the same window from the rounds, or the cache's own column.
+    const peers = fromRounds
+      ? ctx.roster
+          .filter((p) => p.id !== player.id)
+          .map((p) => {
+            const f = byFigures?.get(p.id);
+            const v = f ? FIGURE_OF[spec.id]!(f) : null;
+            return v && v.n > 0 ? v.value : null;
+          })
+          .filter((v): v is number => v !== null)
+      : rows
+          .filter((r) => String(r.player_id) !== player.id)
+          .map((r) => num(r[spec.column]))
+          .filter((v): v is number => v !== null);
     // Under three peers a "team average" is not a comparison worth drawing.
     if (peers.length < 3) continue;
 
@@ -919,7 +1016,7 @@ export async function getPlayerWeakestAreas(
     const behind = spec.direction === 'higher_better' ? -raw : raw;
     if (behind <= 0) continue;
 
-    gaps.push({ measurement: m, gap: behind, teamMean, teamN: peers.length });
+    gaps.push({ measurement: m, gap: behind, teamMean, teamN: peers.length, from: fromRounds ? 'rounds' : 'cache' });
   }
 
   // Normalise by the metric's own spread so a 0.4-stroke SG gap and a 6-point
@@ -927,7 +1024,16 @@ export async function getPlayerWeakestAreas(
   gaps.sort((a, b) => b.gap / Math.max(1e-6, Math.abs(b.teamMean)) - a.gap / Math.max(1e-6, Math.abs(a.teamMean)));
 
   const top = gaps.slice(0, 4);
-  const rounds = int(own.rounds_in_calculation) || int(own.rounds_played);
+  const rounds = ownFig ? ownFig.rounds : own ? int(own.rounds_in_calculation) || int(own.rounds_played) : 0;
+  const cacheLabel = 'the stats cache, which can lag a few weeks and covers its own window';
+  const windowLabel = ownFig ? windowWords(window as FigureWindow) : cacheLabel;
+  const mixed = top.some((g) => g.from === 'cache') && !!ownFig;
+  const notes = [
+    top.length === 0 ? 'Not enough teammates have comparable data to rank areas against the team.' : null,
+    mixed ? `Gaps marked "stats cache" (putt makes, scrambling, sand saves, three-putts, penalties) are from ${cacheLabel}, not ${windowLabel}.` : null,
+    !ownFig && figures && window !== 'cache' ? 'The rounds could not be read, so every gap is from the stats cache.' : null,
+    error ? 'The stats cache could not be read, so only the figures a round holds are ranked.' : null,
+  ].filter(Boolean);
 
   return {
     summary:
@@ -938,6 +1044,7 @@ export async function getPlayerWeakestAreas(
     series: [],
     detail: {
       recorded_rounds: rounds,
+      window: ownFig ? window : 'cache',
       gaps: top.map((g) => ({
         metric_id: g.measurement.metric_id,
         metric_label: g.measurement.metric_label,
@@ -948,14 +1055,13 @@ export async function getPlayerWeakestAreas(
         team_peers_compared: g.teamN,
         unit: g.measurement.unit,
         direction: g.measurement.direction,
+        measured_from: g.from === 'rounds' ? `rounds, ${windowLabel}` : 'stats cache',
       })),
     },
-    coverage: top.length === 0 ? 'partial' : 'complete',
-    coverage_note:
-      top.length === 0
-        ? 'Not enough teammates have comparable data to rank areas against the team.'
-        : null,
-    as_of: str(own.updated_at) ?? nowIso(),
+    // A labelled mix of windows is a caveat, not a gap; a read that failed or an empty ranking is partial.
+    coverage: top.length === 0 || !!error || (!ownFig && !!figures && window !== 'cache') ? 'partial' : 'complete',
+    coverage_note: notes.length ? notes.join(' ') : null,
+    as_of: ownFig ? nowIso() : own ? (str(own.updated_at) ?? nowIso()) : nowIso(),
   };
 }
 

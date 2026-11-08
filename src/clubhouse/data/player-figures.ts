@@ -1,9 +1,10 @@
 import 'server-only';
 import type { createClient } from '@/lib/supabase/server';
-import type { PlayerFigures, FigureWindow } from '@/lib/coachhelm/v3/chat/read-tools';
+import type { PlayerFigures, FigureWindow, PuttBandsRead } from '@/lib/coachhelm/v3/chat/read-tools';
 import { holeRounds, recordedPutts } from './round-scope';
 import { countsForScoring, groupByPlayer, loadSeasonRounds, seasonStartDate, type ChRound } from './season';
-import { loadSince, practiceCut, roundsInFilter } from './stats-common';
+import { bandPutts, loadPutts, loadSince, practiceCut, roundsInFilter, type ChPuttRow } from './stats-common';
+import { DETAIL_MAX_ROUNDS } from './stats-player';
 import { filterFor, type ChFilter } from './stats-filter';
 import { summarizeWindow, weightedMean } from './stats-weight';
 
@@ -72,4 +73,37 @@ export async function loadPlayersFigures(sb: Supabase, who: { timezone: string }
   if (loaded.error) return null;
   const byPlayer = groupByPlayer(loaded.rounds);
   return new Map(playerIds.map((id) => [id, playerFiguresOver(byPlayer.get(id) ?? [], f, start)]));
+}
+
+/**
+ * The rounds whose putts Stats counts for a window: the player's rounds in the filter (practice out unless the filter keeps it), only those with
+ * holes scored, newest `DETAIL_MAX_ROUNDS`. The same cut `stats-player.ts` makes for its `scopeIds`, so the bands below are the ones it draws.
+ */
+export function puttScopeRounds(rounds: readonly ChRound[], f: ChFilter, seasonStart: string): ChRound[] {
+  const counted = practiceCut(f) ? rounds.filter(countsForScoring) : f.span === 'all' ? holeRounds(rounds) : [...rounds];
+  return holeRounds(roundsInFilter(counted, f, seasonStart)).slice(0, DETAIL_MAX_ROUNDS);
+}
+
+/** The window's putts counted into Stats' six bands (`bandPutts` with its default `PUTT_BANDS`), with the rounds and dates behind them. */
+export function playerPuttBandsOver(scope: readonly ChRound[], putts: readonly ChPuttRow[]): PuttBandsRead {
+  const dates = scope.map((r) => r.round_date.slice(0, 10)).sort();
+  return {
+    bands: bandPutts([...putts], new Map()).map((b) => ({ label: b.label, attempts: b.attempts, made: b.made })),
+    rounds: scope.length,
+    window_start: dates[0] ?? null,
+    window_end: dates[dates.length - 1] ?? null,
+  };
+}
+
+/** Ask's putting-by-distance source: one player's rounds, then those rounds' putts, as Stats reads them. Null when either could not be read. */
+export async function loadPlayerPuttBands(sb: Supabase, who: { timezone: string }, playerId: string, window: FigureWindow): Promise<PuttBandsRead | null> {
+  const f = filterForFigureWindow(window);
+  const start = seasonStartDate(new Date(), who.timezone);
+  const loaded = await loadSeasonRounds(sb, [playerId], { surface: 'ask.putt_bands', since: loadSince(f, start) });
+  if (loaded.error) return null;
+  const scope = puttScopeRounds(groupByPlayer(loaded.rounds).get(playerId) ?? [], f, start);
+  if (scope.length === 0) return playerPuttBandsOver([], []);
+  const putts = await loadPutts(sb, scope.map((r) => r.id));
+  if (putts.error) return null;
+  return playerPuttBandsOver(scope, putts.rows);
 }

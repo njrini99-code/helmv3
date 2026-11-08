@@ -91,7 +91,7 @@ import { CLAIMS_OPEN, CLAIMS_CLOSE, extractAndValidateClaimsSafe } from '@/lib/c
 import { isFlagEnabled } from '@/lib/flags';
 import { isClubhouseForTeam } from '@/clubhouse/gate';
 import { isClubhouseFor } from '@/clubhouse/gate';
-import { loadPlayersFigures } from '@/clubhouse/data/player-figures';
+import { loadPlayerPuttBands, loadPlayersFigures } from '@/clubhouse/data/player-figures';
 import { loadTeamStrokesGained } from '@/clubhouse/data/team-sg';
 import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
 import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
@@ -596,6 +596,7 @@ export async function POST(req: NextRequest) {
         teamTools: isClubhouseForTeam(ctx.team_id),
         // The team's strokes gained is Team Stats' own figure for the window (QA-1), so it is read there and handed in.
         playerFigures: (ids, window) => loadPlayersFigures(supabase, { timezone: ctx.timezone }, ids, window),
+        puttBands: (id, window) => loadPlayerPuttBands(supabase, { timezone: ctx.timezone }, id, window),
         teamStrokesGained: (window) => loadTeamStrokesGained(supabase, { timezone: ctx.timezone, playerIds: ctx.roster.map((p) => p.id) }, window),
         askV2,
         surface: parsed.data.surface,

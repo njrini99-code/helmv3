@@ -56,6 +56,7 @@ import { getDocuments, getPractice, getTeamPatterns } from './ask-reads';
 import { applyTourBenchmarks, benchmarkSource } from './benchmark-reads';
 import { benchmarkTools, coachWideReadTools } from './wide-read-tools';
 import { WIDE_READ_STEPS } from './wide-read-names';
+import { withWindowLabel } from './window-label';
 import { teamPatternEnabled } from '@/lib/coachhelm/v3/team-pattern/flag';
 import { holdForExecution, releaseHeld, sweepHeld } from './undo-hold';
 import { tool } from 'ai';
@@ -82,6 +83,7 @@ import {
   getPlayerMetric,
   FIGURE_WINDOWS,
   type PlayerFiguresSource,
+  type PuttBandsSource,
   getPlayerTrend,
   getPlayerWeakestAreas,
   getPuttingDistanceProfile,
@@ -241,7 +243,7 @@ function detailFor(envelope: ToolEnvelope): string | undefined {
 }
 
 /** What every tool that reads a round-based figure tells the model about `window`, so the window follows the question. */
-export const WINDOW_NOTE = 'Window: "last10" is the default (each player\'s newest ten rounds, the figures the Stats page shows first); "last5" and "last20" likewise; "season" when the question says this season; "cache" for the whole recorded history (the cache can lag a few weeks, and says its own window). Scoring, putts per round, greens, fairways and strokes gained come from the rounds in that window; putt makes and distance bands are shot-level and always the cache\'s.';
+export const WINDOW_NOTE = 'Window: "last10" is the default (each player\'s newest ten rounds, the figures the Stats page shows first); "last5" and "last20" likewise; "season" when the question says this season; "cache" for the whole recorded history (the cache can lag a few weeks, and says its own window). Scoring, putts per round, greens, fairways and strokes gained come from the rounds in that window; the other shot-level figures (putt makes by distance in get_player_metrics, scrambling, sand saves, three-putts, penalties) are the cache\'s and say its window; get_putting_distance_profile reads the window\'s own shots.';
 
 export interface BuildToolsArgs {
   sb: Sb;
@@ -261,6 +263,8 @@ export interface BuildToolsArgs {
   teamStrokesGained?: TeamSgSource;
   /** One player's scoring, putts and strokes gained for a window, from the rounds as Stats reads them. Handed in by the route, like `teamStrokesGained`. */
   playerFigures?: PlayerFiguresSource;
+  /** One player's putts in the Stats page's bands for a window, from the rounds and shots as Stats reads them. Handed in by the route. */
+  puttBands?: PuttBandsSource;
   /** Ask v2 (Clubhouse on for the team): steps update in place, and new tools join. Fairway's chat never sets it. */
   askV2?: boolean;
   /** Ask v2's surface. `send_message` is registered only for Quick chat; left out, the Ask tab, which never sends. */
@@ -347,7 +351,7 @@ function scopedKey(key: string, conversationId: string | null, plan: unknown): s
   return `${key.slice(0, 110)}:${h.toString(36)}`;
 }
 
-export function buildCoachTools({ sb, ctx, conversationId, writer, collect: collectOuter, teamStrokesGained, playerFigures, teamTools = false, practicePlans = false, askV2 = false, surface = 'ask', onArtifactWords, defer }: BuildToolsArgs): ToolSet {
+export function buildCoachTools({ sb, ctx, conversationId, writer, collect: collectOuter, teamStrokesGained, playerFigures, puttBands, teamTools = false, practicePlans = false, askV2 = false, surface = 'ask', onArtifactWords, defer }: BuildToolsArgs): ToolSet {
   const scope = <P extends { idempotency_key: string }>(proposal: P, plan: unknown): P => ({ ...proposal, idempotency_key: scopedKey(proposal.idempotency_key, conversationId, plan) });
   // The next chat request finishes what a cut-off function left held (TASK_FIELDS §3 step 5). It has to be a request: the writes read the coach from the session.
   if (askV2 && defer) defer(() => sweepHeld(sb, { coach_id: ctx.coach_id, team_id: ctx.team_id, resolve: (row) => heldCommitFor(sb, ctx, row) }));
@@ -399,7 +403,9 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
       // HELM_COACHHELM_TEAMS canary: every roster player is on ctx.team_id, so
       // the chat's team is the scope (no read).
       // Ask v2: where the Tour has a value for a metric a read returned, the measurement carries it, so a visual and the audit see the benchmark.
-      const envelope = await guarded(() => runWithCoachHelmTeams([ctx.team_id], async () => (benchSource ? applyTourBenchmarks(await run(input), benchSource) : run(input))), collect, name, ctx);
+      const guardedEnvelope = await guarded(() => runWithCoachHelmTeams([ctx.team_id], async () => (benchSource ? applyTourBenchmarks(await run(input), benchSource) : run(input))), collect, name, ctx);
+      // The window the read actually used, for the scope line (Ask v2).
+      const envelope = askV2 ? withWindowLabel(name, input, guardedEnvelope) : guardedEnvelope;
       progressEnd(step, name, envelope, envelope.coverage === 'unavailable');
       const ref = `e${evidenceByRef.size + 1}`;
       evidenceByRef.set(ref, envelope);
@@ -688,10 +694,10 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
 
     get_putting_distance_profile: tool({
       description:
-        'Make rate by putt distance for one player, with the attempt count behind every bucket. Use for any question about putting inside/outside a distance.',
-      inputSchema: z.object({ player_id: PlayerId }),
+        `Make rate by putt distance for one player, with the attempt count behind every bucket, in the bands the Stats page draws (0-3 up to 25+ ft), from the rounds in the window. Use for any question about putting inside/outside a distance. ${WINDOW_NOTE}`,
+      inputSchema: z.object({ player_id: PlayerId, window: z.enum(FIGURE_WINDOWS).default('last10') }),
       execute: read('get_putting_distance_profile', (input) =>
-        getPuttingDistanceProfile(sb, ctx, input),
+        getPuttingDistanceProfile(sb, ctx, input, puttBands),
       ),
     }),
 
@@ -715,9 +721,9 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
 
     get_player_weakest_areas: tool({
       description:
-        'Which measured areas one player is furthest behind their team on, with sample sizes. Use for "where is X losing the most".',
-      inputSchema: z.object({ player_id: PlayerId }),
-      execute: read('get_player_weakest_areas', (input) => getPlayerWeakestAreas(sb, ctx, input)),
+        `Which measured areas one player is furthest behind their team on, with sample sizes. Use for "where is X losing the most". Scoring, putts, greens, fairways and strokes gained are compared over the window for the player and each teammate; shot-level areas (putt makes, scrambling, sand saves, three-putts, penalties) come from the stats cache and are marked so. ${WINDOW_NOTE}`,
+      inputSchema: z.object({ player_id: PlayerId, window: z.enum(FIGURE_WINDOWS).default('last10') }),
+      execute: read('get_player_weakest_areas', (input) => getPlayerWeakestAreas(sb, ctx, input, playerFigures)),
     }),
 
     get_recent_rounds: tool({
