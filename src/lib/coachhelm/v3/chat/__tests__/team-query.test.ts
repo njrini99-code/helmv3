@@ -149,9 +149,11 @@ describe('query_team_data validation', () => {
 describe('query_team_data results', () => {
   it('marks a full page partial and an empty one empty, and says unavailable for a failed read', async () => {
     const full = pgrst(tables);
-    const e = await queryTeamData(full.sb, ctx, parse({ table: 'golf_rounds', columns: ['total_score'], limit: 2 }), on);
+    const e = await queryTeamData(full.sb, ctx, parse({ table: 'golf_rounds', columns: ['total_score'], limit: 1 }), on);
     expect(e.coverage).toBe('partial');
-    expect(e.coverage_note).toMatch(/first 2 rows/);
+    expect(e.coverage_note).toMatch(/first 1 of 2 rows/);
+    // A page that is exactly full is not cut: the server's own count says so.
+    expect((await queryTeamData(pgrst(tables).sb, ctx, parse({ table: 'golf_rounds', columns: ['total_score'], limit: 2 }), on)).coverage).toBe('complete');
     expect((await queryTeamData(pgrst({ golf_rounds: { rows: [] } }).sb, ctx, parse({ table: 'golf_rounds', columns: ['total_score'] }), on)).coverage).toBe('empty');
     expect((await queryTeamData(pgrst({ golf_rounds: { error: { message: 'down' } } }).sb, ctx, parse({ table: 'golf_rounds', columns: ['total_score'] }), on)).coverage).toBe('unavailable');
   });

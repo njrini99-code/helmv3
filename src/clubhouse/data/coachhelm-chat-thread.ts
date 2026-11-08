@@ -956,7 +956,11 @@ export function detailTable(detail: unknown, caption: string): AskTable | null {
     .sort(columnOrder)
     .slice(0, 4);
   if (keys.length === 0) return null;
-  return fitToPhone({ caption, columns: keys.map(headingOf), rows: rows.slice(0, 8).map((r) => keys.map((k) => (isPlain(r[k]) && r[k] !== '' ? humanCell(r[k] as string | number | boolean, timezone) : NO_DATA))) });
+  // A read that carries the unit of its columns (query_team_data) puts it in the heading: "Approach proximity (ft)", never a bare 15.3.
+  const units = (detail as { units?: Record<string, string> }).units ?? {};
+  const unitWord: Record<string, string> = { feet: 'ft', yards: 'yd', percent: '%' };
+  const heading = (k: string) => (unitWord[units[k] ?? ''] ? `${headingOf(k)} (${unitWord[units[k] as string]})` : headingOf(k));
+  return fitToPhone({ caption, columns: keys.map(heading), rows: rows.slice(0, 8).map((r) => keys.map((k) => (isPlain(r[k]) && r[k] !== '' ? humanCell(r[k] as string | number | boolean, timezone) : NO_DATA))) });
 }
 
 /**

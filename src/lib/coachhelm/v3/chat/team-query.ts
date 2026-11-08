@@ -7,6 +7,9 @@ import { logServerError } from '@/lib/server-error-logger';
 import type { CoachChatContext } from './context';
 import { nowIso, unavailableEnvelope, type ToolEnvelope } from './provenance';
 import { looseRule, TEAM_QUERY_TABLE_NAMES, type LooseRule } from './team-query-allowlist';
+import { columnWithUnit, describeDictionary } from './data-dictionary';
+import { defaultOrder, refused, rowsEnvelope, type LooseBuilder, type Row, type Value } from './team-query-shared';
+import { describeRoundLines, queryRoundLines, ROUND_LINES } from './team-round-lines';
 
 /**
  * `query_team_data`: the long tail. One generic, read-only reader over the static allowlist in `team-query-allowlist.ts`.
@@ -27,7 +30,7 @@ const MAX_COLUMNS = 20;
 
 const Scalar = z.union([z.string().max(100), z.number(), z.boolean(), z.null()]);
 export const TeamQueryInput = z.object({
-  table: z.enum(TEAM_QUERY_TABLE_NAMES),
+  table: z.enum([...TEAM_QUERY_TABLE_NAMES, ROUND_LINES]),
   columns: z.array(z.string().min(1).max(60)).min(1).max(MAX_COLUMNS),
   filters: z.array(z.object({ column: z.string().min(1).max(60), op: z.enum(QUERY_FILTER_OPS), value: z.union([Scalar, z.array(z.union([z.string().max(100), z.number()])).max(50)]) })).max(MAX_FILTERS).default([]),
   order: z.object({ column: z.string().min(1).max(60), ascending: z.boolean().default(false) }).optional(),
@@ -36,43 +39,25 @@ export const TeamQueryInput = z.object({
 export type TeamQueryInput = z.infer<typeof TeamQueryInput>;
 
 type Sb = SupabaseClient<Database>;
-type Value = string | number | boolean | null;
-type Row = Record<string, unknown>;
-/** The reader builds the query from validated strings, so the typed client is stepped around here and nowhere else. */
-type LooseBuilder = {
-  select: (cols: string) => LooseBuilder;
-  eq: (c: string, v: unknown) => LooseBuilder;
-  in: (c: string, v: unknown[]) => LooseBuilder;
-  gte: (c: string, v: unknown) => LooseBuilder;
-  lte: (c: string, v: unknown) => LooseBuilder;
-  is: (c: string, v: null | boolean) => LooseBuilder;
-  order: (c: string, o: { ascending: boolean }) => LooseBuilder;
-  limit: (n: number) => LooseBuilder;
-} & PromiseLike<{ data: Row[] | null; error: { message?: string } | null }>;
-
-const refused = (why: string, allowed?: readonly string[]): ToolEnvelope => ({
-  summary: 'That query was not run.',
-  measurements: [],
-  series: [],
-  detail: { refused: true, reason: why, ...(allowed ? { allowed_columns: allowed } : {}) },
-  coverage: 'unavailable',
-  coverage_note: why,
-  as_of: nowIso(),
-});
 
 const isScalar = (v: unknown): v is string | number => typeof v === 'string' || typeof v === 'number';
 
-/** Describes the allowlist for the tool's description: each table, what it holds and its columns. Tournament tables only while their flag is on. */
+/**
+ * Describes the sources for the tool's description: each table, what it holds and its columns with their units, then the reading guide
+ * (units, signs, quirks). Tournament tables only while their flag is on.
+ */
 export function describeQueryTables(opts: { tournamentsOn: boolean }): string {
-  return TEAM_QUERY_TABLE_NAMES.filter((t) => opts.tournamentsOn || !looseRule(t)?.flag)
+  const tables = TEAM_QUERY_TABLE_NAMES.filter((t) => opts.tournamentsOn || !looseRule(t)?.flag)
     .map((t) => {
       const r = looseRule(t) as LooseRule;
-      return `${t} (${r.label}; ${r.scope === 'player' ? 'roster players' : 'this team'}): ${r.columns.join(', ')}`;
+      return `${t} (${r.label}; ${r.scope === 'player' ? 'roster players' : 'this team'}): ${r.columns.map((c) => columnWithUnit(t, c)).join(', ')}`;
     })
     .join('\n');
+  return `${describeRoundLines()}\n${tables}\n\n${describeDictionary()}`;
 }
 
 export async function queryTeamData(sb: Sb, ctx: CoachChatContext, input: TeamQueryInput, opts: { tournamentsOn: boolean }): Promise<ToolEnvelope> {
+  if (input.table === ROUND_LINES) return queryRoundLines(sb, ctx, input);
   const rule = looseRule(input.table);
   if (!rule || (rule.flag && !opts.tournamentsOn)) return refused('That table is not available.');
   const allowed = new Set(rule.columns);
@@ -105,7 +90,8 @@ export async function queryTeamData(sb: Sb, ctx: CoachChatContext, input: TeamQu
     filters.push({ column: f.column, op: f.op, value: f.value });
   }
 
-  const order = input.order ?? { column: rule.order.column, ascending: rule.order.ascending };
+  // With no order asked for, the question's own date leads (the date a filter narrows, else a date asked for), never a bookkeeping time.
+  const order = input.order ?? defaultOrder(rule, columns, filters, allowed);
   if (input.order && !allowed.has(order.column)) return refused(`"${order.column}" is not a column you can order by in this table.`, rule.columns);
   const limit = Math.min(Math.max(input.limit, 1), QUERY_ROW_LIMIT);
 
@@ -117,7 +103,7 @@ export async function queryTeamData(sb: Sb, ctx: CoachChatContext, input: TeamQu
   const sliced = rule.scope === 'player' && chunkIds(playerIds).length > 1;
   const selectList = [...columns, ...(rule.scope === 'player' ? ['player_id'] : []), ...(sliced && !columns.includes(order.column) ? [order.column] : [])].join(', ');
   const base = () => {
-    let q = (sb as unknown as { from: (t: string) => LooseBuilder }).from(input.table).select(selectList);
+    let q = (sb as unknown as { from: (t: string) => LooseBuilder }).from(input.table).select(selectList, { count: 'exact' });
     for (const [col, val] of Object.entries(rule.forced ?? {})) q = q.eq(col, val);
     for (const f of filters) {
       q = f.op === 'eq' ? q.eq(f.column, f.value) : f.op === 'in' ? q.in(f.column, f.value as unknown[]) : f.op === 'gte' ? q.gte(f.column, f.value) : f.op === 'lte' ? q.lte(f.column, f.value) : q.is(f.column, f.value as null | boolean);
@@ -128,13 +114,16 @@ export async function queryTeamData(sb: Sb, ctx: CoachChatContext, input: TeamQu
   // A player-scoped table runs once per slice of the roster (an `.in()` past ~200 ids fails before Postgres sees it), then merges.
   const slices = rule.scope === 'player' ? chunkIds(playerIds).map((chunk) => base().in('player_id', chunk)) : [base().eq('team_id', ctx.team_id)];
   const rows: Row[] = [];
+  // The server's own count of the rows that match, summed over the slices: it is what lets a cut be said as "the first N of M".
+  let total: number | null = 0;
   for (const q of slices) {
-    const { data, error } = await q;
+    const { data, error, count } = await q;
     if (error) {
       void logServerError(`queryTeamData failed (${input.table}): ${error.message ?? 'unknown'}`, { action: 'coachhelm.ask.queryTeamData', feature: 'coachhelm_chat', userId: ctx.coach_id, handled: true });
       return unavailableEnvelope(`Could not read ${rule.label}.`, 'That read failed. This is not the same as no rows.');
     }
     rows.push(...(data ?? []));
+    total = total !== null && typeof count === 'number' ? total + count : null;
   }
   if (slices.length > 1) {
     const dir = order.ascending ? 1 : -1;
@@ -154,14 +143,5 @@ export async function queryTeamData(sb: Sb, ctx: CoachChatContext, input: TeamQu
     return typeof row.player_id === 'string' ? { ...row, player: who.get(row.player_id) ?? 'A player' } : row;
   });
   if (shown.length === 0) return empty();
-  const full = rows.length >= limit;
-  return {
-    summary: `${shown.length} row${shown.length === 1 ? '' : 's'} of ${rule.label}.`,
-    measurements: [],
-    series: [],
-    detail: { kind: 'team_data', rows: shown, row_count: shown.length, limit, ordered_by: order.column, newest_first: !order.ascending },
-    coverage: full ? 'partial' : 'complete',
-    coverage_note: full ? `Showing the first ${limit} rows in this order; there may be more. Narrow the filters for the rest.` : null,
-    as_of: nowIso(),
-  };
+  return rowsEnvelope({ label: rule.label, table: input.table, columns: [...columns, ...(rule.scope === 'player' ? ['player_id'] : [])], rows: shown, total, limit, order });
 }

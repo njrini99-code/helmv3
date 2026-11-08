@@ -20,9 +20,10 @@ export function pgrst(tables: Tables, opts: { maxRows?: number } = {}) {
     let rows: Row[] = [...(tables[table]?.rows ?? [])];
     const ordering: Array<{ col: string; ascending: boolean }> = [];
     let cap = maxRows;
+    let wantCount = false;
     const log = (method: string, ...args: unknown[]) => calls.push({ table, method, args });
     const q: Record<string, unknown> = {
-      select: (...a: unknown[]) => (log('select', ...a), q),
+      select: (...a: unknown[]) => (log('select', ...a), (wantCount = (a[1] as { count?: string } | undefined)?.count === 'exact'), q),
       eq: (c: string, v: unknown) => (log('eq', c, v), (rows = rows.filter((r) => r[c] === v)), q),
       neq: (c: string, v: unknown) => (log('neq', c, v), (rows = rows.filter((r) => r[c] !== v)), q),
       in: (c: string, vs: unknown[]) => (log('in', c, vs), (rows = rows.filter((r) => vs.includes(r[c]))), q),
@@ -43,7 +44,8 @@ export function pgrst(tables: Tables, opts: { maxRows?: number } = {}) {
       if (t?.error) return { data: null as Row[] | null, error: t.error };
       const out = [...rows];
       for (const o of [...ordering].reverse()) out.sort((a, b) => ((a[o.col] as never) < (b[o.col] as never) ? -1 : (a[o.col] as never) > (b[o.col] as never) ? 1 : 0) * (o.ascending ? 1 : -1));
-      return { data: out.slice(0, cap) as Row[] | null, error: null as { code?: string; message: string } | null };
+      // `count: 'exact'` is the number of rows that match, before the cap, as the server counts it.
+      return { data: out.slice(0, cap) as Row[] | null, error: null as { code?: string; message: string } | null, ...(wantCount ? { count: out.length } : {}) };
     };
     return q;
   };

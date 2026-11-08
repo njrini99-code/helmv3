@@ -331,3 +331,11 @@ describe('a reloaded turn draws the same table as the live one', () => {
     expect(columns(sourced)).toEqual(['Player', 'Title', 'State']);
   });
 });
+
+describe('a table says the unit of its columns', () => {
+  it('puts ft and % in the heading of a read that carries units', () => {
+    const e = env('1 row of career statistics.', { kind: 'team_data', rows: [{ player: 'Cole', approach_proximity_average: 15.3, gir_percentage: 61.2 }], units: { approach_proximity_average: 'feet', gir_percentage: 'percent' } });
+    const t = detailTable(e.detail, e.summary)!;
+    expect(t.columns).toEqual(['Player', 'GIR percentage (%)', 'Approach proximity average (ft)']);
+  });
+});
