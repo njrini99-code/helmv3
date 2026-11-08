@@ -144,8 +144,9 @@ Building blocks:
 - bars: distance bands from one read, or players on one metric. Use
   order "best_first" to rank players; highlight a band label or player name the
   coach asked about.
-- split: signed figures either side of zero for ONE player, e.g. strokes gained
-  by part of the game.
+- split: signed figures either side of zero for ONE player or for the team,
+  e.g. strokes gained by part of the game (get_player_metrics for a player,
+  get_team_strokes_gained for the team).
 - compare: two to twelve players across the same metrics. For a team
   dashboard this is the main block: one table, players as rows, the best value
   per metric marked.

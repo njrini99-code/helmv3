@@ -861,14 +861,24 @@ function entityScope(entity: MeasuredEntity | undefined): { player: string | nul
   return { player: null, team: entity.kind === 'team' };
 }
 
+/**
+ * A clause that talks about the rest of the group — "the others have 13 to 17 each". Its figures belong to everyone BUT
+ * the players named earlier, so the name before it must not claim them. Staging, 2026-11-07: "Cole Bennett has 37 rounds
+ * recorded, and the others have 13 to 17 each." was withheld because 13 and 17 were bound to Cole Bennett.
+ */
+const OTHERS_CUE = /\b(?:the\s+(?:others?|rest|remaining(?:\s+\w+)?)|everyone\s+else|everybody\s+else|all\s+the\s+others|each\s+of\s+the\s+others|the\s+other\s+(?:\w+\s+){0,2}(?:players|golfers))\b/i;
+
 /** What the text says a given number is about. `null` means "not stated". */
 interface Binding {
   players: ReadonlySet<string> | null;
+  /** Players the number is explicitly NOT about (the named ones, when the clause says "the others"). */
+  excluding?: ReadonlySet<string>;
   teamCue: boolean;
   families: ReadonlySet<MetricFamily> | null;
 }
 
 function playerCompatible(a: Anchor, b: Binding): boolean {
+  if (a.player !== null && b.excluding?.has(a.player)) return false;
   if (b.players === null) return true;
   if (a.team) return b.teamCue;
   return a.player === null || b.players.has(a.player);
@@ -1040,8 +1050,14 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
       }
     }
 
+    // "…and the others have 13 to 17 each": a clause about the rest of the group takes the players that
+    // were inherited from earlier text, and every evidenced player except them is who it is about. A name in
+    // the clause itself (`inClause`) is stated, not inherited, and still wins.
+    const aboutOthers = inClause.length === 0 && !bracketed && players !== null && OTHERS_CUE.test(text.slice(clause[0], clause[1]));
+
     return {
-      players,
+      players: aboutOthers ? null : players,
+      ...(aboutOthers && players ? { excluding: players } : {}),
       teamCue: TEAM_CUE.test(text.slice(sentence[0], sentence[1])),
       families: familiesByToken.get(index) ?? null,
     };

@@ -2,7 +2,7 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import type { CoachChatContext } from './context';
-import { nowIso, unavailableEnvelope, type ToolEnvelope } from './provenance';
+import { nowIso, readFigure, unavailableEnvelope, type ToolEnvelope } from './provenance';
 import { practiceTables, type TeamDrillRow } from '@/lib/golf/practice-db';
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
 import { toClassDay } from '@/lib/golf/class-day-shape';
@@ -56,7 +56,26 @@ export async function getTeamStrokesGained(sb: Sb, ctx: CoachChatContext, input:
   };
   const areas = { tee: mean('strokes_gained_tee'), approach: mean('strokes_gained_approach'), short: mean('strokes_gained_around_green'), putting: mean('strokes_gained_putting') };
   if (!inWindow.length) return env('No rounds with strokes gained yet.', { areas }, 'empty');
-  return env(`Team strokes gained over ${inWindow.length} player rounds.`, { areas, sample_size: inWindow.length, window_start: dates[dates.length - 1], window_end: dates[0] }, inWindow.length < 5 ? 'partial' : 'complete', inWindow.length < 5 ? `Only ${inWindow.length} rounds, so this is a lean read.` : null);
+  const window_start = dates[dates.length - 1] ?? null;
+  const window_end = dates[0] ?? null;
+  // The four areas as measurements, not only `detail.areas`: a composed visual draws figures from `measurements` and
+  // nothing else, so a read with an empty list could never be charted (staging, 2026-11-07: "a split needs at least
+  // two signed figures"). Same ids and labels as a player's strokes-gained legs, so one split draws either.
+  const entity = { kind: 'team' as const, id: ctx.team_id, label: ctx.team_name };
+  const leg = (metric_id: string, metric_label: string, value: number | null) =>
+    value === null
+      ? []
+      : [readFigure({ metric_id, metric_label, unit: 'strokes', value, entity, window_start, window_end, sample_size: inWindow.length, sample_unit: 'rounds', direction: 'higher_better', source: 'rounds', method: 'mean_sg_per_player_round_vs_broadie_baseline' })];
+  const measurements = [
+    ...leg('sg_tee', 'Strokes gained off the tee', areas.tee),
+    ...leg('sg_approach', 'Strokes gained approach', areas.approach),
+    ...leg('sg_around_green', 'Strokes gained around the green', areas.short),
+    ...leg('sg_putting', 'Strokes gained putting', areas.putting),
+  ];
+  return {
+    ...env(`Team strokes gained, the average per round, over ${inWindow.length} player rounds.`, { areas, sample_size: inWindow.length, window_start, window_end }, inWindow.length < 5 ? 'partial' : 'complete', inWindow.length < 5 ? `Only ${inWindow.length} rounds, so this is a lean read.` : null),
+    measurements,
+  };
 }
 
 export async function getTeamPuttingProfile(sb: Sb, ctx: CoachChatContext, input: { rounds: number }): Promise<ToolEnvelope> {
