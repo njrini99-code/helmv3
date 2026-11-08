@@ -1602,7 +1602,9 @@ export function collectScopedNumbers(
     // A payload tagged `kind: 'reference' | 'definition' | 'benchmark'` is no one's result; everything beneath it needs a sourced sentence.
     const refKind = obj.kind === 'reference' || obj.kind === 'definition' || obj.kind === 'benchmark' || obj.kind === 'level' || obj.kind === 'tour';
     const next = { team: obj.team_scope === true || inherited.team, metric: typeof obj.metric_scope === 'string' ? obj.metric_scope : inherited.metric, reference: refKind || inherited.reference };
-    const own2 = Object.entries(obj).flatMap(([k, v]) => collectScopedNumbers(v, scope, k, depth + 1, next));
+    // Where a player stands ("74th percentile among 78 college players", "7th of 7") is the player's own, though the reference it is measured
+    // against is no one's: only the reference's value needs a sourced sentence.
+    const own2 = Object.entries(obj).flatMap(([k, v]) => collectScopedNumbers(v, scope, k, depth + 1, k === 'place_percent' || k === 'place_of' || k === 'place' ? { ...next, reference: inherited.reference } : next));
     // A gap row states both of its figures ("player_value", "team_average"); the gap between them is arithmetic on the row, said as "a gap of 0.36".
     const pv = obj.player_value;
     const ta = obj.team_average;
