@@ -97,9 +97,8 @@
   "why": "GIR table per player with windows and holes matches the ranking read; 7 of 8 players have data."
  },
  "2b09aa74": {
-  "expect": "accepted",
-  "why": "SG putting list matches the reads; the team averages are derived. The only figure the audit rejects now is the 30 in \"15-30ft lags\", a distance the coach is advised to practise, not a result.",
-  "knownWrongBlock": true
+  "expect": "rejected",
+  "why": "States a practice distance, \"15-30ft lags\", that appears in no read: the model invented it. The SG putting list and team averages are right, but the withhold is correct."
  },
  "4500c208": {
   "expect": "accepted",
