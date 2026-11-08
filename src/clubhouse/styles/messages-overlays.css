@@ -170,6 +170,11 @@
   position: fixed;
   pointer-events: auto;
 }
+/* The copy carries the thread's scope classes (`ch-ms-thread`) so the bubble keeps its look, and `.ch-ms-thread` paints the page
+   colour: left alone, that is a lighter strip behind the lifted row, avatar to the thread's edge. Only the bubble lifts. */
+.ch-mso-lift .ch-mso-lift__copy {
+  background: none;
+}
 .ch-mso-lift__copy * {
   animation: none !important;
 }
