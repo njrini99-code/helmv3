@@ -54,3 +54,23 @@ describe('a figure written against a player with nothing to stand on', () => {
     expect(run3('Audit Testplayer has none of the 26 rounds.')).toEqual([]);
   });
 });
+
+// Replay e0170c07: "approach is ahead of putting … the gap is only 0.06 strokes per round" (-3.09 against -3.03, the same team and window) was withheld.
+describe('the gap between two strokes-gained areas', () => {
+  const sg = (id: string, value: number, start: string, end: string, n: number) => ({ metric_id: id, metric_label: id, unit: 'strokes_per_round', value, entity: { kind: 'team', id: 't1', label: 'Team' }, window_start: start, window_end: end, sample_size: n, sample_unit: 'rounds', as_of: '2026-11-08T00:00:00.000Z', coverage: 'complete', coverage_note: null, source: 'x', method: 'x', denominator: null, benchmark: null, direction: null });
+  const wide = ['2026-05-29', '2026-10-21'] as const;
+  const narrow = ['2026-08-21', '2026-10-21'] as const;
+  const sgRead = { summary: 'x', series: [], coverage: 'complete', coverage_note: null, as_of: '2026-11-08T00:00:00.000Z', detail: undefined, measurements: [sg('sg_approach', -3.09, ...wide, 55), sg('sg_putting', -3.03, ...wide, 55), sg('sg_putting', -2.4, ...narrow, 11), sg('sg_approach', -4.37, ...narrow, 11)] } as unknown as ToolEnvelope;
+  const run = (text: string) => auditNumericClaims(text, sgRead.measurements, [], collectEnvelopeNumbers(sgRead), [], 'America/New_York', { players: [] }).map((c) => c.text);
+  it('is supported: one entity, one window', () => {
+    expect(run('Approach is -3.09 strokes per round and putting is -3.03, so the gap is only 0.06 strokes per round.')).toEqual([]);
+    expect(run('In the narrow window approach is -4.37 and putting is -2.4, a gap of 1.97 strokes per round.')).toEqual([]);
+  });
+  it('a sentence that does not call it a gap does not borrow one: a 1.97 that is the narrow window\'s approach-putting difference is still a figure beside tee play', () => {
+    expect(run('In the narrow window approach is -4.37 and putting is -2.4; tee play is 1.97 strokes per round.')).toEqual(['1.97']);
+  });
+  it('a gap across windows, or a different one, is not', () => {
+    expect(run('Approach is -3.09 strokes per round and putting is -3.03, so the gap is only 0.16 strokes per round.')).toEqual(['0.16']);
+    expect(run('Approach is -3.09 strokes per round in the broad window and putting is -2.4 in the narrow one, a gap of 0.69 strokes per round.')).toEqual(['0.69']);
+  });
+});

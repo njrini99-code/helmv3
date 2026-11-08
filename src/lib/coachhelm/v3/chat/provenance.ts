@@ -928,10 +928,14 @@ interface AnchorScope {
   parent: MetricFamily | null;
   /** A reference or benchmark figure: it grounds a claim only in a sentence that names a source (see {@link REFERENCE_CUE}). */
   reference?: boolean;
+  /** A difference between two metrics' figures: it grounds a claim only in a sentence that says it is a gap (see {@link GAP_CUE}). */
+  gap?: boolean;
 }
 interface Anchor extends AnchorScope {
   value: number;
 }
+/** A sentence that calls a number a difference between two things. */
+const GAP_CUE = /\b(?:gaps?|ahead|behind|difference|differs?|apart|margin|lead(?:s|ing)?|trails?|more than|less than|than|between|separates?|split)\b/i;
 const UNSCOPED: AnchorScope = { player: null, team: false, family: null, parent: null };
 
 function entityScope(entity: MeasuredEntity | undefined): { player: string | null; team: boolean } {
@@ -955,6 +959,8 @@ interface Binding {
   teamCue: boolean;
   /** The number's own sentence names a reference, a benchmark, the Tour or a level. */
   refCue: boolean;
+  /** The number's own sentence calls it a gap, a lead or a margin. */
+  gapCue: boolean;
   families: ReadonlySet<MetricFamily> | null;
 }
 
@@ -1213,6 +1219,7 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
       teamCue: TEAM_CUE.test(text.slice(sentence[0], sentence[1])),
       // A row of a markdown table is named by its header row ("| Distance band | Owen | Division I average | Tour |").
       refCue: REFERENCE_CUE.test(text.slice(sentence[0], sentence[1])) || REFERENCE_CUE.test(tableHeaderOf(text, sentence[0])),
+      gapCue: GAP_CUE.test(text.slice(sentence[0], sentence[1])),
       families: familiesByToken.get(index) ?? null,
     };
   };
@@ -1416,7 +1423,7 @@ export function auditNumericClaimsDetailed(
       // A reference's field names are its own: means and differences of them say nothing about a team.
       if (n.metric_key && n.metric_key !== 'row_count' && !n.reference) {
         const id = `${scope.player ?? ''}|${scope.team}|${n.metric_key}`;
-        const group = detailGroups.get(id) ?? { scope, values: [] };
+        const group: { scope: AnchorScope; values: number[] } = detailGroups.get(id) ?? { scope, values: [] };
         if (group.values.length < PAIRWISE_ANCHOR_CAP * 2) group.values.push(n.value);
         detailGroups.set(id, group);
       }
@@ -1485,6 +1492,22 @@ export function auditNumericClaimsDetailed(
     }
   }
 
+  // The gap between two strokes-gained areas of one entity over one window ("approach is ahead of putting by 0.06", staging e0170c07): both are
+  // published on screen, in the same unit, so their difference is arithmetic on them. Held to strokes gained, one entity, one window, and an
+  // area once each, so a strokes figure can still never be justified by subtracting two putt counts.
+  const sgAreas = new Map<string, Map<string, number>>();
+  for (const m of measurements) {
+    if (typeof m.value !== 'number' || !/^sg_(?:tee|approach|around_green|putting|total)$/.test(m.metric_id)) continue;
+    const key = `${m.entity?.kind}:${m.entity?.id}|${m.window_start}|${m.window_end}`;
+    const areas = sgAreas.get(key) ?? new Map<string, number>();
+    areas.set(m.metric_id, m.value);
+    sgAreas.set(key, areas);
+  }
+  for (const areas of sgAreas.values()) {
+    const values = [...areas.values()];
+    for (const [i, left] of values.entries()) for (const right of values.slice(i + 1)) add(left - right, { ...UNSCOPED, gap: true });
+  }
+
   const exempt = text.replace(CLAIM_EXEMPT, ' ');
   // Resolved before the plain numeric scan, and blanked out of `scrubbed`
   // either way, so a date's own digits are never re-examined as a bare
@@ -1510,7 +1533,8 @@ export function auditNumericClaimsDetailed(
     // Ordinals, counts of rounds/weeks/players — not statistical assertions. A count of some of the things just talked about
     // ("8 of those came in two rounds") is one: it is a sum over a subset, and no sample size or denominator stands for it.
     // "the last 20 rounds" is a window the reads can be asked for (5, 10 or 20), not a figure.
-    const asWindow = value === 20 && /\b(?:last|newest|past|previous|recent)\s+$/i.test(scrubbed.slice(Math.max(0, match.start - 12), match.start)) && /^\s*rounds?\b/i.test(scrubbed.slice(match.end, match.end + 10));
+    // "his last 20 rounds", and the list a capabilities answer gives: "the last 5, 10 or 20 rounds" (staging 7488e220).
+    const asWindow = value === 20 && /\b(?:last|newest|past|previous|recent)\s+(?:\d{1,2}(?:\s*,\s*|\s+(?:or|and)\s+))*$/i.test(scrubbed.slice(Math.max(0, match.start - 28), match.start)) && /^\s*rounds?\b/i.test(scrubbed.slice(match.end, match.end + 10));
     const smallInteger = (Number.isInteger(value) && Math.abs(value) <= 12) || asWindow;
     const subsetCount = smallInteger && value >= 2 && SUBSET_COUNT_AFTER.test(scrubbed.slice(match.end, match.end + 40));
     if (smallInteger && !subsetCount) continue;
@@ -1545,7 +1569,7 @@ export function auditNumericClaimsDetailed(
     // A figure about a metric, written against a player no read this turn has any figure for, has nothing of that player's to stand on: an
     // untagged number (a roster-wide detail value) that happens to match does not make it theirs.
     const hasNothing = !!binding.players && binding.players.size > 0 && !!binding.families?.size && !binding.teamCue && [...binding.players].every((p) => !taggedPlayers.has(p));
-    if (!pool.some((a) => near(a) && playerCompatible(a, binding) && metricCompatible(a, binding) && (!a.reference || binding.refCue) && !(hasNothing && a.player === null && !a.team && !a.reference))) {
+    if (!pool.some((a) => near(a) && playerCompatible(a, binding) && metricCompatible(a, binding) && (!a.reference || binding.refCue) && (!a.gap || binding.gapCue) && !(hasNothing && a.player === null && !a.team && !a.reference))) {
       seen.add(raw);
       found.push(pool.some(near) ? { text: raw, value, misattributed: true } : { text: raw, value });
     } else {

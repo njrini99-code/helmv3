@@ -77,6 +77,11 @@ describe('tables and windows', () => {
     expect(run('He played 20 rounds.')).toEqual(['20']);
     expect(run('I can read the last 19 rounds.')).toEqual(['19']);
   });
+  it('a list of windows ("the last 5, 10 or 20 rounds", staging 7488e220) is windows; a 20 that is not one of them is a figure', () => {
+    expect(run('I can look at the last 5, 10 or 20 rounds, the season, or the whole history.')).toEqual([]);
+    expect(run('In 5, 10 or 20 rounds he scored.')).toEqual(['20']);
+    expect(run('Over the last 5, 10 or 20 putts he lost strokes.')).toEqual(['20']);
+  });
 });
 
 describe('a table after other text', () => {

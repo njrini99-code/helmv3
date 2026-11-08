@@ -645,8 +645,7 @@
  },
  "e0170c07": {
   "expect": "accepted",
-  "why": "Team SG: 11 rounds by one player (Aug 21 to Oct 21) and 55 rounds by 7 players (May 29 to Oct 21), approach ahead of putting by 0.06 (-3.09 against -3.03). The audit rejects \"0.06\", the difference of two read figures.",
-  "knownWrongBlock": true
+  "why": "Team SG: 11 rounds by one player (Aug 21 to Oct 21) and 55 rounds by 7 players (May 29 to Oct 21), approach ahead of putting by 0.06 (-3.09 against -3.03). The audit rejects \"0.06\", the difference of two read figures."
  },
  "ec49170e": {
   "expect": "accepted",
@@ -691,8 +690,7 @@
  },
  "7488e220": {
   "expect": "accepted",
-  "why": "Capabilities list; \"the last 5, 10 or 20 rounds\" are windows the assistant can read, not results. The audit rejects \"20\".",
-  "knownWrongBlock": true
+  "why": "Capabilities list; \"the last 5, 10 or 20 rounds\" are windows the assistant can read, not results. The audit rejects \"20\"."
  },
  "848ce511": {
   "expect": "accepted",
