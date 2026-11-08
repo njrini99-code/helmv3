@@ -269,3 +269,60 @@ describe('POST /coachhelm/v3/chat/stream — grounding-flag persistence (real ai
     );
   });
 });
+
+/**
+ * An approval continuation: the coach pressed Confirm, so the browser resubmits the thread whose last message is the ASSISTANT's, carrying the
+ * approved tool call. The new stream starts with that call's RESULT, for a call this stream never opened. Without `originalMessages` the SDK's
+ * own message builder (the one behind `onFinish`) throws "No tool invocation found for tool call ID", the response dies with a 500 ("failed to
+ * pipe response") and the turn is stored as failed.
+ */
+describe('POST /coachhelm/v3/chat/stream — an approval continuation (real ai SDK)', () => {
+  const execute = vi.fn(async (_input: { title: string }) => ({ status: 'created' }));
+
+  beforeEach(async () => {
+    const { tool } = await import('ai');
+    const { z } = await import('zod');
+    execute.mockClear();
+    mocks.appendMessage.mockClear();
+    mocks.auditNumericClaims.mockReset().mockReturnValue([]);
+    mocks.buildCoachTools.mockReturnValue({
+      create_event: tool({ description: 'Create an event', inputSchema: z.object({ title: z.string() }), execute } as never),
+    } as never);
+  });
+
+  const thread = {
+    conversation_id: null,
+    client_turn_id: 'turn-2',
+    messages: [
+      { id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Add a practice Tuesday' }] },
+      {
+        id: 'a1',
+        role: 'assistant',
+        parts: [
+          { type: 'step-start' },
+          { type: 'text', text: 'Here is the practice for you to confirm.' },
+          { type: 'tool-create_event', toolCallId: 'toolu_1', state: 'approval-responded', input: { title: 'Practice' }, approval: { id: 'ap1', approved: true } },
+        ],
+      },
+    ],
+  };
+
+  it('streams to the end, runs the approved action once, and stores only what this stream added', async () => {
+    const response = (await POST(makeRequest(thread))) as unknown as Response;
+    const text = await response.text();
+    expect(response.status).toBe(200);
+    expect(text).not.toContain('No tool invocation');
+    expect(text).toContain('tool-output-available');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(execute).toHaveBeenCalledTimes(1);
+    const stored = mocks.appendMessage.mock.calls.find((call) => (call[1] as { role?: string })?.role === 'assistant');
+    expect(stored).toBeDefined();
+    const row = stored![1] as { status?: string; ui_parts?: Array<{ type: string; text?: string }> };
+    expect(row.status).toBe('complete');
+    // The first leg's text and card were stored with the first leg; this row holds the continuation only.
+    const parts = row.ui_parts ?? [];
+    expect(parts.some((p) => p.text === 'Here is the practice for you to confirm.')).toBe(false);
+    expect(parts.some((p) => p.type === 'text' && /76\.5/.test(p.text ?? ''))).toBe(true);
+  });
+});

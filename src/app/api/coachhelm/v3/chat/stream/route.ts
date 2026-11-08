@@ -604,6 +604,10 @@ export async function POST(req: NextRequest) {
   const evidenceRefs = new Map<string, ToolEnvelope>();
   perf.mark('knows');
   const stream = createUIMessageStream({
+    // An approval continuation (the coach pressed Confirm) streams the approved call's RESULT for a tool call the earlier request opened. The SDK's
+    // message builder behind `onFinish` has to know that message, or it throws "No tool invocation found for tool call ID", the response dies with a
+    // 500 and the turn is stored as failed. A new question starts a new message, so it passes nothing.
+    ...(isApprovalContinuation ? { originalMessages: uiMessages } : {}),
     execute: async ({ writer }) => {
       perf.mark('execute');
       const tools = buildCoachTools({
@@ -1130,8 +1134,11 @@ export async function POST(req: NextRequest) {
         return Promise.resolve();
       };
       try {
-        const assistant = [...messages].reverse().find((m) => m.role === 'assistant');
-        if (!assistant) return;
+        const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
+        if (!lastAssistant) return;
+        // On a continuation the builder hands back the earlier message with this stream's parts appended; the earlier parts were stored with the
+        // first leg, so this row holds only what this stream added (as it did when the row was built from this stream alone).
+        const assistant = isApprovalContinuation ? { ...lastAssistant, parts: lastAssistant.parts.slice(uiMessages[uiMessages.length - 1]?.parts.length ?? 0) } : lastAssistant;
 
         // Prefer the exact string `execute` streamed and verified — see
         // `turnVerdict`'s declaration above — over independently
