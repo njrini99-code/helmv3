@@ -110,6 +110,12 @@
     transition: opacity var(--ch-dur-msg-time) linear;
   }
 }
+/* At rest the column starts 12k past the row, inside the 16 px page gutter, so it would peek 4 px; it shows only while the drag moves the thread. */
+@media not ((min-width: 821px) and ((min-height: 501px) or (pointer: fine))) {
+  [data-ch-ms-v2] .ch-ms-msgs:not([data-ch-times]) .ch-msv-time {
+    visibility: hidden;
+  }
+}
 
 /* MSG-209 Day marker: plain centred text on the page, no chip. Day 12k/600 ink-3, time 400 beside it, margin 22 0 8. */
 [data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-day {

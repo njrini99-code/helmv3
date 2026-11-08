@@ -32,8 +32,12 @@ export function useThreadDragTimes(scroller: RefObject<HTMLElement | null>, enab
     const paint = (x: number) => {
       current = x;
       const l = list();
-      if (l) l.style.transform = x ? `translateX(${x}px)` : '';
+      if (!l) return;
+      l.style.transform = x ? `translateX(${x}px)` : '';
+      // The times sit just past the row's edge and would peek through the page gutter at rest, so they show only while moved.
+      if (x) l.setAttribute('data-ch-times', '');
     };
+    const hideTimes = (l: HTMLElement | null) => l?.removeAttribute('data-ch-times');
     const down = (e: PointerEvent) => {
       if (e.pointerType === 'mouse' || e.clientX < BACK_SWIPE_EDGE) return;
       if ((e.target as Element | null)?.closest('button, a, input, textarea, [role="button"]')) return;
@@ -63,9 +67,15 @@ export function useThreadDragTimes(scroller: RefObject<HTMLElement | null>, enab
       if (!from) return;
       const l = list();
       paint(0);
-      if (reduced || !l?.animate) return;
+      if (reduced || !l?.animate) {
+        hideTimes(l);
+        return;
+      }
       const curve = chSpringCurve('settle');
-      l.animate([{ transform: `translateX(${from}px)` }, { transform: 'none' }], { duration: curve.ms, easing: curve.linear });
+      const settle = l.animate([{ transform: `translateX(${from}px)` }, { transform: 'none' }], { duration: curve.ms, easing: curve.linear });
+      settle.onfinish = () => {
+        if (!current) hideTimes(l);
+      };
     };
     el.addEventListener('pointerdown', down, { passive: true });
     window.addEventListener('pointermove', move, { passive: true });
@@ -77,6 +87,7 @@ export function useThreadDragTimes(scroller: RefObject<HTMLElement | null>, enab
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', up);
       paint(0);
+      hideTimes(list());
     };
   }, [scroller, enabled, reduced, k]);
 }
