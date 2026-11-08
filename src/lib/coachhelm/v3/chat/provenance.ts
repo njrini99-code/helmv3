@@ -902,6 +902,8 @@ export const METRIC_CUES: ReadonlyArray<readonly [RegExp, MetricFamily]> = [
   [/\bdriving distance\b/gi, 'distance'],
   [/\bscor(?:e|es|ed|ing)\b|\bstroke average\b|\b(?:to|over|under) par\b|\bbest round\b/gi, 'scoring'],
   [/\b(?:shot|shoots|shooting|carded|posted|fired)\b(?=\s+(?:an?\s+)?[-+]?\d)/gi, 'scoring'],
+  // "averaged 76.0 strokes over his last ten rounds" is a scoring average (strokes gained and strokes per round are other things).
+  [/\baverag(?:e|ed|es|ing)\b(?=\s+[-+]?\d+(?:\.\d+)?\s+strokes(?![\w/]|\s+(?:gained|per|a|lost)))/gi, 'scoring'],
 ];
 
 /** A sentence that refers to a person without naming them. */
@@ -969,6 +971,12 @@ function playerCompatible(a: Anchor, b: Binding): boolean {
   if (b.players === null) return true;
   if (a.team) return b.teamCue;
   return a.player === null || b.players.has(a.player);
+}
+
+/** Whether a cite's subject is who the number's sentence is about: a team cite, a sentence naming no one, or the cite's player among those named. */
+function citeFitsBinding(subject: string | null, b: Binding): boolean {
+  if (subject === null || subject === 'team' || b.players === null || b.players.size === 0) return true;
+  return [...b.players].some((p) => p.startsWith(subject) || subject.startsWith(p));
 }
 
 function metricCompatible(a: Anchor, b: Binding): boolean {
@@ -1141,7 +1149,7 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
    * list, and the nearest name is the one with no figure. For such a sentence (`ambiguous`) the names of up to the three nearest named
    * sentences are all candidates; a figure that belongs to none of them is still misattributed.
    */
-  const sentencePlayers = (sentenceIndex: number, ambiguous = false): Set<string> | null => {
+  const sentencePlayers = (sentenceIndex: number, ambiguous = false, pronounAt = -1): Set<string> | null => {
     const paragraph = spanIndexAt(paragraphs, (sentences[sentenceIndex] as Span)[0]);
     const found = new Set<string>();
     let namedSentences = 0;
@@ -1151,6 +1159,8 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
       const here = names.filter((n) => within(span, n));
       if (here.length > 0) {
         if (!ambiguous) return union(here);
+        // A list item is about the name it opens with ("- Audit, short putting: Missed. His make rate was 46.5%"): the pronoun in the same line has no other antecedent.
+        if (pronounAt >= 0 && !text.slice(span[0], pronounAt).includes('\n')) return union(here);
         for (const id of union(here)) found.add(id);
         namedSentences += 1;
         if (namedSentences >= PRONOUN_LOOKBACK) break;
@@ -1199,7 +1209,7 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
       const before = inSentence.filter((n) => n.end <= t.start);
       const after = inSentence.filter((n) => n.start >= t.end);
       const nearest = before[before.length - 1] ?? after[0];
-      players = nearest ? new Set(nearest.ids) : sentenceIndex > 0 ? sentencePlayers(sentenceIndex - 1, PERSON_PRONOUN.test(text.slice(sentence[0], sentence[1]))) : null;
+      players = nearest ? new Set(nearest.ids) : sentenceIndex > 0 ? sentencePlayers(sentenceIndex - 1, PERSON_PRONOUN.test(text.slice(sentence[0], sentence[1])), sentence[0]) : null;
       // The chain only carries within a paragraph and stops at a team sentence.
       if (!nearest && TEAM_CUE.test(text.slice(sentence[0], sentence[1]))) players = null;
       if (!nearest && players && sentenceIndex > 0) {
@@ -1307,6 +1317,8 @@ export function auditNumericClaimsDetailed(
      * is written to, is the model's own named figure from its own named evidence and is not matched against names. Left out, nothing changes.
      */
     citedValues?: readonly string[];
+    /** The subject of each cited value, in step: a player id (or its prefix of six or more characters) or `team`. A cite grounds a figure only beside that player's name. */
+    citedSubjects?: readonly string[];
     /** Called with what the audit did with the turn's numbers (for the citation counts); the return value is unchanged. */
     report?: (detail: AuditDetail) => void;
     /** A subset count ("8 of those") is grounded by a verified cite only, never by a figure in the reads. */
@@ -1520,8 +1532,17 @@ export function auditNumericClaimsDetailed(
   const seen = new Set<string>();
   const bind = buildBinder(scrubbed, nameSources);
   const spans = new Set(options?.requestedSpans ?? []);
-  const cited = (options?.citedValues ?? []).map((raw) => ({ value: Number(raw.trim().replace(/[−–]/g, '-').replace(/[%,+]/g, '')), raw: raw.trim().replace(/[−–]/g, '-').replace(/[%,+]/g, '') }));
+  const cited = (options?.citedValues ?? []).map((raw, i) => ({ value: Number(raw.trim().replace(/[−–]/g, '-').replace(/[%,+]/g, '')), raw: raw.trim().replace(/[−–]/g, '-').replace(/[%,+]/g, ''), subject: options?.citedSubjects?.[i] ?? null }));
   const taggedPlayers = new Set(anchors.map((a) => a.player).filter((p): p is string => p !== null));
+  // A player the reads measured and found nothing for (a measurement with no value): whatever is written against their name has nothing of theirs to stand on.
+  const measuredPlayers = new Set<string>();
+  const valuedPlayers = new Set<string>();
+  for (const m of measurements) {
+    if (m.entity?.kind !== 'player') continue;
+    measuredPlayers.add(m.entity.id);
+    if (m.value !== null) valuedPlayers.add(m.entity.id);
+  }
+  const noDataPlayers = new Set([...measuredPlayers].filter((id) => !valuedPlayers.has(id)));
   let figures = 0;
   let citedCount = 0;
   let heuristicPassed = 0;
@@ -1541,8 +1562,11 @@ export function auditNumericClaimsDetailed(
     if (seen.has(raw)) continue;
     if (spans.has(value) && TIME_UNIT_AFTER.test(scrubbed.slice(match.end, match.end + 24))) continue;
     figures += 1;
-    // A figure the model cited, and the server verified against the read it named, is not matched against names.
-    if (cited.some((c) => Number.isFinite(c.value) && Math.abs(Math.abs(c.value) - Math.abs(value)) <= Math.max(roundingTolerance(raw.replace(/^-/, '')), roundingTolerance(c.raw.replace(/^-/, ''))))) {
+    // A figure the model cited, and the server verified against the read it named, is not matched against names. It stands for the figure only at
+    // the precision the figure is written to (a cite of 58 does not stand for 57.8), and only beside the player it was cited for: a 72.5 cited
+    // for Owen does not make "Audit Testplayer: 72.5" true.
+    const wrote = bind.bindingFor(index);
+    if (cited.some((c) => Number.isFinite(c.value) && Math.abs(Math.abs(c.value) - Math.abs(value)) <= roundingTolerance(raw.replace(/^-/, '')) && citeFitsBinding(c.subject, wrote))) {
       citedCount += 1;
       seen.add(raw);
       continue;
@@ -1568,7 +1592,7 @@ export function auditNumericClaimsDetailed(
     const pool = subsetCount && options?.strictSubsetCounts ? [] : subsetCount ? anchors.filter((a) => (counted ? a.family === counted || a.parent === counted : a.family !== null)) : anchors;
     // A figure about a metric, written against a player no read this turn has any figure for, has nothing of that player's to stand on: an
     // untagged number (a roster-wide detail value) that happens to match does not make it theirs.
-    const hasNothing = !!binding.players && binding.players.size > 0 && !!binding.families?.size && !binding.teamCue && [...binding.players].every((p) => !taggedPlayers.has(p));
+    const hasNothing = !!binding.players && binding.players.size > 0 && !binding.teamCue && (([...binding.players].every((p) => noDataPlayers.has(p))) || (!!binding.families?.size && [...binding.players].every((p) => !taggedPlayers.has(p))));
     if (!pool.some((a) => near(a) && playerCompatible(a, binding) && metricCompatible(a, binding) && (!a.reference || binding.refCue) && (!a.gap || binding.gapCue) && !(hasNothing && a.player === null && !a.team && !a.reference))) {
       seen.add(raw);
       found.push(pool.some(near) ? { text: raw, value, misattributed: true } : { text: raw, value });

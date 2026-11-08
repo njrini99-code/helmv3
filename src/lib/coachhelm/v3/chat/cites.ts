@@ -296,7 +296,7 @@ export function auditCited(args: { surface?: 'coach' | 'player'; /** Derived cou
   const verified = checked.filter((c) => c.status === 'verified');
   const mismatched = checked.filter((c) => c.status === 'mismatch');
   let detail: AuditDetail = { unsupported: [], figures: 0, cited: 0, heuristicPassed: 0 };
-  const flagged = auditNumericClaims(...args.base, { ...args.options, citedValues: verified.map((c) => c.cite.v), ...(args.strictCounts && args.cites ? { strictSubsetCounts: true } : {}), report: (d) => (detail = d) });
+  const flagged = auditNumericClaims(...args.base, { ...args.options, citedValues: verified.map((c) => c.cite.v), citedSubjects: verified.map((c) => c.cite.subject), ...(args.strictCounts && args.cites ? { strictSubsetCounts: true } : {}), report: (d) => (detail = d) });
   const citations: CitationStats | undefined = args.cites
     ? {
         figures: detail.figures,
