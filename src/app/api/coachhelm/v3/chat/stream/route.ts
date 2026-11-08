@@ -1033,8 +1033,9 @@ export async function POST(req: NextRequest) {
           instructions: systemPrompt,
           messages: [...modelMessages, ...firstResponse, { role: 'user', content: repairNote }],
           tools,
-          // Reads only: a repair never proposes a change.
-          activeTools: Object.keys(tools).filter((name) => !isConfirmRequired(name)),
+          // Reads only: a repair never proposes a change. The tool definitions stay exactly the first pass's (a smaller set is a different prefix, so
+          // the repair call wrote the whole 39k-token prefix again: $0.10 on one turn), and a change tool is refused instead of offered.
+          toolApproval: ({ toolCall }: { toolCall: { toolName: string } }) => (isConfirmRequired(toolCall.toolName) ? 'denied' : 'not-applicable'),
           stopWhen: stepCountIs(4),
           prepareStep: ({ messages }) => ({ messages: withTailBreakpoint(messages) }),
           onLanguageModelCallStart: (e) => perf.modelRequest(e),
