@@ -23,7 +23,7 @@ import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { Tooltip } from '../../../ui/Tooltip';
 import { PhoneTop, usePhoneTabsHidden } from '../../../shell/phone-chrome';
 import { AskComposer, useRefuseOffline } from './Composer';
-import { askDraftKey, useAskKept } from './drafts';
+import { askDraftKey, useAskKept, useSeedOnce } from './drafts';
 import { AskEvidencePanel } from './EvidencePanel';
 import { conversationHref, HistoryDrawer, HistoryPanel } from './History';
 import { AskHomeV2 } from './Home';
@@ -212,7 +212,10 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
     setStoppedTurn(last?.role === 'assistant' ? last.id : null);
     chat.stop();
   };
+  // FID-ASK-7: read once, then off the address (below), and taken once: the first send ends it.
+  const [seededQuestion, consumeSeed] = useSeedOnce(typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('q'));
   const send = (text: string) => {
+    consumeSeed();
     setStoppedTurn(null);
     lastSent.current = text;
     expecting.current = openId === null ? epoch.current : null;
@@ -266,7 +269,6 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
   const scopeLine = showHome ? `${player ? 'My rounds' : data.teamName} · this season` : askScope(lastAsked, player ? 'My rounds' : data.teamName, player ? [] : (data.players ?? []).map((p) => p.name));
 
   // FID-ASK-7: read once, then off the address, so a reload doesn't put it back over what the coach has since typed.
-  const [seededQuestion] = useState(() => (typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('q')));
   useEffect(() => {
     if (!seededQuestion) return;
     const url = new URL(window.location.href);

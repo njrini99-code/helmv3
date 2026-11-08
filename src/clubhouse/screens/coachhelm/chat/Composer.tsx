@@ -172,7 +172,7 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
   const refuseOffline = useRefuseOffline();
   const finePointer = useFinePointer();
   const hero = variant === 'hero';
-  const [value, setValue] = useAskDraft(draftKey);
+  const [value, setValue, clearDraft] = useAskDraft(draftKey);
   useEffect(() => {
     if (seed) setValue(seed);
     // Mount only: it is a starting point, not a value to hold on to.
@@ -283,6 +283,7 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
     haptic('press');
     onSend(withRangeClause(typed, range));
     setValue('');
+    clearDraft();
     setRange(null);
     setDismissed(false);
     opened.current = null;

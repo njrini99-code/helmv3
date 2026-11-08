@@ -42,7 +42,7 @@
  * that will execute — not a client-side guess at what might happen.
  * ========================================================================== */
 
-import { getClassTimes, getDrillBank, getPlanFormat, getTeamPuttingProfile, getTeamStrokesGained } from './practice-reads';
+import { getClassTimes, getDrillBank, getPlanFormat, getTeamPuttingProfile, getTeamStrokesGained, TEAM_SG_WINDOWS, type TeamSgSource } from './practice-reads';
 import { practicePicture } from './practice-pictures';
 import { practiceDraftTool, publishFlow } from './practice-draft';
 import { getSeasonScoring } from './season-reads';
@@ -247,6 +247,8 @@ export interface BuildToolsArgs {
    * src/clubhouse may not import the gate. Left out, the whole-team tools stay off.
    */
   teamTools?: boolean;
+  /** The team's strokes gained for a window, from the one source Team Stats reads. The route hands it in (code outside src/clubhouse may not import it); left out, that read says it could not be read. */
+  teamStrokesGained?: TeamSgSource;
   /** Ask v2 (Clubhouse on for the team): steps update in place, and new tools join. Fairway's chat never sets it. */
   askV2?: boolean;
   /** Ask v2's surface. `send_message` is registered only for Quick chat; left out, the Ask tab, which never sends. */
@@ -333,7 +335,7 @@ function scopedKey(key: string, conversationId: string | null, plan: unknown): s
   return `${key.slice(0, 110)}:${h.toString(36)}`;
 }
 
-export function buildCoachTools({ sb, ctx, conversationId, writer, collect: collectOuter, teamTools = false, practicePlans = false, askV2 = false, surface = 'ask', onArtifactWords, defer }: BuildToolsArgs): ToolSet {
+export function buildCoachTools({ sb, ctx, conversationId, writer, collect: collectOuter, teamStrokesGained, teamTools = false, practicePlans = false, askV2 = false, surface = 'ask', onArtifactWords, defer }: BuildToolsArgs): ToolSet {
   const scope = <P extends { idempotency_key: string }>(proposal: P, plan: unknown): P => ({ ...proposal, idempotency_key: scopedKey(proposal.idempotency_key, conversationId, plan) });
   // The next chat request finishes what a cut-off function left held (TASK_FIELDS §3 step 5). It has to be a request: the writes read the coach from the session.
   if (askV2 && defer) defer(() => sweepHeld(sb, { coach_id: ctx.coach_id, team_id: ctx.team_id, resolve: (row) => heldCommitFor(sb, ctx, row) }));
@@ -755,7 +757,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
           get_class_times: tool({ description: 'Who is in class on a day, per tracked player. Read before planning a practice.', inputSchema: z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }), execute: read('get_class_times', (input) => getClassTimes(sb, ctx, input)) }),
           get_drill_bank: tool({ description: 'Team drills and the GolfHelm library, with the refs a plan must use. A drill is never invented.', inputSchema: z.object({ category: z.string().max(40).optional() }), execute: read('get_drill_bank', (input) => getDrillBank(sb, ctx, input)) }),
           get_plan_format: tool({ description: 'The team\'s plan format: its section names and order. Read it before drafting a plan, and call the sections by these names.', inputSchema: z.object({}), execute: read('get_plan_format', () => getPlanFormat(sb, ctx)) }),
-          get_team_strokes_gained: tool({ description: 'The team\'s strokes gained per area over recent rounds.', inputSchema: z.object({ rounds: z.number().int().min(3).max(30).default(10) }), execute: read('get_team_strokes_gained', (input) => getTeamStrokesGained(sb, ctx, input)) }),
+          get_team_strokes_gained: tool({ description: 'The team\'s strokes gained per round in each area (off the tee, approach, around the green, putting), the average over each player\'s rounds in the window, the same figures the Stats page shows. window "last10" is the default (each player\'s newest ten rounds); "season" when the coach says this season; "last5" or "last20" for those.', inputSchema: z.object({ window: z.enum(TEAM_SG_WINDOWS).default('last10') }), execute: read('get_team_strokes_gained', (input) => getTeamStrokesGained(teamStrokesGained, { id: ctx.team_id, name: ctx.team_name }, input)) }),
           get_team_putting_profile: tool({ description: 'The team\'s putting by distance.', inputSchema: z.object({ rounds: z.number().int().min(3).max(30).default(10) }), execute: read('get_team_putting_profile', (input) => getTeamPuttingProfile(sb, ctx, input)) }),
           ...practiceDraftTool({ ctx, writer, envelopes: () => seenEnvelopes, evidenceByRef }),
           [publishFlow.name]: flowTool(publishFlow as unknown as FlowDef<never>),

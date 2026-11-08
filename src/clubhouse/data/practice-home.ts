@@ -4,6 +4,7 @@ import { TERMS } from '../lib/glossary';
 import { createClient } from '@/lib/supabase/server';
 import { resolveCoachChatContext } from '@/lib/coachhelm/v3/chat/context';
 import { getTeamStrokesGained } from '@/lib/coachhelm/v3/chat/practice-reads';
+import { loadTeamStrokesGained } from './team-sg';
 import { parsePlanBody, parseVersionBody, type PlanBodyV2, type PlanWhy } from '@/lib/coachhelm/v3/practice-plan/model';
 import { practiceTables, type PracticePlanRow, type PracticePlanVersionRow, type TeamDrillRow } from '@/lib/golf/practice-db';
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
@@ -249,7 +250,7 @@ async function helperFacts(sb: Sb, teamId: string, after: Date, zone: string): P
   const facts: Array<{ lead: string; text: string }> = [];
   const ctx = await resolveCoachChatContext(sb).catch(() => null);
   if (ctx && ctx.team_id === teamId) {
-    const sg = await getTeamStrokesGained(sb, ctx, { rounds: 10 }).catch(() => null);
+    const sg = await getTeamStrokesGained((window) => loadTeamStrokesGained(sb, { timezone: ctx.timezone, playerIds: ctx.roster.map((p) => p.id) }, window), { id: ctx.team_id, name: ctx.team_name }, { window: 'last10' }).catch(() => null);
     const areas = (sg?.detail as { areas?: Record<string, number | null> } | undefined)?.areas;
     const worst = areas ? Object.entries(areas).filter((e): e is [string, number] => typeof e[1] === 'number' && e[1] < 0).sort((a, b) => a[1] - b[1])[0] : undefined;
     if (worst) facts.push({ lead: SG_NAMES[worst[0]] ?? worst[0], text: `loses ${formatFixed(Math.abs(worst[1]))} a round, the most of any part of the game` });
