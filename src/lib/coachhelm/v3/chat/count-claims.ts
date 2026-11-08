@@ -75,6 +75,39 @@ export function statedCounts(evidence: Iterable<ToolEnvelope>, roster: readonly 
   return out;
 }
 
+const MONTH_BEFORE = /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s+$/i;
+const SMALL = /\b(\d{1,2}|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|both)\b/gi;
+/** Words that name one item out of the group ("his best round", "the first one"): a subset of one, though no number says so. */
+const ONE_NAMED = /\b(?:best|worst|lowest|highest|biggest|smallest|only|single|first|last|latest|newest|oldest|top|one)\b/i;
+
+/**
+ * Whether "the other N" is the group less a subset the nearby words name: some number S in this sentence or the one before it (a date, a
+ * decimal, a window and the count itself aside), or one for a single named item, with N + S a count the reads state or a cite carries.
+ */
+function isComplement(text: string, at: number, length: number, n: number, stated: ReadonlySet<number>, cited: readonly number[], rosterSize: number): boolean {
+  let from = 0;
+  const bounds = [...text.slice(0, at).matchAll(/[.!?](?=\s|$)/g)].map((b) => (b.index ?? 0) + 1);
+  if (bounds.length >= 2) from = bounds[bounds.length - 2] as number;
+  const next = /[.!?](?=\s|$)/.exec(text.slice(at + length));
+  const to = next ? at + length + (next.index ?? 0) + 1 : text.length;
+  const near = text.slice(from, to);
+  const here = at - from;
+  const subsets = new Set<number>();
+  if (ONE_NAMED.test(near)) subsets.add(1);
+  for (const s of near.matchAll(SMALL)) {
+    const i = s.index ?? 0;
+    if (i >= here && i < here + length) continue;
+    if (MONTH_BEFORE.test(near.slice(Math.max(0, i - 12), i)) || WINDOW_BEFORE.test(near.slice(Math.max(0, i - 24), i))) continue;
+    const after = near.slice(i + s[0].length, i + s[0].length + 2);
+    if (/^\.\d|^%|^(?:st|nd|rd|th)/i.test(after)) continue;
+    const word = s[0].toLowerCase();
+    const v = /^\d+$/.test(word) ? Number(word) : word === 'both' ? 2 : ({ one: 1, two: 2, ...WORDS } as Record<string, number>)[word];
+    if (v !== undefined && v >= 1 && v < 13) subsets.add(v);
+  }
+  // The roster's size is the size of a group of players: it is not the size of a group of rounds, and a 5 + 3 that happens to be the roster would pass anything.
+  return [...subsets].some((s) => (stated.has(n + s) && (n + s !== rosterSize || rosterSize === 0)) || cited.some((c) => Math.abs(Math.abs(c) - (n + s)) < 1e-9));
+}
+
 /** The counts in `text` that no verified cite and no read stands for. */
 export function auditCountClaims(text: string, stated: ReadonlySet<number>, citedValues: readonly string[], rosterSize = 0): UnsupportedClaim[] {
   const cited = citedValues.map((c) => Number(c.replace(/[−–]/g, '-').replace(/[%,+]/g, ''))).filter(Number.isFinite);
@@ -95,7 +128,18 @@ export function auditCountClaims(text: string, stated: ReadonlySet<number>, cite
       if (Number.isFinite(whole) && n < whole && (stated.has(whole) || whole <= rosterSize)) continue;
       if (/\b(?:other|remaining|rest)\s+$/i.test(text.slice(Math.max(0, at - 14), at))) continue;
     }
-    if (stated.has(n) || cited.some((c) => Math.abs(Math.abs(c) - n) < 1e-9)) continue;
+    const isCited = cited.some((c) => Math.abs(Math.abs(c) - n) < 1e-9);
+    // "The other 5 rounds" is what is left of a group once the ones just named are taken out, so it is the group's size less theirs; a 5 that is only the size of the window does not stand for it (staging 21a4a215: two of five named, "the other 5").
+    const complement = /\b(?:other|remaining|rest)\s+$/i.test(text.slice(Math.max(0, at - 14), at));
+    if (complement && !isCited) {
+      if (isComplement(text, at, m[0].length - (m[1]?.length ?? 0), n, stated, cited, rosterSize)) continue;
+      if (!seen.has(raw)) {
+        seen.add(raw);
+        flagged.push({ text: raw, value: n });
+      }
+      continue;
+    }
+    if (stated.has(n) || isCited) continue;
     if (seen.has(raw)) continue;
     seen.add(raw);
     flagged.push({ text: raw, value: n });

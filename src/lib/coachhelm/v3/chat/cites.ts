@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { auditCountClaims, statedCounts } from './count-claims';
+import { auditRowBounds, roundSets } from './row-bounds';
 import { auditRankClaims } from './rank-claims';
 import { auditNumericClaims, collectNumbers, collectEnvelopeNumbers, collectScopedNumbers, roundingTolerance, teamDataCounts, type AuditDetail, type Measurement, type ScopedNumber, type ToolEnvelope, type UnsupportedClaim } from './provenance';
 
@@ -324,11 +325,14 @@ export function auditCited(args: { surface?: 'coach' | 'player'; /** Derived cou
   const ranks = auditRankClaims(args.base[0], reads, args.options?.players ?? []);
   // Counts of things ("12 qualifier rounds") in a coach turn: a tally the model made while writing is withheld unless a read states it or a cite stands for it.
   const counts = args.strictCounts && args.cites ? auditCountClaims(args.base[0], statedCounts(args.cites.evidence.values(), args.options?.players ?? [], args.base[3]), verified.map((c) => c.cite.v), args.options?.players?.length ?? 0) : [];
+  // Bounds over a set of rounds ("the other 3 rounds had 31 putts or fewer"): checked against the rows the turn read, flagged only when no read of rounds holds enough rows inside the bound.
+  const bounds = args.cites ? auditRowBounds(args.base[0], roundSets(args.cites.evidence.values())) : [];
   const unsupported = [
     ...mismatched.map((c): UnsupportedClaim => ({ text: c.cite.v, value: c.value ?? 0, misattributed: true })),
     ...flagged.filter((u) => !mismatched.some((c) => c.cite.v === u.text)),
     ...ranks,
     ...counts.filter((c) => !flagged.some((u) => u.text === c.text)),
+    ...bounds.filter((c) => !flagged.some((u) => u.text === c.text)),
   ];
   return { unsupported, ...(citations ? { citations } : {}) };
 }

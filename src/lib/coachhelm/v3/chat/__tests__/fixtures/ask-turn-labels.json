@@ -713,5 +713,13 @@
  "e455047c": {
   "expect": "accepted",
   "why": "Greeting; no figures."
+ },
+ "bounds-wrong-other-five": {
+  "expect": "rejected",
+  "why": "Says \"the other 5 rounds had 30 putts or fewer, with 0 to 2 three-putts\": two of the five were named, so three are left, and one of those had 31 putts. Same text as fe6a4fbd, with the cites present so the coach-turn rules apply."
+ },
+ "bounds-true-other-three": {
+  "expect": "accepted",
+  "why": "\"The other 3 rounds had 31 putts or fewer, with 0 to 2 three-putts\": the three rounds not named had 30, 31 and 30 putts and 0, 2 and 2 three-putts. The rest as in fe6a4fbd."
  }
 }
