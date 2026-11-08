@@ -9,8 +9,6 @@ import { filterFor } from '../data/stats-filter';
 import { teamStrokesGainedOver } from '../data/team-sg';
 import { playerFiguresOver, teamFiguresOver } from '../data/player-figures';
 import { groupByPlayer } from '../data/season';
-import { sgOver } from '../data/stats-weight';
-import { holeRounds } from '../data/round-scope';
 import type { ChRoundCache } from '../data/stats-common';
 
 // Staging, 2026-11-08: Ask said "off the tee -1.21, approach -3.59 over 12 rounds" for the same team and question the Stats

@@ -124,7 +124,7 @@ describe('a comparison is made over the same window, with the same per-player va
   });
 
   it('place is defined as a rank among the players with a figure: 1 is best by the metric’s direction, ties share a rank, and fewer than five players is no place', () => {
-    const cohort = (direction: 'higher_better' | 'lower_better', vals: Record<string, number>) => ({ window: 'last10' as const, direction, values: new Map(Object.entries(vals)) });
+    const cohort = (direction: 'higher_better' | 'lower_better', vals: Record<string, number>) => ({ window: 'last10' as const, direction, values: new Map(Object.entries(vals)), team: null });
     const five = { a: 1, b: 2, c: 3, d: 4, e: 5 };
     expect(teamRefFromCohort(cohort('higher_better', five), 'e', 'last10')).toMatchObject({ kind: 'cohort', rank: 1, n: 5, avg: 3 });
     expect(teamRefFromCohort(cohort('lower_better', five), 'e', 'last10')).toMatchObject({ rank: 5 });
