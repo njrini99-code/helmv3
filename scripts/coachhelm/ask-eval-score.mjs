@@ -1,0 +1,99 @@
+/**
+ * The pure half of scripts/coachhelm/ask-eval.mjs: reading the answer stream and scoring an answer against the facts a
+ * question expects. No network, no database. Tested in scripts/coachhelm/__tests__/ask-eval-score.test.ts.
+ */
+
+export const dateRe = (iso) => {
+  const [y, m, d] = iso.split('-').map(Number);
+  const mon = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'][m - 1];
+  const full = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'][m - 1];
+  return new RegExp(`\\b(?:${mon}[a-z]*\\.?\\s+0?${d}\\b|0?${m}/0?${d}\\b|${y}-0?${m}-0?${d}\\b|0?${d}\\s+${full}|0?${d}\\s+${mon}\\b)`, 'i');
+};
+
+const NUM = /[-\u2212\u2013]?\d+(?:,\d{3})*(?:\.\d+)?/g;
+const words = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
+export function numbersIn(text) {
+  const clean = text.replace(/[*_`]/g, '');
+  const out = [];
+  for (const m of clean.matchAll(NUM)) {
+    const raw = m[0].replace(/[\u2212\u2013]/g, '-').replace(/,/g, '');
+    out.push({ value: Number(raw), decimals: (raw.split('.')[1] ?? '').length });
+  }
+  for (const m of clean.matchAll(/\b(one|two|three|four|five|six|seven|eight|nine|ten)\b/gi)) out.push({ value: words[m[1].toLowerCase()], decimals: 0 });
+  return out;
+}
+export const close = (a, v, tol, decimals) => {
+  for (const x of [a, -a]) {
+    if (Math.abs(x - v) <= tol) return true;
+    if (Number.isInteger(decimals) && Math.abs(Math.round(v * 10 ** decimals) / 10 ** decimals - x) < 1e-9) return true;
+  }
+  return false;
+};
+
+export function score(question, text) {
+  const nums = numbersIn(text);
+  const lower = text.toLowerCase();
+  const results = [];
+  for (const f of question.facts) {
+    const targets = f.anyOf ?? [f.value ?? f.iso];
+    let status = 'missing';
+    let detail = '';
+    if (f.kind === 'number') {
+      const tol = f.tol ?? 0.005;
+      const hit = nums.some((n) => targets.some((v) => close(n.value, v, tol, n.decimals)));
+      status = hit ? 'correct' : 'missing';
+      if (f.claim) {
+        const m = f.claim.exec(text.replace(/[*_`]/g, ''));
+        if (m?.[1] != null) {
+          const stated = Number(String(m[1]).replace(/,/g, '')) || words[String(m[1]).toLowerCase()];
+          if (Number.isFinite(stated) && !targets.some((v) => close(stated, v, tol, (String(m[1]).split('.')[1] ?? '').length))) {
+            status = 'wrong';
+            detail = `says ${m[1]}`;
+          }
+        }
+      }
+    } else if (f.kind === 'text') {
+      status = targets.some((t) => lower.includes(String(t).toLowerCase())) ? 'correct' : 'missing';
+    } else if (f.kind === 'date') {
+      status = dateRe(f.iso).test(text) ? 'correct' : 'missing';
+    } else if (f.kind === 'phrase') {
+      status = f.re.test(text) ? 'correct' : 'missing';
+    }
+    results.push({ label: f.label, optional: Boolean(f.optional), status, detail });
+  }
+  for (const f of question.forbid ?? []) {
+    if (f.re.test(text)) results.push({ label: f.label, optional: false, status: 'wrong', detail: 'forbidden statement present' });
+  }
+  const required = results.filter((r) => !r.optional);
+  return {
+    results,
+    correct: results.filter((r) => r.status === 'correct').length,
+    wrong: results.filter((r) => r.status === 'wrong').length,
+    missing: required.filter((r) => r.status === 'missing').length,
+    allRight: required.every((r) => r.status === 'correct') && !results.some((r) => r.status === 'wrong'),
+  };
+}
+
+
+/** What the answer stream has said so far: the text, and whether the route flagged or broke the turn. */
+export const newStreamState = () => ({ text: '', flag: null, incomplete: false, error: null, evidence: 0 });
+
+/** Fold one server-sent-event line of the UI message stream into the state. Lines that are not `data:` JSON are ignored. */
+export function applyStreamLine(state, rawLine) {
+  const line = rawLine.trim();
+  if (!line.startsWith('data:')) return state;
+  const payload = line.slice(5).trim();
+  if (!payload || payload === '[DONE]') return state;
+  let ev;
+  try {
+    ev = JSON.parse(payload);
+  } catch {
+    return state;
+  }
+  if (ev.type === 'text-delta') state.text += ev.delta ?? '';
+  else if (ev.type === 'data-grounding-flag') state.flag = ev.data ?? {};
+  else if (ev.type === 'data-turn-incomplete') state.incomplete = true;
+  else if (ev.type === 'data-evidence') state.evidence += 1;
+  else if (ev.type === 'error') state.error = ev.errorText ?? 'stream error';
+  return state;
+}

@@ -1,0 +1,397 @@
+{
+ "id": "4500c208",
+ "messageId": "4500c208-28fb-43bf-9243-152b3d71812a",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "tell me who has the best performances during qualifiers",
+  "createdAt": "2026-10-26T01:07:57.4897+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-10-26T01:06:31.130213+00:00",
+   "content": "create a practice for me",
+   "evidence": []
+  },
+  {
+   "role": "assistant",
+   "createdAt": "2026-10-26T01:06:34.419524+00:00",
+   "content": "I can set that up. I need a few details before I can draft it:\n\n1. Which day(s) of the week, and what time?\n2. How many occurrences (the series needs a fixed length — e.g., 6 weeks)?\n\nOptional but helpful: a title, location, and whether you want RSVPs required. Let me know the day/time/count and I'll draft the preview.",
+   "evidence": []
+  },
+  {
+   "role": "user",
+   "createdAt": "2026-10-26T01:06:56.845819+00:00",
+   "content": "how is cole bennet at putting?",
+   "evidence": []
+  },
+  {
+   "role": "assistant",
+   "createdAt": "2026-10-26T01:07:12.127504+00:00",
+   "content": "Cole's putting is a clear weak spot right now. Over his last 23 recorded rounds (May 18–Sep 26), he's losing 2.93 strokes per round to the field on the greens — the single largest negative number of any metric category — while averaging 27.07 putts per round and three-putting 8.15% of holes.\n\nHis make-rate profile over that same window shows the pattern isn't just long-range misses:\n\n- 3–5 ft: 47.7% (44 attempts) — this range should be far closer to automatic\n- 5–10 ft: 27.7% (83 attempts)\n- 10–15 ft: 15.6% (64 attempts)\n- 15–25 ft: 19.2% (120 attempts)\n- 25+ ft: 0% (31 attempts)\n\nThe 3–5 ft number is the one I'd flag first — missing roughly half of short putts is unusual and tends to compound through a round, and it's a volume issue (44 attempts) not a small sample fluke. The 25+ ft zero over 31 attempts is notable too, though at that range makes are naturally rare league-wide so it's less diagnostic on its own.\n\nWant me to set up a putting-focused practice block or a focus area target for him off this?",
+   "evidence": [
+    {
+     "as_of": "2026-09-29T02:20:34.950563+00:00",
+     "series": [],
+     "summary": "4 metrics for Cole Bennett.",
+     "coverage": "complete",
+     "measurements": [
+      {
+       "unit": "strokes",
+       "as_of": "2026-09-29T02:20:34.950563+00:00",
+       "value": -2.93,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_putting",
+       "window_end": "2026-09-26",
+       "denominator": null,
+       "sample_size": 23,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained putting",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      },
+      {
+       "unit": "count",
+       "as_of": "2026-09-29T02:20:34.950563+00:00",
+       "value": 27.07,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "total_putts_over_rounds",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "putts_per_round",
+       "window_end": "2026-09-26",
+       "denominator": null,
+       "sample_size": 23,
+       "sample_unit": "rounds",
+       "metric_label": "Putts per round",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-09-29T02:20:34.950563+00:00",
+       "value": 8.15,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "three_putt_holes_over_holes",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "three_putt_pct",
+       "window_end": "2026-09-26",
+       "denominator": null,
+       "sample_size": 23,
+       "sample_unit": "holes",
+       "metric_label": "Three-putt rate",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-09-29T02:20:34.950563+00:00",
+       "value": 21.73,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "one_putt_holes_over_holes",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "one_putt_pct",
+       "window_end": "2026-09-26",
+       "denominator": null,
+       "sample_size": 23,
+       "sample_unit": "holes",
+       "metric_label": "One-putt rate",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": null
+    },
+    {
+     "as_of": "2026-09-29T02:20:34.950563+00:00",
+     "series": [
+      {
+       "unit": "percent",
+       "as_of": "2026-09-29T02:20:34.950563+00:00",
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "putts_made_over_attempts_by_distance_bucket",
+       "points": [
+        {
+         "at": "3-5 ft",
+         "value": 47.7,
+         "bucket": "3-5 ft",
+         "sample_size": 44
+        },
+        {
+         "at": "5-10 ft",
+         "value": 27.7,
+         "bucket": "5-10 ft",
+         "sample_size": 83
+        },
+        {
+         "at": "10-15 ft",
+         "value": 15.6,
+         "bucket": "10-15 ft",
+         "sample_size": 64
+        },
+        {
+         "at": "15-25 ft",
+         "value": 19.2,
+         "bucket": "15-25 ft",
+         "sample_size": 120
+        },
+        {
+         "at": "25+ ft",
+         "value": 0,
+         "bucket": "25+ ft",
+         "sample_size": 31
+        }
+       ],
+       "source": "stats cache",
+       "coverage": "partial",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "putt_make_pct_by_distance",
+       "window_end": "2026-09-26",
+       "metric_label": "Make rate by distance",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      }
+     ],
+     "summary": "Cole Bennett's make rate by putt distance.",
+     "coverage": "partial",
+     "measurements": [
+      {
+       "unit": "percent",
+       "as_of": "2026-09-29T02:20:34.950563+00:00",
+       "value": 47.7,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "putts_made_over_attempts_by_distance_bucket",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "putt_make_pct_3-5 ft",
+       "window_end": "2026-09-26",
+       "denominator": 44,
+       "sample_size": 44,
+       "sample_unit": "attempts",
+       "metric_label": "Make rate 3-5 ft",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-09-29T02:20:34.950563+00:00",
+       "value": 27.7,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "putts_made_over_attempts_by_distance_bucket",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "putt_make_pct_5-10 ft",
+       "window_end": "2026-09-26",
+       "denominator": 83,
+       "sample_size": 83,
+       "sample_unit": "attempts",
+       "metric_label": "Make rate 5-10 ft",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-09-29T02:20:34.950563+00:00",
+       "value": 15.6,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "putts_made_over_attempts_by_distance_bucket",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "putt_make_pct_10-15 ft",
+       "window_end": "2026-09-26",
+       "denominator": 64,
+       "sample_size": 64,
+       "sample_unit": "attempts",
+       "metric_label": "Make rate 10-15 ft",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-09-29T02:20:34.950563+00:00",
+       "value": 19.2,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "putts_made_over_attempts_by_distance_bucket",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "putt_make_pct_15-25 ft",
+       "window_end": "2026-09-26",
+       "denominator": 120,
+       "sample_size": 120,
+       "sample_unit": "attempts",
+       "metric_label": "Make rate 15-25 ft",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-09-29T02:20:34.950563+00:00",
+       "value": 0,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "putts_made_over_attempts_by_distance_bucket",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "putt_make_pct_25+ ft",
+       "window_end": "2026-09-26",
+       "denominator": 31,
+       "sample_size": 31,
+       "sample_unit": "attempts",
+       "metric_label": "Make rate 25+ ft",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": null
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "createdAt": "2026-10-26T01:07:35.107965+00:00",
+   "content": "Draft a team update about",
+   "evidence": []
+  },
+  {
+   "role": "assistant",
+   "createdAt": "2026-10-26T01:07:37.638615+00:00",
+   "content": "I need a bit more to draft this well — what's the update about? A few options based on what we've looked at:\n\n- Cole's putting / a short-game emphasis\n- Upcoming practice or schedule change\n- Something else entirely (results, a reminder, etc.)\n\nLet me know the topic and I'll draft the title and body for your review.",
+   "evidence": []
+  },
+  {
+   "role": "user",
+   "createdAt": "2026-10-26T01:07:57.4897+00:00",
+   "content": "tell me who has the best performances during qualifiers",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-10-26T01:08:02.644368+00:00",
+  "status": "complete",
+  "costUsd": null,
+  "content": "I don't have a way to isolate \"qualifier\" rounds specifically — the tools I have access to report overall scoring, strokes-gained, and round-by-round history, but not event type (qualifier vs. practice round vs. tournament). \n\nCan you clarify what you're looking for? A couple of ways I could approximate it:\n\n- Overall scoring average or scoring vs. par across the team, ranked\n- Most recent rounds for specific players, if you can tell me which rounds were the qualifiers (by date/course)\n\nLet me know which would help, or point me to the date range/course for the qualifier rounds in question.",
+  "tools": [],
+  "evidence": [],
+  "recorded": {
+   "outcome": "accepted"
+  }
+ }
+}

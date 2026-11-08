@@ -1,0 +1,273 @@
+{
+ "id": "8c707121",
+ "messageId": "8c707121-5df1-45d2-ade0-b80024a61c2a",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "QA CRUD test message v3: what is our team GIR percentage?",
+  "createdAt": "2026-09-02T23:15:36.13571+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-09-02T23:15:36.13571+00:00",
+   "content": "QA CRUD test message v3: what is our team GIR percentage?",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-09-02T23:15:42.626771+00:00",
+  "status": "failed",
+  "costUsd": null,
+  "content": "There's no single team-wide GIR average — this is a per-player metric with different windows for each player. Here's where the roster stands, highest to lowest:\n\n| Player | GIR% | Window | Sample |\n|---|---|---|---|\n| Cole Bennett | 70.79% | May 18 – Aug 31 | 315 holes |\n| Mason Rivers | 68.98% | May 28 – Jul 10 | 216 holes |\n| Dylan Brooks | 68.98% | Jun 6 – Aug 31 | 216 holes |\n| Tyler Hayes | 66.67% | May 31 – Aug 31 | 198 holes |\n| Jackson Hale | 64.75% | May 18 – Jul 10 | 261 holes |\n| Owen Carter | 61.57% | May 28 – Jul 10 | 216 holes |\n| Ethan Park | 60.44% | May 18 – Jul 10 | 225 holes |\n\nCoverage note: 7 of your 8 active players have GIR data — Audit Testplayer has none recorded. Windows aren't uniform across players, so this isn't a single blended team number.\n\n_Some figures in this answer could not be traced back to your program's data, so I've flagged it rather than presenting them as fact. Please ask again._",
+  "tools": [
+   {
+    "name": "get_team_metric_ranking",
+    "input": {
+     "metric_id": "gir_pct"
+    }
+   }
+  ],
+  "evidence": [
+   {
+    "tool": "get_team_metric_ranking",
+    "ref": null,
+    "envelope": {
+     "as_of": "2026-09-02T23:15:38.096Z",
+     "detail": {
+      "direction": "higher_better",
+      "metric_id": "gir_pct",
+      "metric_label": "Greens in regulation"
+     },
+     "series": [],
+     "summary": "Greens in regulation across Demo University Golf.",
+     "coverage": "partial",
+     "measurements": [
+      {
+       "unit": "percent",
+       "as_of": "2026-09-01T02:20:35.292299+00:00",
+       "value": 70.79,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "greens_hit_over_greens_total",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "gir_pct",
+       "window_end": "2026-08-31",
+       "denominator": 315,
+       "sample_size": 315,
+       "sample_unit": "holes",
+       "metric_label": "Greens in regulation",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-07-23T11:39:47.911234+00:00",
+       "value": 68.98,
+       "entity": {
+        "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "kind": "player",
+        "label": "Mason Rivers"
+       },
+       "method": "greens_hit_over_greens_total",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "gir_pct",
+       "window_end": "2026-07-10",
+       "denominator": 216,
+       "sample_size": 216,
+       "sample_unit": "holes",
+       "metric_label": "Greens in regulation",
+       "window_start": "2026-05-28",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-09-01T02:20:34.945542+00:00",
+       "value": 68.98,
+       "entity": {
+        "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "kind": "player",
+        "label": "Dylan Brooks"
+       },
+       "method": "greens_hit_over_greens_total",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "gir_pct",
+       "window_end": "2026-08-31",
+       "denominator": 216,
+       "sample_size": 216,
+       "sample_unit": "holes",
+       "metric_label": "Greens in regulation",
+       "window_start": "2026-06-06",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-09-01T02:20:35.56034+00:00",
+       "value": 66.67,
+       "entity": {
+        "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "kind": "player",
+        "label": "Tyler Hayes"
+       },
+       "method": "greens_hit_over_greens_total",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "gir_pct",
+       "window_end": "2026-08-31",
+       "denominator": 198,
+       "sample_size": 198,
+       "sample_unit": "holes",
+       "metric_label": "Greens in regulation",
+       "window_start": "2026-05-31",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-07-21T01:06:59.516925+00:00",
+       "value": 64.75,
+       "entity": {
+        "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "kind": "player",
+        "label": "Jackson Hale"
+       },
+       "method": "greens_hit_over_greens_total",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "gir_pct",
+       "window_end": "2026-07-10",
+       "denominator": 261,
+       "sample_size": 261,
+       "sample_unit": "holes",
+       "metric_label": "Greens in regulation",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-07-23T11:39:47.911234+00:00",
+       "value": 61.57,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "greens_hit_over_greens_total",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "gir_pct",
+       "window_end": "2026-07-10",
+       "denominator": 216,
+       "sample_size": 216,
+       "sample_unit": "holes",
+       "metric_label": "Greens in regulation",
+       "window_start": "2026-05-28",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-07-21T01:06:59.213613+00:00",
+       "value": 60.44,
+       "entity": {
+        "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "kind": "player",
+        "label": "Ethan Park"
+       },
+       "method": "greens_hit_over_greens_total",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "gir_pct",
+       "window_end": "2026-07-10",
+       "denominator": 225,
+       "sample_size": 225,
+       "sample_unit": "holes",
+       "metric_label": "Greens in regulation",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": "No greens in regulation recorded for Audit Testplayer."
+    }
+   }
+  ],
+  "recorded": {
+   "outcome": "rejected",
+   "reason": "unknown",
+   "unmatchedTokens": [],
+   "misattributedTokens": []
+  }
+ }
+}

@@ -1,0 +1,307 @@
+{
+ "id": "ccec585b",
+ "messageId": "ccec585b-9075-47b7-af5f-3a7f3aaaf62c",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "Brief me on Demo University Golf",
+  "createdAt": "2026-07-26T02:05:51.774568+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-07-26T02:05:51.774568+00:00",
+   "content": "Brief me on Demo University Golf",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-07-26T02:06:01.687954+00:00",
+  "status": "failed",
+  "costUsd": null,
+  "content": "**Roster & data coverage:** All 7 active players have recorded rounds (11–15 each). Most recent data is from July 10, except Dylan Brooks (July 19) and Tyler Hayes (July 12) — Cole Bennett, Owen Carter, Ethan Park, Mason Rivers, and Jackson Hale all top out at July 10, so their last two weeks aren't reflected yet.\n\nLast round to par:\n- Tyler Hayes: -2\n- Ethan Park: -1\n- Owen Carter: +2\n- Dylan Brooks: +6\n- Mason Rivers: +8\n- Jackson Hale: +12\n- Cole Bennett: +13\n\n**Upcoming schedule:**\n- Spring Preview Tournament, Jul 30–31, Magnolia Ridge GC (Columbia, SC) — 5 accepted, Dylan Brooks and Jackson Hale still pending.\n- Pre-Season Qualifier — Spring Roster Selection, Aug 6, home course — same 2 pending (Brooks, Hale).\n\n**Open tasks:** 5 open, 2 overdue — \"Update Yardage Book — Home Course\" (was due Jul 22, high priority) and \"Complete Swing Mechanics Self-Assessment Video\" (was due Jul 24, medium priority). Three more due over the next two weeks, including a high-priority pre-tournament course overview video due Jul 28.\n\nWorth chasing down RSVPs from Brooks and Hale before the Jul 30 tournament, and following up on the two overdue tasks.\n\n_Some figures in this answer could not be traced back to your program's data, so I've flagged it rather than presenting them as fact. Please ask again._",
+  "tools": [
+   {
+    "name": "get_team_overview",
+    "input": {}
+   },
+   {
+    "name": "get_open_tasks",
+    "input": {}
+   },
+   {
+    "name": "get_upcoming_events",
+    "input": {
+     "days_ahead": 14
+    }
+   }
+  ],
+  "evidence": [
+   {
+    "tool": "get_open_tasks",
+    "ref": null,
+    "envelope": {
+     "as_of": "2026-07-26T02:05:54.960Z",
+     "detail": {
+      "tasks": [
+       {
+        "title": "Update Yardage Book — Home Course",
+        "status": "in_progress",
+        "overdue": true,
+        "task_id": "a1a68717-a6db-4d00-8ca5-427ff894eaf6",
+        "due_date": "2026-07-22",
+        "priority": "high"
+       },
+       {
+        "title": "Complete Swing Mechanics Self-Assessment Video",
+        "status": "in_progress",
+        "overdue": true,
+        "task_id": "5be36a2e-cbd3-4c78-97f4-388a170dc5d5",
+        "due_date": "2026-07-24",
+        "priority": "medium"
+       },
+       {
+        "title": "Submit Spring Invitational Travel Preferences Form",
+        "status": "pending",
+        "overdue": false,
+        "task_id": "1dd41a13-16d9-46bb-8c38-29f727487f49",
+        "due_date": "2026-07-27",
+        "priority": "medium"
+       },
+       {
+        "title": "Watch Pre-Tournament Course Overview Video",
+        "status": "pending",
+        "overdue": false,
+        "task_id": "5402b6d3-ac25-4927-8f5f-deea2baa33a7",
+        "due_date": "2026-07-28",
+        "priority": "high"
+       },
+       {
+        "title": "Individual Goal-Setting Meeting with Coach",
+        "status": "pending",
+        "overdue": false,
+        "task_id": "fdab3687-5928-4fdf-9631-899ef0690557",
+        "due_date": "2026-08-04",
+        "priority": "low"
+       }
+      ],
+      "open_count": 5,
+      "overdue_count": 2
+     },
+     "series": [],
+     "summary": "5 open tasks, 2 overdue.",
+     "coverage": "complete",
+     "measurements": [],
+     "coverage_note": null
+    }
+   },
+   {
+    "tool": "get_team_overview",
+    "ref": null,
+    "envelope": {
+     "as_of": "2026-07-26T02:05:54.963Z",
+     "detail": {
+      "players": [
+       {
+        "name": "Cole Bennett",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "last_round_date": "2026-07-10",
+        "rounds_recorded": 15,
+        "last_round_to_par": 13
+       },
+       {
+        "name": "Owen Carter",
+        "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "last_round_date": "2026-07-10",
+        "rounds_recorded": 12,
+        "last_round_to_par": 2
+       },
+       {
+        "name": "Ethan Park",
+        "player_id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "last_round_date": "2026-07-10",
+        "rounds_recorded": 13,
+        "last_round_to_par": -1
+       },
+       {
+        "name": "Mason Rivers",
+        "player_id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "last_round_date": "2026-07-10",
+        "rounds_recorded": 12,
+        "last_round_to_par": 8
+       },
+       {
+        "name": "Jackson Hale",
+        "player_id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "last_round_date": "2026-07-10",
+        "rounds_recorded": 15,
+        "last_round_to_par": 12
+       },
+       {
+        "name": "Dylan Brooks",
+        "player_id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "last_round_date": "2026-07-19",
+        "rounds_recorded": 12,
+        "last_round_to_par": 6
+       },
+       {
+        "name": "Tyler Hayes",
+        "player_id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "last_round_date": "2026-07-12",
+        "rounds_recorded": 11,
+        "last_round_to_par": -2
+       }
+      ],
+      "timezone": "America/New_York",
+      "team_name": "Demo University Golf",
+      "latest_round_date": "2026-07-19",
+      "profiles_resolved": 7,
+      "active_roster_count": 7,
+      "players_with_rounds": 7,
+      "unresolved_player_ids": []
+     },
+     "series": [],
+     "summary": "Demo University Golf has 7 active players.",
+     "coverage": "complete",
+     "measurements": [
+      {
+       "unit": "count",
+       "as_of": "2026-07-26T02:05:54.963Z",
+       "value": 7,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "count_active_team_members",
+       "source": "roster",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "active_roster_count",
+       "window_end": null,
+       "denominator": null,
+       "sample_size": 7,
+       "sample_unit": "players",
+       "metric_label": "Active roster",
+       "window_start": null,
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": null
+    }
+   },
+   {
+    "tool": "get_upcoming_events",
+    "ref": null,
+    "envelope": {
+     "as_of": "2026-07-26T02:05:55.458Z",
+     "detail": {
+      "events": [
+       {
+        "title": "Spring Preview Tournament",
+        "ends_at": "2026-07-31T22:00:00+00:00",
+        "event_id": "0445386a-bc6b-4ffb-9b12-5a5c2362a73f",
+        "location": "Magnolia Ridge Golf Club — Columbia, SC",
+        "starts_at": "2026-07-30T12:00:00+00:00",
+        "event_type": "tournament",
+        "requires_rsvp": true,
+        "rsvp_accepted": 5,
+        "rsvp_deadline": null,
+        "rsvp_declined": 0,
+        "rsvp_pending_count": 2,
+        "rsvp_pending_names": [
+         "Dylan Brooks",
+         "Jackson Hale"
+        ]
+       },
+       {
+        "title": "Pre-Season Qualifier — Spring Roster Selection",
+        "ends_at": "2026-08-06T19:00:00+00:00",
+        "event_id": "9619a9db-1dae-4d1a-9837-47f8edadfae7",
+        "location": "Demo University Home Course",
+        "starts_at": "2026-08-06T13:00:00+00:00",
+        "event_type": "qualifier",
+        "requires_rsvp": true,
+        "rsvp_accepted": 5,
+        "rsvp_deadline": null,
+        "rsvp_declined": 0,
+        "rsvp_pending_count": 2,
+        "rsvp_pending_names": [
+         "Dylan Brooks",
+         "Jackson Hale"
+        ]
+       }
+      ],
+      "timezone": "America/New_York"
+     },
+     "series": [],
+     "summary": "2 events in the next 14 days.",
+     "coverage": "complete",
+     "measurements": [],
+     "coverage_note": null
+    }
+   }
+  ],
+  "recorded": {
+   "outcome": "rejected",
+   "reason": "unknown",
+   "unmatchedTokens": [],
+   "misattributedTokens": []
+  }
+ }
+}
