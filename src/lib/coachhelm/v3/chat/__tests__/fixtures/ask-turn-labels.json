@@ -330,5 +330,223 @@
  "cite-unresolved": {
   "expect": "accepted",
   "why": "An unresolved cite adds nothing and removes nothing: the figure is judged by the text heuristics, which pass it."
+ },
+ "033474a2": {
+  "expect": "accepted",
+  "why": "No round since Oct 25: Cole Oct 21, six players Sept 26, Audit Testplayer none: match the rounds."
+ },
+ "06a7b55b": {
+  "expect": "accepted",
+  "why": "Mason 72.0, Owen 72.5, Ethan 73.0, Jackson 73.5 over 2 rounds each, Cole 77.46 over 13: match the rounds."
+ },
+ "1473e344": {
+  "expect": "accepted",
+  "why": "No round since Oct 25: Cole Oct 21, six players Sept 26, Audit Testplayer none: match the rounds."
+ },
+ "17000661": {
+  "expect": "rejected",
+  "why": "Says \"the 12 qualifier rounds on September 25 and 26\" (14: six other players and Cole, two each) and \"Four Pebble Beach practice rounds on Oct 2, Oct 8 and Oct 25\" (three). The 74 and 77, 26 rounds and the other 24 are right. Parent-supplied wrong accept.",
+  "knownWrongAccept": true
+ },
+ "191a834e": {
+  "expect": "accepted",
+  "why": "Ethan Park -1.92 first, Owen -2.06 second, Tyler -2.88, Jackson -4.77 lowest, putts per round (Ethan 32.5 third): match the reads."
+ },
+ "2cd24468": {
+  "expect": "accepted",
+  "why": "Greeting; no figures."
+ },
+ "35133609": {
+  "expect": "accepted",
+  "why": "No attendance on record; goals only for Cole (2) and Owen (3), none active: matches the reads."
+ },
+ "39654d85": {
+  "expect": "accepted",
+  "why": "Nothing on the calendar for the next seven or eight days; five overdue tasks with their due dates: match the reads."
+ },
+ "3a4e7bea": {
+  "expect": "accepted",
+  "why": "Approach then putting; the season read is 11 rounds by Cole alone (Aug 21 to Oct 21): matches the reads."
+ },
+ "3bfd61d9": {
+  "expect": "accepted",
+  "why": "Owen -4.16 over 8 rounds, team -3.09 and 6th of 7 (the window-matched figures), GIR 61.11% over 144 holes and 5th of 7, Division I 60%, Tour 66%: match the reads."
+ },
+ "3e8b7c6b": {
+  "expect": "accepted",
+  "why": "Approach then putting; the season read is 11 rounds by Cole alone (Aug 21 to Oct 21): matches the reads."
+ },
+ "3f1c1439": {
+  "expect": "accepted",
+  "why": "Ethan -1.92 best, Owen second, Tyler third, Jackson lowest at -4.77; \"his putts per round (33.13) are not the highest on the team\" is true (Dylan and Mason 33.38). The audit rejects \"highest on the team\", a negated superlative.",
+  "knownWrongBlock": true
+ },
+ "424d8808": {
+  "expect": "accepted",
+  "why": "25 counted rounds since Aug 1: Cole 13, six players 2 each, Audit none: matches the rounds."
+ },
+ "431b31ea": {
+  "expect": "accepted",
+  "why": "Owen -4.16 over 8 rounds, team -3.09 and 6th of 7 (the window-matched figures), GIR 61.11% over 144 holes and 5th of 7, Division I 60%, Tour 66%: match the reads."
+ },
+ "4b58e107": {
+  "expect": "rejected",
+  "why": "Says \"the other seven players\" have no putts for the Sept 25 and 26 qualifiers; six other players played them (Audit Testplayer has no rounds). The 74 and 77, 26 rounds and Cole's three in-progress rounds are right.",
+  "knownWrongAccept": true
+ },
+ "5cdae8d1": {
+  "expect": "accepted",
+  "why": "Owen -4.16 over 8 rounds, team -3.09 and 6th of 7 (the window-matched figures), GIR 61.11% over 144 holes and 5th of 7, Division I 60%, Tour 66%: match the reads."
+ },
+ "5e40b957": {
+  "expect": "accepted",
+  "why": "Nothing on the calendar for the next seven or eight days; five overdue tasks with their due dates: match the reads."
+ },
+ "5ede83bd": {
+  "expect": "accepted",
+  "why": "Greeting; no figures."
+ },
+ "6bcbe62e": {
+  "expect": "accepted",
+  "why": "No attendance on record; goals only for Cole (2) and Owen (3), none active: matches the reads."
+ },
+ "7ab4dc0e": {
+  "expect": "accepted",
+  "why": "Mason 72.0, Owen 72.5, Ethan 73.0, Jackson 73.5 over 2 rounds each, Cole 77.46 over 13: match the rounds."
+ },
+ "80de68c6": {
+  "expect": "accepted",
+  "why": "Owen last ten rounds 76.0, last five 74.8; ranks 6th of 7 approach, 2nd putting, 6th off the tee, 4th around the green, 5th total (-6.74): recomputed from the rounds."
+ },
+ "8256b86c": {
+  "expect": "accepted",
+  "why": "Nothing on the calendar for the next seven or eight days; five overdue tasks with their due dates: match the reads."
+ },
+ "83d24e87": {
+  "expect": "accepted",
+  "why": "25 counted rounds since Aug 1: Cole 13, six players 2 each, Audit none: matches the rounds."
+ },
+ "886125c8": {
+  "expect": "accepted",
+  "why": "25 counted rounds since Aug 1: Cole 13, six players 2 each, Audit none: matches the rounds."
+ },
+ "897a9953": {
+  "expect": "accepted",
+  "why": "Greeting; no figures."
+ },
+ "8d6cfee8": {
+  "expect": "accepted",
+  "why": "25 counted rounds since Aug 1: Cole 13, six players 2 each, Audit none: matches the rounds."
+ },
+ "8d9c2010": {
+  "expect": "accepted",
+  "why": "Two rounds, Cole Bennett Oct 21 at Springfield CC, 74 and 77 with 3 three-putts each (37 putts), 26 rounds since Sept 1: match the rounds."
+ },
+ "8dd420b1": {
+  "expect": "accepted",
+  "why": "Mason 72.0, Owen 72.5, Ethan 73.0, Jackson 73.5 over 2 rounds each, Cole 77.46 over 13: match the rounds."
+ },
+ "95294ad2": {
+  "expect": "accepted",
+  "why": "Capabilities list; no data figures."
+ },
+ "9f63af20": {
+  "expect": "accepted",
+  "why": "Team season SG is 11 rounds by Cole alone (Aug 21 to Oct 21): approach -4.37, putting -2.4, tee -1.36, around +0.07. The audit rejects \"20\", the \"last 20 rounds\" window the answer offers to read, not a result.",
+  "knownWrongBlock": true
+ },
+ "a22b7ed9": {
+  "expect": "accepted",
+  "why": "No attendance on record; goals only for Cole (2) and Owen (3), none active: matches the reads."
+ },
+ "a5cea2c8": {
+  "expect": "accepted",
+  "why": "Ethan Park -1.92 first, Owen -2.06 second, Tyler -2.88, Jackson -4.77 lowest, putts per round (Ethan 32.5 third): match the reads."
+ },
+ "a79fb19f": {
+  "expect": "accepted",
+  "why": "Nothing on the calendar for the next seven or eight days; five overdue tasks with their due dates: match the reads."
+ },
+ "bd48ac5e": {
+  "expect": "accepted",
+  "why": "Owen last ten rounds 76.0, last five 74.8; ranks 6th of 7 approach, 2nd putting, 6th off the tee, 4th around the green, 5th total (-6.74): recomputed from the rounds."
+ },
+ "c2fdf9cb": {
+  "expect": "accepted",
+  "why": "No attendance on record; goals only for Cole (2) and Owen (3), none active: matches the reads."
+ },
+ "c504139c": {
+  "expect": "accepted",
+  "why": "Owen last ten rounds 76.0, last five 74.8; ranks 6th of 7 approach, 2nd putting, 6th off the tee, 4th around the green, 5th total (-6.74): recomputed from the rounds."
+ },
+ "c51d1c60": {
+  "expect": "accepted",
+  "why": "Greeting; no figures."
+ },
+ "d44edc5d": {
+  "expect": "accepted",
+  "why": "Capabilities list; no data figures."
+ },
+ "db1934b9": {
+  "expect": "accepted",
+  "why": "Ethan Park -1.92 first, Owen -2.06 second, Tyler -2.88, Jackson -4.77 lowest, putts per round (Ethan 32.5 third): match the reads."
+ },
+ "db8dd119": {
+  "expect": "accepted",
+  "why": "Two rounds, Cole Bennett Oct 21 at Springfield CC, 74 and 77 with 3 three-putts each (37 putts), 26 rounds since Sept 1: match the rounds."
+ },
+ "dbf40839": {
+  "expect": "accepted",
+  "why": "No round since Oct 25: Cole Oct 21, six players Sept 26, Audit Testplayer none: match the rounds."
+ },
+ "e0e84a03": {
+  "expect": "accepted",
+  "why": "Capabilities list; no data figures."
+ },
+ "e8669a92": {
+  "expect": "accepted",
+  "why": "Greeting; no figures."
+ },
+ "e8b71de1": {
+  "expect": "accepted",
+  "why": "Capabilities list; no data figures."
+ },
+ "eca75814": {
+  "expect": "accepted",
+  "why": "Greeting; no figures."
+ },
+ "ecfab019": {
+  "expect": "accepted",
+  "why": "Approach then putting; the season read is 11 rounds by Cole alone (Aug 21 to Oct 21): matches the reads."
+ },
+ "f210d104": {
+  "expect": "accepted",
+  "why": "Owen summary: total -6.74 (5th of 7), approach 6th, putting 2nd, off the tee -0.32 (6th), GIR 5th: recomputed from the rounds. The audit rejects \"-0.32\", true and in the reads.",
+  "knownWrongBlock": true
+ },
+ "f2ca8d34": {
+  "expect": "accepted",
+  "why": "No round since Oct 25: Cole Oct 21, six players Sept 26, Audit Testplayer none: match the rounds."
+ },
+ "f3b7b4b4": {
+  "expect": "accepted",
+  "why": "Mason 72.0, Owen 72.5, Ethan 73.0, Jackson 73.5 over 2 rounds each, Cole 77.46 over 13: match the rounds."
+ },
+ "f7e82e5b": {
+  "expect": "accepted",
+  "why": "Two rounds, Cole Bennett Oct 21 at Springfield CC, 74 and 77 with 3 three-putts each (37 putts), 26 rounds since Sept 1: match the rounds."
+ },
+ "faf4fb84": {
+  "expect": "accepted",
+  "why": "Owen -4.16, team -3.09 and 6th of 7, GIR 61.11% and 5th of 7, proximity 23.77, 50.58, 94.65 ft against Division I 28, 38, 55 and Tour 18, 30, 45: all in the reads. The audit rejects the reference distances 28, 18, 38 and 45.",
+  "knownWrongBlock": true
+ },
+ "bca71497": {
+  "expect": "accepted",
+  "why": "Owen 6th of 7 on approach SG over the last 10 rounds: right (fresh turn on the tip)."
+ },
+ "b4b827dc": {
+  "expect": "accepted",
+  "why": "Cole last five rounds: 73/30 putts/0, 77/37/3, 74/37/3, 82/31/2, 75/30/2, SG putting -6.64 and -3.9: match the rounds (fresh turn on the tip)."
  }
 }

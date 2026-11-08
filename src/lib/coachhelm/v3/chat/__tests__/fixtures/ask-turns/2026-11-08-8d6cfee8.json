@@ -1,0 +1,514 @@
+{
+ "id": "8d6cfee8",
+ "messageId": "8d6cfee8-3c54-427f-b8d4-7323ffe36ac8",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "How many rounds has the team logged this season?",
+  "createdAt": "2026-11-08T05:48:38.504869+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-11-08T05:48:38.504869+00:00",
+   "content": "How many rounds has the team logged this season?",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-11-08T05:48:48.210691+00:00",
+  "status": "failed",
+  "costUsd": null,
+  "content": "The team has 37 rounds on record this season, counting from 1 August through 25 October. Of those, 34 are completed and 3 are still in progress, and an unfinished round has no stat line. All 37 are 18-hole rounds.\n\nBy type, 22 are qualifier rounds, 12 are practice rounds and 3 are tournament rounds. Season scoring figures leave practice out, so the count that feeds them is lower than 37.\n\nOnly 7 of your 8 players have recorded rounds. Audit Testplayer has none.",
+  "tools": [
+   {
+    "name": "get_team_season_settings",
+    "input": {}
+   },
+   {
+    "name": "get_team_overview",
+    "input": {}
+   },
+   {
+    "name": "summarise_data",
+    "input": {
+     "ops": [
+      {
+       "id": "all",
+       "op": "count"
+      },
+      {
+       "id": "by_type",
+       "op": "count_by",
+       "field": "round_type"
+      },
+      {
+       "id": "by_status",
+       "op": "count_by",
+       "field": "status"
+      },
+      {
+       "id": "by_holes",
+       "op": "count_by",
+       "field": "holes_played"
+      }
+     ],
+     "source": {
+      "query": {
+       "limit": 200,
+       "table": "round_lines",
+       "columns": [
+        "round_date",
+        "round_type",
+        "status",
+        "holes_played"
+       ],
+       "filters": [
+        {
+         "op": "gte",
+         "value": "2026-08-01",
+         "column": "round_date"
+        }
+       ]
+      }
+     }
+    }
+   }
+  ],
+  "evidence": [
+   {
+    "tool": "get_team_season_settings",
+    "ref": "e1",
+    "envelope": {
+     "as_of": "2026-11-08T05:48:40.701Z",
+     "detail": {
+      "terms": [],
+      "today": "2026-11-08",
+      "seasons": [],
+      "settings": {
+       "timezone": "America/New_York",
+       "sg_baseline": null,
+       "default_tees": "blue",
+       "scoring_format": "stroke_play",
+       "handicap_system": "usga",
+       "sg_benchmark_level": "scratch"
+      },
+      "timezone": "America/New_York",
+      "team_scope": true,
+      "season_starts_on": "2026-08-01"
+     },
+     "series": [],
+     "summary": "The team’s seasons, school terms and scoring settings.",
+     "coverage": "complete",
+     "measurements": [],
+     "coverage_note": null
+    }
+   },
+   {
+    "tool": "get_team_overview",
+    "ref": "e2",
+    "envelope": {
+     "as_of": "2026-11-08T05:48:40.766Z",
+     "detail": {
+      "players": [
+       {
+        "name": "Cole Bennett",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "last_round_date": "2026-10-21",
+        "rounds_recorded": 37,
+        "last_round_holes": 18,
+        "last_round_to_par": 2
+       },
+       {
+        "name": "Owen Carter",
+        "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 14,
+        "last_round_holes": 18,
+        "last_round_to_par": -1
+       },
+       {
+        "name": "Ethan Park",
+        "player_id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 15,
+        "last_round_holes": 18,
+        "last_round_to_par": 1
+       },
+       {
+        "name": "Mason Rivers",
+        "player_id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 14,
+        "last_round_holes": 18,
+        "last_round_to_par": 0
+       },
+       {
+        "name": "Jackson Hale",
+        "player_id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 17,
+        "last_round_holes": 18,
+        "last_round_to_par": 0
+       },
+       {
+        "name": "Audit Testplayer",
+        "player_id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+        "last_round_date": null,
+        "rounds_recorded": 0,
+        "last_round_holes": null,
+        "last_round_to_par": null
+       },
+       {
+        "name": "Dylan Brooks",
+        "player_id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 14,
+        "last_round_holes": 18,
+        "last_round_to_par": 2
+       },
+       {
+        "name": "Tyler Hayes",
+        "player_id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 13,
+        "last_round_holes": 18,
+        "last_round_to_par": 5
+       }
+      ],
+      "timezone": "America/New_York",
+      "team_name": "Demo University Golf",
+      "latest_round_date": "2026-10-21",
+      "profiles_resolved": 8,
+      "active_roster_count": 8,
+      "players_with_rounds": 7,
+      "unresolved_player_ids": []
+     },
+     "series": [],
+     "summary": "Demo University Golf has 8 active players.",
+     "coverage": "partial",
+     "measurements": [
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:48:40.766Z",
+       "value": 8,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "count_active_team_members",
+       "source": "roster",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "active_roster_count",
+       "window_end": null,
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "players",
+       "metric_label": "Active roster",
+       "window_start": null,
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": "1 player has no recorded rounds (Audit Testplayer)"
+    }
+   },
+   {
+    "tool": "summarise_data",
+    "ref": "e3",
+    "envelope": {
+     "as_of": "2026-11-08T05:48:43.315Z",
+     "detail": {
+      "kind": "summary",
+      "results": [
+       {
+        "id": "summary:all",
+        "op": "count",
+        "value": 37
+       },
+       {
+        "id": "summary:by_type",
+        "op": "count_by",
+        "field": "round_type",
+        "groups": [
+         {
+          "count": 12,
+          "round_type": "practice"
+         },
+         {
+          "count": 3,
+          "round_type": "tournament"
+         },
+         {
+          "count": 22,
+          "round_type": "qualifier"
+         }
+        ]
+       },
+       {
+        "id": "summary:by_status",
+        "op": "count_by",
+        "field": "status",
+        "groups": [
+         {
+          "count": 3,
+          "status": "in_progress"
+         },
+         {
+          "count": 34,
+          "status": "completed"
+         }
+        ]
+       },
+       {
+        "id": "summary:by_holes",
+        "op": "count_by",
+        "field": "holes_played",
+        "groups": [
+         {
+          "count": 37,
+          "holes_played": "18"
+         }
+        ]
+       }
+      ],
+      "rows_used": 37
+     },
+     "series": [],
+     "summary": "7 figures worked out from 37 rows.",
+     "coverage": "complete",
+     "measurements": [
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:48:43.314Z",
+       "value": 37,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "summary_count",
+       "source": "summarised reads",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "summary:all",
+       "window_end": "2026-10-25",
+       "denominator": null,
+       "sample_size": 37,
+       "sample_unit": "rounds",
+       "metric_label": "Rows",
+       "window_start": "2026-08-02",
+       "coverage_note": null
+      },
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:48:43.314Z",
+       "value": 12,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "summary_count_by",
+       "source": "summarised reads",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "summary:by_type:practice",
+       "window_end": "2026-10-25",
+       "denominator": 37,
+       "sample_size": 12,
+       "sample_unit": "rounds",
+       "metric_label": "Rows with round_type practice",
+       "window_start": "2026-08-02",
+       "coverage_note": null
+      },
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:48:43.314Z",
+       "value": 3,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "summary_count_by",
+       "source": "summarised reads",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "summary:by_type:tournament",
+       "window_end": "2026-10-21",
+       "denominator": 37,
+       "sample_size": 3,
+       "sample_unit": "rounds",
+       "metric_label": "Rows with round_type tournament",
+       "window_start": "2026-10-21",
+       "coverage_note": null
+      },
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:48:43.315Z",
+       "value": 22,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "summary_count_by",
+       "source": "summarised reads",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "summary:by_type:qualifier",
+       "window_end": "2026-09-26",
+       "denominator": 37,
+       "sample_size": 22,
+       "sample_unit": "rounds",
+       "metric_label": "Rows with round_type qualifier",
+       "window_start": "2026-08-21",
+       "coverage_note": null
+      },
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:48:43.315Z",
+       "value": 3,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "summary_count_by",
+       "source": "summarised reads",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "summary:by_status:in_progress",
+       "window_end": "2026-10-25",
+       "denominator": 37,
+       "sample_size": 3,
+       "sample_unit": "rounds",
+       "metric_label": "Rows with status in_progress",
+       "window_start": "2026-10-02",
+       "coverage_note": null
+      },
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:48:43.315Z",
+       "value": 34,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "summary_count_by",
+       "source": "summarised reads",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "summary:by_status:completed",
+       "window_end": "2026-10-21",
+       "denominator": 37,
+       "sample_size": 34,
+       "sample_unit": "rounds",
+       "metric_label": "Rows with status completed",
+       "window_start": "2026-08-02",
+       "coverage_note": null
+      },
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:48:43.315Z",
+       "value": 37,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "summary_count_by",
+       "source": "summarised reads",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "summary:by_holes:18",
+       "window_end": "2026-10-25",
+       "denominator": 37,
+       "sample_size": 37,
+       "sample_unit": "rounds",
+       "metric_label": "Rows with holes_played 18",
+       "window_start": "2026-08-02",
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": null
+    }
+   }
+  ],
+  "recorded": {
+   "outcome": "rejected",
+   "reason": "ungrounded_claims",
+   "unmatchedTokens": [
+    "7"
+   ],
+   "misattributedTokens": [
+    "7"
+   ]
+  }
+ }
+}

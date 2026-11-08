@@ -1,0 +1,127 @@
+{
+ "id": "35133609",
+ "messageId": "35133609-c091-4a60-9f36-aa5c26bfcef5",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "Show attendance and goal progress for the whole team.",
+  "createdAt": "2026-11-08T05:34:48.252159+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-11-08T05:34:48.252159+00:00",
+   "content": "Show attendance and goal progress for the whole team.",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-11-08T05:34:52.98333+00:00",
+  "status": "complete",
+  "costUsd": null,
+  "content": "Neither read returned anything for the team.\n\n- **Attendance:** No attendance is on record for any of the 8 players. Nothing has been logged, or no events have been checked in. I can't tell which from here.\n- **Goals:** There are no active goals visible for the team. I only see goals you set or that a player shared with you, so private goals wouldn't show. I checked active goals only, not achieved ones.\n\nI can check achieved goals, or look at the calendar to see whether any events with check-in exist. I can also draft goals for players if you'd like to set some.",
+  "tools": [
+   {
+    "name": "get_attendance_summary",
+    "input": {}
+   },
+   {
+    "name": "get_goals",
+    "input": {
+     "limit": 40,
+     "state": "active"
+    }
+   }
+  ],
+  "evidence": [
+   {
+    "tool": "get_attendance_summary",
+    "ref": "e1",
+    "envelope": {
+     "as_of": "2026-11-08T05:34:50.390Z",
+     "detail": {
+      "rows": []
+     },
+     "series": [],
+     "summary": "No attendance on record.",
+     "coverage": "empty",
+     "measurements": [],
+     "coverage_note": null
+    }
+   },
+   {
+    "tool": "get_goals",
+    "ref": "e2",
+    "envelope": {
+     "as_of": "2026-11-08T05:34:50.393Z",
+     "detail": {
+      "goals": [],
+      "visibility": "Goals a coach set or a player shared with the coach, recorded against this team. A goal a player keeps private, or one with no team on it, is not visible here."
+     },
+     "series": [],
+     "summary": "No active goals visible for the team.",
+     "coverage": "empty",
+     "measurements": [],
+     "coverage_note": null
+    }
+   }
+  ],
+  "recorded": {
+   "outcome": "accepted"
+  }
+ }
+}
