@@ -197,13 +197,13 @@ test.describe('phone, the team thread', () => {
     await installSampler(page);
     // The team is pinned now, so its row isn't the first; its route opens it.
     await page.goto('/clubhouse-preview/messages?state=design&view=team', { waitUntil: 'networkidle' });
-    await page.locator('.ch-ms-poll__opt').first().waitFor();
+    await page.locator('.ch-msd-poll__opt').first().waitFor();
     // The thread pins to its end as its photos and poll settle; a test that scrolled before that would be scrolled back.
     await page.waitForTimeout(800);
   });
 
   test('5. Votes sheet: close mid-rise, reopen', async ({ page }) => {
-    const link = page.locator('.ch-ms-poll__link').last();
+    const link = page.locator('.ch-msd-poll__link').last();
     await link.scrollIntoViewIfNeeded();
     const box = (await link.boundingBox())!;
     const open = () => page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
@@ -219,10 +219,10 @@ test.describe('phone, the team thread', () => {
   });
 
   test('8. Vote, then change it 100 ms later', async ({ page }) => {
-    const poll = page.locator('.ch-ms-poll__opts').last();
+    const poll = page.locator('.ch-msd-poll__opts').last();
     await poll.scrollIntoViewIfNeeded();
-    const opts = poll.locator('.ch-ms-poll__opt');
-    await run(page, { 'choice fills': { sel: '.ch-ms-poll__fill' } }, 1100, async () => {
+    const opts = poll.locator('.ch-msd-poll__opt');
+    await run(page, { 'choice fills': { sel: '.ch-msd-poll__fill' } }, 1100, async () => {
       await opts.nth(0).click();
       await page.waitForTimeout(100);
       await opts.nth(1).click();
