@@ -30,7 +30,8 @@ import { config } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { cliGuard } from '../lib/cli-guard.mjs';
-import { applyStreamLine, newStreamState, score } from './ask-eval-score.mjs';
+import { readFileSync } from 'node:fs';
+import { applyStreamLine, citationsFromLedger, citationsFromLog, newStreamState, score } from './ask-eval-score.mjs';
 
 const STAGING_REF = 'ybmwektreyrwjscxlogv';
 const DEMO_TEAM_ID = '6ecdd1a6-63fe-4beb-b094-00118f334163';
@@ -41,11 +42,12 @@ const cli = cliGuard({
   name: 'scripts/coachhelm/ask-eval.mjs',
   summary:
     'Ask CoachHelm Ask ~21 real questions on the local dev server against the staging demo team, score each answer against an expected answer computed from staging data, and write a markdown report. Dry run by default (free); --apply spends model budget.',
-  usage: '[--base-url <url>] [--only <id,id>] [--out <file>] [--cookie <header>] [--player-cookie <header>] [--list]',
+  usage: '[--base-url <url>] [--only <id,id>] [--out <file>] [--server-log <file>] [--cookie <header>] [--player-cookie <header>] [--list]',
   options: [
     ['--base-url <url>', `Dev server (default ${DEFAULT_BASE}). It must run on the staging env and have Clubhouse on for the demo team.`],
     ['--only <ids>', 'Comma-separated question ids (see --list).'],
     ['--out <file>', 'Report path (default: <tmpdir>/ask-eval/ask-eval-<timestamp>.md).'],
+    ['--server-log <file>', "The dev server's log. An accepted turn's citation counts (cited, verified, unresolved, mismatched, invalid) exist only in its v3.chat.stream.citations event; a rejected turn's are in the ledger."],
     ['--cookie <header>', 'Cookie header of a signed-in demo coach (or ASK_EVAL_COOKIE). Skips the magic-link sign-in.'],
     ['--player-cookie <header>', 'Cookie header of a signed-in Cole Bennett (or ASK_EVAL_PLAYER_COOKIE).'],
     ['--list', 'Print the question ids and exit.'],
@@ -370,6 +372,52 @@ function buildQuestions() {
     note: `As of today; Ethan's newest round is ${real.find((r) => r.player_id === ethan.id)?.round_date}.`,
   });
 
+  // - arithmetic over rows: the questions summarise_data exists for (counts, ranks, averages, differences, joins) -
+  const byType = (t) => sep.filter((r) => r.round_type === t);
+  q.push({
+    id: 'sum-rounds-by-type-since-sep1', category: 'count (summarise_data)', viewer: 'coach',
+    ask: 'How many tournament, qualifier and practice rounds has the team played since September 1?',
+    facts: [
+      { label: `tournament ${byType('tournament').length}`, kind: 'number', value: byType('tournament').length },
+      { label: `qualifier ${byType('qualifier').length}`, kind: 'number', value: byType('qualifier').length },
+      { label: `practice ${byType('practice').length}`, kind: 'number', value: byType('practice').length },
+    ],
+    note: 'Recorded rounds, test-flagged ones left out; in-progress practice rounds are included.',
+  });
+  const tp = roster.map((p) => ({ p, n: sep.filter((r) => r.player_id === p.id).reduce((a, r) => a + threePutts(r.id), 0) })).sort((a, b) => b.n - a.n);
+  q.push({
+    id: 'sum-rank-three-putts-since-sep1', category: 'ranking (summarise_data)', viewer: 'coach',
+    ask: 'Rank the players by their total number of three-putts since September 1.',
+    facts: [
+      { label: `${tp[0].p.name} first with ${tp[0].n}`, kind: 'text', value: tp[0].p.name },
+      { label: `their total ${tp[0].n}`, kind: 'number', value: tp[0].n },
+    ],
+    note: 'Counted from the holes. Only Cole Bennett has hole data since Sept 1 (the qualifier rounds carry a score only), so an answer that ranks the others must say they have no data.',
+  });
+  const under75 = roster.map((p) => ({ p, n: sepDone.filter((r) => r.player_id === p.id && r.total_score != null && r.total_score < 75).length })).sort((a, b) => b.n - a.n);
+  q.push({
+    id: 'sum-most-rounds-under-75', category: 'join (summarise_data)', viewer: 'coach',
+    ask: 'Which player has the most finished rounds under 75 since September 1, and how many?',
+    facts: [
+      { label: `${under75[0].p.name} with ${under75[0].n}`, kind: 'text', value: under75[0].p.name },
+      { label: `count ${under75[0].n}`, kind: 'number', value: under75[0].n },
+    ],
+  });
+  const typeAvg = ['tournament', 'qualifier', 'practice'].map((t) => ({ t, v: r2(mean(scores(sepDone.filter((r) => r.round_type === t)))) }));
+  q.push({
+    id: 'sum-average-score-by-type', category: 'window (summarise_data)', viewer: 'coach',
+    ask: "What is the team's average score in tournament, qualifier and practice rounds since September 1?",
+    facts: typeAvg.filter((x) => x.v !== null).map((x) => ({ label: `${x.t} average ${x.v}`, kind: 'number', value: x.v, tol: 0.1 })),
+    note: 'Finished rounds with a score, test-flagged ones left out.',
+  });
+  const owenAug = real.filter((r) => r.player_id === owen.id && r.round_date >= '2026-08-01');
+  const diff = [coleAug.length - owenAug.length, coleAug.filter((r) => r.status === 'completed').length - owenAug.filter((r) => r.status === 'completed').length];
+  q.push({
+    id: 'sum-difference-cole-owen-rounds', category: 'comparison (summarise_data)', viewer: 'coach',
+    ask: 'How many more rounds has Cole Bennett played than Owen Carter since August 1?',
+    facts: [{ label: `difference ${diff[0]} recorded, ${diff[1]} finished`, kind: 'number', anyOf: diff }],
+  });
+
   // - player viewer: Cole Bennett -
   const cole5 = readings(cole.id, 5, (rs) => mean(scores(rs)));
   q.push({
@@ -474,6 +522,8 @@ async function ledgerCost(viewerKey, id, since) {
   return { cost: rows.reduce((a, r) => a + Number(r.cost_usd ?? 0), 0), rows };
 }
 
+const serverLogPath = flag('--server-log');
+const serverLog = serverLogPath ? readFileSync(serverLogPath, 'utf8') : null;
 const report = [];
 for (const question of picked) {
   const cookie = question.viewer === 'player' ? playerCookie : coachCookie;
@@ -484,6 +534,8 @@ for (const question of picked) {
   let note = '';
   let conversationId = null;
   let flagged = [];
+  let tools = [];
+  let citations = null;
   try {
     const res = await fetch(`${base}/api/coachhelm/v3/chat/stream`, {
       method: 'POST',
@@ -497,6 +549,7 @@ for (const question of picked) {
     } else {
       const streamed = await readStream(res);
       text = streamed.text;
+      tools = streamed.tools;
       if (streamed.flag) {
         verdict = 'rejected';
         flagged = streamed.flag.unmatched_tokens ?? [];
@@ -523,6 +576,7 @@ for (const question of picked) {
   try {
     const ledger = await ledgerCost(question.viewer === 'player' ? 'player_id' : 'coach_id', question.viewer === 'player' ? byName('Cole Bennett').id : coach.id, startedAt.toISOString());
     cost = ledger.cost;
+    citations = citationsFromLedger(ledger.rows[0]);
     if (question.viewer === 'player' && ledger.rows[0] && ledger.rows[0].verified === false) {
       verdict = 'rejected';
       flagged = ledger.rows[0].citations?.unmatched_tokens ?? [];
@@ -530,9 +584,10 @@ for (const question of picked) {
   } catch (err) {
     note += ` ledger: ${err instanceof Error ? err.message : err}`;
   }
+  if (!citations && serverLog) citations = citationsFromLog(serverLog, conversationId);
   const scored = verdict === 'error' ? null : score(question, text);
-  report.push({ question, verdict, text, flagged, seconds, cost, scored, note });
-  console.log(`${verdict.padEnd(10)} ${question.id}  correct ${scored?.correct ?? '-'} wrong ${scored?.wrong ?? '-'} missing ${scored?.missing ?? '-'}  ${seconds.toFixed(1)}s  $${cost.toFixed(3)}`);
+  report.push({ question, verdict, text, flagged, seconds, cost, scored, note, tools, citations });
+  console.log(`${verdict.padEnd(10)} ${question.id}  ${citations ? `cites ${citations.cites}/ok ${citations.verified}/mismatch ${citations.mismatched}  ` : ''}correct ${scored?.correct ?? '-'} wrong ${scored?.wrong ?? '-'} missing ${scored?.missing ?? '-'}  ${seconds.toFixed(1)}s  $${cost.toFixed(3)}`);
 }
 
 // ------------------------- report -------------------------
@@ -545,8 +600,9 @@ lines.push(`# Ask evaluation, ${new Date().toISOString()}`, '');
 lines.push(`Server ${base}, staging ${ref}, team ${team.name}. ${report.length} questions, total cost $${report.reduce((a, r) => a + r.cost, 0).toFixed(2)}, total time ${report.reduce((a, r) => a + r.seconds, 0).toFixed(0)}s.`, '');
 lines.push(`Verdicts: accepted ${count((r) => r.verdict === 'accepted')}, rejected ${count((r) => r.verdict === 'rejected')}, incomplete ${count((r) => r.verdict === 'incomplete')}, error ${count((r) => r.verdict === 'error')}.`);
 lines.push(`Fully right answers: ${count((r) => r.scored?.allRight)} of ${report.length}. Wrong rejections (rejected, every fact right): ${wrongRejections.length}. Accepted but not fully right: ${wrongAccepts.length}.`, '');
-lines.push('| Question | Category | Viewer | Verdict | Correct | Wrong | Missing | Time | Cost |', '|---|---|---|---|---|---|---|---|---|');
-for (const r of report) lines.push(`| ${r.question.id} | ${r.question.category} | ${r.question.viewer} | ${r.verdict} | ${r.scored?.correct ?? '-'} | ${r.scored?.wrong ?? '-'} | ${r.scored?.missing ?? '-'} | ${r.seconds.toFixed(1)}s | $${r.cost.toFixed(3)} |`);
+lines.push('| Question | Category | Viewer | Verdict | Correct | Wrong | Missing | Time | Cost | Cited | Verified | Unresolved | Mismatched | Invalid | summarise_data |', '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|');
+for (const r of report) lines.push(`| ${r.question.id} | ${r.question.category} | ${r.question.viewer} | ${r.verdict} | ${r.scored?.correct ?? '-'} | ${r.scored?.wrong ?? '-'} | ${r.scored?.missing ?? '-'} | ${r.seconds.toFixed(1)}s | $${r.cost.toFixed(3)} | ${r.citations ? `${r.citations.cited} | ${r.citations.verified} | ${r.citations.unresolved} | ${r.citations.mismatched} | ${r.citations.invalid}` : 'n/a | n/a | n/a | n/a | n/a'} | ${r.tools.includes('summarise_data') ? 'yes' : 'no'} |`);
+lines.push('', "Citation counts: a rejected turn's are read from the ledger; an accepted turn's only from the server log (pass --server-log), otherwise n/a. Cited = figures a verified cite stood for; Verified, Unresolved, Mismatched and Invalid count the cites by outcome.");
 if (wrongRejections.length) {
   lines.push('', '## Wrong rejections', '');
   for (const r of wrongRejections) lines.push(`- ${r.question.id}: flagged ${JSON.stringify(r.flagged)}`);
@@ -561,6 +617,8 @@ for (const r of report) {
   if (r.question.note) lines.push(`Note: ${r.question.note}`, '');
   if (r.note) lines.push(`Run note: ${r.note}`, '');
   if (r.flagged.length) lines.push(`Audit flagged: ${JSON.stringify(r.flagged)}`, '');
+  if (r.tools.length) lines.push(`Tools: ${r.tools.join(', ')}`, '');
+  if (r.citations) lines.push(`Citations: ${JSON.stringify(r.citations)}`, '');
   for (const x of r.scored?.results ?? []) lines.push(`- ${x.status}${x.optional ? ' (optional)' : ''}: ${x.label}${x.detail ? ` [${x.detail}]` : ''}`);
   lines.push('', '> ' + (r.text.trim().replace(/\n/g, '\n> ') || '(no text)'), '');
 }

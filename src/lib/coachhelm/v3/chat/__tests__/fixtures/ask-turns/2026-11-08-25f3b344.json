@@ -1,0 +1,515 @@
+{
+ "id": "25f3b344",
+ "messageId": "25f3b344-8623-41fd-a15b-afbf4e441e75",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "Which rounds since September 1 had three or more three-putts?",
+  "createdAt": "2026-11-08T05:04:51.250602+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-11-08T05:04:51.250602+00:00",
+   "content": "Which rounds since September 1 had three or more three-putts?",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-11-08T05:05:03.925535+00:00",
+  "status": "complete",
+  "costUsd": null,
+  "content": "Two rounds since September 1 had three or more three-putts. Both were Cole Bennett's, in the same tournament on October 21 at Springfield Country Club:\n\n- He shot 77 with 3 three-putts.\n- He shot 74 with 3 three-putts.\n\nNeither round had more than three. These figures come from the stat lines of the 26 rounds recorded from September 6 to October 25. Three of those 26 have no stat line yet, so their three-putt counts aren't available. Those three rounds were played between October 2 and October 25, so I can't rule out one of them having three or more.",
+  "tools": [
+   {
+    "name": "summarise_data",
+    "input": {
+     "ops": [
+      {
+       "op": "count"
+      },
+      {
+       "op": "list",
+       "limit": 50,
+       "fields": [
+        "id",
+        "round_date",
+        "course_name",
+        "round_type",
+        "total_score",
+        "right_three_putts"
+       ],
+       "order_by": "round_date",
+       "descending": false
+      }
+     ],
+     "join": {
+      "keep": "matched",
+      "with": {
+       "query": {
+        "limit": 200,
+        "table": "golf_round_stats_cache",
+        "columns": [
+         "round_id",
+         "three_putts",
+         "total_putts"
+        ],
+        "filters": []
+       }
+      },
+      "left_key": "id",
+      "right_key": "round_id"
+     },
+     "where": [
+      {
+       "op": "gte",
+       "field": "right_three_putts",
+       "value": 3
+      }
+     ],
+     "source": {
+      "query": {
+       "limit": 200,
+       "order": {
+        "column": "round_date",
+        "ascending": true
+       },
+       "table": "golf_rounds",
+       "columns": [
+        "id",
+        "round_date",
+        "course_name",
+        "round_type",
+        "status",
+        "total_score",
+        "total_putts"
+       ],
+       "filters": [
+        {
+         "op": "gte",
+         "value": "2026-09-01",
+         "column": "round_date"
+        }
+       ]
+      }
+     }
+    }
+   },
+   {
+    "name": "summarise_data",
+    "input": {
+     "ops": [
+      {
+       "op": "count"
+      },
+      {
+       "op": "list",
+       "limit": 50,
+       "fields": [
+        "round_date",
+        "player",
+        "course_name",
+        "round_type",
+        "total_score",
+        "three_putts"
+       ],
+       "order_by": "round_date",
+       "descending": false
+      }
+     ],
+     "join": {
+      "keep": "matched",
+      "with": {
+       "query": {
+        "limit": 200,
+        "table": "golf_round_stats_cache",
+        "columns": [
+         "round_id",
+         "three_putts",
+         "total_putts"
+        ],
+        "filters": []
+       }
+      },
+      "left_key": "id",
+      "right_key": "round_id"
+     },
+     "where": [
+      {
+       "op": "gte",
+       "field": "three_putts",
+       "value": 3
+      }
+     ],
+     "source": {
+      "query": {
+       "limit": 200,
+       "order": {
+        "column": "round_date",
+        "ascending": true
+       },
+       "table": "golf_rounds",
+       "columns": [
+        "id",
+        "round_date",
+        "course_name",
+        "round_type",
+        "status",
+        "total_score",
+        "total_putts"
+       ],
+       "filters": [
+        {
+         "op": "gte",
+         "value": "2026-09-01",
+         "column": "round_date"
+        }
+       ]
+      }
+     }
+    }
+   },
+   {
+    "name": "summarise_data",
+    "input": {
+     "ops": [
+      {
+       "id": "all_rounds",
+       "op": "count"
+      },
+      {
+       "id": "no_stat_line",
+       "op": "count",
+       "where": [
+        {
+         "op": "is_null",
+         "field": "three_putts"
+        }
+       ]
+      },
+      {
+       "id": "two_plus",
+       "op": "count",
+       "where": [
+        {
+         "op": "gte",
+         "field": "three_putts",
+         "value": 2
+        }
+       ]
+      }
+     ],
+     "join": {
+      "keep": "all_left",
+      "with": {
+       "query": {
+        "limit": 200,
+        "table": "golf_round_stats_cache",
+        "columns": [
+         "round_id",
+         "three_putts"
+        ],
+        "filters": []
+       }
+      },
+      "left_key": "id",
+      "right_key": "round_id"
+     },
+     "source": {
+      "query": {
+       "limit": 200,
+       "table": "golf_rounds",
+       "columns": [
+        "id",
+        "round_date",
+        "status",
+        "total_score"
+       ],
+       "filters": [
+        {
+         "op": "gte",
+         "value": "2026-09-01",
+         "column": "round_date"
+        }
+       ]
+      }
+     }
+    }
+   }
+  ],
+  "evidence": [
+   {
+    "tool": "summarise_data",
+    "ref": "e1",
+    "envelope": {
+     "as_of": "2026-11-08T05:04:55.691Z",
+     "detail": {
+      "reason": "There is no field \"right_three_putts\" in these rows. They have: id, round_date, course_name, round_type, status, total_score, total_putts, player_id, player, round_id, three_putts, right_total_putts, right_player_id, right_player.",
+      "refused": true
+     },
+     "series": [],
+     "summary": "That summary was not worked out.",
+     "coverage": "unavailable",
+     "measurements": [],
+     "coverage_note": "There is no field \"right_three_putts\" in these rows. They have: id, round_date, course_name, round_type, status, total_score, total_putts, player_id, player, round_id, three_putts, right_total_putts, right_player_id, right_player."
+    }
+   },
+   {
+    "tool": "summarise_data",
+    "ref": "e2",
+    "envelope": {
+     "as_of": "2026-11-08T05:04:58.334Z",
+     "detail": {
+      "kind": "summary",
+      "rows": [
+       {
+        "player": "Cole Bennett",
+        "round_date": "2026-10-21",
+        "round_type": "tournament",
+        "course_name": "Springfield Country Club",
+        "three_putts": 3,
+        "total_score": 77
+       },
+       {
+        "player": "Cole Bennett",
+        "round_date": "2026-10-21",
+        "round_type": "tournament",
+        "course_name": "Springfield Country Club",
+        "three_putts": 3,
+        "total_score": 74
+       }
+      ],
+      "results": [
+       {
+        "id": "summary:count_1",
+        "op": "count",
+        "value": 2
+       },
+       {
+        "id": "summary:list_2",
+        "op": "list",
+        "rows": 2,
+        "shown": 2
+       }
+      ],
+      "row_count": 2,
+      "rows_used": 2,
+      "matching_rows": 2
+     },
+     "series": [],
+     "summary": "2 figures worked out from 2 rows.",
+     "coverage": "complete",
+     "measurements": [
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:04:58.334Z",
+       "value": 2,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "summary_count",
+       "source": "summarised reads",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "summary:count_1",
+       "window_end": "2026-10-21",
+       "denominator": null,
+       "sample_size": 2,
+       "sample_unit": "rounds",
+       "metric_label": "Rows",
+       "window_start": "2026-10-21",
+       "coverage_note": null
+      },
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:04:58.334Z",
+       "value": 2,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "summary_list",
+       "source": "summarised reads",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "summary:list_2",
+       "window_end": "2026-10-21",
+       "denominator": null,
+       "sample_size": 2,
+       "sample_unit": "rounds",
+       "metric_label": "Rows listed",
+       "window_start": "2026-10-21",
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": null
+    }
+   },
+   {
+    "tool": "summarise_data",
+    "ref": "e3",
+    "envelope": {
+     "as_of": "2026-11-08T05:05:01.684Z",
+     "detail": {
+      "kind": "summary",
+      "results": [
+       {
+        "id": "summary:all_rounds",
+        "op": "count",
+        "value": 26
+       },
+       {
+        "id": "summary:no_stat_line",
+        "op": "count",
+        "value": 3
+       },
+       {
+        "id": "summary:two_plus",
+        "op": "count",
+        "value": 4
+       }
+      ],
+      "rows_used": 26
+     },
+     "series": [],
+     "summary": "3 figures worked out from 26 rows.",
+     "coverage": "complete",
+     "measurements": [
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:05:01.683Z",
+       "value": 26,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "summary_count",
+       "source": "summarised reads",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "summary:all_rounds",
+       "window_end": "2026-10-25",
+       "denominator": null,
+       "sample_size": 26,
+       "sample_unit": "rounds",
+       "metric_label": "Rows",
+       "window_start": "2026-09-06",
+       "coverage_note": null
+      },
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:05:01.683Z",
+       "value": 3,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "summary_count",
+       "source": "summarised reads",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "summary:no_stat_line",
+       "window_end": "2026-10-25",
+       "denominator": null,
+       "sample_size": 3,
+       "sample_unit": "rounds",
+       "metric_label": "Rows",
+       "window_start": "2026-10-02",
+       "coverage_note": null
+      },
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:05:01.684Z",
+       "value": 4,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "summary_count",
+       "source": "summarised reads",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "summary:two_plus",
+       "window_end": "2026-10-21",
+       "denominator": null,
+       "sample_size": 4,
+       "sample_unit": "rounds",
+       "metric_label": "Rows",
+       "window_start": "2026-09-30",
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": null
+    }
+   }
+  ],
+  "recorded": {
+   "outcome": "accepted"
+  }
+ }
+}

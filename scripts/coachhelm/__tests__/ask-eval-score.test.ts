@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error -- plain .mjs helper, scripts/ is outside tsconfig.
-import { applyStreamLine, dateRe, newStreamState, score } from '../ask-eval-score.mjs';
+import { applyStreamLine, citationsFromLedger, citationsFromLog, dateRe, newStreamState, score } from '../ask-eval-score.mjs';
 
 const owen = {
   facts: [
@@ -69,5 +69,27 @@ describe('ask-eval stream reader', () => {
     applyStreamLine(state, 'data: {"type":"data-turn-incomplete","id":"turn-verdict","data":{}}');
     applyStreamLine(state, 'data: {"type":"error","errorText":"boom"}');
     expect(state).toMatchObject({ incomplete: true, error: 'boom' });
+  });
+});
+
+describe('ask-eval tools and citations', () => {
+  it('records each tool a turn called once', () => {
+    const state = newStreamState();
+    for (const t of ['query_team_data', 'summarise_data', 'summarise_data']) applyStreamLine(state, `data: {"type":"tool-input-available","toolCallId":"c","toolName":"${t}","input":{}}`);
+    expect(state.tools).toEqual(['query_team_data', 'summarise_data']);
+  });
+
+  it('reads a rejected turn\'s counts from its ledger row', () => {
+    expect(citationsFromLedger({ citations: { citation_stats: { figures: 9, cited: 5, cites: 6, verified: 5, unresolved: 0, mismatched: 1, invalid: 0 } } })).toMatchObject({ figures: 9, cited: 5, verified: 5, mismatched: 1, fallback_passed: 0 });
+    expect(citationsFromLedger({ citations: null })).toBeNull();
+  });
+
+  it('reads an accepted turn\'s counts from the log line that names its conversation', () => {
+    const log = [
+      '{"msg":"chat/stream: citation coverage","action":"v3.chat.stream.citations","extra":{"figures":7,"cited":4,"cites":5,"verified":4,"unresolved":1,"mismatched":0,"invalid":0,"outcome":"accepted","conversationId":"abc-123"}}',
+      '{"action":"v3.chat.stream.citations","extra":{"verified":9,"conversationId":"other"}}',
+    ].join('\n');
+    expect(citationsFromLog(log, 'abc-123')).toMatchObject({ figures: 7, cited: 4, cites: 5, verified: 4, unresolved: 1, mismatched: 0 });
+    expect(citationsFromLog(log, 'missing')).toBeNull();
   });
 });

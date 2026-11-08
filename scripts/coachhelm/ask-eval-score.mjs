@@ -76,7 +76,7 @@ export function score(question, text) {
 
 
 /** What the answer stream has said so far: the text, and whether the route flagged or broke the turn. */
-export const newStreamState = () => ({ text: '', flag: null, incomplete: false, error: null, evidence: 0 });
+export const newStreamState = () => ({ text: '', flag: null, incomplete: false, error: null, evidence: 0, tools: [] });
 
 /** Fold one server-sent-event line of the UI message stream into the state. Lines that are not `data:` JSON are ignored. */
 export function applyStreamLine(state, rawLine) {
@@ -94,6 +94,35 @@ export function applyStreamLine(state, rawLine) {
   else if (ev.type === 'data-grounding-flag') state.flag = ev.data ?? {};
   else if (ev.type === 'data-turn-incomplete') state.incomplete = true;
   else if (ev.type === 'data-evidence') state.evidence += 1;
+  else if (ev.type === 'tool-input-available' || ev.type === 'tool-input-start') {
+    if (ev.toolName && !state.tools.includes(ev.toolName)) state.tools.push(ev.toolName);
+  }
   else if (ev.type === 'error') state.error = ev.errorText ?? 'stream error';
   return state;
+}
+
+/** The counts the route's citation audit keeps for a turn (`CitationStats` in cites.ts). */
+export const CITATION_KEYS = ['figures', 'cited', 'fallback_passed', 'cites', 'verified', 'unresolved', 'mismatched', 'blocks', 'invalid'];
+
+/** Read the counts from a ledger row's `citations.citation_stats` (written with a rejection), or null. */
+export function citationsFromLedger(row) {
+  const stats = row?.citations?.citation_stats;
+  return stats && typeof stats === 'object' ? Object.fromEntries(CITATION_KEYS.map((k) => [k, Number(stats[k] ?? 0)])) : null;
+}
+
+/**
+ * Read the counts of one conversation from the dev server's log text: the line of the `v3.chat.stream.citations` event that
+ * names the conversation. An accepted turn's counts exist only there (the ledger keeps them for a rejection). The line may be
+ * JSON or key=value text; each key is read wherever it appears on the line. Null when no such line.
+ */
+export function citationsFromLog(logText, conversationId) {
+  if (!logText || !conversationId) return null;
+  const line = logText.split('\n').find((l) => l.includes('v3.chat.stream.citations') && l.includes(conversationId));
+  if (!line) return null;
+  const out = {};
+  for (const key of CITATION_KEYS) {
+    const m = new RegExp(`["']?\\b${key}\\b["']?\\s*[:=]\\s*(\\d+)`).exec(line);
+    out[key] = m ? Number(m[1]) : 0;
+  }
+  return out;
 }

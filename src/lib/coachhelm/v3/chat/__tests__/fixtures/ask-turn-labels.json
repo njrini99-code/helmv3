@@ -146,16 +146,18 @@
  },
  "368318ea": {
   "expect": "accepted",
-  "why": "Known case 2: approach SG -4.16 over 8 rounds (June 9 to September 26), team -2.33, Ethan Park -4.40 the only lower, GIR 61.11% over 144 holes, Division I 60%, team 66.25%, Tour 66%: all match the reads."
+  "why": "Known case 2: approach SG -4.16 over 8 rounds (June 9 to September 26), team -2.33, Ethan Park -4.40 the only lower, GIR 61.11% over 144 holes, Division I 60%, team 66.25%, Tour 66%: all match the reads. The in-progress rank-claims code rejects \"second-lowest approach figure of the seven players\", which is true (6th of 7); the committed audit accepts the answer.",
+  "knownWrongBlock": true
  },
  "8e12f58e": {
   "expect": "accepted",
   "why": "Team SG by area (-3.59, -2.54, -1.21, +0.46) over 12 rounds from Aug 25 to Oct 21; \"about six strokes\" is 3.59 + 2.54."
  },
  "923f2d30": {
-  "expect": "accepted",
-  "why": "Every figure is supported by this turn's reads: -4.16 over 8 rounds, team -2.33, \"7th of 7\" and the 36th percentile are what the benchmark read's comparison prints (place_of 7, place_percent 0).",
-  "answerWrong": "Says Owen Carter \"ranks 7th of 7\" on approach. In his last-10 window Ethan Park (-4.40) is lower, so he is 6th of 7. The comparison is computed on all recorded rounds (-3.83) but attached to the last-10 measurement, so the tool gave the wrong place: the audit cannot be faulted, the read can."
+  "expect": "rejected",
+  "why": "Says Owen Carter \"ranks 7th of 7\" on approach; Ethan Park (-4.40) is lower in his last-10 window, so he is 6th of 7. The 7th is what the benchmark read's comparison prints (place_of 7, percent 0), computed on all recorded rounds (-3.83) and attached to the last-10 measurement.",
+  "knownWrongAccept": true,
+  "evidenceHeldWrong": "The comparison's place is for a different window than the measurement it is attached to."
  },
  "cc9ec64e": {
   "expect": "incomplete",
@@ -172,6 +174,173 @@
  "fb4a0134": {
   "expect": "accepted",
   "why": "Nothing on the calendar for the next eight days, \"through Sunday, November 15\": the read covered 8 days from Saturday November 7, so the date is derived and correct; tasks and due dates match the read.",
+  "knownWrongBlock": true
+ },
+ "0022b134": {
+  "expect": "rejected",
+  "why": "Says Owen's approach SG is \"last of 7\" (-4.16): Ethan Park (-4.40) is lower, so 6th of 7.",
+  "knownWrongAccept": true,
+  "evidenceHeldWrong": "Same all-rounds place attached to a last-10 measurement."
+ },
+ "006dd9be": {
+  "expect": "accepted",
+  "why": "Greeting; no figures."
+ },
+ "c36b6702": {
+  "expect": "accepted",
+  "why": "Greeting; no figures."
+ },
+ "e97a9217": {
+  "expect": "accepted",
+  "why": "Greeting; no figures."
+ },
+ "f1551e99": {
+  "expect": "accepted",
+  "why": "Greeting; no figures."
+ },
+ "fa1af921": {
+  "expect": "accepted",
+  "why": "Greeting; no figures."
+ },
+ "6966fda6": {
+  "expect": "accepted",
+  "why": "Capabilities list; \"8 players\" is the roster."
+ },
+ "13215588": {
+  "expect": "rejected",
+  "why": "Says 22 of the 26 rounds since Sept 1 are completed with a three-putt count; the truth is 23 completed and 3 in progress. The rest (74 and 77, 37 putts each, the 73 on 30 putts) is right. The rejection of \"22\" is correct."
+ },
+ "199e97ff": {
+  "expect": "accepted",
+  "why": "Putting: Ethan -1.92 and Owen -2.06 SG putting, Owen 31.88 putts, Tyler 32.29, Ethan 32.5 match the reads; the team average -3.01 is the benchmark read's, the window mean is -3.03."
+ },
+ "25f3b344": {
+  "expect": "accepted",
+  "why": "74 and 77 with 3 three-putts each, 26 rounds from Sept 6 to Oct 25, 3 without a stat line: match the reads."
+ },
+ "27ef9b7e": {
+  "expect": "accepted",
+  "why": "Top three by scoring average this season: Mason 72, Owen 72.5, Ethan 73, Jackson 73.5, Cole 77.46 over 13 rounds, 25 counted rounds: all match the rounds."
+ },
+ "44e916c1": {
+  "expect": "accepted",
+  "why": "25 counted rounds since August 1, Cole 13 and six others 2 each: matches the rounds."
+ },
+ "4c95b791": {
+  "expect": "accepted",
+  "why": "Case 3: no attendance, 5 goals for Cole (2) and Owen (3), 127% and 89%, 15.3 and 15.9 against targets 18 and 15: match the reads."
+ },
+ "505a8976": {
+  "expect": "rejected",
+  "why": "Says Owen's approach is \"the lowest on the team\" and \"last of 7\" (-4.16): Ethan Park (-4.40) is lower.",
+  "knownWrongAccept": true,
+  "evidenceHeldWrong": "Same all-rounds place attached to a last-10 measurement."
+ },
+ "5474d144": {
+  "expect": "rejected",
+  "why": "Says Owen is \"seventh of seven\" and \"lowest on the team\" on approach SG: he is 6th of 7.",
+  "knownWrongAccept": true,
+  "evidenceHeldWrong": "Same all-rounds place attached to a last-10 measurement."
+ },
+ "69fbff01": {
+  "expect": "rejected",
+  "why": "Says \"last of 7\" on approach SG (Ethan Park is lower) and puts him \"at the 17th percentile of 7\".",
+  "knownWrongAccept": true,
+  "evidenceHeldWrong": "Same all-rounds place attached to a last-10 measurement."
+ },
+ "6a5dfc33": {
+  "expect": "rejected",
+  "why": "Says the 77 round had 35 putts; it had 37 (the 74 also 37, the 73 30). Everything else (74 and 77, 26 rounds, 3 in progress, 23 before Sept 1) is right.",
+  "knownWrongAccept": true
+ },
+ "6a787fb4": {
+  "expect": "rejected",
+  "why": "Says Owen is \"7th of the 7 players\" and \"the weakest on the team\" on approach SG. Ethan Park (-4.40) is lower, so he is 6th of 7. Parent-supplied wrong accept.",
+  "knownWrongAccept": true,
+  "evidenceHeldWrong": "Same all-rounds place attached to a last-10 measurement."
+ },
+ "6da3a6b2": {
+  "expect": "rejected",
+  "why": "Says \"8 of those came in two rounds on Oct 21\"; two rounds with 3 three-putts each make 6. The 10 in total (0+3+3+2+2) and the per-round figures are right. Parent-supplied wrong accept.",
+  "knownWrongAccept": true
+ },
+ "7c3ff223": {
+  "expect": "accepted",
+  "why": "No round since Oct 25 (two weeks), Cole's Oct 21, six players' Sept 26: match the rounds."
+ },
+ "916d2d99": {
+  "expect": "accepted",
+  "why": "Nothing on the calendar for Nov 8 to Nov 15 and five overdue tasks with their due dates: match the reads."
+ },
+ "95218c6c": {
+  "expect": "accepted",
+  "why": "Nothing on the calendar for Nov 8 to Nov 15 and five overdue tasks with their due dates: match the reads."
+ },
+ "d81e1e18": {
+  "expect": "accepted",
+  "why": "Nothing on the calendar for Nov 8 to Nov 15 and five overdue tasks with their due dates: match the reads."
+ },
+ "e3875884": {
+  "expect": "accepted",
+  "why": "Nothing on the calendar for Nov 8 to Nov 15 and five overdue tasks with their due dates: match the reads."
+ },
+ "966a565b": {
+  "expect": "rejected",
+  "why": "Calls Owen \"the team's strongest putter at -2.06\" (Ethan Park is -1.92) and ranks him \"last of 7\" on approach (6th).",
+  "knownWrongAccept": true,
+  "evidenceHeldWrong": "The last-of-7 place is the all-rounds place attached to a last-10 measurement."
+ },
+ "a2d53134": {
+  "expect": "accepted",
+  "why": "Owen 6th of 7 on approach SG, -4.16, only Ethan Park lower at -4.40, mean of the seven -3.09, gap 1.07, and the ranking read's own -2.33 named as not matching: all true. The audit rejects \"-2.33\", which the answer states about the read.",
+  "knownWrongBlock": true
+ },
+ "b286e525": {
+  "expect": "rejected",
+  "why": "Says Owen's approach is \"the lowest place on the team\": Ethan Park is lower.",
+  "knownWrongAccept": true,
+  "evidenceHeldWrong": "Same all-rounds place attached to a last-10 measurement."
+ },
+ "b5b0f6c3": {
+  "expect": "accepted",
+  "why": "Team SG by area: season read thin (11 rounds by one player), last-10 read approach -3.09, putting -3.03, tee 0.4, 55 rounds by 7 players: match the reads."
+ },
+ "b9b74abc": {
+  "expect": "rejected",
+  "why": "Says \"ranks last of 7\" and \"the weakest on the team\" on approach SG: he is 6th of 7.",
+  "knownWrongAccept": true,
+  "evidenceHeldWrong": "Same all-rounds place attached to a last-10 measurement."
+ },
+ "d8b1d11e": {
+  "expect": "accepted",
+  "why": "Proximity and GIR figures, the 74th percentile among 78 college players (place_percent 74, place_of 78 in the read), 22nd and 13th: all in the reads. The audit rejects \"74\" and \"78\", which are the read's own place figures.",
+  "knownWrongBlock": true
+ },
+ "e2a04053": {
+  "expect": "accepted",
+  "why": "74 and 77 (37 putts each), 26 rounds, 3 in progress, 23 earlier rounds with three or more: match the reads."
+ },
+ "fc72cf38": {
+  "expect": "rejected",
+  "why": "Says \"seven other rounds are the other players' qualifier rounds on Sept 25 and 26\"; six players have two each, 12. The 74 and 77, 26 rounds and Cole's three in-progress rounds are right.",
+  "knownWrongAccept": true
+ },
+ "cite-verified": {
+  "expect": "accepted",
+  "why": "The cite -4.16 for Owen in e3 is confirmed by the read. (Same text as 368318ea: the in-progress rank-claims code rejects its true \"second-lowest\" sentence.)",
+  "knownWrongBlock": true
+ },
+ "cite-mismatch-subject": {
+  "expect": "rejected",
+  "why": "The cite attributes -4.16 to Cole Bennett in the ranking read, which says -3.60: a cite the read contradicts is rejected even though the text heuristics pass the figure."
+ },
+ "cite-mismatch-window": {
+  "expect": "rejected",
+  "why": "The cite names a window the read does not have."
+ },
+ "cite-unresolved": {
+  "expect": "accepted",
+  "why": "An unresolved cite adds nothing and removes nothing: the figure is judged by the text heuristics, which pass it. (Same text as 368318ea: the in-progress rank-claims code rejects its true \"second-lowest\" sentence.)",
   "knownWrongBlock": true
  }
 }

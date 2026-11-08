@@ -36,7 +36,8 @@ interface RealResult {
   flagged: string[];
 }
 const real: RealResult[] = fixtures.map((fixture) => {
-  const label = labels[fixture.id] as AskLabel;
+  // A missing label fails the first test below; a placeholder keeps the rest of the module (and ASK_REPLAY_DUMP) running.
+  const label: AskLabel = labels[fixture.id] ?? { expect: 'incomplete', why: 'UNLABELLED' };
   const verdict = replayVerdict(fixture);
   return {
     fixture,
@@ -46,12 +47,15 @@ const real: RealResult[] = fixtures.map((fixture) => {
   };
 });
 
+/** Stored turns only: the hand-written citation fixtures are asserted below but belong in no rate. */
+const stored = real.filter((r) => !r.fixture.authored);
+
 interface CorruptionResult {
   corruption: Corruption;
   actual: 'accepted' | 'rejected';
 }
 // A corruption is only attributable when the clean answer passes: start from labelled-true answers the audit accepts.
-const corruptions: CorruptionResult[] = real
+const corruptions: CorruptionResult[] = stored
   .filter((r) => r.label.expect === 'accepted' && replayVerdict(r.fixture, { text: answerText(r.fixture) }).outcome === 'accepted')
   .flatMap((r) => corruptionsFor(r.fixture))
   .map((corruption) => {
@@ -62,8 +66,8 @@ const corruptions: CorruptionResult[] = real
 const pct = (n: number, d: number) => (d === 0 ? 'n/a' : `${((100 * n) / d).toFixed(1)}%`);
 
 function summary() {
-  const trueAnswers = real.filter((r) => r.label.expect === 'accepted');
-  const falseAnswers = real.filter((r) => r.label.expect === 'rejected');
+  const trueAnswers = stored.filter((r) => r.label.expect === 'accepted');
+  const falseAnswers = stored.filter((r) => r.label.expect === 'rejected');
   const wrongBlocks = trueAnswers.filter((r) => r.actual === 'rejected');
   const wrongAccepts = falseAnswers.filter((r) => r.actual === 'accepted');
   const kinds: CorruptionKind[] = ['changed-figure', 'moved-figure', 'figure-to-no-data-player', 'invented-date', 'shifted-date-in-window'];
@@ -76,7 +80,7 @@ function summary() {
   const acceptedCorruptions = corruptions.filter((c) => c.actual === 'accepted');
   return {
     fixtures: fixtures.length,
-    answersWrongButSupported: real.filter((r) => r.label.answerWrong).map((r) => r.fixture.id),
+    answersWithWrongEvidence: stored.filter((r) => r.label.evidenceHeldWrong).map((r) => r.fixture.id),
     wrongBlock: { rate: pct(wrongBlocks.length, trueAnswers.length), count: wrongBlocks.length, of: trueAnswers.length, fixtures: wrongBlocks.map((r) => ({ id: r.fixture.id, flagged: r.flagged, question: r.fixture.userMessage.content.slice(0, 70) })) },
     wrongAcceptReal: { rate: pct(wrongAccepts.length, falseAnswers.length), count: wrongAccepts.length, of: falseAnswers.length, fixtures: wrongAccepts.map((r) => r.fixture.id) },
     wrongAcceptConstructed: { rate: pct(acceptedCorruptions.length, corruptions.length), count: acceptedCorruptions.length, of: corruptions.length, byKind, ids: acceptedCorruptions.map((c) => `${c.corruption.id} (${c.corruption.detail})`) },
@@ -84,15 +88,22 @@ function summary() {
 }
 
 afterAll(() => {
+  // ASK_REPLAY_DUMP=<file>: every stored turn with its question, answer and verdict, for labelling a new export.
+  if (process.env.ASK_REPLAY_DUMP) {
+    writeFileSync(
+      process.env.ASK_REPLAY_DUMP,
+      real.map((r) => `### ${r.fixture.id} ${r.fixture.turn.createdAt.slice(0, 16)} recorded=${r.fixture.turn.recorded.outcome}:${r.fixture.turn.recorded.reason ?? ''}${JSON.stringify(r.fixture.turn.recorded.unmatchedTokens ?? [])} now=${r.actual}${JSON.stringify(r.flagged)} label=${labels[r.fixture.id]?.expect ?? 'NONE'}\nQ: ${r.fixture.userMessage.content.replace(/\n/g, ' ')}\nA: ${r.fixture.turn.content}\n`).join('\n'),
+    );
+  }
   const s = summary();
   const lines = [
     '',
-    `Ask replay: ${s.fixtures} stored turns (${real.filter((r) => r.label.expect === 'incomplete').length} incomplete, in no rate), ${corruptions.length} corrupted copies${STRICT ? ' (strict)' : ''}`,
+    `Ask replay: ${stored.length} stored turns (${stored.filter((r) => r.label.expect === 'incomplete').length} incomplete, in no rate) + ${real.length - stored.length} citation fixtures, ${corruptions.length} corrupted copies${STRICT ? ' (strict)' : ''}`,
     '  constructed corruptions are the headline; the stored false-answer set is small',
     `  wrong-block rate (true answers rejected):          ${s.wrongBlock.rate}  (${s.wrongBlock.count}/${s.wrongBlock.of})  ${s.wrongBlock.fixtures.map((f) => `${f.id}[${f.flagged.join(' ')}]`).join(' ')}`,
     `  wrong-accept rate, stored (false answers accepted): ${s.wrongAcceptReal.rate}  (${s.wrongAcceptReal.count}/${s.wrongAcceptReal.of})  ${s.wrongAcceptReal.fixtures.join(' ')}`,
     `  wrong-accept rate, constructed corruptions:         ${s.wrongAcceptConstructed.rate}  (${s.wrongAcceptConstructed.count}/${s.wrongAcceptConstructed.of})\n      by kind: ${Object.entries(s.wrongAcceptConstructed.byKind).map(([k, v]) => `${k} ${v.accepted}/${v.total}`).join(', ')}`,
-    `  answers supported by their reads but wrong (a tool gave bad data): ${s.answersWrongButSupported.join(' ') || 'none'}`,
+    `  false answers whose own reads held the wrong data: ${s.answersWithWrongEvidence.join(' ') || 'none'}`,
     ...s.wrongAcceptConstructed.ids.map((id) => `      accepted: ${id}`),
   ];
   console.log(lines.join('\n'));
@@ -197,7 +208,8 @@ describe('Ask replay: matches the route', () => {
       } else piece += ch;
     }
     if (piece.trim()) keys.push(piece);
-    const names = keys.map((k) => /^\s*([A-Za-z_]\w*)/.exec(k)?.[1]).filter(Boolean);
+    // A conditional spread (`...(askV2 ? { cites: ... } : {})`) contributes the key inside its object.
+    const names = keys.map((k) => (/^\s*\.\.\./.test(k) ? /\{\s*([A-Za-z_]\w*)\s*:/.exec(k)?.[1] : /^\s*([A-Za-z_]\w*)/.exec(k)?.[1])).filter(Boolean);
     expect(names, 'route.ts changed what it passes computeTurnVerdict: update replayVerdict in ask-replay-harness.ts and VERDICT_ARGS').toEqual([...VERDICT_ARGS]);
   });
 });
