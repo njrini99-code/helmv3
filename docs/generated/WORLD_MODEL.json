@@ -4212,7 +4212,7 @@
       },
       {
         "id": "get_golf_conversations_with_details",
-        "definedIn": "supabase/migrations/20261008160000_golf_conversation_hidden_at.sql"
+        "definedIn": "supabase/migrations/20261107090200_golf_conversation_list_rpc_privacy.sql"
       },
       {
         "id": "get_my_baseball_player_id",
@@ -4311,6 +4311,10 @@
         "definedIn": "supabase/migrations/20260807030000_golf_conversation_participants_tenant_isolation.sql"
       },
       {
+        "id": "golf_conversations_identity_guard",
+        "definedIn": "supabase/migrations/20261107090100_golf_conversations_messages_column_grants.sql"
+      },
+      {
         "id": "golf_courses_set_normalized_name",
         "definedIn": "supabase/migrations/20260613190000_course_library_normalize_unique.sql"
       },
@@ -4363,6 +4367,10 @@
         "definedIn": "supabase/migrations/20261025010000_golf_conversation_read_marks.sql"
       },
       {
+        "id": "golf_messages_identity_guard",
+        "definedIn": "supabase/migrations/20261107090100_golf_conversations_messages_column_grants.sql"
+      },
+      {
         "id": "golf_messages_notify_anyway_guard",
         "definedIn": "supabase/migrations/20261025070300_golf_messages_notify_anyway.sql"
       },
@@ -4383,6 +4391,10 @@
         "definedIn": "supabase/migrations/20260613160100_course_library_normalize_fix.sql"
       },
       {
+        "id": "golf_participants_identity_guard",
+        "definedIn": "supabase/migrations/20261107090000_golf_participants_column_grants.sql"
+      },
+      {
         "id": "golf_pin_conversation",
         "definedIn": "supabase/migrations/20261031150000_golf_conversation_pins.sql"
       },
@@ -4393,6 +4405,10 @@
       {
         "id": "golf_player_invited_to_event",
         "definedIn": "supabase/migrations/20261018120000_golf_events_meetings_invitees_only.sql"
+      },
+      {
+        "id": "golf_player_next_class",
+        "definedIn": "supabase/migrations/20261107090400_golf_player_next_class.sql"
       },
       {
         "id": "golf_player_on_course",
@@ -4551,6 +4567,10 @@
         "definedIn": "supabase/migrations/20261025070100_golf_class_blocks_functions.sql"
       },
       {
+        "id": "golf_search_messages",
+        "definedIn": "supabase/migrations/20261107090500_golf_search_messages.sql"
+      },
+      {
         "id": "golf_season_start",
         "definedIn": "supabase/migrations/20261024151000_golf_player_standing_season.sql"
       },
@@ -4641,6 +4661,10 @@
       {
         "id": "golf_tournament_update_round",
         "definedIn": "supabase/migrations/20261025040000_golf_tournament_from_calendar.sql"
+      },
+      {
+        "id": "golf_typing_topic_allowed",
+        "definedIn": "supabase/migrations/20261107090300_golf_typing_private_topic.sql"
       },
       {
         "id": "golf_user_in_conversation_team_audience",
