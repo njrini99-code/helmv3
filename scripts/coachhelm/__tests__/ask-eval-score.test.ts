@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error -- plain .mjs helper, scripts/ is outside tsconfig.
-import { applyStreamLine, captureFixture, citationsFromLedger, citationsFromLog, dateRe, newStreamState, score } from '../ask-eval-score.mjs';
+import { applyStreamLine, captureFixture, citationsFromLedger, citationsFromLog, citesFromLog, dateRe, newStreamState, score } from '../ask-eval-score.mjs';
 
 const owen = {
   facts: [
@@ -103,5 +103,23 @@ describe('ask-eval capture', () => {
     const f = captureFixture({ id: 'player-x', surface: 'player', team: 'T', timezone: 'America/New_York', roster: [{ id: 'p', name: 'A B', first_name: 'A', last_name: 'B' }], ask: 'q', askedAt: '2026-11-08T00:00:00Z', answeredAt: '2026-11-08T00:00:30Z', text: state.text, state, verdict: 'accepted', flagged: [], cost: 0.04, base: 'http://localhost:3101' });
     expect(f).toMatchObject({ surface: 'player', userMessage: { content: 'q' }, turn: { content: '73.0', status: 'complete', recorded: { outcome: 'accepted' }, tools: [{ name: 'get_player_metrics', input: { window: 'last5' } }], evidence: [{ tool: 'get_player_metrics', ref: 'e1' }] } });
     expect(captureFixture({ id: 'c', surface: 'coach', team: 'T', timezone: 'z', roster: [], ask: 'q', askedAt: 'a', answeredAt: 'b', text: '', state, verdict: 'rejected', flagged: ['23'], base: 'x' }).turn.recorded).toMatchObject({ outcome: 'rejected', reason: 'ungrounded_claims', unmatchedTokens: ['23'] });
+  });
+});
+
+describe('ask-eval cites from the dev log', () => {
+  const log = [
+    'noise',
+    '[ask:cites] {"surface":"coach","says":"Owen is at -4.16 per round over his last ten rounds, and mor","cites":[["-4.16","e3","sg_approach","8091da4b"],["-2.33","e3","sg_approach","team"],["lost","e3","k","8091da4b","c"]]}',
+    '[ask:cites] {"surface":"player","says":"Other answer","cites":[["1","e1","k","team"]]}',
+  ].join('\n');
+  it('matches a line to the answer by its first 60 characters, whitespace collapsed', () => {
+    const cites = citesFromLog(log, 'Owen is at -4.16 per round\nover his last ten rounds, and more text after sixty chars ...', 'coach');
+    expect(cites).toEqual([
+      { v: '-4.16', ref: 'e3', key: 'sg_approach', subject: '8091da4b' },
+      { v: '-2.33', ref: 'e3', key: 'sg_approach', subject: 'team' },
+      { v: 'lost', ref: 'e3', key: 'k', subject: '8091da4b', c: 1 },
+    ]);
+    expect(citesFromLog(log, 'Something else entirely', 'coach')).toBeNull();
+    expect(citesFromLog(log, 'Owen is at -4.16 per round over his last ten rounds, and more text after sixty chars ...', 'player')).toBeNull();
   });
 });

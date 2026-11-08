@@ -31,7 +31,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { cliGuard } from '../lib/cli-guard.mjs';
 import { readFileSync } from 'node:fs';
-import { applyStreamLine, captureFixture, citationsFromLedger, citationsFromLog, newStreamState, score } from './ask-eval-score.mjs';
+import { applyStreamLine, captureFixture, citationsFromLedger, citationsFromLog, citesFromLog, newStreamState, score } from './ask-eval-score.mjs';
 
 const STAGING_REF = 'ybmwektreyrwjscxlogv';
 const DEMO_TEAM_ID = '6ecdd1a6-63fe-4beb-b094-00118f334163';
@@ -525,7 +525,8 @@ async function ledgerCost(viewerKey, id, since) {
 
 const captureDir = flag('--capture-dir');
 const serverLogPath = flag('--server-log');
-const serverLog = serverLogPath ? readFileSync(serverLogPath, 'utf8') : null;
+// Read again for every question: the dev server keeps appending to it.
+const readServerLog = () => (serverLogPath ? readFileSync(serverLogPath, 'utf8') : null);
 const report = [];
 for (const question of picked) {
   const cookie = question.viewer === 'player' ? playerCookie : coachCookie;
@@ -588,6 +589,7 @@ for (const question of picked) {
   } catch (err) {
     note += ` ledger: ${err instanceof Error ? err.message : err}`;
   }
+  const serverLog = readServerLog();
   if (!citations && serverLog) citations = citationsFromLog(serverLog, conversationId);
   const scored = verdict === 'error' ? null : score(question, text);
   report.push({ question, verdict, text, flagged, seconds, cost, scored, note, tools, citations });
@@ -597,6 +599,7 @@ for (const question of picked) {
       id: `${question.viewer}-${question.id}`, surface: question.viewer, team: team.name, timezone: team.timezone,
       roster: who.map((p) => ({ id: p.id, name: p.name, first_name: p.first, last_name: p.name.slice(p.first.length).trim() || null })),
       ask: question.ask, askedAt: startedAt.toISOString(), answeredAt: new Date().toISOString(), text, state, verdict, flagged, cost, base,
+      cites: serverLog ? citesFromLog(serverLog, text, question.viewer) : null,
     });
     mkdirSync(captureDir, { recursive: true });
     writeFileSync(join(captureDir, `${fixture.id}.json`), `${JSON.stringify(fixture, null, 1)}\n`);

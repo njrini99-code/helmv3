@@ -1,0 +1,377 @@
+{
+ "id": "ec49170e",
+ "messageId": "ec49170e-0b97-4753-b41b-3ab127de747e",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "Show attendance and goal progress for the whole team.",
+  "createdAt": "2026-11-08T06:04:03.657541+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-11-08T06:04:03.657541+00:00",
+   "content": "Show attendance and goal progress for the whole team.",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-11-08T06:04:16.031909+00:00",
+  "status": "complete",
+  "costUsd": null,
+  "content": "There is no attendance on record for any of the 8 players, so I can't show attendance. Two reads came back empty. That means no attendance has been logged, not that anyone has 0%.\n\nThere are also no active goals for the team. The full goal history has 5 goals, all closed, and all belong to Cole Bennett and Owen Carter. The other six players have no goals visible to me. A goal a player keeps private doesn't show here.\n\nCole Bennett (both goals ended 10 July 2026):\n- **Wedge distance control:** achieved. Proximity went from a baseline of 28 to 15.29 against a target of 18.\n- **Short putting from 3 to 5 feet:** missed. The make rate went from 82% to 46.5% against a target of 92%.\n\nOwen Carter (his goals ended between 14 and 20 July 2026):\n- **Approach dispersion:** missed, but close. Proximity went from 24 to 15.95 against a target of 15.\n- **5 to 10 foot make rate:** missed. The make rate went from 58% to 34.5% against a target of 75%.\n- **Short-side scrambling from rough:** missed. The baseline was 35% and the target 55%. No current value was recorded, so it can't be scored.\n\nAudit Testplayer has no recorded rounds, so none of the other stats can cover that player either. Since all five goals ended in July, the team currently has nothing being tracked. If you want, I can draft goals for the players who have none.",
+  "tools": [
+   {
+    "name": "get_attendance_summary",
+    "input": {}
+   },
+   {
+    "name": "get_goals",
+    "input": {
+     "limit": 40,
+     "state": "active"
+    }
+   },
+   {
+    "name": "get_team_overview",
+    "input": {}
+   },
+   {
+    "name": "get_goals",
+    "input": {
+     "limit": 40,
+     "state": "all"
+    }
+   },
+   {
+    "name": "query_team_data",
+    "input": {
+     "limit": 50,
+     "table": "golf_attendance_summary",
+     "columns": [
+      "period_start_date",
+      "period_end_date",
+      "total_events",
+      "attended_count",
+      "attendance_percentage"
+     ],
+     "filters": []
+    }
+   }
+  ],
+  "evidence": [
+   {
+    "tool": "get_goals",
+    "ref": "e1",
+    "envelope": {
+     "as_of": "2026-11-08T06:04:06.069Z",
+     "detail": {
+      "goals": [],
+      "visibility": "Goals a coach set or a player shared with the coach, recorded against this team. A goal a player keeps private, or one with no team on it, is not visible here."
+     },
+     "series": [],
+     "summary": "No active goals visible for the team.",
+     "coverage": "empty",
+     "measurements": [],
+     "coverage_note": null
+    }
+   },
+   {
+    "tool": "get_team_overview",
+    "ref": "e2",
+    "envelope": {
+     "as_of": "2026-11-08T06:04:06.071Z",
+     "detail": {
+      "players": [
+       {
+        "name": "Cole Bennett",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "last_round_date": "2026-10-21",
+        "rounds_recorded": 37,
+        "last_round_holes": 18,
+        "last_round_to_par": 2
+       },
+       {
+        "name": "Owen Carter",
+        "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 14,
+        "last_round_holes": 18,
+        "last_round_to_par": -1
+       },
+       {
+        "name": "Ethan Park",
+        "player_id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 15,
+        "last_round_holes": 18,
+        "last_round_to_par": 1
+       },
+       {
+        "name": "Mason Rivers",
+        "player_id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 14,
+        "last_round_holes": 18,
+        "last_round_to_par": 0
+       },
+       {
+        "name": "Jackson Hale",
+        "player_id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 17,
+        "last_round_holes": 18,
+        "last_round_to_par": 0
+       },
+       {
+        "name": "Audit Testplayer",
+        "player_id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+        "last_round_date": null,
+        "rounds_recorded": 0,
+        "last_round_holes": null,
+        "last_round_to_par": null
+       },
+       {
+        "name": "Dylan Brooks",
+        "player_id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 14,
+        "last_round_holes": 18,
+        "last_round_to_par": 2
+       },
+       {
+        "name": "Tyler Hayes",
+        "player_id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 13,
+        "last_round_holes": 18,
+        "last_round_to_par": 5
+       }
+      ],
+      "timezone": "America/New_York",
+      "team_name": "Demo University Golf",
+      "latest_round_date": "2026-10-21",
+      "profiles_resolved": 8,
+      "active_roster_count": 8,
+      "players_with_rounds": 7,
+      "unresolved_player_ids": []
+     },
+     "series": [],
+     "summary": "Demo University Golf has 8 active players.",
+     "coverage": "partial",
+     "measurements": [
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T06:04:06.071Z",
+       "value": 8,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "count_active_team_members",
+       "source": "roster",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "active_roster_count",
+       "window_end": null,
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "players",
+       "metric_label": "Active roster",
+       "window_start": null,
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": "1 player has no recorded rounds (Audit Testplayer)"
+    }
+   },
+   {
+    "tool": "get_attendance_summary",
+    "ref": "e3",
+    "envelope": {
+     "as_of": "2026-11-08T06:04:06.170Z",
+     "detail": {
+      "rows": []
+     },
+     "series": [],
+     "summary": "No attendance on record.",
+     "coverage": "empty",
+     "measurements": [],
+     "coverage_note": null
+    }
+   },
+   {
+    "tool": "query_team_data",
+    "ref": "e4",
+    "envelope": {
+     "as_of": "2026-11-08T06:04:07.970Z",
+     "detail": {
+      "rows": [],
+      "limit": 50,
+      "row_count": 0
+     },
+     "series": [],
+     "summary": "No attendance found.",
+     "coverage": "empty",
+     "measurements": [],
+     "coverage_note": null
+    }
+   },
+   {
+    "tool": "get_goals",
+    "ref": "e5",
+    "envelope": {
+     "as_of": "2026-11-08T06:04:07.972Z",
+     "detail": {
+      "goals": [
+       {
+        "state": "achieved",
+        "title": "Wedge Distance Control (80-120 yards)",
+        "player": "Cole Bennett",
+        "set_by": "manual",
+        "ends_at": "2026-07-10T23:18:27.289064+00:00",
+        "goal_id": "0f4887e0-01ad-48fd-8ee5-e44ca5a45298",
+        "category": "approach",
+        "metric_id": "approach_proximity_50_125ft",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "started_at": "2026-04-11T23:18:27.289064+00:00",
+        "target_value": 18,
+        "current_value": 15.285714285714286,
+        "baseline_value": 28,
+        "progress_percent": 127
+       },
+       {
+        "state": "missed",
+        "title": "Short Putting Consistency (3-6 feet)",
+        "player": "Cole Bennett",
+        "set_by": "manual",
+        "ends_at": "2026-07-10T23:18:27.289064+00:00",
+        "goal_id": "62cb5fc4-2bc9-49ec-9f6d-83bbe41358d4",
+        "category": "putting",
+        "metric_id": "putts_made_3_5ft_pct",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "started_at": "2026-04-11T23:18:27.289064+00:00",
+        "target_value": 92,
+        "current_value": 46.5,
+        "baseline_value": 82,
+        "progress_percent": -355
+       },
+       {
+        "state": "missed",
+        "title": "Tighten 150–180y approach dispersion",
+        "player": "Owen Carter",
+        "set_by": "manual",
+        "ends_at": "2026-07-14T14:23:39.074461+00:00",
+        "goal_id": "5dffd036-f2aa-4a1b-8ffe-d19db5f12f0e",
+        "category": "approach",
+        "metric_id": "approach_proximity_50_125ft",
+        "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "started_at": "2026-04-15T14:23:39.074461+00:00",
+        "target_value": 15,
+        "current_value": 15.94915254237288,
+        "baseline_value": 24,
+        "progress_percent": 89
+       },
+       {
+        "state": "missed",
+        "title": "Rebuild 5–10 ft make rate",
+        "player": "Owen Carter",
+        "set_by": "manual",
+        "ends_at": "2026-07-17T14:23:39.074461+00:00",
+        "goal_id": "ae71ede9-4528-4710-ae02-0bcbd01ce99d",
+        "category": "putting",
+        "metric_id": "putts_made_5_10ft_pct",
+        "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "started_at": "2026-04-18T14:23:39.074461+00:00",
+        "target_value": 75,
+        "current_value": 34.5,
+        "baseline_value": 58,
+        "progress_percent": -138
+       },
+       {
+        "state": "missed",
+        "title": "Improve short-side scrambling",
+        "player": "Owen Carter",
+        "set_by": "manual",
+        "ends_at": "2026-07-20T14:23:39.074461+00:00",
+        "goal_id": "d96797ea-b34b-4ff3-becc-c6e2a01f206a",
+        "category": "short_game",
+        "metric_id": "scrambling_pct_rough",
+        "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "started_at": "2026-04-21T14:23:39.074461+00:00",
+        "target_value": 55,
+        "current_value": null,
+        "baseline_value": 35
+       }
+      ],
+      "visibility": "Goals a coach set or a player shared with the coach, recorded against this team. A goal a player keeps private, or one with no team on it, is not visible here."
+     },
+     "series": [],
+     "summary": "5 goals.",
+     "coverage": "complete",
+     "measurements": [],
+     "coverage_note": null
+    }
+   }
+  ],
+  "recorded": {
+   "outcome": "accepted"
+  }
+ }
+}

@@ -135,7 +135,7 @@ export function citationsFromLog(logText, conversationId) {
  * (player answers are not stored until HM3), can be committed as a fixture. `surface: 'player'` replays through the player's audit.
  * The model's cites block is withheld from the stream, so a captured turn has none.
  */
-export function captureFixture({ id, surface, team, timezone, roster, ask, askedAt, answeredAt, text, state, verdict, flagged, cost, base }) {
+export function captureFixture({ id, surface, team, timezone, roster, ask, askedAt, answeredAt, text, state, verdict, flagged, cost, base, cites }) {
   return {
     id,
     messageId: `captured-${id}`,
@@ -152,7 +152,35 @@ export function captureFixture({ id, surface, team, timezone, roster, ask, asked
       content: text,
       tools: state.toolCalls,
       evidence: state.evidenceParts,
+      ...(cites ? { cites } : {}),
       recorded: verdict === 'accepted' ? { outcome: 'accepted' } : { outcome: 'rejected', reason: verdict === 'incomplete' ? 'stream_incomplete' : 'ungrounded_claims', unmatchedTokens: flagged ?? [], misattributedTokens: [] },
     },
   };
+}
+
+const collapse = (t) => String(t).replace(/\s+/g, ' ').trim();
+
+/**
+ * The cites of one answer, from the dev server's `[ask:cites]` line (cites.ts prints every cite in development):
+ * `[ask:cites] {"surface":"coach","says":"<first 60 chars of the answer>","cites":[["-4.16","e3","sg_approach","8091da4b"],["lost","e3","k","8091da4b","c"]]}`.
+ * The line is matched to the answer by `says`, the first 60 characters of the stored text with whitespace collapsed.
+ * The subject is an 8-character id prefix (the verifier accepts six or more). Null when no line matches.
+ */
+export function citesFromLog(logText, answerText, surface) {
+  if (!logText || !answerText) return null;
+  const says = collapse(answerText).slice(0, 60);
+  const lines = logText.split('\n').filter((l) => l.includes('[ask:cites]'));
+  for (const line of lines.reverse()) {
+    const json = line.slice(line.indexOf('{'));
+    let parsed;
+    try {
+      parsed = JSON.parse(json);
+    } catch {
+      continue;
+    }
+    if (surface && parsed.surface && parsed.surface !== surface) continue;
+    if (collapse(parsed.says ?? '') !== says || !Array.isArray(parsed.cites)) continue;
+    return parsed.cites.filter(Array.isArray).map(([v, ref, key, subject, flag]) => ({ v: String(v), ref, key, subject, ...(flag === 'c' ? { c: 1 } : {}) }));
+  }
+  return null;
 }
