@@ -79,7 +79,11 @@ describe('tables and windows', () => {
   });
   it('a list of windows ("the last 5, 10 or 20 rounds", staging 7488e220) is windows; a 20 that is not one of them is a figure', () => {
     expect(run('I can look at the last 5, 10 or 20 rounds, the season, or the whole history.')).toEqual([]);
-    expect(run('In 5, 10 or 20 rounds he scored.')).toEqual(['20']);
+    // With no read at all the list is the windows Ask offers, whatever leads it; beside a read it is a figure.
+    const bare = (text: string) => auditNumericClaims(text, [], [], [], [], 'America/New_York', { players: roster }).map((c) => c.text);
+    expect(bare('I can use windows of 5, 10 or 20 rounds.')).toEqual([]);
+    expect(bare('In 5, 10 or 17 rounds he scored.')).toEqual(['17']);
+    expect(auditNumericClaims('In 5, 10 or 20 rounds he scored.', [], [], collectEnvelopeNumbers(standing), [], 'America/New_York', { players: roster }).map((c) => c.text)).toEqual(['20']);
     expect(run('Over the last 5, 10 or 20 putts he lost strokes.')).toEqual(['20']);
   });
 });

@@ -174,6 +174,9 @@ function metricRows(detail: unknown, key: string): Array<{ object: Record<string
   return out;
 }
 
+/** Keys that name a count of the read itself (see `statedCounts`), not a measurement. */
+const COUNT_KEYS = new Set(['row_count', 'list_length', 'player_count', 'players', 'count', 'category_count', 'rows']);
+
 /** What a read holds under `key` for `subject`: null when it holds nothing under that key and subject (the cite is unresolved). */
 function candidatesFor(cite: Cite, env: ToolEnvelope, anySubject = false): Candidate[] | null {
   const key = norm(cite.key);
@@ -215,6 +218,16 @@ function candidatesFor(cite: Cite, env: ToolEnvelope, anySubject = false): Candi
     if (!anySubject && !(cite.subject === 'team' ? row.player === null : (row.player !== null && sameSubject(cite.subject, row.player)) || row.player === null)) continue;
     resolved = true;
     found.push(...collectNumbers(row.object).map((value) => ({ value, window: null })));
+  }
+
+  // A count the read itself holds (rows returned, a list's length, the players it has a figure for, a count of a category): "six players" is cited
+  // with one of these keys, and verified against the counts of that read alone, whoever the subject.
+  if (COUNT_KEYS.has(key)) {
+    const counts = statedCounts([env], []);
+    if (counts.size > 0) {
+      resolved = true;
+      found.push(...[...counts].map((value) => ({ value, window: null })));
+    }
   }
 
   if (key === 'summary') {

@@ -201,7 +201,7 @@ function valueAt(sentence: string, value: number): number[] {
  * the sample, nearest to the figure if it states more than one, and that sample is the measurement's own. A count that is someone
  * else's ("72.5 over his 9 rounds" for a 2-round figure) fails, as does a figure written with no sample at all.
  */
-export function thinSampleStated(prose: string, value: number, sampleSize: number, unit: Measurement['sample_unit']): boolean {
+export function thinSampleStated(prose: string, value: number, sampleSize: number, unit: Measurement['sample_unit'], general: readonly number[] = generalSamples(prose, unit)): boolean {
   let stated = false;
   for (const sentence of prose.split(SENTENCE_BREAK)) {
     const samples = samplesStated(sentence, unit);
@@ -209,12 +209,22 @@ export function thinSampleStated(prose: string, value: number, sampleSize: numbe
       // The "2" of "2 rounds" is a count, not this figure.
       if (samples.some((s) => s.at === at)) continue;
       const nearest = [...samples].sort((a, b) => Math.abs(a.at - at) - Math.abs(b.at - at))[0];
-      if (!nearest) continue;
+      if (!nearest) {
+        // A list of figures under one statement of what they rest on ("Each of these averages rests on 2 rounds"): live Q5, 2026-11-08.
+        if (general.length > 0 && general.every((n) => n === sampleSize)) stated = true;
+        continue;
+      }
       if (nearest.n !== sampleSize) return false;
       stated = true;
     }
   }
   return stated;
+}
+
+/** The sample a sentence states for a whole group of figures ("each average rests on 2 rounds", "all four are over 3 rounds"). */
+const GROUP_WORDS = /\b(?:each|every|all|both|these|those|they|the (?:figures?|averages?|numbers?|results?|rates?))\b/i;
+function generalSamples(prose: string, unit: Measurement['sample_unit']): number[] {
+  return prose.split(SENTENCE_BREAK).filter((s) => GROUP_WORDS.test(s)).flatMap((s) => samplesStated(s, unit).map((x) => x.n));
 }
 
 /**
@@ -231,7 +241,7 @@ function omittedThinFigures(prose: string, measurements: readonly Measurement[],
     const parts = m.entity.label.split(/\s+/).filter((n) => n.length > 1);
     const about = (s: string) => parts.some((n) => s.includes(n)) || (players.size === 1 && /\b(?:he|she|his|her)\b/i.test(s));
     const named = prose.split(SENTENCE_BREAK).filter((s) => about(s) && valueAt(s, m.value as number).length > 0);
-    return named.length > 0 && !named.some((s) => thinSampleStated(s, m.value as number, m.sample_size, m.sample_unit));
+    return named.length > 0 && !named.some((s) => thinSampleStated(s, m.value as number, m.sample_size, m.sample_unit, generalSamples(prose, m.sample_unit)));
   });
 }
 

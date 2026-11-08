@@ -331,7 +331,7 @@ measurement in that read (sg_approach, gir_pct, summary:place), the metric_id of
 approach_proximity_50_125ft), or the field name in its detail. subject is the first 8 characters of the player_id the figure is about
 (copy them from the roster or the read), or "team" for the team's. Add a fifth item, "c", when the sentence asserts the figure as the cause of
 something. A comparison value beside a figure (the team average, the Division I average, the Tour, a place such as 7 of 7) belongs to the
-same measurement as that figure: cite it with that measurement's key and subject. Copy refs, keys and ids from the reads; never invent them.
+same measurement as that figure: cite it with that measurement's key and subject. A count you stated, including a spelled-out one ("six" is cited as "6"), is cited too: key row_count for the rows a read returned, list_length for the items in a list it holds, player_count for the players it has a figure for, subject "team"; a count you worked out is the summarise_data figure's key. Copy refs, keys and ids from the reads; never invent them.
 This block is the only structured block you write: window, unit and sample are taken from the read. Every answer that states a figure ends
 with it; without it your figures are checked by guesswork and the answer may be withheld. The block is removed before the coach reads your answer.`.trim();
 

@@ -1555,7 +1555,9 @@ export function auditNumericClaimsDetailed(
     // ("8 of those came in two rounds") is one: it is a sum over a subset, and no sample size or denominator stands for it.
     // "the last 20 rounds" is a window the reads can be asked for (5, 10 or 20), not a figure.
     // "his last 20 rounds", and the list a capabilities answer gives: "the last 5, 10 or 20 rounds" (staging 7488e220).
-    const asWindow = value === 20 && /\b(?:last|newest|past|previous|recent)\s+(?:\d{1,2}(?:\s*,\s*|\s+(?:or|and)\s+))*$/i.test(scrubbed.slice(Math.max(0, match.start - 28), match.start)) && /^\s*rounds?\b/i.test(scrubbed.slice(match.end, match.end + 10));
+    // With no read at all (a capabilities answer), "5, 10 or 20 rounds" lists the windows Ask can read, whatever word leads it.
+    const noReads = measurements.length === 0 && series.length === 0 && anchors.length === 0;
+    const asWindow = value === 20 && /^\s*rounds?\b/i.test(scrubbed.slice(match.end, match.end + 10)) && (/\b(?:last|newest|past|previous|recent)\s+(?:\d{1,2}(?:\s*,\s*|\s+(?:or|and)\s+))*$/i.test(scrubbed.slice(Math.max(0, match.start - 28), match.start)) || (noReads && /\b(?:5|10)(?:\s*,\s*|\s+(?:or|and)\s+)$/i.test(scrubbed.slice(Math.max(0, match.start - 12), match.start))));
     const smallInteger = (Number.isInteger(value) && Math.abs(value) <= 12) || asWindow;
     const subsetCount = smallInteger && value >= 2 && SUBSET_COUNT_AFTER.test(scrubbed.slice(match.end, match.end + 40));
     if (smallInteger && !subsetCount) continue;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { claimsFromCites } from '../cite-claims';
-import { unbackedCausalSentences, validateCitedChatClaims } from '../claims-packet';
+import { thinSampleStated, unbackedCausalSentences, validateCitedChatClaims } from '../claims-packet';
 import { auditCountClaims } from '../count-claims';
 import { extractCites, verifyCite } from '../cites';
 import type { Measurement, ToolEnvelope } from '../provenance';
@@ -73,5 +73,44 @@ describe('a cite is a mismatch only against someone else’s own figure, not a r
   it('but a figure that is another player’s own is a misattribution', () => {
     const [c] = extractCites('<<<CITES>>>[["-2.06","e1","sg_putting","p-ethan"]]<<<END_CITES>>>').cites;
     expect(verifyCite(c!, evidence).status).toBe('mismatch');
+  });
+});
+
+// Live Q5 (ask-perf rerun at d63cd1d055): "Top 3 by scoring average" listed three figures, each over 2 rounds, and said once that each average
+// rests on 2 rounds and is a thin read. The rule wanted the count inside every figure's own sentence.
+describe('one statement of the sample for a list of thin figures', () => {
+  const list = '1. Ethan Park: 0.5 over par.\n2. Owen Carter: 1.0 over par.\n\nEach of these averages rests on 2 rounds, so treat it as a thin read.';
+  it('stands for every figure in the list when its count is the measurement’s own', () => {
+    expect(thinSampleStated(list, 0.5, 2, 'rounds')).toBe(true);
+    expect(thinSampleStated(list, 1, 2, 'rounds')).toBe(true);
+  });
+  it('does not stand for a figure whose sample is another count', () => {
+    expect(thinSampleStated(list, 0.5, 9, 'rounds')).toBe(false);
+  });
+  it('a count that is not about the group does not stand for the list', () => {
+    expect(thinSampleStated('1. Ethan Park: 0.5 over par.\n\nOwen has 2 rounds on record.', 0.5, 2, 'rounds')).toBe(false);
+  });
+  it('a figure with no sample anywhere is still refused', () => {
+    expect(thinSampleStated('1. Ethan Park: 0.5 over par.\n2. Owen Carter: 1.0 over par.', 0.5, 2, 'rounds')).toBe(false);
+  });
+  it('a figure with its own count is paired with that count, whatever the group says', () => {
+    expect(thinSampleStated('Ethan Park: 0.5 over his 9 rounds. Each of these rests on 2 rounds.', 0.5, 2, 'rounds')).toBe(false);
+  });
+});
+
+// Counts are cited like figures (team-lead, live Q4/Q10): the keys that name a count of the read itself are verified against that read's own counts.
+describe('count cites', () => {
+  const rows = Array.from({ length: 6 }, (_, i) => ({ player: `P${i}`, round_type: i < 4 ? 'practice' : 'qualifier', total_score: 70 + i }));
+  const read = { summary: '6 rows of rounds.', measurements: [], series: [], coverage: 'complete', coverage_note: null, as_of: '2026-11-08T00:00:00.000Z', detail: { kind: 'team_data', rows, row_count: 6 } } as unknown as ToolEnvelope;
+  const evidence = new Map<string, ToolEnvelope>([['e1', read]]);
+  const status = (v: string, key: string) => verifyCite({ v, ref: 'e1', key, subject: 'team' }, evidence).status;
+  it('row_count, list_length and a category count verify against the read', () => {
+    expect(status('6', 'row_count')).toBe('verified');
+    expect(status('6', 'list_length')).toBe('verified');
+    expect(status('4', 'row_count')).toBe('verified');
+  });
+  it('a count the read does not hold is not verified', () => {
+    expect(status('7', 'row_count')).toBe('unresolved');
+    expect(status('7', 'list_length')).toBe('unresolved');
   });
 });
