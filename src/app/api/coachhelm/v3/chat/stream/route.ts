@@ -991,7 +991,7 @@ export async function POST(req: NextRequest) {
         players: ctx.roster,
         requestedSpans,
         claims,
-        ...(askV2 ? { cites: { cites: extractedCites.cites, evidence: evidenceRefs, blocks: extractedCites.blocks, invalid: extractedCites.invalid } } : {}),
+        ...(askV2 ? { cites: { cites: extractedCites.cites, evidence: evidenceRefs, blocks: extractedCites.blocks, invalid: extractedCites.invalid, label: convId } } : {}),
       });
       // How much of the answer the citations carried and how much fell back to the text heuristics: the rate that decides when the
       // heuristics can retire. Counts only (no prose, no names, no values), at info level, off Sentry.
