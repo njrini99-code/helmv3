@@ -238,7 +238,8 @@ export function verifyCite(cite: Cite, evidence: ReadonlyMap<string, ToolEnvelop
     // A figure cited to someone else's value of that key is a misattribution, and withholds the turn. A figure the read holds for nobody under that
     // key is the model's slip in naming where it came from (a "7" cited to the roster count when it is the players with rounds) or an invented
     // figure; the text check decides which, as it would with no cite.
-    const elsewhere = (candidatesFor(cite, env, true) ?? []).some((c) => matchesValue(c.value, written, cite.v));
+    // Someone else's OWN figure of that key: the reference values beside every player's (the Tour's 0, the team average) belong to all of them.
+    const elsewhere = env.measurements.some((m) => norm(m.metric_id) === norm(cite.key) && !subjectIs(cite.subject, m.entity) && typeof m.value === 'number' && matchesValue(m.value, written, cite.v));
     if (elsewhere) return { cite, status: 'mismatch', value: written, reason: `${cite.ref} ${cite.key} holds that figure for someone else, not ${cite.subject}` };
     return { cite, status: 'unresolved', value: written, reason: `${cite.ref} ${cite.key} for ${cite.subject} does not hold ${cite.v}; left to the text check` };
   }
@@ -320,7 +321,7 @@ export function auditCited(args: { surface?: 'coach' | 'player'; /** Derived cou
   const reads = args.cites ? [...args.cites.evidence.values()].map((e) => e.measurements) : [args.base[1]];
   const ranks = auditRankClaims(args.base[0], reads, args.options?.players ?? []);
   // Counts of things ("12 qualifier rounds") in a coach turn: a tally the model made while writing is withheld unless a read states it or a cite stands for it.
-  const counts = args.strictCounts && args.cites ? auditCountClaims(args.base[0], statedCounts(args.cites.evidence.values(), args.options?.players ?? [], args.base[3]), verified.map((c) => c.cite.v)) : [];
+  const counts = args.strictCounts && args.cites ? auditCountClaims(args.base[0], statedCounts(args.cites.evidence.values(), args.options?.players ?? [], args.base[3]), verified.map((c) => c.cite.v), args.options?.players?.length ?? 0) : [];
   const unsupported = [
     ...mismatched.map((c): UnsupportedClaim => ({ text: c.cite.v, value: c.value ?? 0, misattributed: true })),
     ...flagged.filter((u) => !mismatched.some((c) => c.cite.v === u.text)),

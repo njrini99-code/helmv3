@@ -56,7 +56,7 @@ describe('claims derived from cites', () => {
   });
   it('and pass the typed gate the claims block passed', () => {
     const claims = claimsFromCites(cites, evidence);
-    const v = validateCitedChatClaims("Owen's strokes gained on approach is -4.16 and his greens in regulation 61.11% over 144 holes.", read.measurements, claims);
+    const v = validateCitedChatClaims("Owen's strokes gained on approach is -4.16 and his greens in regulation 61.11% over 144 holes. Ethan Park is at -4.40.", read.measurements, claims);
     expect(v.claims).toMatchObject({ malformed: false });
     expect(v.claims?.rejected).toEqual([]);
     expect(v.claims?.accepted.length).toBe(3);

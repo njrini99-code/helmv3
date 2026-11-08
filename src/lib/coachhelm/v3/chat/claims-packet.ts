@@ -243,9 +243,16 @@ function causeSide(sentence: string): string {
   return before ? sentence.slice(0, before.index) : sentence;
 }
 
+/** Words that describe what a measure counts or how it is built. */
+const MEASURE_WORDS = /\b(?:accounts? for|measures?|counts?|includes?|excludes?|is (?:calculated|computed|based on|measured)|reflects?|rewards?|penali[sz]es?|compares?|weights?)\b/i;
+/** A cause that is only a comparison of two figures ("because it is close to average"). */
+const COMPARISON_WORDS = /\b(?:close to|near|similar to|in line with|above|below|higher than|lower than|better than|worse than|compared (?:to|with)|relative to|average)\b/i;
+/** Causes nothing measured backs: how someone feels or what they do, not what a number is. */
+const UNMEASURED_CAUSE = /\b(?:tempo|confidence|nerves?|pressure|swing|focus|mindset|fatigue|tired|effort|motivation|attitude|rhythm|technique|mechanics|habits?|practice(?:d|s)? (?:more|less)|lazy|careless)\b/i;
+
 /** What a read can say about itself: why a figure is missing or thin. Not a claim about anyone's play. */
 const DATA_CAUSE =
-  /\b(?:flag(?:s|ged)?|incomplete|excluded|left out|leaves? out|not counted|(?:doesn|don)['’]?t count|no data|no recorded|no rounds|not recorded|not logged|(?:hasn|haven)['’]?t logged|(?:isn|aren)['’]?t available|not available|unavailable|too few|sample size|the (?:tool|read|window|sample|cache)|9-hole|nine-hole|total only)\b/i;
+  /\b(?:flag(?:s|ged)?|incomplete|totals? only|posted as|no (?:college |published )?(?:figure|value|baseline|benchmark|average)|rests? on|resting on|based on|no other players? (?:has|have)|(?:has|have) [a-z ]{0,30}recorded|(?:carry|carries|have|has|with|had) no (?:shot|stat)[- ]?(?:level )?(?:data|lines?)|missing|excluded|left out|leaves? out|not counted|(?:doesn|don)['’]?t count|no data|no recorded|no rounds|not recorded|not logged|(?:hasn|haven)['’]?t logged|(?:isn|aren)['’]?t available|not available|unavailable|too few|sample size|the (?:tool|read|window|sample|cache)|9-hole|nine-hole|total only)\b/i;
 /** Why a day doesn't work or an event moved. A reason for a decision, never for how someone played: nothing here measured that. */
 const CALENDAR_CAUSE = /\b(?:class|exams?|schedule|calendar|conflict|rsvps?|weather|rain)\b/i;
 /** A sentence saying how someone's play went, which a calendar word can't explain. */
@@ -274,6 +281,9 @@ export function unbackedCausalSentences(prose: string, measurements: readonly Me
     if (!CAUSAL_LANGUAGE_RE.test(sentence)) return false;
     const cause = causeSide(sentence);
     if (ANSWER_LIMIT.test(sentence) || DATA_CAUSE.test(cause)) return false;
+    // Explaining what a measure counts, or why two figures differ, says nothing about why anyone played as they did (live, 2026-11-08: "the two
+    // measures disagree because strokes gained putting accounts for how far each putt was", "hides this because it is close to average").
+    if ((MEASURE_WORDS.test(cause) || COMPARISON_WORDS.test(cause)) && !UNMEASURED_CAUSE.test(cause)) return false;
     if (CALENDAR_CAUSE.test(cause)) return PLAY_OUTCOME.test(sentence);
     // A bare count ("over the last 3 rounds") is the window, not a measured cause.
     const figures = cause.replace(/\b\d+\s+(?:[a-z'’-]+\s+){0,2}rounds?\b/gi, ' ');
@@ -354,8 +364,10 @@ export function validateCitedChatClaims(rawText: string, measurements: readonly 
   }
   if (packets.length === 0) return { strippedText: text, claims: null };
   const claimable = [...packets, ...packetsFor(measurements, 'team')];
+  // A cite for a value the answer does not write ("even par" for 0) is no figure to hold to a floor or a window.
+  const written = claimList.filter((c) => valueAt(text, c.value).length > 0);
   try {
-    return { strippedText: text, claims: validateClaimList(claimList, text, measurements, packets, claimable) };
+    return { strippedText: text, claims: validateClaimList(written, text, measurements, packets, claimable) };
   } catch {
     return { strippedText: text, claims: MALFORMED };
   }
