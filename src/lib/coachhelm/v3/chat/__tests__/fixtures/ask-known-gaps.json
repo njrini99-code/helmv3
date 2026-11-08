@@ -1,1 +1,18 @@
-{ "acceptedCorruptions": ["f334ec07:changed-figure:0"] }
+{
+ "acceptedCorruptions": [
+  "223f73df:shifted-date-in-window:0",
+  "28f917e1:shifted-date-in-window:0",
+  "368318ea:shifted-date-in-window:0",
+  "3e677059:shifted-date-in-window:0",
+  "73111c93:shifted-date-in-window:0",
+  "8b39dd77:shifted-date-in-window:0",
+  "8c707121:shifted-date-in-window:0",
+  "8e12f58e:shifted-date-in-window:0",
+  "923f2d30:figure-to-no-data-player:0",
+  "b10cc416:shifted-date-in-window:0",
+  "ce23c78d:shifted-date-in-window:0",
+  "d03274e1:shifted-date-in-window:0",
+  "d044747b:shifted-date-in-window:0",
+  "f334ec07:changed-figure:0"
+ ]
+}

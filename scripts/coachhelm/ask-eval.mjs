@@ -17,7 +17,9 @@
  * audit withheld the answer) or incomplete (the stream broke). A rejected turn whose stored text has every fact right is a
  * wrong rejection. The report lists those first.
  *
- * Writes: staging conversation and ledger rows (what any Ask turn writes), the markdown report, nothing else.
+ * Writes: staging conversation and ledger rows (what any Ask turn writes), a magic-link token on the demo coach's and Cole
+ * Bennett's auth users (the sign-in, unless --cookie is given; no email is sent), and the markdown report. Nothing else.
+ * The report defaults to the OS temp dir: pass --out <file> to put it elsewhere.
  * Never run against production: it refuses unless the Supabase URL is the staging project.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';

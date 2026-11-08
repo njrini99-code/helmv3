@@ -51,16 +51,25 @@ export interface AskFixture {
   };
 }
 
-/** A hand label for one stored turn: what the audit SHOULD say about the answer text. */
+/**
+ * A hand label for one stored turn. The audit rates use ONE rule: is every figure and date in the answer supported by
+ * what THIS turn's reads returned? That is what the audit can know. Whether the answer is also true is recorded
+ * separately (`answerWrong`), because a tool that returns a wrong figure makes a wrong answer the audit rightly accepts.
+ */
 export interface AskLabel {
-  /** `accepted`: every figure and date in the answer is true to the evidence. `rejected`: the answer states something its evidence does not support. */
-  expect: 'accepted' | 'rejected';
+  /**
+   * `accepted`: every figure and date is supported by the turn's evidence. `rejected`: something is not (or contradicts it).
+   * `incomplete`: the stored turn did not finish; it must be rejected as `stream_incomplete` and counts in no rate.
+   */
+  expect: 'accepted' | 'rejected' | 'incomplete';
   /** One line: why this label, naming the figure(s) checked. */
   why: string;
   /** Set on an `accepted` label the current audit rejects: a known wrong block. The suite reports it instead of failing, and says when it starts passing. */
   knownWrongBlock?: true;
   /** Set on a `rejected` label the current audit accepts: a known wrong accept. Reported the same way. */
   knownWrongAccept?: true;
+  /** Set when the answer is supported by its reads but not true (a tool returned wrong data). Reported, never a failure of the audit. */
+  answerWrong?: string;
 }
 
 export function loadFixtures(): AskFixture[] {

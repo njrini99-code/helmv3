@@ -66,7 +66,7 @@ function summary() {
   const falseAnswers = real.filter((r) => r.label.expect === 'rejected');
   const wrongBlocks = trueAnswers.filter((r) => r.actual === 'rejected');
   const wrongAccepts = falseAnswers.filter((r) => r.actual === 'accepted');
-  const kinds: CorruptionKind[] = ['changed-figure', 'moved-figure', 'invented-date'];
+  const kinds: CorruptionKind[] = ['changed-figure', 'moved-figure', 'figure-to-no-data-player', 'invented-date', 'shifted-date-in-window'];
   const byKind = Object.fromEntries(
     kinds.map((k) => {
       const set = corruptions.filter((c) => c.corruption.kind === k);
@@ -76,6 +76,7 @@ function summary() {
   const acceptedCorruptions = corruptions.filter((c) => c.actual === 'accepted');
   return {
     fixtures: fixtures.length,
+    answersWrongButSupported: real.filter((r) => r.label.answerWrong).map((r) => r.fixture.id),
     wrongBlock: { rate: pct(wrongBlocks.length, trueAnswers.length), count: wrongBlocks.length, of: trueAnswers.length, fixtures: wrongBlocks.map((r) => ({ id: r.fixture.id, flagged: r.flagged, question: r.fixture.userMessage.content.slice(0, 70) })) },
     wrongAcceptReal: { rate: pct(wrongAccepts.length, falseAnswers.length), count: wrongAccepts.length, of: falseAnswers.length, fixtures: wrongAccepts.map((r) => r.fixture.id) },
     wrongAcceptConstructed: { rate: pct(acceptedCorruptions.length, corruptions.length), count: acceptedCorruptions.length, of: corruptions.length, byKind, ids: acceptedCorruptions.map((c) => `${c.corruption.id} (${c.corruption.detail})`) },
@@ -86,10 +87,12 @@ afterAll(() => {
   const s = summary();
   const lines = [
     '',
-    `Ask replay: ${s.fixtures} stored turns, ${corruptions.length} corrupted copies${STRICT ? ' (strict)' : ''}`,
+    `Ask replay: ${s.fixtures} stored turns (${real.filter((r) => r.label.expect === 'incomplete').length} incomplete, in no rate), ${corruptions.length} corrupted copies${STRICT ? ' (strict)' : ''}`,
+    '  constructed corruptions are the headline; the stored false-answer set is small',
     `  wrong-block rate (true answers rejected):          ${s.wrongBlock.rate}  (${s.wrongBlock.count}/${s.wrongBlock.of})  ${s.wrongBlock.fixtures.map((f) => `${f.id}[${f.flagged.join(' ')}]`).join(' ')}`,
     `  wrong-accept rate, stored (false answers accepted): ${s.wrongAcceptReal.rate}  (${s.wrongAcceptReal.count}/${s.wrongAcceptReal.of})  ${s.wrongAcceptReal.fixtures.join(' ')}`,
-    `  wrong-accept rate, constructed corruptions:         ${s.wrongAcceptConstructed.rate}  (${s.wrongAcceptConstructed.count}/${s.wrongAcceptConstructed.of})  ${Object.entries(s.wrongAcceptConstructed.byKind).map(([k, v]) => `${k} ${v.accepted}/${v.total}`).join(', ')}`,
+    `  wrong-accept rate, constructed corruptions:         ${s.wrongAcceptConstructed.rate}  (${s.wrongAcceptConstructed.count}/${s.wrongAcceptConstructed.of})\n      by kind: ${Object.entries(s.wrongAcceptConstructed.byKind).map(([k, v]) => `${k} ${v.accepted}/${v.total}`).join(', ')}`,
+    `  answers supported by their reads but wrong (a tool gave bad data): ${s.answersWrongButSupported.join(' ') || 'none'}`,
     ...s.wrongAcceptConstructed.ids.map((id) => `      accepted: ${id}`),
   ];
   console.log(lines.join('\n'));
@@ -108,6 +111,7 @@ describe('Ask replay: stored turns', () => {
   it('has fixtures for each side of the audit, so the rates mean something', () => {
     expect(real.filter((r) => r.label.expect === 'accepted').length).toBeGreaterThan(15);
     expect(real.filter((r) => r.label.expect === 'rejected').length).toBeGreaterThan(1);
+    expect(real.filter((r) => r.label.expect === 'incomplete').length).toBeGreaterThan(0);
     expect(corruptions.length).toBeGreaterThan(30);
   });
 
@@ -115,6 +119,11 @@ describe('Ask replay: stored turns', () => {
     const known = Boolean(r.label.knownWrongBlock || r.label.knownWrongAccept);
     it(`${known ? '[known gap] ' : ''}${r.label.expect}: ${r.fixture.userMessage.content.replace(/\s+/g, ' ').slice(0, 60)}`, () => {
       const why = r.actual === 'rejected' ? `audit flagged ${JSON.stringify(r.flagged)}` : 'audit accepted';
+      if (r.label.expect === 'incomplete') {
+        const verdict = replayVerdict(r.fixture);
+        expect(verdict.outcome === 'rejected' ? verdict.reason : verdict.outcome, r.label.why).toBe('stream_incomplete');
+        return;
+      }
       if (known && !STRICT) {
         // A known gap passes whether or not the audit still disagrees with the label; say when it no longer does.
         if (r.actual === r.label.expect) console.log(`  ask-replay: ${r.fixture.id} now matches its label; remove its knownWrong* flag`);

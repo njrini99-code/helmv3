@@ -153,13 +153,13 @@
   "why": "Team SG by area (-3.59, -2.54, -1.21, +0.46) over 12 rounds from Aug 25 to Oct 21; \"about six strokes\" is 3.59 + 2.54."
  },
  "923f2d30": {
-  "expect": "rejected",
-  "why": "Says Owen Carter \"ranks 7th of 7\" on approach. In his last-10 window Ethan Park (-4.40) is lower, so he is 6th of 7. The 7th comes from the benchmark read's place, which is computed on all recorded rounds (-3.83), not the window the answer states. Small ranks are exempt from the audit.",
-  "knownWrongAccept": true
+  "expect": "accepted",
+  "why": "Every figure is supported by this turn's reads: -4.16 over 8 rounds, team -2.33, \"7th of 7\" and the 36th percentile are what the benchmark read's comparison prints (place_of 7, place_percent 0).",
+  "answerWrong": "Says Owen Carter \"ranks 7th of 7\" on approach. In his last-10 window Ethan Park (-4.40) is lower, so he is 6th of 7. The comparison is computed on all recorded rounds (-3.83) but attached to the last-10 measurement, so the tool gave the wrong place: the audit cannot be faulted, the read can."
  },
  "cc9ec64e": {
-  "expect": "rejected",
-  "why": "The answer was cut off mid-sentence (\"is also the lowest on t\"); a truncated answer is never shown."
+  "expect": "incomplete",
+  "why": "The stored answer is cut off mid-sentence (\"is also the lowest on t\") and the turn recorded stream_incomplete. Not counted in any rate: the audit rejects it because the stream did not finish, whatever the text says."
  },
  "efd480a1": {
   "expect": "accepted",

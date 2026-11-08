@@ -3,8 +3,10 @@
  * evidence does not support, so the grounding audit should reject it. Three kinds:
  *
  *  - `changed-figure`   one figure in the answer is replaced by a value no read produced;
- *  - `moved-figure`     a figure that belongs to one player is written against another player;
- *  - `invented-date`    a date no read, and nothing the coach said, supports (a shifted date, or a new sentence).
+ *  - `moved-figure`     a figure that belongs to one player is written against another player who has figures of their own;
+ *  - `figure-to-no-data-player`  the same, written against a roster player the turn read nothing for;
+ *  - `invented-date`    a date outside everything the turn read and the coach said (a replaced date, or a new sentence);
+ *  - `shifted-date-in-window`  a stated date moved to another day inside a window a read covered, a day no read names.
  *
  * Generation is deterministic (the first eligible spots, no randomness), and a corruption is only produced when
  * its new text is checked to be unsupported by the evidence, so a rejection can be attributed to the corruption and
@@ -12,7 +14,7 @@
  */
 import type { AskFixture } from './ask-replay-harness';
 
-export type CorruptionKind = 'changed-figure' | 'moved-figure' | 'invented-date';
+export type CorruptionKind = 'changed-figure' | 'moved-figure' | 'figure-to-no-data-player' | 'invented-date' | 'shifted-date-in-window';
 
 export interface Corruption {
   /** Stable id: `<fixture>:<kind>:<n>`. */
@@ -171,7 +173,8 @@ function changedFigures(fixture: AskFixture, text: string, ev: Evidence): Corrup
   }));
 }
 
-function movedFigures(fixture: AskFixture, text: string, ev: Evidence): Corruption[] {
+function movedFigures(fixture: AskFixture, text: string, ev: Evidence, toPlayerWithData: boolean): Corruption[] {
+  const kind: CorruptionKind = toPlayerWithData ? 'moved-figure' : 'figure-to-no-data-player';
   const out: Corruption[] = [];
   const lines = text.split('\n');
   let offset = 0;
@@ -188,11 +191,11 @@ function movedFigures(fixture: AskFixture, text: string, ev: Evidence): Corrupti
       if (inPool(token.value, token.decimals, ev.unscoped)) continue; // also a team or unscoped figure: not clearly this player's
       // Owned by this player alone: a figure two players share reads as a group figure, and moving it proves nothing.
       if ([...ev.byPlayer.values()].filter((set) => inPool(token.value, token.decimals, set)).length !== 1) continue;
-      // Prefer a player the turn read figures for: moving a figure onto someone with their own numbers is the hard case.
+      // The hard case moves a figure onto someone with numbers of their own; the other onto someone the turn read nothing for.
       const hasEvidence = (id: string) => (ev.byPlayer.get(id)?.size ?? 0) > 0;
       const to = [...fixture.roster]
-        .sort((a, b) => Number(hasEvidence(b.id)) - Number(hasEvidence(a.id)) || a.name.localeCompare(b.name))
-        .find((p) => p.id !== from.id && !line.includes(p.name) && !inPool(token.value, token.decimals, ev.byPlayer.get(p.id) ?? []));
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .find((p) => p.id !== from.id && hasEvidence(p.id) === toPlayerWithData && !line.includes(p.name) && !inPool(token.value, token.decimals, ev.byPlayer.get(p.id) ?? []));
       if (to) candidates.push({ from, to, line, start, token });
     }
   }
@@ -203,9 +206,9 @@ function movedFigures(fixture: AskFixture, text: string, ev: Evidence): Corrupti
       .split(c.from.name).join(c.to.name)
       .replace(new RegExp(`\\b${c.from.first_name}\\b`, 'g'), c.to.first_name ?? c.to.name);
     out.push({
-      id: `${fixture.id}:moved-figure:${n}`,
+      id: `${fixture.id}:${kind}:${n}`,
       fixtureId: fixture.id,
-      kind: 'moved-figure',
+      kind,
       detail: `${c.token.text} from ${c.from.name} to ${c.to.name}`,
       text: text.slice(0, c.start) + swapped + text.slice(c.start + c.line.length),
     });
@@ -258,9 +261,45 @@ function inventedDates(fixture: AskFixture, text: string, ev: Evidence): Corrupt
   return out;
 }
 
+/** A stated date moved to another day inside the span the turn read, to a day no read names: the audit lets a date inside a window through. */
+function shiftedDates(fixture: AskFixture, text: string, ev: Evidence): Corruption[] {
+  const day = (iso: string) => Date.parse(`${iso}T00:00:00Z`) / 86_400_000;
+  const known = [...ev.isoDates].map(day).filter(Number.isFinite);
+  if (known.length < 2) return [];
+  const low = Math.min(...known);
+  const high = Math.max(...known);
+  const year = Number(fixture.turn.createdAt.slice(0, 4));
+  const named = new RegExp(`\\b(${MONTH_RE})\\.?\\s+(\\d{1,2})\\b`, 'gi');
+  for (let m = named.exec(text); m; m = named.exec(text)) {
+    const month = MONTHS.indexOf((m[1] as string).slice(0, 3).toLowerCase());
+    const d = Number(m[2]);
+    if (month < 0 || d < 1 || d > 28) continue;
+    for (const shift of [9, 13, 6, 17, 4]) {
+      const nextDay = ((d + shift - 1) % 28) + 1;
+      const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(nextDay).padStart(2, '0')}`;
+      if (nextDay === d || ev.isoDates.has(iso) || day(iso) <= low || day(iso) >= high) continue;
+      const replacement = `${m[1]} ${nextDay}`;
+      return [{
+        id: `${fixture.id}:shifted-date-in-window:0`,
+        fixtureId: fixture.id,
+        kind: 'shifted-date-in-window',
+        detail: `${m[0]} -> ${replacement} (inside ${new Date(low * 86_400_000).toISOString().slice(0, 10)}..${new Date(high * 86_400_000).toISOString().slice(0, 10)})`,
+        text: text.slice(0, m.index) + replacement + text.slice(m.index + m[0].length),
+      }];
+    }
+  }
+  return [];
+}
+
 /** Corrupted copies of one stored answer. */
 export function corruptionsFor(fixture: AskFixture): Corruption[] {
   const text = answerText(fixture);
   const ev = evidenceOf(fixture);
-  return [...changedFigures(fixture, text, ev), ...movedFigures(fixture, text, ev), ...inventedDates(fixture, text, ev)];
+  return [
+    ...changedFigures(fixture, text, ev),
+    ...movedFigures(fixture, text, ev, true),
+    ...movedFigures(fixture, text, ev, false),
+    ...inventedDates(fixture, text, ev),
+    ...shiftedDates(fixture, text, ev),
+  ];
 }
