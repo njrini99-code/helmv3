@@ -53,6 +53,9 @@ import { heldCommitFor } from './held-runner';
 import { getProximityByBand, getRoundDetail, getShotPattern } from './shot-reads';
 import { compareSeasons, getCalendar, getCourse, getRootCauses } from './engine-reads';
 import { getDocuments, getPractice, getTeamPatterns } from './ask-reads';
+import { applyTourBenchmarks, benchmarkSource } from './benchmark-reads';
+import { benchmarkTools, coachWideReadTools } from './wide-read-tools';
+import { WIDE_READ_STEPS } from './wide-read-names';
 import { teamPatternEnabled } from '@/lib/coachhelm/v3/team-pattern/flag';
 import { holdForExecution, releaseHeld, sweepHeld } from './undo-hold';
 import { tool } from 'ai';
@@ -192,6 +195,7 @@ const PROGRESS_LABEL: Record<string, (input: Record<string, unknown>) => string>
   create_task: () => 'Drafting a task',
   create_team_announcement: () => 'Drafting a team update',
   create_drill: () => 'Drafting a drill',
+  ...Object.fromEntries(Object.entries(WIDE_READ_STEPS).map(([name, [doing]]) => [name, () => doing])),
 };
 
 /** The same words, past tense, for the row once the read is back (Ask v2). */
@@ -225,6 +229,7 @@ const PROGRESS_DONE: Record<string, string> = {
   compare_seasons: 'Compared the seasons',
   find_player: 'Found that player on your roster',
   show_visual: 'Built the visual',
+  ...Object.fromEntries(Object.entries(WIDE_READ_STEPS).map(([name, [, done]]) => [name, done])),
 };
 
 /** One short fact from the envelope's own counts, never a number not in it; it goes through `collect` with the envelope, so the audit already knows it. */
@@ -373,6 +378,9 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
     });
   };
 
+  /** Ask v2: the team's Tour and standards, each read once for the turn. */
+  const benchSource = askV2 ? benchmarkSource(sb, ctx.team_id) : null;
+
   /** Every read this turn, by the `evidence_ref` the model is handed, for show_visual to resolve. Server memory only. */
   const evidenceByRef = new Map<string, ToolEnvelope>();
   const evidence = (toolName: string, envelope: ToolEnvelope, ref?: string) => {
@@ -390,7 +398,8 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
       const step = progress(name, input);
       // HELM_COACHHELM_TEAMS canary: every roster player is on ctx.team_id, so
       // the chat's team is the scope (no read).
-      const envelope = await guarded(() => runWithCoachHelmTeams([ctx.team_id], () => run(input)), collect, name, ctx);
+      // Ask v2: where the Tour has a value for a metric a read returned, the measurement carries it, so a visual and the audit see the benchmark.
+      const envelope = await guarded(() => runWithCoachHelmTeams([ctx.team_id], async () => (benchSource ? applyTourBenchmarks(await run(input), benchSource) : run(input))), collect, name, ctx);
       progressEnd(step, name, envelope, envelope.coverage === 'unavailable');
       const ref = `e${evidenceByRef.size + 1}`;
       evidenceByRef.set(ref, envelope);
@@ -758,6 +767,10 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
 
     // Ask v2's create flows, each on the same gate: nothing writes before the named button, and nothing is told until Undo closes.
     ...(askV2 ? Object.fromEntries((isFlagEnabled('golf_tournaments_v1') ? [...CREATE_FLOWS, ...LINEUP_FLOWS] : CREATE_FLOWS).filter((f) => (f.name === 'send_message' ? surface === 'quick_chat' : f.name === 'publish_artifact' ? surface !== 'quick_chat' : true)).map((f) => [f.name, flowTool(f)])) : {}),
+
+    // Ask v2's wider reads: benchmarks, definitions and the golf reference, the typed reads for the rest of the program, and the allowlisted reader for the long tail.
+    ...(askV2 && benchSource ? benchmarkTools({ sb, ctx, read, source: benchSource, who: { role: 'coach' } }) : {}),
+    ...(askV2 ? coachWideReadTools({ sb, ctx, read, tournamentsOn: isFlagEnabled('golf_tournaments_v1') }) : {}),
 
     ...(askV2 && practicePlans ? { [drillFlow.name]: flowTool(drillFlow as unknown as FlowDef<never>) } : {}),
     ...(askV2 ? askDraftTools({ sb, ctx, writer, practicePlans, surface, onArtifactWords }) : {}),

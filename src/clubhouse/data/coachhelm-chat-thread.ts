@@ -3,6 +3,7 @@ import type { UIMessage } from 'ai';
 import type { ReadPictureData } from '../screens/coachhelm/plan/ReadPicture';
 import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { Measurement, MeasurementSeries, ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
+import { WIDE_READ_CHIPS } from '@/lib/coachhelm/v3/chat/wide-read-names';
 import { ValidatedComposition } from '@/lib/coachhelm/v3/chat/visuals/composition';
 import { ValidatedVisualArtifact } from '@/lib/coachhelm/v3/chat/visuals/schema';
 import { changeTone, formatFixed, formatSG, formatToPar, MINUS, NO_DATA } from '../lib/format';
@@ -401,6 +402,7 @@ const READ_NAME: Record<string, string> = {
   get_team_strokes_gained: 'Strokes gained',
   get_team_putting_profile: 'Team putts',
   get_my_reads: 'Your reads',
+  ...WIDE_READ_CHIPS,
 };
 
 /** What a read's figures rest on: its first measurement, or its first series (a trend's envelope carries only that). */

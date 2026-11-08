@@ -15,6 +15,9 @@ import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { playerTitle } from '@/lib/coachhelm/reads/player-cause';
 import { compileComposition } from './visuals/compile-composition';
 import { CompositionSpecV2, ShowVisualInputV2 } from './visuals/composition';
+import { applyTourBenchmarks, benchmarkSource } from './benchmark-reads';
+import { benchmarkTools } from './wide-read-tools';
+import { PLAYER_BENCHMARK_STEP, WIDE_READ_STEPS } from './wide-read-names';
 
 type Sb = SupabaseClient<Database>;
 
@@ -88,6 +91,8 @@ export function inSecondPerson<E extends ToolEnvelope>(envelope: E, name: string
 
 export function buildPlayerTools({ sb, ctx, playerId, writer, collect, playerFigures }: { sb: Sb; ctx: CoachChatContext; playerId: string; writer: UIMessageStreamWriter; collect: (e: ToolEnvelope) => void; playerFigures?: PlayerFiguresSource }): ToolSet {
   const evidenceByRef = new Map<string, ToolEnvelope>();
+  // The player's team's Tour and standards, read once for the turn: a measurement a read returns carries the Tour's value where there is one.
+  const benchSource = benchmarkSource(sb, ctx.team_id);
   let n = 0;
   const read =
     <I extends object>(name: string, label: string, done: string, run: (input: I) => Promise<ToolEnvelope>) =>
@@ -96,7 +101,7 @@ export function buildPlayerTools({ sb, ctx, playerId, writer, collect, playerFig
       writer.write({ type: 'data-progress', id, data: { label, tool: name } });
       let envelope: ToolEnvelope;
       try {
-        envelope = inSecondPerson(await run(input), ctx.roster.find((p) => p.id === playerId)?.name ?? '');
+        envelope = inSecondPerson(await applyTourBenchmarks(await run(input), benchSource), ctx.roster.find((p) => p.id === playerId)?.name ?? '');
       } catch {
         envelope = unavailableEnvelope('Could not complete that read.', 'That read could not be completed.');
       }
@@ -107,7 +112,13 @@ export function buildPlayerTools({ sb, ctx, playerId, writer, collect, playerFig
       writer.write({ type: 'data-evidence', id: `evidence-${name}-${n}`, data: { tool: name, envelope, ref } });
       return { ...envelope, evidence_ref: ref };
     };
+  /** The shared benchmark reads, announced in the player's words. */
+  const wide = <I extends Record<string, unknown>>(name: string, run: (input: I) => Promise<ToolEnvelope>) => {
+    const [doing, done] = name === 'get_benchmarks' ? PLAYER_BENCHMARK_STEP : (WIDE_READ_STEPS[name] ?? ['Reading', 'Read']);
+    return read(name, doing, done, run);
+  };
   return {
+    ...benchmarkTools({ sb, ctx, read: wide, source: benchSource, who: { role: 'player', playerId } }),
     get_player_metrics: tool({ description: `Your computed statistics. ${WINDOW_NOTE}`, inputSchema: z.object({ metric_ids: z.array(z.enum(METRIC_IDS)).min(1).max(8), window: z.enum(FIGURE_WINDOWS).default('last10') }), execute: read('get_player_metrics', 'Reading your statistics', 'Read your statistics', (i: { metric_ids: Array<(typeof METRIC_IDS)[number]>; window: (typeof FIGURE_WINDOWS)[number] }) => getPlayerMetric(sb, ctx, { player_id: playerId, metric_ids: i.metric_ids, window: i.window }, playerFigures)) }),
     get_player_trend: tool({ description: 'Your movement on one metric over rounds.', inputSchema: z.object({ metric_id: z.enum(METRIC_IDS), last_n: z.number().int().min(3).max(30).default(10) }), execute: read('get_player_trend', 'Reading your recent rounds', 'Read your recent rounds', (i: { metric_id: string; last_n: number }) => getPlayerTrend(sb, ctx, { player_id: playerId, metric_id: i.metric_id, last_n: i.last_n })) }),
     get_recent_rounds: tool({ description: 'Your recent rounds.', inputSchema: z.object({ last_n: z.number().int().min(1).max(20).default(5) }), execute: read('get_recent_rounds', 'Reading your rounds', 'Read your rounds', (i: { last_n: number }) => getRecentRounds(sb, ctx, { player_id: playerId, last_n: i.last_n })) }),
@@ -136,5 +147,7 @@ export function buildPlayerTools({ sb, ctx, playerId, writer, collect, playerFig
 export const PLAYER_INSTRUCTIONS = (first: string, team: string, zone: string) => `You are CoachHelm, talking with ${first}, a player on ${team}. Their timezone is ${zone}.
 
 Say "you". In a visual's title, lede and notes too: "Your last round", never their name. Be encouraging and plain. Use only your tools; every figure must come from a read this turn, followed by that read's evidence_ref in square brackets, like [e2].
-Never name another player, even if asked. You can only read this player's own data. The only comparisons are the PGA Tour and the team average, and never who on the team did what.
+Never name another player, even if asked. You can only read this player's own data. The comparisons you can make are the Tour, college and high-school averages, the team average and the average at your level, and never who on the team did what.
+To compare, read the benchmarks first: they return the Tour and college averages with their source, and your standing (your value, the Tour, the team average, the level average). Say which level and where the value comes from. A benchmark is an average, not anyone's result: never write it as if it were yours or a teammate's.
+For golf knowledge (what a stat means, how putting or approach play affects scoring, what is typical), read the golf reference. Its figures are published research: say where they come from, keep them in their own sentence apart from your numbers, and never invent a distance, count of reps or target that no read returned. If a read has nothing, say so.
 You cannot change anything. If asked to write or send something, say to ask their coach.`;
