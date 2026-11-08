@@ -17,6 +17,7 @@ export function BubbleReceipt({
   group,
   carrier,
   onSeenBy,
+  reduced,
 }: {
   api: ChMessagesApi;
   m: ChMsg;

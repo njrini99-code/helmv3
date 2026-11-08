@@ -1,7 +1,7 @@
 'use client';
 
 import type { ChMessagesApi } from '../api/types';
-import { type ChConv, type ChMsg, threadItems, firstName } from '../model';
+import { type ChConv, type ChMsg, threadItems } from '../model';
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { haptic } from '../../../lib/haptics';
 import { receiptCarrierId, SEEN_BY_VISIBILITY } from '@/lib/golf/message-receipts';
@@ -27,6 +27,7 @@ import { ThreadScroller } from './ThreadScroller';
 import { Bubble } from './Bubble';
 import { Composer } from './Composer';
 import { TypingRows } from './TypingRows';
+import { useThreadLayers } from './use-thread-layers';
 import { EditMessageModal, DeleteMessageModal } from '../overlays/message-modals';
 
 /** The thread's glide, longer than the page's (a conversation is read down a long column). */
@@ -126,36 +127,20 @@ export function Thread({
     };
   }, [picking]);
 
-  const sub = conv.group
-    ? `${conv.memberCount} members${
-        conv.memberIds.length
-          ? ` · ${conv.memberIds
-              .slice(0, 3)
-              .map((id) => firstName(personOf(api, id)?.name ?? "Member"))
-              .join(", ")}${conv.memberIds.length > 3 ? " and more" : ""}`
-          : ""
-      }`
-    : conv.subtitle;
-  // Redesign: the bar's hairline shows once there is content under it (M-MSG-04b).
-  const barEl = useRef<HTMLElement | null>(null);
+  // MSG-202: "11 members" / "6 members" for a group, the person's role for a direct thread (no member names).
+  const sub = conv.group ? `${conv.memberCount} members` : conv.subtitle;
   const [searching, setSearching] = useState(false);
-  useEffect(() => {
-    const el = scroller.current;
-    if (!el) return;
-    const on = () => barEl.current?.classList.toggle("is-under", el.scrollTop >= 2);
-    on();
-    el.addEventListener("scroll", on, { passive: true });
-    return () => el.removeEventListener("scroll", on);
-  }, []);
+  // MSG-202/203: the scroller runs under the glass bar and the floating composer; the bar's hairline shows once content is under it (`is-flat` at the top).
+  useThreadLayers(scroller, { kind: "desk", convId: conv.id, reduced: reducedMotion });
 
   return (
     <PollThreadContext.Provider value={pollThread}>
     <section
       ref={section}
-      className="ch-ms-thread"
+      className="ch-ms-thread is-layered"
       aria-label={`Conversation with ${conv.title}`}
     >
-      <header className="ch-ms-th" ref={barEl}>
+      <header className="ch-ms-th">
         <div className="ch-ms-th__who">
           <span className="ch-ms-back">
             <IconButton
@@ -179,7 +164,7 @@ export function Thread({
           </div>
         </div>
         <div className="ch-ms-th__act">
-          <IconButton icon={Search} label="Search this conversation" variant={searching ? "secondary" : "ghost"} pressed={searching} onClick={() => setSearching((v) => !v)} />
+          <IconButton icon={Search} label="Search in conversation" variant={searching ? "secondary" : "ghost"} pressed={searching} onClick={() => setSearching((v) => !v)} />
           {calendarHref && api.viewer.role === "coach" && (
             <Tooltip>
               <a

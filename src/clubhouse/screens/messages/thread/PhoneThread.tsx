@@ -27,6 +27,7 @@ import { ThreadScroller } from './ThreadScroller';
 import { Bubble } from './Bubble';
 import { Composer } from './Composer';
 import { TypingRows } from './TypingRows';
+import { useThreadLayers } from './use-thread-layers';
 import { HoldLift } from '../hold-lift';
 import { HoldReactKeys } from '../overlays/HoldKeys';
 import { REACTIONS } from '../overlays/reactions';
@@ -117,6 +118,8 @@ export function PhoneThread({
   useReplyFromTyping(scroller, api.msgs.length, !!api.typing, true, threadReduced);
   useFaceFlight(true, threadReduced);
   useSendRise(scroller, api.msgs.length, true, threadReduced);
+  // MSG-201/203/307: the scroller runs under the bar and the composer, and both ride the keyboard.
+  useThreadLayers(scroller, { kind: 'phone', convId: conv.id, reduced: threadReduced });
   const titleId = `ch-msp-thread-${conv.id}`;
   const sub = conv.group ? `${conv.memberCount} members` : conv.subtitle;
   const copy = async (m: ChMsg) => {
@@ -137,7 +140,7 @@ export function PhoneThread({
         titleId={titleId}
         back={{ onBack, ariaLabel: "Back to Messages" }}
         title={
-          <button type="button" className="ch-msp-who" onClick={onDetails}>
+          <button type="button" className="ch-msp-who" onClick={onDetails} aria-label={`Details for ${conv.group ? conv.title : firstName(conv.title)}`}>
             {conv.group ? <GroupMark size="md" flag={!!conv.channel} /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size="md" year={convYear(api, conv)} />}
             <span>
               <b>{!conv.group ? firstName(conv.title) : conv.title}</b>
