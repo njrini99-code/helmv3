@@ -18,6 +18,7 @@ import { CompositionSpecV2, ShowVisualInputV2 } from './visuals/composition';
 import { applyTourBenchmarks, benchmarkSource } from './benchmark-reads';
 import { benchmarkTools } from './wide-read-tools';
 import { PLAYER_BENCHMARK_STEP, WIDE_READ_STEPS } from './wide-read-names';
+import { withWindowLabel } from './window-label';
 
 type Sb = SupabaseClient<Database>;
 
@@ -101,7 +102,7 @@ export function buildPlayerTools({ sb, ctx, playerId, writer, collect, playerFig
       writer.write({ type: 'data-progress', id, data: { label, tool: name } });
       let envelope: ToolEnvelope;
       try {
-        envelope = inSecondPerson(await applyTourBenchmarks(await run(input), benchSource), ctx.roster.find((p) => p.id === playerId)?.name ?? '');
+        envelope = withWindowLabel(name, input, inSecondPerson(await applyTourBenchmarks(await run(input), benchSource), ctx.roster.find((p) => p.id === playerId)?.name ?? ''));
       } catch {
         envelope = unavailableEnvelope('Could not complete that read.', 'That read could not be completed.');
       }

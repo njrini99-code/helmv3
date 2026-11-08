@@ -2,6 +2,7 @@
 
 import { useQuickChatRun } from '../../../shell/quick-chat/QuickChatProvider';
 import { AnimatePresence } from 'motion/react';
+import { lastTurnWindow } from './ask-scope-window';
 import { AskKnowsPanel } from './parts/KnowsPanel';
 import { AllowanceMeter, PlayerOut } from './parts/Allowance';
 import { ArtifactBody, ArtifactView } from './parts/Artifact';
@@ -102,11 +103,12 @@ function AskFrame({ team, children }: { team?: string; children: ReactNode }) {
  * pages; everything else is the chat. The conversation itself runs on the production hook and route, unchanged.
  */
 /** The scope line's words: who, from a name in the question, and the window only if the question gave one (QA-5: a guessed "last 30 days" contradicted answers read over the season). Never a figure, so it can't overclaim. */
-export function askScope(question: string, team: string, names: readonly string[]): string {
+export function askScope(question: string, team: string, names: readonly string[], readWindow?: string | null): string {
   const q = question.toLowerCase();
   const who = names.find((n) => q.includes(n.toLowerCase()) || q.includes((n.split(' ')[0] ?? n).toLowerCase())) ?? team;
   const rounds = q.match(/last (\d+) rounds/)?.[0];
-  const window = rounds ?? (/this season|this fall|this spring/.exec(q)?.[0]) ?? (/last season|last fall/.exec(q)?.[0]) ?? (/last 30 days/.exec(q)?.[0]);
+  // The window the reads used wins over the question's words: the answer was read over that.
+  const window = readWindow ?? rounds ?? (/this season|this fall|this spring/.exec(q)?.[0]) ?? (/last season|last fall/.exec(q)?.[0]) ?? (/last 30 days/.exec(q)?.[0]);
   return window ? `${who} · ${window}` : who;
 }
 
@@ -266,7 +268,7 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
 
   // S-ASK.scope: what the last question is about, in the same words the question used; it changes when a question is sent.
   const lastAsked = [...chat.messages].reverse().find((m) => m.role === 'user')?.parts.flatMap((p) => (p.type === 'text' ? [p.text] : [])).join(' ') ?? '';
-  const scopeLine = showHome ? `${player ? 'My rounds' : data.teamName} · this season` : askScope(lastAsked, player ? 'My rounds' : data.teamName, player ? [] : (data.players ?? []).map((p) => p.name));
+  const scopeLine = showHome ? `${player ? 'My rounds' : data.teamName} · this season` : askScope(lastAsked, player ? 'My rounds' : data.teamName, player ? [] : (data.players ?? []).map((p) => p.name), lastTurnWindow(chat.messages));
 
   // FID-ASK-7: read once, then off the address, so a reload doesn't put it back over what the coach has since typed.
   useEffect(() => {

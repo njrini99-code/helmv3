@@ -220,6 +220,8 @@ export const ToolEnvelope = z.object({
   coverage: CoverageState,
   coverage_note: z.string().nullable().default(null),
   as_of: z.string(),
+  /** The window the read actually covered, in the scope line's words ("last 10 rounds"). Set by the read wrapper (window-label.ts); absent on older stored reads and on reads with no window. */
+  window_label: z.string().optional(),
 });
 export type ToolEnvelope = z.infer<typeof ToolEnvelope>;
 
