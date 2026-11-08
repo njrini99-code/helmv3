@@ -1034,6 +1034,16 @@ describe('Messages · behaviour contracts (P007, docs/clubhouse/pages/P007-messa
     expect(router.replace).toHaveBeenCalledWith('/golf/dashboard/messages', { scroll: false });
   });
 
+  it('70102 a ?c= link is the short form of ?conversation= and opens the same thread, not the newest', async () => {
+    live.convs.conversations = [team, dm];
+    params.current = new URLSearchParams('c=dm');
+    router.replace.mockClear();
+    show();
+    expect(await screen.findByRole('textbox', { name: /Message Jonah$/ })).toBeTruthy();
+    expect(screen.queryByRole('textbox', { name: /Message Varsity team/ })).toBeNull();
+    expect(router.replace).toHaveBeenCalledWith('/golf/dashboard/messages', { scroll: false });
+  });
+
   it('A16 a ?compose=1 link (the palette’s New message) opens New message and cleans the address', async () => {
     live.convs.conversations = [team, dm];
     params.current = new URLSearchParams('compose=1');

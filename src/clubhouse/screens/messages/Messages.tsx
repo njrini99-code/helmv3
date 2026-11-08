@@ -180,15 +180,15 @@ export function Messages({ data }: { data: ChMessagesData }) {
     }
   }, [loading, selectedId, convs, paramsDone]);
 
-  // Deep links: ?conversation=<id>, or ?player=<golf_players.id> or ?user=<auth user id> (a player's
+  // Deep links: ?conversation=<id> (or the short ?c=<id>), or ?player=<golf_players.id> or ?user=<auth user id> (a player's
   // "Message coach" on Home) to open (or start) a direct thread.
   // `?compose=1` (the command palette's New message, A16) opens New message with no one chosen.
-  const linkKey = ['conversation', 'player', 'user', 'prefill', 'compose'].map((k) => params.get(k) ?? '').join('\u0000');
+  const linkKey = ['conversation', 'c', 'player', 'user', 'prefill', 'compose'].map((k) => params.get(k) ?? '').join('\u0000');
   useEffect(() => {
     if (loading || handledParams.current === linkKey) return;
     const first = handledParams.current === null;
     handledParams.current = linkKey;
-    const conv = params.get('conversation');
+    const conv = params.get('conversation') ?? params.get('c');
     const player = params.get('player');
     const user = params.get('user');
     // Read once: the entry is deleted as it is taken, so Back or a reload never brings the draft back.
