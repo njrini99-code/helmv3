@@ -15,12 +15,13 @@
  * person who is not on the demo roster, so no personal data beyond the demo team's own names is written.
  */
 import { createHash } from 'node:crypto';
-import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import { cliGuard, skipWrite } from '../lib/cli-guard.mjs';
+import { citesFromLog } from './ask-eval-score.mjs';
 
 const STAGING_REF = 'ybmwektreyrwjscxlogv';
 const DEMO_TEAM_ID = '6ecdd1a6-63fe-4beb-b094-00118f334163';
@@ -31,11 +32,12 @@ const cli = cliGuard({
   name: 'scripts/coachhelm/export-ask-turns.mjs',
   summary:
     'Export stored CoachHelm Ask turns (golf_coachhelm_chat_messages) from the staging demo team to JSON fixtures for the offline replay suite. Read-only against the database; --apply only writes local files.',
-  usage: '[--team <uuid>] [--out <dir>] [--since <YYYY-MM-DD>] [--prune]',
+  usage: '[--team <uuid>] [--out <dir>] [--since <YYYY-MM-DD>] [--cites-log <file>] [--prune]',
   options: [
     ['--team <uuid>', `Team whose coaches’ conversations to export (default: Demo University Golf, ${DEMO_TEAM_ID}).`],
     ['--out <dir>', 'Fixture directory (default: src/lib/coachhelm/v3/chat/__tests__/fixtures/ask-turns).'],
     ['--since <date>', 'Only turns created on or after this date.'],
+    ['--cites-log <file>', "A dev server log with [ask:cites] lines: a turn they match (by conversation id and the answer's first 60 characters) is exported with its cites, so it replays cited, as in production. Cites already in an existing fixture file are kept."],
     ['--prune', 'With --apply: delete fixture files in --out that this export no longer produces. Labels are never touched.'],
   ],
   writes: true,
@@ -50,6 +52,7 @@ const flag = (name) => {
 const teamId = flag('--team') ?? DEMO_TEAM_ID;
 const outDir = resolve(flag('--out') ?? DEFAULT_OUT);
 const since = flag('--since');
+const citesLog = flag('--cites-log') ? readFileSync(resolve(flag('--cites-log')), 'utf8') : null;
 
 config({ path: join(process.cwd(), '.env.local'), quiet: true });
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -127,6 +130,14 @@ for (const m of msgs) {
   if (!byConv.has(m.conversation_id)) byConv.set(m.conversation_id, []);
   byConv.get(m.conversation_id).push(m);
 }
+/** The cites an earlier export already holds for this file: a re-export without the log must not lose them. */
+const keptCites = (file) => {
+  try {
+    return existsSync(join(outDir, file)) ? JSON.parse(readFileSync(join(outDir, file), 'utf8')).turn?.cites : undefined;
+  } catch {
+    return undefined;
+  }
+};
 
 const evidenceOf = (m) =>
   (Array.isArray(m.ui_parts) ? m.ui_parts : []).filter((p) => p?.type === 'data-evidence' && p.data?.envelope).map((p) => ({ tool: p.data.tool, ref: p.data.ref ?? null, envelope: p.data.envelope }));
@@ -134,7 +145,7 @@ const evidenceOf = (m) =>
 const fixtures = [];
 const skipped = [];
 const seen = new Set();
-for (const ms of byConv.values()) {
+for (const [convId, ms] of byConv) {
   for (let i = 0; i < ms.length; i += 1) {
     const m = ms[i];
     if (m.role !== 'assistant') continue;
@@ -174,8 +185,10 @@ for (const ms of byConv.values()) {
             unmatchedTokens: flagPart?.data?.unmatched_tokens ?? [],
             misattributedTokens: flagPart?.data?.misattributed_tokens ?? [],
           };
+    const file = `${m.created_at.slice(0, 10)}-${m.id.slice(0, 8)}.json`;
+    const cites = (citesLog ? citesFromLog(citesLog, content, 'coach', convId) : null) ?? keptCites(file);
     fixtures.push({
-      file: `${m.created_at.slice(0, 10)}-${m.id.slice(0, 8)}.json`,
+      file,
       body: {
         id: m.id.slice(0, 8),
         messageId: m.id,
@@ -198,6 +211,7 @@ for (const ms of byConv.values()) {
             .filter((p) => typeof p?.type === 'string' && p.type.startsWith('tool-'))
             .map((p) => ({ name: p.type.slice(5), input: p.input ?? null })),
           evidence,
+          ...(cites ? { cites } : {}),
           recorded,
         },
       },
@@ -210,7 +224,7 @@ console.log(`staging project ${ref}, team "${team.name}" (${roster.length} activ
 console.log(`\n${fixtures.length} turns to export:`);
 for (const f of fixtures) {
   const t = f.body.turn;
-  console.log(`  ${f.file}  ${t.recorded.outcome}${t.recorded.reason ? `:${t.recorded.reason}` : ''}  ev=${t.evidence.length}  "${f.body.userMessage.content.replace(/\s+/g, ' ').slice(0, 60)}"`);
+  console.log(`  ${f.file}  ${t.recorded.outcome}${t.recorded.reason ? `:${t.recorded.reason}` : ''}  ev=${t.evidence.length}${t.cites ? `  cites=${t.cites.length}` : ''}  "${f.body.userMessage.content.replace(/\s+/g, ' ').slice(0, 60)}"`);
 }
 console.log(`\n${skipped.length} turns left out:`);
 for (const s of skipped) console.log(`  ${s}`);

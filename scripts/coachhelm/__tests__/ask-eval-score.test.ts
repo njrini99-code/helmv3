@@ -120,6 +120,8 @@ describe('ask-eval cites from the dev log', () => {
       { v: 'lost', ref: 'e3', key: 'k', subject: '8091da4b', c: 1 },
     ]);
     expect(citesFromLog(log, 'Something else entirely', 'coach')).toBeNull();
+    expect(citesFromLog(log.replace('"surface":"coach",', '"surface":"coach","turn":"conv-1",'), 'Owen is at -4.16 per round over his last ten rounds, and more', 'coach', 'conv-2')).toBeNull();
+    expect(citesFromLog(log.replace('"surface":"coach",', '"surface":"coach","turn":"conv-1",'), 'Owen is at -4.16 per round over his last ten rounds, and more', 'coach', 'conv-1')).toHaveLength(3);
     expect(citesFromLog(log, 'Owen is at -4.16 per round over his last ten rounds, and more text after sixty chars ...', 'player')).toBeNull();
   });
 });

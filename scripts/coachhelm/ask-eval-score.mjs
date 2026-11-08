@@ -162,25 +162,25 @@ const collapse = (t) => String(t).replace(/\s+/g, ' ').trim();
 
 /**
  * The cites of one answer, from the dev server's `[ask:cites]` line (cites.ts prints every cite in development):
- * `[ask:cites] {"surface":"coach","says":"<first 60 chars of the answer>","cites":[["-4.16","e3","sg_approach","8091da4b"],["lost","e3","k","8091da4b","c"]]}`.
- * The line is matched to the answer by `says`, the first 60 characters of the stored text with whitespace collapsed.
+ * `[ask:cites] {"surface":"coach","turn":"<conversation id>","says":"<first 60 chars of the answer>","cites":[["-4.16","e3","sg_approach","8091da4b"],["lost","e3","k","8091da4b","c"]]}`.
+ * The line is matched to the answer by `says`, the first 60 characters of the stored text with whitespace collapsed, and, when `turnId`
+ * is given, by `turn` too (only that turn's line counts; without a `turnId`, the newest `says` match does).
  * The subject is an 8-character id prefix (the verifier accepts six or more). Null when no line matches.
  */
-export function citesFromLog(logText, answerText, surface) {
+export function citesFromLog(logText, answerText, surface, turnId) {
   if (!logText || !answerText) return null;
   const says = collapse(answerText).slice(0, 60);
-  const lines = logText.split('\n').filter((l) => l.includes('[ask:cites]'));
-  for (const line of lines.reverse()) {
-    const json = line.slice(line.indexOf('{'));
-    let parsed;
+  const parsedLines = [];
+  for (const line of logText.split('\n').reverse()) {
+    if (!line.includes('[ask:cites] ')) continue;
     try {
-      parsed = JSON.parse(json);
+      const parsed = JSON.parse(line.slice(line.indexOf('{')));
+      if (Array.isArray(parsed.cites) && collapse(parsed.says ?? '') === says && (!surface || !parsed.surface || parsed.surface === surface)) parsedLines.push(parsed);
     } catch {
-      continue;
+      /* not a cites line */
     }
-    if (surface && parsed.surface && parsed.surface !== surface) continue;
-    if (collapse(parsed.says ?? '') !== says || !Array.isArray(parsed.cites)) continue;
-    return parsed.cites.filter(Array.isArray).map(([v, ref, key, subject, flag]) => ({ v: String(v), ref, key, subject, ...(flag === 'c' ? { c: 1 } : {}) }));
   }
-  return null;
+  // With a turn id only that turn's line counts: two turns can open with the same 60 characters and cite different reads.
+  const hit = turnId ? parsedLines.find((p) => p.turn === turnId) : parsedLines[0];
+  return hit ? hit.cites.filter(Array.isArray).map(([v, ref, key, subject, flag]) => ({ v: String(v), ref, key, subject, ...(flag === 'c' ? { c: 1 } : {}) })) : null;
 }

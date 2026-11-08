@@ -599,7 +599,7 @@ for (const question of picked) {
       id: `${question.viewer}-${question.id}`, surface: question.viewer, team: team.name, timezone: team.timezone,
       roster: who.map((p) => ({ id: p.id, name: p.name, first_name: p.first, last_name: p.name.slice(p.first.length).trim() || null })),
       ask: question.ask, askedAt: startedAt.toISOString(), answeredAt: new Date().toISOString(), text, state, verdict, flagged, cost, base,
-      cites: serverLog ? citesFromLog(serverLog, text, question.viewer) : null,
+      cites: serverLog ? citesFromLog(serverLog, text, question.viewer, conversationId) : null,
     });
     mkdirSync(captureDir, { recursive: true });
     writeFileSync(join(captureDir, `${fixture.id}.json`), `${JSON.stringify(fixture, null, 1)}\n`);

@@ -668,5 +668,50 @@
   "expect": "rejected",
   "why": "Says \"the other 5 rounds had 30 putts or fewer\": the other three had 30, 31 and 30 putts, so it is neither 5 rounds nor 30 or fewer. The 10 three-putts, 33 putts a round, the per-round lines and 34.67 are right.",
   "knownWrongAccept": true
+ },
+ "01cd8a97": {
+  "expect": "rejected",
+  "why": "Says Ethan Park is \"first of the six players with a figure\" and \"each of the six ranked players\": seven players have a putting figure (Audit Testplayer has none). The withhold of \"six\" is correct."
+ },
+ "023d13da": {
+  "expect": "accepted",
+  "why": "74 and 77 with 37 putts and 3 three-putts, the 73 on 30 putts, 26 rounds since Sept 1: match the rounds."
+ },
+ "200ff94b": {
+  "expect": "accepted",
+  "why": "25 counted rounds, scoring average 75.76, Cole 13 and six others 2 each: match the rounds."
+ },
+ "403b178c": {
+  "expect": "accepted",
+  "why": "Owen -4.16 over 8 rounds, team -3.09 and 6th of 7, Tour 0, proximity 23.77 ft against Division I 28: match the reads."
+ },
+ "50cdef6e": {
+  "expect": "accepted",
+  "why": "Team SG: season read is 11 rounds by one player (-4.37 approach, -2.4 putting, -1.36 tee, 0.07 around), the 10-round read 55 rounds by 7 players (-3.09, -3.03), \"six other players have rounds but no season strokes gained\": true."
+ },
+ "7488e220": {
+  "expect": "accepted",
+  "why": "Capabilities list; \"the last 5, 10 or 20 rounds\" are windows the assistant can read, not results. The audit rejects \"20\".",
+  "knownWrongBlock": true
+ },
+ "848ce511": {
+  "expect": "accepted",
+  "why": "No completed round since Oct 25; Cole Oct 21 (a practice round dated Oct 25 still in progress), six players Sept 26: match the rounds."
+ },
+ "9dc45e7d": {
+  "expect": "accepted",
+  "why": "No attendance; five closed goals, proximity 28 to 15.29 against 18, make rate 82 to 46.5 against 92, 24 to 15.95 against 15: match the reads."
+ },
+ "a9556701": {
+  "expect": "accepted",
+  "why": "Nothing scheduled Nov 8 to Nov 15, 5 open tasks all overdue, due dates Jul 22 to Aug 4: match the reads."
+ },
+ "c79c8e4e": {
+  "expect": "accepted",
+  "why": "Top three by scoring average: Mason 72, Owen 72.5, Ethan 73 over 2 rounds each, 0 and 0.5 over par: match the rounds."
+ },
+ "e455047c": {
+  "expect": "accepted",
+  "why": "Greeting; no figures."
  }
 }

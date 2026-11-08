@@ -1,0 +1,89 @@
+{
+ "id": "7488e220",
+ "messageId": "7488e220-c5a7-4196-a83f-5186d74fea5c",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "What can you do?",
+  "createdAt": "2026-11-08T06:24:56.43589+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-11-08T06:24:56.43589+00:00",
+   "content": "What can you do?",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-11-08T06:25:01.472265+00:00",
+  "status": "failed",
+  "costUsd": null,
+  "content": "I can read your team's data and help you act on it. Here's what that covers.\n\n**Analysis**\n- Player and team stats: scoring, strokes gained by area, greens, fairways, putting, scrambling and penalties. I can look at the last 5, 10 or 20 rounds, the season, or the whole recorded history.\n- Trends round by round, and where a player is losing the most strokes.\n- Putting by distance, approach proximity and miss patterns.\n- Comparisons between players, team rankings, and season-over-season changes.\n- Benchmarks against the Division level, your team average and the Tour. I only quote a reference when a source returns it.\n- Hole-by-hole detail for a single round.\n\n**Program tracking**\n- Qualifiers, tournaments and lineups.\n- Goals, focus areas and whether players are logging practice against them.\n- Attendance, upcoming events, open tasks and travel.\n- Tournament reviews and player reflections.\n\n**Things I can draft for you to confirm**\n- Practices, recurring practices, events, trips and qualifiers.\n- Goals, focus areas and tasks.\n- Team announcements, messages and polls.\n- Practice plans built from your drill bank.\n- Round notes, availability notes, lineups and written reports.\n\nNothing changes until you confirm it. I draft it and you approve it.\n\nSome good places to start:\n- \"How is the team doing?\"\n- \"Where is Cole losing the most strokes?\"\n- \"Who putts best from short range?\"\n- \"Draft a practice for Tuesday focused on approach play.\"",
+  "tools": [],
+  "evidence": [],
+  "cites": [],
+  "recorded": {
+   "outcome": "rejected",
+   "reason": "ungrounded_claims",
+   "unmatchedTokens": [
+    "20"
+   ],
+   "misattributedTokens": []
+  }
+ }
+}
