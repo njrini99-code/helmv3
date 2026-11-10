@@ -1708,3 +1708,14 @@ REVOKE ALL ON FUNCTION "helm_private"."sync_tournament_round_from_event"() FROM 
 REVOKE ALL ON FUNCTION "helm_private"."sync_tournament_round_titles"() FROM PUBLIC, "anon", "authenticated";
 
 REVOKE ALL ON FUNCTION "helm_private"."sync_round_event_fields"() FROM PUBLIC, "anon", "authenticated";
+
+-- Messages privacy fixes (HELD 20261107090000 to 20261107090300)
+REVOKE ALL ON FUNCTION "public"."golf_participants_identity_guard"() FROM PUBLIC, "anon";
+
+REVOKE ALL ON FUNCTION "public"."golf_conversations_identity_guard"() FROM PUBLIC, "anon";
+
+REVOKE ALL ON FUNCTION "public"."golf_messages_identity_guard"() FROM PUBLIC, "anon";
+
+REVOKE ALL ON FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") TO "service_role";
