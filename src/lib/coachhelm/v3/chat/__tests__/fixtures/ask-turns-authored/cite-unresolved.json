@@ -1,0 +1,821 @@
+{
+ "id": "cite-unresolved",
+ "messageId": "authored-unresolved",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "authoredFrom": "368318ea",
+  "note": "Cites a read that does not exist this turn: unresolved, so the text heuristics judge the figure."
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "How does Owen Carter's approach play compare with his level, the team and the Tour over his last 10 rounds?",
+  "createdAt": "2026-11-08T04:49:16.373671+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-11-08T04:49:16.373671+00:00",
+   "content": "How does Owen Carter's approach play compare with his level, the team and the Tour over his last 10 rounds?",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-11-08T04:49:31.204696+00:00",
+  "status": "complete",
+  "costUsd": null,
+  "content": "Owen's approach play is well behind the team and the Tour over this window, and there is no college figure to read it against. His strokes gained on approach is -4.16 per round over his last ten rounds. Only 8 of those rounds have approach strokes gained recorded, from June 9 to September 26, so the read rests on 8 rounds.\n\n- **Level:** There is no Division I figure for strokes gained, so I can't place him against his level.\n- **Team:** The team average is -2.33 per round, and Owen is below it. By value he has the second-lowest approach figure of the seven players with data. Only Ethan Park is lower, at -4.40. Audit Testplayer has no approach strokes gained in this window.\n- **Tour:** The Tour baseline is 0, so he is behind it by the full -4.16. A college player trailing the Tour is expected, so the team comparison is the more useful one.\n\nHis greens in regulation are less alarming. He hit 61.11% over 144 holes in the same window. The Division I average is 60%, so he is slightly above his level there. The team average is 66.25% and the Tour figure is 66%, so he is below both. He reaches a typical number of greens but loses strokes on the approach shots themselves. The reads don't say why, so a look at his approach shot patterns by distance is the logical next step.",
+  "tools": [
+   {
+    "name": "find_player",
+    "input": {
+     "name": "Owen Carter"
+    }
+   },
+   {
+    "name": "get_benchmarks",
+    "input": {
+     "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+     "metric_ids": [
+      "sg_approach"
+     ]
+    }
+   },
+   {
+    "name": "get_player_metrics",
+    "input": {
+     "window": "last10",
+     "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+     "metric_ids": [
+      "sg_approach",
+      "gir_pct"
+     ]
+    }
+   },
+   {
+    "name": "get_team_metric_ranking",
+    "input": {
+     "window": "last10",
+     "metric_id": "sg_approach"
+    }
+   }
+  ],
+  "evidence": [
+   {
+    "tool": "get_team_metric_ranking",
+    "ref": "e1",
+    "envelope": {
+     "as_of": "2026-11-08T04:49:20.840Z",
+     "detail": {
+      "direction": "higher_better",
+      "metric_id": "sg_approach",
+      "metric_label": "Strokes gained approach"
+     },
+     "series": [],
+     "summary": "Strokes gained approach across Demo University Golf, over each player\u2019s newest ten rounds.",
+     "coverage": "partial",
+     "measurements": [
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T04:49:20.840Z",
+       "value": -2.03,
+       "entity": {
+        "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "kind": "player",
+        "label": "Dylan Brooks"
+       },
+       "method": "sg_approach_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_approach",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": null,
+         "label": "Team average",
+         "value": -2.33,
+         "place_of": 7,
+         "place_percent": 67,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained approach",
+       "window_start": "2026-06-07",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T04:49:20.840Z",
+       "value": -2.28,
+       "entity": {
+        "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "kind": "player",
+        "label": "Mason Rivers"
+       },
+       "method": "sg_approach_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_approach",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": null,
+         "label": "Team average",
+         "value": -2.33,
+         "place_of": 7,
+         "place_percent": 50,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained approach",
+       "window_start": "2026-05-29",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T04:49:20.840Z",
+       "value": -2.43,
+       "entity": {
+        "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "kind": "player",
+        "label": "Jackson Hale"
+       },
+       "method": "sg_approach_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_approach",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": null,
+         "label": "Team average",
+         "value": -2.33,
+         "place_of": 7,
+         "place_percent": 83,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained approach",
+       "window_start": "2026-06-08",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T04:49:20.840Z",
+       "value": -2.72,
+       "entity": {
+        "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "kind": "player",
+        "label": "Tyler Hayes"
+       },
+       "method": "sg_approach_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_approach",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": null,
+         "label": "Team average",
+         "value": -2.33,
+         "place_of": 7,
+         "place_percent": 33,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 7,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained approach",
+       "window_start": "2026-06-08",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T04:49:20.840Z",
+       "value": -3.6,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "sg_approach_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_approach",
+       "window_end": "2026-10-21",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": null,
+         "label": "Team average",
+         "value": -2.33,
+         "place_of": 7,
+         "place_percent": 100,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained approach",
+       "window_start": "2026-08-25",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T04:49:20.840Z",
+       "value": -4.16,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "sg_approach_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_approach",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": null,
+         "label": "Team average",
+         "value": -2.33,
+         "place_of": 7,
+         "place_percent": 0,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained approach",
+       "window_start": "2026-06-09",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T04:49:20.840Z",
+       "value": -4.4,
+       "entity": {
+        "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "kind": "player",
+        "label": "Ethan Park"
+       },
+       "method": "sg_approach_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_approach",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": null,
+         "label": "Team average",
+         "value": -2.33,
+         "place_of": 7,
+         "place_percent": 17,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained approach",
+       "window_start": "2026-06-09",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T04:49:20.840Z",
+       "value": null,
+       "entity": {
+        "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+        "kind": "player",
+        "label": "Audit Testplayer"
+       },
+       "method": "sg_approach_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "empty",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_approach",
+       "window_end": null,
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": "There is no team average for this metric yet.",
+         "label": "Team average",
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no team average yet"
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 0,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained approach",
+       "window_start": null,
+       "coverage_note": "Not enough rounds in this window for approach strokes gained per round."
+      }
+     ],
+     "window_label": "last 10 rounds",
+     "coverage_note": "No strokes gained approach recorded for Audit Testplayer."
+    }
+   },
+   {
+    "tool": "get_benchmarks",
+    "ref": "e2",
+    "envelope": {
+     "as_of": "2026-11-08T04:49:21.079Z",
+     "detail": {
+      "kind": "benchmark_read",
+      "note": "Benchmarks are published or estimated averages, never this team\u2019s results. Name the level and the source when you use one.",
+      "standing": {
+       "rows": [
+        {
+         "gaps": {
+          "vs_team": -1.5,
+          "vs_tour": -3.83,
+          "vs_level": null
+         },
+         "direction": "higher_better",
+         "metric_id": "sg_approach",
+         "comparisons": [
+          {
+           "kind": "level",
+           "note": "There is no college figure for this metric.",
+           "label": "Division I average",
+           "value": null,
+           "place_of": null,
+           "place_percent": null,
+           "missing_reason": "no college figure"
+          },
+          {
+           "kind": "team",
+           "note": null,
+           "label": "Team average",
+           "value": -2.33,
+           "place_of": 7,
+           "place_percent": 0,
+           "missing_reason": null
+          },
+          {
+           "kind": "tour",
+           "note": null,
+           "label": "PGA Tour",
+           "value": 0,
+           "place_of": null,
+           "place_percent": null,
+           "missing_reason": null
+          }
+         ],
+         "computed_at": "2026-11-07T02:20:34.954747+00:00",
+         "metric_label": "SG: Approach",
+         "metric_scope": "sg_approach",
+         "player_value": -3.83
+        }
+       ],
+       "player": "Owen Carter",
+       "window": "all recorded rounds, refreshed nightly",
+       "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91"
+      },
+      "benchmarks": [
+       {
+        "kind": "benchmark",
+        "unit": "strokes",
+        "levels": {
+         "pga": {
+          "label": "PGA Tour",
+          "value": 0
+         }
+        },
+        "season": "2024",
+        "source": "\"Scheffler routinely >1.0\" per Research doc \u00a72 SG benchmarks; elite ~0.5+.",
+        "direction": "higher_better",
+        "metric_id": "sg_approach",
+        "metric_label": "SG: Approach",
+        "metric_scope": "sg_approach",
+        "source_label": "2024 reference table",
+        "tour_percentiles": {
+         "p25": -0.3,
+         "p50": 0,
+         "p75": 0.5
+        }
+       }
+      ],
+      "team_level": "Division I average"
+     },
+     "series": [],
+     "summary": "Division I average, PGA Tour for 1 metric, with 1 standing row.",
+     "coverage": "complete",
+     "measurements": [],
+     "coverage_note": null
+    }
+   },
+   {
+    "tool": "get_player_metrics",
+    "ref": "e3",
+    "envelope": {
+     "as_of": "2026-11-08T04:49:20.969Z",
+     "series": [],
+     "summary": "2 metrics for Owen Carter, over the newest ten rounds.",
+     "coverage": "complete",
+     "measurements": [
+      {
+       "unit": "strokes",
+       "as_of": "2026-11-08T04:49:20.969Z",
+       "value": -4.16,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "sg_approach_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 0,
+        "source": "PGA Tour 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "sg_approach",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "There is no college figure for this metric.",
+         "label": "Division I average",
+         "value": null,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": "no college figure"
+        },
+        {
+         "kind": "team",
+         "note": null,
+         "label": "Team average",
+         "value": -2.33,
+         "place_of": 7,
+         "place_percent": 0,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "value": 0,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained approach",
+       "window_start": "2026-06-09",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-11-08T04:49:20.969Z",
+       "value": 61.11,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "gir_pct_per_18_over_the_window_as_stats_reads_it",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": {
+        "value": 60,
+        "source": "Division I average 2024",
+        "version": "2024",
+        "omitted_for_cohort": false
+       },
+       "direction": "higher_better",
+       "metric_id": "gir_pct",
+       "window_end": "2026-09-26",
+       "comparisons": [
+        {
+         "kind": "level",
+         "note": "Place is among college players on helm.",
+         "label": "Division I average",
+         "value": 60,
+         "place_of": 71,
+         "place_percent": 36,
+         "missing_reason": null
+        },
+        {
+         "kind": "team",
+         "note": null,
+         "label": "Team average",
+         "value": 66.25,
+         "place_of": 7,
+         "place_percent": 17,
+         "missing_reason": null
+        },
+        {
+         "kind": "tour",
+         "note": null,
+         "label": "PGA Tour",
+         "value": 66,
+         "place_of": null,
+         "place_percent": null,
+         "missing_reason": null
+        }
+       ],
+       "denominator": 144,
+       "sample_size": 144,
+       "sample_unit": "holes",
+       "metric_label": "Greens in regulation",
+       "window_start": "2026-06-09",
+       "coverage_note": null
+      }
+     ],
+     "window_label": "last 10 rounds",
+     "coverage_note": null
+    }
+   }
+  ],
+  "recorded": {
+   "outcome": "accepted"
+  },
+  "cites": [
+   {
+    "v": "-4.16",
+    "ref": "e9",
+    "key": "sg_approach",
+    "subject": "8091da4b-dbc9-47f3-80f1-be37c96b2c91"
+   }
+  ]
+ },
+ "authored": true
+}

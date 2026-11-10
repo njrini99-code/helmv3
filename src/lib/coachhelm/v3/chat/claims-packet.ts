@@ -201,7 +201,7 @@ function valueAt(sentence: string, value: number): number[] {
  * the sample, nearest to the figure if it states more than one, and that sample is the measurement's own. A count that is someone
  * else's ("72.5 over his 9 rounds" for a 2-round figure) fails, as does a figure written with no sample at all.
  */
-export function thinSampleStated(prose: string, value: number, sampleSize: number, unit: Measurement['sample_unit']): boolean {
+export function thinSampleStated(prose: string, value: number, sampleSize: number, unit: Measurement['sample_unit'], general: readonly number[] = generalSamples(prose, unit)): boolean {
   let stated = false;
   for (const sentence of prose.split(SENTENCE_BREAK)) {
     const samples = samplesStated(sentence, unit);
@@ -209,12 +209,22 @@ export function thinSampleStated(prose: string, value: number, sampleSize: numbe
       // The "2" of "2 rounds" is a count, not this figure.
       if (samples.some((s) => s.at === at)) continue;
       const nearest = [...samples].sort((a, b) => Math.abs(a.at - at) - Math.abs(b.at - at))[0];
-      if (!nearest) continue;
+      if (!nearest) {
+        // A list of figures under one statement of what they rest on ("Each of these averages rests on 2 rounds"): live Q5, 2026-11-08.
+        if (general.length > 0 && general.every((n) => n === sampleSize)) stated = true;
+        continue;
+      }
       if (nearest.n !== sampleSize) return false;
       stated = true;
     }
   }
   return stated;
+}
+
+/** The sample a sentence states for a whole group of figures ("each average rests on 2 rounds", "all four are over 3 rounds"). */
+const GROUP_WORDS = /\b(?:each|every|all|both|these|those|they|the (?:figures?|averages?|numbers?|results?|rates?))\b/i;
+function generalSamples(prose: string, unit: Measurement['sample_unit']): number[] {
+  return prose.split(SENTENCE_BREAK).filter((s) => GROUP_WORDS.test(s)).flatMap((s) => samplesStated(s, unit).map((x) => x.n));
 }
 
 /**
@@ -231,7 +241,7 @@ function omittedThinFigures(prose: string, measurements: readonly Measurement[],
     const parts = m.entity.label.split(/\s+/).filter((n) => n.length > 1);
     const about = (s: string) => parts.some((n) => s.includes(n)) || (players.size === 1 && /\b(?:he|she|his|her)\b/i.test(s));
     const named = prose.split(SENTENCE_BREAK).filter((s) => about(s) && valueAt(s, m.value as number).length > 0);
-    return named.length > 0 && !named.some((s) => thinSampleStated(s, m.value as number, m.sample_size, m.sample_unit));
+    return named.length > 0 && !named.some((s) => thinSampleStated(s, m.value as number, m.sample_size, m.sample_unit, generalSamples(prose, m.sample_unit)));
   });
 }
 
@@ -243,9 +253,16 @@ function causeSide(sentence: string): string {
   return before ? sentence.slice(0, before.index) : sentence;
 }
 
+/** Words that describe what a measure counts or how it is built. */
+const MEASURE_WORDS = /\b(?:accounts? for|measures?|counts?|includes?|excludes?|is (?:calculated|computed|based on|measured)|reflects?|rewards?|penali[sz]es?|compares?|weights?)\b/i;
+/** A cause that is only a comparison of two figures ("because it is close to average"). */
+const COMPARISON_WORDS = /\b(?:close to|near|similar to|in line with|above|below|higher than|lower than|better than|worse than|compared (?:to|with)|relative to|average|(?:sits?|sitting|ranks?|ranking|falls?|is|are|was|were|stays?|remains?) (?:well |far |just |slightly |still )?(?:behind|ahead of|ahead|trailing)|trail(?:s|ing)?|leads?|lead(?:ing)?)\b/i;
+/** Causes nothing measured backs: how someone feels or what they do, not what a number is. */
+const UNMEASURED_CAUSE = /\b(?:tempo|confidence|nerves?|pressure|swing|focus|mindset|fatigue|tired|effort|motivation|attitude|rhythm|technique|mechanics|habits?|practice(?:d|s)? (?:more|less)|lazy|careless)\b/i;
+
 /** What a read can say about itself: why a figure is missing or thin. Not a claim about anyone's play. */
 const DATA_CAUSE =
-  /\b(?:flag(?:s|ged)?|incomplete|excluded|left out|leaves? out|not counted|(?:doesn|don)['’]?t count|no data|no recorded|no rounds|not recorded|not logged|(?:hasn|haven)['’]?t logged|(?:isn|aren)['’]?t available|not available|unavailable|too few|sample size|the (?:tool|read|window|sample|cache)|9-hole|nine-hole|total only)\b/i;
+  /\b(?:flag(?:s|ged)?|incomplete|totals? only|posted as|no (?:[a-z]+ ){0,3}(?:figure|value|baseline|benchmark|average)|rests? on|resting on|based on|no other players? (?:has|have)|(?:has|have) [a-z ]{0,30}recorded|(?:carry|carries|have|has|with|had) no (?:shot|stat)[- ]?(?:level )?(?:data|lines?)|missing|excluded|left out|leaves? out|not counted|(?:doesn|don)['’]?t count|no data|no recorded|no rounds|not recorded|not logged|(?:hasn|haven)['’]?t logged|(?:isn|aren)['’]?t available|not available|unavailable|too few|sample size|the (?:[a-z]+ )?(?:tool|read|window|sample|cache)|9-hole|nine-hole|total only)\b/i;
 /** Why a day doesn't work or an event moved. A reason for a decision, never for how someone played: nothing here measured that. */
 const CALENDAR_CAUSE = /\b(?:class|exams?|schedule|calendar|conflict|rsvps?|weather|rain)\b/i;
 /** A sentence saying how someone's play went, which a calendar word can't explain. */
@@ -274,6 +291,9 @@ export function unbackedCausalSentences(prose: string, measurements: readonly Me
     if (!CAUSAL_LANGUAGE_RE.test(sentence)) return false;
     const cause = causeSide(sentence);
     if (ANSWER_LIMIT.test(sentence) || DATA_CAUSE.test(cause)) return false;
+    // Explaining what a measure counts, or why two figures differ, says nothing about why anyone played as they did (live, 2026-11-08: "the two
+    // measures disagree because strokes gained putting accounts for how far each putt was", "hides this because it is close to average").
+    if ((MEASURE_WORDS.test(cause) || COMPARISON_WORDS.test(cause)) && !UNMEASURED_CAUSE.test(cause)) return false;
     if (CALENDAR_CAUSE.test(cause)) return PLAY_OUTCOME.test(sentence);
     // A bare count ("over the last 3 rounds") is the window, not a measured cause.
     const figures = cause.replace(/\b\d+\s+(?:[a-z'’-]+\s+){0,2}rounds?\b/gi, ' ');
@@ -287,6 +307,80 @@ const MALFORMED: TypedClaimAttempt = { accepted: [], rejected: [], malformed: tr
 function stripOnly(rawText: string): string {
   const hasMarker = rawText.includes(CLAIMS_OPEN) || rawText.includes(CLAIMS_CLOSE);
   return hasMarker ? stripAllClaimsDelimiters(rawText) : rawText;
+}
+
+/**
+ * The checks of {@link extractAndValidateChatClaims} over a list of claims already in hand, whether the model wrote them in a `<<<CLAIMS>>>`
+ * block or they were derived from its per-figure citations (`cite-claims.ts`).
+ */
+function validateClaimList(claimList: readonly ClaimReference[], strippedText: string, measurements: readonly Measurement[], packets: readonly EvidencePacket[], claimable: readonly EvidencePacket[]): TypedClaimAttempt {
+  const accepted: ClaimReference[] = [];
+  const rejected: RejectedClaim[] = [];
+  for (const raw of claimList) {
+    const forPlayer = claimable.filter((p) => p.player_id === raw.player_id);
+    if (forPlayer.length === 0) {
+      rejected.push({ claim: raw, reason: 'wrong_player' });
+      continue;
+    }
+    const packet = forPlayer.find((p) => p.window_start === raw.window_start && p.window_end === raw.window_end);
+    if (!packet) {
+      rejected.push({ claim: raw, reason: 'wrong_window' });
+      continue;
+    }
+    // Empty prose: this call judges the CLAIM only (see the doc comment for
+    // why prose-level `uncited_number` is not applied).
+    const verdict = validateClaims([snapToEntry(raw, packet)], packet, '');
+    accepted.push(...verdict.accepted);
+    for (const r of verdict.rejected) {
+      const sampleSize = packet.entries.find((e) => e.metric_id === raw.metric_id)?.sample_n ?? 0;
+      const unit = measurements.find((m) => m.entity?.id === raw.player_id && m.metric_id === raw.metric_id && m.window_start === raw.window_start && m.window_end === raw.window_end)?.sample_unit;
+      if (r.reason === 'unsupported_small_number' && raw.claim_type !== 'causal' && sampleSize > 0 && unit && thinSampleStated(strippedText, raw.value, sampleSize, unit)) accepted.push(r.claim);
+      else rejected.push(r);
+    }
+  }
+
+  for (const m of omittedThinFigures(strippedText, measurements, claimList)) {
+    rejected.push({
+      claim: { claim_id: `thin:${m.metric_id}`, metric_id: m.metric_id, value: m.value as number, player_id: m.entity.id, window_start: m.window_start as string, window_end: m.window_end as string },
+      reason: 'unsupported_small_number',
+    });
+  }
+
+  // Prose-level causal check, once for the turn (see doc comment).
+  const causallyBacked = accepted.some((c) => c.claim_type === 'causal');
+  const alreadyFlagged = rejected.some((r) => r.reason === 'unsupported_cause');
+  if (!causallyBacked && !alreadyFlagged) {
+    const prose = validateClaims([], packets[0] as EvidencePacket, unbackedCausalSentences(strippedText, measurements).join('. '));
+    rejected.push(...prose.rejected.filter((r) => r.reason === 'unsupported_cause'));
+  }
+
+  return { accepted, rejected, malformed: false };
+}
+
+/**
+ * The chat claim gate for an Ask v2 turn, whose claims come from its citations instead of a second block. Returns `claims: null` (the gate does
+ * not engage) when the turn has no player-scoped measurement, as {@link extractAndValidateChatClaims} does. A turn whose figures all went
+ * uncited has an empty claim list, not a malformed one: the numeric audit still binds every figure, and a thin-sample figure left out of the
+ * list is still refused (`omittedThinFigures`).
+ */
+export function validateCitedChatClaims(rawText: string, measurements: readonly Measurement[], claimList: readonly ClaimReference[]): { strippedText: string; claims: TypedClaimAttempt | null } {
+  // A model that writes the old block anyway must not leave it in the answer.
+  const text = rawText.includes(CLAIMS_OPEN) || rawText.includes(CLAIMS_CLOSE) ? stripAllClaimsDelimiters(rawText) : rawText;
+  let packets: EvidencePacket[];
+  try {
+    packets = buildPlayerPackets(measurements);
+  } catch {
+    return { strippedText: text, claims: MALFORMED };
+  }
+  if (packets.length === 0) return { strippedText: text, claims: null };
+  const claimable = [...packets, ...packetsFor(measurements, 'team')];
+  // A cite for a value the answer does not write ("even par" for 0) is no figure to hold to a floor or a window.
+  const written = claimList.filter((c) => valueAt(text, c.value).length > 0);
+  try {
+    return { strippedText: text, claims: validateClaimList(written, text, measurements, packets, claimable) };
+  } catch {
+    return { strippedText: text, claims: MALFORMED };
+  }
 }
 
 /**
@@ -352,47 +446,7 @@ export function extractAndValidateChatClaims(
     const result = ClaimsBlockSchema.safeParse(parsed);
     if (!result.success) return { strippedText, claims: MALFORMED };
 
-    const accepted: ClaimReference[] = [];
-    const rejected: RejectedClaim[] = [];
-    for (const raw of result.data) {
-      const forPlayer = claimable.filter((p) => p.player_id === raw.player_id);
-      if (forPlayer.length === 0) {
-        rejected.push({ claim: raw, reason: 'wrong_player' });
-        continue;
-      }
-      const packet = forPlayer.find((p) => p.window_start === raw.window_start && p.window_end === raw.window_end);
-      if (!packet) {
-        rejected.push({ claim: raw, reason: 'wrong_window' });
-        continue;
-      }
-      // Empty prose: this call judges the CLAIM only (see the doc comment for
-      // why prose-level `uncited_number` is not applied).
-      const verdict = validateClaims([snapToEntry(raw, packet)], packet, '');
-      accepted.push(...verdict.accepted);
-      for (const r of verdict.rejected) {
-        const sampleSize = packet.entries.find((e) => e.metric_id === raw.metric_id)?.sample_n ?? 0;
-        const unit = measurements.find((m) => m.entity?.id === raw.player_id && m.metric_id === raw.metric_id && m.window_start === raw.window_start && m.window_end === raw.window_end)?.sample_unit;
-        if (r.reason === 'unsupported_small_number' && raw.claim_type !== 'causal' && sampleSize > 0 && unit && thinSampleStated(strippedText, raw.value, sampleSize, unit)) accepted.push(r.claim);
-        else rejected.push(r);
-      }
-    }
-
-    for (const m of omittedThinFigures(strippedText, measurements, result.data)) {
-      rejected.push({
-        claim: { claim_id: `thin:${m.metric_id}`, metric_id: m.metric_id, value: m.value as number, player_id: m.entity.id, window_start: m.window_start as string, window_end: m.window_end as string },
-        reason: 'unsupported_small_number',
-      });
-    }
-
-    // Prose-level causal check, once for the turn (see doc comment).
-    const causallyBacked = accepted.some((c) => c.claim_type === 'causal');
-    const alreadyFlagged = rejected.some((r) => r.reason === 'unsupported_cause');
-    if (!causallyBacked && !alreadyFlagged) {
-      const prose = validateClaims([], packets[0] as EvidencePacket, unbackedCausalSentences(strippedText, measurements).join('. '));
-      rejected.push(...prose.rejected.filter((r) => r.reason === 'unsupported_cause'));
-    }
-
-    return { strippedText, claims: { accepted, rejected, malformed: false } };
+    return { strippedText, claims: validateClaimList(result.data, strippedText, measurements, packets, claimable) };
   } catch {
     return { strippedText, claims: MALFORMED };
   }

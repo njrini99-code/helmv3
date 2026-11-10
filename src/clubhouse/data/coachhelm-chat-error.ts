@@ -39,6 +39,8 @@ export const CHAT_ERROR_CONVERSATION_GONE = "That conversation isn't available. 
 export const CHAT_ERROR_SIGNED_OUT = 'Your session ended. Sign in again, then retry.';
 export const CHAT_ERROR_NOT_A_COACH = 'Ask CoachHelm is for coaches.';
 export const CHAT_ERROR_GENERIC = 'Something went wrong while answering. Try again.';
+/** A stream that ended with no error and no answer: offered with Retry, which asks the same question again. */
+export const CHAT_ERROR_DID_NOT_FINISH: ChatErrorNotice = { message: "This answer didn't finish coming through.", recovery: 'retry' };
 /** The pre-existing fallback for an error that carries no text at all. */
 export const CHAT_ERROR_EMPTY = 'That answer did not come through.';
 

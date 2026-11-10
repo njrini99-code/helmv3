@@ -42,7 +42,7 @@
  * that will execute — not a client-side guess at what might happen.
  * ========================================================================== */
 
-import { getClassTimes, getDrillBank, getPlanFormat, getTeamPuttingProfile, getTeamStrokesGained } from './practice-reads';
+import { getClassTimes, getDrillBank, getPlanFormat, getTeamPuttingProfile, getTeamStrokesGained, TEAM_SG_WINDOWS, type TeamSgSource } from './practice-reads';
 import { practicePicture } from './practice-pictures';
 import { practiceDraftTool, publishFlow } from './practice-draft';
 import { getSeasonScoring } from './season-reads';
@@ -52,6 +52,13 @@ import { CREATE_FLOWS, CREATE_TOOL_NAMES, LINEUP_FLOWS, drillFlow, flowCommit, t
 import { heldCommitFor } from './held-runner';
 import { getProximityByBand, getRoundDetail, getShotPattern } from './shot-reads';
 import { compareSeasons, getCalendar, getCourse, getRootCauses } from './engine-reads';
+import { getDocuments, getPractice, getTeamPatterns } from './ask-reads';
+import { applyComparisons, benchmarkSource } from './benchmark-reads';
+import { benchmarkTools, coachWideReadTools } from './wide-read-tools';
+import { coachSummariseTools, SUMMARISE_STEP } from './summarise-tools';
+import { WIDE_READ_STEPS } from './wide-read-names';
+import { withWindowLabel } from './window-label';
+import { teamPatternEnabled } from '@/lib/coachhelm/v3/team-pattern/flag';
 import { holdForExecution, releaseHeld, sweepHeld } from './undo-hold';
 import { tool } from 'ai';
 import type { ToolSet, UIMessageStreamWriter } from 'ai';
@@ -75,6 +82,9 @@ import {
   getTeamTravel,
   getPlayerInsights,
   getPlayerMetric,
+  FIGURE_WINDOWS,
+  type PlayerFiguresSource,
+  type PuttBandsSource,
   getPlayerTrend,
   getPlayerWeakestAreas,
   getPuttingDistanceProfile,
@@ -154,6 +164,7 @@ export interface CoachChatDataParts extends Record<string, unknown> {
 
 /** Coach-readable progress copy. Raw tool names never reach the interface. */
 const PROGRESS_LABEL: Record<string, (input: Record<string, unknown>) => string> = {
+  summarise_data: () => SUMMARISE_STEP.doing,
   get_team_overview: () => 'Reading your roster',
   get_player_metrics: () => 'Reading recorded statistics',
   get_player_trend: (i) => `Reading the last ${Number(i.last_n) || 5} recorded rounds`,
@@ -175,7 +186,10 @@ const PROGRESS_LABEL: Record<string, (input: Record<string, unknown>) => string>
   get_proximity_by_band: () => 'Reading proximity by band',
   get_round_detail: () => 'Reading the round hole by hole',
   get_root_causes: () => 'Reading the open causes',
-  get_calendar: () => 'Reading the team calendar',
+  get_calendar: () => 'Reading the team calendar, replies and classes',
+  get_team_patterns: () => 'Looking for what the team shares',
+  get_practice: () => 'Reading practice plans and sessions',
+  get_documents: () => 'Reading Documents',
   get_course: () => 'Reading the course',
   compare_seasons: () => 'Comparing the seasons',
   show_visual: () => 'Building the visual',
@@ -185,6 +199,7 @@ const PROGRESS_LABEL: Record<string, (input: Record<string, unknown>) => string>
   create_task: () => 'Drafting a task',
   create_team_announcement: () => 'Drafting a team update',
   create_drill: () => 'Drafting a drill',
+  ...Object.fromEntries(Object.entries(WIDE_READ_STEPS).map(([name, [doing]]) => [name, () => doing])),
 };
 
 /** The same words, past tense, for the row once the read is back (Ask v2). */
@@ -193,6 +208,7 @@ const PROGRESS_DONE: Record<string, string> = {
   get_player_metrics: 'Read recorded statistics',
   get_player_trend: 'Read the recorded rounds',
   get_putting_distance_profile: 'Compared putting by distance',
+  summarise_data: SUMMARISE_STEP.done,
   compare_players: 'Compared players on the same window',
   get_team_metric_ranking: 'Ranked the team',
   get_player_weakest_areas: 'Found where the gap is largest',
@@ -210,11 +226,15 @@ const PROGRESS_DONE: Record<string, string> = {
   get_proximity_by_band: 'Read proximity by band',
   get_round_detail: 'Read the round hole by hole',
   get_root_causes: 'Read the open causes',
-  get_calendar: 'Read the team calendar',
+  get_calendar: 'Read the team calendar, replies and classes',
+  get_team_patterns: 'Looked for what the team shares',
+  get_practice: 'Read practice plans and sessions',
+  get_documents: 'Read Documents',
   get_course: 'Read the course',
   compare_seasons: 'Compared the seasons',
   find_player: 'Found that player on your roster',
   show_visual: 'Built the visual',
+  ...Object.fromEntries(Object.entries(WIDE_READ_STEPS).map(([name, [, done]]) => [name, done])),
 };
 
 /** One short fact from the envelope's own counts, never a number not in it; it goes through `collect` with the envelope, so the audit already knows it. */
@@ -224,6 +244,9 @@ function detailFor(envelope: ToolEnvelope): string | undefined {
   const unit = m.sample_unit === 'rounds' ? (m.sample_size === 1 ? 'round' : 'rounds') : m.sample_size === 1 ? String(m.sample_unit).replace(/s$/, '') : String(m.sample_unit);
   return `${m.sample_size} ${unit}`;
 }
+
+/** What every tool that reads a round-based figure tells the model about `window`, so the window follows the question. */
+export const WINDOW_NOTE = 'Window: "last10" is the default (each player\'s newest ten rounds, the figures the Stats page shows first); "last5" and "last20" likewise; "season" when the question says this season; "cache" for the whole recorded history (the cache can lag a few weeks, and says its own window). Scoring, putts per round, greens, fairways and strokes gained come from the rounds in that window; the other shot-level figures (putt makes by distance in get_player_metrics, scrambling, sand saves, three-putts, penalties) are the cache\'s and say its window; get_putting_distance_profile reads the window\'s own shots.';
 
 export interface BuildToolsArgs {
   sb: Sb;
@@ -239,6 +262,14 @@ export interface BuildToolsArgs {
    * src/clubhouse may not import the gate. Left out, the whole-team tools stay off.
    */
   teamTools?: boolean;
+  /** The team's strokes gained for a window, from the one source Team Stats reads. The route hands it in (code outside src/clubhouse may not import it); left out, that read says it could not be read. */
+  teamStrokesGained?: TeamSgSource;
+  /** The map the turn's reads are kept in by evidence_ref, when the caller wants it (the route's citation check reads it). */
+  evidenceRefs?: Map<string, ToolEnvelope>;
+  /** One player's scoring, putts and strokes gained for a window, from the rounds as Stats reads them. Handed in by the route, like `teamStrokesGained`. */
+  playerFigures?: PlayerFiguresSource;
+  /** One player's putts in the Stats page's bands for a window, from the rounds and shots as Stats reads them. Handed in by the route. */
+  puttBands?: PuttBandsSource;
   /** Ask v2 (Clubhouse on for the team): steps update in place, and new tools join. Fairway's chat never sets it. */
   askV2?: boolean;
   /** Ask v2's surface. `send_message` is registered only for Quick chat; left out, the Ask tab, which never sends. */
@@ -325,7 +356,7 @@ function scopedKey(key: string, conversationId: string | null, plan: unknown): s
   return `${key.slice(0, 110)}:${h.toString(36)}`;
 }
 
-export function buildCoachTools({ sb, ctx, conversationId, writer, collect: collectOuter, teamTools = false, practicePlans = false, askV2 = false, surface = 'ask', onArtifactWords, defer }: BuildToolsArgs): ToolSet {
+export function buildCoachTools({ sb, ctx, conversationId, writer, collect: collectOuter, evidenceRefs, teamStrokesGained, playerFigures, puttBands, teamTools = false, practicePlans = false, askV2 = false, surface = 'ask', onArtifactWords, defer }: BuildToolsArgs): ToolSet {
   const scope = <P extends { idempotency_key: string }>(proposal: P, plan: unknown): P => ({ ...proposal, idempotency_key: scopedKey(proposal.idempotency_key, conversationId, plan) });
   // The next chat request finishes what a cut-off function left held (TASK_FIELDS §3 step 5). It has to be a request: the writes read the coach from the session.
   if (askV2 && defer) defer(() => sweepHeld(sb, { coach_id: ctx.coach_id, team_id: ctx.team_id, resolve: (row) => heldCommitFor(sb, ctx, row) }));
@@ -356,8 +387,12 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
     });
   };
 
+  /** Ask v2: the team's Tour and standards, each read once for the turn. */
+  // The roster's windowed figures come from the same source the ranking uses, so a comparison and the ranking cannot disagree.
+  const benchSource = askV2 ? benchmarkSource(sb, ctx.team_id, { ctx, figures: playerFigures, role: 'coach' }) : null;
+
   /** Every read this turn, by the `evidence_ref` the model is handed, for show_visual to resolve. Server memory only. */
-  const evidenceByRef = new Map<string, ToolEnvelope>();
+  const evidenceByRef = evidenceRefs ?? new Map<string, ToolEnvelope>();
   const evidence = (toolName: string, envelope: ToolEnvelope, ref?: string) => {
     writer.write({
       type: 'data-evidence',
@@ -373,7 +408,10 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
       const step = progress(name, input);
       // HELM_COACHHELM_TEAMS canary: every roster player is on ctx.team_id, so
       // the chat's team is the scope (no read).
-      const envelope = await guarded(() => runWithCoachHelmTeams([ctx.team_id], () => run(input)), collect, name, ctx);
+      // Ask v2: where the Tour has a value for a metric a read returned, the measurement carries it, so a visual and the audit see the benchmark.
+      const guardedEnvelope = await guarded(() => runWithCoachHelmTeams([ctx.team_id], async () => (benchSource ? applyComparisons(await run(input), benchSource) : run(input))), collect, name, ctx);
+      // The window the read actually used, for the scope line (Ask v2).
+      const envelope = askV2 ? withWindowLabel(name, input, guardedEnvelope) : guardedEnvelope;
       progressEnd(step, name, envelope, envelope.coverage === 'unavailable');
       const ref = `e${evidenceByRef.size + 1}`;
       evidenceByRef.set(ref, envelope);
@@ -640,12 +678,13 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
 
     get_player_metrics: tool({
       description:
-        'Computed statistics for one player. Every value comes back with its unit, window, sample size and the timestamp it was computed at.',
+        `Computed statistics for one player. Every value comes back with its unit, window, sample size and the timestamp it was computed at. ${WINDOW_NOTE}`,
       inputSchema: z.object({
         player_id: PlayerId,
         metric_ids: z.array(z.enum(METRIC_IDS)).min(1).max(8),
+        window: z.enum(FIGURE_WINDOWS).default('last10'),
       }),
-      execute: read('get_player_metrics', (input) => getPlayerMetric(sb, ctx, input)),
+      execute: read('get_player_metrics', (input) => getPlayerMetric(sb, ctx, input, playerFigures)),
     }),
 
     get_player_trend: tool({
@@ -661,44 +700,45 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
 
     get_putting_distance_profile: tool({
       description:
-        'Make rate by putt distance for one player, with the attempt count behind every bucket. Use for any question about putting inside/outside a distance.',
-      inputSchema: z.object({ player_id: PlayerId }),
+        `Make rate by putt distance for one player, with the attempt count behind every bucket, in the bands the Stats page draws (0-3 up to 25+ ft), from the rounds in the window. Use for any question about putting inside/outside a distance. ${WINDOW_NOTE}`,
+      inputSchema: z.object({ player_id: PlayerId, window: z.enum(FIGURE_WINDOWS).default('last10') }),
       execute: read('get_putting_distance_profile', (input) =>
-        getPuttingDistanceProfile(sb, ctx, input),
+        getPuttingDistanceProfile(sb, ctx, input, puttBands),
       ),
     }),
 
     compare_players: tool({
       description:
-        'Compare two or more players on the same metrics over the same window definition. Reports per-player coverage so an unequal basis is visible.',
+        `Compare two or more players on the same metrics over the same window definition. Reports per-player coverage so an unequal basis is visible. ${WINDOW_NOTE}`,
       inputSchema: z.object({
         player_ids: z.array(PlayerId).min(2).max(6),
         metric_ids: z.array(z.enum(METRIC_IDS)).min(1).max(6),
+        window: z.enum(FIGURE_WINDOWS).default('last10'),
       }),
-      execute: read('compare_players', (input) => comparePlayers(sb, ctx, input)),
+      execute: read('compare_players', (input) => comparePlayers(sb, ctx, input, playerFigures)),
     }),
 
     get_team_metric_ranking: tool({
       description:
-        'Rank the active roster on one metric, with each player\'s sample size. Returns measured values and the metric direction — never a verdict about a player.',
-      inputSchema: z.object({ metric_id: z.enum(METRIC_IDS) }),
-      execute: read('get_team_metric_ranking', (input) => getTeamMetricRanking(sb, ctx, input)),
+        `Rank the active roster on one metric, with each player's sample size. Returns measured values and the metric direction — never a verdict about a player. ${WINDOW_NOTE}`,
+      inputSchema: z.object({ metric_id: z.enum(METRIC_IDS), window: z.enum(FIGURE_WINDOWS).default('last10') }),
+      execute: read('get_team_metric_ranking', (input) => getTeamMetricRanking(sb, ctx, input, playerFigures)),
     }),
 
     get_player_weakest_areas: tool({
       description:
-        'Which measured areas one player is furthest behind their team on, with sample sizes. Use for "where is X losing the most".',
-      inputSchema: z.object({ player_id: PlayerId }),
-      execute: read('get_player_weakest_areas', (input) => getPlayerWeakestAreas(sb, ctx, input)),
+        `Which measured areas one player is furthest behind their team on, with sample sizes. Use for "where is X losing the most". Scoring, putts, greens, fairways and strokes gained are compared over the window for the player and each teammate; shot-level areas (putt makes, scrambling, sand saves, three-putts, penalties) come from the stats cache and are marked so. ${WINDOW_NOTE}`,
+      inputSchema: z.object({ player_id: PlayerId, window: z.enum(FIGURE_WINDOWS).default('last10') }),
+      execute: read('get_player_weakest_areas', (input) => getPlayerWeakestAreas(sb, ctx, input, playerFigures)),
     }),
 
     get_recent_rounds: tool({
-      description: 'Recent completed rounds for one player: date, course, score, putts.',
+      description: 'Recent completed rounds for one player: date, course, score, putts. Gives the player\'s last N rounds that count in Stats (practice left out, so the list and the scoring figure for the window are the same rounds), each with score, putts, three-putts, greens, fairways and up-and-downs; a round with no putts recorded has them empty. Use it to count three-putts or list rounds.',
       inputSchema: z.object({
         player_id: PlayerId,
         last_n: z.number().int().min(1).max(20).default(5),
       }),
-      execute: read('get_recent_rounds', (input) => getRecentRounds(sb, ctx, input)),
+      execute: read('get_recent_rounds', (input) => getRecentRounds(sb, ctx, input, playerFigures)),
     }),
 
     // Visual artifacts (docs/architecture/coachhelm-agentic-visuals.md): the model designs the visual and names the
@@ -740,6 +780,11 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
     // Ask v2's create flows, each on the same gate: nothing writes before the named button, and nothing is told until Undo closes.
     ...(askV2 ? Object.fromEntries((isFlagEnabled('golf_tournaments_v1') ? [...CREATE_FLOWS, ...LINEUP_FLOWS] : CREATE_FLOWS).filter((f) => (f.name === 'send_message' ? surface === 'quick_chat' : f.name === 'publish_artifact' ? surface !== 'quick_chat' : true)).map((f) => [f.name, flowTool(f)])) : {}),
 
+    // Ask v2's wider reads: benchmarks, definitions and the golf reference, the typed reads for the rest of the program, and the allowlisted reader for the long tail.
+    ...(askV2 && benchSource ? benchmarkTools({ sb, ctx, read, source: benchSource, who: { role: 'coach' } }) : {}),
+    ...(askV2 ? coachWideReadTools({ sb, ctx, read, tournamentsOn: isFlagEnabled('golf_tournaments_v1') }) : {}),
+    ...(askV2 ? coachSummariseTools({ sb, ctx, read, evidence: evidenceByRef, tournamentsOn: isFlagEnabled('golf_tournaments_v1') }) : {}),
+
     ...(askV2 && practicePlans ? { [drillFlow.name]: flowTool(drillFlow as unknown as FlowDef<never>) } : {}),
     ...(askV2 ? askDraftTools({ sb, ctx, writer, practicePlans, surface, onArtifactWords }) : {}),
     ...(practicePlans && teamTools
@@ -747,7 +792,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
           get_class_times: tool({ description: 'Who is in class on a day, per tracked player. Read before planning a practice.', inputSchema: z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }), execute: read('get_class_times', (input) => getClassTimes(sb, ctx, input)) }),
           get_drill_bank: tool({ description: 'Team drills and the GolfHelm library, with the refs a plan must use. A drill is never invented.', inputSchema: z.object({ category: z.string().max(40).optional() }), execute: read('get_drill_bank', (input) => getDrillBank(sb, ctx, input)) }),
           get_plan_format: tool({ description: 'The team\'s plan format: its section names and order. Read it before drafting a plan, and call the sections by these names.', inputSchema: z.object({}), execute: read('get_plan_format', () => getPlanFormat(sb, ctx)) }),
-          get_team_strokes_gained: tool({ description: 'The team\'s strokes gained per area over recent rounds.', inputSchema: z.object({ rounds: z.number().int().min(3).max(30).default(10) }), execute: read('get_team_strokes_gained', (input) => getTeamStrokesGained(sb, ctx, input)) }),
+          get_team_strokes_gained: tool({ description: 'The team\'s strokes gained per round in each area (off the tee, approach, around the green, putting), the average over each player\'s rounds in the window, the same figures the Stats page shows. window "last10" is the default (each player\'s newest ten rounds); "season" when the coach says this season; "last5" or "last20" for those.', inputSchema: z.object({ window: z.enum(TEAM_SG_WINDOWS).default('last10') }), execute: read('get_team_strokes_gained', (input) => getTeamStrokesGained(teamStrokesGained, { id: ctx.team_id, name: ctx.team_name }, input)) }),
           get_team_putting_profile: tool({ description: 'The team\'s putting by distance.', inputSchema: z.object({ rounds: z.number().int().min(3).max(30).default(10) }), execute: read('get_team_putting_profile', (input) => getTeamPuttingProfile(sb, ctx, input)) }),
           ...practiceDraftTool({ ctx, writer, envelopes: () => seenEnvelopes, evidenceByRef }),
           [publishFlow.name]: flowTool(publishFlow as unknown as FlowDef<never>),
@@ -778,7 +823,7 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
           execute: read('get_root_causes', (input) => getRootCauses(sb, ctx, input)),
         }),
         get_calendar: tool({
-          description: 'Team events between two instants, on the team\'s clock.',
+          description: 'Team events between two instants, on the team\'s clock, each with who replied and checked in (events that ask for a reply) and which players are in class during it. Past or future, any window.',
           inputSchema: z.object({ from: z.string(), to: z.string() }),
           execute: read('get_calendar', (input) => getCalendar(sb, ctx, input)),
         }),
@@ -792,6 +837,26 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect: coll
           inputSchema: z.object({ player_id: z.string().uuid().optional() }),
           execute: read('compare_seasons', (input) => compareSeasons(sb, ctx, input)),
         }),
+        get_practice: tool({
+          description: 'Practices held, practice plans (draft or published) and the sessions players logged in a window. No shot data. Use it for any question about practice.',
+          inputSchema: z.object({ since_days: z.number().int().min(1).max(180).default(30) }),
+          execute: read('get_practice', (input) => getPractice(sb, ctx, input)),
+        }),
+        get_documents: tool({
+          description: 'Document titles and folders, and whether players can see each. Never a file\'s contents.',
+          inputSchema: z.object({ folder: z.string().max(60).optional(), limit: z.number().int().min(1).max(60).default(30) }),
+          execute: read('get_documents', (input) => getDocuments(sb, ctx, input)),
+        }),
+        // Only where the Board shows team patterns: Ask never says what the Board hides (coachhelm_team_pattern_v1, off).
+        ...(teamPatternEnabled()
+          ? {
+              get_team_patterns: tool({
+                description: 'What several players share: the same cause family in enough of the roster, with the players and strokes a round it costs.',
+                inputSchema: z.object({}),
+                execute: read('get_team_patterns', () => getTeamPatterns(sb, ctx)),
+              }),
+            }
+          : {}),
         }
       : {}),
 

@@ -168,7 +168,7 @@ vi.mock('@/lib/coachhelm/v3/chat/agent-tools', () => ({
   buildCoachTools: mocks.buildCoachTools,
   isConfirmRequired: () => false,
 }));
-vi.mock('@/lib/coachhelm/v3/chat/instructions', () => ({ buildInstructions: mocks.buildInstructions }));
+vi.mock('@/lib/coachhelm/v3/chat/instructions', () => ({ buildInstructions: mocks.buildInstructions, buildInstructionBlocks: vi.fn(() => ({ stable: 'system prompt', dynamic: 'this program' })) }));
 // The real `ToolEnvelope` zod schema (and everything else in the module) is
 // kept: `priorTurnEvidence` (route.ts) validates stored evidence with it, and
 // a test asserting that a malformed envelope is dropped rather than crashing
@@ -551,6 +551,120 @@ describe('POST /coachhelm/v3/chat/stream — grounding audit over the full strea
     expect(flagIndex).toBeGreaterThanOrEqual(0);
     expect(finishIndex).toBe(calls.length - 1);
     expect(flagIndex).toBeLessThan(finishIndex);
+  });
+
+  it('a rejected turn never emits its answer text; an accepted one releases it, in order, before the finish chunk', async () => {
+    const stream = () => ({
+      usage: Promise.resolve({ inputTokens: 10, outputTokens: 10 }),
+      toUIMessageStream: () =>
+        fakeUiMessageStream([
+          { type: 'start-step' },
+          { type: 'text-start', id: 's1' },
+          { type: 'text-delta', id: 's1', delta: 'His make rate is ' },
+          { type: 'text-delta', id: 's1', delta: '71%.' },
+          { type: 'text-end', id: 's1' },
+          { type: 'finish-step' },
+          { type: 'finish' },
+        ]),
+    });
+    const emitted = () => mocks.lastWriter!.write.mock.calls.map((call) => call[0] as FakeChunk);
+
+    mocks.streamText.mockImplementation(stream);
+    mocks.auditNumericClaims.mockReturnValue([{ text: '71%', value: 71 }]);
+    await runPostAndSettle(baseBody);
+    const rejected = emitted();
+    expect(rejected.some((c) => c.type === 'text-start' || c.type === 'text-delta' || c.type === 'text-end')).toBe(false);
+    expect(JSON.stringify(rejected)).not.toContain('71%');
+    expect(rejected.some((c) => c.type === 'data-grounding-flag')).toBe(true);
+
+    mocks.streamText.mockImplementation(stream);
+    mocks.auditNumericClaims.mockReturnValue([]);
+    await runPostAndSettle(baseBody);
+    const accepted = emitted();
+    const types = accepted.map((c) => c.type);
+    expect(accepted.filter((c) => c.type === 'text-delta').map((c) => c.delta).join('')).toBe('His make rate is 71%.');
+    expect(types.indexOf('text-start')).toBeLessThan(types.indexOf('text-delta'));
+    expect(types.lastIndexOf('text-end')).toBeLessThan(types.indexOf('finish'));
+    expect(types[types.length - 1]).toBe('finish');
+  });
+
+  describe('the one repair pass for a rejected turn', () => {
+    const answer = (text: string) => () => ({
+      usage: Promise.resolve({ inputTokens: 10, outputTokens: 10 }),
+      response: Promise.resolve({ messages: [{ role: 'assistant', content: [{ type: 'text', text }] }] }),
+      toUIMessageStream: () =>
+        fakeUiMessageStream([
+          { type: 'start-step' },
+          { type: 'text-start', id: 's1' },
+          { type: 'text-delta', id: 's1', delta: text },
+          { type: 'text-end', id: 's1' },
+          { type: 'finish-step' },
+          { type: 'finish' },
+        ]),
+    });
+    const emitted = () => mocks.lastWriter!.write.mock.calls.map((call) => call[0] as FakeChunk);
+    const shownText = () => emitted().filter((c) => c.type === 'text-delta').map((c) => c.delta).join('');
+
+    it('a rejected then repaired turn releases only the repaired text', async () => {
+      mocks.streamText.mockReset();
+      mocks.streamText.mockImplementationOnce(answer('His make rate is 71%.')).mockImplementationOnce(answer('His make rate is 64%.'));
+      mocks.auditNumericClaims.mockReset().mockReturnValueOnce([{ text: '71%', value: 71 }]).mockReturnValue([]);
+
+      await runPostAndSettle(baseBody);
+
+      expect(mocks.streamText).toHaveBeenCalledTimes(2);
+      // The second call is told what was refused, after the first answer.
+      const second = mocks.streamText.mock.calls[1]![0] as { messages: Array<{ role: string; content: unknown }> };
+      const last = second.messages[second.messages.length - 1]!;
+      expect(last.role).toBe('user');
+      expect(String(last.content)).toContain('71%');
+      expect(shownText()).toBe('His make rate is 64%.');
+      expect(JSON.stringify(emitted())).not.toContain('71%');
+      expect(emitted().some((c) => c.type === 'data-grounding-flag')).toBe(false);
+      expect(emitted().filter((c) => c.type === 'finish')).toHaveLength(1);
+    });
+
+    it('a refused count is rewritten with no reads; a figure no read holds may read', async () => {
+      mocks.streamText.mockReset();
+      mocks.streamText.mockImplementationOnce(answer('Six players have a figure.')).mockImplementationOnce(answer('Every player has a figure.'));
+      mocks.auditNumericClaims.mockReset().mockReturnValueOnce([{ text: 'Six', value: 6 }]).mockReturnValue([]);
+      await runPostAndSettle(baseBody);
+      expect((mocks.streamText.mock.calls[1]![0] as { toolChoice?: string }).toolChoice).toBe('none');
+      expect(shownText()).toBe('Every player has a figure.');
+
+      mocks.streamText.mockReset();
+      mocks.streamText.mockImplementationOnce(answer('His make rate is 71%.')).mockImplementationOnce(answer('His make rate is 64%.'));
+      mocks.auditNumericClaims.mockReset().mockReturnValueOnce([{ text: '71%', value: 71 }]).mockReturnValue([]);
+      await runPostAndSettle(baseBody);
+      expect((mocks.streamText.mock.calls[1]![0] as { toolChoice?: string }).toolChoice).toBe('auto');
+    });
+
+    it('a twice rejected turn releases no answer text, only the withheld card', async () => {
+      mocks.streamText.mockReset();
+      mocks.streamText.mockImplementationOnce(answer('His make rate is 71%.')).mockImplementationOnce(answer('His make rate is 72%.'));
+      mocks.auditNumericClaims.mockReset().mockReturnValue([{ text: '71%', value: 71 }]);
+
+      await runPostAndSettle(baseBody);
+
+      expect(mocks.streamText).toHaveBeenCalledTimes(2);
+      expect(shownText()).toBe('');
+      expect(emitted().filter((c) => c.type === 'data-grounding-flag')).toHaveLength(1);
+      expect(emitted().filter((c) => c.type === 'finish')).toHaveLength(1);
+    });
+
+    it('a turn that never finished is not repaired', async () => {
+      mocks.streamText.mockReset();
+      mocks.streamText.mockImplementation(() => ({
+        usage: Promise.resolve({ inputTokens: 10, outputTokens: 10 }),
+        toUIMessageStream: () => fakeUiMessageStream([{ type: 'text-start', id: 's1' }, { type: 'text-delta', id: 's1', delta: 'Half an ans' }]),
+      }));
+      mocks.auditNumericClaims.mockReset().mockReturnValue([]);
+
+      await runPostAndSettle(baseBody);
+
+      expect(mocks.streamText).toHaveBeenCalledTimes(1);
+      expect(shownText()).toBe('');
+    });
   });
 
   it('seeds the audit with team-scoped evidence already shown to the coach, even on a zero-tool-call turn', async () => {
@@ -1133,6 +1247,37 @@ describe('POST /coachhelm/v3/chat/stream — #1999 review follow-ups (claims-blo
     }
     const persisted = mocks.appendMessage.mock.calls[0]![1];
     expect((persisted.content as string).trim()).toBe(forwardedText().trim());
+  });
+
+  it('a <<<CITES>>> block, split across chunks, never reaches the wire or the stored content', async () => {
+    mocks.streamText.mockImplementation(() => ({
+      usage: Promise.resolve({ inputTokens: 10, outputTokens: 10 }),
+      toUIMessageStream: () =>
+        fakeUiMessageStream([
+          { type: 'text-start', id: 's1' },
+          { type: 'text-delta', id: 's1', delta: 'His putts total is 28. <<<CI' },
+          { type: 'text-delta', id: 's1', delta: 'TES>>>\n[{"v":"28","ref":"e1","key":"total_putts","subject":"p1"}]<<<END_CI' },
+          { type: 'text-delta', id: 's1', delta: 'TES>>> Next, the tee shots.' },
+          { type: 'text-end', id: 's1' },
+          { type: 'finish' },
+        ]),
+    }));
+
+    await runPostAndSettle(baseBody);
+
+    expect(forwardedText()).toBe('His putts total is 28.  Next, the tee shots.');
+    for (const call of mocks.lastWriter!.write.mock.calls) {
+      const delta = (call[0] as FakeChunk).delta;
+      if (typeof delta === 'string') {
+        expect(delta).not.toContain('<<<CI');
+        expect(delta).not.toContain('total_putts');
+      }
+    }
+    const persisted = mocks.appendMessage.mock.calls[0]![1];
+    expect(persisted.content as string).not.toContain('CITES');
+    expect(persisted.content as string).not.toContain('total_putts');
+    // The numbers in the block are not audited as the answer's own: the audit saw the prose only.
+    expect(mocks.auditNumericClaims.mock.calls[0]![0]).not.toContain('total_putts');
   });
 
   it('a partial opener that never completes is still flushed at EOF — nothing is silently lost', async () => {

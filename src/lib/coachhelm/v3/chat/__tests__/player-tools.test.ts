@@ -13,7 +13,7 @@ describe('player Ask tool set', () => {
     for (const k of Object.keys(tools)) {
       expect(k).not.toMatch(/^(create|set|add|draft|save|publish|request|send|update|delete)_/);
     }
-    for (const banned of ['compare_players', 'get_team_metric_ranking', 'get_team_overview', 'get_team_rounds', 'get_team_patterns']) expect(tools[banned]).toBeUndefined();
+    for (const banned of ['compare_players', 'get_team_metric_ranking', 'get_team_overview', 'get_team_rounds', 'get_team_patterns', 'get_practice', 'get_documents', 'get_calendar', 'get_root_causes']) expect(tools[banned]).toBeUndefined();
   });
   it('tells the model never to name another player', () => {
     expect(PLAYER_INSTRUCTIONS('Me', 'Team', 'UTC')).toMatch(/Never name another player/);

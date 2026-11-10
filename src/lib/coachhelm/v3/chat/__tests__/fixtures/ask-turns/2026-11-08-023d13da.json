@@ -1,0 +1,608 @@
+{
+ "id": "023d13da",
+ "messageId": "023d13da-2946-43a6-b612-5c0efca11680",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "Which rounds since September 1 had three or more three-putts?",
+  "createdAt": "2026-11-08T06:24:10.62376+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-11-08T06:24:10.62376+00:00",
+   "content": "Which rounds since September 1 had three or more three-putts?",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-11-08T06:24:22.330067+00:00",
+  "status": "complete",
+  "costUsd": null,
+  "content": "Two rounds since September 1 had three or more three-putts. Both were Cole Bennett's tournament rounds at Springfield Country Club on October 21, and each had 3 three-putts. Those two scores were 74 and 77, with 37 putts in each. He also played a third round there that day, with 0 three-putts and 30 putts.\n\nThe read covers 26 rounds since September 1. Only 9 completed rounds have putts recorded. The 14 qualifier rounds on September 25 and 26 were posted as totals only, with no putts recorded. Their three-putt figure shows 0, but that means \"not recorded\", so I can't say whether any of them reached three. Three in-progress practice rounds have no stat line either.",
+  "tools": [
+   {
+    "name": "query_team_data",
+    "input": {
+     "limit": 200,
+     "order": {
+      "column": "round_date",
+      "ascending": true
+     },
+     "table": "round_lines",
+     "columns": [
+      "round_date",
+      "course_name",
+      "round_type",
+      "status",
+      "holes_played",
+      "total_score",
+      "total_putts",
+      "three_putts"
+     ],
+     "filters": [
+      {
+       "op": "gte",
+       "value": "2026-09-01",
+       "column": "round_date"
+      }
+     ]
+    }
+   },
+   {
+    "name": "summarise_data",
+    "input": {
+     "ops": [
+      {
+       "id": "n_matching",
+       "op": "count",
+       "where": [
+        {
+         "op": "gte",
+         "field": "three_putts",
+         "value": 3
+        }
+       ]
+      },
+      {
+       "id": "n_total_putts_recorded",
+       "op": "count",
+       "where": [
+        {
+         "op": "not_null",
+         "field": "total_putts"
+        },
+        {
+         "op": "eq",
+         "field": "status",
+         "value": "completed"
+        }
+       ]
+      },
+      {
+       "id": "n_no_putts",
+       "op": "count",
+       "where": [
+        {
+         "op": "is_null",
+         "field": "total_putts"
+        }
+       ]
+      }
+     ],
+     "source": {
+      "ref": "e1"
+     }
+    }
+   }
+  ],
+  "evidence": [
+   {
+    "tool": "query_team_data",
+    "ref": "e1",
+    "envelope": {
+     "as_of": "2026-11-08T06:24:14.313Z",
+     "detail": {
+      "kind": "team_data",
+      "noun": "rounds",
+      "rows": [
+       {
+        "player": "Cole Bennett",
+        "status": "completed",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "round_date": "2026-09-06",
+        "round_type": "practice",
+        "course_name": "The Cardinal",
+        "three_putts": 1,
+        "total_putts": 36,
+        "total_score": 82,
+        "holes_played": 18
+       },
+       {
+        "player": "Cole Bennett",
+        "status": "completed",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "round_date": "2026-09-13",
+        "round_type": "qualifier",
+        "course_name": "The Cardinal",
+        "three_putts": 1,
+        "total_putts": 31,
+        "total_score": 87,
+        "holes_played": 18
+       },
+       {
+        "player": "Cole Bennett",
+        "status": "completed",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "round_date": "2026-09-15",
+        "round_type": "qualifier",
+        "course_name": "Bryan Park Players",
+        "three_putts": 0,
+        "total_putts": 30,
+        "total_score": 77,
+        "holes_played": 18
+       },
+       {
+        "player": "Mason Rivers",
+        "status": "completed",
+        "player_id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "round_date": "2026-09-25",
+        "round_type": "qualifier",
+        "course_name": "Home course",
+        "three_putts": 0,
+        "total_putts": null,
+        "total_score": 72,
+        "holes_played": 18
+       },
+       {
+        "player": "Owen Carter",
+        "status": "completed",
+        "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "round_date": "2026-09-25",
+        "round_type": "qualifier",
+        "course_name": "Home course",
+        "three_putts": 0,
+        "total_putts": null,
+        "total_score": 74,
+        "holes_played": 18
+       },
+       {
+        "player": "Jackson Hale",
+        "status": "completed",
+        "player_id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "round_date": "2026-09-25",
+        "round_type": "qualifier",
+        "course_name": "Home course",
+        "three_putts": 0,
+        "total_putts": null,
+        "total_score": 75,
+        "holes_played": 18
+       },
+       {
+        "player": "Ethan Park",
+        "status": "completed",
+        "player_id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "round_date": "2026-09-25",
+        "round_type": "qualifier",
+        "course_name": "Home course",
+        "three_putts": 0,
+        "total_putts": null,
+        "total_score": 73,
+        "holes_played": 18
+       },
+       {
+        "player": "Tyler Hayes",
+        "status": "completed",
+        "player_id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "round_date": "2026-09-25",
+        "round_type": "qualifier",
+        "course_name": "Home course",
+        "three_putts": 0,
+        "total_putts": null,
+        "total_score": 78,
+        "holes_played": 18
+       },
+       {
+        "player": "Cole Bennett",
+        "status": "completed",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "round_date": "2026-09-25",
+        "round_type": "qualifier",
+        "course_name": "Home course",
+        "three_putts": 0,
+        "total_putts": null,
+        "total_score": 71,
+        "holes_played": 18
+       },
+       {
+        "player": "Dylan Brooks",
+        "status": "completed",
+        "player_id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "round_date": "2026-09-25",
+        "round_type": "qualifier",
+        "course_name": "Home course",
+        "three_putts": 0,
+        "total_putts": null,
+        "total_score": 76,
+        "holes_played": 18
+       },
+       {
+        "player": "Dylan Brooks",
+        "status": "completed",
+        "player_id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "round_date": "2026-09-26",
+        "round_type": "qualifier",
+        "course_name": "Home course",
+        "three_putts": 0,
+        "total_putts": null,
+        "total_score": 74,
+        "holes_played": 18
+       },
+       {
+        "player": "Owen Carter",
+        "status": "completed",
+        "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "round_date": "2026-09-26",
+        "round_type": "qualifier",
+        "course_name": "Home course",
+        "three_putts": 0,
+        "total_putts": null,
+        "total_score": 71,
+        "holes_played": 18
+       },
+       {
+        "player": "Mason Rivers",
+        "status": "completed",
+        "player_id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "round_date": "2026-09-26",
+        "round_type": "qualifier",
+        "course_name": "Home course",
+        "three_putts": 0,
+        "total_putts": null,
+        "total_score": 72,
+        "holes_played": 18
+       },
+       {
+        "player": "Jackson Hale",
+        "status": "completed",
+        "player_id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "round_date": "2026-09-26",
+        "round_type": "qualifier",
+        "course_name": "Home course",
+        "three_putts": 0,
+        "total_putts": null,
+        "total_score": 72,
+        "holes_played": 18
+       },
+       {
+        "player": "Tyler Hayes",
+        "status": "completed",
+        "player_id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "round_date": "2026-09-26",
+        "round_type": "qualifier",
+        "course_name": "Home course",
+        "three_putts": 0,
+        "total_putts": null,
+        "total_score": 77,
+        "holes_played": 18
+       },
+       {
+        "player": "Ethan Park",
+        "status": "completed",
+        "player_id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "round_date": "2026-09-26",
+        "round_type": "qualifier",
+        "course_name": "Home course",
+        "three_putts": 0,
+        "total_putts": null,
+        "total_score": 73,
+        "holes_played": 18
+       },
+       {
+        "player": "Cole Bennett",
+        "status": "completed",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "round_date": "2026-09-26",
+        "round_type": "qualifier",
+        "course_name": "Home course",
+        "three_putts": 0,
+        "total_putts": null,
+        "total_score": 70,
+        "holes_played": 18
+       },
+       {
+        "player": "Cole Bennett",
+        "status": "completed",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "round_date": "2026-09-29",
+        "round_type": "practice",
+        "course_name": "Bryan Park Players",
+        "three_putts": 1,
+        "total_putts": 31,
+        "total_score": 68,
+        "holes_played": 18
+       },
+       {
+        "player": "Cole Bennett",
+        "status": "completed",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "round_date": "2026-09-30",
+        "round_type": "practice",
+        "course_name": "Starmount Forest",
+        "three_putts": 2,
+        "total_putts": 30,
+        "total_score": 75,
+        "holes_played": 18
+       },
+       {
+        "player": "Cole Bennett",
+        "status": "in_progress",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "round_date": "2026-10-02",
+        "round_type": "practice",
+        "course_name": "Pebble Beach Golf Club",
+        "three_putts": null,
+        "total_putts": 0,
+        "total_score": null,
+        "holes_played": 18
+       },
+       {
+        "player": "Cole Bennett",
+        "status": "completed",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "round_date": "2026-10-06",
+        "round_type": "practice",
+        "course_name": "Bryan Park Champs",
+        "three_putts": 2,
+        "total_putts": 31,
+        "total_score": 82,
+        "holes_played": 18
+       },
+       {
+        "player": "Cole Bennett",
+        "status": "in_progress",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "round_date": "2026-10-08",
+        "round_type": "practice",
+        "course_name": "Pebble Beach Golf Club",
+        "three_putts": null,
+        "total_putts": 0,
+        "total_score": null,
+        "holes_played": 18
+       },
+       {
+        "player": "Cole Bennett",
+        "status": "completed",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "round_date": "2026-10-21",
+        "round_type": "tournament",
+        "course_name": "Springfield Country Club",
+        "three_putts": 3,
+        "total_putts": 37,
+        "total_score": 74,
+        "holes_played": 18
+       },
+       {
+        "player": "Cole Bennett",
+        "status": "completed",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "round_date": "2026-10-21",
+        "round_type": "tournament",
+        "course_name": "Springfield Country Club",
+        "three_putts": 3,
+        "total_putts": 37,
+        "total_score": 77,
+        "holes_played": 18
+       },
+       {
+        "player": "Cole Bennett",
+        "status": "completed",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "round_date": "2026-10-21",
+        "round_type": "tournament",
+        "course_name": "Springfield Country Club",
+        "three_putts": 0,
+        "total_putts": 30,
+        "total_score": 73,
+        "holes_played": 18
+       },
+       {
+        "player": "Cole Bennett",
+        "status": "in_progress",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "round_date": "2026-10-25",
+        "round_type": "practice",
+        "course_name": "Pebble Beach Golf Club",
+        "three_putts": null,
+        "total_putts": 0,
+        "total_score": null,
+        "holes_played": 18
+       }
+      ],
+      "limit": 200,
+      "units": {
+       "three_putts": "count",
+       "total_putts": "count",
+       "total_score": "strokes",
+       "holes_played": "count"
+      },
+      "row_count": 26,
+      "truncated": false,
+      "ordered_by": "round_date",
+      "total_rows": 26,
+      "newest_first": false
+     },
+     "series": [],
+     "summary": "26 rows of rounds.",
+     "coverage": "complete",
+     "measurements": [],
+     "coverage_note": null
+    }
+   },
+   {
+    "tool": "summarise_data",
+    "ref": "e2",
+    "envelope": {
+     "as_of": "2026-11-08T06:24:17.455Z",
+     "detail": {
+      "kind": "summary",
+      "titles": {},
+      "results": [
+       {
+        "id": "summary:n_matching",
+        "op": "count",
+        "value": 2
+       },
+       {
+        "id": "summary:n_total_putts_recorded",
+        "op": "count",
+        "value": 9
+       },
+       {
+        "id": "summary:n_no_putts",
+        "op": "count",
+        "value": 14
+       }
+      ],
+      "sources": [
+       "e1"
+      ],
+      "rows_used": 26
+     },
+     "series": [],
+     "summary": "3 figures worked out from 26 rows.",
+     "coverage": "complete",
+     "measurements": [
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T06:24:17.455Z",
+       "value": 2,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "summary_count",
+       "source": "summarised reads",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "summary:n_matching",
+       "window_end": "2026-10-21",
+       "denominator": null,
+       "sample_size": 2,
+       "sample_unit": "rounds",
+       "metric_label": "Rows",
+       "window_start": "2026-10-21",
+       "coverage_note": null
+      },
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T06:24:17.455Z",
+       "value": 9,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "summary_count",
+       "source": "summarised reads",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "summary:n_total_putts_recorded",
+       "window_end": "2026-10-21",
+       "denominator": null,
+       "sample_size": 9,
+       "sample_unit": "rounds",
+       "metric_label": "Rows",
+       "window_start": "2026-09-06",
+       "coverage_note": null
+      },
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T06:24:17.455Z",
+       "value": 14,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "summary_count",
+       "source": "summarised reads",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "summary:n_no_putts",
+       "window_end": "2026-09-26",
+       "denominator": null,
+       "sample_size": 14,
+       "sample_unit": "rounds",
+       "metric_label": "Rows",
+       "window_start": "2026-09-25",
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": null
+    }
+   }
+  ],
+  "recorded": {
+   "outcome": "accepted"
+  }
+ }
+}

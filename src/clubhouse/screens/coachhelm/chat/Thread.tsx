@@ -11,6 +11,7 @@ import {
   failedAnswerChangedNothing,
   focusForProposal,
   pendingApproval,
+  playerFollowUps,
   type EvidenceFocus,
 } from '../../../data/coachhelm-chat-thread';
 import { haptic } from '../../../lib/haptics';
@@ -42,6 +43,8 @@ export interface AskThreadProps {
   offline: boolean;
   phone: boolean;
   players: Array<{ id: string; name: string }>;
+  /** Who is asking: a player's next steps are read-only and about their own game. */
+  viewer?: 'coach' | 'player';
   /** Both receive the APPROVAL id (`part.approval.id`). */
   onApprove: (approvalId: string) => void;
   onDeny: (approvalId: string) => void;
@@ -75,7 +78,7 @@ function fromBottom(sp: HTMLElement | null): { gap: number; screen: number } {
  * the coach sends, and stays where the coach scrolled to while an answer streams. Streamed text
  * does not animate; a new turn arrives with the base fade.
  */
-export function AskThread({ team, stoppedTurn = null, onArtifact, messages, busy, error, offline, phone, players, onApprove, onDeny, onSend, onRetry, onNewChat, evidenceFocus, onOpenEvidence }: AskThreadProps) {
+export function AskThread({ viewer = 'coach', team, stoppedTurn = null, onArtifact, messages, busy, error, offline, phone, players, onApprove, onDeny, onSend, onRetry, onNewChat, evidenceFocus, onOpenEvidence }: AskThreadProps) {
   const toast = useToast();
   const reduced = useChReducedMotion();
   const turns = useMemo(() => buildTurns(messages, { busy }), [messages, busy]);
@@ -187,11 +190,12 @@ export function AskThread({ team, stoppedTurn = null, onArtifact, messages, busy
               </div>
             );
           }
-          const showFollowUps = turn.id === lastAssistantId && !busy && !pending && !error && turn.followUps.length > 0;
+          const followUps = viewer === 'player' ? playerFollowUps(turn.followUps, turn.envelopes) : turn.followUps;
+          const showFollowUps = turn.id === lastAssistantId && !busy && !pending && !error && followUps.length > 0;
           return (
             <AnswerCard
               key={turn.id}
-              turn={turn}
+              turn={followUps === turn.followUps ? turn : { ...turn, followUps }}
               stopped={stoppedTurn === turn.id}
               question={(() => {
                 const before = turns[turnIndex - 1];

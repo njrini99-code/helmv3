@@ -1,0 +1,192 @@
+{
+ "id": "95218c6c",
+ "messageId": "95218c6c-521c-44ea-a563-3b8bf63cbdc7",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "What's on this week?",
+  "createdAt": "2026-11-08T05:03:42.336665+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-11-08T05:03:42.336665+00:00",
+   "content": "What's on this week?",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-11-08T05:03:46.224355+00:00",
+  "status": "complete",
+  "costUsd": null,
+  "content": "Nothing is on the calendar for the next seven days (Nov 8 to Nov 15), and no trips are set up.\n\nFive team tasks are open, and all five are overdue:\n- Update Yardage Book — Home Course (high priority, due Jul 22)\n- Complete Swing Mechanics Self-Assessment Video (medium, due Jul 24, in progress)\n- Submit Spring Invitational Travel Preferences Form (medium, due Jul 27)\n- Watch Pre-Tournament Course Overview Video (high, due Jul 28)\n- Individual Goal-Setting Meeting with Coach (low, due Aug 4)\n\nThese tasks are months old. Close them out if they're done, or reassign them if they still matter. I can draft a practice for this week if you want one.",
+  "tools": [
+   {
+    "name": "get_upcoming_events",
+    "input": {
+     "days_ahead": 7
+    }
+   },
+   {
+    "name": "get_team_travel",
+    "input": {}
+   },
+   {
+    "name": "get_open_tasks",
+    "input": {}
+   }
+  ],
+  "evidence": [
+   {
+    "tool": "get_open_tasks",
+    "ref": "e1",
+    "envelope": {
+     "as_of": "2026-11-08T05:03:43.978Z",
+     "detail": {
+      "tasks": [
+       {
+        "title": "Update Yardage Book — Home Course",
+        "status": "pending",
+        "overdue": true,
+        "task_id": "a1a68717-a6db-4d00-8ca5-427ff894eaf6",
+        "due_date": "2026-07-22",
+        "priority": "high"
+       },
+       {
+        "title": "Complete Swing Mechanics Self-Assessment Video",
+        "status": "in_progress",
+        "overdue": true,
+        "task_id": "5be36a2e-cbd3-4c78-97f4-388a170dc5d5",
+        "due_date": "2026-07-24",
+        "priority": "medium"
+       },
+       {
+        "title": "Submit Spring Invitational Travel Preferences Form",
+        "status": "pending",
+        "overdue": true,
+        "task_id": "1dd41a13-16d9-46bb-8c38-29f727487f49",
+        "due_date": "2026-07-27",
+        "priority": "medium"
+       },
+       {
+        "title": "Watch Pre-Tournament Course Overview Video",
+        "status": "pending",
+        "overdue": true,
+        "task_id": "5402b6d3-ac25-4927-8f5f-deea2baa33a7",
+        "due_date": "2026-07-28",
+        "priority": "high"
+       },
+       {
+        "title": "Individual Goal-Setting Meeting with Coach",
+        "status": "pending",
+        "overdue": true,
+        "task_id": "fdab3687-5928-4fdf-9631-899ef0690557",
+        "due_date": "2026-08-04",
+        "priority": "low"
+       }
+      ],
+      "open_count": 5,
+      "overdue_count": 5
+     },
+     "series": [],
+     "summary": "5 open tasks, 5 overdue.",
+     "coverage": "complete",
+     "measurements": [],
+     "coverage_note": null
+    }
+   },
+   {
+    "tool": "get_upcoming_events",
+    "ref": "e2",
+    "envelope": {
+     "as_of": "2026-11-08T05:03:43.980Z",
+     "detail": {
+      "events": [],
+      "window": {
+       "to": "2026-11-15",
+       "days": 7,
+       "from": "2026-11-08"
+      }
+     },
+     "series": [],
+     "summary": "Nothing scheduled in the next 7 days.",
+     "coverage": "empty",
+     "measurements": [],
+     "coverage_note": null
+    }
+   },
+   {
+    "tool": "get_team_travel",
+    "ref": "e3",
+    "envelope": {
+     "as_of": "2026-11-08T05:03:43.989Z",
+     "detail": {
+      "trips": []
+     },
+     "series": [],
+     "summary": "No upcoming or recent trips are set up.",
+     "coverage": "empty",
+     "measurements": [],
+     "coverage_note": null
+    }
+   }
+  ],
+  "recorded": {
+   "outcome": "accepted"
+  }
+ }
+}

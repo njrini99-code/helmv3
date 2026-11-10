@@ -1,0 +1,192 @@
+{
+ "id": "player-last5-average",
+ "messageId": "captured-player-last5-average",
+ "surface": "player",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/ask-eval.mjs --capture-dir",
+  "server": "http://localhost:3101"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  }
+ ],
+ "userMessage": {
+  "content": "What is my scoring average over my last 5 rounds?",
+  "createdAt": "2026-11-08T06:06:10.435Z"
+ },
+ "priorMessages": [],
+ "turn": {
+  "createdAt": "2026-11-08T06:06:21.396Z",
+  "status": "complete",
+  "costUsd": 0.014855299999999998,
+  "content": "Your scoring average over your last 5 rounds (25 Sep to 21 Oct) is **73** [e1].\n\nI didn't compare it to your level, your team or the Tour. Scoring average isn't one of the benchmark metrics I can read. If you'd like a comparison, I can check strokes gained instead. Your SG: Total over the same 5 rounds is -4.39 [e2]. There is no Division I college figure for strokes gained, and the team average isn't available for a 5-round window. The PGA Tour average is 0 [e2], so you're 4.39 strokes behind it. The Tour is a professional yardstick, so being behind it is expected.\n\n",
+  "tools": [
+   {
+    "name": "get_player_metrics",
+    "input": {
+     "metric_ids": [
+      "scoring_average"
+     ],
+     "window": "last5"
+    }
+   },
+   {
+    "name": "get_benchmarks",
+    "input": {
+     "metric_ids": [
+      "sg_total"
+     ],
+     "window": "last5"
+    }
+   }
+  ],
+  "evidence": [
+   {
+    "tool": "get_player_metrics",
+    "ref": "e1",
+    "envelope": {
+     "summary": "1 metric for you, over the newest five rounds.",
+     "measurements": [
+      {
+       "metric_id": "scoring_average",
+       "metric_label": "Scoring average",
+       "unit": "score",
+       "value": 73,
+       "entity": {
+        "kind": "player",
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "label": "You"
+       },
+       "window_start": "2026-09-25",
+       "window_end": "2026-10-21",
+       "sample_size": 5,
+       "sample_unit": "rounds",
+       "as_of": "2026-11-08T06:06:14.674Z",
+       "coverage": "complete",
+       "coverage_note": null,
+       "source": "rounds",
+       "method": "scoring_average_per_18_over_the_window_as_stats_reads_it",
+       "denominator": null,
+       "benchmark": null,
+       "direction": "lower_better"
+      }
+     ],
+     "series": [],
+     "detail": {
+      "window": "last5"
+     },
+     "coverage": "complete",
+     "coverage_note": null,
+     "as_of": "2026-11-08T06:06:14.674Z",
+     "window_label": "last 5 rounds"
+    }
+   },
+   {
+    "tool": "get_benchmarks",
+    "ref": "e2",
+    "envelope": {
+     "summary": "Division I average, PGA Tour for 1 metric, with 1 standing row.",
+     "measurements": [],
+     "series": [],
+     "detail": {
+      "kind": "benchmark_read",
+      "team_level": "Division I average",
+      "note": "Benchmarks are published or estimated averages, never this team\u2019s results. Name the level and the source when you use one.",
+      "benchmarks": [
+       {
+        "kind": "benchmark",
+        "metric_id": "sg_total",
+        "metric_scope": "sg_total",
+        "metric_label": "SG: Total",
+        "unit": "strokes",
+        "direction": "higher_better",
+        "season": "2024",
+        "source_label": "2024 reference table",
+        "source": "Broadie / PGA Tour ShotLink; field-level zero-sum. Research doc \u00a72 \"SG benchmarks (Top 30 Tour)\".",
+        "levels": {
+         "pga": {
+          "label": "PGA Tour",
+          "value": 0
+         }
+        },
+        "tour_percentiles": {
+         "p25": -0.5,
+         "p50": 0,
+         "p75": 0.5
+        }
+       }
+      ],
+      "standing": {
+       "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+       "player": "You",
+       "window": "over the last 5 rounds; the level's place is over all recorded rounds, refreshed nightly",
+       "rows": [
+        {
+         "metric_id": "sg_total",
+         "metric_scope": "sg_total",
+         "metric_label": "SG: Total",
+         "direction": "higher_better",
+         "player_value": -4.39,
+         "window": "last5",
+         "window_label": "the last 5 rounds",
+         "standing_value": -1.61,
+         "comparisons": [
+          {
+           "kind": "level",
+           "label": "Division I average",
+           "value": null,
+           "place_percent": null,
+           "place": null,
+           "place_of": null,
+           "note": "There is no college figure for this metric.",
+           "missing_reason": "no college figure"
+          },
+          {
+           "kind": "team",
+           "label": "Team average",
+           "value": null,
+           "place_percent": null,
+           "place": null,
+           "place_of": null,
+           "note": "A team average over the last 5 rounds is not available to a player: the team\u2019s figure covers all recorded rounds only.",
+           "missing_reason": "all rounds only"
+          },
+          {
+           "kind": "tour",
+           "label": "PGA Tour",
+           "value": 0,
+           "place_percent": null,
+           "place": null,
+           "place_of": null,
+           "note": null,
+           "missing_reason": null
+          }
+         ],
+         "gaps": {
+          "vs_level": null,
+          "vs_team": null,
+          "vs_tour": -4.39
+         },
+         "computed_at": "2026-11-07T02:20:34.954747+00:00"
+        }
+       ]
+      }
+     },
+     "coverage": "complete",
+     "coverage_note": null,
+     "as_of": "2026-11-08T06:06:15.375Z"
+    }
+   }
+  ],
+  "recorded": {
+   "outcome": "accepted"
+  }
+ }
+}

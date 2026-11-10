@@ -8,6 +8,7 @@ import type { Measurement, MeasurementSeries } from '@/lib/coachhelm/v3/chat/pro
 import type { ResolvedBlock, ValidatedComposition } from '@/lib/coachhelm/v3/chat/visuals/composition';
 import {
   bucketBlock,
+  comparisonWords,
   formatValue,
   measurementTable,
   rankRows,
@@ -100,6 +101,8 @@ function verdictOf(m: Measurement): { tone: 'good' | 'loss'; words: string } | n
 function Headline({ block }: { block: Extract<ResolvedBlock, { type: 'headline' }> }) {
   const m = block.measurement;
   const verdict = verdictOf(m);
+  // The level, the team average and the Tour, in that order, a missing one said so (owner, 2026-11-08).
+  const refs = m.comparisons?.length ? comparisonWords(m.comparisons, m.unit) : [];
   const reference =
     m.denominator !== null && m.unit === 'percent' && m.value !== null
       ? `${Math.round((m.value / 100) * m.denominator)} of ${m.denominator}`
@@ -111,6 +114,13 @@ function Headline({ block }: { block: Extract<ResolvedBlock, { type: 'headline' 
       <div className="ch-th-cv__hero-words">
         <p className="ch-th-cv__hero-label">{block.label ?? m.metric_label}</p>
         <p className="ch-th-cv__hero-sub">{[block.label ? m.metric_label : null, reference].filter(Boolean).join(' · ')}</p>
+        {refs.length > 0 && (
+          <ul className="ch-th-cv__refs" aria-label="Compared with">
+            {refs.map((r) => (
+              <li key={r}>{r}</li>
+            ))}
+          </ul>
+        )}
       </div>
       <div className="ch-th-cv__hero-fig">
         <b className="ch-th-cv__hero-n ch-num">{formatValue(m.value, m.unit, m)}</b>

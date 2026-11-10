@@ -106,19 +106,19 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .conf .btns .p.cap::before { content: ''; position: absolute; left: 0; bottom: 0; width: 40%; height: 2px; border-radius: var(--ch-radius-mark); background: var(--ch-ask-accent); animation: ch-ak-capsule var(--ch-dur-sweep) linear infinite; }
 .ch-ak-th .cxl { margin: 0; padding: 12px 16px 12px; font: var(--ch-type-15); color: var(--ch-text-secondary); letter-spacing: var(--ch-track-15); }
 .ch-ak-th .conf.flash::before { content: ''; position: absolute; inset: 0; z-index: 1; border-radius: inherit; box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--ch-ask-accent) 60%, transparent); pointer-events: none; animation: ch-ak-edge var(--ch-dur-sweep) var(--ch-ease) forwards; }
-.ch-ak-th .receipt { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: var(--ch-hairline-w) solid var(--ch-separator); }
-.ch-ak-th .receipt > div { min-width: 0; flex: 1; }
-.ch-ak-th .receipt b { display: block; font: var(--ch-type-15-strong); color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
-.ch-ak-th .receipt .sub { display: block; font: var(--ch-type-14);  color: var(--ch-text-secondary); }
-.ch-ak-th .receipt.undone b { font-weight:var(--ch-fw-500); color: var(--ch-text-secondary); }
-.ch-ak-th .receipt .ck { position: relative; display: grid; place-items: center; flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--ch-ask-accent); color: var(--ch-card-bg); }
-.ch-ak-th .receipt .ck.warn { background: none; color: var(--ch-loss); }
-.ch-ak-th .receipt.in .ck::after { content: ''; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 2px var(--ch-ask-accent); pointer-events: none; animation: ch-ak-ring var(--ch-dur-reveal) var(--ch-ease) forwards; }
-.ch-ak-th .receipt .lk { position: relative; display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 6px; border: 0; background: none; font: var(--ch-type-14-strong);  color: var(--ch-ask-accent); text-decoration: none; white-space: nowrap; cursor: pointer; }
-.ch-ak-th .receipt .lk::after { content: ''; position: absolute; inset: -9px 0; }
-.ch-ak-th .receipt .undo svg { width: 20px; height: 20px; }
-.ch-ak-th .receipt .undo .trk { stroke: var(--ch-ak-ak-track); }
-.ch-ak-th .receipt .undo .drn { stroke: var(--ch-ask-accent); stroke-dasharray: 63; transform: rotate(-90deg); transform-origin: 12px 12px; animation: ch-ak-drain 8s linear forwards; }
+.ch-ak-th .receipt, .ch-ak-sv .receipt { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: var(--ch-hairline-w) solid var(--ch-separator); }
+.ch-ak-th .receipt > div, .ch-ak-sv .receipt > div { min-width: 0; flex: 1; }
+.ch-ak-th .receipt b, .ch-ak-sv .receipt b { display: block; font: var(--ch-type-15-strong); color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
+.ch-ak-th .receipt .sub, .ch-ak-sv .receipt .sub { display: block; font: var(--ch-type-14);  color: var(--ch-text-secondary); }
+.ch-ak-th .receipt.undone b, .ch-ak-sv .receipt.undone b { font-weight:var(--ch-fw-500); color: var(--ch-text-secondary); }
+.ch-ak-th .receipt .ck, .ch-ak-sv .receipt .ck { position: relative; display: grid; place-items: center; flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--ch-ask-accent); color: var(--ch-card-bg); }
+.ch-ak-th .receipt .ck.warn, .ch-ak-sv .receipt .ck.warn { background: none; color: var(--ch-loss); }
+.ch-ak-th .receipt.in .ck::after, .ch-ak-sv .receipt.in .ck::after { content: ''; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 2px var(--ch-ask-accent); pointer-events: none; animation: ch-ak-ring var(--ch-dur-reveal) var(--ch-ease) forwards; }
+.ch-ak-th .receipt .lk, .ch-ak-sv .receipt .lk { position: relative; display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 6px; border: 0; background: none; font: var(--ch-type-14-strong);  color: var(--ch-ask-accent); text-decoration: none; white-space: nowrap; cursor: pointer; }
+.ch-ak-th .receipt .lk::after, .ch-ak-sv .receipt .lk::after { content: ''; position: absolute; inset: -9px 0; }
+.ch-ak-th .receipt .undo svg, .ch-ak-sv .receipt .undo svg { width: 20px; height: 20px; }
+.ch-ak-th .receipt .undo .trk, .ch-ak-sv .receipt .undo .trk { stroke: var(--ch-ak-ak-track); }
+.ch-ak-th .receipt .undo .drn, .ch-ak-sv .receipt .undo .drn { stroke: var(--ch-ask-accent); stroke-dasharray: 63; transform: rotate(-90deg); transform-origin: 12px 12px; animation: ch-ak-drain 8s linear forwards; }
 .ch-ak-th .told { margin: 0 16px 16px; padding: 12px 12px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); box-shadow: inset 0 0 0 0.5px var(--ch-ak-ak-hair); font: var(--ch-type-13);  color: var(--ch-text-secondary); }
 .ch-ak-th .told b { font-weight:var(--ch-fw-600); color: var(--ch-text-primary); }
 @keyframes ch-ak-capsule { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
@@ -130,7 +130,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .acard .tile { position: relative; display: grid; align-content: start; gap: 4px; width: 44px; height: 52px; padding: 8px 6px; border-radius: var(--ch-radius-sm); background: var(--ch-well-bg-flat); box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-card-ring); overflow: hidden; }
 .ch-ak-th .acard .tile i { display: block; height: 4px; border-radius: var(--ch-radius-mark); background: var(--ch-ak-ak-track); }
 .ch-ak-th .acard .tile i:first-child { width: 70%; background: var(--ch-ask-accent); }
-.ch-ak-th .acard .tile.busy::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent, var(--ch-ak-ak-tint), transparent); animation: ch-ak-scan 1.1s linear infinite; }
+.ch-ak-th .acard .tile.busy::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent, var(--ch-ak-ak-tint), transparent); animation: ch-ak-scan var(--ch-dur-sweep) linear infinite; }
 .ch-ak-th .acard b { display: block; font: var(--ch-type-16-strong);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-16); }
 .ch-ak-th .acard span span { display: block; font: var(--ch-type-14);  color: var(--ch-text-secondary); }
 .ch-ak-th .acard .go { padding: 6px 12px; border-radius: var(--ch-radius-sm); background: var(--ch-ak-ak-tint); font: var(--ch-type-14-strong);  color: var(--ch-ask-accent); }
@@ -145,7 +145,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-push .apdock { background: var(--ch-card-bg); padding-bottom: env(safe-area-inset-bottom); }
 @keyframes ch-ak-scan { from { transform: translateY(-100%); } to { transform: translateY(100%); } }
 @media (prefers-reduced-motion: reduce) {
-  .ch-ak-th .conf.flash::before, .ch-ak-th .receipt.in .ck::after, .ch-ak-th .conf .btns .p.cap::before, .ch-ak-th .acard .tile.busy::after { animation: none; display: none; }
+  .ch-ak-th .conf.flash::before, .ch-ak-th .receipt.in .ck::after, .ch-ak-sv .receipt.in .ck::after, .ch-ak-th .conf .btns .p.cap::before, .ch-ak-th .acard .tile.busy::after { animation: none; display: none; }
 }
 /* AK6, AK7: shot and engine blocks. Drawn at rest; marks never grow on first paint without the card's own reveal. */
 .ch-ak-miss { margin: 0; display: grid; gap: 8px; justify-items: center; }
@@ -632,28 +632,28 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-worked button.ipl::after { content: ''; position: absolute; inset: -4px 0; }
 .ch-ak-worked .ipl b { font: var(--ch-type-13-strong); color: var(--ch-text-primary); }
 .ch-ak-worked .ipl span { font: var(--ch-type-12); color: var(--ch-text-tertiary); }
-.ch-ak-th .conf.is-fill .ipl { animation: ch-ak-pop 0.54s var(--ch-ease-spring-pop, var(--ch-ease)) both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-press) / 1.57); }
+.ch-ak-th .conf.is-fill .ipl { animation: ch-ak-pop var(--ch-dur-spring-pop, var(--ch-dur-reveal)) var(--ch-ease-spring-pop, var(--ch-ease)) both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-press) / 1.57); }
 @keyframes ch-ak-pop { from { opacity: 0; transform: scale(0.9); } }
 
 .ch-ak-th .ch-ak-evlink { position: relative; display: block; margin: 6px 16px 0; padding: 0; border: 0; background: none; font: var(--ch-type-14-strong); color: var(--ch-ask-accent); cursor: pointer; }
 .ch-ak-th .ch-ak-evlink::after { content: ''; position: absolute; inset: -12px 0; }
 
 /* M-ASK-50: the Draft chip takes the flow's done word. */
-.ch-ak-th .dchip.is-pop { animation: ch-ak-chip 0.54s var(--ch-ease-spring-pop, var(--ch-ease)) both; }
+.ch-ak-th .dchip.is-pop { animation: ch-ak-chip var(--ch-dur-spring-pop, var(--ch-dur-reveal)) var(--ch-ease-spring-pop, var(--ch-ease)) both; }
 @keyframes ch-ak-chip { from { transform: scale(0.7); } }
 
 /* M-ASK-51: at the ring's end Undo fades and takes no presses. */
-.ch-ak-th .receipt .undo { transition: opacity var(--ch-dur-base) var(--ch-ease); }
-.ch-ak-th .receipt .undo.gone { opacity: 0; pointer-events: none; }
-.ch-ak-th .receipt.undone:focus { outline: none; }
+.ch-ak-th .receipt .undo, .ch-ak-sv .receipt .undo { transition: opacity var(--ch-dur-base) var(--ch-ease); }
+.ch-ak-th .receipt .undo.gone, .ch-ak-sv .receipt .undo.gone { opacity: 0; pointer-events: none; }
+.ch-ak-th .receipt.undone:focus, .ch-ak-sv .receipt.undone:focus { outline: none; }
 
 /* E-TOLD: coins 22 overlapping 5; they light 90ms apart only after a window this visit watched (M-ASK-53). */
 .ch-ak-th .told { display: flex; align-items: center; gap: 8px; }
 .ch-ak-th .told .coins { display: inline-flex; flex: none; }
 .ch-ak-th .told .coin { display: inline-flex; margin-left: -4px; border-radius: 50%; box-shadow: 0 0 0 2px var(--ch-well-bg-flat); }
 .ch-ak-th .told .coin:first-child { margin-left: 0; }
-.ch-ak-th .told.is-live { animation: ch-ak-rise6 0.46s var(--ch-ease-spring-smooth) both; }
-.ch-ak-th .told.is-live .coin { animation: ch-ak-coin 0.54s var(--ch-ease-spring-pop, var(--ch-ease)) both; animation-delay: calc(var(--ch-dur-typing-step) + var(--ch-i, 0) * var(--ch-dur-press) / 1.22); }
+.ch-ak-th .told.is-live { animation: ch-ak-rise6 var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) both; }
+.ch-ak-th .told.is-live .coin { animation: ch-ak-coin var(--ch-dur-spring-pop, var(--ch-dur-reveal)) var(--ch-ease-spring-pop, var(--ch-ease)) both; animation-delay: calc(var(--ch-dur-typing-step) + var(--ch-i, 0) * var(--ch-dur-press) / 1.22); }
 @keyframes ch-ak-coin { from { opacity: 0.35; filter: saturate(0.3); transform: scale(0.85); } }
 
 /* E-WK: the week the draft lands in. Hour column 30, five days, body 132. */
@@ -678,7 +678,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-wk .slot.is-ev { display: grid; align-content: start; padding: 2px 4px; background: var(--ch-accent); color: var(--ch-text-on-accent); }
 .ch-ak-wk .slot.is-ev b { display: block; font: var(--ch-type-11-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: var(--ch-track-11); }
 .ch-ak-wk .slot.is-ev span { font: var(--ch-type-11); letter-spacing: var(--ch-track-11); }
-.ch-ak-wk .slot.is-landing { animation: ch-ak-land 0.54s var(--ch-ease-spring-pop, var(--ch-ease)) var(--ch-dur-reveal) both; }
+.ch-ak-wk .slot.is-landing { animation: ch-ak-land var(--ch-dur-spring-pop, var(--ch-dur-reveal)) var(--ch-ease-spring-pop, var(--ch-ease)) var(--ch-dur-reveal) both; }
 @keyframes ch-ak-slot { 50% { opacity: 1; } }
 @keyframes ch-ak-land { from { opacity: 0; transform: scale(0.9); } }
 
@@ -694,7 +694,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-lock .ban b { font: var(--ch-type-14-strong); color: var(--ch-ink-900); }
 .ch-ak-lock .bd { font: var(--ch-type-13); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .ch-ak-th .conf.is-fill .ch-ak-lock { animation: ch-ak-fade var(--ch-dur-base) var(--ch-ease) both; }
-.ch-ak-th .conf.is-fill .ch-ak-lock .ban { animation: ch-ak-drop 0.54s var(--ch-ease-spring-pop, var(--ch-ease)) 0.2s both; }
+.ch-ak-th .conf.is-fill .ch-ak-lock .ban { animation: ch-ak-drop var(--ch-dur-spring-pop, var(--ch-dur-reveal)) var(--ch-ease-spring-pop, var(--ch-ease)) var(--ch-dur-quick) both; }
 @keyframes ch-ak-drop { from { opacity: 0; transform: translateY(-26px) scale(0.96); } }
 
 /* E-QUAL: round cards and the travel seats. */
@@ -709,8 +709,8 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-qual .bar { display: inline-flex; gap: 4px; }
 .ch-ak-qual .bar i { width: 24px; height: 6px; border-radius: var(--ch-radius-mark); background: var(--ch-chart-gain-fill); }
 .ch-ak-qual .bar i.pick { background: var(--ch-chart-track); box-shadow: inset 0 0 0 1px var(--ch-chart-gain-fill); }
-.ch-ak-th .conf.is-fill .ch-ak-qual .rd { animation: ch-ak-qr 0.71s var(--ch-ease-spring-send, var(--ch-ease)) both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-press) / 1.22); }
-.ch-ak-th .conf.is-fill .ch-ak-qual .bar i { animation: ch-ak-fade 0.08s linear both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-press) / 1.375); }
+.ch-ak-th .conf.is-fill .ch-ak-qual .rd { animation: ch-ak-qr var(--ch-dur-spring-send, var(--ch-dur-reveal)) var(--ch-ease-spring-send, var(--ch-ease)) both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-press) / 1.22); }
+.ch-ak-th .conf.is-fill .ch-ak-qual .bar i { animation: ch-ak-fade var(--ch-dur-press) linear both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-press) / 1.375); }
 @keyframes ch-ak-qr { from { opacity: 0; transform: translateX(24px); } }
 
 @media (prefers-reduced-motion: reduce) {
@@ -730,7 +730,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .step.is-next .tx { color: var(--ch-text-secondary); }
 
 /* E-CITE: the popover opens from its chip and goes on to Stats or the list of reads (M-ASK-22). */
-.ch-ak-th .cpop { animation: ch-ak-cpop 0.2s var(--ch-ease) both; }
+.ch-ak-th .cpop { animation: ch-ak-cpop var(--ch-dur-quick) var(--ch-ease) both; }
 @keyframes ch-ak-cpop { from { opacity: 0; transform: translateY(4px) scale(0.98); } }
 .ch-ak-th .cpop-f { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; padding-top: 8px; border-top: var(--ch-hairline-w) solid var(--ch-separator); }
 .ch-ak-th .cpop-f a, .ch-ak-th .cpop-f button { position: relative; padding: 0; border: 0; background: none; font: var(--ch-type-14-strong); color: var(--ch-ask-accent); text-decoration: none; cursor: pointer; }
@@ -849,7 +849,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 
 /* MOT-20: Undo is live for its whole 8 seconds, Reduce Motion or not: the ring's only job is to show the time left. */
 @media (prefers-reduced-motion: reduce) {
-  .ch-root .ch-ak-th .receipt .undo .drn { animation-duration: 8s !important; }
+  .ch-root .ch-ak-th .receipt .undo .drn, .ch-root .ch-ak-sv .receipt .undo .drn { animation-duration: 8s !important; }
 }
 /* Save draft (E-SAVE): where a report goes. Portaled, so it anchors to its own class. */
 .ch-ak-save { display: grid; gap: 12px; }
@@ -936,3 +936,77 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 .ch-ak-th .lk[data-ch-pressed] {
   background-color: var(--ch-press-wash, var(--ch-well-bg-flat));
 }
+
+/* Save draft (S-ASK.save): the card docked above an artifact's footer, in the pane and above the phone dock. Its receipt shares the kit's rules above. */
+.ch-ak-sv { display: grid; gap: 0; margin: 12px 16px 4px; overflow: hidden; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-ask-shadow-2); animation: ch-ak-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) both; }
+.ch-ak-sv .hd { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: var(--ch-hairline-w) solid var(--ch-separator); }
+.ch-ak-sv .pg { display: grid; place-items: center; flex: none; width: 36px; height: 44px; border-radius: var(--ch-radius-sm); background: var(--ch-well-bg-flat); color: var(--ch-text-secondary); }
+.ch-ak-sv .tt { min-width: 0; flex: 1; display: grid; }
+.ch-ak-sv .tt b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
+.ch-ak-sv .tt small { font: var(--ch-type-13); color: var(--ch-text-secondary); }
+.ch-ak-sv .row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; margin: 8px 0 0; padding: 8px 16px; border: 0; background: none; text-align: left; cursor: pointer; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); color: var(--ch-text-secondary); }
+.ch-ak-sv .row:disabled { cursor: default; }
+.ch-ak-sv .row .n { flex: 1; min-width: 0; }
+.ch-ak-sv .row b { font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
+.ch-ak-sv .row .fi { display: grid; place-items: center; color: var(--ch-ask-accent); transform-origin: 50% 100%; }
+.ch-ak-sv .row .c { font: var(--ch-type-13); color: var(--ch-text-tertiary); }
+.ch-ak-sv .row .chev { flex: none; color: var(--ch-text-tertiary); transition: transform var(--ch-dur-base) var(--ch-ease); }
+.ch-ak-sv .row[aria-expanded='true'] .chev { transform: rotate(180deg); }
+.ch-ak-sv .list { display: grid; margin: 4px 16px 0; padding: 4px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); animation: ch-ak-rise6 var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) both; }
+.ch-ak-sv .fr { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 8px 12px; border: 0; border-radius: var(--ch-radius-sm); background: none; text-align: left; cursor: pointer; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
+.ch-ak-sv .fr svg:first-child { flex: none; color: var(--ch-text-secondary); }
+.ch-ak-sv .fr .n { flex: 1; min-width: 0; }
+.ch-ak-sv .fr .c { font: var(--ch-type-13); color: var(--ch-text-tertiary); }
+.ch-ak-sv .fr .tk { display: grid; place-items: center; width: 20px; color: var(--ch-ask-accent); opacity: 0; }
+.ch-ak-sv .fr.on .tk { opacity: 1; }
+.ch-ak-sv .fr.nw { flex-wrap: wrap; color: var(--ch-ask-accent); }
+.ch-ak-sv .fr.nw svg:first-child { color: var(--ch-ask-accent); }
+.ch-ak-sv .fr .inp { flex: 1; min-width: 0; min-height: 36px; padding: 6px 8px; border: 0; border-radius: var(--ch-radius-sm); background: var(--ch-card-bg); box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-separator); font: var(--ch-type-15); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
+.ch-ak-sv .bad { flex-basis: 100%; margin: 0; padding: 4px 16px 0; font: var(--ch-type-13); color: var(--ch-loss); }
+.ch-ak-sv .fr .bad { padding: 0 0 0 32px; }
+.ch-ak-sv .note { margin: 0; padding: 8px 16px 0; font: var(--ch-type-14); color: var(--ch-text-secondary); }
+.ch-ak-sv .note b { font: var(--ch-type-14-strong); color: var(--ch-text-primary); }
+.ch-ak-sv .btns { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 12px 16px 16px; }
+.ch-ak-sv .cap { padding: 8px 20px; border-radius: 999px; background: color-mix(in oklab, var(--ch-ask-accent) 10%, transparent); font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); color: var(--ch-ask-accent); }
+.ch-ak-sv .cxl { margin: 0; padding: 12px 16px 4px; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); color: var(--ch-text-secondary); }
+.ch-ak-sv .receipt .undo .trk { stroke: var(--ch-chart-track); }
+@media (prefers-reduced-motion: reduce) {
+  .ch-ak-sv, .ch-ak-sv .list { --ch-rm-animation: var(--ch-dur-crossfade-rm); animation: ch-ak-fade var(--ch-dur-crossfade-rm) linear both; }
+  .ch-ak-sv .row .chev { transition: none; }
+}
+[data-motion='off'] .ch-ak-sv, [data-motion='off'] .ch-ak-sv .list { animation: none; }
+
+/* Motion that every answer and every draft owns. Each entry plays once, on a card that is new in this visit, and has both Reduce Motion and Animations off. */
+/* M-ASK-25: the follow-ups rise together under a finished answer, never on a thread restored from history. */
+.ch-ak-th .ch-ak-turn.is-new .chips .chip { animation: ch-ak-rise6 var(--ch-dur-base) var(--ch-ease-spring-settle) both; }
+/* M-ASK-100: the jump key arrives, it does not appear. */
+.ch-ak-root .ch-ak-jump { animation: ch-ak-rise6 var(--ch-dur-quick) var(--ch-ease) both; }
+/* M-ASK-67: the due ring sweeps to the days left (its end is the inline offset); assignees pop a beat apart. */
+@keyframes ch-ak-ringin { from { stroke-dashoffset: 100; } }
+.ch-ak-th .conf.is-fill .ch-ak-tk .rp { animation: ch-ak-ringin var(--ch-dur-reveal) var(--ch-ease-spring-smooth) both; }
+.ch-ak-th .conf.is-fill .ch-ak-tk .who > * { animation: ch-ak-pop var(--ch-dur-spring-pop, var(--ch-dur-reveal)) var(--ch-ease-spring-pop, var(--ch-ease)) calc(var(--ch-dur-reveal) * 0.6) both; }
+.ch-ak-th .conf.is-fill .ch-ak-tk .who > :nth-child(2) { animation-delay: calc(var(--ch-dur-reveal) * 0.6 + var(--ch-dur-press) * 0.73); }
+.ch-ak-th .conf.is-fill .ch-ak-tk .who > :nth-child(3) { animation-delay: calc(var(--ch-dur-reveal) * 0.6 + var(--ch-dur-press) * 1.46); }
+.ch-ak-th .conf.is-fill .ch-ak-tk .who > :nth-child(4) { animation-delay: calc(var(--ch-dur-reveal) * 0.6 + var(--ch-dur-press) * 2.19); }
+/* M-ASK-59: the route draws, then the flag at the far end pops. Drawn from the trip's own words, not to scale. */
+@keyframes ch-ak-routein { from { stroke-dashoffset: 1; } }
+.ch-ak-route .rline { stroke-dasharray: 1; }
+.ch-ak-route .rd, .ch-ak-route .ro { transform-box: fill-box; transform-origin: 50% 50%; }
+.ch-ak-th .conf.is-fill .ch-ak-route .rline { animation: ch-ak-routein calc(var(--ch-dur-reveal) * 2) var(--ch-ease) both; }
+.ch-ak-th .conf.is-fill .ch-ak-route .rd { animation: ch-ak-pop var(--ch-dur-spring-pop, var(--ch-dur-reveal)) var(--ch-ease-spring-pop, var(--ch-ease)) calc(var(--ch-dur-reveal) * 2) both; }
+/* M-ASK-70: the note's card pops in under the coach's coin. M-ASK-65: the lineup's seats rise in order, a beat apart. */
+.ch-ak-th .conf.is-fill .ch-ak-nb { animation: ch-ak-pop var(--ch-dur-spring-pop, var(--ch-dur-reveal)) var(--ch-ease-spring-pop, var(--ch-ease)) both; }
+.ch-ak-th .conf.is-fill .ch-ak-lu li { animation: ch-ak-rise6 var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-press) * 1.27); }
+/* M-ASK-61, 63: a board scales in and its tiles follow 90ms apart; a poll's options rise 160ms apart. */
+.ch-ak-th .ch-ak-turn.is-new .ch-ak-board { animation: ch-ak-pop var(--ch-dur-spring-settle) var(--ch-ease-spring-settle) both; }
+.ch-ak-th .ch-ak-turn.is-new .ch-ak-board .btiles > * { animation: ch-ak-pop var(--ch-dur-spring-pop, var(--ch-dur-reveal)) var(--ch-ease-spring-pop, var(--ch-ease)) both; }
+.ch-ak-th .ch-ak-turn.is-new .ch-ak-board .btiles > :nth-child(1) { animation-delay: var(--ch-dur-press); }
+.ch-ak-th .ch-ak-turn.is-new .ch-ak-board .btiles > :nth-child(2) { animation-delay: calc(var(--ch-dur-press) * 1.82); }
+.ch-ak-th .ch-ak-turn.is-new .ch-ak-board .btiles > :nth-child(3) { animation-delay: calc(var(--ch-dur-press) * 2.64); }
+.ch-ak-th .ch-ak-turn.is-new .ch-ak-board .btiles > :nth-child(n+4) { animation-delay: calc(var(--ch-dur-press) * 3.45); }
+.ch-ak-th .ch-ak-turn.is-new .ch-ak-pollp .pr { animation: ch-ak-rise6 var(--ch-dur-spring-settle) var(--ch-ease-spring-settle) both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-press) * 1.45); }
+@media (prefers-reduced-motion: reduce) {
+  .ch-ak-th .ch-ak-turn.is-new .chips .chip, .ch-ak-root .ch-ak-jump, .ch-ak-th .conf.is-fill .ch-ak-nb, .ch-ak-th .conf.is-fill .ch-ak-lu li, .ch-ak-th .ch-ak-turn.is-new .ch-ak-board, .ch-ak-th .ch-ak-turn.is-new .ch-ak-pollp .pr { animation: ch-ak-fade var(--ch-dur-crossfade-rm) linear both; animation-delay: 0s; }
+  .ch-ak-th .conf.is-fill .ch-ak-tk .rp, .ch-ak-th .conf.is-fill .ch-ak-tk .who > *, .ch-ak-th .conf.is-fill .ch-ak-route .rline, .ch-ak-th .conf.is-fill .ch-ak-route .rd, .ch-ak-th .ch-ak-turn.is-new .ch-ak-board .btiles > * { animation: none; }
+}
+[data-motion='off'] .ch-ak-th :is(.ch-ak-turn.is-new .chips .chip, .conf.is-fill .ch-ak-tk .rp, .conf.is-fill .ch-ak-tk .who > *, .conf.is-fill .ch-ak-route .rline, .conf.is-fill .ch-ak-route .rd, .conf.is-fill .ch-ak-nb, .conf.is-fill .ch-ak-lu li, .ch-ak-turn.is-new .ch-ak-board, .ch-ak-turn.is-new .ch-ak-board .btiles > *, .ch-ak-turn.is-new .ch-ak-pollp .pr), [data-motion='off'] .ch-ak-root .ch-ak-jump { animation: none; }

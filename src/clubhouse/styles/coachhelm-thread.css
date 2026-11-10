@@ -524,6 +524,92 @@
 .ch-th-bar[data-tone='loss'] .ch-th-bar__track > span {
   background: var(--ch-chart-loss);
 }
+/* A tick on a track, one shape per reference so none is read from a legend: the level a tall line, the team a round dot, the Tour a
+   hollow diamond. Each has the same shape beside its words under the track. */
+.ch-th-bar__tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ch-text-primary);
+}
+.ch-th-bar__tick[data-kind='team'] {
+  top: 50%;
+  bottom: auto;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: var(--ch-text-primary);
+}
+.ch-th-bar__tick[data-kind='tour'] {
+  top: 50%;
+  bottom: auto;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border: 2px solid var(--ch-text-primary);
+  background: transparent;
+  transform: rotate(45deg);
+}
+/* Zero on a signed track: a thin rule, with the fill running from it. */
+.ch-th-bar__zero {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--ch-hairline-w, 1px);
+  background: var(--ch-text-tertiary);
+}
+/* A benchmark row stacks: the label and the value, the track across the card, the three references in words. */
+.ch-th-bar--bench,
+.ch-th--phone .ch-th-bar--bench {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 12px;
+}
+.ch-th-bar--bench > .ch-th-bar__track {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+.ch-th-bar--bench > .ch-th-bar__refs {
+  grid-column: 1 / -1;
+  grid-row: 3;
+}
+.ch-th-bar__refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: var(--ch-type-13);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-secondary);
+}
+.ch-th-bar__refs li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.ch-th-bar__swatch {
+  display: inline-block;
+  width: 2px;
+  height: 12px;
+  background: var(--ch-text-primary);
+}
+.ch-th-bar__swatch[data-kind='team'] {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.ch-th-bar__swatch[data-kind='tour'] {
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--ch-text-primary);
+  background: transparent;
+  transform: rotate(45deg);
+}
 .ch-th-bar__val,
 .ch-th-va__val {
   font: var(--ch-type-14-strong);
@@ -1841,6 +1927,14 @@ a.ch-th-reads__r:focus-visible {
   font: var(--ch-type-13);
   color: var(--ch-text-secondary);
 }
+/* What the figure is read against: the level, the team average, the Tour. */
+.ch-th-cv__refs {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  font: var(--ch-type-13);
+  color: var(--ch-text-tertiary);
+}
 /* On a phone the figure goes under its words, so neither is squeezed into a column of single words. */
 .ch-th--phone .ch-th-cv__hero {
   flex-direction: column;
@@ -1878,13 +1972,18 @@ a.ch-th-reads__r:focus-visible {
 }
 /* A note, labelled for the kind of claim it is. */
 .ch-th-cv__note {
+  /* The kind pill sits on its own line above the sentence: beside it, "Measured" read as the sentence's first word. */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
   font: var(--ch-type-15);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-th-cv__kind {
   display: inline-block;
-  margin-right: 6px;
+  margin-right: 0;
   padding: 1px 8px;
   border-radius: 999px;
   font: var(--ch-type-12-strong);
@@ -2037,7 +2136,7 @@ a.ch-th-reads__r:focus-visible {
 @container (max-width: 260px) {
   /* MOB-ASK-1 */
   .ch-th--phone .ch-th-bar { grid-template-columns: minmax(0, 1fr) auto; }
-  .ch-th--phone .ch-th-bar > :nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+  .ch-th--phone .ch-th-bar:not(.ch-th-bar--bench) > :nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
   /* MOB-ASK-8 */
   .ch-th--phone .ch-th-rank li { grid-template-columns: 14px minmax(0, 1fr) auto; }
   .ch-th--phone .ch-th-rank li > :nth-child(3) { grid-column: 2 / -1; grid-row: 2; }

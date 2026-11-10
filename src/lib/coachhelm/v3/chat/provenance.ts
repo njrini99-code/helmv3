@@ -87,6 +87,32 @@ const BenchmarkRef = z.object({
 export type BenchmarkRef = z.infer<typeof BenchmarkRef>;
 
 /**
+ * One of the three things a figure is read against, always in this order: the player's level (college players of the same gender, or the
+ * published division average), the team average, the Tour. A reference with no value is still listed, with `note` saying why, so a missing
+ * one is stated and never silently dropped. `place_percent` is where the player sits among them (higher is better, whichever way the metric runs).
+ */
+export const Comparison = z.object({
+  kind: z.enum(['level', 'team', 'tour']),
+  /** What the value is the average of, in words: "Division III average", "College players on Helm", "Team average", "PGA Tour". */
+  label: z.string(),
+  value: z.number().nullable(),
+  place_percent: z.number().nullable().default(null),
+  /** The team's rank, 1 best (direction applied), among the `place_of` players who have a figure over the same window. Team only. */
+  place: z.number().nullable().default(null),
+  /** How many players the place is among. */
+  place_of: z.number().nullable().default(null),
+  /**
+   * The player's own figure on this reference's basis, when that is not the measurement's value: the level is over all recorded rounds, so beside it
+   * stands the player's all-rounds figure and never the window one. Level only; null elsewhere.
+   */
+  your_value: z.number().nullable().optional(),
+  note: z.string().nullable().default(null),
+  /** When `value` is null, the short reason the card and chip print: "not set", "no college figure", "no team average yet". */
+  missing_reason: z.string().nullable().default(null),
+});
+export type Comparison = z.infer<typeof Comparison>;
+
+/**
  * The one baseline this product is allowed to cite, with its real provenance.
  *
  * Sourced from Mark Broadie's expected-strokes model (ShotLink), recalibrated
@@ -157,8 +183,11 @@ export const Measurement = z.object({
   /** Denominator when the value is a rate, so "58%" can be shown as 25/43. */
   denominator: z.number().nullable().default(null),
 
-  /** Only present when a real, versioned benchmark was retrieved. */
+  /** Only present when a real, versioned benchmark was retrieved. The level when there is one, else the Tour: what a chip grades against. */
   benchmark: BenchmarkRef.nullable().default(null),
+
+  /** The level, the team average and the Tour, in that order, for a metric the standards cover; absent for any other. A team-level figure carries level and Tour only. */
+  comparisons: z.array(Comparison).optional(),
 
   /**
    * 'higher_better' | 'lower_better'. Charts read this instead of assuming up
@@ -220,6 +249,8 @@ export const ToolEnvelope = z.object({
   coverage: CoverageState,
   coverage_note: z.string().nullable().default(null),
   as_of: z.string(),
+  /** The window the read actually covered, in the scope line's words ("last 10 rounds"). Set by the read wrapper (window-label.ts); absent on older stored reads and on reads with no window. */
+  window_label: z.string().optional(),
 });
 export type ToolEnvelope = z.infer<typeof ToolEnvelope>;
 
@@ -288,7 +319,20 @@ export interface ScopedNumber {
   metric_key: string | null;
   /** A team-level figure (`team_scope: true` on the payload): beside a name it needs a team cue, like a team `Measurement`. */
   team?: boolean;
+  /**
+   * A reference or benchmark figure (golf-reference text, a metric definition, a benchmark's levels and sources): it is no one's result, so it
+   * may ground a claim only in a sentence that names a source ({@link REFERENCE_CUE}). Otherwise any number printed anywhere in the
+   * reference text could back a made-up figure about the team.
+   */
+  reference?: boolean;
 }
+
+/**
+ * Words that mark a sentence as citing a reference, a benchmark or a level: its source, the Tour, a college level, "the benchmark".
+ * A figure from {@link ScopedNumber.reference} grounds a claim only where this matches in the claim's own sentence.
+ */
+export const REFERENCE_CUE =
+  /\b(?:reference|research|published|studies|study|sources?|sourced|benchmarks?|tour|pga|lpga|korn ferry|division\s+(?:i{1,3}|[123])|d[123]|high[- ]school|level(?:'s)? average|average (?:for|at|of) (?:the |their |your |his |her )?level|(?:at|against|to|for|of) (?:the |their |your |his |her |that )level|handicap|hcp|scratch|broadie|shotlink|shot scope|arccos|golftec|hickman|ncsa|clippd|dethier)\b/i;
 
 /** A roster member the audit can recognise by name in the model's text. */
 export interface AuditPlayer {
@@ -344,6 +388,26 @@ const CALENDAR_YEAR = new RegExp(
 /** Blank every plain calendar year out of `text`, keeping positions so a claim's context is unchanged. */
 function blankCalendarYears(text: string): string {
   return text.replace(CALENDAR_YEAR, (match, prefix: string) => prefix + ' '.repeat(match.length - prefix.length));
+}
+
+/**
+ * "8 of those came in two rounds", "three of them": a number counting some of the things the sentence before named. The things counted are
+ * not said here, so it is a subset count unless a count noun follows ("8 of those rounds" is a number of rounds).
+ */
+const SUBSET_COUNT_AFTER = /^\s+of\s+(?:those|them|these)\b(?!\s+(?:\d+|rounds?|holes?|players?|shots?|attempts?|events?|games?|days?|weeks?|tournaments?|qualifiers?|sessions?|drills?|goals?|tasks?|practices|practice)\b)/i;
+
+/** The metric family of the cue nearest before `at` in its paragraph, or null when the paragraph has named none yet. */
+function lastFamilyBefore(text: string, at: number): MetricFamily | null {
+  const start = text.lastIndexOf('\n\n', at) + 1;
+  const before = text.slice(Math.max(0, start), at);
+  let best: { end: number; family: MetricFamily } | null = null;
+  for (const [re, family] of METRIC_CUES) {
+    for (const m of before.matchAll(re)) {
+      const end = (m.index ?? 0) + m[0].length;
+      if (!best || end > best.end) best = { end, family };
+    }
+  }
+  return best?.family ?? null;
 }
 
 /** The single pattern used both to find a claim in prose and to read a number out of tool text. */
@@ -471,7 +535,7 @@ const MONTH_NAME_ALT = Object.keys(MONTH_NAMES)
  * ("September 25 and 26 putts" is a count); see {@link auditDateExpressions}.
  */
 const DATE_EXPRESSION_RE = new RegExp(
-  `\\b(?:(${MONTH_NAME_ALT})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s*(\\d{4}))?(?:\\s*[-–—]\\s*(\\d{1,2})(?:st|nd|rd|th)?\\b)?(\\s+(?:and|or|&)\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b(?![.,]\\d|\\s*%|-\\d|\\s+(?:STAT_NOUNS)\\b))?|(\\d{1,2})\\/(\\d{1,2})\\/(\\d{2}|\\d{4}))\\b`.replace(
+  `\\b(?:(${MONTH_NAME_ALT})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s*(\\d{4}))?(?:\\s*[-–—]\\s*(\\d{1,2})(?:st|nd|rd|th)?\\b(?!\\s+(?:days?|weeks?|months?|years?|hours?|hrs?|minutes?|mins?|nights?)\\b))?(\\s+(?:and|or|&)\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b(?![.,]\\d|\\s*%|-\\d|\\s+(?:STAT_NOUNS)\\b))?|(\\d{1,2})\\/(\\d{1,2})\\/(\\d{2}|\\d{4})|(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?(${MONTH_NAME_ALT})(?:,?\\s*(\\d{4}))?)\\b`.replace(
     'STAT_NOUNS',
     'putts?|strokes?|shots?|rounds?|holes?|attempts?|birdies|birdie|pars?|bogeys?|eagles?|greens?|fairways?|yards?|yds?|feet|foot|ft|meters?|metres?|percent|pct|points?|players?|events?|tournaments?|times|total|more|fewer|over|under',
   ),
@@ -538,63 +602,61 @@ function resolveDateMatch(
  * rejected date is reported once, as the whole expression ("Oct 3"), not
  * once for the whole thing and again for its day-of-month.
  */
+/** What leads a date that is the far edge of a window: "through July 25", "(to July 25)", "between July 11 and July 25", "the next 14 days, until". */
+const WINDOW_LEAD = /(?:\b(?:next|coming|upcoming|through|thru|until|till|to|window|ahead|between|within|period|span|ends?|ending|deadline|by|as of|today|now|currently|updated|checked)\b|[–—-])[,:]?\s*(?:(?:is|was|being)\s+)?(?:and\s+)?(?:(?:mon|tues?|wed(?:nes)?|thu(?:rs?)?|fri|sat(?:ur)?|sun)(?:day)?\.?,?\s+)?$/i;
+
 function auditDateExpressions(
   text: string,
   evidenceDates: ReadonlySet<string>,
   evidenceWindows: ReadonlyArray<readonly [string, string]>,
+  edgeDates: ReadonlySet<string> = new Set(),
 ): { scrubbed: string; claims: UnsupportedClaim[] } {
-  const evidenceMonthDays = new Set<string>();
-  for (const iso of evidenceDates) evidenceMonthDays.add(iso.slice(5, 10));
-
-  // Every year a window's own bounds touch — the candidates tried when a
-  // no-year expression ("Aug 25") needs a year to test for CONTAINMENT
-  // (rather than exact membership) against that window. A window spanning a
-  // year boundary (2025-12-20..2026-01-10) contributes BOTH 2025 and 2026,
-  // so "Dec 28" resolves against 2025-12-28 and is correctly seen to fall
-  // inside the window even though the window's END year is 2026.
-  const candidateYears = new Set<number>();
+  // A window grounds its own two bounds and nothing between them: "May 27" inside a window that starts May 18 is a date the reads never
+  // returned (replay: 12 of 22 shifted dates passed this way). The bounds are dates the reads stated, so they join the exact pool.
+  const exactDates = new Set<string>(evidenceDates);
   for (const [start, end] of evidenceWindows) {
-    const startYear = Number(start.slice(0, 4));
-    const endYear = Number(end.slice(0, 4));
-    if (Number.isInteger(startYear)) candidateYears.add(startYear);
-    if (Number.isInteger(endYear)) candidateYears.add(endYear);
+    exactDates.add(start);
+    exactDates.add(end);
   }
+  const evidenceMonthDays = new Set<string>();
+  for (const iso of exactDates) evidenceMonthDays.add(iso.slice(5, 10));
 
-  const isSupported = (month: number, day: number, year: number | null): boolean => {
+  const isSupported = (month: number, day: number, year: number | null, aboutWindow = false): boolean => {
     const monthDay = `${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    // The far edge of a window the read was asked for ("the next 14 days"), in a sentence that speaks of the window.
+    if (aboutWindow && [...edgeDates].some((iso) => iso.slice(5, 10) === monthDay && (year === null || Number(iso.slice(0, 4)) === year))) return true;
     if (year === null) {
-      // Exact-day membership, independent of year or window — deliberately
-      // GLOBAL across every evidence date in the turn, not scoped to a
-      // specific metric/window/entity. That is a real residual risk (an
-      // unrelated measurement's window boundary sharing a month-day, e.g.
-      // "ends Dec 31", would let a fabricated "wrapped up on Dec 31"
-      // elsewhere in the same turn pass) rather than a fabrication this
-      // check is meant to catch. Narrowing this to the claim's own
-      // entity/window is a possible follow-up, not done here — the fix this
-      // block makes is the CONTAINMENT check below, which is what actually
-      // closes the reported false-positive gap for a real, in-window date.
-      //
-      // The containment check itself, once added, carries a related and
-      // wider version of the same risk: it is scoped to a WINDOW, not an
-      // entity, so any evidence window spanning most or all of a year
-      // supports nearly every bare month-day inside it — an unrelated
-      // season-long measurement makes containment almost as permissive as
-      // the exact-day pool above, for a different reason. Neither is fixed
-      // here; both are the same "no-year dates aren't scoped to the claim's
-      // own subject" gap the note above already describes.
-      if (evidenceMonthDays.has(monthDay)) return true;
-      for (const candidateYear of candidateYears) {
-        const iso = `${candidateYear}-${monthDay}`;
-        if (evidenceWindows.some(([start, end]) => iso >= start && iso <= end)) return true;
-      }
-      return false;
+      // Exact-day membership, independent of year: a month and day some read returned (a round, an event, a window bound). Global across the
+      // turn's evidence, not scoped to the claim's own subject: an unrelated read's date sharing a month-day still passes, a residual gap.
+      // Falling inside a window grounds nothing (2026-11-08).
+      return evidenceMonthDays.has(monthDay);
     }
     const iso = `${year}-${monthDay}`;
-    return evidenceDates.has(iso) || evidenceWindows.some(([start, end]) => iso >= start && iso <= end);
+    return exactDates.has(iso);
   };
 
   const claims: UnsupportedClaim[] = [];
   const seen = new Set<string>();
+  // "Wednesday (July 30", "Thu, Oct 21": the weekday has to be the date's. A date with no year is tried in every year the reads touch, and
+  // flagged only when none of them makes it that weekday (replay 30518f0c: July 30, 2026 is a Thursday).
+  const evidenceYears = new Set<number>([...exactDates].map((iso) => Number(iso.slice(0, 4))).filter((y) => Number.isInteger(y) && y > 1900));
+  for (const m of text.matchAll(WEEKDAY_DATE_RE)) {
+    const weekday = WEEKDAY_INDEX[(m[1] ?? '').toLowerCase()];
+    const month = MONTH_NAMES[(m[2] ?? '').toLowerCase()];
+    const day = Number(m[3]);
+    if (weekday === undefined || month === undefined || !Number.isInteger(day) || day < 1 || day > 31) continue;
+    const years = m[4] ? [Number(m[4])] : [...evidenceYears];
+    if (years.length === 0) continue;
+    const real = years.filter((y) => new Date(Date.UTC(y, month - 1, day)).getUTCMonth() === month - 1);
+    if (real.length === 0) continue;
+    if (!real.some((y) => new Date(Date.UTC(y, month - 1, day)).getUTCDay() === weekday)) {
+      const label = m[0].trim();
+      if (!seen.has(label)) {
+        seen.add(label);
+        claims.push({ text: label, value: day, misattributed: true });
+      }
+    }
+  }
   const flag = (label: string, day: number) => {
     if (seen.has(label)) return;
     seen.add(label);
@@ -603,11 +665,14 @@ function auditDateExpressions(
 
   const scrubbed = text.replace(
     DATE_EXPRESSION_RE,
-    (whole, monthName, dayA, yearA, rangeEndDay, listTail, listDay, monthNumStr, dayNumStr, yearNumStr) => {
-      const resolved = resolveDateMatch(monthName, dayA, yearA, monthNumStr, dayNumStr, yearNumStr);
+    (whole, monthName, dayA, yearA, rangeEndDay, listTail, listDay, monthNumStr, dayNumStr, yearNumStr, dayFirst, monthFirst, yearDayFirst, offset: number) => {
+      // "26 September", "9th of June": the day first. A lower-case "may" or "march" after a number is the verb ("4 may improve").
+      if (dayFirst !== undefined && /^(?:may|march)$/.test(monthFirst)) return whole;
+      const resolved = dayFirst !== undefined ? resolveDateMatch(monthFirst, dayFirst, yearDayFirst, undefined, undefined, undefined) : resolveDateMatch(monthName, dayA, yearA, monthNumStr, dayNumStr, yearNumStr);
       if (!resolved) return whole; // Not a real calendar date — leave for the numeric scan.
 
-      if (!isSupported(resolved.month, resolved.day, resolved.year)) {
+      const aboutWindow = WINDOW_LEAD.test(text.slice(Math.max(0, offset - 40), offset));
+      if (!isSupported(resolved.month, resolved.day, resolved.year, aboutWindow)) {
         // With a range tail, `whole` includes the second day too ("Aug
         // 27-28") — flag just the head so the two days can be reported (and
         // individually deduped) independently.
@@ -620,7 +685,7 @@ function auditDateExpressions(
       if (rangeEndDay) {
         const endDay = Number(rangeEndDay);
         if (Number.isInteger(endDay) && endDay >= 1 && endDay <= 31) {
-          if (!isSupported(resolved.month, endDay, resolved.year)) {
+          if (!isSupported(resolved.month, endDay, resolved.year, aboutWindow)) {
             flag(`${monthName} ${rangeEndDay}`, endDay);
           }
         }
@@ -663,13 +728,26 @@ function auditDateExpressions(
 const BARE_ORDINAL_DAY_RE =
   /(\b(?:on|since|from|until|till|through|by|before|after)\s+the\s+)(\d{1,2})(?:st|nd|rd|th)\b(?!\s+(?!(?:of|and|or|at|to|through|when|with|but)\b)[a-z])/gi;
 
-const WEEKDAY_INDEX: Record<string, number> = { sunday: 0, monday: 1, tuesday: 2, tues: 2, wednesday: 3, thursday: 4, thurs: 4, friday: 5, saturday: 6 };
+const WEEKDAY_INDEX: Record<string, number> = { sunday: 0, sun: 0, monday: 1, mon: 1, tuesday: 2, tues: 2, tue: 2, wednesday: 3, wed: 3, thursday: 4, thurs: 4, thur: 4, thu: 4, friday: 5, fri: 5, saturday: 6, sat: 6 };
 const WEEKDAY_WORDS_RE = /\b(?:(next|this)\s+)?(sunday|monday|tuesday|tues|wednesday|thursday|thurs|friday|saturday)\b/gi;
+/** A weekday straight before a month and day: "Wednesday, July 30", "Thu Oct 21", "Tue (Sep 9, 2026". Groups: weekday, month, day, year. */
+const WEEKDAY_DATE_RE = new RegExp(`\\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday|sun|mon|tues?|wed|thu(?:rs?)?|fri|sat)\\b\\.?,?\\s*\\(?\\s*(${MONTH_NAME_ALT})\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s*(\\d{4}))?`, 'gi');
 const NEAR_DAY_WORDS_RE = /\b(today|tomorrow)\b/gi;
 
 function addDays(iso: string, days: number): string {
   const [y, m, d] = iso.split('-').map(Number) as [number, number, number];
   return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
+/** A span of time the coach wrote with its unit: "over the last 30 days", "past 6 weeks", "3-month". */
+const REQUESTED_SPAN_RE = /\b(\d{1,3})[\s-]*(?:calendar\s+)?(?:days?|weeks?|months?|years?)\b/gi;
+/** What follows a number in the answer when it is naming a span of time. */
+const TIME_UNIT_AFTER = /^[\s-]*(?:calendar\s+)?(?:days?|weeks?|months?|years?)\b/i;
+
+/** The spans of time a coach's message names, for {@link auditNumericClaims}' `requestedSpans`. */
+export function coachRequestedSpans(text: string | null | undefined): number[] {
+  if (!text) return [];
+  return [...new Set([...text.matchAll(REQUESTED_SPAN_RE)].map((m) => Number(m[1])))];
 }
 
 /**
@@ -696,7 +774,9 @@ export function coachRequestDates(text: string | null | undefined, todayIso: str
   for (const m of text.matchAll(DATE_EXPRESSION_RE)) {
     // Lower-case "may" and "march" are ordinary English ("he may 10 putt it"); other months are not ("nov 10").
     if (m[1] === 'may' || m[1] === 'march' || m[1] === 'mar') continue;
-    const r = resolveDateMatch(m[1], m[2], m[3], m[7], m[8], m[9]);
+    // "14 November": the day first.
+    if (m[10] !== undefined && /^(?:may|march|mar)$/.test(m[11] ?? '')) continue;
+    const r = m[10] !== undefined ? resolveDateMatch(m[11], m[10], m[12], undefined, undefined, undefined) : resolveDateMatch(m[1], m[2], m[3], m[7], m[8], m[9]);
     if (!r) continue;
     // "Nov 10-12" and "Nov 10 and 17" name both days, in the head's month and year.
     for (const day of [r.day, ...[m[4], m[6]].filter(Boolean).map(Number)]) {
@@ -712,7 +792,7 @@ export function coachRequestDates(text: string | null | undefined, todayIso: str
  * Half a unit at the precision the number was written to: "72.5" and "72.6" both round 72.55 and "73" does too, while "72.95",
  * written to the hundredth, claims 72.95. A flat tolerance on top of the rounded evidence let that one through (73 minus 0.05).
  */
-function roundingTolerance(raw: string): number {
+export function roundingTolerance(raw: string): number {
   const dot = raw.indexOf('.');
   const decimals = dot === -1 ? 0 : raw.length - dot - 1;
   return 0.5 * 10 ** -decimals + 1e-9;
@@ -729,6 +809,10 @@ function roundingTolerance(raw: string): number {
  */
 const HEDGE_BEFORE =
   /(?:\b(?:about|around|roughly|approximately|nearly|almost|over|under|above|below|more than|less than|fewer than|greater than|at least|at most|upwards of|north of|shy of)|~)\s*[-−]?$/i;
+
+/** A hedge that says the figure is a floor (the real one is larger) or a ceiling (the real one is smaller). */
+const HEDGE_ABOVE = /\b(?:more than|over|above|at least|greater than|upwards of|north of)\b/i;
+const HEDGE_BELOW = /\b(?:less than|fewer than|under|below|at most|shy of)\b/i;
 
 /** Proportional slack granted to a hedged number. 10% catches rounding, not invention. */
 const HEDGED_RELATIVE_TOLERANCE = 0.1;
@@ -761,7 +845,7 @@ function metricGroup(metricId: string): string {
 // would make that worse, not better.
 
 /** A metric family the prose can name. SG areas carry `sg` as their parent. */
-type MetricFamily =
+export type MetricFamily =
   | 'putting'
   | 'three_putt'
   | 'one_putt'
@@ -802,7 +886,7 @@ const FAMILY_BY_KEY: ReadonlyArray<readonly [RegExp, MetricFamily, MetricFamily 
   [/scor|to_par|total_score|best_round/, 'scoring', null],
 ];
 
-function familyOf(key: string | null | undefined): { family: MetricFamily | null; parent: MetricFamily | null } {
+export function familyOf(key: string | null | undefined): { family: MetricFamily | null; parent: MetricFamily | null } {
   if (!key) return { family: null, parent: null };
   const k = key.toLowerCase();
   for (const [re, family, parent] of FAMILY_BY_KEY) if (re.test(k)) return { family, parent };
@@ -813,7 +897,7 @@ function familyOf(key: string | null | undefined): { family: MetricFamily | null
  * Words in the model's prose that name a metric. Never bare "strokes" or "%":
  * both appear next to almost every golf number and would bind everything.
  */
-const METRIC_CUES: ReadonlyArray<readonly [RegExp, MetricFamily]> = [
+export const METRIC_CUES: ReadonlyArray<readonly [RegExp, MetricFamily]> = [
   [/\b(?:three|3)[- ]?putt\w*/gi, 'three_putt'],
   [/\b(?:one|1)[- ]?putt\w*/gi, 'one_putt'],
   [/\bputt(?:s|ing|ed|er)?\b/gi, 'putting'],
@@ -830,7 +914,14 @@ const METRIC_CUES: ReadonlyArray<readonly [RegExp, MetricFamily]> = [
   [/\bdriving distance\b/gi, 'distance'],
   [/\bscor(?:e|es|ed|ing)\b|\bstroke average\b|\b(?:to|over|under) par\b|\bbest round\b/gi, 'scoring'],
   [/\b(?:shot|shoots|shooting|carded|posted|fired)\b(?=\s+(?:an?\s+)?[-+]?\d)/gi, 'scoring'],
+  // "averaged 76.0 strokes over his last ten rounds" is a scoring average (strokes gained and strokes per round are other things).
+  [/\baverag(?:e|ed|es|ing)\b(?=\s+[-+]?\d+(?:\.\d+)?\s+strokes(?![\w/]|\s+(?:gained|per|a|lost)))/gi, 'scoring'],
 ];
+
+/** A sentence that refers to a person without naming them. */
+const PERSON_PRONOUN = /\b(?:he|his|him|himself|she|her|hers|herself)\b/i;
+/** How many named sentences back a pronoun may reach for its antecedent when the paragraph names several players. */
+const PRONOUN_LOOKBACK = 3;
 
 /** A sentence that talks about the group, so a team figure may sit next to a name. */
 const TEAM_CUE = /\b(?:team|squad|roster|program|everyone|teammates)\b/i;
@@ -849,10 +940,43 @@ interface AnchorScope {
   team: boolean;
   family: MetricFamily | null;
   parent: MetricFamily | null;
+  /** A reference or benchmark figure: it grounds a claim only in a sentence that names a source (see {@link REFERENCE_CUE}). */
+  reference?: boolean;
+  /** A difference between two metrics' figures: it grounds a claim only in a sentence that says it is a gap (see {@link GAP_CUE}). */
+  gap?: boolean;
+  /** A mean of a group's figures: it grounds a claim only in a sentence that says it is an average or about the group (see {@link AGGREGATE_CUE}). */
+  aggregate?: boolean;
 }
 interface Anchor extends AnchorScope {
   value: number;
 }
+/** "the other 17", "the remaining 4": the number straight after is what is left of a group. */
+const OTHER_BEFORE = /\b(?:other|remaining|rest of the)\s+$/i;
+
+/** Whether `value` plus a whole number written in this sentence or the one before it is a whole number some read states (the group the subset was taken from). */
+function complementOfStated(text: string, start: number, end: number, value: number, anchors: ReadonlyArray<{ value: number }>): boolean {
+  const stops = [...text.slice(0, start).matchAll(/[.!?](?=\s|$)/g)].map((b) => (b.index ?? 0) + 1);
+  const from = stops.length >= 2 ? (stops[stops.length - 2] as number) : 0;
+  const next = /[.!?](?=\s|$)/.exec(text.slice(end));
+  const near = text.slice(from, next ? end + (next.index ?? 0) + 1 : text.length);
+  const here = start - from;
+  for (const m of near.matchAll(/(?:^|[^\d.])(\d{1,3})(?![\d.]\d|%)/g)) {
+    const at = (m.index ?? 0) + m[0].length - (m[1] as string).length;
+    if (at >= here && at < here + (end - start)) continue;
+    const s = Number(m[1]);
+    if (s >= 1 && anchors.some((a) => Math.abs(a.value - (value + s)) < 1e-9)) return true;
+  }
+  return false;
+}
+
+/** "If you use ", "should you go with ": the figure after it is one already on the table. */
+const USE_CLAUSE = /\b(?:if|when|should)\s+(?:you|we|I)\s+(?:use|used|take|took|go with|went with|count|counted|prefer|choose)\s+(?:the\s+|that\s+)?$/i;
+
+/** A sentence that calls a number an average of a group's figures, or is about the group. */
+const AGGREGATE_CUE = /\b(?:averages?|averaged|averaging|mean|across|combined|together|overall|total|team|roster|squad|everyone|group|pooled|collective|typical|midpoint)\b/i;
+
+/** A sentence that calls a number a difference between two things. */
+const GAP_CUE = /\b(?:gaps?|ahead|behind|difference|differs?|apart|margin|lead(?:s|ing)?|trails?|more than|less than|than|between|separates?|split)\b/i;
 const UNSCOPED: AnchorScope = { player: null, team: false, family: null, parent: null };
 
 function entityScope(entity: MeasuredEntity | undefined): { player: string | null; team: boolean } {
@@ -861,17 +985,39 @@ function entityScope(entity: MeasuredEntity | undefined): { player: string | nul
   return { player: null, team: entity.kind === 'team' };
 }
 
+/**
+ * A clause that talks about the rest of the group — "the others have 13 to 17 each". Its figures belong to everyone BUT
+ * the players named earlier, so the name before it must not claim them. Staging, 2026-11-07: "Cole Bennett has 37 rounds
+ * recorded, and the others have 13 to 17 each." was withheld because 13 and 17 were bound to Cole Bennett.
+ */
+const OTHERS_CUE = /\b(?:the\s+(?:others?|rest|remaining(?:\s+\w+)?)|everyone\s+else|everybody\s+else|all\s+the\s+others|each\s+of\s+the\s+others|the\s+other\s+(?:\w+\s+){0,2}(?:players|golfers))\b/i;
+
 /** What the text says a given number is about. `null` means "not stated". */
 interface Binding {
   players: ReadonlySet<string> | null;
+  /** Players the number is explicitly NOT about (the named ones, when the clause says "the others"). */
+  excluding?: ReadonlySet<string>;
   teamCue: boolean;
+  /** The number's own sentence names a reference, a benchmark, the Tour or a level. */
+  refCue: boolean;
+  /** The number's own sentence calls it a gap, a lead or a margin. */
+  gapCue: boolean;
+  /** The number's own sentence says average, mean, combined or names the group. */
+  aggCue: boolean;
   families: ReadonlySet<MetricFamily> | null;
 }
 
 function playerCompatible(a: Anchor, b: Binding): boolean {
+  if (a.player !== null && b.excluding?.has(a.player)) return false;
   if (b.players === null) return true;
   if (a.team) return b.teamCue;
   return a.player === null || b.players.has(a.player);
+}
+
+/** Whether a cite's subject is who the number's sentence is about: a team cite, a sentence naming no one, or the cite's player among those named. */
+function citeFitsBinding(subject: string | null, b: Binding): boolean {
+  if (subject === null || subject === 'team' || b.players === null || b.players.size === 0) return true;
+  return [...b.players].some((p) => p.startsWith(subject) || subject.startsWith(p));
 }
 
 function metricCompatible(a: Anchor, b: Binding): boolean {
@@ -909,6 +1055,43 @@ function spanIndexAt(spans: readonly Span[], pos: number): number {
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+const DAY_OR_MONTH = /^(?:Mon|Tue|Tues|Wed|Thu|Thur|Thurs|Fri|Sat|Sun|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|January|February|March|April|June|July|August|September|October|November|December)$/;
+
+/**
+ * True when the single-word name at [start, end) sits beside a capitalised word that is neither another name nor a sentence's first word
+ * nor a day or month: "Bryan Park Champs" is a course, and "Park" in it is not Ethan Park. One-sided: it can only lose a name, so a number
+ * beside it is audited less strictly, never more.
+ */
+function insideForeignPhrase(text: string, start: number, end: number, known: ReadonlyMap<string, unknown>): boolean {
+  const word = /[\p{Lu}][\p{L}'’-]*/u;
+  const foreign = (w: string | undefined, atSentenceStart: boolean) => !!w && !atSentenceStart && !known.has(w) && !DAY_OR_MONTH.test(w);
+  const before = /(^|[\s(*_-])([\p{Lu}][\p{L}'’-]*)\s$/u.exec(text.slice(Math.max(0, start - 40), start));
+  if (before) {
+    const wordStart = start - (before[0].length - before[1]!.length);
+    const lead = text.slice(0, wordStart).replace(/[\s*_-]+$/, '');
+    const sentenceFirst = lead === '' || /[.!?:\n]$/.test(lead) || /\n\s*[-*\d.]*\s*$/.test(text.slice(0, wordStart));
+    if (foreign(before[2], sentenceFirst)) return true;
+  }
+  const after = new RegExp(`^\\s([\\p{Lu}][\\p{L}'’-]*)`, 'u').exec(text.slice(end, end + 40));
+  if (after && word.test(after[1]!) && foreign(after[1], false)) return true;
+  return false;
+}
+
+/** The header row of the markdown table the line at `at` belongs to, or "" when that line is not a table row. */
+function tableHeaderOf(text: string, at: number): string {
+  const lineAt = (start: number) => text.slice(start, (text.indexOf('\n', start) + 1 || text.length + 1) - 1);
+  const isRow = (start: number) => /^\s*\|/.test(lineAt(start));
+  const lineStart = text.lastIndexOf('\n', at - 1) + 1;
+  if (!isRow(lineStart)) return '';
+  let start = lineStart;
+  while (start > 0) {
+    const prevStart = text.lastIndexOf('\n', start - 2) + 1;
+    if (!isRow(prevStart)) break;
+    start = prevStart;
+  }
+  return lineAt(start);
 }
 
 interface Occurrence {
@@ -953,7 +1136,10 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
     const re = new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp(name)}(?![\\p{L}\\p{N}])`, 'gu');
     for (const m of text.matchAll(re)) {
       const start = (m.index ?? 0) + (m[1]?.length ?? 0);
-      names.push({ start, end: (m.index ?? 0) + m[0].length, ids });
+      const end = (m.index ?? 0) + m[0].length;
+      // "Bryan Park Champs (practice)": a first or last name inside a longer capitalised phrase of other words is a place or a course, not the player.
+      if (!/\s/.test(name) && insideForeignPhrase(text, start, end, idsByName)) continue;
+      names.push({ start, end, ids });
     }
   }
   names.sort((a, b) => a.start - b.start);
@@ -967,9 +1153,38 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
   // putts 31.5" binds GIR→58 and putts→31.5); a tie goes to the number
   // written before the cue ("31 putts").
   const familiesByToken = new Map<number, Set<MetricFamily>>();
+  // "Off the tee and around the green: -0.32 and -0.20": a list of areas followed by a list of numbers in the same order, area by area. Each cue
+  // takes the number at its own place in the list instead of the nearest one (which gave "around the green" the figure for the tee).
+  const inList = new Set<number>();
+  const cueHits = METRIC_CUES.flatMap(([re, family]) => [...text.matchAll(re)].map((m) => ({ start: m.index ?? 0, end: (m.index ?? 0) + m[0].length, family }))).sort((a, b) => a.start - b.start);
+  for (let i = 0; i < cueHits.length; i += 1) {
+    const group = [cueHits[i] as (typeof cueHits)[number]];
+    while (i + 1 < cueHits.length && /^\s*(?:,|&|and|,\s*and)\s+$/i.test(text.slice((group[group.length - 1] as (typeof cueHits)[number]).end, (cueHits[i + 1] as (typeof cueHits)[number]).start) + ' ')) {
+      group.push(cueHits[i + 1] as (typeof cueHits)[number]);
+      i += 1;
+    }
+    if (group.length < 2) continue;
+    const afterGroup = (group[group.length - 1] as (typeof cueHits)[number]).end;
+    const first = tokens.findIndex((t) => t.start >= afterGroup && t.start - afterGroup <= 24 && /^[^.\n]*$/.test(text.slice(afterGroup, t.start)));
+    if (first === -1) continue;
+    let ok = true;
+    for (let k = 1; k < group.length; k += 1) {
+      const prev = tokens[first + k - 1];
+      const next = tokens[first + k];
+      if (!prev || !next || !/^\s*(?:%|[a-z/ ]{0,16})?\s*(?:,|&|and|,\s*and)\s+$/i.test(text.slice(prev.end, next.start) + ' ')) ok = false;
+    }
+    if (!ok) continue;
+    for (const [k, cue] of group.entries()) {
+      const set = familiesByToken.get(first + k) ?? new Set<MetricFamily>();
+      set.add(cue.family);
+      familiesByToken.set(first + k, set);
+      inList.add(cue.start);
+    }
+  }
   for (const [re, family] of METRIC_CUES) {
     for (const m of text.matchAll(re)) {
       const cs = m.index ?? 0;
+      if (inList.has(cs)) continue;
       const ce = cs + m[0].length;
       const clause = spanIndexAt(metricClauses, cs);
       let best = -1;
@@ -997,18 +1212,46 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
     return out;
   };
 
-  /** The players a sentence names, walking back through its paragraph for a pronoun sentence. */
-  const sentencePlayers = (sentenceIndex: number): Set<string> | null => {
+  /**
+   * The players a sentence names, walking back through its paragraph for a pronoun sentence. A sentence that says "he" or "she" when the
+   * paragraph has named several players has no single antecedent: "…and Owen is below it. Only Ethan Park is lower, at -4.40. Audit
+   * Testplayer has no approach strokes gained. The Tour baseline is 0, so he is behind it by -4.16" is about Owen, the subject of the
+   * list, and the nearest name is the one with no figure. For such a sentence (`ambiguous`) the names of up to the three nearest named
+   * sentences are all candidates; a figure that belongs to none of them is still misattributed.
+   */
+  const sentencePlayers = (sentenceIndex: number, ambiguous = false, pronounAt = -1): Set<string> | null => {
     const paragraph = spanIndexAt(paragraphs, (sentences[sentenceIndex] as Span)[0]);
+    const found = new Set<string>();
+    let namedSentences = 0;
     for (let i = sentenceIndex; i >= 0; i -= 1) {
       const span = sentences[i] as Span;
       if (spanIndexAt(paragraphs, span[0]) !== paragraph) break;
       const here = names.filter((n) => within(span, n));
-      if (here.length > 0) return union(here);
+      if (here.length > 0) {
+        if (!ambiguous) return union(here);
+        // A list item is about the name it opens with ("- Audit, short putting: Missed. His make rate was 46.5%"): the pronoun in the same line has no other antecedent.
+        if (pronounAt >= 0 && !text.slice(span[0], pronounAt).includes('\n')) return union(here);
+        for (const id of union(here)) found.add(id);
+        namedSentences += 1;
+        if (namedSentences >= PRONOUN_LOOKBACK) break;
+        continue;
+      }
       // A sentence about the group, with no name, ends the pronoun chain.
-      if (TEAM_CUE.test(text.slice(span[0], span[1]))) return null;
+      if (TEAM_CUE.test(text.slice(span[0], span[1]))) return found.size > 0 ? found : null;
     }
-    return null;
+    return found.size > 0 ? found : null;
+  };
+
+  /** The names of the clause before a parenthesis, when that parenthesis opens straight after a name ("Wise's (28 and 27 rounds)"). */
+  const namesBeforeParenthesis = (clause: Span): Array<Occurrence & { ids: ReadonlySet<string> }> => {
+    if (clause[0] < 1 || text[clause[0] - 1] !== '(') return [];
+    const at = spanIndexAt(playerClauses, clause[0]) - 1;
+    const previous = at >= 0 ? (playerClauses[at] as Span) : null;
+    if (!previous) return [];
+    const here = names.filter((n) => within(previous, n));
+    const last = here[here.length - 1];
+    // Straight after a name, with at most "'s" and a space between it and the bracket.
+    return last && clause[0] - 1 - last.end <= 4 ? here : [];
   };
 
   const bindingFor = (index: number): Binding => {
@@ -1018,6 +1261,7 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
     const clause = playerClauses[spanIndexAt(playerClauses, t.start)] as Span;
 
     let players: Set<string> | null;
+    let listed: Array<Occurrence & { ids: ReadonlySet<string> }>;
     // "-3.83 (Bo Ray)": a name in brackets straight after a number is whose number it is, whatever name came before it.
     const bracket = /^\s*%?\s*\(\s*/.exec(text.slice(t.end, t.end + 8));
     const bracketed = bracket ? names.find((n) => n.start === t.end + bracket[0].length) : undefined;
@@ -1026,12 +1270,16 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
       players = new Set(bracketed.ids);
     } else if (inClause.length > 0) {
       players = union(inClause);
+    } else if ((listed = namesBeforeParenthesis(clause)).length > 0) {
+      // "…smaller than Braeden Gillen's or Luke Wise's (28 and 27 rounds)": the figures in the brackets belong to the
+      // names just ahead of them, all of them, not only the last.
+      players = union(listed);
     } else {
       const inSentence = names.filter((n) => within(sentence, n));
       const before = inSentence.filter((n) => n.end <= t.start);
       const after = inSentence.filter((n) => n.start >= t.end);
       const nearest = before[before.length - 1] ?? after[0];
-      players = nearest ? new Set(nearest.ids) : sentenceIndex > 0 ? sentencePlayers(sentenceIndex - 1) : null;
+      players = nearest ? new Set(nearest.ids) : sentenceIndex > 0 ? sentencePlayers(sentenceIndex - 1, PERSON_PRONOUN.test(text.slice(sentence[0], sentence[1])), sentence[0]) : null;
       // The chain only carries within a paragraph and stops at a team sentence.
       if (!nearest && TEAM_CUE.test(text.slice(sentence[0], sentence[1]))) players = null;
       if (!nearest && players && sentenceIndex > 0) {
@@ -1040,9 +1288,19 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
       }
     }
 
+    // "…and the others have 13 to 17 each": a clause about the rest of the group takes the players that
+    // were inherited from earlier text, and every evidenced player except them is who it is about. A name in
+    // the clause itself (`inClause`) is stated, not inherited, and still wins.
+    const aboutOthers = inClause.length === 0 && !bracketed && players !== null && OTHERS_CUE.test(text.slice(clause[0], clause[1]));
+
     return {
-      players,
+      players: aboutOthers ? null : players,
+      ...(aboutOthers && players ? { excluding: players } : {}),
       teamCue: TEAM_CUE.test(text.slice(sentence[0], sentence[1])),
+      // A row of a markdown table is named by its header row ("| Distance band | Owen | Division I average | Tour |").
+      refCue: REFERENCE_CUE.test(text.slice(sentence[0], sentence[1])) || REFERENCE_CUE.test(tableHeaderOf(text, sentence[0])),
+      gapCue: GAP_CUE.test(text.slice(sentence[0], sentence[1])),
+      aggCue: AGGREGATE_CUE.test(text.slice(sentence[0], sentence[1])) || AGGREGATE_CUE.test(tableHeaderOf(text, sentence[0])),
       families: familiesByToken.get(index) ?? null,
     };
   };
@@ -1063,7 +1321,21 @@ function buildBinder(text: string, people: readonly AuditPlayer[]) {
  * counts of rounds, weeks or players that appear in the surrounding sentence
  * rather than standalone statistical claims.
  */
-export function auditNumericClaims(
+export function auditNumericClaims(...args: Parameters<typeof auditNumericClaimsDetailed>): UnsupportedClaim[] {
+  const detail = auditNumericClaimsDetailed(...args);
+  args[6]?.report?.(detail);
+  return detail.unsupported;
+}
+
+/** What the audit did with a turn's numbers: the ones it flagged, and how many it examined, how many a verified citation stood for, how many the text heuristics passed. */
+export interface AuditDetail {
+  unsupported: UnsupportedClaim[];
+  figures: number;
+  cited: number;
+  heuristicPassed: number;
+}
+
+export function auditNumericClaimsDetailed(
   text: string,
   measurements: readonly Measurement[],
   series: readonly MeasurementSeries[] = [],
@@ -1103,9 +1375,28 @@ export function auditNumericClaims(
    * evidence this turn ("Bob averages 74" when only Alice was read must fail).
    * Omitted, only the evidence's own player entity labels are recognised.
    */
-  options?: { players?: readonly AuditPlayer[] },
-): UnsupportedClaim[] {
-  if (!text) return [];
+  options?: {
+    players?: readonly AuditPlayer[];
+    /**
+     * Spans of time the coach's own words named ({@link coachRequestedSpans}: "over the last 30 days" gives 30). The answer
+     * restating one — "not the full last 30 calendar days" — is repeating the question, not reporting a figure, so the
+     * number is let through when a unit of time follows it ("30 days"), and only then.
+     */
+    requestedSpans?: readonly number[];
+    /**
+     * Figures a verified citation stands for (`cites.ts`), as written: a number in the answer equal to one of these, at the precision it
+     * is written to, is the model's own named figure from its own named evidence and is not matched against names. Left out, nothing changes.
+     */
+    citedValues?: readonly string[];
+    /** The subject of each cited value, in step: a player id (or its prefix of six or more characters) or `team`. A cite grounds a figure only beside that player's name. */
+    citedSubjects?: readonly string[];
+    /** Called with what the audit did with the turn's numbers (for the citation counts); the return value is unchanged. */
+    report?: (detail: AuditDetail) => void;
+    /** A subset count ("8 of those") is grounded by a verified cite only, never by a figure in the reads. */
+    strictSubsetCounts?: boolean;
+  },
+): AuditDetail {
+  if (!text) return { unsupported: [], figures: 0, cited: 0, heuristicPassed: 0 };
 
   /**
    * Every value a tool actually produced, at any precision the prose might
@@ -1117,6 +1408,8 @@ export function auditNumericClaims(
   const anchors: Anchor[] = [];
   /** Anchors grouped by metric, so a delta only spans figures of one kind. */
   const byMetric = new Map<string, Set<number>>();
+  /** The same values with repeats kept: a mean counts two players on one figure twice. */
+  const allByMetric = new Map<string, number[]>();
 
   const add = (n: number | null | undefined, scope: AnchorScope, metricId?: string) => {
     if (typeof n !== 'number' || !Number.isFinite(n)) return;
@@ -1137,6 +1430,9 @@ export function auditNumericClaims(
       // iteration order is insertion order) keeps the group at the cap while
       // preferring the most recently seen values — the ones most likely to
       // still be relevant to the current question.
+      const all = allByMetric.get(key) ?? [];
+      if (all.length < PAIRWISE_ANCHOR_CAP * 2) all.push(n);
+      allByMetric.set(key, all);
       if (!group.has(n) && group.size >= PAIRWISE_ANCHOR_CAP) {
         const oldest = group.values().next().value;
         if (oldest !== undefined) group.delete(oldest);
@@ -1149,7 +1445,8 @@ export function auditNumericClaims(
   // Evidence dates, kept separate from `anchors` — see
   // `auditDateExpressions`'s doc comment for why a date is matched against
   // its own evidence set rather than this number pool.
-  const evidenceDates = new Set<string>(extraSupportedDates);
+  const evidenceDates = new Set<string>(extraSupportedDates.filter((d) => !d.startsWith('~')));
+  const edgeDates = new Set<string>(extraSupportedDates.filter((d) => d.startsWith('~')).map((d) => d.slice(1)));
   const evidenceWindows: Array<[string, string]> = [];
   const addWindow = (start: string | null, end: string | null) => {
     // For a timestamped bound, the exact-date evidence set accepts only the
@@ -1174,23 +1471,55 @@ export function auditNumericClaims(
     const fam = familyOf(m.metric_id);
     if (m.entity?.kind === 'player') nameSources.push({ id: m.entity.id, name: m.entity.label });
     add(m.value, { ...who, ...fam }, m.metric_id);
+    // "88.9% (48/54 holes)": the count behind a rate is the rate times its denominator, the same figure the tool's own
+    // numerator would be, so the count is as sourced as the rate.
+    if (m.unit === 'percent' && typeof m.value === 'number' && typeof m.denominator === 'number' && m.denominator > 0) {
+      add(Math.round((m.value / 100) * m.denominator), { ...who, family: null, parent: null });
+    }
     // A sample size or denominator is a count of attempts/rounds, not a
     // reading of the metric — it binds to the player, never to a metric.
     add(m.sample_size, { ...who, family: null, parent: null });
     add(m.denominator, { ...who, family: null, parent: null });
     // A benchmark is an external baseline, not anyone on this roster.
-    add(m.benchmark?.value, { player: null, team: false, ...fam }, m.metric_id);
+    add(m.benchmark?.value, { player: null, team: false, ...fam, reference: true }, m.metric_id);
+    // The three references: the level and the Tour are no one's result (a sentence must name them); the team average is the team's figure.
+    for (const c of m.comparisons ?? []) {
+      if (c.kind === 'team') add(c.value, { player: null, team: true, ...fam });
+      else add(c.value, { player: null, team: false, ...fam, reference: true });
+      add(c.place_percent, { ...who, family: null, parent: null });
+      add(c.place, { ...who, family: null, parent: null });
+      add(c.place_of, { ...who, family: null, parent: null });
+      // The count the comparison names in its own words ("Division I players on Helm (n=22)", "the other 22 ... players").
+      for (const words of [c.label, c.note]) if (typeof words === 'string') for (const n of numbersInText(words)) add(n, { ...who, family: null, parent: null });
+      // The level is over all recorded rounds: its figure and its gap are the player's all-rounds ones, not the window's.
+      add(c.your_value, { ...who, ...fam });
+      const mine = typeof c.your_value === 'number' ? c.your_value : m.value;
+      if (typeof mine === 'number' && typeof c.value === 'number') add(mine - c.value, { ...who, ...fam });
+    }
     // A stated delta between a value and its benchmark is itself supported.
     if (typeof m.value === 'number' && typeof m.benchmark?.value === 'number') {
       add(m.value - m.benchmark.value, { ...who, ...fam });
     }
     addWindow(m.window_start, m.window_end);
   }
+  /** A detail field's values per player, so "averaging +3.01 a round" over the rounds a read listed can be checked. */
+  const detailGroups = new Map<string, { scope: AnchorScope; values: number[] }>();
   for (const n of extraSupported) {
     if (typeof n === 'number') add(n, UNSCOPED);
     else if (n && typeof n.value === 'number') {
-      add(n.value, { player: n.player_id ?? null, team: n.team === true, ...familyOf(n.metric_key) });
+      const scope = { player: n.player_id ?? null, team: n.team === true, ...familyOf(n.metric_key), ...(n.reference ? { reference: true } : {}) };
+      add(n.value, scope);
+      // A reference's field names are its own: means and differences of them say nothing about a team.
+      if (n.metric_key && n.metric_key !== 'row_count' && !n.reference) {
+        const id = `${scope.player ?? ''}|${scope.team}|${n.metric_key}`;
+        const group: { scope: AnchorScope; values: number[] } = detailGroups.get(id) ?? { scope, values: [] };
+        if (group.values.length < PAIRWISE_ANCHOR_CAP * 2) group.values.push(n.value);
+        detailGroups.set(id, group);
+      }
     }
+  }
+  for (const { scope, values } of detailGroups.values()) {
+    if (values.length >= 2) add(values.reduce((a, b) => a + b, 0) / values.length, { ...scope, aggregate: true });
   }
   for (const s of series) {
     addWindow(s.window_start, s.window_end);
@@ -1240,10 +1569,32 @@ export function auditNumericClaims(
     // rather than trusting that invariant silently.
     if (group.size < 2 || group.size > PAIRWISE_ANCHOR_CAP) continue;
     const fam = familyOf(key);
+    // "The team average is about -2.35": the mean of the players a ranking listed is arithmetic on published values,
+    // like the differences below, and a coach asking about "the team" is asking for it. Staging turns were withheld for
+    // a mean of seven ranked players that no tool returns.
+    for (const list of [[...group], allByMetric.get(key) ?? []]) {
+      if (list.length >= 2) add(list.reduce((a, b) => a + b, 0) / list.length, { player: null, team: false, ...fam, aggregate: true });
+    }
     const values = [...group];
     for (const [i, left] of values.entries()) {
       for (const right of values.slice(i + 1)) add(left - right, { player: null, team: false, ...fam });
     }
+  }
+
+  // The gap between two strokes-gained areas of one entity over one window ("approach is ahead of putting by 0.06", staging e0170c07): both are
+  // published on screen, in the same unit, so their difference is arithmetic on them. Held to strokes gained, one entity, one window, and an
+  // area once each, so a strokes figure can still never be justified by subtracting two putt counts.
+  const sgAreas = new Map<string, Map<string, number>>();
+  for (const m of measurements) {
+    if (typeof m.value !== 'number' || !/^sg_(?:tee|approach|around_green|putting|total)$/.test(m.metric_id)) continue;
+    const key = `${m.entity?.kind}:${m.entity?.id}|${m.window_start}|${m.window_end}`;
+    const areas = sgAreas.get(key) ?? new Map<string, number>();
+    areas.set(m.metric_id, m.value);
+    sgAreas.set(key, areas);
+  }
+  for (const areas of sgAreas.values()) {
+    const values = [...areas.values()];
+    for (const [i, left] of values.entries()) for (const right of values.slice(i + 1)) add(left - right, { ...UNSCOPED, gap: true });
   }
 
   const exempt = text.replace(CLAIM_EXEMPT, ' ');
@@ -1251,35 +1602,93 @@ export function auditNumericClaims(
   // either way, so a date's own digits are never re-examined as a bare
   // number (matched or not — a rejected date is reported once, as the
   // whole expression, not again for its day-of-month).
-  const { scrubbed: dateScrubbed, claims: dateClaims } = auditDateExpressions(exempt, evidenceDates, evidenceWindows);
+  const { scrubbed: dateScrubbed, claims: dateClaims } = auditDateExpressions(exempt, evidenceDates, evidenceWindows, edgeDates);
   // A year that survives the date audit is a plain label ("in 2026").
   const scrubbed = blankCalendarYears(dateScrubbed);
   const found: UnsupportedClaim[] = [...dateClaims];
   const seen = new Set<string>();
   const bind = buildBinder(scrubbed, nameSources);
+  const spans = new Set(options?.requestedSpans ?? []);
+  const cited = (options?.citedValues ?? []).map((raw, i) => ({ value: Number(raw.trim().replace(/[−–]/g, '-').replace(/[%,+]/g, '')), raw: raw.trim().replace(/[−–]/g, '-').replace(/[%,+]/g, ''), subject: options?.citedSubjects?.[i] ?? null }));
+  const taggedPlayers = new Set(anchors.map((a) => a.player).filter((p): p is string => p !== null));
+  // A player the reads measured and found nothing for (a measurement with no value): whatever is written against their name has nothing of theirs to stand on.
+  const measuredPlayers = new Set<string>();
+  const valuedPlayers = new Set<string>();
+  for (const m of measurements) {
+    if (m.entity?.kind !== 'player') continue;
+    measuredPlayers.add(m.entity.id);
+    if (m.value !== null) valuedPlayers.add(m.entity.id);
+  }
+  const noDataPlayers = new Set([...measuredPlayers].filter((id) => !valuedPlayers.has(id)));
+  let figures = 0;
+  let citedCount = 0;
+  let heuristicPassed = 0;
 
   for (const [index, match] of bind.tokens.entries()) {
     const raw = match.raw;
     const value = Number(raw);
     if (!Number.isFinite(value)) continue;
-    // Ordinals, counts of rounds/weeks/players — not statistical assertions.
-    if (Number.isInteger(value) && Math.abs(value) <= 12) continue;
+    // Ordinals, counts of rounds/weeks/players — not statistical assertions. A count of some of the things just talked about
+    // ("8 of those came in two rounds") is one: it is a sum over a subset, and no sample size or denominator stands for it.
+    // "the last 20 rounds" is a window the reads can be asked for (5, 10 or 20), not a figure.
+    // "his last 20 rounds", and the list a capabilities answer gives: "the last 5, 10 or 20 rounds" (staging 7488e220).
+    // With no read at all (a capabilities answer), "5, 10 or 20 rounds" lists the windows Ask can read, whatever word leads it.
+    const noReads = measurements.length === 0 && series.length === 0 && anchors.length === 0;
+    const asWindow = value === 20 && /^\s*rounds?\b/i.test(scrubbed.slice(match.end, match.end + 10)) && (/\b(?:last|newest|past|previous|recent)\s+(?:\d{1,2}(?:\s*,\s*|\s+(?:or|and)\s+))*$/i.test(scrubbed.slice(Math.max(0, match.start - 28), match.start)) || (noReads && /\b(?:5|10)(?:\s*,\s*|\s+(?:or|and)\s+)$/i.test(scrubbed.slice(Math.max(0, match.start - 12), match.start))));
+    const smallInteger = (Number.isInteger(value) && Math.abs(value) <= 12) || asWindow;
+    const subsetCount = smallInteger && value >= 2 && SUBSET_COUNT_AFTER.test(scrubbed.slice(match.end, match.end + 40));
+    if (smallInteger && !subsetCount) continue;
     if (seen.has(raw)) continue;
+    // "Only 9 of the 26 rounds have a count. The other 17 have none": what is left of a group some read states, once the subset just written is taken out.
+    if (Number.isInteger(value) && OTHER_BEFORE.test(scrubbed.slice(Math.max(0, match.start - 14), match.start)) && complementOfStated(scrubbed, match.start, match.end, value, anchors)) {
+      heuristicPassed += 1;
+      continue;
+    }
+    // "If you use -2.33, Owen's gap is larger": a figure picked up again as the alternative being weighed is the same claim the earlier sentence made
+    // (and the audit made of it there), not a new one about the player named after it.
+    if (USE_CLAUSE.test(scrubbed.slice(Math.max(0, match.start - 40), match.start)) && scrubbed.slice(0, match.start).includes(raw)) continue;
+    if (spans.has(value) && TIME_UNIT_AFTER.test(scrubbed.slice(match.end, match.end + 24))) continue;
+    figures += 1;
+    // A figure the model cited, and the server verified against the read it named, is not matched against names. It stands for the figure only at
+    // the precision the figure is written to (a cite of 58 does not stand for 57.8), and only beside the player it was cited for: a 72.5 cited
+    // for Owen does not make "Audit Testplayer: 72.5" true.
+    const wrote = bind.bindingFor(index);
+    if (cited.some((c) => Number.isFinite(c.value) && Math.abs(Math.abs(c.value) - Math.abs(value)) <= roundingTolerance(raw.replace(/^-/, '')) && citeFitsBinding(c.subject, wrote))) {
+      citedCount += 1;
+      seen.add(raw);
+      continue;
+    }
 
     const at = match.start;
-    const hedged = HEDGE_BEFORE.test(scrubbed.slice(Math.max(0, at - 24), at));
+    const hedge = HEDGE_BEFORE.exec(scrubbed.slice(Math.max(0, at - 24), at));
     const exact = roundingTolerance(raw);
-    const tolerance = hedged ? Math.max(exact, Math.abs(value) * HEDGED_RELATIVE_TOLERANCE) : exact;
-
-    const near = (a: Anchor) => Math.abs(a.value - value) <= tolerance;
+    const room = Math.abs(value) * HEDGED_RELATIVE_TOLERANCE;
+    // "more than 7.5" is rounded outward from a larger real figure, "less than 30" from a smaller: the slack runs one way. An approximation
+    // ("about 26.6") gets half of it either way (28 is not "about 26.6" because 10% of it reaches).
+    const near = (a: Anchor) => {
+      const diff = Math.abs(a.value) - Math.abs(value);
+      if (!hedge) return Math.abs(a.value - value) <= exact;
+      if (HEDGE_ABOVE.test(hedge[0])) return diff >= -exact && diff <= Math.max(exact, room);
+      if (HEDGE_BELOW.test(hedge[0])) return -diff >= -exact && -diff <= Math.max(exact, room);
+      return Math.abs(a.value - value) <= Math.max(exact, room / 2);
+    };
     const binding = bind.bindingFor(index);
-    if (!anchors.some((a) => near(a) && playerCompatible(a, binding) && metricCompatible(a, binding))) {
+    // A subset count is grounded by a figure of a metric (a per-round count, a stated total), never by a count of rounds, holes or players.
+    // What it counts is what the paragraph was last talking about ("three-putted … 8 of those"), when it said.
+    const counted = subsetCount ? lastFamilyBefore(scrubbed, match.start) : null;
+    const pool = subsetCount && options?.strictSubsetCounts ? [] : subsetCount ? anchors.filter((a) => (counted ? a.family === counted || a.parent === counted : a.family !== null)) : anchors;
+    // A figure about a metric, written against a player no read this turn has any figure for, has nothing of that player's to stand on: an
+    // untagged number (a roster-wide detail value) that happens to match does not make it theirs.
+    const hasNothing = !!binding.players && binding.players.size > 0 && !binding.teamCue && (([...binding.players].every((p) => noDataPlayers.has(p))) || (!!binding.families?.size && [...binding.players].every((p) => !taggedPlayers.has(p))));
+    if (!pool.some((a) => near(a) && playerCompatible(a, binding) && metricCompatible(a, binding) && (!a.reference || binding.refCue) && (!a.gap || binding.gapCue) && (!a.aggregate || binding.aggCue || binding.teamCue) && !(hasNothing && a.player === null && !a.team && !a.reference))) {
       seen.add(raw);
-      found.push(anchors.some(near) ? { text: raw, value, misattributed: true } : { text: raw, value });
+      found.push(pool.some(near) ? { text: raw, value, misattributed: true } : { text: raw, value });
+    } else {
+      heuristicPassed += 1;
     }
   }
 
-  return found;
+  return { unsupported: found, figures, cited: citedCount, heuristicPassed };
 }
 
 /**
@@ -1326,15 +1735,15 @@ export function collectScopedNumbers(
   playerId: string | null = null,
   key: string | null = null,
   depth = 0,
-  inherited: { team?: boolean; metric?: string } = {},
+  inherited: { team?: boolean; metric?: string; reference?: boolean } = {},
 ): ScopedNumber[] {
   if (depth > 6 || value === null || value === undefined) return [];
   const team = inherited.team && playerId === null ? { team: true } : {};
   if (typeof value === 'number') {
-    return Number.isFinite(value) ? [{ value, player_id: playerId, metric_key: inherited.metric ?? key, ...team }] : [];
+    return Number.isFinite(value) ? [{ value, player_id: playerId, metric_key: inherited.metric ?? key, ...team, ...(inherited.reference ? { reference: true } : {}) }] : [];
   }
   if (typeof value === 'string') {
-    return numbersInText(value).map((n) => ({ value: n, player_id: playerId, metric_key: null, ...team }));
+    return numbersInText(value).map((n) => ({ value: n, player_id: playerId, metric_key: null, ...team, ...(inherited.reference ? { reference: true } : {}) }));
   }
   if (Array.isArray(value)) return value.flatMap((v) => collectScopedNumbers(v, playerId, key, depth + 1, inherited));
   if (typeof value === 'object') {
@@ -1342,8 +1751,19 @@ export function collectScopedNumbers(
     const nested = obj.player && typeof obj.player === 'object' ? (obj.player as Record<string, unknown>).player_id : undefined;
     const own = typeof obj.player_id === 'string' ? obj.player_id : typeof nested === 'string' ? nested : null;
     const scope = own ?? playerId;
-    const next = { team: obj.team_scope === true || inherited.team, metric: typeof obj.metric_scope === 'string' ? obj.metric_scope : inherited.metric };
-    return Object.entries(obj).flatMap(([k, v]) => collectScopedNumbers(v, scope, k, depth + 1, next));
+    // A payload tagged `kind: 'reference' | 'definition' | 'benchmark'` is no one's result; everything beneath it needs a sourced sentence.
+    const refKind = obj.kind === 'reference' || obj.kind === 'definition' || obj.kind === 'benchmark' || obj.kind === 'level' || obj.kind === 'tour';
+    const next = { team: obj.team_scope === true || inherited.team, metric: typeof obj.metric_scope === 'string' ? obj.metric_scope : inherited.metric, reference: refKind || inherited.reference };
+    // Where a player stands ("74th percentile among 78 college players", "7th of 7") is the player's own, though the reference it is measured
+    // against is no one's: only the reference's value needs a sourced sentence.
+    const own2 = Object.entries(obj).flatMap(([k, v]) => collectScopedNumbers(v, scope, k, depth + 1, k === 'place_percent' || k === 'place_of' || k === 'place' ? { ...next, reference: inherited.reference } : next));
+    // A gap row states both of its figures ("player_value", "team_average"); the gap between them is arithmetic on the row, said as "a gap of 0.36".
+    const pv = obj.player_value;
+    const ta = obj.team_average;
+    if (typeof pv === 'number' && typeof ta === 'number' && Number.isFinite(pv) && Number.isFinite(ta) && !next.reference) {
+      own2.push({ value: Math.round((pv - ta) * 1e6) / 1e6, player_id: scope, metric_key: typeof obj.metric_id === 'string' ? obj.metric_id : 'gap', ...(next.team ? { team: true } : {}) } as ScopedNumber);
+    }
+    return own2;
   }
   return [];
 }
@@ -1360,9 +1780,60 @@ export function readFigure(f: Pick<Measurement, 'metric_id' | 'metric_label' | '
   return { denominator: null, direction: null, ...f, as_of: nowIso(), coverage: 'complete', coverage_note: null, benchmark: null };
 }
 
+/**
+ * Every date an envelope supports: the ISO dates in its `detail` and the day it was read ("as of July 23"), which the
+ * answer may name. Staging, 2026-11-08: an answer saying coverage was "complete as of July 23, 2026" was withheld
+ * because only `detail` was read for dates.
+ */
+export function collectEnvelopeDates(envelope: Pick<ToolEnvelope, 'detail' | 'as_of' | 'measurements' | 'series'> & { summary?: string }, timezone?: string): string[] {
+  const asOfDays = typeof envelope.as_of === 'string' ? isoDaysOf(envelope.as_of, timezone) : [];
+  // "Nothing scheduled in the next 8 days": the read's own window ends 8 days after the day it was read, and the answer says "through November 15".
+  // Marked with a leading `~`: an edge of a window grounds a date only where the sentence is about the window ("through July 25"), not "data from July 25".
+  const ahead = [...(envelope.summary ?? '').matchAll(/\b(?:next|coming|upcoming)\s+(\d{1,3})\s+days?\b/gi)].flatMap((m) => (asOfDays[0] ? [`~${addDays(asOfDays[0], Number(m[1]))}`] : []));
+  return [
+    ...(envelope.detail === undefined ? [] : collectDates(envelope.detail, timezone)),
+    // The day a read was made is today's date, not a date in the data: it is marked like a window edge.
+    ...[envelope.as_of, ...(envelope.measurements ?? []).map((m) => m.as_of), ...(envelope.series ?? []).map((s) => s.as_of)].flatMap((at) => (typeof at === 'string' ? isoDaysOf(at, timezone).map((d) => `~${d}`) : [])),
+    ...ahead,
+  ];
+}
+
+/** A string field with this few distinct values is a category (status, round type, player), and a count of each is a figure the data states. */
+const CATEGORY_MAX = 8;
+
+/**
+ * The counts a list of rows holds, for a `team_data` read (`query_team_data`): how many rows, how many of each value of a field
+ * with few values (23 completed, 3 in progress; 7 rounds for Cole), and the rows left when one value is taken out. A coach asking
+ * "which rounds…" is answered with "the other 23 rounds", and nothing returns that number. Staging, 2026-11-08: such an answer,
+ * otherwise exact, was withheld for it. Only a count of what the read returned, never a number the rows do not make.
+ */
+export function teamDataCounts(detail: unknown): ScopedNumber[] {
+  const d = detail as { kind?: unknown; rows?: unknown } | null | undefined;
+  if (!d || d.kind !== 'team_data' || !Array.isArray(d.rows) || d.rows.length === 0) return [];
+  const rows = d.rows.filter((r): r is Record<string, unknown> => !!r && typeof r === 'object');
+  const out: ScopedNumber[] = [{ value: rows.length, player_id: null, metric_key: 'row_count' }];
+  const fields = new Set(rows.flatMap((r) => Object.keys(r)));
+  for (const field of fields) {
+    if (/(^id$|_id$)/.test(field)) continue;
+    const values = rows.map((r) => r[field]);
+    if (!values.every((v) => v === null || v === undefined || typeof v === 'string')) continue;
+    const counts = new Map<string, number>();
+    for (const v of values) if (typeof v === 'string' && v !== '') counts.set(v, (counts.get(v) ?? 0) + 1);
+    if (counts.size === 0 || counts.size > CATEGORY_MAX) continue;
+    for (const [value, n] of counts) {
+      // A count of one player's rows is that player's: it must not stand for anyone else's.
+      const owner = field === 'player' ? rows.find((r) => r[field] === value && typeof r.player_id === 'string')?.player_id : null;
+      const player_id = typeof owner === 'string' ? owner : null;
+      out.push({ value: n, player_id, metric_key: 'row_count' });
+      if (player_id === null && rows.length - n > 0) out.push({ value: rows.length - n, player_id: null, metric_key: 'row_count' });
+    }
+  }
+  return out;
+}
+
 export function collectEnvelopeNumbers(envelope: Pick<ToolEnvelope, 'summary' | 'detail'>): ScopedNumber[] {
   const top = (envelope.detail && typeof envelope.detail === 'object' ? envelope.detail : {}) as { player_id?: unknown; team_scope?: unknown };
   const who = typeof top.player_id === 'string' ? { player_id: top.player_id } : { player_id: null, ...(top.team_scope === true ? { team: true } : {}) };
   const fromSummary = numbersInText(envelope.summary).map((value) => ({ value, ...who, metric_key: null }));
-  return [...(envelope.detail === undefined ? [] : collectScopedNumbers(envelope.detail)), ...fromSummary];
+  return [...(envelope.detail === undefined ? [] : collectScopedNumbers(envelope.detail)), ...teamDataCounts(envelope.detail), ...fromSummary];
 }

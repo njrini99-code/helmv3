@@ -27,8 +27,8 @@
  * above only, same as before this gate existed.
  * ========================================================================== */
 
-import { auditNumericClaims } from './provenance';
-import type { AuditPlayer, Measurement, MeasurementSeries, ScopedNumber, UnsupportedClaim } from './provenance';
+import type { AuditPlayer, Measurement, MeasurementSeries, ScopedNumber, ToolEnvelope, UnsupportedClaim } from './provenance';
+import { auditCited, type Cite, type CitationStats } from './cites';
 import type { RejectedClaim } from '../llm/claim-validator';
 import type { TypedClaimAttempt } from '../llm/claims-block';
 
@@ -43,7 +43,7 @@ import type { TypedClaimAttempt } from '../llm/claims-block';
 export type TurnVerdictReason = 'stream_incomplete' | 'ungrounded_claims' | 'claim_validation_failed';
 
 export type TurnVerdict =
-  | { outcome: 'accepted' }
+  | { outcome: 'accepted'; citations?: CitationStats }
   | {
       outcome: 'rejected';
       reason: TurnVerdictReason;
@@ -52,6 +52,8 @@ export type TurnVerdict =
       note: string;
       /** Populated only for `reason: 'ungrounded_claims'`. */
       unsupported: UnsupportedClaim[];
+      /** How much of the answer the per-figure citations carried (`cites.ts`). Absent when the turn had no citation block. */
+      citations?: CitationStats;
       /** Populated only for `reason: 'claim_validation_failed'` — the typed
        *  gate's own rejected claims, `{claim_id, metric_id, reason}` only,
        *  mirroring `compose.ts`'s no-prose logging contract. */
@@ -97,6 +99,8 @@ export function computeTurnVerdict(args: {
    *  the text and bind the number to them (audit row 47b). Optional; omitted,
    *  only the evidence's own entity labels are recognised. */
   players?: readonly AuditPlayer[];
+  /** Spans of time the coach's own words named — see {@link auditNumericClaims}' `requestedSpans`. */
+  requestedSpans?: readonly number[];
   /**
    * The typed claim gate's result for this turn, or `null` when it did not
    * engage (no single-player packet — see `chat/claims-packet.ts`) or the
@@ -104,22 +108,26 @@ export function computeTurnVerdict(args: {
    * remains additive for any existing caller.
    */
   claims?: TypedClaimAttempt | null;
+  /**
+   * The model's per-figure citations and this turn's reads by evidence_ref. Each cite is checked against the read it names: a figure
+   * cited to evidence that says something else withholds the turn, a verified one stands on its own, an unresolved one is ignored and
+   * its figure is audited by the text heuristics. Left out (a turn stored before citations, a caller that has none), nothing changes.
+   */
+  cites?: { cites: readonly Cite[]; evidence: ReadonlyMap<string, ToolEnvelope>; blocks?: number; invalid?: number; /** Names the turn in the development log. */ label?: string };
 }): TurnVerdict {
   if (!args.streamComplete) {
     return { outcome: 'rejected', reason: 'stream_incomplete', note: STREAM_INCOMPLETE_NOTE, unsupported: [] };
   }
 
-  const unsupported = auditNumericClaims(
-    args.text,
-    args.measurements,
-    args.series,
-    args.detailNumbers,
-    args.detailDates,
-    args.timezone,
-    { players: args.players },
-  );
+  const { unsupported, citations } = auditCited({
+    surface: 'coach',
+    strictCounts: true,
+    base: [args.text, args.measurements, args.series, args.detailNumbers, args.detailDates, args.timezone],
+    options: { players: args.players, requestedSpans: args.requestedSpans },
+    cites: args.cites,
+  });
   if (unsupported.length > 0) {
-    return { outcome: 'rejected', reason: 'ungrounded_claims', note: UNGROUNDED_NOTE, unsupported };
+    return { outcome: 'rejected', reason: 'ungrounded_claims', note: UNGROUNDED_NOTE, unsupported, ...(citations ? { citations } : {}) };
   }
 
   // Addendum A7 slice 1: the typed claim gate, third and last check. A
@@ -138,7 +146,7 @@ export function computeTurnVerdict(args: {
     };
   }
 
-  return { outcome: 'accepted' };
+  return citations ? { outcome: 'accepted', citations } : { outcome: 'accepted' };
 }
 
 /**
@@ -166,6 +174,8 @@ export function verdictPartType(reason: TurnVerdictReason): 'data-grounding-flag
  */
 export interface VerdictRecord {
   reason: TurnVerdictReason;
+  /** The citation counts of the turn, when it had a citation block. */
+  citations?: CitationStats;
   /** `ungrounded_claims`: the flagged numbers. `claim_validation_failed`:
    *  `metric_id:reason` per rejected claim. `stream_incomplete`: empty. */
   unmatched_tokens: string[];
@@ -182,7 +192,7 @@ export function verdictRecord(verdict: TurnVerdict): VerdictRecord | null {
       unmatched_tokens: (verdict.rejectedClaims ?? []).map((r) => `${r.claim.metric_id || '(none)'}:${r.reason}`),
     };
   }
-  const record: VerdictRecord = { reason: verdict.reason, unmatched_tokens: verdict.unsupported.map((c) => c.text) };
+  const record: VerdictRecord = { reason: verdict.reason, unmatched_tokens: verdict.unsupported.map((c) => c.text), ...(verdict.citations ? { citations: verdict.citations } : {}) };
   const misattributed = verdict.unsupported.filter((c) => c.misattributed).map((c) => c.text);
   if (misattributed.length > 0) record.misattributed_tokens = misattributed;
   return record;

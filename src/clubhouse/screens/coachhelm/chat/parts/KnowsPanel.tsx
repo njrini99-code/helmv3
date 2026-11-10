@@ -17,11 +17,15 @@ const TONES = [
 const CAN_SEE: ReadonlyArray<{ area: string; what: string }> = [
   { area: 'Strokes gained and core stats', what: 'Metrics, trends, rankings and comparisons, by player or team.' },
   { area: 'Shots', what: 'Miss direction and distance left, putts by distance. Shots store a direction, not a map position.' },
-  { area: 'CoachHelm engine', what: 'Root causes, team patterns and open reads per player.' },
+  { area: 'CoachHelm engine', what: 'Open reads and root causes per player, and what the team shares where the Board shows it.' },
   { area: 'Rounds', what: 'Recent rounds and hole by hole for a round.' },
-  { area: 'Practice', what: 'Plans, once the Practice tab is on. It writes a plan only after you confirm.' },
-  { area: 'Calendar and classes', what: 'Upcoming events. It adds an event only after you confirm.' },
-  { area: 'Qualifiers and tournaments', what: 'Where those are on for your team.' },
+  { area: 'Practice', what: 'Practices held, plans, the drill bank and the sessions players log. It writes a plan only after you confirm.' },
+  { area: 'Calendar and classes', what: 'Any event with replies and check-ins, and who is in class. It adds an event only after you confirm.' },
+  { area: 'Qualifiers and tournaments', what: 'Entries, selections and results; reviews and notes where tournaments are on for your team.' },
+  { area: 'Attendance, goals and focus areas', what: 'Attendance by player, goals a coach set or a player shared, and the practice logged toward each focus area.' },
+  { area: 'Benchmarks and golf knowledge', what: 'The Tour, college and high-school averages with their sources, where each player stands against them, and a sourced golf reference. It keeps these apart from your team’s own numbers.' },
+  { area: 'Other team records', what: 'Rounds, events, replies and seasons beyond the reads above, from a fixed list of tables. Never contact details, academics or messages.' },
+  { area: 'Documents', what: 'Titles and folders, never a file’s contents. It saves a draft only when you tap Save.' },
   { area: 'Messages', what: 'Stays out. It drafts a board or poll you send yourself from Messages.' },
 ];
 

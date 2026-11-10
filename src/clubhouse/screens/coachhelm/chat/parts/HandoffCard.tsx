@@ -70,8 +70,8 @@ export function HandoffCard({ handoff, tiles }: { handoff: AskHandoffData; tiles
         <div className="ch-ak-pollp">
           <b className="pq">{poll.question}</b>
           <ul className="po">
-            {poll.options.map((o) => (
-              <li key={o} className="pr">
+            {poll.options.map((o, i) => (
+              <li key={o} className="pr" style={{ ['--ch-i' as string]: i }}>
                 <span className="pt">{o}</span>
                 <span className="pb" aria-hidden="true" />
                 <span className="pn ch-num">0</span>

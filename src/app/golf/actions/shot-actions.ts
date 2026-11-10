@@ -3,7 +3,8 @@
 import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
-import { revalidatePath, updateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
+import { updateTag } from '@/lib/cache/safe-update-tag';
 import { CACHE_TAGS } from '@/lib/cache/tags';
 import { z } from 'zod';
 // roundTypeToDb was a no-op (identity function) and has been removed.

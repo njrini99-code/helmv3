@@ -1,0 +1,273 @@
+{
+ "id": "d03274e1",
+ "messageId": "d03274e1-9897-4472-859c-0edbb57bc6f8",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "who is the worst player on my team",
+  "createdAt": "2026-08-14T13:50:14.739667+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-08-14T13:50:14.739667+00:00",
+   "content": "who is the worst player on my team",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-08-14T13:50:27.112578+00:00",
+  "status": "failed",
+  "costUsd": null,
+  "content": "\"Worst\" isn't something I'll label a player with, but here's where strokes gained total stands across the roster — each player's own window and round count, since not everyone's data covers the same dates:\n\n| Player | SG Total | Rounds | Window |\n|---|---|---|---|\n| Cole Bennett | -3.62 | 18 | May 18 – Aug 2 |\n| Dylan Brooks | -4.13 | 12 | Jun 6 – Jul 19 |\n| Tyler Hayes | -4.21 | 11 | May 31 – Jul 12 |\n| Jackson Hale | -4.44 | 15 | May 18 – Jul 10 |\n| Mason Rivers | -4.88 | 12 | May 28 – Jul 10 |\n| Owen Carter | -6.45 | 12 | May 28 – Jul 10 |\n| Ethan Park | -6.60 | 13 | May 18 – Jul 10 |\n\nEthan Park and Owen Carter show the lowest strokes-gained totals over their respective windows, meaning they're giving up the most strokes relative to the field baseline right now. If you want, I can pull their weakest specific areas (putting, approach, tee, short game) to find where that gap is coming from.\n\n_Some figures in this answer could not be traced back to your program's data, so I've flagged it rather than presenting them as fact. Please ask again._",
+  "tools": [
+   {
+    "name": "get_team_metric_ranking",
+    "input": {
+     "metric_id": "sg_total"
+    }
+   }
+  ],
+  "evidence": [
+   {
+    "tool": "get_team_metric_ranking",
+    "ref": null,
+    "envelope": {
+     "as_of": "2026-08-14T13:50:20.933Z",
+     "detail": {
+      "direction": "higher_better",
+      "metric_id": "sg_total",
+      "metric_label": "Strokes gained total"
+     },
+     "series": [],
+     "summary": "Strokes gained total across Demo University Golf.",
+     "coverage": "complete",
+     "measurements": [
+      {
+       "unit": "strokes",
+       "as_of": "2026-08-03T02:20:15.690041+00:00",
+       "value": -3.62,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_total",
+       "window_end": "2026-08-02",
+       "denominator": null,
+       "sample_size": 18,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained total",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-07-23T11:39:47.911234+00:00",
+       "value": -4.13,
+       "entity": {
+        "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "kind": "player",
+        "label": "Dylan Brooks"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_total",
+       "window_end": "2026-07-19",
+       "denominator": null,
+       "sample_size": 12,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained total",
+       "window_start": "2026-06-06",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-07-21T01:06:58.100617+00:00",
+       "value": -4.21,
+       "entity": {
+        "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "kind": "player",
+        "label": "Tyler Hayes"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_total",
+       "window_end": "2026-07-12",
+       "denominator": null,
+       "sample_size": 11,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained total",
+       "window_start": "2026-05-31",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-07-21T01:06:59.516925+00:00",
+       "value": -4.44,
+       "entity": {
+        "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "kind": "player",
+        "label": "Jackson Hale"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_total",
+       "window_end": "2026-07-10",
+       "denominator": null,
+       "sample_size": 15,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained total",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-07-23T11:39:47.911234+00:00",
+       "value": -4.88,
+       "entity": {
+        "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "kind": "player",
+        "label": "Mason Rivers"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_total",
+       "window_end": "2026-07-10",
+       "denominator": null,
+       "sample_size": 12,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained total",
+       "window_start": "2026-05-28",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-07-23T11:39:47.911234+00:00",
+       "value": -6.45,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_total",
+       "window_end": "2026-07-10",
+       "denominator": null,
+       "sample_size": 12,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained total",
+       "window_start": "2026-05-28",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-07-21T01:06:59.213613+00:00",
+       "value": -6.6,
+       "entity": {
+        "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "kind": "player",
+        "label": "Ethan Park"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_total",
+       "window_end": "2026-07-10",
+       "denominator": null,
+       "sample_size": 13,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained total",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": null
+    }
+   }
+  ],
+  "recorded": {
+   "outcome": "rejected",
+   "reason": "unknown",
+   "unmatchedTokens": [],
+   "misattributedTokens": []
+  }
+ }
+}

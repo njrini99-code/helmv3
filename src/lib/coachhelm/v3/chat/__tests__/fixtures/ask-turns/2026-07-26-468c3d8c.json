@@ -1,0 +1,458 @@
+{
+ "id": "468c3d8c",
+ "messageId": "468c3d8c-c498-40a4-9262-b7c36b130b89",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "Whos the best driver on the team?",
+  "createdAt": "2026-07-26T02:42:36.831086+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-07-26T02:42:36.831086+00:00",
+   "content": "Whos the best driver on the team?",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-07-26T02:42:43.990569+00:00",
+  "status": "failed",
+  "costUsd": null,
+  "content": "Depends on which part of driving you mean:\n\n**Strokes gained off the tee** (overall value added, distance + accuracy combined), last 11-15 rounds per player:\n- Tyler Hayes: 1.35\n- Dylan Brooks: 1.34\n- Mason Rivers: 1.01\n- Cole Bennett / Jackson Hale: 0.81 each\n- Owen Carter: -0.15\n- Ethan Park: -0.28\n\n**Driving accuracy** (fairways hit), over 150-199 holes per player:\n- Mason Rivers / Dylan Brooks: 68.9%\n- Owen Carter: 65.87%\n- Tyler Hayes: 65.33%\n- Cole Bennett / Jackson Hale: 60.8%\n- Ethan Park: 50.29%\n\nTyler Hayes and Dylan Brooks lead on overall strokes gained off the tee, essentially tied. Mason Rivers and Dylan Brooks are most accurate finding fairways. All figures are from complete coverage across the full roster.\n\n_Some figures in this answer could not be traced back to your program's data, so I've flagged it rather than presenting them as fact. Please ask again._",
+  "tools": [
+   {
+    "name": "get_team_metric_ranking",
+    "input": {
+     "metric_id": "sg_tee"
+    }
+   },
+   {
+    "name": "get_team_metric_ranking",
+    "input": {
+     "metric_id": "driving_accuracy_pct"
+    }
+   }
+  ],
+  "evidence": [
+   {
+    "tool": "get_team_metric_ranking",
+    "ref": null,
+    "envelope": {
+     "as_of": "2026-07-26T02:42:39.735Z",
+     "detail": {
+      "direction": "higher_better",
+      "metric_id": "driving_accuracy_pct",
+      "metric_label": "Driving accuracy"
+     },
+     "series": [],
+     "summary": "Driving accuracy across Demo University Golf.",
+     "coverage": "complete",
+     "measurements": [
+      {
+       "unit": "percent",
+       "as_of": "2026-07-23T11:39:47.911234+00:00",
+       "value": 68.9,
+       "entity": {
+        "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "kind": "player",
+        "label": "Mason Rivers"
+       },
+       "method": "fairways_hit_over_fairways_total",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "driving_accuracy_pct",
+       "window_end": "2026-07-10",
+       "denominator": 164,
+       "sample_size": 164,
+       "sample_unit": "holes",
+       "metric_label": "Driving accuracy",
+       "window_start": "2026-05-28",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-07-23T11:39:47.911234+00:00",
+       "value": 68.9,
+       "entity": {
+        "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "kind": "player",
+        "label": "Dylan Brooks"
+       },
+       "method": "fairways_hit_over_fairways_total",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "driving_accuracy_pct",
+       "window_end": "2026-07-19",
+       "denominator": 164,
+       "sample_size": 164,
+       "sample_unit": "holes",
+       "metric_label": "Driving accuracy",
+       "window_start": "2026-06-06",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-07-23T11:39:47.911234+00:00",
+       "value": 65.87,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "fairways_hit_over_fairways_total",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "driving_accuracy_pct",
+       "window_end": "2026-07-10",
+       "denominator": 167,
+       "sample_size": 167,
+       "sample_unit": "holes",
+       "metric_label": "Driving accuracy",
+       "window_start": "2026-05-28",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-07-21T01:06:58.100617+00:00",
+       "value": 65.33,
+       "entity": {
+        "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "kind": "player",
+        "label": "Tyler Hayes"
+       },
+       "method": "fairways_hit_over_fairways_total",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "driving_accuracy_pct",
+       "window_end": "2026-07-12",
+       "denominator": 150,
+       "sample_size": 150,
+       "sample_unit": "holes",
+       "metric_label": "Driving accuracy",
+       "window_start": "2026-05-31",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-07-21T01:06:58.696167+00:00",
+       "value": 60.8,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "fairways_hit_over_fairways_total",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "driving_accuracy_pct",
+       "window_end": "2026-07-10",
+       "denominator": 199,
+       "sample_size": 199,
+       "sample_unit": "holes",
+       "metric_label": "Driving accuracy",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-07-21T01:06:59.516925+00:00",
+       "value": 60.8,
+       "entity": {
+        "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "kind": "player",
+        "label": "Jackson Hale"
+       },
+       "method": "fairways_hit_over_fairways_total",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "driving_accuracy_pct",
+       "window_end": "2026-07-10",
+       "denominator": 199,
+       "sample_size": 199,
+       "sample_unit": "holes",
+       "metric_label": "Driving accuracy",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      },
+      {
+       "unit": "percent",
+       "as_of": "2026-07-21T01:06:59.213613+00:00",
+       "value": 50.29,
+       "entity": {
+        "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "kind": "player",
+        "label": "Ethan Park"
+       },
+       "method": "fairways_hit_over_fairways_total",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "driving_accuracy_pct",
+       "window_end": "2026-07-10",
+       "denominator": 171,
+       "sample_size": 171,
+       "sample_unit": "holes",
+       "metric_label": "Driving accuracy",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": null
+    }
+   },
+   {
+    "tool": "get_team_metric_ranking",
+    "ref": null,
+    "envelope": {
+     "as_of": "2026-07-26T02:42:39.750Z",
+     "detail": {
+      "direction": "higher_better",
+      "metric_id": "sg_tee",
+      "metric_label": "Strokes gained off the tee"
+     },
+     "series": [],
+     "summary": "Strokes gained off the tee across Demo University Golf.",
+     "coverage": "complete",
+     "measurements": [
+      {
+       "unit": "strokes",
+       "as_of": "2026-07-21T01:06:58.100617+00:00",
+       "value": 1.35,
+       "entity": {
+        "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "kind": "player",
+        "label": "Tyler Hayes"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_tee",
+       "window_end": "2026-07-12",
+       "denominator": null,
+       "sample_size": 11,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained off the tee",
+       "window_start": "2026-05-31",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-07-23T11:39:47.911234+00:00",
+       "value": 1.34,
+       "entity": {
+        "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "kind": "player",
+        "label": "Dylan Brooks"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_tee",
+       "window_end": "2026-07-19",
+       "denominator": null,
+       "sample_size": 12,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained off the tee",
+       "window_start": "2026-06-06",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-07-23T11:39:47.911234+00:00",
+       "value": 1.01,
+       "entity": {
+        "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "kind": "player",
+        "label": "Mason Rivers"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_tee",
+       "window_end": "2026-07-10",
+       "denominator": null,
+       "sample_size": 12,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained off the tee",
+       "window_start": "2026-05-28",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-07-21T01:06:58.696167+00:00",
+       "value": 0.81,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_tee",
+       "window_end": "2026-07-10",
+       "denominator": null,
+       "sample_size": 15,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained off the tee",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-07-21T01:06:59.516925+00:00",
+       "value": 0.81,
+       "entity": {
+        "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "kind": "player",
+        "label": "Jackson Hale"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_tee",
+       "window_end": "2026-07-10",
+       "denominator": null,
+       "sample_size": 15,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained off the tee",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-07-23T11:39:47.911234+00:00",
+       "value": -0.15,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_tee",
+       "window_end": "2026-07-10",
+       "denominator": null,
+       "sample_size": 12,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained off the tee",
+       "window_start": "2026-05-28",
+       "coverage_note": null
+      },
+      {
+       "unit": "strokes",
+       "as_of": "2026-07-21T01:06:59.213613+00:00",
+       "value": -0.28,
+       "entity": {
+        "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "kind": "player",
+        "label": "Ethan Park"
+       },
+       "method": "sg_per_round_vs_broadie_baseline",
+       "source": "stats cache",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "higher_better",
+       "metric_id": "sg_tee",
+       "window_end": "2026-07-10",
+       "denominator": null,
+       "sample_size": 13,
+       "sample_unit": "rounds",
+       "metric_label": "Strokes gained off the tee",
+       "window_start": "2026-05-18",
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": null
+    }
+   }
+  ],
+  "recorded": {
+   "outcome": "rejected",
+   "reason": "unknown",
+   "unmatchedTokens": [],
+   "misattributedTokens": []
+  }
+ }
+}

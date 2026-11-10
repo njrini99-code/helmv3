@@ -137,3 +137,36 @@ describe('CoachComposition: a team table', () => {
     expect(document.querySelector('.ch-th-cv__entity')?.textContent).toBe('5 players');
   });
 });
+
+describe('CoachComposition: the headline chip compares with the level, the team and the Tour (owner, 2026-11-08)', () => {
+  const girRef = (kind: 'level' | 'team' | 'tour', value: number | null, over: Record<string, unknown> = {}) => ({ kind, label: kind, value, place_percent: null, place_of: null, note: null, ...over });
+  const gir = (comparisons: unknown[], benchmark: unknown) => ({
+    ...JSON.parse(JSON.stringify(ASK_COMPOSITION.blocks[0]!.measurement)),
+    metric_id: 'gir_pct', metric_label: 'Greens in regulation', unit: 'percent', value: 58.1, direction: 'higher_better', denominator: null, comparisons, benchmark,
+  });
+  const headline = (m: unknown) => ValidatedComposition.parse({ ...ASK_COMPOSITION, blocks: [{ type: 'headline', measurement: m, label: null }] });
+  const lines = () => Array.from(document.querySelectorAll('.ch-th-cv__refs li')).map((li) => li.textContent);
+
+  it('lists all three, level first and the Tour last, each with where the player sits', () => {
+    const m = gir([girRef('level', 61.5, { place_percent: 30, place_of: 70 }), girRef('team', 57.2, { place: 6, place_of: 9 }), girRef('tour', 66)], { source: 'Division III average 2024', version: '2024', value: 61.5, omitted_for_cohort: false });
+    render(<CoachComposition composition={headline(m)} />);
+    expect(lines()).toEqual(['Level 62% · ahead of 30% of 70 college players on Helm (all rounds)', 'Team 57% · 6th of 9', 'Tour 66%']);
+    expect(screen.getByText('Behind Division III average 2024')).toBeTruthy();
+    expect(document.querySelector('.ch-th-cv__refs')!.getAttribute('aria-label')).toBe('Compared with');
+  });
+
+  it('states a missing figure instead of dropping it or showing one alone', () => {
+    const m = gir([girRef('level', null, { missing_reason: 'not set' }), girRef('team', null, { missing_reason: 'no team average yet' }), girRef('tour', 66)], { source: 'PGA Tour 2024', version: '2024', value: 66, omitted_for_cohort: false });
+    render(<CoachComposition composition={headline(m)} />);
+    const l = lines();
+    expect(l).toHaveLength(3);
+    expect(l[0]).toBe('Level: not set');
+    expect(l[1]).toBe('Team: no team average yet');
+    expect(l[2]).toBe('Tour 66%');
+  });
+
+  it('draws no comparison list for a figure the standards do not cover', () => {
+    render(<CoachComposition composition={headline(gir([], null))} />);
+    expect(document.querySelector('.ch-th-cv__refs')).toBeNull();
+  });
+});

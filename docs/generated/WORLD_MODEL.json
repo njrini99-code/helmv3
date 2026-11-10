@@ -3478,6 +3478,12 @@
         ]
       },
       {
+        "id": "golf_division_cohort",
+        "definedIn": [
+          "supabase/migrations/20261108100000_golf_division_cohort.sql"
+        ]
+      },
+      {
         "id": "golf_focus_area_criteria",
         "definedIn": [
           "supabase/migrations/20260923110000_golf_focus_area_practice_log.sql"
@@ -4121,6 +4127,10 @@
       {
         "id": "coach_organization_is_claimable",
         "definedIn": "supabase/migrations/20261016200000_coach_organization_pin.sql"
+      },
+      {
+        "id": "college_level_of",
+        "definedIn": "supabase/migrations/20261108100000_golf_division_cohort.sql"
       },
       {
         "id": "find_baseball_player_by_email_for_roster",
@@ -4977,6 +4987,10 @@
       {
         "id": "refresh_crm_coach_engagement",
         "definedIn": "supabase/migrations/20260801053000_refresh_engagement_xact_lock.sql"
+      },
+      {
+        "id": "refresh_division_cohort",
+        "definedIn": "supabase/migrations/20261108100000_golf_division_cohort.sql"
       },
       {
         "id": "refresh_player_standing",
@@ -21622,6 +21636,21 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/ask-reads.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/ask-reads.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/benchmark-reads.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/persistence.ts",
           "anchor": "src/lib/supabase/untyped"
         },
@@ -21669,6 +21698,21 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/shot-reads.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/team-query.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/team-reads.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/team-round-lines.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
         },
         {
           "kind": "import_graph",
@@ -21913,6 +21957,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/__tests__/season-reads.test.ts",
           "anchor": "src/clubhouse/data/season"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/__tests__/team-strokes-gained-read.test.ts",
+          "anchor": "src/clubhouse/data/team-sg"
         },
         {
           "kind": "import_graph",
@@ -22509,8 +22558,23 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/__tests__/ask-replay-harness.ts",
+          "anchor": "src/lib/golf/timezone"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/ask-draft-tools.ts",
           "anchor": "src/lib/golf/message-polls"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/ask-reads.ts",
+          "anchor": "src/lib/golf/class-day-shape"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/ask-reads.ts",
+          "anchor": "src/lib/golf/timezone"
         },
         {
           "kind": "import_graph",
@@ -22606,6 +22670,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/shot-reads.ts",
           "anchor": "src/lib/golf/putt-distance-buckets"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/team-reads.ts",
+          "anchor": "src/lib/golf/timezone"
         },
         {
           "kind": "import_graph",
@@ -22970,6 +23039,16 @@
       "target": "team_operations",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/ask-reads.ts",
+          "anchor": "src/lib/golf/practice-db"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/ask-reads.ts",
+          "anchor": "src/lib/golf/practice-errors"
+        },
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/create-tools.ts",
@@ -25988,6 +26067,17 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/components/golf/stats/**"
+        }
+      ]
+    },
+    {
+      "source": "stats_analytics",
+      "target": "golf_division_cohort",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261108100000_golf_division_cohort.sql"
         }
       ]
     },

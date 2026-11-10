@@ -2,6 +2,7 @@
 
 import { useQuickChatRun } from '../../../shell/quick-chat/QuickChatProvider';
 import { AnimatePresence } from 'motion/react';
+import { lastTurnIsGeneral, lastTurnWindow } from './ask-scope-window';
 import { AskKnowsPanel } from './parts/KnowsPanel';
 import { AllowanceMeter, PlayerOut } from './parts/Allowance';
 import { ArtifactBody, ArtifactView } from './parts/Artifact';
@@ -13,9 +14,9 @@ import { useSafariKeyboardFit } from '../../../shell/PhoneScreen';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
-import { describeChatError } from '../../../data/coachhelm-chat-error';
+import { CHAT_ERROR_DID_NOT_FINISH, describeChatError } from '../../../data/coachhelm-chat-error';
 import { titleFromQuestion, type ChAskConversation, type ChAskData, type ChAskLoad } from '../../../data/coachhelm-chat-shape';
-import { pendingApproval, type EvidenceFocus } from '../../../data/coachhelm-chat-thread';
+import { answerNeverCame, pendingApproval, type EvidenceFocus } from '../../../data/coachhelm-chat-thread';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneIconAction } from '../../../ui/PhoneBar';
 import { Icon } from '../../../ui/Icon';
@@ -23,7 +24,7 @@ import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { Tooltip } from '../../../ui/Tooltip';
 import { PhoneTop, usePhoneTabsHidden } from '../../../shell/phone-chrome';
 import { AskComposer, useRefuseOffline } from './Composer';
-import { askDraftKey, useAskKept } from './drafts';
+import { askDraftKey, useAskKept, useSeedOnce } from './drafts';
 import { AskEvidencePanel } from './EvidencePanel';
 import { conversationHref, HistoryDrawer, HistoryPanel } from './History';
 import { AskHomeV2 } from './Home';
@@ -102,11 +103,12 @@ function AskFrame({ team, children }: { team?: string; children: ReactNode }) {
  * pages; everything else is the chat. The conversation itself runs on the production hook and route, unchanged.
  */
 /** The scope line's words: who, from a name in the question, and the window only if the question gave one (QA-5: a guessed "last 30 days" contradicted answers read over the season). Never a figure, so it can't overclaim. */
-export function askScope(question: string, team: string, names: readonly string[]): string {
+export function askScope(question: string, team: string, names: readonly string[], readWindow?: string | null): string {
   const q = question.toLowerCase();
   const who = names.find((n) => q.includes(n.toLowerCase()) || q.includes((n.split(' ')[0] ?? n).toLowerCase())) ?? team;
   const rounds = q.match(/last (\d+) rounds/)?.[0];
-  const window = rounds ?? (/this season|this fall|this spring/.exec(q)?.[0]) ?? (/last season|last fall/.exec(q)?.[0]) ?? (/last 30 days/.exec(q)?.[0]);
+  // The window the reads used wins over the question's words: the answer was read over that.
+  const window = readWindow ?? rounds ?? (/this season|this fall|this spring/.exec(q)?.[0]) ?? (/last season|last fall/.exec(q)?.[0]) ?? (/last 30 days/.exec(q)?.[0]);
   return window ? `${who} · ${window}` : who;
 }
 
@@ -201,7 +203,10 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
   const ranOutLive = data.allowance !== 'out';
   const pending = pendingApproval(chat.messages);
   const showHome = chat.messages.length === 0 && !gone && !data.threadFailed;
-  const notice = chat.error ? describeChatError(chat.error) : null;
+  // A turn whose stream ended with no error and no answer (a dev reload, a timeout, a crash) is not an idle thread: it says the answer didn't
+  // finish and offers Retry, which sends the same question again (`regenerate` appends nothing).
+  const noAnswer = !chat.busy && !chat.error && !showHome && !gone && !data.threadFailed && !out && answerNeverCame(chat.messages);
+  const notice = chat.error ? describeChatError(chat.error) : noAnswer ? CHAT_ERROR_DID_NOT_FINISH : null;
   // A thread covers the page, so the phone tab bar steps aside; the new-chat home keeps it.
   usePhoneTabsHidden(phone && !showHome);
 
@@ -212,7 +217,10 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
     setStoppedTurn(last?.role === 'assistant' ? last.id : null);
     chat.stop();
   };
+  // FID-ASK-7: read once, then off the address (below), and taken once: the first send ends it.
+  const [seededQuestion, consumeSeed] = useSeedOnce(typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('q'));
   const send = (text: string) => {
+    consumeSeed();
     setStoppedTurn(null);
     lastSent.current = text;
     expecting.current = openId === null ? epoch.current : null;
@@ -263,10 +271,9 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
 
   // S-ASK.scope: what the last question is about, in the same words the question used; it changes when a question is sent.
   const lastAsked = [...chat.messages].reverse().find((m) => m.role === 'user')?.parts.flatMap((p) => (p.type === 'text' ? [p.text] : [])).join(' ') ?? '';
-  const scopeLine = showHome ? `${player ? 'My rounds' : data.teamName} · this season` : askScope(lastAsked, player ? 'My rounds' : data.teamName, player ? [] : (data.players ?? []).map((p) => p.name));
+  const scopeLine = showHome ? `${player ? 'My rounds' : data.teamName} · this season` : lastTurnIsGeneral(chat.messages) ? 'Golf reference' : askScope(lastAsked, player ? 'My rounds' : data.teamName, player ? [] : (data.players ?? []).map((p) => p.name), lastTurnWindow(chat.messages));
 
   // FID-ASK-7: read once, then off the address, so a reload doesn't put it back over what the coach has since typed.
-  const [seededQuestion] = useState(() => (typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('q')));
   useEffect(() => {
     if (!seededQuestion) return;
     const url = new URL(window.location.href);
@@ -308,6 +315,7 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
   ) : (
     <SectionBoundary surface="coachhelm.ask.thread" label="The conversation" code="CH-13225">
       <AskThread
+        viewer={data.role === 'player' ? 'player' : 'coach'}
         team={data.teamName}
         onArtifact={setArtifact}
         messages={chat.messages}
@@ -355,11 +363,14 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
             lead
             title={
               <>
-                <Tooltip>
-                  <button type="button" className="ch-pbar__icon" aria-label="Chats" onClick={() => setDrawer(true)}>
-                    <Icon icon={MessagesSquare} size={20} />
-                  </button>
-                </Tooltip>
+                {/* A player's Ask keeps no history until HM3 (02 §AK10a), so there is no Chats list to open, as on desktop. */}
+                {!player && (
+                  <Tooltip>
+                    <button type="button" className="ch-pbar__icon" aria-label="Chats" onClick={() => setDrawer(true)}>
+                      <Icon icon={MessagesSquare} size={20} />
+                    </button>
+                  </Tooltip>
+                )}
                 <span className="ch-ask-ph__title">{showHome && !gone ? 'CoachHelm' : heading}</span>
               </>
             }
@@ -380,7 +391,9 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
       )}
       <div className="ch-ask-top">
         {player ? <PlayerAskTabs /> : <CoachHelmTabs active={sw.shown} onGo={sw.go} />}
-        {player && data.allowance && !showHome && <AllowanceMeter bucket={data.allowance} />}
+        {/* Desktop keeps the meter beside the tabs in a thread. On the phone it sat off screen in the tab row and its height
+            opened an empty band above and below the tabs; the phone shows it on Ask's home only. */}
+        {player && data.allowance && !showHome && !phone && <AllowanceMeter bucket={data.allowance} />}
         {!phone && <TeamLabel name={data.teamName} />}
       </div>
       <div className={'ch-ask-body' + (!phone && chatsShown ? ' has-panel' : '') + (!phone && evidenceOpen ? ' has-evidence' : '')}>
@@ -439,7 +452,7 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
       <AnimatePresence>{artifact && phone && artifactView}</AnimatePresence>
       {phone && (
         <>
-          <HistoryDrawer {...histProps} open={drawer} onClose={() => setDrawer(false)} />
+          {!player && <HistoryDrawer {...histProps} open={drawer} onClose={() => setDrawer(false)} />}
           {/* On the phone the evidence panel is its own sheet (EvidencePanel, CH-13851); wrapping it in a second Modal here
               stacked an empty Evidence sheet in front of the real one. */}
           {/* Kept mounted after its first opening, so it slides out when closed rather than vanishing (audit A-18). */}

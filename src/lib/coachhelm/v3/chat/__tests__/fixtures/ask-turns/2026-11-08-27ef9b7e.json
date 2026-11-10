@@ -1,0 +1,688 @@
+{
+ "id": "27ef9b7e",
+ "messageId": "27ef9b7e-6de0-414e-813f-a8e3a7235d8e",
+ "source": {
+  "project": "staging",
+  "team": "Demo University Golf",
+  "exportedBy": "scripts/coachhelm/export-ask-turns.mjs"
+ },
+ "timezone": "America/New_York",
+ "roster": [
+  {
+   "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+   "name": "Cole Bennett",
+   "first_name": "Cole",
+   "last_name": "Bennett"
+  },
+  {
+   "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+   "name": "Dylan Brooks",
+   "first_name": "Dylan",
+   "last_name": "Brooks"
+  },
+  {
+   "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+   "name": "Mason Rivers",
+   "first_name": "Mason",
+   "last_name": "Rivers"
+  },
+  {
+   "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+   "name": "Jackson Hale",
+   "first_name": "Jackson",
+   "last_name": "Hale"
+  },
+  {
+   "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+   "name": "Ethan Park",
+   "first_name": "Ethan",
+   "last_name": "Park"
+  },
+  {
+   "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+   "name": "Tyler Hayes",
+   "first_name": "Tyler",
+   "last_name": "Hayes"
+  },
+  {
+   "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+   "name": "Owen Carter",
+   "first_name": "Owen",
+   "last_name": "Carter"
+  },
+  {
+   "id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+   "name": "Audit Testplayer",
+   "first_name": "Audit",
+   "last_name": "Testplayer"
+  }
+ ],
+ "userMessage": {
+  "content": "Who are my top 3 players by scoring average this season?",
+  "createdAt": "2026-11-08T05:05:28.703082+00:00"
+ },
+ "priorMessages": [
+  {
+   "role": "user",
+   "createdAt": "2026-11-08T05:05:28.703082+00:00",
+   "content": "Who are my top 3 players by scoring average this season?",
+   "evidence": []
+  }
+ ],
+ "turn": {
+  "createdAt": "2026-11-08T05:05:38.150173+00:00",
+  "status": "failed",
+  "costUsd": null,
+  "content": "The top three this season are Mason Rivers, Owen Carter and Ethan Park, but each has only two counted rounds, so the ranking is thin.\n\n- **Mason Rivers:** 72 average, even par, over his 2 rounds.\n- **Owen Carter:** 72.5 average, 0.5 over par, over his 2 rounds.\n- **Ethan Park:** 73 average, 1 over par, over his 2 rounds.\n\nJackson Hale is next at 73.5 over his 2 rounds, only half a stroke behind Park, so third place could easily change.\n\nCole Bennett is the only player with a real sample, 13 counted rounds at a 77.46 average. The team average is 75.76 over 25 counted rounds. His number comes from far more rounds than the others, which makes it a different kind of read from theirs.\n\nCounted rounds are full 18-hole rounds since August 1, with practice rounds left out. Audit Testplayer has no counted rounds, so the ranking covers 7 of your 8 players.",
+  "tools": [
+   {
+    "name": "get_season_scoring",
+    "input": {}
+   },
+   {
+    "name": "get_team_overview",
+    "input": {}
+   }
+  ],
+  "evidence": [
+   {
+    "tool": "get_season_scoring",
+    "ref": "e1",
+    "envelope": {
+     "as_of": "2026-11-08T05:05:30.331Z",
+     "detail": {
+      "kind": "season_scoring",
+      "rule": "Full 18-hole countable rounds since 1 August in the team zone, practice left out. The same rounds Roster averages.",
+      "team": {
+       "rounds": 25,
+       "avg_score": 75.76,
+       "avg_to_par": 3.92,
+       "team_scope": true,
+       "to_par_rounds": 25,
+       "practice_left_out": 9,
+       "nine_holes_left_out": 0
+      },
+      "players": [
+       {
+        "name": "Cole Bennett",
+        "rounds": 13,
+        "avg_score": 77.46,
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "avg_to_par": 5.77,
+        "to_par_rounds": 13,
+        "practice_left_out": 9,
+        "nine_holes_left_out": 0
+       },
+       {
+        "name": "Owen Carter",
+        "rounds": 2,
+        "avg_score": 72.5,
+        "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "avg_to_par": 0.5,
+        "to_par_rounds": 2,
+        "practice_left_out": 0,
+        "nine_holes_left_out": 0
+       },
+       {
+        "name": "Ethan Park",
+        "rounds": 2,
+        "avg_score": 73,
+        "player_id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "avg_to_par": 1,
+        "to_par_rounds": 2,
+        "practice_left_out": 0,
+        "nine_holes_left_out": 0
+       },
+       {
+        "name": "Mason Rivers",
+        "rounds": 2,
+        "avg_score": 72,
+        "player_id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "avg_to_par": 0,
+        "to_par_rounds": 2,
+        "practice_left_out": 0,
+        "nine_holes_left_out": 0
+       },
+       {
+        "name": "Jackson Hale",
+        "rounds": 2,
+        "avg_score": 73.5,
+        "player_id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "avg_to_par": 1.5,
+        "to_par_rounds": 2,
+        "practice_left_out": 0,
+        "nine_holes_left_out": 0
+       },
+       {
+        "name": "Audit Testplayer",
+        "rounds": 0,
+        "avg_score": null,
+        "player_id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+        "avg_to_par": null,
+        "to_par_rounds": 0,
+        "practice_left_out": 0,
+        "nine_holes_left_out": 0
+       },
+       {
+        "name": "Dylan Brooks",
+        "rounds": 2,
+        "avg_score": 75,
+        "player_id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "avg_to_par": 3,
+        "to_par_rounds": 2,
+        "practice_left_out": 0,
+        "nine_holes_left_out": 0
+       },
+       {
+        "name": "Tyler Hayes",
+        "rounds": 2,
+        "avg_score": 77.5,
+        "player_id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "avg_to_par": 5.5,
+        "to_par_rounds": 2,
+        "practice_left_out": 0,
+        "nine_holes_left_out": 0
+       }
+      ],
+      "season_start": "2026-08-01"
+     },
+     "series": [],
+     "summary": "Demo University Golf: 25 counted rounds this season, 7 players of 8.",
+     "coverage": "partial",
+     "measurements": [
+      {
+       "unit": "score",
+       "as_of": "2026-11-08T05:05:30.331Z",
+       "value": 75.76,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "mean_total_score_full_18_countable_rounds_no_practice",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "season_scoring_average",
+       "window_end": "2026-11-08",
+       "denominator": null,
+       "sample_size": 25,
+       "sample_unit": "rounds",
+       "metric_label": "Scoring average, this season",
+       "window_start": "2026-08-01",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-11-08T05:05:30.331Z",
+       "value": 3.92,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "mean_score_to_par_full_18_countable_rounds_no_practice",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "season_scoring_to_par",
+       "window_end": "2026-11-08",
+       "denominator": null,
+       "sample_size": 25,
+       "sample_unit": "rounds",
+       "metric_label": "Scoring to par, this season",
+       "window_start": "2026-08-01",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-11-08T05:05:30.331Z",
+       "value": 77.46,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "mean_total_score_full_18_countable_rounds_no_practice",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "season_scoring_average",
+       "window_end": "2026-11-08",
+       "denominator": null,
+       "sample_size": 13,
+       "sample_unit": "rounds",
+       "metric_label": "Scoring average, this season",
+       "window_start": "2026-08-01",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-11-08T05:05:30.331Z",
+       "value": 5.77,
+       "entity": {
+        "id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "kind": "player",
+        "label": "Cole Bennett"
+       },
+       "method": "mean_score_to_par_full_18_countable_rounds_no_practice",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "season_scoring_to_par",
+       "window_end": "2026-11-08",
+       "denominator": null,
+       "sample_size": 13,
+       "sample_unit": "rounds",
+       "metric_label": "Scoring to par, this season",
+       "window_start": "2026-08-01",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-11-08T05:05:30.331Z",
+       "value": 72.5,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "mean_total_score_full_18_countable_rounds_no_practice",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "season_scoring_average",
+       "window_end": "2026-11-08",
+       "denominator": null,
+       "sample_size": 2,
+       "sample_unit": "rounds",
+       "metric_label": "Scoring average, this season",
+       "window_start": "2026-08-01",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-11-08T05:05:30.331Z",
+       "value": 0.5,
+       "entity": {
+        "id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "kind": "player",
+        "label": "Owen Carter"
+       },
+       "method": "mean_score_to_par_full_18_countable_rounds_no_practice",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "season_scoring_to_par",
+       "window_end": "2026-11-08",
+       "denominator": null,
+       "sample_size": 2,
+       "sample_unit": "rounds",
+       "metric_label": "Scoring to par, this season",
+       "window_start": "2026-08-01",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-11-08T05:05:30.331Z",
+       "value": 73,
+       "entity": {
+        "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "kind": "player",
+        "label": "Ethan Park"
+       },
+       "method": "mean_total_score_full_18_countable_rounds_no_practice",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "season_scoring_average",
+       "window_end": "2026-11-08",
+       "denominator": null,
+       "sample_size": 2,
+       "sample_unit": "rounds",
+       "metric_label": "Scoring average, this season",
+       "window_start": "2026-08-01",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-11-08T05:05:30.331Z",
+       "value": 1,
+       "entity": {
+        "id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "kind": "player",
+        "label": "Ethan Park"
+       },
+       "method": "mean_score_to_par_full_18_countable_rounds_no_practice",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "season_scoring_to_par",
+       "window_end": "2026-11-08",
+       "denominator": null,
+       "sample_size": 2,
+       "sample_unit": "rounds",
+       "metric_label": "Scoring to par, this season",
+       "window_start": "2026-08-01",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-11-08T05:05:30.331Z",
+       "value": 72,
+       "entity": {
+        "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "kind": "player",
+        "label": "Mason Rivers"
+       },
+       "method": "mean_total_score_full_18_countable_rounds_no_practice",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "season_scoring_average",
+       "window_end": "2026-11-08",
+       "denominator": null,
+       "sample_size": 2,
+       "sample_unit": "rounds",
+       "metric_label": "Scoring average, this season",
+       "window_start": "2026-08-01",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-11-08T05:05:30.331Z",
+       "value": 0,
+       "entity": {
+        "id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "kind": "player",
+        "label": "Mason Rivers"
+       },
+       "method": "mean_score_to_par_full_18_countable_rounds_no_practice",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "season_scoring_to_par",
+       "window_end": "2026-11-08",
+       "denominator": null,
+       "sample_size": 2,
+       "sample_unit": "rounds",
+       "metric_label": "Scoring to par, this season",
+       "window_start": "2026-08-01",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-11-08T05:05:30.331Z",
+       "value": 73.5,
+       "entity": {
+        "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "kind": "player",
+        "label": "Jackson Hale"
+       },
+       "method": "mean_total_score_full_18_countable_rounds_no_practice",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "season_scoring_average",
+       "window_end": "2026-11-08",
+       "denominator": null,
+       "sample_size": 2,
+       "sample_unit": "rounds",
+       "metric_label": "Scoring average, this season",
+       "window_start": "2026-08-01",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-11-08T05:05:30.331Z",
+       "value": 1.5,
+       "entity": {
+        "id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "kind": "player",
+        "label": "Jackson Hale"
+       },
+       "method": "mean_score_to_par_full_18_countable_rounds_no_practice",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "season_scoring_to_par",
+       "window_end": "2026-11-08",
+       "denominator": null,
+       "sample_size": 2,
+       "sample_unit": "rounds",
+       "metric_label": "Scoring to par, this season",
+       "window_start": "2026-08-01",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-11-08T05:05:30.331Z",
+       "value": 75,
+       "entity": {
+        "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "kind": "player",
+        "label": "Dylan Brooks"
+       },
+       "method": "mean_total_score_full_18_countable_rounds_no_practice",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "season_scoring_average",
+       "window_end": "2026-11-08",
+       "denominator": null,
+       "sample_size": 2,
+       "sample_unit": "rounds",
+       "metric_label": "Scoring average, this season",
+       "window_start": "2026-08-01",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-11-08T05:05:30.331Z",
+       "value": 3,
+       "entity": {
+        "id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "kind": "player",
+        "label": "Dylan Brooks"
+       },
+       "method": "mean_score_to_par_full_18_countable_rounds_no_practice",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "season_scoring_to_par",
+       "window_end": "2026-11-08",
+       "denominator": null,
+       "sample_size": 2,
+       "sample_unit": "rounds",
+       "metric_label": "Scoring to par, this season",
+       "window_start": "2026-08-01",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-11-08T05:05:30.331Z",
+       "value": 77.5,
+       "entity": {
+        "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "kind": "player",
+        "label": "Tyler Hayes"
+       },
+       "method": "mean_total_score_full_18_countable_rounds_no_practice",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "season_scoring_average",
+       "window_end": "2026-11-08",
+       "denominator": null,
+       "sample_size": 2,
+       "sample_unit": "rounds",
+       "metric_label": "Scoring average, this season",
+       "window_start": "2026-08-01",
+       "coverage_note": null
+      },
+      {
+       "unit": "score",
+       "as_of": "2026-11-08T05:05:30.331Z",
+       "value": 5.5,
+       "entity": {
+        "id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "kind": "player",
+        "label": "Tyler Hayes"
+       },
+       "method": "mean_score_to_par_full_18_countable_rounds_no_practice",
+       "source": "rounds",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": "lower_better",
+       "metric_id": "season_scoring_to_par",
+       "window_end": "2026-11-08",
+       "denominator": null,
+       "sample_size": 2,
+       "sample_unit": "rounds",
+       "metric_label": "Scoring to par, this season",
+       "window_start": "2026-08-01",
+       "coverage_note": null
+      }
+     ],
+     "window_label": "this season",
+     "coverage_note": "9 practice rounds left out. No counted rounds for Audit Testplayer."
+    }
+   },
+   {
+    "tool": "get_team_overview",
+    "ref": "e2",
+    "envelope": {
+     "as_of": "2026-11-08T05:05:30.344Z",
+     "detail": {
+      "players": [
+       {
+        "name": "Cole Bennett",
+        "player_id": "49ffe06d-9b22-4f2f-8c69-f56badbbde6b",
+        "last_round_date": "2026-10-21",
+        "rounds_recorded": 37,
+        "last_round_holes": 18,
+        "last_round_to_par": 2
+       },
+       {
+        "name": "Owen Carter",
+        "player_id": "8091da4b-dbc9-47f3-80f1-be37c96b2c91",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 14,
+        "last_round_holes": 18,
+        "last_round_to_par": -1
+       },
+       {
+        "name": "Ethan Park",
+        "player_id": "8e382583-2ce6-4d15-8568-5088cf02dbd1",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 15,
+        "last_round_holes": 18,
+        "last_round_to_par": 1
+       },
+       {
+        "name": "Mason Rivers",
+        "player_id": "9458ca63-9dbe-4020-ab13-9e2b70f70c80",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 14,
+        "last_round_holes": 18,
+        "last_round_to_par": 0
+       },
+       {
+        "name": "Jackson Hale",
+        "player_id": "b40a650a-bce0-4e46-87cd-365b0256ee21",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 17,
+        "last_round_holes": 18,
+        "last_round_to_par": 0
+       },
+       {
+        "name": "Audit Testplayer",
+        "player_id": "b6b87c4d-0673-4166-9f8c-44e60936a034",
+        "last_round_date": null,
+        "rounds_recorded": 0,
+        "last_round_holes": null,
+        "last_round_to_par": null
+       },
+       {
+        "name": "Dylan Brooks",
+        "player_id": "ed1ff03e-b33a-4a80-891e-09685b7db3d0",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 14,
+        "last_round_holes": 18,
+        "last_round_to_par": 2
+       },
+       {
+        "name": "Tyler Hayes",
+        "player_id": "faced578-b271-416f-b757-ac3aee5bd9e5",
+        "last_round_date": "2026-09-26",
+        "rounds_recorded": 13,
+        "last_round_holes": 18,
+        "last_round_to_par": 5
+       }
+      ],
+      "timezone": "America/New_York",
+      "team_name": "Demo University Golf",
+      "latest_round_date": "2026-10-21",
+      "profiles_resolved": 8,
+      "active_roster_count": 8,
+      "players_with_rounds": 7,
+      "unresolved_player_ids": []
+     },
+     "series": [],
+     "summary": "Demo University Golf has 8 active players.",
+     "coverage": "partial",
+     "measurements": [
+      {
+       "unit": "count",
+       "as_of": "2026-11-08T05:05:30.344Z",
+       "value": 8,
+       "entity": {
+        "id": "6ecdd1a6-63fe-4beb-b094-00118f334163",
+        "kind": "team",
+        "label": "Demo University Golf"
+       },
+       "method": "count_active_team_members",
+       "source": "roster",
+       "coverage": "complete",
+       "benchmark": null,
+       "direction": null,
+       "metric_id": "active_roster_count",
+       "window_end": null,
+       "denominator": null,
+       "sample_size": 8,
+       "sample_unit": "players",
+       "metric_label": "Active roster",
+       "window_start": null,
+       "coverage_note": null
+      }
+     ],
+     "coverage_note": "1 player has no recorded rounds (Audit Testplayer)"
+    }
+   }
+  ],
+  "recorded": {
+   "outcome": "rejected",
+   "reason": "claim_validation_failed",
+   "unmatchedTokens": [
+    "season_scoring_to_par:unsupported_small_number",
+    "season_scoring_to_par:unsupported_small_number"
+   ],
+   "misattributedTokens": []
+  }
+ }
+}

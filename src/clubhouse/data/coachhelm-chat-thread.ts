@@ -1,13 +1,17 @@
+import { MODEL_FACING_NOTE, rowsCaption } from '@/lib/coachhelm/v3/chat/rows-caption';
 import { artifactsOf, type AskArtifact } from '../screens/coachhelm/chat/parts/artifacts';
 import type { UIMessage } from 'ai';
 import type { ReadPictureData } from '../screens/coachhelm/plan/ReadPicture';
 import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { Measurement, MeasurementSeries, ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
+import { WIDE_READ_CHIPS } from '@/lib/coachhelm/v3/chat/wide-read-names';
 import { ValidatedComposition } from '@/lib/coachhelm/v3/chat/visuals/composition';
 import { ValidatedVisualArtifact } from '@/lib/coachhelm/v3/chat/visuals/schema';
 import { changeTone, formatFixed, formatSG, formatToPar, MINUS, NO_DATA } from '../lib/format';
 import { formatWallClock, zoneWallParts } from '../lib/dates';
 import { plural } from '../lib/plural';
+import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
+import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 
 /**
  * Ask CoachHelm, the conversation (Clubhouse P013): what a thread of AI SDK message parts means on
@@ -322,6 +326,17 @@ export function describeWork(steps: AskStep[], envelopes: ToolEnvelope[]): strin
   return `Read ${bits.join(' across ')}`;
 }
 
+/**
+ * A player's own next steps: read-only and about their own game, never a write (focus areas, practices, reminders) and never
+ * a teammate comparison, which the player Ask can't do (01-BRIEF decision 1: stats and visuals only, Tour and team averages).
+ */
+export function playerFollowUps(followUps: readonly string[], envelopes: ToolEnvelope[]): string[] {
+  if (followUps.length === 0) return [];
+  const putting = envelopes.some((e) => e.coverage !== 'unavailable' && e.measurements.some((m) => /putt/i.test(m.metric_id)));
+  const out = putting ? ['Break my putting down by distance', 'How does my putting compare with the Tour?'] : ['How does this compare with the Tour?', 'How has this changed over my last 10 rounds?'];
+  return out.slice(0, 3);
+}
+
 /** At most three next steps, each one only when the evidence supports it: a row of always-there buttons teaches people to stop reading them. */
 export function followUpsFor(envelopes: ToolEnvelope[]): string[] {
   const out: string[] = [];
@@ -344,6 +359,18 @@ export function followUpsFor(envelopes: ToolEnvelope[]): string[] {
 /** The server's own sentence for a rejected turn (`STREAM_INCOMPLETE_NOTE`, src/lib/coachhelm/v3/chat/verdict.ts), for a
  * verdict that arrives without it: word for word, straight apostrophes included, as what the server sends is shown as sent. */
 export const REJECTED_TURN_NOTE = "This answer didn't finish coming through, so it isn't being shown. Please ask again.";
+
+/**
+ * Whether the last turn ended with nothing to show: the question is there and no answer followed (the stream died, a timeout or a reload cut it
+ * before any text was stored), or the answer holds only progress steps. The thread then says so and offers Retry, never just the question.
+ */
+export function answerNeverCame(messages: readonly UIMessage[]): boolean {
+  const last = messages[messages.length - 1];
+  if (!last) return false;
+  if (last.role === 'user') return Boolean(userText(last));
+  if (last.role !== 'assistant') return false;
+  return partsOf(last).every((p) => p.type === 'data-progress' || p.type === 'step-start');
+}
 
 /** Bold markers and list markers out, for Copy. */
 export function plainText(text: string): string {
@@ -373,6 +400,25 @@ const READ_NAME: Record<string, string> = {
   get_upcoming_events: 'Schedule',
   get_open_tasks: 'Tasks',
   get_team_travel: 'Travel',
+  get_season_scoring: 'Season scoring',
+  get_shot_pattern: 'Shots',
+  get_proximity_by_band: 'Proximity',
+  get_round_detail: 'Round',
+  get_root_causes: 'Causes',
+  get_calendar: 'Calendar',
+  get_course: 'Course',
+  compare_seasons: 'Seasons',
+  get_team_patterns: 'Team patterns',
+  get_practice: 'Practice',
+  get_documents: 'Documents',
+  get_class_times: 'Classes',
+  get_drill_bank: 'Drills',
+  get_plan_format: 'Plan format',
+  get_team_strokes_gained: 'Strokes gained',
+  get_team_putting_profile: 'Team putts',
+  get_my_reads: 'Your reads',
+  summarise_data: 'Worked out the figures',
+  ...WIDE_READ_CHIPS,
 };
 
 /** What a read's figures rest on: its first measurement, or its first series (a trend's envelope carries only that). */
@@ -390,6 +436,17 @@ function windowWords(m: Pick<Measurement, 'window_start' | 'window_end' | 'sampl
   return Number.isFinite(days) && days > 0 ? `${days} days` : null;
 }
 
+/** "Jun 9–Sep 26": the dates a read covers, with the year when the window crosses one. Null when the read names no window. */
+export function windowDates(m: Pick<Measurement, 'window_start' | 'window_end'> | undefined): string | null {
+  const a = fmtDay(m?.window_start);
+  const b = fmtDay(m?.window_end);
+  if (!a || !b) return null;
+  const yearA = m?.window_start?.slice(0, 4);
+  const yearB = m?.window_end?.slice(0, 4);
+  if (a === b) return a;
+  return yearA !== yearB ? `${a}, ${yearA}–${b}, ${yearB}` : `${a}–${b}`;
+}
+
 function turnReadsOf(parts: ReadonlyArray<Record<string, unknown> & { type: string }>): AskTurnRead[] {
   const out: AskTurnRead[] = [];
   for (const p of parts) {
@@ -398,7 +455,8 @@ function turnReadsOf(parts: ReadonlyArray<Record<string, unknown> & { type: stri
     if (!d?.envelope || !d.ref) continue;
     const tool = d.tool ?? '';
     const name = READ_NAME[tool] ?? 'Read';
-    const win = windowWords(readBasis(d.envelope));
+    // The dates the read covers, never a count of days ("By player · 111 days" said nothing a coach could check); no window, just the read's name.
+    const win = windowDates(readBasis(d.envelope));
     out.push({ ref: d.ref, tool, name, chip: win ? `${name} · ${win}` : name, envelope: d.envelope });
   }
   return out;
@@ -411,7 +469,7 @@ export function readRows(read: AskTurnRead): Array<{ label: string; value: strin
   const line = sourceLine(m);
   return [
     ...(m.sample_size > 0 ? [{ label: 'Sample', value: sampleWords(m.sample_size, m.sample_unit) }] : []),
-    ...(windowWords(m) ? [{ label: 'Window', value: windowWords(m) as string }] : []),
+    ...(windowDates(m) ? [{ label: 'Window', value: windowDates(m) as string }] : windowWords(m) ? [{ label: 'Window', value: windowWords(m) as string }] : []),
     ...(line && !m.sample_size && !windowWords(m) ? [{ label: 'Source', value: line }] : []),
     ...(fmtDay(m.as_of) ? [{ label: 'Computed', value: fmtDay(m.as_of) as string }] : []),
   ];
@@ -424,13 +482,84 @@ function pendingVisualOf(parts: ReadonlyArray<Record<string, unknown> & { type: 
   return Array.isArray(blocks) ? blocks.map((b) => String(b?.type ?? '')).filter(Boolean) : [];
 }
 
+/** The rounds a read lists, as "player|day": a recent-rounds list, or rows of a records read that carry a round date and a player. */
+function roundKeys(envelope: ToolEnvelope): Set<string> {
+  const d = envelope.detail as { kind?: unknown; player?: { player_id?: unknown }; rounds?: unknown; rows?: unknown } | undefined;
+  const keys = new Set<string>();
+  if (Array.isArray(d?.rounds) && typeof d?.player?.player_id === 'string') {
+    for (const r of d.rounds as Array<{ date?: unknown }>) if (typeof r?.date === 'string') keys.add(`${d.player.player_id}|${r.date.slice(0, 10)}`);
+  } else if (d?.kind === 'team_data' && Array.isArray(d.rows)) {
+    for (const r of d.rows as Array<{ round_date?: unknown; player_id?: unknown }>) if (typeof r?.round_date === 'string' && typeof r.player_id === 'string') keys.add(`${r.player_id}|${r.round_date.slice(0, 10)}`);
+  }
+  return keys;
+}
+
+/** How much of what a coach asks a rounds list for it holds: three-putts, then putts, then the other columns. */
+function roundsListScore(envelope: ToolEnvelope): number {
+  const d = envelope.detail as { rounds?: unknown; rows?: unknown } | undefined;
+  const rows = (Array.isArray(d?.rounds) ? d.rounds : Array.isArray(d?.rows) ? d.rows : []) as Array<Record<string, unknown>>;
+  const has = (k: string) => rows.some((r) => typeof r[k] === 'number' && (r[k] as number) > 0);
+  return (has('three_putts') ? 100 : 0) + (has('total_putts') || has('putts') ? 10 : 0) + new Set(rows.flatMap((r) => Object.keys(r))).size / 100;
+}
+
 /** One assistant message as the thread draws it. */
 export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; busy: boolean }): AskAssistantTurn {
   const parts = partsOf(message);
+  // A read that failed and was made again with success is the model's own recovery: the coach is not shown the failure (its field names mean
+  // nothing to them). It stays in the steps, worded plainly. A failure nothing recovered from is still shown, as a plain sentence.
+  const evidence = parts.flatMap((p, i) => {
+    if (p.type !== 'data-evidence') return [];
+    const d = dataOf<{ tool?: string; envelope?: ToolEnvelope; ref?: string }>(p);
+    return d?.envelope ? [{ i, tool: d.tool ?? '', envelope: d.envelope, ref: d.ref ?? null }] : [];
+  });
+  const failed = (e: ToolEnvelope) => e.coverage === 'unavailable';
+  const recovered = new Set<number>();
+  const retriedTools = new Map<string, number>();
+  for (const ev of evidence) {
+    if (failed(ev.envelope) && evidence.some((later) => later.i > ev.i && later.tool === ev.tool && !failed(later.envelope))) {
+      recovered.add(ev.i);
+      retriedTools.set(ev.tool, (retriedTools.get(ev.tool) ?? 0) + 1);
+    }
+  }
+  // Once the worked-out result exists, the raw reads it was built from are reads, not tables above the answer. A summary names the reads it took
+  // figures from (`detail.sources`, by evidence ref): exactly those fold, and any other read stays drawn. One that names none (an older turn)
+  // folds every record list read before it.
+  const collapsed = new Set<number>();
+  for (const sum of evidence.filter((ev) => ev.tool === 'summarise_data' && !failed(ev.envelope))) {
+    const named = (sum.envelope.detail as { sources?: unknown } | undefined)?.sources;
+    const refs = Array.isArray(named) ? new Set(named.filter((r): r is string => typeof r === 'string')) : null;
+    for (const ev of evidence) {
+      if (ev.i >= sum.i || failed(ev.envelope)) continue;
+      if (refs ? ev.ref != null && refs.has(ev.ref) : (ev.envelope.detail as { kind?: unknown } | undefined)?.kind === 'team_data') collapsed.add(ev.i);
+    }
+  }
+  // A record list longer than the table can draw is the model's working set, not the answer: the table would show the first few of them while the
+  // answer is about some others (staging, 2026-11-08: 8 of 26 rounds drawn under an answer about 2). It stays a read in the disclosure.
+  for (const ev of evidence) {
+    const d = ev.envelope.detail as { kind?: unknown; rows?: unknown } | undefined;
+    if (!failed(ev.envelope) && d?.kind === 'team_data' && Array.isArray(d.rows) && d.rows.length > TABLE_ROWS) collapsed.add(ev.i);
+  }
+  // Two reads that list the same player's same rounds are one table: the one with the most of the figures a coach asks for (three-putts, then putts).
+  const shadowed = new Set<number>();
+  const lists = evidence.filter((ev) => !failed(ev.envelope) && !recovered.has(ev.i) && !collapsed.has(ev.i)).map((ev) => ({ ev, keys: roundKeys(ev.envelope), score: roundsListScore(ev.envelope) })).filter((l) => l.keys.size > 0);
+  for (const [n, a] of lists.entries()) {
+    for (const b of lists.slice(n + 1)) {
+      if (shadowed.has(a.ev.i) || shadowed.has(b.ev.i)) continue;
+      const shared = [...a.keys].filter((k) => b.keys.has(k)).length;
+      if (shared * 2 < Math.min(a.keys.size, b.keys.size)) continue;
+      shadowed.add((a.score > b.score ? b : a).ev.i);
+    }
+  }
+  const retriedWords = (tool: string) => (tool === 'summarise_data' ? 'One calculation was retried' : 'One read was retried');
   const steps: AskStep[] = parts
     .filter((p) => p.type === 'data-progress')
     .map((p, i) => {
-      const d = dataOf<{ label?: string; state?: AskStep['state']; done?: string; detail?: string; picture?: ReadPictureData }>(p);
+      const d = dataOf<{ label?: string; tool?: string; state?: AskStep['state']; done?: string; detail?: string; picture?: ReadPictureData }>(p);
+      const left = d?.tool ? (retriedTools.get(d.tool) ?? 0) : 0;
+      if (d?.state === 'failed' && d.tool && left > 0) {
+        retriedTools.set(d.tool, left - 1);
+        return { id: String(p.id ?? `step-${i}`), label: stepLabel(d.label), state: 'done' as const, done: retriedWords(d.tool) };
+      }
       return { id: String(p.id ?? `step-${i}`), label: stepLabel(d?.label), ...(d?.state ? { state: d.state } : {}), ...(d?.done ? { done: stepLabel(d.done) } : {}), ...(d?.picture ? { picture: d.picture } : {}), ...(d?.detail ? { detail: d.detail } : {}) };
     });
   const envelopes = parts
@@ -438,6 +567,7 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
     .map((p) => dataOf<{ envelope?: ToolEnvelope }>(p)?.envelope)
     .filter((e): e is ToolEnvelope => Boolean(e));
   const paired = pairProposals(parts, ctx);
+  const emptySeen = new Set<string>();
   const active = ctx.isLast && ctx.busy;
   // A validated visual stands in for the generic blocks of the reads it was built from: the same figures drawn twice is noise.
   const artifacts = new Map<string, ValidatedVisualArtifact>();
@@ -453,7 +583,24 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
     const parsed = ValidatedComposition.safeParse(dataOf<unknown>(p));
     if (parsed.success) compositions.set(String(p.id ?? `c-${i}`), parsed.data);
   });
+  // A model's visual that plots the same metric for the same subjects as a read's own chart stands in for it (the title and the point are the
+  // visual's; the same bars twice are noise). A figure the read could not give (no value) is not a subject the visual could plot.
+  const plotted = new Set<string>();
+  for (const c of compositions.values()) {
+    for (const b of c.blocks as Array<{ measurement?: Measurement; measurements?: Measurement[] }>) {
+      for (const m of [...(b.measurement ? [b.measurement] : []), ...(b.measurements ?? [])]) plotted.add(`${m.entity.id}|${m.metric_id}`);
+    }
+  }
+  const drawnByVisual = (e: ToolEnvelope) => {
+    const valued = e.measurements.filter((m) => m.value !== null);
+    return plotted.size > 0 && e.series.length === 0 && valued.length > 0 && valued.every((m) => plotted.has(`${m.entity.id}|${m.metric_id}`));
+  };
   const coveredRefs = new Set([...[...artifacts.values()].flatMap((a) => a.evidenceRefs), ...[...compositions.values()].flatMap((c) => c.evidenceRefs)]);
+  for (const p of parts) {
+    if (p.type !== 'data-evidence') continue;
+    const d = dataOf<{ ref?: string; envelope?: ToolEnvelope }>(p);
+    if (d?.ref && d.envelope && drawnByVisual(d.envelope)) coveredRefs.add(d.ref);
+  }
 
   const actionBlocks = (): AskBlock[] => {
     const out: AskBlock[] = [];
@@ -470,10 +617,12 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
   };
 
   // The checks rejected this turn: one note, and the cards stay (a card is a fact about an action, not a claim the audit judges).
+  // The steps stay too: they say what was read, not what was claimed, and they fold to "N steps · Ns" above the note (design:
+  // staging, 2026-11-07, dropped the whole list when the note replaced the answer).
   const verdict = parts.find((p) => p.type === 'data-grounding-flag' || p.type === 'data-turn-incomplete');
   if (verdict) {
     const note = String(dataOf<{ note?: string }>(verdict)?.note ?? '').trim() || REJECTED_TURN_NOTE;
-    return { role: 'assistant', id: message.id, steps: [], envelopes: [], blocks: actionBlocks(), note, answerText: note, work: null, followUps: [], active };
+    return { role: 'assistant', id: message.id, steps, envelopes: [], blocks: actionBlocks(), note, answerText: note, work: null, followUps: [], active };
   }
 
   const blocks: AskBlock[] = [];
@@ -487,8 +636,22 @@ export function buildAssistantTurn(message: UIMessage, ctx: { isLast: boolean; b
       lead = false;
       texts.push(plainText(text));
     } else if (p.type === 'data-evidence') {
-      const data = dataOf<{ envelope?: ToolEnvelope; ref?: string }>(p);
-      if (data?.envelope && !(data.ref && coveredRefs.has(data.ref))) blocks.push({ kind: 'evidence', key: `e-${String(p.id ?? i)}`, envelope: data.envelope });
+      const data = dataOf<{ tool?: string; envelope?: ToolEnvelope; ref?: string }>(p);
+      if (recovered.has(i) || collapsed.has(i) || shadowed.has(i)) return;
+      if (data?.envelope && data.tool === 'summarise_data' && failed(data.envelope)) {
+        // No field names or row counts for a coach: the calculation did not finish.
+        blocks.push({ kind: 'evidence', key: `e-${String(p.id ?? i)}`, envelope: { ...data.envelope, summary: 'Could not work out the figures.', coverage_note: 'That calculation could not be completed.', detail: undefined } });
+        return;
+      }
+      if (data?.envelope && !(data.ref && coveredRefs.has(data.ref))) {
+        // An empty read says so once: a second one with the same words (the same read made twice) adds a card and no information.
+        const note = data.envelope.coverage === 'empty' ? emptyNote(data.envelope) : null;
+        if (note !== null) {
+          if (!note || emptySeen.has(note)) return;
+          emptySeen.add(note);
+        }
+        blocks.push({ kind: 'evidence', key: `e-${String(p.id ?? i)}`, envelope: withWindowFigures(data.envelope, envelopes) });
+      }
     } else if (p.type === 'data-visual-artifact') {
       const artifact = artifacts.get(String(p.id ?? `v-${i}`));
       if (artifact) blocks.push({ kind: 'visual', key: `v-${artifact.artifactId}`, artifact });
@@ -720,7 +883,7 @@ export type AskEvidence =
   | { kind: 'unavailable'; note: string }
   | { kind: 'empty'; note: string }
   | (EvBase & { kind: 'trend'; unit: Measurement['unit']; points: Array<{ label: string; value: number; n: number }>; reference: { label: string; value: number } | null; summary: string; goodDirection: 'up' | 'down' | null; toPar?: boolean })
-  | (EvBase & { kind: 'bars'; rows: Array<{ label: string; pct: number; display: string; of: string | null; tone: 'good' | 'loss' | 'neutral'; highlight?: boolean }> })
+  | (EvBase & { kind: 'bars'; rows: Array<{ label: string; pct: number; /** Where zero sits on the track (percent from the left); a fill runs from it to `pct`. Absent: the fill starts at the left edge. */ zero?: number; display: string; of: string | null; tone: 'good' | 'loss' | 'neutral'; highlight?: boolean; /** Marks on the track: the level's average, and the Tour where it was asked for. */ ticks?: Array<{ at: number; kind: 'level' | 'team' | 'tour'; text: string; /** The tag and value printed under the track: "D1 50%", "Team 33%", "Tour 66%". */ short?: string }> }> })
   | (EvBase & { kind: 'ranking'; rows: AskRankRow[]; signed: boolean })
   | (EvBase & { kind: 'compare'; team: AskTeamTable })
   | (EvBase & { kind: 'legs'; rows: Array<{ label: string; value: number; display: string }>; takeaway: string })
@@ -780,11 +943,30 @@ export interface EvidenceTile {
 /** Fewer points than this is a change, not a trend: drawn as a table. */
 export const MIN_TREND_POINTS = 3;
 
-const benchOf = (b: Measurement['benchmark'] | MeasurementSeries['benchmark'], unit: Measurement['unit']): string | null =>
-  b && !b.omitted_for_cohort ? `${b.source}, ${b.version}: ${formatValue(b.value, unit)}` : null;
+/** "PGA Tour (2024)": a source that already names its year (the standards' "PGA Tour 2024") is not given the version again. */
+export function benchName(source: string, version: string): string {
+  const src = source.trim();
+  const v = version.trim();
+  if (!v) return src;
+  if (!src.includes(v)) return `${src} (${v})`;
+  const bare = src.replace(v, '').replace(/\s+/g, ' ').replace(/[\s,(-]+$/, '').trim();
+  return bare ? `${bare} (${v})` : src;
+}
 
-const partialNote = (e: { coverage: string; coverage_note: string | null }): string | null =>
-  e.coverage === 'partial' && e.coverage_note ? e.coverage_note : null;
+const benchOf = (b: Measurement['benchmark'] | MeasurementSeries['benchmark'], unit: Measurement['unit']): string | null =>
+  b && !b.omitted_for_cohort ? `${benchName(b.source, b.version)}: ${formatValue(b.value, unit)}` : null;
+
+/**
+ * The line under a card when its read was cut short. A coach reads a caption, never the model's note: a note written for the model (it names
+ * columns, says "say so" and "narrow the filters") is replaced by the caption the read's detail yields, and with none it is not drawn.
+ */
+const partialNote = (e: { coverage: string; coverage_note: string | null; detail?: unknown }): string | null => {
+  if (e.coverage !== 'partial') return null;
+  const d = e.detail as { caption?: unknown } | undefined;
+  const caption = rowsCaption(e.detail) ?? (typeof d?.caption === 'string' && d.caption ? d.caption : null);
+  if (caption) return caption;
+  return e.coverage_note && !MODEL_FACING_NOTE.test(e.coverage_note) ? e.coverage_note : null;
+};
 
 /** "of 44", or the sample in words. */
 function ofSample(m: Measurement): string | null {
@@ -826,6 +1008,15 @@ const HEADINGS: Record<string, string> = {
   rsvp_pending_count: 'No reply',
   rsvp_accepted: 'Going',
   rsvp_declined: 'Not going',
+  // A round's columns, short enough for five on a phone.
+  round_date: 'Date',
+  course_name: 'Course',
+  total_score: 'Score',
+  score_to_par: 'To par',
+  total_putts: 'Putts',
+  three_putts: '3-putts',
+  total_gir: 'GIR',
+  total_penalties: 'Penalties',
 };
 
 /** A column heading from a key: "target_value" is "Target value", "requires_rsvp" is "RSVP required". */
@@ -868,6 +1059,59 @@ export function humanCell(v: string | number | boolean, timezone?: string | null
  * events...): the fallback for an evidence kind this screen has no chart for. Ids and raw
  * timestamps are left out; at most four columns and eight rows.
  */
+/**
+ * A table drawn without being asked for has to fit a phone (393 px, less the page gutters) without a sideways scroll or a clipped column:
+ * columns are dropped from the right until they fit, and a column that cannot is not drawn. A column is estimated at its longest cell (a long
+ * cell wraps, so it counts at most 18 characters) at 6 px a character plus 12 px of padding.
+ */
+export const PHONE_TABLE_PX = 361;
+export function fitToPhone(table: AskTable | null): AskTable | null {
+  if (!table) return null;
+  const wide = (i: number) => Math.min(18, Math.max(table.columns[i]?.length ?? 0, ...table.rows.map((r) => (r[i] ?? '').length))) * 6 + 12;
+  let n = table.columns.length;
+  while (n > 0 && Array.from({ length: n }, (_, i) => wide(i)).reduce((a, b) => a + b, 0) > PHONE_TABLE_PX) n -= 1;
+  return n < 1 ? null : { ...table, columns: table.columns.slice(0, n), rows: table.rows.map((r) => r.slice(0, n)) };
+}
+
+/**
+ * Fields the tool keeps for itself: who set a goal, where a figure came from, which metric a row is about. They are not for a coach to read.
+ */
+/** The rows a record table draws. */
+const TABLE_ROWS = 8;
+/** A recent-rounds table draws every round the read lists (the read's own cap). */
+const ROUNDS_TABLE_ROWS = 20;
+const INTERNAL_COLUMN = /^(?:set_by|source|origin|method|metric|metric_id|record_type|visibility|version)$/;
+
+/**
+ * The order a generic record table lists its fields in. A stored turn comes back from a jsonb column, which hands an object's keys back
+ * shortest first (not in the order the tool wrote them), so the live table and the reloaded one disagreed. Fields are read by a fixed
+ * priority instead, so both paths draw the same columns in the same order:
+ *   1. who or what the row is, and when (player, title, date),
+ *   2. the figure the question asked for: any field that is not one of the generic ones (three-putts, putts, a make rate),
+ *   3. where and how it went (course, location, score),
+ *   4. the plain labels last (status, round type, hole count): never what a table is picked for.
+ * Within a step, jsonb's own order breaks ties.
+ */
+const COLUMNS_WHO_WHEN = ['player', 'name', 'title', 'category', 'event_type', 'kind', 'state', 'round_date', 'date', 'day', 'starts_at', 'start_time', 'start_date', 'ends_at', 'end_time', 'end_date', 'due_date', 'target_date'];
+const COLUMNS_WHERE_HOW = ['course_name', 'location', 'total_score', 'score_to_par'];
+const COLUMNS_LABELS = ['status', 'priority', 'round_type', 'holes_played', 'type'];
+const jsonbOrder = (a: string, b: string) => a.length - b.length || (a < b ? -1 : a > b ? 1 : 0);
+function columnRank(k: string): [number, number] {
+  let i = COLUMNS_WHO_WHEN.indexOf(k);
+  if (i !== -1) return [0, i];
+  i = COLUMNS_WHERE_HOW.indexOf(k);
+  if (i !== -1) return [2, i];
+  i = COLUMNS_LABELS.indexOf(k);
+  return i !== -1 ? [3, i] : [1, 0];
+}
+const columnOrder = (a: string, b: string) => {
+  const [ca, ia] = columnRank(a);
+  const [cb, ib] = columnRank(b);
+  return ca - cb || ia - ib || jsonbOrder(a, b);
+};
+/** How many columns a generic record table starts from; `fitToPhone` then drops the rightmost until it fits 393 px. */
+const TABLE_COLUMNS = 5;
+
 export function detailTable(detail: unknown, caption: string): AskTable | null {
   if (!detail || typeof detail !== 'object') return null;
   const lists = Object.values(detail as Record<string, unknown>).filter((v): v is Array<Record<string, unknown>> => Array.isArray(v) && v.length > 0 && v.every((r) => r && typeof r === 'object' && !Array.isArray(r)));
@@ -876,11 +1120,74 @@ export function detailTable(detail: unknown, caption: string): AskTable | null {
   const timezone = textOf((detail as Record<string, unknown>).timezone);
   // A start and end time say when; ids, record stamps and a flag that is the same on every row say nothing.
   const keys = Object.keys(rows[0] ?? {})
-    .filter((k) => !/(^id$|_id$|^type$|^created_at$|^updated_at$|^timezone$)/.test(k) && rows.some((r) => isPlain(r[k]) && r[k] !== ''))
+    .filter((k) => !/(^id$|_id$|^type$|^created_at$|^updated_at$|^timezone$)/.test(k) && !INTERNAL_COLUMN.test(k) && rows.some((r) => isPlain(r[k]) && r[k] !== ''))
     .filter((k) => !(rows.every((r) => typeof r[k] === 'boolean') && rows.every((r) => r[k] === false)))
-    .slice(0, 4);
+    .sort(columnOrder)
+    .slice(0, TABLE_COLUMNS);
   if (keys.length === 0) return null;
-  return { caption, columns: keys.map(headingOf), rows: rows.slice(0, 8).map((r) => keys.map((k) => (isPlain(r[k]) && r[k] !== '' ? humanCell(r[k] as string | number | boolean, timezone) : NO_DATA))) };
+  // A read that carries the unit of its columns (query_team_data) puts it in the heading: "Approach proximity (ft)", never a bare 15.3.
+  const units = (detail as { units?: Record<string, string> }).units ?? {};
+  const unitWord: Record<string, string> = { feet: 'ft', yards: 'yd', percent: '%' };
+  const heading = (k: string) => (unitWord[units[k] ?? ''] ? `${headingOf(k)} (${unitWord[units[k] as string]})` : headingOf(k));
+  return fitToPhone({
+    caption,
+    columns: keys.map(heading),
+    rows: rows.slice(0, TABLE_ROWS).map((r) => keys.map((k) => puttCell(r, k) ?? (isPlain(r[k]) && r[k] !== '' ? humanCell(r[k] as string | number | boolean, timezone) : NO_DATA))),
+  });
+}
+
+/**
+ * Putts and three-putts of a round that has none recorded. A round still being played has no putt count yet, and a stat line with no putts holds
+ * 0, which is "not recorded" and never a round holed in no putts (`cachedPutts`): the cell says "In progress", or is empty, never "0".
+ * Undefined for any other column, or a figure that is a real count.
+ */
+function puttCell(r: Record<string, unknown>, k: string): string | undefined {
+  if (k !== 'total_putts' && k !== 'three_putts' && k !== 'putts') return undefined;
+  if (/^in[ _-]?progress$/i.test(String(r.status ?? ''))) return 'In progress';
+  const none = k === 'three_putts' ? r.total_putts === 0 : r[k] === 0;
+  return none ? formatValue(null, 'count') : undefined;
+}
+
+/**
+ * The team's goals (`get_goals`: `detail.goals`) as Player, Title, Category, State, in that order whether the turn is live or read back from
+ * storage. A column no goal has a value for is left out; the tool's internal fields (who set it, the metric id) are never columns.
+ */
+export function goalsTable(detail: unknown, caption: string): AskTable | null {
+  const goals = (detail as { goals?: unknown } | null | undefined)?.goals;
+  if (!Array.isArray(goals) || goals.length === 0) return null;
+  const list = goals.filter((g): g is Record<string, unknown> => !!g && typeof g === 'object');
+  const columns: Array<[string, string]> = [['Player', 'player'], ['Title', 'title'], ['Category', 'category'], ['State', 'state']];
+  const shown = columns.filter(([, k]) => list.some((g) => isPlain(g[k]) && g[k] !== ''));
+  if (shown.length === 0) return null;
+  return fitToPhone({ caption, columns: shown.map(([name]) => name), rows: list.slice(0, 8).map((g) => shown.map(([, k]) => (isPlain(g[k]) && g[k] !== '' ? humanCell(g[k] as string | number | boolean, null) : formatValue(null, 'count')))) });
+}
+
+/**
+ * A list of rounds (`get_recent_rounds`: `detail.rounds`) as a table with the figures the question is about: score, to par, putts and
+ * strokes gained, each straight from the round's own row. The generic record table keeps the first four fields it meets, which for a
+ * round are the date, the course, the type and the holes, and left the score out (staging, 2026-11-08: "What did I shoot in my last
+ * round?"). A column no round has a value for is left out.
+ */
+export function roundsTable(detail: unknown, caption: string): AskTable | null {
+  const rounds = (detail as { rounds?: unknown } | null | undefined)?.rounds;
+  if (!Array.isArray(rounds) || rounds.length === 0) return null;
+  type R = { date?: unknown; course?: unknown; total_score?: unknown; to_par?: unknown; putts?: unknown; three_putts?: unknown; sg_total?: unknown };
+  const list = rounds.filter((r): r is R => !!r && typeof r === 'object');
+  const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+  if (!list.some((r) => num(r.total_score) !== null)) return null;
+  const columns: Array<[string, (r: R) => string | null]> = [
+    ['Date', (r) => (typeof r.date === 'string' ? fmtDay(r.date) : null)],
+    ['Course', (r) => textOf(r.course)],
+    ['Score', (r) => (num(r.total_score) === null ? null : formatValue(num(r.total_score), 'score'))],
+    ['To par', (r) => (num(r.to_par) === null ? null : formatToPar(num(r.to_par) as number, 0))],
+    // A 0 is a round with no putts recorded (a round still being played), never a round holed in none.
+    ['Putts', (r) => (num(r.putts) === null || num(r.putts) === 0 ? null : formatValue(num(r.putts), 'count'))],
+    ['3-putts', (r) => (num(r.three_putts) === null ? null : formatValue(num(r.three_putts), 'count'))],
+    ['Strokes gained', (r) => (num(r.sg_total) === null ? null : formatValue(num(r.sg_total), 'strokes'))],
+  ];
+  const shown = columns.filter(([, cell]) => list.some((r) => cell(r) !== null));
+  // Every round the read lists (at most 20): the title says how many, so the table shows that many.
+  return fitToPhone({ caption, columns: shown.map(([name]) => name), rows: list.slice(0, ROUNDS_TABLE_ROWS).map((r) => shown.map(([, cell]) => cell(r) ?? formatValue(null, 'count'))) });
 }
 
 function seriesTable(s: MeasurementSeries): AskTable {
@@ -1047,11 +1354,230 @@ export function teamTable(all: Measurement[]): AskTeamTable {
   return { players, metrics, cells, best, playersAsRows: players.length > metrics.length };
 }
 
+const BENCH_UNIT: Record<string, Measurement['unit']> = { strokes: 'strokes', percent: 'percent', feet: 'feet', count: 'count' };
+
+type RefKind = 'level' | 'team' | 'tour';
+const REF_WORD: Record<RefKind, string> = { level: 'Level', team: 'Team', tour: 'Tour' };
+
+/**
+ * The three references of a figure in words, level first, team second, Tour third, each with where the player sits among them and a missing
+ * one stated: "Level 62% · ahead of 30% of 71 players", "Team: no average yet", "Tour 66%". What the headline chip shows under its verdict.
+ */
+const ordinal = (n: number): string => {
+  const v = n % 100;
+  return `${n}${v >= 11 && v <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[n % 10] ?? 'th'}`;
+};
+
+export function comparisonWords(comparisons: ReadonlyArray<{ kind: RefKind; value: number | null; your_value?: number | null; place_percent?: number | null; place?: number | null; place_of?: number | null; note?: string | null; missing_reason?: string | null }>, unit: Measurement['unit']): string[] {
+  const ordered = (['level', 'team', 'tour'] as const).flatMap((k) => comparisons.filter((c) => c.kind === k));
+  return ordered.map((c) => {
+    if (c.value === null) return `${REF_WORD[c.kind]}: ${c.missing_reason ?? 'not available'}${c.kind === 'team' && c.place != null && c.place_of != null ? ` · ${ordinal(c.place)} of ${c.place_of}` : c.kind === 'level' && c.place_percent != null ? ` · ahead of ${c.place_percent}% of ${c.place_of ?? ''} college players on Helm (all rounds)`.replace(/ {2}/g, ' ') : ''}`;
+    // The team: the rank among the players with a figure over the same window ("6th of 7"). The level: the share of the college players on Helm the
+    // player is ahead of, over all recorded rounds (said so). A team rank never becomes a percent.
+    const place =
+      c.kind === 'team' && c.place != null && c.place_of != null
+        ? ` · ${ordinal(c.place)} of ${c.place_of}`
+        : c.place_percent == null
+          ? ''
+          : c.kind === 'team'
+            ? ` · ahead of ${c.place_percent}% of the team (all rounds)`
+            : ` · ahead of ${c.place_percent}% of ${c.place_of ?? ''} college players on Helm (all rounds)`.replace(/ {2}/g, ' ');
+    // The level is over all recorded rounds: beside it is the player's own all-rounds figure, never the window's.
+    const yours = c.kind === 'level' && typeof c.your_value === 'number' ? ` (you ${formatValue(c.your_value, unit)}, all rounds)` : '';
+    return `${REF_WORD[c.kind]} ${formatValue(c.value, unit)}${yours}${place}`;
+  });
+}
+
+/**
+ * The track's domain: a fill starts at zero, never at a truncated baseline. Rates, distances and counts run 0 to the largest value rounded up
+ * (a rate to at most 100); strokes gained and other signed figures run either side of zero, with the zero rule in the middle.
+ */
+export function zeroBasedDomain(unit: string, values: ReadonlyArray<number | null>, signed: boolean): { min: number; max: number } {
+  const v = values.filter((x): x is number => typeof x === 'number' && Number.isFinite(x));
+  const biggest = Math.max(0, ...v.map(Math.abs));
+  const nice = (x: number): number => {
+    if (x <= 0) return 1;
+    const p = 10 ** Math.floor(Math.log10(x));
+    const n = [1, 1.5, 2, 3, 4, 5, 6, 8, 10].find((c) => c * p >= x - 1e-9) ?? 10;
+    return n * p;
+  };
+  if (signed || v.some((x) => x < 0)) return { min: -nice(biggest), max: nice(biggest) };
+  const max = nice(biggest);
+  return { min: 0, max: unit === 'percent' ? Math.min(100, max) : max };
+}
+const domainPct = (v: number, d: { min: number; max: number }) => Math.max(0, Math.min(100, ((v - d.min) / (d.max - d.min)) * 100));
+
+/** The row label on a phone: a putt band is "5–10 ft makes", not the standards' "Putts Made 5-10 ft". */
+function benchLabel(metricId: string, label: string): string {
+  const m = metricId.match(/^putts_made_(\d+)_(?:(\d+)ft|plus_ft)_pct$/);
+  return m ? (m[2] ? `${m[1]}–${m[2]} ft makes` : `${m[1]}+ ft makes`) : label;
+}
+
+/** The tag printed with a reference's value: "D1", "Team", "Tour". */
+function refTag(kind: RefKind, label?: string): string {
+  if (kind === 'team') return 'Team';
+  if (kind === 'tour') return 'Tour';
+  const d = label?.match(/Division (I{1,3})\b/)?.[1];
+  return d ? `D${d.length}` : 'Level';
+}
+
+/** The standards name a putt band `putts_made_5_10ft_pct`; the putting read names it `putt_make_pct_5-10 ft` (`25+ ft` for the last). Both reduce to `putt510`. */
+function normMetric(id: string): string {
+  const std = id.match(/^putts_made_(\d+)_(?:(\d+)ft|plus_ft)_pct$/);
+  if (std) return `putt${std[1]}${std[2] ?? 'plus'}`;
+  const read = id.match(/^putt_make_pct_(\d+)(?:-(\d+)| ?\+) ?ft$/);
+  if (read) return `putt${read[1]}${read[2] ?? 'plus'}`;
+  return id.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+const METRIC_ALIAS: Record<string, string> = { sgtee: 'sgott', sandsavepct: 'scramblingpctsand', penaltiesperround: 'penaltyrateperround' };
+const sameMetric = (a: string, b: string) => { const x = normMetric(a); const y = normMetric(b); return (METRIC_ALIAS[x] ?? x) === (METRIC_ALIAS[y] ?? y); };
+
+/**
+ * A benchmark read's "you" is the answer's own window when another read in the same turn measured that metric for that player (the standing is
+ * over all recorded rounds, nightly): the row takes the window figure, keeps the standing figure as `standing_value`, and names the window.
+ * Places in the level and the team stay the standing's.
+ */
+export function withWindowFigures(envelope: ToolEnvelope, all: readonly ToolEnvelope[]): ToolEnvelope {
+  const d = envelope.detail as { kind?: string; standing?: { player_id?: string; player?: string; rows?: Array<Record<string, unknown>> } } | undefined;
+  const rows = d?.standing?.rows;
+  if (d?.kind !== 'benchmark_read' || !rows?.length) return envelope;
+  const mine = d.standing?.player === 'You';
+  const next = rows.map((r) => {
+    const id = String(r.metric_id ?? '');
+    // A row the server already read over a window says so itself; another read's figure never replaces it.
+    if (typeof r.window_label === 'string') return r;
+    for (const e of all) {
+      if (e === envelope) continue;
+      const m = e.measurements.find((x) => x.entity.kind === 'player' && (mine || x.entity.id === d.standing?.player_id) && x.value !== null && sameMetric(x.metric_id, id));
+      if (m && m.value !== null) return { ...r, standing_value: r.player_value, player_value: m.value, window_label: (e as { window_label?: string }).window_label ?? null };
+    }
+    return r;
+  });
+  return next.every((r, i) => r === rows[i]) ? envelope : { ...envelope, detail: { ...d, standing: { ...d.standing, rows: next } } };
+}
+
+/**
+ * A benchmark read for one player as a compact figure: a track per metric with the player's value, a tick for the level average, one for the
+ * team average (a player sees the team's, never a teammate) and one for the Tour; a reference with no value is said so under the figure. Nothing
+ * without a standing (a bare table of benchmark values is not a picture of anyone), and at most six metrics.
+ */
+export function benchmarkBlock(envelope: ToolEnvelope): Extract<AskEvidence, { kind: 'bars' }> | null {
+  type Ref = { kind: RefKind; label?: string; value: number | null; your_value?: number | null; place_percent?: number | null; place_of?: number | null; note?: string | null; missing_reason?: string | null };
+  type Row = { metric_id?: string; metric_label?: string; player_value?: number; comparisons?: Ref[]; standing_value?: number; window_label?: string };
+  const d = envelope.detail as { standing?: { player?: string; rows?: Row[] } } | undefined;
+  const num = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+  const rows = (d?.standing?.rows ?? []).filter((r) => num(r.player_value) && r.metric_id && r.metric_id in METRIC_RENDER_CONFIG).slice(0, 6);
+  if (rows.length === 0) return null;
+  const tableRows: string[][] = [];
+  const missing: string[] = [];
+  const windowed: string[] = [];
+  const who0 = d?.standing?.player === 'You' ? 'You' : (d?.standing?.player ?? 'The player');
+  const levelSentences: string[] = [];
+  const out = rows.map((r) => {
+    const cfg = METRIC_RENDER_CONFIG[r.metric_id as MetricId];
+    const unit = BENCH_UNIT[cfg.unit] ?? 'count';
+    const refs = r.comparisons ?? [];
+    const val = (k: RefKind) => refs.find((c) => c.kind === k)?.value ?? null;
+    const you = r.player_value as number;
+    const level = val('level');
+    const scale = zeroBasedDomain(cfg.unit, [you, level, val('team'), val('tour')], cfg.default_scale.min < 0);
+    const fmt = (v: number) => formatValue(v, unit);
+    // The level is over all recorded rounds, so the player's side of it is their all-rounds figure (the standing's), not the window's.
+    const levelRef = refs.find((c) => c.kind === 'level');
+    const youLevel = typeof levelRef?.your_value === 'number' ? levelRef.your_value : you;
+    const better = level === null ? null : cfg.direction === 'higher_better' ? youLevel > level : youLevel < level;
+    const label = benchLabel(r.metric_id as string, (r.metric_label ?? cfg.display_label).replace(/^SG:\s*/, 'SG '));
+    // The standing is over all recorded rounds; when the figure shown is the answer's window, the places still come from the standing.
+    if (num(r.standing_value) && fmt(r.standing_value) !== fmt(you)) windowed.push(r.window_label ?? 'the window');
+    // Plain sentences, one per missing reference: "No college figure for SG Putting." / "No team figure for GIR % (fewer than 5 teammates)."
+    if (levelRef && levelRef.value !== null && typeof levelRef.your_value === 'number') {
+      const ahead = levelRef.place_percent == null ? '' : ` (${who0 === 'You' ? 'you’re ' : ''}ahead of ${levelRef.place_percent}% of ${levelRef.place_of ?? ''} college players on Helm)`.replace(/ {2}/g, ' ');
+      levelSentences.push(`${label}: over all recorded rounds ${who0 === 'You' ? 'you’re' : 'they’re'} at ${fmt(levelRef.your_value)} against ${fmt(levelRef.value)} for ${levelRef.label ?? 'the level'}${ahead}.`);
+    }
+    for (const k of ['level', 'team', 'tour'] as const) {
+      if (val(k) !== null) continue;
+      const reason = (refs.find((c) => c.kind === k)?.missing_reason ?? 'not available').replace(/\.$/, '');
+      const sentence = k === 'level' && reason === 'no college figure' ? `No college figure for ${label}.` : k === 'level' && reason === 'not set' ? 'The team’s level is not set.' : `No ${REF_WORD[k].toLowerCase()} figure for ${label} (${reason}).`;
+      if (!missing.includes(sentence)) missing.push(sentence);
+    }
+    tableRows.push([label, fmt(you), ...(['level', 'team', 'tour'] as const).map((k) => { const v = val(k); return v === null ? formatValue(null, unit) : fmt(v); })]);
+    return {
+      label,
+      pct: domainPct(you, scale),
+      zero: domainPct(0, scale),
+      display: fmt(you),
+      of: null,
+      tone: better === null || youLevel === level ? ('neutral' as const) : better ? ('good' as const) : ('loss' as const),
+      ticks: (['level', 'team', 'tour'] as const).flatMap((k) => { const v = val(k); return v === null ? [] : [{ at: domainPct(v, scale), kind: k, text: `${REF_WORD[k]} ${fmt(v)}`, short: `${refTag(k, refs.find((c) => c.kind === k)?.label)} ${fmt(v)}` }]; }),
+    };
+  });
+  const who = d?.standing?.player === 'You' ? 'You' : (d?.standing?.player ?? 'The player');
+  return {
+    kind: 'bars',
+    title: `${who} against the level, the team and the Tour`,
+    rows: out,
+    source: null,
+    note: [windowed.length ? `${who === 'You' ? 'Your' : 'The'} figure is over ${windowed[0]!.replace(/^(last )/, 'the $1')}. The level’s figure and place are over all recorded rounds.` : '', ...levelSentences.slice(0, 2), ...missing.slice(0, 3)].filter(Boolean).join(' ') || null,
+    bench: null,
+    table: { caption: `${who} against the level, the team and the Tour`, columns: ['Metric', who === 'You' ? 'You' : 'Value', 'Level', 'Team', 'Tour'], rows: tableRows },
+  };
+}
+
+/** What an empty read says, in its own words (trimmed); the empty string when it says nothing. */
+/** A note a coach can read: the model's own words (column names, instructions) are replaced by `fallback`. */
+const coachWords = (text: string | null | undefined, fallback: string): string => {
+  const t = (text ?? '').trim();
+  return t && !MODEL_FACING_NOTE.test(t) ? t : fallback;
+};
+
+export const emptyNote = (envelope: ToolEnvelope): string => {
+  const note = (envelope.coverage_note?.trim() || envelope.summary?.trim() || '').replace(/\s+/g, ' ');
+  return MODEL_FACING_NOTE.test(note) ? (envelope.summary?.trim() && !MODEL_FACING_NOTE.test(envelope.summary) ? envelope.summary.trim() : '') : note;
+};
+
+/**
+ * A `summarise_data` result. Its `detail` holds the operations' results and, for a list, the rows: the rows are the table (columns picked as any
+ * record table's), and the figures that are not the list's own count go to the same figure card any read gets. Nothing is drawn twice.
+ */
+function summaryBlocks(envelope: ToolEnvelope): AskEvidence[] {
+  const d = envelope.detail as { rows?: unknown; matching_rows?: unknown; row_count?: unknown; timezone?: unknown } | undefined;
+  const blocks: AskEvidence[] = [];
+  const rows = Array.isArray(d?.rows) ? (d?.rows as unknown[]).filter((r): r is Record<string, unknown> => !!r && typeof r === 'object' && !Array.isArray(r)) : [];
+  const total = typeof d?.matching_rows === 'number' ? d.matching_rows : rows.length;
+  if (rows.length > 0) {
+    const table = detailTable({ rows, ...(typeof d?.timezone === 'string' ? { timezone: d.timezone } : {}) }, total > rows.length ? `${rows.length} of ${total} rows` : plural(rows.length, 'row'));
+    if (table) blocks.push({ kind: 'table', title: table.caption, source: null, note: total > rows.length ? `Showing the first ${rows.length} of ${total} rows.` : partialNote(envelope), bench: null, table });
+  }
+  // The "Rows listed" count is the table's own: it is not a figure to draw again.
+  const titles = (envelope.detail as { titles?: Record<string, unknown> } | undefined)?.titles;
+  // Each figure's card title as the summary states it ("Owen Carter vs team (pooled), strokes gained approach"), not the label the model reads.
+  const figures = envelope.measurements
+    .filter((m) => m.method !== 'summary_list')
+    .map((m) => (typeof titles?.[m.metric_id] === 'string' ? { ...m, metric_label: titles[m.metric_id] as string } : m));
+  if (figures.length > 0) {
+    const caption = (envelope.detail as { caption?: unknown } | undefined)?.caption;
+    const rest = evidenceBlocks({ ...envelope, detail: typeof caption === 'string' ? { caption } : undefined, measurements: figures });
+    blocks.push(...rest.filter((b) => b.kind !== 'empty'));
+  }
+  if (blocks.length === 0) return envelope.coverage === 'empty' ? [{ kind: 'empty', note: coachWords(envelope.coverage_note, 'No rows matched.') }] : [];
+  return blocks;
+}
+
 /** One tool's output as the block this screen draws. The choice is made from the SHAPE of the evidence, never from what the model asked for. */
 export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
   // A failed read is never "no data": it is the honest "could not read this".
-  if (envelope.coverage === 'unavailable') return [{ kind: 'unavailable', note: envelope.coverage_note?.trim() || envelope.summary || 'The read did not come back.' }];
-  if (envelope.coverage === 'empty') return [{ kind: 'empty', note: envelope.coverage_note?.trim() || envelope.summary || 'Nothing is recorded for this yet.' }];
+  if (envelope.coverage === 'unavailable') return [{ kind: 'unavailable', note: coachWords(envelope.coverage_note, coachWords(envelope.summary, 'The read did not come back.')) }];
+  // Golf knowledge and metric definitions are words, not figures: they show as the step that read them and as chips in the answer's prose, never as a card.
+  const kind = (envelope.detail as { kind?: unknown } | undefined)?.kind;
+  if (kind === 'reference' || kind === 'definition') return [];
+  // A worked-out result (summarise_data) is the answer's own figures: a list of rows is the table, a count, rank or difference is one compact figure card.
+  if (kind === 'summary') return summaryBlocks(envelope);
+  // A benchmark read draws only as a picture of where one player stands, or not at all.
+  if (kind === 'benchmark_read') {
+    const b = benchmarkBlock(envelope);
+    return b ? [b] : [];
+  }
+  if (envelope.coverage === 'empty') return [{ kind: 'empty', note: emptyNote(envelope) || 'Nothing is recorded for this yet.' }];
 
   const blocks: AskEvidence[] = [];
   const ms = envelope.measurements;
@@ -1132,7 +1658,7 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
         tiles: ms.map((m) => {
           const t = m.unit === 'strokes' ? changeTone(m.value, false, 1) : '';
           return {
-            label: many ? `${m.entity.label}, ${m.metric_label}` : m.metric_label,
+            label: many && !m.metric_label.startsWith(m.entity.label) ? `${m.entity.label}, ${m.metric_label}` : m.metric_label,
             value: formatValue(m.value, m.unit, m),
             sub: restates(m) ? null : madeOf(m),
             tone: t === 'is-loss' ? 'loss' : t === 'is-gain' ? 'gain' : 'plain',
@@ -1161,7 +1687,7 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
   // Nothing above drew it (a tool whose output is a list of records, or a kind added later): its real table, or no block at all. A
   // placeholder table read as a broken chart, one row saying "Read" under the headings Read and Result (QA-2).
   if (blocks.length === 0) {
-    const table = detailTable(envelope.detail, envelope.summary);
+    const table = roundsTable(envelope.detail, envelope.summary) ?? goalsTable(envelope.detail, envelope.summary) ?? detailTable(envelope.detail, envelope.summary);
     if (table) blocks.push({ kind: 'table', title: envelope.summary, source: null, note: partialNote(envelope), bench: null, table });
   }
   return blocks;

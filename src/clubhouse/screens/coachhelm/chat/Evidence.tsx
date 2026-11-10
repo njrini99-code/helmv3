@@ -14,6 +14,8 @@ import { Line } from '../../../ui/charts/Line';
 import { changeTone, formatToPar } from '../../../lib/format';
 import { plural } from '../../../lib/plural';
 
+const SAYS_NONE = /\b(?:on record|recorded|nothing|no [a-z ]+ (?:yet|found))\b/i;
+
 /** Who is on the coach's team: a read about anyone else is drawn, never linked. */
 type Roster = ReadonlyArray<{ id: string }>;
 
@@ -23,6 +25,7 @@ type Roster = ReadonlyArray<{ id: string }>;
  */
 export function AskEvidenceView({ envelope, roster = [] }: { envelope: ToolEnvelope; roster?: Roster }) {
   const blocks = evidenceBlocks(envelope);
+  if (blocks.length === 0) return null;
   return (
     <div className="ch-th-evidence">
       {blocks.map((block, i) => (
@@ -84,7 +87,12 @@ export function AskEvidenceBlock({ block, bare = false, roster = [] }: { block: 
     return (
       <div className="ch-th-read" data-ch-code="CH-13350">
         <p>
-          <b>Nothing recorded for this yet.</b> {block.note}
+          {/* A note that already says nothing is recorded is the card; the generic lead-in would say it twice. */}
+          {SAYS_NONE.test(block.note) ? block.note : (
+            <>
+              <b>Nothing recorded for this yet.</b> {block.note}
+            </>
+          )}
         </p>
       </div>
     );
@@ -137,15 +145,30 @@ export function Drawing({ block, roster = [] }: { block: Exclude<AskEvidence, { 
       return (
         <div className="ch-th-bars" role="list" aria-label={block.title}>
           {block.rows.map((r, i) => (
-            <div key={r.label} style={{ '--ch-i': i } as CSSProperties} className={'ch-th-bar' + (r.highlight ? ' is-on' : '')} role="listitem" data-tone={r.tone}>
+            <div key={r.label} style={{ '--ch-i': i } as CSSProperties} className={'ch-th-bar' + (r.highlight ? ' is-on' : '') + (r.ticks?.length ? ' ch-th-bar--bench' : '')} role="listitem" data-tone={r.tone} aria-label={r.ticks?.length ? `${r.label}: ${r.display}. ${r.ticks.map((t) => t.text).join('. ')}` : undefined}>
               <span className="ch-th-bar__label">{r.label}</span>
               <span className="ch-th-bar__track" aria-hidden="true">
-                <span style={{ width: `${r.pct}%` }} />
+                {typeof r.zero === 'number' ? <span style={{ left: `${Math.min(r.zero, r.pct)}%`, width: `${Math.abs(r.pct - r.zero)}%` }} /> : <span style={{ width: `${r.pct}%` }} />}
+                {r.zero ? <b className="ch-th-bar__zero" style={{ left: `${r.zero}%` }} /> : null}
+                {r.ticks?.map((t) => (
+                  <i key={t.kind} className="ch-th-bar__tick" data-kind={t.kind} style={{ left: `${t.at}%` }} />
+                ))}
               </span>
               <span className="ch-th-bar__val">
                 {r.display}
                 {r.of && <span> {r.of}</span>}
               </span>
+              {r.ticks?.length ? (
+                // The three references in words, each with the mark it has on the track, so no tick has to be decoded from a legend.
+                <ul className="ch-th-bar__refs" aria-hidden="true">
+                  {r.ticks.map((t) => (
+                    <li key={t.kind} data-kind={t.kind}>
+                      <i className="ch-th-bar__swatch" data-kind={t.kind} />
+                      {t.short ?? t.text}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </div>
           ))}
         </div>

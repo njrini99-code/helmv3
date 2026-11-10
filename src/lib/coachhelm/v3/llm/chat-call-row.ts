@@ -54,7 +54,8 @@ export interface ChatLlmCallRow {
    * happened to land before that happened.
    */
   citations: {
-    reason: 'verification_failed';
+    /** `grounded` marks a turn the audit accepted, recorded only to keep its citation counts. */
+    reason: 'verification_failed' | 'grounded';
     /**
      * Which chat verdict check rejected the turn (audit row 47c). `reason`
      * alone could not tell an ungrounded claim from a dropped stream or a
@@ -63,6 +64,8 @@ export interface ChatLlmCallRow {
      */
     verdict_reason?: ChatVerdictReason;
     unmatched_tokens: string[];
+    /** Counts of the turn's per-figure citations (cites.ts): figures examined, cited, verified, unresolved, mismatched and the fallback. Recorded for a grounded turn too (reason `grounded`), so the share of answers the citations carried can be read from the ledger. */
+    citation_stats?: Record<string, number>;
   } | null;
   verified: boolean;
   /**
@@ -89,6 +92,8 @@ export function buildChatLlmCallRow(args: {
   unmatchedTokens?: string[];
   /** Which verdict check rejected the turn. Ignored when grounded. */
   verdictReason?: ChatVerdictReason;
+  /** The turn's citation counts, recorded with the row whether the turn was grounded or not (null `citations` when grounded and there were none). */
+  citationStats?: Record<string, number>;
 }): ChatLlmCallRow {
   return {
     task: 'coach_chat',
@@ -105,11 +110,14 @@ export function buildChatLlmCallRow(args: {
     // Bare number literals only ('71', '-25') — never the surrounding prose,
     // a player name or a database value. See the ChatLlmCallRow doc comment.
     citations: args.grounded
-      ? null
+      ? args.citationStats
+        ? { reason: 'grounded', unmatched_tokens: [], citation_stats: args.citationStats }
+        : null
       : {
           reason: 'verification_failed',
           ...(args.verdictReason ? { verdict_reason: args.verdictReason } : {}),
           unmatched_tokens: args.unmatchedTokens ?? [],
+          ...(args.citationStats ? { citation_stats: args.citationStats } : {}),
         },
     verified: args.grounded,
     fallback_to_template: false,

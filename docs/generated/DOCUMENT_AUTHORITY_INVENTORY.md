@@ -208,7 +208,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/auth-onboarding-join.md` | current | yes | - | - | - |
 | `memory/features/calendar-events.md` | current | yes | - | yes | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | - |
-| `memory/features/coachhelm-ai.md` | current | yes | - | yes | - |
+| `memory/features/coachhelm-ai.md` | current | yes | - | yes | 1 |
 | `memory/features/crm_outreach.md` | current | yes | - | - | - |
 | `memory/features/email_outbound.md` | current | yes | - | - | - |
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | - |
@@ -933,6 +933,7 @@ them would bury everything above.
 | `docs/clubhouse/STATUS.md` | current | - | - | yes | - |
 | `docs/clubhouse/UI_OWNERSHIP.md` | current | - | - | yes | - |
 | `docs/clubhouse/UX_OPTIMIZATION.md` | current | - | - | - | - |
+| `docs/clubhouse/ask-v2/GAP.md` | current | - | - | - | 1 |
 | `docs/clubhouse/catalog/auth.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/calendar.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/classes.md` | current | - | - | - | - |
@@ -1617,6 +1618,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-06-landscape-phone.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-06-one-window.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-06-team-lane.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-07-ask-v2-gap-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-07-dashboard-cuts.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-07-one-sg-source.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-07-pre-refresh.md` | current | - | - | - | - |

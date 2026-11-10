@@ -26,7 +26,7 @@ takes `kind: "compose"` with a title, an optional one-line lede, a layout
 | `kpis` | up to six related figures from one read | at least one drawable figure |
 | `trend` | one metric over rounds | at least 3 rounds; `benchmark` only if the read carried one, else the average |
 | `bars` | distance bands, or players on one metric | bands need 2+; players need 2+; `best_first` only when the metric has a direction; `highlight` dropped if not in the data |
-| `split` | signed figures either side of zero for one player (strokes gained) | one player, one window, no conflicting reads; `sg_total` left out unless named |
+| `split` | signed figures either side of zero for one player or the team (strokes gained) | one player or the team, one window, no conflicting reads; `sg_total` left out unless named |
 | `compare` | two to twelve players across the same metrics (the team table) | 2–12 players; players become rows when they outnumber metrics |
 | `note` | one sentence: `measured`, `association` (pattern) or `hypothesis` | no digit |
 <!-- markdownlint-enable MD013 -->

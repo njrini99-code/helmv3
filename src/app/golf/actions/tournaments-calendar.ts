@@ -15,7 +15,8 @@
  * gated). A cancel tells players once per tournament, or once for a single round, through the shared cancel fan-out.
  */
 import { after } from 'next/server';
-import { revalidatePath, updateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
+import { updateTag } from '@/lib/cache/safe-update-tag';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { CACHE_TAGS } from '@/lib/cache/tags';

@@ -12,6 +12,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
  * The real-data pass at the bottom runs only when CH_STATS_REALDATA names a read-only dump (one JSON file per table).
  */
 
+vi.mock('server-only', () => ({}));
 vi.mock('../lib/track-server', () => ({ chLogServer: vi.fn() }));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(async () => undefined), logServerEvent: vi.fn(async () => undefined) }));
 vi.mock('@/lib/admin/observed-action', () => ({ withAdminObserved: (_n: string, _o: unknown, fn: unknown) => fn }));
@@ -53,6 +54,12 @@ vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayersStandingMap: v
 vi.mock('@/components/golf/stats/team-board/TeamStatsBoard', () => ({ TeamStatsBoard: Object.assign(() => null, { parityBoard: true }) }));
 vi.mock('@/components/fairway', () => ({ ViewHeader: () => null, EmptyState: () => null, Button: () => null }));
 import { filterFor, type ChFilter } from '../data/stats-filter';
+import { parityState } from './parity-state';
+import { teamFiguresOver } from '../data/player-figures';
+import { loadSeasonRounds, seasonStartDate } from '../data/season';
+import { loadPlayersFigures } from '../data/player-figures';
+import { getRecentRounds } from '@/lib/coachhelm/v3/chat/read-tools';
+import { loadSince } from '../data/stats-common';
 import type { EvalDb, Row } from './supabase-eval-fake';
 import { clubhousePlayer, clubhouseTeam, fairwayDetail, fairwayTeam, holeRoundIds, playerPairs, sameOnScreen, standingPairs, subsetDb, teamPairs, teamWindowRoundIds, type Pair } from './stats-parity-harness';
 
@@ -228,6 +235,65 @@ describe('Team stats against the Fairway Team stats page, same rounds', () => {
     const ids = await teamWindowRoundIds(db, 't1', filterFor('season'));
     expect(ids).toContain('a-aug1');
     expect(ids).not.toContain('a-jul31');
+  });
+});
+
+describe('Ask’s team figures are the numbers Team Stats prints, same rounds', () => {
+  // Ask compares a player to "the team" with `teamFiguresOver` (the rounds' own columns); Team Stats reads the same window through
+  // `loadTeamStats` (the round-cache rows). One team value, whichever screen asks: scoring average, greens and putts per round.
+  const windows: Array<[string, ChFilter]> = [
+    ['last10', filterFor('last10')],
+    ['last5', filterFor('last10', 5)],
+    ['last20', filterFor('last10', 20)],
+    ['season', filterFor('season')],
+  ];
+
+  it.each(windows)('%s: scoring average, greens in regulation and putts per round match Team Stats to the digit', async (_name, f) => {
+    vi.useFakeTimers({ now: NOW, toFake: ['Date'] });
+    const db = teamFixture();
+    const stats = await clubhouseTeam(db, 't1', f);
+    const { evalClient } = await import('./supabase-eval-fake');
+    const sb = evalClient({ get current() { return parityState.db; } }) as never;
+    const ids = ['pA', 'pB', 'pC'];
+    const start = seasonStartDate(new Date(), 'America/Chicago');
+    const loaded = await loadSeasonRounds(sb, ids, { surface: 'parity', since: loadSince(f, start) });
+    const ask = teamFiguresOver(loaded.rounds, ids, f, start);
+    const fig = (k: string) => stats.figures.find((x) => x.key === k)?.value ?? null;
+    // The figures exist (a null on both sides would match and prove nothing).
+    expect(fig('score')).not.toBeNull();
+    expect(fig('putts')).not.toBeNull();
+    expect(fig('gir')).not.toBeNull();
+    expect(ask.scoring_average).toBe(fig('score'));
+    expect(ask.putts_per_round).toBe(fig('putts'));
+    expect(ask.gir_pct).toBe(fig('gir'));
+  });
+});
+
+// Player Ask, staging, 2026-11-08 ("How did my approach play and scoring look over my last 5 rounds?"): Stats' last-5 scoring figure was 73.0
+// (practice left out) and the recent-rounds read listed the newest five including practice (76.2); the model trusted the wrong one.
+describe('the recent-rounds read lists the rounds Stats counts for the same window', () => {
+  it.each([5, 10] as const)('last %i: the same rounds, and their scoring average is the figure Stats prints', async (n) => {
+    vi.useFakeTimers({ now: NOW, toFake: ['Date'] });
+    const db = teamFixture();
+    const f = filterFor('last10', n);
+    const prof = await clubhousePlayer(db, 't1', 'pA', f);
+    const { evalClient } = await import('./supabase-eval-fake');
+    const sb = evalClient({ get current() { return parityState.db; } }) as never;
+    const figures = (ids: string[], window: Parameters<typeof loadPlayersFigures>[3]) => loadPlayersFigures(sb, { timezone: 'America/Chicago' }, ids, window);
+    const ctx = { coach_id: 'c', user_id: 'u', team_id: 't1', team_name: 'T', timezone: 'America/Chicago', roster: [{ id: 'pA', name: 'Player A' }] } as never;
+    const e = await getRecentRounds(sb, ctx, { player_id: 'pA', last_n: n }, figures);
+    const listed = (e.detail as { rounds: Array<{ round_id: string; round_type: string | null; total_score: number | null; holes: number }> }).rounds;
+    expect(listed).toHaveLength(n);
+    // Practice is not in the list, as it is not in Stats' window.
+    expect(listed.every((r) => r.round_type !== 'practice')).toBe(true);
+    expect(new Set(listed.map((r) => r.round_id))).toEqual(new Set(prof!.rounds.map((r) => r.id)));
+    const per18 = listed.reduce((a, r) => a + (r.total_score as number), 0) / listed.reduce((a, r) => a + r.holes / 18, 0);
+    expect(per18).toBeCloseTo(prof!.win.avg as number, 9);
+    // Without a figures source every round is listed and each says whether Stats counts it.
+    const raw = await getRecentRounds(sb, ctx, { player_id: 'pA', last_n: n });
+    const rawRounds = (raw.detail as { rounds: Array<{ round_type: string | null; counts_for_stats: boolean }> }).rounds;
+    expect(rawRounds.some((r) => r.round_type === 'practice')).toBe(true);
+    expect(rawRounds.every((r) => r.counts_for_stats === (r.round_type !== 'practice'))).toBe(true);
   });
 });
 

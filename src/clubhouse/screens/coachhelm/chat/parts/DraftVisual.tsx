@@ -261,7 +261,7 @@ export function TripDraft({ visual }: { visual: Trip }) {
     <div className="ch-ak-route">
       <svg viewBox="0 0 340 84" aria-hidden="true">
         <path className="rbase" d="M26 58 C 96 58, 110 18, 178 28 S 270 56, 312 22" />
-        <path className="rline" d="M26 58 C 96 58, 110 18, 178 28 S 270 56, 312 22" />
+        <path className="rline" pathLength="1" d="M26 58 C 96 58, 110 18, 178 28 S 270 56, 312 22" />
         <circle cx="26" cy="58" r="6" className="ro" />
         <circle cx="312" cy="22" r="7" className="rd" />
       </svg>
@@ -284,8 +284,8 @@ export function TripDraft({ visual }: { visual: Trip }) {
 export function LineupDraft({ visual }: { visual: Lineup }) {
   return (
     <ol className="ch-ak-lu">
-      {visual.seats.map((s) => (
-        <li key={s.name} className={s.alternate ? 'alt' : undefined}>
+      {visual.seats.map((s, i) => (
+        <li key={s.name} className={s.alternate ? 'alt' : undefined} style={{ ['--ch-i' as string]: i }}>
           <span className="n ch-num">{s.alternate ? 'Alt' : (s.slot ?? '—')}</span>
           <Avatar name={s.name} size="xs" />
           <span className="nm">{s.name}</span>
