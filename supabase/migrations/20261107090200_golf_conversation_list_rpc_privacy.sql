@@ -19,7 +19,14 @@
 -- table is read. Names are visible to co-participants anyway (the Messages directory shows them).
 --
 -- Unread: COUNT(*) of messages in the conversation that are not the viewer's, not deleted and newer than the viewer's own
--- participant last_read_at (never read = everything). One member opening a group no longer clears it for everyone.
+-- participant last_read_at. One member opening a group no longer clears it for everyone. A viewer who has never read:
+--   * a group (is_team_chat, the same test as the is_group column): every message from someone else, the rule the Fairway
+--     hook already applies to groups (perViewerUnreadTargets), so the RPC and the hook agree.
+--   * a direct conversation: the old `read` flag, which with two people is already per-viewer. Counting everything
+--     there would turn direct messages read before last_read_at existed back to unread (7 such rows on production,
+--     2026-11-10).
+-- Production effect, read-only check 2026-11-10 (91 participant rows): no direct conversation's count changes; group rows
+-- change only in the RPC's own number, which the production build (d0f467a73) already replaces with its per-viewer count.
 --
 -- ORDER: any time; independent of M1/M2. Rollback re-opens the e-mail leak.
 --
@@ -89,7 +96,11 @@ BEGIN
       WHERE m.conversation_id = c.id
         AND m.sender_id <> v_uid
         AND NOT COALESCE(m.is_deleted, FALSE)
-        AND CASE WHEN cp.last_read_at IS NULL THEN NOT COALESCE(m.read, FALSE) ELSE m.created_at > cp.last_read_at END),
+        AND CASE
+              WHEN cp.last_read_at IS NOT NULL THEN m.created_at > cp.last_read_at
+              WHEN COALESCE(c.is_team_chat, FALSE) THEN TRUE
+              ELSE NOT COALESCE(m.read, FALSE)
+            END),
     ARRAY(SELECT cp2.user_id
           FROM public.golf_conversation_participants cp2
           WHERE cp2.conversation_id = c.id

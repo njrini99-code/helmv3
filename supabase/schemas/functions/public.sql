@@ -3907,7 +3907,11 @@ BEGIN
       WHERE m.conversation_id = c.id
         AND m.sender_id <> v_uid
         AND NOT COALESCE(m.is_deleted, FALSE)
-        AND CASE WHEN cp.last_read_at IS NULL THEN NOT COALESCE(m.read, FALSE) ELSE m.created_at > cp.last_read_at END),
+        AND CASE
+              WHEN cp.last_read_at IS NOT NULL THEN m.created_at > cp.last_read_at
+              WHEN COALESCE(c.is_team_chat, FALSE) THEN TRUE
+              ELSE NOT COALESCE(m.read, FALSE)
+            END),
     ARRAY(SELECT cp2.user_id
           FROM public.golf_conversation_participants cp2
           WHERE cp2.conversation_id = c.id
