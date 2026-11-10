@@ -60,6 +60,15 @@
   border-radius: var(--ch-radius-lg);
   min-height: calc(40 * var(--ch-type-k));
 }
+/* The span switch (This season | All time) shares the row styling but has two choices, not the window's five. */
+.ch-shs-ctl .ch-span {
+  flex: 1;
+  min-width: 0;
+}
+.ch-shs .ch-shs-ctl .ch-span .ch-seg {
+  grid-template-columns: 1fr 1fr;
+  overflow-x: visible;
+}
 .ch-shs-ctl.is-custom .ch-seg {
   grid-template-columns: 1fr 1fr 1fr 1.3fr 1.6fr 1.3fr;
   overflow-x: auto;
@@ -222,7 +231,7 @@
   padding: 0 12px;
 }
 
-/* A card that opens a detail: the pressed wash; data-ch-press-scale carries the 0.97 (lib/press.ts). */
+/* A card that opens a detail: the pressed wash (data-ch-pressable, lib/press.ts). The card never scales. */
 .ch-shs-sum {
   cursor: pointer;
   transition: box-shadow var(--ch-dur-release) var(--ch-ease);
@@ -1546,6 +1555,23 @@ li + li > .ch-shs-rrow::before {
   border-radius: var(--ch-radius-mark);
   background: var(--ch-shs-s-ink);
 }
+/* The mean's label keeps a halo of the card under it, so a line crossing it can't strike through the words. */
+.ch-shs-mean-label {
+  paint-order: stroke;
+  stroke: var(--ch-shs-s-card);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+.ch-shs-early-key {
+  margin-top: 6px;
+}
+.ch-shs-early-key i {
+  width: 16px;
+  height: 8px;
+  border-radius: var(--ch-radius-xs);
+  background: none;
+  box-shadow: var(--ch-stats-redesign-x5);
+}
 .ch-shs-skey {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(calc(96 * var(--ch-type-k)), 1fr));
@@ -1994,7 +2020,7 @@ p.ch-shs-mini-cap {
 .ch-shs-hero-top {
   position: relative;
   margin: 0;
-  padding: 12px var(--ch-page-x-phone) 34px;
+  padding: var(--ch-space-3) var(--ch-page-x-phone) var(--ch-space-8);
   background: var(--ch-frame);
   color: var(--ch-on-green-ink);
 }
@@ -2024,7 +2050,7 @@ p.ch-shs-mini-cap {
   margin: 0;
   font: var(--ch-type-22-strong);
   font-variation-settings: 'wdth' 92;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.02em;
   color: var(--ch-on-green-ink);
   text-shadow: none;
   overflow-wrap: anywhere;

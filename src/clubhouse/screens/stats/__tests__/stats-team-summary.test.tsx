@@ -8,7 +8,9 @@ vi.mock('@/app/golf/actions/development', () => ({ createFocusArea: vi.fn() }));
 
 import { formatSigned } from '../../../lib/format';
 import { PREVIEW_TEAM_STATS as TEAM } from '../../../preview/fixtures-stats';
-import { asDesktop, asPhone, browserBack, card, cards, detailShown, painted, resetAddress, showTeam } from './_shs-harness';
+import { render } from '@testing-library/react';
+import { StatsTeam } from '../StatsTeam';
+import { asDesktop, asPhone, browserBack, card, cards, detailShown, painted, resetAddress, showTeam, tree } from './_shs-harness';
 
 beforeEach(() => {
   asPhone();
@@ -17,6 +19,21 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   asDesktop();
+});
+
+describe("production’s ?area= on Team Stats", () => {
+  it.each([
+    ['scoring', 'sd-team-score'],
+    ['game', 'sd-team-game'],
+    ['players', 'sd-team-players'],
+  ])('?area=%s opens %s, and Back reaches the summary', async (area, hash) => {
+    window.history.replaceState(null, '', `/golf/dashboard/stats?area=${area}`);
+    render(tree(<StatsTeam data={TEAM} initialArea={area} />));
+    await waitFor(() => expect(detailShown()).toBe(hash));
+    await browserBack();
+    await waitFor(() => expect(detailShown()).toBeNull());
+    expect(window.location.search).toBe('');
+  });
 });
 
 /** Stats-home criteria 48 to 56, 86. */

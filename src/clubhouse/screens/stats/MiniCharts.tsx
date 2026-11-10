@@ -114,6 +114,13 @@ export function HBars({ rows, tourKey = false }: { rows: readonly HBarRow[]; tou
           Tour average
         </div>
       )}
+      {/* An outlined bar is a band with too few tries to grade: say so, or the outline reads as a style. */}
+      {rows.some((r) => r.value != null && r.early) && (
+        <div className="ch-shs-tour-key ch-shs-early-key">
+          <i aria-hidden="true" />
+          Outline: too few tries to grade yet
+        </div>
+      )}
     </>
   );
 }

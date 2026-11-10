@@ -40,7 +40,13 @@ address names, with who and the four hero figures already in the server's first
 render (50101). The address is read for its tab and window (50102):
 ?tab=overview, game, rounds or dev, and ?window=season or qualifiers, anything
 else opening Overview and Last 10 (D-53; Roster's All N is
-`window=season&tab=rounds`). A coach pages through the team with Previous player
+`window=season&tab=rounds`). Production's stats-board `?area=` opens the same
+place (stats-v2): scoring, driving, approach, short-game, putting, standing
+(Strokes gained) and rounds, plus this build's goals. On the phone the area is
+the pushed detail (a hash wins over `?area=`, which wins over `?tab=`); on desktop
+it is the tab, scrolled to the part for a game area; `home` or an unknown value
+opens the summary. The arrival replaces the address with the summary's (no `tab`,
+no `area`), so one Back reaches the summary. A coach pages through the team with Previous player
 and Next player (50103) and Message opens the player's direct thread (50104). A
 player's own address is /golf/dashboard/stats with no ?player=.
 

@@ -42,7 +42,7 @@ import { useStatsDetail, type StatsArrivalState } from './use-stats-detail';
 
 const TITLE: Readonly<Record<StatsTeamDetailId, string>> = { tscore: 'Team scoring', tgame: 'Team game', tplayers: 'Players' };
 
-const windowDays = (data: ChTeamStats) => (data.window === 'last10' && !isFiltered(data.filter) ? `Last ${data.last} days` : windowShort(data.filter));
+const windowDays = (data: ChTeamStats) => (data.window === 'last10' && !isFiltered(data.filter) ? `Last ${data.last} round days` : windowShort(data.filter));
 
 
 /** "Sam gains the most; Lee loses the most", and "loses the least" when everyone is below zero (08 criterion 57). */
@@ -98,7 +98,7 @@ const toPar = (data: ChTeamStats): string | null => {
  * No large title, as drawn. A coach's page only: the route never serves it to a player (`routes/stats.tsx`). `StatsTeamPhone` stays for
  * the flag off, and its Players list and Team putting render here unchanged.
  */
-export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
+export function StatsTeamPhoneShs({ data, initialArea }: { data: ChTeamStats; /** The address's production `?area=`. */ initialArea?: string }) {
   const noRounds = !data.roundsError && data.roundCount === 0;
   const nineOnly = noRounds && nineRoundsInWindow(data.filter, data.filterOptions);
   const filtered = isFiltered(data.filter);
@@ -115,7 +115,7 @@ export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
   useSegFade(ctlRef);
   const below = useArrivalPainted();
   const arrival: StatsArrivalState = data.roundsError ? 'failed' : noRounds ? 'empty' : 'ready';
-  const { detail, open, close } = useStatsDetail({ screen: 'team', state: arrival });
+  const { detail, open, close } = useStatsDetail({ screen: 'team', area: initialArea, state: arrival });
   const reduced = useChReducedMotion();
   const stuck = useStuck();
   const root = useRef<HTMLDivElement>(null);
@@ -144,10 +144,12 @@ export function StatsTeamPhoneShs({ data }: { data: ChTeamStats }) {
         <div inert={detail != null} aria-hidden={detail != null || undefined}>
           {!bare && (
             <div ref={ctlRef} className={'ch-shs-ctl' + (hasRange(data.filter) ? ' is-custom' : '') + (stuck ? ' is-stuck' : '')}>
-              <div className="ch-shs-ctl__row">
-                <PhoneWindowSwitch custom={hasRange(data.filter)} hook="stats-window-seg" />
-                {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone hook="stats-filter" />}
-              </div>
+              <PhoneWindowSwitch
+                custom={hasRange(data.filter)}
+                hook="stats-window-seg"
+                rows
+                beside={showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} phone hook="stats-filter" />}
+              />
             </div>
           )}
           <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className="ch-shs-sheet">

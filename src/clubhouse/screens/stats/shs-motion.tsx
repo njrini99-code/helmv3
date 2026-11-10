@@ -1,10 +1,10 @@
 'use client';
 
 import { Component, useEffect, useState, type ReactNode } from 'react';
-import { CH_FADE_MS } from '../../lib/motion';
+import { CH_DUR, CH_FADE_MS } from '../../lib/motion';
 
 /** A figure block's crossfade on a window change (07 M-STATS-09). */
-const XFADE_MS = 260;
+const XFADE_MS = CH_DUR.base * 1000;
 
 
 /** The window switch has reached the bar and something has passed under it (07 M-STATS-11). */

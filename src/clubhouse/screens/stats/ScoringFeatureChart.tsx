@@ -5,6 +5,7 @@ import { formatFixed } from '../../lib/format';
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 'react';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { CH_MARKS_MS } from '../../lib/motion';
 import { hapticScrub } from '../../lib/haptics';
 import { meanSeries, parLine, type TrendRound } from './round-trend';
 import { monoPath, type ShsTone } from './shs-figures';
@@ -14,7 +15,7 @@ const BASE_PAD = { l: 4, r: 30, t: 10, b: 26 };
 const HOLD_MS = 120;
 const SIDEWAYS_PX = 6;
 /** The line's morph on a window change (07 M-STATS-10). */
-const MORPH_MS = 360;
+const MORPH_MS = CH_MARKS_MS;
 const morphEase = (t: number) => 1 - Math.pow(1 - t, 3.2);
 
 type Pt = readonly [number, number];
@@ -323,11 +324,16 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<{ label: 
             {known[n - 1]!.label}
           </text>
         )}
-        {mean != null && (
-          <text className="ch-shs-ax" x={width - BASE_PAD.r} textAnchor="end" y={Math.max(12, y(mean) - 6)}>
-            Mean {formatFixed(mean, 1)}
-          </text>
-        )}
+        {mean != null && (() => {
+          // The label sits at the end of the dash where the line is farther from it, so the line rarely runs through the words.
+          const my = y(mean);
+          const atLeft = pts.length > 1 && Math.abs(pts[0]![1] - my) > Math.abs(pts[pts.length - 1]![1] - my);
+          return (
+            <text className="ch-shs-ax ch-shs-mean-label" x={atLeft ? pts[0]![0] : width - BASE_PAD.r} textAnchor={atLeft ? 'start' : 'end'} y={Math.max(12, my - 6)}>
+              Mean {formatFixed(mean, 1)}
+            </text>
+          );
+        })()}
       </svg>
     </div>
   );

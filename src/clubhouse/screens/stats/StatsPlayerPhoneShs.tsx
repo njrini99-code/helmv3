@@ -110,6 +110,7 @@ export function useBigText(): boolean {
 export function StatsPlayerPhoneShs({
   data,
   initialTab,
+  initialArea,
   reads,
   playerHref,
   messageHref,
@@ -124,6 +125,8 @@ export function StatsPlayerPhoneShs({
 }: {
   data: ChPlayerProfile;
   initialTab?: string;
+  /** The address's production `?area=`: opens that area's detail, like a hash. */
+  initialArea?: string;
   reads?: ChReadsSource;
   playerHref: string;
   messageHref: string | null;
@@ -157,7 +160,7 @@ export function StatsPlayerPhoneShs({
   const showFilter = !failed && (data.filterOptions.total > 0 || filtered);
   const arrivalState: StatsArrivalState = failed ? 'failed' : noRounds ? 'empty' : 'ready';
 
-  const { detail, open, close, replace, saveScroll, detailScroll, restoreTo } = useStatsDetail({ screen: 'player', tab: initialTab, state: arrivalState });
+  const { detail, open, close, replace, saveScroll, detailScroll, restoreTo } = useStatsDetail({ screen: 'player', tab: initialTab, area: initialArea, state: arrivalState });
   const backLabel = coach ? 'Player stats' : 'My stats';
 
   const share = async () => {
@@ -455,14 +458,15 @@ function changeSentence(lines: ReadonlyArray<{ subject: string; figure: string; 
 
 function WhatChanged({ data }: { data: ChPlayerProfile }) {
   const scores = trendRounds(data.rounds, 'score').filter((r) => r.value != null);
-  const bars = changeBars(data);
+  const insightFirst = hasPrevious(data) ? playerInsight(data) : null;
+  const bars = changeBars(data, insightFirst?.state === 'changes' ? insightFirst.lines[0]?.subject : undefined);
   if (scores.length < 4)
     return (
       <p className="ch-shs-hl">
         {plural(scores.length, 'round')} so far, averaging {formatFixed(data.win.avg)}. Once there are a few more, this card says what changed and why.
       </p>
     );
-  const insight = hasPrevious(data) ? playerInsight(data) : null;
+  const insight = insightFirst;
   return (
     <>
       {insight?.state === 'changes' ? (
@@ -482,7 +486,7 @@ function WhatChanged({ data }: { data: ChPlayerProfile }) {
               <span className="ch-shs-cmp-track">
                 <i className={`ch-shs-fill-${b.tone}`} data-ch-grow="" style={{ width: `${formatFixed(b.width, 1)}%` }} />
               </span>
-              <span className="v">{formatFixed(b.value)}</span>
+              <span className="v">{formatFixed(b.value)}{b.unit}</span>
             </div>
           ))}
         </div>
