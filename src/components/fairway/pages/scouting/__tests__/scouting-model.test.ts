@@ -5,6 +5,7 @@ import {
   buildVerdict,
   changedSinceSeen,
   evidenceSignature,
+  focusNumbersForAssign,
   formatCalendarDate,
   formatGap,
   formatAverageToPar,
@@ -188,5 +189,51 @@ describe('evidence seen', () => {
     const b = makeInsight();
     const seen = { [a.id]: evidenceSignature(a), [b.id]: 'old' };
     expect([...changedSinceSeen([a, b, makeInsight()], seen)]).toEqual([b.id]);
+  });
+});
+
+describe('focusNumbersForAssign', () => {
+  it('sends the reading and a target halfway to Tour when the evidence is in the metric unit', () => {
+    const e = makeInsight().evidence; // putts_made_5_10ft_pct, percent, 34.5 vs Tour 62.2
+    const n = focusNumbersForAssign(e);
+    expect(n.current_value).toBe(34.5);
+    expect(n.target_value).toBeCloseTo(48.35, 4);
+  });
+
+  it('sends no numbers when a percent sits under a metric registered in feet', () => {
+    // The approach read: green-hit % under the on-green proximity id.
+    const e = makeInsight({
+      evidence: { metric: 'approach_proximity_175_plus_ft', unit: 'percent', your_value: 18.8, comparison_value: 50 },
+    }).evidence;
+    expect(focusNumbersForAssign(e)).toEqual({ current_value: null, target_value: null });
+  });
+
+  it('keeps the reading but drops a target that points the wrong way', () => {
+    // Feet under a feet metric, already closer than Tour: halfway to Tour is worse.
+    const e = makeInsight({
+      evidence: { metric: 'approach_proximity_175_plus_ft', unit: 'feet', your_value: 20, comparison_value: 30 },
+    }).evidence;
+    expect(focusNumbersForAssign(e)).toEqual({ current_value: 20, target_value: null });
+  });
+
+  it('reads the Tour anchor from the secondary comparison when the primary is not Tour', () => {
+    const e = makeInsight({
+      evidence: { comparison_source: 'team_avg', comparison_value: 40, secondary_source: 'pga_baseline', secondary_value: 62.2 },
+    }).evidence;
+    expect(focusNumbersForAssign(e).target_value).toBeCloseTo(48.35, 4);
+  });
+
+  it('sends no target without a Tour anchor, and no reading that is not a number', () => {
+    const noTour = makeInsight({ evidence: { comparison_source: 'team_avg', comparison_value: 40 } }).evidence;
+    expect(focusNumbersForAssign(noTour)).toEqual({ current_value: 34.5, target_value: null });
+    const nan = makeInsight({ evidence: { your_value: Number.NaN } }).evidence;
+    expect(focusNumbersForAssign(nan)).toEqual({ current_value: null, target_value: null });
+  });
+
+  it('passes an unregistered metric through, since there is no unit to disagree with', () => {
+    const e = makeInsight({
+      evidence: { metric: 'custom_wedge_drill', unit: 'count', your_value: 4, comparison_value: 8 },
+    }).evidence;
+    expect(focusNumbersForAssign(e)).toEqual({ current_value: 4, target_value: 6 });
   });
 });

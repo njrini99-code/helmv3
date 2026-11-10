@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ScoutingReport, type ScoutingReportProps } from '../ScoutingReport';
@@ -124,6 +125,67 @@ describe('ScoutingReport', () => {
     window.localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify({ [ins.id]: 'stale-signature' }));
     const { container } = renderReport({ evidenceInsights: [ins] });
     await waitFor(() => expect(container.querySelector('[data-slot="evidence-changed"]')).toBeTruthy());
+  });
+
+  // Production 2026-11-10 (7f3eca05 / f91bd0e9): an approach read carries its
+  // green-hit PERCENT under an `approach_proximity_*` id, which the registry
+  // defines as feet, lower is better. Assign focus sent 18.8 and a target of
+  // 20.8 as if they were feet, and the server refused: "better when lower, so
+  // a target of 20.8 is above the current 18.8".
+  it('assigns an approach read without sending its green-hit percent as feet of proximity', async () => {
+    const { createFocusAreaFromInsight } = await import('@/app/golf/actions/development');
+    const create = vi.mocked(createFocusAreaFromInsight);
+    create.mockClear();
+    const user = userEvent.setup();
+    renderReport({
+      evidenceInsights: [
+        makeInsight({
+          category: 'approach',
+          title: 'Greens from 175+ yd',
+          evidence: {
+            metric: 'approach_proximity_175_plus_ft',
+            metric_label: 'Greens hit from 175+ yd',
+            unit: 'percent',
+            your_value: 18.8,
+            your_value_display: '19%',
+            comparison_value: 50,
+            comparison_source: 'pga_baseline',
+            sample_n: 32,
+          },
+        }),
+      ],
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Assign focus' }));
+    const popover = await screen.findByLabelText('Assign a focus');
+    await user.click(within(popover).getByText('Greens from 175+ yd'));
+
+    await waitFor(() => expect(create).toHaveBeenCalledTimes(1));
+    const sent = create.mock.calls[0]![0];
+    // The focus still links to the read and its distance band.
+    expect(sent.target_metric).toBe('approach_proximity_175_plus_ft');
+    // A percent is never stored as the baseline or target of a feet metric.
+    expect(sent.current_value).toBeNull();
+    expect(sent.target_value).toBeNull();
+  });
+
+  it('still sends the reading and a target toward Tour when the units agree', async () => {
+    const { createFocusAreaFromInsight } = await import('@/app/golf/actions/development');
+    const create = vi.mocked(createFocusAreaFromInsight);
+    create.mockClear();
+    const user = userEvent.setup();
+    renderReport({ evidenceInsights: [makeInsight({ title: 'Short putts leak' })] });
+
+    await user.click(screen.getByRole('button', { name: 'Assign focus' }));
+    const popover = await screen.findByLabelText('Assign a focus');
+    await user.click(within(popover).getByText('Short putts leak'));
+
+    await waitFor(() => expect(create).toHaveBeenCalledTimes(1));
+    const sent = create.mock.calls[0]![0];
+    expect(sent.target_metric).toBe('putts_made_5_10ft_pct');
+    expect(sent.current_value).toBe(34.5);
+    // Halfway from 34.5 to Tour's 62.2.
+    expect(sent.target_value).toBeCloseTo(48.35, 4);
   });
 
   it('renders the plan ledger with baseline → now and a target', () => {

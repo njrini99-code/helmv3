@@ -960,6 +960,7 @@ features:
       components:
         - src/components/golf/coachhelm/triage/**
         - src/components/fairway/pages/coachhelm/**
+        - src/components/fairway/pages/scouting/**
         - src/components/golf/coachhelm/insights/**
         - src/components/golf/coachhelm/coach/**
         - src/components/golf/coachhelm/settings/**

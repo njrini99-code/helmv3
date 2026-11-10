@@ -20,7 +20,9 @@ import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { tourOnlyEvidence } from '@/lib/coachhelm/v2/insights/tour-only';
 import type { InsightComparisonSource, InsightUnit } from '@/lib/coachhelm/v2/insights/types';
 import type { ThemeNode } from '@/lib/coachhelm/v3/themes/types';
-import { resolveMetricDirection } from '@/lib/coachhelm/focus-areas/direction';
+import { describeWrongWayTarget, resolveMetricDirection } from '@/lib/coachhelm/focus-areas/direction';
+import { computeTargetValue } from '@/lib/coachhelm/v3/goals/suggestion-writer';
+import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import { DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
 
 /* ---------------------------------------------------------------------------
@@ -580,6 +582,56 @@ export function formatPlanValue(value: number, metric: string | null): string {
   if (pct) return `${text}%`;
   if (metric && /proximity|_ft$|_feet/.test(metric)) return `${text} ft`;
   return text;
+}
+
+/* ---------------------------------------------------------------------------
+ * Assign focus — the numbers a claim sends with its focus area
+ * ------------------------------------------------------------------------- */
+
+export interface FocusAssignNumbers {
+  current_value: number | null;
+  target_value: number | null;
+}
+
+/**
+ * The reading and the target "Assign focus" sends for a claim.
+ *
+ * A claim's figure is not always in its metric's own unit. An approach read
+ * carries its green-hit PERCENT under an `approach_proximity_*` id, which the
+ * registry defines as feet, lower is better. Sent as they were, the server
+ * read the percent as feet and refused the focus (production 2026-11-10,
+ * 7f3eca05: "better when lower, so a target of 20.8 is above the current
+ * 18.8"); had it accepted, the plan would have printed "18.8 ft".
+ *
+ * So the numbers travel only when the evidence is in the metric's registered
+ * unit (the rule `valueFraming` and root-cause already use to trust the
+ * registry). Otherwise the focus is created with no baseline and no target,
+ * which the plan allows. A target the server's own write-time guard would
+ * refuse is left unset for the same reason: the coach gets a focus to set a
+ * target on, not an error about a number they never typed.
+ */
+export function focusNumbersForAssign(e: EvidenceInsight['evidence']): FocusAssignNumbers {
+  const cfg = getMetricRenderConfig(e.metric);
+  if (cfg && cfg.unit !== e.unit) return { current_value: null, target_value: null };
+
+  const current = Number.isFinite(e.your_value) ? e.your_value : null;
+  const pga =
+    e.comparison_source === 'pga_baseline'
+      ? e.comparison_value
+      : e.secondary_source === 'pga_baseline'
+        ? (e.secondary_value ?? null)
+        : null;
+  let target =
+    current !== null && pga !== null && Number.isFinite(pga)
+      ? computeTargetValue({ playerValue: current, anchorValue: pga, metricId: e.metric })
+      : null;
+  if (
+    target !== null &&
+    describeWrongWayTarget({ targetMetric: e.metric, baselineValue: current, targetValue: target }) !== null
+  ) {
+    target = null;
+  }
+  return { current_value: current, target_value: target };
 }
 
 /* ---------------------------------------------------------------------------
