@@ -1455,6 +1455,12 @@ html[data-fw-theme='dark'] .ch-acs-sum > div:last-child {
   .ch-rsu-2 {
     grid-template-columns: minmax(0, 1fr);
   }
+  /* Round details keeps Date and Holes side by side, as on the desk, so the section sits above the Start bar when
+     the page opens (stacked, Holes was half under it). The add-course sheet's pairs still stack. */
+  .ch-rsu-cols .ch-rsu-2 {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+  }
   .ch-rsu-par button {
     width: 36px;
     height: 36px;
