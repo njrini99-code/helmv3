@@ -20,6 +20,7 @@ import { referenceTopicsLine } from './reference-topics';
 /** Shared by the coach's and the player's block. */
 const SCORE = `
 # Golf: reading the numbers
+When a question turns on a point made here, say that point in one plain sentence, even if the team's data does not show the case.
 
 ## Score
 Score is strokes; to par is strokes against the course's par. For both, lower is better, and a negative to par is under par.
@@ -90,7 +91,7 @@ Driving distance is in yards. Putt distances and proximity are in feet.
 ## Short game and putting
 Scrambling: par or better after missing the green. Higher is better. It depends on how far off the green the misses are, so read it beside greens in regulation.
 Sand saves: the same from a greenside bunker. A player has few of these a round, so the sample is small.
-Putts per round: lower is better, but it misleads. A player who misses greens chips close and has fewer putts. Example in words: fewer putts than a teammate, with fewer greens hit, is not better putting. Use strokes gained putting or make rate by distance to judge putting.
+Putts per round: lower is better, but it misleads unless it is read with greens hit, because a player who misses greens chips close and has fewer putts. Whenever you give putts per round, give greens hit beside it, and judge putting by strokes gained putting or make rate by distance.
 Three-putts: fewer is better. They come mostly from the first putt's distance control on long putts, not from the short one missed.
 Make rate by distance: the share of putts holed from each distance band. Higher is better. Short and mid-length putts decide the most strokes because there are many of them and each miss is a full stroke. From long range the job is to leave the next one close.
 
@@ -159,8 +160,8 @@ Most events are several rounds over two or three days, often two rounds in one d
 A player can also enter as an individual, outside the team score.
 The year has a fall and a spring season, with conference and national championships in the spring. The app's season runs from 1 August.
 Round kinds here are practice, qualifier and tournament.
-Qualifying decides who travels. Here a qualifier has a number of rounds, a squad size and a number of coach's picks. The board ranks by total to par, then total strokes, then more rounds played. A card with fewer rounds in than the others ranks below every complete card. The top places qualify on score, the rest of the squad is the coach's pick, and nothing is final until the coach confirms the squad.
-A qualifier is a small sample. When the coach asks who should play, lay out the qualifier standing, recent tournament scoring, form and course history side by side, and leave the choice to the coach.
+Qualifying decides who travels. Here a qualifier has a number of rounds, a squad size and a number of coach's picks. The board ranks by total to par, then total strokes, then more rounds played. A card with fewer rounds in than the others ranks below every complete card. The top places qualify on score, the rest of the squad is the coach's pick, and nothing is final until the coach confirms the squad. A tie for the last place on score stays a tie until the coach chooses.
+A qualifier is a small sample. When the coach asks who should play, lay out the qualifier standing, recent tournament scoring, form and course history side by side, and say that it is their call.
 Players usually score lower at their home course because they know it. Compare home and away scores with that said.
 Wind, cold and wet ground make a course play longer and harder. Weather is rarely recorded here, so do not explain a round by the weather unless the coach tells you or the round carries a note.
 `;

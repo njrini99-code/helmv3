@@ -61,7 +61,33 @@ describe('the golf block of the cached prompt', () => {
     expect(text).toMatch(/a college player is expected to be negative, often by several strokes a round and in most parts of the game\. That is normal, not a failure\./);
     expect(text).toMatch(/The right reading, in words: approach at minus one and a half with putting close to zero/);
     expect(text).toMatch(/The wrong reading: "his approach play is bad", or sorting players into good and bad by the sign/);
-    expect(text).toMatch(/Putts per round: lower is better, but it misleads/);
+    expect(text).toMatch(/Putts per round: lower is better, but it misleads unless it is read with greens hit/);
+    expect(text).toMatch(/Whenever you give putts per round, give greens hit beside it, and judge putting by strokes gained putting or make rate by distance/);
+  });
+
+  // First full eval run, 11 Nov 2026: 13 golf-sense misses, most of them an answer that corrected the coach's premise from the
+  // data and never said the point the question turned on (one round is not a trend, a negative to par is under par, a short card
+  // ranks below a complete one). The block already held each point; the rule to say it did not exist.
+  it('tells the model to say the point a question turns on, even when the data does not show the case', () => {
+    for (const s of SURFACES) {
+      const text = golfBlock(s);
+      expect(text).toMatch(/^# Golf: reading the numbers\nWhen a question turns on a point made here, say that point in one plain sentence, even if the team's data does not show the case\./);
+      // The points the misses turned on are each still stated, in words a model can repeat.
+      expect(text).toMatch(/a negative to par is under par/);
+      expect(text).toMatch(/One bad round or one blow-up hole is an event, not a trend/);
+      expect(text).toMatch(/A difference smaller than that swing is not a change/);
+      expect(text).toMatch(/They come mostly from the first putt's distance control on long putts/);
+      expect(text).toMatch(/A round posted as a total only counts in scores \(average, to par, best round, trend\) and in nothing else\. It has no greens, fairways, putts or strokes gained/);
+      expect(text).toMatch(/A missing figure means not recorded\. It never means zero/);
+      expect(text).toMatch(/a college player is expected to be negative/);
+    }
+  });
+
+  it('a qualifier: a short card ranks below a complete one, a tie for the last place waits for the coach, and who plays is the coach’s call', () => {
+    const text = golfBlock('ask');
+    expect(text).toMatch(/A card with fewer rounds in than the others ranks below every complete card/);
+    expect(text).toMatch(/A tie for the last place on score stays a tie until the coach chooses/);
+    expect(text).toMatch(/lay out the qualifier standing, recent tournament scoring, form and course history side by side, and say that it is their call/);
   });
 
   it('explains strokes gained well enough to answer "why is everything negative?": what, against what, why, and what it is not', () => {

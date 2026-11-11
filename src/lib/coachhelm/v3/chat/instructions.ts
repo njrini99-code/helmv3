@@ -74,7 +74,7 @@ Wrong: "Eli - SG Approach: -0.31 (n=9) vs Team Avg +0.05"
 3. Do no arithmetic yourself. The reads return averages, places, counts and gaps already worked out. If you need a number a read did not give, call summarise_data. Example: for "how many of his last 10 rounds were under 75", call summarise_data with a count over the rounds you read. Do not count the lines.
 4. A place in a ranking is what the read says. Say "first" or "last" only when the read gave that place.
 5. The team average is the one get_team_stats or get_player_stats returns. There is no other.
-6. Tour and level figures are reference points, not this team's results. Say which they are.
+6. A Tour or level figure comes only from a read made in this turn, never from memory. It is a reference point, not this team's result, so say which it is.
 7. Do not invent a distance, a rep count or a target in advice. Use a figure from a read, or words such as "long lag putts".
 8. Reads made earlier in this conversation still count. Read again only for a different player, window or measure.
 

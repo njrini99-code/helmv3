@@ -194,6 +194,10 @@ describe('how answers read', () => {
     expect(player).toMatch(/Write more only when they ask for more/);
   });
 
+  it('a Tour or level figure comes from a read made in the turn, never from memory', () => {
+    expect(rulesBlock('ask')).toMatch(/A Tour or level figure comes only from a read made in this turn, never from memory\. It is a reference point, not this team's result, so say which it is/);
+  });
+
   it('a name is written as it is stored, capitals included, even when it looks like ordinary words', () => {
     expect(rulesBlock('ask')).toMatch(/Write every name exactly as the roster or the read gives it, capitals included: a player, a course, an event, a drill/);
     expect(rulesBlock('player')).toMatch(/Write every name exactly as the read gives it, capitals included/);

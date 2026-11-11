@@ -1512,6 +1512,10 @@ made by ENGINE at the overnight lead's direction; their owners should know.
 - **A player has `get_rounds`** (`my-rounds.ts`): their own Rounds page through a new loader, `myRounds`, bound for a
   player only. A player's tool list is now eleven reads; the data map's player text names it.
 - **`get_goals` counts what its state filter left out** (`team-reads.ts`).
+- **The golf block** (`knowledge/golf.ts`, 3,994 of its 4,000): its first line now tells the model to say the point a
+  question turns on even when the data does not show the case; putts per round is given with greens hit; a tie for the
+  last qualifying place waits for the coach; the lineup is "their call". The prompt's Figures rule 6 says a Tour or
+  level figure comes only from a read made in the turn.
 - **For the eval's owner (KNOWLEDGE).** Scorer lines that failed answers a coach would call right, left as they are:
   "the choice is yours" and "The choice stays with you" do not match `your (call|decision|choice)`; "normally below"
   and "what you'd expect" do not match `expected|normal`; a Tour make rate quoted from `get_player_stats` (the read

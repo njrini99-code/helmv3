@@ -947,6 +947,13 @@ replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
   chat asks for active goals and a coach was told only one goal was visible.
 - **A short answer still carries what was asked**: the prompt's rule 3 ("Give each thing the question asked for: every
   figure, name, course or count it names. Never drop one to stay short").
+- **Saying the point a question turns on** (the golf block's first line, coach and player): "When a question turns on a
+  point made here, say that point in one plain sentence, even if the team's data does not show the case." In the first
+  full eval run most golf-sense misses were answers that corrected the coach's premise from the data and never said the
+  point itself (one round is not a trend, a negative to par is under par, a short qualifier card ranks below a
+  complete one). With it: putts per round is always given with greens hit beside it; a tie for the last qualifying
+  place stays a tie until the coach chooses (SOURCES A6); who plays is the coach's call; and a Tour or level figure
+  comes only from a read made in the turn (the prompt's Figures rule 6).
 - **How long an answer is** (the prompt's "Answering", coach and player alike): the answer in the first sentence with
   its figure, at most four sentences in all as one short paragraph (an offer of a next step is one of the four), more
   only when the coach asks for more; no heading, table, bold or label with a colon at the start of a line; a list only
