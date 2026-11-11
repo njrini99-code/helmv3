@@ -96,6 +96,15 @@ describe('History, desktop', () => {
 });
 
 describe('History, phone', () => {
+  it('Add event is the head’s quiet key, as on Events and Compare: the same key under the same switch, never green on one view', () => {
+    const c = draw(data, search(), { phone: true });
+    const add = within(c as HTMLElement).getByRole('link', { name: 'Add event' });
+    expect(add.className).toContain('ch-btn--secondary');
+    expect(add.className).not.toContain('ch-btn--primary');
+    expect(add.getAttribute('href')).toContain('/tournaments/new');
+    expect(c.querySelectorAll('.ch-btn--primary')).toHaveLength(0);
+  });
+
   it('draws one bar a finished event, this season’s in green, each one opening its event', () => {
     const c = draw(data, search(), { phone: true });
     const bars = c.querySelectorAll('.ch-tour-rev-bar');
