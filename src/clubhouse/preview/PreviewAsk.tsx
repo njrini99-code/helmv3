@@ -142,8 +142,8 @@ function useScriptedChat(options: UseCoachHelmChatOptions = {}): UseCoachHelmCha
     const step = drive.islstep;
     let inner: ReturnType<typeof setTimeout> | undefined;
     const t = setTimeout(() => {
-      click('.ch-isl .hd');
-      if (step !== null) inner = setTimeout(() => click('.ch-isl .st .op'), step);
+      click('.ch-ak-page.is-last .ch-ak-isl button.hd');
+      if (step !== null) inner = setTimeout(() => click('.ch-ak-page.is-last .ch-ak-isl .st .op'), step);
     }, drive.isl);
     return () => {
       clearTimeout(t);
