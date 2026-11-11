@@ -212,6 +212,21 @@
 .ch-tour-desk.is-phone .ch-tour-desk-pill {
   height: 44px;
 }
+/* On a phone the section is the card, and its body starts on the heading's rule (ui.css). The pills, the hole grid's
+   switches and the comparison's line bring no room of their own and sat against that rule: they take 12, as the
+   player's event sections do (tournaments-player.css). The room under the pills and under the line is padding too: a
+   margin there is outside the block, so the page showed through the card as a 12px band over the table, and the
+   line's own margin is zeroed by `.ch-root p`, which left its button 1px under the words. */
+.ch-tour-desk.is-phone .ch-sec__head ~ .ch-tour-desk-tools {
+  margin-bottom: 0;
+  padding-block: 12px;
+}
+.ch-tour-desk.is-phone .ch-sec__head ~ .ch-tour-desk-hg {
+  padding-top: 12px;
+}
+.ch-tour-desk.is-phone .ch-sec__head ~ .ch-tour-desk-line {
+  padding-block: 12px;
+}
 
 /* Who counted (board .tr-ct; phone .tm-ct): players by rounds, the team under the lineup. Flush on the canvas on desktop. */
 .ch-tour-desk-ct__scroll {

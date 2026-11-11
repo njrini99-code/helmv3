@@ -17,6 +17,18 @@ describe('event desk hole grid columns', () => {
   });
 });
 
+describe('event desk tabs on a phone', () => {
+  it('a tab’s body stands 12 under its heading’s rule, and nothing leaves a band of page across the card', () => {
+    // The section is the card on a phone and its blocks draw the card's colour: a margin between two blocks is outside
+    // both, so the page showed through. Room is padding.
+    const tools = rule('.ch-tour-desk.is-phone .ch-sec__head ~ .ch-tour-desk-tools');
+    expect(tools).toMatch(/margin-bottom:\s*0/);
+    expect(tools).toMatch(/padding-block:\s*12px/);
+    expect(rule('.ch-tour-desk.is-phone .ch-sec__head ~ .ch-tour-desk-hg')).toMatch(/padding-top:\s*12px/);
+    expect(rule('.ch-tour-desk.is-phone .ch-sec__head ~ .ch-tour-desk-line')).toMatch(/padding-block:\s*12px/);
+  });
+});
+
 describe('event desk hole grid colours', () => {
   it('draws the Team vs par row under par in the score-under red (D-42), never the chart gain green', () => {
     const under = rule('.ch-tour-desk-heat.is-under');
