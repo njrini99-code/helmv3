@@ -88,7 +88,7 @@ function LiveViewDesk({ v }: { v: LiveViewState }) {
 
   return (
     <main ref={root} className="ch-lv ch-lv--desk" aria-labelledby="ch-lv-title" data-canopy="">
-      <header className="ch-lv-head" data-canopy-head="">
+      <header className="ch-lv-head" data-canopy-head="tight">
         <div>
           <span className="ch-lv-eyebrow">Today</span>
           <LargeTitle id="ch-lv-title">

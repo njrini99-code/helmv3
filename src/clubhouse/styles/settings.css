@@ -818,11 +818,11 @@
     z-index: 1;
     background: var(--ch-workspace);
   }
-  /* The large title (.ch-large-title, shell.css), as the board's page intro (ui.css .ch-intro): under an engraved double
-     rule. The top bar carries only the back link, and the page's heading for VoiceOver. */
+  /* The large title (.ch-large-title, shell.css) opens the page, as the board's page intro does (ui.css .ch-intro): 8px
+     in, with no rule above it (owner, 11 Nov 2026: the double rule there only drew a line under the bar). The top bar
+     carries only the back link, and the page's heading for VoiceOver. */
   .ch-setm-title {
-    padding-top: 16px;
-    border-top: var(--ch-ledger-rule-double);
+    padding-top: 8px;
   }
   /* The intro's brief, 10px under the title (ui.css .ch-intro__brief); written against the page so it outranks the
      root's paragraph reset. */

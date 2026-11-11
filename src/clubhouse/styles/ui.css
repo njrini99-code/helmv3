@@ -1052,12 +1052,15 @@ button.ch-feat {
   color: var(--ch-on-green-ink-soft);
 }
 
+/* A page's opening has no rule above it (owner, 11 Nov 2026): nothing sits above it but the bar, so the Ledger's double
+   rule there only drew a thin double line under the green bar. The double rule is for a section that follows something
+   (.ch-sec__head below, a page's own section heads); an opening starts 8px in. Calendar and Rounds had dropped it by hand,
+   and every page's own opening head (Team Hub, Qualifiers, Settings, Recruiting, Stats) now does the same. */
 .ch-intro {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding-top: 16px;
-  border-top: var(--ch-ledger-rule-double);
+  padding-top: 8px;
 }
 /* 12px, the phone text floor (F09): PageIntro opens a page on the phone (lead, 2026-10-08). */
 .ch-intro__eyebrow {

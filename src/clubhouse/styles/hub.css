@@ -1237,10 +1237,10 @@
     gap: var(--ch-gap-section-phone-snug);
     padding: var(--ch-page-top-phone) var(--ch-page-x-phone) var(--ch-page-bottom-phone);
   }
+  /* The head opens the page: no rule above it, 8px in, as the kit's intro (ui.css .ch-intro; owner, 11 Nov 2026). */
   .ch-hb-h {
     gap: 16px;
-    padding: 16px 0 0;
-    border-top: var(--ch-ledger-rule-double);
+    padding: 8px 0 0;
     border-bottom: 0;
   }
   /* The page's large title (.ch-large-title, shell.css; owner decision 4) on its own line under the role chip and the

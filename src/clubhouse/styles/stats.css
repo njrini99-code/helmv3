@@ -3789,10 +3789,10 @@
     gap: 16px;
     padding: 26px var(--ch-page-x-phone) 36px;
   }
+  /* Each head opens its page: no rule above it, 8px in (ui.css .ch-intro; owner, 11 Nov 2026). */
   .ch-stm .ch-stm-head {
     gap: 8px;
-    padding: 16px 0 0;
-    border-top: var(--ch-ledger-rule-double);
+    padding: 8px 0 0;
   }
   /* The team's context line over the title: plain sentence case, never tracked (doctrine; direction A, 2026-10-08). */
   .ch-stm .ch-stm-head span {
@@ -3804,8 +3804,7 @@
   /* A player's head: the avatar in the Ledger's ring beside the name, the page's large title (.ch-large-title, shell.css). */
   .ch-stm .ch-spm-head {
     gap: 16px;
-    padding: 16px 0 0;
-    border-top: var(--ch-ledger-rule-double);
+    padding: 8px 0 0;
   }
   /* Inset by the ring's 4px, so the ring (not the coin) meets the column's edge. */
   .ch-stm .ch-spm-head > .ch-avatar {

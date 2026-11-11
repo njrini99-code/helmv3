@@ -19,7 +19,7 @@ export function MessagesNoTeam({ coach }: { coach: boolean; }) {
  */
 export function MessagesHead({ brief }: { brief?: string }) {
   return (
-    <header className="ch-ms-head" data-canopy-head="">
+    <header className="ch-ms-head" data-canopy-head="tight">
       <h1>Messages</h1>
       {brief && <p>{brief}</p>}
     </header>
