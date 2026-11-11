@@ -73,8 +73,10 @@ describe('Team rounds · the desktop book is a table', () => {
     const table = screen.getByRole('table', { name: 'Team rounds' });
     expect([...table.querySelectorAll('[role="columnheader"]')].map((h) => h.textContent)).toEqual(['Date', 'Player', 'Course', 'Tees', 'Type', 'Score', 'To par']);
     const first = PREVIEW_TEAM_ROUNDS.rounds.list[0]!;
+    // Two players posted on Oct 12: inside a day the rounds run by player, A to Z, so Eli Brooks' 75 is above Jonah Okafor's 72.
+    expect(first.player).toBe('Eli Brooks');
     const row = firstRow().closest('[role="row"]')!;
-    expect([...row.querySelectorAll('[role="cell"]')].map((c) => c.textContent)).toEqual(['Oct 12', expect.stringContaining(first.player), first.course, 'Blue tees', 'Qualifier', String(first.score), 'E']);
+    expect([...row.querySelectorAll('[role="cell"]')].map((c) => c.textContent)).toEqual(['Oct 12', expect.stringContaining(first.player), first.course, 'Blue tees', 'Qualifier', '75', '+3']);
     expect(screen.getByRole('heading', { level: 2, name: 'October 2026' })).toBeTruthy();
     // No stretched phone list beside it.
     expect(document.querySelector('.ch-lgr')).toBeNull();
