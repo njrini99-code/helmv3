@@ -11,7 +11,11 @@
   min-height: 0;
   background: var(--ch-workspace);
   color: var(--ch-text-primary);
-  font-variant-numeric: tabular-nums;
+  /* The one large figure of each direction: 40px and up is free of the step scale, so each is a role of this page. */
+  --ch-type-look-figure-a: 500 calc(64 * var(--ch-type-k))/0.8 var(--ch-font-sans);
+  --ch-type-look-figure-b: 500 calc(52 * var(--ch-type-k))/1 var(--ch-font-sans);
+  --ch-type-look-figure-b-desk: 500 calc(64 * var(--ch-type-k))/1 var(--ch-font-sans);
+  --ch-type-look-figure-c: 600 calc(44 * var(--ch-type-k))/1 var(--ch-font-sans);
 }
 .ch-look[data-long] {
   height: auto;
@@ -163,6 +167,7 @@
 .ch-look-isl__row.is-active {
   color: var(--ch-feature-ink);
   font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
 }
 .ch-look-isl__row.is-waiting {
   color: var(--ch-feature-ink-3);
@@ -247,7 +252,7 @@
 }
 .ch-look-hold b {
   font: var(--ch-type-14-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
 }
 .ch-look-hold.is-on-green .ch-look-hold__track {
   stroke: var(--ch-feature-track);
@@ -335,7 +340,7 @@
   justify-content: space-between;
   gap: var(--ch-space-3);
   padding-bottom: var(--ch-space-3);
-  border-bottom: 1px solid var(--ch-ink-rule);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-ink-rule);
   color: var(--ch-text-tertiary);
   font: var(--ch-type-13);
 }
@@ -361,7 +366,8 @@
   background: none;
   color: var(--ch-champagne-ink);
   font: var(--ch-type-11-strong);
-  line-height: 1;
+  letter-spacing: var(--ch-track-11);
+  line-height: var(--ch-lead-tight);
   cursor: pointer;
 }
 .ch-look-a-mark::after {
@@ -385,9 +391,9 @@
 }
 .ch-look-a-fig__n {
   color: var(--ch-loss);
-  font: 500 calc(64 * var(--ch-type-k)) / 0.8 var(--ch-font-sans);
+  font: var(--ch-type-look-figure-a);
   font-variation-settings: var(--ch-wdth-dense);
-  letter-spacing: -0.045em;
+  letter-spacing: -0.038em;
 }
 .ch-look-a-fig__l {
   font: var(--ch-type-17-strong);
@@ -505,8 +511,7 @@
 }
 .ch-look-a-hole__name {
   fill: var(--ch-text-primary);
-  font-size: 12px;
-  font-weight: 500;
+  font: var(--ch-type-12-medium);
 }
 .ch-look-a-hole__zero {
   stroke: var(--ch-chart-zero);
@@ -514,15 +519,15 @@
 }
 .ch-look-a-hole__base {
   fill: var(--ch-text-tertiary);
-  font-size: 11px;
+  font: var(--ch-type-11);
+  letter-spacing: var(--ch-track-11);
 }
 .ch-look-a-hole__stem {
   stroke-width: 2;
   stroke-linecap: round;
 }
 .ch-look-a-hole__value {
-  font-size: 15px;
-  font-weight: 600;
+  font: var(--ch-type-15-strong);
   letter-spacing: -0.01em;
 }
 .ch-look-a-hole__part.is-gain .ch-look-a-hole__stem {
@@ -551,7 +556,8 @@
 }
 .ch-look-a-trend__axis {
   fill: var(--ch-text-tertiary);
-  font-size: 11px;
+  font: var(--ch-type-11);
+  letter-spacing: var(--ch-track-11);
 }
 .ch-look-a-trend__path {
   fill: none;
@@ -572,13 +578,12 @@
 }
 .ch-look-a-trend__first {
   fill: var(--ch-text-secondary);
-  font-size: 12px;
-  font-weight: 500;
+  font: var(--ch-type-12-medium);
 }
 .ch-look-a-trend__last {
   fill: var(--ch-gain);
-  font-size: 15px;
-  font-weight: 600;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
 }
 
 /* The ranked table: ruled lines, no boxes. */
@@ -613,13 +618,14 @@
 .ch-look-a-rank__v {
   color: var(--ch-loss);
   font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   text-align: right;
 }
 
 /* The sources, at the foot of the leaf: the pencilled numerals again, each a row that opens. */
 .ch-look-a-src {
   margin-top: var(--ch-space-4);
-  border-top: 1px solid var(--ch-ink-rule);
+  border-top: var(--ch-hairline-w) solid var(--ch-ink-rule);
 }
 .ch-look-a-src__row {
   display: grid;
@@ -648,6 +654,7 @@
 .ch-look-a-src__n {
   color: var(--ch-champagne-ink);
   font: var(--ch-type-11-strong);
+  letter-spacing: var(--ch-track-11);
 }
 .ch-look-a-src__t {
   overflow: hidden;
@@ -835,14 +842,14 @@
   padding: var(--ch-space-3) 0 var(--ch-space-3) var(--ch-space-4);
   border-left: var(--ch-hairline-w) solid var(--ch-separator-strong);
   color: var(--ch-loss);
-  font: 500 calc(52 * var(--ch-type-k)) / 1 var(--ch-font-sans);
+  font: var(--ch-type-look-figure-b);
   font-variation-settings: var(--ch-wdth-dense);
-  letter-spacing: -0.045em;
+  letter-spacing: -0.038em;
 }
 
 /* The grid: a label column, eight rounds, a total. Every row below shares it. */
 .ch-look-b-grid {
-  border-top: 1px solid var(--ch-ink-rule);
+  border-top: var(--ch-hairline-w) solid var(--ch-ink-rule);
 }
 .ch-look-b-row {
   position: relative;
@@ -898,6 +905,7 @@
 .ch-look-b-row.is-trend small {
   color: var(--ch-text-tertiary);
   font: var(--ch-type-11);
+  letter-spacing: var(--ch-track-11);
 }
 .ch-look-b-plot {
   position: relative;
@@ -986,7 +994,7 @@
   left: 50%;
   width: 6px;
   height: calc(var(--ch-look-v) * 13px);
-  margin-left: -3px;
+  translate: -50% 0;
   border-radius: var(--ch-radius-mark);
 }
 .ch-look-b-row.is-part i.is-gain {
@@ -1020,7 +1028,7 @@
   left: 50%;
   width: 50px;
   height: 30px;
-  margin: -15px 0 0 -25px;
+  translate: -50% -50%;
   fill: none;
   stroke: var(--ch-ink-500);
   stroke-width: 1.25;
@@ -1114,7 +1122,7 @@
 }
 .ch-look-b-task__rows {
   margin: 0;
-  border-top: 1px solid var(--ch-ink-rule);
+  border-top: var(--ch-hairline-w) solid var(--ch-ink-rule);
 }
 .ch-look-b-task__rows > div {
   position: relative;
@@ -1225,7 +1233,7 @@
   align-items: center;
   gap: var(--ch-space-3);
   min-height: 48px;
-  border-bottom: 1px solid var(--ch-champagne-rule-strong);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-champagne-rule-strong);
 }
 .ch-look-board__head h3 {
   color: inherit;
@@ -1265,7 +1273,8 @@
   box-shadow: var(--ch-board-double-shadow);
   color: var(--ch-print-ink);
   font: var(--ch-type-15-strong);
-  line-height: 1;
+  letter-spacing: var(--ch-track-15);
+  line-height: var(--ch-lead-tight);
 }
 .ch-look-c-plates {
   display: inline-flex;
@@ -1276,7 +1285,7 @@
   min-width: 38px;
   height: 60px;
   padding: 0 var(--ch-space-1);
-  font: 600 calc(44 * var(--ch-type-k)) / 1 var(--ch-font-sans);
+  font: var(--ch-type-look-figure-c);
   font-variation-settings: var(--ch-wdth-dense);
   letter-spacing: -0.03em;
 }
@@ -1315,7 +1324,7 @@
   gap: var(--ch-space-3);
   margin: 0;
   padding-bottom: var(--ch-space-2);
-  border-bottom: 1px solid var(--ch-champagne-rule-strong);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-champagne-rule-strong);
   color: var(--ch-feature-ink);
   font: var(--ch-type-13-strong);
 }
@@ -1363,7 +1372,7 @@
   position: absolute;
   top: 50%;
   height: 10px;
-  margin-top: -5px;
+  translate: 0 -50%;
   width: calc(var(--ch-look-v) * 84px);
   border-radius: var(--ch-radius-mark);
 }
@@ -1401,7 +1410,7 @@
   height: 28px;
   padding: 0;
   font: var(--ch-type-14-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
 }
 .ch-look-c-pegs span {
   align-self: end;
@@ -1479,7 +1488,7 @@
 .ch-look-isl.is-slats .ch-look-isl__head {
   min-height: 48px;
   margin-bottom: var(--ch-space-2);
-  border-bottom: 1px solid var(--ch-champagne-rule-strong);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-champagne-rule-strong);
 }
 
 /* The task on the board: each field a slat, and an ivory sill for the keys. */
@@ -1524,7 +1533,7 @@
 }
 .ch-look-c-after {
   margin-top: var(--ch-space-4);
-  border-top: 1px solid var(--ch-champagne-rule-strong);
+  border-top: var(--ch-hairline-w) solid var(--ch-champagne-rule-strong);
 }
 .ch-look-c-after > div {
   min-height: 40px;
@@ -1604,16 +1613,16 @@
   }
   .ch-look-b-total__n {
     padding-left: var(--ch-space-6);
-    font-size: calc(64 * var(--ch-type-k));
+    font: var(--ch-type-look-figure-b-desk);
   }
   .ch-look-b-row.is-part > [role='rowheader'],
   .ch-look-b-row.is-worst > [role='rowheader'],
   .ch-look-b-row.is-trend > [role='rowheader'] {
-    font-size: calc(14 * var(--ch-type-k));
+    font: var(--ch-type-14-medium);
+    line-height: var(--ch-lead-tight);
   }
   .ch-look-b-row.is-part > span[role='cell'] i {
     width: 8px;
-    margin-left: -4px;
   }
   .ch-look--b .ch-look-card:not(.ch-look-b-task) .ch-look-b-src {
     display: grid;
