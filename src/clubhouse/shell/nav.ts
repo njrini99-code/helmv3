@@ -172,6 +172,20 @@ export function routeLabel(pathname: string): string | null {
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+/**
+ * A section's page that is a root on the phone under a name of its own (Practice's Drills, Groups and Templates: each
+ * page's bar is `PhoneTop start` with that name). The shell's bar says the same name while the page loads, so it does
+ * not read "Practice" and then change. Null where the section's own name is the page's.
+ */
+const PHONE_ROOT_NAMES: Readonly<Record<string, string>> = {
+  '/golf/dashboard/practice/drills': 'Drills',
+  '/golf/dashboard/practice/groups': 'Groups',
+  '/golf/dashboard/practice/templates': 'Templates',
+};
+export function phoneRootName(pathname: string): string | null {
+  return PHONE_ROOT_NAMES[pathname.replace(/\/$/, '')] ?? null;
+}
+
 export function activeNavItem(pathname: string, role: ChRole = 'coach', features?: ChNavFeatures | null): ChNavItem | undefined {
   let best: ChNavItem | undefined;
   for (const item of navFor(role, features)) {
@@ -378,11 +392,13 @@ const PUSHED_BELOW: ReadonlyArray<{ path: RegExp; top: (role: ChRole, m: RegExpE
   { path: /^\/golf\/dashboard\/rounds\/recover$/, top: () => ({ back: 'Rounds', title: 'Recover', parent: '/golf/dashboard/rounds' }) },
   // No parent: a plan opens from Ask, a push, Documents or Calendar, and Back returns to whichever it was (D-41). The
   // link is named as the page names it (PlanPageActions: "Practice"), so the bar does not change when the page arrives.
-  { path: /^\/golf\/dashboard\/practice\/plan\/[^/]+$/, top: (role) => ({ back: 'Practice', title: role === 'player' ? '' : 'Practice plan' }) },
+  // The bar's title is the plan's own name, which the address does not carry: the stand-in says nothing rather than
+  // "Practice plan" for a moment and then the name (the builder's bar too).
+  { path: /^\/golf\/dashboard\/practice\/plan\/[^/]+$/, top: () => ({ back: 'Practice', title: '' }) },
   { path: /^\/golf\/dashboard\/practice\/drills\/[^/]+$/, top: () => ({ back: 'Drills', title: 'Drill', parent: '/golf/dashboard/practice/drills' }) },
   { path: /^\/golf\/dashboard\/practice\/print\/([^/]+)$/, top: (role, m) => (role === 'coach' ? { back: 'Plan', title: 'Print', parent: `/golf/dashboard/practice/plan/${m[1]}` } : null) },
   { path: /^\/golf\/dashboard\/practice\/format$/, top: (role) => (role === 'coach' ? { back: 'Practice', title: 'Plan format' } : null) },
-  { path: /^\/golf\/dashboard\/practice\/plan\/[^/]+\/edit$/, top: (role) => (role === 'coach' ? { back: 'Practice', title: 'Practice plan', parent: '/golf/dashboard/practice' } : null) },
+  { path: /^\/golf\/dashboard\/practice\/plan\/[^/]+\/edit$/, top: (role) => (role === 'coach' ? { back: 'Practice', title: '', parent: '/golf/dashboard/practice' } : null) },
   // P-7: no parent, so Back steps back to the round or the library it came from (D-41).
   { path: /^\/golf\/dashboard\/rounds\/course\/[^/]+$/, top: (role) => ({ back: role === 'coach' ? 'Round' : 'Rounds', title: 'Course' }) },
 ];

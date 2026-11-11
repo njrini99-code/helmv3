@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRef } from 'react';
 import { ChevronRight, Settings } from 'lucide-react';
 import { Icon } from '../ui/Icon';
-import { routeLabel, type ChNavItem, type ChPhonePushedTop } from './nav';
+import { phoneRootName, routeLabel, type ChNavItem, type ChPhonePushedTop } from './nav';
 import { Bell } from './Bell';
 import { useCrumbTrail } from './crumbs';
 import { PushedTopStandIn, usePhoneChromeState, DeskSlot } from './phone-chrome';
@@ -86,9 +86,10 @@ export function TopBar({
         ))}
       </nav>
       <DeskSlot />
-      {/* The phone's tab-root title. Only one of it and the breadcrumbs is displayed at a width. */}
+      {/* The phone's tab-root title. Only one of it and the breadcrumbs is displayed at a width. A root with a name of
+          its own (Practice's Drills, Groups, Templates) is named so here too, as its page's bar will name it. */}
       <b className="ch-topbar__ptitle">
-        <SectionTrigger>{crumbs[crumbs.length - 1]}</SectionTrigger>
+        <SectionTrigger>{phoneRootName(pathname) ?? crumbs[crumbs.length - 1]}</SectionTrigger>
       </b>
       {/* The green hero's bar (usePhoneHero, the phone Home): the team's mark beside the title. */}
       <span className="ch-topbar__team" aria-hidden="true" title={teamName ?? 'GolfHelm'}>

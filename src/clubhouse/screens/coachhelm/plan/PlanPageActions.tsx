@@ -51,7 +51,7 @@ export function PlanPageActions({ plan, playerPlanId, editHref = null, coachBar 
   if (inPage) {
     return (
       <div className="ch-prc-planacts">
-        {phone && <PhoneTop title="Practice plan" back={{ label: 'Practice', onBack: back }} />}
+        {phone && <PhoneTop title={plan.title} back={{ label: 'Practice', onBack: back }} />}
         <Button onClick={print}>Print</Button>
         <Button busy={sharing} onClick={() => void sharePdf()}>
           Share PDF
