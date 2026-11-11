@@ -106,6 +106,20 @@ export function clearFrom(g: ChCalEvent, laid: ReadonlyArray<ChLaid<ChCalEvent |
   return t > g.start! && (g.end! - t) * hh - 2 >= 22 ? t : undefined;
 }
 
+/**
+ * The hour another block starts lying over this one. The cascade draws each later lane over the earlier ones, to the
+ * column's right edge, so from that hour down only the strip at this block's left still shows: 23px of it in the
+ * desktop week's 100px columns, where the class under "Course prep" read "10" and "3:(" (the ends of its second title
+ * line and of its time). A block's words keep to the rows above it there (EventBlock, ClassGroupBlock). A busy block
+ * lies under the others and covers nothing.
+ */
+export function coveredFrom(l: ChLaid<ChCalEvent | ChClassGroup>, laid: ReadonlyArray<ChLaid<ChCalEvent | ChClassGroup>>): number | undefined {
+  const g = l.e;
+  if (l.lanes < 2 || isUnder(g)) return undefined;
+  const over = laid.filter((o) => o.lane > l.lane && !isUnder(o.e) && o.e.start! < g.end! && o.e.end! > g.start!);
+  return over.length ? Math.max(g.start!, Math.min(...over.map((o) => o.e.start!))) : undefined;
+}
+
 export function EventBlock({
   e,
   lane,
@@ -123,6 +137,7 @@ export function EventBlock({
   past = false,
   onSlot,
   clear,
+  cover,
 }: {
   e: ChCalEvent;
   lane: number;
@@ -153,6 +168,8 @@ export function EventBlock({
   onSlot?: (on: boolean) => void;
   /** A busy block under other events: the hour it comes out from under them (clearFrom), where it is drawn from. */
   clear?: number;
+  /** The hour another block starts lying over this one (coveredFrom): its words keep to the rows above it. */
+  cover?: number;
 }) {
   const clock = useChClock();
   const rowMark = useRowMark();
@@ -213,7 +230,12 @@ export function EventBlock({
   // corner, and the title leaves the time its row there, so the mark never lies on a title line.
   const marked = showWarn || (!short && (e.plan?.state === 'published' || e.plan?.state === 'edited'));
   const top0 = shared ? 4 : 6;
-  const solo = Math.max(1, Math.min(3, Math.floor((h - top0 - (marked ? 2 + timeLine : 4) + 0.5) / titleLine)));
+  // Under a block that lies over this one: the room its words have above that block, less the 2px of its edge. The
+  // title takes only the lines that show whole there (one at least), and the time keeps its row only if it does too
+  // (calendar.css, .ch-ev.is-covered .ch-ev__w): never a line cut off at the other block's side.
+  const room = cover != null && cover < end ? Math.max(titleLine, (Math.max(cover, start) - start) * hh - 2 - top0) : null;
+  const held = Math.floor((h - top0 - (marked ? 2 + timeLine : 4) + 0.5) / titleLine);
+  const solo = Math.max(1, Math.min(3, held, room != null ? Math.floor((room + 0.5) / titleLine) : 3));
   const words = (
     <>
       <span className="ch-ev__t">
@@ -243,9 +265,9 @@ export function EventBlock({
       type="button"
       data-print-visible
       // CH-6801: a button named with its title, time and any overlap. CH-6601: it lifts on hover and marks its selection.
-      className={`ch-ev ch-ev--${e.cancelled ? 'other' : e.type}${tier === 'sliver' ? ' ch-ev--sliver' : ''}${e.cancelled ? ' is-cancelled' : ''}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${under ? ' ch-ev--under' : ''}${lines ? ' ch-ev--wrap' : ''}${pill ? ' has-round' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${marked ? ' has-mark' : ''}${past && !state ? ' is-past' : ''}`}
+      className={`ch-ev ch-ev--${e.cancelled ? 'other' : e.type}${tier === 'sliver' ? ' ch-ev--sliver' : ''}${e.cancelled ? ' is-cancelled' : ''}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${under ? ' ch-ev--under' : ''}${lines ? ' ch-ev--wrap' : ''}${pill ? ' has-round' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${marked ? ' has-mark' : ''}${room != null ? ' is-covered' : ''}${past && !state ? ' is-past' : ''}`}
       data-ev-id={state === 'card' ? undefined : e.id}
-      style={{ top, height: h, left: box.left, width: box.width, zIndex: under || state === 'card' ? undefined : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}), ...(give ? { '--ch-ev-solo': solo } : {}) } as CSSProperties}
+      style={{ top, height: h, left: box.left, width: box.width, zIndex: under || state === 'card' ? undefined : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}), ...(give ? { '--ch-ev-solo': solo } : {}), ...(room != null ? { '--ch-ev-room': `${room}px` } : {}) } as CSSProperties}
       aria-label={`${rl.name}${rl.spoken}, ${rangeLabel(e, clock)}${past && !state ? ', ended' : ''}${flagged ? ', schedule overlap' : ''}${e.cancelled ? ', cancelled' : ''}${mark?.aria ?? ''}${drag ? '. Alt and the arrow keys move it; add Shift to change its length' : ''}`}
       aria-pressed={sel}
       aria-hidden={state === 'card' || undefined}
@@ -459,7 +481,7 @@ export function TimeGrid({
               {d === now.date && nowVisible && <span className="ch-wk__gone" aria-hidden="true" style={{ height: (now.hour - from) * CAL_HH }} />}
               {laid.map((l) => {
                 const g = l.e;
-                if (isClassGroup(g)) return <ClassGroupBlock key={g.id} g={g} lane={l.lane} lanes={l.lanes} selId={selId} people={people} onSelect={onSelect} from={from} to={to} />;
+                if (isClassGroup(g)) return <ClassGroupBlock key={g.id} g={g} lane={l.lane} lanes={l.lanes} selId={selId} people={people} onSelect={onSelect} from={from} to={to} cover={coveredFrom(l, laid)} />;
                 return (
                 <EventPeek key={g.id} e={g} coach={coach} people={people} onOpen={() => onSelect(g.id)} disabled={!!drag}>
                   <EventBlock
@@ -478,6 +500,7 @@ export function TimeGrid({
                     past={isPastEvent(g, now)}
                     onSlot={(on) => setRested((cur) => (on ? g.id : cur === g.id ? null : cur))}
                     clear={l.lanes > 1 && isUnder(g) ? clearFrom(g, laid) : undefined}
+                    cover={coveredFrom(l, laid)}
                   />
                 </EventPeek>
                 );

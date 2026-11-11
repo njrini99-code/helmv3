@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../../../lib/haptics', () => ({ haptic: vi.fn(), hapticScrub: vi.fn() }));
 
 import { laneBox, layoutLanes, type ChCalEvent, type ChCalType } from '../model';
-import { TimeGrid, clearFrom } from '../views';
+import { TimeGrid, clearFrom, coveredFrom } from '../views';
 
 afterEach(cleanup);
 
@@ -141,5 +141,68 @@ describe('a timed run in the all-day lane', () => {
 
   it('across two columns the name comes first: both times beside it left "8:00 AM S… 5:00 PM"', () => {
     expect(times(run('2026-10-20', '2026-10-21'))).toEqual([]);
+  });
+});
+
+/**
+ * Thu 3 PM at 1440px: a class from 3:00 with "Course prep" lying over it from 3:30. The class showed "10" and "3:(" in
+ * the 23px strip beside the block on top: the ends of its second title line and of its time.
+ */
+describe('a block another lies over shows whole lines only', () => {
+  const lab = ev({ id: 'lab', type: 'class', start: 15, end: 16.25 });
+  const prep = ev({ id: 'prep', type: 'practice', start: 15.5, end: 17.5 });
+
+  it('knows the hour the block on top begins; the block on top, and one under a busy block, are covered by nothing', () => {
+    const laid = layoutLanes([lab, prep]);
+    const of = (id: string) => laid.find((l) => l.e.id === id)!;
+    expect(coveredFrom(of('lab'), laid)).toBe(15.5);
+    expect(coveredFrom(of('prep'), laid)).toBeUndefined();
+    const busy = ev({ id: 'busy', type: 'busy', start: 15.5, end: 16 });
+    const under = layoutLanes([lab, busy]);
+    expect(coveredFrom(under.find((l) => l.e.id === 'lab')!, under)).toBeUndefined();
+    expect(coveredFrom(layoutLanes([lab])[0]!, layoutLanes([lab]))).toBeUndefined();
+  });
+
+  it('its title keeps to the lines above the block on top, and its words to the room there', () => {
+    const { container } = grid([lab, prep]);
+    const b = container.querySelector<HTMLElement>('[data-ev-id="lab"]')!;
+    expect(b.className).toContain('is-covered');
+    // Half an hour is 26px: less the other block's 2px edge and this one's 4px of padding, 20px, one 18px title line.
+    expect(b.style.getPropertyValue('--ch-ev-room')).toBe('20px');
+    expect(b.style.getPropertyValue('--ch-ev-solo')).toBe('1');
+    const top = container.querySelector<HTMLElement>('[data-ev-id="prep"]')!;
+    expect(top.className).not.toContain('is-covered');
+    expect(top.style.getPropertyValue('--ch-ev-room')).toBe('');
+  });
+
+  it('a block covered lower down keeps every line that shows whole', () => {
+    const block = ev({ id: 'block', type: 'practice', start: 15.5, end: 17 });
+    const one = ev({ id: 'one', type: 'meeting', start: 16.75, end: 17.5 });
+    const { container } = grid([block, one]);
+    const b = container.querySelector<HTMLElement>('[data-ev-id="block"]')!;
+    // 75 minutes is 65px: 59 of room, three title lines, or two and the time's row.
+    expect(b.style.getPropertyValue('--ch-ev-room')).toBe('59px');
+    expect(b.style.getPropertyValue('--ch-ev-solo')).toBe('3');
+  });
+
+  it('a block of classes marks the lines of names that would be cut', () => {
+    const a = ev({ id: 'a', type: 'class', title: 'CHEM 102', owner: 'p1', start: 15, end: 16.25 });
+    const c = ev({ id: 'c', type: 'class', title: 'BIOL 110', owner: 'p2', start: 15, end: 16.25 });
+    const { container } = grid([a, c, prep]);
+    const who = [...container.querySelectorAll<HTMLElement>('.ch-ev--group .ch-ev__who')];
+    expect(who.length).toBeGreaterThan(0);
+    for (const w of who) expect(w.hasAttribute('data-covered')).toBe(true);
+    cleanup();
+    // With nothing over it the names are plain lines.
+    const free = grid([a, c]);
+    for (const w of free.container.querySelectorAll('.ch-ev--group .ch-ev__who')) expect(w.hasAttribute('data-covered')).toBe(false);
+  });
+
+  it('only in a narrow column: a wide one shows those rows whole in the strip at the left', () => {
+    const at = css.indexOf('.ch-ev.is-covered .ch-ev__w {');
+    expect(at).toBeGreaterThan(-1);
+    const open = css.lastIndexOf('@container', at);
+    expect(css.slice(open, css.indexOf('{', open)).trim()).toBe('@container (max-width: 97.98px)');
+    expect(css.slice(at)).toMatch(/^\.ch-ev\.is-covered \.ch-ev__w \{\s*height: var\(--ch-ev-room\);\s*\}\s*\.ch-ev--group \.ch-ev__who\[data-covered\] \{\s*display: none;/);
   });
 });

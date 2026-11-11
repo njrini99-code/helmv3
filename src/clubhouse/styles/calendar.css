@@ -1057,6 +1057,16 @@ html[data-fw-theme='dark'] .ch-ev-bar.is-held {
   .ch-ev--short .ch-ev__m {
     display: none;
   }
+  /* A block another lies over (views.tsx coveredFrom): from where that one begins only a 23px strip at the left still
+     shows, and whatever ran under it was cut off at its side (the class under "Course prep" read "10" and "3:("). The
+     words keep to the room above it (--ch-ev-room): the title the lines that show whole, and the time its row only when
+     that row does too; otherwise it wraps out of sight with the rest, as a time with no row always has. */
+  .ch-ev.is-covered .ch-ev__w {
+    height: var(--ch-ev-room);
+  }
+  .ch-ev--group .ch-ev__who[data-covered] {
+    display: none;
+  }
 }
 /* An event block's time in whole parts (views.tsx): "8:00", " AM", " – 9:30 AM", " · Finley GC". One line shows; a part
    that doesn't fit wraps out of sight with every part after it, so the block keeps the longest start of its time that

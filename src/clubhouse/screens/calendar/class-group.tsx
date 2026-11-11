@@ -41,6 +41,7 @@ export function ClassGroupBlock({
   onSelect,
   from,
   to,
+  cover,
 }: {
   g: ChClassGroup;
   lane: number;
@@ -50,6 +51,8 @@ export function ClassGroupBlock({
   onSelect: (id: string) => void;
   from: number;
   to: number;
+  /** The hour another block starts lying over this one (views.tsx coveredFrom): the names keep to the rows above it. */
+  cover?: number;
 }) {
   const id = useId();
   const reduced = useChReducedMotion();
@@ -73,6 +76,11 @@ export function ClassGroupBlock({
   // 2, under 6px of padding (it counted 15 a line, so a larger Text Size pushed the last name out of the block).
   const short = h < 6 + 34 * k;
   const lines = short ? 0 : Math.min(2, Math.floor((h - 6 - 18 * k + 0.5) / (2 + 16 * k)));
+  // Under a block that lies over this one, the lines of names that would be cut at its side: every line that ends below
+  // where it begins (less the 2px of its edge), counted under the cascaded block's 4px of padding. In a narrow column
+  // they go (calendar.css, .ch-ev__who[data-covered]); a wide column shows them whole in the strip at the left.
+  const room = cover != null && cover < end ? (Math.max(cover, start) - start) * CAL_HH - 2 : null;
+  const cut = (line: number) => (room != null && 4 + 18 * k + line * (2 + 16 * k) > room ? '' : undefined);
   const fill = names.length >= 7 ? 3 : names.length >= 4 ? 2 : 1;
 
   const close = useCallback((focus = true) => {
@@ -154,9 +162,9 @@ export function ClassGroupBlock({
         }}
       >
         <span className="ch-ev__t">Class</span>
-        {lines >= 2 && <span className="ch-ev__who">{names[0]}</span>}
-        {lines >= 2 && more > 0 && <span className="ch-ev__who">{more} more</span>}
-        {lines === 1 && <span className="ch-ev__who">{more > 0 ? `${names[0]} +${more}` : names[0]}</span>}
+        {lines >= 2 && <span className="ch-ev__who" data-covered={cut(1)}>{names[0]}</span>}
+        {lines >= 2 && more > 0 && <span className="ch-ev__who" data-covered={cut(2)}>{more} more</span>}
+        {lines === 1 && <span className="ch-ev__who" data-covered={cut(1)}>{more > 0 ? `${names[0]} +${more}` : names[0]}</span>}
       </button>
       {typeof document !== 'undefined' &&
         createPortal(
