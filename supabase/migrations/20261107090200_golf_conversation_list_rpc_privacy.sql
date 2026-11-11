@@ -2,7 +2,8 @@
 -- Apply: npm run db:apply -- supabase/migrations/20261107090200_golf_conversation_list_rpc_privacy.sql
 -- Risk: LOW. CREATE OR REPLACE with the SAME signature and return columns, so the Fairway hook and the Clubhouse build keep
 -- working. Body changes: (1) participant_names no longer carries e-mail addresses, (2) unread_count counts from each
--- viewer's own last_read_at instead of the shared golf_messages.read flag, (3) search_path pinned to '' with every
+-- viewer's own last_read_at instead of the shared golf_messages.read flag (one case keeps the flag: a direct
+-- conversation its viewer has never read, see Unread below), (3) search_path pinned to '' with every
 -- name schema-qualified, (4) participant_ids and participant_names come from one ordered list, so index n in one is
 -- the person at index n in the other.
 -- App change needed: NONE required. src/hooks/golf/use-golf-messages.ts:1787-1793 builds `participant_names: []` and never
@@ -17,6 +18,12 @@
 -- co-participant by calling the RPC, whatever the users-table RLS says.
 -- Now: a display name from golf_players (first + last) or golf_coaches (full_name), else 'Unknown'. No e-mail column of any
 -- table is read. Names are visible to co-participants anyway (the Messages directory shows them).
+-- What this does NOT close (security review 2026-11-10, B1): it stops this RPC handing out e-mail; it does not make
+-- e-mail or phone private. golf_players.email / .phone are still readable straight from the table by teammates
+-- (golf_players_select's teammate branch; closed by the held 20261017005000 once the app that reads teammates through
+-- golf_player_profiles is deployed), and golf_coaches.email / .phone by every coach and player of the same organisation
+-- (golf_coaches_select). authenticated holds table-wide SELECT on both. The Baseball RPC
+-- get_baseball_conversations_with_details still returns e-mail as participant_names.
 --
 -- Unread: COUNT(*) of messages in the conversation that are not the viewer's, not deleted and newer than the viewer's own
 -- participant last_read_at. One member opening a group no longer clears it for everyone. A viewer who has never read:

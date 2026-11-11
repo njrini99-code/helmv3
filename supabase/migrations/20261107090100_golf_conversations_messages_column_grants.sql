@@ -25,8 +25,14 @@
 --
 -- The fix:
 --   1. Column grants. golf_conversations: UPDATE (updated_at). golf_messages: UPDATE (content, edited_at, is_deleted,
---      payload, has_attachments). Everything else becomes read-only to clients. pinned_at / pinned_by / reply_to_id /
---      kind / notify_anyway* are not writable by clients either (notify_anyway* are also guarded by their own trigger).
+--      payload, has_attachments). A client can no longer UPDATE any other column of an existing row: title, created_by,
+--      team_id, is_team_chat, is_team_channel, created_at; conversation_id, sender_id, created_at, kind, reply_to_id,
+--      read, pinned_at, pinned_by, notify_anyway* (the last also have their own trigger).
+--      That is UPDATE only. INSERT keeps its table-wide grant, so on a NEW row a client still sets every column the
+--      INSERT policies do not check. Closed elsewhere: created_at, kind = 'system' and reply_to_id on a new message
+--      (20261110090100); is_team_channel = true on a new conversation (20261110090000). Still the caller's choice on
+--      INSERT after all seven files: pinned_at, pinned_by, edited_at, is_deleted and read on a new message; title,
+--      is_team_chat, created_at and updated_at on a new conversation.
 --   2. BEFORE UPDATE guards that freeze identity columns for authenticated and anon sessions even if a grant is widened:
 --      conversations: id, created_by, team_id, is_team_chat, is_team_channel, created_at.
 --      messages:      id, conversation_id, sender_id, created_at, kind, reply_to_id.
@@ -50,8 +56,9 @@
 --      job or client path truncates, maintains or puts a trigger on either table.
 --   5. anon loses every privilege on both tables (defence in depth; RLS is all that keeps anon out today).
 --
--- Not changed (follow-up, report): any team player can INSERT a conversation with is_team_channel = true (the policy only
--- checks team membership). That is a separate decision for the owner; see the report.
+-- Not closed by this file: INSERT, beyond created_by (see point 1). In particular any team player can still INSERT a
+-- conversation with is_team_channel = true until 20261110090000 is applied, and a sender still chooses created_at,
+-- kind and reply_to_id of a new message until 20261110090100 is applied.
 --
 -- LOCKS (pg_locks after each statement, local stack 2026-11-10). Two table locks, each taken once, at the top:
 --   golf_messages       SHARE ROW EXCLUSIVE (what CREATE OR REPLACE TRIGGER needs): writes wait, reads do not.
@@ -74,7 +81,7 @@
 -- VERIFY: select 1 where has_column_privilege('authenticated', 'public.golf_conversations', 'updated_at', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_conversations', 'title', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_conversations', 'created_by', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_conversations', 'team_id', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_conversations', 'is_team_chat', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_conversations', 'is_team_channel', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_conversations', 'created_at', 'UPDATE');
 -- VERIFY: select 1 where has_column_privilege('authenticated', 'public.golf_messages', 'content', 'UPDATE') and has_column_privilege('authenticated', 'public.golf_messages', 'edited_at', 'UPDATE') and has_column_privilege('authenticated', 'public.golf_messages', 'is_deleted', 'UPDATE') and has_column_privilege('authenticated', 'public.golf_messages', 'payload', 'UPDATE') and has_column_privilege('authenticated', 'public.golf_messages', 'has_attachments', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_messages', 'read', 'UPDATE');
 -- VERIFY: select 1 where not has_column_privilege('authenticated', 'public.golf_messages', 'conversation_id', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_messages', 'sender_id', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_messages', 'created_at', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_messages', 'kind', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_messages', 'reply_to_id', 'UPDATE');
--- VERIFY: select 1 where (select count(*) from pg_trigger where not tgisinternal and tgname in ('golf_conversations_identity_guard', 'golf_messages_identity_guard')) = 2;
+-- VERIFY: select 1 where exists (select 1 from pg_trigger where tgrelid = 'public.golf_conversations'::regclass and tgname = 'golf_conversations_identity_guard' and not tgisinternal and tgenabled = 'O') and exists (select 1 from pg_trigger where tgrelid = 'public.golf_messages'::regclass and tgname = 'golf_messages_identity_guard' and not tgisinternal and tgenabled = 'O');
 -- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_conversations' and policyname = 'golf_conversations_insert_v2' and with_check like '%created_by%';
 -- VERIFY: select 1 where not has_table_privilege('authenticated', 'public.golf_conversations', 'TRUNCATE, MAINTAIN, TRIGGER, REFERENCES') and not has_table_privilege('authenticated', 'public.golf_messages', 'TRUNCATE, MAINTAIN, TRIGGER, REFERENCES');
 -- VERIFY: select 1 where has_table_privilege('authenticated', 'public.golf_conversations', 'SELECT') and has_table_privilege('authenticated', 'public.golf_conversations', 'INSERT') and has_table_privilege('authenticated', 'public.golf_conversations', 'DELETE') and has_table_privilege('authenticated', 'public.golf_messages', 'SELECT') and has_table_privilege('authenticated', 'public.golf_messages', 'INSERT') and has_table_privilege('authenticated', 'public.golf_messages', 'DELETE');

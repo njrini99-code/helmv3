@@ -1711,10 +1711,16 @@ REVOKE ALL ON FUNCTION "helm_private"."sync_round_event_fields"() FROM PUBLIC, "
 
 -- Messages privacy fixes (HELD 20261107090000 to 20261107090300)
 REVOKE ALL ON FUNCTION "public"."golf_participants_identity_guard"() FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_participants_identity_guard"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_participants_identity_guard"() TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."golf_conversations_identity_guard"() FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_conversations_identity_guard"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_conversations_identity_guard"() TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."golf_messages_identity_guard"() FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_messages_identity_guard"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_messages_identity_guard"() TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") FROM PUBLIC, "anon";
 GRANT ALL ON FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") TO "authenticated";
@@ -1727,6 +1733,8 @@ GRANT ALL ON FUNCTION "public"."golf_user_in_conversation_team_audience"("p_conv
 
 -- Messages privacy fixes (HELD 20261110090100)
 REVOKE ALL ON FUNCTION "public"."golf_messages_insert_guard"() FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_messages_insert_guard"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_messages_insert_guard"() TO "service_role";
 
 -- Team channel auto-join (HELD 20261110090200)
 REVOKE ALL ON FUNCTION "helm_private"."golf_team_channel_join_member"() FROM PUBLIC, "anon", "authenticated";
