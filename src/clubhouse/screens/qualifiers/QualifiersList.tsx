@@ -248,30 +248,34 @@ export function LiveLine({ line }: { line?: ChQLiveLine }) {
   );
 }
 
-function Mine({ item }: { item: ChQListItem }) {
-  if (!item.mine) return null;
-  if (!item.mine.entered) return <span className="ch-qf-mine is-out">You aren’t entered</span>;
-  if (!item.mine.played) return <span className="ch-qf-mine">You’re entered · no rounds in yet</span>;
-  // Once the coach confirms the squad, the line says whether you made it (wave 7); before that, or with the read failed, the standing.
-  if (item.mine.squad === true) {
-    return (
-      <span className="ch-qf-mine">
-        You made the squad · {placeOf(item.mine.position)} · {formatToPar(item.mine.toPar)}
-      </span>
-    );
-  }
-  if (item.mine.squad === false) {
-    return (
-      <span className="ch-qf-mine">
-        You’re {placeOf(item.mine.position)} · {formatToPar(item.mine.toPar)} · not selected
-      </span>
-    );
-  }
+/**
+ * Where you stand on a card, set as the qualifier's own page states a place and a total ("You vs the line", parts.tsx): what you
+ * are in the strong line, the total on its plate, the rest quiet beside them, in the sentence's order. It is read, and found, as
+ * the one sentence it was.
+ */
+function Standing({ lead, place, toPar, rest }: { lead: string; place?: string | null; toPar?: number | null; rest?: string | null }) {
+  const said = [lead, place, toPar !== undefined ? formatToPar(toPar) : null, rest].filter(Boolean).join(' · ');
   return (
-    <span className="ch-qf-mine">
-      You’re {placeOf(item.mine.position)} · {formatToPar(item.mine.toPar)} · {item.mine.played} of {item.numRounds} {pluralWord(item.numRounds, 'round')}
+    <span className="ch-qf-mine ch-qf-you-line__me ch-num">
+      <span className="ch-sr-only">{said}</span>
+      <span className="ch-qf-mine__v" aria-hidden="true">
+        <b>{lead}</b>
+        {place && <span>{place}</span>}
+        {toPar !== undefined && <ToParPlate value={toPar} size="card" />}
+        {rest && <span>{rest}</span>}
+      </span>
     </span>
   );
+}
+
+function Mine({ item }: { item: ChQListItem }) {
+  if (!item.mine) return null;
+  if (!item.mine.entered) return <span className="ch-qf-mine ch-qf-you-line__me is-out">You aren’t entered</span>;
+  if (!item.mine.played) return <Standing lead="You’re entered" rest="no rounds in yet" />;
+  // Once the coach confirms the squad, the line says whether you made it (wave 7); before that, or with the read failed, the standing.
+  if (item.mine.squad === true) return <Standing lead="You made the squad" place={placeOf(item.mine.position)} toPar={item.mine.toPar} />;
+  if (item.mine.squad === false) return <Standing lead={`You’re ${placeOf(item.mine.position)}`} toPar={item.mine.toPar} rest="not selected" />;
+  return <Standing lead={`You’re ${placeOf(item.mine.position)}`} toPar={item.mine.toPar} rest={`${item.mine.played} of ${item.numRounds} ${pluralWord(item.numRounds, 'round')}`} />;
 }
 
 /**

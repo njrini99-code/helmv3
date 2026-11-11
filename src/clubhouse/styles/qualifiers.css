@@ -286,10 +286,13 @@
 .ch-qf-meta__w {
   grid-column: 1 / -1;
 }
+/* Where you stand on a card. It is set as the qualifier's own page states a place and a total (.ch-qf-you-line__me, below:
+   the strong line, the to-par plate, the quiet rest), so it reads as the card's figure. It was 13px, the card's smallest line. */
 .ch-qf-mine {
-  font: var(--ch-type-13-medium);
-  color: var(--ch-green-700);
   font-variant-numeric: tabular-nums;
+}
+.ch-qf-mine__v {
+  display: contents;
 }
 .ch-qf-mine.is-out {
   color: var(--ch-text-tertiary);
@@ -1619,6 +1622,9 @@
     order: 6;
     color: var(--ch-champagne-300);
   }
+  .ch-qf-hero .ch-qf-mine b {
+    color: var(--ch-on-green-ink);
+  }
   .ch-qf-hero .ch-qf-mine.is-out {
     color: var(--ch-on-green-ink-muted);
   }
@@ -2645,7 +2651,8 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   .ch-qf-hero .ch-qf-lead .ch-qf-lead__r {
     min-height: 40px;
   }
-  .ch-qf-hero .ch-qf-lead .ch-qf-plate {
+  .ch-qf-hero .ch-qf-lead .ch-qf-plate,
+  .ch-qf-hero .ch-qf-mine .ch-qf-plate {
     width: auto;
     min-width: 36px;
     height: auto;
@@ -2660,11 +2667,17 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
     font-variation-settings: 'wdth' 88;
     color: var(--ch-on-green-ink);
   }
-  .ch-qf-hero .ch-qf-lead .ch-qf-plate.is-under {
+  .ch-qf-hero .ch-qf-lead .ch-qf-plate.is-under,
+  .ch-qf-hero .ch-qf-mine .ch-qf-plate.is-under {
     color: #ff8b7d;
   }
-  .ch-qf-hero .ch-qf-lead .ch-qf-plate.is-none {
+  .ch-qf-hero .ch-qf-lead .ch-qf-plate.is-none,
+  .ch-qf-hero .ch-qf-mine .ch-qf-plate.is-none {
     color: var(--ch-on-green-ink-muted);
+  }
+  /* Your own total under the leaders is the same flat numeral, set in the sentence: no column to hold. */
+  .ch-qf-hero .ch-qf-mine .ch-qf-plate {
+    min-width: 0;
   }
 }
 
@@ -4200,7 +4213,7 @@ button.ch-qf-prounds__r.is-open {
     display: none;
   }
   .ch-qf--list .ch-qf-grid.is-ledger .ch-qf-mine {
-    margin-top: -4px;
+    margin-top: 0;
   }
 }
 /* Inside a green board the ledger's heading ink is the board's own, not the page's darker step. */
