@@ -1642,10 +1642,12 @@
   .ch-hb-feed li + li {
     box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
   }
+  /* Every row's words start on one column, 20px in (the dot, then 14px): a row with a place to go bleeds 12px for its
+     press tint and takes that back in padding, so a row with none is set 20px in to match (it stood at 16, 4px left). */
   .ch-hb-feed li > a,
   .ch-hb-feed li > .ch-hb-feed__row {
     min-height: 58px;
-    padding: 8px 0 8px 16px;
+    padding: 8px 0 8px 20px;
   }
   .ch-hb-feed li > a {
     margin: 0 -12px;
@@ -3960,10 +3962,13 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   background: none;
   box-shadow: none;
 }
+/* No rule over it either: the phone's sections open on a double rule (they have no card), and inside the tile that rule
+   sat above the title as a second edge no other tile has. */
 .ch-hw--feed .ch-hb-card__h,
 .ch-hb[data-canopy] .ch-hw--feed .ch-hb-card__h {
   min-height: 22px;
   padding: 0 0 12px;
+  border-top: 0;
   box-shadow: none;
 }
 .ch-hw--feed .ch-hb-card__h h2,
