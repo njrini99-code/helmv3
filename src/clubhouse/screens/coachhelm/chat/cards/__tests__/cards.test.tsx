@@ -319,8 +319,12 @@ describe('a plan the server built is drawn as the plan says, and an older card s
   it('shows the focus card as the sheet has it: one quiet line under the rule', () => {
     const { container } = draw(of('create_focus_area'));
     expect(container.querySelectorAll('.ch-akc-foot > p').length).toBe(1);
+    // Where it stands waits behind Details with how it is changed afterwards.
+    expect(screen.queryByText(/accepts before the window starts/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Details' }));
-    expect(container.querySelector('.ch-akc-more')!.textContent).toContain('After the 8 seconds: Mark it completed from the chat or on Jonah’s page.');
+    const more = container.querySelector('.ch-akc-more')!.textContent!;
+    expect(more).toContain('StatusProposed: Jonah Okafor accepts before the window starts');
+    expect(more).toContain('After the 8 seconds: Mark it completed from the chat or on Jonah’s page.');
   });
 
   it('keeps the honest line on the older card of the same task', () => {
@@ -390,10 +394,9 @@ describe('edit mode: only what the plan declares, each in the app’s own contro
   it('offers Edit only where the plan declares fields, only while the card waits, and only when the shell can send it', () => {
     edit(of('create_task'));
     expect(screen.getByRole('button', { name: 'Edit' })).toBeTruthy();
-    // What can be changed is said behind Details; the Edit key itself is in view.
-    expect(screen.queryByText('You can change the task, due, priority and assigned to.')).toBeNull();
+    // The key alone: no sentence beside it, in view or behind Details. Its form shows what can be changed.
     fireEvent.click(screen.getByRole('button', { name: 'Details' }));
-    expect(screen.getByText('You can change the task, due, priority and assigned to.')).toBeTruthy();
+    expect(screen.queryByText(/You can change/)).toBeNull();
     cleanup();
     edit(of('lock_lineup'));
     expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();

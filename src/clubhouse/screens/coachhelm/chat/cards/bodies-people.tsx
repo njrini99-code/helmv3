@@ -76,14 +76,14 @@ export function FocusBody(props: BodyProps) {
   const people = peopleOf(p, roster, valueOf(p, 'Player'));
   const name = people[0]?.name ?? 'the player';
   const lede = tense(phase, { will: `Sends to ${name}, who is asked to accept it`, did: `Sent to ${name}, who is asked to accept it`, not: `Not sent. ${name} was not told.` });
-  const status = valueOf(p, 'Status');
+  // Where it stands ("Proposed: Jonah accepts before the window starts") is a fact behind Details.
   const area = valueOf(p, 'Area');
   const target = valueOf(p, 'Target');
   const review = valueOf(p, 'Review on') ?? valueOf(p, 'Review');
   const by = valueOf(p, 'By');
   const over = valueOf(p, 'Over');
   return (
-    <Body label={lede} card={props} rows={[...missingRows(p), ...unsetOf(p, FOCUS_SET), ...restOf(p, ['Player', 'Focus', 'Area', 'Status', ...FOCUS_SET])]} wordless>
+    <Body label={lede} card={props} rows={[...missingRows(p), ...unsetOf(p, FOCUS_SET), ...restOf(p, ['Player', 'Focus', 'Area', ...FOCUS_SET])]} wordless>
       <Who proposal={p} density={density}>
         <People people={people} density={density} />
       </Who>
@@ -93,7 +93,6 @@ export function FocusBody(props: BodyProps) {
         meta={[review && `Review ${review}`, by && `By ${by}`, over && `Over ${over}`, area && titleCase(area)]}
       />
       <Delivery proposal={p} phase={phase} density={density} />
-      {status && <Change>{sentence(status)}</Change>}
     </Body>
   );
 }

@@ -351,11 +351,6 @@ export function Diff({ now, after }: { now: string; after: string }) {
   );
 }
 
-const lowerList = (labels: readonly string[]): string => {
-  const l = labels.map((x) => x.charAt(0).toLowerCase() + x.slice(1));
-  return l.length <= 1 ? (l[0] ?? '') : `${l.slice(0, -1).join(', ')} and ${l[l.length - 1]}`;
-};
-
 /** A sentence of the plan's afterwards line that is a way back the coach takes: an instruction, with nothing final in it. */
 const WAY_BACK = /(^|: )(change|edit|delete|remove|move|restore|reopen|resume|pause|mark|unpublish|set|take|log|clear|cancel|close)\b/i;
 const FINAL = /\b(cannot|can[’']t|not|never|no longer|stays?|already|have read)\b/i;
@@ -395,7 +390,8 @@ function toldLine(card: CardBodyProps & { copy: CardCopy }, lede: string, wordle
  * body's own drawing it holds what every card says the same way, and it keeps that short: under the hairline, one quiet
  * line for who is told and where it appears, and a second only for what cannot be taken back. Everything else a plan
  * says (a fact the body did not set in its own words, what was assumed, the note on its channels, how it is changed
- * afterwards, what can be edited) waits behind one Details key, which says when something was assumed. What a coach has
+ * afterwards) waits behind one Details key, which says when something was assumed. The Edit key says nothing beside it:
+ * its form shows what can be changed. What a coach has
  * to see before confirming is never behind it: a write with no Undo says so first, a value still to give is asked for in
  * place, and who a send will not reach is in the body's first lines.
  * `rows`: the facts the body has not set in its own words. `wordless`: the body has no words of its own to show when the
@@ -436,8 +432,7 @@ export function Body({ label, card, wordless = false, rows = [], children }: { l
   const { final, back } = undoParts(undo?.after);
   const after = !undo ? null : undo.window ? (back ? `After the 8 seconds: ${back}` : 'Undo is there for 8 seconds after you confirm.') : back ? `Afterwards: ${back}` : null;
   const channels = p.delivery?.note ?? null;
-  const hint = canEdit && !open ? `You can change the ${lowerList(fields.map((f) => f.label))}.` : null;
-  const hasMore = rest.length > 0 || !!channels || !!after || !!hint;
+  const hasMore = rest.length > 0 || !!channels || !!after;
   return (
     <div className="ch-akc" role="group" aria-label={reachLine(card.copy, phase, p, label)} data-ch-card-body={card.tool} data-density={density} data-phase={phase} data-reach={card.copy.reach} data-editing={open ? '' : undefined}>
       {p.undo?.window === false && !isSaved(phase) && !isWithdrawn(phase) && (
@@ -473,7 +468,6 @@ export function Body({ label, card, wordless = false, rows = [], children }: { l
             <Rows facts={rest} density={density} subject={p.summary} />
             {channels && <p className="ch-akc-after">{channels}</p>}
             {after && <p className="ch-akc-after">{after}</p>}
-            {hint && <p className="ch-akc-after">{hint}</p>}
           </div>
         )}
       </div>
