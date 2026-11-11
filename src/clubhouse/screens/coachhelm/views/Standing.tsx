@@ -164,7 +164,7 @@ function Hero({ s, voice = PLAYER_VOICE }: { s: ChStanding; voice?: ChViewVoice 
   const meta = [
     season && s.window.since ? `${s.window.label} from ${s.window.since.replace(' ', '\u00a0')}` : s.window.label,
     s.rounds != null ? `${plural(s.rounds, 'round')}` : null,
-    !season && s.scoringAverage ? `Scoring average ${s.scoringAverage}` : null,
+    !season && s.scoringAverage ? `Scoring average ${s.scoringAverage}, practice included` : null,
     s.refreshed ? `Refreshed ${s.refreshed.replace(' ', '\u00a0')}` : null,
   ].filter(Boolean);
   const { tour, team } = s.counts;

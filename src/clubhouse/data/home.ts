@@ -19,6 +19,7 @@ import { hasHoleScores, holeRounds, recordedPutts } from './round-scope';
 import { loadRoundCache, previousInFilter, readTourBenchmarks, roundsInFilter, seasonOnly, tourForGender, type ChRoundCache } from './stats-common';
 import { filterFor } from './stats-filter';
 import { effectiveCount, weightedMean, windowChangeSe } from './stats-weight';
+import { teamStrokesGained } from './stats-team-sg';
 import { changeSe, floorRate } from '../lib/stats-signal';
 import { rsvpOf } from './calendar';
 import { parseAvailability, type ChAvailability } from './availability';
@@ -978,9 +979,11 @@ export function teamLegs(input: {
   const marks = input.bench && !input.bench.error ? input.bench.bench : null;
   const stats = legRows(holeLast, input.cache.byRound, marks, { tee: null, approach: null, around: null, putting: null });
   let ranked = false;
+  // Team stats' definition (A4): the rounds of the players with three whole rounds in the window, so Home and Stats say one figure.
+  const teamSg = teamStrokesGained(holeLast, input.players.map((p) => p.id));
   const rows = LEG_KEYS.map((key, i): ChTeamLeg => {
     const pick = (r: ChRound) => sgLegs(r)[i] ?? null;
-    const sg = effectiveCount(holeLast, pick) >= MIN_SG_ROUNDS ? weightedMean(holeLast, pick) : null;
+    const sg = teamSg.legs[i] ?? null;
     const prevSg = effectiveCount(holePrev, pick) >= MIN_SG_ROUNDS ? weightedMean(holePrev, pick) : null;
     const pairedSg = weightedMean(holePaired, pick);
     const delta = sg != null && prevSg != null && pairedSg != null ? pairedSg - prevSg : null;
