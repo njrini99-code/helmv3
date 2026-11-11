@@ -22,9 +22,10 @@ The golf block writes to the **Stats screen's** definition wherever two parts of
 | No strokes gained figure under three rounds that have one (a nine-hole round counts as half). | `src/clubhouse/data/season.ts:79` (`MIN_SG_ROUNDS`), `src/clubhouse/data/stats-weight.ts:127-136` |
 | A strokes gained total above +15 for one round is treated as bad data and the round does not count. | `src/lib/golf/round-countable.ts:54`, `:134-137` (number not stated in the prompt) |
 
-Not verified, so not stated: how a par-3 tee shot is typed when it is logged. Golf convention files it under
-approach; the database files a shot under the `shot_type` it was saved with (`public.sql:8020-8023`), and only the
-penalty rule names par 3 (`:8016`). The prompt says "by the type it was logged as" and makes no par-3 claim.
+A tee shot on a par 3 counts as approach: the on-course logger types it so (`src/hooks/golf/use-shot-state-machine.ts:1197-1198`),
+as do the Arccos import (`src/lib/coachhelm/v3/ingest/providers/arccos-mapper.ts:67-71`) and the TypeScript calculator
+(`src/lib/utils/golf-stats-calculator-shots.ts:887`). The database files a shot under the type it was saved with
+(`public.sql:8020-8023`), so a shot saved by another path as `tee` on a par 3 would land in off the tee; none was found.
 
 ### A2. A counted round
 | Statement | Proof |

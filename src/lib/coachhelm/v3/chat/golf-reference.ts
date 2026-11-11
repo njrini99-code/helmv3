@@ -1,12 +1,17 @@
 import { GOLF_REFERENCE_SECTIONS } from './golf-reference.generated';
 import type { GolfReferenceSection } from './golf-reference-split';
+import { isServed, referenceTopic, REFERENCE_TOPICS, servedText, topicOfSection } from './knowledge/reference-topics';
 import { nowIso, type ToolEnvelope } from './provenance';
 
 /**
- * `get_golf_reference`: sections of the sourced golf reference (`docs/v3-research-golf-domain.md`, compiled 2026-05-24 from
- * Broadie, ShotLink, Shot Scope, Arccos and college scoring sources). It is general golf knowledge, never the team's data:
- * every section is tagged `kind: 'reference'` and carries its source, and the read says so in its summary. Its figures
- * ground the audit only because they are returned here, in `detail.reference`; nothing outside a returned section does.
+ * The on-demand golf reference behind `get_reference` (topic golf): sections of the sourced golf research
+ * (`docs/v3-research-golf-domain.md`, compiled 2026-05-24 from Broadie, ShotLink, Shot Scope, Arccos and college scoring
+ * sources). It is general golf knowledge, never the team's data: every section is tagged `kind: 'reference'` and carries its
+ * source, and the read says so in its summary.
+ *
+ * What is served, and under which topic name, is decided in `knowledge/reference-topics.ts`: the Tour tables are withheld
+ * (the standards table is the one source of a Tour figure), and a few unsourced sentences are cut. `topic` is either one of
+ * those topic names, which returns that topic in reading order, or a few words, which are searched for.
  */
 
 export const REFERENCE_SOURCE = 'CoachHelm golf reference (sourced research, compiled 2026-05-24)';
@@ -61,7 +66,15 @@ function tokens(text: string): string[] {
   return [...out].filter((t) => t.length > 1);
 }
 
-const INDEX = GOLF_REFERENCE_SECTIONS.map((s) => ({ section: s, head: new Set(tokens(`${s.chapter} ${s.heading}`)), body: tokens(s.text) }));
+/** The sections the assistant may be handed, each with its cuts applied. */
+export const SERVED_SECTIONS: readonly GolfReferenceSection[] = GOLF_REFERENCE_SECTIONS.filter((s) => isServed(s.id)).map((s) => ({ ...s, text: servedText(s.id, s.text) }));
+const SERVED_BY_ID = new Map(SERVED_SECTIONS.map((s) => [s.id, s]));
+
+// A section is also found by its topic's own words ("course management", "pressure"), which the prompt names.
+const INDEX = SERVED_SECTIONS.map((s) => {
+  const topic = topicOfSection(s.id);
+  return { section: s, head: new Set(tokens(`${s.chapter} ${s.heading} ${topic ? topic.id.replace(/_/g, ' ') : ''}`)), body: tokens(s.text) };
+});
 
 export function searchGolfReference(topic: string): Array<{ section: GolfReferenceSection; score: number }> {
   const want = tokens(topic);
@@ -81,35 +94,42 @@ export function searchGolfReference(topic: string): Array<{ section: GolfReferen
 
 const clip = (text: string): string => (text.length <= MAX_CHARS ? text : `${text.slice(0, MAX_CHARS).replace(/\s+\S*$/, '')} …`);
 
+const topicIndex = () => REFERENCE_TOPICS.map((t) => ({ topic: t.id, about: t.label, headings: t.sections.flatMap((id) => (SERVED_BY_ID.get(id) ? [SERVED_BY_ID.get(id)!.heading] : [])) }));
+
 export function getGolfReference(input: { topic: string }): ToolEnvelope {
-  const found = searchGolfReference(input.topic).slice(0, MAX_SECTIONS);
+  // A topic name returns the topic from its start; anything else is searched for.
+  const named = referenceTopic(input.topic);
+  const ofTopic = named ? named.sections.flatMap((id) => (SERVED_BY_ID.get(id) ? [SERVED_BY_ID.get(id)!] : [])) : [];
+  const found = named ? ofTopic.slice(0, MAX_SECTIONS) : searchGolfReference(input.topic).slice(0, MAX_SECTIONS).map((r) => r.section);
   if (found.length === 0) {
     return {
-      summary: 'The golf reference has nothing on that topic.',
+      summary: 'The golf reference has nothing on that. Its topics are listed.',
       measurements: [],
       series: [],
-      detail: { kind: 'reference', reference: [], chapters: [...new Set(GOLF_REFERENCE_SECTIONS.map((s) => s.chapter))] },
+      detail: { kind: 'reference', reference: [], topics: topicIndex(), chapters: [...new Set(SERVED_SECTIONS.map((s) => s.chapter))] },
       coverage: 'empty',
-      coverage_note: 'This is general golf knowledge, not this team’s data. Try one of the chapters listed.',
+      coverage_note: 'This is general golf knowledge, not this team’s data. Ask again with one of the topics or headings listed. Tour and level figures are on topic standards, not here.',
       as_of: nowIso(),
     };
   }
-  const reference = found.map(({ section }) => ({
+  const reference = found.map((section) => ({
     kind: 'reference' as const,
     section: section.id,
+    topic: topicOfSection(section.id)?.id ?? null,
     chapter: section.chapter,
     heading: section.heading,
     source: `${REFERENCE_SOURCE}: ${section.chapter}${section.heading === section.chapter ? '' : `, ${section.heading}`}`,
     text: clip(section.text),
   }));
+  const more = named ? ofTopic.slice(MAX_SECTIONS).map((s) => s.heading) : [];
   return {
     // The topic is the model's own words, so it stays out of the summary: a number in it would count as sourced.
     summary: `${reference.length === 1 ? 'One reference section' : `${reference.length} reference sections`} found. General golf knowledge, not this team’s data.`,
     measurements: [],
     series: [],
-    detail: { kind: 'reference', not_team_data: true, reference },
+    detail: { kind: 'reference', not_team_data: true, reference, ...(more.length ? { more_in_this_topic: more } : {}) },
     coverage: 'complete',
-    coverage_note: 'Reference figures are published research, not this team’s results: name the source when you use one.',
+    coverage_note: `Reference figures are published research, not this team’s results: name the source when you use one.${more.length ? ' More headings are in this topic: ask with a heading’s words to read one.' : ''}`,
     as_of: nowIso(),
   };
 }
