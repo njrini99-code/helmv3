@@ -1,0 +1,289 @@
+'use client';
+
+import { ArrowLeftRight, Bell, Eye, LockKeyhole, Send, TriangleAlert, type LucideIcon } from 'lucide-react';
+import { useId, useState, type ReactNode } from 'react';
+import type { ProposalFact } from '@/lib/coachhelm/v3/chat/action-types';
+import { Avatar } from '../../../../ui/Avatar';
+import { Badge, type BadgeTone } from '../../../../ui/Badge';
+import { Button } from '../../../../ui/Button';
+import { Icon } from '../../../../ui/Icon';
+import type { CardCopy } from './catalog';
+import { count, dayParts, dayWords } from './facts';
+import { isSaved, isWithdrawn, type CardDensity, type CardPerson, type CardPhase, type Reach } from './types';
+
+/**
+ * The parts every card body is made of (CAPABILITIES.md 0.2 to 0.5): reach, people, words in the reader's frame, the
+ * detail rows, what changes, and the warning. Nothing here moves: a body is drawn whole, and a disclosure changes its
+ * height in one frame on the coach's own tap.
+ */
+
+const REACH_ICON: Record<Reach, LucideIcon> = { sends: Send, visible: Eye, private: LockKeyhole };
+const REACH_TONE: Record<Reach, BadgeTone> = { sends: 'accent', visible: 'info', private: 'neutral' };
+
+/** The words for a state: what will happen, what did, or that it did not. */
+export function tense(phase: CardPhase, words: { will: string; did?: string; not?: string }): string {
+  if (isWithdrawn(phase)) return words.not ?? words.will;
+  if (isSaved(phase)) return words.did ?? words.will;
+  return words.will;
+}
+
+/**
+ * Who is affected and how far it travels. Always the first thing in a body. `lede` is the sentence ("Sends to 6
+ * players, in the app"); the mark says which of the three levels it is, and turns neutral once nothing went anywhere.
+ */
+export function ReachRow({ copy, phase, lede, children }: { copy: CardCopy; phase: CardPhase; lede: string; children?: ReactNode }) {
+  const withdrawn = isWithdrawn(phase) && copy.reach === 'sends';
+  const mark = withdrawn ? 'Not sent' : copy.reach === 'sends' && isSaved(phase) ? 'Sent' : copy.mark;
+  return (
+    <div className="ch-akc-reach" data-reach={copy.reach} data-withdrawn={withdrawn ? '' : undefined}>
+      <div className="ch-akc-reach__top">
+        <Badge tone={withdrawn ? 'neutral' : REACH_TONE[copy.reach]}>
+          <Icon icon={REACH_ICON[copy.reach]} size={12} />
+          {mark}
+        </Badge>
+        <p className="ch-akc-reach__lede">{lede}</p>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function nameLine(people: readonly CardPerson[], total: number): string {
+  const n = people.length;
+  if (n === 0) return '';
+  if (n === 1 && total <= 1) return people[0]!.name;
+  if (total <= 3 && n === total) return `${people.slice(0, -1).map((p) => p.name).join(', ')} and ${people[n - 1]!.name}`;
+  const shown = people.slice(0, 2).map((p) => p.name).join(', ');
+  return `${shown} and ${count(total - 2)} more`;
+}
+
+/**
+ * People by name: coins, a line of names, and every name one tap away. `total` is the plan's count when it names fewer
+ * people than it counts; the gap is said, never filled in.
+ */
+export function People({ people, total, density, label = 'players', everyone = false }: { people: readonly CardPerson[]; total?: number; density: CardDensity; label?: string; /** The whole roster: "All 7 players". */ everyone?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const listId = useId();
+  const all = Math.max(total ?? 0, people.length);
+  const coins = density === 'compact' ? 3 : 5;
+  if (people.length === 0) {
+    return all > 0 ? <p className="ch-akc-people__gap">The plan does not list who: {count(all)} {label}.</p> : null;
+  }
+  const unnamed = all - people.length;
+  const expandable = people.length > 3;
+  return (
+    <div className="ch-akc-people">
+      <div className="ch-akc-people__line">
+        <span className="ch-akc-people__coins" aria-hidden="true">
+          {people.slice(0, coins).map((p) => (
+            <Avatar key={p.id} name={p.name} id={p.id} size="xs" />
+          ))}
+          {all > coins && <span className="ch-akc-people__more ch-num">+{count(all - coins)}</span>}
+        </span>
+        <span className="ch-akc-people__names">{everyone ? `All ${count(all)} ${label}` : nameLine(people, all)}</span>
+        {expandable && (
+          <Button variant="ghost" size="sm" aria={{ expanded: open, controls: listId }} onClick={() => setOpen((v) => !v)}>
+            {open ? 'Show fewer' : `Show all ${count(people.length)}`}
+          </Button>
+        )}
+      </div>
+      {open && (
+        <ul id={listId} className="ch-akc-people__all">
+          {people.map((p) => (
+            <li key={p.id}>
+              <Avatar name={p.name} id={p.id} size="xs" />
+              <span>{p.name}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {unnamed > 0 && <p className="ch-akc-people__gap">{count(unnamed)} more are not named in the plan.</p>}
+    </div>
+  );
+}
+
+/** Roughly how many characters a line holds at each density; the clamp is CSS, this only decides whether to offer the key. */
+const PER_LINE: Record<CardDensity, number> = { full: 62, compact: 40 };
+
+/**
+ * Text held to a few lines with the rest one tap away. The whole text is always in the DOM (the clamp is CSS), so a
+ * screen reader reads all of it, and the key says how much there is before the coach confirms.
+ */
+export function Clamp({ text, lines, density, what = 'message', className }: { text: string; lines: number; density: CardDensity; /** "message", "note", "document": the key's noun. */ what?: string; className?: string }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  const long = text.length > lines * PER_LINE[density] || text.split('\n').length > lines;
+  return (
+    <div className={'ch-akc-clamp' + (className ? ` ${className}` : '')} data-open={open || !long ? '' : undefined} style={{ ['--ch-akc-lines' as string]: lines }}>
+      <p id={id} className="ch-akc-clamp__t">
+        {text}
+      </p>
+      {long && (
+        <Button variant="ghost" size="sm" aria={{ expanded: open, controls: id }} onClick={() => setOpen((v) => !v)}>
+          {open ? 'Show less' : `Show the whole ${what} · ${count(text.length)} characters`}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+const linesFor = (density: CardDensity, full = 6): number => (density === 'compact' ? 2 : full);
+
+/** A notification as a phone shows it: the app's glyph, a bold title, the body. The words are the plan's, never a summary. */
+export function Notice({ title, body, caption, density }: { title: string; body?: string | null; caption?: string; density: CardDensity }) {
+  return (
+    <figure className="ch-akc-words">
+      {caption && <figcaption>{caption}</figcaption>}
+      <div className="ch-akc-notice">
+        <span className="ch-akc-notice__app" aria-hidden="true">
+          <Icon icon={Bell} size={14} />
+        </span>
+        <div className="ch-akc-notice__tx">
+          <b>{title}</b>
+          {body && <Clamp text={body} lines={linesFor(density)} density={density} />}
+        </div>
+      </div>
+    </figure>
+  );
+}
+
+/** The coach's own sent bubble, as Messages draws it, with the thread's last message above it when the plan has one. */
+export function Bubble({ text, before, caption, density }: { text: string; before?: string | null; caption?: string; density: CardDensity }) {
+  return (
+    <figure className="ch-akc-words">
+      {caption && <figcaption>{caption}</figcaption>}
+      <div className="ch-akc-thread">
+        {before && <p className="ch-akc-thread__before">{before}</p>}
+        <div className="ch-akc-bubble">
+          <Clamp text={text} lines={linesFor(density)} density={density} />
+        </div>
+      </div>
+    </figure>
+  );
+}
+
+/** A note as it will sit under the thing it is on. `quiet`: words already there, which stay. */
+export function Quote({ text, caption, quiet = false, struck = false, density, what = 'note' }: { text: string; caption?: string; quiet?: boolean; struck?: boolean; density: CardDensity; what?: string }) {
+  return (
+    <figure className={'ch-akc-words ch-akc-quote' + (quiet ? ' is-quiet' : '') + (struck ? ' is-struck' : '')}>
+      {caption && <figcaption>{caption}</figcaption>}
+      <blockquote>
+        <Clamp text={text} lines={linesFor(density, quiet ? 3 : 6)} density={density} what={what} />
+      </blockquote>
+    </figure>
+  );
+}
+
+/** The plan names the channel and not the words: said plainly, in the place the words would be. */
+export function NoWords({ channel }: { channel: string }) {
+  return (
+    <div className="ch-akc-nowords">
+      <p>{channel}</p>
+      <small>The exact wording is not shown here.</small>
+    </div>
+  );
+}
+
+/** A calendar day as a tile: weekday, day, month. */
+export function DateTile({ iso, tone }: { iso: string; tone?: 'edge' | 'pending' }) {
+  const parts = dayParts(iso);
+  if (!parts) return null;
+  return (
+    <span className="ch-akc-tile" data-tone={tone} role="img" aria-label={dayWords(iso, true)}>
+      <small aria-hidden="true">{parts.weekday}</small>
+      <b className="ch-num" aria-hidden="true">
+        {parts.day}
+      </b>
+      <small aria-hidden="true">{parts.month}</small>
+    </span>
+  );
+}
+
+/**
+ * The remaining facts as label and value. A value the coach still has to give reads "Not set" in amber and, while the
+ * card is open, asks for it. A value the engine assumed says so, with where it came from.
+ */
+export function Rows({ facts, density, subject, onAsk }: { facts: readonly ProposalFact[]; density: CardDensity; /** What the card is about, for the sentence a row sends. */ subject: string; onAsk?: (text: string) => void }) {
+  if (facts.length === 0) return null;
+  return (
+    <dl className="ch-akc-rows">
+      {facts.map((f) => (
+        <div key={f.label} className="ch-akc-row" data-missing={f.missing ? '' : undefined}>
+          <dt>{f.label}</dt>
+          <dd>
+            {f.missing ? (
+              <span className="ch-akc-row__unset">
+                <span>{f.value && f.value !== 'Not set' ? f.value : 'Not set'}</span>
+                {onAsk && (
+                  <Button variant="secondary" size="sm" onClick={() => onAsk(`Set the ${f.label.toLowerCase()} on ${subject}`)}>
+                    Set it
+                  </Button>
+                )}
+              </span>
+            ) : f.value.length > 120 ? (
+              <Clamp text={f.value} lines={density === 'compact' ? 1 : 3} density={density} what="text" />
+            ) : (
+              <span>{f.value}</span>
+            )}
+            {f.source && !f.missing && (
+              <span className="ch-akc-row__src">
+                <Badge tone="warning">Assumed</Badge>
+                <small>{f.source}</small>
+              </span>
+            )}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+/** What this replaces, or leaves alone. */
+export function Change({ children }: { children: ReactNode }) {
+  return (
+    <p className="ch-akc-change">
+      <Icon icon={ArrowLeftRight} size={14} />
+      <span>{children}</span>
+    </p>
+  );
+}
+
+/** Something that cannot be taken back, or that the plan does not show. Amber, never red. */
+export function Warning({ children, first = false }: { children: ReactNode; first?: boolean }) {
+  return (
+    <p className={'ch-akc-warn' + (first ? ' is-first' : '')} role="note">
+      <Icon icon={TriangleAlert} size={15} />
+      <span>{children}</span>
+    </p>
+  );
+}
+
+/** One line of secondary facts, joined by the middle dot. Empty parts are dropped. */
+export function Meta({ parts }: { parts: ReadonlyArray<string | null | undefined | false> }) {
+  const shown = parts.filter((p): p is string => !!p);
+  return shown.length ? <p className="ch-akc-meta">{shown.join(' · ')}</p> : null;
+}
+
+/** In quick chat the secondary rows wait behind one key; in Ask they are simply there. */
+export function Fold({ density, label = 'details', children }: { density: CardDensity; label?: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  if (density === 'full') return <>{children}</>;
+  return (
+    <div className="ch-akc-fold">
+      <Button variant="ghost" size="sm" aria={{ expanded: open, controls: id }} onClick={() => setOpen((v) => !v)}>
+        {open ? `Hide ${label}` : `Show ${label}`}
+      </Button>
+      {open && <div id={id}>{children}</div>}
+    </div>
+  );
+}
+
+/** The frame of every body: one group, named by what it is about, in the density and state it is drawn in. */
+export function Body({ label, phase, density, tool, children }: { label: string; phase: CardPhase; density: CardDensity; tool: string; children: ReactNode }) {
+  return (
+    <div className="ch-akc" role="group" aria-label={label} data-ch-card-body={tool} data-density={density} data-phase={phase}>
+      {children}
+    </div>
+  );
+}

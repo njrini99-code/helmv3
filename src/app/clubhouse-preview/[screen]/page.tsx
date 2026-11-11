@@ -144,6 +144,7 @@ import { PREVIEW_HELM_COACH_NOT_ENOUGH } from '@/clubhouse/preview/fixtures-coac
 import { PREVIEW_HELM_COACH_COACH_COPY } from '@/clubhouse/preview/fixtures-coachhelm-voice';
 import { PreviewCoachHelmPlayer } from '@/clubhouse/preview/PreviewCoachHelmPlayer';
 import { PreviewAsk } from '@/clubhouse/preview/PreviewAsk';
+import { PreviewChatCapabilities } from '@/clubhouse/preview/PreviewChatCapabilities';
 import { PreviewCoachHelmViews } from '@/clubhouse/preview/PreviewCoachHelmViews';
 import { PreviewCoachHelmCoachPlayer } from '@/clubhouse/preview/PreviewCoachHelmCoachPlayer';
 import { PREVIEW_TRACK_RECORD, PREVIEW_TRACK_RECORD_EARLY, PREVIEW_TRACK_RECORD_EMPTY, PREVIEW_TRACK_RECORD_UNAVAILABLE, trackLoad } from '@/clubhouse/preview/fixtures-coachhelm-track';
@@ -163,6 +164,7 @@ import '@/clubhouse/styles/coachhelm-team.css';
 import '@/clubhouse/styles/coachhelm-read.css';
 import '@/clubhouse/styles/coachhelm-file.css';
 import '@/clubhouse/styles/coachhelm-ask-v2.css';
+import '@/clubhouse/styles/coachhelm-ask-cards.css';
 import '@/clubhouse/styles/coachhelm-plan.css';
 import '@/clubhouse/styles/practice.css';
 import { PreviewPracticeBuilder, PreviewPracticeHome, PreviewPracticeLibrary } from '@/clubhouse/preview/PreviewPracticeHome';
@@ -218,6 +220,7 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  *   /clubhouse-preview/coachhelm-practice-home ?state=empty | firstrun | new | player | player-empty   (Practice, the tab; synthetic plans, nothing reaches a server)
  *   /clubhouse-preview/coachhelm-practice-builder ?state=empty | blocks | sheet | ghosts | kept | groups | drills | review | publish | stale | new   (the builder over the design page's plan; nothing reaches a server)
  *   /clubhouse-preview/coachhelm-ask ?state=… &q=…   (the Ask sub-tab; states in src/clubhouse/preview/PreviewAsk.tsx)
+ *   /clubhouse-preview/coachhelm-capabilities ?task=<tool> &state=proposed | confirming | held | saved | undone | cancelled | superseded | failed | expired &density=full | compact &variant=… &play=1 | undo   (every chat capability's card)
  *   /clubhouse-preview/coachhelm-views ?view=standing ?state=early | empty | womens | nobaseline | thin | readsfailed | gamepartial | gameempty | gameedge | gamefailed | failed | off | loading   (the player's Standing, with How you play; Jonah)
  *   /clubhouse-preview/coachhelm-views ?view=profile   (Game profile's old address: Standing, opened at How you play)
  *   /clubhouse-preview/coachhelm-views ?view=deep-dive ?state=engine | corrections | corrections-good | cleared | manycleared | holes | young | partsfailed | teampool | empty | norounds | failed | off | loading, &q=in-slope | in-pen | in-brk | in-dbl   (the player's Deep dive; q is the read it opens on)
@@ -621,6 +624,11 @@ export default async function ClubhousePreview({
     'coachhelm-ask': {
       path: '/golf/dashboard/coachhelm',
       node: <PreviewAsk state={state} kind={q} />,
+    },
+    // Every capability of the chat as its card, in every state (docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md): ?task=create_trip&state=held&density=compact&variant=…&play=1|undo
+    'coachhelm-capabilities': {
+      path: '/golf/dashboard/coachhelm',
+      node: <PreviewChatCapabilities task={(await searchParams as { task?: string }).task} density={(await searchParams as { density?: string }).density} variant={(await searchParams as { variant?: string }).variant} state={state} play={play} />,
     },
     'coachhelm-practice-home': {
       path: '/golf/dashboard/practice',

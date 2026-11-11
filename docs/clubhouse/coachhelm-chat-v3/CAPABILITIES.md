@@ -330,8 +330,8 @@ catalog's.
 - **Long.** 0.4: six lines, Show the whole message with the character count.
 - **Words.** Primary "Post to 7 players", busy "Posting…", badge "Posted". Hold: "Not sent yet. Sends in 8 seconds
   to 7 players." Receipt "{title} sent to 7 players." Open: Announcements. Told: "Told 7 in the app".
-- **Undo.** "Undone. Nothing was posted." After the window an announcement cannot be recalled; the hold line is the
-  only place that says so, so the warning row reads "Once it is sent it cannot be recalled."
+- **Undo.** "Undone. Nothing was posted." After the window it is in every player's Announcements; whether it can be
+  taken down from there is the app's, and the card does not claim either way.
 - **Compact.** Reach, the notice at two lines.
 - **Requests.** none of substance (the plan carries names and words).
 
