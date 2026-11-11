@@ -2851,7 +2851,7 @@ path.ch-rt-map__shot {
     gap: 8px 8px;
   }
   .ch-rt-dist input {
-    width: 112px;
+    width: 104px;
     height: 52px;
     text-align: left;
     font: 600 28px/52px var(--ch-font-sans);
@@ -2870,12 +2870,14 @@ path.ch-rt-map__shot {
   .ch-rt-dist > em {
     color: var(--ch-ink-500);
   }
+  /* The quick picks share the box's row, as on the desk, so the whole shot sits above the bar when the card opens
+     (they were a row of their own, half under it). Where four keys will not fit beside the box they wrap under it. */
   .ch-rt-quick {
     display: grid;
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
     gap: 4px;
-    width: 100%;
+    flex: 1 1 164px;
     margin-left: 0;
   }
   .ch-rt-quick button {
