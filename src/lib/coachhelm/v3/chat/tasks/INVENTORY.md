@@ -37,7 +37,7 @@ TOOLS's own list of what is covered) and against the redesign's promises: `desig
 
 | Tool | Wraps | Why it passes | The card shows |
 |---|---|---|---|
-| `send_event_reminder` | `sendEventReminderToPlayers(eventId, playerIds)` (`golf/actions/calendar-events.ts`) | "Remind everyone who hasn't replied about Saturday" is the plainest voice request the calendar has, and the Calendar screen has the button. The action checks the coach is on the event's team's staff and narrows the recipients to that team's active players itself. A repeat lands on the same notification rows (its own upsert key), so a retried commit cannot double-send. | The event; every recipient by name and the count; the reminder word for word (title and message, built with the same two functions the action uses); that it is an in-app notification and goes after the Undo window. |
+| `send_event_reminder` | `sendEventReminderToPlayers(eventId, playerIds)` (`golf/actions/calendar-events.ts`) | "Remind everyone who hasn't replied about Saturday" is the plainest voice request the calendar has. Fairway's event detail has the button (`src/components/golf/calendar/EventDetailModal.tsx`); Clubhouse's Calendar does not call the action yet, so in Clubhouse this tool is the way to do it. The action checks the coach is on the event's team's staff and narrows the recipients to that team's active players itself. A repeat lands on the same notification rows (its own upsert key), so a retried commit cannot double-send. | The event; every recipient by name and the count; the reminder word for word (title and message, built with the same two functions the action uses); that it is an in-app notification and goes after the Undo window. |
 | `record_attendance` | `markAttendance(eventId, playerId, mark)` (`golf/actions/attendance.ts`); `markNoShow` and `bulkCheckIn` are the same write | "Mark everyone here today except Eli" by voice, at the practice. The action authorises the coach for the event and requires each player to be an active member. It overwrites the mark, so a retry is the same rows. | The event; each player by name with the mark they will get and the mark they have now; the counts; "Nothing is sent to players." |
 | `save_note`, `remove_note` (not tasks: `../context/notes.ts`) | `saveCoachFact`, `deleteCoachFact` (`golf/actions/coachhelm-ask.ts`) | The brief's item 3. A note is the coach's own and saves at once with a chip; the only removal any tool here performs is of the coach's own note, at their word. | A chip, not a card. |
 
@@ -73,7 +73,11 @@ The model is told to say where the thing is done (`find_in_app` gives the place)
 3. **A reminder on a task** (`setTaskReminder`): ask/06 `f_task.brief` asks "When should I remind them?" and
    `create_task` does not set it. TOOLS owns `create_task`; this is a field for that tool, not a new one.
 4. **Signals: handled, dismissed** (`acknowledgeInsight`, `dismissInsight`, `reviewSignal`, `dismissSignal`,
-   patterns). Small, no one is told, plain on the CoachHelm board.
+   patterns). Small, and plain on the CoachHelm board. The permission check is an exported function
+   (`verifyInsightAccess`, `src/lib/auth/verify-player-access.ts`), so `plan` can make the action's own check. Not
+   built now for one reason: each action also writes a row with `recordInsightAction` (the coach acknowledged or
+   dismissed), and whether the player's own CoachHelm page shows that row was not established. The card's "what the
+   player sees" line must be true before this ships.
 5. **Qualifier after creation** (entrants, courses, squad size, open and close) and **selection** (coach picks, ties,
    confirm). Selection decides who travels and tells the team: its own card, and an owner call.
 6. **Goals and focus areas after creation** (pause, resume, progress, complete, outcome).
