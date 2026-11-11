@@ -218,57 +218,78 @@
 .ch-tour-rev-trend.is-phone .ch-tour-rev-trend__note {
   margin-top: 16px;
 }
+/* The phone's bars run across: the event's full name at the left, its bar beside it, the figure at the bar's end. A row
+   is one link at thumb height. The name wraps to a second line before it would ever be cut. */
 .ch-tour-rev-bars {
-  display: grid;
-  gap: 4px;
-  align-items: end;
-  height: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   margin: 16px 0 0;
+}
+.ch-tour-rev-bars ol {
+  margin: 0;
   padding: 0;
   list-style: none;
 }
-.ch-tour-rev-bars li {
-  height: 100%;
-  min-width: 0;
+.ch-tour-rev-bars .ch-tour-rev-bars__k {
+  margin: 0 0 2px;
+  font: var(--ch-type-12-strong);
+  line-height: var(--ch-lead-tight);
+  color: var(--ch-text-tertiary);
 }
 .ch-tour-rev-bar {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 42%) minmax(0, 1fr);
   align-items: center;
-  justify-content: flex-end;
-  gap: 4px;
-  height: 100%;
+  column-gap: 12px;
   min-height: 44px;
+  padding-block: 6px;
   text-decoration: none;
 }
+.ch-tour-rev-bar__n {
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
+  color: var(--ch-text-primary);
+  overflow-wrap: anywhere;
+}
+.ch-tour-rev-bar__t {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+/* The bar's share of the track, less the room its figure takes at the end, so the longest bar and its figure both fit. */
 .ch-tour-rev-bar i {
   display: block;
-  width: 70%;
-  border-radius: var(--ch-radius-sm) var(--ch-radius-sm) var(--ch-radius-mark) var(--ch-radius-mark);
-  background: var(--ch-green-200);
+  flex: none;
+  width: calc(var(--ch-tour-rev-len, 0) * (100% - 48px));
+  height: 14px;
+  border-radius: var(--ch-radius-mark) var(--ch-radius-sm) var(--ch-radius-sm) var(--ch-radius-mark);
+  /* An earlier season is this season's green, thinned: it holds against the card in the dark too, where the pale step
+     of the ramp sank into it. */
+  background: color-mix(in oklab, var(--ch-green-600) 34%, transparent);
 }
 .ch-tour-rev-bar.is-now i {
   background: var(--ch-green-600);
 }
-/* The phone's bars: figure and event at 12, the phone's text floor (Q-141); the event name ellipsizes in its column. */
+/* Figure and event at the phone's text floor or above (Q-141). */
 .ch-tour-rev-bar b {
-  font: var(--ch-type-12-strong);
+  flex: none;
+  font: var(--ch-type-13-strong);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
-}
-.ch-tour-rev-bar span {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font: var(--ch-type-12);
-  line-height: var(--ch-lead-tight);
-  color: var(--ch-text-secondary);
 }
 .ch-tour-rev-bar:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
   border-radius: var(--ch-radius-xs);
+}
+/* The two filters, one under the other, each the card's full width. */
+.ch-tour-rev-hist.is-phone .ch-tour-rev-tools {
+  flex: 1 1 auto;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
 }
 
 /* Link inbox: a row per GolfHelm round (who and what, the match and the two pickers, the two keys). A row is a card on

@@ -3,7 +3,7 @@
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { Button } from '../../ui/Button';
 import { InlineNotice } from '../../ui/Notices';
 import { Section } from '../../ui/Section';
@@ -118,8 +118,8 @@ function HistoryReady({ data, search, phone }: { data: ChTourHistoryData; search
             title="Across seasons"
             actions={
               <div className="ch-tour-rev-tools">
-                <Segmented size="sm" label="Lineup mode" value={state.adjust === 'field' ? 'actual' : state.mode} onChange={(v) => move({ mode: v })} options={[{ value: 'actual', label: 'Actual lineups' }, { value: 'matched', label: 'Returning players', disabled: state.adjust === 'field' }]} />
-                <Segmented size="sm" label="Measured against" value={state.adjust} onChange={(v) => move({ adjust: v })} options={[{ value: 'raw', label: 'Course rating' }, { value: 'field', label: 'The field' }]} />
+                <Segmented size="sm" block={phone} label="Lineup mode" value={state.adjust === 'field' ? 'actual' : state.mode} onChange={(v) => move({ mode: v })} options={[{ value: 'actual', label: 'Actual lineups' }, { value: 'matched', label: 'Returning players', disabled: state.adjust === 'field' }]} />
+                <Segmented size="sm" block={phone} label="Measured against" value={state.adjust} onChange={(v) => move({ adjust: v })} options={[{ value: 'raw', label: 'Course rating' }, { value: 'field', label: 'The field' }]} />
               </div>
             }
           >
@@ -210,26 +210,48 @@ function Trend({ points, state, note }: { points: TrendPoint[]; state: ChTourHis
   );
 }
 
-/** The phone's History (board `MHistory`): one bar a finished event, taller the closer to the mark, this season in green. */
+/** How much of the track the shortest bar still fills, so the weakest figure is a bar and not a sliver. */
+const BAR_MIN = 0.14;
+
+/**
+ * The phone's History (board `MHistory`): one bar a finished event, down the page in the order they were played. The
+ * event's full name stands at the left, the bar runs from it, longer the closer to the mark, and the figure sits at the
+ * bar's end. A season is named over its events and this season's bars are the green ones. (Upright bars left each
+ * name a seventh of the card, so every one was cut to a stub.)
+ */
 function TrendBars({ points, data, state, note }: { points: TrendPoint[]; data: ChTourHistoryData; state: ChTourHistorySearch; note: string | null }) {
   const paths = useTourPaths();
-  const { lo, hi } = trendScale(points, 0.5);
+  // No room either side of the range: the best figure's bar is the whole track, the weakest the least a bar may be.
+  const { lo, hi } = trendScale(points, 0);
   const current = data.seasons[0]?.id;
+  const runs = seasonRuns(points);
   return (
     <div className="ch-tour-rev-trend is-phone">
       <p className="ch-tour-rev-trend__t">{WHAT[state.adjust].title}</p>
       <p className="ch-tour-rev-trend__s">Per round · lower is better · {lineup(state)}</p>
-      <ol className="ch-tour-rev-bars" style={{ gridTemplateColumns: `repeat(${Math.max(points.length, 1)}, minmax(0, 1fr))` }}>
-        {points.map((p) => (
-          <li key={p.event.id}>
-            <Link href={paths.desk(p.event.id)} className={'ch-tour-rev-bar' + (p.event.seasonId === current ? ' is-now' : '')} aria-label={label(p)}>
-              <b className="ch-num">{p.value == null ? <NoData /> : formatSigned(p.value, 1)}</b>
-              <i style={{ height: p.value == null ? 14 : 14 + (1 - trendY(p.value, lo, hi)) * 70 }} />
-              <span>{p.event.short}</span>
-            </Link>
-          </li>
-        ))}
-      </ol>
+      <div className="ch-tour-rev-bars">
+        {runs.map((r) => {
+          const season = data.seasons.find((x) => x.id === r.seasonId)?.label;
+          return (
+            <section key={r.from} className="ch-tour-rev-bars__g" aria-label={season}>
+              {season && runs.length > 1 && <p className="ch-tour-rev-bars__k ch-num">{season}</p>}
+              <ol>
+                {points.slice(r.from, r.to + 1).map((p) => (
+                  <li key={p.event.id}>
+                    <Link href={paths.desk(p.event.id)} className={'ch-tour-rev-bar' + (p.event.seasonId === current ? ' is-now' : '')} aria-label={label(p)}>
+                      <span className="ch-tour-rev-bar__n">{p.event.name}</span>
+                      <span className="ch-tour-rev-bar__t">
+                        <i style={{ '--ch-tour-rev-len': p.value == null ? 0 : (BAR_MIN + (1 - trendY(p.value, lo, hi)) * (1 - BAR_MIN)).toFixed(3) } as CSSProperties} />
+                        <b className="ch-num">{p.value == null ? <NoData /> : formatSigned(p.value, 1)}</b>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          );
+        })}
+      </div>
       {note && <p className="ch-tour-rev-trend__note">{note}</p>}
     </div>
   );
