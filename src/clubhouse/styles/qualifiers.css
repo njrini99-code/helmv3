@@ -2433,6 +2433,12 @@
     flex: 0 1 auto;
     min-width: 0;
   }
+  /* The phone names only the step you are on (above), so its strip is one row of circles joined by rules. Three
+     name bars did not fit 390 and wrapped the third step under the others: the strip was 76 tall while it loaded and
+     36 once it had, and everything under it jumped up 40. One bar, on the first step, as the page opens. */
+  .ch-qfs[aria-busy='true'] .ch-qfs-steps li:not(:first-child) > .ch-skel:last-child {
+    display: none;
+  }
   .ch-qf--form[aria-busy='true'] .ch-qf-fs.ch-qf-skel {
     padding: 12px 0 0;
     border-top: var(--ch-ledger-rule-double);
