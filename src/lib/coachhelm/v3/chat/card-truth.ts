@@ -99,10 +99,20 @@ export const SETTINGS_NOTE = 'Each player’s own notification settings decide w
 /** The date a sender prints when it formats a plain day itself (`qualifier-actions.ts`, `tasks.ts`). Kept as the same expression, so the same runtime prints the same words. */
 export const longDay = (day: string): string => new Date(day).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-/** One event that asks for replies: `fanOutEventInvitation` (lib/calendar/fan-out.ts) pushes through `generatePushPayload`, which is called here. */
-export function eventInviteDelivery(title: string): CardDelivery {
-  const push = generatePushPayload('event_rsvp_reminder', { eventName: title });
-  return { channels: ['push', 'in_app', 'email'], title: push.title, body: push.body, note: `The bell row in the app and the email name the event, its date and its place. ${SETTINGS_NOTE}` };
+/**
+ * One event that asks for replies: `fanOutEventInvitation` (lib/calendar/fan-out.ts). The push goes through
+ * `generatePushPayload`, which is called here; the bell row is the fan-out's own two lines, with the date as the action
+ * hands it over (the event's day as written, `dateLabel: validatedData.startDate`); the email's subject is the template's.
+ */
+export function eventInviteDelivery(e: { title: string; date: string; location: string | null }): CardDelivery {
+  const push = generatePushPayload('event_rsvp_reminder', { eventName: e.title });
+  return {
+    channels: ['push', 'in_app', 'email'],
+    title: push.title,
+    body: push.body,
+    variants: [{ channel: 'in_app', title: `New event: ${e.title}`, body: `${e.date}${e.location ? ` at ${e.location}` : ''}` }],
+    note: `The email’s subject is “RSVP needed: ${e.title}”, and it gives the date${e.location ? ' and the place' : ''}. ${SETTINGS_NOTE}`,
+  };
 }
 
 /** A repeating practice that asks for replies (`recurring-events.ts`): the same push, and the bell row quoted. */

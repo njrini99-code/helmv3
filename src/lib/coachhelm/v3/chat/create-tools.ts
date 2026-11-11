@@ -251,7 +251,7 @@ const eventFlow: FlowDef<EventStored> = {
     const people = seenOf(i.seen).people;
     // Only an event that asks for replies tells anyone (owner, 2026-10-08), and only invited players with an account.
     const { recipients, not_reached } = reachOf(people, i.requires_rsvp);
-    const delivery = recipients.length ? eventInviteDelivery(i.title) : null;
+    const delivery = recipients.length ? eventInviteDelivery({ title: i.title, date: i.date, location: i.location ?? null }) : null;
     return {
       visual: { kind: 'cal', date: i.date, start: i.all_day ? null : (i.start ?? null), end: i.all_day ? null : end, title: i.title, where: i.location ?? null, who: people.length ? plural(people.length, 'player') : 'Not asked', rsvp: i.requires_rsvp },
       action: 'Add to calendar',
