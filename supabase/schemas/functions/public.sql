@@ -15512,7 +15512,7 @@ $$;
 ALTER FUNCTION "public"."golf_tournament_untrack"("p_tournament_id" "uuid", "p_expected_version" integer) OWNER TO "postgres";
 
 
--- Messages privacy fixes (HELD 20261107090000 / 20261107090100 / 20261107090300)
+-- Messages privacy fixes (HELD 20261107090000 / 20261107090100)
 CREATE OR REPLACE FUNCTION "public"."golf_participants_identity_guard"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO ''
@@ -15604,26 +15604,6 @@ END $$;
 
 ALTER FUNCTION "public"."golf_messages_identity_guard"() OWNER TO "postgres";
 
-CREATE OR REPLACE FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") RETURNS boolean
-    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
-    SET "search_path" TO ''
-    AS $$
-DECLARE
-  m text[];
-BEGIN
-  IF p_topic IS NULL THEN
-    RETURN false;
-  END IF;
-  m := regexp_match(p_topic,
-    '^golf-typing:([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$');
-  IF m IS NULL THEN
-    RETURN false;
-  END IF;
-  RETURN public.golf_conversation_has_me(m[1]::uuid);
-END $$;
-
-ALTER FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") OWNER TO "postgres";
-
 
 -- Applied to production 2026-10-21 by 20261017003000 and missing from this mirror until 2026-11-10
 -- (golf_participants_insert_v2, branch 2).
@@ -15660,44 +15640,6 @@ ALTER FUNCTION "public"."golf_user_in_conversation_team_audience"("p_conversatio
 
 COMMENT ON FUNCTION "public"."golf_user_in_conversation_team_audience"("p_conversation_id" "uuid", "p_user_id" "uuid") IS 'True when p_user_id is on the conversation''s team roster (active rows) or a coach staffed on that team. Bounds who a conversation''s creator may add while it is formed (golf_participants_insert_v2, branch 2). Definer rights avoid re-entering RLS on golf_conversation_participants.';
 
-
--- Messages privacy fixes (HELD 20261110090100): what a client session may put on a new message
-CREATE OR REPLACE FUNCTION "public"."golf_messages_insert_guard"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO ''
-    AS $$
-BEGIN
-  -- Client sessions only. service_role, the table owner and definer functions pass
-  -- (the demo seed back-dates messages; a server may one day post a system notice).
-  IF current_user NOT IN ('authenticated', 'anon') THEN
-    RETURN NEW;
-  END IF;
-
-  -- 1. The date is the server's: the same value the column default gives every send.
-  NEW.created_at := now();
-
-  -- 2. A system notice is not a client's to send.
-  IF NEW.kind = 'system' THEN
-    RAISE EXCEPTION 'A system message cannot be sent from a client session'
-      USING ERRCODE = '42501';
-  END IF;
-
-  -- 3. A reply quotes a message in its own conversation. Read as the sender (RLS
-  --    applies): a member sees every message of the conversation they are sending in.
-  IF NEW.reply_to_id IS NOT NULL AND NOT EXISTS (
-    SELECT 1
-    FROM public.golf_messages AS r
-    WHERE r.id = NEW.reply_to_id
-      AND r.conversation_id = NEW.conversation_id
-  ) THEN
-    RAISE EXCEPTION 'A reply must quote a message in the same conversation'
-      USING ERRCODE = '42501';
-  END IF;
-
-  RETURN NEW;
-END $$;
-
-ALTER FUNCTION "public"."golf_messages_insert_guard"() OWNER TO "postgres";
 
 -- Team link on participant INSERT (HELD 20261110090600): false only for a team's channel or team chat when the
 -- caller is not on that team

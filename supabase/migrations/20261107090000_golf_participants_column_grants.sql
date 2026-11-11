@@ -53,8 +53,7 @@
 --      member (a conversation's creator) could insert that member's row with
 --      hidden_at, last_read_at, muted_until and notification_level already
 --      set: the person is listed as a member and never sees the chat, gets no
---      badge and no push, and after 20261110090100 no message can be dated
---      late enough to un-hide it. For authenticated and anon sessions the
+--      badge and no push. For authenticated and anon sessions the
 --      trigger sets joined_at := now(), last_read_at, hidden_at and
 --      muted_until := NULL and notification_level := 'all' (the column
 --      default, which the precondition below checks). The state columns

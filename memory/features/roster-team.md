@@ -71,7 +71,7 @@ Team page
   `availability_note` is not read or written anywhere (the action refuses a note) until a coach-only store exists,
   which needs a held migration (docs/clubhouse/held/data/roster-availability.md).
 - Roster/player profile data must be team-scoped.
-- Held, not applied (2026-11-10, `supabase/migrations/HELD.md` rows `20261110090200` to `20261110090600`): once
+- Held, not applied (2026-11-10, `supabase/migrations/HELD.md` rows `20261110090200` to `20261110090700`): once
   applied, a roster or staff write also keeps Messages in step. A player who becomes `active` or a coach who is
   staffed is put in the team's channel (created if the team has none); a person whose last role on the team ends is
   taken out of the team's channel and team chats. The triggers never fail the roster write: an error is a WARNING.

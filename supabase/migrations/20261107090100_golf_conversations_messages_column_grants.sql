@@ -46,9 +46,11 @@
 --      trigger).
 --      That is UPDATE only. INSERT keeps its table-wide grant, so on a NEW row
 --      a client still sets every column the INSERT policies do not check.
---      Closed elsewhere: created_at, kind = 'system' and reply_to_id on a new
---      message (20261110090100); is_team_channel = true on a new conversation
---      (20261110090050). Still the caller's choice on INSERT after all the
+--      Closed elsewhere: is_team_channel = true on a new conversation
+--      (20261110090050). Not closed in this release: created_at, kind =
+--      'system' and reply_to_id on a new message (20261110090100, deferred by
+--      owner direction 2026-11-10). Still the caller's choice on INSERT after
+--      all the
 --      files: pinned_at, pinned_by, edited_at, is_deleted and read on a new
 --      message; title, is_team_chat, created_at and updated_at on a new
 --      conversation.
@@ -93,8 +95,8 @@
 -- Not closed by this file: INSERT, beyond created_by (see point 1). In
 -- particular any team player can still INSERT a conversation with
 -- is_team_channel = true until 20261110090050 is applied, and a sender still
--- chooses created_at, kind and reply_to_id of a new message until
--- 20261110090100 is applied.
+-- chooses created_at, kind and reply_to_id of a new message (20261110090100
+-- would close that; it is deferred and not in this release).
 --
 -- LOCKS (pg_locks after each statement, local stack 2026-11-10). Two table
 -- locks, each taken once, at the top:
