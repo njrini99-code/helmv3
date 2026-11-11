@@ -33,12 +33,22 @@ is off, 2 craft, 1 nit.
 | 18 | 2 | Helper card | Two facts where the design has three (the class-time line). The loader reads strokes gained and the next event only; there is no class-time read to cite. | `data/practice-home.ts` helperFacts |
 | 19 | 1 | Preview | `coachhelm-practice-builder?state=new` draws the Blocks step: `BuilderPreview.newSheet` is never read. The sheet lives on home (`?state=new`). | `Builder.tsx`, preview page |
 
-## Not yet looked at when this was written
+## Found in the later captures (library, print)
 
-The capture queue was still running (the dev server restarted once mid-run). Library (drills, a drill, groups,
-templates), print (studio, no rotation, no drills) and every desktop width are judged in the rebuild's own captures and
-added to the table below when seen.
+| # | Score | Where | What differs | Checked in |
+|---|---|---|---|---|
+| 20 | 5 | A drill, phone | Edit, Archive and Copy to your bank are not on the page: the header's actions are hidden on a phone and the bar carries none. | `practice.css` `.ch-prc-h__a { display: none }`, `LibraryPages.tsx` DrillPage |
+| 21 | 5 | Groups preview | Every saved group reads "0 players" (the same Map fixture fault as row 4). | `preview/PreviewPracticeHome.tsx` |
+| 22 | 2 | A drill | The facts card has an empty band under its last row (the two `.ch-prc-facts` rules). | `practice.css` |
 
-## Added after the first pass
+## After the rebuild (10 Nov, late)
 
-(rows appended as the remaining captures land)
+Closed: 1 to 11, 13 to 17, 20 to 22. The mix legend now counts the same clock minutes the strip draws.
+
+Open, in order:
+- 12: the New plan sheet still asks nothing when Ask CoachHelm is picked; the helper asks in the builder.
+- 14 (part): Run's group rows still give the clock in both columns.
+- 18: no class-time read exists for the helper's third fact; nothing is invented.
+- 19: `builder?state=new` is still a dead preview state.
+- Not captured: Reduce Motion, the largest Text Size, and desktop for run, library and print.
+- A real paginated PDF of the printed plan was not produced; page breaks are checked by rule only (`coachhelm-plan.css:91`).
