@@ -2,7 +2,6 @@
 
 import { TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
-import type { ReactNode } from 'react';
 import type { ChCoachHome, ChHomeEvent } from '../../data/home';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
@@ -68,7 +67,7 @@ function DeskHead({ id, title, href, link }: { id: string; title: string; href: 
  * Today: the rest of the day, with Up next in the hero, so no event is drawn twice. Each row opens its event. A day with nothing on it
  * says so; the week lives on Calendar.
  */
-export function DeskToday({ events, now, week }: { events: readonly ChHomeEvent[]; now: Date | null; /** The week's days under the rows (CoachHome passes WeekDays), so the card says what is coming as well as what is left today. */ week?: ReactNode }) {
+export function DeskToday({ events, now }: { events: readonly ChHomeEvent[]; now: Date | null }) {
   const t12 = useChClockText();
   const t = now?.getTime();
   return (
@@ -103,7 +102,6 @@ export function DeskToday({ events, now, week }: { events: readonly ChHomeEvent[
           })}
         </ul>
       )}
-      {week && <div className="ch-dh-week">{week}</div>}
     </section>
   );
 }
@@ -112,16 +110,15 @@ export function DeskToday({ events, now, week }: { events: readonly ChHomeEvent[
  * Latest rounds: the newest four, not tappable (06 11), the score in a well over its to-par. A failed or empty read takes today's
  * section, in the caller. Beside the score, the player's last rounds as a word-sized line (the phone's own, from the same
  * rows), on one range down the list; it is left out when that read failed or the player has fewer than three rounds.
- * `wide`: the card runs the page's width, so its rows sit two across.
  */
-export function DeskRounds({ rounds, trends = null, wide = false }: { rounds: ChCoachHome['latestRounds']['rounds']; trends?: ChCoachHome['leaderboard']['rows'] | null; wide?: boolean }) {
+export function DeskRounds({ rounds, trends = null }: { rounds: ChCoachHome['latestRounds']['rounds']; trends?: ChCoachHome['leaderboard']['rows'] | null }) {
   const shown = rounds.slice(0, DESK_ROUNDS);
   const trendOf = new Map((trends ?? []).map((p) => [p.playerId, p.trend]));
   return (
     <section className="ch-dh-card" aria-labelledby="ch-dh-rounds">
       <DeskHead id="ch-dh-rounds" title="Latest rounds" href={rebuiltHref('/golf/dashboard/stats')} link="Team stats" />
       <FormRange trends={shown.map((r) => trendOf.get(r.playerId))} earlyBelow={3}>
-      <ul className={'ch-dh-rows ch-dh-rows--rounds' + (wide && shown.length > 1 ? ' is-wide' : '')}>
+      <ul className="ch-dh-rows ch-dh-rows--rounds">
         {shown.map((r) => (
           <li key={r.id}>
             <Avatar name={r.playerName} id={r.playerId} size="sm" />

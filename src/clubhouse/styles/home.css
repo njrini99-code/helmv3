@@ -4713,7 +4713,10 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     stroke-width: 2.2;
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-form__dot {
-    fill: var(--ch-chart-line);
+    fill: none;
+    stroke: var(--ch-chart-line);
+    stroke-width: 7;
+    stroke-linecap: round;
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-form__figs {
     display: grid;
@@ -4724,21 +4727,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   /* The team's game: two by two, as designed. The columns need 150pt each at the default Text Size, so a larger size (or a
      narrow phone) takes one column and nothing is squeezed. Bars from a centre zero. */
-  .ch-hm[data-ch-crh='on'] .ch-hm-legs__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(150px * var(--ch-type-scale, 1))), 1fr));
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .ch-hm[data-ch-crh='on'] .ch-hm-legs__cell {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: baseline;
-    gap: 6px 12px;
-    min-width: 0;
-    padding: 12px 16px;
-  }
   /* The flag-off row names its parts as grid areas; the cell has no such areas, and they would stack. */
   .ch-hm[data-ch-crh='on'] .ch-hm-legs__cell > * {
     grid-area: auto;
@@ -4771,10 +4759,21 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   /* A hairline between the parts, across and down: the list shows the separator through a hairline gap. */
   .ch-hm[data-ch-crh='on'] .ch-hm-legs__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(150px * var(--ch-type-scale, 1))), 1fr));
+    margin: 0;
+    padding: 0;
+    list-style: none;
     gap: var(--ch-hairline-w);
     background: var(--ch-separator);
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-legs__cell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 6px 12px;
+    min-width: 0;
+    padding: 12px 16px;
     align-content: start;
     background: var(--ch-card-bg);
   }
@@ -4831,12 +4830,10 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     font-style: normal;
   }
   /* Latest rounds. */
+  /* The player's line and the score keep to what they need, so the course and its date fit beside them on a 390pt phone. */
   .ch-hm[data-ch-crh='on'] .ch-hm-rd {
     min-height: 64px;
     padding: 8px 16px;
-  }
-  /* The player's line and the score keep to what they need, so the course and its date fit beside them on a 390pt phone. */
-  .ch-hm[data-ch-crh='on'] .ch-hm-rd {
     gap: 8px;
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-rd__spark {
@@ -4888,7 +4885,9 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     gap: 24px;
     padding: 20px 24px;
     border-radius: var(--ch-radius-lg);
-    background: var(--ch-frame);
+    /* The feature card's own green and cast: on the night canvas the frame's green is the canvas, and the card had no edge. */
+    background: var(--ch-feature-bg);
+    box-shadow: var(--ch-feature-shadow);
     color: var(--ch-on-green-plate);
   }
   .ch-h-main[data-ch-crh='on'] .ch-h-herocard h1 {
@@ -4994,7 +4993,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   font: var(--ch-type-15);
   color: var(--ch-text-secondary); letter-spacing: var(--ch-track-15); }
 /* The card body, not a card of its own (CRH-4); the note is the card's footer. */
-:is(.ch-hm, .ch-h-main)[data-ch-crh='on'] .ch-hm-week {
+.ch-hm[data-ch-crh='on'] .ch-hm-week {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
@@ -5003,11 +5002,11 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 .ch-hm[data-ch-crh='on'] .ch-hm-sec:has(> .ch-hm-week) {
   gap: 0;
 }
-:is(.ch-hm, .ch-h-main)[data-ch-crh='on'] .ch-hm-week__n {
+.ch-hm[data-ch-crh='on'] .ch-hm-week__n {
   position: relative;
   padding: 12px 16px 12px;
 }
-:is(.ch-hm, .ch-h-main)[data-ch-crh='on'] .ch-hm-week__n::before {
+.ch-hm[data-ch-crh='on'] .ch-hm-week__n::before {
   position: absolute;
   inset: 0 16px auto;
   height: var(--ch-hairline-w);
@@ -5015,11 +5014,11 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   content: '';
 }
 /* A competition day is the design's green tile (CRH-23). */
-:is(.ch-hm, .ch-h-main)[data-ch-crh='on'] .ch-hm-week li.is-major .ch-wks__d {
+.ch-hm[data-ch-crh='on'] .ch-hm-week li.is-major .ch-wks__d {
   background: var(--ch-frame);
   color: var(--ch-hero-mint);
 }
-:is(.ch-hm, .ch-h-main)[data-ch-crh='on'] .ch-hm-week li.is-major .ch-wks__d :is(em, b, i) {
+.ch-hm[data-ch-crh='on'] .ch-hm-week li.is-major .ch-wks__d :is(em, b, i) {
   color: inherit;
 }
 .ch-root[data-ch-crh='on'] .ch-hm-skel__hero:not(.is-player) {
@@ -5612,7 +5611,10 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     fill: color-mix(in srgb, var(--ch-green-500) 18%, transparent);
   }
   .ch-h-main[data-ch-crh='on'] .ch-hm-form__dot {
-    fill: var(--ch-green-500);
+    fill: none;
+    stroke: var(--ch-green-500);
+    stroke-width: 7;
+    stroke-linecap: round;
   }
   .ch-h-main[data-ch-crh='on'] .ch-hm-form__figs {
     display: grid;
@@ -5645,7 +5647,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   [data-ch-crh='on']:not([data-ch-role='player']) .ch-h-main[aria-busy='true'] > .ch-hm-sk-crh {
     display: grid;
-    gap: 16px;
+    gap: 24px;
   }
   .ch-hm-sk-crh__hero {
     display: grid;
@@ -5657,10 +5659,24 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     --ch-skel-base: rgb(244 238 221 / 0.16);
     --ch-skel-sheen: rgb(244 238 221 / 0.22);
   }
+  /* The loaded page's own rhythm: 24 between cards. */
   .ch-hm-sk-crh__body {
     display: grid;
-    gap: 12px;
+    gap: 24px;
     padding-inline: var(--ch-page-x-phone);
+  }
+  .ch-hm-sk-form > :not(b) {
+    margin: 12px 16px 0;
+  }
+  .ch-hm-sk-form__top {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+  .ch-hm-sk-form__figs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    padding-bottom: 12px;
   }
 }
 
@@ -5901,48 +5917,30 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 
 /* Coach Home, desktop: the cards' composition. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  /* Today beside Team scoring at one height: the taller card sets it and the other fills it (Today with the week under its
-     rows, Team scoring with a taller plot), so no band of page shows under either. */
+  /* Today over Latest rounds in the first column; Team scoring fills the second at the same height, its plot taking the
+     room, so no band of page shows under either. */
   .ch-h-main[data-ch-crh='on'] .ch-h-grid.is-level {
     align-items: stretch;
   }
-  .ch-h-main[data-ch-crh='on'] .ch-h-grid.is-level > * {
+  .ch-h-col {
     display: grid;
+    align-content: start;
+    gap: 16px;
     min-width: 0;
   }
-  .ch-h-main[data-ch-crh='on'] .ch-h-grid.is-level .ch-hm-form {
+  .ch-h-col:empty {
+    display: none;
+  }
+  .ch-h-main[data-ch-crh='on'] .ch-h-grid.is-level > .ch-hm-form {
     grid-template-rows: auto auto auto minmax(64px, 1fr) auto;
   }
-  .ch-h-main[data-ch-crh='on'] .ch-h-grid.is-level .ch-hm-form__svg {
+  .ch-h-main[data-ch-crh='on'] .ch-h-grid.is-level > .ch-hm-form .ch-hm-form__svg {
     height: 100%;
     min-height: 64px;
   }
   .ch-h-main[data-ch-crh='on'] .ch-hm-form__span {
     display: flex;
     padding: 0 16px;
-  }
-  /* The week sits at the foot of Today, under one hairline. */
-  .ch-dh-week {
-    position: relative;
-    margin-top: auto;
-  }
-  .ch-dh-week::before {
-    position: absolute;
-    inset: 0 0 auto 16px;
-    height: var(--ch-hairline-w);
-    background: var(--ch-separator);
-    content: '';
-  }
-  .ch-dh-week .ch-hm-week__n {
-    margin: 0;
-    font: var(--ch-type-15);
-    letter-spacing: var(--ch-track-15);
-    color: var(--ch-text-secondary);
-  }
-  .ch-dh-week .ch-hm-week__n b {
-    font: var(--ch-type-15-strong);
-    letter-spacing: var(--ch-track-15);
-    color: var(--ch-text-primary);
   }
   /* An event's type as a dot, the phone's own marks. */
   .ch-dh-dot {
@@ -5966,21 +5964,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     flex: none;
     align-items: center;
     margin-inline-start: auto;
-  }
-  /* Latest rounds across the page: two rows to a line, a hairline over every line but the first. */
-  .ch-dh-rows--rounds.is-wide {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .ch-dh-rows--rounds.is-wide > li:nth-child(2)::before {
-    display: none;
-  }
-  .ch-dh-rows--rounds.is-wide > li:nth-child(even)::after {
-    position: absolute;
-    inset: 12px auto 12px 0;
-    width: var(--ch-hairline-w);
-    background: var(--ch-separator);
-    content: '';
   }
 }
 

@@ -382,10 +382,11 @@ export function Form({ form }: { form: ChTeamForm; }) {
         </span>
       </div>
       {pts.length > 1 && (
-        <svg viewBox={`0 0 ${W} ${H}`} className="ch-hm-form__svg" role="img" aria-label={`Team scoring, the team’s average on each of its last ${pts.length} round days, from ${formatFixed(pts[0]!)} to ${formatFixed(pts[pts.length - 1]!)}`}>
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="ch-hm-form__svg" role="img" aria-label={`Team scoring, the team’s average on each of its last ${pts.length} round days, from ${formatFixed(pts[0]!)} to ${formatFixed(pts[pts.length - 1]!)}`}>
           <path d={`${d} L${x(pts.length - 1)},${H} L${x(0)},${H} Z`} className="ch-hm-form__fill" />
-          <path d={d} className="ch-hm-form__line" />
-          <circle cx={x(pts.length - 1)} cy={y(pts[pts.length - 1]!)} r="3.6" className="ch-hm-form__dot" />
+          <path d={d} className="ch-hm-form__line" vectorEffect="non-scaling-stroke" />
+          {/* The last point: a zero-length round stroke, so it stays a circle when the desktop card stretches the plot to its height. */}
+          <path d={`M${x(pts.length - 1).toFixed(1)},${y(pts[pts.length - 1]!).toFixed(1)} h0.01`} className="ch-hm-form__dot" vectorEffect="non-scaling-stroke" />
         </svg>
       )}
       <dl className="ch-hm-form__figs">

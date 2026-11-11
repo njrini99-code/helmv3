@@ -1954,9 +1954,6 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   font: var(--ch-type-13-strong);
   color: var(--ch-hero-mint);
 }
-[data-ch-crh='on'] .ch-cl-term__soon dd {
-  margin: 4px 0 0;
-  font: var(--ch-type-15); letter-spacing: var(--ch-track-15); }
 [data-ch-crh='on'] .ch-cl-meta {
   font: var(--ch-type-meta);
   color: var(--ch-text-secondary);
@@ -2419,6 +2416,9 @@ html[data-fw-theme='dark'] .ch-cl[data-ch-crh='on'] {
   min-width: 0;
 }
 [data-ch-crh='on'] .ch-cl-term__soon dd {
+  margin: 4px 0 0;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
