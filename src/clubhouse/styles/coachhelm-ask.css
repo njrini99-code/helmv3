@@ -704,6 +704,44 @@
 .ch-ask-cmp.is-phone .ch-ask-cmp__grow {
   display: none;
 }
+/* Direction A (owner, 11 Nov): in a thread the composer is one ivory bar with a plain +, the field and the green
+   rounded-square send key. The + and the @ carry no ring; a hover or a press washes them. The send key keeps its green
+   when there is nothing to send yet, and its arrow steps back instead. */
+.ch-ask-cmp.is-dock .ch-ask-cmp__round,
+.ch-ask-cmp.is-phone .ch-ask-cmp__round {
+  border-radius: var(--ch-radius-md);
+  box-shadow: none;
+}
+@media (hover: hover) {
+  .ch-ask-cmp.is-dock .ch-ask-cmp__round:hover,
+  .ch-ask-cmp.is-phone .ch-ask-cmp__round:hover {
+    background: var(--ch-well-bg-flat);
+    box-shadow: none;
+    color: var(--ch-text-primary);
+  }
+}
+/* The @ stays, quieter than the +: it is a shortcut to what typing @ already does. It wears the placeholder's ink
+   (the text inks are all one inside Ask's composer). */
+.ch-ask-cmp.is-dock .ch-ask-cmp__round.is-quiet,
+.ch-ask-cmp.is-phone .ch-ask-cmp__round.is-quiet {
+  color: var(--ch-text-placeholder);
+}
+.ch-ask-cmp.is-dock .ch-ask-cmp__round[data-ch-pressed],
+.ch-ask-cmp.is-phone .ch-ask-cmp__round[data-ch-pressed] {
+  background: var(--ch-press-wash);
+}
+.ch-ask-cmp.is-dock .ch-ask-cmp__send,
+.ch-ask-cmp.is-phone .ch-ask-cmp__send {
+  border-radius: var(--ch-radius-md);
+}
+.ch-ask-cmp.is-dock .ch-ask-cmp__send:disabled,
+.ch-ask-cmp.is-phone .ch-ask-cmp__send:disabled {
+  opacity: 1;
+}
+.ch-ask-cmp.is-dock .ch-ask-cmp__send:disabled .g-send,
+.ch-ask-cmp.is-phone .ch-ask-cmp__send:disabled .g-send {
+  opacity: 0.55;
+}
 /* The mention picker (cmdk, CH-13821): the roster and the stats, a list docked on the box. Above the box in a thread and
    on the phone, so it rises out of the composer the thumb is on; below the desktop's new-chat box, which sits high on
    its page. It floats (the overlay elevation) because it covers the conversation for a moment, and nothing in it takes
