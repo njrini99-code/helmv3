@@ -337,6 +337,14 @@
   padding-bottom: 4px;
 }
 
+/* A phone section's body starts on its heading's rule. Rows bring their own room over their first line; a plain line, the
+   reflection's form and the card's line did not, and their text sat against the rule. They take an event row's 12. */
+.ch-tour-pl.is-phone .ch-sec__head ~ .ch-tour-pl-quiet,
+.ch-tour-pl.is-phone .ch-sec__head ~ .ch-tour-pl-reflect,
+.ch-tour-pl.is-phone .ch-sec__head ~ .ch-tour-pl-card {
+  padding-top: 12px;
+}
+
 /* An event's rounds and notes: one card of rows. */
 .ch-tour-pl-rounds,
 .ch-tour-pl-notes {

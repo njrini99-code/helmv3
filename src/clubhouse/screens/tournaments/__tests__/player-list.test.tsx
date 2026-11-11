@@ -158,3 +158,14 @@ describe('the player’s Tournaments · the list waits where it lands', () => {
     expect(draw(fx.list).querySelectorAll('.ch-tour-pl-body--list.is-two > .ch-sec')).toHaveLength(2);
   });
 });
+
+/**
+ * On a phone a section's body starts on its heading's rule. "Team results" and the reflection began there with no room:
+ * their first line touched the rule, against 16 under their last. They take the 12 an event's rows keep over their text.
+ */
+describe('the player’s Tournaments · a phone card’s text clears its heading’s rule', () => {
+  it.each(['.ch-tour-pl-quiet', '.ch-tour-pl-reflect', '.ch-tour-pl-card'])('%s starts 12 under the rule, as an event row’s text does', (block) => {
+    expect(decls(`.ch-tour-pl.is-phone .ch-sec__head ~ ${block}`)['padding-top']).toBe('12px');
+    expect(decls('.ch-tour-pl-round').padding).toBe('12px 16px');
+  });
+});
