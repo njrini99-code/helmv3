@@ -1740,3 +1740,21 @@ GRANT ALL ON FUNCTION "public"."golf_messages_insert_guard"() TO "service_role";
 REVOKE ALL ON FUNCTION "helm_private"."golf_team_channel_join_member"() FROM PUBLIC, "anon", "authenticated";
 
 REVOKE ALL ON FUNCTION "helm_private"."golf_team_channel_join_staff"() FROM PUBLIC, "anon", "authenticated";
+
+-- Team channel for every team (HELD 20261110090300)
+REVOKE ALL ON FUNCTION "helm_private"."golf_ensure_team_channel"("p_team_id" "uuid") FROM PUBLIC, "anon", "authenticated";
+
+-- Leaving a team (HELD 20261110090400)
+REVOKE ALL ON FUNCTION "helm_private"."golf_team_remove_departed"("p_team_id" "uuid", "p_user_id" "uuid") FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_team_chats_leave_member"() FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_team_chats_leave_staff"() FROM PUBLIC, "anon", "authenticated";
+
+-- Team channel backfill (HELD 20261110090500)
+REVOKE ALL ON FUNCTION "helm_private"."golf_team_channel_backfill"() FROM PUBLIC, "anon", "authenticated";
+
+-- Team link on participant INSERT (HELD 20261110090600)
+REVOKE ALL ON FUNCTION "public"."golf_conversation_team_link_ok"("p_conversation_id" "uuid") FROM PUBLIC, "anon";
+GRANT EXECUTE ON FUNCTION "public"."golf_conversation_team_link_ok"("p_conversation_id" "uuid") TO "authenticated";
+GRANT EXECUTE ON FUNCTION "public"."golf_conversation_team_link_ok"("p_conversation_id" "uuid") TO "service_role";

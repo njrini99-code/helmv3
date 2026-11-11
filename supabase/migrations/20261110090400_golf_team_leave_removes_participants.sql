@@ -36,7 +36,8 @@
 --      conversation of another team.
 --   2. helm_private.golf_team_chats_leave_member(), on golf_team_members:
 --        golf_team_members_leave_team_chats         AFTER UPDATE OF status,
---          WHEN (old.status = 'active' AND new.status IS DISTINCT FROM 'active')
+--          WHEN (old.status = 'active'
+--                AND new.status IS DISTINCT FROM 'active')
 --        golf_team_members_delete_leave_team_chats  AFTER DELETE
 --      It resolves the row's player to a user and calls (1).
 --   3. helm_private.golf_team_chats_leave_staff(), on golf_team_coach_staff:
@@ -69,7 +70,8 @@
 -- Thought through, and what happens:
 --   * Inactive, then active again: 20261110090200 / 090300 put the player back
 --     in the channel. Not in a coach's group: a coach adds people to a group.
---     Their old last_read_at is gone, so the channel's history counts as unread.
+--     Their old last_read_at is gone, so the channel's history counts as
+--     unread for them.
 --   * A coach who created a group and leaves the staff: the group is not
 --     deleted and keeps its created_by. Its members keep reading and posting
 --     and can each leave; nobody can add or remove a member any more, because
@@ -149,7 +151,7 @@ END $$;
 -- 1. Take one person out of one team's channel and team chats -----------------
 
 CREATE OR REPLACE FUNCTION helm_private.golf_team_remove_departed(
-  p_team_id uuid, p_user_id uuid
+    p_team_id uuid, p_user_id uuid
 )
 RETURNS integer LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = ''

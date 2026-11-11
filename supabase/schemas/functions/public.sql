@@ -15676,3 +15676,23 @@ BEGIN
 END $$;
 
 ALTER FUNCTION "public"."golf_messages_insert_guard"() OWNER TO "postgres";
+
+-- Team link on participant INSERT (HELD 20261110090600): false only for a team's channel or team chat when the
+-- caller is not on that team
+CREATE OR REPLACE FUNCTION "public"."golf_conversation_team_link_ok"("p_conversation_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+  SELECT NOT EXISTS (
+    SELECT 1
+    FROM public.golf_conversations AS c
+    WHERE c.id = p_conversation_id
+      AND c.team_id IS NOT NULL
+      AND (c.is_team_channel OR c.is_team_chat)
+      AND NOT (
+        public.is_golf_team_coach(c.team_id)
+        OR public.is_golf_team_player(c.team_id)
+      )
+  );$$;
+
+ALTER FUNCTION "public"."golf_conversation_team_link_ok"("p_conversation_id" "uuid") OWNER TO "postgres";

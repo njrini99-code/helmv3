@@ -1310,11 +1310,14 @@ $$;
 ALTER FUNCTION "helm_private"."sync_round_event_fields"() OWNER TO "postgres";
 
 
--- Team channel auto-join (HELD 20261110090200): a roster or staff row puts its user in the team's channel
+-- Team channel auto-join (HELD 20261110090200, bodies as of HELD 20261110090300): a roster or staff row
+-- ensures the team's channel and puts its user in it
 CREATE OR REPLACE FUNCTION "helm_private"."golf_team_channel_join_member"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
     AS $$
+DECLARE
+  v_channel uuid;
 BEGIN
   -- Active now, and not active before this statement.
   IF NEW.status IS DISTINCT FROM 'active'::public.team_member_status THEN
@@ -1323,16 +1326,19 @@ BEGIN
   IF TG_OP = 'UPDATE' AND OLD.status IS NOT DISTINCT FROM NEW.status THEN
     RETURN NULL;
   END IF;
-  -- Never fail the roster write: joining the team matters more than the channel row.
+  -- Never fail the roster write: joining the team matters more than the channel.
   BEGIN
-    INSERT INTO public.golf_conversation_participants (conversation_id, user_id)
-    SELECT c.id, gp.user_id
-    FROM public.golf_players AS gp
-    INNER JOIN public.golf_conversations AS c
-      ON c.team_id = NEW.team_id AND c.is_team_channel = true
-    WHERE gp.id = NEW.player_id
-      AND gp.user_id IS NOT NULL
-    ON CONFLICT (conversation_id, user_id) DO NOTHING;
+    v_channel := helm_private.golf_ensure_team_channel(NEW.team_id);
+    IF v_channel IS NOT NULL THEN
+      INSERT INTO public.golf_conversation_participants (conversation_id, user_id)
+      SELECT
+        v_channel,
+        gp.user_id
+      FROM public.golf_players AS gp
+      WHERE gp.id = NEW.player_id
+        AND gp.user_id IS NOT NULL
+      ON CONFLICT (conversation_id, user_id) DO NOTHING;
+    END IF;
   EXCEPTION WHEN OTHERS THEN
     RAISE WARNING
       'golf team channel auto-join failed for team % player %: % (%)',
@@ -1347,17 +1353,22 @@ CREATE OR REPLACE FUNCTION "helm_private"."golf_team_channel_join_staff"() RETUR
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
     AS $$
+DECLARE
+  v_channel uuid;
 BEGIN
   -- Never fail the staff write.
   BEGIN
-    INSERT INTO public.golf_conversation_participants (conversation_id, user_id)
-    SELECT c.id, gc.user_id
-    FROM public.golf_coaches AS gc
-    INNER JOIN public.golf_conversations AS c
-      ON c.team_id = NEW.team_id AND c.is_team_channel = true
-    WHERE gc.id = NEW.coach_id
-      AND gc.user_id IS NOT NULL
-    ON CONFLICT (conversation_id, user_id) DO NOTHING;
+    v_channel := helm_private.golf_ensure_team_channel(NEW.team_id);
+    IF v_channel IS NOT NULL THEN
+      INSERT INTO public.golf_conversation_participants (conversation_id, user_id)
+      SELECT
+        v_channel,
+        gc.user_id
+      FROM public.golf_coaches AS gc
+      WHERE gc.id = NEW.coach_id
+        AND gc.user_id IS NOT NULL
+      ON CONFLICT (conversation_id, user_id) DO NOTHING;
+    END IF;
   EXCEPTION WHEN OTHERS THEN
     RAISE WARNING
       'golf team channel auto-join failed for team % coach %: % (%)',
@@ -1367,3 +1378,299 @@ BEGIN
 END $$;
 
 ALTER FUNCTION "helm_private"."golf_team_channel_join_staff"() OWNER TO "postgres";
+
+-- Team channel for every team (HELD 20261110090300): the team's channel, created and filled when there is none
+CREATE OR REPLACE FUNCTION "helm_private"."golf_ensure_team_channel"("p_team_id" "uuid") RETURNS "uuid"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_channel uuid;
+  v_creator uuid;
+  v_team_name text;
+BEGIN
+  IF p_team_id IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT c.id INTO v_channel
+  FROM public.golf_conversations AS c
+  WHERE c.team_id = p_team_id AND c.is_team_channel
+  LIMIT 1;
+  IF v_channel IS NOT NULL THEN
+    RETURN v_channel;
+  END IF;
+
+  -- The owner: the primary coach, else the coach staffed first. No coach with
+  -- an account, no channel.
+  SELECT gc.user_id INTO v_creator
+  FROM public.golf_team_coach_staff AS s
+  INNER JOIN public.golf_coaches AS gc ON s.coach_id = gc.id
+  WHERE s.team_id = p_team_id AND gc.user_id IS NOT NULL
+  ORDER BY coalesce(s.is_primary, false) DESC, s.created_at ASC, s.id ASC
+  LIMIT 1;
+  IF v_creator IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT t.name INTO v_team_name
+  FROM public.golf_teams AS t
+  WHERE t.id = p_team_id;
+  IF NOT FOUND THEN
+    RETURN NULL;
+  END IF;
+
+  INSERT INTO public.golf_conversations (
+    team_id, created_by, is_team_channel, is_team_chat, title
+  )
+  VALUES (
+    p_team_id, v_creator, true, true,
+    coalesce(nullif(btrim(v_team_name), '') || ' — ', '') || 'Team Channel'
+  )
+  ON CONFLICT (team_id) WHERE is_team_channel DO NOTHING
+  RETURNING id INTO v_channel;
+
+  IF v_channel IS NULL THEN
+    -- Another transaction created it while this one waited. Its own call
+    -- fills the channel; this caller adds its own user afterwards.
+    SELECT c.id INTO v_channel
+    FROM public.golf_conversations AS c
+    WHERE c.team_id = p_team_id AND c.is_team_channel
+    LIMIT 1;
+    RETURN v_channel;
+  END IF;
+
+  -- Fill it from the roster: active players and staffed coaches with an account.
+  INSERT INTO public.golf_conversation_participants (conversation_id, user_id)
+  SELECT
+    v_channel,
+    people.user_id
+  FROM (
+    SELECT gp.user_id
+    FROM public.golf_team_members AS m
+    INNER JOIN public.golf_players AS gp ON m.player_id = gp.id
+    WHERE m.team_id = p_team_id
+      AND m.status = 'active'::public.team_member_status
+      AND gp.user_id IS NOT NULL
+    UNION
+    SELECT gc.user_id
+    FROM public.golf_team_coach_staff AS s
+    INNER JOIN public.golf_coaches AS gc ON s.coach_id = gc.id
+    WHERE s.team_id = p_team_id AND gc.user_id IS NOT NULL
+  ) AS people
+  ON CONFLICT (conversation_id, user_id) DO NOTHING;
+
+  RETURN v_channel;
+END $$;
+
+ALTER FUNCTION "helm_private"."golf_ensure_team_channel"("p_team_id" "uuid") OWNER TO "postgres";
+
+-- Leaving a team (HELD 20261110090400): a person with no live link to the team leaves its channel and team chats
+CREATE OR REPLACE FUNCTION "helm_private"."golf_team_remove_departed"("p_team_id" "uuid", "p_user_id" "uuid") RETURNS integer
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_removed integer := 0;
+BEGIN
+  IF p_team_id IS NULL OR p_user_id IS NULL THEN
+    RETURN 0;
+  END IF;
+  -- A deleted team: its rows are cascading. Leave its conversations alone.
+  IF NOT EXISTS (
+    SELECT 1 FROM public.golf_teams AS t
+    WHERE t.id = p_team_id
+  ) THEN
+    RETURN 0;
+  END IF;
+  -- Still on the team in either role: stays.
+  IF EXISTS (
+    SELECT 1
+    FROM public.golf_team_members AS m
+    INNER JOIN public.golf_players AS gp ON m.player_id = gp.id
+    WHERE m.team_id = p_team_id
+      AND m.status = 'active'::public.team_member_status
+      AND gp.user_id = p_user_id
+  ) OR EXISTS (
+    SELECT 1
+    FROM public.golf_team_coach_staff AS s
+    INNER JOIN public.golf_coaches AS gc ON s.coach_id = gc.id
+    WHERE s.team_id = p_team_id
+      AND gc.user_id = p_user_id
+  ) THEN
+    RETURN 0;
+  END IF;
+
+  DELETE FROM public.golf_conversation_participants AS cp
+  USING public.golf_conversations AS c
+  WHERE cp.conversation_id = c.id
+    AND cp.user_id = p_user_id
+    AND c.team_id = p_team_id
+    AND (c.is_team_channel OR c.is_team_chat);
+  GET DIAGNOSTICS v_removed = ROW_COUNT;
+  RETURN v_removed;
+END $$;
+
+ALTER FUNCTION "helm_private"."golf_team_remove_departed"("p_team_id" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_team_chats_leave_member"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_user uuid;
+BEGIN
+  -- Never fail the roster write.
+  BEGIN
+    SELECT gp.user_id INTO v_user
+    FROM public.golf_players AS gp
+    WHERE gp.id = OLD.player_id;
+    IF v_user IS NOT NULL THEN
+      PERFORM helm_private.golf_team_remove_departed(OLD.team_id, v_user);
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING
+      'golf team chats removal failed for team % player %: % (%)',
+      OLD.team_id, OLD.player_id, SQLERRM, SQLSTATE;
+  END;
+  RETURN NULL;
+END $$;
+
+ALTER FUNCTION "helm_private"."golf_team_chats_leave_member"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_team_chats_leave_staff"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_user uuid;
+BEGIN
+  -- Never fail the staff write.
+  BEGIN
+    SELECT gc.user_id INTO v_user
+    FROM public.golf_coaches AS gc
+    WHERE gc.id = OLD.coach_id;
+    IF v_user IS NOT NULL THEN
+      PERFORM helm_private.golf_team_remove_departed(OLD.team_id, v_user);
+
+      -- The channel belongs to a coach who is on the staff. If this one
+      -- created it and is no longer staffed, hand it to the primary coach
+      -- still there, else the one staffed first. Nobody left: no change.
+      UPDATE public.golf_conversations AS c
+      SET created_by = heir.user_id
+      FROM (
+        SELECT gc.user_id
+        FROM public.golf_team_coach_staff AS s
+        INNER JOIN public.golf_coaches AS gc ON s.coach_id = gc.id
+        WHERE s.team_id = OLD.team_id
+          AND gc.user_id IS NOT NULL
+          AND gc.user_id <> v_user
+        ORDER BY coalesce(s.is_primary, false) DESC, s.created_at ASC, s.id ASC
+        LIMIT 1
+      ) AS heir
+      WHERE c.team_id = OLD.team_id
+        AND c.is_team_channel
+        AND c.created_by = v_user
+        AND NOT EXISTS (
+          SELECT 1
+          FROM public.golf_team_coach_staff AS s2
+          INNER JOIN public.golf_coaches AS gc2 ON s2.coach_id = gc2.id
+          WHERE s2.team_id = OLD.team_id
+            AND gc2.user_id = v_user
+        );
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING
+      'golf team chats removal failed for team % coach %: % (%)',
+      OLD.team_id, OLD.coach_id, SQLERRM, SQLSTATE;
+  END;
+  RETURN NULL;
+END $$;
+
+ALTER FUNCTION "helm_private"."golf_team_chats_leave_staff"() OWNER TO "postgres";
+
+-- Team channel backfill (HELD 20261110090500): the sweep that file runs once; kept so it can be run again
+CREATE OR REPLACE FUNCTION "helm_private"."golf_team_channel_backfill"() RETURNS TABLE("channels_created" integer, "rows_added" integer, "rows_removed" integer)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+  v_team uuid;
+  v_person record;
+  v_channel uuid;
+  v_had_channel boolean;
+  v_before integer;
+  v_after integer;
+  v_created integer := 0;
+  v_added integer := 0;
+  v_removed integer := 0;
+BEGIN
+  -- a. Every team with a staffed coach has a channel holding its people.
+  FOR v_team IN
+    SELECT t.id
+    FROM public.golf_teams AS t
+    WHERE EXISTS (
+      SELECT 1
+      FROM public.golf_team_coach_staff AS s
+      INNER JOIN public.golf_coaches AS gc ON s.coach_id = gc.id
+      WHERE s.team_id = t.id AND gc.user_id IS NOT NULL
+    )
+    ORDER BY t.id
+  LOOP
+    SELECT
+      count(DISTINCT c.id) > 0,
+      count(cp.id)::integer
+    INTO v_had_channel, v_before
+    FROM public.golf_conversations AS c
+    LEFT JOIN public.golf_conversation_participants AS cp
+      ON c.id = cp.conversation_id
+    WHERE c.team_id = v_team AND c.is_team_channel;
+
+    v_channel := helm_private.golf_ensure_team_channel(v_team);
+    CONTINUE WHEN v_channel IS NULL;
+    IF NOT v_had_channel THEN
+      v_created := v_created + 1;
+    END IF;
+
+    INSERT INTO public.golf_conversation_participants (conversation_id, user_id)
+    SELECT
+      v_channel,
+      people.user_id
+    FROM (
+      SELECT gp.user_id
+      FROM public.golf_team_members AS m
+      INNER JOIN public.golf_players AS gp ON m.player_id = gp.id
+      WHERE m.team_id = v_team
+        AND m.status = 'active'::public.team_member_status
+        AND gp.user_id IS NOT NULL
+      UNION
+      SELECT gc.user_id
+      FROM public.golf_team_coach_staff AS s
+      INNER JOIN public.golf_coaches AS gc ON s.coach_id = gc.id
+      WHERE s.team_id = v_team AND gc.user_id IS NOT NULL
+    ) AS people
+    ON CONFLICT (conversation_id, user_id) DO NOTHING;
+
+    SELECT count(*)::integer INTO v_after
+    FROM public.golf_conversation_participants AS cp
+    WHERE cp.conversation_id = v_channel;
+    v_added := v_added + (v_after - v_before);
+  END LOOP;
+
+  -- b. Nobody without a live link stays in a team's channel or team chats.
+  FOR v_person IN
+    SELECT DISTINCT
+      c.team_id,
+      cp.user_id
+    FROM public.golf_conversation_participants AS cp
+    INNER JOIN public.golf_conversations AS c ON cp.conversation_id = c.id
+    WHERE c.team_id IS NOT NULL AND (c.is_team_channel OR c.is_team_chat)
+  LOOP
+    v_removed := v_removed
+      + helm_private.golf_team_remove_departed(v_person.team_id, v_person.user_id);
+  END LOOP;
+
+  RETURN QUERY SELECT v_created, v_added, v_removed;
+END $$;
+
+ALTER FUNCTION "helm_private"."golf_team_channel_backfill"() OWNER TO "postgres";

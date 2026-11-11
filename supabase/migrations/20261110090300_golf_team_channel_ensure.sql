@@ -88,7 +88,7 @@
 -- takes (a new conversation, and the updated_at bump a send makes); reads do
 -- not wait and are not waited for. The index is not built CONCURRENTLY:
 -- that cannot run inside the transaction scripts/db/apply.mjs opens, and the
--- table is small (production: a few hundred rows). CREATE OR REPLACE FUNCTION
+-- table is small (production: 23 rows, 2026-11-10). CREATE OR REPLACE FUNCTION
 -- takes no table lock, and no trigger is created or dropped.
 --
 -- ORDER: after 20261110090200 (it replaces that file's two functions and keeps
@@ -103,7 +103,8 @@
 -- VERIFY: select 1 where (select count(*) from pg_trigger where not tgisinternal and tgenabled = 'O' and ((tgrelid = 'public.golf_team_members'::regclass and tgname = 'golf_team_members_join_team_channel') or (tgrelid = 'public.golf_team_coach_staff'::regclass and tgname = 'golf_team_coach_staff_join_team_channel'))) = 2; -- noqa: LT05
 -- VERIFY: select 1 where not exists (select 1 from public.golf_conversations where is_team_channel and team_id is not null group by team_id having count(*) > 1); -- noqa: LT05
 --
--- ROLLBACK: supabase/rollbacks/20261110090300_golf_team_channel_ensure.rollback.sql
+-- ROLLBACK: the file
+-- supabase/rollbacks/20261110090300_golf_team_channel_ensure.rollback.sql
 -- (one transaction: puts back the two function bodies of 20261110090200, then
 -- drops the ensure function and the index). Channels created in the meantime
 -- stay, with the people in them; nothing marks them as created by a trigger
@@ -167,9 +168,10 @@ BEGIN
   END IF;
 END $$;
 
--- 1. One channel per team ------------------------------------------------------
+-- 1. One channel per team -----------------------------------------------------
 
--- golf_conversations is small (production: a few hundred rows) and CONCURRENTLY cannot run inside apply.mjs's transaction.
+-- golf_conversations is small (production: 23 rows, 2026-11-10) and
+-- CONCURRENTLY cannot run inside apply.mjs's transaction.
 -- squawk-ignore require-concurrent-index-creation
 CREATE UNIQUE INDEX IF NOT EXISTS golf_conversations_one_team_channel_uq
 ON public.golf_conversations (team_id) WHERE is_team_channel;

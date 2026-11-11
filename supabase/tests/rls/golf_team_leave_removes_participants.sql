@@ -7,9 +7,9 @@
 -- its team chats, and out of nothing else: not a one-to-one conversation, not another team's channel, and not while
 -- the same login is still on the team in its other role.
 --
--- Before the migration 17 of the 34 fail (run that way on the local stack, 2026-11-10): the two structure checks and
--- every line that expects somebody to be gone; the 33rd then stops the run, because it calls a function that does not
--- exist yet. The roster and staff writes themselves, and every "is still in" line, pass before and after.
+-- Before the migration 15 of the 34 fail (run that way on the local stack, 2026-11-10): the two structure checks and
+-- every line that expects somebody to be gone. After it all 34 pass. The roster and staff writes themselves, and
+-- every "is still in" line, pass before and after.
 --
 -- Ids use the 0000...0a6xxx range.
 
