@@ -1060,6 +1060,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-07-slide-plate.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-10-shared-foundation.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
+| `docs/clubhouse/coachhelm-chat-v3/LOOK.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/MOTION.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/QUICK-CHAT.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/SPEC.md` | current | - | - | - | - |
@@ -1223,6 +1224,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-11-07-one-sg-source.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-07-pre-refresh.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-07-shell-motion.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-11-team-parts-floor.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P003-roster/DESIGN.md` | current | - | - | - | - |
