@@ -258,9 +258,11 @@
 .ch-hf .cx__done { margin: 0; font: var(--ch-type-14);  color: var(--ch-hf-a-ink-2); }
 .ch-hf .cx__chg { display: inline-flex; align-items: center; min-height: 36px; padding: 0 4px; border: 0; background: none; font: var(--ch-type-13-strong);  color: var(--ch-hf-a-ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--ch-hf-a-accent); cursor: pointer; flex-shrink: 0; }
 .ch-hf .sk { display: flex; flex-direction: column; gap: 8px; padding: 4px 20px 20px; }
-.ch-hf .sk i { position: relative; overflow: hidden; display: block; height: calc(12px * var(--ch-type-k, 1)); border-radius: var(--ch-radius-tail); background: var(--ch-hf-a-skel); }
+/* 12 and 22 are numbers: --ch-type-k is itself a length (1px at the default text size), and a length times a length is no height
+   at all, so every line here was 0px tall and the loading cards drew their heads over an empty sheet. */
+.ch-hf .sk i { position: relative; overflow: hidden; display: block; height: calc(12 * var(--ch-type-k)); border-radius: var(--ch-radius-tail); background: var(--ch-hf-a-skel); }
 .ch-hf .sk i::before { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, var(--ch-hf-a-skel-sheen) 50%, transparent 70%); transform: translateX(-100%); animation: ch-hf-shim var(--ch-dur-shimmer) linear infinite; } /* today's .ch-skel: --ch-dur-shimmer 1.9s */
-.ch-hf .sk i.t { height: calc(22px * var(--ch-type-k, 1)); width: 70%; }
+.ch-hf .sk i.t { height: calc(22 * var(--ch-type-k)); width: 70%; }
 .ch-hf .feat .sk { padding: 0; }
 .ch-hf .feat .sk i { background: color-mix(in srgb, var(--ch-feature-ink) 10%, transparent); }
 .ch-hf .feat .sk i::before { background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--ch-feature-ink) 12%, transparent) 50%, transparent 70%); }
