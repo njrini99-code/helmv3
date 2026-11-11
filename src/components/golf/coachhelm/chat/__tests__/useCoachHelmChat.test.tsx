@@ -229,6 +229,27 @@ describe('useCoachHelmChat', () => {
     online.mockRestore();
   });
 
+  it('a question about a tapped thing carries the typed reference, keeps what the server accepted, and a retry carries it again', async () => {
+    const about = { evidence_ref: 'e3', key: 'metric:sg_putting@p1' };
+    fetchMock
+      .mockResolvedValueOnce(sse([{ type: 'message_start', conversation_id: CONVERSATION, message_id: 'a1', resumed: false, about }, { type: 'error', message: 'That did not work.', action: 'retry', kind: 'model' }, { type: 'done', status: 'failed' }]))
+      .mockResolvedValueOnce(sse([{ type: 'message_start', conversation_id: CONVERSATION, message_id: 'a1', resumed: false, about }, { type: 'text_delta', delta: 'From 6 to 10 feet.' }, { type: 'done', status: 'complete' }]))
+      .mockResolvedValueOnce(sse(answer('Plain.').map((e) => (e.type === 'message_start' ? { ...e, message_id: 'a2' } : e))));
+    const { result } = renderHook(() => useCoachHelmChat({ conversationId: CONVERSATION }));
+    act(() => result.current.send('Why is this low?', { about }));
+    await waitFor(() => expect(result.current.status).toBe('error'));
+    expect(bodyOf(0)).toMatchObject({ message: 'Why is this low?', about });
+    act(() => result.current.retry());
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(bodyOf(1)).toMatchObject({ message: 'Why is this low?', about });
+    expect(bodyOf(1).client_turn_id).toBe(bodyOf(0).client_turn_id);
+    expect(result.current.messages.at(-1)!.metadata).toMatchObject({ about });
+    // The next plain question says nothing of it.
+    act(() => result.current.send('And overall?'));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    expect(bodyOf(2)).not.toHaveProperty('about');
+  });
+
   it('a caller that supplies no screen sends none', async () => {
     fetchMock.mockResolvedValueOnce(sse(answer('One.')));
     const { result } = renderHook(() => useCoachHelmChat());

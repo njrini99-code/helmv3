@@ -16,6 +16,7 @@
 import { logServerError } from '@/lib/server-error-logger';
 import type { ToolEnvelope } from '../provenance';
 import { stripReadMarkers } from '../read-markers';
+import { aboutLine } from './about';
 import { defaultGroundingCheck, type GroundingCheck } from './grounding';
 import { runModelLoop, toolResultsMessage, type LoopState, type LoopStop, type PendingDecision } from './loop';
 import { emptyUsage, fallbackModelOf, profileFor, type ChatFeatures, type ModelClient, type ModelMessage, type ModelProfile, type SystemPrompt, type ToolResultBlock, type UsageTotals } from './model';
@@ -29,7 +30,8 @@ import type { ChatTool, TaskTool, ToolContext } from './tool';
  * `revise`: the coach changed fields on a waiting card; no model is called.
  */
 export type TurnInput =
-  | { kind: 'message'; text: string }
+  /** `about`: the thing in an earlier answer the coach tapped, as the browser sent it. Resolved here against this conversation's reads. */
+  | { kind: 'message'; text: string; about?: unknown }
   | { kind: 'decision'; key: string; approved: boolean; revision?: number }
   | { kind: 'revise'; key: string; edits: Record<string, unknown>; revision?: number }
   /** "Approve all": confirm these waiting cards of one turn, in the order they were proposed (not the order listed here). */
@@ -409,7 +411,9 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
 
   // ── A new message ───────────────────────────────────────────────────────────────────────────────────────────────
   const question = input.text;
-  send({ type: 'message_start', conversation_id: conversationId, message_id: ui.id, resumed: false, started_at: startedAt, context: deps.screen ?? null });
+  // What the coach tapped, if anything: resolved against the reads this conversation has stored, and nothing else.
+  const tapped = input.about === undefined ? undefined : aboutLine(reads, input.about);
+  send({ type: 'message_start', conversation_id: conversationId, message_id: ui.id, resumed: false, started_at: startedAt, context: deps.screen ?? null, ...(tapped === undefined ? {} : { about: tapped?.about ?? null }) });
   for (const part of deps.preface ?? []) send({ type: 'part', part });
 
   // A card still waiting when the coach asks something else is a Cancel: the model is told so before the new question.
@@ -455,7 +459,7 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
   rowId = loaded.rows.find((r) => r.role === 'assistant' && r.client_turn_id === deps.clientTurnId)?.id;
   // The coach's words are their own text block, after the result of any card they left: never inside a tool_result.
   const userMessage: ModelMessage = { role: 'user', content: declined.length > 0 ? [...declined, { type: 'text', text: input.text }] : input.text };
-  const note = deps.turnNote?.trim();
+  const note = [deps.turnNote?.trim(), tapped?.line].filter(Boolean).join('\n');
   const asked: ModelMessage[] = note ? [userMessage, { role: 'system', content: note }] : [userMessage];
   state.messages = [...buildHistory(loaded, { withoutTurn: deps.clientTurnId }), ...asked];
   state.appended = [...asked];

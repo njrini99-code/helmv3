@@ -1149,3 +1149,32 @@ every reader, so no screen can offer it again. A test reads those two files.
 PLANS, for P10: please add `sentPlayerIds: string[]` to what `sendEventReminderToPlayers` returns (additive, beside the
 count). With it the receipt's `missed` can name who the send did not reach; today the action returns a count and a
 coach's session cannot read players' notification rows.
+
+
+## 2026-11-11 (ENGINE): asking about a thing that was tapped
+
+E30. **`about` on a new message.** Request: `{ ..., message, about: { evidence_ref, key } }`. `evidence_ref` is the
+     `ref` of an evidence part of THIS conversation (`e3`); `key` names one element of that read:
+     `metric:<metric_id>`, `metric:<metric_id>@<entity_id>`, `entity:<entity_id>`,
+     `point:<metric_id>@<entity_id>#<at>` (the entity may be left out), `row:<id>` (a row of the read's `detail`
+     whose `id` or any `*_id` field is `<id>`: a round, a qualifier, a tournament) and `row:hole:<n>`.
+     - It is resolved in `engine/about.ts` against the reads the conversation has stored (`collectReads`) and nothing
+       else. The model is told in one line of the turn's system message, after the date and the screen line, built
+       only from the stored read: its summary and window, and the element's own labels, value and sample (a row: its
+       scalar fields). The browser's `key` only chooses among stored elements; none of its text is passed on. Stored
+       strings are flattened to one line and cut short.
+     - **Ignored, never an error**: a reference that is not that shape, a read this conversation does not hold
+       (another conversation's `e3` is not this one's), or an element the read does not have. The message is then
+       answered as any other.
+     - `message_start.about` is sent only when the request carried one: the reference accepted, or `null` when it was
+       ignored. The hook keeps it as `message.metadata.about` and takes it as `send(text, { about })`; a retry of the
+       question carries it again.
+     - A player's Ask has no stored reads, so a reference there resolves to nothing.
+     - **For the reviewer**: the reads this resolves against are stored in a column the coach can write
+       (`ui_parts`), as the stored model messages are. So this line can carry text a coach put into their own stored
+       read into a system message of their own conversation. It adds nothing to what editing `model_messages`
+       already allows, and no check that matters (the Confirm, the seal, row-level security on every read) is the
+       model's to waive.
+     - **For CAPABILITIES and the UI**: a component that lets a thing be tapped sends the evidence part's `ref` and a
+       key in one of the forms above. For anything not reachable that way, tell me what the element is and I add a
+       form; do not send words.

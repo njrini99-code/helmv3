@@ -29,6 +29,8 @@ export interface ChatMessageMetadata {
   started_at?: string;
   /** The screen the server resolved for the turn, for the context chip. Null: none was sent, or none passed the checks. */
   context?: { screen: string; label: string } | null;
+  /** The thing in an earlier answer this turn was asked about, as the server resolved it. Null: one was sent and it named nothing stored. */
+  about?: ChatAboutEcho | null;
 }
 
 /** A `data-*` part on the wire. With an `id`, a later part of the same type and id replaces the earlier one in place. */
@@ -59,6 +61,12 @@ export const isChatErrorKind = (value: unknown): value is ChatErrorKind => typeo
 export interface ChatScreenEcho {
   screen: string;
   label: string;
+}
+
+/** The element of an earlier read a message was asked about (`engine/about.ts`): the reference the server accepted, as it was sent. */
+export interface ChatAboutEcho {
+  evidence_ref: string;
+  key: string;
 }
 
 /**
@@ -120,8 +128,9 @@ export function turnMetaOf(parts: readonly ChatUIPart[]): ChatTurnMeta | null {
 
 export type ChatEvent =
   /** First event of every response. `resumed`: this response continues an assistant message the browser already holds (a decision on its card).
-   *  `started_at`: when this request began work (ISO). `context`: the screen the server resolved from the request's `screen`, or null. */
-  | { type: 'message_start'; conversation_id: string; message_id: string; resumed: boolean; started_at?: string; context?: ChatScreenEcho | null }
+   *  `started_at`: when this request began work (ISO). `context`: the screen the server resolved from the request's `screen`, or null.
+   *  `about`: sent only when the request carried one: the reference the server resolved against this conversation's reads, or null. */
+  | { type: 'message_start'; conversation_id: string; message_id: string; resumed: boolean; started_at?: string; context?: ChatScreenEcho | null; about?: ChatAboutEcho | null }
   /** The model has been called and nothing has arrived from it yet. Sent before each model call; not stored. */
   | { type: 'phase'; phase: 'thinking' }
   /** The answer, as the model writes it. */

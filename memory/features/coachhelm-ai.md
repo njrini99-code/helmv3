@@ -150,6 +150,11 @@ entries are history. The tool list and the prompt are described where the tools 
   first kept turn the coach's standing notes (`context/notes.ts`) are sent as one `{ role: 'system' }` message
   straight after the coach's message and stored with the turn. A decision request sends none. The coach's own words
   are never inside a `tool_result` and never in the same block as the app's.
+- **Asking about a thing that was tapped.** A new message may carry `about: { evidence_ref, key }`: a typed
+  reference to one element of a read this conversation stored (a figure, a player in a read, a point of a trend, a
+  round, a hole). `engine/about.ts` resolves it against the conversation's stored reads only and adds one line to the
+  turn's system message, built from the stored read. A reference that names nothing stored is ignored. The browser
+  never sends words for it.
 - **Refusals.** `stop_reason: 'refusal'` is an answer, not a fault: words already streamed are withdrawn, the coach
   gets one sentence they can act on, the turn is stored `complete` with that sentence as the reply (the model's
   refused content is not kept), and `stop_details.category` is in the turn's log line (`refusalCategory`).
