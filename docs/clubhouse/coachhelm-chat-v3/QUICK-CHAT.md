@@ -369,6 +369,7 @@ asks listed under "Second pass". Ids are still missing for a focus area, a goal,
 its natural key: those rows are found only when exactly one new row of the kind appears, else nothing is marked.
 
 Engine and protocol:
+
 1. `created[].id` on the final receipt (the saved row's id), so a row is found by id and not by being the one new row.
 2. `created[].href` that goes to the thing, not its section (Calendar on that day, the player's file for a focus area).
 3. A `lands` object on the proposal (`{ kind, home, day? }`), so the pending slot does not depend on a client map of
@@ -378,6 +379,7 @@ Engine and protocol:
 6. The screen context on the request (SPEC request 7); the chip's `screen` half is drawn and not sent until then.
 
 The lead (`chat-ux`):
+
 1. The shared thread pieces at compact size, and `MO-3-4` callable with a foreign source rect (a start's label).
 2. The shared task card's phase changes as a callback (`onPhase(key, 'held' | 'saved' | 'undone' | 'failed', receipt)`),
    because Undo is the card's own state and is not in the messages.
@@ -391,6 +393,7 @@ Other screens (one-line hooks, listed per file in the build report): `data-ch-ro
 ## How each moment is checked
 
 As MOTION.md's six steps, plus for these moments:
+
 1. the pour and a landing as frame sequences at 60 fps in WebKit;
 2. the interrupts: close at 140 ms into an open, open at 90 ms into that close, Escape mid-pour, Back while open, a
    drag released at 20% (returns) and at 40% (closes), Undo during the hold with the slot visible;
@@ -460,7 +463,7 @@ through `onCardPhase`, and its `ActivityIsland` in the header's centre slot. The
 | Team Hub, tasks | `screens/hub/parts.tsx`, `TaskRow`'s `PresenceRow` and the `.ch-hb-tasks` list in `Tasks` | `data-ch-row={`task:${t.id}`}` on the row; `data-ch-row-tag=""` on its title `<b>`; `<LandingSlot kind="task" />` as the list's first child |
 | Team Hub, announcements | `screens/hub/parts.tsx`, `Announcement`'s `PresenceRow` and its list | `data-ch-row={`announcement:${a.id}`}`; `<LandingSlot kind="announcement" />` at the head |
 | Team Hub, travel | `screens/hub/parts.tsx` (`TripPass`), `widgets.tsx` (`TripTile`) | `data-ch-row={`trip:${id}`}`; `<LandingSlot kind="trip" />` at the head |
-| Calendar | the day's agenda list and the event chip in `screens/calendar/**` | `data-ch-row={`event:${id}`}` (and `blocked_time:${id}`) on each event; `<LandingSlot kind="event" day={isoDay} />` in each visible day |
+| Calendar | the day's agenda list and the event chip in `screens/calendar/**` | ``data-ch-row={`event:${id}`}`` (and `blocked_time:${id}`) on each event; `<LandingSlot kind="event" day={isoDay} />` in each visible day |
 | A player's focus areas | `screens/stats/StatsPlayer.tsx` (and its phone twin) | `data-ch-row={`focus_area:${id}`}`; `<LandingSlot kind="focus_area" subject={playerId} />` at the head |
 | Qualifiers | `screens/qualifiers/QualifiersList.tsx` | `data-ch-row={`qualifier:${id}`}`; `<LandingSlot kind="qualifier" />` at the head |
 | Recruiting | the board's row or card in `screens/recruiting/**` | `data-ch-row={`recruit:${id}`}`; `<LandingSlot kind="recruit" />` at the head of its column |
@@ -515,6 +518,7 @@ the shell keeps a pushed phone screen's, `use-panel-history.ts`); a start tapped
 no longer flings the sheet.
 
 Still open:
+
 1. Not exercised on a device: the keyboard's rise with the pour (MO-1-3 is drawn against a block in `qc=hello-kb`),
    the iOS edge swipe, VoiceOver's order, haptics, 120 Hz. The benchmark rows that depend on these say so.
 2. Not measured: frame times of the pour and of the recede (T3) on a phone.

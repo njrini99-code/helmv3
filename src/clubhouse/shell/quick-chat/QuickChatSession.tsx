@@ -7,10 +7,10 @@ import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmC
 import type { ChatUIMessage } from '@/lib/coachhelm/v3/chat/engine/protocol';
 import { haptic } from '../../lib/haptics';
 import { useChMotionMode } from '../../lib/reduced-motion';
+import { sheetSettleHaptic } from '../../lib/sheet-drag';
 import { useChPhone } from '../../lib/use-phone';
 import { conversationHref } from '../../screens/coachhelm/chat/History';
-import { Button } from '../../ui/Button';
-import { Icon } from '../../ui/Icon';
+import { Button, IconButton } from '../../ui/Button';
 import type { ChAskSheetChat } from '../AskSheet';
 import { HelmMark, useQcCtx } from './qc-context';
 import { useQcSeam } from './qc-seam';
@@ -268,7 +268,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
           if (dragCloses(dy, v, el.offsetHeight, DRAG_CLOSE_SHARE, DRAG_FLING)) {
             // Thrown, the close starts at the finger's speed instead of at rest.
             thrown.current = Math.sign(v) === Math.sign(dy) ? Math.abs(v) : 0;
-            haptic('commit');
+            sheetSettleHaptic();
             onClose();
           } else motion.dragBack(el, scrim.current, dy, v);
         },
@@ -285,7 +285,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
       <div ref={scrim} className="scrim" hidden={!shown} onClick={onClose} aria-hidden="true" />
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- the dialog keeps Tab inside itself (AC-QC-PNL-08) */}
       <section id="ch-qc-panel" ref={panel} className="qc" role="dialog" aria-modal="true" aria-label="CoachHelm" tabIndex={-1} hidden={!shown} data-ch-qc-panel="" onKeyDown={onPanelKey}>
-        <header className="qc__h" data-qc-rise="" data-qc-handle="" {...handle}>
+        <header className="qc__h" data-qc-rise="" data-qc-drag="" {...handle}>
           <span className="qc__mark">
             <HelmMark />
           </span>
@@ -295,9 +295,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
           <Button variant="ghost" size="sm" className="qc__full" rightIcon={ArrowUpRight} aria={{ label: conversationId ? 'Open in Ask' : 'Open Ask' }} onClick={toAsk}>
             <span className="qc__full-l">{conversationId ? 'Open in Ask' : 'Open Ask'}</span>
           </Button>
-          <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm qc__x" aria-label="Close" onClick={onClose}>
-            <Icon icon={X} size={16} />
-          </button>
+          <IconButton icon={X} label="Close" size="sm" className="qc__x" onClick={onClose} />
         </header>
         <div className="qc__sheet">
           <QuickChatThread
@@ -320,7 +318,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
             field={field}
             islandSlot={islandSlot}
           />
-          {phone && <i className="ch-grab ch-grab--hit" aria-hidden="true" data-qc-handle="" {...handle} />}
+          {phone && <i className="ch-grab ch-grab--hit" aria-hidden="true" data-qc-drag="" {...handle} />}
         </div>
       </section>
     </div>

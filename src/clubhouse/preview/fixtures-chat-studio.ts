@@ -12,6 +12,7 @@ import { fromBlock, fromEvidence, type StudioData, type StudioHole } from '../sc
 import { ASK_COMPOSITION, ASK_EV_JONAH_SG, ASK_EV_JONAH_TREND, ASK_EV_SLOPE, ASK_EV_TEAM_SG } from './fixtures-ask-thread';
 import { CAP_ROSTER, capTask } from './fixtures-chat-capabilities';
 import { PP_PLAN_PART } from './fixtures-practice-plan';
+import { formatFixed, formatSigned } from '../lib/format';
 
 export interface StudioSpecimen {
   /** The deep link's `form`. */
@@ -41,7 +42,7 @@ const HOLES: StudioHole[] = PAR.map((par, i) => ({ n: i + 1, par, score: SHOT[i]
 
 const TWELVE = ['Eli Brandt', 'Jonah Okafor', 'Priya Natarajan', 'Theo Marchetti', 'Sam Whitfield', 'Sofia Alvarez', 'Ava Lindqvist', 'Owen Park', 'Marcus Delacroix-Whitmore', 'Leo Tanaka', 'Noor Haddad', 'Wes Callahan'];
 const figure = (display: string, tone: 'good' | 'loss' | 'plain' = 'plain') => ({ display, tone });
-const sg = (v: number) => figure(`${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(2)}`, v > 0.05 ? 'good' : v < -0.05 ? 'loss' : 'plain');
+const sg = (v: number) => figure(formatSigned(v, 2), v > 0.05 ? 'good' : v < -0.05 ? 'loss' : 'plain');
 const TEAM_TABLE: AskTeamTable = {
   players: TWELVE.map((label, i) => ({ id: CAP_ROSTER[i]?.id ?? `p-${i}`, label, sample: i === 9 ? 'over 2 rounds' : `over ${6 + (i % 3)} rounds` })),
   metrics: [
@@ -50,12 +51,13 @@ const TEAM_TABLE: AskTeamTable = {
     { id: 'gir', label: 'Greens in regulation', short: 'Greens', unit: 'percent', strokes: false },
     { id: 'putts', label: 'Putts per round', short: 'Putts', unit: 'count', strokes: false },
   ],
-  cells: TWELVE.map((_, i) => [figure((71.2 + i * 0.45).toFixed(1)), sg(0.62 - i * 0.11), figure(`${68 - i * 2}%`), i === 10 ? null : figure((29.1 + i * 0.3).toFixed(1))]),
+  cells: TWELVE.map((_, i) => [figure(formatFixed(71.2 + i * 0.45, 1)), sg(0.62 - i * 0.11), figure(`${68 - i * 2}%`), i === 10 ? null : figure(formatFixed(29.1 + i * 0.3, 1))]),
   best: [CAP_ROSTER[0]!.id, CAP_ROSTER[0]!.id, CAP_ROSTER[0]!.id, CAP_ROSTER[0]!.id],
   playersAsRows: true,
 };
 
 const event = capTask('create_event');
+if (!event) throw new Error('fixtures-chat-studio: the create_event capability fixture is missing');
 
 export const STUDIO_SPECIMENS: readonly StudioSpecimen[] = [
   make('figure', 'figure', 'One figure, set large', 'r1', { title: null, figures: [{ key: 'putts', label: 'Jonah Okafor, putts per round', value: '31.8', sub: 'over 4 rounds', tone: 'plain', refs: ['Team average 30.4', 'Division I average 29.6'], href: '#stats-jonah' }] }),

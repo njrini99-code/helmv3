@@ -11,7 +11,9 @@ Flags: `coachhelm_ask_v2`, `coachhelm_quick_chat_v1`, `coachhelm_player_ask_v1` 
 ## Step 1: what renders or runs ONLY when the flag is ON (written before any edit)
 
 ### Ask group (`ask-flag.ts`: `isAskV2Enabled`, `isPlayerAskEnabled`; props `v2`, `askOn`, `quickChat`, `helmViews.playerAsk`)
+
 ON-only:
+
 - `Thread.tsx` `if (v2)` branch: `AnswerCard` (parts/AnswerCard.tsx) with `Steps`, `ReadChip`, `Sources`, `FollowUps`, `ToolSkeleton`,
   `ArtifactCard`, `BriefCard`, `HandoffCard`, `PlanCard`, `ConfirmCard`, `Receipt`; the live "Reading your program" `Steps` row for
   the awaiting turn; the `ch-ak-th` class and `data-v2`; the follow-the-answer reach of 0.9 screens and the "Jump to the latest"
@@ -27,6 +29,7 @@ ON-only:
 - CSS: `coachhelm-ask-v2.css` (every rule under `[data-v2]`), `quick-chat.css`.
 
 OFF-only:
+
 - `Thread.tsx` fall-through `<article class="ch-th-ans">`: `AskProse`/`AskEvidenceView`/`CoachVisualArtifact`/`CoachComposition`
   drawn straight, `AskActionCard`, `AskReceiptCard` (`ActionCard.tsx`, imported nowhere else), `Work`, `useElapsed`, `workReceipt`,
   Thread's own copy button and `ch-th-follow` pills, the `ch-th-think` placeholder, the 80px stick reach.
@@ -38,7 +41,9 @@ copy `Icon` are NOT only in the OFF article. `AnswerCard.tsx` renders each of th
 Only `AskActionCard`, `AskReceiptCard`, `Work`, `useElapsed`, `workReceipt` and Thread's own copy and follow-up markup are OFF-only.
 
 ### Practice group (`practice-plan/flag.ts`: `isPracticePlansEnabled`, `isPracticeTabEnabled`; props `askOn`, `practicePlans`, `practice`, `helperOn`, `saveOn`, `slashFlags.plans`)
+
 ON-only:
+
 - The whole Practice tab: `/golf/dashboard/practice/**` pages (no redirect to Calendar), the Practice nav entry (`CH_NAV_PRACTICE`),
   `PracticeHome`, the Builder, library pages, plan format page.
 - With `coachhelm_practice_plans_v1`: `NewPlanSheet` "Ask CoachHelm" start (and it is the default start), the "Plan format" links, the
@@ -51,11 +56,13 @@ OFF-only: the redirects to Calendar, the `unavailable` returns ("Practice plans 
 Practice tab."), the `'blank'` default start and `emptyBody(..., start === 'blank' && !askOn)`.
 
 ### Read (`read/flag.ts`: `isReadEnabled`; props `readOn`)
+
 ON-only: `?view=read` pages (`ReadPage`, `ReadSkeleton`, `loadCoachRead`, `loadPlayerRead`), `readHref` returning the read address,
 `ReadPanel` linking to it (`canLink`), the Reads rail, `coachhelm-read.css`.
 OFF-only: `readHref`'s old branch to the Deep dive address, `readOn` plumbing (`ChFile` data `readOn`, `ReadPanel readOn`).
 
 ### Player file (`player-file/flag.ts`: `isPlayerFileEnabled`; props `fileOn`)
+
 ON-only: `?view=player` (`PlayerFile`, `FileSkeleton`, `loadCoachPlayerFile`), the player's "Your week" (`PlayerYourWeek`,
 `YourWeek`, `loadPlayerYourWeek`), `playerFileHref` returning the file address, the redirect of old coach drill addresses to the
 file, `coachhelm-file.css`.
@@ -63,14 +70,17 @@ OFF-only: `playerFileHref`'s old branch (Standing / Deep dive addresses), the pl
 (`PlayerBoard` at `!drill`), `fileOn` plumbing. (`PlayerBoard.tsx` itself stays: `coachHelmLinks` is imported by Standing and Deep dive.)
 
 ### Team board (`team-board/flag.ts`: `isTeamBoardEnabled`; `helmViews.team`)
+
 ON-only: `TeamBoard`, `TeamBoardSkeleton`, `loadCoachTeamBoard`, the Team tab, `coachhelm-team.css`, `ReadPanel`/`PlayerPanel`
 cross-lane links. OFF-only: the coach's first view being `CoachBoard`. (`CoachBoard` stays: gate-off pages use it.
 `TEAM_BOARD_FIRST_VIEW` and `COURSE_TAB` are design switches, not flags.)
 
 ## Step 3: proof that every ON-only item still exists and is rendered
+
 Grep for the JSX use or the import in live code (previews and tests excluded). No ON-only item is gone.
 
 ### Ask group
+
 - kept: AnswerCard (src/clubhouse/screens/coachhelm/chat/Thread.tsx:192)
 - kept: Steps (live row) (src/clubhouse/screens/coachhelm/chat/Thread.tsx:164)
 - kept: ConfirmCard (src/clubhouse/screens/coachhelm/chat/Thread.tsx:217)
@@ -96,6 +106,7 @@ Grep for the JSX use or the import in live code (previews and tests excluded). N
 - kept: actions/[key] route (src/app/api/coachhelm/v3/chat/actions/[key]/route.ts:4)
 
 ### Practice group
+
 - kept: PracticeHome (src/app/golf/(dashboard)/dashboard/practice/page.tsx:6)
 - kept: PlayerPracticeHome (src/clubhouse/routes/practice.tsx:56)
 - kept: Builder (src/clubhouse/routes/practice.tsx:158)
@@ -107,12 +118,14 @@ Grep for the JSX use or the import in live code (previews and tests excluded). N
 - kept: coachhelm-plan.css (imported by src/clubhouse/routes/practice.tsx:26 and routes/coachhelm.tsx:54)
 
 ### Read
+
 - kept: ReadPage (src/clubhouse/routes/coachhelm.tsx:97)
 - kept: ReadSkeleton (src/clubhouse/routes/coachhelm.tsx:247)
 - kept: readHref (read address) (src/clubhouse/data/coachhelm-views-shape.ts:115)
 - kept: coachhelm-read.css (imported by src/clubhouse/routes/coachhelm.tsx:50-52)
 
 ### Player file
+
 - kept: PlayerFile (src/clubhouse/screens/coachhelm/file/PlayerFile.tsx:89)
 - kept: FileSkeleton (src/clubhouse/routes/coachhelm.tsx:113)
 - kept: PlayerYourWeek (src/clubhouse/routes/coachhelm.tsx:155)
@@ -121,16 +134,17 @@ Grep for the JSX use or the import in live code (previews and tests excluded). N
 - kept: coachhelm-file.css (imported by src/clubhouse/routes/coachhelm.tsx:50-52)
 
 ### Team board
+
 - kept: TeamBoard (src/clubhouse/routes/coachhelm.tsx:78)
 - kept: TeamBoardSkeleton (src/clubhouse/routes/coachhelm.tsx:289)
 - kept: loadCoachTeamBoard (src/clubhouse/routes/coachhelm.tsx:78)
 - kept: coachhelm-team.css (imported by src/clubhouse/routes/coachhelm.tsx:50-52)
 - kept: PlayerPanel (src/clubhouse/screens/coachhelm/team/TeamBoard.tsx:367)
 
-
 Also kept: `coachhelm-ask-v2.css` (routes/coachhelm.tsx:53) and `quick-chat.css` (shell/quick-chat/QuickChatProvider.tsx:15).
 
 ## Deleted (OFF-only)
+
 - `chat/ActionCard.tsx` (`AskActionCard`, `AskReceiptCard`), `Work`, `useElapsed`, the `<article class="ch-th-ans">` branch and Thread's own copy and follow-up markup, `workReceipt`, `AskHome`.
 - `AskSheetProvider`, `useAskSheet`, `AskSheetButton` (the sparkle key) and `MaybeQuickChat`; the top bar draws `HelmKey` only.
 - Every `isAskV2Enabled`, `isPlayerAskEnabled`, `isPracticePlansEnabled`, `isPracticeTabEnabled`, `isReadEnabled`, `isPlayerFileEnabled`, `isTeamBoardEnabled` read and their helper files (except `team-board/flag.ts`, which keeps the design switches `TEAM_BOARD_FIRST_VIEW` and `COURSE_TAB`).
@@ -138,6 +152,7 @@ Also kept: `coachhelm-ask-v2.css` (routes/coachhelm.tsx:53) and `quick-chat.css`
 - The player's old board as their CoachHelm home (`PlayerBoard` at `!drill`); `PlayerBoard.tsx` stays for `coachHelmLinks` and the preview.
 
 ## Decisions
+
 - Fairway keeps its tool set: the stream route passes `practicePlans: true`, and plan tools still need `teamTools` (Clubhouse for the team).
 - The Practice pages no longer redirect to Calendar for anyone. A Fairway user is not offered the tab (the nav is Clubhouse's).
 - No-round players get the first-run empty state whether or not the team has events (`isPlayerFirstRun`).

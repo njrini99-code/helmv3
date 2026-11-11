@@ -269,7 +269,7 @@ const BASE_TASKS: CapTask[] = [
         { label: 'Player', value: 'Jonah Okafor' },
         { label: 'Focus', value: 'Lag putting from outside 20 feet' },
         { label: 'Area', value: 'putting' },
-        { label: 'Target', value: 'three putts per round → 1.2 (from 2.4)' },
+        { label: 'Target', value: 'three putts per round down to 1.2 (from 2.4)' },
         { label: 'Over', value: '8 rounds' },
         { label: 'Status', value: 'Proposed: Jonah Okafor accepts before the window starts' },
       ],

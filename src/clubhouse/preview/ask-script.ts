@@ -174,7 +174,8 @@ function timeline(pace: AskPace, beats: Beat[], opts: { status?: 'complete' | 'a
       t = end + p.think;
     } else if (beat.kind === 'text') {
       const next = rng(beat.text.length * 31 + pace.length);
-      const words = beat.text.split(/(?<=\s)/);
+      // Each word with the one whitespace character after it (no lookbehind: iOS before 16.4 cannot parse one).
+      const words = beat.text.match(/\S*\s|\S+$/g) ?? [beat.text];
       let sentences = 0;
       for (let i = 0; i < words.length; ) {
         const n = Math.max(1, Math.round(p.words[0] + next() * (p.words[1] - p.words[0])));

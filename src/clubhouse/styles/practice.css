@@ -567,7 +567,7 @@ span.ch-prc-tile__it {
   content: '';
   width: 8px;
   height: 8px;
-  border-radius: 2px;
+  border-radius: var(--ch-radius-mark);
   background: var(--ch-run-group-b);
 }
 .ch-prc-ribbon__mix [data-tone='random']::before { background: var(--ch-run-group-c); }
@@ -844,12 +844,16 @@ span.ch-prc-tile__it {
   background: var(--ch-selected-strong);
   color: var(--ch-text-on-accent);
 }
+/* Working: the CoachHelm wheel turns one spoke, then holds, as it does in Ask (CONS-24: the one spinner is ui/Spinner, and
+   the brand mark's turn is the named exception, not a second ring). The same keyframes as coachhelm-thread.css, repeated
+   here because this page does not load that stylesheet. */
 .ch-prc-fold__m.is-working svg {
-  animation: ch-prc-turn var(--ch-dur-shimmer) linear infinite;
+  animation: ch-th-turn var(--ch-dur-shimmer) var(--ch-ease-io) infinite;
 }
-@keyframes ch-prc-turn {
-  to {
-    transform: rotate(360deg);
+@keyframes ch-th-turn {
+  70%,
+  100% {
+    transform: rotate(45deg);
   }
 }
 .ch-prc-fold__t {
@@ -1319,7 +1323,7 @@ html[data-fw-theme='dark'] :is(.ch-prc-group.is-f .ch-prc-disc, .ch-prc-disc.g-F
   align-content: start;
   gap: 12px;
   width: 100%;
-  max-width: 760px;
+  max-width: var(--ch-measure-reading);
   min-width: 0;
   margin: 0 auto;
   padding: 20px 24px 40px;
@@ -1704,7 +1708,7 @@ main.ch-prc-planpage {
 .ch-prt-sheet figcaption { font: var(--ch-type-13); color: var(--ch-text-secondary); }
 .ch-prt-frame { position: relative; width: 100%; overflow: hidden; background: var(--ch-print-paper); border-radius: var(--ch-radius-xs); box-shadow: var(--ch-elevation-lifted); }
 /* Where the printer starts the next sheet, drawn over the paper: a dashed rule and its words. It is the studio's, never printed. */
-.ch-prt-cut { position: absolute; inset-inline: 0; display: flex; justify-content: flex-end; padding: 2px 8px 0; border-block-start: 1px dashed var(--ch-print-soft); font: var(--ch-type-11-medium); color: var(--ch-print-soft); pointer-events: none; }
+.ch-prt-cut { position: absolute; inset-inline: 0; display: flex; justify-content: flex-end; padding: 2px 8px 0; border-block-start: 1px dashed var(--ch-print-soft); font: var(--ch-type-11-medium); letter-spacing: var(--ch-track-11); color: var(--ch-print-soft); pointer-events: none; }
 .ch-prt-paper { position: absolute; inset: 0 auto auto 0; transform-origin: 0 0; visibility: hidden; color: var(--ch-print-ink); }
 .ch-prt-paper[data-ui='clubhouse'] { --ch-type-k: var(--ch-print-k); }
 .ch-prt-paper[data-ready] { visibility: visible; }

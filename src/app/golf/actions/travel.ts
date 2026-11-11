@@ -261,13 +261,20 @@ async function createGolfTravelItineraryImpl(input: CreateTravelItineraryInput) 
 
     // The same request again: the trip it made the first time is the answer (the id is the request's, and it is this team's).
     if (error?.code === '23505' && validatedData.requestId) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: first } = await (supabase as any)
+      const { data: first, error: firstError } = await supabase
         .from('golf_travel_itineraries')
         .select('*')
         .eq('id', validatedData.requestId)
         .eq('team_id', validatedData.team_id)
         .maybeSingle();
+      // A failed look falls through to the "operation failed" answer below; it is recorded so it is not read as "no first trip".
+      if (firstError) {
+        await logServerError(
+          `travel request lookup failed after a duplicate itinerary: ${describeError(firstError)}`,
+          { action: 'travel.createItinerary.requestLookup', featureArea: 'travel' },
+          'warning',
+        );
+      }
       if (first) return { success: true, data: first };
     }
 
@@ -812,12 +819,19 @@ async function updateTravelExpenseImpl(input: UpdateExpenseInput) {
     // so a coach staffed only on the men's team could edit the women's team's
     // expenses. Resolve the expense's own team first and apply the same
     // staff-strict wall travel.ts already uses for itineraries.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: expenseRecord } = await (supabase as any)
+    const { data: expenseRecord, error: expenseReadError } = await supabase
       .from('golf_travel_expenses')
       .select('team_id')
       .eq('id', validatedData.id)
       .maybeSingle();
+    if (expenseReadError) {
+      await logServerError(
+        `travel expense team read failed before update: ${describeError(expenseReadError)}`,
+        { action: 'travel.updateExpense.resolveTeam', featureArea: 'travel' },
+        'warning',
+      );
+      return { success: false, error: "Couldn't load that expense just now. Please try again." };
+    }
     if (!expenseRecord) return { success: false, error: 'Expense not found' };
     if (!(await validateCoachTeamAccess(supabase, coach.id, expenseRecord.team_id, coach.organization_id))) {
       return { success: false, error: 'Not authorized for this team' };
@@ -890,12 +904,19 @@ async function deleteTravelExpenseImpl(expenseId: string) {
   // DS-42: same staff-strict wall as updateTravelExpense — the coach-side RLS
   // policy on golf_travel_expenses is org-scoped, so an app-layer check is the
   // only thing keeping a coach from deleting a sibling team's expenses.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: expenseRecord } = await (supabase as any)
+  const { data: expenseRecord, error: expenseReadError } = await supabase
     .from('golf_travel_expenses')
     .select('team_id')
     .eq('id', parsed.data)
     .maybeSingle();
+  if (expenseReadError) {
+    await logServerError(
+      `travel expense team read failed before delete: ${describeError(expenseReadError)}`,
+      { action: 'travel.deleteExpense.resolveTeam', featureArea: 'travel' },
+      'warning',
+    );
+    return { success: false, error: "Couldn't load that expense just now. Please try again." };
+  }
   if (!expenseRecord) return { success: false, error: 'Expense not found' };
   if (!(await validateCoachTeamAccess(supabase, coach.id, expenseRecord.team_id, coach.organization_id))) {
     return { success: false, error: 'Not authorized for this team' };

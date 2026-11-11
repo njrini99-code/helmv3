@@ -405,7 +405,7 @@ describe('every state looks its own', () => {
     // The drawing itself is hidden from assistive tech (a row's spark); the words beside it carry the figure and the direction.
     expect(card.querySelector('.ch-hd-strip__chart svg')?.getAttribute('aria-hidden')).toBe('true');
     const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/coachhelm-read.css'), 'utf8');
-    expect(css).toMatch(/\.ch-hr\.is-phone \.ch-hd-plan__w \{ grid-column: 2; grid-row: 2; justify-self: start; \}/);
+    expect(css).toMatch(/\.ch-hr-page\.is-phone \.ch-hd-plan__w \{ grid-column: 2; grid-row: 2; justify-self: start; \}/);
   });
 
   it('the Next line keeps each separator dot with the words before it, so a wrapped line never opens with a dot', () => {

@@ -231,7 +231,7 @@
   border-radius: var(--ch-radius-md);
   background: var(--ch-card-bg);
   /* MSG-106: a hairline ring and the shared bubblet drop, nothing lifted. */
-  box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-elevation-bubblet);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-bubblet);
   font: var(--ch-type-12-medium);
   letter-spacing: var(--ch-track-12);
   color: var(--ch-inb-ink-2);

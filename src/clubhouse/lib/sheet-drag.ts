@@ -4,6 +4,14 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Pointer
 import { haptic } from './haptics';
 import { CH_DUR, chSpringCurve } from './motion';
 
+/**
+ * The settle a dragged sheet closes with (CONS-25: `commit` is kept for a sheet settling). A sheet that follows the finger
+ * with its own motion (the quick chat) closes through this, so the heavy haptic keeps one owner.
+ */
+export function sheetSettleHaptic(): void {
+  haptic('commit');
+}
+
 /** A drag down past this many pixels closes the sheet. */
 export const CH_SHEET_CLOSE_PX = 80;
 /** So does a flick faster than this (px per ms), once it has moved a little. */

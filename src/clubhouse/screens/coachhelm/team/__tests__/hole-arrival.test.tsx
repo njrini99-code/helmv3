@@ -200,7 +200,9 @@ describe('the selected station’s pulse (M-TEAM-06)', () => {
   });
 
   it('is scale 1 to 1.7 over 2.4s, twice', () => {
-    expect(css).toMatch(/\.holefx__ring\.is-pulse \{\s*animation:ch-htb-pulse 2400ms var\(--ch-ease\) 2;/);
+    // The 2.4s is a token (clubhouse:check refuses a literal duration in a page stylesheet); both halves are held.
+    expect(css).toMatch(/\.holefx__ring\.is-pulse \{\s*animation:ch-htb-pulse var\(--ch-dur-station-pulse\) var\(--ch-ease\) 2;/);
+    expect(readFileSync(join(process.cwd(), 'src/clubhouse/styles/tokens.css'), 'utf8')).toMatch(/\n {2}--ch-dur-station-pulse: 2400ms;/);
     expect(css).toMatch(/@keyframes ch-htb-pulse \{\s*from \{\s*opacity:\.7;\s*transform:scale\(1\);\s*\}\s*to \{\s*opacity:0;\s*transform:scale\(1\.7\);/);
   });
 });

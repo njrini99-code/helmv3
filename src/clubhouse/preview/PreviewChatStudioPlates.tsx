@@ -15,6 +15,7 @@ import { Segmented } from '../ui/Segmented';
 import { Select } from '../ui/Select';
 import { CAP_ROSTER, capTask, type CapTask } from './fixtures-chat-capabilities';
 import { STUDIO_SPECIMENS, studioSpecimen, type StudioSpecimen } from './fixtures-chat-studio';
+import { formatFixed } from '../lib/format';
 
 /**
  * The gallery's plates that are not one task card (CAPABILITIES.md, "What is built"): every studio component in both
@@ -322,7 +323,7 @@ export function WorkspacePlate({ sequence, autoplay = false, density, at }: { se
           {playing ? 'Start again' : 'Play'}
         </Button>
         <span className="ch-akg-note ch-num">
-          {worked.toFixed(1)} seconds of work, then {seq.writing.toFixed(1)} of writing. Real timing.
+          {formatFixed(worked, 1)} seconds of work, then {formatFixed(seq.writing, 1)} of writing. Real timing.
         </span>
       </div>
       <div className="ch-akg-isl" data-density={density}>

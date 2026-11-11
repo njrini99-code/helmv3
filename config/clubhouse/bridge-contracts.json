@@ -1332,13 +1332,14 @@
     "category": 1,
     "item": 5,
     "name": "TEAM_PARTS_ON_THE_FORMS_LAST_10",
-    "meaning": "Coach Home's four parts (The team's game; under the team's form on desktop, after Team scoring on the phone) read the form's own Last 10 rounds of the active roster, hole-level only (Q-123): strokes gained per round in each part from 3 rounds with hole scores (else none), its change against the same players' previous ten (Q-112) coloured only when it clears its standard error, the part's plain stat (Fairways, Greens, Up and down, Putts) with the Tour's mark from the team's tour, and who gains and loses most from Team Stats' ranking (ties share a place and are named together; one ranked player, or everyone in one place, loses nothing). No other player's round reaches the figures.",
+    "meaning": "Coach Home's four parts (The team's game; under the team's form on desktop, after Team scoring on the phone) read the form's own Last 10 rounds of the active roster, hole-level only (Q-123): strokes gained per round in each part is Team Stats' own team figure (teamStrokesGained): the rounds of the players who have 3 rounds with strokes gained in that window, so a player's first round or two moves it neither here nor on Stats (no player at that floor: none), its change against the same players' previous ten (Q-112) coloured only when it clears its standard error, the part's plain stat (Fairways, Greens, Up and down, Putts) with the Tour's mark from the team's tour, and who gains and loses most from Team Stats' ranking (ties share a place and are named together; one ranked player, or everyone in one place, loses nothing). No other player's round reaches the figures.",
     "status": "implemented",
     "where": "src/clubhouse/data/home.ts#teamLegs, legPeople, teamWindows; src/clubhouse/data/leg-rows.ts#legRows; src/clubhouse/data/stats-team.ts#teamGrid; src/clubhouse/screens/home/TeamLegs.tsx#TeamLegs, TeamLegsPhone",
     "tests": [
       "src/clubhouse/__tests__/home.test.tsx",
       "src/clubhouse/__tests__/home-data-completeness.test.ts",
-      "src/clubhouse/__tests__/home-coach-parity.test.tsx"
+      "src/clubhouse/__tests__/home-coach-parity.test.tsx",
+      "src/clubhouse/__tests__/team-sg-parity.test.ts"
     ]
   },
   {
@@ -15549,7 +15550,7 @@
     "item": 3,
     "name": "DELETE_ALL_CLASSES_NOT_DRAWN_WITH_NO",
     "chCode": "CH-12503",
-    "meaning": "Delete all classes (a quiet red button under the deck, with a bin icon; 44px tall and full width on the phone). Not drawn with no classes (CH-12301) or when they didn't load (CH-12201); off while a save, an import, a remove, a calendar sync or a delete-all is running, because a write beside it would put back what was just taken off",
+    "meaning": "Delete all classes (the destructive row, with a bin icon, in the More menu on the Your classes heading, on the phone and on desktop). Not drawn with no classes (CH-12301) or when they didn't load (CH-12201); the More key is off while a save, an import, a remove, a calendar sync or a delete-all is running, because a write beside it would put back what was just taken off",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/classes.md"
   },
@@ -17124,6 +17125,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130650,
+    "page": "P013",
+    "category": 6,
+    "item": 50,
+    "name": "REMOVE_FOCUS_ON_A_READ_FAILS",
+    "chCode": "CH-13008",
+    "meaning": "Remove focus on a read fails (written when its Undo toast goes)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130660,
     "page": "P013",
     "category": 6,
@@ -17232,7 +17244,7 @@
     "name": "ASK_COACHHELM_PROPOSES_AN_ACTION",
     "chCode": "CH-13951",
     "meaning": "Ask: CoachHelm proposes an action",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -18516,7 +18528,7 @@
     "name": "PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE",
     "chCode": "CH-13860",
     "meaning": "Standing: a screen reader moves through How you play",
-    "status": "reserved",
+    "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {

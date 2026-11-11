@@ -59,12 +59,17 @@ async function takeHeld(sb: Sb, where: { run_id: string }): Promise<string | nul
 /**
  * Held to approved for several rows in ONE update. A batch whose shared window has closed is taken whole, so no card of it can be
  * written by another request (a card's own ring-end, the sweep) while an earlier card of the batch is still being written.
- * Returns the ids taken; a row the coach undid, or that was opened early, is not among them.
+ * Returns the ids taken; a row the coach undid, or that was opened early, is not among them. Null when the update itself failed:
+ * nothing is known to be taken, and the caller says what that means.
  */
-export async function takeHeldMany(sb: Sb, args: { run_ids: string[] }): Promise<Set<string>> {
+export async function takeHeldMany(sb: Sb, args: { run_ids: string[] }): Promise<Set<string> | null> {
   if (args.run_ids.length === 0) return new Set();
   const { data, error } = await askTables(sb).from(TABLE).update({ status: 'approved', decided_at: new Date().toISOString() } as never).eq('status', 'held').in('id', args.run_ids).select('id');
-  if (error || !Array.isArray(data)) return new Set();
+  if (error) {
+    void logServerError('coachhelm held batch not taken', { action: 'coachhelm.tool.take_held', feature: 'coachhelm_chat', handled: true, extra: { code: error.code ?? null, rows: args.run_ids.length } }, 'error');
+    return null;
+  }
+  if (!Array.isArray(data)) return new Set();
   return new Set((data as Array<{ id: string }>).map((row) => row.id));
 }
 

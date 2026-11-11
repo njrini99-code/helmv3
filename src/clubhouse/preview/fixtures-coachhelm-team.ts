@@ -5,6 +5,7 @@ import type { CourseHistory } from '@/lib/coachhelm/v3/team-board/course-shape';
 import { HELM_PLAYERS, PREVIEW_TOUR, slope } from './fixtures-coachhelm';
 import { PREVIEW_TRACK_RECORD } from './fixtures-coachhelm-track';
 import { PREVIEW_SG_FLOOR, PREVIEW_TEAM_SG, previewSgRow } from './fixtures-team-sg';
+import { formatFixed } from '../lib/format';
 
 /**
  * The team board for the cast's seven active players. Their reads and the course table are the design page's
@@ -135,7 +136,7 @@ export const PREVIEW_TEAM_BOARD: ChTeamBoardData = {
     ],
   },
   // Each read's worth as the themes part hands it over: the cascade's figure, to the team where the read has a team figure.
-  worth: { status: 'ok', value: Object.fromEntries(LIST.flatMap((p) => p.reads.needs).filter((r) => r.stakes).map((r) => [r.id, { strokes: Number(r.stakes).toFixed(1), anchor: r.compare?.team != null ? ('team' as const) : ('tour' as const) }])) },
+  worth: { status: 'ok', value: Object.fromEntries(LIST.flatMap((p) => p.reads.needs).filter((r) => r.stakes).map((r) => [r.id, { strokes: formatFixed(Number(r.stakes), 1), anchor: r.compare?.team != null ? ('team' as const) : ('tour' as const) }])) },
   patterns: {
     rows: [
       {

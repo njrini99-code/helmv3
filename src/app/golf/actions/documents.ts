@@ -460,7 +460,16 @@ async function saveTextDocumentImpl(
     const requestId = options.requestId;
     if (requestId !== undefined) {
       if (!SAVE_REQUEST_ID_RE.test(requestId)) return { data: null, error: 'Invalid request' };
-      const { data: first } = await supabase.from('golf_documents').select('*').eq('id', requestId).eq('team_id', teamId).maybeSingle();
+      const { data: first, error: firstError } = await supabase.from('golf_documents').select('*').eq('id', requestId).eq('team_id', teamId).maybeSingle();
+      // A failed look is not "no first save": say so and stop before a second file is stored.
+      if (firstError) {
+        await logServerError(
+          `documents: request lookup failed before save: ${describeError(firstError)}`,
+          { action: 'documents.saveText.requestLookup', featureArea: 'documents' },
+          'warning',
+        );
+        return { data: null, error: 'Couldn’t save the document just now. Please try again.' };
+      }
       if (first) return { data: first as GolfDocument, error: null };
     }
 
@@ -498,7 +507,15 @@ async function saveTextDocumentImpl(
       .single();
     // Two sends of one request at the same moment: the first to land is the answer.
     if (insertError?.code === '23505' && requestId) {
-      const { data: first } = await supabase.from('golf_documents').select('*').eq('id', requestId).eq('team_id', teamId).maybeSingle();
+      const { data: first, error: firstError } = await supabase.from('golf_documents').select('*').eq('id', requestId).eq('team_id', teamId).maybeSingle();
+      // A failed look falls through to the insert error below, which is thrown and logged.
+      if (firstError) {
+        await logServerError(
+          `documents: request lookup failed after a duplicate save: ${describeError(firstError)}`,
+          { action: 'documents.saveText.requestLookup', featureArea: 'documents' },
+          'warning',
+        );
+      }
       if (first) return { data: first as GolfDocument, error: null };
     }
     if (insertError) throw insertError;

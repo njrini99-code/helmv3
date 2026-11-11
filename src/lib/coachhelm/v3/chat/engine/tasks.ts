@@ -400,7 +400,8 @@ export async function startConfirmAll(deps: TaskDeps, ctx: ToolContext, wanted: 
   const finish = async (): Promise<BatchEnd[]> => {
     if (until) await new Promise<void>((resolve) => setTimeout(resolve, Math.max(0, Date.parse(until) - Date.now())));
     // The window has closed: every card still held is taken in one update, before the first of them is written.
-    const mine = await takeHeldMany(ctx.sb, { run_ids: cards.flatMap((c) => (c.state === 'held' ? [claimed.get(c.key)!.run_id] : [])) });
+    // A failed take (null) took nothing: no held card of the batch is written by this request, and each is answered from its own row below.
+    const mine = (await takeHeldMany(ctx.sb, { run_ids: cards.flatMap((c) => (c.state === 'held' ? [claimed.get(c.key)!.run_id] : [])) })) ?? new Set<string>();
     const ends: BatchEnd[] = [];
     let stopped = false;
     for (const card of cards) {

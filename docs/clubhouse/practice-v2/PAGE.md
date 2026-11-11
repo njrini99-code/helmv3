@@ -14,7 +14,7 @@ plan page belong to `screens/coachhelm/plan/**`.
 ## Addresses
 
 | Address | Who | Screen |
-|---|---|---|
+| --- | --- | --- |
 | `/golf/dashboard/practice` | coach, player | `PracticeHome`, `PlayerPracticeHome` |
 | `/golf/dashboard/practice/drills`, `/drills/<id>`, `/groups`, `/templates` | coach | `LibraryPages` |
 | `/golf/dashboard/practice/plan/<id>/edit` (`?fill=1`) | coach | `Builder` |
@@ -27,7 +27,7 @@ A player who opens a coach address is sent to their own. A Fairway user is sent 
 ## What each state says
 
 | State | Where | What is on screen | Source |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Practice not on this database | every address | "Practice isn't on yet" and Go to Calendar | a read answered with a missing table, function or column (`isPracticeMissing`) |
 | A read failed | home, library | "Practice didn't load. Your plans are safe." and Try again | any other read error |
 | A plan that is gone | plan page, print, builder | "This plan isn't available" | the plan row or its event did not read |
@@ -111,7 +111,7 @@ These behaviours have tests and no CH code. Minting one regenerates the shared b
 coordinator instead of added here.
 
 | Proposed row | What is seen | Test |
-|---|---|---|
+| --- | --- | --- |
 | Practice: the plan page's state | Draft, Published or Edits not published, each with its line | practice-states › the plan page says which of three states |
 | Practice: print, the drills did not load | "This plan's drills didn't load" with Try again | practice-states › a drills read that failed is said |
 | Practice: print, the sheet count | "4 sheets · Coach copy 3 · Range board 1", with "Coach copy runs past one sheet…" and the breaks marked on the paper | practice-states › counts the sheets before the press; › a piece that runs past one sheet; page-cuts |

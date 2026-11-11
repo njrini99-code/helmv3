@@ -187,7 +187,7 @@ export function Measured({ d, voice, pictures }: { d: ChReadDetail; voice: ChVie
   const against = ladder ? ladder.lines.map((l) => (l.source === 'team_pool' ? 'the team' : l.label)).join(' and ') : '';
   return (
     <Card sec="measured" title="What was measured">
-      <div className={'ch-hd-meas ' + (b.kind === 'strength' ? 'is-good' : 'is-warn')}>
+      <div className={'ch-hd-meas ' + (b.kind === 'strength' ? 'is-gain' : 'is-warn')}>
         <div className="ch-hd-meas__v">
           <b className="ch-num">{d.measured.value}</b>
           <span>{d.measured.label}</span>
@@ -245,7 +245,7 @@ export function Moved({ d }: { d: ChReadDetail }) {
   const hi = Math.max(...all);
   const first = vals[0] as number;
   const last = vals[vals.length - 1] as number;
-  const tone = t.lowerBetter == null || first === last ? 'is-plain' : last < first === t.lowerBetter ? 'is-good' : 'is-warn';
+  const tone = t.lowerBetter == null || first === last ? 'is-plain' : last < first === t.lowerBetter ? 'is-gain' : 'is-warn';
   return (
     <Card
       sec="moved"

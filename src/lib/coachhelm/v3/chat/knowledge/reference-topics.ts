@@ -96,7 +96,7 @@ export const WITHHELD: Readonly<Record<string, string>> = {
   [`${C4}/wedge-play-75-125-yd-biggest-college-tour-gap`]: 'Its college range has no source, and its claim that wedge play is the biggest college-to-Tour gap is not what the one published comparison shows (section 3 cites around the green as the widest).',
   [`${C6}/wedge-gapping-standard-setup`]: 'Carry distances for men only, and the college column has no source.',
   [`${C9}/choking-mechanics`]: 'A chain from pressure to the body to the swing with no source. The assistant does not explain a result by a swing or a body.',
-  [`${C10}/typical-improvement-curves`]: 'Vendor claims of strokes saved and an unsourced statement about college players. It reads as a promise of a result.',
+  [`${C10}/typical-improvement-curves`]: 'Vendor marketing figures for how far a product lowers a score, and an unsourced statement about college players. It reads as a promise of a result.',
 };
 
 /** One sentence cut from a served section. `cut` is the exact text in the document; the test fails if it is no longer there. */

@@ -253,6 +253,7 @@ the whole change again, follow-ups included (131401).
 | 130647 | CH-13082 | `PRACTICE_DELETE_DRAFT_REFUSED` | Practice: Delete draft refused |
 | 130648 | CH-13083 | `PRACTICE_A_NEW_DRILL_SAVED` | Practice: a new drill saved |
 | 130649 | CH-13084 | `PRACTICE_OFFLINE_WHILE_EDITING` | Practice: offline while editing |
+| 130650 | CH-13008 | `REMOVE_FOCUS_ON_A_READ_FAILS` | Remove focus on a read fails (written when its Undo toast goes) |
 | 130660 | CH-13233 | `PLAYER_THEIR_OWN_COURSE_PLAN_DOESNT_LOAD` | Player: their own course plan (chs-21) doesn't load: the courses or the plan read fails or throws |
 
 ## 07 — Network / offline

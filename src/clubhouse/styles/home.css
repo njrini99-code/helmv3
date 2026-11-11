@@ -3165,7 +3165,7 @@
   .ch-hm-hero {
     display: flex;
     flex-direction: column;
-    padding: 52px var(--ch-page-x-phone) 22px;
+    padding: 52px var(--ch-page-x-phone) 24px;
     border-radius: 0;
     background: none;
     box-shadow: none;
@@ -3353,7 +3353,7 @@
   /* The player's first run on the phone (CH-2312) opens as the loaded page does: the date and the greeting with no rule
      above them, then the welcome as one card with the card's own inset, so its two buttons sit inside it. */
   .ch-h-main--first.is-player {
-    padding-top: 30px;
+    padding-top: 32px;
   }
   .ch-h-main--first.is-player > .ch-h-head {
     padding-top: 0;

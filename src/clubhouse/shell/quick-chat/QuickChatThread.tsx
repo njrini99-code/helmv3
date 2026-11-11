@@ -15,7 +15,7 @@ import type { ChMotionMode } from '../../lib/reduced-motion';
 import { AskEvidencePanel } from '../../screens/coachhelm/chat/EvidencePanel';
 import { ActivityIsland } from '../../screens/coachhelm/chat/island/ActivityIsland';
 import { useIsland } from '../../screens/coachhelm/chat/island/useIsland';
-import { askLinkHref } from '../../screens/coachhelm/chat/ask-links';
+import { askLinkHref } from '../../data/coachhelm-chat-links';
 import { noteSendSource } from '../../screens/coachhelm/chat/send-source';
 import { AskThread } from '../../screens/coachhelm/chat/Thread';
 import { Badge } from '../../ui/Badge';

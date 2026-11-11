@@ -76,7 +76,7 @@
 .ch-shs .ch-shs-ctl .ch-seg__b {
   position: relative;
   min-height: calc(32 * var(--ch-type-k));
-  padding: 0 3px;
+  padding: 0 2px;
   border-radius: var(--ch-radius-md);
   font: var(--ch-type-14-medium);
   white-space: nowrap;

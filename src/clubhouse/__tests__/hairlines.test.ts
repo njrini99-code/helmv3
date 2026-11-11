@@ -29,7 +29,6 @@ const ALLOW_LINES: Record<string, number> = {
   'styles/onboard.css': 5,
   'styles/qualifiers.css': 2,
   'styles/recruiting.css': 2,
-  'styles/roster.css': 2,
   'styles/rounds-setup.css': 9,
   'styles/rounds-track.css': 5,
   'styles/rounds.css': 3,

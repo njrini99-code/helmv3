@@ -10,7 +10,7 @@ control is Clubhouse's real primitive from `src/clubhouse/ui/**`, never the mock
 ## What is where
 
 | Piece | File |
-|---|---|
+| --- | --- |
 | The page, its states, the bar, the stepper and J/K, the skeleton | `src/clubhouse/screens/coachhelm/read/ReadPage.tsx` |
 | The parts (head, measured, moved, cause, where, rounds, how sure, this week, plan, chips, more reads, rail) | `read/parts.tsx` |
 | The coach's and the player's action rows, the held writes, Re-check now | `read/actions.tsx` |
@@ -44,7 +44,7 @@ payload is made, not in the view:
 ## The ten slots the first build left out
 
 | # | Slot | Now | Source, or the exact gap |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 1 | The trend line and the Last 8 / Season switch | Built | The read's metric per round from the attribution registry's per-round source (`lib/coachhelm/v3/causality/metric-sources.ts`: `golf_rounds` and `golf_round_stats_cache` columns), over countable rounds. A metric the registry marks as having no per-round series (putt make rate by distance, miss bias, the slope gap, proximity bands) and one it does not know draw no trend; the stored before and after is then a quiet row under the measure. To cover those: a per-round cache for the bucket (the registry's own note names `golf_round_putt_distance_cache`), which is a schema change. |
 | 2 | Undo on Assign, and Remove focus | Built | Both wait behind an eight-second Undo in the page (the pattern of the board's Decline): nothing is saved and the player is told nothing until it closes; leaving the page sends it at once. Remove focus is the coach's existing `deleteFocusArea`, offered on a focus made from this read. |
 | 3 | Re-check now | Built for a coach | `refreshPlayerAnalysisAsCoach(playerId)`: the existing per-player re-check (auth, the engine's rate limit and team membership checked in the action). It takes Assign's place on a stale read. A player has no re-check action; theirs says the line only. |

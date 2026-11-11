@@ -69,6 +69,32 @@ describe('Ask’s team strokes gained is the figure Stats and Home print for the
     expect(season.rounds).toBe(14 + 4 + 3);
     expect(season.legs.tee).not.toBeCloseTo(ask.legs.tee!, 3);
   });
+
+  // Home pooled every round in the window, so a player's first two tracked rounds moved Home's four parts and not Team Stats'.
+  it('Home leaves out a player under the floor, as Stats does: two wild rounds from a new player move neither (20105)', () => {
+    const newcomer = [round('p5', 1, [-9, -9, -9, -9]), round('p5', 4, [-9, -9, -9, -9])];
+    const withNew = [...rounds, ...newcomer];
+    const roster = [...players, { id: 'p5', first_name: 'p5', last_name: null }];
+    const homeNew = teamLegs({ full: withNew.filter(countsForScoring), players: roster, cache, bench: { bench: new Map(), error: false }, tour: 'pga' })!;
+    // Stats' own function over the same window (`teamStrokesGainedOver` cuts the window, then calls `teamStrokesGained`).
+    const stats = teamStrokesGainedOver(withNew, [...ids, 'p5'], filterFor('last10'), START);
+    expect(stats.players).toBe(3);
+    for (const key of ['tee', 'approach', 'around', 'putting'] as const) {
+      const sg = homeNew.rows.find((r) => r.key === key)!.sg;
+      // The same number as without the newcomer, and the number Stats' function gives.
+      expect(sg).toBeCloseTo(homeSg(key)!, 9);
+      expect(sg).toBeCloseTo(stats.legs[key]!, 9);
+    }
+    // The newcomer's rounds are still rounds with holes on Home's card; they are only not read for the four figures.
+    expect(homeNew.holeRounds).toBe(home.holeRounds + 2);
+  });
+
+  it('with no player at the floor Home prints no figure, however many rounds the team has between them', () => {
+    const thin = ['q1', 'q2', 'q3'].flatMap((id, i) => [round(id, i, [1, 1, 1, 1]), round(id, i + 3, [1, 1, 1, 1])]);
+    const none = teamLegs({ full: thin, players: ['q1', 'q2', 'q3'].map((id) => ({ id, first_name: id, last_name: null })), cache, bench: { bench: new Map(), error: false }, tour: 'pga' })!;
+    expect(none.holeRounds).toBe(6);
+    expect(none.rows.map((r) => r.sg)).toEqual([null, null, null, null]);
+  });
 });
 
 

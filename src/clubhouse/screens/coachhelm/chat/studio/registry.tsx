@@ -53,11 +53,11 @@ function Fallback({ part, size }: Pick<StudioRenderProps, 'part' | 'size'>) {
 
 /** A component that throws on its data is replaced by the table, not by a hole in the answer. */
 class Guard extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
+  override state = { failed: false };
   static getDerivedStateFromError(): { failed: boolean } {
     return { failed: true };
   }
-  render(): ReactNode {
+  override render(): ReactNode {
     return this.state.failed ? this.props.fallback : this.props.children;
   }
 }

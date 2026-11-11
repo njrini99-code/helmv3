@@ -349,7 +349,7 @@
 }
 /* The selected station's pulse (M-TEAM-06): 1 to 1.7 over 2.4s, twice, then still. */
 .ch-htb .holefx__ring.is-pulse {
-  animation:ch-htb-pulse 2400ms var(--ch-ease) 2;
+  animation:ch-htb-pulse var(--ch-dur-station-pulse) var(--ch-ease) 2;
 }
 @keyframes ch-htb-pulse {
   from {

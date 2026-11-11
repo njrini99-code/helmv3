@@ -11,6 +11,7 @@ import { playerStrokesGained } from './figure-window';
 import { classYearLabel, countsForScoring, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, MIN_SG_ROUNDS, roundsForSpan, seasonStartDate, summarizePlayer, type ChForm, type ChRound } from './season';
 import { spanFloorsLeaderboard, spanSince, spanStart, type ChSpan } from './span';
 import { LEGS, sgLegs, teamGrid, type ChLeg } from './stats-team';
+import { teamStrokesGained } from './stats-team-sg';
 import { legRows } from './leg-rows';
 import { loadCoachQueue, type ChCoachQueue } from './home-queue';
 import { teamRankRows, type TeamRankMetric, type TeamRankRow } from '../screens/stats/team-rank';
@@ -954,7 +955,8 @@ export function legPeople(rows: TeamRankRow[]): { gains: ChLegPeople | null; los
 
 /**
  * The team's four parts (spec B §1), on the form's own Last 10 rounds (`teamWindows`), hole-level throughout (Q-123):
- * strokes gained per round in each part (MIN_SG_ROUNDS whole rounds with it, else null), its change against each
+ * strokes gained per round in each part (Team Stats' `teamStrokesGained`: the rounds of the players with MIN_SG_ROUNDS whole
+ * rounds with strokes gained in the window, else null), its change against each
  * player's previous ten (the same players, Q-112, with the standard error Team Stats uses for strokes gained), the
  * part's plain stat pooled over the same rounds with the Tour's mark (Player Home's legRows), and who gains and loses
  * most (Team Stats' ranking). `players` is the active roster: no one else's round reaches the grid. Null with no round.
@@ -978,6 +980,9 @@ export function teamLegs(input: {
   const grid = teamGrid(input.players, full, filterFor('last10'));
   const marks = input.bench && !input.bench.error ? input.bench.bench : null;
   const stats = legRows(holeLast, input.cache.byRound, marks, { tee: null, approach: null, around: null, putting: null });
+  // The four figures are the one team figure (`teamStrokesGained`, Team Stats' own, A4): only the players with three whole rounds
+  // with strokes gained in the window are read, so a player's first round or two never moves a part here and not on Stats.
+  const teamSg = teamStrokesGained(holeLast, input.players.map((p) => p.id));
   let ranked = false;
   // Team stats' definition (A4): the rounds of the players with three whole rounds in the window, so Home and Stats say one figure.
   const teamSg = teamStrokesGained(holeLast, input.players.map((p) => p.id));

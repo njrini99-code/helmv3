@@ -177,8 +177,9 @@ const PLACEHOLDER = /\{(player|player2|new_player|no_shots_player|teammate)\}/g;
 const escapeRe = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 /** First names that are also everyday words: lower-case, they are not a name written wrongly. The same list as `knowledge/eval/index.ts`. */
 export const EVERYDAY_WORDS = new Set(['will', 'grant', 'chase', 'hunter', 'mark', 'bill', 'drew', 'rich', 'may', 'rose', 'lane', 'reed', 'art', 'dean', 'miles', 'chance', 'ace', 'bo', 'sky', 'jay', 'pat', 'sandy', 'summer', 'hope', 'faith', 'grace', 'joy']);
+// The same source as `knowledge/eval/index.ts`, which ships in app source and so writes "not after a letter" without a lookbehind.
 const miscasedSource = (stored) =>
-  `(?<![A-Za-z])(?!${escapeRe(stored)}(?![A-Za-z]))${[...stored].map((ch) => (/[A-Za-z]/.test(ch) ? `[${ch.toLowerCase()}${ch.toUpperCase()}]` : escapeRe(ch))).join('')}(?![A-Za-z])`;
+  `(?:^|[^A-Za-z])(?!${escapeRe(stored)}(?![A-Za-z]))${[...stored].map((ch) => (/[A-Za-z]/.test(ch) ? `[${ch.toLowerCase()}${ch.toUpperCase()}]` : escapeRe(ch))).join('')}(?![A-Za-z])`;
 function properNounSource(names, everyday) {
   const whole = [...(names.people ?? []), ...(names.places ?? [])].map((n) => n.trim()).filter((n) => /[A-Za-z]{2}/.test(n));
   const parts = (names.people ?? []).flatMap((n) => n.trim().split(/\s+/)).filter((w) => w.length >= 3 && /^[A-Z]/.test(w) && !everyday.has(w.toLowerCase()));

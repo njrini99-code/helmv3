@@ -21657,6 +21657,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/supabase-sources.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/supabase-sources.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/causality/attribute.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
         },
@@ -21974,6 +21984,11 @@
       "evidence": [
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/supabase-sources.ts",
+          "anchor": "src/lib/calendar/timezone"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/create-tools.ts",
           "anchor": "src/app/golf/actions/calendar-events"
         },
@@ -22048,6 +22063,46 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/development.ts",
           "anchor": "src/clubhouse/gate"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/__tests__/stats-parity.test.ts",
+          "anchor": "src/clubhouse/lib/stats-signal"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/__tests__/stats-parity.test.ts",
+          "anchor": "src/clubhouse/data/figure-window"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/__tests__/stats-parity.test.ts",
+          "anchor": "src/clubhouse/data/round-scope"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/__tests__/stats-parity.test.ts",
+          "anchor": "src/clubhouse/data/season"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/__tests__/stats-parity.test.ts",
+          "anchor": "src/clubhouse/data/stats-common"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/__tests__/stats-parity.test.ts",
+          "anchor": "src/clubhouse/data/stats-figures"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/__tests__/stats-parity.test.ts",
+          "anchor": "src/clubhouse/data/stats-filter"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/__tests__/stats-parity.test.ts",
+          "anchor": "src/clubhouse/data/stats-weight"
         },
         {
           "kind": "import_graph",
@@ -22664,6 +22719,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/__tests__/stats-parity.test.ts",
+          "anchor": "src/lib/golf/leak-map-buckets"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/analyst/measures.ts",
           "anchor": "src/lib/golf/leak-map-buckets"
         },
@@ -23176,6 +23236,11 @@
       "target": "stats_analytics",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/__tests__/stats-parity.test.ts",
+          "anchor": "src/lib/golf/benchmarks/tour"
+        },
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/analyst/fact-sheet.ts",
