@@ -921,6 +921,9 @@ main[data-canopy] .ch-hs-r:not(:first-child) .ch-hs-r__f dt {
    gained total, the figure its four rows add up to, beside it. The phone draws neither: its board is the sentence, and
    the pair's wrapper draws nothing. */
 .ch-hs-hero__figs {
+  /* The figures sit on the green board, so the gain and loss pair is the on-green one here (CONS-20). */
+  --ch-chart-gain: var(--ch-feature-gain);
+  --ch-chart-loss: var(--ch-feature-loss);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -954,10 +957,10 @@ main[data-canopy] .ch-hs-r:not(:first-child) .ch-hs-r__f dt {
   color: var(--ch-text-primary);
 }
 .ch-hs-hero__figs .is-loss dd {
-  color: var(--ch-feature-loss);
+  color: var(--ch-chart-loss);
 }
 .ch-hs-hero__figs .is-gain dd {
-  color: var(--ch-feature-gain);
+  color: var(--ch-chart-gain);
 }
 .ch-hs-hero__figs .is-none dd {
   color: var(--ch-text-tertiary);

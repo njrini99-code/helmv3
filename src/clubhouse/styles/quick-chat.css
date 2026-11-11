@@ -183,7 +183,7 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 .ch-qcs.is-phone .qc__isl { right: 88px; }
 .ch-qcs .qc__h { position: relative; }
 .ch-qcs .qc__ttl { transition: opacity var(--ch-dur-quick) var(--ch-ease); }
-.ch-qcs .qc__h:has(.ch-isl:not(.is-leaving)) .qc__ttl { opacity: 0; }
+.ch-qcs .qc__h:has(.ch-isl):not(:has(.ch-isl.is-leaving)) .qc__ttl { opacity: 0; }
 /* On the phone the way into Ask is its arrow alone (its name is the button's accessible name): the row's centre is the island's. */
 .ch-qcs.is-phone .qc__full-l { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .ch-qcs .qc__x { flex: none; }

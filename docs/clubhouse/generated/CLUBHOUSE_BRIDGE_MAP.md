@@ -1853,7 +1853,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 131812 | CH-13823 | 18 Accessibility | `ASK_THE_OPEN_CHAT_IN_THE_LIST` | implemented | Ask: The open chat in the list |
 | 131813 | CH-13850 | 18 Accessibility | `ASK_COACHHELM_IS_WORKING_ON_AN_ANSWER` | implemented | Ask: CoachHelm is working on an answer |
 | 131814 | CH-13851 | 18 Accessibility | `ASK_THE_EVIDENCE_CONTROL` | implemented | Ask: The evidence control |
-| 131815 | CH-13852 | 18 Accessibility | `ASK_EVIDENCE_DRAWN_AS_A_CHART` | implemented | Ask: Evidence drawn as a chart |
+| 131815 | CH-13852 | 18 Accessibility | `ASK_EVIDENCE_DRAWN_AS_A_CHART` | reserved | Ask: Evidence drawn as a chart |
 | 131816 | CH-13860 | 18 Accessibility | `PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE` | implemented | Standing: a screen reader moves through How you play |
 | 131817 | CH-13880 | 18 Accessibility | `STANDING_A_SCREEN_READER_MOVES_THROUGH_THE` | reserved | Standing: a screen reader moves through the page |
 | 131818 | CH-13890 | 18 Accessibility | `DEEP_DIVE_A_SCREEN_READER_MOVES_THROUGH` | implemented | Deep dive: a screen reader moves through the page |

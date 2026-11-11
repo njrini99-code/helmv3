@@ -1073,10 +1073,10 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
   .ch-ak-root:has(.ch-ask-dock textarea:focus) .ch-ak-islhost { display: none; }
 }
 
-/* --isl-r is the radius step as a length for the geometry below; the corners themselves name the step (radius-steps). */
-.ch-isl { --isl-r: var(--ch-radius-lg); --isl-w: min(380px, 100% - 28px); position: absolute; top: 2px; left: 50%; z-index: var(--ch-z-sticky); width: var(--isl-w); height: calc(var(--isl-r) * 2); margin-left: calc(var(--isl-w) / -2); color: var(--ch-feature-ink); animation: ch-isl-in var(--ch-dur-spring-pop, var(--ch-dur-base)) var(--ch-ease-spring-pop, var(--ch-ease)) backwards; transition: transform var(--ch-dur-release) var(--ch-ease); }
-.ch-ask-head .ch-isl { top: calc(50% - var(--isl-r)); --isl-w: min(380px, 100% - 32px); }
-.ch-isl.is-compact { --isl-w: min(300px, 100% - 24px); }
+/* --ch-isl-r is the radius step as a length for the geometry below; the corners themselves name the step (radius-steps). */
+.ch-isl { --ch-isl-r: var(--ch-radius-lg); --ch-isl-w: min(380px, 100% - 28px); position: absolute; top: 2px; left: 50%; z-index: var(--ch-z-sticky); width: var(--ch-isl-w); height: calc(var(--ch-isl-r) * 2); margin-left: calc(var(--ch-isl-w) / -2); color: var(--ch-feature-ink); animation: ch-isl-in var(--ch-dur-spring-pop, var(--ch-dur-base)) var(--ch-ease-spring-pop, var(--ch-ease)) backwards; transition: transform var(--ch-dur-release) var(--ch-ease); }
+.ch-isl:is(.ch-ask-head *) { top: calc(50% - var(--ch-isl-r)); --ch-isl-w: min(380px, 100% - 32px); }
+.ch-isl.is-compact { --ch-isl-w: min(300px, 100% - 24px); }
 .ch-isl:has(.hd[data-ch-pressed]) { transform: scale(0.98); transition-duration: var(--ch-dur-press); }
 .ch-isl.is-leaving { animation: ch-isl-out var(--ch-dur-quick) var(--ch-ease) forwards; pointer-events: none; }
 @keyframes ch-isl-in { from { opacity: 0; transform: translateY(-6px) scale(0.9); } }
@@ -1085,15 +1085,15 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 
 /* The shadow of each size, crossed by opacity: a shadow is never resized. */
 .ch-isl .sh { position: absolute; inset: 0; border-radius: var(--ch-radius-lg); box-shadow: var(--ch-feature-shadow); pointer-events: none; }
-.ch-isl .sh::after { content: ''; position: absolute; inset: 0 0 auto; height: calc(var(--isl-r) * 2 + var(--ch-isl-h, 0) * 1px); border-radius: var(--ch-radius-lg); box-shadow: var(--ch-elevation-raised); opacity: 0; transition: opacity var(--ch-dur-base) var(--ch-ease); }
+.ch-isl .sh::after { content: ''; position: absolute; inset: 0 0 auto; height: calc(var(--ch-isl-r) * 2 + var(--ch-isl-h, 0) * 1px); border-radius: var(--ch-radius-lg); box-shadow: var(--ch-elevation-raised); opacity: 0; transition: opacity var(--ch-dur-base) var(--ch-ease); }
 .ch-isl.is-open .sh::after { opacity: 1; }
 
 /* The plate: a top cap, a middle two pixels tall (whole pixels, so its edges stay sharp when scaled) that scales to the steps' height, and a bottom cap that rides its edge. */
 .ch-isl .pl { position: absolute; inset: 0; pointer-events: none; }
 .ch-isl .pl i { position: absolute; left: 0; right: 0; background: var(--ch-feature-bg); }
-.ch-isl .pt { top: 0; height: var(--isl-r); border-radius: var(--ch-radius-lg) var(--ch-radius-lg) 0 0; }
-.ch-isl .pm { top: calc(var(--isl-r) - 1px); height: 2px; transform-origin: 50% 0; }
-.ch-isl .pb { top: var(--isl-r); height: var(--isl-r); border-radius: 0 0 var(--ch-radius-lg) var(--ch-radius-lg); }
+.ch-isl .pt { top: 0; height: var(--ch-isl-r); border-radius: var(--ch-radius-lg) var(--ch-radius-lg) 0 0; }
+.ch-isl .pm { top: calc(var(--ch-isl-r) - 1px); height: 2px; transform-origin: 50% 0; }
+.ch-isl .pb { top: var(--ch-isl-r); height: var(--ch-isl-r); border-radius: 0 0 var(--ch-radius-lg) var(--ch-radius-lg); }
 .ch-isl :is(.pm, .pb, .bc, .bd) { transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth); }
 .ch-isl.is-open .pm { transform: scaleY(calc((var(--ch-isl-h, 0) + 2) / 2)); }
 .ch-isl.is-open .pb { transform: translateY(calc(var(--ch-isl-h, 0) * 1px)); }
@@ -1115,7 +1115,8 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 /* A step's mark. The ring turns for as long as the step runs; finished, it closes where it is and the check draws inside it. */
 :is(.ch-isl, .ch-ak-isl) .mk { flex: none; display: grid; place-items: center; width: 18px; height: 18px; }
 :is(.ch-isl, .ch-ak-isl) .mk.is-waiting::before { content: ''; width: 12px; height: 12px; border-radius: 50%; background: var(--ch-feature-ink-3); opacity: 0.4; }
-:is(.ch-isl, .ch-ak-isl) .mk svg { width: 16px; height: 16px; overflow: visible; }
+/* The ring (r 8, stroke 2.2) and its marks sit inside the 20-unit box, so the svg clips nothing and needs no overflow. */
+:is(.ch-isl, .ch-ak-isl) .mk svg { width: 16px; height: 16px; }
 :is(.ch-isl, .ch-ak-isl) .mk :is(.trk, .arc, .ck, .bar) { stroke-width: 2.2; }
 :is(.ch-isl, .ch-ak-isl) .mk .trk { stroke: var(--ch-feature-track); transition: opacity var(--ch-dur-base) var(--ch-ease); }
 :is(.ch-isl, .ch-ak-isl) .mk .arc { stroke: var(--ch-feature-gain); stroke-dasharray: 100; stroke-dashoffset: 70; transform-box: fill-box; transform-origin: 50% 50%; animation: ch-spinner-turn var(--ch-dur-sweep) linear infinite; transition: stroke-dashoffset var(--ch-dur-base) var(--ch-ease), opacity var(--ch-dur-base) var(--ch-ease); }
@@ -1135,11 +1136,11 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 /* The steps. The clip is a window of fixed height hung from the plate's moving edge, and the list inside it is moved back by
    the same amount, so the list stays where it is and only the edge travels: two equal and opposite moves on the same clock
    as the plate, which stay equal when the height changes mid-move. */
-.ch-isl { --isl-max: 420px; }
-.ch-isl .bc { position: absolute; top: calc(var(--isl-r) * 2); left: 0; right: 0; height: var(--isl-max); overflow: hidden; border-radius: 0 0 var(--ch-radius-lg) var(--ch-radius-lg); pointer-events: none; transform: translateY(calc(var(--isl-max) * -1)); }
-.ch-isl .bd { max-height: min(52dvh, var(--isl-max)); overflow-y: auto; overscroll-behavior: contain; padding: 0 6px 8px; opacity: 0; transform: translateY(var(--isl-max)); transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth), opacity var(--ch-dur-quick) var(--ch-ease); }
-.ch-isl.is-open .bc { transform: translateY(calc(var(--ch-isl-h, 0) * 1px - var(--isl-max))); }
-.ch-isl.is-open .bd { pointer-events: auto; opacity: 1; transform: translateY(calc(var(--isl-max) - var(--ch-isl-h, 0) * 1px)); }
+.ch-isl { --ch-isl-max: 420px; }
+.ch-isl .bc { position: absolute; top: calc(var(--ch-isl-r) * 2); left: 0; right: 0; height: var(--ch-isl-max); overflow: hidden; border-radius: 0 0 var(--ch-radius-lg) var(--ch-radius-lg); pointer-events: none; transform: translateY(calc(var(--ch-isl-max) * -1)); }
+.ch-isl .bd { max-height: min(52dvh, var(--ch-isl-max)); overflow-y: auto; overscroll-behavior: contain; padding: 0 6px 8px; opacity: 0; transform: translateY(var(--ch-isl-max)); transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth), opacity var(--ch-dur-quick) var(--ch-ease); }
+.ch-isl.is-open .bc { transform: translateY(calc(var(--ch-isl-h, 0) * 1px - var(--ch-isl-max))); }
+.ch-isl.is-open .bd { pointer-events: auto; opacity: 1; transform: translateY(calc(var(--ch-isl-max) - var(--ch-isl-h, 0) * 1px)); }
 .ch-isl .steps { margin: 0; padding: 4px 0 0; border-top: 1px solid var(--ch-feature-sep); list-style: none; }
 .ch-isl .st { animation: ch-ak-rise6 var(--ch-dur-spring-settle) var(--ch-ease-spring-settle) backwards; }
 .ch-isl .st { position: relative; }
@@ -1292,7 +1293,7 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
   padding: var(--ch-space-1) var(--ch-space-4) var(--ch-space-3);
   border-radius: var(--ch-radius-xl);
 }
-.ch-th--phone .ch-ak-isl.is-open {
+.ch-ak-th.ch-th--phone .ch-ak-isl.is-open {
   width: 100%;
 }
 .ch-ak-isl.is-open .hd {

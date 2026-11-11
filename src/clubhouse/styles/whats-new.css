@@ -45,7 +45,7 @@
    middle while the chevron sat at the far edge, with 40% of the page empty between). The head keeps the page's width;
    the filter, the days and their rows stop at the reading measure, the chevron at its edge. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  .ch-rd.ch-wn[data-canopy] > :not(.ch-rd-h, .ch-es) {
+  .ch-wn.ch-rd[data-canopy] > :not(.ch-rd-h, .ch-es) {
     width: 100%;
     max-width: var(--ch-measure-reading);
   }

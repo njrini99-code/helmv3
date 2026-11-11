@@ -370,16 +370,16 @@
   letter-spacing: -0.01em;
 }
 .ch-aks-hole__part.is-gain .ch-aks-hole__stem {
-  stroke: var(--ch-gain);
+  stroke: var(--ch-chart-gain);
 }
 .ch-aks-hole__part.is-gain :is(.ch-aks-hole__end, .ch-aks-hole__value) {
-  fill: var(--ch-gain);
+  fill: var(--ch-chart-gain);
 }
 .ch-aks-hole__part.is-loss .ch-aks-hole__stem {
-  stroke: var(--ch-loss);
+  stroke: var(--ch-chart-loss);
 }
 .ch-aks-hole__part.is-loss :is(.ch-aks-hole__end, .ch-aks-hole__value) {
-  fill: var(--ch-loss);
+  fill: var(--ch-chart-loss);
 }
 /* Each part's key lies over its own column of the drawing: station, name, stem and figure. */
 .ch-aks-hole__keys {
@@ -442,10 +442,10 @@
   letter-spacing: var(--ch-track-15);
 }
 .ch-aks-ruled.is-gain :is(.ch-aks-ruled__pt.is-last, .ch-aks-ruled__last) {
-  fill: var(--ch-gain);
+  fill: var(--ch-chart-gain);
 }
 .ch-aks-ruled.is-loss :is(.ch-aks-ruled__pt.is-last, .ch-aks-ruled__last) {
-  fill: var(--ch-loss);
+  fill: var(--ch-chart-loss);
 }
 
 /* comparison: a ruled table, the best in each measure marked by a dot. */

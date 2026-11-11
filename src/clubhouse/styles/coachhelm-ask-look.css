@@ -504,18 +504,18 @@
   letter-spacing: -0.01em;
 }
 .ch-look-a-hole__part.is-gain .ch-look-a-hole__stem {
-  stroke: var(--ch-gain);
+  stroke: var(--ch-chart-gain);
 }
 .ch-look-a-hole__part.is-gain .ch-look-a-hole__end,
 .ch-look-a-hole__part.is-gain .ch-look-a-hole__value {
-  fill: var(--ch-gain);
+  fill: var(--ch-chart-gain);
 }
 .ch-look-a-hole__part.is-loss .ch-look-a-hole__stem {
-  stroke: var(--ch-loss);
+  stroke: var(--ch-chart-loss);
 }
 .ch-look-a-hole__part.is-loss .ch-look-a-hole__end,
 .ch-look-a-hole__part.is-loss .ch-look-a-hole__value {
-  fill: var(--ch-loss);
+  fill: var(--ch-chart-loss);
 }
 
 /* Score to par: ink on ruled paper, the first and last rounds named, nothing else. */

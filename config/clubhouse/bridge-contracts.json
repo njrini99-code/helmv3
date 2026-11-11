@@ -18517,7 +18517,7 @@
     "name": "ASK_EVIDENCE_DRAWN_AS_A_CHART",
     "chCode": "CH-13852",
     "meaning": "Ask: Evidence drawn as a chart",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {

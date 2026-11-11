@@ -31,10 +31,10 @@ describe('CH-13853: what an answer shows is styled', () => {
   });
 
   it('a gain is green and a loss amber, on the stem, its end and its figure; red is the pin’s flag only', () => {
-    expect(rule('.ch-aks-hole__part.is-gain .ch-aks-hole__stem')).toMatch(/stroke: var\(--ch-gain\);/);
-    expect(rule('.ch-aks-hole__part.is-loss .ch-aks-hole__stem')).toMatch(/stroke: var\(--ch-loss\);/);
-    expect(rule('.ch-aks-hole__part.is-gain :is(.ch-aks-hole__end, .ch-aks-hole__value)')).toMatch(/fill: var\(--ch-gain\);/);
-    expect(rule('.ch-aks-hole__part.is-loss :is(.ch-aks-hole__end, .ch-aks-hole__value)')).toMatch(/fill: var\(--ch-loss\);/);
+    expect(rule('.ch-aks-hole__part.is-gain .ch-aks-hole__stem')).toMatch(/stroke: var\(--ch-chart-gain\);/);
+    expect(rule('.ch-aks-hole__part.is-loss .ch-aks-hole__stem')).toMatch(/stroke: var\(--ch-chart-loss\);/);
+    expect(rule('.ch-aks-hole__part.is-gain :is(.ch-aks-hole__end, .ch-aks-hole__value)')).toMatch(/fill: var\(--ch-chart-gain\);/);
+    expect(rule('.ch-aks-hole__part.is-loss :is(.ch-aks-hole__end, .ch-aks-hole__value)')).toMatch(/fill: var\(--ch-chart-loss\);/);
     expect(rule(".ch-aks [data-tone='gain']")).toMatch(/color: var\(--ch-gain\);/);
     expect(rule(".ch-aks [data-tone='loss']")).toMatch(/color: var\(--ch-loss\);/);
     expect(rule('.ch-aks-hole__flag')).toMatch(/fill: var\(--ch-chart-flag\);/);
