@@ -1,7 +1,7 @@
 'use client';
 
-import type { CSSProperties } from 'react';
-import { NO_DATA } from '../../../../lib/format';
+import { useId, type CSSProperties, type ReactNode } from 'react';
+import { NO_DATA, changeTone } from '../../../../lib/format';
 import { Nine, type ChNineHole } from '../../../../ui/Nine';
 import { ScrollRegion } from '../../../../ui/ScrollRegion';
 import { PlanCard } from '../../plan/PlanCard';
@@ -9,48 +9,73 @@ import { CardBody } from '../cards';
 import { AppLinkRow, CoachNoteChip } from '../cards/answers';
 import { BriefBody, DocBody, HandoffBody } from '../cards/drafts';
 import { dayParts, dayWords, plural } from '../cards/facts';
-import { DataTable, Drawing, Trend } from '../Evidence';
+import { DataTable } from './table';
 import { HoleStrip, MissPattern, PuttProfile, SeasonCompare } from '../visual/blocks';
 import { AskKey, OpenKey, type AskTarget } from './ask';
+import { HolePlan, RuledTrend, onTheHole, trendReference } from './drawings';
 import type { StudioEvent, StudioHole, StudioProps } from './types';
 
 /**
- * The studio's components, one per kind (registry.tsx). Each draws the thing as the app itself shows it: a round as
- * its scorecard, a qualifier as its board with the cut between rows, a schedule as days. Figures arrive printed and a
- * sample arrives in words; nothing here computes one.
+ * The studio's components, one per kind (registry.tsx), in the chat's approved look (LOOK.md, "A. The yardage book"):
+ * each is a ruled section of the answer's leaf. A head names it (and, at its right, what its figures are measured in),
+ * the thing itself is drawn under it, and nothing is boxed: no card in the card, no track behind a bar, no pill. A
+ * figure is type, and its tone is its colour (gain green, loss amber). Figures arrive printed and a sample arrives in
+ * words; nothing here computes one.
  *
- * No component has motion of its own. The entrance is the chat lead's (the composition's beats, MOTION.md); a row's
- * only response is the pressed wash. A bar's length is a transform on a full-width fill, so nothing animates layout.
+ * No component has motion of its own. The entrance is the composition's (CoachComposition, MOTION.md); a row's only
+ * response to a press is its dim.
  */
 
 const targetOf = (kind: AskTarget['kind'], p: Pick<StudioProps, 'read' | 'onAsk'>): AskTarget => ({ kind, read: p.read, onAsk: p.onAsk });
-const pct = (n: number): CSSProperties => ({ transform: `scaleX(${Math.max(0, Math.min(1, n))})` });
+
+/** A section's head: its name at the left and, at the right, the quiet words that say what its figures are. */
+function Head({ title, aside }: { title: ReactNode; aside?: ReactNode }) {
+  if (!title) return null;
+  return (
+    <p className="ch-aks-title">
+      <span>{title}</span>
+      {aside && <small className="ch-num">{aside}</small>}
+    </p>
+  );
+}
 
 /* ---------------------------------------------------------------- figure */
 
-/** One figure set large, or up to six beside each other. Each is a key: "Ask about Jonah's putts per round, 31.8 over 4 rounds". */
+/**
+ * One figure set large with its name on the figure's own baseline and its terms on the line under it, or several as ruled
+ * rows (one figure is large; every other number is a row figure). Each is a key: "Ask about Jonah's putts per round, 31.8
+ * over 4 rounds".
+ */
 export function Figure(p: StudioProps<'figure'>) {
   const t = targetOf('figure', p);
   const one = p.data.figures.length === 1;
   return (
     <div className="ch-aks ch-aks-fig" data-size={p.size} data-one={one ? '' : undefined}>
-      {p.data.title && <p className="ch-aks-title">{p.data.title}</p>}
+      <Head title={p.data.title} />
       <ul className="ch-aks-fig__list">
         {p.data.figures.map((f) => (
           <li key={f.key} className="ch-aks-row">
             <AskKey target={t} id={f.key} className="ch-aks-fig__cell" words={`Ask about this: ${f.label}, ${f.value}${f.sub ? ` ${f.sub}` : ''}`}>
-              <span className="ch-aks-fig__label">{f.label}</span>
               <b className="ch-aks-fig__value ch-num" data-tone={f.tone === 'plain' ? undefined : f.tone}>
                 {f.value}
               </b>
-              {f.sub && <span className="ch-aks-fig__sub">{f.sub}</span>}
+              <span className="ch-aks-fig__label">{f.label}</span>
+              {(f.sub || f.verdict) && (
+                <span className="ch-aks-fig__sub">
+                  {f.sub}
+                  {/* The tone is the figure's colour; its words are kept for a reader who does not see colour. */}
+                  {f.verdict && <span className="ch-sr-only"> {f.verdict}</span>}
+                </span>
+              )}
+              {!!f.refs?.length && <span className="ch-sr-only ch-aks-fig__vs">Compared with</span>}
               {f.refs?.map((r) => (
                 <span key={r} className="ch-aks-fig__ref ch-num">
                   {r}
                 </span>
               ))}
             </AskKey>
-            <OpenKey href={f.href} label={`Open ${f.label}`} />
+            {/* The one large figure stands alone, as the sheet sets it; the answer's sources open what it was read from. */}
+            {!one && <OpenKey href={f.href} label={`Open ${f.label}`} />}
           </li>
         ))}
       </ul>
@@ -60,26 +85,23 @@ export function Figure(p: StudioProps<'figure'>) {
 
 /* ---------------------------------------------------------------- ranking */
 
-/** Players ranked on one measure: place, name, the sample in words, a bar on one fitted axis, the figure. A row asks about that player on that measure; its arrow opens their stats. */
+const RANK_TONE = { good: 'gain', best: 'gain', loss: 'loss', plain: undefined } as const;
+
+/** Players ranked on one measure, as ruled rows: place, name, the sample in words, the figure in its tone. A row asks about that player on that measure; its arrow opens their stats. */
 export function RankingList(p: StudioProps<'ranking'>) {
   const t = targetOf('ranking', p);
-  const { rows, signed, label, highlight, hrefs } = p.data;
+  const { rows, label, highlight, hrefs } = p.data;
   return (
-    <div className="ch-aks ch-aks-rank" data-size={p.size} data-signed={signed ? '' : undefined}>
-      <p className="ch-aks-title">{label}</p>
-      <ol className="ch-aks-rank__list" aria-label={label}>
+    <div className="ch-aks ch-aks-rank" data-size={p.size}>
+      <Head title={label} />
+      <ol className="ch-aks-rows" aria-label={label}>
         {rows.map((r) => (
           <li key={r.id} className="ch-aks-row" data-on={highlight === r.id ? '' : undefined}>
             <AskKey target={t} id={r.id} className="ch-aks-rank__row" words={`Ask about this: ${r.label}, ${label} ${r.display}${r.of ? ` ${r.of}` : ''}`}>
               <span className="ch-aks-rank__n ch-num">{r.rank}</span>
-              <span className="ch-aks-rank__who">
-                <b>{r.label}</b>
-                {r.of && <small>{r.of}</small>}
-              </span>
-              <span className="ch-aks-track" data-signed={signed ? '' : undefined} aria-hidden="true">
-                <i data-tone={r.tone} data-side={signed ? (r.value < 0 ? 'neg' : 'pos') : undefined} style={pct(r.pct / 100)} />
-              </span>
-              <b className="ch-aks-rank__val ch-num" data-tone={r.tone === 'plain' ? undefined : r.tone}>
+              <span className="ch-aks-rank__who">{r.label}</span>
+              {r.of && <small className="ch-aks-rank__of ch-num">{r.of}</small>}
+              <b className="ch-aks-rank__val ch-num" data-tone={RANK_TONE[r.tone]}>
                 {r.display}
               </b>
             </AskKey>
@@ -87,7 +109,6 @@ export function RankingList(p: StudioProps<'ranking'>) {
           </li>
         ))}
       </ol>
-      {signed && <p className="ch-aks-foot">Right of the line gains strokes on the baseline; left of it loses them.</p>}
     </div>
   );
 }
@@ -104,7 +125,7 @@ export function Comparison(p: StudioProps<'comparison'>) {
     const c = team.cells[pi]?.[mi];
     const best = team.best[mi] === team.players[pi]?.id;
     return (
-      <td key={`${pi}-${mi}`} className="ch-num" data-tone={c && c.tone !== 'plain' ? c.tone : undefined} data-best={best ? '' : undefined}>
+      <td key={`${pi}-${mi}`} className="ch-num" data-tone={c && c.tone !== 'plain' ? (c.tone === 'good' ? 'gain' : c.tone) : undefined} data-best={best ? '' : undefined}>
         {best && <span className="ch-aks-cmp__dot" aria-hidden="true" />}
         {c?.display ?? <span className="ch-aks-none">None</span>}
         {best && <span className="ch-sr-only"> (best)</span>}
@@ -126,6 +147,7 @@ export function Comparison(p: StudioProps<'comparison'>) {
   };
   return (
     <div className="ch-aks ch-aks-cmp" data-size={p.size}>
+      <Head title={label} />
       <ScrollRegion label={`${label}, scrolls sideways`} className="ch-aks-cmp__wrap" fade={false}>
         <table className="ch-aks-cmp__table">
           <caption className="ch-sr-only">{`${label}: ${plural(team.players.length, 'player')} across ${plural(team.metrics.length, 'measure')}; the best in each is marked.`}</caption>
@@ -162,12 +184,13 @@ export function Comparison(p: StudioProps<'comparison'>) {
 
 /* ---------------------------------------------------------------- trend */
 
-/** One measure round by round with its reference line (the thread's own chart), or this season against last on one scale. The whole trend asks; a point is read from the table beside it. */
+/** One measure round by round, ink on ruled paper with the first and the last round named (drawings.tsx), or this season against last on one scale. The whole trend asks; a round is read from the table kept for a screen reader. */
 export function TrendFigure(p: StudioProps<'trend'>) {
   const t = targetOf('trend', p);
   if (p.data.form === 'seasons') {
     return (
       <div className="ch-aks ch-aks-trend" data-size={p.size}>
+        <Head title={p.data.seasons.metric} />
         <SeasonCompare block={p.data.seasons} />
       </div>
     );
@@ -175,7 +198,8 @@ export function TrendFigure(p: StudioProps<'trend'>) {
   const { trend } = p.data;
   return (
     <div className="ch-aks ch-aks-trend" data-size={p.size}>
-      <Trend block={trend} />
+      <Head title={trend.title} aside={trendReference(trend)} />
+      <RuledTrend block={trend} drawIn={p.drawIn} />
       <AskKey target={t} id="trend" className="ch-aks-line" words={`Ask about this: ${trend.title}, ${trend.summary}`}>
         {trend.summary}
       </AskKey>
@@ -198,7 +222,7 @@ export function Round(p: StudioProps<'round'>) {
   if ('strip' in p.data) {
     return (
       <div className="ch-aks ch-aks-round" data-size={p.size}>
-        {p.data.title && <p className="ch-aks-title">{p.data.title}</p>}
+        <Head title={p.data.title ?? 'Hole by hole'} aside="To par" />
         <HoleStrip block={p.data.strip} />
         <OpenLine href={p.data.href} label="Open the round" />
       </div>
@@ -216,7 +240,7 @@ export function Round(p: StudioProps<'round'>) {
         <ul>
           {list.map(({ h, d }) => (
             <li key={h.n}>
-              <AskKey target={t} id={`hole:${h.n}`} className="ch-aks-chip" words={`Ask about this: hole ${h.n}, ${toParWords(d)}`}>
+              <AskKey target={t} id={`hole:${h.n}`} className="ch-aks-round__hole" words={`Ask about this: hole ${h.n}, ${toParWords(d)}`}>
                 <b className="ch-num">{h.n}</b>
                 <span>{toParWords(d)}</span>
               </AskKey>
@@ -227,8 +251,8 @@ export function Round(p: StudioProps<'round'>) {
     );
   return (
     <div className="ch-aks ch-aks-round" data-size={p.size}>
-      {p.data.title && <p className="ch-aks-title">{p.data.title}</p>}
-      <div className="ch-aks-round__card">
+      <Head title={p.data.title} />
+      <div className="ch-aks-round__nines">
         <Nine label="Out" holes={nine(1, 9)} caption="Holes 1 to 9: par and score" />
         <Nine label="In" holes={nine(10, 18)} caption="Holes 10 to 18: par and score" />
       </div>
@@ -246,43 +270,97 @@ function OpenLine({ href, label }: { href: string | null | undefined; label: str
 
 /* ---------------------------------------------------------------- strokes gained */
 
-/** Strokes gained by part of the game on one axis: gain to the right of the line, loss to the left. A part asks about itself. */
+/**
+ * Strokes gained by part of the game. When the legs are the parts of one game (off the tee, approach, around the green,
+ * putting), they are sounded off the hole drawn tee to green: plan and figures on one axis (drawings.tsx). Any other set
+ * of legs (a total among them, two players' legs) is ruled rows, the figure in its tone. A part asks about itself.
+ */
 export function StrokesGained(p: StudioProps<'strokes_gained'>) {
   const t = targetOf('strokes_gained', p);
-  const max = Math.max(0.5, ...p.data.legs.map((l) => Math.abs(l.value)));
+  const placed = onTheHole(p.data.legs);
+  const title = p.data.title ?? (placed ? 'Tee to green' : 'Strokes gained');
   return (
-    <div className="ch-aks ch-aks-sg" data-size={p.size}>
-      {p.data.title && <p className="ch-aks-title">{p.data.title}</p>}
-      <ul className="ch-aks-sg__list" aria-label="Strokes gained by part of the game">
-        {p.data.legs.map((l) => {
-          const side = l.value > 0 ? 'pos' : l.value < 0 ? 'neg' : undefined;
-          return (
+    <div className="ch-aks ch-aks-sg" data-size={p.size} data-form={placed ? 'hole' : 'rows'}>
+      <Head title={title} aside={/strokes gained/i.test(title) ? 'A round' : 'Strokes gained a round'} />
+      {placed ? (
+        <HolePlan placed={placed} target={t} baseline="Baseline" highlight={p.data.highlight ?? null} />
+      ) : (
+        <ul className="ch-aks-rows" aria-label="Strokes gained by part of the game">
+          {p.data.legs.map((l) => (
             <li key={l.key} className="ch-aks-row">
               <AskKey target={t} id={l.key} className="ch-aks-sg__row" words={`Ask about this: strokes gained ${l.label.toLowerCase()}, ${l.display}`}>
                 <span className="ch-aks-sg__label">{l.label}</span>
-                <span className="ch-aks-track" data-signed="" aria-hidden="true">
-                  {side && <i data-tone={side === 'pos' ? 'good' : 'loss'} data-side={side} style={pct(Math.abs(l.value) / max)} />}
-                </span>
-                <b className="ch-aks-sg__val ch-num" data-tone={side === 'pos' ? 'gain' : side === 'neg' ? 'loss' : undefined}>
+                {l.sample && <small className="ch-aks-rank__of ch-num">{l.sample}</small>}
+                {/* The tone comes from the value as it prints (one decimal): a leg shown as 0.0 is neither a gain nor a loss (A2). */}
+                <b className="ch-aks-sg__val ch-num" data-tone={TONE_OF[changeTone(l.value, false, 1)]}>
                   {l.display}
                 </b>
               </AskKey>
             </li>
-          );
-        })}
-      </ul>
-      {p.data.takeaway && <p className="ch-aks-foot">{p.data.takeaway}</p>}
+          ))}
+        </ul>
+      )}
+      {p.data.takeaway && <p className="ch-aks-say">{p.data.takeaway}</p>}
     </div>
   );
 }
 
 /* ---------------------------------------------------------------- distance profile */
 
-/** Make rate or feet left by distance band, each with its attempts, or where the misses go. Each band and each direction asks (the lead's marks). */
+const BAND_TONE = { good: 'gain', loss: 'loss', neutral: undefined } as const;
+const TONE_OF = { 'is-gain': 'gain', 'is-loss': 'loss', '': undefined } as const;
+
+/** Make rate or feet left by distance band, as ruled rows: the band, its attempts, the figure in its tone, and under it what it is set against, in words. Putts and misses keep their own drawings. Each band and each direction asks. */
 export function DistanceProfile(p: StudioProps<'distance_profile'>) {
+  const t = targetOf('distance_profile', p);
+  if (p.data.form === 'putts')
+    return (
+      <div className="ch-aks ch-aks-dist" data-size={p.size}>
+        <Head title="Make rate by distance" aside="Made" />
+        <PuttProfile block={p.data.putts} />
+      </div>
+    );
+  if (p.data.form === 'misses')
+    return (
+      <div className="ch-aks ch-aks-dist" data-size={p.size}>
+        <Head title="Where the misses go" />
+        <MissPattern block={p.data.misses} />
+      </div>
+    );
+  const { bands } = p.data;
   return (
     <div className="ch-aks ch-aks-dist" data-size={p.size}>
-      {p.data.form === 'bands' ? <Drawing block={p.data.bands} /> : p.data.form === 'putts' ? <PuttProfile block={p.data.putts} /> : <MissPattern block={p.data.misses} />}
+      <Head title={bands.title} />
+      <ul className="ch-aks-rows" aria-label={bands.title}>
+        {bands.rows.map((r) => (
+          <li key={r.label} className="ch-aks-row" data-on={r.highlight ? '' : undefined}>
+            <AskKey
+              target={t}
+              id={r.label}
+              className="ch-aks-dist__row"
+              // With references, the row is one sentence for a screen reader: the figure, then each of them by name.
+              label={r.ticks?.length ? `${r.label}: ${r.display}. ${r.ticks.map((k) => k.text).join('. ')}` : undefined}
+              words={`Ask about this: ${bands.title}, ${r.label}, ${r.display}${r.of ? ` ${r.of}` : ''}`}
+            >
+              <span className="ch-aks-dist__band">{r.label}</span>
+              <b className="ch-aks-dist__val ch-num" data-tone={BAND_TONE[r.tone]}>
+                {r.display}
+              </b>
+              {r.of && <small className="ch-aks-rank__of ch-num"> {r.of}</small>}
+              {r.ticks?.length ? (
+                // What the figure is set against, in words under it: the level, the team, the Tour. No tick to decode, no track to read it off.
+                <small className="ch-aks-dist__refs ch-num">
+                  {r.ticks.map((k) => (
+                    <span key={k.kind} data-kind={k.kind}>
+                      {k.short ?? k.text}
+                    </span>
+                  ))}
+                </small>
+              ) : null}
+            </AskKey>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -296,18 +374,18 @@ function repliesWords(r: NonNullable<StudioEvent['replies']>): string {
   return parts.join(', ');
 }
 
-/** Days with their events: the day as the calendar's tile, each event with its time, its place, the replies in and the class conflicts. An event asks about itself; its arrow opens it on the Calendar. */
+/** Days with their events: the day set in the margin, each event a ruled row with what it is, its time, its place, the replies in and the class conflicts. An event asks about itself; its arrow opens it on the Calendar. */
 export function Schedule(p: StudioProps<'schedule'>) {
   const t = targetOf('schedule', p);
   return (
     <div className="ch-aks ch-aks-sched" data-size={p.size}>
-      {p.data.title && <p className="ch-aks-title">{p.data.title}</p>}
+      <Head title={p.data.title} />
       <ol className="ch-aks-sched__days">
         {p.data.days.map((d) => {
           const parts = dayParts(d.date);
           return (
             <li key={d.date} className="ch-aks-sched__day">
-              <span className="ch-akc-tile ch-aks-sched__date" aria-hidden="true">
+              <span className="ch-aks-sched__date" aria-hidden="true">
                 <small>{parts?.weekday}</small>
                 <b className="ch-num">{parts?.day}</b>
                 <small>{parts?.month}</small>
@@ -317,17 +395,14 @@ export function Schedule(p: StudioProps<'schedule'>) {
                 {d.events.map((e) => (
                   <li key={e.id} className="ch-aks-row">
                     <AskKey target={t} id={e.id} className="ch-aks-sched__event" words={`Ask about this: ${e.title}, ${dayWords(d.date)}${e.time ? `, ${e.time}` : ''}`}>
-                      <span className="ch-aks-sched__bar" data-kind={e.kind} aria-hidden="true" />
-                      <span className="ch-aks-sched__tx">
-                        <b>{e.title}</b>
-                        <small className="ch-num">{[EVENT_WORD[e.kind], e.time ?? 'All day', e.place].filter(Boolean).join(' · ')}</small>
-                        {e.replies && <small className="ch-num">{repliesWords(e.replies)}</small>}
-                        {!!e.conflicts && (
-                          <small className="ch-aks-sched__clash">
-                            {plural(e.conflicts, 'player has', 'players have')} a class then
-                          </small>
-                        )}
-                      </span>
+                      <b>{e.title}</b>
+                      <small className="ch-num">{[EVENT_WORD[e.kind], e.time ?? 'All day', e.place].filter(Boolean).join(' · ')}</small>
+                      {e.replies && <small className="ch-num">{repliesWords(e.replies)}</small>}
+                      {!!e.conflicts && (
+                        <small className="ch-aks-sched__clash">
+                          {plural(e.conflicts, 'player has', 'players have')} a class then
+                        </small>
+                      )}
                     </AskKey>
                     <OpenKey href={e.href} label={`Open ${e.title} on the Calendar`} />
                   </li>
@@ -352,10 +427,7 @@ export function QualifierBoard(p: StudioProps<'qualifier_board'>) {
   const rounds = p.size === 'compact' ? [] : roundLabels;
   return (
     <div className="ch-aks ch-aks-board" data-size={p.size}>
-      <p className="ch-aks-title">
-        {title}
-        {status && <small>{status}</small>}
-      </p>
+      <Head title={title} aside={status} />
       <ol className="ch-aks-board__rows" data-open={rows.some((r) => r.href) ? '' : undefined} style={{ '--ch-aks-cols': ['20px', 'minmax(0, 1fr)', ...rounds.map(() => '36px'), '44px', '52px'].join(' ') } as CSSProperties} aria-label={`${title}: ${plural(rows.length, 'player')}${cut ? `, ${plural(cut, 'seat')}` : ''}`}>
         <li className="ch-aks-board__head" aria-hidden="true">
           <span />
@@ -421,18 +493,18 @@ export function Note(p: StudioProps<'note'>) {
   );
 }
 
-/** What CoachHelm has on record, each a row that can be asked about. */
+/** What CoachHelm has on record, each a sentence that can be asked about: what it is about, then what is kept. Never a label and value grid. */
 export function OnRecord(p: StudioProps<'on_record'>) {
   const t = targetOf('on_record', p);
   return (
     <div className="ch-aks ch-aks-record" data-size={p.size}>
-      <p className="ch-aks-title">{p.data.title}</p>
-      <ul>
+      <Head title={p.data.title} />
+      <ul className="ch-aks-rows">
         {p.data.rows.map((r) => (
           <li key={r.label} className="ch-aks-row">
             <AskKey target={t} id={r.label} className="ch-aks-record__row" words={`Ask about this: ${r.label}, ${r.value}`}>
-              <span>{r.label}</span>
-              <b>{r.value}</b>
+              <b>{r.label}</b>
+              {r.value}
             </AskKey>
           </li>
         ))}
@@ -456,10 +528,16 @@ export function Action(p: StudioProps<'action'>) {
 
 /** Rows and columns with a caption that names the source: the fallback, always available. */
 export function Table(p: StudioProps<'table'>) {
+  const titleId = useId();
+  const { table } = p.data;
+  const title = p.data.title?.trim() || table.caption;
   return (
     <div className="ch-aks ch-aks-table" data-size={p.size}>
-      <p className="ch-aks-title">{p.data.table.caption}</p>
-      <DataTable table={p.data.table} />
+      <p className="ch-aks-title" id={titleId}>
+        <span>{title}</span>
+      </p>
+      {/* A head that already says the caption names the table; a different one leaves the caption to a screen reader. */}
+      <DataTable table={table} labelledBy={title === table.caption.trim() ? titleId : undefined} />
     </div>
   );
 }

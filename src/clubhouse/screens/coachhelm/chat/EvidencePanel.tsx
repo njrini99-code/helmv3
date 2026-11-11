@@ -5,7 +5,8 @@ import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { buildEvidencePanel, readForFocus, sourceLine, readBasis, type EvidenceFocus } from '../../../data/coachhelm-chat-thread';
 import { Modal } from '../../../ui/Modal';
-import { AskEvidenceView, DataTable, Tiles, Trend } from './Evidence';
+import { AskEvidenceView, DataTable } from './Evidence';
+import { Studio } from './studio';
 import '../../../styles/coachhelm-thread.css';
 import { IconButton } from '../../../ui/Button';
 
@@ -22,7 +23,7 @@ export function AskEvidencePanel({ focus, messages, phone, onClose, open = true 
           <b>This read didn’t come back.</b> The answer says what it is missing.
         </p>
       ) : (
-        <AskEvidenceView envelope={read.envelope} roster={[]} />
+        <AskEvidenceView envelope={read.envelope} roster={[]} ask={false} />
       )}
     </div>
   );
@@ -30,22 +31,30 @@ export function AskEvidencePanel({ focus, messages, phone, onClose, open = true 
   const title = read ? focus.label : 'Evidence';
   const body = readBody || (
     // `is-phone`: the sheet's figures are rows on the sheet, not tiles (coachhelm-thread.css, the cardless pass).
-    <div className={'ch-th-evp__body' + (phone ? ' is-phone' : '')}>
+    <div className={'ch-th-evp__body ch-aks-ev' + (phone ? ' is-phone' : '')}>
       {model.empty ? (
         <p className="ch-th-read" data-ch-code="CH-13255">
           <b>Nothing in this conversation speaks to this player yet.</b> Ask about their putting or their recent rounds and the figures show here.
         </p>
       ) : (
         <>
-          {model.tiles.length > 0 && <Tiles tiles={model.tiles} />}
+          {/* The same studio the answer draws with, so a figure reads the same here as in the leaf; nothing asks from under a sheet. */}
+          {model.tiles.length > 0 && (
+            <div className="ch-aks-sec">
+              <Studio part={{ kind: 'figure', data: { title: null, figures: model.tiles.map((t) => ({ key: t.label, label: t.label, value: t.value, sub: t.sub, tone: t.tone })) } }} size={phone ? 'compact' : 'full'} />
+            </div>
+          )}
           {model.trend && (
-            <figure className="ch-th-fig ch-th-fig--bare">
-              <figcaption>{model.trend.title}</figcaption>
-              <Trend block={model.trend} />
-              {model.trend.source && <p className="ch-th-fig__src">{model.trend.source}</p>}
+            <figure className="ch-aks-sec">
+              <Studio part={{ kind: 'trend', data: { form: 'rounds', trend: model.trend } }} size={phone ? 'compact' : 'full'} />
+              {model.trend.source && <p className="ch-aks-src ch-num">{model.trend.source}</p>}
             </figure>
           )}
-          {model.table && <DataTable table={model.table} />}
+          {model.table && (
+            <div className="ch-aks-sec">
+              <DataTable table={model.table} />
+            </div>
+          )}
           {model.smallSample && <p className="ch-th-evp__small">{model.smallSample}</p>}
         </>
       )}

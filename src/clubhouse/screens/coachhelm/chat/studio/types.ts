@@ -46,6 +46,8 @@ export interface StudioFigure {
   tone: StudioTone;
   /** What it is set against, in words: "Team average 30.4". */
   refs?: readonly string[];
+  /** The tone in words ("Loses to the baseline", "Behind Division I average"): the figure says it by its colour, a screen reader by these. */
+  verdict?: string | null;
   /** The screen that shows it. */
   href?: string | null;
 }
@@ -55,6 +57,8 @@ export interface StudioLeg {
   label: string;
   value: number;
   display: string;
+  /** The sample in words ("over 8 rounds"), when the leg carries its own. */
+  sample?: string | null;
 }
 
 export interface StudioHole {
@@ -103,7 +107,7 @@ export interface StudioData {
   ranking: { label: string; rows: AskRankRow[]; signed: boolean; highlight: string | null; hrefs?: Readonly<Record<string, string>> };
   trend: { form: 'rounds'; trend: Extract<AskEvidence, { kind: 'trend' }> } | { form: 'seasons'; seasons: SeasonCompareBlock };
   round: { title: string | null; holes: StudioHole[]; href?: string | null } | { title: string | null; strip: HoleStripBlock; href?: string | null };
-  strokes_gained: { title: string | null; legs: StudioLeg[]; takeaway: string | null };
+  strokes_gained: { title: string | null; legs: StudioLeg[]; takeaway: string | null; /** The leg the answer is about (its `key`): its name is set stronger. */ highlight?: string | null };
   distance_profile: { form: 'bands'; bands: Extract<AskEvidence, { kind: 'bars' }> } | { form: 'putts'; putts: PuttProfileBlock } | { form: 'misses'; misses: MissPatternBlock };
   schedule: { title: string | null; days: StudioDay[]; href?: string | null };
   qualifier_board: { title: string; rows: StudioBoardRow[]; /** Seats: the cut is drawn under this row. Null when the qualifier has none. */ cut: number | null; roundLabels: string[]; status: string | null; href?: string | null };
@@ -114,7 +118,7 @@ export interface StudioData {
   on_record: { title: string; rows: ReadonlyArray<{ label: string; value: string }> };
   /** One object from proposed to saved or undone (the engine's list, studio-kinds.ts): with a `receipt` it is drawn in the receipt's tense, without one in `phase` (proposed when left out). */
   action: { tool: string; proposal: ActionProposal; receipt?: ActionReceipt | null; phase?: CardPhase };
-  table: { table: AskTable };
+  table: { table: AskTable; /** The block's own name, when it is not the table's caption. */ title?: string | null };
 }
 
 export type StudioPart = { [K in StudioKindName]: { kind: K; data: StudioData[K] } }[StudioKindName];
@@ -128,4 +132,6 @@ export interface StudioProps<K extends StudioKindName = StudioKindName> {
   onAsk?: (ask: StudioAsk) => void;
   roster?: readonly CardPerson[];
   team?: string;
+  /** A live answer's trend draws its line once as it arrives (CoachComposition decides, at mount, never under reduced motion). */
+  drawIn?: boolean;
 }

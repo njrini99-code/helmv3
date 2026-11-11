@@ -15,8 +15,11 @@ import {
   type AskTable,
 } from '../../../../data/coachhelm-chat-thread';
 import { changeTone } from '../../../../lib/format';
-import { playerStatsHref } from '../Prose';
+import { rebuiltHref } from '../../../../shell/nav';
 import type { StudioFigure, StudioLeg, StudioPart, StudioTone } from './types';
+
+/** A player's Stats, once that screen is rebuilt: the address the answer's own words link a roster name to (Prose.tsx, a client module this one cannot read a value from). */
+const playerStatsHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${id}`);
 
 /**
  * From what the engine emits to what a studio component draws. A figure is copied as the read printed it and its
@@ -37,6 +40,19 @@ function toneOf(m: Measurement): StudioTone {
 
 const hrefOf = (m: Measurement): string | null => (m.entity.kind === 'player' ? playerStatsHref(m.entity.id) : null);
 
+/** A figure's verdict, by the measure's own direction: strokes gained against the baseline, anything else against its benchmark. Null when it has neither, or sits level. */
+export function verdictOf(m: Measurement): { tone: 'gain' | 'loss'; words: string } | null {
+  if (m.value === null) return null;
+  if (m.unit === 'strokes') {
+    const t = changeTone(m.value, false, 1);
+    return t === 'is-gain' ? { tone: 'gain', words: 'Gains on the baseline' } : t === 'is-loss' ? { tone: 'loss', words: 'Loses to the baseline' } : null;
+  }
+  const b = m.benchmark && !m.benchmark.omitted_for_cohort ? m.benchmark : null;
+  if (!b || !m.direction || m.value === b.value) return null;
+  const better = m.direction === 'higher_better' ? m.value > b.value : m.value < b.value;
+  return better ? { tone: 'gain', words: `Better than ${b.source}` } : { tone: 'loss', words: `Behind ${b.source}` };
+}
+
 function figureOf(m: Measurement, label?: string | null): StudioFigure {
   return {
     key: `${m.metric_id}:${m.entity.id}`,
@@ -47,6 +63,16 @@ function figureOf(m: Measurement, label?: string | null): StudioFigure {
     refs: m.comparisons?.length ? comparisonWords(m.comparisons, m.unit) : undefined,
     href: hrefOf(m),
   };
+}
+
+/**
+ * The answer's one large figure: its name beside it, and on the line under it the measure (when the model gave the figure
+ * a name of its own) and the sample in words, a rate as its count ("6 of 9"). Its tone is its verdict, said by colour.
+ */
+function headlineOf(m: Measurement, label: string | null): StudioFigure {
+  const made = m.denominator !== null && m.unit === 'percent' && m.value !== null ? `${Math.round((m.value / 100) * m.denominator)} of ${m.denominator}` : null;
+  const verdict = verdictOf(m);
+  return { ...figureOf(m, label), sub: [label ? m.metric_label : null, made ?? sampleSaid(m)].filter(Boolean).join(', ') || null, tone: verdict?.tone ?? 'plain', verdict: verdict?.words ?? null };
 }
 
 const sgPart = (label: string): string => {
@@ -66,16 +92,22 @@ function playerHrefs(ms: readonly Measurement[]): Record<string, string> {
   return statsHrefs(ms.filter((m) => m.entity.kind === 'player').map((m) => m.entity.id));
 }
 
-/** A block of a `show_visual` composition, as the component that draws it takes it. Every block type has a case: the registry test holds this to `STUDIO_KINDS`. */
-export function fromBlock(block: ResolvedBlock): StudioPart {
+/**
+ * A block of a `show_visual` composition, as the component that draws it takes it. Every block type has a case: the registry test holds this to `STUDIO_KINDS`.
+ * `several`: the composition is about more than one player or team, so a block that is one of theirs is named for them (the leaf's head cannot be).
+ */
+export function fromBlock(block: ResolvedBlock, several = false): StudioPart {
   switch (block.type) {
     case 'headline':
-      return { kind: 'figure', data: { title: null, figures: [figureOf(block.measurement, block.label)] } };
+      return { kind: 'figure', data: { title: null, figures: [headlineOf(block.measurement, block.label)] } };
     case 'kpis':
       return { kind: 'figure', data: { title: block.measurements[0]?.entity.label ?? null, figures: block.measurements.map((m) => figureOf(m)) } };
     case 'trend': {
       const trend = trendBlock(block.series);
-      return { kind: 'trend', data: { form: 'rounds', trend: block.reference === 'none' ? { ...trend, reference: null } : trend } };
+      const rounds = block.series.points.length;
+      // One player's answer names the measure and its window; who it is about is the leaf's head.
+      const title = !several && rounds > 1 && block.series.points.every((p) => p.bucket === null) ? `${block.series.metric_label}, last ${rounds} rounds` : trend.title;
+      return { kind: 'trend', data: { form: 'rounds', trend: { ...trend, title, reference: block.reference === 'none' ? null : trend.reference } } };
     }
     case 'season_compare':
       return { kind: 'trend', data: { form: 'seasons', seasons: block } };
@@ -90,8 +122,8 @@ export function fromBlock(block: ResolvedBlock): StudioPart {
       return { kind: 'ranking', data: { label: block.measurements[0]!.metric_label, rows, signed, highlight: block.highlight, hrefs: playerHrefs(block.measurements) } };
     }
     case 'split': {
-      const legs: StudioLeg[] = block.measurements.filter((m): m is Measurement & { value: number } => m.value !== null).map((m) => ({ key: m.metric_id, label: sgPart(m.metric_label), value: m.value, display: formatValue(m.value, m.unit) }));
-      return { kind: 'strokes_gained', data: { title: block.measurements[0]?.entity.label ?? null, legs, takeaway: null } };
+      const legs: StudioLeg[] = block.measurements.filter((m): m is Measurement & { value: number } => m.value !== null).map((m) => ({ key: m.metric_id, label: sgPart(m.metric_label), value: m.value, display: formatValue(m.value, m.unit), sample: sampleSaid(m) }));
+      return { kind: 'strokes_gained', data: { title: several ? (block.measurements[0]?.entity.label ?? null) : null, legs, takeaway: null } };
     }
     case 'compare': {
       const team = teamTable(block.measurements);
@@ -124,7 +156,7 @@ export function fromEvidence(ev: AskEvidence): StudioPart | null {
       return { kind: 'figure', data: { title: ev.title, figures: ev.tiles.map((t) => ({ key: t.label, label: t.label, value: t.value, sub: t.sub, tone: t.tone })) } };
     case 'reads':
     case 'table':
-      return { kind: 'table', data: { table: ev.table } };
+      return { kind: 'table', data: { table: ev.table, title: ev.title } };
   }
 }
 

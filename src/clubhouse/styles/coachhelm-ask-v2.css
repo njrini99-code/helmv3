@@ -1542,6 +1542,22 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
   background: none;
   box-shadow: none;
 }
+/* The studio in a leaf (coachhelm-ask-studio.css). A visual that opens with its figure hangs from the lead with no rule
+   between them. And its finding is not set twice: where the lead stands over it, the visual's own title and takeaway are
+   kept for a screen reader only. */
+.ch-ak-leaf > .ch-ak-vis:has(> .ch-aks-cv[data-opens='figure']) {
+  padding-top: 0;
+  border-top: 0;
+}
+.ch-ak-leaf > .prose ~ .ch-ak-vis .ch-aks-cv__head {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  margin: -2px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 
 /* A pencilled source mark: a raised numeral after what it supports, the same numeral as its row at the foot. */
 .ch-ak-th .cite-wrap {

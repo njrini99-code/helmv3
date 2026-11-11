@@ -6,6 +6,7 @@ import { Action, AppLink, Comparison, DistanceProfile, Document, Figure, Note, O
 import { tableOf } from './from';
 import type { StudioAsk, StudioProps, StudioSize } from './types';
 import type { CardPerson } from '../cards/types';
+import '../../../../styles/coachhelm-ask-studio.css';
 
 /**
  * The studio's registry and its one renderer. A kind maps to exactly one component, drawn in the size it is asked for.
@@ -45,6 +46,8 @@ export interface StudioRenderProps {
   onAsk?: (ask: StudioAsk) => void;
   roster?: readonly CardPerson[];
   team?: string;
+  /** A live answer's trend draws its line as it arrives (CoachComposition decides). */
+  drawIn?: boolean;
 }
 
 function Fallback({ part, size }: Pick<StudioRenderProps, 'part' | 'size'>) {
@@ -62,7 +65,7 @@ class Guard extends Component<{ fallback: ReactNode; children: ReactNode }, { fa
   }
 }
 
-export function Studio({ part, size, read = null, onAsk, roster, team }: StudioRenderProps) {
+export function Studio({ part, size, read = null, onAsk, roster, team, drawIn }: StudioRenderProps) {
   const fallback = <Fallback part={part} size={size} />;
   if (!isStudioKind(part.kind)) {
     return (
@@ -76,7 +79,7 @@ export function Studio({ part, size, read = null, onAsk, roster, team }: StudioR
   return (
     <div className="ch-aks-part" data-studio={part.kind} data-size={size}>
       <Guard fallback={fallback}>
-        <Drawn data={part.data as StudioProps['data']} size={size} read={read} onAsk={onAsk} roster={roster} team={team} />
+        <Drawn data={part.data as StudioProps['data']} size={size} read={read} onAsk={onAsk} roster={roster} team={team} drawIn={drawIn} />
       </Guard>
     </div>
   );

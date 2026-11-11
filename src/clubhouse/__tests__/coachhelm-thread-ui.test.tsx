@@ -164,22 +164,23 @@ describe('CH-13850 what CoachHelm is doing', () => {
   });
 });
 
-describe('CH-13852 View as table', () => {
-  it('swaps a chart for a real table of the same figures, and back', async () => {
+// Owner, 11 Nov: the "Table" key is gone from what an answer shows. A block that is rows is its own table; a chart keeps its
+// figures as a table for a screen reader (chat/__tests__/evidence-direction.test.tsx).
+describe('CH-13852 the figures without a Table key', () => {
+  it('has no key to swap a figure for a table: the rows are the figures, toned by what the read says is the weak side', () => {
     show();
-    const toggles = screen.getAllByRole('button', { name: /View as table/ });
-    const slope = toggles[0]!;
-    expect(slope.getAttribute('aria-pressed')).toBe('false');
-    expect(screen.getByRole('list', { name: 'Make rate from 4 to 6 feet, by slope' })).toBeTruthy();
-    await userEvent.click(slope);
-    expect(slope.getAttribute('aria-pressed')).toBe('true');
-    const table = screen.getByRole('table', { name: 'Make rate from 4 to 6 feet, by slope for Finley University' });
-    expect(within(table).getAllByRole('row').map((r) => r.textContent)).toEqual(['RangeRateSample', 'Uphill76%51', 'Level81%44', 'Downhill58%31']);
-    expect(screen.queryByRole('list', { name: 'Make rate from 4 to 6 feet, by slope' })).toBeNull();
-    await userEvent.click(slope);
+    expect(screen.queryByRole('button', { name: /View as table/ })).toBeNull();
+    const rows = within(screen.getByRole('list', { name: 'Make rate from 4 to 6 feet, by slope' })).getAllByRole('listitem');
+    expect(rows.map((r) => [r.querySelector('.ch-aks-dist__band')?.textContent, r.querySelector('.ch-aks-dist__val')?.textContent, r.querySelector('.ch-aks-dist__val')?.getAttribute('data-tone')])).toEqual([
+      ['Uphill', '76%', 'gain'],
+      ['Level', '81%', 'gain'],
+      ['Downhill', '58%', 'loss'],
+    ]);
+    // No bar on a track: the figure is type.
+    expect(document.querySelector('.ch-ak-leaf [class*="track"]')).toBeNull();
     expect(screen.queryByRole('table', { name: /by slope/ })).toBeNull();
   });
-  it('the bars carry the sample beside each and the source line under them', () => {
+  it('the rows carry the sample beside each and the source line under them', () => {
     show();
     const figure = screen.getByRole('list', { name: 'Make rate from 4 to 6 feet, by slope' });
     expect(within(figure).getAllByRole('listitem').map((i) => i.textContent)).toEqual(['Uphill76% of 51', 'Level81% of 44', 'Downhill58% of 31']);
@@ -335,12 +336,21 @@ describe('the evidence panel', () => {
     panel();
     const aside = screen.getByRole('complementary', { name: 'Evidence' });
     expect(within(aside).getByText('Jonah Okafor, downhill putts, 4 to 6 feet')).toBeTruthy();
-    const tiles = Array.from(aside.querySelectorAll('.ch-th-tile')).map((t) => t.textContent);
-    expect(tiles).toEqual(['Downhill, 4 to 6 feet33%3 of 9', 'Team, Downhill, 4 to 6 feet58%18 of 31', 'Level, 4 to 6 feet78%7 of 9']);
+    // The figures are ruled rows drawn by the studio (the figure, its name, its sample), not tiles.
+    const figures = Array.from(aside.querySelectorAll('.ch-aks-fig__cell')).map((t) => [t.querySelector('.ch-aks-fig__label')?.textContent, t.querySelector('.ch-aks-fig__value')?.textContent, t.querySelector('.ch-aks-fig__sub')?.textContent]);
+    expect(figures).toEqual([
+      ['Downhill, 4 to 6 feet', '33%', '3 of 9'],
+      ['Team, Downhill, 4 to 6 feet', '58%', '18 of 31'],
+      ['Level, 4 to 6 feet', '78%', '7 of 9'],
+    ]);
+    expect(aside.querySelector('.ch-th-tile')).toBeNull();
     expect(within(aside).getByRole('img', { name: /Make rate by round for Jonah Okafor: 50% to 0% across 5 rounds/ })).toBeTruthy();
     expect(within(aside).getByText('Team 58%')).toBeTruthy();
     expect(within(aside).getByText('Small sample: 9 attempts. Treat it as a direction, not a verdict.')).toBeTruthy();
-    expect(within(aside).getByRole('table')).toBeTruthy();
+    // Two tables: the trend's rounds, kept for a screen reader, and the rounds the panel lists.
+    const tables = within(aside).getAllByRole('table');
+    expect(tables).toHaveLength(2);
+    expect(tables[0]!.className).toBe('ch-sr-only');
   });
   it('focus moves to the panel when it opens and back to the control that opened it when it closes; Esc and the close button close it', async () => {
     const opener = document.createElement('button');

@@ -1,0 +1,899 @@
+/* The studio: what a CoachHelm answer shows (prefix ch-aks; screens/coachhelm/chat/studio/**, chat/visual/**,
+   chat/Evidence.tsx). The look is the yardage book's (docs/clubhouse/coachhelm-chat-v3/LOOK.md, direction A; the owner's
+   sheet is preview/ask-look/a/TurnA.tsx): every part is a ruled section of the answer's leaf, under a head that names
+   it. Nothing is boxed: no card in the card, no track behind a bar, no pill, no chip. A figure is type and its tone is its
+   colour (gain green, loss amber); red is the pin's flag only. A row that asks dims under a press, as the leaf's source
+   rows do. Nothing here moves on its own; the one exception is a live answer's composition (the foot of this file). */
+
+.ch-aks-part {
+  min-width: 0;
+}
+.ch-aks {
+  /* The one large figure: 40px and up is free of the step scale, so it is a role of this sheet. */
+  --ch-type-aks-figure: 500 calc(64 * var(--ch-type-k)) / 0.8 var(--ch-font-sans);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-3);
+  min-width: 0;
+  margin: 0;
+  color: var(--ch-text-primary);
+  container-type: inline-size;
+}
+.ch-aks ul,
+.ch-aks ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-aks b {
+  font-weight:var(--ch-fw-600);
+}
+.ch-aks [data-tone='gain'] {
+  color: var(--ch-gain);
+}
+.ch-aks [data-tone='loss'] {
+  color: var(--ch-loss);
+}
+
+/* A section's head: its name, and at the right the quiet words that say what its figures are. */
+.ch-aks-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ch-space-3);
+  margin: 0;
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-13);
+}
+.ch-aks-title > span {
+  min-width: 0;
+  color: var(--ch-text-primary);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+.ch-aks-title > small {
+  flex: none;
+  max-width: 50%;
+  font: var(--ch-type-13);
+  text-align: right;
+}
+.ch-aks-k {
+  margin: 0;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-13-strong);
+}
+.ch-aks-foot,
+.ch-aks-src {
+  margin: 0;
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-12);
+  text-wrap: pretty;
+}
+.ch-aks-say,
+.ch-aks-line {
+  display: block;
+  margin: 0;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-14);
+  text-wrap: pretty;
+}
+.ch-aks-none {
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-13);
+}
+
+/* The two things an element does: the row asks, the arrow at its end opens. */
+.ch-aks-row {
+  display: flex;
+  align-items: stretch;
+  gap: var(--ch-space-1);
+  min-width: 0;
+}
+.ch-aks-ask {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ch-radius-sm);
+  background: none;
+  color: inherit;
+  font: var(--ch-type-14);
+  text-align: start;
+}
+.ch-aks-ask.is-key {
+  min-height: 44px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ch-aks-ask.is-key[data-ch-pressed],
+.ch-aks-open[data-ch-pressed] {
+  opacity: 0.6;
+}
+.ch-aks-ask.is-key:focus-visible,
+.ch-aks-open:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-aks-open {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  min-height: 44px;
+  margin-right: calc(-1 * var(--ch-space-3));
+  border-radius: var(--ch-radius-sm);
+  color: var(--ch-text-tertiary);
+}
+@media (hover: hover) {
+  .ch-aks-open:hover {
+    color: var(--ch-ask-accent);
+  }
+}
+
+/* Ruled rows: a hairline between two, none over the first, none around. */
+.ch-aks-rows {
+  display: flex;
+  flex-direction: column;
+  margin-block: calc(-1 * var(--ch-space-1)) calc(-1 * var(--ch-space-3));
+}
+.ch-aks-rows > li + li {
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-aks-rank__row,
+.ch-aks-dist__row,
+.ch-aks-sg__row {
+  display: grid;
+  align-items: baseline;
+  gap: var(--ch-space-0_5) var(--ch-space-2);
+  padding: var(--ch-space-3) 0;
+}
+.ch-aks-rank__row {
+  grid-template-columns: var(--ch-space-5) minmax(0, 1fr) auto minmax(52px, auto);
+}
+.ch-aks-dist__row,
+.ch-aks-sg__row {
+  grid-template-columns: minmax(0, 1fr) auto minmax(52px, auto);
+}
+.ch-aks-rank__n {
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-13);
+}
+.ch-aks-rank__who,
+.ch-aks-dist__band,
+.ch-aks-sg__label {
+  min-width: 0;
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  overflow-wrap: anywhere;
+}
+.ch-aks-rows > li[data-on] :is(.ch-aks-rank__who, .ch-aks-dist__band) {
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-aks-rank__of {
+  grid-area: 1 / -3 / 2 / -2;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-13);
+  text-align: right;
+}
+.ch-aks-rank__val,
+.ch-aks-dist__val,
+.ch-aks-sg__val {
+  grid-area: 1 / -2 / 2 / -1;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  text-align: right;
+}
+.ch-aks-dist__refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--ch-space-3);
+  grid-column: 1 / -1;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-12);
+}
+
+/* figure: one number set large, its name on the figure's own baseline and its terms on the line below; several are rows. */
+.ch-aks-fig__cell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--ch-space-0_5) var(--ch-space-3);
+  padding: var(--ch-space-3) 0;
+}
+.ch-aks-fig__list {
+  display: flex;
+  flex-direction: column;
+  margin-block: calc(-1 * var(--ch-space-1)) calc(-1 * var(--ch-space-3));
+}
+.ch-aks-fig__list > li + li {
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-aks-fig__value {
+  grid-area: 1 / 2 / span 2 / 3;
+  align-self: center;
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+  text-align: right;
+}
+.ch-aks-fig__label {
+  grid-column: 1;
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  overflow-wrap: anywhere;
+}
+.ch-aks-fig__sub,
+.ch-aks-fig__ref {
+  grid-column: 1;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-13);
+}
+.ch-aks-fig[data-one] .ch-aks-fig__list {
+  margin-block: 0;
+}
+.ch-aks-fig[data-one] .ch-aks-fig__cell {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: last baseline;
+  gap: var(--ch-space-2) var(--ch-space-3);
+  padding: 0;
+}
+.ch-aks-fig[data-one] .ch-aks-fig__value {
+  grid-area: auto;
+  align-self: auto;
+  font: var(--ch-type-aks-figure);
+  font-variation-settings: var(--ch-wdth-dense);
+  letter-spacing: -0.038em;
+  text-align: left;
+}
+.ch-aks-fig[data-one] .ch-aks-fig__label {
+  grid-column: auto;
+  font: var(--ch-type-17-strong);
+  letter-spacing: var(--ch-track-17);
+  text-wrap: balance;
+}
+.ch-aks-fig[data-one] :is(.ch-aks-fig__sub, .ch-aks-fig__ref) {
+  grid-column: 1 / -1;
+}
+
+/* The hole in plan, and the soundings under it. Label sizes are in drawing units (the drawing is 318 wide). */
+.ch-aks-hole,
+.ch-aks-ruled {
+  position: relative;
+  max-width: 440px;
+}
+.ch-aks-hole__svg,
+.ch-aks-ruled__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--ch-font-sans);
+}
+.ch-aks-hole__rough {
+  fill: none;
+  stroke: var(--ch-chart-rough);
+  stroke-width: 60;
+  stroke-linecap: round;
+}
+.ch-aks-hole__rough.is-edge {
+  stroke: var(--ch-separator-strong);
+  stroke-width: 61.5;
+}
+.ch-aks-hole__fairway {
+  fill: none;
+  stroke: var(--ch-chart-fairway);
+  stroke-width: 27;
+  stroke-linecap: round;
+}
+.ch-aks-hole__fairway.is-edge {
+  stroke: var(--ch-green-ring);
+  stroke-width: 28.5;
+}
+.ch-aks-hole__tree,
+.ch-aks-hole__green,
+.ch-aks-hole__tee {
+  fill: var(--ch-chart-fairway-alt);
+  stroke: var(--ch-green-ring);
+  stroke-width: 0.75;
+}
+.ch-aks-hole__fringe {
+  fill: var(--ch-chart-fairway);
+  stroke: var(--ch-green-ring);
+  stroke-width: 0.75;
+}
+.ch-aks-hole__sand {
+  fill: var(--ch-chart-paper);
+  stroke: var(--ch-champagne-500);
+  stroke-width: 0.75;
+}
+.ch-aks-hole__line {
+  fill: none;
+  stroke: var(--ch-ink-500);
+  stroke-width: 1;
+  stroke-dasharray: 0.1 4;
+  stroke-linecap: round;
+}
+.ch-aks-hole__pole {
+  stroke: var(--ch-ink-700);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+.ch-aks-hole__flag {
+  fill: var(--ch-chart-flag);
+}
+.ch-aks-hole__cup {
+  fill: var(--ch-ink-900);
+}
+.ch-aks-hole__station {
+  fill: var(--ch-chart-paper);
+  stroke: var(--ch-ink-900);
+  stroke-width: 1.5;
+}
+.ch-aks-hole__lead {
+  stroke: var(--ch-ink-500);
+  stroke-width: 0.75;
+  stroke-dasharray: 1.5 2.5;
+}
+.ch-aks-hole__name {
+  fill: var(--ch-text-primary);
+  font: var(--ch-type-12-medium);
+}
+.ch-aks-hole__part.is-on .ch-aks-hole__name {
+  font: var(--ch-type-12-strong);
+}
+.ch-aks-hole__zero {
+  stroke: var(--ch-chart-zero);
+  stroke-width: 1;
+}
+.ch-aks-hole__base {
+  fill: var(--ch-text-tertiary);
+  font: var(--ch-type-11);
+  letter-spacing: var(--ch-track-11);
+}
+.ch-aks-hole__stem {
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.ch-aks-hole__end {
+  fill: var(--ch-ink-500);
+}
+.ch-aks-hole__value {
+  fill: var(--ch-text-secondary);
+  font: var(--ch-type-15-strong);
+  letter-spacing: -0.01em;
+}
+.ch-aks-hole__part.is-gain .ch-aks-hole__stem {
+  stroke: var(--ch-gain);
+}
+.ch-aks-hole__part.is-gain :is(.ch-aks-hole__end, .ch-aks-hole__value) {
+  fill: var(--ch-gain);
+}
+.ch-aks-hole__part.is-loss .ch-aks-hole__stem {
+  stroke: var(--ch-loss);
+}
+.ch-aks-hole__part.is-loss :is(.ch-aks-hole__end, .ch-aks-hole__value) {
+  fill: var(--ch-loss);
+}
+/* Each part's key lies over its own column of the drawing: station, name, stem and figure. */
+.ch-aks-hole__keys {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ch-aks-hole__keys > li {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 44px;
+  transform: translateX(-50%);
+}
+.ch-aks-hole__key {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+}
+
+/* One measure round by round: ink on ruled paper, the first and the last round named, nothing else. */
+.ch-aks-ruled__rule {
+  stroke: var(--ch-separator-strong);
+  stroke-width: 1;
+}
+.ch-aks-ruled__rule.is-minor {
+  stroke: var(--ch-separator);
+  stroke-dasharray: 1 3;
+}
+.ch-aks-ruled__axis {
+  fill: var(--ch-text-tertiary);
+  font: var(--ch-type-11);
+  letter-spacing: var(--ch-track-11);
+}
+.ch-aks-ruled__path {
+  fill: none;
+  stroke: var(--ch-ink-900);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ch-aks-ruled__pt {
+  fill: var(--ch-chart-paper);
+  stroke: var(--ch-ink-900);
+  stroke-width: 1.5;
+}
+.ch-aks-ruled__pt.is-last {
+  fill: var(--ch-ink-900);
+  stroke: var(--ch-chart-paper);
+  stroke-width: 2;
+}
+.ch-aks-ruled__first {
+  fill: var(--ch-text-secondary);
+  font: var(--ch-type-12-medium);
+}
+.ch-aks-ruled__last {
+  fill: var(--ch-text-primary);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-aks-ruled.is-gain :is(.ch-aks-ruled__pt.is-last, .ch-aks-ruled__last) {
+  fill: var(--ch-gain);
+}
+.ch-aks-ruled.is-loss :is(.ch-aks-ruled__pt.is-last, .ch-aks-ruled__last) {
+  fill: var(--ch-loss);
+}
+
+/* comparison: a ruled table, the best in each measure marked by a dot. */
+.ch-aks-cmp__wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.ch-aks-cmp__table {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--ch-type-14);
+}
+.ch-aks-cmp__table th,
+.ch-aks-cmp__table td {
+  padding: var(--ch-space-3) var(--ch-space-2);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-separator);
+  text-align: end;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+.ch-aks-cmp__table thead th {
+  padding-block: 0 var(--ch-space-2);
+  border-bottom-color: var(--ch-separator-strong);
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-12);
+  white-space: normal;
+  vertical-align: bottom;
+}
+.ch-aks-cmp__table th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  padding-inline-start: 0;
+  background: var(--ch-chart-paper);
+  font: var(--ch-type-14);
+  text-align: start;
+}
+.ch-aks-cmp__table thead th:first-child {
+  font: var(--ch-type-12);
+}
+.ch-aks-cmp__table td:last-child,
+.ch-aks-cmp__table th:last-child {
+  padding-inline-end: 0;
+}
+.ch-aks-cmp__table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.ch-aks-cmp__table td[data-best] {
+  font-weight:var(--ch-fw-600);
+}
+.ch-aks-cmp__who {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.ch-aks-cmp__who > b {
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-aks-cmp__who > small {
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-12);
+}
+.ch-aks-cmp[data-size='compact'] .ch-aks-cmp__who {
+  width: 112px;
+  min-width: 112px;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+.ch-aks-cmp[data-size='compact'] :is(.ch-aks-cmp__table th, .ch-aks-cmp__table td) {
+  padding-inline: var(--ch-space-1);
+}
+.ch-aks-cmp__dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-inline-end: var(--ch-space-1);
+  border-radius: 50%;
+  background: var(--ch-gain);
+  vertical-align: middle;
+}
+
+/* round: the app's own scorecard, then the holes that decided it, each a key set as words. */
+.ch-aks-round__nines {
+  display: grid;
+  gap: var(--ch-space-2);
+  min-width: 0;
+  overflow-x: auto;
+}
+.ch-aks-round__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--ch-space-4);
+  padding-top: var(--ch-space-1);
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-aks-round__group > .ch-aks-k {
+  flex: none;
+  min-width: 112px;
+}
+.ch-aks-round__group > ul {
+  display: flex;
+  flex: 1 1 0;
+  flex-wrap: wrap;
+  gap: 0 var(--ch-space-4);
+}
+.ch-aks-round__hole {
+  display: inline-flex;
+  flex: none;
+  align-items: baseline;
+  gap: var(--ch-space-1);
+  padding-block: var(--ch-space-3);
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-13);
+}
+.ch-aks-round__hole > b {
+  color: var(--ch-text-primary);
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+}
+
+/* schedule: a day is its date set in the margin and its events as ruled rows beside it. */
+.ch-aks-sched__days {
+  display: flex;
+  flex-direction: column;
+}
+.ch-aks-sched__day {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--ch-space-3);
+  padding-block: var(--ch-space-1);
+}
+.ch-aks-sched__day + .ch-aks-sched__day {
+  border-top: var(--ch-hairline-w) solid var(--ch-separator-strong);
+}
+.ch-aks-sched__date {
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--ch-space-3);
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-12);
+}
+.ch-aks-sched__date > b {
+  color: var(--ch-text-primary);
+  font: var(--ch-type-22-medium);
+  letter-spacing: var(--ch-track-22);
+}
+.ch-aks-sched__day > ul {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ch-aks-sched__day > ul > li + li {
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-aks-sched__day > ul > .ch-aks-none {
+  padding-block: var(--ch-space-3);
+}
+.ch-aks-sched__event {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-0_5);
+  padding-block: var(--ch-space-3);
+}
+.ch-aks-sched__event > b {
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  overflow-wrap: anywhere;
+}
+.ch-aks-sched__event > small {
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-13);
+}
+.ch-aks-sched__event > .ch-aks-sched__clash {
+  color: var(--ch-loss);
+}
+
+/* qualifier board: ruled rows, and the cut drawn between the last seat and the first player outside it. */
+.ch-aks-board__rows {
+  --ch-aks-cols: 20px minmax(0, 1fr) 44px 52px;
+  display: flex;
+  flex-direction: column;
+}
+.ch-aks-board__rows > li.ch-aks-row {
+  flex-wrap: wrap;
+  border-top: var(--ch-hairline-w) solid var(--ch-separator);
+}
+.ch-aks-board__rows > li[data-cut] + li {
+  border-top: 0;
+}
+.ch-aks-board__head,
+.ch-aks-board__row {
+  display: grid;
+  grid-template-columns: var(--ch-aks-cols);
+  align-items: baseline;
+  gap: var(--ch-space-2);
+}
+.ch-aks-board__head {
+  padding-bottom: var(--ch-space-2);
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-12);
+}
+.ch-aks-board__rows[data-open] > .ch-aks-board__head {
+  padding-inline-end: calc(var(--ch-space-8) + var(--ch-space-1));
+}
+.ch-aks-board .is-num {
+  text-align: end;
+}
+.ch-aks-board__row {
+  padding-block: var(--ch-space-3);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-aks-board__row > .ch-aks-rank__n {
+  font: var(--ch-type-13);
+}
+.ch-aks-board__name {
+  overflow: hidden;
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-aks-board__rows > li:not([data-in]) .ch-aks-board__row {
+  color: var(--ch-text-secondary);
+}
+.ch-aks-board__rows > li:not([data-in]) .ch-aks-board__name {
+  font-weight:var(--ch-fw-400);
+}
+.ch-aks-board__cut {
+  display: flex;
+  flex: 1 0 100%;
+  align-items: center;
+  gap: var(--ch-space-2);
+  padding-block: var(--ch-space-1);
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-12-medium);
+}
+.ch-aks-board__cut::before,
+.ch-aks-board__cut::after {
+  content: '';
+  flex: 1 1 0;
+  border-top: var(--ch-hairline-w) dashed var(--ch-ink-500);
+}
+
+/* note, and what is on record: sentences on the paper, the first words saying what each is. */
+.ch-aks-note {
+  display: block;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-14);
+  text-wrap: pretty;
+}
+.ch-aks-note > b {
+  margin-inline-end: var(--ch-space-1);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-14-strong);
+}
+.ch-aks-record__row {
+  display: block;
+  padding-block: var(--ch-space-3);
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-14);
+  text-wrap: pretty;
+}
+.ch-aks-record__row > b {
+  margin-inline-end: var(--ch-space-2);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-15-medium);
+  letter-spacing: var(--ch-track-15);
+}
+
+/* A read with nothing in it, or one that did not come back: a sentence on the paper, never a banner in it. */
+.ch-aks-read {
+  display: flex;
+  gap: var(--ch-space-2);
+  margin: 0;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-14);
+  text-wrap: pretty;
+}
+.ch-aks-read p {
+  margin: 0;
+}
+.ch-aks-read b {
+  color: var(--ch-text-primary);
+  font: var(--ch-type-14-strong);
+}
+.ch-aks-read__icon {
+  flex: none;
+  margin-top: 2px;
+  color: var(--ch-loss);
+}
+
+/* ---------- in an answer: the sections of a composition, of a visual, and of a read's evidence ---------- */
+.ch-aks-sec {
+  min-width: 0;
+  margin: 0;
+}
+.ch-aks-cv,
+.ch-aks-ev {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  container: chaks / inline-size;
+}
+.ch-aks-cv__page {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ch-aks-sec + .ch-aks-sec,
+.ch-aks-cv__page + .ch-aks-cv__page {
+  margin-top: var(--ch-space-6);
+  padding-top: var(--ch-space-4);
+  border-top: var(--ch-hairline-w) solid var(--ch-separator-strong);
+}
+.ch-aks-ev > :not(.ch-aks-sec) + *,
+.ch-aks-ev > * + :not(.ch-aks-sec) {
+  margin-top: var(--ch-space-5);
+}
+/* A note belongs to the block over it: it follows without a rule. */
+.ch-aks-sec + .ch-aks-sec[data-type='note'] {
+  margin-top: var(--ch-space-4);
+  padding-top: 0;
+  border-top: 0;
+}
+/* The finding, where no lead stands over it: set as the lead is. */
+.ch-aks-cv__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-2);
+  margin: 0 0 var(--ch-space-5);
+}
+.ch-aks-cv__title {
+  margin: 0;
+  color: var(--ch-text-primary);
+  font: var(--ch-type-20-medium);
+  letter-spacing: var(--ch-track-20);
+  text-wrap: pretty;
+}
+.ch-aks-cv__lede {
+  margin: 0;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-14);
+  text-wrap: pretty;
+}
+.ch-aks-cv__foot,
+.ch-aks-va__notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-2);
+  margin-top: var(--ch-space-5);
+}
+.ch-aks-va > .ch-aks-src,
+.ch-aks-ev__fig > .ch-aks-src {
+  margin-top: var(--ch-space-3);
+}
+.ch-aks-va__notes + .ch-aks-src {
+  margin-top: var(--ch-space-2);
+}
+.ch-aks-cv__cover,
+.ch-aks-va__total,
+.ch-aks-ev__note {
+  margin: 0;
+  color: var(--ch-text-secondary);
+  font: var(--ch-type-13);
+  text-wrap: pretty;
+}
+.ch-aks-ev__note {
+  margin-top: var(--ch-space-3);
+}
+.ch-aks-cv__cover > b,
+.ch-aks-va__total > b {
+  color: var(--ch-text-primary);
+  font: var(--ch-type-13-strong);
+}
+/* On a desk a split composition opens as two pages either side of a gutter seam. */
+@container chaks (min-width: 640px) {
+  .ch-aks-cv__pages[data-spread] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--ch-space-8);
+  }
+  .ch-aks-cv__pages[data-spread] > .ch-aks-cv__page + .ch-aks-cv__page {
+    margin-top: 0;
+    padding-top: 0;
+    padding-left: var(--ch-space-8);
+    border-top: 0;
+    border-left: var(--ch-hairline-w) solid var(--ch-separator-strong);
+  }
+}
+/* A narrow column (a phone at its largest type, the quick chat): a row's sample drops under its name. */
+@container (max-width: 300px) {
+  .ch-aks-rank__row {
+    grid-template-columns: var(--ch-space-5) minmax(0, 1fr) minmax(52px, auto);
+  }
+  .ch-aks-dist__row,
+  .ch-aks-sg__row {
+    grid-template-columns: minmax(0, 1fr) minmax(52px, auto);
+  }
+  .ch-aks-rank__of {
+    grid-area: 2 / -3 / 3 / -2;
+    text-align: left;
+  }
+}
+
+/* Motion (playbook §3; the CoachHelm chat exception in .claude/rules/clubhouse.md). Only a visual that arrived in a live
+   answer carries data-live (decided once at mount, never under reduced motion or Animations off). Opacity, transform and
+   the line's path length only, on the D-64 beats: each section rises 8px over the base beat, 80 ms apart (capped at six,
+   --ch-b), and the trend's line draws over the reveal beat once its section has mostly arrived (--ch-cv-lag). The offsets
+   are set by CoachComposition, since only durations are tokens. Numbers are never counted up. */
+@keyframes ch-aks-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes ch-aks-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+@keyframes ch-aks-fade {
+  from {
+    opacity: 0;
+  }
+}
+.ch-aks-cv[data-live] .ch-aks-cv__in {
+  animation: ch-aks-rise var(--ch-dur-base) var(--ch-ease) backwards;
+  animation-delay: var(--ch-b);
+}
+.ch-aks-cv[data-live] .ch-aks-ruled[data-draw] .ch-aks-ruled__path {
+  stroke-dasharray: 1;
+  animation: ch-aks-draw var(--ch-dur-reveal) var(--ch-ease) backwards;
+  animation-delay: calc(var(--ch-b) + var(--ch-cv-lag));
+}
+.ch-aks-cv[data-live] .ch-aks-ruled[data-draw] :is(.ch-aks-ruled__pt, .ch-aks-ruled__first, .ch-aks-ruled__last) {
+  animation: ch-aks-fade var(--ch-dur-quick) var(--ch-ease) backwards;
+  animation-delay: calc(var(--ch-b) + var(--ch-cv-lag) + var(--ch-dur-reveal));
+}
+/* The delays are not durations, so Animations off and Reduce Motion end every one here too, in case a live mark outlives
+   the setting being turned on mid-answer. */
+@media (prefers-reduced-motion: reduce) {
+  .ch-aks-cv[data-live] .ch-aks-cv__in,
+  .ch-aks-cv[data-live] .ch-aks-ruled[data-draw] :is(.ch-aks-ruled__path, .ch-aks-ruled__pt, .ch-aks-ruled__first, .ch-aks-ruled__last) {
+    animation: none;
+  }
+}
+[data-motion='off'] .ch-aks-cv[data-live] .ch-aks-cv__in,
+[data-motion='off'] .ch-aks-cv[data-live] .ch-aks-ruled[data-draw] :is(.ch-aks-ruled__path, .ch-aks-ruled__pt, .ch-aks-ruled__first, .ch-aks-ruled__last) {
+  animation: none;
+}

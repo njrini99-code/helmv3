@@ -60,16 +60,15 @@ describe('a benchmark read draws a picture of where the player stands, or nothin
     expect(b.table.rows).toEqual([['GIR %', '58%', '62%', '57%', '66%']]);
   });
 
-  it('tags the level by its division ("D3 50%"), and prints the three in words under the track with a mark that matches each tick', () => {
+  it('tags the level by its division ("D3 50%"), and prints the three in words under the figure, with no track and no tick to decode', () => {
     const div = { ...standingRow, comparisons: [ref('level', 50, { label: 'Division III average' }), ref('team', 33), ref('tour', 66)] };
     const b = benchmarkBlock(benchmark([div]))!;
     expect(b.rows[0]!.ticks!.map((t) => t.short)).toEqual(['D3 50%', 'Team 33%', 'Tour 66%']);
     const { container } = render(<AskEvidenceView envelope={benchmark([div])} />);
-    const refs = Array.from(container.querySelectorAll('.ch-th-bar__refs li'));
+    const refs = Array.from(container.querySelectorAll('.ch-aks-dist__refs > span'));
     expect(refs.map((li) => li.textContent)).toEqual(['D3 50%', 'Team 33%', 'Tour 66%']);
     expect(refs.map((li) => li.getAttribute('data-kind'))).toEqual(['level', 'team', 'tour']);
-    expect(container.querySelectorAll('.ch-th-bar__swatch')).toHaveLength(3);
-    expect(container.querySelector('.ch-th-bar--bench')).not.toBeNull();
+    expect(container.querySelector('[class*="track"], [class*="tick"], [class*="swatch"]')).toBeNull();
   });
 
   it('labels a putt band short, in one line: "5–10 ft makes", not "Putts Made 5-10 ft"', () => {
@@ -116,11 +115,11 @@ describe('a benchmark read draws a picture of where the player stands, or nothin
     expect(benchmarkBlock(env('x', { kind: 'benchmark_read', benchmarks: [] }))).toBeNull();
   });
 
-  it('renders as the bars with three ticks, with the sentence a screen reader gets naming all three', () => {
+  it('renders as one row with its three references in words, with the sentence a screen reader gets naming all three', () => {
     const { container } = render(<AskEvidenceView envelope={benchmark([standingRow])} />);
-    expect(container.querySelectorAll('.ch-th-bar')).toHaveLength(1);
-    expect(container.querySelectorAll('.ch-th-bar__tick')).toHaveLength(3);
-    expect(container.querySelector('.ch-th-bar')!.getAttribute('aria-label')).toBe('GIR %: 58%. Level 62%. Team 57%. Tour 66%');
+    expect(container.querySelectorAll('.ch-aks-dist__row')).toHaveLength(1);
+    expect(container.querySelectorAll('.ch-aks-dist__refs > span')).toHaveLength(3);
+    expect(container.querySelector('.ch-aks-dist__row')!.getAttribute('aria-label')).toBe('GIR %: 58%. Level 62%. Team 57%. Tour 66%');
     // No raw table and no slug on the card.
     expect(container.querySelector('table')).toBeNull();
     expect(container.textContent).not.toMatch(/benchmark_read|1-the-strokes/);
@@ -237,11 +236,12 @@ describe('the track never starts above zero (a fill under a truncated baseline o
     expect(zeroBasedDomain('percent', [29, 50, 33, 62], false)).toEqual({ min: 0, max: 80 });
   });
 
-  it('is drawn from the left edge at that width, not as a sliver', () => {
+  it('is drawn as its figure, in type: no track is filled, so no fill can overstate a gap', () => {
     const { container } = render(<AskEvidenceView envelope={benchmark([putt(29)])} />);
-    const fill = container.querySelector<HTMLElement>('.ch-th-bar__track > span')!;
-    expect(parseFloat(fill.style.width)).toBeCloseTo(36.25, 2);
-    expect(container.querySelector('.ch-th-bar__zero')).toBeNull();
+    expect(container.querySelector('.ch-aks-dist__val')!.textContent).toBe('29%');
+    expect(Array.from(container.querySelectorAll('.ch-aks-dist__refs > span')).map((r) => r.textContent)).toEqual(['D1 50%', 'Team 33%', 'Tour 62%']);
+    expect(container.querySelector('[class*="track"], [class*="zero"]')).toBeNull();
+    expect(container.querySelector('[style*="width"]')).toBeNull();
   });
 
   it('a rate is never given a domain past 100, and a distance or a count starts at zero too', () => {
@@ -269,18 +269,19 @@ describe('the track never starts above zero (a fill under a truncated baseline o
     expect(note).toBe('No college figure for SG Putting. No team figure for SG Putting (all rounds only). No team figure for GIR % (fewer than 5 teammates).');
   });
 
-  it('strokes gained is centred on zero with a zero rule, and the fill runs from it', () => {
+  it('strokes gained is centred on zero in the read, and drawn as its signed figure', () => {
     const sg = { metric_id: 'sg_putting', metric_label: 'SG: Putting', player_value: -0.4, comparisons: [ref('level', null, { missing_reason: 'no college figure' }), ref('team', 0.3), ref('tour', 0)] };
     const b = benchmarkBlock(benchmark([sg]))!;
     const row = b.rows[0]!;
     expect(row.zero).toBe(50);
     expect(row.pct).toBeLessThan(50);
     expect(row.ticks!.find((t) => t.kind === 'tour')!.at).toBe(50);
+    // On the page it is the signed figure, toned against what the read compared it with: no fill, no zero rule to draw.
     const { container } = render(<AskEvidenceView envelope={benchmark([sg])} />);
-    const fill = container.querySelector<HTMLElement>('.ch-th-bar__track > span')!;
-    expect(parseFloat(fill.style.left)).toBeCloseTo(row.pct, 6);
-    expect(parseFloat(fill.style.width)).toBeCloseTo(50 - row.pct, 6);
-    expect(container.querySelector('.ch-th-bar__zero')).not.toBeNull();
+    const value = container.querySelector('.ch-aks-dist__val')!;
+    expect(value.textContent).toBe('−0.4');
+    expect(value.getAttribute('data-tone')).toBe(row.tone === 'loss' ? 'loss' : row.tone === 'good' ? 'gain' : null);
+    expect(container.querySelector('[class*="track"], [class*="zero"]')).toBeNull();
   });
 });
 
@@ -307,10 +308,10 @@ describe('an empty read draws one card, once', () => {
     expect(other.container.textContent).toBe('Nothing recorded for this yet. Cole has 0 rounds in the window.');
   });
 
-  it('keeps the default line only when an empty read is drawn directly; the thread drops a wordless one (above), and one card is one .ch-th-read', () => {
+  it('keeps the default line only when an empty read is drawn directly; the thread drops a wordless one (above), and one read is one line', () => {
     expect(evidenceBlocks(empty(''))).toEqual([{ kind: 'empty', note: 'Nothing is recorded for this yet.' }]);
     const { container } = render(<AskEvidenceView envelope={empty('No attendance on record.')} />);
-    expect(container.querySelectorAll('.ch-th-read')).toHaveLength(1);
+    expect(container.querySelectorAll('.ch-aks-read')).toHaveLength(1);
   });
 });
 
