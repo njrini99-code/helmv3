@@ -28,9 +28,12 @@ describe('the refreshed shell', () => {
     expect(rules.some((r) => r.props.background === 'var(--ch-grouped-bg)')).toBe(true);
   });
 
-  it('a feature card is flat in the refreshed shell', () => {
-    const feature = scopedRules('ui.css').filter((r) => r.props['--ch-feature-bg']);
-    expect(feature.map((r) => r.props['--ch-feature-bg'])).toEqual(['var(--ch-green-800)', '#123d29']);
+  it('a feature card is flat at the token, so no scoped rule has to flatten it', () => {
+    // The flag is retired, so the flat green lives in tokens.css (styles/__tests__/depth.test.ts pins its value) and
+    // the scoped override that used to flatten a radial token is gone.
+    expect(scopedRules('ui.css').filter((r) => r.props['--ch-feature-bg'])).toEqual([]);
+    expect(css('tokens.css')).toMatch(/--ch-feature-bg: var\(--ch-green-800\);/);
+    expect(css('tokens.css')).not.toMatch(/--ch-feature-bg:[^;]*gradient/);
   });
 });
 

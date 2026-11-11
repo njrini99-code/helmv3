@@ -543,13 +543,14 @@
   white-space: nowrap;
 }
 
-/* Surface (design system: surfaces/Surface) */
+/* Surface (design system: surfaces/Surface). Every variant with depth reads the one card recipe (tokens.css
+   --ch-card-shadow); nothing below sets another. */
 .ch-surface {
   position: relative;
   min-width: 0;
   border-radius: var(--ch-radius-card);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-card);
+  box-shadow: var(--ch-card-shadow);
 }
 .ch-surface--flat {
   box-shadow: 0 0 0 1px var(--ch-border-subtle);
@@ -1260,9 +1261,6 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
     background: rgb(0 0 0 / 0.06);
     color: var(--ch-ink-950);
   }
-}
-:where(html[data-fw-theme='dark']) .ch-surface {
-  box-shadow: var(--ch-elevation-reading);
 }
 :where(html[data-fw-theme='dark']) .ch-surface__foot {
   background: var(--ch-bg-subtle);
@@ -2208,17 +2206,10 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   }
 }
 
-/* Clubhouse refresh, PR 2. The feature card is flat (SHARED-2). A Surface takes the card's
-   surface, ring and shadow; its head is title plus meta over a hairline inset 16, and its note is a band inside the card. */
-.ch-app[data-ch-refresh='on'] {
-  --ch-feature-bg: var(--ch-green-800);
-}
-html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
-  --ch-feature-bg: #123d29;
-}
+/* Clubhouse refresh, PR 2. A Surface takes the card's face; its head is title plus meta over a hairline inset 16, and
+   its note is a band inside the card. (The feature card is flat in tokens.css itself: --ch-feature-bg.) */
 .ch-app[data-ch-refresh='on'] .ch-surface {
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-ui-x1);
 }
 .ch-app[data-ch-refresh='on'] .ch-surface__sub {
   font: var(--ch-type-meta);
@@ -2290,7 +2281,28 @@ html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
 .ch-surface--card {
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-ui-x1);
+}
+/* The one feature card as a Surface (variant="feature"): the flat green, its cast, and the on-green inks for the head
+   and note. One per view (DESIGN_LANGUAGE law 5). */
+.ch-app[data-ch-refresh='on'] .ch-surface--feature,
+.ch-surface--feature {
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-feature-bg);
+  box-shadow: var(--ch-feature-shadow);
+  color: var(--ch-feature-ink);
+}
+.ch-surface--feature .ch-surface__title {
+  color: var(--ch-feature-ink);
+}
+.ch-app[data-ch-refresh='on'] .ch-surface--feature :is(.ch-surface__sub, .ch-surface__foot),
+.ch-surface--feature :is(.ch-surface__sub, .ch-surface__foot) {
+  border-color: var(--ch-feature-sep);
+  background: transparent;
+  color: var(--ch-feature-ink-2);
+}
+.ch-app[data-ch-refresh='on'] .ch-surface--feature .ch-surface__rule,
+.ch-surface--feature .ch-surface__rule {
+  background: var(--ch-feature-sep);
 }
 .ch-surface--card .ch-surface__foot {
   border-top: var(--ch-hairline-w) solid var(--ch-separator);
@@ -2361,7 +2373,6 @@ html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
 /* The lane's card head, note and shared pieces (classes-roster-home 06 1.3). Everything here is scoped to the flag. */
 [data-ch-crh='on'] .ch-surface--card {
   overflow: hidden;
-  box-shadow: var(--ch-crh-card-shadow);
 }
 [data-ch-crh='on'] .ch-surface--card .ch-surface__head {
   position: relative;
@@ -2495,7 +2506,6 @@ html[data-fw-theme='dark'] .ch-app[data-ch-refresh='on'] {
   outline-offset: 2px;
 }
 [data-ui='clubhouse'] {
-  --ch-ui-x1: var(--ch-elevation-lifted);
   --ch-ui-x2: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-separator);
   --ch-ui-x3: inset 0 0 0 var(--ch-hairline-w) rgb(0 0 0 / 0.1), inset 0 var(--ch-hairline-w) 0 rgb(255 255 255 / 0.16);
 }

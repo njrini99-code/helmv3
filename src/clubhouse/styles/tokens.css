@@ -596,8 +596,15 @@
   --ch-shadow-sm: var(--ch-elevation-reading);
   --ch-shadow-md: var(--ch-elevation-raised);
   --ch-shadow-lg: var(--ch-elevation-overlay);
-  /* B3: the Surface card's own lift (ui.css .ch-surface): a hairline ring, a contact shadow and a soft fall. */
-  --ch-elevation-card: 0 0 0 1px rgb(28 25 18 / 0.07), 0 1px 2px rgb(28 25 18 / 0.04), 0 8px 20px -10px rgb(28 25 18 / 0.1);
+  /* Depth: ONE card and ONE feature card (owner: "lit faces, soft contact and ambient shadows, restrained";
+     design/handoff/depth.css is the reference). The card is depth.css's sheet (--dp-sheet-shadow): a lit top edge, the
+     card's hairline ring, a contact shadow, a soft near shadow and an ambient fall with negative spread, so it sits
+     under the card and never hazes the page. The face is the flat --ch-card-bg: text never sits on a gradient. Every
+     card at rest reads this value. --ch-card-shadow is its name; the older names (reading, lifted, the Messages and
+     Roster lanes' own) are the same recipe and remain only for the files that still spell them. */
+  --ch-elevation-card: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px var(--ch-card-ring),
+    var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.06), var(--ch-light-drift-mid) 6px 14px -6px rgb(28 25 18 / 0.12),
+    var(--ch-light-drift) 22px 40px -22px rgb(28 25 18 / 0.22);
   --ch-glass-bg: rgb(250 248 241 / 0.7);
   /* Glass is for the floating navigation only (top bar, tab bar); 20px reads as frosted without the muddy edge. */
   --ch-glass-blur: 20px;
@@ -616,20 +623,14 @@
      and overlays retain a small, progressively stronger separation. */
   --ch-edge: rgb(28 25 18 / 0.08);
   --ch-highlight: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim-soft);
-  /* Reading surfaces (premium brief, October 6): layered light rather than one broad shadow. A lit top edge, a crisp
-     hairline, a tight contact shadow and an ambient falloff with negative spread, so the shadow sits under the card
-     instead of hazing the canvas around it. */
-  --ch-elevation-reading: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(28 25 18 / 0.085),
-    var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.08), var(--ch-light-drift-mid) 8px 18px -10px rgb(28 25 18 / 0.16),
-    var(--ch-light-drift) 22px 40px -24px rgb(28 25 18 / 0.18);
-  /* The redesign's cards (owner, 5 Nov: "more depth"): the reading surface's light, with a firmer edge and a longer cast. */
-  --ch-elevation-lifted: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(28 25 18 / 0.1),
-    var(--ch-light-drift-near) 1px 3px rgb(28 25 18 / 0.12), var(--ch-light-drift-mid) 12px 24px -10px rgb(28 25 18 / 0.26),
-    var(--ch-light-drift) 30px 52px -22px rgb(28 25 18 / 0.3);
-  /* The reading surface's cast shadow alone, for dark and branded surfaces where a white top edge or ink hairline
-     would draw a line (the green hero, the green Up next card). */
+  /* The card's two older names (the reading surface of October 6; the "lifted" card of 5 Nov, which went past
+     depth.css). Both are the one card now, so a page never shows two kinds of card. */
+  --ch-elevation-reading: var(--ch-elevation-card);
+  --ch-elevation-lifted: var(--ch-elevation-card);
+  /* The card's three drops alone, for dark and branded surfaces where a white top edge or ink hairline would draw a
+     line (the green hero, the green Up next card). */
   --ch-elevation-cast: var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.06),
-    var(--ch-light-drift-mid) 8px 18px -10px rgb(28 25 18 / 0.16), var(--ch-light-drift) 22px 40px -24px rgb(28 25 18 / 0.18);
+    var(--ch-light-drift-mid) 6px 14px -6px rgb(28 25 18 / 0.12), var(--ch-light-drift) 22px 40px -22px rgb(28 25 18 / 0.22);
   --ch-elevation-reading-hover: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(28 25 18 / 0.1),
     var(--ch-light-drift-near) 2px 4px rgb(28 25 18 / 0.07), var(--ch-light-drift-mid) 12px 24px -12px rgb(28 25 18 / 0.2),
     var(--ch-light-drift) 28px 48px -26px rgb(28 25 18 / 0.22);
@@ -680,7 +681,7 @@
   --ch-well-bg-flat: #f6f4ee;
   --ch-separator: rgb(28 27 24 / 0.1);
   --ch-card-ring: rgb(28 27 24 / 0.07);
-  --ch-card-shadow: var(--ch-elevation-lifted);
+  --ch-card-shadow: var(--ch-elevation-card);
   --ch-gain: #14613d;
   --ch-loss: #9a5700;
   --ch-flag: #b3261e;
@@ -703,7 +704,7 @@
   --ch-feature-gain-tint: #20523a;
   --ch-feature-loss-tint: #2f4e30;
   --ch-feature-flat-tint: #2b5340;
-  --ch-feature-shadow: 0 1px 2px rgb(11 30 20 / 0.2), 0 10px 24px -14px rgb(11 30 20 / 0.5);
+  --ch-feature-shadow: var(--ch-elevation-feature);
   --ch-feature-icon-bg: rgb(244 241 232 / 0.12);
   --ch-separator-strong: rgb(28 27 24 / 0.16);
   --ch-press-wash: rgb(28 27 24 / 0.05);
@@ -754,7 +755,7 @@
   /* Messages v2: the lifted-bubble scrim, the one flat card style, and the ivory ink on a sent bubble (the artifact's
      scrim, card-shadow and sent-ink; --ch-scrim, --ch-card-shadow and --ch-text-on-accent are shared app-wide and stay). */
   --ch-scrim-msg: rgb(28 30 24 / 0.22);
-  --ch-card-shadow-flat: 0 0 0 1px rgb(28 27 24 / 0.07), 0 1px 2px rgb(28 25 18 / 0.05), 0 8px 20px -12px rgb(28 25 18 / 0.12);
+  --ch-card-shadow-flat: var(--ch-elevation-card);
   --ch-bubble-mine-ink: #fdfcf8;
   --ch-chart-line: #3f7556;
   --ch-countdown-on-green: #e3f5e9;
@@ -781,14 +782,16 @@
   --ch-on-green-rule: rgb(244 241 232 / 0.14);
   --ch-on-green-mark: rgb(244 241 232 / 0.5);
   --ch-switch-on: #2e8a57;
-  --ch-crh-card-shadow: var(--ch-elevation-lifted);
+  --ch-crh-card-shadow: var(--ch-elevation-card);
   --ch-crh-btn-shadow: 0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(28 25 18 / 0.05);
   --ch-crh-btn-pri-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), 0 6px 14px -8px rgb(11 58 37 / 0.7);
   --ch-crh-sheet-shadow: 0 -10px 40px -10px rgb(0 0 0 / 0.35);
   --ch-crh-well-shadow: inset 0 1px 2px rgb(28 25 18 / 0.05);
-  /* The one feature card: the frame's green, lit faintly from its top right corner. */
-  --ch-feature-bg: radial-gradient(120% 90% at 100% 0%, rgb(123 199 154 / 0.14), transparent 60%), var(--ch-green-800);
-  --ch-elevation-feature: 0 0 0 1px #082b1c, 0 14px 28px -18px rgb(11 58 37 / 0.7);
+  /* The one feature card: flat --ch-green-800 (#0b3a25; #123d29 at night), no radial light (DESIGN_LANGUAGE 4 and 9,
+     SHARED-2). Its depth is a cast alone, in depth.css's green (rgb 8 43 28): a contact shadow and an ambient fall. No
+     white top edge and no ring, which draw an outline on green. --ch-feature-shadow is the same value. */
+  --ch-feature-bg: var(--ch-green-800);
+  --ch-elevation-feature: 0 1px 2px rgb(8 43 28 / 0.2), 0 14px 30px -18px rgb(8 43 28 / 0.6);
   /* A field-green board hung on the page (a scorecard nine, the round strip, a row's Out/In/Tot): a short green drop,
      a step deeper when its row is hovered. A lit data mark (the best round's dot, the putts bar, a hit green): a small
      green glow under it. Drop only; the caller keeps its own ring or inset edge. */
@@ -1017,7 +1020,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-ring-own: #c9ad74;
   --ch-switch-off-ring: #827d71;
   --ch-scrim-msg: rgb(0 0 0 / 0.45);
-  --ch-card-shadow-flat: 0 0 0 1px rgb(255 255 255 / 0.06), inset 0 1px 0 rgb(255 255 255 / 0.04);
   --ch-bubble-mine-ink: #f4eedd;
   /* Clubhouse refresh, PR 1. Dark Sophomore is #8B6B30 (DECISIONS: white reads 4.95:1; the language table's #8F6E31 gives 4.7). */
   --ch-grouped-bg: #0e120f;
@@ -1025,7 +1027,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-well-bg-flat: #141815;
   --ch-separator: rgb(241 236 223 / 0.1);
   --ch-card-ring: rgb(255 255 255 / 0.06);
-  --ch-card-shadow: var(--ch-elevation-lifted);
   --ch-gain: #7cc79b;
   --ch-loss: #e7ae57;
   --ch-flag: #f28b7d;
@@ -1038,7 +1039,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-feature-gain-tint: #26553e;
   --ch-feature-loss-tint: #355133;
   --ch-feature-flat-tint: #315643;
-  --ch-feature-shadow: 0 0 0 1px rgb(255 255 255 / 0.06);
   --ch-separator-strong: rgb(241 236 223 / 0.16);
   --ch-press-wash: rgb(241 236 223 / 0.06);
   --ch-chip-gain-bg: #29392f;
@@ -1066,7 +1066,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-warn-ink: #f0c77e;
   --ch-warn-icon: #e7ae57;
   --ch-warn-ring: rgb(231 174 87 / 0.24);
-  --ch-crh-card-shadow: var(--ch-elevation-lifted);
   --ch-crh-btn-shadow: 0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(0 0 0 / 0.3);
   --ch-crh-well-shadow: inset 0 1px 2px rgb(0 0 0 / 0.3);
   --ch-on-ink-warning: #8a5a0c;
@@ -1236,12 +1235,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   );
   --ch-light-paper-tint: transparent;
   --ch-highlight: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim);
-  --ch-elevation-reading: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(255 255 255 / 0.06),
+  /* The one card at night: a card is lighter than its page, so the ring and the lit edge carry it and the drops
+     only deepen it (depth.css has no night values; these are the reading surface's, unchanged). */
+  --ch-elevation-card: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px var(--ch-card-ring),
     var(--ch-light-drift-near) 1px 2px rgb(0 0 0 / 0.35), var(--ch-light-drift-mid) 8px 18px -10px rgb(0 0 0 / 0.5),
     var(--ch-light-drift) 22px 40px -24px rgb(0 0 0 / 0.5);
-  --ch-elevation-lifted: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(255 255 255 / 0.09),
-    var(--ch-light-drift-near) 1px 3px rgb(0 0 0 / 0.45), var(--ch-light-drift-mid) 12px 24px -10px rgb(0 0 0 / 0.65),
-    var(--ch-light-drift) 30px 52px -22px rgb(0 0 0 / 0.65);
   --ch-elevation-cast: var(--ch-light-drift-near) 1px 2px rgb(0 0 0 / 0.3), var(--ch-light-drift-mid) 8px 18px -10px rgb(0 0 0 / 0.5),
     var(--ch-light-drift) 22px 40px -24px rgb(0 0 0 / 0.5);
   --ch-elevation-reading-hover: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(255 255 255 / 0.09),
