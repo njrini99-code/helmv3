@@ -48,6 +48,8 @@
   .ch-hf.is-desk .ch-hf-rail { display: block; padding: 16px 12px; border-right: var(--ch-hairline-w) solid var(--ch-hf-a-sep); max-height: calc(100dvh - 72px); overflow-y: auto; position: sticky; top: 0; }
 }
 @media (min-width: 1180px) { .ch-hf.is-desk .ch-hf-flow { max-width: none; } }
+/* The failed file is one card: it keeps the reading width at any desk size, where the ready file's two columns take the page. */
+.ch-hf.is-desk.is-failed .ch-hf-flow { max-width: var(--ch-measure-reading); }
 .ch-hf .dhead.is-week { margin-bottom: 24px; }
 .ch-hf.is-phone .dhead.is-week { margin-top: 20px; display: block; }
 .ch-hf.is-phone .dhead.is-week p { margin-top: 4px; }
@@ -116,6 +118,8 @@
 .ch-hf .feat__cmp div { padding: 8px 12px; border-radius: var(--ch-radius-md); background: color-mix(in srgb, var(--ch-feature-ink) 7%, transparent); }
 .ch-hf .feat__cmp b { display: block; font: var(--ch-type-22-medium);  font-stretch: 88%; letter-spacing: 0;  }
 .ch-hf .feat__cmp b.loss { color: var(--ch-hf-a-feat-loss); }
+/* The window a team figure reads ("all time", "this season"): its own line under "Team", so the label never breaks mid-phrase. */
+.ch-hf .feat__cmp span small { display: block; font: var(--ch-type-13); }
 .ch-hf .feat__cmp span { display: block; margin-top: 4px; font: var(--ch-type-13);  color: var(--ch-hf-a-feat-2); }
 .ch-hf .feat__p { margin: 0; font: var(--ch-type-15);  color: var(--ch-hf-a-feat-2); letter-spacing: var(--ch-track-15); }
 .ch-hf .feat__p b { color: var(--ch-hf-a-feat-1); font-weight:var(--ch-fw-600); }
@@ -256,8 +260,10 @@
 .ch-hf .cb-p b { color: var(--ch-hf-a-ink); font-weight:var(--ch-fw-600); }
 .ch-hf .lnk { border: 0; background: none; padding: 0; color: var(--ch-hf-a-accent); font: var(--ch-type-15-strong);  cursor: pointer; letter-spacing: var(--ch-track-15); }
 .ch-hf .r.undo .lnk { min-height: 44px; }
-/* A link inside a sentence keeps the line's height and reaches 44 to the finger. */
-.ch-hf p .lnk { position: relative; }
+/* A link inside a sentence keeps the line's height and reaches 44 to the finger. The app's own rule for a link in a paragraph
+   (globals.css: a negative margin undone by the same padding) lost its padding to `.lnk` above, which left the margin pulling the
+   link two pixels over the space before it ("per round.Full standing"). The reach is the ::after below, so the margin goes too. */
+.ch-hf p .lnk { position: relative; margin: 0; }
 .ch-hf p .lnk::after { position: absolute; inset: -12px -8px; content: ''; }
 .ch-hf .feat.tap { cursor: pointer; transition: box-shadow 0s; }
 .ch-hf .feat.tap[data-ch-pressed]:not(:has(button[data-ch-pressed])) { box-shadow: var(--ch-file-shadow-5); transition-delay: var(--ch-dur-press); }

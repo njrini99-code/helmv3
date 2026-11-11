@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { LazyMotion, domAnimation } from 'motion/react';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -100,6 +102,10 @@ describe('every figure on the file names the window it reads (one number, one so
     expect(card.textContent).toContain('Last 10 rounds');
     expect(card.textContent).not.toContain('All time ·');
     expect(within(card).getByRole('link', { name: 'Full standing, all time' })).toBeTruthy();
+    // A separator never starts a line, and the link keeps the space before it (it sat two pixels over it).
+    expect(card.querySelector('.card__n')!.textContent).toContain('Last 10 rounds\u00a0· strokes per round. Full standing, all time');
+    const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/coachhelm-file.css'), 'utf8');
+    expect(css).toMatch(/\.ch-hf p \.lnk \{ position: relative; margin: 0; \}/);
   });
 
   it('a Team cell that comes from the standing rows says their window; a read’s own team figure is plain Team', () => {
@@ -107,6 +113,10 @@ describe('every figure on the file names the window it reads (one number, one so
     const first = render(<PlayerFile load={{ status: 'ready', data }} roster={null} />, { wrapper: Wrap });
     const cells = () => [...document.querySelectorAll('[data-ch="file-feature"] .feat__cmp span')].map((x) => x.textContent);
     expect(cells()).toContain('Team, all time');
+    // The window is its own line under "Team" (it broke after "all" in the phone's cell); a reader still hears "Team, all time".
+    const team = [...document.querySelectorAll('[data-ch="file-feature"] .feat__cmp > div > span')].find((x) => x.textContent === 'Team, all time')!;
+    expect(team.querySelector('small')?.textContent).toBe('all time');
+    expect(team.querySelector('.ch-sr-only')?.textContent).toBe(', ');
     first.unmount();
     // The same read carrying its own team figure: that is the one the Team board's sheet draws, so the cell is plain "Team".
     const feat = data.cards.feat!;

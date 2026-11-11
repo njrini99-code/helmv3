@@ -39,8 +39,10 @@ export interface ChFileSg {
   source: string;
   /** The Standing page's own window ("All time", "This season"), said on the link to it: its legs are that window's, not these. */
   standing?: string | null;
-  /** Totals-only rounds: every row is "—" and the note says why. */
+  /** No figure to draw: every row is "—" and the note says why (`needs`). */
   needsHoles: boolean;
+  /** Why: no round posted hole by hole (`holes`), or fewer than the three such rounds a figure needs (`rounds`). Absent: read as `holes`. */
+  needs?: 'holes' | 'rounds' | null;
   /** Of the rounds the legs read, how many were shot-tracked and how many estimated from the scorecard (stats-sg-mix.ts); null or absent when unread. */
   mix?: ChSgMix | null;
 }
@@ -94,6 +96,9 @@ const FILE_LEGS: ReadonlyArray<{ id: string; label: string; key: ChLegKey }> = [
 ];
 
 /** The window line under the card: the rounds the figures really read, so it can never be taken for another screen's window. */
+/** How many hole-by-hole rounds a strokes gained figure needs (`MIN_SG_ROUNDS`, season.ts; a test holds the two together). */
+export const FILE_SG_FLOOR = 3;
+
 export function fileSgSource(fig: Pick<ChFigures, 'rounds' | 'holeRounds'>): string {
   if (fig.rounds === 0) return 'No counted rounds yet · strokes per round';
   const window = fig.rounds >= 10 ? 'Last 10 rounds' : `Last ${plural(fig.rounds, 'round')}`;
@@ -124,7 +129,10 @@ export function toChFileSgOver(fig: ChFigures, team: { legs: ReadonlyArray<numbe
     const gap = worst.team == null ? null : (worst.strokes as number) - worst.team;
     note += gap != null && Number(gap.toFixed(1)) < 0 ? `; against the team, ${costs(gap)}.` : '.';
   }
-  return { rows: out, hasTeam: out.some((r) => r.team != null), note, source: fileSgSource(fig), needsHoles: known.length === 0 };
+  // No figure at all: either no round was posted hole by hole, or there are fewer than the three such rounds a figure needs. The card
+  // used to give the first reason for both, which told a player with two hole-by-hole rounds that those rounds were missing.
+  const needs = known.length > 0 ? null : fig.holeRounds > 0 ? ('rounds' as const) : ('holes' as const);
+  return { rows: out, hasTeam: out.some((r) => r.team != null), note, source: fileSgSource(fig), needsHoles: known.length === 0, needs };
 }
 
 /** The team's figure for one metric, with its floor (S-FILE 14): null below five. */

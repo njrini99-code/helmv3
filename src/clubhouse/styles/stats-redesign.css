@@ -215,11 +215,22 @@
 .ch-shs.is-big .ch-shs-ah > .ch-shs-dlink {
   margin-left: auto;
 }
+/* Text Size Larger and above: every choice stays on screen with nothing to scroll to. The switch takes the whole row and the choices
+   share it (each at least its own label), and the filter button, which no longer fits beside it, drops to a row of its own below,
+   at the right edge where it sat. Until the shared two-row Segmented lands this is the whole answer on a 375pt phone; a 320pt
+   phone at the largest size still scrolls the well rather than clip a word. */
+.ch-shs.is-big .ch-shs-ctl__row {
+  flex-wrap: wrap;
+}
 .ch-shs.is-big .ch-shs-ctl .ch-seg {
-  grid-auto-columns: max-content;
+  flex: 1 1 100%;
+  grid-auto-columns: minmax(max-content, 1fr);
 }
 .ch-shs.is-big .ch-shs-ctl .ch-seg__b {
-  padding: 0 12px;
+  padding: 0 6px;
+}
+.ch-shs.is-big .ch-shs-ctl .ch-sf {
+  margin-left: auto;
 }
 
 /* A card that opens a detail: the pressed wash (data-ch-pressable, lib/press.ts). The card never scales. */

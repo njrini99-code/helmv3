@@ -21,14 +21,14 @@ import { loadTeamStats } from '../stats-team';
 import { filterFor } from '../stats-filter';
 import { firstTenLegs, toChTeamLegs, TRAIL_MIN_ROUNDS } from '../coachhelm-team-legs';
 import { boardRoundsWords, stationsOfTeamSg, STATIONS } from '../coachhelm-team-shape';
-import { fileSgSource, FILE_TEAM_FLOOR, toChFileSgOver } from '../coachhelm-file-shape';
+import { fileSgSource, FILE_SG_FLOOR, FILE_TEAM_FLOOR, toChFileSgOver } from '../coachhelm-file-shape';
 import { lastTenRounds, playerStrokesGained, roundsForFigures } from '../figure-window';
 import { teamLastTenStrokesGained, teamStrokesGained } from '../stats-team-sg';
 import { teamStrokesGainedOver } from '../team-sg';
 import { teamFiguresOver } from '../player-figures';
 import { sgOver } from '../stats-weight';
 import { practiceCut, roundsInFilter } from '../stats-common';
-import { countsForScoring } from '../season';
+import { countsForScoring, MIN_SG_ROUNDS } from '../season';
 import { holeRounds } from '../round-scope';
 import type { ChRound } from '../season';
 import { PREVIEW_TEAM_STATS, PREVIEW_PLAYER } from '../../preview/fixtures-stats';
@@ -238,6 +238,24 @@ describe('a player’s strokes gained is one figure on Team stats, on CoachHelm 
     expect(file).not.toMatch(/toChFileSg\(/);
     // A player's own page asks for no team.
     expect(file).toMatch(/loadFileSgRounds\(supabase, \{ playerId, teamId: null \}\)/);
+  });
+});
+
+describe('the file says why it has no strokes gained', () => {
+  const none = { tee: null, approach: null, around: null, putting: null };
+  it('fewer than three hole-by-hole rounds: it needs rounds, not hole scores', () => {
+    const sg = toChFileSgOver({ rounds: 2, holeRounds: 2, legs: none, total: null }, null, { you: false, first: 'Eli' });
+    expect(sg.needsHoles).toBe(true);
+    expect(sg.needs).toBe('rounds');
+    expect(FILE_SG_FLOOR).toBe(MIN_SG_ROUNDS);
+  });
+  it('rounds posted as totals only: it needs hole-by-hole scores', () => {
+    expect(toChFileSgOver({ rounds: 4, holeRounds: 0, legs: none, total: null }, null, { you: false, first: 'Eli' }).needs).toBe('holes');
+  });
+  it('with figures it needs nothing', () => {
+    const sg = toChFileSgOver({ rounds: 10, holeRounds: 10, legs: { ...none, approach: -0.4 }, total: -0.4 }, null, { you: false, first: 'Eli' });
+    expect(sg.needsHoles).toBe(false);
+    expect(sg.needs).toBeNull();
   });
 });
 

@@ -37,10 +37,13 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
   const tabs = <PlayerHelmTabs active={sw.shown} onGo={sw.go} />;
   if (!data) {
     return (
-      <main className={'ch-hf' + (phone ? ' is-phone' : ' is-desk')}>
+      // On a desk the card takes the page's own gutters and a reading width (it sat edge to edge, under the top bar).
+      <main className={'ch-hf' + (phone ? ' is-phone' : ' is-desk is-failed')}>
         {phone && <PhoneTop start title="CoachHelm" />}
-        <div className="ch-hf-flow">
-          <FileFailed who="your CoachHelm" onRetry={() => refresh()} />
+        <div className={phone ? undefined : 'dfile'}>
+          <div className="ch-hf-flow">
+            <FileFailed who="your CoachHelm" onRetry={() => refresh()} />
+          </div>
         </div>
       </main>
     );

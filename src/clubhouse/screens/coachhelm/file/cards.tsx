@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { Check, Eye, Flag, Lock, MessageSquare, Target, Users, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ChDeepInsight } from '../../../data/coachhelm-dive-shape';
-import { FILE_SIGN, fileAimLabel, fileAlertLabel, fileAreaLabel, playerKicker, type ChFileCards, type ChFileField, type ChFileIntent, type ChFilePlan, type ChFileSg, type ChFileStage, type ChFileTrack } from '../../../data/coachhelm-file-shape';
+import { FILE_SG_FLOOR, FILE_SIGN, fileAimLabel, fileAlertLabel, fileAreaLabel, playerKicker, type ChFileCards, type ChFileField, type ChFileIntent, type ChFilePlan, type ChFileSg, type ChFileStage, type ChFileTrack } from '../../../data/coachhelm-file-shape';
 import { stanceOf, type ChInsight } from '../../../data/coachhelm-shape';
 import { formatFixed } from '../../../lib/format';
 import { Icon } from '../../../ui/Icon';
@@ -109,8 +109,18 @@ export function FeatureCard({
         </div>
         <div>
           <b className="ch-num">{cells.team}</b>
-          {/* A team figure from the standing rows names their window, so it is never read as Team stats' figure for its window. */}
-          <span>{b.compare?.team == null && team != null && teamBasis ? `Team, ${teamBasis}` : 'Team'}</span>
+          {/* A team figure from the standing rows names their window, so it is never read as Team stats' figure for its window. The
+              window is its own line by design: "Team, all time" does not fit the phone's cell, and broke after "all". */}
+          <span>
+            {b.compare?.team == null && team != null && teamBasis ? (
+              <>
+                Team<span className="ch-sr-only">, </span>
+                <small>{teamBasis}</small>
+              </>
+            ) : (
+              'Team'
+            )}
+          </span>
         </div>
         <div>
           <b className="ch-num">{cells.tour}</b>
@@ -396,8 +406,9 @@ export function SgCard({ sg, who, standingHref }: { sg: ChFileSg; who: string; s
         </div>
       </div>
       <p className="card__n">
-        {sg.needsHoles ? 'Strokes gained needs hole-by-hole scores. ' : sg.note ? `${sg.note} ` : ''}
-        {sg.source}.{mix && <span data-ch-sg-mix=""> {mix}.</span>}
+        {sg.needsHoles ? (sg.needs === 'rounds' ? `Strokes gained shows from ${FILE_SG_FLOOR} rounds posted hole by hole. ` : 'Strokes gained needs hole-by-hole scores. ') : sg.note ? `${sg.note} ` : ''}
+        {/* A separator never starts a line: the space before each "·" does not break. */}
+        {sg.source.replace(/ · /g, '\u00a0· ')}.{mix && <span data-ch-sg-mix=""> {mix}.</span>}
         {standingHref && (
           <>
             {' '}

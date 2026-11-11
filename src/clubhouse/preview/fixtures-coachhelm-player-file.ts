@@ -100,12 +100,14 @@ export function previewPlayerFile(state: string): ChPlayerFile {
   const inYourVoice = cards.feat ? { ...cards.feat, base: { ...cards.feat.base, lede: cards.feat.base.lede.replace(/^Across all (\d+) rounds on file \w+ is averaging ([\d.]+) penalty strokes per round\./, 'You’re averaging $2 penalty strokes a round across all $1 rounds.') } } : null;
   const lens: ChFileCards = { ...cards, feat: inYourVoice, intent: undefined, track: undefined, dismissed: [], reads: list.filter((d) => !d.base.strength && d !== list[0]).slice(0, 2), working: strengths.slice(0, 1), more: Math.max(0, list.length - 3), sg: cards.sg && SG_YOU, field: field(state, 'player') };
   return {
-    head: { playerId: voice.playerId, name: state === 'long' ? 'Maximilian Okonkwo-Vandermeer' : WHO.name, first: state === 'long' ? 'Maximilian' : FIRST, line: voice.line },
+    // A player with no rounds has no last round to name: the head says the class year alone, as the card says "No rounds yet".
+    head: { playerId: voice.playerId, name: state === 'long' ? 'Maximilian Okonkwo-Vandermeer' : WHO.name, first: state === 'long' ? 'Maximilian' : FIRST, line: state === 'empty' ? WHO.classYear : voice.line },
     cards,
     lens,
     failed: { ...(state === 'sgfailed' ? { sg: true as const } : {}), ...(state === 'intentfailed' ? { intent: true as const } : {}), ...(state === 'fieldfailed' ? { field: true as const } : {}) },
     rounds: state === 'empty' ? 0 : state === 'early' ? 2 : WHO.rounds,
-    roundsToGo: state === 'early' ? 4 : 0,
+    // Two rounds on file, two of the four that count played: the hero's "2 of 4" and its "2 rounds" chip say one thing.
+    roundsToGo: state === 'early' ? 2 : 0,
     readOn: false,
     penalties: [0, 1, 3, 0, 2, 1, 0, 2].map((value, i) => ({ label: `Oct ${i + 1}`, value })),
   };

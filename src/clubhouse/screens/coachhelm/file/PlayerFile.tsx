@@ -124,10 +124,13 @@ export function PlayerFile({ load, at, insight, roster, writes = LIVE_COACHHELM_
   const phone = useChPhone();
   if (load.status !== 'ready') {
     return (
-      <main className={'ch-hf' + (phone ? ' is-phone' : '')}>
+      // On a desk the card takes the page's own gutters and a reading width (it sat edge to edge, under the top bar).
+      <main className={'ch-hf' + (phone ? ' is-phone' : ' is-desk is-failed')}>
         {phone && <PhoneTop back={{ label: 'CoachHelm', onBack: () => (window.history.length > 1 ? router.back() : router.push(PLAYER_HELM_HREF.board)) }} title="CoachHelm" />}
-        <div className="ch-hf-flow">
-          <FileFailed who="this player’s file" onRetry={() => refresh()} />
+        <div className={phone ? undefined : 'dfile'}>
+          <div className="ch-hf-flow">
+            <FileFailed who="this player’s file" onRetry={() => refresh()} />
+          </div>
         </div>
       </main>
     );
