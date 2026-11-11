@@ -2,7 +2,7 @@
 
 import { Component, type ReactNode } from 'react';
 import { STUDIO_KINDS, type StudioKindName } from '@/lib/coachhelm/v3/chat/visuals/studio-kinds';
-import { ActionPreview, AppLink, Comparison, DistanceProfile, Document, Figure, Note, PracticePlan, QualifierBoard, RankingList, Receipt, Round, Schedule, StrokesGained, Table, TrendFigure } from './components';
+import { Action, AppLink, Comparison, DistanceProfile, Document, Figure, Note, OnRecord, PracticePlan, QualifierBoard, RankingList, Round, Schedule, StrokesGained, Table, TrendFigure } from './components';
 import { tableOf } from './from';
 import type { StudioAsk, StudioProps, StudioSize } from './types';
 import type { CardPerson } from '../cards/types';
@@ -29,8 +29,8 @@ export const STUDIO_COMPONENTS: { readonly [K in StudioKindName]: (p: StudioProp
   document: Document,
   app_link: AppLink,
   note: Note,
-  action_preview: ActionPreview,
-  receipt: Receipt,
+  on_record: OnRecord,
+  action: Action,
   table: Table,
 };
 
