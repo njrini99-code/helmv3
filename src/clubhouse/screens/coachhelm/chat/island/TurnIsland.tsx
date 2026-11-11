@@ -4,7 +4,7 @@ import { ChevronDown } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { haptic } from '../../../../lib/haptics';
 import { Icon } from '../../../../ui/Icon';
-import { StepMark, StepRow } from './ActivityIsland';
+import { LeadMark, StepRow } from './ActivityIsland';
 import type { IslandModel } from './model';
 
 export interface TurnIslandProps {
@@ -24,7 +24,9 @@ export interface TurnIslandProps {
  * The activity island, in the thread (direction A; owner, 11 Nov): how CoachHelm's steps show while it works. It sits in the
  * flow under the question: a deep green rounded panel with a title row and a chevron, and one row a step (a ringed tick for
  * done, a ring that turns for active, a dim disc for waiting). When the first words of the answer arrive, or the work
- * finishes, it folds to one line ("Read 8 rounds · 3 steps · 4s"); a tap opens the steps again.
+ * finishes, it folds to one line ("Read 8 rounds · 3 steps · 4s"); a tap opens the steps again. The line is led by the
+ * chat's mark, the ball (`LeadMark`): thinking from the first moment after send and while the answer is written, gone
+ * when the work is done, when the line keeps only its tick.
  *
  * Every row is one of the engine's own events (`island/model.ts`). Its two sizes swap in one frame and only its rows fade, so
  * no height is animated; it folds before anything is drawn under it, so nothing the coach is reading moves by itself.
@@ -46,12 +48,11 @@ export function TurnIsland({ model, summary, meta, words, open, onToggle, onOpen
     }
   }, [model]);
 
-  const mark = model.live ? 'active' : model.stopped ? 'stopped' : 'done';
-  // A live turn with no step yet says only what is known: nothing for the first beat (the ring alone turns), then the wait's own words.
+  // A live turn with no step yet says only what is known: nothing for the first beat (the ball alone, thinking), then the wait's own words.
   const title = model.live ? (hasSteps ? (shown ? 'Working on your question' : model.head) : (words ?? '')) : model.stopped ? 'Stopped' : summary;
   const line = (
     <>
-      {!shown && <StepMark state={mark} />}
+      {!shown && <LeadMark live={model.live} settled={model.stopped ? 'stopped' : 'done'} />}
       {/* Keyed by its words: a change of activity is a new line fading in, not letters swapping in place. */}
       {title && (
         <span key={title} className="t">

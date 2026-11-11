@@ -5,13 +5,14 @@ import { useEffect, useId, useLayoutEffect, useReducer, useRef, useState } from 
 import { pluralWord } from '../../../../lib/plural';
 import { Avatar } from '../../../../ui/Avatar';
 import { Icon } from '../../../../ui/Icon';
+import { BallMark } from '../BallMark';
 import { waitLight } from '../reveal';
 import { elapsedWords, type IslandStep, type IslandStepState } from './model';
 import type { Island } from './useIsland';
 
 /** How long a finished ring keeps turning after it has closed: by then it is a full circle, its check is drawn, and the stop cannot be seen. */
 const RING_REST_MS = 600;
-/** The island's own exit, a quick fade (`--ch-dur-quick`). */
+/** The island's own exit, a quick fade (`--ch-dur-quick`); the ball leaves the line on the same beat. */
 const LEAVE_MS = 180;
 const FACES = 6;
 
@@ -19,10 +20,11 @@ const FACES = 6;
  * A step's mark. Waiting: a dim dot. Active: an open ring, turning. Done: the ring closes and the check draws inside it, in
  * the same place (the signature beat, MOTION MO-4-I5). Failed: the ring closes amber with a bar. Stopped: the ring stays open
  * and still. The ring keeps one animation for its whole life, so it never restarts or jumps when its state changes; it is
- * stopped only once it is a full circle. A mark that is first drawn finished is drawn still.
+ * stopped only once it is a full circle. A mark that is first drawn finished is drawn still, unless it is `fresh`: the
+ * work ended a moment ago under another mark (the line's ball), and its tick is drawn as it would have been.
  */
-export function StepMark({ state }: { state: IslandStepState }) {
-  const [resting, setResting] = useState(state !== 'active');
+export function StepMark({ state, fresh = false }: { state: IslandStepState; fresh?: boolean }) {
+  const [resting, setResting] = useState(state !== 'active' && !fresh);
   useEffect(() => {
     if (state === 'active') {
       setResting(false);
@@ -42,6 +44,26 @@ export function StepMark({ state }: { state: IslandStepState }) {
       </svg>
     </span>
   );
+}
+
+/**
+ * The mark that leads the island's one line. While CoachHelm works it is the chat's own mark, the ball, thinking (owner,
+ * 11 Nov); the rows under it keep their rings. When the work ends the ball goes on the quick beat and the line's state is
+ * drawn where it was: the ring that closes with its tick, or the open ring of a stopped turn. A line first drawn after
+ * the work never had a ball, and its mark is drawn still.
+ */
+export function LeadMark({ live, settled }: { live: boolean; /** What the line shows once the work is over. */ settled: IslandStepState }) {
+  const [gone, setGone] = useState(!live);
+  const watched = useRef(live);
+  if (live) watched.current = true;
+  if (live && gone) setGone(false);
+  useEffect(() => {
+    if (live) return;
+    const t = setTimeout(() => setGone(true), LEAVE_MS);
+    return () => clearTimeout(t);
+  }, [live]);
+  if (!gone) return <BallMark state="thinking" size="sm" leaving={!live} />;
+  return <StepMark state={settled} fresh={watched.current} />;
 }
 
 /** The island's clock: the seconds the live turn has worked, ticking here so nothing above re-renders for it. */
@@ -201,7 +223,7 @@ export function ActivityIsland({ island, density = 'full', onOpenStep }: { islan
         </span>
       )}
       <button type="button" className="hd" aria-expanded={open} aria-controls={listId} onClick={island.toggle} data-ch-press="">
-        <StepMark state={m.live ? 'active' : m.stopped ? 'stopped' : m.settled ? 'done' : 'waiting'} />
+        <LeadMark live={m.live} settled={m.stopped ? 'stopped' : m.settled ? 'done' : 'waiting'} />
         {/* Keyed by its words: a change of activity is a new line fading in, not letters swapping in place. */}
         <span key={m.head} className="t">
           {m.head}

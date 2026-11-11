@@ -1,0 +1,206 @@
+/* CoachHelm's mark in the chat: a golf ball (chat/BallMark.tsx; owner, 11 Nov: "a dissolve pulse golf ball", "at rest
+   maybe like a couple ripples but calmed down", and nothing beside a finished answer). Drawn once and never redrawn:
+   everything that moves is its own layer and moves by transform and opacity only, so the loop runs on the compositor.
+   The ball is ivory on every surface and in both themes; only what leaves it (the points of light, the rings) takes the
+   surface's ink. */
+.ch-ball {
+  --ch-ball-s: 24px;
+  --ch-ball-hi: var(--ch-on-fill-0);
+  --ch-ball-body: var(--ch-on-fill-100);
+  --ch-ball-limb: var(--ch-on-green-glyph);
+  --ch-ball-pit: color-mix(in oklab, var(--ch-green-900) 30%, var(--ch-on-fill-100));
+  --ch-ball-dot: var(--ch-feature-ink);
+  --ch-ball-rip: var(--ch-feature-ink);
+  position: relative;
+  flex: none;
+  display: inline-block;
+  width: var(--ch-ball-s);
+  height: var(--ch-ball-s);
+}
+.ch-ball.is-paper {
+  --ch-ball-dot: var(--ch-forest-800);
+  --ch-ball-rip: var(--ch-forest-800);
+}
+.ch-ball.is-sm {
+  --ch-ball-s: 20px;
+}
+.ch-ball.is-lg {
+  --ch-ball-s: 28px;
+}
+.ch-ball :is(.ch-ball__orb, .ch-ball__body, .ch-ball__shell, .ch-ball__rip, svg) {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+/* The sphere: lit from the upper left, falling away to the lower right. No outline; on paper a small cast shadow holds its edge. */
+.ch-ball .ch-ball__shell {
+  inset: 4.1667%;
+  width: auto;
+  height: auto;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 29%, var(--ch-ball-hi) 0, var(--ch-ball-body) 44%, var(--ch-ball-limb) 122%);
+}
+.ch-ball.is-paper .ch-ball__shell {
+  box-shadow: var(--ch-elevation-badge);
+}
+/* A dimple, and the lit lip on its far side. */
+.ch-ball__lip {
+  fill: var(--ch-ball-hi);
+  opacity: 0.75;
+}
+.ch-ball__pit {
+  fill: var(--ch-ball-pit);
+}
+.ch-ball__dots {
+  fill: var(--ch-ball-dot);
+  opacity: 0;
+}
+.ch-ball .ch-ball__rip {
+  inset: 4.1667%;
+  box-sizing: border-box;
+  width: auto;
+  height: auto;
+  border: var(--ch-hairline-w) solid var(--ch-ball-rip);
+  border-radius: 50%;
+  opacity: 0;
+}
+
+/* Thinking: the ball breathes in; as it does its shell thins and the dimples are left standing as points of light, which
+   drift out past its edge ring by ring; then the ball forms again around them. One loop on the live beat. */
+.ch-ball.is-thinking .ch-ball__orb {
+  animation: ch-ball-breathe var(--ch-dur-live) var(--ch-ease-io) infinite;
+}
+.ch-ball.is-thinking .ch-ball__body {
+  animation: ch-ball-thin var(--ch-dur-live) var(--ch-ease-io) infinite;
+}
+.ch-ball.is-thinking .ch-ball__dots {
+  animation: ch-ball-drift-a var(--ch-dur-live) var(--ch-ease) infinite;
+}
+.ch-ball.is-thinking .ch-ball__dots.is-b {
+  animation-name: ch-ball-drift-b;
+}
+.ch-ball.is-thinking .ch-ball__dots.is-c {
+  animation-name: ch-ball-drift-c;
+}
+@keyframes ch-ball-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  46% {
+    transform: scale(0.9);
+  }
+  84% {
+    transform: scale(1);
+  }
+}
+@keyframes ch-ball-thin {
+  0%,
+  10% {
+    opacity: 1;
+  }
+  30%,
+  50% {
+    opacity: 0.3;
+  }
+  78%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes ch-ball-drift-a {
+  0%,
+  10% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  26% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50%,
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+@keyframes ch-ball-drift-b {
+  0%,
+  15% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  31% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  57%,
+  100% {
+    opacity: 0;
+    transform: scale(1.24);
+  }
+}
+@keyframes ch-ball-drift-c {
+  0%,
+  20% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  36% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  64%,
+  100% {
+    opacity: 0;
+    transform: scale(1.28);
+  }
+}
+
+/* At rest: the ball is still. Two rings leave it, slowly, half a loop apart, and are gone before they reach anything. */
+.ch-ball.is-rest .ch-ball__rip {
+  animation: ch-ball-ripple calc(var(--ch-dur-live) * 2) var(--ch-ease) infinite;
+}
+.ch-ball.is-rest .ch-ball__rip.is-late {
+  animation-delay: var(--ch-dur-live);
+}
+@keyframes ch-ball-ripple {
+  0% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  12% {
+    opacity: 0.22;
+  }
+  72%,
+  100% {
+    opacity: 0;
+    transform: scale(1.66);
+  }
+}
+
+/* Done: it goes, on the quick beat. Nothing is left beside the answer. */
+.ch-ball.is-leaving {
+  animation: ch-ball-out var(--ch-dur-quick) var(--ch-ease) forwards;
+}
+@keyframes ch-ball-out {
+  to {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+/* Reduced motion and Animations off: a still, whole ball, and no ring moves. */
+@media (prefers-reduced-motion: reduce) {
+  .ch-ball,
+  .ch-ball :is(.ch-ball__orb, .ch-ball__body, .ch-ball__dots, .ch-ball__rip) {
+    animation: none;
+  }
+}
+[data-motion='off'] .ch-ball,
+[data-motion='off'] .ch-ball :is(.ch-ball__orb, .ch-ball__body, .ch-ball__dots, .ch-ball__rip) {
+  animation: none;
+}

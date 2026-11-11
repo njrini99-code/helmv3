@@ -142,15 +142,16 @@ describe('CH-13850 what CoachHelm is doing', () => {
     show({ messages: ASK_MSGS_WORKING, busy: true, phone: true });
     expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull();
   });
-  it('before the server answers there are no words, only the island’s ring; its line speaks at 1.2 s and says only what is known', () => {
+  it('before the server answers there are no words, only the ball, thinking; its line speaks at 1.2 s and says only what is known', () => {
     vi.useFakeTimers();
     try {
       show({ messages: ASK_MSGS_THINKING, busy: true });
-      // The turn arrives after its question (150 ms), with the ring turning and nothing said.
+      // The turn arrives after its question (150 ms), with the chat's mark thinking and nothing said: no ring, no wheel.
       expect(screen.queryByRole('article', { name: 'CoachHelm answer' })).toBeNull();
       act(() => { vi.advanceTimersByTime(200); });
       const turn = screen.getByRole('article', { name: 'CoachHelm answer' });
-      expect(turn.querySelector('.ch-ak-isl.is-live .mk.is-active')).not.toBeNull();
+      expect(turn.querySelector('.ch-ak-isl.is-live .hd .ch-ball.is-thinking')).not.toBeNull();
+      expect(turn.querySelector('.ch-ak-isl .hd .mk')).toBeNull();
       expect(turn.querySelector('.ch-ak-isl .hd')?.textContent).toBe('');
       // Nothing has come back from the server: it is still being sent, and that is all that is claimed.
       act(() => { vi.advanceTimersByTime(1100); });
