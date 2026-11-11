@@ -505,6 +505,7 @@ export const writeArtifact: ReadTool<z.infer<typeof WriteArtifactInput>> = {
   description: 'Write a long piece the coach will keep (a player report, a lineup, a round recap) as a document beside the chat. Pass the artifact_id it returned to revise it. Every figure must come from a read. It stays in this chat until the coach publishes it.',
   input: WriteArtifactInput,
   progress: () => 'Writing it up',
+  draft: { fields: ['title', 'body'] },
   run: async (_ctx, { artifact_id, kind, title, body }) => {
     const artifactId = artifact_id ?? randomUUID();
     return notice('It is on screen as a card the coach can open. Say one line about it; do not repeat it.', { detail: { artifact_id: artifactId }, parts: [{ type: 'data-artifact', id: partId(`artifact-${artifactId}`), data: { artifactId, kind, title, versionId: randomUUID(), at: new Date().toISOString(), body } }] });
@@ -517,6 +518,7 @@ export const draftMessage: ReadTool<z.infer<typeof DraftMessageInput>> = {
   description: 'Open a draft in Messages, for one thread found with find_thread or for named players. Sends nothing: the coach presses Send there.',
   input: DraftMessageInput,
   progress: () => 'Drafting the message',
+  draft: { fields: ['content'] },
   run: async (ctx, { conversation_id, player_ids, content }) => {
     if (conversation_id) {
       const { data, error } = await ctx.sb.from('golf_conversations').select('id, title').eq('team_id', ctx.who.team_id).eq('id', conversation_id).maybeSingle();
@@ -614,6 +616,7 @@ export const draftPracticePlan: ReadTool<z.infer<typeof PlanDraftModelInput>> = 
   description: 'Write a practice plan draft as a card, after reading the drill bank and the plan format and after the coach\'s answers. Saves nothing: Save and Publish are the coach\'s presses. Use only drills from the drill bank, and make the block lengths add up to the minutes asked. A number in a Because must come from a read.',
   input: PlanDraftModelInput,
   progress: () => 'Drafting the practice plan',
+  draft: { fields: ['title', 'blocks'] },
   run: async (ctx, input) => {
     const strict = PracticeDraftInput.safeParse(input);
     if (!strict.success) return notice(`Not drafted: ${strict.error.issues.slice(0, 3).map((i) => `${i.path.join('.')} ${i.message}`).join('; ')}.`, { refused: true });

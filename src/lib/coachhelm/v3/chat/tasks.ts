@@ -216,6 +216,7 @@ function flowTask<I>(f: FlowDef<I>): RevisableTask<I> {
     input: f.input,
     progress: () => PROGRESS[f.name] ?? 'Preparing that',
     ...(f.immediate ? { immediate: true } : {}),
+    ...(f.draft?.length ? { draft: { fields: f.draft } } : {}),
     plan,
     // The coach's edits on the card: the stored input with them, held to the task's own schema, then planned again with every read and check `plan` makes.
     revise: async (ctx, proposal, edits) => {
@@ -322,6 +323,8 @@ function plannedTask<I, TPlan extends WithPeople>(def: {
   /** The keys of `input` a coach may change on the card, and the card's label for each. */
   editable: readonly string[];
   editLabels?: Record<string, string>;
+  /** Top-level input fields the coach watches being written (`TaskTool.draft`, engine E31). */
+  draft?: readonly string[];
   /** The model's input back from a stored plan, where the plan is not the input with more on it. */
   toInput?: (plan: TPlan) => unknown;
 }): RevisableTask<I> {
@@ -355,6 +358,7 @@ function plannedTask<I, TPlan extends WithPeople>(def: {
     description: def.description,
     input: def.input,
     progress: () => def.progress,
+    ...(def.draft?.length ? { draft: { fields: def.draft } } : {}),
     plan,
     revise: async (ctx, proposal, edits) => {
       coachOnly(ctx);
@@ -460,6 +464,7 @@ const createTeamAnnouncement = plannedTask<Parameters<typeof planAnnouncement>[1
   description: 'Send a team update. The full text is on the card before anything goes out. Leave recipient_player_ids out to send to the whole team.',
   input: z.object({ title: z.string().min(1).max(120), body: z.string().min(1).max(2000), urgency: z.enum(['low', 'normal', 'high', 'urgent']).optional(), requires_acknowledgement: z.boolean().optional(), recipient_player_ids: z.array(PlayerId).optional() }),
   progress: 'Drafting a team update',
+  draft: ['title', 'body'],
   editable: ['title', 'body', 'urgency', 'requires_acknowledgement', 'recipient_player_ids'],
   editLabels: { body: 'Message', requires_acknowledgement: 'Acknowledgement', recipient_player_ids: 'To' },
   // "The whole team" is shown as the people it was when the card was made; an edited card sends to exactly the people it lists.
