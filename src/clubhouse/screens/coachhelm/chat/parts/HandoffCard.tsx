@@ -3,7 +3,6 @@ import { useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { LayoutGrid, ListChecks, MessageCircle, type LucideIcon } from 'lucide-react';
 import { Button } from '../../../../ui/Button';
-import { Icon } from '../../../../ui/Icon';
 import { useToast } from '../../../../ui/Toast';
 import { messagesPrefillHref } from '../../../messages/prefill';
 import type { AskHandoffData } from '../../../../data/coachhelm-chat-thread';
@@ -50,9 +49,6 @@ export function HandoffCard({ handoff, tiles }: { handoff: AskHandoffData; tiles
   return (
     <section className="conf ch-ak-handoff">
       <div className="hd">
-        <span className="ico">
-          <Icon icon={head.icon} size={17} />
-        </span>
         <span className="tt">
           <b>{handoff.title}</b>
           <span>{head.lede}</span>

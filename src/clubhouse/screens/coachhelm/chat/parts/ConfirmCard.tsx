@@ -62,6 +62,13 @@ export function landsWhere(tool: string, visual: ActionProposal['visual']): stri
   if (tool === 'create_event' && visual?.kind === 'cal' && visual.date) return formatWith(new Date(`${visual.date}T12:00:00`), { weekday: 'short', month: 'short', day: 'numeric' });
   return LANDS[tool]?.where ?? '';
 }
+/** Where a confirmed draft appears, as the card's one quiet line ("It appears in Home, under Focus."); null where the app has no one place for it. */
+export function landsLine(tool: string, visual: ActionProposal['visual']): string | null {
+  const l = LANDS[tool];
+  if (!l) return null;
+  const where = landsWhere(tool, visual);
+  return where ? `It appears in ${l.app}, under ${where}.` : `It appears in ${l.app}.`;
+}
 /** The kit's head per flow (06 kit ②): what it will become, with its own mark. */
 const HEAD: Record<string, { icon: LucideIcon; title: string }> = {
   create_event: { icon: CalendarPlus, title: 'New event' },

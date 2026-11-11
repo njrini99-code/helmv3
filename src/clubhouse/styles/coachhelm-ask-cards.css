@@ -172,14 +172,12 @@
 .ch-akc-roll h4 { display: flex; align-items: center; gap: 8px; margin: 0; font: var(--ch-type-14-strong); color: var(--ch-text-secondary); }
 
 /* ---------- 4. details, 5. changes, 6. warning ---------- */
-/* One grid for all the rows, so every label is as wide as the longest and no label breaks inside a word. */
-.ch-akc-rows { display: grid; grid-template-columns: fit-content(44%) minmax(0, 1fr); margin: 0; }
-.ch-akc-row { display: contents; }
-.ch-akc-row > dt { padding: 8px 16px 8px 0; font: var(--ch-type-13); line-height: calc(20 * var(--ch-type-k)); color: var(--ch-text-tertiary); }
-.ch-akc-row > dd { display: flex; flex-direction: column; gap: 4px; min-width: 0; margin: 0; padding: 8px 0; font: var(--ch-type-14); overflow-wrap: anywhere; }
-.ch-akc-row + .ch-akc-row > * { border-top: var(--ch-hairline-w) solid var(--ch-separator); }
-.ch-akc-row:first-child > * { padding-top: 0; }
-.ch-akc-row:last-child > * { padding-bottom: 0; }
+/* The remaining facts are quiet lines, never a table of fields (owner, 11 Nov): each reads as a sentence, its label a quiet
+   word ahead of its value, with no columns and no rules between them. */
+.ch-akc-rows { display: grid; gap: var(--ch-space-1); margin: 0; }
+.ch-akc-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--ch-space-1_5); min-width: 0; font: var(--ch-type-14); }
+.ch-akc-row > dt { color: var(--ch-text-secondary); }
+.ch-akc-row > dd { display: flex; flex: 1 1 auto; flex-direction: column; gap: var(--ch-space-1); min-width: 0; margin: 0; color: var(--ch-text-primary); overflow-wrap: anywhere; }
 .ch-akc-row__unset { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--ch-loss); font-weight: var(--ch-fw-600); }
 .ch-akc-row__src { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .ch-akc-row__src > small { font: var(--ch-type-12); color: var(--ch-text-tertiary); }

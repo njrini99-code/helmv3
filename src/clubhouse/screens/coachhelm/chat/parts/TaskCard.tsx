@@ -7,11 +7,10 @@ import { haptic } from '../../../../lib/haptics';
 import { useChReducedMotion } from '../../../../lib/reduced-motion';
 import { Badge } from '../../../../ui/Badge';
 import { Button } from '../../../../ui/Button';
-import { Icon } from '../../../../ui/Icon';
 import { announceLanding } from '../../../../shell/quick-chat/landing';
 import { flyDraftHome } from '../ask-flight';
-import { CardBody, cardCopy, isWithdrawn, type CardDensity, type CardPerson, type CardPhase } from '../cards';
-import { phaseOfReceipt, Receipt, type ReceiptPhase } from './ConfirmCard';
+import { CardBody, cardCopy, drawsSubject, isWithdrawn, type CardDensity, type CardPerson, type CardPhase } from '../cards';
+import { landsLine, phaseOfReceipt, Receipt, type ReceiptPhase } from './ConfirmCard';
 
 export interface TaskCardProps {
   view: AskProposalView;
@@ -37,6 +36,10 @@ export interface TaskCardProps {
  * The task card's shell (chat v3, SPEC Moment 7): the frame, the head, the button row, the countdown and the receipt, and every
  * motion. What a coach checks before Confirm is the capability's own body (`cards/`), drawn whole from the stored plan; the
  * words of the head, the button and the badge come from the same catalogue as the body, so they cannot drift apart.
+ *
+ * The look is direction A's pin sheet: the same paper leaf as an answer, a running head that says what it will become, the
+ * thing itself, and one quiet line for where it appears (who is told is the body's first line). No icon tile, and no
+ * "On confirm" row repeating what the body already says.
  */
 export function TaskCard({ view, density = 'full', fresh = false, busy = false, roster = [], team, evidence, onApprove, onDeny, onSend, onPhase }: TaskCardProps) {
   const { proposal: p, status } = view;
@@ -102,29 +105,25 @@ export function TaskCard({ view, density = 'full', fresh = false, busy = false, 
   const badge =
     phase === 'saved' || phase === 'partial' ? copy.badge : phase === 'undone' ? 'Undone' : phase === 'held' ? 'Holding' : phase === 'failed' ? 'Not saved' : phase === 'cancelled' || phase === 'superseded' ? 'Set aside' : 'Draft';
   const sends = p.notifications.length > 0 && !p.notifications.every((n) => /^(nobody|nothing)/i.test(n));
+  const lands = landsLine(view.tool, p.visual);
   return (
     <section ref={cardRef} className={'conf ch-ak-task' + (density === 'compact' ? ' is-compact' : '') + (landing && phase === 'saved' ? ' flash' : '') + (arriving ? ' is-arriving' : '')} aria-label={p.action} data-phase={phase} data-ch-code="CH-13951">
       <div className="hd">
-        <span className="ico">
-          <Icon icon={copy.icon} size={17} />
-        </span>
         <span className="tt">
           <b>{copy.head}</b>
-          <span>{p.summary}</span>
         </span>
         <span className={'dchip' + (landing && phase === 'saved' ? ' is-pop' : '')}>
           <Badge tone={phase === 'saved' ? 'positive' : phase === 'failed' || phase === 'partial' ? 'warning' : 'neutral'}>{badge}</Badge>
         </span>
       </div>
+      {/* A task whose body draws its own subject needs no second title; one that does not is named by the plan's summary. */}
+      {!drawsSubject(view.tool) && <p className="ch-ak-task__sum">{p.summary}</p>}
       {/* What a coach checks, whole at first paint. A withdrawn draft steps back; it is not removed (it is the record of what was offered). */}
       <div className={'ch-ak-task__body' + (isWithdrawn(phase) && phase !== 'failed' ? ' is-dim' : '')}>
         <CardBody tool={view.tool} proposal={p} receipt={receipt} phase={phase} density={density} roster={roster} team={team} onAsk={undecided && !pressed && onSend ? (text) => void onSend(text) : undefined} />
       </div>
-      {undecided && (
-        <p className="oncf">
-          <b>On confirm:</b> {p.notifications.length ? p.notifications.join(' ') : 'Nothing is sent.'}
-        </p>
-      )}
+      {/* The one quiet line: where it appears. Who is told is the body's first line, said once. */}
+      {undecided && (lands || !sends) && <p className="oncf">{[sends ? null : 'Nothing is sent.', lands].filter(Boolean).join(' ')}</p>}
       {undecided && evidence && (
         <button type="button" className="ch-ak-evlink" aria-expanded={evidence.open} onClick={evidence.onOpen}>
           See what this is based on
@@ -135,7 +134,7 @@ export function TaskCard({ view, density = 'full', fresh = false, busy = false, 
         <div className="btns">
           {/* Cancel leaves on Confirm but keeps its box, so the working button keeps its place (MO-7-4). */}
           <span className={'cx' + (phase === 'confirming' ? ' is-gone' : '')}>
-            <Button variant="ghost" disabled={!!pressed || !view.approvalId || !undecided} onClick={() => answer(false)} data={{ 'data-ch-ask-cancel': '' }}>
+            <Button variant="ghost" size="lg" disabled={!!pressed || !view.approvalId || !undecided} onClick={() => answer(false)} data={{ 'data-ch-ask-cancel': '' }}>
               Cancel
             </Button>
           </span>
@@ -144,7 +143,7 @@ export function TaskCard({ view, density = 'full', fresh = false, busy = false, 
               {copy.busy}
             </span>
           ) : (
-            <Button variant="primary" disabled={!!pressed || !view.approvalId || p.missing.length > 0} onClick={() => answer(true)} data={{ 'data-ch-ask-confirm': '' }}>
+            <Button variant="primary" size="lg" disabled={!!pressed || !view.approvalId || p.missing.length > 0} onClick={() => answer(true)} data={{ 'data-ch-ask-confirm': '' }}>
               {copy.primary}
             </Button>
           )}

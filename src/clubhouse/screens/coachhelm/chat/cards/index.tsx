@@ -48,6 +48,9 @@ const BODIES: Record<string, ComponentType<BodyProps>> = {
   record_focus_outcome: PlanBody,
 };
 
+/** The body draws the thing itself (its title, its day, its words), so the shell adds no second title. The generic plan body does not. */
+export const drawsSubject = (tool: string): boolean => !!BODIES[tool] && BODIES[tool] !== PlanBody;
+
 /** The tools with a body of their own. */
 export const BODY_TOOLS: readonly string[] = Object.keys(BODIES);
 

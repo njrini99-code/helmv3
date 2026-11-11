@@ -59,12 +59,12 @@ html[data-fw-theme='dark'] .ch-ak-th {
   .ch-ak-th .step.is-in { animation: none; }
 }
 /* AK4: confirm, commit, receipt, Undo (kit ② to ⑤) */
-.ch-ak-th .conf { position: relative; overflow: hidden; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-ask-shadow-2); }
-.ch-ak-th .conf .hd { display: flex; align-items: center; gap: 12px; padding: 16px 16px 12px; border-bottom: var(--ch-hairline-w) solid var(--ch-separator); }
-.ch-ak-th .conf .ico { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: var(--ch-radius-sm); background: var(--ch-ak-ak-tint); color: var(--ch-ask-accent); }
+.ch-ak-th .conf { position: relative; overflow: hidden; border-radius: var(--ch-radius-card); background: var(--ch-chart-paper); box-shadow: var(--ch-elevation-card); }
+.ch-ak-th .conf .hd { position: relative; display: flex; align-items: center; gap: var(--ch-space-3); margin: 0 var(--ch-space-5) var(--ch-space-1); padding: var(--ch-space-4) 0 var(--ch-space-3); border-bottom: var(--ch-hairline-w) solid var(--ch-ink-rule); }
+.ch-ak-th .conf .hd::after { content: ''; position: absolute; right: 0; bottom: calc(-1 * var(--ch-space-1)); left: 0; border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline); }
 .ch-ak-th .conf .tt { min-width: 0; flex: 1; }
-.ch-ak-th .conf .tt b { display: block; font: var(--ch-type-16-strong);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-16); }
-.ch-ak-th .conf .tt span { display: block; font: var(--ch-type-14);  color: var(--ch-text-secondary); }
+.ch-ak-th .conf .tt b { display: block; font: var(--ch-type-13-strong); color: var(--ch-text-primary); }
+.ch-ak-th .conf .tt span { display: block; font: var(--ch-type-13); color: var(--ch-text-tertiary); }
 .ch-ak-th .evd { margin: 16px 16px 6px; padding: 12px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); box-shadow: var(--ch-well-shadow); }
 .ch-ak-th .evd.dim { filter: saturate(0); }
 .ch-ak-th .evd .ls { display: grid; gap: 4px; min-width: 0; }
@@ -72,17 +72,19 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .evd .f .inf { grid-column: 2; font: var(--ch-type-14); color: var(--ch-text-tertiary); }
 .ch-ak-th .evd .f .ns { color: var(--ch-text-tertiary); }
 .ch-ak-th .evd .f .v { color: var(--ch-text-primary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.ch-ak-th .oncf { margin: 0; padding: 6px 16px 0; font: var(--ch-type-14);  color: var(--ch-text-secondary); }
-.ch-ak-th .oncf b { font-weight:var(--ch-fw-600); color: var(--ch-text-primary); }
-.ch-ak-th .conf .btns { display: flex; align-items: center; gap: 8px; padding: 12px 16px 16px; }
+.ch-ak-th .oncf { margin: var(--ch-space-4) var(--ch-space-5) 0; padding-top: var(--ch-space-3); border-top: var(--ch-hairline-w) solid var(--ch-separator-strong); font: var(--ch-type-13); color: var(--ch-text-secondary); text-wrap: pretty; }
+.ch-ak-th .conf .btns { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--ch-space-2); padding: var(--ch-space-4) var(--ch-space-5); }
+.ch-ak-th .conf .btns > :only-child { grid-column: 1 / -1; }
 .ch-ak-th .conf .btns button { position: relative; cursor: pointer; }
 .ch-ak-th .conf .btns button::after { content: ''; position: absolute; inset: -3px 0; }
 .ch-ak-th .conf .btns .p { margin-left: auto; padding: 8px 12px; border: 0; border-radius: var(--ch-radius-sm); background: var(--ch-accent); color: var(--ch-text-on-accent); font: var(--ch-type-15-strong); overflow: hidden; letter-spacing: var(--ch-track-15); }
-.ch-ak-th .conf .btns .p.cap { padding: 8px 20px; border-radius: 999px; background: var(--ch-ak-ak-tint); color: var(--ch-ask-accent); }
+.ch-ak-th .conf .btns .p.cap { position: relative; padding: var(--ch-space-3) var(--ch-space-5); border-radius: var(--ch-radius-md); background: var(--ch-ak-ak-tint); color: var(--ch-ask-accent); text-align: center; }
 .ch-ak-th .conf .btns .p.cap::before { content: ''; position: absolute; left: 0; bottom: 0; width: 40%; height: 2px; border-radius: var(--ch-radius-mark); background: var(--ch-ask-accent); animation: ch-ak-capsule var(--ch-dur-sweep) linear infinite; }
-.ch-ak-th .cxl { margin: 0; padding: 12px 16px 12px; font: var(--ch-type-15); color: var(--ch-text-secondary); letter-spacing: var(--ch-track-15); }
+.ch-ak-th .cxl { margin: 0; padding: var(--ch-space-3) var(--ch-space-5) var(--ch-space-4); font: var(--ch-type-14); color: var(--ch-text-secondary); }
 .ch-ak-th .conf.flash::before { content: ''; position: absolute; inset: 0; z-index: 1; border-radius: inherit; box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--ch-ask-accent) 60%, transparent); pointer-events: none; animation: ch-ak-edge var(--ch-dur-sweep) var(--ch-ease) forwards; }
-.ch-ak-th .receipt, .ch-ak-sv .receipt { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: var(--ch-hairline-w) solid var(--ch-separator); }
+.ch-ak-th .receipt { display: flex; align-items: center; gap: var(--ch-space-3); margin: var(--ch-space-4) var(--ch-space-5) 0; padding: var(--ch-space-3) 0; border-top: var(--ch-hairline-w) solid var(--ch-separator-strong); }
+.ch-ak-th .conf > .receipt:first-child { margin-top: 0; border-top: 0; }
+.ch-ak-sv .receipt { display: flex; align-items: center; gap: var(--ch-space-3); padding: var(--ch-space-3) var(--ch-space-4); border-top: var(--ch-hairline-w) solid var(--ch-separator); }
 .ch-ak-th .receipt > div, .ch-ak-sv .receipt > div { min-width: 0; flex: 1; }
 .ch-ak-th .receipt b, .ch-ak-sv .receipt b { display: block; font: var(--ch-type-15-strong); color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
 .ch-ak-th .receipt .sub, .ch-ak-sv .receipt .sub { display: block; font: var(--ch-type-14);  color: var(--ch-text-secondary); }
@@ -95,7 +97,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .receipt .undo svg, .ch-ak-sv .receipt .undo svg { width: 20px; height: 20px; }
 .ch-ak-th .receipt .undo .trk, .ch-ak-sv .receipt .undo .trk { stroke: var(--ch-ak-ak-track); }
 .ch-ak-th .receipt .undo .drn, .ch-ak-sv .receipt .undo .drn { stroke: var(--ch-ask-accent); stroke-dasharray: 63; transform: rotate(-90deg); transform-origin: 12px 12px; animation: ch-ak-drain 8s linear forwards; }
-.ch-ak-th .told { margin: 0 16px 16px; padding: 12px 12px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); box-shadow: inset 0 0 0 0.5px var(--ch-ak-ak-hair); font: var(--ch-type-13);  color: var(--ch-text-secondary); }
+.ch-ak-th .told { margin: 0 var(--ch-space-5) var(--ch-space-4); font: var(--ch-type-13); color: var(--ch-text-secondary); }
 .ch-ak-th .told b { font-weight:var(--ch-fw-600); color: var(--ch-text-primary); }
 @keyframes ch-ak-capsule { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
 @keyframes ch-ak-edge { from { opacity: 1; } to { opacity: 0; } }
@@ -507,7 +509,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
   cursor: pointer;
 }
 .ch-ak-th .conf .btns .ch-btn--primary, .ch-ak-th .conf .btns .p.cap {
-  margin-left: auto;
+  width: 100%;
 }
 .ch-ak-th .dchip {
   flex: none;
@@ -611,7 +613,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .conf.is-fill .ipl { animation: ch-ak-pop var(--ch-dur-spring-pop, var(--ch-dur-reveal)) var(--ch-ease-spring-pop, var(--ch-ease)) both; animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-press) / 1.57); }
 @keyframes ch-ak-pop { from { opacity: 0; transform: scale(0.9); } }
 
-.ch-ak-th .ch-ak-evlink { position: relative; display: block; margin: 6px 16px 0; padding: 0; border: 0; background: none; font: var(--ch-type-14-strong); color: var(--ch-ask-accent); cursor: pointer; }
+.ch-ak-th .ch-ak-evlink { position: relative; display: block; margin: var(--ch-space-3) var(--ch-space-5) 0; padding: 0; border: 0; background: none; font: var(--ch-type-14-strong); color: var(--ch-ask-accent); cursor: pointer; }
 .ch-ak-th .ch-ak-evlink::after { content: ''; position: absolute; inset: -12px 0; }
 
 /* M-ASK-50: the Draft chip takes the flow's done word. */
@@ -1078,9 +1080,8 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 /* Cancel leaves on Confirm and keeps its box, so the working button keeps its place. */
 .ch-ak-th[data-v3] .conf .btns .cx { transition: opacity var(--ch-dur-msg-key-out) var(--ch-ease); }
 .ch-ak-th[data-v3] .conf .btns .cx.is-gone { opacity: 0; pointer-events: none; }
-.ch-ak-th[data-v3] .conf .btns > .ch-btn--primary { margin-left: auto; }
 .ch-ak-th[data-v3] .conf .btns .p.cap { animation: ch-ak-fade var(--ch-dur-quick) var(--ch-ease) backwards; }
-.ch-ak-needs { margin: 0; padding: 0 16px 4px; font: var(--ch-type-14); color: var(--ch-text-secondary); }
+.ch-ak-needs { margin: 0; padding: var(--ch-space-2) var(--ch-space-5) 0; font: var(--ch-type-13); color: var(--ch-loss); }
 /* The hold: the countdown ring with the seconds left, in the place the check will take. */
 .ch-ak-th[data-v3] .receipt { min-height: 68px; animation: ch-ak-fade var(--ch-dur-quick) var(--ch-ease) backwards; }
 .ch-ak-th[data-v3] .receipt.is-hold { align-items: flex-start; }
@@ -1113,8 +1114,13 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 [data-motion='off'] .ch-ak-th[data-v3] .receipt.in.is-live .ck path { animation: none; stroke-dashoffset: 0; }
 /* A chip and the punctuation that closes its sentence are one unbreakable piece. */
 .ch-ak-keep { white-space: nowrap; }
-/* The task card's body (the capability's own, cards/): a withdrawn draft steps back; it is not removed. */
-.ch-ak-task__body { min-width: 0; transition: opacity var(--ch-dur-quick) var(--ch-ease); }
+/* The task card's body (the capability's own, cards/): the thing itself, on the sheet. A withdrawn draft steps back; it is not removed. */
+.ch-ak-task__body { min-width: 0; padding: var(--ch-space-4) var(--ch-space-5) 0; transition: opacity var(--ch-dur-quick) var(--ch-ease); }
+.ch-ak-task__sum { margin: var(--ch-space-4) var(--ch-space-5) 0; font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); color: var(--ch-text-primary); text-wrap: balance; }
+/* A pin sheet is a slip, not a page: it keeps a slip's width on a desk. */
+.ch-ak-th .conf.ch-ak-task { box-sizing: border-box; width: 100%; max-width: 520px; padding-bottom: var(--ch-space-1); }
+.ch-ak-th .conf.ch-ak-task:has(> .btns:last-child, > .cxl:last-child, > .told:last-child) { padding-bottom: 0; }
+.ch-ak-th .conf.ch-ak-task > .receipt:last-child { margin-bottom: var(--ch-space-1); }
 .ch-ak-task__body.is-dim { opacity: 0.55; }
 
 /* ── Chat v3, the activity island in a header (quick chat; SPEC Moment 4; MOTION MO-4-I1 to I9) ──────────────────────

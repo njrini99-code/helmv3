@@ -25,13 +25,18 @@ afterEach(() => {
 });
 
 describe('the task card shell (chat v3, SPEC Moment 7)', () => {
-  it('arrives whole: the body, the "On confirm" line and both buttons are there with the card, and Confirm answers once', () => {
+  it('arrives whole: the body, the one quiet line and both buttons are there with the card, and Confirm answers once', () => {
     const onApprove = vi.fn();
     show(view(), { fresh: true, onApprove });
     expect(card().classList.contains('is-arriving')).toBe(true);
     expect(card().dataset.phase).toBe('proposed');
     expect(card().querySelector('.ch-ak-task__body')).not.toBeNull();
-    expect(screen.getByText('Jonah gets a notification.')).toBeTruthy();
+    // Who is told is the body's first line, said once; the shell adds one quiet line for where it appears, and no table of fields
+    // and no "On confirm" row (owner, 11 Nov).
+    expect(card().querySelector('.ch-akc-reach__lede')?.textContent).toMatch(/^Sends to Jonah Okafor/);
+    expect(card().querySelector('.oncf')?.textContent).toBe('It appears in Home, under Focus.');
+    expect(screen.queryByText(/On confirm/)).toBeNull();
+    expect(card().querySelector('.hd .ico')).toBeNull();
     const confirm = card().querySelector<HTMLButtonElement>('[data-ch-ask-confirm]')!;
     fireEvent.click(confirm);
     fireEvent.click(confirm);

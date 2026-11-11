@@ -2,7 +2,7 @@
 import { Button } from '../../../../ui/Button';
 
 import { useEffect, useRef, useState } from 'react';
-import { Check, Mail, Timer } from 'lucide-react';
+import { Check, Timer } from 'lucide-react';
 import { Icon } from '../../../../ui/Icon';
 import { requestAskCredits, undoAskCredits } from '@/app/golf/actions/coachhelm-ask-credits';
 import type { AskAllowanceBucket } from '../../../../data/coachhelm-chat-shape';
@@ -102,9 +102,6 @@ export function PlayerOut({ live = false, from }: { live?: boolean; from: string
       {showConfirm && (
         <section className={'conf ch-ak-request' + (stage === 'cancelled' ? ' is-cancelled' : '')}>
           <div className="hd">
-            <span className="ico">
-              <Icon icon={Mail} size={17} />
-            </span>
             <span className="tt">
               <b>Request more Ask</b>
               <span>An email to Helm Sports Labs</span>
