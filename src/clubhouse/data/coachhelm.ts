@@ -754,7 +754,7 @@ async function pulseOf(): Promise<ChPulse> {
 /**
  * The pulse as a read the board can draw later: started now, marked handled, and never rejecting, so the loader hands it to the
  * board without waiting for it and an early return leaves nothing unhandled. A pulse that threw is `failed`, which the board draws
- * as the pulse not loading (CH-13203), logged here.
+ * as the pulse not loading, logged here.
  */
 export function pulseLater(): Promise<ChPulseResult> {
   return handled(

@@ -16967,7 +16967,7 @@
     "status": "implemented",
     "where": "src/clubhouse/lib/use-action.ts#useAction; src/clubhouse/screens/coachhelm/parts.tsx#useFocusActions (assign, dismiss, undo)",
     "tests": [
-      "src/clubhouse/screens/coachhelm/__tests__/focus-actions-row.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-focus-actions-row.test.tsx"
     ]
   },
   {
@@ -17705,7 +17705,7 @@
     "status": "implemented",
     "where": "src/clubhouse/screens/coachhelm/parts.tsx#FocusActions; src/clubhouse/data/coachhelm.ts#assignedByInsight",
     "tests": [
-      "src/clubhouse/screens/coachhelm/__tests__/focus-actions-row.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-focus-actions-row.test.tsx"
     ]
   },
   {
@@ -17732,7 +17732,7 @@
     "status": "implemented",
     "where": "src/clubhouse/screens/coachhelm/parts.tsx#FocusActions, #useFocusActions (assign, dismiss, undo); src/clubhouse/lib/use-action.ts#useAction",
     "tests": [
-      "src/clubhouse/screens/coachhelm/__tests__/focus-actions-row.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-focus-actions-row.test.tsx"
     ]
   },
   {
@@ -17745,7 +17745,7 @@
     "status": "implemented",
     "where": "src/clubhouse/screens/coachhelm/parts.tsx#useFocusActions (assign); src/clubhouse/screens/coachhelm/writes.ts#LIVE_COACHHELM_WRITES; src/app/golf/actions/development.ts#createFocusAreaFromInsightV2",
     "tests": [
-      "src/clubhouse/screens/coachhelm/__tests__/focus-actions-row.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-focus-actions-row.test.tsx"
     ]
   },
   {
@@ -17758,7 +17758,7 @@
     "status": "implemented",
     "where": "src/clubhouse/screens/coachhelm/parts.tsx#useFocusActions (assign)",
     "tests": [
-      "src/clubhouse/screens/coachhelm/__tests__/focus-actions-row.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-focus-actions-row.test.tsx"
     ]
   },
   {
@@ -17804,7 +17804,7 @@
     "status": "implemented",
     "where": "src/clubhouse/screens/coachhelm/parts.tsx#useFocusActions (assigned, dismissed)",
     "tests": [
-      "src/clubhouse/screens/coachhelm/__tests__/focus-actions-row.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-focus-actions-row.test.tsx"
     ]
   },
   {
@@ -17817,7 +17817,7 @@
     "status": "implemented",
     "where": "src/clubhouse/screens/coachhelm/parts.tsx#useFocusActions (assign, dismiss, undo); src/clubhouse/lib/use-action.ts#useAction",
     "tests": [
-      "src/clubhouse/screens/coachhelm/__tests__/focus-actions-row.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-focus-actions-row.test.tsx"
     ]
   },
   {
@@ -17843,7 +17843,7 @@
     "status": "implemented",
     "where": "src/clubhouse/screens/coachhelm/parts.tsx#useFocusActions (undo); src/clubhouse/screens/coachhelm/writes.ts#LIVE_COACHHELM_WRITES",
     "tests": [
-      "src/clubhouse/screens/coachhelm/__tests__/focus-actions-row.test.tsx"
+      "src/clubhouse/__tests__/coachhelm-focus-actions-row.test.tsx"
     ]
   },
   {

@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -12,8 +12,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
  */
 
 const hapticSpy = vi.hoisted(() => vi.fn());
-vi.mock('../../../lib/haptics', () => ({ haptic: hapticSpy }));
-vi.mock('../../../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
+vi.mock('../lib/haptics', () => ({ haptic: hapticSpy }));
+vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn(), replace: vi.fn() }), usePathname: () => '/golf/dashboard/coachhelm' }));
 vi.mock('@/app/golf/actions/development', () => ({ acceptFocusArea: vi.fn(), createFocusAreaFromInsightV2: vi.fn(), declineFocusArea: vi.fn() }));
 vi.mock('@/app/golf/actions/insights-feed', () => ({ dismissInsight: vi.fn(), reactivateInsight: vi.fn() }));
@@ -22,11 +22,11 @@ vi.mock('@/app/golf/actions/insights-coachhelm', () => ({ refreshTeamAnalysisAsC
 vi.mock('@/app/golf/actions/coachhelm-course-plan', () => ({ getMyCoursePlan: vi.fn(), listMyCoursePlanCourses: vi.fn() }));
 
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
-import type { ChInsight } from '../../../data/coachhelm-shape';
-import { PREVIEW_HELM_COACH } from '../../../preview/fixtures-coachhelm';
-import { ToastProvider } from '../../../ui/Toast';
-import { FocusActions, useFocusActions } from '../parts';
-import type { ChCoachHelmWrites } from '../writes';
+import type { ChInsight } from '../data/coachhelm-shape';
+import { PREVIEW_HELM_COACH } from '../preview/fixtures-coachhelm';
+import { ToastProvider } from '../ui/Toast';
+import { FocusActions, useFocusActions } from '../screens/coachhelm/parts';
+import type { ChCoachHelmWrites } from '../screens/coachhelm/writes';
 
 const jonah = PREVIEW_HELM_COACH.players.list.find((p) => p.name === 'Jonah Okafor')!;
 const READ: ChInsight = { ...jonah.top, assigned: null, declined: false, stale: false };
@@ -228,6 +228,56 @@ describe('Assign as focus, Dismiss and Undo on a read', () => {
     expect(code('CH-13901')).toBeNull();
     await u.click(other);
     expect(code('CH-13901')).not.toBeNull();
+  });
+
+  it('CH-13002 a failed Dismiss says so and keeps the read; Retry that works shows the notice', async () => {
+    const u = userEvent.setup();
+    const dismiss = vi.fn().mockResolvedValueOnce({ success: false, error: 'nope' }).mockResolvedValue({ success: true });
+    show(okWrites({ dismiss }));
+    await u.click(screen.getByRole('button', { name: 'Dismiss' }));
+    await expectCode('CH-13002', /Couldn’t dismiss the insight/);
+    expect(code('CH-13901')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Assign as focus' })).toBeTruthy();
+    await u.click(within(code('CH-13002') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    await expectCode('CH-13901', /Insight dismissed/);
+    expect(dismiss).toHaveBeenCalledTimes(2);
+  });
+
+  it('CH-13003 a failed Undo says so and keeps the notice; Retry that works brings the read back', async () => {
+    const u = userEvent.setup();
+    const undo = vi.fn().mockResolvedValueOnce({ success: false, error: 'nope' }).mockResolvedValue({ success: true });
+    show(okWrites({ undo }));
+    await u.click(screen.getByRole('button', { name: 'Dismiss' }));
+    await u.click(await screen.findByRole('button', { name: 'Undo' }));
+    await expectCode('CH-13003', /Couldn’t undo the dismissal/);
+    expect(code('CH-13901')).not.toBeNull();
+    await u.click(within(code('CH-13003') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(code('CH-13901')).toBeNull());
+    expect(undo).toHaveBeenCalledTimes(2);
+  });
+
+  it('CH-13403 while a write is saving its button says so (Assigning…, Dismissing…, Undoing…) and every control of the row waits', async () => {
+    const u = userEvent.setup();
+    let land: (r: { success: boolean }) => void = () => {};
+    const pending = () => new Promise<{ success: boolean }>((r) => (land = r));
+    const w = show(okWrites({ assign: vi.fn(pending), dismiss: vi.fn(pending), undo: vi.fn(pending) }));
+    await u.click(screen.getByRole('button', { name: 'Assign as focus' }));
+    await expectCode('CH-13403', /Assigning…/);
+    expect(screen.getByRole('button', { name: 'Dismiss' })).toBeDisabled();
+    // A second tap while it is in flight sends nothing more.
+    await u.click(screen.getByRole('button', { name: /Assigning/ }));
+    expect(w.assign).toHaveBeenCalledTimes(1);
+    await act(async () => land({ success: false }));
+    await waitFor(() => expect(code('CH-13403')).toBeNull());
+    await u.click(screen.getByRole('button', { name: 'Dismiss' }));
+    await expectCode('CH-13403', /Dismissing…/);
+    expect(screen.getByRole('button', { name: 'Assign as focus' })).toBeDisabled();
+    await act(async () => land({ success: true }));
+    await expectCode('CH-13901');
+    await u.click(screen.getByRole('button', { name: 'Undo' }));
+    await expectCode('CH-13403', /Undoing…/);
+    await act(async () => land({ success: true }));
+    await waitFor(() => expect(code('CH-13901')).toBeNull());
   });
 
   it('131403 Undo restores the state the read had: a matured one comes back matured', async () => {

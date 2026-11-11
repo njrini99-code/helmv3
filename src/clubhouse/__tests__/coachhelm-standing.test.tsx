@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -542,6 +542,17 @@ describe('the loader reads the signed-in player’s own standing, and says when 
 
 describe('the Standing screen', () => {
   const show = (load = standingLoad(PREVIEW_STANDING)) => render(wrap(<Standing load={load} />));
+
+  it('CH-13204 a section that crashes while drawing is contained: the page’s head and view strip stay, and it says so', async () => {
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // A ladder that can't be read throws inside the standing's own boundary only.
+    show(standingLoad({ ...PREVIEW_STANDING, ladder: null as never }));
+    await waitFor(() => expect(code('CH-13204')).not.toBeNull());
+    expect(code('CH-13204')!.textContent).toMatch(/couldn’t be shown/);
+    expect(screen.getByRole('heading', { level: 1, name: 'CoachHelm' })).toBeTruthy();
+    expect(screen.getByRole('radiogroup', { name: 'CoachHelm view' })).toBeTruthy();
+    quiet.mockRestore();
+  });
 
   it('CH-13880 the page is labelled by CoachHelm; where they stand, where strokes go and each group are labelled regions', () => {
     show();
