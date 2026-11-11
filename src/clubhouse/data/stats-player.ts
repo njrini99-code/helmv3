@@ -29,7 +29,10 @@ import {
   type ChRoundCache,
   type ChSgChange,
   type ChWindow,
+  sgPolicyAtSource,
+  sgSourceFor,
 } from './stats-common';
+import { sgMixOf, type ChSgMix } from './stats-sg-mix';
 import { holeRounds } from './round-scope';
 import { floorRate } from '../lib/stats-signal';
 import { effectiveWindow, filterFor, roundKind, type ChFilter, type ChFilterOptions, type ChLast } from './stats-filter';
@@ -162,6 +165,11 @@ export interface ChGoalSuggestion {
 
 export interface ChPlayerProfile {
   viewer: ChViewer;
+  /**
+   * Of the window's rounds with strokes gained, how many were shot-tracked and how many estimated from the scorecard
+   * (stats-sg-mix.ts). Null when that read failed, absent on data built elsewhere: the screen then says nothing.
+   */
+  sgMix?: ChSgMix | null;
   window: ChWindow;
   /** How many rounds Last N counts (read with `window: 'last10'`). */
   last: ChLast;
@@ -262,7 +270,14 @@ export async function loadPlayerProfile(input: {
   // earliest the season can start anywhere (UTC−12) and trimmed to the team's own start once the zone is in (below).
   const tzRead = loadTeamZone(supabase, input.teamId, 'stats');
   const wide = seasonStartDate(now, 'Etc/GMT+12');
-  const ownRoundsRead = loadSeasonRounds(supabase, [input.playerId], { surface: 'stats', since: loadSince(f, wide) });
+  // Estimated strokes gained (stats-sg-mix.ts): the policy is applied to the rounds as they load, the player's and the teammates',
+  // so every figure below follows it. Under today's policy this reads nothing and changes nothing.
+  const withSgPolicy = <T extends { rounds: ChRound[] }>(read: PromiseLike<T>) =>
+    Promise.resolve(read).then(async (res) => {
+      const policy = await sgPolicyAtSource(supabase, res.rounds, 'stats');
+      return { ...res, rounds: policy.rounds, sgEarly: policy.early };
+    });
+  const ownRoundsRead = withSgPolicy(loadSeasonRounds(supabase, [input.playerId], { surface: 'stats', since: loadSince(f, wide) }));
   // The personal-best card's attesting coach (P005-C2): the team's primary coach on staff. A failed read only drops the line.
   const coachRead = attestingCoachName(supabase, input.teamId);
   const focusRead = Promise.resolve(
@@ -304,10 +319,12 @@ export async function loadPlayerProfile(input: {
     if (res.error) chLogServer('stats', 'teamMembers', res.error, 'teams');
     return [...new Set([input.playerId, ...(res.data ?? []).map((m) => m.player_id)])];
   });
-  const othersRoundsRead = teamIdsRead.then((ids) => {
-    const others = ids.filter((id) => id !== input.playerId);
-    return others.length ? loadSeasonRounds(supabase, others, { surface: 'stats', since: loadSince(f, wide) }) : { rounds: [] as ChRound[], error: false };
-  });
+  const othersRoundsRead = withSgPolicy(
+    teamIdsRead.then((ids) => {
+      const others = ids.filter((id) => id !== input.playerId);
+      return others.length ? loadSeasonRounds(supabase, others, { surface: 'stats', since: loadSince(f, wide) }) : { rounds: [] as ChRound[], error: false };
+    }),
+  );
   // The teammates' cache rows: the window's rounds of every other player on the team (the comparisons' team column).
   const othersCacheRead = Promise.all([teamIdsRead, othersRoundsRead, tzRead]).then(([ids, others, tz]) => {
     if (!coach || others.error) return { byRound: new Map<string, ChRoundCache>(), error: false };
@@ -347,7 +364,7 @@ export async function loadPlayerProfile(input: {
   // Every shot-level figure counts exactly the window's own rounds with their holes (the ones the Rounds table lists, of the lengths the filter chose),
   // newest 100 at most: the detail read is given these ids instead of a date preset, which would count a different set.
   const scopeIds = ownHole.slice(0, DETAIL_MAX_ROUNDS).map((r) => r.id);
-  const [detailRead, cacheOwnRead, puttsRead, holesRead, approachRead, sprayReadRaw] = await Promise.all([
+  const [detailRead, cacheOwnRead, puttsRead, holesRead, approachRead, sprayReadRaw, sgSourceRead] = await Promise.all([
     scopeIds.length
       ? inStatsContext(sharedContext, () => getDetailedStats(input.playerId, scopeIds)).then(
           (s) => ({ stats: s, error: false }),
@@ -363,6 +380,8 @@ export async function loadPlayerProfile(input: {
     loadHoles(supabase, scopeIds),
     loadApproachShots(supabase, scopeIds),
     scopeIds.length ? inStatsContext(sharedContext, () => loadSpray(input.playerId, scopeIds)) : Promise.resolve({ spray: null, error: false }),
+    // Which of the window's rounds were shot-tracked and which estimated from the scorecard: two rows a round at most.
+    sgSourceFor(supabase, ownRes.sgEarly, ownHole, 'stats'),
   ]);
   const [othersRead, cacheOthers, benchRes, focusRes, goalsRes, suggestionsRes] = await Promise.all([othersRoundsRead, othersCacheRead, benchRead, focusRead, goalsRead, suggestionsRead]);
   const othersRes = trim(othersRead);
@@ -580,6 +599,7 @@ export async function loadPlayerProfile(input: {
   return {
     attestingCoach,
     viewer: input.viewer,
+    sgMix: roundsFailed ? null : sgMixOf(ownHole, sgSourceRead),
     window: f.window,
     last: f.last,
     filter: f,

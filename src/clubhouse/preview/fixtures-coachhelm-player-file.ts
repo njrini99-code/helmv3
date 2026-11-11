@@ -79,7 +79,17 @@ export function previewPlayerFile(state: string): ChPlayerFile {
     dismissed: none || state === 'oneread' ? [] : [{ id: 'pv-dis', title: 'Fairways hit on par 5s', lifecycle: 'detected' }],
     working: [],
     more: 0,
-    sg: state === 'sgfailed' ? null : none ? toChFileSgOver(NO_FIGURES, null, { you: false, first: FIRST }) : SG,
+    // sgmixed, sgest: where the last ten rounds' strokes gained came from (stats-sg-mix.ts), some estimated and then all.
+    sg:
+      state === 'sgfailed'
+        ? null
+        : none
+          ? toChFileSgOver(NO_FIGURES, null, { you: false, first: FIRST })
+          : state === 'sgmixed'
+            ? { ...SG, mix: { measured: 6, estimated: 4, estimatedCounted: true } }
+            : state === 'sgest'
+              ? { ...SG, mix: { measured: 0, estimated: 10, estimatedCounted: true } }
+              : SG,
     plan,
     field: field(state, 'coach'),
     intent: state === 'nointent' ? null : { aim: 'breakout', alerts: 'balanced', watching: ['course_management'], note: 'Wants to play number one by spring.' },

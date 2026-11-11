@@ -12,6 +12,7 @@ import type { ChHelmLifecycle } from './coachhelm-shape';
 import { formatSigned, formatFixed } from '../lib/format';
 import { plural } from '../lib/plural';
 import type { ChFigures, ChLegKey } from './figure-window';
+import type { ChSgMix } from './stats-sg-mix';
 
 /** The file's shapes, pure and client-safe (coachhelm-lenses 02-PLAN 2.3). A coach-only card is simply absent from every shape built for a player or the lens. */
 
@@ -40,6 +41,8 @@ export interface ChFileSg {
   standing?: string | null;
   /** Totals-only rounds: every row is "—" and the note says why. */
   needsHoles: boolean;
+  /** Of the rounds the legs read, how many were shot-tracked and how many estimated from the scorecard (stats-sg-mix.ts); null or absent when unread. */
+  mix?: ChSgMix | null;
 }
 
 /**

@@ -833,3 +833,18 @@ export const PREVIEW_SELF_READS: ChStatsReads = {
   },
 };
 export const PREVIEW_READS_FAILED: ChStatsReads = { status: 'failed' };
+
+/**
+ * Team stats with rounds whose strokes gained was estimated from the scorecard (stats-sg-mix.ts): some of them, then all. The preview
+ * route does not offer these yet (it needs one line there); the screen tests draw them.
+ */
+export const PREVIEW_TEAM_STATS_SGMIXED: ChTeamStats = {
+  ...PREVIEW_TEAM_STATS,
+  sgMix: { measured: 44, estimated: 6, estimatedCounted: true },
+  grid: PREVIEW_TEAM_STATS.grid.map((g, i) => ({ ...g, sgMix: i === 1 ? { measured: Math.max(0, g.rounds - 6), estimated: Math.min(6, g.rounds), estimatedCounted: true } : { measured: g.rounds, estimated: 0, estimatedCounted: true } })),
+};
+export const PREVIEW_TEAM_STATS_SGEST: ChTeamStats = {
+  ...PREVIEW_TEAM_STATS,
+  sgMix: { measured: 0, estimated: 50, estimatedCounted: true },
+  grid: PREVIEW_TEAM_STATS.grid.map((g) => ({ ...g, sgMix: { measured: 0, estimated: g.rounds, estimatedCounted: true } })),
+};

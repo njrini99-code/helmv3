@@ -39,6 +39,7 @@ import { plural, pluralWord } from '../../lib/plural';
 import { LargeTitle } from '../../ui/LargeTitle';
 import { TeamInsight } from './StatsInsight';
 import { NoData } from '../../ui/NoData';
+import { sgIsEstimate } from '../../data/stats-sg-mix';
 
 type Sort = 'avg' | 'sg';
 /** The leg the strokes gained readout shows and the players' SG sort ranks by: the team total or one of the four legs. */
@@ -473,7 +474,8 @@ export function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: C
                     </span>
                     <span className="ch-stm-row__v ch-num">
                       <b>{p.avg == null ? <NoData /> : formatFixed(p.avg)}</b>
-                      <span className={changeInk(sg)}>{sg == null ? 'Early read' : `${formatSigned(sg)} SG`}</span>
+                      {/* A figure that rests on estimated rounds alone is marked as one (stats-sg-mix.ts). */}
+                      <span className={changeInk(sg)}>{sg == null ? 'Early read' : `${formatSigned(sg)} SG${sgIsEstimate(p.sgMix) ? ' est.' : ''}`}</span>
                     </span>
                     <Icon icon={ChevronRight} size={16} className="ch-stm-row__chev" />
                     <LinkPending />

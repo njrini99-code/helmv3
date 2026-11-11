@@ -6,6 +6,7 @@ import { closesFor, type ChDeepInsight, type ChDiveTheme } from './coachhelm-div
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { AssembledThemes } from '@/lib/coachhelm/v3/themes/types';
 import type { ChNotEnough } from './coachhelm-firm';
+import type { ChSgMix } from './stats-sg-mix';
 import type { ChTeamPatternRow, ChTeamPatterns } from './coachhelm-team-pattern';
 import type { ChTrackRecord } from './coachhelm-track-record-shape';
 import type { CourseHistory } from '@/lib/coachhelm/v3/team-board/course-shape';
@@ -38,6 +39,8 @@ export interface ChTeamPlayer {
    * have twenty or more counted rounds this season, so the trail's start and the dot (their last ten) never share a round.
    */
   first10: Record<ChStation, number | null> | null;
+  /** Where this player's last ten rounds' strokes gained came from: shot-tracked or estimated (stats-sg-mix.ts). */
+  sgMix?: ChSgMix | null;
   reads: { needs: ChInsight[]; working: ChInsight[] };
   heldBack: number;
 }
@@ -88,7 +91,13 @@ export interface ChTeamBoardData {
    * (a rolling year, `lastTenFloor`), which says whether there is anything to draw. `seasonRounds`: the counted rounds since the
    * season's first day, the only count the head may call "this season"; absent on a board built before it was carried.
    */
-  teamTotal: { strokes: number | null; rounds: number; seasonRounds?: number };
+  teamTotal: {
+    strokes: number | null;
+    rounds: number;
+    seasonRounds?: number;
+    /** Of the rounds the hole's figure rests on, how many were shot-tracked and how many estimated from the scorecard (stats-sg-mix.ts); null when unread. */
+    sgMix?: ChSgMix | null;
+  };
   course: { history: CourseHistory | null; reads: ChInsight[]; against: ChTourRow[] | null };
   patterns?: ChTeamPatterns | null;
   /** off: nothing is drawn; failed: the card says so, never "no pattern" (W-TEAM-6). */

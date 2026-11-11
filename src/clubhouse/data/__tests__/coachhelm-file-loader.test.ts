@@ -33,6 +33,7 @@ vi.mock('@/lib/supabase/server', () => ({
         gte: (c: string, v: unknown) => (call.filters.push(['gte', c, v]), chain),
         in: (c: string, v: unknown) => (call.filters.push(['in', c, v]), chain),
         not: () => chain,
+        gt: () => chain,
         maybeSingle: async () => {
           const r = res();
           return { data: Array.isArray(r.data) ? (r.data[0] ?? null) : r.data, error: r.error };
@@ -291,6 +292,24 @@ describe('Where the strokes go reads the rounds, the one strokes-gained source',
     expect(sg?.hasTeam).toBe(false);
     expect(sg?.source).toBe('Last 4 rounds · strokes per round');
     expect(load.data.failed.sg).toBeUndefined();
+    // No shot rows for these rounds: their strokes gained was estimated from the scorecard, and the card carries that.
+    expect(sg?.mix).toEqual({ measured: 0, estimated: 4, estimatedCounted: true });
+    // The shots asked about are the player's own rounds, never a teammate's.
+    for (const c of db.calls.filter((x) => x.table === 'golf_shots')) for (const [op, col, v] of c.filters) if (op === 'in' && col === 'round_id') expect((v as string[]).every((id) => id.startsWith('p1-'))).toBe(true);
+  });
+
+  it('the card carries how many of the player’s rounds were shot-tracked, on the coach’s file and on the lens alike', async () => {
+    db.tables.golf_rounds = { data: all, error: null };
+    db.tables.golf_team_members = { data: MATES.map((player_id) => ({ player_id })), error: null };
+    // Three of the player's four rounds have a usable shot.
+    db.tables.golf_shots = { data: ['p1-r0', 'p1-r1', 'p1-r2'].map((round_id) => ({ round_id, distance_to_hole_after: 100, putt_made: null, result: null })), error: null };
+    const load = await loadCoachPlayerFile({ scope });
+    if (load.status !== 'ready') throw new Error(`expected ready, got ${load.status}`);
+    expect(load.data.cards.sg?.mix).toEqual({ measured: 3, estimated: 1, estimatedCounted: true });
+    expect(load.data.lens?.sg?.mix).toEqual({ measured: 3, estimated: 1, estimatedCounted: true });
+    // The figures themselves are untouched: every round still counts.
+    expect(load.data.cards.sg?.rows[0]?.strokes).toBeCloseTo(-0.5, 9);
+    delete db.tables.golf_shots;
   });
 
   it('a coach’s file reads the active roster for the team’s tick; the lens, the player’s page, has none', async () => {

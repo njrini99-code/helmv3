@@ -46,6 +46,7 @@ import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 import { PREVIEW_REVIEW, PREVIEW_REVIEW_NO_SG, PREVIEW_REVIEW_ROUND } from '../preview/fixtures-round-review';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
+import { shotsAnswer } from '../data/__tests__/sg-shots-fake';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 const ROOT = { className: 'ch-root', 'data-ui': 'clubhouse' } as const;
@@ -419,7 +420,8 @@ describe('team loader', () => {
     golf_rounds: { data: rounds },
     golf_round_stats_cache: { data: [] },
     golf_pga_standards: { data: [] },
-    golf_shots: { data: [] },
+    // These are rounds with shots, so the fixture says so: each has a usable shot (which is how a round is known to be shot-tracked).
+    golf_shots: shotsAnswer((rounds as Array<{ id: string }>).map((r) => r.id)),
   });
   // Three rounds in three weeks: +2, +2, then −2 the newest. The window mean is +0.67; the last week alone is −2.0.
   const three = [rnd('r1', 'p1', 21, 2, [1, 1, 0, 0]), rnd('r2', 'p1', 14, 2, [1, 1, 0, 0]), rnd('r3', 'p1', 1, -2, [-1, -1, 0, 0])];

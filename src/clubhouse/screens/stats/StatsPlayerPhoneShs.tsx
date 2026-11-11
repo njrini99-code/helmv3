@@ -38,6 +38,7 @@ import { GoalSetButton, GoalStatus, GoalSuggestions } from './Goals';
 import { legReadout, sgLegRows } from './leg-rows';
 import { GoalRing, MiniDiverging, MiniRails, RoundTicker, type MiniRailRow } from './MiniCharts';
 import { CACHE_ERROR, countWords, shotsWords } from './notes';
+import { sgIsEstimate, sgMixWords } from '../../data/stats-sg-mix';
 import { ProposalAnswer } from './ProposalAnswer';
 import { RoundsExtra } from './RoundsExtra';
 import { RoundTrend } from './RoundTrend';
@@ -583,12 +584,24 @@ function SgCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => void })
   const rows = sgLegRows(data, data.viewer === 'coach').filter((r) => !r.total);
   const said = strongestAndLeak(rows);
   const tone = sgTone(data.win.sgPerRound, ready);
+  // Where the rounds' strokes gained came from (stats-sg-mix.ts): a figure that is all estimate is marked as one, and a mixed one says
+  // how many rounds were shot-tracked. Nothing is added when every round was.
+  const est = ready && sgIsEstimate(data.sgMix);
+  const mix = ready ? sgMixWords(data.sgMix) : null;
   return (
-    <SummaryCard go="sg" onOpen={onOpen} title="Strokes gained" meta="vs Tour" ariaLabel={`Strokes gained ${ready ? formatSigned(data.win.sgPerRound) : 'no value'} a round against the Tour. Open details`}>
+    <SummaryCard go="sg" onOpen={onOpen} title="Strokes gained" meta="vs Tour" ariaLabel={`Strokes gained ${ready ? `${formatSigned(data.win.sgPerRound)}${est ? ', an estimate,' : ''}` : 'no value'} a round against the Tour. Open details`}>
       <div className="ch-shs-sb is-one">
         <div>
-          <span className={`ch-shs-bigv${tone === 'flat' ? '' : ` ch-shs-${tone}`}${ready ? '' : ' ch-shs-none'}`}>{ready ? formatSigned(data.win.sgPerRound) : <NoData />}</span>
+          <span className={`ch-shs-bigv${tone === 'flat' ? '' : ` ch-shs-${tone}`}${ready ? '' : ' ch-shs-none'}`}>
+            {ready ? formatSigned(data.win.sgPerRound) : <NoData />}
+            {est && <small>est.</small>}
+          </span>
           <div className="ch-shs-cap">{ready ? 'Strokes a round against the Tour' : `${SG_WAIT}.`}</div>
+          {mix && (
+            <p className="ch-shs-mini-cap" data-ch-sg-mix="">
+              {mix}
+            </p>
+          )}
         </div>
       </div>
       <MiniDiverging rows={rows} ready={ready} />
@@ -1015,7 +1028,18 @@ function SgDetail({ data, onPart }: { data: ChPlayerProfile; onPart: (id: StatsD
     <>
       <DetailHero
         figure={formatSigned(data.win.sgPerRound)}
-        caption={`Strokes a round against the Tour · ${label}`}
+        unit={sgIsEstimate(data.sgMix) ? 'est.' : undefined}
+        caption={
+          <>
+            Strokes a round against the Tour · {label}
+            {sgMixWords(data.sgMix) && (
+              <>
+                <br />
+                <span data-ch-sg-mix="">{sgMixWords(data.sgMix)}</span>
+              </>
+            )}
+          </>
+        }
         gauge={data.win.sgPerRound != null ? <FigureGauge gauge={{ kind: 'sg', tour: data.tour }} n={data.win.sgPerRound} /> : undefined}
         chips={
           <>

@@ -13,6 +13,7 @@ import type { ChTrackRecord } from '../../../data/coachhelm-track-record-shape';
 import { formatSigned } from '../../../lib/format';
 import { Coin, Notice } from './parts';
 import { STATION_SHORT } from './hole-geometry';
+import { sgIsEstimate } from '../../../data/stats-sg-mix';
 
 /** Four bars around a zero line: 20pt is 1.1 strokes, loss down, gain up (AC-ROSTER-03). */
 export function FingerPrint({ player, labels = false }: { player: ChTeamPlayer; labels?: boolean }) {
@@ -62,6 +63,7 @@ export function RosterCard({ players, phone, onPlayer }: { players: readonly ChT
               <span className="m">
                 {[phone ? shortYear(p.classYear) : p.classYear, p.rounds ? `${p.rounds} rounds` : 'no rounds yet'].filter(Boolean).join(' · ')}
                 {p.early && p.rounds ? ' · early' : ''}
+                {p.total != null && sgIsEstimate(p.sgMix) ? ' · estimated' : ''}
                 {p.heldBack ? ` · ${p.heldBack} held back` : ''}
               </span>
             </span>

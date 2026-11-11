@@ -22,6 +22,7 @@ import { Button } from '../../../ui/Button';
 import { toPar } from './CourseCard';
 import { STATION_NAME } from './hole-geometry';
 import { Chevron, Coin, ReadRow, ReadWorthContext } from './parts';
+import { sgMixShort } from '../../../data/stats-sg-mix';
 
 const areaName = (r: ChInsight) => (r.area ? STATION_NAME[r.area] : 'Course and scoring');
 
@@ -252,7 +253,7 @@ export function ReadPanel({
  */
 export function PlayerPanel({ player, onClose }: { player: ChTeamPlayer; onClose: () => void }) {
   const year = player.classYear ?? 'Player';
-  const line = player.rounds === 0 ? `${yearShort(year)} · no rounds yet this season` : `${yearShort(year)} · ${plural(player.rounds, 'round')} · ${formatSigned(player.total)} a round to Tour · last 10${player.early ? ' · early' : ''}`;
+  const line = player.rounds === 0 ? `${yearShort(year)} · no rounds yet this season` : `${yearShort(year)} · ${plural(player.rounds, 'round')} · ${formatSigned(player.total)} a round to Tour · last 10${player.early ? ' · early' : ''}${player.total != null && sgMixShort(player.sgMix) ? ` · ${sgMixShort(player.sgMix)!.toLowerCase()}` : ''}`;
   return (
     <>
       <Head lead={<Coin player={player} />} name={player.name} line={line} onClose={onClose} />

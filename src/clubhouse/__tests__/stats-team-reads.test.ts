@@ -12,6 +12,7 @@ vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).f
 vi.mock('@/lib/admin/rls-denial', () => ({ maybeCaptureRlsDenial: vi.fn() }));
 
 import { loadTeamStats } from '../data/stats-team';
+import { shotsAnswer } from '../data/__tests__/sg-shots-fake';
 import { filterFor } from '../data/stats-filter';
 
 type Filters = Array<[string, unknown[]]>;
@@ -32,7 +33,8 @@ function base(over: import('./supabase-fake').ChFakeTables = {}): import('./supa
     golf_rounds: { data: rounds },
     golf_round_stats_cache: { data: rounds.map((r) => ({ round_id: r.id, greens_hit: 10, greens_total: 18, total_putts: 31, scramble_attempts: 6, scrambles_converted: 3, birdies: 2, eagles: 0 })) },
     golf_pga_standards: { data: [{ metric_id: 'gir_pct', pga_tour_value: 67 }] },
-    golf_shots: { data: [] },
+    // Every round here was shot-tracked, as every round with strokes gained in production is: one read finds them all.
+    golf_shots: shotsAnswer(rounds.map((r) => r.id)),
     ...over,
   };
 }
@@ -43,14 +45,51 @@ afterEach(() => {
 });
 
 describe('Team stats reads', () => {
-  it('three round trips: the team and its players; the rounds and the Tour’s averages; then the round figures and both putt reads together', async () => {
+  it('three round trips: the team and its players; the rounds and the Tour’s averages; then the round figures, both putt reads and the shot-tracked read together', async () => {
     const waves = readWaves();
     tables.gate = waves.gate;
     tables.current = base();
     const { result, waves: depth } = await waves.run(loadTeamStats({ teamId: 't1', window: 'last10', filter: filterFor('last10') }));
     // The team's zone (the season's turn, owner decision 9) is read in the first wave, beside the team.
-    expect(depth).toEqual([['golf_team_members', 'golf_team_settings', 'golf_teams'], ['golf_pga_standards', 'golf_rounds'], ['golf_round_stats_cache', 'golf_shots', 'golf_shots']]);
+    expect(depth).toEqual([['golf_team_members', 'golf_team_settings', 'golf_teams'], ['golf_pga_standards', 'golf_rounds'], ['golf_round_stats_cache', 'golf_shots', 'golf_shots', 'golf_shots']]);
     expect(result.roundCount).toBe(20);
+    expect(result.sgMix).toEqual({ measured: 20, estimated: 0, estimatedCounted: true });
+  });
+
+  it('which rounds were shot-tracked: the first shot of hole 1 and 10 of the window’s rounds, then only the rounds that did not answer', async () => {
+    const asked: Array<{ ids: string[]; narrowed: boolean }> = [];
+    const isMeasured = (f: Filters) => f.some(([k, a]) => k === 'select' && String(a[0]).includes('distance_to_hole_after'));
+    // p2's two newest rounds have no shot rows: their strokes gained was estimated from the scorecard.
+    const tracked = rounds.filter((r) => !(r.player_id === 'p2' && Number(r.id.split('-r')[1]) < 2)).map((r) => r.id);
+    tables.current = base({
+      golf_shots: (f) => {
+        if (!isMeasured(f)) return { data: [] };
+        const ids = inIds(f) ?? [];
+        asked.push({ ids, narrowed: f.some(([k, a]) => k === 'eq' && a[0] === 'shot_number' && a[1] === 1) && f.some(([k, a]) => k === 'in' && a[0] === 'hole_number') });
+        return { data: tracked.filter((id) => ids.includes(id)).map((id) => ({ round_id: id, distance_to_hole_after: 100, putt_made: null, result: null })) };
+      },
+    });
+    const stats = await loadTeamStats({ teamId: 't1', window: 'last10', filter: filterFor('last10') });
+    // The window's twenty rounds, narrowed to two rows a round at most; then the two that had no such shot, with no narrowing.
+    expect(asked).toHaveLength(2);
+    expect(asked[0]!.narrowed).toBe(true);
+    expect(asked[0]!.ids).toHaveLength(20);
+    expect(asked[1]!.narrowed).toBe(false);
+    expect([...asked[1]!.ids].sort()).toEqual(['p2-r0', 'p2-r1']);
+    expect(stats.sgMix).toEqual({ measured: 18, estimated: 2, estimatedCounted: true });
+    // Each player's own split rides on the grid row; "with shots" is no longer said of rounds that had none.
+    expect(stats.grid.find((g) => g.id === 'p1')!.sgMix).toEqual({ measured: 10, estimated: 0, estimatedCounted: true });
+    expect(stats.grid.find((g) => g.id === 'p2')!.sgMix).toEqual({ measured: 8, estimated: 2, estimatedCounted: true });
+    expect(stats.figures.find((x) => x.key === 'sg')!.context).not.toMatch(/with shots/);
+  });
+
+  it('the shot-tracked read failing leaves the page whole: every figure as it was, and no claim either way', async () => {
+    const isMeasured = (f: Filters) => f.some(([k, a]) => k === 'select' && String(a[0]).includes('distance_to_hole_after'));
+    tables.current = base({ golf_shots: (f) => (isMeasured(f) ? { error: { message: 'boom' } } : { data: [] }) });
+    const stats = await loadTeamStats({ teamId: 't1', window: 'last10', filter: filterFor('last10') });
+    expect(stats.sgMix).toBeNull();
+    expect(stats.team.sgMean).toBeCloseTo(0.5, 9);
+    expect(stats.puttsError).toBe(false);
   });
 
   it('the bands read asks for the window’s rounds only, and the season’s longest putt for the season’s rounds', async () => {

@@ -40,6 +40,7 @@ vi.mock('@/app/golf/actions/stats-data', async () => {
 });
 
 import { loadPlayerProfile } from '../data/stats-player';
+import { shotsAnswer } from '../data/__tests__/sg-shots-fake';
 import { filterFor } from '../data/stats-filter';
 
 const day = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
@@ -57,7 +58,8 @@ function base(over: import('./supabase-fake').ChFakeTables = {}): import('./supa
     golf_rounds: { data: rounds },
     golf_round_stats_cache: { data: rounds.map((r) => ({ round_id: r.id, greens_hit: 10, greens_total: 18, total_putts: 31, birdies: 2, eagles: 0 })) },
     golf_pga_standards: { data: [{ metric_id: 'gir_pct', pga_tour_value: 67 }] },
-    golf_shots: { data: [] },
+    // Every round here was shot-tracked, as every round with strokes gained in production is: one read finds them all.
+    golf_shots: shotsAnswer(rounds.map((r) => r.id)),
     golf_holes: { data: [] },
     golf_player_focus_areas: { data: [] },
     golf_goals: { data: [] },
@@ -94,7 +96,8 @@ describe('Stats player reads: how deep', () => {
       // follows only when the team has staff, which this fixture doesn't).
       // golf_team_settings: the team's zone for the season's turn (owner decision 9), beside the rest; the rounds don't wait for it.
       ['auth:verifyAccess', 'golf_goal_suggestions', 'golf_goals', 'golf_player_focus_areas', 'golf_players', 'golf_rounds', 'golf_team_coach_staff', 'golf_team_members', 'golf_team_settings', 'golf_teams'],
-      ['action:getDetailedStats', 'action:getSprayChartData', 'golf_holes', 'golf_pga_standards', 'golf_round_stats_cache', 'golf_shots', 'golf_shots'],
+      // Three reads of the shots, together: the putt bands, the approach shots, and which rounds were shot-tracked (stats-sg-mix.ts).
+      ['action:getDetailedStats', 'action:getSprayChartData', 'golf_holes', 'golf_pga_standards', 'golf_round_stats_cache', 'golf_shots', 'golf_shots', 'golf_shots'],
     ]);
     expect(result!.rounds.length).toBeGreaterThan(0);
     // Both actions ran inside the one shared context for this player, so neither signs the viewer in or checks access again.
@@ -105,7 +108,7 @@ describe('Stats player reads: how deep', () => {
     const { result, waves: depth } = await depthOf('coach');
     expect(depth).toEqual([
       ['auth:verifyAccess', 'golf_goals', 'golf_player_focus_areas', 'golf_players', 'golf_rounds', 'golf_team_coach_staff', 'golf_team_members', 'golf_team_members', 'golf_team_settings', 'golf_teams'],
-      ['action:getDetailedStats', 'action:getSprayChartData', 'golf_holes', 'golf_pga_standards', 'golf_round_stats_cache', 'golf_rounds', 'golf_shots', 'golf_shots'],
+      ['action:getDetailedStats', 'action:getSprayChartData', 'golf_holes', 'golf_pga_standards', 'golf_round_stats_cache', 'golf_rounds', 'golf_shots', 'golf_shots', 'golf_shots'],
       ['golf_round_stats_cache'],
     ]);
     expect(result!.teamAvg).not.toBeNull();

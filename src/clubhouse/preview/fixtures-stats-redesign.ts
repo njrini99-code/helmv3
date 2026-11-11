@@ -83,6 +83,11 @@ export function previewShsPlayer(state: string | undefined): ChPlayerProfile | n
     // The loader has already cut practice rounds for this one, so the figures read as a window with none (CP-125).
     case 'practice':
       return BASE;
+    // Where the window's strokes gained came from (stats-sg-mix.ts): some rounds estimated from the scorecard, then all of them.
+    case 'sgmixed':
+      return { ...BASE, sgMix: { measured: 6, estimated: 4, estimatedCounted: true } };
+    case 'sgest':
+      return { ...BASE, sgMix: { measured: 0, estimated: 10, estimatedCounted: true } };
     default:
       return null;
   }

@@ -6,6 +6,7 @@ import { TeamBoard, type TeamBoardOpen, type TeamStation } from '../screens/coac
 import { TeamBoardSkeleton } from '../screens/coachhelm/team/TeamBoardSkeleton';
 import { PREVIEW_TEAM_BOARD } from './fixtures-coachhelm-team';
 import { PREVIEW_TRACK_RECORD } from './fixtures-coachhelm-track';
+import { PREVIEW_TEAM_SG } from './fixtures-team-sg';
 
 const STATION_KEY: Record<string, TeamStation> = { tee: 'tee', app: 'approach', sg: 'short_game', putt: 'putting', course: 'course' };
 
@@ -28,6 +29,17 @@ function stateData(state: string | undefined): ChTeamBoardData {
   if (state === 'stress') {
     const stress: ChTeamPlayer = { ...(list[3] as ChTeamPlayer), id: 'pl-stress', name: 'Cole Bennett', first: 'Cole', rounds: 3, early: true, total: 0.5, worst: 'putting', legs: { tee: { strokes: 2.5, rounds: 3, missing: null }, approach: { strokes: 1.9, rounds: 3, missing: null }, short_game: { strokes: 0, rounds: 3, missing: null }, putting: { strokes: -3.9, rounds: 3, missing: null } } };
     return { ...base, team: { ...base.team, name: 'Demo University Golf' }, roster: { count: 1, error: false }, players: { list: [stress], error: false }, stations: stationFigures([stress]), teamTotal: { strokes: 0.5, rounds: 3, seasonRounds: 3 } };
+  }
+  // Where the hole's rounds' strokes gained came from (stats-sg-mix.ts): some estimated from the scorecard, then all of them.
+  if (state === 'sgmixed' || state === 'sgest') {
+    const all = state === 'sgest';
+    // The hole's figure rests on the last ten of the players who have one (a player under the floor has no total and no part in it).
+    const counted = (p: (typeof base.players.list)[number]) => (p.total == null ? 0 : Math.min(10, p.rounds));
+    // Mixed: six of one player's rounds, the same six Team stats' mixed preview carries (44 of 50). All: every round.
+    const lost = (p: (typeof base.players.list)[number], i: number) => (all ? counted(p) : i === 1 ? Math.min(6, counted(p)) : 0);
+    const list = base.players.list.map((p, i) => ({ ...p, sgMix: { measured: counted(p) - lost(p, i), estimated: lost(p, i), estimatedCounted: true } }));
+    const estimated = all ? PREVIEW_TEAM_SG.rounds : list.reduce((a, p) => a + p.sgMix.estimated, 0);
+    return { ...base, players: { ...base.players, list }, teamTotal: { ...base.teamTotal, sgMix: { measured: PREVIEW_TEAM_SG.rounds - estimated, estimated, estimatedCounted: true } } };
   }
   // Two players with twenty or more counted season rounds: the huddle draws their trail from the first ten (02-PLAN 9.2 B).
   if (state === 'trails') {

@@ -49,7 +49,10 @@ import {
 } from './coachhelm-team-shape';
 import { roundsForFigures } from './figure-window';
 import { toChTeamLegs } from './coachhelm-team-legs';
-import { teamLastTenStrokesGained } from './stats-team-sg';
+import { teamLastTenRounds, teamLastTenStrokesGained } from './stats-team-sg';
+import { sgPolicyAtSource, sgSourceFor } from './stats-common';
+import { sgMixOf } from './stats-sg-mix';
+import { holeRounds } from './round-scope';
 import { classYearLabel, lastTenFloor, loadSeasonRounds, loadTeamZone, seasonStartDate } from './season';
 import { NEEDS_MAX, WORKING_MAX } from './coachhelm-shape';
 
@@ -142,7 +145,15 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
   );
 
   const zone = await zoneRead;
-  const roundsRead = handled(loadSeasonRounds(supabase, ids, { surface: 'coachhelm.team', since: lastTenFloor(now) }));
+  // Estimated strokes gained (stats-sg-mix.ts): the policy is applied to the rounds as they load, so the hole, the stations and each
+  // player's legs follow it. The split for the hole's own window is read as soon as the rounds are in, alongside everything else.
+  const roundsRead = handled(
+    loadSeasonRounds(supabase, ids, { surface: 'coachhelm.team', since: lastTenFloor(now) }).then(async (res) => {
+      const policy = await sgPolicyAtSource(supabase, res.rounds, 'coachhelm.team');
+      return { ...res, rounds: policy.rounds, sgEarly: policy.early };
+    }),
+  );
+  const sgSourceRead = handled(roundsRead.then((res) => sgSourceFor(supabase, res.sgEarly, teamLastTenRounds(roundsForFigures(res.rounds), ids), 'coachhelm.team')));
   const [visible, heads] = await Promise.all([loadVisible(supabase, ids), topInsights(ids, { limit: NEEDS_MAX + WORKING_MAX, drawnLater: () => drawn })]);
   const rankedAny = [...heads.values()].some((l) => l.length > 0);
   if (visible.error || (visible.rows.length > 0 && !rankedAny)) {
@@ -170,7 +181,7 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
   let patternsFailed = false;
   const newestRead = newestRounds(supabase, ids, earliestStaleFloor([...visible.rows, ...allReads]));
   const openRows = Promise.all([newestRead, tourRead]).then(([n, t]) => visible.rows.filter((r) => isOpenFinding(r, t.baseline, n.days.get(r.player_id) ?? null)));
-  const [drills, assigned, declined, newest, tourResult, patterns, focus, corrections, seasonRounds] = await Promise.all([
+  const [drills, assigned, declined, newest, tourResult, patterns, focus, corrections, seasonRounds, sgSource] = await Promise.all([
     drillTextByInsight(supabase, allReads),
     assignedByInsight(supabase, readIds),
     declinedByInsight(supabase, readIds),
@@ -182,6 +193,7 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     readFocusVerdicts(supabase, readIds, flags.verdicts),
     readCorrections(supabase, { role: 'coach', teamIds: [input.teamId], reads: allReads.map((i) => ({ id: i.id, playerId: i.player_id })) }),
     roundsRead,
+    sgSourceRead,
   ]);
   const tour = tourResult.baseline;
   const iso = now.toISOString();
@@ -193,6 +205,9 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
   const legs = toChTeamLegs(countable, ids, seasonStart);
   // The hole's figures and the hero: Team stats' own team figure over the same window (one number, one source).
   const teamSg = teamLastTenStrokesGained(countable, ids);
+  // The same rounds, split by where their strokes gained came from: shot-tracked, or estimated from the scorecard.
+  const lastTenHoles = holeRounds(teamLastTenRounds(countable, ids));
+  const sgMixFor = (playerIds: ReadonlySet<string>) => (seasonRounds.error ? null : sgMixOf(lastTenHoles.filter((r) => playerIds.has(r.player_id)), sgSource));
   const list: ChTeamPlayer[] = roster.map((p) => {
     const first = p.name === NO_NAME ? NO_NAME : firstName(p.name);
     const coach = { role: 'coach', first } as const;
@@ -224,6 +239,7 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
       total: seasonRounds.error ? null : (leg?.total ?? null),
       worst: seasonRounds.error ? null : (leg?.worst ?? null),
       first10: seasonRounds.error ? null : (leg?.first10 ?? null),
+      sgMix: sgMixFor(new Set([p.id])),
       reads: { needs, working: split.working },
       heldBack: heldBack.find((h) => h.id === p.id)?.reads.length ?? 0,
     };
@@ -274,7 +290,7 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     players: { list, error: false },
     legsError: seasonRounds.error,
     stations: seasonRounds.error ? stationFigures([]) : stationsOfTeamSg(teamSg),
-    teamTotal: { strokes: seasonRounds.error ? null : teamSg.total, rounds: countable.length, seasonRounds: seasonCountable.length },
+    teamTotal: { strokes: seasonRounds.error ? null : teamSg.total, rounds: countable.length, seasonRounds: seasonCountable.length, sgMix: sgMixFor(teamSg.ready) },
     course: { history, reads: courseReads(list), against },
     patterns,
     patternsStatus: !teamPatternEnabled() ? 'off' : patternsFailed ? 'failed' : 'ok',

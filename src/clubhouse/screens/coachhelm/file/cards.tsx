@@ -15,6 +15,7 @@ import { stanceOf, type ChInsight } from '../../../data/coachhelm-shape';
 import { formatFixed } from '../../../lib/format';
 import { Icon } from '../../../ui/Icon';
 import type { ChFocusActions } from '../parts';
+import { sgIsEstimate, sgMixWords } from '../../../data/stats-sg-mix';
 
 export type FileLens = 'coach' | 'player';
 
@@ -355,9 +356,13 @@ export function FieldCard({ field }: { field: ChFileField }) {
 }
 
 export function SgCard({ sg, who, standingHref }: { sg: ChFileSg; who: string; standingHref: string | null }) {
+  // Where the rounds' strokes gained came from (stats-sg-mix.ts): figures that are all estimate are marked in the head, and the note
+  // says how many rounds were shot-tracked. Nothing is added when every round was.
+  const mix = sg.needsHoles ? null : sgMixWords(sg.mix);
+  const est = !sg.needsHoles && sgIsEstimate(sg.mix);
   return (
     <section className="card" aria-labelledby="ch-hf-sg" data-ch-anchor="sg">
-      <CardHead id="ch-hf-sg" title="Where the strokes go" meta={`${who} vs Tour${sg.hasTeam ? ' and team' : ''}`} />
+      <CardHead id="ch-hf-sg" title="Where the strokes go" meta={`${who} vs Tour${sg.hasTeam ? ' and team' : ''}${est ? ' · estimate' : ''}`} />
       <div className="card__b">
         <div className="sg">
           {sg.rows.map((r) => {
@@ -392,7 +397,7 @@ export function SgCard({ sg, who, standingHref }: { sg: ChFileSg; who: string; s
       </div>
       <p className="card__n">
         {sg.needsHoles ? 'Strokes gained needs hole-by-hole scores. ' : sg.note ? `${sg.note} ` : ''}
-        {sg.source}.
+        {sg.source}.{mix && <span data-ch-sg-mix=""> {mix}.</span>}
         {standingHref && (
           <>
             {' '}

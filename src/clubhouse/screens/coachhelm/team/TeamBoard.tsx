@@ -33,6 +33,7 @@ import { CourseSheet, GonePanel, PlayerPanel, ReadPanel } from './panels';
 import { SpotCard } from './SpotCard';
 import { StationControl } from './StationControl';
 import { TeamHole } from './TeamHole';
+import { sgIsEstimate, sgMixShort, sgMixWords } from '../../../data/stats-sg-mix';
 
 export type TeamStation = ChStation | 'course';
 export type TeamBoardOpen = { kind: 'read' | 'player' | 'course'; id: string } | { kind: 'story'; id: string; story: ChTeamStory; week: string };
@@ -84,16 +85,29 @@ function Hero({
   // the window Home, the roster and Stats' default read), so the hero is Team stats' "Team SG per round" on Last 10, to the decimal. The
   // line under the figure says that window; it is not "this season", and the head's round count is not the rounds behind the figure.
   const windowLine = 'Each player’s last 10';
+  // Where those rounds' strokes gained came from (stats-sg-mix.ts): all estimate, the figure is marked; mixed, a third line says how
+  // many were shot-tracked. Nothing is added when every round was.
+  const has = data.teamTotal.strokes != null;
+  const est = has && sgIsEstimate(data.teamTotal.sgMix);
+  const mixLine = has ? (est ? 'Estimated from the scorecard' : sgMixShort(data.teamTotal.sgMix)) : null;
+  const mixSaid = has ? sgMixWords(data.teamTotal.sgMix) : null;
   // The sign carries the direction for the eye; the words carry it for a screen reader (QA-7).
   const figure = (
-    <div className="hn" role="group" aria-label={`${formatSigned(data.teamTotal.strokes)} a round ${betterOrWorse(data.teamTotal.strokes, data.team.baselineLabel)}, ${windowLine.toLowerCase()}`}>
+    <div className="hn" role="group" aria-label={`${formatSigned(data.teamTotal.strokes)} a round ${betterOrWorse(data.teamTotal.strokes, data.team.baselineLabel)}, ${windowLine.toLowerCase()}${mixSaid ? `. ${mixSaid}` : ''}`}>
       <b className="ch-num" aria-hidden="true">
         {formatSigned(data.teamTotal.strokes)}
+        {est && <small>est.</small>}
       </b>
       <span aria-hidden="true">
         a round {data.team.baselineLabel}
         <br />
         {windowLine}
+        {mixLine && (
+          <>
+            <br />
+            <span data-ch-sg-mix="">{mixLine}</span>
+          </>
+        )}
       </span>
     </div>
   );

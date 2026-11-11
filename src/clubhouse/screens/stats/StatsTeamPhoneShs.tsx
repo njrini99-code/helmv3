@@ -38,6 +38,7 @@ import { TeamInsight } from './StatsInsight';
 import { ShsArrow, ShsCard, ShsPill, SummaryCard } from './SummaryCard';
 import { teamRankRows } from './team-rank';
 import { TeamRank } from './TeamRank';
+import { sgIsEstimate, sgMixWords } from '../../data/stats-sg-mix';
 import { useStatsDetail, type StatsArrivalState } from './use-stats-detail';
 
 const TITLE: Readonly<Record<StatsTeamDetailId, string>> = { tscore: 'Team scoring', tgame: 'Team game', tplayers: 'Players' };
@@ -344,12 +345,23 @@ function legRows(data: ChTeamStats) {
 function TeamGameCard({ data, onOpen }: { data: ChTeamStats; onOpen: () => void }) {
   const tone = sgTone(data.team.sgMean);
   const foot = roundRows(data);
+  // Where the rounds' strokes gained came from (stats-sg-mix.ts): all estimate, the figure is marked; mixed, the card says how many.
+  const est = data.team.sgMean != null && sgIsEstimate(data.sgMix);
+  const mix = data.team.sgMean != null ? sgMixWords(data.sgMix) : null;
   return (
-    <SummaryCard go="tgame" onOpen={onOpen} title="Strokes gained by leg" meta="vs Tour" ariaLabel={`Strokes gained by leg: team ${formatSigned(data.team.sgMean)} a round against the Tour. Open details`}>
+    <SummaryCard go="tgame" onOpen={onOpen} title="Strokes gained by leg" meta="vs Tour" ariaLabel={`Strokes gained by leg: team ${formatSigned(data.team.sgMean)}${est ? ', an estimate,' : ''} a round against the Tour. Open details`}>
       <div className="ch-shs-sb is-one">
         <div>
-          <span className={`ch-shs-bigv${tone === 'flat' ? '' : ` ch-shs-${tone}`}${data.team.sgMean == null ? ' ch-shs-none' : ''}`}>{formatSigned(data.team.sgMean)}</span>
+          <span className={`ch-shs-bigv${tone === 'flat' ? '' : ` ch-shs-${tone}`}${data.team.sgMean == null ? ' ch-shs-none' : ''}`}>
+            {formatSigned(data.team.sgMean)}
+            {est && <small>est.</small>}
+          </span>
           <div className="ch-shs-cap">Team strokes a round against the Tour</div>
+          {mix && (
+            <p className="ch-shs-mini-cap" data-ch-sg-mix="">
+              {mix}
+            </p>
+          )}
         </div>
       </div>
       <MiniDiverging rows={legRows(data)} fixedScale={4} />
@@ -484,7 +496,21 @@ function TeamGameDetail({ data }: { data: ChTeamStats }) {
   const pinned = rows.find((r) => r.label === pin);
   return (
     <>
-      <DetailHero figure={formatSigned(data.team.sgMean)} caption="Team strokes a round against the Tour" chips={worst && worst.value < -0.05 ? <span>{worst.label} costs the most, {formatFixed(Math.abs(worst.value))} a round</span> : undefined} />
+      <DetailHero
+        figure={formatSigned(data.team.sgMean)}
+        unit={data.team.sgMean != null && sgIsEstimate(data.sgMix) ? 'est.' : undefined}
+        caption={
+          <>
+            Team strokes a round against the Tour
+            {data.team.sgMean != null && sgMixWords(data.sgMix) && (
+              <>
+                <br />
+                <span data-ch-sg-mix="">{sgMixWords(data.sgMix)}</span>
+              </>
+            )}
+          </>
+        }
+        chips={worst && worst.value < -0.05 ? <span>{worst.label} costs the most, {formatFixed(Math.abs(worst.value))} a round</span> : undefined} />
       <ShsCard title="Strokes gained by leg" meta="Per round">
         <p className="ch-shs-readout" aria-live="polite">
           {pinned ? `${pinned.label}: ${formatSigned(pinned.value)} a round.` : 'Tap a leg to read it.'}

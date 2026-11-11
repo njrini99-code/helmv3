@@ -180,6 +180,13 @@
   color:var(--ch-feature-ink-2);
   padding-bottom:2px;
 }
+/* The hero is an estimate (every round's strokes gained came from the scorecard, none from shots): marked beside the figure. */
+.ch-htb .feat .hn b small {
+  margin-left: 4px;
+  font: var(--ch-type-14);
+  letter-spacing: 0;
+  color: var(--ch-feature-ink-2);
+}
 .ch-htb .feat .hole {
   margin:12px 0 0;
 }

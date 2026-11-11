@@ -47,8 +47,9 @@ describe('sgLegRows: how sure each leg is', () => {
 
   it('reads a leg as a sentence: the figure, the rounds, the likely range, the team', () => {
     const [tee] = sgLegRows(PREVIEW_PLAYER, true);
+    // The preview team is level with the Tour off the tee (one team across the previews), and a level figure is written 0.0, unsigned.
     const text = legReadout(tee!, 'Team');
-    expect(text).toMatch(/^Off the tee · \+0\.3 a round · 10 rounds · likely range −?\d\.\d to \+?\d\.\d · Team [+−]\d\.\d$/);
+    expect(text).toMatch(/^Off the tee · \+0\.3 a round · 10 rounds · likely range −?\d\.\d to \+?\d\.\d · Team (?:[+−]\d\.\d|0\.0)$/);
     expect(legReadout({ label: 'Putting', value: null, tag: 'Needs 5 rounds' })).toBe('Putting · Needs 5 rounds');
     expect(legReadout({ label: 'Putting', value: 0.2, n: 6, state: 'early', tag: 'Early read · 6 rounds', se: null })).toBe('Putting · +0.2 a round · Early read · 6 rounds');
   });
