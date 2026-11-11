@@ -1818,11 +1818,18 @@
   }
   .ch-qfm-acts {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     margin-top: -8px;
   }
+  /* Manage selections takes the room its neighbour leaves. Close qualifier is its own width beside it (148 of a 343 row
+     at 375), and at a larger Text Size, where the two no longer fit, it wraps under and takes the row: the 999 to 1
+     shares give it nothing while it has a neighbour and everything once it stands alone. */
   .ch-qfm-acts .ch-btn:first-child:not(:last-child) {
-    flex: 1;
+    flex: 999 1 0%;
+  }
+  .ch-qfm-acts .ch-btn:last-child:not(:first-child) {
+    flex: 1 0 auto;
   }
   .ch-qfm-acts .ch-btn:only-child {
     width: 100%;

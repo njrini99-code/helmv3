@@ -11140,7 +11140,7 @@
     "category": 19,
     "item": 1,
     "name": "PHONE_DETAIL",
-    "meaning": "At 820px and below a qualifier is one column: two facts (rounds in, spots), the leaderboard as cards that open a player's rounds in a sheet, the confirmed squad above it, and Edit, Close and Reopen in the bar's actions sheet; round-by-round stays on desktop.",
+    "meaning": "At 820px and below a qualifier is one column: two facts (rounds in, spots), the leaderboard as cards that open a player's rounds in a sheet, the confirmed squad above it, and Edit, Close and Reopen in the bar's actions sheet, with Close also a key beside Manage selections once the qualifier is past its last day; round-by-round stays on desktop.",
     "status": "implemented",
     "where": "src/clubhouse/screens/qualifiers/QualifierDetailPhone.tsx#QualifierDetailPhone",
     "tests": [

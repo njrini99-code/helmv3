@@ -2875,6 +2875,41 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
     expect(edits()).toHaveLength(1);
   });
 
+  it('past its last day and still open, Close qualifier stands on the page beside Manage selections, asks first, and stays in the sheet', async () => {
+    const user = userEvent.setup();
+    const w = fakeWrites();
+    // The live qualifier ends on 1 Oct; a week later it is still open, waiting on rounds.
+    const late = detail('live', 'coach', { today: '2026-10-08' });
+    inPhone(<QualifierDetail data={late} writes={w} live={false} />);
+    expect(document.querySelector('.ch-qfm-head .ch-qf-status')!.textContent).toMatch(/^Waiting on \d+ rounds$/);
+    const row = document.querySelector('.ch-qfm-acts') as HTMLElement;
+    expect([...row.querySelectorAll('.ch-btn')].map((b) => b.textContent?.trim())).toEqual(['Manage selections', 'Close qualifier']);
+    // The desk head's key: the quiet variant, never a second primary.
+    expect(within(row).getByRole('button', { name: 'Close qualifier' }).className).toContain('ch-btn--ghost');
+    await user.click(within(row).getByRole('button', { name: 'Close qualifier' }));
+    await expectCode('CH-09501', /Close this qualifier/);
+    expect(w.setStatus).not.toHaveBeenCalled();
+    await user.click(inDialog('CH-09501', 'Keep it open'));
+    // Still in the sheet with the other actions.
+    await user.click(screen.getByRole('button', { name: 'Qualifier actions' }));
+    expect(within(await screen.findByRole('dialog', { name: late.name })).getByRole('button', { name: 'Close qualifier' })).toBeTruthy();
+  });
+
+  it('the page’s Close key is only for a qualifier past its last day: not while it runs, not before it starts, not once closed, never for a player', () => {
+    const keys = () => [...document.querySelectorAll('.ch-qfm-acts .ch-btn')].map((b) => b.textContent?.trim());
+    const running = inPhone(<QualifierDetail data={detail('live', 'coach', { today: '2026-09-25' })} writes={fakeWrites()} live={false} />);
+    expect(keys()).toEqual(['Manage selections']);
+    running.unmount();
+    const upcoming = inPhone(<QualifierDetail data={detail('upcoming', 'coach', { today: '2026-12-31' })} writes={fakeWrites()} live={false} />);
+    expect(keys()).toEqual(['Manage selections']);
+    upcoming.unmount();
+    const closed = inPhone(<QualifierDetail data={detail('completed', 'coach', { today: '2026-12-31' })} writes={fakeWrites()} live={false} />);
+    expect(keys()).not.toContain('Close qualifier');
+    closed.unmount();
+    inPhone(<QualifierDetail data={detail('live', 'player', { today: '2026-10-08' })} writes={fakeWrites()} live={false} />);
+    expect(document.querySelector('.ch-qfm-acts')).toBeNull();
+  });
+
   it('a concluded qualifier with its squad confirmed has no row of page keys at all: its actions are the sheet’s', () => {
     inPhone(<QualifierDetail data={detail('selected')} writes={fakeWrites()} live={false} />);
     expect(document.querySelector('.ch-qfm-acts')).toBeNull();

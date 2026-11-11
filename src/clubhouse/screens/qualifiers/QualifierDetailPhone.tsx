@@ -35,7 +35,8 @@ const LIST = '/golf/dashboard/qualifiers';
 /**
  * One qualifier on the phone (docs/clubhouse/phone/qualifiers.md, boards 02,
  * 03 and 05): one column, three facts, the leaderboard as stacked cards, and
- * a sheet with a player's rounds. Edit, Close and Reopen sit in the bar's actions sheet (Q-20);
+ * a sheet with a player's rounds. Edit, Close and Reopen sit in the bar's actions sheet (Q-20), and Close is also a
+ * key on the page once the qualifier is past its last day;
  * round-by-round stays on desktop, since the sheet has each round. The
  * confirmed squad sits above the leaderboard. Same data, writes and catalog
  * as desktop; the close confirm is the desktop's, passed in.
@@ -74,6 +75,10 @@ export function QualifierDetailPhone({
   const coach = data.role === 'coach';
   // The squad is the coach's to manage until it is confirmed.
   const manage = data.selectionState !== 'selected';
+  // Past its last day and still open (the pill reads "Waiting on n rounds" or "Past last day"): closing it is now a job
+  // of the day, so its key stands on the page as it does in the desk's head. Before that it is only in the sheet. In
+  // production every qualifier left "in progress" was one of these, more than a month past its end (11 Nov 2026).
+  const closeDue = status === 'in_progress' && !!feed.ended;
   const [actions, setActions] = useState(false);
   const [peek, setPeek] = useState<string | null>(null);
   const b = data.board;
@@ -131,11 +136,19 @@ export function QualifierDetailPhone({
 
       {/* The page's own keys are the jobs of the day. Edit is said once, in the bar's sheet with the other actions: on the
           page it was a second door to that sheet, whose first row said Edit again. */}
-      {coach && manage && (
+      {coach && (manage || closeDue) && (
         <div className="ch-qfm-acts" onClickCapture={onSelectionClick}>
-          <Button leftIcon={Users} href={`${LIST}/${data.id}/selection`}>
-            Manage selections
-          </Button>
+          {manage && (
+            <Button leftIcon={Users} href={`${LIST}/${data.id}/selection`}>
+              Manage selections
+            </Button>
+          )}
+          {/* The desk head's own key, on the page once closing is the job: the same question follows (CH-09501). */}
+          {closeDue && (
+            <Button variant="ghost" leftIcon={Lock} feel="warning" onClick={onAskClose}>
+              Close qualifier
+            </Button>
+          )}
         </div>
       )}
 

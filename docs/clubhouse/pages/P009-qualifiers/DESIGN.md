@@ -131,8 +131,9 @@ Approved spec `docs/clubhouse/phone/qualifiers.md`. The list is the desktop list
 with phone CSS under a "‹ More" top bar. A qualifier is one column: three facts,
 the confirmed squad above the leaderboard, the leaderboard as rows on seams, and
 a rounds sheet for a player (round chips, Out and In, Message and Stats); Edit,
-Close and Reopen sit in the bar's actions sheet (Q-20), and round-by-round stays
-on desktop. The form
+Close and Reopen sit in the bar's actions sheet (Q-20), Close is also a key on
+the page once the qualifier is past its last day, and round-by-round stays on
+desktop. The form
 puts Cancel and Create in the top bar and hides the tab bar. Manage selections
 has its own top bar and a foot for the primary action.
 

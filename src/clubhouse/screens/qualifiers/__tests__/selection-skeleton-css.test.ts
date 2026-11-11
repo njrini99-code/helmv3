@@ -41,3 +41,16 @@ describe('Manage selections while it loads, on a phone', () => {
     expect(sheet.rest).not.toMatch(/\.ch-qfs\[aria-busy='true'\] \.ch-qfs-steps li:not\(:first-child\) > \.ch-skel:last-child/);
   });
 });
+
+describe('the phone qualifier’s row of page keys', () => {
+  it('holds Manage selections and Close qualifier on one line at the default size, and wraps Close under at a larger Text Size', () => {
+    const p = sheet.phone;
+    expect(p).toMatch(/\.ch-qfm-acts\s*\{[^}]*flex-wrap:\s*wrap;/);
+    // Beside a neighbour Close keeps its own width (999 to 1 of the spare room); alone on a wrapped line it takes the row.
+    expect(p).toMatch(/\.ch-qfm-acts \.ch-btn:first-child:not\(:last-child\)\s*\{\s*flex:\s*999 1 0%;/);
+    expect(p).toMatch(/\.ch-qfm-acts \.ch-btn:last-child:not\(:first-child\)\s*\{\s*flex:\s*1 0 auto;/);
+    // Each key is 36 drawn and 44 to the finger; two wrapped lines are 8 apart, so their reaches meet and never overlap.
+    expect(p).toMatch(/\.ch-qfm-acts \.ch-btn::before\s*\{[^}]*inset:\s*-4px 0;/);
+    expect(p).toMatch(/\.ch-qfm-acts\s*\{[^}]*gap:\s*8px;/);
+  });
+});
