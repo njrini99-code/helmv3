@@ -1,7 +1,7 @@
 'use client';
 
 import { Ban, ChevronDown, ChevronUp, Target, TriangleAlert } from 'lucide-react';
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from 'react';
 import { Button } from '../../ui/Button';
 import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
@@ -346,6 +346,7 @@ export function TimeGrid({
   daylight,
   coach = false,
   viewerId,
+  legend,
 }: {
   dates: string[];
   events: ChCalEvent[];
@@ -365,6 +366,8 @@ export function TimeGrid({
   daylight?: (date: string) => ChDaylight;
   /** P006-C3: the hover card's Nudge is the coach's. */
   coach?: boolean;
+  /** The week's legend, drawn in the pinned head at the grid's right edge (owner, 2026-11-11); the day has none. */
+  legend?: ReactNode;
 }) {
   // 6 AM to 9 PM, widened to the hour around anything earlier or later on the days shown, so a 5 AM bus or a 9:30 PM
   // meeting is on the grid instead of dropped from it (CAL-07).
@@ -431,6 +434,7 @@ export function TimeGrid({
     >
       {/* The days and the all-day row stay pinned under the top bar while the hours scroll (P006-B1 opens mid-day). */}
       <div className="ch-wk__top">
+        {legend}
         <div className="ch-wk__head">
           <div />
           {dates.map((d) => (

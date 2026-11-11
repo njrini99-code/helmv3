@@ -995,6 +995,44 @@ function CalendarBody({
     });
   };
 
+  // Owner, 2026-11-11: the week's legend sits in the week's own pinned head, at the grid's right edge (views.tsx), so
+  // the toolbar holds on one row beside the week's button; it names Travel and Busy time too, whose tiles the week
+  // draws (busy time is the coach's alone). Day, Month and List keep theirs in the toolbar.
+  const legend = (
+    <div className="ch-cal-legend" aria-hidden="true">
+      <span>
+        <i className="ch-dot-practice" />
+        Practice
+      </span>
+      <span>
+        <i className="ch-dot-qualifier" />
+        Competition
+      </span>
+      <span>
+        <i className="ch-dot-meeting" />
+        Meeting
+      </span>
+      {view !== 'month' && (
+        <span>
+          <i className="ch-dot-class" />
+          Classes
+        </span>
+      )}
+      {view === 'week' && (
+        <span>
+          <i className="ch-dot-travel" />
+          Travel
+        </span>
+      )}
+      {view === 'week' && coach && (
+        <span>
+          <i className="ch-dot-busy" />
+          Busy
+        </span>
+      )}
+    </div>
+  );
+
   const moreItems = [
     { label: 'Add to calendar app', icon: Rss, onSelect: () => setSubs(true) },
     // The board's Print week: the browser's print of what is on screen; the print rules (calendar.css, shell.css) drop the chrome.
@@ -1284,26 +1322,7 @@ function CalendarBody({
             {attention.heading} · {attention.count}
           </Button>
         )}
-        <div className="ch-cal-legend" aria-hidden="true">
-          <span>
-            <i className="ch-dot-practice" />
-            Practice
-          </span>
-          <span>
-            <i className="ch-dot-qualifier" />
-            Competition
-          </span>
-          <span>
-            <i className="ch-dot-meeting" />
-            Meeting
-          </span>
-          {view !== 'month' && (
-            <span>
-              <i className="ch-dot-class" />
-              Classes
-            </span>
-          )}
-        </div>
+        {view !== 'week' && legend}
       </div>
 
       {notices}
@@ -1320,7 +1339,7 @@ function CalendarBody({
               <Swap swapKey={view}>
                 <Swap swapKey={period.key} kind="slide" dir={period.dir}>
                   {(view === 'week' || view === 'day') && (
-                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} onMove={coach ? onGridMove : undefined} onBarMove={coach ? (e, to) => onGridMove(e, to, 'bar') : undefined} daylight={daylight} coach={coach} viewerId={data.viewerPlayerId} />
+                    <TimeGrid dates={dates} events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={open} onDay={(d) => go('day', d)} legend={view === 'week' ? legend : undefined} onMove={coach ? onGridMove : undefined} onBarMove={coach ? (e, to) => onGridMove(e, to, 'bar') : undefined} daylight={daylight} coach={coach} viewerId={data.viewerPlayerId} />
                   )}
                   {view === 'month' && (
                     <MonthView

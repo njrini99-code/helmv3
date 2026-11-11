@@ -2119,6 +2119,39 @@ describe('Calendar · what each role is given', () => {
     });
   });
 
+  // Owner, 2026-11-11: with the week's button the toolbar wrapped its legend onto a second row.
+  it('the week’s legend is in the week’s pinned head and names Travel and Busy; Day, Month and List keep theirs in the toolbar', () => {
+    const legend = () => document.querySelector<HTMLElement>('.ch-cal-legend')!;
+    const items = () => [...legend().querySelectorAll('span')].map((x) => x.textContent);
+    const dots = () => [...legend().querySelectorAll('i')].map((x) => x.className);
+    const coach = wrap(cal());
+    expect(document.querySelectorAll('.ch-cal-legend')).toHaveLength(1);
+    expect(legend().parentElement!.className).toBe('ch-wk__top');
+    expect(legend().nextElementSibling!.className).toBe('ch-wk__head');
+    expect(legend().getAttribute('aria-hidden')).toBe('true');
+    expect(items()).toEqual(['Practice', 'Competition', 'Meeting', 'Classes', 'Travel', 'Busy']);
+    expect(dots()).toEqual(['ch-dot-practice', 'ch-dot-qualifier', 'ch-dot-meeting', 'ch-dot-class', 'ch-dot-travel', 'ch-dot-busy']);
+    expect(document.querySelector('.ch-cal-bar .ch-cal-legend')).toBeNull();
+    coach.unmount();
+    // Busy time is the coach's alone.
+    const player = wrap(PREVIEW_CALENDAR_PLAYER);
+    expect(items()).toEqual(['Practice', 'Competition', 'Meeting', 'Classes', 'Travel']);
+    player.unmount();
+    for (const [view, names] of [
+      ['day', ['Practice', 'Competition', 'Meeting', 'Classes']],
+      ['month', ['Practice', 'Competition', 'Meeting']],
+      ['agenda', ['Practice', 'Competition', 'Meeting', 'Classes']],
+    ] as const) {
+      const page = wrap(cal({ view }));
+      expect(document.querySelectorAll('.ch-cal-legend')).toHaveLength(1);
+      expect(legend().parentElement!.className).toBe('ch-cal-bar');
+      expect(items()).toEqual(names);
+      page.unmount();
+    }
+    const css = readFileSync(join(__dirname, '..', 'styles', 'calendar.css'), 'utf8');
+    expect(css).toMatch(/\n\.ch-wk__top > \.ch-cal-legend \{\s*flex-wrap: wrap;\s*justify-content: flex-end;\s*margin: 0 0 var\(--ch-space-2\);\s*\}/);
+  });
+
   // Owner, 2026-11-11: the desktop week opens with the now line in the canvas's upper third, with no easing.
   describe('where the page opens', () => {
     let canvas: HTMLDivElement;

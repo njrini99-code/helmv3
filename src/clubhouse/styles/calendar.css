@@ -184,6 +184,13 @@
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
+/* The week's legend is in the week's pinned head, on a line of its own that ends at the grid's right edge (owner,
+   2026-11-11: with the week's button the toolbar wrapped it onto a second row). */
+.ch-wk__top > .ch-cal-legend {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin: 0 0 var(--ch-space-2);
+}
 .ch-cal-legend i {
   display: inline-block;
   width: 8px;
