@@ -29,7 +29,7 @@ import {
   type DropAnimation,
   type KeyboardCoordinateGetter,
 } from '@dnd-kit/core';
-import { useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { haptic } from '../../lib/haptics';
 import { chSpringCurve, CH_DUR, CH_EASE } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
@@ -95,6 +95,9 @@ export function DndMonth({
   const grabDate = useRef<string | null>(null);
   const canDrag = (e: ChCalEvent) => !!coach && !!draggable(e, true);
 
+  // dnd-kit numbers its contexts as they mount (DndDescribedBy-0, -1…), and the server's count and the browser's differ,
+  // so every draggable's aria-describedby failed hydration on each load. React's id is the same on both.
+  const dndId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 450, tolerance: 10 } }),
@@ -205,6 +208,7 @@ export function DndMonth({
   if (!coach) return body;
   return (
     <DndContext
+      id={dndId}
       sensors={sensors}
       autoScroll={false}
       collisionDetection={dayCollision}
