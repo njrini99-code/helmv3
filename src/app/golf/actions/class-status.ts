@@ -34,6 +34,11 @@ const termSchema = z.object({
   classesEnd: day,
   examsEnd: day,
   timeZone: z.string().min(1).max(64),
+  /**
+   * Optional, for a new term only. A UUID the caller keeps for one request: it becomes the term's own id, so the same
+   * request sent twice answers with the first term and never makes a second. Left out, nothing changes.
+   */
+  requestId: uuid.optional(),
 });
 
 const breakSchema = z.object({
@@ -41,6 +46,8 @@ const breakSchema = z.object({
   startsOn: day,
   endsOn: day,
   label: z.string().trim().max(60, 'Keep the name to 60 characters').optional(),
+  /** Optional. A UUID the caller keeps for one request: it becomes the break's own id, so a repeat answers with the first break. */
+  requestId: uuid.optional(),
 });
 
 const MISSING = new Set(['42P01', 'PGRST205', 'PGRST202', '42883']);
@@ -83,7 +90,12 @@ async function saveTeamTermImpl(input: z.input<typeof termSchema>): Promise<Resu
     const row = { team_id: t.teamId, label: t.label, classes_start: t.classesStart, classes_end: t.classesEnd, exams_end: t.examsEnd, time_zone: t.timeZone };
     const { data, error } = t.id
       ? await table.update(row).eq('id', t.id).eq('team_id', t.teamId).select('id').maybeSingle()
-      : await table.insert(row).select('id').single();
+      : await table.insert(t.requestId ? { ...row, id: t.requestId } : row).select('id').single();
+    // The same request again: the term it made the first time is the answer.
+    if (!t.id && t.requestId && error?.code === '23505') {
+      const { data: first } = await heldTable(supabase, 'golf_team_terms').select('id').eq('id', t.requestId).eq('team_id', t.teamId).maybeSingle();
+      if (first) return { success: true, data: { id: String((first as { id: unknown }).id) } };
+    }
     const said = refusal(error);
     if (said) {
       if (!MISSING.has(String(error?.code)) && error?.code !== '42501' && error?.code !== '23P01') {
@@ -111,9 +123,14 @@ async function addTeamBreakImpl(input: z.input<typeof breakSchema>): Promise<Res
     const { supabase, user: u } = await user();
     if (!u) return { success: false, error: 'You must be signed in' };
     const { data, error } = await heldTable(supabase, 'golf_class_exceptions')
-      .insert({ team_id: b.teamId, player_id: null, kind: 'off', starts_on: b.startsOn, ends_on: b.endsOn, label: b.label || null })
+      .insert({ ...(b.requestId ? { id: b.requestId } : {}), team_id: b.teamId, player_id: null, kind: 'off', starts_on: b.startsOn, ends_on: b.endsOn, label: b.label || null })
       .select('id')
       .single();
+    // The same request again: the break it made the first time is the answer.
+    if (b.requestId && error?.code === '23505') {
+      const { data: first } = await heldTable(supabase, 'golf_class_exceptions').select('id').eq('id', b.requestId).eq('team_id', b.teamId).maybeSingle();
+      if (first) return { success: true, data: { id: String((first as { id: unknown }).id) } };
+    }
     const said = refusal(error);
     if (said) {
       if (!MISSING.has(String(error?.code)) && error?.code !== '42501') {

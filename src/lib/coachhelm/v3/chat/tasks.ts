@@ -139,7 +139,7 @@ export function landsFor(tool: string, input: unknown): ActionLanding | undefine
     case 'set_lineup':
       return uuid(i.tournament_id) ? on('lineup', `${DASH}/tournaments/${uuid(i.tournament_id)}`) : undefined;
     case 'publish_practice_plan':
-      return uuid(i.plan_id) ? on('plan', `${DASH}/practice/${uuid(i.plan_id)}`) : undefined;
+      return uuid(i.plan_id) ? on('plan', `${DASH}/practice/plan/${uuid(i.plan_id)}`) : undefined;
     default:
       return undefined;
   }

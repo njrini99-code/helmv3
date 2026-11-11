@@ -14,7 +14,14 @@ export interface DrillInput {
   minutes: number;
   setup?: string;
   goal?: string;
+  /**
+   * Optional. A UUID the caller keeps for one request: it becomes the drill's own id, so the same request sent twice
+   * (a retry after a lost response) answers with the first drill and never makes a second. Left out, nothing changes.
+   */
+  requestId?: string;
 }
+
+const REQUEST_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const check = (d: DrillInput): string | null => {
   if (!d.name.trim()) return 'Name the drill.';
@@ -33,7 +40,13 @@ async function createTeamDrillImpl(input: DrillInput): Promise<PracticeResult<{ 
   if (bad) return { success: false, error: bad, code: 'CH-17112' };
   const { sb, userId } = await who();
   if (!userId) return { success: false, error: 'Not signed in.' };
-  const { data, error } = await practiceTables(sb).from('golf_team_drills').insert({ team_id: input.teamId, name: input.name.trim(), area: input.area, kind: input.kind, minutes: input.minutes, setup: input.setup ?? '', goal: input.goal ?? '', created_by: userId } as never).select('id').maybeSingle();
+  if (input.requestId !== undefined && !REQUEST_ID_RE.test(input.requestId)) return { success: false, error: 'Couldn’t save the drill. It wasn’t added to the plan.', code: 'CH-17112' };
+  const { data, error } = await practiceTables(sb).from('golf_team_drills').insert({ ...(input.requestId ? { id: input.requestId } : {}), team_id: input.teamId, name: input.name.trim(), area: input.area, kind: input.kind, minutes: input.minutes, setup: input.setup ?? '', goal: input.goal ?? '', created_by: userId } as never).select('id').maybeSingle();
+  // The same request again: the drill it made the first time is the answer (the id is the request's, and it is this team's).
+  if (error?.code === '23505' && input.requestId) {
+    const { data: first } = await practiceTables(sb).from('golf_team_drills').select('id').eq('id', input.requestId).eq('team_id', input.teamId).maybeSingle();
+    if (first) return { success: true, id: (first as { id: string }).id };
+  }
   if (error || !data) return { success: false, error: 'Couldn’t save the drill. It wasn’t added to the plan.', code: 'CH-17006', unavailable: isPracticeMissing(error?.code) };
   return { success: true, id: data.id };
 }

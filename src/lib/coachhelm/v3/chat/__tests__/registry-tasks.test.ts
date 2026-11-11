@@ -123,7 +123,7 @@ const SAMPLES: Record<string, unknown> = {
   lock_lineup: { tournament_id: ID },
 };
 /** The tasks whose own row can be looked for: by request id, or by the card's natural key since it was planned. */
-const LOOKABLE = ['create_event', 'add_blocked_time', 'create_recruit', 'create_trip', 'create_qualifier', 'create_goal', 'send_message', 'create_drill', 'publish_artifact', 'create_focus_area', 'create_task', 'create_team_announcement', 'create_recurring_practice', 'lock_lineup', 'publish_practice_plan'];
+const LOOKABLE = ['create_event', 'add_blocked_time', 'create_recruit', 'create_trip', 'create_qualifier', 'create_goal', 'send_message', 'create_drill', 'publish_artifact', 'create_focus_area', 'create_task', 'create_team_announcement', 'create_recurring_practice', 'lock_lineup', 'publish_practice_plan', 'add_team_break', 'save_team_term'];
 
 type Task = TaskTool<unknown, TaskProposal>;
 const all = (): Task[] => {
@@ -253,7 +253,7 @@ describe('where a task lands, and which row it wrote', () => {
       create_focus_area: { kind: 'focus_area', home: `/golf/dashboard/roster?player=${P1}` },
       send_message: { kind: 'message', home: `/golf/dashboard/messages?conversation=${ID}` },
       set_lineup: { kind: 'lineup', home: `/golf/dashboard/tournaments/${ID}` },
-      publish_practice_plan: { kind: 'plan', home: `/golf/dashboard/practice/${ID}` },
+      publish_practice_plan: { kind: 'plan', home: `/golf/dashboard/practice/plan/${ID}` },
       create_goal: null,
       add_round_note: null,
       add_team_break: null,

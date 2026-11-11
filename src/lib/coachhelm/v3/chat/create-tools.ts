@@ -135,7 +135,7 @@ export interface FlowDef<I> {
   /** What the receipt says when `written` finds the row. */
   done?: (ctx: CoachChatContext, input: I) => FlowDone;
   /** The table whose row id is `requestId`: an action that failed after that row exists is recorded as done, never offered again. */
-  landed?: { table: 'golf_events' | 'golf_coach_blocked_time' | 'golf_recruits'; done: (input: I) => FlowDone };
+  landed?: { table: 'golf_events' | 'golf_coach_blocked_time' | 'golf_recruits' | 'golf_team_drills' | 'golf_class_exceptions' | 'golf_team_terms'; done: (input: I) => FlowDone };
 }
 
 /** The same request id for every retry of one card: the coach's own scoped ledger key, hashed, so two cards that differ anywhere are two rows. Two coaches' same-looking events never collide. */
@@ -662,8 +662,11 @@ const blockFlow: FlowDef<z.infer<typeof blockInput>> = {
   },
 };
 const breakInput = z.object({ first_day: DATE, last_day: DATE, label: z.string().max(60) });
+const breakDone = (i: z.infer<typeof breakInput>): FlowDone => ({ summary: `${i.label} is on the calendar.`, kind: 'break', label: i.label, href: `/golf/dashboard/calendar?date=${i.first_day}` });
 const breakFlow: FlowDef<z.infer<typeof breakInput>> = {
   name: 'add_team_break',
+  // The break's row id is this card's request id (the action keeps it), so a second run finds the first one's row.
+  landed: { table: 'golf_class_exceptions', done: breakDone },
   description: 'A team break from class, 21 days at most.',
   input: breakInput,
   plan: (ctx, i) => {
@@ -682,19 +685,17 @@ const breakFlow: FlowDef<z.infer<typeof breakInput>> = {
       key: ['break', i.first_day, i.last_day],
     };
   },
-  run: async (ctx, i) => {
-    const res = (await addTeamBreak({ teamId: ctx.team_id, startsOn: i.first_day, endsOn: i.last_day, label: i.label })) as { success?: boolean; ok?: boolean; error?: string; data?: { id?: string } };
-    const ok = !!(res.success ?? res.ok);
-    const id = ok && res.data?.id && res.data.id !== 'undefined' ? res.data.id : undefined;
-    return { ok, error: res.error, summary: `${i.label} is on the calendar.`, kind: 'break', label: i.label, href: `/golf/dashboard/calendar?date=${i.first_day}`, ...(id ? { id } : {}) };
+  run: async (ctx, i, { requestId }) => {
+    const res = (await addTeamBreak({ teamId: ctx.team_id, startsOn: i.first_day, endsOn: i.last_day, label: i.label, requestId })) as { success?: boolean; ok?: boolean; error?: string };
+    return { ok: !!(res.success ?? res.ok), error: res.error, ...breakDone(i) };
   },
 };
 const termInput = z.object({ name: z.string().min(1).max(40), classes_start: DATE, classes_end: DATE, exams_end: DATE });
 type TermStored = z.infer<typeof termInput> & { seen?: { others: number } };
 const termFlow: FlowDef<TermStored> = {
   name: 'save_team_term',
-  written: (sb, ctx, i) => rowSince(sb, 'golf_team_terms', { team_id: ctx.team_id, label: i.name, classes_start: i.classes_start, classes_end: i.classes_end, exams_end: i.exams_end }, null),
-  done: (_ctx, i) => ({ summary: `${i.name} is saved.`, kind: 'term', label: i.name, href: '/golf/dashboard/settings?section=team' }),
+  // The term's row id is this card's request id (the action keeps it), so the look is exact.
+  landed: { table: 'golf_team_terms', done: (i) => ({ summary: `${i.name} is saved.`, kind: 'term', label: i.name, href: '/golf/dashboard/settings?section=team' }) },
   description: 'Save a term. Ask for any date not given; never infer from a school calendar.',
   input: termInput,
   stored: termInput.extend({ seen: z.object({ others: z.number() }).optional() }),
@@ -729,10 +730,9 @@ const termFlow: FlowDef<TermStored> = {
       key: ['term', i.name, i.classes_start],
     };
   },
-  run: async (ctx, i) => {
-    const res = (await saveTeamTerm({ teamId: ctx.team_id, label: i.name, classesStart: i.classes_start, classesEnd: i.classes_end, examsEnd: i.exams_end, timeZone: ctx.timezone })) as { success?: boolean; ok?: boolean; error?: string; data?: { id?: string } };
-    const ok = !!(res.success ?? res.ok);
-    return { ok, error: res.error, summary: `${i.name} is saved.`, kind: 'term', label: i.name, href: '/golf/dashboard/settings?section=team', ...(ok && res.data?.id ? { id: res.data.id } : {}) };
+  run: async (ctx, i, { requestId }) => {
+    const res = (await saveTeamTerm({ teamId: ctx.team_id, label: i.name, classesStart: i.classes_start, classesEnd: i.classes_end, examsEnd: i.exams_end, timeZone: ctx.timezone, requestId })) as { success?: boolean; ok?: boolean; error?: string };
+    return { ok: !!(res.success ?? res.ok), error: res.error, summary: `${i.name} is saved.`, kind: 'term', label: i.name, href: '/golf/dashboard/settings?section=team' };
   },
 };
 const availInput = z.object({ player_id: z.string().uuid(), note: z.string().min(1).max(280) });
@@ -871,8 +871,8 @@ const KIND_WORDS: Record<z.infer<typeof drillInput>['kind'], string> = { skill: 
 /** TASK_FIELDS 5.14: one drill bank, N-00's `golf_team_drills`. Registered only with the practice plans flag, which waits on that held migration. */
 export const drillFlow: FlowDef<z.infer<typeof drillInput>> = {
   name: 'create_drill',
-  written: (sb, ctx, i, { since }) => rowSince(sb, 'golf_team_drills', { team_id: ctx.team_id, name: i.name.trim(), area: i.area, minutes: i.minutes }, since),
-  done: (_ctx, i) => ({ summary: `${i.name} is in the drill bank.`, kind: 'drill', label: i.name, href: DRILLS_HREF }),
+  // The drill's row id is this card's request id (the action keeps it), so the look is exact.
+  landed: { table: 'golf_team_drills', done: (i) => ({ summary: `${i.name} is in the drill bank.`, kind: 'drill', label: i.name, href: DRILLS_HREF }) },
   description: 'Add a new drill to the team drill bank. Players see it only when a published plan uses it.',
   input: drillInput,
   plan: (_ctx, i) => ({
@@ -886,9 +886,9 @@ export const drillFlow: FlowDef<z.infer<typeof drillInput>> = {
     visible_note: 'Coaches see it in the drill bank. Players see it only when a published plan uses it.',
     key: ['drill', i.name.trim().toLowerCase(), i.area, i.minutes],
   }),
-  run: async (ctx, i) => {
-    const res = await createTeamDrill({ teamId: ctx.team_id, name: i.name, area: i.area, kind: i.kind, minutes: i.minutes, setup: i.setup, goal: i.goal });
-    return { ok: res.success, error: res.success ? undefined : res.error, summary: `${i.name} is in the drill bank.`, kind: 'drill', label: i.name, href: DRILLS_HREF, ...(res.success && res.id ? { id: res.id } : {}) };
+  run: async (ctx, i, { requestId }) => {
+    const res = await createTeamDrill({ teamId: ctx.team_id, name: i.name, area: i.area, kind: i.kind, minutes: i.minutes, setup: i.setup, goal: i.goal, requestId });
+    return { ok: res.success, error: res.success ? undefined : res.error, summary: `${i.name} is in the drill bank.`, kind: 'drill', label: i.name, href: DRILLS_HREF };
   },
 };
 
