@@ -30,7 +30,7 @@ import { whoHears, whoHearsLine } from './who-hears';
 import { RoundMoveConfirm, SeriesScopeMenu } from './drag-popovers';
 import { useToast } from '../../ui/Toast';
 import { friendlyReason, isOffline, normalise, useAction } from '../../lib/use-action';
-import { Attendance, EventDetail, Overlap, Summary, type ChInsp, type InspCtx } from './inspector';
+import { Attendance, EventDetail, Overlap, Summary, attentionOf, type ChInsp, type InspCtx } from './inspector';
 import { CancelEvent, DeleteEvent, EventEditor, SubscribeSheet, type ChTournamentSaved, type EditorSeed } from './editor';
 import { roundsOverlay } from './round-overlay';
 import { RoundEditor } from './editor-round';
@@ -940,6 +940,30 @@ function CalendarBody({
     refresh,
   };
 
+  // Owner, 2026-11-11: the desktop week takes the page's full width, so the panel (Today, what needs attention) lies
+  // under the grid (calendar.css, .ch-cal-body[data-view='week']). The toolbar says how much is waiting there and goes
+  // to it: the list's own heading and its count, and nothing when the count is 0.
+  const attention = attentionOf(ctx);
+  const toAttention = () => {
+    // From the keyboard, focus goes with the page, to the list's first row.
+    const keyboard = keyed.current;
+    // An event open in the panel gives way to the summary, where the list is.
+    setInsp(null);
+    requestAnimationFrame(() => {
+      const canvas = document.getElementById('ch-canvas');
+      const sec = panel.current?.querySelector<HTMLElement>('[data-ch-attention]');
+      if (!canvas || !sec) return;
+      // The list's heading comes to rest 16px under the top bar.
+      const bar = Number.parseFloat(getComputedStyle(canvas).getPropertyValue('--ch-topbar-h')) || 56;
+      const top = Math.max(0, Math.round(sec.getBoundingClientRect().top - canvas.getBoundingClientRect().top + canvas.scrollTop - bar - 16));
+      const lenis = canvasLenis();
+      if (reduced) canvasScrollNow(top);
+      else if (lenis) lenis.scrollTo(top);
+      else canvas.scrollTo({ top, behavior: 'smooth' });
+      if (keyboard) sec.querySelector<HTMLElement>('.ch-in__need')?.focus({ preventScroll: true });
+    });
+  };
+
   const moreItems = [
     { label: 'Add to calendar app', icon: Rss, onSelect: () => setSubs(true) },
     // The board's Print week: the browser's print of what is on screen; the print rules (calendar.css, shell.css) drop the chrome.
@@ -1224,6 +1248,11 @@ function CalendarBody({
           />
         </div>
         {coach && data.people.length > 0 && <PeoplePicker people={data.people} sel={sel} setSel={setSel} />}
+        {view === 'week' && !data.eventsError && attention.count > 0 && (
+          <Button variant="ghost" className="ch-cal-attn ch-num" onClick={toAttention}>
+            {attention.heading} · {attention.count}
+          </Button>
+        )}
         <div className="ch-cal-legend" aria-hidden="true">
           <span>
             <i className="ch-dot-practice" />
@@ -1252,7 +1281,7 @@ function CalendarBody({
           <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again." onRetry={refresh} covered={covered} />
         </div>
       ) : (
-        <div className="ch-cal-body">
+        <div className="ch-cal-body" data-view={view}>
           <div style={{ minWidth: 0 }}>
             <SectionBoundary surface={`calendar.${view}`} label="The calendar" code="CH-6210">
               {/* CH-6604: another view settles in (base in, quick out); CH-6605: another day, week or month slides 12px the

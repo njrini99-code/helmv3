@@ -23,8 +23,9 @@ export function CalendarSkeleton() {
           <Skeleton width={333} height={18} radius={9} />
         </div>
       </div>
-      {/* The view and the panel in the loaded page's own classes, so they sit flush on the Ledger like it does. */}
-      <div className="ch-cal-body">
+      {/* The view and the panel in the loaded page’s own classes, so they sit flush on the Ledger like it does. Calendar
+          opens on the week, whose panel lies under it on the desktop (owner, 2026-11-11), so the skeleton waits that way. */}
+      <div className="ch-cal-body" data-view="week">
         <div className="ch-wk ch-cal-surface" style={{ display: 'grid', gap: 16 }}>
           <Skeleton width="100%" height={48} radius={10} />
           <Skeleton width="100%" height={820} radius={10} />

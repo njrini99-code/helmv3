@@ -177,14 +177,13 @@ function playerOverlapLine(events: ChCalEvent[], o: ChCalOverlap, clock: ChClock
   return `Overlaps ${what} ${fmtHour(o.from, false, clock)}–${fmtHour(o.to, true, clock)}`;
 }
 
-/* Nothing selected: today, what needs attention, where the data comes from. */
-export function Summary({ ctx }: { ctx: InspCtx }) {
-  const { now, events, overlaps, people, role } = ctx;
-  const clock = useChClock();
-  const today = events.filter((e) => e.date === now.date && e.type !== 'class' && e.type !== 'busy' && !e.cancelled).sort((a, b) => (a.start ?? -1) - (b.start ?? -1));
-  const next = today.find((e) => !e.allDay && (e.start ?? 0) > now.hour);
-  const mins = next ? Math.round(((next.start ?? 0) - now.hour) * 60) : 0;
-  const until = mins < 60 ? `in ${mins} min` : `in ${Math.floor(mins / 60)} h ${mins % 60 ? `${mins % 60} min` : ''}`.trim();
+/**
+ * What needs attention in the next seven days: the overlaps, and the events still waiting on replies (for a player,
+ * the replies they owe). The panel's list draws these; the week's toolbar counts them (Calendar.tsx), since on the
+ * desktop week the list lies under the grid.
+ */
+export function attentionOf(ctx: Pick<InspCtx, 'now' | 'events' | 'overlaps' | 'role' | 'viewerPlayerId'>) {
+  const { now, events, overlaps, role } = ctx;
   const weekEnd = dayAfter(now.date, 7);
   const upcoming = events.filter((e) => e.type !== 'class' && e.type !== 'busy' && !e.cancelled && e.date >= now.date && e.date < weekEnd);
   const seen = new Set<string>();
@@ -201,6 +200,21 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
     const e = find(events, o.eventId);
     return e && e.date >= now.date && e.date < weekEnd;
   });
+  return { pendingRows, weekOverlaps, count: weekOverlaps.length + pendingRows.length, heading: attentionHeading(role, weekOverlaps.length) };
+}
+
+/** The list's heading, which the week's toolbar button repeats so it names the list it goes to. */
+export const attentionHeading = (role: InspCtx['role'], overlaps: number) => (role === 'coach' ? 'Needs attention' : overlaps ? 'Needs your attention' : 'Needs your reply');
+
+/* Nothing selected: today, what needs attention, where the data comes from. */
+export function Summary({ ctx }: { ctx: InspCtx }) {
+  const { now, events, people, role } = ctx;
+  const clock = useChClock();
+  const today = events.filter((e) => e.date === now.date && e.type !== 'class' && e.type !== 'busy' && !e.cancelled).sort((a, b) => (a.start ?? -1) - (b.start ?? -1));
+  const next = today.find((e) => !e.allDay && (e.start ?? 0) > now.hour);
+  const mins = next ? Math.round(((next.start ?? 0) - now.hour) * 60) : 0;
+  const until = mins < 60 ? `in ${mins} min` : `in ${Math.floor(mins / 60)} h ${mins % 60 ? `${mins % 60} min` : ''}`.trim();
+  const { pendingRows, weekOverlaps, heading } = attentionOf(ctx);
   const classOwners = new Set(events.filter((e) => e.type === 'class' && e.owner).map((e) => e.owner));
 
   return (
@@ -238,9 +252,9 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
       )}
       </div>
 
-      <div className="ch-in__sec">
+      <div className="ch-in__sec" data-ch-attention="">
         <div className="ch-in__sechead">
-          <b>{role === 'coach' ? 'Needs attention' : weekOverlaps.length ? 'Needs your attention' : 'Needs your reply'}</b>
+          <b>{heading}</b>
           <span>Next 7 days</span>
         </div>
         {ctx.rsvpError && (

@@ -49,14 +49,16 @@ describe('the week grid in narrow columns', () => {
     expect(b.querySelector(':scope > .ch-ev__t')).not.toBeNull();
   });
 
-  it('the wrapper is not there in a wide column, and under 98px of text room it puts the title first', () => {
+  it('the wrapper is not there in a wide column, and under 180px of text room it puts the title first', () => {
     expect(css).toMatch(/\.ch-ev__w \{\s*display: contents;\s*\}/);
     const narrow = css.slice(css.indexOf('.ch-ev .ch-ev__w {'));
-    expect(css.slice(0, css.indexOf('.ch-ev .ch-ev__w {')).trimEnd().endsWith('@container (max-width: 97.98px) {')).toBe(true);
+    // 180px: the full-width week's column gives a block 129px of text room at 1440, where a title beside its time is cut.
+    expect(css.slice(0, css.indexOf('.ch-ev .ch-ev__w {')).trimEnd().endsWith('@container (max-width: 179.98px) {')).toBe(true);
     expect(narrow).toMatch(/flex-flow: column wrap;/);
     expect(narrow).toMatch(/-webkit-line-clamp: var\(--ch-ev-solo, 2\);/);
-    // The type's glyph goes under the same width.
+    // The type's glyph goes only under 98px, so the full-width week's column keeps it.
     expect(css).toMatch(/@container \(max-width: 97\.98px\) \{\s*\.ch-ev__g \{\s*display: none;/);
+    expect(css.match(/@container \(max-width: 179\.98px\) \{\s*\.ch-ev__g \{/)).toBeNull();
   });
 
   it('a marked block leaves the time its row, so the mark in the bottom corner never lies on a title line', () => {
@@ -202,7 +204,7 @@ describe('a block another lies over shows whole lines only', () => {
     const at = css.indexOf('.ch-ev.is-covered .ch-ev__w {');
     expect(at).toBeGreaterThan(-1);
     const open = css.lastIndexOf('@container', at);
-    expect(css.slice(open, css.indexOf('{', open)).trim()).toBe('@container (max-width: 97.98px)');
+    expect(css.slice(open, css.indexOf('{', open)).trim()).toBe('@container (max-width: 179.98px)');
     expect(css.slice(at)).toMatch(/^\.ch-ev\.is-covered \.ch-ev__w \{\s*height: var\(--ch-ev-room\);\s*\}\s*\.ch-ev--group \.ch-ev__who\[data-covered\] \{\s*display: none;/);
   });
 });
@@ -237,8 +239,26 @@ describe('a 45-minute block takes two title lines in a narrow column', () => {
     const at = css.indexOf('.ch-ev.ch-ev--short.ch-ev--two .ch-ev__t {');
     expect(at).toBeGreaterThan(-1);
     const open = css.lastIndexOf('@container', at);
-    expect(css.slice(open, css.indexOf('{', open)).trim()).toBe('@container (max-width: 97.98px)');
+    expect(css.slice(open, css.indexOf('{', open)).trim()).toBe('@container (max-width: 179.98px)');
     expect(css.slice(at, css.indexOf('}', at))).toMatch(/-webkit-line-clamp: 2;[\s\S]*white-space: normal;/);
     expect(css).toMatch(/\.ch-ev--short\.is-pinned \.ch-ev__t \{\s*align-self: flex-start;\s*margin-top: var\(--ch-space-1\);/);
+  });
+});
+
+/** Owner, 2026-11-11: the desktop week takes the page's full width; its panel lies under it, as a narrow canvas stacks it. */
+describe('the desktop week takes the full width', () => {
+  it('the week’s body is one column at any width, with the panel in the page’s flow under it', () => {
+    expect(css).toMatch(/\n\.ch-cal-body\[data-view='week'\] \{\s*grid-template-columns: minmax\(0, 1fr\);\s*\}/);
+    expect(css).toMatch(/\n\.ch-cal-body\[data-view='week'\] > \.ch-in-wrap \{\s*position: static;\s*max-height: none;\s*\}/);
+  });
+
+  it('on the Ledger it is the narrow canvas’s stack: its gap, no column rule, and a hairline above the panel', () => {
+    expect(css).toMatch(/\.ch-cal\[data-canopy\] \.ch-cal-body\[data-view='week'\] \{\s*grid-template-columns: minmax\(0, 1fr\);\s*gap: 32px;\s*\}/);
+    expect(css).toMatch(/\.ch-cal\[data-canopy\] \.ch-cal-body\[data-view='week'\]::before \{\s*content: none;\s*\}/);
+    expect(css).toMatch(/\.ch-cal\[data-canopy\] \.ch-cal-body\[data-view='week'\] > \.ch-in-wrap\.ch-cal-surface \{\s*padding: 24px 0 0;\s*box-shadow: inset 0 var\(--ch-hairline-w\) 0 var\(--ch-ledger-rule\);\s*\}/);
+  });
+
+  it('Day, Month and List keep the panel beside them: no rule names their view', () => {
+    expect(css.match(/\.ch-cal-body\[data-view='(?!week')/)).toBeNull();
   });
 });

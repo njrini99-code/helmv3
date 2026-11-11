@@ -1998,6 +1998,51 @@ describe('Calendar · what each role is given', () => {
     expect(screen.queryByRole('button', { name: /New event/ })).toBeNull();
   });
 
+  // Owner, 2026-11-11: the desktop week takes the full width and the panel lies under it, so the toolbar says what waits there.
+  it('the week’s toolbar says how much needs attention, in the list’s own words, and goes to the list; other views and a quiet week have no such button', async () => {
+    const user = userEvent.setup();
+    const canvas = document.body.appendChild(Object.assign(document.createElement('div'), { id: 'ch-canvas' }));
+    const scrollTo = vi.fn();
+    canvas.scrollTo = scrollTo as unknown as typeof canvas.scrollTo;
+    try {
+      const coach = wrap(cal());
+      expect(document.querySelector('.ch-cal-body')!.getAttribute('data-view')).toBe('week');
+      const sec = document.querySelector<HTMLElement>('[data-ch-attention]')!;
+      expect(within(sec).getByText('Needs attention')).toBeTruthy();
+      // The count is everything waiting: the rows shown and the ones the list only counts ("4 more events are waiting").
+      const waiting = sec.querySelectorAll('.ch-in__need').length + Number(/(\d+) more/.exec(sec.textContent ?? '')?.[1] ?? 0);
+      expect(waiting).toBeGreaterThan(0);
+      const btn = screen.getByRole('button', { name: `Needs attention · ${waiting}` });
+      expect(btn.className).toContain('ch-btn--ghost');
+      expect(btn.parentElement!.className).toBe('ch-cal-bar');
+      // Pressed, the list's heading comes to rest 16px under the top bar (56px where the shell has not said).
+      sec.getBoundingClientRect = () => ({ top: 1475, bottom: 1849, left: 0, right: 0, width: 0, height: 374, x: 0, y: 1475, toJSON: () => ({}) });
+      await user.click(btn);
+      await waitFor(() => expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 1475 - 56 - 16 })));
+      expect(document.activeElement?.className ?? '').not.toContain('ch-in__need');
+      // From the keyboard, focus goes with the page, to the list's first row.
+      btn.focus();
+      await user.keyboard('{Enter}');
+      await waitFor(() => expect(document.activeElement).toBe(sec.querySelector('.ch-in__need')));
+      // Day, Month and List keep the panel beside them, so they have no button.
+      for (const other of ['Day', 'Month', 'List']) {
+        await user.click(screen.getByRole('radio', { name: other }));
+        expect(screen.queryByRole('button', { name: /^Needs attention · / })).toBeNull();
+      }
+      coach.unmount();
+      // A player's reads as their list does.
+      const player = wrap(PREVIEW_CALENDAR_PLAYER);
+      const theirs = document.querySelector<HTMLElement>('[data-ch-attention]')!;
+      expect(screen.getByRole('button', { name: `Needs your attention · ${theirs.querySelectorAll('.ch-in__need').length}` })).toBeTruthy();
+      player.unmount();
+      // Nothing waiting: no button.
+      wrap(cal({ events: [] }));
+      expect(document.querySelector('.ch-cal-attn')).toBeNull();
+    } finally {
+      canvas.remove();
+    }
+  });
+
   it('60801 a player has no planning tools: no New event or N key, no editor from ?new=1, no busy time, people filter, overlap panel, responses, attendance, edit or cancel; a coach has them', async () => {
     const user = userEvent.setup();
     const seeded = { initialNew: true, initialWith: 'jonah', initialEvent: 'e9' };

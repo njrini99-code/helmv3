@@ -766,12 +766,17 @@
   flex: 1;
   min-width: 0;
 }
-/* There the glyph goes and the name takes two lines ("Qualifier · Pinehurst No. 2" was "Qualifie…"); its row in the
-   lane grows with it (views.tsx). The bar's material still tells its type. */
+/* There the glyph goes: the bar's material still tells its type. */
 @container (max-width: 95.98px) {
   .ch-ev-bar--span > .ch-ev__g {
     display: none;
   }
+}
+/* A bar one week column wide, at any desktop width (the full-width week's column is 151px at 1440 and 175 at most;
+   two columns start past 290): the name takes two lines ("Qualifier · Pinehurst No. 2" was "Qualifie…", and
+   "Qualifier · Pinehu…" beside its glyph); its row in the lane grows with it (views.tsx). The glyph, where there is
+   room for one, stays level with the first line: its box is that line's height and the drawing is centred in it. */
+@container (max-width: 179.98px) {
   .ch-ev-bar--span > span:not([class]) {
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -782,6 +787,11 @@
     text-align: start;
     white-space: normal;
     overflow-wrap: normal;
+  }
+  .ch-ev-bar--span > .ch-ev__g {
+    align-self: flex-start;
+    height: calc(1em * var(--ch-lead-label));
+    margin-block: var(--ch-space-1);
   }
 }
 .ch-ev-bar__t {
@@ -1005,16 +1015,20 @@ html[data-fw-theme='dark'] .ch-ev-bar.is-held {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-/* A block's words (views.tsx wraps them unless the block is one short row). In a column of 120px or more the wrapper is
-   not there, and the title and the time lie as they always did. Under that (the desktop week at 1440px; the query
-   measures the 98px inside the block's padding) the title comes first: it wraps to the lines it needs (--ch-ev-solo,
-   what the block holds), and the time sits under it when a row is left. A time with no row wraps into a second column,
-   out of sight past the block's edge, never cut through. The wrapper reaches the block's bottom edge, as the time
-   always has. */
+/* A block's words (views.tsx wraps them unless the block is one short row). In a wide block (the day view) the wrapper
+   is not there, and the title and the time lie as they always did. In a week column the title comes first: it wraps to
+   the lines it needs (--ch-ev-solo, what the block holds), and the time sits under it when a row is left. A time with
+   no row wraps into a second column, out of sight past the block's edge, never cut through. The wrapper reaches the
+   block's bottom edge, as the time always has.
+   The query measures the room inside the block's padding. It was 98px, for the 100px columns the week had beside the
+   panel; the full-width week (owner, 2026-11-11) draws 151px columns at 1440 and 175 at most (129 and 153 of room),
+   where "Busy · Recruiting call", "Putting ladder" and a covered class were cut again by the old layout, so it is every
+   block with under 180px of room. The type's glyph keeps its own, lower mark above (98px): it is back in these
+   columns. */
 .ch-ev__w {
   display: contents;
 }
-@container (max-width: 97.98px) {
+@container (max-width: 179.98px) {
   .ch-ev .ch-ev__w {
     display: flex;
     flex: none;
@@ -1057,10 +1071,11 @@ html[data-fw-theme='dark'] .ch-ev-bar.is-held {
   .ch-ev--short .ch-ev__m {
     display: none;
   }
-  /* A block another lies over (views.tsx coveredFrom): from where that one begins only a 23px strip at the left still
-     shows, and whatever ran under it was cut off at its side (the class under "Course prep" read "10" and "3:("). The
-     words keep to the room above it (--ch-ev-room): the title the lines that show whole, and the time its row only when
-     that row does too; otherwise it wraps out of sight with the rest, as a time with no row always has. */
+  /* A block another lies over (views.tsx coveredFrom): from where that one begins only a strip at the left still shows
+     (23px in a 100px column, 69 in the full-width week's 151), and whatever ran under it was cut off at its side (the
+     class under "Course prep" read "10" and "3:(", and at full width "3:00 PM – 4"). The words keep to the room above
+     it (--ch-ev-room): the title the lines that show whole, and the time its row only when that row does too;
+     otherwise it wraps out of sight with the rest, as a time with no row always has. */
   .ch-ev.is-covered .ch-ev__w {
     height: var(--ch-ev-room);
   }
@@ -2760,6 +2775,16 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     max-height: none;
   }
 }
+/* Owner, 2026-11-11: the desktop week takes the page's full width, so its event titles fit their columns (151px a day
+   at 1440, where they were 100). The week's body takes the stacked shape a narrow canvas has just above, at any width:
+   the panel under the view. Day, Month and List keep the panel beside them. */
+.ch-cal-body[data-view='week'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ch-cal-body[data-view='week'] > .ch-in-wrap {
+  position: static;
+  max-height: none;
+}
 @container (max-width: 900px) {
   .ch-ed {
     grid-template-columns: minmax(0, 1fr);
@@ -3788,6 +3813,20 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
       padding: 24px 0 0;
       box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
     }
+  }
+  /* The week stacks the same way at any width (owner, 2026-11-11; .ch-cal-body[data-view='week'] above): the same
+     three rules, so the panel under the full-width week is the one a narrow canvas already draws. Its rule is the
+     hairline the column rule it replaces was (row 36), as the page's other Ledger rules are. */
+  .ch-cal[data-canopy] .ch-cal-body[data-view='week'] {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+  .ch-cal[data-canopy] .ch-cal-body[data-view='week']::before {
+    content: none;
+  }
+  .ch-cal[data-canopy] .ch-cal-body[data-view='week'] > .ch-in-wrap.ch-cal-surface {
+    padding: 24px 0 0;
+    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule);
   }
   /* The agenda's single column: today's tint bleeds past both edges, as its rows' hover does. */
   @container (max-width: 720px) {
