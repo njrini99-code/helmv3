@@ -1,34 +1,49 @@
 # Stats v2: gap list against the owner's newest design
 
 Date: 2026-11-07. Branch `agent/ch-stats-v2` (from `agent/ch-consolidate`).
-Design: `design-refresh/stats/redesign/clubhouse-stats.html` (newest) against `design-refresh/stats-and-home-phone.html` (earlier).
+Design: `design-refresh/stats/redesign/clubhouse-stats.html` (newest) against
+`design-refresh/stats-and-home-phone.html` (earlier).
 
 ## What is new in the newest design
 
-Nothing. After the export wrapper (doctype, head, `<body>`) is stripped, the two HTML files are identical
-byte for byte, and both equal `design-refresh/stats-home/redesign/stats-and-home-phone.html`, the package the
-earlier build (`StatsPlayerPhoneShs`, `StatsTeamPhoneShs`, the `.ch-shs-*` layer) was made from. So the
+Nothing. After the export wrapper (doctype, head, `<body>`) is stripped, the two
+HTML files are identical
+byte for byte, and both equal
+`design-refresh/stats-home/redesign/stats-and-home-phone.html`, the package the
+earlier build (`StatsPlayerPhoneShs`, `StatsTeamPhoneShs`, the `.ch-shs-*`
+layer) was made from. So the
 code map below was mostly built already; this list says what is and is not.
 
 ## Owner rules that override the design (from the brief)
 
-1. Player Home is untouched (`screens/home/**`, `PlayerGame.tsx`, `home.css` `.ch-ph-*`). The design's "Your game" row and the Home leg tokens are skipped.
-2. The Stats window defaults to This season, with an All time option (`SpanSwitch`, commit cc71f4e2dc). Kept.
-3. No change to what a round records, how a figure is computed, or the standard-error rule for colouring a change.
-4. Desktop keeps production's bento and drills: shared tokens and card language only, the comparison table with every change toned, and the hover readout with arrow-key stepping.
+1. Player Home is untouched (`screens/home/**`, `PlayerGame.tsx`, `home.css`
+   `.ch-ph-*`). The design's "Your game" row and the Home leg tokens are
+   skipped.
+2. The Stats window defaults to This season, with an All time option
+   (`SpanSwitch`, commit cc71f4e2dc). Kept.
+3. No change to what a round records, how a figure is computed, or the
+   standard-error rule for colouring a change.
+4. Desktop keeps production's bento and drills: shared tokens and card language
+   only, the comparison table with every change toned, and the hover readout
+   with arrow-key stepping.
 
 ## Later owner decisions that supersede motion rows
 
-The Nov 6 sweep (`design-refresh/redesign-ui-sweep-2026-11-06/lanes/motion.md`, MOT-01, MOT-02) records the owner bar:
-no first-paint motion, motion answers the user's action only, Reduce Motion is the 180 ms opacity fade
-(`CH_FADE_MS`), and it names the Stats grow-once rows (07 M-STATS-12 to 15) as superseded. Commit 9db3599267
-removed grow-on-scroll on that basis, and `.claude/rules/clubhouse.md` (Q-153) still bans first-paint draw-ins. The
-three motion rows marked SUPERSEDED below follow that and are not rebuilt. They are an open question in the report.
+The Nov 6 sweep (`design-refresh/redesign-ui-sweep-2026-11-06/lanes/motion.md`,
+MOT-01, MOT-02) records the owner bar:
+no first-paint motion, motion answers the user's action only, Reduce Motion is
+the 180 ms opacity fade
+(`CH_FADE_MS`), and it names the Stats grow-once rows (07 M-STATS-12 to 15) as
+superseded. Commit 9db3599267
+removed grow-on-scroll on that basis, and `.claude/rules/clubhouse.md` (Q-153)
+still bans first-paint draw-ins. The
+three motion rows marked SUPERSEDED below follow that and are not rebuilt. They
+are an open question in the report.
 
 ## Code map
 
 | # | Design row | Status | Evidence |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 1 | `styles/tokens.css`: language tokens (grouped bg, card bg, well, text, gain, loss, flag, separator, ring) | DONE | `tokens.css:669-698`, dark `:983-1001` |
 | 1a | Chart additions: `--ch-chart-gain-fill/loss-fill` (#1F6B45/#4FA877, #B86F0C/#E09A35), `--ch-chart-flat`, `--ch-chart-track` | DONE | `tokens.css:678-679`, `:992-993`, fills `:1574-1580` (under `data-ch-refresh=on`, set once on the frame, `shell/ClubhouseFrame.tsx:185`) |
 | 1b | Feature-card chart tones (ivory, mint, amber, coral) | DONE | `tokens.css:681-698` |
@@ -52,7 +67,7 @@ three motion rows marked SUPERSEDED below follow that and are not rebuilt. They 
 ## Motion table
 
 | Row | Design | Status | Evidence |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | M1 | Push: house push, 462 ms `--ch-ease-spring-smooth`, summary drifts `CH_UNDERLAY_SHIFT` under `--ch-push-dim` | DONE | `StatsDetailScreen` wraps `PhoneScreen` (`PhoneScreen.tsx:129`, `phone-chrome.tsx:188`, `tokens.css:1408`) |
 | M2 | Window switch thumb 360 ms on `--ch-ease-spring` | PARTIAL, deliberate | The house `Segmented` plate (`ui/Segmented.tsx:23`, settle spring base 260 ms, bounce 0.1) is shared by every segmented control and pinned by `motion-durations-pinned`; the Stats switch uses it unchanged |
 | M3 | Content cross-fade 260 ms on `--ch-ease` on a window or section change | DONE | `WindowCrossfade` `shs-motion.tsx:31-75`, 260 ms (`XFADE_MS`, now `CH_DUR.base`); `.ch-shs-xfade-ghost` `stats-redesign.css:1897-1906` |
@@ -66,7 +81,7 @@ three motion rows marked SUPERSEDED below follow that and are not rebuilt. They 
 ## Beyond the design language (treated as approved)
 
 | Addition | Status |
-|---|---|
+| --- | --- |
 | `--ch-chart-gain-fill` / `--ch-chart-loss-fill` | Present (`tokens.css:1574-1580`) |
 | `--ch-chart-flat`, `--ch-chart-track` | Present (`tokens.css:678-679`, `:992-993`) |
 | Feature-card chart tones | Present (`tokens.css:681-698`) |
@@ -79,13 +94,26 @@ three motion rows marked SUPERSEDED below follow that and are not rebuilt. They 
 
 ## Also fixed on the way
 
-- `stats-redesign.css` `.ch-shs-who h1` took `letter-spacing: -0.015em`, the one off-scale value that put the file one over its recorded holdout (`look-feel-pass-css.test.ts`). It is now `-0.02em`, on the scale.
-- `stats-redesign.css` `.ch-shs-hero-top` (a Home hero class no markup uses) had `padding: 12px … 34px`, the one off-scale spacing that put the file one over the spacing ratchet (`spacing-scale.test.ts`). It now reads the scale tokens (12 and 32); nothing renders it.
-- Still over on this base and not Stats: `home.css` 11 > 10 in `spacing-scale.test.ts` (Home is off limits), and `roster.test.tsx` 32401.
+- `stats-redesign.css` `.ch-shs-who h1` took `letter-spacing: -0.015em`, the one
+  off-scale value that put the file one over its recorded holdout
+  (`look-feel-pass-css.test.ts`). It is now `-0.02em`, on the scale.
+- `stats-redesign.css` `.ch-shs-hero-top` (a Home hero class no markup uses) had
+  `padding: 12px … 34px`, the one off-scale spacing that put the file one over
+  the spacing ratchet (`spacing-scale.test.ts`). It now reads the scale tokens
+  (12 and 32); nothing renders it.
+- Still over on this base and not Stats: `home.css` 11 > 10 in
+  `spacing-scale.test.ts` (Home is off limits), and `roster.test.tsx` 32401.
 
 ## Baseline before the first edit (this base)
 
 - `npm run clubhouse:css`: exit 0, 0 findings.
-- `npm run clubhouse:check`: exit 1, 73 violations, all "has no test that names it" (catalog `roster`, `messages`, `classes`) and bridge-contract test names (roster, messages, classes, player-home). None is Stats. Unchanged after this work.
-- `npm run test:file -- src/clubhouse/screens/stats src/clubhouse/routes`: 260 passed.
-- Failing on this base and not touched here (they read the catalog and test titles only; confirmed by running both against the base `P005` CONTRACT.md, same two failures): `stats-player.test.tsx` 52401 and `stats-team.test.tsx` 42401, which want Bridge IDs and CH codes named in test titles.
+- `npm run clubhouse:check`: exit 1, 73 violations, all "has no test that names
+  it" (catalog `roster`, `messages`, `classes`) and bridge-contract test names
+  (roster, messages, classes, player-home). None is Stats. Unchanged after this
+  work.
+- `npm run test:file -- src/clubhouse/screens/stats src/clubhouse/routes`: 260
+  passed.
+- Failing on this base and not touched here (they read the catalog and test
+  titles only; confirmed by running both against the base `P005` CONTRACT.md,
+  same two failures): `stats-player.test.tsx` 52401 and `stats-team.test.tsx`
+  42401, which want Bridge IDs and CH codes named in test titles.
