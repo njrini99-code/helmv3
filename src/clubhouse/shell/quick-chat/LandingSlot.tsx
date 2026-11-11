@@ -61,6 +61,7 @@ export function LandingSlot({ kind, day, subject, as: Tag = 'div' }: { kind: Lan
   const saved = landing.phase === 'saved';
   return (
     <Tag ref={el as never} className="ch-landslot" data-ch-slot={landing.key} data-phase={landing.phase}>
+      <i className="ch-landslot__tint" aria-hidden="true" />
       <span className="ch-landslot__t">{landing.label}</span>
       <span className="ch-landslot__s">
         <span data-on={saved ? undefined : ''}>

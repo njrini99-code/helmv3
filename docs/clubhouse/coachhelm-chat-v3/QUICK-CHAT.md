@@ -433,14 +433,20 @@ As MOTION.md's six steps, plus for these moments:
 
 ### Stand-ins (named, to be replaced, none hidden)
 
+Second pass, 11 Nov: the thread, the card and the island are no longer stand-ins. The panel mounts the Ask lane's
+`AskThread` (compact density, its own Rule P on the panel's scroller, its Latest key in the panel's body), its task card
+through `onCardPhase`, and its `ActivityIsland` in the header's centre slot. The inherited `Steps`, `AssistantTurn`,
+`TaskCard`, `QuickAsk`, `task-motion.ts` and `visuals/**` are deleted, with their 300 lines of ported styles.
+
 | Stand-in | For | Replace when |
 | --- | --- | --- |
-| The inherited `Steps`, `AssistantTurn` and `TaskCard` in this folder | The Ask lane's shared thread pieces at compact size (work line, read list, the card with the countdown ring and "Not saved yet", turn notice, Rule P's scroller) | The lead exports them. The inherited card still says "Added" and shows a check during the hold, which contradicts the slot's "Not saved yet"; the shared card fixes that |
-| `.ub[data-new]` rising 10px on settle | The lead's MO-3-4 from a foreign source rect | It is exported |
-| `LANDING_HOMES` (tool name to kind, home and place) | `lands` on the proposal | Engine request 3 |
-| Row found as "the one new row of its kind", or by its title | `created[].id` | Engine request 1 |
-| `BEAT_MS` in `qc-timing.ts` | The lead's `chat/turn-timing.ts` | It lands |
-| `PreviewLandingHost` in `PreviewQuickChat.tsx` | A screen that has taken the hooks: it stamps the Team Hub's task rows, places the slot, and plays the loader's part by adding the saved row 520 ms after the save | The Hub takes its two lines |
+| The panel's composer (`.cmp` in `QuickChatThread.tsx`) | The Ask lane's composer at compact size (MO-3-1 to MO-3-7: the send key's two fills, the arrow leaving, the stop glyph) | The lead exports it. Today the key swaps in the frame of the tap with no morph |
+| `import '../../styles/coachhelm-ask-v2.css'` in `QuickChatThread.tsx` | The thread and the island carrying their own styles | The lead moves those rules into `coachhelm-thread.css` |
+| The link catch on the panel's body (`openLink`) | The card handing its Open to the host (`onOpenReceipt`) | The lead adds it. Until then "Save now and open" is a page load (`location.assign`) and loses the landing |
+| `LANDING_HOMES` | Only cards stored before `proposal.lands` existed, and the other paths a home answers to | Never fully: it is the fallback |
+| Row found as "the one new row of its kind", or by its title | Only tasks whose action returns no id (focus area, goal, trip, a second commit found by its natural key) | The engine returns those ids |
+| `PreviewLandingHost` in `PreviewQuickChat.tsx` | A screen that has taken the hooks | The Hub takes its two lines |
+| The preview's `window.fetch` stand-in for `actions/[key]` | The server's answers to Undo, the fallback GET and "save now" | Never: a preview does not reach the network |
 
 ### The one-line hooks each screen needs (none is in a file this lane owns)
 
@@ -497,17 +503,85 @@ the pour can be driven from the key.
 | Announced | "Added to Tasks: Putting ladder for Eli." once, in a polite status region |
 | A start, tapped (handler called in the page) | the starts leave, the question is in the thread, the key is Stop, the read's line shows |
 
-### Not working, or not verified (found by the same driver)
+### Not working, or not verified
 
-1. **Back does not close the panel in the WebKit driver.** `history.back()` pops the panel's entry (`popstate` fires
-   once, `history.state` returns to the page's) and the panel stays open (`aria-expanded` stays true). The listener is
-   in `QuickChatSession.tsx` and by reading should call `onClose`; the cause was not found in the time available.
-   Until it is, Back from an open panel leaves the panel open over the page. Every other close was measured working.
-2. A start was verified by calling its handler in the page. A real pointer click on a start was not captured in a
-   hydrated page (the one attempt landed on a page the dev server was still compiling).
-3. The largest Text Size capture (`CH_TYPE_SCALE=1.353`, 390x844) was taken while the dev server was re-rendering and
-   shows the desk frame at phone width. Nothing clips in it and the starts wrap to two and three lines; the phone
-   sheet at that size is not confirmed.
-4. Not exercised on a device: the keyboard's rise with the pour (MO-1-3 is drawn against a block in `qc=hello-kb`),
-   the iOS edge swipe, VoiceOver's order, haptics.
-5. Not measured: frame times of the pour (T3); the page's `inert` under VoiceOver; Tab with full keyboard access on.
+Fixed in the second pass (11 Nov): Back closes the panel (it failed in the first build; the entry is now kept the way
+the shell keeps a pushed phone screen's, `use-panel-history.ts`); a start tapped with a real pointer; a rested finger
+no longer flings the sheet.
+
+Still open:
+1. Not exercised on a device: the keyboard's rise with the pour (MO-1-3 is drawn against a block in `qc=hello-kb`),
+   the iOS edge swipe, VoiceOver's order, haptics, 120 Hz. The benchmark rows that depend on these say so.
+2. Not measured: frame times of the pour and of the recede (T3) on a phone.
+3. The largest Text Size on the phone sheet: the one capture was taken mid re-render.
+4. Never run: today's thread read back from the server (`readTodayThread`), the day rollover, Open travelling to
+   another page with the mark on arrival, a failed write's slot leaving, Backspace taking the chip.
+5. "Save now and open" on the card is a page load (the Ask lane's `saveNow`); the landing is lost when it is used.
+6. In the preview the thread's waiting line reads "No answer yet. You can stop and ask again." for the first 300 ms
+   of a scripted turn: the preview's fake hook sends no `message_start`. Not seen with the real hook; for the lead to
+   confirm.
+
+---
+
+## Second pass (11 Nov 2026): the benchmark, the shared thread, the engine's answers
+
+### The benchmark (owner, 10 Nov late: "Like chat gpt Claude interface but better")
+
+What the two apps do is described from their shipped behaviour as a person using them sees it, not from their code.
+"Measured" is WebKit in the preview with `scratchpad/tools/qc-drive.mjs`; "not on a device" means the row is a claim
+until an iPhone confirms it, and is listed as open above.
+
+| Mechanism | What they do | What we do | Equal or better, and why |
+| --- | --- | --- | --- |
+| Getting to the assistant from where you are | Both are places you go. On a phone you leave what you were doing; on a desk each has a quick-entry bar that floats over the desktop and knows nothing of the window under it unless you attach it | The key is in the bar of every screen; the panel pours out of it over the page the coach is on, and names that page on a chip | Better: no trip, and it arrives knowing the screen. Neither of them can be inside this product |
+| A sheet or popover opening | iOS sheets rise from the foot on the system spring; their web popovers fade and scale in about 150 ms from a fixed origin | A 742 ms critically damped spring from the key's own centre, opaque by 90 ms, content rising top to bottom 30 ms apart. Measured at 390 wide: .64 at 46 ms, .81 at 180, .94 at 315, 1.00 at 762 | Better on meaning (it comes out of the thing that was pressed and goes back into it); equal on feel by the numbers; frame times on a phone not measured |
+| The keyboard | Opening a new chat focuses the field and the keyboard rises with the screen | The key focuses a field of its own inside the tap, so the keyboard starts in the same gesture; the composer is placed where the keyboard will leave it and the sheet's frame never changes | Equal by design. Not on a device: a defect until an iPhone shows one motion |
+| Dragging it away | A system sheet tracks the finger and can be flicked | 1:1 from the grab point after a 10px slop, either direction; let go short and it returns on a spring started at the finger's speed; flick it and the close starts at that speed (measured: thrown at 1.5 px/ms, scale .94 at 10 ms, .75 at 82, .53 at 222, no step at release); a finger that rested first is not a fling | Equal on tracking and throw; better in that up, toward the key, works as well as down |
+| Interrupting a move | System sheets can be caught mid-flight; their web menus cannot be turned around | Every move reads the frame on screen and continues from it. Measured: close 140 ms into an open, scale .760 then .770 one frame on; reopen 90 ms into that close, .531 then .534 | Better than their web surfaces; equal to a system sheet |
+| Answering the touch | Controls show a pressed state at once | The key, each start, the chip's remove, the composer's keys all take the app's press on pointer down (110 ms to .96 or .97); the panel's code is fetched on pointer down; opening never waits for today's thread; a start sends in the tap's handler | Equal. No handler here waits on the network to show it was heard |
+| What is behind it | The app behind a sheet dims and is gone from use | One flat veil at 24%; the page keeps updating, keeps its scroll position (measured 240 before, 240 after), and takes no pointer, key or VoiceOver focus | Better: the page is still the coach's place, which the landing depends on |
+| Starts | A few suggested prompts, general or drawn from history, as cards or chips | Rows for this screen and this player, each saying what it reads or makes; they sit on the composer; the one tapped rises to the top of the page as the question (the thread's own move, from the row's words) | Better: specific to where the coach is, and the tap visibly becomes the question |
+| What goes with the question | Attachments and "working with" chips that can be removed | One chip in the page's words ("Roster · Eli Brandt"), removed by its key or by Backspace in an empty field; nothing is sent that it does not show | Equal, and exact about the one thing that matters here |
+| Showing work while it runs | A status line with life in it; tool calls as rows that fold | The Ask lane's activity island, in the panel's header row: one line while it works, opening over the body, never changing the panel's size. Closed, the key itself says what is happening ("Reading…", "Needs your OK", "Saves in 5", "Added") | Better when the panel is closed: they have nowhere to say it |
+| An action taken for the coach | A tool card in the thread says what was done; the thing itself is somewhere else | The page behind shows where it will be while the write is held, then the real row, marked once. Measured from Confirm (1.6 s scripted hold): slot at 0.47 s; card and slot both "Not saved yet"; saved at 2.13 s; the slot's ground lit by 2.4 s; the panel away and the real row on that lit ground in one sample at 2.66 s (never both, never neither, no second rise); tint held 1.2 s, gone at 2.8 s; nothing left on the row | This is the one neither can do. It is the moment to show someone |
+| Taking it back | Permission is asked before a tool runs; after that it has happened | The write is held for 8 seconds on the server's clock, shown on the card's ring, on the slot and on the key; Undo leaves the page exactly as it was (measured: the slot leaves, the list keeps its 4 rows, the panel stays) | Better: an honest window, visible in three places that agree |
+| Coming back | History lists; a thread reopens at rest | The panel reopens on today's thread at rest under "Earlier today"; Open in Ask carries the same conversation to the full screen; Back closes the panel and leaves the page (measured: closing by 30 ms, hidden by 260, focus on the key) | Equal |
+
+Rows where ours is not yet proven equal (the keyboard, frame times, 120 Hz) are defects until measured on an iPhone,
+and are in the open list.
+
+### What changed in this pass
+
+1. **The thread is the Ask lane's.** `AskThread` with `density="compact"`, `phone` (the panel is a phone-wide column
+   on a desk too), `jumpHost` the panel's body, `onCardPhase` to the landing. Evidence opens as the app's sheet over the
+   panel. The "Earlier today" rule is now a quiet sticky line at the top of the panel's body, shown until the first
+   question of this sitting (the thread is one unit, so the rule cannot sit between two of its pages).
+2. **The island has a place.** The header's centre is its slot (`.qc__isl`). While an island is shown the name steps
+   back by opacity; on the phone the way into Ask is its arrow alone, so the island has the row's centre.
+3. **The engine's four answers are used** (CONTRACT_NOTES E18). `proposal.lands` decides the kind, the home, the day
+   and (from `?player=`) whose page; `created[].id` finds the row; the table of tool names is the fallback for older
+   cards. Tasks whose action returns no id (focus area, goal, trip) are found only as the one new row of their kind,
+   and when that is not certain nothing is marked.
+4. **`surface: null` counts as today's thread.** Until the held migration is applied every conversation lists
+   `surface: null`; the panel then restores the newest conversation started today (as before), and narrows to quick
+   chat's own by itself once surfaces are stored. Chosen over "restore nothing", which would lose coming back entirely
+   for as long as the migration is held.
+5. **A stored card is not an event** (`phaseIsNow`). The shared card reports where it stands when it is first drawn; a
+   receipt read back from the server, a reloaded Undo (`status: 'cancelled'`) or an old failure lands nothing, marks
+   nothing and says nothing on the key. Only an open hold, a change after a hold seen in this sitting, or the card's
+   first word after this sitting's Confirm counts. Tested.
+6. **The hand-off is one object.** Saved, the slot's ground lights to the mark's tint (180 ms) while its line says
+   "Saved"; the real row then takes that ground at full in the frame it appears, so the eye sees a pending row become
+   a real one, not one thing vanish and another arrive. The mark's 180 ms rise is kept only for a row with no slot
+   before it (Open from another page).
+7. **The panel steps away before the page is asked to re-read.** Asked first, the re-read's work delayed the close by
+   about 250 ms in the preview; now the close starts one beat after the save and the re-read is asked in that frame.
+8. **A thrown sheet keeps its speed** into the close (`chThrownExit`, the app's own), and a finger that rested for
+   80 ms before lifting has none.
+9. **Back** uses the shell's pattern for a same-URL entry, with its own key.
+10. **The phone sheet's ground is solid.** Glass on a sheet that covers the screen let words of the page read through
+    its foot and costs a backdrop re-sample on every frame of the pour. A desk keeps the glass.
+11. **Links out of the panel** go by the app's push and take the panel's history entry; when the thing lives on the
+    page behind, nothing navigates.
+12. `quick-chat.css` went from 552 lines to about 250 and holds no hex colour; what remains raw is the approved glass,
+    the key's ivory disc on the green bar and the live pill's hairline.

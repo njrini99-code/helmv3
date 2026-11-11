@@ -36,8 +36,8 @@ export interface Landing {
 }
 
 /**
- * Where each tool's thing lives. A stand-in for a `lands` object on the proposal (QUICK-CHAT.md request 3): the server
- * knows this better than a table of tool names does.
+ * Where each tool's thing lives, for a card stored before the proposal carried `lands` (engine E18), and the other
+ * paths a home answers to. `landingHome` prefers the server's word.
  */
 export const LANDING_HOMES: Readonly<Record<string, { kind: LandingKind; homes: readonly string[]; place: string }>> = {
   create_task: { kind: 'task', homes: ['/golf/dashboard/team-hub', '/golf/dashboard/tasks', '/golf/dashboard/team'], place: 'Tasks' },
@@ -52,6 +52,45 @@ export const LANDING_HOMES: Readonly<Record<string, { kind: LandingKind; homes: 
   create_trip: { kind: 'trip', homes: ['/golf/dashboard/team-hub', '/golf/dashboard/travel', '/golf/dashboard/team'], place: 'Travel' },
   create_recruit: { kind: 'recruit', homes: ['/golf/dashboard/recruiting'], place: 'Recruiting' },
 };
+
+/** The place in the coach's words, by kind: "Added to Tasks". */
+export const LANDING_PLACE: Readonly<Record<LandingKind, string>> = {
+  task: 'Tasks',
+  event: 'Calendar',
+  blocked_time: 'Calendar',
+  focus_area: 'Focus areas',
+  announcement: 'Announcements',
+  message: 'Messages',
+  qualifier: 'Qualifiers',
+  trip: 'Travel',
+  recruit: 'Recruiting',
+  lineup: 'Lineup',
+  plan: 'Practice plans',
+};
+
+/** What the server says about where a task's thing lives (`proposal.lands`, engine E18): the truth where it is present. */
+export interface LandsHint {
+  kind: string;
+  home: string;
+  day?: string;
+}
+
+/**
+ * Where a card's thing lives: the server's `lands` when the proposal carries one, with the table's homes kept as other
+ * names for the same page (the Team Hub answers to several paths); the table alone for a card stored before it did.
+ */
+export function landingHome(tool: string | undefined, lands?: LandsHint | null): { kind: LandingKind; homes: readonly string[]; place: string; day: string | null; subject: string | null } | null {
+  const table = tool ? LANDING_HOMES[tool] : undefined;
+  if (lands && lands.kind in LANDING_PLACE) {
+    const kind = lands.kind as LandingKind;
+    const [at, query = ''] = lands.home.split('?');
+    const home = (at ?? '').replace(/\/$/, '');
+    // A one-player page is named by its address: `?player=<id>` is whose page the thing lives on.
+    const subject = new URLSearchParams(query.split('#')[0]).get('player');
+    return { kind, homes: [home, ...(table?.kind === kind ? table.homes.filter((h) => h !== home) : [])], place: LANDING_PLACE[kind], day: lands.day ?? null, subject };
+  }
+  return table ? { ...table, day: null, subject: null } : null;
+}
 
 /** How long a saved landing waits to be seen (the panel stayed open, or Open has not been pressed yet) before it is dropped. */
 export const LANDING_UNSEEN_MS = 60_000;
@@ -83,25 +122,25 @@ const path = (href: string) => (href.split(/[?#]/)[0] ?? '').replace(/\/$/, '');
 export const isLandingHome = (l: Pick<Landing, 'homes'>, pathname: string): boolean => l.homes.includes(path(pathname));
 
 /** The hold began: the page may show where the thing will be. A tool with no home on any screen starts nothing. */
-export function holdLanding(a: { key: string; tool: string; label: string; day?: string | null; subject?: string | null; heldUntil: string | null; before?: readonly string[] | null }): Landing | null {
-  const home = LANDING_HOMES[a.tool];
+export function holdLanding(a: { key: string; tool: string; lands?: LandsHint | null; label: string; day?: string | null; subject?: string | null; heldUntil: string | null; before?: readonly string[] | null }): Landing | null {
+  const home = landingHome(a.tool, a.lands);
   if (!home) return null;
-  const landing: Landing = { key: a.key, kind: home.kind, homes: home.homes, place: home.place, label: a.label, id: null, day: a.day ?? null, subject: a.subject ?? null, phase: 'held', heldUntil: a.heldUntil, before: a.before ?? null, savedAt: null };
+  const landing: Landing = { key: a.key, kind: home.kind, homes: home.homes, place: home.place, label: a.label, id: null, day: a.day ?? home.day, subject: a.subject ?? home.subject, phase: 'held', heldUntil: a.heldUntil, before: a.before ?? null, savedAt: null };
   set([...landings.filter((l) => l.key !== a.key), landing]);
   return landing;
 }
 
 /** The write is in. Also the way in for a receipt that was never held here (Ask's Open): it starts at `saved`. */
-export function saveLanding(a: { key: string; tool?: string; label?: string; id?: string | null; day?: string | null; subject?: string | null; at?: number }): Landing | null {
+export function saveLanding(a: { key: string; tool?: string; lands?: LandsHint | null; label?: string; id?: string | null; day?: string | null; subject?: string | null; at?: number }): Landing | null {
   const at = a.at ?? Date.now();
   const had = landings.find((l) => l.key === a.key);
   if (had) {
     patch(a.key, { phase: 'saved', id: a.id ?? had.id, savedAt: at, heldUntil: null });
     return landings.find((l) => l.key === a.key) ?? null;
   }
-  const home = a.tool ? LANDING_HOMES[a.tool] : undefined;
+  const home = landingHome(a.tool, a.lands);
   if (!home) return null;
-  const landing: Landing = { key: a.key, kind: home.kind, homes: home.homes, place: home.place, label: a.label ?? '', id: a.id ?? null, day: a.day ?? null, subject: a.subject ?? null, phase: 'saved', heldUntil: null, before: null, savedAt: at };
+  const landing: Landing = { key: a.key, kind: home.kind, homes: home.homes, place: home.place, label: a.label ?? '', id: a.id ?? null, day: a.day ?? home.day, subject: a.subject ?? home.subject, phase: 'saved', heldUntil: null, before: null, savedAt: at };
   set([...landings, landing]);
   return landing;
 }
@@ -173,7 +212,7 @@ const bez = (c: readonly number[]) => `cubic-bezier(${c.join(',')})`;
  * quick beat, held, gone at `--ch-dur-live`. Both are this file's own nodes, appended to the row and removed when the
  * effect ends, so the row is an ordinary row again. Animations off: the same mark, still, for the same time.
  */
-export function markRow(row: HTMLElement, mode: 'full' | 'fade' | 'off' = 'full'): () => void {
+export function markRow(row: HTMLElement, mode: 'full' | 'fade' | 'off' = 'full', opts: { /** The row takes the place of a slot that was already lit: the tint is handed over at full, with no second rise. */ handed?: boolean } = {}): () => void {
   row.querySelectorAll(':scope > .ch-landmark, .ch-landtag').forEach((n) => n.remove());
   const tint = row.ownerDocument.createElement('i');
   tint.className = 'ch-landmark';
@@ -198,7 +237,7 @@ export function markRow(row: HTMLElement, mode: 'full' | 'fade' | 'off' = 'full'
     row.removeAttribute('data-ch-landed');
   };
   const frames: Keyframe[] = [
-    { opacity: 0, easing: bez(CH_EASE) },
+    { opacity: opts.handed ? 1 : 0, easing: bez(CH_EASE) },
     { opacity: 1, offset: CH_FADE_MS / LANDING_MARK_MS },
     { opacity: 1, offset: MARK_HOLD_UNTIL_MS / LANDING_MARK_MS, easing: bez(CH_EASE_IO) },
     { opacity: 0 },

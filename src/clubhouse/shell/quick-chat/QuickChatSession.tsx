@@ -17,12 +17,12 @@ import { useQcSeam } from './qc-seam';
 import { DRAG_CLOSE_SHARE, DRAG_FLING, DRAG_REST_MS, DRAG_SLOP_PX } from './qc-timing';
 import { QuickChatThread } from './QuickChatThread';
 import { readTodayThread } from './earlier-today';
+import { usePanelHistory } from './use-panel-history';
 import { dragCloses, useQcMotion } from './useQcMotion';
 
-const ASK_HOME = '/golf/dashboard/coachhelm/chat';
+const ASK_HOME = '/golf/dashboard/coachhelm?view=ask';
 /** The keyboard's height once it has been seen this session, so the next open pours with the composer already in place (MO-1-3). */
 let knownKeyboard = 0;
-let entrySeq = 0;
 
 /**
  * "Inert others": every sibling of each kept element's ancestors, up to the body, stops taking pointer, key and
@@ -62,6 +62,9 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
   const field = useRef<HTMLTextAreaElement>(null);
   const [shown, setShown] = useState(open);
   const [text, setText] = useState(initialText);
+  const [islandSlot, setIslandSlot] = useState<HTMLElement | null>(null);
+  /** The speed the sheet was thrown at (px per ms), for the close that follows it; 0 for every other close. */
+  const thrown = useRef(0);
   const motion = useQcMotion(mode);
   /** The close is the app going somewhere (Open in Ask, a receipt's Open): focus and history belong to the destination. */
   const leaving = useRef(false);
@@ -112,7 +115,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
   );
 
   const releaseInert = useRef<(() => void) | null>(null);
-  const entry = useRef<number | null>(null);
+  const history = usePanelHistory(open, onClose);
   useLayoutEffect(() => {
     if (open) setShown(true);
   }, [open]);
@@ -137,49 +140,25 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
       });
       if (fine || summoned) field.current?.focus({ preventScroll: true });
       else el.focus({ preventScroll: true });
-      // The panel owns one history entry: Back closes it and the page behind does not navigate (MQ-1-9). Pushed in the
-      // frame the pour is created in, so the router's own work is done before the first frame and never lands inside the pour.
-      if (mounted.current && entry.current === null) {
-        entry.current = ++entrySeq;
-        window.history.pushState({ ...(window.history.state as object | null), chQc: entry.current }, '');
-      }
     } else if (shown) {
       releaseInert.current?.();
       releaseInert.current = null;
-      motion.close(el, scrim.current, () => {
-        el.hidden = true;
-        if (scrim.current) scrim.current.hidden = true;
-        setShown(false);
-        // Its history entry goes when the close has ended: a reopen before then keeps the entry it had.
-        const mine = entry.current;
-        entry.current = null;
-        if (mine !== null && !leaving.current && (window.history.state as { chQc?: number } | null)?.chQc === mine) window.history.back();
-      });
+      motion.close(
+        el,
+        scrim.current,
+        () => {
+          el.hidden = true;
+          if (scrim.current) scrim.current.hidden = true;
+          setShown(false);
+        },
+        thrown.current,
+      );
+      thrown.current = 0;
       if (!leaving.current) keyRef.current?.querySelector<HTMLElement>('[data-ch-qc-key]')?.focus({ preventScroll: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs on the toggle
   }, [open, phone]);
   useEffect(() => () => releaseInert.current?.(), []);
-
-  // A panel that is open when the shell first draws (a preview state) takes its entry once the router has mounted.
-  const mounted = useRef(false);
-  useEffect(() => {
-    mounted.current = true;
-    if (!open || entry.current !== null) return;
-    entry.current = ++entrySeq;
-    window.history.pushState({ ...(window.history.state as object | null), chQc: entry.current }, '');
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on mount
-  }, []);
-  useEffect(() => {
-    if (!open) return;
-    const onPop = () => {
-      if (entry.current === null || (window.history.state as { chQc?: number } | null)?.chQc === entry.current) return;
-      entry.current = null;
-      onClose();
-    };
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
-  }, [open, onClose]);
 
   useEffect(() => {
     const vv = window.visualViewport;
@@ -216,14 +195,13 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
   /** Close because the app is going somewhere: the destination takes the panel's history entry, so Back returns to the page. */
   const leaveTo = useCallback(
     (href: string) => {
-      const mine = entry.current !== null && (window.history.state as { chQc?: number } | null)?.chQc === entry.current;
+      const mine = history.forget();
       leaving.current = true;
-      entry.current = null;
       onClose();
       if (mine) router.replace(href);
       else router.push(href);
     },
-    [onClose, router],
+    [history, onClose, router],
   );
   const conversationId = session?.conversationId ?? null;
   const toAsk = () => {
@@ -288,6 +266,8 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
           // A finger that rested before it lifted is not a fling: its last speed is stale.
           const v = e.timeStamp - d.t > DRAG_REST_MS ? 0 : d.v;
           if (dragCloses(dy, v, el.offsetHeight, DRAG_CLOSE_SHARE, DRAG_FLING)) {
+            // Thrown, the close starts at the finger's speed instead of at rest.
+            thrown.current = Math.sign(v) === Math.sign(dy) ? Math.abs(v) : 0;
             haptic('commit');
             onClose();
           } else motion.dragBack(el, scrim.current, dy, v);
@@ -310,8 +290,10 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
             <HelmMark />
           </span>
           <b className="qc__ttl">CoachHelm</b>
-          <Button variant="ghost" size="sm" className="qc__full" rightIcon={ArrowUpRight} onClick={toAsk}>
-            {conversationId ? 'Open in Ask' : 'Open Ask'}
+          {/* The activity island's place: one line here while CoachHelm works, opening over the body; empty otherwise. */}
+          <span className="qc__isl" ref={setIslandSlot} />
+          <Button variant="ghost" size="sm" className="qc__full" rightIcon={ArrowUpRight} aria={{ label: conversationId ? 'Open in Ask' : 'Open Ask' }} onClick={toAsk}>
+            <span className="qc__full-l">{conversationId ? 'Open in Ask' : 'Open Ask'}</span>
           </Button>
           <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm qc__x" aria-label="Close" onClick={onClose}>
             <Icon icon={X} size={16} />
@@ -336,6 +318,7 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
             text={text}
             setText={setText}
             field={field}
+            islandSlot={islandSlot}
           />
           {phone && <i className="ch-grab ch-grab--hit" aria-hidden="true" data-qc-handle="" {...handle} />}
         </div>

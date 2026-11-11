@@ -108,29 +108,11 @@ const askQual = brief('Two things before I set it', '“Top 5 travel” doesn’
   ['tees', 'Tees', ['White', 'Blue', 'Black']],
 ]);
 
-const FOLDERS = [{ name: 'Practice plans', count: 4 }, { name: 'Qualifier prep', count: 2 }, { name: 'Team', count: 7 }];
 /** What a signed-in read would have given the panel, per `?qc=`. */
 export function seamFor(state: string): QcSeamValue {
-  const base: QcSeamValue = {
-    planOn: true,
-    earlier: { title: 'Moved Team lift to 2:00 PM', line: 'Mon 3 Nov · 11 players told', at: '9:12 AM' },
-    week: {
-      days: ['02', '03', '04', '05', '06', '07', '08'].map((d, i) => ({ date: `2026-11-${d}`, hasEvent: i % 2 === 1 })),
-      items: [{ title: 'Team lift', start: '2026-11-06T14:00:00Z', end: '2026-11-06T14:45:00Z' }],
-    },
-  };
-  if (state === 'hello-kb') return { ...base, keyboard: 336 };
-  if (state === 'today') return { ...base, today: true };
-  if (state.startsWith('undone-') && state !== 'undone-plan') return { ...base, taskPhase: 'undone' };
-  const plan = (phase: NonNullable<QcSeamValue['plan']>['phase'], menu?: 'open' | 'new') => ({ ...base, plan: { phase, menu, folders: FOLDERS } });
-  if (state === 'confirm-plan') return plan('draft');
-  if (state === 'folder' || state === 'folder-menu') return plan('draft', 'open');
-  if (state === 'folder-new') return plan('draft', 'new');
-  if (state === 'receipt-plan') return plan('saved');
-  if (state === 'told-plan') return plan('told');
-  if (state === 'undone-plan') return plan('undone');
-  if (state === 'failed-plan') return plan('failed');
-  return base;
+  if (state === 'hello-kb') return { planOn: true, keyboard: 336 };
+  if (state === 'today') return { planOn: true, today: true };
+  return { planOn: true };
 }
 
 /** A task for one player: a flow with no picture of its own, whose home is the Team Hub's tasks (QUICK-CHAT.md, Moment 8). */

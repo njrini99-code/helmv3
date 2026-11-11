@@ -2,35 +2,37 @@
 
 import { ArrowUpRight, MapPin, X } from 'lucide-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
+import { createPortal } from 'react-dom';
+import type { ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { ChatUIMessage } from '@/lib/coachhelm/v3/chat/engine/protocol';
 import { describeChatError } from '../../data/coachhelm-chat-error';
 import { ASK_STARTERS } from '../../data/coachhelm-chat-shape';
-import { buildTurns, pendingApproval, stepsReceipt, type AskAssistantTurn } from '../../data/coachhelm-chat-thread';
+import { buildTurns, pendingApproval, type AskProposalView, type EvidenceFocus } from '../../data/coachhelm-chat-thread';
 import { isoDay } from '../../lib/dates';
 import { haptic } from '../../lib/haptics';
 import { CH_EASE, CH_FADE_MS } from '../../lib/motion';
-import { pluralWord } from '../../lib/plural';
 import type { ChMotionMode } from '../../lib/reduced-motion';
-import { AskProse } from '../../screens/coachhelm/chat/Prose';
+import { AskEvidencePanel } from '../../screens/coachhelm/chat/EvidencePanel';
+import { ActivityIsland } from '../../screens/coachhelm/chat/island/ActivityIsland';
+import { useIsland } from '../../screens/coachhelm/chat/island/useIsland';
+import { askLinkHref } from '../../screens/coachhelm/chat/ask-links';
+import { noteSendSource } from '../../screens/coachhelm/chat/send-source';
+import { AskThread } from '../../screens/coachhelm/chat/Thread';
 import { Badge } from '../../ui/Badge';
 import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
 import type { ChAskSheetChat } from '../AskSheet';
 import { subscribeOnline } from '../AskSheetBody';
-import { LANDING_HOMES } from './landing';
+import { saveLanding } from './landing';
 import { useQcCtx } from './qc-context';
 import { useQcSeam } from './qc-seam';
-import { PILL_REST_MS, RESTORE_GRACE_MS, SECOND_MS } from './qc-timing';
-import { QuickAsk } from './QuickAsk';
+import { CONFIRM_FRESH_MS, PILL_REST_MS, RESTORE_GRACE_MS, SECOND_MS } from './qc-timing';
 import { qcContext, qcScreen, quickStarts, type QuickStart } from './starts';
-import { TaskCard } from './TaskCard';
 import { useDictation } from './useDictation';
-import { useLandingDriver, type TaskPhase, type TaskPhaseMeta } from './use-landing-driver';
-import { PlanTask } from './visuals/PlanTask';
+import { phaseIsNow, useLandingDriver, type TaskPhase } from './use-landing-driver';
+// The turn, the card and the island are styled beside Ask's own rules; the panel can open before Ask has ever been visited.
+import '../../styles/coachhelm-ask-v2.css';
 
-const TURNS_SHOWN = 30;
-/** AC-QC-STP-04: past six rows, the oldest done ones fold. */
-const STEPS_SHOWN = 6;
 const ease = `cubic-bezier(${CH_EASE.join(',')})`;
 const Ico = ({ d, size }: { d: string; size?: number }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width={size} height={size} aria-hidden="true">
@@ -57,15 +59,17 @@ export interface QuickChatThreadProps {
   text: string;
   setText: (next: string | ((was: string) => string)) => void;
   field: RefObject<HTMLTextAreaElement | null>;
+  /** The header's centred slot, where the activity island lives: one line there, and it opens over the body without changing the panel. */
+  islandSlot: HTMLElement | null;
 }
 
 /**
- * The conversation inside the quick chat's frame: the chat hook, the empty start for this screen, the thread, the
- * context chip and the composer (QUICK-CHAT.md, Moments 1, 2, 8 and 9). The turn's own pieces (steps, the task card)
- * are the inherited ones in this folder, standing in until the Ask lane's shared thread pieces are exported at compact
- * size; they are composed here, never restyled.
+ * The conversation inside the quick chat's frame (QUICK-CHAT.md, Moments 1, 2, 8 and 9): the chat hook, the empty start
+ * for this screen, the context chip and the composer are this lane's; the thread itself (question, turn, reads, prose,
+ * the task card and its receipt, the turn notice, the Latest key, Rule P) is the Ask lane's `AskThread` at compact
+ * density, and the activity island is its `ActivityIsland`, both used whole and never restyled here.
  */
-export function QuickChatThread({ chat: useChatImpl, conversationId, initialMessages, restored, restoring, open, onClose, leaveTo, looking, pathname, planOn, phone, mode, text, setText, field }: QuickChatThreadProps) {
+export function QuickChatThread({ chat: useChatImpl, conversationId, initialMessages, restored, restoring, open, onClose, leaveTo, looking, pathname, planOn, phone, mode, text, setText, field, islandSlot }: QuickChatThreadProps) {
   const reduced = mode !== 'full';
   const seam = useQcSeam();
   const online = useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
@@ -86,11 +90,10 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
   const pendingId = pending?.approvalId ?? null;
   const notice = chat.error ? describeChatError(chat.error) : null;
   const mic = useDictation((words) => setText((t) => (t.trim() ? `${t.trimEnd()} ${words}` : words)));
-  // The turn that was stopped, not the session: an earlier finished turn stays finished.
-  const [stoppedId, setStoppedId] = useState<string | null>(null);
-  const body = useRef<HTMLDivElement>(null);
-  // MOB-QC-13: one announcement when an answer finishes, not one per streamed word.
-  const finished = useMemo(() => (chat.busy ? '' : ([...turns].reverse().find((t) => t.role === 'assistant') as { answerText?: string } | undefined)?.answerText ?? ''), [chat.busy, turns]);
+  // The turn that was stopped, not the session: an earlier finished turn stays finished. `pending`: stopped before the server opened one.
+  const [stoppedTurn, setStoppedTurn] = useState<string | null>(null);
+  const [body, setBody] = useState<HTMLDivElement | null>(null);
+  const [evidence, setEvidence] = useState<EvidenceFocus | null>(null);
   /** A row landing in the page behind, said once: "Added to Tasks: Putting ladder for Eli." */
   const [landedLine, setLandedLine] = useState('');
 
@@ -118,60 +121,81 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
     // eslint-disable-next-line react-hooks/exhaustive-deps -- checked on open
   }, [open]);
 
-  // `ST-9.qc.today`: reopened on a thread, the rule sits over its last page; the turns below it were asked in this sitting.
-  const lastQuestion = [...turns].reverse().find((t) => t.role === 'user')?.id ?? null;
-  const [ruleAt, setRuleAt] = useState<string | null>(() => (restored || seam?.today ? lastQuestion : null));
+  // `ST-9.qc.today`: opened on a thread that was already there, a quiet rule says what the coach is looking at. It goes
+  // with the first question of this sitting: from then the page on screen is now.
+  const [earlierUntil, setEarlierUntil] = useState<number | null>(() => (restored || seam?.today ? turns.length : null));
   const wasOpen = useRef(open);
-  /** A turn finished, or a card started waiting, while the panel was away: reopened, the thread shows the top of that page. */
-  const unread = useRef(false);
   useLayoutEffect(() => {
-    if (open && !wasOpen.current) {
-      if (turns.length) setRuleAt(lastQuestion);
-      const el = body.current;
-      if (el) {
-        const page = unread.current && lastQuestion ? el.querySelector<HTMLElement>(`[data-turn="${CSS.escape(lastQuestion)}"]`) : null;
-        el.scrollTop = page ? Math.max(0, page.offsetTop - 12) : el.scrollHeight;
-      }
-      unread.current = false;
-    }
+    if (open && !wasOpen.current) setEarlierUntil(turns.length ? turns.length : null);
     wasOpen.current = open;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs on the toggle
   }, [open]);
-  useLayoutEffect(() => {
-    // A thread that is there when the panel first draws (restored, or reopened by a reload) opens on its newest words.
-    const el = body.current;
-    if (!el) return;
-    el.scrollTop = el.scrollHeight;
-    // Once more when the cards inside have taken their height.
-    const raf = requestAnimationFrame(() => (el.scrollTop = el.scrollHeight));
-    return () => cancelAnimationFrame(raf);
-  }, []);
+  const earlier = earlierUntil !== null && turns.length === earlierUntil;
+
+  // The activity island: where CoachHelm's work is shown, in the header's own row, so it covers nothing in the thread.
+  const island = useIsland({ messages: chat.messages, busy: chat.busy, ended: !!notice || stoppedTurn !== null });
+
+  // Moment 8: the page behind as the proof.
+  const confirmAt = useRef(0);
+  const fieldFocusAt = useRef(0);
+  const state = useRef({ text, busy: chat.busy });
+  state.current = { text, busy: chat.busy };
+  const land = useLandingDriver({
+    pathname,
+    open,
+    mode,
+    // The chat stays when the coach is already on to the next thing: words in the field, the field taken up since Confirm, a turn running.
+    canRecede: () => !state.current.text.trim() && fieldFocusAt.current <= confirmAt.current && !state.current.busy,
+    recede: onClose,
+    announce: setLandedLine,
+  });
+  /** What the card in this sitting last said. A stored receipt is not an event: reopening a finished thread lands nothing and says nothing. */
+  const [card, setCard] = useState<{ phase: TaskPhase; until: string | null } | null>(null);
+  const seenPhase = useRef(new Map<string, TaskPhase>());
+  const views = useRef<AskProposalView[]>([]);
+  views.current = turns.flatMap((t) => (t.role === 'assistant' ? t.blocks.flatMap((b) => (b.kind === 'proposal' ? [b.view] : [])) : []));
+  const onCardPhase = (key: string, phase: TaskPhase, receipt: ActionReceipt | null) => {
+    const before = seenPhase.current.get(key);
+    seenPhase.current.set(key, phase);
+    const until = receipt?.status === 'held' ? (receipt.held_until ?? null) : null;
+    const confirmedNow = confirmAt.current > 0 && performance.now() - confirmAt.current < CONFIRM_FRESH_MS;
+    // A stored card reports once when it is drawn: that is not an event (a reloaded Undo lands nothing and says nothing).
+    if (!phaseIsNow(before, phase, { heldUntil: until, confirmedNow })) return;
+    setCard({ phase, until });
+    const view = views.current.find((v) => v.key === key);
+    if (!view) return;
+    const made = receipt?.created[0];
+    land(key, phase, {
+      tool: view.tool,
+      lands: view.proposal.lands ?? null,
+      label: made?.label ?? view.proposal.summary,
+      subject: view.proposal.affects.find((a) => a.kind === 'player')?.id ?? null,
+      heldUntil: until,
+      id: made?.id ?? null,
+    });
+  };
 
   // The pill and the flag follow the run. A task that waits on the coach says so for 1800ms, then the key carries a flag.
   const lastTurn = turns[turns.length - 1];
   const assistant = lastTurn?.role === 'assistant' ? lastTurn : null;
-  const stepLabel = assistant?.steps[assistant.steps.length - 1]?.label ?? 'Working';
+  // What it is doing now, in the step's own words; a calculation that calls reads shows the read it is on ("Working it out" between them).
+  const stepLabel = ([...(assistant?.steps ?? [])].reverse().find((s) => s.state === 'active') ?? assistant?.steps[assistant.steps.length - 1])?.label ?? 'Working';
   const lastReceipt = assistant?.blocks.flatMap((b) => (b.kind === 'proposal' ? [b.view.receipt] : b.kind === 'receipt' ? [b.receipt] : [])).find(Boolean) ?? null;
-  const receiptStatus = lastReceipt?.status;
-  const heldUntil = receiptStatus === 'held' ? (lastReceipt?.held_until ?? null) : null;
-  /** What the card in this sitting last said. The stored receipt stays `held` until the thread is read again, so the card is the truth. */
-  const [card, setCard] = useState<{ phase: TaskPhase; until: string | null } | null>(null);
+  const storedFailed = lastReceipt?.status === 'failed';
   const [clock, tick] = useState(0);
   useEffect(() => {
-    const until = card ? (card.phase === 'held' ? card.until : null) : heldUntil;
-    const left = until ? Math.ceil((Date.parse(until) - Date.now()) / SECOND_MS) : 0;
+    const left = card?.phase === 'held' && card.until ? Math.ceil((Date.parse(card.until) - Date.now()) / SECOND_MS) : 0;
     if (pendingId) {
       setRun({ state: 'wait', label: 'Needs your OK' });
       if (open) return;
-      unread.current = true;
       const t = setTimeout(() => {
         setRun({ state: 'idle', label: '' });
         setFlag(true);
       }, PILL_REST_MS);
       return () => clearTimeout(t);
     }
-    if (chat.busy) return setRun({ state: 'work', label: stepLabel });
-    if (card?.phase === 'failed' || (!card && receiptStatus === 'failed')) return setRun({ state: 'failed', label: 'Didn’t go through' });
+    if (chat.busy && card?.phase !== 'held') return setRun({ state: 'work', label: stepLabel });
+    if (card?.phase === 'failed' || (!card && storedFailed)) return setRun({ state: 'failed', label: 'Didn’t go through' });
     if (left > 0) {
       // The hold's clock on the pill, from the server's instant: "Saves in 5".
       setRun({ state: 'wait', label: `Saves in ${left}` });
@@ -190,68 +214,31 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
     }
     setRun({ state: 'idle', label: '' });
     return undefined;
-  }, [pendingId, chat.busy, stepLabel, receiptStatus, heldUntil, card, open, setRun, setFlag, clock]);
-  // An answer that finished with the panel away has not been read: reopened, the thread shows the top of its page.
-  const wasBusy = useRef(chat.busy);
-  useEffect(() => {
-    if (wasBusy.current && !chat.busy && !open) unread.current = true;
-    wasBusy.current = chat.busy;
-  }, [chat.busy, open]);
-
-  // Anything added scrolls the body; the panel's own height never moves (M-GROW). Only a reader at the bottom is followed (MOB-QC-4).
-  useEffect(() => {
-    const el = body.current;
-    if (!el || !chat.messages.length) return;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight < 80) el.scrollTo({ top: el.scrollHeight, behavior: reduced || chat.busy ? 'auto' : 'smooth' });
-  }, [chat.messages, chat.busy, reduced]);
-
-  // Moment 8: the page behind as the proof.
-  const confirmAt = useRef(0);
-  const fieldFocusAt = useRef(0);
-  const state = useRef({ text, busy: chat.busy });
-  state.current = { text, busy: chat.busy };
-  const land = useLandingDriver({
-    pathname,
-    open,
-    mode,
-    // The chat stays when the coach is already on to the next thing: words in the field, the field taken up since Confirm, a turn running.
-    canRecede: () => !state.current.text.trim() && fieldFocusAt.current <= confirmAt.current && !state.current.busy,
-    recede: onClose,
-    announce: setLandedLine,
-  });
-  const onPhase = (key: string, phase: TaskPhase, meta: TaskPhaseMeta) => {
-    setCard({ phase, until: meta.heldUntil ?? null });
-    land(key, phase, meta);
-  };
+  }, [pendingId, chat.busy, stepLabel, storedFailed, card, open, setRun, setFlag, clock]);
 
   /** MO-2-3: the starts step back for the question; the one that was tapped has become it. */
   const [stepping, setStepping] = useState<{ rows: QuickStart[]; from: string | null } | null>(null);
-  const born = useRef<ReadonlySet<string>>(new Set(turns.map((t) => t.id)));
-  const send = (t: string, from: string | null = null) => {
+  const send = (t: string, from: string | null = null): boolean => {
     const clean = t.trim();
     // Offline, nothing leaves and the words stay in the field; while a turn runs the key is Stop (SPEC `ST-3`).
-    if (!clean || !online || chat.busy) return;
+    if (!clean || !online || chat.busy) return false;
     if (!turns.length && !reduced) {
       setStepping({ rows: starts, from });
       setTimeout(() => setStepping(null), CH_FADE_MS);
     }
     setText('');
     setChipHeld(false);
-    setStoppedId(null);
+    setStoppedTurn(null);
     haptic('press');
     chat.send(clean);
+    return true;
   };
   const stop = () => {
     haptic('press');
     chat.stop();
-    setStoppedId(turns[turns.length - 1]?.id ?? null);
+    const last = turns[turns.length - 1];
+    setStoppedTurn(last?.role === 'assistant' ? last.id : 'pending');
   };
-  /** A receipt's Open: in place when the thing lives on this page, by the shared push when it lives elsewhere (MO-8-5). */
-  const openThing = (href: string) => {
-    if ((href.split(/[?#]/)[0] ?? '').replace(/\/$/, '') === pathname.replace(/\/$/, '')) onClose();
-    else leaveTo(href);
-  };
-  const toAsk = () => leaveTo(chat.conversationId ? `/golf/dashboard/coachhelm/chat?c=${encodeURIComponent(chat.conversationId)}` : '/golf/dashboard/coachhelm/chat');
 
   const dropChip = () => {
     if (!chip || chat.busy) return;
@@ -266,6 +253,24 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
     out.onfinish = done;
   };
 
+  /**
+   * A link out of the panel (a receipt's Open, a link in an answer): the destination takes the panel's history entry and
+   * arrives by the app's own push, not a page load, so a row the chat just made is still known when the page draws it
+   * (MO-8-5). When the thing lives on the page behind, nothing navigates: the panel steps away and the page is the answer.
+   */
+  const openLink = (e: React.MouseEvent<HTMLDivElement>) => {
+    const a = (e.target as Element).closest?.('a[href]');
+    const href = a?.getAttribute('href');
+    if (!a || !href || !href.startsWith('/') || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0 || a.getAttribute('target') === '_blank') return;
+    e.preventDefault();
+    const view = views.current.find((v) => v.receipt?.created.some((c) => c.href && (askLinkHref(c.href) ?? c.href) === href));
+    const made = view?.receipt?.created.find((c) => c.href);
+    if (view) saveLanding({ key: view.key, tool: view.tool, lands: view.proposal.lands ?? null, label: made?.label ?? view.proposal.summary, id: made?.id ?? null, subject: view.proposal.affects.find((x) => x.kind === 'player')?.id ?? null });
+    haptic('press');
+    if ((href.split(/[?#]/)[0] ?? '').replace(/\/$/, '') === pathname.replace(/\/$/, '')) onClose();
+    else leaveTo(href);
+  };
+
   const fresh = turns.length === 0;
   const canSend = !!text.trim() && online;
   // With the chip dropped the screen is still the screen: its starts stay, without the player's name.
@@ -276,14 +281,11 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
     if (open) openedAt.current = performance.now();
   }, [open]);
   const late = open && performance.now() - openedAt.current > RESTORE_GRACE_MS;
-  const hidden = turns.length > TURNS_SHOWN ? turns.length - TURNS_SHOWN : 0;
 
   return (
     <>
-      <div className="qc__body" ref={body} data-qc-rise="">
-        <p className="ch-sr-only" role="status">
-          {finished}
-        </p>
+      {/* A link's own click is caught on its way down (openLink); the link stays the control. */}
+      <div className="qc__body" ref={setBody} data-qc-rise="" onClickCapture={openLink}>
         <p className="ch-sr-only" role="status">
           {landedLine}
         </p>
@@ -293,8 +295,19 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
               <ul className="qc-starts" aria-label="Starts for this screen" data-late={late ? '' : undefined}>
                 {starts.map((s) => (
                   <li key={s.id}>
-                    <button type="button" className="qc-start" data-ch-press="" onClick={() => send(s.ask, s.id)}>
-                      <span className="qc-start__q">{s.ask}</span>
+                    <button
+                      type="button"
+                      className="qc-start"
+                      data-ch-press=""
+                      onClick={(e) => {
+                        // MO-2-4: the question rises out of the words that were tapped.
+                        noteSendSource(e.currentTarget.querySelector('[data-ch-ask-source]'));
+                        send(s.ask, s.id);
+                      }}
+                    >
+                      <span className="qc-start__q" data-ch-ask-source="">
+                        {s.ask}
+                      </span>
                       <span className="qc-start__d">{s.does}</span>
                       <Icon icon={ArrowUpRight} size={16} className="qc-start__go" />
                     </button>
@@ -317,59 +330,46 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
                   ))}
                 </ul>
               )}
-              {hidden > 0 && (
-                <button type="button" className="steps-sum" onClick={toAsk}>
-                  Earlier in this chat · Open in Ask
-                </button>
-              )}
-              {turns.slice(hidden).map((turn) =>
-                turn.role === 'user' ? (
-                  <div className="qc-q" key={turn.id} data-turn={turn.id}>
-                    {ruleAt === turn.id && (
-                      <p className="qc-rule">
-                        <span>Earlier today</span>
-                      </p>
-                    )}
-                    <div className="ub" data-new={born.current.has(turn.id) ? undefined : ''}>
-                      {turn.text}
-                    </div>
-                  </div>
-                ) : (
-                  <AssistantTurn
-                    key={turn.id}
-                    turn={turn}
-                    failed={!!notice && turn.id === turns[turns.length - 1]?.id}
-                    onFull={toAsk}
-                    online={online}
-                    stopped={stoppedId === turn.id}
-                    onSend={send}
-                    onApprove={(id) => {
-                      confirmAt.current = performance.now();
-                      chat.approve(id);
-                    }}
-                    onDeny={chat.deny}
-                    onOpen={openThing}
-                    onPhase={onPhase}
-                  />
-                ),
-              )}
-              {notice && (
-                <p className="say quiet qc-lost" role="alert">
-                  <span>{notice.message ?? 'Lost the connection. Nothing was saved.'}</span>
-                  {notice.recovery === 'retry' && (
-                    <button type="button" onClick={() => chat.retry()}>
-                      Try again
-                    </button>
-                  )}
+              {earlier && (
+                <p className="qc-rule">
+                  <span>Earlier today</span>
                 </p>
               )}
+              <AskThread
+                density="compact"
+                jumpHost={body}
+                messages={chat.messages}
+                busy={chat.busy}
+                error={notice}
+                offline={!online}
+                // The panel is a phone-wide column on a desk too: the thread takes its phone page edge, not a desk's centred measure.
+                phone
+                players={[]}
+                stoppedTurn={stoppedTurn}
+                onApprove={(id) => {
+                  confirmAt.current = performance.now();
+                  chat.approve(id);
+                }}
+                onDeny={chat.deny}
+                onSend={(t) => send(t)}
+                onStop={stop}
+                onRetry={() => {
+                  setStoppedTurn(null);
+                  chat.retry();
+                }}
+                onNewChat={chat.newConversation}
+                evidenceFocus={evidence}
+                onOpenEvidence={setEvidence}
+                onCardPhase={onCardPhase}
+                island={{ turnId: island.model?.turnId ?? null, open: island.open, pinned: island.pinned, openFor: island.openFor }}
+              />
             </>
           )}
         </div>
       </div>
       <div className="qc__foot">
         <div className="qc__comp" data-qc-rise="">
-          {!online && <p className="say quiet qc-offline">You’re offline. Your words stay here until you’re back.</p>}
+          {!online && <p className="qc-offline">You’re offline. Your words stay here until you’re back.</p>}
           {(chip || chipHeld) && (
             <div className="qc-ctx">
               {chip && (
@@ -385,7 +385,7 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
                     ) : (
                       <span className="qc-chip__l">{chip.label}</span>
                     )}
-                    <button type="button" className="qc-chip__x" aria-label="Remove" disabled={chat.busy} onClick={dropChip}>
+                    <button type="button" className="qc-chip__x" aria-label="Remove" data-ch-press="" disabled={chat.busy} onClick={dropChip}>
                       <Icon icon={X} size={13} />
                     </button>
                   </Badge>
@@ -406,7 +406,7 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
                 },
               }))}
               trigger={(t) => (
-                <button {...t} type="button" className="cmp__plus" aria-label="Add to your question">
+                <button {...t} type="button" className="cmp__plus" aria-label="Add to your question" data-ch-press="">
                   <Ico d="M12 5v14M5 12h14" size={18} />
                 </button>
               )}
@@ -418,6 +418,7 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
               placeholder={fresh ? 'Ask about your team' : pendingId ? 'Ask something else, or answer the card' : 'Ask a follow-up'}
               rows={1}
               value={text}
+              data-ch-ask-source=""
               onFocus={() => {
                 fieldFocusAt.current = performance.now();
               }}
@@ -433,6 +434,7 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
                 // A phone's blue send key sends, as Messages' does.
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
+                  noteSendSource(e.currentTarget);
                   send(text);
                 } else if (e.key === 'Backspace' && !text && chip) {
                   // An empty field's Backspace takes the chip, as a token field does.
@@ -442,128 +444,36 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
               }}
             />
             {mic.available && (
-              <button type="button" className={'cmp__mic' + (mic.on ? ' is-on' : '')} aria-label={mic.on ? 'Stop dictating' : 'Dictate'} aria-pressed={mic.on} onClick={mic.toggle}>
+              <button type="button" className={'cmp__mic' + (mic.on ? ' is-on' : '')} aria-label={mic.on ? 'Stop dictating' : 'Dictate'} aria-pressed={mic.on} data-ch-press="" onClick={mic.toggle}>
                 <Ico d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3" size={18} />
               </button>
             )}
             {chat.busy ? (
-              <button className="cmp__send stop" type="button" aria-label="Stop" onClick={stop}>
+              <button className="cmp__send stop" type="button" aria-label="Stop" data-ch-press="" onClick={stop}>
                 <span className="sq" />
               </button>
             ) : (
-              <button className={'cmp__send' + (canSend ? '' : ' off')} type="button" aria-label="Send" aria-disabled={!canSend} onClick={() => send(text)}>
+              <button
+                className={'cmp__send' + (canSend ? '' : ' off')}
+                type="button"
+                aria-label="Send"
+                aria-disabled={!canSend}
+                data-ch-press=""
+                onClick={() => {
+                  noteSendSource(field.current);
+                  send(text);
+                }}
+              >
                 <Ico d="M12 19V5M6 11l6-6 6 6" size={17} />
               </button>
             )}
           </div>
         </div>
       </div>
+      {islandSlot && !fresh && createPortal(<ActivityIsland island={island} density="compact" onOpenStep={(messageId, ref, label) => setEvidence({ messageId, key: `read-${messageId}-${ref}`, label, ref })} />, islandSlot)}
+      {/* A figure's source, over the panel: the app's sheet on the phone and on a desk (the panel has no room beside its thread). */}
+      {evidence && <AskEvidencePanel open focus={evidence} messages={chat.messages} phone onClose={() => setEvidence(null)} />}
       {seam?.keyboard ? <div className="qc-kbd-stand-in" aria-hidden="true" style={{ height: seam.keyboard }} /> : null}
-    </>
-  );
-}
-
-/** The steps, and their fold once the card is ready: "N steps · Ns", which a tap reopens in place (AC-QC-STP-03, 04). */
-function Steps({ turn, stopped, failed = false }: { turn: AskAssistantTurn; stopped: boolean; failed?: boolean }) {
-  const [opened, setOpened] = useState(false);
-  const [more, setMore] = useState(false);
-  // Only the browser that watched the run knows how long it took; a reloaded chat folds to the count alone.
-  const started = useRef<number | null>(turn.active ? performance.now() : null);
-  const seconds = useRef<number | null>(null);
-  if (turn.active && started.current === null) started.current = performance.now();
-  if (!turn.active && started.current !== null && seconds.current === null) seconds.current = (performance.now() - started.current) / SECOND_MS;
-  const list = turn.active || !turn.blocks.length || opened;
-  if (!turn.steps.length) return null;
-  const summary = (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" aria-hidden="true">
-      <path d="M5 13l4 4L19 7" />
-    </svg>
-  );
-  if (!list)
-    return (
-      <button type="button" className="steps-sum" aria-expanded="false" onClick={() => setOpened(true)}>
-        {summary}
-        {stepsReceipt(turn.steps, seconds.current)}
-      </button>
-    );
-  const folded = more ? 0 : Math.max(0, turn.steps.length - STEPS_SHOWN);
-  return (
-    <ol className="steps">
-      {folded > 0 && (
-        <li className="step done">
-          <button type="button" className="steps-sum" onClick={() => setMore(true)}>
-            {folded} more {pluralWord(folded, 'step', 'steps')}
-          </button>
-        </li>
-      )}
-      {turn.steps.slice(folded).map((s) => {
-        const last = s === turn.steps[turn.steps.length - 1];
-        const active = turn.active && last;
-        return (
-          <li key={s.id} className={'step ' + (active ? 'active' : failed && last ? 'fail' : stopped && last ? 'stopped' : 'done')}>
-            <span className="step__g">
-              {active ? (
-                <span className="dot" />
-              ) : (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" aria-hidden="true">
-                  <path d="M5 13l4 4L19 7" />
-                </svg>
-              )}
-            </span>
-            <span className="step__l">
-              {active ? s.label : (s.done ?? s.label)}
-              {!active && s.detail && <span className="step__d"> · {s.detail}</span>}
-            </span>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
-function AssistantTurn({ turn, online, stopped, failed = false, onSend, onApprove, onDeny, onOpen, onFull, onPhase }: { turn: AskAssistantTurn; online: boolean; stopped: boolean; failed?: boolean; onFull: () => void; onSend: (t: string) => void; onApprove: (id: string) => void; onDeny: (id: string) => void; onOpen: (href: string) => void; onPhase: React.ComponentProps<typeof TaskCard>['onPhase'] }) {
-  return (
-    <>
-      <Steps turn={turn} stopped={stopped} failed={failed} />
-      {stopped && !turn.active && !turn.blocks.length && <p className="say quiet">Stopped. Nothing was saved.</p>}
-      {turn.note && <p className="say quiet">{turn.note}</p>}
-      {turn.blocks.map((b) => {
-        if (b.kind === 'text')
-          return (
-            <div className="say" key={b.key}>
-              <AskProse text={b.text} playersByName={{}} />
-            </div>
-          );
-        // Quick chat finishes four tasks with their own visuals; anything else carries on in Ask, the same conversation, words and all (FID-QC-1).
-        if (b.kind === 'proposal' && !b.view.proposal.visual && !LANDING_HOMES[b.view.tool])
-          return (
-            <p className="say quiet qc-handoff" key={b.key}>
-              <span>This one’s easier to finish in Ask.</span>
-              <button type="button" onClick={onFull}>
-                Open in Ask
-              </button>
-            </p>
-          );
-        if (b.kind === 'proposal') return <TaskCard key={b.key} view={b.view} online={online} onSend={onSend} onApprove={onApprove} onDeny={onDeny} onOpen={onOpen} onPhase={onPhase} />;
-        if (b.kind === 'plan') return <PlanTask key={b.key} plan={b.plan} online={online} onOpen={onOpen} />;
-        if (b.kind === 'brief') return <QuickAsk key={b.key} brief={b.brief} onSend={onSend} />;
-        // The card is the record of its own receipt; a receipt with no card in this turn says its one line.
-        if (b.kind === 'receipt')
-          return turn.blocks.some((x) => x.kind === 'proposal') ? null : (
-            <p className="say quiet" key={b.key}>
-              {b.receipt.summary}
-            </p>
-          );
-        // A chart or a table the panel doesn't draw isn't dropped silently (QC-1).
-        return (
-          <p className="say quiet qc-handoff" key={b.key}>
-            <span>There’s a chart with this answer.</span>
-            <button type="button" onClick={onFull}>
-              See it in Ask
-            </button>
-          </p>
-        );
-      })}
     </>
   );
 }

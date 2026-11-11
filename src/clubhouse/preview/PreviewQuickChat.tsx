@@ -16,6 +16,9 @@ const CONFIRM_MS = 450;
 const REREAD_MS = 520;
 const ANSWER_MS = 1400;
 
+/** Cards undone in this preview: the scripted server writes nothing for them when their hold ends. */
+const undone = new Set<string>();
+
 const asMessage = (id: string, role: 'user' | 'assistant', parts: unknown[]) => ({ id, role, parts }) as unknown as UIMessage;
 
 /** The fixture as the chat hook: still for a state, or scripted (a question gets a short answer; Confirm holds, then saves). */
@@ -51,7 +54,9 @@ function fake(f: QcFixture): ChAskSheetChat {
       approve: () => {
         const script = f.script;
         if (!script) return;
+        // As the engine does: the held receipt on the Confirm's own stream, then the outcome on the same part when the hold ends.
         timers.current.push(setTimeout(() => setMessages(taskThread(taskReceipt('held', script.holdMs))), CONFIRM_MS));
+        timers.current.push(setTimeout(() => setMessages((m) => (undone.has('qc-task') ? m : taskThread(taskReceipt(script.fails ? 'failed' : 'completed')))), CONFIRM_MS + script.holdMs + 60));
       },
       deny: () => {},
     } as UseCoachHelmChatResult;
@@ -122,13 +127,27 @@ export default function PreviewQuickChat({ state, open, onClose, looking, pathna
       delete document.body.dataset.qc;
     };
   }, [state]);
-  const seam = useMemo<QcSeamValue>(() => {
-    const base = seamFor(state);
-    const script = f.script;
-    if (!script) return base;
-    // In place of the three calls a held card makes: the preview never reaches the network.
-    return { ...base, act: async (_key, op) => (op === 'undo' ? {} : { receipt: taskReceipt(script.fails ? 'failed' : 'completed') }) };
-  }, [state, f.script]);
+  const seam = useMemo<QcSeamValue>(() => seamFor(state), [state]);
+  // In place of the three calls a held card makes (`GET`, `DELETE`, `POST ?now=1` on `actions/[key]`): the preview never
+  // reaches the network, signs nothing in and writes nothing. Undo answers yes; the other two answer with the outcome.
+  const fails = !!f.script?.fails;
+  useEffect(() => {
+    const real = window.fetch;
+    window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      const at = url.indexOf('/api/coachhelm/v3/chat/actions/');
+      if (at < 0) return real(input, init);
+      const key = decodeURIComponent(url.slice(at + '/api/coachhelm/v3/chat/actions/'.length).split('?')[0] ?? '');
+      const method = (init?.method ?? 'GET').toUpperCase();
+      if (method === 'DELETE') undone.add(key);
+      const body = method === 'DELETE' ? { ok: true, receipt: { ...taskReceipt('completed'), status: 'cancelled', summary: 'Undone. Nothing was written.', created: [] } } : { receipt: undone.has(key) ? null : taskReceipt(fails ? 'failed' : 'completed') };
+      return Promise.resolve(new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } }));
+    };
+    return () => {
+      window.fetch = real;
+      undone.clear();
+    };
+  }, [fails]);
   return (
     <QcSeam.Provider value={seam}>
       <QuickChatSession open={open} onClose={onClose} looking={looking} pathname={pathname} chat={chat} />

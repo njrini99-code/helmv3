@@ -2,6 +2,7 @@
 
 import { useCallback, useRef } from 'react';
 import { CH_EASE, CH_EASE_SHEET, CH_FADE_MS, CH_MS, chSpringCurve, CH_DUR } from '../../lib/motion';
+import { chThrownExit } from '../../lib/sheet-drag';
 import type { ChMotionMode } from '../../lib/reduced-motion';
 
 const bez = (c: readonly number[]) => `cubic-bezier(${c.join(',')})`;
@@ -112,7 +113,7 @@ export function useQcMotion(mode: ChMotionMode) {
   );
 
   const close = useCallback(
-    (panel: HTMLElement, scrim: HTMLElement | null, done: () => void) => {
+    (panel: HTMLElement, scrim: HTMLElement | null, done: () => void, thrownAt = 0) => {
       const was = held(panel, scrim);
       stop();
       clearDrag(panel, scrim);
@@ -122,8 +123,11 @@ export function useQcMotion(mode: ChMotionMode) {
         return;
       }
       moving.current = true;
-      const duration = mode === 'fade' ? CH_FADE_MS : CH_MS.field;
-      const easing = mode === 'fade' ? 'linear' : bez(CH_EASE_SHEET);
+      // A thrown sheet keeps its speed into the close (the smooth spring started at the finger's speed over what is left of
+      // its travel), so the hand and the close are one motion; every other close is MO-1-4's own time and curve.
+      const exit = thrownAt > 0 && mode === 'full' ? chThrownExit(thrownAt, Math.max(1, panel.offsetHeight / 2)) : null;
+      const duration = mode === 'fade' ? CH_FADE_MS : exit ? Math.min(exit.ms, CH_MS.field * 2) : CH_MS.field;
+      const easing = mode === 'fade' ? 'linear' : exit ? exit.linear : bez(CH_EASE_SHEET);
       const main =
         mode === 'fade'
           ? panel.animate([{ opacity: was.o }, { opacity: 0 }], { duration, easing, fill: 'forwards' })

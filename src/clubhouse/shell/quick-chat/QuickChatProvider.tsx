@@ -123,6 +123,7 @@ export function HelmKey() {
         aria-expanded={open}
         aria-controls="ch-qc-panel"
         data-ch-qc-key=""
+        data-ch-press=""
         style={live ? { visibility: 'hidden' } : undefined}
         onPointerEnter={warm}
         onFocus={warm}
