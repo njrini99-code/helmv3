@@ -2099,11 +2099,12 @@ a.ch-trd-open:focus-visible {
     padding: var(--ch-page-top-phone-docked) var(--ch-page-x-phone) var(--ch-page-bottom-phone-docked);
   }
   /* The eyebrow takes the page's whole width, as the intro's does; New round sits at the end of the title's line. */
+  /* The head opens the sheet, so it has no rule above it: the intro's double rule only drew a line under the bar (owner,
+     11 Nov 2026: no double line where nothing sits above it), as on Calendar and Team Hub. It starts 8px in, as theirs do. */
   .ch-rd.is-phone > .ch-rd-h {
     position: relative;
     display: block;
-    padding-top: 16px;
-    border-top: var(--ch-ledger-rule-double);
+    padding-top: 8px;
   }
   .ch-rd.is-phone > .ch-rd-h > .ch-btn {
     position: absolute;
@@ -2439,15 +2440,14 @@ a.ch-trd-open:focus-visible {
     gap: var(--ch-gap-section-phone);
     padding: var(--ch-page-top-phone-docked) var(--ch-page-x-phone) var(--ch-page-bottom-phone-docked);
   }
-  /* At the loaded geometry (measured at 390): the intro is 84.5px (the eyebrow's 24px line box, the title 10px under it), New
+  /* At the loaded geometry (measured at 390): the intro is 73.5px (the eyebrow's 24px line box, the title 10px under it), New
      round sits at the end of the title's line, the card and season scoring stand 30px apart, a month opens 18px under the tools
      and its rows are 67.8px. */
   .ch-rd-sk-h {
     position: relative;
     display: flex;
     flex-direction: column;
-    padding-top: 16px;
-    border-top: var(--ch-ledger-rule-double);
+    padding-top: 8px;
   }
   .ch-rd-sk-title {
     margin-top: 8px;
