@@ -647,8 +647,10 @@ export default async function ClubhousePreview({
       path: '/golf/dashboard/practice/format',
       node: <PreviewPracticeFormat state={state} />,
     },
+    // A player opens their plan at the same address a coach does (routes/practice.tsx); `/player/practice/…` is no
+    // route, so the shell fell back to Home's bar and breadcrumb over the Practice page.
     'coachhelm-practice-player': {
-      path: '/player/practice/plan/preview',
+      path: '/golf/dashboard/practice/plan/preview',
       node: <PreviewPracticePlayer state={state} />,
     },
     'coachhelm-practice-print': {
