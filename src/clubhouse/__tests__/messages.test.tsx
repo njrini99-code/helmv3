@@ -1939,3 +1939,22 @@ describe('Messages · a message’s menu holds only what it can do', () => {
     expect(await screen.findByRole('button', { name: 'Cancel reply' })).toBeTruthy();
   });
 });
+
+/**
+ * F-0021 (TO-01): on the phone the composer's field was 36 tall inside a 46 pill, and the pill's own 5px above and
+ * below it took the tap and did nothing. The pill is the field to the finger: a tap on its own edge puts the caret in it.
+ */
+describe('Messages · the composer pill is the field’s tap area', () => {
+  it('a tap on the pill’s own edge puts the caret in the field; a key inside the pill keeps its own tap', async () => {
+    show();
+    const field = (await screen.findByRole('textbox', { name: /Message Varsity team/ })) as HTMLTextAreaElement;
+    const pill = field.closest<HTMLElement>('.ch-ms-comp__field')!;
+    field.blur();
+    expect(document.activeElement).not.toBe(field);
+    fireEvent.click(pill);
+    expect(document.activeElement).toBe(field);
+    field.blur();
+    fireEvent.click(pill.querySelector('button')!);
+    expect(document.activeElement).not.toBe(field);
+  });
+});

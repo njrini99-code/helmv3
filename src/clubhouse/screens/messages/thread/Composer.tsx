@@ -358,7 +358,9 @@ export function Composer({
         files={files}
         onRemove={(i) => setFiles((s) => s.filter((_, j) => j !== i))}
       />
-      <div className="ch-ms-comp__field">
+      {/* The pill is the field to the finger (F-0021): its own 5px around the 36px field puts the caret in it, so the
+          target is the pill's 46, not 36. A keyboard goes to the field itself. */}
+      <div className="ch-ms-comp__field" role="presentation" onClick={(e) => e.target === e.currentTarget && ta.current?.focus()}>
         <ComposerPlusV2
             api={api}
             conv={conv}

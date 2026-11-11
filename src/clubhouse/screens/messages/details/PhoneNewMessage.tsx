@@ -297,7 +297,8 @@ export function PhoneNewMessage({
       </div>
       <footer ref={footer} className="ch-ms-comp" hidden={!to.length}>
         <AttachChips files={files} onRemove={(i) => setFiles(files.filter((_, j) => j !== i))} />
-        <div className="ch-ms-comp__field">
+        {/* As the thread's composer: a tap on the pill's own edge puts the caret in the field (F-0021). */}
+        <div className="ch-ms-comp__field" role="presentation" onClick={(e) => e.target === e.currentTarget && box.current?.focus()}>
           <AttachButton phone disabled={!to.length} onPick={(picked) => setFiles(addFiles(files, picked))} />
           <textarea
             ref={box}
