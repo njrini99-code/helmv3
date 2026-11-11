@@ -1,19 +1,24 @@
 import { toChInsight } from '../data/coachhelm-map';
-import { courseReads, stationFigures, teamTotalOf, worstOf, type ChStation, type ChTeamBoardData, type ChTeamLeg, type ChTeamPlayer } from '../data/coachhelm-team-shape';
+import { courseReads, stationsOfTeamSg, worstOf, type ChStation, type ChTeamBoardData, type ChTeamLeg, type ChTeamPlayer } from '../data/coachhelm-team-shape';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { CourseHistory } from '@/lib/coachhelm/v3/team-board/course-shape';
 import { HELM_PLAYERS, PREVIEW_TOUR, slope } from './fixtures-coachhelm';
 import { PREVIEW_TRACK_RECORD } from './fixtures-coachhelm-track';
-import { CAST } from './cast';
+import { PREVIEW_SG_FLOOR, PREVIEW_TEAM_SG, previewSgRow } from './fixtures-team-sg';
 
-/** The design page's board (`redesign/coachhelm-team.html`, P, READS, CRS): five players, their legs, reads and the course table. */
+/**
+ * The team board for the cast's seven active players. Their reads and the course table are the design page's
+ * (`redesign/coachhelm-team.html`, READS, CRS); every strokes-gained figure is the shared table's (fixtures-team-sg.ts), the one
+ * Team stats and the Player file preview read too, so the three previews show one team.
+ */
 const PLAYERS = {
   ...HELM_PLAYERS,
   sam: { id: 'pl-sam', name: 'Sam Whitfield' },
+  sofia: { id: 'pl-sofia', name: 'Sofia Alvarez' },
+  ava: { id: 'pl-ava', name: 'Ava Lindqvist' },
 } as const;
 
-const leg = (strokes: number, rounds: number): ChTeamLeg => ({ strokes, rounds, missing: null });
-const legs = (r: number, tee: number, approach: number, short_game: number, putting: number) => ({ tee: leg(tee, r), approach: leg(approach, r), short_game: leg(short_game, r), putting: leg(putting, r) });
+const leg = (strokes: number | null, rounds: number): ChTeamLeg => (strokes == null ? { strokes: null, rounds, missing: `Shows from ${PREVIEW_SG_FLOOR} rounds with shots.` } : { strokes, rounds, missing: null });
 
 /** A read's drill belongs to its area: the base insight is the putting one, so a read anywhere else swaps it or carries none. */
 const DRILLS: Record<string, EvidenceInsight['drills']> = {
@@ -51,21 +56,24 @@ const READS: Record<string, ReturnType<typeof read>[]> = {
     read(PLAYERS.theo.id, 'r3', 'approach', 'Proximity from 125 to 175', 'Theo’s approaches from 125 to 175 finish 41 feet away on average, from 4 rounds.', { stakes: '.4', sample: '4 rounds', word: 'Thin read' }),
     read(PLAYERS.theo.id, 'r14', 'scoring', 'Par 3 scoring: 3.48 (+0.48 vs par)', 'Theo averages 3.48 on par 3s, from 4 rounds. Tour is 3.00.'),
   ],
-  // Sam has 3 rounds on file: a player is read from 4 (preview/cast.ts), so he stands on the hole with no read.
+  // Sam has two counted rounds with shots: under the floor of three, so he has no figure, no place on the hole and no read.
 };
 
-const player = (p: { id: string; name: string }, classYear: string, rounds: number, l: Record<ChStation, ChTeamLeg>, early = rounds < 5): ChTeamPlayer => {
-  const values = Object.values(l).map((x) => x.strokes as number);
+/** One player as the loader shapes them: who they are from the cast, their last-ten figures from the shared table. */
+const player = (key: keyof typeof PLAYERS): ChTeamPlayer => {
+  const p = PLAYERS[key];
+  const row = previewSgRow(key);
+  const l: Record<ChStation, ChTeamLeg> = { tee: leg(row.legs?.[0] ?? null, row.shots), approach: leg(row.legs?.[1] ?? null, row.shots), short_game: leg(row.legs?.[2] ?? null, row.shots), putting: leg(row.legs?.[3] ?? null, row.shots) };
   return {
     id: p.id,
     name: p.name,
-    first: p.name.split(' ')[0] as string,
-    classYear,
-    rounds,
-    early,
+    first: row.cast.first,
+    classYear: row.cast.classYear,
+    // The counted rounds in the window (ten at most), which is what the loader carries; the cast's count is every round on file.
+    rounds: row.rounds,
+    early: row.rounds < 5,
     legs: l,
-    // The page's figure; the app's total is the stored per-round mean (8 K).
-    total: values.reduce((a, b) => a + b, 0),
+    total: row.total,
     worst: worstOf(l),
     first10: null,
     reads: { needs: READS[p.id] ?? [], working: [] },
@@ -73,14 +81,8 @@ const player = (p: { id: string; name: string }, classYear: string, rounds: numb
   };
 };
 
-const LIST: ChTeamPlayer[] = [
-  // Who they are, their year and their rounds on file come from the one cast every preview shares.
-  player(PLAYERS.eli, CAST.eli.classYear, CAST.eli.rounds, legs(CAST.eli.rounds, -0.31, -1.08, -0.22, -0.47)),
-  player(PLAYERS.jonah, CAST.jonah.classYear, CAST.jonah.rounds, legs(CAST.jonah.rounds, 0.12, -0.54, -0.38, -0.96)),
-  player(PLAYERS.priya, CAST.priya.classYear, CAST.priya.rounds, legs(CAST.priya.rounds, -0.18, -0.89, 0.08, -0.71)),
-  player(PLAYERS.theo, CAST.theo.classYear, CAST.theo.rounds, legs(CAST.theo.rounds, -0.64, -0.41, -0.29, -0.83)),
-  player(PLAYERS.sam, CAST.sam.classYear, CAST.sam.rounds, legs(CAST.sam.rounds, -0.22, -0.77, -0.51, -0.35)),
-];
+// The design's five, in its order, then the two the cast adds.
+const LIST: ChTeamPlayer[] = (['eli', 'jonah', 'priya', 'theo', 'sam', 'sofia', 'ava'] as const).map(player);
 
 const WEEK_STARTS = ['2026-08-17', '2026-08-24', '2026-08-31', '2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28', '2026-10-05', '2026-10-12', '2026-10-19', '2026-10-26'];
 const WEEK_VALUES = [7.6, 6.9, 8.1, 6.3, 6.6, 5.9, 6.2, 6.8, 5.4, 5.7, 6.1];
@@ -117,8 +119,9 @@ export const PREVIEW_TEAM_BOARD: ChTeamBoardData = {
   roster: { count: LIST.length, error: false },
   players: { list: LIST, error: false },
   legsError: false,
-  stations: stationFigures(LIST),
-  teamTotal: { strokes: teamTotalOf(LIST), rounds: 62, seasonRounds: 62 },
+  // The team figure Team stats' preview prints, pooled over the same rounds.
+  stations: stationsOfTeamSg({ legs: PREVIEW_TEAM_SG.legs, legPlayers: PREVIEW_TEAM_SG.legs.map(() => PREVIEW_TEAM_SG.players) }),
+  teamTotal: { strokes: PREVIEW_TEAM_SG.total, rounds: HISTORY.rounds, seasonRounds: HISTORY.rounds },
   course: {
     history: HISTORY,
     reads: courseReads(LIST),
@@ -136,7 +139,7 @@ export const PREVIEW_TEAM_BOARD: ChTeamBoardData = {
       {
         id: 'approach-short',
         title: 'Eli, Priya and Theo all miss approaches short',
-        members: '3 of 5 players',
+        members: '3 of 7 players',
         strokes: null,
         next: 'the ball finishes short of the green',
         who: [],

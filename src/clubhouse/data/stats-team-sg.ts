@@ -13,7 +13,8 @@ import { effectiveCount, weightedMean } from './stats-weight';
  *
  * The definition is Team stats' (A4): the rounds with their holes in the window, of the players who have three whole rounds with a
  * strokes-gained total there, pooled per round (per 18 holes). A leg is the mean of that leg over the same rounds; the total is the
- * mean of the stored per-round totals, never the legs added up. Pure and client-safe: no Supabase, no React.
+ * mean of the stored per-round totals, never the legs added up. Pure, but server-side like the loaders that call it (it reads
+ * `season.ts`): a client file takes its types only.
  */
 export interface ChTeamSg {
   /** The team's strokes gained a round against the baseline; null with no player at the floor. */

@@ -26,6 +26,9 @@ import { lastTenRounds, playerStrokesGained, roundsForFigures } from '../figure-
 import { teamLastTenStrokesGained, teamStrokesGained } from '../stats-team-sg';
 import { holeRounds } from '../round-scope';
 import type { ChRound } from '../season';
+import { PREVIEW_TEAM_STATS, PREVIEW_PLAYER } from '../../preview/fixtures-stats';
+import { PREVIEW_TEAM_BOARD } from '../../preview/fixtures-coachhelm-team';
+import { PREVIEW_SG_ROWS, PREVIEW_TEAM_SG } from '../../preview/fixtures-team-sg';
 
 const src = (file: string) => readFileSync(join(process.cwd(), 'src/clubhouse', file), 'utf8');
 const day = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
@@ -234,5 +237,49 @@ describe('the huddle’s trail starts from the first ten rounds of the season, o
   it('pooling by round: the team figure over one player’s rounds is that player’s own figure', () => {
     const rounds = roundsForFigures(many(12));
     expect(teamStrokesGained(holeRounds(lastTenRounds(rounds)), ['ada']).total).toBeCloseTo(toChTeamLegs(rounds, ['ada']).get('ada')!.total!, 9);
+  });
+});
+
+describe('the previews show one team (preview/fixtures-team-sg.ts)', () => {
+  /** The table as rounds: each player's rounds with shots, every one carrying that player's figures. */
+  const tableRounds = PREVIEW_SG_ROWS.flatMap((r) =>
+    Array.from({ length: r.shots }, (_, i) => ({
+      ...round(r.cast.id, i, r.total ?? 0),
+      strokes_gained_tee: r.legs?.[0] ?? 0,
+      strokes_gained_approach: r.legs?.[1] ?? 0,
+      strokes_gained_around_green: r.legs?.[2] ?? 0,
+      strokes_gained_putting: r.legs?.[3] ?? 0,
+    })),
+  ) as unknown as ChRound[];
+
+  it('the table’s team figure is the real function’s over the same rounds', () => {
+    const real = teamStrokesGained(holeRounds(tableRounds), PREVIEW_SG_ROWS.map((r) => r.cast.id));
+    expect(PREVIEW_TEAM_SG.total).toBeCloseTo(real.total!, 9);
+    PREVIEW_TEAM_SG.legs.forEach((v, i) => expect(v).toBeCloseTo(real.legs[i]!, 9));
+    expect(PREVIEW_TEAM_SG.rounds).toBe(real.rounds);
+    expect(PREVIEW_TEAM_SG.players).toBe(real.ready.size);
+  });
+
+  it('Team stats and the Team board print one team figure and one figure a player', () => {
+    expect(PREVIEW_TEAM_BOARD.teamTotal.strokes).toBe(PREVIEW_TEAM_STATS.team.sgMean);
+    expect(PREVIEW_TEAM_STATS.figures.find((f) => f.key === 'sg')!.value).toBe(PREVIEW_TEAM_STATS.team.sgMean);
+    STATIONS.forEach((s, i) => expect(PREVIEW_TEAM_BOARD.stations[s].team).toBe(PREVIEW_TEAM_STATS.legTotals[i]));
+    // The same roster, by name, and each player's legs and total the same on both.
+    expect(PREVIEW_TEAM_BOARD.players.list.map((p) => p.name).sort()).toEqual(PREVIEW_TEAM_STATS.grid.map((g) => g.name).sort());
+    for (const g of PREVIEW_TEAM_STATS.grid) {
+      const p = PREVIEW_TEAM_BOARD.players.list.find((x) => x.name === g.name)!;
+      expect(p.total).toBe(g.total);
+      STATIONS.forEach((s, i) => expect(p.legs[s].strokes).toBe(g.legs[i]));
+      expect(p.rounds).toBe(g.rounds);
+    }
+  });
+
+  it('a player’s own page carries the same team figure and their own grid row', () => {
+    const sg = PREVIEW_PLAYER.comparisons.filter((c) => c.sg);
+    expect(sg[0]!.team).toBe(PREVIEW_TEAM_SG.total);
+    sg.slice(1).forEach((c, i) => expect(c.team).toBe(PREVIEW_TEAM_SG.legs[i]));
+    const row = PREVIEW_TEAM_STATS.grid.find((g) => g.name === PREVIEW_PLAYER.name)!;
+    expect(sg[0]!.you).toBe(row.total);
+    sg.slice(1).forEach((c, i) => expect(c.you).toBe(row.legs[i]));
   });
 });

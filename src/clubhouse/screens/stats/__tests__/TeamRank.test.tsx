@@ -13,7 +13,21 @@ const { rankLabel, rankReadout, rankScale, rankSummary, rankTicks, shortName, te
 afterEach(cleanup);
 beforeEach(() => push.mockClear());
 
-const D = PREVIEW_TEAM_STATS;
+/**
+ * The rank's own seven players: a clear leader, a tie, an early read and a player under the floor. The preview fixture's grid now
+ * follows the shared cast (preview/fixtures-team-sg.ts), so these rows are kept here, where every order and readout below is pinned.
+ */
+const rankLegs = (n: number) => [1.1, 1.3, 0.9, 1.2].map((sd) => ({ n, se: Math.round((sd / Math.sqrt(n)) * 100) / 100 }));
+const RANK_GRID: ChTeamStats['grid'] = [
+  { id: 'theo', name: 'Theo Marchetti', rounds: 10, legs: [0.4, 0.7, 0.2, 0.4], total: 1.7, change: 0.6, avg: 70.9, spread: { sg: { n: 10, se: 0.63 }, legs: rankLegs(10), score: { n: 10, se: 0.85 } } },
+  { id: 'sofia', name: 'Sofia Alvarez', rounds: 10, legs: [0.4, 0.5, 0.1, 0.4], total: 1.2, change: 0.3, avg: 71.6, spread: { sg: { n: 10, se: 0.66 }, legs: rankLegs(10), score: { n: 10, se: 0.8 } } },
+  { id: 'ava', name: 'Ava Lindqvist', rounds: 10, legs: [0.2, 0.3, 0.1, 0.3], total: 0.6, change: 0.2, avg: 72.4, spread: { sg: { n: 10, se: 0.6 }, legs: rankLegs(10), score: { n: 10, se: 0.9 } } },
+  { id: 'eli', name: 'Eli Brandt', rounds: 10, legs: [0.0, -0.4, 0.0, 0.0], total: -0.5, change: -0.3, avg: 74.8, spread: { sg: { n: 6, se: 0.82 }, legs: rankLegs(6), score: { n: 10, se: 1.0 } } },
+  { id: 'priya', name: 'Priya Natarajan', rounds: 10, legs: [-0.6, -0.8, -0.2, -0.3], total: -1.2, change: 1.7, avg: 75.2, spread: { sg: { n: 10, se: 0.7 }, legs: rankLegs(10), score: { n: 10, se: 0.95 } } },
+  { id: 'jonah', name: 'Jonah Okafor', rounds: 10, legs: [0.3, -1.2, -0.1, 0.2], total: -0.9, change: -1.7, avg: 73.6, spread: { sg: { n: 10, se: 0.68 }, legs: rankLegs(10), score: { n: 10, se: 0.88 } } },
+  { id: 'luca', name: 'Luca Ferraro', rounds: 2, legs: [null, null, null, null], total: null, change: null, avg: 76.5, spread: { sg: { n: 2, se: 2.69 }, legs: rankLegs(2), score: { n: 2, se: 2.55 } } },
+];
+const D: ChTeamStats = { ...PREVIEW_TEAM_STATS, grid: RANK_GRID, team: { ...PREVIEW_TEAM_STATS.team, sgMean: -0.5 } };
 type Row = ChTeamStats['grid'][number];
 const row = (id: string, total: number | null, n: number, se: number | null, extra: Partial<Row> = {}): Row => ({
   id,
