@@ -3623,6 +3623,11 @@ html:not([data-fw-theme='dark']) .ch-qf :is(.ch-input, .ch-textarea)::placeholde
   .ch-qf[data-canopy] .ch-qf-board .ch-qf-row--head {
     color: var(--ch-text-secondary);
   }
+  /* The sheet has its own 32px gutter here, so "You vs the line" and its rules sit on the edge the title, the spread and the
+     columns share. Its 20px inset was the unpadded panel's, and made a third left edge inside the card. */
+  .ch-qf[data-canopy] .ch-qf-board .ch-qf-you-line {
+    margin-inline: 0;
+  }
 }
 
 /* Thru as dots: one per scheduled round, a played round filled green with a little lift, an unplayed one an empty ring. */
