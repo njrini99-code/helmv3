@@ -2369,13 +2369,12 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   align-items: baseline;
   gap: 8px;
   margin: 0;
-  font: var(--ch-type-20-strong);
-  letter-spacing: var(--ch-track-20);
+  font: var(--ch-type-section);
+  letter-spacing: var(--ch-track-section);
   color: var(--ch-text-primary);
 }
 .ch-cl-yours__h h2 span {
   font: var(--ch-type-13-strong);
-  letter-spacing: 0;
   color: var(--ch-text-secondary);
 }
 .ch-cl-dgrid__side {
@@ -2444,7 +2443,7 @@ html[data-fw-theme='dark'] .ch-cl[data-ch-crh='on'] {
   border: 0;
   border-radius: var(--ch-radius-card);
   background: var(--ch-cl-t);
-  box-shadow: inset 0 0 0 1px var(--ch-cl-tb), var(--ch-elevation-cast);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-cl-tb), var(--ch-elevation-cast);
   color: var(--ch-text-primary);
   font: inherit;
   text-align: left;
@@ -2457,7 +2456,7 @@ html[data-fw-theme='dark'] .ch-cl[data-ch-crh='on'] {
 }
 @media (hover: hover) {
   .ch-cl-card:hover {
-    box-shadow: inset 0 0 0 1px var(--ch-cl-tf), var(--ch-elevation-cast);
+    box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-cl-tf), var(--ch-elevation-cast);
   }
 }
 .ch-cl-card:focus-visible {
@@ -2481,12 +2480,10 @@ html[data-fw-theme='dark'] .ch-cl[data-ch-crh='on'] {
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
-/* The department is the one tracked label on the page: it is a code. */
+/* The department: a small strong label in the tone's ink beside the number. */
 .ch-cl-card__code b {
   flex: none;
   font: var(--ch-type-13-strong);
-  font-weight: var(--ch-fw-700, 700);
-  letter-spacing: 0.08em;
   color: var(--ch-cl-tf);
 }
 .ch-cl-card__cr {
@@ -2494,7 +2491,7 @@ html[data-fw-theme='dark'] .ch-cl[data-ch-crh='on'] {
   padding: 4px 8px;
   border-radius: var(--ch-radius-tail);
   background: color-mix(in srgb, var(--ch-card-bg) 62%, transparent);
-  box-shadow: inset 0 0 0 1px var(--ch-cl-tb);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-cl-tb);
   font: var(--ch-type-13-strong);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
@@ -2532,28 +2529,26 @@ html[data-fw-theme='dark'] .ch-cl[data-ch-crh='on'] {
 .ch-cl-card__week > span {
   display: grid;
   place-content: center;
-  gap: 4px;
+  gap: 0;
   height: calc(46px * min(var(--ch-type-scale, 1), 1.2));
   border-radius: var(--ch-radius-md);
-  box-shadow: inset 0 0 0 1px var(--ch-cl-tb);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-cl-tb);
   text-align: center;
 }
 .ch-cl-card__week em {
   display: block;
   font: var(--ch-type-12-strong);
   font-style: normal;
-  line-height: 1;
   color: var(--ch-cl-tf);
 }
 .ch-cl-card__week b {
   font: var(--ch-type-12-strong);
-  line-height: 1;
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-cl-card__week > span.is-on {
   background: var(--ch-card-bg);
-  box-shadow: 0 0 0 1px var(--ch-cl-tb), var(--ch-elevation-badge);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-cl-tb), var(--ch-elevation-badge);
 }
 .ch-cl-card__week > span.is-on em {
   color: var(--ch-text-primary);
@@ -2566,12 +2561,12 @@ html[data-fw-theme='dark'] .ch-cl[data-ch-crh='on'] {
   box-shadow: 0 0 0 2px var(--ch-cl-ring-today), var(--ch-elevation-badge);
 }
 .ch-cl-card__week > span.is-on.is-clash:not(.is-today) {
-  box-shadow: 0 0 0 1px var(--ch-warn-icon), var(--ch-elevation-badge);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-warn-icon), var(--ch-elevation-badge);
 }
 .ch-cl-card__flex {
   padding: 12px;
   border-radius: var(--ch-radius-md);
-  box-shadow: inset 0 0 0 1px var(--ch-cl-tb);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-cl-tb);
   font: var(--ch-type-15);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
@@ -2611,7 +2606,7 @@ html[data-fw-theme='dark'] .ch-cl[data-ch-crh='on'] {
 .ch-cl-card__term {
   padding: 4px 8px;
   border-radius: var(--ch-radius-tail);
-  box-shadow: inset 0 0 0 1px var(--ch-cl-tb);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-cl-tb);
   font: var(--ch-type-13-strong);
   color: var(--ch-text-secondary);
 }
@@ -2657,4 +2652,9 @@ html[data-fw-theme='dark'] .ch-cl {
 /* Remove wears the design's outline, in its red words. */
 .ch-modal[data-ch-detent] .ch-cl-danger {
   box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+}
+
+/* At night the credits bar on the green card takes each tone's lit ink: its deep tint all but vanished into the green. */
+html[data-fw-theme='dark'] [data-ch-crh='on'] .ch-cl-term__bar i {
+  background: var(--ch-cl-tf);
 }

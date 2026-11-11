@@ -4,7 +4,8 @@ import { ChartColumn, Check, ChevronRight, CircleAlert, Copy, Ellipsis, RotateCw
 import { AnimatePresence } from 'motion/react';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import { Component, useCallback, useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react';
+import { chReport } from '../../lib/track';
 import { useChSessionState } from '../../lib/session-state';
 import type { ChRoster, ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
@@ -316,7 +317,9 @@ export function RosterPhoneCrh({
           onStatus(p);
         }}
       />
-      <RequestsSheetCrh open={requestsOpen} atRest={link.atRest} onClose={closeRequests} data={data} jr={jr} clock={clock} />
+      <SheetGuard>
+        <RequestsSheetCrh open={requestsOpen} atRest={link.atRest} onClose={closeRequests} data={data} jr={jr} clock={clock} />
+      </SheetGuard>
       <Modal
         open={!!leaving}
         onClose={keepEditing}
@@ -544,6 +547,24 @@ export function RequestsSheetCrh({ open, atRest, onClose, data, jr, clock }: { o
 }
 
 /** The profile's more button (05 S-ROSTER.profile-actions): today's rows in a restyled sheet. */
+/**
+ * The requests sheet draws the same requests as the row on the page, but outside that row's section. A request that cannot be
+ * drawn is told once, by the row's own boundary (CH-3204); this keeps the sheet's crash from taking the whole page down with
+ * it, and reports it under the same surface.
+ */
+class SheetGuard extends Component<{ children: ReactNode }, { failed: boolean }> {
+  override state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  override componentDidCatch(error: Error) {
+    chReport(error, { surface: 'roster.requests', severity: 'high' });
+  }
+  override render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
 function PlayerActionsCrh({ p, onClose, onRemove, onStatus }: { p: ChRosterPlayer | undefined; onClose: () => void; onRemove: (p: ChRosterPlayer) => void; onStatus: (p: ChRosterPlayer) => void }) {
   const statsHref = p ? rebuiltHref(`/golf/dashboard/stats?player=${p.id}`) : null;
   // The shared sheet of actions (ui MenuSheet), not a list drawn here: its rows, its keys and its destructive row are the app's own.

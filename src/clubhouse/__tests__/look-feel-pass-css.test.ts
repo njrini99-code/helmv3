@@ -192,7 +192,7 @@ const RAW_FONT: Record<string, number> = {
   'styles/auth.css': 32,
   'styles/base.css': 1,
   'styles/calendar.css': 8,
-  'styles/classes.css': 12,
+  'styles/classes.css': 7,
   'styles/coachhelm-ask.css': 1,
   'styles/coachhelm-dive.css': 1,
   'styles/coachhelm.css': 1,
@@ -215,7 +215,7 @@ const RAW_FONT: Record<string, number> = {
 
 /** Raw `line-height` values per stylesheet after the leading pass (2026-10-24, row 27): fixed-row px leadings and legacy ratios. Only falls. */
 const RAW_LEAD: Record<string, number> = {
-  'styles/classes.css': 2,
+  'styles/classes.css': 1,
   'styles/coachhelm-ask.css': 3,
   'styles/coachhelm-profile.css': 1,
   'styles/coachhelm-thread.css': 1,

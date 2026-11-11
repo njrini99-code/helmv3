@@ -122,7 +122,7 @@ describe('elevation tokens (B4)', () => {
 const RAW_SHADOW: Record<string, number> = {
   'styles/auth.css': 6,
   'styles/calendar.css': 28,
-  'styles/classes.css': 14,
+  'styles/classes.css': 13,
   'styles/coachhelm-ask.css': 1,
   'styles/coachhelm-dive.css': 1,
   'styles/coachhelm-profile.css': 5,
@@ -149,7 +149,7 @@ const RAW_SHADOW: Record<string, number> = {
 /** Raw drop shadows per stylesheet on 2026-10-24 (row 40): tinted lifts under green and ink surfaces. Only falls. */
 const RAW_DROP: Record<string, number> = {
   'styles/auth.css': 2,
-  'styles/classes.css': 2,
+  'styles/classes.css': 1,
   'styles/coachhelm-ask.css': 1,
   'styles/controls.css': 2,
   'styles/home.css': 3,

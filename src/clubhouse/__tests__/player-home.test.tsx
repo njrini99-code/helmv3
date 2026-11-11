@@ -369,6 +369,30 @@ describe('Player Home · the phone, the page’s own contracts', () => {
     vi.restoreAllMocks();
   });
 
+  it('21901 at 820px and below the player gets the phone Home, never the desktop page shrunk: the date and greeting over Up next, the two keys, then This week, Your latest round, Scoring and Your game in that order', () => {
+    show();
+    const main = screen.getByRole('main', { name: 'Home' });
+    expect(main.className).toContain('ch-hm--player');
+    // None of the desktop page is drawn beside it.
+    expect(document.querySelector('.ch-h-main')).toBeNull();
+    const hero = main.querySelector('.ch-hm-hero.is-player')!;
+    expect(hero.querySelector('.ch-hm-hero__date')?.textContent).toBe(PREVIEW_PLAYER_HOME.todayLabel);
+    expect(hero.querySelector('h1')?.textContent).toBe(PREVIEW_PLAYER_HOME.greeting);
+    // Up next and the two keys sit in the hero, before any section.
+    expect(hero.querySelector('.ch-ph-acts')).not.toBeNull();
+    expect(within(hero as HTMLElement).getByText('Message coach')).toBeTruthy();
+    expect(within(hero as HTMLElement).getByText('New round')).toBeTruthy();
+    const heads = [...main.querySelectorAll('h2')].map((h) => h.textContent ?? '');
+    const at = (w: string) => heads.findIndex((h) => h.startsWith(w));
+    expect(at('This week')).toBeGreaterThanOrEqual(0);
+    expect(at('Your latest round')).toBeGreaterThan(at('This week'));
+    expect(at('Scoring')).toBeGreaterThan(at('Your latest round'));
+    expect(at('Your game')).toBeGreaterThan(at('Scoring'));
+    // The sections are on the page, in the body under the hero; the week holds the seven days.
+    expect(main.querySelector('.ch-hm-body')!.compareDocumentPosition(hero) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    expect(main.querySelectorAll('.ch-hm-week li')).toHaveLength(7);
+  });
+
   it('20806 the phone draws none of the coach’s controls either: no Plan, no Add event, no quick event types', () => {
     show(home({ next: null, today: [] }));
     for (const name of ['Plan', 'Add event', 'Practice', 'Qualifier', 'Tournament', 'Meeting']) expect(screen.queryByRole('link', { name })).toBeNull();

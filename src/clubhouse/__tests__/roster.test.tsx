@@ -52,7 +52,7 @@ import { availabilityLine, rowNote } from '../screens/roster/format';
 import { nameList, useJoinRequests } from '../screens/roster/useJoinRequests';
 import { ToastProvider } from '../ui/Toast';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
-import { PREVIEW_ROSTER, PREVIEW_ROSTER_AVAILABILITY, PREVIEW_ROSTER_FAILED, PREVIEW_ROSTER_PARTIAL } from '../preview/fixtures-roster';
+import { PREVIEW_ROSTER, PREVIEW_ROSTER_AVAILABILITY, PREVIEW_ROSTER_FAILED, PREVIEW_ROSTER_HELM_FAILED, PREVIEW_ROSTER_PARTIAL } from '../preview/fixtures-roster';
 import './dialog-polyfill';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
@@ -895,6 +895,97 @@ describe('Roster · the redesigned screens: changes, failures and edge states', 
     expect(actions.intent).not.toHaveBeenCalled();
   });
 
+  /** The control inside a segmented group, by its words. */
+  const option = (within_: HTMLElement, words: string) => (within(within_).getByText(words).closest('button, [role="radio"], label') ?? within(within_).getByText(words)) as HTMLElement;
+  /** A copy of a record whose one field throws when it is read, as a malformed row would. */
+  const breaks = <T extends object>(row: T, field: keyof T): T => Object.defineProperty({ ...row }, field, { enumerable: true, get() { throw new Error('boom'); } }) as T;
+
+  it('CH-3009 CH-3405 marking a player injured shows at once and holds the control until it lands; a refusal says so and puts the word back, and Retry finishes it', async () => {
+    const user = userEvent.setup();
+    const held = later<{ success: boolean }>();
+    actions.availability.mockReturnValue(held.promise);
+    phone(roster());
+    const seg = () => document.querySelector('.ch-rs-avail__seg') as HTMLElement;
+    await user.click(option(seg(), 'Injured'));
+    await expectCode('CH-3405');
+    expect(seg().getAttribute('aria-busy')).toBe('true');
+    // A second change while the first is in flight is refused.
+    await user.click(option(seg(), 'Away')).catch(() => undefined);
+    expect(actions.availability).toHaveBeenCalledTimes(1);
+    expect(actions.availability).toHaveBeenCalledWith({ playerId: theo.id, availability: 'injured' });
+    await act(async () => held.resolve({ success: false }));
+    await expectCode('CH-3009', /Couldn’t mark Theo Marchetti injured/);
+    expect(code('CH-3009')!.textContent).toMatch(/Nothing changed on the roster/);
+    await waitFor(() => expect(code('CH-3405')).toBeNull());
+
+    actions.availability.mockResolvedValue({ success: true });
+    await user.click(within(code('CH-3009') as HTMLElement).getByRole('button', { name: /Retry|Try again/ }));
+    expect(await screen.findByText('Theo Marchetti marked injured')).toBeTruthy();
+    expect(actions.availability).toHaveBeenCalledTimes(2);
+  });
+
+  it('CH-3011 the coach-only reason a player is out that does not save says so and stays in the field', async () => {
+    const user = userEvent.setup();
+    actions.availabilityNote.mockResolvedValue({ success: false });
+    window.history.replaceState(null, '', '/golf/dashboard/roster?player=ava');
+    phone({ ...PREVIEW_ROSTER_AVAILABILITY, availabilityCoachNotes: true });
+    const why = screen.getByRole('textbox', { name: /Why/ }) as HTMLTextAreaElement;
+    await user.clear(why);
+    await user.type(why, 'Wrist, back in two weeks');
+    await user.tab();
+    await expectCode('CH-3011', /Couldn’t save the note about Ava/);
+    expect(code('CH-3011')!.textContent).toMatch(/Your text is still in the field/);
+    expect(why.value).toBe('Wrist, back in two weeks');
+    expect(actions.availabilityNote).toHaveBeenCalledTimes(1);
+  });
+
+  it('CH-3305 a player with no 18-hole rounds: the profile says so in the trend card, and never draws an empty chart', () => {
+    phone(roster({ players: PREVIEW_ROSTER.players.map((p) => (p.id === theo.id ? { ...p, trend: [], rounds: 0, avg: null } : p)) }));
+    expect(code('CH-3305')).not.toBeNull();
+    expect(code('CH-3305')!.textContent).toMatch(/No 18-hole rounds this season/);
+    expect(code('CH-3305')!.closest('.ch-surface')!.querySelector('svg.ch-formline, .ch-rsx-chart svg')).toBeNull();
+  });
+
+  it('CH-3212 when CoachHelm\u2019s counts did not load the profile shows dashes and says so, never zero or "No reads yet"', () => {
+    phone(PREVIEW_ROSTER_HELM_FAILED);
+    expect(code('CH-3212')).not.toBeNull();
+    expect(code('CH-3212')!.textContent).toMatch(/— costing strokes · — working/);
+    expect(screen.getByText(/Didn’t load\. Refresh to try again\./)).toBeTruthy();
+    expect(code('CH-3212')!.textContent).not.toMatch(/No reads yet/);
+    expect(code('CH-3212')!.textContent).not.toMatch(/\b0 costing strokes/);
+  });
+
+  it('31402 Try again on a roster that did not load asks the server for the whole page again', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', '/golf/dashboard/roster');
+    phone(PREVIEW_ROSTER_FAILED);
+    await expectCode('CH-3201');
+    // One failure block and one way to recover, in the card.
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('CH-3204 a join request that cannot be drawn fails inside its own section; the team card and the players still show', async () => {
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    window.history.replaceState(null, '', '/golf/dashboard/roster');
+    phone(roster({ requests: PREVIEW_ROSTER.requests.map((r, i) => (i === 0 ? breaks(r, 'gradYear') : r)) }));
+    await expectCode('CH-3204', /Join requests couldn’t be shown/);
+    expect(document.querySelector('.ch-rs-tcard')).not.toBeNull();
+    expect(screen.getAllByRole('button', { name: /^Sofia Alvarez/ }).length).toBeGreaterThan(0);
+    quiet.mockRestore();
+  });
+
+  it('CH-3205 CH-3206 a player row that cannot be drawn fails inside the list, and the same player\u2019s profile inside the panel; the page keeps its head and team card', async () => {
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    phone(roster({ players: PREVIEW_ROSTER.players.map((p) => (p.id === theo.id ? breaks(p, 'handicap') : p)) }));
+    await expectCode('CH-3205', /The roster couldn’t be shown/);
+    await expectCode('CH-3206', /The player panel couldn’t be shown/);
+    for (const c of ['CH-3205', 'CH-3206']) expect(within(code(c) as HTMLElement).getByRole('button', { name: 'Try again' })).toBeTruthy();
+    expect(document.querySelector('.ch-rs-tcard')).not.toBeNull();
+    quiet.mockRestore();
+  });
+
   it('CH-3002 CH-3003 31301 a join request leaves the list the moment it is decided and comes back in its place when the server refuses; each failure names the player', async () => {
     const [grace, owen] = PREVIEW_ROSTER.requests as [(typeof PREVIEW_ROSTER.requests)[number], (typeof PREVIEW_ROSTER.requests)[number]];
     const held = later<{ success: boolean; error?: string }>();
@@ -926,6 +1017,56 @@ describe('Roster · the redesigned screens: changes, failures and edge states', 
     expect(hapticSpy).toHaveBeenCalledWith('error');
   });
 
+});
+
+describe('Roster · the redesigned desktop: filters, the remembered layout and a refreshed page', () => {
+  const control = (words: RegExp | string) => {
+    const el = screen.getAllByText(words)[0]!;
+    return (el.closest('button, [role="radio"], label') ?? el) as HTMLElement;
+  };
+  const rowNames = () => [...document.querySelectorAll('.ch-rs-row b, .ch-rs-face b')].map((n) => n.textContent);
+
+  it('CH-3303 a status filter with nobody says so and offers Show everyone, which brings the players back', async () => {
+    const user = userEvent.setup();
+    wrap(roster({ players: PREVIEW_ROSTER.players.filter((p) => p.status === 'active') }));
+    expect(code('CH-3303')).toBeNull();
+    await user.click(control(/^Inactive/));
+    await expectCode('CH-3303', /No inactive players/);
+    await user.click(within(code('CH-3303') as HTMLElement).getByRole('button', { name: 'Show everyone' }));
+    await waitFor(() => expect(code('CH-3303')).toBeNull());
+    expect(screen.getAllByText('Sofia Alvarez').length).toBeGreaterThan(0);
+  });
+
+  it('31202 the layout choice is kept on the device and applied when Roster opens again; a device that refuses storage still switches', async () => {
+    const user = userEvent.setup();
+    const first = wrap(roster());
+    expect(document.querySelector('.ch-rs-faces')).toBeNull();
+    await user.click(screen.getByLabelText('Team view'));
+    await waitFor(() => expect(document.querySelector('.ch-rs-faces')).not.toBeNull());
+    expect(localStorage.getItem('ch-roster-view')).toBe('faces');
+    first.unmount();
+    wrap(roster());
+    await waitFor(() => expect(document.querySelector('.ch-rs-faces')).not.toBeNull());
+    // Storage that throws: the switch still works for this visit.
+    const refuse = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('denied');
+    });
+    await user.click(screen.getByLabelText(/List/));
+    await waitFor(() => expect(document.querySelector('.ch-rs-faces')).toBeNull());
+    refuse.mockRestore();
+  });
+
+  it('30303 when the server sends the page again, the players and the join requests on screen become the new ones', async () => {
+    const view = wrap(roster());
+    expect(screen.getAllByText('Theo Marchetti').length).toBeGreaterThan(0);
+    expect(screen.getByText(/Grace Liu/)).toBeTruthy();
+    const two = PREVIEW_ROSTER.players.filter((p) => p.name === 'Sofia Alvarez' || p.name === 'Ava Lindqvist');
+    view.rerender(tree(roster({ players: two, requests: [] })));
+    await waitFor(() => expect(screen.queryAllByText('Theo Marchetti')).toHaveLength(0));
+    expect(screen.getAllByText('Sofia Alvarez').length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Grace Liu/)).toBeNull();
+    expect(rowNames().some((n) => n === 'Jonah Okafor')).toBe(false);
+  });
 });
 
 describe('Roster · data truth', () => {
