@@ -359,8 +359,9 @@ const qualifierFlow: FlowDef<QualifierStored> = {
       recipients,
       not_reached,
       delivery,
-      visible_to: 'team',
-      visible_note: `Every player and coach on ${ctx.team_name} can see the qualifier in Qualifiers.`,
+      // Certain: the players in it (their notice opens it) and the coaches. Whether a player outside the field can open it is the Qualifiers page's own rule, not claimed here.
+      visible_to: 'recipients',
+      visible_note: 'The players in it and this team’s coaches see it in Qualifiers.',
       key: ['qualifier', i.name, i.start_date, i.player_ids.join(',')],
     };
   },
