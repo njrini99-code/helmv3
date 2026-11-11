@@ -24,7 +24,7 @@ export function LiveViewPhone({ v }: { v: LiveViewState }) {
     <main className="ch-lv ch-lv--phone" aria-labelledby="ch-lv-title">
       <PhoneTop back={{ label: 'Home', onBack: back }} title={<span data-ch-code="CH-16610">{LIVE_COPY.viewTitle}</span>} titleId="ch-lv-title" />
       <div className="ch-lv-feed">
-        <FreshnessChip feed={v.failed ? 'connecting' : v.live.feed} updatedAt={v.live.updatedAt} onRefresh={v.live.refresh} />
+        <FreshnessChip feed={v.live.feed} failed={v.failed} updatedAt={v.live.updatedAt} onRefresh={v.live.refresh} />
       </div>
       <div className="ch-lv-tools">
         <LiveFilter v={v} />

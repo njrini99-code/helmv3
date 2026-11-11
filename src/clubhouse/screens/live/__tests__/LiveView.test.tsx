@@ -89,6 +89,15 @@ describe('the live view', () => {
     expect(screen.getByRole('button', { name: /Try again/ })).toBeTruthy();
   });
 
+  it('on a desk the chip follows the page when the first read failed: its words, no Connecting, one Try again', () => {
+    const { container } = view(PREVIEW_LIVE_FAILED);
+    const chip = container.querySelector('.ch-lv-head .ch-lv-chip')!;
+    expect(chip.textContent).toBe('Can’t refresh right now');
+    expect(chip.getAttribute('data-feed')).toBe('failed');
+    expect(container.querySelector('[data-ch-code="CH-16604"]')!.textContent).toContain(chip.textContent);
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+  });
+
   it('says it is not theirs to read when the coach has no team (CH-16609)', () => {
     const { container } = render(<LiveDenied />);
     expect(container.querySelector('[data-ch-code="CH-16609"]')!.textContent).toBe('You don’t have access to this team’s live rounds.');
