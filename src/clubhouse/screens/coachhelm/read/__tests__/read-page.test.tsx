@@ -408,6 +408,12 @@ describe('every state looks its own', () => {
     expect(css).toMatch(/\.ch-hr\.is-phone \.ch-hd-plan__w \{ grid-column: 2; grid-row: 2; justify-self: start; \}/);
   });
 
+  it('the Next line keeps each separator dot with the words before it, so a wrapped line never opens with a dot', () => {
+    show('putts', 'coach');
+    const next = [...main().querySelectorAll('header.ch-hd-dos__h dl.ch-hd-read > div')].find((r) => r.querySelector('dt')?.textContent === 'Next');
+    expect(next?.querySelector('dd')?.textContent).toBe('Downhill ladder\u00a0· 12 min\u00a0· intermediate.');
+  });
+
   it('the split under a counted cause is two labelled figures, each with its count', () => {
     show('penalties', 'coach');
     const dl = (sec('cause') as HTMLElement).querySelector('dl.ch-hd-dx__d') as HTMLElement;

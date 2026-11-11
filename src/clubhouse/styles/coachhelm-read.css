@@ -56,6 +56,7 @@
 .ch-hr.is-phone .ch-hd-plan__w { grid-column: 2; grid-row: 2; justify-self: start; }
 .ch-hr.is-phone .ch-hd-plan__i.is-link > svg { grid-column: 3; grid-row: 1 / span 2; }
 .ch-hr-done { display: inline-flex; flex: 1 1 0; align-items: center; gap: 6px; min-width: 0; margin: 0; color: var(--ch-text-secondary); }
+.ch-hr-done > svg { flex: none; }
 
 /* ---------- the phone's three tabs: the Segmented control, full width ---------- */
 .ch-hr-tabs { margin: 20px 0 16px; }

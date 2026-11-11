@@ -151,7 +151,8 @@ export function ReadHead({ d, voice }: { d: ChReadDetail; voice: ChViewVoice }) 
         </div>
         <div>
           <dt>Next</dt>
-          <dd>{n.drill ? `${n.drill}${n.meta ? ` · ${n.meta}` : ''}.` : n.text ? `${bare(n.text)}.` : n.none}</dd>
+          {/* A separator dot stays with what it follows (a no-break space before it), so a wrapped line never opens with one. */}
+          <dd>{n.drill ? `${n.drill}${n.meta ? ` · ${n.meta}` : ''}.`.replace(/ · /g, '\u00a0· ') : n.text ? `${bare(n.text)}.` : n.none}</dd>
         </div>
         <div>
           <dt>When</dt>
