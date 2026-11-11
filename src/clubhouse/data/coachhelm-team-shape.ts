@@ -2,7 +2,9 @@ import { plural } from '../lib/plural';
 import type { ChLadderAreaId } from './coachhelm-ladder-shape';
 import type { ChCoachHelmData, ChInsight, ChBoardMissing } from './coachhelm-shape';
 import type { ChCoachBrief, ChBriefWorking } from './coachhelm-coach-brief-shape';
-import type { ChDiveTheme } from './coachhelm-dive-shape';
+import { closesFor, type ChDeepInsight, type ChDiveTheme } from './coachhelm-dive-shape';
+import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+import type { AssembledThemes } from '@/lib/coachhelm/v3/themes/types';
 import type { ChNotEnough } from './coachhelm-firm';
 import type { ChTeamPatternRow, ChTeamPatterns } from './coachhelm-team-pattern';
 import type { ChTrackRecord } from './coachhelm-track-record-shape';
@@ -38,6 +40,28 @@ export interface ChTeamPlayer {
   first10: Record<ChStation, number | null> | null;
   reads: { needs: ChInsight[]; working: ChInsight[] };
   heldBack: number;
+}
+
+/**
+ * What a read is worth, a round: the cascade's figure and what it closes the gap to (`closesFor`, coachhelm-dive-shape.ts), the one
+ * function the Read page and the Player file print too. Never the engine's own `strokes_impact` (`ChInsight.stakes`), which was a
+ * second number for the same read.
+ */
+export type ChReadWorth = NonNullable<ChDeepInsight['closes']>;
+
+/** Each read's worth from one player's assembled themes, by read id; a read with no cascade cause has none, and nothing is drawn for it. */
+export function worthByRead(readIds: readonly string[], themes: AssembledThemes | null): Record<string, ChReadWorth> {
+  const out: Record<string, ChReadWorth> = {};
+  for (const id of readIds) {
+    const worth = closesFor({ id } as EvidenceInsight, themes);
+    if (worth) out[id] = worth;
+  }
+  return out;
+}
+
+/** "Worth 0.4 a round, to the Tour": the sheet's words, naming what the gap is closed to as the file's sentence does. */
+export function worthWords(worth: ChReadWorth): string {
+  return `Worth ${worth.strokes} a round, to ${worth.anchor === 'team' ? 'the team' : 'the Tour'}`;
 }
 
 /** A part the board draws from when it lands: a value or a promise, like the pulse; failed says so with its own Try again. */
@@ -76,6 +100,8 @@ export interface ChTeamBoardData {
   brief?: Promise<ChTeamPart<ChCoachBrief>> | ChTeamPart<ChCoachBrief>;
   record?: Promise<ChTeamPart<ChTrackRecord>> | ChTeamPart<ChTrackRecord>;
   themes?: Promise<ChTeamPart<Record<string, Record<string, ChDiveTheme>>>> | ChTeamPart<Record<string, Record<string, ChDiveTheme>>>;
+  /** Each drawn read's worth, by read id, from the same theme reads as `themes` (so it lands when they do). Absent: nothing is drawn. */
+  worth?: Promise<ChTeamPart<Record<string, ChReadWorth>>> | ChTeamPart<Record<string, ChReadWorth>>;
   /** By player name, as stories are: the newest round inside the week. */
   storyRounds?: Promise<ChTeamPart<Record<string, ChStoryRound>>> | ChTeamPart<Record<string, ChStoryRound>>;
 }

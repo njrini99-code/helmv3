@@ -38,6 +38,8 @@ import {
   STATIONS,
   stationFigures,
   stationsOfTeamSg,
+  worthByRead,
+  type ChReadWorth,
   type ChStation,
   type ChTeamBoardData,
   type ChTeamLeg,
@@ -244,6 +246,26 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     : null;
 
   const names = new Map(roster.map((p) => [p.id, p.name]));
+  // One read of each player's themes serves the stories and each drawn read's worth.
+  const themed = part('themes', async () => {
+    // At most four at a time, only players the reads say are moving (02-PLAN 4.5).
+    const themes: Record<string, ReturnType<typeof themesByCategory>> = {};
+    const worth: Record<string, ChReadWorth> = {};
+    // A theme only tells a story when it is Improving or Slipping; storiesOf drops the rest.
+    const candidates = [...names.keys()];
+    for (let i = 0; i < candidates.length; i += 4) {
+      await Promise.all(
+        candidates.slice(i, i + 4).map(async (id) => {
+          const t = await readThemes(id, 'coach');
+          if (!t) return;
+          themes[id] = themesByCategory(t, 'coach');
+          const drawn = list.find((p) => p.id === id);
+          Object.assign(worth, worthByRead(drawn ? [...drawn.reads.needs, ...drawn.reads.working].map((r) => r.id) : [], t));
+        }),
+      );
+    }
+    return { themes, worth };
+  });
   const missing = boardMissing({ drills: drills.error, assigned: assigned.error, declined: declined.error, newest: newest.error, tour: tourResult.error });
   return {
     off: null,
@@ -286,20 +308,8 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
       }
       return out;
     }),
-    themes: part('themes', async () => {
-      // At most four at a time, only players the reads say are moving (02-PLAN 4.5).
-      const out: Record<string, ReturnType<typeof themesByCategory>> = {};
-      // A theme only tells a story when it is Improving or Slipping; storiesOf drops the rest.
-      const candidates = [...names.keys()];
-      for (let i = 0; i < candidates.length; i += 4) {
-        await Promise.all(
-          candidates.slice(i, i + 4).map(async (id) => {
-            const t = await readThemes(id, 'coach');
-            if (t) out[id] = themesByCategory(t, 'coach');
-          }),
-        );
-      }
-      return out;
-    }),
+    themes: themed.then((p): ChTeamPart<Record<string, ReturnType<typeof themesByCategory>>> => (p.status === 'ok' ? { status: 'ok', value: p.value.themes } : p)),
+    // One read, one worth: the cascade's figure (`closesFor`), which the Read page and the Player file print, from the themes just read.
+    worth: themed.then((p): ChTeamPart<Record<string, ChReadWorth>> => (p.status === 'ok' ? { status: 'ok', value: p.value.worth } : p)),
   };
 }

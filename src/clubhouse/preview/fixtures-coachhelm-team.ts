@@ -134,6 +134,8 @@ export const PREVIEW_TEAM_BOARD: ChTeamBoardData = {
       { id: 'opening_hole_delta', team: 0.12, tour: 0.1, n: 5 },
     ],
   },
+  // Each read's worth as the themes part hands it over: the cascade's figure, to the team where the read has a team figure.
+  worth: { status: 'ok', value: Object.fromEntries(LIST.flatMap((p) => p.reads.needs).filter((r) => r.stakes).map((r) => [r.id, { strokes: Number(r.stakes).toFixed(1), anchor: r.compare?.team != null ? ('team' as const) : ('tour' as const) }])) },
   patterns: {
     rows: [
       {

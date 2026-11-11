@@ -1,5 +1,6 @@
 'use client';
 
+import { useContext } from 'react';
 import { plural } from '../../../lib/plural';
 import { day } from './CourseCard';
 import Link from 'next/link';
@@ -7,7 +8,7 @@ import { Badge } from '../../../ui/Badge';
 import { pluralWord } from '../../../lib/plural';
 
 import { X } from 'lucide-react';
-import type { ChTeamBoardData, ChTeamPlayer } from '../../../data/coachhelm-team-shape';
+import { worthWords, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
 import type { ChInsight } from '../../../data/coachhelm-shape';
 import { coachReadHref, playerFileHref, readHref } from '../../../data/coachhelm-views-shape';
 import type { CourseHistoryRow } from '@/lib/coachhelm/v3/team-board/course-shape';
@@ -20,7 +21,7 @@ import { askAboutReadHref } from '../chat/ask-links';
 import { Button } from '../../../ui/Button';
 import { toPar } from './CourseCard';
 import { STATION_NAME } from './hole-geometry';
-import { Chevron, Coin, ReadRow } from './parts';
+import { Chevron, Coin, ReadRow, ReadWorthContext } from './parts';
 
 const areaName = (r: ChInsight) => (r.area ? STATION_NAME[r.area] : 'Course and scoring');
 
@@ -163,6 +164,10 @@ export function ReadPanel({
   const href = !canLink ? null : coach ? readHref(player.id, read.id) : readHref(null, read.id);
   const ask = coach ? askAboutReadHref({ insightId: read.id, title: read.title, first: player.first }) : null;
   const cx = deep?.base.engine?.corrections;
+  // One worth for a read: the file's host hands over the read's own deep figure; the board reads the same function's from its themes.
+  const boardWorth = useContext(ReadWorthContext);
+  const worth = deep ? deep.closes : (boardWorth.byRead?.[read.id] ?? null);
+  const worthPending = !deep && boardWorth.pending;
   return (
     <>
       {coach ? <Head lead={<Coin player={player} />} name={player.name} line={`${areaName(read)} · ${player.rounds === 0 ? 'no counted rounds yet' : `last ${plural(player.rounds, 'round')}`}`} onClose={onClose} /> : <Head lead={null} name={areaName(read)} line="" onClose={onClose} />}
@@ -170,11 +175,19 @@ export function ReadPanel({
       <p className="lede">{read.lede}</p>
       <div className="evs">
         {read.stale && <Badge>Out of date</Badge>}
-        {/* CoachHelm's own estimate for this read (`strokesAtStake`), not a sum of the figures below: "about" says so. */}
-        {read.stakes && <Badge tone="warning">Worth about {read.stakes} a round</Badge>}
         {word && <Badge tone={word === 'Solid read' ? 'positive' : 'neutral'}>{word}</Badge>}
         {cause && <Badge>Cause: {cause}</Badge>}
         {read.evidence.window && <Badge>{read.evidence.window}</Badge>}
+        {/* Last, with its place held while it is on its way, so the badges before it never move when it lands. */}
+        {worth ? (
+          <Badge tone="warning">{worthWords(worth)}</Badge>
+        ) : (
+          worthPending && (
+            <span className="ev__hold" aria-hidden="true">
+              <Badge tone="warning">{worthWords({ strokes: '0.0', anchor: 'team' })}</Badge>
+            </span>
+          )
+        )}
       </div>
       <Comparison read={read} first={coach ? player.first : 'You'} />
       {deep && <ReadEvidence deep={deep} penalties={penalties} coach={coach} />}

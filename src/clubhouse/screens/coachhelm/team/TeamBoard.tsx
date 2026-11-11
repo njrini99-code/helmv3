@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { boardRoundsWords, courseReads, stationOrder, readsDrawn, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
+import { boardRoundsWords, courseReads, stationOrder, readsDrawn, type ChReadWorth, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
 import { formatSigned } from '../../../lib/format';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
@@ -11,7 +11,7 @@ import { useRefresh } from '../../../lib/use-refresh';
 import { CoachHelmHead } from '../CoachHelmHead';
 import { useChSessionState } from '../../../lib/session-state';
 import { plural } from '../../../lib/plural';
-import { Notice } from './parts';
+import { Notice, ReadWorthContext } from './parts';
 import { rebuiltHref } from '../../../shell/nav';
 import { CoachHelmOffNotice } from '../CoachBoard';
 import { CoachHelmTabs, COACHHELM_HREF, type CoachHelmView } from '../chat/SubTabs';
@@ -194,6 +194,18 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
       live = false;
     };
   }, [data.storyRounds]);
+  // Each drawn read's worth lands with the themes part; until it does, rows hold its place (ReadWorthContext).
+  const worthNow = data.worth && !(data.worth instanceof Promise) ? data.worth : null;
+  const [worth, setWorth] = useState<{ byRead: Record<string, ChReadWorth> | null; pending: boolean }>({ byRead: worthNow?.status === 'ok' ? worthNow.value : null, pending: data.worth != null && !worthNow });
+  useEffect(() => {
+    let live = true;
+    void Promise.resolve(data.worth).then((w) => {
+      if (live) setWorth({ byRead: w?.status === 'ok' ? w.value : null, pending: false });
+    });
+    return () => {
+      live = false;
+    };
+  }, [data.worth]);
   const [weekBrief, setWeekBrief] = useState<ChCoachBrief | null>(null);
   // A new object each time, so asking for the same story again opens it again.
   const [storyAsk, setStoryAsk] = useState<{ id: string } | null>(null);
@@ -420,6 +432,7 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
           : 'Story';
 
   return (
+    <ReadWorthContext.Provider value={worth}>
     <main ref={top} {...sw.enter} className={'ch-htb ' + (phone ? 'is-phone' : 'is-desk')} aria-busy={sw.pending || undefined} data-ch-screen="coachhelm-team">
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone ? (
@@ -444,5 +457,6 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
         </Inspector>
       )}
     </main>
+    </ReadWorthContext.Provider>
   );
 }

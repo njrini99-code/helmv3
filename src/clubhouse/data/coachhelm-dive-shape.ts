@@ -412,7 +412,7 @@ function planFor(raw: EvidenceInsight, focusAreas: readonly DiveFocusRow[], goal
  * cascade anchors it on the team's average when it has one (the player's value, the team's and the Tour's all known), and
  * otherwise carries the whole gap to the Tour (`CauseNode.strokesSavedPerRound`), so the page says which.
  */
-function closesFor(raw: EvidenceInsight, themes: AssembledThemes | null): ChDeepInsight['closes'] {
+export function closesFor(raw: EvidenceInsight, themes: AssembledThemes | null): ChDeepInsight['closes'] {
   const cause = themes?.themes.flatMap((t) => t.causes).find((c) => c.insight_id === raw.id);
   if (!cause || cause.counterfactualSuppressed || !(cause.strokesSavedPerRound > 0)) return null;
   const team = cause.standingTeamAvgValue != null && cause.standingPlayerValue != null && cause.standingPgaValue != null;

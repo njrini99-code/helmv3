@@ -570,6 +570,11 @@
   font: var(--ch-type-13);
   color:var(--ch-ink-600);
 }
+/* The worth chip's place while its figure is on its way (the themes part): held, unseen, so the line never moves when it lands. */
+.ch-htb .ev__hold {
+  display:inline-flex;
+  visibility:hidden;
+}
 .ch-htb .chev {
   color:var(--ch-ink-500);
 }
