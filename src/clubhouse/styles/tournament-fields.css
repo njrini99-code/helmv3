@@ -116,6 +116,14 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--ch-space-3);
 }
+/* A day's own name over its field. Off here: the row's one label stands at the left, and the wrapper is not a box, so
+   each field is the pair's own cell as before. The Tournaments form turns them on (tournaments-lineup.css). */
+.ch-tfx__sub {
+  display: contents;
+}
+.ch-tfx__sublbl {
+  display: none;
+}
 .ch-tfx__help {
   margin: var(--ch-space-1) 0 0;
   font: var(--ch-type-13);

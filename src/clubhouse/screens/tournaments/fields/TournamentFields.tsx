@@ -131,14 +131,27 @@ export function TournamentFields({
 
   return (
     <div className="ch-tfx__body">
-      <div className="ch-tfx__row">
+      <div className="ch-tfx__row ch-tfx__row--days">
         <span className="ch-tfx__lbl" id={`${idPrefix}-days`}>
           Days
         </span>
         <div>
+          {/* Each day carries its own name for a page that writes its labels over its fields (the Tournaments form): two
+              fields under one "Days" read as the same field twice. The calendar's sheet keeps the one label at the left
+              and does not draw these; each field is already named for assistive tech by its own `label`. */}
           <div className="ch-tfx__pair" role="group" aria-labelledby={`${idPrefix}-days`}>
-            <DateField label="First day" value={s.firstDay} onChange={(v) => v && setFirst(v)} />
-            <DateField label="Last day" value={s.lastDay} min={s.firstDay} onChange={(v) => v && setLast(v)} aria-invalid={!!daysErr} aria-describedby={daysErr ? `${idPrefix}-days-err` : undefined} />
+            <div className="ch-tfx__sub">
+              <span className="ch-tfx__sublbl" aria-hidden="true">
+                First day
+              </span>
+              <DateField label="First day" value={s.firstDay} onChange={(v) => v && setFirst(v)} />
+            </div>
+            <div className="ch-tfx__sub">
+              <span className="ch-tfx__sublbl" aria-hidden="true">
+                Last day
+              </span>
+              <DateField label="Last day" value={s.lastDay} min={s.firstDay} onChange={(v) => v && setLast(v)} aria-invalid={!!daysErr} aria-describedby={daysErr ? `${idPrefix}-days-err` : undefined} />
+            </div>
           </div>
           {daysErr && (
             <p id={`${idPrefix}-days-err`} className="ch-tfx__help is-error" data-ch-code={daysErr.code}>

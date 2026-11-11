@@ -8,6 +8,7 @@ import { newRequestId } from '../../data/recruiting-shape';
 import { haptic } from '../../lib/haptics';
 import { useAction } from '../../lib/use-action';
 import { Button } from '../../ui/Button';
+import { Section } from '../../ui/Section';
 import { Select } from '../../ui/Select';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
@@ -196,55 +197,67 @@ function NewEvent({ data, phone }: { data: ChTourFormData; phone: boolean }) {
             )}
           </div>
         )}
-        <div className="ch-tour-lu-form__name">
-          <label htmlFor="ch-tour-form-name" className="ch-tour-lu-form__lbl">
-            Name
-          </label>
-          <input
-            id="ch-tour-form-name"
-            className="ch-input ch-tour-lu-form__input"
-            placeholder="Pinehurst Invitational"
-            value={state.name}
-            maxLength={120}
-            aria-invalid={touched && !!errors.name}
-            aria-describedby={touched && errors.name ? 'ch-tour-form-name-err' : undefined}
-            onChange={(e) => setState({ ...state, name: e.target.value })}
-          />
-          {touched && errors.name && (
-            <p id="ch-tour-form-name-err" className="ch-field__help is-error" data-ch-code={errors.name.code}>
-              {errors.name.text}
-            </p>
-          )}
+        {/* The fields at the left; at the right, held in view, what saving does and the two keys (the qualifier form's
+            layout). One column on the phone, in the same order. */}
+        <div className="ch-tour-lu-form__main">
+          <Section id="ch-tour-form-details" title="Details">
+            <div className="ch-tour-lu-form__fields">
+              <div className="ch-tour-lu-form__name">
+                <label htmlFor="ch-tour-form-name" className="ch-tour-lu-form__lbl">
+                  Name
+                </label>
+                <input
+                  id="ch-tour-form-name"
+                  className="ch-input ch-tour-lu-form__input"
+                  placeholder="Pinehurst Invitational"
+                  value={state.name}
+                  maxLength={120}
+                  aria-invalid={touched && !!errors.name}
+                  aria-describedby={touched && errors.name ? 'ch-tour-form-name-err' : undefined}
+                  onChange={(e) => setState({ ...state, name: e.target.value })}
+                />
+                {touched && errors.name && (
+                  <p id="ch-tour-form-name-err" className="ch-field__help is-error" data-ch-code={errors.name.code}>
+                    {errors.name.text}
+                  </p>
+                )}
+              </div>
+              <section className="ch-tfx" aria-label="Tournament details">
+                <TournamentFields state={state} onChange={setState} errors={errors} showErrors={touched} timezone={data.timezone} courseWrites={LIVE_WRITES} announce={setSaid} />
+              </section>
+              {!editing && data.qualifiers.length > 0 && (
+                <div className="ch-tour-lu-form__qual">
+                  <label htmlFor="ch-tour-form-qual" className="ch-tour-lu-form__lbl">
+                    Qualifier
+                  </label>
+                  <Select
+                    id="ch-tour-form-qual"
+                    value={qualifierId}
+                    onChange={setQualifierId}
+                    options={[{ value: NO_QUALIFIER, label: 'None' }, ...data.qualifiers.map((q) => ({ value: q.id, label: q.status === 'open' ? `${q.name} (open)` : q.name }))]}
+                  />
+                </div>
+              )}
+            </div>
+          </Section>
         </div>
-        <section className="ch-tfx" aria-label="Tournament details">
-          <TournamentFields state={state} onChange={setState} errors={errors} showErrors={touched} timezone={data.timezone} courseWrites={LIVE_WRITES} announce={setSaid} />
-        </section>
-        {!editing && data.qualifiers.length > 0 && (
-          <div className="ch-tour-lu-form__qual">
-            <label htmlFor="ch-tour-form-qual" className="ch-tour-lu-form__lbl">
-              Qualifier
-            </label>
-            <Select
-              id="ch-tour-form-qual"
-              value={qualifierId}
-              onChange={setQualifierId}
-              options={[{ value: NO_QUALIFIER, label: 'None' }, ...data.qualifiers.map((q) => ({ value: q.id, label: q.status === 'open' ? `${q.name} (open)` : q.name }))]}
-            />
+        <div className="ch-tour-lu-form__side">
+          <Section id="ch-tour-form-summary" title={editing ? 'Changes' : 'Summary'}>
+            <div className="ch-tour-lu-form__fields">
+              <p className="ch-tour-lu-form__receipt ch-well-soft">{editing ? 'Scores and the lineup stay as they are.' : receiptSentence({ state, convert: false, rsvp: false, qualifierName: qualifier?.name })}</p>
+            </div>
+          </Section>
+          <p className="ch-sr-only" role="status" aria-live="polite">
+            {said}
+          </p>
+          <div className="ch-tour-lu-form__actions">
+            <Button variant={phone ? 'secondary' : 'ghost'} href={back}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" busy={save.pending}>
+              {editing ? (save.pending ? 'Saving…' : 'Save changes') : save.pending ? 'Creating…' : 'Create tournament'}
+            </Button>
           </div>
-        )}
-        {!editing && (
-          <p className="ch-tour-lu-form__receipt">{receiptSentence({ state, convert: false, rsvp: false, qualifierName: qualifier?.name })}</p>
-        )}
-        <p className="ch-sr-only" role="status" aria-live="polite">
-          {said}
-        </p>
-        <div className="ch-tour-lu-form__actions">
-          <Button variant="secondary" href={back}>
-            Cancel
-          </Button>
-          <Button variant="primary" type="submit" busy={save.pending}>
-            {editing ? (save.pending ? 'Saving…' : 'Save changes') : save.pending ? 'Creating…' : 'Create tournament'}
-          </Button>
         </div>
       </form>
     </TourMain>

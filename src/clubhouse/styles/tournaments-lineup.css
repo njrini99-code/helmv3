@@ -2,13 +2,35 @@
    Owned by the lineup area (src/clubhouse/screens/tournaments/README.md). Every class here starts .ch-tour-lu-; shared
    pieces (the view root .ch-tour, the changed-wash) live in tournaments.css. Tokens only. */
 
-/* New event: the name, the shared tournament fields (.ch-tfx, tournament-fields.css), the qualifier, the receipt sentence
-   and the two actions. A single column on the page's measure; the phone stacks the actions, Create first. */
+/* New event and Edit event, in the qualifier form's layout: the fields at the left under one heading, and at the right,
+   held in view, what saving does and the two keys. One column on the phone and in a narrow window, in the same order,
+   the keys stacked with Create first. Every label stands over its field: the shared tournament fields (.ch-tfx,
+   tournament-fields.css) are drawn flat here, with their labels moved up from the left. */
 .ch-tour-lu-form__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+  gap: 40px 48px;
+}
+.ch-tour-lu-form__body > .ch-tfx-note {
+  grid-column: 1 / -1;
+}
+.ch-tour-lu-form__main,
+.ch-tour-lu-form__side {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+.ch-tour-lu-form__side {
+  position: sticky;
+  top: calc(var(--ch-topbar-h) + 20px);
+}
+.ch-tour-lu-form__fields {
   display: flex;
   flex-direction: column;
   gap: var(--ch-space-4);
-  max-width: var(--ch-measure-reading);
+  min-width: 0;
 }
 .ch-tour-lu-form__name,
 .ch-tour-lu-form__qual {
@@ -16,30 +38,122 @@
   flex-direction: column;
   gap: var(--ch-space-2);
 }
-.ch-tour-lu-form__lbl {
+.ch-tour-lu-form__lbl,
+.ch-tour-lu-form .ch-tfx__sublbl {
   font: var(--ch-type-13-medium);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
 .ch-tour-lu-form__input {
   width: 100%;
-  height: 44px;
 }
-.ch-tour-lu-form__body .ch-tfx {
+.ch-tour-lu-form .ch-tfx {
   margin-top: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
 }
-.ch-tour-lu-form__receipt {
+.ch-tour-lu-form .ch-tfx__body {
+  gap: var(--ch-space-4);
+}
+.ch-tour-lu-form .ch-tfx__row {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--ch-space-2);
+}
+.ch-tour-lu-form .ch-tfx__lbl {
+  padding-top: 0;
+}
+/* First day and Last day, side by side at every width, each under its own name; the row's "Days" is left to assistive
+   tech, which reads it as the pair's name. */
+.ch-tour-lu-form .ch-tfx__row--days > .ch-tfx__lbl {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.ch-tour-lu-form .ch-tfx__pair {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--ch-space-3);
+}
+.ch-tour-lu-form .ch-tfx__sub {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-2);
+  min-width: 0;
+}
+.ch-tour-lu-form .ch-tfx__sublbl {
+  display: block;
+}
+/* The course's field is the height of the fields around it. */
+.ch-tour-lu-form .ch-tfx__course {
+  min-height: 40px;
+}
+/* A round's day and its tee time share the round's line on the phone, Add time at its end: with the fields drawn
+   flat the row has the room. A custom round, whose day is a field of its own, still drops the time under it. */
+@container (max-width: 359px) {
+  .ch-tour-lu-form .ch-tfx__round:has(> .ch-tfx__day > b) {
+    flex-wrap: nowrap;
+  }
+  .ch-tour-lu-form .ch-tfx__round:has(> .ch-tfx__day > b) > .ch-tfx__tee {
+    order: 0;
+    width: auto;
+    min-width: 104px;
+    margin-left: 0;
+    text-align: right;
+  }
+}
+/* What saving does, in the form's quiet well. Two classes: `.ch-root p` (base.css) would otherwise zero its margins. */
+.ch-tour-lu-form .ch-tour-lu-form__receipt {
   margin: 0;
+  padding: 12px 16px;
   font: var(--ch-type-14);
   color: var(--ch-text-secondary);
 }
+/* The commit sits under a seam at the foot of the held column, as the qualifier form's does. */
 .ch-tour-lu-form__actions {
   display: flex;
   justify-content: flex-end;
   gap: var(--ch-space-2);
+  padding-top: 20px;
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
+}
+@media (max-width: 1100px) {
+  .ch-tour-lu-form__body {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: var(--ch-measure-reading);
+  }
+  .ch-tour-lu-form__side {
+    position: static;
+  }
+}
+.ch-tour-lu-form.is-phone .ch-tour-lu-form__body {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+.ch-tour-lu-form.is-phone .ch-tour-lu-form__main,
+.ch-tour-lu-form.is-phone .ch-tour-lu-form__side {
+  gap: 16px;
+}
+.ch-tour-lu-form.is-phone .ch-tour-lu-form__side {
+  position: static;
+}
+/* On the phone a section is a card (ui.css): its first label stands clear of the head's rule. */
+.ch-tour-lu-form.is-phone .ch-tour-lu-form__fields,
+.ch-tour-lu.is-phone .ch-tour-lu-extra {
+  padding-top: 12px;
+}
+.ch-tour-lu-form.is-phone .ch-tour-lu-form__input,
+.ch-tour-lu-form.is-phone .ch-tfx__course {
+  min-height: 44px;
 }
 .ch-tour-lu-form.is-phone .ch-tour-lu-form__actions {
   flex-direction: column-reverse;
+  padding-top: 0;
+  box-shadow: none;
 }
 .ch-tour-lu-form.is-phone .ch-tour-lu-form__actions .ch-btn {
   width: 100%;

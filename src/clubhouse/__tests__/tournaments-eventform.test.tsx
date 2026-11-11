@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const nav = vi.hoisted(() => ({ push: vi.fn() }));
@@ -52,6 +52,19 @@ describe('New event (Tournaments page)', () => {
     expect(container.querySelector('[data-ch-tour-view="form"] h1')?.textContent).toBe('New event');
     expect(container.querySelector('[data-ch-code="CH-16301"]')).toBeNull();
     expect(screen.getByLabelText('Name')).toBeInTheDocument();
+  });
+
+  it('lays the fields at the left and, at the right, what creating does with the two keys; each day stands under its own name', () => {
+    const { container } = draw();
+    const side = container.querySelector('.ch-tour-lu-form__side') as HTMLElement;
+    expect(within(side).getByRole('button', { name: 'Create tournament' })).toBeInTheDocument();
+    expect(within(side).getByRole('link', { name: 'Cancel' })).toBeInTheDocument();
+    expect(side.querySelector('.ch-tour-lu-form__receipt')?.textContent).toMatch(/^Creates the tournament/);
+    const main = container.querySelector('.ch-tour-lu-form__main') as HTMLElement;
+    expect(within(main).getByLabelText('Name')).toBeInTheDocument();
+    // The shared tournament fields (stubbed here) and the qualifier are with the name, not in the held column.
+    expect(within(main).getByRole('button', { name: 'Pick Pinehurst' })).toBeInTheDocument();
+    expect(main.querySelector('#ch-tour-form-qual')).not.toBeNull();
   });
 
   it('CH-6147 and CH-6140: a missing name and course are said together and nothing is sent', () => {
