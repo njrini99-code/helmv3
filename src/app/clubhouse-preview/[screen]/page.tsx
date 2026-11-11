@@ -186,7 +186,7 @@ import { ChClockProvider } from '@/clubhouse/lib/use-clock';
  *   /clubhouse-preview/qualifier-player ?q=…   /clubhouse-preview/qualifier-new, qualifier-edit ?state=failed | noroster | courses | failwrites | loading
  *   /clubhouse-preview/qualifier-selection ?q=standings | picking | picked | selected, &state=failwrites
  *   /clubhouse-preview/coachhelm   retired (the signal-list board): opens coachhelm-team, the coach's CoachHelm Team page
- *   /clubhouse-preview/coachhelm-player ?state=accepted | noplan | proposed | seen | declined | early | empty | failed | loading | failwrites   (a player's CoachHelm, Your week; the older player board is retired), &view=standing | deep-dive | profile for their views (states as coachhelm-views)
+ *   /clubhouse-preview/coachhelm-player ?state=accepted | noplan | proposed | seen | declined | early | empty | failed | off | off-bare | loading | failwrites   (a player's CoachHelm, Your week; the older player board is retired), &view=standing | deep-dive | profile for their views (states as coachhelm-views)
  *   /clubhouse-preview/coachhelm-practice-print ?state=norotation | nodrills | draft | unread | long | cards   (unread: the drills read failed; long: a 14-drill appendix switched on)
  *   /clubhouse-preview/coachhelm-practice-run ?state=draft | edited
  *   /clubhouse-preview/coachhelm-practice-library ?tab=drills | drill | groups | templates &state=empty | library

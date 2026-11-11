@@ -250,4 +250,27 @@ describe('the player page (S-BOARD, W-LNS-14, W-LNS-15)', () => {
     window.dispatchEvent(new Event('pagehide'));
     expect(writes.decline).not.toHaveBeenCalled();
   });
+
+  it('CH-13304 CoachHelm off for the team is said as that, with the coach’s words when there are some: never the "couldn’t load" card, no Try again, no views', () => {
+    render(<YourWeek load={{ status: 'off', reason: 'Off during the offseason' }} />, { wrapper: Wrap });
+    const off = document.querySelector('[data-ch-code="CH-13304"]') as HTMLElement;
+    expect(off).not.toBeNull();
+    expect(off.textContent).toMatch(/CoachHelm is off for your team/);
+    expect(off.textContent).toMatch(/Your coach turned it off: “Off during the offseason”\. Ask your coach if you want it back on\./);
+    expect(document.body.textContent).not.toMatch(/Couldn’t load/);
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+    expect(screen.queryByRole('radiogroup')).toBeNull();
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    cleanup();
+    render(<YourWeek load={{ status: 'off', reason: null }} />, { wrapper: Wrap });
+    expect(document.querySelector('[data-ch-code="CH-13304"]')!.textContent).toMatch(/CoachHelm is turned off, so no insights are being shown\. Ask your coach if you want it back on\./);
+  });
+
+  it('a read that failed is still the "couldn’t load" card with Try again', () => {
+    render(<YourWeek load={{ status: 'failed' }} />, { wrapper: Wrap });
+    expect(screen.getByRole('alert').textContent).toMatch(/Couldn’t load your CoachHelm/);
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
+    expect(document.querySelector('[data-ch-code="CH-13304"]')).toBeNull();
+  });
 });

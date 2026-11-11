@@ -17,6 +17,8 @@ export function PreviewCoachHelmPlayerFile({ state = 'accepted', viewer, lens, a
   const res = fail ? ({ success: false, error: 'Preview: refused' } as const) : ({ success: true } as const);
   if (viewer === 'player') {
     if (state === 'failed') return <YourWeek load={{ status: 'failed' }} />;
+    // CoachHelm off for the player's team (CH-13304), with the coach's words; `off-bare` has none.
+    if (state === 'off' || state === 'off-bare') return <YourWeek load={{ status: 'off', reason: state === 'off' ? 'We are pausing AI insights until after the spring qualifier' : null }} />;
     return <YourWeek load={{ status: 'ready', data: previewPlayerWeek(state) }} writes={{ accept: () => wait(res), decline: () => wait(res) }} />;
   }
   const assign = () => wait(state === 'duplicate' ? ({ success: false, error: ACTIVE_FOCUS_DUPLICATE_ERROR } as const) : res);
