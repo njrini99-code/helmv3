@@ -130,6 +130,21 @@ describe('set_goal_state', () => {
   });
 });
 
+describe('set_goal_state: editing the reason before Confirm', () => {
+  it('a close offers its reason and an edit plans again; a pause offers nothing; the state and the goal are never fields', async () => {
+    const { sb, writes } = db();
+    const p = stored(await setGoalState.plan(toolCtx(sb, coachWho()), { goal_id: GOAL, state: 'abandoned', reason: 'Switching to a putting goal' }));
+    expect(p.editable?.map((f) => [f.key, f.label, f.value])).toEqual([['reason', 'Reason kept with the goal', 'Switching to a putting goal']]);
+    const q = await setGoalState.revise!(toolCtx(sb, coachWho()), p, { reason: 'Injury: back in spring' });
+    expect(fact(q, 'Reason kept with the goal')).toBe('Injury: back in spring');
+    expect(writes).toEqual([]);
+    expect(a.abandonGoal).not.toHaveBeenCalled();
+    await expect(setGoalState.revise!(toolCtx(sb, coachWho()), p, { state: 'paused' })).rejects.toThrow('That cannot be changed on this card. Ask for it in words instead.');
+    await expect(setGoalState.revise!(toolCtx(sb, playerWho(), 'player'), p, { reason: 'x' })).rejects.toThrow('Only a coach can do that.');
+    expect((await setGoalState.plan(toolCtx(sb, coachWho()), { goal_id: GOAL, state: 'paused', reason: null })).editable).toBeUndefined();
+  });
+});
+
 describe('mark_signal_handled', () => {
   it('the card says the player will see “Acknowledged” on their own page, and writes nothing', async () => {
     const { sb, writes } = db();

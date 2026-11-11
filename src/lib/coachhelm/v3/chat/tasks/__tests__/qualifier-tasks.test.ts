@@ -88,3 +88,20 @@ describe('set_qualifier_coach_pick', () => {
     expect(qualifierTools().map((t) => [t.name, t.kind])).toEqual([['set_qualifier_coach_pick', 'task']]);
   });
 });
+
+describe('set_qualifier_coach_pick: editing the reason before Confirm', () => {
+  it('the card offers the reason only; an edit plans again with the team check and writes nothing', async () => {
+    const { sb, writes } = db();
+    const p = JSON.parse(JSON.stringify(await setQualifierPick.plan(toolCtx(sb, coachWho()), input))) as StoredProposal;
+    expect(p.editable?.map((f) => [f.key, f.label, f.value, f.required])).toEqual([['reasoning', 'Reason', 'Best ball-striker in wind', true]]);
+    a.verifyTeamAccess.mockClear();
+    const q = await setQualifierPick.revise!(toolCtx(sb, coachWho()), p, { reasoning: 'Has played this course most' });
+    expect(fact(q, 'Reason')).toBe('Has played this course most');
+    expect(a.verifyTeamAccess).toHaveBeenCalledWith(TEAM, COACH_USER, sb);
+    expect(writes).toEqual([]);
+    expect(a.setQualifierCoachPick).not.toHaveBeenCalled();
+    // The player and the qualifier are the request, not fields; a pick needs a reason.
+    await expect(setQualifierPick.revise!(toolCtx(sb, coachWho()), p, { player_id: BLAKE })).rejects.toThrow('That cannot be changed on this card. Ask for it in words instead.');
+    await expect(setQualifierPick.revise!(toolCtx(sb, coachWho()), p, { reasoning: '' })).rejects.toThrow('Reason is not a value this card can take.');
+  });
+});

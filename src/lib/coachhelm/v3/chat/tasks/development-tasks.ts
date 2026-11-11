@@ -147,6 +147,8 @@ const GoalInput = z.strictObject({
   reason: z.string().min(1).max(300).nullable(),
 });
 type GoalInput = z.infer<typeof GoalInput>;
+/** What the coach can change on the card itself: the reason kept with the goal. The state is the request, so it is not a field. */
+const goalEdits = editing(GoalInput, { reason: 'Reason kept with the goal' });
 const GoalStored = z.object({ goal_id: z.string().uuid(), state: z.enum(GOAL_STATES), reason: z.string().nullable(), title: z.string(), player: z.string() });
 
 async function goalRow(ctx: ToolContext, id: string) {
@@ -201,10 +203,16 @@ export const setGoalState: TaskTool<GoalInput, StoredProposal> = {
       ...NOTHING_SENT,
       visible_note: facts[facts.length - 1]!.value,
       undo: { window: true, after: input.state === 'abandoned' ? 'A closed goal is not reopened here; set a new goal.' : input.state === 'paused' ? 'Resume it.' : 'Pause it again.' },
+      // The reason is only kept, and only shown, when a goal is closed.
+      ...(input.state === 'abandoned' ? { editable: goalEdits.fields(input, { reason }) } : {}),
       tool: 'set_goal_state',
-      input: { goal_id: row.id, state: input.state, reason, title, player: player.name },
+      input: { goal_id: row.id, state: input.state, reason, title, player: player.name, asked: input },
       planned_at: now(),
     };
+  },
+  revise: async (ctx, proposal, edits) => {
+    coachOnly(ctx);
+    return setGoalState.plan(ctx, goalEdits.merge(proposal, edits));
   },
   commit: async (ctx, proposal) => {
     const name = 'set_goal_state';

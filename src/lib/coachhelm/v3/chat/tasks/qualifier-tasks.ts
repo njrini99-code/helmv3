@@ -22,7 +22,7 @@ import { keyOf } from '../action-planners';
 import type { ProposalFact } from '../action-types';
 import { CoachContextError, type CoachChatContext } from '../context';
 import type { ChatTool, TaskTool, ToolContext } from '../engine/tool';
-import { NOTHING_SENT, coachOnly, done, failed, list, now, rosterPlayer, settle, type StoredProposal } from './kit';
+import { NOTHING_SENT, coachOnly, done, editing, failed, list, now, rosterPlayer, settle, type StoredProposal } from './kit';
 
 const PickInput = z.strictObject({
   qualifier_id: z.string().uuid(),
@@ -30,6 +30,8 @@ const PickInput = z.strictObject({
   reasoning: z.string().min(1).max(500),
 });
 type PickInput = z.infer<typeof PickInput>;
+/** What the coach can change on the card itself: their reason. The qualifier and the player are the request. */
+const pickEdits = editing(PickInput, { reasoning: 'Reason' });
 const PickStored = z.object({ qualifier_id: z.string().uuid(), player_id: z.string().uuid(), reasoning: z.string().min(1), qualifier: z.string(), player: z.string() });
 
 async function picksOf(ctx: ToolContext, qualifierId: string): Promise<string[] | null> {
@@ -89,10 +91,15 @@ export const setQualifierPick: TaskTool<PickInput, StoredProposal> = {
       visible_to: confirmed ? 'team' : 'coaches',
       visible_note: `${facts[5]!.value} The reason is only ever shown to coaches.`,
       undo: { window: true, after: 'Take the pick back on the Qualifiers screen.' },
+      editable: pickEdits.fields(input, { reasoning }),
       tool: 'set_qualifier_coach_pick',
-      input: { qualifier_id: q.id, player_id: player.id, reasoning, qualifier: q.name, player: player.name },
+      input: { qualifier_id: q.id, player_id: player.id, reasoning, qualifier: q.name, player: player.name, asked: input },
       planned_at: now(),
     };
+  },
+  revise: async (ctx, proposal, edits) => {
+    coachOnly(ctx);
+    return setQualifierPick.plan(ctx, pickEdits.merge(proposal, edits));
   },
   commit: async (ctx, proposal) => {
     const name = 'set_qualifier_coach_pick';

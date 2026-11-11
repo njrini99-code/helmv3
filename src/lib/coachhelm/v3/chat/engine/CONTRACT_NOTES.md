@@ -1127,3 +1127,10 @@ E29. **Several proposals in one turn.** One answer may ask for several tasks. Ea
        the instant the window closes, a card's own ring-end request (`commitHeldNow`) can take that one row before
        the batch does; that card is then written by that request, out of order, and the batch reports its result.
        (3) A batch holds one request open for the window plus every write; the route's limit is 120 seconds.
+
+C13. (CONTEXT.) Three more CONTEXT cards take one edit before Confirm, the same way as C12: the `reason` on
+`cancel_event` (the words players are sent are planned again from it), the `reason` on `set_goal_state` when the state
+is `abandoned` (a pause or a resume offers nothing, so `editable` is absent there), and the `reasoning` on
+`set_qualifier_coach_pick`. Six CONTEXT cards now have `revise`; `send_event_reminder`, `record_attendance`,
+`set_focus_area_status`, `mark_signal_handled`, `dismiss_signal` and `record_focus_outcome` do not, and E28 answers
+`fixed` for them.

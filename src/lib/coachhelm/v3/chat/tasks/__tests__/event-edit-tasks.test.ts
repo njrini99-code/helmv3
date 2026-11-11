@@ -273,6 +273,25 @@ describe('cancel_event', () => {
   });
 });
 
+describe('cancel_event: editing the reason before Confirm', () => {
+  it('the card offers the reason only; an edit plans again and the words players get change with it, with nothing written', async () => {
+    const { sb, writes } = db();
+    const p = stored(await cancelEvent.plan(toolCtx(sb, coach()), { event_id: EVENT, reason: 'Course is closed' }));
+    expect(p.editable?.map((f) => [f.key, f.label, f.type, f.value, f.max_length])).toEqual([['reason', 'Reason', 'text', 'Course is closed', 200]]);
+    const q = await cancelEvent.revise!(toolCtx(sb, coach()), p, { reason: 'Frost delay, greens are closed' });
+    expect(fact(q, 'Reason')).toBe('Frost delay, greens are closed');
+    expect(fact(q, 'In the app they see')).toContain('Frost delay, greens are closed');
+    expect(fact(q, 'In the app they see')).not.toContain('Course is closed');
+    // A blank is no reason, as when none was given.
+    expect(fact(await cancelEvent.revise!(toolCtx(sb, coach()), p, { reason: '' }), 'Reason')).toBe('Not set');
+    expect(writes).toEqual([]);
+    expect(actions.deleteGolfEvent).not.toHaveBeenCalled();
+    await expect(cancelEvent.revise!(toolCtx(sb, coach()), p, { event_id: FOREIGN })).rejects.toThrow('That cannot be changed on this card. Ask for it in words instead.');
+    await expect(cancelEvent.revise!(toolCtx(sb, coach()), p, { reason: 'x'.repeat(201) })).rejects.toThrow('Reason is not a value this card can take.');
+    await expect(cancelEvent.revise!(toolCtx(sb, playerWho(), 'player'), p, { reason: 'Rain' })).rejects.toThrow('Only a coach can do that.');
+  });
+});
+
 describe('the words on the cards are still the app’s', () => {
   it('the update notice and the cancellation notice are built as these tools build them', () => {
     const rsvp = readFileSync(join(process.cwd(), 'src/lib/calendar/rsvp.ts'), 'utf8');
