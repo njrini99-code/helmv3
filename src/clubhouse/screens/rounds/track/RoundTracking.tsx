@@ -18,13 +18,13 @@ import { Spinner } from '../../../ui/Spinner';
 import { Swap } from '../../../ui/Swap';
 import { TeeSwatch, TYPE_LABEL } from '../parts';
 import { CourseView } from './CourseView';
-import { PuttMissPrompt, RecoveryPrompt } from './DataPrompts';
+import { AskHeld, PuttMissPrompt, RecoveryPrompt } from './DataPrompts';
 import { HoleReview } from './HoleReview';
 import { heroDistance, scoreName, shotKind } from './labels';
 import { HoleMap, ShotLog, TrackStrip } from './parts';
 import { EditShotSheet, PenaltySheet, UnsavedSheet } from './sheets';
 import { ShotEntry } from './ShotEntry';
-import { useChPuttPrompt, useChRecoveryPrompt } from './use-data-prompts';
+import { useChPuttPrompt, useChRecoveryPrompt, type ChPuttPromptView, type ChRecoveryPromptView } from './use-data-prompts';
 import { useWakeLock } from './use-wake-lock';
 import { pluralWord } from '../../../lib/plural';
 import '../../../styles/rounds-track.css';
@@ -120,6 +120,9 @@ export function RoundTracking(props: RoundTrackingProps) {
   // The stage above the shot log takes the screen's spare height on a phone. While the log is open the stage keeps the
   // height it had, so the log's rows open downward from a line that stays where it was tapped (the page scrolls to
   // them, as it did) instead of the stage giving its height up and the line jumping.
+  // The prompt this shot showed, as it last stood: once it goes (Skip, or its receipt has been read) it is still drawn,
+  // held, until the next shot, so its place in the card keeps its height (owner, 2026-11-11).
+  const [shown, setShown] = useState<{ shot: string; mark: string; putt: ChPuttPromptView | null; recovery: ChRecoveryPromptView | null; start: ReactNode } | null>(null);
   // The putt's Break and slope row: closed until the player opens it, then open for the rest of the round (owner,
   // 2026-11-11). Held here, beside the engine, so it outlives each shot's entry and the move between holes.
   const [puttReadOpen, setPuttReadOpen] = useState(false);
@@ -193,14 +196,27 @@ export function RoundTracking(props: RoundTrackingProps) {
   const saveState = heldSaved === 'saved' && t.holeCheckpointStatus !== 'idle' ? 'idle' : heldSaved;
   const meta = [round.teeLabel && `${round.teeLabel} tees`, round.type && TYPE_LABEL[round.type]].filter(Boolean).join(' · ');
   const atStart = !!startPrompt && isRoundStartMoment({ holeScores: holes.map((h) => h.score), currentHoleIndex, startHole, shotCount: t.shotHistory.length });
-  const prompts =
-    puttAsk || recoveryAsk || atStart ? (
-      <>
-        {atStart && startPrompt}
-        {puttAsk && <PuttMissPrompt prompt={puttAsk} pref={distancePref} />}
-        {recoveryAsk && <RecoveryPrompt prompt={recoveryAsk} />}
-      </>
-    ) : undefined;
+  const asking = !!(puttAsk || recoveryAsk || atStart);
+  const shotKey = `${hole.number}:${t.currentShot}`;
+  // What is on show, by what it says, so the copy held for later is the prompt as the player last saw it.
+  const mark = [puttAsk && `${puttAsk.key}|${puttAsk.saved}|${puttAsk.counter}`, recoveryAsk && `${recoveryAsk.key}|${recoveryAsk.saved}`, atStart && 'start'].filter(Boolean).join(';');
+  if (asking && (shown?.shot !== shotKey || shown.mark !== mark)) setShown({ shot: shotKey, mark, putt: puttAsk, recovery: recoveryAsk, start: atStart ? startPrompt : null });
+  const held = !asking && shown?.shot === shotKey ? shown : null;
+  const prompts = asking ? (
+    <>
+      {atStart && startPrompt}
+      {puttAsk && <PuttMissPrompt prompt={puttAsk} pref={distancePref} />}
+      {recoveryAsk && <RecoveryPrompt prompt={recoveryAsk} />}
+    </>
+  ) : held ? (
+    <AskHeld.Provider value={true}>
+      <div className="ch-rt-held" aria-hidden="true" inert>
+        {held.start}
+        {held.putt && <PuttMissPrompt prompt={held.putt} pref={distancePref} />}
+        {held.recovery && <RecoveryPrompt prompt={held.recovery} />}
+      </div>
+    </AskHeld.Provider>
+  ) : undefined;
 
   return (
     <div className="ch-rt-q">
@@ -375,6 +391,7 @@ export function RoundTracking(props: RoundTrackingProps) {
               puttReadOpen={puttReadOpen}
               onPuttReadOpen={setPuttReadOpen}
               prompts={prompts}
+              asking={asking}
             />
           )}
           </Swap>

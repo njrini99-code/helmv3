@@ -1225,8 +1225,20 @@ path.ch-rt-map__shot {
 .ch-rt-note--flat {
   margin: 12px 16px 0;
 }
-/* CH-11960 to CH-11962: CoachHelm's one-tap data prompts, first in the entry card. A question with Skip on its right (a
-   44px target held inside the header's line), the chips, and one quiet line under them; never the card's primary. */
+/* The card's foot band (the distance row, and a data prompt before a result is picked). No box on the desk: the row is
+   the panel's own section, a prompt stands first in the panel as it did, and a prompt that has gone takes no room. The
+   phone block stacks the two in one place. */
+.ch-rt-band {
+  display: contents;
+}
+.ch-rt-band__ask {
+  order: -1;
+}
+.ch-rt-held {
+  display: none;
+}
+/* CH-11960 to CH-11962: CoachHelm's one-tap data prompts in the entry card. A question with Skip on its right (a 44px
+   target held inside the header's line), the chips, and one quiet line under them; never the card's primary. */
 .ch-rt-ask .ch-rt-sec__h > .ch-btn {
   min-height: 44px;
   margin: -8px -8px -8px 0;
@@ -3040,18 +3052,71 @@ path.ch-rt-map__shot {
   }
   .ch-rt-sec,
   .ch-rt-slot,
+  .ch-rt-band,
   .ch-rt-card > .ch-rt-sec:first-child {
     padding: 0 0 12px;
     border-bottom: var(--ch-hairline-w) solid var(--ch-ivory-300);
     border-radius: 0;
   }
   .ch-rt-card > * + .ch-rt-sec,
-  .ch-rt-card > * + .ch-rt-slot {
+  .ch-rt-card > * + .ch-rt-slot,
+  .ch-rt-card > * + .ch-rt-band {
     padding-top: 12px;
   }
-  .ch-rt-card > .ch-rt-sec:last-of-type {
+  /* The card's last part ends on the card's own padding: the band, or the putt's read row under it. */
+  .ch-rt-card > .ch-rt-sec.ch-rt-read,
+  .ch-rt-card > .ch-rt-band:not(:has(+ .ch-rt-read)) {
     padding-bottom: 0;
     border-bottom: 0;
+  }
+  /* The foot band (owner, 2026-11-11): the distance row and a data prompt share one cell, so the band is as tall as the
+     taller and a prompt pushes nothing as it comes, is answered or is skipped. The prompt shows while no result is
+     picked; then the row takes the band and the prompt is hidden where it stands. A prompt that has gone is still
+     drawn, hidden and inert, until the next shot (RoundTracking), so Skip takes no height off the card. */
+  .ch-rt-band {
+    display: grid;
+  }
+  .ch-rt-band > * {
+    grid-area: 1 / 1;
+    min-width: 0;
+  }
+  .ch-rt-band > .ch-rt-sec,
+  .ch-rt-band .ch-rt-ask {
+    padding: 0;
+    border-bottom: 0;
+  }
+  .ch-rt-band__ask {
+    order: 0;
+    transition: opacity var(--ch-dur-base) var(--ch-ease);
+  }
+  .ch-rt-band[data-face='distance'] > .ch-rt-band__ask {
+    visibility: hidden;
+    opacity: 0;
+    transition:
+      opacity var(--ch-dur-quick) var(--ch-ease),
+      visibility 0s linear var(--ch-dur-quick);
+  }
+  .ch-rt-held {
+    display: block;
+    visibility: hidden;
+  }
+  /* A prompt is one height whatever it says: its heading keeps the line Skip stands in after Skip has gone (the
+     receipt), and its chips stand in one row of equal keys instead of wrapping. */
+  .ch-rt-ask .ch-rt-sec__h {
+    min-height: 28px;
+    margin-bottom: 4px;
+  }
+  .ch-rt-ask .ch-rt-tags {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+  }
+  .ch-rt-ask .ch-rt-tags button {
+    padding: 0 4px;
+    text-align: center;
+  }
+  .ch-rt-ask__s {
+    margin-top: 6px;
   }
   /* The result's place: its two faces share one cell, so it is as tall as the taller and neither the pick nor the
      answer changes the card's height. The face not in use is held hidden and inert (ShotEntry). The one arriving
@@ -3478,7 +3543,7 @@ path.ch-rt-map__shot {
   }
   /* Held hidden, the row takes the rule above it too: a hairline over an empty band reads as a section with nothing in it. */
   .ch-rt-card .ch-rt-sec:has(+ .ch-rt-sec.is-reserved),
-  .ch-rt-card .ch-rt-slot:has(+ .ch-rt-sec.is-reserved) {
+  .ch-rt-card .ch-rt-slot:has(+ .ch-rt-band[data-face='distance'] > .ch-rt-sec.is-reserved) {
     border-bottom-color: transparent;
   }
 }

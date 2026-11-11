@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, type ReactNode } from 'react';
+import { createContext, useContext, useId, type ReactNode } from 'react';
 import { formatFeet, type DistancePreference } from '@/lib/golf/distance-units';
 import { PUTT_MISS_OPTIONS } from '@/lib/coachhelm/data-gap/asks';
 import { haptic } from '../../../lib/haptics';
@@ -10,13 +10,31 @@ import type { ChPuttPromptView, ChRecoveryPromptView } from './use-data-prompts'
 const PUTT_LABEL = Object.fromEntries(PUTT_TAGS) as Record<(typeof PUTT_TAGS)[number][0], string>;
 
 /**
- * One data prompt at the top of the entry card (and, for the course nudge, in the Round complete sheet): a question, chips,
- * one line under them, and Skip. Never a modal and never in the way: Next shot stays the screen's one primary action, the
- * chips are secondary, and the row goes once it is answered and its receipt has been read. A chip is a selection tick; Skip
- * is silent (D-70).
+ * A prompt that has gone (skipped, or answered and read) is still drawn for the rest of its shot, held: hidden and
+ * inert, with no code and nothing announced, so the place it stood in keeps its height and nothing in the card moves
+ * when Skip is tapped (owner, 2026-11-11). The shot screen sets this around the prompts it holds.
+ */
+export const AskHeld = createContext(false);
+
+/**
+ * One data prompt in the entry card (and, for the course nudge, in the Round complete sheet): a question, chips, one line
+ * under them, and Skip. Never a modal and never in the way: Next shot stays the screen's one primary action, the chips are
+ * secondary, and the row goes once it is answered and its receipt has been read. A chip is a selection tick; Skip is
+ * silent (D-70). On the phone it stands in the distance row's place until a result is picked (ShotEntry).
  */
 export function AskRow({ code, label, onSkip, skipLabel, line, sheet = false, children }: { code: string; label: string; onSkip?: () => void; skipLabel: string; line: ReactNode; sheet?: boolean; children: ReactNode }) {
   const id = useId();
+  const held = useContext(AskHeld);
+  if (held)
+    return (
+      <section className="ch-rt-sec ch-rt-ask is-held" aria-hidden="true" inert>
+        <div className="ch-rt-sec__h">
+          <span>{label}</span>
+        </div>
+        {children}
+        <p className="ch-rt-ask__s">{line}</p>
+      </section>
+    );
   return (
     <section className={'ch-rt-sec ch-rt-ask' + (sheet ? ' ch-rt-ask--sheet' : '')} aria-labelledby={id} data-ch-code={code}>
       <div className="ch-rt-sec__h">

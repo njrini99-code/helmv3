@@ -253,11 +253,16 @@ are the reference; no Clubhouse board draws them, so this note is the spec
 until one does. All three are off in production
 (`coachhelm_data_gap_prompt_v1`, `coachhelm_data_prompts_v2`).
 
-- **Where.** First inside the entry card, above the lie and result controls,
-  as one flush section: a label, a ghost Skip at the right (44px tall), one
-  row of chips, and a muted caption that is a live status line. Never in the
-  action bar, never a second primary. At most one prompt shows: the putt ask,
-  then the recovery tap, then the course nudge.
+- **Where.** In the entry card's foot band, the place the distance row takes
+  once a result is picked (owner, 2026-11-11: a fixed place that pushes
+  nothing), as one flush section: a label, a ghost Skip at the right (44px
+  tall), one row of chips as equal keys, and a muted caption that is a live
+  status line. It shows while no result is picked and gives the band to the
+  distance row once one is; Change brings it back. Skipped, or answered and
+  read, it is still drawn for the rest of its shot, hidden and inert, so the
+  card does not change height. Never in the action bar, never a second
+  primary. At most one prompt shows: the putt ask, then the recovery tap, then
+  the course nudge. On the desktop it stays first in the panel.
 - **Putt miss (CH-11960).** After a missed first putt in the band the
   player's putting read is short of, with no miss side tagged: "Which side
   did it miss?" and the chips Short, Long, High side, Low side. The caption

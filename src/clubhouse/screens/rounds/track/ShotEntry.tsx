@@ -67,10 +67,13 @@ export interface ShotEntryProps {
   puttReadOpen: boolean;
   onPuttReadOpen: (open: boolean) => void;
   /**
-   * The one-tap data prompts (CH-11960 to CH-11962), drawn first in the card: the round screen owns them, so a tap
-   * survives the entry being re-keyed for the next shot. Absent, the card is what it was.
+   * The one-tap data prompts (CH-11960 to CH-11962). The round screen owns them, so a tap survives the entry's change to
+   * the next shot. They stand in the distance row's place, which is held empty until a result is picked: a fixed place
+   * that pushes nothing as a prompt comes, is answered or is skipped (owner, 2026-11-11). Absent, the card is what it was.
    */
   prompts?: ReactNode;
+  /** A prompt is asking now (not one held, hidden, after it went): it shows until a result is picked. */
+  asking?: boolean;
 }
 
 const DIST_ID = 'ch-rt-dist';
@@ -191,7 +194,6 @@ export function ShotEntry(p: ShotEntryProps) {
     <section className="ch-rt-panel" aria-label={`Shot ${p.currentShot}`}>
       {/* Board 3: the entry is one ivory card; the bar under it sits on the green (phone). */}
       <div className="ch-rt-card">
-        {p.prompts}
         {p.isTeeShot && p.currentHole.par !== 3 && (
           <Sec label="Club off tee">
             <Seg
@@ -301,9 +303,13 @@ export function ShotEntry(p: ShotEntryProps) {
         </div>
         {!noticeAtDistance && notice}
 
-        {/* Held from the first frame, hidden and inert until a result is picked, so the card neither grows on the pick nor
-            shrinks on Next shot (F-0019, F-0020); and held the same way once the ball is holed, which asks no distance,
-            so Holed takes no height off the card either. Layout only: the field, its value and its dispatches are unchanged. */}
+        {/* The card's foot band. The distance row is held in it from the first frame, hidden and inert until a result is
+            picked, so the card neither grows on the pick nor shrinks on Next shot (F-0019, F-0020); and held the same way
+            once the ball is holed, which asks no distance, so Holed takes no height off the card either. A data prompt
+            shares the band: it shows while the row is still held (no result yet) and gives the band to the row once one is
+            picked. Layout only: the field, its value and its dispatches are unchanged. */}
+        <div className="ch-rt-band" data-face={p.prompts && p.asking && !result ? 'ask' : 'distance'}>
+        {p.prompts && <div className="ch-rt-band__ask">{p.prompts}</div>}
         <Sec
           label={distLabel}
           hint="Required"
@@ -361,6 +367,7 @@ export function ShotEntry(p: ShotEntryProps) {
           )}
           {noticeAtDistance && notice}
         </Sec>
+        </div>
 
         {p.isPutting && (
           // The putt's read, one optional row under the leave distance (owner, 2026-11-11): closed until the player opens
