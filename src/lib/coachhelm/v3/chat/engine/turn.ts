@@ -70,6 +70,7 @@ const REFUSAL_NOTE = 'CoachHelm can’t help with that one. Try asking it anothe
 const TRUNCATED_NOTE = 'That answer ran too long to finish. Ask for a smaller piece of it.';
 const STOPPED_NOTE = 'Stopped before it finished.';
 const CARD_GONE_NOTE = 'This card can no longer be confirmed. Ask CoachHelm to prepare it again.';
+const CARD_RETRY_NOTE = 'That could not be confirmed just now. Try again, or ask CoachHelm to prepare it again.';
 const NOT_SAVED_NOTE = 'That answer could not be saved, so it may be gone after a reload. Please ask again.';
 
 const receiptPart = (key: string, receipt: unknown): WireDataPart => ({ type: 'data-action-receipt', id: `receipt-${key}`, data: receipt });
@@ -363,11 +364,12 @@ async function answerStaleDecision(deps: TurnDeps, loaded: LoadedConversation, o
     send({ type: 'done', status: 'complete' });
     return;
   }
-  // Still drawn as waiting, but nothing can continue it.
-  if (row && open && open.row.id === row.id && deps.tasks && deps.store) {
-    await declineTask(deps.tasks, { ...deps.toolContext, signal: new AbortController().signal, reads: new Map() }, key, 'declined');
-    const cards = applyChatEvent({ id: row.id, role: 'assistant', parts: row.ui_parts ?? [] }, { type: 'decision', key, approved: false });
-    await saveCardState(deps.toolContext.sb, loaded.mode, row.id, cards.parts).catch(() => undefined);
+  // Still drawn as waiting, but its turn could not be found this time. Nothing is changed: a read that failed for a moment must not
+  // cancel the coach's card. They can press again, or ask something else (which declines it).
+  if (row && open && open.row.id === row.id) {
+    send({ type: 'error', message: CARD_RETRY_NOTE, action: 'retry' });
+    send({ type: 'done', status: 'awaiting_decision' });
+    return;
   }
   send({ type: 'decision', key, approved: false });
   send({ type: 'error', message: CARD_GONE_NOTE, action: 'none' });

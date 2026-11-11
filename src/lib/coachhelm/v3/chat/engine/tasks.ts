@@ -6,7 +6,9 @@
  * holds it for the Undo window and commits the STORED plan. Cancel reaches `declineTask`. Each returns the sentence the
  * model is told, which states what actually happened: the receipt card, not the model's prose, is the record.
  */
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { logServerError } from '@/lib/server-error-logger';
+import { getServiceRoleKey } from '@/lib/supabase/admin';
 import type { ActionProposal, ActionReceipt } from '../action-types';
 import { claimForExecution, isStoredProposal, readRun, recordDenial, recordOutcome, recordProposal, type StoredProposal } from '../action-runs';
 import { holdForExecution, releaseHeld } from '../undo-hold';
@@ -37,6 +39,46 @@ export function scopedKey(plannerKey: string, conversationId: string, toolUseId:
     h = Math.imul(h, 0x01000193) >>> 0;
   }
   return `${plannerKey.slice(0, 110)}:${h.toString(36)}`;
+}
+
+/** JSON with object keys in a fixed order: a jsonb column returns keys in its own order, and the seal must not depend on it. */
+function canonical(value: unknown): string {
+  const sort = (v: unknown): unknown => {
+    if (Array.isArray(v)) return v.map(sort);
+    if (v && typeof v === 'object') {
+      return Object.fromEntries(
+        Object.keys(v as Record<string, unknown>)
+          .sort()
+          .filter((k) => (v as Record<string, unknown>)[k] !== undefined)
+          .map((k) => [k, sort((v as Record<string, unknown>)[k])]),
+      );
+    }
+    return v;
+  };
+  return JSON.stringify(sort(value));
+}
+
+/**
+ * The server's seal on a recorded proposal.
+ *
+ * The ledger's policy lets a coach write their own rows, and Confirm commits the STORED plan without building it again.
+ * Without a seal, a row written by hand (straight to the API, not through the chat) would be committed as if the planner
+ * had produced it, skipping every check `plan` makes (the roster, the team, the limits). The seal is an HMAC over the
+ * coach, the key and the plan with a secret only the server holds, so only a plan this server's planner produced, for
+ * this coach and this card, can be committed. Null when the server has no secret to seal with.
+ */
+export function proposalSeal(coachId: string, key: string, proposal: unknown): string | null {
+  const secret = getServiceRoleKey();
+  if (!secret) return null;
+  return createHmac('sha256', secret).update(`coachhelm-action-proposal-v1\n${coachId}\n${key}\n${canonical(proposal)}`).digest('hex');
+}
+
+export function proposalIsSealed(coachId: string, key: string, stored: StoredProposal): boolean {
+  const expected = proposalSeal(coachId, key, stored.proposal);
+  if (!expected || typeof stored.seal !== 'string') return false;
+  const given = Buffer.from(stored.seal);
+  const wanted = Buffer.from(expected);
+  return given.length === wanted.length && timingSafeEqual(given, wanted);
 }
 
 const failedReceipt = (action: string, summary: string, error: string | undefined, retryable: boolean): ActionReceipt => ({
@@ -71,7 +113,13 @@ export async function proposeTask(deps: TaskDeps, tool: TaskTool<unknown>, ctx: 
     return { ok: false, message: err instanceof Error && err.message ? err.message : 'That could not be prepared.' };
   }
   const proposal: CardProposal = { ...planned, idempotency_key: scopedKey(planned.idempotency_key, ctx.conversationId, toolUseId), tool: tool.name };
-  const stored: StoredProposal = { v: 2, input, proposal, ...(resume === undefined ? {} : { resume }) };
+  const seal = proposalSeal(deps.coachId, proposal.idempotency_key, proposal);
+  if (!seal) {
+    // A card that could never be confirmed must not be shown.
+    void logServerError('coachhelm task proposal not sealed: the server secret is not available', { action: `coachhelm.tool.${tool.name}.propose`, feature: 'coachhelm_chat', userId: deps.coachId, handled: true }, 'error');
+    return { ok: false, message: 'That could not be prepared safely, so nothing is offered to confirm. Nothing was written.' };
+  }
+  const stored: StoredProposal = { v: 2, input, proposal, seal, ...(resume === undefined ? {} : { resume }) };
   const recorded = await recordProposal(ctx.sb, {
     coach_id: deps.coachId,
     team_id: deps.teamId,
@@ -98,8 +146,16 @@ export interface DecisionOutcome {
 /** Confirm. Runs the stored plan at most once, however many times it is called for one key. */
 export async function confirmTask(deps: TaskDeps, tool: TaskTool<unknown> | undefined, ctx: ToolContext, key: string): Promise<DecisionOutcome> {
   const run = await readRun(ctx.sb, { coach_id: deps.coachId, idempotency_key: key });
-  if (!run || !tool || run.tool_name !== tool.name || !isStoredProposal(run.proposed_input)) {
-    return { receipt: null, result: 'Failed: this card can no longer be confirmed. Nothing was written. Offer to prepare it again.', isError: true };
+  const gone: DecisionOutcome = {
+    // A receipt, so the card shows that it failed instead of reading as confirmed with nothing under it.
+    receipt: failedReceipt(tool?.name ?? 'Action', 'That didn’t go through. Nothing was saved.', undefined, false),
+    result: 'Failed: this card can no longer be confirmed. Nothing was written. Offer to prepare it again.',
+    isError: true,
+  };
+  if (!run || !tool || run.tool_name !== tool.name || !isStoredProposal(run.proposed_input)) return gone;
+  if (!proposalIsSealed(deps.coachId, key, run.proposed_input)) {
+    void logServerError(`coachhelm task refused: the stored proposal does not carry this server's seal (${tool.name})`, { action: `coachhelm.tool.${tool.name}.confirm`, feature: 'coachhelm_chat', userId: deps.coachId, handled: true }, 'error');
+    return gone;
   }
   const proposal = run.proposed_input.proposal as CardProposal;
 

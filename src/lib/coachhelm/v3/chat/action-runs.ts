@@ -227,6 +227,8 @@ export interface StoredProposal {
   v: 2;
   input: unknown;
   proposal: unknown;
+  /** The server's seal over (coach, key, proposal): see `engine/tasks.ts`. A row without a valid one is never committed. */
+  seal?: string;
   resume?: unknown;
 }
 

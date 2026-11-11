@@ -4,6 +4,7 @@ import type { Database } from '@/lib/types/database';
 import { isStoredProposal } from './action-runs';
 import type { ActionProposal, ActionReceipt } from './action-types';
 import type { CoachChatContext } from './context';
+import { proposalIsSealed } from './engine/tasks';
 import type { ChatTool, TaskTool, ToolContext } from './engine/tool';
 import type { HeldCommit, HeldRow } from './undo-hold';
 
@@ -22,6 +23,8 @@ export function heldCommitFor(sb: SupabaseClient<Database>, ctx: CoachChatContex
   if (row.team_id !== ctx.team_id) return null;
   const tool = tools.find((t): t is TaskTool<unknown> => t.kind === 'task' && t.name === row.tool_name);
   if (!tool || !isStoredProposal(row.proposed_input)) return unwritable(row.tool_name);
+  // Only a plan this server's planner produced for this coach and this card is written (engine/tasks.ts, the seal).
+  if (!proposalIsSealed(ctx.coach_id, row.idempotency_key, row.proposed_input)) return unwritable(row.tool_name);
   const proposal = row.proposed_input.proposal as ActionProposal;
   const toolContext: ToolContext = { sb, who: ctx, conversationId: row.conversation_id ?? '', surface: 'ask', loaders: {}, signal: new AbortController().signal, reads: new Map() };
   return { run: () => tool.commit(toolContext, proposal) };

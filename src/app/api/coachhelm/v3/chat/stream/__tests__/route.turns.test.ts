@@ -31,7 +31,7 @@ const h = vi.hoisted(() => ({
 
 vi.mock('@sentry/nextjs', () => ({ setConversationId: vi.fn() }));
 vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn(async () => h.db.client) }));
-vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: vi.fn(() => h.admin.client) }));
+vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: vi.fn(() => h.admin.client), getServiceRoleKey: () => 'a-secret-only-the-server-holds' }));
 vi.mock('@/lib/coachhelm/v2/gate', () => ({
   isCoachHelmEnabledForCoach: vi.fn(async () => ({ effectivelyEnabled: true })),
   isCoachHelmEnabledForPlayer: vi.fn(async () => ({ effectivelyEnabled: true })),
@@ -384,6 +384,25 @@ describe('a task', () => {
     expect(events.some((e) => e.type === 'receipt')).toBe(true);
     const after = restoreUIMessages((db.tables[MESSAGES] ?? []) as never);
     expect(after.at(-1)!.parts.find((p) => p.type === 'tool-create_focus_area')).toMatchObject({ state: 'approval-responded', approval: { id: key, approved: true } });
+  });
+
+  it('a ledger row written by hand is never committed: only a plan this server sealed can be confirmed', async () => {
+    const { conversationId, key } = await propose();
+    // The ledger's policy lets a coach write their own rows. Here the stored plan is swapped for one the planner never produced.
+    const stored = runs()[0]!.proposed_input as { proposal: { summary: string; facts: unknown[] } };
+    stored.proposal = { ...stored.proposal, summary: 'Create a focus area for a player on another team.' };
+    const model = script({ content: [text('That did not go through.')] });
+    const { events } = await decide(conversationId, key, true);
+
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    expect(log.commits).toHaveLength(0);
+    expect(runs()[0]!.status).toBe('proposed');
+    const receipt = (events.find((e) => e.type === 'receipt') as { part: { data: { status: string } } }).part.data;
+    expect(receipt.status).toBe('failed');
+    const [result] = lastRequestMessages(model)[2]!.content as Array<{ is_error?: boolean; content: string }>;
+    expect(result).toMatchObject({ is_error: true });
+    expect(result!.content).toContain('Nothing was written');
+    expect(h.logServerError.mock.calls.some((c) => String((c as unknown[])[0]).includes('seal'))).toBe(true);
   });
 
   it('a plan that cannot be recorded shows no card and the model is told nothing was written', async () => {
