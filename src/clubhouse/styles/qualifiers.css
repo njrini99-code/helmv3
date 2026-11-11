@@ -3485,6 +3485,27 @@ html[data-fw-theme='dark'] .ch-qf-board .ch-badge {
     letter-spacing: var(--ch-track-section);
     color: var(--ch-text-primary);
   }
+  /* A player's card: the status sits on the title's line, beside the name, and the description runs the column's width under
+     both. The chip stood at the column's far end, mid-card, and held a column the description could not enter, so it was cut. */
+  .ch-qf--list.is-player .ch-qf-card__h {
+    display: grid;
+    grid-template-columns: minmax(0, max-content) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 4px 12px;
+  }
+  .ch-qf--list.is-player .ch-qf-card__h > div {
+    display: contents;
+  }
+  .ch-qf--list.is-player .ch-qf-card__h h3 {
+    grid-area: 1 / 1;
+    margin-bottom: 0;
+  }
+  .ch-qf--list.is-player .ch-qf-card__h .ch-qf-status {
+    grid-area: 1 / 2;
+  }
+  .ch-qf--list.is-player .ch-qf-card__h p {
+    grid-area: 2 / 1 / auto / -1;
+  }
 }
 
 /* A canvas of 800px or less (821–1040px windows with the full sidebar): three columns left the name as little as 93px
