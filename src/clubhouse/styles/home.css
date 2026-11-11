@@ -4732,6 +4732,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-form__top > span:first-child em {
     display: block;
+    grid-column: 1 / -1;
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-tl__w {
     display: inline-flex;
@@ -4762,9 +4763,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-form__top > span:first-child {
     display: contents;
-  }
-  .ch-hm[data-ch-crh='on'] .ch-hm-form__top > span:first-child em {
-    grid-column: 1 / -1;
   }
   .ch-hm[data-ch-crh='on'] .ch-hm-form__top .ch-hm-delta em:not(.ch-hm-form__basis) {
     max-width: none;
