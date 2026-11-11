@@ -3,7 +3,7 @@ import type { CoachChatContext } from '../../context';
 import type { PlayerChatContext } from '../../engine/tool';
 import { toolsFor } from '../../registry';
 import { FLAGGED_READERS } from '../data-map.source';
-import { EVAL_GLOBAL_FORBID, EVAL_PATTERN_NAMES, golfSenseQuestions, sentenceCount } from '../eval';
+import { EVAL_GLOBAL_FORBID, EVAL_PATTERN_NAMES, golfSenseQuestions, properNounPattern, sentenceCount } from '../eval';
 
 vi.mock('server-only', () => ({}));
 vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: () => false }));
@@ -84,7 +84,7 @@ describe('the golf-sense eval set', () => {
     const fails = (answer: string) => EVAL_GLOBAL_FORBID.filter((name) => guard(name).test(answer));
 
     it('are on every question', () => {
-      expect([...EVAL_GLOBAL_FORBID].sort()).toEqual(['abbreviation', 'heading_or_table', 'names_internals', 'sample_notation', 'wrong_case']);
+      expect([...EVAL_GLOBAL_FORBID].sort()).toEqual(['abbreviation', 'heading_or_table', 'names_internals', 'proper_noun_case', 'sample_notation', 'sentence_start_case', 'wrong_case']);
       for (const q of questions) for (const name of EVAL_GLOBAL_FORBID) expect(q.forbid.filter((f) => f.pattern === name).length, `${q.id}: ${name}`).toBe(1);
     });
 
@@ -100,6 +100,44 @@ describe('the golf-sense eval set', () => {
       for (const bad of ['His SG putting is up.', 'GIR is down over his last 10 rounds.', 'His scoring avg is lower.', 'Eli vs the team on greens.', 'He is hitting it 280 yds.']) expect(fails(bad), bad).toContain('abbreviation');
       for (const bad of ['His Strokes Gained putting is up.', 'Greens In Regulation is down.', 'He is behind the tour on greens.', 'His Scoring Average dropped.', 'He gains Off the Tee.']) expect(fails(bad), bad).toContain('wrong_case');
       for (const bad of ['I read get_player_stats for him.', 'From golf_rounds, he has ten rounds.']) expect(fails(bad), bad).toContain('names_internals');
+    });
+
+    it('fail a distance written as ft or yd, after a number or in a band, and pass it in words', () => {
+      for (const bad of ['He has holed 9 of 14 from 5–10 ft.', 'He makes most from 3-5 ft.', 'From 25+ ft he three-putts often.', 'He leaves it 28ft on average.', 'From 125–175 yd he is close to the team.', 'He drives it 281 yd.', 'His proximity (ft) is down.']) expect(fails(bad), bad).toContain('abbreviation');
+      for (const fine of ['He has holed 9 of 14 from 5 to 10 feet.', 'Inside 10 feet he is ahead of the team.', 'From 25 feet and out he three-putts often.', 'He leaves it 28 feet away on average from 125 to 175 yards, over 31 shots.', 'He drives it 281 yards.']) expect(fails(fine), fine).toEqual([]);
+      const byId = (id: string) => questions.find((q) => q.id === id)!;
+      const putting = 'Eli is missing most from 5 to 10 feet: he has holed 9 of 21 from there over his last 10 rounds. Inside 5 feet he has made 38 of 41.';
+      for (const f of byId('write-putting-by-distance').facts) expect(f.re.test(putting), f.label).toBe(true);
+      expect(byId('write-putting-by-distance').facts[0]!.re.test('He has holed 9 of 21 from 5–10 ft.')).toBe(false);
+      const approach = 'From 100 to 150 yards Eli leaves it 31 feet from the hole on average, over 44 shots in his last 10 rounds. That is a little closer than the team from the same range.';
+      for (const f of byId('write-approach-by-distance').facts) expect(f.re.test(approach), f.label).toBe(true);
+      expect(fails(approach)).toEqual([]);
+    });
+
+    it('fail a sentence or a list line that starts lower-case, and pass decimals and names inside a sentence', () => {
+      for (const bad of ['his putting is better over his last 10 rounds.', 'Eli putts well. he three-putts rarely.', 'Two things stand out:\n- approach play is behind the team\n- Putting is ahead', 'Is it early? yes, over 4 rounds.']) expect(fails(bad), bad).toContain('sentence_start_case');
+      for (const fine of ['His scoring average is 74.2 over his last 10 rounds. That is 1.3 lower than the team.', 'Two things stand out:\n- Approach play is behind the team.\n- Putting is ahead.', 'It is early (4 rounds). Wait for more.']) expect(fails(fine), fine).not.toContain('sentence_start_case');
+    });
+
+    it('fail a proper noun not written as it is: pga tour, Pga, ncaa, division i', () => {
+      for (const bad of ['That is close to the pga tour figure.', 'The Pga Tour figure is a reference.', 'The LPGA tour figure is a reference.', 'There is no ncaa average for it.', 'No figure is published for division ii.']) expect(fails(bad), bad).toContain('proper_noun_case');
+      for (const fine of ['That is a PGA Tour figure from the standards, not this team\'s.', 'The LPGA Tour figure is a reference.', 'No figure is published for NCAA Division II.']) expect(fails(fine), fine).toEqual([]);
+    });
+
+    it('fail a player, course or event not capitalised as the team\'s records have it, once the harness gives the names', () => {
+      const stored = { people: ['Eli Brandt', 'Will McAllister', 'Zoë van der Berg'], places: ['Pine Valley Invitational', 'TPC Sawgrass', 'The Honors Course'] };
+      const withNames = golfSenseQuestions({}, stored);
+      const proper = withNames[0]!.forbid.find((f) => f.pattern === 'proper_noun_case')!.re;
+      for (const bad of ['eli brandt leads the team in strokes gained putting.', 'ELI BRANDT leads the team.', 'Over his last 10 rounds eli is ahead of the team.', 'Brandt and mcallister are level.', 'Will Mcallister shot his best round.', 'He played well at the pine valley invitational.', 'His best round was at Tpc Sawgrass.', 'At the honors course he was two under.', 'Zoë Van Der Berg leads.']) expect(proper.test(bad), bad).toBe(true);
+      for (const fine of ['Eli Brandt leads the team in strokes gained putting.', 'Eli is ahead of the team, and McAllister is level with him.', 'He played well at the Pine Valley Invitational and at TPC Sawgrass.', 'At The Honors Course he was two under.', 'Zoë van der Berg leads.', 'He will play on Saturday.', 'Nobody will reach the line this week.', 'It was an elite round.', 'Belief matters less than the figures.']) expect(proper.test(fine), fine).toBe(false);
+      // Every question carries the team's names once they are given, and the fixed names still apply.
+      for (const q of withNames) expect(q.forbid.find((f) => f.pattern === 'proper_noun_case')!.re.source).toContain('[eE][lL][iI]');
+      expect(proper.test('That is close to the pga tour figure.')).toBe(true);
+      // Without names, only the fixed proper nouns are checked; with none given, no pattern is built.
+      expect(properNounPattern({})).toBeNull();
+      expect(guard('proper_noun_case').test('eli brandt leads.')).toBe(false);
+      // A first name that is an everyday word is checked only inside the full name.
+      expect(properNounPattern({ people: ['Will McAllister'] })!.test('will mcallister leads.')).toBe(true);
     });
 
     it('pass two or three plain sentences with the sample in words', () => {

@@ -129,7 +129,8 @@ export function getGolfReference(input: { topic: string }): ToolEnvelope {
     series: [],
     detail: { kind: 'reference', not_team_data: true, reference, ...(more.length ? { more_in_this_topic: more } : {}) },
     coverage: 'complete',
-    coverage_note: `Reference figures are published research, not this team’s results: name the source when you use one.${more.length ? ' More headings are in this topic: ask with a heading’s words to read one.' : ''}`,
+    // The research text is written in shorthand; the answer is not (owner, 10 Nov 2026: no notation or abbreviation a coach would not say aloud).
+    coverage_note: `Reference figures are published research, not this team’s results: name the source when you use one. These notes are written in shorthand (SG, GIR, FW, HCP, ft, yds): in an answer write strokes gained, greens in regulation, fairways, handicap, feet and yards in full.${more.length ? ' More headings are in this topic: ask with a heading’s words to read one.' : ''}`,
     as_of: nowIso(),
   };
 }

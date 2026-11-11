@@ -624,3 +624,27 @@ every assignee with an account (finished or not, as the app sends it), the coach
 words. Its receipt's notification is `queued`: the reminder goes out with the hourly job, not at commit. Held for
 Undo like the others. Whole prefix after it, characters / 4: Ask 21,062 with the tournaments flag off and 21,476 with
 it on; quick chat 20,545 and 20,959. The twelve CONTEXT tools are 1,751 of that.
+
+## 2026-11-10 (KNOWLEDGE): what the eval harness needs from `knowledge/eval`
+
+K6. `knowledge/eval/golf-sense.json` is plain data (an `.mjs` harness can read it directly); `knowledge/eval/index.ts`
+    is the same thing loaded and compiled, for a TypeScript harness and for the tests. Either way, per answer:
+    - **Golf sense** (one column): every `facts[].re` must match; no pattern in the question's own `forbid` may match.
+      Two rules a data question does not have: skip `tour_figure_from_memory` when the turn called `get_reference`
+      (the figure was read, not remembered), and score `readers` against the turn's tool calls (any one listed read
+      counts; an empty list means no read of team data is required).
+    - **Writing** (its own column, never folded into golf sense): every pattern named in `global_forbid` is held
+      against EVERY answer, the data questions in `ask-eval.mjs` included, and `style.max_sentences` where a question
+      has it (`sentenceCount(answer)` from `index.ts`; a list line counts as one). `golfSenseQuestions()` already
+      appends the global patterns to each question's `forbid`, so a harness using `index.ts` must split them back out
+      by name: a `forbid` entry whose `pattern` is in `EVAL_GLOBAL_FORBID` is a writing failure, any other is a
+      golf-sense failure.
+    - **Names as stored**: call `golfSenseQuestions(names, { people, places })` with the roster's names as `people`
+      and the course and event names the turn's reads returned as `places`; the `proper_noun_case` rule then fails
+      "eli brandt" or "Tpc Sawgrass". Without them only the fixed names (PGA Tour, NCAA, Division I) are checked.
+    - Placeholders to fill from the staging roster: `{player}`, `{player2}`, `{new_player}` (fewer than three
+      shot-tracked rounds), `{no_shots_player}` (hole-by-hole rounds, no logged shots), `{teammate}` (a player's turn).
+    - Exports: `golfSenseQuestions`, `properNounPattern`, `sentenceCount`, `EVAL_GLOBAL_FORBID`, `EVAL_PATTERN_NAMES`,
+      `EVAL_PLACEHOLDERS`, and the types `EvalQuestion`, `EvalFact`, `EvalForbid`.
+    The report should show, per question: golf sense pass or fail with the labels that failed; writing pass or fail
+    with the rule names that failed; the reads used against the reads expected.

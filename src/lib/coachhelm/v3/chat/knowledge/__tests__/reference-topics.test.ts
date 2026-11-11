@@ -67,6 +67,11 @@ describe('the on-demand golf reference, by topic', () => {
     expect(d.topics?.every((t) => t.headings.length > 0)).toBe(true);
   });
 
+  it('tells the model the notes are in shorthand and the answer is not', () => {
+    const note = getGolfReference({ topic: 'what_moves_score' }).coverage_note ?? '';
+    expect(note).toMatch(/written in shorthand \(SG, GIR, FW, HCP, ft, yds\): in an answer write strokes gained, greens in regulation, fairways, handicap, feet and yards in full/);
+  });
+
   it('is named in the prompt topic by topic, so the model knows what it can look up', () => {
     for (const t of REFERENCE_TOPICS.filter((t) => t.id !== 'sources')) expect(golfBlock('ask')).toContain(`${t.id} (${t.label})`);
   });
