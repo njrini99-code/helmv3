@@ -478,3 +478,36 @@ the pour can be driven from the key.
 | 8. Home is elsewhere (no slot, no recede, Open travels) | `roster?qc=land-fast` |
 | 9. Reopened later the same day | `hub?tab=tasks&qc=today`, `roster?qc=today` |
 | Inherited task states | `calendar?qc=confirm-cal`, `receipt-cal`, `told-cal`, `failed-cal`, `undone-cal`, and the `msg`, `qual`, `plan` sets |
+
+### Measured (WebKit, the preview, 10 Nov 2026 late; driver `scratchpad/tools/qc-drive.mjs`)
+
+| What | Result |
+| --- | --- |
+| MO-1-1, desktop: panel scale after the tap | 17 ms .50 · 95 ms .63 · 232 ms .87 · 374 ms .97 · 534 ms .994 · 761 ms 1.00; opacity .89 at 95 ms, 1 from then |
+| MO-1-1, phone 390x844 | 46 ms .63 · 174 ms .79 · 253 ms .90 · 314 ms .94 (the table's 90% at 313 ms is .95) · 534 ms .994 |
+| Running during the pour (`document.getAnimations()`) | panel `transform` 742 ms; scrim `opacity` 462 ms; header, body, composer `opacity` + `transform` 280 ms; the key's disc `transform` 260 ms. Nothing else |
+| At rest | focus in the composer; the sidebar, the skip link, the bar's crumbs, search and other keys and (phone) the route frame carry `inert`; the key and the panel do not; the panel's history entry is on top |
+| After Escape | panel hidden, focus on the key, `history.state` back to the page's, the page's scroll position unchanged (240 before, 240 after), URL unchanged |
+| M-RETARGET: close 140 ms into an open, reopen 90 ms into that close | scale .760 > .770 one frame after the close starts; .531 > .534 one frame after the reopen; rests at 1. No jump (the row allows .06) |
+| MO-1-5, phone | under the finger `matrix(1,0,0,1,0,156)` for a 166px move (10px slop); released at 20% after a rest: returns to `none`, stays open; released at 40% upward: closes from the live frame (scale .83 one frame later) |
+| Moment 8, `hub?tab=tasks&qc=land-fast`, desktop and phone | 0 Confirm · 462 ms slot "Not saved yet · saves in 2" · 1.1 s "saves in 1" · 2.30 s slot "Saved" · 2.54 s panel receding, pill "Added" · 2.82 s panel closed, real row in the list, slot gone (no sample with both, none with neither) · 2.92 s mark rising · held at 1 until about 1.3 s after it began · 0 at 2.75 s · mark, tag and attribute removed at 2.8 s, nothing left on the row · pill gone 1.8 s after "Added" |
+| Running during the mark | `.ch-landmark` `opacity` 2800 ms; `.ch-landtag` `opacity` 2800 ms |
+| Undo during the hold (`qc=land`) | slot "saves in 7" > phase `undone`, animating `opacity` and `transform` > gone; the list has the same 4 rows; the panel stays open; the card says Undone |
+| Reduce Motion, phone | the pour is opacity only (scale 1 throughout; .08 at 17 ms, .51 at 46 ms, 1 by 229 ms); the landing runs in the same order; the mark is the same opacity effect |
+| Announced | "Added to Tasks: Putting ladder for Eli." once, in a polite status region |
+| A start, tapped (handler called in the page) | the starts leave, the question is in the thread, the key is Stop, the read's line shows |
+
+### Not working, or not verified (found by the same driver)
+
+1. **Back does not close the panel in the WebKit driver.** `history.back()` pops the panel's entry (`popstate` fires
+   once, `history.state` returns to the page's) and the panel stays open (`aria-expanded` stays true). The listener is
+   in `QuickChatSession.tsx` and by reading should call `onClose`; the cause was not found in the time available.
+   Until it is, Back from an open panel leaves the panel open over the page. Every other close was measured working.
+2. A start was verified by calling its handler in the page. A real pointer click on a start was not captured in a
+   hydrated page (the one attempt landed on a page the dev server was still compiling).
+3. The largest Text Size capture (`CH_TYPE_SCALE=1.353`, 390x844) was taken while the dev server was re-rendering and
+   shows the desk frame at phone width. Nothing clips in it and the starts wrap to two and three lines; the phone
+   sheet at that size is not confirmed.
+4. Not exercised on a device: the keyboard's rise with the pour (MO-1-3 is drawn against a block in `qc=hello-kb`),
+   the iOS edge swipe, VoiceOver's order, haptics.
+5. Not measured: frame times of the pour (T3); the page's `inert` under VoiceOver; Tab with full keyboard access on.
