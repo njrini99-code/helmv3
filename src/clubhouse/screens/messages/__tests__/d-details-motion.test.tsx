@@ -157,9 +157,17 @@ describe('the sheet: layout and motion pins', () => {
     expect(Number(q![1])).toBeLessThanOrEqual(1280 - 240 - 8);
     expect(css).toContain('grid-template-columns: 320px minmax(0, 1fr) 300px;');
   });
-  it('MOT-DET-2: the stylesheet never transitions a layout property (the column motion is set from details-v2 per Q-27)', () => {
+  it('MOT-DET-2: no layout property is ever transitioned, in the stylesheet or from the hook: the panel slides and the thread FLIPs by transform', () => {
     expect(css).not.toMatch(/transition[^;]*grid-template-columns/);
     expect(css).not.toMatch(/transition[^;]*\b(width|height|left|top)\b/);
+    const hook = readFileSync(resolve(process.cwd(), 'src/clubhouse/screens/messages/details-v2.tsx'), 'utf8');
+    expect(hook).not.toMatch(/style\.transition\s*=/);
+    expect(hook).not.toMatch(/grid-template-columns \$\{/);
+    // The panel: translateX(100%) and opacity on the smooth spring; the thread's pieces: translate() from where they were.
+    expect(hook).toMatch(/transform: 'translateX\(100%\)', opacity: 0/);
+    expect(hook).toMatch(/transform: `translate\(\$\{dx\}px, \$\{dy\}px\)`/);
+    // Leaving, the panel is lifted out of the grid so it can slide away over the thread.
+    expect(css).toMatch(/\.ch-msd-det\.is-leaving \{\s*position: absolute;/);
   });
   it('MOT-POLL-2: the bar scales (scaleX, origin left) on the smooth spring and lands under Reduce Motion', () => {
     expect(css).toMatch(/\.ch-msd-poll__fill \{[^}]*transform: scaleX\(var\(--ch-poll-share, 0\)\);[^}]*transform-origin: 0 50%;[^}]*transition: transform var\(--ch-dur-spring-smooth\) var\(--ch-ease-spring-smooth\);/);

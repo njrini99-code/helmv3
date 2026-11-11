@@ -98,7 +98,6 @@ function rings(): Hit[] {
 const ALLOW_RING: Record<string, number> = {
   'styles/controls.css': 1,
   'styles/messages-overlays.css': 8,
-  'styles/messages-thread.css': 1,
   'styles/shell.css': 4,
 };
 

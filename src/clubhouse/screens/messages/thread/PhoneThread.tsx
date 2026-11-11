@@ -9,7 +9,6 @@ import { useState, useRef, useMemo, useEffect } from 'react';
 import { receiptCarrierId, SEEN_BY_VISIBILITY, seenByAccess } from '@/lib/golf/message-receipts';
 import { useSeenByList, HoldSeenRow } from '../seen-by';
 import { type PollThreadActions, PollThreadContext, notePollHold } from '../polls';
-import { useNewDivider } from './NewDivider';
 import { useThreadAnchor } from '../use-thread-anchor';
 import { useFocusMessage } from '../use-focus-message';
 import { useThreadDragTimes } from '../use-thread-drag-times';
@@ -101,7 +100,6 @@ export function PhoneThread({
   const [deleting, setDeleting] = useState<ChMsg | null>(null);
   const scroller = useRef<HTMLDivElement | null>(null);
   const items = useMemo(() => threadItems(api.msgs, api.now, api.timeZone), [api.msgs, api.now, api.timeZone]);
-  const newId = useNewDivider(api, conv);
   // The thread follows its end only while the reader is there (audit T25); see useThreadAnchor. A search hit holds it
   // (useFocusMessage) until the thread has come to the message and its mark has faded.
   const focusing = !!api.focusMessageId || (!!api.foundMessageId && api.msgs.some((m) => m.id === api.foundMessageId));
@@ -159,7 +157,6 @@ export function PhoneThread({
           scroller={scroller}
           className="ch-msp-scroll ch-ms-scroll"
           items={items}
-          newId={newId}
           onStarter={(text) => setSeed({ text, nonce: Date.now() })}
           renderBubble={(it) => (
           <Bubble

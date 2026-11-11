@@ -9,8 +9,7 @@ import { orderReceiptRows, seenBy, seenByAccess, seenByAccessibleName, seenByLab
 import { chSpring, chSpringCurve, chTween, CH_EASE } from "../../lib/motion";
 import { chSupportsLinear } from "../../lib/sheet-drag";
 import { useChMotionMode, useChReducedMotion } from "../../lib/reduced-motion";
-import { Avatar, avatarTone } from "../../ui/Avatar";
-import { initials as initialsOf } from "../../lib/format";
+import { Avatar } from "../../ui/Avatar";
 import { Icon } from "../../ui/Icon";
 import { MsSheet } from "./overlays/MsSheet";
 import { InlineNotice } from "../../ui/Notices";
@@ -111,10 +110,7 @@ export function SeenFaces({ api, ids, size, max }: { api: ChMessagesApi; ids: re
       <AnimatePresence initial={false}>
         {ids.slice(0, max).map((id) => (
           <M.span key={id} className="ch-msv-faces__f" initial={reduced ? false : { scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={chSpring("pop", reduced)}>
-            {/* The lane's faces are 16 and 20 with 7 and 8 type, under Avatar's steps: the same coin, drawn at the lane's size (listed for the owner). */}
-            <span className="ch-avatar" data-tone={avatarTone(personOf(api, id)?.playerId ?? id)} style={{ ["--ch-av-size" as string]: `${size}px`, ["--ch-av-type" as string]: `${size <= 16 ? 7 : 8}px` }} aria-hidden="true">
-              {initialsOf(personOf(api, id)?.name ?? "Member")}
-            </span>
+            <Avatar name={personOf(api, id)?.name ?? "Member"} id={personOf(api, id)?.playerId ?? id} size={size} />
           </M.span>
         ))}
       </AnimatePresence>
@@ -324,7 +320,7 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
         <ul className="ch-seen-sec__rows">
           {rows.map((x) => (
             <li key={x.userId} data-user={x.userId} className="ch-seen-row" aria-label={x.label}>
-              {compact ? <Avatar name={x.name} size="sm" /> : <Avatar name={x.name} size={32} />}
+              {compact ? <Avatar name={x.name} size="sm" /> : <Avatar name={x.name} size="md" />}
               <span className="ch-seen-row__body">
                 <span className="ch-seen-row__name">{x.name}</span>
                 {x.role !== "member" && <small className="ch-seen-row__role">{x.role === "coach" ? "Coach" : "Player"}</small>}

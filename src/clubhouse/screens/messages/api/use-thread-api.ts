@@ -1,3 +1,5 @@
+'use client';
+
 import type { ChMessagesApi } from './types';
 import type { MessagesApiCtx } from './ctx';
 import { isOffline } from '../../../lib/use-action';

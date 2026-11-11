@@ -136,7 +136,7 @@ const cardActions = new Map<string, PollCardActions>();
 export const pollCardActions = (messageId: string): PollCardActions | null => cardActions.get(messageId) ?? null;
 
 /**
- * The footer's second part (MSG-501): "Closes tomorrow at 6:00 PM", the last hour counting down ("Closes in 12 min"), "Final" once
+ * The footer's second part (MSG-501): "Closes Sunday 8 PM", the last hour counting down ("Closes in 12 min"), "Final" once
  * closed by hand or "Voting ended" when its time ran out. Nothing when the poll has no end.
  */
 export function closesLabel(poll: Poll, state: ReturnType<typeof pollState>, now: string, timeZone: string, hours: "12" | "24", nowMs: number): string | null {
@@ -147,8 +147,14 @@ export function closesLabel(poll: Poll, state: ReturnType<typeof pollState>, now
   const left = Date.parse(poll.closesAt) - nowMs;
   if (left < 60_000) return "Closes in under a minute";
   if (left < 3_600_000) return `Closes in ${Math.ceil(left / 60_000)} min`;
-  return `Closes ${endsWords(poll.closesAt, now, timeZone, hours)}`;
+  return `Closes ${untilLabel(poll.closesAt, now, timeZone)} ${footClock(poll.closesAt, timeZone, hours)}`;
 }
+
+/** The foot's time, as the design writes it: "8 PM" on the hour and "8:30 PM" otherwise; a 24-hour clock keeps its minutes. */
+const footClock = (iso: string, timeZone: string, hours: "12" | "24"): string => {
+  const at = clock(iso, timeZone, hours);
+  return hours === "12" ? at.replace(/:00(?=\s|$)/, "") : at;
+};
 
 /** Header words (MSG-501): "Poll · Choose one", "Poll · Choose any", and "Poll · Final" once it is over (Q-08). */
 export const pollHeadWords = (poll: Poll, closed: boolean): string => `Poll · ${closed ? "Final" : poll.multi ? "Choose any" : "Choose one"}`;
@@ -352,21 +358,9 @@ export function PollCard({
             </button>
           )
         )}
-        {remind && (
-          <button type="button" className="ch-msd-poll__link" onClick={remind.run}>
-            Remind {remind.count}
-          </button>
-        )}
-        {mine && !closed && tally && (
-          <button type="button" className="ch-msd-poll__link" onClick={() => setClosing(true)}>
-            Close poll
-          </button>
-        )}
-        {share && (
-          <button type="button" className="ch-msd-poll__link" onClick={share}>
-            Share result
-          </button>
-        )}
+        {/* MSG-501: the foot draws the count and See votes, one row. Remind, Close poll and Share result are rows of the
+            message's lift menu (a hold on the phone; a right click, Enter on the focused card or More on desktop), which
+            reads them from `pollCardActions`; "Draft a reminder" is also in the Votes sheet. */}
       </div>
       <PollVotesModal api={api} conv={conv} poll={poll} tally={tally} closed={closed} remind={remind} author={mine} open={votesOpen} onClose={() => setVotesOpen(false)} />
       <ClosePollModal api={api} messageId={messageId} open={closing} onClose={() => setClosing(false)} />

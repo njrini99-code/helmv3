@@ -8,13 +8,13 @@ import { rebuiltHref } from '../../../shell/nav';
 import { useMuteAction, detailsLine, QuickActions, ConversationSearch, MuteMenu, MembersCard, PhotosAndFiles, ClassStatusCard } from '../details-v2';
 import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { msAnimate } from '../motion/messages-motion';
-import { IconButton, Button } from '../../../ui/Button';
-import { X, Users, Trash2 } from 'lucide-react';
+import { IconButton } from '../../../ui/Button';
+import { X, Users } from 'lucide-react';
 import { Icon } from '../../../ui/Icon';
 import { Avatar } from '../../../ui/Avatar';
 import { convAvatarId, convYear } from '../shared/conv-ui';
 import { ThreadClassSection } from '../ThreadClassSection';
-import { LeaveGroupModal, DeleteConversationModal, AddMembersModal, RemoveMemberModal } from './group-modals';
+import { LeaveGroupModal, AddMembersModal, RemoveMemberModal } from './group-modals';
 import { InlineNotice } from '../../../ui/Notices';
 import { Skeleton } from '../../../ui/States';
 import { muteLabel } from './mute-label';
@@ -31,7 +31,6 @@ export function Details({
   onClose: () => void;
 }) {
   const [leaving, setLeaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [adding, setAdding] = useState(false);
   const [removing, setRemoving] = useState<ChMember | null>(null);
   const mayAdd = conv.group && conv.creatorId === api.viewer.userId;
@@ -100,16 +99,9 @@ export function Details({
 
         <PhotosAndFiles api={api} conv={conv} />
 
-        {api.deleteConversation && (
-          <div className="ch-ms-det__sec">
-            <Button variant="danger" leftIcon={Trash2} onClick={() => setDeleting(true)}>
-              Delete conversation
-            </Button>
-          </div>
-        )}
+        {/* Delete conversation is where the design draws it: the conversation row's own menu (MSG-111), not here. */}
       </div>
       <LeaveGroupModal api={api} conv={conv} open={leaving} onClose={() => setLeaving(false)} onLeft={onClose} />
-      <DeleteConversationModal api={api} conv={conv} open={deleting} onClose={() => setDeleting(false)} onDeleted={onClose} />
       {mayAdd && <AddMembersModal api={api} conv={conv} open={adding} onClose={() => setAdding(false)} />}
       {mayRemove && <RemoveMemberModal api={api} conv={conv} member={removing} onClose={() => setRemoving(null)} />}
     </aside>

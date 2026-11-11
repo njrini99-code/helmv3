@@ -53,9 +53,13 @@
     overflow-y: auto;
   }
 }
+/* MOT-DET-2 The track lands at once and is the page's colour; the panel (paper, with the hairline on its left) is what
+   moves: it slides in from the window's edge by transform (details-v2 `useDetailsColumn`), so no grid size is ever animated. */
+[data-ch-ms-v2] .ch-msd-ms {
+  position: relative;
+}
 [data-ch-ms-v2] .ch-msd-det {
-  background: var(--ch-card-bg);
-  box-shadow: var(--ch-messages-x6);
+  background: var(--ch-grouped-bg);
   animation: none;
 }
 [data-ch-ms-v2] .ch-msd-det__in {
@@ -63,6 +67,17 @@
   flex-direction: column;
   gap: var(--ch-space-3);
   padding: var(--ch-space-5) var(--ch-msd-s14) var(--ch-space-8);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-messages-x6);
+}
+/* Leaving: the track has already gone, so the panel is lifted out of the grid and slides away over the thread's right edge. */
+[data-ch-ms-v2] .ch-msd-det.is-leaving {
+  position: absolute;
+  inset: 0 0 0 auto;
+  z-index: var(--ch-z-raised);
+  width: 300px;
+  background: none;
+  pointer-events: none;
 }
 /* Direct children keep the column's width and lose the old 272 px sizing. */
 [data-ch-ms-v2] .ch-msd-det__in > .ch-msp-tiles,
@@ -86,6 +101,7 @@
   font: var(--ch-type-17-strong);
   letter-spacing: var(--ch-track-17);
   font-weight: var(--ch-fw-700);
+  color: var(--ch-text-primary);
 }
 [data-ch-ms-v2] .ch-msd-hero > span {
   font: var(--ch-type-15);
@@ -131,9 +147,43 @@
   background: var(--ch-card-bg);
   box-shadow: var(--ch-card-shadow);
 }
+/* The header's quiet note ("Players you haven't messaged"): 15k, ink-2, on the header's baseline. */
+[data-ch-ms-v2] .ch-msd-lcard__h > small {
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-tertiary);
+}
+/* A row in a card (MSG-605, MSG-702): min 52, 7 above and below, the card's own 16 at its sides, so nothing reaches past
+   the card; the seam between rows starts at the same 16. The press wash fills the row edge to edge. */
+[data-ch-ms-v2] .ch-msd-lcard .ch-msp-row.is-btn {
+  width: 100%;
+  min-height: 52px;
+  margin-inline: 0;
+  padding: var(--ch-msd-s7) var(--ch-space-4);
+  border-radius: 0;
+}
+[data-ch-ms-v2] .ch-msd-lcard .ch-msp-row.is-btn::before {
+  margin-inline: 0;
+  left: var(--ch-space-4);
+}
+/* MSG-603 The name on the phone page: 22k/700, ink (the shell's green large title is not this heading). */
+[data-ch-ms-v2] .ch-msp-details .ch-msp-prof h2 {
+  font: var(--ch-type-22-strong);
+  letter-spacing: var(--ch-track-22);
+  color: var(--ch-text-primary);
+}
+/* MSG-702 The To field draws no box of its own: the card is the field, and the accent caret shows where typing goes. The
+   shell's :focus-visible outline would draw a square inside the rounded card. */
+[data-ch-ms-v2] .ch-msp-new .ch-msp-to__in:focus-visible,
+[data-ch-ms-v2] .ch-msd-to input:focus-visible {
+  outline: none;
+}
 [data-ch-ms-v2] .ch-msd-lcard__h {
   position: relative;
+  display: flex;
   align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ch-msd-s10);
   padding: var(--ch-msd-s14) var(--ch-space-4) var(--ch-space-2);
   font: var(--ch-type-card-title);
   letter-spacing: var(--ch-track-card-title);
@@ -421,21 +471,24 @@
   min-width: 1ch;
   text-align: right;
 }
+/* MSG-501 The foot is one row: the count and when it closes on the left (it may break inside its own column at a large Text
+   Size, never under the link), See votes on the right. */
 [data-ch-ms-v2] .ch-msd-poll__foot {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--ch-space-1) var(--ch-space-4);
+  gap: var(--ch-space-1) var(--ch-space-2);
   margin-top: var(--ch-space-1);
   font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }
 [data-ch-ms-v2] .ch-msd-poll__count {
-  margin-right: auto;
+  flex: 1;
+  min-width: 0;
 }
 /* A text key: 12.5k/600 accent-text, a 44 px target, 28 in the layout. */
 [data-ch-ms-v2] .ch-msd-poll__link {
+  flex: none;
   min-height: 44px;
   margin: -8px 0;
   padding: var(--ch-space-2) var(--ch-space-0_5);
@@ -491,7 +544,7 @@
   overflow: hidden;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow-flat);
+  box-shadow: var(--ch-card-shadow);
 }
 .ch-msd-vg__h {
   position: relative;
@@ -593,28 +646,14 @@
 }
 
 /* ---------------------------------------------------------------------------------------------------------------------
-   MSG-220 / MSG-221: the photo and the file bubble. */
-.ch-msd-photo {
-  width: 242px;
-  height: 176px;
-  padding: var(--ch-msd-s3);
-  border-radius: var(--ch-radius-xl);
-  overflow: hidden;
-}
-.ch-msd-photo img {
-  display: block;
-  width: 236px;
-  height: 170px;
-  max-width: 100%;
-  border-radius: var(--ch-radius-lg);
-  object-fit: cover;
-}
+   MSG-220 / MSG-221: the photo and the file bubble. The photo's frame (242 by 176, a 3 px rim, the bubble's corners) is the
+   bubble's own definition in messages.css (`.ch-ms-img`). */
 /* The frame is held before the signed address arrives, so a photo does not grow the thread (Q-41). */
 .ch-msd-photo-frame {
   display: block;
   width: 242px;
   height: 176px;
-  border-radius: var(--ch-radius-xl);
+  border-radius: var(--ch-radius-bubble);
   background: var(--ch-well-bg-flat);
 }
 [data-ch-ms-v2] .ch-msd-file {

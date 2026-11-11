@@ -54,10 +54,8 @@ export const JUMP_CLEAR_PX = 8;
 export interface SendRiseInput {
   /** Where the field's text sat: its left edge and bottom, in viewport px. */
   field: { left: number; bottom: number };
-  /** Where the new bubble landed: its left and bottom. */
+  /** Where the new bubble comes to rest: its left and bottom, less whatever the thread's make-room glide holds it low by when measured. */
   bubble: { left: number; bottom: number };
-  /** The list holds the rows this far low while it glides (useThreadMakeRoom), so the bubble subtracts it. */
-  held: number;
   /** A text bubble (the words become the bubble); a file or poll also fades in. */
   text: boolean;
   /** This bubble's step behind the newest (0 = the newest) when several send at once. */
@@ -65,15 +63,15 @@ export interface SendRiseInput {
 }
 
 export interface SendRisePlan {
-  /** Vertical: `translate 0 from > 0` on the launch spring. */
+  /** Vertical: `translateY(from) > 0` on the launch spring, in the page's own space. */
   y: { from: number; spring: 'launch'; ms: number; delayMs: number };
-  /** Sideways: `translate from 0 > 0` over LAUNCH_X_SHARE of the launch time on the house ease, added to the vertical glide. */
+  /** Sideways: `translate from 0 > 0` over LAUNCH_X_SHARE of the launch time on the house ease, on the bubble inside the rising stack. */
   x: { from: number; ms: number; easing: string; delayMs: number };
   /** `scale .92 > 1` on pop from the bubble's lower left. */
   scale: { from: number; spring: 'pop'; origin: string; delayMs: number };
   /** A file or poll fades in over the fill beat, linear. */
   fade: { from: number; ms: number } | null;
-  /** The words become the bubble: the fill and the ink come up over the ink beat. */
+  /** The words become the bubble: the filled bubble fades in under a ghost of the words in the field's ink, over the ink beat. */
   fill: { ms: number; easing: string } | null;
   /** The tail grows in over the pop spring plus a beat, held to 15%. */
   tail: { ms: number; hold: number; from: number } | null;
@@ -82,11 +80,11 @@ export interface SendRisePlan {
 }
 
 /** MOT-SEND-6, -7, -8: every number of the send flight in one pure place. */
-export function planSendRise({ field, bubble, held, text, step = 0 }: SendRiseInput): SendRisePlan {
+export function planSendRise({ field, bubble, text, step = 0 }: SendRiseInput): SendRisePlan {
   const launch = chSpringCurve('launch');
   const delayMs = step * SEND_STAGGER.delayMs;
   return {
-    y: { from: field.bottom - bubble.bottom - held - step * SEND_STAGGER.offsetPx, spring: 'launch', ms: launch.ms, delayMs },
+    y: { from: field.bottom - bubble.bottom - step * SEND_STAGGER.offsetPx, spring: 'launch', ms: launch.ms, delayMs },
     x: { from: field.left - 9 - bubble.left, ms: Math.round(launch.ms * LAUNCH_X_SHARE), easing: HOUSE_EASE, delayMs },
     scale: { from: SEND_SCALE_FROM, spring: 'pop', origin: '0% 100%', delayMs },
     fade: text ? null : { from: SEND_FADE_FROM, ms: CH_MS.fill },
@@ -97,30 +95,66 @@ export function planSendRise({ field, bubble, held, text, step = 0 }: SendRiseIn
 }
 
 /**
- * Play a send plan on a real bubble (the Q-19 fallback shape: the bubble itself rises, no clone, so MC-01, 02 and 11
- * cannot catch a clone teleporting). Reduce Motion is the launch spring's rule: the bubble crossfades in place.
- * Returns the animations that started.
+ * Play a send plan on the real bubble (the Q-19 fallback shape: no copy flies over the app, so MC-01, 02 and 11 have no
+ * clone to teleport). Everything that moves is a transform or an opacity, one animation per property per element and never
+ * additive, so the whole flight runs on the compositor while React and the send's request keep the main thread busy:
+ *
+ * - up: `carrier` (the row's stack) rises `plan.y.from > 0` on `launch`, in the page's own space. `counter` cancels the
+ *   thread's make-room glide on this row alone, so the bubble follows the launch spring and nothing else: one rise, one
+ *   soft landing, while everything above it glides up on `send`.
+ * - sideways and the scale: the bubble itself, on the house ease over 62% of the launch time and on `pop` from its lower left.
+ * - the words become the bubble: the bubble (green fill, light ink) fades in over the ink beat while a ghost of the same
+ *   words in the field's ink, laid exactly over it, fades out. The words never leave the screen; the fill comes up under them.
+ * - the tail grows in last.
+ *
+ * Reduce Motion is the launch spring's rule: the bubble crossfades in place. Returns the animations that started.
  */
 export function playSendRise(
   bubble: HTMLElement,
   plan: SendRisePlan,
-  opts: { reduced: boolean; tail?: HTMLElement | null; ink?: { from: string; to: string; fill: string } | null },
+  opts: {
+    reduced: boolean;
+    tail?: HTMLElement | null;
+    /** What carries the rise: the row's stack. Without one (a unit test, a bare bubble) the bubble carries it. */
+    carrier?: HTMLElement | null;
+    /** The thread's make-room glide, as it holds this row low at the first frame: cancelled on `el` with the same clock. */
+    counter?: { el: HTMLElement; from: number; ms: number; easing: string } | null;
+    /** The field's ink, for the ghost of the words. */
+    ink?: string | null;
+  },
 ): Animation[] {
   const out: Animation[] = [];
   const add = (a: Animation | null) => {
     if (a) out.push(a);
+    return a;
   };
   if (opts.reduced) {
     add(msAnimate(bubble, [{ opacity: 0 }, { opacity: 1 }], 'launch', { reduced: true }));
     return out;
   }
-  bubble.style.transformOrigin = plan.scale.origin;
-  add(msAnimate(bubble, [{ translate: `0 ${plan.y.from}px` }, { translate: '0 0' }], 'launch', { delay: plan.y.delayMs, fill: 'backwards' }));
-  add(msAnimate(bubble, [{ translate: `${plan.x.from}px 0` }, { translate: '0 0' }], null, { composite: 'add', delay: plan.x.delayMs, fill: 'backwards', timing: { ms: plan.x.ms, easing: plan.x.easing } }));
-  add(msAnimate(bubble, [{ scale: String(plan.scale.from) }, { scale: '1' }], 'pop', { delay: plan.scale.delayMs, fill: 'backwards' }));
-  if (plan.fade) add(msAnimate(bubble, [{ opacity: plan.fade.from }, { opacity: 1 }], null, { delay: plan.y.delayMs, fill: 'backwards', timing: { ms: plan.fade.ms, easing: 'linear' } }));
-  if (plan.fill && opts.ink) {
-    add(msAnimate(bubble, [{ backgroundColor: 'transparent', color: opts.ink.from }, { backgroundColor: opts.ink.fill, color: opts.ink.to }], null, { delay: plan.y.delayMs, fill: 'backwards', timing: plan.fill }));
+  const carrier = opts.carrier ?? bubble;
+  const delay = plan.y.delayMs;
+  add(msAnimate(carrier, [{ transform: `translateY(${plan.y.from}px)` }, { transform: 'translateY(0px)' }], 'launch', { delay, fill: 'backwards' }));
+  if (opts.counter && Math.abs(opts.counter.from) >= 1) {
+    add(msAnimate(opts.counter.el, [{ transform: `translateY(${-opts.counter.from}px)` }, { transform: 'translateY(0px)' }], null, { timing: { ms: opts.counter.ms, easing: opts.counter.easing } }));
+  }
+  const side = (el: HTMLElement) => {
+    el.style.transformOrigin = plan.scale.origin;
+    add(msAnimate(el, [{ translate: `${plan.x.from}px 0` }, { translate: '0 0' }], null, { delay: plan.x.delayMs, fill: 'backwards', timing: { ms: plan.x.ms, easing: plan.x.easing } }));
+    add(msAnimate(el, [{ scale: String(plan.scale.from) }, { scale: '1' }], 'pop', { delay: plan.scale.delayMs, fill: 'backwards' }));
+  };
+  side(bubble);
+  if (plan.fade) add(msAnimate(bubble, [{ opacity: plan.fade.from }, { opacity: 1 }], null, { delay, fill: 'backwards', timing: { ms: plan.fade.ms, easing: 'linear' } }));
+  if (plan.fill) {
+    add(msAnimate(bubble, [{ opacity: 0 }, { opacity: 1 }], null, { delay, fill: 'backwards', timing: plan.fill }));
+    if (opts.ink && carrier !== bubble) {
+      const ghost = sendGhost(bubble, opts.ink);
+      carrier.appendChild(ghost);
+      side(ghost);
+      const fade = add(msAnimate(ghost, [{ opacity: 1 }, { opacity: 0 }], null, { delay, fill: 'both', timing: plan.fill }));
+      if (fade) fade.onfinish = fade.oncancel = () => ghost.remove();
+      else ghost.remove();
+    }
   }
   if (plan.tail && opts.tail) {
     const t = plan.tail;
@@ -133,11 +167,41 @@ export function playSendRise(
           { opacity: 1, scale: '1', offset: 1 },
         ],
         null,
-        { delay: plan.y.delayMs, fill: 'backwards', timing: { ms: t.ms, easing: HOUSE_EASE } },
+        { delay, fill: 'backwards', timing: { ms: t.ms, easing: HOUSE_EASE } },
       ),
     );
   }
   return out;
+}
+
+/** The mark a send's ghost carries, so nothing else mistakes it for a message. */
+export const SEND_GHOST_ATTR = 'data-ch-send-ghost';
+
+/**
+ * The words as they sat in the field: the bubble's own box and type with no fill, no shadow and no tail, in the field's ink,
+ * laid over the bubble inside its (relatively positioned) stack. Hidden from assistive tech and from every pointer.
+ */
+function sendGhost(bubble: HTMLElement, ink: string): HTMLElement {
+  const ghost = bubble.cloneNode(true) as HTMLElement;
+  for (const name of ['id', 'data-ch-bubble', 'tabindex', 'role']) ghost.removeAttribute(name);
+  ghost.setAttribute('aria-hidden', 'true');
+  ghost.setAttribute(SEND_GHOST_ATTR, '');
+  ghost.querySelectorAll('svg').forEach((n) => n.remove());
+  Object.assign(ghost.style, {
+    position: 'absolute',
+    left: `${bubble.offsetLeft}px`,
+    top: `${bubble.offsetTop}px`,
+    width: `${bubble.offsetWidth}px`,
+    height: `${bubble.offsetHeight}px`,
+    margin: '0',
+    background: 'none',
+    boxShadow: 'none',
+    filter: 'none',
+    outline: '0',
+    color: ink,
+    pointerEvents: 'none',
+  });
+  return ghost;
 }
 
 /** MOT-SEND-6: the arrow leaves the send key upward as the message goes (200 ms). Reduce Motion: no arrow motion. */

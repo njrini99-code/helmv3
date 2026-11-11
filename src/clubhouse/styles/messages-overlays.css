@@ -328,11 +328,18 @@
 }
 
 /* Reaction badges (MSG-406, MOT-RX-1): clipped to the bubble's top corner; the colour is the opposite of the bubble it sits on. */
+/* The badges sit in the row's line, which is exactly as wide as the bubble: -14 above it, -10 past the corner that faces the
+   other side of the thread (their bubble's right, your bubble's left). Never wider than the screen (MSG-2). */
 .ch-ms-reacts {
+  --ch-mso-rx-page: 0 0 0 2px var(--ch-grouped-bg);
+  --ch-mso-rx-page-own: 0 0 0 4px var(--ch-grouped-bg);
+  --ch-mso-rx-pale: color-mix(in srgb, var(--ch-bubble-mine-fill) 20%, transparent);
   position: absolute;
   top: -14px;
+  z-index: var(--ch-z-raised);
   display: flex;
-  gap: 4px;
+  gap: var(--ch-ms-px-3);
+  max-width: calc(100vw - 2 * var(--ch-page-x-phone));
 }
 .ch-ms-reacts.on-theirs {
   right: -10px;
@@ -341,11 +348,10 @@
   left: -10px;
 }
 .ch-ms-react {
-  --ch-mso-rx-halo: 0 0 0 2px var(--ch-grouped-bg), 0 0 0 3px color-mix(in srgb, var(--ch-bubble-mine-fill) 20%, transparent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: var(--ch-ms-px-3);
   box-sizing: border-box;
   min-width: 26px;
   height: 26px;
@@ -356,23 +362,29 @@
   line-height: var(--ch-lead-tight);
   cursor: pointer;
 }
-/* Under their (paper) bubble the badge is the accent green; under yours it is ivory with a pale ring. */
+/* On their (paper) bubble the badge is the accent green; on yours it is ivory with a pale ring. Both stand on a 2 px page halo. */
 .ch-ms-reacts.on-theirs .ch-ms-react {
   background: var(--ch-bubble-mine-fill);
   color: var(--ch-bubble-mine-ink);
+  box-shadow: var(--ch-mso-rx-page), var(--ch-elevation-badge);
   transform-origin: 100% 100%;
 }
 .ch-ms-reacts.on-mine .ch-ms-react {
-  background: var(--ch-ivory-50);
+  background: var(--ch-card-bg);
   color: var(--ch-accent-ink);
-  box-shadow: var(--ch-mso-rx-halo);
+  box-shadow: var(--ch-mso-rx-page), 0 0 0 3px var(--ch-mso-rx-pale), var(--ch-elevation-badge);
   transform-origin: 0% 100%;
 }
 /* YOUR reaction carries the champagne ring on a 4 px page-colour halo. */
 .ch-ms-reacts .ch-ms-react.is-mine {
   outline: 2px solid var(--ch-ring-own);
   outline-offset: 1px;
-  box-shadow: 0 0 0 4px var(--ch-grouped-bg), var(--ch-card-shadow);
+}
+.ch-ms-reacts.on-theirs .ch-ms-react.is-mine {
+  box-shadow: var(--ch-mso-rx-page-own);
+}
+.ch-ms-reacts.on-mine .ch-ms-react.is-mine {
+  box-shadow: var(--ch-mso-rx-page-own), 0 0 0 5px var(--ch-mso-rx-pale), var(--ch-elevation-badge);
 }
 .ch-ms-react svg {
   fill: none;
@@ -477,23 +489,26 @@
   display: flex;
   justify-content: flex-end;
 }
+/* The pill: paper on the one flat card shadow, the 13 medium role (the design's 12.5 lands on the scale's 13 step),
+   padding 3 9 (3 9 3 4 when faces lead it). */
 .ch-msv-seen {
   position: relative;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   margin: 6px 2px 0;
-  padding: 4px 8px 4px 4px;
+  padding: var(--ch-ms-px-3) var(--ch-ms-px-9) var(--ch-ms-px-3) 4px;
   border: 0;
   border-radius: 999px;
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  /* A pill is too small for the card recipe's ambient layer: a hairline ring and the shared badge drop. */
+  box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-elevation-badge);
   color: var(--ch-text-tertiary);
   font: var(--ch-type-13-medium);
 }
 /* A pill with no face in it (Delivered, a direct thread's receipt, a player's count) keeps the text's inset. */
 .ch-msv-seen:not(:has(.ch-msv-faces)) {
-  padding-left: 8px;
+  padding-left: var(--ch-ms-px-9);
 }
 button.ch-msv-seen {
   cursor: pointer;
@@ -547,7 +562,7 @@ button.ch-msv-seen::before {
   overflow: hidden;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow-flat);
+  box-shadow: var(--ch-card-shadow);
 }
 .ch-mss .ch-seen-list.is-v2 .ch-seen-sec__h {
   position: static;
@@ -587,10 +602,6 @@ button.ch-msv-seen::before {
   text-align: right;
 }
 
-/* A reacted bubble clears the chips above it; the row stays on the screen (MSG-2). */
-.ch-ms-reacts {
-  max-width: calc(100vw - 2 * var(--ch-page-x-phone));
-}
 /* A 44 px target around a 26 px badge on the phone, centred on it. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   .ch-ms-react {

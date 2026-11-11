@@ -10,7 +10,7 @@ describe('personOf', () => {
     expect(personOf({ directory: [coach], members: [{ ...former, userId: 'u-coach', name: 'Other' }] }, 'u-coach')?.name).toBe('Pat Coach');
   });
 
-  it("names a member of an older team's chat from the group's members instead of leaving them unnamed", () => {
+  it('names a member of an older team’s chat from the group’s members instead of leaving them unnamed', () => {
     expect(personOf({ directory: [coach], members: [former] }, 'u-old')).toMatchObject({ name: 'Sam Former', role: 'player', subtitle: 'Class of 2028' });
   });
 

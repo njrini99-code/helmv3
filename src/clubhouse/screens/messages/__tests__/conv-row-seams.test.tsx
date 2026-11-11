@@ -117,6 +117,8 @@ describe('inbox row craft (PR 9)', () => {
   });
 
   it('F-0051 the phone Announcements card sits on the page edge, not 4px past it', () => {
-    expect(css).toMatch(/@media \(max-width: 820px\)[^{]*\{[^@]*\.ch-msp \.ch-ms-sec\.is-ann\s*\{[^}]*margin-inline: 0;/);
+    // One definition now: no inline margin at all, and no rule pulls the card past the edge with a negative one.
+    expect(css).toMatch(/\n\.ch-ms-sec\.is-ann\s*\{[^}]*margin: 8px 0 4px;/);
+    expect(css).not.toMatch(/\.ch-ms-sec\.is-ann\s*\{[^}]*margin[^;]*-\d/);
   });
 });

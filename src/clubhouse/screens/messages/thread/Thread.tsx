@@ -7,7 +7,6 @@ import { haptic } from '../../../lib/haptics';
 import { receiptCarrierId, SEEN_BY_VISIBILITY } from '@/lib/golf/message-receipts';
 import { useSeenByList } from '../seen-by';
 import { type PollThreadActions, PollThreadContext } from '../polls';
-import { useNewDivider } from './NewDivider';
 import { personOf } from '../person-of';
 import { rebuiltHref } from '../../../shell/nav';
 import { useThreadAnchor } from '../use-thread-anchor';
@@ -81,7 +80,6 @@ export function Thread({
   useEffect(() => {
     if (replyToId) section.current?.querySelector<HTMLTextAreaElement>(".ch-ms-comp textarea")?.focus();
   }, [replyToId]);
-  const newId = useNewDivider(api, conv);
   const scroller = useRef<HTMLDivElement | null>(null);
   const items = useMemo(
     () => threadItems(api.msgs, api.now, api.timeZone),
@@ -206,7 +204,6 @@ export function Thread({
         scroller={scroller}
         className="ch-ms-scroll"
         items={items}
-        newId={newId}
         onStarter={(text) => setSeed({ text, nonce: Date.now() })}
         renderBubble={(it) => (
           <Bubble

@@ -18,7 +18,7 @@ import { CalendarPlus, ChevronRight } from 'lucide-react';
 import { InlineNotice } from '../../../ui/Notices';
 import { Skeleton } from '../../../ui/States';
 import { muteLabel } from './mute-label';
-import { LeaveGroupModal, DeleteConversationModal, AddMembersModal, RemoveMemberModal } from './group-modals';
+import { LeaveGroupModal, AddMembersModal, RemoveMemberModal } from './group-modals';
 
 /* Details */
 
@@ -39,7 +39,6 @@ function Panel({ title, action, children, code }: { title?: string; action?: Rea
 export function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv; onBack: () => void }) {
   const coach = api.viewer.role === "coach";
   const [leaving, setLeaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [adding, setAdding] = useState(false);
   const [removing, setRemoving] = useState<ChMember | null>(null);
   const titleId = `ch-msp-details-${conv.id}`;
@@ -61,7 +60,7 @@ export function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: 
   };
   return (
     <PhoneScreen labelledBy={titleId} className="ch-msp-details" keyboardAware>
-      <PhoneBar back={{ label: "Back", ariaLabel: "Back to conversation", onBack }} title="Details" titleId={titleId} />
+      <PhoneBar back={{ label: conv.title, ariaLabel: "Back to conversation", onBack }} title="Details" titleId={titleId} />
       <div className="ch-msp-scroll">
         <SectionBoundary surface="messages.details" label="Details" code="CH-7213">
           <div className="ch-msp-page">
@@ -96,26 +95,28 @@ export function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: 
 
             <>
                 {conv.group && <MembersCard api={api} conv={conv} onMessage={(id) => void message(id)} onRemove={mine && api.removeMember ? setRemoving : undefined} />}
-                {/* Schedule keeps its place on the page; the four across are the drawn four. */}
-                {calendarHref && (
-                  <Panel>
-                    <Link className="ch-msp-row is-btn" href={calendarHref}>
-                      <span className="ch-msp-row__ic">
-                        <Icon icon={CalendarPlus} size={16} />
-                      </span>
-                      <span className="ch-msp-row__b">
-                        <b>Schedule</b>
-                      </span>
-                      <Icon icon={ChevronRight} size={16} className="ch-msp-chev" />
-                    </Link>
-                  </Panel>
-                )}
               </>
 
             <PhotosAndFiles api={api} conv={conv} />
 
+            {/* Schedule is not in the design (GAP.md "Can't match as drawn"): it keeps working, after the drawn cards, as one row
+                inside a card of the one card style. */}
+            {calendarHref && (
+              <section className="ch-msp-panel ch-msd-lcard" aria-label="Schedule">
+                <Link className="ch-msp-row is-btn" href={calendarHref}>
+                  <span className="ch-msp-row__ic">
+                    <Icon icon={CalendarPlus} size={16} />
+                  </span>
+                  <span className="ch-msp-row__b">
+                    <b>Schedule</b>
+                  </span>
+                  <Icon icon={ChevronRight} size={16} className="ch-msp-chev" />
+                </Link>
+              </section>
+            )}
+
             {/* With the switch gone it can have nothing to show: then it isn't drawn. */}
-            {(api.muteError || !api.mute || muted || api.deleteConversation) && (
+            {(api.muteError || !api.mute || muted) && (
               <Panel>
                 {api.muteError ? (
                   <InlineNotice code="CH-7208" title="The mute setting didn’t load" body="Try again." onRetry={api.retryMute} />
@@ -131,11 +132,6 @@ export function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: 
                   )
                 )}
 
-                {api.deleteConversation && (
-                  <button type="button" className="ch-msp-danger" onClick={() => setDeleting(true)}>
-                    Delete conversation
-                  </button>
-                )}
               </Panel>
             )}
           </div>
@@ -143,7 +139,6 @@ export function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: 
       </div>
       {muteV2.choosing && <MuteMenu anchor={muteV2.anchor} onPick={(h) => void muteV2.setMute(true, h)} onClose={() => muteV2.setChoosing(false)} />}
       <LeaveGroupModal api={api} conv={conv} open={leaving} onClose={() => setLeaving(false)} onLeft={() => {}} />
-      <DeleteConversationModal api={api} conv={conv} open={deleting} onClose={() => setDeleting(false)} onDeleted={() => {}} />
       {mine && conv.group && <AddMembersModal api={api} conv={conv} open={adding} onClose={() => setAdding(false)} />}
       {mine && conv.group && api.removeMember && <RemoveMemberModal api={api} conv={conv} member={removing} onClose={() => setRemoving(null)} />}
     </PhoneScreen>

@@ -7,81 +7,8 @@
  * without !important; the replaced v2-scoped rules were deleted from messages.css.
  */
 
-/* MSG-204 Bubble geometry: radius 19, padding 7.5k 13k, 16k/1.32, -0.005em; theirs on recv with the bubble shadow, mine flat sent. */
-[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-msg .ch-ms-bub:not(.ch-ms-bub--file, .is-deleted) {
-  position: relative;
-  padding: calc(7.5 * var(--ch-type-k)) calc(13 * var(--ch-type-k));
-  border-radius: var(--ch-radius-bubble);
-  background: var(--ch-bubble-theirs-bg);
-  box-shadow: none;
-  font: var(--ch-type-msg-bubble);
-  letter-spacing: var(--ch-track-msg-bubble);
-  color: var(--ch-text-primary);
-  filter: var(--ch-bubble-theirs-shadow);
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
-}
-[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-msg.is-mine .ch-ms-bub:not(.ch-ms-bub--file, .is-deleted) {
-  background: var(--ch-bubble-mine-fill);
-  box-shadow: var(--ch-messages-x4);
-  color: var(--ch-bubble-mine-ink);
-  filter: var(--ch-bubble-mine-shadow);
-}
-/* MSG-205 Join corners 6 on the side facing the run; the last bubble keeps its 19 (the tail draws instead). */
-[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-msg:not(.is-mine, .is-first) .ch-ms-bub:not(.ch-ms-bub--file, .is-deleted) {
-  border-top-left-radius: var(--ch-radius-tail);
-}
-[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-msg:not(.is-mine, .is-last) .ch-ms-bub:not(.ch-ms-bub--file, .is-deleted) {
-  border-bottom-left-radius: var(--ch-radius-tail);
-}
-[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-msg.is-mine:not(.is-first) .ch-ms-bub:not(.ch-ms-bub--file, .is-deleted) {
-  border-top-right-radius: var(--ch-radius-tail);
-}
-[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-msg.is-mine:not(.is-last) .ch-ms-bub:not(.ch-ms-bub--file, .is-deleted) {
-  border-bottom-right-radius: var(--ch-radius-tail);
-}
-/* Desktop bubbles read 15k. */
-@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  [data-ch-ms-v2] .ch-ms-thread .ch-ms-msg .ch-ms-bub:not(.ch-ms-bub--file, .is-deleted, .is-emoji) {
-    font: var(--ch-type-msg-bubble-desk);
-    letter-spacing: var(--ch-track-msg-bubble);
-  }
-}
-/* MSG-206 One tail, the drawn SVG, on the last bubble of a run: the legacy clip-path tail is not drawn under the redesign. */
-[data-ch-ms-v2] .ch-msp-thread .ch-ms-msg.is-last .ch-ms-bub::after {
-  content: none;
-}
-/* MSG-204 Emoji only: no bubble, 40k, padding 0. */
-[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-msg .ch-ms-bub.is-emoji {
-  padding: 0;
-  background: none;
-  box-shadow: none;
-  filter: none;
-  font: var(--ch-type-msg-emoji);
-  letter-spacing: 0;
-  color: inherit;
-}
-/* MSG-205 Spacing: 2 inside a run, 10 before a run, 16 before a bubble that carries reactions. */
-[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-msg {
-  position: relative;
-  margin-top: 2px;
-}
-[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-msg.is-first {
-  margin-top: var(--ch-ms-px-10);
-}
-[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-msg:has(.ch-ms-reacts) {
-  margin-top: 16px;
-}
-/* MSG-204 The stack is 76% of the column (the phone's older 82% cap no longer compounds with it); desktop min(520, 72%) stays. */
-[data-ch-ms-v2] .ch-msp-thread .ch-ms-msg__col {
-  max-width: 100%;
-}
-[data-ch-ms-v2] .ch-ms-thread .ch-ms-msg__stack {
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
-}
+/* MSG-204 to MSG-206 The bubble, its joins, the emoji-only form and the photo frame are one definition in messages.css (`.ch-ms-bub`). */
+/* MSG-205 row spacing and the MSG-204 column cap are the row's one definition in messages.css (`.ch-ms-msg`, `.ch-ms-msg__col`). */
 /* MSG-207 Group names: first name inside the first bubble, 13k/600 ink-2, floor 12k on the phone, margin 0 0 1. */
 [data-ch-ms-v2] .ch-msv-bname {
   display: block;
@@ -201,17 +128,13 @@
 }
 
 /* MSG-216 Failed send: the bubble stays as sent; a danger pill under it reads "Not delivered · Try again". */
-[data-ch-ms-v2] .ch-ms-msg.is-failed .ch-ms-bub,
-[data-ch-ms-v2] .ch-ms-msg.is-mine.is-failed .ch-ms-bub {
-  outline: 0;
-}
 [data-ch-ms-v2] .ch-ms-msg__fail {
   gap: 6px;
   min-height: 0;
   margin: 6px 2px 0;
   padding: var(--ch-ms-px-3) var(--ch-ms-px-9);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow-flat);
+  box-shadow: var(--ch-card-shadow);
   font: var(--ch-type-13-medium);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-flag);
@@ -240,7 +163,7 @@
   padding: var(--ch-ms-px-5) var(--ch-ms-px-10);
   border-radius: var(--ch-radius-md);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow-flat);
+  box-shadow: var(--ch-card-shadow);
   font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }
@@ -249,7 +172,7 @@
 [data-ch-ms-v2] .ch-msv-hello {
   margin: 16px 0 12px;
   padding: var(--ch-ms-px-22) 16px var(--ch-ms-px-18);
-  box-shadow: var(--ch-card-shadow-flat);
+  box-shadow: var(--ch-card-shadow);
 }
 [data-ch-ms-v2] .ch-msv-hello > b {
   font: var(--ch-type-20-strong);
@@ -273,26 +196,7 @@
   }
 }
 
-/* MSG-301 / MSG-302 Composer pill: glass-strong at blur 24 / saturate 170, float shadow, a 1.5 ring on focus-within; the plus key reads ink-2. */
-[data-ch-ms-v2] .ch-ms-comp__field {
-  gap: 6px;
-  padding: 5px;
-  -webkit-backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
-  backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
-  box-shadow: var(--ch-shadow-float);
-}
-[data-ch-ms-v2] .ch-ms-comp__field:focus-within {
-  box-shadow: var(--ch-shadow-float), 0 0 0 1.5px color-mix(in oklab, var(--ch-accent-ink) 55%, transparent);
-}
-[data-ch-ms-v2] .ch-msv-plus__key {
-  color: var(--ch-text-tertiary);
-}
-/* MSG-303 The field: padding 8 4 7, no ring of its own (the pill carries it). */
-[data-ch-ms-v2] .ch-ms-comp__field textarea,
-[data-ch-ms-v2] .ch-ms-comp__field textarea:focus {
-  padding: 8px 4px 7px;
-  box-shadow: none;
-}
+/* MSG-301 to MSG-304 The composer pill, its field and its keys are one definition in messages.css (`.ch-ms-comp`). */
 
 /*
  * MSG-201 / MSG-202 / MSG-203 / MSG-307: the thread as three layers. The scroller fills the page; the bar and the floating
@@ -327,13 +231,6 @@
   padding-bottom: calc(var(--ch-ms-pad-bot, 92px) + var(--ch-ms-kb, 0px));
 }
 
-/* The glass layers' backing: the composer fades from the page over its own height and 24 px above it, solid from 58%. */
-[data-ch-ms-v2] :is(.ch-msp-thread, .ch-ms-thread.is-layered) .ch-ms-comp::before {
-  inset: -24px 0 0;
-  height: auto;
-  z-index: -1;
-  background: linear-gradient(to bottom, transparent, var(--ch-grouped-bg) 58%);
-}
 
 /* The phone bar: today's green bar with its lip, over the page; three columns so the who sits in the middle (MSG-201). */
 [data-ch-ms-v2] .ch-msp-thread > .ch-pbar {
@@ -440,7 +337,7 @@ body [data-ch-ms-v2] .ch-pscreen.ch-msp-thread[data-fw-keyboard-aware][data-ch-v
   opacity: 0;
 }
 [data-ch-ms-v2] .ch-ms-thread.is-layered .ch-ms-th__who div > span {
-  font-size: calc(12.5px * var(--ch-type-k));
+  font: var(--ch-type-13);
   color: var(--ch-crh-ink4);
 }
 /* MSG-203 The desktop composer floats at the foot over the page. */

@@ -17,6 +17,7 @@ import {
   playFieldReturn,
   playReceiptRise,
   playSendRise,
+  SEND_GHOST_ATTR,
   planSendRise,
 } from '../messages-beats';
 import { pillRead } from '../../thread-v2';
@@ -63,7 +64,7 @@ describe('MOT-R: Reduce Motion', () => {
   });
   it('R-6: the sent bubble crossfades in place, no flight, no clone', () => {
     const b = node();
-    const plan = planSendRise({ field: { left: 20, bottom: 800 }, bubble: { left: 200, bottom: 700 }, held: 40, text: true });
+    const plan = planSendRise({ field: { left: 20, bottom: 800 }, bubble: { left: 200, bottom: 700 }, text: true });
     playSendRise(b, plan, { reduced: true });
     expect(calls(b)).toHaveLength(1);
     expect(calls(b)[0]![0]).toEqual([{ opacity: 0 }, { opacity: 1 }]);
@@ -85,11 +86,12 @@ describe('MOT-SEND-4: the send key', () => {
 });
 
 describe('MOT-SEND-6 / -7 / -8: the send flight', () => {
-  const input = { field: { left: 40, bottom: 800 }, bubble: { left: 220, bottom: 700 }, held: 30, text: true } as const;
+  const input = { field: { left: 40, bottom: 800 }, bubble: { left: 220, bottom: 700 }, text: true } as const;
 
   it('SEND-7: up on launch (812 ms), sideways on the house ease over 62% of it, scale .92 on pop from the lower left', () => {
     const plan = planSendRise(input);
-    expect(plan.y).toEqual({ from: 800 - 700 - 30, spring: 'launch', ms: 812, delayMs: 0 });
+    // The whole way from the field to its resting place, in the page's own space: the list's make-room glide is cancelled on the row.
+    expect(plan.y).toEqual({ from: 800 - 700, spring: 'launch', ms: 812, delayMs: 0 });
     expect(plan.x).toEqual({ from: 40 - 9 - 220, ms: Math.round(812 * LAUNCH_X_SHARE), easing: HOUSE_EASE, delayMs: 0 });
     expect(plan.x.ms).toBe(503);
     expect(plan.scale).toEqual({ from: 0.92, spring: 'pop', origin: '0% 100%', delayMs: 0 });
@@ -104,7 +106,7 @@ describe('MOT-SEND-6 / -7 / -8: the send flight', () => {
   it('SEND-7: several bubbles at once are delayed 40 ms and lifted 8 px a step', () => {
     const plan = planSendRise({ ...input, step: 2 });
     expect(plan.y.delayMs).toBe(2 * SEND_STAGGER.delayMs);
-    expect(plan.y.from).toBe(800 - 700 - 30 - 2 * SEND_STAGGER.offsetPx);
+    expect(plan.y.from).toBe(800 - 700 - 2 * SEND_STAGGER.offsetPx);
   });
 
   it('SEND-6: the words become the bubble in 160 ms on the fill curve; the tail grows over pop + 60 ms, held to 15%', () => {
@@ -136,18 +138,75 @@ describe('MOT-SEND-6 / -7 / -8: the send flight', () => {
     expect(calls(field)[0]![1]).toMatchObject({ duration: 220, delay: 140, easing: 'linear' });
   });
 
-  it('plays the vertical glide, the stacked sideways glide, the scale, the fill and the tail on the real bubble', () => {
+  /** Every property a keyframe list moves. */
+  const moved = (frames: Keyframe[]) => [...new Set(frames.flatMap((k) => Object.keys(k).filter((p) => p !== 'offset')))];
+
+  it('the stack rises on launch; the bubble goes sideways, scales and fades in; the make-room glide is cancelled on the row; nothing is additive', () => {
+    const stack = node();
     const b = node();
+    stack.appendChild(b);
+    const line = node();
     const tail = node();
     const plan = planSendRise(input);
-    playSendRise(b, plan, { reduced: false, tail, ink: { from: 'rgb(0,0,0)', to: 'rgb(255,255,255)', fill: 'rgb(21,90,57)' } });
+    playSendRise(b, plan, { reduced: false, tail, carrier: stack, counter: { el: line, from: 56, ms: 700, easing: 'linear' }, ink: 'rgb(28, 27, 24)' });
+    // Up: one transform on the stack, the full distance on launch.
+    expect(calls(stack)).toHaveLength(1);
+    expect(calls(stack)[0]![0]).toEqual([{ transform: 'translateY(100px)' }, { transform: 'translateY(0px)' }]);
+    expect(calls(stack)[0]![1]).toMatchObject({ duration: 812, fill: 'backwards' });
+    // The thread's glide (56 px low at the first frame, on its own clock) is taken back off this row alone.
+    expect(calls(line)[0]![0]).toEqual([{ transform: 'translateY(-56px)' }, { transform: 'translateY(0px)' }]);
+    expect(calls(line)[0]![1]).toMatchObject({ duration: 700, easing: 'linear' });
+    // The bubble: sideways (503 ms), scale (pop) and the fill coming up (160 ms), each its own property.
     const c = calls(b);
-    expect(c).toHaveLength(4);
-    expect(c[0]![1]).toMatchObject({ duration: 812 });
-    expect(c[1]![1]).toMatchObject({ duration: 503, composite: 'add' });
-    expect(c[2]![1]).toMatchObject({ duration: 496 });
-    expect(c[3]![1]).toMatchObject({ duration: 160 });
+    expect(c.map(([frames]) => moved(frames))).toEqual([['translate'], ['scale'], ['opacity']]);
+    expect(c.map(([, o]) => o.duration)).toEqual([503, 496, 160]);
     expect(calls(tail)[0]![0].map((k) => k.offset)).toEqual([0, 0.15, 1]);
+    // Compositor only: transforms and opacity, never a colour, and never an additive animation.
+    for (const el of [stack, line, b, tail]) {
+      for (const [frames, o] of calls(el)) {
+        expect(moved(frames).every((p) => ['transform', 'translate', 'scale', 'opacity'].includes(p)), moved(frames).join()).toBe(true);
+        expect(o.composite).toBeUndefined();
+      }
+    }
+  });
+
+  it('SEND-6: the words never leave the screen: a ghost of them in the field’s ink lies over the bubble, moves with it and fades as the fill comes up', () => {
+    const stack = node();
+    const b = node();
+    b.id = 'ch-ms-message-x';
+    b.setAttribute('data-ch-bubble', '');
+    b.textContent = 'On my way';
+    b.appendChild(document.createElementNS('http://www.w3.org/2000/svg', 'svg'));
+    stack.appendChild(b);
+    // The ghost is a copy the flight makes itself, so its `animate` is the prototype's: stand one in for the length of the test.
+    const proto = HTMLElement.prototype as unknown as { animate?: unknown };
+    const had = proto.animate;
+    proto.animate = vi.fn(() => ({ onfinish: null, oncancel: null }));
+    let g: [Keyframe[], KeyframeAnimationOptions][];
+    try {
+      playSendRise(b, planSendRise(input), { reduced: false, carrier: stack, ink: 'rgb(28, 27, 24)' });
+      g = (proto.animate as ReturnType<typeof vi.fn>).mock.calls as [Keyframe[], KeyframeAnimationOptions][];
+    } finally {
+      if (had === undefined) delete proto.animate;
+      else proto.animate = had;
+    }
+    const ghost = stack.querySelector<HTMLElement>(`[${SEND_GHOST_ATTR}]`)!;
+    expect(ghost.textContent).toBe('On my way');
+    expect(ghost.getAttribute('aria-hidden')).toBe('true');
+    expect(ghost.id).toBe('');
+    expect(ghost.hasAttribute('data-ch-bubble')).toBe(false);
+    expect(ghost.querySelector('svg')).toBeNull();
+    expect(ghost.style.color).toBe('rgb(28, 27, 24)');
+    expect(ghost.style.pointerEvents).toBe('none');
+    expect(g.map(([frames]) => moved(frames))).toEqual([['translate'], ['scale'], ['opacity']]);
+    expect(g[2]![0]).toEqual([{ opacity: 1 }, { opacity: 0 }]);
+    expect(g[2]![1]).toMatchObject({ duration: 160, easing: FILL_EASE });
+    // A file or a poll has no words to carry: no ghost.
+    const stack2 = node();
+    const file = node();
+    stack2.appendChild(file);
+    playSendRise(file, planSendRise({ ...input, text: false }), { reduced: false, carrier: stack2, ink: null });
+    expect(stack2.querySelector(`[${SEND_GHOST_ATTR}]`)).toBeNull();
   });
 });
 

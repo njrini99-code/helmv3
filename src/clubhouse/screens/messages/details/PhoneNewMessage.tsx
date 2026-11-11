@@ -136,8 +136,12 @@ export function PhoneNewMessage({
   const who = to.length === 1 ? firstName(personOf(api, to[0]!)?.name ?? "them") : `${to.length} people`;
   const quickGroups = coach && !q ? (
 <>
-              <h2 className="ch-ms-sec__l">Quick groups</h2>
-              <div className="ch-msp-panel">
+              {/* Not in the design (GAP.md "Can't match as drawn"): kept as a second card in the one card style, under Suggested. */}
+              <section className="ch-msp-panel ch-msd-lcard" aria-labelledby="ch-msp-new-quick">
+              <header className="ch-msd-lcard__h">
+                <b id="ch-msp-new-quick">Quick groups</b>
+              </header>
+              <div>
                 <button type="button" className="ch-msp-row is-btn" onClick={onAnnounce}>
                   <span className="ch-msp-row__ic is-round">
                     <Icon icon={Megaphone} size={16} />
@@ -179,6 +183,7 @@ export function PhoneNewMessage({
                   </button>
                 )}
               </div>
+              </section>
             </>
   ) : null;
   return (
@@ -256,13 +261,15 @@ export function PhoneNewMessage({
             </p>
           )}
 
-          {!api.directoryError && !people.length && !q ? null : (
-            <h2 className="ch-msv-suggest__h">Suggested</h2>
-          )}
           {api.directoryError ? (
             <InlineNotice code="CH-7205" title="Your team list didn’t load" body="Try again." onRetry={api.retryDirectory} />
-          ) : (
-            <div className="ch-msp-panel" role="listbox" aria-multiselectable={coach} aria-label="People">
+          ) : !people.length && !q ? null : (
+            <section className="ch-msp-panel ch-msd-lcard ch-msd-suggest" aria-labelledby="ch-msp-new-suggested">
+              <header className="ch-msd-lcard__h">
+                <b id="ch-msp-new-suggested">Suggested</b>
+                {!term && <small>{coach ? "Players you haven’t messaged" : "People you haven’t messaged"}</small>}
+              </header>
+            <div role="listbox" aria-multiselectable={coach} aria-label="People">
               {people.map((p) => {
                 const on = to.includes(p.userId);
                 return (
@@ -282,6 +289,7 @@ export function PhoneNewMessage({
               })}
               {!people.length && (q.trim()) && <p className="ch-msp-none">{q.trim() ? `No one matches “${q.trim()}”.` : "No one to message yet."}</p>}
             </div>
+            </section>
           )}
           {group && <p className="ch-msp-hint ch-num">Messages to {to.length} people start a new group.</p>}
           {quickGroups}

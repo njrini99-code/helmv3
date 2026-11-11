@@ -346,10 +346,14 @@ export function useFaceFlight(enabled: boolean, reduced: boolean): void {
 
 /**
  * Send (MOT-SEND-6, -7; Q-19 fallback shape): the REAL bubble leaves the field. Up on `launch` (one soft overshoot), sideways on
- * the house ease over 62% of it, scale .92 > 1 on `pop` from its lower left; a text bubble starts as plain words in the field's
- * ink and the green fill and light ink come up in 160 ms; the tail grows in last; a file or poll also fades in. Several bubbles
- * sent at once are delayed 40 ms and lifted 8 px a step. Reduce Motion: the bubble crossfades in place. Runs after
- * useThreadMakeRoom, because it reads rects while that glide holds the rows low.
+ * the house ease over 62% of it, scale .92 > 1 on `pop` from its lower left; a text bubble starts as the plain words exactly where
+ * they sat in the field and the green fill comes up under them in 160 ms; the tail grows in last; a file or poll also fades in.
+ * Several bubbles sent at once are delayed 40 ms and lifted 8 px a step. Reduce Motion: the bubble crossfades in place.
+ *
+ * Runs after useThreadMakeRoom, whose glide is already holding the rows low when the boxes are read: the bubble's resting place is
+ * its measured box less that hold, and the glide is cancelled on the new row alone (`counter`), so the bubble starts on the field
+ * and follows the launch spring only. (It used to subtract the row's height from a box that already included the hold, and so
+ * began one row above the field: the words never left the composer, they appeared over it.)
  */
 export function useSendRise(scroller: RefObject<HTMLElement | null>, count: number, enabled: boolean, reduced: boolean): void {
   const seen = useRef(count);
@@ -364,22 +368,42 @@ export function useSendRise(scroller: RefObject<HTMLElement | null>, count: numb
     if (!fresh[fresh.length - 1]?.classList.contains('is-mine')) return;
     const field = document.querySelector<HTMLElement>('.ch-ms-comp textarea');
     const f = field?.getBoundingClientRect();
+    const glide = reduced ? null : readGlide(el.querySelector<HTMLElement>('.ch-ms-msgs'));
     fresh.forEach((row, n) => {
       if (!row.classList.contains('is-mine')) return;
       stampSend(row.id.replace(/^ch-ms-message-/, ''));
       const bub = row.querySelector<HTMLElement>('.ch-ms-bub, .ch-ms-img');
       if (!bub?.animate) return;
       if (reduced || !f) {
-        playSendRise(bub, planSendRise({ field: { left: 0, bottom: 0 }, bubble: { left: 0, bottom: 0 }, held: 0, text: false }), { reduced: true });
+        playSendRise(bub, planSendRise({ field: { left: 0, bottom: 0 }, bubble: { left: 0, bottom: 0 }, text: false }), { reduced: true });
         return;
       }
       const b = bub.getBoundingClientRect();
       const text = bub.classList.contains('ch-ms-bub') && !bub.classList.contains('ch-ms-bub--file');
-      const plan = planSendRise({ field: { left: f.left, bottom: f.bottom }, bubble: { left: b.left, bottom: b.bottom }, held: row.getBoundingClientRect().height, text, step: fresh.length - 1 - n });
-      const cs = getComputedStyle(bub);
-      playSendRise(bub, plan, { reduced: false, tail: bub.querySelector<HTMLElement>('.ch-msv-tail'), ink: text && field ? { from: getComputedStyle(field).color, to: cs.color, fill: cs.backgroundColor } : null });
+      const plan = planSendRise({ field: { left: f.left, bottom: f.bottom }, bubble: { left: b.left, bottom: b.bottom - (glide?.now ?? 0) }, text, step: fresh.length - 1 - n });
+      const line = row.querySelector<HTMLElement>('.ch-ms-msg__line');
+      playSendRise(bub, plan, {
+        reduced: false,
+        tail: bub.querySelector<HTMLElement>('.ch-msv-tail'),
+        carrier: row.querySelector<HTMLElement>('.ch-ms-msg__stack'),
+        counter: glide && line ? { el: line, from: glide.from, ms: glide.ms, easing: glide.easing } : null,
+        ink: text && field ? getComputedStyle(field).color : null,
+      });
     });
   }, [scroller, count, enabled, reduced]);
+}
+
+/**
+ * The thread's make-room glide as it stands: how far it holds the list low right now (already in every measured box), where it
+ * began, and its clock, so a send can cancel it on its own row. Null when the list is not gliding (a reader further up, jsdom).
+ */
+function readGlide(list: HTMLElement | null): { now: number; from: number; ms: number; easing: string } | null {
+  const running = list?.getAnimations?.().find((a) => a.effect instanceof KeyframeEffect && a.effect.getKeyframes().some((k) => typeof k.transform === 'string' && k.transform !== 'none'));
+  if (!list || !running || typeof DOMMatrixReadOnly === 'undefined') return null;
+  const effect = running.effect as KeyframeEffect;
+  const timing = effect.getTiming();
+  const y = (transform: string) => (transform && transform !== 'none' ? new DOMMatrixReadOnly(transform).m42 : 0);
+  return { now: y(getComputedStyle(list).transform), from: y(String(effect.getKeyframes()[0]?.transform ?? 'none')), ms: Number(timing.duration) || 0, easing: String(timing.easing ?? 'linear') };
 }
 
 /** The send key: hidden with an empty field, springs in on `pop`, and shrinks out from where it is before it hides (M-MSG-06). */

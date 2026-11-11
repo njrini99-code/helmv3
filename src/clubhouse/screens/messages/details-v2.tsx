@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, BellOff, FileText, LogOut, Paperclip, Search, UserMinus, UserPlus, UserRound, ImageOff } from 'lucide-react';
+import { Bell, BellOff, FileText, LogOut, Search, UserMinus, UserPlus, UserRound, ImageOff } from 'lucide-react';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
@@ -228,7 +228,7 @@ export function QuickActions({
         <span>Search</span>
       </button>
       <button type="button" className="ch-msp-tile ch-msd-tile" onClick={onFiles}>
-        <Icon icon={Paperclip} size={20} />
+        <Icon icon={FileText} size={20} />
         <span>Files</span>
       </button>
       {profileHref && (
@@ -466,53 +466,109 @@ export function PhotosAndFiles({ api, conv }: { api: ChMessagesApi; conv: ChConv
 }
 
 /** Where the thread reads its scroll position from, desktop. */
-const THREAD_SCROLLER = '.ch-ms .ch-ms-thread .ch-ms-scroll, .ch-ms .ch-ms-scroll';
 /** The thread counts as "at the latest message" within this many px of the bottom (the artifact's `pinBottom`). */
 export const PIN_SLACK_PX = 60;
-/** Frames the re-pin runs beyond the column's own glide, ms. */
-const PIN_TAIL_MS = 40;
 
 /**
- * The details column's life (MSG-602, MOT-DET-2; Q-27's default): the one layout motion in Messages, set from here as the
- * artifact's `wsMotion` does. The canvas grid takes the smooth spring on `grid-template-columns` (inline, so a close mid-open
- * turns round where it is), the panel's content stays pinned to its right edge so the track reveals it, and a thread that was at
- * its latest message is put back there every frame for the glide plus 40 ms. Reduce Motion: the column lands at once and the
- * panel crossfades (Details). The panel stays mounted until the glide has run, so a close reads as the track narrowing.
+ * The details column's life (MSG-602, MOT-DET-2), by transform and opacity only. The owner's rule (10 Nov) is no layout
+ * animation, so the grid track is never transitioned: it lands at once and the motion is drawn over it.
+ *
+ * - The panel slides in from the window's edge (`translateX(100%) > none`, with opacity) on `smooth` (462 ms). Its track is
+ *   the page's colour, so nothing flashes where the panel has not arrived yet.
+ * - The thread narrows at once, and what the reader can see of it is put back where it was and released: every visible
+ *   row, the composer pill, the bar's keys and the jump key glide from their old place to their new one on the same
+ *   spring (FLIP: one layout read with the old track, one with the new). A thread at its latest message stays on it.
+ * - Closing is the same in reverse: the track goes at once, the panel leaves over the thread (it is lifted out of the grid
+ *   for the length of its exit), and the thread glides back out to its width.
+ * - A turn-around mid-way starts each piece from where it is (the live transform), so nothing jumps.
+ * - Reduce Motion: the column lands at once and the panel crossfades (the shared fade).
+ *
+ * The panel stays mounted until its exit has run.
  */
 export function useDetailsColumn(open: boolean): boolean {
   const reduced = useChReducedMotion();
   const [mounted, setMounted] = useState(open);
-  const pinned = useRef<boolean | null>(null);
+  const was = useRef(open);
   useLayoutEffect(() => {
-    const grid = document.querySelector<HTMLElement>('.ch-msd-ms');
-    if (!grid) return;
-    grid.style.transition = reduced ? 'none' : `grid-template-columns ${chSpringCurve('smooth').ms}ms ${chSpringCurve('smooth').linear}`;
-    return () => {
-      grid.style.transition = '';
-    };
-  }, [reduced]);
-  useEffect(() => {
+    if (was.current === open) return;
+    was.current = open;
     if (open) setMounted(true);
-    if (reduced) {
+    const grid = document.querySelector<HTMLElement>('.ch-msd-ms');
+    const track = grid?.querySelector<HTMLElement>('.ch-msd-det') ?? null;
+    const panel = track?.querySelector<HTMLElement>('.ch-msd-det__in') ?? null;
+    const done = () => {
+      track?.classList.remove(DETAILS_LEAVING);
       if (!open) setMounted(false);
-      return;
-    }
-    const scroller = document.querySelector<HTMLElement>(THREAD_SCROLLER);
-    // A turn-around keeps the first decision: while the track moves, the thread's own height changes with its width.
-    if (pinned.current === null) pinned.current = !!scroller && scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < PIN_SLACK_PX;
-    let frame = 0;
-    const started = performance.now();
-    const run = chSpringCurve('smooth').ms + PIN_TAIL_MS;
-    const pin = (now: number) => {
-      if (pinned.current && scroller) scroller.scrollTop = scroller.scrollHeight;
-      if (now - started < run) frame = requestAnimationFrame(pin);
-      else {
-        pinned.current = null;
-        if (!open) setMounted(false);
-      }
     };
-    frame = requestAnimationFrame(pin);
-    return () => cancelAnimationFrame(frame);
+    if (!grid || typeof grid.animate !== 'function') return done();
+    if (reduced) {
+      if (open && panel) msAnimate(panel, [{ opacity: 0 }, { opacity: 1 }], 'smooth', { reduced: true });
+      return done();
+    }
+    flipThread(grid, open);
+    if (!panel || !track) return done();
+    track.classList.toggle(DETAILS_LEAVING, !open);
+    // A turn-around starts from where the panel is; a fresh open or close from its end.
+    const running = panel.getAnimations?.().find((a) => a.id === DETAILS_MOTION_ID);
+    const live = running ? getComputedStyle(panel) : null;
+    const from = live ? { transform: live.transform === 'none' ? 'translateX(0)' : live.transform, opacity: Number(live.opacity) } : open ? { transform: 'translateX(100%)', opacity: 0 } : { transform: 'translateX(0)', opacity: 1 };
+    running?.cancel();
+    const slide = msAnimate(panel, [from, open ? { transform: 'translateX(0)', opacity: 1 } : { transform: 'translateX(100%)', opacity: 0 }], 'smooth', { fill: open ? 'none' : 'forwards' });
+    if (!slide) return done();
+    slide.id = DETAILS_MOTION_ID;
+    slide.onfinish = done;
+    return undefined;
   }, [open, reduced]);
   return mounted || open;
+}
+
+/** The class the panel's track wears while the panel leaves: it is lifted out of the grid, over the thread's right edge. */
+export const DETAILS_LEAVING = 'is-leaving';
+const DETAILS_MOTION_ID = 'ch-msd-details';
+/** What the reader can see of the thread that the column's arrival moves: rows and day markers, the composer pill, the bar's keys, the jump key, the date pill. */
+const THREAD_MOVERS = '.ch-ms-msg__col, .ch-ms-day > span, .ch-ms-comp__field, .ch-ms-th__act, .ch-msv-jump, .ch-msv-datepill';
+
+/**
+ * FLIP the thread across the track change: read each visible piece with the old track, read it again with the new one, and let
+ * it glide from the first to the second on `smooth`. A piece that hangs from the right (your bubbles, the bar's keys, the jump
+ * key) is followed by its right edge, the rest by their left, so a bubble that re-wraps still starts where its edge was.
+ */
+function flipThread(grid: HTMLElement, open: boolean): void {
+  const pane = grid.querySelector<HTMLElement>('.ch-ms-pane');
+  const scroller = pane?.querySelector<HTMLElement>('.ch-ms-scroll') ?? null;
+  if (!pane) return;
+  const view = pane.getBoundingClientRect();
+  const movers = Array.from(pane.querySelectorAll<HTMLElement>(THREAD_MOVERS)).filter((el) => {
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.bottom > view.top - 80 && r.top < view.bottom + 80;
+  });
+  if (!movers.length) return;
+  const right = (el: HTMLElement) => !!el.closest('.ch-ms-msg.is-mine, .ch-ms-th__act') || el.classList.contains('ch-msv-jump');
+  const place = (el: HTMLElement) => {
+    const r = el.getBoundingClientRect();
+    return { x: right(el) ? r.right : r.left, y: r.bottom };
+  };
+  // Where a piece already is in a glide this one interrupts (the two layout reads below both include it, so it is added back).
+  const live = movers.map((el) => {
+    const t = el.getAnimations?.().some((a) => a.id === DETAILS_MOTION_ID) ? getComputedStyle(el).transform : 'none';
+    if (!t || t === 'none' || typeof DOMMatrixReadOnly === 'undefined') return { x: 0, y: 0 };
+    const m = new DOMMatrixReadOnly(t);
+    return { x: m.m41, y: m.m42 };
+  });
+  // First: the layout as it stood, for one read (the class is React's; it is put back before anything paints).
+  grid.classList.toggle('has-details', !open);
+  const atEnd = !!scroller && scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < PIN_SLACK_PX;
+  const first = movers.map(place);
+  grid.classList.toggle('has-details', open);
+  if (atEnd && scroller) scroller.scrollTop = scroller.scrollHeight;
+  const curve = chSpringCurve('smooth');
+  movers.forEach((el, i) => {
+    const last = place(el);
+    const dx = first[i]!.x - last.x + live[i]!.x;
+    const dy = first[i]!.y - last.y + live[i]!.y;
+    for (const running of el.getAnimations?.() ?? []) if (running.id === DETAILS_MOTION_ID) running.cancel();
+    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+    const glide = el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0px, 0px)' }], { duration: curve.ms, easing: curve.linear });
+    glide.id = DETAILS_MOTION_ID;
+  });
 }

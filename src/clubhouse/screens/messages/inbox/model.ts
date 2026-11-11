@@ -2,7 +2,8 @@ import type { ChClock } from '../../../lib/clock-cookie';
 import { dayDiff, parts, clock } from '../model-time';
 import type { ChConv } from '../model';
 import { firstName } from '../../../lib/names';
-import { PIN_LIMIT, type ChPins } from '../pinned';
+import { PIN_LIMIT } from '../pin-limit';
+import type { ChPins } from '../pinned';
 
 export type ChConvFilter = 'all' | 'unread' | 'groups';
 

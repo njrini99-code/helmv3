@@ -85,6 +85,7 @@ export function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) 
         ) : firstRun ? null : !api.convs.length ? (
           <EmptyState
             code="CH-7301"
+            kind="first-run"
             compact
             icon={MessageSquare}
             title="No conversations yet"

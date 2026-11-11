@@ -393,13 +393,17 @@ export function Composer({
         <span className="ch-ms-comp__hint">
           This conversation didn’t load, so you can’t send yet. Try again above.
         </span>
-      ) : !phone ? (
-        <span className="ch-ms-comp__hint">
-          Enter to send · Shift + Enter for a new line{notify ? ` · ${notifyChordLabel(mac).hint}` : ""}
-          <CharsLeft text={draft} />
-        </span>
       ) : (
-        <CharsLeft text={draft} />
+        <>
+          {/* MSG-308: nothing is drawn under the desktop pill. The keys are still said to a screen reader (CH-7802), and the
+              Notify anyway chord is on its own menu row. */}
+          {!phone && (
+            <span className="ch-sr-only" data-ch-comp-keys="">
+              Enter to send · Shift + Enter for a new line{notify ? ` · ${notifyChordLabel(mac).hint}` : ""}
+            </span>
+          )}
+          <CharsLeft text={draft} />
+        </>
       )}
       <Modal
         open={replacing != null}

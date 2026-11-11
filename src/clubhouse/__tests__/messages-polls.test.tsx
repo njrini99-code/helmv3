@@ -150,7 +150,7 @@ describe('PollCard', () => {
     vi.setSystemTime(new Date('2026-10-24T15:00:00Z'));
     try {
       render(<PollCard api={api([])} messageId="m1" poll={poll({ closesAt: '2026-10-25T23:00:00Z' })} mine={false} />);
-      expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('No votes yet · Closes tomorrow at 6:00 PM');
+      expect(document.querySelector('.ch-msd-poll__count')!.textContent).toBe('No votes yet · Closes tomorrow 6 PM');
     } finally {
       vi.useRealTimers();
     }
@@ -218,7 +218,9 @@ describe('PollCard', () => {
     const user = userEvent.setup();
     const a = api([]);
     render(<PollCard api={a} messageId="m1" poll={poll()} mine />);
-    await user.click(screen.getByRole('button', { name: 'Close poll' }));
+    // MSG-501: the card draws the count and See votes only; Close poll is a row of the message's lift menu, which runs this.
+    expect(within(document.querySelector('.ch-msd-poll__foot') as HTMLElement).getAllByRole('button').map((b) => b.textContent)).toEqual(['See votes']);
+    act(() => pollCardActions('m1')!.close!());
     const dialog = await screen.findByRole('dialog', { name: 'Close this poll?' });
     await user.click(within(dialog).getByRole('button', { name: 'Close poll' }));
     expect(a.polls!.close).toHaveBeenCalledWith('m1');
@@ -396,25 +398,25 @@ describe('poll actions (P-2 slice 5)', () => {
   const withThread = (ui: ReactElement, replyWith = vi.fn()) => ({ replyWith, ui: <PollThreadContext.Provider value={{ replyWith }}>{ui}</PollThreadContext.Provider> });
 
   it('Remind N prefills a reply naming the ones who haven’t voted, never the coach; hidden for a player', async () => {
-    const user = userEvent.setup();
     const t = withThread(<PollCard api={coachApi([{ message_id: 'm1', user_id: 'ana', choice: 'o1' }])} messageId="m1" poll={poll()} mine />);
     render(t.ui);
-    await user.click(screen.getByRole('button', { name: 'Remind 2' }));
+    expect(pollCardActions('m1')!.remind!.count).toBe(2);
+    act(() => pollCardActions('m1')!.remind!.run());
     // Q-09: the reminder names the poll (and when it closes); it fills the composer and never sends.
     expect(t.replyWith).toHaveBeenCalledWith('m1', 'Reminder: vote in the “Which van are you riding in?” poll.');
     cleanup();
     render(withThread(<PollCard api={api([])} messageId="m1" poll={poll()} mine={false} />).ui);
+    expect(pollCardActions('m1')!.remind).toBeNull();
     expect(screen.queryByRole('button', { name: /^Remind/ })).toBeNull();
   });
 
   it('Remind is hidden when only the viewer is left to vote', () => {
     const rows = ['ana', 'ben', 'cal'].map((user_id) => ({ message_id: 'm1', user_id, choice: 'o1' }));
     render(withThread(<PollCard api={coachApi(rows)} messageId="m1" poll={poll()} mine />).ui);
-    expect(screen.queryByRole('button', { name: /^Remind/ })).toBeNull();
+    expect(pollCardActions('m1')!.remind).toBeNull();
   });
 
   it('Share result prefills the final result out of the people who voted', async () => {
-    const user = userEvent.setup();
     const rows = [
       { message_id: 'm1', user_id: 'ana', choice: 'o1' },
       { message_id: 'm1', user_id: 'ben', choice: 'o1' },
@@ -422,7 +424,7 @@ describe('poll actions (P-2 slice 5)', () => {
     ];
     const t = withThread(<PollCard api={api(rows)} messageId="m1" poll={poll({ closedAt: NOW })} mine />);
     render(t.ui);
-    await user.click(screen.getByRole('button', { name: 'Share result' }));
+    act(() => pollCardActions('m1')!.share!());
     expect(t.replyWith).toHaveBeenCalledWith('m1', 'Van A has it with 2 of the 3 who voted. Van B had 1.');
   });
 

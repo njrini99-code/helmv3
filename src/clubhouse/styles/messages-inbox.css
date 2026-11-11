@@ -85,7 +85,7 @@
   border: 0;
   border-radius: 50%;
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow-flat);
+  box-shadow: var(--ch-card-shadow);
   color: var(--ch-accent-ink);
 }
 /* A 44 target on the 40 key (MSG-010). */
@@ -130,7 +130,7 @@
   overflow: hidden;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow-flat);
+  box-shadow: var(--ch-card-shadow);
 }
 [data-ch-ms-v2] .ch-inb--phone .ch-msv-card__h,
 [data-ch-ms-v2] .ch-inb--phone .ch-ms-sec:not(.is-ann) > .ch-ms-sec__l {
@@ -234,7 +234,8 @@
   padding: var(--ch-space-1) var(--ch-space-2);
   border-radius: var(--ch-radius-md);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-messages-x2), var(--ch-elevation-reading);
+  /* MSG-106: a hairline ring and the shared bubblet drop, nothing lifted. */
+  box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-elevation-bubblet);
   font: var(--ch-type-12-medium);
   letter-spacing: var(--ch-track-12);
   color: var(--ch-inb-ink-2);

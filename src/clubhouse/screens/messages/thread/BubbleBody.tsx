@@ -3,12 +3,12 @@
 import type { ChMessagesApi } from '../api/types';
 import { firstName, type ChMsg, type ChPerson } from '../model';
 import { PollCard } from '../polls';
-import { MessageText, ReplyQuote } from './MessageText';
+import { MessageText } from './MessageText';
 import { BubbleTail } from '../thread-v2';
 import { Attachments } from './Attachments';
 import { isEmojiOnly } from './model';
 
-/** A message's content: the quote it replies to, then the poll, the words or the photos and files. */
+/** A message's content: the poll, the words or the photos and files. The quote it replies to sits above it, in the row's column (Bubble). */
 export function BubbleBody({
   api,
   m,
@@ -28,7 +28,6 @@ export function BubbleBody({
   const emoji = !m.poll && !m.edited && isEmojiOnly(m.text);
   return (
     <>
-      {m.replyToId && <ReplyQuote api={api} replyToId={m.replyToId} />}
       {m.poll ? (
         <PollCard api={api} messageId={m.id} poll={m.poll} mine={m.mine} />
       ) : (

@@ -10,6 +10,7 @@ import { Avatar } from '../../../ui/Avatar';
 import { classYearKey } from '../../../lib/class-year';
 import { BubbleHoldLift, BubbleReactBar, BubbleReactions, useBubbleActions } from '../overlays/bubble-actions';
 import { BubbleBody } from './BubbleBody';
+import { ReplyQuote } from './MessageText';
 import { BubbleHoverBar } from './BubbleHoverBar';
 import { BubbleReceipt } from './BubbleReceipt';
 import { typingRecentlyShown } from './TypingRows';
@@ -103,7 +104,8 @@ export function Bubble({
         </span>
       )}
       <div className="ch-ms-msg__col">
-
+        {/* MSG-218: the quote is a chip above the bubble, in the column; the line below is exactly as wide as the bubble. */}
+        {m.replyToId && <ReplyQuote api={api} replyToId={m.replyToId} />}
         <div className="ch-ms-msg__line">
           <div className="ch-ms-msg__stack" {...act.press} {...act.rightClick} {...(!m.failed && !m.deleted ? { "data-ch-press-scale": ".97", onClick: act.toggleLikeOnDouble, onDoubleClick: (e: ReactMouseEvent) => e.preventDefault() } : {})}>
             <BubbleBody api={api} m={m} first={first} last={last} group={group} who={who} />
@@ -132,8 +134,9 @@ export function Bubble({
           )}
 
           <BubbleReactBar api={api} m={m} picking={picking} act={act} />
+          {/* MSG-406: the badges hang from the bubble's own top corner, so they live in the line, which is the bubble's width. */}
+          <BubbleReactions api={api} m={m} act={act} />
         </div>
-        <BubbleReactions api={api} m={m} act={act} />
         <BubbleReceipt api={api} m={m} group={group} carrier={carrier} onSeenBy={onSeenBy} showTime={act.showTime} reduced={act.reduced} />
       </div>
       <span className="ch-msv-time ch-num">{clock(m.at, api.timeZone, api.clock)}</span>

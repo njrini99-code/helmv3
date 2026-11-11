@@ -90,7 +90,7 @@
     "crh-negative-margin": 0
   },
   "src/clubhouse/styles/messages.css": {
-    "hex": 4,
+    "hex": 1,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0
   },
@@ -135,7 +135,7 @@
     "crh-negative-margin": 0
   },
   "src/clubhouse/styles/shell.css": {
-    "hex": 32,
+    "hex": 28,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0
   },
@@ -155,7 +155,7 @@
     "crh-negative-margin": 0
   },
   "src/clubhouse/styles/ui.css": {
-    "hex": 102,
+    "hex": 101,
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0
   }

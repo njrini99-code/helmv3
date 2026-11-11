@@ -20,6 +20,9 @@ vi.mock('../screens/messages/use-conversation-pins', async () => {
 });
 vi.mock('../screens/messages/use-row-mutes', () => ({ isMutedRow: () => false, useRowMutes: () => ({ muted: null, refresh: () => {} }) }));
 vi.mock('../screens/messages/use-typing-by-conversation', () => ({ useTypingByConversation: () => new Map() }));
+// The open thread's private typing joins a Realtime channel through the browser client: never from a unit test (CI has the
+// project's URL in its environment, so an unmocked hook opened a live socket).
+vi.mock('../screens/messages/typing-channel', async (orig) => ({ ...(await orig<object>()), usePrivateTyping: () => ({ typingUserIds: [], send: () => {} }) }));
 /** Phone or desktop layout (useChPhone), set per test. */
 const layout = vi.hoisted(() => ({ phone: false }));
 vi.mock('../lib/use-phone', () => ({ useChPhone: () => layout.phone, CH_PHONE_QUERY: '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' }));
@@ -104,6 +107,7 @@ vi.mock('@/app/golf/actions/communication', () => ({ acknowledgeAnnouncement: a.
 
 import type { ChMessagesData } from '../data/messages';
 import { Messages } from '../screens/messages/Messages';
+import { pollCardActions } from '../screens/messages/polls';
 import { DraftStore } from '../screens/messages/drafts';
 import { MessagesSkeleton } from '../screens/messages/MessagesSkeleton';
 import { MessagesNoTeam } from '../screens/messages/MessagesNoTeam';
@@ -304,8 +308,13 @@ describe('Messages · actions that fail', () => {
     a.hideGolfConversation.mockResolvedValueOnce({ success: false, error: 'nope' }).mockResolvedValueOnce({ success: true });
     live.convs.conversations = [team];
     show();
-    await openDetails(user);
-    await user.click(await screen.findByRole('button', { name: 'Delete conversation' }));
+    // Delete lives in the row's menu only (the design's Details has no Delete row).
+    const row = await screen.findByRole('button', { name: /^(?!Actions for ).*Varsity team/ });
+    await waitFor(() => {
+      fireEvent.contextMenu(row, { clientX: 120, clientY: 120 });
+      expect(within(screen.getByRole('menu', { name: 'Actions for Varsity team' })).getByRole('menuitem', { name: 'Delete conversation' })).toBeTruthy();
+    });
+    await user.click(within(screen.getByRole('menu', { name: 'Actions for Varsity team' })).getByRole('menuitem', { name: 'Delete conversation' }));
     await expectCode('CH-7503', /Delete Varsity team\?/);
     expect(a.hideGolfConversation).not.toHaveBeenCalled();
     await user.click(within(code('CH-7503') as HTMLElement).getByRole('button', { name: 'Delete conversation' }));
@@ -1336,12 +1345,13 @@ describe('Messages · wave 5 feedback', () => {
     expect(await screen.findByText('Muted until Oct 21 · 2:40 PM')).toBeTruthy();
   });
 
-  it('#17 a thread opened with something unread marks where it starts', async () => {
+  it('#17 a thread opened with something unread draws no "New" marker: the design has none, the jump key counts what is new', async () => {
     live.convs.conversations = [{ ...team, unread_count: 1 }];
     live.msgs.messages = [mine, jonahMsg];
     show();
-    const sep = await screen.findByRole('separator', { name: 'New messages' });
-    expect(sep.nextElementSibling?.id).toBe('ch-ms-message-j1');
+    expect(await screen.findByText(jonahMsg.content)).toBeTruthy();
+    expect(screen.queryByRole('separator', { name: 'New messages' })).toBeNull();
+    expect(document.querySelector('.ch-ms-day.is-new')).toBeNull();
   });
 
   describe('phone', () => {
@@ -1455,12 +1465,15 @@ describe('Messages · polls (premium features P-2)', () => {
     show();
     const card = await screen.findByRole('group', { name: 'Which van?' });
     const box = (await screen.findByRole('textbox', { name: /Message Varsity team/ })) as HTMLTextAreaElement;
-    await user.click(within(card).getByRole('button', { name: /^Remind \d$/ }));
+    // MSG-501: the card draws the count and See votes; Remind is a row of the message's lift menu, which runs this action.
+    expect(within(card).queryByRole('button', { name: /^Remind/ })).toBeNull();
+    expect(pollCardActions('p1')!.remind!.count).toBeGreaterThan(0);
+    act(() => pollCardActions('p1')!.remind!.run());
     await waitFor(() => expect(box.value).toMatch(/^Reminder: vote in the “Which van\?” poll/));
     expect(document.querySelector('.ch-ms-comp__reply')).not.toBeNull();
     await user.clear(box);
     await user.type(box, 'My own words');
-    await user.click(within(card).getByRole('button', { name: /^Remind \d$/ }));
+    act(() => pollCardActions('p1')!.remind!.run());
     const ask = await screen.findByRole('dialog', { name: 'Replace your draft?' });
     await user.click(within(ask).getByRole('button', { name: 'Keep my draft' }));
     expect(box.value).toBe('My own words');
@@ -1504,7 +1517,8 @@ describe('Messages · polls (premium features P-2)', () => {
     const user = userEvent.setup();
     polls.closeGolfPoll.mockResolvedValue({ success: false, error: 'nope' } as never);
     show();
-    await user.click(await screen.findByRole('button', { name: 'Close poll' }));
+    await screen.findByRole('group', { name: 'Which van?' });
+    act(() => pollCardActions('p1')!.close!());
     const dialog = await screen.findByRole('dialog', { name: 'Close this poll?' });
     await user.click(within(dialog).getByRole('button', { name: 'Close poll' }));
     await expectCode('CH-7027', /Couldn’t close the poll/);

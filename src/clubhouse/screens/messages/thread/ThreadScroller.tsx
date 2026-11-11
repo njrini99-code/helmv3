@@ -8,7 +8,6 @@ import { HelloCard } from '../HelloCard';
 import { InlineNotice } from '../../../ui/Notices';
 import { EmptyState, Skeleton } from '../../../ui/States';
 import { ListPresence, PresenceRow } from '../../../ui/ListPresence';
-import { NewDivider } from './NewDivider';
 
 type MsgItem = Extract<ChThreadItem, { kind: 'msg' }>;
 
@@ -23,7 +22,6 @@ export function ThreadScroller({
   scroller,
   className,
   items,
-  newId,
   onStarter,
   renderBubble,
   renderTyping,
@@ -33,8 +31,6 @@ export function ThreadScroller({
   scroller: RefObject<HTMLDivElement | null>;
   className: string;
   items: ChThreadItem[];
-  /** The message the "New" divider sits before. */
-  newId: string | null;
   /** A starter chosen on the first-message card lands in the composer. */
   onStarter: (text: string) => void;
   /** One message's bubble, keyed by `it.key`. */
@@ -82,14 +78,14 @@ export function ThreadScroller({
             !conv.group ? (
               <HelloCard name={conv.title} id={convAvatarId(api, conv)} role={conv.subtitle ?? ""} coach={api.viewer.role === "coach"} year={convYear(api, conv)} onStarter={onStarter} />
             ) : (
-            <EmptyState compact code="CH-7304" title="No messages yet" body={`Say hello to ${conv.group ? "the group" : firstName(conv.title)}.`} />
+            <EmptyState compact kind="first-run" code="CH-7304" title="No messages yet" body={`Say hello to ${conv.group ? "the group" : firstName(conv.title)}.`} />
             )
           ) : (
             // B7: a deleted message closes in place; one that arrives rises in at its full height, so the thread above it
             // never moves (owner, 2026-10-31, as Fairway's thread does). The scroll stays with useThreadAnchor (no FLIP), and
             // another conversation is a new list, whose messages never arrive.
             <ListPresence key={conv.id} flip={false} arrive="rise">
-              {items.flatMap((it) =>
+              {items.flatMap<ReactNode>((it) =>
                 it.kind === "day"
                   ? [
                       <PresenceRow as="div" key={it.key} className="ch-ms-day">
@@ -97,7 +93,6 @@ export function ThreadScroller({
                       </PresenceRow>,
                     ]
                   : [
-                      ...(it.m.id === newId ? [<NewDivider key={`new-${it.key}`} />] : []),
                       renderBubble(it),
                     ],
               )}

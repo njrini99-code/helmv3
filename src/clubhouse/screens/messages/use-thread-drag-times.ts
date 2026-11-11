@@ -15,6 +15,12 @@ export function dragOffset(dx: number, max: number): number {
   return Math.max(-max, Math.min(0, dx * FOLLOW));
 }
 
+/** The list's sideways offset as it is drawn right now, mid-settle included (0 when it has none or it can't be read). */
+function liveX(l: HTMLElement): number {
+  const x = Number(/^matrix\(([^)]+)\)$/.exec(getComputedStyle(l).transform)?.[1]?.split(',')[4]);
+  return Number.isFinite(x) ? x : 0;
+}
+
 /**
  * Drag for times (M-MSG-05, phone): a leftward pan on the thread moves every bubble and reveals each message's time, and it settles
  * back on release, starting from where it is if grabbed again. Vertical wins after 10px, so native scroll keeps it. The left 24px
@@ -38,11 +44,34 @@ export function useThreadDragTimes(scroller: RefObject<HTMLElement | null>, enab
       if (x) l.setAttribute('data-ch-times', '');
     };
     const hideTimes = (l: HTMLElement | null) => l?.removeAttribute('data-ch-times');
+    let settling: Animation | null = null;
+    /** Back to rest from where it is. The times hide once it has landed, unless it was grabbed again on the way. */
+    const settle = () => {
+      const from = current;
+      if (!from) return;
+      const l = list();
+      paint(0);
+      if (reduced || !l?.animate) {
+        hideTimes(l);
+        return;
+      }
+      const curve = chSpringCurve('settle');
+      const a = l.animate([{ transform: `translateX(${from}px)` }, { transform: 'none' }], { duration: curve.ms, easing: curve.linear });
+      settling = a;
+      a.onfinish = () => {
+        if (settling === a) settling = null;
+        if (!current) hideTimes(l);
+      };
+    };
     const down = (e: PointerEvent) => {
       if (e.pointerType === 'mouse' || e.clientX < BACK_SWIPE_EDGE) return;
       if ((e.target as Element | null)?.closest('button, a, input, textarea, [role="button"]')) return;
       const l = list();
+      // Grabbed on its way back: it carries on from where it is, so the live offset is read before the settle is dropped.
+      const live = l && settling ? liveX(l) : current;
+      settling = null;
       l?.getAnimations().forEach((a) => a.cancel());
+      if (live !== current) paint(live);
       start = { x: e.clientX, y: e.clientY, from: current };
       locked = false;
     };
@@ -53,7 +82,9 @@ export function useThreadDragTimes(scroller: RefObject<HTMLElement | null>, enab
       if (!locked) {
         if (Math.hypot(dx, dy) < AXIS_SLOP) return;
         if (Math.abs(dy) >= Math.abs(dx) || dx > 0) {
+          // A scroll or a rightward pan is not this gesture; a thread caught on its way back still finishes the trip.
           start = null;
+          settle();
           return;
         }
         locked = true;
@@ -62,20 +93,8 @@ export function useThreadDragTimes(scroller: RefObject<HTMLElement | null>, enab
     };
     const up = () => {
       if (!start) return;
-      const from = current;
       start = null;
-      if (!from) return;
-      const l = list();
-      paint(0);
-      if (reduced || !l?.animate) {
-        hideTimes(l);
-        return;
-      }
-      const curve = chSpringCurve('settle');
-      const settle = l.animate([{ transform: `translateX(${from}px)` }, { transform: 'none' }], { duration: curve.ms, easing: curve.linear });
-      settle.onfinish = () => {
-        if (!current) hideTimes(l);
-      };
+      settle();
     };
     el.addEventListener('pointerdown', down, { passive: true });
     window.addEventListener('pointermove', move, { passive: true });

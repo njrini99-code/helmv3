@@ -94,7 +94,10 @@ export function ReactionChip({ api, messageId, r, arriving = false }: { api: ChM
       <button
         ref={(el) => {
           btn.current = el;
-          if (arriving) popBadge(el, reduced);
+          // A badge that was there when its row first drew never pops: without this mark, the first re-render of the row (a send, a
+          // receipt) popped every badge already on the screen.
+          if (el && !arriving) el.dataset.chPopped = "1";
+          else if (arriving) popBadge(el, reduced);
         }}
         type="button"
         className={"ch-ms-react ch-num" + (r.mine ? " is-mine" : "")}

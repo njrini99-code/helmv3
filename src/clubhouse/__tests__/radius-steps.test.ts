@@ -13,7 +13,7 @@ const PART = String.raw`(?:var\(--ch-radius-(?:xs|sm|md|lg|xl|card|sheet|mark|ta
 const OK = new RegExp(String.raw`^${PART}(?:\s+${PART})*(?:\s*!important)?$`);
 const sheets = walk(join(ROOT, 'styles'), /\.css$/).filter((f) => !f.endsWith('tokens.css'));
 // The Messages composer fields stay capsules at one line and grow (.ch-ms-comp__field, the pushed thread's textarea).
-const ALLOW: Record<string, number> = { 'styles/messages.css': 2 };
+const ALLOW: Record<string, number> = { 'styles/messages.css': 1 };
 
 const read = (f: string) => readFileSync(join(ROOT, 'styles', f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 /** The body of the rule whose selector list holds exactly `sel`. */

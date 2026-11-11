@@ -105,7 +105,7 @@ describe('MSG-402 / 403 the lift', () => {
     mount();
     const by = (cls: string) => calls().find((c) => c.node.className.includes(cls))!;
     expect(by('ch-mso-lift__copy').spring).toBe('lift');
-    expect(String(by('ch-mso-lift__copy').keyframes[0]!.transform)).toMatch(/^translateY\(0\) scale\((0\.9|1\.0)/);
+    expect(String(by('ch-mso-lift__copy').keyframes[0]!.transform)).toMatch(/^translateY\(0\) scale\((0\.9\d{0,2}|1)\)$/);
     expect(by('ch-mso-lift__copy').keyframes[1]).toEqual({ transform: 'translateY(0px) scale(1.02)' });
     expect(by('ch-mso-rbar').spring).toBe('pop');
     expect(by('ch-mso-rbar').keyframes[0]).toEqual({ transform: 'scale(.5)', opacity: 0 });

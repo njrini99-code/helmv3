@@ -204,8 +204,8 @@
 }
 /* Two groups with one title tell themselves apart by a quiet tail (" · 11 members"), after the name and not bold. */
 .ch-ms-row__top b .ch-ms-row__hint {
-  font-weight: 400;
-  letter-spacing: 0;
+  font: var(--ch-type-16);
+  letter-spacing: var(--ch-track-16);
   color: var(--ch-text-tertiary);
 }
 .ch-ms-row__top > span {
@@ -454,22 +454,6 @@
 .ch-ms-rail__body {
   overscroll-behavior: contain;
 }
-/* A photo in a thread: a fixed 4:3 frame, cropped to fit, so a late image never moves the messages around it. */
-.ch-ms-img {
-  display: block;
-  width: min(280px, 100%);
-  aspect-ratio: 4 / 3;
-  overflow: hidden;
-  border-radius: var(--ch-radius-lg);
-  background: var(--ch-green-100);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
-}
-.ch-ms-img img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
 .ch-ms-scroll {
   flex: 1;
   min-height: 0;
@@ -504,38 +488,59 @@
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
+/*
+ * A message row (MSG-204, MSG-205, MSG-207): the one definition. The row is the full width of the thread column; the
+ * column inside it carries the cap (76% of the row on a phone, min(520px, 72%) on desktop), so the percentage resolves
+ * against a box with a real width. The line and the stack inside it shrink to the bubble, which is what the reaction
+ * badges, the hover bar and the hold menu are placed against. 2 px inside a run, 10 before a run, 16 before a bubble
+ * that carries reactions.
+ */
 .ch-ms-msg {
+  position: relative;
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 .ch-ms-msg.is-first {
-  margin-top: 12px;
+  margin-top: var(--ch-ms-px-10);
+}
+.ch-ms-msg:has(.ch-ms-reacts) {
+  margin-top: 16px;
 }
 .ch-ms-msg.is-mine {
   justify-content: flex-end;
 }
+/* The 30 px face slot beside a group's bubbles; a 1:1 draws no face. */
 .ch-ms-msg__av {
   flex: none;
   width: 30px;
 }
+.ch-ms-msg:not(.is-group) > .ch-ms-msg__av {
+  display: none;
+}
 .ch-ms-msg__col {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: flex-start;
   min-width: 0;
-  max-width: min(560px, 78%);
+  max-width: 76%;
+}
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-ms-msg__col {
+    max-width: min(520px, 72%);
+  }
 }
 .ch-ms-msg.is-mine .ch-ms-msg__col {
   align-items: flex-end;
 }
-/* The name and the time under a bubble start (or end) on its text's 14px inset. */
+/* The line is as wide as the bubble: the badges and the hover bar hang from its corners. */
 .ch-ms-msg__line {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 6px;
+  max-width: 100%;
 }
 /* Keyboard-only actions take their own line; message content remains unobscured. */
 .ch-ms-msg__line:has(> .ch-sr-only--focusable:focus-visible) {
@@ -548,75 +553,124 @@
   flex-direction: row-reverse;
 }
 .ch-ms-msg__stack {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
+  max-width: 100%;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 .ch-ms-msg.is-mine .ch-ms-msg__stack {
   align-items: flex-end;
 }
-.ch-ms-bub {
-  padding: 8px 16px;
-  /* Radius 16 with a 6 tail (P007 checklist): at 20 a one-line bubble read as a pill. */
-  border-radius: var(--ch-radius-lg);
-  background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-elevation-bubble);
-  font: var(--ch-type-15);
-  letter-spacing: var(--ch-track-15);
+/*
+ * A bubble (MSG-204 to MSG-206, MSG-220): the one definition, for a text bubble and a photo's frame.
+ * Radius 19; padding 7.5k 13k; 16k at 1.32 (15k on desktop), -0.005em; words wrap anywhere and keep their line breaks,
+ * greedily, so a bubble is never wider than its longest line needs. Theirs is paper on the three-layer drop shadow; yours
+ * is one flat green with a lit top edge. In a run the corners that face the next bubble close to 6; the last bubble of a
+ * run keeps its 19 and carries the drawn tail. A file bubble (`--file`) and an announcement's file row keep their own box.
+ */
+.ch-ms-bub:not(.ch-ms-bub--file),
+.ch-ms-img {
+  position: relative;
+  box-sizing: border-box;
+  max-width: 100%;
+  border: 0;
+  border-radius: var(--ch-radius-bubble);
+  background: var(--ch-bubble-theirs-bg);
   color: var(--ch-text-primary);
+  filter: var(--ch-bubble-theirs-shadow);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.ch-ms-bub:not(.ch-ms-bub--file) {
+  padding: calc(7.5 * var(--ch-type-k)) calc(13 * var(--ch-type-k));
+  font: var(--ch-type-msg-bubble);
+  letter-spacing: var(--ch-track-msg-bubble);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  text-wrap: pretty;
 }
-.ch-ms-msg:not(.is-mine).is-last .ch-ms-bub {
-  border-bottom-left-radius: var(--ch-radius-tail);
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-ms-bub:not(.ch-ms-bub--file, .is-emoji) {
+    font: var(--ch-type-msg-bubble-desk);
+    letter-spacing: var(--ch-track-msg-bubble);
+  }
 }
-.ch-ms-msg:not(.is-mine):not(.is-first) .ch-ms-bub {
+.ch-ms-msg.is-mine :is(.ch-ms-bub:not(.ch-ms-bub--file), .ch-ms-img) {
+  background: var(--ch-bubble-mine-fill);
+  box-shadow: var(--ch-messages-x4);
+  color: var(--ch-bubble-mine-ink);
+  filter: var(--ch-bubble-mine-shadow);
+}
+.ch-ms-msg:not(.is-mine, .is-first) :is(.ch-ms-bub:not(.ch-ms-bub--file), .ch-ms-img) {
   border-top-left-radius: var(--ch-radius-tail);
 }
-.ch-ms-msg:not(.is-mine):not(.is-last) .ch-ms-bub {
+.ch-ms-msg:not(.is-mine, .is-last) :is(.ch-ms-bub:not(.ch-ms-bub--file), .ch-ms-img) {
   border-bottom-left-radius: var(--ch-radius-tail);
 }
-.ch-ms-msg.is-mine .ch-ms-bub {
-  border-bottom-right-radius: var(--ch-radius-tail);
-  background: var(--ch-bubble-mine-bg);
-  box-shadow: var(--ch-elevation-bubble-mine);
-  color: #f7fbf8;
-}
-.ch-ms-msg.is-mine:not(.is-first) .ch-ms-bub {
+.ch-ms-msg.is-mine:not(.is-first) :is(.ch-ms-bub:not(.ch-ms-bub--file), .ch-ms-img) {
   border-top-right-radius: var(--ch-radius-tail);
 }
-/* P007 D2: a message that didn't send must be read to retry it: full-ink text on a muted fill inside a dashed edge,
-   beside the "Not sent · Retry" line, never faded (0.6 measured about 2.8:1). */
-.ch-ms-msg.is-failed .ch-ms-bub,
-.ch-ms-msg.is-mine.is-failed .ch-ms-bub {
-  background: var(--ch-bg-subtle);
+.ch-ms-msg.is-mine:not(.is-last) :is(.ch-ms-bub:not(.ch-ms-bub--file), .ch-ms-img) {
+  border-bottom-right-radius: var(--ch-radius-tail);
+}
+/* MSG-220 A photo: a 236 by 170 picture in a 3 px frame (242 by 176), held before the picture arrives. No tail. */
+.ch-ms-img {
+  display: block;
+  width: 242px;
+  height: 176px;
+  padding: var(--ch-ms-px-3);
+  cursor: pointer;
+}
+.ch-ms-img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--ch-radius-lg);
+  object-fit: cover;
+}
+/* MSG-204 One to three emoji and nothing else: no bubble, 40k. */
+.ch-ms-bub.is-emoji {
+  padding: 0;
+  background: none;
   box-shadow: none;
-  outline: 1.5px dashed var(--ch-border-strong);
-  outline-offset: -1.5px;
-  color: var(--ch-text-primary);
+  filter: none;
+  font: var(--ch-type-msg-emoji);
+  letter-spacing: 0;
+  color: inherit;
 }
-.ch-ms-bub.is-deleted {
-  background: transparent;
-  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
-  font-style: italic;
-  color: var(--ch-text-tertiary);
-}
+/* A deleted message: an outline where the bubble was, in either colour. */
+.ch-ms-bub.is-deleted,
 .ch-ms-msg.is-mine .ch-ms-bub.is-deleted {
   background: transparent;
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
+  filter: none;
+  font-style: italic;
   color: var(--ch-text-tertiary);
 }
-/* A search hit the thread came to (useFocusMessage): a green ring that fades once the mark is lifted (FOUND_FOR_MS). */
-/* Never over a failed bubble's dashed edge or a file bubble's own focus ring. */
-.ch-ms-msg:not(.is-failed) .ch-ms-bub:not(:focus-visible) {
+/* A search hit the thread came to (useFocusMessage): a green ring that fades once the mark is lifted (FOUND_FOR_MS). A
+   failed bubble stays as it was sent (MSG-216); its pill under it says what happened. */
+.ch-ms-bub:not(.ch-ms-bub--file, :focus-visible) {
   outline: 2px solid transparent;
   outline-offset: 2px;
   transition: outline-color var(--ch-dur-base) var(--ch-ease);
 }
-.ch-ms-msg.is-found:not(.is-failed) .ch-ms-bub:not(:focus-visible) {
+.ch-ms-msg.is-found .ch-ms-bub:not(.ch-ms-bub--file, :focus-visible) {
   outline-color: var(--ch-green-ring);
+}
+/* A file row outside the thread (an announcement's document) keeps the paper box the bubble used to lend it. */
+.ch-ms-bub--file {
+  padding: 8px 16px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-elevation-bubble);
+  color: var(--ch-text-primary);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
 }
 .ch-ms-bub--file {
   display: grid;
@@ -871,138 +925,133 @@
   cursor: pointer;
 }
 
-/* Composer */
+/*
+ * Composer (MSG-301 to MSG-304, MSG-308): the one definition, for the thread (phone and desktop) and New message.
+ * One glass pill holds the + key, the field and the send key. The footer floats over the foot of the thread: 8 above the
+ * pill, the page edge less 6 at its sides (10 at 390, 14 on a large phone) and the home indicator's room under it on a
+ * phone; 10 / 28 / 18 on desktop, where the pill is capped at the reading measure and centred. The fade behind it runs from
+ * 24 above the footer to solid page at 58%, so the thread dissolves under the pill instead of ending on a line.
+ */
 .ch-ms-comp {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 6px;
   box-sizing: border-box;
   width: 100%;
-  max-width: var(--ch-ms-measure);
-  margin: 0 auto;
-  padding: 8px 32px 16px;
+  padding: var(--ch-ms-px-10) calc(var(--ch-space-6) + var(--ch-space-1)) var(--ch-ms-px-18);
 }
+.ch-ms-comp::before {
+  content: '';
+  position: absolute;
+  inset: -24px 0 0;
+  z-index: -1;
+  background: linear-gradient(to bottom, transparent, var(--ch-grouped-bg) 58%);
+  pointer-events: none;
+}
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  .ch-ms-comp {
+    padding: 8px calc(var(--ch-page-x-phone) - 6px) max(8px, calc(env(safe-area-inset-bottom) - 4px));
+  }
+}
+/* The pill: 46 at one line (5 of padding round 36 keys), growing with the field; radius 24, so it stays a capsule at one
+   line and a rounded card at six. Glass-strong at blur 24 / saturate 170 on the float shadow; a 1.5 ring while it has focus. */
 .ch-ms-comp__field {
+  --ch-ms-comp-ring: 0 0 0 1.5px color-mix(in oklab, var(--ch-accent-ink) 55%, transparent);
   display: flex;
   align-items: flex-end;
   gap: 6px;
-  padding: 6px 6px 6px 8px;
-  border-radius: var(--ch-radius-lg);
-  background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-raised);
-  transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--ch-measure-reading);
+  min-height: 46px;
+  margin: 0 auto;
+  padding: var(--ch-ms-px-5);
+  border-radius: 24px;
+  background: var(--ch-glass-strong);
+  -webkit-backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
+  backdrop-filter: blur(var(--ch-glass-blur-msg, var(--ch-glass-blur))) saturate(var(--ch-glass-saturate-msg, var(--ch-glass-saturate)));
+  box-shadow: var(--ch-shadow-float);
 }
 .ch-ms-comp__field:focus-within {
-  box-shadow: var(--ch-elevation-floating-focus);
+  box-shadow: var(--ch-ms-comp-ring), var(--ch-shadow-float);
 }
+/* The field (MSG-303): 16k at 1.32 like the bubble it becomes, 36 high at one line and 132 at six, then it scrolls. Its
+   height changes without animating. It draws no ring of its own: the pill carries it (the shell's :focus-visible outline
+   would draw a square inside the capsule). */
 .ch-ms-comp__field textarea {
   flex: 1;
-  min-height: 22px;
+  min-width: 0;
+  min-height: 36px;
   max-height: 132px;
-  padding: 8px 4px;
+  box-sizing: border-box;
+  padding: 8px 4px calc(var(--ch-space-2) - 1px);
   border: 0;
-  outline: none;
-  background: transparent;
-  font: var(--ch-type-body);
+  background: none;
+  box-shadow: none;
   color: var(--ch-text-primary);
+  font: var(--ch-type-msg-bubble);
+  letter-spacing: var(--ch-track-msg-bubble);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   resize: none;
+  scrollbar-width: none;
+}
+.ch-ms-comp__field textarea:focus-visible {
+  outline: none;
 }
 .ch-ms-comp__field textarea::placeholder {
   color: var(--ch-text-placeholder);
+  opacity: 1;
 }
+/* The send key (MSG-304): a 36 flat green disc with a lit top edge, an 18 arrow at 2.4; a 44 target on a phone. */
 .ch-ms-send {
+  --ch-ms-send-drop: 0 2px 6px -2px color-mix(in srgb, var(--ch-bubble-mine-fill) 50%, transparent);
+  position: relative;
   display: grid;
   flex: none;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   border: 0;
   border-radius: 50%;
-  background: var(--ch-bg-inset);
+  background: var(--ch-well-bg-flat);
   color: var(--ch-text-disabled);
   cursor: default;
-  transition:
-    background-color var(--ch-dur-quick) var(--ch-ease),
-    color var(--ch-dur-quick) var(--ch-ease),
-    transform var(--ch-dur-quick) var(--ch-ease);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
-.ch-ms-send.is-ready {
-  background: var(--ch-green-fill-600);
-  color: var(--ch-text-on-accent);
+.ch-ms-send.is-ready,
+.ch-msv-sendkey .ch-ms-send {
+  background: var(--ch-bubble-mine-fill);
+  box-shadow: var(--ch-messages-x4), var(--ch-ms-send-drop);
+  color: var(--ch-bubble-mine-ink);
   cursor: pointer;
 }
-@media (hover: hover) {
-  .ch-ms-send.is-ready:hover {
-    background: var(--ch-green-fill-700);
-  }
+/* In the thread the key exists only while there is something to send (its holder shrinks it away, MOT-SEND-4): it keeps its
+   green on the way out, where the shell's control easing would turn it grey mid-shrink. */
+.ch-msv-sendkey .ch-ms-send {
+  transition: none;
+}
+.ch-ms-send::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
 }
 .ch-ms-send:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }
+/* The line under the pill: only what a state has to say (replies are off, N characters left). */
 .ch-ms-comp__hint {
-  padding: 0 8px;
+  display: flex;
+  gap: 12px;
+  padding: 0 16px;
   font: var(--ch-type-13);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
-}
-
-/* The composer (owner, 2026-10-08: "more premium"): a taller, rounder bar that lifts and takes a green glow when you write;
-   Attach a quiet green-wash disc, Send a green disc that is already tinted when empty (never a grey well). */
-.ch-ms-comp {
-  padding: 12px 32px 16px;
-}
-.ch-ms-comp__field {
-  align-items: center;
-  gap: 8px;
-  min-height: 56px;
-  padding: 8px 8px 8px 8px;
-  border-radius: 28px;
-  background: var(--ch-ivory-0, #fff);
-  box-shadow: 0 0 0 1px rgb(21 90 57 / 0.14), var(--ch-elevation-raised);
-}
-.ch-ms-comp__field:focus-within {
-  box-shadow: 0 0 0 1.5px var(--ch-border-focus), 0 0 0 5px var(--ch-focus-halo), var(--ch-elevation-raised);
-}
-.ch-ms-comp__field textarea {
-  padding: 12px 6px;
-  font: var(--ch-type-15);
-  letter-spacing: var(--ch-track-15);
-}
-.ch-ms-comp__field .ch-iconbtn {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--ch-green-50);
-  color: var(--ch-green-700);
-  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.12);
-}
-@media (hover: hover) {
-  .ch-ms-comp__field .ch-iconbtn:hover {
-    background: var(--ch-green-100);
-  }
-}
-.ch-ms-send {
-  width: 40px;
-  height: 40px;
-  background: var(--ch-green-100);
-  color: var(--ch-green-700);
-}
-.ch-ms-send.is-ready {
-  background: var(--ch-green-fill-700);
-  box-shadow: var(--ch-green-raised-shadow);
-  color: var(--ch-on-fill-50);
-}
-@media (hover: hover) {
-  .ch-ms-send.is-ready:hover {
-    background: var(--ch-green-800);
-    transform: translateY(-1px);
-  }
-}
-.ch-ms-comp__hint {
-  padding: 0 16px;
 }
 
 /* Details */
@@ -1181,8 +1230,7 @@
     display: inline-flex;
     margin-left: -8px;
   }
-  .ch-ms-msgs,
-  .ch-ms-comp {
+  .ch-ms-msgs {
     padding-right: 16px;
     padding-left: 16px;
   }
@@ -1287,12 +1335,12 @@
   color: var(--ch-text-tertiary);
 }
 
-/* P007-A1: the announcement as a signed team letter. On desktop the sheet is paper the room's light falls on (never
-   the words); on the phone it stays flush on the parchment with only the letterhead line and the signature's rule. */
+/* P007-A1: the announcement as a signed team letter. On desktop the sheet is flat paper (no light on it, as
+   every card now); on the phone it stays flush on the parchment with only the letterhead line and the signature's rule. */
 .ch-ms-ann.is-letter {
   gap: 16px;
   padding: 32px 48px 32px;
-  background: var(--ch-light-paper), var(--ch-sheet-bg);
+  background: var(--ch-sheet-bg);
 }
 .ch-ms-ann__head {
   display: flex;
@@ -1751,52 +1799,6 @@
     box-shadow: none;
     color: var(--ch-text-tertiary);
   }
-  .ch-msp-thread .ch-ms-msg.is-first {
-    margin-top: 8px;
-  }
-  .ch-msp-thread .ch-ms-msg__col {
-    max-width: 82%;
-  }
-  .ch-msp-thread .ch-ms-msg__stack {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    user-select: none;
-  }
-  .ch-msp-thread .ch-ms-bub {
-    padding: 8px 16px;
-    box-shadow: var(--ch-elevation-bubble);
-    font: var(--ch-type-17);
-    letter-spacing: var(--ch-track-17);
-  }
-  .ch-msp-thread .ch-ms-msg.is-mine .ch-ms-bub:not(.ch-ms-bub--file) {
-    background: var(--ch-bubble-mine-bg);
-    box-shadow: var(--ch-elevation-bubble-mine);
-    color: #fff;
-  }
-  /* The outer corners start a run; close corners join messages from the same sender. */
-  .ch-msp-thread .ch-ms-bub { position: relative; border-radius: var(--ch-radius-lg); }
-  .ch-msp-thread .ch-ms-msg:not(.is-mine):not(.is-first) .ch-ms-bub { border-top-left-radius: var(--ch-radius-tail); }
-  .ch-msp-thread .ch-ms-msg:not(.is-mine):not(.is-last) .ch-ms-bub { border-bottom-left-radius: var(--ch-radius-tail); }
-  .ch-msp-thread .ch-ms-msg:not(.is-mine).is-last .ch-ms-bub { border-bottom-left-radius: var(--ch-radius-tail); }
-  .ch-msp-thread .ch-ms-msg.is-mine:not(.is-first) .ch-ms-bub { border-top-right-radius: var(--ch-radius-tail); }
-  .ch-msp-thread .ch-ms-msg.is-mine .ch-ms-bub { border-bottom-right-radius: var(--ch-radius-tail); }
-  .ch-msp-thread .ch-ms-msg.is-last .ch-ms-bub:not(.ch-ms-bub--file):not(.is-deleted)::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: -6px;
-    width: 12px;
-    height: 14px;
-    background: inherit;
-    clip-path: path('M 12 0 L 12 14 L 0 14 Q 9 11 12 0 Z');
-    pointer-events: none;
-  }
-  .ch-msp-thread .ch-ms-msg.is-mine.is-last .ch-ms-bub:not(.ch-ms-bub--file):not(.is-deleted)::after {
-    left: auto;
-    right: -6px;
-    transform: scaleX(-1);
-  }
-  .ch-msp-thread .ch-ms-msg:not(.is-group) .ch-ms-msg__av { display: none; }
   .ch-msp-thread .ch-ms-msg__stack { touch-action: pan-y; }
   .ch-msp-composer { flex: none; min-width: 0; }
   .ch-msp-thread .ch-ms-msg__t {
@@ -1805,74 +1807,9 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* Composer: the design's "+", a white pill, and a round send, above the home indicator and the keyboard */
-  .ch-msp-thread .ch-ms-comp,
-  .ch-msp-new .ch-ms-comp {
-    flex: none;
-    max-width: none;
-    margin: 0;
-    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
-    background: var(--ch-phone-composer-bg);
-    box-shadow: 0 -1px 0 var(--ch-border-hairline);
-  }
+  /* New message: no home-indicator room under a keyboard. */
   body.keyboard-open .ch-msp-new .ch-ms-comp {
     padding-bottom: 8px;
-  }
-  .ch-msp-thread .ch-ms-comp__field,
-  .ch-msp-new .ch-ms-comp__field {
-    align-items: center;
-    padding: 0;
-    background: none;
-    box-shadow: none;
-  }
-  .ch-msp-thread .ch-ms-comp__field:focus-within,
-  .ch-msp-new .ch-ms-comp__field:focus-within {
-    box-shadow: none;
-  }
-  .ch-msp-thread .ch-ms-comp__field .ch-iconbtn {
-    width: 44px;
-    height: 44px;
-  }
-  /* The design's 38px pill inside a 44px target, as the search field. */
-  .ch-msp-thread .ch-ms-comp__field textarea,
-  .ch-msp-new .ch-ms-comp__field textarea {
-    min-height: 44px;
-    /* Six 20px lines plus padding and the focused pill's border. */
-    max-height: 144px;
-    padding: 8px 16px;
-    box-sizing: border-box;
-    border: 3px solid transparent;
-    border-radius: 22px;
-    background: var(--ch-ivory-0);
-    background-clip: padding-box;
-    box-shadow: var(--ch-field-pill-edge);
-    font: var(--ch-type-16);
-    letter-spacing: var(--ch-track-16);
-  }
-  .ch-msp-thread .ch-ms-comp__field textarea:focus,
-  .ch-msp-new .ch-ms-comp__field textarea:focus {
-    box-shadow: var(--ch-field-pill-edge-focus);
-  }
-  .ch-msp-new .ch-ms-comp__field textarea {
-    margin-left: 4px;
-  }
-  .ch-msp-thread .ch-ms-send,
-  .ch-msp-new .ch-ms-send {
-    position: relative;
-    background: var(--ch-ivory-300);
-    color: var(--ch-on-fill-0);
-  }
-  .ch-msp-thread .ch-ms-send.is-ready,
-  .ch-msp-new .ch-ms-send.is-ready {
-    background: var(--ch-green-fill-600);
-    color: var(--ch-text-on-accent);
-  }
-  /* A 44px target around the 34px send. */
-  .ch-msp-thread .ch-ms-send::before,
-  .ch-msp-new .ch-ms-send::before {
-    content: '';
-    position: absolute;
-    inset: -5px;
   }
   /* A 44px target around a 24px reaction, centred on it. */
   /* A 44px target around the Add sheet's 30px buttons. */
@@ -2407,13 +2344,6 @@
 /* "N new messages": shown when messages arrive while the reader is scrolled up (audit T25); it sits just above the
    composer, over the end of the thread, and takes the reader down. */
 /* Jump to latest (wave 5 #17): the same pill, quieter, once the reader is away from the end with nothing new. */
-/* "New": the first message that was unread when the thread opened. */
-.ch-ms-day.is-new span {
-  background: var(--ch-green-50);
-  box-shadow: 0 0 0 1px rgb(21 90 57 / 0.18);
-  color: var(--ch-green-700);
-  font-weight: 600;
-}
 /* A web link in a bubble (wave 5 #13): underlined in the bubble's own ink, and free to wrap. */
 .ch-ms-link {
   color: inherit;
@@ -2464,10 +2394,6 @@
   overflow-wrap: normal;
 }
 /* "N left" near the 5000-character limit (wave 5 #21). */
-.ch-ms-comp__hint {
-  display: flex;
-  gap: 12px;
-}
 .ch-ms-comp__left {
   margin-left: auto;
   font: var(--ch-type-13);
@@ -2785,15 +2711,6 @@ html[data-fw-theme='dark'] .ch-ms-row.is-sel {
   background: var(--ch-raised-bg);
   box-shadow: var(--ch-key-raised-shadow);
 }
-html[data-fw-theme='dark'] .ch-ms-msg.is-mine .ch-ms-bub {
-  color: var(--ch-on-green-ink);
-}
-html[data-fw-theme='dark'] .ch-ms-msg.is-mine .ch-ms-bub.is-deleted {
-  color: var(--ch-text-tertiary);
-}
-html[data-fw-theme='dark'] .ch-ms-send.is-ready {
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), var(--ch-elevation-control);
-}
 html[data-fw-theme='dark'] .ch-ms-to__c,
 html[data-fw-theme='dark'] .ch-ms-ann__ack {
   color: var(--ch-green-700);
@@ -2838,17 +2755,6 @@ html[data-fw-theme='dark'] .ch-ms-grp.is-ann.is-urgent {
   html[data-fw-theme='dark'] .ch-msp .ch-ms-row .ch-ms-grp.is-ann.is-urgent {
     color: var(--ch-warning-600);
   }
-  html[data-fw-theme='dark'] .ch-msp-thread .ch-ms-msg.is-mine .ch-ms-bub:not(.ch-ms-bub--file) {
-    color: var(--ch-on-green-ink);
-  }
-  html[data-fw-theme='dark'] .ch-msp-thread .ch-ms-send,
-  html[data-fw-theme='dark'] .ch-msp-new .ch-ms-send {
-    color: var(--ch-ink-500);
-  }
-  html[data-fw-theme='dark'] .ch-msp-thread .ch-ms-send.is-ready,
-  html[data-fw-theme='dark'] .ch-msp-new .ch-ms-send.is-ready {
-    color: var(--ch-text-on-accent);
-  }
   html[data-fw-theme='dark'] .ch-msp-icon[data-ch-pressed] {
     background: rgb(237 231 216 / 0.06);
   }
@@ -2862,34 +2768,12 @@ html[data-fw-theme='dark'] .ch-ms-grp.is-ann.is-urgent {
   }
 }
 
-/* P007 D2, after the phone and dark bubble rules it has to win over: a failed message in full ink on a muted fill. */
-.ch-msp-thread .ch-ms-msg.is-mine.is-failed .ch-ms-bub:not(.ch-ms-bub--file),
-html[data-fw-theme='dark'] .ch-ms-msg.is-mine.is-failed .ch-ms-bub,
-html[data-fw-theme='dark'] .ch-msp-thread .ch-ms-msg.is-mine.is-failed .ch-ms-bub:not(.ch-ms-bub--file) {
-  background: var(--ch-bg-subtle);
-  box-shadow: none;
-  color: var(--ch-text-primary);
-}
-.ch-msp-thread .ch-ms-msg.is-failed .ch-ms-bub::after {
-  display: none;
-}
 
-/* Announcements fold under the conversations (owner, 2026-10-16: "messages should be first", announcements "folded"):
-   one raised row on its own tinted card, a gap above it, opening in place to the newest three. */
+/* Announcements fold under the conversations (owner, 2026-10-16: "messages should be first", announcements "folded";
+   Q-37: kept, in the inbox's card style). The section is only a wrapper: its row is the one flat card, opening in place to
+   the newest three. No tint and no ring round it. */
 .ch-ms-sec.is-ann {
-  margin: 8px -4px 4px;
-  padding: 4px;
-  border-radius: var(--ch-radius-card);
-  background: color-mix(in srgb, var(--ch-green-100) 55%, var(--ch-bg-surface));
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-600) 22%, transparent),
-    var(--ch-elevation-reading-accent);
-}
-/* On the phone the card sits on the page edge (16, 20 on a large phone) like the inbox under it, not 4px past it (F-0051). */
-@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  .ch-msp .ch-ms-sec.is-ann {
-    margin-inline: 0;
-  }
+  margin: 8px 0 4px;
 }
 .ch-ms-sec.is-ann > .ch-ms-sec__l {
   padding: 8px 12px;
@@ -2965,10 +2849,6 @@ html[data-fw-theme='dark'] .ch-msp-thread .ch-ms-msg.is-mine.is-failed .ch-ms-bu
     transform: translateY(-4px);
   }
 }
-html[data-fw-theme='dark'] .ch-ms-sec.is-ann {
-  background: color-mix(in srgb, var(--ch-green-fill-600) 12%, var(--ch-bg-surface));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-500) 22%, transparent);
-}
 
 /* B8: the conversation list draws only the rows near the screen; an off-screen row keeps the height it last drew (a
    row's 44px avatar and its padding before it first draws). Everything a row paints sits inside its box (the seam is
@@ -2987,10 +2867,6 @@ html[data-fw-theme='dark'] .ch-ms-sec.is-ann {
 }
 
 /* P-10 Notify anyway: the send cluster. With nothing to offer none of this is drawn. */
-.ch-ms-send {
-  -webkit-touch-callout: none;
-  user-select: none;
-}
 .ch-ms-send-split {
   display: inline-flex;
   flex: none;
@@ -3566,11 +3442,14 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
 }
 
 /* Messages redesign, 11c: thread and bubbles (06 S-MSG.thread, .team, .typing, .times, .date-pill, .jump). */
-/* A run reads as one block: 6 on the side facing the run. */
+/* MSG-206 The tail: the drawn 18 by 20 curl on the last bubble of a run, 5 past the bubble's lower corner. It is the bubble's
+   own colour and sits behind the words (the bubble's filter makes it a stacking context), so at a small Text Size, where
+   the side padding is under the tail's 13 px root, it can never cover a glyph. */
 [data-ch-ms-v2] .ch-msv-tail {
   position: absolute;
   bottom: 0;
   left: -5px;
+  z-index: -1;
   width: 18px;
   height: 20px;
   fill: var(--ch-bubble-theirs-bg);
@@ -3741,25 +3620,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   opacity: 1;
 }
 
-/* Redesign, the thread: photo, file, receipt, day pill and failed line (08 MSG-THREAD-04 to 06, 14). */
-[data-ch-ms-v2] .ch-ms-img {
-  display: block;
-  width: 242px;
-  height: 176px;
-  padding: 2px;
-  border-radius: var(--ch-radius-xl);
-  background: var(--ch-bubble-theirs-bg);
-}
-[data-ch-ms-v2] .ch-ms-msg.is-mine .ch-ms-img {
-  background: var(--ch-bubble-mine-fill);
-}
-[data-ch-ms-v2] .ch-ms-img img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: var(--ch-radius-lg);
-  object-fit: cover;
-}
+/* Redesign, the thread: receipt, day pill and failed line (08 MSG-THREAD-04 to 06, 14). */
 /* The desktop bar's rule shows only with content under it; scoped to the Messages bar, never the shell's (trap 1). */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   [data-ch-ms-v2] .ch-ms-th {
@@ -3772,9 +3633,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   }
   [data-ch-ms-v2] .ch-ms-th .ch-avatar {
     flex: none;
-  }
-  [data-ch-ms-v2] .ch-ms-msg__col {
-    max-width: min(520px, 72%);
   }
   [data-ch-ms-v2] .ch-ms-msgs {
     max-width: var(--ch-measure-reading);
@@ -3796,41 +3654,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   color: var(--ch-text-secondary);
 }
 
-/* Redesign, the composer: one glass pill, + key, field, send key (06 S-MSG.composer, 08 MSG-COMP). */
-[data-ch-ms-v2] .ch-ms-comp {
-  position: relative;
-}
-[data-ch-ms-v2] .ch-ms-comp::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: -24px;
-  height: 24px;
-  background: linear-gradient(transparent, var(--ch-grouped-bg));
-  pointer-events: none;
-}
-[data-ch-ms-v2] .ch-ms-comp__field {
-  display: flex;
-  align-items: flex-end;
-  gap: 6px;
-  min-height: 46px;
-  padding: 4px;
-  border: 0;
-  border-radius: var(--ch-radius-xl);
-  background: var(--ch-glass-strong);
-  box-shadow: var(--ch-card-shadow);
-}
-[data-ch-ms-v2] .ch-ms-comp__field textarea {
-  flex: 1;
-  min-width: 0;
-  min-height: 36px;
-  max-height: 132px;
-  padding: 8px 4px 6px;
-  border: 0;
-  background: none;
-  font: var(--ch-type-16);
-  resize: none; letter-spacing: var(--ch-track-16); }
+/* The send key's holder: nothing there at all while the field is empty (MSG-304). */
 [data-ch-ms-v2] .ch-msv-sendkey[hidden] {
   display: none;
 }
@@ -3838,30 +3662,30 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   flex: none;
   display: inline-flex;
 }
-[data-ch-ms-v2] .ch-msv-sendkey .ch-ms-send {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--ch-bubble-mine-fill);
-  color: var(--ch-text-on-accent);
-}
 [data-ch-ms-v2] .ch-msv-plus {
   position: relative;
   flex: none;
 }
-[data-ch-ms-v2] .ch-msv-plus__key {
+/* The + key (MSG-302) and New message's attach key: a 36 disc on the well colour, ink-2 glyph, a 44 target. */
+[data-ch-ms-v2] .ch-msv-plus__key,
+[data-ch-ms-v2] .ch-ms-comp__field > .ch-iconbtn {
   position: relative;
   display: grid;
+  flex: none;
   place-items: center;
   width: 36px;
   height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   padding: 0;
   border: 0;
   border-radius: 50%;
   background: var(--ch-well-bg-flat);
-  color: var(--ch-text-primary);
+  box-shadow: none;
+  color: var(--ch-text-tertiary);
   cursor: pointer;
 }
+[data-ch-ms-v2] .ch-ms-comp__field > .ch-iconbtn::before,
 [data-ch-ms-v2] .ch-msv-plus__key::before {
   content: '';
   position: absolute;
@@ -3929,10 +3753,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   position: absolute;
   inset: -8px;
 }
-/* Reaction badges (MSG-REACT-01, 04). */
-[data-ch-ms-v2] .ch-ms-msg__col {
-  position: relative;
-}
 [data-ch-ms-v2] .ch-ms-msg__t.is-pill {
   align-self: flex-end;
   width: fit-content;
@@ -3999,30 +3819,23 @@ body:has([data-ch-ms-v2]) .ch-toast {
   place-items: center;
   padding: 16px;
 }
+/* MSG-701 First run: the card is centred in the page under the bar (the page is as tall as the screen less the bar and
+   the home indicator's room, so centre means the middle of what the person sees), at the page edge on a phone. */
 .ch-msp-home:has(> .ch-msv-empty) {
   display: grid;
   align-content: center;
   justify-items: center;
-}
-[data-ch-ms-v2] .ch-msv-suggest__h,
-.ch-msv-suggest__h {
-  margin: 0;
-  padding: 12px 16px 8px;
-  border-radius: var(--ch-radius-lg) var(--ch-radius-lg) 0 0;
-  background: var(--ch-card-bg);
-  font: var(--ch-type-17-strong);
-  letter-spacing: var(--ch-track-17);
-}
-.ch-msv-suggest__h + .ch-msp-panel {
-  margin-top: 0;
-  border-radius: 0 0 var(--ch-radius-lg) var(--ch-radius-lg);
+  box-sizing: border-box;
+  min-height: calc(var(--ch-vv-h, 100dvh) - env(safe-area-inset-top) - var(--ch-phone-topbar-h) - env(safe-area-inset-bottom) - var(--ch-space-5));
+  padding-inline: var(--ch-page-x-phone);
 }
 [data-ch-ms-v2] .ch-msv-empty {
   display: grid;
   justify-items: center;
   gap: 8px;
+  box-sizing: border-box;
   width: min(360px, 100%);
-  margin: 24px auto;
+  margin: 0 auto;
   padding: 24px 20px 20px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
@@ -4118,13 +3931,6 @@ body:has([data-ch-ms-v2]) .ch-toast {
 [data-ch-ms-v2] .ch-msp-tile {
   display: grid;
   justify-items: center;
-  gap: 4px;
-  padding: 8px 2px 8px;
-  border-radius: var(--ch-radius-md);
-  background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
-  color: var(--ch-text-secondary);
-  font: var(--ch-type-13-medium);
 }
 [data-ch-ms-v2] .ch-msp-tile svg {
   width: 20px;
@@ -4148,10 +3954,6 @@ body:has([data-ch-ms-v2]) .ch-toast {
 }
 .ch-ms-comp[hidden] {
   display: none;
-}
-.ch-msv-suggest__h:has(+ .ch-msp-panel) {
-  margin-bottom: -12px;
-  padding-bottom: 12px;
 }
 .ch-msv-seeall {
   padding-left: 16px;
@@ -4377,7 +4179,9 @@ body:has([data-ch-ms-v2]) .ch-toast {
 }
 /* New message (MSG-NEW-01, 02) */
 [data-ch-ms-v2] .ch-msp-new .ch-msp-to {
+  min-height: 52px;
   margin: 12px var(--ch-page-x-phone) 0;
+  padding: 12px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
   box-shadow: var(--ch-card-shadow);
@@ -4388,11 +4192,6 @@ body:has([data-ch-ms-v2]) .ch-toast {
 [data-ch-ms-v2] .ch-msp-tok {
   background: var(--ch-accent);
   color: var(--ch-on-accent, #fff);
-}
-[data-ch-ms-v2] .ch-msp-new .ch-msp-row.is-btn {
-  min-height: 52px;
-  padding: 6px 16px;
-  gap: 12px;
 }
 .ch-msv-newpane {
   position: relative;
@@ -4501,9 +4300,6 @@ body:has([data-ch-ms-v2]) .ch-toast {
     backdrop-filter: blur(var(--ch-glass-blur));
   }
 }
-[data-ch-ms-v2] .ch-ms-msg__line {
-  position: relative;
-}
 /* No hover on a finger: a long press holds the bar and the time open (MOB-MSG-2). */
 [data-ch-ms-v2] .ch-ms-msg[data-ch-bar] .ch-msv-time {
   opacity: 1;
@@ -4574,33 +4370,18 @@ body:has([data-ch-ms-v2]) .ch-toast {
   background: var(--ch-bubble-mine-fill);
   color: var(--ch-text-on-accent);
 }
-/* The hold menu and scrim blur what's behind them (M-MSG-10); a 1:1 draws no face beside its bubbles. */
-[data-ch-ms-v2] .ch-ms-msg:not(.is-group) > .ch-ms-msg__av {
-  display: none;
-}
 /* MSG-VOTES-01: name over the person's line. */
 
 /* MSG-2: a reacted bubble clears the chips above it; the row stays on the screen. */
-/* MSG-3: the phone composer is the floating glass pill; the fade above it matches the page. */
+/* MSG-004: the thread's sides sit 4 inside the page edge (12 at 390, 16 on a large phone), so a bubble and its tail
+   hug the edge the way the composer pill does. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
-  [data-ch-ms-v2].ch-msp-thread .ch-ms-comp,
-  [data-ch-ms-v2] .ch-msp-thread .ch-ms-comp,
-  [data-ch-ms-v2] .ch-msp-new .ch-ms-comp {
-    padding: 0 12px max(8px, calc(env(safe-area-inset-bottom) - 4px));
-    background: none;
-    box-shadow: none;
-  }
-  /* MOB-MSG-13: the thread's sides follow the page edge. */
-  [data-ch-ms-v2] .ch-msp-scroll .ch-ms-msgs { padding-inline: var(--ch-page-x-phone); }
-  /* MOB-MSG-15: the bubble column, as drawn. */
-  [data-ch-ms-v2] .ch-msp-thread .ch-ms-msg__stack { max-width: 76%; }
+  [data-ch-ms-v2] .ch-msp-scroll .ch-ms-msgs { padding-inline: calc(var(--ch-page-x-phone) - var(--ch-space-1)); }
 }
 /* MSG-7: the phone thread bar, as drawn: 36 face, 17 name, 13 role, at any Text Size. */
 .ch-msp-who b { font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); }
 .ch-msp-who em { font: var(--ch-type-13); letter-spacing: var(--ch-track-13); }
 .ch-msp-who { min-height: 44px; height: auto; }
-/* MSG-15: the reply quote is flat inside the bubble. */
-[data-ch-ms-v2] .ch-ms-quote { background: var(--ch-well-bg-flat); box-shadow: none; }
 /* MSG-19: the skeleton is built on the row's own type, so nothing jumps when the rows land. */
 .ch-msv-sk.is-line { display: block; height: 1lh; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); background-clip: content-box; padding-block: 2px; }
 .ch-msv-sk.is-line.is-small { font: var(--ch-type-13); letter-spacing: var(--ch-track-13); }
@@ -4632,7 +4413,6 @@ body:has([data-ch-ms-v2]) .ch-toast {
 /* MOB-MSG-28 */
 .ch-msv-files { scroll-margin-top: calc(env(safe-area-inset-top) + var(--ch-phone-topbar-h)); }
 /* MOB-MSG-23: a photo, opened. */
-.ch-ms-img { padding: 0; border: 0; background: none; cursor: pointer; }
 .ch-ms-imgview { display: grid; gap: 12px; justify-items: center; }
 .ch-ms-imgview img { max-width: 100%; max-height: 70dvh; border-radius: var(--ch-radius-md); }
 .ch-ms-imgview__orig { display: inline-flex; align-items: center; min-height: 44px; color: var(--ch-accent); font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); }
