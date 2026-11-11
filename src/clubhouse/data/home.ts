@@ -20,7 +20,6 @@ import { hasHoleScores, holeRounds, recordedPutts } from './round-scope';
 import { loadRoundCache, previousInFilter, readTourBenchmarks, roundsInFilter, seasonOnly, tourForGender, type ChRoundCache } from './stats-common';
 import { filterFor } from './stats-filter';
 import { effectiveCount, weightedMean, windowChangeSe } from './stats-weight';
-import { teamStrokesGained } from './stats-team-sg';
 import { changeSe, floorRate } from '../lib/stats-signal';
 import { rsvpOf } from './calendar';
 import { parseAvailability, type ChAvailability } from './availability';
@@ -984,8 +983,6 @@ export function teamLegs(input: {
   // with strokes gained in the window are read, so a player's first round or two never moves a part here and not on Stats.
   const teamSg = teamStrokesGained(holeLast, input.players.map((p) => p.id));
   let ranked = false;
-  // Team stats' definition (A4): the rounds of the players with three whole rounds in the window, so Home and Stats say one figure.
-  const teamSg = teamStrokesGained(holeLast, input.players.map((p) => p.id));
   const rows = LEG_KEYS.map((key, i): ChTeamLeg => {
     const pick = (r: ChRound) => sgLegs(r)[i] ?? null;
     const sg = teamSg.legs[i] ?? null;
