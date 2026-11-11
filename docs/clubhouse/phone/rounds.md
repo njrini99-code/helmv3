@@ -302,6 +302,14 @@ legacy engine's start, when the engine moves; ROUNDS_PLAN step 4).
 - The qualifier: the first open qualifier is offered above Round details (Play
   sets the type, the course and the tees, and says which round it counts as); a
   qualifier with no round open shows why and can't be chosen.
+- Round type from the course (owner, 2026-11-11): when the course and tees
+  just picked are exactly one open qualifier's, Round type is set to Qualifier
+  with that qualifier's next round, and a line under the control says why
+  ("Set to Qualifier because this course and these tees are Fall qualifier
+  2's."). The player can change it. With no match, or several, the type stays
+  Practice. The page never chooses over a type the player chose, a qualifier
+  they played from its offer, or a kept setup of another type; a type it chose
+  goes back to Practice when the course changes to one that is no qualifier's.
 
 ## Setup on the phone
 
