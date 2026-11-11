@@ -57,3 +57,36 @@ Changes to `tool.ts` against the contract in the rebuild brief, with the reason 
    Keep `after()` only as the fallback for a browser that disconnects during the hold (do not abort the wait on the
    request signal), keep the card's GET and the sweep, and run the sweep on any signed-in coach page load, not only
    on a chat request. A cron cannot do these writes: each action reads the coach from the session.
+
+## 2026-11-10 late (TOOLS), for Haiku 5.5 at high effort
+
+7. Strict tool use. Every tool `toolsFor` returns has `input` wrapped by `strictInput` (`../strict-input.ts`):
+   `z.toJSONSchema(tool.input, { io: 'input' })` is a closed object with every property required, optional fields as
+   `anyOf [..., null]`, and no `minimum`, `maximum`, `minLength`, `maxLength`, `pattern`, `minItems` or `default`.
+   ENGINE can set `strict: true` on every tool as it is; `strictProblems(schema)` in that file lists any violation and
+   `__tests__/strict-input.test.ts` runs it over every surface. `tool.input.parse` takes the model's nulls, drops them
+   for optional fields and then runs the tool's own schema, so `run` and `plan` receive what they always did. An
+   input with optional fields left out (a request sent without `strict`) still parses.
+   Caveat for ENGINE: the reference lists no limit on the number of strict tools or of nullable fields, and I could
+   not make a live call. If the API rejects 38 strict tools, set `strict` on the task tools first: a wrong field
+   there matters more than on a read.
+8. `instructionBlocks(surface, who)` no longer uses a date or notes (the third argument is accepted and ignored).
+   Neither block holds anything that changes during a conversation: no date, no screen, no notes, no count; the
+   roster is in a fixed order. The policy tells the model to expect a system note after the coach's message, in the
+   words "Today is Tue 10 Nov 2026. The coach is on Roster, looking at Eli Brandt.", and that the coach's standing
+   notes arrive the same way. Until that message is sent the model has no date: the readers that need one
+   (`get_schedule`) default to the server's clock, so nothing breaks, but "next Tuesday" is unresolved.
+   The roster is still in the team block. If it changes while a conversation is open, the team block changes and
+   that conversation's thinking blocks stop matching; `drop_block` covers it. Storing the team block with the
+   conversation would avoid even that, and is ENGINE's call.
+9. Tool definitions are byte-stable: each tool is one object for the life of the process, descriptions hold no date
+   and no count, and the list order per surface is fixed. The list still differs with `golf_tournaments_v1`
+   (three tools), which is a deploy-level constant.
+10. Reads as search-result blocks: every line of `model_text` now stands on its own ("Eli Brandt, Scoring avg, last
+    10 rounds: 74.2 (n=10 rounds) | team average 75.1"), one figure per line, so ENGINE can send each read as one
+    search-result block (title = the envelope's `summary`, source = its `evidence_ref`, text = `model_text`) or keep
+    it as text. For the direct reads that set no `model_text`, the envelope's JSON is the content either way.
+11. Adding a tool from another worker: export a `ReadTool` or `TaskTool` with an ordinary zod object as `input` and
+    name the surfaces it belongs to here. TOOLS adds the import to `../registry.ts` at the end of that surface's
+    reads or tasks (appending keeps the earlier definitions' bytes and order) and re-measures the prefix.
+

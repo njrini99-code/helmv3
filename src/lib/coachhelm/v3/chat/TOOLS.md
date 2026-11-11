@@ -124,3 +124,46 @@ draft_poll, draft_board. Quick chat has no write_artifact, draft_message or draf
 Count as built: 38 on Ask (41 with the tournaments flag) against 67 (71) before; 35 on quick chat; 9 for a player
 (16 before; `get_rounds` is not offered to a player, whose rounds come from their own Stats page).
 Tool definitions plus policy, characters / 4: 26,063 before, under 12,000 after (`__tests__/registry-size.test.ts`).
+
+## 3. App actions that already have a task tool
+
+For whoever adds task tools: these actions are covered. Do not add a second tool for any of them. Each is on the
+contract (`plan` writes nothing, `commit` runs after Confirm and the Undo window) in `tasks.ts`, built from the flows
+in `create-tools.ts`, `practice-draft.ts`, `action-planners.ts` and `practice-planner.ts`.
+
+| Action in the app | Tool | Server action it wraps |
+|---|---|---|
+| Add one event to the calendar (practice, tournament, qualifier day, meeting, travel day, other), with invites and RSVP | `create_event` | `createGolfEvent` |
+| Add a repeating practice with every date listed | `create_recurring_practice` | `createRecurringEvent` |
+| Block the coach's own time | `add_blocked_time` | `addCoachBlockedTime` |
+| Add a team break from class | `add_team_break` | `addTeamBreak` |
+| Save a school term | `save_team_term` | `saveTeamTerm` |
+| Add a trip (transport, dates, hotel, rooms, uniform, gear) | `create_trip` | `createGolfTravelItinerary` |
+| Set up a qualifier (rounds, squad, coach picks, field) | `create_qualifier` | `createGolfQualifier` |
+| Give a player a goal on one of eight stats | `create_goal` | `createGoal` |
+| Give a player a focus area | `create_focus_area` | `createFocusArea` |
+| Assign a task to players | `create_task` | `createTask` |
+| Send a team announcement | `create_team_announcement` | `createEnrichedAnnouncement` |
+| Add a coach note to a round | `add_round_note` | `saveRoundCoachNote` |
+| Set a coach-only availability note on a player | `set_availability_note` | `setPlayerAvailabilityCoachNote` |
+| Add a recruit | `create_recruit` | `createRecruit` |
+| Add a drill to the team drill bank | `create_drill` | `createTeamDrill` |
+| Publish a saved practice plan (and post it in Team chat) | `publish_practice_plan` | `publishPracticePlan` |
+| Publish a written piece to Documents | `publish_artifact` (Ask, practice helper) | `saveTextDocument` |
+| Send a message to a thread | `send_message` (quick chat only) | `sendGolfMessage` |
+| Set a tournament lineup | `set_lineup` (flag `golf_tournaments_v1`) | `setTournamentEntries` |
+| Lock a tournament lineup, no Undo | `lock_lineup` (same flag) | `lockTournamentLineup` |
+
+Drafts that write nothing and hand the coach a card (read tools, not tasks): a practice plan (`draft_practice_plan`,
+after `ask_practice_brief`), a long document (`write_artifact`), a message, poll or board opened in Messages
+(`draft_message`, `draft_poll`, `draft_board`), with `find_thread` to find the thread.
+
+Not covered by any tool here (so open to a new one, if it passes the brief's tests): editing or moving an existing
+event, replying to an RSVP for a player, recording a round or a score, selecting qualifier picks, completing or
+closing a task, editing a goal or a focus area, saving a practice plan draft, uploading a document, changing
+settings, and everything a player does.
+
+Every tool in the registry is passed through `strictInput` (`strict-input.ts`) when it is listed, so a new tool only
+needs an ordinary zod object for its input: optional fields, bounds and defaults are fine, and the model is shown the
+strict form of it.
+

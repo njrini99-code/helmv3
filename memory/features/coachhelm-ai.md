@@ -704,7 +704,7 @@ replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
   has 38 tools (41 with `golf_tournaments_v1`; the previous stack had 67 and 71), the same list on the Ask tab and in
   the practice helper so they share one cached prefix; quick chat has `send_message` in place of `publish_artifact`
   and no `write_artifact`, `draft_message` or `draft_poll`. A player has 9, all reads. Tool definitions plus the
-  policy are 11,991 tokens on Ask by characters / 4 (26,063 before, measured the same way);
+  policy are 11,615 tokens on Ask by characters / 4 (26,063 before, measured the same way);
   `__tests__/registry-size.test.ts` is the measurement and holds the 12,000 ceiling.
 - **One number, one source.** `get_player_stats`, `get_team_stats`, `get_rounds`, `get_season` and `get_qualifiers`
   (`chat/readers.ts`) do not compute their figures: they call the Clubhouse screen's own loader for the window asked
@@ -737,10 +737,18 @@ replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
   `add_team_break`, `set_availability_note`, `add_round_note`, the lineup pair and `publish_practice_plan` have no
   look of their own (the note and the lineup are safe to repeat by how their actions work; a break is not).
   Receipt notification lines of the four older tasks are still the planner's prediction, not what the fan-out did.
-- **The prompt** (`chat/instructions.ts`): `policyBlock(surface)` is the same text for every team and day (one for
-  the coach surfaces, one for a player); `teamBlock(who, { today, notes })` has the team, the timezone, the date to
-  the day, the season's start, the roster with ids and the coach's standing notes. There are no output formats to
-  parse and no rules about a checker.
+- **The prompt** (`chat/instructions.ts`), written for Claude Haiku 5.5 at high effort: one rule per sentence with
+  its reason, a worked example where a rule is easy to misread, and the line that keeps the rules in force however
+  a user argues. `policyBlock(surface)` is the same bytes for every team, day and conversation (one for the coach
+  surfaces, one for a player); `teamBlock(who)` has the team, its timezone and the roster with ids in a fixed order.
+  Neither holds a date, a screen, the coach's notes or a count: those reach the model as a system message after the
+  coach's message, and the policy tells it to expect them there. There are no output formats to parse.
+- **Strict tool use** (`chat/strict-input.ts`): every registered tool's input is shown to the model as a closed
+  object with every field required and optional fields nullable, with no length or range keywords; the tool's own
+  zod schema validates behind it, so no bound is lost. A new tool needs only an ordinary zod object.
+- **What a read says to the model**: one figure per line, each naming whose it is, what it is, the window and the
+  sample ("Eli Brandt, Scoring avg, last 10 rounds: 74.2 (n=10 rounds) | team average 75.1"). Several players in one
+  `get_player_stats` call are set side by side by the reader, best first with the gap.
 - **The grounding check** is `chat/grounding.ts` (`checkGrounding(text, reads, question)`): the numbers in the
   answer against every number in the conversation's reads and the differences between their figures; dates, times,
   ids, ordinals and small counts are not figures. It only logs. Against the 165 hand-labelled staging turns it
@@ -752,7 +760,7 @@ replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
   `getTeamStrokesGained` / `getTeamPuttingProfile` in `practice-reads.ts`, `getRoundStats` / `getQualifierEntries`
   in `team-reads.ts` and `metrics-catalog.ts`'s cache columns. The model cannot reach them.
 - Tests: `chat/__tests__/registry-readers.test.ts`, `registry-tasks.test.ts`, `registry-size.test.ts`,
-  `instructions.test.ts`, `grounding-fixtures.test.ts`.
+  `instructions.test.ts`, `strict-input.test.ts`, `grounding-fixtures.test.ts`.
 
 ### Coach chat read tools: whole-team reads (2026-10-25)
 
