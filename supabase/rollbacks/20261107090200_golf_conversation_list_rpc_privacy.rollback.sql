@@ -3,7 +3,9 @@
 -- WARNING: this puts the participant_names e-mail leak and the shared-flag unread count back. Use it only to restore a
 -- broken caller while a fix is prepared.
 
-SET lock_timeout = '3s';
+-- SET LOCAL: run this file as one transaction (psql -1, or one
+-- `supabase db query --linked --file` call); outside one it only warns.
+SET LOCAL lock_timeout = '3s';
 
 CREATE OR REPLACE FUNCTION public.get_golf_conversations_with_details(p_user_id uuid)
 RETURNS TABLE(id uuid, created_at timestamptz, updated_at timestamptz, creator_id uuid, last_message_content text, last_message_at timestamptz, last_message_sender_id uuid, unread_count bigint, participant_ids uuid[], participant_names text[], is_group boolean, title text, participant_count bigint, is_team_channel boolean)

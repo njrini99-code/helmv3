@@ -2,9 +2,10 @@
 --
 -- get_golf_conversations_with_details is SECURITY DEFINER and used to return users.email for every co-participant of every
 -- conversation the caller was in. It now returns display names (golf_players first + last, golf_coaches full_name, else
--- 'Unknown') and never an e-mail address; unread_count counts from the caller's own last_read_at, not the shared `read` flag;
+-- 'Unknown') and never an e-mail address; unread_count counts from the caller's own last_read_at, not the shared `read` flag
+-- (a never-read group counts every message from someone else; a never-read direct conversation keeps the flag);
 -- participant_ids and participant_names are one ordered list; a non-member gets nothing; anon cannot call it.
--- WRITTEN, NOT RUN where it was authored (no Docker): run with npm run test:rls before applying.
+-- Run on the real local stack 2026-11-10 (supabase test db --local).
 --
 -- Ids use the 0000...0f3xxx range. G: group chat created by coach A with A, B, C, D (D has no profile row).
 -- DM: A and B. E is in nothing.
@@ -12,7 +13,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(15);
+SELECT plan(18);
 
 DO $$
 BEGIN
@@ -130,6 +131,28 @@ SELECT is(
   (SELECT unread_count FROM public.get_golf_conversations_with_details('00000000-0000-0000-0000-0000000f31a1')
     WHERE id = '00000000-0000-0000-0000-0000000f32a1'),
   2::bigint, 'A, who has never read G, has B''s and C''s messages unread (own and deleted excluded)');
+RESET ROLE;
+
+-- A direct conversation nobody has read: the flag still decides, so direct messages read before last_read_at existed
+-- do not come back as unread.
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-0000000f31b1", "role": "authenticated"}';
+SELECT is(
+  (SELECT unread_count FROM public.get_golf_conversations_with_details('00000000-0000-0000-0000-0000000f31b1')
+    WHERE id = '00000000-0000-0000-0000-0000000f32b1'),
+  1::bigint, 'B, who has never read the DM, has A''s unflagged message unread');
+SELECT is(
+  (SELECT is_group FROM public.get_golf_conversations_with_details('00000000-0000-0000-0000-0000000f31b1')
+    WHERE id = '00000000-0000-0000-0000-0000000f32b1'),
+  false, 'the DM is not a group');
+RESET ROLE;
+UPDATE public.golf_messages SET read = true WHERE conversation_id = '00000000-0000-0000-0000-0000000f32b1';
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-0000000f31b1", "role": "authenticated"}';
+SELECT is(
+  (SELECT unread_count FROM public.get_golf_conversations_with_details('00000000-0000-0000-0000-0000000f31b1')
+    WHERE id = '00000000-0000-0000-0000-0000000f32b1'),
+  0::bigint, 'a DM read under the old flag stays read for a viewer with no last_read_at');
 RESET ROLE;
 
 -- Hidden rule unchanged: the DM B hid stays out until a newer message arrives ---------------------

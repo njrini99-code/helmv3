@@ -504,6 +504,7 @@ CREATE TABLE IF NOT EXISTS "public"."golf_conversation_participants" (
     "last_read_at" timestamp with time zone,
     "notification_level" "text" DEFAULT 'all'::"text" NOT NULL,
     "muted_until" timestamp with time zone,
+    "hidden_at" timestamp with time zone,
     CONSTRAINT "golf_participants_notification_level_check" CHECK (("notification_level" = ANY (ARRAY['all'::"text", 'mentions'::"text", 'muted'::"text"])))
 );
 

@@ -1712,13 +1712,7 @@ REVOKE ALL ON FUNCTION "helm_private"."sync_round_event_fields"() FROM PUBLIC, "
 REVOKE ALL ON FUNCTION "public"."golf_tournament_my_lineup"("p_tournament_id" "uuid") FROM PUBLIC, "anon";
 GRANT ALL ON FUNCTION "public"."golf_tournament_my_lineup"("p_tournament_id" "uuid") TO "authenticated";
 
--- Messages v2 package M
-REVOKE ALL ON FUNCTION "public"."golf_participants_identity_guard"() FROM PUBLIC, "anon";
-
-REVOKE ALL ON FUNCTION "public"."golf_conversations_identity_guard"() FROM PUBLIC, "anon";
-
-REVOKE ALL ON FUNCTION "public"."golf_messages_identity_guard"() FROM PUBLIC, "anon";
-
+-- Messages v2 package M (HELD 20261107090300): typing on a private topic
 REVOKE ALL ON FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") FROM PUBLIC, "anon";
 GRANT ALL ON FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") TO "service_role";
@@ -1761,3 +1755,58 @@ GRANT ALL ON FUNCTION "public"."college_level_of"("p_division" "text") TO "servi
 
 REVOKE ALL ON FUNCTION "public"."refresh_division_cohort"() FROM PUBLIC, "anon", "authenticated";
 GRANT ALL ON FUNCTION "public"."refresh_division_cohort"() TO "service_role";
+
+-- Messages privacy fixes (HELD 20261107090000 to 20261107090200)
+REVOKE ALL ON FUNCTION "public"."golf_participants_identity_guard"() FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_participants_identity_guard"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_participants_identity_guard"() TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_participants_insert_guard"() FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_participants_insert_guard"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_participants_insert_guard"() TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_conversations_identity_guard"() FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_conversations_identity_guard"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_conversations_identity_guard"() TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_messages_identity_guard"() FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_messages_identity_guard"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_messages_identity_guard"() TO "service_role";
+
+
+-- 20261017003000 (applied 2026-10-21; missing from this mirror until 2026-11-10)
+REVOKE ALL ON FUNCTION "public"."golf_user_in_conversation_team_audience"("p_conversation_id" "uuid", "p_user_id" "uuid") FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_user_in_conversation_team_audience"("p_conversation_id" "uuid", "p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_user_in_conversation_team_audience"("p_conversation_id" "uuid", "p_user_id" "uuid") TO "service_role";
+
+-- Team channel auto-join (HELD 20261110090200)
+REVOKE ALL ON FUNCTION "helm_private"."golf_team_channel_join_member"() FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_team_channel_join_staff"() FROM PUBLIC, "anon", "authenticated";
+
+-- Team channel for every team (HELD 20261110090300)
+REVOKE ALL ON FUNCTION "helm_private"."golf_ensure_team_channel"("p_team_id" "uuid") FROM PUBLIC, "anon", "authenticated";
+
+-- Leaving a team (HELD 20261110090400)
+REVOKE ALL ON FUNCTION "helm_private"."golf_team_remove_departed"("p_team_id" "uuid", "p_user_id" "uuid") FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_team_chats_leave_member"() FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_team_chats_leave_staff"() FROM PUBLIC, "anon", "authenticated";
+
+-- Team channel backfill (HELD 20261110090500)
+REVOKE ALL ON FUNCTION "helm_private"."golf_team_channel_backfill"() FROM PUBLIC, "anon", "authenticated";
+
+-- Team link on participant INSERT (HELD 20261110090600)
+REVOKE ALL ON FUNCTION "public"."golf_conversation_team_link_ok"("p_conversation_id" "uuid") FROM PUBLIC, "anon";
+GRANT EXECUTE ON FUNCTION "public"."golf_conversation_team_link_ok"("p_conversation_id" "uuid") TO "authenticated";
+GRANT EXECUTE ON FUNCTION "public"."golf_conversation_team_link_ok"("p_conversation_id" "uuid") TO "service_role";
+
+-- Coach roster writes (HELD 20261110090700)
+REVOKE ALL ON FUNCTION "public"."golf_team_join_requests_identity_guard"() FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_team_join_requests_identity_guard"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_team_join_requests_identity_guard"() TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_team_members_identity_guard"() FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_team_members_identity_guard"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_team_members_identity_guard"() TO "service_role";

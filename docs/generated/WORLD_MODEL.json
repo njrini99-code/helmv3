@@ -4321,6 +4321,10 @@
         "definedIn": "supabase/migrations/20260807030000_golf_conversation_participants_tenant_isolation.sql"
       },
       {
+        "id": "golf_conversation_team_link_ok",
+        "definedIn": "supabase/migrations/20261110090600_golf_participants_insert_team_link.sql"
+      },
+      {
         "id": "golf_conversations_identity_guard",
         "definedIn": "supabase/migrations/20261107090100_golf_conversations_messages_column_grants.sql"
       },
@@ -4402,6 +4406,10 @@
       },
       {
         "id": "golf_participants_identity_guard",
+        "definedIn": "supabase/migrations/20261107090000_golf_participants_column_grants.sql"
+      },
+      {
+        "id": "golf_participants_insert_guard",
         "definedIn": "supabase/migrations/20261107090000_golf_participants_column_grants.sql"
       },
       {
@@ -4599,6 +4607,14 @@
       {
         "id": "golf_team_class_day",
         "definedIn": "supabase/migrations/20261025070100_golf_class_blocks_functions.sql"
+      },
+      {
+        "id": "golf_team_join_requests_identity_guard",
+        "definedIn": "supabase/migrations/20261110090700_golf_team_members_coach_write_bounds.sql"
+      },
+      {
+        "id": "golf_team_members_identity_guard",
+        "definedIn": "supabase/migrations/20261110090700_golf_team_members_coach_write_bounds.sql"
       },
       {
         "id": "golf_team_terms_guard",
@@ -22648,6 +22664,36 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/measures.ts",
+          "anchor": "src/lib/golf/leak-map-buckets"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/measures.ts",
+          "anchor": "src/lib/golf/putt-make"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/measures.ts",
+          "anchor": "src/lib/golf/round-type-utils"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/rounds.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/rounds.ts",
+          "anchor": "src/lib/golf/round-score-countable"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/rounds.ts",
+          "anchor": "src/lib/golf/round-total"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/__tests__/data-dictionary.test.ts",
           "anchor": "src/lib/golf/sg-benchmarks"
         },
@@ -23130,6 +23176,11 @@
       "target": "stats_analytics",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/analyst/fact-sheet.ts",
+          "anchor": "src/lib/golf/benchmarks/tour"
+        },
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/counterfactual/cohort-baselines.ts",

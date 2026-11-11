@@ -304,6 +304,9 @@ CREATE INDEX "idx_golf_conversations_created_by" ON "public"."golf_conversations
 
 CREATE INDEX "idx_golf_conversations_team_channel" ON "public"."golf_conversations" USING "btree" ("team_id", "is_team_channel") WHERE ("is_team_channel" = true);
 
+-- One channel per team (HELD 20261110090300)
+CREATE UNIQUE INDEX "golf_conversations_one_team_channel_uq" ON "public"."golf_conversations" USING "btree" ("team_id") WHERE "is_team_channel";
+
 CREATE INDEX "idx_golf_conversations_team_id" ON "public"."golf_conversations" USING "btree" ("team_id");
 
 CREATE INDEX "idx_golf_conversations_team_updated" ON "public"."golf_conversations" USING "btree" ("team_id", "updated_at" DESC);

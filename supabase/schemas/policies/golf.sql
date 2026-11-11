@@ -592,6 +592,14 @@ CREATE POLICY "golf_confidence_calibration_admin_read_all" ON "public"."golf_con
 
 CREATE POLICY "golf_confidence_calibration_service_role_all" ON "public"."golf_confidence_calibration" TO "service_role" USING ((( SELECT "auth"."role"() AS "role") = 'service_role'::"text")) WITH CHECK ((( SELECT "auth"."role"() AS "role") = 'service_role'::"text"));
 
+CREATE POLICY "golf_conversations_insert_team_channel_coach" ON "public"."golf_conversations" AS RESTRICTIVE FOR INSERT WITH CHECK ((("is_team_channel" IS NOT TRUE) OR (("team_id" IS NOT NULL) AND "public"."is_golf_team_coach"("team_id"))));
+
+-- Team link on participant INSERT and DELETE (HELD 20261110090600): only someone on the team adds a member to its
+-- channel or team chats, or removes another member from them; your own row you can always delete
+CREATE POLICY "golf_participants_insert_team_link" ON "public"."golf_conversation_participants" AS RESTRICTIVE FOR INSERT WITH CHECK ("public"."golf_conversation_team_link_ok"("conversation_id"));
+
+CREATE POLICY "golf_participants_delete_team_link" ON "public"."golf_conversation_participants" AS RESTRICTIVE FOR DELETE USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) OR "public"."golf_conversation_team_link_ok"("conversation_id")));
+
 CREATE POLICY "golf_conversations_insert_v2" ON "public"."golf_conversations" FOR INSERT TO "authenticated" WITH CHECK ((("created_by" = ( SELECT "auth"."uid"() AS "uid")) AND (("team_id" IS NULL) OR "public"."is_golf_team_coach"("team_id") OR "public"."is_golf_team_player"("team_id"))));
 
 CREATE POLICY "golf_conversations_select_v2" ON "public"."golf_conversations" FOR SELECT USING ((("id" IN ( SELECT "public"."user_conversation_ids"(( SELECT "auth"."uid"() AS "uid")) AS "user_conversation_ids")) OR ((("is_team_chat" = true) OR ("is_team_channel" = true)) AND "public"."is_golf_team_coach"("team_id")) OR ((("is_team_chat" = true) OR ("is_team_channel" = true)) AND "public"."is_golf_team_player"("team_id"))));
@@ -802,11 +810,9 @@ CREATE POLICY "golf_participants_delete" ON "public"."golf_conversation_particip
    FROM "public"."golf_conversations" "c"
   WHERE (("c"."id" = "golf_conversation_participants"."conversation_id") AND ("c"."is_team_chat" = true) AND ("c"."team_id" IS NOT NULL)))) AND ("conversation_id" IN ( SELECT "public"."user_conversation_ids"(( SELECT "auth"."uid"() AS "uid")) AS "user_conversation_ids")))));
 
-CREATE POLICY "golf_participants_insert_v2" ON "public"."golf_conversation_participants" FOR INSERT WITH CHECK (((("user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("public"."golf_conversation_created_by_me"("conversation_id") OR (EXISTS ( SELECT 1
-   FROM "public"."golf_conversations" "c"
-  WHERE (("c"."id" = "golf_conversation_participants"."conversation_id") AND ("c"."is_team_chat" = true) AND ("c"."team_id" IS NOT NULL) AND "public"."golf_conversation_on_my_team"("golf_conversation_participants"."conversation_id")))))) OR ((EXISTS ( SELECT 1
+CREATE POLICY "golf_participants_insert_v2" ON "public"."golf_conversation_participants" FOR INSERT WITH CHECK (((("user_id" = ( SELECT "auth"."uid"() AS "uid")) AND "public"."golf_conversation_created_by_me"("conversation_id")) OR ((EXISTS ( SELECT 1
    FROM "public"."golf_conversations" "gc"
-  WHERE (("gc"."id" = "golf_conversation_participants"."conversation_id") AND ("gc"."created_by" = ( SELECT "auth"."uid"() AS "uid"))))) AND (NOT "public"."golf_conversation_has_other_participant"("conversation_id"))) OR ("public"."golf_conversation_created_by_me"("conversation_id") AND (EXISTS ( SELECT 1
+  WHERE (("gc"."id" = "golf_conversation_participants"."conversation_id") AND ("gc"."created_by" = ( SELECT "auth"."uid"() AS "uid"))))) AND (NOT "public"."golf_conversation_has_other_participant"("conversation_id")) AND "public"."golf_user_in_conversation_team_audience"("conversation_id", "user_id")) OR ("public"."golf_conversation_created_by_me"("conversation_id") AND (EXISTS ( SELECT 1
    FROM "public"."golf_conversations" "c"
   WHERE (("c"."id" = "golf_conversation_participants"."conversation_id") AND ("c"."is_team_chat" = true) AND ("c"."team_id" IS NOT NULL)))) AND "public"."golf_user_on_conversation_team"("conversation_id", "user_id"))));
 
@@ -1127,7 +1133,10 @@ CREATE POLICY "golf_team_coach_staff_select" ON "public"."golf_team_coach_staff"
 
 CREATE POLICY "golf_team_members_delete_coach" ON "public"."golf_team_members" FOR DELETE TO "authenticated" USING ("public"."is_golf_team_coach"("team_id"));
 
-CREATE POLICY "golf_team_members_insert_coach" ON "public"."golf_team_members" FOR INSERT TO "authenticated" WITH CHECK ("public"."is_golf_team_coach"("team_id"));
+-- Coach roster writes (HELD 20261110090700): a coach adds only a player with a pending join request for that team
+CREATE POLICY "golf_team_members_insert_coach" ON "public"."golf_team_members" FOR INSERT TO "authenticated" WITH CHECK (("public"."is_golf_team_coach"("team_id") AND (EXISTS ( SELECT 1
+   FROM "public"."golf_team_join_requests" "r"
+  WHERE (("r"."team_id" = "golf_team_members"."team_id") AND ("r"."player_id" = "golf_team_members"."player_id") AND ("r"."status" = 'pending'::"text"))))));
 
 CREATE POLICY "golf_team_members_select_v5" ON "public"."golf_team_members" FOR SELECT USING (((EXISTS ( SELECT 1
    FROM ("public"."golf_team_coach_staff" "gtcs"

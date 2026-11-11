@@ -1,36 +1,76 @@
--- STATUS: WRITTEN, NOT APPLIED (HOLD, see HELD.md). PRIORITY: privacy fix, ships ahead of the Messages redesign.
--- Apply: npm run db:apply -- supabase/migrations/20261107090200_golf_conversation_list_rpc_privacy.sql
--- Risk: LOW. CREATE OR REPLACE with the SAME signature and return columns, so the Fairway hook and the Clubhouse build keep
--- working. Body changes: (1) participant_names no longer carries e-mail addresses, (2) unread_count counts from each
--- viewer's own last_read_at instead of the shared golf_messages.read flag, (3) search_path pinned to '' with every
--- name schema-qualified, (4) participant_ids and participant_names come from one ordered list, so index n in one is
--- the person at index n in the other.
--- App change needed: NONE required. src/hooks/golf/use-golf-messages.ts:1787-1793 builds `participant_names: []` and never
--- reads the field (the row is typed at :1418 only). src/hooks/use-messages.ts reads participant_names at :347 but belongs to
--- the Baseball RPC, which this file does not touch. unread_count is read at :2053 and :2087; the G-40 per-viewer recompute
--- (:1812-1900) still runs for groups and now agrees with the RPC. A direct message's count follows last_read_at the
--- way the badge (src/lib/golf/unread-message-count.ts) already does.
+-- STATUS: WRITTEN, NOT APPLIED (HOLD, see HELD.md). PRIORITY: privacy fix,
+-- ships ahead of the Messages redesign.
+-- Apply: npm run db:apply -- \
+--   supabase/migrations/20261107090200_golf_conversation_list_rpc_privacy.sql
+-- Risk: LOW. CREATE OR REPLACE with the SAME signature and return columns, so
+-- the Fairway hook and the Clubhouse build keep working. Body changes: (1)
+-- participant_names no longer carries e-mail addresses, (2) unread_count counts
+-- from each viewer's own last_read_at instead of the shared golf_messages.read
+-- flag (one case keeps the flag: a direct conversation its viewer has never
+-- read, see Unread below), (3) search_path pinned to '' with every name
+-- schema-qualified, (4) participant_ids and participant_names come from one
+-- ordered list, so index n in one is the person at index n in the other.
+-- App change needed: NONE required.
+-- src/hooks/golf/use-golf-messages.ts:1787-1793 builds `participant_names: []`
+-- and never reads the field (the row is typed at :1418 only).
+-- src/hooks/use-messages.ts reads participant_names at :347 but belongs to the
+-- Baseball RPC, which this file does not touch. unread_count is read at :2053
+-- and :2087; the G-40 per-viewer recompute (:1812-1900) still runs for groups
+-- and now agrees with the RPC. A direct message's count follows last_read_at
+-- the way the badge (src/lib/golf/unread-message-count.ts) already does.
 --
--- The leak (confirmed on production and staging, 2026-11-07): the old body returned
---   ARRAY(SELECT COALESCE(u.email, 'Unknown') FROM golf_conversation_participants cp2 JOIN users u ...)
--- from a SECURITY DEFINER function, so any member of any conversation (a teammate, a minor) got the e-mail address of every
--- co-participant by calling the RPC, whatever the users-table RLS says.
--- Now: a display name from golf_players (first + last) or golf_coaches (full_name), else 'Unknown'. No e-mail column of any
--- table is read. Names are visible to co-participants anyway (the Messages directory shows them).
+-- The leak (confirmed on production and staging, 2026-11-07): the old body
+-- returned
+--   ARRAY(SELECT COALESCE(u.email, 'Unknown')
+--         FROM golf_conversation_participants cp2 JOIN users u ...)
+-- from a SECURITY DEFINER function, so any member of any conversation (a
+-- teammate, a minor) got the e-mail address of every co-participant by calling
+-- the RPC, whatever the users-table RLS says.
+-- Now: a display name from golf_players (first + last) or golf_coaches
+-- (full_name), else 'Unknown'. No e-mail column of any table is read. Names are
+-- visible to co-participants anyway (the Messages directory shows them).
+-- What this does NOT close (security review 2026-11-10, B1): it stops this RPC
+-- handing out e-mail; it does not make e-mail or phone private.
+-- golf_players.email / .phone are still readable straight from the table by
+-- teammates (golf_players_select's teammate branch; closed by the held
+-- 20261017005000 once the app that reads teammates through golf_player_profiles
+-- is deployed), and golf_coaches.email / .phone by every coach and player of
+-- the same organisation (golf_coaches_select). authenticated holds table-wide
+-- SELECT on both. The Baseball RPC get_baseball_conversations_with_details
+-- still returns e-mail as participant_names.
 --
--- Unread: COUNT(*) of messages in the conversation that are not the viewer's, not deleted and newer than the viewer's own
--- participant last_read_at (never read = everything). One member opening a group no longer clears it for everyone.
+-- Unread: COUNT(*) of messages in the conversation that are not the viewer's,
+-- not deleted and newer than the viewer's own participant last_read_at. One
+-- member opening a group no longer clears it for everyone. A viewer who has
+-- never read:
+--   * a group (is_team_chat, the same test as the is_group column): every
+--     message from someone else, the rule the Fairway hook already applies to
+--     groups (perViewerUnreadTargets), so the RPC and the hook agree.
+--   * a direct conversation: the old `read` flag, which with two people is
+--     already per-viewer. Counting everything there would turn direct messages
+--     read before last_read_at existed back to unread (7 such rows on
+--     production, 2026-11-10).
+-- Production effect, read-only check 2026-11-10 (91 participant rows): no
+-- direct conversation's count changes; group rows change only in the RPC's own
+-- number, which the production build (d0f467a73) already replaces with its
+-- per-viewer count.
 --
 -- ORDER: any time; independent of M1/M2. Rollback re-opens the e-mail leak.
 --
--- VERIFY: select 1 where pg_get_functiondef('public.get_golf_conversations_with_details(uuid)'::regprocedure) not ilike '%email%';
--- VERIFY: select 1 where exists (select 1 from pg_proc p where p.oid = 'public.get_golf_conversations_with_details(uuid)'::regprocedure and p.prosecdef and p.proconfig @> array['search_path=""']);
--- VERIFY: select 1 where has_function_privilege('authenticated', 'public.get_golf_conversations_with_details(uuid)', 'execute') and not has_function_privilege('anon', 'public.get_golf_conversations_with_details(uuid)', 'execute');
+-- VERIFY: select 1 where pg_get_functiondef('public.get_golf_conversations_with_details(uuid)'::regprocedure) not ilike '%email%'; -- noqa: LT05
+-- VERIFY: select 1 where exists (select 1 from pg_proc p where p.oid = 'public.get_golf_conversations_with_details(uuid)'::regprocedure and p.prosecdef and p.proconfig @> array['search_path=""']); -- noqa: LT05
+-- VERIFY: select 1 where has_function_privilege('authenticated', 'public.get_golf_conversations_with_details(uuid)', 'execute') and not has_function_privilege('anon', 'public.get_golf_conversations_with_details(uuid)', 'execute'); -- noqa: LT05
 --
--- ROLLBACK: supabase/rollbacks/20261107090200_golf_conversation_list_rpc_privacy.rollback.sql (restores the 20261008160000 body)
+-- ROLLBACK: run the file on the next line (it restores the 20261008160000
+-- body, and with it the e-mail leak and the shared-flag unread count):
+-- supabase/rollbacks/20261107090200_golf_conversation_list_rpc_privacy.rollback.sql  -- noqa: LT05
 -- pgTAP: supabase/tests/rls/golf_conversation_list_rpc_privacy.sql
 
-SET lock_timeout = '3s';
+-- SET LOCAL: the timeout ends with this file's transaction, so it cannot
+-- follow a reused connection. db:apply, supabase db reset and psql -1 each
+-- run the file as one transaction; under a plain `psql -f` this line only
+-- warns and no timeout is set, so never apply it that way.
+SET LOCAL lock_timeout = '3s';
 
 DO $$
 BEGIN
@@ -43,8 +83,10 @@ BEGIN
   END IF;
 END $$;
 
-CREATE OR REPLACE FUNCTION public.get_golf_conversations_with_details(p_user_id uuid)
-RETURNS TABLE(
+CREATE OR REPLACE FUNCTION public.get_golf_conversations_with_details(
+    p_user_id uuid
+)
+RETURNS TABLE (
     id uuid,
     created_at timestamptz,
     updated_at timestamptz,
@@ -89,7 +131,11 @@ BEGIN
       WHERE m.conversation_id = c.id
         AND m.sender_id <> v_uid
         AND NOT COALESCE(m.is_deleted, FALSE)
-        AND CASE WHEN cp.last_read_at IS NULL THEN NOT COALESCE(m.read, FALSE) ELSE m.created_at > cp.last_read_at END),
+        AND CASE
+              WHEN cp.last_read_at IS NOT NULL THEN m.created_at > cp.last_read_at
+              WHEN COALESCE(c.is_team_chat, FALSE) THEN TRUE
+              ELSE NOT COALESCE(m.read, FALSE)
+            END),
     ARRAY(SELECT cp2.user_id
           FROM public.golf_conversation_participants cp2
           WHERE cp2.conversation_id = c.id
@@ -128,6 +174,9 @@ BEGIN
 END;
 $$;
 
--- CREATE OR REPLACE keeps the existing ACL; state it anyway so a re-run is explicit.
-REVOKE ALL ON FUNCTION public.get_golf_conversations_with_details(uuid) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.get_golf_conversations_with_details(uuid) TO authenticated, service_role;
+-- CREATE OR REPLACE keeps the existing ACL; state it anyway so a re-run is
+-- explicit.
+REVOKE ALL ON FUNCTION public.get_golf_conversations_with_details(uuid)
+FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.get_golf_conversations_with_details(uuid)
+TO authenticated, service_role;
