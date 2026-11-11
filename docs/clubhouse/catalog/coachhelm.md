@@ -113,7 +113,7 @@ restoring it) are inside the action, so a toast's Retry completes them.
 | CH-13007 | Re-check rate-limited | Refused by the engine's rate limit (5 runs a minute per coach). The action's own words as the line: "Too many analyze requests in the last minute — please wait a moment and try again."; not reported as a failure; the board is not read again | `RecheckReads`, `COACHHELM_ENGINE_RATE_LIMITED` (`lib/auth/action-rate-limit-messages.ts`) | coachhelm-recheck.test › CH-13007 |
 | CH-13050 | Ask: An action CoachHelm proposed fails after Confirm | A toast "Create focus area, not completed" with the reason; the card becomes the failed receipt | `Thread` (the receipt stream) | coachhelm-thread-ui.test › CH-13050 |
 | CH-13080 | Practice: three saves in a row failed (the design's CH-17001) | "Couldn't save · Try again" beside the title | `useAutosave` | practice-screens |
-| CH-13081 | Practice: publish went through | "Published" and who was told; a refusal says so in the sheet and nothing was sent | `Builder` | practice-screens |
+| CH-13081 | Practice: publish went through | Publish first confirms: three facts (When, Tells, Files to), "You get 8 seconds to undo before anyone is told.", then the one press under them ("Publish to 11 people"; "Republish" with What changed and Tell players). Then an 8 second hold with Undo, and "Published" and who was told. A refusal reopens the confirm with the reason and nothing was sent | `Builder` | practice-screens |
 | CH-13082 | Practice: Delete draft refused | "Couldn't delete the plan" | `Builder` | practice-screens |
 | CH-13083 | Practice: a new drill saved | "Saved to your drill bank", and it lands in the slot | `Builder`, `NewDrillSheet` | practice-screens |
 | CH-13084 | Practice: offline while editing | "Offline · changes kept on this device"; saved on reconnect | `useAutosave` | practice-screens |
@@ -203,9 +203,9 @@ restoring it) are inside the action, so a toast's Retry completes them.
 | CH-13324 | Ask: A chat search with no match | Search chats filters by title, and no match says so | `History` | coachhelm-ask.test › CH-13324 |
 | CH-13350 | Ask: A read tool found nothing recorded | The evidence says nothing is recorded for it, distinct from a failed read (CH-13250) | `Evidence` | coachhelm-thread-ui.test › CH-13350 |
 | CH-13333 | Player: no course has three of their countable rounds yet, or the course picked has fewer than three (chs-21) | "No course has three of your rounds on it yet. A plan needs three rounds on one course, with the course picked when you start the round." (or "You have 2 countable rounds at Pine Hollow. A plan needs three.") | `MyCoursePlan`, `PlanLines` | my-course-plan.test › says so when no course has three rounds |
-| CH-13395 | Practice: New plan, and someone with no team | The New plan sheet; NoTeam | `NewPlanSheet`, `PracticeHomeRoute` | practice-screens |
-| CH-13396 | Practice: a coach's first plan, or no practice this week | "Plan your first practice"; "No practices this week" | `PracticeHome` | practice-screens |
-| CH-13397 | Practice: a player with nothing published | "Your coach hasn't published a plan for this practice yet." | `PlayerPracticeHome` | practice-screens |
+| CH-13395 | Practice: New plan, and someone with no team | The New plan sheet: which practice, then Start from (Blank, Copy a past practice, Ask CoachHelm; a template when one was picked). With Ask CoachHelm it asks "What should Thursday cover?": How long (the calendar's window and the two half-hours under it, the window picked) and Work on (pick any, none picked), and the press reads "Build plan"; both picks go in the helper's first message. Otherwise "Create plan". NoTeam for someone with no team | `NewPlanSheet`, `PracticeHomeRoute`, `askWords` | practice-screens; new-plan-ask |
+| CH-13396 | Practice: a coach's first plan, or no practice this week | First plan: one card, "Plan your first practice", with three starts (Ask CoachHelm, Start from a template, Blank) and no empty Drafts or Published headers; with no practice on the calendar to plan, "Add a practice" instead of the starts. No practice this week: "No practices this week" and the plans still list | `PracticeHome` | practice-screens; practice-states |
+| CH-13397 | Practice: a player with nothing published | "Your coach hasn't published a plan for this practice yet." With a published plan the page leads with their own next practice (focus, their group, the stop that is on now and the next two) and never a draft, a Because or another group's stops | `PlayerPracticeHome` | practice-screens; practice-states |
 
 ## 134xx Loading
 
@@ -283,7 +283,7 @@ in place.
 | CH-13852 | Ask: Evidence drawn as a chart | View as table shows the same numbers as a table | `Evidence` | coachhelm-thread-ui.test › CH-13852 |
 | CH-13853 | Ask: A validated visual (strokes gained anatomy) | Each part of the game is a button that opens its sample; arrow keys move between them; View as table shows the same figures; a note carries no figure of its own. Drawn from the figures stored in the message, so a reload draws the same chart | `CoachVisualArtifact` | coachhelm-visual-artifact.test › CH-13853 |
 | CH-13895 | Practice: a block's sheet on a phone, or Swap | Named by the block; Alt+Up and Alt+Down move a focused block | `Builder` | practice-screens |
-| CH-13896 | Practice: the time ribbon changes | Announced politely | `Builder` | practice-screens |
+| CH-13896 | Practice: the time ribbon changes | Announced politely. The ribbon is the day to scale (a segment a block, as wide as its minutes, coloured by its drill's kind; suggestions outlined; open time empty), named for a screen reader in words ("6 blocks, 3 h"), with a legend that counts the same minutes | `Builder`, `DayStrip` | practice-screens; practice-states |
 
 ## 139xx Network and UX
 

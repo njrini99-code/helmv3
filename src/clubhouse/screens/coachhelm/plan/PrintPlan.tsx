@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
+import { clubhouseFontVariables } from '../../../lib/fonts';
 import { PracticePlanSheet } from './sheet/PracticePlanSheet';
 import type { PlanSheetModel } from './sheet/plan-sheet-model';
 
@@ -16,7 +17,9 @@ export async function printNode(node: ReactNode): Promise<void> {
   // A second Print replaces the first; iOS often never fires afterprint in the home-screen app.
   document.querySelectorAll('.ch-cp-print-root').forEach((el) => el.remove());
   const host = document.createElement('div');
-  host.className = 'ch-cp-print-root';
+  // The font variables live on the Clubhouse root, which this host is outside of. Without them `--ch-font-sans` is invalid, every `font: var(--ch-type-*)`
+  // falls back to the browser's default, and the sheet prints in one size of system type (seen in WebKit's print render, 10 Nov 2026).
+  host.className = `ch-cp-print-root ${clubhouseFontVariables}`;
   // The print root sits outside the app's tree, and the type and space tokens live on this attribute.
   host.setAttribute('data-ui', 'clubhouse');
   document.body.appendChild(host);
@@ -48,7 +51,7 @@ export async function printNode(node: ReactNode): Promise<void> {
  */
 export async function sharePlanPdf(plan: PlanSheetModel): Promise<boolean> {
   const host = document.createElement('div');
-  host.className = 'ch-cp-print-root ch-cp-pdf-root';
+  host.className = `ch-cp-print-root ch-cp-pdf-root ${clubhouseFontVariables}`;
   host.setAttribute('data-ui', 'clubhouse');
   document.body.appendChild(host);
   const root = createRoot(host);

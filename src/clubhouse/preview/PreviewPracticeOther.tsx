@@ -100,8 +100,15 @@ const PRINT_DRILLS: PrintDrill[] = [
 
 const LONG_DRILLS: PrintDrill[] = Array.from({ length: 14 }, (_, i) => ({ ...PRINT_DRILLS[i % 2]!, name: `${PRINT_DRILLS[i % 2]!.name}, set ${i + 1}` }));
 
-/** `coachhelm-practice-print?state=norotation|nodrills|draft|unread|long|cards`: the print studio on the design's plan. `unread`: the drills read failed. `long`: a 14-drill appendix, switched on. */
+/** `coachhelm-practice-print?state=norotation|nodrills|draft|unread|long|cards|tall`: the print studio on the design's plan. `unread`: the drills read failed. `long`: a 14-drill appendix, switched on. */
 export function PreviewPracticePrint({ state }: { state?: string }) {
+  // `tall`: the same plan four times over (24 blocks, four rotations), so the coach copy's schedule runs past one sheet and the page breaks can be seen.
+  if (state === 'tall') {
+    const blocks = [0, 1, 2, 3].flatMap((n) => PP_PLAN_PART.draft.body.variants.main.blocks.map((b) => ({ ...b, id: `${b.id}-${n}`, title: n ? `${b.title} ${n + 1}` : b.title, ...(b.kind === 'stations' ? { stations: b.stations.map((st) => ({ ...st, id: `${st.id}-${n}` })) } : {}) })));
+    const tall = { ...PP_PLAN_PART.draft.body, variants: { ...PP_PLAN_PART.draft.body.variants, main: { blocks } } };
+    const why = Object.fromEntries([0, 1, 2, 3].flatMap((n) => Object.entries(PP_PLAN_PART.draft.why).map(([k, v]) => [`${k}-${n}`, v])));
+    return <PrintStudio plan={toSheetModel({ body: tall, why, title: PP_PLAN_PART.title, team: 'Demo University Golf', start: PRINT_START, end: new Date('2026-11-06T07:00:00Z'), zone: 'America/New_York', coaches: PP_COACHES, names: PP_NAMES, state: 'Published' }, 'coach')} drills={PRINT_DRILLS} startWith={{ board: false }} planHref="/clubhouse-preview/coachhelm-practice-plan" />;
+  }
   const body = state === 'norotation' ? { ...PP_PLAN_PART.draft.body, variants: { ...PP_PLAN_PART.draft.body.variants, main: { blocks: PP_PLAN_PART.draft.body.variants.main.blocks.filter((b) => b.kind !== 'stations') } } } : PP_PLAN_PART.draft.body;
   const plan = toSheetModel({ body, why: PP_PLAN_PART.draft.why, title: PP_PLAN_PART.title, team: 'Demo University Golf', start: PRINT_START, end: new Date('2026-11-05T22:00:00Z'), zone: 'America/New_York', coaches: PP_COACHES, names: PP_NAMES, state: 'Published' }, 'coach');
   return (

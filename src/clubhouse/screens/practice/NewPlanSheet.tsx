@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { copyPlanBody, savePracticePlan } from '@/app/golf/actions/practice-plans';
 import type { PlanBodyV2 } from '@/lib/coachhelm/v3/practice-plan/model';
 import type { ChPracticeEvent } from '../../data/practice-home-shape';
-import { FormSheet } from '../../ui/FormSheet';
+import { PracticeSheet } from './PracticeSheet';
 import { Icon } from '../../ui/Icon';
 import { useToast } from '../../ui/Toast';
 import { TERMS } from '../../lib/glossary';
@@ -89,7 +89,7 @@ export function NewPlanSheet({ open, onClose, events, copies, roster, initialEve
   };
 
   return (
-    <FormSheet open={open} onClose={onClose} title="New plan" actionLabel={asking ? 'Build plan' : 'Create plan'} full onAction={() => void create()} actionDisabled={!event || event.allDay || (start === 'copy' && !copyId)} busy={busy} code="CH-13395">
+    <PracticeSheet open={open} onClose={onClose} title="New plan" actionLabel={asking ? 'Build plan' : 'Create plan'} full onAction={() => void create()} actionDisabled={!event || event.allDay || (start === 'copy' && !copyId)} busy={busy} code="CH-13395">
       <div className="ch-prc-new">
         {error && (
           <p className="ch-prc-new__err" role="alert">
@@ -150,6 +150,6 @@ export function NewPlanSheet({ open, onClose, events, copies, roster, initialEve
           </>
         )}
       </div>
-    </FormSheet>
+    </PracticeSheet>
   );
 }

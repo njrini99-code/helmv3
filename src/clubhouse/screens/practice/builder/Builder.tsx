@@ -16,7 +16,8 @@ import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
 import { PhoneIconAction } from '../../../ui/PhoneBar';
 import { Button } from '../../../ui/Button';
-import { ActionSheet, FormSheet } from '../../../ui/FormSheet';
+import { ActionSheet } from '../../../ui/FormSheet';
+import { PracticeSheet } from '../PracticeSheet';
 import { Switch } from '../../../ui/Switch';
 import { TimeField } from '../../../ui/TimeField';
 import { Icon } from '../../../ui/Icon';
@@ -769,9 +770,9 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
   const sheets = (
     <>
       {phone && activeBlock && (
-        <FormSheet open onClose={() => setSelected(null)} title={activeBlock.title || 'Block'} actionLabel="Done" onAction={() => setSelected(null)} actionDisabled={!activeBlock.title.trim()} code="CH-13895" full>
+        <PracticeSheet open onClose={() => setSelected(null)} title={activeBlock.title || 'Block'} actionLabel="Done" onAction={() => setSelected(null)} actionDisabled={!activeBlock.title.trim()} code="CH-13895" full>
           <BlockFields block={activeBlock} body={body} onChange={(n) => editBlock(activeBlock.id, n)} onRemove={() => deleteBlock(activeBlock.id)} />
-        </FormSheet>
+        </PracticeSheet>
       )}
       <Modal open={bankOpen} title="Add drill" detent={0.8} onClose={() => setBankOpen(false)}>
         <BankList drills={drills} pickLabel="Use" onPick={pickDrill} onNew={() => setNewDrill(true)} />
@@ -788,12 +789,12 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
           if (slot) pickDrill(d);
         }}
       />
-      <FormSheet open={splitOpen} onClose={() => setSplitOpen(false)} title="Split evenly" actionLabel="Split" onAction={() => { setBody((b) => splitGroups(b, splitN)); setSplitOpen(false); }} code="CH-13582" note={body.groups.some((g) => g.players.length) ? 'This replaces the groups you have.' : undefined}>
+      <PracticeSheet open={splitOpen} onClose={() => setSplitOpen(false)} title="Split evenly" actionLabel="Split" onAction={() => { setBody((b) => splitGroups(b, splitN)); setSplitOpen(false); }} code="CH-13582" note={body.groups.some((g) => g.players.length) ? 'This replaces the groups you have.' : undefined}>
         <div className="ch-prc-fields">
           <Segmented label="Number of groups" value={String(splitN)} options={[2, 3, 4, 5, 6].map((n) => ({ value: String(n), label: String(n) }))} onChange={(v) => setSplitN(Number(v))} />
           <p className="ch-prc-note">{plural(body.players.length, 'player')} into {splitN} groups.</p>
         </div>
-      </FormSheet>
+      </PracticeSheet>
       <Modal
         open={confirm}
         onClose={() => setConfirm(false)}
@@ -853,25 +854,46 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
           <p className="ch-prc-note">You get 8 seconds to undo before anyone is told.</p>
         </div>
       </Modal>
-      <FormSheet open={!!moving} onClose={() => setMoving(null)} title="Practice time" actionLabel="Save" onAction={() => setMoveAsk(true)} actionDisabled={!moving?.start}>
+      <PracticeSheet open={!!moving} onClose={() => setMoving(null)} title="Practice time" actionLabel="Save" onAction={() => setMoveAsk(true)} actionDisabled={!moving?.start}>
         {moving && (
           <div className="ch-prc-timeform">
             <TimeField label="Starts" value={moving.start} onChange={(v) => setMoving({ ...moving, start: v })} />
             <TimeField label="Ends" value={moving.end} onChange={(v) => setMoving({ ...moving, end: v })} />
           </div>
         )}
-      </FormSheet>
-      <ActionSheet
-        open={moveAsk}
-        onClose={() => setMoveAsk(false)}
-        title={moving ? `Also move ${data.dayWord} practice to ${moving.start ? formatWallClock(moving.start) : ''} on the calendar?` : ''}
-        message={data.inSeries ? 'Only this practice moves. The rest of the series stays.' : undefined}
-        actions={[{ label: 'Move practice', onClick: () => void movePractice() }]}
-      />
-      <FormSheet open={askDelete} onClose={() => setAskDelete(false)} title="Delete this draft?" actionLabel="Delete" danger onAction={() => void doDelete()} busy={deleting} code="CH-13082">
+      </PracticeSheet>
+      {phone ? (
+        <ActionSheet
+          open={moveAsk}
+          onClose={() => setMoveAsk(false)}
+          title={moving ? `Also move ${data.dayWord} practice to ${moving.start ? formatWallClock(moving.start) : ''} on the calendar?` : ''}
+          message={data.inSeries ? 'Only this practice moves. The rest of the series stays.' : undefined}
+          actions={[{ label: 'Move practice', onClick: () => void movePractice() }]}
+        />
+      ) : (
+        // The phone's action sheet has no desk drawing: on a Mac the same question is the shared Modal.
+        <Modal
+          open={moveAsk}
+          onClose={() => setMoveAsk(false)}
+          title={moving ? `Also move ${data.dayWord} practice to ${moving.start ? formatWallClock(moving.start) : ''} on the calendar?` : ''}
+          description={data.inSeries ? 'Only this practice moves. The rest of the series stays.' : undefined}
+          width={440}
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setMoveAsk(false)}>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={() => void movePractice()}>
+                Move practice
+              </Button>
+            </>
+          }
+        />
+      )}
+      <PracticeSheet open={askDelete} onClose={() => setAskDelete(false)} title="Delete this draft?" actionLabel="Delete" danger onAction={() => void doDelete()} busy={deleting} code="CH-13082">
         <p className="ch-prc-note">Players never saw it. This can’t be undone.</p>
-      </FormSheet>
-      <FormSheet open={!!swap} onClose={() => setSwap(null)} title="Swap drill" actionLabel="Done" onAction={() => setSwap(null)} code="CH-13895">
+      </PracticeSheet>
+      <PracticeSheet open={!!swap} onClose={() => setSwap(null)} title="Swap drill" actionLabel="Done" onAction={() => setSwap(null)} code="CH-13895">
         <div className="ch-prc-bank">
           {swap && altsOf(swap).map((a) => (
             <button key={a.ref} type="button" className="ch-prc-drill" onClick={() => pickSwap(swap, a.ref)}>
@@ -880,7 +902,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
             </button>
           ))}
         </div>
-      </FormSheet>
+      </PracticeSheet>
     </>
   );
 

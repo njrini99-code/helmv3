@@ -13,11 +13,11 @@
   padding: var(--ch-page-top-coachhelm) var(--ch-page-gutter) var(--ch-page-bottom);
   color: var(--ch-text-primary);
 }
+/* No colour here: a heading takes the ink of what it sits on (the page's, or the printed sheet's paper, which stays light in dark). */
 .ch-prc h2 {
   margin: 0;
   font: var(--ch-type-15-strong);
   letter-spacing: var(--ch-track-15);
-  color: var(--ch-text-primary);
 }
 .ch-prc-h {
   display: flex;
@@ -406,6 +406,11 @@ span.ch-prc-tile__it {
   font: var(--ch-type-14);
   letter-spacing: var(--ch-track-14);
   color: var(--ch-text-secondary);
+}
+/* A form in the desk's modal: its fields, then anything the save had to say. */
+.ch-prc-sheetform {
+  display: grid;
+  gap: 12px;
 }
 /* Ask CoachHelm's two questions, on the sheet's own well. */
 .ch-prc-ask {

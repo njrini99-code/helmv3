@@ -46,7 +46,7 @@ const HOME: ChPracticeHome = {
   published: [{ id: 'c', day: 'Tue, Nov 10', title: 'Hargrove week tune-up', time: '3:00 to 5:30 PM', line: '3:00 Warm-up · 3:20 Wedges', state: 'Updated', href: '/golf/dashboard/practice/plan/c', edits: true }],
   past: [{ id: 'a', day: 'Tue, Nov 3', title: 'Tuesday practice', time: '3:00 to 5:00 PM', line: '3:00 Warm-up · 3:15 Short game', state: 'Done', href: '/golf/dashboard/practice/plan/a' }],
   open: [
-    { id: 'e-fri', label: 'Friday, Nov 6', detail: '2:00 to 4:30 PM · Lakeside', title: 'Friday practice', place: 'Lakeside', allDay: false },
+    { id: 'e-fri', label: 'Friday, Nov 6', detail: '2:00 to 4:30 PM · Lakeside', title: 'Friday practice', place: 'Lakeside', allDay: false, minutes: 150 },
     { id: 'e-mon', label: 'Monday, Nov 9', detail: 'All day · Lakeside', title: 'Monday practice', place: 'Lakeside', allDay: true },
   ],
   copies: [{ id: 'a', label: 'Tuesday practice · Tue, Nov 3' }],
@@ -73,7 +73,8 @@ const PLAYER: ChPlayerPracticeHome = {
       { time: '4:55', place: 'Clubhouse patio', line: 'Wrap' },
     ],
   },
-  week: WEEK.map((t) => ({ ...t, items: t.items.filter((i) => i.state === 'Done').map((i) => ({ ...i, eventId: null })) })),
+  // What a player's week holds: live plans only. Thursday's is the published plan the card above draws; Friday has none published, so it shows nothing.
+  week: WEEK.map((t) => ({ ...t, items: t.items.flatMap((i) => (i.state === 'Done' ? [{ ...i, eventId: null }] : i.state === 'Draft' ? [{ ...i, state: 'Published' as const, href: '/golf/dashboard/practice/plan/c', eventId: null }] : [])) })),
   upcoming: [],
   past: [{ id: 'a', day: 'Tue, Nov 3', title: 'Tuesday practice', time: '3:00 to 5:00 PM', line: '3:00 Warm-up · 3:15 Short game', state: 'Done', href: '/golf/dashboard/practice/plan/a' }],
 };

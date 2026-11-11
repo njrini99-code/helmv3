@@ -15,7 +15,7 @@ import { PhoneIconAction } from '../../ui/PhoneBar';
 import { Avatar } from '../../ui/Avatar';
 import { Badge } from '../../ui/Badge';
 import { Button, IconButton } from '../../ui/Button';
-import { FormSheet } from '../../ui/FormSheet';
+import { PracticeSheet } from './PracticeSheet';
 import { Icon } from '../../ui/Icon';
 import { LargeTitle } from '../../ui/LargeTitle';
 import { Menu } from '../../ui/Menu';
@@ -177,7 +177,7 @@ export function DrillPage({ teamId, drill, preview = false }: { teamId: string; 
     router.push('/golf/dashboard/practice/drills');
   };
   return (
-    <main className={'ch-page ch-prc ch-prc-drill' + (phone ? ' is-phone' : '')} data-ch="practice" aria-labelledby="ch-prc-title">
+    <main className={'ch-page ch-prc ch-prc-drillpage' + (phone ? ' is-phone' : '')} data-ch="practice" aria-labelledby="ch-prc-title">
       {phone && <PhoneTop title="Drill" back={{ label: 'Drills', onBack: () => router.push('/golf/dashboard/practice/drills') }} />}
       <header className="ch-prc-h">
         <div>
@@ -238,7 +238,7 @@ export function DrillPage({ teamId, drill, preview = false }: { teamId: string; 
           </div>
         )}
       </dl>
-      <FormSheet open={editing} onClose={() => setEditing(false)} title="Edit drill" onAction={() => void save()} actionDisabled={!name.trim()} busy={busy}>
+      <PracticeSheet open={editing} onClose={() => setEditing(false)} title="Edit drill" onAction={() => void save()} actionDisabled={!name.trim()} busy={busy}>
         <div className="ch-prc-fields">
           <div className="ch-field">
             <label className="ch-field__label" htmlFor="ch-prc-d-n">
@@ -275,7 +275,7 @@ export function DrillPage({ teamId, drill, preview = false }: { teamId: string; 
             <input id="ch-prc-d-g" className="ch-input" maxLength={200} value={goal} onChange={(e) => setGoal(e.target.value)} />
           </div>
         </div>
-      </FormSheet>
+      </PracticeSheet>
       <Modal
         open={archiving}
         onClose={() => setArchiving(false)}
@@ -367,7 +367,7 @@ export function GroupsPage({ teamId, groups, roster, preview = false }: { teamId
           ))}
         </ul>
       )}
-      <FormSheet open={!!editing} onClose={() => setEditing(null)} title={editing === 'new' ? 'New group' : 'Edit group'} onAction={() => void save()} actionDisabled={!name.trim()} busy={busy} full>
+      <PracticeSheet open={!!editing} onClose={() => setEditing(null)} title={editing === 'new' ? 'New group' : 'Edit group'} onAction={() => void save()} actionDisabled={!name.trim()} busy={busy} full>
         <div className="ch-prc-fields">
           {problem && (
             <p className="ch-field__help is-error" role="alert">
@@ -400,7 +400,7 @@ export function GroupsPage({ teamId, groups, roster, preview = false }: { teamId
             </Button>
           )}
         </div>
-      </FormSheet>
+      </PracticeSheet>
       <Modal
         open={deleting}
         onClose={() => setDeleting(false)}
@@ -535,7 +535,7 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
           </ul>
         )}
       </section>
-      <FormSheet open={!!renaming} onClose={() => setRenaming(null)} title="Rename template" onAction={() => void rename()} actionDisabled={!name.trim()} busy={busy}>
+      <PracticeSheet open={!!renaming} onClose={() => setRenaming(null)} title="Rename template" onAction={() => void rename()} actionDisabled={!name.trim()} busy={busy}>
         <div className="ch-prc-fields">
           <div className="ch-field">
             <label className="ch-field__label" htmlFor="ch-prc-t-n">
@@ -544,7 +544,7 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
             <input id="ch-prc-t-n" className="ch-input" maxLength={60} value={name} onChange={(e) => setName(e.target.value)} />
           </div>
         </div>
-      </FormSheet>
+      </PracticeSheet>
       <Modal
         open={!!deleting}
         onClose={() => setDeleting(null)}

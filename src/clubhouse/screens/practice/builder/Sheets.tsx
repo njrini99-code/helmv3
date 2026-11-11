@@ -9,7 +9,7 @@ import { stationsLen } from '@/lib/coachhelm/v3/practice-plan/model';
 import type { ChBankDrill } from '../../../data/practice-home-shape';
 import { haptic } from '../../../lib/haptics';
 import { Button } from '../../../ui/Button';
-import { FormSheet } from '../../../ui/FormSheet';
+import { PracticeSheet } from '../PracticeSheet';
 import { Icon } from '../../../ui/Icon';
 import { Select } from '../../../ui/Select';
 import { fmtMinutes, PLACES, setHoles, setStationCount, stepLength } from './builder-model';
@@ -251,7 +251,7 @@ export function NewDrillSheet({ open, onClose, teamId, onSaved, preview = false 
     }
   };
   return (
-    <FormSheet open={open} onClose={onClose} title="New drill" actionLabel="Save" onAction={() => void save()} actionDisabled={!name.trim()} busy={busy} dirty={!!name} code="CH-13083" note={error ?? undefined}>
+    <PracticeSheet open={open} onClose={onClose} title="New drill" actionLabel="Save" onAction={() => void save()} actionDisabled={!name.trim()} busy={busy} dirty={!!name} code="CH-13083" note={error ?? undefined}>
       <div className="ch-prc-fields">
         <div className="ch-field">
           <label className="ch-field__label" htmlFor={`${id}-n`}>
@@ -274,6 +274,6 @@ export function NewDrillSheet({ open, onClose, teamId, onSaved, preview = false 
           <Stepper label="Minutes" value={`${minutes} min`} lessOff={minutes <= 5} moreOff={minutes >= 180} onLess={() => setMinutes((m) => m - 5)} onMore={() => setMinutes((m) => m + 5)} />
         </div>
       </div>
-    </FormSheet>
+    </PracticeSheet>
   );
 }
