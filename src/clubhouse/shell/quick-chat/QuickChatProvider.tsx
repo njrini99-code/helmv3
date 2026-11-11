@@ -34,7 +34,8 @@ export const useQuickChatRun = (): UseCoachHelmChatResult | null => useContext(Q
 export function QuickChatProvider({ plans = false, pathname, search, enabled, children }: { plans?: boolean; pathname: string; search: string; enabled: boolean; children: ReactNode }) {
   // Preview only: `?qc=<state>` opens the panel at that state with the design page's fixture (QC0).
   const previewState = pathname.startsWith('/clubhouse-preview') || process.env.NODE_ENV !== 'production' ? new URLSearchParams(search).get('qc') : null;
-  const initialOpen = !!previewState && previewState !== 'closed' && previewState !== 'live' && previewState !== 'live-work';
+  // `&qcopen=0` starts a preview state with the panel closed, so the pour can be driven from the key.
+  const initialOpen = !!previewState && previewState !== 'closed' && previewState !== 'live' && previewState !== 'live-work' && new URLSearchParams(search).get('qcopen') !== '0';
   const role = useClubhouseRole();
   const on = enabled && role === 'coach';
   const onCoachHelm = pathname === '/golf/dashboard/coachhelm' || pathname.startsWith('/golf/dashboard/coachhelm/');
@@ -109,7 +110,7 @@ export function HelmKey() {
   const reduced = useChReducedMotion();
   const desktop = useCommandDesktop();
   if (!c?.on) return null;
-  const { open, toggle, warm, run, flag, keyRef } = c;
+  const { open, toggle, warm, run, flag, keyRef, session } = c;
   const live = !open && run.state !== 'idle';
   return (
     <span className={'ch-qck keyslot' + (phone ? ' is-phone' : ' is-desk') + (reduced ? ' is-reduce' : '')} ref={keyRef}>
@@ -128,6 +129,9 @@ export function HelmKey() {
         onPointerDown={warm}
         onClick={() => {
           haptic('press');
+          // MO-1-3: opening on the empty start, the phone's keyboard rises in this gesture: iOS only raises it for a focus made
+          // inside the tap, and the composer may not be mounted yet, so a field the key owns takes it and hands it on.
+          if (phone && !open && !session?.messages.length) keyRef.current?.querySelector<HTMLInputElement>('.ch-qc-kbd')?.focus({ preventScroll: true });
           toggle();
         }}
       >
@@ -140,6 +144,7 @@ export function HelmKey() {
         <span className="hkey__flag" />
       </button>
       </Tooltip>
+      {phone && <input className="ch-qc-kbd" tabIndex={-1} aria-hidden="true" enterKeyHint="send" />}
       {live && (
         <button type="button" className="live" aria-live="polite" onClick={toggle}>
           <span className="live__ic">

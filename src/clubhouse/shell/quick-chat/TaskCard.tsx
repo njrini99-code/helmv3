@@ -12,6 +12,8 @@ import { land, landed, taskIn, toldIn } from './task-motion';
 import type { AskProposalView } from '../../data/coachhelm-chat-thread';
 import { EventVisual, MessageVisual, QualifierVisual } from './visuals/visuals';
 import { useQcSeam } from './qc-seam';
+import { LANDING_HOMES, saveLanding } from './landing';
+import type { TaskPhase, TaskPhaseMeta } from './use-landing-driver';
 
 /** M-TYPE: text the card writes, one character per tick; a card that isn't new shows it whole, as does Reduce Motion. */
 function useTyped(text: string, perSecond: number, on: boolean): string {
@@ -64,11 +66,13 @@ const toldLine = (n: ReadonlyArray<{ channel: string; recipients: number; status
 };
 
 /** S-TASK: the card, its visual, confirm, busy, receipt with the ring, told, undone, failed, cancelled. Every receipt value is the server's. */
-export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { view: AskProposalView; online: boolean; onSend: (t: string) => void; onApprove: (id: string) => void; onDeny: (id: string) => void; onOpen: (href: string) => void }) {
+export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen, onPhase }: { view: AskProposalView; online: boolean; onSend: (t: string) => void; onApprove: (id: string) => void; onDeny: (id: string) => void; onOpen: (href: string) => void; /** The card moved on while the coach watched: the landing in the page behind follows it (QUICK-CHAT.md, Moment 8). */ onPhase?: (key: string, phase: TaskPhase, meta: TaskPhaseMeta) => void }) {
   // Quick chat draws its three (S-TASK); any other flow's card is generic here, and its picture is Ask's.
   const drawn = view.proposal.visual;
   const visual = drawn?.kind === 'cal' || drawn?.kind === 'msg' || drawn?.kind === 'qual' ? drawn : null;
-  const w = visual ? WORDS[visual.kind] : { icon: 'M5 12l5 5 9-11', sub: 'CoachHelm', chip: 'Done', busy: 'Working…', done: 'Done', failTitle: 'That didn’t go through' };
+  // A flow with no picture of its own still says where its thing lives: "Added to Tasks".
+  const place = LANDING_HOMES[view.tool]?.place ?? null;
+  const w = visual ? WORDS[visual.kind] : { icon: 'M5 12l5 5 9-11', sub: place ?? 'CoachHelm', chip: place ? 'Added' : 'Done', busy: place ? 'Adding…' : 'Working…', done: place ? `Added to ${place}` : 'Done', failTitle: 'That didn’t go through' };
   const seam = useQcSeam();
   const [phase, setPhase] = useState<Phase>(() => (seam?.taskPhase === 'undone' ? { k: 'undone' } : phaseOf(view)));
   const [late, setLate] = useState(false);
@@ -76,6 +80,7 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
   const ring = useRef<SVGCircleElement>(null);
   const card = useRef<HTMLElement>(null);
   const key = view.key;
+  const title = visual?.kind === 'cal' || visual?.kind === 'qual' ? visual.title : visual?.kind === 'msg' ? visual.thread : view.proposal.summary;
   const reduced = useChReducedMotion();
   // The land plays over the draft's chip and footer; the receipt arrives when it ends (M-LAND, M-CHIP, M-RCPT).
   const [landing, setLanding] = useState(false);
@@ -91,6 +96,11 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
       if (phase.k === 'draft') void taskIn(el, reduced);
       return;
     }
+    // Only a change the coach watched is an event: a card drawn from a stored thread lands nothing.
+    const meta: TaskPhaseMeta = { tool: view.tool, label: title, day: visual?.kind === 'cal' ? visual.date : visual?.kind === 'qual' ? visual.start : null, heldUntil: phase.k === 'held' ? phase.until : null };
+    if (phase.k === 'held') onPhase?.(key, 'held', meta);
+    else if (phase.k === 'done' && before !== 'done') onPhase?.(key, 'saved', meta);
+    else if (phase.k === 'undone' || phase.k === 'failed') onPhase?.(key, phase.k, meta);
     if ((before === 'draft' || before === 'busy') && (phase.k === 'held' || phase.k === 'done')) {
       setLanding(true);
       void land(el, visual?.kind ?? 'generic', reduced).then(() => setLanding(false));
@@ -121,8 +131,7 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
     let alive = true;
     const end = setTimeout(async () => {
       for (let i = 0; i < 5 && alive; i++) {
-        const res = await fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(key)}`).catch(() => null);
-        const row = (await res?.json().catch(() => null)) as { receipt?: AskProposalView['receipt'] } | null;
+        const row = seam?.act ? await seam.act(key, 'poll') : ((await (await fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(key)}`).catch(() => null))?.json().catch(() => null)) as { receipt?: AskProposalView['receipt'] } | null);
         if (row?.receipt && row.receipt.status !== 'held') {
           if (alive) setPhase(phaseOf({ ...view, receipt: row.receipt }));
           return;
@@ -139,20 +148,20 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
   }, [held, key]);
 
   const undo = async () => {
-    const res = await fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(key)}`, { method: 'DELETE' }).catch(() => null);
-    if (res?.ok) setPhase({ k: 'undone' });
+    const ok = seam?.act ? !!(await seam.act(key, 'undo')) : !!(await fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(key)}`, { method: 'DELETE' }).catch(() => null))?.ok;
+    if (ok) setPhase({ k: 'undone' });
     else setLate(true);
   };
   const open = async () => {
-    const res = await fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(key)}?now=1`, { method: 'POST' }).catch(() => null);
-    const row = (await res?.json().catch(() => null)) as { receipt?: AskProposalView['receipt'] } | null;
+    const row = seam?.act ? await seam.act(key, 'now') : ((await (await fetch(`/api/coachhelm/v3/chat/actions/${encodeURIComponent(key)}?now=1`, { method: 'POST' }).catch(() => null))?.json().catch(() => null)) as { receipt?: AskProposalView['receipt'] } | null);
+    // The hold ended early because the coach asked: the card is saved from this frame, and the page behind hears of it.
+    if (row?.receipt && row.receipt.status !== 'held') setPhase((p) => (p.k === 'undone' ? p : phaseOf({ ...view, receipt: row.receipt! })));
     const href = row?.receipt?.created[0]?.href ?? view.receipt?.created[0]?.href ?? (visual?.kind === 'msg' ? `/golf/dashboard/messages?conversation=${visual.conversationId}` : visual?.kind === 'qual' ? '/golf/dashboard/qualifiers' : '/golf/dashboard/calendar');
     onOpen(href);
   };
 
   const toldNames = view.proposal.affects.filter((a) => a.kind === 'player').map((a) => a.label);
   const shown: Phase = landing ? { k: 'busy' } : phase;
-  const title = visual?.kind === 'cal' || visual?.kind === 'qual' ? visual.title : visual?.kind === 'msg' ? visual.thread : view.proposal.summary;
   const typed = useTyped(title, 38, typing);
   const chip = shown.k === 'draft' || shown.k === 'busy' ? 'Draft' : phase.k === 'undone' ? 'Undone' : phase.k === 'failed' ? 'Not saved' : phase.k === 'cancelled' ? 'Cancelled' : w.chip;
   const chipTone = shown.k === 'held' || shown.k === 'done' ? 'positive' : shown.k === 'failed' ? 'warning' : 'neutral';
@@ -245,7 +254,11 @@ export function TaskCard({ view, online, onSend, onApprove, onDeny, onOpen }: { 
               </span>
               <span className="rcpt__a">
                 {(phase as { href: string | null }).href && (
-                  <button className="tbtn" type="button" data-a="open" onClick={() => onOpen((phase as { href: string | null }).href!)}>
+                  <button className="tbtn" type="button" data-a="open" onClick={() => {
+                      // Wherever it lives, it lands the same way: the destination finds the row and marks it (MO-8-5).
+                      saveLanding({ key, tool: view.tool, label: title });
+                      onOpen((phase as { href: string | null }).href!);
+                    }}>
                     Open
                   </button>
                 )}

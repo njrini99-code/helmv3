@@ -1,108 +1,118 @@
 'use client';
-import { pluralWord } from '../../lib/plural';
-import { AskProse } from '../../screens/coachhelm/chat/Prose';
 
+import { ArrowUpRight, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useCoachHelmChat } from '@/components/golf/coachhelm/chat/useCoachHelmChat';
-import { describeChatError } from '../../data/coachhelm-chat-error';
-import { buildTurns, pendingApproval, stepsReceipt, type AskAssistantTurn } from '../../data/coachhelm-chat-thread';
+import type { ChatUIMessage } from '@/lib/coachhelm/v3/chat/engine/protocol';
+import { haptic } from '../../lib/haptics';
+import { useChMotionMode } from '../../lib/reduced-motion';
 import { useChPhone } from '../../lib/use-phone';
-import { useChReducedMotion } from '../../lib/reduced-motion';
 import { conversationHref } from '../../screens/coachhelm/chat/History';
-import { subscribeOnline } from '../AskSheetBody';
-import { modKey } from '../command/shortcuts';
+import { Button } from '../../ui/Button';
+import { Icon } from '../../ui/Icon';
 import type { ChAskSheetChat } from '../AskSheet';
 import { HelmMark, useQcCtx } from './qc-context';
-import { QuickAsk } from './QuickAsk';
 import { useQcSeam } from './qc-seam';
-import { quickStarts, START_ICON } from './starts';
-import { PlanTask } from './visuals/PlanTask';
-import { useEarlierToday } from './earlier-today';
-import { TaskCard } from './TaskCard';
-import { useQcMotion } from './useQcMotion';
-import { useDictation } from './useDictation';
-import { ASK_STARTERS } from '../../data/coachhelm-chat-shape';
-import { Menu } from '../../ui/Menu';
+import { DRAG_CLOSE_SHARE, DRAG_FLING, DRAG_SLOP_PX } from './qc-timing';
+import { QuickChatThread } from './QuickChatThread';
+import { readTodayThread } from './earlier-today';
+import { dragCloses, useQcMotion } from './useQcMotion';
 
-const TURNS_SHOWN = 30;
-/** AC-QC-STP-04: past six rows, the oldest done ones fold. */
-const STEPS_SHOWN = 6;
-/** A release this far up on the header or grab bar closes the phone panel (M-CLOSE's build rule); the panel doesn't follow the finger. */
-const SWIPE_SLOP = 10;
-const Ico = ({ d, size }: { d: string; size?: number }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width={size} height={size} aria-hidden="true">
-    <path d={d} />
-  </svg>
-);
+const ASK_HOME = '/golf/dashboard/coachhelm/chat';
+/** The keyboard's height once it has been seen this session, so the next open pours with the composer already in place (MO-1-3). */
+let knownKeyboard = 0;
+let entrySeq = 0;
 
-/** The session and panel. Mounted once on `warm`; a path change doesn't touch the run. */
-export default function QuickChatSession({ open, onClose, looking, pathname, planOn = false, chat: useChatImpl = useCoachHelmChat, initialText = '' }: { planOn?: boolean; open: boolean; onClose: () => void; looking: { label: string; playerId: string | null; playerName: string | null }; pathname: string; chat?: ChAskSheetChat; initialText?: string }) {
+/**
+ * "Inert others": every sibling of each kept element's ancestors, up to the body, stops taking pointer, key and
+ * VoiceOver focus. The page behind stays drawn and alive; only the chat and its key can be reached.
+ */
+export function inertOthers(keep: readonly Element[]): () => void {
+  const changed: HTMLElement[] = [];
+  const kept = (el: Element) => keep.some((k) => el === k || el.contains(k));
+  for (const k of keep) {
+    for (let node: Element | null = k; node && node !== document.body && node.parentElement; node = node.parentElement) {
+      for (const sib of node.parentElement.children) {
+        if (sib === node || kept(sib) || !(sib instanceof HTMLElement) || sib.inert || sib.tagName === 'SCRIPT' || sib.tagName === 'STYLE') continue;
+        sib.inert = true;
+        changed.push(sib);
+      }
+    }
+  }
+  return () => {
+    for (const el of changed) el.inert = false;
+  };
+}
+
+/**
+ * The quick chat's frame (QUICK-CHAT.md, Moment 1): the panel that pours out of the key, its scrim, its header, every
+ * way of closing it, and what the page behind does meanwhile. The conversation inside is `QuickChatThread`, mounted
+ * once on `warm` and never keyed by path: the stream route aborts when its request goes, so a remount per path would
+ * end the run (wiring QW1).
+ */
+export default function QuickChatSession({ open, onClose, looking, pathname, planOn = false, chat = useCoachHelmChat, initialText = '' }: { planOn?: boolean; open: boolean; onClose: () => void; looking: { label: string; playerId: string | null; playerName: string | null }; pathname: string; chat?: ChAskSheetChat; initialText?: string }) {
   const router = useRouter();
   const phone = useChPhone();
-  const reduced = useChReducedMotion();
-  const online = useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
-  const { keyRef, setRun, setFlag, setSession } = useQcCtx();
-  const chat = useChatImpl({ surface: 'quick_chat', initialContext: looking.playerId ? [{ kind: 'player', id: looking.playerId, label: looking.playerName ?? 'This player' }] : undefined });
-  const turns = useMemo(() => buildTurns(chat.messages, { busy: chat.busy }), [chat.messages, chat.busy]);
-  const pending = pendingApproval(chat.messages);
-  // A fresh object each render: effects key on its id, or setting the key's state re-renders into a loop.
-  const pendingId = pending?.approvalId ?? null;
-  const notice = chat.error ? describeChatError(chat.error) : null;
-  const [text, setText] = useState(initialText);
-  const mic = useDictation((words) => setText((t) => (t.trim() ? `${t.trimEnd()} ${words}` : words)));
-  // The turn that was stopped, not the session: an earlier finished turn stays finished.
-  const [stoppedId, setStoppedId] = useState<string | null>(null);
+  const mode = useChMotionMode();
+  const seam = useQcSeam();
+  const { keyRef, session } = useQcCtx();
   const panel = useRef<HTMLElement>(null);
-  // MOB-QC-13: one announcement when an answer finishes, not one per streamed word.
-  const finished = useMemo(() => (chat.busy ? '' : ([...turns].reverse().find((t) => t.role === 'assistant') as { answerText?: string } | undefined)?.answerText ?? ''), [chat.busy, turns]);
-  // MOB-QC-14: on the phone the panel is modal for VoiceOver too, which aria-modal alone isn't in Safari.
-  useEffect(() => {
-    if (!phone || !open) return;
-    const root = document.querySelector<HTMLElement>('.ch-root');
-    if (!root) return;
-    const was = root.inert;
-    root.inert = true;
-    return () => {
-      root.inert = was;
-    };
-  }, [phone, open]);
   const scrim = useRef<HTMLDivElement>(null);
-  const body = useRef<HTMLDivElement>(null);
   const field = useRef<HTMLTextAreaElement>(null);
   const [shown, setShown] = useState(open);
-  const motion = useQcMotion(reduced);
+  const [text, setText] = useState(initialText);
+  const motion = useQcMotion(mode);
+  /** The close is the app going somewhere (Open in Ask, a receipt's Open): focus and history belong to the destination. */
+  const leaving = useRef(false);
 
+  // `ST-9.qc.today.restored`: today's thread, read once when the key is first warmed. The live hook holds it from then on.
+  const live = chat === useCoachHelmChat && !seam;
+  const [restored, setRestored] = useState<{ id: string; messages: ChatUIMessage[] } | null>(null);
+  const [restoring, setRestoring] = useState(live);
+  const sessionAt = useRef(session);
+  sessionAt.current = session;
   useEffect(() => {
-    setSession(chat);
-    return () => setSession(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- the hook's result changes when the run does
-  }, [chat.messages, chat.busy, chat.conversationId]);
+    if (!live) return;
+    let alive = true;
+    void readTodayThread().then((thread) => {
+      if (!alive) return;
+      // A question asked before the read answered starts its own conversation; the earlier one stays in Ask.
+      if (thread && !sessionAt.current?.messages.length && !sessionAt.current?.busy) setRestored(thread);
+      setRestoring(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [live]);
 
-  // The panel's box comes from the key's: 6pt under the bar on both, and above the keyboard on the phone.
+  // The panel hangs 6px under the bar on both layouts; the pour's origin is the key's centre.
   const place = useCallback(() => {
     const el = panel.current;
     const key = keyRef.current?.getBoundingClientRect();
     if (!el || !key) return { x: window.innerWidth - 60, y: 60 };
-    const bar = key.bottom;
-    el.style.setProperty('--ch-qc-qc-top', `${bar + 6}px`);
-    el.parentElement?.style.setProperty('--ch-qc-qc-scrim-top', `${bar}px`);
-    if (phone) {
-      const kb = window.visualViewport ? window.visualViewport.height + window.visualViewport.offsetTop : window.innerHeight;
-      // A keyboard pan moves the visual viewport: the panel follows, so its header stays on screen (QC-9).
-      el.style.setProperty('--ch-qc-qc-top', `${(window.visualViewport?.offsetTop ?? 0) + bar + 6}px`);
-      // Clear of the home indicator with the keyboard down (MOB-QC-7); with the keyboard up in a short window, the whole height (MOB-QC-2).
-      const vv = window.visualViewport;
-      const keyboardUp = !!vv && vv.height < window.innerHeight - 80;
-      const room = kb - bar - 14;
-      if (keyboardUp && room < 240) {
-        el.style.setProperty('--ch-qc-qc-top', `${(vv?.offsetTop ?? 0) + 4}px`);
-        el.style.setProperty('--ch-qc-qc-h', `${(vv?.height ?? window.innerHeight) - 8}px`);
-      } else el.style.setProperty('--ch-qc-qc-h', keyboardUp ? `${Math.min(700, room)}px` : `min(700px, calc(${room}px - env(safe-area-inset-bottom)))`);
-    }
+    const top = (phone ? (window.visualViewport?.offsetTop ?? 0) : 0) + key.bottom;
+    el.style.setProperty('--ch-qc-top', `${top + 6}px`);
+    scrim.current?.style.setProperty('--ch-qc-scrim-top', `${top}px`);
     return { x: key.left + key.width / 2, y: key.top + key.height / 2 };
   }, [keyRef, phone]);
 
+  // MO-1-3: the sheet's frame never changes; the composer rides the keyboard on a transform (the CSS transition on --ch-qc-kb).
+  const ride = useCallback(
+    (predicted?: number) => {
+      const el = panel.current;
+      if (!el) return;
+      const vv = window.visualViewport;
+      const measured = phone && vv ? Math.max(0, Math.round(el.offsetTop + el.offsetHeight - (vv.offsetTop + vv.height) + 8)) : 0;
+      const cover = seam?.keyboard ?? predicted ?? (measured > 120 ? measured : 0);
+      if (predicted === undefined && measured > 120) knownKeyboard = measured;
+      el.style.setProperty('--ch-qc-kb', `${cover}px`);
+    },
+    [phone, seam?.keyboard],
+  );
+
+  const releaseInert = useRef<(() => void) | null>(null);
+  const entry = useRef<number | null>(null);
   useLayoutEffect(() => {
     if (open) setShown(true);
   }, [open]);
@@ -110,36 +120,82 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
     const el = panel.current;
     if (!el) return;
     if (open) {
+      el.hidden = false;
+      if (scrim.current) scrim.current.hidden = false;
+      leaving.current = false;
       const origin = place();
-      motion.open(el, scrim.current, origin);
-      // A fine pointer only: on a phone turned sideways this would raise a keyboard over the panel (MOB-QC-1).
-      if (!phone && window.matchMedia('(pointer: fine)').matches) field.current?.focus({ preventScroll: true });
+      // The key focused a field of its own inside the tap, so iOS raises the keyboard in this gesture: the composer takes it over.
+      const proxy = keyRef.current?.querySelector<HTMLInputElement>('.ch-qc-kbd');
+      const summoned = !!proxy && document.activeElement === proxy;
+      const fine = !phone && window.matchMedia('(pointer: fine)').matches;
+      ride(summoned && knownKeyboard ? knownKeyboard : undefined);
+      motion.open(el, scrim.current, origin, () => {
+        // MQ-1-8: the page is live through the pour and inert from its last frame.
+        releaseInert.current?.();
+        const wrapper = el.closest('.ch-qcs');
+        releaseInert.current = inertOthers([...(wrapper ? [wrapper] : [el]), ...(keyRef.current ? [keyRef.current] : [])]);
+      });
+      if (fine || summoned) field.current?.focus({ preventScroll: true });
+      else el.focus({ preventScroll: true });
     } else if (shown) {
-      motion.close(el, scrim.current, () => setShown(false));
-      keyRef.current?.querySelector('button')?.focus({ preventScroll: true });
+      releaseInert.current?.();
+      releaseInert.current = null;
+      motion.close(el, scrim.current, () => {
+        el.hidden = true;
+        if (scrim.current) scrim.current.hidden = true;
+        setShown(false);
+      });
+      if (!leaving.current) keyRef.current?.querySelector<HTMLElement>('[data-ch-qc-key]')?.focus({ preventScroll: true });
+      const mine = entry.current;
+      entry.current = null;
+      if (mine !== null && !leaving.current && (window.history.state as { chQc?: number } | null)?.chQc === mine) window.history.back();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs on the toggle
   }, [open, phone]);
+  useEffect(() => () => releaseInert.current?.(), []);
+
+  // The panel owns one history entry: Back closes it and the page behind does not navigate (MQ-1-9). Pushed after the
+  // frame the pour starts in, never during render or layout: the router hears of every push.
+  useEffect(() => {
+    if (!open || entry.current !== null) return;
+    entry.current = ++entrySeq;
+    window.history.pushState({ ...(window.history.state as object | null), chQc: entry.current }, '');
+  }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    const onPop = () => {
+      if (entry.current === null || (window.history.state as { chQc?: number } | null)?.chQc === entry.current) return;
+      entry.current = null;
+      onClose();
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [open, onClose]);
+
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv || !open) return;
-    vv.addEventListener('resize', place);
-    vv.addEventListener('scroll', place);
-    return () => {
-      vv.removeEventListener('resize', place);
-      vv.removeEventListener('scroll', place);
+    const fit = () => {
+      place();
+      ride();
     };
-  }, [open, place]);
+    vv.addEventListener('resize', fit);
+    vv.addEventListener('scroll', fit);
+    return () => {
+      vv.removeEventListener('resize', fit);
+      vv.removeEventListener('scroll', fit);
+    };
+  }, [open, place, ride]);
 
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
       const t = e.target as HTMLElement | null;
-      if (t?.tagName === 'INPUT') return;
+      if (t?.tagName === 'INPUT' || t?.closest('[role="menu"], .ch-modal')) return;
       // First Escape leaves a field that has words in it; the next closes (QC-20).
       if (t?.tagName === 'TEXTAREA' && (t as HTMLTextAreaElement).value) {
-        t.blur();
+        panel.current?.focus({ preventScroll: true });
         return;
       }
       onClose();
@@ -148,376 +204,126 @@ export default function QuickChatSession({ open, onClose, looking, pathname, pla
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  // The pill and the flag follow the run. A task that waits on the coach says so for 1800ms, then the key carries a flag.
-  const lastTurn = turns[turns.length - 1];
-  const assistant = lastTurn?.role === 'assistant' ? lastTurn : null;
-  const stepLabel = assistant?.steps[assistant.steps.length - 1]?.label ?? 'Working';
-  const receiptStatus = assistant?.blocks.flatMap((b) => (b.kind === 'proposal' ? [b.view.receipt?.status] : b.kind === 'receipt' ? [b.receipt.status] : [])).find(Boolean);
-  useEffect(() => {
-    if (pendingId) {
-      setRun({ state: 'wait', label: 'Needs your OK' });
-      if (open) return;
-      const t = setTimeout(() => {
-        setRun({ state: 'idle', label: '' });
-        setFlag(true);
-      }, 1800);
-      return () => clearTimeout(t);
-    }
-    if (chat.busy) return setRun({ state: 'work', label: stepLabel });
-    if (receiptStatus === 'failed') return setRun({ state: 'failed', label: 'Didn’t go through' });
-    if (receiptStatus === 'held' || receiptStatus === 'completed') {
-      setRun({ state: 'done', label: 'Done' });
-      const t = setTimeout(() => setRun({ state: 'idle', label: '' }), 1800);
-      return () => clearTimeout(t);
-    }
-    setRun({ state: 'idle', label: '' });
-    return undefined;
-  }, [pendingId, chat.busy, stepLabel, receiptStatus, open, setRun, setFlag]);
-
-  // Anything added scrolls the body; the panel's own height never moves (M-GROW).
-  useEffect(() => {
-    const el = body.current;
-    // Only a reader at the bottom is followed, and without a smooth scroll on every token (MOB-QC-4).
-    if (!el || !chat.messages.length) return;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight < 80) el.scrollTo({ top: el.scrollHeight, behavior: reduced || chat.busy ? 'auto' : 'smooth' });
-  }, [chat.messages, chat.busy, reduced]);
-
-  // AC-QC-CMP-03, 05: a message written during a run or offline waits, and goes when it can. A pending confirm holds it too.
-  const [queued, setQueued] = useState<string[]>([]);
-  const send = (t: string) => {
-    const clean = t.trim();
-    if (!clean) return;
-    setText('');
-    if (chat.busy || pending || !online) {
-      setQueued((q) => [...q, clean]);
-      return;
-    }
-    setStoppedId(null);
-    chat.send(clean);
-  };
-  useEffect(() => {
-    if (!queued.length || chat.busy || pending || !online) return;
-    setStoppedId(null);
-    chat.send(queued[0]!);
-    setQueued((q) => q.slice(1));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- sends when the way clears, keyed on the id (`pending` is new each render)
-  }, [queued, chat.busy, pendingId, online]);
-  const stop = () => {
-    chat.stop();
-    setStoppedId(turns[turns.length - 1]?.id ?? null);
-  };
-  const full = () => {
-    if (!chat.conversationId) return;
-    onClose();
-    router.push(conversationHref(chat.conversationId));
+  /** Close because the app is going somewhere: the destination takes the panel's history entry, so Back returns to the page. */
+  const leaveTo = useCallback(
+    (href: string) => {
+      const mine = entry.current !== null && (window.history.state as { chQc?: number } | null)?.chQc === entry.current;
+      leaving.current = true;
+      entry.current = null;
+      onClose();
+      if (mine) router.replace(href);
+      else router.push(href);
+    },
+    [onClose, router],
+  );
+  const conversationId = session?.conversationId ?? null;
+  const toAsk = () => {
+    haptic('press');
+    leaveTo(conversationId ? conversationHref(conversationId) : ASK_HOME);
   };
 
-  const fresh = turns.length === 0;
-  const canSend = !!text.trim();
-  const seam = useQcSeam();
-  const liveEarlier = useEarlierToday(open, fresh && !seam);
-  const earlier = seam ? (seam.earlier ?? null) : liveEarlier;
-  // Tab stays inside the dialog (AC-QC-PNL-08).
+  // Tab stays inside the dialog, with the key as one more stop after the last (AC-QC-PNL-08).
   const onPanelKey = (e: React.KeyboardEvent<HTMLElement>) => {
     if (e.key !== 'Tab' || !panel.current) return;
     const stops = [...panel.current.querySelectorAll<HTMLElement>('button:not(:disabled), textarea, a[href], input:not(:disabled), [tabindex="0"]')].filter((el) => el.offsetParent !== null);
-    if (!stops.length) return;
-    const first = stops[0]!;
-    const last = stops[stops.length - 1]!;
-    if (e.shiftKey && document.activeElement === first) {
+    const key = keyRef.current?.querySelector<HTMLElement>('[data-ch-qc-key]');
+    const first = stops[0];
+    const last = stops[stops.length - 1];
+    if (!first || !last || !key) return;
+    const at = document.activeElement;
+    if (e.shiftKey && (at === first || at === panel.current)) {
       e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && document.activeElement === last) {
+      key.focus();
+    } else if (!e.shiftKey && at === last) {
       e.preventDefault();
-      first.focus();
+      key.focus();
     }
   };
-  const swipeFrom = useRef<number | null>(null);
-  const swipe = phone
+
+  // MO-1-5: the header and the grab bar are the sheet's handles. A drag follows the finger from the grab point, either way.
+  const drag = useRef<{ id: number; y0: number; on: boolean; y: number; t: number; v: number } | null>(null);
+  const handle = phone
     ? {
-        onPointerDown: (e: React.PointerEvent) => {
-          swipeFrom.current = e.clientY;
+        onPointerDown: (e: React.PointerEvent<HTMLElement>) => {
+          if ((e.target as HTMLElement).closest('button, a')) return;
+          drag.current = { id: e.pointerId, y0: e.clientY, on: false, y: e.clientY, t: e.timeStamp, v: 0 };
         },
-        onPointerUp: (e: React.PointerEvent) => {
-          if (swipeFrom.current != null && swipeFrom.current - e.clientY > SWIPE_SLOP) onClose();
-          swipeFrom.current = null;
+        onPointerMove: (e: React.PointerEvent<HTMLElement>) => {
+          const d = drag.current;
+          const el = panel.current;
+          if (!d || d.id !== e.pointerId || !el) return;
+          const dy = e.clientY - d.y0;
+          if (!d.on) {
+            if (Math.abs(dy) < DRAG_SLOP_PX) return;
+            d.on = true;
+            d.y0 += Math.sign(dy) * DRAG_SLOP_PX;
+            e.currentTarget.setPointerCapture(e.pointerId);
+          }
+          const dt = e.timeStamp - d.t;
+          if (dt > 0) d.v = (e.clientY - d.y) / dt;
+          d.y = e.clientY;
+          d.t = e.timeStamp;
+          motion.dragTo(el, scrim.current, e.clientY - d.y0);
+        },
+        onPointerUp: (e: React.PointerEvent<HTMLElement>) => {
+          const d = drag.current;
+          const el = panel.current;
+          drag.current = null;
+          if (!d?.on || !el) return;
+          const dy = e.clientY - d.y0;
+          if (dragCloses(dy, d.v, el.offsetHeight, DRAG_CLOSE_SHARE, DRAG_FLING)) {
+            haptic('commit');
+            onClose();
+          } else motion.dragBack(el, scrim.current, dy, d.v);
+        },
+        onPointerCancel: () => {
+          const d = drag.current;
+          drag.current = null;
+          if (d?.on && panel.current) motion.dragBack(panel.current, scrim.current, d.y - d.y0, 0);
         },
       }
     : {};
-  const hidden = turns.length > TURNS_SHOWN ? turns.length - TURNS_SHOWN : 0;
+
   return (
-    <div className={'ch-qcs' + (phone ? ' is-phone' : ' is-desk') + (reduced ? ' is-reduce' : '')}>
+    <div className={'ch-qcs' + (phone ? ' is-phone' : ' is-desk') + (mode !== 'full' ? ' is-reduce' : '')}>
       <div ref={scrim} className="scrim" hidden={!shown} onClick={onClose} aria-hidden="true" />
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- the dialog keeps Tab inside itself (AC-QC-PNL-08) */}
-      <section id="ch-qc-panel" ref={panel} className="qc" role="dialog" aria-modal={phone || undefined} aria-label="CoachHelm" hidden={!shown} data-ch-qc-panel="" onKeyDown={onPanelKey}>
-        <header className="qc__h" data-qc-rise="" {...swipe}>
+      <section id="ch-qc-panel" ref={panel} className="qc" role="dialog" aria-modal="true" aria-label="CoachHelm" tabIndex={-1} hidden={!shown} data-ch-qc-panel="" onKeyDown={onPanelKey}>
+        <header className="qc__h" data-qc-rise="" data-qc-handle="" {...handle}>
           <span className="qc__mark">
             <HelmMark />
           </span>
-          <span className="qc__ttl">
-            <b>CoachHelm</b>
-            <span className="qc__ctx">
-              <i />
-              Looking at {looking.label}
-            </span>
-          </span>
-          <button className="qbtn qc__full" type="button" aria-label="Open full chat" disabled={!chat.conversationId} onClick={full}>
-            <Ico d="M9 15L4 20M4 15v5h5M15 9l5-5M20 9V4h-5" size={16} />
-          </button>
-          <button className="qbtn qc__x" type="button" aria-label="Close" onClick={onClose}>
-            <Ico d="M6 6l12 12M18 6L6 18" size={16} />
+          <b className="qc__ttl">CoachHelm</b>
+          <Button variant="ghost" size="sm" className="qc__full" rightIcon={ArrowUpRight} onClick={toAsk}>
+            {conversationId ? 'Open in Ask' : 'Open Ask'}
+          </Button>
+          <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm qc__x" aria-label="Close" onClick={onClose}>
+            <Icon icon={X} size={16} />
           </button>
         </header>
         <div className="qc__sheet">
-          <div className="qc__body" ref={body} data-qc-rise="">
-            <p className="ch-sr-only" role="status">
-              {finished}
-            </p>
-            <div className="qc__inner">
-              {fresh ? (
-                <div className="hello">
-                  <h3 className="hello__t">What should we get done?</h3>
-                  <p className="hello__s">You confirm everything before it happens.</p>
-                  <div className="tiles">
-                    {quickStarts(pathname, planOn || !!seam?.planOn).map((t) => (
-                      <button key={t.id} className={'tile t-' + t.id} type="button" onClick={() => send(t.ask)}>
-                        <i>
-                          <Ico d={START_ICON[t.id]} />
-                        </i>
-                        <svg className="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                          <path d="M7 17L17 7M9 7h8v8" />
-                        </svg>
-                        <b>{t.title}</b>
-                        <span>{t.line}</span>
-                      </button>
-                    ))}
-                  </div>
-                  {earlier && (
-                    <div className="earlier">
-                      <small>Earlier today</small>
-                      <div className="earlier__r">
-                        <span className="rcpt__g">
-                          <Ico d="M5 13l4 4L19 7" />
-                        </span>
-                        <span className="earlier__t">
-                          <b>{earlier.title}</b>
-                          <span>{earlier.line}</span>
-                        </span>
-                        <time className="ch-num">{earlier.at}</time>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <>
-                  {hidden > 0 && (
-                    <button type="button" className="steps-sum" onClick={full}>
-                      Earlier in this chat · Open full chat
-                    </button>
-                  )}
-                  {turns.slice(hidden).map((turn) =>
-                    turn.role === 'user' ? (
-                      <div className="ub" key={turn.id}>
-                        {turn.text}
-                      </div>
-                    ) : (
-                      <AssistantTurn
-                        key={turn.id}
-                        turn={turn}
-                        failed={!!notice && turn.id === turns[turns.length - 1]?.id}
-                        onFull={full}
-                        online={online}
-                        stopped={stoppedId === turn.id}
-                        onSend={send}
-                        onApprove={chat.approve}
-                        onDeny={chat.deny}
-                        onOpen={(href) => {
-                          onClose();
-                          router.push(href);
-                        }}
-                      />
-                    ),
-                  )}
-                  {notice && (
-                    <p className="say quiet qc-lost" role="alert">
-                      <span>{notice.message ?? 'Lost the connection. Nothing was saved.'}</span>
-                      {notice.recovery === 'retry' && (
-                        <button type="button" onClick={() => chat.retry()}>
-                          Try again
-                        </button>
-                      )}
-                    </p>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-          <div className="qc__comp" data-qc-rise="">
-            {!online && <p className="say quiet">You’re offline. CoachHelm will send when you’re back.</p>}
-            <div className="cmp">
-              <Menu
-                label="Add to your question"
-                align="start"
-                keepFocus
-                items={ASK_STARTERS.filter((s) => s.id !== 'add-player').map((s) => ({
-                  label: s.label,
-                  onSelect: () => {
-                    setText((t) => (t.trim() ? `${t.trimEnd()} ${s.seed}` : s.seed));
-                    field.current?.focus();
-                  },
-                }))}
-                trigger={(t) => (
-                  <button {...t} type="button" className="cmp__plus" aria-label="Add to your question">
-                    <Ico d="M12 5v14M5 12h14" size={18} />
-                  </button>
-                )}
-              />
-              <textarea
-                ref={field}
-                className="cmp__t"
-                aria-label="Ask CoachHelm"
-                placeholder="Ask CoachHelm or tell it what to do"
-                rows={1}
-                value={text}
-                onChange={(e) => {
-                  setText(e.target.value);
-                  // Grows with the words, up to four lines (QC-8).
-                  const el = e.target;
-                  el.style.height = 'auto';
-                  el.style.height = `${Math.min(el.scrollHeight, 4 * parseFloat(getComputedStyle(el).lineHeight || '22'))}px`;
-                }}
-                enterKeyHint="send"
-                onKeyDown={(e) => {
-                  // A phone's blue send key sends, as Messages' does.
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    send(text);
-                  }
-                }}
-              />
-              {mic.available && (
-                <button type="button" className={'cmp__mic' + (mic.on ? ' is-on' : '')} aria-label={mic.on ? 'Stop dictating' : 'Dictate'} aria-pressed={mic.on} onClick={mic.toggle}>
-                  <Ico d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3" size={18} />
-                </button>
-              )}
-              {chat.busy ? (
-                <button className="cmp__send stop" type="button" aria-label="Stop" onClick={stop}>
-                  <span className="sq" />
-                </button>
-              ) : (
-                <button className={'cmp__send' + (canSend ? '' : ' off')} type="button" aria-label="Send" disabled={!canSend} onClick={() => send(text)}>
-                  <Ico d="M12 19V5M6 11l6-6 6 6" size={17} />
-                </button>
-              )}
-            </div>
-            {!phone && (
-              <div className="cmp__hint">
-                <span>
-                  <kbd>{modKey(true)}J</kbd> open
-                </span>
-                <span>
-                  <kbd>esc</kbd> close
-                </span>
-                <span>Saved in CoachHelm</span>
-              </div>
-            )}
-          </div>
-          {phone && <i className="ch-grab ch-grab--hit" aria-hidden="true" {...swipe} />}
+          <QuickChatThread
+            key={restored?.id ?? 'fresh'}
+            chat={chat}
+            conversationId={restored?.id ?? null}
+            initialMessages={restored?.messages}
+            restored={!!restored}
+            restoring={restoring}
+            open={open}
+            onClose={onClose}
+            leaveTo={leaveTo}
+            looking={looking}
+            pathname={pathname}
+            planOn={planOn}
+            phone={phone}
+            mode={mode}
+            text={text}
+            setText={setText}
+            field={field}
+          />
+          {phone && <i className="ch-grab ch-grab--hit" aria-hidden="true" data-qc-handle="" {...handle} />}
         </div>
       </section>
     </div>
-  );
-}
-
-/** The steps, and their fold once the card is ready: "N steps · Ns", which a tap reopens in place (AC-QC-STP-03, 04). */
-function Steps({ turn, stopped, failed = false }: { turn: AskAssistantTurn; stopped: boolean; failed?: boolean }) {
-  const [opened, setOpened] = useState(false);
-  const [more, setMore] = useState(false);
-  // Only the browser that watched the run knows how long it took; a reloaded chat folds to the count alone.
-  const started = useRef<number | null>(turn.active ? performance.now() : null);
-  const seconds = useRef<number | null>(null);
-  if (turn.active && started.current === null) started.current = performance.now();
-  if (!turn.active && started.current !== null && seconds.current === null) seconds.current = (performance.now() - started.current) / 1000;
-  const list = turn.active || !turn.blocks.length || opened;
-  if (!turn.steps.length) return null;
-  const summary = (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" aria-hidden="true">
-      <path d="M5 13l4 4L19 7" />
-    </svg>
-  );
-  if (!list)
-    return (
-      <button type="button" className="steps-sum" aria-expanded="false" onClick={() => setOpened(true)}>
-        {summary}
-        {stepsReceipt(turn.steps, seconds.current)}
-      </button>
-    );
-  const folded = more ? 0 : Math.max(0, turn.steps.length - STEPS_SHOWN);
-  return (
-    <ol className="steps">
-      {folded > 0 && (
-        <li className="step done">
-          <button type="button" className="steps-sum" onClick={() => setMore(true)}>
-            {folded} more {pluralWord(folded, 'step', 'steps')}
-          </button>
-        </li>
-      )}
-      {turn.steps.slice(folded).map((s) => {
-        const last = s === turn.steps[turn.steps.length - 1];
-        const active = turn.active && last;
-        return (
-          <li key={s.id} className={'step ' + (active ? 'active' : failed && last ? 'fail' : stopped && last ? 'stopped' : 'done')}>
-            <span className="step__g">
-              {active ? (
-                <span className="dot" />
-              ) : (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" aria-hidden="true">
-                  <path d="M5 13l4 4L19 7" />
-                </svg>
-              )}
-            </span>
-            <span className="step__l">
-              {active ? s.label : (s.done ?? s.label)}
-              {!active && s.detail && <span className="step__d"> · {s.detail}</span>}
-            </span>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
-function AssistantTurn({ turn, online, stopped, failed = false, onSend, onApprove, onDeny, onOpen, onFull }: { turn: AskAssistantTurn; online: boolean; stopped: boolean; failed?: boolean; onFull: () => void; onSend: (t: string) => void; onApprove: (id: string) => void; onDeny: (id: string) => void; onOpen: (href: string) => void }) {
-  return (
-    <>
-      <Steps turn={turn} stopped={stopped} failed={failed} />
-      {stopped && !turn.active && !turn.blocks.length && <p className="say quiet">Stopped. Nothing was saved.</p>}
-      {turn.note && <p className="say quiet">{turn.note}</p>}
-      {turn.blocks.map((b) => {
-        if (b.kind === 'text') return <div className="say" key={b.key}><AskProse text={b.text} playersByName={{}} /></div>;
-        // Quick chat finishes four tasks with their own visuals; anything else carries on in Ask, the same conversation, words and all (FID-QC-1).
-        if (b.kind === 'proposal' && !b.view.proposal.visual)
-          return (
-            <p className="say quiet qc-handoff" key={b.key}>
-              <span>This one’s easier to finish in Ask.</span>
-              <button type="button" onClick={onFull}>
-                Open in Ask
-              </button>
-            </p>
-          );
-        if (b.kind === 'proposal') return <TaskCard key={b.key} view={b.view} online={online} onSend={onSend} onApprove={onApprove} onDeny={onDeny} onOpen={onOpen} />;
-        if (b.kind === 'plan') return <PlanTask key={b.key} plan={b.plan} online={online} onOpen={onOpen} />;
-        if (b.kind === 'brief') return <QuickAsk key={b.key} brief={b.brief} onSend={onSend} />;
-        // A chart or a table the panel doesn't draw isn't dropped silently (QC-1).
-        return (
-          <p className="say quiet qc-handoff" key={b.key}>
-            <span>There’s a chart with this answer.</span>
-            <button type="button" onClick={onFull}>
-              See it in Ask
-            </button>
-          </p>
-        );
-      })}
-    </>
   );
 }

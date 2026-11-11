@@ -15,7 +15,6 @@ vi.mock('../../AskSheet', async () => {
 
 import { ClubhouseMarker } from '../../context';
 import { HelmKey, QuickChatProvider } from '../QuickChatProvider';
-import { quickStarts } from '../starts';
 
 const CAL = '/golf/dashboard/calendar';
 
@@ -133,15 +132,3 @@ describe('opening', () => {
 });
 
 /** AC-QC-HEL-03, CP-QC-10. */
-describe('the tiles', () => {
-  it('are always four', () => {
-    for (const p of [CAL, '/golf/dashboard/qualifiers', '/golf/dashboard/messages', '/golf/dashboard']) {
-      expect(quickStarts(p, true)).toHaveLength(4);
-      expect(quickStarts(p, false)).toHaveLength(4);
-    }
-  });
-  it('with plans on, the fourth is the plan; off, no plan tile', () => {
-    expect(quickStarts(CAL, true)[3]!.id).toBe('plan');
-    expect(quickStarts(CAL, false).map((t) => t.id)).not.toContain('plan');
-  });
-});
