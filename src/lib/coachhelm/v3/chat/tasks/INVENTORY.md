@@ -82,11 +82,15 @@ The model is told to say where the thing is done (`find_in_app` gives the place)
 
 ## Left for later, in order
 
-The prefix is the limit now, not the work: Ask's cached prefix is 20,915 of the 21,000 ceiling
-(`__tests__/registry-size.test.ts`), and a task tool costs 120 to 230. Each of these needs room found first.
+Room in the cached prefix was the limit while these were built (Ask stood at 20,915 of a 21,000 ceiling, which is
+why every description here is one or two sentences); the ceiling is being raised to 26,000 on the lead's decision, so
+the reasons below are the real ones.
 
-1. **A reminder on a task** (`setTaskReminder`). Coach-only action; the in-app words are a fixed template ("Task
-   Reminder", "Reminder: “<title>” is due on <date>"). Ready to build as soon as there is room.
+1. **A reminder on a task** (`setTaskReminder`). The action is coach-only and simple. Not built because the reminder's
+   words are written in two places in `golf/actions/task-reminders.ts` that do not agree ("is due on <date>" in
+   `sendInAppNotification`, "is due <date>" in the queue processor), and which one fires for a queued in-app reminder
+   was not traced. It goes to every assignee with an account and to the coach who assigned the task. The card must
+   quote the line that is actually sent; one more read of that file settles it.
 2. **Dismiss a signal** (`dismissInsight`, `dismissSignal`, patterns). What a player's own page does with a signal the
    coach dismissed was not established, so the card could not say what the player sees.
 3. **Qualifier selection beyond a pick**: confirm (`confirmQualifierSelection` tells the team, and its notice is
@@ -328,7 +332,7 @@ The prefix is the limit now, not the work: Ask's cached prefix is 20,915 of the 
 | `refreshStatsCacheAction` | `golf/actions/stats.ts` | none: not a request | bookkeeping the app does by itself (read state, generation, caches); nobody asks for it |
 | `markReminderSent` | `golf/actions/task-reminders.ts` | none: not a request | bookkeeping the app does by itself (read state, generation, caches); nobody asks for it |
 | `processReminders` | `golf/actions/task-reminders.ts` | none: not a request | bookkeeping the app does by itself (read state, generation, caches); nobody asks for it |
-| `setTaskReminder` | `golf/actions/task-reminders.ts` | none yet | A reminder on a task. Buildable (coach-only action, words known: "Task Reminder", "Reminder: “<title>” is due on <date>"). Not built only because the prefix has 85 tokens of room left; next in line. |
+| `setTaskReminder` | `golf/actions/task-reminders.ts` | none yet | The same reminder through a second entry point; see `golf/actions/tasks.ts`. |
 | `clearTaskReminder` | `golf/actions/tasks.ts` | none yet | Clear a task reminder. |
 | `completeTask` | `golf/actions/tasks.ts` | none: a player’s own action | a player ticks their own task |
 | `createRecurringTask` | `golf/actions/tasks.ts` | none yet | A repeating task. |
@@ -338,7 +342,7 @@ The prefix is the limit now, not the work: Ask's cached prefix is 20,915 of the 
 | `deleteTask` | `golf/actions/tasks.ts` | none, on purpose | deletes or removes something |
 | `deleteTaskTemplate` | `golf/actions/tasks.ts` | none, on purpose | deletes or removes something |
 | `seedDefaultTemplates` | `golf/actions/tasks.ts` | none yet | Seeds task templates. |
-| `setTaskReminder` | `golf/actions/tasks.ts` | none yet | A reminder on a task. Buildable (coach-only action, words known: "Task Reminder", "Reminder: “<title>” is due on <date>"). Not built only because the prefix has 85 tokens of room left; next in line. |
+| `setTaskReminder` | `golf/actions/tasks.ts` | none yet | A reminder on a task. Coach-only and simple; not built because its words are written in two places that do not agree and the one that fires was not traced (see "Left for later", 1). |
 | `uncompleteTask` | `golf/actions/tasks.ts` | none: a player’s own action | a player unticks their own task |
 | `updateTaskTemplate` | `golf/actions/tasks.ts` | none yet | Edit a task template. |
 | `createAnnouncement` | `golf/actions/team-management.ts` | none yet | The older announcement action; create_team_announcement wraps the current one. |
