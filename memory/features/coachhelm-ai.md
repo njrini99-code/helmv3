@@ -92,29 +92,41 @@ entries are history. The tool list and the prompt are described where the tools 
   `turn.ts` one request, `loop.ts` the model loop, `store.ts` the stored conversation, `tasks.ts` the action gate,
   `model.ts` the only file that calls `@anthropic-ai/sdk`, `protocol.ts` the wire events and the reducer, `tool.ts`
   the tool contract).
-- **Model settings** (`engine/model.ts`): Claude Haiku 5.5 (`claude-haiku-5-5`, from `MODEL_FOR_TASK.coach_chat`;
-  owner decision 2026-11-10), called directly with `ANTHROPIC_API_KEY` (no gateway fallback: a missing key is a
-  logged, coach-readable failure). `max_tokens` 16000, streamed. Thinking is adaptive and on by default; depth is
-  `output_config.effort`, one constant (`CHAT_EFFORT`, `high`, sent on every request because the model's default is
-  `medium`). No sampling parameter and no `fallbacks` are sent (this model has no server-side fallback). `tool_choice`
-  is `auto` (a forced tool skips thinking); the step after the last allowed read is sent with `none` so the model
-  answers from what it has. At most 12 model calls plus that closing call per coach turn (`CHAT_MAX_STEPS`), 8 for a
-  player.
-- **Optional features are one object, `CHAT_FEATURES`**, each a field that turns it off: `dropStaleThinking`
-  (`thinking.block_binding.prefix_mismatch_behavior: 'drop_block'`, beta `thinking-binding-controls-2026-08-01`),
-  `strictTools` (`strict: true`; the engine still validates every input with zod), `citations` (below),
-  `compaction` (`compact_20260112` at the default trigger, beta `compact-2026-01-12`), `programmaticReads` (below).
-  Built and off: `taskBudgetTokens` (null), `progressNotes` (`thinking.display: 'updates'`). If the API rejects a
-  request (HTTP 400) that carries any of them, the loop sends that call once more as a plain request (no beta, no
-  `strict`, no code tool), keeps the rest of the turn plain, completes the turn and logs `v3.chat.stream.degraded`
-  as an error: the coach loses the feature, not the answer.
+- **A model per surface** (`engine/model.ts`; owner decisions 2026-11-10): `SURFACE_MODEL` names the model a surface
+  runs on and `MODEL_PROFILES` holds each model's settings (`profileFor(surface)` is the one lookup). Ask, quick chat
+  and the practice helper run on **Claude Sonnet 5.5** (`claude-sonnet-5-5`, `MODEL_FOR_TASK.coach_chat`) at effort
+  `medium`; a player's read-only Ask runs on **Claude Haiku 5.5** (`claude-haiku-5-5`, `PLAYER_CHAT_MODEL`) at effort
+  `high`. Switching a surface is one line; `CHAT_MODEL_OVERRIDE` puts every surface on one model for an eval run and
+  is null otherwise. Both are called directly with `ANTHROPIC_API_KEY` (no gateway fallback: a missing key is a
+  logged, coach-readable failure). `max_tokens` 16000, streamed. Thinking is adaptive (never `disabled`: Sonnet 5.5
+  rejects that); depth is `output_config.effort`, sent on every request. No sampling parameter is sent. `tool_choice`
+  is `auto` (never forced: Sonnet 5.5 rejects a forced tool); the step after the last allowed read is sent with `none`
+  so the model answers from what it has. At most 12 model calls plus that closing call per coach turn
+  (`CHAT_MAX_STEPS`), 8 for a player.
+- **Optional features are one object per profile** (`ChatFeatures`; `chatFeatures(surface)`), each a field that turns
+  it off: `dropStaleThinking` (`thinking.block_binding.prefix_mismatch_behavior: 'drop_block'`, beta
+  `thinking-binding-controls-2026-08-01`), `strictTools` (`strict: true`; the engine still validates every input with
+  zod), `citations` (below), `compaction` (`compact_20260112` at the default trigger, beta `compact-2026-01-12`),
+  `programmaticReads` (below), and on Sonnet 5.5 only `progressNotes` (`thinking.display: 'updates'`, beta
+  `thinking-display-updates-2026-08-18`: the model's short progress updates reach the thread as `note` events) and
+  `refusalFallback` (next item). Built and off: `taskBudgetTokens` (null). If the API rejects a request (HTTP 400)
+  that carries any of them, the loop sends that call once more as a plain request (no beta, no `strict`, no code
+  tool, no `fallbacks`), keeps the rest of the turn plain, completes the turn and logs `v3.chat.stream.degraded` as
+  an error: the coach loses the feature, not the answer.
+- **Refusal fallback (Sonnet 5.5 only).** Requests carry `fallbacks: 'default'` (beta
+  `server-side-fallback-2026-07-01`): when the model declines for a category the API retries, the API answers with a
+  substitute model inside the same response. The loop keeps the words already streamed, drops from the echoed turn
+  what the declining model left before the handover (`echoable()` in `engine/loop.ts`), bills each attempt at the
+  rates of the model that ran it (`usage.iterations`) and logs the substitute's id (`fallbackModel` in
+  `v3.chat.stream.turn`). If the substitute declines too, the turn is an ordinary declined turn. Haiku 5.5 has no
+  such fallback and is never sent the parameter.
 - **The model's code calls the reads (programmatic tool calling): ON for Ask, quick chat and the practice helper,
   OFF for a player.** The model may write code that calls the read tools in Anthropic's code execution sandbox and
   works a figure out there, so a question across many players or rounds is one model call instead of one per read.
   **With this on, the results of those reads (players' names and figures) pass through Anthropic's code execution
   container. Anthropic retains that container's data for up to 30 days and the feature is not eligible for zero data
   retention. The owner chose this on 10 Nov 2026** ("It's not minors. Turn it on."). The switch is
-  `CHAT_FEATURES.programmaticReads` in `engine/model.ts`. What does not change: every read the code calls is validated
+  `programmaticReads` in each model profile's features in `engine/model.ts` (a player's is always off). What does not change: every read the code calls is validated
   by the tool's zod schema, runs with the signed-in coach's session client under row-level security and the same
   ownership checks, and its envelope reaches the store, the evidence parts (marked `via: 'code'`) and the grounding
   check. A task can never be called from code, and no card is prepared while code is waiting on a read. Reads are not
@@ -122,11 +134,14 @@ entries are history. The tool list and the prompt are described where the tools 
   citation markers; its sources are the turn's `via: 'code'` evidence parts.
 - **Stored model messages are exactly what the API returned**, appended only: thinking blocks with their signatures,
   text (with the API's citation objects) and tool calls in order, each tool-result message, and the per-turn system
-  message. Thinking is never sent to the browser. A thinking block is valid only while `system`, `tools` and every
+  message. The model's thinking is never sent to the browser; on Sonnet 5.5 the short progress updates it writes
+  between steps are (`note` events). A thinking block is valid only while `system`, `tools` and every
   earlier message are unchanged, so **nothing that changes during a conversation's life is in the prompt or a tool
   definition**: no date, no screen, no notes, no count. A deploy that changes the prompt or a roster edit still
   changes the prefix; `drop_block` makes the API drop the blocks it can no longer verify (the count is in the turn's
-  log line, `calls[].dropped_thinking`) instead of failing the coach's question.
+  log line, `calls[].dropped_thinking`) instead of failing the coach's question. The same covers a conversation whose
+  model changes with a deploy: Sonnet 5.5 reads the blocks Haiku 5.5 wrote, and a block a model cannot read is dropped
+  by the API, not rejected.
 - **The per-turn system message.** Today's date, the screen the chat was opened from (`screen` in the body, checked
   against the caller's own team by `context/screen-context.ts`), the conversation's tone, and on a conversation's
   first kept turn the coach's standing notes (`context/notes.ts`) are sent as one `{ role: 'system' }` message
@@ -139,10 +154,20 @@ entries are history. The tool list and the prompt are described where the tools 
   (5 minutes); the conversation tail is cached by the request-level `cache_control`, so no marker is written into a
   stored message. The model's minimum cacheable prefix is 512 tokens. `cache_read` and the two kinds of cache write
   are logged per model call (`v3.chat.stream.turn`).
-- **Cost.** Each model call is priced on its own rate card (`callCostUsd`): $0.10 in / $0.50 out per million tokens
-  for a prompt of 100K tokens or fewer, $0.50 / $2.50 above; a cache read is 0.1x input, a five-minute write 1.25x, a
-  one-hour write 2x. A call over 100K prompt tokens logs `v3.chat.stream.long_prompt`. The pre-flight budget estimate
-  uses the short card (`MODEL_COST_USD_PER_MTOK`).
+- **Cost.** Each model call is priced at the rates of the model that ran it (`callCostUsd`, `CHAT_RATES`): Sonnet 5.5
+  (and Sonnet 5, when a fallback answered) $2 in / $10 out per million tokens on one rate card; Haiku 5.5 $0.10 /
+  $0.50 for a prompt of 100K tokens or fewer and $0.50 / $2.50 above. For both, a cache read is 0.1x input, a
+  five-minute write 1.25x, a one-hour write 2x. A Haiku call over 100K prompt tokens logs
+  `v3.chat.stream.long_prompt`. The ledger row's `model_id` is the surface's model; a player's turn is written with
+  `task: 'coach_chat'` (the ledger's `task` CHECK has no player key) and the Haiku id. The pre-flight budget estimate
+  is 12,000 tokens in and 2,500 out at the surface model's rates (`MODEL_COST_USD_PER_MTOK`): about $0.049 a turn on
+  Sonnet 5.5.
+- **The eval** (`scripts/coachhelm/ask-eval.mjs`): asks the data questions and the golf-sense questions on a dev
+  server over the wire protocol, as the staging coach and a staging player, and writes a report with the engine's
+  own verdicts, the figures, golf sense, the reads used, the writing rules and the logged figures check in separate
+  columns. A dry run (no model call, nothing written) unless `--apply` is passed; it refuses any project but
+  staging and stops at `--max-usd` (default 25). Every run with `--apply` is a live spend and needs the owner's
+  approval.
 - **Text streams live.** There is no audit between the model and the coach. After the turn a deterministic check
   compares the numbers in the answer with the numbers the conversation's reads returned and LOGS the result
   (`grounded`, unmatched tokens in `golf_coachhelm_llm_calls`). It never hides, delays or rewrites an answer.
@@ -989,7 +1014,7 @@ card anatomy, motion spec and message mechanics in
 and the `sg_anatomy` artifact in `ChatThread` (`CompositionVisual.tsx`, figures
 in `EvidenceFigures.tsx`, motion in `EvidenceMotion.tsx`); visuals that arrive in
 a live answer animate in, restored threads and reduced motion render final.
-Coach chat runs on Claude Haiku 5.5 at effort high (`MODEL_FOR_TASK.coach_chat`, 2026-11-10; Sonnet 5.5 from 2026-10-29 until then).
+Coach chat runs on Claude Sonnet 5.5 at effort medium (`MODEL_FOR_TASK.coach_chat`) and a player's Ask on Claude Haiku 5.5 at effort high (`PLAYER_CHAT_MODEL`), each from its profile in `chat/engine/model.ts` (2026-11-10).
 Fixture for screenshots: `/fairway-preview/coachhelm-evidence` (`?live` replays
 the motion; dev only).
 

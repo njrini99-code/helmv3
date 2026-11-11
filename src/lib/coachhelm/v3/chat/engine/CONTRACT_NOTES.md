@@ -775,3 +775,78 @@ this team) and a test.
 P10. For CONTEXT: E-23 is your `send_event_reminder`. The receipt shape is ready (`missed: [{ name, reason }]`,
 `notifications[].to`); your commit knows `ids` and `sent` but not which ids were missed, because
 `sendEventReminderToPlayers` returns a count. With `data.sentPlayerIds` from the action you can name them.
+
+
+## 2026-11-11 (ENGINE): a model per surface, and the eval harness on the wire protocol
+
+E20. **Model profiles** (`engine/model.ts`). `MODEL_PROFILES` holds one `ModelProfile` per model (`modelId`, `ledgerId`,
+     `effort`, `features`); `SURFACE_MODEL` says which model a surface runs on; `profileFor(surface)` is the one
+     lookup the route and the player turn use. Today: `ask`, `quick_chat`, `practice_helper` on Claude Sonnet 5.5
+     (`claude-sonnet-5-5`, effort `medium`); `player` on Claude Haiku 5.5 (`claude-haiku-5-5`, effort `high`, exactly as
+     before). Switching a surface is one line in `SURFACE_MODEL`. `CHAT_MODEL_OVERRIDE` (null) puts every surface on one
+     model when set, for an eval run: set it, run, set it back. A player never gets `programmaticReads`, whichever
+     model. Gone: `CHAT_MODEL_ID`, `CHAT_MODEL_LEDGER_ID`, `CHAT_EFFORT`, `CHAT_PRICING`; `CHAT_FEATURES` is the coach
+     profile's features and `chatFeatures(surface)` the surface's. `llm/types.ts`: `MODEL_FOR_TASK.coach_chat` is
+     `anthropic/claude-sonnet-5-5`, `PLAYER_CHAT_MODEL` is `anthropic/claude-haiku-5-5`.
+     **`player_chat` is a constant, not a `ComposeTask`.** The ledger's `task` column has a CHECK that lists the four
+     tasks, so a new task key needs a migration; a player's turn is still written `task: 'coach_chat'` with the Haiku
+     id as its `model_id`. The same will hold for any other new ledger key (the suggestions call).
+     **For PLANS and KNOWLEDGE**: the prompt header says it was written for Haiku at high effort. Nothing in it is wrong
+     for Sonnet 5.5; it is simply read by both now, so a rule should not name the model.
+
+E21. **What differs on Sonnet 5.5** (source: the `claude-api` skill's model-migration notes, section "Migrating to
+     Claude Sonnet 5.5", and the installed SDK's types):
+     - `thinking` is adaptive and never `disabled` (a 400 on this model); `tool_choice` is never forced (a 400); effort
+       is `medium` (the model's default is `high`; `medium` is the documented starting point for multistep tool use).
+     - `thinking.display: 'updates'` is ON (`progressNotes`, beta `thinking-display-updates-2026-08-18`). The model's
+       thinking comes back as short progress updates; the loop sends each as a `note` event (the app's reducer already
+       draws it as a progress row) and drops the API's "This part of the response was interrupted before it finished."
+       sentinel. Full thinking is still never sent to the browser. Off for Haiku.
+     - **Server-side refusal fallback is ON** (`refusalFallback`: `fallbacks: 'default'`, beta
+       `server-side-fallback-2026-07-01`). When Sonnet 5.5 declines for one of the categories the API retries, the API
+       answers with a substitute model in the same response. What the loop does with that response:
+       a `fallback` content block marks the handover; text already streamed stays and the continuation is not started
+       as a new paragraph; when the turn is echoed back, everything the declining model left before the LAST `fallback`
+       block that the API will not accept again is dropped (`echoable()`: `thinking`, `redacted_thinking`, `tool_use`,
+       and a `server_tool_use` without its result), and the tool calls the loop runs are the ones after it; usage is
+       read per attempt from `usage.iterations` (the top-level `usage` covers only the last attempt), so a fallback
+       attempt is billed at the substitute model's rates; the substitute's id is in the turn's log line
+       (`fallbackModel`). If the substitute declines too, `stop_reason` is `refusal` and the turn is the same declined
+       turn as before. Not verified against the live API: `fallbacks` together with the code tool
+       (`programmaticReads`). If the API rejects the pair it is a 400, and the existing retry sends the call plain.
+     - The reject-then-plain retry (`plainFeatures`) also drops `fallbacks` and the notes.
+
+E22. **Cost** (`CHAT_RATES`, `ratesFor`, `callCostUsd`). Each attempt is priced at the rates of the model that ran
+     it: Sonnet 5.5 and Sonnet 5 at $2 in / $10 out per million tokens, one rate card; Haiku 5.5 at $0.10 / $0.50 up to
+     100K prompt tokens and $0.50 / $2.50 above (`onLongCard`). Cache multipliers are the same for both: read 0.1x
+     input, 5-minute write 1.25x, 1-hour write 2x. **That makes a Sonnet 5.5 cache read $0.20 per million, as the
+     migration notes give it; the lead's message said $0.10 (0.05x). One number in `CACHE_MULTIPLIERS`/`CHAT_RATES`
+     if the price page says otherwise.** The ledger row's `model_id` is the profile's (the model asked for); the
+     budget gate reserves 12,000 in and 2,500 out at that model's rates (about $0.049 a turn on Sonnet 5.5 against
+     $0.0025 on Haiku 5.5), so a coach's daily budget buys about a twentieth of the turns the gate allowed on Haiku.
+
+E23. **A conversation whose model changes** (a deploy that edits `SURFACE_MODEL`; a coach's three surfaces share one
+     model, so moving between them changes nothing). History is still sent back exactly as stored. Sonnet 5.5 reads
+     the thinking blocks Haiku 5.5 wrote, so Haiku to Sonnet replays whole. The other way, and for any block a model
+     cannot verify, `drop_block` makes the API leave the block out instead of rejecting the request; the count is in
+     the turn's log line (`calls[].dropped_thinking`) and nothing is rewritten in the store. Route test: "a
+     conversation stored on Haiku continues on Sonnet". A conversation that holds code-tool blocks may not replay on
+     the plain retry; that case is unchanged from E16.
+
+E24. **The eval harness** (`scripts/coachhelm/ask-eval.mjs`, pure half `ask-eval-score.mjs`) now speaks the wire
+     protocol. One POST per question, a new conversation each: `{ conversation_id: null, client_turn_id, surface:
+     'ask', message }` as the coach, `{ client_turn_id, message }` as the player. It folds `ChatEvent`s the way
+     `applyChatEvent` does (a `text_discard` drops the words since the last non-text part) and scores the answer with
+     the read markers (` [e3]`) taken out. Verdicts are the engine's: `complete`, `card`, `declined` (from
+     `data-turn-meta`), `failed`, `stopped`, `incomplete`; there is no "rejected", and the ledger's `verified` is
+     reported beside the verdict as "figures matched". It asks the data questions and KNOWLEDGE's golf-sense
+     questions (K6): golf sense, reads and writing are three columns, the writing rules are held against every answer,
+     `tour_figure_from_memory` is skipped when the turn called `get_reference`, and a read the model's code made counts
+     by the read's own name (the evidence part's `tool`). The compile of `golf-sense.json` is a plain-JavaScript copy
+     of `knowledge/eval/index.ts` (a `.mjs` script cannot import it); `scripts/coachhelm/__tests__/ask-eval-score.test.ts`
+     holds the two to the same questions, patterns, sentence count and everyday-word list, so **KNOWLEDGE: a change to
+     `index.ts` fails that test until the copy follows.** The protocol carries no tool input, so a captured fixture's
+     `tools[].input` is null. It is a dry run unless `--apply` is passed: the dry run reads staging (free), prints the
+     plan and calls no model. `--max-usd` (default 25) stops the run before the ledger total can pass it; a 401 or a
+     spent budget stops it at once; the report is written whatever stops it. Gone with the old audit: the citation
+     and repair columns and `--server-log`.

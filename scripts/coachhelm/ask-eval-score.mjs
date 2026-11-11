@@ -1,6 +1,6 @@
 /**
- * The pure half of scripts/coachhelm/ask-eval.mjs: reading the answer stream and scoring an answer against the facts a
- * question expects. No network, no database. Tested in scripts/coachhelm/__tests__/ask-eval-score.test.ts.
+ * The pure half of scripts/coachhelm/ask-eval.mjs: reading the answer stream (the chat's wire protocol), scoring an answer
+ * against the facts a question expects, and the golf-sense and writing columns. No network, no database. Tested in scripts/coachhelm/__tests__/ask-eval-score.test.ts.
  */
 
 export const dateRe = (iso) => {
@@ -75,60 +75,178 @@ export function score(question, text) {
 }
 
 
-/** What the answer stream has said so far: the text, and whether the route flagged or broke the turn. */
-export const newStreamState = () => ({ text: '', flag: null, incomplete: false, error: null, evidence: 0, tools: [], evidenceParts: [], toolCalls: [], repair: null });
+/**
+ * What one turn's answer stream has said so far. The stream is the chat's wire protocol (`ChatEvent` in
+ * src/lib/coachhelm/v3/chat/engine/protocol.ts): server-sent events, one JSON object per `data:` frame.
+ * `tools` is every read the turn ran, by name, once each: the ones the model asked for itself and the ones its code called
+ * (`code_execution` is the code step itself). The protocol does not carry a read's input, so `toolCalls[].input` is null.
+ */
+export const newTurnState = () => ({ texts: [], open: false, conversationId: null, status: null, durationMs: null, declined: false, error: null, errorKind: null, evidence: 0, tools: [], evidenceParts: [], toolCalls: [], failedReads: [], cards: 0 });
 
-/** Fold one server-sent-event line of the UI message stream into the state. Lines that are not `data:` JSON are ignored. */
-export function applyStreamLine(state, rawLine) {
-  const line = rawLine.trim();
-  if (!line.startsWith('data:')) return state;
-  const payload = line.slice(5).trim();
-  if (!payload || payload === '[DONE]') return state;
-  let ev;
-  try {
-    ev = JSON.parse(payload);
-  } catch {
+/** The words of the answer, without the read markers the engine appends to a sentence (" [e3]"): a marker's digit is not a figure. */
+export const answerText = (state) => state.texts.join('').replace(/[ \t]?\[e\d+\]/g, '');
+
+/** Feed it the response body as it arrives; it returns the events each chunk completes. A torn last frame is never returned. */
+export function eventReader() {
+  let buffer = '';
+  return (chunk) => {
+    buffer += chunk;
+    const events = [];
+    for (;;) {
+      const end = buffer.indexOf('\n\n');
+      if (end === -1) return events;
+      const data = buffer.slice(0, end).split('\n').filter((line) => line.startsWith('data:')).map((line) => line.slice(5).trimStart()).join('\n');
+      buffer = buffer.slice(end + 2);
+      if (!data) continue;
+      try {
+        const parsed = JSON.parse(data);
+        if (parsed && typeof parsed.type === 'string') events.push(parsed);
+      } catch {
+        /* not one of ours (a proxy's comment line) */
+      }
+    }
+  };
+}
+
+/** Fold one event into the state, the way the app's own reducer does (`applyChatEvent`): a discard drops the text since the last non-text part. */
+export function applyEvent(state, ev) {
+  const sawTool = (name) => {
+    if (!name) return;
+    if (!state.tools.includes(name)) state.tools.push(name);
+  };
+  if (ev.type === 'text_delta') {
+    if (!ev.delta) return state;
+    if (state.open) state.texts[state.texts.length - 1] += ev.delta;
+    else state.texts.push(ev.delta);
+    state.open = true;
     return state;
   }
-  if (ev.type === 'text-delta') state.text += ev.delta ?? '';
-  else if (ev.type === 'data-grounding-flag') state.flag = ev.data ?? {};
-  else if (ev.type === 'data-turn-incomplete') state.incomplete = true;
-  else if (ev.type === 'data-progress' && ev.data?.tool === 'repair') state.repair = ev.data.state ?? 'running';
-  else if (ev.type === 'data-evidence') {
-    state.evidence += 1;
-    if (ev.data?.envelope) state.evidenceParts.push({ tool: ev.data.tool ?? null, ref: ev.data.ref ?? null, envelope: ev.data.envelope });
-  } else if (ev.type === 'tool-input-available' || ev.type === 'tool-input-start') {
-    if (ev.toolName && !state.tools.includes(ev.toolName)) state.tools.push(ev.toolName);
-    if (ev.type === 'tool-input-available' && ev.toolName) state.toolCalls.push({ name: ev.toolName, input: ev.input ?? null });
+  if (ev.type === 'text_discard') {
+    if (state.open) state.texts.pop();
+    state.open = false;
+    return state;
   }
-  else if (ev.type === 'error') state.error = ev.errorText ?? 'stream error';
+  if (ev.type === 'message_start') state.conversationId = ev.conversation_id ?? state.conversationId;
+  else if (ev.type === 'usage' || ev.type === 'phase') return state;
+  else if (ev.type === 'done') {
+    state.status = ev.status ?? null;
+    state.durationMs = ev.duration_ms ?? null;
+  } else if (ev.type === 'error') {
+    state.error = ev.message ?? 'stream error';
+    state.errorKind = ev.kind ?? null;
+  } else {
+    // Everything else adds a part beside the text, so the next words start a new text part.
+    state.open = false;
+    if (ev.type === 'read_started') {
+      sawTool(ev.tool);
+      state.toolCalls.push({ name: ev.tool, input: null });
+    } else if (ev.type === 'read_finished' && ev.state === 'failed') state.failedReads.push(ev.tool);
+    else if (ev.type === 'evidence') {
+      state.evidence += 1;
+      const data = ev.part?.data ?? {};
+      sawTool(data.tool);
+      if (data.envelope) state.evidenceParts.push({ tool: data.tool ?? null, ref: data.ref ?? null, envelope: data.envelope, ...(data.via ? { via: data.via } : {}) });
+    } else if (ev.type === 'decision_needed') {
+      sawTool(ev.tool);
+      state.cards += 1;
+    } else if (ev.type === 'part' && ev.part?.type === 'data-turn-meta') state.declined = ev.part.data?.declined === true;
+  }
   return state;
 }
 
-/** The counts the route's citation audit keeps for a turn (`CitationStats` in cites.ts). */
-export const CITATION_KEYS = ['figures', 'cited', 'fallback_passed', 'cites', 'verified', 'unresolved', 'mismatched', 'blocks', 'invalid'];
-
-/** Read the counts from a ledger row's `citations.citation_stats` (written with a rejection), or null. */
-export function citationsFromLedger(row) {
-  const stats = row?.citations?.citation_stats;
-  return stats && typeof stats === 'object' ? Object.fromEntries(CITATION_KEYS.map((k) => [k, Number(stats[k] ?? 0)])) : null;
+/**
+ * How the turn ended, in the engine's own words. Nothing is withheld any more, so there is no "rejected": an answer whose
+ * figures did not all match its reads is still `complete`, and the ledger's `verified` says so beside it.
+ *   complete   the turn finished                      card       it stopped at a card waiting for Confirm
+ *   declined   the model would not answer (a complete turn whose words are the app's sentence; its `data-turn-meta` says so)
+ *   failed     the turn failed and said so            stopped    it was cancelled
+ *   incomplete the stream ended without saying how
+ */
+export function verdictOf(state) {
+  if (state.status === 'failed' || state.error) return 'failed';
+  if (state.declined) return 'declined';
+  if (state.status === 'complete') return 'complete';
+  if (state.status === 'awaiting_decision') return 'card';
+  if (state.status === 'stopped') return 'stopped';
+  return 'incomplete';
 }
 
+// ------------------------- the golf-sense questions (src/lib/coachhelm/v3/chat/knowledge/eval) -------------------------
+
+const PLACEHOLDER = /\{(player|player2|new_player|no_shots_player|teammate)\}/g;
+const escapeRe = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+/** First names that are also everyday words: lower-case, they are not a name written wrongly. The same list as `knowledge/eval/index.ts`. */
+export const EVERYDAY_WORDS = new Set(['will', 'grant', 'chase', 'hunter', 'mark', 'bill', 'drew', 'rich', 'may', 'rose', 'lane', 'reed', 'art', 'dean', 'miles', 'chance', 'ace', 'bo', 'sky', 'jay', 'pat', 'sandy', 'summer', 'hope', 'faith', 'grace', 'joy']);
+const miscasedSource = (stored) =>
+  `(?<![A-Za-z])(?!${escapeRe(stored)}(?![A-Za-z]))${[...stored].map((ch) => (/[A-Za-z]/.test(ch) ? `[${ch.toLowerCase()}${ch.toUpperCase()}]` : escapeRe(ch))).join('')}(?![A-Za-z])`;
+function properNounSource(names, everyday) {
+  const whole = [...(names.people ?? []), ...(names.places ?? [])].map((n) => n.trim()).filter((n) => /[A-Za-z]{2}/.test(n));
+  const parts = (names.people ?? []).flatMap((n) => n.trim().split(/\s+/)).filter((w) => w.length >= 3 && /^[A-Z]/.test(w) && !everyday.has(w.toLowerCase()));
+  const all = [...new Set([...whole, ...parts])];
+  return all.length ? all.map(miscasedSource).join('|') : null;
+}
+
+/** Sentences in an answer, counted the way `style.max_sentences` means it: a list line counts as one. */
+export const sentenceCount = (answer) =>
+  answer
+    .split(/\n+/)
+    .flatMap((line) => line.split(/(?<=[.!?])\s+(?=[A-Z"“])/))
+    .filter((part) => /[A-Za-z]/.test(part)).length;
+
 /**
- * Read the counts of one conversation from the dev server's log text: the line of the `v3.chat.stream.citations` event that
- * names the conversation. An accepted turn's counts exist only there (the ledger keeps them for a rejection). The line may be
- * JSON or key=value text; each key is read wherever it appears on the line. Null when no such line.
+ * The questions of `golf-sense.json`, compiled into this harness's shape. `data` is the parsed file. `names` fills the placeholders
+ * (a question whose placeholder has no name comes back with `unfilled`, and is not asked); `stored` is the team's own proper names
+ * (`people`: the roster; `places`: courses and events), which join the proper-noun rule. A plain-JavaScript copy of
+ * `golfSenseQuestions` in `knowledge/eval/index.ts`, which a .mjs script cannot import; scripts/coachhelm/__tests__ holds the two
+ * to the same output. Each question's own guards are `forbid`; the writing rules every answer is held to are `writing`.
  */
-export function citationsFromLog(logText, conversationId) {
-  if (!logText || !conversationId) return null;
-  const line = logText.split('\n').find((l) => l.includes('v3.chat.stream.citations') && l.includes(conversationId));
-  if (!line) return null;
-  const out = {};
-  for (const key of CITATION_KEYS) {
-    const m = new RegExp(`["']?\\b${key}\\b["']?\\s*[:=]\\s*(\\d+)`).exec(line);
-    out[key] = m ? Number(m[1]) : 0;
-  }
-  return out;
+export function golfSenseQuestions(data, names = {}, stored = {}, everyday = EVERYDAY_WORDS) {
+  const proper = properNounSource(stored, everyday);
+  const fill = (text) => text.replace(PLACEHOLDER, (whole, key) => names[key] ?? whole);
+  const compile = (label, pattern, id) => {
+    const p = data.patterns[pattern];
+    if (!p) throw new Error(`eval question ${id} names an unknown pattern: ${pattern}`);
+    const source = p.re.replace(PLACEHOLDER, (whole, key) => (names[key] ? escapeRe(names[key]) : whole));
+    return { label, pattern, re: new RegExp(pattern === 'proper_noun_case' && proper ? `${source}|${proper}` : source, p.flags) };
+  };
+  return data.questions.map((q) => ({
+    id: q.id,
+    category: `golf sense: ${q.area}`,
+    viewer: q.viewer,
+    ask: fill(q.ask),
+    unfilled: [...new Set([...q.ask.matchAll(PLACEHOLDER)].map((m) => m[1]).filter((key) => !names[key]))],
+    readers: [...q.readers],
+    facts: q.facts.map((f) => ({ label: f.label, kind: 'phrase', re: new RegExp(f.re, f.flags) })),
+    forbid: q.forbid.map((f) => compile(f.label, f.pattern, q.id)),
+    writing: data.global_forbid.filter((name) => !q.forbid.some((f) => f.pattern === name)).map((name) => compile(data.patterns[name]?.why ?? name, name, q.id)),
+    note: q.note,
+    ...(q.style ? { style: q.style } : {}),
+    golfSense: true,
+  }));
+}
+
+/** The writing rules alone, for a question that is not from the file (the data questions): every answer is held to them. */
+export const writingRules = (data, stored = {}) => golfSenseQuestions({ ...data, questions: [{ id: 'writing', area: '', viewer: 'coach', ask: '', readers: [], facts: [], forbid: [], note: '' }] }, {}, stored)[0].writing;
+
+/**
+ * The two columns a golf-sense answer is scored on, and the reads it used against the reads it should have.
+ *   golf sense  every fact matches and none of the question's own guards does. A Tour figure is not "from memory" when the turn
+ *               read the reference (`get_reference`), so that guard is skipped then.
+ *   writing     none of the writing rules matches, and the answer is no longer than `style.max_sentences` where the question has one.
+ *   reads       any one of `readers` was used; an empty list means no read of team data is needed.
+ */
+export function scoreSense(question, text, tools, rules = question.writing ?? []) {
+  const missing = (question.facts ?? []).filter((f) => f.kind === 'phrase' && !f.re.test(text)).map((f) => f.label);
+  const said = (question.forbid ?? []).filter((f) => f.re.test(text) && !(f.pattern === 'tour_figure_from_memory' && tools.includes('get_reference'))).map((f) => f.label);
+  const broken = rules.filter((f) => f.re.test(text)).map((f) => f.pattern);
+  const sentences = sentenceCount(text);
+  if (question.style?.max_sentences && sentences > question.style.max_sentences) broken.push(`longer than ${question.style.max_sentences} sentences (${sentences})`);
+  const expected = question.readers ?? [];
+  return {
+    sense: { pass: missing.length === 0 && said.length === 0, missing, said },
+    writing: { pass: broken.length === 0, broken },
+    reads: { pass: expected.length === 0 || expected.some((name) => tools.includes(name)), expected, used: tools.filter((name) => name !== 'code_execution') },
+  };
 }
 
 /**
@@ -186,31 +304,61 @@ export function citesFromLog(logText, answerText, surface, turnId) {
   return hit ? hit.cites.filter(Array.isArray).map(([v, ref, key, subject, flag]) => ({ v: String(v), ref, key, subject, ...(flag === 'c' ? { c: 1 } : {}) })) : null;
 }
 
+// ------------------------- the report -------------------------
+
 /**
- * What the dev server printed while one question ran (the log text appended between its start and its end; questions run one at a time).
- * `[ask:citations]` is printed once per audited pass, so two lines mean the repair pass ran. `[ask:cites-not-verified]` lists the cites that
- * did not verify, with the reason. The `[ServerErrorLogger]` blocks name an action (`v3.chat.stream.repair`, `.ungrounded`,
- * `.claim_validation`) but not its extra fields: the off-prod logger does not print them.
+ * The markdown report, as lines. One row of `report` per question asked: `{ question, verdict, text, seconds, cost, scored, sense,
+ * note, tools, failedReads, grounded, unmatched, model }`, where `scored` is `score()`'s result for a data question and null for a
+ * golf-sense one, `sense` is `scoreSense()`'s (null when there was no answer), and `grounded` is the ledger's `verified` (null when
+ * no ledger row was found).
  */
-export function summariseLogSlice(slice) {
-  const citationLines = [];
-  const notVerified = [];
-  let repairActions = 0;
-  let ungroundedActions = 0;
-  let claimActions = 0;
-  for (const line of String(slice ?? '').split('\n')) {
-    try {
-      if (line.startsWith('[ask:citations] ')) citationLines.push(JSON.parse(line.slice(line.indexOf('{'))));
-      else if (line.startsWith('[ask:cites-not-verified] ')) {
-        const parsed = JSON.parse(line.slice('[ask:cites-not-verified] '.length));
-        notVerified.push(...(Array.isArray(parsed) ? parsed : (parsed.cites ?? [])));
-      }
-    } catch {
-      /* a truncated or foreign line */
+export function reportLines({ report, asked, skipped, base, ref, team, maxUsd, stoppedBecause, at }) {
+  const count = (fn) => report.filter(fn).length;
+  const data = report.filter((r) => !r.question.golfSense);
+  const golf = report.filter((r) => r.question.golfSense);
+  const right = (r) => (r.question.golfSense ? Boolean(r.sense?.sense.pass) : Boolean(r.scored?.allRight));
+  const notRight = report.filter((r) => r.verdict === 'complete' && !right(r));
+  const times = report.filter((r) => r.verdict === 'complete').map((r) => r.seconds).sort((a, b) => a - b);
+  const ruleCounts = {};
+  for (const r of report) for (const rule of r.sense?.writing.broken ?? []) ruleCounts[rule.replace(/ \(\d+\)$/, '')] = (ruleCounts[rule.replace(/ \(\d+\)$/, '')] ?? 0) + 1;
+  const models = {};
+  for (const r of report) if (r.model) models[r.model] = (models[r.model] ?? 0) + 1;
+  const yn = (v) => (v == null ? 'n/a' : v ? 'pass' : 'FAIL');
+  const lines = [];
+  lines.push(`# CoachHelm chat evaluation, ${at}`, '');
+  lines.push(`Server ${base}, staging ${ref}, team ${team}. ${report.length} of ${asked} questions asked, total cost $${report.reduce((a, r) => a + r.cost, 0).toFixed(2)} (cap $${maxUsd.toFixed(2)}), total time ${report.reduce((a, r) => a + r.seconds, 0).toFixed(0)}s${times.length ? `, median ${times[Math.floor(times.length / 2)].toFixed(1)}s per complete answer` : ''}.`, '');
+  if (stoppedBecause) lines.push(`**${stoppedBecause}**`, '');
+  if (skipped.length) lines.push(`Not asked (nobody on the roster fits the placeholder): ${skipped.join(', ')}.`, '');
+  lines.push(`Verdicts: ${['complete', 'card', 'declined', 'failed', 'stopped', 'incomplete', 'error'].map((v) => `${v} ${count((r) => r.verdict === v)}`).join(', ')}.`);
+  lines.push(`Models, from the ledger: ${Object.entries(models).map(([m, n]) => `${m} ${n}`).join(', ') || 'none recorded'}.`);
+  if (data.length) lines.push(`Data questions fully right: ${data.filter(right).length} of ${data.length}.`);
+  if (golf.length) lines.push(`Golf sense: ${golf.filter(right).length} of ${golf.length} pass. Used a read they should: ${golf.filter((r) => r.sense?.reads.pass).length} of ${golf.length}.`);
+  lines.push(`Writing rules: ${count((r) => r.sense?.writing.pass)} of ${count((r) => r.sense)} answers break none.${Object.keys(ruleCounts).length ? ` Broken: ${Object.entries(ruleCounts).sort((a, b) => b[1] - a[1]).map(([rule, n]) => `${rule} ${n}`).join(', ')}.` : ''}`);
+  lines.push(`Figures matched the turn's reads (the logged check; it withholds nothing): ${count((r) => r.grounded === true)} of ${count((r) => r.grounded != null)}.`, '');
+  lines.push('| Question | Category | Viewer | Verdict | Correct | Wrong | Missing | Golf sense | Reads | Writing | Figures matched | Model | Time | Cost |', '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|');
+  for (const r of report) lines.push(`| ${r.question.id} | ${r.question.category} | ${r.question.viewer} | ${r.verdict} | ${r.scored?.correct ?? '-'} | ${r.scored?.wrong ?? '-'} | ${r.scored?.missing ?? '-'} | ${r.question.golfSense ? yn(r.sense?.sense.pass) : '-'} | ${r.question.golfSense ? yn(r.sense?.reads.pass) : '-'} | ${yn(r.sense?.writing.pass)} | ${r.grounded == null ? 'n/a' : r.grounded ? 'yes' : 'no'} | ${r.model ?? 'n/a'} | ${r.seconds.toFixed(1)}s | $${r.cost.toFixed(3)} |`);
+  if (notRight.length) {
+    lines.push('', '## Complete but not right', '');
+    for (const r of notRight) {
+      const why = r.question.golfSense
+        ? [...r.sense.sense.missing.map((x) => `does not say: ${x}`), ...r.sense.sense.said.map((x) => `says: ${x}`)]
+        : r.scored.results.filter((x) => x.status !== 'correct' && !x.optional).map((x) => `${x.status} ${x.label}${x.detail ? ` (${x.detail})` : ''}`);
+      lines.push(`- ${r.question.id}: ${why.join('; ')}`);
     }
-    if (line.includes("'v3.chat.stream.repair'")) repairActions += 1;
-    if (line.includes("'v3.chat.stream.ungrounded'")) ungroundedActions += 1;
-    if (line.includes("'v3.chat.stream.claim_validation'")) claimActions += 1;
   }
-  return { citationLines, notVerified, repairActions, ungroundedActions, claimActions };
+  lines.push('', '## Per question', '');
+  for (const r of report) {
+    lines.push(`### ${r.question.id} (${r.verdict})`, '', `Q: ${r.question.ask}`, '');
+    if (r.question.note) lines.push(`Note: ${r.question.note}`, '');
+    if (r.note) lines.push(`Run note: ${r.note}`, '');
+    if (r.grounded === false) lines.push(`Figures in none of the turn's reads: ${JSON.stringify(r.unmatched ?? [])}`, '');
+    if (r.tools.length) lines.push(`Reads: ${r.tools.join(', ')}${r.failedReads?.length ? ` (failed: ${r.failedReads.join(', ')})` : ''}`, '');
+    if (r.question.golfSense && r.sense) lines.push(`Reads expected: ${r.sense.reads.expected.length ? r.sense.reads.expected.join(' or ') : 'none needed'} (${yn(r.sense.reads.pass)})`, '');
+    for (const x of r.scored?.results ?? []) lines.push(`- ${x.status}${x.optional ? ' (optional)' : ''}: ${x.label}${x.detail ? ` [${x.detail}]` : ''}`);
+    for (const x of (r.question.golfSense && r.sense?.sense.missing) || []) lines.push(`- golf sense, does not say: ${x}`);
+    for (const x of (r.question.golfSense && r.sense?.sense.said) || []) lines.push(`- golf sense, says: ${x}`);
+    for (const x of r.sense?.writing.broken ?? []) lines.push(`- writing: ${x}`);
+    lines.push('', '> ' + (r.text.trim().replace(/\n/g, '\n> ') || '(no text)'), '');
+  }
+  return lines;
 }
