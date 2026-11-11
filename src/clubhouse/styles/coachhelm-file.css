@@ -8,7 +8,8 @@
   --ch-hf-a-ink-3: var(--ch-text-tertiary);
   --ch-hf-a-gain: var(--ch-gain);
   --ch-hf-a-loss: var(--ch-loss);
-  --ch-hf-a-accent: var(--ch-accent);
+  /* The link ink: green-600 is the readable green in both themes (the dark --ch-accent is a fill, 2.9:1 as text on a dark card). */
+  --ch-hf-a-accent: var(--ch-green-600);
   --ch-hf-a-sep: var(--ch-separator);
   --ch-hf-a-ring: var(--ch-border-hairline);
   --ch-hf-a-shadow: var(--ch-card-shadow);
