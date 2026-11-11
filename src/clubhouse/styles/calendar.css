@@ -3625,7 +3625,9 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
   .ch-cal[data-canopy] .ch-wk__nowlbl {
     background: var(--ch-workspace);
   }
-  .ch-cal[data-canopy] .ch-ev--lane {
+  /* Not while it has keyboard focus: this outranks .ch-ev:focus-visible, and turned the focus ring the canvas's own
+     colour on every cascaded block (cream on cream; a block on its own showed the green ring). */
+  .ch-cal[data-canopy] .ch-ev--lane:not(:focus-visible) {
     outline-color: var(--ch-workspace);
   }
 
