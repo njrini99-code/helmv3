@@ -30,6 +30,9 @@ BEGIN;
 
 SELECT plan(33);
 
+-- Written with triggers off: after 20261110090300 a staff row on a team with no channel creates one, and this fixture
+-- makes the team's channel by hand, with the id the assertions name.
+SET LOCAL session_replication_role = replica;
 DO $$
 BEGIN
   INSERT INTO auth.users (id, email, role) VALUES
@@ -51,11 +54,17 @@ BEGIN
 
   INSERT INTO public.organizations (id, name, type) VALUES
     ('00000000-0000-0000-0000-0000000a2101', 'A2 Org',   'college'),
-    ('00000000-0000-0000-0000-0000000a2102', 'A2 Other', 'college')
+    ('00000000-0000-0000-0000-0000000a2102', 'A2 Other', 'college'),
+    ('00000000-0000-0000-0000-0000000a2103', 'A2 Third', 'college'),
+    ('00000000-0000-0000-0000-0000000a2104', 'A2 Fourth', 'college')
   ON CONFLICT DO NOTHING;
   INSERT INTO public.golf_teams (id, name, join_code, organization_id) VALUES
     ('00000000-0000-0000-0000-0000000a2201', 'A2 Team',  'A2TEAM01', '00000000-0000-0000-0000-0000000a2101'),
-    ('00000000-0000-0000-0000-0000000a2202', 'A2 Other', 'A2TEAM02', '00000000-0000-0000-0000-0000000a2102')
+    ('00000000-0000-0000-0000-0000000a2202', 'A2 Other', 'A2TEAM02', '00000000-0000-0000-0000-0000000a2102'),
+    -- Two more teams C coaches, with no channel: a team has one channel at most (20261110090300), so the two
+    -- "may create a channel" assertions below each need a team that has none.
+    ('00000000-0000-0000-0000-0000000a2203', 'A2 Third',  'A2TEAM03', '00000000-0000-0000-0000-0000000a2103'),
+    ('00000000-0000-0000-0000-0000000a2204', 'A2 Fourth', 'A2TEAM04', '00000000-0000-0000-0000-0000000a2104')
   ON CONFLICT DO NOTHING;
 
   -- C and C3 coach the team (C creates its conversations); C2 coaches the other team.
@@ -67,7 +76,9 @@ BEGIN
   INSERT INTO public.golf_team_coach_staff (team_id, coach_id) VALUES
     ('00000000-0000-0000-0000-0000000a2201', '00000000-0000-0000-0000-0000000a2301'),
     ('00000000-0000-0000-0000-0000000a2202', '00000000-0000-0000-0000-0000000a2302'),
-    ('00000000-0000-0000-0000-0000000a2201', '00000000-0000-0000-0000-0000000a2303')
+    ('00000000-0000-0000-0000-0000000a2201', '00000000-0000-0000-0000-0000000a2303'),
+    ('00000000-0000-0000-0000-0000000a2203', '00000000-0000-0000-0000-0000000a2301'),
+    ('00000000-0000-0000-0000-0000000a2204', '00000000-0000-0000-0000-0000000a2301')
   ON CONFLICT DO NOTHING;
 
   -- P1 and P2 are active on the team; X is active on the other team.
@@ -94,6 +105,7 @@ BEGIN
     ('00000000-0000-0000-0000-0000000a2600', '00000000-0000-0000-0000-0000000a2500', '00000000-0000-0000-0000-0000000a2c01', 'channel history')
   ON CONFLICT DO NOTHING;
 END $$;
+SET LOCAL session_replication_role = origin;
 
 -- ---------------------------------------------------------------------------
 -- Structure
@@ -173,8 +185,8 @@ SELECT lives_ok(
 );
 SELECT lives_ok(
   $$INSERT INTO public.golf_conversations (id, team_id, title, is_team_chat, is_team_channel, created_by)
-    VALUES ('00000000-0000-0000-0000-0000000a2504', '00000000-0000-0000-0000-0000000a2201', 'Coach channel', true, true, '00000000-0000-0000-0000-0000000a2c01')$$,
-  'a coach of the team may create a conversation flagged as its team channel'
+    VALUES ('00000000-0000-0000-0000-0000000a2504', '00000000-0000-0000-0000-0000000a2203', 'Coach channel', true, true, '00000000-0000-0000-0000-0000000a2c01')$$,
+  'a coach of a team that has no channel may create a conversation flagged as its team channel'
 );
 -- Leave group, then come back: branch 1 still lets a creator add themself.
 SELECT lives_ok(
@@ -313,7 +325,7 @@ SELECT is(
 SET LOCAL ROLE service_role;
 SELECT lives_ok(
   $$INSERT INTO public.golf_conversations (id, team_id, title, is_team_chat, is_team_channel, created_by)
-      VALUES ('00000000-0000-0000-0000-0000000a2507', '00000000-0000-0000-0000-0000000a2201', 'Seeded channel', true, true, '00000000-0000-0000-0000-0000000a2c01');
+      VALUES ('00000000-0000-0000-0000-0000000a2507', '00000000-0000-0000-0000-0000000a2204', 'Seeded channel', true, true, '00000000-0000-0000-0000-0000000a2c01');
     INSERT INTO public.golf_conversation_participants (conversation_id, user_id) VALUES
       ('00000000-0000-0000-0000-0000000a2507', '00000000-0000-0000-0000-0000000a2c01'),
       ('00000000-0000-0000-0000-0000000a2507', '00000000-0000-0000-0000-0000000a2b01'),

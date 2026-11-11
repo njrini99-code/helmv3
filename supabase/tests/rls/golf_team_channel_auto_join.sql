@@ -24,6 +24,9 @@ LANGUAGE sql AS $f$
   WHERE conversation_id = p_conversation AND user_id = p_user;
 $f$;
 
+-- Written with triggers off, so the fixture is what it says: after 20261110090300 a staff row on a team with no channel
+-- creates one, and the channels below are made by hand with ids the assertions name.
+SET LOCAL session_replication_role = replica;
 DO $$
 BEGIN
   INSERT INTO auth.users (id, email, role) VALUES
@@ -93,6 +96,7 @@ BEGIN
     ('00000000-0000-0000-0000-0000000a4600', '00000000-0000-0000-0000-0000000a4500', '00000000-0000-0000-0000-0000000a4c01', 'welcome to the team')
   ON CONFLICT DO NOTHING;
 END $$;
+SET LOCAL session_replication_role = origin;
 
 -- ---------------------------------------------------------------------------
 -- Structure
@@ -204,10 +208,16 @@ SELECT is(public.a4_in('00000000-0000-0000-0000-0000000a4501', '00000000-0000-00
   'P3 is in their own team''s channel');
 SELECT is(public.a4_in('00000000-0000-0000-0000-0000000a4500', '00000000-0000-0000-0000-0000000a4b03'), 0,
   'and not in this team''s');
+-- Changed on purpose by 20261110090300 (owner decision 2026-11-10: every team has a channel). Before it, P5 was in no
+-- conversation here.
 SELECT is(
-  (SELECT count(*)::int FROM public.golf_conversation_participants
+  (SELECT count(*)::int FROM public.golf_conversation_participants cp
+    JOIN public.golf_conversations c ON c.id = cp.conversation_id
+    WHERE cp.user_id = '00000000-0000-0000-0000-0000000a4b05'
+      AND c.team_id = '00000000-0000-0000-0000-0000000a4203' AND c.is_team_channel)
+  + (SELECT count(*)::int FROM public.golf_conversation_participants
     WHERE user_id = '00000000-0000-0000-0000-0000000a4b05'),
-  0, 'P5, on a team with no channel, is in no conversation, and the roster write did not fail');
+  2, 'P5, on a team with no channel, gets one (20261110090300): it is the only conversation P5 is in');
 SELECT is(
   (SELECT count(*)::int FROM public.golf_conversation_participants
     WHERE conversation_id = '00000000-0000-0000-0000-0000000a4500'),
