@@ -40,7 +40,8 @@ describe('the player’s Tournaments list · said once', () => {
     expect(c.querySelector('h1')?.textContent).toBe('Tournaments');
     expect(c.textContent).not.toContain('Your team’s events, with the days');
     const captions = [...c.querySelectorAll('.ch-sec__meta')].map((x) => x.textContent);
-    expect(captions).toEqual(phone ? ['1 event', 'Your total, to par'] : ['2 events on the calendar', 'Your own scores, round by round']);
+    // On the phone the one event that follows is the green card's foot, so only Played is a titled card.
+    expect(captions).toEqual(phone ? ['Your total, to par'] : ['2 events on the calendar', 'Your own scores, round by round']);
   });
 
   it('desktop: nothing sits between the title and the head’s rule', () => {
@@ -167,5 +168,86 @@ describe('the player’s Tournaments · a phone card’s text clears its heading
   it.each(['.ch-tour-pl-quiet', '.ch-tour-pl-reflect', '.ch-tour-pl-card'])('%s starts 12 under the rule, as an event row’s text does', (block) => {
     expect(decls(`.ch-tour-pl.is-phone .ch-sec__head ~ ${block}`)['padding-top']).toBe('12px');
     expect(decls('.ch-tour-pl-round').padding).toBe('12px 16px');
+  });
+});
+
+/**
+ * On a phone "Coming up · 1 event" was a whole titled card for one row. A single following event is now the green card's
+ * foot. A link cannot sit inside a link, so on the phone the card is the coach's card (TournamentsHome): a named group
+ * whose title opens the next event and whose foot opens the one after. Two or more following events keep their card.
+ */
+describe('the player’s Tournaments · one following event is the card’s foot (phone)', () => {
+  const coming = fx.list.list.filter((x) => x.status !== 'complete');
+  const played = fx.list.list.filter((x) => x.status === 'complete');
+  const [next, then] = coming as [(typeof coming)[number], (typeof coming)[number]];
+  const hrefOf = (id: string) => `/golf/dashboard/tournaments/${id}`;
+
+  it('the fixture has exactly one event after the next', () => {
+    expect(coming).toHaveLength(2);
+  });
+
+  it('the card is a named group, and its title is the link to the next event', () => {
+    const card = draw(fx.list, true).querySelector('.ch-tour-pl-next')!;
+    expect(card.tagName).toBe('DIV');
+    expect(card.getAttribute('role')).toBe('group');
+    expect(card.getAttribute('aria-label')).toBe(`Up next: ${next.name}`);
+    expect(card.classList.contains('is-link')).toBe(false);
+    const title = card.querySelector('.ch-feat__title a')!;
+    expect(title.getAttribute('href')).toBe(hrefOf(next.eventId));
+    expect(title.textContent).toBe(next.name);
+    expect(title.querySelector('svg.lucide-chevron-right')).not.toBeNull();
+  });
+
+  it('the one following event is the foot: a second link, named, with when, where and how far off', () => {
+    const c = draw(fx.list, true);
+    const foot = c.querySelector('.ch-tour-pl-next .ch-feat__foot')!;
+    const links = foot.querySelectorAll('a');
+    expect(links).toHaveLength(1);
+    expect(links[0]!.getAttribute('href')).toBe(hrefOf(then.eventId));
+    expect(links[0]!.querySelector('b')!.textContent).toBe(then.name);
+    expect(links[0]!.textContent).toMatch(/^Also coming up: /);
+    expect(links[0]!.querySelector('.ch-sr-only')!.textContent).toBe('Also coming up: ');
+    expect([...links[0]!.querySelectorAll('.ch-tour-pl-bits > span > span')].map((x) => x.textContent)).toEqual([expect.stringMatching(/^[A-Z][a-z]{2} \d/), then.courseName, expect.stringMatching(/^In \d+ days$/)]);
+    // No titled card for one row, and no link inside a link.
+    expect(c.querySelector('#ch-tour-pl-up-t')).toBeNull();
+    expect(c.querySelector('.ch-tour-pl-later')).toBeNull();
+    expect(c.querySelector('a a')).toBeNull();
+    // Every event is still one tap away: the next, the one after, and each played.
+    const hrefs = [...c.querySelectorAll<HTMLAnchorElement>('a[href^="/golf/dashboard/tournaments/"]')].map((a) => a.getAttribute('href'));
+    expect(hrefs).toEqual([next, then, ...played].map((x) => hrefOf(x.eventId)));
+  });
+
+  it('with two or more following events the Coming up card stays, and the green card has no foot', () => {
+    const third = { ...then, eventId: 'e-third', name: 'Third Event' };
+    const c = draw({ ...fx.list, list: [...coming, third, ...played] }, true);
+    expect(c.querySelector('.ch-tour-pl-next .ch-feat__foot')).toBeNull();
+    expect(c.querySelector('#ch-tour-pl-up-t')!.textContent).toBe('Coming up');
+    expect([...c.querySelectorAll('.ch-tour-pl-later .ch-lgr__row')].map((a) => a.getAttribute('href'))).toEqual([hrefOf(then.eventId), hrefOf('e-third')]);
+    expect(c.querySelector('.ch-sec__meta')!.textContent).toBe('2 events');
+  });
+
+  it('with nothing after it the green card has no foot', () => {
+    const c = draw({ ...fx.list, list: [next, ...played] }, true);
+    expect(c.querySelector('.ch-tour-pl-next .ch-feat__foot')).toBeNull();
+    expect(c.querySelector('.ch-tour-pl-next .ch-feat__title a')!.getAttribute('href')).toBe(hrefOf(next.eventId));
+  });
+
+  it('desktop is unchanged: the whole card is the one link, and the following event is a row under it', () => {
+    const c = draw(fx.list);
+    const card = c.querySelector('.ch-tour-pl-next')!;
+    expect(card.tagName).toBe('A');
+    expect(card.getAttribute('href')).toBe(hrefOf(next.eventId));
+    expect(card.querySelector('a')).toBeNull();
+    expect(card.querySelector('.ch-feat__foot')).toBeNull();
+    expect(c.querySelectorAll('.ch-tour-pl-later .ch-lgr__row')).toHaveLength(1);
+  });
+
+  it('both links reach 44 to the finger, dim while pressed and take the on-dark ring', () => {
+    expect(decls('.ch-tour-pl-next__open::after')).toMatchObject({ position: 'absolute', inset: 'min(0px, calc(50% - 22px)) 0' });
+    expect(decls('.ch-tour-pl-next__then')).toMatchObject({ 'min-height': '44px' });
+    for (const link of ['.ch-tour-pl-next__open', '.ch-tour-pl-next__then']) {
+      expect(decls(`${link}[data-ch-pressed]`)).toMatchObject({ opacity: '0.55' });
+      expect(decls(`${link}:focus-visible`)).toMatchObject({ outline: '2px solid var(--ch-border-focus-on-dark)' });
+    }
   });
 });

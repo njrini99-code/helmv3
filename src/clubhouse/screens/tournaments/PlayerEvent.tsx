@@ -119,8 +119,12 @@ function ListPage({ data, phone }: { data: ChTourPlayerData; phone: boolean }) {
   const today = teamToday(data.now, data.team.timezone);
   const next = upcoming[0];
   const later = upcoming.slice(1);
-  const card = next && <NextCard row={next} today={today} timezone={data.team.timezone} href={paths.player(next.eventId)} />;
-  const rest = later.length > 0 && <LaterRows rows={later} today={today} href={paths.player} />;
+  // On a phone a single following event is the green card's foot, not a titled card of one row; two or more keep their card.
+  const then = phone && later.length === 1 ? later[0] : undefined;
+  const card = next && (
+    <NextCard row={next} today={today} timezone={data.team.timezone} href={paths.player(next.eventId)} phone={phone} then={then && { row: then, href: paths.player(then.eventId) }} />
+  );
+  const rest = later.length > 0 && !then && <LaterRows rows={later} today={today} href={paths.player} />;
   return (
     <TourMain view="player" phone={phone} labelledBy={TITLE_ID} className="ch-tour-pl">
       <TourPhoneTop phone={phone} title="Tournaments" />
@@ -162,24 +166,46 @@ function ListPage({ data, phone }: { data: ChTourPlayerData; phone: boolean }) {
 }
 
 /**
- * The next event (or the one being played): the kit's one green card, the whole of it the link to the event. It carries no
- * label of its own, so a screen reader reads what the card says: where, when, how far off, and each day's first tee.
+ * The next event (or the one being played): the kit's one green card. On a desktop the whole of it is the link to the
+ * event, and it carries no label of its own, so a screen reader reads what the card says: where, when, how far off, and
+ * each day's first tee. On a phone it is the coach's card (TournamentsHome): a named group whose title is the link, so
+ * the foot can hold a second one, the single event that follows (`then`).
  */
-function NextCard({ row: x, today, timezone, href }: { row: ListRow; today: string; timezone: string; href: string }) {
+function NextCard({ row: x, today, timezone, href, phone, then }: { row: ListRow; today: string; timezone: string; href: string; phone: boolean; then?: { row: ListRow; href: string } }) {
   const live = x.status === 'live';
   const days = daysUntil(today, x.startDate);
   return (
     <FeatureCard
       className="ch-tour-pl-next"
-      href={href}
+      href={phone ? undefined : href}
+      label={phone ? `Up next: ${x.name}` : undefined}
       kicker={<Bits items={[tourRange(x.startDate, x.endDate), x.courseName]} />}
       chip={live ? 'Live now' : inDays(today, x.startDate)}
       soon={live || (days >= 0 && days <= 1)}
       title={
-        <span className="ch-tour-pl-next__t">
-          {x.name}
-          <Icon icon={ChevronRight} size={16} />
-        </span>
+        phone ? (
+          <Link href={href} className="ch-tour-pl-next__t ch-tour-pl-next__open">
+            {x.name}
+            <Icon icon={ChevronRight} size={16} />
+          </Link>
+        ) : (
+          <span className="ch-tour-pl-next__t">
+            {x.name}
+            <Icon icon={ChevronRight} size={16} />
+          </span>
+        )
+      }
+      foot={
+        then && (
+          <Link href={then.href} className="ch-tour-pl-next__then">
+            <span className="ch-tour-pl-next__then-t">
+              <span className="ch-sr-only">Also coming up: </span>
+              <b>{then.row.name}</b>
+              <Bits items={[tourRange(then.row.startDate, then.row.endDate), then.row.courseName, then.row.status === 'live' ? 'Live now' : inDays(today, then.row.startDate)]} />
+            </span>
+            <Icon icon={ChevronRight} size={16} />
+          </Link>
+        )
       }
       line={
         x.days.length === 0 ? (

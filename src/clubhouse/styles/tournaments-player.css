@@ -135,6 +135,66 @@
 .ch-tour-pl.is-phone .ch-tour-pl-next {
   padding: 16px;
 }
+/* On a phone the card is the coach's (tournaments-home.css): not one link but a group. Its title opens the event, 27px
+   drawn and 44 to the finger, and one following event is its foot, a second link under the card's own rule. Both dim
+   while pressed, as a text link does on Player Home, and take the on-dark focus ring. */
+.ch-tour-pl-next__open,
+.ch-tour-pl-next__then {
+  position: relative;
+  color: inherit;
+  text-decoration: none;
+  transition: opacity var(--ch-dur-press) var(--ch-ease);
+}
+.ch-tour-pl-next__open::after {
+  position: absolute;
+  inset: min(0px, calc(50% - 22px)) 0;
+  content: '';
+}
+.ch-tour-pl-next__open[data-ch-pressed],
+.ch-tour-pl-next__then[data-ch-pressed] {
+  opacity: 0.55;
+  transition-delay: var(--ch-dur-press-delay);
+}
+@media (hover: hover) {
+  .ch-tour-pl-next__open:active,
+  .ch-tour-pl-next__then:active {
+    opacity: 0.55;
+    transition-delay: var(--ch-dur-press-delay);
+  }
+}
+.ch-tour-pl-next__open:focus-visible,
+.ch-tour-pl-next__then:focus-visible {
+  outline: 2px solid var(--ch-border-focus-on-dark);
+  outline-offset: 2px;
+  border-radius: var(--ch-radius-xs);
+}
+/* The foot's rule sits the card's own 12 under the days, as the days' rule sits under the title. */
+.ch-tour-pl-next .ch-feat__foot {
+  margin-top: 0;
+}
+.ch-tour-pl-next__then {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  min-height: 44px;
+}
+.ch-tour-pl-next__then-t {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.ch-tour-pl-next__then b {
+  font: var(--ch-type-14-strong);
+  color: var(--ch-on-green-ink);
+}
+.ch-tour-pl-next__then svg {
+  flex: none;
+  color: var(--ch-on-green-ink-soft);
+}
 .ch-tour-pl.is-phone .ch-tour-pl-next .ch-feat__title {
   font: var(--ch-type-22-strong);
   line-height: var(--ch-lead-tight);
