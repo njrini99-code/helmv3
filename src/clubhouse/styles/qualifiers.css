@@ -3140,6 +3140,34 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   box-shadow: inset 0 0 0 2px var(--ch-champagne-500);
   color: var(--ch-ledger-eyebrow);
 }
+/* You: a player's own coin carries the mark their dot has on a round's field strip (.ch-qf-rv__dot.is-me), a gap of the board's
+   ground and then a ring, in the green of the list's "You". The coin keeps its state's own edge inside the ring. */
+.ch-qf-sp__plot li.is-me {
+  z-index: 1;
+}
+.ch-qf-sp__plot li.is-me > span {
+  box-shadow:
+    0 0 0 2px var(--ch-bg-surface),
+    0 0 0 3.5px var(--ch-green-700);
+}
+.ch-qf-sp__plot li.is-me.is-bubble > span {
+  box-shadow:
+    inset 0 0 0 2px var(--ch-champagne-500),
+    0 0 0 2px var(--ch-bg-surface),
+    0 0 0 3.5px var(--ch-green-700);
+}
+.ch-qf-sp__plot li.is-me.is-out > span {
+  box-shadow:
+    inset 0 0 0 1.5px var(--ch-ink-400),
+    0 0 0 2px var(--ch-bg-surface),
+    0 0 0 3.5px var(--ch-green-700);
+}
+/* At night the deep green of a coin on score is the board's own ground (1.07:1): the coin takes the mint the page's other
+   on-score marks take there (the thru dots, "Qualifying"), with the deep green as its ink. */
+:where(html[data-fw-theme='dark']) .ch-qf-sp__plot li.is-score > span {
+  background: var(--ch-green-700);
+  color: var(--ch-green-900);
+}
 .ch-qf-sp__plot li.is-hot > span {
   transform: scale(1.14);
 }

@@ -457,7 +457,7 @@ function Leaderboard({
       </p>
       <ViewerLineCard board={b} viewerId={data.viewerPlayerId} numRounds={data.numRounds} selection={viewerSelection(data.selectionState, data.selections)} />
       {coach && b.mixed && <MixedRounds mixed={b.mixed} />}
-      <StandingsSpread rows={b.rows} topScore={b.topScore} />
+      <StandingsSpread rows={b.rows} topScore={b.topScore} viewerId={data.viewerPlayerId} />
       <div className="ch-qf-table" role="table" aria-labelledby="ch-qf-lb">
         <div role="rowgroup">
           <div className="ch-qf-row ch-qf-row--head ch-qf-lbrow" role="row">
