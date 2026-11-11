@@ -30,6 +30,13 @@ describe('Practice library', () => {
     await userEvent.type(screen.getByRole('searchbox'), 'zzz');
     expect(screen.getByText('No drills match “zzz”')).toBeTruthy();
   });
+  it('the areas are one row that shows its clipped edge, and each list is a shelf of drills', () => {
+    render(<ToastProvider><DrillsPage preview teamId="t" team={[team]} library={[lib]} /></ToastProvider>);
+    const areas = screen.getByRole('group', { name: 'Area' });
+    expect(areas.classList.contains('ch-hscroll')).toBe(true);
+    expect(areas.querySelectorAll('button').length).toBe(9);
+    expect([...document.querySelectorAll('.ch-prc-list')].every((list) => list.classList.contains('is-drills'))).toBe(true);
+  });
   it('a team drill edits and archives; a library drill only copies', () => {
     const { unmount } = render(<ToastProvider><DrillPage preview teamId="t" drill={detail(team)} /></ToastProvider>);
     expect(screen.getByRole('button', { name: 'Edit' })).toBeTruthy();

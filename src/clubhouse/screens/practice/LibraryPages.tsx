@@ -3,12 +3,14 @@
 import { ChevronRight, Ellipsis, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { archiveTeamDrill, copyLibraryDrill, deletePracticeGroup, deletePracticeTemplate, renamePracticeTemplate, savePracticeGroup, savePracticeTemplate, updateTeamDrill } from '@/app/golf/actions/practice-library';
 import type { DrillKind, PlanArea, PlanBodyV2 } from '@/lib/coachhelm/v3/practice-plan/model';
 import type { ChDrillDetail, ChDrillRow, ChPracticeGroup, ChPracticeTemplate, ChRosterRow } from '../../data/practice-library-shape';
 import { useRefresh } from '../../lib/use-refresh';
 import { useChPhone } from '../../lib/use-phone';
+import { useChReducedMotion } from '../../lib/reduced-motion';
+import { useHScroll, useKeepInView } from '../../ui/use-hscroll';
 import { plural } from '../../lib/plural';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { PhoneIconAction } from '../../ui/PhoneBar';
@@ -83,19 +85,25 @@ export function DrillsPage({ teamId, team, library, preview = false }: { teamId:
   const mine = useMemo(() => team.filter(match), [team, q, area]); // eslint-disable-line react-hooks/exhaustive-deps -- match reads q and area
   const theirs = useMemo(() => library.filter(match), [library, q, area]); // eslint-disable-line react-hooks/exhaustive-deps -- match reads q and area
   const phone = useChPhone();
+  const areaRow = useRef<HTMLDivElement | null>(null);
+  const areaEdges = useHScroll(areaRow);
+  useKeepInView(areaRow, '[aria-pressed="true"]', `${phone}:${area}`, useChReducedMotion());
   return (
     <main className={'ch-page ch-prc' + (phone ? ' is-phone' : '')} data-ch="practice" aria-labelledby="ch-prc-title">
       <LibraryHead tab="drills" title="Drills" actionLabel="New drill" onAction={() => setCreating(true)} />
-      <SearchField value={q} onChange={setQ} placeholder="Search drills" label="Search drills" />
-      <div className="ch-pills ch-prc-areas" role="group" aria-label="Area">
-        <button type="button" className="ch-pill" aria-pressed={area === 'all'} onClick={() => setArea('all')}>
-          All
-        </button>
-        {AREAS.map(([v, label]) => (
-          <button key={v} type="button" className="ch-pill" aria-pressed={area === v} onClick={() => setArea(v)}>
-            {label}
+      {/* Search and the areas: one line on a Mac; on a phone the areas are one row that scrolls sideways, its clipped edge fading and the chosen area kept whole. */}
+      <div className="ch-prc-find">
+        <SearchField value={q} onChange={setQ} placeholder="Search drills" label="Search drills" />
+        <div ref={areaEdges} className="ch-hscroll ch-pills ch-prc-areas" role="group" aria-label="Area">
+          <button type="button" className="ch-pill" aria-pressed={area === 'all'} onClick={() => setArea('all')}>
+            All
           </button>
-        ))}
+          {AREAS.map(([v, label]) => (
+            <button key={v} type="button" className="ch-pill" aria-pressed={area === v} onClick={() => setArea(v)}>
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
       {mine.length === 0 && theirs.length === 0 ? (
         <EmptyState
@@ -112,11 +120,11 @@ export function DrillsPage({ teamId, team, library, preview = false }: { teamId:
         <>
           <section className="ch-prc-sec" aria-label="Your drills">
             <h2>Your drills</h2>
-            {mine.length ? <ul className="ch-prc-list">{mine.map((d) => <DrillRowLink key={d.id} d={d} />)}</ul> : <p className="ch-prc-none">{team.length ? 'None in this area.' : 'None yet. Copy a GolfHelm drill, or add your own.'}</p>}
+            {mine.length ? <ul className="ch-prc-list is-drills">{mine.map((d) => <DrillRowLink key={d.id} d={d} />)}</ul> : <p className="ch-prc-none">{team.length ? 'None in this area.' : 'None yet. Copy a GolfHelm drill, or add your own.'}</p>}
           </section>
           <section className="ch-prc-sec" aria-label="GolfHelm drills">
             <h2>GolfHelm drills</h2>
-            {theirs.length ? <ul className="ch-prc-list">{theirs.map((d) => <DrillRowLink key={d.id} d={d} />)}</ul> : <p className="ch-prc-none">{area === 'bunker' || area === 'fitness' ? `No GolfHelm drills for ${AREA_WORDS[area]} yet.` : 'None in this area.'}</p>}
+            {theirs.length ? <ul className="ch-prc-list is-drills">{theirs.map((d) => <DrillRowLink key={d.id} d={d} />)}</ul> : <p className="ch-prc-none">{area === 'bunker' || area === 'fitness' ? `No GolfHelm drills for ${AREA_WORDS[area]} yet.` : 'None in this area.'}</p>}
           </section>
         </>
       )}

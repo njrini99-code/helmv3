@@ -1546,8 +1546,48 @@ main.ch-prc-planpage > .ch-backlink {
 }
 
 /* The library: Drills, a drill, Groups, Templates (N-00 4.1). */
+/* Finding a drill: the search, then the areas. */
+.ch-prc-find {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
 .ch-prc-areas {
   gap: 8px;
+  min-width: 0;
+}
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  /* One line on a Mac: the search at a field's width, the areas beside it. */
+  .ch-prc-find {
+    grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+    align-items: center;
+  }
+  /* The drills as a shelf, each its own card, three across at the page's width; every card in a row is as tall as its tallest. */
+  .ch-prc-list.is-drills {
+    grid-template-columns: repeat(auto-fill, minmax(288px, 1fr));
+    gap: 12px;
+    overflow: visible;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-prc-list.is-drills li {
+    display: grid;
+    border-radius: var(--ch-radius-lg);
+    background: var(--ch-card-bg);
+    box-shadow: var(--ch-card-shadow);
+  }
+  .ch-prc-list.is-drills li + li {
+    border-top: 0;
+  }
+  .ch-prc-list.is-drills .ch-prc-row {
+    align-items: start;
+    padding: 16px;
+    border-radius: inherit;
+  }
+  .ch-prc-list.is-drills .ch-prc-row > svg {
+    margin-top: 2px;
+  }
 }
 .ch-prc-dfacts {
   display: grid;
@@ -1631,6 +1671,8 @@ main.ch-prc-planpage > .ch-backlink {
 }
 .ch-prc-tmpl__go {
   display: grid;
+  /* A card stretched to its row's height keeps its lines together at the top. */
+  align-content: start;
   gap: 4px;
   min-width: 0;
   padding: 0;
@@ -1736,6 +1778,20 @@ main.ch-prc-planpage > .ch-backlink {
   .ch-prc-slot__t {
     flex-basis: 100%;
   }
+  /* The areas are one row that scrolls sideways, out to the screen's edges; the clipped edge fades (.ch-hscroll) and the chosen area is kept whole. */
+  .ch-prc-areas {
+    flex-wrap: nowrap;
+    margin: 0 calc(-1 * var(--ch-page-x-phone));
+    padding: 2px var(--ch-page-x-phone);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ch-prc-areas::-webkit-scrollbar {
+    display: none;
+  }
+  .ch-prc-areas .ch-pill {
+    flex: none;
+  }
   /* The coach's keys follow Run on a phone, side by side. */
   .ch-prc-planbar__a > * {
     flex: 1 1 0;
@@ -1761,6 +1817,10 @@ main.ch-prc-planpage > .ch-backlink {
     margin: 0 -20px;
     padding: 2px 20px;
     scroll-padding-inline: 20px;
+  }
+  .ch-prc-areas {
+    margin: 0 -20px;
+    padding: 2px 20px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
