@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { Icon } from '../../ui/Icon';
+import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 import { PageIntro } from '../../ui/Ledger';
 import { Segmented } from '../../ui/Segmented';
 import { EmptyState, Skeleton } from '../../ui/States';
@@ -130,12 +131,28 @@ export function TourCrumb({ href, children = 'Tournaments' }: { href: string; ch
 export function TourLoading({ view, phone, title, className, children }: { view: ChTourView; phone: boolean; title: string; className?: string; children: ReactNode }) {
   return (
     <TourMain view={view} phone={phone} busy label={`Loading ${title.toLowerCase()}`} className={'ch-tour--skel' + (className ? ` ${className}` : '')}>
-      <header className="ch-tour-head" data-canopy-head={phone ? undefined : 'tight'}>
-        <div className="ch-tour-head__t">
-          <Skeleton width={150} height={13} />
-          <Skeleton width={phone ? 200 : 300} height={phone ? 34 : 44} radius={10} />
-        </div>
-      </header>
+      {phone ? (
+        /* The phone's head is the kit's PageIntro (TourHead above): the eyebrow's line where the view has one (New event
+           and Link rounds have none), then the large title's own block, so the title stands where it will and the bar
+           hides its copy while loading as it does once the page lands (CONS-13). */
+        <header className="ch-intro ch-tour-intro" aria-hidden="true">
+          {view !== 'form' && view !== 'links' && (
+            <span className="ch-intro__eyebrow">
+              <Skeleton width={150} height={13} />
+            </span>
+          )}
+          <span className="ch-intro__row">
+            <LargeTitleSkeleton width={200} className="ch-intro__title" />
+          </span>
+        </header>
+      ) : (
+        <header className="ch-tour-head" data-canopy-head="tight">
+          <div className="ch-tour-head__t">
+            <Skeleton width={150} height={13} />
+            <Skeleton width={300} height={44} radius={10} />
+          </div>
+        </header>
+      )}
       {children}
     </TourMain>
   );

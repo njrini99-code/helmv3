@@ -1010,6 +1010,38 @@
   gap: 12px;
   animation: ch-shs-skelin var(--ch-dur-base) var(--ch-ease) backwards;
 }
+/* A coach's view of a player while loading: the head's block at the loaded head's geometry (stats.css .ch-spm-head: 4px
+   in, the 40px avatar centred beside the name's own line and the facts' two lines at a 390pt phone). */
+.ch-shs-skel-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px var(--ch-page-x-phone) 0;
+}
+.ch-shs-skel-head__id {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.ch-shs-skel--av {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+.ch-shs-skel-head__facts {
+  display: block;
+  min-height: 2lh;
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
+}
+.ch-shs-skel-head__facts > .ch-shs-skel {
+  width: 70%;
+  height: 12px;
+  margin-top: 2px;
+}
 .ch-shs-skel--hero {
   width: 42%;
   height: calc(40 * var(--ch-type-k));

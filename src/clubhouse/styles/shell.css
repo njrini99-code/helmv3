@@ -3107,8 +3107,15 @@ html[data-fw-theme='dark'] .ch-offline {
     color: var(--ch-title-ink);
     text-wrap: balance;
   }
-  [data-ui='clubhouse'] .ch-large-title--skel > .ch-skel {
-    vertical-align: middle;
+  /* The skeleton's block is the title's own line (41px), with its 30px bar centred in it: as a plain block it was the
+     bar's 30px, so everything under a loading title stood 11px high. The line is the content box, so a page's padding on
+     the title (Settings, Recruiting) adds to it as it does on the loaded title. Placing either one from a page's sheet takes more
+     than one class: the margin reset above ([data-ui] plus the class) outranks a one-class rule. */
+  [data-ui='clubhouse'] .ch-large-title--skel {
+    display: flex;
+    box-sizing: content-box;
+    align-items: center;
+    min-height: 1lh;
   }
   [data-ui='clubhouse'] .ch-topbar :is(.ch-topbar__ptitle, .ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
     transition:

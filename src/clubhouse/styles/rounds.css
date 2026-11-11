@@ -2471,6 +2471,19 @@ a.ch-trd-open:focus-visible {
     min-height: 1lh;
     margin-top: 8px;
   }
+  /* Team rounds and What's new while loading (CH-11413, CH-13430): one skeleton serves both widths with no is-phone on
+     its root, so it stood in the base page's frame (40px sides) with its title 21px high. The phone's frame and the
+     head's lines are named here: the head starts 8px in, the eyebrow's 13px bar is centred in the eyebrow's 24px line box
+     (the 3.5px under it and the head's 10px spacer leave the title's 8px), then the title's own line. */
+  .ch-rd:is([data-ch-code='CH-11413'], [data-ch-code='CH-13430'])[aria-busy='true'] {
+    padding: var(--ch-page-top-phone-docked) var(--ch-page-x-phone) var(--ch-page-bottom-phone-docked);
+  }
+  .ch-rd:is([data-ch-code='CH-11413'], [data-ch-code='CH-13430'])[aria-busy='true'] > .ch-rd-h {
+    padding-top: 8px;
+  }
+  .ch-rd:is([data-ch-code='CH-11413'], [data-ch-code='CH-13430'])[aria-busy='true'] > .ch-rd-h > div > .ch-skel:first-child {
+    margin-block: 5.5px 3.5px;
+  }
   .ch-rd-sk-hero {
     container: chrdsk / inline-size;
     display: flex;

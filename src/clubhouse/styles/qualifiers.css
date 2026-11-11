@@ -2345,9 +2345,10 @@
   .ch-qf-skel-desk {
     display: none;
   }
+  /* The phone's list has no eyebrow (the bar names the page), so its skeleton draws none: the bar that stood here put
+     the title 26px low. */
   .ch-qf--list[aria-busy='true'] .ch-qf-head > div > .ch-skel:nth-child(1) {
-    width: 150px !important;
-    height: 14.4px !important;
+    display: none;
   }
   /* The title is the shared large-title block (ui/LargeTitle.tsx); the desktop's bar is held in .ch-qf-skel-desk. */
   .ch-qf--list[aria-busy='true'] .ch-qf-head > div > .ch-skel:nth-child(4) {
@@ -2420,11 +2421,16 @@
   .ch-qf--form[aria-busy='true'] > .ch-qf-held--back {
     display: none;
   }
+  /* The eyebrow's own 18px line (it was held at 14.4px, so the title stood 3.6px high). */
   .ch-qf[aria-busy='true'] .ch-qf-held--eyebrow {
-    height: 14.4px;
+    height: 18px;
   }
   .ch-qf[aria-busy='true'] .ch-qf-held--line {
     height: 21.75px;
+  }
+  /* Manage selections' line under the title is the page's 20px figure line. */
+  .ch-qfs[aria-busy='true'] .ch-qf-head .ch-qf-held--line {
+    height: 20px;
   }
   .ch-qfs[aria-busy='true'] .ch-qfs-steps li {
     min-width: 0;

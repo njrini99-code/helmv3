@@ -128,6 +128,12 @@
 .ch-tour--skel .ch-tour-head__t {
   gap: 12px;
 }
+/* On the phone the loading head is the page intro's own lines: the eyebrow's bar stands in the eyebrow's line. */
+.ch-tour--skel .ch-tour-intro .ch-intro__eyebrow {
+  display: flex;
+  align-items: center;
+  min-height: 1lh;
+}
 
 /* A small pill (tour.css .tr-chip): neutral, ok (confirmed, complete), warn (provisional, missing data) or live. The
    words say the state; the dot and the tint only back them up. */

@@ -1814,6 +1814,12 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
 [data-ch-crh='on'] .ch-cl-h .ch-cl-title {
   margin-top: 8px;
 }
+/* The skeleton's title has no head around it, so the rule above missed it and it stood 8px high. It takes the same 8px,
+   and gives it back under itself so the term line keeps its place. */
+[data-ch-crh='on'] .ch-cl-sk-crh > .ch-cl-title {
+  margin-top: 8px;
+  margin-bottom: -8px;
+}
 /* The term card: the view's one feature card, flat on the frame's green. */
 [data-ch-crh='on'] .ch-cl-term {
   display: grid;

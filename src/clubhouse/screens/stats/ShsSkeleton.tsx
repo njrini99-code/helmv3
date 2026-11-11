@@ -1,6 +1,7 @@
 import { TERMS } from '../../lib/glossary';
 import { filterFor, hasRange, rangeOf, type ChFilter } from '../../data/stats-filter';
 import { WindowSwitch } from './WindowSwitch';
+import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 import '../../styles/stats-redesign.css';
 
 /** Each card keeps its loaded height (06 S-STATS loading, 393 wide), so nothing shifts as the page lands (08 criterion 93). */
@@ -38,7 +39,7 @@ const TEAM_SECTIONS: typeof SECTIONS = [
  * are bars; the green card is plain (criteria 93 to 96).
  */
 export function ShsPlayerSkeleton({ filter, coach = false }: { filter?: ChFilter; /** A coach waiting on a player's page: the game is not theirs, and the player's name is not known yet. */ coach?: boolean }) {
-  return <Skeleton sections={coach ? SECTIONS.map((s) => (s.name === 'Your game' ? { ...s, name: 'Game' } : s)) : SECTIONS} filter={filter} />;
+  return <Skeleton sections={coach ? SECTIONS.map((s) => (s.name === 'Your game' ? { ...s, name: 'Game' } : s)) : SECTIONS} filter={filter} head={coach} />;
 }
 
 /** Team Stats' (today's CH-4401 stays on the container). */
@@ -48,9 +49,20 @@ export function ShsTeamSkeleton({ filter }: { filter?: ChFilter }) {
 
 const still = () => {};
 
-function Skeleton({ sections, code, filter = filterFor() }: { sections: typeof SECTIONS; code?: string; filter?: ChFilter }) {
+function Skeleton({ sections, code, filter = filterFor(), head = false }: { sections: typeof SECTIONS; code?: string; filter?: ChFilter; /** A coach's view of a player opens with the player's head (the avatar, the name as the page's large title, the facts): its block stands here so the switch and the cards do not drop 85px when the page lands. */ head?: boolean }) {
   return (
     <main className="ch-st is-phone ch-shs" aria-busy="true" aria-label="Loading stats" data-ch-code={code}>
+      {head && (
+        <div className="ch-shs-skel-head" aria-hidden="true">
+          <span className="ch-shs-skel ch-shs-skel--av" />
+          <span className="ch-shs-skel-head__id">
+            <LargeTitleSkeleton width={170} />
+            <span className="ch-shs-skel-head__facts">
+              <span className="ch-shs-skel" />
+            </span>
+          </span>
+        </div>
+      )}
       <div className="ch-shs-ctl" inert>
         <div className="ch-shs-ctl__row">
           {/* The control is known before the figures are: it is drawn as itself, so nothing changes shape when they land. */}
