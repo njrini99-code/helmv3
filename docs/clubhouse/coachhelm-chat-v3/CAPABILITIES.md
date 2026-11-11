@@ -326,7 +326,7 @@ catalog's.
   the card where a coach approves text written by the assistant for their whole team.
 - **Checks.** The title and the whole message; who gets it; urgency; whether each player must acknowledge.
 - **Layout.** Reach: Sends ("Sends to all 7 players"). Words: the notice (title bold, body under it, verbatim).
-  Details: Urgency (Urgent in amber), Acknowledgement.
+  Details: Urgency when it is not normal, Acknowledgement when it is required.
 - **Long.** 0.4: six lines, Show the whole message with the character count.
 - **Words.** Primary "Post to 7 players", busy "Posting…", badge "Posted". Hold: "Not sent yet. Sends in 8 seconds
   to 7 players." Receipt "{title} sent to 7 players." Open: Announcements. Told: "Told 7 in the app".
