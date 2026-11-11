@@ -1040,19 +1040,20 @@ describe('Roster · the redesigned desktop: filters, the remembered layout and a
   it('31202 the layout choice is kept on the device and applied when Roster opens again; a device that refuses storage still switches', async () => {
     const user = userEvent.setup();
     const first = wrap(roster());
-    expect(document.querySelector('.ch-rs-faces')).toBeNull();
-    await user.click(screen.getByLabelText('Team view'));
-    await waitFor(() => expect(document.querySelector('.ch-rs-faces')).not.toBeNull());
-    expect(localStorage.getItem('ch-roster-view')).toBe('faces');
+    // Roster opens on the cards, as the owner's design does (design/handoff/roster.jsx).
+    expect(document.querySelector('.ch-rs-faces')).not.toBeNull();
+    await user.click(screen.getByLabelText(/List/));
+    await waitFor(() => expect(document.querySelector('.ch-rs-faces')).toBeNull());
+    expect(localStorage.getItem('ch-roster-view')).toBe('list');
     first.unmount();
     wrap(roster());
-    await waitFor(() => expect(document.querySelector('.ch-rs-faces')).not.toBeNull());
+    await waitFor(() => expect(document.querySelector('.ch-rs-faces')).toBeNull());
     // Storage that throws: the switch still works for this visit.
     const refuse = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('denied');
     });
-    await user.click(screen.getByLabelText(/List/));
-    await waitFor(() => expect(document.querySelector('.ch-rs-faces')).toBeNull());
+    await user.click(screen.getByLabelText('Team view'));
+    await waitFor(() => expect(document.querySelector('.ch-rs-faces')).not.toBeNull());
     refuse.mockRestore();
   });
 

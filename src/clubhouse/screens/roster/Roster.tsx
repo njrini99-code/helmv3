@@ -108,7 +108,8 @@ export function Roster({ data }: { data: ChRoster; }) {
   const [q, setQ] = useChSessionState('q', '');
   const [show, setShow] = useChSessionState<Show>('show', 'active');
   const [sort, setSort] = useChSessionState<Sort>('sort', 'avg');
-  const [view, setView] = useChSessionState<View>('view', 'list');
+  // The cards are what Roster opens on, as the owner's design does (design/handoff/roster.jsx); the table is the other layout.
+  const [view, setView] = useChSessionState<View>('view', 'faces');
   // Counts the coach's own layout changes: the cards and the table swap with motion on those (CH-3603), never when the
   // kept layout comes back as the page opens.
   const [viewTurn, setViewTurn] = useState(0);
