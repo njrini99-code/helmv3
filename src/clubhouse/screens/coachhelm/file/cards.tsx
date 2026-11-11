@@ -40,7 +40,9 @@ function cmpCells(i: ChInsight, team: number | null) {
   const you = c?.own ?? null;
   const tour = c?.tour ?? null;
   const youLoses = you != null && tour != null && (c?.higherBetter ? you < tour : you > tour);
-  return { you: c ? fmt(you) : (i.evidence.gauge?.you ?? i.value), team: fmt(team), tour: fmt(tour), youLoses };
+  // The read's own team figure first, so a read shows one Team number here and on the Team board's sheet (which draws only the read's);
+  // the standing average stands in only for a read that carries none.
+  return { you: c ? fmt(you) : (i.evidence.gauge?.you ?? i.value), team: fmt(c?.team ?? team), tour: fmt(tour), youLoses };
 }
 
 /** The one green card: the top read, its comparison, its evidence (none hideable), and what can be done from here. The whole card opens the read. */
@@ -351,7 +353,7 @@ export function FieldCard({ field }: { field: ChFileField }) {
 export function SgCard({ sg, who, standingHref }: { sg: ChFileSg; who: string; standingHref: string | null }) {
   return (
     <section className="card" aria-labelledby="ch-hf-sg" data-ch-anchor="sg">
-      <CardHead id="ch-hf-sg" title="Where the strokes go" meta={`${who} vs Tour and team`} />
+      <CardHead id="ch-hf-sg" title="Where the strokes go" meta={`${who} vs Tour${sg.hasTeam ? ' and team' : ''}`} />
       <div className="card__b">
         <div className="sg">
           {sg.rows.map((r) => {

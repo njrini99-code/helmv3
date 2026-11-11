@@ -26,7 +26,7 @@ export function huddleRange(points: ReadonlyArray<{ x: number; y: number }>): { 
   return { lo, hi };
 }
 
-/** Where a player stood after their first 10 rounds, when the board carries that window (`first10`; the loader doesn't yet, 02-PLAN 9.2). */
+/** Where a player stood over their first 10 rounds this season, when the board carries that window (`first10`: twenty or more counted season rounds, 02-PLAN 9.2 B). */
 function firstPoint(p: ChTeamPlayer): { x: number; y: number } | null {
   const f = p.first10;
   if (!f || f.tee == null || f.approach == null || f.short_game == null || f.putting == null) return null;
@@ -121,7 +121,7 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
         </svg>
       </div>
       <div className="legend">
-        {trails.length > 0 && <span>Line: from their first 10 rounds to now</span>}
+        {trails.length > 0 && <span>Line: from their first 10 rounds this season to their last 10</span>}
         <span>Dashed: team average</span>
         <span>Hollow: fewer than 5 rounds</span>
       </div>

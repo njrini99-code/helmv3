@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { courseReads, stationOrder, readsDrawn, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
+import { boardRoundsWords, courseReads, stationOrder, readsDrawn, type ChStation, type ChTeamBoardData, type ChTeamPlayer } from '../../../data/coachhelm-team-shape';
 import { formatSigned } from '../../../lib/format';
 import { useChPhone } from '../../../lib/use-phone';
 import { PhoneTop } from '../../../shell/phone-chrome';
@@ -80,9 +80,9 @@ function Hero({
     setPicks((n) => n + 1);
     setStation(s);
   };
-  // The hole's figures are each player's last ten counted rounds (coachhelm-team-legs.ts, `lastTenRounds`: the window Home, Stats and
-  // the roster read), averaged over the players at the shots floor. The line under the figure says that window, as Home's team card
-  // does; it is not "this season", and the board's round count is not the rounds behind the figure.
+  // The hole's figures are Team stats' own team figure (`teamStrokesGained`) over each player's last ten counted rounds (`lastTenRounds`:
+  // the window Home, the roster and Stats' default read), so the hero is Team stats' "Team SG per round" on Last 10, to the decimal. The
+  // line under the figure says that window; it is not "this season", and the head's round count is not the rounds behind the figure.
   const windowLine = 'Each player’s last 10';
   // The sign carries the direction for the eye; the words carry it for a screen reader (QA-7).
   const figure = (
@@ -236,8 +236,8 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
   const list: ChTeamPlayer[] = data.players.list;
   const noRounds = data.teamTotal.rounds === 0;
   const tabs = data.off ? null : <CoachHelmTabs active={sw.shown} onGo={sw.go} boardLabel="Team" />;
-  const context = data.off ? 'CoachHelm reads the rounds your players post.' : data.roster.count === 0 ? 'No players yet' : noRounds ? `${plural(data.roster.count, 'player')} · no rounds yet this season` : `${plural(data.roster.count, 'player')} · ${plural(data.teamTotal.rounds, 'round')} this season · ${plural(readsDrawn(list), 'open read')}`;
-  const head = <CoachHelmHead title={data.team.name || 'CoachHelm'} context={context} scope={data.team.name ? `${data.team.name} · ${plural(data.roster.count, 'player')} · this season` : undefined} tabs={tabs} />;
+  const context = data.off ? 'CoachHelm reads the rounds your players post.' : data.roster.count === 0 ? 'No players yet' : noRounds ? `${plural(data.roster.count, 'player')} · no rounds yet this season` : `${plural(data.roster.count, 'player')} · ${boardRoundsWords(data.teamTotal)} · ${plural(readsDrawn(list), 'open read')}`;
+  const head = <CoachHelmHead title={data.team.name || 'CoachHelm'} context={context} scope={data.team.name ? `${data.team.name} · ${plural(data.roster.count, 'player')} · ${boardRoundsWords(data.teamTotal)}` : undefined} tabs={tabs} />;
   const course = courseReads(list).length;
   const skeletonCard = <span className="skl" style={{ height: 120, borderRadius: 16 }} />;
   const today = (

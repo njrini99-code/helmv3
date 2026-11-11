@@ -31,7 +31,10 @@ export interface ChTeamPlayer {
   legs: Record<ChStation, ChTeamLeg>;
   total: number | null;
   worst: ChStation | null;
-  /** 02-PLAN 9.2 option A: no trails, so always null. */
+  /**
+   * Where the player stood over their first ten counted rounds this season (02-PLAN 9.2 B), by the legs' own maths; null unless they
+   * have twenty or more counted rounds this season, so the trail's start and the dot (their last ten) never share a round.
+   */
   first10: Record<ChStation, number | null> | null;
   reads: { needs: ChInsight[]; working: ChInsight[] };
   heldBack: number;
@@ -56,7 +59,12 @@ export interface ChTeamBoardData {
   /** Leg figures from the season's rounds; `error`: that read failed, and the hole says so. */
   legsError: boolean;
   stations: Record<ChStation, { team: number | null; n: number }>;
-  teamTotal: { strokes: number | null; rounds: number };
+  /**
+   * `strokes`: the one team figure over each player's last ten (`teamStrokesGained`). `rounds`: every counted round the board read
+   * (a rolling year, `lastTenFloor`), which says whether there is anything to draw. `seasonRounds`: the counted rounds since the
+   * season's first day, the only count the head may call "this season"; absent on a board built before it was carried.
+   */
+  teamTotal: { strokes: number | null; rounds: number; seasonRounds?: number };
   course: { history: CourseHistory | null; reads: ChInsight[]; against: ChTourRow[] | null };
   patterns?: ChTeamPatterns | null;
   /** off: nothing is drawn; failed: the card says so, never "no pattern" (W-TEAM-6). */
@@ -81,12 +89,32 @@ export function worstOf(legs: Record<ChStation, ChTeamLeg>): ChStation | null {
   return worst;
 }
 
-/** Station figures: the mean of the current roster's legs, never a stored `team_avg` (AC-HOLE-26). */
+/**
+ * The station figures from the one team figure (`teamStrokesGained`, data/stats-team-sg.ts): what the loader draws, so the hole and
+ * Team stats' leg bars are one value over one window. `n` is how many players' rounds a station rests on. Never a stored `team_avg` (AC-HOLE-26).
+ */
+export function stationsOfTeamSg(sg: { legs: ReadonlyArray<number | null>; legPlayers: ReadonlyArray<number> }): ChTeamBoardData['stations'] {
+  const out = {} as ChTeamBoardData['stations'];
+  STATIONS.forEach((s, i) => {
+    out[s] = { team: sg.legs[i] ?? null, n: sg.legs[i] == null ? 0 : (sg.legPlayers[i] ?? 0) };
+  });
+  return out;
+}
+
+/**
+ * Station figures from players' own legs, for a board built without its rounds (a preview fixture, a test). Weighted by the rounds
+ * behind each leg, which is the team figure's own pooling (`teamStrokesGained`) whenever every leg carries its count. The loader does
+ * not call this: it reads the rounds themselves through `stationsOfTeamSg`.
+ */
 export function stationFigures(players: ReadonlyArray<Pick<ChTeamPlayer, 'legs'>>): ChTeamBoardData['stations'] {
   const out = {} as ChTeamBoardData['stations'];
   for (const s of STATIONS) {
-    const xs = players.map((p) => p.legs[s].strokes).filter((v): v is number => v != null);
-    out[s] = { team: xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null, n: xs.length };
+    const xs = players.map((p) => p.legs[s]).filter((l): l is ChTeamLeg & { strokes: number } => l.strokes != null);
+    const weight = xs.reduce((a, l) => a + Math.max(l.rounds, 0), 0);
+    // A leg with no count behind it (an old fixture) weighs as one round, so a list of bare figures is still their mean.
+    const w = (l: ChTeamLeg) => (weight > 0 ? Math.max(l.rounds, 0) : 1);
+    const total = xs.reduce((a, l) => a + w(l), 0);
+    out[s] = { team: total > 0 ? xs.reduce((a, l) => a + l.strokes * w(l), 0) / total : null, n: xs.length };
   }
   return out;
 }
@@ -101,10 +129,26 @@ export function boardPlayerWords(n: number): string {
   return `average of ${plural(n, 'player')}`;
 }
 
-/** The hero: the team mean of stored per-round totals, never the sum of the legs (AC-HOLE-26, 8 K). */
-export function teamTotalOf(players: ReadonlyArray<Pick<ChTeamPlayer, 'total'>>): number | null {
-  const xs = players.map((p) => p.total).filter((v): v is number => v != null);
-  return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+/**
+ * The head's round count, in the only words each count allows: "62 rounds this season" for the counted rounds since the season's
+ * first day, and "no rounds yet this season" for none. A board that carries no season count says the year its read covers instead,
+ * never "this season" over a count that can start before it.
+ */
+export function boardRoundsWords(teamTotal: ChTeamBoardData['teamTotal']): string {
+  if (teamTotal.seasonRounds == null) return teamTotal.rounds === 0 ? 'no rounds yet' : `${plural(teamTotal.rounds, 'round')} in the last year`;
+  return teamTotal.seasonRounds === 0 ? 'no rounds yet this season' : `${plural(teamTotal.seasonRounds, 'round')} this season`;
+}
+
+/**
+ * The hero for a board built without its rounds (a preview fixture, a test): the players' stored per-round totals, weighted by the
+ * rounds in each player's window, never the sum of the legs (AC-HOLE-26, 8 K). The loader's hero is `teamStrokesGained(...).total`.
+ */
+export function teamTotalOf(players: ReadonlyArray<Pick<ChTeamPlayer, 'total'> & { rounds?: number }>): number | null {
+  const xs = players.filter((p): p is typeof p & { total: number } => p.total != null);
+  const counted = xs.every((p) => (p.rounds ?? 0) > 0);
+  const w = (p: { rounds?: number }) => (counted ? (p.rounds as number) : 1);
+  const total = xs.reduce((a, p) => a + w(p), 0);
+  return total > 0 ? xs.reduce((a, p) => a + p.total * w(p), 0) / total : null;
 }
 
 /** Biggest loss first: "biggest leak", "second biggest", "third", "smallest". Unknown figures go last. */

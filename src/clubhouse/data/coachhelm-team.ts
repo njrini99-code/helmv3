@@ -37,7 +37,7 @@ import {
   courseReads,
   STATIONS,
   stationFigures,
-  teamTotalOf,
+  stationsOfTeamSg,
   type ChStation,
   type ChTeamBoardData,
   type ChTeamLeg,
@@ -47,6 +47,7 @@ import {
 } from './coachhelm-team-shape';
 import { roundsForFigures } from './figure-window';
 import { toChTeamLegs } from './coachhelm-team-legs';
+import { teamLastTenStrokesGained } from './stats-team-sg';
 import { classYearLabel, lastTenFloor, loadSeasonRounds, loadTeamZone, seasonStartDate } from './season';
 import { NEEDS_MAX, WORKING_MAX } from './coachhelm-shape';
 
@@ -64,7 +65,7 @@ export function emptyTeamBoard(off: ChTeamBoardData['off'] = null): ChTeamBoardD
     players: { list: [], error: false },
     legsError: false,
     stations: stationFigures([]),
-    teamTotal: { strokes: null, rounds: 0 },
+    teamTotal: { strokes: null, rounds: 0, seasonRounds: 0 },
     course: { history: null, reads: [], against: null },
     pulse: { rows: [], error: false },
   };
@@ -184,7 +185,12 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
   const iso = now.toISOString();
 
   const countable = roundsForFigures(seasonRounds.rounds);
-  const legs = toChTeamLegs(countable, ids);
+  // The legs read each player's last ten across seasons; "this season" figures (the head's count, Courses, the huddle's trails) read from here.
+  const seasonStart = seasonStartDate(now, zone);
+  const seasonCountable = countable.filter((r) => r.round_date.slice(0, 10) >= seasonStart);
+  const legs = toChTeamLegs(countable, ids, seasonStart);
+  // The hole's figures and the hero: Team stats' own team figure over the same window (one number, one source).
+  const teamSg = teamLastTenStrokesGained(countable, ids);
   const list: ChTeamPlayer[] = roster.map((p) => {
     const first = p.name === NO_NAME ? NO_NAME : firstName(p.name);
     const coach = { role: 'coach', first } as const;
@@ -215,7 +221,7 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
       legs: seasonRounds.error ? noLegs() : (leg?.legs ?? noLegs()),
       total: seasonRounds.error ? null : (leg?.total ?? null),
       worst: seasonRounds.error ? null : (leg?.worst ?? null),
-      first10: null,
+      first10: seasonRounds.error ? null : (leg?.first10 ?? null),
       reads: { needs, working: split.working },
       heldBack: heldBack.find((h) => h.id === p.id)?.reads.length ?? 0,
     };
@@ -223,9 +229,8 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
   // Counted as shown: what the board draws, at most 3 and 1 a player, no note, no measured zero (W-TEAM-4).
   settleDrawn(list.flatMap((p) => [...p.reads.needs, ...p.reads.working].map((r) => r.id)));
 
-  // The legs read each player's last ten across seasons; "Courses this season" stays the season's.
-  const seasonStart = seasonStartDate(now, zone);
-  const history = seasonRounds.error ? null : toCourseHistory(countable.filter((r) => r.round_date.slice(0, 10) >= seasonStart) as never, ids, iso.slice(0, 10));
+  // "Courses this season" stays the season's.
+  const history = seasonRounds.error ? null : toCourseHistory(seasonCountable as never, ids, iso.slice(0, 10));
   const standings = await loadPlayersStandingMap(ids).catch((err: unknown) => {
     log('standing', err);
     return null;
@@ -246,8 +251,8 @@ export async function loadCoachTeamBoard(input: { coachId: string; teamId: strin
     roster: { count: roster.length, error: false },
     players: { list, error: false },
     legsError: seasonRounds.error,
-    stations: stationFigures(list),
-    teamTotal: { strokes: teamTotalOf(list), rounds: countable.length },
+    stations: seasonRounds.error ? stationFigures([]) : stationsOfTeamSg(teamSg),
+    teamTotal: { strokes: seasonRounds.error ? null : teamSg.total, rounds: countable.length, seasonRounds: seasonCountable.length },
     course: { history, reads: courseReads(list), against },
     patterns,
     patternsStatus: !teamPatternEnabled() ? 'off' : patternsFailed ? 'failed' : 'ok',

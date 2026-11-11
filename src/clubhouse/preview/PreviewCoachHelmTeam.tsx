@@ -14,11 +14,11 @@ function stateData(state: string | undefined): ChTeamBoardData {
   const list = base.players.list;
   if (state === 'early') {
     const early = list.map((p, i) => ({ ...p, rounds: [3, 4, 4, 3, 2][i] ?? 3, early: true }));
-    return { ...base, players: { list: early, error: false }, teamTotal: { ...base.teamTotal, rounds: 16 } };
+    return { ...base, players: { list: early, error: false }, teamTotal: { ...base.teamTotal, rounds: 16, seasonRounds: 16 } };
   }
   if (state === 'empty') {
     const empty: ChTeamPlayer[] = list.map((p) => ({ ...p, rounds: 0, early: true, reads: { needs: [], working: [] }, total: null, worst: null, legs: Object.fromEntries(STATIONS.map((s) => [s, { strokes: null, rounds: 0, missing: 'No rounds yet.' }])) as ChTeamPlayer['legs'] }));
-    return { ...base, players: { list: empty, error: false }, stations: stationFigures(empty), teamTotal: { strokes: null, rounds: 0 }, course: { history: null, reads: [], against: null }, record: { status: 'ok', value: { ...PREVIEW_TRACK_RECORD, empty: true } as never } };
+    return { ...base, players: { list: empty, error: false }, stations: stationFigures(empty), teamTotal: { strokes: null, rounds: 0, seasonRounds: 0 }, course: { history: null, reads: [], against: null }, record: { status: 'ok', value: { ...PREVIEW_TRACK_RECORD, empty: true } as never } };
   }
   if (state === 'failed') return { ...base, brief: { status: 'failed' }, record: { status: 'failed' } } as ChTeamBoardData;
   if (state === 'failed-all') return { ...base, players: { list: [], error: true } };
@@ -27,7 +27,12 @@ function stateData(state: string | undefined): ChTeamBoardData {
   // The figures staging really produced, which sank the hole's halos and labels: one early player carrying the whole board (TEAM-1 to TEAM-5).
   if (state === 'stress') {
     const stress: ChTeamPlayer = { ...(list[3] as ChTeamPlayer), id: 'pl-stress', name: 'Cole Bennett', first: 'Cole', rounds: 3, early: true, total: 0.5, worst: 'putting', legs: { tee: { strokes: 2.5, rounds: 3, missing: null }, approach: { strokes: 1.9, rounds: 3, missing: null }, short_game: { strokes: 0, rounds: 3, missing: null }, putting: { strokes: -3.9, rounds: 3, missing: null } } };
-    return { ...base, team: { ...base.team, name: 'Demo University Golf' }, roster: { count: 1, error: false }, players: { list: [stress], error: false }, stations: stationFigures([stress]), teamTotal: { strokes: 0.5, rounds: 3 } };
+    return { ...base, team: { ...base.team, name: 'Demo University Golf' }, roster: { count: 1, error: false }, players: { list: [stress], error: false }, stations: stationFigures([stress]), teamTotal: { strokes: 0.5, rounds: 3, seasonRounds: 3 } };
+  }
+  // Two players with twenty or more counted season rounds: the huddle draws their trail from the first ten (02-PLAN 9.2 B).
+  if (state === 'trails') {
+    const from: Record<string, ChTeamPlayer['first10']> = { [(list[0] as ChTeamPlayer).id]: { tee: -0.52, approach: -1.41, short_game: -0.3, putting: -0.62 }, [(list[1] as ChTeamPlayer).id]: { tee: -0.1, approach: -0.3, short_game: -0.45, putting: -0.5 } };
+    return { ...base, players: { list: list.map((p) => ({ ...p, first10: from[p.id] ?? null })), error: false } };
   }
   if (state === 'long') {
     const worst: ChStation = 'approach';

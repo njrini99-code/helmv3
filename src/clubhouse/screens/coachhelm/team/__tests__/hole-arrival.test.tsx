@@ -228,7 +228,8 @@ describe('coins on the hole and the huddle', () => {
     const some = render(<Huddle data={withTrail} onPlayer={() => {}} />);
     expect(some.container.querySelectorAll('.trail')).toHaveLength(1);
     expect(some.container.querySelector(`[data-ch-team-trail="${eli.id}"]`)).not.toBeNull();
-    expect(some.container.textContent).toContain('Line: from their first 10 rounds to now');
+    // Both ends of the line are named, so the start cannot be read as the same window as the dot (each player's last ten).
+    expect(some.container.textContent).toContain('Line: from their first 10 rounds this season to their last 10');
   });
 });
 

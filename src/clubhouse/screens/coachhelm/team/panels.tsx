@@ -165,12 +165,13 @@ export function ReadPanel({
   const cx = deep?.base.engine?.corrections;
   return (
     <>
-      {coach ? <Head lead={<Coin player={player} />} name={player.name} line={`${areaName(read)} · ${player.rounds} rounds this season`} onClose={onClose} /> : <Head lead={null} name={areaName(read)} line="" onClose={onClose} />}
+      {coach ? <Head lead={<Coin player={player} />} name={player.name} line={`${areaName(read)} · ${player.rounds === 0 ? 'no counted rounds yet' : `last ${plural(player.rounds, 'round')}`}`} onClose={onClose} /> : <Head lead={null} name={areaName(read)} line="" onClose={onClose} />}
       <h3>{read.title}</h3>
       <p className="lede">{read.lede}</p>
       <div className="evs">
         {read.stale && <Badge>Out of date</Badge>}
-        {read.stakes && <Badge tone="warning">Worth {read.stakes} a round</Badge>}
+        {/* CoachHelm's own estimate for this read (`strokesAtStake`), not a sum of the figures below: "about" says so. */}
+        {read.stakes && <Badge tone="warning">Worth about {read.stakes} a round</Badge>}
         {word && <Badge tone={word === 'Solid read' ? 'positive' : 'neutral'}>{word}</Badge>}
         {cause && <Badge>Cause: {cause}</Badge>}
         {read.evidence.window && <Badge>{read.evidence.window}</Badge>}

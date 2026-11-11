@@ -118,7 +118,7 @@ export const PREVIEW_TEAM_BOARD: ChTeamBoardData = {
   players: { list: LIST, error: false },
   legsError: false,
   stations: stationFigures(LIST),
-  teamTotal: { strokes: teamTotalOf(LIST), rounds: 62 },
+  teamTotal: { strokes: teamTotalOf(LIST), rounds: 62, seasonRounds: 62 },
   course: {
     history: HISTORY,
     reads: courseReads(LIST),

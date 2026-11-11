@@ -10,6 +10,8 @@ import type { ChLadder } from './coachhelm-ladder-shape';
 import type { ChCoachPlayerHead } from './coachhelm-views-shape';
 import type { ChHelmLifecycle } from './coachhelm-shape';
 import { formatSigned, formatFixed } from '../lib/format';
+import { plural } from '../lib/plural';
+import type { ChFigures, ChLegKey } from './figure-window';
 
 /** The file's shapes, pure and client-safe (coachhelm-lenses 02-PLAN 2.3). A coach-only card is simply absent from every shape built for a player or the lens. */
 
@@ -38,7 +40,10 @@ export interface ChFileSg {
   needsHoles: boolean;
 }
 
-/** One figure for one leg: as the ladder states it, with the team's tick only when the team is five or more (02 13.11). */
+/**
+ * The card from the Standing ladder's rows (`golf_player_standing`, a season or all time). The loaders no longer call this: the file
+ * reads `toChFileSgOver`, the rounds' own figures, so its legs are the hole's and Stats'. Kept for the Standing-sourced fixtures and tests.
+ */
 export function toChFileSg(ladder: ChLadder, rows: readonly PlayerStanding[], who: { you: boolean; first: string }, source: { window: string; rounds: number | null }): ChFileSg {
   const metric: Record<string, string> = { tee: 'sg_ott', approach: 'sg_approach', short_game: 'sg_around_green', putting: 'sg_putting' };
   const byMetric = new Map(rows.map((r) => [r.metric_id as string, r]));
@@ -71,6 +76,50 @@ export function toChFileSg(ladder: ChLadder, rows: readonly PlayerStanding[], wh
     source: `${source.window}${source.rounds != null ? ` · ${source.rounds} rounds` : ''} · strokes per round`,
     needsHoles: known.length === 0,
   };
+}
+
+/** The team's tick on the file needs this many players at the strokes-gained floor (S-FILE 14, 02 13.11). */
+export const FILE_TEAM_FLOOR = 5;
+
+const FILE_LEGS: ReadonlyArray<{ id: string; label: string; key: ChLegKey }> = [
+  { id: 'tee', label: 'Off the tee', key: 'tee' },
+  { id: 'approach', label: 'Approach', key: 'approach' },
+  { id: 'short_game', label: 'Around the green', key: 'around' },
+  { id: 'putting', label: 'Putting', key: 'putting' },
+];
+
+/** The window line under the card: the rounds the figures really read, so it can never be taken for another screen's window. */
+export function fileSgSource(fig: Pick<ChFigures, 'rounds' | 'holeRounds'>): string {
+  if (fig.rounds === 0) return 'No counted rounds yet · strokes per round';
+  const window = fig.rounds >= 10 ? 'Last 10 rounds' : `Last ${plural(fig.rounds, 'round')}`;
+  return `${window}${fig.holeRounds < fig.rounds ? ` · ${fig.holeRounds} with hole scores` : ''} · strokes per round`;
+}
+
+/**
+ * "Where the strokes go" from the one strokes-gained source (owner rule: one number, one source). `fig` is `playerStrokesGained` over
+ * the player's rounds: their newest ten counted 18-hole rounds, which CoachHelm Team, Home, the roster and Stats' default all read, so
+ * a leg here is the leg on the hole and in Stats on Last 10, to the decimal. `team` is `teamStrokesGained` over the roster's same
+ * window, drawn only with five players at the floor; null for a player's own page, which never carries a figure built from teammates'
+ * rounds. Figures print to one decimal, as the hole and Stats print them.
+ */
+export function toChFileSgOver(fig: ChFigures, team: { legs: ReadonlyArray<number | null>; ready: { size: number } } | null, who: { you: boolean; first: string }): ChFileSg {
+  const teamLegs = team && team.ready.size >= FILE_TEAM_FLOOR ? team.legs : null;
+  const out: ChFileSgRow[] = FILE_LEGS.map((a, i) => {
+    const value = fig.legs[a.key];
+    const printed = value == null ? 0 : Number(value.toFixed(1));
+    return { id: a.id, label: a.label, strokes: value, figure: value == null ? '—' : formatSigned(value), tone: value == null || printed === 0 ? 'none' : printed > 0 ? 'gain' : 'loss', team: value == null ? null : (teamLegs?.[i] ?? null) };
+  });
+  const known = out.filter((r) => r.strokes != null);
+  const worst = known.length ? known.reduce((x, y) => ((y.strokes as number) < (x.strokes as number) ? y : x)) : null;
+  const costs = (v: number) => formatFixed(Math.abs(v), 1);
+  let note: string | null = null;
+  if (worst && Number((worst.strokes as number).toFixed(1)) < 0) {
+    note = `Against the Tour, ${worst.label.toLowerCase()} costs ${who.you ? 'you' : who.first} ${costs(worst.strokes as number)} a round`;
+    // "Against the team" only when the player is behind the team there, and by a figure that prints.
+    const gap = worst.team == null ? null : (worst.strokes as number) - worst.team;
+    note += gap != null && Number(gap.toFixed(1)) < 0 ? `; against the team, ${costs(gap)}.` : '.';
+  }
+  return { rows: out, hasTeam: out.some((r) => r.team != null), note, source: fileSgSource(fig), needsHoles: known.length === 0 };
 }
 
 /** The team's figure for one metric, with its floor (S-FILE 14): null below five. */

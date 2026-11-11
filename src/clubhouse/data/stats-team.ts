@@ -32,6 +32,7 @@ import {
 import { holeCoverage, holeRounds } from './round-scope';
 import { effectiveWindow, filterFor, hasPrevious, previousWords, type ChFilter, type ChFilterOptions, type ChLast } from './stats-filter';
 import { effectiveCount, effectiveRounds, roundHalves, roundValues, summarizeWindow, weightedMean, windowChangeSe, type ChHalves } from './stats-weight';
+import { teamStrokesGained } from './stats-team-sg';
 
 export type { ChHalves } from './stats-weight';
 import { changeSe, floorRate, halvesTone, meanSe, needsText, type DeltaTone, type SpreadKind } from '../lib/stats-signal';
@@ -303,10 +304,12 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   // stretch do, so one player's first round or two never swings the headline or the leg totals.
   const sgOf = (r: ChRound) => r.strokes_gained_total;
   const atFloor = (rs: ChRound[]) => new Set(players.filter((p) => effectiveCount(rs.filter((r) => r.player_id === p.id), sgOf) >= MIN_SG_ROUNDS).map((p) => p.id));
-  const sgReady = atFloor(holeWindow);
+  // The headline and the leg totals are the one team figure (`teamStrokesGained`), which CoachHelm Team reads too over its own window.
+  const teamSg = teamStrokesGained(holeWindow, players.map((p) => p.id));
+  const sgReady = teamSg.ready;
   const sgWindow = holeWindow.filter((r) => sgReady.has(r.player_id));
   const sgNow = sgWindow.map(sgOf).filter((v): v is number => v != null);
-  const sgTotal = weightedMean(sgWindow, sgOf);
+  const sgTotal = teamSg.total;
   const earlier = players.reduce((a, p) => a + earlierInFilter(byPlayer.get(p.id) ?? [], f, start), 0);
   // The change is like for like (A4, Q-112): the same players on both sides, each at the floor in the window and in their own
   // previous stretch, so a floored window is never set against an unfloored one (a player's two earlier rounds count nowhere).
@@ -452,7 +455,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     legWeeks,
     legHalves,
     grid,
-    legTotals: LEGS.map((_, i) => avgOf(sgWindow, (r) => sgLegs(r)[i] ?? null)),
+    legTotals: [...teamSg.legs],
     putting,
     bests,
     tour,

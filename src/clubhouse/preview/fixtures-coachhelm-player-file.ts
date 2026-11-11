@@ -1,8 +1,9 @@
-import { toChFileField, toChFilePlan, toChFileSg, toChFileTrack, type ChFileCards, type ChFileField, type ChFilePlan, type ChFileRosterRow, type ChFileSg, type ChPlayerFile, type ChPlayerWeek } from '../data/coachhelm-file-shape';
-import type { ChLadder } from '../data/coachhelm-ladder-shape';
+import { toChFileField, toChFilePlan, toChFileSgOver, toChFileTrack, type ChFileCards, type ChFileField, type ChFilePlan, type ChFileRosterRow, type ChFileSg, type ChPlayerFile, type ChPlayerWeek } from '../data/coachhelm-file-shape';
+import type { ChFigures } from '../data/figure-window';
+import { STATIONS, type ChStation } from '../data/coachhelm-team-shape';
+import { PREVIEW_TEAM_BOARD } from './fixtures-coachhelm-team';
 import type { ChDeepInsight } from '../data/coachhelm-dive-shape';
 import { PREVIEW_FILE_DIVE as PREVIEW_COACH_DIVE, PREVIEW_COACH_VOICE } from './fixtures-coachhelm-coach-player';
-import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { CAST } from './cast';
 
 /**
@@ -15,21 +16,18 @@ const WHO = CAST.eli;
 const FIRST = WHO.first;
 const voice = PREVIEW_COACH_VOICE as Extract<typeof PREVIEW_COACH_VOICE, { role: 'coach' }>;
 
-const LADDER: ChLadder = {
-  top: 'approach',
-  readsFailed: false,
-  rows: [
-    // One decimal, as `toChLadder` prints strokes (02-PLAN A20): the fixture never shows a precision the app can't.
-    { id: 'tee', label: 'Off the tee', strokes: '−0.9', sense: 'loss', pct: 100, missing: null, causes: [] },
-    { id: 'approach', label: 'Approach', strokes: '−0.4', sense: 'loss', pct: 46, missing: null, causes: [] },
-    { id: 'short_game', label: 'Around the green', strokes: '+0.1', sense: 'gain', pct: 13, missing: null, causes: [] },
-    { id: 'putting', label: 'Putting', strokes: '+0.3', sense: 'gain', pct: 34, missing: null, causes: [] },
-  ],
-};
-const row = (metric_id: string, player_value: number, team_avg: number | null, team_n: number) => ({ player_id: voice.playerId, metric_id, player_value, team_avg, team_n, team_pct: null }) as unknown as PlayerStanding;
-const STANDING = [row('sg_ott', -0.91, -0.2, 7), row('sg_approach', -0.42, -0.35, 7), row('sg_around_green', 0.12, 0.05, 7), row('sg_putting', 0.31, 0.1, 7)];
-const SG: ChFileSg = toChFileSg(LADDER, STANDING, { you: false, first: FIRST }, { window: 'All time', rounds: WHO.rounds });
-const SG_YOU: ChFileSg = toChFileSg(LADDER, STANDING, { you: true, first: FIRST }, { window: 'All time', rounds: WHO.rounds });
+/**
+ * Eli's legs are the ones the Team board's fixture stands him on the hole with, and the team's tick is that board's station figure:
+ * one number in every preview, as the loaders now give one (the file reads `toChFileSgOver`, the rounds' own last ten).
+ */
+const BOARD_ELI = PREVIEW_TEAM_BOARD.players.list.find((p) => p.first === FIRST);
+const legOf = (s: ChStation) => BOARD_ELI?.legs[s].strokes ?? null;
+const FIGURES: ChFigures = { rounds: 10, holeRounds: 10, legs: { tee: legOf('tee'), approach: legOf('approach'), around: legOf('short_game'), putting: legOf('putting') }, total: BOARD_ELI?.total ?? null };
+const NO_FIGURES: ChFigures = { rounds: 2, holeRounds: 2, legs: { tee: null, approach: null, around: null, putting: null }, total: null };
+const TEAM_SG = { legs: STATIONS.map((s) => PREVIEW_TEAM_BOARD.stations[s].team), ready: { size: PREVIEW_TEAM_BOARD.roster.count } };
+const SG: ChFileSg = toChFileSgOver(FIGURES, TEAM_SG, { you: false, first: FIRST });
+// The player's own page carries no team figure.
+const SG_YOU: ChFileSg = toChFileSgOver(FIGURES, null, { you: true, first: FIRST });
 
 const FOCUS = (status: string, from: string | null = 'pv-1') => ({ id: 'fa-1', title: 'Penalty strokes', status, created_at: '2026-10-02T13:00:00Z', started_at: status === 'active' ? '2026-10-05T13:00:00Z' : null, updated_at: '2026-10-05T13:00:00Z', from_insight_id: from });
 const GOAL = { id: 'g', title: 'Penalties a round', baseline_value: 1.4, target_value: 0.6, snapshots: [{ date: '2026-10-06', value: 1.3 }, { date: '2026-10-13', value: 1.1 }, { date: '2026-10-20', value: 1.2 }, { date: '2026-10-27', value: 0.9 }] } as never;
@@ -79,7 +77,7 @@ export function previewPlayerFile(state: string): ChPlayerFile {
     dismissed: none || state === 'oneread' ? [] : [{ id: 'pv-dis', title: 'Fairways hit on par 5s', lifecycle: 'detected' }],
     working: [],
     more: 0,
-    sg: state === 'sgfailed' ? null : none ? toChFileSg({ ...LADDER, rows: LADDER.rows.map((r) => ({ ...r, strokes: null, sense: null })) }, [], { you: false, first: FIRST }, { window: 'All time', rounds: 2 }) : SG,
+    sg: state === 'sgfailed' ? null : none ? toChFileSgOver(NO_FIGURES, null, { you: false, first: FIRST }) : SG,
     plan,
     field: field(state, 'coach'),
     intent: state === 'nointent' ? null : { aim: 'breakout', alerts: 'balanced', watching: ['course_management'], note: 'Wants to play number one by spring.' },
