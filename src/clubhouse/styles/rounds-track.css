@@ -1600,13 +1600,10 @@ path.ch-rt-map__shot {
   .ch-rt-mc {
     min-width: 0;
   }
+  /* The label cells keep their own 12px lead (the rules above outrank this one). */
   .ch-rt-mc th,
   .ch-rt-mc td {
     padding: 0;
-  }
-  .ch-rt-mc th[scope='row'],
-  .ch-rt-mc thead th:first-child {
-    padding-left: 10px;
   }
   .ch-rt-mc thead th:first-child {
     width: 48px;
