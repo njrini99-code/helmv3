@@ -239,18 +239,19 @@ describe('a plain answer', () => {
       { type: 'text', text: 'TEAM BLOCK', cache_control: { type: 'ephemeral' } },
     ]);
     expect(request.cache_control).toEqual({ type: 'ephemeral' });
-    // A coach's reads may be called from the model's code, so they cannot be strict (the engine validates every input itself);
-    // a task is direct-only and strict; the code tool is last.
+    // A coach's reads may be called from the model's code; a task is direct-only; no tool is strict (the engine validates
+    // every input itself); the code tool is last.
     expect((request.tools as Array<{ name: string; eager_input_streaming?: boolean; strict?: boolean; allowed_callers?: string[] }>).map((t) => [t.name, t.eager_input_streaming ?? null, t.strict ?? null, t.allowed_callers?.length ?? 0])).toEqual([
       ['get_player_stats', true, null, 2],
       ['get_team_stats', true, null, 2],
-      ['create_focus_area', true, true, 0],
+      ['create_focus_area', true, null, 0],
       ['get_rounds', true, null, 2],
       ['get_round', true, null, 2],
       ['find_in_app', true, null, 2],
       ['code_execution', null, null, 0],
     ]);
-    expect((request.tools as Array<{ name: string; input_schema?: { additionalProperties?: boolean } }>).find((t) => t.name === 'create_focus_area')!.input_schema!.additionalProperties).toBe(false);
+    // The schema goes as the tool wrote it (no strict transform): the engine's own check is what holds an input to it.
+    expect((request.tools as Array<{ name: string; input_schema?: unknown }>).find((t) => t.name === 'create_focus_area')!.input_schema).toEqual({ type: 'object', properties: { title: { type: 'string', minLength: 1 } }, required: ['title'] });
   });
 
   it('the next question replays the stored messages, thinking included, and appends', async () => {
@@ -549,21 +550,23 @@ describe('the optional request features', () => {
   const ledgerRows = () => ((h.admin as unknown as FakeDb).tables.golf_coachhelm_llm_calls ?? []) as Array<{ citations: { features_dropped?: string[] } | null }>;
 
   it('a request the API rejects gives up the ONE feature its message names, the turn completes with everything else on, and the rejection is logged with the API’s own words', async () => {
-    const model = script({ content: [], reject: rejected('tools: Too many strict tools (33). The maximum number of strict tools is 20.') }, { content: [toolUse('tu_1', 'get_team_stats', {})] }, { content: [text('74.2.')] });
+    const model = script({ content: [], reject: rejected('fallbacks: Input should be a valid list') }, { content: [toolUse('tu_1', 'get_team_stats', {})] }, { content: [text('74.2.')] });
     const { events } = await ask('How is the team scoring?');
 
     expect(done(events)?.status).toBe('complete');
     expect(textOf(events)).toBe('74.2.');
     expect(events.some((e) => e.type === 'error')).toBe(false);
     expect(model.requests).toHaveLength(3);
-    // As configured, the request carried strict tools (the task; the reads a coach's code may call never are).
+    // As configured, the request carried the refusal fallback and its header; no tool was strict.
     expect(model.requests[0]!.betas).toEqual(ALL_BETAS);
-    expect(strictOf(model.requests[0]!)).toEqual(['create_focus_area']);
-    // The retry, and every later call of the turn, has no strict tool and is otherwise the same request.
+    expect(model.requests[0]!.fallbacks).toBe('default');
+    expect(strictOf(model.requests[0]!)).toEqual([]);
+    // The retry, and every later call of the turn, has no fallback and is otherwise the same request, tools included.
     for (const request of model.requests.slice(1)) {
-      expect(strictOf(request)).toEqual([]);
-      expect(request.betas).toEqual(ALL_BETAS);
-      expect(request.fallbacks).toBe('default');
+      expect(request).not.toHaveProperty('fallbacks');
+      expect(request.betas).toEqual(ALL_BETAS.filter((beta) => beta !== 'server-side-fallback-2026-07-01'));
+      expect(JSON.stringify(request.tools)).toBe(JSON.stringify(model.requests[0]!.tools));
+      expect(JSON.stringify(request.system)).toBe(JSON.stringify(model.requests[0]!.system));
       expect(request.context_management).toEqual({ edits: [{ type: 'compact_20260112' }] });
       expect(request.thinking).toEqual({ type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' }, display: 'updates' });
       expect(JSON.stringify(request.tools)).toMatch(/code_execution_20260120/);
@@ -575,17 +578,35 @@ describe('the optional request features', () => {
     // One log line, an error to be fixed, and the reason is in the line itself: the status, the type, what was given up, what the API said.
     const logged = degradedLogs();
     expect(logged).toHaveLength(1);
-    expect(logged[0]![0]).toBe('chat/stream: the API rejected a request (400 invalid_request_error) and it was sent again without strict_tools: tools: Too many strict tools (33). The maximum number of strict tools is 20.');
-    expect(logged[0]![1]).toMatchObject({ errorCode: 'chat_feature_rejected', handled: true, extra: { dropped: 'strict_tools', alreadyDropped: [], status: 400, errorType: 'invalid_request_error', model: 'claude-sonnet-5-5' } });
+    expect(logged[0]![0]).toBe('chat/stream: the API rejected a request (400 invalid_request_error) and it was sent again without refusal_fallback: fallbacks: Input should be a valid list');
+    expect(logged[0]![1]).toMatchObject({ errorCode: 'chat_feature_rejected', handled: true, extra: { dropped: 'refusal_fallback', alreadyDropped: [], status: 400, errorType: 'invalid_request_error', model: 'claude-sonnet-5-5' } });
     expect(logged[0]![2]).toBe('error');
     // Nothing of the request is in it.
     expect(JSON.stringify(logged[0])).not.toContain('How is the team scoring');
     // The turn says what it ran without: on the wire (names only), in its log line and in its ledger row.
-    expect(usageOf(events).features_dropped).toEqual(['strict_tools']);
-    expect(JSON.stringify(events)).not.toContain('Too many strict tools');
-    expect(turnLogExtra()).toMatchObject({ degraded: true, featuresDropped: ['strict_tools'] });
+    expect(usageOf(events).features_dropped).toEqual(['refusal_fallback']);
+    expect(JSON.stringify(events)).not.toContain('Input should be a valid list');
+    expect(turnLogExtra()).toMatchObject({ degraded: true, featuresDropped: ['refusal_fallback'] });
     expect(ledgerRows()).toHaveLength(1);
-    expect(ledgerRows()[0]!.citations).toMatchObject({ features_dropped: ['strict_tools'] });
+    expect(ledgerRows()[0]!.citations).toMatchObject({ features_dropped: ['refusal_fallback'] });
+  });
+
+  it('no tool is sent strict, and every request of a turn carries the same tool definitions and system blocks, so the prefix is written once', async () => {
+    // 11 Nov 2026, live: twenty strict tools were answered "The compiled grammar is too large", and the retry without them rewrote the prefix.
+    const model = script({ content: [toolUse('tu_1', 'get_team_stats', {})] }, { content: [toolUse('tu_2', 'get_team_stats', {})] }, { content: [text('74.2.')] });
+    const { events } = await ask('How is the team scoring?');
+    expect(done(events)?.status).toBe('complete');
+    expect(model.requests).toHaveLength(3);
+    for (const request of model.requests) {
+      expect(strictOf(request)).toEqual([]);
+      expect(JSON.stringify(request.tools)).not.toContain('"strict"');
+      expect(JSON.stringify(request.tools)).toBe(JSON.stringify(model.requests[0]!.tools));
+      expect(JSON.stringify(request.system)).toBe(JSON.stringify(model.requests[0]!.system));
+      expect(request.betas).toEqual(ALL_BETAS);
+      expect(request.tool_choice).toEqual({ type: 'auto' });
+    }
+    expect(degradedLogs()).toEqual([]);
+    expect(usageOf(events)).not.toHaveProperty('features_dropped');
   });
 
   it('a turn that runs as configured says nothing was given up: no field on the wire, none in the ledger row', async () => {
@@ -601,13 +622,13 @@ describe('the optional request features', () => {
   });
 
   it('a rejection that names nothing gives the features up one at a time, in order, down to the plain request', async () => {
-    const order = ['progress_notes', 'refusal_fallback', 'strict_tools', 'compaction', 'programmatic_reads', 'thinking_binding'];
+    const order = ['progress_notes', 'refusal_fallback', 'compaction', 'programmatic_reads', 'thinking_binding'];
     const model = script(...order.map(() => ({ content: [], reject: rejected('messages.1: something the request does not say') })), { content: [text('74.2.')] });
     const { events } = await ask('How is the team scoring?');
 
     expect(done(events)?.status).toBe('complete');
     expect(textOf(events)).toBe('74.2.');
-    expect(model.requests).toHaveLength(7);
+    expect(model.requests).toHaveLength(6);
     expect(usageOf(events).features_dropped).toEqual(order);
     expect(degradedLogs().map((c) => (c[1] as { extra: { dropped: string } }).extra.dropped)).toEqual(order);
     expect((degradedLogs()[2]![1] as { extra: { alreadyDropped: string[] } }).extra.alreadyDropped).toEqual(['progress_notes', 'refusal_fallback']);
@@ -615,15 +636,15 @@ describe('the optional request features', () => {
     expect(model.requests[1]!.betas).toEqual(['thinking-binding-controls-2026-08-01', 'compact-2026-01-12', 'server-side-fallback-2026-07-01']);
     expect(model.requests[1]!.thinking).toEqual({ type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } });
     expect(model.requests[2]).not.toHaveProperty('fallbacks');
-    expect(strictOf(model.requests[2]!)).toEqual(['create_focus_area']);
-    expect(strictOf(model.requests[3]!)).toEqual([]);
-    expect(model.requests[3]!.context_management).toBeDefined();
-    expect(model.requests[4]).not.toHaveProperty('context_management');
-    expect(JSON.stringify(model.requests[4]!.tools)).toMatch(/code_execution_20260120/);
-    expect(JSON.stringify(model.requests[5]!.tools)).not.toMatch(/code_execution|allowed_callers/);
-    expect(model.requests[5]!.betas).toEqual(['thinking-binding-controls-2026-08-01']);
-    // The last request carries no beta and nothing a beta or `strict` added. What is not optional is unchanged.
-    const plain = model.requests[6]!;
+    expect(model.requests[2]!.context_management).toBeDefined();
+    expect(model.requests[3]).not.toHaveProperty('context_management');
+    expect(JSON.stringify(model.requests[3]!.tools)).toMatch(/code_execution_20260120/);
+    // Until the code tool goes, the tools are the same bytes on every rung: no tool is strict, so nothing else rewrites them.
+    for (const request of model.requests.slice(0, 4)) expect(JSON.stringify(request.tools)).toBe(JSON.stringify(model.requests[0]!.tools));
+    expect(JSON.stringify(model.requests[4]!.tools)).not.toMatch(/code_execution|allowed_callers/);
+    expect(model.requests[4]!.betas).toEqual(['thinking-binding-controls-2026-08-01']);
+    // The last request carries no beta and nothing a beta added. What is not optional is unchanged.
+    const plain = model.requests[5]!;
     expect(plain).not.toHaveProperty('betas');
     expect(plain).not.toHaveProperty('fallbacks');
     expect(plain).not.toHaveProperty('context_management');
@@ -635,12 +656,12 @@ describe('the optional request features', () => {
   });
 
   it('when the plain request is rejected too the turn fails with a sentence, and nothing is tried twice', async () => {
-    const model = script(...Array.from({ length: 7 }, () => ({ content: [], reject: rejected('messages: invalid') })));
+    const model = script(...Array.from({ length: 6 }, () => ({ content: [], reject: rejected('messages: invalid') })));
     const { events } = await ask('How is the team scoring?');
-    expect(model.requests).toHaveLength(7);
+    expect(model.requests).toHaveLength(6);
     expect(done(events)?.status).toBe('failed');
     expect((events.find((e) => e.type === 'error') as { message: string }).message).not.toContain('invalid');
-    expect(usageOf(events).features_dropped).toHaveLength(6);
+    expect(usageOf(events).features_dropped).toHaveLength(5);
   });
 
   it('a rejection that carries the API’s own error code (an account, billing or key fault) gives up nothing and is not retried', async () => {
@@ -655,15 +676,17 @@ describe('the optional request features', () => {
 
   it('a player’s rejected request gives up its own groups: the turn answers and its ledger row says what it ran without', async () => {
     h.role = 'player';
-    const model = script({ content: [], reject: rejected('tools: 56 parameters use a union type; the maximum across strict tools is 16.') }, { content: [text('You are averaging 73.1.')] });
+    const model = script({ content: [], reject: rejected('context_management: Extra inputs are not permitted') }, { content: [text('You are averaging 73.1.')] });
     const { events } = await ask('How am I scoring?');
     expect(done(events)?.status).toBe('complete');
     expect(model.requests[0]!.betas).toEqual(['thinking-binding-controls-2026-08-01', 'compact-2026-01-12']);
-    expect(strictOf(model.requests[0]!).length).toBeGreaterThan(0);
-    expect(strictOf(model.requests[1]!)).toEqual([]);
-    expect(model.requests[1]!.betas).toEqual(['thinking-binding-controls-2026-08-01', 'compact-2026-01-12']);
-    expect(usageOf(events).features_dropped).toEqual(['strict_tools']);
-    expect(ledgerRows()[0]!.citations).toMatchObject({ features_dropped: ['strict_tools'] });
+    expect(strictOf(model.requests[0]!)).toEqual([]);
+    expect(model.requests[0]!.context_management).toBeDefined();
+    expect(model.requests[1]).not.toHaveProperty('context_management');
+    expect(model.requests[1]!.betas).toEqual(['thinking-binding-controls-2026-08-01']);
+    expect(JSON.stringify(model.requests[1]!.tools)).toBe(JSON.stringify(model.requests[0]!.tools));
+    expect(usageOf(events).features_dropped).toEqual(['compaction']);
+    expect(ledgerRows()[0]!.citations).toMatchObject({ features_dropped: ['compaction'] });
   });
 
   it('a plain request that is rejected is not retried: the coach gets a sentence and the turn is stored failed', async () => {
@@ -831,17 +854,17 @@ describe('the model’s code calling the reads (on for a coach, off for a player
     await ask('How am I scoring?');
     const tools = player.requests[0]!.tools as Array<{ name: string; strict?: boolean; allowed_callers?: string[] }>;
     expect(tools.map((t) => t.name)).toEqual(['get_my_stats', 'create_focus_area']);
-    expect(tools.every((t) => t.strict === true && t.allowed_callers === undefined)).toBe(true);
+    expect(tools.every((t) => t.strict === undefined && t.allowed_callers === undefined)).toBe(true);
   });
 
-  it('with it off the request has no code tool, every tool is strict, and the turn works the same', async () => {
+  it('with it off the request has no code tool, no tool the code may call, still no strict tool, and the turn works the same', async () => {
     h.features = { ...CHAT_FEATURES, programmaticReads: false };
     const model = script({ content: [toolUse('tu_1', 'get_team_stats', {})] }, { content: [text('74.2.')] });
     const { events } = await ask('How is the team scoring?');
     expect(done(events)?.status).toBe('complete');
     const tools = model.requests[0]!.tools as Array<{ name: string; strict?: boolean; allowed_callers?: string[] }>;
     expect(tools.some((t) => t.name === 'code_execution')).toBe(false);
-    expect(tools.every((t) => t.strict === true && t.allowed_callers === undefined)).toBe(true);
+    expect(tools.every((t) => t.strict === undefined && t.allowed_callers === undefined)).toBe(true);
   });
 
   it('a read the code calls is validated, runs as the signed-in coach, and is still a row, a piece of evidence and a stored read', async () => {
@@ -958,7 +981,7 @@ describe('the model’s code calling the reads (on for a coach, off for a player
     await ask('Remember that qualifying is 54 holes');
     expect(log.reads).toHaveLength(0);
     const sent = model.requests[0]!.tools as Array<{ name: string; strict?: boolean; allowed_callers?: string[] }>;
-    expect(sent.find((t) => t.name === 'save_note')).toMatchObject({ strict: true });
+    expect(sent.find((t) => t.name === 'save_note')).not.toHaveProperty('strict');
     expect(sent.find((t) => t.name === 'save_note')).not.toHaveProperty('allowed_callers');
     const reply = model.requests[1]!.messages.at(-1) as { content: Array<{ is_error?: boolean; content: string }> };
     expect(reply.content[0]).toMatchObject({ is_error: true, content: 'This cannot be called from code. Call it directly. Nothing was changed.' });
@@ -985,10 +1008,10 @@ describe('the model’s code calling the reads (on for a coach, off for a player
     const [first, second] = model.requests;
     const tools = first!.tools as Array<{ name: string; type?: string; strict?: boolean; allowed_callers?: string[] }>;
     expect(tools.at(-1)).toEqual({ type: 'code_execution_20260120', name: 'code_execution' });
-    // Reads may be called from code, and so cannot be strict; a task is only ever asked for directly, and stays strict.
+    // Reads may be called from code; a task is only ever asked for directly. Neither is strict.
     expect(tools.find((t) => t.name === 'get_team_stats')).toMatchObject({ allowed_callers: ['direct', 'code_execution_20260120'] });
     expect(tools.find((t) => t.name === 'get_team_stats')).not.toHaveProperty('strict');
-    expect(tools.find((t) => t.name === 'create_focus_area')).toMatchObject({ strict: true });
+    expect(tools.find((t) => t.name === 'create_focus_area')).not.toHaveProperty('strict');
     expect(tools.find((t) => t.name === 'create_focus_area')).not.toHaveProperty('allowed_callers');
     expect(first).not.toHaveProperty('container');
 

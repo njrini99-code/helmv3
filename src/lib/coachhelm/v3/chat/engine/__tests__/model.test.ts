@@ -4,7 +4,7 @@ import { z } from 'zod';
 vi.mock('server-only', () => ({}));
 
 import Anthropic from '@anthropic-ai/sdk';
-import { addUsage, anthropicModelClient, buildModelRequest, callCostUsd, CHAT_FEATURES, CHAT_MODEL_OVERRIDE, chatFeatures, emptyUsage, fallbackModelOf, FEATURE_GROUPS, groupsOn, groupToDrop, isPlain, isRejectedRequest, rejectionOf, STRICT_LIMITS, strictCostOf, strictToolNames, withoutGroup, MissingModelKeyError, MODEL_PROFILES, modelToolFor, onLongCard, plainFeatures, profileFor, promptTokens, ratesFor, SURFACE_MODEL, turnCostUsd, type ChatFeatures } from '../model';
+import { addUsage, anthropicModelClient, buildModelRequest, callCostUsd, CHAT_FEATURES, CHAT_MODEL_OVERRIDE, chatFeatures, emptyUsage, fallbackModelOf, FEATURE_GROUPS, groupsOn, groupToDrop, isPlain, isRejectedRequest, rejectionOf, STRICT_LIMITS, STRICT_TOOLS, strictCostOf, strictToolNames, withoutGroup, MissingModelKeyError, MODEL_PROFILES, modelToolFor, onLongCard, plainFeatures, profileFor, promptTokens, ratesFor, SURFACE_MODEL, turnCostUsd, type ChatFeatures } from '../model';
 import { echoable } from '../loop';
 import { estimateCostUsd, MODEL_FOR_TASK, PLAYER_CHAT_MODEL } from '@/lib/coachhelm/v3/llm/types';
 import type { ChatTool } from '../tool';
@@ -57,7 +57,7 @@ describe('the model each surface runs on', () => {
     expect(sent.tool_choice).toEqual({ type: 'auto' });
     expect(request(undefined, { profile: SONNET, answerOnly: true }).tool_choice).toEqual({ type: 'none' });
     for (const rejected of ['temperature', 'top_p', 'top_k']) expect(sent).not.toHaveProperty(rejected);
-    expect(SONNET.features).toEqual({ dropStaleThinking: true, strictTools: true, citations: true, compaction: true, taskBudgetTokens: null, progressNotes: true, programmaticReads: true, refusalFallback: true, suggestions: true });
+    expect(SONNET.features).toEqual({ dropStaleThinking: true, strictTools: false, citations: true, compaction: true, taskBudgetTokens: null, progressNotes: true, programmaticReads: true, refusalFallback: true, suggestions: true });
   });
 
   it('Haiku 5.5: effort high, no fallbacks parameter at all, no progress notes', () => {
@@ -69,7 +69,7 @@ describe('the model each surface runs on', () => {
     expect(sent.thinking).toEqual({ type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } });
     expect(sent.betas).toEqual(['thinking-binding-controls-2026-08-01', 'compact-2026-01-12']);
     expect(sent.tool_choice).toEqual({ type: 'auto' });
-    expect(HAIKU.features).toEqual({ dropStaleThinking: true, strictTools: true, citations: true, compaction: true, taskBudgetTokens: null, progressNotes: false, programmaticReads: true, refusalFallback: false, suggestions: true });
+    expect(HAIKU.features).toEqual({ dropStaleThinking: true, strictTools: false, citations: true, compaction: true, taskBudgetTokens: null, progressNotes: false, programmaticReads: true, refusalFallback: false, suggestions: true });
   });
 
   it('what is kept of a turn a refusal fallback took over: text and everything after the last boundary; not the declining model’s thinking or tool calls', () => {
@@ -87,7 +87,8 @@ describe('the model each surface runs on', () => {
 
 describe('the model request', () => {
   it('a zod input becomes a JSON Schema object the API takes: strict, closed, defaults optional for the model, no $schema key', () => {
-    const direct = { ...HAIKU.features, programmaticReads: false };
+    // The strict form of one tool, asked for by name: no request sends it today (`STRICT_TOOLS` is empty).
+    const direct = { ...HAIKU.features, strictTools: true, programmaticReads: false };
     const converted = modelToolFor(rounds, direct);
     expect(converted).toMatchObject({ name: 'get_rounds', description: 'Rounds.', eager_input_streaming: true, strict: true });
     expect(converted).not.toHaveProperty('allowed_callers');
@@ -101,7 +102,7 @@ describe('the model request', () => {
     // Without strict the schema is sent as written, and the engine's own zod check is the only gate (it always runs).
     const loose = modelToolFor(rounds, { ...direct, strictTools: false });
     // The schema is the same whichever model it is sent to.
-    expect(modelToolFor(rounds, { ...SONNET.features, programmaticReads: false })).toEqual(converted);
+    expect(modelToolFor(rounds, { ...SONNET.features, strictTools: true, programmaticReads: false })).toEqual(converted);
     expect(loose).not.toHaveProperty('strict');
     expect((loose.input_schema as { required?: string[] }).required).toEqual(['player_id']);
   });
@@ -154,7 +155,7 @@ describe('the model request', () => {
     expect(plain).not.toHaveProperty('fallbacks');
 
     // Programmatic calling is stable (no header): the code tool is offered, reads may be called from code and so are not strict.
-    const code = request({ ...off, strictTools: true, programmaticReads: true }, { container: 'container_1' });
+    const code = request({ ...off, strictTools: true, programmaticReads: true }, { container: 'container_1', strictAllowed: 'any' });
     expect(code).not.toHaveProperty('betas');
     expect(code.container).toBe('container_1');
     const tools = code.tools as Array<{ name: string; type?: string; strict?: boolean; allowed_callers?: string[] }>;
@@ -166,27 +167,54 @@ describe('the model request', () => {
     expect(tools[2]).toEqual({ type: 'code_execution_20260120', name: 'code_execution' });
   });
 
-  it('with the model’s code on, a read may be called from code and is not strict, a task is direct-only and strict, and the code tool is last', () => {
-    const sent = request();
-    // With the code tool on: the read may be called from code and is not strict; the task is direct-only and strict; the code tool is last.
+  it('no tool is sent strict, on either model or any surface; with the model’s code on a read may be called from code, a task is direct-only, and the code tool is last', () => {
+    // 11 Nov 2026: twenty strict tools within the documented counts were answered "The compiled grammar is too large".
+    expect([...STRICT_TOOLS]).toEqual([]);
+    expect(SONNET.features.strictTools).toBe(false);
+    expect(HAIKU.features.strictTools).toBe(false);
+    const sent = request(undefined, { profile: SONNET });
     const tools = sent.tools as Array<{ name: string; type?: string; strict?: boolean; allowed_callers?: string[] }>;
     expect(tools.map((t) => [t.name, t.strict ?? null, t.allowed_callers ?? null])).toEqual([
       ['get_rounds', null, ['direct', 'code_execution_20260120']],
-      ['create_event', true, null],
+      ['create_event', null, null],
       ['code_execution', null, null],
     ]);
-    // A tool on the read contract that changes something is direct-only: never offered to the code, and still strict.
+    expect(JSON.stringify(sent.tools)).not.toContain('"strict"');
+    // A tool on the read contract that changes something is direct-only: never offered to the code.
     const note = modelToolFor({ ...rounds, name: 'save_note', direct_only: true } as ChatTool);
-    expect(note).toMatchObject({ name: 'save_note', strict: true });
+    expect(note).not.toHaveProperty('strict');
     expect(note).not.toHaveProperty('allowed_callers');
-    // A player's request has no code tool, and its reads are strict.
+    // A player's request has no code tool, and nothing in it is strict either.
     const player = request(chatFeatures('player')).tools as Array<{ name: string; strict?: boolean }>;
-    expect(player.map((t) => [t.name, t.strict ?? null])).toEqual([['get_rounds', true], ['create_event', true]]);
+    expect(player.map((t) => [t.name, t.strict ?? null])).toEqual([['get_rounds', null], ['create_event', null]]);
+    // The switch alone sends nothing strict: a tool has to be named on the list as well.
+    expect(JSON.stringify(request({ ...chatFeatures('player'), strictTools: true }).tools)).not.toContain('"strict"');
+    expect([...strictToolNames([rounds], { ...chatFeatures('player'), strictTools: true })]).toEqual([]);
+    expect([...strictToolNames([rounds], { ...chatFeatures('player'), strictTools: true }, new Set(['get_rounds']))]).toEqual(['get_rounds']);
+  });
+
+  it('every request of a turn carries the same tool definitions and the same system blocks, byte for byte', () => {
+    // The tools are the head of the cached prefix: a later step, a waiting container or the answer-only step must not rewrite it.
+    for (const profile of [SONNET, profileFor('player')]) {
+      const first = request(undefined, { profile });
+      const later = [
+        request(undefined, { profile, messages: [...messages, { role: 'assistant', content: 'Reading.' }, { role: 'user', content: 'And Sam?' }] }),
+        request(undefined, { profile, container: 'container_1' }),
+        request(undefined, { profile, answerOnly: true }),
+      ];
+      for (const next of later) {
+        expect(JSON.stringify(next.tools)).toBe(JSON.stringify(first.tools));
+        expect(JSON.stringify(next.system)).toBe(JSON.stringify(first.system));
+        expect(next.betas).toEqual(first.betas);
+      }
+    }
   });
 
   it('strict is a budget across one request: 20 tools, 24 optional parameters, 16 union parameters; tasks first, then the list’s order', () => {
     expect(STRICT_LIMITS).toEqual({ tools: 20, optional: 24, unions: 16 });
-    const direct = { ...HAIKU.features, programmaticReads: false };
+    // The budget alone (`'any'`): what the allowlist would be cut to if it named more than one request can carry.
+    const direct = { ...HAIKU.features, strictTools: true, programmaticReads: false };
+    const budget = (tools: readonly ChatTool[], features: ChatFeatures) => strictToolNames(tools, features, 'any');
     const named = (name: string, kind: 'read' | 'task', input: z.ZodType<unknown>): ChatTool => ({ ...tool(input, kind), name }) as ChatTool;
     const union = (n: number) => z.object(Object.fromEntries(Array.from({ length: n }, (_, i) => [`f${i}`, z.string().nullable()])));
     const optional = (n: number) => z.object(Object.fromEntries(Array.from({ length: n }, (_, i) => [`f${i}`, z.string().optional()])));
@@ -197,38 +225,43 @@ describe('the model request', () => {
 
     // Unions: 10 + 10 does not fit in 16, so the second is left out and the next that fits is taken.
     const byUnions = [named('r1', 'read', union(10)), named('r2', 'read', union(10)), named('r3', 'read', union(6)), named('r4', 'read', union(1))];
-    expect([...strictToolNames(byUnions, direct)]).toEqual(['r1', 'r3']);
+    expect([...budget(byUnions, direct)]).toEqual(['r1', 'r3']);
     // Optional parameters have their own limit of 24.
-    expect([...strictToolNames([named('o1', 'read', optional(20)), named('o2', 'read', optional(5)), named('o3', 'read', optional(4))], direct)]).toEqual(['o1', 'o3']);
+    expect([...budget([named('o1', 'read', optional(20)), named('o2', 'read', optional(5)), named('o3', 'read', optional(4))], direct)]).toEqual(['o1', 'o3']);
     // Tasks are served before reads, whatever the order of the list; the list itself keeps its order in the request.
     const mixed = [named('r1', 'read', union(10)), named('t1', 'task', union(10)), named('r2', 'read', union(6))];
-    expect([...strictToolNames(mixed, direct)]).toEqual(['t1', 'r2']);
-    expect(buildModelRequest({ tools: mixed, system: { stable: 'P', team: 'T' }, messages, profile: HAIKU, features: direct }).tools!.map((t) => [(t as { name: string }).name, (t as { strict?: boolean }).strict ?? null])).toEqual([['r1', null], ['t1', true], ['r2', true]]);
+    expect([...budget(mixed, direct)]).toEqual(['t1', 'r2']);
+    expect(buildModelRequest({ tools: mixed, system: { stable: 'P', team: 'T' }, messages, profile: HAIKU, features: direct, strictAllowed: 'any' }).tools!.map((t) => [(t as { name: string }).name, (t as { strict?: boolean }).strict ?? null])).toEqual([['r1', null], ['t1', true], ['r2', true]]);
     // Never more than twenty, however cheap they are.
     const many = Array.from({ length: 30 }, (_, i) => named(`n${i}`, 'read', z.object({ id: z.string() })));
-    expect(strictToolNames(many, direct).size).toBe(20);
-    expect([...strictToolNames(many, direct)].at(-1)).toBe('n19');
+    expect(budget(many, direct).size).toBe(20);
+    expect([...budget(many, direct)].at(-1)).toBe('n19');
     // A read the model's code may call is never strict and spends nothing; with strict off nothing is.
-    expect([...strictToolNames(byUnions, { ...direct, programmaticReads: true })]).toEqual([]);
-    expect([...strictToolNames(byUnions, { ...direct, strictTools: false })]).toEqual([]);
+    expect([...budget(byUnions, { ...direct, programmaticReads: true })]).toEqual([]);
+    expect([...budget(byUnions, { ...direct, strictTools: false })]).toEqual([]);
   });
 
   it('the features form groups, given up one at a time in a fixed order unless the API names one', () => {
     expect(FEATURE_GROUPS).toEqual(['progress_notes', 'refusal_fallback', 'task_budget', 'strict_tools', 'compaction', 'programmatic_reads', 'thinking_binding']);
-    expect(groupsOn(SONNET.features)).toEqual(['progress_notes', 'refusal_fallback', 'strict_tools', 'compaction', 'programmatic_reads', 'thinking_binding']);
-    expect(groupsOn(chatFeatures('player'))).toEqual(['strict_tools', 'compaction', 'thinking_binding']);
+    // `strict_tools` is still a group, but no profile carries it: nothing is sent strict.
+    expect(groupsOn(SONNET.features)).toEqual(['progress_notes', 'refusal_fallback', 'compaction', 'programmatic_reads', 'thinking_binding']);
+    expect(groupsOn({ ...SONNET.features, strictTools: true })).toEqual(['progress_notes', 'refusal_fallback', 'strict_tools', 'compaction', 'programmatic_reads', 'thinking_binding']);
+    expect(groupsOn(chatFeatures('player'))).toEqual(['compaction', 'thinking_binding']);
     // Giving up a group changes that group's field and nothing else.
-    expect(withoutGroup(SONNET.features, 'strict_tools')).toEqual({ ...SONNET.features, strictTools: false });
+    expect(withoutGroup({ ...SONNET.features, strictTools: true }, 'strict_tools')).toEqual(SONNET.features);
     expect(withoutGroup({ ...SONNET.features, taskBudgetTokens: 60_000 }, 'task_budget')).toEqual(SONNET.features);
     expect(request(withoutGroup(SONNET.features, 'refusal_fallback'), { profile: SONNET })).not.toHaveProperty('fallbacks');
     expect(request(withoutGroup(SONNET.features, 'refusal_fallback'), { profile: SONNET }).betas).toEqual(['thinking-binding-controls-2026-08-01', 'thinking-display-updates-2026-08-18', 'compact-2026-01-12']);
 
     // The API's message names one group the request carries: that one goes.
-    expect(groupToDrop(SONNET.features, 'tools: Too many strict tools (33). The maximum number of strict tools is 20.')).toBe('strict_tools');
-    expect(groupToDrop(SONNET.features, 'Schema is too complex for compilation.')).toBe('strict_tools');
+    // With a strict tool in the request (none today), these are the API's own sentences about it; the third is the one of 11 Nov 2026.
+    const STRICT = { ...SONNET.features, strictTools: true };
+    expect(groupToDrop(STRICT, 'The compiled grammar is too large, which would cause performance issues. Simplify your tool schemas or reduce the number of strict tools.')).toBe('strict_tools');
+    expect(groupToDrop(STRICT, 'tools: Too many strict tools (33). The maximum number of strict tools is 20.')).toBe('strict_tools');
+    expect(groupToDrop(STRICT, 'Schema is too complex for compilation.')).toBe('strict_tools');
     // Structured outputs and citations do not go together, and strict tools are the request's only structured output.
-    expect(groupToDrop(SONNET.features, 'Structured outputs cannot be used when citations are enabled.')).toBe('strict_tools');
-    expect(groupToDrop(chatFeatures('player'), 'messages.3.content.0.tool_result.content.0.search_result.citations: not supported with this request')).toBe('strict_tools');
+    expect(groupToDrop(STRICT, 'Structured outputs cannot be used when citations are enabled.')).toBe('strict_tools');
+    expect(groupToDrop({ ...chatFeatures('player'), strictTools: true }, 'messages.3.content.0.tool_result.content.0.search_result.citations: not supported with this request')).toBe('strict_tools');
     expect(groupToDrop(SONNET.features, 'thinking.block_binding: Extra inputs are not permitted')).toBe('thinking_binding');
     expect(groupToDrop(SONNET.features, 'Unexpected value(s) `compact-2026-01-12` for the `anthropic-beta` header.')).toBe('compaction');
     expect(groupToDrop(SONNET.features, 'fallbacks: Input should be a valid list')).toBe('refusal_fallback');
@@ -236,8 +269,8 @@ describe('the model request', () => {
     expect(groupToDrop(SONNET.features, 'tools.3.custom.allowed_callers: Extra inputs are not permitted')).toBe('programmatic_reads');
     // It names none, or more than one, or one the request does not carry: the next in order.
     expect(groupToDrop(SONNET.features, 'messages.2: unexpected role')).toBe('progress_notes');
-    expect(groupToDrop(SONNET.features, 'tools.3: a strict tool cannot be given allowed_callers')).toBe('progress_notes');
-    expect(groupToDrop(chatFeatures('player'), 'fallbacks: not supported on this model')).toBe('strict_tools');
+    expect(groupToDrop(STRICT, 'tools.3: a strict tool cannot be given allowed_callers')).toBe('progress_notes');
+    expect(groupToDrop(chatFeatures('player'), 'fallbacks: not supported on this model')).toBe('compaction');
     expect(groupToDrop(withoutGroup(SONNET.features, 'progress_notes'), 'messages.2: unexpected role')).toBe('refusal_fallback');
     // Nothing left to give up.
     expect(groupToDrop(plainFeatures(SONNET.features), 'messages: invalid')).toBeNull();

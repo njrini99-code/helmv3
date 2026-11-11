@@ -315,7 +315,7 @@ export function citesFromLog(logText, answerText, surface, turnId) {
 
 /**
  * Why the API rejected a request, from the dev server's log: the engine logs one line per rejection,
- * "chat/stream: the API rejected a request (400 invalid_request_error) and it was sent again without strict_tools: <the API's message>".
+ * "chat/stream: the API rejected a request (400 invalid_request_error) and it was sent again without <group>: <the API's message>".
  * `logText` is the part of the log written while one question was being answered. Each reason is cut to 400 characters.
  */
 export function rejectionsFromLog(logText) {

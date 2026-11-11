@@ -46,8 +46,10 @@ the tie-breaker.
 8a. **A request the API rejects is a fault, not a fallback.** The loop gives up one feature group at a time
    (`FEATURE_GROUPS`) so the coach still gets an answer, logs the API's own reason, and marks the turn
    (`features_dropped`). Never read a degraded turn as proof the configuration works: run the eval with
-   `--require-features`. `strict: true` is limited per REQUEST (20 strict tools, 24 optional parameters, 16 union
-   parameters across them); `strictToolNames` spends that budget, do not set `strict` on a tool yourself.
+   `--require-features`. No tool is sent `strict: true`: the API refused these tools for its per-request counts (20
+   strict tools, 24 optional parameters, 16 union parameters) and then, within them, with "The compiled grammar is too
+   large". The engine's zod check validates every input. Do not set `strict` on a tool yourself; a name goes into
+   `STRICT_TOOLS` (`engine/model.ts`) only after a live request with that exact set was accepted.
 9. **The prompt prefix is stable, byte for byte.** Tools in a fixed order, the policy, golf and data-map blocks
    identical for every team, then the team block (team, season rule, timezone, roster). Nothing that changes during
    a conversation's life goes in `system` or `tools`: today's date, the screen the coach is on and the coach's notes

@@ -39,10 +39,17 @@
  * event and written to the ledger row. A request that is accepted only after a group was dropped is a fault to fix,
  * never a pass (the eval's `--require-features` fails the run on one).
  *
- * `strict: true` has a budget the API enforces per REQUEST, not per tool (structured outputs, "Schema complexity
- * limits"): at most 20 strict tools, 24 optional parameters and 16 parameters with a union type, summed over every
- * strict tool. `modelToolsFor` spends that budget in the tool list's own order, tasks first; a tool that does not fit
- * is sent without `strict` (the engine checks every input itself, strict or not).
+ * NO tool is sent `strict` (`STRICT_TOOLS` is empty, so `strictTools` is off in both profiles). The API compiles
+ * every strict schema of a request into one grammar and refused these tools twice on live requests: first for the
+ * documented per-request counts (20 strict tools, 24 optional parameters, 16 parameters with a union type), then,
+ * within those counts, with "The compiled grammar is too large" (11 Nov 2026). The engine checks every input against
+ * the tool's own zod schema before it runs and answers a bad one with a tool error, strict or not. A tool comes back
+ * to `strict` by name in `STRICT_TOOLS`, after a live request has shown the API takes the set; the budget in
+ * `strictToolNames` and the `strict_tools` group stay for that.
+ *
+ * Every request of a turn carries the same tool definitions, byte for byte (the tools are the head of the cached
+ * prefix): they depend only on the surface's tool list and the features, never on the step, the container or
+ * `answerOnly`. Only a group the API rejected changes them, and that is logged.
  */
 import Anthropic from '@anthropic-ai/sdk';
 import { transformJSONSchema } from '@anthropic-ai/sdk/lib/transform-json-schema';
@@ -80,7 +87,10 @@ export interface ChatFeatures {
    * stored thinking block the API can no longer verify is dropped, not a 400. Confirmed in the SDK types and the guide.
    */
   dropStaleThinking: boolean;
-  /** `strict: true` on a tool, so the model's input matches the schema exactly. Stable; no beta. On as many tools as the API's per-request budget allows (`strictToolNames`). */
+  /**
+   * `strict: true` on the tools named in `STRICT_TOOLS`, so the model's input matches the schema exactly. Stable; no
+   * beta. OFF: the list is empty (the API answered "The compiled grammar is too large" for twenty of these tools).
+   */
   strictTools: boolean;
   /**
    * A read goes back to the model as a `search_result` block with citations on (stable, no beta; this model is listed
@@ -107,8 +117,9 @@ export interface ChatFeatures {
    * per read. Stable on this model, no beta. ON for the coach surfaces by the owner's decision of 10 Nov 2026, made
    * knowing that with it on the results of those reads pass through Anthropic's code execution container, which
    * Anthropic retains for up to 30 days and which is not eligible for zero data retention. OFF for a player (a small
-   * read-only tool set). With it on the read tools are not `strict` (the two cannot be combined; the engine's own zod
-   * check still runs before every read, however it was called) and a task is never callable from code.
+   * read-only tool set). A read the code may call is never `strict`, whatever `STRICT_TOOLS` names (the two cannot be
+   * combined; the engine's own zod check still runs before every read, however it was called) and a task is never
+   * callable from code.
    */
   programmaticReads: boolean;
   /**
@@ -139,18 +150,28 @@ export interface ModelProfile {
   features: ChatFeatures;
 }
 
+/**
+ * The tools that may be sent `strict`, by name. EMPTY: no tool is, on any surface. The first live requests were
+ * rejected for the per-request counts, and the next, within those counts, with "The compiled grammar is too large,
+ * which would cause performance issues. Simplify your tool schemas or reduce the number of strict tools." (11 Nov
+ * 2026). Add a name only after a live request with exactly that set has been accepted (the eval's
+ * `--require-features` fails on a turn that had to give the group up). The engine's zod check runs on every input
+ * either way.
+ */
+export const STRICT_TOOLS: ReadonlySet<string> = new Set<string>();
+
 export const MODEL_PROFILES: Record<ChatModelId, ModelProfile> = {
   'claude-sonnet-5-5': {
     modelId: 'claude-sonnet-5-5',
     ledgerId: MODEL_FOR_TASK.coach_chat,
     effort: 'medium',
-    features: { dropStaleThinking: true, strictTools: true, citations: true, compaction: true, taskBudgetTokens: null, progressNotes: true, programmaticReads: true, refusalFallback: true, suggestions: true },
+    features: { dropStaleThinking: true, strictTools: STRICT_TOOLS.size > 0, citations: true, compaction: true, taskBudgetTokens: null, progressNotes: true, programmaticReads: true, refusalFallback: true, suggestions: true },
   },
   'claude-haiku-5-5': {
     modelId: 'claude-haiku-5-5',
     ledgerId: PLAYER_CHAT_MODEL,
     effort: 'high',
-    features: { dropStaleThinking: true, strictTools: true, citations: true, compaction: true, taskBudgetTokens: null, progressNotes: false, programmaticReads: true, refusalFallback: false, suggestions: true },
+    features: { dropStaleThinking: true, strictTools: STRICT_TOOLS.size > 0, citations: true, compaction: true, taskBudgetTokens: null, progressNotes: false, programmaticReads: true, refusalFallback: false, suggestions: true },
   },
 };
 
@@ -346,7 +367,8 @@ const isProgrammatic = (tool: ChatTool, features: ChatFeatures): boolean => feat
  * A tool as the API takes it. `eager_input_streaming` streams large inputs as written; the engine validates every input
  * itself either way. With `strict`, the schema is passed through the SDK's own transform (objects closed, keywords the
  * API does not take moved into the description); a schema it cannot express is sent without `strict` rather than
- * failing the request. `strict` here is this ONE tool's: whether it fits the request's budget is `modelToolsFor`'s.
+ * failing the request. `strict` here is this ONE tool's, and says what its strict form WOULD be: which tools a request
+ * actually sends strict is `modelToolsFor`'s (the allowlist, then the budget), and today that is none.
  */
 export function modelToolFor(tool: ChatTool, features: ChatFeatures = CHAT_FEATURES, strict: boolean = features.strictTools): ModelTool {
   const base = { name: tool.name, description: tool.description, eager_input_streaming: true };
@@ -358,17 +380,20 @@ export function modelToolFor(tool: ChatTool, features: ChatFeatures = CHAT_FEATU
 }
 
 /**
- * The names of the tools sent `strict`, within the request's budget (`STRICT_LIMITS`). Tasks come first, because a
- * write's arguments matter most; within tasks and within reads the list's own order decides, so the order of the
- * registry is the order of priority. A tool that would take the request over any limit is left out and the next one
- * is tried. The same list and features always give the same names: the tools are part of the cached prefix.
+ * The names of the tools sent `strict`: only ones on the allowlist (`STRICT_TOOLS`, empty, so none), and of those only
+ * what fits the request's budget (`STRICT_LIMITS`). Tasks come first, because a write's arguments matter most; within
+ * tasks and within reads the list's own order decides, so the order of the registry is the order of priority. A tool
+ * that would take the request over any limit is left out and the next one is tried. The same list, features and
+ * allowlist always give the same names: the tools are part of the cached prefix. `allowed: 'any'` is the budget alone,
+ * for a test or a measurement; the counts are necessary, not sufficient (the compiled grammar has its own size limit).
  */
-export function strictToolNames(tools: readonly ChatTool[], features: ChatFeatures = CHAT_FEATURES): Set<string> {
+export function strictToolNames(tools: readonly ChatTool[], features: ChatFeatures = CHAT_FEATURES, allowed: ReadonlySet<string> | 'any' = STRICT_TOOLS): Set<string> {
   const names = new Set<string>();
   if (!features.strictTools) return names;
   const spent = { optional: 0, unions: 0 };
   for (const tool of [...tools.filter((t) => t.kind === 'task'), ...tools.filter((t) => t.kind !== 'task')]) {
     if (names.size >= STRICT_LIMITS.tools) break;
+    if (allowed !== 'any' && !allowed.has(tool.name)) continue;
     if (isProgrammatic(tool, features)) continue;
     const schema = strictSchemaOf(tool);
     if (!schema) continue;
@@ -381,9 +406,9 @@ export function strictToolNames(tools: readonly ChatTool[], features: ChatFeatur
   return names;
 }
 
-/** Every tool of a request as the API takes it, in the list's order, `strict` on the ones the budget allows. */
-export function modelToolsFor(tools: readonly ChatTool[], features: ChatFeatures = CHAT_FEATURES): ModelTool[] {
-  const strict = strictToolNames(tools, features);
+/** Every tool of a request as the API takes it, in the list's order, `strict` on the ones the allowlist names and the budget allows (today none). */
+export function modelToolsFor(tools: readonly ChatTool[], features: ChatFeatures = CHAT_FEATURES, allowed: ReadonlySet<string> | 'any' = STRICT_TOOLS): ModelTool[] {
+  const strict = strictToolNames(tools, features, allowed);
   return tools.map((tool) => modelToolFor(tool, features, strict.has(tool.name)));
 }
 
@@ -416,6 +441,8 @@ export function buildModelRequest(args: {
   answerOnly?: boolean;
   /** The code execution container of a programmatic call that is waiting for its results. Required then, by the API. */
   container?: string | null;
+  /** Which tools may be sent `strict`. Left out, `STRICT_TOOLS` (none). Named only by a test or a measured experiment. */
+  strictAllowed?: ReadonlySet<string> | 'any';
 }): ModelRequest {
   const profile = args.profile ?? profileFor('ask');
   const f = args.features ?? profile.features;
@@ -425,7 +452,8 @@ export function buildModelRequest(args: {
   if (f.taskBudgetTokens !== null) betas.push('task-budgets-2026-03-13');
   if (f.compaction) betas.push('compact-2026-01-12');
   if (f.refusalFallback) betas.push('server-side-fallback-2026-07-01');
-  const tools: NonNullable<ModelRequest['tools']> = modelToolsFor(args.tools, f);
+  // The same bytes on every request of a turn: nothing here reads the step, the messages, the container or `answerOnly`.
+  const tools: NonNullable<ModelRequest['tools']> = modelToolsFor(args.tools, f, args.strictAllowed);
   if (f.programmaticReads) tools.push({ type: CODE_EXECUTION, name: 'code_execution' });
   return {
     model: profile.modelId,

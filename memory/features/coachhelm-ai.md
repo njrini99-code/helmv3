@@ -106,8 +106,8 @@ entries are history. The tool list and the prompt are described where the tools 
   (`CHAT_MAX_STEPS`), 8 for a player.
 - **Optional features are one object per profile** (`ChatFeatures`; `chatFeatures(surface)`), each a field that turns
   it off: `dropStaleThinking` (`thinking.block_binding.prefix_mismatch_behavior: 'drop_block'`, beta
-  `thinking-binding-controls-2026-08-01`), `strictTools` (`strict: true`; the engine still validates every input with
-  zod), `citations` (below), `compaction` (`compact_20260112` at the default trigger, beta `compact-2026-01-12`),
+  `thinking-binding-controls-2026-08-01`), `strictTools` (`strict: true` on the tools named in `STRICT_TOOLS`; off, the list is empty, see
+  below; the engine validates every input with zod either way), `citations` (below), `compaction` (`compact_20260112` at the default trigger, beta `compact-2026-01-12`),
   `programmaticReads` (below), and on Sonnet 5.5 only `progressNotes` (`thinking.display: 'updates'`, beta
   `thinking-display-updates-2026-08-18`: the model's short progress updates reach the thread as `note` events) and
   `refusalFallback` (next item). Built and off: `taskBudgetTokens` (null).
@@ -123,13 +123,20 @@ entries are history. The tool list and the prompt are described where the tools 
   (`citations.features_dropped`). **A turn that gave something up did not run as configured**: the eval calls it
   `degraded`, never `complete`, and `--require-features` stops the run on the first one. First live run, 10 Nov 2026:
   every request was rejected and retried plain, because every tool was sent `strict` (next item).
-- **`strict` is a budget per request, not per tool.** The API accepts at most 20 strict tools, 24 optional
-  parameters and 16 parameters with a union type, summed over every strict tool of one request (structured outputs,
-  "Schema complexity limits"); over any of them the whole request is a 400. `strictToolNames` spends that budget:
-  tasks first, then reads, each in the registry's order, skipping a tool that would pass a limit; the rest are sent
-  with their schema as written. The registry shows an optional field as a required nullable one, so each costs one
-  union: a coach's 33 direct-only tools hold 72 and a player's 10 reads hold 56, against 16. The engine checks every
-  input with the tool's own zod schema whether or not it was sent strict.
+- **No tool is sent `strict`, on any surface** (`STRICT_TOOLS` in `engine/model.ts` is empty, so `strictTools` is off
+  in both profiles and `strict_tools` is in no request's groups). The API refused these tools twice on live requests:
+  on 10 Nov 2026 for the documented per-request counts (at most 20 strict tools, 24 optional parameters and 16
+  parameters with a union type, summed over every strict tool; a coach's request held 33 and 72 unions), and on 11 Nov
+  2026, cut to those counts, with "The compiled grammar is too large, which would cause performance issues. Simplify
+  your tool schemas or reduce the number of strict tools." The engine checks every input with the tool's own zod
+  schema before it runs and answers a bad one with a tool error, so nothing is unchecked. A tool comes back to
+  `strict` only by name in `STRICT_TOOLS`, after a live request with exactly that set was accepted (the eval's
+  `--require-features`); `strictToolNames` then cuts the list to the per-request counts, which are necessary and not
+  sufficient.
+- **Every request of a turn carries the same tool definitions and system blocks, byte for byte.** They depend only on
+  the surface's tool list and the features, never on the step, a waiting container or the answer-only step
+  (`tool_choice: none` with the tools still listed), so the cached prefix is written once. Only a group the API
+  rejected changes them.
 - **Refusal fallback (Sonnet 5.5 only).** Requests carry `fallbacks: 'default'` (beta
   `server-side-fallback-2026-07-01`): when the model declines for a category the API retries, the API answers with a
   substitute model inside the same response. The loop keeps the words already streamed, drops from the echoed turn
@@ -146,9 +153,8 @@ entries are history. The tool list and the prompt are described where the tools 
   `programmaticReads` in each model profile's features in `engine/model.ts` (a player's is always off). What does not change: every read the code calls is validated
   by the tool's zod schema, runs with the signed-in coach's session client under row-level security and the same
   ownership checks, and its envelope reaches the store, the evidence parts (marked `via: 'code'`) and the grounding
-  check. A task can never be called from code, and no card is prepared while code is waiting on a read. Reads are not
-  `strict` while this is on (the API does not allow both); tasks are strict as far as the request's strict budget
-  goes. An answer computed in code carries no
+  check. A task can never be called from code, and no card is prepared while code is waiting on a read. A read the
+  code may call can never be `strict` (the API does not allow both); today no tool is. An answer computed in code carries no
   citation markers; its sources are the turn's `via: 'code'` evidence parts. Each run of the code also leaves one
   `data-computed` part (`ChatComputed`: the reads it called by evidence ref, how many, how many players, the window
   they share, and a method sentence when the code began with a `# Method:` line), stored with the turn; its progress
@@ -932,8 +938,8 @@ replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
   coach's message, and the policy tells it to expect them there. There are no output formats to parse.
 - **Strict tool use** (`chat/strict-input.ts`): every registered tool's input is shown to the model as a closed
   object with every field required and optional fields nullable, with no length or range keywords; the tool's own
-  zod schema validates behind it, so no bound is lost. A new tool needs only an ordinary zod object. Which tools are
-  actually SENT strict is the engine's budget (above): a nullable field is a union, and one request may hold 16.
+  zod schema validates behind it, so no bound is lost. A new tool needs only an ordinary zod object. That is
+  the shape the model is shown; NO tool is sent with `strict: true` (above), so the zod check is the only gate.
 - **What a read says to the model**: one figure per line, each naming whose it is, what it is, the window and the
   sample ("Eli Brandt, Scoring avg, last 10 rounds: 74.2 (n=10 rounds) | team average 75.1"). Several players in one
   `get_player_stats` call are set side by side by the reader, best first with the gap.

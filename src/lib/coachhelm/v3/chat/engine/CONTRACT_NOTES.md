@@ -1489,3 +1489,17 @@ E36. **Suggestions (D4, 11 Nov 2026).**
   rest of the response is still read; a new question, Stop, a new chat or leaving the page ends that read. A
   connection lost after `done` is not a failure.
 
+E37. **No tool is sent `strict` (11 Nov 2026, after the second live run).** The budget of E33 kept a request within the
+API's documented counts and the API still rejected it: "The compiled grammar is too large, which would cause
+performance issues. Simplify your tool schemas or reduce the number of strict tools." The retry without strict tools
+rewrote the whole cached prefix, which is what made a first turn cost $0.27 to $0.36.
+- `STRICT_TOOLS` (`engine/model.ts`) is the list of tools that may be sent strict, and it is EMPTY. Both profiles'
+  `strictTools` is `STRICT_TOOLS.size > 0`, so it is false and `strict_tools` is in no request's groups: the ladder
+  has nothing to give up there. What E33 says about which tools are strict today (20 of 33, 8 of 10) no longer holds.
+- The budget stays (`strictToolNames(tools, features, allowed)`, `'any'` for the budget alone) for the day a short
+  list is tried; a name is added only after a live request with exactly that set was accepted.
+- Every request of a turn carries identical tool definitions and system blocks: they are built from the tool list and
+  the features only. The answer-only step keeps the tools and sends `tool_choice: none`. Tests: `model.test.ts`,
+  `registry-tools.test.ts` (the real registry, every surface) and the route suite (three model calls, one prefix).
+- **PLANS / CONTEXT:** nothing to change. `strict-input.ts` still decides the shape the model is shown; the tool's own
+  zod schema, run by the engine before `run`/`plan`, is now the only check on an input, so keep every bound in it.

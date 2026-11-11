@@ -75,7 +75,7 @@ const cli = cliGuard({
     ['--capture-dir <dir>', "Also write each turn as a replay-suite fixture (JSON: question, answer text, the reads' envelopes, the reads by name, verdict) to <dir>/<question id>.json. A player's turn is stored nowhere else until HM3. Copy the files you want into src/lib/coachhelm/v3/chat/__tests__/fixtures/ask-turns-player/ and label them."],
     ['--cookie <header>', 'Cookie header of a signed-in demo coach (or ASK_EVAL_COOKIE). Skips the magic-link sign-in.'],
     ['--player-cookie <header>', 'Cookie header of a signed-in Cole Bennett (or ASK_EVAL_PLAYER_COOKIE).'],
-    ['--require-features', 'Fail the run at the first turn the API only accepted after a request feature was given up (strict tools, the code tool, a beta). Such a turn did not run as configured, so its score says nothing; the run stops there and exits 1.'],
+    ['--require-features', 'Fail the run at the first turn the API only accepted after a request feature was given up (the code tool, a beta, strict tools if any are named again). Such a turn did not run as configured, so its score says nothing; the run stops there and exits 1.'],
     ['--server-log <file>', "The dev server's log file. When a turn ran without a feature, the API's own reason is read from the lines the server wrote during that turn and put in the question's run note."],
     ['--list', 'Print the question ids and exit.'],
   ],
