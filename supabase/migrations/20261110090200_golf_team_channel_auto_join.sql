@@ -1,61 +1,90 @@
--- STATUS: WRITTEN, NOT APPLIED (HOLD, see HELD.md). New behaviour, not a security fix; applied separately from them.
--- Apply: npm run db:apply -- supabase/migrations/20261110090200_golf_team_channel_auto_join.sql
--- Risk: LOW-MEDIUM. No data changes when applied (no backfill). Adds two AFTER ROW triggers, on golf_team_members and
--- golf_team_coach_staff. Each can only add a participant row to a conversation flagged is_team_channel for that row's own
--- team, and neither can fail the roster write it rides on: any error is caught and raised as a WARNING.
--- App change needed: NONE. The conversation list already reloads on a golf_conversation_participants change.
+-- STATUS: WRITTEN, NOT APPLIED (HOLD, see HELD.md). New behaviour, not a
+-- security fix; applied separately from them.
+-- Apply: npm run db:apply -- \
+--   supabase/migrations/20261110090200_golf_team_channel_auto_join.sql
+-- Risk: LOW-MEDIUM. No data changes when applied (no backfill). Adds two AFTER
+-- ROW triggers, on golf_team_members and golf_team_coach_staff. Each can only
+-- add a participant row to a conversation flagged is_team_channel for that
+-- row's own team, and neither can fail the roster write it rides on: any error
+-- is caught and raised as a WARNING.
+-- App change needed: NONE. The conversation list already reloads on a
+-- golf_conversation_participants change.
 --
--- The gap (owner requirement, 2026-11-10: once a player joins a team they are in its team channel). Nothing does that
--- today, at main (743cb23a1) or at the build production serves (d0f467a73):
---   join by code             teams.ts:430 (RPC golf_join_team_with_code) or :433   roster row only
---   coach approves a request teams.ts:1356 (acceptJoinRequest)                     roster row only
---   set active again         team-management.ts:336 (d0f467a73: :242)              status only
---   staff                    golf_team_coach_staff rows                            no conversation write
---   No trigger on either table touches conversations, the Messages screens never insert the viewer, and after
---   20261110090000 a member cannot add themself. Production, 2026-11-10 (read-only): 12 teams, 1 has a team channel; on
---   that team 1 of 8 active players and 2 of 3 staffed coaches are not in it.
+-- The gap (owner requirement, 2026-11-10: once a player joins a team they are
+-- in its team channel). Nothing does that today, at main (743cb23a1) or at the
+-- build production serves (d0f467a73):
+--   join by code: teams.ts:430 (RPC golf_join_team_with_code) or :433.
+--     Writes the roster row only.
+--   coach approves a request: teams.ts:1356 (acceptJoinRequest).
+--     Writes the roster row only.
+--   set active again: team-management.ts:336 (d0f467a73: :242).
+--     Writes status only.
+--   staff: golf_team_coach_staff rows. No conversation write.
+--   No trigger on either table touches conversations, the Messages screens
+--   never insert the viewer, and after 20261110090000 a member cannot add
+--   themself. Production, 2026-11-10 (read-only): 12 teams, 1 has a team
+--   channel; on that team 1 of 8 active players and 2 of 3 staffed coaches are
+--   not in it.
 --
 -- What this adds:
---   1. helm_private.golf_team_channel_join_member(), AFTER INSERT OR UPDATE OF status ON golf_team_members, for a row
---      that is 'active' now and was not before the statement (a new active row, or pending / inactive / removed to
---      active). If the player has a user_id, that user gets a participant row in every conversation with
---      team_id = the row's team and is_team_channel = true, ON CONFLICT (conversation_id, user_id) DO NOTHING. A team
---      with no channel: nothing happens. An update that leaves status 'active' adds nobody, so a member the channel's
---      creator removed is not put back by an unrelated roster edit.
---   2. helm_private.golf_team_channel_join_staff(), AFTER INSERT ON golf_team_coach_staff: the same for the coach's user.
---   Both are SECURITY DEFINER (the participant INSERT policy admits only a conversation's creator), search_path = '',
---   EXECUTE revoked from PUBLIC, anon and authenticated; a trigger fires without the caller holding EXECUTE. The insert
---   runs inside BEGIN ... EXCEPTION WHEN OTHERS THEN RAISE WARNING, as helm_private.golf_live_broadcast does, so joining a
---   team, approving a request or changing a status succeeds whatever happens to the channel row.
---   A new member reads the channel's whole history; that is what "in the channel" means here (no per-member watermark).
+--   1. helm_private.golf_team_channel_join_member(), AFTER INSERT OR UPDATE OF
+--      status ON golf_team_members, for a row that is 'active' now and was not
+--      before the statement (a new active row, or pending / inactive / removed
+--      to active). If the player has a user_id, that user gets a participant
+--      row in every conversation with team_id = the row's team and
+--      is_team_channel = true, ON CONFLICT (conversation_id, user_id) DO
+--      NOTHING. A team with no channel: nothing happens. An update that leaves
+--      status 'active' adds nobody, so a member the channel's creator removed
+--      is not put back by an unrelated roster edit.
+--   2. helm_private.golf_team_channel_join_staff(), AFTER INSERT ON
+--      golf_team_coach_staff: the same for the coach's user.
+--   Both are SECURITY DEFINER (the participant INSERT policy admits only a
+--   conversation's creator), search_path = '', EXECUTE revoked from PUBLIC,
+--   anon and authenticated; a trigger fires without the caller holding EXECUTE.
+--   The insert runs inside BEGIN ... EXCEPTION WHEN OTHERS THEN RAISE WARNING,
+--   as helm_private.golf_live_broadcast does, so joining a team, approving a
+--   request or changing a status succeeds whatever happens to the channel row.
+--   A new member reads the channel's whole history; that is what "in the
+--   channel" means here (no per-member watermark).
 --
 -- Not included, on purpose (report):
---   * No backfill. Existing members who are not in their channel stay out until a separate, approved file adds them.
---   * No trigger on golf_players.user_id. Every player row is created with its user_id (onboarding.ts:447, :594); nothing
---     links an account to a roster row afterwards, and production has 0 active roster rows without an account.
---   * Nothing creates a team channel (only scripts/seed-demo-team-ops.ts:641 does, with the service role), and creating
---     one does not pull in the current roster. 11 of 12 production teams have none.
---   * Leaving is untouched: going inactive or being removed from the team does not remove the participant row, here or
---     in any other conversation.
+--   * No backfill. Existing members who are not in their channel stay out until
+--     a separate, approved file adds them.
+--   * No trigger on golf_players.user_id. Every player row is created with its
+--     user_id (onboarding.ts:447, :594); nothing links an account to a roster
+--     row afterwards, and production has 0 active roster rows without an
+--     account.
+--   * Nothing creates a team channel (only scripts/seed-demo-team-ops.ts:641
+--     does, with the service role), and creating one does not pull in the
+--     current roster. 11 of 12 production teams have none.
+--   * Leaving is untouched: going inactive or being removed from the team does
+--     not remove the participant row, here or in any other conversation.
 --
--- LOCKS (pg_locks after each statement, local stack 2026-11-10): SHARE ROW EXCLUSIVE on golf_team_members, then on
--- golf_team_coach_staff, each once, from CREATE OR REPLACE TRIGGER. Roster and staff writes wait for the few
--- milliseconds the file takes; reads do not wait and are not waited for, which matters on golf_team_members: nearly
--- every Golf policy reads it. (DROP TRIGGER IF EXISTS, which an earlier draft used, takes ACCESS EXCLUSIVE even when
--- the trigger does not exist.)
+-- LOCKS (pg_locks after each statement, local stack 2026-11-10): SHARE ROW
+-- EXCLUSIVE on golf_team_members, then on golf_team_coach_staff, each once,
+-- from CREATE OR REPLACE TRIGGER. Roster and staff writes wait for the few
+-- milliseconds the file takes; reads do not wait and are not waited for, which
+-- matters on golf_team_members: nearly every Golf policy reads it. (DROP
+-- TRIGGER IF EXISTS, which an earlier draft used, takes ACCESS EXCLUSIVE even
+-- when the trigger does not exist.)
 --
--- ORDER: after 20261110090000 and 20261107090100, and the precondition below refuses to run without them. These triggers
--- trust is_team_channel: 20261110090000 lets only a coach of the team create a flagged row, and 20261107090100 stops a
--- member changing the flag on an existing one. Without both, a player could flag a conversation of their own and have
--- every new team member delivered into it. No app deploy is needed before or after.
+-- ORDER: after 20261110090000 and 20261107090100, and the precondition below
+-- refuses to run without them. These triggers trust is_team_channel:
+-- 20261110090000 lets only a coach of the team create a flagged row, and
+-- 20261107090100 stops a member changing the flag on an existing one. Without
+-- both, a player could flag a conversation of their own and have every new team
+-- member delivered into it. No app deploy is needed before or after.
 --
--- VERIFY: select 1 from pg_trigger where tgrelid = 'public.golf_team_members'::regclass and tgname = 'golf_team_members_join_team_channel' and not tgisinternal and tgenabled = 'O' and (tgtype & 2) = 0 and (tgtype & 4) = 4 and (tgtype & 16) = 16;
--- VERIFY: select 1 from pg_trigger where tgrelid = 'public.golf_team_coach_staff'::regclass and tgname = 'golf_team_coach_staff_join_team_channel' and not tgisinternal and tgenabled = 'O' and (tgtype & 2) = 0 and (tgtype & 4) = 4;
--- VERIFY: select 1 where (select count(*) from pg_proc where oid in ('helm_private.golf_team_channel_join_member()'::regprocedure, 'helm_private.golf_team_channel_join_staff()'::regprocedure) and prosecdef and proconfig = array['search_path=""'] and not has_function_privilege('anon', oid, 'EXECUTE') and not has_function_privilege('authenticated', oid, 'EXECUTE')) = 2;
+-- VERIFY: select 1 from pg_trigger where tgrelid = 'public.golf_team_members'::regclass and tgname = 'golf_team_members_join_team_channel' and not tgisinternal and tgenabled = 'O' and (tgtype & 2) = 0 and (tgtype & 4) = 4 and (tgtype & 16) = 16; -- noqa: LT05
+-- VERIFY: select 1 from pg_trigger where tgrelid = 'public.golf_team_coach_staff'::regclass and tgname = 'golf_team_coach_staff_join_team_channel' and not tgisinternal and tgenabled = 'O' and (tgtype & 2) = 0 and (tgtype & 4) = 4; -- noqa: LT05
+-- VERIFY: select 1 where (select count(*) from pg_proc where oid in ('helm_private.golf_team_channel_join_member()'::regprocedure, 'helm_private.golf_team_channel_join_staff()'::regprocedure) and prosecdef and proconfig = array['search_path=""'] and not has_function_privilege('anon', oid, 'EXECUTE') and not has_function_privilege('authenticated', oid, 'EXECUTE')) = 2; -- noqa: LT05
 --
--- ROLLBACK: (one transaction; rows the triggers added stay, and can be told apart by nothing: remove them by hand if needed):
---   drop trigger if exists golf_team_coach_staff_join_team_channel on public.golf_team_coach_staff;
---   drop trigger if exists golf_team_members_join_team_channel on public.golf_team_members;
+-- ROLLBACK: (one transaction; rows the triggers added stay, and can be told
+-- apart by nothing: remove them by hand if needed):
+--   drop trigger if exists golf_team_coach_staff_join_team_channel
+--     on public.golf_team_coach_staff;
+--   drop trigger if exists golf_team_members_join_team_channel
+--     on public.golf_team_members;
 --   drop function if exists helm_private.golf_team_channel_join_staff();
 --   drop function if exists helm_private.golf_team_channel_join_member();
 -- pgTAP: supabase/tests/rls/golf_team_channel_auto_join.sql
@@ -106,7 +135,7 @@ BEGIN
   END IF;
 END $$;
 
--- 1. A player whose roster row becomes active --------------------------------------
+-- 1. A player whose roster row becomes active ---------------------------------
 
 CREATE OR REPLACE FUNCTION helm_private.golf_team_channel_join_member()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
@@ -147,7 +176,7 @@ FOR EACH ROW
 WHEN (new.status = 'active')
 EXECUTE FUNCTION helm_private.golf_team_channel_join_member();
 
--- 2. A coach who is put on the team's staff ----------------------------------------
+-- 2. A coach who is put on the team's staff -----------------------------------
 
 CREATE OR REPLACE FUNCTION helm_private.golf_team_channel_join_staff()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
