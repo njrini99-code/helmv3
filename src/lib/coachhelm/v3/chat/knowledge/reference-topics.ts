@@ -105,6 +105,11 @@ export const REDACTED: ReadonlyArray<{ section: string; cut: string; why: string
   { section: `${C4}/pressure-gap-tournament-vs-practice`, cut: ' For amateurs/college, practice-to-tournament gap typically **2-5 strokes** for sub-handicap players.', why: 'A college figure with no source: the cited study is of Tour players. The team’s own gap is on the Stats page.' },
   { section: `${C9}/tournament-vs-practice-gap`, cut: '\n- College/amateur: typical 2-5 stroke practice-to-tournament gap; widens with handicap', why: 'The same unsourced figure.' },
   { section: `${C3}/where-college-differs-from-tour`, cut: '\n4. **Wedge proximity from 75-125** is the largest D1 vs Tour gap', why: 'Not what the published comparison in the next section shows.' },
+  {
+    section: `${C3}/published-college-baselines-and-what-is-not-published`,
+    cut: ' An earlier "Typical College Stat Profile (D1)" table (fairway %, GIR %, putts per round, scrambling, 3-putt rate, driving distance) had no single published source and was removed: do not reintroduce those ranges.',
+    why: 'A note to the document\'s editors about its own history, not golf knowledge.',
+  },
 ];
 
 const TOPIC_BY_ID = new Map(REFERENCE_TOPICS.map((t) => [t.id, t]));

@@ -204,3 +204,17 @@ model to say "the Tour benchmark" and to name a tour only when a read named it.
    allowlisted tables. Flag-gated tables (tournaments) are in the map with the words "only when tournaments are
    turned on", so the prefix stays the same bytes with the flag on or off.
 6. A player's map has no table names at all: a player has no table reader.
+7. The on-demand reference is served in plain words (`reference-plain.ts`), not in the research document's
+   shorthand. Choices made there: a markdown link (a publication's own title and its address) is left exactly as
+   written, shorthand in a title included; an arrow in prose reads as a colon ("fairway: about 65%") and as "to"
+   between two numbers and in a heading; "30+ ft" reads "30 feet and out" and "12+" reads "12 or more"; a range of
+   feet or yards takes "to" ("3 to 5 feet"), every other range keeps its hyphen ("25-30%"); "D1" reads "Division I"
+   and "JUCO" "junior college"; headings lose their chapter number and are in sentence case, as are table headers.
+   No number is changed: the only digits that become words are in "3-putt", "1-putt" and "D1/D2/D3" (tested).
+8. Pointers to the research document are cut from what the model reads: "Research doc §N", "(see the next
+   section ...)", "... are in section 2", "Section 2 sources". The coverage note tells the model to credit a figure
+   to published research or to the publisher the text names, never to a chapter or section. The phrase "Per
+   Research doc §N" in live insights does not come from this reference: the insight rules write it themselves
+   (for example `src/lib/coachhelm/v3/composite/rules/pressure-decel-chain.ts:100`), and the delivery layer strips
+   it for the feed (`src/app/golf/actions/insight-delivery.ts:1630`, `insight-delivery-ranking.ts:97`). A reader
+   that hands a stored insight's text to the model should pass it through `stripSelfReferences`.
