@@ -249,7 +249,7 @@ function NoEvents() {
  * reads "Now"; with none under way, the next one reads "Next". A row that has passed keeps its ink: only its time
  * steps back, so it never looks disabled.
  */
-export function Today({ list, now, failed, quiet, canPlan = true, inline = false, card = false }: { /** The coach's card, with the lane's flag: a Clash chip in words. Player Home's calls never pass it. */ card?: boolean; list: ChHomeEvent[]; now: Date | null; failed: boolean; quiet: boolean; canPlan?: boolean; inline?: boolean }) {
+export function Today({ list, now, failed, quiet, canPlan = true, inline = false, card = false }: { /** The coach's card, with the lane's flag: an Overlap chip in words. Player Home's calls never pass it. */ card?: boolean; list: ChHomeEvent[]; now: Date | null; failed: boolean; quiet: boolean; canPlan?: boolean; inline?: boolean }) {
   const t12 = useChClockText();
   if (failed) return null;
   const t = now?.getTime();
@@ -289,7 +289,7 @@ export function Today({ list, now, failed, quiet, canPlan = true, inline = false
               {e.conflict ? (
                 <span className="ch-hm-tl__w" title="Overlaps another event">
                   <Icon icon={TriangleAlert} size={13} />
-                  <span>Clash</span>
+                  <span>Overlap</span>
                 </span>
               ) : mark ? (
                 <span className="ch-hm-now">{live ? 'Now' : 'Next'}</span>

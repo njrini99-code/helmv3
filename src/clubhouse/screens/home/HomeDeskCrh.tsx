@@ -92,7 +92,7 @@ export function DeskToday({ events, now }: { events: readonly ChHomeEvent[]; now
                   {e.conflict ? (
                     <span className="ch-dh-clash" title="Overlaps another event">
                       <Icon icon={TriangleAlert} size={13} />
-                      Clash
+                      Overlap
                     </span>
                   ) : live ? (
                     <span className="ch-hm-now">Now</span>

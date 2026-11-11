@@ -81,3 +81,12 @@ describe('Coach Home, phone: Team scoring’s change reads on one line (owner, 5
     expect(rule(".ch-hm[data-ch-crh='on'] .ch-hm-form__top .ch-hm-delta em:not(.ch-hm-form__basis)")).toContain('max-width: none');
   });
 });
+
+describe('Coach Home: a schedule conflict is an Overlap, the word Calendar and Classes use (owner, 11 Nov)', () => {
+  const src = (file: string) => readFileSync(join(process.cwd(), 'src/clubhouse/screens/home', file), 'utf8');
+  it.each(['HomePhone.tsx', 'HomeDeskCrh.tsx'])('%s says Overlap on the chip and never Clash', (file) => {
+    const text = src(file);
+    expect(text).toMatch(/title="Overlaps another event"[\s\S]{0,160}Overlap\b/);
+    expect(text).not.toMatch(/\bClash\b/);
+  });
+});
