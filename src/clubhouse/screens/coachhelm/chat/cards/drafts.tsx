@@ -29,14 +29,15 @@ function Nothing({ line }: { line: string }) {
   );
 }
 
-function closesWords(iso: string | undefined): string {
+/** When a poll closes, on the team's clock when the shell gives its zone; else on the viewer's. */
+function closesWords(iso: string | undefined, timeZone?: string): string {
   const at = iso ? new Date(iso) : null;
   if (!at || Number.isNaN(at.getTime())) return 'Stays open until you close it';
-  return `Closes ${formatWith(at, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
+  return `Closes ${formatWith(at, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', ...(timeZone ? { timeZone } : {}) })}`;
 }
 
 /** B4 to B6: a message, a poll or a board that opens in Messages. `tiles`: the board's figures, already drawn in this answer. */
-export function HandoffBody({ handoff, roster = [], density, tiles }: { handoff: AskHandoffData; roster?: readonly CardPerson[]; density: CardDensity; tiles?: ReadonlyArray<{ label: string; value: string }> }) {
+export function HandoffBody({ handoff, roster = [], density, tiles, timeZone }: { handoff: AskHandoffData; roster?: readonly CardPerson[]; density: CardDensity; tiles?: ReadonlyArray<{ label: string; value: string }>; /** The team's zone, for a poll's closing time. */ timeZone?: string }) {
   const people = handoff.players.map((id) => roster.find((r) => r.id === id)).filter((p): p is CardPerson => !!p);
   const to = handoff.thread ?? handoff.title.replace(/^(Draft|Poll) for /, '');
   return (
@@ -57,7 +58,10 @@ export function HandoffBody({ handoff, roster = [], density, tiles }: { handoff:
               </li>
             ))}
           </ul>
-          <p className="ch-akc-meta">{closesWords(handoff.poll.closes)} · Names show on votes</p>
+          {/* Without a zone the time is the viewer's own clock, which a server cannot know. */}
+          <p className="ch-akc-meta" suppressHydrationWarning>
+            {closesWords(handoff.poll.closes, timeZone)} · Names show on votes
+          </p>
         </div>
       )}
       {handoff.kind === 'board' && (

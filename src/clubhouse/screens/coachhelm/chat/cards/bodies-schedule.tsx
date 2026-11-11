@@ -9,7 +9,7 @@ import { Button } from '../../../../ui/Button';
 import { Icon } from '../../../../ui/Icon';
 import type { CardCopy } from './catalog';
 import { clockRange, countedFact, dayWords, daysBetween, factOf, namesIn, peopleOf, plural, restOf, stampWords, valueOf } from './facts';
-import { Body, Change, DateTile, Fold, Meta, NoWords, Notice, People, ReachRow, Rows, Warning, tense } from './kit';
+import { Body, Change, DateTile, Fold, NoWords, Notice, People, ReachRow, Rows, Warning, tense } from './kit';
 import { isOpen, isSaved, type CardBodyProps, type CardPerson } from './types';
 
 /** The bodies of the tasks that put something on the calendar or act on an event (CAPABILITIES.md A1 to A7, A19 to A22). */
@@ -48,8 +48,8 @@ export function EventBody(props: BodyProps) {
         <div className="ch-akc-event" data-pending={phase === 'held' || phase === 'undoing' || phase === 'committing' ? '' : undefined}>
           <DateTile iso={cal.date} />
           <div className="ch-akc-event__tx">
-            <b title={cal.title}>{cal.title}</b>
-            <span className="ch-num">{allDay ? 'All day' : clockRange(cal.start, cal.end)}</span>
+            <b className="ch-num">{allDay ? 'All day' : clockRange(cal.start, cal.end)}</b>
+            <span>{dayWords(cal.date, true)}</span>
             <span className="ch-akc-event__where">
               <Icon icon={MapPin} size={13} />
               {cal.where ?? 'No place set'}
@@ -58,7 +58,7 @@ export function EventBody(props: BodyProps) {
           {valueOf(p, 'Type') && <Badge>{titleCase(valueOf(p, 'Type')!)}</Badge>}
         </div>
       )}
-      {copy.reach === 'sends' && <NoWords channel={p.notifications.join(' ')} />}
+      {copy.reach === 'sends' && <NoWords channel={p.notifications.join(' ')} phase={phase} />}
       <Fold density={density}>
         <Rows facts={restOf(p, ['When', 'Type', 'Where', 'Invited'])} density={density} subject={p.summary} onAsk={ask(props)} />
       </Fold>
@@ -76,33 +76,41 @@ const DATE_WORDS = /^(\w{3}), (\w{3}) (\d{1,2})$/;
 function DayTiles({ dates, limit }: { dates: string[]; limit: number | null }) {
   const [all, setAll] = useState(false);
   const shown = limit && !all ? dates.slice(0, limit) : dates;
-  let month = '';
+  // One row a month, the month said once at its head: a coach counts across a row, and a month's end is a row's end.
+  const months: Array<{ month: string; days: Array<{ words: string; weekday: string; day: string; edge: boolean }> }> = [];
+  const loose: string[] = [];
+  shown.forEach((d, i) => {
+    const m = d.match(DATE_WORDS);
+    if (!m) return void loose.push(d);
+    const last = months[months.length - 1];
+    const group = last && last.month === m[2] ? last : (months.push({ month: m[2]!, days: [] }), months[months.length - 1]!);
+    group.days.push({ words: d, weekday: m[1]!, day: m[3]!, edge: i === 0 || i === dates.length - 1 });
+  });
   return (
-    <div className="ch-akc-days">
-      <ol className="ch-akc-days__list" aria-label={`${dates.length} dates`}>
-        {shown.map((d, i) => {
-          const m = d.match(DATE_WORDS);
-          if (!m) return <li key={d + i} className="ch-akc-days__text">{d}</li>;
-          const head = m[2] !== month;
-          month = m[2]!;
-          return (
-            <li key={d + i} data-month={head ? '' : undefined}>
-              <span className="ch-akc-tile" data-tone={i === 0 || i === dates.length - 1 ? 'edge' : undefined} role="img" aria-label={d}>
-                <small aria-hidden="true">{m[1]}</small>
-                <b className="ch-num" aria-hidden="true">{m[3]}</b>
-                <small aria-hidden="true">{m[2]}</small>
-              </span>
-            </li>
-          );
-        })}
-        {limit && !all && dates.length > limit && (
-          <li className="ch-akc-days__more">
-            <Button variant="ghost" size="sm" onClick={() => setAll(true)}>
-              {`Show all ${dates.length}`}
-            </Button>
-          </li>
-        )}
-      </ol>
+    <div className="ch-akc-days" role="group" aria-label={`${dates.length} dates`}>
+      {months.map((g) => (
+        <div key={g.month + g.days[0]!.day} className="ch-akc-days__month">
+          <small>{g.month}</small>
+          <ol>
+            {g.days.map((d) => (
+              <li key={d.words}>
+                <span className="ch-akc-tile is-day" data-tone={d.edge ? 'edge' : undefined} role="img" aria-label={d.words}>
+                  <small aria-hidden="true">{d.weekday}</small>
+                  <b className="ch-num" aria-hidden="true">
+                    {d.day}
+                  </b>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ))}
+      {loose.length > 0 && <p className="ch-akc-days__text">{loose.join(' · ')}</p>}
+      {limit && !all && dates.length > limit && (
+        <Button variant="ghost" size="sm" onClick={() => setAll(true)}>
+          {`Show all ${dates.length}`}
+        </Button>
+      )}
     </div>
   );
 }
@@ -125,7 +133,7 @@ export function SeriesBody(props: BodyProps) {
         <p className="ch-akc-series__rule">{valueOf(p, 'Repeats')}</p>
         <DayTiles dates={dates} limit={density === 'compact' ? 4 : null} />
       </div>
-      {copy.reach === 'sends' && <NoWords channel={`${p.notifications.join('. ')}.`} />}
+      {copy.reach === 'sends' && <NoWords channel={`${p.notifications.join('. ')}.`} phase={phase} />}
       <Fold density={density}>
         <Rows facts={restOf(p, ['Repeats', 'Dates', 'Occurrences', 'Invites'])} density={density} subject={p.summary} onAsk={ask(props)} />
       </Fold>
@@ -148,8 +156,8 @@ export function BlockedBody(props: BodyProps) {
       <div className="ch-akc-event">
         {day && <DateTile iso={day} />}
         <div className="ch-akc-event__tx">
-          <b title={p.summary}>{p.summary}</b>
-          <span className="ch-num">{to ? clockRange(from, to) : 'All day'}</span>
+          <b className="ch-num">{to ? clockRange(from, to) : 'All day'}</b>
+          {day && <span>{dayWords(day, true)}</span>}
         </div>
       </div>
       <Rows facts={restOf(p, ['When'])} density={density} subject={p.summary} onAsk={ask(props)} />
@@ -165,7 +173,6 @@ export function BreakBody(props: BodyProps) {
     <Body label={lede} phase={phase} density={density} tool={props.tool}>
       <ReachRow copy={copy} phase={phase} lede={lede} />
       <div className="ch-akc-span">
-        <b className="ch-akc-span__name">{p.summary}</b>
         {first && last && (
           <div className="ch-akc-span__run" role="img" aria-label={`${dayWords(first, true)} to ${dayWords(last, true)}, ${plural(daysBetween(first, last), 'day')}`}>
             <DateTile iso={first} tone="edge" />
@@ -194,7 +201,6 @@ export function TermBody(props: BodyProps) {
     <Body label={lede} phase={phase} density={density} tool={props.tool}>
       <ReachRow copy={copy} phase={phase} lede={lede} />
       <div className="ch-akc-term">
-        <b className="ch-akc-span__name">{p.summary}</b>
         {start && end && exams && (
           <>
             <div className="ch-akc-term__bar" aria-hidden="true">
@@ -310,8 +316,7 @@ export function QualifierBody(props: BodyProps) {
       </ReachRow>
       {q && (
         <div className="ch-akc-qual">
-          <b title={q.title}>{q.title}</b>
-          <Meta parts={[plural(q.rounds, 'round'), `from ${dayWords(q.start)}`, `${plural(q.field, 'player')} in the field`]} />
+          <p className="ch-akc-subject">{[plural(q.rounds, 'round'), `from ${dayWords(q.start)}`, `${plural(q.field, 'player')} in the field`].join(' · ')}</p>
           <div className="ch-akc-qual__seats" role="img" aria-label={`${earned} qualify on score, ${plural(q.picks, 'coach pick')}`}>
             {Array.from({ length: q.total }, (_, i) => (
               <i key={i} data-pick={i >= earned ? '' : undefined} />
@@ -326,7 +331,7 @@ export function QualifierBody(props: BodyProps) {
           </div>
         </div>
       )}
-      <NoWords channel={p.notifications.join(' ')} />
+      <NoWords channel={p.notifications.join(' ')} phase={phase} />
       <Fold density={density}>
         <Rows facts={[...restOf(p, ['Starts', 'Rounds', 'Squad', 'Players']).filter((f) => f.value !== 'Not set'), ...extra]} density={density} subject={p.summary} onAsk={ask(props)} />
       </Fold>

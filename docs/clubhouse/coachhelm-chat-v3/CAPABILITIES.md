@@ -622,7 +622,8 @@ inside the body.
 6. `add_team_break`, `save_team_term`, `set_lineup` use the plan's own "Nobody is told." with the neutral mark until
    E-6 says who can see them.
 7. `lock_lineup` puts its warning first and has no hold states.
-8. Dates in facts arrive as ISO (`2026-11-12`); bodies print them as "Thu 12 Nov" through `lib/dates`, never raw.
+8. Dates in facts arrive as ISO (`2026-11-12`); bodies print them as "Thu, Nov 12" through `lib/dates`, the way the
+   planners that already write words do. Never raw.
 9. The gallery drives bodies from fixtures of the real `ActionProposal` and `ActionReceipt` types inside a stand-in
    frame until the lead's shell exports; the stand-in is labelled in the gallery.
 10. Group D forms D1 to D12 reuse the lead's `Evidence.tsx` blocks in the gallery; this lane adds only what does

@@ -50,7 +50,7 @@ export function GoalBody(props: BodyProps) {
           <p className="ch-akc-gap">The plan does not say where {name.split(' ')[0]} stands on this now.</p>
         </div>
       )}
-      <NoWords channel={p.notifications.join(' ')} />
+      <NoWords channel={p.notifications.join(' ')} phase={phase} />
       <Rows facts={restOf(p, ['Player', 'Target', 'By', 'How'])} density={density} subject={p.summary} onAsk={ask(props)} />
     </Body>
   );
@@ -77,6 +77,7 @@ export function FocusBody(props: BodyProps) {
         <b>{valueOf(p, 'Focus') ?? p.summary}</b>
         {valueOf(p, 'Target') && <p className="ch-num">{titleCase(valueOf(p, 'Target')!)}</p>}
       </div>
+      <NoWords channel={`${p.notifications.join('. ')}.`} phase={phase} />
       <Rows facts={[...missingRows(p), ...window, ...restOf(p, ['Player', 'Focus', 'Area', 'Target', 'By', 'Over', 'Status'])]} density={density} subject={p.summary} onAsk={ask(props)} />
       {status && <Change>{status}.</Change>}
     </Body>
@@ -108,6 +109,7 @@ export function TaskBody(props: BodyProps) {
           <Meta parts={[t?.due ? `Due ${dayWords(t.due)}` : null, priority && priority !== 'medium' ? `${titleCase(priority)} priority` : null]} />
         </div>
       </div>
+      <NoWords channel={`${p.notifications.join('. ')}.`} phase={phase} />
       <Rows facts={[...(due?.missing ? [{ ...due, label: 'Due date', value: 'Not set' }] : []), ...restOf(p, ['Task', 'Assigned to', 'Due', 'Priority'])]} density={density} subject={p.summary} onAsk={ask(props)} />
     </Body>
   );
@@ -213,7 +215,6 @@ export function DrillBody(props: BodyProps) {
           {valueOf(p, 'Area') && <Badge tone="accent">{valueOf(p, 'Area')}</Badge>}
           <span className="ch-num">{valueOf(p, 'Length')}</span>
         </div>
-        <b>{p.summary}</b>
         {setup && <Clamp text={setup} lines={density === 'compact' ? 2 : 4} density={density} what="setup" />}
         {goal && (
           <p className="ch-akc-drill__goal">
@@ -268,7 +269,6 @@ export function PublishDocBody(props: BodyProps) {
       <article className="ch-akc-page">
         <header>
           <small>{valueOf(p, 'Goes to') ?? 'Documents'}</small>
-          <b>{p.summary}</b>
         </header>
         <Clamp text={words} lines={density === 'compact' ? 3 : 6} density={density} what="document" />
       </article>
@@ -311,7 +311,7 @@ export function GenericBody(props: BodyProps) {
       <ReachRow copy={copy} phase={phase} lede={lede}>
         <People people={people} density={density} />
       </ReachRow>
-      {copy.reach === 'sends' && people.length === 0 && <NoWords channel={lede} />}
+      {copy.reach === 'sends' && people.length === 0 && <NoWords channel={lede} phase={phase} />}
       <Rows facts={[...missingRows(p), ...p.facts]} density={density} subject={p.summary} onAsk={ask(props)} />
     </Body>
   );

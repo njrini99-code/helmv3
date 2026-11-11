@@ -1,7 +1,7 @@
 'use client';
 
-import { ArrowLeftRight, Bell, Eye, LockKeyhole, Send, TriangleAlert, type LucideIcon } from 'lucide-react';
-import { useId, useState, type ReactNode } from 'react';
+import { ArrowLeftRight, Bell, ChevronDown, Eye, LockKeyhole, Send, TriangleAlert, type LucideIcon } from 'lucide-react';
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { ProposalFact } from '@/lib/coachhelm/v3/chat/action-types';
 import { Avatar } from '../../../../ui/Avatar';
 import { Badge, type BadgeTone } from '../../../../ui/Badge';
@@ -71,22 +71,29 @@ export function People({ people, total, density, label = 'players', everyone = f
   }
   const unnamed = all - people.length;
   const expandable = people.length > 3;
+  const line = everyone ? `All ${count(all)} ${label}` : nameLine(people, all);
+  const inner = (
+    <>
+      <span className="ch-akc-people__coins" aria-hidden="true">
+        {people.slice(0, coins).map((p) => (
+          <Avatar key={p.id} name={p.name} id={p.id} size="xs" />
+        ))}
+        {all > coins && <span className="ch-akc-people__more ch-num">+{count(all - coins)}</span>}
+      </span>
+      <span className="ch-akc-people__names">{line}</span>
+    </>
+  );
   return (
     <div className="ch-akc-people">
-      <div className="ch-akc-people__line">
-        <span className="ch-akc-people__coins" aria-hidden="true">
-          {people.slice(0, coins).map((p) => (
-            <Avatar key={p.id} name={p.name} id={p.id} size="xs" />
-          ))}
-          {all > coins && <span className="ch-akc-people__more ch-num">+{count(all - coins)}</span>}
-        </span>
-        <span className="ch-akc-people__names">{everyone ? `All ${count(all)} ${label}` : nameLine(people, all)}</span>
-        {expandable && (
-          <Button variant="ghost" size="sm" aria={{ expanded: open, controls: listId }} onClick={() => setOpen((v) => !v)}>
-            {open ? 'Show fewer' : `Show all ${count(people.length)}`}
-          </Button>
-        )}
-      </div>
+      {expandable ? (
+        // One control for the whole line, as the work line's summary is: the names are the key that opens the names.
+        <button type="button" className="ch-akc-people__line is-key" data-ch-press="" aria-expanded={open} aria-controls={listId} aria-label={`${line}. ${open ? 'Hide the list' : `Show all ${count(people.length)}`}`} onClick={() => setOpen((v) => !v)}>
+          {inner}
+          <Icon icon={ChevronDown} size={15} className="ch-akc-people__chev" />
+        </button>
+      ) : (
+        <div className="ch-akc-people__line">{inner}</div>
+      )}
       {open && (
         <ul id={listId} className="ch-akc-people__all">
           {people.map((p) => (
@@ -111,11 +118,19 @@ const PER_LINE: Record<CardDensity, number> = { full: 62, compact: 40 };
  */
 export function Clamp({ text, lines, density, what = 'message', className }: { text: string; lines: number; density: CardDensity; /** "message", "note", "document": the key's noun. */ what?: string; className?: string }) {
   const [open, setOpen] = useState(false);
+  // Whether the text really runs past the clamp, once it has been laid out. Before that (and where nothing is laid out) the guess from its length stands.
+  const [cut, setCut] = useState<boolean | null>(null);
+  const ref = useRef<HTMLParagraphElement>(null);
   const id = useId();
-  const long = text.length > lines * PER_LINE[density] || text.split('\n').length > lines;
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || open || el.clientHeight === 0) return;
+    setCut(el.scrollHeight > el.clientHeight + 1);
+  }, [text, lines, density, open]);
+  const long = cut ?? (text.length > lines * PER_LINE[density] || text.split('\n').length > lines);
   return (
     <div className={'ch-akc-clamp' + (className ? ` ${className}` : '')} data-open={open || !long ? '' : undefined} style={{ ['--ch-akc-lines' as string]: lines }}>
-      <p id={id} className="ch-akc-clamp__t">
+      <p ref={ref} id={id} className="ch-akc-clamp__t">
         {text}
       </p>
       {long && (
@@ -174,8 +189,9 @@ export function Quote({ text, caption, quiet = false, struck = false, density, w
   );
 }
 
-/** The plan names the channel and not the words: said plainly, in the place the words would be. */
-export function NoWords({ channel }: { channel: string }) {
+/** The plan names the channel and not the words: said plainly, in the place the words would be. Once the card is decided the reach line carries it. */
+export function NoWords({ channel, phase }: { channel: string; phase: CardPhase }) {
+  if (isSaved(phase) || isWithdrawn(phase)) return null;
   return (
     <div className="ch-akc-nowords">
       <p>{channel}</p>
