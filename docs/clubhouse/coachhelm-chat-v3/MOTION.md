@@ -40,7 +40,10 @@ the reveal's. `setRevealMode('burst')` is the way back.
 
 **Frame budget, stated:** while a long answer streams with a chart on the page, no frame over 33 ms and no more than
 1 in 100 over 25 ms on the phone viewport in WebKit; the island's open and fold lay nothing out (transforms on five
-layers). Last measured figure above; the island's own frames are not yet measured (below the bar until they are).
+layers). Measured 11 Nov, the whole-team turn (`isl-team`, real pace, phone, light on, smoothed reveal): 730 frames, median
+10 ms, p95 11 ms; the 50 frames after the island opened and after it folded peaked at 13 ms and 12 ms with none over
+25 ms. One frame of 42 ms elsewhere in that turn, so the budget's "none over 33 ms" was missed once in that run;
+which change caused it is not established.
 
 ## The grammar
 
