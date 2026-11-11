@@ -1727,3 +1727,8 @@ GRANT ALL ON FUNCTION "public"."golf_user_in_conversation_team_audience"("p_conv
 
 -- Messages privacy fixes (HELD 20261110090100)
 REVOKE ALL ON FUNCTION "public"."golf_messages_insert_guard"() FROM PUBLIC, "anon";
+
+-- Team channel auto-join (HELD 20261110090200)
+REVOKE ALL ON FUNCTION "helm_private"."golf_team_channel_join_member"() FROM PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "helm_private"."golf_team_channel_join_staff"() FROM PUBLIC, "anon", "authenticated";

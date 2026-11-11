@@ -1308,3 +1308,62 @@ $$;
 
 
 ALTER FUNCTION "helm_private"."sync_round_event_fields"() OWNER TO "postgres";
+
+
+-- Team channel auto-join (HELD 20261110090200): a roster or staff row puts its user in the team's channel
+CREATE OR REPLACE FUNCTION "helm_private"."golf_team_channel_join_member"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Active now, and not active before this statement.
+  IF NEW.status IS DISTINCT FROM 'active'::public.team_member_status THEN
+    RETURN NULL;
+  END IF;
+  IF TG_OP = 'UPDATE' AND OLD.status IS NOT DISTINCT FROM NEW.status THEN
+    RETURN NULL;
+  END IF;
+  -- Never fail the roster write: joining the team matters more than the channel row.
+  BEGIN
+    INSERT INTO public.golf_conversation_participants (conversation_id, user_id)
+    SELECT c.id, gp.user_id
+    FROM public.golf_players AS gp
+    INNER JOIN public.golf_conversations AS c
+      ON c.team_id = NEW.team_id AND c.is_team_channel = true
+    WHERE gp.id = NEW.player_id
+      AND gp.user_id IS NOT NULL
+    ON CONFLICT (conversation_id, user_id) DO NOTHING;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING
+      'golf team channel auto-join failed for team % player %: % (%)',
+      NEW.team_id, NEW.player_id, SQLERRM, SQLSTATE;
+  END;
+  RETURN NULL;
+END $$;
+
+ALTER FUNCTION "helm_private"."golf_team_channel_join_member"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "helm_private"."golf_team_channel_join_staff"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Never fail the staff write.
+  BEGIN
+    INSERT INTO public.golf_conversation_participants (conversation_id, user_id)
+    SELECT c.id, gc.user_id
+    FROM public.golf_coaches AS gc
+    INNER JOIN public.golf_conversations AS c
+      ON c.team_id = NEW.team_id AND c.is_team_channel = true
+    WHERE gc.id = NEW.coach_id
+      AND gc.user_id IS NOT NULL
+    ON CONFLICT (conversation_id, user_id) DO NOTHING;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING
+      'golf team channel auto-join failed for team % coach %: % (%)',
+      NEW.team_id, NEW.coach_id, SQLERRM, SQLSTATE;
+  END;
+  RETURN NULL;
+END $$;
+
+ALTER FUNCTION "helm_private"."golf_team_channel_join_staff"() OWNER TO "postgres";

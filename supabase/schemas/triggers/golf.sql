@@ -199,3 +199,8 @@ CREATE OR REPLACE TRIGGER "golf_messages_identity_guard" BEFORE UPDATE ON "publi
 
 -- Messages privacy fixes (HELD 20261110090100): the date, kind and reply target of a new message, client sessions only
 CREATE OR REPLACE TRIGGER "golf_messages_insert_guard" BEFORE INSERT ON "public"."golf_messages" FOR EACH ROW EXECUTE FUNCTION "public"."golf_messages_insert_guard"();
+
+-- Team channel auto-join (HELD 20261110090200)
+CREATE OR REPLACE TRIGGER "golf_team_members_join_team_channel" AFTER INSERT OR UPDATE OF "status" ON "public"."golf_team_members" FOR EACH ROW WHEN (("new"."status" = 'active'::"public"."team_member_status")) EXECUTE FUNCTION "helm_private"."golf_team_channel_join_member"();
+
+CREATE OR REPLACE TRIGGER "golf_team_coach_staff_join_team_channel" AFTER INSERT ON "public"."golf_team_coach_staff" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_team_channel_join_staff"();
