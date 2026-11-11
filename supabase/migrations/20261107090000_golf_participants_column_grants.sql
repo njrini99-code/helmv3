@@ -21,7 +21,14 @@
 --      joined_at for authenticated and anon sessions. It matters if someone later widens the grant. It is keyed on
 --      current_user (not the JWT claim), so definer functions, the table owner and service_role (which do not run as
 --      authenticated/anon) pass, and an ON DELETE action cannot trip it.
---   3. anon loses every privilege on this table (defence in depth: RLS is the only thing keeping anon out today).
+--   3. authenticated also loses TRUNCATE, MAINTAIN, TRIGGER and REFERENCES (both reviews, 2026-11-10). It keeps SELECT,
+--      INSERT, DELETE and the four column UPDATEs. TRUNCATE ignores RLS; TRIGGER lets its holder attach any trigger
+--      function it may execute; MAINTAIN is VACUUM / ANALYZE / REINDEX / CLUSTER. None is reachable through PostgREST,
+--      so this is defence in depth. Nothing needs them (local stack with every migration applied, 2026-11-10): no
+--      foreign key references this table, and REFERENCES is only checked when a constraint is CREATED, for the role
+--      creating it (the checks themselves run as the table owner); authenticated and anon own no table and cannot create
+--      one in public; no function, cron job or client path truncates, maintains or puts a trigger on this table.
+--   4. anon loses every privilege on this table (defence in depth: RLS is the only thing keeping anon out today).
 --
 -- Not touched: policies (unchanged), the AFTER triggers (golf_participants_read_mark, *_read_marks_on_leave and, once
 -- 20261031150000 is applied, the pin triggers; all SECURITY DEFINER or unaffected by column grants).
@@ -33,12 +40,15 @@
 -- VERIFY: select 1 where has_column_privilege('authenticated', 'public.golf_conversation_participants', 'last_read_at', 'UPDATE') and has_column_privilege('authenticated', 'public.golf_conversation_participants', 'notification_level', 'UPDATE') and has_column_privilege('authenticated', 'public.golf_conversation_participants', 'muted_until', 'UPDATE') and has_column_privilege('authenticated', 'public.golf_conversation_participants', 'hidden_at', 'UPDATE');
 -- VERIFY: select 1 where not has_column_privilege('authenticated', 'public.golf_conversation_participants', 'conversation_id', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_conversation_participants', 'user_id', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_conversation_participants', 'id', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_conversation_participants', 'joined_at', 'UPDATE');
 -- VERIFY: select 1 from pg_trigger where tgrelid = 'public.golf_conversation_participants'::regclass and tgname = 'golf_participants_identity_guard' and not tgisinternal;
+-- VERIFY: select 1 where not has_table_privilege('authenticated', 'public.golf_conversation_participants', 'TRUNCATE, MAINTAIN, TRIGGER, REFERENCES') and has_table_privilege('authenticated', 'public.golf_conversation_participants', 'SELECT') and has_table_privilege('authenticated', 'public.golf_conversation_participants', 'INSERT') and has_table_privilege('authenticated', 'public.golf_conversation_participants', 'DELETE');
 --
 -- ROLLBACK: (one transaction; re-opens the hole, use only to restore a broken writer while a fix is prepared):
 --   drop trigger if exists golf_participants_identity_guard on public.golf_conversation_participants;
 --   drop function if exists public.golf_participants_identity_guard();
 --   grant update on public.golf_conversation_participants to authenticated;
---   -- anon had ALL privileges before; do not restore them unless something proves a need:
+--   -- authenticated also held TRUNCATE, MAINTAIN, TRIGGER and REFERENCES, and anon held ALL. Nothing uses either; do
+--   -- not restore them unless something proves a need:
+--   -- grant truncate, maintain, trigger, references on public.golf_conversation_participants to authenticated;
 --   -- grant all on public.golf_conversation_participants to anon;
 -- pgTAP: supabase/tests/rls/golf_participants_column_grants.sql
 
@@ -72,6 +82,9 @@ END $$;
 REVOKE UPDATE ON public.golf_conversation_participants FROM PUBLIC, anon, authenticated;
 GRANT UPDATE (last_read_at, notification_level, muted_until, hidden_at)
 ON public.golf_conversation_participants TO authenticated;
+-- TRUNCATE ignores RLS, and none of these four is used by a client session.
+REVOKE TRUNCATE, MAINTAIN, TRIGGER, REFERENCES
+ON public.golf_conversation_participants FROM PUBLIC, authenticated;
 REVOKE ALL ON public.golf_conversation_participants FROM anon;
 
 -- 2. Identity guard ----------------------------------------------------------

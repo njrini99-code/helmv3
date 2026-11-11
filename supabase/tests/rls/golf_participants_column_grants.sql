@@ -4,14 +4,15 @@
 -- member could re-point their own participant row at any conversation and read its messages. This suite acts as user B
 -- (a plain member of conversation X) and proves every re-pointing write now fails, while the four columns the app writes
 -- (last_read_at, notification_level, muted_until, hidden_at) still work, and that user C (not in X) sees nothing of X.
--- WRITTEN, NOT RUN where it was authored (no Docker): run with npm run test:rls before applying.
+-- It also proves authenticated lost TRUNCATE (which ignores RLS), TRIGGER, MAINTAIN and REFERENCES on the table.
+-- Runs on the local stack with npm run test:rls (first real run 2026-11-10).
 --
 -- Ids use the 0000...0f1xxx range. A creates X and is in X with B; C creates Y and is alone in it.
 
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(25);
+SELECT plan(28);
 
 CREATE FUNCTION public.f1_rows_affected(p_sql text) RETURNS integer
 LANGUAGE plpgsql AS $f$
@@ -73,6 +74,13 @@ SELECT ok(
   AND NOT has_table_privilege('anon', 'public.golf_conversation_participants', 'TRUNCATE'),
   'anon holds no privilege on the participants table'
 );
+SELECT ok(
+  NOT has_table_privilege('authenticated', 'public.golf_conversation_participants', 'TRUNCATE, MAINTAIN, TRIGGER, REFERENCES')
+  AND has_table_privilege('authenticated', 'public.golf_conversation_participants', 'SELECT')
+  AND has_table_privilege('authenticated', 'public.golf_conversation_participants', 'INSERT')
+  AND has_table_privilege('authenticated', 'public.golf_conversation_participants', 'DELETE'),
+  'authenticated keeps SELECT, INSERT and DELETE and holds none of TRUNCATE, MAINTAIN, TRIGGER, REFERENCES'
+);
 
 -- ---------------------------------------------------------------------------
 -- The exploit, as user B (a member of X, not of Y)
@@ -113,6 +121,16 @@ SELECT throws_ok(
   $$UPDATE public.golf_conversation_participants SET id = gen_random_uuid()
     WHERE user_id = '00000000-0000-0000-0000-0000000f11b1'$$,
   '42501', NULL, 'B cannot rewrite the row id');
+
+-- TRUNCATE ignores RLS: with the privilege, one statement empties every conversation's membership.
+SELECT throws_ok(
+  $$TRUNCATE public.golf_conversation_participants$$,
+  '42501', NULL, 'B cannot TRUNCATE the participants table');
+-- TRIGGER is all it takes to attach a trigger function the role may execute.
+SELECT throws_ok(
+  $$CREATE TRIGGER f1_probe BEFORE INSERT ON public.golf_conversation_participants
+    FOR EACH ROW EXECUTE FUNCTION public.golf_participants_identity_guard()$$,
+  '42501', NULL, 'B cannot attach a trigger to the participants table');
 
 -- Another member's row is out of reach even for the allowed columns.
 SELECT is(

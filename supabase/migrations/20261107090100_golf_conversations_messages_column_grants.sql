@@ -35,7 +35,20 @@
 --      the table owner. Without that a sender could not hard-delete a message that has a reply.
 --   3. golf_conversations_insert_v2 now also requires created_by = auth.uid(). Both app inserts already set it
 --      (messages.ts:439 and :1055). The team channel is created by service-role scripts, which bypass RLS.
---   4. anon loses every privilege on both tables (defence in depth; RLS is all that keeps anon out today).
+--   4. authenticated also loses TRUNCATE, MAINTAIN, TRIGGER and REFERENCES on both tables (both reviews, 2026-11-10) and
+--      keeps SELECT, INSERT, DELETE and the column UPDATEs above. TRUNCATE ignores RLS: `TRUNCATE golf_messages CASCADE`
+--      is stopped by nothing else on production today (authenticated holds TRUNCATE on the four tables that reference
+--      golf_messages there, per the schema mirror), while `TRUNCATE golf_conversations CASCADE` is refused only because
+--      authenticated has no TRUNCATE on golf_conversation_read_marks. TRIGGER lets its holder attach any trigger function
+--      it may execute; MAINTAIN is VACUUM / ANALYZE / REINDEX / CLUSTER. None is reachable through PostgREST, so this is
+--      defence in depth. authenticated still holds TRUNCATE on golf_message_attachments, _mentions, _reactions and
+--      _responses (GRANT ALL, like most Golf tables); that is a wider sweep, not this file. Nothing
+--      needs them (local stack with every migration applied, 2026-11-10): the twelve foreign keys that reference these
+--      two tables all sit on tables owned by postgres, and REFERENCES is only checked when a constraint is CREATED, for
+--      the role creating it (the checks themselves run as the table owner, so a client's message, attachment or reaction
+--      insert still passes them); authenticated and anon own no table and cannot create one in public; no function, cron
+--      job or client path truncates, maintains or puts a trigger on either table.
+--   5. anon loses every privilege on both tables (defence in depth; RLS is all that keeps anon out today).
 --
 -- Not changed (follow-up, report): any team player can INSERT a conversation with is_team_channel = true (the policy only
 -- checks team membership). That is a separate decision for the owner; see the report.
@@ -48,6 +61,8 @@
 -- VERIFY: select 1 where not has_column_privilege('authenticated', 'public.golf_messages', 'conversation_id', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_messages', 'sender_id', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_messages', 'created_at', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_messages', 'kind', 'UPDATE') and not has_column_privilege('authenticated', 'public.golf_messages', 'reply_to_id', 'UPDATE');
 -- VERIFY: select 1 where (select count(*) from pg_trigger where not tgisinternal and tgname in ('golf_conversations_identity_guard', 'golf_messages_identity_guard')) = 2;
 -- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_conversations' and policyname = 'golf_conversations_insert_v2' and with_check like '%created_by%';
+-- VERIFY: select 1 where not has_table_privilege('authenticated', 'public.golf_conversations', 'TRUNCATE, MAINTAIN, TRIGGER, REFERENCES') and not has_table_privilege('authenticated', 'public.golf_messages', 'TRUNCATE, MAINTAIN, TRIGGER, REFERENCES');
+-- VERIFY: select 1 where has_table_privilege('authenticated', 'public.golf_conversations', 'SELECT') and has_table_privilege('authenticated', 'public.golf_conversations', 'INSERT') and has_table_privilege('authenticated', 'public.golf_conversations', 'DELETE') and has_table_privilege('authenticated', 'public.golf_messages', 'SELECT') and has_table_privilege('authenticated', 'public.golf_messages', 'INSERT') and has_table_privilege('authenticated', 'public.golf_messages', 'DELETE');
 --
 -- ROLLBACK: (one transaction; re-opens the holes, use only to restore a broken writer while a fix is prepared):
 --   drop trigger if exists golf_messages_identity_guard on public.golf_messages;
@@ -59,7 +74,10 @@
 --   drop policy if exists golf_conversations_insert_v2 on public.golf_conversations;
 --   create policy golf_conversations_insert_v2 on public.golf_conversations for insert
 --     with check (team_id is null or public.is_golf_team_coach(team_id) or public.is_golf_team_player(team_id));
---   -- anon had ALL privileges before; do not restore them unless something proves a need.
+--   -- authenticated also held TRUNCATE, MAINTAIN, TRIGGER and REFERENCES on both tables, and anon held ALL. Nothing uses
+--   -- either; do not restore them unless something proves a need:
+--   -- grant truncate, maintain, trigger, references on public.golf_conversations, public.golf_messages to authenticated;
+--   -- grant all on public.golf_conversations, public.golf_messages to anon;
 -- pgTAP: supabase/tests/rls/golf_conversations_messages_column_grants.sql
 
 -- SET LOCAL: the timeout ends with this file's transaction, so it cannot
@@ -107,6 +125,12 @@ GRANT UPDATE (updated_at) ON public.golf_conversations TO authenticated;
 REVOKE UPDATE ON public.golf_messages FROM PUBLIC, anon, authenticated;
 GRANT UPDATE (content, edited_at, is_deleted, payload, has_attachments)
 ON public.golf_messages TO authenticated;
+
+-- TRUNCATE ignores RLS, and none of these four is used by a client session.
+REVOKE TRUNCATE, MAINTAIN, TRIGGER, REFERENCES
+ON public.golf_conversations FROM PUBLIC, authenticated;
+REVOKE TRUNCATE, MAINTAIN, TRIGGER, REFERENCES
+ON public.golf_messages FROM PUBLIC, authenticated;
 
 REVOKE ALL ON public.golf_conversations FROM anon;
 REVOKE ALL ON public.golf_messages FROM anon;
