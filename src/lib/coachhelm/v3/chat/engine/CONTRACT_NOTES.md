@@ -1530,11 +1530,11 @@ E39. **After the reruns at a863b56cc1 (11 Nov 2026).** Again outside the engine,
 - **Golf sense**: the premise and the point have a place in that shape; the point is said before asking which player; a
   player's answer writes no teammate's name. **Reads**: `get_goals` gives the total in every state and whose the other
   goals are; the coach's `get_rounds` counts by kind and says its rounds are finished ones.
-- **Left for the eval's owner, not changed:** `sg-estimated` expects "shot by shot / each shot / logged shots" and an
-  answer said "where shots are logged"; `sg-player-everything-negative` expects "furthest / most / biggest / largest"
-  and an answer said "the widest gaps"; `compare-owen-approach` requires who ranks below Owen and his greens in
-  regulation, which the question does not ask for; the abbreviation rule flags the stored drill name "6-10ft Edge
-  Drill".
+- **Scorer, second loosening** (overnight lead's decision, nothing else): `sg-estimated` accepts "shots are logged";
+  `sg-player-everything-negative` accepts "widest"; `compare-owen-approach` no longer requires who ranks below Owen or
+  his greens in regulation; the abbreviation rule is read with stored names taken out (`scoreSense(..., { names })`,
+  players, courses, events and drill titles); `career-vs-window` expects no read, since it names no player and the
+  harness has none on screen.
 - **Figures in no read (7 in the reruns).** Three were the model's own arithmetic (a total, a difference of two counts,
   a spread): the prompt now names those. Two were the coach's own number, because the route called the check without
   the question: it now passes `groundingCheck` whole. Two were "18 holes". One answer's figures were what its code had

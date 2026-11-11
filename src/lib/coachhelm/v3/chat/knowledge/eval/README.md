@@ -49,3 +49,12 @@ changed. The coach's choice also matches "the choice is yours" and "the choice s
 ledger's list of figures found in no read, and only a Tour figure on that list is "from memory" (with no ledger row,
 only `get_reference` lifts the guard). In the harness, `window-tyler-last3-rounds` and `sum-rounds-by-type-since-sep1`
 pass on either reading of which rounds count, and only when the answer says which.
+
+## Loosened after the reruns (11 Nov 2026)
+
+Again by the overnight lead's decision, and nothing else. `sg-estimated` accepts "shots are logged";
+`sg-player-everything-negative` accepts "widest". `career-vs-window` expects no read: it names no player and the
+harness has none on screen, so a right answer says the point and asks which player. In the harness, the facts on
+`compare-owen-approach` about who ranks below him and his greens in regulation are optional (the question does not ask
+for them), and the abbreviation rule is read with the team's stored names taken out (players, courses, events and the
+drill bank's titles), so a drill stored as "6-10ft Edge Drill" is not an abbreviation the answer chose.

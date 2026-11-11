@@ -244,6 +244,12 @@ export function golfSenseQuestions(data, names = {}, stored = {}, everyday = EVE
 /** The writing rules alone, for a question that is not from the file (the data questions): every answer is held to them. */
 export const writingRules = (data, stored = {}) => golfSenseQuestions({ ...data, questions: [{ id: 'writing', area: '', viewer: 'coach', ask: '', readers: [], facts: [], forbid: [], note: '' }] }, {}, stored)[0].writing;
 
+/** A text with each stored name taken out, longest first, so a name inside a longer one goes with it. Names shorter than three characters are left. */
+export function withoutNames(text, names) {
+  const list = [...new Set((names ?? []).map((n) => String(n ?? '').trim()).filter((n) => n.length >= 3))].sort((a, b) => b.length - a.length);
+  return list.reduce((out, name) => out.split(name).join(' '), text);
+}
+
 /** Every figure inside each match of a guard, the last one read whole: the guard's pattern stops at a figure's first digits. */
 export function figuresAt(re, text) {
   const all = new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`);
@@ -268,13 +274,16 @@ const sameFigure = (token, figure) => {
  *               ledger's list of the answer's figures found in none of the turn's reads, and a Tour sentence whose figure is not
  *               on it was read (the Stats read prints Tour marks beside a player's own). Unknown (`null`): only `get_reference` lifts it.
  *   writing     none of the writing rules matches, and the answer is no longer than `style.max_sentences` where the question has one.
+ *               The abbreviation rule is read with the team's stored names taken out (`read.names`: players, courses, events,
+ *               drills): a drill stored as "6-10ft Edge Drill" is a name to write as stored, not an abbreviation the answer chose.
  *   reads       any one of `readers` was used; an empty list means no read of team data is needed.
  */
 export function scoreSense(question, text, tools, rules = question.writing ?? [], read = {}) {
   const missing = (question.facts ?? []).filter((f) => f.kind === 'phrase' && !f.re.test(text)).map((f) => f.label);
   const tourFigureWasRead = (f) => tools.includes('get_reference') || (Array.isArray(read.unmatched) && tools.length > 0 && figuresAt(f.re, text).every((figure) => !read.unmatched.some((token) => sameFigure(token, figure))));
   const said = (question.forbid ?? []).filter((f) => f.re.test(text) && !(f.pattern === 'tour_figure_from_memory' && tourFigureWasRead(f))).map((f) => f.label);
-  const broken = rules.filter((f) => f.re.test(text)).map((f) => f.pattern);
+  const unnamed = withoutNames(text, read.names);
+  const broken = rules.filter((f) => f.re.test(f.pattern === 'abbreviation' ? unnamed : text)).map((f) => f.pattern);
   const sentences = sentenceCount(text);
   if (question.style?.max_sentences && sentences > question.style.max_sentences) broken.push(`longer than ${question.style.max_sentences} sentences (${sentences})`);
   const expected = question.readers ?? [];
