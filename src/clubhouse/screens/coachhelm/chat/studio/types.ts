@@ -75,9 +75,11 @@ export interface StudioEvent {
   /** "3 to 5:30 PM"; null for an all-day entry. */
   time: string | null;
   kind: 'practice' | 'qualifier' | 'tournament' | 'travel' | 'class' | 'other';
+  /** The calendar's own word for it, when it is none of the kinds above ("Team meeting"). */
+  kindLabel?: string | null;
   place?: string | null;
   /** Replies in, when the event asks for them. */
-  replies?: { going: number; out: number; waiting: number } | null;
+  replies?: { going: number; out: number; waiting: number; maybe?: number } | null;
   /** Players with a class at that time. */
   conflicts?: number;
   href?: string | null;

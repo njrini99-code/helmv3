@@ -8,7 +8,7 @@ import type { ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
 import type { ResolvedBlock } from '@/lib/coachhelm/v3/chat/visuals/composition';
 import type { StudioKindName } from '@/lib/coachhelm/v3/chat/visuals/studio-kinds';
 import { evidenceBlocks, type AskEvidence, type AskTeamTable } from '../data/coachhelm-chat-thread';
-import { fromBlock, fromEvidence, type StudioData, type StudioHole } from '../screens/coachhelm/chat/studio';
+import { fromBlock, fromEvidence, fromRead as thingOf, type StudioData, type StudioHole } from '../screens/coachhelm/chat/studio';
 import { ASK_COMPOSITION, ASK_EV_JONAH_SG, ASK_EV_JONAH_TREND, ASK_EV_SLOPE, ASK_EV_TEAM_SG } from './fixtures-ask-thread';
 import { CAP_ROSTER, capTask } from './fixtures-chat-capabilities';
 import { PP_PLAN_PART } from './fixtures-practice-plan';
@@ -56,6 +56,43 @@ const TEAM_TABLE: AskTeamTable = {
   playersAsRows: true,
 };
 
+/* The three reads whose detail is a thing the app has a screen for, each in the shape its tool emits (engine-reads.ts
+   `getCalendar`, readers.ts `runQualifiers`, readers-direct.ts `getRound`), so the gallery draws what `fromRead` makes of a
+   real answer and not a hand-built part. The ids are shaped as the database's are, since a link is only drawn to a
+   page the Clubhouse has (shell/nav `rebuiltHref`). */
+const read = (summary: string, detail: unknown, over: Partial<ToolEnvelope> = {}): ToolEnvelope => ({ summary, measurements: [], series: [], detail, coverage: 'complete', coverage_note: null, as_of: '2026-11-11T12:00:00.000Z', ...over });
+const calendarHref = (id: string) => `/golf/dashboard/calendar?event=${id}`;
+export const STUDIO_READ_SCHEDULE = read('4 events on the team calendar.', {
+  zone: 'America/Chicago',
+  from: '2026-11-12T06:00:00.000Z',
+  to: '2026-11-26T06:00:00.000Z',
+  events: [
+    { id: 'ev-1', title: 'Short game practice', event_type: 'practice', start_time: '2026-11-12T21:00:00.000Z', end_time: '2026-11-12T23:30:00.000Z', location: 'Ridgeline practice green', status: 'scheduled', href: calendarHref('ev-1'), replies: { accepted: 6, maybe: 1, declined: 1, pending: 1, checked_in: 0 }, in_class: ['Eli Brandt', 'Priya Natarajan'] },
+    { id: 'ev-2', title: 'Compliance meeting', event_type: 'team_meeting', start_time: '2026-11-12T23:45:00.000Z', end_time: '2026-11-13T00:30:00.000Z', location: 'Field house, room 2', status: 'scheduled', href: calendarHref('ev-2'), in_class: [] },
+    { id: 'ev-3', title: 'Fall qualifier, round 3', event_type: 'qualifier', start_time: '2026-11-13T14:10:00.000Z', end_time: null, location: 'Ridgeline, back tees', status: 'scheduled', href: calendarHref('ev-3'), replies: { accepted: 8, maybe: 0, declined: 0, pending: 0, checked_in: 0 }, in_class: [] },
+    { id: 'ev-4', title: 'Bus to Sandhills Collegiate', event_type: 'travel', start_time: '2026-11-14T12:30:00.000Z', end_time: null, location: 'Leaves from the field house', status: 'scheduled', href: calendarHref('ev-4'), in_class: [] },
+  ],
+});
+export const STUDIO_READ_BOARD = read('Fall qualifier: the board, 8 with a score.', {
+  qualifier_id: '0f0a11e0-0000-4000-8000-00000000a001',
+  href: '/golf/dashboard/qualifiers/0f0a11e0-0000-4000-8000-00000000a001',
+  name: 'Fall qualifier',
+  status: 'in_progress',
+  selection: 'open',
+  rounds_planned: 3,
+  squad: 5,
+  coach_picks: 1,
+  entrants: 8,
+  standings: TWELVE.slice(0, 8).map((player, i) => ({ position: String(i + 1), player_id: CAP_ROSTER[i]?.id ?? `p-${i}`, player, rounds: i === 7 ? 1 : 2, total: i === 7 ? 76 : 139 + i * 2, to_par: i === 7 ? 4 : i * 2 - 5, avg_score: 70 + i, fewer_rounds_than_leaders: i === 7, rounds_not_18_holes: 0, state: null, selected: null, reason: null })),
+});
+export const STUDIO_READ_ROUND = read('Jonah Okafor, Ridgeline on 2026-11-08.', {
+  player_id: 'p-jonah',
+  kind: 'hole_strip',
+  round: { round_id: '0f0a11e0-0000-4000-8000-00000000b001', href: '/golf/dashboard/rounds/0f0a11e0-0000-4000-8000-00000000b001', date: '2026-11-08', course: 'Ridgeline', type: 'tournament', holes_played: 18, total: 75, to_par: 3, front: 38, back: 37, putts: 31 },
+  holes: PAR.map((par, i) => ({ hole_number: i + 1, par, score: SHOT[i]!, putts: 2, penalty_strokes: 0, gir: SHOT[i]! <= par })),
+}, { measurements: ASK_EV_JONAH_SG.measurements.slice(0, 1) });
+const fromReadOr = (envelope: ToolEnvelope, kind: string): { kind: string; data: unknown } => thingOf(envelope) ?? { kind: 'table', data: { table: { caption: `No ${kind} in this read`, columns: ['What', 'Value'], rows: [['Form', kind]] } } };
+
 const event = capTask('create_event');
 if (!event) throw new Error('fixtures-chat-studio: the create_event capability fixture is missing');
 
@@ -96,6 +133,12 @@ export const STUDIO_SPECIMENS: readonly StudioSpecimen[] = [
     href: '#board',
     rows: TWELVE.slice(0, 8).map((name, i) => ({ id: CAP_ROSTER[i]!.id, name, rounds: [String(69 + i), i === 7 ? '' : String(70 + ((i * 3) % 5))].filter(Boolean), total: i === 7 ? String(69 + i) : String(139 + i + ((i * 3) % 5)), toPar: i === 0 ? '−5' : i === 3 ? 'E' : i < 3 ? `−${4 - i}` : `+${i - 2}`, href: `#rounds-${i}` })),
   }),
+  { id: 'schedule_read', kind: 'schedule', title: 'The calendar, from the schedule read', read: 'r8', part: fromReadOr(STUDIO_READ_SCHEDULE, 'schedule'), note: 'What a real answer draws: the read’s own events, in the team’s time zone.' },
+  { id: 'board_read', kind: 'qualifier_board', title: 'A board, from the qualifier read', read: 'r9', part: fromReadOr(STUDIO_READ_BOARD, 'qualifier_board'), note: 'The read carries each card’s total, not each round, and the cut is the squad less the coach’s picks.' },
+  { id: 'round_read', kind: 'round', title: 'A round, from the round read', read: 'r5', part: fromReadOr(STUDIO_READ_ROUND, 'round') },
+  make('round_strip', 'round', 'A round hole by hole, to par', 'r5', { title: null, strip: { type: 'hole_strip', holes: PAR.map((par, i) => ({ hole_number: i + 1, to_par: SHOT[i]! - par })) } }),
+  make('distance_misses', 'distance_profile', 'Where the misses go', 'r7', { form: 'misses', misses: { type: 'miss_pattern', total: 64, no_direction: 6, inside_15: 14, inside_25: 31, wedges: [{ direction: 'long', count: 4, avg_left_ft: 31 }, { direction: 'long_right', count: 6, avg_left_ft: 34 }, { direction: 'right', count: 17, avg_left_ft: 38 }, { direction: 'short_right', count: 11, avg_left_ft: 42 }, { direction: 'short', count: 9, avg_left_ft: 36 }, { direction: 'short_left', count: 5, avg_left_ft: 29 }, { direction: 'left', count: 4, avg_left_ft: 27 }, { direction: 'long_left', count: 2, avg_left_ft: 24 }] } }),
+  make('trend_seasons', 'trend', 'This season against last', 'r4', { form: 'seasons', seasons: { type: 'season_compare', metric: 'Scoring average to par', this_season: { mean: 2.1, lo: 0.4, hi: 3.8, n: 9 }, last_season: { mean: 3.4, lo: 1.6, hi: 5.2, n: 22 }, method: 'Full rounds that count, practice left out.' } }),
   make('practice_plan', 'practice_plan', 'A practice plan, as a run sheet', 'r10', { form: 'plan', plan: PP_PLAN_PART }, 'The practice lane’s own plan card, mounted as it is.'),
   make('practice_brief', 'practice_plan', 'The questions asked before a plan is drafted', 'r10', { form: 'brief', brief: { title: 'Thursday’s practice', questions: [{ id: 'focus', title: 'What should it work on?', why: 'The team lost most strokes here over the last 8 rounds.', options: [{ id: 'putt', label: 'Putting inside 8 feet', hint: 'from the read' }, { id: 'app', label: 'Approach, 150 to 175 yards' }], pick: ['putt'] }] } }),
   make('document', 'document', 'A long piece kept beside the chat', 'r11', { form: 'document', doc: { kind: 'player_report', title: 'Eli Brandt: fall review', at: '2026-11-10T21:04:00.000Z', body: 'Eli played 9 rounds this fall and averaged 71.2.\n\nHis putting inside 8 feet is the best on the team. His approach play from 150 to 175 yards cost him the most.' } }),

@@ -1,16 +1,17 @@
 'use client';
 
+import { ChevronRight } from 'lucide-react';
 import { useId, type CSSProperties, type ReactNode } from 'react';
 import { NO_DATA, changeTone } from '../../../../lib/format';
 import { Nine, type ChNineHole } from '../../../../ui/Nine';
 import { ScrollRegion } from '../../../../ui/ScrollRegion';
 import { PlanCard } from '../../plan/PlanCard';
 import { CardBody } from '../cards';
-import { AppLinkRow, CoachNoteChip } from '../cards/answers';
 import { BriefBody, DocBody, HandoffBody } from '../cards/drafts';
 import { dayParts, dayWords, plural } from '../cards/facts';
 import { DataTable } from './table';
-import { HoleStrip, MissPattern, PuttProfile, SeasonCompare } from '../visual/blocks';
+import { Icon } from '../../../../ui/Icon';
+import { HoleStrip, MissPattern, SeasonCompare } from '../visual/blocks';
 import { AskKey, OpenKey, type AskTarget } from './ask';
 import { HolePlan, RuledTrend, onTheHole, trendReference } from './drawings';
 import type { StudioEvent, StudioHole, StudioProps } from './types';
@@ -263,9 +264,26 @@ export function Round(p: StudioProps<'round'>) {
   );
 }
 
-/** The part's own way into the app, when it has one: a quiet line at the foot, the same row an app link is. */
+/**
+ * A way into a screen of the app: a ruled row with where it goes, its one line when there is one, and a chevron, the same
+ * row the leaf's sources are. `data-ch-app-link` is the thread's hook (context/find-in-app.ts); the address is an in-app
+ * path from the app map, never model text.
+ */
+function LinkRow({ href, label, purpose }: { href: string; label: string; purpose?: string | null }) {
+  return (
+    <a className="ch-aks-link" href={href} data-ch-press="" data-ch-app-link="">
+      <span className="ch-aks-link__tx">
+        <b>{label}</b>
+        {purpose && <small>{purpose}</small>}
+      </span>
+      <Icon icon={ChevronRight} size={16} />
+    </a>
+  );
+}
+
+/** The part's own way into the app, when it has one: the same row, at the part's foot. */
 function OpenLine({ href, label }: { href: string | null | undefined; label: string }) {
-  return href ? <AppLinkRow link={{ href, label }} /> : null;
+  return href ? <LinkRow href={href} label={label} /> : null;
 }
 
 /* ---------------------------------------------------------------- strokes gained */
@@ -313,13 +331,34 @@ const TONE_OF = { 'is-gain': 'gain', 'is-loss': 'loss', '': undefined } as const
 /** Make rate or feet left by distance band, as ruled rows: the band, its attempts, the figure in its tone, and under it what it is set against, in words. Putts and misses keep their own drawings. Each band and each direction asks. */
 export function DistanceProfile(p: StudioProps<'distance_profile'>) {
   const t = targetOf('distance_profile', p);
-  if (p.data.form === 'putts')
+  if (p.data.form === 'putts') {
+    const { buckets } = p.data.putts;
     return (
       <div className="ch-aks ch-aks-dist" data-size={p.size}>
         <Head title="Make rate by distance" aside="Made" />
-        <PuttProfile block={p.data.putts} />
+        <ul className="ch-aks-rows" aria-label="Make rate by distance">
+          {buckets.map((b) => {
+            const rate = b.rate == null ? NO_DATA : `${Math.round(b.rate)}%`;
+            return (
+              <li key={b.id} className="ch-aks-row">
+                <AskKey target={t} id={b.id} className="ch-aks-dist__row" words={`Ask about this: putts from ${b.label}${b.rate == null ? '' : `, ${rate}`}`}>
+                  <span className="ch-aks-dist__band">{b.label}</span>
+                  <b className="ch-aks-dist__val ch-num">{rate}</b>
+                  <small className="ch-aks-rank__of ch-num"> {plural(b.attempts, 'putt')}</small>
+                  {/* The season's rate in words under the figure: it was a tick on a track, which had to be decoded. */}
+                  {b.season_rate != null && (
+                    <small className="ch-aks-dist__refs ch-num">
+                      <span data-kind="season">Season {Math.round(b.season_rate)}%</span>
+                    </small>
+                  )}
+                </AskKey>
+              </li>
+            );
+          })}
+        </ul>
       </div>
     );
+  }
   if (p.data.form === 'misses')
     return (
       <div className="ch-aks ch-aks-dist" data-size={p.size}>
@@ -370,7 +409,7 @@ export function DistanceProfile(p: StudioProps<'distance_profile'>) {
 const EVENT_WORD: Record<StudioEvent['kind'], string> = { practice: 'Practice', qualifier: 'Qualifier', tournament: 'Tournament', travel: 'Travel', class: 'Class', other: 'Event' };
 
 function repliesWords(r: NonNullable<StudioEvent['replies']>): string {
-  const parts = [`${r.going} going`, r.out > 0 ? `${r.out} out` : null, r.waiting > 0 ? `${r.waiting} not replied` : null].filter(Boolean);
+  const parts = [`${r.going} going`, r.maybe ? `${r.maybe} maybe` : null, r.out > 0 ? `${r.out} out` : null, r.waiting > 0 ? `${r.waiting} not replied` : null].filter(Boolean);
   return parts.join(', ');
 }
 
@@ -396,7 +435,7 @@ export function Schedule(p: StudioProps<'schedule'>) {
                   <li key={e.id} className="ch-aks-row">
                     <AskKey target={t} id={e.id} className="ch-aks-sched__event" words={`Ask about this: ${e.title}, ${dayWords(d.date)}${e.time ? `, ${e.time}` : ''}`}>
                       <b>{e.title}</b>
-                      <small className="ch-num">{[EVENT_WORD[e.kind], e.time ?? 'All day', e.place].filter(Boolean).join(' · ')}</small>
+                      <small className="ch-num">{[e.kindLabel ?? EVENT_WORD[e.kind], e.time ?? 'All day', e.place].filter(Boolean).join('\u00a0· ')}</small>
                       {e.replies && <small className="ch-num">{repliesWords(e.replies)}</small>}
                       {!!e.conflicts && (
                         <small className="ch-aks-sched__clash">
@@ -428,7 +467,7 @@ export function QualifierBoard(p: StudioProps<'qualifier_board'>) {
   return (
     <div className="ch-aks ch-aks-board" data-size={p.size}>
       <Head title={title} aside={status} />
-      <ol className="ch-aks-board__rows" data-open={rows.some((r) => r.href) ? '' : undefined} style={{ '--ch-aks-cols': ['20px', 'minmax(0, 1fr)', ...rounds.map(() => '36px'), '44px', '52px'].join(' ') } as CSSProperties} aria-label={`${title}: ${plural(rows.length, 'player')}${cut ? `, ${plural(cut, 'seat')}` : ''}`}>
+      <ol className="ch-aks-board__rows" data-open={rows.some((r) => r.href) ? '' : undefined} style={{ '--ch-aks-cols': ['20px', 'minmax(0, 1fr)', ...rounds.map(() => '52px'), '44px', '52px'].join(' ') } as CSSProperties} aria-label={`${title}: ${plural(rows.length, 'player')}${cut ? `, ${plural(cut, 'seat')}` : ''}`}>
         <li className="ch-aks-board__head" aria-hidden="true">
           <span />
           <span>Player</span>
@@ -478,14 +517,28 @@ export function Document(p: StudioProps<'document'>) {
 }
 
 export function AppLink(p: StudioProps<'app_link'>) {
-  return <AppLinkRow link={p.data.link} />;
+  const { link } = p.data;
+  return (
+    <div className="ch-aks ch-aks-applink" data-size={p.size}>
+      <LinkRow href={link.href} label={link.label} purpose={link.purpose} />
+    </div>
+  );
 }
 
 const CLAIM_WORD = { measured: 'Measured', association: 'Pattern', hypothesis: 'Hypothesis' } as const;
 
-/** One sentence about a visual (said as what it is: measured, a pattern, or a guess), or a note the coach asked to keep. */
+/** One sentence about a visual (said as what it is: measured, a pattern, or a guess), or a note the coach asked to keep: words on the paper, never a chip. */
 export function Note(p: StudioProps<'note'>) {
-  if (p.data.form === 'kept') return <CoachNoteChip note={p.data.note} />;
+  if (p.data.form === 'kept') {
+    // A record of what was kept or taken back, as a sentence. The key that removes a note is the thread's own chip.
+    const saved = p.data.note.op === 'saved';
+    return (
+      <p className="ch-aks ch-aks-note" data-op={p.data.note.op} data-size={p.size} role="status">
+        <b>{saved ? 'Noted' : 'Removed'}</b> {p.data.note.text}
+        {saved && <small>Only you. Players never see notes.</small>}
+      </p>
+    );
+  }
   return (
     <p className="ch-aks ch-aks-note" data-claim={p.data.claim} data-size={p.size}>
       <b>{CLAIM_WORD[p.data.claim]}</b> {p.data.text}

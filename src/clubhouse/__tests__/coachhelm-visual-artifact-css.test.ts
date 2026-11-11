@@ -44,7 +44,9 @@ describe('CH-13853: what an answer shows is styled', () => {
 
   it('nothing is a bar on a track, a pill or a chip, and nothing is boxed: no fill, no shadow, no frame around a part', () => {
     expect(selectors.filter((s) => /track|pill|chip|badge|card/.test(s))).toEqual([]);
-    expect(css).not.toMatch(/box-shadow|var\(--ch-chart-track\)|var\(--ch-well-bg/);
+    // The one shadow named is the shared nine's own, turned off where a round lies flat on the paper.
+    expect(css).not.toMatch(/box-shadow: (?!none;)|var\(--ch-chart-track\)|var\(--ch-well-bg/);
+    expect(css.match(/box-shadow: none;/g) ?? []).toHaveLength(1);
     // The only fills are the table's sticky first column (the paper it sits on) and the best-in-measure dot.
     const filled = [...css.matchAll(/([^{}]*)\{[^{}]*background: (?!none)[^{}]*\}/g)].map((m) => m[1]!.trim());
     expect(filled).toEqual(['.ch-aks-cmp__table th:first-child', '.ch-aks-cmp__dot']);

@@ -7,7 +7,7 @@ import { evidenceBlocks, readAreaWord, type AskEvidence } from '../../../data/co
 import { coachReadHref } from '../../../data/coachhelm-views-shape';
 import { useChPhone } from '../../../lib/use-phone';
 import { Icon } from '../../../ui/Icon';
-import { Studio, fillComposer, fromEvidence } from './studio';
+import { Studio, fillComposer, fromEvidence, fromRead } from './studio';
 
 /** The table of a read's figures: the studio's (chat/studio/table.tsx), named here for the files that read it from the thread. */
 export { DataTable } from './studio/table';
@@ -26,10 +26,22 @@ type Roster = ReadonlyArray<{ id: string }>;
  * reach the composer (the evidence sheet lies over it), so nothing there looks tappable.
  */
 export function AskEvidenceView({ envelope, roster = [], ask = true }: { envelope: ToolEnvelope; roster?: Roster; ask?: boolean }) {
-  const blocks = evidenceBlocks(envelope);
-  if (blocks.length === 0) return null;
+  const phone = useChPhone();
+  // A read that is a thing the app has a screen for is drawn as that thing: the calendar's days, a qualifier's board, a
+  // round's scorecard. It stands in for the table of the same rows (and, for a board, the ranking of the same players).
+  const thing = fromRead(envelope);
+  const stoodFor: ReadonlyArray<AskEvidence['kind']> = !thing ? [] : thing.kind === 'qualifier_board' ? ['table', 'ranking', 'compare'] : ['table'];
+  const blocks = evidenceBlocks(envelope).filter((b) => !stoodFor.includes(b.kind));
+  if (!thing && blocks.length === 0) return null;
   return (
     <div className="ch-th-evidence ch-aks-ev">
+      {thing && (
+        <figure className="ch-aks-sec ch-aks-ev__fig" data-kind={thing.kind}>
+          <Studio part={thing} size={phone ? 'compact' : 'full'} onAsk={ask ? fillComposer : undefined} />
+          {/* The read's own caveat, when no block under it is left to carry it. */}
+          {blocks.length === 0 && envelope.coverage === 'partial' && envelope.coverage_note && <p className="ch-aks-ev__note">{envelope.coverage_note}</p>}
+        </figure>
+      )}
       {blocks.map((block, i) => (
         <AskEvidenceBlock key={i} block={block} roster={roster} ask={ask} />
       ))}
