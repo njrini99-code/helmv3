@@ -1,17 +1,34 @@
 # Ask v2: gap against the owner's design (2026-11-07)
 
-Survey of `agent/ch-ask-v2` (based on `origin/agent/ch-consolidate`) against `design-refresh/ask/` (`01-BRIEF`, `ASK_REDESIGN`, `05-SCREENS`, `07-MOTION`, `08-ACCEPTANCE`) and the owner's latest page `design-refresh/ask/redesign/coachhelm-ask.html`. The uncommitted diff to that page is the document wrapper only (`<html>`, `<body>`); no scene, token or "Decided" row changed.
+Survey of `agent/ch-ask-v2` (based on `origin/agent/ch-consolidate`) against
+`design-refresh/ask/` (`01-BRIEF`, `ASK_REDESIGN`, `05-SCREENS`, `07-MOTION`,
+`08-ACCEPTANCE`) and the owner's latest page
+`design-refresh/ask/redesign/coachhelm-ask.html`. The uncommitted diff to that
+page is the document wrapper only (`<html>`, `<body>`); no scene, token or
+"Decided" row changed.
 
-**How to read it.** Every status is from reading source. Nothing here was seen in a browser; a DONE row means the selector, keyframe or component exists and is wired, not that it matches the design pixel for pixel. Paths are relative to `src/clubhouse/screens/coachhelm/` unless they start with `src/`. Line numbers are those of this branch's first commit; later rows in the "Built on this branch" section say what moved.
+**How to read it.** Every status is from reading source. Nothing here was seen
+in a browser; a DONE row means the selector, keyframe or component exists and is
+wired, not that it matches the design pixel for pixel. Paths are relative to
+`src/clubhouse/screens/coachhelm/` unless they start with `src/`. Line numbers
+are those of this branch's first commit; later rows in the "Built on this
+branch" section say what moved.
 
-**State of play.** Ask v2 was built across the earlier `ch-ask` lane (change logs `2026-11-05-ask-design-reconcile`, `2026-11-06-ask-lane` under `docs/clubhouse/pages/P013-coachhelm/changes/`). The CoachHelm flags were retired on `ch-consolidate` (`f78315c73b`): there is no `coachhelm_ask_v2` switch any more, and none is re-added. HM1 to HM4 exist as held migrations (`supabase/migrations/20261101090000` to `090300`, listed in `supabase/migrations/HELD.md`); folders are free text on `golf_documents.folder`, so no folders table is needed and none is written.
+**State of play.** Ask v2 was built across the earlier `ch-ask` lane (change
+logs `2026-11-05-ask-design-reconcile`, `2026-11-06-ask-lane` under
+`docs/clubhouse/pages/P013-coachhelm/changes/`). The CoachHelm flags were
+retired on `ch-consolidate` (`f78315c73b`): there is no `coachhelm_ask_v2`
+switch any more, and none is re-added. HM1 to HM4 exist as held migrations
+(`supabase/migrations/20261101090000` to `090300`, listed in
+`supabase/migrations/HELD.md`); folders are free text on
+`golf_documents.folder`, so no folders table is needed and none is written.
 
 Counts, motion rows (112): see the summary under the table.
 
 ## Decided rows (the owner's, binding)
 
 | Decided | Status | Evidence |
-|---|---|---|
+| --- | --- | --- |
 | Players get their own Ask: own data, stats and visuals, no writes, PGA Tour and team averages only, hidden weekly allowance | DONE | `src/lib/coachhelm/v3/chat/player-tools.ts` (reads only, `player_id` forced), `player-allowance.ts`, `parts/Allowance.tsx`; HM3 and HM4 held |
 | Artifacts save to Documents only when the coach taps Save, into a folder or a new one; a published plan also files a copy in Practice plans | PARTIAL | practice plan: `plan/PlanCard.tsx:135-226`, in-card folders and Undo. Other artifacts: `parts/Artifact.tsx:86-166` is a Modal with a Select, saves with a toast and no Undo |
 | Announcements post on Post with the 8 second Undo; players are told once Undo closes; boards and polls are drafts in the Messages composer | DONE | `src/lib/coachhelm/v3/chat/create-tools.ts` (announcement on the gate, `undo-hold.ts`), `parts/HandoffCard.tsx:62-89` |
@@ -20,7 +37,7 @@ Counts, motion rows (112): see the summary under the table.
 ## Spec items (`ASK_REDESIGN.md` section 3)
 
 | # | Item | Status | Evidence and what is open |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 1 | Steps | DONE | `parts/Steps.tsx`; breathing dot, shimmer, drawn check, amber ring `coachhelm-ask-v2.css:33-40`; detail line per done row |
 | 2 | Tool card skeleton and crossfade | DONE | `parts/ToolCard.tsx`, `parts/AnswerCard.tsx:118-133` |
 | 3 | Read chips and Sources | DONE | `parts/ReadChip.tsx`, `parts/Sources.tsx`; Sources reveal is a fade, not a clip (M-ASK-23) |
@@ -40,7 +57,7 @@ Counts, motion rows (112): see the summary under the table.
 ### Create flows
 
 | Flow | Server | Draft visual | Motion |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Event | DONE `create_event` | DONE week grid | PARTIAL (slot only) |
 | Announcement | DONE | DONE lock preview | DONE |
 | Travel | DONE `create_trip` | DONE schematic route | MISSING |
@@ -57,7 +74,7 @@ Counts, motion rows (112): see the summary under the table.
 ## What Ask can see (design table, 9 areas)
 
 | Area | Status | Evidence |
-|---|---|---|
+| --- | --- | --- |
 | Strokes gained and core stats | DONE | `agent-tools.ts` (`get_player_metrics`, `get_player_trend`, `get_team_metric_ranking`, `compare_players`); by course and by round type not read |
 | Shots | DONE | `src/lib/coachhelm/v3/chat/shot-reads.ts` (`get_shot_pattern`, `get_proximity_by_band`); putts by distance `get_putting_distance_profile` |
 | CoachHelm engine: root causes | DONE | `engine-reads.ts:12` `get_root_causes` |
@@ -74,7 +91,7 @@ Counts, motion rows (112): see the summary under the table.
 ## Screen IDs (`05-SCREENS.md`, 315 IDs), by group
 
 | Group | IDs | Status | Evidence |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Shell, home, scope, history, settings, tone, knows, flag-off | S-ASK, .player, .scope, .history*, .settings, .tone*, .knows*, .loading, .error | DONE | `chat/Ask.tsx`, `Home.tsx`, `History.tsx`, `parts/KnowsPanel.tsx`; History has no "more" paging (.history.more) |
 | Composer and menus | .composer*, .jump | PARTIAL | `chat/Composer.tsx`; jump key has no fade |
 | Turn: bubble, answer, steps (7), tool cards (8), read chip, sources, follow-ups, hypothesis, answers | .turn*, .steps*, .toolcard*, .readchip*, .sources*, .followups, .hypothesis, .answer* | DONE (follow-ups PARTIAL) | `chat/Thread.tsx`, `parts/` |
@@ -90,10 +107,13 @@ Counts, motion rows (112): see the summary under the table.
 
 ## Motion rows (`07-MOTION.md`, M-ASK-01 to 112)
 
-Layout properties (height, grid track, width) are never animated; the house lint (`clubhouse/no-layout-motion`, `scripts/clubhouse/css-quality.mjs`) bans them, so those rows are built as transform or clip and noted "can't match as drawn" where the design animates the box.
+Layout properties (height, grid track, width) are never animated; the house lint
+(`clubhouse/no-layout-motion`, `scripts/clubhouse/css-quality.mjs`) bans them,
+so those rows are built as transform or clip and noted "can't match as drawn"
+where the design animates the box.
 
 | ID | Trigger | Element | Status | Evidence (source only) |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | M-ASK-01 | Tap Ask in the Board | Ask segmented (no slop, on release) | DONE | shared Segmented pill spring (`ui/Segmented.tsx`), thread rise `coachhelm-thread.css:47-49` |
 | M-ASK-02 | Send press (Send button or Return), question non-empty | `.msg-u` bubble | PARTIAL | user turn rises on `ch-th-rise` (release beat, `coachhelm-thread.css:47`), not the settle spring on 260ms |
 | M-ASK-03 | The composer has focus and text is being typed | composer caret | DONE | native textarea caret (`chat/Composer.tsx`), nothing to draw |
@@ -211,17 +231,29 @@ Summary of the 112 rows at this commit: DONE 56, PARTIAL 39, MISSING 17.
 
 ## Order of work on this branch
 
-1. Reads that existing tables support: `get_team_patterns`, `get_practice`, `get_documents`, and `get_calendar` widened to class conflicts and attendance. Registered with a progress and a past-tense label; the in-app "What Ask can see" list brought up to date.
-2. Save draft for non-plan artifacts to the design's docked save card: folder list in the card, New folder, flight and squash, receipt with the 8 second Undo.
-3. Motion that is missing on every answer or every draft: follow-up entrance (M-ASK-25), jump key (M-ASK-100), literal-second durations moved to named tokens, the bespoke drafts (M-ASK-59 to 71) where a transform, opacity or stroke can carry it.
-4. Left PARTIAL with the reason: Seen by on the Told row (no RLS-safe source), board flight into Messages (M-ASK-62), publish and focus fan-out homes (M-ASK-80 to 82), drill draft visual, Lock card as its own surface, history paging.
+1. Reads that existing tables support: `get_team_patterns`, `get_practice`,
+   `get_documents`, and `get_calendar` widened to class conflicts and
+   attendance. Registered with a progress and a past-tense label; the in-app
+   "What Ask can see" list brought up to date.
+2. Save draft for non-plan artifacts to the design's docked save card: folder
+   list in the card, New folder, flight and squash, receipt with the 8 second
+   Undo.
+3. Motion that is missing on every answer or every draft: follow-up entrance
+   (M-ASK-25), jump key (M-ASK-100), literal-second durations moved to named
+   tokens, the bespoke drafts (M-ASK-59 to 71) where a transform, opacity or
+   stroke can carry it.
+4. Left PARTIAL with the reason: Seen by on the Told row (no RLS-safe source),
+   board flight into Messages (M-ASK-62), publish and focus fan-out homes
+   (M-ASK-80 to 82), drill draft visual, Lock card as its own surface, history
+   paging.
 
-No schema change is planned: folders are free text on `golf_documents.folder`, the allowance, tone and facts tables are HM2 to HM4 and already written.
+No schema change is planned: folders are free text on `golf_documents.folder`,
+the allowance, tone and facts tables are HM2 to HM4 and already written.
 
 ## Built on this branch (after the survey)
 
 | Row | Was | Now | Evidence |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Engine: team patterns | MISSING | DONE (only while `coachhelm_team_pattern_v1` is on) | `src/lib/coachhelm/v3/chat/ask-reads.ts` `getTeamPatterns`, `agent-tools.ts` registration |
 | Practice reviews and plans | MISSING | DONE for plans, practices and logged sessions; golf has no practice reviews table | `ask-reads.ts` `getPractice` |
 | Documents | MISSING | DONE | `ask-reads.ts` `getDocuments` |
@@ -241,7 +273,7 @@ No schema change is planned: folders are free text on `golf_documents.folder`, t
 ## Still open, with the reason
 
 | Row | Reason |
-|---|---|
+| --- | --- |
 | Seen by on the Told row | a coach cannot read another user's `notifications` rows; needs an RLS-safe aggregate (a database function), not written here |
 | Track record and corrections reads | the engine modules need the Board's loaders; no cheap read exists, so not added |
 | M-ASK-62 board flies into Messages | the hand-off is a prefill and a route change; there is no mock composer in the card to land in |
