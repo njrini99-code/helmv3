@@ -46,6 +46,13 @@ describe('event desk hole grid type on a phone', () => {
   });
 });
 
+describe('event desk notes', () => {
+  it('keep their 8 over them: the rule names two classes, so the root’s paragraph reset cannot zero it', () => {
+    expect(rule('.ch-tour-desk .ch-tour-desk-note')).toMatch(/margin:\s*8px 0 0/);
+    expect(css).not.toMatch(/^\.ch-tour-desk-note \{/m);
+  });
+});
+
 describe('event desk hole grid colours', () => {
   it('draws the Team vs par row under par in the score-under red (D-42), never the chart gain green', () => {
     const under = rule('.ch-tour-desk-heat.is-under');

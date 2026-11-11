@@ -167,7 +167,8 @@
   flex-wrap: wrap;
   gap: 8px;
 }
-.ch-tour-desk-note {
+/* Two classes: `.ch-root p` (base.css) outranks one and zeroed this margin, so a note sat against the grid over it. */
+.ch-tour-desk .ch-tour-desk-note {
   margin: 8px 0 0;
   max-width: 80ch;
   font: var(--ch-type-13);
