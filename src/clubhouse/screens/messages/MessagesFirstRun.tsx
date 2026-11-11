@@ -1,7 +1,7 @@
 'use client';
 
 import { SquarePen } from 'lucide-react';
-import { Icon } from '../../ui/Icon';
+import { Button } from '../../ui/Button';
 
 /**
  * CH-7309 (D-71): no conversation and no announcement yet, so the whole page
@@ -26,14 +26,13 @@ export function MessagesFirstRun({ onNew, teamName, onTeam }: { coach: boolean; 
         </svg>
         <h2>No conversations yet</h2>
         <p>{`Message a player, a coach or the whole team. Everything stays inside ${teamName ?? 'your team'}.`}</p>
-        <button type="button" className="ch-msv-empty__cta" onClick={onNew}>
-          <Icon icon={SquarePen} size={18} />
+        <Button variant="primary" size="lg" leftIcon={SquarePen} onClick={onNew}>
           Start a conversation
-        </button>
+        </Button>
         {onTeam && (
-          <button type="button" className="ch-msv-empty__ghost" onClick={onTeam}>
+          <Button variant="ghost" onClick={onTeam}>
             Message the team
-          </button>
+          </Button>
         )}
       </section>
     );

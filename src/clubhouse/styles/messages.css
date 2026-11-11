@@ -304,9 +304,6 @@
     background: rgb(28 25 18 / 0.08);
   }
 }
-.ch-ms-row .ch-avatar {
-  --ch-av-size: 44px !important;
-}
 .ch-ms-grp {
   width: 44px;
   height: 44px;
@@ -3851,26 +3848,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
   margin: 0;
   font: var(--ch-type-15);
   color: var(--ch-text-secondary); letter-spacing: var(--ch-track-15); }
-[data-ch-ms-v2] .ch-msv-empty__cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--ch-bubble-mine-fill);
-  color: var(--ch-text-on-accent);
-  font: var(--ch-type-15-strong);
-  cursor: pointer; letter-spacing: var(--ch-track-15); }
-[data-ch-ms-v2] .ch-msv-empty__ghost {
-  min-height: 44px;
-  padding: 0 12px;
-  border: 0;
-  background: none;
-  color: var(--ch-green-600);
-  font: var(--ch-type-15-strong);
-  cursor: pointer; letter-spacing: var(--ch-track-15); }
+/* The two actions are the shared Button (primary, ghost): no lane copy of either. */
 [data-ch-ms-v2] .ch-msv-hello {
   display: grid;
   justify-items: center;

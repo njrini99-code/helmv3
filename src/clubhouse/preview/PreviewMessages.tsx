@@ -9,6 +9,7 @@ import { useToast, useToastPill } from '../ui/Toast';
 import { designFiles, designLongInbox, designReadMarks, DESIGN_CONVS, DESIGN_NOW, DESIGN_PEOPLE, DESIGN_REACTIONS, DESIGN_ROUTE_CONV, designRouteFixture, DESIGN_THREADS, DESIGN_VOTES, designAttachments, designMsg, designPins, designRowTyping } from './messages-design-cast';
 
 import { usePinned } from '../screens/messages/pinned';
+import { CAST_TEAM } from './cast';
 import { buildPollPayload, encodeChoice, parsePollPayload, pollFallbackText, tallyPoll, type Poll, type PollResponseRow } from '@/lib/golf/message-polls';
 
 /**
@@ -342,7 +343,7 @@ export function PreviewMessages({ state, view, play, role = 'coach' }: { state?:
     signers: { 'c-maya': { name: 'Maya Reyes', title: 'Head coach' } },
     timeZone: TZ,
     now: design ? DESIGN_NOW : NOW,
-    teamName: design ? 'Demo University Golf' : 'Varsity',
+    teamName: design ? CAST_TEAM.name : CAST_TEAM.squad,
     ...(design ? { receipts: { status: 'ready' as const, marks: designReadMarks(view), retry: () => undefined } } : {}),
     convs,
     convsLoading: state === 'loading' || (design && view === 'loading'),

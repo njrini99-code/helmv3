@@ -109,7 +109,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | --- | --- | --- | --- | --- |
 | CH-7301 | No conversations yet | "No conversations yet" + (coach) "Start one with a player, or create a team group." | `Rail` | messages.test › CH-7301 |
 | CH-7302 | A rail search or a filter has nothing | Search: "No conversation names match" + Clear search (message hits may follow below); Groups: "No group conversations yet"; Unread: "Nothing unread" + "You’re caught up." + Show all | `Rail`, `PhoneInbox` (`RailEmpty`) | messages.test › CH-7302, #12 |
-| CH-7303 | No message mentions the search | "No messages mention “bus”" (the shared filtered state) | `MessageHits` | messages.test › CH-7303 |
+| CH-7303 | A conversation’s own search (Details › Search) finds no message | "No results" + "Try another name or word." The inbox search says it as CH-7302 does when no name matches either, and adds nothing when one does | `MessageHits` (`ConversationSearch`) | messages.test › CH-7303 |
 | CH-7304 | A thread with no messages | "No messages yet" + "Say hello to the group." (or the person’s first name) | `Thread` | messages.test › CH-7304 |
 | CH-7305 | Nothing open | "Start your first conversation" / "Pick a conversation" | `MessagesView` | messages.test › CH-7305 |
 | CH-7306 | Nothing has been shared in the conversation (Details) | "No files shared yet." | `FilesPanel`, `FilesSection` | messages.test › CH-7306 |
@@ -117,7 +117,7 @@ the thread with Retry (CH-7016), and the draft is never lost.
 | CH-7308 | Signed in with no team (coach or player) | The page empty state: "You aren’t on a team yet" + "Messages open once you’re on a team roster, with your coaches and teammates." + Open team settings (a coach's Team, a player's Golf profile; the route passes the role) | `MessagesNoTeam`, from the route | messages.test › CH-7308 |
 | CH-7309 | Nothing at all yet: no conversation and no announcement (D-71) | The page empty state: "No conversations yet" + (coach) "Start a thread with the whole team or message a player directly." / (player) "Message a coach or a teammate. Team announcements show up here too." + New message; the rail and thread empties (CH-7301, CH-7305) show only once something is listed | `MessagesFirstRun` (desktop and phone) | messages.test › CH-7309 |
 | CH-7370 | Notify anyway is offered: a coach, a conversation of their own team, a recipient in class with pushes held (P-10) | Phone: a 450 ms hold on Send opens a menu with one item, "Notify anyway" + "In class until 11:50 AM · skips the class hold" (a group: "3 people here are in class · skips the class hold"). Desktop: a 24 px chevron beside Send opens "Send and notify anyway" with the same caption and the shortcut (Cmd Shift Enter, Ctrl Shift Enter elsewhere), and Cmd or Ctrl + Shift + Enter sends the same way; the hint under the field gains "· Cmd Shift Enter to notify anyway". A plain Send is unchanged. Not offered with files attached, or when nothing is held | `SendCluster`, `sendNotify` | class-awareness-messages.test › CH-7370 |
-| CH-7310 | Nobody has seen a group message yet (the Seen by list) | Title "Not seen yet"; only Not yet, with when each last opened the chat | `SeenByBody` | messages-seen-by.test › CH-7310 |
+| CH-7310 | Nobody has seen a group message yet (the Seen by list) | The sheet stays "Seen by"; one section, "Not seen yet", each row "Hasn’t opened this chat" | `SeenByBody` | messages-seen-by.test › CH-7310 |
 
 ## 74xx Loading
 

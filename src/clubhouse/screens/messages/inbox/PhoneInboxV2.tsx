@@ -84,7 +84,7 @@ export function PhoneInboxV2({ api, onNew, onTeam }: { api: ChMessagesApi; onNew
               </h2>
               <ListPresence arrive="inbox" cut={changedScope}>
                 {recent.map((c) => (
-                  <ConvRow key={c.id} api={api} c={c} avatarSize={44} phone />
+                  <ConvRow key={c.id} api={api} c={c} phone />
                 ))}
               </ListPresence>
             </section>

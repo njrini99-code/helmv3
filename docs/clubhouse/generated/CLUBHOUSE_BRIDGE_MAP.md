@@ -813,7 +813,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 70301 |  | 03 Background loading / refresh | `REALTIME_UPDATES_ARRIVE` | implemented | New messages, edits, deletes and reactions arrive over realtime while the page is open, without a reload; the rail refreshes its last message and unread counts the same way. |
 | 70401 | CH-7301 | 04 Empty | `NO_CONVERSATIONS_YET` | implemented | No conversations yet |
 | 70402 | CH-7302 | 04 Empty | `A_RAIL_SEARCH_OR_THE_UNREAD_FILTER` | implemented | A rail search or a filter has nothing |
-| 70403 | CH-7303 | 04 Empty | `NO_MESSAGE_MENTIONS_THE_SEARCH` | implemented | No message mentions the search |
+| 70403 | CH-7303 | 04 Empty | `NO_MESSAGE_MENTIONS_THE_SEARCH` | implemented | A conversation’s own search (Details › Search) finds no message |
 | 70404 | CH-7304 | 04 Empty | `A_THREAD_WITH_NO_MESSAGES` | implemented | A thread with no messages |
 | 70405 | CH-7305 | 04 Empty | `NOTHING_OPEN` | implemented | Nothing open |
 | 70406 | CH-7306 | 04 Empty | `NOTHING_HAS_BEEN_SHARED_IN_THE_CONVERSATION` | implemented | Nothing has been shared in the conversation (Details) |

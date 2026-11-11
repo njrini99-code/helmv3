@@ -12,7 +12,7 @@ import { titleHints } from './model';
 import { personOf } from '../person-of';
 import { PresenceRow } from '../../../ui/ListPresence';
 
-export function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false }: { api: ChMessagesApi; c: ChConv; avatarSize: number; onOpen: () => void; bind: ContextMenuBind; plain?: boolean }) {
+export function ConvRowButton({ api, c, onOpen, bind, plain = false }: { api: ChMessagesApi; c: ChConv; onOpen: () => void; bind: ContextMenuBind; plain?: boolean }) {
   const row = {
     type: "button" as const,
     className: "ch-ms-row" + (isUnread(c) ? " is-unread" : "") + (api.selectedId === c.id ? " is-sel" : ""),
@@ -30,7 +30,7 @@ export function ConvRowButton({ api, c, avatarSize, onOpen, bind, plain = false 
           <Icon icon={c.channel ? Flag : Users} size={15} />
         </span>
       ) : (
-        <Avatar name={c.title} id={convAvatarId(api, c)} size={avatarSize} year={convYear(api, c)} />
+        <Avatar name={c.title} id={convAvatarId(api, c)} size="lg" year={convYear(api, c)} />
       )}
       <span className="ch-ms-row__main">
         <span className="ch-ms-row__top">

@@ -111,3 +111,20 @@ describe('the list (P-1 slice 4)', () => {
     expect(retry).toHaveBeenCalled();
   });
 });
+
+describe('the list when nobody has read it', () => {
+  it('CH-7310 nobody seen: the sheet has one section, "Not seen yet", and a forged future open never shows as a date to come', () => {
+    render(<SeenBySheet api={api({ coach: SENT, ava: '2030-01-01T00:00:00Z', eli: null })} m={msg({ at: '2031-01-01T00:00:00Z' })} onClose={() => {}} />);
+    const dialog = screen.getByRole('dialog', { name: 'Seen by' });
+    const list = dialog.querySelector('[data-ch-code="CH-7310"]')!;
+    expect(list).not.toBeNull();
+    // No "Seen" section at all: one heading, for the people who have not.
+    const heads = [...list.querySelectorAll('h3')].map((h) => h.textContent ?? '');
+    expect(heads).toHaveLength(1);
+    expect(heads[0]).toMatch(/^Not seen yet/);
+    expect(list.querySelectorAll('.ch-seen-row')).toHaveLength(2);
+    // Each row says the same plain thing; a forged future open never reads as a date to come.
+    expect([...list.querySelectorAll('.ch-seen-row__meta')].map((x) => x.textContent)).toEqual(['Hasn’t opened this chat', 'Hasn’t opened this chat']);
+    expect(dialog.textContent).not.toMatch(/tomorrow|2030/i);
+  });
+});

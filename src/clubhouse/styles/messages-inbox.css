@@ -207,18 +207,14 @@
     background: var(--ch-press-wash);
   }
 }
-/* The face is 62 (Avatar's "xl" step is 64; messages.css's coin rule is !important too, so this is as well). */
-[data-ch-ms-v2] .ch-inb--phone .ch-msv-pin .ch-avatar {
-  --ch-av-size: 62px !important;
-  --ch-av-type: calc(62px * 0.38) !important;
-}
+/* The face is Avatar's xl step (64), set by the component; a group's coin is the same size, its icon half of it. */
 [data-ch-ms-v2] .ch-inb--phone .ch-msv-pin .ch-msv-pin__grp {
-  width: 62px;
-  height: 62px;
+  width: 64px;
+  height: 64px;
 }
 [data-ch-ms-v2] .ch-inb--phone .ch-msv-pin .ch-msv-pin__grp svg {
-  width: 31px;
-  height: 31px;
+  width: 32px;
+  height: 32px;
 }
 [data-ch-ms-v2] .ch-inb--phone .ch-msv-pin__l {
   max-width: 100%;
@@ -326,25 +322,13 @@
   border-radius: var(--ch-radius-md);
 }
 
-/* The face: 44 on the phone, 40 on the rail; a group's is the green coin with its icon at half its size. The
-   inline size comes from Avatar, and messages.css forces 44 with !important. */
-[data-ch-ms-v2] .ch-inb--phone .ch-ms-row .ch-avatar {
-  --ch-av-size: 44px !important;
-  --ch-av-type: calc(44px * 0.38) !important;
-}
-[data-ch-ms-v2] .ch-inb--rail .ch-ms-row .ch-avatar {
-  --ch-av-size: 40px !important;
-  --ch-av-type: calc(40px * 0.38) !important;
-}
+/* The face is Avatar's lg step (40), phone and rail, set by the component; a group's is the green coin at the same
+   size with its icon at half of it. */
 [data-ch-ms-v2] .ch-inb .ch-ms-row:not(.is-ann) .ch-ms-grp {
   background: linear-gradient(160deg, var(--ch-green-500), var(--ch-green-800));
   color: var(--ch-on-fill-50);
 }
-[data-ch-ms-v2] .ch-inb--phone .ch-ms-row:not(.is-ann) .ch-ms-grp {
-  width: 44px;
-  height: 44px;
-}
-[data-ch-ms-v2] .ch-inb--rail .ch-ms-row:not(.is-ann) .ch-ms-grp {
+[data-ch-ms-v2] .ch-inb .ch-ms-row:not(.is-ann) .ch-ms-grp {
   width: 40px;
   height: 40px;
 }
@@ -540,8 +524,8 @@
   vertical-align: middle;
 }
 .ch-inb-sk__face {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
 }
 .ch-inb-skel.is-rail .ch-inb-sk__face {

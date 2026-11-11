@@ -1,16 +1,48 @@
 # Messages v2 motion spec
 
-Source: the `MOT` tables, the spring cards, the `anim()` engine, the demos (`DEMO`/`PLAYS`) and the motion-check (`MCASES`) in `design-refresh/messages/redesign/clubhouse-messages.html`. SPEC.md is the layout; this file is every movement. IDs `MOT-<area>-<n>` are the artifact's table rows in order (49 rows). `MOT-SPR-*` are the seven springs. `MOT-X-*` are motions the artifact only draws in code (not in its tables). `MOT-KB-*` and `MOT-R-*` are the keyboard and Reduce Motion rules. Test notes quote the artifact: each row's "Replay" key (the hash-free demo that plays it) and the motion-check case that covers it (MC-01..MC-11, listed at the end).
+Source: the `MOT` tables, the spring cards, the `anim()` engine, the demos
+(`DEMO`/`PLAYS`) and the motion-check (`MCASES`) in
+`design-refresh/messages/redesign/clubhouse-messages.html`. SPEC.md is the
+layout; this file is every movement. IDs `MOT-<area>-<n>` are the artifact's
+table rows in order (49 rows). `MOT-SPR-*` are the seven springs. `MOT-X-*` are
+motions the artifact only draws in code (not in its tables). `MOT-KB-*` and
+`MOT-R-*` are the keyboard and Reduce Motion rules. Test notes quote the
+artifact: each row's "Replay" key (the hash-free demo that plays it) and the
+motion-check case that covers it (MC-01..MC-11, listed at the end).
 
-**Post-survey rule.** Rows carrying "Default per Q-nn" are overridden by that default (QUESTIONS.md). Gates that shape the build (GAP.md Part G): TSX `duration: N` literals outside {0, .11, .18, .26, .28, .52} and CSS `Nms` / `cubic-bezier(` outside tokens.css fail `clubhouse:check`, so every duration below needs a named constant or token; the app's `chSpringCurve` numbers, not the artifact's solver, are the targets.
+**Post-survey rule.** Rows carrying "Default per Q-nn" are overridden by that
+default (QUESTIONS.md). Gates that shape the build (GAP.md Part G): TSX
+`duration: N` literals outside {0, .11, .18, .26, .28, .52} and CSS `Nms` /
+`cubic-bezier(` outside tokens.css fail `clubhouse:check`, so every duration
+below needs a named constant or token; the app's `chSpringCurve` numbers, not
+the artifact's solver, are the targets.
 
-House rules (artifact, "Motion system"): no count-ups (a vote or reaction count changes at once while its bar or badge moves); no staggers (rows that arrive together move together; the typing-dots wave is one looping element); only transforms and opacity move (the one layout animation is the desktop details column, MOT-DET-2); interrupts never jump (a new motion starts from where the node is now); owner rule B7: an arrival has its full height from the first frame and the thread above never jumps.
+House rules (artifact, "Motion system"): no count-ups (a vote or reaction count
+changes at once while its bar or badge moves); no staggers (rows that arrive
+together move together; the typing-dots wave is one looping element); only
+transforms and opacity move (the one layout animation is the desktop details
+column, MOT-DET-2); interrupts never jump (a new motion starts from where the
+node is now); owner rule B7: an arrival has its full height from the first frame
+and the thread above never jumps.
 
-Engine rule (`anim`): under Reduce Motion a motion with an opacity keyframe becomes a 120 ms linear crossfade between its first and last opacity; a motion without opacity (or with `rd: null`) does not play. See MOT-R. "Replay" below means the artifact's Play/Replay key of that name.
+Engine rule (`anim`): under Reduce Motion a motion with an opacity keyframe
+becomes a 120 ms linear crossfade between its first and last opacity; a motion
+without opacity (or with `rd: null`) does not play. See MOT-R. "Replay" below
+means the artifact's Play/Replay key of that name.
 
 ## Springs (MOT-SPR)
 
-framer `visualDuration` and `bounce`; stiffness = omega^2, damping = 2 * zeta * omega, mass 1, where omega = 2 pi / (1.2 * visualDuration) and zeta = 1 - bounce (min .05). This is `chSpring`'s own conversion (`src/clubhouse/lib/motion.ts` `physics()`), so the numbers can be passed straight in. SwiftUI `.spring(duration, bounce)` duration = 1.2 x visualDuration. "Settles" = the artifact's solver (1/2000 s steps, rest at |x-1| < .001 and |v| < .02); smooth is pinned to 462 ms by the design language. The app's own `chSpringCurve` (SETTLED ruling 29) reads settle 417, reveal 921, send 700, pop 496, lift 471, smooth 462 ms and is the number the build must hit; launch is new: `chSpringCurve('launch')` measures 812 ms (the solver says 828), so derive the 0.62 x sideways time (503 ms) and the 70% receipt delay (568 ms) from 812.
+framer `visualDuration` and `bounce`; stiffness = omega^2, damping = 2 *zeta*
+omega, mass 1, where omega = 2 pi / (1.2 * visualDuration) and zeta = 1 - bounce
+(min .05). This is `chSpring`'s own conversion (`src/clubhouse/lib/motion.ts`
+`physics()`), so the numbers can be passed straight in. SwiftUI
+`.spring(duration, bounce)` duration = 1.2 x visualDuration. "Settles" = the
+artifact's solver (1/2000 s steps, rest at |x-1| < .001 and |v| < .02); smooth
+is pinned to 462 ms by the design language. The app's own `chSpringCurve`
+(SETTLED ruling 29) reads settle 417, reveal 921, send 700, pop 496, lift 471,
+smooth 462 ms and is the number the build must hit; launch is new:
+`chSpringCurve('launch')` measures 812 ms (the solver says 828), so derive the
+0.62 x sideways time (503 ms) and the 70% receipt delay (568 ms) from 812.
 
 | ID | Name | In `CH_SPRINGS`? | visualDuration / bounce | stiffness | damping | Settles (page solver) | Peak | SwiftUI | Used for |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -22,9 +54,14 @@ framer `visualDuration` and `bounce`; stiffness = omega^2, damping = 2 * zeta * 
 | MOT-SPR-6 | pop | yes | 0.25 / 0.35 | 439 | 27.2 | 540 ms | 1.067 | 0.30, 0.35 | Small things arriving: reaction badges, the send key, typing dots, Seen faces. |
 | MOT-SPR-7 | lift | yes | 0.28 / 0.15 | 350 | 31.8 | 487 ms | 1.006 | 0.34, 0.15 | A held bubble lifting, menus unfolding from it. |
 
-The chapter heading says "Six springs" and lists seven (smooth, settle, reveal in Clubhouse; send, launch, pop, lift new/added). Only `launch` is missing from `lib/motion.ts` today (Q-04).
+The chapter heading says "Six springs" and lists seven (smooth, settle, reveal
+in Clubhouse; send, launch, pop, lift new/added). Only `launch` is missing from
+`lib/motion.ts` today (Q-04).
 
-Curves used outside the springs: `--ch-ease` = `cubic-bezier(0.22, 1, 0.36, 1)` (house ease-out); `--ch-ease-spring` = `cubic-bezier(0.34, 1.3, 0.64, 1)` (CSS-only springs: thumb, switch knob, + rotate); iOS keyboard curve `cubic-bezier(0.32, 0.72, 0, 1)` 480 ms.
+Curves used outside the springs: `--ch-ease` = `cubic-bezier(0.22, 1, 0.36, 1)`
+(house ease-out); `--ch-ease-spring` = `cubic-bezier(0.34, 1.3, 0.64, 1)`
+(CSS-only springs: thumb, switch knob, + rotate); iOS keyboard curve
+`cubic-bezier(0.32, 0.72, 0, 1)` 480 ms.
 
 ## Conversation list and navigation (MOT-LIST)
 
@@ -62,7 +99,10 @@ Curves used outside the springs: `--ch-ease` = `cubic-bezier(0.22, 1, 0.36, 1)` 
 | MOT-SEND-11 | Someone starts typing | "Grows from its tail corner; the dots wave in one loop." Bubble `scale(.5) opacity 0 > none` from `0% 100%`; skipped when you are scrolled away from the bottom (the list only makes room, on `pop`). | pop | Fades in; dots pulse | Replay `reply`; hashes `#typing`, `#grouptyping`. |
 | MOT-SEND-12 | The reply arrives | "The message grows out of the typing bubble's corner at the typing bubble's size." Code: the typing row is replaced; the new bubble animates `scale(sc) opacity 0 > scale(sc + (1-sc)*.35) opacity 1 at 35% > none`, `sc` = min(typingW/bubbleW, typingH/bubbleH) clamped .45-1, origin from the bubble's corner. If you are scrolled away: no reveal; the jump key count updates (MOT-JMP-2). | reveal | Crossfade 120 ms | Replay `reply` (file, then text). MC-02: a reply landing 120 ms into your own rise must not make the first bubble or older messages jump. |
 
-Other send details drawn in code, same moment: a second send while the first rises adds a second composite glide (`composite: 'add'`); editing a message flashes `opacity .4 > 1` over 260 ms `--ch-ease` (MOT-X-9); the field's `autogrow` re-pins the bottom if you were within 24 px.
+Other send details drawn in code, same moment: a second send while the first
+rises adds a second composite glide (`composite: 'add'`); editing a message
+flashes `opacity .4 > 1` over 260 ms `--ch-ease` (MOT-X-9); the field's
+`autogrow` re-pins the bottom if you were within 24 px.
 
 ## Hold, lift, blur (MOT-HOLD)
 
@@ -141,7 +181,7 @@ Other send details drawn in code, same moment: a second send while the first ris
 | MOT-X-3 | Desktop hover bar | opacity 0 > 1, `translateY(4px) scale(.96)` > none | opacity 160 ms; transform 220 ms `--ch-ease` | none | `.hoverbar` |
 | MOT-X-4 | Toast | In: `translateY(-8px) scale(.96) opacity 0 > none` on pop. Out after 1.7 s: opacity 200 ms. A newer toast fades the old in 120 ms. | pop / 200 / 120 | fade | `toast()` |
 | MOT-X-5 | Sheet open/close | See MOT-POLL-4; scrim fade on smooth in, 280 ms `--ch-ease` out; reopen while leaving picks up the live scrim opacity and sheet position | smooth / 280 ms | fade | `openSheet`, `closeSheet` |
-| MOT-X-6 | Sheet drag (phone) | Follows the finger from the grabber or header; release past one third of the sheet height or faster than 0.5 px/ms closes (280 ms `--ch-ease` from where it is; ruling 24: a flick uses `chThrownExit`); otherwise settles on smooth; pulling up rubber-bands `-sqrt(|dy|) * 2.2`; scrim opacity = `1 - dy / height` | gesture + smooth / 280 ms | none | `wireSheetDrag` |
+| MOT-X-6 | Sheet drag (phone) | Follows the finger from the grabber or header; release past one third of the sheet height or faster than 0.5 px/ms closes (280 ms `--ch-ease` from where it is; ruling 24: a flick uses `chThrownExit`); otherwise settles on smooth; pulling up rubber-bands `-sqrt( \| dy \| ) * 2.2`; scrim opacity =`1 - dy / height` | gesture + smooth / 280 ms | none | `wireSheetDrag` |
 | MOT-X-7 | Switch (poll form) | Knob `translateX(18px)` 320 ms `cubic-bezier(.34,1.3,.64,1)`, track colour 250 ms | 320 / 250 ms | none | `.mute-sw` |
 | MOT-X-8 | Row context menu | Same as MOT-DET-3's menu | lift / 160 ms | fade | `popMenu` |
 | MOT-X-9 | Edit saved | Edited bubble `opacity .4 > 1` | 260 ms `--ch-ease` | n/a | `send()` edit branch |
@@ -156,18 +196,39 @@ Other send details drawn in code, same moment: a second send while the first ris
 
 ## Keyboard and Reduce Motion (MOT-KB, MOT-R)
 
-- MOT-KB-1 Real keyboard (not the artifact's fake): `keyboardWillShow` sets `--keyboard-height` and `body.keyboard-open`; composer and jump rise by that height on 480 ms `cubic-bezier(0.32, 0.72, 0, 1)`; the list follows by the same amount; the latest message stays above the field if you were at the bottom; keyboard down reverses on the same curve. Phone only; desktop has none.
-- MOT-KB-2 Keys light on press (`is-down` 120 ms) and show a key pop: DEVICE SIMULATION, do not build.
-- MOT-R-1 Under Reduce Motion: zero motion except 120 ms crossfades (the artifact: `duration: 120, easing: linear`). The shared app helper is `CH_FADE_MS = 180` (0.18 s, `lib/motion.ts`), and ruling 25 says call the shared helper; the HTML says 120 (Q-05).
-- MOT-R-2 Loops stop: typing dots hold still at opacity 1 (keeps the 3:1 mark), skeleton pulse stops, caret keeps blinking.
+- MOT-KB-1 Real keyboard (not the artifact's fake): `keyboardWillShow` sets
+  `--keyboard-height` and `body.keyboard-open`; composer and jump rise by that
+  height on 480 ms `cubic-bezier(0.32, 0.72, 0, 1)`; the list follows by the
+  same amount; the latest message stays above the field if you were at the
+  bottom; keyboard down reverses on the same curve. Phone only; desktop has
+  none.
+- MOT-KB-2 Keys light on press (`is-down` 120 ms) and show a key pop: DEVICE
+  SIMULATION, do not build.
+- MOT-R-1 Under Reduce Motion: zero motion except 120 ms crossfades (the
+  artifact: `duration: 120, easing: linear`). The shared app helper is
+  `CH_FADE_MS = 180` (0.18 s, `lib/motion.ts`), and ruling 25 says call the
+  shared helper; the HTML says 120 (Q-05).
+- MOT-R-2 Loops stop: typing dots hold still at opacity 1 (keeps the 3:1 mark),
+  skeleton pulse stops, caret keeps blinking.
 - MOT-R-3 Hold: the press scale is skipped; the lift appears in place.
-- MOT-R-4 Jump / springScroll: scroll jumps at once (`S.reduce || |to - from| < 2`).
-- MOT-R-5 Desktop details column: opens at once, panel crossfades 120 ms (`wsMotion` sets transition none).
-- MOT-R-6 Send: the new bubble crossfades `opacity 0 > 1` (launch spring's 120 ms rule); no flight, no clone, no arrow motion; the thread moves at once; the receipt appears.
+- MOT-R-4 Jump / springScroll: scroll jumps at once (`S.reduce || |to - from| <
+  2`).
+- MOT-R-5 Desktop details column: opens at once, panel crossfades 120 ms
+  (`wsMotion` sets transition none).
+- MOT-R-6 Send: the new bubble crossfades `opacity 0 > 1` (launch spring's 120
+  ms rule); no flight, no clone, no arrow motion; the thread moves at once; the
+  receipt appears.
 
 ## Acceptance cases: the artifact's own motion check (`#motion-check`)
 
-The check runs every interrupt and overlap case through the real engine in a real browser, samples the on-screen box of each moving thing every frame and fails a case on any teleport (a one-frame speed spike: displacement > 10 px and > 3 x the larger neighbouring speed, floor .05), a flicker (gone for a frame, or an opacity blink > .45 and > 3 x its neighbours), or, under Reduce Motion, any glide (two consecutive frames each moving > .5 px). It must run in a HEADED browser at 60 Hz or better (SETTLED: headless containers drop frames and fail 2 or 3 cases that the page passes; the page's own run was 11 of 11 clean in Chrome 156 on the Mac). The build must pass the equivalent for its own components.
+The check runs every interrupt and overlap case through the real engine in a
+real browser, samples the on-screen box of each moving thing every frame and
+fails a case on any teleport (a one-frame speed spike: displacement > 10 px and > 3 x the larger neighbouring speed, floor .05), a flicker (gone for a frame, or
+an opacity blink > .45 and > 3 x its neighbours), or, under Reduce Motion, any
+glide (two consecutive frames each moving > .5 px). It must run in a HEADED
+browser at 60 Hz or better (SETTLED: headless containers drop frames and fail 2
+or 3 cases that the page passes; the page's own run was 11 of 11 clean in Chrome
+156 on the Mac). The build must pass the equivalent for its own components.
 
 | Case | Device | Covers | What is sampled |
 | --- | --- | --- | --- |
@@ -183,4 +244,5 @@ The check runs every interrupt and overlap case through the real engine in a rea
 | MC-10 Desktop details: close mid-open, reopen | desktop | MOT-DET-2 | details panel, latest message, composer, 1500 ms |
 | MC-11 Reduce Motion: send and a reply | phone | MOT-R-6 | your bubble, 1400 ms; no glides, no gaps |
 
-Row count check: MOT table rows 5 + 4 + 12 + 6 + 3 + 4 + 3 + 3 + 3 + 3 + 3 = 49; springs 7; extras MOT-X 17; keyboard/reduce 8.
+Row count check: MOT table rows 5 + 4 + 12 + 6 + 3 + 4 + 3 + 3 + 3 + 3 + 3 = 49;
+springs 7; extras MOT-X 17; keyboard/reduce 8.

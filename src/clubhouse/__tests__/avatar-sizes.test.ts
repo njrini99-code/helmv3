@@ -36,7 +36,6 @@ const ALLOW_NUMERIC: Record<string, number> = {
   'screens/messages/details/NewMessage.tsx': 1,
   'screens/messages/details/PhoneDetails.tsx': 1,
   'screens/messages/details/PhoneNewMessage.tsx': 1,
-  'screens/messages/inbox/ConvRowButton.tsx': 1,
   'screens/messages/polls.tsx': 2,
   'screens/messages/seen-by.tsx': 1,
   'screens/messages/thread/Bubble.tsx': 1,

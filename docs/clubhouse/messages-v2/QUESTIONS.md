@@ -1,6 +1,9 @@
 # Messages v2: open questions for the owner
 
-Nothing here blocks the build. Each question has the default the implementers use until the owner says otherwise. "HTML" means `design-refresh/messages/redesign/clubhouse-messages.html`. Items are numbered Q-nn; SPEC.md and MOTION.md cite them.
+Nothing here blocks the build. Each question has the default the implementers
+use until the owner says otherwise. "HTML" means
+`design-refresh/messages/redesign/clubhouse-messages.html`. Items are numbered
+Q-nn; SPEC.md and MOTION.md cite them.
 
 ## Conflicts inside the design
 
@@ -42,7 +45,10 @@ Nothing here blocks the build. Each question has the default the implementers us
 | Q-17 | Class status in a DM's details ("No classes today. Next: Monday 9:05 AM, Statistics"). | Shown to a coach viewing a player's DM only. Never to another player. |
 | Q-18 | "Profile" quick action in DM details. | Coach viewer only (ruling 20): for a player it would link to a teammate's stats (SHARED-11). |
 
-DATA.md has its own numbered questions (its Q1-Q10, e.g. private per-person state table, Captain tag, DM receipt toggle). Defaults agree on: no toggle in v2, no Captain chip, coach-only Hasn't voted, and the channel-counts-as-a-pin rule (Q-11 now matches DATA.md Q1).
+DATA.md has its own numbered questions (its Q1-Q10, e.g. private per-person
+state table, Captain tag, DM receipt toggle). Defaults agree on: no toggle in
+v2, no Captain chip, coach-only Hasn't voted, and the channel-counts-as-a-pin
+rule (Q-11 now matches DATA.md Q1).
 
 ## Raised by the code survey (GAP.md)
 

@@ -6,11 +6,11 @@ import { RailEmpty } from './RailEmpty';
 import { Search } from 'lucide-react';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
-import { EmptyState, Skeleton } from '../../ui/States';
+import { Skeleton } from '../../ui/States';
 import { chTrail } from '../../lib/track';
 import { railTime, searchSnippet, ChSearchHit } from './model';
 
-export function MessageHits({ api, q, nameMatches, conversationId, onPicked, layout = 'flat' }: { api: ChMessagesApi; q: string; /** One conversation's hits only (Details, Search). */ conversationId?: string; onPicked?: () => void; /** Redesign: how many names matched, so an empty search says it once (S-MSG.search). */ nameMatches?: number; /** The inbox's empty "Nothing here": the phone's card or the rail's flat label. */ layout?: 'card' | 'flat' }) {
+export function MessageHits({ api, q, nameMatches, conversationId, onPicked, layout = 'flat' }: { api: ChMessagesApi; q: string; /** One conversation's hits only (Details, Search). */ conversationId?: string; onPicked?: () => void; /** Redesign: how many names matched, so an empty search says it once (S-MSG.search). */ nameMatches: number; /** The inbox's empty "Nothing here": the phone's card or the rail's flat label. */ layout?: 'card' | 'flat' }) {
   const [hits, setHits] = useState<ChSearchHit[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -36,12 +36,12 @@ export function MessageHits({ api, q, nameMatches, conversationId, onPicked, lay
     };
   }, [search, term, attempt, conversationId]);
   if (term.length < 2) return null;
-  if (nameMatches != null && hits && !hits.length && !failed) {
+  if (hits && !hits.length && !failed) {
     if (nameMatches > 0) return null;
     // A conversation's own search (Details) keeps its card; the inbox's says it as the "Nothing here" card does (MSG-115).
     if (!conversationId) return <div role="status"><RailEmpty filter="all" q={term} layout={layout} /></div>;
     return (
-      <section className="ch-msv-card ch-msv-noresults" role="status">
+      <section className="ch-msv-card ch-msv-noresults" role="status" data-ch-code="CH-7303">
         <b>No results</b>
         <span>Try another name or word.</span>
       </section>
@@ -69,8 +69,6 @@ export function MessageHits({ api, q, nameMatches, conversationId, onPicked, lay
             <Skeleton width="80%" height={13} />
           </div>
         </div>
-      ) : !hits.length ? (
-        <EmptyState compact kind="filtered" code="CH-7303" title={`No messages mention “${term}”`} />
       ) : (
         <div className="ch-ms-sec__card">
           {hits.slice(0, 20).map((h) => {

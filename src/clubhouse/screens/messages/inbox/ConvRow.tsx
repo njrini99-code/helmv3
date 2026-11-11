@@ -85,12 +85,12 @@ export function useConvActions(api: ChMessagesApi, c: ChConv, phone: boolean) {
 }
 
 /** One conversation in the list: the desktop rail and the phone inbox. */
-export function ConvRow({ api, c, avatarSize = 40, phone = false }: { api: ChMessagesApi; c: ChConv; avatarSize?: number; phone?: boolean }) {
+export function ConvRow({ api, c, phone = false }: { api: ChMessagesApi; c: ChConv; phone?: boolean }) {
   const { ctx, sheets, open, unread, toggleRead, askDelete } = useConvActions(api, c, phone);
   if (!phone) {
     return (
       <>
-        <ConvRowButton api={api} c={c} avatarSize={avatarSize} onOpen={open} bind={ctx.bind(c)} />
+        <ConvRowButton api={api} c={c} onOpen={open} bind={ctx.bind(c)} />
         {sheets}
       </>
     );
@@ -103,7 +103,7 @@ export function ConvRow({ api, c, avatarSize = 40, phone = false }: { api: ChMes
         leading={{ label: unread ? "Read" : "Unread", icon: unread ? MailOpen : Mail, tone: "accent", run: toggleRead }}
         trailing={askDelete && { label: "Delete", icon: Trash2, tone: "danger", run: askDelete }}
       >
-        <ConvRowButton api={api} c={c} avatarSize={avatarSize} onOpen={open} bind={ctx.bind(c)} plain />
+        <ConvRowButton api={api} c={c} onOpen={open} bind={ctx.bind(c)} plain />
         {/* VoiceOver and a keyboard can't swipe or hold: the same actions, one control away (shown when focused). */}
         <span className="ch-sr-only ch-sr-only--focusable">
           <button type="button" onClick={(e) => ctx.openAt(c, e.currentTarget)}>

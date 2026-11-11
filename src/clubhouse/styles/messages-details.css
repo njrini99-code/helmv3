@@ -716,12 +716,6 @@
 [data-ch-ms-v2] .ch-msd-empty p {
   max-width: 280px;
 }
-[data-ch-ms-v2] .ch-msd-empty .ch-msv-empty__cta {
-  padding: 0 var(--ch-msd-s18);
-}
-[data-ch-ms-v2] .ch-msd-empty .ch-msv-empty__ghost {
-  font: var(--ch-type-14-strong);
-}
 [data-ch-ms-v2] .ch-msd-hello {
   max-width: none;
   margin: var(--ch-space-4) 0 var(--ch-space-3);

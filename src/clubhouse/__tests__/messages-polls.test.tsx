@@ -439,3 +439,42 @@ describe('poll actions (P-2 slice 5)', () => {
     expect(pollCardActions('m1')).toBeNull();
   });
 });
+
+describe('the New poll sheet: a send whose outcome is not known', () => {
+  const openSheet = async (a: ChMessagesApi) => {
+    const user = userEvent.setup();
+    render(<PollButton api={a} conv={conv()} />);
+    await user.click(screen.getByRole('button', { name: 'New poll' }));
+    return { user, dialog: await screen.findByRole('dialog', { name: 'New poll' }) };
+  };
+  const sendKey = (dialog: HTMLElement) => within(dialog).getByRole('button', { name: /^Send( poll)?$/ });
+
+  it('CH-7031 an edited retry after a send that threw passes the earlier id; an earlier copy that landed asks before anything more is posted', async () => {
+    const send = vi
+      .fn<ChPollsApi['send']>()
+      .mockResolvedValueOnce({ ok: false, error: 'Try again in a moment.', threw: true })
+      .mockResolvedValueOnce({ ok: false, error: 'An earlier copy of this poll was already sent', earlierCopy: true })
+      .mockResolvedValueOnce({ ok: true });
+    const a = api([], { send });
+    const { user, dialog } = await openSheet(a);
+    await user.type(within(dialog).getByLabelText('Question'), 'Which van?');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Van A');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Van B');
+    await user.click(sendKey(dialog));
+    await user.type(within(dialog).getByLabelText('Question'), ' Thursday');
+    await user.click(sendKey(dialog));
+    const first = send.mock.calls[0]!;
+    const second = send.mock.calls[1]!;
+    // The edit is a new poll (a new id) that names the one whose outcome is unknown.
+    expect(second[2]).not.toBe(first[2]);
+    expect(second[3]).toBe(first[2]);
+    expect(await within(dialog).findByText('An earlier copy of this poll was already sent')).toBeTruthy();
+    expect(dialog.querySelector('[data-ch-code="CH-7031"]')).not.toBeNull();
+    // Nothing more is posted until the person chooses.
+    expect(send).toHaveBeenCalledTimes(2);
+    await user.click(within(dialog).getByRole('button', { name: 'Send this version' }));
+    const third = send.mock.calls[2]!;
+    expect(third[2]).not.toBe(second[2]);
+    expect(third[3]).toBeUndefined();
+  });
+});

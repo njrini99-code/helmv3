@@ -1600,3 +1600,295 @@ describe('MSG-406 reactions appear at once (messages-v2 fix 1)', () => {
     }
   });
 });
+
+describe('Messages · failure and edge states on the redesign (catalog rows with no test since the flag went)', () => {
+  /** jsdom has no Web Animations: every animation here finishes on the next microtask, as it would in a browser. */
+  const finishing = () => {
+    HTMLElement.prototype.animate = (() => {
+      const anim = { cancel: () => {}, finish: () => {}, reverse: () => {}, finished: Promise.resolve() };
+      Object.defineProperty(anim, 'onfinish', { configurable: true, set(fn: (() => void) | null) { if (fn) queueMicrotask(fn); }, get: () => null });
+      return anim;
+    }) as never;
+  };
+  const dan = { userId: 'dan', name: 'Dan Whitfield', role: 'coach' as const, subtitle: 'Assistant coach', playerId: null };
+  /** Desktop New message: the pane lists people; New group and Announcement open the form. */
+  const newForm = async (user: User, kind: 'New group' | 'Announcement') => {
+    await user.click(screen.getAllByRole('button', { name: 'New message' })[0]!);
+    await user.click(await screen.findByRole('button', { name: kind }));
+    return within(await screen.findByRole('dialog', { name: kind === 'Announcement' ? 'New announcement' : 'New message' }));
+  };
+  /** The message's menu, opened as a mouse opens it. */
+  const menuOn = async (user: User, item: string) => {
+    const bubble = await screen.findByText('Bus at 6:15', { selector: '.ch-ms-bub' });
+    fireEvent.contextMenu(bubble, { clientX: 100, clientY: 100 });
+    await user.click(await screen.findByRole('menuitem', { name: item }));
+  };
+  const openThread = async (user: User) => {
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /^(?!Actions for ).*Varsity team/ })).toHaveLength(1), { timeout: 5000 });
+    await user.click(screen.getByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
+    return screen.findByRole('region', { name: /Varsity team/ });
+  };
+  /** The phone's actions for a message, by the named button VoiceOver and keyboards reach. */
+  const phoneAction = async (user: User, thread: HTMLElement, item: string) => {
+    await user.click(within(thread).getByRole('button', { name: 'Message actions' }));
+    await expectCode('CH-7604');
+    await user.click(within(code('CH-7604') as HTMLElement).getByText(item));
+  };
+
+  it('CH-7007 an edit that fails says so and keeps the words in the box', async () => {
+    finishing();
+    const user = userEvent.setup();
+    live.msgs.editMessage.mockRejectedValue(new Error('refused'));
+    show();
+    await menuOn(user, 'Edit');
+    const box = screen.getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement;
+    await waitFor(() => expect(box.value).toBe('Bus at 6:15'));
+    await user.type(box, ' sharp{Enter}');
+    await expectCode('CH-7007', /Couldn’t edit the message/);
+    expect(live.msgs.editMessage).toHaveBeenCalledWith('m1', 'Bus at 6:15 sharp');
+    // Nothing typed is lost, and the box is still the edit, not a new message.
+    expect(box.value).toBe('Bus at 6:15 sharp');
+    expect(screen.getByText('Editing message')).toBeTruthy();
+    expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('CH-7501 CH-7008 deleting a message asks first with the message quoted; a failed delete says so and the message stays', async () => {
+    finishing();
+    const user = userEvent.setup();
+    live.msgs.removeMessage.mockRejectedValue(new Error('refused'));
+    show();
+    await menuOn(user, 'Delete');
+    await expectCode('CH-7501', /Delete this message\?/);
+    expect(code('CH-7501')!.textContent).toContain('Bus at 6:15');
+    expect(live.msgs.removeMessage).not.toHaveBeenCalled();
+    await user.click(within(code('CH-7501') as HTMLElement).getByRole('button', { name: /^Delete/ }));
+    await expectCode('CH-7008', /Couldn’t delete the message/);
+    expect(live.msgs.removeMessage).toHaveBeenCalledWith('m1');
+    expect(screen.getByText('Bus at 6:15', { selector: '.ch-ms-bub' })).toBeTruthy();
+  });
+
+  it('CH-7502 CH-7010 leaving a group asks first; a failed leave says so', async () => {
+    const user = userEvent.setup();
+    a.leaveGolfGroup.mockResolvedValue({ error: 'nope' });
+    // Only someone who didn't create the group can leave it.
+    live.convs.conversations = [{ ...team, creator_id: 'dan' }];
+    show();
+    await openDetails(user);
+    await user.click(await screen.findByRole('button', { name: /^Leave/ }));
+    await expectCode('CH-7502', /Leave Varsity team\?/);
+    expect(a.leaveGolfGroup).not.toHaveBeenCalled();
+    await user.click(within(code('CH-7502') as HTMLElement).getByRole('button', { name: 'Leave group' }));
+    await expectCode('CH-7010', /Couldn’t leave the group/);
+    expect(a.leaveGolfGroup).toHaveBeenCalledWith('team');
+  });
+
+  it('CH-7203 71402 message search that does not load says the names still match, and Try again reads only the search', async () => {
+    const user = userEvent.setup();
+    a.searchGolfMessages.mockRejectedValueOnce(new Error('boom'));
+    show();
+    await user.type(screen.getByRole('searchbox', { name: /Search conversations and messages/ }), 'bus');
+    await expectCode('CH-7203', /Message search didn’t load/);
+    expect(code('CH-7203')!.textContent).toMatch(/Conversations above still match by name/);
+    const searches = a.searchGolfMessages.mock.calls.length;
+    const rail = live.convs.refetch.mock.calls.length;
+    const thread = live.msgs.refetch.mock.calls.length;
+    await user.click(within(code('CH-7203') as HTMLElement).getByRole('button', { name: 'Try again' }));
+    await waitFor(() => expect(a.searchGolfMessages.mock.calls.length).toBe(searches + 1));
+    await waitFor(() => expect(code('CH-7203')).toBeNull());
+    // 71402: only that section is read again. The rail and the open thread are as they were.
+    expect(live.convs.refetch.mock.calls.length).toBe(rail);
+    expect(live.msgs.refetch.mock.calls.length).toBe(thread);
+    expect(screen.getByRole('textbox', { name: /Message Varsity team/ })).toBeTruthy();
+  });
+
+  it('CH-7303 a conversation’s own search that finds no message says No results, in Details', async () => {
+    const user = userEvent.setup();
+    show();
+    await openDetails(user);
+    await user.click(await screen.findByRole('button', { name: 'Search' }));
+    await user.type(await screen.findByRole('searchbox', { name: 'Search this conversation with Varsity team' }), 'van');
+    await expectCode('CH-7303', /No results/);
+    expect(code('CH-7303')!.textContent).toMatch(/Try another name or word/);
+    expect(a.searchGolfMessages).toHaveBeenCalledWith('van', 't1');
+  });
+
+  it('CH-7104 CH-7105 a new group needs a name, then a person, then a player, before anything is created', async () => {
+    const user = userEvent.setup();
+    show({ ...data, directory: [dan, ...data.directory] });
+    const form = await newForm(user, 'New group');
+    hapticSpy.mockClear();
+    await user.click(form.getByRole('button', { name: 'Create group' }));
+    await expectCode('CH-7104', /Name the group so players know what it’s for/);
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
+    await user.type(form.getByRole('textbox', { name: /^Group name/ }), 'Travel');
+    await user.click(form.getByRole('button', { name: 'Create group' }));
+    await expectCode('CH-7105', /Choose at least one person/);
+    // A coach's group is a broadcast to its players: coaches alone would reach the whole team.
+    await user.click(form.getByRole('option', { name: /Dan Whitfield/ }));
+    await user.click(form.getByRole('button', { name: 'Create group' }));
+    await expectCode('CH-7105', /Choose at least one player\. Coaches join the group once it exists/);
+    expect(a.createGolfTeamBroadcast).not.toHaveBeenCalled();
+  });
+
+  it('CH-7003 a group that is not created says so and keeps the form as it was', async () => {
+    const user = userEvent.setup();
+    a.createGolfTeamBroadcast.mockResolvedValue({ error: 'nope' });
+    show();
+    const form = await newForm(user, 'New group');
+    await user.type(form.getByRole('textbox', { name: 'Group name' }), 'Travel');
+    await user.click(form.getByRole('option', { name: /Jonah Okafor/ }));
+    await user.click(form.getByRole('button', { name: 'Create group' }));
+    await expectCode('CH-7003', /Couldn’t create the group/);
+    expect(a.createGolfTeamBroadcast).toHaveBeenCalledWith({ teamId: 't1', title: 'Travel', selectedPlayerIds: ['p-jonah'] });
+    expect((form.getByRole('textbox', { name: 'Group name' }) as HTMLInputElement).value).toBe('Travel');
+  });
+
+  it('CH-7019 a coach picked for a new group is added once it exists; one who cannot be added is named', async () => {
+    const user = userEvent.setup();
+    a.createGolfTeamBroadcast.mockResolvedValue({ conversationId: 'g1' });
+    a.addGolfGroupMember.mockResolvedValue({ error: 'nope' });
+    // The new group is in the list once it is read again, so it opens (a thread that is not listed would say CH-7015 instead).
+    live.convs.refetch.mockImplementationOnce(async () => {
+      live.convs.conversations = [{ ...team, id: 'g1', title: 'Travel', participant_ids: ['me', 'jonah'], participant_count: 2 }, team];
+    });
+    show({ ...data, directory: [dan, ...data.directory] });
+    const form = await newForm(user, 'New group');
+    await user.type(form.getByRole('textbox', { name: 'Group name' }), 'Travel');
+    await user.click(form.getByRole('option', { name: /Jonah Okafor/ }));
+    await user.click(form.getByRole('option', { name: /Dan Whitfield/ }));
+    hapticSpy.mockClear();
+    await user.click(form.getByRole('button', { name: 'Create group' }));
+    await waitFor(() => expect(code('CH-7019')?.textContent ?? '').toMatch(/Group created, but Dan wasn’t added/));
+    // The broadcast takes players only; the coach is a second write.
+    expect(a.createGolfTeamBroadcast).toHaveBeenCalledWith({ teamId: 't1', title: 'Travel', selectedPlayerIds: ['p-jonah'] });
+    expect(a.addGolfGroupMember).toHaveBeenCalledWith('g1', 'dan');
+    expect(hapticSpy).toHaveBeenCalledWith('warning');
+  });
+
+  it('CH-7102 CH-7103 CH-7014 an announcement needs a title and a body; a failed post says so and keeps the text', async () => {
+    const user = userEvent.setup();
+    a.createEnrichedAnnouncement.mockResolvedValue({ success: false, error: 'nope' });
+    show();
+    const form = await newForm(user, 'Announcement');
+    await user.click(form.getByRole('button', { name: 'Post announcement' }));
+    await expectCode('CH-7102', /Give the announcement a title/);
+    await expectCode('CH-7103', /Write what the team needs to know/);
+    expect(a.createEnrichedAnnouncement).not.toHaveBeenCalled();
+    await user.type(form.getByRole('textbox', { name: /^Title/ }), 'Bus times');
+    await user.type(form.getByRole('textbox', { name: /^Message/ }), 'Bus leaves at 6:15.');
+    await user.click(form.getByRole('button', { name: 'Post announcement' }));
+    await expectCode('CH-7014', /Couldn’t post the announcement/);
+    expect(a.createEnrichedAnnouncement).toHaveBeenCalledTimes(1);
+    expect((form.getByRole('textbox', { name: /^Title/ }) as HTMLInputElement).value).toBe('Bus times');
+    expect((form.getByRole('textbox', { name: /^Message/ }) as HTMLTextAreaElement).value).toBe('Bus leaves at 6:15.');
+  });
+
+  it('CH-7213 a crash in Details is contained: the thread beside it stays', async () => {
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const user = userEvent.setup();
+    // A member row the screen cannot draw (a name that is not text).
+    a.getGolfConversationParticipantIdentities.mockResolvedValue({ participants: [{ userId: 'dan', name: {}, subtitle: '', type: 'player' }] });
+    show();
+    await openDetails(user);
+    await expectCode('CH-7213', /Details couldn’t be shown/);
+    expect(screen.getByRole('textbox', { name: /Message Varsity team/ })).toBeTruthy();
+    expect(screen.getByText('Bus at 6:15', { selector: '.ch-ms-bub' })).toBeTruthy();
+    quiet.mockRestore();
+  });
+
+  it('CH-7028 a poll that throws on send says so; a refusal shows its reason in the form; the retry cannot post twice', async () => {
+    finishing();
+    const user = userEvent.setup();
+    polls.sendGolfPoll.mockRejectedValueOnce(new Error('network'));
+    show();
+    await user.click(await screen.findByRole('button', { name: 'Add a photo, file or poll' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Poll' }));
+    const dialog = await screen.findByRole('dialog', { name: 'New poll' });
+    await user.type(within(dialog).getByLabelText('Question'), 'Dinner?');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 1' }), 'Tacos');
+    await user.type(within(dialog).getByRole('textbox', { name: 'Choice 2' }), 'Pasta');
+    await user.click(within(dialog).getByRole('button', { name: /^Send( poll)?$/ }));
+    await expectCode('CH-7028', /Couldn’t send the poll/);
+    // The draft is kept.
+    expect((within(dialog).getByLabelText('Question') as HTMLInputElement).value).toBe('Dinner?');
+
+    polls.sendGolfPoll.mockResolvedValueOnce({ success: false, error: 'You are not in this conversation' } as never);
+    await user.click(within(dialog).getByRole('button', { name: /^Send( poll)?$/ }));
+    expect(await within(dialog).findByText('You are not in this conversation')).toBeTruthy();
+    const ids = polls.sendGolfPoll.mock.calls.map((c) => (c as unknown[])[2]);
+    expect(ids[1]).toBe(ids[0]);
+  });
+
+  describe('phone', () => {
+    it('71901 at phone width Messages is a stack: the inbox pushes the thread, the thread pushes Details, and Back pops one', async () => {
+      const user = userEvent.setup();
+      showPhone();
+      // The inbox alone: no thread is open beside it, as there would be on the desktop.
+      await screen.findByRole('button', { name: /^(?!Actions for ).*Varsity team/ });
+      expect(screen.queryByRole('textbox', { name: /Message Varsity team/ })).toBeNull();
+      const thread = await openThread(user);
+      expect(within(thread).getByRole('button', { name: 'Back to Messages' })).toBeTruthy();
+      expect(within(thread).getByRole('textbox', { name: /Message Varsity team/ })).toBeTruthy();
+      await user.click(within(thread).getByRole('button', { name: 'Details for Varsity team' }));
+      const details = await screen.findByRole('region', { name: 'Details' });
+      // The thread under Details is out of reach until Details pops.
+      expect(thread.hasAttribute('inert')).toBe(true);
+      await user.click(within(details).getByRole('button', { name: 'Back to conversation' }));
+      await waitFor(() => expect(thread.hasAttribute('inert')).toBe(false));
+    });
+
+    it('CH-7020 a message that cannot be copied says so', async () => {
+      finishing();
+      const user = userEvent.setup();
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: vi.fn().mockRejectedValue(new Error('denied')) } });
+      showPhone();
+      const thread = await openThread(user);
+      await phoneAction(user, thread, 'Copy');
+      await expectCode('CH-7020', /Couldn’t copy the message/);
+    });
+
+    it('CH-7022 text delivered but its file refused: only the unsaved file and the reply remain, and the retry sends no second copy of the text', async () => {
+      finishing();
+      const user = userEvent.setup();
+      live.files.sendMessageWithAttachments.mockResolvedValueOnce({ success: true, attachmentsFailed: true });
+      showPhone();
+      const thread = await openThread(user);
+      await phoneAction(user, thread, 'Reply');
+      const file = new File(['x'], 'plan.pdf', { type: 'application/pdf' });
+      await user.upload(thread.querySelector('input[type="file"]:not([accept^="image"])') as HTMLInputElement, file);
+      const box = within(thread).getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement;
+      await user.type(box, 'Delivered text');
+      hapticSpy.mockClear();
+      await user.click(within(thread).getByRole('button', { name: 'Send' }));
+      await expectCode('CH-7022', /Message sent; attachments not saved/);
+      expect(box.value).toBe('');
+      expect(within(thread).getByRole('button', { name: 'Remove plan.pdf' })).toBeTruthy();
+      expect(within(thread).getByRole('button', { name: 'Cancel reply' })).toBeTruthy();
+      expect(hapticSpy).toHaveBeenCalledWith('warning');
+      expect(hapticSpy).not.toHaveBeenCalledWith('success');
+      await user.click(within(thread).getByRole('button', { name: 'Send' }));
+      await waitFor(() => expect(live.files.sendMessageWithAttachments).toHaveBeenCalledTimes(2));
+      expect(live.files.sendMessageWithAttachments.mock.calls[1]?.[0]).toEqual(expect.objectContaining({ content: '', replyToId: 'm1', attachments: [expect.objectContaining({ file })] }));
+      expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('CH-7217 a pending send that cannot be checked locks the box until the check succeeds', async () => {
+      const user = userEvent.setup();
+      live.files.getPendingAttachmentSend.mockRejectedValueOnce(new Error('unreadable')).mockResolvedValue(null);
+      showPhone();
+      const thread = await openThread(user);
+      await expectCode('CH-7217', /Couldn’t check a pending send/);
+      const box = within(thread).getByRole('textbox', { name: /Message Varsity team/ }) as HTMLTextAreaElement;
+      expect(box.readOnly).toBe(true);
+      await user.type(box, 'Too early');
+      expect(box.value).toBe('');
+      expect(live.msgs.sendMessage).not.toHaveBeenCalled();
+      await user.click(within(code('CH-7217') as HTMLElement).getByRole('button', { name: 'Try again' }));
+      await waitFor(() => expect(box.readOnly).toBe(false));
+      expect(code('CH-7217')).toBeNull();
+      await user.type(box, 'Fresh message');
+      await user.click(within(thread).getByRole('button', { name: 'Send' }));
+      await waitFor(() => expect(live.msgs.sendMessage).toHaveBeenCalledWith('Fresh message'));
+    });
+  });
+});

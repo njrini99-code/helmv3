@@ -1,8 +1,18 @@
 # Messages v2 gap analysis: today's code vs SPEC.md and MOTION.md
 
-Method: five read-only surveys (one per slice) compared every SPEC.md item (MSG-nnn) and MOTION.md item (MOT-*) with the code at branch `agent/ch-messages-v2` (from `agent/ch-consolidate`, 2026-11-07), grepping exact copy and numbers and reading the code. Line numbers were verified by the surveyors with `grep -n`; cascade and layout claims were checked by reading CSS, not in a browser. Short forms in the tables: `MV` = `src/clubhouse/screens/messages/MessagesView.tsx`, `MP` = `MessagesPhone.tsx`, `M` = `Messages.tsx`, `CSS` = `src/clubhouse/styles/messages.css` (5,958 lines), `UGM` = `src/hooks/golf/use-golf-messages.ts`.
+Method: five read-only surveys (one per slice) compared every SPEC.md item
+(MSG-nnn) and MOTION.md item (MOT-*) with the code at branch
+`agent/ch-messages-v2` (from `agent/ch-consolidate`, 2026-11-07), grepping exact
+copy and numbers and reading the code. Line numbers were verified by the
+surveyors with `grep -n`; cascade and layout claims were checked by reading CSS,
+not in a browser. Short forms in the tables: `MV` =
+`src/clubhouse/screens/messages/MessagesView.tsx`, `MP` = `MessagesPhone.tsx`,
+`M` = `Messages.tsx`, `CSS` = `src/clubhouse/styles/messages.css` (5,958 lines),
+`UGM` = `src/hooks/golf/use-golf-messages.ts`.
 
-Verdicts: DONE (matches values, copy and behaviour), PARTIAL (exists but differs; the cell lists spec vs code), MISSING (no implementation), CONFLICTS (code does something the new spec forbids; delete or flip it, do not extend it).
+Verdicts: DONE (matches values, copy and behaviour), PARTIAL (exists but
+differs; the cell lists spec vs code), MISSING (no implementation), CONFLICTS
+(code does something the new spec forbids; delete or flip it, do not extend it).
 
 ## Totals (unique items)
 
@@ -12,29 +22,72 @@ Verdicts: DONE (matches values, copy and behaviour), PARTIAL (exists but differs
 | MOT | 81 | DONE 27, PARTIAL 44, MISSING 9, CONFLICTS 1 |
 | All | 189 | DONE 46, PARTIAL 112, MISSING 13, CONFLICTS 18 |
 
-Rows that two surveys covered are counted once: MSG-220 and MSG-221 under Part D (D owns photo and file bubbles whole), MSG-224 under Part C, MOT-KB-1 under Part B. The other slice's row is kept below and marked "(see other slice)". Part G also holds a 27-row token table that is not counted. Per slice (rows): A: DONE 7, PARTIAL 20, MISSING 0, CONFLICTS 8; B: DONE 9, PARTIAL 35, MISSING 10, CONFLICTS 4; C: DONE 8, PARTIAL 24, MISSING 0, CONFLICTS 2; D: DONE 9, PARTIAL 25, MISSING 1, CONFLICTS 3; G: DONE 13, PARTIAL 8, MISSING 2, CONFLICTS 1.
+Rows that two surveys covered are counted once: MSG-220 and MSG-221 under Part D
+(D owns photo and file bubbles whole), MSG-224 under Part C, MOT-KB-1 under Part
+B. The other slice's row is kept below and marked "(see other slice)". Part G
+also holds a 27-row token table that is not counted. Per slice (rows): A: DONE
+7, PARTIAL 20, MISSING 0, CONFLICTS 8; B: DONE 9, PARTIAL 35, MISSING 10,
+CONFLICTS 4; C: DONE 8, PARTIAL 24, MISSING 0, CONFLICTS 2; D: DONE 9, PARTIAL
+25, MISSING 1, CONFLICTS 3; G: DONE 13, PARTIAL 8, MISSING 2, CONFLICTS 1.
 
 ## What changes the plan (read these first)
 
-1. The thread is three flex rows (bar, scroller, composer), not layers (Part B risk 1). The spec's content-under-glass, `--pad-top`/`--pad-bot`, keyboard ride and floating pills all need the scroller to become the page with the bar and composer as overlays. One owner, once, before motion work.
-2. `Bubble` (MV:1110-1534, 425 lines) mixes B (row, tail, receipt, time), C (hold, lift, hover bar, reactions, double-tap) and D (poll, attachments). `Thread` (MV) and `PhoneThread` (MP) duplicate the scroller, day rows, typing row, jump key and composer mount. `Messages.tsx` builds the whole `api` in one literal. These are the merge hazards; PLAN.md schedules a seam wave first.
-3. The lint and ratchet gates bite (Part G risks 1-3): literal `duration: N` outside {0, .11, .18, .26, .28, .52} and literal `Nms` / `cubic-bezier(` in CSS outside tokens.css fail `clubhouse:check`; animating `grid-template-columns` (MOT-DET-2) fails `clubhouse/no-layout-motion` and contradicts the Nov 7 shell-motion rule; CSS ratchets on `messages.css` run in both directions; adding `launch` fails `motion-physics.test.tsx` until it is named there.
-4. Pins: no server action exists; the hook calls Supabase from the browser against `golf_conversation_pins`, which is not in production, so pins are per-device there today. The team channel does not count toward the 3-pin limit in code but does in the HTML (Part A risks 1-2).
-5. Sends are serialized (`!sending` gate, MV:1863) so MC-01 (two sends 140 ms apart) is impossible today; there is no `launch` spring, no clone flight, and desktop has no send animation (Part B).
-6. Desktop 3-pane applies only at canvas >= 1101 px; at the 1280 viewport the design draws, the canvas is about 1032 px, so the legacy floating details panel renders (Part D risk 4).
-7. Hold on a poll or a file-only message opens nothing; bubbles have no `tabindex` (Part C risks 1-2).
-8. Mute: two toasts per mute, no inbox-glyph refresh after a Details mute, expiry only applied at read time (Part D risk 7).
-9. Security: DATA.md section 3 lists three RLS/grant holes and an email leak found while auditing; they are not Messages UI work, but the redesign adds surface on top of them.
+1. The thread is three flex rows (bar, scroller, composer), not layers (Part B
+   risk 1). The spec's content-under-glass, `--pad-top`/`--pad-bot`, keyboard
+   ride and floating pills all need the scroller to become the page with the bar
+   and composer as overlays. One owner, once, before motion work.
+2. `Bubble` (MV:1110-1534, 425 lines) mixes B (row, tail, receipt, time), C
+   (hold, lift, hover bar, reactions, double-tap) and D (poll, attachments).
+   `Thread` (MV) and `PhoneThread` (MP) duplicate the scroller, day rows, typing
+   row, jump key and composer mount. `Messages.tsx` builds the whole `api` in
+   one literal. These are the merge hazards; PLAN.md schedules a seam wave
+   first.
+3. The lint and ratchet gates bite (Part G risks 1-3): literal `duration: N`
+   outside {0, .11, .18, .26, .28, .52} and literal `Nms` / `cubic-bezier(` in
+   CSS outside tokens.css fail `clubhouse:check`; animating
+   `grid-template-columns` (MOT-DET-2) fails `clubhouse/no-layout-motion` and
+   contradicts the Nov 7 shell-motion rule; CSS ratchets on `messages.css` run
+   in both directions; adding `launch` fails `motion-physics.test.tsx` until it
+   is named there.
+4. Pins: no server action exists; the hook calls Supabase from the browser
+   against `golf_conversation_pins`, which is not in production, so pins are
+   per-device there today. The team channel does not count toward the 3-pin
+   limit in code but does in the HTML (Part A risks 1-2).
+5. Sends are serialized (`!sending` gate, MV:1863) so MC-01 (two sends 140 ms
+   apart) is impossible today; there is no `launch` spring, no clone flight, and
+   desktop has no send animation (Part B).
+6. Desktop 3-pane applies only at canvas >= 1101 px; at the 1280 viewport the
+   design draws, the canvas is about 1032 px, so the legacy floating details
+   panel renders (Part D risk 4).
+7. Hold on a poll or a file-only message opens nothing; bubbles have no
+   `tabindex` (Part C risks 1-2).
+8. Mute: two toasts per mute, no inbox-glyph refresh after a Details mute,
+   expiry only applied at read time (Part D risk 7).
+9. Security: DATA.md section 3 lists three RLS/grant holes and an email leak
+   found while auditing; they are not Messages UI work, but the redesign adds
+   surface on top of them.
 
 ---
 
 ## Part A. Slice A: inbox, pins, search, rail
 
-Surveyed 2026-11-07 in `ch-messages-v2` (branch `agent/ch-messages-v2`), read-only. Items: SPEC MSG-004..007 (Messages part only), MSG-101..116, MSG-121..126; MOTION MOT-LIST-1..5, MOT-X-2, X-8, X-15, X-17. Where SPEC.md and the HTML differ, the HTML (`design-refresh/messages/redesign/clubhouse-messages.html`, Part 2 CSS from line 613) was used and is said so. Line numbers were re-checked with `grep -n` against this checkout.
+Surveyed 2026-11-07 in `ch-messages-v2` (branch `agent/ch-messages-v2`),
+read-only. Items: SPEC MSG-004..007 (Messages part only), MSG-101..116,
+MSG-121..126; MOTION MOT-LIST-1..5, MOT-X-2, X-8, X-15, X-17. Where SPEC.md and
+the HTML differ, the HTML
+(`design-refresh/messages/redesign/clubhouse-messages.html`, Part 2 CSS from
+line 613) was used and is said so. Line numbers were re-checked with `grep -n`
+against this checkout.
 
-Short names: `MP` = `src/clubhouse/screens/messages/MessagesPhone.tsx`, `MV` = `.../MessagesView.tsx`, `M` = `.../Messages.tsx`, `CSS` = `src/clubhouse/styles/messages.css`, `CTRL` = `src/clubhouse/styles/controls.css`, `UI` = `src/clubhouse/ui`, `SH` = `src/clubhouse/shell`.
+Short names: `MP` = `src/clubhouse/screens/messages/MessagesPhone.tsx`, `MV` =
+`.../MessagesView.tsx`, `M` = `.../Messages.tsx`, `CSS` =
+`src/clubhouse/styles/messages.css`, `CTRL` =
+`src/clubhouse/styles/controls.css`, `UI` = `src/clubhouse/ui`, `SH` =
+`src/clubhouse/shell`.
 
-Counts: 35 items. DONE 7, PARTIAL 20, CONFLICTS 8 (MSG-102, 106, 108, 109, 112, 113, 124, MOT-X-17), MISSING 0. A CONFLICTS cell starts with what to delete or replace; build the rest after that.
+Counts: 35 items. DONE 7, PARTIAL 20, CONFLICTS 8 (MSG-102, 106, 108, 109, 112,
+113, 124, MOT-X-17), MISSING 0. A CONFLICTS cell starts with what to delete or
+replace; build the rest after that.
 
 ### Verdicts
 
@@ -72,13 +125,14 @@ Counts: 35 items. DONE 7, PARTIAL 20, CONFLICTS 8 (MSG-102, 106, 108, 109, 112, 
 | MOT-LIST-4 | PARTIAL | Rows: `ListPresence arrive="inbox" cut={changedScope}` (`MP:342`, scope compare `MP:251-256`): rows that stay glide (framer `layout="position"`) on the 462 ms smooth push curve, new rows fade in on it, rows leaving a filter/search change are cut in one frame, a row leaving the list fades + scales .96 over 180 ms (`UI/ListPresence.tsx:94-100`, `:116-120`). Thumb: `useSlidePlate` WAAPI on the `settle` spring, translate + width, skipped under Reduce Motion (`UI/Segmented.tsx:61`, `lib/slide-plate.ts:20-85`). Desktop rail uses plain `<ListPresence>` (`MV:625`, `:633`: arrive "open"). | Rows on the phone: DONE. Thumb: CSS `transform .36s cubic-bezier(.34,1.3,.64,1)` (overshoot) vs settle spring (about 427 ms, small overshoot); jump under RM: ok. Decide: add a `tween` option to the Messages Segmented, or accept the settle spring. Desktop rail: rows open/close height (`ENTER`/`LEAVE`) on filter change vs translateY glide + fade: switch the rail's two `ListPresence` to `arrive="inbox"` too. |
 | MOT-LIST-5 | PARTIAL | Row/pin dots: see MSG-110. Preview swaps to dots while typing, hides 5 s after the last event (`use-typing-by-conversation.ts:6`, `MV:560-566`), loop 1.2 s, delays 0/.16/.32. Reduce Motion: no animation, opacity 1 (`CSS:4186-4196`, also `base.css:320-327`). | Easing token vs CSS `ease`; gap 2 vs 3; 2+ typers show text. Otherwise DONE. |
 | MOT-X-2 | PARTIAL | Same code as MOT-LIST-4 thumb. | CSS 360 ms `cubic-bezier(.34,1.3,.64,1)` vs `settle` spring via WAAPI (`slide-plate.ts`). Reduce Motion jump: ok. |
-| MOT-X-8 | PARTIAL | Row menu = `ContextMenuSurface` `m.div` (`UI/ContextMenu.tsx:289-316`): in `CH_POP.initial` (opacity 0, `translateY(-4px) scale(.97)`), exit `translateY(-2px) scale(.98)`, both `chTween('quick')` 180 ms; origin `top|bottom left|right` from placement (`:243-258`). Reduce Motion: opacity only. | Needs `scale(.8) opacity 0 > none` on the `lift` spring from the top-left (bottom-left when flipped up) and a 160 ms opacity close; add as an option on `useContextMenu` (shared by other screens), not a global change. |
+| MOT-X-8 | PARTIAL | Row menu = `ContextMenuSurface` `m.div` (`UI/ContextMenu.tsx:289-316`): in `CH_POP.initial` (opacity 0, `translateY(-4px) scale(.97)`), exit `translateY(-2px) scale(.98)`, both `chTween('quick')` 180 ms; origin `top \| bottom left \| right`from placement (`:243-258`). Reduce Motion: opacity only. | Needs `scale(.8) opacity 0 > none` on the `lift` spring from the top-left (bottom-left when flipped up) and a 160 ms opacity close; add as an option on `useContextMenu` (shared by other screens), not a global change. |
 | MOT-X-15 | PARTIAL | Phone inbox skeleton `.ch-msv-sk` pulse `ch-msv-skel` opacity 1 > .55 at 50% over `--ch-dur-sweep` = 900 ms, ease-in-out, infinite (`CSS:4174-4185`, `tokens.css:926`); stops under `prefers-reduced-motion` and `data-motion='off'` (`CSS:4186-4196`). Desktop rail and route skeleton use `ui Skeleton` -> `.ch-skel` with a sheen sweep `--ch-dur-shimmer` 1.9 s (`shell.css:857-870`, `tokens.css:922`). | Duration 900 ms vs 1.4 s (`animation-duration: 1.4s` on the Messages skeleton only; do not change `--ch-dur-sweep`, spinners use it). Desktop/route: replace the shimmer with the same pulse (new `ch-msv-sk` rows). RM stop: ok. |
 | MOT-X-17 | CONFLICTS | Rows transition `background-color var(--ch-dur-quick)` 180 ms (`CSS:115-117`; phone `var(--ch-dur-press)` 110 ms, `CSS:1793`). Selected = 5% ink (`CSS:4110`), press = `[data-ch-pressed]` 5% (`CSS:4124`). Pins have no transition. | REMOVE FIRST: the row background transitions (`CSS:115-117` 180 ms, `CSS:1793` 110 ms). Then: Spec: a plain background change, no animation. Set `transition: none` on `.ch-ms-row` in the v2 scope (phone and desk). Colour values are right. |
 
 ### Code map
 
 #### src/clubhouse/screens/messages/MessagesPhone.tsx (1,270 lines)
+
 | Lines | Name | Holds | Shared with other slices |
 | --- | --- | --- | --- |
 | 1-113 | imports | inbox uses `Segmented`, `SearchField`, `RailEmpty`, `MessageHits`, `AnnouncementsSection`, `MessagesFirstRun`, `ListPresence`, `Avatar`, `filterConvs`, `pinnedThreads`, `noteTappedFace` | the thread/details imports are slice B/C/D |
@@ -93,6 +147,7 @@ Counts: 35 items. DONE 7, PARTIAL 20, CONFLICTS 8 (MSG-102, 106, 108, 109, 112, 
 | 1203-1270 | `PhoneAnnouncementForm` | none | D |
 
 #### src/clubhouse/screens/messages/MessagesView.tsx (3,389 lines)
+
 | Lines | Name | Holds | Shared with other slices |
 | --- | --- | --- | --- |
 | 152 | `RAIL_KEYS` | rail keyboard hint | A |
@@ -112,9 +167,21 @@ Counts: 35 items. DONE 7, PARTIAL 20, CONFLICTS 8 (MSG-102, 106, 108, 109, 112, 
 | 3257-3389 | `MessagesDesktop` | rail mount `:3295`; the rest is pane/details/first-run | D owns the function, A owns only the `<Rail>` line |
 
 #### src/clubhouse/screens/messages/Messages.tsx (1,094 lines, one component `Messages` 73-1094 that builds the `api` object)
-A touches: `mark`/`marked` (108-117, device-only marked-unread), `loadedConvs` mapping (119-147: `lastText`, `lastSenderId`, `lastIsPoll`, `markedUnread`; a pin bubblet needs `lastSenderId`, already there), `select` (280-298: clears the mark on open), `canHide` probe (171-183), `searchMessages` (577-603), `muteOf` (631-641), `rowMutes`/`convIds`/`pins`/`typingByConv`/`shownConvs` (689-693), `api` fields `pins`, `typingByConv`, `convs`, `convsLoading`, `convsError` (695-720), `deleteConversation` (937-949), `openHit` (999-1002), `muteConversation` (1015-1019), `setRead` (1020-1042). The rest of `api` (send, attachments, polls, reactions, members, announcements, drafts) belongs to B/C/D. Because it is one `api` literal, merge conflicts here are likely: keep A's edits to the listed blocks.
+
+A touches: `mark`/`marked` (108-117, device-only marked-unread), `loadedConvs`
+mapping (119-147: `lastText`, `lastSenderId`, `lastIsPoll`, `markedUnread`; a
+pin bubblet needs `lastSenderId`, already there), `select` (280-298: clears the
+mark on open), `canHide` probe (171-183), `searchMessages` (577-603), `muteOf`
+(631-641), `rowMutes`/`convIds`/`pins`/`typingByConv`/`shownConvs` (689-693),
+`api` fields `pins`, `typingByConv`, `convs`, `convsLoading`, `convsError`
+(695-720), `deleteConversation` (937-949), `openHit` (999-1002),
+`muteConversation` (1015-1019), `setRead` (1020-1042). The rest of `api` (send,
+attachments, polls, reactions, members, announcements, drafts) belongs to B/C/D.
+Because it is one `api` literal, merge conflicts here are likely: keep A's edits
+to the listed blocks.
 
 #### Other files in the slice
+
 | File | What | Notes |
 | --- | --- | --- |
 | `RailEmpty.tsx` (42) | MSG-108 filtered empties | A only |
@@ -131,10 +198,24 @@ A touches: `mark`/`marked` (108-117, device-only marked-unread), `loadedConvs` m
 | `thread-v2.tsx:269-309` | `noteTappedFace`, `useFaceFlight` | B owns the file; A calls `noteTappedFace` |
 
 #### CSS (`src/clubhouse/styles/messages.css`, 5,958 lines, shared by all slices)
-Inbox rules, in three generations that overlap: base rail/rows `:36-380`; skeleton/phone page `:1560-1680`; phone rows/seams `:1756-1930`; announcements `:3251-3340`; v2 inbox `:4068-4335` (everything under `[data-ch-ms-v2]`); unread dot + card rows `:5063-5078`; skeleton lines `:5921-5928`; narrow-phone bubblet override `:5937-5941`. Token blocks `:5855-5865`. The 4,000+ lines of thread/composer/overlay/details rules between those belong to B/C/D. Related shared files: `controls.css` (Segmented `:3-107`, Search `:161-215`, phone sizes `:585-640`), `ui.css` (`.ch-popover` `:622`), `tokens.css`, `shell.css` (`.ch-pscreen`, scrim `:1600-1625`).
+
+Inbox rules, in three generations that overlap: base rail/rows `:36-380`;
+skeleton/phone page `:1560-1680`; phone rows/seams `:1756-1930`; announcements
+`:3251-3340`; v2 inbox `:4068-4335` (everything under `[data-ch-ms-v2]`); unread
+dot + card rows `:5063-5078`; skeleton lines `:5921-5928`; narrow-phone bubblet
+override `:5937-5941`. Token blocks `:5855-5865`. The 4,000+ lines of
+thread/composer/overlay/details rules between those belong to B/C/D. Related
+shared files: `controls.css` (Segmented `:3-107`, Search `:161-215`, phone sizes
+`:585-640`), `ui.css` (`.ch-popover` `:622`), `tokens.css`, `shell.css`
+(`.ch-pscreen`, scrim `:1600-1625`).
 
 #### Shared UI / shell touched
-`UI/ContextMenu.tsx` (hold 500 ms, width 232, `CH_POP`), `UI/Menu.tsx` (caption + native disabled), `UI/Segmented.tsx` + `lib/slide-plate.ts`, `UI/SearchField.tsx`, `UI/ListPresence.tsx`, `UI/SwipeRow.tsx`, `UI/Avatar.tsx`, `SH/phone-chrome.tsx` (`CH_UNDERLAY_SHIFT`, `PhoneTop`, `slideUnderlay`), `SH/PhoneScreen.tsx`. Changes there affect every Clubhouse screen: add Messages-scoped variants/options.
+
+`UI/ContextMenu.tsx` (hold 500 ms, width 232, `CH_POP`), `UI/Menu.tsx` (caption + native disabled), `UI/Segmented.tsx` + `lib/slide-plate.ts`,
+`UI/SearchField.tsx`, `UI/ListPresence.tsx`, `UI/SwipeRow.tsx`, `UI/Avatar.tsx`,
+`SH/phone-chrome.tsx` (`CH_UNDERLAY_SHIFT`, `PhoneTop`, `slideUnderlay`),
+`SH/PhoneScreen.tsx`. Changes there affect every Clubhouse screen: add
+Messages-scoped variants/options.
 
 ### Tests
 
@@ -153,39 +234,147 @@ Existing tests that pin behaviour in this slice, and what legitimately changes:
 | `clubhouse/__tests__/page-spacing.test.ts` | `.ch-msp-page` and `.ch-msp-skel` use page tokens (`:111-112`) | Keep edges on `--ch-page-x-phone`; the inbox fix (zero inline padding on `.ch-msv-inbox`) must still pass. |
 | `clubhouse/preview/__tests__/messages-design-fixture.test.tsx` | the `[data-ch-ms-v2]` root | none |
 
-A repo-wide search (excluding `node_modules`) for `ch-ms-row`, `ch-msv-`, `Pin up to 3`, `Nothing unread`, `Loading conversations` finds no test, `e2e/` or `scripts/` file outside `src/` that pins inbox selectors or copy; the hits outside the code are docs: `docs/clubhouse/catalog/messages.md`, `docs/clubhouse/pages/P007-messages/changes/*` (inbox row, desktop seams, silent open), `docs/clubhouse/motion/2026-10-20-messages.md` and `design/handoff/messages.jsx`. The mapped feature docs carry the old copy and structure and must be updated with the build (AGENTS.md: update the mapped doc when its contract changes).
+A repo-wide search (excluding `node_modules`) for `ch-ms-row`, `ch-msv-`, `Pin
+up to 3`, `Nothing unread`, `Loading conversations` finds no test, `e2e/` or
+`scripts/` file outside `src/` that pins inbox selectors or copy; the hits
+outside the code are docs: `docs/clubhouse/catalog/messages.md`,
+`docs/clubhouse/pages/P007-messages/changes/*` (inbox row, desktop seams, silent
+open), `docs/clubhouse/motion/2026-10-20-messages.md` and
+`design/handoff/messages.jsx`. The mapped feature docs carry the old copy and
+structure and must be updated with the build (AGENTS.md: update the mapped doc
+when its contract changes).
 
-No test pins the phone context line, `typersLine`, the pin bubblet, `PhoneInboxV2`, `MessageHits` copy or `RailEmpty`'s search/Unread copy directly; add focused tests for each new rule.
+No test pins the phone context line, `typersLine`, the pin bubblet,
+`PhoneInboxV2`, `MessageHits` copy or `RailEmpty`'s search/Unread copy directly;
+add focused tests for each new rule.
 
 ### Risks and surprises
 
-1. Pins in production (what actually happens; the table's absence is inferred from `HELD.md:253` and `database.ts` having no `golf_conversation_pins`, not checked against the live catalog). There is NO server action and NO loader for pins. `useConversationPins` (`use-conversation-pins.ts`) talks to Supabase from the browser: it reads `golf_conversation_pins` (`.select('conversation_id')` scoped by `team_id`, ordered by `position`, `:73-77`), writes through `rpc('golf_pin_conversation', {p_conversation_id, p_pinned})` which returns `{pins: [...]}` or raises `pin_limit` / `not_a_member` (`:86`, `:211-216`; toasts "You already have 3 pinned." / "You’re not in this conversation anymore."), imports this device's pins once (`:94-121`) and listens on the private channel `golf-pins:<viewer>` (event `pins`, `:153-160`). `golf_reorder_conversation_pins` exists in the migration but nothing calls it. Migration `20261031150000_golf_conversation_pins.sql` is "WRITTEN, NOT APPLIED" in `supabase/migrations/HELD.md:253` and `golf_conversation_pins` is not in `src/lib/types/database.ts`, so in production the read fails (`42P01`/`PGRST205`/`PGRST202`), the hook stores `unavailableUntil = now + 5 min` (module scope, `:13-15`, `:76`) and returns `null`; the UI then uses device pins (`pinned.ts`, localStorage `ch:msg:pinned:{viewer}:{team}`, max 3) with no toast or error anywhere. Pins therefore WORK per device in production, do not sync, and cannot show on a second device. Side effects: (a) the Pinned card is held empty for up to `PROBE_WAIT_MS` = 1.5 s (`:229`) and then jumps to the device pins, so tiles can appear late; (b) every window `focus` on a mount that did the probe repeats the failing GET because `refetch` does not check `unavailableUntil` (`:139-142`, `:174`; the early return at `:130` only skips mounts inside the 5-minute window): one 404 per focus in the network panel; (c) Messages passes `enabled=true` as a literal (`M:691`); the "flag off: no request" comment is stale. After the owner applies the migration and runs `npm run db:types`, the next mount picks up the server list and runs the one-time import; the `PinsClient` cast can then go. The build must keep the device fallback.
-2. Pin accounting does not match the spec. The team channel is "always pinned first" for display (`pinnedThreads`, `model.ts:378-382`) but is not a stored pin and does not count toward `atLimit` (`pinned.ts:44`, `use-conversation-pins.ts:234`). The HTML's third pin is the channel (pins = team, eli, dana; "Pin up to 3" appears at 3 including Team). In code a coach can store 3 own pins, and the phone card then shows channel + the first two and silently drops the third from Pinned (it falls into Recent). Either count the channel in `atLimit` (limit 3 total) or make the limit 2 when a channel exists. The channel row's menu also offers "Pin" (it dedups in display but burns a slot).
-3. Unpin on the phone. If MSG-107 filters pinned conversations out of Recent, the only row menu (`ConvRow`) is no longer reachable for a pinned DM; today it is reachable only because filters/search re-list pins. The Pinned tile needs its own long-press menu (Unpin, Mark as unread, Mute…, Delete) using the same `useContextMenu`. The HTML does not draw this; propose it as the default.
-4. Possible double inset on the phone inbox (MSG-004/005): `.ch-msp-page` padding plus `.ch-msv-top`/`.ch-msv-card` padding/margin. Measure before and after.
-5. 24% vs 30% push underlay is a conflict between the HTML/MOTION.md and the Nov 4 ruling in `07-MOTION.md` (M-MSG-01a: "build -24%, `CH_UNDERLAY_SHIFT`, `brightness(0.9)`") and `SETTLED-4NOV`; the constant is shell-wide. Also the Reduce Motion fade is 180 ms in the app (`CH_FADE_MS`, owner decision 2) vs 120 ms in the HTML (Q-05).
-6. Shared primitives. Segmented, SearchField, ContextMenu/Menu, ListPresence, Avatar sizes and `.ch-popover` are used by every screen; `controls.css:585-591` enlarges segments on the phone for the whole app. Implement Messages deltas as scoped variants (class under `[data-ch-ms-v2]`, or new optional props) and keep `ui/__tests__` green.
-7. CSS archaeology. Row styling is three generations deep with an `!important` avatar size (`CSS:301-303`), a two-line name clamp (`CSS:310-320`), unscoped rules (`.ch-menu__item:disabled`, `CSS:4332`), and `~`-sibling seam selectors that exist because a row's sheets are `<dialog>`s left after its frame (`CSS:1840-1875`, pinned by `conv-row-seams.test.tsx`). Change the seam model in one pass with the test.
-8. `MessagesScreen` wraps the screen in `data-ch-ms-v2` unconditionally (`MessagesScreen.tsx:36`); the "flag off keeps today's DOM" comments in `CSS` are historical. All new CSS can live under that attribute.
-9. Phone rows sit inside `SwipeRow` (leading Read/Unread, trailing Delete; owner decision 14) and the Actions button for VoiceOver (`MV:416-429`). The HTML draws neither; keep them (every action must also be in the menu). The extra wrapper is why seam CSS targets `.ch-ms-swipe`.
-10. Announcements live inside the inbox on both layouts (`AnnouncementsSection`, owner 2026-10-16, D-44; `MP:350`, `MV:729`). The HTML has no announcements. Keep unless PLAN removes them; they must follow the new card/row styling or they will look like the old ledger.
-11. Delete/hide: `hideGolfConversation` is a server action writing the caller's own `hidden_at` (`actions/conversation-hide.ts`). Migration `20261008160000` is APPLIED (HELD.md:196, 2026-10-21) and `database.ts:12646` has `hidden_at`, so the file's "held" comments and the `as '*'`/`as never` casts are stale; `canHideGolfConversations` still costs one server-action read unless `data.canHide` is passed (`M:171-183`). The team channel cannot be hidden (server error "A team channel can’t be deleted") but the menu offers Delete for it.
-12. Mark as unread is device-local (`marked-unread.ts`, owner decision 14): it never changes the server read flag or the nav badge; opening the conversation clears it (`M:290`). The "Unread" filter and the dot include marked rows (`model.ts:216-218`).
-13. Search is a server action with `ilike` over messages (limit 50, hidden conversations excluded, `actions/messages.ts:1483-1560`); the client filters hits to the loaded inbox (`M:595-597`) and shows 20. Name search also matches the preview text (`model.ts:222`).
-14. Typing: the hook joins up to 30 `golf-conversation:<id>` channels and skips the open thread; pins and rows beyond that show no typing. Group copy is a decision (Q-12 default: dots only).
-15. Desktop auto-open: with no `selectedId`, desktop opens the newest thread beside the rail and marks it selected (`M:184-191`), so the `is-sel` wash is always present on desktop.
-16. Rail head is fixed above the scroller in code; in the HTML prototype it scrolls with the list. Spec text does not require scrolling; keep fixed.
-17. HTML vs SPEC.md: SPEC.md MSG-107 says the phone list "filters out pin", the HTML also keeps the Pinned card under Unread/Groups; the HTML also lists desktop pinned rows only when they pass the filter (matches code). SPEC.md MSG-105 "Max 3" counts the team channel (see item 2).
+1. Pins in production (what actually happens; the table's absence is inferred
+   from `HELD.md:253` and `database.ts` having no `golf_conversation_pins`, not
+   checked against the live catalog). There is NO server action and NO loader
+   for pins. `useConversationPins` (`use-conversation-pins.ts`) talks to
+   Supabase from the browser: it reads `golf_conversation_pins`
+   (`.select('conversation_id')` scoped by `team_id`, ordered by `position`,
+   `:73-77`), writes through `rpc('golf_pin_conversation', {p_conversation_id,
+   p_pinned})` which returns `{pins: [...]}` or raises `pin_limit` /
+   `not_a_member` (`:86`, `:211-216`; toasts "You already have 3 pinned." /
+   "You’re not in this conversation anymore."), imports this device's pins once
+   (`:94-121`) and listens on the private channel `golf-pins:<viewer>` (event
+   `pins`, `:153-160`). `golf_reorder_conversation_pins` exists in the migration
+   but nothing calls it. Migration `20261031150000_golf_conversation_pins.sql`
+   is "WRITTEN, NOT APPLIED" in `supabase/migrations/HELD.md:253` and
+   `golf_conversation_pins` is not in `src/lib/types/database.ts`, so in
+   production the read fails (`42P01`/`PGRST205`/`PGRST202`), the hook stores
+   `unavailableUntil = now + 5 min` (module scope, `:13-15`, `:76`) and returns
+   `null`; the UI then uses device pins (`pinned.ts`, localStorage
+   `ch:msg:pinned:{viewer}:{team}`, max 3) with no toast or error anywhere. Pins
+   therefore WORK per device in production, do not sync, and cannot show on a
+   second device. Side effects: (a) the Pinned card is held empty for up to
+   `PROBE_WAIT_MS` = 1.5 s (`:229`) and then jumps to the device pins, so tiles
+   can appear late; (b) every window `focus` on a mount that did the probe
+   repeats the failing GET because `refetch` does not check `unavailableUntil`
+   (`:139-142`, `:174`; the early return at `:130` only skips mounts inside the
+   5-minute window): one 404 per focus in the network panel; (c) Messages passes
+   `enabled=true` as a literal (`M:691`); the "flag off: no request" comment is
+   stale. After the owner applies the migration and runs `npm run db:types`, the
+   next mount picks up the server list and runs the one-time import; the
+   `PinsClient` cast can then go. The build must keep the device fallback.
+2. Pin accounting does not match the spec. The team channel is "always pinned
+   first" for display (`pinnedThreads`, `model.ts:378-382`) but is not a stored
+   pin and does not count toward `atLimit` (`pinned.ts:44`,
+   `use-conversation-pins.ts:234`). The HTML's third pin is the channel (pins =
+   team, eli, dana; "Pin up to 3" appears at 3 including Team). In code a coach
+   can store 3 own pins, and the phone card then shows channel + the first two
+   and silently drops the third from Pinned (it falls into Recent). Either count
+   the channel in `atLimit` (limit 3 total) or make the limit 2 when a channel
+   exists. The channel row's menu also offers "Pin" (it dedups in display but
+   burns a slot).
+3. Unpin on the phone. If MSG-107 filters pinned conversations out of Recent,
+   the only row menu (`ConvRow`) is no longer reachable for a pinned DM; today
+   it is reachable only because filters/search re-list pins. The Pinned tile
+   needs its own long-press menu (Unpin, Mark as unread, Mute…, Delete) using
+   the same `useContextMenu`. The HTML does not draw this; propose it as the
+   default.
+4. Possible double inset on the phone inbox (MSG-004/005): `.ch-msp-page`
+   padding plus `.ch-msv-top`/`.ch-msv-card` padding/margin. Measure before and
+   after.
+5. 24% vs 30% push underlay is a conflict between the HTML/MOTION.md and the Nov
+   4 ruling in `07-MOTION.md` (M-MSG-01a: "build -24%, `CH_UNDERLAY_SHIFT`,
+   `brightness(0.9)`") and `SETTLED-4NOV`; the constant is shell-wide. Also the
+   Reduce Motion fade is 180 ms in the app (`CH_FADE_MS`, owner decision 2) vs
+   120 ms in the HTML (Q-05).
+6. Shared primitives. Segmented, SearchField, ContextMenu/Menu, ListPresence,
+   Avatar sizes and `.ch-popover` are used by every screen;
+   `controls.css:585-591` enlarges segments on the phone for the whole app.
+   Implement Messages deltas as scoped variants (class under `[data-ch-ms-v2]`,
+   or new optional props) and keep `ui/__tests__` green.
+7. CSS archaeology. Row styling is three generations deep with an `!important`
+   avatar size (`CSS:301-303`), a two-line name clamp (`CSS:310-320`), unscoped
+   rules (`.ch-menu__item:disabled`, `CSS:4332`), and `~`-sibling seam selectors
+   that exist because a row's sheets are `<dialog>`s left after its frame
+   (`CSS:1840-1875`, pinned by `conv-row-seams.test.tsx`). Change the seam model
+   in one pass with the test.
+8. `MessagesScreen` wraps the screen in `data-ch-ms-v2` unconditionally
+   (`MessagesScreen.tsx:36`); the "flag off keeps today's DOM" comments in `CSS`
+   are historical. All new CSS can live under that attribute.
+9. Phone rows sit inside `SwipeRow` (leading Read/Unread, trailing Delete; owner
+   decision 14) and the Actions button for VoiceOver (`MV:416-429`). The HTML
+   draws neither; keep them (every action must also be in the menu). The extra
+   wrapper is why seam CSS targets `.ch-ms-swipe`.
+10. Announcements live inside the inbox on both layouts (`AnnouncementsSection`,
+    owner 2026-10-16, D-44; `MP:350`, `MV:729`). The HTML has no announcements.
+    Keep unless PLAN removes them; they must follow the new card/row styling or
+    they will look like the old ledger.
+11. Delete/hide: `hideGolfConversation` is a server action writing the caller's
+    own `hidden_at` (`actions/conversation-hide.ts`). Migration `20261008160000`
+    is APPLIED (HELD.md:196, 2026-10-21) and `database.ts:12646` has
+    `hidden_at`, so the file's "held" comments and the `as '*'`/`as never` casts
+    are stale; `canHideGolfConversations` still costs one server-action read
+    unless `data.canHide` is passed (`M:171-183`). The team channel cannot be
+    hidden (server error "A team channel can’t be deleted") but the menu offers
+    Delete for it.
+12. Mark as unread is device-local (`marked-unread.ts`, owner decision 14): it
+    never changes the server read flag or the nav badge; opening the
+    conversation clears it (`M:290`). The "Unread" filter and the dot include
+    marked rows (`model.ts:216-218`).
+13. Search is a server action with `ilike` over messages (limit 50, hidden
+    conversations excluded, `actions/messages.ts:1483-1560`); the client filters
+    hits to the loaded inbox (`M:595-597`) and shows 20. Name search also
+    matches the preview text (`model.ts:222`).
+14. Typing: the hook joins up to 30 `golf-conversation:<id>` channels and skips
+    the open thread; pins and rows beyond that show no typing. Group copy is a
+    decision (Q-12 default: dots only).
+15. Desktop auto-open: with no `selectedId`, desktop opens the newest thread
+    beside the rail and marks it selected (`M:184-191`), so the `is-sel` wash is
+    always present on desktop.
+16. Rail head is fixed above the scroller in code; in the HTML prototype it
+    scrolls with the list. Spec text does not require scrolling; keep fixed.
+17. HTML vs SPEC.md: SPEC.md MSG-107 says the phone list "filters out pin", the
+    HTML also keeps the Pinned card under Unread/Groups; the HTML also lists
+    desktop pinned rows only when they pass the filter (matches code). SPEC.md
+    MSG-105 "Max 3" counts the team channel (see item 2).
 
-Summary: 35 items, DONE 7, PARTIAL 20, CONFLICTS 8 (MSG-102 context line, MSG-106 narrow-phone bubblet override, MSG-108 empty copy, MSG-109 unread styling/avatar/seams, MSG-112 route skeleton, MSG-113 name wrap, MSG-124 rail seams, MOT-X-17 row transitions), MISSING 0.
+Summary: 35 items, DONE 7, PARTIAL 20, CONFLICTS 8 (MSG-102 context line,
+MSG-106 narrow-phone bubblet override, MSG-108 empty copy, MSG-109 unread
+styling/avatar/seams, MSG-112 route skeleton, MSG-113 name wrap, MSG-124 rail
+seams, MOT-X-17 row transitions), MISSING 0.
 
 ---
 
 ## Part B. Slice B: thread, composer, send, typing, date pill, jump
 
-Slice B of the Messages v2 gap survey. Today's code is the Nov 4 generation (`[data-ch-ms-v2]` rules in `src/clubhouse/styles/messages.css`, hooks in `thread-v2.tsx`). Where SPEC.md and the HTML differ I say so. All paths below are under `src/clubhouse/` unless they start with `src/`. Line numbers were re-read against the checkout (branch `agent/ch-messages-v2`). CSS-cascade claims (specificity) come from reading the stylesheet, not from a browser run; the implementer should check them in WebKit.
+Slice B of the Messages v2 gap survey. Today's code is the Nov 4 generation
+(`[data-ch-ms-v2]` rules in `src/clubhouse/styles/messages.css`, hooks in
+`thread-v2.tsx`). Where SPEC.md and the HTML differ I say so. All paths below
+are under `src/clubhouse/` unless they start with `src/`. Line numbers were
+re-read against the checkout (branch `agent/ch-messages-v2`). CSS-cascade claims
+(specificity) come from reading the stylesheet, not from a browser run; the
+implementer should check them in WebKit.
 
-Abbreviations: MV = `screens/messages/MessagesView.tsx`, MP = `screens/messages/MessagesPhone.tsx`, T2 = `screens/messages/thread-v2.tsx`, CSS = `styles/messages.css`, UGM = `src/hooks/golf/use-golf-messages.ts`.
+Abbreviations: MV = `screens/messages/MessagesView.tsx`, MP =
+`screens/messages/MessagesPhone.tsx`, T2 = `screens/messages/thread-v2.tsx`, CSS
+= `styles/messages.css`, UGM = `src/hooks/golf/use-golf-messages.ts`.
 
 ### Verdicts
 
@@ -208,7 +397,7 @@ Abbreviations: MV = `screens/messages/MessagesView.tsx`, MP = `screens/messages/
 | MSG-215 | PARTIAL | Group receipt `SeenByPill` (seen-by.tsx:144-167): paper pill with up to 5 faces (`SeenFaces size 16 max 5`, seen-by.tsx:105-122, pop-in on `pop`), text "Seen by **n** of m" / "Seen by everyone" / "Sent" (`seenByLabel`, message-receipts.ts:39-45). CSS `.ch-msv-seen`: gap 6, padding `4 8 4 4`, margin `6 2 0`, card shadow, 13/500 (CSS:4987-5008); face ring `0 0 0 1px card` and overlap -4 (CSS:4970-4982). Button when `canOpen`, else a span. Only for viewers `seenByAccess` allows (`'sender-and-coaches'`, message-receipts.ts:82; mine only). The file header comment "No faces anywhere" (seen-by.tsx:25) is stale. | Zero readers: copy "Delivered" (code "Sent"), non-interactive pill. Padding `3 9 3 4`, 12.5k/500, face ring 1.5px surface. Everything else matches. Player senders in groups: Q-15 decides. |
 | MSG-216 | CONFLICTS | Failed bubble gets a muted fill and dashed outline: `.ch-ms-msg.is-failed .ch-ms-bub {background: --ch-bg-subtle; outline: 1.5px dashed ...}` (CSS:599-606, 3238-3247; keyed by `is-failed` class MV:1304). Line under it is `.ch-ms-msg__fail` pill (MV:1441-1459; CSS:4659-4672): "Not sent." + "Try again" + "Discard" buttons; unknown outcome: "Couldn’t confirm this message sent. Check before sending again." Retry = `api.retry(id)` (Messages.tsx:825-835): offline refuses with CH-1903, failure toasts CH-7004, success has NO toast. | HTML draws the normal green bubble (no `.is-failed` rule) with a danger-colour pill under it: alert icon 14k + `Not delivered · **Try again**` (500; bold on Try again). Flip: remove the muted/dashed bubble styling (CSS:3238-3247 and the base rule), restyle `.ch-ms-msg__fail` danger (`--ch-flag`), copy "Not delivered" (Q-03 default: adopt; change `messages.test.tsx:474,484,491` on purpose), add toast "Sending again" on tap. Keep the unknown-outcome copy and CH-7016/7017 codes (Q-06). Keep "Discard" (spec has none, but it is the only way to drop a failed row; decision for the implementer, default keep as a secondary action). |
 | MSG-217 | MISSING | `edited` is mapped into `ChMsg` (Messages.tsx:476, model.ts:99) but nothing renders it: grep `\.edited` in screens/messages finds no JSX. | Add `<span class="edited">Edited</span>` inside the text bubble before the tail: 0.78em, opacity .75, margin-left 6. |
-| MSG-218 | PARTIAL | `ReplyQuote` (MV:1573-1596): a button `.ch-ms-quote` above the bubble with `<b>You|Name</b>` + one-line text; v2 override makes it flat well bg with no shadow (CSS:5919-5920). | Spec: margin `0 4px 4px`, padding `5 10`, radius 12, surface + card shadow, 13 ink-2, max-width 100%. The v2 "flat inside the bubble" override (CSS:5919 "MSG-15") contradicts: flip to card surface + shadow. Keep click-to-scroll behaviour. |
+| MSG-218 | PARTIAL | `ReplyQuote` (MV:1573-1596): a button `.ch-ms-quote` above the bubble with `<b>You \| Name</b>` + one-line text; v2 override makes it flat well bg with no shadow (CSS:5919-5920). | Spec: margin `0 4px 4px`, padding `5 10`, radius 12, surface + card shadow, 13 ink-2, max-width 100%. The v2 "flat inside the bubble" override (CSS:5919 "MSG-15") contradicts: flip to card surface + shadow. Keep click-to-scroll behaviour. |
 | MSG-219 | DONE | `overflow-wrap:anywhere` on bubbles (CSS:576); header name truncates (`.ch-msp-who b` ellipsis, CSS:1963-1970; desktop `.ch-ms-th__who`). Keys stay 44. | none |
 | MSG-220 | (see other slice) PARTIAL | Shell only (content = slice D): photo is a button `.ch-ms-img` (MV:895-901) 242x176, padding 2, radius xl, theirs/mine bg (CSS:4606-4623), inner img radius lg; lazy-loaded by `Attachments` (MV:911-1040) INSIDE `.ch-ms-msg__stack` (MV:1325-1347). Holdable: stack carries the press handlers (MV:1325). aria = `Open {name}` (MV:895), not "Photo from {First}"; img alt = file name, no `role=img` "Photo of ...". No tail (ok). | Seam: slice B owns `.ch-ms-msg__stack`/row/reaction badge/press; slice D owns `Attachments`, `ImageAttachment`, `.ch-ms-img`. Shell deltas: inner padding 2 -> 3, outer stays 242x176; bubble aria "Photo from {First}". Reaction badge is positioned on `.ch-ms-msg__col` (MV:1433), fine. |
 | MSG-221 | (see other slice) PARTIAL | File bubble = `<a class="ch-ms-bub ch-ms-bub--file">` (MV:1015-1033; CSS:628-660 legacy): icon tile `.ch-ms-file__ic`, name `<b>`, `kind · size`, download icon. No type-label tile (PDF/MOV 9.5/700), no "mine = white .14 tile". | Seam as MSG-220 (D owns content). B owns only that the row/stack/press/holdable behaviour and corner joins apply to it. |
@@ -217,7 +406,7 @@ Abbreviations: MV = `screens/messages/MessagesView.tsx`, MP = `screens/messages/
 | MSG-224 | (see other slice) PARTIAL | `ch-msv-hoverbar role="toolbar" aria-label="Message actions"` with Like/Love/Laugh, Reply, More (MV:1353-1387): 5 keys, glyph 14.4. Rendered on desktop only (`!onActions`). Also rendered on polls. CSS: `top:-20`, `left:0` (theirs) / `right:0` (mine) i.e. above the bubble corner, width 144, height 32.6, padding 2, key 26.9, `--ch-glass-bg` blur (CSS:5657-5700). Aria: "React like"/"Remove like", "Reply", "More message actions". | Position beside the bubble: top -18; theirs `right:-64`, mine `left:-64`. Padding 3, keys 28, `glass-strong` blur 18. Aria exactly "Like", "Love", "Laugh", "Reply", "More actions". Not on polls. Opacity 160 ms / transform 220 ms `--ch-ease` (code 180/180). Hover reveal on `:hover/:focus-within` ok. |
 | MSG-301 | PARTIAL | One `Composer` for desktop and phone (MV:1777-2130). v2 pill: `.ch-ms-comp__field` flex, gap 6, `min-height:46`, padding 4, radius xl (20), `--ch-glass-strong`, `--ch-card-shadow` (CSS:4688-4699). No focus-within ring. Phone: the v2 rules win where both set a property (equal specificity 0,2,0 / 0,2,1 and v2 comes later: field CSS:4688 over CSS:2123-2129; textarea CSS:4699 over CSS:2139-2153; the phone composer padding is v2's CSS:5901-5907, `0 12px max(8px, inset-4)`, keyboard-open `8px` CSS:5909). What leaks through from the legacy phone textarea rule is what v2 never sets: `box-sizing:border-box`, `border-radius:22px`, `background-clip:padding-box`, `box-shadow: var(--ch-field-pill-edge)` (CSS:2139-2153), and the legacy `:focus` rule `box-shadow: var(--ch-field-pill-edge-focus)` (CSS:2154-2157, specificity 0,3,1, beats v2). So the phone field is a glass pill containing a textarea that still draws its own 22px edge ring. Desktop: `.ch-ms-comp` padding `8 32 16`, max-width `--ch-ms-measure` 816 (CSS:988-998). | Spec: pill padding 5, gap 6, radius 24, max-width 760 centred, glass-strong blur 24 saturate 170%, float shadow `--ch-shadow-float`; focus-within ring `0 0 0 1.5px color-mix(in oklab, accent-text 55%, transparent)`; `.comp` padding phone `8 10 30` (14 at 430) / desk `10 28 18`. Delete the legacy `.ch-msp-thread .ch-ms-comp*` block (CSS:2109-2178 incl. send rules, dark variants CSS:3213-3225) so the v2 pill is the only look. `--ch-glass-saturate` is 110% (tokens.css:603): saturate(170%) is new. |
 | MSG-302 | PARTIAL | `ComposerPlusV2` key (ComposerPlusV2.tsx:66-68): 36 circle `--ch-well-bg-flat`, `Plus size 20`, rotates 45 on open with `transform var(--ch-dur-release) var(--ch-ease-spring)` (CSS:4745-4751; 280 ms, spec 300 ms). aria "Add a photo, file or poll" and it changes to "Close" while open; `aria-expanded` ok. | Spec aria is static "Add photo, file or poll" (drop the "a" and the "Close" swap; `composer-v2.test.tsx:122,144-147` pin today's). Icon ink-2 (code text-primary). The menu itself is slice C/D (MSG-312). |
-| MSG-303 | PARTIAL | Textarea `rows=1`, placeholder `Message {firstName|group title}` (MV:2080), `useAutosize` (MV:1735-1747) no animation; max 132 (v2 CSS:4707 `max-height:132px`, `min-height:36px`, padding `8px 4px 6px`); phone legacy overrides (see MSG-301). aria-label is `Message {label}` (MV:2079), disabled copy "Replies are off until this loads". | Spec aria "Message"; padding `8 4 7`; 16k/1.32 (code 16/21). Keep disabled copy (Q-06). |
+| MSG-303 | PARTIAL | Textarea `rows=1`, placeholder `Message {firstName \| group title}` (MV:2080), `useAutosize` (MV:1735-1747) no animation; max 132 (v2 CSS:4707 `max-height:132px`,`min-height:36px`, padding`8px 4px 6px`); phone legacy overrides (see MSG-301). aria-label is`Message {label}` (MV:2079), disabled copy "Replies are off until this loads". | Spec aria "Message"; padding `8 4 7`; 16k/1.32 (code 16/21). Keep disabled copy (Q-06). |
 | MSG-304 | PARTIAL | Send key exists only when ready: `SendKeyHolder` -> `useSendKeyPop` (MV:1750-1759; T2:343-373): scale .4 -> 1 on `pop` in, shrink from live frame out, `hidden` after; Reduce Motion swaps at once (T2:352-355). `ready` requires `!sending` (MV:1863). Button `onMouseDown preventDefault` so the field keeps focus (NotifyAnyway.tsx:99, always, not only when the keyboard is up). Desktop Enter sends, Shift+Enter newline, not while `isComposing` (MV:2029-2039); phone Return adds a line (`!phone &&`, MV:2036; HTML's own `return` key also inserts "\n", kbPress `ret`), `enterKeyHint` "enter"/"send" (MV:2095). 36 circle accent, `ArrowUp size 17` (NotifyAnyway.tsx:106; spec 18 / stroke 2.4), aria "Send". Notify-anyway adds long-press / chevron (NotifyAnyway.tsx:73-171): extra, keep. | Arrow 17 -> 18 stroke 2.4. The `!sending` gate and `sendingRef` early return (MV:1863,1919) mean the key disappears for a server round trip after every send and a second send cannot start until the first resolves: remove the gate for plain text (the optimistic row is id-safe, see Send path) or MC-01 (two sends 140 ms apart) can never happen. The unknown-outcome / recovery states keep their lock. |
 | MSG-305 | PARTIAL | Reply chip `.ch-ms-comp__reply` (MV:2053-2057: "Replying to {name}" / "yourself"; cancel `IconButton` aria "Cancel reply" MV:2056); edit chip "Editing message" (MV:2045-2051, cancel "Cancel edit" MV:2049); file chips `AttachChips` (MV:1626-1658: `FileText 13` + name + remove `aria "Remove {name}"`, no 28x32 tile). All three `ref={chipRise}` -> rise 12 px on `smooth`, Reduce Motion = appears (T2:376-385) ok. CSS shared box: min-height 44, padding `6 8 6 6`, radius 12, glass-strong, card shadow, 13/500 (CSS:4819-4835), reply/edit `fit-content; min-height 0`, key 26 with 44 target (CSS:5018-5040). Container: `.ch-ms-to` (CSS:1273). | Chip text 12.5k/500 (code 13); file chip: 28x32 tile + name ("Lineup · Saturday.pdf"); aria "Remove file", "Cancel" (code "Remove {name}", "Cancel reply", "Cancel edit"; tests at composer-v2.test.tsx:230-236). `.comp__files` padding `4 4 6 46` (aligns under the field, past the plus key); today the chip row has no left inset. Chips use `glass-strong`, spec `surface`. |
 | MSG-306 | PARTIAL | Edit flow in the composer (MV:1848-1859 fill+focus+caret; `send()` branch MV:1920-1942): same text closes with no write; success flashes `.ch-ms-bub` `opacity .4 -> 1`, 260 ms `cubic-bezier(.22,1,.36,1)` (MV:1933; Reduce Motion `CH_FADE_MS`). Never a new bubble ok. `EditMessageModal` is mounted with `message={null}` (MV:2440, MP:691), i.e. dead code; `edit` toasts "Message edited" (Messages.tsx:838-842). | Add the "Edited" marker (MSG-217). Spec has no "Message edited" toast: the HTML only flashes. Remove the dead `EditMessageModal` mounts once nothing opens them (slice C owns the menu). |
@@ -255,45 +444,166 @@ Abbreviations: MV = `screens/messages/MessagesView.tsx`, MP = `screens/messages/
 
 #### Supporting findings (send path, typing, receipts, keyboard, launch, ListPresence)
 
-The table above is one table in ID order (MSG-201 to MSG-311, then the MOT rows).
+The table above is one table in ID order (MSG-201 to MSG-311, then the MOT
+rows).
 
 **Send path end to end (text).**
-1. `Composer.send` (MV:1918-2009). Gates: `ready` (MV:1863) needs `!sending && !checking && !checkFailed && !unavailable`, and the function returns if `sendingRef.current` (MV:1919). It clears the draft (`setDraft("")`, MV:1948) and files, calls `api.onTyping(false)` (MV:1950), then `await api.send(text, parentId, {notifyAnyway?})` (MV:1955-1960). Haptics: success after a true result (MV:1991), `warning` for partial/unknown, `error` otherwise (MV:1997). Reply chip clears only on success (MV:1989). Field is refocused at the end (MV:2008).
-2. `api.send` in `Messages.tsx:752-770` calls `msgs.sendMessage` (UGM:1147-1227). It builds ONE client UUID (`generateClientMessageId`, UGM:407-425; falls back to a v4-shaped string), appends an optimistic row `pending:true` with `created_at = new Date()` synchronously (UGM:1157-1182), then `sendGolfMessage(conversationId, content, optimisticId, replyToId, {notifyAnyway})` (server action `src/app/actions/messages.ts:809`, a `'use server'` file; it also fans out push via `notifyGolfMessageRecipients`) wrapped in `withOneTransportRetry` (750 ms, UGM:23,1195-1202).
-3. Idempotency: the client id is written as the real `golf_messages.id`; a duplicate attempt collides on the primary key (23505) and the action reports success (UGM:1186-1194; `src/test/actions/send-message-duplicate-key-equivalence.test.ts`). The realtime INSERT echo replaces the optimistic row IN PLACE by id (`applyRealtimeMessageInsert`, UGM:340-399), so a sent bubble never remounts; `pending` clears when the action answers (UGM:1217-1218).
-4. Failure: the row stays, `sendFailed:true` + `sendOutcome` `'refused'` (answered with an error) or `'unknown'` (transport error text, `classifySendFailure`, UGM:1127-1145) (UGM:1127-1131,1208-1226). `ChMsg.failed` maps it (Messages.tsx:475). The toast in `Messages.tsx:757-767` agrees with the bubble. Failed rows are held across a refetch (UGM:840-848).
-5. Retry: `api.retry(id)` (Messages.tsx:825-835) -> `msgs.retryMessage(id)` (UGM:1249-1283): reuses the SAME id (so pressing twice or racing a committed attempt cannot duplicate), clears the failed flag optimistically (`pending:true`), restores it if it fails again; offline refuses first with CH-1903. `discard` removes only `sendFailed` rows (UGM:1296-1299).
-6. Attachments are a separate path (`api.sendFiles`, Messages.tsx:771-823, `useMessageAttachments({recoverable:true})`): outcome `true | 'partial' | 'unknown'`, unconfirmed sends lock the composer (CH-7023) and recover through `getPendingAttachmentSend`. Not optimistic: no bubble until the server row arrives. A photo/file/poll "launch" (MOT-SEND-7 non-text) therefore has no optimistic bubble to fly today; polls call `insertConfirmed` after the action answers (UGM, Messages.tsx:889-910).
-7. First message from New message: `autoSend` effect calls `send()` on mount of the thread's composer (MV:2014-2021); `useSendRise`/`useThreadMakeRoom` skip because `before === 0` (T2:197, 318).
+
+1. `Composer.send` (MV:1918-2009). Gates: `ready` (MV:1863) needs `!sending &&
+   !checking && !checkFailed && !unavailable`, and the function returns if
+   `sendingRef.current` (MV:1919). It clears the draft (`setDraft("")`, MV:1948)
+   and files, calls `api.onTyping(false)` (MV:1950), then `await api.send(text,
+   parentId, {notifyAnyway?})` (MV:1955-1960). Haptics: success after a true
+   result (MV:1991), `warning` for partial/unknown, `error` otherwise (MV:1997).
+   Reply chip clears only on success (MV:1989). Field is refocused at the end
+   (MV:2008).
+2. `api.send` in `Messages.tsx:752-770` calls `msgs.sendMessage`
+   (UGM:1147-1227). It builds ONE client UUID (`generateClientMessageId`,
+   UGM:407-425; falls back to a v4-shaped string), appends an optimistic row
+   `pending:true` with `created_at = new Date()` synchronously (UGM:1157-1182),
+   then `sendGolfMessage(conversationId, content, optimisticId, replyToId,
+   {notifyAnyway})` (server action `src/app/actions/messages.ts:809`, a `'use
+   server'` file; it also fans out push via `notifyGolfMessageRecipients`)
+   wrapped in `withOneTransportRetry` (750 ms, UGM:23,1195-1202).
+3. Idempotency: the client id is written as the real `golf_messages.id`; a
+   duplicate attempt collides on the primary key (23505) and the action reports
+   success (UGM:1186-1194;
+   `src/test/actions/send-message-duplicate-key-equivalence.test.ts`). The
+   realtime INSERT echo replaces the optimistic row IN PLACE by id
+   (`applyRealtimeMessageInsert`, UGM:340-399), so a sent bubble never remounts;
+   `pending` clears when the action answers (UGM:1217-1218).
+4. Failure: the row stays, `sendFailed:true` + `sendOutcome` `'refused'`
+   (answered with an error) or `'unknown'` (transport error text,
+   `classifySendFailure`, UGM:1127-1145) (UGM:1127-1131,1208-1226).
+   `ChMsg.failed` maps it (Messages.tsx:475). The toast in
+   `Messages.tsx:757-767` agrees with the bubble. Failed rows are held across a
+   refetch (UGM:840-848).
+5. Retry: `api.retry(id)` (Messages.tsx:825-835) -> `msgs.retryMessage(id)`
+   (UGM:1249-1283): reuses the SAME id (so pressing twice or racing a committed
+   attempt cannot duplicate), clears the failed flag optimistically
+   (`pending:true`), restores it if it fails again; offline refuses first with
+   CH-1903. `discard` removes only `sendFailed` rows (UGM:1296-1299).
+6. Attachments are a separate path (`api.sendFiles`, Messages.tsx:771-823,
+   `useMessageAttachments({recoverable:true})`): outcome `true | 'partial' |
+   'unknown'`, unconfirmed sends lock the composer (CH-7023) and recover through
+   `getPendingAttachmentSend`. Not optimistic: no bubble until the server row
+   arrives. A photo/file/poll "launch" (MOT-SEND-7 non-text) therefore has no
+   optimistic bubble to fly today; polls call `insertConfirmed` after the action
+   answers (UGM, Messages.tsx:889-910).
+7. First message from New message: `autoSend` effect calls `send()` on mount of
+   the thread's composer (MV:2014-2021); `useSendRise`/`useThreadMakeRoom` skip
+   because `before === 0` (T2:197, 318).
 
 **What the code animates today on send ("words become the bubble" delta).**
-- Phone only. On the commit that adds the optimistic row (same tick as `setDraft("")`, so the textarea has already shrunk to one row): `useThreadMakeRoom` (MP:443) moves the whole list by `translateY(d)` on `send`; `useSendRise` (MP:447, T2:312-340) then animates the real bubble from the field rect to its slot as ONE transform (`translate(dx,dy) scale(.96)` -> none) with `opacity .85 -> 1`, on `chSpringCurve('send')` (visualDuration .42, bounce .12, 700 ms), origin `100% 100%`. `dx = f.left - 9 - b.left` (the `-9` matches the HTML), `dy = f.bottom - b.bottom - rowHeight`.
-- Also running on the same row: `ListPresence arrive="rise"` fades the row `0 -> 1` and rises it 8 px over 260 ms on `--ch-ease` (ui/ListPresence.tsx:127-129), and the send key shrinks (`useSendKeyPop`).
-- NOT present: a clone (`flyText`), the `launch` spring, a typed-words-fade/green-fill-comes-up 160 ms stage (the bubble is green from frame 1), x on a separate faster curve (path is a straight diagonal, not curved into the right edge), tail grow-in, send-arrow lift, real bubble hidden until landing, receipt wait (70% of launch), textarea opacity return, multi-bubble stagger, Reduce Motion crossfade of the bubble beyond the 180 ms fade in `useSendRise` (T2:324-327).
+
+- Phone only. On the commit that adds the optimistic row (same tick as
+  `setDraft("")`, so the textarea has already shrunk to one row):
+  `useThreadMakeRoom` (MP:443) moves the whole list by `translateY(d)` on
+  `send`; `useSendRise` (MP:447, T2:312-340) then animates the real bubble from
+  the field rect to its slot as ONE transform (`translate(dx,dy) scale(.96)` ->
+  none) with `opacity .85 -> 1`, on `chSpringCurve('send')` (visualDuration .42,
+  bounce .12, 700 ms), origin `100% 100%`. `dx = f.left - 9 - b.left` (the `-9`
+  matches the HTML), `dy = f.bottom - b.bottom - rowHeight`.
+- Also running on the same row: `ListPresence arrive="rise"` fades the row `0 ->
+  1` and rises it 8 px over 260 ms on `--ch-ease` (ui/ListPresence.tsx:127-129),
+  and the send key shrinks (`useSendKeyPop`).
+- NOT present: a clone (`flyText`), the `launch` spring, a
+  typed-words-fade/green-fill-comes-up 160 ms stage (the bubble is green from
+  frame 1), x on a separate faster curve (path is a straight diagonal, not
+  curved into the right edge), tail grow-in, send-arrow lift, real bubble hidden
+  until landing, receipt wait (70% of launch), textarea opacity return,
+  multi-bubble stagger, Reduce Motion crossfade of the bubble beyond the 180 ms
+  fade in `useSendRise` (T2:324-327).
 - Desktop: nothing beyond make-room and the ListPresence rise.
 
 **Typing presence.**
-- Broadcast: `Composer` textarea `onChange` calls `api.onTyping(true)` per keystroke and a 2500 ms idle timer calls `onTyping(false)` (MV:2083-2092); `api.onTyping` = `msgs.sendTypingStatus` (Messages.tsx:729): broadcast `typing` `{userId,isTyping}` on `golf-conversation:{id}` (UGM:965,1101-1114), throttled to one `true` per 500 ms; `sendMessage` and the composer's send both send `false`.
-- Open thread listener: same channel (UGM:1034-1068). Per-typer timers set `typingUserIds` (expiry `typingExpiryMs`, 5000 from Messages.tsx:165; hook default 3000). `isOtherTyping` is last-event-wins and also has its own timer; a message INSERT from someone else clears `isOtherTyping` but NOT `typingUserIds` (UGM:988-992). The thread rows are gated on `api.typing` (`isOtherTyping`), so with two typers in a group one `false` event hides every bubble. Because the sender sends `false` after 2.5 s idle, rows/bubbles clear at about 2.5 s, not 5 s; the 5 s expiry is the backstop.
-- Rows and pins: `useTypingByConversation` (use-typing-by-conversation.ts:1-65) joins `golf-conversation:{id}` for up to 30 conversations on screen EXCEPT the open one (two subscriptions to one topic from one client break the first), listens to `typing` only, ignores the viewer, expires each typer 5 s after their last event (`TYPING_EXPIRY_MS`, `typersAt` is pure and tested). Consequence: a typer only broadcasts on the channel their own thread hook joined, i.e. while THEIR thread is open on that conversation. Cleanup removes and re-creates every channel when the watched set changes (key join, line 25), which can race with the thread hook's subscribe on open.
-- Known-id problem: `api.typingUserIds` is empty for a DM; the phone falls back to `conv.memberIds[0]` (MP:554), desktop to `typingByConv` (MV:2264).
+
+- Broadcast: `Composer` textarea `onChange` calls `api.onTyping(true)` per
+  keystroke and a 2500 ms idle timer calls `onTyping(false)` (MV:2083-2092);
+  `api.onTyping` = `msgs.sendTypingStatus` (Messages.tsx:729): broadcast
+  `typing` `{userId,isTyping}` on `golf-conversation:{id}` (UGM:965,1101-1114),
+  throttled to one `true` per 500 ms; `sendMessage` and the composer's send both
+  send `false`.
+- Open thread listener: same channel (UGM:1034-1068). Per-typer timers set
+  `typingUserIds` (expiry `typingExpiryMs`, 5000 from Messages.tsx:165; hook
+  default 3000). `isOtherTyping` is last-event-wins and also has its own timer;
+  a message INSERT from someone else clears `isOtherTyping` but NOT
+  `typingUserIds` (UGM:988-992). The thread rows are gated on `api.typing`
+  (`isOtherTyping`), so with two typers in a group one `false` event hides every
+  bubble. Because the sender sends `false` after 2.5 s idle, rows/bubbles clear
+  at about 2.5 s, not 5 s; the 5 s expiry is the backstop.
+- Rows and pins: `useTypingByConversation` (use-typing-by-conversation.ts:1-65)
+  joins `golf-conversation:{id}` for up to 30 conversations on screen EXCEPT the
+  open one (two subscriptions to one topic from one client break the first),
+  listens to `typing` only, ignores the viewer, expires each typer 5 s after
+  their last event (`TYPING_EXPIRY_MS`, `typersAt` is pure and tested).
+  Consequence: a typer only broadcasts on the channel their own thread hook
+  joined, i.e. while THEIR thread is open on that conversation. Cleanup removes
+  and re-creates every channel when the watched set changes (key join, line 25),
+  which can race with the thread hook's subscribe on open.
+- Known-id problem: `api.typingUserIds` is empty for a DM; the phone falls back
+  to `conv.memberIds[0]` (MP:554), desktop to `typingByConv` (MV:2264).
 
 **Read / receipt writes.**
-- Open: `fetchMessages` ends with `await markGolfMessagesAsRead(conversationId)` unless `deferMarkRead` (auto-opened deep link; released by `select` -> `msgs.markRead()`, Messages.tsx:277-285; UGM:860,1361-1373). Arrival while open: `markReadSoon` debounced 900 ms, only if `document.visibilityState === 'visible'` (UGM:31,946-962,993). Row menu "Mark as read" -> `setRead` -> action + `refetch` + `badges.refetch` (Messages.tsx:1026-1040). Server action: `src/app/actions/messages.ts:837` -> `markMessagesAsRead`.
-- Reading others' reads: realtime UPDATE on `golf_conversation_participants` -> `readMarks` (monotonic) and `otherParticipantLastReadAt` for DMs (UGM:998-1018); refetch after a dropped channel (UGM:1074-1085). `ChMsg.seen` = `isRead` (viewer-relative, UGM:894-908). No per-message read time reaches the UI.
 
-**Keyboard.** See MSG-307. Summary: three sources (Capacitor `keyboardWillShow/Hide`, Safari `visualViewport` in `CapacitorProvider`, per-sheet `useSheetKeyboardFit` in `ui/sheet-keyboard.ts`) publish `--keyboard-height` + `body.keyboard-open` with no animation; Messages consumes it only through `PhoneScreen`'s `padding-bottom`, the composer's `padding-bottom:8px` rule (CSS:5909) and the toast offset. Capacitor's own `scrollIntoView` on `keyboardWillShow` is skipped for `[data-fw-keyboard-aware]` screens (CapacitorProvider.tsx:163-172).
+- Open: `fetchMessages` ends with `await markGolfMessagesAsRead(conversationId)`
+  unless `deferMarkRead` (auto-opened deep link; released by `select` ->
+  `msgs.markRead()`, Messages.tsx:277-285; UGM:860,1361-1373). Arrival while
+  open: `markReadSoon` debounced 900 ms, only if `document.visibilityState ===
+  'visible'` (UGM:31,946-962,993). Row menu "Mark as read" -> `setRead` ->
+  action + `refetch` + `badges.refetch` (Messages.tsx:1026-1040). Server action:
+  `src/app/actions/messages.ts:837` -> `markMessagesAsRead`.
+- Reading others' reads: realtime UPDATE on `golf_conversation_participants` ->
+  `readMarks` (monotonic) and `otherParticipantLastReadAt` for DMs
+  (UGM:998-1018); refetch after a dropped channel (UGM:1074-1085). `ChMsg.seen`
+  = `isRead` (viewer-relative, UGM:894-908). No per-message read time reaches
+  the UI.
 
-**ListPresence arrive behaviour.** The thread wraps its rows in `<ListPresence key={conv.id} flip={false} arrive="rise">` (MV:2378, MP:522). `PresenceRow` arrivals (any row whose key is new after first paint: your sent bubble, an incoming bubble, a day marker, the New divider) run `initial {opacity:0, transform:translateY(8px)}` -> `{1, 0}` over `CH_DUR.base` 260 ms `CH_EASE` (ui/ListPresence.tsx:127-129), then clear their inline styles (`settle`, line 83-85). Reduced motion: no animation. Exits use `LEAVE` (height/margins collapse). First paint never animates and a different `conv.id` is a new list. Implication for the new send choreography: the row's 8 px rise + fade runs under the real-bubble flight and would show the bubble early (MOT-SEND-6 wants it hidden until the flight lands) and doubles the reply reveal (MOT-SEND-12). The send bubble and the reply bubble need to opt out of `rise` (a prop on `PresenceRow` or `arrive="none"` for mine / for a message that replaces a typing row), while a message that arrives with the reader scrolled away should still just appear (HTML: no animation, badge only).
+**Keyboard.** See MSG-307. Summary: three sources (Capacitor
+`keyboardWillShow/Hide`, Safari `visualViewport` in `CapacitorProvider`,
+per-sheet `useSheetKeyboardFit` in `ui/sheet-keyboard.ts`) publish
+`--keyboard-height` + `body.keyboard-open` with no animation; Messages consumes
+it only through `PhoneScreen`'s `padding-bottom`, the composer's
+`padding-bottom:8px` rule (CSS:5909) and the toast offset. Capacitor's own
+`scrollIntoView` on `keyboardWillShow` is skipped for `[data-fw-keyboard-aware]`
+screens (CapacitorProvider.tsx:163-172).
+
+**ListPresence arrive behaviour.** The thread wraps its rows in `<ListPresence
+key={conv.id} flip={false} arrive="rise">` (MV:2378, MP:522). `PresenceRow`
+arrivals (any row whose key is new after first paint: your sent bubble, an
+incoming bubble, a day marker, the New divider) run `initial {opacity:0,
+transform:translateY(8px)}` -> `{1, 0}` over `CH_DUR.base` 260 ms `CH_EASE`
+(ui/ListPresence.tsx:127-129), then clear their inline styles (`settle`, line
+83-85). Reduced motion: no animation. Exits use `LEAVE` (height/margins
+collapse). First paint never animates and a different `conv.id` is a new list.
+Implication for the new send choreography: the row's 8 px rise + fade runs under
+the real-bubble flight and would show the bubble early (MOT-SEND-6 wants it
+hidden until the flight lands) and doubles the reply reveal (MOT-SEND-12). The
+send bubble and the reply bubble need to opt out of `rise` (a prop on
+`PresenceRow` or `arrive="none"` for mine / for a message that replaces a typing
+row), while a message that arrives with the reader scrolled away should still
+just appear (HTML: no animation, badge only).
 
 **Other hooks in the slice.**
-- `useThreadAnchor` (use-thread-anchor.ts:21-165): opens at the end; settle hold 700 ms (line 9, 127-164, stops on first input or a held search hit); follows arrivals only if `nearEnd` (120 px) or the message is yours (line 121); typing row follows only if near end (line 118); ResizeObserver re-pins on viewport/content height changes for a reader at the end (lines 94-103); `unseen` counter (lines 45,122); `toEnd` is transform-aware (lines 49-64). It is shared with `useFocusMessage` (search hits pause it).
-- `composer-inset.ts` (39 lines): sets `--ch-ms-comp-h` (border-box height of the newest live composer footer) on `.ch-root` via ResizeObserver; consumed by toasts (`ui.css:423`, `shell.css:1429`) and the jump key (`CSS:4548`). It does not know the keyboard.
+
+- `useThreadAnchor` (use-thread-anchor.ts:21-165): opens at the end; settle hold
+  700 ms (line 9, 127-164, stops on first input or a held search hit); follows
+  arrivals only if `nearEnd` (120 px) or the message is yours (line 121); typing
+  row follows only if near end (line 118); ResizeObserver re-pins on
+  viewport/content height changes for a reader at the end (lines 94-103);
+  `unseen` counter (lines 45,122); `toEnd` is transform-aware (lines 49-64). It
+  is shared with `useFocusMessage` (search hits pause it).
+- `composer-inset.ts` (39 lines): sets `--ch-ms-comp-h` (border-box height of
+  the newest live composer footer) on `.ch-root` via ResizeObserver; consumed by
+  toasts (`ui.css:423`, `shell.css:1429`) and the jump key (`CSS:4548`). It does
+  not know the keyboard.
 - `drafts.ts`: see MSG-310.
 
 ### Code map
 
-**`screens/messages/MessagesView.tsx` (3,389 lines).** Thread and composer code is one contiguous block, lines 1040-2446, plus the desktop shell at 3257-3389. Everything else in the file belongs to other slices.
+**`screens/messages/MessagesView.tsx` (3,389 lines).** Thread and composer code
+is one contiguous block, lines 1040-2446, plus the desktop shell at 3257-3389.
+Everything else in the file belongs to other slices.
 
 | Range | Name | What | IDs |
 | --- | --- | --- | --- |
@@ -325,7 +635,17 @@ The table above is one table in ID order (MSG-201 to MSG-311, then the MOT rows)
 | 2941-3255 | `NewMessage` dialog | D | NOT B |
 | 3257-3389 | `MessagesDesktop` | pane switch `Swap` (3304-3313) holds the thread: MOT-X-11; rail and details around it are A/D | MOT-X-11 |
 
-Seams for four implementers: (a) `Bubble` is one 425-line function that mixes B (row/bubble/tail/receipt/failed/time/hover bar) with C (long-press, `HoldLift`, reaction bar, menu items, double-tap) and D (`PollCard`, `Attachments`); split by extracting `BubbleBody`, `BubbleReceipt`, `BubbleHoverBar` first. (b) `Composer` is single-owner (B); the plus menu is a child component (`ComposerPlusV2`, owner C/D) and `AttachChips` is B. (c) `Thread` is the desktop twin of `PhoneThread`: both repeat the scroller JSX, day rows, typing row, jump key and composer mount; extract a shared `ThreadScroller` before four people edit both. (d) `MessagesView.tsx` imports `ConversationSearch`, `MembersCard` etc. from `details-v2`, so a type-only cycle is avoided only because `MessagesScreen.tsx` picks desktop vs phone (MessagesScreen.tsx:13).
+Seams for four implementers: (a) `Bubble` is one 425-line function that mixes B
+(row/bubble/tail/receipt/failed/time/hover bar) with C (long-press, `HoldLift`,
+reaction bar, menu items, double-tap) and D (`PollCard`, `Attachments`); split
+by extracting `BubbleBody`, `BubbleReceipt`, `BubbleHoverBar` first. (b)
+`Composer` is single-owner (B); the plus menu is a child component
+(`ComposerPlusV2`, owner C/D) and `AttachChips` is B. (c) `Thread` is the
+desktop twin of `PhoneThread`: both repeat the scroller JSX, day rows, typing
+row, jump key and composer mount; extract a shared `ThreadScroller` before four
+people edit both. (d) `MessagesView.tsx` imports `ConversationSearch`,
+`MembersCard` etc. from `details-v2`, so a type-only cycle is avoided only
+because `MessagesScreen.tsx` picks desktop vs phone (MessagesScreen.tsx:13).
 
 **`screens/messages/MessagesPhone.tsx` (1,270 lines).**
 
@@ -341,24 +661,55 @@ Seams for four implementers: (a) `Bubble` is one 425-line function that mixes B 
 | 1203-1270 | `PhoneAnnouncementForm` | NOT B |
 
 **`screens/messages/thread-v2.tsx` (385 lines), all B except `useFaceFlight`.**
-`ThreadDatePill` 12-54 (MSG-210/MOT-THR-2/X-1), `ThreadJumpKey` 60-135 (MSG-211/MOT-JMP-1/2), `useSpringToEnd` 141-165 (MOT-JMP-3), `useThreadMakeRoom` 175-210 (MOT-THR-4/SEND-9), `BubbleTail` 213-219 (MSG-206), `useReplyFromTyping` 226-263 (MOT-SEND-12), `noteTappedFace` 269-274 + `useFaceFlight` 280-309 (MOT-LIST-1; slice A/nav), `useSendRise` 312-340 (MOT-SEND-7), `useSendKeyPop` 343-373 (MOT-SEND-4), `useChipRise` 376-385 (MOT-ATT-3; also used by `AttachChips` and the reply/edit chips). Shared with other slices: `useFaceFlight`/`noteTappedFace` (push), `useChipRise` (MOT-ATT-3).
+`ThreadDatePill` 12-54 (MSG-210/MOT-THR-2/X-1), `ThreadJumpKey` 60-135
+(MSG-211/MOT-JMP-1/2), `useSpringToEnd` 141-165 (MOT-JMP-3), `useThreadMakeRoom`
+175-210 (MOT-THR-4/SEND-9), `BubbleTail` 213-219 (MSG-206), `useReplyFromTyping`
+226-263 (MOT-SEND-12), `noteTappedFace` 269-274 + `useFaceFlight` 280-309
+(MOT-LIST-1; slice A/nav), `useSendRise` 312-340 (MOT-SEND-7), `useSendKeyPop`
+343-373 (MOT-SEND-4), `useChipRise` 376-385 (MOT-ATT-3; also used by
+`AttachChips` and the reply/edit chips). Shared with other slices:
+`useFaceFlight`/`noteTappedFace` (push), `useChipRise` (MOT-ATT-3).
 
 **Other files.**
+
 - `use-thread-anchor.ts` (165): B only (also read by `use-focus-message.ts`).
 - `use-thread-drag-times.ts` (82): B only (`MOT-THR-3`).
-- `use-typing-by-conversation.ts` (65): typing for rows/pins; consumers are slice A (rows) but the realtime/expiry logic is B's typing item.
-- `composer-inset.ts` (39), `drafts.ts` (53), `HelloCard.tsx` (25), `NotifyAnyway.tsx` (171, `SendCluster` and `useSendHold`): B (MSG-222, 304, 310). `ComposerPlusV2.tsx` (102): plus key is B (MSG-302), the menu and polls are C/D.
+- `use-typing-by-conversation.ts` (65): typing for rows/pins; consumers are
+  slice A (rows) but the realtime/expiry logic is B's typing item.
+- `composer-inset.ts` (39), `drafts.ts` (53), `HelloCard.tsx` (25),
+  `NotifyAnyway.tsx` (171, `SendCluster` and `useSendHold`): B (MSG-222, 304,
+  310). `ComposerPlusV2.tsx` (102): plus key is B (MSG-302), the menu and polls
+  are C/D.
 - `model.ts`: `threadItems` 198-211, `dayLabel` 167-173, `ChMsg` 91-109 (B).
-- `Messages.tsx` (1094): container wiring of send/retry/discard (752-835), typing (727-729, 692), receipts (866), drafts (95), `markRead` (277-285, 1026-1040).
-- `src/hooks/golf/use-golf-messages.ts` (2,286): `sendMessage` 1147-1227, `retryMessage` 1249-1283, `discardFailedMessage` 1296-1299, realtime channel 965-1086, `sendTypingStatus` 1101-1114, `markRead` 1361-1373.
-- `src/app/actions/messages.ts` (`'use server'`): `sendGolfMessage` 809-811, `markGolfMessagesAsRead` 837-847. It exports `interface MessageSearchResult` (line 1467), a type export from a `'use server'` file that works only because it is erased; do not add value exports of non-functions.
-- `src/components/providers/CapacitorProvider.tsx` (keyboard publishing 106-230), `shell/PhoneScreen.tsx` (30-115 keyboard-aware, 188-215 Safari fit), `ui/sheet-keyboard.ts`.
-- `ui/ListPresence.tsx` (142), `ui/PhoneBar.tsx` (shared bar chassis), `lib/motion.ts` (springs; `launch` goes into `CH_SPRINGS` at lines 70-81, `CH_EASE_SHEET` = the iOS keyboard curve already exists at line 83).
-- CSS `styles/messages.css` (5,958 lines): legacy thread/composer 384-1100, legacy phone block 1676-2190 (thread bar 1941-2020, thread 2028-2107, composer 2109-2178), v2 inbox 4068-4375, v2 thread/bubbles 4376-4636, v2 thread photo/day/desktop bar 4600-4690, v2 composer 4673-4835, v2 lift/hold 4836-4960 (C), receipts/chips 4962-5060, polls/empty/hello 5090-5290, hover bar 5657-5720, phone composer overrides 5895-5915, `.ch-msp-who` 5916-5918. Legacy and v2 rules coexist; there is no flag any more (`data-ch-ms-v2` is always on, `MessagesScreen.tsx:36`).
+- `Messages.tsx` (1094): container wiring of send/retry/discard (752-835),
+  typing (727-729, 692), receipts (866), drafts (95), `markRead` (277-285,
+  1026-1040).
+- `src/hooks/golf/use-golf-messages.ts` (2,286): `sendMessage` 1147-1227,
+  `retryMessage` 1249-1283, `discardFailedMessage` 1296-1299, realtime channel
+  965-1086, `sendTypingStatus` 1101-1114, `markRead` 1361-1373.
+- `src/app/actions/messages.ts` (`'use server'`): `sendGolfMessage` 809-811,
+  `markGolfMessagesAsRead` 837-847. It exports `interface MessageSearchResult`
+  (line 1467), a type export from a `'use server'` file that works only because
+  it is erased; do not add value exports of non-functions.
+- `src/components/providers/CapacitorProvider.tsx` (keyboard publishing
+  106-230), `shell/PhoneScreen.tsx` (30-115 keyboard-aware, 188-215 Safari fit),
+  `ui/sheet-keyboard.ts`.
+- `ui/ListPresence.tsx` (142), `ui/PhoneBar.tsx` (shared bar chassis),
+  `lib/motion.ts` (springs; `launch` goes into `CH_SPRINGS` at lines 70-81,
+  `CH_EASE_SHEET` = the iOS keyboard curve already exists at line 83).
+- CSS `styles/messages.css` (5,958 lines): legacy thread/composer 384-1100,
+  legacy phone block 1676-2190 (thread bar 1941-2020, thread 2028-2107, composer
+  2109-2178), v2 inbox 4068-4375, v2 thread/bubbles 4376-4636, v2 thread
+  photo/day/desktop bar 4600-4690, v2 composer 4673-4835, v2 lift/hold 4836-4960
+  (C), receipts/chips 4962-5060, polls/empty/hello 5090-5290, hover bar
+  5657-5720, phone composer overrides 5895-5915, `.ch-msp-who` 5916-5918. Legacy
+  and v2 rules coexist; there is no flag any more (`data-ch-ms-v2` is always on,
+  `MessagesScreen.tsx:36`).
 
 ### Tests
 
-Existing tests that pin behaviour in this slice, and what legitimately changes (none should be deleted; update the assertion to the new requirement):
+Existing tests that pin behaviour in this slice, and what legitimately changes
+(none should be deleted; update the assertion to the new requirement):
 
 | Test | Pins | Change for v2? |
 | --- | --- | --- |
@@ -376,34 +727,154 @@ Existing tests that pin behaviour in this slice, and what legitimately changes (
 | `src/hooks/golf/__tests__/use-golf-messages.{send-integrity,send-outcome,failed-send,quoted-reply,notify-anyway,read-marks,defer-mark-read,single-load}.test.ts*` | optimistic id reuse, 23505 equivalence, unknown vs refused, retry reuses id, read-mark rules | No: the send path is not being changed; these must stay green and guard the clone-flight work. `src/test/actions/send-message-duplicate-key-equivalence.test.ts` likewise. |
 | `src/clubhouse/__tests__/wiring-p007-messages.test.tsx`, `class-awareness-messages.test.tsx` | wiring of the thread/composer through `Messages` | Re-run; likely only the aria/label changes above. |
 
-New tests belong in `__tests__/` next to the code. The motion acceptance cases MC-01, MC-02, MC-09, MC-11 need a headed 60 Hz sampler (MOTION.md "Acceptance cases"); there is none in the repo for Messages today.
+New tests belong in `__tests__/` next to the code. The motion acceptance cases
+MC-01, MC-02, MC-09, MC-11 need a headed 60 Hz sampler (MOTION.md "Acceptance
+cases"); there is none in the repo for Messages today.
 
 ### Risks and surprises
 
-1. **The structure is flex rows, not layers (MSG-203).** Bar, scroller and composer are three flex children (`PhoneScreen` column: `PhoneBar`, `.ch-msp-scroll`, `.ch-msp-composer`). The spec's "slides under the lip and blurs under the composer", `--pad-top/--pad-bot`, `--kb-pad` and a composer that translates with the keyboard all need the scroller to become the full page with the composer and bar as overlays. This touches `use-thread-anchor` (viewport-height observer), `useThreadMakeRoom` (bottom measurement uses scroller padding-bottom, T2:202), `useComposerInset`, the jump/date-pill offsets, and `ThreadJumpKey`'s settle logic. Do it once, by one owner, before the motion work.
-2. **Legacy and v2 CSS coexist; most v2 rules win by order, a few legacy ones do not lose.** Checked by specificity (v2 is later in the file). What the legacy block still contributes: (a) bubble corners: base `.ch-ms-msg.is-mine .ch-ms-bub {border-bottom-right-radius: 6}` (CSS:588-592, 0,3,0) and `.ch-ms-msg:not(.is-mine).is-last .ch-ms-bub {border-bottom-left-radius: 6}` (CSS:579, 0,4,0) beat v2's `border-radius` shorthand (0,2,0), so last bubbles keep a 6px tail-side corner; (b) a SECOND tail: the phone `::after` clip-path tail (CSS:2079-2093) has no v2 counterpart to override it, so both tails draw; (c) the legacy phone textarea leaks `border-radius:22px`, `box-shadow: field-pill-edge`, `box-sizing`, and its `:focus` ring (CSS:2139-2157, the `:focus` one at 0,3,1 wins over v2); (d) the 82% phone column cap (CSS:2053) compounding with v2's 76% stack; (e) `.ch-ms-th` legacy flex bar rules (CSS:400-408) under the v2 desktop bar. What v2 already wins and the legacy rule is only dead weight: phone composer padding/background (CSS:2109-2118 vs 5901-5907), composer field (CSS:2123-2129 vs 4688), bubble padding/font (CSS:2061-2066), day chip vs plain text (v2 chip CSS:4377 and 4624 beat legacy plain text CSS:2041-2049, so the CHIP is what renders: the conflict is v2's own rule, delete both v2 chip rules). Delete the legacy rules in the same PR that restyles each piece; do not add a third layer.
-3. **Text sends are serialized.** `ready` includes `!sending` and `send()` returns while `sendingRef` is set (MV:1863,1919), and `api.send` only resolves after the server action (round trip). MC-01 (two sends 140 ms apart) is impossible today and the send key flickers away for a round trip after each send. The optimistic id design (UGM:1157) makes parallel sends safe; relax the gate for plain text but keep it for the recovery/unknown attachment states.
-4. **ListPresence rise runs under the new flights (MV:2378, MP:522).** See the ListPresence notes: your own sent bubble and a bubble replacing a typing row must opt out, or the real bubble is visible (8 px low, fading) while the clone flies and the reveal doubles. The `useThreadMakeRoom` measurement happens in the same layout pass; keep `useSendRise`'s successor AFTER `useThreadMakeRoom` in hook order (MP:443-447 today) because it reads rects while the list animation holds the rows `d` px low.
-5. **Q-19 conflict (clone vs real bubble).** SETTLED ruling 23 (Nov 4) said move the REAL bubble because a copy blinked in motion-check cases 1, 2, 11; the HTML (Nov 7) flies a clone and hides the real bubble with an `opacity:0` animation until it lands (`flyText`, HTML 2066-2096). QUESTIONS Q-19 default is "HTML wins, fall back if MC fails". Today's `useSendRise` is the fallback shape already; keep it available behind the same hook signature.
-6. **`launch` is not in `CH_SPRINGS`.** `lib/motion.ts:70-81` has smooth/settle/reveal/send/pop/lift/pour. Adding `launch: {visualDuration .5, bounce .2}` exceeds the 0.1 bounce cap the file's comment documents (Q-04). `chSpringCurve` caps its sampled curve at 1.5 s and rests at 0.001 (motion.ts:111-112), fine for 828 ms. App `pop` is 496 ms (tokens.css:1340), spec solver 540: use the app's number. `CH_FADE_MS` is 180, the HTML says 120 (Q-05, ruling 25: use the shared helper).
-7. **Reduce Motion is `useChReducedMotion()` = OS setting OR Settings > Animations off** (`lib/reduced-motion.ts:30-34`); CSS keyframes key off `prefers-reduced-motion` and `[data-motion='off']` separately (CSS:4592-4604). New motion written in CSS must cover both selectors; WAAPI hooks already take `reduced`.
-8. **Native-only keyboard path.** `--keyboard-height` is only published (a) in the Capacitor app on `keyboardWillShow` with `info.keyboardHeight` (no duration or curve is read), (b) in Safari on coarse pointers from `visualViewport` (>120 px cover) (CapacitorProvider.tsx:205-230), and (c) per sheet. Desktop Chrome in a narrow window never sets it. The Safari path shrinks `.ch-pscreen` to the visual viewport (`data-ch-vv`), so a transform-based ride must not double-apply there. Capacitor's `resize:'ionic'` plus `scrollAssist/scrollPadding` true (capacitor.config.ts:86-91) mean iOS may still scroll the WebView; the screen sets `data-fw-keyboard-aware` so the global `scrollIntoView` is skipped (CapacitorProvider.tsx:163-172). Test on a device or the Simulator; `helm-safari-performance` and `scripts/phone/` are the tools.
-9. **Bubbles are not focusable (MSG-008).** No `tabIndex` on `.ch-ms-bub` (grep: only the reaction bar, MV:1413). Spec wants `tabindex=0`, a 2px `--ch-ring-own` focus ring (offset 3) and Enter/Space opening the actions (MSG-401/402, slice C). `--ch-ring-own` exists (tokens.css:729,980). Photos/files are buttons/anchors already.
-10. **Receipt time is the sent time.** DM "Seen {clock(m.at)}" (MV:1468) prints the message time. Showing "Seen 8:15 AM" needs the reader's `last_read_at` passed into `ChMsg`/`ChReceipts`; DATA.md/Q-15 gate it for minors' privacy. The group receipt already respects `seenByAccess('sender-and-coaches')`.
-11. **Desktop has far fewer motion hooks than phone.** `Thread` (desktop) calls only `useThreadAnchor`, `useThreadMakeRoom`, `useFocusMessage` and `usePanelSmoothScroll`; it lacks date pill, send rise, reply-from-typing, drag (correct, phone only), spring jump, per-typer bubbles. The HTML runs the same `send`/`incoming`/`onScroll` on both devices. Extract shared hooks so both call the same ones.
-12. **Typing gate and channel races.** `api.typing` is last-event-wins (UGM:1038-1064), a message INSERT clears it but leaves `typingUserIds` populated; the rows hook tears down and rebuilds all its channels whenever the watched id set changes (use-typing-by-conversation.ts:25-60) while the thread hook joins the same topic when a conversation opens (the open id is excluded, but the exclusion lands one render after selection). Realtime is Supabase `golf-conversation:{id}` (broadcast + postgres_changes on one channel), and `observeRealtimeChannel` wraps it for telemetry.
-13a. **Re-check after the centred bar (MSG-219):** the name must still ellipsize between two 44 px keys. **iOS focus (MOT-SEND-2):** the send key only prevents `mousedown` (NotifyAnyway.tsx:99); the HTML prevents `pointerdown` while the keyboard is up. If a touch path focuses the button before `mousedown`, the keyboard drops on send; test on a device, and `ta.focus()` after an `await` (MV:2008) does not reliably re-raise a dismissed iOS keyboard.
-13. **Dead code to remove during the work:** `ComposerPlus` (MV:1702-1732, no callers), `EditMessageModal` mounted with `message={null}` (MV:2440, MP:691), the phone `Modal open={false}` "Message" sheet (MP:642-690), `ThreadDatePill`'s unused desktop CSS `top:140px` (CSS:4540), the `.ch-ms-th` legacy flex bar rules once the bar is rebuilt.
-14. **HTML vs SPEC value checks.** HTML Part 1 `.time right:-58px` is superseded by `.phone .time right:-64px` (HTML:934) and the 430 `-68*k` (HTML:1038); SPEC's `-64k` equals the code. HTML `.jump b` is 12/700 with `box-shadow: 0 0 0 2px var(--a-page)` (HTML:427): SPEC matches, code does not (CSS:4567-4580). HTML `.datepill` Part 2 is 13/500 with blur 16 saturate 160 (HTML:307,745); SPEC matches. No conflicts between SPEC and HTML found in this slice beyond the `-64` without `k`.
-15. **`'use server'` surface.** `sendGolfMessage` and `markGolfMessagesAsRead` live in `src/app/actions/messages.ts`; this slice should not need to change them (the optimistic id and 23505 handling already exist). If anything is added there, export only async functions (the file already exports one `interface`); a changed `'use server'` surface needs `npm run build` (AGENTS.md).
+1. **The structure is flex rows, not layers (MSG-203).** Bar, scroller and
+   composer are three flex children (`PhoneScreen` column: `PhoneBar`,
+   `.ch-msp-scroll`, `.ch-msp-composer`). The spec's "slides under the lip and
+   blurs under the composer", `--pad-top/--pad-bot`, `--kb-pad` and a composer
+   that translates with the keyboard all need the scroller to become the full
+   page with the composer and bar as overlays. This touches `use-thread-anchor`
+   (viewport-height observer), `useThreadMakeRoom` (bottom measurement uses
+   scroller padding-bottom, T2:202), `useComposerInset`, the jump/date-pill
+   offsets, and `ThreadJumpKey`'s settle logic. Do it once, by one owner, before
+   the motion work.
+2. **Legacy and v2 CSS coexist; most v2 rules win by order, a few legacy ones do
+   not lose.** Checked by specificity (v2 is later in the file). What the legacy
+   block still contributes: (a) bubble corners: base `.ch-ms-msg.is-mine
+   .ch-ms-bub {border-bottom-right-radius: 6}` (CSS:588-592, 0,3,0) and
+   `.ch-ms-msg:not(.is-mine).is-last .ch-ms-bub {border-bottom-left-radius: 6}`
+   (CSS:579, 0,4,0) beat v2's `border-radius` shorthand (0,2,0), so last bubbles
+   keep a 6px tail-side corner; (b) a SECOND tail: the phone `::after` clip-path
+   tail (CSS:2079-2093) has no v2 counterpart to override it, so both tails
+   draw; (c) the legacy phone textarea leaks `border-radius:22px`, `box-shadow:
+   field-pill-edge`, `box-sizing`, and its `:focus` ring (CSS:2139-2157, the
+   `:focus` one at 0,3,1 wins over v2); (d) the 82% phone column cap (CSS:2053)
+   compounding with v2's 76% stack; (e) `.ch-ms-th` legacy flex bar rules
+   (CSS:400-408) under the v2 desktop bar. What v2 already wins and the legacy
+   rule is only dead weight: phone composer padding/background (CSS:2109-2118 vs
+   5901-5907), composer field (CSS:2123-2129 vs 4688), bubble padding/font
+   (CSS:2061-2066), day chip vs plain text (v2 chip CSS:4377 and 4624 beat
+   legacy plain text CSS:2041-2049, so the CHIP is what renders: the conflict is
+   v2's own rule, delete both v2 chip rules). Delete the legacy rules in the
+   same PR that restyles each piece; do not add a third layer.
+3. **Text sends are serialized.** `ready` includes `!sending` and `send()`
+   returns while `sendingRef` is set (MV:1863,1919), and `api.send` only
+   resolves after the server action (round trip). MC-01 (two sends 140 ms apart)
+   is impossible today and the send key flickers away for a round trip after
+   each send. The optimistic id design (UGM:1157) makes parallel sends safe;
+   relax the gate for plain text but keep it for the recovery/unknown attachment
+   states.
+4. **ListPresence rise runs under the new flights (MV:2378, MP:522).** See the
+   ListPresence notes: your own sent bubble and a bubble replacing a typing row
+   must opt out, or the real bubble is visible (8 px low, fading) while the
+   clone flies and the reveal doubles. The `useThreadMakeRoom` measurement
+   happens in the same layout pass; keep `useSendRise`'s successor AFTER
+   `useThreadMakeRoom` in hook order (MP:443-447 today) because it reads rects
+   while the list animation holds the rows `d` px low.
+5. **Q-19 conflict (clone vs real bubble).** SETTLED ruling 23 (Nov 4) said move
+   the REAL bubble because a copy blinked in motion-check cases 1, 2, 11; the
+   HTML (Nov 7) flies a clone and hides the real bubble with an `opacity:0`
+   animation until it lands (`flyText`, HTML 2066-2096). QUESTIONS Q-19 default
+   is "HTML wins, fall back if MC fails". Today's `useSendRise` is the fallback
+   shape already; keep it available behind the same hook signature.
+6. **`launch` is not in `CH_SPRINGS`.** `lib/motion.ts:70-81` has
+   smooth/settle/reveal/send/pop/lift/pour. Adding `launch: {visualDuration .5,
+   bounce .2}` exceeds the 0.1 bounce cap the file's comment documents (Q-04).
+   `chSpringCurve` caps its sampled curve at 1.5 s and rests at 0.001
+   (motion.ts:111-112), fine for 828 ms. App `pop` is 496 ms (tokens.css:1340),
+   spec solver 540: use the app's number. `CH_FADE_MS` is 180, the HTML says 120
+   (Q-05, ruling 25: use the shared helper).
+7. **Reduce Motion is `useChReducedMotion()` = OS setting OR Settings >
+   Animations off** (`lib/reduced-motion.ts:30-34`); CSS keyframes key off
+   `prefers-reduced-motion` and `[data-motion='off']` separately
+   (CSS:4592-4604). New motion written in CSS must cover both selectors; WAAPI
+   hooks already take `reduced`.
+8. **Native-only keyboard path.** `--keyboard-height` is only published (a) in
+   the Capacitor app on `keyboardWillShow` with `info.keyboardHeight` (no
+   duration or curve is read), (b) in Safari on coarse pointers from
+   `visualViewport` (>120 px cover) (CapacitorProvider.tsx:205-230), and (c) per
+   sheet. Desktop Chrome in a narrow window never sets it. The Safari path
+   shrinks `.ch-pscreen` to the visual viewport (`data-ch-vv`), so a
+   transform-based ride must not double-apply there. Capacitor's
+   `resize:'ionic'` plus `scrollAssist/scrollPadding` true
+   (capacitor.config.ts:86-91) mean iOS may still scroll the WebView; the screen
+   sets `data-fw-keyboard-aware` so the global `scrollIntoView` is skipped
+   (CapacitorProvider.tsx:163-172). Test on a device or the Simulator;
+   `helm-safari-performance` and `scripts/phone/` are the tools.
+9. **Bubbles are not focusable (MSG-008).** No `tabIndex` on `.ch-ms-bub` (grep:
+   only the reaction bar, MV:1413). Spec wants `tabindex=0`, a 2px
+   `--ch-ring-own` focus ring (offset 3) and Enter/Space opening the actions
+   (MSG-401/402, slice C). `--ch-ring-own` exists (tokens.css:729,980).
+   Photos/files are buttons/anchors already.
+10. **Receipt time is the sent time.** DM "Seen {clock(m.at)}" (MV:1468) prints
+    the message time. Showing "Seen 8:15 AM" needs the reader's `last_read_at`
+    passed into `ChMsg`/`ChReceipts`; DATA.md/Q-15 gate it for minors' privacy.
+    The group receipt already respects `seenByAccess('sender-and-coaches')`.
+11. **Desktop has far fewer motion hooks than phone.** `Thread` (desktop) calls
+    only `useThreadAnchor`, `useThreadMakeRoom`, `useFocusMessage` and
+    `usePanelSmoothScroll`; it lacks date pill, send rise, reply-from-typing,
+    drag (correct, phone only), spring jump, per-typer bubbles. The HTML runs
+    the same `send`/`incoming`/`onScroll` on both devices. Extract shared hooks
+    so both call the same ones.
+12. **Typing gate and channel races.** `api.typing` is last-event-wins
+    (UGM:1038-1064), a message INSERT clears it but leaves `typingUserIds`
+    populated; the rows hook tears down and rebuilds all its channels whenever
+    the watched id set changes (use-typing-by-conversation.ts:25-60) while the
+    thread hook joins the same topic when a conversation opens (the open id is
+    excluded, but the exclusion lands one render after selection). Realtime is
+    Supabase `golf-conversation:{id}` (broadcast + postgres_changes on one
+    channel), and `observeRealtimeChannel` wraps it for telemetry. 13a.
+    **Re-check after the centred bar (MSG-219):** the name must still ellipsize
+    between two 44 px keys. **iOS focus (MOT-SEND-2):** the send key only
+    prevents `mousedown` (NotifyAnyway.tsx:99); the HTML prevents `pointerdown`
+    while the keyboard is up. If a touch path focuses the button before
+    `mousedown`, the keyboard drops on send; test on a device, and `ta.focus()`
+    after an `await` (MV:2008) does not reliably re-raise a dismissed iOS
+    keyboard.
+13. **Dead code to remove during the work:** `ComposerPlus` (MV:1702-1732, no
+    callers), `EditMessageModal` mounted with `message={null}` (MV:2440,
+    MP:691), the phone `Modal open={false}` "Message" sheet (MP:642-690),
+    `ThreadDatePill`'s unused desktop CSS `top:140px` (CSS:4540), the
+    `.ch-ms-th` legacy flex bar rules once the bar is rebuilt.
+14. **HTML vs SPEC value checks.** HTML Part 1 `.time right:-58px` is superseded
+    by `.phone .time right:-64px` (HTML:934) and the 430 `-68*k` (HTML:1038);
+    SPEC's `-64k` equals the code. HTML `.jump b` is 12/700 with `box-shadow: 0
+    0 0 2px var(--a-page)` (HTML:427): SPEC matches, code does not
+    (CSS:4567-4580). HTML `.datepill` Part 2 is 13/500 with blur 16 saturate 160
+    (HTML:307,745); SPEC matches. No conflicts between SPEC and HTML found in
+    this slice beyond the `-64` without `k`.
+15. **`'use server'` surface.** `sendGolfMessage` and `markGolfMessagesAsRead`
+    live in `src/app/actions/messages.ts`; this slice should not need to change
+    them (the optimistic id and 23505 handling already exist). If anything is
+    added there, export only async functions (the file already exports one
+    `interface`); a changed `'use server'` surface needs `npm run build`
+    (AGENTS.md).
 
 ---
 
 ## Part C. Slice C: overlays, reactions, menus, attach
 
-Checkout: ch-messages-v2, read-only survey. Spec: SPEC.md MSG-224, 312, 313, 401-410; MOTION.md MOT-HOLD-1..6, MOT-RX-1..3, MOT-TEAM-1..3, MOT-ATT-1..3, MOT-X-3/4/5/6/13/14. HTML checked directly where SPEC and code needed a tie-break (`clubhouse-messages.html` lines 355-360, 502-529, 559-568, 805-815, 924-931, 2150-2330).
+Checkout: ch-messages-v2, read-only survey. Spec: SPEC.md MSG-224, 312, 313,
+401-410; MOTION.md MOT-HOLD-1..6, MOT-RX-1..3, MOT-TEAM-1..3, MOT-ATT-1..3,
+MOT-X-3/4/5/6/13/14. HTML checked directly where SPEC and code needed a
+tie-break (`clubhouse-messages.html` lines 355-360, 502-529, 559-568, 805-815,
+924-931, 2150-2330).
 
-Short version of today: a Nov 4 generation of the lift exists and is good (`hold-lift.tsx`, Reply/Copy/Edit/Seen/Delete rows, bar and menu springs, reaction chips in the opposite colour, Seen faces, attach menu with Photos/File/Poll, shared Modal sheet that already catches reopen mid-exit). The Nov 7 deltas that bite here: no Enter/Space on a bubble, hold on a poll or file-only message draws nothing, hover bar is in the wrong place and has the wrong labels, delete asks first and says "Message deleted", pill toast lasts 4 s not 1.7 s, three of the nine toast strings do not exist, scrim blur is 20 px not 14 + saturate, reaction chips have no title tooltip, attach open/close is a CSS keyframe that cannot resume from a live frame.
+Short version of today: a Nov 4 generation of the lift exists and is good
+(`hold-lift.tsx`, Reply/Copy/Edit/Seen/Delete rows, bar and menu springs,
+reaction chips in the opposite colour, Seen faces, attach menu with
+Photos/File/Poll, shared Modal sheet that already catches reopen mid-exit). The
+Nov 7 deltas that bite here: no Enter/Space on a bubble, hold on a poll or
+file-only message draws nothing, hover bar is in the wrong place and has the
+wrong labels, delete asks first and says "Message deleted", pill toast lasts 4 s
+not 1.7 s, three of the nine toast strings do not exist, scrim blur is 20 px not
+14 + saturate, reaction chips have no title tooltip, attach open/close is a CSS
+keyframe that cannot resume from a live frame.
 
 ### Verdicts
 
@@ -418,7 +889,7 @@ Short version of today: a Nov 4 generation of the lift exists and is good (`hold
 | MSG-404 Message menu | CONFLICTS | desktop rows `MessagesView.tsx:1199-1222, 1285-1291, 1523-1533`; phone rows `MessagesPhone.tsx:632-640`; `messages.css:4925-4970, 5037-5043, 5723-5725, 5872-5875` | **Order and copy**: Reply, Copy (text only), Edit (mine, text only), sep, Seen by row (group AND mine), sep, Delete: matches for the main cases (desktop 1523-1533, phone 632-639). Seen row text `{n} of {m} · {m-n} not yet`, faces 20 px max 6: exact (`seen-by.tsx:125-141`). **Extras that spec does not have**: a coach also gets a "Seen by 9 of 11" row on THEIR message in a group (`seenItem` 1199, `SeenSheetRow` `MessagesPhone.tsx:634, 700-705`); polls add See votes / Remind n / Close poll / Share result / "Copy poll" rows (1200-1209; `MessagesPhone.tsx:632, 635, 714-729`); spec: photos/files/polls get Reply (+ Delete if mine). Poll rows are product (D26), keep them behind the same hold unless the owner says otherwise. Player senders never see the Seen row (coach-only list, `seenByAccess`), consistent with Q-15. **Box**: width 236, padding 6 ok; radius `--ch-radius-lg` 16 vs 18; row min-height 44 vs 42; row padding `0 8px` vs `8 12`; trailing icon 18 vs 19; blur 20 no saturate vs 24/170; **no `role="menu"`/`menuitem`**; origin ok. **Delete (the conflict)**: asks first (`DeleteMessageModal` `MessagesView.tsx:2500-2541`, `MessagesPhone.tsx:693`, CH-7501) then fades via `ListPresence` (height + opacity, no scale); spec: no confirm, row fades `scale .92` 180 ms then the list glides on smooth, toast "Deleted for everyone". Today's toast is "Message deleted" (`Messages.tsx:848`). **Copy** toast "Copied": ok (`MessagesView.tsx:1188-1189`, `MessagesPhone.tsx:450-458`). **Edit** goes to the composer chip (Pkg B), not a modal (the `EditMessageModal` render sites pass `message={null}`, dead). **Reply** sets the chip. **Seen by row** opens `useSeenByList().open`. |
 | MSG-405 Seen by sheet | PARTIAL | `seen-by.tsx:324-336` (`SeenBySheet` = `Modal` width 400, class `ch-msv-sheet`), `SeenByBody` 183-321; `messages.css:5741-5760` | Title "Seen by" ok. **Subtitle**: `{n} of {total} · {slice(0,46)}` with no trailing "…" (327-329); spec adds "…". **Groups**: "Seen" and "Not seen yet" with counts ok; "Not seen yet" omitted when empty ok (`section()` returns false on 0). **Row**: avatar 36 (`Avatar size="md"`, 288) vs 32; the time is a second line under the name (`ch-seen-row__body`, 287-290) vs right-aligned 13k ink-3; no role line; empty time prints nothing, spec fallback "Just now" (261). "Hasn't opened this chat" ok (typographic apostrophe, 261). Ordering is most recent first (311), spec: reading order. Cards: `ch-seen-sec`, not the `vgroup` card look (is-v2 CSS only partly). Close key 40 with 44 target and aria "Close": ok. Dead code: `SeenByPopover` (340-436) is exported and catalogued but nothing renders it; `useSeenByList.render` ignores its `phone` argument and always returns the sheet (438-452). Stale header comment says "No faces anywhere" (24-26) but faces exist. |
 | MSG-406 Reaction badges | PARTIAL | `ReactionChip` `MessagesView.tsx:756-873`, container 1433-1437; CSS `messages.css:748-830, 5082-5093, 5730-5740, 5897-5898` | **Colour rule: matches** (opposite of the bubble, see "Reaction colour rule" under Extra checks) but the green is `--ch-green-700` = **#0F4A2F** (tokens.css:69; dark `--ch-green-fill-700` #1D613F, tokens.css:1079) while the spec accent is #155A39 / dark #1F6B45 (`--ch-bubble-mine-fill`, tokens.css:717, 970): use that token. Position ok (top -14, theirs right -10, mine left -10, 16 px margin via `:has`, 5082-5093, 5897). **Size**: padding `0 8px` (757) vs `0 6px`; gap 4 (755) vs 3; no `min-width: 26`; glyph 12 (`MessagesView.tsx:825`) vs 14; stroke 1.6 (791-795) vs 2; chips gap 2 (5086) vs 3; font 12k/600 (`--ch-type-12-strong`) ok for the phone floor, desktop spec 11.5. `:hover` lifts 1 px (783-787): not in spec. Count only when > 1 ok (826). **Own ring**: 1.5 px `--ch-ring-own` (5736-5739) vs 2 px, offset 1 ok, halo `0 0 0 4px --ch-grouped-bg` ok. **Badges on MINE (ivory)**: halo is `0 0 0 1px rgb(21 90 57/.2)` + bubble elevation (769-772); spec `0 0 0 2px page, 0 0 0 3px rgb(21 90 57/.2)`. **Tooltip**: none. The chip has `aria-label` only (817) and is a `<button aria-haspopup="dialog">` that opens a "who reacted" card (`ch-rx`, 831-869); spec: a `title` `{Label}: You, Maya` (names joined ", ", you first as "You"). Default: keep the button and card (richer, keyboard-reachable), ADD `title` with the spec string. |
-| MSG-407 Sheet system | PARTIAL | `ui/Modal.tsx` (whole), `controls.css:416-575`, `lib/sheet-drag.ts`, `lib/dialog-lifetime.ts`; messages use `Modal` only (`seen-by.tsx:329`, `polls.tsx:486, 539, 809`, `MessagesView.tsx` several), never `FormSheet` | Dismiss paths match (backdrop click, Close key, native Escape via `onCancel`, phone drag from grab/header, body drag at scroll top). **Phone box**: `max-height: 92dvh` (controls.css:551-557) vs 78%; head padding `20 16 6 24` (12 top on phone) vs `10 18`; body padding from `.ch-modal__body`; radius 20 20 0 0 ok (`--ch-radius-sheet` 20); grabber `.ch-grab` is 36 x 5, radius 999, `--ch-grab-bg` (controls.css:1535-1546): ok. **Desk**: width 400 for Seen (`width={400}`) ok; `max-height: calc(100dvh - 48px)` vs 82%; panel `ch-pop` enters `translateY(6px) scale(.98)` (controls.css:531-535) vs `scale .94`. **Scrim**: `::backdrop` plain `--ch-scrim` (controls.css:427-431), no blur; spec scrim = MSG-402 overlay (blur 14 saturate 120). Scope with `.ch-msv-sheet::backdrop` so other screens keep theirs. **Drag**: close past `CH_SHEET_CLOSE_PX` 80 px (`sheet-drag.ts:8`) or a flick > 0.5 px/ms (ok, line 10); spec past one third of the sheet height. Rubber band is UIKit's `(1 - 1/(x*.55/100+1))*100` (`rubberBand`), spec `-sqrt(|d|) * 2.2`. These two live in a file shared by every Clubhouse sheet: change only behind an option, not globally. |
+| MSG-407 Sheet system | PARTIAL | `ui/Modal.tsx` (whole), `controls.css:416-575`, `lib/sheet-drag.ts`, `lib/dialog-lifetime.ts`; messages use `Modal` only (`seen-by.tsx:329`, `polls.tsx:486, 539, 809`, `MessagesView.tsx` several), never `FormSheet` | Dismiss paths match (backdrop click, Close key, native Escape via `onCancel`, phone drag from grab/header, body drag at scroll top). **Phone box**: `max-height: 92dvh` (controls.css:551-557) vs 78%; head padding `20 16 6 24` (12 top on phone) vs `10 18`; body padding from `.ch-modal__body`; radius 20 20 0 0 ok (`--ch-radius-sheet` 20); grabber `.ch-grab` is 36 x 5, radius 999, `--ch-grab-bg` (controls.css:1535-1546): ok. **Desk**: width 400 for Seen (`width={400}`) ok; `max-height: calc(100dvh - 48px)` vs 82%; panel `ch-pop` enters `translateY(6px) scale(.98)` (controls.css:531-535) vs `scale .94`. **Scrim**: `::backdrop` plain `--ch-scrim` (controls.css:427-431), no blur; spec scrim = MSG-402 overlay (blur 14 saturate 120). Scope with `.ch-msv-sheet::backdrop` so other screens keep theirs. **Drag**: close past `CH_SHEET_CLOSE_PX` 80 px (`sheet-drag.ts:8`) or a flick > 0.5 px/ms (ok, line 10); spec past one third of the sheet height. Rubber band is UIKit's `(1 - 1/(x*.55/100+1))*100` (`rubberBand`), spec `-sqrt( \| d \| ) * 2.2`. These two live in a file shared by every Clubhouse sheet: change only behind an option, not globally. |
 | MSG-408 Double-tap Like | PARTIAL | `toggleLikeOnDouble` `MessagesView.tsx:1226-1235`, wired on the stack at 1325 (`onClick`, `onDoubleClick: preventDefault`) | Works for touch and mouse (two clicks within 300 ms toggle Like, `haptic("select")`, `api.react(m.id, "Like", !mine)`). **Excluded**: links, buttons, polls (`.ch-ms-poll`), reply quotes (`.ch-ms-quote`), photos (`img`) (1228); spec: any bubble (photo/file included; polls vote on tap so keep that exclusion). No optimistic update: the badge pops only after insert + full reload (see reaction data path), so the pop lags by two round trips. `api.react` drops a tap while another reaction is saving (`Messages.tsx:858`). |
 | MSG-409 Toast | CONFLICTS | `ui/Toast.tsx:90-105, 215, 222, 366-392` (`useToastPill`, `PILL_DONE_MS`); `messages.css:5095-5103, 5832-5858`; `Messages.tsx:687` turns the pill on | **Duration bug**: the pill's 1.7 s is only stored in `clock.left` (215) while the timer is armed with `DISMISS_MS[tone]` = 4000 (215): a pill confirmation stays 4 s; spec 1.7 s. `toast-timers.test.tsx` pins 4 s for non-pill only. **Placement**: container `top: env(safe-area-inset-top) + 8`, full width, centred (5832-5841); spec absolute centred, `top 62` phone (shot 58) / `18` desk. **Box**: padding `8 12` (5098, 5844) vs `9 14`; min-height 31; blur 20 (`--ch-glass-blur`) vs 18; `font 13 strong` (600) ok; glass-strong + float: partly (it uses `--ch-glass-strong`, shadow from base `.ch-toast`). Icon and close key hidden (5854-5857) ok. **Stack (the conflict)**: up to 3 toasts stacked with layout reflow (`.slice(-2)`, 222); spec: one at a time, a new toast fades the old out in 120 ms. **Motion**: in `y -8, scale .96, opacity 0 -> 1` on `pop` (387-395) ok; out `opacity` over `CH_DUR.quick` 180 ms (370) vs 200 ms. `role="status"` ok (`Toast.tsx:382`). **Copy**: "Copied" ok. "Deleted for everyone": MISSING (today "Message deleted", `Messages.tsx:848`, also `PreviewMessages.tsx:388`). "Sending again": MISSING (searched `src/clubhouse` for the string; the failed-send retry toasts only on failure). "Reminder drafted. It sends only when you tap Send": MISSING. "Unmuted": ok (`details-v2.tsx:59`). Mute strings: today `Mute 8 hours` / `Mute a week` / `Until I turn it on` from `useMuteAction` (59) PLUS `Conversation muted` from `api.setMute` (`Messages.tsx:650`): two toasts per mute (Q-13 keeps today's strings; decide which one survives). |
 | MSG-410 Popover menu primitive | PARTIAL | `ui/Menu.tsx` (`Menu`, `MenuItems`, `menuKeyDown`), `ui/ContextMenu.tsx` (`useContextMenu` with `anchored`), `lib/use-popover-fit.ts`, `CH_POP` (`lib/motion.ts:165-170`); Mute uses bespoke `MuteMenu` `details-v2.tsx:67-92` on `.ch-msv-holdmenu.is-mute` (`messages.css:5295-5298`) | The primitive exists and is shared app-wide: portal, flips up near the bottom, arrows/Home/End/Esc/Tab, `role=menu`/`menuitem`, `aria-disabled` is NOT set (uses native `disabled`), separators, `caption` second line (used for "Pin up to 3"). **Differs from spec**: width 232 (`Menu.tsx:34`, `ContextMenu.tsx:12`) vs 236; surface is `.ch-menu.ch-popover` (card look), not glass-strong blur 24 saturate 170 with radius 18; entry is `CH_POP` (`translateY(-4px) scale(.97)`, quick 180 ms) vs `scale .8 -> 1` from the corner nearest the anchor on `lift`, and exit 160 ms fade; row height/typography are the shared `ch-menu__item`, not 42 min-height 15k/500 with a trailing 19 px icon (icons are left, 15 px); placement rule is 6 px gap with `above>below` flip (`Menu.tsx:95-99`) vs spec 8 px clamp and "above if it would pass the bottom 40 and there is 60 above"; scrim is none (spec: transparent scrim). Row menu: `useContextMenu({ anchored })` opens under the row at `r.left + 16, r.bottom + 4` (`ContextMenu.tsx:137, 204`). **Mute** does not use the primitive at all: it is a lift-styled glass box with a light scrim, no scale-in/out animation (instant mount), rows "Mute 8 hours" etc. Build a Messages popover variant (class or prop) rather than restyling `Menu` for the whole app. |
@@ -457,13 +928,23 @@ Short version of today: a Nov 4 generation of the lift exists and is good (`hold
 
 ### Code map
 
-Four implementers will split `MessagesView.tsx` (3,389 lines) and `MessagesPhone.tsx` (1,270). Overlay code is concentrated in the two files below; everything else is a separate file.
+Four implementers will split `MessagesView.tsx` (3,389 lines) and
+`MessagesPhone.tsx` (1,270). Overlay code is concentrated in the two files
+below; everything else is a separate file.
 
 #### `src/clubhouse/screens/messages/hold-lift.tsx` (174 lines): slice C owns it whole
-- `atRest` 10-16, `safeAreaInsets` 24-32, `HoldLift` 34-174: MSG-401/402/403/404 shell, MOT-HOLD-1..6. Props: `messageId, mine, bar, children, onClosed, closeSignal, onReopen`. Source lookup `47-55`, placement math `56-70`, enter animations `71-90`, `dismiss` 96-118, `reopen` 120-130, key handling 132-155, render 157-172. Selectors tests and e2e use: `.ch-msv-lift`, `.ch-msv-lift__copy`, `.ch-msv-rbar`, `.ch-msv-holdmenu`, `data-ch-code="CH-7604"`.
+
+- `atRest` 10-16, `safeAreaInsets` 24-32, `HoldLift` 34-174: MSG-401/402/403/404
+  shell, MOT-HOLD-1..6. Props: `messageId, mine, bar, children, onClosed,
+  closeSignal, onReopen`. Source lookup `47-55`, placement math `56-70`, enter
+  animations `71-90`, `dismiss` 96-118, `reopen` 120-130, key handling 132-155,
+  render 157-172. Selectors tests and e2e use: `.ch-msv-lift`,
+  `.ch-msv-lift__copy`, `.ch-msv-rbar`, `.ch-msv-holdmenu`,
+  `data-ch-code="CH-7604"`.
 - Shared with other slices: none.
 
 #### `src/clubhouse/screens/messages/MessagesView.tsx` (3,389 lines)
+
 | Lines | Name | IDs | Notes |
 | --- | --- | --- | --- |
 | 93, 137 | imports `HoldLift`, seen-by | C | |
@@ -494,9 +975,15 @@ Four implementers will split `MessagesView.tsx` (3,389 lines) and `MessagesPhone
 | 2449-2498 | `EditMessageModal` (dead render sites) | dead | |
 | 2500-2541 | `DeleteMessageModal` | MSG-404 delete | C |
 
-Split for `Bubble` (1110-1534): the overlay half (C) is 1142-1235, 1285-1291, 1343-1437, 1492-1533; the layout half (B) is 1265-1284, 1292-1342, 1438-1491. They share props and the `id="ch-ms-message-{id}"` row that `HoldLift` queries by id. Suggest extracting C's pieces into new files (`bubble-actions.tsx`: hover bar, lift wiring, `useLongPress`, double-tap; `reaction-chip.tsx`) and leaving B the row layout.
+Split for `Bubble` (1110-1534): the overlay half (C) is 1142-1235, 1285-1291,
+1343-1437, 1492-1533; the layout half (B) is 1265-1284, 1292-1342, 1438-1491.
+They share props and the `id="ch-ms-message-{id}"` row that `HoldLift` queries
+by id. Suggest extracting C's pieces into new files (`bubble-actions.tsx`: hover
+bar, lift wiring, `useLongPress`, double-tap; `reaction-chip.tsx`) and leaving B
+the row layout.
 
 #### `src/clubhouse/screens/messages/MessagesPhone.tsx` (1,270 lines)
+
 | Lines | Name | IDs | Notes |
 | --- | --- | --- | --- |
 | 45, 74, 107-109 | imports `Modal`, seen-by, `HoldLift`, thread-v2 hooks | | |
@@ -514,62 +1001,203 @@ Split for `Bubble` (1110-1534): the overlay half (C) is 1142-1235, 1285-1291, 13
 | 767+ | `PhoneDetails` incl. `Modal` at 888 | MSG-6xx | D |
 
 #### Other files, slice C owns whole
-- `ComposerPlusV2.tsx` (102): MSG-312/313, MOT-ATT-1/2. Mount site `MessagesView.tsx:2069`.
-- `seen-by.tsx` (453): `useSeenBy` 30-42, `SeenByReceipt` 47-103 (legacy inline receipt, B), `SeenFaces` 105-123, `HoldSeenRow` 125-142, `SeenByPill` 144-164 (MSG-215, B), `SeenByBody` 183-321, `SeenBySheet` 324-336, `SeenByPopover` 340-436 (dead), `useSeenByList` 438-452. Split: MSG-404/405 and MOT-TEAM-2/3 = C; pill and receipt = B.
-- `ui/Toast.tsx` (427, shared app-wide): pill mode 90-105, 215, 330-343; changes must stay behind `pillOn`. `useToastPill` called by `Messages.tsx:687` and the preview.
-- `ui/Modal.tsx`, `lib/sheet-drag.ts`, `lib/dialog-lifetime.ts`, `styles/controls.css:416-575`: shared by every Clubhouse screen. Messages-only changes go through `className="ch-msv-sheet"` and `.ch-msv-sheet::backdrop`.
-- `ui/Menu.tsx`, `ui/ContextMenu.tsx`, `lib/use-popover-fit.ts`, `lib/haptics.ts`, `lib/press.ts`, `lib/motion.ts`: shared; `launch` spring is not added here (slice B/C coordination: Q-04).
-- `Messages.tsx` (1,094): container glue for C: `EMOJI_BY_KEY/KEY_BY_EMOJI` 57-58, `useMessageReactions` 167, `reactionMap` 493-507, `remove` 844-851 (toast string), `react` 855-865, mute toast 650, `useToastPill` 687.
-- `details-v2.tsx`: `useMuteAction`/`MuteMenu` 36-92 (MSG-410 consumer, owned by D).
+
+- `ComposerPlusV2.tsx` (102): MSG-312/313, MOT-ATT-1/2. Mount site
+  `MessagesView.tsx:2069`.
+- `seen-by.tsx` (453): `useSeenBy` 30-42, `SeenByReceipt` 47-103 (legacy inline
+  receipt, B), `SeenFaces` 105-123, `HoldSeenRow` 125-142, `SeenByPill` 144-164
+  (MSG-215, B), `SeenByBody` 183-321, `SeenBySheet` 324-336, `SeenByPopover`
+  340-436 (dead), `useSeenByList` 438-452. Split: MSG-404/405 and MOT-TEAM-2/3 =
+  C; pill and receipt = B.
+- `ui/Toast.tsx` (427, shared app-wide): pill mode 90-105, 215, 330-343; changes
+  must stay behind `pillOn`. `useToastPill` called by `Messages.tsx:687` and the
+  preview.
+- `ui/Modal.tsx`, `lib/sheet-drag.ts`, `lib/dialog-lifetime.ts`,
+  `styles/controls.css:416-575`: shared by every Clubhouse screen. Messages-only
+  changes go through `className="ch-msv-sheet"` and `.ch-msv-sheet::backdrop`.
+- `ui/Menu.tsx`, `ui/ContextMenu.tsx`, `lib/use-popover-fit.ts`,
+  `lib/haptics.ts`, `lib/press.ts`, `lib/motion.ts`: shared; `launch` spring is
+  not added here (slice B/C coordination: Q-04).
+- `Messages.tsx` (1,094): container glue for C: `EMOJI_BY_KEY/KEY_BY_EMOJI`
+  57-58, `useMessageReactions` 167, `reactionMap` 493-507, `remove` 844-851
+  (toast string), `react` 855-865, mute toast 650, `useToastPill` 687.
+- `details-v2.tsx`: `useMuteAction`/`MuteMenu` 36-92 (MSG-410 consumer, owned by
+  D).
 - `hooks/golf/use-message-reactions.ts` (shared with Fairway).
-- `src/app/actions/messages.ts` `deleteMessage` 1327-1395, `deleteGolfMessage` 1420; `src/app/golf/actions/messages.ts` re-export 351-358.
+- `src/app/actions/messages.ts` `deleteMessage` 1327-1395, `deleteGolfMessage`
+  1420; `src/app/golf/actions/messages.ts` re-export 351-358.
 
 #### CSS (`src/clubhouse/styles/messages.css`, 5,958 lines)
-Reaction chips 748-830 (+ legacy `.ch-ms-reactbar` 706-746, dead), `.ch-rx` card 830-915; plus/attach 4723-4840; lift, bar, menu, seen row 4870-5041; badges 5082-5093, 5730-5740, 5897-5898; hover bar 5657-5727; sheets 5741-5760; toast pill 5095-5103, 5832-5858; mute menu 5295-5298; blur on menu 5872-5875. Tokens used: `tokens.css` 13-16 (attach tile colours), 602 (`--ch-glass-blur` 20 px), 726 (`--ch-glass-strong`), 729 (`--ch-ring-own`), 869 (`--ch-scrim`), 895-900 (`--ch-ease-spring`, durations).
+
+Reaction chips 748-830 (+ legacy `.ch-ms-reactbar` 706-746, dead), `.ch-rx` card
+830-915; plus/attach 4723-4840; lift, bar, menu, seen row 4870-5041; badges
+5082-5093, 5730-5740, 5897-5898; hover bar 5657-5727; sheets 5741-5760; toast
+pill 5095-5103, 5832-5858; mute menu 5295-5298; blur on menu 5872-5875. Tokens
+used: `tokens.css` 13-16 (attach tile colours), 602 (`--ch-glass-blur` 20 px),
+726 (`--ch-glass-strong`), 729 (`--ch-ring-own`), 869 (`--ch-scrim`), 895-900
+(`--ch-ease-spring`, durations).
 
 ### Tests
 
 Existing tests that pin overlay behaviour:
-- `src/clubhouse/__tests__/messages.test.tsx`: `:836-837` (phone: click sr-only "Message actions", then `[data-ch-code="CH-7604"]` Reply). Keeps working if the lift keeps the code and the labels. `:1480-1486` ("CH-7009 a reaction that fails says so") clicks `getAllByRole('button', { name: 'React like' })[0]`: this is the desktop hover bar's aria-label. Legitimately changes to "Like" (MSG-224 labels); update the query on purpose.
-- `src/clubhouse/screens/messages/__tests__/composer-v2.test.tsx:120-152`: attach rows (`Photos, File, Poll` in a group; `Photos, File` in a DM) and a single `.ch-msv-attach`. Changes only if the owner puts Poll in DMs; add open/close-resume cases for MOT-ATT-2.
-- `screens/messages/__tests__/seen-pill.test.tsx` (`HoldSeenRow`, `SeenByPill`) and `src/clubhouse/__tests__/messages-seen-by.test.tsx` (`SeenByReceipt`, `SeenBySheet` loading/error, subtitle): the sheet subtitle test must change if the "…" is added; `SeenByPopover` is not tested (safe to delete).
-- `screens/messages/__tests__/messages-player-session.test.tsx`: `SeenByReceipt` for a player; unchanged by C.
-- Strings pinned (ruling 19): `__tests__/messages.test.tsx:337, 356, 364` find buttons named "Mute 8 hours" (the details Mute rows, MSG-603/410), `:474` expects "Not sent" (MSG-216, other slice), `:794` the tombstone "Message deleted" (stays: it is what others see). `toast-timers.test.tsx:316-331` uses "Conversation muted" / "Notifications back on" as sample titles only. No test pins the delete toast "Message deleted" from `Messages.tsx:848`, so "Deleted for everyone" breaks nothing; the Mute label change (if the owner picks "For 8 hours") would need `messages.test.tsx:337-364` edited on purpose.
-- `src/clubhouse/__tests__/toast-timers.test.tsx` (4 s confirmation / 8 s error, onExpire, hover/focus holds): all non-pill. Add a pill case at 1.7 s; the existing ones stay.
-- `src/clubhouse/__tests__/motion-physics.test.tsx` (spring tables, `send/pop/lift` named exceptions, toast swipe/hold), `sheet-drag-reduced.test.tsx`, `scrim-follows-sheet.test.tsx`, `dialog-lifetime.test.tsx`, `popup-layout.test.tsx`, `haptic-grammar.test.ts`: shared infrastructure; they change only if the one-third close threshold, the sqrt rubber band or a `launch` spring is added to the shared code (prefer options so these stay).
-- `src/clubhouse/preview/__tests__/messages-design-fixture.test.tsx` and `preview/PreviewMessages.tsx:247-276`: the design route opens states by dispatching `contextmenu` on `.ch-ms-msg__stack`, clicking `.ch-msv-plus__key`, and `.ch-msv-rbar button:nth-child(2)`. Keep those class names or update the preview steps in the same change.
-- `e2e/clubhouse-messages-motion.spec.ts` cases 3 (hold, Escape at 90 ms), 4 (hold again while settling), 6 (attach close/reopen): they sample `.ch-ms-msg .ch-ms-bub, .ch-msv-lift__copy` and `.ch-msv-plus__key`. These are the repo's MC-03/04/06; they must keep passing, and case 6 should be extended to sample the attach menu itself (`.ch-msv-attach`) once MOT-ATT-2 is rebuilt.
-- Fairway has its own reaction tests (`components/fairway/pages/messages/MessageThreadPane.*.test.ts`); not affected unless `use-message-reactions.ts` changes.
 
-New tests worth adding next to the code (`__tests__/`): Enter/Space opens the lift; hold on a poll and on a file-only message opens the lift; reaction `title`; "Deleted for everyone" toast; pill toast lasts 1700 ms.
+- `src/clubhouse/__tests__/messages.test.tsx`: `:836-837` (phone: click sr-only
+  "Message actions", then `[data-ch-code="CH-7604"]` Reply). Keeps working if
+  the lift keeps the code and the labels. `:1480-1486` ("CH-7009 a reaction that
+  fails says so") clicks `getAllByRole('button', { name: 'React like' })[0]`:
+  this is the desktop hover bar's aria-label. Legitimately changes to "Like"
+  (MSG-224 labels); update the query on purpose.
+- `src/clubhouse/screens/messages/__tests__/composer-v2.test.tsx:120-152`:
+  attach rows (`Photos, File, Poll` in a group; `Photos, File` in a DM) and a
+  single `.ch-msv-attach`. Changes only if the owner puts Poll in DMs; add
+  open/close-resume cases for MOT-ATT-2.
+- `screens/messages/__tests__/seen-pill.test.tsx` (`HoldSeenRow`, `SeenByPill`)
+  and `src/clubhouse/__tests__/messages-seen-by.test.tsx` (`SeenByReceipt`,
+  `SeenBySheet` loading/error, subtitle): the sheet subtitle test must change if
+  the "…" is added; `SeenByPopover` is not tested (safe to delete).
+- `screens/messages/__tests__/messages-player-session.test.tsx`: `SeenByReceipt`
+  for a player; unchanged by C.
+- Strings pinned (ruling 19): `__tests__/messages.test.tsx:337, 356, 364` find
+  buttons named "Mute 8 hours" (the details Mute rows, MSG-603/410), `:474`
+  expects "Not sent" (MSG-216, other slice), `:794` the tombstone "Message
+  deleted" (stays: it is what others see). `toast-timers.test.tsx:316-331` uses
+  "Conversation muted" / "Notifications back on" as sample titles only. No test
+  pins the delete toast "Message deleted" from `Messages.tsx:848`, so "Deleted
+  for everyone" breaks nothing; the Mute label change (if the owner picks "For 8
+  hours") would need `messages.test.tsx:337-364` edited on purpose.
+- `src/clubhouse/__tests__/toast-timers.test.tsx` (4 s confirmation / 8 s error,
+  onExpire, hover/focus holds): all non-pill. Add a pill case at 1.7 s; the
+  existing ones stay.
+- `src/clubhouse/__tests__/motion-physics.test.tsx` (spring tables,
+  `send/pop/lift` named exceptions, toast swipe/hold),
+  `sheet-drag-reduced.test.tsx`, `scrim-follows-sheet.test.tsx`,
+  `dialog-lifetime.test.tsx`, `popup-layout.test.tsx`, `haptic-grammar.test.ts`:
+  shared infrastructure; they change only if the one-third close threshold, the
+  sqrt rubber band or a `launch` spring is added to the shared code (prefer
+  options so these stay).
+- `src/clubhouse/preview/__tests__/messages-design-fixture.test.tsx` and
+  `preview/PreviewMessages.tsx:247-276`: the design route opens states by
+  dispatching `contextmenu` on `.ch-ms-msg__stack`, clicking
+  `.ch-msv-plus__key`, and `.ch-msv-rbar button:nth-child(2)`. Keep those class
+  names or update the preview steps in the same change.
+- `e2e/clubhouse-messages-motion.spec.ts` cases 3 (hold, Escape at 90 ms), 4
+  (hold again while settling), 6 (attach close/reopen): they sample `.ch-ms-msg
+  .ch-ms-bub, .ch-msv-lift__copy` and `.ch-msv-plus__key`. These are the repo's
+  MC-03/04/06; they must keep passing, and case 6 should be extended to sample
+  the attach menu itself (`.ch-msv-attach`) once MOT-ATT-2 is rebuilt.
+- Fairway has its own reaction tests
+  (`components/fairway/pages/messages/MessageThreadPane.*.test.ts`); not
+  affected unless `use-message-reactions.ts` changes.
+
+New tests worth adding next to the code (`__tests__/`): Enter/Space opens the
+lift; hold on a poll and on a file-only message opens the lift; reaction
+`title`; "Deleted for everyone" toast; pill toast lasts 1700 ms.
 
 ### Risks and surprises
 
-1. **Hold on a poll or a file-only message opens nothing** (`hold-lift.tsx:47-55, 157`): the source selector is `.ch-ms-bub, .ch-ms-img`. `acting` stays set on the phone, so the next hold on the same message may not re-open (`key={acting.id}` same). Fix by letting `HoldLift` take any `.ch-ms-msg__stack` child (`.ch-ms-poll`, `.ch-ms-file`) and clone the stack instead.
-2. **Focus return is a no-op**: bubbles have no `tabindex` (MSG-008 missing), so `source.focus()` after the lift and the "focus-within" hover reveal both fail. Add `tabIndex=0` + Enter/Space + focus ring on `.ch-ms-bub`/the stack in the same change as the hover bar fix; remember `useLongPress` and the double-tap `onClick` live on the same element.
-3. **Pill toast is 4 s, not 1.7 s** (`Toast.tsx:215`: `left` uses `PILL_DONE_MS`, the timer uses `DISMISS_MS`). The toast is shared by every screen; the pill branch is gated by the module-level `pillOn`, so the change is safe only inside that branch. A toast raised in a `<dialog>` is re-hosted into the dialog (`useToastHost`), so the spec's absolute `top 62 / 18` must be computed relative to the host, not the viewport.
-4. **Delete confirm**: the HTML has no confirm and deletes at once with a fade. Today's `DeleteMessageModal` (CH-7501) is owner-visible safety (it quotes the message). Owner decision needed; default: keep the confirm, change the toast to "Deleted for everyone", and replace the height collapse with the scale .92 fade. `ListPresence` (`ui/ListPresence.tsx:121-142`) animates height, margins and opacity (layout), which breaks the "only transforms move" house rule on delete; the thread uses `arrive="rise"`, `flip={false}`.
-5. **No optimistic reactions**: the badge and its pop wait for insert + a full `refresh()` of every reaction row in the thread, and `api.react` ignores taps while `pending`. Rapid Like/Love taps lose the second. The hook is shared with Fairway; add an optimistic layer in `Messages.tsx` (local overlay on `reactionMap`) rather than editing the hook.
-6. **`Modal` is the only sheet** and `Modal`, `sheet-drag.ts`, `controls.css` are shared app-wide. The spec's one-third close threshold, sqrt rubber band, 78%/82% max-height and blurred scrim must be opt-in (a prop on `useSheetDrag`/`Modal` or `.ch-msv-sheet` CSS), never global.
-7. **Popover primitive**: do not restyle `Menu`/`ContextMenu` globally (232 wide, `CH_POP`); 40+ screens use them. Add a variant. The row menu's "Pin up to 3" can use `MenuItem.caption` + `disabled` (native `disabled`, spec wants `aria-disabled`, so keyboard focus can still land on it). Mute is hand-rolled on the lift CSS and has no open/close animation.
-8. **Attach menu**: CSS keyframes cannot resume from a live frame. Rebuild open/close with WAAPI on `chSpringCurve('lift')` and the existing `is-closing` guard; `--ch-ease-spring-lift` and `--ch-dur-spring-lift` exist (tokens.css:1341-1342, only under `@supports linear()`); the attach keyframe pairs the lift curve with the 520 ms reveal duration. Keep `.ch-msv-plus__key` (e2e, preview) and the swallow-click-on-outside behaviour.
-9. **Hover bar vs reaction badge**: both sit at the top corner (`top:-20` vs `-14`); moving the bar outside the bubble (`±64`) fixes the overlap but the bar then needs room in the row (rows have `padding-inline` 16/28); check narrow desktop panes (details open).
-10. **Seen row privacy**: `HoldSeenRow` and the sheet only show for a coach (`seenByAccess(...).list`, `SEEN_BY_VISIBILITY`), matching Q-15; the HTML shows the row for any group sender. Keep the gate. A coach also gets a Seen row on theirs-in-group today; spec says mine only; decide, default keep (coach tooling, P-1 slice 6).
-11. **Stale comments mislead**: `seen-by.tsx:24-26` ("No faces anywhere"), `MessagesView.tsx:194` (flag comment; the wrapper `data-ch-ms-v2` is now unconditional, `MessagesScreen.tsx:36`), `hold-lift.tsx` header cites M-MSG ids. Legacy `ComposerPlus` (1702) has no callers (checked across `src`).
-12. **`SeenByPopover` and `MuteMenu` carry `data-ch-ms-v2="on"` inline** (`hold-lift.tsx:162`, `details-v2.tsx:79`) because they portal outside the wrapper; any v2 CSS scoped by `[data-ch-ms-v2]` needs the attribute on portalled overlays.
-13. **HTML vs SETTLED / QUESTIONS**: Q-05 (reduced fade 120 vs shared 180) and Q-02 (haptic) are resolved and the code already follows them. Q-13 is NOT closed in practice: it says keep today's mute strings AND the labels "For 8 hours" / "For a week" / "Until I turn it on", but today's rows and toasts read "Mute 8 hours" / "Mute a week" / "Until I turn it on" (`details-v2.tsx:59, 86-88`) and `api.setMute` toasts a second line "Conversation muted" / "Notifications back on" (`Messages.tsx:650, 1013`), so a mute raises two toasts today. Owner to pick the strings. The other open conflict in this slice is the delete confirm (risk 4).
-15. **Generated catalog**: `preview/component-catalog.json` lists `EditMessageModal`, `SeenByPopover`, `HoldSeenRow` etc. (lines 4637, 4891-4895); deleting or renaming exports needs the repo's regenerate step (`npm run regen:resolve` / the catalog generator), never a hand edit.
-14. **Touch press delay**: `press.ts` PRESS_TOUCH_DELAY_MS 70 ms is app-wide (scroll safety). The HTML sinks at 0 ms; a hold's sink therefore starts 70 ms late on the phone. Not worth changing globally; if needed, add a per-element opt-out (`data-ch-press-now`).
+1. **Hold on a poll or a file-only message opens nothing**
+   (`hold-lift.tsx:47-55, 157`): the source selector is `.ch-ms-bub,
+   .ch-ms-img`. `acting` stays set on the phone, so the next hold on the same
+   message may not re-open (`key={acting.id}` same). Fix by letting `HoldLift`
+   take any `.ch-ms-msg__stack` child (`.ch-ms-poll`, `.ch-ms-file`) and clone
+   the stack instead.
+2. **Focus return is a no-op**: bubbles have no `tabindex` (MSG-008 missing), so
+   `source.focus()` after the lift and the "focus-within" hover reveal both
+   fail. Add `tabIndex=0` + Enter/Space + focus ring on `.ch-ms-bub`/the stack
+   in the same change as the hover bar fix; remember `useLongPress` and the
+   double-tap `onClick` live on the same element.
+3. **Pill toast is 4 s, not 1.7 s** (`Toast.tsx:215`: `left` uses
+   `PILL_DONE_MS`, the timer uses `DISMISS_MS`). The toast is shared by every
+   screen; the pill branch is gated by the module-level `pillOn`, so the change
+   is safe only inside that branch. A toast raised in a `<dialog>` is re-hosted
+   into the dialog (`useToastHost`), so the spec's absolute `top 62 / 18` must
+   be computed relative to the host, not the viewport.
+4. **Delete confirm**: the HTML has no confirm and deletes at once with a fade.
+   Today's `DeleteMessageModal` (CH-7501) is owner-visible safety (it quotes the
+   message). Owner decision needed; default: keep the confirm, change the toast
+   to "Deleted for everyone", and replace the height collapse with the scale .92
+   fade. `ListPresence` (`ui/ListPresence.tsx:121-142`) animates height, margins
+   and opacity (layout), which breaks the "only transforms move" house rule on
+   delete; the thread uses `arrive="rise"`, `flip={false}`.
+5. **No optimistic reactions**: the badge and its pop wait for insert + a full
+   `refresh()` of every reaction row in the thread, and `api.react` ignores taps
+   while `pending`. Rapid Like/Love taps lose the second. The hook is shared
+   with Fairway; add an optimistic layer in `Messages.tsx` (local overlay on
+   `reactionMap`) rather than editing the hook.
+6. **`Modal` is the only sheet** and `Modal`, `sheet-drag.ts`, `controls.css`
+   are shared app-wide. The spec's one-third close threshold, sqrt rubber band,
+   78%/82% max-height and blurred scrim must be opt-in (a prop on
+   `useSheetDrag`/`Modal` or `.ch-msv-sheet` CSS), never global.
+7. **Popover primitive**: do not restyle `Menu`/`ContextMenu` globally (232
+   wide, `CH_POP`); 40+ screens use them. Add a variant. The row menu's "Pin up
+   to 3" can use `MenuItem.caption` + `disabled` (native `disabled`, spec wants
+   `aria-disabled`, so keyboard focus can still land on it). Mute is hand-rolled
+   on the lift CSS and has no open/close animation.
+8. **Attach menu**: CSS keyframes cannot resume from a live frame. Rebuild
+   open/close with WAAPI on `chSpringCurve('lift')` and the existing
+   `is-closing` guard; `--ch-ease-spring-lift` and `--ch-dur-spring-lift` exist
+   (tokens.css:1341-1342, only under `@supports linear()`); the attach keyframe
+   pairs the lift curve with the 520 ms reveal duration. Keep
+   `.ch-msv-plus__key` (e2e, preview) and the swallow-click-on-outside
+   behaviour.
+9. **Hover bar vs reaction badge**: both sit at the top corner (`top:-20` vs
+   `-14`); moving the bar outside the bubble (`±64`) fixes the overlap but the
+   bar then needs room in the row (rows have `padding-inline` 16/28); check
+   narrow desktop panes (details open).
+10. **Seen row privacy**: `HoldSeenRow` and the sheet only show for a coach
+    (`seenByAccess(...).list`, `SEEN_BY_VISIBILITY`), matching Q-15; the HTML
+    shows the row for any group sender. Keep the gate. A coach also gets a Seen
+    row on theirs-in-group today; spec says mine only; decide, default keep
+    (coach tooling, P-1 slice 6).
+11. **Stale comments mislead**: `seen-by.tsx:24-26` ("No faces anywhere"),
+    `MessagesView.tsx:194` (flag comment; the wrapper `data-ch-ms-v2` is now
+    unconditional, `MessagesScreen.tsx:36`), `hold-lift.tsx` header cites M-MSG
+    ids. Legacy `ComposerPlus` (1702) has no callers (checked across `src`).
+12. **`SeenByPopover` and `MuteMenu` carry `data-ch-ms-v2="on"` inline**
+    (`hold-lift.tsx:162`, `details-v2.tsx:79`) because they portal outside the
+    wrapper; any v2 CSS scoped by `[data-ch-ms-v2]` needs the attribute on
+    portalled overlays.
+13. **HTML vs SETTLED / QUESTIONS**: Q-05 (reduced fade 120 vs shared 180) and
+    Q-02 (haptic) are resolved and the code already follows them. Q-13 is NOT
+    closed in practice: it says keep today's mute strings AND the labels "For 8
+    hours" / "For a week" / "Until I turn it on", but today's rows and toasts
+    read "Mute 8 hours" / "Mute a week" / "Until I turn it on"
+    (`details-v2.tsx:59, 86-88`) and `api.setMute` toasts a second line
+    "Conversation muted" / "Notifications back on" (`Messages.tsx:650, 1013`),
+    so a mute raises two toasts today. Owner to pick the strings. The other open
+    conflict in this slice is the delete confirm (risk 4).
+14. **Generated catalog**: `preview/component-catalog.json` lists
+    `EditMessageModal`, `SeenByPopover`, `HoldSeenRow` etc. (lines 4637,
+    4891-4895); deleting or renaming exports needs the repo's regenerate step
+    (`npm run regen:resolve` / the catalog generator), never a hand edit.
+15. **Touch press delay**: `press.ts` PRESS_TOUCH_DELAY_MS 70 ms is app-wide
+    (scroll safety). The HTML sinks at 0 ms; a hold's sink therefore starts 70
+    ms late on the phone. Not worth changing globally; if needed, add a
+    per-element opt-out (`data-ch-press-now`).
 
 ---
 
 ## Part D. Slice D: polls, files, photos, details, mute, empty states, desktop layout
 
-Checkout `ch-messages-v2` (branch `agent/ch-messages-v2`), read-only survey, 2026-11-07. Paths are under `src/clubhouse/` unless they start with `src/`. `MV` = `screens/messages/MessagesView.tsx` (3,389 lines), `MP` = `screens/messages/MessagesPhone.tsx` (1,270), `M` = `screens/messages/Messages.tsx` (1,094), `CSS` = `styles/messages.css` (5,958). Line numbers were re-checked with `grep -n` / `sed -n`.
+Checkout `ch-messages-v2` (branch `agent/ch-messages-v2`), read-only survey,
+2026-11-07. Paths are under `src/clubhouse/` unless they start with `src/`. `MV`
+= `screens/messages/MessagesView.tsx` (3,389 lines), `MP` =
+`screens/messages/MessagesPhone.tsx` (1,270), `M` =
+`screens/messages/Messages.tsx` (1,094), `CSS` = `styles/messages.css` (5,958).
+Line numbers were re-checked with `grep -n` / `sed -n`.
 
-Method notes. Every value below was read in the code, not inferred from a test name. Where I deduce a visual result from the CSS cascade instead of a render, the cell says "by cascade". Where SPEC.md and the HTML differ I say so. DATA.md and QUESTIONS.md do not exist in this checkout, so the "privacy-gated (DATA.md)" and Q-nn references could not be read.
+Method notes. Every value below was read in the code, not inferred from a test
+name. Where I deduce a visual result from the CSS cascade instead of a render,
+the cell says "by cascade". Where SPEC.md and the HTML differ I say so. DATA.md
+and QUESTIONS.md do not exist in this checkout, so the "privacy-gated (DATA.md)"
+and Q-nn references could not be read.
 
-Headline: today's polls are the Nov 4 generation (paper card, key-style options, green gradient fill plus a 3 px level line, "Poll / Final / Ends ..." header, "n of m voted" footer). The Nov 7 poll (flat recv bubble, page-2 well options, "Poll · Choose one", "{n} votes · Closes ...") is a restyle plus copy change on top of working behaviour. Behaviour (single and multi vote, close, final, remind, share, drafts, clock) is richer than the spec and must be kept.
+Headline: today's polls are the Nov 4 generation (paper card, key-style options,
+green gradient fill plus a 3 px level line, "Poll / Final / Ends ..." header, "n
+of m voted" footer). The Nov 7 poll (flat recv bubble, page-2 well options,
+"Poll · Choose one", "{n} votes · Closes ...") is a restyle plus copy change on
+top of working behaviour. Behaviour (single and multi vote, close, final,
+remind, share, drafts, clock) is richer than the spec and must be kept.
 
 ### Verdicts
 
@@ -621,6 +1249,7 @@ Headline: today's polls are the Nov 4 generation (paper card, key-style options,
 ### Code map
 
 #### polls.tsx (998 lines) -- slice D owns it whole
+
 | Lines | Name | Holds |
 | --- | --- | --- |
 | 55-77 | `ChPollsApi` | tally / vote / pending / error / retry / send / close contract |
@@ -637,12 +1266,28 @@ Headline: today's polls are the Nov 4 generation (paper card, key-style options,
 | 988-998 | `PollButton` | old composer plus-key poll (group only) |
 
 #### details-v2.tsx (372 lines) -- slice D owns it whole
-`popIn` 23-32, `tokenBeat` 34, `useMuteAction` 37-63, `MuteMenu` 65-90, `QuickActions` 92-162 (MSG-604, MOT-DET-3), `detailsLine` 164-168, `ConversationSearch` 170-184, `MembersCard` 186-246 (MSG-605), `PhotoTile` 251-277, `PhotosAndFiles` 279-335 (MSG-607), `useDetailsColumn` 337-372 (MOT-DET-2). Imported by `MV` (line 91), `MP` (line 105) and `NewMessagePane.tsx` (line 10: `popIn`, `tokenBeat`).
+
+`popIn` 23-32, `tokenBeat` 34, `useMuteAction` 37-63, `MuteMenu` 65-90,
+`QuickActions` 92-162 (MSG-604, MOT-DET-3), `detailsLine` 164-168,
+`ConversationSearch` 170-184, `MembersCard` 186-246 (MSG-605), `PhotoTile`
+251-277, `PhotosAndFiles` 279-335 (MSG-607), `useDetailsColumn` 337-372
+(MOT-DET-2). Imported by `MV` (line 91), `MP` (line 105) and
+`NewMessagePane.tsx` (line 10: `popIn`, `tokenBeat`).
 
 #### Other whole files owned by D
-`files.ts` (66), `class-thread.ts` (57), `group-class.ts` (48), `GroupClassLine.tsx` (48), `ThreadClassSection.tsx` (30), `ThreadClassSub.tsx` (30), `use-row-mutes.ts` (37), `MessagesFirstRun.tsx` (46), `HelloCard.tsx` (25), `MessagesNoTeam.tsx` (27), `NewMessagePane.tsx` (110), `prefill.ts` (133), `MessagesScreen.tsx` (40, only the phone/desktop pick and the `data-ch-ms-v2` wrapper). Server side (not under screens): `src/app/golf/actions/message-mute.ts`, `message-attachments.ts`, `message-polls.ts`, `src/hooks/golf/use-message-responses.ts`, `src/lib/golf/message-polls.ts`.
+
+`files.ts` (66), `class-thread.ts` (57), `group-class.ts` (48),
+`GroupClassLine.tsx` (48), `ThreadClassSection.tsx` (30), `ThreadClassSub.tsx`
+(30), `use-row-mutes.ts` (37), `MessagesFirstRun.tsx` (46), `HelloCard.tsx`
+(25), `MessagesNoTeam.tsx` (27), `NewMessagePane.tsx` (110), `prefill.ts` (133),
+`MessagesScreen.tsx` (40, only the phone/desktop pick and the `data-ch-ms-v2`
+wrapper). Server side (not under screens):
+`src/app/golf/actions/message-mute.ts`, `message-attachments.ts`,
+`message-polls.ts`, `src/hooks/golf/use-message-responses.ts`,
+`src/lib/golf/message-polls.ts`.
 
 #### MessagesView.tsx (3,389 lines) -- shared monolith, seams for D
+
 | Lines | Name | D's part |
 | --- | --- | --- |
 | 177-341 | `ChPendingAttachmentSend`, `ChAttachmentRecovery`, `ChMessagesApi` | D fields: `attachments` 250, `files` 271, `classDay` 277, `directory` 279, `startDirect` 282, `prefill` 285, `mute*` 297-304, `polls` 333. Adding fields here touches every slice's test mocks |
@@ -660,6 +1305,7 @@ Headline: today's polls are the Nov 4 generation (paper card, key-style options,
 | 3257-3389 | `MessagesDesktop` | MSG-801 and the pane switch (3277-3279 turn counter, 3304 `Swap`, 3331 first run, 3369-3377 details mount) |
 
 #### MessagesPhone.tsx (1,270 lines)
+
 | Lines | Name | D's part |
 | --- | --- | --- |
 | 128-244 | `MessagesPhone` | stack/history logic (`details` state 136, `depth` 152), `PhoneNewMessage` mount 212-231 |
@@ -672,47 +1318,177 @@ Headline: today's polls are the Nov 4 generation (paper card, key-style options,
 | 1203-1270 | `PhoneAnnouncementForm` | not in this slice |
 
 #### Messages.tsx (1,094 lines), one component `Messages` (73-1094)
-D parts: class awareness 83-87 and 718; prefill state 98-104 and deep link 195-263; `landDraft` 343-352, `startDirect` 354-383, `createGroup` 384-431; poll responses 489-491 and `api.polls` 867-919; mute state 603-651 (toast at 650); `addCandidates` 653-666; `loadFiles` 668-676; `loadAttachments` 678-687; `rowMutes`/`shownConvs` 689-693; `api` members 920, mute 1010-1019, files 981, prefill 991-993.
+
+D parts: class awareness 83-87 and 718; prefill state 98-104 and deep link
+195-263; `landDraft` 343-352, `startDirect` 354-383, `createGroup` 384-431; poll
+responses 489-491 and `api.polls` 867-919; mute state 603-651 (toast at 650);
+`addCandidates` 653-666; `loadFiles` 668-676; `loadAttachments` 678-687;
+`rowMutes`/`shownConvs` 689-693; `api` members 920, mute 1010-1019, files 981,
+prefill 991-993.
 
 #### CSS (`styles/messages.css`)
-Polls base 3442-3860 (card 3446, head 3505, opts 3560, fill 3626, level 3645, mark 3696, foot 3759, reduced motion 3807-3840, votes sheet 3841-3906, poll sheet 3907-4060); v2 poll override 5103-5132 and 5782-5840; empty/hello/details tiles 5133-5290; details column and quick actions 5399-5560; new message pane 5547-5620; hover/lift 5657-5728; sheet/vote bars 5740-5780; desktop grid: legacy 3-29, 1309-1349, v2 4068-4081; details legacy 1121-1236; photo 451-466 and 4606-4622; file bubble 628-662; photo-off tile 5934.
+
+Polls base 3442-3860 (card 3446, head 3505, opts 3560, fill 3626, level 3645,
+mark 3696, foot 3759, reduced motion 3807-3840, votes sheet 3841-3906, poll
+sheet 3907-4060); v2 poll override 5103-5132 and 5782-5840; empty/hello/details
+tiles 5133-5290; details column and quick actions 5399-5560; new message pane
+5547-5620; hover/lift 5657-5728; sheet/vote bars 5740-5780; desktop grid: legacy
+3-29, 1309-1349, v2 4068-4081; details legacy 1121-1236; photo 451-466 and
+4606-4622; file bubble 628-662; photo-off tile 5934.
 
 ### Tests
 
 Existing tests that pin D behaviour (all in `src/clubhouse/` unless noted):
-- `__tests__/messages-polls.test.tsx` (PollCard: lines 85-215 counts/vote/closed/votes/close, 209-215 group-only button, 218-293 D11-D28, 295-333 visual states, 335-380 remind/share/actions, 384-387 faces). Would legitimately change: 298-305 (asserts `.ch-ms-poll__level` x2 and an "honest 0" in `.ch-ms-poll__n`), 307-312 head text "Poll closed·Final", 314-322 "Voting ended·Final", "Tied" tags, 327-333 "Choose any that work", 85-98 footer strings ("N of M voted", "Everyone voted") because the spec header/footer copy and the no-level-line rule change them; 384-387 asserts `.ch-ms-poll__faces`, a class that no longer exists (the real one is `.ch-msv-pollfaces`), so it passes vacuously: rewrite it to expect up to 3 faces, yours first. 209-215 only if DMs get polls.
-- `__tests__/messages-polls-css.test.ts` pins `--ch-dur-release` on the fill, `border-bottom-right-radius: tail`, `--ch-poll-mark-ring: ink-500`, the `min(460px,78%)` column rules and a no-`prefers-color-scheme` rule on the whole stylesheet. Fill-curve and mark-ring pins change with MSG-502 (the v2 override already moved the fill to smooth, the test passes only because the legacy text still exists); keep the column-width and dark-theme pins.
-- `__tests__/messages.test.tsx`: poll integration 1367-1460 (keep); mute 329-358 (CH-1902, CH-7011) and 337/356/364 "Mute 8 hours" button names (change only if the "For 8 hours" labels are adopted); 417 CH-7208; 673 CH-7405/7407; 876 phone first run; 885-916 and 947-998 Details files (CH-7409/7306/7214/7021, "kind, size and day"); 1055 CH-7605 pane swap (change if the swap curve changes); 1082-1094 CH-7308; 1096-1217 prefill (keep); 1277 "#2 a week’s mute reads as a date" (uses `muteLabel`; delete-safe only if `MuteControl` stays or `muteLabel` is re-homed).
-- `screens/messages/__tests__/class-thread.test.tsx`, `__tests__/class-awareness-messages.test.tsx` (Details block, `GroupClassLine`, `ThreadClassSection`): change only if the class card is restyled (the card text and `data-ch-code` CH-7272/7273 are pinned).
-- `screens/messages/__tests__/messages-player-session.test.tsx`, `attachments-load.test.tsx` (attachment load and re-sign), `screens/messages/__tests__/composer-v2.test.tsx` (CSS pins for the plus key and send key: read before touching the shared stylesheet).
-- `__tests__/toast-timers.test.tsx:316-331` ("Conversation muted" replaced by "Notifications back on"): these test the toast key mechanism, unaffected if the two mute toasts are merged but keep `replace`.
-- `__tests__/redesign-shared-guards.test.ts` (flag name list, no raw hex etc. in `screens/messages`), `__tests__/phone-type-floor-css.test.ts`, `__tests__/target-size-css.test.ts`, `__tests__/no-first-paint-draw-ins.test.ts`: global guards that any new CSS (12 px floor, 44 px targets, no first-paint draw-ins) must still pass; the poll fill must keep "no first-paint draw-in".
-- `preview/__tests__/messages-design-fixture.test.tsx` and `preview/PreviewMessages.tsx` (design fixture with its own toast code at `:479-487`): needs the new poll/details/empty states if captures are to be taken.
-- No test pins the 1101 px container rule, the grid columns or `useDetailsColumn`; add one for the 1280 canvas (see Risks 4).
+
+- `__tests__/messages-polls.test.tsx` (PollCard: lines 85-215
+  counts/vote/closed/votes/close, 209-215 group-only button, 218-293 D11-D28,
+  295-333 visual states, 335-380 remind/share/actions, 384-387 faces). Would
+  legitimately change: 298-305 (asserts `.ch-ms-poll__level` x2 and an "honest
+  0" in `.ch-ms-poll__n`), 307-312 head text "Poll closed·Final", 314-322
+  "Voting ended·Final", "Tied" tags, 327-333 "Choose any that work", 85-98
+  footer strings ("N of M voted", "Everyone voted") because the spec
+  header/footer copy and the no-level-line rule change them; 384-387 asserts
+  `.ch-ms-poll__faces`, a class that no longer exists (the real one is
+  `.ch-msv-pollfaces`), so it passes vacuously: rewrite it to expect up to 3
+  faces, yours first. 209-215 only if DMs get polls.
+- `__tests__/messages-polls-css.test.ts` pins `--ch-dur-release` on the fill,
+  `border-bottom-right-radius: tail`, `--ch-poll-mark-ring: ink-500`, the
+  `min(460px,78%)` column rules and a no-`prefers-color-scheme` rule on the
+  whole stylesheet. Fill-curve and mark-ring pins change with MSG-502 (the v2
+  override already moved the fill to smooth, the test passes only because the
+  legacy text still exists); keep the column-width and dark-theme pins.
+- `__tests__/messages.test.tsx`: poll integration 1367-1460 (keep); mute 329-358
+  (CH-1902, CH-7011) and 337/356/364 "Mute 8 hours" button names (change only if
+  the "For 8 hours" labels are adopted); 417 CH-7208; 673 CH-7405/7407; 876
+  phone first run; 885-916 and 947-998 Details files (CH-7409/7306/7214/7021,
+  "kind, size and day"); 1055 CH-7605 pane swap (change if the swap curve
+  changes); 1082-1094 CH-7308; 1096-1217 prefill (keep); 1277 "#2 a week’s mute
+  reads as a date" (uses `muteLabel`; delete-safe only if `MuteControl` stays or
+  `muteLabel` is re-homed).
+- `screens/messages/__tests__/class-thread.test.tsx`,
+  `__tests__/class-awareness-messages.test.tsx` (Details block,
+  `GroupClassLine`, `ThreadClassSection`): change only if the class card is
+  restyled (the card text and `data-ch-code` CH-7272/7273 are pinned).
+- `screens/messages/__tests__/messages-player-session.test.tsx`,
+  `attachments-load.test.tsx` (attachment load and re-sign),
+  `screens/messages/__tests__/composer-v2.test.tsx` (CSS pins for the plus key
+  and send key: read before touching the shared stylesheet).
+- `__tests__/toast-timers.test.tsx:316-331` ("Conversation muted" replaced by
+  "Notifications back on"): these test the toast key mechanism, unaffected if
+  the two mute toasts are merged but keep `replace`.
+- `__tests__/redesign-shared-guards.test.ts` (flag name list, no raw hex etc. in
+  `screens/messages`), `__tests__/phone-type-floor-css.test.ts`,
+  `__tests__/target-size-css.test.ts`,
+  `__tests__/no-first-paint-draw-ins.test.ts`: global guards that any new CSS
+  (12 px floor, 44 px targets, no first-paint draw-ins) must still pass; the
+  poll fill must keep "no first-paint draw-in".
+- `preview/__tests__/messages-design-fixture.test.tsx` and
+  `preview/PreviewMessages.tsx` (design fixture with its own toast code at
+  `:479-487`): needs the new poll/details/empty states if captures are to be
+  taken.
+- No test pins the 1101 px container rule, the grid columns or
+  `useDetailsColumn`; add one for the 1280 canvas (see Risks 4).
 
 ### Risks and surprises
 
-1. Photo and file bubbles are sized only after an async signed-URL round trip. `Bubble` knows just `hasAttachments` (`MV:1339`); `Attachments` shows a 240 x 54 skeleton (`MV:1005-1008`), then the real 242 x 176 photo, so the thread grows 122 px under the reader the first time a photo scrolls in (the CSS comment at `CSS:451` claims a late image cannot move messages; the skeleton breaks that). MOTION house rule B7 ("an arrival has its full height from the first frame") needs the message list payload to carry the kind (and ideally width/height, which the table has: `AttachmentUploadData.width/height`) so the frame can be reserved before signing. Also `IntersectionObserver` rootMargin 800 px means far-off photos stay unsigned.
-2. Details photo tiles are N+1: each `PhotoTile` calls `api.attachments(messageId)` (a server action that lists and signs ALL files of that message) once per tile, 6 on open and up to 100 after "See all", with no cache shared with the thread's own `Attachments` (`details-v2.tsx:251-277`, `M:678-687`). Add a batch signer (`getSignedUrlsForAttachments` already exists, re-exported `src/app/golf/actions/messages.ts:41,377`) or cache by message id. A signed URL also expires after 1 h; tiles never re-sign.
-3. Votes: voter identity depends on `api.directory` (the viewer's messageable people), so a vote from someone outside it, or a teammate who left, reads "Member" with a placeholder avatar. Visibility is thread-wide by RLS, so showing faces and the full "Votes" sheet leaks nothing new. If a future design shows voters on the card, remember the tally is derived client-side per poll and re-read on every realtime change (250 ms coalesced).
-4. The desktop grid threshold is on the canvas, not the viewport. `.ch-canvas` is `container-type: inline-size` (`shell.css:23`), the 3-pane rule needs `min-width: 1101px` of canvas (viewport >= about 1349), the spec's reference width 1280 gives a 1032 px canvas and silently renders the legacy floating panel with no column animation (and the rail at 300, not 320). This is by cascade, not rendered; a visual check at 1280 would show it at once. At 1440 (canvas about 1192) and with the sidebar folded at 1280 (about 1216) the three-pane grid already applies, so only desktop viewports under about 1349 px with the sidebar open are affected (this includes 1280 and 1024 to 1194 px tablets in landscape). There is no test for it. Changing the threshold also changes when the details panel stops floating over the composer.
-5. Hidden coupling around the photo shell: `hold-lift.tsx:47,50,55` find the lift source with `.ch-ms-bub, .ch-ms-img`, `CSS:2067-3240` exclude `.ch-ms-bub--file` from the mine-green and tail rules, and reaction badges anchor to `.ch-ms-msg__stack`. If D replaces `.ch-ms-img`/`.ch-ms-bub--file` with a `.b.photo`/`.b.file` shell, slices B and C must agree on the class that marks "a bubble shell".
-6. `'use server'` files here (`message-attachments.ts`, `message-mute.ts`, `message-polls.ts`, `messages.ts`) declare `export interface` / `export type`, which erases cleanly; `messages.ts:380-390` records that a type in an `export { ... }` specifier list takes every action down. Do not move types into those files with that form while changing `loadAttachments`' return shape.
-7. Double toast on mute (`details-v2.tsx:59` and `M:650`), no inbox-glyph refresh after a Details mute (`M:1013`), and no in-session expiry: these are existing defects the spec's MSG-608 now depends on; fix them in the same package as the Details restyle.
-8. Spec vs Nov 4 rulings that D must resolve: (a) ruling 19 / Q-13 (keep "Mute 8 hours..." strings and tests) vs MSG-604 and the HTML ("For 8 hours / For a week / Until I turn it on", toast "Muted for ..."); (b) D5 (the poll leader is marked only once final, `polls.tsx:380`, test 298-305) vs MSG-502 / HTML (chip on a sole leader at any time); (c) the 4 Nov "no faces on a poll row (default B: count only)" test (`messages-polls.test.tsx:384`) vs the HTML's voter faces, which today's code already draws (`polls.tsx:360-376`), so the test is stale; (d) ruling 20 (Profile for a coach only) vs the HTML (always drawn): code follows the ruling; (e) HTML Captain chip vs `details-v2.tsx:184` ("no Captain chip").
-9. Class awareness (`ThreadClassSub`, `ThreadClassSection`, `GroupClassLine`) is a P-10 feature gated by `useClassAwareness()` and a coach role (`M:84-87`); the spec draws only a DM card and no header status or group line. They are not in the HTML, so the default is keep, restyled to the new tokens; `GroupClassLine` sits directly above the composer pill (`MV:2062`), so slice B's composer geometry (MSG-301) must leave room for it.
-10. `MessagesPhone` imports from `MessagesView` and `details-v2` imports a type from `MessagesView` (`details-v2.tsx:14`); `MessagesScreen.tsx` exists solely to avoid an import cycle (`check:cycles`). A new shared file (poll voters, photo shell) must not import `MessagesView` values.
-11. Stale comment: `MessagesView.tsx:194` still documents `golf_messages_redesign_v1`; the flag is gone and `data-ch-ms-v2` is always rendered (`MessagesScreen.tsx:36`), so every `[data-ch-ms-v2]` rule is live and legacy rules without the prefix are only fallbacks; keep new rules under the prefix.
-12. `startDirect` creates a server conversation as soon as a person is picked, and `HelloCard` then shows an empty thread; picking then leaving leaves an empty DM (existing behaviour, spec MSG-703 matches it).
+1. Photo and file bubbles are sized only after an async signed-URL round trip.
+   `Bubble` knows just `hasAttachments` (`MV:1339`); `Attachments` shows a 240 x
+   54 skeleton (`MV:1005-1008`), then the real 242 x 176 photo, so the thread
+   grows 122 px under the reader the first time a photo scrolls in (the CSS
+   comment at `CSS:451` claims a late image cannot move messages; the skeleton
+   breaks that). MOTION house rule B7 ("an arrival has its full height from the
+   first frame") needs the message list payload to carry the kind (and ideally
+   width/height, which the table has: `AttachmentUploadData.width/height`) so
+   the frame can be reserved before signing. Also `IntersectionObserver`
+   rootMargin 800 px means far-off photos stay unsigned.
+2. Details photo tiles are N+1: each `PhotoTile` calls
+   `api.attachments(messageId)` (a server action that lists and signs ALL files
+   of that message) once per tile, 6 on open and up to 100 after "See all", with
+   no cache shared with the thread's own `Attachments`
+   (`details-v2.tsx:251-277`, `M:678-687`). Add a batch signer
+   (`getSignedUrlsForAttachments` already exists, re-exported
+   `src/app/golf/actions/messages.ts:41,377`) or cache by message id. A signed
+   URL also expires after 1 h; tiles never re-sign.
+3. Votes: voter identity depends on `api.directory` (the viewer's messageable
+   people), so a vote from someone outside it, or a teammate who left, reads
+   "Member" with a placeholder avatar. Visibility is thread-wide by RLS, so
+   showing faces and the full "Votes" sheet leaks nothing new. If a future
+   design shows voters on the card, remember the tally is derived client-side
+   per poll and re-read on every realtime change (250 ms coalesced).
+4. The desktop grid threshold is on the canvas, not the viewport. `.ch-canvas`
+   is `container-type: inline-size` (`shell.css:23`), the 3-pane rule needs
+   `min-width: 1101px` of canvas (viewport >= about 1349), the spec's reference
+   width 1280 gives a 1032 px canvas and silently renders the legacy floating
+   panel with no column animation (and the rail at 300, not 320). This is by
+   cascade, not rendered; a visual check at 1280 would show it at once. At 1440
+   (canvas about 1192) and with the sidebar folded at 1280 (about 1216) the
+   three-pane grid already applies, so only desktop viewports under about 1349
+   px with the sidebar open are affected (this includes 1280 and 1024 to 1194 px
+   tablets in landscape). There is no test for it. Changing the threshold also
+   changes when the details panel stops floating over the composer.
+5. Hidden coupling around the photo shell: `hold-lift.tsx:47,50,55` find the
+   lift source with `.ch-ms-bub, .ch-ms-img`, `CSS:2067-3240` exclude
+   `.ch-ms-bub--file` from the mine-green and tail rules, and reaction badges
+   anchor to `.ch-ms-msg__stack`. If D replaces `.ch-ms-img`/`.ch-ms-bub--file`
+   with a `.b.photo`/`.b.file` shell, slices B and C must agree on the class
+   that marks "a bubble shell".
+6. `'use server'` files here (`message-attachments.ts`, `message-mute.ts`,
+   `message-polls.ts`, `messages.ts`) declare `export interface` / `export
+   type`, which erases cleanly; `messages.ts:380-390` records that a type in an
+   `export { ... }` specifier list takes every action down. Do not move types
+   into those files with that form while changing `loadAttachments`' return
+   shape.
+7. Double toast on mute (`details-v2.tsx:59` and `M:650`), no inbox-glyph
+   refresh after a Details mute (`M:1013`), and no in-session expiry: these are
+   existing defects the spec's MSG-608 now depends on; fix them in the same
+   package as the Details restyle.
+8. Spec vs Nov 4 rulings that D must resolve: (a) ruling 19 / Q-13 (keep "Mute 8
+   hours..." strings and tests) vs MSG-604 and the HTML ("For 8 hours / For a
+   week / Until I turn it on", toast "Muted for ..."); (b) D5 (the poll leader
+   is marked only once final, `polls.tsx:380`, test 298-305) vs MSG-502 / HTML
+   (chip on a sole leader at any time); (c) the 4 Nov "no faces on a poll row
+   (default B: count only)" test (`messages-polls.test.tsx:384`) vs the HTML's
+   voter faces, which today's code already draws (`polls.tsx:360-376`), so the
+   test is stale; (d) ruling 20 (Profile for a coach only) vs the HTML (always
+   drawn): code follows the ruling; (e) HTML Captain chip vs
+   `details-v2.tsx:184` ("no Captain chip").
+9. Class awareness (`ThreadClassSub`, `ThreadClassSection`, `GroupClassLine`) is
+   a P-10 feature gated by `useClassAwareness()` and a coach role (`M:84-87`);
+   the spec draws only a DM card and no header status or group line. They are
+   not in the HTML, so the default is keep, restyled to the new tokens;
+   `GroupClassLine` sits directly above the composer pill (`MV:2062`), so slice
+   B's composer geometry (MSG-301) must leave room for it.
+10. `MessagesPhone` imports from `MessagesView` and `details-v2` imports a type
+    from `MessagesView` (`details-v2.tsx:14`); `MessagesScreen.tsx` exists
+    solely to avoid an import cycle (`check:cycles`). A new shared file (poll
+    voters, photo shell) must not import `MessagesView` values.
+11. Stale comment: `MessagesView.tsx:194` still documents
+    `golf_messages_redesign_v1`; the flag is gone and `data-ch-ms-v2` is always
+    rendered (`MessagesScreen.tsx:36`), so every `[data-ch-ms-v2]` rule is live
+    and legacy rules without the prefix are only fallbacks; keep new rules under
+    the prefix.
+12. `startDirect` creates a server conversation as soon as a person is picked,
+    and `HelloCard` then shows an empty thread; picking then leaving leaves an
+    empty DM (existing behaviour, spec MSG-703 matches it).
 
 ---
 
 ## Part G. Slice G: global, tokens, springs, CSS, gates
 
-Scope: MSG-001 to 003, 008 to 010, the SPEC token table, MSG-901 to 905, MOT-SPR-1 to 7, MOT-R-1 to 6, MOT-KB-1, plus the six inventories asked for (CSS, reduced motion and haptics, `'use server'` files, flags, checks, shared files).
-Checkout: `/Users/ricknini/worktrees/helmv3/ch-messages-v2` (HEAD `56950784e6`, contains origin/main `743cb23a19`). All lines re-verified. Where SPEC.md and the HTML differ the HTML was read (token values in the HTML at lines 35-110, 617-637, 1002, 1029, springs `SP` at 1329-1337); I found no SPEC-vs-HTML value difference in this slice.
+Scope: MSG-001 to 003, 008 to 010, the SPEC token table, MSG-901 to 905,
+MOT-SPR-1 to 7, MOT-R-1 to 6, MOT-KB-1, plus the six inventories asked for (CSS,
+reduced motion and haptics, `'use server'` files, flags, checks, shared files).
+Checkout: `/Users/ricknini/worktrees/helmv3/ch-messages-v2` (HEAD `56950784e6`,
+contains origin/main `743cb23a19`). All lines re-verified. Where SPEC.md and the
+HTML differ the HTML was read (token values in the HTML at lines 35-110,
+617-637, 1002, 1029, springs `SP` at 1329-1337); I found no SPEC-vs-HTML value
+difference in this slice.
 
-Spring numbers were recomputed from `physics()` (omega = 2 pi / (1.2 vd), zeta = 1 - bounce): stiffness/damping/settle match MOTION.md for all seven; `chSpringCurve` settle ms: smooth 462, settle 417, reveal 921, send 700, pop 496, lift 471, launch 812 (page solver says 828), peaks 1.000 / 1.002 / 1.000 / 1.003 / 1.068 / 1.006 / 1.015.
+Spring numbers were recomputed from `physics()` (omega = 2 pi / (1.2 vd), zeta =
+1 - bounce): stiffness/damping/settle match MOTION.md for all seven;
+`chSpringCurve` settle ms: smooth 462, settle 417, reveal 921, send 700, pop
+496, lift 471, launch 812 (page solver says 828), peaks 1.000 / 1.002 / 1.000 /
+1.003 / 1.068 / 1.006 / 1.015.
 
 ### Verdicts
 
@@ -726,7 +1502,7 @@ Spring numbers were recomputed from `physics()` (omega = 2 pi / (1.2 vd), zeta =
 | MSG-010 Touch targets | DONE | Plus key 36 + `::before inset -4` = 44 (messages.css:4740-4744); send key 36 (4716-4720), phone `::before inset -5` (2173-2178); sheet close key 40 + `::before inset -2` = 44, `flex: none` (5744-5754); hover bar keys 26.9 (5679-5680, the WCAG 2.5.8 exception, ruling 17); segmented/pill reach via controls.css:606-612. | none. Re-check after the bar and row rebuilds that nothing new sits under 44 on the phone. |
 | MSG-901 Contrast | PARTIAL | Token values equal the HTML table (see Token table). Pinned by tests: bubble ink vs fill, ink-2 vs bubble, dots/ring/switch 3:1 (refresh-tokens.test.ts:75-92); `--ch-flag` 4.5 on page and card (same file:57-60). | Not pinned: links on card, chips on tint, times (ink-3 on page), back link on frame, Delete, avatar initials on the lightest coin, "Rejected: ivory on #2A7D53 dark" (`--ch-accent-hover` dark is #2a7d53, tokens.css:1142: never use for sent). Light sent-ink is `--ch-text-on-accent` #ffffff (tokens.css:198), spec #FDFCF8 (the test hardcodes #fdfcf8, refresh-tokens.test.ts:76), passes either way. Add the missing pairs to contrast-tokens.test.ts. |
 | MSG-902 Avatars | CONFLICTS | Shared `Avatar` draws a neutral green coin (phone) or 6 pastel tones (desk) with dark initials, ring `0 0 0 1px` and `inset 0 1px 0 .45` (ui.css:200-219, 226-260; Avatar.tsx:14-30). Sizes come from a step table `xs 24, sm 28, md 36, lg 40, xl 64` (Avatar.tsx:21) so Pinned is 64 (MessagesPhone.tsx:328 `xl`) not 62, HelloCard 64 not 72 (HelloCard.tsx:13), details phone 84 (MessagesPhone.tsx:808 ok), group run 30 ok (MessagesView.tsx:2412), header 36 ok (2287). Group coin gradient exists for the team channel (`.ch-ms-grp`, messages.css:304). | Spec: per-person flat coin (`--h1`, e.g. #2b5f45 #6e5232 #3a6580 #84495a ...) with ivory #fdfcf8 initials at 0.38 x size, weight 600, shadow `inset 0 1px 0 .22, inset 0 -1px 0 .12, 0 1px 2px .15`. The data model has no per-person hue; the HTML hues are a prototype palette. Needs an owner call (Q-new) because SETTLED-4NOV and the 5 Nov ruling ("coins are the calm neutral", Avatar.tsx comment) say the opposite. Do not edit shared Avatar (75 importers): scope `[data-ch-ms-v2] .ch-avatar` or add an opt-in `tone` prop. |
-| MSG-903 Aria labels | PARTIAL | Present: "Back to Messages", "New message", "Filter conversations", "Loading conversations" (role=status, MessagesPhone.tsx:293), "Message actions" (toolbar MessagesView.tsx:1354, dialog hold-lift.tsx:162), "Jump to latest[, N new]" (thread-v2.tsx:130), typing `role="status"` + "{First} is typing" (MessagesPhone.tsx:562, MessagesView.tsx:2415), toast `role=status`/alert (Toast.tsx:382), `aria-expanded` on plus (ComposerPlusV2.tsx:66). | Different from spec: plus key "Add a photo, file or poll" / "Close" (spec "Add photo, file or poll"); hover bar "More message actions" (MessagesView.tsx:1379; spec "More actions"); reaction bar "Reactions" (1396; spec "React"); detail key "Details"/"Group details" (2316, 2786) and phone `.ch-msp-who` has no label naming the person (MessagesPhone.tsx:468; spec "Details for {name}"); "Back to conversation", "Search in conversation", "Remove file" ("Remove {file}" at 1647), "Photo from {First}" absent. Filters are `role="radiogroup"` + `aria-checked` (Segmented.tsx:85-96), spec says `aria-pressed`; changing shared Segmented needs the 56-importer review, otherwise keep radio semantics and note the deviation. Sheets use native `<dialog>` via Modal (no literal `aria-modal`); hold dialog has it. Some strings are pinned (screens/messages/__tests__/composer-v2.test.tsx names "Add a photo, file or poll"); change them on purpose. |
+| MSG-903 Aria labels | PARTIAL | Present: "Back to Messages", "New message", "Filter conversations", "Loading conversations" (role=status, MessagesPhone.tsx:293), "Message actions" (toolbar MessagesView.tsx:1354, dialog hold-lift.tsx:162), "Jump to latest[, N new]" (thread-v2.tsx:130), typing `role="status"` + "{First} is typing" (MessagesPhone.tsx:562, MessagesView.tsx:2415), toast `role=status`/alert (Toast.tsx:382), `aria-expanded` on plus (ComposerPlusV2.tsx:66). | Different from spec: plus key "Add a photo, file or poll" / "Close" (spec "Add photo, file or poll"); hover bar "More message actions" (MessagesView.tsx:1379; spec "More actions"); reaction bar "Reactions" (1396; spec "React"); detail key "Details"/"Group details" (2316, 2786) and phone `.ch-msp-who` has no label naming the person (MessagesPhone.tsx:468; spec "Details for {name}"); "Back to conversation", "Search in conversation", "Remove file" ("Remove {file}" at 1647), "Photo from {First}" absent. Filters are `role="radiogroup"` + `aria-checked` (Segmented.tsx:85-96), spec says `aria-pressed`; changing shared Segmented needs the 56-importer review, otherwise keep radio semantics and note the deviation. Sheets use native `<dialog>` via Modal (no literal `aria-modal`); hold dialog has it. Some strings are pinned (screens/messages/**tests**/composer-v2.test.tsx names "Add a photo, file or poll"); change them on purpose. |
 | MSG-904 Motion check | PARTIAL | `e2e/clubhouse-messages-motion.spec.ts` (316 lines) already runs the 11 cases on the preview fixture `/clubhouse-preview/messages?state=design&view=thread`, sampler `__mcStart`, headed + localhost only (lines 1-20, 134-310). Fixture: `src/clubhouse/preview/PreviewMessages.tsx`. | Cases were written for the Nov 4 build. Re-judge all 11 on the new send choreography (clone vs real bubble, MC-01/02/11), `launch`, keyboard ride and the desktop details column (MC-10). Needs a headed 60 Hz run; headless fails 2-3 cases (SETTLED-4NOV). |
 | MSG-905 Rules kept | PARTIAL | No accent left-border cards (only neutral hairlines, messages.css:1127, 3380). Edge 16/20 from `--ch-page-x-phone` (tokens.css:469, 1501-1506; 414 breakpoint). | Delete/failed use `--ch-danger-600` (#b03a2e / #ef8576, tokens.css:106, 1094) at messages.css:2443, 2528, 5724; spec says `--ch-flag` (#b3261e / #f28b7d, tokens.css:677, 991). Menu Delete is `.ch-menu__item.is-danger` (controls.css:373), also check which token it reads. |
 | MOT-SPR-1 smooth | DONE | `CH_SPRINGS.smooth` vd .26 / b 0 (motion.ts:71) = 405.6 / 40.3, 462 ms; CSS `--ch-ease-spring-smooth` + `--ch-dur-spring-smooth: 462ms` (tokens.css:1333-1334). | none |
@@ -739,14 +1515,15 @@ Spring numbers were recomputed from `physics()` (omega = 2 pi / (1.2 vd), zeta =
 | MOT-R-1 120 ms crossfade | PARTIAL | `CH_FADE_MS = CH_DUR.quick * 1000 = 180` (motion.ts:56); `--ch-dur-crossfade-rm: 180ms` (tokens.css:930, pinned equal by refresh-tokens.test.ts:47-49); global CSS floor (base.css:318-323); Messages WAAPI uses `CH_FADE_MS` (thread-v2.tsx:247, 325; hold-lift.tsx:79, 106-107; MessagesView.tsx:749, 1933). `chFade()` is an ease-out tween (motion.ts:52-54), the artifact is linear; the Messages WAAPI calls pass no easing (default linear) so they are linear. | Spec/HTML 120 ms linear; code 180 ms linear. Default per Q-05 and ruling 25: keep the shared 180 (14 files import `CH_FADE_MS`, 3 CSS consumers). To make Messages 120 a separate token would break ruling 25; a Clubhouse-wide change is a shared-owner decision, not Messages'. Record as accepted deviation. |
 | MOT-R-2 loops stop | DONE | Dots `animation: none; opacity: 1` for row dots (messages.css:4185-4189), thread dots (4591-4603), both also under `[data-motion='off']`; skeleton pulse stops (4185-4194). Caret is the browser's (ruling 21). Legacy `.ch-ms-typing i` (980-985, opacity .6) has no live markup. | Skeleton pulse period is `--ch-dur-sweep` 900 ms (messages.css:4178) vs spec 1.4 s ease-in-out; opacity target .55 matches (4182). Slice A (MSG-112) owns the period. |
 | MOT-R-3 hold | DONE | Press scale skipped under reduced motion (lib/press.ts:53-61); lift copy, bar, menu, scrim just fade `CH_FADE_MS` (hold-lift.tsx:79). | none |
-| MOT-R-4 jump scroll | DONE | `useSpringToEnd(..., reduced)` returns `toEnd()` at once (thread-v2.tsx:144), wired on the phone with `threadReduced` (MessagesPhone.tsx:444). | Desktop passes `anchor.toEnd` directly (MessagesView.tsx:2424): no spring glide on desktop at all (MOT-JMP-3 gap, slice B). Spec also skips when `|to-from| < 2`. |
+| MOT-R-4 jump scroll | DONE | `useSpringToEnd(..., reduced)` returns `toEnd()` at once (thread-v2.tsx:144), wired on the phone with `threadReduced` (MessagesPhone.tsx:444). | Desktop passes `anchor.toEnd` directly (MessagesView.tsx:2424): no spring glide on desktop at all (MOT-JMP-3 gap, slice B). Spec also skips when ` \| to-from \| < 2`. |
 | MOT-R-5 details column | PARTIAL | Reduced details panel crossfades with `ch-msv-det-fade var(--ch-dur-crossfade-rm) linear` (messages.css:5406-5409, 5827-5828). The grid has the one-track-list prep (`320px minmax(0,1fr) 0px` / `300px`, messages.css:4070-4080) but NO `transition: grid-template-columns` (searched `grid-template-columns` + `transition`): MOT-DET-2 itself is missing. | See Risks: a new layout-property transition is rejected by `clubhouse:css` (`clubhouse/no-layout-motion`) unless the exact declaration is in the base. Slice D owns MOT-DET-2. |
 | MOT-R-6 send reduced | DONE | Reduced: new bubble `opacity 0 > 1` over `CH_FADE_MS` (thread-v2.tsx:324-327), thread glide skipped (197, `if (reduced ...) return`), no clone/arrow exists, reply fades (246-249). | Re-verify once `launch` and the clone land: reduced must stay "no flight, no clone, no arrow". |
 | MOT-KB-1 keyboard ride | (see other slice) PARTIAL | Signals exist: native `keyboardWillShow` sets `--keyboard-height` and `body.keyboard-open` (components/providers/CapacitorProvider.tsx:123-132, hide 168-170), web `visualViewport` fallback (207-228), Safari fit `data-ch-vv` (shell/PhoneScreen.tsx:187-215, shell.css:1595-1599). The thread screen is `PhoneScreen keyboardAware` (MessagesPhone.tsx:462) and rides by `padding-bottom: var(--keyboard-height)` on `.ch-pscreen[data-fw-keyboard-aware]` (shell.css:1590-1592): an instant layout resize, no 480 ms transition, composer not translated, jump key follows `--ch-ms-comp-h` (composer-inset.ts, messages.css:4547). `--ch-ease-sheet: cubic-bezier(0.32, 0.72, 0, 1)` exists (tokens.css:913) and is unused; no 480 ms duration token. | Build: a `--ch-dur-keyboard: 480ms` token (CSS literal `ms` and `cubic-bezier(` are banned outside tokens.css), animate the composer and jump key by `translate` from `--keyboard-height`, thread floor padding grows by the same amount, `useThreadAnchor` re-pins (use-thread-anchor.ts), reduced: at once. Shared blast radius: shell.css:1590, PhoneScreen.tsx and CapacitorProvider (Roster phone profile also uses `keyboardAware`, RosterPhoneCrh.tsx:281). `keyboardWillShow` gives only the height, not the keyboard's duration, so 480 ms is a fixed guess. Native-only path: cannot be verified in a desktop browser; Safari web uses the visualViewport path. |
 
 ### Token table
 
-"Spec" = SPEC.md Tokens table (HTML-verified). `Dark` = does the code's dark value equal the spec's dark value.
+"Spec" = SPEC.md Tokens table (HTML-verified). `Dark` = does the code's dark
+value equal the spec's dark value.
 
 | Artifact token | Clubhouse token and value (file:line) | Status | Dark | Notes |
 | --- | --- | --- | --- | --- |
@@ -785,7 +1562,8 @@ Spring numbers were recomputed from `physics()` (omega = 2 pi / (1.2 vd), zeta =
 
 #### Shared files Messages work will touch (other Clubhouse pages import them): single owner needed
 
-Counts are non-test importers in `src/` (script: resolved relative and `@/` imports). "Other pages" = distinct page dirs.
+Counts are non-test importers in `src/` (script: resolved relative and `@/`
+imports). "Other pages" = distinct page dirs.
 
 | File | What Messages needs from it | Importers (total / Messages) | Other pages that import it |
 | --- | --- | --- | --- |
@@ -817,17 +1595,46 @@ Counts are non-test importers in `src/` (script: resolved relative and `@/` impo
 
 #### Messages files and seams (for ownership)
 
-- `screens/messages/MessagesScreen.tsx` (40): phone vs desktop switch, `<div data-ch-ms-v2 display:contents>` at :36 (always on; comment at :34 "Off, the DOM is today's" is stale). Hold overlay and details carry their own `data-ch-ms-v2="on"` (hold-lift.tsx:162, details-v2.tsx:79).
-- `MessagesView.tsx` (3389) is the desktop monolith AND the shared parts library for the phone. Seams: types/`ChMessagesApi` 185-350 (stale flag comment :194); `ConvRow` 360 / `RowMuteModal` 439 / `TypingMini` 512 / `ConvRowButton` 528 / `Rail` 640 (slice A); `ReactionChip` 756 / `Attachments` 911 / `useLongPress` 1045 (hold, `haptic("press")` at 1064, 450 ms at 1066, move cancel 10 px at 1070) / `Bubble` 1110-1540 (slice B/C: stack 1325, hover bar 1354, sr-only actions 1343) / `ReplyQuote` 1573; `AttachChips` 1626 / `ComposerPlus` 1702 / `useAutosize` 1735 / `SendKeyHolder` 1750 / `Composer` 1777-2130 (slice B); `NewDivider` 2144; `Thread` 2152-2447 (slice B; typing 2412, jump 2424, make-room 2220); modals 2449-2753 (slice C/D: Edit, Delete, Leave, DeleteConversation, RemoveMember, AddMembers); `Details` 2754 / `MuteControl` 2869 (slice D); `NewMessage` 2941 (D); `MessagesDesktop` 3257 (D).
-- `MessagesPhone.tsx` (1270): `MessagesPhone` 128, `PhoneInboxV2` 245 (A; still renders the context line `.ch-msv-ctx` at :270), `PhoneThread` 366 (B/C), sheet rows 700-766, `PhoneDetails` 767 (D), `PhoneNewMessage` 911 (D), `PhoneAnnouncementForm` 1203.
-- `thread-v2.tsx` (385, all slice B/C motion hooks): `ThreadDatePill` 12, `ThreadJumpKey` 60, `useSpringToEnd` 141, `useThreadMakeRoom` 175, `BubbleTail` 213, `useReplyFromTyping` 226, `useFaceFlight` 280, `useSendRise` 312, `useSendKeyPop` 343, `useChipRise` 376.
-- `hold-lift.tsx` 174, `seen-by.tsx` 453, `polls.tsx` 998, `details-v2.tsx` 372, `ComposerPlusV2.tsx` 102, `use-thread-anchor.ts` 165, `use-thread-drag-times.ts` 82, `composer-inset.ts` 39 (toast offset var `--ch-ms-comp-h`): single-slice files.
+- `screens/messages/MessagesScreen.tsx` (40): phone vs desktop switch, `<div
+  data-ch-ms-v2 display:contents>` at :36 (always on; comment at :34 "Off, the
+  DOM is today's" is stale). Hold overlay and details carry their own
+  `data-ch-ms-v2="on"` (hold-lift.tsx:162, details-v2.tsx:79).
+- `MessagesView.tsx` (3389) is the desktop monolith AND the shared parts library
+  for the phone. Seams: types/`ChMessagesApi` 185-350 (stale flag comment :194);
+  `ConvRow` 360 / `RowMuteModal` 439 / `TypingMini` 512 / `ConvRowButton` 528 /
+  `Rail` 640 (slice A); `ReactionChip` 756 / `Attachments` 911 / `useLongPress`
+  1045 (hold, `haptic("press")` at 1064, 450 ms at 1066, move cancel 10 px at 1070) / `Bubble` 1110-1540 (slice B/C: stack 1325, hover bar 1354, sr-only
+  actions 1343) / `ReplyQuote` 1573; `AttachChips` 1626 / `ComposerPlus` 1702 /
+  `useAutosize` 1735 / `SendKeyHolder` 1750 / `Composer` 1777-2130 (slice B);
+  `NewDivider` 2144; `Thread` 2152-2447 (slice B; typing 2412, jump 2424,
+  make-room 2220); modals 2449-2753 (slice C/D: Edit, Delete, Leave,
+  DeleteConversation, RemoveMember, AddMembers); `Details` 2754 / `MuteControl`
+  2869 (slice D); `NewMessage` 2941 (D); `MessagesDesktop` 3257 (D).
+- `MessagesPhone.tsx` (1270): `MessagesPhone` 128, `PhoneInboxV2` 245 (A; still
+  renders the context line `.ch-msv-ctx` at :270), `PhoneThread` 366 (B/C),
+  sheet rows 700-766, `PhoneDetails` 767 (D), `PhoneNewMessage` 911 (D),
+  `PhoneAnnouncementForm` 1203.
+- `thread-v2.tsx` (385, all slice B/C motion hooks): `ThreadDatePill` 12,
+  `ThreadJumpKey` 60, `useSpringToEnd` 141, `useThreadMakeRoom` 175,
+  `BubbleTail` 213, `useReplyFromTyping` 226, `useFaceFlight` 280, `useSendRise`
+  312, `useSendKeyPop` 343, `useChipRise` 376.
+- `hold-lift.tsx` 174, `seen-by.tsx` 453, `polls.tsx` 998, `details-v2.tsx` 372,
+  `ComposerPlusV2.tsx` 102, `use-thread-anchor.ts` 165,
+  `use-thread-drag-times.ts` 82, `composer-inset.ts` 39 (toast offset var
+  `--ch-ms-comp-h`): single-slice files.
 
 #### CSS inventory (`styles/messages.css`, 5958 lines, 165,213 bytes; 817 `ch-ms-`, 232 `ch-msv-` occurrences)
 
-Other CSS naming `ch-ms-`: base.css:128 (`.ch-ms-comp__field textarea` focus), shell.css:1429 and ui.css:423 (`--ch-ms-comp-h` toast offset), controls.css:606 (`.ch-msp-link` hit area). No other page's TSX uses `ch-ms*` classes (only `preview/PreviewMessages.tsx`).
+Other CSS naming `ch-ms-`: base.css:128 (`.ch-ms-comp__field textarea` focus),
+shell.css:1429 and ui.css:423 (`--ch-ms-comp-h` toast offset), controls.css:606
+(`.ch-msp-link` hit area). No other page's TSX uses `ch-ms*` classes (only
+`preview/PreviewMessages.tsx`).
 
-The Nov 4 generation is lines 4068-5958 ("Every rule sits under [data-ch-ms-v2]", 216 scoped rules, ALL 232 `.ch-msv-*` uses). `data-ch-ms-v2` is always set, so every rule before 4068 that the overlay does not override is still live, and every one it overrides is dead weight (and a trap: equal-specificity order decides).
+The Nov 4 generation is lines 4068-5958 ("Every rule sits under
+[data-ch-ms-v2]", 216 scoped rules, ALL 232 `.ch-msv-*` uses). `data-ch-ms-v2`
+is always set, so every rule before 4068 that the overlay does not override is
+still live, and every one it overrides is dead weight (and a trap:
+equal-specificity order decides).
 
 | Lines | Content | Generation |
 | --- | --- | --- |
@@ -841,26 +1648,74 @@ The Nov 4 generation is lines 4068-5958 ("Every rule sits under [data-ch-ms-v2]"
 | 4068-5958 | Nov 4 redesign: inbox 4068, thread/bubbles 4376, thread extras 4605, composer 4674, hold 4869, seen pill 4982, chips 5017, reaction badges 5043, toast 5094, poll card 5103, first run/hello/details/mute 5133, new poll 5343, new message 5528, "11e/11c/11d gaps" 5617, touch hold 5708, reactions 5729, sheets 5740, toast pill 5841-5857, local shadow tokens `--ch-messages-x1..x7` 5859-5867, MSG-2/3 composer 5896-5912 | Nov 4 |
 
 Rules that fight the new spec (delete or flip):
-- Day marker chip (MSG-209): `[data-ch-ms-v2] .ch-ms-day > span` is a chip with `--ch-card-bg` + card shadow, padding 4 12, 13/500 (messages.css:4377-4385) and a second copy at 4624-4631 (`margin: 16px 0 8px`, 4632-4635); also base chip 494-505 and the "New" green chip `.ch-ms-day.is-new span` (2769-2774, markup MessagesView.tsx:2146). The phone's plain version (2041-2049) loses to the v2 chip by source order. Replace with plain 12k/600 ink-3 tabular text, margin 22 0 8.
-- Gradient bubble: `background: var(--ch-bubble-mine-bg)` at 590 and 2068 (+ `box-shadow: --ch-elevation-bubble-mine`), colour `#f7fbf8`/`#fff` (592, 2070). Overridden by 4403-4409 and 4433-4440; delete the legacy rules, keep the token (Ask thread uses it).
-- Persistent send key: base `.ch-ms-send` grey with `.is-ready` (1028-1120, 2161-2171, dark 3162, 3216-3221) is the old always-visible key; the v2 wrapper hides it when empty (`.ch-msv-sendkey[hidden] { display: none }` 4709-4711, `SendKeyHolder` MessagesView.tsx:1750, `useSendKeyPop` thread-v2.tsx:343). Behaviour already matches MSG-304; the legacy colours are dead.
-- Day pill position: `top: calc(env(safe-area-inset-top) + var(--ch-phone-topbar-h) + 8px)`, desktop `140px` (4517-4543) vs spec 128/76; no `.linked`/PILL_GAP (thread-v2.tsx:28 uses a 60 px "already on screen" rule instead).
-- Jump key: `bottom: calc(var(--ch-ms-comp-h, 54px) + 12px)`, right 14/18 (4546-4572) vs spec bottom 100, desk right 26 / bottom 96.
-- Composer: in-flow footer (`position: relative`, 4675), `border-radius: var(--ch-radius-xl)` 20 (spec 24), `--ch-card-shadow` (spec float shadow), blur 20 (spec 24 + saturate 170), phone padding `0 12 max(8, safe-4)` (5903-5909) vs spec absolute pill over a thread that scrolls under it.
+
+- Day marker chip (MSG-209): `[data-ch-ms-v2] .ch-ms-day > span` is a chip with
+  `--ch-card-bg` + card shadow, padding 4 12, 13/500 (messages.css:4377-4385)
+  and a second copy at 4624-4631 (`margin: 16px 0 8px`, 4632-4635); also base
+  chip 494-505 and the "New" green chip `.ch-ms-day.is-new span` (2769-2774,
+  markup MessagesView.tsx:2146). The phone's plain version (2041-2049) loses to
+  the v2 chip by source order. Replace with plain 12k/600 ink-3 tabular text,
+  margin 22 0 8.
+- Gradient bubble: `background: var(--ch-bubble-mine-bg)` at 590 and 2068 (+
+  `box-shadow: --ch-elevation-bubble-mine`), colour `#f7fbf8`/`#fff` (592,
+  2070). Overridden by 4403-4409 and 4433-4440; delete the legacy rules, keep
+  the token (Ask thread uses it).
+- Persistent send key: base `.ch-ms-send` grey with `.is-ready` (1028-1120,
+  2161-2171, dark 3162, 3216-3221) is the old always-visible key; the v2 wrapper
+  hides it when empty (`.ch-msv-sendkey[hidden] { display: none }` 4709-4711,
+  `SendKeyHolder` MessagesView.tsx:1750, `useSendKeyPop` thread-v2.tsx:343).
+  Behaviour already matches MSG-304; the legacy colours are dead.
+- Day pill position: `top: calc(env(safe-area-inset-top) +
+  var(--ch-phone-topbar-h) + 8px)`, desktop `140px` (4517-4543) vs spec 128/76;
+  no `.linked`/PILL_GAP (thread-v2.tsx:28 uses a 60 px "already on screen" rule
+  instead).
+- Jump key: `bottom: calc(var(--ch-ms-comp-h, 54px) + 12px)`, right 14/18
+  (4546-4572) vs spec bottom 100, desk right 26 / bottom 96.
+- Composer: in-flow footer (`position: relative`, 4675), `border-radius:
+  var(--ch-radius-xl)` 20 (spec 24), `--ch-card-shadow` (spec float shadow),
+  blur 20 (spec 24 + saturate 170), phone padding `0 12 max(8, safe-4)`
+  (5903-5909) vs spec absolute pill over a thread that scrolls under it.
 - Glass blur 20 / no saturate on all nine glass surfaces; scrim blur 20 (spec 14 + saturate 120%): messages.css:4875-4880.
-- Toast pill (5841-5857) uses `--ch-glass-blur` 20 and `font: --ch-type-13-strong` (spec 13/600) fine, but position `top: safe + 8` vs spec top 62 phone / 18 desk.
-- Avatar override `.ch-ms-row .ch-avatar { --ch-av-size: 44px !important }` (301-303).
-- Dead: `.ch-ms-typing i` (962-985), `.ch-ms-row[data-ch-pressed]` rgb washes (148, 293).
+- Toast pill (5841-5857) uses `--ch-glass-blur` 20 and `font:
+  --ch-type-13-strong` (spec 13/600) fine, but position `top: safe + 8` vs spec
+  top 62 phone / 18 desk.
+- Avatar override `.ch-ms-row .ch-avatar { --ch-av-size: 44px !important }`
+  (301-303).
+- Dead: `.ch-ms-typing i` (962-985), `.ch-ms-row[data-ch-pressed]` rgb washes
+  (148, 293).
 
 #### Reduced-motion helper and haptics
 
-- `lib/reduced-motion.ts`: `useChReducedMotion()` = OS `prefers-reduced-motion` OR Settings > Animations off (29-34); `useChMotionMode()` = `full | fade | off` (44-48; only `seen-by.tsx:342` uses it); `chMotionModeNow()` for non-React code (55-59). Messages calls the boolean in MessagesView (1236, 1574, 1635, 1751, 1847, 2219), MessagesPhone (385, 436), polls, seen-by, hold-lift.
-- `CH_FADE_MS`: 180 (`CH_DUR.quick`), the artifact's `anim()` uses 120. Three layers all say 180: JS `CH_FADE_MS` (motion.ts:56), token `--ch-dur-crossfade-rm` (tokens.css:930, test-pinned equal), global CSS floor (base.css:318-323). Q-05 default: keep.
-- Haptics (`lib/haptics.ts`, native only, preference-gated, `select` throttled 40 ms): `select` tick (tabs, Segmented 64, filters, pick, reaction pick), `press` = light, `commit` = medium (reserved for a sheet settling at a stop, a shot logged, pull to refresh), `success/warning/error`. Messages today: lift/long-press `haptic("press")` at 450 ms (MessagesView.tsx:1064; NotifyAnyway.tsx:40), `select` for toggles/menus (MessagesView.tsx:821, 859, 1095, 1232, 1364, 1417, 1516, 2176, 2319), send `success` (1188) / `error` (1191), delete/refusal `warning` (1611, 1973, 3006), Messages.tsx success/error/warning for writes. `commit` is never used in Messages. HTML MOT-HOLD-2 says "medium impact"; ruling 22 and Q-02 say `press`: keep `press`. Hold cancels on a 10 px move (MessagesView.tsx:1070), spec 8 px scaled (slice C).
+- `lib/reduced-motion.ts`: `useChReducedMotion()` = OS `prefers-reduced-motion`
+  OR Settings > Animations off (29-34); `useChMotionMode()` = `full | fade |
+  off` (44-48; only `seen-by.tsx:342` uses it); `chMotionModeNow()` for
+  non-React code (55-59). Messages calls the boolean in MessagesView (1236,
+  1574, 1635, 1751, 1847, 2219), MessagesPhone (385, 436), polls, seen-by,
+  hold-lift.
+- `CH_FADE_MS`: 180 (`CH_DUR.quick`), the artifact's `anim()` uses 120. Three
+  layers all say 180: JS `CH_FADE_MS` (motion.ts:56), token
+  `--ch-dur-crossfade-rm` (tokens.css:930, test-pinned equal), global CSS floor
+  (base.css:318-323). Q-05 default: keep.
+- Haptics (`lib/haptics.ts`, native only, preference-gated, `select` throttled
+  40 ms): `select` tick (tabs, Segmented 64, filters, pick, reaction pick),
+  `press` = light, `commit` = medium (reserved for a sheet settling at a stop, a
+  shot logged, pull to refresh), `success/warning/error`. Messages today:
+  lift/long-press `haptic("press")` at 450 ms (MessagesView.tsx:1064;
+  NotifyAnyway.tsx:40), `select` for toggles/menus (MessagesView.tsx:821, 859,
+  1095, 1232, 1364, 1417, 1516, 2176, 2319), send `success` (1188) / `error`
+  (1191), delete/refusal `warning` (1611, 1973, 3006), Messages.tsx
+  success/error/warning for writes. `commit` is never used in Messages. HTML
+  MOT-HOLD-2 says "medium impact"; ruling 22 and Q-02 say `press`: keep `press`.
+  Hold cancels on a 10 px move (MessagesView.tsx:1070), spec 8 px scaled (slice
+  C).
 
 #### `'use server'` files Messages touches (bundle-boundary trap)
 
-All under `src/app/golf/actions/` unless noted. Rule: only async functions may be exported; a type must never appear in an `export { ... }` or `export type { ... }` specifier list (Next registers each name as an action and the module throws `ReferenceError` at runtime, taking down every action in it). `export interface X` / `export type X = ...` declarations are erased and safe.
+All under `src/app/golf/actions/` unless noted. Rule: only async functions may
+be exported; a type must never appear in an `export { ... }` or `export type {
+... }` specifier list (Next registers each name as an action and the module
+throws `ReferenceError` at runtime, taking down every action in it). `export
+interface X` / `export type X = ...` declarations are erased and safe.
 
 | File | `'use server'` | Non-function exports | Status |
 | --- | --- | --- | --- |
@@ -873,49 +1728,241 @@ All under `src/app/golf/actions/` unless noted. Rule: only async functions may b
 | `announcements.ts`, `communication.ts` | line 1 | none | Safe. |
 | `documents.ts` | line 5 | `export interface GolfDocumentUploadTicket` (1338) | Safe. |
 
-No pin action exists: pins use direct Supabase calls (`use-conversation-pins.ts`) against held `golf_conversation_pins` (supabase/migrations/HELD.md). No `'use server'` file lives under `src/clubhouse` except `data/palette-people.ts`.
+No pin action exists: pins use direct Supabase calls
+(`use-conversation-pins.ts`) against held `golf_conversation_pins`
+(supabase/migrations/HELD.md). No `'use server'` file lives under
+`src/clubhouse` except `data/palette-people.ts`.
 
 #### Flags and gates
 
-- `golf_messages_redesign_v1` is retired (no entry in `config/feature-flags.yml`, `grep` of the whole tree finds only docs and two comments: MessagesView.tsx:194, messages.css:4068). Stale prose: `docs/clubhouse/GO-LIVE-RUNBOOK.md:104`, `memory/features/team-communications.md:897-898`. `clubhouse_refresh_v1` is also retired (commit 95871ec9fd): `data-ch-refresh="on"` is hard-coded (shell/ClubhouseFrame.tsx:185) and there is no `pre-refresh.css`.
-- The only gate is `golf_clubhouse_ui` (config/feature-flags.yml:861, `default: false`, production/preview/development all `true` in the file) plus the `HELM_CLUBHOUSE_TEAMS` allowlist in `isClubhouseFor` (src/clubhouse/gate.ts:51-60, called from `src/app/golf/(dashboard)/dashboard/messages/page.tsx:8`). Q-28: no new flag. CLAUDE.md says Clubhouse is off in production; the flag file says on: confirm before any release claim.
-- Runtime probes that act as soft gates: `api.polls` (held poll migrations), pins table probe with device-local fallback, `canHideGolfConversations`, `useAppearancePreferences().showAnimations`.
+- `golf_messages_redesign_v1` is retired (no entry in
+  `config/feature-flags.yml`, `grep` of the whole tree finds only docs and two
+  comments: MessagesView.tsx:194, messages.css:4068). Stale prose:
+  `docs/clubhouse/GO-LIVE-RUNBOOK.md:104`,
+  `memory/features/team-communications.md:897-898`. `clubhouse_refresh_v1` is
+  also retired (commit 95871ec9fd): `data-ch-refresh="on"` is hard-coded
+  (shell/ClubhouseFrame.tsx:185) and there is no `pre-refresh.css`.
+- The only gate is `golf_clubhouse_ui` (config/feature-flags.yml:861, `default:
+  false`, production/preview/development all `true` in the file) plus the
+  `HELM_CLUBHOUSE_TEAMS` allowlist in `isClubhouseFor`
+  (src/clubhouse/gate.ts:51-60, called from
+  `src/app/golf/(dashboard)/dashboard/messages/page.tsx:8`). Q-28: no new flag.
+  CLAUDE.md says Clubhouse is off in production; the flag file says on: confirm
+  before any release claim.
+- Runtime probes that act as soft gates: `api.polls` (held poll migrations),
+  pins table probe with device-local fallback, `canHideGolfConversations`,
+  `useAppearancePreferences().showAnimations`.
 
 #### Clubhouse checks and registration
 
-- `npm run clubhouse:check` (= scripts/clubhouse/__tests__ + `scripts/clubhouse/check.mjs`): isolation (`--ch-*` only; `--keyboard-height` allowed), no emoji / exclamation / uppercase / stagger / count-up, **literal `\d+ms` and `cubic-bezier(` banned in any CSS except tokens.css (check.mjs:148-149)**, **TSX `duration: <number>` must be one of 0, .11, .18, .26, .28, .52 (check.mjs:63, 197-201; motion.ts exempt)**, z-index only `--ch-z-*` steps, card/panel/tile radii from `--ch-radius-*`, red tokens only in under/flag/danger/error selectors, class-owner uniqueness across page sheets (css-owners.mjs: new classes `.ch-ms*`/`.ch-msv*`/`.ch-msp*` only in messages.css), catalog (below), registry, changelog gate, VERIFY screenshot log, docs links.
-- Catalog: `docs/clubhouse/catalog/messages.md`; every `CH-7xxx` used in code must be catalogued once; every enforced row (kinds 0-5: toast, validation, didn't load, empty, loading, confirm) must be used in `src/clubhouse` and named in a test under the FLAT `src/clubhouse/__tests__/` dir (check.mjs:442-444 reads only that directory, not `screens/messages/__tests__`). Removing a surface that carries a code (e.g. CH-7604 hold, CH-7608 seen pill, CH-7804 actions) needs the row retired.
-- `npm run clubhouse:css` (css-quality.mjs, also CI clubhouse-quality.yml:83): new `transition` of a layout property (grid-template-columns, width, height, margin, top...) fails `clubhouse/no-layout-motion` unless the identical declaration exists in the merge-base; `transition: all` banned; new outer-blur `box-shadow` must be a `var(--ch-*)` token; per-file ratchet `config/clubhouse/css-ratchet.json` (`messages.css`: hex 6, both directions fail, lower with `npm run clubhouse:css -- --ratchet`). `npm run clubhouse:catalog -- --check` (CI) fails on a stale `src/clubhouse/preview/component-catalog.json`: regenerate after CSS/class changes.
-- Docs gate: a Messages change needs a fragment `docs/clubhouse/pages/P007-messages/changes/<date>-<slug>.md`; a change to a shared file (ui, lib, shell, styles other than messages.css) needs `docs/clubhouse/changes/<date>-<slug>.md` (changelog-gate.mjs).
-- New files under `src/clubhouse/screens/messages/**` need no registration: `memory/registry.yml` feature `team_communications` globs `src/clubhouse/screens/messages/**` and `src/clubhouse/styles/messages.css` (lines 1108-1109; `knowledge:map` confirmed a new file maps to `team_communications` + `clubhouse`), and the P007 manifest's `implementation.root` is that directory (`config/clubhouse/pages/P007-messages.json`; its actions cite `file#Component` but the registry only checks the FILE exists, scripts/clubhouse/registry.mjs:296). A new shared file outside the glob (e.g. a new `lib/` or `ui/` file) maps only to `clubhouse`. Required checks: `npm run typecheck`, `npm run test:e2e -- e2e/messages.spec.ts`, `npm run build`, `npm run clubhouse:check`. Update `memory/features/team-communications.md` and P007 CONTRACT/DESIGN/WIRING if the contract changes.
-- `npm run lint:test-location` counts only `src/test/**` (baseline `.test-location-baseline.json`); new tests go in `src/clubhouse/screens/messages/__tests__/` (not counted), except catalog-naming tests (flat `src/clubhouse/__tests__/`).
-- Other per-file ratchets that list `messages.css` (only fall): elevation-tokens.test.ts RAW_SHADOW 10 (:134) and blur-must-use-glass-token (:50-58); hairlines.test.ts 4 and 2; radius-steps.test.ts 2; spacing-scale.test.ts 9 (off-scale integer px 3,5,7,9,10,13,14,15,17,18,19,21-23,25-29,30,31,33-39,41-47 in padding/margin/gap; use `calc(N * var(--ch-type-k))` or scale steps); tabular-nums 15; chips-tabs 8; legacy-type-roles 7; selected-state 3; look-feel-pass-css 1/2/12/15; page-spacing phone roots; z-ladder.
+- `npm run clubhouse:check` (= scripts/clubhouse/**tests** +
+  `scripts/clubhouse/check.mjs`): isolation (`--ch-*` only; `--keyboard-height`
+  allowed), no emoji / exclamation / uppercase / stagger / count-up, **literal
+  `\d+ms` and `cubic-bezier(` banned in any CSS except tokens.css
+  (check.mjs:148-149)**, **TSX `duration: <number>` must be one of 0, .11, .18,
+  .26, .28, .52 (check.mjs:63, 197-201; motion.ts exempt)**, z-index only
+  `--ch-z-*` steps, card/panel/tile radii from `--ch-radius-*`, red tokens only
+  in under/flag/danger/error selectors, class-owner uniqueness across page
+  sheets (css-owners.mjs: new classes `.ch-ms*`/`.ch-msv*`/`.ch-msp*` only in
+  messages.css), catalog (below), registry, changelog gate, VERIFY screenshot
+  log, docs links.
+- Catalog: `docs/clubhouse/catalog/messages.md`; every `CH-7xxx` used in code
+  must be catalogued once; every enforced row (kinds 0-5: toast, validation,
+  didn't load, empty, loading, confirm) must be used in `src/clubhouse` and
+  named in a test under the FLAT `src/clubhouse/__tests__/` dir
+  (check.mjs:442-444 reads only that directory, not
+  `screens/messages/__tests__`). Removing a surface that carries a code (e.g.
+  CH-7604 hold, CH-7608 seen pill, CH-7804 actions) needs the row retired.
+- `npm run clubhouse:css` (css-quality.mjs, also CI clubhouse-quality.yml:83):
+  new `transition` of a layout property (grid-template-columns, width, height,
+  margin, top...) fails `clubhouse/no-layout-motion` unless the identical
+  declaration exists in the merge-base; `transition: all` banned; new outer-blur
+  `box-shadow` must be a `var(--ch-*)` token; per-file ratchet
+  `config/clubhouse/css-ratchet.json` (`messages.css`: hex 6, both directions
+  fail, lower with `npm run clubhouse:css -- --ratchet`). `npm run
+  clubhouse:catalog -- --check` (CI) fails on a stale
+  `src/clubhouse/preview/component-catalog.json`: regenerate after CSS/class
+  changes.
+- Docs gate: a Messages change needs a fragment
+  `docs/clubhouse/pages/P007-messages/changes/<date>-<slug>.md`; a change to a
+  shared file (ui, lib, shell, styles other than messages.css) needs
+  `docs/clubhouse/changes/<date>-<slug>.md` (changelog-gate.mjs).
+- New files under `src/clubhouse/screens/messages/**` need no registration:
+  `memory/registry.yml` feature `team_communications` globs
+  `src/clubhouse/screens/messages/**` and `src/clubhouse/styles/messages.css`
+  (lines 1108-1109; `knowledge:map` confirmed a new file maps to
+  `team_communications` + `clubhouse`), and the P007 manifest's
+  `implementation.root` is that directory
+  (`config/clubhouse/pages/P007-messages.json`; its actions cite
+  `file#Component` but the registry only checks the FILE exists,
+  scripts/clubhouse/registry.mjs:296). A new shared file outside the glob (e.g.
+  a new `lib/` or `ui/` file) maps only to `clubhouse`. Required checks: `npm
+  run typecheck`, `npm run test:e2e -- e2e/messages.spec.ts`, `npm run build`,
+  `npm run clubhouse:check`. Update `memory/features/team-communications.md` and
+  P007 CONTRACT/DESIGN/WIRING if the contract changes.
+- `npm run lint:test-location` counts only `src/test/**` (baseline
+  `.test-location-baseline.json`); new tests go in
+  `src/clubhouse/screens/messages/__tests__/` (not counted), except
+  catalog-naming tests (flat `src/clubhouse/__tests__/`).
+- Other per-file ratchets that list `messages.css` (only fall):
+  elevation-tokens.test.ts RAW_SHADOW 10 (:134) and blur-must-use-glass-token
+  (:50-58); hairlines.test.ts 4 and 2; radius-steps.test.ts 2;
+  spacing-scale.test.ts 9 (off-scale integer px
+  3,5,7,9,10,13,14,15,17,18,19,21-23,25-29,30,31,33-39,41-47 in
+  padding/margin/gap; use `calc(N * var(--ch-type-k))` or scale steps);
+  tabular-nums 15; chips-tabs 8; legacy-type-roles 7; selected-state 3;
+  look-feel-pass-css 1/2/12/15; page-spacing phone roots; z-ladder.
 
 ### Tests
 
 Existing tests that pin behaviour in this slice:
 
-- `src/clubhouse/__tests__/motion-physics.test.tsx`: springs. Line 49-56 "keep the D-64 base duration with bounce 0 to 0.1" skips a named set `send, pop, lift, pour`: adding `launch` (vd .5, bounce .2) FAILS it until `launch` is added to that set on purpose (owner sign-off, Q-04). Lines 62-72 pin send/pop/lift stiffness, damping, peak; extend with `launch` 110/16.8/1.015. Lines 77-83 compare tokens.css text to `chSpringCurve(kind).linear` for send, pop, lift: add launch if a CSS token is added.
-- `src/clubhouse/__tests__/motion-durations-pinned.test.ts` (:58-69): `--ch-dur-spring-smooth: 462ms`, duration token list. Add the keyboard and launch tokens as new tests; do not change existing.
-- `src/clubhouse/__tests__/refresh-tokens.test.ts`: :47-49 `--ch-dur-crossfade-rm` equals `CH_FADE_MS` (changing Reduce Motion to 120 would need this changed, a shared decision); :54-56 settle curve; :75-92 Messages token contrast (sent ink literal #fdfcf8 vs `--ch-bubble-mine-fill`, ink-2 vs bubble, dot/ring/switch 3:1). Legit to extend for new tokens; the new `--ch-card-shadow-flat`/scrim need none.
-- `src/clubhouse/__tests__/elevation-tokens.test.ts`: :50-58 every `backdrop-filter` contains `var(--ch-glass-blur)` (so spec's saturate must be appended, not substituted); RAW_SHADOW messages 10 (:134).
-- `src/clubhouse/__tests__/contrast-tokens.test.ts` (:426 pins a Messages selector), `hairlines.test.ts`, `radius-steps.test.ts`, `spacing-scale.test.ts`, `tabular-nums.test.ts`, `chips-tabs.test.ts`, `legacy-type-roles.test.ts`, `selected-state.test.ts`, `look-feel-pass-css.test.ts`, `z-ladder.test.ts:59` (`.ch-rx` z), `page-spacing.test.ts:111-115`, `long-lists-css.test.ts:11-29` (`.ch-ms-row` content-visibility, `.ch-ms-msg` must NOT have it), `messages-polls-css.test.ts`: CSS-text ratchets; they should legitimately change only downward when legacy rules are deleted (lower the recorded counts, do not raise).
-- `src/clubhouse/screens/messages/__tests__/`: `thread-v2.test.tsx`, `thread-v2-traps.test.tsx`, `thread-make-room.test.tsx` (pin `useThreadMakeRoom` replace-not-add and the `send`/`reveal`/`pop`/`smooth` choice, reduced skip), `composer-v2.test.tsx`, `seen-pill.test.tsx`, `thread-drag-k.test.tsx` (52k / 58k drag), `conv-row-seams.test.tsx`, `conv-context-menu.test.tsx`. In my slice: any test asserting `send` is the bubble spring or the receipt delay changes when `launch` takes the bubble (MOT-SPR-4/5); the plus-key aria string is pinned in `screens/messages/__tests__/composer-v2.test.tsx`; grep the others before renaming.
-- `src/clubhouse/__tests__/messages-design-fixture` is `src/clubhouse/preview/__tests__/messages-design-fixture.test.tsx` (preview fixture the e2e uses).
-- `e2e/clubhouse-messages-motion.spec.ts` (11 interrupt cases, headed + localhost) and `e2e/messages.spec.ts` (required check for `team_communications`).
-- `src/clubhouse/lib/__tests__/` has no `haptics` or `reduced-motion` unit test for Messages; `motion-physics.test.tsx` mocks `hapticScrub` only.
+- `src/clubhouse/__tests__/motion-physics.test.tsx`: springs. Line 49-56 "keep
+  the D-64 base duration with bounce 0 to 0.1" skips a named set `send, pop,
+  lift, pour`: adding `launch` (vd .5, bounce .2) FAILS it until `launch` is
+  added to that set on purpose (owner sign-off, Q-04). Lines 62-72 pin
+  send/pop/lift stiffness, damping, peak; extend with `launch` 110/16.8/1.015.
+  Lines 77-83 compare tokens.css text to `chSpringCurve(kind).linear` for send,
+  pop, lift: add launch if a CSS token is added.
+- `src/clubhouse/__tests__/motion-durations-pinned.test.ts` (:58-69):
+  `--ch-dur-spring-smooth: 462ms`, duration token list. Add the keyboard and
+  launch tokens as new tests; do not change existing.
+- `src/clubhouse/__tests__/refresh-tokens.test.ts`: :47-49
+  `--ch-dur-crossfade-rm` equals `CH_FADE_MS` (changing Reduce Motion to 120
+  would need this changed, a shared decision); :54-56 settle curve; :75-92
+  Messages token contrast (sent ink literal #fdfcf8 vs `--ch-bubble-mine-fill`,
+  ink-2 vs bubble, dot/ring/switch 3:1). Legit to extend for new tokens; the new
+  `--ch-card-shadow-flat`/scrim need none.
+- `src/clubhouse/__tests__/elevation-tokens.test.ts`: :50-58 every
+  `backdrop-filter` contains `var(--ch-glass-blur)` (so spec's saturate must be
+  appended, not substituted); RAW_SHADOW messages 10 (:134).
+- `src/clubhouse/__tests__/contrast-tokens.test.ts` (:426 pins a Messages
+  selector), `hairlines.test.ts`, `radius-steps.test.ts`,
+  `spacing-scale.test.ts`, `tabular-nums.test.ts`, `chips-tabs.test.ts`,
+  `legacy-type-roles.test.ts`, `selected-state.test.ts`,
+  `look-feel-pass-css.test.ts`, `z-ladder.test.ts:59` (`.ch-rx` z),
+  `page-spacing.test.ts:111-115`, `long-lists-css.test.ts:11-29` (`.ch-ms-row`
+  content-visibility, `.ch-ms-msg` must NOT have it),
+  `messages-polls-css.test.ts`: CSS-text ratchets; they should legitimately
+  change only downward when legacy rules are deleted (lower the recorded counts,
+  do not raise).
+- `src/clubhouse/screens/messages/__tests__/`: `thread-v2.test.tsx`,
+  `thread-v2-traps.test.tsx`, `thread-make-room.test.tsx` (pin
+  `useThreadMakeRoom` replace-not-add and the `send`/`reveal`/`pop`/`smooth`
+  choice, reduced skip), `composer-v2.test.tsx`, `seen-pill.test.tsx`,
+  `thread-drag-k.test.tsx` (52k / 58k drag), `conv-row-seams.test.tsx`,
+  `conv-context-menu.test.tsx`. In my slice: any test asserting `send` is the
+  bubble spring or the receipt delay changes when `launch` takes the bubble
+  (MOT-SPR-4/5); the plus-key aria string is pinned in
+  `screens/messages/__tests__/composer-v2.test.tsx`; grep the others before
+  renaming.
+- `src/clubhouse/__tests__/messages-design-fixture` is
+  `src/clubhouse/preview/__tests__/messages-design-fixture.test.tsx` (preview
+  fixture the e2e uses).
+- `e2e/clubhouse-messages-motion.spec.ts` (11 interrupt cases, headed +
+  localhost) and `e2e/messages.spec.ts` (required check for
+  `team_communications`).
+- `src/clubhouse/lib/__tests__/` has no `haptics` or `reduced-motion` unit test
+  for Messages; `motion-physics.test.tsx` mocks `hapticScrub` only.
 
 ### Risks and surprises
 
-1. **Literal durations and curves are linted.** New WAAPI/framer durations like 120, 150, 160, 200, 220, 260, 480, 520 written as `duration: 120` fail `clubhouse:check` (allowed set .11 .18 .26 .28 .52 and 0). Put named constants in `lib/motion.ts` (exempt) or use `chSpringCurve(...).ms`. In CSS the same literals and `cubic-bezier(...)` are banned outside tokens.css, so the 480 ms keyboard curve, the 120 ms crossfade and the launch curve all need tokens (`--ch-ease-sheet` already exists, unused).
-2. **MOT-DET-2 (animate `grid-template-columns`) trips `clubhouse/no-layout-motion`** and contradicts the Nov 7 "transform and opacity only" shell-motion rule (docs/clubhouse/changes/2026-11-07-shell-motion.md). The prep (`320 | 1fr | 0px`, messages.css:4070-4080) exists without the transition. Needs an owner-approved exception recorded in the baseline, or a transform-based design (slide the panel, snap the thread width). Same family: MOT-SEND-9 / MOT-THR-4 "composite add" (a second send adds on top) conflicts with `useThreadMakeRoom`, which deliberately cancels the running move so it stays on the compositor (thread-v2.tsx:207; change note 2026-11-07-shell-motion).
-3. **Ratchets run both ways.** Deleting legacy `messages.css` rules (gradient bubble hex, dead washes) makes `css-ratchet.json` hex 6 too HIGH and fails until `npm run clubhouse:css -- --ratchet` is run and the JSON committed; same for the per-file counts in the Tests list. Adding spec values like `padding 3 9`, `gap 7`, `margin 22 0 8` raises the off-scale count (spacing-scale, messages.css 9): write them as `calc(N * var(--ch-type-k))` or move to scale steps.
-4. **Glass tokens are not covered by Reduce Transparency / Increase Contrast.** Those blocks set `--ch-glass-bg` and `--ch-glass-blur: 0px` (tokens.css:1476-1500) but Messages draws `--ch-glass-strong`/`--ch-glass`, so under Reduce Transparency the composer, menus, date pill, jump key and toast stay 74-90% translucent with no blur over moving text. Add both tokens to those blocks (opaque `--ch-card-bg`-like fills).
-5. **Shared tokens are read by other pages.** `--ch-glass-strong` (coachhelm-ask-v2), `--ch-scrim` (Modal and sheets everywhere), `--ch-card-shadow` (many pages), `--ch-bubble-mine-bg` (coachhelm-thread.css:64). Override inside `[data-ch-ms-v2]` or add NEW tokens; changing the global value is a cross-page visual change. Nine tokens exist but nothing reads them (`--ch-bubble-radius`, `--ch-bubble-join`, `--ch-poll-bar`, `--ch-poll-bar-on`, `--ch-glass-rule`): use them instead of adding new ones.
-6. **Name traps in the token map.** SPEC "ink-2" is `--ch-text-tertiary`, not `--ch-text-secondary`; spec "ink-3" in dark is `--ch-crh-ink4`, NOT `--ch-ink-500` (#bab3a4). Messages currently draws times in ink-2 (spec ink-3) and secondary text in ink-700. `--ch-on-accent` (messages.css:5540) is undefined; `--ch-accent` dark (#23704a) is not the sent colour.
-7. **Keyboard (MOT-KB-1) is layout-based and shared.** Resize comes from `padding-bottom` on `.ch-pscreen[data-fw-keyboard-aware]` (shell.css:1590), not a transform; `body.keyboard-open { padding-bottom }` (globals.css:485) also exists (harmless on a fixed screen). `keyboardWillShow` carries only the height, so the 480 ms curve is a fixed assumption and can drift from the real iOS animation. Web Safari uses the `visualViewport` path (`data-ch-vv`), so the two environments need separate checks; the native path cannot be exercised on desktop.
-8. **Avatar is a policy conflict, not a styling gap.** MSG-902's per-person hues contradict the 5 Nov "coins are the calm neutral" ruling baked into `ui/Avatar.tsx` and `ui.css:252-259` (phone forces neutral). Get an owner answer before anyone touches it; 75 files import Avatar.
-9. **HTML vs Nov 4 rulings (all in QUESTIONS.md already, listed so slice owners see them):** haptic medium (HTML) vs `press` (ruling 22, keep); clone-flight send (HTML, Q-19) vs "move the real bubble" (ruling 23; today's code moves the real bubble, thread-v2.tsx:312-340); 120 vs 180 ms (Q-05); launch bounce 0.2 over the 0.1 cap (Q-04). `chSpringCurve('launch')` is 812 ms, not 828: derive 0.62x and 70% from it.
-10. **Stale references.** `MessagesView.tsx:194` and `MessagesScreen.tsx:34` describe a flag that no longer exists; GO-LIVE-RUNBOOK and team-communications.md still list `golf_messages_redesign_v1`. Fix in the same change that touches them. CLAUDE.md says Clubhouse is off in production but `config/feature-flags.yml` says `production: true`; verify before saying anything is live.
-11. **`CH_SPRING_POP_MS = 507`** (motion.ts:22) disagrees with `chSpringCurve('pop').ms` (496); only quick-chat uses it. Do not copy it into Messages.
-12. **A brand-new `'use server'` action that returns or re-exports a type will take down send/mark-read/edit/delete** (see the warning in `src/app/golf/actions/messages.ts:380-391`); none of the files above has the problem today.
+1. **Literal durations and curves are linted.** New WAAPI/framer durations like
+   120, 150, 160, 200, 220, 260, 480, 520 written as `duration: 120` fail
+   `clubhouse:check` (allowed set .11 .18 .26 .28 .52 and 0). Put named
+   constants in `lib/motion.ts` (exempt) or use `chSpringCurve(...).ms`. In CSS
+   the same literals and `cubic-bezier(...)` are banned outside tokens.css, so
+   the 480 ms keyboard curve, the 120 ms crossfade and the launch curve all need
+   tokens (`--ch-ease-sheet` already exists, unused).
+2. **MOT-DET-2 (animate `grid-template-columns`) trips
+   `clubhouse/no-layout-motion`** and contradicts the Nov 7 "transform and
+   opacity only" shell-motion rule
+   (docs/clubhouse/changes/2026-11-07-shell-motion.md). The prep (`320 | 1fr |
+   0px`, messages.css:4070-4080) exists without the transition. Needs an
+   owner-approved exception recorded in the baseline, or a transform-based
+   design (slide the panel, snap the thread width). Same family: MOT-SEND-9 /
+   MOT-THR-4 "composite add" (a second send adds on top) conflicts with
+   `useThreadMakeRoom`, which deliberately cancels the running move so it stays
+   on the compositor (thread-v2.tsx:207; change note 2026-11-07-shell-motion).
+3. **Ratchets run both ways.** Deleting legacy `messages.css` rules (gradient
+   bubble hex, dead washes) makes `css-ratchet.json` hex 6 too HIGH and fails
+   until `npm run clubhouse:css -- --ratchet` is run and the JSON committed;
+   same for the per-file counts in the Tests list. Adding spec values like
+   `padding 3 9`, `gap 7`, `margin 22 0 8` raises the off-scale count
+   (spacing-scale, messages.css 9): write them as `calc(N * var(--ch-type-k))`
+   or move to scale steps.
+4. **Glass tokens are not covered by Reduce Transparency / Increase Contrast.**
+   Those blocks set `--ch-glass-bg` and `--ch-glass-blur: 0px`
+   (tokens.css:1476-1500) but Messages draws `--ch-glass-strong`/`--ch-glass`,
+   so under Reduce Transparency the composer, menus, date pill, jump key and
+   toast stay 74-90% translucent with no blur over moving text. Add both tokens
+   to those blocks (opaque `--ch-card-bg`-like fills).
+5. **Shared tokens are read by other pages.** `--ch-glass-strong`
+   (coachhelm-ask-v2), `--ch-scrim` (Modal and sheets everywhere),
+   `--ch-card-shadow` (many pages), `--ch-bubble-mine-bg`
+   (coachhelm-thread.css:64). Override inside `[data-ch-ms-v2]` or add NEW
+   tokens; changing the global value is a cross-page visual change. Nine tokens
+   exist but nothing reads them (`--ch-bubble-radius`, `--ch-bubble-join`,
+   `--ch-poll-bar`, `--ch-poll-bar-on`, `--ch-glass-rule`): use them instead of
+   adding new ones.
+6. **Name traps in the token map.** SPEC "ink-2" is `--ch-text-tertiary`, not
+   `--ch-text-secondary`; spec "ink-3" in dark is `--ch-crh-ink4`, NOT
+   `--ch-ink-500` (#bab3a4). Messages currently draws times in ink-2 (spec
+   ink-3) and secondary text in ink-700. `--ch-on-accent` (messages.css:5540) is
+   undefined; `--ch-accent` dark (#23704a) is not the sent colour.
+7. **Keyboard (MOT-KB-1) is layout-based and shared.** Resize comes from
+   `padding-bottom` on `.ch-pscreen[data-fw-keyboard-aware]` (shell.css:1590),
+   not a transform; `body.keyboard-open { padding-bottom }` (globals.css:485)
+   also exists (harmless on a fixed screen). `keyboardWillShow` carries only the
+   height, so the 480 ms curve is a fixed assumption and can drift from the real
+   iOS animation. Web Safari uses the `visualViewport` path (`data-ch-vv`), so
+   the two environments need separate checks; the native path cannot be
+   exercised on desktop.
+8. **Avatar is a policy conflict, not a styling gap.** MSG-902's per-person hues
+   contradict the 5 Nov "coins are the calm neutral" ruling baked into
+   `ui/Avatar.tsx` and `ui.css:252-259` (phone forces neutral). Get an owner
+   answer before anyone touches it; 75 files import Avatar.
+9. **HTML vs Nov 4 rulings (all in QUESTIONS.md already, listed so slice owners
+   see them):** haptic medium (HTML) vs `press` (ruling 22, keep); clone-flight
+   send (HTML, Q-19) vs "move the real bubble" (ruling 23; today's code moves
+   the real bubble, thread-v2.tsx:312-340); 120 vs 180 ms (Q-05); launch bounce
+   0.2 over the 0.1 cap (Q-04). `chSpringCurve('launch')` is 812 ms, not 828:
+   derive 0.62x and 70% from it.
+10. **Stale references.** `MessagesView.tsx:194` and `MessagesScreen.tsx:34`
+    describe a flag that no longer exists; GO-LIVE-RUNBOOK and
+    team-communications.md still list `golf_messages_redesign_v1`. Fix in the
+    same change that touches them. CLAUDE.md says Clubhouse is off in production
+    but `config/feature-flags.yml` says `production: true`; verify before saying
+    anything is live.
+11. **`CH_SPRING_POP_MS = 507`** (motion.ts:22) disagrees with
+    `chSpringCurve('pop').ms` (496); only quick-chat uses it. Do not copy it
+    into Messages.
+12. **A brand-new `'use server'` action that returns or re-exports a type will
+    take down send/mark-read/edit/delete** (see the warning in
+    `src/app/golf/actions/messages.ts:380-391`); none of the files above has the
+    problem today.
+
+## Part H. Not matched as drawn (10 Nov 2026, release train)
+
+What the built screens still do differently from
+`design-refresh/messages/redesign`, and why.
+
+| Where | Drawn | Built | Why |
+| --- | --- | --- | --- |
+| Receipt under your last message (1:1) | "Seen 8:15 AM" | "Seen" | Needs the other person's read time; that field comes with the data branch. |
+| Pinned faces | 62 px | 64 px | Avatar's `xl` step; a token wins over a raw value (owner, 10 Nov). |
+| Row faces, phone | 44 px | 40 px | Avatar's `lg` step, as the rail already was. |
+| Seen by sheet faces | 32 px | 36 px | Avatar's `md` step. |
+| Details tiles | radius 14 | radius 12 | The radius scale has no 14. |
+| Details | no Schedule row | Schedule card after Photos and files | Today's action, kept; a coach uses it. |
+| New message | no Quick groups | Quick groups card | Today's action, kept. |
+| New message rows | 32 px faces | Avatar's `md` step | The shared step, not a lane size. |
+| "See all" on Photos and files | always shown | only when there is more to see | A link to nothing is a dead control. |
+| Desktop conversation switch | rise 6 px over 260 ms on the house curve | the shared swap: fade 260 ms, rise on a 350 ms spring, old content fades 180 ms | The shared primitive is kept (owner, 10 Nov). |
+| + key rotation | 300 ms | 280 ms | The duration token. |
+| Send key glow | drawn drop | a local green drop (`--ch-ms-send-drop`) | Neither shared elevation token is this colour. |
+| Nobody has seen a group message | each row says when they last opened the chat | each row says "Hasn’t opened this chat" | As built before this pass; the wording is the design page's motion note (MOT-TEAM-3). |
+
+Still open, not a design difference: the keyboard ride moves the list with an
+additive animation (pinned by `thread/__tests__/use-thread-layers.test.tsx`),
+which WebKit does not run on the compositor.

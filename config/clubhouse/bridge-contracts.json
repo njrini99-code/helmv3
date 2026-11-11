@@ -6961,7 +6961,7 @@
     "item": 3,
     "name": "NO_MESSAGE_MENTIONS_THE_SEARCH",
     "chCode": "CH-7303",
-    "meaning": "No message mentions the search",
+    "meaning": "A conversation’s own search (Details › Search) finds no message",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
