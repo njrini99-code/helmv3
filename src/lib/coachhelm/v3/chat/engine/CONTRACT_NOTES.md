@@ -143,3 +143,60 @@ import { findInApp, findInAppForPlayer } from './context/find-in-app';
 - A suggested line for the policy block (TOOLS owns `instructions.ts`): "When the coach asks where something is, or
   your answer sends them to a screen, call find_in_app and name the place; the button under your answer opens it."
 - `registry-size.test.ts`: the tool adds about 190 tokens to the coach prefix and 130 to the player's.
+
+### C3. What the coach has told it: standing notes (decision, then wiring)
+
+**Decision: two plain tools, `save_note` and `remove_note`, not Anthropic's memory tool (`memory_20250818`).** Read:
+`shared/tool-use-concepts.md` ("Client-Side Tools: Memory"), `typescript/claude-api/tool-use.md` ("Memory Tool",
+`betaMemoryTool` and `MemoryToolHandlers`), and the Haiku 5.5 section of `shared/model-migration.md`. Why:
+1. Could not confirm this model takes it. The reference shows the tool on Opus and lists it for Fable; the Haiku 5.5
+   migration section does not mention it, and no live call is allowed. A tool type the model rejects is a 400 on every
+   request of every coach.
+2. It does not fit the rows even where it is accepted. The memory tool is a file directory (`/memories`) the model
+   keeps for itself: `view`, `create`, `str_replace`, `insert`, `delete`, `rename` on paths. The store here is one row
+   per sentence, 1 to 280 characters, per coach and team, under row-level security. A handler would have to invent a
+   file, diff edits back into rows and refuse most commands.
+3. It is the model's memory; these are the coach's words. The model writes to a memory directory what it works out.
+   The table's own rule (held migration 20261101090100, `saveCoachFact`) is that nothing inferred is ever written.
+4. It is schema-less and Anthropic-defined: no `strict`, and no description of ours, so the rule the brief wants in
+   the description (never a named player's health, never what a coach would not want written down) has nowhere to go.
+5. Its protocol has the model look in the directory at the start of a task: one more round trip per conversation,
+   where notes arrive here as a system message with the first turn.
+6. A schema-less tool in `tools` is a second kind of tool for the engine to carry and a different prefix for the
+   player, for no gain over two small strict tools.
+The seam, if the eval ever wants it: `readStandingNotes`, `saveCoachFact` and `deleteCoachFact` are the whole store; a
+`MemoryToolHandlers` over one virtual file `/memories/coach-notes.md` (one note per line) can sit on them.
+
+**ENGINE wires** (`stream/route.ts`; the route already reads `readAskKnows`, this replaces that call):
+```ts
+import { firstTurnNotes, readStandingNotes, toneSentence } from '@/lib/coachhelm/v3/chat/context/notes';
+const knows = await readStandingNotes(supabase, ctx, isNewConversation ? null : convId);   // null: a player, no migration, or a failed read. Never throws.
+// The per-turn system message, after the user's message:
+//   every turn:                 [where.line, toneSentence(knows)].filter(Boolean).join(' ')
+//   a conversation's first turn: [firstTurnNotes(knows), <the line above>].filter(Boolean).join('\n\n')
+```
+- `firstTurnNotes` is null when there are no notes: send nothing. It goes once, on the first turn, and stays in the
+  stored history. A note saved or removed later answers with the full list in its tool result, so that conversation
+  is current without another message; the next conversation gets the new list on its first turn.
+- `toneSentence` goes on every turn because the tone switch can move mid-conversation; it is null without the
+  migration and for a player.
+- `instructionBlocks`'s `notes` option is no longer needed (TOOLS already ignores it); `knowsSection` in
+  `../ask-knows.ts` stays only until the route stops importing it.
+
+**TOOLS wires** (`registry.ts`):
+```ts
+import { noteTools } from './context/notes';
+// coachTools: `...noteTools(who)` at the end of the reads, after find_in_app. Nothing for playerTools: noteTools(player) is [].
+```
+- `save_note({ text })` and `remove_note({ note })` are `kind: 'read'` with `evidence: false`: they save at once and
+  are not confirm-gated, as the brief asks ("saved at once with a receipt chip"). They are the only two tools of that
+  kind that write, and all they write is the coach's own note through the app's own actions (`saveCoachFact`,
+  `deleteCoachFact`: the coach from the session, row-level security on the row). `TASK_TOOL_NAMES` must not list them.
+- New UI part: `{ type: 'data-coach-note', id: 'coach-note-<id>', data: { op: 'saved' | 'removed', note_id, text } }`
+  (`CoachNotePart`). ENGINE: add `'data-coach-note'` to `REPLAYABLE`. The thread draws it as a small chip ("Noted: …",
+  with Remove calling `deleteCoachFact(note_id)`, as `KnowsPanel` does); the panel already lists every note.
+- Suggested policy line (TOOLS): "When the coach asks you to remember something for next time, or to stop doing
+  something a note says, use save_note or remove_note. Do not save anything the coach did not ask you to keep."
+- The server refuses, whatever the model sends: a note naming a roster player beside health, family, grades or
+  discipline; contact details or a password; a 31st note; a duplicate. Without the migration both tools say notes are
+  not switched on and write nothing.
