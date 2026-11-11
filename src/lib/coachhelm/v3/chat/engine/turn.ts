@@ -18,7 +18,7 @@ import type { ToolEnvelope } from '../provenance';
 import { stripReadMarkers } from '../read-markers';
 import { defaultGroundingCheck, type GroundingCheck } from './grounding';
 import { runModelLoop, toolResultsMessage, type LoopState, type LoopStop, type PendingDecision } from './loop';
-import { CHAT_FEATURES, emptyUsage, type ChatFeatures, type ModelClient, type ModelMessage, type SystemPrompt, type ToolResultBlock, type UsageTotals } from './model';
+import { emptyUsage, fallbackModelOf, profileFor, type ChatFeatures, type ModelClient, type ModelMessage, type ModelProfile, type SystemPrompt, type ToolResultBlock, type UsageTotals } from './model';
 import { applyChatEvent, CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, textOfParts, TURN_META_PART, turnMetaOf, type ChatErrorAction, type ChatErrorKind, type ChatEvent, type ChatScreenEcho, type ChatTurnMeta, type ChatTurnStatus, type ChatUIMessage, type ChatUIPart, type WireDataPart } from './protocol';
 import { buildHistory, collectReads, findOpenDecision, saveCardState, saveResumeToLedger, saveTurn, type LoadedConversation, type OpenDecision } from './store';
 import { declineTask, settleAbandonedTask, startConfirm, type DecisionOutcome, type TaskDeps } from './tasks';
@@ -46,6 +46,8 @@ export interface TurnSummary {
   refusalCategory: string | null;
   /** True when the API rejected a request with optional features and the turn went on with plain requests. */
   degraded: boolean;
+  /** The substitute model that answered when a refusal fallback did; null otherwise. */
+  fallbackModel: string | null;
 }
 
 export interface TurnDeps {
@@ -58,7 +60,9 @@ export interface TurnDeps {
   /** Null where tasks are not offered (the player's Ask). */
   tasks: TaskDeps | null;
   maxSteps: number;
-  /** What requests are sent with. Left out, the deployment's (`CHAT_FEATURES`). */
+  /** The model the surface runs on and its settings. Left out, a coach surface's. */
+  profile?: ModelProfile;
+  /** What requests are sent with. Left out, the profile's own. */
   features?: ChatFeatures;
   /**
    * What the app tells the model about THIS turn: today's date, the screen the chat was opened from, and on a
@@ -185,6 +189,7 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
         error,
         refusalCategory,
         degraded: state.degraded,
+        fallbackModel: fallbackModelOf(usage),
       });
     } catch {
       // Accounting never fails a turn.
@@ -205,7 +210,8 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
 
   const open = deps.store ? await findOpenDecision(sb, loaded, coachId).catch(() => null) : null;
   const { reads, nextRef } = collectReads(loaded);
-  const state: LoopState = { messages: [], appended: [], steps: 0, usage, reads, nextRef, nextProgress: 0, features: deps.features ?? CHAT_FEATURES, degraded: false, container: null };
+  const profile = deps.profile ?? profileFor('ask');
+  const state: LoopState = { messages: [], appended: [], steps: 0, usage, reads, nextRef, nextProgress: 0, profile, features: deps.features ?? profile.features, degraded: false, container: null };
   /** The assistant row this request writes: the waiting turn (a decision), or a failed attempt a retry replaces. */
   let rowId: string | undefined;
 

@@ -8,7 +8,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { asTools, cited, codeToolUse, fakeDb, fakeModel, linesTool, newToolLog, readEvents, readTool, rejected, serverCode, taskTool, text, textOf, thinking, toolUse, type FakeDb, type FakeModel, type ToolLog } from './helpers';
+import { asTools, cited, codeToolUse, fakeDb, fakeModel, fallbackHop, linesTool, progressNote, newToolLog, readEvents, readTool, rejected, serverCode, taskTool, text, textOf, thinking, toolUse, type FakeDb, type FakeModel, type ToolLog } from './helpers';
 import type { ChatTool, ReadTool } from '@/lib/coachhelm/v3/chat/engine/tool';
 import type { ChatEvent } from '@/lib/coachhelm/v3/chat/engine/protocol';
 
@@ -20,6 +20,7 @@ const h = vi.hoisted(() => ({
   model: null as unknown,
   modelFactory: null as null | (() => unknown),
   features: null as unknown,
+  modelId: null as string | null,
   notes: null as null | { tone: 'straight' | 'detailed' | 'team_talk'; facts: Array<{ id: string; text: string }> },
   clubhouse: true,
   flags: new Set<string>(),
@@ -90,7 +91,10 @@ vi.mock('@/lib/coachhelm/v3/chat/context', async (original) => {
 });
 vi.mock('@/lib/coachhelm/v3/chat/engine/model', async (original) => {
   const real = await original<typeof import('@/lib/coachhelm/v3/chat/engine/model')>();
-  return { ...real, anthropicModelClient: () => (h.modelFactory ? h.modelFactory() : h.model), chatFeatures: (surface?: 'ask' | 'quick_chat' | 'practice_helper' | 'player') => h.features ?? real.chatFeatures(surface) };
+  type Surface = 'ask' | 'quick_chat' | 'practice_helper' | 'player';
+  // `h.model_id` runs every surface on one model, as the engine's own override constant does for the eval.
+  const profileFor = (surface?: Surface) => real.profileFor(surface, (h.modelId as 'claude-sonnet-5-5' | 'claude-haiku-5-5' | null) ?? null);
+  return { ...real, anthropicModelClient: () => (h.modelFactory ? h.modelFactory() : h.model), profileFor, chatFeatures: (surface?: Surface) => h.features ?? profileFor(surface).features };
 });
 // The real hold, with a 250 ms window instead of 8 s so a test can watch it release.
 const HOLD_MS = 250;
@@ -127,6 +131,7 @@ function setup(opts: { modelColumns?: boolean; holdColumn?: boolean; surfaceColu
   h.role = 'coach';
   h.modelFactory = null;
   h.features = null;
+  h.modelId = null;
   h.notes = null;
   h.clubhouse = true;
   h.flags = new Set();
@@ -203,15 +208,17 @@ describe('a plain answer', () => {
     ]);
 
     const request = model.requests[0]!;
-    expect(request.model).toBe('claude-haiku-5-5');
+    // A coach's surfaces run on Claude Sonnet 5.5: effort medium, adaptive thinking, the model's own notes between tool calls,
+    // and the server-side refusal fallback.
+    expect(request.model).toBe('claude-sonnet-5-5');
     expect(request.max_tokens).toBe(16000);
-    expect(request.thinking).toEqual({ type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } });
-    // This model's default effort is medium: high is sent on every request.
-    expect(request.output_config).toEqual({ effort: 'high' });
+    expect(request.thinking).toEqual({ type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' }, display: 'updates' });
+    expect(request.output_config).toEqual({ effort: 'medium' });
     expect(request.tool_choice).toEqual({ type: 'auto' });
-    // There is no server-side fallback on this model, and nothing it rejects is sent.
-    for (const never of ['fallbacks', 'temperature', 'top_p', 'top_k']) expect(request).not.toHaveProperty(never);
-    expect(request.betas).toEqual(['thinking-binding-controls-2026-08-01', 'compact-2026-01-12']);
+    expect(request.fallbacks).toBe('default');
+    // Nothing this model rejects is sent.
+    for (const never of ['temperature', 'top_p', 'top_k']) expect(request).not.toHaveProperty(never);
+    expect(request.betas).toEqual(['thinking-binding-controls-2026-08-01', 'thinking-display-updates-2026-08-18', 'compact-2026-01-12', 'server-side-fallback-2026-07-01']);
     expect(request.context_management).toEqual({ edits: [{ type: 'compact_20260112' }] });
     // Nothing that changes with the day is in the prompt: the date is the system message after the coach's words.
     expect(JSON.stringify(request.system)).not.toContain('November');
@@ -251,7 +258,7 @@ describe('a plain answer', () => {
     ]);
     expect(assistantRows()).toHaveLength(2);
     // The stored thinking block goes back unchanged, with the instruction to drop it rather than fail if the prompt has changed since.
-    expect(model.requests[0]!.thinking).toEqual({ type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } });
+    expect(model.requests[0]!.thinking).toMatchObject({ type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } });
   });
 });
 
@@ -339,6 +346,128 @@ describe('reads', () => {
   });
 });
 
+describe('the model a surface runs on', () => {
+  const ledger = () => ((h.admin as unknown as FakeDb).tables.golf_coachhelm_llm_calls ?? []) as Array<{ model_id: string; cost_usd: number; prompt_tokens: number; completion_tokens: number; player_id?: string | null }>;
+  const turnLog = () => (h.logServerEvent.mock.calls.map((c) => c as unknown[]).filter((c) => c[0] === 'chat/stream: turn').at(-1)![1] as { extra: Record<string, unknown> }).extra;
+
+  it('every coach surface is Claude Sonnet 5.5 and is billed and logged at its rates; a player’s Ask is Claude Haiku 5.5 at high with no fallbacks parameter', async () => {
+    const before = h.checkBudget.mock.calls.length;
+    for (const surface of ['ask', 'quick_chat', 'practice_helper']) {
+      const model = script({ content: [text('74.2.')], usage: { input_tokens: 1000, output_tokens: 200, cache_read_input_tokens: 20_000, cache_creation_input_tokens: 0 } });
+      await ask('Team?', null, { surface });
+      expect(model.requests[0]).toMatchObject({ model: 'claude-sonnet-5-5', output_config: { effort: 'medium' }, fallbacks: 'default' });
+    }
+    expect(ledger()).toHaveLength(3);
+    expect(ledger().at(-1)).toMatchObject({ model_id: 'anthropic/claude-sonnet-5-5', prompt_tokens: 21_000, completion_tokens: 200 });
+    // 1,000 fresh at $2, 20,000 read at $0.20, 200 out at $10, per million.
+    expect(ledger().at(-1)!.cost_usd).toBeCloseTo((1000 * 2 + 20_000 * 0.2 + 200 * 10) / 1e6, 9);
+    expect(turnLog()).toMatchObject({ model: 'anthropic/claude-sonnet-5-5', fallbackModel: null });
+    // The budget gate reserves a worst-case turn at the same model's rates: 12,000 in at $2 and 2,500 out at $10, per million.
+    const reserved = (h.checkBudget.mock.calls as unknown as Array<[unknown, string, number]>).slice(before).map((call) => call[2]);
+    expect(reserved).toHaveLength(3);
+    for (const usd of reserved) expect(usd).toBeCloseTo((12_000 * 2 + 2500 * 10) / 1e6, 9);
+
+    h.role = 'player';
+    const player = script({ content: [text('73.1.')], usage: { input_tokens: 1000, output_tokens: 200, cache_read_input_tokens: 5000, cache_creation_input_tokens: 0 } });
+    await ask('How am I scoring?');
+    expect(player.requests[0]).toMatchObject({ model: 'claude-haiku-5-5', output_config: { effort: 'high' } });
+    expect(player.requests[0]).not.toHaveProperty('fallbacks');
+    expect(player.requests[0]!.betas).toEqual(['thinking-binding-controls-2026-08-01', 'compact-2026-01-12']);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const row = ledger().at(-1)!;
+    expect(row).toMatchObject({ model_id: 'anthropic/claude-haiku-5-5', player_id: 'player-me' });
+    expect(row.cost_usd).toBeCloseTo((1000 * 0.1 + 5000 * 0.01 + 200 * 0.5) / 1e6, 9);
+  });
+
+  it('a conversation stored on Haiku continues on Sonnet: its thinking blocks go back unchanged, and a block the API drops is counted, not fatal', async () => {
+    h.modelId = 'claude-haiku-5-5';
+    const before = script({ content: [thinking('sig-haiku'), text('71.4.')] });
+    const first = await ask('How is Avery scoring?');
+    expect(before.requests[0]!.model).toBe('claude-haiku-5-5');
+
+    h.modelId = null;
+    const after = script({ content: [thinking('sig-sonnet'), text('Blake is at 74.')], droppedThinking: 1 });
+    const second = await ask('And Blake?', conversationOf(first.events));
+    expect(done(second.events)?.status).toBe('complete');
+    expect(after.requests[0]!.model).toBe('claude-sonnet-5-5');
+    // Sonnet 5.5 reads Haiku 5.5's blocks; what it cannot verify the API drops because the request asks it to.
+    expect((lastRequestMessages(after)[2]!.content as unknown[])[0]).toEqual(thinking('sig-haiku'));
+    expect(after.requests[0]!.thinking).toMatchObject({ block_binding: { prefix_mismatch_behavior: 'drop_block' } });
+    expect((turnLog().calls as Array<{ dropped_thinking: number; model: string }>).map((c) => [c.model, c.dropped_thinking])).toEqual([['claude-sonnet-5-5', 1]]);
+
+    // And back again (the eval's override): the stored Sonnet block is sent as stored too. Nothing is stripped here.
+    h.modelId = 'claude-haiku-5-5';
+    const back = script({ content: [text('Both are under 75.')] });
+    await ask('Compare them', conversationOf(first.events));
+    expect(back.requests[0]!.model).toBe('claude-haiku-5-5');
+    expect((lastRequestMessages(back)[5]!.content as unknown[])[0]).toEqual(thinking('sig-sonnet'));
+  });
+
+  it('a refusal fallback part-way through: the words carry on, the declining model’s tool call is never run, what is kept can be sent back, and both attempts are billed', async () => {
+    const model = script(
+      {
+        content: [thinking('sig-a'), text('Looking at '), toolUse('tu_dropped', 'get_player_stats', {}), fallbackHop(), thinking('sig-b'), text('the team’s rounds.'), toolUse('tu_kept', 'get_team_stats', {})],
+        model: 'claude-sonnet-5',
+        usage: {
+          input_tokens: 900, output_tokens: 300, cache_read_input_tokens: 0, cache_creation_input_tokens: 0,
+          iterations: [
+            { type: 'message', model: 'claude-sonnet-5-5', input_tokens: 1000, output_tokens: 40, cache_read_input_tokens: 20_000, cache_creation_input_tokens: 0 },
+            { type: 'fallback_message', model: 'claude-sonnet-5', input_tokens: 900, output_tokens: 300, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+          ],
+        },
+      },
+      { content: [text('74.2.')], usage: { input_tokens: 100, output_tokens: 20, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
+    );
+    const { events } = await ask('How is the team scoring?');
+    expect(done(events)?.status).toBe('complete');
+    // Nothing already shown is withdrawn, and the substitute's words continue the sentence.
+    expect(events.some((e) => e.type === 'text_discard' || e.type === 'error')).toBe(false);
+    expect(textOf(events)).toBe('Looking at the team’s rounds.74.2.');
+    // Only the tool call after the boundary is run and answered.
+    expect(log.reads.map((r) => r.tool)).toEqual(['get_team_stats']);
+    const sent = lastRequestMessages(model);
+    expect((sent[2]!.content as Array<{ type: string }>).map((b) => b.type)).toEqual(['text', 'fallback', 'thinking', 'text', 'tool_use']);
+    expect((sent[3]!.content as Array<{ tool_use_id: string }>).map((b) => b.tool_use_id)).toEqual(['tu_kept']);
+    // Stored as it will be replayed.
+    expect(((assistantRows()[0]!.model_messages as Array<{ content: Array<{ type: string }> }>)[2]!.content).map((b) => b.type)).toEqual(['text', 'fallback', 'thinking', 'text', 'tool_use']);
+    // Billed per attempt, each at its own model's rate, and the log says a substitute answered.
+    expect(ledger().at(-1)!.cost_usd).toBeCloseTo((1000 * 2 + 20_000 * 0.2 + 40 * 10 + 900 * 2 + 300 * 10 + 100 * 2 + 20 * 10) / 1e6, 9);
+    expect(turnLog()).toMatchObject({ fallbackModel: 'claude-sonnet-5', status: 'complete' });
+  });
+
+  it('when the substitute declines too, the turn is still a complete one with a sentence, and the category is logged', async () => {
+    const model = script({ content: [fallbackHop()], stop_reason: 'refusal', category: 'cyber', model: 'claude-sonnet-5', usage: { input_tokens: 10, output_tokens: 0, iterations: [{ type: 'message', model: 'claude-sonnet-5-5', input_tokens: 1000, output_tokens: 0 }, { type: 'fallback_message', model: 'claude-sonnet-5', input_tokens: 1000, output_tokens: 0 }] } });
+    const { events } = await ask('Something both models decline');
+    expect(model.requests).toHaveLength(1);
+    expect(done(events)?.status).toBe('complete');
+    expect(events.some((e) => e.type === 'error')).toBe(false);
+    expect(assistantRows()[0]!.content).toContain('I can’t help with that one.');
+    expect(turnLog()).toMatchObject({ refusalCategory: 'cyber', fallbackModel: 'claude-sonnet-5' });
+  });
+
+  it('the model’s own notes between tool calls reach the thread as finished progress rows, never as answer text; a cut-off response’s stand-in is not a note', async () => {
+    script(
+      { content: [progressNote('Pulling the team’s last ten rounds.'), toolUse('tu_1', 'get_team_stats', {})] },
+      { content: [progressNote('This part of the response was interrupted before it finished.'), text('74.2.')] },
+    );
+    const { events } = await ask('How is the team scoring?');
+    const notes = events.filter((e) => e.type === 'note') as Array<{ text: string }>;
+    expect(notes.map((n) => n.text)).toEqual(['Pulling the team’s last ten rounds.']);
+    expect(textOf(events)).toBe('74.2.');
+    const [row] = assistantRows();
+    expect(row!.content).toBe('74.2.');
+    expect((row!.ui_parts as Array<{ type: string; data?: { tool?: string; label?: string } }>).filter((p) => p.type === 'data-progress' && p.data?.tool === 'note').map((p) => p.data?.label)).toEqual(['Pulling the team’s last ten rounds.']);
+    // The blocks themselves are stored and go back unchanged, like any thinking block.
+    expect(((row!.model_messages as Array<{ content: unknown[] }>)[2]!.content)[0]).toEqual(progressNote('Pulling the team’s last ten rounds.'));
+
+    // A player's model does not send them, and none are shown.
+    h.role = 'player';
+    const player = script({ content: [text('73.1.')] });
+    await ask('How am I scoring?');
+    expect(player.requests[0]!.thinking).not.toHaveProperty('display');
+  });
+});
+
 describe('what a read tells the model, and how an answer points back at it', () => {
   type SearchResult = { type: string; source: string; title: string; content: Array<{ type: string; text: string }>; citations: { enabled: boolean } };
   const resultOf = (model: FakeModel) => (lastRequestMessages(model)[3]!.content as Array<{ type: string; tool_use_id: string; content: unknown }>)[0]!;
@@ -410,18 +539,19 @@ describe('the optional request features', () => {
     expect(textOf(events)).toBe('74.2.');
     expect(events.some((e) => e.type === 'error')).toBe(false);
     expect(model.requests).toHaveLength(3);
-    expect(model.requests[0]!.betas).toEqual(['thinking-binding-controls-2026-08-01', 'compact-2026-01-12']);
+    expect(model.requests[0]!.betas).toEqual(['thinking-binding-controls-2026-08-01', 'thinking-display-updates-2026-08-18', 'compact-2026-01-12', 'server-side-fallback-2026-07-01']);
     // The retry, and every later call of the turn, carries no beta and nothing a beta or `strict` added.
     for (const request of model.requests.slice(1)) {
       expect(request).not.toHaveProperty('betas');
+      expect(request).not.toHaveProperty('fallbacks');
       expect(request).not.toHaveProperty('context_management');
       expect(request.thinking).toEqual({ type: 'adaptive' });
       expect((request.tools as Array<{ strict?: boolean }>).some((t) => t.strict !== undefined)).toBe(false);
       // The plain request has no code tool either, and no read says it may be called from code.
       expect(JSON.stringify(request.tools)).not.toMatch(/code_execution|allowed_callers/);
       // What is not optional is unchanged.
-      expect(request.model).toBe('claude-haiku-5-5');
-      expect(request.output_config).toEqual({ effort: 'high' });
+      expect(request.model).toBe('claude-sonnet-5-5');
+      expect(request.output_config).toEqual({ effort: 'medium' });
       expect(request.messages.slice(0, 2)).toEqual([{ role: 'user', content: 'How is the team scoring?' }, sys]);
     }
     const logged = h.logServerError.mock.calls.map((c) => c as unknown[]).find((c) => (c[1] as { action?: string })?.action === 'v3.chat.stream.degraded');

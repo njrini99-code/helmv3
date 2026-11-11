@@ -17,7 +17,7 @@
 import { logServerError } from '@/lib/server-error-logger';
 import { CoachContextError } from '../context';
 import type { ToolEnvelope } from '../provenance';
-import { addUsage, buildModelRequest, isModelApiError, isPlain, isRejectedRequest, plainFeatures, type ChatFeatures, type ModelClient, type ModelMessage, type ModelResponse, type SearchResultBlock, type SystemPrompt, type ToolResultBlock, type ToolUseBlock, type UsageTotals } from './model';
+import { addUsage, buildModelRequest, isModelApiError, isPlain, isRejectedRequest, plainFeatures, type ChatFeatures, type ModelClient, type ModelMessage, type ModelProfile, type ModelResponse, type SearchResultBlock, type SystemPrompt, type ToolResultBlock, type ToolUseBlock, type UsageTotals } from './model';
 import { eventForPart, type ChatEvent } from './protocol';
 import { proposeTask, type TaskDeps } from './tasks';
 import type { ChatTool, ReadTool, TaskTool, ToolContext } from './tool';
@@ -61,6 +61,8 @@ export interface LoopState {
   nextRef: number;
   nextProgress: number;
   /** What requests are sent with. Starts as the deployment's features; becomes the plain set if the API rejects a request. */
+  /** The model this turn runs on and its settings. Fixed for the turn. */
+  profile: ModelProfile;
   features: ChatFeatures;
   /** True once a request was rejected and retried plain, for the turn's log line. */
   degraded: boolean;
@@ -94,6 +96,29 @@ export type LoopStop =
   | { kind: 'error'; error: unknown };
 
 const isToolUse = (block: ModelResponse['content'][number]): block is ToolUseBlock => block.type === 'tool_use';
+
+/** The text of a progress block that stands in for work a cut-off response did not finish: not a note for the coach. */
+const INTERRUPTED_NOTE = 'This part of the response was interrupted before it finished.';
+
+/**
+ * The one case where an assistant turn is not kept exactly as returned. When a refusal fallback took over part-way, the
+ * turn holds a `fallback` block, and the API requires that what the model that declined left before the LAST such block
+ * is not sent back: its thinking, its tool calls (which are never run and get no result) and any server tool call
+ * without its result. Text before the boundary, everything after it and the marker itself are kept. A turn with no
+ * `fallback` block is returned untouched.
+ */
+export function echoable(content: ModelResponse['content']): ModelResponse['content'] {
+  const boundary = content.map((b) => b.type as string).lastIndexOf('fallback');
+  if (boundary === -1) return content;
+  const answered = new Set(content.flatMap((b) => (typeof (b as { tool_use_id?: unknown }).tool_use_id === 'string' ? [(b as { tool_use_id: string }).tool_use_id] : [])));
+  return content.filter((block, index) => {
+    if (index >= boundary) return true;
+    const type = block.type as string;
+    if (type === 'thinking' || type === 'redacted_thinking' || type === 'tool_use') return false;
+    if (type === 'server_tool_use') return answered.has((block as { id: string }).id);
+    return true;
+  });
+}
 
 /** A tool call made by the model's code in the sandbox, not by the model directly. Its result goes to the code. */
 const isProgrammatic = (block: ToolUseBlock): boolean => Boolean(block.caller && block.caller.type !== 'direct');
@@ -134,13 +159,14 @@ interface Call {
 
 /** One streamed model call, with the features given. Only an unparseable tool input is retried here (twice). */
 async function streamOnce(deps: LoopDeps, state: LoopState, answerOnly: boolean): Promise<Call> {
-  const request = buildModelRequest({ tools: deps.tools, system: deps.system, messages: state.messages, features: state.features, answerOnly, container: state.container });
+  const request = buildModelRequest({ tools: deps.tools, system: deps.system, messages: state.messages, profile: state.profile, features: state.features, answerOnly, container: state.container });
   for (let attempt = 0; ; attempt += 1) {
     let streamedText = false;
     // Per content block: the reads its sentences cite, and (only with progress notes on) the model's own note.
     const cited = new Map<number, string[]>();
     const notes = new Map<number, string>();
     let previousBlock: string | null = null;
+    let continues = false;
     try {
       // The server's own word for the wait before the first event of a model call.
       deps.emit({ type: 'phase', phase: 'thinking' });
@@ -159,8 +185,14 @@ async function streamOnce(deps: LoopDeps, state: LoopState, answerOnly: boolean)
           }
           // Words either side of a thinking block or a tool call are separate paragraphs. Two text blocks in a row are one sentence the
           // API split where a citation begins or ends: nothing may be put between them.
-          if (event.content_block.type === 'text' && streamedText && previousBlock !== 'text') deps.emit({ type: 'text_delta', delta: '\n\n' });
-          previousBlock = event.content_block.type;
+          // A refusal fallback's marker: the substitute's next words continue the sentence the first model began, whatever the model
+          // that declined left between (its thinking, a tool call that is never run).
+          if ((event.content_block.type as string) === 'fallback') continues = true;
+          else if (event.content_block.type === 'text') {
+            if (streamedText && previousBlock !== 'text' && !continues) deps.emit({ type: 'text_delta', delta: '\n\n' });
+            continues = false;
+          }
+          if ((event.content_block.type as string) !== 'fallback') previousBlock = event.content_block.type;
         } else if (event.type === 'content_block_delta') {
           const delta = event.delta;
           if (delta.type === 'text_delta' && delta.text) {
@@ -177,7 +209,7 @@ async function streamOnce(deps: LoopDeps, state: LoopState, answerOnly: boolean)
           const refs = cited.get(event.index);
           if (refs?.length) deps.emit({ type: 'text_delta', delta: refs.map((ref) => ` [${ref}]`).join('') });
           const note = notes.get(event.index);
-          if (note?.trim()) deps.emit({ type: 'note', id: `note-${(state.nextProgress += 1)}`, text: note });
+          if (note?.trim() && note.trim() !== INTERRUPTED_NOTE) deps.emit({ type: 'note', id: `note-${(state.nextProgress += 1)}`, text: note });
         }
       }
       return { response: await stream.finalMessage(), streamedText };
@@ -314,7 +346,7 @@ export async function runModelLoop(deps: LoopDeps, state: LoopState): Promise<Lo
       return deps.signal.aborted ? { kind: 'aborted' } : { kind: 'error', error: err };
     }
     state.steps += 1;
-    addUsage(state.usage, response);
+    addUsage(state.usage, response, state.profile.modelId);
     if (response.container?.id) state.container = response.container.id;
 
     // A refusal can arrive after words were streamed and can cut a tool call off mid-input: the content is not read.
@@ -323,11 +355,13 @@ export async function runModelLoop(deps: LoopDeps, state: LoopState): Promise<Lo
       return { kind: 'refusal', category: (response.stop_details as { category?: string | null } | null | undefined)?.category ?? null };
     }
 
-    const toolUses = response.content.filter(isToolUse);
+    // What is kept of the turn, and so which tool calls are answered: everything, unless a refusal fallback took over part-way.
+    const content = echoable(response.content);
+    const toolUses = content.filter(isToolUse);
     if (toolUses.length > 0 && response.stop_reason === 'max_tokens') return { kind: 'truncated' };
 
     // Exactly what the API returned, in order.
-    const assistant: ModelMessage = { role: 'assistant', content: response.content };
+    const assistant: ModelMessage = { role: 'assistant', content };
     state.messages.push(assistant);
     state.appended.push(assistant);
 

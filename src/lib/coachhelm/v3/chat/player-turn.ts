@@ -8,7 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { CoachContextError } from './context';
 import { turnContext } from './context/screen-context';
-import { anthropicModelClient, CHAT_MODEL_LEDGER_ID, chatFeatures, PLAYER_MAX_STEPS, promptTokens, turnCostUsd } from './engine/model';
+import { anthropicModelClient, chatFeatures, PLAYER_MAX_STEPS, profileFor, promptTokens, turnCostUsd } from './engine/model';
 import { CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, type ChatErrorAction, type ChatEvent } from './engine/protocol';
 import { chatTurnResponse, type TurnSummary } from './engine/turn';
 import type { PlayerChatContext, ScreenLoaders } from './engine/tool';
@@ -57,6 +57,8 @@ export async function runPlayerTurn(
     return new Response(events.map(encodeChatEvent).join(''), { headers: { 'content-type': CHAT_STREAM_CONTENT_TYPE } });
   }
 
+  // The player's read-only Ask runs on its own model profile.
+  const profile = profileFor('player');
   const blocks = instructionBlocks('player', ctx);
   // Today's date and the screen the player is on: a system message after their own, never in the prompt.
   const context = await turnContext(sb, ctx, body.screen ?? null);
@@ -73,7 +75,7 @@ export async function runPlayerTurn(
             task: 'coach_chat',
             player_id: ctx.player_id,
             coach_id: null,
-            model_id: CHAT_MODEL_LEDGER_ID,
+            model_id: profile.ledgerId,
             prompt_tokens: promptTokens(summary.usage),
             completion_tokens: summary.usage.output,
             cost_usd: usd,
@@ -99,6 +101,7 @@ export async function runPlayerTurn(
       toolContext: { sb, who: ctx, conversationId, surface: 'player', loaders: loadersFor(ctx) },
       tasks: null,
       maxSteps: PLAYER_MAX_STEPS,
+      profile,
       features: chatFeatures('player'),
       turnNote: context.line,
       screen: context.screen?.place ? { screen: context.screen.screen, label: context.screen.place.name } : null,

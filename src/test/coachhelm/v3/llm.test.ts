@@ -13,6 +13,7 @@ import {
   estimateCostUsd,
   hasKnownPricing,
   PLAN_FORMAT_MODEL,
+  PLAYER_CHAT_MODEL,
 } from '@/lib/coachhelm/v3/llm/types';
 import { verifyCitations } from '@/lib/coachhelm/v3/llm/citations';
 
@@ -27,9 +28,11 @@ describe('MODEL_FOR_TASK', () => {
   it('uses Haiku for hero_narrative', () => {
     expect(MODEL_FOR_TASK.hero_narrative).toBe('anthropic/claude-haiku-4-5');
   });
-  it('uses Claude Haiku 5.5 for coach_chat (owner decision, 2026-11-10; the engine sends effort high)', () => {
-    expect(MODEL_FOR_TASK.coach_chat).toBe('anthropic/claude-haiku-5-5');
-    // Reading a sample plan's layout used coach_chat's model; it stays on the model it ran on before the chat moved.
+  it('uses Claude Sonnet 5.5 for coach_chat and Claude Haiku 5.5 for the player (owner decision, 2026-11-10)', () => {
+    expect(MODEL_FOR_TASK.coach_chat).toBe('anthropic/claude-sonnet-5-5');
+    expect(PLAYER_CHAT_MODEL).toBe('anthropic/claude-haiku-5-5');
+    expect(hasKnownPricing(PLAYER_CHAT_MODEL)).toBe(true);
+    // Reading a sample plan's layout keeps its own key, so a change to the chat's model never moves it.
     expect(PLAN_FORMAT_MODEL).toBe('anthropic/claude-sonnet-5-5');
     expect(estimateCostUsd(PLAN_FORMAT_MODEL, 1_000_000, 1_000_000)).toBe(12);
   });
@@ -63,7 +66,7 @@ describe('estimateCostUsd', () => {
     expect(estimateCostUsd('anthropic/claude-sonnet-4-6', 1_000_000, 1_000_000)).toBe(18);
     expect(estimateCostUsd('anthropic/claude-sonnet-5', 1_000_000, 1_000_000)).toBe(18);
   });
-  it('claude haiku 5.5 (coach_chat): $0.10/MTok in, $0.50/MTok out on the short-prompt card the pre-flight estimate uses', () => {
+  it('claude haiku 5.5 (the player\'s Ask): $0.10/MTok in, $0.50/MTok out on the short-prompt card the pre-flight estimate uses', () => {
     expect(estimateCostUsd('anthropic/claude-haiku-5-5', 1_000_000, 1_000_000)).toBeCloseTo(0.6, 10);
   });
   it('charges an UNKNOWN model conservatively rather than free', () => {
