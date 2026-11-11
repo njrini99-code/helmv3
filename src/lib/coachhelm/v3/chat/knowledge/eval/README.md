@@ -22,8 +22,8 @@ Each question: `id`, `area`, `viewer` (`coach` or `player`), `ask`, `readers`, `
   line or list item (`- **Overall:** ...`), an abbreviation a coach would not say aloud (`SG`, `GIR`, `avg`, `vs`,
   `L10`, and `ft` or `yd` after a number or in a band: a distance is "from 3 to 5 feet", "281 yards"), Title Case
   stat names or a lower-case "tour", a sentence or list line that starts lower-case, a proper noun not as it is
-  written (PGA Tour, NCAA, Division I), a tool or table name, and a hyphen for a minus sign (`-0.31`; the reads
-  give `−0.31`). They follow the prompt's own section "How your answers read" (`instructions.ts`).
+  written (PGA Tour, NCAA, Division I), a tool or table name, a hyphen for a minus sign (`-0.31`; the reads
+  give `−0.31`), and a date as digits (`2026-05-18`, `5/18/26`; say "18 May"). They follow the prompt's own section "How your answers read" (`instructions.ts`).
 - Names as stored: `golfSenseQuestions(names, { people, places })` adds the team's own proper names to the
   proper-noun rule, so "eli brandt" or "PINE VALLEY INVITATIONAL" fails when the roster has "Eli Brandt" and the
   event is stored "Pine Valley Invitational". Pass the roster as `people` and the course and event names the turn's

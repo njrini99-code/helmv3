@@ -84,7 +84,7 @@ describe('the golf-sense eval set', () => {
     const fails = (answer: string) => EVAL_GLOBAL_FORBID.filter((name) => guard(name).test(answer));
 
     it('are on every question', () => {
-      expect([...EVAL_GLOBAL_FORBID].sort()).toEqual(['abbreviation', 'ascii_minus', 'heading_or_table', 'names_internals', 'proper_noun_case', 'sample_notation', 'sentence_start_case', 'wrong_case']);
+      expect([...EVAL_GLOBAL_FORBID].sort()).toEqual(['abbreviation', 'ascii_minus', 'heading_or_table', 'names_internals', 'numeric_date', 'proper_noun_case', 'sample_notation', 'sentence_start_case', 'wrong_case']);
       for (const q of questions) for (const name of EVAL_GLOBAL_FORBID) expect(q.forbid.filter((f) => f.pattern === name).length, `${q.id}: ${name}`).toBe(1);
     });
 
@@ -168,7 +168,13 @@ describe('the golf-sense eval set', () => {
       for (const bad of ['His L10 scoring average is 74.2.', 'Over L5 he is down.']) expect(fails(bad), bad).toContain('abbreviation');
       for (const bad of ['His scoring average is 74.2 (10).', 'Cole Bennett (37) has the most rounds.']) expect(fails(bad), bad).toContain('sample_notation');
       for (const bad of ['He is at -0.31 a round against the Tour benchmark.', 'His last round was -2.', 'Approach (-3.60) is his biggest gap.']) expect(fails(bad), bad).toContain('ascii_minus');
-      for (const fine of ['He is at −0.31 a round against the Tour benchmark over his last 9 rounds.', 'He makes 25-30% from that range, between 18 September and 21 October.', 'The rounds are dated 2026-05-18 to 2026-10-21.', 'Round counts:\n- Cole Bennett: 37', 'His last-10 window has 9 rounds with a figure.', 'In 2024 (his first season) he played 14 rounds.']) expect(fails(fine), fine).toEqual([]);
+      for (const fine of ['He is at −0.31 a round against the Tour benchmark over his last 9 rounds.', 'He makes 25-30% from that range, between 18 September and 21 October.', 'Round counts:\n- Cole Bennett: 37', 'His last-10 window has 9 rounds with a figure.', 'In 2024 (his first season) he played 14 rounds.']) expect(fails(fine), fine).toEqual([]);
+    });
+
+    it('fail a date written as digits, which no coach says aloud', () => {
+      // From the first live run: "That's across all 124 rounds on the Rounds page, dated 2026-05-18 to 2026-10-21."
+      for (const bad of ['That is across all 124 rounds, dated 2026-05-18 to 2026-10-21.', 'His best round was on 10/21/2026.', 'He last played on 5/18/26.', 'The qualifier starts 2026-11-14.']) expect(fails(bad), bad).toEqual(['numeric_date']);
+      for (const fine of ['That is across all 124 rounds, played between 18 May and 21 October.', 'His best round was on 21 October 2026.', 'He hit 9 of 14 fairways and 3 of 4 par 5s in two.', 'He scored 73 and 75, a 36-hole total of 148.', 'Since 2024 he has played 14 rounds.']) expect(fails(fine), fine).toEqual([]);
     });
 
     it('hold a yes/no question to the answer, three supporting points and one caveat or offer', () => {

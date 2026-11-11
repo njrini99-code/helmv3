@@ -110,6 +110,11 @@
    "re": "(?<![\\w−–-])-\\d",
    "flags": "",
    "why": "A hyphen for a minus sign (-0.31). The reads give a real minus sign (−0.31): copy the figure as it is."
+  },
+  "numeric_date": {
+   "re": "\\b\\d{4}-\\d{2}-\\d{2}\\b|\\b\\d{1,2}/\\d{1,2}/\\d{2,4}\\b",
+   "flags": "",
+   "why": "A date as digits (2026-05-18, 5/18/26). Say it as a coach would: 18 May, between 18 May and 21 October."
   }
  },
  "questions": [
@@ -2528,6 +2533,7 @@
   "sentence_start_case",
   "proper_noun_case",
   "names_internals",
-  "ascii_minus"
+  "ascii_minus",
+  "numeric_date"
  ]
 }

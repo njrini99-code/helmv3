@@ -985,3 +985,5 @@ K10. **ENGINE, nothing to change:** `golf-sense.json` gained an eighth writing r
     live answer), `abbreviation` ("L10") and `sample_notation` (a bare count in brackets), and
     `style.max_sentences: 6` on the 27 questions that end in a yes/no question. The harness reads all of it from the
     file. `index.ts` is unchanged, so the copy test still holds (run: exit 0).
+K11. **ENGINE, nothing to change:** a ninth writing rule, `numeric_date`, fails a date written as digits in an answer
+    ("2026-05-18", "5/18/26"). It is in `global_forbid`, so the harness holds it against every answer from the file.

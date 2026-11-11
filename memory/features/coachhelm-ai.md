@@ -923,9 +923,9 @@ are byte-identical for every team, day and conversation and sit after the policy
   `stripSelfReferences` is exported for any other text a model reads.
 - **The golf-sense eval** (`knowledge/eval/golf-sense.json`): 76 questions (fourteen of them on strokes gained: what a
   Tour-based figure means and why; seven on writing alone) with what a correct answer must and must
-  not state and which reads it should use, and eight writing rules held against every answer (they follow the
+  not state and which reads it should use, and nine writing rules held against every answer (they follow the
   prompt's "How your answers read": no sample notation, heading, bold label on a list item, abbreviation, wrong
-  capitals or hyphen for a minus sign), in the shape `scripts/coachhelm/ask-eval.mjs` scores. A question that ends
+  capitals, hyphen for a minus sign or date written as digits), in the shape `scripts/coachhelm/ask-eval.mjs` scores. A question that ends
   in a yes/no question fails past six sentences (the answer, at most three supporting points, one caveat or offer). Not yet run: a run
   is a live spend against staging and needs the owner's approval.
 - When a read tool is added, renamed or removed, or the allowlist changes: update `data-map.source.ts` and run
