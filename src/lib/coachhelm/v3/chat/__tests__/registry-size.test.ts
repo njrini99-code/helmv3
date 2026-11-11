@@ -45,12 +45,13 @@ describe('the cached prefix: tool definitions and policy', () => {
     ['practice_helper', coach],
     ['quick_chat', coach],
     ['player', player],
-  ] as const)('%s stays under 26,000 tokens, and its own tools and rules under 12,150', (surface, who) => {
+  ] as const)('%s stays under 26,000 tokens, and its own tools and rules under 12,300', (surface, who) => {
     const size = sizeOf(surface, who);
     console.info(`prefix ${surface}: ${size.tools} tools, ${size.toolTokens} tokens of definitions + ${size.policyTokens} of policy (${size.rulesTokens} of rules, the rest golf and the data map) = ${size.total}; own tools and rules ${size.own}; largest ${size.largest.map(([n, t]) => `${n} ${t}`).join(', ')}`);
-    // 12,150 since 11 Nov 2026 (was 12,000; the lead allowed up to 12,300) for the rules on how an answer is shaped, dates, bracketed ids
-    // and "not tracked". Most of their cost was paid by withdrawing two show_visual forms; Ask measures 12,076.
-    expect(size.own).toBeLessThan(12_150);
+    // 12,300, the lead's allowance of 11 Nov 2026 (was 12,000, then 12,150), for the rules on how an answer is shaped, dates, bracketed
+    // ids and "not tracked", and, after the first full eval run (44 of 99 answers broke a writing rule), the four-sentence limit, no
+    // label or bold lead-in, no words before a read, and names as stored. Ask measures 12,233.
+    expect(size.own).toBeLessThan(12_300);
     // 26,000 by the lead's decision of 10 Nov 2026 (was 21,000): the knowledge blocks carry what strokes gained means and the writing rules.
     expect(size.total).toBeLessThan(26_000);
   });
@@ -62,7 +63,7 @@ describe('the cached prefix: tool definitions and policy', () => {
         const size = sizeOf(surface, coach);
         console.info(`prefix ${surface}, tournaments on: ${size.tools} tools = ${size.total}; own tools and rules ${size.own}`);
         // The flag adds get_tournaments, set_lineup and lock_lineup (about 420 tokens): the same brake, moved by what they weigh.
-        expect(size.own).toBeLessThan(12_500);
+        expect(size.own).toBeLessThan(12_720);
         expect(size.total).toBeLessThan(24_000);
       }
     } finally {

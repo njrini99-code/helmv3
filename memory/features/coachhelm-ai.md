@@ -888,7 +888,7 @@ replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
   `publish_artifact` and no `write_artifact`, `draft_message` or `draft_poll`. A player has 10, all reads. Tool
   definitions plus the whole cached policy are 21,870 tokens on Ask by characters / 4, and 22,284 with the flag on
   (26,063 before, measured the same way); `__tests__/registry-size.test.ts` is the measurement and holds three
-  lines: 12,000 for the registry's own tools and rules (11,997 on 10 Nov), 26,000 for the whole cached prefix, and
+  lines: 12,300 for the registry's own tools and rules (12,233 on 11 Nov), 26,000 for the whole cached prefix, and
   24,000 with the flag on, past which rarely used tasks are to be deferred behind tool search.
 - **The cached policy** is `policyBlock(surface)` in `chat/instructions.ts`: this file's rules (`rulesBlock`), then
   golf as the app measures it, then where things are in the data (`knowledgeBlocks` from `chat/knowledge/`), in that
@@ -936,6 +936,14 @@ replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
   surfaces, one for a player); `teamBlock(who)` has the team, its timezone and the roster with ids in a fixed order.
   Neither holds a date, a screen, the coach's notes or a count: those reach the model as a system message after the
   coach's message, and the policy tells it to expect them there. There are no output formats to parse.
+- **How long an answer is** (the prompt's "Answering", coach and player alike): the answer in the first sentence with
+  its figure, at most four sentences in all as one short paragraph (an offer of a next step is one of the four), more
+  only when the coach asks for more; no heading, table, bold or label with a colon at the start of a line; a list only
+  when a list or a ranking was asked for; nothing written before or between reads; a window shared by several figures
+  said once; every name as the roster or the read stores it, capitals included. Written after the first full eval run
+  (11 Nov 2026: 44 of 99 answers broke a writing rule, 30 of them by length and 13 with bold lead-ins, under the
+  earlier "answer, then at most three supporting points"). The size brake on the registry's own tools and rules is
+  12,300 (`__tests__/registry-size.test.ts`; Ask measures 12,233).
 - **Strict tool use** (`chat/strict-input.ts`): every registered tool's input is shown to the model as a closed
   object with every field required and optional fields nullable, with no length or range keywords; the tool's own
   zod schema validates behind it, so no bound is lost. A new tool needs only an ordinary zod object. That is
