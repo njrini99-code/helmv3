@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { cleanup, render } from '@testing-library/react';
+import postcss from 'postcss';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { tourFixture } from '../../../preview/fixtures-tournaments';
 import { PlayerEvent } from '../PlayerEvent';
@@ -11,6 +14,15 @@ vi.mock('@/app/golf/actions/tournaments-holes', () => ({ saveTournamentHole: vi.
 
 const fx = tourFixture('ready').player;
 const draw = (d: ChTourPlayerData, phone = false) => render(<PlayerEvent data={d} load="ready" phone={phone} />).container;
+
+const css = postcss.parse(readFileSync(join(import.meta.dirname, '../../../styles/tournaments-player.css'), 'utf8'));
+const decls = (selector: string) => {
+  const out: Record<string, string> = {};
+  css.walkRules((r) => {
+    if (r.selector === selector && r.parent?.type === 'root') r.walkDecls((d) => void (out[d.prop] = d.value));
+  });
+  return out;
+};
 
 afterEach(cleanup);
 
@@ -34,5 +46,36 @@ describe('the player’s Tournaments list · said once', () => {
   it('desktop: nothing sits between the title and the head’s rule', () => {
     const c = draw(fx.list);
     expect(c.querySelector('.ch-tour-head__t p')).toBeNull();
+  });
+});
+
+/**
+ * On a desktop "Played" lay on the bare canvas with its text 8px right of its own heading (the rows' 8px padding), beside
+ * a column whose card starts on its heading's edge. It is a table, the object a section keeps a card for: it sits on the
+ * reading sheet as Roster's list does, the sheet's edge on the heading's edge and its text 16 in, as the green card's is.
+ */
+describe('the player’s Tournaments list · Played is a table on the sheet', () => {
+  it('the table is the shared sheet', () => {
+    const table = draw(fx.list).querySelector('[role="table"]')!;
+    expect(table.classList.contains('ch-sheet')).toBe(true);
+    expect(table.classList.contains('ch-tour-pl-res')).toBe(true);
+  });
+
+  it('keeps the sheet’s face on the Ledger canopy, which flattens it elsewhere', () => {
+    expect(decls('.ch-tour-pl:not(.is-phone) .ch-tour-pl-res.ch-sheet')).toEqual({
+      'border-radius': 'var(--ch-radius-card)',
+      background: 'var(--ch-sheet-bg)',
+      'box-shadow': 'var(--ch-sheet-shadow)',
+    });
+  });
+
+  it('rows run the sheet’s width with Roster’s row: 64 tall, text 16 in, one hairline from that inset', () => {
+    const row = decls('.ch-tour-pl-res__row');
+    expect(row).toMatchObject({ 'min-height': '64px', padding: '8px 16px' });
+    expect(row['border-radius']).toBeUndefined();
+    expect(decls('.ch-tour-pl-res__row + .ch-tour-pl-res__row::before')).toMatchObject({ inset: '0 0 auto 16px', height: 'var(--ch-hairline-w)', background: 'var(--ch-separator)' });
+    expect(decls('.ch-tour-pl-res__row.is-head')).toMatchObject({ 'min-height': '0', 'padding-block': '12px' });
+    // The sheet has no inline padding of its own, so its edge is the heading's edge.
+    expect(decls('.ch-tour-pl-res').padding).toBeUndefined();
   });
 });

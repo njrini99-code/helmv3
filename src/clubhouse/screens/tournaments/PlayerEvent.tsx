@@ -232,14 +232,14 @@ function PlayedRows({ rows, href }: { rows: ChTourPlayerData['list']; href: (id:
 }
 
 /**
- * The events played on a desktop: the ledger's flush rows as a table of the player's own numbers, a column a round (as
- * many as the longest event has), then the total and the to-par. The event's name is the row's one link.
+ * The events played on a desktop: a table of the player's own numbers on the reading sheet, as Roster's list is, a column
+ * a round (as many as the longest event has), then the total and the to-par. The event's name is the row's one link.
  */
 function PlayedTable({ rows, href }: { rows: ChTourPlayerData['list']; href: (id: string) => string }) {
   const rounds = Math.max(1, ...rows.map((x) => x.days.length));
   const cols = Array.from({ length: rounds }, (_, i) => i + 1);
   return (
-    <SideScroll className="ch-tour-pl-res" role="table" aria-label="Events played" style={{ ['--ch-tour-pl-rounds' as string]: rounds }}>
+    <SideScroll className="ch-tour-pl-res ch-sheet" role="table" aria-label="Events played" style={{ ['--ch-tour-pl-rounds' as string]: rounds }}>
       <div className="ch-tour-pl-res__row is-head" role="row">
         <span role="columnheader">Event</span>
         {cols.map((n) => (

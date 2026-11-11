@@ -171,12 +171,20 @@
   white-space: normal;
 }
 
-/* The events played on a desktop: the season ledger's flush rows as the player's own numbers. The name is the row's one
-   link and its ::after the row's hit area; a column a round, then the total and the to-par, all right-aligned figures. */
+/* The events played on a desktop: the player's own numbers as a table on the reading sheet, built as Roster's list is:
+   the sheet's edge on the heading's edge, rows the sheet's width with their text 16 in, one hairline between rows from
+   that inset. The Ledger canopy flattens .ch-sheet for its flush sections (shell.css); a table is the object a Section
+   keeps a card for (ui/Section.tsx), so the sheet's own face is named again here. The name is the row's one link and its
+   ::after the row's hit area; a column a round, then the total and the to-par, all right-aligned figures. */
 .ch-tour-pl-res {
   display: flex;
   flex-direction: column;
   min-width: 0;
+}
+.ch-tour-pl:not(.is-phone) .ch-tour-pl-res.ch-sheet {
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-sheet-shadow);
 }
 .ch-tour-pl-res__row {
   position: relative;
@@ -184,25 +192,28 @@
   grid-template-columns: minmax(180px, 1fr) repeat(var(--ch-tour-pl-rounds, 3), 32px) 44px 48px 16px;
   gap: 12px;
   align-items: center;
-  padding: 12px 8px;
-  border-radius: var(--ch-radius-md);
+  min-height: 64px;
+  padding: 8px 16px;
 }
-/* The seam between two rows is a straight hairline of its own: drawn on the row, it would bend with the row's corners. */
-.ch-tour-pl-res__row:not(.is-head) + .ch-tour-pl-res__row::before {
+/* The last row's wash and focus ring follow the sheet's own corners. */
+.ch-tour-pl-res__row:last-child,
+.ch-tour-pl-res__row:last-child .ch-tour-pl-res__open::after {
+  border-radius: 0 0 var(--ch-radius-card) var(--ch-radius-card);
+}
+/* The seam between two rows, and under the labels, is a straight hairline of its own from the text's inset. */
+.ch-tour-pl-res__row + .ch-tour-pl-res__row::before {
   position: absolute;
-  inset: 0 0 auto;
+  inset: 0 0 auto 16px;
   height: var(--ch-hairline-w);
-  background: var(--ch-ledger-rule-soft);
+  background: var(--ch-separator);
   content: '';
 }
 .ch-tour-pl-res__row.is-head {
-  padding-top: 0;
-  padding-bottom: 8px;
-  border-radius: 0;
+  min-height: 0;
+  padding-block: 12px;
   font: var(--ch-type-13-medium);
   line-height: var(--ch-lead-label);
   color: var(--ch-text-secondary);
-  box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
 }
 .ch-tour-pl-res__row > .is-r {
   justify-self: end;
