@@ -365,3 +365,94 @@ E10. Off, each one field of `CHAT_FEATURES`: `taskBudgetTokens` (null: the guide
      at the default trigger, `dropStaleThinking`.
 
 E11. `data-app-link` and `data-coach-note` are in `REPLAYABLE` (`../restore.ts`), so both survive a reload (CONTEXT C2, C3).
+
+
+## 2026-11-10 (KNOWLEDGE): what TOOLS and ENGINE import from `../knowledge`
+
+K1. Two more blocks of the cached prompt, both byte-identical for every team, day and conversation (tests:
+    `knowledge/__tests__/golf-block.test.ts`, `data-map.test.ts`):
+    ```ts
+    import { knowledgeBlocks } from './knowledge';
+    knowledgeBlocks(surface: ChatSurface): { golf: string; dataMap: string }
+    ```
+    - `golf`: golf as this app measures it (a coach's text for `ask`, `quick_chat`, `practice_helper`; a player's for `player`).
+    - `dataMap`: where things are. A coach's lists what exists, which read answers which question, the exact tables and
+      columns of `query_team_data`, the status values and what is not recorded. A player's names no table.
+    Where they sit: inside the one-hour block, after the policy and before the team block:
+    `tools → policy → golf → dataMap → [1h breakpoint] → team → conversation`.
+    The smallest wiring, in `instructions.ts` (TOOLS), needs no engine change because `prompt.stable` is one block:
+    ```ts
+    const k = knowledgeBlocks(surface);
+    return { policy: [policyBlock(surface), k.golf, k.dataMap].join('\n\n'), team: teamBlock(who) };
+    ```
+    Neither block may be built per request from anything else: no date, name, count or flag goes in. The data map is
+    the same bytes with `golf_tournaments_v1` on or off (it names `get_tournaments` "only when tournaments are turned on").
+
+K2. Size, characters / 4: golf 3,165 (coach) / 2,917 (player); data map 3,655 (coach) / 686 (player). The new ceiling for
+    `__tests__/registry-size.test.ts` is 19,000 for tool definitions + policy + golf + data map: add
+    `knowledgeChars(surface)` (exported from `./knowledge`) to `toolChars + policyChars`. Measured on 10 Nov with the
+    tournaments flag ON: ask 19,636 (tools 11,177, policy 1,640), quick chat 19,145, player 7,494. So with the flag on
+    the coach surfaces are over by about 640; with it off (production) they should clear it. Levers, cheapest first:
+    (a) delete the policy's "Which read to use" list (about 250): the data map's "Which read answers which question"
+    replaces it and is checked against the registry; keep the policy's two sentences on the default window and on
+    calling independent reads together; (b) delete `get_reference`'s description of each topic's contents where the
+    data map says it; (c) the tool definitions themselves, which grew past the 12,000 they were measured at.
+
+K3. `get_reference` keeps its shape. `getGolfReference({ topic })` is still exported from `./golf-reference` and still
+    takes the model's `about`. New behaviour behind the same call: `about` may be one of the topic names the golf
+    block lists (`strokes_gained`, `what_moves_score`, `college_golf`, `course_management`, `lies_and_conditions`,
+    `holes_and_courses`, `pressure`, `improvement`), which returns that topic from its start with
+    `detail.more_in_this_topic`; any other words are searched as before. A miss returns `detail.topics` (and still
+    `detail.chapters`). The Tour tables of the research document are no longer served: a Tour or level figure comes
+    only from topic `standards`. Optional for TOOLS: change `about`'s description to "a topic name from the prompt, or
+    a few words". No schema change is needed.
+
+K4. A reader named in the data map must exist in the registry and a registry read must be in the map, or
+    `npm run coachhelm:data-map` refuses and `data-map.test.ts` fails. When TOOLS or CONTEXT adds a read tool: either
+    add a line to `READER_GUIDE` in `knowledge/data-map.source.ts` (it reads team data) or add its name to
+    `NOT_DATA_READERS` there (it does not), then run `npm run coachhelm:data-map`. When the allowlist gains a table,
+    `QUERY_TABLE_NOTES` needs its one line (it does not compile without it).
+
+K5. For TOOLS, from reading the readers against the screens (not fixed by KNOWLEDGE, the files are yours):
+    - `readers.ts` (qualifier board) prints `shortRounds` as "N short, ranked below full cards". `shortRounds` counts a
+      player's counted rounds that were not 18 holes (`src/clubhouse/screens/qualifiers/model.ts:220`). The rule the
+      board ranks by is `played < most rounds anyone has` (`src/lib/coachhelm/v3/qualifying/ranking.ts:54-57`).
+    - `get_rounds` prints the Rounds page's season line, which includes practice rounds; `get_season` leaves them out.
+      The golf block and the data map say `get_season` is the season figure. Either drop that line or word it
+      "all round kinds".
+
+## 2026-11-10 late (CONTEXT): `find_in_app` only where Clubhouse renders (ENGINE wires; TOOLS agrees)
+
+C7. Every address in the app map (`../context/app-map.ts`) is a Clubhouse page: Team Hub's tabs, Practice,
+`?view=ask`, the Settings sections. The stream route also serves Fairway's chat, where some of those addresses are a
+different page or a redirect. The registry cannot know which shell a team gets, so it keeps registering `find_in_app`
+for every coach and player (one list, stable bytes), and the route, which already knows, drops it by name before the
+request is built whenever Clubhouse is not on for that person, with the same check the page uses:
+```ts
+const tools = toolsFor(surface, ctx).filter((t) => clubhouseOn || t.name !== 'find_in_app');
+```
+That is two cached tool lists (with and without), each byte-stable. The same value decides whether `turnContext`'s
+screen is worth sending: its place names are the Clubhouse navigation's, so with Clubhouse off pass `null` for the
+screen and keep the date (`turnContext(supabase, ctx, clubhouseOn ? body.screen : null)`).
+Nothing else of CONTEXT's depends on the shell: the notes and the two event tasks are the same in both.
+
+## 2026-11-10 night (TOOLS), after KNOWLEDGE's blocks landed
+
+18. K1 is wired as K1 asks, one level down: `policyBlock(surface)` now returns the whole cached policy (rules, golf,
+    data map, joined by a blank line, built once per surface) and `instructionBlocks(surface, who).policy` is that
+    string. ENGINE changes nothing: `prompt.stable` is still one block. `rulesBlock(surface)` is the rules alone.
+19. Size, characters / 4, tournaments flag off (corrected after items 21 and 22): Ask and the practice helper 19,876
+    (tools 11,349, rules 1,707, golf and data map 6,820), quick chat 19,384, player 7,497. The whole-prefix ceiling in `registry-size.test.ts` is
+    21,000 by the lead's decision (K2's 19,000 is superseded); TOOLS's own tools and rules keep their 12,000 (11,836).
+    K2's lever (a) is taken: the rules no longer list which read answers which question and point at the data map.
+20. `find_in_app` stays registered for every coach and player. ENGINE drops it by name in the route when Clubhouse is
+    not on for the team (`isClubhouseForTeam`), which gives two byte-stable tool lists. Both policies read correctly
+    without it ("If you have find_in_app ... If you do not have it, name the screen in words").
+21. Task results: rule 4 of the coach's Tasks rules now names what the loop sends (`Committed`, `Partly done`,
+    `Failed`, and the three results that say nothing was written). No rule mentions a held result.
+22. Code (E8, `code_execution`): the coach's rules carry four sentences, worded "If you have code_execution", so the
+    prompt is the same bytes with `programmaticReads` on or off and reads correctly either way: use it when a question
+    spans many players or rounds or needs a calculation across several reads; for one player or one figure call the
+    read directly; never do arithmetic in the answer; a task is never called from code, the task tool is called
+    directly so the coach gets the card. The player's policy does not mention code. ENGINE: if the tool is offered
+    under another name than `code_execution`, or you need other words, say so here and TOOLS changes the sentences.

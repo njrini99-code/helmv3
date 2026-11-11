@@ -126,9 +126,12 @@ Registered for CONTEXT on top, always after every tool above so the cached order
 `save_note`, `remove_note` (end of the reads), `send_event_reminder`, `record_attendance` (end of the tasks); the player gets
 `find_in_app` only. That makes 43 on Ask (46 with the flag), 40 on quick chat, 10 for a player
 (16 before; `get_rounds` is not offered to a player, whose rounds come from their own Stats page).
-Tool definitions plus policy, characters / 4: 26,063 before. Now 13,023 on Ask (11,804 without CONTEXT's five), 12,532 on quick
-chat, 3,862 for a player. `__tests__/registry-size.test.ts` holds two ceilings: 12,000 for this file's own tools and rules,
-19,000 for the whole cached prefix (KNOWLEDGE's golf block and data map count toward it once `policyBlock` carries them).
+Tool definitions plus policy, characters / 4: 26,063 before. The whole cached prefix is now 19,876 on Ask (tools 11,349, this
+file's rules 1,707, KNOWLEDGE's golf block and data map 6,820), 19,384 on quick chat, 7,497 for a player (tournaments flag off).
+`__tests__/registry-size.test.ts` holds two ceilings: 12,000 for this file's own tools and rules (11,836 on Ask) and 21,000 for
+the whole prefix. Which read answers which question is no longer in the rules: the data map's reader guide says it and is
+checked against this registry (`knowledge/__tests__/data-map.test.ts`), so a new or renamed read tool must be added to
+`knowledge/data-map.source.ts` and the map regenerated (`npm run coachhelm:data-map`).
 
 ## 3. App actions that already have a task tool
 

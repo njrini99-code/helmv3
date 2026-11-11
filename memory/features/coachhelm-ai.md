@@ -743,9 +743,16 @@ replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
   `chat/context/**` and `chat/tasks/**`, always last in their group), the same list on the Ask tab and in
   the practice helper so they share one cached prefix; quick chat has `send_message` in place of `publish_artifact`
   and no `write_artifact`, `draft_message` or `draft_poll`. A player has 10, all reads. Tool definitions plus the
-  policy are 13,023 tokens on Ask by characters / 4 (26,063 before, measured the same way);
+  whole cached policy are 19,876 tokens on Ask by characters / 4 (26,063 before, measured the same way);
   `__tests__/registry-size.test.ts` is the measurement and holds two ceilings: 12,000 for the registry's own tools
-  and rules (11,804 today) and 19,000 for the whole cached prefix.
+  and rules (11,836 today) and 21,000 for the whole cached prefix.
+- **The cached policy** is `policyBlock(surface)` in `chat/instructions.ts`: this file's rules (`rulesBlock`), then
+  golf as the app measures it, then where things are in the data (`knowledgeBlocks` from `chat/knowledge/`), in that
+  order and the same bytes for every team and day. The rules do not list which read answers which question; the
+  data map does. For a coach they say when to work in code (`code_execution`, offered by the engine behind
+  `CHAT_FEATURES.programmaticReads`): a question across many players or rounds, or a calculation across reads;
+  otherwise the read is called directly, and a task is never called from code. The sentences are worded "if you
+  have", so the bytes are the same with the switch on or off. `teamBlock(who)` follows it: the team, its timezone, when a season runs, the roster with ids.
 - **One number, one source.** `get_player_stats`, `get_team_stats`, `get_rounds`, `get_season` and `get_qualifiers`
   (`chat/readers.ts`), and `get_round` and `get_tournaments` (`chat/readers-direct.ts`), do not compute their
   figures: they call the Clubhouse screen's own loader for the window asked
@@ -804,10 +811,45 @@ replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
   `getTeamMetricRanking` feeds the level comparison in `get_reference`, and `getTeamStrokesGained` is the Clubhouse
   practice home's. A course is the one read with no screen behind it: the Course page's loader is one player's
   history, so the team's scoring by hole for a course stays the chat's own read (`getCourse`).
+- Putting by distance (`get_player_stats` section putting, `get_team_stats` with putting): a band nobody putted from
+  is written "no attempts" with a null rate, never 0 of 0 or 0%; a band putted from and never holed is a real 0%.
 - A document published to the team (`publish_artifact`) says on its card, before Confirm, "Players on <team> will be
   able to see this" with the active player count.
 - Tests: `chat/__tests__/registry-readers.test.ts`, `registry-tasks.test.ts`, `registry-size.test.ts`,
   `instructions.test.ts`, `strict-input.test.ts`, `grounding-fixtures.test.ts`.
+
+### CoachHelm chat: what it knows (golf, and where things are) (2026-11-10)
+
+The model is small, so what it knows about golf and about the team's data is written into the cached prompt, not left
+behind a tool. `src/lib/coachhelm/v3/chat/knowledge/` owns it; `knowledgeBlocks(surface)` returns two strings that
+are byte-identical for every team, day and conversation and sit after the policy inside the one-hour cache block
+(`tools → policy → golf → data map → team`). The wiring into `instructions.ts` is described in
+`chat/engine/CONTRACT_NOTES.md` (K1 to K5).
+
+- **Golf** (`knowledge/golf.ts`): what each figure means and which way is good, how the figures relate, college
+  golf, from a number to something to do, where to be careful, and what the assistant does not do (a swing or body
+  diagnosis, medical advice, a label on a player, a promise, a figure from memory). It states this app's own
+  definitions: strokes gained against Tour level by the team's gender, a counted round, the windows, the season from
+  1 August, which figures need hole-by-hole scoring or logged shots, how a qualifier is ranked, how team figures pool.
+  `knowledge/SOURCES.md` gives the `file:line` behind each and lists every place the app defines one thing two ways;
+  `knowledge/__tests__/app-definitions.test.ts` fails when the code and the text part ways. It contains no benchmark,
+  Tour average or "good" threshold (`golf-block.test.ts` guards it): every figure comes from a read.
+- **The data map** (`knowledge/data-map.generated.ts`, GENERATED: `npm run coachhelm:data-map`, never hand-edited):
+  what exists, which read answers which question, the exact tables and columns of `query_team_data`, what the status
+  values mean, and what is not recorded. Built by `scripts/coachhelm/gen-data-map.ts` from `database.ts`, the
+  allowlist and the registry, with the plain meanings in `knowledge/data-map.source.ts`. It names no table outside
+  the allowlist and no column outside its table's list, and it is the same bytes with the tournaments flag on or
+  off. A player's map names no table and nothing about the team. `data-map.test.ts` recomputes it and fails when a
+  named table, column, status value or read is gone, or when the registry gains a read the map does not explain.
+- **The on-demand reference** (`get_reference`, topic golf) is served by topic (`knowledge/reference-topics.ts`), and
+  the prompt names the topics. The research document's men's Tour tables are withheld (a Tour or level figure comes
+  only from topic standards, which uses the team's own tour), as are sections with unsourced college figures, vendor
+  claims and a body-and-swing causal chain; four unsourced sentences are cut from sections that are otherwise served.
+- **The golf-sense eval** (`knowledge/eval/golf-sense.json`): sixty questions with what a correct answer must and must
+  not state and which reads it should use, in the shape `scripts/coachhelm/ask-eval.mjs` scores. Not yet run: a run
+  is a live spend against staging and needs the owner's approval.
+- When a read tool is added, renamed or removed, or the allowlist changes: update `data-map.source.ts` and run
+  `npm run coachhelm:data-map`.
 
 ### Coach chat read tools: whole-team reads (2026-10-25)
 

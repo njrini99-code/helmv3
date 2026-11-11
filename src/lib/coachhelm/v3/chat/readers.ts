@@ -90,6 +90,13 @@ export function gapsToTeam(rows: readonly StatsComparisonRow[]): Array<{ label: 
     .map(({ weight: _weight, ...rest }) => rest);
 }
 
+/**
+ * One distance band in words. A band nobody putted from is "no attempts": it has no make rate, and is never written as 0 of 0 or 0%, which
+ * reads as a player who missed everything from there.
+ */
+const bandWords = (b: { label: string; made: number; attempts: number; bench: number | null }): string =>
+  b.attempts > 0 ? `${b.label} ${b.made} of ${b.attempts} (${round((b.made / b.attempts) * 100, 0)}%${b.bench === null ? '' : `, Tour ${round(b.bench, 0)}%`})` : `${b.label} no attempts`;
+
 const SECTIONS = ['rounds', 'putting', 'approach', 'holes'] as const;
 type Section = (typeof SECTIONS)[number];
 const ROUNDS_LISTED = 20;
@@ -119,7 +126,7 @@ function playerLines(page: PlayerStatsScreen, name: string, window: StatsWindow,
       // The shape the putting block of a visual draws (visuals/compile-composition.ts).
       detail.profile = { buckets: page.puttBands.map((b) => ({ id: slug(b.label), label: b.label, attempts: b.attempts, made: b.made, rate: b.attempts ? round((b.made / b.attempts) * 100, 1) : null })) };
       detail.putt_bands = page.puttBands.map((b) => ({ band: b.label, made: b.made, attempts: b.attempts, make_pct: b.attempts ? round((b.made / b.attempts) * 100, 0) : null, tour_pct: b.bench }));
-      lines.push(`Putting by distance (made of attempts): ${page.puttBands.map((b) => `${b.label} ${b.made} of ${b.attempts}${b.attempts ? ` (${round((b.made / b.attempts) * 100, 0)}%${b.bench === null ? '' : `, Tour ${round(b.bench, 0)}%`})` : ''}`).join('; ')}.`);
+      lines.push(`Putting by distance (made of attempts): ${page.puttBands.map(bandWords).join('; ')}.`);
     }
   }
   if (sections.includes('approach')) {
@@ -306,7 +313,7 @@ async function runTeamStats(ctx: ToolContext, input: TeamStatsInput): Promise<To
       detail.kind = 'putt_profile';
       detail.profile = { buckets: page.putting.bands.map((b) => ({ id: slug(b.label), label: b.label, attempts: b.attempts, made: b.made, rate: b.attempts ? round((b.made / b.attempts) * 100, 1) : null })) };
       detail.putt_bands = page.putting.bands.map((b) => ({ band: b.label, made: b.made, attempts: b.attempts, make_pct: b.attempts ? round((b.made / b.attempts) * 100, 0) : null, tour_pct: b.bench }));
-      lines.push(`Team putting by distance (made of attempts, ${page.putting.putts} putts): ${page.putting.bands.map((b) => `${b.label} ${b.made} of ${b.attempts}${b.attempts ? ` (${round((b.made / b.attempts) * 100, 0)}%${b.bench === null ? '' : `, Tour ${round(b.bench, 0)}%`})` : ''}`).join('; ')}.`);
+      lines.push(`Team putting by distance (made of attempts, ${page.putting.putts} putts): ${page.putting.bands.map(bandWords).join('; ')}.`);
     }
   }
   if (page.bests.length) {

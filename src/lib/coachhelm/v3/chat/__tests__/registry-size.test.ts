@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import type { CoachChatContext } from '../context';
 import type { ChatSurface, ChatTool, PlayerChatContext } from '../engine/tool';
-import { policyBlock } from '../instructions';
+import { policyBlock, rulesBlock } from '../instructions';
 import { toolsFor } from '../registry';
 
 vi.mock('server-only', () => ({}));
@@ -26,16 +26,18 @@ function sizeOf(surface: ChatSurface, who: CoachChatContext | PlayerChatContext)
   const toolChars = chars(tools);
   const ownChars = chars(tools.filter((t) => !REGISTERED_FOR_OTHERS.has(t.name)));
   const policyChars = policyBlock(surface).length;
-  return { tools: tools.length, toolTokens: tokens(toolChars), policyTokens: tokens(policyChars), total: tokens(toolChars + policyChars), own: tokens(ownChars + policyChars), largest: tools.map((t) => [t.name, tokens(definition(t).length)] as const).sort((a, b) => b[1] - a[1]).slice(0, 3) };
+  const rulesChars = rulesBlock(surface).length;
+  return { tools: tools.length, toolTokens: tokens(toolChars), policyTokens: tokens(policyChars), total: tokens(toolChars + policyChars), rulesTokens: tokens(rulesChars), own: tokens(ownChars + rulesChars), largest: tools.map((t) => [t.name, tokens(definition(t).length)] as const).sort((a, b) => b[1] - a[1]).slice(0, 3) };
 }
 
 /**
  * The cached prefix is the tool definitions followed by the policy. Measured the same way (characters / 4, the engine's own schema
  * conversion) the previous stack was 26,063 with its 71 tools and tournaments on; the route's own note called it 39k in real tokens.
  *
- * Two ceilings. The tools this file's owner wrote, with the rules, stay under the original 12,000: that is what keeps a new tool or a long
- * description from quietly undoing the work. Everything cached (those, the tools registered for CONTEXT, and the whole policy) stays under
- * the owner's 19,000; KNOWLEDGE's golf block and data map count toward it from the day `policyBlock` carries them.
+ * Two ceilings. The tools this file's owner wrote, with the rules (`rulesBlock`), stay under the original 12,000: that is what keeps a new
+ * tool or a long description from quietly undoing the work. Everything cached (those, the tools registered for CONTEXT, and the whole
+ * policy with KNOWLEDGE's golf block and data map) stays under 21,000 (owner, 10 Nov: the model must know golf and where things are, and
+ * a cached prefix is nearly free on this model).
  */
 describe('the cached prefix: tool definitions and policy', () => {
   it.each([
@@ -43,11 +45,11 @@ describe('the cached prefix: tool definitions and policy', () => {
     ['practice_helper', coach],
     ['quick_chat', coach],
     ['player', player],
-  ] as const)('%s stays under 19,000 tokens, and its own tools and rules under 12,000', (surface, who) => {
+  ] as const)('%s stays under 21,000 tokens, and its own tools and rules under 12,000', (surface, who) => {
     const size = sizeOf(surface, who);
-    console.info(`prefix ${surface}: ${size.tools} tools, ${size.toolTokens} tokens of definitions + ${size.policyTokens} of policy = ${size.total} (${size.own} without the tools registered for CONTEXT); largest ${size.largest.map(([n, t]) => `${n} ${t}`).join(', ')}`);
+    console.info(`prefix ${surface}: ${size.tools} tools, ${size.toolTokens} tokens of definitions + ${size.policyTokens} of policy (${size.rulesTokens} of rules, the rest golf and the data map) = ${size.total}; own tools and rules ${size.own}; largest ${size.largest.map(([n, t]) => `${n} ${t}`).join(', ')}`);
     expect(size.own).toBeLessThan(12_000);
-    expect(size.total).toBeLessThan(19_000);
+    expect(size.total).toBeLessThan(21_000);
   });
 
   it('the Ask tab and the practice helper send the same definitions, so they share one cache entry', () => {
