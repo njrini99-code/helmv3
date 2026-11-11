@@ -57,6 +57,7 @@ import {
   isMajor,
   openTimes,
   rangeLabel,
+  startLabel,
   replyLock,
   rsvpCounts,
   type ChCalEvent,
@@ -293,10 +294,18 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
                 <span className="ch-in__ic is-ok">
                   <Icon icon={MailQuestion} size={14} />
                 </span>
+                {/* Beside a clash the player's row says what it asks in words, as the coach's does ("1 reply pending"):
+                    the event and its time alone left the ask to the glyph. The event follows with its day and its start,
+                    on one line as the coach's is (the full range is in the event it opens). Under "Needs your reply"
+                    the heading has already said it, and the row stays the event. */}
                 <span style={{ minWidth: 0 }}>
-                  <b>{role === 'coach' ? `${plural(pending.length, 'reply', 'replies')} pending` : e.title}</b>
+                  <b>{role === 'coach' ? `${plural(pending.length, 'reply', 'replies')} pending` : weekOverlaps.length ? 'Reply needed' : e.title}</b>
                   <span>
-                    {role === 'coach' ? `${e.title} · ${pending.length <= 2 ? pending.map((p) => first(people.get(p)?.name)).join(', ') : `${dowOf(e.date)} ${dayNum(e.date)}`}` : `${dowOf(e.date)} ${dayNum(e.date)} · ${rangeLabel(e, clock)}`}
+                    {role === 'coach'
+                      ? `${e.title} · ${pending.length <= 2 ? pending.map((p) => first(people.get(p)?.name)).join(', ') : `${dowOf(e.date)} ${dayNum(e.date)}`}`
+                      : weekOverlaps.length
+                        ? `${e.title} · ${dowOf(e.date)} ${dayNum(e.date)} · ${startLabel(e, true, clock)}`
+                        : `${dowOf(e.date)} ${dayNum(e.date)} · ${rangeLabel(e, clock)}`}
                   </span>
                 </span>
                 <Icon icon={ChevronRight} size={14} />
