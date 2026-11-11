@@ -5,25 +5,28 @@ import { holeRounds } from './round-scope';
 import { countsForScoring, groupByPlayer, loadSeasonRounds, seasonStartDate, type ChRound } from './season';
 import { loadSince, practiceCut, roundsInFilter } from './stats-common';
 import { filterFor, type ChFilter } from './stats-filter';
-import { sgOver } from './stats-weight';
+import { teamStrokesGained } from './stats-team-sg';
 
 /**
- * The team's strokes gained per round, the one calculation Team Stats' cards, Home's four parts and CoachHelm's Ask read share (QA-1):
- * each player's rounds in the filter's window (`roundsInFilter`, per player, so "Last 10" is every player's newest ten), practice
- * left out as Stats leaves it, the rounds with their holes pooled, and the mean of the stored per-round legs per 18 holes, null
- * under the floor of three whole rounds. Pure over the rounds, so a page and Ask can differ only by the window they name.
+ * The team's strokes gained per round, the one calculation Team Stats' cards, Home's four parts, CoachHelm Team and CoachHelm's Ask
+ * read share (QA-1): each player's rounds in the filter's window (`roundsInFilter`, per player, so "Last 10" is every player's newest
+ * ten), practice left out as Stats leaves it, then `teamStrokesGained` (data/stats-team-sg.ts) over the rounds with their holes: only
+ * the players with three whole rounds that have strokes gained count, their rounds pooled per 18 holes. This used to pool every round
+ * with no per-player floor, so a player's first tracked round or two moved Ask's figure and not Team Stats'. `rounds` and `players` are
+ * the rounds and players the figure rests on. Pure over the rounds, so a page and Ask can differ only by the window they name.
  */
 export function teamStrokesGainedOver(rounds: readonly ChRound[], playerIds: readonly string[], f: ChFilter, seasonStart: string): TeamSgFigures {
   const scoring = practiceCut(f) ? rounds.filter(countsForScoring) : [...rounds];
   const byPlayer = groupByPlayer(scoring);
   const window: ChRound[] = [];
   for (const id of playerIds) window.push(...roundsInFilter(byPlayer.get(id) ?? [], f, seasonStart));
-  const holes = holeRounds(window);
-  const dates = holes.map((r) => r.round_date.slice(0, 10)).sort();
+  const sg = teamStrokesGained(holeRounds(window), playerIds);
+  const read = holeRounds(window).filter((r) => sg.ready.has(r.player_id) && r.strokes_gained_total != null);
+  const dates = read.map((r) => r.round_date.slice(0, 10)).sort();
   return {
-    legs: sgOver(holes).legs,
-    rounds: holes.length,
-    players: new Set(holes.map((r) => r.player_id)).size,
+    legs: { tee: sg.legs[0], approach: sg.legs[1], around: sg.legs[2], putting: sg.legs[3] },
+    rounds: sg.rounds,
+    players: sg.ready.size,
     window_start: dates[0] ?? null,
     window_end: dates[dates.length - 1] ?? null,
   };

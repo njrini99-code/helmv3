@@ -24,6 +24,11 @@ import { boardRoundsWords, stationsOfTeamSg, STATIONS } from '../coachhelm-team-
 import { fileSgSource, FILE_TEAM_FLOOR, toChFileSgOver } from '../coachhelm-file-shape';
 import { lastTenRounds, playerStrokesGained, roundsForFigures } from '../figure-window';
 import { teamLastTenStrokesGained, teamStrokesGained } from '../stats-team-sg';
+import { teamStrokesGainedOver } from '../team-sg';
+import { teamFiguresOver } from '../player-figures';
+import { sgOver } from '../stats-weight';
+import { practiceCut, roundsInFilter } from '../stats-common';
+import { countsForScoring } from '../season';
 import { holeRounds } from '../round-scope';
 import type { ChRound } from '../season';
 import { PREVIEW_TEAM_STATS, PREVIEW_PLAYER } from '../../preview/fixtures-stats';
@@ -132,6 +137,51 @@ describe('a team’s strokes gained is one figure on Team stats and on CoachHelm
     expect(board).toMatch(/stationsOfTeamSg\(teamSg\)/);
     expect(board).not.toMatch(/teamTotalOf\(/);
     expect(board).not.toMatch(/stationFigures\(list\)/);
+  });
+});
+
+describe('CoachHelm’s Ask states Team stats’ team strokes gained (SOURCES.md B1)', () => {
+  // Ask reads `loadTeamStrokesGained` (-> `teamStrokesGainedOver`) and `teamFiguresOver`. Both used to pool every round in the window
+  // with no per-player floor, so Di's two rounds (-9 each) moved what the assistant said and not what Team stats printed.
+  const SEASON = day(200);
+  const f = filterFor('last10');
+
+  it('the four legs, the rounds and the players are Team stats’, with a player under the floor on the roster', async () => {
+    const team = await stats();
+    const ask = teamStrokesGainedOver(loaded, IDS, f, SEASON);
+    expect([ask.legs.tee, ask.legs.approach, ask.legs.around, ask.legs.putting].map((v) => v!.toFixed(9))).toEqual(team.legTotals.map((v) => v!.toFixed(9)));
+    expect(ask.rounds).toBe(team.sgRounds);
+    expect(ask.players).toBe(5);
+
+    const figures = teamFiguresOver(loaded, IDS, f, SEASON);
+    expect(figures.sg_total).toBeCloseTo(team.figures.find((x) => x.key === 'sg')!.value!, 9);
+    expect(figures.sg_rounds).toBe(team.sgRounds);
+    expect(figures.legs).toEqual(ask.legs);
+  });
+
+  it('the old pooling, every round with no per-player floor, gives another number over the same rounds', () => {
+    const scoring = practiceCut(f) ? loaded.filter(countsForScoring) : loaded;
+    const window = IDS.flatMap((id) => roundsInFilter(scoring.filter((r) => r.player_id === id), f, SEASON));
+    const old = sgOver(holeRounds(window));
+    const ask = teamFiguresOver(loaded, IDS, f, SEASON);
+    // Far enough apart that a return to the old sum cannot pass as rounding.
+    expect(Math.abs(old.total! - ask.sg_total!)).toBeGreaterThan(0.3);
+    expect(Math.abs(old.legs.approach! - ask.legs.approach!)).toBeGreaterThan(0.1);
+  });
+
+  it('a team with nobody at the floor has no figure, however many rounds the roster has between them', () => {
+    const thin = ['a', 'b', 'c'].flatMap((id) => [0, 1].map((i) => round(id, i, -1))) as unknown as ChRound[];
+    const ask = teamStrokesGainedOver(thin, ['a', 'b', 'c'], f, SEASON);
+    expect(ask.legs).toEqual({ tee: null, approach: null, around: null, putting: null });
+    expect(ask.rounds).toBe(0);
+    expect(ask.players).toBe(0);
+    expect(teamFiguresOver(thin, ['a', 'b', 'c'], f, SEASON).sg_total).toBeNull();
+  });
+
+  it('both of Ask’s loaders call the one function and no longer pool for themselves', () => {
+    expect(src('data/team-sg.ts')).toMatch(/teamStrokesGained\(holeRounds\(window\), playerIds\)/);
+    expect(src('data/team-sg.ts')).not.toMatch(/sgOver\(/);
+    expect(src('data/player-figures.ts')).toMatch(/teamStrokesGained\(holeRounds\(window\), playerIds\)/);
   });
 });
 

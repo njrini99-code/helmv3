@@ -7,6 +7,7 @@ import { bandPutts, loadPutts, loadSince, practiceCut, roundsInFilter, type ChPu
 import { DETAIL_MAX_ROUNDS } from './stats-player';
 import { filterFor, type ChFilter } from './stats-filter';
 import { summarizeWindow, weightedMean } from './stats-weight';
+import { teamStrokesGained } from './stats-team-sg';
 
 /**
  * One player's scoring, putts and strokes gained for a window, the figures Stats prints for it (QA-1): the player's rounds in the
@@ -71,14 +72,23 @@ export function playerFiguresOver(rounds: readonly ChRound[], f: ChFilter, seaso
 /**
  * The team's figures for a window, the way Team Stats pools them: each player's rounds in the filter (so "Last 10" is every player's newest ten),
  * practice left out as Stats leaves it, all those rounds pooled, and the same calculation a player's own figures use over the pool. Its strokes
- * gained legs are `teamStrokesGainedOver`'s (the same rounds through the same `sgOver`), so Ask's team value is the number Stats prints.
+ * gained is `teamStrokesGained`'s (the function Team Stats, CoachHelm Team and `teamStrokesGainedOver` call), so Ask's team value is the number Stats prints.
  */
 export function teamFiguresOver(rounds: readonly ChRound[], playerIds: readonly string[], f: ChFilter, seasonStart: string): PlayerFigures & { players: number } {
   const scoring = practiceCut(f) ? rounds.filter(countsForScoring) : [...rounds];
   const byPlayer = groupByPlayer(scoring);
   const window: ChRound[] = [];
   for (const id of playerIds) window.push(...roundsInFilter(byPlayer.get(id) ?? [], f, seasonStart));
-  return { ...figuresOfWindow(window), players: new Set(holeRounds(window).map((r) => r.player_id)).size };
+  // Strokes gained is the one team figure (`teamStrokesGained`): only the players with three rounds that have it count, as on Team
+  // Stats. Scoring, putts and the rates stay every round's, pooled, which is Team Stats' rule for those.
+  const sg = teamStrokesGained(holeRounds(window), playerIds);
+  return {
+    ...figuresOfWindow(window),
+    sg_total: sg.total,
+    sg_rounds: sg.rounds,
+    legs: { tee: sg.legs[0], approach: sg.legs[1], around: sg.legs[2], putting: sg.legs[3] },
+    players: new Set(holeRounds(window).map((r) => r.player_id)).size,
+  };
 }
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
