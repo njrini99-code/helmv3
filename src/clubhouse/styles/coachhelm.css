@@ -7,7 +7,9 @@
   gap: var(--ch-gap-section);
   max-width: var(--ch-measure-page);
   margin: 0 auto;
-  padding: var(--ch-page-top-coachhelm) var(--ch-page-gutter) var(--ch-page-bottom);
+  /* The top follows the page head top (the role line is 4px shorter than the eyebrow), as the desktop sheet's own top
+     below does, so a page with no shell head (the read) opens on one line by day and by night. */
+  padding: var(--ch-page-top-eyebrow-short-4) var(--ch-page-gutter) var(--ch-page-bottom);
   color: var(--ch-text-primary);
 }
 .ch-hl.is-phone {
