@@ -1753,3 +1753,11 @@ GRANT ALL ON FUNCTION "public"."golf_player_next_class"("p_team_id" "uuid", "p_p
 REVOKE ALL ON FUNCTION "public"."golf_search_messages"("p_query" "text", "p_conversation_id" "uuid", "p_limit" integer) FROM PUBLIC, "anon";
 GRANT ALL ON FUNCTION "public"."golf_search_messages"("p_query" "text", "p_conversation_id" "uuid", "p_limit" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."golf_search_messages"("p_query" "text", "p_conversation_id" "uuid", "p_limit" integer) TO "service_role";
+
+-- Ask level comparison (HELD 20261108100000): the division cohort
+REVOKE ALL ON FUNCTION "public"."college_level_of"("p_division" "text") FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."college_level_of"("p_division" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."college_level_of"("p_division" "text") TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."refresh_division_cohort"() FROM PUBLIC, "anon", "authenticated";
+GRANT ALL ON FUNCTION "public"."refresh_division_cohort"() TO "service_role";

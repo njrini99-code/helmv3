@@ -314,3 +314,6 @@ COMMENT ON TABLE "public"."golf_tournaments" IS 'P016 Tournaments (D-81): one to
 
 -- Messages v2 package M, M5 (HELD 20261031150000)
 COMMENT ON TABLE "public"."golf_conversation_pins" IS 'Clubhouse Messages pins, per person per team, in order (position 0 first). Private: only the owner reads them; every write goes through golf_pin_conversation and golf_reorder_conversation_pins.';
+
+-- Ask level comparison (HELD 20261108100000): the division cohort
+COMMENT ON TABLE "public"."golf_division_cohort" IS 'Mean of golf_player_standing.player_value over the players on Helm at one college level and gender, one row per metric, only for cohorts of 8 or more. Aggregates only: no player column. Rebuilt by refresh_division_cohort().';

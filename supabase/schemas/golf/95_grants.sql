@@ -782,3 +782,7 @@ GRANT ALL ON TABLE "public"."golf_class_hold_dirty" TO "service_role";
 -- Messages v2 package M, M5 (HELD 20261031150000)
 GRANT SELECT ON TABLE "public"."golf_conversation_pins" TO "authenticated";
 GRANT ALL ON TABLE "public"."golf_conversation_pins" TO "service_role";
+
+-- Ask level comparison (HELD 20261108100000): the division cohort
+GRANT SELECT ON TABLE "public"."golf_division_cohort" TO "authenticated";
+GRANT ALL ON TABLE "public"."golf_division_cohort" TO "service_role";

@@ -1384,3 +1384,6 @@ CREATE POLICY "golf_trm_select" ON "public"."golf_tournament_result_marks" FOR S
 
 -- Messages v2 package M, M5 (HELD 20261031150000)
 CREATE POLICY "golf_conversation_pins_select_own" ON "public"."golf_conversation_pins" FOR SELECT TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+-- Ask level comparison (HELD 20261108100000): the division cohort
+CREATE POLICY "golf_division_cohort_read" ON "public"."golf_division_cohort" FOR SELECT TO "authenticated" USING (true);

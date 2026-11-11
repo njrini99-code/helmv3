@@ -15909,3 +15909,112 @@ BEGIN
 END $$;
 
 ALTER FUNCTION "public"."golf_search_messages"("p_query" "text", "p_conversation_id" "uuid", "p_limit" integer) OWNER TO "postgres";
+
+-- Ask level comparison (HELD 20261108100000): the division cohort
+CREATE OR REPLACE FUNCTION "public"."college_level_of"("p_division" "text") RETURNS "text"
+    LANGUAGE "sql" IMMUTABLE PARALLEL SAFE
+    SET "search_path" TO 'public'
+    AS $_$
+  SELECT CASE
+    WHEN p_division IS NULL THEN NULL
+    -- Another association's divisions (NAIA, junior college) have no
+    -- published college level.
+    WHEN lower(p_division) ~ '(naia|njcaa|juco|junior|ccca|cccaa|nccaa)'
+      THEN NULL
+    ELSE (
+      SELECT CASE m[1]
+        WHEN '1' THEN 'd1'
+        WHEN 'i' THEN 'd1'
+        WHEN '2' THEN 'd2'
+        WHEN 'ii' THEN 'd2'
+        WHEN '3' THEN 'd3'
+        WHEN 'iii' THEN 'd3'
+      END
+      FROM (
+        SELECT COALESCE(
+          -- "d1", "NCAA D1", "NCAA Division III", "div 2", "D-II"
+          regexp_match(
+            lower(p_division),
+            '(?:division|div|d)[\s._-]*(iii|ii|i|1|2|3)(?![a-z0-9])'
+          ),
+          -- a bare "1" / "iii"
+          regexp_match(btrim(lower(p_division)), '^(iii|ii|i|1|2|3)$')
+        ) AS m
+      ) x
+    )
+  END
+$_$;
+
+ALTER FUNCTION "public"."college_level_of"("p_division" "text") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."college_level_of"("p_division" "text") IS 'The college level of a division string: d1, d2, d3, or NULL (NAIA, junior college, unset). SQL twin of levelFromDivision() in src/lib/coachhelm/v3/chat/benchmark-reads.ts.';
+
+CREATE OR REPLACE FUNCTION "public"."refresh_division_cohort"() RETURNS integer
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  -- One instant for the whole run. Every row this run writes carries it, so
+  -- any row that carries another instant was left by an earlier run. It is
+  -- the wall clock, not now(): now() is the transaction's start, which is
+  -- earlier than any clock reading taken inside the transaction, and a row
+  -- stamped with it would look older than the run that wrote it.
+  v_run timestamptz := clock_timestamp();
+  v_rows integer;
+BEGIN
+  WITH team_level AS (
+    SELECT t.id AS team_id,
+           COALESCE(t.gender, 'mens') AS gender,
+           -- The newest season row's division; failing that, the program's
+           -- division (as Ask reads it).
+           COALESCE(
+             public.college_level_of((
+               SELECT ts.division
+               FROM public.golf_team_seasons ts
+               WHERE ts.team_id = t.id
+               ORDER BY ts.season DESC
+               LIMIT 1
+             )),
+             public.college_level_of(o.division)
+           ) AS level
+    FROM public.golf_teams t
+    LEFT JOIN public.organizations o ON o.id = t.organization_id
+  ),
+  members AS (
+    SELECT DISTINCT tm.player_id, tl.gender, tl.level
+    FROM public.golf_team_members tm
+    JOIN team_level tl ON tl.team_id = tm.team_id
+    WHERE tm.status = 'active'::team_member_status
+      AND tl.level IS NOT NULL
+      AND tl.gender IN ('mens', 'womens')
+  ),
+  agg AS (
+    SELECT m.gender,
+           m.level,
+           s.metric_id,
+           AVG(s.player_value) AS cohort_avg,
+           COUNT(DISTINCT s.player_id) AS cohort_n
+    FROM members m
+    JOIN public.golf_player_standing s ON s.player_id = m.player_id
+    GROUP BY m.gender, m.level, s.metric_id
+    HAVING COUNT(DISTINCT s.player_id) >= 8
+  )
+  INSERT INTO public.golf_division_cohort AS c
+    (gender, level, metric_id, cohort_avg, cohort_n, computed_at)
+  SELECT gender, level, metric_id, cohort_avg, cohort_n, v_run FROM agg
+  ON CONFLICT (gender, level, metric_id) DO UPDATE
+  SET cohort_avg = EXCLUDED.cohort_avg,
+      cohort_n = EXCLUDED.cohort_n,
+      computed_at = EXCLUDED.computed_at;
+  GET DIAGNOSTICS v_rows = ROW_COUNT;
+
+  -- A cohort that fell under the floor (or lost its level) was not written by
+  -- this run, so its row still carries an earlier run's instant: remove it.
+  DELETE FROM public.golf_division_cohort WHERE computed_at <> v_run;
+  RETURN v_rows;
+END;
+$$;
+
+ALTER FUNCTION "public"."refresh_division_cohort"() OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."refresh_division_cohort"() IS 'Rebuilds golf_division_cohort from golf_player_standing: writes this run''s cohorts and removes every row an earlier run left. Runs with its owner''s rights (search_path pinned); service role only. Call after the standing refresh.';

@@ -2690,3 +2690,18 @@ CREATE TABLE IF NOT EXISTS "public"."golf_conversation_pins" (
 );
 
 ALTER TABLE "public"."golf_conversation_pins" OWNER TO "postgres";
+
+-- Ask level comparison (HELD 20261108100000): the division cohort
+CREATE TABLE IF NOT EXISTS "public"."golf_division_cohort" (
+    "gender" "text" NOT NULL,
+    "level" "text" NOT NULL,
+    "metric_id" "text" NOT NULL,
+    "cohort_avg" numeric NOT NULL,
+    "cohort_n" bigint NOT NULL,
+    "computed_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_division_cohort_cohort_n_check" CHECK (("cohort_n" >= 8)),
+    CONSTRAINT "golf_division_cohort_gender_check" CHECK (("gender" = ANY (ARRAY['mens'::"text", 'womens'::"text"]))),
+    CONSTRAINT "golf_division_cohort_level_check" CHECK (("level" = ANY (ARRAY['d1'::"text", 'd2'::"text", 'd3'::"text"])))
+);
+
+ALTER TABLE "public"."golf_division_cohort" OWNER TO "postgres";
