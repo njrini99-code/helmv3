@@ -1227,3 +1227,52 @@ E31. **Drafts.** A tool says its input is a draft with one member on the contrac
        part is removed (the card or the read takes its place in the same flush); on `failed` it stays with
        `state: 'failed'`. It is not replayed on reload.
      - A call made by the model's code is never a draft (the code writes no input the coach could watch).
+
+
+## 2026-11-11 (ENGINE): the steps of a turn, for the activity island
+
+E32. **Steps.** Built to the shape in `docs/clubhouse/coachhelm-chat-v3/SPEC.md`, Requests 8: the fields are on the
+     `data-progress` part, typed as `ChatStep` in `protocol.ts`. Everything is optional and additive; a row stored
+     before a field existed still draws, and a browser that knows none of it sees the same two events as before.
+     - **Events.** `read_started` and `read_finished` carry the step's facts; a new `step_update { id, label?, ... }`
+       carries a running step's news (only the fields that changed; `subjects` whole). The facts:
+       `state` (`read_started`: `'active'`, or `'waiting'` for a step really queued; `read_finished`: `done` /
+       `failed`), `kind`, `parent_id`, `subjects`, `count`, `covers`, `evidence_ref`, `started_at`, `ended_at`, `seq`,
+       and `done_label` on `read_finished`. The reducer keeps what a step said while it ran on its finished row.
+     - **`seq`**: the turn's sequence number, on every step event (`read_started`, `step_update`, `read_finished`,
+       `note`). It starts at 1 and rises by one per event, in the order sent; a request that continues a turn (a
+       decision) counts on from the stored rows. Each state change of a step is sent exactly once: one start, one
+       finish. (The code step's rename is now a `step_update`, not a second `read_started`.)
+     - **`kind`**: `'read' | 'find' | 'compare' | 'calculate' | 'visual' | 'draft' | 'check'`. The engine sends `read`
+       for a read, `draft` for a task being planned and `calculate` for the model's code. **PLANS/CONTEXT: a tool sets
+       its own with `ToolBase.step`** (`find_in_app`: `'find'`; `show_visual`: `'visual'`; `summarise_data`:
+       `'calculate'` or `'compare'`; a task that checks recipients: `'check'`). It only chooses the mark.
+     - **`subjects`**: `[{ kind, id, label }]`, at most 12, in the order they became known. A player is sent only if
+       they are on the caller's own roster and is named from that roster, never from what a read called them; the
+       team only if it is the caller's; a round (coach only) as the read named it. A signed-in player's roster is
+       themselves, so their steps name only them. Known from the tool's input (`player_id`, `player_ids`) when the
+       step starts, and from what the read measured when it ends.
+     - **`count`** `{ n, unit, more }`: on a finished read, what it counted (its first figure's sample: 38 rounds),
+       `more: false`. On the code step while it runs, the reads it has made so far (`unit: 'reads'`, `more: true`),
+       re-sent at most every 250 ms (`STEP_UPDATE_INTERVAL_MS`), then the final tally. **`covers`** `{ n, of, unit }`:
+       on the code step, how many of the roster's players its reads have measured ("9 of 12 players").
+     - **`evidence_ref`** on `read_finished`: the read it produced. Its `evidence` event is always sent BEFORE the
+       `read_finished`, so the step can be opened the moment it says done, while the rest of the turn goes on.
+       **`parent_id`**: a read the model's code called names the code's step.
+     - **`started_at` / `ended_at`**: clock readings (ISO). Nothing is estimated and no percentage exists.
+     - **`waiting` is in the type and the reducer and the engine never sends it today.** A message's tool calls are
+       run side by side, so nothing queues: a step is known and started in the same instant. It will be sent the day
+       something really waits its turn. Nothing is announced that is not already running.
+     - **The turn's work**: `done.work = { steps, working_ms }`, and the same two in `data-turn-meta` (`steps`,
+       `working_ms`) for a reload. `steps` counts the turn's rows that are work (not notes), over every request that
+       worked on the turn. `working_ms` is the time at least one step was running (overlapping steps are not added
+       up), so it is less than `duration_ms`, which also holds the model's own time and any wait on the coach.
+     - **Stored and reloaded.** The steps are the turn's stored `data-progress` rows: what the browser folds from the
+       stream equals what is stored, row for row (tested). `restoreUIMessages(rows, { steps: true })` keeps them on a
+       reload; the default still drops them, because a thread that draws rows positionally (Fairway's) would redraw
+       old turns' rows. **Clubhouse's loader (`src/clubhouse/data/coachhelm-chat.ts:113`) should pass
+       `{ steps: true }`** for "open an earlier turn's steps"; that file is not mine.
+     - **A bug this found and fixed**: a request that continued a turn restarted its row ids at `progress-1`, so its
+       first step REPLACED the turn's first stored step. A continued turn now numbers its rows on from the stored
+       ones (`lastRowNumberOf`).
+     - Steps are events beside the text: nothing waits on them and no text passes through them.

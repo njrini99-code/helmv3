@@ -22,6 +22,7 @@ import { runModelLoop, toolResultsMessage, type LoopState, type LoopStop, type P
 import { emptyUsage, fallbackModelOf, profileFor, type ChatFeatures, type ModelClient, type ModelMessage, type ModelProfile, type SystemPrompt, type ToolResultBlock, type UsageTotals } from './model';
 import { applyChatEvent, CARD_REVISION_PART, CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, eventsForStoredParts, textOfParts, TURN_META_PART, turnMetaOf, type ChatCardRevision, type ChatErrorAction, type ChatErrorKind, type ChatEvent, type ChatScreenEcho, type ChatTurnMeta, type ChatTurnStatus, type ChatUIMessage, type ChatUIPart, type WireDataPart } from './protocol';
 import { buildHistory, collectReads, findOpenDecision, saveCardState, saveResumeToLedger, saveTurn, type LoadedConversation, type OpenDecision } from './store';
+import { lastRowNumberOf, lastSeqOf, workOf } from './steps';
 import { declineTask, reviseTask, settleAbandonedTask, startConfirm, startConfirmAll, type DecisionOutcome, type TaskDeps } from './tasks';
 import type { ChatTool, TaskTool, ToolContext } from './tool';
 
@@ -184,7 +185,9 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
   let refusalCategory: string | null = null;
   const finish = async (status: ChatTurnStatus, stop: TurnSummary['stop'], error: unknown, grounding: { grounded: boolean; unmatched: string[] }, before: readonly ChatUIPart[]) => {
     send({ type: 'usage', input_tokens: usage.input + usage.cacheRead + usage.cacheWrite, output_tokens: usage.output, cache_read_input_tokens: usage.cacheRead });
-    send({ type: 'done', status, duration_ms: Date.now() - started });
+    // The turn's work, beside its whole duration: how many steps, and for how long at least one of them was running.
+    const work = workOf(ui.parts);
+    send({ type: 'done', status, duration_ms: Date.now() - started, ...(work.steps > 0 ? { work } : {}) });
     const earlier = new Set(proposalKeysOf(before));
     try {
       await deps.onFinished({
@@ -214,8 +217,11 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
   let earlier: ChatTurnMeta | null = null;
   let refused = false;
   const stamp = () => {
-    const reads = ui.parts.filter((p) => p.type === 'data-progress' && readNames.has(String((p.data as { tool?: unknown } | undefined)?.tool)) && (p.data as { state?: unknown }).state !== undefined).length;
-    const meta: ChatTurnMeta = { started_at: earlier?.started_at ?? startedAt, duration_ms: (earlier?.duration_ms ?? 0) + (Date.now() - started), reads, ...(refused || earlier?.declined ? { declined: true as const } : {}) };
+    const finished = (p: ChatUIPart) => ['done', 'failed'].includes(String((p.data as { state?: unknown } | undefined)?.state));
+    const reads = ui.parts.filter((p) => p.type === 'data-progress' && readNames.has(String((p.data as { tool?: unknown } | undefined)?.tool)) && finished(p)).length;
+    // The steps are the turn's own rows, earlier requests' included, so these two need no adding up.
+    const work = workOf(ui.parts);
+    const meta: ChatTurnMeta = { started_at: earlier?.started_at ?? startedAt, duration_ms: (earlier?.duration_ms ?? 0) + (Date.now() - started), reads, ...(work.steps > 0 ? work : {}), ...(refused || earlier?.declined ? { declined: true as const } : {}) };
     emit({ type: 'part', part: { type: TURN_META_PART, id: 'turn-meta', data: meta } });
   };
 
@@ -289,6 +295,9 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
     const before = open.row.ui_parts ?? [];
     ui = { id: open.row.id, role: 'assistant', parts: before };
     earlier = turnMetaOf(before);
+    // This request's steps are numbered on from the turn's stored ones, and never take a stored step's id (which would replace it).
+    state.seq = lastSeqOf(before);
+    state.nextProgress = lastRowNumberOf(before);
     send({ type: 'message_start', conversation_id: conversationId, message_id: ui.id, resumed: true, started_at: startedAt });
 
     const toolFor = (name: string) => deps.tools.find((t): t is TaskTool<unknown> => t.kind === 'task' && t.name === name);

@@ -23,6 +23,7 @@ import type { ActionProposal, ActionReceipt } from '../action-types';
 import type { CoachChatContext } from '../context';
 import type { ToolEnvelope } from '../provenance';
 import type { ScreenLoaders } from '../screen-loaders';
+import type { ChatStepKind } from './protocol';
 
 export type ChatSurface = 'ask' | 'quick_chat' | 'practice_helper' | 'player';
 
@@ -99,6 +100,11 @@ interface ToolBase<I> {
   input: z.ZodType<I>;
   /** The human progress row, e.g. "Reading Eli's last 8 rounds". Never a tool name. Must not throw. */
   progress: (input: I) => string;
+  /**
+   * What kind of work this is, for the thread's list of steps: `read` (the default for a read), `find`, `compare`, `calculate`,
+   * `visual`, `draft` (the default for a task) or `check`. It chooses the step's mark; it changes nothing else.
+   */
+  step?: ChatStepKind;
   /**
    * This tool's input is a draft the coach should watch being written (a practice plan's blocks, a message's words). `fields`
    * are the top-level input fields to show as the model writes them. The engine shows only what is finished: a whole value, the

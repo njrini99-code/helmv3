@@ -63,6 +63,50 @@ export interface ChatScreenEcho {
   label: string;
 }
 
+/** What kind of work a step is: it chooses the step's mark in the thread. */
+export type ChatStepKind = 'read' | 'find' | 'compare' | 'calculate' | 'visual' | 'draft' | 'check';
+/** Someone or something a step is about. Only ever a player from the caller's own roster, the caller's team, or a round the caller's own read returned. */
+export interface ChatStepSubject {
+  kind: 'player' | 'team' | 'round' | 'event' | 'qualifier' | 'tournament' | 'plan' | 'document';
+  id: string;
+  label: string;
+}
+/**
+ * A step of work: the data of a `data-progress` part (part id = the step's id, stable for the step's life). Every field but
+ * `label` and `tool` is optional, so a row stored before a field existed still draws. Nothing in it is estimated.
+ */
+export interface ChatStep {
+  /** The step in people's words while it runs ("Reading Eli's last 8 rounds"). */
+  label: string;
+  /** The tool's name, or `code_execution` for the model's code, or `note` for a progress note. Never drawn. */
+  tool: string;
+  /** `waiting`: really queued, not yet started. `active`: running. Absent on a row stored before states were sent while running. */
+  state?: 'waiting' | 'active' | 'done' | 'failed';
+  /** (older name of `done_label`, kept on the part for screens that read it) */
+  done?: string;
+  /** The label once finished, when it differs. */
+  done_label?: string;
+  /** A few words on what it found ("38 rounds"). */
+  detail?: string;
+  picture?: unknown;
+  kind?: ChatStepKind;
+  /** The step this one ran under: a read the model's code called names the code's step. */
+  parent_id?: string;
+  /** Who it is about, in the order they became known. Re-sent whole when it grows. */
+  subjects?: readonly ChatStepSubject[];
+  /** What it has counted. `more: true` while it is still counting. */
+  count?: { n: number; unit: string; more: boolean };
+  /** How much of a known whole it has covered ("9 of 12 players"). */
+  covers?: { n: number; of: number; unit: string };
+  /** The read it produced, openable from the moment the step is done. */
+  evidence_ref?: string;
+  /** Clock readings (ISO). */
+  started_at?: string;
+  ended_at?: string;
+  /** The turn's sequence number of the last event that changed this step. Rises by one with every step event of the turn. */
+  seq?: number;
+}
+
 /**
  * `data-draft`: a draft while the model writes it, in the live thread (part id `draft-<id>`). It is removed when the draft is
  * accepted (what it became takes its place) and kept as `failed` when it is not. Never replayed on reload.
@@ -95,6 +139,10 @@ export interface ChatTurnMeta {
   duration_ms: number;
   /** Reads the turn finished, failed ones included. */
   reads: number;
+  /** Steps of work the turn had (reads, calculations, drafts), over every request that worked on it. Absent on a turn stored before steps were counted. */
+  steps?: number;
+  /** For how long at least one step was running. Not the turn's duration: the model's own time and any wait on the coach are not in it. */
+  working_ms?: number;
   /** The model declined to answer and the words are the app's sentence. */
   declined?: true;
 }
@@ -137,7 +185,7 @@ export interface ChatCardRevision {
 
 export function turnMetaOf(parts: readonly ChatUIPart[]): ChatTurnMeta | null {
   const data = parts.find((p) => p.type === TURN_META_PART)?.data as Partial<ChatTurnMeta> | undefined;
-  return data && typeof data.started_at === 'string' && typeof data.duration_ms === 'number' ? { started_at: data.started_at, duration_ms: data.duration_ms, reads: typeof data.reads === 'number' ? data.reads : 0, ...(data.declined ? { declined: true as const } : {}) } : null;
+  return data && typeof data.started_at === 'string' && typeof data.duration_ms === 'number' ? { started_at: data.started_at, duration_ms: data.duration_ms, reads: typeof data.reads === 'number' ? data.reads : 0, ...(typeof data.steps === 'number' ? { steps: data.steps } : {}), ...(typeof data.working_ms === 'number' ? { working_ms: data.working_ms } : {}), ...(data.declined ? { declined: true as const } : {}) } : null;
 }
 
 export type ChatEvent =
@@ -151,12 +199,19 @@ export type ChatEvent =
   | { type: 'text_delta'; delta: string }
   /** The words of the step in progress are withdrawn (the model declined mid-sentence). Rare. */
   | { type: 'text_discard' }
-  /** A read or a draft has started: the progress row. `label` is for people; `tool` is kept for the stored part's shape and is never drawn. */
-  | { type: 'read_started'; id: string; label: string; tool: string }
+  /**
+   * A step has started (or, with `state: 'waiting'`, is really queued): the progress row. `label` is for people; `tool` is kept for
+   * the stored part's shape and is never drawn. The step fields are those of `ChatStep`. `seq` is the turn's sequence number: it
+   * rises by one with every step event (`read_started`, `step_update`, `read_finished`, `note`), so a screen can tell their order and
+   * that it has missed none; each change of a step's state is sent exactly once.
+   */
+  | ({ type: 'read_started'; id: string; label: string; tool: string; state?: 'waiting' | 'active' } & StepFields)
+  /** A running step has learned something: who it is about, how much it has counted or covered, or a truer label. Only the fields that changed; `subjects` whole. */
+  | ({ type: 'step_update'; id: string; label?: string } & StepFields)
   /** `detail`: a few words on what was read ("38 rounds"). `picture`: a small drawing for the row, in the shape the thread's read pictures take. */
-  | { type: 'read_finished'; id: string; label: string; tool: string; state: 'done' | 'failed'; detail?: string; picture?: unknown }
+  | ({ type: 'read_finished'; id: string; label: string; tool: string; state: 'done' | 'failed'; detail?: string; picture?: unknown; done_label?: string } & StepFields)
   /** A short progress note in the model's own words (never its reasoning). Drawn as a finished progress row. */
-  | { type: 'note'; id: string; text: string }
+  | { type: 'note'; id: string; text: string; seq?: number }
   /**
    * A draft as the model writes it (a tool whose input is a draft: `ToolBase.draft`). `id` is the same for every event of one
    * draft. `fields`: the fields that changed since the last event, each with its WHOLE value so far (a list: its finished items;
@@ -185,7 +240,14 @@ export type ChatEvent =
   /** A sentence a coach can act on. Never provider text. */
   | { type: 'error'; message: string; action: ChatErrorAction; kind?: ChatErrorKind }
   /** Last event of every response. `duration_ms`: what this request took. */
-  | { type: 'done'; status: ChatTurnStatus; duration_ms?: number };
+  /** `work`: the turn's steps and for how long at least one was running (`duration_ms` is the whole turn, the model's own time included). */
+  | { type: 'done'; status: ChatTurnStatus; duration_ms?: number; work?: { steps: number; working_ms: number } };
+
+/** The facts a step event may carry beyond its label. All optional. */
+type StepFields = Pick<ChatStep, 'kind' | 'parent_id' | 'subjects' | 'count' | 'covers' | 'evidence_ref' | 'started_at' | 'ended_at' | 'seq'>;
+const STEP_FIELDS = ['kind', 'parent_id', 'subjects', 'count', 'covers', 'evidence_ref', 'started_at', 'ended_at', 'seq'] as const;
+/** The step facts an event carries, and nothing else of it. */
+const stepFieldsOf = (event: StepFields): StepFields => Object.fromEntries(STEP_FIELDS.flatMap((k) => (event[k] === undefined ? [] : [[k, event[k]]]))) as StepFields;
 
 export const CHAT_STREAM_CONTENT_TYPE = 'text/event-stream; charset=utf-8';
 
@@ -257,19 +319,38 @@ export function applyChatEvent(message: ChatUIMessage, event: ChatEvent): ChatUI
       const last = parts[parts.length - 1];
       return last && last.type === 'text' ? { ...message, parts: parts.slice(0, -1) } : message;
     }
-    case 'read_started':
-      return { ...message, parts: upsertDataPart(parts, { type: 'data-progress', id: event.id, data: { label: event.label, tool: event.tool } }) };
-    case 'read_finished':
-      return {
-        ...message,
-        parts: upsertDataPart(parts, {
-          type: 'data-progress',
-          id: event.id,
-          data: { label: event.label, tool: event.tool, state: event.state, done: event.label, ...(event.detail ? { detail: event.detail } : {}), ...(event.picture === undefined || event.picture === null ? {} : { picture: event.picture }) },
-        }),
+    case 'read_started': {
+      const data: ChatStep = { label: event.label, tool: event.tool, ...(event.state ? { state: event.state } : {}), ...stepFieldsOf(event) };
+      return { ...message, parts: upsertDataPart(parts, { type: 'data-progress', id: event.id, data }) };
+    }
+    case 'step_update': {
+      const row = parts.find((p) => p.type === 'data-progress' && p.id === event.id);
+      if (!row) return message;
+      const data: ChatStep = { ...(row.data as ChatStep), ...(event.label ? { label: event.label } : {}), ...stepFieldsOf(event) };
+      return { ...message, parts: upsertDataPart(parts, { type: 'data-progress', id: event.id, data }) };
+    }
+    case 'read_finished': {
+      // What the step said about itself while it ran (who it is about, when it began) stays on the finished row.
+      const earlier = parts.find((p) => p.type === 'data-progress' && p.id === event.id)?.data as ChatStep | undefined;
+      const data: ChatStep = {
+        ...(earlier ? stepFieldsOf(earlier) : {}),
+        label: event.label,
+        tool: event.tool,
+        state: event.state,
+        done: event.done_label ?? event.label,
+        ...(event.done_label ? { done_label: event.done_label } : {}),
+        ...(event.detail ? { detail: event.detail } : {}),
+        ...(event.picture === undefined || event.picture === null ? {} : { picture: event.picture }),
+        ...stepFieldsOf(event),
       };
-    case 'note':
-      return event.text.trim() ? { ...message, parts: upsertDataPart(parts, { type: 'data-progress', id: event.id, data: { label: event.text.trim(), tool: 'note', state: 'done', done: event.text.trim() } }) } : message;
+      return { ...message, parts: upsertDataPart(parts, { type: 'data-progress', id: event.id, data }) };
+    }
+    case 'note': {
+      const words = event.text.trim();
+      if (!words) return message;
+      const data: ChatStep = { label: words, tool: 'note', state: 'done', done: words, ...(event.seq === undefined ? {} : { seq: event.seq }) };
+      return { ...message, parts: upsertDataPart(parts, { type: 'data-progress', id: event.id, data }) };
+    }
     case 'evidence':
     case 'visual':
     case 'proposal':

@@ -10,7 +10,7 @@ import type { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { asTools, cited, codeToolUse, fakeDb, fakeModel, fallbackHop, linesTool, progressNote, newToolLog, readEvents, readTool, rejected, serverCode, taskTool, text, textOf, thinking, toolUse, type FakeDb, type FakeModel, type ToolLog } from './helpers';
 import type { ChatTool, ReadTool, TaskTool } from '@/lib/coachhelm/v3/chat/engine/tool';
-import type { ChatEvent } from '@/lib/coachhelm/v3/chat/engine/protocol';
+import { applyChatEvent, type ChatEvent, type ChatUIMessage } from '@/lib/coachhelm/v3/chat/engine/protocol';
 
 vi.mock('server-only', () => ({}));
 
@@ -788,16 +788,31 @@ describe('the model’s code calling the reads (on for a coach, off for a player
     h.toolsFor.mockImplementation(() => asTools(stats, readTool('get_team_stats', log, 74.2)));
     const code = "# Method: Averaged each player's putts per round over their last 8 rounds, then ranked them\nrows = [await get_player_stats({'player_id': p}) for p in players]";
     script(
-      { content: [serverCode('srvtoolu_1', code), codeToolUse('tu_1', 'get_player_stats', { player_id: 'p1' }), codeToolUse('tu_2', 'get_player_stats', { player_id: 'p2' }), codeToolUse('tu_3', 'get_player_stats', { player_id: 'p1' })], container: 'container_1' },
+      { content: [serverCode('srvtoolu_1', code), codeToolUse('tu_1', 'get_player_stats', { player_id: 'player-a' }), codeToolUse('tu_2', 'get_player_stats', { player_id: 'player-b' }), codeToolUse('tu_3', 'get_player_stats', { player_id: 'player-a' })], container: 'container_1' },
       { content: [{ type: 'code_execution_tool_result', tool_use_id: 'srvtoolu_1', content: { type: 'code_execution_result', stdout: '30.1', stderr: '', return_code: 0, content: [] } } as never, text('Avery putts best.')] },
     );
     const { events } = await ask('Who putts best?');
 
     const codeRows = events.filter((e) => (e.type === 'read_started' || e.type === 'read_finished') && e.tool === 'code_execution') as Array<{ type: string; id: string; label: string; detail?: string }>;
-    // One row, renamed exactly once, when a read showed a second player.
-    expect(codeRows.map((e) => `${e.type}:${e.label}`)).toEqual(['read_started:Working out the figures', 'read_started:Working it out across the team', 'read_finished:Working it out across the team']);
+    // One row, started and finished once each, and renamed exactly once (an update to the running step), when a read showed a second player.
+    expect(codeRows.map((e) => `${e.type}:${e.label}`)).toEqual(['read_started:Working out the figures', 'read_finished:Working it out across the team']);
     expect(new Set(codeRows.map((e) => e.id)).size).toBe(1);
     expect(codeRows.at(-1)).toMatchObject({ detail: '3 reads' });
+    const updates = events.filter((e) => e.type === 'step_update') as Array<{ id: string; label?: string; count?: unknown; covers?: unknown; subjects?: Array<{ label: string }> }>;
+    expect(updates.every((u) => u.id === codeRows[0]!.id)).toBe(true);
+    expect(updates.filter((u) => u.label !== undefined).map((u) => u.label)).toEqual(['Working it out across the team']);
+    // While it runs it says how far it has got; when it ends, the whole of it: three reads, both players of a roster of two, by name.
+    expect(updates[0]).toMatchObject({ count: { unit: 'reads', more: true } });
+    expect(codeRows.at(-1)).toMatchObject({
+      kind: 'calculate',
+      count: { n: 3, unit: 'reads', more: false },
+      covers: { n: 2, of: 2, unit: 'players' },
+      subjects: [{ kind: 'player', id: 'player-a', label: 'Avery Lane' }, { kind: 'player', id: 'player-b', label: 'Blake Reed' }],
+    });
+    // The reads the code called sit under it.
+    const children = events.filter((e) => e.type === 'read_started' && e.tool === 'get_player_stats') as Array<{ parent_id?: string; subjects?: unknown }>;
+    expect(children.map((c) => c.parent_id)).toEqual([codeRows[0]!.id, codeRows[0]!.id, codeRows[0]!.id]);
+    expect(children[1]!.subjects).toEqual([{ kind: 'player', id: 'player-b', label: 'Blake Reed' }]);
     const part = events.find((e) => e.type === 'part' && e.part.type === 'data-computed') as { part: { id: string; data: unknown } };
     expect(part.part).toEqual({
       type: 'data-computed',
@@ -1206,6 +1221,127 @@ describe('a task', () => {
     expect(result).toMatchObject({ is_error: true });
     expect(result!.content).toContain('Nothing was written');
     expect(done(events)?.status).toBe('complete');
+  });
+});
+
+describe('the steps of a turn', () => {
+  type StepEvent = { type: 'read_started' | 'step_update' | 'read_finished' | 'note'; id: string; seq?: number; state?: string; kind?: string; tool?: string; started_at?: string; ended_at?: string; subjects?: Array<{ kind: string; id: string; label: string }>; count?: unknown; evidence_ref?: string; parent_id?: string };
+  const stepEvents = (events: ChatEvent[]) => events.filter((e) => e.type === 'read_started' || e.type === 'step_update' || e.type === 'read_finished' || e.type === 'note') as unknown as StepEvent[];
+  const measured = (name: string, players: Array<[string, string]>) => {
+    const tool = { ...readTool(name, log, 0) } as ReadTool<{ player_id?: string }>;
+    tool.run = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 12));
+      return read;
+    };
+    const read = ({
+      summary: 'Putting',
+      measurements: players.map(([id, label]) => ({ metric_id: 'sg_putting', metric_label: 'Strokes gained putting', unit: 'strokes', value: -0.4, entity: { kind: 'player', id, label }, window_start: null, window_end: null, sample_size: 8, sample_unit: 'rounds', as_of: '2026-11-10T12:00:00.000Z', coverage: 'complete', coverage_note: null, source: 'golf_rounds', method: 'mean', denominator: null, benchmark: null, direction: 'higher_better' })),
+      series: [],
+      coverage: 'complete',
+      coverage_note: null,
+      as_of: '2026-11-10T12:00:00.000Z',
+    }) as never;
+    return tool;
+  };
+
+  it('each step says what it is, when it ran, who it is about and what it produced; the events are numbered in the order sent', async () => {
+    // One read names a player in its input; the other turns out to be about two players, one of whom is not on this coach's roster.
+    h.toolsFor.mockImplementation(() => asTools(measured('get_player_stats', [['player-a', 'someone else’s label']]), measured('get_team_stats', [['player-b', 'B'], ['not-on-this-roster', 'A stranger']]), { ...taskTool('create_focus_area', log), step: 'check' } as never));
+    script({ content: [toolUse('tu_1', 'get_player_stats', { player_id: 'player-a' }), toolUse('tu_2', 'get_team_stats', {})] }, { content: [text('Blake putts best.')] });
+    const before = Date.now();
+    const { events } = await ask('Who putts best?');
+    const steps = stepEvents(events);
+
+    // Numbered 1, 2, 3, ... in the order they were sent: nothing missing, nothing twice.
+    expect(steps.map((s) => s.seq)).toEqual(steps.map((_, i) => i + 1));
+    // Each step starts once and finishes once.
+    for (const id of new Set(steps.map((s) => s.id))) expect(steps.filter((s) => s.id === id).map((s) => s.type)).toEqual(['read_started', 'read_finished']);
+    const [a, b] = ['get_player_stats', 'get_team_stats'].map((tool) => ({ start: steps.find((s) => s.type === 'read_started' && s.tool === tool)!, end: steps.find((s) => s.type === 'read_finished' && s.tool === tool)! }));
+    expect(a!.start).toMatchObject({ state: 'active', kind: 'read' });
+    expect(a!.end).toMatchObject({ state: 'done', kind: 'read', evidence_ref: 'e1', count: { n: 8, unit: 'rounds', more: false } });
+    // Real clock readings: it began during this request and ended no earlier than it began.
+    expect(Date.parse(a!.start.started_at!)).toBeGreaterThanOrEqual(before - 5);
+    expect(a!.end.started_at).toBe(a!.start.started_at);
+    expect(Date.parse(a!.end.ended_at!)).toBeGreaterThanOrEqual(Date.parse(a!.start.started_at!));
+    // Who it is about: known from the input before it ran, and named from the coach's roster, never from what the read called them.
+    expect(a!.start.subjects).toEqual([{ kind: 'player', id: 'player-a', label: 'Avery Lane' }]);
+    expect(a!.end.subjects).toEqual([{ kind: 'player', id: 'player-a', label: 'Avery Lane' }]);
+    // Known only once it returned; and someone who is not on this coach's roster is never sent.
+    expect(b!.start).not.toHaveProperty('subjects');
+    expect(b!.end.subjects).toEqual([{ kind: 'player', id: 'player-b', label: 'Blake Reed' }]);
+    expect(JSON.stringify(steps)).not.toContain('stranger');
+    // The read a step produced is already on the stream when the step says it is done.
+    const order = events.map((e) => (e.type === 'evidence' ? `evidence:${(e.part.data as { ref: string }).ref}` : e.type === 'read_finished' ? `finished:${(e as unknown as StepEvent).evidence_ref}` : null)).filter(Boolean);
+    expect(order.indexOf('evidence:e1')).toBeLessThan(order.indexOf('finished:e1'));
+    expect(order.indexOf('evidence:e2')).toBeLessThan(order.indexOf('finished:e2'));
+
+    // The turn's work, beside its whole duration, on the last event and in the stored facts.
+    const last = events.find((e) => e.type === 'done') as { duration_ms: number; work?: { steps: number; working_ms: number } };
+    expect(last.work!.steps).toBe(2);
+    // The two reads ran side by side for about 12 ms each: the time worked is the time something was running, not the sum.
+    expect(last.work!.working_ms).toBeGreaterThanOrEqual(10);
+    expect(last.work!.working_ms).toBeLessThanOrEqual(last.duration_ms);
+    const [row] = assistantRows();
+    expect(turnMetaOf(row!.ui_parts as never)).toMatchObject({ reads: 2, steps: 2 });
+  });
+
+  it('what the browser folds from the stream is what is stored, step for step, and a reload can bring the steps back', async () => {
+    h.toolsFor.mockImplementation(() => asTools(measured('get_player_stats', [['player-a', 'A']]), readTool('get_team_stats', log, 74.2)));
+    script({ content: [toolUse('tu_1', 'get_player_stats', { player_id: 'player-a' }), toolUse('tu_2', 'get_team_stats', {})] }, { content: [text('Here.')] });
+    const { events } = await ask('How are we putting?');
+    const folded = events.reduce(applyChatEvent, { id: 'x', role: 'assistant', parts: [] } as ChatUIMessage);
+    const progress = (parts: readonly { type: string }[]) => parts.filter((p) => p.type === 'data-progress');
+    const stored = assistantRows()[0]!.ui_parts as Array<{ type: string; id?: string; data?: Record<string, unknown> }>;
+    expect(progress(folded.parts)).toEqual(progress(stored));
+    expect(progress(stored)).toHaveLength(2);
+    for (const step of progress(stored) as typeof stored) expect(step.data).toMatchObject({ state: 'done', kind: 'read', started_at: expect.any(String), ended_at: expect.any(String), seq: expect.any(Number) });
+    // A reload keeps them only for a thread that asks (one that can open an earlier turn's steps).
+    const rows = (db.tables[MESSAGES] ?? []) as never;
+    expect(restoreUIMessages(rows).at(-1)!.parts.some((p) => p.type === 'data-progress')).toBe(false);
+    expect(progress(restoreUIMessages(rows, { steps: true }).at(-1)!.parts)).toEqual(progress(stored));
+  });
+
+  it('a step that fails says so with the same facts; a draft of a card is a step of the kind its tool names; a note is numbered with the steps', async () => {
+    const broken = { ...readTool('get_team_stats', log, 0) } as ReadTool<{ player_id?: string }>;
+    broken.run = async () => Promise.reject(new Error('boom'));
+    h.toolsFor.mockImplementation(() => asTools(broken, { ...taskTool('create_focus_area', log), step: 'check' } as never));
+    script({ content: [progressNote('Checking the team first.'), toolUse('tu_1', 'get_team_stats', { player_id: 'player-b' }), toolUse('tu_task', 'create_focus_area', { title: 'Putting' })] });
+    const { events } = await ask('Make a putting focus area');
+    const steps = stepEvents(events);
+    expect(steps.map((s) => s.seq)).toEqual(steps.map((_, i) => i + 1));
+    expect(steps[0]).toMatchObject({ type: 'note', seq: 1 });
+    const failed = steps.find((s) => s.type === 'read_finished' && s.tool === 'get_team_stats')!;
+    expect(failed).toMatchObject({ state: 'failed', kind: 'read', subjects: [{ id: 'player-b', label: 'Blake Reed' }], started_at: expect.any(String), ended_at: expect.any(String) });
+    expect(failed).not.toHaveProperty('evidence_ref');
+    expect(steps.find((s) => s.type === 'read_finished' && s.tool === 'create_focus_area')).toMatchObject({ state: 'done', kind: 'check' });
+    // A note is not a step of work: it is not counted.
+    expect((events.find((e) => e.type === 'done') as { work?: { steps: number } }).work).toMatchObject({ steps: 2 });
+  });
+
+  it('a decision that continues the turn numbers its steps on from the stored ones, and the work is the whole turn’s', async () => {
+    h.toolsFor.mockImplementation(() => asTools(measured('get_player_stats', [['player-a', 'A']]), taskTool('create_focus_area', log)));
+    script({ content: [toolUse('tu_1', 'get_player_stats', { player_id: 'player-a' })] }, { content: [toolUse('tu_task', 'create_focus_area', { title: 'Putting' })] });
+    const first = await ask('Look at Avery, then make a putting focus area');
+    const firstSeqs = stepEvents(first.events).map((s) => s.seq!);
+    expect(firstSeqs).toEqual([1, 2, 3, 4]);
+
+    // After the card is confirmed the model reads once more before it closes.
+    script({ content: [toolUse('tu_2', 'get_player_stats', { player_id: 'player-a' })] }, { content: [text('Done, and Avery is unchanged.')] });
+    const second = await decide(conversationOf(first.events), keyOf(first.events), true);
+    expect(stepEvents(second.events).map((s) => s.seq)).toEqual([5, 6]);
+    expect((second.events.find((e) => e.type === 'done') as { work?: { steps: number } }).work).toMatchObject({ steps: 3 });
+    expect(turnMetaOf(assistantRows()[0]!.ui_parts as never)).toMatchObject({ steps: 3, reads: 2 });
+  });
+
+  it('a player’s steps name only the player', async () => {
+    h.role = 'player';
+    h.toolsFor.mockImplementation(() => asTools(measured('get_my_stats', [['player-me', 'Me'], ['player-a', 'A teammate']])));
+    script({ content: [toolUse('tu_1', 'get_my_stats', { player_id: 'player-a' })] }, { content: [text('73.1.')] });
+    const { events } = await ask('How am I putting?');
+    const steps = stepEvents(events);
+    expect(steps.find((s) => s.type === 'read_started')).not.toHaveProperty('subjects');
+    expect(steps.find((s) => s.type === 'read_finished')!.subjects).toEqual([{ kind: 'player', id: 'player-me', label: 'Eli Stone' }]);
+    expect(JSON.stringify(steps)).not.toContain('player-a');
   });
 });
 

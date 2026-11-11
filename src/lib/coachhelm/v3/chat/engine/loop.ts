@@ -19,7 +19,8 @@ import { CoachContextError } from '../context';
 import type { ToolEnvelope } from '../provenance';
 import { addUsage, buildModelRequest, isModelApiError, isPlain, isRejectedRequest, plainFeatures, type ChatFeatures, type ModelClient, type ModelMessage, type ModelProfile, type ModelResponse, type SearchResultBlock, type SystemPrompt, type ToolResultBlock, type ToolUseBlock, type UsageTotals } from './model';
 import { partialInput } from './draft';
-import { COMPUTED_PART, eventForPart, type ChatComputed, type ChatEvent } from './protocol';
+import { COMPUTED_PART, eventForPart, type ChatComputed, type ChatEvent, type ChatStep, type ChatStepSubject } from './protocol';
+import { countOfEnvelope, playersCovered, stepKindOf, subjectsOfEnvelope, subjectsOfInput, withSubjects } from './steps';
 import { proposeTask, type TaskDeps } from './tasks';
 import type { ChatTool, ReadTool, TaskTool, ToolContext } from './tool';
 
@@ -71,8 +72,10 @@ export interface LoopState {
   container: string | null;
   /** The progress row of the model's code while it runs. In memory only. */
   codeRow?: string | null;
-  /** What that run of the code has done so far: the reads it called, and the method line its code began with. In memory only. */
-  codeRun?: { refs: string[]; method: string | null; wide: boolean } | null;
+  /** What that run of the code has done so far: the reads it called, the method line its code began with, and what its step has said. In memory only. */
+  codeRun?: { refs: string[]; method: string | null; wide: boolean; started_at?: string; told?: number; subjects?: readonly ChatStepSubject[] } | null;
+  /** The turn's sequence number: the last one given to a step event. A request that continues a turn starts from the stored rows' highest. */
+  seq?: number;
   /** Tool calls whose input is being shown as a draft and has not been settled yet, by tool_use id. In memory only. */
   drafts?: Set<string>;
 }
@@ -195,6 +198,26 @@ interface Call {
   streamedText: boolean;
 }
 
+/** The next sequence number of the turn: one for every step event, in the order they are sent. */
+const nextSeq = (state: LoopState): number => (state.seq = (state.seq ?? 0) + 1);
+const nowIso = (): string => new Date().toISOString();
+/** How often a running step re-sends its tally, at most. A change of its label is not held back. */
+export const STEP_UPDATE_INTERVAL_MS = 250;
+
+/** What the code's step can say now: how many reads it has made, who they are about, and how much of the roster that is. */
+function codeStepFacts(deps: LoopDeps, state: LoopState, more: boolean): Pick<ChatStep, 'count' | 'covers' | 'subjects'> {
+  const run = state.codeRun;
+  const who = deps.toolContext.who;
+  const envelopes = (run?.refs ?? []).map((ref) => state.reads.get(ref)).filter((e): e is ToolEnvelope => Boolean(e));
+  const players = playersCovered(who, envelopes);
+  const subjects = run?.subjects ?? [];
+  return {
+    ...(envelopes.length > 0 ? { count: { n: envelopes.length, unit: 'reads', more } } : {}),
+    ...(players > 0 && who.roster.length > 0 ? { covers: { n: players, of: who.roster.length, unit: 'players' } } : {}),
+    ...(subjects.length > 0 ? { subjects } : {}),
+  };
+}
+
 /** How often a draft is read from the input so far and shown, at most. */
 export const DRAFT_INTERVAL_MS = 150;
 
@@ -253,8 +276,8 @@ async function streamOnce(deps: LoopDeps, state: LoopState, answerOnly: boolean)
             codeInput = '';
             if (!state.codeRow) {
               state.codeRow = `progress-${(state.nextProgress += 1)}`;
-              state.codeRun = { refs: [], method: null, wide: false };
-              deps.emit({ type: 'read_started', id: state.codeRow, label: CODE_LABEL, tool: 'code_execution' });
+              state.codeRun = { refs: [], method: null, wide: false, started_at: nowIso(), told: 0, subjects: [] };
+              deps.emit({ type: 'read_started', id: state.codeRow, label: CODE_LABEL, tool: 'code_execution', state: 'active', kind: 'calculate', started_at: state.codeRun.started_at, seq: nextSeq(state) });
             }
           } else if (block.type.endsWith('code_execution_tool_result') && state.codeRow) {
             // The run is over: its row closes saying how many reads it covered, and a part records what it worked from.
@@ -266,6 +289,11 @@ async function streamOnce(deps: LoopDeps, state: LoopState, answerOnly: boolean)
               tool: 'code_execution',
               state: 'done',
               ...(computed.reads > 0 ? { detail: `${computed.reads} ${computed.reads === 1 ? 'read' : 'reads'}` } : {}),
+              kind: 'calculate',
+              ...codeStepFacts(deps, state, false),
+              ...(state.codeRun?.started_at ? { started_at: state.codeRun.started_at } : {}),
+              ended_at: nowIso(),
+              seq: nextSeq(state),
             });
             deps.emit({ type: 'part', part: { type: COMPUTED_PART, id: `computed-${state.codeRow}`, data: computed } });
             state.codeRow = null;
@@ -318,7 +346,7 @@ async function streamOnce(deps: LoopDeps, state: LoopState, answerOnly: boolean)
           const refs = cited.get(event.index);
           if (refs?.length) deps.emit({ type: 'text_delta', delta: refs.map((ref) => ` [${ref}]`).join('') });
           const note = notes.get(event.index);
-          if (note?.trim() && note.trim() !== INTERRUPTED_NOTE) deps.emit({ type: 'note', id: `note-${(state.nextProgress += 1)}`, text: note });
+          if (note?.trim() && note.trim() !== INTERRUPTED_NOTE) deps.emit({ type: 'note', id: `note-${(state.nextProgress += 1)}`, text: note, seq: nextSeq(state) });
         }
       }
       return { response: await stream.finalMessage(), streamedText };
@@ -378,7 +406,12 @@ function sampleDetail(envelope: ToolEnvelope): string | null {
 
 async function runRead(deps: LoopDeps, state: LoopState, tool: ReadTool<unknown>, input: unknown, progressId: string, refNumber: number, programmatic: boolean): Promise<{ result: StoredToolResult; endTurn: boolean }> {
   const label = safeLabel(tool, input);
-  deps.emit({ type: 'read_started', id: progressId, label, tool: tool.name });
+  const who = deps.toolContext.who;
+  // What the step can say before it has run: its kind, when it began, who its input names, and the calculation it is part of.
+  const started_at = nowIso();
+  const named = subjectsOfInput(who, input);
+  const facts = { kind: stepKindOf(tool), ...(programmatic && state.codeRow ? { parent_id: state.codeRow } : {}), started_at };
+  deps.emit({ type: 'read_started', id: progressId, label, tool: tool.name, state: 'active', ...facts, ...(named.length > 0 ? { subjects: named } : {}), seq: nextSeq(state) });
   try {
     // `model_text` stays on the envelope: the grounding check reads the lines the model was shown.
     const { parts, evidence, end_turn, progress_detail, progress_picture, ...envelope } = await tool.run({ ...deps.toolContext, reads: state.reads }, input);
@@ -390,16 +423,23 @@ async function runRead(deps: LoopDeps, state: LoopState, tool: ReadTool<unknown>
       // reads a computed figure came from.
       deps.emit({ type: 'evidence', part: { type: 'data-evidence', id: `evidence-${ref}`, data: { tool: tool.name, envelope, ref, ...(programmatic ? { via: 'code' } : {}) } } });
       if (programmatic && state.codeRun && state.codeRow) {
-        state.codeRun.refs.push(ref);
-        // Once its reads cover a second player the row says so. Said once, and only because a read showed it.
-        if (!state.codeRun.wide && playersOf(state.codeRun.refs.map((r) => state.reads.get(r)).filter((e): e is ToolEnvelope => Boolean(e))).size > 1) {
-          state.codeRun.wide = true;
-          deps.emit({ type: 'read_started', id: state.codeRow, label: CODE_LABEL_WIDE, tool: 'code_execution' });
+        const run = state.codeRun;
+        run.refs.push(ref);
+        run.subjects = withSubjects(run.subjects ?? [], subjectsOfEnvelope(who, envelope));
+        // Once its reads cover a second player the step says so. Said once, and only because a read showed it.
+        const widened = !run.wide && playersOf(run.refs.map((r) => state.reads.get(r)).filter((e): e is ToolEnvelope => Boolean(e))).size > 1;
+        if (widened) run.wide = true;
+        // Its running tally (reads so far, who they are about, how much of the roster) is re-sent a few times a second at most.
+        if (widened || Date.now() - (run.told ?? 0) >= STEP_UPDATE_INTERVAL_MS) {
+          run.told = Date.now();
+          deps.emit({ type: 'step_update', id: state.codeRow, ...(widened ? { label: CODE_LABEL_WIDE } : {}), ...codeStepFacts(deps, state, true), seq: nextSeq(state) });
         }
       }
     }
     for (const part of parts ?? []) deps.emit(eventForPart(part));
     const detail = (typeof progress_detail === 'string' && progress_detail.trim()) || sampleDetail(envelope);
+    const about = withSubjects(named, subjectsOfEnvelope(who, envelope));
+    const counted = countOfEnvelope(envelope);
     deps.emit({
       type: 'read_finished',
       id: progressId,
@@ -408,6 +448,13 @@ async function runRead(deps: LoopDeps, state: LoopState, tool: ReadTool<unknown>
       state: envelope.coverage === 'unavailable' ? 'failed' : 'done',
       ...(detail ? { detail: detail.slice(0, 80) } : {}),
       ...(progress_picture === undefined || progress_picture === null ? {} : { picture: progress_picture }),
+      ...facts,
+      ...(about.length > 0 ? { subjects: about } : {}),
+      ...(counted ? { count: counted } : {}),
+      // The read it produced can be opened from this moment, while the rest of the turn goes on.
+      ...(isEvidence ? { evidence_ref: ref } : {}),
+      ended_at: nowIso(),
+      seq: nextSeq(state),
     });
 
     const lines = typeof envelope.model_text === 'string' && envelope.model_text.trim() ? envelope.model_text : null;
@@ -421,7 +468,7 @@ async function runRead(deps: LoopDeps, state: LoopState, tool: ReadTool<unknown>
     if (deps.signal.aborted) throw err;
     const expected = err instanceof CoachContextError;
     void logServerError(`coachhelm tool read failed: ${tool.name}`, { action: `coachhelm.tool.${tool.name}`, feature: 'coachhelm_chat', handled: true, skipSentry: expected }, 'warning');
-    deps.emit({ type: 'read_finished', id: progressId, label, tool: tool.name, state: 'failed' });
+    deps.emit({ type: 'read_finished', id: progressId, label, tool: tool.name, state: 'failed', ...facts, ...(named.length > 0 ? { subjects: named } : {}), ended_at: nowIso(), seq: nextSeq(state) });
     return { result: { is_error: true, content: expected ? (err as Error).message : 'That read could not be completed. Say so plainly; do not guess the figure.' }, endTurn: false };
   }
 }
@@ -433,17 +480,19 @@ async function runTask(deps: LoopDeps, state: LoopState, tool: TaskTool<unknown>
   // A card cannot wait on the coach while the model's code waits on a read: the code would be left hanging for as long as the coach takes.
   if (codeWaiting) return { result: { is_error: true, content: 'Not prepared: your code is still running. Ask for this change on its own after the code has finished. Nothing was written.' }, task: null };
   const label = safeLabel(tool, input);
-  deps.emit({ type: 'read_started', id: progressId, label, tool: tool.name });
+  const named = subjectsOfInput(deps.toolContext.who, input);
+  const facts = { kind: stepKindOf(tool), started_at: nowIso(), ...(named.length > 0 ? { subjects: named } : {}) };
+  deps.emit({ type: 'read_started', id: progressId, label, tool: tool.name, state: 'active', ...facts, seq: nextSeq(state) });
   const proposed = await proposeTask(deps.tasks, tool, { ...deps.toolContext, reads: state.reads }, input, block.id);
   if (!proposed.ok) {
-    deps.emit({ type: 'read_finished', id: progressId, label, tool: tool.name, state: 'failed' });
+    deps.emit({ type: 'read_finished', id: progressId, label, tool: tool.name, state: 'failed', ...facts, ended_at: nowIso(), seq: nextSeq(state) });
     return { result: { is_error: true, content: `Not prepared: ${proposed.message}` }, task: null };
   }
   const key = proposed.proposal.idempotency_key;
   // The draft gives way to the card it became.
   endDraft(deps, state, block.id, true);
   deps.emit({ type: 'proposal', part: { type: 'data-action-proposal', id: `proposal-${key}`, data: proposed.proposal } });
-  deps.emit({ type: 'read_finished', id: progressId, label, tool: tool.name, state: 'done' });
+  deps.emit({ type: 'read_finished', id: progressId, label, tool: tool.name, state: 'done', ...facts, ended_at: nowIso(), seq: nextSeq(state) });
   return { result: null, task: { key, tool: tool.name, tool_use_id: block.id } };
 }
 

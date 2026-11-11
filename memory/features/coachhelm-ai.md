@@ -265,6 +265,14 @@ entries are history. The tool list and the prompt are described where the tools 
   stored). An edited card carries `revision`; a Confirm or an edit names the revision on screen, and one that names
   another is answered with the card as it stands and writes nothing, so a card changed in one tab cannot be confirmed
   from a stale copy in another. The plan that is committed is the one the ledger row held when it was claimed.
+- **Steps of work.** Each read, calculation and draft is a step: a `data-progress` row (`ChatStep`) with its kind,
+  its state, clock readings for when it began and ended, who it is about (players only from the caller's own roster
+  and named from it; a player's steps name only that player), what it counted, the read it produced
+  (`evidence_ref`, openable as soon as the step is done) and, for a read the model's code called, the step it ran
+  under. Every step event carries the turn's sequence number, and each state change is sent once. A running
+  calculation re-sends its tally at most every 250 ms. Nothing is estimated and no step is announced before it is
+  running. `done.work` and `data-turn-meta` give the turn's step count and the time at least one step was running.
+  The rows are stored with the turn; `restoreUIMessages(rows, { steps: true })` keeps them on reload.
 - **A draft is shown as it is written.** A tool whose input is a draft (`ToolBase.draft.fields`) has those fields
   streamed to the thread while the model writes them (`draft_delta`, at most every 150 ms): whole values, the
   finished items of a list, words up to the last whole word, never a half-written item (`engine/draft.ts`). Nothing
