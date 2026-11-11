@@ -108,7 +108,7 @@ Every card says which of three things is true, in the same place, with the same 
 - Text another person will read is drawn in the frame they will read it in: a **notice** (app glyph, bold title,
   body: the notification as a phone shows it), a **bubble** (the coach's own sent bubble from Messages), a **note**
   (quoted, with its author line).
-- It is the plan's text, never a summary. The whole text is in the DOM. Past 6 lines (2 in compact) it is clamped
+- It is the plan's text, never a summary. The whole text is in the DOM. Past 6 lines (4 in compact) it is clamped
   with **Show the whole message · 1,240 characters**; the count is always shown when clamped so a coach knows how
   much is under the fold before they confirm.
 - When the plan has the channel but not the words ("6 players get a push and an email"), the card shows the channel
@@ -119,7 +119,7 @@ Every card says which of three things is true, in the same place, with the same 
 | Value | Limit in the plan | Full | Compact |
 | --- | --- | --- | --- |
 | A title or name | 80 to 200 | wraps to two lines, then ellipsis; full text in `title` and to VoiceOver | one line |
-| Words that are sent | 2,000 (message, announcement), 8,000 (document) | 6 lines, then Show the whole message | 2 lines, then the same |
+| Words that are sent | 2,000 (message, announcement), 8,000 (document) | 6 lines, then Show the whole message | 4 lines, then the same (two lines of a message is not enough to approve it) |
 | A note | 280 to 2,000 | 6 lines, then Show all | 2 lines |
 | A list of dates | 26 | every date as a day tile, wrapping (a date is the thing being approved; none is hidden) | first 4 tiles and "+22", Show all |
 | A list of people | 80 | 0.3 | 0.3 with 3 avatars |
@@ -628,3 +628,59 @@ inside the body.
    frame until the lead's shell exports; the stand-in is labelled in the gallery.
 10. Group D forms D1 to D12 reuse the lead's `Evidence.tsx` blocks in the gallery; this lane adds only what does
     not exist (D14 row, D15, D16, the note chip).
+
+## What is built, and how to see it
+
+- `cards/index.tsx`: `CardBody` (the 22 task bodies and the generic one), `cardCopy` and `CARD_TOOLS` from
+  `catalog.ts`. `cards/drafts.tsx`: `BriefBody`, `HandoffBody` (message, poll, board), `DocBody`. `cards/answers.tsx`:
+  `AppLinkRow`, `CoachNoteChip`, `WorkedOut`, `NotTracked`. `cards/work-words.ts`: section F as data.
+- The gallery, one page: `/clubhouse-preview/coachhelm-capabilities`. On a desktop each task is drawn twice, as Ask
+  draws it and as quick chat does; on a phone a switch chooses. Each has a state switch, a case switch (long text, one
+  recipient, forty, something missing) and Play, which runs Confirm, the request, the 8 seconds and the save at real
+  timing; Play with Undo presses Undo at 3 seconds.
+- One capability, for a capture: `?task=<tool>&state=<state>&density=full|compact&variant=<case>&play=1|undo`.
+  States: `proposed`, `confirming`, `held`, `undoing`, `committing`, `saved`, `partial`, `undone`, `cancelled`,
+  `superseded`, `failed`, `expired`. Cases: `create_event` quiet; `create_recurring_practice` missing; `create_trip`
+  bare; `create_focus_area` missing; `create_task` one, forty; `create_team_announcement` long, one;
+  `send_event_reminder` one, forty. The other forms by id: `ask_practice_brief`, `draft_practice_plan`,
+  `write_artifact`, `draft_message`, `draft_poll`, `draft_board`, `save_note`, `save_note_long`, `remove_note`,
+  `ev-figure`, `ev-ranking`, `ev-trend`, `ev-bands`, `ev-legs`, `ev-empty`, `ev-failed`, `app_link`, `computed`,
+  `not_tracked`, `work_line`, `work_words`.
+
+## The seam, as it stands
+
+The seam in 0.1 was sent to the chat UI lead at the start; no answer had come when this was written, so:
+
+- The gallery's frame (head, buttons, ring, receipt row, Told line) is a **stand-in** built to SPEC Moment 7, in
+  `PreviewChatCapabilities.tsx` and the `ch-akg-*` rules. It is not the shell and is not imported by the app. Its 8
+  seconds are a page timer; the real card draws the server's `held_until`. When the shell exports, the gallery mounts
+  it and the stand-in is deleted.
+- One thing to settle with the lead: with reach first in every body, SPEC's "On confirm:" line under the draft says
+  the same thing a second time. The stand-in leaves it out. Recommendation: the shell drops the line and keeps only
+  the hold sentence beside the ring (`cardCopy(...).hold(seconds)`), so one fact lives in one place.
+- The shell's head shows `cardCopy.head` over `proposal.summary`. Bodies are written not to repeat the summary.
+
+## Below the bar, said plainly
+
+1. **The frame is a stand-in.** The ring does not become the check here (MO-7-9), the receipt does not take the
+   buttons' place by a cross-fade (MO-7-5), and nothing arrives (MO-7-1). Those are the shell's motions; the gallery
+   shows states and timing, not choreography.
+2. **A poll draft is drawn in the poll's shape, not by Messages' own `PollCard`**, which needs the whole Messages
+   api object to mount. Wanted from the Messages owner: a presentational face of the poll (question, options, head
+   words) that takes a `Poll` and nothing else.
+3. **An event is not shown in its week.** The old card's five-day grid read the real week from the server; a body
+   may not fetch. The date tile says the day; whether the day is free is not on the card. Wanted: the day's other
+   events on the plan (`visual.cal.day: Array<{ title, start, end }>`), then the grid can come back with no request.
+4. **The drill, the task and the trip are drawn like their homes, not with their homes' components.** They use the
+   same tokens and shapes; they are not the drill bank's card or the Tasks row imported. The plan draft is the
+   practice lane's real `PlanCard`.
+5. **Twelve cards say "the plan does not…"** (the wording a player receives, who is in a thread, which round, which
+   tournament, where a player stands on a goal). That is honest and it is not premium. Each one goes away with its
+   engine request (E-1 to E-24); none is hidden.
+6. **Evidence forms D2, D5, D8, D9, D10** (comparison table, a round hole by hole, the rounds list, a schedule, a
+   qualifier board) are specified here and not in the gallery: there is no fixture envelope for them yet. D1, D3, D4,
+   D6, D7, empty and failed are the lead's blocks with the Ask fixtures.
+7. **VoiceOver was checked by structure and by test** (the group's name is the reach sentence, avatars are
+   decorative, every name is text, a body holds no button of the shell's), **not by listening on a phone.**
+8. **Not checked on an iPhone.** WebKit captures only: phone and desktop, light and dark, the largest Text Size,
+   Reduce Motion (a body has no motion to reduce).

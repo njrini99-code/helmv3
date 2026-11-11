@@ -3,7 +3,7 @@
    the end, the gallery that shows them (prefix ch-akg, preview only). Layout on tokens: no colour of its own, no motion of its
    own. A body is drawn whole; a disclosure changes its height in one frame on the coach's tap. */
 
-.ch-akc { display: flex; flex-direction: column; gap: 12px; min-width: 0; color: var(--ch-text-primary); }
+.ch-akc { display: flex; flex-direction: column; gap: 12px; min-width: 0; color: var(--ch-text-primary); container-type: inline-size; }
 .ch-akc > * { min-width: 0; margin: 0; }
 .ch-akc[data-density='compact'] { gap: 8px; }
 .ch-akc b { font-weight: var(--ch-fw-600); }
@@ -48,8 +48,8 @@
 
 .ch-akc-thread { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline); }
 .ch-akc-thread__before { align-self: flex-start; max-width: 84%; margin: 0; padding: 8px 12px; border-radius: var(--ch-radius-bubble); background: var(--ch-bubble-theirs-bg); color: var(--ch-text-secondary); font: var(--ch-type-14); overflow-wrap: anywhere; }
-.ch-akc-bubble { align-self: flex-end; max-width: 84%; padding: 8px 12px; border-radius: var(--ch-radius-bubble); border-end-end-radius: var(--ch-radius-tail); background: var(--ch-bubble-mine-fill); color: var(--ch-bubble-mine-ink); }
-.ch-akc-bubble .ch-btn { color: inherit; }
+.ch-akc-thread__mine { align-items: flex-end; }
+.ch-akc-clamp__t.ch-akc-bubble { align-self: flex-end; max-width: 84%; padding: 8px 12px; border-radius: var(--ch-radius-bubble); border-end-end-radius: var(--ch-radius-tail); background: var(--ch-bubble-mine-fill); color: var(--ch-bubble-mine-ink); }
 
 .ch-akc-quote > blockquote { margin: 0; padding: 12px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline); }
 .ch-akc-quote.is-quiet > blockquote { background: none; color: var(--ch-text-secondary); }
@@ -78,8 +78,8 @@
 .ch-akc-series__rule { margin: 0; font: var(--ch-type-16-strong); }
 .ch-akc-days { display: flex; flex-direction: column; gap: 6px; }
 .ch-akc-days > .ch-btn { align-self: flex-start; }
-.ch-akc-days__month { display: grid; grid-template-columns: 32px minmax(0, 1fr); align-items: center; gap: 8px; }
-.ch-akc-days__month > small { font: var(--ch-type-12-strong); color: var(--ch-text-tertiary); }
+.ch-akc-days__month { display: grid; grid-template-columns: calc(32 * var(--ch-type-k)) minmax(0, 1fr); align-items: start; gap: 8px; }
+.ch-akc-days__month > small { padding-top: 6px; font: var(--ch-type-12-strong); color: var(--ch-text-tertiary); }
 .ch-akc-days__month > ol { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; list-style: none; }
 .ch-akc-tile.is-day { width: 40px; padding: 4px 0; }
 .ch-akc-tile.is-day > b { font: var(--ch-type-16-strong); }
@@ -109,6 +109,13 @@
 .ch-akc-trip__leg { display: grid; grid-template-columns: minmax(8px, 1fr) auto minmax(8px, 1fr); align-items: center; gap: 6px; padding-bottom: 2px; color: var(--ch-text-secondary); }
 .ch-akc-trip__leg > i { height: var(--ch-hairline-w); background: var(--ch-separator-strong); }
 .ch-akc-trip__leg > em { display: inline-flex; align-items: center; gap: 4px; font: var(--ch-type-12-strong); font-style: normal; white-space: nowrap; }
+/* In a narrow card (quick chat, a phone at a large Text Size) the route stands up: from, the leg, to. */
+@container (max-width: 400px) {
+  .ch-akc-trip__route { grid-template-columns: minmax(0, 1fr); align-items: start; gap: 6px; }
+  .ch-akc-trip__end.is-to { text-align: start; }
+  .ch-akc-trip__leg { grid-template-columns: auto minmax(8px, 1fr); padding-bottom: 0; }
+  .ch-akc-trip__leg > i:first-child { display: none; }
+}
 .ch-akc-chips { display: flex; flex-direction: column; gap: 6px; }
 .ch-akc-chips > ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 
@@ -276,7 +283,7 @@
 .ch-akg-form > p { margin: 0; font: var(--ch-type-13); color: var(--ch-text-secondary); }
 .ch-akg-plain { padding: 16px; border-radius: var(--ch-radius-card); background: var(--ch-card-bg); box-shadow: var(--ch-elevation-card); }
 .ch-akg-words { width: 100%; border-collapse: collapse; }
-.ch-akg-words th, .ch-akg-words td { padding: 10px 12px 10px 0; border-top: var(--ch-hairline-w) solid var(--ch-separator); font: var(--ch-type-14); text-align: start; vertical-align: top; overflow-wrap: anywhere; }
+.ch-akg-words th, .ch-akg-words td { padding: 10px 12px 10px 0; border-top: var(--ch-hairline-w) solid var(--ch-separator); font: var(--ch-type-14); text-align: start; vertical-align: top; overflow-wrap: break-word; }
 .ch-akg-words th { width: 32%; font: var(--ch-type-13-strong); color: var(--ch-text-secondary); }
 .ch-akg-words tr:first-child > * { border-top: 0; }
 .ch-akg-words td > span { display: inline-block; margin: 0 6px 4px 0; }
@@ -315,5 +322,11 @@
 .ch-akg-told { margin: 0; font: var(--ch-type-13); color: var(--ch-text-secondary); }
 .ch-akg-note { padding: 10px 12px; border-radius: var(--ch-radius-sm); background: var(--ch-info-100); color: var(--ch-info-600); font: var(--ch-type-13); }
 
-.ch-akg-work { display: inline-flex; align-items: center; gap: 8px; min-height: 28px; }
+.ch-akg-work { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-height: 28px; }
+@media (max-width: 640px) {
+  .ch-akg-words, .ch-akg-words tbody, .ch-akg-words tr, .ch-akg-words th, .ch-akg-words td { display: block; width: auto; }
+  .ch-akg-words th { padding-bottom: 4px; }
+  .ch-akg-words td { padding-top: 0; border-top: 0; }
+  .ch-akg-words tr:first-child > th { padding-top: 0; }
+}
 .ch-akg-work > b { font: var(--ch-type-15-strong); }

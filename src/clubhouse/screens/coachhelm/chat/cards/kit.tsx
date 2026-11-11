@@ -116,7 +116,7 @@ const PER_LINE: Record<CardDensity, number> = { full: 62, compact: 40 };
  * Text held to a few lines with the rest one tap away. The whole text is always in the DOM (the clamp is CSS), so a
  * screen reader reads all of it, and the key says how much there is before the coach confirms.
  */
-export function Clamp({ text, lines, density, what = 'message', className }: { text: string; lines: number; density: CardDensity; /** "message", "note", "document": the key's noun. */ what?: string; className?: string }) {
+export function Clamp({ text, lines, density, what = 'message', className, textClass }: { text: string; lines: number; density: CardDensity; /** "message", "note", "document": the key's noun. */ what?: string; className?: string; /** A frame the words themselves wear (a bubble), so the key sits outside it. */ textClass?: string }) {
   const [open, setOpen] = useState(false);
   // Whether the text really runs past the clamp, once it has been laid out. Before that (and where nothing is laid out) the guess from its length stands.
   const [cut, setCut] = useState<boolean | null>(null);
@@ -130,7 +130,7 @@ export function Clamp({ text, lines, density, what = 'message', className }: { t
   const long = cut ?? (text.length > lines * PER_LINE[density] || text.split('\n').length > lines);
   return (
     <div className={'ch-akc-clamp' + (className ? ` ${className}` : '')} data-open={open || !long ? '' : undefined} style={{ ['--ch-akc-lines' as string]: lines }}>
-      <p ref={ref} id={id} className="ch-akc-clamp__t">
+      <p ref={ref} id={id} className={'ch-akc-clamp__t' + (textClass ? ` ${textClass}` : '')}>
         {text}
       </p>
       {long && (
@@ -142,7 +142,8 @@ export function Clamp({ text, lines, density, what = 'message', className }: { t
   );
 }
 
-const linesFor = (density: CardDensity, full = 6): number => (density === 'compact' ? 2 : full);
+/** Words that are sent keep four lines even in quick chat: two lines of a message is not enough to approve it. */
+const linesFor = (density: CardDensity, full = 6): number => (density === 'compact' ? Math.min(full, 4) : full);
 
 /** A notification as a phone shows it: the app's glyph, a bold title, the body. The words are the plan's, never a summary. */
 export function Notice({ title, body, caption, density }: { title: string; body?: string | null; caption?: string; density: CardDensity }) {
@@ -169,9 +170,7 @@ export function Bubble({ text, before, caption, density }: { text: string; befor
       {caption && <figcaption>{caption}</figcaption>}
       <div className="ch-akc-thread">
         {before && <p className="ch-akc-thread__before">{before}</p>}
-        <div className="ch-akc-bubble">
-          <Clamp text={text} lines={linesFor(density)} density={density} />
-        </div>
+        <Clamp text={text} lines={linesFor(density)} density={density} className="ch-akc-thread__mine" textClass="ch-akc-bubble" />
       </div>
     </figure>
   );
