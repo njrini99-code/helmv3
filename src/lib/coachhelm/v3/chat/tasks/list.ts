@@ -10,7 +10,8 @@ import { developmentTools } from './development-tasks';
 import { eventEditTools } from './event-edit-tasks';
 import { eventTaskTools } from './event-tasks';
 import { qualifierTools } from './qualifier-tasks';
+import { taskTaskTools } from './task-tasks';
 
 export function contextTaskTools(): ChatTool[] {
-  return [...eventTaskTools(), ...eventEditTools(), ...developmentTools(), ...qualifierTools()];
+  return [...eventTaskTools(), ...eventEditTools(), ...developmentTools(), ...qualifierTools(), ...taskTaskTools()];
 }

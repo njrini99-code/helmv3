@@ -108,3 +108,13 @@ export function wallClock(iso: string, timeZone: string): { date: string; time: 
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '00';
   return { date: `${get('year')}-${get('month')}-${get('day')}`, time: `${get('hour')}:${get('minute')}` };
 }
+
+/**
+ * The permission several of the app's actions require: the caller is on the staff of the team. A read that fails
+ * denies (a check that could not run must not pass) and says it was the check that failed, not "you are not a coach".
+ */
+export async function requireTeamStaff(ctx: ToolContext, who: CoachChatContext): Promise<void> {
+  const { data, error } = await ctx.sb.from('golf_team_coach_staff').select('id').eq('team_id', who.team_id).eq('coach_id', who.coach_id).maybeSingle();
+  if (error) throw new Error('Your access could not be checked just now. Try again in a moment.');
+  if (!data) throw new CoachContextError('Only this team’s coaches can do that.', 403);
+}

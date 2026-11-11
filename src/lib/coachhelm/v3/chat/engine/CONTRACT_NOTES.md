@@ -615,3 +615,12 @@ own; the two lines that named `eventTaskTools` now name this). The names are in 
 - Not built, with the reason for each: `../tasks/INVENTORY.md`, "Asked for and not possible" and "Left for later".
 - E19 is done: `save_note` and `remove_note` carry `direct_only: true`. `find_in_app` reads nothing of the team's
   and writes nothing, so it does not.
+
+## 2026-11-11 (CONTEXT): `set_task_reminder`
+
+C9. A ninth CONTEXT task, appended to `contextTaskTools()` (so last in every coach list): `set_task_reminder({ task_id,
+date, time })` wraps `setTaskReminder` (`golf/actions/tasks.ts`). It queues the app's in-app reminder; the card names
+every assignee with an account (finished or not, as the app sends it), the coach who assigned the task, and the
+words. Its receipt's notification is `queued`: the reminder goes out with the hourly job, not at commit. Held for
+Undo like the others. Whole prefix after it, characters / 4: Ask 21,062 with the tournaments flag off and 21,476 with
+it on; quick chat 20,545 and 20,959. The twelve CONTEXT tools are 1,751 of that.
