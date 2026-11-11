@@ -178,7 +178,7 @@ function PlayerFirstRun({ data, own }: { data: ChPlayerHome; own?: ReactNode }) 
   return (
     // `--first`: the framed head on desktop, as the loaded page has (states audit, 2026-10-08), and the Ledger's page
     // intro on the phone (home.css "Player Home on the phone").
-    <main className="ch-h-main ch-h-main--first" data-canopy="">
+    <main className="ch-h-main ch-h-main--first is-player" data-canopy="">
       <header className="ch-h-head" data-canopy-head="">
         <span className="ch-h-head__date">{data.todayLabel}</span>
         <h1 className="ch-display">{data.greeting}</h1>

@@ -3350,6 +3350,19 @@
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
+  /* The player's first run on the phone (CH-2312) opens as the loaded page does: the date and the greeting with no rule
+     above them, then the welcome as one card with the card's own inset, so its two buttons sit inside it. */
+  .ch-h-main--first.is-player {
+    padding-top: 30px;
+  }
+  .ch-h-main--first.is-player > .ch-h-head {
+    padding-top: 0;
+    border-top: 0;
+  }
+  .ch-h-main--first.is-player > .ch-es--page > .ch-es__copy,
+  .ch-hm--player .ch-es--page > .ch-es__copy {
+    padding: 24px 16px 16px;
+  }
   /* The coach's first run with events: the week strip opens a section under the intro, as on the loaded page. */
   .ch-h-main--first > .ch-hm-sec {
     margin-top: 32px;
@@ -4224,8 +4237,9 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 .ch-h-main--desk > .ch-h-queue + .ch-h-sheet {
   margin-top: 32px;
 }
-.ch-h-main--first > .ch-h-queue {
-  margin-bottom: 4px;
+/* The first run's welcome is a card (4 Nov), so it keeps a card's gap from the head's rule and from Waiting on you. */
+.ch-h-main--first > .ch-es--page {
+  margin-top: 16px;
 }
 
 /* The team's game (TeamLegs.tsx): a ruled ledger under the scoring stage, on the stage's own Last 10 rounds. */

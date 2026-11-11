@@ -2087,28 +2087,17 @@ a.ch-rs-peek__dev:focus-visible,
     margin-top: 8px;
   }
 
-  /* The toolbar heads the players: an engraved rule under it, as under a section title, and the players hang from
-     that rule (the faces' column lines start on it). */
+  /* The toolbar heads the players: an engraved rule under it, as under a section title. The list hangs from that
+     rule; the face tiles keep the page's gap under it, so a card never touches the rule. */
   .ch-rs[data-canopy] .ch-rs-bar {
     margin-top: 16px;
     padding-bottom: 16px;
     box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
-  .ch-rs[data-canopy] .ch-rs-body,
-  .ch-rs[data-canopy] .ch-rs-bar + .ch-rs-faces {
+  .ch-rs[data-canopy] .ch-rs-body {
     margin-top: -16px;
   }
 
-  /* Faces: portraits on a ruled page. Hairlines run only between the cells (each face draws the line to its left and
-     above; the grid clips the outer ones), and a face has no fill, lift or shadow: hover and press tint its cell,
-     the open player's cell takes the selected tint and its coin a green ring. The figures sit in the cell, not in a
-     well. The coin's rings are outlines, so the gap between coin and ring is the cell itself, whatever its tint. */
-  .ch-rs[data-canopy] .ch-rs-faces {
-    gap: 0;
-    overflow: hidden;
-  }
-  @media (hover: hover) {
-  }
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
       background: var(--ch-ledger-row-hover);
