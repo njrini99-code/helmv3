@@ -94,7 +94,8 @@ function ListPage({ data, phone }: { data: ChTourPlayerData; phone: boolean }) {
   return (
     <TourMain view="player" phone={phone} labelledBy={TITLE_ID} className="ch-tour-pl">
       <TourPhoneTop phone={phone} title="Tournaments" />
-      <TourHead tightAlways id={TITLE_ID} phone={phone} eyebrow={data.team.label} title="Tournaments" line="Your team’s events, with the days, the tee times and your own scores." />
+      {/* No line under the title: each section's caption already says what it holds, in its own place. */}
+      <TourHead tightAlways id={TITLE_ID} phone={phone} eyebrow={data.team.label} title="Tournaments" />
       {data.errors.events ? (
         <InlineNotice code="CH-16290" title="The events didn’t load" body="Nothing has changed. Try again." onRetry={refresh} retrying={refreshing} />
       ) : data.list.length === 0 ? (
