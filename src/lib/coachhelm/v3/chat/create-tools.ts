@@ -327,8 +327,8 @@ const tripFlow: FlowDef<z.infer<typeof tripInput>> = {
       key: ['trip', i.event_name, i.departure_date, i.destination],
     };
   },
-  run: async (ctx, i) => {
-    const res = (await createGolfTravelItinerary({ team_id: ctx.team_id, event_name: i.event_name, destination: i.destination, transportation_type: i.transportation_type, departure_date: i.departure_date, departure_time: i.departure_time, departure_location: i.departure_location, return_date: i.return_date, return_time: i.return_time, flight_info: i.flight_info, hotel_name: i.hotel_name, hotel_address: i.hotel_address, hotel_phone: i.hotel_phone, hotel_confirmation: i.hotel_confirmation, room_assignments: i.room_assignments, uniform_requirements: i.uniform_requirements, gear_list: i.gear_list?.join(', '), notes: i.notes })) as { success: boolean; error?: string; data?: { id?: string } | null };
+  run: async (ctx, i, { requestId }) => {
+    const res = (await createGolfTravelItinerary({ requestId, team_id: ctx.team_id, event_name: i.event_name, destination: i.destination, transportation_type: i.transportation_type, departure_date: i.departure_date, departure_time: i.departure_time, departure_location: i.departure_location, return_date: i.return_date, return_time: i.return_time, flight_info: i.flight_info, hotel_name: i.hotel_name, hotel_address: i.hotel_address, hotel_phone: i.hotel_phone, hotel_confirmation: i.hotel_confirmation, room_assignments: i.room_assignments, uniform_requirements: i.uniform_requirements, gear_list: i.gear_list?.join(', '), notes: i.notes })) as { success: boolean; error?: string; data?: { id?: string } | null };
     const id = res.success && typeof res.data?.id === 'string' ? res.data.id : undefined;
     return { ok: res.success, error: res.error, summary: `The trip to ${i.destination} is added.`, kind: 'trip', label: i.event_name, href: '/golf/dashboard/travel', ...(id ? { id } : {}) };
   },
@@ -379,8 +379,8 @@ const qualifierFlow: FlowDef<QualifierStored> = {
       key: ['qualifier', i.name, i.start_date, i.player_ids.join(',')],
     };
   },
-  run: async (_ctx, i) => {
-    const res = (await createGolfQualifier({ name: i.name, description: i.description, startDate: i.start_date, endDate: i.end_date, numRounds: i.num_rounds, selectionSlotsTotal: i.selection_slots_total, selectionSlotsCoachPick: i.selection_slots_coach_pick, playerIds: i.player_ids, rules: i.rules, entryDeadline: i.entry_deadline })) as { success: boolean; error?: string; data?: { qualifierId?: string } };
+  run: async (_ctx, i, { requestId }) => {
+    const res = (await createGolfQualifier({ requestId, name: i.name, description: i.description, startDate: i.start_date, endDate: i.end_date, numRounds: i.num_rounds, selectionSlotsTotal: i.selection_slots_total, selectionSlotsCoachPick: i.selection_slots_coach_pick, playerIds: i.player_ids, rules: i.rules, entryDeadline: i.entry_deadline })) as { success: boolean; error?: string; data?: { qualifierId?: string } };
     const id = res.success ? res.data?.qualifierId : undefined;
     const { recipients, not_reached } = reachOf(i.seen?.people ?? [], true);
     return { ok: res.success, error: res.error, summary: `${i.name} is set.`, kind: 'qualifier', label: i.name, href: id ? `/golf/dashboard/qualifiers/${id}` : '/golf/dashboard/qualifiers', ...(id ? { id } : {}), ...(res.success ? { notifications: queuedTo(['push', 'in_app', 'email'], recipients), missed: missedOf(not_reached) } : {}) };
@@ -435,8 +435,8 @@ const goalFlow: FlowDef<GoalStored> = {
       key: ['goal', p.id, i.metric_id, i.target_value, i.window_days],
     };
   },
-  run: async (ctx, i) => {
-    const res = (await createGoal({ team_id: ctx.team_id, player_id_if_coach_creating: i.player_id, metric_id: i.metric_id, title: goalTitleOf(i.label, i.window_days), category: 'manual', ends_at: new Date(Date.now() + i.window_days * 86_400_000).toISOString(), target_value: i.target_value, target_source: 'manual', baseline_value: null, coach_assignment_mode: i.mode })) as { ok?: boolean; success?: boolean; error?: string; goal_id?: string };
+  run: async (ctx, i, { requestId }) => {
+    const res = (await createGoal({ requestId, team_id: ctx.team_id, player_id_if_coach_creating: i.player_id, metric_id: i.metric_id, title: goalTitleOf(i.label, i.window_days), category: 'manual', ends_at: new Date(Date.now() + i.window_days * 86_400_000).toISOString(), target_value: i.target_value, target_source: 'manual', baseline_value: null, coach_assignment_mode: i.mode })) as { ok?: boolean; success?: boolean; error?: string; goal_id?: string };
     const ok = !!(res.ok ?? res.success);
     const { recipients, not_reached } = reachOf(i.seen?.people ?? [], true);
     return { ok, error: res.error, summary: `The goal is set for ${requireRosterPlayer(ctx, i.player_id).name}.`, kind: 'goal', href: goalHref(i.player_id), ...(ok && res.goal_id ? { id: res.goal_id } : {}), ...(ok ? { notifications: queuedTo(['in_app'], recipients).map((n) => ({ ...n, status: 'sent' as const })), missed: missedOf(not_reached) } : {}) };
@@ -957,8 +957,8 @@ const publishArtifactFlow: FlowDef<z.infer<typeof publishArtifactInput>> = {
     visible_note: `Every player and coach on ${ctx.team_name} can open it in Documents. Nobody gets a notification.`,
     key: ['publish_artifact', i.title, createHash('sha256').update(i.body).digest('hex')],
   }),
-  run: async (ctx, i) => {
-    const res = await saveTextDocument(ctx.team_id, i.title, i.body, { category: 'other', playerVisible: true });
+  run: async (ctx, i, { requestId }) => {
+    const res = await saveTextDocument(ctx.team_id, i.title, i.body, { category: 'other', playerVisible: true, requestId });
     const id = (res.data as { id?: string } | null)?.id;
     return { ok: !!res.data, error: res.data ? undefined : (res.error ?? 'That didn’t publish. Nothing changed.'), summary: `${i.title} is in Documents.`, kind: 'document', label: i.title, href: DOCUMENTS_HREF, ...(id ? { id } : {}) };
   },

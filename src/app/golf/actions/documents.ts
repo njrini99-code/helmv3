@@ -424,6 +424,8 @@ export async function createDocument(
  * this team) — a server action without an auth check is a hard CI rule, and a
  * player should never be able to write a coaching plan into the team library.
  */
+const SAVE_REQUEST_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 async function saveTextDocumentImpl(
   teamId: string,
   title: string,
@@ -434,6 +436,7 @@ async function saveTextDocumentImpl(
     playerVisible?: boolean;
     /** File extension + mime; defaults to markdown. */
     extension?: 'md' | 'txt';
+    requestId?: string;
   } = {}
 ): Promise<{ data: GolfDocument | null; error: string | null }> {
   try {
@@ -451,6 +454,15 @@ async function saveTextDocumentImpl(
 
     const trimmed = (content ?? '').trim();
     if (!trimmed) return { data: null, error: 'Document content is empty' };
+
+    // The same request again: the document it saved the first time is the answer (the id is the request's, and it is
+    // this team's). Looked for before the upload, so a repeat stores no second file.
+    const requestId = options.requestId;
+    if (requestId !== undefined) {
+      if (!SAVE_REQUEST_ID_RE.test(requestId)) return { data: null, error: 'Invalid request' };
+      const { data: first } = await supabase.from('golf_documents').select('*').eq('id', requestId).eq('team_id', teamId).maybeSingle();
+      if (first) return { data: first as GolfDocument, error: null };
+    }
 
     const ext = options.extension ?? 'md';
     const mimeType = ext === 'txt' ? 'text/plain' : 'text/markdown';
@@ -470,6 +482,7 @@ async function saveTextDocumentImpl(
     const { data: document, error: insertError } = await supabase
       .from('golf_documents')
       .insert({
+        ...(requestId ? { id: requestId } : {}),
         team_id: teamId,
         title,
         description: options.description || null,
@@ -483,6 +496,11 @@ async function saveTextDocumentImpl(
       })
       .select()
       .single();
+    // Two sends of one request at the same moment: the first to land is the answer.
+    if (insertError?.code === '23505' && requestId) {
+      const { data: first } = await supabase.from('golf_documents').select('*').eq('id', requestId).eq('team_id', teamId).maybeSingle();
+      if (first) return { data: first as GolfDocument, error: null };
+    }
     if (insertError) throw insertError;
 
     // Initial version record (file_url is NOT NULL — supply the public URL).
@@ -528,6 +546,11 @@ export async function saveTextDocument(
     playerVisible?: boolean;
     /** File extension + mime; defaults to markdown. */
     extension?: 'md' | 'txt';
+    /**
+     * Optional. A uuid that becomes the document's id, so the same request sent twice (a retry after a lost response)
+     * answers with the first document and stores no second file. Left out, nothing changes.
+     */
+    requestId?: string;
   } = {}
 ): Promise<{ data: GolfDocument | null; error: string | null }> {
   return observedSaveTextDocument(teamId, title, content, options);

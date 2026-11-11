@@ -1178,3 +1178,21 @@ E30. **`about` on a new message.** Request: `{ ..., message, about: { evidence_r
      - **For CAPABILITIES and the UI**: a component that lets a thing be tapped sends the evidence part's `ref` and a
        key in one of the forms above. For anything not reachable that way, tell me what the element is and I add a
        form; do not send words.
+
+## 2026-11-11 (PLANS): request ids on four more actions, and why three need none
+
+P14. `createGolfTravelItinerary`, `createGolfQualifier`, `createGoal` and `saveTextDocument` take an optional
+`requestId` (a uuid; it becomes the row's id). The same request sent twice answers with the first row: no second
+trip, qualifier, goal or document, no second set of entries, no second notification, no second stored file. A row
+with that id that belongs to another team (or another player, for a goal) is never returned: the call fails as a
+plain insert failure would. Left out, the insert is what it was. `create_trip`, `create_qualifier`, `create_goal`
+and `publish_artifact` pass the card's request id (`flowRequestId`); their content-based `written` look stays as
+well, so a card first tried before this change is still found.
+
+The other three were left alone because each already refuses its own repeat inside the action:
+`createTask` and `createEnrichedAnnouncement` answer a same-content repeat within two minutes with the first row
+("a retry after a lost response"), and `createFocusArea` refuses a second active focus area on the same metric for
+the player. A focus area with no metric has no such guard; the card's own look (`written`) is what stops a repeat.
+
+Not done: `npm run build` (not allowed on this laptop). The change adds an optional field to four existing server
+actions and exports nothing new. Test: `src/app/golf/actions/__tests__/request-id-trip-qualifier-goal-document.test.ts`.

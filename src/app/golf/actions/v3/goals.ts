@@ -71,7 +71,14 @@ export interface CreateGoalInput {
   // carries an auditable lineage (P1-07).
   origin?: GoalOrigin;
   origin_insight_id?: string | null;
+  /**
+   * Optional. A uuid that becomes the goal's id, so the same request sent twice (a retry after a lost response)
+   * answers with the first goal: no second one and no second notification. Left out, nothing changes.
+   */
+  requestId?: string;
 }
+
+const REQUEST_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export interface ActionResult {
   ok: boolean;
@@ -100,6 +107,9 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
     const goalWindow = resolveGoalWindow(input.ends_at);
     if (!goalWindow.ok) {
       return { ok: false, error: goalWindow.error };
+    }
+    if (input.requestId !== undefined && !REQUEST_ID_RE.test(input.requestId)) {
+      return { ok: false, error: 'Invalid request' };
     }
 
     const supabase = await createClient();
@@ -244,6 +254,7 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
     if (targetRule) return { ok: false, error: GOAL_RULE_MESSAGES[targetRule] };
 
     const insertPayload = {
+      ...(input.requestId ? { id: input.requestId } : {}),
       player_id,
       team_id,
       created_by_user_id: user.id,
@@ -278,6 +289,18 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
       .insert(insertPayload)
       .select('id')
       .single();
+
+    // The same request again: the goal it made the first time is the answer (the id is the request's, and it is this
+    // player's). The player was told then, so nobody is told twice.
+    if (error?.code === '23505' && input.requestId) {
+      const { data: first } = await supabase
+        .from('golf_goals')
+        .select('id')
+        .eq('id', input.requestId)
+        .eq('player_id', player_id)
+        .maybeSingle();
+      if (first) return { ok: true, goal_id: first.id, warning };
+    }
 
     if (error || !data) {
       await logServerError(`createGoal failed: ${error?.message ?? 'no row'}`, {
