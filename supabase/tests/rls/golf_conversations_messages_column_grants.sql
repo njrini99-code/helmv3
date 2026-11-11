@@ -5,17 +5,19 @@
 --     point it at another team and add that team's minors);
 --   * move their own message into a conversation they are not in, back-date it, change its kind or sender;
 --   * create a conversation "owned" by someone else.
--- Each must now fail with 42501. The writes the app really makes (updated_at, title; edit, soft delete, poll close,
--- has_attachments both directly and through the INVOKER trigger, read) must still work, and a hard delete of a message that
--- has a reply must still work (ON DELETE SET NULL runs as the table owner and passes the guard).
--- WRITTEN, NOT RUN where it was authored (no Docker): run with npm run test:rls before applying.
+-- Each must now fail with 42501, and so must a rename (title) and a direct write of `read`. The writes the app really makes
+-- (updated_at; edit, soft delete, poll close, has_attachments both directly and through the INVOKER trigger, a send) must
+-- still work, and a hard delete of a message that has a reply must still work (ON DELETE SET NULL runs as the table owner
+-- and passes the guard). It also proves authenticated lost TRUNCATE (which ignores RLS), TRIGGER, MAINTAIN and REFERENCES
+-- on both tables, and that a send and an attachment still pass their foreign-key checks without REFERENCES.
+-- Runs on the local stack with npm run test:rls (first real run 2026-11-10).
 --
 -- Ids use the 0000...0f2xxx range.
 
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(36);
+SELECT plan(41);
 
 CREATE FUNCTION public.f2_rows_affected(p_sql text) RETURNS integer
 LANGUAGE plpgsql AS $f$
@@ -108,6 +110,17 @@ SELECT ok(
   AND NOT has_table_privilege('anon', 'public.golf_messages', 'TRUNCATE'),
   'anon holds no privilege on conversations or messages'
 );
+SELECT ok(
+  NOT has_table_privilege('authenticated', 'public.golf_conversations', 'TRUNCATE, MAINTAIN, TRIGGER, REFERENCES')
+  AND NOT has_table_privilege('authenticated', 'public.golf_messages', 'TRUNCATE, MAINTAIN, TRIGGER, REFERENCES')
+  AND has_table_privilege('authenticated', 'public.golf_conversations', 'SELECT')
+  AND has_table_privilege('authenticated', 'public.golf_conversations', 'INSERT')
+  AND has_table_privilege('authenticated', 'public.golf_conversations', 'DELETE')
+  AND has_table_privilege('authenticated', 'public.golf_messages', 'SELECT')
+  AND has_table_privilege('authenticated', 'public.golf_messages', 'INSERT')
+  AND has_table_privilege('authenticated', 'public.golf_messages', 'DELETE'),
+  'authenticated keeps SELECT, INSERT and DELETE on both tables and holds none of TRUNCATE, MAINTAIN, TRIGGER, REFERENCES'
+);
 
 -- ---------------------------------------------------------------------------
 -- Conversation exploits, as B
@@ -183,6 +196,22 @@ SELECT is(
   (SELECT count(*)::int FROM public.golf_messages WHERE conversation_id = '00000000-0000-0000-0000-0000000f22b1'),
   0, 'B reads nothing in Y');
 
+-- TRUNCATE ignores RLS, and CASCADE follows every foreign key. The message is checked as well as the code: before this
+-- file the same statements were refused only further down the cascade, at a table authenticated cannot truncate
+-- (golf_conversation_read_marks; golf_push_holds where that held file is applied), and on a database without
+-- golf_push_holds the messages one was not refused at all.
+SELECT throws_ok(
+  $$TRUNCATE public.golf_conversations CASCADE$$,
+  '42501', 'permission denied for table golf_conversations', 'B cannot TRUNCATE conversations');
+SELECT throws_ok(
+  $$TRUNCATE public.golf_messages CASCADE$$,
+  '42501', 'permission denied for table golf_messages', 'B cannot TRUNCATE messages');
+-- TRIGGER is all it takes to attach a trigger function the role may execute.
+SELECT throws_ok(
+  $$CREATE TRIGGER f2_probe BEFORE INSERT ON public.golf_messages
+    FOR EACH ROW EXECUTE FUNCTION public.golf_messages_identity_guard()$$,
+  '42501', NULL, 'B cannot attach a trigger to the messages table');
+
 -- ---------------------------------------------------------------------------
 -- The writes the app makes still work, as B
 -- ---------------------------------------------------------------------------
@@ -190,6 +219,11 @@ SELECT lives_ok(
   $$UPDATE public.golf_messages SET content = 'B one (edited)', edited_at = '2026-11-02 12:00:00+00'
     WHERE id = '00000000-0000-0000-0000-0000000f23b1' AND sender_id = '00000000-0000-0000-0000-0000000f21b1'$$,
   'updateMessage: content + edited_at');
+-- The foreign key to golf_conversations is checked as the table owner: the sender needs no REFERENCES privilege.
+SELECT lives_ok(
+  $$INSERT INTO public.golf_messages (conversation_id, sender_id, content)
+    VALUES ('00000000-0000-0000-0000-0000000f22a1', '00000000-0000-0000-0000-0000000f21b1', 'B sends again')$$,
+  'sendMessage: B can still send in X');
 SELECT lives_ok(
   $$UPDATE public.golf_messages SET is_deleted = true, content = ''
     WHERE id = '00000000-0000-0000-0000-0000000f23b2' AND sender_id = '00000000-0000-0000-0000-0000000f21b1'$$,

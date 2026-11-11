@@ -4,14 +4,15 @@
 -- member could re-point their own participant row at any conversation and read its messages. This suite acts as user B
 -- (a plain member of conversation X) and proves every re-pointing write now fails, while the four columns the app writes
 -- (last_read_at, notification_level, muted_until, hidden_at) still work, and that user C (not in X) sees nothing of X.
--- WRITTEN, NOT RUN where it was authored (no Docker): run with npm run test:rls before applying.
+-- It also proves authenticated lost TRUNCATE (which ignores RLS), TRIGGER, MAINTAIN and REFERENCES on the table.
+-- Runs on the local stack with npm run test:rls (first real run 2026-11-10).
 --
 -- Ids use the 0000...0f1xxx range. A creates X and is in X with B; C creates Y and is alone in it.
 
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(25);
+SELECT plan(32);
 
 CREATE FUNCTION public.f1_rows_affected(p_sql text) RETURNS integer
 LANGUAGE plpgsql AS $f$
@@ -73,6 +74,13 @@ SELECT ok(
   AND NOT has_table_privilege('anon', 'public.golf_conversation_participants', 'TRUNCATE'),
   'anon holds no privilege on the participants table'
 );
+SELECT ok(
+  NOT has_table_privilege('authenticated', 'public.golf_conversation_participants', 'TRUNCATE, MAINTAIN, TRIGGER, REFERENCES')
+  AND has_table_privilege('authenticated', 'public.golf_conversation_participants', 'SELECT')
+  AND has_table_privilege('authenticated', 'public.golf_conversation_participants', 'INSERT')
+  AND has_table_privilege('authenticated', 'public.golf_conversation_participants', 'DELETE'),
+  'authenticated keeps SELECT, INSERT and DELETE and holds none of TRUNCATE, MAINTAIN, TRIGGER, REFERENCES'
+);
 
 -- ---------------------------------------------------------------------------
 -- The exploit, as user B (a member of X, not of Y)
@@ -113,6 +121,16 @@ SELECT throws_ok(
   $$UPDATE public.golf_conversation_participants SET id = gen_random_uuid()
     WHERE user_id = '00000000-0000-0000-0000-0000000f11b1'$$,
   '42501', NULL, 'B cannot rewrite the row id');
+
+-- TRUNCATE ignores RLS: with the privilege, one statement empties every conversation's membership.
+SELECT throws_ok(
+  $$TRUNCATE public.golf_conversation_participants$$,
+  '42501', NULL, 'B cannot TRUNCATE the participants table');
+-- TRIGGER is all it takes to attach a trigger function the role may execute.
+SELECT throws_ok(
+  $$CREATE TRIGGER f1_probe BEFORE INSERT ON public.golf_conversation_participants
+    FOR EACH ROW EXECUTE FUNCTION public.golf_participants_identity_guard()$$,
+  '42501', NULL, 'B cannot attach a trigger to the participants table');
 
 -- Another member's row is out of reach even for the allowed columns.
 SELECT is(
@@ -166,6 +184,68 @@ SELECT is(
   (SELECT count(*)::int FROM public.golf_messages WHERE conversation_id = '00000000-0000-0000-0000-0000000f12a1'),
   0, 'a non-member sees none of X''s messages');
 RESET ROLE;
+
+-- ---------------------------------------------------------------------------
+-- INSERT: a creator cannot pre-set another member's private state (security review 2026-11-10, item 4).
+-- INSERT is granted table-wide, so before the insert guard a creator could add a member with hidden_at,
+-- last_read_at, muted_until and notification_level already set: that person never saw the chat.
+-- ---------------------------------------------------------------------------
+RESET ROLE;
+-- A creator adds only people on the conversation's team, so A and B need one. Replica mode: no roster trigger runs.
+SET LOCAL session_replication_role = replica;
+INSERT INTO public.organizations (id, name, type) VALUES
+  ('00000000-0000-0000-0000-0000000f1401', 'F1 Org', 'college');
+INSERT INTO public.golf_teams (id, name, join_code, organization_id) VALUES
+  ('00000000-0000-0000-0000-0000000f1501', 'F1 Team', 'F1TEAM01', '00000000-0000-0000-0000-0000000f1401');
+INSERT INTO public.golf_players (id, user_id, first_name, last_name) VALUES
+  ('00000000-0000-0000-0000-0000000f16a1', '00000000-0000-0000-0000-0000000f11a1', 'Aone', 'Player'),
+  ('00000000-0000-0000-0000-0000000f16b1', '00000000-0000-0000-0000-0000000f11b1', 'Bone', 'Player');
+INSERT INTO public.golf_team_members (player_id, team_id, status) VALUES
+  ('00000000-0000-0000-0000-0000000f16a1', '00000000-0000-0000-0000-0000000f1501', 'active'),
+  ('00000000-0000-0000-0000-0000000f16b1', '00000000-0000-0000-0000-0000000f1501', 'active');
+SET LOCAL session_replication_role = origin;
+SELECT ok(
+  EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgrelid = 'public.golf_conversation_participants'::regclass
+      AND tgname = 'golf_participants_insert_guard' AND NOT tgisinternal AND tgenabled = 'O'
+      AND (tgtype & 1) = 1 AND (tgtype & 2) = 2 AND (tgtype & 4) = 4),
+  'golf_participants_insert_guard is a BEFORE INSERT row trigger');
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-0000000f11a1", "role": "authenticated"}';
+SELECT lives_ok(
+  $$INSERT INTO public.golf_conversations (id, created_by, team_id, is_team_chat, title)
+      VALUES ('00000000-0000-0000-0000-0000000f12c1', '00000000-0000-0000-0000-0000000f11a1',
+              '00000000-0000-0000-0000-0000000f1501', false, 'Z: A then B');
+    INSERT INTO public.golf_conversation_participants
+      (conversation_id, user_id, joined_at, last_read_at, hidden_at, muted_until, notification_level)
+      VALUES ('00000000-0000-0000-0000-0000000f12c1', '00000000-0000-0000-0000-0000000f11a1',
+              '2001-01-01', '2099-01-01', '2099-01-01', '2099-01-01', 'muted');
+    INSERT INTO public.golf_conversation_participants
+      (conversation_id, user_id, joined_at, last_read_at, hidden_at, muted_until, notification_level)
+      VALUES ('00000000-0000-0000-0000-0000000f12c1', '00000000-0000-0000-0000-0000000f11b1',
+              '2001-01-01', '2099-01-01', '2099-01-01', '2099-01-01', 'muted')$$,
+  'a creator still adds themself and then another member, whatever state columns the insert carries');
+RESET ROLE;
+SELECT is(
+  (SELECT count(*)::int FROM public.golf_conversation_participants
+    WHERE conversation_id = '00000000-0000-0000-0000-0000000f12c1'
+      AND joined_at = now() AND last_read_at IS NULL AND hidden_at IS NULL AND muted_until IS NULL
+      AND notification_level = 'all'),
+  2, 'both rows land with joined_at = now(), nothing read, not hidden, not muted, level all');
+DELETE FROM public.golf_conversation_participants
+WHERE conversation_id = '00000000-0000-0000-0000-0000000f12c1';
+INSERT INTO public.golf_conversation_participants (conversation_id, user_id, joined_at, hidden_at, notification_level)
+VALUES ('00000000-0000-0000-0000-0000000f12b1', '00000000-0000-0000-0000-0000000f11a1',
+        '2026-11-02 08:00:00+00', '2026-11-02 09:00:00+00', 'mentions');
+SELECT is(
+  (SELECT count(*)::int FROM public.golf_conversation_participants
+    WHERE conversation_id = '00000000-0000-0000-0000-0000000f12b1' AND user_id = '00000000-0000-0000-0000-0000000f11a1'
+      AND joined_at = '2026-11-02 08:00:00+00' AND hidden_at = '2026-11-02 09:00:00+00'
+      AND notification_level = 'mentions'),
+  1, 'the table owner (definer code, the service role, admin repair) inserts a row as written');
+DELETE FROM public.golf_conversation_participants
+WHERE conversation_id = '00000000-0000-0000-0000-0000000f12b1' AND user_id = '00000000-0000-0000-0000-0000000f11a1';
 
 -- ---------------------------------------------------------------------------
 -- anon

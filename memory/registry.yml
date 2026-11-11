@@ -1170,6 +1170,9 @@ features:
         - supabase/migrations/20261021100000_golf_player_hub_rpcs_staff_gate.sql
         - supabase/migrations/20261105090000_golf_player_hub_events_class_rows.sql
         - supabase/migrations/20261105100000_golf_players_coach_reads_inactive_members.sql
+        # Messaging security (held, PR #2498). The name carries none of
+        # "messag", "conversation" or "chat_": the participants column grants.
+        - supabase/migrations/20261107090000_golf_participants_column_grants.sql
         # Polls in Messages (held): the vote guard and the payload freeze carry
         # "poll" but not "messag" in their names.
         - supabase/migrations/*golf_poll_*.sql

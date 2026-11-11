@@ -3907,7 +3907,11 @@ BEGIN
       WHERE m.conversation_id = c.id
         AND m.sender_id <> v_uid
         AND NOT COALESCE(m.is_deleted, FALSE)
-        AND CASE WHEN cp.last_read_at IS NULL THEN NOT COALESCE(m.read, FALSE) ELSE m.created_at > cp.last_read_at END),
+        AND CASE
+              WHEN cp.last_read_at IS NOT NULL THEN m.created_at > cp.last_read_at
+              WHEN COALESCE(c.is_team_chat, FALSE) THEN TRUE
+              ELSE NOT COALESCE(m.read, FALSE)
+            END),
     ARRAY(SELECT cp2.user_id
           FROM public.golf_conversation_participants cp2
           WHERE cp2.conversation_id = c.id
@@ -15636,76 +15640,7 @@ $$;
 ALTER FUNCTION "public"."golf_tournament_my_lineup"("p_tournament_id" "uuid") OWNER TO "postgres";
 
 
--- Messages v2 package M (HELD 20261107090000 / 20261107090100 / 20261107090300)
-CREATE OR REPLACE FUNCTION "public"."golf_participants_identity_guard"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO ''
-    AS $$
-BEGIN
-  -- Only client sessions are held to this. service_role, the table owner and
-  -- SECURITY DEFINER functions run as other roles and pass.
-  IF current_user NOT IN ('authenticated', 'anon') THEN
-    RETURN NEW;
-  END IF;
-  IF NEW.id IS DISTINCT FROM OLD.id
-     OR NEW.conversation_id IS DISTINCT FROM OLD.conversation_id
-     OR NEW.user_id IS DISTINCT FROM OLD.user_id
-     OR NEW.joined_at IS DISTINCT FROM OLD.joined_at THEN
-    RAISE EXCEPTION 'A participant row cannot be moved' USING ERRCODE = '42501';
-  END IF;
-  RETURN NEW;
-END $$;
-
-ALTER FUNCTION "public"."golf_participants_identity_guard"() OWNER TO "postgres";
-
-CREATE OR REPLACE FUNCTION "public"."golf_conversations_identity_guard"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO ''
-    AS $$
-BEGIN
-  -- Client sessions only. service_role, the table owner and definer functions pass,
-  -- and so does Postgres's own ON DELETE SET NULL on team_id (it runs as the owner).
-  IF current_user NOT IN ('authenticated', 'anon') THEN
-    RETURN NEW;
-  END IF;
-  IF NEW.id IS DISTINCT FROM OLD.id
-     OR NEW.created_by IS DISTINCT FROM OLD.created_by
-     OR NEW.team_id IS DISTINCT FROM OLD.team_id
-     OR NEW.is_team_chat IS DISTINCT FROM OLD.is_team_chat
-     OR NEW.is_team_channel IS DISTINCT FROM OLD.is_team_channel
-     OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN
-    RAISE EXCEPTION 'A conversation''s owner, team and kind cannot be changed'
-      USING ERRCODE = '42501';
-  END IF;
-  RETURN NEW;
-END $$;
-
-ALTER FUNCTION "public"."golf_conversations_identity_guard"() OWNER TO "postgres";
-
-CREATE OR REPLACE FUNCTION "public"."golf_messages_identity_guard"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO ''
-    AS $$
-BEGIN
-  -- Client sessions only. Postgres's ON DELETE SET NULL on reply_to_id runs as the
-  -- table owner, so deleting a message that has replies still works.
-  IF current_user NOT IN ('authenticated', 'anon') THEN
-    RETURN NEW;
-  END IF;
-  IF NEW.id IS DISTINCT FROM OLD.id
-     OR NEW.conversation_id IS DISTINCT FROM OLD.conversation_id
-     OR NEW.sender_id IS DISTINCT FROM OLD.sender_id
-     OR NEW.created_at IS DISTINCT FROM OLD.created_at
-     OR NEW.kind IS DISTINCT FROM OLD.kind
-     OR NEW.reply_to_id IS DISTINCT FROM OLD.reply_to_id THEN
-    RAISE EXCEPTION 'A message cannot be moved, re-attributed, back-dated or re-typed'
-      USING ERRCODE = '42501';
-  END IF;
-  RETURN NEW;
-END $$;
-
-ALTER FUNCTION "public"."golf_messages_identity_guard"() OWNER TO "postgres";
-
+-- Messages v2 package M (HELD 20261107090300): typing on a private topic
 CREATE OR REPLACE FUNCTION "public"."golf_typing_topic_allowed"("p_topic" "text") RETURNS boolean
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'
@@ -16056,3 +15991,199 @@ $$;
 ALTER FUNCTION "public"."refresh_division_cohort"() OWNER TO "postgres";
 
 COMMENT ON FUNCTION "public"."refresh_division_cohort"() IS 'Rebuilds golf_division_cohort from golf_player_standing: writes this run''s cohorts and removes every row an earlier run left. Runs with its owner''s rights (search_path pinned); service role only. Call after the standing refresh.';
+
+-- Messages privacy fixes (HELD 20261107090000 / 20261107090100)
+CREATE OR REPLACE FUNCTION "public"."golf_participants_identity_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Only client sessions are held to this. service_role, the table owner and
+  -- SECURITY DEFINER functions run as other roles and pass.
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.id IS DISTINCT FROM OLD.id
+     OR NEW.conversation_id IS DISTINCT FROM OLD.conversation_id
+     OR NEW.user_id IS DISTINCT FROM OLD.user_id
+     OR NEW.joined_at IS DISTINCT FROM OLD.joined_at THEN
+    RAISE EXCEPTION 'A participant row cannot be moved' USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+ALTER FUNCTION "public"."golf_participants_identity_guard"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_participants_insert_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Only client sessions are held to this. service_role, the table owner and
+  -- SECURITY DEFINER functions run as other roles and insert the row as written.
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  -- A new member starts from the defaults, whoever inserts the row. The state
+  -- columns belong to the member, who sets them afterwards by UPDATE.
+  NEW.joined_at := now();
+  NEW.last_read_at := NULL;
+  NEW.hidden_at := NULL;
+  NEW.muted_until := NULL;
+  NEW.notification_level := 'all';
+  RETURN NEW;
+END $$;
+
+ALTER FUNCTION "public"."golf_participants_insert_guard"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_conversations_identity_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Client sessions only. service_role, the table owner and definer functions pass,
+  -- and so does Postgres's own ON DELETE SET NULL on team_id (it runs as the owner).
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.id IS DISTINCT FROM OLD.id
+     OR NEW.created_by IS DISTINCT FROM OLD.created_by
+     OR NEW.team_id IS DISTINCT FROM OLD.team_id
+     OR NEW.is_team_chat IS DISTINCT FROM OLD.is_team_chat
+     OR NEW.is_team_channel IS DISTINCT FROM OLD.is_team_channel
+     OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+    RAISE EXCEPTION 'A conversation''s owner, team and kind cannot be changed'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+ALTER FUNCTION "public"."golf_conversations_identity_guard"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_messages_identity_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Client sessions only. Postgres's ON DELETE SET NULL on reply_to_id runs as the
+  -- table owner, so deleting a message that has replies still works.
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.id IS DISTINCT FROM OLD.id
+     OR NEW.conversation_id IS DISTINCT FROM OLD.conversation_id
+     OR NEW.sender_id IS DISTINCT FROM OLD.sender_id
+     OR NEW.created_at IS DISTINCT FROM OLD.created_at
+     OR NEW.kind IS DISTINCT FROM OLD.kind
+     OR NEW.reply_to_id IS DISTINCT FROM OLD.reply_to_id THEN
+    RAISE EXCEPTION 'A message cannot be moved, re-attributed, back-dated or re-typed'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+ALTER FUNCTION "public"."golf_messages_identity_guard"() OWNER TO "postgres";
+
+
+-- Applied to production 2026-10-21 by 20261017003000 and missing from this mirror until 2026-11-10
+-- (golf_participants_insert_v2, branch 2).
+CREATE OR REPLACE FUNCTION "public"."golf_user_in_conversation_team_audience"("p_conversation_id" "uuid", "p_user_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+  select exists (
+    select 1
+      from public.golf_conversations c
+     where c.id = p_conversation_id
+       and c.team_id is not null
+       and (
+         exists (
+           select 1
+             from public.golf_team_members gtm
+             join public.golf_players gp on gp.id = gtm.player_id
+            where gtm.team_id = c.team_id
+              and gtm.status = 'active'
+              and gp.user_id = p_user_id
+         )
+         or exists (
+           select 1
+             from public.golf_team_coach_staff gtcs
+             join public.golf_coaches gc on gc.id = gtcs.coach_id
+            where gtcs.team_id = c.team_id
+              and gc.user_id = p_user_id
+         )
+       )
+  );
+$$;
+
+ALTER FUNCTION "public"."golf_user_in_conversation_team_audience"("p_conversation_id" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_user_in_conversation_team_audience"("p_conversation_id" "uuid", "p_user_id" "uuid") IS 'True when p_user_id is on the conversation''s team roster (active rows) or a coach staffed on that team. Bounds who a conversation''s creator may add while it is formed (golf_participants_insert_v2, branch 2). Definer rights avoid re-entering RLS on golf_conversation_participants.';
+
+
+-- Team link on participant INSERT (HELD 20261110090600): false only for a team's channel or team chat when the
+-- caller is not on that team
+CREATE OR REPLACE FUNCTION "public"."golf_conversation_team_link_ok"("p_conversation_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+  SELECT NOT EXISTS (
+    SELECT 1
+    FROM public.golf_conversations AS c
+    WHERE c.id = p_conversation_id
+      AND c.team_id IS NOT NULL
+      AND (c.is_team_channel OR c.is_team_chat)
+      AND NOT (
+        public.is_golf_team_coach(c.team_id)
+        OR public.is_golf_team_player(c.team_id)
+      )
+  );$$;
+
+ALTER FUNCTION "public"."golf_conversation_team_link_ok"("p_conversation_id" "uuid") OWNER TO "postgres";
+
+-- Coach roster writes (HELD 20261110090700): a join request and a roster row keep their team and player
+CREATE OR REPLACE FUNCTION "public"."golf_team_join_requests_identity_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Only client sessions are held to this. service_role, the table owner and
+  -- SECURITY DEFINER functions run as other roles and pass.
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.id IS DISTINCT FROM OLD.id
+     OR NEW.team_id IS DISTINCT FROM OLD.team_id
+     OR NEW.player_id IS DISTINCT FROM OLD.player_id THEN
+    RAISE EXCEPTION 'A join request cannot be moved to another team or player'
+      USING ERRCODE = '42501';
+  END IF;
+  IF NEW.status = 'pending' AND OLD.status IS DISTINCT FROM 'pending' THEN
+    RAISE EXCEPTION 'A decided join request cannot be reopened'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+ALTER FUNCTION "public"."golf_team_join_requests_identity_guard"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_team_members_identity_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Only client sessions are held to this. service_role, the table owner and
+  -- SECURITY DEFINER functions run as other roles and pass.
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.id IS DISTINCT FROM OLD.id
+     OR NEW.team_id IS DISTINCT FROM OLD.team_id
+     OR NEW.player_id IS DISTINCT FROM OLD.player_id THEN
+    RAISE EXCEPTION 'A roster row cannot be moved to another team or player'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+ALTER FUNCTION "public"."golf_team_members_identity_guard"() OWNER TO "postgres";
