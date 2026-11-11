@@ -81,7 +81,7 @@ export function settledText(text: string): string {
   // Bold in progress: close it, so the words draw bold without their asterisks.
   const lastPara = out.slice(out.lastIndexOf('\n\n') + 1);
   if ((lastPara.match(/\*\*/g) ?? []).length % 2 === 1) out = /\*\*$/.test(out) ? out.slice(0, -2) : `${out}**`;
-  return out.replace(/[ \t]+$/, '');
+  return out.replace(/\s+$/, '');
 }
 
 /** The complete sentences of `text` past `from`: what a screen reader is told, a sentence at a time (never per word). */
