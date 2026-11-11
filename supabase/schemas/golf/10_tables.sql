@@ -381,7 +381,11 @@ CREATE TABLE IF NOT EXISTS "public"."golf_coachhelm_chat_messages" (
     "client_turn_id" "text",
     "status" "text",
     "ui_parts" "jsonb",
+    "model_messages" "jsonb",
+    "pending_decision" "jsonb",
     CONSTRAINT "golf_coachhelm_chat_messages_cost_usd_check" CHECK ((("cost_usd" IS NULL) OR ("cost_usd" >= (0)::numeric))),
+    CONSTRAINT "golf_coachhelm_chat_messages_model_messages_array" CHECK ((("model_messages" IS NULL) OR ("jsonb_typeof"("model_messages") = 'array'::"text"))),
+    CONSTRAINT "golf_coachhelm_chat_messages_pending_decision_object" CHECK ((("pending_decision" IS NULL) OR ("jsonb_typeof"("pending_decision") = 'object'::"text"))),
     CONSTRAINT "golf_coachhelm_chat_messages_role_check" CHECK (("role" = ANY (ARRAY['user'::"text", 'assistant'::"text", 'tool'::"text"])))
 );
 
