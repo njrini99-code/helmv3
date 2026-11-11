@@ -3,7 +3,7 @@
 import { Flag, MessageSquare, Plus, Share } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import Link from 'next/link';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import { basisWords, clearFilters, hasRange, isFiltered, rangeOf, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { playerInsight } from '../../data/stats-insight';
@@ -361,7 +361,21 @@ export function StatsPlayerPhoneShs({
             <Avatar name={data.name} id={data.id} size="lg" />
             <span className="ch-spm-head__id">
               <LargeTitle>{data.name}</LargeTitle>
-              <p className="ch-num">{[data.classYear, failed ? null : `${plural(data.season.rounds, 'round')} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} ${TERMS.handicap.short}`].filter(Boolean).join(' · ')}</p>
+              {/* Each fact is one unbroken item that opens with its separator (`.ch-spm-facts`, stats.css): the three are wider than the
+                  254pt beside the avatar on a 390pt phone, where the line broke inside a fact and the next line began with the dot. */}
+              <p className="ch-num ch-spm-facts">
+                {[data.classYear, failed ? null : `${plural(data.season.rounds, 'round')} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} ${TERMS.handicap.short}`]
+                  .filter((x): x is string => !!x)
+                  .map((fact, i) => (
+                    <Fragment key={fact}>
+                      {i > 0 && ' '}
+                      <span>
+                        {i > 0 && <i>· </i>}
+                        {fact}
+                      </span>
+                    </Fragment>
+                  ))}
+              </p>
             </span>
             {messageHref && (
               <Link href={messageHref} className="ch-spm-head__msg" aria-label={`Message ${first}`} data-ch-press="">

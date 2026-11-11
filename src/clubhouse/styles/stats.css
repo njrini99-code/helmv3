@@ -2518,6 +2518,26 @@
   .ch-spm-head p > span {
     white-space: nowrap;
   }
+  /* The facts under the name wrap whole, and a line neither starts nor ends on a separator. Every fact opens with a slot
+     the width of the separator, the paragraph starts that far to the left, and its first slot's width is clipped away:
+     the fact that starts a line starts on the text's edge with its dot out of sight, and one that follows another shows it. */
+  .ch-spm-head .ch-spm-facts {
+    --ch-spm-sep: 0.6em;
+    margin-left: calc(-1 * var(--ch-spm-sep));
+    clip-path: inset(0 0 0 var(--ch-spm-sep));
+  }
+  .ch-spm-head .ch-spm-facts > span {
+    display: inline-block;
+    padding-left: var(--ch-spm-sep);
+  }
+  .ch-spm-facts > span > i {
+    display: inline-block;
+    width: var(--ch-spm-sep);
+    margin-left: calc(-1 * var(--ch-spm-sep));
+    font-style: normal;
+    text-align: center;
+    white-space: pre;
+  }
   .ch-spm-head__msg {
     display: grid;
     place-items: center;
