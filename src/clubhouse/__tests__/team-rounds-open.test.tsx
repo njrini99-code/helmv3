@@ -38,8 +38,9 @@ function ui() {
   );
 }
 
+// The desktop book is a table: a round opens from the link in its name cell, which covers the row.
 const firstRow = () => {
-  const link = document.querySelector<HTMLAnchorElement>('a.ch-lgr__row[href*="/rounds/"]');
+  const link = document.querySelector<HTMLAnchorElement>('[role="table"] [role="row"] a.ch-trd-open[href*="/rounds/"]');
   if (!link) throw new Error('no round row');
   return link;
 };
@@ -63,6 +64,20 @@ describe('Team rounds · opening a round', () => {
     fireEvent.click(a, { button: 0, metaKey: true });
     expect(openedFromLibrary(roundId(a))).toBe(false);
     expect(screen.getAllByRole('link').length).toBeGreaterThan(0);
+  });
+});
+
+describe('Team rounds · the desktop book is a table', () => {
+  it('puts every value in a cell under its header, a band for each month', () => {
+    render(ui());
+    const table = screen.getByRole('table', { name: 'Team rounds' });
+    expect([...table.querySelectorAll('[role="columnheader"]')].map((h) => h.textContent)).toEqual(['Date', 'Player', 'Course', 'Tees', 'Type', 'Score', 'To par']);
+    const first = PREVIEW_TEAM_ROUNDS.rounds.list[0]!;
+    const row = firstRow().closest('[role="row"]')!;
+    expect([...row.querySelectorAll('[role="cell"]')].map((c) => c.textContent)).toEqual(['Oct 12', expect.stringContaining(first.player), first.course, 'Blue tees', 'Qualifier', String(first.score), 'E']);
+    expect(screen.getByRole('heading', { level: 2, name: 'October 2026' })).toBeTruthy();
+    // No stretched phone list beside it.
+    expect(document.querySelector('.ch-lgr')).toBeNull();
   });
 });
 

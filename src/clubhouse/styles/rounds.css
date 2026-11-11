@@ -1735,6 +1735,199 @@ a.ch-rd-sc:focus-visible {
   }
 }
 
+/* Team rounds on desktop (design review, 10 Nov 2026). The season's figures sit beside the title, each as wide as what
+   it says, over the head's one hairline: a strip as wide as the page held four small figures in wide cells, under an
+   empty band between two rules. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-rd.ch-trd[data-canopy] .ch-rd-h {
+    flex-wrap: wrap;
+    gap: var(--ch-space-5) var(--ch-space-8);
+  }
+  .ch-rd.ch-trd[data-canopy] .ch-rd-h .ch-fgr {
+    flex: none;
+    grid-template-columns: repeat(var(--ch-fgr-n, 4), max-content);
+    padding: 0;
+    border: 0;
+  }
+  .ch-rd.ch-trd[data-canopy] .ch-rd-h .ch-fgr__c {
+    padding: 0 var(--ch-space-6);
+  }
+  .ch-rd.ch-trd[data-canopy] .ch-rd-h .ch-fgr__c:first-child {
+    padding-left: 0;
+  }
+  .ch-rd.ch-trd[data-canopy] .ch-rd-h .ch-fgr__c:last-child {
+    padding-right: 0;
+  }
+}
+
+/* The desktop book: one table in the Roster table's pattern. A card, a quiet label row, a band for each month or
+   player, and a round a row with every value in a cell under its header; a hairline between rows starts at the inset. */
+.ch-trd-tbl {
+  overflow: hidden;
+  border-radius: var(--ch-radius-card);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+}
+.ch-trd-tr {
+  position: relative;
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1.3fr) minmax(0, 1.3fr) minmax(0, 0.9fr) minmax(0, 0.9fr) 56px 56px 16px;
+  column-gap: var(--ch-space-4);
+  align-items: center;
+  min-height: 56px;
+  padding: var(--ch-space-2) var(--ch-space-5);
+  font: var(--ch-type-14);
+  color: var(--ch-text-secondary);
+  transition: background-color var(--ch-dur-press) var(--ch-ease);
+}
+.ch-trd-tbl.is-by-player .ch-trd-tr {
+  grid-template-columns: 64px minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) 56px 56px 16px;
+}
+.ch-trd-tr + .ch-trd-tr::before {
+  position: absolute;
+  inset: 0 0 auto var(--ch-space-5);
+  height: var(--ch-hairline-w);
+  background: var(--ch-separator);
+  content: '';
+}
+.ch-trd-tr--head {
+  min-height: 0;
+  padding-block: var(--ch-space-3);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
+}
+.ch-trd-tr .r {
+  justify-self: end;
+  text-align: right;
+}
+.ch-trd-tr > [role='cell'] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* A round opens from its name: the link covers the row, so the whole row is the target and the cells stay cells. */
+.ch-trd-open {
+  min-width: 0;
+  overflow: hidden;
+  font: var(--ch-type-14-strong);
+  color: var(--ch-text-primary);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+a.ch-trd-open::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+}
+a.ch-trd-open:focus-visible {
+  outline: none;
+}
+.ch-trd-tr:has(a.ch-trd-open:focus-visible) {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: -2px;
+}
+@media (hover: hover) {
+  .ch-trd-tr.is-link:hover {
+    background: var(--ch-ledger-row-hover);
+  }
+}
+.ch-trd-tr.is-link:has(a.ch-trd-open[data-ch-pressed]) {
+  background: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
+  .ch-trd-tr.is-link:has(a.ch-trd-open:active) {
+    background: var(--ch-ledger-row-press);
+  }
+}
+.ch-trd-tr > .ch-trd-td--who {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-3);
+}
+.ch-trd-td--date {
+  font: var(--ch-type-14-medium);
+}
+.ch-trd-tr > .ch-trd-td--tee,
+.ch-trd-tr > .ch-trd-td--type {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+}
+.ch-trd-td--score {
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+}
+.ch-trd-td--par {
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-trd-td--par.is-under {
+  color: var(--ch-score-under);
+}
+.ch-trd-td--go {
+  display: inline-flex;
+  justify-self: end;
+  color: var(--ch-ink-500);
+}
+/* The band that opens a month or a player: its name, and the count and average at the row's end. */
+.ch-trd-grp {
+  display: block;
+  background: var(--ch-card-bg-raised);
+  box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-separator), inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-separator);
+}
+.ch-trd-grp__c {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-3);
+  min-height: 44px;
+  padding: var(--ch-space-2) var(--ch-space-5);
+}
+.ch-rd.ch-trd .ch-trd-grp__t {
+  margin: 0;
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-trd-grp__m {
+  margin-left: auto;
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
+  color: var(--ch-text-secondary);
+}
+/* A narrower window (a tablet, the sidebar open on a small laptop) keeps every column and never scrolls sideways: the
+   table tightens, and a long name ends in an ellipsis before the score leaves the screen. The tee gives way last. */
+@container chrd (max-width: 900px) {
+  .ch-trd-tr,
+  .ch-trd-tbl.is-by-player .ch-trd-tr {
+    grid-template-columns: 56px minmax(0, 1.5fr) minmax(0, 1.2fr) minmax(0, 1fr) 96px 44px 48px 16px;
+    column-gap: var(--ch-space-3);
+    padding-inline: var(--ch-space-4);
+  }
+  .ch-trd-tbl.is-by-player .ch-trd-tr {
+    grid-template-columns: 56px minmax(0, 1.5fr) minmax(0, 1fr) 96px 44px 48px 16px;
+  }
+  .ch-trd-tr + .ch-trd-tr::before {
+    left: var(--ch-space-4);
+  }
+  .ch-trd-grp__c {
+    padding-inline: var(--ch-space-4);
+  }
+}
+@container chrd (max-width: 640px) {
+  .ch-trd-tr {
+    grid-template-columns: 56px minmax(0, 1.5fr) minmax(0, 1.2fr) 96px 44px 48px 16px;
+  }
+  .ch-trd-tbl.is-by-player .ch-trd-tr {
+    grid-template-columns: 56px minmax(0, 1fr) 96px 44px 48px 16px;
+  }
+  .ch-trd-tr > .ch-trd-td--tee {
+    display: none;
+  }
+}
+
 @container chrv (max-width: 900px) {
   .ch-rv-cols {
     grid-template-columns: minmax(0, 1fr);

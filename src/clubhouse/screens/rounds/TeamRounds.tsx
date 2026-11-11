@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
-import { Flag, UserPlus, Users } from 'lucide-react';
+import { useMemo, type MouseEvent } from 'react';
+import Link from 'next/link';
+import { ChevronRight, Flag, UserPlus, Users } from 'lucide-react';
 import type { ChTeamRound, ChTeamRounds } from '../../data/team-rounds-shape';
 import { formatFixed, formatToPar } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
@@ -12,6 +13,8 @@ import { useRefresh } from '../../lib/use-refresh';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { rebuiltHref } from '../../shell/nav';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
+import { Avatar } from '../../ui/Avatar';
+import { Icon } from '../../ui/Icon';
 import { FigureRow, LedgerList, LedgerRow } from '../../ui/Ledger';
 import { InlineNotice } from '../../ui/Notices';
 import { Button } from '../../ui/Button';
@@ -57,47 +60,174 @@ export function groupTeamRounds(list: readonly ChTeamRound[], by: Group, q: stri
   return by === 'player' ? out.sort((a, b) => a.title.localeCompare(b.title) || a.key.localeCompare(b.key)) : out;
 }
 
-function dayLead(iso: string) {
-  return shortDay(iso);
-}
-
-function TeamRoundRow({ r, by }: { r: ChTeamRound; by: Group }) {
+/** What opening a round takes, for the phone row and the desktop table row alike. */
+function useOpenRound(r: ChTeamRound) {
   const href = teamRoundsLinks.review(r.id);
   // The review is fetched whole as a finger lands on the row (A13), as the player's library does.
   const press = usePressPrefetch();
-  const under = r.toPar != null && r.toPar < 0;
-  const meta = (
-    <>
-      {by === 'month' && <span>{r.course}</span>}
-      <span className="ch-trd-meta__tee">
-        <TeeSwatch color={r.teeColor} />
-        {r.tee ?? `${r.holes} holes`}
-      </span>
-      {r.tee && r.holes === 9 && <span className="ch-rd-pill is-nine">9 holes</span>}
-      <TypePill type={r.type} />
-      {!r.countable && <span className="ch-rd-pill is-nc">Not counted</span>}
-    </>
+  return {
+    href,
+    press: press(href),
+    // Opening a round is navigation, so it is silent (D-70, A14).
+    onClick: href
+      ? (e: MouseEvent<HTMLElement>) => {
+          // Only a same-tab open leaves the note (a new-tab click would leave a stale one for a later deep link), as the player library does.
+          if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) noteOpenedFromLibrary(r.id);
+        }
+      : undefined,
+    label: `${r.player}, ${shortDay(r.date)}, ${r.course}, ${r.score}${r.toPar != null ? ` (${formatToPar(r.toPar)})` : ''}`,
+  };
+}
+
+/** The tee a round was played from, or its length when no tee was recorded. */
+function TeeCell({ r }: { r: ChTeamRound }) {
+  return (
+    <span className="ch-trd-meta__tee">
+      <TeeSwatch color={r.teeColor} />
+      {r.tee ?? `${r.holes} holes`}
+    </span>
   );
+}
+
+/** The phone row: one structure for every round (name, the course, then the tee and what kind of round it was). */
+function TeamRoundRow({ r, by }: { r: ChTeamRound; by: Group }) {
+  const open = useOpenRound(r);
+  const under = r.toPar != null && r.toPar < 0;
   return (
     <LedgerRow
-      lead={dayLead(r.date)}
+      lead={shortDay(r.date)}
       title={by === 'month' ? r.player : r.course}
-      meta={<span className="ch-trd-meta">{meta}</span>}
+      meta={
+        <span className="ch-trd-meta">
+          {by === 'month' && <span className="ch-trd-meta__course">{r.course}</span>}
+          <span className="ch-trd-meta__kind">
+            <TeeCell r={r} />
+            {r.tee && r.holes === 9 && <span className="ch-rd-pill is-nine">9 holes</span>}
+            <TypePill type={r.type} />
+            {!r.countable && <span className="ch-rd-pill is-nc">Not counted</span>}
+          </span>
+        </span>
+      }
       trail={
         <span className={'ch-trd-score' + (under ? ' is-under' : '')}>
           <b>{r.toPar == null ? <NoData /> : formatToPar(r.toPar)}</b>
           <em>{r.score}</em>
         </span>
       }
-      href={href ?? undefined}
-      {...press(href)}
-      // Opening a round is navigation, so it is silent (D-70, A14).
-      onClick={href ? (e) => {
-        // Only a same-tab open leaves the note (a new-tab click would leave a stale one for a later deep link), as the player library does.
-        if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) noteOpenedFromLibrary(r.id);
-      } : undefined}
-      label={`${r.player}, ${shortDay(r.date)}, ${r.course}, ${r.score}${r.toPar != null ? ` (${formatToPar(r.toPar)})` : ''}`}
+      href={open.href ?? undefined}
+      {...open.press}
+      onClick={open.onClick}
+      label={open.label}
     />
+  );
+}
+
+type RoundGroup = ReturnType<typeof groupTeamRounds>[number];
+
+/** A group's count and its 18-hole countable average, as its heading's caption. */
+function groupMeta(g: RoundGroup) {
+  const full = g.rounds.filter((r) => r.holes === 18 && r.countable);
+  const avg = full.length ? full.reduce((a, r) => a + r.score, 0) / full.length : null;
+  return (
+    <span className="ch-num">
+      {g.rounds.length} {pluralWord(g.rounds.length, 'round')}
+      {avg != null && ` · avg ${formatFixed(avg, 1)}`}
+    </span>
+  );
+}
+
+const groupId = (g: RoundGroup) => `ch-trd-${g.key.replace(/\W+/g, '-').toLowerCase()}`;
+
+/** One round in the desktop table. The round's name cell holds the link, which covers the row. */
+function TeamRoundTableRow({ r, by }: { r: ChTeamRound; by: Group }) {
+  const open = useOpenRound(r);
+  const under = r.toPar != null && r.toPar < 0;
+  const name = by === 'month' ? r.player : r.course;
+  const opener = open.href ? (
+    <Link href={open.href} className="ch-trd-open" aria-label={open.label} onClick={open.onClick} {...open.press}>
+      {name}
+    </Link>
+  ) : (
+    <span className="ch-trd-open">{name}</span>
+  );
+  return (
+    <div className={'ch-trd-tr' + (open.href ? ' is-link' : '')} role="row">
+      <span role="cell" className="ch-trd-td--date ch-num">
+        {shortDay(r.date)}
+      </span>
+      {by === 'month' ? (
+        <span role="cell" className="ch-trd-td--who">
+          <Avatar name={r.player} id={r.playerId} size="sm" />
+          {opener}
+        </span>
+      ) : null}
+      <span role="cell" className="ch-trd-td--course">
+        {by === 'month' ? r.course : opener}
+      </span>
+      <span role="cell" className="ch-trd-td--tee">
+        <TeeCell r={r} />
+        {r.tee && r.holes === 9 && <span className="ch-rd-pill is-nine">9 holes</span>}
+      </span>
+      <span role="cell" className="ch-trd-td--type">
+        {r.type ? <TypePill type={r.type} /> : <NoData />}
+        {!r.countable && <span className="ch-rd-pill is-nc">Not counted</span>}
+      </span>
+      <span role="cell" className="r ch-num ch-trd-td--score">
+        {r.score}
+      </span>
+      <span role="cell" className={'r ch-num ch-trd-td--par' + (under ? ' is-under' : '')}>
+        {r.toPar == null ? <NoData /> : formatToPar(r.toPar)}
+      </span>
+      <span className="ch-trd-td--go" aria-hidden="true">
+        {open.href && <Icon icon={ChevronRight} size={16} />}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * The desktop book (design review, 10 Nov 2026: the phone's list stretched across the page left 700px of nothing
+ * between a name and its score). One table in the pattern of the Roster table: a quiet label row, a band for each
+ * month or player, and a row a round with every value in a cell under its header.
+ */
+function TeamRoundsTable({ groups, by }: { groups: RoundGroup[]; by: Group }) {
+  return (
+    <div className={'ch-trd-tbl' + (by === 'player' ? ' is-by-player' : '')} role="table" aria-label="Team rounds">
+      <div role="rowgroup">
+        <div className="ch-trd-tr ch-trd-tr--head" role="row">
+          <span role="columnheader">Date</span>
+          {by === 'month' && <span role="columnheader">Player</span>}
+          <span role="columnheader">Course</span>
+          <span role="columnheader" className="ch-trd-td--tee">
+            Tees
+          </span>
+          <span role="columnheader">Type</span>
+          <span role="columnheader" className="r">
+            Score
+          </span>
+          <span role="columnheader" className="r">
+            To par
+          </span>
+          <span aria-hidden="true" />
+        </div>
+      </div>
+      {groups.map((g) => (
+        <div key={g.key} role="rowgroup" aria-labelledby={`${groupId(g)}-t`}>
+          <div className="ch-trd-grp" role="row">
+            <div role="cell" aria-colspan={by === 'month' ? 7 : 6} className="ch-trd-grp__c">
+              {by === 'player' && g.rounds[0] && <Avatar name={g.title} id={g.rounds[0].playerId} size="sm" />}
+              <h2 id={`${groupId(g)}-t`} className="ch-trd-grp__t">
+                {g.title}
+              </h2>
+              <span className="ch-trd-grp__m">{groupMeta(g)}</span>
+            </div>
+          </div>
+          {g.rounds.map((r) => (
+            <TeamRoundTableRow key={r.id} r={r} by={by} />
+          ))}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -129,6 +259,23 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
   const noRoster = !data.rosterError && data.players.length === 0;
   const nothing = !noRoster && !data.rosterError && !data.rounds.error && list.length === 0 && unscored === 0;
   const best = s.best;
+  const book = !data.rosterError && !data.rounds.error && !noRoster && !nothing;
+  // The season's figures: under the title on the phone, beside it on desktop (design review, 10 Nov 2026: a strip as
+  // wide as the page held four small figures in wide cells, under an empty band between two rules).
+  const season = book && (
+    <SectionBoundary surface="rounds.team.season" label="This season" code="CH-11203">
+      <FigureRow
+        label="The team this season"
+        code="CH-11319"
+        items={[
+          { label: 'Rounds', value: s.rounds ? s.rounds : <NoData />, note: s.players ? `${plural(s.players, 'player')}` : undefined },
+          { label: 'Average', value: s.avg == null ? <NoData /> : formatFixed(s.avg, 1), note: s.avg == null ? undefined : '18 holes' },
+          { label: 'Under par', value: s.rounds ? s.underPar : <NoData />, tone: s.underPar ? 'under' : undefined, note: s.rounds ? `of ${s.rounds}` : undefined },
+          { label: 'Low round', value: best ? best.score : <NoData />, note: best ? `${best.player.split(' ')[0]} · ${best.toPar == null ? shortDay(best.date) : formatToPar(best.toPar)}` : undefined },
+        ]}
+      />
+    </SectionBoundary>
+  );
 
   return (
     <main className={'ch-rd ch-trd' + (phone ? ' is-phone' : '')} aria-labelledby="ch-trd-title" aria-busy={refreshing || undefined} data-canopy={phone ? undefined : ''}>
@@ -144,6 +291,7 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
           </span>
           <LargeTitle id="ch-trd-title">Team rounds</LargeTitle>
         </div>
+        {!phone && season}
       </header>
 
       {stale && <InlineNotice code="CH-11219" title="The team’s rounds may be out of date" body="We couldn’t refresh them just now. This is what loaded last time." onRetry={refresh} retrying={refreshing} />}
@@ -192,18 +340,7 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
         />
       ) : (
         <>
-          <SectionBoundary surface="rounds.team.season" label="This season" code="CH-11203">
-            <FigureRow
-              label="The team this season"
-              code="CH-11319"
-              items={[
-                { label: 'Rounds', value: s.rounds ? s.rounds : <NoData />, note: s.players ? `${plural(s.players, 'player')}` : undefined },
-                { label: 'Average', value: s.avg == null ? <NoData /> : formatFixed(s.avg, 1), note: s.avg == null ? undefined : '18 holes' },
-                { label: 'Under par', value: s.rounds ? s.underPar : <NoData />, tone: s.underPar ? 'under' : undefined, note: s.rounds ? `of ${s.rounds}` : undefined },
-                { label: 'Low round', value: best ? best.score : <NoData />, note: best ? `${best.player.split(' ')[0]} · ${best.toPar == null ? shortDay(best.date) : formatToPar(best.toPar)}` : undefined },
-              ]}
-            />
-          </SectionBoundary>
+          {phone && season}
 
           <SectionBoundary surface="rounds.team.book" label="Team rounds" code="CH-11203">
             <div className="ch-rd-tools">
@@ -228,26 +365,18 @@ export function TeamRounds({ data: fresh, teamId, live, liveNow }: { data: ChTea
             </div>
             {groups.length === 0 ? (
               <EmptyState code="CH-11321" compact title={q.trim() ? `No rounds for “${q.trim()}”` : 'No rounds for this player'} body={q.trim() ? 'Check the spelling, or search part of a name or course.' : 'They haven’t posted a round yet.'} />
+            ) : phone ? (
+              groups.map((g) => (
+                <Section key={g.key} id={groupId(g)} title={g.title} meta={groupMeta(g)}>
+                  <LedgerList label={`${g.title}, ${g.rounds.length} rounds`}>
+                    {g.rounds.map((r) => (
+                      <TeamRoundRow key={r.id} r={r} by={group} />
+                    ))}
+                  </LedgerList>
+                </Section>
+              ))
             ) : (
-              groups.map((g) => {
-                const full = g.rounds.filter((r) => r.holes === 18 && r.countable);
-                const avg = full.length ? full.reduce((a, r) => a + r.score, 0) / full.length : null;
-                const meta = (
-                  <span className="ch-num">
-                    {g.rounds.length} {pluralWord(g.rounds.length, 'round')}
-                    {avg != null && ` · avg ${formatFixed(avg, 1)}`}
-                  </span>
-                );
-                return (
-                  <Section key={g.key} id={`ch-trd-${g.key.replace(/\W+/g, '-').toLowerCase()}`} title={g.title} meta={meta}>
-                    <LedgerList label={`${g.title}, ${g.rounds.length} rounds`}>
-                      {g.rounds.map((r) => (
-                        <TeamRoundRow key={r.id} r={r} by={group} />
-                      ))}
-                    </LedgerList>
-                  </Section>
-                );
-              })
+              <TeamRoundsTable groups={groups} by={group} />
             )}
           </SectionBoundary>
 
