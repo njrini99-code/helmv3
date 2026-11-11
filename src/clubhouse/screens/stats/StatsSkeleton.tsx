@@ -104,19 +104,23 @@ export function StatsSkeleton() {
     <main className="ch-st" aria-busy="true" aria-label="Loading stats" data-ch-code="CH-4401" data-canopy="">
       {/* P004-D7: the page keeps its one h1 while it loads. */}
       <h1 className="ch-sr-only">Team stats</h1>
-      {/* The framed page head in place (PageHero): the section line, the sans title's line and the line under it, the window switch on the right. */}
-      <header className="ch-hero" data-canopy-head="tight" aria-hidden="true">
-        <Line height={14.3}>
-          <Skeleton width={150} height={11} />
-        </Line>
-        <Line height={47.5}>
-          <Skeleton width={240} height={38} radius={10} />
-        </Line>
-        <Line height={24.8}>
-          <Skeleton width={300} height={14} />
-        </Line>
-        <div className="ch-hero__actions">
-          <Skeleton width={236} height={32} radius={11} />
+      {/* The page head in place, as the loaded page draws it (StatsTeam's .ch-shs-dhead; its rules are in stats-redesign.css,
+          which the route's loading already carries through ShsSkeleton): no section line over the title, the title's
+          own line, the team's line under it, and Export at the row's end. It drew a section line the page has not, so the
+          title stood 4px high and everything under the head 8px low. */}
+      <header className="ch-shs-dhead" data-canopy-head="tight" aria-hidden="true">
+        <div className="ch-shs-dhead__row">
+          <div className="ch-shs-dhead__id">
+            <Line height={47.5}>
+              <Skeleton width={212} height={36} radius={10} />
+            </Line>
+            <Line height={21}>
+              <Skeleton width={300} height={14} />
+            </Line>
+          </div>
+          <div className="ch-shs-dhead__act">
+            <Skeleton width={83} height={36} radius={12} />
+          </div>
         </div>
       </header>
       {/* The round filter's bar (its Filter button), so the figures do not move when it appears. */}
