@@ -1593,6 +1593,31 @@ path.ch-rt-map__shot {
   font: 700 14px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
 }
+/* On a phone the card fits its sheet, so all nine holes of a nine show at once, as Home's scorecard does, down to a
+   320px screen: the label and Tot columns narrow and the hole cells drop their side padding (a 21px mark still fits
+   a 21px column). Nothing scrolls under Tot then, so its fade goes too. */
+@media (max-width: 600px) {
+  .ch-rt-mc {
+    min-width: 0;
+  }
+  .ch-rt-mc th,
+  .ch-rt-mc td {
+    padding: 0;
+  }
+  .ch-rt-mc th[scope='row'],
+  .ch-rt-mc thead th:first-child {
+    padding-left: 10px;
+  }
+  .ch-rt-mc thead th:first-child {
+    width: 48px;
+  }
+  .ch-rt-mc thead th:last-child {
+    width: 34px;
+  }
+  .ch-rt-mc tr > :last-child::before {
+    content: none;
+  }
+}
 
 /* Round complete */
 .ch-rt-sum {
