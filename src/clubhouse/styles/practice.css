@@ -825,6 +825,25 @@ span.ch-prc-tile__it {
   width: 100%;
   margin-top: 12px;
 }
+/* The helper's key keeps its light face on the green in dark, as Hub's featured card's key does: the dark key read as a hole in the card,
+   its label the faintest thing on it. The ink is the card's own green; the keyboard ring is champagne so it shows on the green. */
+html[data-fw-theme='dark'] .ch-prc-feat .ch-btn--secondary {
+  background: var(--ch-on-green-ink);
+  box-shadow: none;
+  color: var(--ch-feature-bg);
+  text-shadow: none;
+}
+html[data-fw-theme='dark'] .ch-prc-feat .ch-btn--secondary[data-ch-pressed]:not(:disabled) {
+  background: var(--ch-on-green-ink-meta);
+}
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-prc-feat .ch-btn--secondary:active:not(:disabled) {
+    background: var(--ch-on-green-ink-meta);
+  }
+}
+html[data-fw-theme='dark'] .ch-prc-feat .ch-btn--secondary:focus-visible {
+  box-shadow: 0 0 0 2px var(--ch-feature-bg), 0 0 0 4px var(--ch-border-focus-on-dark);
+}
 .ch-prc-feat__more {
   min-height: 44px;
   border: 0;
