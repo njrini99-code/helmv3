@@ -2148,15 +2148,27 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   }
 }
 
+/* One left edge on a desk, whichever page is open (one frame, owner 11 Nov 2026): page mains have different measures, and
+   centring each on its own moved the title between pages on a wide screen. Each sits where the widest measure would. Named
+   by attribute, never by a page's class (clubhouse:check, class owners): the Ledger pages (data-canopy) and the redesigned
+   desks (data-ch-crh). The player's CoachHelm file fills the frame and centres its own column, so it is left out. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  [data-ui='clubhouse'] main:is([data-canopy], [data-ch-crh='on']):not([data-ch='your-week']) {
+    margin-inline: max(0px, calc((100vw - var(--ch-sidebar-w) - var(--ch-measure-wide)) / 2)) auto;
+  }
+}
+
 /* The page head (owner, 2026-10-07: "match the bundle", the Coach Home design handoff). A page opts in with
    main[data-canopy] and marks its title block data-canopy-head; on desktop the block is the opening of the ivory
    workspace, not a band: a double hairline above, one below, a small engraved date or section line, a heavy sans
    title in the title ink (--ch-title-ink, near-black on every page: owner, 11 Nov 2026) with a letterpress edge, one
    sentence, and the page's actions on the right. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  /* The head sits on the page gutter, level with the content below it: it had a 4px inset of its own, so every title stood
+     4px in from its page (one frame, owner 11 Nov 2026). */
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] {
     position: relative;
-    padding: 32px 4px 32px;
+    padding: 32px 0;
     box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule-soft);
   }
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head]::before {
@@ -2186,13 +2198,13 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   /* The CoachHelm read's desktop head has no canopy either, and its player's name was the old light 52px hero face: it is a
      page title too (fix wave 2026-11-11). Named by its screen attribute: a shared sheet that names .ch-hr-page makes the
      class everyone's, and coachhelm-read.css anchors its rules on it (clubhouse:check, class owners). */
-  /* Any other head that keeps its own layout marks its h1 data-ch-page-title and gets the same title (Classes; owner,
+  /* Any other head that keeps its own layout marks its title data-ch-page-title and gets the same title (Classes; owner,
      11 Nov 2026: one title style from one place). The title's size, face, tracking, ink and edge are set here and nowhere
      else; a page's own rule only places it. */
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] h1,
   [data-ui='clubhouse'] main[data-ch-crh='on'].ch-rsd .ch-rs-head h1,
   [data-ui='clubhouse'] main[data-ch-screen='coachhelm-read'].is-desk .ch-hl-h h1,
-  [data-ui='clubhouse'] main h1[data-ch-page-title] {
+  [data-ui='clubhouse'] main [data-ch-page-title] {
     margin: 0;
     font: 600 calc(44 * var(--ch-type-k))/1.08 var(--ch-font-sans);
     letter-spacing: -0.036em;
@@ -2686,7 +2698,7 @@ html[data-fw-theme='dark'] .ch-bellp__row:focus-visible {
   /* The letterpress edge at night: the lit lip under the letters becomes a shadow, never a white halo. */
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] h1,
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-ch-crh='on'].ch-rsd .ch-rs-head h1,
-  html[data-fw-theme='dark'] [data-ui='clubhouse'] main h1[data-ch-page-title] {
+  html[data-fw-theme='dark'] [data-ui='clubhouse'] main [data-ch-page-title] {
     text-shadow: 0 1px 0 rgb(0 0 0 / 0.5);
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] .ch-btn--secondary {

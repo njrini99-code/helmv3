@@ -77,10 +77,19 @@
 .ch-h-main--desk > .ch-h-head + .ch-h-flow {
   margin-top: 32px;
 }
-/* The canopy rises from under the top bar: the page's top padding is part of the green. The date line is 4px shorter
-   than the page head's eyebrow (tokens.css), so the top adds it. */
+/* The canopy rises from under the top bar: the page's top padding is part of the green. Player Home is held as built (the
+   owner's 28 Oct version): its top and its head's 4px inset are the ones it was built on, not the one frame's (tokens.css
+   --ch-page-top-home-player; owner question, 11 Nov 2026). */
 .ch-h-main--desk[data-canopy] {
-  padding-top: var(--ch-page-top-eyebrow-short-4);
+  padding-top: var(--ch-page-top-home-player);
+}
+[data-ui='clubhouse'] main.ch-h-main[data-canopy] > .ch-h-head[data-canopy-head] {
+  padding-inline: 4px;
+}
+/* And it stays centred on its own measure on a wide screen, where the one frame sets every other page on one left edge
+   (shell.css): past 1608px it stands apart from them until the owner says it joins the frame. */
+[data-ui='clubhouse'] main.ch-h-main[data-canopy]:not([data-ch-crh]) {
+  margin-inline: auto;
 }
 .ch-h-main--desk[data-canopy] > .ch-h-head {
   padding-top: 4px;
@@ -2561,7 +2570,7 @@
    load (WebKit 1440, 2026-10-07: 183px with the sans greeting, the two-line brief and the actions). */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-h-main[aria-busy='true'][data-canopy] {
-    padding-top: var(--ch-page-top-eyebrow-short-4);
+    padding-top: var(--ch-page-top-home-player);
   }
   .ch-h-main[aria-busy='true'][data-canopy] > .ch-h-head {
     box-sizing: border-box;
@@ -3545,7 +3554,7 @@
    rules run the page's width, and the date and the greeting sit where the loaded Home sets them. */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-h-main--first[data-canopy] {
-    padding-top: var(--ch-page-top-eyebrow-short-4);
+    padding-top: var(--ch-page-top-home-player);
   }
   .ch-h-main--first[data-canopy] > .ch-h-head {
     gap: 4px;
@@ -5543,9 +5552,10 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     font: var(--ch-type-13-strong);
     color: var(--ch-green-600);
   }
+  /* The coach's desk is on the one frame: the page gutter and the redesigned desks' top (tokens.css). */
   .ch-h-main[data-ch-crh='on'] {
     gap: 16px;
-    padding: 24px 32px 40px;
+    padding: var(--ch-page-top-crh) var(--ch-page-gutter) 40px;
   }
   /* The first run with nothing ahead has no Up next: the words take the hero. */
   .ch-h-herocard > :only-child {
@@ -5816,8 +5826,8 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     gap: 16px;
     /* The loading main keeps the framed page's top inset; the lane's page starts 14px higher. */
     margin-top: calc(-1 * (var(--ch-space-3) + var(--ch-space-0_5)));
-    /* And its sides, or the page shifts when the data lands: the lane's page runs 32 from the edge. */
-    margin-inline: calc(32px - var(--ch-page-gutter));
+    /* Its sides are the loading main's own: the lane's page runs the page gutter too (one frame, owner 11 Nov 2026). */
+    margin-inline: 0;
   }
   .ch-h-sk-dcrh__hero {
     min-height: 215px;

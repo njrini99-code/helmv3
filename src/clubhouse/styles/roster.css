@@ -36,10 +36,12 @@
   display: flex;
   gap: 8px;
 }
+/* 16px tall, so with the 8px under it the title starts 24px below the head's top, on the one title line (tokens.css). */
 .ch-rs-team {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-height: 16px;
 }
 .ch-rs-team__name {
   font: var(--ch-type-14-medium);
@@ -3353,7 +3355,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   [data-ch-crh='on'].ch-rsd {
     gap: 16px;
-    padding: 24px 32px 40px;
+    padding: var(--ch-page-top-crh) var(--ch-page-gutter) 40px;
   }
   /* The title's face, size, forest ink and letterpress edge are the shared page title's (shell.css, with the canopy head's
      rule); only the older head's gradient fill is undone here. */

@@ -2132,17 +2132,16 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
     display: grid;
     gap: 20px;
   }
+  /* The loaded head's height: the term line's 18px, 6px, and the shared title's 47.5px line. */
   .ch-cl-sk-dcrh__h {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    min-height: 68px;
+    min-height: 71.5px;
   }
+  /* The title is the shared page title (shell.css, [data-ch-page-title]), as the loaded page's is. */
   .ch-cl-sk-dcrh__title {
     margin: 0;
-    font: var(--ch-type-34-strong);
-    letter-spacing: var(--ch-track-large-title);
-    color: var(--ch-text-primary);
   }
   .ch-cl-sk-dcrh__label {
     font: var(--ch-type-20-strong);
@@ -2152,7 +2151,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   /* The loading page takes the loaded page's own inset. */
   .ch-cl[aria-busy='true'] {
     gap: 20px;
-    padding: 24px 32px 40px;
+    padding: var(--ch-page-top-crh) var(--ch-page-gutter) 40px;
   }
   .ch-cl-sk-dcrh__stack {
     display: grid;
@@ -2286,13 +2285,19 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
 /* Classes, desktop, behind the lane's flag (06 §4.9): main padding 28 36 40, gap 22; the term card as a row; binders in 3 columns beside a 340 aside. */
 .ch-cl[data-ch-crh='on']:not(.is-phone) {
   gap: 20px;
-  padding: 24px 32px 40px;
+  padding: var(--ch-page-top-crh) var(--ch-page-gutter) 40px;
   background: var(--ch-grouped-bg);
 }
 .ch-cl[data-ch-crh='on']:not(.is-phone) .ch-cl-h {
   align-items: flex-end;
 }
-/* The title's face, size, ink and letterpress edge are the shared page title's (shell.css, h1[data-ch-page-title]): it was
+/* The term line is the head's eyebrow: the eyebrow role's own 18px line with 6px under it, so the title lands on the one
+   title line (tokens.css). It was an inline span in the page's 21px line. */
+.ch-cl[data-ch-crh='on']:not(.is-phone) .ch-cl-h .ch-cl-k {
+  display: block;
+  font: var(--ch-type-eyebrow);
+}
+/* The title's face, size, ink and letterpress edge are the shared page title's (shell.css, [data-ch-page-title]): it was
    its own 34px in plain ink. This rule only places it under the term line. */
 .ch-cl[data-ch-crh='on']:not(.is-phone) .ch-cl-h h1 {
   margin: 6px 0 0;

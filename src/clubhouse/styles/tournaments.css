@@ -57,8 +57,11 @@
   min-width: 0;
 }
 .ch-tour-head__k {
+  /* The step's own 18px line with 6px under it (the head's 8px gap, less 2), as every page head's eyebrow: the title starts
+     24px below the eyebrow's top, on the one title line (tokens.css). It was a 16.9px line (1.3 of 13) and the 8px gap,
+     which put every Tournaments title 0.9px under the others. */
+  margin-bottom: -2px;
   font: var(--ch-type-13-medium);
-  line-height: var(--ch-lead-label);
   color: var(--ch-ledger-eyebrow);
 }
 .ch-tour-head h1 {

@@ -10,6 +10,14 @@
   padding: var(--ch-page-head-top) var(--ch-page-gutter) 80px;
   color: var(--ch-text-primary);
 }
+/* A player's head has no role chip over the title (the chip is the coach's alone), so the top adds that room and the title
+   lands on the one title line (tokens.css); it stood 24px higher than the coach's. By the frame's role, so the loading
+   page opens where the loaded one does. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  [data-ch-role='player'] .ch-hb[data-canopy] {
+    padding-top: var(--ch-page-top-no-eyebrow);
+  }
+}
 .ch-hb-h {
   display: flex;
   flex-wrap: wrap;

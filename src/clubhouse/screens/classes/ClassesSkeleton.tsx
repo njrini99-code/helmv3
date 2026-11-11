@@ -16,7 +16,7 @@ export function ClassesSkeleton() {
         <header className="ch-cl-sk-dcrh__h">
           <div className="ch-cl-sk-dcrh__stack">
             <Skeleton width={190} height={13} />
-            <p className="ch-cl-sk-dcrh__title">Classes</p>
+            <p className="ch-cl-sk-dcrh__title" data-ch-page-title="">Classes</p>
           </div>
           <div className="ch-cl-sk-dcrh__acts">
             <Skeleton width={150} height={36} radius={10} />

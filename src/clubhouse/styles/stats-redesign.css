@@ -2395,6 +2395,13 @@ p.ch-shs-mini-cap {
 .ch-shs-dhead__act .ch-st-head__act {
   margin: 0;
 }
+/* The redesigned desk head has no eyebrow line over its title, so the page's top adds that room and the title lands on the
+   one title line (tokens.css): it stood 26px higher than the other pages' titles. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-st[data-canopy]:has(.ch-shs-dhead) {
+    padding-top: var(--ch-page-top-no-eyebrow);
+  }
+}
 .ch-shs-dhead {
   display: flex;
   flex-direction: column;

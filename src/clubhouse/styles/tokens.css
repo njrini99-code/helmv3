@@ -438,12 +438,14 @@
   --ch-measure-page: 1200px;
   --ch-measure-wide: 1360px;
   --ch-gutter: 40px;
-  /* The desktop page (wave 3, design #5): every tab's main sets its framed head on one line, so the title holds still
-     between tabs. The gutter is each main's side padding (the head's 4px inset puts the title 44px in from the frame);
-     the head top is its top padding above the head's double rule. A main keeps its own max width and centres past it; a
-     page whose head has no eyebrow line, or a shorter one, adds that room to this top so its title lands level. */
+  /* The desktop page (wave 3, design #5; one frame, owner 11 Nov 2026): every page's main opens on one left edge and one
+     title line, so the title holds still between pages. The gutter is each main's side padding, and the title sits on it,
+     level with the content below (the head has no inset of its own). The head top is the main's top padding above the
+     head; with the head's own 12px, an 18px eyebrow line and the 6px under it, the title's top is 48px under the bar. A
+     page whose head has no eyebrow line, or a shorter one, adds that room to this top so its title lands level. A main
+     keeps its own max width; past the widest measure every main sits where the widest would (shell.css). */
   --ch-page-gutter: var(--ch-gutter);
-  --ch-page-head-top: 34px;
+  --ch-page-head-top: 12px;
   /* CONS-34: page spacing per meaning. A page root (the list in __tests__/page-spacing.test.ts) takes its padding and
      gap only from --ch-page-* and --ch-gap-*. Every value here is the one its roots used before (R7 section 13); where
      two roots differ for one meaning there are two tokens, held at today's values until the owner settles them (OQ-63),
@@ -453,6 +455,11 @@
   --ch-page-top-eyebrow-short-2: calc(var(--ch-page-head-top) + 2px); /* Classes' term line */
   --ch-page-top-eyebrow-short-4: calc(var(--ch-page-head-top) + 4px); /* CoachHelm's role line, Home's date line */
   --ch-page-top-eyebrow-low-2: calc(var(--ch-page-head-top) - 2px); /* Stats' eyebrow sits 2px lower */
+  /* The redesigned desks (coach Home, Roster, Classes) open on a plain head with no 12px padding of its own: the top adds it. */
+  --ch-page-top-crh: calc(var(--ch-page-head-top) + 12px);
+  /* Player Home is the owner's 28 Oct version, held as built: the top it was built on (the old 34px head top and its date
+     line's 4px), so it does not move with the frame. Whether it joins the frame is the owner's call. */
+  --ch-page-top-home-player: 38px;
   --ch-page-top-coachhelm: 36px;
   --ch-page-top-home: 52px;
   --ch-page-top-home-desk: 40px;

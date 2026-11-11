@@ -66,6 +66,9 @@ const TOKENS: Record<string, string> = {
   '--ch-page-top-eyebrow-short-2': 'calc(var(--ch-page-head-top) + 2px)',
   '--ch-page-top-eyebrow-short-4': 'calc(var(--ch-page-head-top) + 4px)',
   '--ch-page-top-eyebrow-low-2': 'calc(var(--ch-page-head-top) - 2px)',
+  // One frame (owner, 2026-11-11): the redesigned desks' top, and Player Home's, which is held where it was built.
+  '--ch-page-top-crh': 'calc(var(--ch-page-head-top) + 12px)',
+  '--ch-page-top-home-player': '38px',
   '--ch-page-top-coachhelm': '36px',
   '--ch-page-top-home': '52px',
   '--ch-page-top-home-desk': '40px',

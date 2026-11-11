@@ -508,10 +508,11 @@ section.ch-lv-card {
   display: flex;
   margin-bottom: var(--ch-space-2);
 }
+/* The desk is the same frame as every Ledger page: the gutter and the head top come from tokens.css. */
 .ch-lv--desk {
   max-width: var(--ch-measure-page);
   margin: 0 auto;
-  padding: var(--ch-space-6) var(--ch-space-6) var(--ch-space-10);
+  padding: var(--ch-page-head-top) var(--ch-page-gutter) var(--ch-space-10);
 }
 .ch-lv--denied {
   padding: var(--ch-space-10) var(--ch-space-4);
@@ -524,8 +525,10 @@ section.ch-lv-card {
   gap: var(--ch-space-4);
   margin-bottom: var(--ch-space-4);
 }
+/* The eyebrow's 18px line and 6px under it, as every page head's: the title lands on the one title line (tokens.css). */
 .ch-lv-eyebrow {
   display: block;
+  margin-bottom: 6px;
   font: var(--ch-type-eyebrow);
   color: var(--ch-ink-500);
 }
