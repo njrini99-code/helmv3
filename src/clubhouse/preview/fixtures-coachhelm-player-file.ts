@@ -25,7 +25,8 @@ const legOf = (s: ChStation) => BOARD_ELI?.legs[s].strokes ?? null;
 const FIGURES: ChFigures = { rounds: 10, holeRounds: 10, legs: { tee: legOf('tee'), approach: legOf('approach'), around: legOf('short_game'), putting: legOf('putting') }, total: BOARD_ELI?.total ?? null };
 const NO_FIGURES: ChFigures = { rounds: 2, holeRounds: 2, legs: { tee: null, approach: null, around: null, putting: null }, total: null };
 const TEAM_SG = { legs: STATIONS.map((s) => PREVIEW_TEAM_BOARD.stations[s].team), ready: { size: PREVIEW_TEAM_BOARD.roster.count } };
-const SG: ChFileSg = toChFileSgOver(FIGURES, TEAM_SG, { you: false, first: FIRST });
+// The coach's card links to the Standing page, whose legs are that page's own window: the link says which.
+const SG: ChFileSg = { ...toChFileSgOver(FIGURES, TEAM_SG, { you: false, first: FIRST }), standing: 'All time' };
 // The player's own page carries no team figure.
 const SG_YOU: ChFileSg = toChFileSgOver(FIGURES, null, { you: true, first: FIRST });
 
@@ -72,6 +73,7 @@ export function previewPlayerFile(state: string): ChPlayerFile {
   const cards: ChFileCards = {
     feat: list[0] ?? null,
     featTeam: state === 'teamsmall' ? null : 0.7,
+    featTeamBasis: 'all time',
     reads: list,
     cleared: [],
     dismissed: none || state === 'oneread' ? [] : [{ id: 'pv-dis', title: 'Fairways hit on par 5s', lifecycle: 'detected' }],

@@ -134,3 +134,23 @@ describe('a part off or failed (W-TEAM-15)', () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('the board’s counts and windows say only what they are (one number, one source)', () => {
+  it('rounds from last season still draw the hole, under words that never call them this season', () => {
+    // 1 August: every counted round in the rolling year is from before the season, so the season's count is none.
+    render(ui({ data: { ...PREVIEW_TEAM_BOARD, teamTotal: { ...PREVIEW_TEAM_BOARD.teamTotal, rounds: 40, seasonRounds: 0 }, course: { ...PREVIEW_TEAM_BOARD.course, history: null } } }));
+    const text = document.body.textContent ?? '';
+    // The head's words for this count are `boardRoundsWords` (one-team-figure.test.ts): "no rounds yet this season".
+    expect(text).not.toMatch(/\d+ rounds this season/);
+    // The hole is drawn (it reads each player's last ten, across seasons) and says that window.
+    expect(text).toContain('Each player’s last 10');
+    expect(document.querySelector('[data-ch-team-card="hole"]')).not.toBeNull();
+  });
+
+  it('Team against Tour says all time: it reads standing rows, not the season’s rounds', () => {
+    render(ui({ initialStation: 'course' }));
+    const text = document.body.textContent ?? '';
+    expect(text).toContain('Team against Tour · all time');
+    expect(text).not.toContain('Team against Tour · this season');
+  });
+});

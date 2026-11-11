@@ -52,6 +52,7 @@ export function FeatureCard({
   first,
   name,
   team,
+  teamBasis,
   stage,
   coach,
   actions,
@@ -62,6 +63,8 @@ export function FeatureCard({
   first: string;
   name: string;
   team: number | null;
+  /** The standing rows' window ("all time"), said under the Team cell when the figure is theirs and not the read's own. */
+  teamBasis?: string | null;
   stage: ChFileStage;
   coach: string;
   actions: ReactNode;
@@ -105,7 +108,8 @@ export function FeatureCard({
         </div>
         <div>
           <b className="ch-num">{cells.team}</b>
-          <span>Team</span>
+          {/* A team figure from the standing rows names their window, so it is never read as Team stats' figure for its window. */}
+          <span>{b.compare?.team == null && team != null && teamBasis ? `Team, ${teamBasis}` : 'Team'}</span>
         </div>
         <div>
           <b className="ch-num">{cells.tour}</b>
@@ -393,7 +397,7 @@ export function SgCard({ sg, who, standingHref }: { sg: ChFileSg; who: string; s
           <>
             {' '}
             <Link className="lnk" href={standingHref}>
-              Full standing
+              {sg.standing ? `Full standing, ${sg.standing.toLowerCase()}` : 'Full standing'}
             </Link>
           </>
         )}

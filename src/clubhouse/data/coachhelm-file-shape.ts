@@ -34,8 +34,10 @@ export interface ChFileSg {
   hasTeam: boolean;
   /** "Against the Tour, off the tee costs Eli 0.9 a round; against the team, 0.7." */
   note: string | null;
-  /** "All time · 21 rounds · strokes per round". */
+  /** "Last 10 rounds · strokes per round": the rounds the figures read. */
   source: string;
+  /** The Standing page's own window ("All time", "This season"), said on the link to it: its legs are that window's, not these. */
+  standing?: string | null;
   /** Totals-only rounds: every row is "—" and the note says why. */
   needsHoles: boolean;
 }
@@ -341,6 +343,11 @@ export interface ChFileCards {
   feat: ChDeepInsight | null;
   /** Team on the top read's own metric; null below five. */
   featTeam: number | null;
+  /**
+   * Where `featTeam` comes from when the read carries no team figure of its own: the standing rows' window ("all time", or "this
+   * season" once the season table is used). The Team cell says it, so it is never read as Team stats' window figure.
+   */
+  featTeamBasis?: string | null;
   reads: ChDeepInsight[];
   cleared: ChDiveCleared[];
   dismissed: ChFileDismissed[];

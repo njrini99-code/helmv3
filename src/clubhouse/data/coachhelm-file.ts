@@ -267,8 +267,11 @@ export async function loadCoachPlayerFile(input: { scope: ChCoachPlayerScope }):
     const lensSg = mine ? toChFileSgOver(mine, null, { you: true, first }) : null;
     // The player's own view of the same round: no dots, no card under five (SHARED-11).
     const lensField = field === null || field === undefined ? null : await loadFileField(scope, { role: 'player' }, zone);
-    const cards: ChFileCards = { ...coachCards(load.data.list, rows, load.data.cleared ?? []), dismissed, sg, plan, field: field ?? null, intent: intent ?? null, track: track ?? null };
-    const lensCards: ChFileCards | null = lens ? { ...playerCards(lens, rows), sg: lensSg, plan, field: lensField ?? null } : null;
+    // The standing rows' own window, for the two places the file still shows a standing figure: the featured read's Team cell
+    // (when the read carries no team figure) and the link to the Standing page.
+    const basis = rowsRead.ok ? (rowsRead.window === 'season' ? 'this season' : 'all time') : null;
+    const cards: ChFileCards = { ...coachCards(load.data.list, rows, load.data.cleared ?? []), featTeamBasis: basis, dismissed, sg: sg && st ? { ...sg, standing: st.window.label } : sg, plan, field: field ?? null, intent: intent ?? null, track: track ?? null };
+    const lensCards: ChFileCards | null = lens ? { ...playerCards(lens, rows), featTeamBasis: basis, sg: lensSg, plan, field: lensField ?? null } : null;
     const failed: ChPlayerFile['failed'] = {
       ...(sgRounds === null ? { sg: true as const } : {}),
       ...(plan === null ? { plan: true as const } : {}),
@@ -327,6 +330,8 @@ export async function loadPlayerYourWeek(input: { playerId: string }): Promise<{
     const coach = proposals.list[0]?.coachName ?? 'Your coach';
     const plan = toChFilePlan(last, null, null, null, coach, zone);
     const cards: ChFileCards = { ...playerCards(list, rows), sg, plan, field: field ?? null };
+    // The standing rows' own window, said under a Team cell that comes from them.
+    cards.featTeamBasis = rowsRead.ok ? (rowsRead.window === 'season' ? 'this season' : 'all time') : null;
     return { load: { status: 'ready', data: { cards, proposals, rounds: load.data.rounds ?? st?.rounds ?? null, roundsToGo: toGo, readOn: true, penalties, refreshed: st?.refreshed ?? null, failed: { ...(sgRounds ? {} : { sg: true as const }), ...(field === undefined ? { field: true as const } : {}) } } } };
   } catch (err) {
     log('week', err);

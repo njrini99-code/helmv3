@@ -93,6 +93,31 @@ describe('the coach file and the lens', () => {
   });
 });
 
+describe('every figure on the file names the window it reads (one number, one source)', () => {
+  it('the strokes card says the last ten, and its link to Standing says Standing’s own window', () => {
+    render(<PlayerFile load={{ status: 'ready', data: previewPlayerFile('default') }} roster={null} />, { wrapper: Wrap });
+    const card = document.querySelector('[data-ch-anchor="sg"]') as HTMLElement;
+    expect(card.textContent).toContain('Last 10 rounds');
+    expect(card.textContent).not.toContain('All time ·');
+    expect(within(card).getByRole('link', { name: 'Full standing, all time' })).toBeTruthy();
+  });
+
+  it('a Team cell that comes from the standing rows says their window; a read’s own team figure is plain Team', () => {
+    const data = previewPlayerFile('default');
+    const first = render(<PlayerFile load={{ status: 'ready', data }} roster={null} />, { wrapper: Wrap });
+    const cells = () => [...document.querySelectorAll('[data-ch="file-feature"] .feat__cmp span')].map((x) => x.textContent);
+    expect(cells()).toContain('Team, all time');
+    first.unmount();
+    // The same read carrying its own team figure: that is the one the Team board's sheet draws, so the cell is plain "Team".
+    const feat = data.cards.feat!;
+    const own = { ...data, cards: { ...data.cards, feat: { ...feat, base: { ...feat.base, compare: { ...feat.base.compare!, team: 0.9 } } } } };
+    render(<PlayerFile load={{ status: 'ready', data: own }} roster={null} />, { wrapper: Wrap });
+    expect(cells()).toContain('Team');
+    expect(cells()).not.toContain('Team, all time');
+    expect(document.querySelector('[data-ch="file-feature"] .feat__cmp')!.textContent).toContain('0.9');
+  });
+});
+
 describe('IntentSheet (W-LNS-8)', () => {
   const VALUE: ChFileIntent = { aim: 'develop', alerts: 'balanced', watching: [], note: 'old' };
 

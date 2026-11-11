@@ -247,7 +247,7 @@ function Ready({ data, at, insight, roster, writes, saveIntent, initialLens }: {
       </section>
     ) : shown.feat ? (
       <Swap swapKey={lens}>
-        <FeatureCard d={shown.feat} lens={lens} first={first} name={head.name} team={shown.featTeam} stage={planNow?.stage ?? 'none'} coach={planNow?.coach ?? 'Your coach'} actions={featActions} onOpen={() => setOpenRead(shown.feat!.base.id)} />
+        <FeatureCard d={shown.feat} lens={lens} first={first} name={head.name} team={shown.featTeam} teamBasis={shown.featTeamBasis} stage={planNow?.stage ?? 'none'} coach={planNow?.coach ?? 'Your coach'} actions={featActions} onOpen={() => setOpenRead(shown.feat!.base.id)} />
       </Swap>
     ) : (
       <Swap swapKey={lens}>

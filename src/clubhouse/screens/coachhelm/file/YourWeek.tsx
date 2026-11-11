@@ -60,7 +60,7 @@ export function YourWeek({ load, writes = LIVE_PLAYER_WRITES }: { load: ChViewLo
         Your focus since {cards.plan?.since}
       </span>
     ) : null;
-  const feat = cards.feat ? <FeatureCard key="feat" d={cards.feat} lens="player" first="" name="" team={cards.featTeam} stage={stage} coach={proposal?.coachName ?? 'Your coach'} actions={actions} onOpen={() => setOpenRead(cards.feat!.base.id)} /> : <EarlyFeature key="feat" lens="player" first="" rounds={data.rounds} toGo={data.roundsToGo} />;
+  const feat = cards.feat ? <FeatureCard key="feat" d={cards.feat} lens="player" first="" name="" team={cards.featTeam} teamBasis={cards.featTeamBasis} stage={stage} coach={proposal?.coachName ?? 'Your coach'} actions={actions} onOpen={() => setOpenRead(cards.feat!.base.id)} /> : <EarlyFeature key="feat" lens="player" first="" rounds={data.rounds} toGo={data.roundsToGo} />;
   const empty = !cards.feat && data.rounds === 0;
   const penalties = open && /penalt/i.test(`${open.base.metric} ${open.base.title}`) ? data.penalties : null;
   const left = [feat, <PlanCard key="plan" plan={cards.plan} lens="player" first="" />, cards.sg && <SgCard key="sg" sg={cards.sg} who="You" standingHref={null} />];
