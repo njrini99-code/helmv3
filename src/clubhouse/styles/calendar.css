@@ -3099,7 +3099,9 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     line-height: var(--ch-lead-caption);
     color: var(--ch-warning-600);
   }
+  /* Inline with the words (the page's reset draws an svg as a block, which put the triangle on a line of its own). */
   .ch-calm-ev__clash > svg {
+    display: inline-block;
     margin-right: 4px;
     vertical-align: -2px;
   }
