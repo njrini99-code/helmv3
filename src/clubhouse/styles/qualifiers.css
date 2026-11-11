@@ -605,6 +605,13 @@
     margin: 0 0 var(--ch-space-2);
   }
 }
+/* On a desk "Your rounds" stands beside the board and already says the place, the total and the rounds in ("+4" was on
+   screen four times within 570px), so the block keeps what only it says: the two line sentences. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-qf--detail:has(.ch-qf-prounds) .ch-qf-you-line__me {
+    display: none;
+  }
+}
 
 .ch-qf-panel__head {
   display: flex;
