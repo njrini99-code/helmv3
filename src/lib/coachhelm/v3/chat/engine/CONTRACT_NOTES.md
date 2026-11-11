@@ -200,3 +200,43 @@ import { noteTools } from './context/notes';
 - The server refuses, whatever the model sends: a note naming a roster player beside health, family, grades or
   discipline; contact details or a password; a 31st note; a duplicate. Without the migration both tools say notes are
   not switched on and write nothing.
+
+### C4. What the app can do: two more tasks (TOOLS wires, one line)
+
+The whole list of the app's actions against the tools, with what is left to the app on purpose and what is left for
+later in order, is `../tasks/INVENTORY.md`.
+
+```ts
+import { eventTaskTools } from './tasks/event-tasks';
+// taskTools({ quickChat }) in ../tasks.ts, or coachTools in registry.ts: `...eventTaskTools()` at the END of the tasks
+// for all three coach surfaces (appending keeps every earlier definition's bytes). Never for a player.
+```
+- `send_event_reminder({ event_id, recipients: 'not_replied' | 'invited' | 'named', player_ids })` wraps
+  `sendEventReminderToPlayers`. `record_attendance({ event_id, present_player_ids, late_player_ids, no_show_player_ids })`
+  wraps `markAttendance`. Both are `kind: 'task'` on the contract as it stands; no change to `tool.ts` is asked for.
+- Add both names to `TASK_TOOL_NAMES` (it is built from `taskTools`, so wiring through `taskTools` does it), to
+  `WHERE` in `../tasks.ts` only if their receipts should go through `failedReceipt` (they build their own), and to
+  `held-runner.ts`'s way back from a ledger row to a tool, which finds a tool by name in the surface's list.
+- `P` is `ActionProposal & { tool, input, planned_at }`, the same shape as TOOLS's `TaskProposal`, JSON-safe; `input`
+  is what `commit` uses (the checked event id, the resolved player ids and, for the reminder, the exact words shown).
+- Hold and Undo: both go through the ordinary 8 second hold. A reminder is sent by `commit`, so nobody hears before
+  the window closes.
+- The event id comes from `get_schedule`. A suggested policy line (TOOLS): "To remind players about an event or
+  record who was at one, read the schedule for the event first, then call send_event_reminder or record_attendance."
+- Receipt truth for ENGINE's tool_result: `record_attendance` reads the rows back before it says a mark was not
+  saved. `send_event_reminder` cannot read back (a coach cannot read players' notification rows), so when the send
+  itself does not confirm its receipt says "may or may not have gone out … sending it again is safe" and
+  `retryable` is true: the action's upsert key makes a second send land on the same rows.
+
+### C5. Things CONTEXT found that are not its to fix
+
+1. `src/app/golf/actions/coachhelm-ask.ts` still says of `saveCoachFact` "no chat turn ever calls this" (AK8), and
+   the held migration's table comment says "never written by the model". `save_note` now calls it, on the owner's
+   instruction of 10 Nov, with the coach's own sentence only. Whoever applies 20261101090100 should change both
+   comments; the migration file is ENGINE's lane and the action file is outside every worker's list.
+2. `reminderWords` in `../tasks/event-tasks.ts` repeats two lines of `sendEventReminderToPlayersImpl` because a
+   `'use server'` file can export only actions. A test pins the action's lines. The clean fix is to move the wording
+   into `src/lib/calendar/` and have both import it; the same move for `notifyEventUpdate`'s formatter unblocks
+   `update_event` (INVENTORY.md, "Left for later", 1).
+3. The scoped typecheck reports 23 errors in `src/components/golf/coachhelm/chat/*.test.tsx` (jest-dom matchers not
+   typed in this program). They are there with or without CONTEXT's files; none is in `context/**` or `tasks/**`.
