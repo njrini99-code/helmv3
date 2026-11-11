@@ -916,3 +916,42 @@ revise?: (ctx: ToolContext, proposal: P, edits: Record<string, unknown>) => Prom
   changed before Confirm, the new proposal's `summary` and `facts` are the words to give it.
 - A whole-team task or team update that is edited becomes a card for exactly the people it lists (the `people` field
   holds them), so "everyone" is fixed at the people the coach saw.
+
+## 2026-11-11 (ENGINE): a computed answer shows its work; an earlier card's ending on the next stream
+
+E25. **An answer worked out in code says so** (the catalogue's E-25; all additive).
+     - The code's progress row (`tool: 'code_execution'`) is labelled "Working out the figures". When a read the code
+       calls shows a second player, the same row (same `id`) is sent once more as `read_started` with the label
+       "Working it out across the team". It closes with that label and `detail: "14 reads"` (no detail when the code
+       called none).
+     - When the run ends, one part: `{ type: 'part', part: { type: 'data-computed', id: 'computed-<row id>', data } }`
+       with `data: ChatComputed` (`engine/protocol.ts`, `COMPUTED_PART`):
+       `refs: string[]` (the evidence refs of the reads the code called, in the order it asked for them),
+       `reads: number`, `players: number` (different players those reads measured), `window: string | null` (the
+       reads' own `window_label` when they all share one), `method?: string`. Stored with the turn and replayed on
+       reload (`REPLAYABLE`). The reads themselves are the `data-evidence` parts with `via: 'code'`, as before.
+     - Against the catalogue's proposed shape: `players`, `reads`, `window` are as written there; `refs` is added;
+       `method` is optional; `table` is not sent. The code's printed output is free text the engine does not parse,
+       and a table rebuilt from it would be a guess.
+     - **`method` and PLANS**: the engine lifts one line and only one: a comment in the model's code that begins
+       `# Method:`. It is dropped when it names a tool, holds anything that reads as code (an underscore, a bracket,
+       a backtick, `=`), or runs past 240 characters. The model does not write that line today, so `method` is
+       absent until the prompt asks for it. A sentence for `instructions.ts`, if you want the "How this was worked
+       out" line: "When you calculate in code, begin the code with one comment line `# Method:` followed by one plain
+       sentence a coach could read, saying what you did with which figures. No tool or field names in it."
+
+E26. **How an earlier card ended is said on the next answer's stream.** `decision` already carried `message_id`; the
+     part events (`evidence`, `visual`, `proposal`, `receipt`, `part`) now take an optional `message_id` too, and the
+     engine uses it for `receipt`. At the start of a new message's response, for the assistant message just before
+     it, the engine sends each card's recorded `decision` and each `data-action-receipt` as `receipt`, both with
+     `message_id` naming that earlier message. That covers a Confirm whose connection dropped (the write went on in
+     the request, the browser never heard) and, as before, a card withdrawn because the coach asked something else
+     (`reason: 'superseded'`). A browser that already has them folds them again and nothing changes (parts upsert by
+     id). The hook routes `decision` and `receipt` events that carry `message_id` to that message and does not treat
+     them as the start of the new answer. Nothing is sent when the earlier message holds no card.
+
+E27. **KNOWLEDGE's K9 is in the harness, narrowed.** `stored.places` is now the staging rounds' course names plus the
+     names of the team's competitions: `golf_events.title` where `event_type` is tournament, qualifier or match,
+     `golf_qualifiers.name` and `golf_tournaments.name`. Practices, meetings and travel are left out on purpose: they
+     are titled in everyday words ("Practice"), and the rule would then fail the word "practice" wherever an answer
+     used it. The dry run prints the names it will hold answers to.

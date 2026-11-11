@@ -151,6 +151,27 @@ describe('useCoachHelmChat', () => {
     expect(result.current.messages.at(-1)!.parts).toEqual([{ type: 'text', text: 'Blake is at 74.' }]);
   });
 
+  it('a Confirm whose connection was lost: the next answer brings the card and its receipt up to date in the earlier message', async () => {
+    const receipt = { type: 'data-action-receipt' as const, id: `receipt-${KEY}`, data: { idempotency_key: KEY, status: 'completed', summary: 'Created the focus area.' } };
+    fetchMock.mockResolvedValueOnce(
+      sse([
+        { type: 'message_start', conversation_id: CONVERSATION, message_id: 'a2', resumed: false },
+        { type: 'decision', key: KEY, approved: true, message_id: 'a-card' },
+        { type: 'receipt', part: receipt, message_id: 'a-card' },
+        { type: 'text_delta', delta: 'Blake is at 74.' },
+        { type: 'done', status: 'complete' },
+      ]),
+    );
+    const { result } = renderHook(() => useCoachHelmChat({ initialMessages: [waitingCard], conversationId: CONVERSATION }));
+    act(() => result.current.send('How is Blake?'));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    const earlier = result.current.messages.find((m) => m.id === 'a-card')!.parts;
+    expect(earlier.find((p) => p.type === 'tool-create_focus_area')).toMatchObject({ state: 'approval-responded', approval: { id: KEY, approved: true } });
+    expect(earlier.find((p) => p.type === 'data-action-receipt')).toEqual(receipt);
+    // Nothing of the earlier card lands in the new answer.
+    expect(result.current.messages.at(-1)!.parts).toEqual([{ type: 'text', text: 'Blake is at 74.' }]);
+  });
+
   it('every failure carries its kind: the server’s on a stream or a refusal, the browser’s own for a dropped connection', async () => {
     const { result } = renderHook(() => useCoachHelmChat({ initialMessages: [waitingCard], conversationId: CONVERSATION }));
     const kindAfter = async (arrange: () => void, act_: () => void) => {

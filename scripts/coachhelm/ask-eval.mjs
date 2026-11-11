@@ -490,8 +490,17 @@ const names = {
 };
 for (const key of Object.keys(names)) if (!names[key]) delete names[key];
 const sense = JSON.parse(readFileSync(GOLF_SENSE_FILE, 'utf8'));
-/** The team's own names as they are stored, which the writing rules hold an answer to: the roster, and the courses its rounds were played on. */
-const stored = { people: roster.map((p) => p.name), places: [...new Set(real.map((r) => r.course_name).filter(Boolean))] };
+// The team's own names as they are stored, which the writing rules hold an answer to: the roster, the courses its rounds were played
+// on, and its competitions ("the fall invitational" fails where the record says "Fall Invitational"). Only competitions: a practice
+// or a meeting is titled in everyday words ("Practice"), and holding an answer to their capitals would fail the word itself.
+const namesOf = async (table, column, only) =>
+  (await fetchAllRows((from, to) => only(sb.from(table).select(`id, ${column}`).eq('team_id', DEMO_TEAM_ID)).order('id', { ascending: true }).range(from, to), table)).map((row) => row[column]);
+const eventNames = [
+  ...(await namesOf('golf_events', 'title', (q) => q.in('event_type', ['tournament', 'qualifier', 'match']))),
+  ...(await namesOf('golf_qualifiers', 'name', (q) => q)),
+  ...(await namesOf('golf_tournaments', 'name', (q) => q)),
+];
+const stored = { people: roster.map((p) => p.name), places: [...new Set([...real.map((r) => r.course_name), ...eventNames].map((n) => String(n ?? '').trim()).filter(Boolean))] };
 const writing = writingRules(sense, stored);
 const senseQuestions = golfSenseQuestions(sense, names, stored);
 
@@ -538,6 +547,7 @@ for (const x of picked) {
 if (which !== 'data') console.log(`\nGolf-sense names: ${Object.entries(names).map(([k, v]) => `{${k}} = ${v}`).join(', ') || 'none'}. Override with --names.`);
 for (const x of skipped) console.log(`not asked: ${x.id} (nobody on the staging roster fits {${x.unfilled.join('}, {')}}; name one with --names)`);
 console.log(`Every answer is also held to ${writing.length} writing rules (${writing.map((r) => r.pattern).join(', ')}).`);
+console.log(`Names an answer must write as stored: the ${stored.people.length} players, and ${stored.places.length} courses and competitions (${stored.places.slice(0, 12).join('; ')}${stored.places.length > 12 ? '; ...' : ''}).`);
 console.log(`\nCost estimate: ${picked.length} turns x about $${median.toFixed(2)} (median of ${history.length} past staging turns, which ran on the previous engine; p90 $${p90.toFixed(2)}) = about $${(picked.length * median).toFixed(2)}, up to $${(picked.length * p90).toFixed(2)}. It stops at $${maxUsd.toFixed(2)} (--max-usd).`);
 console.log(`Time estimate: ${Math.round((picked.length * 45) / 60)} to ${Math.round((picked.length * 90) / 60)} minutes (one question at a time).`);
 console.log(`It uses the dev server at ${base} (must run on this staging env, with ANTHROPIC_API_KEY, CoachHelm on for the demo team and a daily budget that covers the run) and writes staging conversation rows.`);

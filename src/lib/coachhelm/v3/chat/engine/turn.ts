@@ -19,7 +19,7 @@ import { stripReadMarkers } from '../read-markers';
 import { defaultGroundingCheck, type GroundingCheck } from './grounding';
 import { runModelLoop, toolResultsMessage, type LoopState, type LoopStop, type PendingDecision } from './loop';
 import { emptyUsage, fallbackModelOf, profileFor, type ChatFeatures, type ModelClient, type ModelMessage, type ModelProfile, type SystemPrompt, type ToolResultBlock, type UsageTotals } from './model';
-import { applyChatEvent, CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, textOfParts, TURN_META_PART, turnMetaOf, type ChatErrorAction, type ChatErrorKind, type ChatEvent, type ChatScreenEcho, type ChatTurnMeta, type ChatTurnStatus, type ChatUIMessage, type ChatUIPart, type WireDataPart } from './protocol';
+import { applyChatEvent, CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, eventsForStoredParts, textOfParts, TURN_META_PART, turnMetaOf, type ChatErrorAction, type ChatErrorKind, type ChatEvent, type ChatScreenEcho, type ChatTurnMeta, type ChatTurnStatus, type ChatUIMessage, type ChatUIPart, type WireDataPart } from './protocol';
 import { buildHistory, collectReads, findOpenDecision, saveCardState, saveResumeToLedger, saveTurn, type LoadedConversation, type OpenDecision } from './store';
 import { declineTask, settleAbandonedTask, startConfirm, type DecisionOutcome, type TaskDeps } from './tasks';
 import type { ChatTool, TaskTool, ToolContext } from './tool';
@@ -312,6 +312,9 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
 
   // A card still waiting when the coach asks something else is a Cancel: the model is told so before the new question.
   const declined: ToolResultBlock[] = [];
+  // The message before this one, if it holds cards: how each of them ended is sent again below.
+  const lastRow = loaded.rows.filter((r) => r.role === 'assistant' && r.client_turn_id !== deps.clientTurnId).at(-1);
+  let priorCards: { id: string; parts: readonly ChatUIPart[] } | null = lastRow ? { id: lastRow.id, parts: (lastRow.ui_parts ?? []) as ChatUIPart[] } : null;
   if (open && deps.tasks) {
     const ctx: ToolContext = { ...toolContext, reads };
     let cards: ChatUIMessage = { id: open.row.id, role: 'assistant', parts: open.row.ui_parts ?? [] };
@@ -322,9 +325,7 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
       if (outcome.declined) {
         // Nobody pressed Cancel: the card was withdrawn because the coach asked something else. The browser is told which message
         // holds it, and the stored card says so too, so a reload draws "withdrawn" as a fact and not from its position.
-        const withdrawn: ChatEvent = { type: 'decision', key, approved: false, reason: 'superseded' };
-        cards = applyChatEvent(cards, withdrawn);
-        send({ ...withdrawn, message_id: open.row.id });
+        cards = applyChatEvent(cards, { type: 'decision', key, approved: false, reason: 'superseded' });
       } else if (outcome.receipt) cards = applyChatEvent(cards, { type: 'receipt', part: receiptPart(key, outcome.receipt) });
       const task = open.pending?.tasks.find((t) => t.key === key);
       if (task) results[task.tool_use_id] = { content: outcome.result, ...(outcome.isError ? { is_error: true } : {}) };
@@ -336,6 +337,15 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
     if (loaded.mode === 'columns' && open.pending && open.row.model_messages) {
       const answer = toolResultsMessage({ order: open.pending.order, results });
       declined.push(...(answer.content as ToolResultBlock[]));
+    }
+    priorCards = { id: open.row.id, parts: cards.parts };
+  }
+  // How the cards of the message before this one ended, addressed to that message. The browser usually knows. It does not when the
+  // Confirm that settled a card lost its connection (the write went on without it), or when the card was withdrawn just now: these
+  // few events bring that card up to date without a reload. They change nothing in a browser that already has them.
+  if (priorCards) {
+    for (const event of eventsForStoredParts(priorCards.parts)) {
+      if (event.type === 'decision' || event.type === 'receipt') send({ ...event, message_id: priorCards.id });
     }
   }
 

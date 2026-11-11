@@ -214,10 +214,12 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
           return;
         }
         if (event.type === 'done' || event.type === 'usage' || !target) return;
+        // How a card in an earlier message ended (withdrawn because the coach asked something else, or settled by a Confirm whose
+        // connection was lost): the event names that message, and it is not the start of this answer.
+        const earlier = (event.type === 'decision' || event.type === 'receipt') && event.message_id ? event.message_id : null;
         // The first thing of the answer itself ends the wait.
-        setPhase(null);
-        // A card withdrawn because the coach asked something else sits in an earlier message: the event names it.
-        const id = event.type === 'decision' && event.message_id ? event.message_id : target;
+        if (!earlier) setPhase(null);
+        const id = earlier ?? target;
         thread.current = thread.current.map((m) => (m.id === id ? applyChatEvent(m, event) : m));
       };
 

@@ -77,6 +77,25 @@ export interface ChatTurnMeta {
   declined?: true;
 }
 
+/**
+ * `data-computed`: the model worked a figure out in code. One part per run of its code, sent when the run ends and stored with the
+ * turn. Figures in such an answer carry no read markers (a read the code calls cannot be cited), so this is how the answer shows
+ * its work: the reads the code called are the evidence parts named in `refs` (each also says `via: 'code'`).
+ */
+export const COMPUTED_PART = 'data-computed' as const;
+export interface ChatComputed {
+  /** Evidence refs of the reads the code called, in the order it asked for them. Empty when it only did arithmetic on figures already read. */
+  refs: string[];
+  /** How many reads that is. */
+  reads: number;
+  /** How many different players those reads measured. */
+  players: number;
+  /** The window the reads share, in the reads' own words ("Last 8 rounds"); null when they differ or give none. */
+  window: string | null;
+  /** One sentence on how it was worked out, in the model's own plain words, when its code began with one (`# Method: ...`). */
+  method?: string;
+}
+
 export function turnMetaOf(parts: readonly ChatUIPart[]): ChatTurnMeta | null {
   const data = parts.find((p) => p.type === TURN_META_PART)?.data as Partial<ChatTurnMeta> | undefined;
   return data && typeof data.started_at === 'string' && typeof data.duration_ms === 'number' ? { started_at: data.started_at, duration_ms: data.duration_ms, reads: typeof data.reads === 'number' ? data.reads : 0, ...(data.declined ? { declined: true as const } : {}) } : null;
@@ -98,8 +117,9 @@ export type ChatEvent =
   | { type: 'read_finished'; id: string; label: string; tool: string; state: 'done' | 'failed'; detail?: string; picture?: unknown }
   /** A short progress note in the model's own words (never its reasoning). Drawn as a finished progress row. */
   | { type: 'note'; id: string; text: string }
-  /** A part of the answer that is not prose. The four named kinds are the ones the brief lists; `part` is every other stored data part. */
-  | { type: 'evidence' | 'visual' | 'proposal' | 'receipt' | 'part'; part: WireDataPart }
+  /** A part of the answer that is not prose. The four named kinds are the ones the brief lists; `part` is every other stored data part.
+   *  `message_id`: the part belongs to an EARLIER message, not the one this response is writing (how an earlier card ended). */
+  | { type: 'evidence' | 'visual' | 'proposal' | 'receipt' | 'part'; part: WireDataPart; message_id?: string }
   /** The turn is waiting on the coach: the card for `key` is live. */
   | { type: 'decision_needed'; key: string; tool: string; tool_use_id: string }
   /**

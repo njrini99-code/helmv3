@@ -694,6 +694,12 @@ describe('the model’s code calling the reads (on for a coach, off for a player
     // The thread: one row for the code, from its start until its result is back, and a row for each read under it.
     const rows = events.flatMap((e) => (e.type === 'read_started' || e.type === 'read_finished' ? [`${e.type}:${e.tool}`] : []));
     expect(rows).toEqual(['read_started:code_execution', 'read_started:get_team_stats', 'read_finished:get_team_stats', 'read_finished:code_execution']);
+    // The code's row is named for what it is doing, and closes saying how many reads it covered.
+    expect(events.find((e) => e.type === 'read_started' && e.tool === 'code_execution')).toMatchObject({ label: 'Working out the figures' });
+    expect(events.find((e) => e.type === 'read_finished' && e.tool === 'code_execution')).toMatchObject({ label: 'Working out the figures', detail: '1 read', state: 'done' });
+    // And a part records what the run worked from. No method: the code did not begin with one.
+    const computed = events.filter((e) => e.type === 'part' && e.part.type === 'data-computed') as Array<{ part: { id: string; data: unknown } }>;
+    expect(computed.map((e) => e.part.data)).toEqual([{ refs: ['e2'], reads: 1, players: 0, window: null }]);
     // The evidence says the code asked for it: that is how the thread knows which reads a computed figure came from.
     const evidence = events.filter((e) => e.type === 'evidence') as Array<{ part: { data: { tool: string; ref: string; via?: string } } }>;
     // (Refs are reserved in call order before anything runs, so the call that was refused took e1.)
@@ -706,6 +712,50 @@ describe('the model’s code calling the reads (on for a coach, off for a player
     const stored = row!.model_messages as Array<{ role: string; content: Array<{ type: string }> }>;
     expect(stored[2]!.content.map((b) => b.type)).toEqual(['server_tool_use', 'tool_use', 'tool_use']);
     expect(stored[4]!.content.map((b) => b.type)).toEqual(['code_execution_tool_result', 'text']);
+  });
+
+  it('a figure worked out across players says so: the row is renamed once a second player is read, and a stored part names the reads, the players, the window and the method', async () => {
+    const stats = { ...readTool('get_player_stats', log, 0) } as ReadTool<{ player_id?: string }>;
+    stats.run = async (_ctx, input) => ({
+      summary: 'Putting',
+      measurements: [{ metric_id: 'putts_per_round', metric_label: 'Putts per round', unit: 'count', value: 30.5, entity: { kind: 'player', id: String(input.player_id), label: 'A player' }, window_start: null, window_end: null, sample_size: 8, sample_unit: 'rounds', as_of: '2026-11-10T12:00:00.000Z', coverage: 'complete', coverage_note: null, source: 'golf_rounds', method: 'mean', denominator: null, benchmark: null, direction: 'lower_better' }],
+      series: [],
+      coverage: 'complete',
+      coverage_note: null,
+      as_of: '2026-11-10T12:00:00.000Z',
+      window_label: 'Last 8 rounds',
+    });
+    h.toolsFor.mockImplementation(() => asTools(stats, readTool('get_team_stats', log, 74.2)));
+    const code = "# Method: Averaged each player's putts per round over their last 8 rounds, then ranked them\nrows = [await get_player_stats({'player_id': p}) for p in players]";
+    script(
+      { content: [serverCode('srvtoolu_1', code), codeToolUse('tu_1', 'get_player_stats', { player_id: 'p1' }), codeToolUse('tu_2', 'get_player_stats', { player_id: 'p2' }), codeToolUse('tu_3', 'get_player_stats', { player_id: 'p1' })], container: 'container_1' },
+      { content: [{ type: 'code_execution_tool_result', tool_use_id: 'srvtoolu_1', content: { type: 'code_execution_result', stdout: '30.1', stderr: '', return_code: 0, content: [] } } as never, text('Avery putts best.')] },
+    );
+    const { events } = await ask('Who putts best?');
+
+    const codeRows = events.filter((e) => (e.type === 'read_started' || e.type === 'read_finished') && e.tool === 'code_execution') as Array<{ type: string; id: string; label: string; detail?: string }>;
+    // One row, renamed exactly once, when a read showed a second player.
+    expect(codeRows.map((e) => `${e.type}:${e.label}`)).toEqual(['read_started:Working out the figures', 'read_started:Working it out across the team', 'read_finished:Working it out across the team']);
+    expect(new Set(codeRows.map((e) => e.id)).size).toBe(1);
+    expect(codeRows.at(-1)).toMatchObject({ detail: '3 reads' });
+    const part = events.find((e) => e.type === 'part' && e.part.type === 'data-computed') as { part: { id: string; data: unknown } };
+    expect(part.part).toEqual({
+      type: 'data-computed',
+      id: `computed-${codeRows[0]!.id}`,
+      data: { refs: ['e1', 'e2', 'e3'], reads: 3, players: 2, window: 'Last 8 rounds', method: "Averaged each player's putts per round over their last 8 rounds, then ranked them." },
+    });
+    // It comes after the run's reads and before the words that use the figure.
+    const order = events.map((e) => (e.type === 'part' ? e.part.type : e.type));
+    expect(order.lastIndexOf('evidence')).toBeLessThan(order.indexOf('data-computed'));
+    expect(order.indexOf('data-computed')).toBeLessThan(order.indexOf('text_delta'));
+    // Stored with the turn, and still there after a reload; the stored row reads as finished under its last name.
+    const [row] = assistantRows();
+    const stored = row!.ui_parts as Array<{ type: string; id?: string; data?: { label?: string; state?: string; detail?: string } }>;
+    expect(stored.filter((p) => p.type === 'data-computed')).toEqual([part.part]);
+    expect(stored.filter((p) => p.type === 'data-progress' && p.id === codeRows[0]!.id).map((p) => p.data)).toMatchObject([{ label: 'Working it out across the team', state: 'done', detail: '3 reads' }]);
+    expect(restoreUIMessages((db.tables[MESSAGES] ?? []) as never).at(-1)!.parts.find((p) => p.type === 'data-computed')).toMatchObject({ data: { reads: 3, players: 2 } });
+    // The model is never sent the part.
+    expect(turnMetaOf(row!.ui_parts as never)).toMatchObject({ reads: 3 });
   });
 
   it('a card is not prepared while the code is waiting on a read: the model is told to ask for it on its own afterwards', async () => {
@@ -813,6 +863,34 @@ describe('a task', () => {
     expect(row!.pending_decision).toMatchObject({ order: ['tu_task'], tasks: [{ tool: 'create_focus_area', tool_use_id: 'tu_task' }], steps: 1 });
     // The assistant message that asked is stored as returned: the tool call waits for its result.
     expect((row!.model_messages as Array<{ role: string }>).map((m) => m.role)).toEqual(['user', 'system', 'assistant']);
+  });
+
+  it('a Confirm whose connection was lost: the next question’s stream says how the card ended, addressed to the message that holds it', async () => {
+    const { conversationId, key } = await propose();
+    script({ content: [text('Done: the putting focus area is created.')] });
+    // The Confirm runs to its end on the server; this browser never reads its response.
+    await decide(conversationId, key, true);
+    const cardRow = assistantRows()[0]!;
+    expect(runs()[0]!.status).toBe('completed');
+
+    script({ content: [text('Blake is at 74.')] });
+    const { events } = await ask('How is Blake scoring?', conversationId);
+    const about = events.filter((e) => (e.type === 'decision' || e.type === 'receipt') && 'message_id' in e) as Array<{ type: string; message_id: string; approved?: boolean; part?: { id: string; data: { status: string } } }>;
+    expect(about.map((e) => [e.type, e.message_id])).toEqual([['decision', cardRow.id], ['receipt', cardRow.id]]);
+    expect(about[0]).toMatchObject({ key, approved: true });
+    expect(about[1]!.part).toMatchObject({ id: `receipt-${key}`, data: { status: 'completed' } });
+    // Before a word of the new answer, and never folded into it.
+    expect(events.findIndex((e) => e.type === 'receipt')).toBeLessThan(events.findIndex((e) => e.type === 'text_delta'));
+    const newRow = assistantRows().at(-1)!;
+    expect(newRow.id).not.toBe(cardRow.id);
+    expect((newRow.ui_parts as Array<{ type: string }>).some((p) => p.type === 'data-action-receipt' || p.type.startsWith('tool-'))).toBe(false);
+    // Nothing is written twice and the model is not asked about it again.
+    expect(log.commits).toHaveLength(1);
+
+    // A message that follows one with no card says nothing about earlier cards.
+    script({ content: [text('Casey is at 76.')] });
+    const next = await ask('And Casey?', conversationId);
+    expect(next.events.some((e) => (e.type === 'decision' || e.type === 'receipt'))).toBe(false);
   });
 
   it('confirmed: shown as held at once, written when the Undo window closes in the same request, and only then does the model close', async () => {
@@ -1001,6 +1079,8 @@ describe('a task', () => {
     expect(JSON.stringify((sent[3]!.content as unknown[])[0])).not.toContain('Blake');
     expect(sent[4]).toEqual(sys);
     // The browser is told the card was withdrawn, and in which message it sits: a fact, not something to infer from position.
+    // It is told before anything of the new answer.
+    expect(events.findIndex((e) => e.type === 'decision')).toBeLessThan(events.findIndex((e) => e.type === 'text_delta'));
     const cardRow = assistantRows()[0]!;
     expect(events.find((e) => e.type === 'decision')).toEqual({ type: 'decision', key, approved: false, reason: 'superseded', message_id: cardRow.id });
     expect((cardRow.ui_parts as Array<{ type: string; approval?: unknown }>).find((p) => p.type === 'tool-create_focus_area')?.approval).toEqual({ id: key, approved: false, reason: 'superseded' });

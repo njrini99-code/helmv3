@@ -131,7 +131,10 @@ entries are history. The tool list and the prompt are described where the tools 
   ownership checks, and its envelope reaches the store, the evidence parts (marked `via: 'code'`) and the grounding
   check. A task can never be called from code, and no card is prepared while code is waiting on a read. Reads are not
   `strict` while this is on (the API does not allow both); tasks stay strict. An answer computed in code carries no
-  citation markers; its sources are the turn's `via: 'code'` evidence parts.
+  citation markers; its sources are the turn's `via: 'code'` evidence parts. Each run of the code also leaves one
+  `data-computed` part (`ChatComputed`: the reads it called by evidence ref, how many, how many players, the window
+  they share, and a method sentence when the code began with a `# Method:` line), stored with the turn; its progress
+  row reads "Working out the figures", or "Working it out across the team" once its reads cover a second player.
 - **Stored model messages are exactly what the API returned**, appended only: thinking blocks with their signatures,
   text (with the API's citation objects) and tool calls in order, each tool-result message, and the per-turn system
   message. The model's thinking is never sent to the browser; on Sonnet 5.5 the short progress updates it writes
@@ -249,6 +252,9 @@ entries are history. The tool list and the prompt are described where the tools 
 - **Hold release**: the Confirm request itself, as above. The fallbacks for a function that died mid-window are
   unchanged: the card's own `GET /api/coachhelm/v3/chat/actions/[key]` when its ring ends, and a sweep on the coach's
   next chat request. A held row is rebuilt from the stored, sealed proposal (`held-runner.ts`). There is still no cron.
+- **A browser that missed how a card ended** (a Confirm whose connection dropped while the write went on) is told on
+  the coach's next question: that response begins with the earlier message's recorded `decision` and `receipt`
+  events, each carrying `message_id`, and the hook folds them into that message. No reload is needed.
 - Tests: `src/app/api/coachhelm/v3/chat/stream/__tests__/route.turns.test.ts` (the route against a scripted model and
   an in-memory database) and `src/components/golf/coachhelm/chat/__tests__/useCoachHelmChat.test.tsx`.
 
