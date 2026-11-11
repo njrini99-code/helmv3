@@ -967,7 +967,11 @@ route and the registry is in `engine/CONTRACT_NOTES.md`, sections C1 to C7.
   action's permission check first in `plan`, and reads back before a receipt says nothing was saved. Each card says
   what the player will see on their own pages, established from the page's code and held by a test that reads it
   (a focus area's value shows, an entry's note does not; an outcome completes the focus area and credits the signal
-  it came from, and if that second half fails the receipt is `partial`). `cancel_event` is
+  it came from, and if that second half fails the receipt is `partial`). Three of the cards can be edited in place
+  before Confirm (`editable` and `revise`, through `editing` in `tasks/kit.ts`): `update_event` (date, start, end,
+  place, title), `set_task_reminder` (date, time) and `log_focus_progress` (value, note). An edit is merged into the
+  input the card was planned from, held to the tool's own schema, and planned again with every read and check; the
+  thing the card is about (the event, the task, the focus area) is never a field. `cancel_event` is
   the app's soft cancellation and never the row delete; `update_event` and `cancel_event` act on one date, as the
   Calendar does for "this date only". Where something is sent the card names who gets it and shows the words, and a
   test pins those words to the app's own lines.

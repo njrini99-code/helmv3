@@ -23,7 +23,7 @@ import { offsetMinutesFor } from '@/lib/golf/timezone';
 import { keyOf } from '../action-planners';
 import type { ProposalFact } from '../action-types';
 import type { ChatTool, TaskTool, ToolContext } from '../engine/tool';
-import { asPlayers, coachOnly, done, failed, list, now, plural, requireTeamStaff, settle, unreached, withAccounts, type StoredProposal } from './kit';
+import { asPlayers, coachOnly, done, editing, failed, list, now, plural, requireTeamStaff, settle, unreached, withAccounts, type StoredProposal } from './kit';
 
 const ReminderInput = z.strictObject({
   task_id: z.string().uuid(),
@@ -31,6 +31,8 @@ const ReminderInput = z.strictObject({
   time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).describe('24-hour HH:MM.'),
 });
 type ReminderInput = z.infer<typeof ReminderInput>;
+/** What the coach can change on the card itself: when the reminder goes out. */
+const reminderEdits = editing(ReminderInput, { date: 'Date', time: 'Time' }, { time: 'time' });
 const ReminderStored = z.object({ task_id: z.string().uuid(), at: z.string(), title: z.string(), body: z.string(), when: z.string(), told: z.number().int().nonnegative() });
 
 async function taskRow(ctx: ToolContext, teamId: string, id: string) {
@@ -98,10 +100,15 @@ export const setTaskReminderTool: TaskTool<ReminderInput, StoredProposal> = {
       delivery: { channels: ['in_app'], title: 'Task Reminder', body, ...(assigner || others ? { note: [assigner, others ? `${plural(others, 'assigned player')} no longer on the active roster ${others === 1 ? 'gets' : 'get'} it too.` : null].filter(Boolean).join(' ') } : {}) },
       undo: { window: true, after: 'Change or clear the reminder on the task in Team Hub, any time before it goes out.' },
       idempotency_key: keyOf(['set_task_reminder', task.id, at]),
+      editable: reminderEdits.fields(input),
       tool: 'set_task_reminder',
-      input: { task_id: task.id, at, title: task.title, body, when, told },
+      input: { task_id: task.id, at, title: task.title, body, when, told, asked: input },
       planned_at: now(),
     };
+  },
+  revise: async (ctx, proposal, edits) => {
+    coachOnly(ctx);
+    return setTaskReminderTool.plan(ctx, reminderEdits.merge(proposal, edits));
   },
   commit: async (ctx, proposal) => {
     const name = 'set_task_reminder';

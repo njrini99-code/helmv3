@@ -96,6 +96,49 @@ describe('update_event: the card', () => {
   });
 });
 
+describe('update_event: editing the card before Confirm', () => {
+  const asked = { event_id: EVENT, ...keep, new_start: '16:00' };
+
+  it('the card offers the event as it will be, each field typed by the tool’s own schema', async () => {
+    const p = await updateEvent.plan(toolCtx(db().sb, coach()), asked);
+    expect(p.editable?.map((f) => [f.key, f.label, f.type, f.value])).toEqual([
+      ['new_date', 'Date', 'date', '2026-11-12'],
+      ['new_start', 'Start', 'time', '16:00'],
+      ['new_end', 'End', 'time', '18:30'],
+      ['new_location', 'Place', 'text', 'Pine Hills GC'],
+      ['new_title', 'Title', 'text', 'Team practice'],
+    ]);
+    expect(p.editable?.find((f) => f.key === 'new_title')?.max_length).toBe(200);
+    // The event itself is never a field: a different event is a different request.
+    expect(p.editable?.some((f) => f.key === 'event_id')).toBe(false);
+  });
+
+  it('an edit plans again from what was asked and the edit: the same reads and checks, nothing written, no action called', async () => {
+    const { sb, writes } = db();
+    const p = stored(await updateEvent.plan(toolCtx(sb, coach()), asked));
+    const q = await updateEvent.revise!(toolCtx(sb, coach()), p, { new_start: '16:30', new_location: 'Range 2' });
+    expect(fact(q, 'After')).toBe('Thu, Nov 12 at 4:30 PM at Range 2, until 7:00 PM');
+    expect(fact(q, 'They see')).toBe('Event updated: Team practice\nThu, Nov 12 at 4:30 PM at Range 2');
+    expect((q.input as { asked: unknown }).asked).toEqual({ ...asked, new_start: '16:30', new_location: 'Range 2' });
+    expect(q.editable?.find((f) => f.key === 'new_location')?.value).toBe('Range 2');
+    expect(writes).toEqual([]);
+    expect(actions.updateGolfEvent).not.toHaveBeenCalled();
+    // A blank leaves that part of the event as it is.
+    expect(fact(await updateEvent.revise!(toolCtx(sb, coach()), p, { new_location: '' }), 'After')).toBe('Thu, Nov 12 at 4:00 PM at Pine Hills GC, until 6:30 PM');
+  });
+
+  it('refuses a field the card did not offer, a value the schema refuses, what the plan itself refuses, a card with nothing to start from, and a player', async () => {
+    const { sb } = db();
+    const p = stored(await updateEvent.plan(toolCtx(sb, coach()), asked));
+    const revise = (card: StoredProposal, edits: Record<string, unknown>) => updateEvent.revise!(toolCtx(sb, coach()), card, edits);
+    await expect(revise(p, { event_id: FOREIGN })).rejects.toThrow('That cannot be changed on this card. Ask for it in words instead.');
+    await expect(revise(p, { new_start: '25:00' })).rejects.toThrow('Start is not a value this card can take.');
+    await expect(revise(p, { new_end: '15:00' })).rejects.toThrow('The end must be after the start on the same day.');
+    await expect(revise({ ...p, input: { event_id: EVENT } }, { new_start: '16:30' })).rejects.toThrow('This card can no longer be edited. Ask for it again.');
+    await expect(updateEvent.revise!(toolCtx(sb, playerWho(), 'player'), p, { new_start: '16:30' })).rejects.toThrow('Only a coach can do that.');
+  });
+});
+
 describe('update_event: the write', () => {
   /** The app's action, standing in: it writes the row only on the version it was given, as the real one does. */
   const moving = (tables: ReturnType<typeof fakeSb>['tables'], opts: { failAfterWrite?: boolean } = {}) =>

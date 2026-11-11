@@ -1041,3 +1041,20 @@ E28. **Editing a waiting card.** All additive; a browser that knows nothing of i
        coach edits again or a `decision` for the key arrives. `accepted: true` needs no notice.
      - **What the model is told**: nothing at the time of the edit. On Confirm the tool result states what was
        committed (the receipt's summary), which is the edited card (PLANS P11).
+
+C12. (CONTEXT, 10 Nov, late.) Three CONTEXT cards can be edited before Confirm, on E28 and PLANS's `editable`:
+`update_event` (`new_date`, `new_start`, `new_end`, `new_location`, `new_title`), `set_task_reminder` (`date`, `time`)
+and `log_focus_progress` (`value`, `note`). Each has `revise` and puts `editable` on its proposal.
+
+- These tools store what the write needs, not the model's input, so the input a card was planned from is kept beside
+  it as `proposal.input.asked` and an edit is merged into that (`editing` in `../tasks/kit.ts`; `reviseInput` could
+  not be used because these schemas are strict and take null, not an absent key). The merged input is held to the
+  tool's own schema and `plan` runs again: the same reads, permission checks and refusals. It throws `EditRefused`
+  (`../editable.ts`) with a sentence the coach can read.
+- `update_event`'s fields show the event as it will be (the day, both times, the place, the title), not only what the
+  model asked to change. A blank is null, which this tool reads as "leave that part as it is".
+- Field kinds come from `editableFields`; the two 24-hour times are named `time` by the tool because their pattern is
+  stricter than the one `editableFields` recognises. **PLANS: if you want that recognised in `editable.ts` instead,
+  the pattern is `^([01]\d|2[0-3]):[0-5]\d$`.**
+- The other nine CONTEXT cards offer nothing to edit (no `revise`), so E28 answers `fixed` for them.
+- Nothing here is in the cached prefix: the sizes in C11 stand.

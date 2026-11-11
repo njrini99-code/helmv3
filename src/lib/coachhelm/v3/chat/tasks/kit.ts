@@ -12,9 +12,11 @@
  * was saved" on the action's word alone.
  */
 import 'server-only';
+import type { z } from 'zod';
 import type { ActionProposal, ActionReceipt } from '../action-types';
-import type { CardDelivery, CardNotReached, CardPerson, CardUndo, CardVisibility } from '../card-types';
+import type { CardDelivery, CardNotReached, CardPerson, CardUndo, CardVisibility, EditableField } from '../card-types';
 import { CoachContextError, type CoachChatContext } from '../context';
+import { EditRefused, editableFields } from '../editable';
 import { isPlayerContext, type ToolContext } from '../engine/tool';
 
 /** What every task here returns from `plan`: the card, the tool, the input the write will use, and when it was planned. JSON-safe. The same shape as TOOLS's `TaskProposal`. */
@@ -117,4 +119,38 @@ export async function requireTeamStaff(ctx: ToolContext, who: CoachChatContext):
   const { data, error } = await ctx.sb.from('golf_team_coach_staff').select('id').eq('team_id', who.team_id).eq('coach_id', who.coach_id).maybeSingle();
   if (error) throw new Error('Your access could not be checked just now. Try again in a moment.');
   if (!data) throw new CoachContextError('Only this team’s coaches can do that.', 403);
+}
+
+/**
+ * A card the coach can change in place before confirming (`engine/tool.ts`, `revise`). A tool names the fields of its
+ * own input that may be edited; their types and limits are read from the tool's schema (`editableFields`), so the form
+ * and the check cannot part ways. The input the card was planned from is kept on the card as `input.asked`, and an
+ * edit is merged into that and validated by the same schema before the tool plans again: every read and every check
+ * `plan` makes, no write, no model. A blank is null, which in these tools means "as it is now" or "none".
+ */
+export function editing<I extends Record<string, unknown>>(schema: z.ZodType<I>, labels: Readonly<Record<string, string>>, kinds: Readonly<Record<string, EditableField['type']>> = {}) {
+  const keys = Object.keys(labels);
+  return {
+    /**
+     * The fields for the card. `shown` is what each holds after the change, where the input itself says only what
+     * changes. `kinds` names a field's kind where the schema's pattern does not give it away (a 24-hour time).
+     */
+    fields: (asked: I, shown: Readonly<Record<string, unknown>> = {}): EditableField[] =>
+      editableFields(schema, keys, { ...asked, ...shown }, { labels: { ...labels } }).map((f) => (kinds[f.key] ? { ...f, type: kinds[f.key]! } : f)),
+    /** The tool's input with the coach's edits, or a sentence the coach can read. */
+    merge: (proposal: { input: unknown }, edits: Record<string, unknown>): I => {
+      const before = schema.safeParse((proposal.input as { asked?: unknown } | null)?.asked);
+      if (!before.success) throw new EditRefused('This card can no longer be edited. Ask for it again.');
+      const stray = Object.keys(edits).find((k) => !keys.includes(k));
+      if (stray) throw new EditRefused('That cannot be changed on this card. Ask for it in words instead.');
+      const merged: Record<string, unknown> = { ...before.data };
+      for (const [key, value] of Object.entries(edits)) merged[key] = value === '' || value === undefined ? null : value;
+      const after = schema.safeParse(merged);
+      if (!after.success) {
+        const key = String(after.error.issues[0]?.path[0] ?? '');
+        throw new EditRefused(`${labels[key] ?? 'That'} is not a value this card can take.`);
+      }
+      return after.data;
+    },
+  };
 }

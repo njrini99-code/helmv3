@@ -30,7 +30,7 @@ import type { ProposalFact } from '../action-types';
 import type { CoachChatContext } from '../context';
 import type { ChatTool, TaskTool, ToolContext } from '../engine/tool';
 import type { CardPerson } from '../card-types';
-import { asPlayers, coachOnly, done, failed, list, now, plural, settle, unreached, wallClock, withAccounts, type StoredProposal } from './kit';
+import { asPlayers, coachOnly, done, editing, failed, list, now, plural, settle, unreached, wallClock, withAccounts, type StoredProposal } from './kit';
 
 interface EventRow {
   id: string;
@@ -101,6 +101,8 @@ const UpdateInput = z.strictObject({
   new_title: z.string().min(1).max(200).nullable(),
 });
 type UpdateInput = z.infer<typeof UpdateInput>;
+/** What the coach can change on the card itself. A blank leaves that part of the event as it is. */
+const updateEdits = editing(UpdateInput, { new_date: 'Date', new_start: 'Start', new_end: 'End', new_location: 'Place', new_title: 'Title' }, { new_start: 'time', new_end: 'time', new_location: 'text' });
 
 const UpdateStored = z.object({
   event_id: z.string().uuid(),
@@ -222,10 +224,16 @@ export const updateEvent: TaskTool<UpdateInput, StoredProposal> = {
       delivery: told > 0 ? { channels: ['in_app'], title: words.title, body: words.message, ...(invited.others ? { note: `${plural(invited.others, 'invited player')} no longer on the active roster ${invited.others === 1 ? 'is' : 'are'} told too.` } : {}) } : null,
       undo: { window: true, after: 'Move it back on the Calendar. A notice that has gone out stays sent.' },
       lands: { kind: 'event', home: '/golf/dashboard/calendar', day },
+      // The fields show the event as it will be, so the coach edits what they read on the card.
+      editable: updateEdits.fields(input, { new_date: day, new_start: allDay ? null : wallClock(startIso, zone).time, new_end: endIso && !allDay ? wallClock(endIso, zone).time : null, new_location: location ?? null, new_title: title }),
       tool: 'update_event',
-      input: { event_id: event.id, payload, expect: { start: startIso, end: endIso, location: location ?? null, title }, summary, told, day },
+      input: { event_id: event.id, payload, expect: { start: startIso, end: endIso, location: location ?? null, title }, summary, told, day, asked: input },
       planned_at: now(),
     };
+  },
+  revise: async (ctx, proposal, edits) => {
+    coachOnly(ctx);
+    return updateEvent.plan(ctx, updateEdits.merge(proposal, edits));
   },
   commit: async (ctx, proposal) => {
     const name = 'update_event';

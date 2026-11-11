@@ -43,7 +43,7 @@ import { keyOf } from '../action-planners';
 import type { ProposalFact } from '../action-types';
 import { CoachContextError, type CoachChatContext } from '../context';
 import type { ChatTool, TaskTool, ToolContext } from '../engine/tool';
-import { NOTHING_SENT, coachOnly, done, failed, now, rosterPlayer, settle, type StoredProposal } from './kit';
+import { NOTHING_SENT, coachOnly, done, editing, failed, now, rosterPlayer, settle, type StoredProposal } from './kit';
 
 /** The action's own gate for anything about one player, asked the way the action asks it. */
 async function requirePlayerAccess(ctx: ToolContext, who: CoachChatContext, playerId: string): Promise<void> {
@@ -415,6 +415,8 @@ const ProgressInput = z.strictObject({
   note: z.string().min(1).max(500).nullable().describe('The coach’s note in their words, or null.'),
 });
 type ProgressInput = z.infer<typeof ProgressInput>;
+/** What the coach can change on the card itself: the value and the note. */
+const progressEdits = editing(ProgressInput, { value: 'After', note: 'Note' });
 const ProgressStored = z.object({ focus_area_id: z.string().uuid(), value: z.number(), note: z.string().nullable(), title: z.string(), player: z.string() });
 
 export const logFocusProgress: TaskTool<ProgressInput, StoredProposal> = {
@@ -461,10 +463,15 @@ export const logFocusProgress: TaskTool<ProgressInput, StoredProposal> = {
       ...NOTHING_SENT,
       visible_note: sees,
       undo: { window: true, after: 'Log the earlier value again. A saved note is not removed from the chat.' },
+      editable: progressEdits.fields(input, { value, note }),
       tool: 'log_focus_progress',
-      input: { focus_area_id: row.id, value, note, title: row.title, player: player.name },
+      input: { focus_area_id: row.id, value, note, title: row.title, player: player.name, asked: input },
       planned_at: now(),
     };
+  },
+  revise: async (ctx, proposal, edits) => {
+    coachOnly(ctx);
+    return logFocusProgress.plan(ctx, progressEdits.merge(proposal, edits));
   },
   commit: async (ctx, proposal) => {
     const name = 'log_focus_progress';

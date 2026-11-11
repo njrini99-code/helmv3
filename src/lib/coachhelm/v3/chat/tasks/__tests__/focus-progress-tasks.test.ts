@@ -135,6 +135,30 @@ describe('log_focus_progress', () => {
   });
 });
 
+describe('log_focus_progress: editing the card before Confirm', () => {
+  it('the card offers the value and the note; an edit plans again with the same checks and writes nothing', async () => {
+    const { sb, writes } = db();
+    const p = stored(await logFocusProgress.plan(toolCtx(sb, coachWho()), { focus_area_id: FOCUS, value: 31, note: null }));
+    expect(p.editable?.map((f) => [f.key, f.label, f.type, f.value])).toEqual([['value', 'After', 'number', 31], ['note', 'Note', 'long_text', null]]);
+    a.verifyPlayerAccess.mockClear();
+    const q = await logFocusProgress.revise!(toolCtx(sb, coachWho()), p, { value: 32, note: 'Counted over nine holes' });
+    expect([fact(q, 'After'), fact(q, 'Note')]).toEqual(['32', 'Counted over nine holes']);
+    expect(q.summary).toBe('Set Avery Lane’s focus area “Lag putting” to 32, with a note.');
+    expect(a.verifyPlayerAccess).toHaveBeenCalledWith(AVERY, COACH_USER, sb);
+    expect(writes).toEqual([]);
+    expect(a.updateFocusAreaProgress).not.toHaveBeenCalled();
+  });
+
+  it('refuses the focus area as a field, a value that is not a number, an edit that leaves nothing to log, and a player', async () => {
+    const { sb } = db();
+    const p = stored(await logFocusProgress.plan(toolCtx(sb, coachWho()), { focus_area_id: FOCUS, value: 31, note: null }));
+    await expect(logFocusProgress.revise!(toolCtx(sb, coachWho()), p, { focus_area_id: FOREIGN_FOCUS })).rejects.toThrow('That cannot be changed on this card. Ask for it in words instead.');
+    await expect(logFocusProgress.revise!(toolCtx(sb, coachWho()), p, { value: 'thirty' })).rejects.toThrow('After is not a value this card can take.');
+    await expect(logFocusProgress.revise!(toolCtx(sb, coachWho()), p, { value: '' })).rejects.toThrow('Give a value, a note, or both.');
+    await expect(logFocusProgress.revise!(toolCtx(sb, playerWho(), 'player'), p, { value: 32 })).rejects.toThrow('Only a coach can do that.');
+  });
+});
+
 describe('record_focus_outcome', () => {
   it('the card writes nothing and says it completes the focus area, reaches the signal it came from, and what the player sees', async () => {
     const { sb, writes } = db({ from_insight_id: SIGNAL });
