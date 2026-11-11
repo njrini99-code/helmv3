@@ -61,7 +61,7 @@ export interface CardCopy {
   home: string | null;
   /** Writes on the press: no hold, no Undo. */
   immediate: boolean;
-  /** The quiet key beside the primary. "Cancel", except where that word is the action itself. */
+  /** The quiet key beside the primary: "Not now", or the task's own word where setting it aside needs saying ("Keep the event"). */
   dismiss: string;
 }
 
@@ -98,7 +98,7 @@ const ROWS: Record<string, Row> = {
   create_trip: { head: 'New trip', icon: Route, primary: 'Add the trip', busy: 'Adding…', badge: 'Added', reach: 'visible', undone: 'Undone. The trip was not added.', home: 'Travel' },
   create_qualifier: { head: 'New qualifier', icon: Trophy, primary: 'Set qualifier', busy: 'Setting…', badge: 'Set', reach: 'sends', told: (p) => toldInLine(p) || namesIn(valueOf(p, 'Players')).length, undone: 'Undone. The qualifier was not set, and nobody was told.', home: 'Qualifiers' },
   create_goal: { head: 'New goal', icon: Target, primary: 'Set goal', busy: 'Setting…', badge: 'Set', reach: 'sends', told: () => 1, undone: 'Undone. The goal was not set, and nobody was told.', home: null },
-  create_focus_area: { head: 'New focus area', icon: Flag, primary: 'Assign focus', busy: 'Assigning…', badge: 'Proposed', reach: 'sends', told: () => 1, undone: 'Undone. The focus area was not created, and nobody was told.', home: 'Focus areas' },
+  create_focus_area: { head: 'New focus', icon: Flag, primary: 'Assign focus', busy: 'Assigning…', badge: 'Proposed', reach: 'sends', told: () => 1, undone: 'Undone. The focus area was not created, and nobody was told.', home: 'Focus areas' },
   create_task: { head: 'New task', icon: ClipboardCheck, primary: 'Assign task', busy: 'Assigning…', badge: 'Assigned', reach: 'sends', told: players, undone: 'Undone. The task was not created, and nobody was told.', home: 'Tasks' },
   create_team_announcement: { head: 'Team announcement', icon: Megaphone, primary: (_p, told) => (told ? `Post to ${plural(told, 'player')}` : 'Post'), busy: 'Posting…', badge: 'Posted', reach: 'sends', told: players, verb: 'posted', undone: 'Undone. Nothing was posted.', home: 'Announcements' },
   add_round_note: { head: 'Note on a round', icon: StickyNote, primary: 'Add note', busy: 'Adding…', badge: 'Added', reach: 'visible', undone: 'Undone. The round’s notes are as they were.', home: null },
@@ -142,7 +142,7 @@ export function cardCopy(tool: string, proposal: ActionProposal): CardCopy {
     // A task this table has not met: the plan's own words, and the cautious reading of its reach.
     const truth = reachOf(proposal, tellsSomebody(proposal) ? 'sends' : 'private');
     const told = truth.reach === 'sends' ? (proposal.recipients?.length ?? toldInLine(proposal)) : 0;
-    return { head: proposal.action, icon: ClipboardCheck, primary: 'Confirm', busy: 'Working…', badge: 'Done', reach: truth.reach, mark: truth.mark ?? (truth.reach === 'sends' ? 'Sends' : truth.reach === 'visible' ? MARK.visible : 'Nobody is told'), told, hold: holdLine('saved', told), undone: 'Undone. Nothing was saved, and nobody was told.', untouched: 'Nothing was saved.', home: null, immediate: proposal.undo?.window === false, dismiss: 'Cancel' };
+    return { head: proposal.action, icon: ClipboardCheck, primary: 'Confirm', busy: 'Working…', badge: 'Done', reach: truth.reach, mark: truth.mark ?? (truth.reach === 'sends' ? 'Sends' : truth.reach === 'visible' ? MARK.visible : 'Nobody is told'), told, hold: holdLine('saved', told), undone: 'Undone. Nothing was saved, and nobody was told.', untouched: 'Nothing was saved.', home: null, immediate: proposal.undo?.window === false, dismiss: 'Not now' };
   }
   // The plan's own word on who is sent something and who can see it outranks the catalogue's reading of an older card.
   const read = typeof row.reach === 'function' ? row.reach(proposal) : row.reach;
@@ -164,7 +164,7 @@ export function cardCopy(tool: string, proposal: ActionProposal): CardCopy {
     untouched: verb === 'saved' ? 'Nothing was saved.' : `Nothing was ${verb}.`,
     home: row.home,
     immediate: proposal.undo ? !proposal.undo.window : !!row.immediate,
-    dismiss: row.dismiss ?? 'Cancel',
+    dismiss: row.dismiss ?? 'Not now',
   };
 }
 

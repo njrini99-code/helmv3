@@ -17,7 +17,7 @@ const step = (ms: number) => act(() => void vi.advanceTimersByTime(ms));
 describe('the capabilities gallery · Play runs the real sequence at real timing', () => {
   it('Confirm, the request, 8 seconds of hold, saved', () => {
     render(<PreviewChatCapabilities task="create_task" />);
-    expect(badge()).toBe('Draft');
+    expect(badge()).toBe('Not saved');
     fireEvent.click(screen.getByRole('button', { name: 'Assign task' }));
     expect(screen.getByRole('button', { name: 'Assigning…' })).toBeTruthy();
     step(700);
@@ -33,7 +33,7 @@ describe('the capabilities gallery · Play runs the real sequence at real timing
     expect(badge()).toBe('Assigned');
     expect(document.querySelector('.ch-akg-mark[data-tone="ok"]')).toBeTruthy();
     expect(screen.getByText('Told 4 in the app')).toBeTruthy();
-    expect(screen.getByText('Sent to 4 players: a notice in the app')).toBeTruthy();
+    expect(screen.getByText('4 players got a notice in the app.')).toBeTruthy();
   });
 
   it('Undo at 3 seconds: nothing saved, nobody told, and it can be put back', () => {
@@ -46,9 +46,9 @@ describe('the capabilities gallery · Play runs the real sequence at real timing
     step(500);
     expect(badge()).toBe('Undone');
     expect(screen.getByText('Undone. Nothing was posted.')).toBeTruthy();
-    expect(document.querySelector('.ch-akc-reach .ch-badge')!.textContent).toBe('Not sent');
+    expect(document.querySelector('.ch-akc-told[data-withdrawn]')!.textContent).toMatch(/^Not sent\. /);
     fireEvent.click(screen.getByRole('button', { name: 'Put it back' }));
-    expect(badge()).toBe('Draft');
+    expect(badge()).toBe('Not saved');
   });
 
   it('a lock writes on the press: no hold and no Undo', () => {

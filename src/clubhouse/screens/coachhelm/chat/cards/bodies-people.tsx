@@ -1,16 +1,16 @@
 'use client';
 
-import { Circle, Clock } from 'lucide-react';
 import type { ProposalFact } from '@/lib/coachhelm/v3/chat/action-types';
-import { Avatar } from '../../../../ui/Avatar';
-import { Badge } from '../../../../ui/Badge';
-import { Icon } from '../../../../ui/Icon';
-import { missingRows, type BodyProps } from './bodies-schedule';
+import { missingRows, unsetOf, type BodyProps } from './bodies-schedule';
 import { count, dayWords, factOf, peopleOf, plural, restOf, valueOf } from './facts';
-import { Body, Bubble, Change, Clamp, Delivery, Diff, Fold, Meta, NoWords, Notice, People, Quote, ReachRow, Rows, tense } from './kit';
+import { Body, Bubble, Change, Clamp, Delivery, Diff, Fold, Notice, People, Quote, Rows, Thing, Who, sentence, tense } from './kit';
 import { isOpen, type CardPerson } from './types';
 
-/** The bodies of the tasks about a player, words that are sent, and things that are published (CAPABILITIES.md A8 to A18). */
+/**
+ * The bodies of the tasks about a player, words that are sent, and things that are published (CAPABILITIES.md A8 to A18).
+ * Each one reads the same way: who it is for, the thing itself as that person will see it, the words that are sent, and
+ * any fact left over as a plain line. Who is told and where it appears is the frame's one line at the foot (`Body`).
+ */
 
 const ask = (p: BodyProps) => (isOpen(p.phase) ? p.onAsk : undefined);
 const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ');
@@ -21,80 +21,82 @@ const who = (roster: readonly CardPerson[] = [], name: string): CardPerson => ro
 // ---------------------------------------------------------------------------------------------------------------------
 
 export function GoalBody(props: BodyProps) {
-  const { proposal: p, copy, phase, density, roster } = props;
+  const { proposal: p, phase, density, roster } = props;
   const g = p.visual?.kind === 'goal' ? p.visual : null;
   const name = g?.player ?? valueOf(p, 'Player') ?? 'the player';
   const lede = tense(phase, { will: `Sends to ${name}: a push`, did: `Sent to ${name}: a push`, not: `Not sent. ${name} was not told.` });
   const how = valueOf(p, 'How');
   return (
-    <Body label={lede} card={props}>
-      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density} />
-      {g && (
-        <div className="ch-akc-goal">
-          <div className="ch-akc-goal__who">
-            <Avatar name={name} id={who(roster, name).id} size="md" />
-            <span>
-              <b>{name}</b>
-              <small>{g.stat}</small>
-            </span>
-            {how && <Badge tone={how === 'Assigned' ? 'accent' : 'neutral'}>{how}</Badge>}
-          </div>
-          <p className="ch-akc-goal__target">
+    <Body label={lede} card={props} wordless>
+      <Who proposal={p} density={density}>
+        {(g?.player || valueOf(p, 'Player')) && <People people={[who(roster, name)]} density={density} />}
+      </Who>
+      {g ? (
+        <Thing
+          title={g.stat}
+          lines={[
+            <>
+              Reach{' '}
+              <b className="ch-num">
+                {g.target}
+                {g.unit && <span className="ch-akc-goal__unit"> {g.unit}</span>}
+              </b>{' '}
+              in {plural(g.days, 'day')}
+            </>,
+          ]}
+        >
+          <p className="ch-akc-meta">
             {g.current != null && (
               <>
-                <small>Now</small>
-                <span className="ch-akc-goal__now ch-num">{g.current}</span>
+                Now <span className="ch-akc-goal__now ch-num">{g.current}</span>
+                {(g.better || how) && ' · '}
               </>
             )}
-            <small>Target</small>
-            <b className="ch-num">
-              {g.target}
-              {g.unit && <span className="ch-akc-goal__unit"> {g.unit}</span>}
-            </b>
-            <span>
-              <Icon icon={Clock} size={13} />
-              in {plural(g.days, 'day')}
-            </span>
+            {[g.better ? (g.better === 'up' ? 'Higher is better' : 'Lower is better') : null, how].filter(Boolean).join(' · ')}
           </p>
-          {g.better && <p className="ch-akc-meta">{g.better === 'up' ? 'Higher is better.' : 'Lower is better.'}</p>}
           {g.current === null && <p className="ch-akc-meta">No rounds yet in the 90 days a goal is measured from, so there is no figure for now.</p>}
           {g.current === undefined && <p className="ch-akc-gap">The plan does not say where {name.split(' ')[0]} stands on this now.</p>}
-        </div>
+        </Thing>
+      ) : (
+        <Thing title={valueOf(p, 'Goal') ?? p.summary} />
       )}
-      <Delivery proposal={p} phase={phase} density={density}>
-        <NoWords channel={p.notifications.join(' ')} phase={phase} />
-      </Delivery>
+      <Delivery proposal={p} phase={phase} density={density} />
       <Rows facts={restOf(p, ['Player', 'Target', 'By', 'How', 'Goal', 'Now', 'Better is'])} density={density} subject={p.summary} onAsk={ask(props)} />
     </Body>
   );
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// A9. A focus area
+// A9. A focus area: the focus as the player's Home will show it
 // ---------------------------------------------------------------------------------------------------------------------
 
+/** The facts of a focus that the body sets in its own words. One the coach still has to give is asked for as a line. */
+const FOCUS_SET = ['Goal', 'Target', 'Review on', 'Review', 'By', 'Over'];
+
 export function FocusBody(props: BodyProps) {
-  const { proposal: p, copy, phase, density, roster } = props;
+  const { proposal: p, phase, density, roster } = props;
   const people = peopleOf(p, roster, valueOf(p, 'Player'));
   const name = people[0]?.name ?? 'the player';
   const lede = tense(phase, { will: `Sends to ${name}, who is asked to accept it`, did: `Sent to ${name}, who is asked to accept it`, not: `Not sent. ${name} was not told.` });
   const status = valueOf(p, 'Status');
-  const window: ProposalFact[] = [factOf(p, 'By'), factOf(p, 'Over')].filter((f): f is ProposalFact => !!f);
+  const area = valueOf(p, 'Area');
+  const target = valueOf(p, 'Target');
+  const review = valueOf(p, 'Review on') ?? valueOf(p, 'Review');
+  const by = valueOf(p, 'By');
+  const over = valueOf(p, 'Over');
   return (
-    <Body label={lede} card={props}>
-      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density}>
+    <Body label={lede} card={props} wordless>
+      <Who proposal={p} density={density}>
         <People people={people} density={density} />
-      </ReachRow>
-      <div className="ch-akc-focus">
-        {valueOf(p, 'Area') && <Badge>{titleCase(valueOf(p, 'Area')!)}</Badge>}
-        <b>{valueOf(p, 'Focus') ?? p.summary}</b>
-        {valueOf(p, 'Target') && <p className="ch-num">{titleCase(valueOf(p, 'Target')!)}</p>}
-      </div>
-      <Delivery proposal={p} phase={phase} density={density}>
-        <NoWords channel={`${p.notifications.join('. ')}.`} phase={phase} />
-      </Delivery>
-      <Rows facts={[...missingRows(p), ...window, ...restOf(p, ['Player', 'Focus', 'Area', 'Target', 'By', 'Over', 'Status'])]} density={density} subject={p.summary} onAsk={ask(props)} />
-      {status && <Change>{status}.</Change>}
+      </Who>
+      <Thing
+        title={valueOf(p, 'Focus') ?? p.summary}
+        lines={[valueOf(p, 'Goal'), target && titleCase(target)]}
+        meta={[review && `Review ${review}`, by && `By ${by}`, over && `Over ${over}`, area && titleCase(area)]}
+      />
+      <Delivery proposal={p} phase={phase} density={density} />
+      <Rows facts={[...missingRows(p), ...unsetOf(p, FOCUS_SET), ...restOf(p, ['Player', 'Focus', 'Area', 'Status', ...FOCUS_SET])]} density={density} subject={p.summary} onAsk={ask(props)} />
+      {status && <Change>{sentence(status)}</Change>}
     </Body>
   );
 }
@@ -113,20 +115,12 @@ export function TaskBody(props: BodyProps) {
   const due = factOf(p, 'Due');
   const priority = valueOf(p, 'Priority');
   return (
-    <Body label={lede} card={props}>
-      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density}>
+    <Body label={lede} card={props} wordless>
+      <Who proposal={p} density={density}>
         <People people={people} density={density} everyone={everyone} />
-      </ReachRow>
-      <div className="ch-akc-task">
-        <Icon icon={Circle} size={20} className="ch-akc-task__box" />
-        <div>
-          <b>{t?.title ?? valueOf(p, 'Task') ?? p.summary}</b>
-          <Meta parts={[t?.due ? `Due ${dayWords(t.due)}` : null, priority && priority !== 'medium' ? `${titleCase(priority)} priority` : null]} />
-        </div>
-      </div>
-      <Delivery proposal={p} phase={phase} density={density}>
-        <NoWords channel={`${p.notifications.join('. ')}.`} phase={phase} />
-      </Delivery>
+      </Who>
+      <Thing title={t?.title ?? valueOf(p, 'Task') ?? p.summary} meta={[t?.due ? `Due ${dayWords(t.due)}` : null, priority && priority !== 'medium' ? `${titleCase(priority)} priority` : null]} />
+      <Delivery proposal={p} phase={phase} density={density} />
       <Rows facts={[...(due?.missing ? [{ ...due, label: 'Due date', value: 'Not set' }] : []), ...restOf(p, ['Task', 'Assigned to', 'Due', 'Priority'])]} density={density} subject={p.summary} onAsk={ask(props)} />
     </Body>
   );
@@ -150,9 +144,9 @@ export function AnnouncementBody(props: BodyProps) {
   ];
   return (
     <Body label={lede} card={props}>
-      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density}>
+      <Who proposal={p} density={density}>
         <People people={people} density={density} everyone={everyone} />
-      </ReachRow>
+      </Who>
       <Delivery proposal={p} phase={phase} density={density}>
         <Notice title={valueOf(p, 'Title') ?? p.summary} body={valueOf(p, 'Message')} caption={tense(phase, { will: 'What each of them gets', did: 'What each of them got', not: 'What they would have got' })} density={density} />
       </Delivery>
@@ -166,35 +160,36 @@ export function AnnouncementBody(props: BodyProps) {
 // ---------------------------------------------------------------------------------------------------------------------
 
 export function RoundNoteBody(props: BodyProps) {
-  const { proposal: p, copy, phase, density } = props;
+  const { proposal: p, phase, density, roster } = props;
   const note = p.visual?.kind === 'note' ? p.visual : null;
   const name = note?.player ?? 'The player';
   const earlier = valueOf(p, 'Earlier note');
   const lede = tense(phase, { will: `${name} will see this note on the round. No notification is sent.`, did: `${name} can see this note on the round.`, not: `Not added. ${name} sees nothing new.` });
+  const round = note?.round;
   return (
     <Body label={lede} card={props}>
-      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density} />
-      {earlier && <Quote text={earlier} caption="Already on the round" quiet density={density} />}
-      <Quote text={note?.note ?? valueOf(p, 'Adding') ?? ''} caption={earlier ? 'Adding under it' : 'Adding'} density={density} />
-      {earlier && <Change>The earlier note stays. This goes under it.</Change>}
-      {note?.round ? (
-        <p className="ch-akc-subject">{[note.round.course, note.round.date ? dayWords(note.round.date) : null, note.round.score != null ? `${note.round.score}` : null].filter(Boolean).join(' · ') || 'This round'}</p>
+      <Who density={density}>{note?.player && <People people={[who(roster, note.player)]} density={density} />}</Who>
+      {round ? (
+        <Thing title={round.course ?? 'This round'} meta={[round.date ? dayWords(round.date) : null, round.score != null ? `${round.score}` : null]} />
       ) : (
         <p className="ch-akc-gap">The plan does not say which round: no course, date or score.</p>
       )}
+      {earlier && <Quote text={earlier} caption="Already on the round" quiet density={density} />}
+      <Quote text={note?.note ?? valueOf(p, 'Adding') ?? ''} caption={earlier ? 'Adding under it' : 'The note'} density={density} />
+      {earlier && <Change>The earlier note stays. This goes under it.</Change>}
     </Body>
   );
 }
 
 export function AvailabilityBody(props: BodyProps) {
-  const { proposal: p, copy, phase, density } = props;
+  const { proposal: p, density } = props;
   const name = p.summary.replace(/^Availability note for /, '');
   const replaces = valueOf(p, 'Replaces');
   const lede = `Coaches only. ${name.split(' ')[0]} never sees this.`;
   return (
     <Body label={lede} card={props}>
-      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density} />
-      <Quote text={valueOf(p, 'Note') ?? ''} caption={`On ${name}`} density={density} />
+      <Thing title={name} />
+      <Quote text={valueOf(p, 'Note') ?? ''} caption="The note" density={density} />
       {replaces && <Quote text={replaces} caption="Replaces" quiet struck density={density} />}
     </Body>
   );
@@ -205,47 +200,28 @@ export function AvailabilityBody(props: BodyProps) {
 // ---------------------------------------------------------------------------------------------------------------------
 
 export function RecruitBody(props: BodyProps) {
-  const { proposal: p, copy, phase, density } = props;
+  const { proposal: p, density } = props;
   const year = valueOf(p, 'Grad year');
   const status = valueOf(p, 'Status');
   const lede = 'Coaches only. Players never see recruits.';
   return (
     <Body label={lede} card={props}>
-      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density} />
-      <div className="ch-akc-goal__who">
-        <Avatar name={p.summary} size="md" />
-        <span>
-          <b>{p.summary}</b>
-          <small>{[year ? `Class of ${year}` : null, valueOf(p, 'Hometown')].filter(Boolean).join(' · ') || 'No class or hometown given'}</small>
-        </span>
-        {status && <Badge>{titleCase(status)}</Badge>}
-      </div>
+      <Thing title={p.summary} lines={[[year ? `Class of ${year}` : null, valueOf(p, 'Hometown')].filter(Boolean).join(' · ') || 'No class or hometown given']} meta={[status && titleCase(status)]} />
       <Rows facts={restOf(p, ['Grad year', 'Status', 'Hometown'])} density={density} subject={p.summary} onAsk={ask(props)} />
     </Body>
   );
 }
 
 export function DrillBody(props: BodyProps) {
-  const { proposal: p, copy, phase, density } = props;
+  const { proposal: p, density } = props;
   const setup = valueOf(p, 'Setup');
-  const goal = valueOf(p, 'Goal');
   const lede = 'Players see it only when a published plan uses it.';
   return (
     <Body label={lede} card={props}>
-      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density} />
-      <div className="ch-akc-drill">
-        <div className="ch-akc-drill__hd">
-          {valueOf(p, 'Area') && <Badge tone="accent">{valueOf(p, 'Area')}</Badge>}
-          <span className="ch-num">{valueOf(p, 'Length')}</span>
-        </div>
+      <Thing title={p.summary} meta={[valueOf(p, 'Area'), valueOf(p, 'Length')]}>
         {setup && <Clamp text={setup} lines={density === 'compact' ? 2 : 4} density={density} what="setup" />}
-        {goal && (
-          <p className="ch-akc-drill__goal">
-            <small>Goal</small>
-            {goal}
-          </p>
-        )}
-      </div>
+        {valueOf(p, 'Goal') && <p className="ch-akc-thing__l">{valueOf(p, 'Goal')}</p>}
+      </Thing>
       <Rows facts={restOf(p, ['Area', 'Length', 'Setup', 'Goal'])} density={density} subject={p.summary} onAsk={ask(props)} />
     </Body>
   );
@@ -256,21 +232,22 @@ export function DrillBody(props: BodyProps) {
 // ---------------------------------------------------------------------------------------------------------------------
 
 export function PublishPlanBody(props: BodyProps) {
-  const { proposal: p, copy, phase, density, roster } = props;
+  const { proposal: p, phase, density, roster } = props;
   const pub = p.publish;
   const tells = pub?.tellsLine ?? valueOf(p, 'Tells') ?? '';
   const everyone = pub?.people;
   const people = everyone ? everyone.map((x) => ({ id: x.id ?? x.name, name: x.name })) : (pub?.coins ?? []).map((c) => who(roster, c.name));
   const lede = tense(phase, { will: `Sends to ${tells}`, did: `Sent to ${tells}`, not: `Not sent. It would have gone to ${tells}.` });
-  const details: ProposalFact[] = [
-    ...['When', 'Where'].map((l) => factOf(p, l)).filter((f): f is ProposalFact => !!f),
-    ...(pub ? [{ label: 'Filed in', value: pub.folder }, { label: 'Team chat', value: pub.teamChat ? 'Also posts in Team chat, with no second push' : 'Not posted in Team chat' }] : []),
-  ];
   return (
     <Body label={lede} card={props}>
-      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density}>
+      <Who proposal={p} density={density}>
         <People people={people} total={everyone ? people.length : people.length + (pub?.coinsMore ?? 0)} density={density} label="people" />
-      </ReachRow>
+      </Who>
+      <Thing
+        title={p.summary}
+        lines={[[valueOf(p, 'When'), valueOf(p, 'Where')].filter(Boolean).join(' · ')]}
+        meta={pub ? [`Filed in ${pub.folder}`, pub.chatPost ? null : pub.teamChat ? 'Also posts in Team chat, with no second push' : 'Not posted in Team chat'] : []}
+      />
       <Delivery proposal={p} phase={phase} density={density}>
         {pub?.sample ? (
           <Notice title={pub.sample.title} body={pub.sample.body} caption={`What ${pub.sample.player} gets. Each player sees their own start.`} density={density} />
@@ -279,26 +256,18 @@ export function PublishPlanBody(props: BodyProps) {
         )}
       </Delivery>
       {pub?.chatPost && <Bubble text={pub.chatPost} caption="Also posts in Team chat, with no second push" density={density} />}
-      <Fold density={density}>
-        <Rows facts={details} density={density} subject={p.summary} onAsk={ask(props)} />
-      </Fold>
     </Body>
   );
 }
 
 export function PublishDocBody(props: BodyProps) {
-  const { proposal: p, copy, phase, density } = props;
+  const { proposal: p, density } = props;
   const words = valueOf(p, 'Words') ?? '';
-  const lede = (valueOf(p, 'Who can see it') ?? 'Players can open it in Documents.').replace(/\s*:\s*/, ': ');
+  const lede = `${sentence((valueOf(p, 'Who can see it') ?? 'Players can open it in Documents').replace(/\s*:\s*/, ': '))} Nobody gets a notification.`;
   return (
     <Body label={lede} card={props}>
-      <ReachRow copy={copy} phase={phase} lede={`${lede} proposal={p} density={density} Nobody gets a notification.`} />
-      <article className="ch-akc-page">
-        <header>
-          <small>{valueOf(p, 'Goes to') ?? 'Documents'}</small>
-        </header>
-        <Clamp text={words} lines={density === 'compact' ? 3 : 6} density={density} what="document" />
-      </article>
+      <Thing title={p.summary} meta={[valueOf(p, 'Goes to') ?? 'Documents']} />
+      <Quote text={words} caption="The document" density={density} what="document" />
       <Rows facts={restOf(p, ['Who can see it', 'Goes to', 'Words'])} density={density} subject={p.summary} onAsk={ask(props)} />
     </Body>
   );
@@ -316,13 +285,13 @@ export function MessageBody(props: BodyProps) {
   const lede = tense(phase, { will: `Sends as you to ${plural(n, 'player')} in ${thread}`, did: `Sent as you to ${plural(n, 'player')} in ${thread}`, not: `Not sent. Nothing went to ${thread}.` });
   return (
     <Body label={lede} card={props}>
-      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density}>
+      <Who proposal={p} density={density}>
         {msg?.members?.length ? (
           <People people={msg.members.map((name) => who(roster, name))} total={n} density={density} label="people" />
         ) : (
           <p className="ch-akc-people__gap">The plan does not list who is in {thread}: {count(n)} {n === 1 ? 'player' : 'players'}.</p>
         )}
-      </ReachRow>
+      </Who>
       <Bubble text={msg?.draft ?? valueOf(p, 'Message') ?? ''} before={msg?.last} caption={thread} density={density} />
       <Rows facts={restOf(p, ['Thread', 'Message', 'To'])} density={density} subject={p.summary} onAsk={ask(props)} />
     </Body>
@@ -333,7 +302,7 @@ export function MessageBody(props: BodyProps) {
 // The plan itself, for a task with no drawing of its own: its reach, what changes, the words, every other fact
 // ---------------------------------------------------------------------------------------------------------------------
 
-/** Facts the frame and its parts already say (who is told, the words, when it goes), so they are not said twice as rows. */
+/** Facts the frame and its parts already say (who is told, the words, when it goes), so they are not said twice as lines. */
 const SAID = ['To', 'Told', 'Will not get it', 'Will not be told', 'They see', 'In the app they see', 'By e-mail they get', 'When', 'How', 'The player sees', 'Players see', 'Players are told', 'Who gets it'];
 
 /**
@@ -351,14 +320,14 @@ export function PlanBody(props: BodyProps) {
   const sees = factOf(p, 'They see') ?? factOf(p, 'In the app they see');
   const [title, ...rest] = (sees?.value ?? '').split('\n');
   return (
-    <Body label={lede} card={props}>
-      <ReachRow copy={copy} phase={phase} lede={lede} proposal={p} density={density}>
+    <Body label={lede} card={props} wordless={!title}>
+      <Who proposal={p} density={density}>
         {copy.reach === 'sends' && <People people={people} density={density} />}
-      </ReachRow>
+      </Who>
       {subject && <p className="ch-akc-subject">{subject}</p>}
       {now && after && <Diff now={now} after={after} />}
       <Delivery proposal={p} phase={phase} density={density}>
-        {copy.reach === 'sends' && (title ? <Notice title={title} body={rest.join('\n')} caption="What each of them gets" density={density} /> : <NoWords channel={lede} phase={phase} />)}
+        {copy.reach === 'sends' && title && <Notice title={title} body={rest.join('\n')} caption="What each of them gets" density={density} />}
       </Delivery>
       <Fold density={density}>
         <Rows facts={[...missingRows(p), ...restOf(p, [...SAID, ...(subject ? ['Event', 'Focus area', 'Goal', 'Signal', 'Task', 'Qualifier'] : []), ...(now && after ? ['Now', 'After'] : [])])]} density={density} subject={p.summary} onAsk={ask(props)} />

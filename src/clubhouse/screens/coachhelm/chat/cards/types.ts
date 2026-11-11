@@ -40,6 +40,11 @@ export interface CardBodyProps {
   density: CardDensity;
   roster?: readonly CardPerson[];
   team?: string;
+  /**
+   * Where the thing appears once it is saved, in the app's words ("It appears in Home, under Focus."), and the place's
+   * name, so the foot's one line does not name it twice. The shell knows it; absent, the line says only who is told.
+   */
+  lands?: { app: string; line: string } | null;
   /** A row tap asks for the change in words. Absent, or once Confirm is pressed: rows are not buttons. */
   onAsk?: (text: string) => void;
   /**

@@ -1,15 +1,14 @@
 'use client';
 
-import { Badge } from '../../../../ui/Badge';
 import type { AskBriefData, AskHandoffData } from '../../../../data/coachhelm-chat-thread';
 import { formatWith } from '../../../../lib/dates';
-import { Bubble, Clamp, People } from './kit';
+import { Bubble, People, Quote, Thing } from './kit';
 import type { CardDensity, CardPerson } from './types';
 
 /**
- * The bodies of the drafts and hand-offs (CAPABILITIES.md, section B): cards that write nothing. Each one says the one
- * true thing in the reach position (nothing is sent until the coach presses Send in Messages) and then shows the draft
- * as the place it is going will show it. The button that opens Messages is the shell's.
+ * The bodies of the drafts and hand-offs (CAPABILITIES.md, section B): cards that write nothing. Each one shows the draft
+ * as the place it is going will show it, and says the one true thing in the foot's quiet line (nothing is sent until the
+ * coach presses Send in Messages). The button that opens Messages is the shell's.
  */
 
 const NOTHING: Record<AskHandoffData['kind'], string> = {
@@ -20,11 +19,8 @@ const NOTHING: Record<AskHandoffData['kind'], string> = {
 
 function Nothing({ line }: { line: string }) {
   return (
-    <div className="ch-akc-reach" data-reach="private">
-      <div className="ch-akc-reach__top">
-        <Badge>Draft</Badge>
-        <p className="ch-akc-reach__lede">{line}</p>
-      </div>
+    <div className="ch-akc-foot">
+      <p className="ch-akc-told">{line}</p>
     </div>
   );
 }
@@ -42,8 +38,11 @@ export function HandoffBody({ handoff, roster = [], density, tiles, timeZone }: 
   const to = handoff.thread ?? handoff.title.replace(/^(Draft|Poll) for /, '');
   return (
     <div className="ch-akc" role="group" aria-label={NOTHING[handoff.kind]} data-ch-card-body={`draft_${handoff.kind}`} data-density={density}>
-      <Nothing line={NOTHING[handoff.kind]} />
-      {people.length > 0 && <People people={people} density={density} />}
+      {people.length > 0 && (
+        <div className="ch-akc-who">
+          <People people={people} density={density} />
+        </div>
+      )}
       {handoff.kind === 'message' && <Bubble text={handoff.draft} caption={people.length ? `To ${people.length === 1 ? people[0]!.name : `${people.length} players`}` : to} density={density} />}
       {handoff.kind === 'poll' && handoff.poll && (
         <div className="ch-akc-poll" data-multi={handoff.poll.multi ? '' : undefined}>
@@ -75,6 +74,7 @@ export function HandoffBody({ handoff, roster = [], density, tiles, timeZone }: 
           ))}
         </div>
       )}
+      <Nothing line={NOTHING[handoff.kind]} />
     </div>
   );
 }
@@ -84,7 +84,6 @@ export function BriefBody({ brief, density }: { brief: AskBriefData; density: Ca
   const line = 'Nothing is drafted until you answer. Tap to change a choice.';
   return (
     <div className="ch-akc" role="group" aria-label={line} data-ch-card-body="ask_practice_brief" data-density={density}>
-      <Nothing line={line} />
       <div className="ch-akc-brief">
         {brief.questions.map((q) => (
           <section key={q.id} aria-label={q.title}>
@@ -101,6 +100,7 @@ export function BriefBody({ brief, density }: { brief: AskBriefData; density: Ca
           </section>
         ))}
       </div>
+      <Nothing line={line} />
     </div>
   );
 }
@@ -119,14 +119,9 @@ export function DocBody({ doc, density }: { doc: DocDraft; density: CardDensity 
   const line = 'It stays in this chat until you publish it.';
   return (
     <div className="ch-akc" role="group" aria-label={line} data-ch-card-body="write_artifact" data-density={density}>
+      <Thing title={doc.title} meta={[DOC_KIND[doc.kind]]} />
+      <Quote text={doc.body} density={density} what="document" />
       <Nothing line={line} />
-      <article className="ch-akc-page">
-        <header>
-          <small>{DOC_KIND[doc.kind]}</small>
-          <b>{doc.title}</b>
-        </header>
-        <Clamp text={doc.body} lines={density === 'compact' ? 3 : 6} density={density} what="document" />
-      </article>
     </div>
   );
 }

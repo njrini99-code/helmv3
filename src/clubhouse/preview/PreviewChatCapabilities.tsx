@@ -5,7 +5,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
 import type { AskBriefData, AskHandoffData } from '../data/coachhelm-chat-thread';
-import { CARD_PHASES, CardBody, cardCopy, editableOf, isOutOfDate, isWithdrawn, type CardDensity, type CardPerson, type CardPhase, type EditableField } from '../screens/coachhelm/chat/cards';
+import { CARD_PHASES, CardBody, cardCopy, drawsSubject, editableOf, isOutOfDate, isWithdrawn, type CardDensity, type CardPerson, type CardPhase, type EditableField } from '../screens/coachhelm/chat/cards';
+import { landsOf } from '../screens/coachhelm/chat/parts/ConfirmCard';
 import { AppLinkRow, CoachNoteChip, NotTracked, WorkedOut, computedSummary } from '../screens/coachhelm/chat/cards/answers';
 import { BriefBody, DocBody, HandoffBody } from '../screens/coachhelm/chat/cards/drafts';
 import { WORK_KINDS } from '../screens/coachhelm/chat/cards/work-words';
@@ -48,13 +49,13 @@ const isPhase = (s: string | undefined): s is CardPhase => !!s && (CARD_PHASES a
 function badgeFor(phase: CardPhase, done: string, sends: boolean): { tone: BadgeTone; text: string } {
   if (phase === 'saved') return { tone: 'positive', text: done };
   if (phase === 'partial') return { tone: 'warning', text: 'Partly done' };
-  if (phase === 'held' || phase === 'undoing' || phase === 'committing') return { tone: 'accent', text: 'Holding' };
+  if (phase === 'held' || phase === 'undoing' || phase === 'committing') return { tone: 'warning', text: 'Holding' };
   if (phase === 'undone') return { tone: 'neutral', text: 'Undone' };
   if (phase === 'cancelled') return { tone: 'neutral', text: 'Cancelled' };
   if (phase === 'superseded') return { tone: 'neutral', text: 'Set aside' };
   if (phase === 'expired') return { tone: 'neutral', text: 'Expired' };
   if (phase === 'failed') return { tone: 'warning', text: sends ? 'Not sent' : 'Not saved' };
-  return { tone: 'neutral', text: 'Draft' };
+  return { tone: 'neutral', text: 'Not saved' };
 }
 
 const toldWords = (r: ActionReceipt): string | null => {
@@ -89,18 +90,14 @@ function StandInCard({ cap, proposal, roster, phase, density, left, running, onC
   const ringLeft = phase === 'committing' ? 0 : left;
   return (
     <section className="ch-akg-card" data-density={density} data-phase={phase} aria-label={`${copy.primary}. ${proposal.summary}`}>
+      {/* As the real shell draws it (parts/TaskCard.tsx): a running head and the state, then the thing itself. A body that draws its own subject gets no second title. */}
       <div className="ch-akg-card__hd">
-        <span className="ch-akg-card__ico" aria-hidden="true">
-          <Icon icon={copy.icon} size={17} />
-        </span>
-        <span className="ch-akg-card__tt">
-          <b>{copy.head}</b>
-          <span title={proposal.summary}>{proposal.summary}</span>
-        </span>
+        <b>{copy.head}</b>
         <Badge tone={badge.tone}>{badge.text}</Badge>
       </div>
+      {!drawsSubject(cap.tool) && <p className="ch-akg-card__sum">{proposal.summary}</p>}
       <div className="ch-akg-card__body" data-dim={isWithdrawn(phase) && phase !== 'failed' ? '' : undefined}>
-        <CardBody tool={cap.tool} proposal={proposal} receipt={receipt} phase={phase} density={density} roster={roster} team={CAP_TEAM} onAsk={() => undefined} onEdit={edit?.onEdit} editing={edit?.busy} editError={edit?.error} onEditOpen={edit?.onOpen} />
+        <CardBody tool={cap.tool} proposal={proposal} receipt={receipt} phase={phase} density={density} roster={roster} team={CAP_TEAM} lands={landsOf(cap.tool, proposal.visual)} onAsk={() => undefined} onEdit={edit?.onEdit} editing={edit?.busy} editError={edit?.error} onEditOpen={edit?.onOpen} />
       </div>
       <div className="ch-akg-card__ft">
         {(phase === 'proposed' || phase === 'confirming') && (

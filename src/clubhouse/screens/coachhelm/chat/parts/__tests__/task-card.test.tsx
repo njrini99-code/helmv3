@@ -8,7 +8,7 @@ import { phaseOfReceipt } from '../ConfirmCard';
 const hapticSpy = vi.hoisted(() => vi.fn());
 vi.mock('../../../../../lib/haptics', () => ({ haptic: hapticSpy, hapticScrub: vi.fn() }));
 
-const proposal = (): AskProposalView['proposal'] => ({ action: 'Create focus area', summary: 'Give Jonah Okafor a focus area on downhill putts.', facts: [{ label: 'Player', value: 'Jonah Okafor' }], affects: [{ kind: 'player', id: 'p-jonah', label: 'Jonah Okafor' }], notifications: ['Jonah gets a notification.'], missing: [], idempotency_key: 'k' });
+const proposal = (): AskProposalView['proposal'] => ({ action: 'Create focus area', summary: 'Give Jonah Okafor a focus area on downhill putts.', facts: [{ label: 'Player', value: 'Jonah Okafor' }, { label: 'Focus', value: 'Downhill putts, 4 to 6 feet' }], affects: [{ kind: 'player', id: 'p-jonah', label: 'Jonah Okafor' }], notifications: ['Jonah gets a notification.'], missing: [], idempotency_key: 'k' });
 const view = (over: Partial<AskProposalView> = {}): AskProposalView => ({ key: 'k', tool: 'create_focus_area', proposal: proposal(), approvalId: 'a1', status: 'live', receipt: null, ...over });
 const receipt = (over: Partial<ActionReceipt>): ActionReceipt => ({ status: 'completed', action: 'Create focus area', summary: 'Created a focus area for Jonah Okafor.', created: [], notifications: [], partial_failures: [], retryable: false, at: '2026-11-10T12:00:00.000Z', ...over });
 const held = () => receipt({ status: 'held', held_until: new Date(Date.now() + 8000).toISOString(), summary: 'Give Jonah Okafor a focus area on downhill putts.' });
@@ -31,10 +31,15 @@ describe('the task card shell (chat v3, SPEC Moment 7)', () => {
     expect(card().classList.contains('is-arriving')).toBe(true);
     expect(card().dataset.phase).toBe('proposed');
     expect(card().querySelector('.ch-ak-task__body')).not.toBeNull();
-    // Who is told is the body's first line, said once; the shell adds one quiet line for where it appears, and no table of fields
-    // and no "On confirm" row (owner, 11 Nov).
-    expect(card().querySelector('.ch-akc-reach__lede')?.textContent).toMatch(/^Sends to Jonah Okafor/);
-    expect(card().querySelector('.oncf')?.textContent).toBe('It appears in Home, under Focus.');
+    // The card is the thing itself: who it is for, then the focus as its title. Who is told and where it appears is ONE quiet line
+    // under the body's rule, and there is no chip, no bold reach sentence, no table of fields and no "On confirm" row (owner, 11 Nov).
+    expect(card().querySelector('.ch-akc-who')?.textContent).toBe('JOJonah Okafor');
+    expect(card().querySelector('.ch-akc-thing__t')?.textContent).toBe('Downhill putts, 4 to 6 feet');
+    expect(card().querySelectorAll('.ch-akc-told').length).toBe(1);
+    // The planner's own sentence ends once (it brings its own full stop), then where it appears, then that the wording is not shown.
+    expect(card().querySelector('.ch-akc-told')?.textContent).toBe('Jonah gets a notification. It appears in Home, under Focus. The exact wording is not shown here.');
+    expect(card().querySelector('.oncf, .ch-akc-reach, .ch-akc-nowords, .ch-akc-rows')).toBeNull();
+    expect(card().querySelector('[data-ch-ask-cancel]')?.textContent).toBe('Not now');
     expect(screen.queryByText(/On confirm/)).toBeNull();
     expect(card().querySelector('.hd .ico')).toBeNull();
     const confirm = card().querySelector<HTMLButtonElement>('[data-ch-ask-confirm]')!;

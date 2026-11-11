@@ -75,18 +75,24 @@ describe('a card that sends to players always shows who and the words', () => {
 
   it.each(sending.map((c) => [c.id, c] as const))('%s', (_id, c) => {
     const { container } = draw(c);
-    const reach = container.querySelector('.ch-akc-reach[data-reach="sends"]')!;
-    expect(within(reach as HTMLElement).getByText('Sends')).toBeTruthy();
+    const body = container.querySelector<HTMLElement>('[data-ch-card-body][data-reach="sends"]')!;
+    expect(body, `${c.id}: the body knows it sends`).toBeTruthy();
+    // Who is told is one quiet line under the foot's rule (owner, 11 Nov): never a chip, never a bold sentence at the top.
+    const told = body.querySelector('.ch-akc-foot > .ch-akc-told')!.textContent!;
+    expect(told.length, `${c.id}: the told line`).toBeGreaterThan(8);
+    expect(body.querySelector('.ch-badge'), `${c.id}: no chip`).toBeNull();
+    expect(body.firstElementChild!.classList.contains('ch-akc-who'), `${c.id}: who it is for comes first`).toBe(true);
     // Who: people by name, or the plain statement that the plan does not name them. Never neither.
+    const who = body.querySelector('.ch-akc-who')!;
     const named = c.proposal.affects.filter((a) => a.kind === 'player').map((a) => a.label);
-    const coins = reach.querySelector('.ch-akc-people__line');
-    const lede = reach.querySelector('.ch-akc-reach__lede')!.textContent!;
-    const gap = /does not list who|not named in the plan/.test(reach.textContent!);
-    expect(!!coins || gap || named.some((n) => lede.includes(n)) || /Sends to [A-Z]/.test(lede), `${c.id}: recipients`).toBe(true);
-    // The words: in the reader's frame, or the plain statement that the plan does not carry them. Never a made-up preview.
+    const coins = who.querySelector('.ch-akc-people__line');
+    const gap = /does not list who|not named in the plan/.test(who.textContent!);
+    expect(!!coins || gap || named.some((n) => told.includes(n)), `${c.id}: recipients`).toBe(true);
+    // The words: set as a quote, or the plain statement that the plan does not carry them. Never a made-up preview, never a box.
     const words = container.querySelector('.ch-akc-notice, .ch-akc-bubble');
-    const none = container.querySelector('.ch-akc-nowords');
-    expect(!!words !== !!none, `${c.id}: words, or the statement that there are none, and not both`).toBe(true);
+    const none = told.includes('The exact wording is not shown here.');
+    expect(!!words !== none, `${c.id}: words, or the statement that there are none, and not both`).toBe(true);
+    expect(container.querySelector('.ch-akc-nowords'), `${c.id}: no grey box`).toBeNull();
   });
 
   it('prints a sent message whole, however long, and says how much is under the fold', () => {
@@ -124,14 +130,14 @@ describe('a card that sends to players always shows who and the words', () => {
 
   it('says so in the state: sending, sent, not sent', () => {
     const c = CASES.find((x) => x.id === 'create_task')!;
-    expect(draw(c, 'proposed').container.textContent).toContain('Sends to 4 players: a notice in the app');
+    expect(draw(c, 'proposed').container.querySelector('.ch-akc-told')!.textContent).toBe('4 players get a notice in the app.');
     cleanup();
-    expect(draw(c, 'saved').container.textContent).toContain('Sent to 4 players: a notice in the app');
+    expect(draw(c, 'saved').container.querySelector('.ch-akc-told')!.textContent).toBe('4 players got a notice in the app.');
     cleanup();
     for (const phase of ['undone', 'cancelled', 'superseded', 'failed', 'expired'] as const) {
       const { container, unmount } = draw(c, phase);
-      expect(container.querySelector('.ch-akc-reach .ch-badge')!.textContent).toBe('Not sent');
-      expect(container.textContent).toContain('Not sent. It would have gone to 4 players.');
+      expect(container.querySelector('.ch-akc-told[data-withdrawn]')!.textContent).toBe('Not sent. 4 players would have got a notice in the app.');
+      expect(container.querySelector('.ch-badge')).toBeNull();
       unmount();
     }
   });
@@ -243,7 +249,7 @@ describe('a plan the server built is drawn as the plan says, and an older card s
   it('names every recipient from the plan, anyone it will not reach, and the notification word for word', () => {
     const c = of('create_event');
     const { container } = draw(c);
-    expect(container.textContent).toContain('Sends to 6 players: a push, a notice in the app and an email');
+    expect(container.querySelector('.ch-akc-told')!.textContent).toBe('6 players get a push, a notice in the app and an email.');
     expect(container.querySelector('.ch-akc-notice')!.textContent).toBe('You’re invited: Short-game practiceThu, Nov 12, 3:00 PM at Short-game area, Ridgeline GC. Tap to reply.');
     expect(container.querySelector('.ch-akc-nowords')).toBeNull();
     // The same notice as the bell row words it.
@@ -261,7 +267,7 @@ describe('a plan the server built is drawn as the plan says, and an older card s
 
   it('shows each person their own words when a plan gives them', () => {
     const { container } = draw(of('publish_practice_plan'));
-    expect(container.textContent).toContain('Sends to 8 players and 2 coaches: a push and a notice in the app');
+    expect(container.querySelector('.ch-akc-told')!.textContent).toBe('8 players and 2 coaches get a push and a notice in the app.');
     expect(container.querySelector('.ch-akc-notice')!.textContent).toContain('You start at Station 1, putting green.');
     fireEvent.change(screen.getByLabelText('Whose words'), { target: { value: 'p-jonah-okafor' } });
     expect(container.querySelector('.ch-akc-notice')!.textContent).toContain('You start at Station 2, bunkers.');
@@ -280,7 +286,9 @@ describe('a plan the server built is drawn as the plan says, and an older card s
   it('draws where a player stands on a goal, a round by its course, a thread by its people, a lineup by what it replaces', () => {
     expect(draw(of('create_goal')).container.querySelector('.ch-akc-goal__now')!.textContent).toBe('-0.1');
     cleanup();
-    expect(draw(of('add_round_note')).container.textContent).toContain('Ridgeline GC · Sun, Nov 8 · 74');
+    const round = draw(of('add_round_note')).container.querySelector('.ch-akc-thing')!;
+    expect(round.querySelector('.ch-akc-thing__t')!.textContent).toBe('Ridgeline GC');
+    expect(round.querySelector('.ch-akc-meta')!.textContent).toBe('Sun, Nov 8 · 74');
     cleanup();
     expect(draw(of('send_message')).container.textContent).not.toContain('does not list who');
     cleanup();

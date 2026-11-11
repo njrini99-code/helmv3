@@ -1,28 +1,26 @@
 'use client';
 
-import { ArrowDown, ArrowLeftRight, Bell, ChevronDown, Eye, LockKeyhole, Pencil, Send, TriangleAlert, Undo2, type LucideIcon } from 'lucide-react';
+import { ChevronDown, Pencil, TriangleAlert } from 'lucide-react';
 import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { ActionProposal, ProposalFact } from '@/lib/coachhelm/v3/chat/action-types';
 import { Avatar } from '../../../../ui/Avatar';
-import { Badge, type BadgeTone } from '../../../../ui/Badge';
 import { Button } from '../../../../ui/Button';
 import { Icon } from '../../../../ui/Icon';
 import { Segmented } from '../../../../ui/Segmented';
 import { Select } from '../../../../ui/Select';
 import type { CardCopy } from './catalog';
 import { EditForm } from './edit';
-import { count, dayParts, dayWords } from './facts';
+import { count, dayParts, dayWords, tellsSomebody } from './facts';
 import { channelChip, channelWords, editableOf, recipientWords } from './truth';
-import { isSaved, isWithdrawn, type CardBodyProps, type CardDensity, type CardPerson, type CardPhase, type Reach } from './types';
+import { isSaved, isWithdrawn, type CardBodyProps, type CardDensity, type CardPerson, type CardPhase } from './types';
 
 /**
- * The parts every card body is made of (CAPABILITIES.md 0.2 to 0.5): reach, people, words in the reader's frame, the
- * detail rows, what changes, and the warning. Nothing here moves: a body is drawn whole, and a disclosure changes its
+ * The parts every card body is made of (CAPABILITIES.md 0.2 to 0.5), in the order a card reads: who it is for, the thing
+ * itself as the person who receives it will see it, the words that are sent set as a quote, any other fact as a plain
+ * line, and one quiet line at the foot for who is told and where it appears. Nothing here is a box inside the card, a
+ * chip or a table of fields (owner, 11 Nov). Nothing here moves: a body is drawn whole, and a disclosure changes its
  * height in one frame on the coach's own tap.
  */
-
-const REACH_ICON: Record<Reach, LucideIcon> = { sends: Send, visible: Eye, private: LockKeyhole };
-const REACH_TONE: Record<Reach, BadgeTone> = { sends: 'accent', visible: 'info', private: 'neutral' };
 
 /** The words for a state: what will happen, what did, or that it did not. */
 export function tense(phase: CardPhase, words: { will: string; did?: string; not?: string }): string {
@@ -31,39 +29,62 @@ export function tense(phase: CardPhase, words: { will: string; did?: string; not
   return words.will;
 }
 
-/** The reach sentence: from the plan when it lists who is sent something, else the body's own reading of an older card. */
-export function reachLine(copy: CardCopy, phase: CardPhase, proposal: ActionProposal | undefined, lede: string): string {
-  if (proposal?.recipients === undefined) return (copy.reach !== 'sends' && proposal?.visible_note) || lede;
-  if (copy.reach !== 'sends') return proposal.visible_note ?? lede;
-  const who = recipientWords(proposal.recipients);
-  const how = proposal.delivery?.channels.length ? `: ${channelWords(proposal.delivery.channels)}` : '';
-  return tense(phase, { will: `Sends to ${who}${how}`, did: `Sent to ${who}${how}`, not: `Not sent. It would have gone to ${who}.` });
+/** One sentence, ending once: a planner's line may or may not bring its own full stop. */
+export function sentence(text: string): string {
+  const t = text.trim().replace(/\.+$/, '');
+  return !t || /[.!?]$/.test(t) ? t : `${t}.`;
 }
 
 /**
- * Who is affected and how far it travels. Always the first thing in a body. The mark says which of the three levels it
- * is, and turns neutral once nothing went anywhere. With a plan that lists its recipients, the sentence, the people and
- * anyone who will not be reached are the plan's; without one, `lede` and `children` are the body's reading of the card.
+ * The reach sentence: from the plan when it lists who is sent something, else the body's own reading of an older card.
+ * A plan that lists nobody says so in the catalogue's word, whatever the older reading was.
  */
-export function ReachRow({ copy, phase, lede, proposal, density = 'full', children }: { copy: CardCopy; phase: CardPhase; lede: string; proposal?: ActionProposal; density?: CardDensity; children?: ReactNode }) {
-  const withdrawn = isWithdrawn(phase) && copy.reach === 'sends';
-  const mark = withdrawn ? 'Not sent' : copy.reach === 'sends' && isSaved(phase) ? 'Sent' : copy.mark;
+export function reachLine(copy: CardCopy, phase: CardPhase, proposal: ActionProposal | undefined, lede: string): string {
+  if (proposal?.recipients === undefined) return (copy.reach !== 'sends' && proposal?.visible_note) || lede;
+  if (copy.reach !== 'sends') return proposal.visible_note ?? (proposal.recipients.length === 0 && /^(Sends|Sent|Not sent)\b/.test(lede) ? copy.mark : lede);
+  const people = proposal.recipients;
+  const who = recipientWords(people);
+  const one = people.length === 1;
+  const what = proposal.delivery?.channels.length ? channelWords(proposal.delivery.channels) : null;
+  if (!what) return tense(phase, { will: `${who} ${one ? 'is' : 'are'} told`, did: `${who} ${one ? 'was' : 'were'} told`, not: `Not sent. ${who} ${one ? 'was' : 'were'} not told.` });
+  return tense(phase, { will: `${who} ${one ? 'gets' : 'get'} ${what}`, did: `${who} got ${what}`, not: `Not sent. ${who} would have got ${what}.` });
+}
+
+/**
+ * Who it is for: the people, by name, and anyone it will not reach. The first thing in a body, and quiet: small coins and
+ * a line of names, every name one tap away. With a plan that lists its recipients the people are the plan's; without
+ * one, `children` is the body's reading of the card. How far it travels is the foot's one line (`Body`).
+ */
+export function Who({ proposal, density = 'full', children }: { proposal?: ActionProposal; density?: CardDensity; children?: ReactNode }) {
   const listed = proposal?.recipients;
   return (
-    <div className="ch-akc-reach" data-reach={copy.reach} data-withdrawn={withdrawn ? '' : undefined}>
-      <div className="ch-akc-reach__top">
-        <Badge tone={withdrawn ? 'neutral' : REACH_TONE[copy.reach]}>
-          <Icon icon={REACH_ICON[copy.reach]} size={12} />
-          {mark}
-        </Badge>
-        <p className="ch-akc-reach__lede">{reachLine(copy, phase, proposal, lede)}</p>
-      </div>
+    <div className="ch-akc-who">
       {listed === undefined ? children : listed.length > 0 && <People people={listed} density={density} label={listed.some((p) => p.role === 'coach') ? 'people' : 'players'} />}
       {proposal?.not_reached?.map((n) => (
         <p key={n.id} className="ch-akc-missed">
-          <b>Will not get it:</b> {n.name} ({n.reason})
+          Will not get it: {n.name} ({n.reason})
         </p>
       ))}
+    </div>
+  );
+}
+
+/**
+ * The thing itself, set the way its home will show it: its name, then what it says in plain lines in their natural
+ * order, then one quiet line. Never a label beside a value.
+ */
+export function Thing({ title, lines = [], meta = [], children }: { title?: string | null; lines?: ReadonlyArray<ReactNode | null | undefined | false>; meta?: ReadonlyArray<string | null | undefined | false>; children?: ReactNode }) {
+  const shown = lines.filter((l) => l !== null && l !== undefined && l !== false && l !== '');
+  return (
+    <div className="ch-akc-thing">
+      {title && <h4 className="ch-akc-thing__t">{title}</h4>}
+      {shown.map((l, i) => (
+        <p key={i} className="ch-akc-thing__l">
+          {l}
+        </p>
+      ))}
+      <Meta parts={meta} />
+      {children}
     </div>
   );
 }
@@ -73,19 +94,20 @@ function nameLine(people: readonly CardPerson[], total: number): string {
   if (n === 0) return '';
   if (n === 1 && total <= 1) return people[0]!.name;
   if (total <= 3 && n === total) return `${people.slice(0, -1).map((p) => p.name).join(', ')} and ${people[n - 1]!.name}`;
-  const shown = people.slice(0, 2).map((p) => p.name).join(', ');
-  return `${shown} and ${count(total - 2)} more`;
+  // More than a few: the first by name and how many more, so the line is one line on a phone. Every name is one tap away.
+  return `${people[0]!.name} and ${count(total - 1)} more`;
 }
 
 /**
  * People by name: coins, a line of names, and every name one tap away. `total` is the plan's count when it names fewer
  * people than it counts; the gap is said, never filled in.
  */
-export function People({ people, total, density, label = 'players', everyone = false }: { people: readonly CardPerson[]; total?: number; density: CardDensity; label?: string; /** The whole roster: "All 7 players". */ everyone?: boolean }) {
+export function People({ people, total, label = 'players', everyone = false }: { people: readonly CardPerson[]; total?: number; density: CardDensity; label?: string; /** The whole roster: "All 7 players". */ everyone?: boolean }) {
   const [open, setOpen] = useState(false);
   const listId = useId();
   const all = Math.max(total ?? 0, people.length);
-  const coins = density === 'compact' ? 3 : 5;
+  // One line: a few coins, then the names. Everyone is one tap away.
+  const coins = 3;
   if (people.length === 0) {
     return all > 0 ? <p className="ch-akc-people__gap">The plan does not list who: {count(all)} {label}.</p> : null;
   }
@@ -98,7 +120,6 @@ export function People({ people, total, density, label = 'players', everyone = f
         {people.slice(0, coins).map((p) => (
           <Avatar key={p.id} name={p.name} id={p.id} size="xs" />
         ))}
-        {all > coins && <span className="ch-akc-people__more ch-num">+{count(all - coins)}</span>}
       </span>
       <span className="ch-akc-people__names">{line}</span>
     </>
@@ -165,20 +186,15 @@ export function Clamp({ text, lines, density, what = 'message', className, textC
 /** Words that are sent keep four lines even in quick chat: two lines of a message is not enough to approve it. */
 const linesFor = (density: CardDensity, full = 6): number => (density === 'compact' ? Math.min(full, 4) : full);
 
-/** A notification as a phone shows it: the app's glyph, a bold title, the body. The words are the plan's, never a summary. */
+/** Words a person receives, set as a quote: the title they see, then the body. The words are the plan's, never a summary. */
 export function Notice({ title, body, caption, density }: { title: string; body?: string | null; caption?: string; density: CardDensity }) {
   return (
     <figure className="ch-akc-words">
       {caption && <figcaption>{caption}</figcaption>}
-      <div className="ch-akc-notice">
-        <span className="ch-akc-notice__app" aria-hidden="true">
-          <Icon icon={Bell} size={14} />
-        </span>
-        <div className="ch-akc-notice__tx">
-          <b>{title}</b>
-          {body && <Clamp text={body} lines={linesFor(density)} density={density} />}
-        </div>
-      </div>
+      <blockquote className="ch-akc-notice">
+        <b>{title}</b>
+        {body && <Clamp text={body} lines={linesFor(density)} density={density} />}
+      </blockquote>
     </figure>
   );
 }
@@ -208,17 +224,6 @@ export function Quote({ text, caption, quiet = false, struck = false, density, w
   );
 }
 
-/** The plan names the channel and not the words: said plainly, in the place the words would be. Once the card is decided the reach line carries it. */
-export function NoWords({ channel, phase }: { channel: string; phase: CardPhase }) {
-  if (isSaved(phase) || isWithdrawn(phase)) return null;
-  return (
-    <div className="ch-akc-nowords">
-      <p>{channel}</p>
-      <small>The exact wording is not shown here.</small>
-    </div>
-  );
-}
-
 /** A calendar day as a tile: weekday, day, month. */
 export function DateTile({ iso, tone }: { iso: string; tone?: 'edge' | 'pending' }) {
   const parts = dayParts(iso);
@@ -235,8 +240,9 @@ export function DateTile({ iso, tone }: { iso: string; tone?: 'edge' | 'pending'
 }
 
 /**
- * The remaining facts as label and value. A value the coach still has to give reads "Not set" in amber and, while the
- * card is open, asks for it. A value the engine assumed says so, with where it came from.
+ * The facts a body has not set in its own words, each as one quiet line that reads as a sentence ("Length: 2.5 hours"):
+ * no columns, no rules between them. A value the coach still has to give reads "Not set" in amber and, while the card is
+ * open, asks for it. A value the engine assumed says so in the same line, with where it came from.
  */
 export function Rows({ facts, density, subject, onAsk }: { facts: readonly ProposalFact[]; density: CardDensity; /** What the card is about, for the sentence a row sends. */ subject: string; onAsk?: (text: string) => void }) {
   if (facts.length === 0) return null;
@@ -260,12 +266,7 @@ export function Rows({ facts, density, subject, onAsk }: { facts: readonly Propo
             ) : (
               <span>{f.value}</span>
             )}
-            {f.source && !f.missing && (
-              <span className="ch-akc-row__src">
-                <Badge tone="warning">Assumed</Badge>
-                <small>{f.source}</small>
-              </span>
-            )}
+            {f.source && !f.missing && <small className="ch-akc-row__src">Assumed. {f.source}</small>}
           </dd>
         </div>
       ))}
@@ -276,10 +277,7 @@ export function Rows({ facts, density, subject, onAsk }: { facts: readonly Propo
 /** What this replaces, or leaves alone. */
 export function Change({ children }: { children: ReactNode }) {
   return (
-    <p className="ch-akc-change">
-      <Icon icon={ArrowLeftRight} size={14} />
-      <span>{children}</span>
-    </p>
+    <p className="ch-akc-change">{children}</p>
   );
 }
 
@@ -332,51 +330,36 @@ export function Delivery({ proposal, phase, density, children }: { proposal: Act
   const first = (proposal.recipients?.[0]?.name ?? '').split(' ')[0];
   const who = person ? person.name.split(' ')[0] : proposal.recipients?.length === 1 ? first : null;
   const caption = who ? tense(phase, { will: `What ${who} gets`, did: `What ${who} got`, not: `What ${who} would have got` }) : tense(phase, { will: 'What each of them gets', did: 'What each of them got', not: 'What they would have got' });
+  // One way in: said in the caption's own line. Several that word it differently: the coach switches between them.
+  const how = forms.length > 1 ? null : d.channels.map(channelChip).join(', ');
   return (
     <figure className="ch-akc-words ch-akc-delivery">
       <figcaption>
         {caption}
+        {how && <span aria-label="How it arrives"> · {how}</span>}
         {each.length > 1 && '. Each person’s is their own.'}
       </figcaption>
-      {forms.length > 1 ? (
-        <Segmented label="How it arrives" size="sm" value={channel} options={forms.map((f, i) => ({ value: String(i), label: channelChip(f.channel) }))} onChange={setChannel} />
-      ) : (
-        d.channels.length > 0 && (
-          <ul className="ch-akc-delivery__how" aria-label="How it arrives">
-            {d.channels.map((c) => (
-              <li key={c}>
-                <Badge>{channelChip(c)}</Badge>
-              </li>
-            ))}
-          </ul>
-        )
-      )}
+      {forms.length > 1 && <Segmented label="How it arrives" size="sm" value={channel} options={forms.map((f, i) => ({ value: String(i), label: channelChip(f.channel) }))} onChange={setChannel} />}
       {each.length > 1 && <Select label="Whose words" value={person?.id ?? ''} options={each.map((e) => ({ value: e.id, label: e.name }))} onChange={setWhose} />}
-      <div className="ch-akc-notice">
-        <span className="ch-akc-notice__app" aria-hidden="true">
-          <Icon icon={Bell} size={14} />
-        </span>
-        <div className="ch-akc-notice__tx">
-          <b>{form.title}</b>
-          <Clamp text={channel === '0' && person ? person.body : form.body} lines={linesFor(density)} density={density} />
-        </div>
-      </div>
+      <blockquote className="ch-akc-notice">
+        <b>{form.title}</b>
+        <Clamp text={channel === '0' && person ? person.body : form.body} lines={linesFor(density)} density={density} />
+      </blockquote>
       {d.note && <p className="ch-akc-meta">{d.note}</p>}
     </figure>
   );
 }
 
-/** What changes: how it stands now, and how it will stand. The one place a card shows both. */
+/** What changes: how it stands now, struck through, and how it will stand under it. The one place a card shows both. */
 export function Diff({ now, after }: { now: string; after: string }) {
   return (
     <div className="ch-akc-diff" role="group" aria-label="What changes">
       <p className="is-now">
-        <small>Now</small>
+        <small className="ch-sr-only">Now</small>
         <span>{now}</span>
       </p>
-      <Icon icon={ArrowDown} size={14} />
       <p className="is-after">
-        <small>After</small>
+        <small className="ch-sr-only">After</small>
         <b>{after}</b>
       </p>
     </div>
@@ -388,12 +371,32 @@ const lowerList = (labels: readonly string[]): string => {
   return l.length <= 1 ? (l[0] ?? '') : `${l.slice(0, -1).join(', ')} and ${l[l.length - 1]}`;
 };
 
+/** The words an older card cannot show, said where the words would be told. */
+const NO_WORDS = 'The exact wording is not shown here.';
+
 /**
- * The frame of every body: one group, named by its reach sentence, in the density and state it is drawn in. It also
- * holds what every card says the same way when the plan carries it: that a write has no Undo (first), how it is taken
- * back afterwards (last), who a send missed, and the way into edit mode.
+ * The foot's one line: who is told, and where the thing appears. A plan that lists its recipients says it in the plan's
+ * terms. An older card that tells somebody and carries no words says it in the planner's own sentence, and that the
+ * wording is not shown. While the write is held the receipt row says who is told, so the line says only where it appears.
  */
-export function Body({ label, card, children }: { label: string; card: CardBodyProps & { copy: CardCopy }; children: ReactNode }) {
+function toldLine(card: CardBodyProps & { copy: CardCopy }, lede: string, wordless: boolean): { told: string; note: string | null } {
+  const { proposal: p, phase, copy, lands } = card;
+  const open = phase === 'proposed' || phase === 'confirming';
+  const older = p.recipients === undefined && p.delivery === undefined;
+  const bare = open && older && wordless && copy.reach === 'sends' && tellsSomebody(p);
+  const told = bare ? p.notifications.map(sentence).join(' ') : sentence(reachLine(copy, phase, p, lede));
+  const place = lands && !new RegExp(`\\b${lands.app}\\b`).test(told) ? lands.line : null;
+  if (phase === 'held' || phase === 'undoing' || phase === 'committing') return { told: lands?.line ?? told, note: null };
+  return { told: open && place ? `${told} ${place}` : told, note: bare ? NO_WORDS : null };
+}
+
+/**
+ * The frame of every body: one group, named by its reach sentence, in the density and state it is drawn in. After the
+ * body's own drawing it holds what every card says the same way: who a send missed, the one quiet line for who is told
+ * and where it appears, how it is taken back afterwards, and the way into edit mode. A write with no Undo says so first.
+ * `wordless`: the body has no words of its own to show when the plan carries none (an older card).
+ */
+export function Body({ label, card, wordless = false, children }: { label: string; card: CardBodyProps & { copy: CardCopy }; wordless?: boolean; children: ReactNode }) {
   const { proposal: p, phase, density, receipt } = card;
   const fields = editableOf(p);
   const canEdit = phase === 'proposed' && !!card.onEdit && fields.length > 0;
@@ -406,35 +409,35 @@ export function Body({ label, card, children }: { label: string; card: CardBodyP
     card.onEditOpen?.(next);
   };
   const missed = receipt?.missed ?? [];
+  const { told, note } = toldLine(card, label, wordless);
   return (
-    <div className="ch-akc" role="group" aria-label={reachLine(card.copy, phase, p, label)} data-ch-card-body={card.tool} data-density={density} data-phase={phase} data-editing={open ? '' : undefined}>
+    <div className="ch-akc" role="group" aria-label={reachLine(card.copy, phase, p, label)} data-ch-card-body={card.tool} data-density={density} data-phase={phase} data-reach={card.copy.reach} data-editing={open ? '' : undefined}>
       {p.undo?.window === false && !isSaved(phase) && !isWithdrawn(phase) && (
         <Warning first>
           <b>This happens the moment you press.</b> There is no Undo.
         </Warning>
       )}
       {children}
-      {missed.length > 0 && (
-        <p className="ch-akc-missed">
-          <b>Did not get it:</b> {missed.map((m) => `${m.name} (${m.reason})`).join(', ')}
+      {missed.length > 0 && <p className="ch-akc-missed">Did not get it: {missed.map((m) => `${m.name} (${m.reason})`).join(', ')}</p>}
+      <div className="ch-akc-foot">
+        <p className="ch-akc-told" data-withdrawn={isWithdrawn(phase) ? '' : undefined}>
+          {told}
+          {note && <span> {note}</span>}
         </p>
-      )}
-      {p.undo?.after && !isWithdrawn(phase) && (
-        <p className="ch-akc-after">
-          <Icon icon={Undo2} size={14} />
-          <span>
-            <b>{p.undo.window ? 'After the 8 seconds:' : 'Afterwards:'}</b> {p.undo.after}
-          </span>
-        </p>
-      )}
-      {canEdit && !open && (
-        <div className="ch-akc-editkey">
-          <Button variant="secondary" size="sm" leftIcon={Pencil} onClick={() => setOpen(true)}>
-            Edit
-          </Button>
-          <small>You can change the {lowerList(fields.map((f) => f.label))}.</small>
-        </div>
-      )}
+        {p.undo?.after && !isWithdrawn(phase) && (
+          <p className="ch-akc-after">
+            {p.undo.window ? 'After the 8 seconds:' : 'Afterwards:'} {p.undo.after}
+          </p>
+        )}
+        {canEdit && !open && (
+          <div className="ch-akc-editkey">
+            <Button variant="ghost" size="sm" leftIcon={Pencil} onClick={() => setOpen(true)}>
+              Edit
+            </Button>
+            <small>You can change the {lowerList(fields.map((f) => f.label))}.</small>
+          </div>
+        )}
+      </div>
       {open && <EditForm fields={fields} busy={!!card.editing} error={card.editError ?? null} onSubmit={(patch) => card.onEdit?.(patch)} onClose={() => setOpen(false)} />}
     </div>
   );

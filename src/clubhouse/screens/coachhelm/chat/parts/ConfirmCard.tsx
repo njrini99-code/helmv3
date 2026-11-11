@@ -69,6 +69,11 @@ export function landsLine(tool: string, visual: ActionProposal['visual']): strin
   const where = landsWhere(tool, visual);
   return where ? `It appears in ${l.app}, under ${where}.` : `It appears in ${l.app}.`;
 }
+/** The same, with the place's own name, so the card's one quiet line can tell when its words already name it. */
+export function landsOf(tool: string, visual: ActionProposal['visual']): { app: string; line: string } | null {
+  const line = landsLine(tool, visual);
+  return line ? { app: LANDS[tool]!.app, line } : null;
+}
 /** The kit's head per flow (06 kit ②): what it will become, with its own mark. */
 const HEAD: Record<string, { icon: LucideIcon; title: string }> = {
   create_event: { icon: CalendarPlus, title: 'New event' },

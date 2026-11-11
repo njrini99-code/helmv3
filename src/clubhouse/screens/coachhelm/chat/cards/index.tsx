@@ -5,6 +5,7 @@ import { AnnouncementBody, AvailabilityBody, DrillBody, FocusBody, GoalBody, Mes
 import { AttendanceBody, BlockedBody, BreakBody, EventBody, LineupBody, LockBody, QualifierBody, ReminderBody, SeriesBody, TermBody, TripBody, type BodyProps } from './bodies-schedule';
 import { cardCopy } from './catalog';
 import type { CardBodyProps } from './types';
+import '../../../../styles/coachhelm-ask-cards.css';
 
 export { ApproveAll, batchPlan, type ApproveAllProps, type BatchPhase, type BatchPlan, type WaitingCard } from './ApproveAll';
 export { CARD_TOOLS, cardCopy, type CardCopy } from './catalog';
@@ -48,7 +49,7 @@ const BODIES: Record<string, ComponentType<BodyProps>> = {
   record_focus_outcome: PlanBody,
 };
 
-/** The body draws the thing itself (its title, its day, its words), so the shell adds no second title. The generic plan body does not. */
+/** The body draws the thing itself (its name, its day, its words), so the shell adds no second title. The generic plan body does not. */
 export const drawsSubject = (tool: string): boolean => !!BODIES[tool] && BODIES[tool] !== PlanBody;
 
 /** The tools with a body of their own. */
