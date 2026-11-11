@@ -923,8 +923,11 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         <BackLink onClick={() => void goBack()}>Practice</BackLink>
         <div className="ch-prb-head__t">
           <input id="ch-prb-title" className="ch-prb-title" aria-label="Plan title" maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} />
-          {whenLine}
-          {saveStatus}
+          {/* One line under the title: when and where, Change, then whether it is saved. */}
+          <div className="ch-prb-head__m">
+            {whenLine}
+            {saveStatus}
+          </div>
         </div>
         <div className="ch-prb-head__steps">{stepBar}</div>
         {ribbonBar}
