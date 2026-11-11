@@ -6,11 +6,12 @@
  * surfaces and never for a player. INVENTORY.md beside this file says what each wraps and what is deliberately absent.
  */
 import type { ChatTool } from '../engine/tool';
-import { developmentTools } from './development-tasks';
+import { developmentTools, dismissSignal } from './development-tasks';
 import { eventEditTools } from './event-edit-tasks';
 import { eventTaskTools } from './event-tasks';
 import { qualifierTools } from './qualifier-tasks';
+import { taskTaskTools } from './task-tasks';
 
 export function contextTaskTools(): ChatTool[] {
-  return [...eventTaskTools(), ...eventEditTools(), ...developmentTools(), ...qualifierTools()];
+  return [...eventTaskTools(), ...eventEditTools(), ...developmentTools(), ...qualifierTools(), ...taskTaskTools(), dismissSignal];
 }

@@ -69,7 +69,8 @@ describe('the registry’s tools as the model is given them', () => {
     expect(tools.slice(0, -1).map((t) => t.name)).toEqual(registry.map((t) => t.name));
     for (const tool of registry) {
       const sent = tools.find((t) => t.name === tool.name)!;
-      if (tool.kind === 'read') {
+      // A read that writes (`direct_only`: the coach's two note tools, CONTRACT_NOTES E19) is sent as a task is: strict, and not callable from the model's code.
+      if (tool.kind === 'read' && !tool.direct_only) {
         expect(sent.allowed_callers).toEqual(['direct', 'code_execution_20260120']);
         expect(sent).not.toHaveProperty('strict');
       } else {
@@ -77,6 +78,7 @@ describe('the registry’s tools as the model is given them', () => {
         expect(sent).not.toHaveProperty('allowed_callers');
       }
     }
+    expect(registry.filter((t) => t.kind === 'read' && t.direct_only).map((t) => t.name)).toEqual(['save_note', 'remove_note']);
   });
 
   it('a player’s request has no code tool, and every tool in it is strict', () => {

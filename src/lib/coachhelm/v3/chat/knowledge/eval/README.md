@@ -1,6 +1,6 @@
 # Golf-sense eval for CoachHelm chat
 
-`golf-sense.json` holds 74 questions a college coach or player really asks, written to test whether the assistant
+`golf-sense.json` holds 76 questions a college coach or player really asks, written to test whether the assistant
 reads golf figures the way a coach's analyst would. They complement the data questions in
 `scripts/coachhelm/ask-eval.mjs`, which check that figures are right; these check meaning, direction and caution.
 
@@ -19,7 +19,13 @@ Each question: `id`, `area`, `viewer` (`coach` or `player`), `ask`, `readers`, `
   is required.
 - `global_forbid` (top of the file): the writing rules, scored against every answer whatever the question: the
   sample as notation (`n=4`, `N-4`), a heading or a table, an abbreviation a coach would not say aloud (`SG`,
-  `GIR`, `avg`, `vs`), Title Case stat names or a lower-case "tour", and a tool or table name.
+  `GIR`, `avg`, `vs`, and `ft` or `yd` after a number or in a band: a distance is "from 3 to 5 feet", "281 yards"),
+  Title Case stat names or a lower-case "tour", a sentence or list line that starts lower-case, a proper noun not as
+  it is written (PGA Tour, NCAA, Division I), and a tool or table name.
+- Names as stored: `golfSenseQuestions(names, { people, places })` adds the team's own proper names to the
+  proper-noun rule, so "eli brandt" or "PINE VALLEY INVITATIONAL" fails when the roster has "Eli Brandt" and the
+  event is stored "Pine Valley Invitational". Pass the roster as `people` and the course and event names the turn's
+  reads returned as `places`.
 - `style.max_sentences` (the `writing` questions): the answer fails when it runs longer. `index.ts` exports the
   `sentenceCount` these limits mean.
 - Placeholders `{player}`, `{player2}`, `{new_player}`, `{no_shots_player}`, `{teammate}` are filled from the staging roster.

@@ -168,6 +168,8 @@ async function runRemove(ctx: ToolContext, input: { note: string }): Promise<Too
 
 export const saveNote: ReadTool<{ text: string }> = {
   kind: 'read',
+  // It writes: only the model itself may ask for it, never the model's code (engine/CONTRACT_NOTES.md, E19).
+  direct_only: true,
   name: 'save_note',
   description:
     'Keep one standing note for this coach across conversations when they ask you to remember something: how they want answers, or a lasting team fact. Use the coach’s words, one sentence. Never a named player’s health, injuries, family, grades or discipline, or contact details: say you will not keep that. It saves at once and players never see notes.',
@@ -178,6 +180,8 @@ export const saveNote: ReadTool<{ text: string }> = {
 
 export const removeNote: ReadTool<{ note: string }> = {
   kind: 'read',
+  // It writes: only the model itself may ask for it, never the model's code (engine/CONTRACT_NOTES.md, E19).
+  direct_only: true,
   name: 'remove_note',
   description:
     'Remove one of the coach’s standing notes when they ask you to forget it. Pass its text or a few of its words; if several match, nothing is removed and they are returned so you can ask which.',

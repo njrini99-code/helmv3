@@ -135,6 +135,10 @@ checked against this registry (`knowledge/__tests__/data-map.test.ts`), so a new
 
 ## 3. App actions that already have a task tool
 
+Since 11 Nov 2026 every task's card is built by the server (`card-truth.ts`): who is reached by id, the words sent,
+what is replaced, who can see it and how it is undone, and `commit` refuses a card the world has moved under. The
+fields and the rule are in `engine/CONTRACT_NOTES.md`, "PLANS". A new task follows the same rule: intent in, truth out.
+
 For whoever adds task tools: these actions are covered. Do not add a second tool for any of them. Each is on the
 contract (`plan` writes nothing, `commit` runs after Confirm and the Undo window) in `tasks.ts`, built from the flows
 in `create-tools.ts`, `practice-draft.ts`, `action-planners.ts` and `practice-planner.ts`.
