@@ -126,7 +126,9 @@
 .ch-hf .feat__ev { display: flex; flex-wrap: wrap; gap: 6px; }
 .ch-hf .feat__ev span { padding: 4px 8px; border-radius: var(--ch-radius-tail); background: color-mix(in srgb, var(--ch-feature-ink) 10%, transparent); font: var(--ch-type-13-strong); color: var(--ch-hf-a-feat-1); }
 .ch-hf .feat__acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
-.ch-hf .stat-done { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: var(--ch-radius-md); font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); background: color-mix(in srgb, var(--ch-feature-gain) 12%, transparent); color: var(--ch-hf-a-feat-gain); } /* .12, not .18: 5.38:1 dark (.18 gave 4.71) */
+/* What already happened is a status line (a tick and the words) on its own row over the keys, never a filled box beside "Message":
+   at a key's height, padding and radius it read as a second button (fix wave 2026-11-11). */
+.ch-hf .stat-done { display: flex; flex: 1 0 100%; align-items: center; gap: 8px; font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); color: var(--ch-hf-a-feat-gain); }
  /* 8%, not 11%: 4.99:1 light (11% gave 4.78) */
 .ch-hf .rows { display: flex; flex-direction: column; }
 .ch-hf .r { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 64px; padding: 8px 16px; border: 0; background: none; text-align: left; width: 100%; cursor: pointer; color: var(--ch-hf-a-ink); }
@@ -280,6 +282,15 @@
 .ch-hf .r__t small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ch-hf .r__t b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ch-hf .r__t b.l2 { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+/* A row with a stance chip (All reads, What's working, the track record). Chips of different widths started the titles at three
+   left edges and cut them ("Solid re…"), so the title keeps the row's width on one edge and the chip sits on the meta line
+   under it (fix wave 2026-11-11). The text wrapper draws nothing; its two lines are the grid's. */
+.ch-hf .r.r--chip { grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 8px; padding-block: 12px; }
+.ch-hf .r.r--chip > .r__t { display: contents; }
+.ch-hf .r.r--chip > .r__t > b { grid-column: 1 / span 2; grid-row: 1; }
+.ch-hf .r.r--chip > :first-child { grid-column: 1; grid-row: 2; justify-self: start; }
+.ch-hf .r.r--chip > .r__t > small { grid-column: 2; grid-row: 2; align-self: center; }
+.ch-hf .r.r--chip > .r__e { grid-column: 3; grid-row: 1 / span 2; }
 .ch-hf .dhead > div { min-width: 0; }
 .ch-hf .dhead .lt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ch-hf .grid2.one { grid-template-columns: minmax(0, 640px); }

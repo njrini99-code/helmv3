@@ -406,7 +406,7 @@ export function SgCard({ sg, who, standingHref }: { sg: ChFileSg; who: string; s
           )}
         </div>
       </div>
-      <p className="card__n">
+      <p className="card__n ch-num">
         {sg.needsHoles ? (sg.needs === 'rounds' ? `Strokes gained shows from ${FILE_SG_FLOOR} rounds posted hole by hole. ` : 'Strokes gained needs hole-by-hole scores. ') : sg.note ? `${sg.note} ` : ''}
         {/* A separator never starts a line: the space before each "·" does not break. */}
         {sg.source.replace(/ · /g, '\u00a0· ')}.{mix && <span data-ch-sg-mix=""> {mix}.</span>}
@@ -429,11 +429,11 @@ function readRow(d: ChDeepInsight, lens: FileLens, assigned: boolean, onOpen: (i
   const area = AREA[d.area] ?? 'Course and scoring';
   const firm = lens === 'player' ? d.base.evidence.read?.word : d.firmness;
   return (
-    <button type="button" className="r" key={d.base.id} data-ch-hf-read={d.base.id} onClick={() => onOpen(d.base.id)}>
+    <button type="button" className="r r--chip" key={d.base.id} data-ch-hf-read={d.base.id} onClick={() => onOpen(d.base.id)}>
       <Badge tone={CHIP_TONE[tone] ?? 'neutral'}>{stance.word}</Badge>
       <span className="r__t">
         <b className="l2 ch-num">{d.base.title}</b>
-        <small>{[area, d.base.value, firm].filter(Boolean).join(' · ')}</small>
+        <small className="ch-num">{[area, d.base.value, firm].filter(Boolean).join(' · ')}</small>
       </span>
       <span className="r__e">
         <svg width="8" height="14" viewBox="0 0 8 14" aria-hidden="true">
@@ -506,11 +506,11 @@ export function WorkingCard({ list, onOpen }: { list: ChDeepInsight[]; onOpen: (
     <section className="card" aria-labelledby="ch-hf-working">
       <CardHead id="ch-hf-working" title="What’s working" meta="Top strength" />
       <div className="rows">
-        <button type="button" className="r" data-ch-hf-read={d.base.id} onClick={() => onOpen(d.base.id)}>
+        <button type="button" className="r r--chip" data-ch-hf-read={d.base.id} onClick={() => onOpen(d.base.id)}>
           <Badge tone="positive">Working</Badge>
           <span className="r__t">
             <b className="l2 ch-num">{d.base.title}</b>
-            <small>{d.base.value}</small>
+            <small className="ch-num">{d.base.value}</small>
           </span>
         </button>
       </div>
@@ -546,7 +546,7 @@ export function IntentCard({ intent, first, onEdit }: { intent: ChFileIntent | n
               )}
             </dl>
           </div>
-          <p className="card__n">
+          <p className="card__n ch-num">
             <button type="button" className="lnk ch-hf-44" data-ch-hf-intent-edit="" onClick={onEdit}>
               Edit plan
             </button>
@@ -595,7 +595,7 @@ export function TrackCard({ track, first }: { track: ChFileTrack; first: string 
           {measured && (
             <div className="rows ch-hf-trackrows">
               {track.rows.map((r) => (
-                <div className="r static" key={r.id}>
+                <div className="r r--chip static" key={r.id}>
                   <Badge tone={r.word === 'Improved' ? 'positive' : 'neutral'}>{r.word}</Badge>
                   <span className="r__t">
                     <b className="ch-num">{r.title}</b>
