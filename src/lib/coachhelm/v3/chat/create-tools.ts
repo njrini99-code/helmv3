@@ -333,7 +333,7 @@ const qualifierFlow: FlowDef<QualifierStored> = {
   stored: qualifierInput.extend({ seen: z.object({ people: SeenPeople }).optional() }),
   prepare: async (sb, ctx, i) => ({ ...i, seen: { people: await seenPlayers(sb, ctx, i.player_ids) } }),
   stale: (sb, ctx, i) => peopleChanged(sb, ctx, seenOf(i.seen).people, 'Nothing was saved.'),
-  plan: (ctx, i) => {
+  plan: (_ctx, i) => {
     if (i.selection_slots_coach_pick > i.selection_slots_total) throw new ActionPlanError('Coach picks can’t be more than the squad.');
     if (i.end_date && i.end_date < i.start_date) throw new ActionPlanError('The end date is before the start. Ask the coach.');
     const people = seenOf(i.seen).people;
