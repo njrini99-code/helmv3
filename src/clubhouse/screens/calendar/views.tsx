@@ -33,6 +33,7 @@ import {
   fmtHour,
   groupClasses,
   isClassGroup,
+  laneBox,
   layoutLanes,
   monthName,
   rangeLabel,
@@ -40,7 +41,9 @@ import {
   addDays,
   type ChCalEvent,
   type ChCalPerson,
+  type ChClassGroup,
   type ChDaylight,
+  type ChLaid,
 } from './model';
 
 import { TYPE_ICON } from './type-icon';
@@ -86,6 +89,23 @@ export function isPastEvent(e: ChCalEvent, now: ChNow): boolean {
   return e.date === now.date && !e.allDay && e.end != null && e.end <= now.hour;
 }
 
+const isUnder = (x: ChCalEvent | ChClassGroup) => !isClassGroup(x) && (x.type === 'busy' || x.busyOnly);
+
+/**
+ * Where a busy block that lies under other events (A26) comes out from under them: the end of whatever covers its
+ * start, when at least a row of it shows from there. The staff meeting at 12:00 under a round that ends at 12:30 was a
+ * bare hatched stub hanging below the round, its words covered; it is drawn from 12:30 instead, a tile of its own that
+ * says what it is. Its name and its peek keep its real hours. Two busy blocks that overlap keep the cascade.
+ */
+export function clearFrom(g: ChCalEvent, laid: ReadonlyArray<ChLaid<ChCalEvent | ChClassGroup>>, hh = CAL_HH): number | undefined {
+  const others = laid.map((l) => l.e).filter((x) => x !== g && x.start! < g.end! && x.end! > g.start!);
+  if (others.some(isUnder)) return undefined;
+  const covering = (t: number) => others.find((x) => x.start! <= t && x.end! > t);
+  let t = g.start!;
+  for (let cover = covering(t); cover; cover = covering(t)) t = cover.end!;
+  return t > g.start! && (g.end! - t) * hh - 2 >= 22 ? t : undefined;
+}
+
 export function EventBlock({
   e,
   lane,
@@ -102,6 +122,7 @@ export function EventBlock({
   state,
   past = false,
   onSlot,
+  clear,
 }: {
   e: ChCalEvent;
   lane: number;
@@ -130,13 +151,15 @@ export function EventBlock({
   past?: boolean;
   /** P-14: a changed block shows where it was while the pointer rests on it or it has focus. */
   onSlot?: (on: boolean) => void;
+  /** A busy block under other events: the hour it comes out from under them (clearFrom), where it is drawn from. */
+  clear?: number;
 }) {
   const clock = useChClock();
   const rowMark = useRowMark();
   const k = useChTypeK();
   const mark = state === 'card' ? null : rowMark(e);
-  const start = Math.max(e.start!, from);
   const end = Math.min(e.end!, to);
+  const start = Math.min(Math.max(e.start!, from, clear ?? 0), end);
   const top = (start - from) * hh;
   // At least one line of title (A26): a 15-minute block was 20px and cut its title's descenders.
   const h = Math.max((end - start) * hh - 2, 22);
@@ -150,8 +173,7 @@ export function EventBlock({
   /** Overlapping events cascade, as Apple Calendar does (owner, 2026-10-06: the split lanes crushed titles into
    *  fragments): each later lane steps right and lies over the earlier ones, reaching the column's right edge, so every
    *  block keeps a readable width and an earlier one shows in full above where the next begins. */
-  const step = lanes > 1 ? Math.min(46, 70 / (lanes - 1)) : 0;
-  const left = step * lane;
+  const box = clear != null ? laneBox(0, 1) : laneBox(lane, lanes);
   const shared = lanes > 1;
   // A busy block (someone's time, not a team event) lies under the events it overlaps, whatever its lane (A26): stepped in
   // over a team round it hid the round's title.
@@ -182,14 +204,48 @@ export function EventBlock({
   // One line keeps the plain cut-off, which shows more of the title than a word-wrapped clamp.
   const fit = Math.min(3, Math.floor((h - 8 - timeLine + 0.5) / titleLine));
   const lines = short || shared || fit < 2 ? undefined : fit;
+  // In a narrow column (the desktop week: a block under 114px, calendar.css .ch-ev__w) the title comes first: it takes
+  // the lines it needs, up to those the block holds with 4px under the last, and the time keeps its row only when there
+  // is one left under the title. A one-hour "Round review" reads in full on two lines instead of "Round r…" over a time
+  // the grid already gives; "Strength" on one line keeps its "6:30 AM".
+  const give = !short;
+  // The overlap or plan mark: in the narrow column it moves from over the title's last word to the block's bottom
+  // corner, and the title leaves the time its row there, so the mark never lies on a title line.
+  const marked = showWarn || (!short && (e.plan?.state === 'published' || e.plan?.state === 'edited'));
+  const top0 = shared ? 4 : 6;
+  const solo = Math.max(1, Math.min(3, Math.floor((h - top0 - (marked ? 2 + timeLine : 4) + 0.5) / titleLine)));
+  const words = (
+    <>
+      <span className="ch-ev__t">
+        {tier !== 'sliver' && <Icon icon={TYPE_ICON[e.type]} size={12} className="ch-ev__g" />}
+        {pill ? rl.name : title}
+      </span>
+      <span className="ch-ev__m ch-ev__m--fit">
+        {when.map((part, i) => (
+          <span key={i}>{part}</span>
+        ))}
+        {where && <span>{where}</span>}
+        {wasPlace && (
+          <span className="ch-ev__was">
+            <WasValue changeId={mark!.change.id}>{wasPlace}</WasValue>
+          </span>
+        )}
+        {wasTime && (
+          <span className="ch-ev__was">
+            <WasValue changeId={mark!.change.id}>{restyleClock(wasTime, clock)}</WasValue>
+          </span>
+        )}
+      </span>
+    </>
+  );
   return (
     <button
       type="button"
       data-print-visible
       // CH-6801: a button named with its title, time and any overlap. CH-6601: it lifts on hover and marks its selection.
-      className={`ch-ev ch-ev--${e.cancelled ? 'other' : e.type}${tier === 'sliver' ? ' ch-ev--sliver' : ''}${e.cancelled ? ' is-cancelled' : ''}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${under ? ' ch-ev--under' : ''}${lines ? ' ch-ev--wrap' : ''}${pill ? ' has-round' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${past && !state ? ' is-past' : ''}`}
+      className={`ch-ev ch-ev--${e.cancelled ? 'other' : e.type}${tier === 'sliver' ? ' ch-ev--sliver' : ''}${e.cancelled ? ' is-cancelled' : ''}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${under ? ' ch-ev--under' : ''}${lines ? ' ch-ev--wrap' : ''}${pill ? ' has-round' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${marked ? ' has-mark' : ''}${past && !state ? ' is-past' : ''}`}
       data-ev-id={state === 'card' ? undefined : e.id}
-      style={{ top, height: h, left: `calc(${left}% + 3px)`, width: `calc(${100 - left}% - 6px)`, zIndex: under || state === 'card' ? undefined : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}) } as CSSProperties}
+      style={{ top, height: h, left: box.left, width: box.width, zIndex: under || state === 'card' ? undefined : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}), ...(give ? { '--ch-ev-solo': solo } : {}) } as CSSProperties}
       aria-label={`${rl.name}${rl.spoken}, ${rangeLabel(e, clock)}${past && !state ? ', ended' : ''}${flagged ? ', schedule overlap' : ''}${e.cancelled ? ', cancelled' : ''}${mark?.aria ?? ''}${drag ? '. Alt and the arrow keys move it; add Shift to change its length' : ''}`}
       aria-pressed={sel}
       aria-hidden={state === 'card' || undefined}
@@ -207,32 +263,13 @@ export function EventBlock({
         onSelect(e.id);
       }}
     >
-      <span className="ch-ev__t">
-        {tier !== 'sliver' && <Icon icon={TYPE_ICON[e.type]} size={12} className="ch-ev__g" />}
-        {pill ? rl.name : title}
-      </span>
+      {give ? <span className="ch-ev__w">{words}</span> : words}
       {pill && (
         <span className="ch-ev__round ch-num" aria-hidden="true">
           {e.cancelled && <Icon icon={Ban} size={12} />}
           {`R${rl.round}`}
         </span>
       )}
-      <span className="ch-ev__m ch-ev__m--fit">
-        {when.map((part, i) => (
-          <span key={i}>{part}</span>
-        ))}
-        {where && <span>{where}</span>}
-        {wasPlace && (
-          <span className="ch-ev__was">
-            <WasValue changeId={mark!.change.id}>{wasPlace}</WasValue>
-          </span>
-        )}
-        {wasTime && (
-          <span className="ch-ev__was">
-            <WasValue changeId={mark!.change.id}>{restyleClock(wasTime, clock)}</WasValue>
-          </span>
-        )}
-      </span>
       <EventLiveDot e={e} />
       {showWarn && (
         <span className="ch-ev__warn" aria-hidden="true">
@@ -378,7 +415,7 @@ export function TimeGrid({
             </button>
           ))}
         </div>
-        <div className="ch-wk__allday" ref={lane} style={{ gridTemplateRows: `repeat(${rows}, 26px)` }}>
+        <div className="ch-wk__allday" ref={lane} style={{ gridTemplateRows: `repeat(${rows}, minmax(26px, auto))` }}>
           <span style={{ gridRow: `1 / span ${rows}` }}>All day</span>
           {bars.map((b) => (
             <LaneBar key={b.e.id} b={b} narrow={b.c0 === b.c1 && dates.length > 1} people={people} viewerId={viewerId} sel={selId === b.e.id} onSelect={onSelect} drag={barEngine.bind(b.e)} state={bd?.e.id === b.e.id ? 'held' : undefined} />
@@ -440,6 +477,7 @@ export function TimeGrid({
                     state={drag?.e.id === g.id ? 'held' : clashes?.has(g.id) ? 'clash' : undefined}
                     past={isPastEvent(g, now)}
                     onSlot={(on) => setRested((cur) => (on ? g.id : cur === g.id ? null : cur))}
+                    clear={l.lanes > 1 && isUnder(g) ? clearFrom(g, laid) : undefined}
                   />
                 </EventPeek>
                 );

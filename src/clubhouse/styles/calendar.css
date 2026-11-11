@@ -522,6 +522,15 @@
 .ch-ev.is-past.ch-ev--tournament:not(:hover):not(:focus-visible):not(.is-sel) {
   background-color: color-mix(in srgb, var(--ch-green-fill-700) 75%, var(--ch-bg-page));
 }
+/* An ended competition keeps its green: desaturated as well, the lightened fill went grey and a four-hour round read as
+   a disabled slab beside the paper tiles. Its time takes the title's ivory there (the soft ivory measured 3.74:1). */
+.ch-ev.is-past.ch-ev--tournament,
+.ch-mo__cell.is-past .ch-mo__ev.is-major:not(.is-qualifier) {
+  filter: none;
+}
+.ch-ev.is-past.ch-ev--tournament:not(:hover):not(:focus-visible):not(.is-sel) .ch-ev__m {
+  color: var(--ch-on-fill-100);
+}
 .ch-ev.is-past .ch-ev__m {
   opacity: 1;
 }
@@ -744,15 +753,36 @@
 .ch-wk__allday {
   row-gap: var(--ch-space-1);
 }
-.ch-ev-bar--span {
+.ch-ev-bar.ch-ev-bar--span {
   position: relative;
   max-width: none;
   min-width: 0;
-  height: 26px;
+  height: auto;
+  min-height: 26px;
+  /* The bar measures itself: one week column wide at 1440px (under 112px) it has no room for a glyph and a name. */
+  container-type: inline-size;
 }
 .ch-ev-bar--span > span {
   flex: 1;
   min-width: 0;
+}
+/* There the glyph goes and the name takes two lines ("Qualifier · Pinehurst No. 2" was "Qualifie…"); its row in the
+   lane grows with it (views.tsx). The bar's material still tells its type. */
+@container (max-width: 95.98px) {
+  .ch-ev-bar--span > .ch-ev__g {
+    display: none;
+  }
+  .ch-ev-bar--span > span:not([class]) {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    margin-block: var(--ch-space-1);
+    line-height: var(--ch-lead-label);
+    text-align: start;
+    white-space: normal;
+    overflow-wrap: normal;
+  }
 }
 .ch-ev-bar__t {
   flex: none;
@@ -874,13 +904,15 @@ html[data-fw-theme='dark'] .ch-ev-bar.is-held {
     opacity: 1;
   }
 }
-/* The type's leading glyph: 12px before the title, shown on a block at least 64px wide and 24px tall. */
+/* The type's leading glyph: 12px before the title, shown on a block at least 114px wide (a column of 120; the query
+   measures the 98px inside its padding) and 24px tall. In the desktop week's 100px columns it took a fifth of the
+   title's line; the block's material tells its type. */
 .ch-ev__g {
   display: inline-block;
   margin-inline-end: var(--ch-space-1);
   vertical-align: -0.125em;
 }
-@container (max-width: 63.98px) {
+@container (max-width: 97.98px) {
   .ch-ev__g {
     display: none;
   }
@@ -972,6 +1004,59 @@ html[data-fw-theme='dark'] .ch-ev-bar.is-held {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+/* A block's words (views.tsx wraps them unless the block is one short row). In a column of 120px or more the wrapper is
+   not there, and the title and the time lie as they always did. Under that (the desktop week at 1440px; the query
+   measures the 98px inside the block's padding) the title comes first: it wraps to the lines it needs (--ch-ev-solo,
+   what the block holds), and the time sits under it when a row is left. A time with no row wraps into a second column,
+   out of sight past the block's edge, never cut through. The wrapper reaches the block's bottom edge, as the time
+   always has. */
+.ch-ev__w {
+  display: contents;
+}
+@container (max-width: 97.98px) {
+  .ch-ev .ch-ev__w {
+    display: flex;
+    flex: none;
+    flex-flow: column wrap;
+    align-content: flex-start;
+    gap: 2px var(--ch-space-4);
+    height: calc(100% + 6px);
+    min-width: 0;
+  }
+  .ch-ev--lane .ch-ev__w {
+    height: calc(100% + 4px);
+  }
+  .ch-ev .ch-ev__w > .ch-ev__t,
+  .ch-ev .ch-ev__w > .ch-ev__m {
+    width: 100%;
+  }
+  .ch-ev .ch-ev__w > .ch-ev__t {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--ch-ev-solo, 2);
+    line-clamp: var(--ch-ev-solo, 2);
+    flex-shrink: 0;
+    white-space: normal;
+    overflow-wrap: normal;
+  }
+  .ch-ev .ch-ev__w > .ch-ev__m {
+    display: flex;
+  }
+  /* The overlap or plan mark sits in the bottom corner there instead of lying over the title's last word; the time
+     keeps clear of it (a part that no longer fits goes with the rest, as ever). */
+  .ch-ev.has-mark .ch-ev__warn {
+    top: auto;
+    bottom: 5px;
+  }
+  .ch-ev.has-mark .ch-ev__w > .ch-ev__m {
+    box-sizing: border-box;
+    padding-inline-end: var(--ch-space-5);
+  }
+  /* A short block there is its title alone; its time is its place on the grid, its peek and its name. */
+  .ch-ev--short .ch-ev__m {
+    display: none;
+  }
 }
 /* An event block's time in whole parts (views.tsx): "8:00", " AM", " – 9:30 AM", " · Finley GC". One line shows; a part
    that doesn't fit wraps out of sight with every part after it, so the block keeps the longest start of its time that
