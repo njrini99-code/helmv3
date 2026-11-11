@@ -45,8 +45,9 @@
   width: 100%;
 }
 
-/* Lineup builder: the spots, the alternate and individuals, and the roster with each player's form. A single column on
-   the page's measure; on the phone every key is 44px and the rows stack. */
+/* Lineup builder: the spots, the alternate and individuals, and the roster with each player's form.
+   Desktop: two panes, the lineup being built at the left and the roster to build it from at the right, which stays in
+   view as the page moves. Phone: one column, every key 44px, and the screen's keys in one bar at the foot. */
 .ch-tour-lu-meta {
   display: flex;
   flex-wrap: wrap;
@@ -63,9 +64,41 @@
   flex-direction: column;
   gap: 32px;
   min-width: 0;
+}
+.ch-tour-lu-cols,
+.ch-tour-lu-col {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  min-width: 0;
+}
+/* One column keeps the reading measure (a narrow desktop window, the tablet tier). */
+.ch-tour-lu-cols,
+.ch-tour-lu-notes {
   max-width: var(--ch-measure-reading);
 }
-.ch-tour-lu.is-phone .ch-tour-lu-body {
+@media (min-width: 1180px) {
+  .ch-tour-lu:not(.is-phone) .ch-tour-lu-cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 40px 48px;
+    max-width: none;
+  }
+  .ch-tour-lu:not(.is-phone) .ch-tour-lu-side {
+    position: sticky;
+    top: calc(var(--ch-topbar-h) + 20px);
+  }
+  /* A long roster scrolls in its own pane, so its last player is never below the window while the pane is held. */
+  .ch-tour-lu:not(.is-phone) .ch-tour-lu-side .ch-tour-lu-roster {
+    max-height: calc(100dvh - var(--ch-topbar-h) - 140px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+.ch-tour-lu.is-phone .ch-tour-lu-body,
+.ch-tour-lu.is-phone .ch-tour-lu-cols,
+.ch-tour-lu.is-phone .ch-tour-lu-col {
   gap: 20px;
 }
 .ch-tour-lu-notes {
@@ -120,7 +153,15 @@
   flex-direction: column;
   gap: 6px;
 }
+.ch-tour-lu-r .ch-avatar {
+  flex: none;
+}
+/* The name, the year and, for a player who is injured or out, the chip that says so: one line that wraps as a line. */
 .ch-tour-lu-r__n {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
   font: var(--ch-type-14-strong);
   color: var(--ch-text-primary);
 }
@@ -179,14 +220,75 @@
   font: var(--ch-type-13-medium);
   color: var(--ch-text-primary);
 }
+
+/* Phone: a section is already a card there (ui.css), so its list is flat inside it, and a row is one line: portrait,
+   name over form, then the spot's chip or Add at the right end. Add is drawn small and takes a 44px tap. */
+.ch-tour-lu.is-phone .ch-tour-lu-slots,
+.ch-tour-lu.is-phone .ch-tour-lu-roster {
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
 .ch-tour-lu.is-phone .ch-tour-lu-slot,
 .ch-tour-lu.is-phone .ch-tour-lu-r {
-  padding: 12px;
+  padding: 12px 0;
 }
 .ch-tour-lu.is-phone .ch-tour-lu-r {
-  flex-wrap: wrap;
+  min-height: 64px;
 }
-.ch-tour-lu.is-phone .ch-tour-lu-r__act {
-  width: 100%;
-  justify-content: space-between;
+.ch-tour-lu.is-phone .ch-tour-lu-r__act .ch-btn::after {
+  content: '';
+  position: absolute;
+  inset: -8px -4px;
+}
+
+/* The phone's bar: the screen's keys at the foot, over the home indicator, in reach of a thumb. A solid toolbar the
+   width of the screen (the tab bar is away on a pushed page); the list fades into it under one shade, as the round
+   setup's dock does. It closes the page, so it cancels the foot padding under it (the view's 32px and the phone
+   canvas's 20px plus the safe area, shell.css) and keeps the safe area as its own padding: the keys stand above the
+   home indicator and the bar's paper runs to the screen's edge, at the end of the page as while it scrolls. */
+.ch-tour-lu-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 calc(-1 * var(--ch-page-x-phone)) calc(-52px - env(safe-area-inset-bottom, 0px));
+  padding: 10px var(--ch-page-x-phone) calc(10px + env(safe-area-inset-bottom, 0px));
+  background: var(--ch-bg-surface);
+}
+.ch-tour-lu-bar::before {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  left: 0;
+  height: var(--ch-scroll-edge-h);
+  background: var(--ch-scroll-edge-up);
+  content: '';
+  pointer-events: none;
+}
+.ch-tour-lu-bar__s {
+  flex: 1 1 auto;
+  min-width: 0;
+  font: var(--ch-type-14-strong);
+  color: var(--ch-text-primary);
+  white-space: nowrap;
+}
+.ch-tour-lu-bar .ch-btn {
+  --ch-btn-pad-x: 16px;
+  flex: none;
+}
+.ch-tour-lu-bar .ch-btn--primary {
+  flex: 1 1 auto;
+  max-width: 190px;
+  margin-left: auto;
+}
+/* Off, Publish keeps its outline on the bar: the shape of the key it will be, its word in the quiet ink, with no fill.
+   (The shared unlit key is a pressed well, which at this size read as a grey slab across the foot of the screen.) */
+.ch-tour-lu-bar .ch-btn--primary:disabled:not([aria-busy='true']) {
+  background: none;
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-control);
+  color: var(--ch-text-tertiary);
+  text-shadow: none;
 }

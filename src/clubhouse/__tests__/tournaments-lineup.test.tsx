@@ -178,6 +178,26 @@ describe.each([
     const c = draw(fx, { phone });
     expect(c.querySelector('.ch-tour')?.classList.contains('is-phone')).toBe(phone);
     expect(c.querySelectorAll('.ch-tour-lu-slot')).toHaveLength(5);
-    expect(c.querySelectorAll('.ch-avatar').length > 0).toBe(!phone);
+    // Every roster row carries its player's portrait, on the phone as on a desktop.
+    expect(c.querySelectorAll('.ch-tour-lu-r .ch-avatar')).toHaveLength(c.querySelectorAll('.ch-tour-lu-r').length);
+    // The phone's keys are one bar at the foot (where the lineup stands, Lock, Publish); a desktop keeps them in the head.
+    const bar = c.querySelector('[data-ch-lineup-bar]');
+    expect(!!bar).toBe(phone);
+    expect(c.querySelectorAll('.ch-tour-head__a').length).toBe(phone ? 0 : 1);
+    if (bar) {
+      expect(bar.textContent).toContain('4 of 5 set');
+      expect(within(bar as HTMLElement).getByRole('button', { name: 'Lock lineup' })).toBeEnabled();
+      expect(within(bar as HTMLElement).getByRole('button', { name: 'Publish lineup' })).toBeDisabled();
+    }
+  });
+
+  it('a change puts Save draft where the count stood on the phone’s bar, and lights Publish', () => {
+    const c = draw(fx, { phone });
+    const row = Array.from(c.querySelectorAll('.ch-tour-lu-r')).find((li) => li.querySelector('.ch-tour-lu-r__n')?.textContent?.startsWith(free.name)) as HTMLElement;
+    fireEvent.click(within(row).getByRole('button', { name: 'Add' }));
+    expect(screen.getAllByRole('button', { name: 'Save draft' })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Publish lineup' })).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Publish lineup' })).toBeEnabled();
+    if (phone) expect(c.querySelector('[data-ch-lineup-bar]')?.querySelector('.ch-tour-lu-bar__s')).toBeNull();
   });
 });
