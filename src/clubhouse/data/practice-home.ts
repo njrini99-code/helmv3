@@ -9,7 +9,7 @@ import { parsePlanBody, parseVersionBody, type PlanBodyV2, type PlanWhy } from '
 import { practiceTables, type PracticePlanRow, type PracticePlanVersionRow, type TeamDrillRow } from '@/lib/golf/practice-db';
 import { isPracticeMissing } from '@/lib/golf/practice-errors';
 import { isoDay, formatWith } from '../lib/dates';
-import { loadPlayerPractice } from './practice-plan';
+import { editedAfterPublish, loadPlayerPractice } from './practice-plan';
 import type { ChBankDrill, ChBuilderData, ChPlayerPracticeHome, ChPracticeEvent, ChPracticeHome, ChPracticeLoad, ChPracticeRow, ChPracticeState, ChPracticeTile, ChPracticeUpNext } from './practice-home-shape';
 
 type Sb = Awaited<ReturnType<typeof createClient>>;
@@ -21,7 +21,7 @@ interface EventRow {
   location: string | null;
   all_day: boolean | null;
 }
-type PlanRow = PracticePlanRow & { edited_after_publish?: boolean };
+type PlanRow = PracticePlanRow;
 
 const HREF = '/golf/dashboard/practice/plan/';
 const DAY = 86_400_000;
@@ -67,7 +67,7 @@ function stateOf(p: PlanRow | undefined, ended: boolean): ChPracticeState {
   if (!p) return 'No plan';
   if (p.status === 'draft') return 'Draft';
   if (ended) return 'Done';
-  return p.edited_after_publish ? 'Updated' : 'Published';
+  return editedAfterPublish(p) ? 'Updated' : 'Published';
 }
 
 /** Monday to Sunday of the team-zone week holding `now`. */
@@ -140,7 +140,7 @@ export async function loadCoachPracticeHome(teamId: string, now: Date = new Date
     const ended = (e.end_time ? new Date(e.end_time) : start) < now;
     const body = parsePlanBody(p.body);
     const state = stateOf(p, ended);
-    return [{ id: p.id, day: dayShort(start, zone), title: p.title || e.title, time: span(e, zone), line: blockLine(body, start, zone), state, href: p.status === 'draft' ? `${HREF}${p.id}/edit` : `${HREF}${p.id}`, edits: p.status === 'published' && !!p.edited_after_publish, at: e.start_time, ended }];
+    return [{ id: p.id, day: dayShort(start, zone), title: p.title || e.title, time: span(e, zone), line: blockLine(body, start, zone), state, href: p.status === 'draft' ? `${HREF}${p.id}/edit` : `${HREF}${p.id}`, edits: editedAfterPublish(p), at: e.start_time, ended }];
   });
   const bare = ({ at: _a, ended: _e, ...r }: ChPracticeRow & { at: string; ended: boolean }): ChPracticeRow => r;
   const soonest = (a: { at: string }, b: { at: string }) => a.at.localeCompare(b.at);
@@ -295,7 +295,7 @@ export async function loadPlanForBuilder(planId: string): Promise<{ status: 'rea
       status: row.status,
       liveBody: live ? parseVersionBody((live as { body: unknown }).body) : null,
       inSeries: !!event.recurrence_rule || !!event.parent_event_id,
-      edited: !!row.edited_after_publish,
+      edited: editedAfterPublish(row),
       title: row.title ?? event.title,
       meta: [dayShort(start, team.zone), span(event, team.zone), event.location].filter(Boolean).join(' · '),
       dayWord: formatWith(start, { weekday: 'long', timeZone: team.zone }),

@@ -21,4 +21,10 @@ describe('practice errors', () => {
     for (const c of ['PGRST205', 'PGRST202', '42P01', '42883']) expect(isPracticeMissing(c)).toBe(true);
     expect(isPracticeMissing('23505')).toBe(false);
   });
+  it('treats a missing column the same way: a database with only some of the held migrations is "not on yet", never "didn’t load"', () => {
+    for (const c of ['42703', 'PGRST204']) expect(isPracticeMissing(c)).toBe(true);
+  });
+  it('a timeout, a refused read, no code and an empty code are failures, not "not on yet"', () => {
+    for (const c of ['57014', '42501', 'PGRST301', '', null, undefined]) expect(isPracticeMissing(c)).toBe(false);
+  });
 });

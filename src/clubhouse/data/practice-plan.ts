@@ -37,6 +37,12 @@ async function context(sb: Awaited<ReturnType<typeof createClient>>, eventId: st
   return { event, team, names, coaches: (coaches ?? []).map((c) => c.full_name).filter((n): n is string => !!n) };
 }
 
+/**
+ * A published plan carrying edits players don't have. One source, the column the save function keeps (`edited_after_publish`): Practice home, the builder and the
+ * plan page all read it. `version` counts saves and `published_version` counts publishes, so comparing them says nothing.
+ */
+export const editedAfterPublish = (r: Pick<PracticePlanRow, 'status' | 'edited_after_publish'>): boolean => r.status === 'published' && r.edited_after_publish === true;
+
 const stateWord = (r: PracticePlanRow, zone: string, publishedAt: string | null): string => {
   if (r.status !== 'published') return 'Draft · not published';
   return publishedAt ? `Published ${formatWith(new Date(publishedAt), { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: zone })}` : 'Published';
@@ -70,7 +76,7 @@ export async function loadCoachPlan(planId: string): Promise<PlanPageLoad> {
   // with no time, which is still true; it never falls back to "Draft".
   if (live.error) chLogServer('practice.plan', 'published at', live.error, 'practice_plans');
   const publishedAt = live.error ? null : ((live.data as { published_at: string } | null)?.published_at ?? null);
-  const coach: CoachPlanExtras = { body, zone, start: new Date(ctx.event.start_time), status: { planId, title: row.title ?? 'Practice plan', version: row.version, status: row.status === 'published' ? 'published' : 'draft', edited: row.published_version != null && row.version !== row.published_version, seen } };
+  const coach: CoachPlanExtras = { body, zone, start: new Date(ctx.event.start_time), status: { planId, title: row.title ?? 'Practice plan', version: row.version, status: row.status === 'published' ? 'published' : 'draft', edited: editedAfterPublish(row), seen } };
   return { status: 'ready', coach, plan: toSheetModel({ body, why: (row.coach_why ?? {}) as Record<string, PlanWhy>, title: row.title ?? 'Practice plan', team: ctx.team?.name ?? '', start: new Date(ctx.event.start_time), end: ctx.event.end_time ? new Date(ctx.event.end_time) : null, zone: ctx.team?.timezone ?? 'America/New_York', coaches: ctx.coaches, names: ctx.names, state: stateWord(row, zone, publishedAt), format }, 'coach') };
 }
 

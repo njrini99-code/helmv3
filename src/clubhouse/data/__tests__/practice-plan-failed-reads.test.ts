@@ -128,3 +128,39 @@ describe('when a published plan went out', () => {
     expect(logged).toHaveBeenCalledWith('practice.plan', 'published at', TIMEOUT, 'practice_plans');
   });
 });
+
+describe('edits not published: one source, the column the save function keeps', () => {
+  const plan = (patch: Row) => {
+    tables.golf_practice_plans = [{ ...tables.golf_practice_plans![0], ...patch }];
+  };
+  const edited = async () => {
+    const load = await loadCoachPlan('plan-1');
+    if (load.status !== 'ready' || !load.coach) throw new Error('expected a coach plan');
+    return load.coach.status.edited;
+  };
+  it('saved many times and published once is not "edited": the two counters never have to match', async () => {
+    plan({ version: 7, published_version: 1, edited_after_publish: false });
+    expect(await edited()).toBe(false);
+  });
+  it('is edited when the column says so, whatever the counters read', async () => {
+    plan({ version: 3, published_version: 3, edited_after_publish: true });
+    expect(await edited()).toBe(true);
+  });
+  it('a draft is never "published with edits", and a row without the column reads as not edited', async () => {
+    plan({ status: 'draft', published_version: null, edited_after_publish: true });
+    expect(await edited()).toBe(false);
+    plan({ status: 'published', edited_after_publish: undefined });
+    expect(await edited()).toBe(false);
+  });
+});
+
+describe('a database with only part of Practice', () => {
+  it.each(['42703', 'PGRST204', 'PGRST205', '42P01'])('a plan read answered %s is "not on yet", not "gone"', async (code) => {
+    failing.golf_practice_plans = { code, message: 'missing' };
+    expect(await loadCoachPlan('plan-1')).toEqual({ status: 'unavailable' });
+  });
+  it('any other failure is still "gone": nothing is promised that was not read', async () => {
+    failing.golf_practice_plans = TIMEOUT;
+    expect(await loadCoachPlan('plan-1')).toEqual({ status: 'gone' });
+  });
+});

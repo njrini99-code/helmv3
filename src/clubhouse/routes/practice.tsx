@@ -132,6 +132,7 @@ export async function PracticePrintRoute({ planId }: { planId: string }) {
   if (!team) return NO_TEAM;
   // A drills read that fails is not "this plan has no drills": the studio says the appendix is missing instead of printing a plan that looks whole.
   const [load, drills] = await Promise.all([loadCoachPlan(planId), loadPlanDrills(planId).then((list) => ({ list, unread: false }), () => ({ list: [], unread: true }))]);
+  if (load.status === 'unavailable') return OFF;
   if (load.status !== 'ready') {
     return (
       <main className="ch-page" data-ch="practice">
@@ -165,6 +166,8 @@ export async function PracticePlanRoute({ planId }: { planId: string }) {
   // A coach who also has a player row is a coach, as the session says.
   const player = session.role === 'player' ? session.player : null;
   const load = player ? await loadPlayerPlan(planId, player.id) : await loadCoachPlan(planId);
+  // Practice not on this database yet is its own state, the one the tab shows: never "it may have been removed".
+  if (load.status === 'unavailable') return OFF;
   if (load.status !== 'ready') {
     return (
       <main className="ch-page ch-prc-planpage" data-ch="practice-plan">
