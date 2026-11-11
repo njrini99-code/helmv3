@@ -62,6 +62,7 @@ import {
   windowShort,
 } from './shs-figures';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
+import { DeskPane } from './DeskPane';
 import { DetailHero, StatsDetailScreen } from './StatsDetailScreen';
 import { ShsArrow, ShsCard, ShsChevron, ShsIcon, ShsPill, SummaryCard, type ShsIconName } from './SummaryCard';
 import { useStatsDetail, type StatsArrivalState } from './use-stats-detail';
@@ -195,15 +196,8 @@ export function StatsPlayerPhoneShs({
     if (desk) setDeskPick(id as StatsPlayerDetailId);
     else open(id);
   };
-  const [anchor, setAnchor] = useState<string | null>(null);
-  const pane = useRef<HTMLElement>(null);
   // The pane opens each drill at its top, or on the block the card named (What changed lands on "Against the N before").
-  useEffect(() => {
-    const el = pane.current;
-    if (!desk || !el) return;
-    const target = anchor ? el.querySelector<HTMLElement>(`[data-ch-anchor="${anchor}"]`) : null;
-    el.scrollTop = target ? Math.max(0, target.offsetTop - 12) : 0;
-  }, [desk, deskDetail, anchor]);
+  const [anchor, setAnchor] = useState<string | null>(null);
   const reduced = useChReducedMotion();
   const stuck = useStuck();
   const root = useRef<HTMLDivElement>(null);
@@ -310,14 +304,9 @@ export function StatsPlayerPhoneShs({
         <WindowCrossfade k={filterKey(data.filter)} off={false} reduced={reduced} className={'ch-shs-desk' + (below ? '' : ' is-alone')}>
           <div className="ch-shs-desk__sum">{sheet}</div>
           {(ready || below) && (
-            <aside ref={pane} className="ch-shs-screen ch-shs-desk__det" aria-labelledby="ch-shs-desk-det-t" data-ch-shs-detail={hashOf(deskDetail)}>
-              <h2 id="ch-shs-desk-det-t" className="ch-shs-desk__dett">
-                {DETAIL_TITLE[deskDetail]}
-              </h2>
-              <div className="ch-shs-d-sheet ch-shs-d-sheet--body">
-                <DetailBody id={deskDetail} data={data} reads={reads} onRetry={onRetry} coach={coach} onAddFocus={onAddFocus} onPart={(id) => go(id)} />
-              </div>
-            </aside>
+            <DeskPane detail={deskDetail} hash={hashOf(deskDetail)} title={DETAIL_TITLE[deskDetail]} anchor={anchor}>
+              <DetailBody id={deskDetail} data={data} reads={reads} onRetry={onRetry} coach={coach} onAddFocus={onAddFocus} onPart={(id) => go(id)} beside />
+            </DeskPane>
           )}
         </WindowCrossfade>
       </div>
@@ -848,6 +837,7 @@ function DetailBody({
   coach,
   onAddFocus,
   onPart,
+  beside = false,
 }: {
   id: StatsPlayerDetailId;
   data: ChPlayerProfile;
@@ -856,15 +846,17 @@ function DetailBody({
   coach: boolean;
   onAddFocus: (() => void) | null;
   onPart: (id: StatsDetailId) => void;
+  /** On a desk the drill stands beside its card: Scoring leaves out what the Scoring average card already shows. */
+  beside?: boolean;
 }) {
   if (id === 'sg') return <SgDetail data={data} onPart={onPart} />;
   if (id === 'rounds') return <RoundsDetail data={data} />;
   if (id === 'goals') return <GoalsDetail data={data} coach={coach} onAddFocus={onAddFocus} onRetry={onRetry} />;
-  return <GameAreaDetail id={id} data={data} reads={reads} onRetry={onRetry} />;
+  return <GameAreaDetail id={id} data={data} reads={reads} onRetry={onRetry} beside={beside} />;
 }
 
 /** Scoring and the four parts: the page's blocks around today's panels, every one of them kept (`GameDetail only`). */
-function GameAreaDetail({ id, data, reads, onRetry }: { id: 'scoring' | 'tee' | 'approach' | 'short' | 'putting'; data: ChPlayerProfile; reads?: ChReadsSource; onRetry: () => void }) {
+function GameAreaDetail({ id, data, reads, onRetry, beside = false }: { id: 'scoring' | 'tee' | 'approach' | 'short' | 'putting'; data: ChPlayerProfile; reads?: ChReadsSource; onRetry: () => void; beside?: boolean }) {
   const label = windowLabel(data.filter);
   const previous = hasPrevious(data);
   if (data.statsError) return <InlineNotice code="CH-5202" title="Shot-level detail didn’t load." body="Scores and rounds are correct. Try again." onRetry={onRetry} />;
@@ -877,7 +869,17 @@ function GameAreaDetail({ id, data, reads, onRetry }: { id: 'scoring' | 'tee' | 
   let after: ReactNode;
   if (id === 'scoring') {
     const change = scoringChange(data);
-    hero = (
+    // Beside its card (a desk), the figure, its change and the curve are already on the page: the drill keeps the one thing the card
+    // lacks, a coach's team average, and starts at its cards.
+    hero = beside ? (
+      coach && data.teamAvg != null ? (
+        <div className="ch-shs-d-hero">
+          <p className="ch-shs-d-hero__cap">
+            Team average <b className="ch-num">{formatAvg(data.teamAvg)}</b> · {label}
+          </p>
+        </div>
+      ) : null
+    ) : (
       <DetailHero
         figure={formatFixed(data.win.avg)}
         caption={`Scoring average${data.win.toPar == null ? '' : ` · ${formatToPar(data.win.toPar)} to par`} · ${label}${coach && data.teamAvg != null ? ` · Team ${formatAvg(data.teamAvg)}` : ''}`}
@@ -898,7 +900,7 @@ function GameAreaDetail({ id, data, reads, onRetry }: { id: 'scoring' | 'tee' | 
     const parValues = new Set(data.rounds.map((r) => (r.toPar == null || r.holes !== 18 ? null : r.score - r.toPar)));
     const par = parValues.size === 1 ? [...parValues][0]! : null;
     const reading = scoreTrendReading(data);
-    before = x.series.score.length > 0 && (
+    before = !beside && x.series.score.length > 0 && (
       <ShsCard title="Score by round" meta={par == null ? undefined : 'Par dashed'}>
         <Ribbon points={x.series.score} lowerIsBetter reference={par == null ? null : { value: par, label: 'Par' }} />
         {reading && <p className="ch-shs-mini-cap">{reading}</p>}

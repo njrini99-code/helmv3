@@ -7,6 +7,7 @@ import { useBigText } from './StatsPlayerPhoneShs';
 import { useRefresh } from '../../lib/use-refresh';
 import { useSegFade } from './seg-fade';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { DeskPane } from './DeskPane';
 import type { ChTeamStats } from '../../data/stats-team';
 import { hasRange, isFiltered, nineRoundsInWindow } from '../../data/stats-filter';
 import { holeCoverage } from '../../data/round-scope';
@@ -146,10 +147,6 @@ export function StatsTeamPhoneShs({
   const [deskPick, setDeskPick] = useState<StatsTeamDetailId | null>(null);
   const deskDetail: StatsTeamDetailId = deskPick ?? (detail as StatsTeamDetailId | null) ?? 'tscore';
   const go = (id: StatsDetailId) => (desk ? setDeskPick(id as StatsTeamDetailId) : open(id));
-  const pane = useRef<HTMLElement>(null);
-  useEffect(() => {
-    if (desk && pane.current) pane.current.scrollTop = 0;
-  }, [desk, deskDetail]);
   const days = (data.days ?? []).filter((d): d is { label: string; score: number; n?: number; date?: string } => d.score != null);
   const mean = days.length ? teamDaysMean(days) : null;
   const few = !data.roundsError && !noRounds && days.length > 0 && days.length < 3;
@@ -238,7 +235,7 @@ export function StatsTeamPhoneShs({
   const ready = !data.roundsError && !noRounds;
   const drill = (id: StatsTeamDetailId) => (
     <>
-      {id === 'tscore' && <TeamScoringDetail data={data} covered={covered} days={days} mean={mean} />}
+      {id === 'tscore' && <TeamScoringDetail data={data} covered={covered} days={days} mean={mean} beside={desk} />}
       {id === 'tgame' && <TeamGameDetail data={data} />}
       {id === 'tplayers' && <TeamPlayersDetail data={data} />}
     </>
@@ -255,12 +252,9 @@ export function StatsTeamPhoneShs({
               {ready && below && extra}
             </div>
             {ready && (
-              <aside ref={pane} className="ch-shs-screen ch-shs-desk__det" aria-labelledby="ch-shs-desk-det-t" data-ch-shs-detail={hashOf(deskDetail)}>
-                <h2 id="ch-shs-desk-det-t" className="ch-shs-desk__dett">
-                  {TITLE[deskDetail]}
-                </h2>
-                <div className="ch-shs-d-sheet ch-shs-d-sheet--body">{drill(deskDetail)}</div>
-              </aside>
+              <DeskPane detail={deskDetail} hash={hashOf(deskDetail)} title={TITLE[deskDetail]}>
+                {drill(deskDetail)}
+              </DeskPane>
             )}
           </WindowCrossfade>
         </div>
@@ -427,7 +421,7 @@ function TheRound({ data, note }: { data: ChTeamStats; note?: string | null }) {
               <dd className="v">{figureValue(f)}</dd>
               {ref && <dd className="m">{ref}</dd>}
               {f.delta != null && (
-                <dd>
+                <dd className="d">
                   <ShsPill tone={t === 'is-gain' ? 'gain' : t === 'is-loss' ? 'loss' : 'flat'}>{formatSigned(f.delta, f.digits)}</ShsPill>
                 </dd>
               )}
@@ -440,15 +434,28 @@ function TheRound({ data, note }: { data: ChTeamStats; note?: string | null }) {
   );
 }
 
-function TeamScoringDetail({ data, covered, days, mean }: { data: ChTeamStats; covered: boolean; days: ReadonlyArray<{ label: string; score: number; n?: number }>; mean: number | null }) {
+function TeamScoringDetail({
+  data,
+  covered,
+  days,
+  mean,
+  beside = false,
+}: {
+  data: ChTeamStats;
+  covered: boolean;
+  days: ReadonlyArray<{ label: string; score: number; n?: number }>;
+  mean: number | null;
+  /** On a desk the Scoring average card stands beside this drill with the same figure, change and curve, so the drill starts at what the card lacks. */
+  beside?: boolean;
+}) {
   const f = scoringFigure(data);
   const context = `${data.teamName} · ${data.activeCount} active ${pluralWord(data.activeCount, 'player')} · countable rounds only.`;
   // Today's trend reading, on the card that now draws the trend. One round day is a point, not a trend.
   const trend = days.length >= 2 ? teamTrendReading(data, days.length) : null;
   return (
     <>
-      <DetailHero figure={f ? figureValue(f) : <NoData />} caption={['Team scoring average', toPar(data), windowDays(data)].filter(Boolean).join(' · ')} chips={<Change data={data} />} />
-      {days.length > 0 && (
+      {!beside && <DetailHero figure={f ? figureValue(f) : <NoData />} caption={['Team scoring average', toPar(data), windowDays(data)].filter(Boolean).join(' · ')} chips={<Change data={data} />} />}
+      {!beside && days.length > 0 && (
         <ShsCard title="By round day" meta={mean == null ? undefined : 'Team mean dashed'}>
           <Ribbon points={days.map((d) => ({ label: d.label, value: d.score }))} lowerIsBetter reference={mean == null ? null : { value: mean, label: 'Mean' }} format={(v) => formatFixed(v, 1)} tone={trend?.tone === 'is-gain' ? 'gain' : trend?.tone === 'is-loss' ? 'loss' : 'flat'} />
           <p className="ch-shs-mini-cap">{trend ? `Lower is better. ${trend.reading}` : 'The trend draws once the team has rounds on a second day.'}</p>

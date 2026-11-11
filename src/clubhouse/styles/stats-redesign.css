@@ -1877,6 +1877,8 @@ p.ch-shs-mini-cap {
   margin: 0;
 }
 .ch-shs-m3 > div {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
 }
 .ch-shs-m3 dt {
@@ -1895,6 +1897,10 @@ p.ch-shs-mini-cap {
   margin-top: 2px;
   font: var(--ch-type-13);
   color: var(--ch-shs-s-ink-2);
+}
+/* The change chips share one line across the row, however many lines each figure's reference takes. */
+.ch-shs-m3 .d {
+  margin-top: auto;
 }
 .ch-shs-m3 .ch-shs-pill {
   margin-top: 8px;
@@ -2423,6 +2429,8 @@ p.ch-shs-mini-cap {
   padding: 0 0 var(--ch-space-4);
 }
 .ch-shs-desk {
+  /* Where a column rests under the glass top bar. */
+  --ch-shs-pane-rest: calc(var(--ch-topbar-h) + var(--ch-space-4));
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
   gap: var(--ch-space-6);
@@ -2437,6 +2445,10 @@ p.ch-shs-mini-cap {
   gap: var(--ch-space-4);
   align-items: start;
   min-width: 0;
+  /* When the drill beside them is the longer column, the cards go down with the page until their last one is in view and hold
+     there, so the pane never ends beside blank canvas. Their height is measured by DeskPane.tsx; before it runs nothing holds. */
+  position: sticky;
+  top: min(var(--ch-shs-pane-rest), calc(var(--ch-shs-port-h, 100dvh) - var(--ch-shs-sum-h, 100000px) - var(--ch-space-4)));
 }
 /* Section names, notes, the feature card and anything that is not a card keep the full width; cards pair up under them. */
 .ch-shs-desk__sum > :not(.ch-shs-card),
@@ -2455,15 +2467,27 @@ p.ch-shs-mini-cap {
 .ch-shs-desk__sum > .ch-shs-sech:first-child {
   margin-top: 0;
 }
+/* The pane's column runs the whole row, so the pane has the row to travel in; the lead is its place in it (DeskPane.tsx). */
+.ch-shs-desk__rail {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  min-width: 0;
+}
+.ch-shs-desk__lead {
+  flex: none;
+  height: 0;
+}
+/*
+ * The pane is as tall as what it holds and never scrolls inside itself, so it always ends on a whole card. The page scrolls under
+ * the glass top bar, so a pane shorter than the window rests below it. A taller one goes down with the page until its last card
+ * is in view and holds there; on the way back up it holds once its title is under the bar again (`data-dir`, set when the scroll
+ * turns round). The two heights are measured by DeskPane.tsx; before it runs the pane rests under the bar.
+ */
 .ch-shs-desk__det {
   position: sticky;
-  /* The page scrolls under the glass top bar, so the pane rests below it. */
-  top: calc(var(--ch-topbar-h) + var(--ch-space-4));
-  /* Short enough that the page's own bottom space never ends the sticking: at the end of the scroll the pane is still whole
-     under the bar, and what is taller scrolls inside it. */
-  max-height: calc(100dvh - var(--ch-topbar-h) - var(--ch-page-bottom) - var(--ch-space-4) - var(--ch-space-4));
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  top: min(var(--ch-shs-pane-rest), calc(var(--ch-shs-port-h, 100dvh) - var(--ch-shs-pane-h, 0px) - var(--ch-space-4)));
+  scroll-margin-top: var(--ch-shs-pane-rest);
   border-radius: var(--ch-radius-lg);
   background: var(--ch-shs-s-bg);
   box-shadow: var(--ch-stats-redesign-shadow-1);
@@ -2476,8 +2500,96 @@ p.ch-shs-mini-cap {
   letter-spacing: -0.02em;
   color: var(--ch-shs-s-ink);
 }
+.ch-shs-desk__rail[data-dir='up'] > .ch-shs-desk__det {
+  top: auto;
+  bottom: calc(var(--ch-shs-port-h, 100dvh) - var(--ch-shs-pane-h, 0px) - var(--ch-shs-pane-rest));
+}
+.ch-shs-desk__det [data-ch-anchor] {
+  scroll-margin-top: var(--ch-shs-pane-rest);
+}
 .ch-shs-desk__det .ch-shs-d-sheet {
   padding: var(--ch-space-2) var(--ch-space-4) var(--ch-space-5);
+}
+/* Team putting in the pane: the phone's panel (a bar per band, the Tour rate as a mark), whose own rules live in the phone's
+   stylesheet block and so never reached a desk. Drawn here in the redesign's inks, like the leg bars beside it. */
+.ch-shs-desk__det .ch-stm-panel__h {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ch-shs-desk__det .ch-stm-panel .ch-stm-panel__h h2 {
+  margin: 0;
+  color: var(--ch-shs-s-ink);
+}
+.ch-shs-desk__det .ch-stm-panel__h > span {
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-shs-s-ink-2);
+}
+.ch-shs-desk__det .ch-stm-putt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-3);
+  margin-top: var(--ch-space-3);
+}
+.ch-shs-desk__det .ch-stm-putt__r {
+  display: grid;
+  grid-template-columns: calc(64 * var(--ch-type-k)) minmax(0, 1fr) calc(40 * var(--ch-type-k));
+  align-items: center;
+  gap: var(--ch-space-3);
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-shs-s-ink-2);
+}
+.ch-shs-desk__det .ch-stm-putt__r b {
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  text-align: right;
+  color: var(--ch-shs-s-ink);
+}
+.ch-shs-desk__det .ch-stm-putt__r b.ch-loss {
+  color: var(--ch-shs-s-loss);
+}
+.ch-shs-desk__det .ch-stm-putt__bar {
+  position: relative;
+  height: calc(10 * var(--ch-type-k));
+  border-radius: 999px;
+  background: var(--ch-shs-s-track);
+}
+.ch-shs-desk__det .ch-stm-putt__bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: var(--ch-shs-s-gain-fill);
+}
+.ch-shs-desk__det .ch-stm-putt__bar i.is-low {
+  background: var(--ch-shs-s-loss-fill);
+}
+.ch-shs-desk__det .ch-stm-putt__bar em {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: var(--ch-radius-mark);
+  background: var(--ch-shs-s-ink);
+}
+/* What changed, the pane's last card, on its neighbours' edges and title ink. */
+.ch-shs-desk__det .ch-surface__head {
+  padding: 12px 16px 0;
+}
+.ch-shs-desk__det .ch-surface__title {
+  color: var(--ch-shs-s-ink);
+}
+.ch-shs-desk__det .ch-surface__body {
+  padding: 8px 16px 16px;
+}
+.ch-shs-desk__det .ch-stm-note {
+  margin: var(--ch-space-3) 0 0;
+  font: var(--ch-type-15);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-shs-s-ink-2);
+  text-wrap: pretty;
 }
 /* The card whose drill is open says so: the house's selected ring, drawn inside the card so the bento's gaps stay even. Scoring is
    the pane's resting drill and two cards open it (the feature card and What changed), so it draws no ring: the pane's title says it. */

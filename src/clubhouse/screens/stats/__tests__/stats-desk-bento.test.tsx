@@ -1,5 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { LazyMotion, domAnimation } from 'motion/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -107,6 +109,26 @@ describe('desktop My stats is the bento with its drill beside it', () => {
     expect(document.querySelector<HTMLElement>('.ch-shs--desk')?.dataset.chShsOpen).toBe('goals');
   });
 
+  it('the resting Scoring drill carries only what its card lacks: no second figure, change or curve beside the card', async () => {
+    render(shell(<StatsPlayer data={coachView()} coachId="coach-1" />));
+    await waitFor(() => expect(pane()).not.toBeNull());
+    expect(title()).toBe('Scoring');
+    // The Scoring average card stands beside the pane with the figure, its change and the score-by-round curve.
+    expect(pane()!.querySelector('.ch-shs-d-hero__fig')).toBeNull();
+    expect(pane()!.textContent).not.toContain('Score by round');
+    // What the card lacks stays: a coach's team average over the same rounds.
+    if (coachView().teamAvg != null) expect(pane()!.textContent).toContain('Team average');
+    // A drill whose card shows less than its hero keeps the hero.
+    const rounds = await waitFor(() => {
+      const c = cards().find((x) => x.dataset.go === 'rounds');
+      if (!c) throw new Error('the rounds card is not drawn yet');
+      return c;
+    });
+    fireEvent.click(within(rounds).getAllByRole('button')[0]!);
+    await waitFor(() => expect(title()).toBe('Rounds'));
+    expect(pane()!.querySelector('.ch-shs-d-hero__fig')).not.toBeNull();
+  });
+
   it('the tabbed tables are still there when asked for, which is what paper prints', async () => {
     render(shell(<StatsPlayer layout="tabs" data={self()} coachId={null} />));
     expect(screen.getByRole('tablist', { name: 'Profile sections' })).toBeTruthy();
@@ -129,6 +151,27 @@ describe('desktop Team stats is the bento with its drill beside it', () => {
     expect(document.querySelector('.ch-shs-dctl')).not.toBeNull();
     // No figure in the head: the team's numbers live in their cards.
     expect(document.querySelector('.ch-shs-dhead')?.textContent).not.toMatch(/[+−]\d\.\d/);
+  });
+
+  it('the resting Team scoring drill carries only what its card lacks: The round, Round days and putting, no second figure or curve', async () => {
+    render(shell(<StatsTeam data={PREVIEW_TEAM_STATS} />));
+    await waitFor(() => expect(pane()).not.toBeNull());
+    expect(title()).toBe('Team scoring');
+    expect(pane()!.querySelector('.ch-shs-d-hero__fig')).toBeNull();
+    expect(pane()!.textContent).not.toContain('By round day');
+    expect(pane()!.textContent).toContain('The round');
+    expect(pane()!.textContent).toContain('Round days');
+    expect(pane()!.textContent).toContain('Team putting');
+    // Each figure's change chip sits in the cell's last line, so the three share one baseline whatever the reference lines above them.
+    expect(pane()!.querySelectorAll('.ch-shs-m3 dd.d .ch-shs-pill').length).toBeGreaterThan(1);
+  });
+
+  it('the pane is as tall as what it holds: no height cap and no scroller of its own, so it ends on a whole card', () => {
+    const css = readFileSync(join(__dirname, '../../../styles/stats-redesign.css'), 'utf8');
+    const rule = /\n\.ch-shs-desk__det \{[^}]*\}/.exec(css)?.[0] ?? '';
+    expect(rule).toMatch(/position: sticky/);
+    expect(rule).not.toMatch(/max-height|overflow/);
+    expect(/\n\.ch-shs-m3 \.d \{[^}]*margin-top: auto/.test(css)).toBe(true);
   });
 
   it('choosing a card changes the pane in place, with no push and no hash', async () => {
