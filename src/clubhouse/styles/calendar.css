@@ -1865,7 +1865,9 @@ html[data-fw-theme='dark'] .ch-mo__ribbon.is-held {
 /* Detail panel */
 .ch-in-wrap {
   position: sticky;
-  top: 16px;
+  /* Under the top bar, level with the week's pinned head (it sticks at the bar with 8px of its own above the day
+     names), as the two stand at rest. At 16px the Today card's first row slid under the bar once the week scrolled. */
+  top: calc(var(--ch-topbar-h) + var(--ch-space-2));
   /* A size container (the column is a fixed 340), so the change note reads the panel's width (F-0028). */
   container-type: inline-size;
   max-height: calc(100vh - 110px);
