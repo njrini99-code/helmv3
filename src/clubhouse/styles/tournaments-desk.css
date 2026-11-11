@@ -513,7 +513,9 @@ button.ch-tour-desk-sc:focus-visible {
   min-width: 720px;
   padding: 0 6px;
 }
-.ch-tour-desk-hg__nine {
+/* A nine is only a group for the reader: its holes are the row's own columns. Named through the row, so the row's
+   `> span` cell rule below (one class and an element) cannot make the group a cell and stack its nine holes in it. */
+.ch-tour-desk-hg__row > .ch-tour-desk-hg__nine {
   display: contents;
 }
 .ch-tour-desk-hg__row > span,

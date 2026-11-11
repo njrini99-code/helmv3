@@ -8,6 +8,15 @@ const rule = (selector: string) => {
   return at < 0 ? '' : css.slice(at, css.indexOf('}', at));
 };
 
+describe('event desk hole grid columns', () => {
+  it('keeps a nine out of the grid: its holes are the row’s columns, and the row’s cell rule cannot outrank that', () => {
+    // `.ch-tour-desk-hg__row > span` (a class and an element) makes every direct span a 32px cell. A nine named by its
+    // class alone lost to it, became one cell and stacked its nine holes on top of each other.
+    expect(rule('.ch-tour-desk-hg__row > .ch-tour-desk-hg__nine')).toMatch(/display:\s*contents/);
+    expect(css).not.toMatch(/^\.ch-tour-desk-hg__nine \{/m);
+  });
+});
+
 describe('event desk hole grid colours', () => {
   it('draws the Team vs par row under par in the score-under red (D-42), never the chart gain green', () => {
     const under = rule('.ch-tour-desk-heat.is-under');
