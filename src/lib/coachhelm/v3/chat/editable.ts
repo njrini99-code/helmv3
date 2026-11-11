@@ -27,6 +27,23 @@ const optionLabel = (value: string): string => words(value);
 const core = (s: JsonSchema): JsonSchema => s.anyOf?.find((x) => x.type !== 'null') ?? s;
 
 /**
+ * A day or a time of day, told from what the field's own pattern accepts and refuses, so a stricter pattern (a 24-hour
+ * time as `^([01]\d|2[0-3]):[0-5]\d$`) is recognised as well as the loose one. Null when it is neither.
+ */
+function shapeOf(pattern: string): 'date' | 'time' | null {
+  if (!pattern) return null;
+  let re: RegExp;
+  try {
+    re = new RegExp(pattern);
+  } catch {
+    return null;
+  }
+  if (re.test('2026-11-10') && !re.test('09:30') && !re.test('lunch')) return 'date';
+  if (re.test('09:30') && re.test('23:59') && !re.test('2026-11-10') && !re.test('lunch')) return 'time';
+  return null;
+}
+
+/**
  * The editable fields of a card: one per key the task allows, typed and limited by the task's own schema.
  * `labels` maps a key to the fact label it shows as on the card; `people` is the roster a player list is chosen from.
  */
@@ -53,7 +70,7 @@ export function editableFields(schema: z.ZodType, keys: readonly string[], input
       else out.push({ ...base, type: 'list', value: list, ...(prop.maxItems !== undefined ? { max_items: prop.maxItems } : {}), ...(item.maxLength !== undefined ? { max_length: item.maxLength } : {}) });
     } else if (type === 'string') {
       const pattern = prop.pattern ?? '';
-      const kind = prop.format === 'date-time' ? 'datetime' : /\\d\{4\}-\\d\{2\}-\\d\{2\}/.test(pattern) ? 'date' : /\\d\{(?:1,)?2\}:\\d\{2\}/.test(pattern) ? 'time' : (prop.maxLength ?? 0) > 300 ? 'long_text' : 'text';
+      const kind = prop.format === 'date-time' ? 'datetime' : (shapeOf(pattern) ?? (/\\d\{4\}-\\d\{2\}-\\d\{2\}/.test(pattern) ? 'date' : /\\d\{(?:1,)?2\}:\\d\{2\}/.test(pattern) ? 'time' : (prop.maxLength ?? 0) > 300 ? 'long_text' : 'text'));
       out.push({ ...base, type: kind, value: typeof value === 'string' ? value : null, ...(prop.maxLength !== undefined ? { max_length: prop.maxLength } : {}), ...(prop.minLength ? { min_length: prop.minLength } : {}) });
     }
   }
