@@ -4,6 +4,7 @@ import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { CourseHistory } from '@/lib/coachhelm/v3/team-board/course-shape';
 import { HELM_PLAYERS, PREVIEW_TOUR, slope } from './fixtures-coachhelm';
 import { PREVIEW_TRACK_RECORD } from './fixtures-coachhelm-track';
+import { CAST } from './cast';
 
 /** The design page's board (`redesign/coachhelm-team.html`, P, READS, CRS): five players, their legs, reads and the course table. */
 const PLAYERS = {
@@ -14,8 +15,15 @@ const PLAYERS = {
 const leg = (strokes: number, rounds: number): ChTeamLeg => ({ strokes, rounds, missing: null });
 const legs = (r: number, tee: number, approach: number, short_game: number, putting: number) => ({ tee: leg(tee, r), approach: leg(approach, r), short_game: leg(short_game, r), putting: leg(putting, r) });
 
+/** A read's drill belongs to its area: the base insight is the putting one, so a read anywhere else swaps it or carries none. */
+const DRILLS: Record<string, EvidenceInsight['drills']> = {
+  tee: [{ id: 'dr-gate', slug: 'fairway-gate', title: 'Fairway gate', duration_min: 15, difficulty: 'intermediate' }],
+  approach: [{ id: 'dr-carry', slug: 'carry-ladder', title: 'Carry-number ladder', duration_min: 15, difficulty: 'intermediate' }],
+  short_game: [{ id: 'dr-landing', slug: 'landing-spot-ladder', title: 'Landing-spot ladder', duration_min: 12, difficulty: 'intermediate' }],
+};
+
 const read = (playerId: string, id: string, category: string, title: string, content: string, drawn?: { stakes: string; sample: string; assigned?: 'proposed'; word?: string; label?: string; compare?: { own: number; team: number; tour: number; unit: string; higherBetter: boolean } }) => {
-  const r = toChInsight({ ...slope(playerId, id), category, title, content } as EvidenceInsight, { tour: PREVIEW_TOUR, viewer: { role: 'coach', first: title.split(' ')[0] ?? 'Player' } });
+  const r = toChInsight({ ...slope(playerId, id), category, title, content, ...(category === 'putting' ? {} : { drills: DRILLS[category] ?? [] }) } as EvidenceInsight, { tour: PREVIEW_TOUR, viewer: { role: 'coach', first: title.split(' ')[0] ?? 'Player' } });
   if (!drawn) return r;
   const evidence = { ...r.evidence, sample: drawn.sample, ...(drawn.label ? { label: drawn.label } : {}), ...(drawn.word && r.evidence.read ? { read: { ...r.evidence.read, word: drawn.word } } : {}) };
   return { ...r, stakes: drawn.stakes, evidence, ...(drawn.assigned ? { assigned: drawn.assigned } : {}), ...(drawn.compare ? { compare: { ...r.compare, ...drawn.compare } } : {}) } as typeof r;
@@ -40,12 +48,10 @@ const READS: Record<string, ReturnType<typeof read>[]> = {
   [PLAYERS.theo.id]: [
     read(PLAYERS.theo.id, 'r5', 'putting', 'Three-putts from 30 feet and out', 'Theo three-putts 1.2 times a round from 30 feet and out, from 4 rounds.'),
     read(PLAYERS.theo.id, 'r7', 'tee', 'Drives finish right of the fairway', '1 in 3 of Theo’s drives finish in the right rough or worse, from 4 rounds.'),
+    read(PLAYERS.theo.id, 'r3', 'approach', 'Proximity from 125 to 175', 'Theo’s approaches from 125 to 175 finish 41 feet away on average, from 4 rounds.', { stakes: '.4', sample: '4 rounds', word: 'Thin read' }),
     read(PLAYERS.theo.id, 'r14', 'scoring', 'Par 3 scoring: 3.48 (+0.48 vs par)', 'Theo averages 3.48 on par 3s, from 4 rounds. Tour is 3.00.'),
   ],
-  [PLAYERS.sam.id]: [
-    read(PLAYERS.sam.id, 'r3', 'approach', 'Proximity from 125 to 175', 'Sam’s approaches from 125 to 175 finish 41 feet away on average, from 6 rounds.', { stakes: '.4', sample: '3 rounds', word: 'Thin read' }),
-    read(PLAYERS.sam.id, 'r9', 'short_game', 'Up and down from greenside bunkers', 'Sam has got up and down 2 times from 11 greenside bunkers, from 6 rounds.'),
-  ],
+  // Sam has 3 rounds on file: a player is read from 4 (preview/cast.ts), so he stands on the hole with no read.
 };
 
 const player = (p: { id: string; name: string }, classYear: string, rounds: number, l: Record<ChStation, ChTeamLeg>, early = rounds < 5): ChTeamPlayer => {
@@ -68,11 +74,12 @@ const player = (p: { id: string; name: string }, classYear: string, rounds: numb
 };
 
 const LIST: ChTeamPlayer[] = [
-  player(PLAYERS.eli, 'Junior', 21, legs(21, -0.31, -1.08, -0.22, -0.47)),
-  player(PLAYERS.jonah, 'Senior', 18, legs(18, 0.12, -0.54, -0.38, -0.96)),
-  player(PLAYERS.priya, 'Sophomore', 16, legs(16, -0.18, -0.89, 0.08, -0.71)),
-  player(PLAYERS.theo, 'Freshman', 4, legs(4, -0.64, -0.41, -0.29, -0.83)),
-  player(PLAYERS.sam, 'Junior', 3, legs(3, -0.22, -0.77, -0.51, -0.35)),
+  // Who they are, their year and their rounds on file come from the one cast every preview shares.
+  player(PLAYERS.eli, CAST.eli.classYear, CAST.eli.rounds, legs(CAST.eli.rounds, -0.31, -1.08, -0.22, -0.47)),
+  player(PLAYERS.jonah, CAST.jonah.classYear, CAST.jonah.rounds, legs(CAST.jonah.rounds, 0.12, -0.54, -0.38, -0.96)),
+  player(PLAYERS.priya, CAST.priya.classYear, CAST.priya.rounds, legs(CAST.priya.rounds, -0.18, -0.89, 0.08, -0.71)),
+  player(PLAYERS.theo, CAST.theo.classYear, CAST.theo.rounds, legs(CAST.theo.rounds, -0.64, -0.41, -0.29, -0.83)),
+  player(PLAYERS.sam, CAST.sam.classYear, CAST.sam.rounds, legs(CAST.sam.rounds, -0.22, -0.77, -0.51, -0.35)),
 ];
 
 const WEEK_STARTS = ['2026-08-17', '2026-08-24', '2026-08-31', '2026-09-07', '2026-09-14', '2026-09-21', '2026-09-28', '2026-10-05', '2026-10-12', '2026-10-19', '2026-10-26'];
@@ -128,12 +135,12 @@ export const PREVIEW_TEAM_BOARD: ChTeamBoardData = {
     rows: [
       {
         id: 'approach-short',
-        title: 'Eli, Priya and Sam all miss approaches short',
+        title: 'Eli, Priya and Theo all miss approaches short',
         members: '3 of 5 players',
         strokes: null,
         next: 'the ball finishes short of the green',
         who: [],
-        memberIds: [PLAYERS.eli.id, PLAYERS.priya.id, PLAYERS.sam.id],
+        memberIds: [PLAYERS.eli.id, PLAYERS.priya.id, PLAYERS.theo.id],
         area: 'approach',
       },
     ],

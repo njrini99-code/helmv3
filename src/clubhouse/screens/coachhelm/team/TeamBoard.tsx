@@ -74,19 +74,28 @@ function Hero({
   courseTab: boolean;
 }) {
   const list = data.players.list;
+  // A choice made here, as against the station the page opened on or brought back from the last visit: the hole's pulse answers it.
+  const [picks, setPicks] = useState(0);
+  const pick = (s: TeamStation) => {
+    setPicks((n) => n + 1);
+    setStation(s);
+  };
   // The hole's figures are each player's season mean, averaged over the players at the shots floor (coachhelm-team-legs.ts):
   // said here because Home's team's game pools every player's last 10 and reads differently.
+  // The sign carries the direction for the eye; the words carry it for a screen reader (QA-7).
   const figure = (
-    <div className="hn">
-      <b className="ch-num">{formatSigned(data.teamTotal.strokes)}</b>
-      <span>
-        a round {betterOrWorse(data.teamTotal.strokes, data.team.baselineLabel)}
+    <div className="hn" role="group" aria-label={`${formatSigned(data.teamTotal.strokes)} a round ${betterOrWorse(data.teamTotal.strokes, data.team.baselineLabel)}, ${windowWords('season', data.teamTotal.rounds)}`}>
+      <b className="ch-num" aria-hidden="true">
+        {formatSigned(data.teamTotal.strokes)}
+      </b>
+      <span aria-hidden="true">
+        a round {data.team.baselineLabel}
         <br />
         {windowWords('season', data.teamTotal.rounds)}
       </span>
     </div>
   );
-  const chips = <StationControl value={station} onChange={setStation} stations={data.stations} courseReads={course} courseTab={courseTab} />;
+  const chips = <StationControl value={station} onChange={pick} stations={data.stations} courseReads={course} courseTab={courseTab} />;
   return (
     <section className="feat hero ch-htb-feat" data-ch-team-card="hole" aria-label={`Where ${data.team.name} gives back strokes`}>
       {phone ? (
@@ -104,7 +113,7 @@ function Hero({
         </div>
       )}
       <div className={'hole' + (station === 'course' ? ' offh' : '')}>
-        <TeamHole stations={data.stations} players={list} station={station} onStation={setStation} orientation={phone ? 'v' : 'h'} />
+        <TeamHole stations={data.stations} players={list} station={station} onStation={pick} orientation={phone ? 'v' : 'h'} arrive picks={picks} />
       </div>
       {phone && chips}
       <div className="hfoot">
