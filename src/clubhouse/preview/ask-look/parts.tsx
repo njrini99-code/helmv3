@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowUp, ChevronDown, ChevronUp, Plus, Square } from 'lucide-react';
-import { IconButton } from '../../ui/Button';
+import { Button, IconButton } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { LOOK } from './content';
 
@@ -131,7 +131,16 @@ export function Composer({ working, phone }: { working: boolean; phone: boolean 
       <form className={'ch-look-cmp' + (working ? ' is-working' : '')} onSubmit={(e) => e.preventDefault()}>
         <IconButton icon={Plus} label="Add a player, a round or a file" />
         <textarea rows={1} readOnly aria-label="Message CoachHelm" placeholder={working ? 'Add to this while it works' : 'Ask a follow-up'} />
-        {working ? <IconButton icon={Square} label="Stop" variant="ink" className="ch-look-cmp__go" /> : <IconButton icon={ArrowUp} label="Send" variant="primary" className="ch-look-cmp__go" />}
+        {/* A filled key: IconButton is ghost or secondary only, so this is Button with the icon key's class and its name. */}
+        {working ? (
+          <Button variant="ink" className="ch-iconbtn ch-look-cmp__go" aria={{ label: 'Stop' }}>
+            <Icon icon={Square} size={16} />
+          </Button>
+        ) : (
+          <Button variant="primary" className="ch-iconbtn ch-look-cmp__go" aria={{ label: 'Send' }}>
+            <Icon icon={ArrowUp} size={16} />
+          </Button>
+        )}
       </form>
       {!phone && <p className="ch-look-foot">{LOOK.foot}</p>}
     </div>

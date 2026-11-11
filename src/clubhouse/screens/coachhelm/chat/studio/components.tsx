@@ -411,17 +411,19 @@ export function AppLink(p: StudioProps<'app_link'>) {
 
 const CLAIM_WORD = { measured: 'Measured', association: 'Pattern', hypothesis: 'Hypothesis' } as const;
 
-/** One sentence about a visual (said as what it is: measured, a pattern, or a guess), a note the coach asked to keep, or what is on record. */
+/** One sentence about a visual (said as what it is: measured, a pattern, or a guess), or a note the coach asked to keep. */
 export function Note(p: StudioProps<'note'>) {
-  const t = targetOf('note', p);
   if (p.data.form === 'kept') return <CoachNoteChip note={p.data.note} />;
-  if (p.data.form === 'visual') {
-    return (
-      <p className="ch-aks ch-aks-note" data-claim={p.data.claim} data-size={p.size}>
-        <b>{CLAIM_WORD[p.data.claim]}</b> {p.data.text}
-      </p>
-    );
-  }
+  return (
+    <p className="ch-aks ch-aks-note" data-claim={p.data.claim} data-size={p.size}>
+      <b>{CLAIM_WORD[p.data.claim]}</b> {p.data.text}
+    </p>
+  );
+}
+
+/** What CoachHelm has on record, each a row that can be asked about. */
+export function OnRecord(p: StudioProps<'on_record'>) {
+  const t = targetOf('on_record', p);
   return (
     <div className="ch-aks ch-aks-record" data-size={p.size}>
       <p className="ch-aks-title">{p.data.title}</p>
@@ -439,15 +441,16 @@ export function Note(p: StudioProps<'note'>) {
   );
 }
 
-/** What a task will do. The frame, the keys and the ring are the shell's (parts/TaskCard.tsx); this is the body it mounts. */
-export function ActionPreview(p: StudioProps<'action_preview'>) {
-  return <CardBody tool={p.data.tool} proposal={p.data.proposal} receipt={null} phase={p.data.phase ?? 'proposed'} density={p.size} roster={p.roster} team={p.team} />;
-}
-
-/** What a task did: the same body in its saved tense, so the receipt is the preview the coach confirmed, not a second object. */
-export function Receipt(p: StudioProps<'receipt'>) {
-  const { receipt } = p.data;
-  const phase = receipt.status === 'completed' ? 'saved' : receipt.status === 'partial' ? 'partial' : receipt.status === 'held' ? 'held' : receipt.status === 'cancelled' ? 'undone' : 'failed';
+/**
+ * What a task will do, and then what it did: one body, in the tense of the block's own state. With a receipt it is the preview the
+ * coach confirmed in its saved (or held, partial, undone, failed) tense, not a second object; without one it is the proposal in its
+ * phase. The frame, the keys and the ring are the shell's (parts/TaskCard.tsx); this is the body it mounts.
+ */
+export function Action(p: StudioProps<'action'>) {
+  const receipt = p.data.receipt ?? null;
+  const phase = !receipt
+    ? (p.data.phase ?? 'proposed')
+    : receipt.status === 'completed' ? 'saved' : receipt.status === 'partial' ? 'partial' : receipt.status === 'held' ? 'held' : receipt.status === 'cancelled' ? 'undone' : 'failed';
   return <CardBody tool={p.data.tool} proposal={p.data.proposal} receipt={receipt} phase={phase} density={p.size} roster={p.roster} team={p.team} />;
 }
 

@@ -110,9 +110,10 @@ export interface StudioData {
   practice_plan: { form: 'plan'; plan: PlanPartData } | { form: 'brief'; brief: AskBriefData };
   document: { form: 'document'; doc: DocDraft } | { form: 'handoff'; handoff: AskHandoffData };
   app_link: { link: AppLink };
-  note: { form: 'visual'; claim: 'measured' | 'association' | 'hypothesis'; text: string } | { form: 'kept'; note: CoachNote } | { form: 'record'; title: string; rows: ReadonlyArray<{ label: string; value: string }> };
-  action_preview: { tool: string; proposal: ActionProposal; phase?: CardPhase };
-  receipt: { tool: string; proposal: ActionProposal; receipt: ActionReceipt };
+  note: { form: 'visual'; claim: 'measured' | 'association' | 'hypothesis'; text: string } | { form: 'kept'; note: CoachNote };
+  on_record: { title: string; rows: ReadonlyArray<{ label: string; value: string }> };
+  /** One object from proposed to saved or undone (the engine's list, studio-kinds.ts): with a `receipt` it is drawn in the receipt's tense, without one in `phase` (proposed when left out). */
+  action: { tool: string; proposal: ActionProposal; receipt?: ActionReceipt | null; phase?: CardPhase };
   table: { table: AskTable };
 }
 
