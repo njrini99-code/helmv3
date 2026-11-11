@@ -211,7 +211,15 @@
 .ch-hf .dots i { position: absolute; top: 13px; width: 14px; height: 14px; transform: translateX(-50%); border-radius: 50%; background: var(--ch-hf-c-neutral); box-shadow: 0 0 0 2px var(--ch-hf-a-card); }
 .ch-hf .dots i.me { top: 10px; width: 20px; height: 20px; background: var(--ch-hf-c-gain); }
 .ch-hf .dots i.mean { top: 8px; width: 2px; height: 24px; margin-left: -1px; border-radius: var(--ch-radius-mark); background: var(--ch-hf-c-zero); box-shadow: none; }
-.ch-hf .dots__lab { display: flex; justify-content: space-between; font: var(--ch-type-13);  color: var(--ch-hf-a-ink-3); }
+.ch-hf .dots__lab { position: relative; display: flex; justify-content: space-between; font: var(--ch-type-13);  color: var(--ch-hf-a-ink-3); }
+/* A label at each mark (it was one line, "You +3.6 · field +6.0", centred in the row between them). The left mark's label ends at
+   its mark and the right mark's starts at its mark: --ch-hf-a and --ch-hf-b are the two marks, left then right, and --ch-hf-r a
+   mark's half width (the dot's 10px, the tick's 1px). Marks closer than the labels meet 4px either side of their midpoint, and a
+   label stops 8px short of the scale's end figure (--ch-hf-n: that figure's and the label's characters). */
+.ch-hf .dots__m { position: absolute; top: 0; white-space: nowrap; --ch-hf-r: 1px; }
+.ch-hf .dots__m.is-me { --ch-hf-r: 10px; }
+.ch-hf .dots__m.is-l { left: max(min(calc(var(--ch-hf-a) + var(--ch-hf-r)), calc((var(--ch-hf-a) + var(--ch-hf-b)) / 2 - 4px)), calc(var(--ch-hf-n) * 1ch + 8px)); transform: translateX(-100%); }
+.ch-hf .dots__m.is-r { left: min(max(calc(var(--ch-hf-b) - var(--ch-hf-r)), calc((var(--ch-hf-a) + var(--ch-hf-b)) / 2 + 4px)), calc(100% - var(--ch-hf-n) * 1ch - 8px)); }
 .ch-hf .kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 16px; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); }
 .ch-hf .kv dt { color: var(--ch-hf-a-ink-2); }
 .ch-hf .kv dd { margin: 0; font-weight:var(--ch-fw-500); }

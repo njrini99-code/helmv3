@@ -8,7 +8,7 @@ import { pluralWord } from '../../../lib/plural';
 
 import Link from 'next/link';
 import { Check, Eye, Flag, Lock, MessageSquare, Target, Users, X } from 'lucide-react';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { ChDeepInsight } from '../../../data/coachhelm-dive-shape';
 import { FILE_SG_FLOOR, FILE_SIGN, fileAimLabel, fileAlertLabel, fileAreaLabel, playerKicker, type ChFileCards, type ChFileField, type ChFileIntent, type ChFilePlan, type ChFileSg, type ChFileStage, type ChFileTrack } from '../../../data/coachhelm-file-shape';
 import { stanceOf, type ChInsight } from '../../../data/coachhelm-shape';
@@ -345,6 +345,19 @@ function GoalBlock({ goal }: { goal: NonNullable<ChFilePlan['goal']> }) {
 export function FieldCard({ field }: { field: ChFileField }) {
   const [lo, hi] = field.scale;
   const at = (v: number) => `${((v - lo) / (hi - lo)) * 100}%`;
+  // The caption's two figures, each said at its own mark: "You +3.6" at the dot and "field +6.0" at the mean's tick. The one on
+  // the left ends at its mark and the one on the right starts at its mark, so they never run into each other (coachhelm-file.css).
+  const [, own, mean] = /^(.*) · (field .*)$/.exec(field.caption) ?? [];
+  const ends = [FILE_SIGN(lo), FILE_SIGN(hi)] as const;
+  const meLeft = field.me <= field.mean;
+  const mark = (text: string, me: boolean) => {
+    const left = me === meLeft;
+    return (
+      <span className={'dots__m ' + (left ? 'is-l' : 'is-r') + (me ? ' is-me' : '')} style={{ '--ch-hf-n': (left ? ends[0] : ends[1]).length + text.length } as CSSProperties}>
+        {text}
+      </span>
+    );
+  };
   return (
     <section className="card" aria-labelledby="ch-hf-field" data-ch-anchor="field">
       <CardHead id="ch-hf-field" title="Last round in context" meta={field.meta} />
@@ -366,10 +379,17 @@ export function FieldCard({ field }: { field: ChFileField }) {
           <i className="mean" style={{ left: at(field.mean) }} />
           <i className="me" style={{ left: at(field.me) }} />
         </div>
-        <div className="dots__lab ch-num">
-          <span>{FILE_SIGN(lo)}</span>
-          <span>{field.caption}</span>
-          <span>{FILE_SIGN(hi)}</span>
+        <div className="dots__lab ch-num" style={{ '--ch-hf-a': at(Math.min(field.me, field.mean)), '--ch-hf-b': at(Math.max(field.me, field.mean)) } as CSSProperties}>
+          <span>{ends[0]}</span>
+          {own && mean ? (
+            <>
+              {mark(own, true)}
+              {mark(mean, false)}
+            </>
+          ) : (
+            <span>{field.caption}</span>
+          )}
+          <span>{ends[1]}</span>
         </div>
       </div>
     </section>
