@@ -10,6 +10,13 @@
   padding: var(--ch-page-top-eyebrow-low-2) var(--ch-page-gutter) var(--ch-page-bottom);
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
+/* The redesigned desk head (stats-redesign.css, .ch-shs-dhead) has no eyebrow line over its title, so the page's top adds that room and the title lands on the
+   one title line (tokens.css): it stood 26px higher than the other pages' titles. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-st[data-canopy]:has(.ch-shs-dhead) {
+    padding-top: var(--ch-page-top-no-eyebrow);
+  }
+}
 .ch-st-panel {
   display: flex;
   flex-direction: column;
