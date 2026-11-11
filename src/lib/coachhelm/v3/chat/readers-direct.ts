@@ -121,7 +121,7 @@ export const getRound: ReadTool<{ round_id: string }> = {
       summary: `${where}${r.holesPlayed === 9 ? ' (9 holes)' : ''}.`,
       measurements,
       series: [],
-      detail: { player_id: r.playerId, kind: 'hole_strip', round: { round_id: r.id, date: day, course: r.course, type: r.type, holes_played: r.holesPlayed, total: r.score, to_par: r.toPar, front: r.front.score, back: r.back.score, putts: r.putts, fairways: r.fairways, greens: r.greens, strokes_gained: sg }, holes, tallies, recap: r.recap, player_note: r.notes, coach_note: r.coachNote },
+      detail: { player_id: r.playerId, kind: 'hole_strip', round: { round_id: r.id, ...(playerOf(ctx) ? {} : { href: `/golf/dashboard/rounds/${r.id}` }), date: day, course: r.course, type: r.type, holes_played: r.holesPlayed, total: r.score, to_par: r.toPar, front: r.front.score, back: r.back.score, putts: r.putts, fairways: r.fairways, greens: r.greens, strokes_gained: sg }, holes, tallies, recap: r.recap, player_note: r.notes, coach_note: r.coachNote },
       coverage: r.holesError ? 'partial' : 'complete',
       coverage_note: r.holesError ? 'The holes could not be read; the totals are the round\'s own.' : holes.length ? null : 'This round was posted as a total, with no holes.',
       as_of: nowIso(),

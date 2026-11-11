@@ -290,6 +290,13 @@ describe('the reads that are read out field by field', () => {
     expect(await textOf(maya, 'get_schedule', {})).toContainEqual(expect.stringMatching(/^Tuesday range: event type: practice; .*my reply: no reply \[event /));
   });
 
+  it('a row with a screen of its own carries its address for the card, and the model is never read it', async () => {
+    const result = await run(coach, 'get_schedule', { include: [] });
+    const events = (result.detail as { events: Array<{ id: string; href: string }> }).events;
+    expect(events[0]).toMatchObject({ id: EVENT, href: `/golf/dashboard/calendar?event=${EVENT}` });
+    expect((result as ToolResult & { model_text: string }).model_text).not.toMatch(/href|\/golf\/dashboard/);
+  });
+
   it('a metric is named by its label in words, with its id exact in brackets for the next call', async () => {
     const lines = await textOf(coach, 'get_reference', { topic: 'metric_definitions', metric_ids: ['sg_putting', 'gir_pct'] });
     expect(lines).toContain('strokes gained putting: kind: definition; category: putting; unit: strokes; direction: higher better; description: Strokes gained on the greens. [metric sg_putting]');

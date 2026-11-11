@@ -41,6 +41,8 @@ export async function getCalendar(sb: Sb, ctx: CoachChatContext, input: { from: 
     end_time: e.end_time,
     location: e.location,
     status: e.status,
+    // Where a row has a screen of its own, the row carries its address (CAPABILITIES E-34). Never read out to the model.
+    href: `/golf/dashboard/calendar?event=${e.id}`,
     ...(e.requires_rsvp === true && attendance && !attendance.failed ? { replies: attendance.counts.get(e.id) } : {}),
     ...(conflicts && !conflicts.failed ? { in_class: conflicts.byEvent.get(e.id) ?? [] } : {}),
   }));

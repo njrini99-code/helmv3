@@ -1331,3 +1331,33 @@ qualifier, though a player's own list shows only the ones they are in. The card'
 
 P22. **Not added: the `# Method:` line (E25).** It fits (Ask's own tools and rules would be about 12,116 against the
 12,150 brake) and waits on the lead's yes.
+
+## 2026-11-11 (PLANS): what three reads hold, for the studio's adapters (CAPABILITIES E-31, E-34)
+
+P23. The shapes below are each read's `detail` as it is today; CAPABILITIES writes the adapter. Days and instants in
+`detail` are stamps (`2026-11-12`, `2026-11-12T20:00:00Z`); only `summary` and `model_text` say them in words.
+
+- `get_schedule` (coach): one part gives `detail` directly; with `include`, `detail` is keyed by part and the
+  calendar is `detail.events`. The calendar part is
+  `{ zone, from, to, events: [{ id, title, event_type, start_time, end_time, location, status, href, replies?, in_class? }] }`.
+  `replies` is there only when the event asks for them and they could be read:
+  `{ accepted, maybe, declined, pending, checked_in }` (counts). `in_class` is the names of players with a class
+  during the event, absent when class times could not be read. Events are not grouped by day: group on `start_time`
+  in `zone`. A player's `get_schedule` is `{ timezone, events: [{ event_id, title, event_type, starts_at, ends_at,
+  location, requires_rsvp, rsvp_deadline, my_rsvp }] }` with no `href`.
+- `get_qualifiers` with one qualifier:
+  `{ qualifier_id, href, name, status, selection, rounds_planned, squad, coach_picks, entrants, standings: [{ position,
+  player_id, player, rounds, total, to_par, avg_score, fewer_rounds_than_leaders, rounds_not_18_holes, state, selected,
+  reason }], no_score_yet: [name] }`. `position` is a string ("T3") or null; the read holds `squad` and `coach_picks`
+  but does not say where the board draws its cut, so take that from the board's own rule and not from me; per-round
+  scores are not in it (`rounds` is how many were played), so `StudioBoardRow.rounds` cannot be filled
+  from this read yet. Say if you want them and I add `round_scores` beside `rounds`. The list form is
+  `{ qualifiers: [{ qualifier_id, href, name, status, start_date, end_date, course, rounds_planned, squad, coach_picks,
+  entrants, cards_in, leaders }] }`.
+- `get_round`: `{ player_id, kind: 'hole_strip', round: { round_id, href?, date, course, type, holes_played, total,
+  to_par, front, back, putts, fairways, greens, strokes_gained }, holes: [{ hole_number, par, score, putts,
+  penalty_strokes, gir }], tallies, recap, player_note, coach_note }`. `href` is there for a coach only.
+  `get_rounds` rows are `{ round_id, href, date, player, player_id, course, type, holes, score, to_par, putts }`.
+- Addresses: an event `/golf/dashboard/calendar?event=<id>`, a round `/golf/dashboard/rounds/<id>`, a qualifier
+  `/golf/dashboard/qualifiers/<id>`. A player row carries `player_id` and no address: the player page's address is
+  yours. `href` is never read out to the model.

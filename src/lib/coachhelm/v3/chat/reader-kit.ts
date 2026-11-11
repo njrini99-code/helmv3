@@ -288,7 +288,8 @@ function recordLine(record: Record<string, unknown>, words: WordsOptions): { tex
   const nested: Array<[string, unknown]> = [];
   for (const [raw, v] of Object.entries(record)) {
     const k = snake(raw);
-    if (v === undefined || v === '') continue;
+    // A row's address in the app is for the card that draws it, never for the model to read out.
+    if (v === undefined || v === '' || k === 'href') continue;
     if (typeof v === 'string' && (k === 'ref' || k === 'metric_id' || ((k === 'id' || k.endsWith('_id')) && UUID.test(v)))) ids.push(`[${k === 'id' || k === 'ref' ? k : fieldWords(k.replace(/_id$/, ''))} ${v}]`);
     else if (isScalar(v)) {
       if (lead === null && typeof v === 'string' && LEADS.has(k)) lead = scalarWords(k, v, words);
