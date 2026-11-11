@@ -7,6 +7,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { asTools, fakeDb, fakeModel, newToolLog, readEvents, readTool, taskTool, text, textOf, thinking, toolUse, type FakeDb, type FakeModel, type ToolLog } from './helpers';
 import type { ChatTool } from '@/lib/coachhelm/v3/chat/engine/tool';
 import type { ChatEvent } from '@/lib/coachhelm/v3/chat/engine/protocol';
@@ -70,10 +71,12 @@ vi.mock('@/lib/coachhelm/v3/chat/engine/model', async (original) => {
   const real = await original<typeof import('@/lib/coachhelm/v3/chat/engine/model')>();
   return { ...real, anthropicModelClient: () => (h.modelFactory ? h.modelFactory() : h.model) };
 });
-// The real hold, with a 40 ms window instead of 8 s so a test can watch it release.
+// The real hold, with a 150 ms window instead of 8 s so a test can watch it release.
+const HOLD_MS = 150;
+const afterHold = () => new Promise((resolve) => setTimeout(resolve, HOLD_MS + 150));
 vi.mock('@/lib/coachhelm/v3/chat/undo-hold', async (original) => {
   const real = await original<typeof import('@/lib/coachhelm/v3/chat/undo-hold')>();
-  return { ...real, holdForExecution: (sb: never, args: { run_id: string }) => real.holdForExecution(sb, { ...args, now: Date.now() - real.UNDO_HOLD_MS + 40 }) };
+  return { ...real, holdForExecution: (sb: never, args: { run_id: string }) => real.holdForExecution(sb, { ...args, now: Date.now() - real.UNDO_HOLD_MS + HOLD_MS }) };
 });
 
 import { POST } from '../route';
@@ -223,6 +226,39 @@ describe('reads', () => {
     expect(result!.content).toContain('player_id');
   });
 
+  it('a tool can hand back a part for the thread, mark itself as not a read, and end the turn', async () => {
+    const brief: ChatTool = {
+      kind: 'read',
+      name: 'ask_practice_brief',
+      description: 'Asks the coach the questions a plan needs.',
+      input: z.object({}),
+      progress: () => 'Preparing the questions',
+      run: async () => ({ summary: 'Asked the coach three questions.', measurements: [], series: [], coverage: 'complete', coverage_note: null, as_of: '2026-11-10T12:00:00.000Z', evidence: false, end_turn: true, parts: [{ type: 'data-brief', id: 'brief-1', data: { questions: ['How long?'] } }] }),
+    };
+    h.toolsFor.mockImplementation(() => [brief]);
+    const model = script({ content: [text('A few questions first.'), toolUse('tu_b', 'ask_practice_brief', {})] });
+    const { events } = await ask('Build Thursday’s practice');
+
+    // One model call: the coach's answers are the next message.
+    expect(model.requests).toHaveLength(1);
+    expect(done(events)?.status).toBe('complete');
+    expect(events.some((e) => e.type === 'evidence')).toBe(false);
+    expect(events.find((e) => e.type === 'part')).toEqual({ type: 'part', part: { type: 'data-brief', id: 'brief-1', data: { questions: ['How long?'] } } });
+    const [row] = assistantRows();
+    expect((row!.ui_parts as Array<{ type: string }>).map((p) => p.type)).toEqual(['text', 'data-progress', 'data-brief']);
+    // The stored turn ends with the tool's result, so the call is answered and the next question simply follows it.
+    const stored = row!.model_messages as Array<{ role: string; content: unknown }>;
+    expect(stored.map((m) => m.role)).toEqual(['user', 'assistant', 'user']);
+    const [result] = stored[2]!.content as Array<{ type: string; content: string }>;
+    expect(result!.type).toBe('tool_result');
+    expect(JSON.parse(result!.content)).not.toHaveProperty('evidence_ref');
+    expect(JSON.parse(result!.content)).not.toHaveProperty('parts');
+
+    const next = script({ content: [text('Here is the plan.')] });
+    await ask('Ninety minutes', conversationOf(events));
+    expect(lastRequestMessages(next).map((m) => m.role)).toEqual(['user', 'assistant', 'user', 'user']);
+  });
+
   it('after the last allowed step the model gets one call with no tools to answer from what it has', async () => {
     const reads = Array.from({ length: 8 }, (_, i) => ({ content: [toolUse(`tu_${i}`, 'get_team_stats', {})] }));
     const model = script(...reads, { content: [text('Here is what I found.')] });
@@ -293,7 +329,7 @@ describe('a task', () => {
     // Nothing is written during the hold; after it, the plan the coach saw is committed exactly once.
     expect(log.commits).toHaveLength(0);
     expect(runs()[0]!.status).toBe('held');
-    await new Promise((resolve) => setTimeout(resolve, 120));
+    await afterHold();
     expect(log.commits).toHaveLength(1);
     expect(log.commits[0]).toMatchObject({ summary: 'Create the focus area "Putting from 6 feet".', idempotency_key: key });
     expect(log.plans).toHaveLength(1);
@@ -310,7 +346,7 @@ describe('a task', () => {
     expect(events.find((e) => e.type === 'decision')).toEqual({ type: 'decision', key, approved: true });
     expect(events.some((e) => e.type === 'receipt')).toBe(true);
     expect(done(events)?.status).toBe('complete');
-    await new Promise((resolve) => setTimeout(resolve, 120));
+    await afterHold();
     expect(log.commits).toHaveLength(1);
     expect(assistantRows()).toHaveLength(1);
   });
@@ -338,7 +374,7 @@ describe('a task', () => {
     expect(done(events)?.status).toBe('complete');
     const [result] = lastRequestMessages(model)[2]!.content as Array<{ content: string }>;
     expect(result!.content).toBe('Declined by the coach. Nothing was written.');
-    await new Promise((resolve) => setTimeout(resolve, 60));
+    await afterHold();
     expect(log.commits).toHaveLength(0);
     expect(runs()[0]!.status).toBe('denied');
     expect(assistantRows()).toHaveLength(1);
@@ -394,7 +430,7 @@ describe('a task', () => {
     const model = script({ content: [text('That did not go through.')] });
     const { events } = await decide(conversationId, key, true);
 
-    await new Promise((resolve) => setTimeout(resolve, 120));
+    await afterHold();
     expect(log.commits).toHaveLength(0);
     expect(runs()[0]!.status).toBe('proposed');
     const receipt = (events.find((e) => e.type === 'receipt') as { part: { data: { status: string } } }).part.data;
@@ -535,7 +571,7 @@ describe('a database without the new migration', () => {
     expect(sent[1]!.content).toEqual([thinking('sig-p'), toolUse('tu_task', 'create_focus_area', { title: 'Putting from 6 feet' })]);
     expect((sent[2]!.content as Array<{ tool_use_id: string }>)[0]!.tool_use_id).toBe('tu_task');
     expect(assistantRows()).toHaveLength(1);
-    await new Promise((resolve) => setTimeout(resolve, 120));
+    await afterHold();
     expect(log.commits).toHaveLength(1);
   });
 });

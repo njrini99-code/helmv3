@@ -940,6 +940,18 @@ Plan storage and publishing are in `memory/features/team-operations.md`.
 
 ## Known Risk Areas
 
+- **Chat entries below dated before 2026-11-10 describe the previous chat stack** (the AI SDK route with its held text,
+  prose audit, verdict parts, repair pass, claims and cites blocks and client-held thread). They are kept as the record
+  of why the rebuild was made. What runs now is in "CoachHelm chat: the engine" under Business Rules. Files and tests
+  those entries name that no longer exist: `chat/abandoned-approvals.ts`, `chat/stream-blocks.ts`,
+  `chat/repair-pass.ts`, `chat/repair-feedback.ts`, `chat/prompt-cache.ts`, `chat/ask-perf.ts`, `chat/ui-parts.ts`,
+  `computeTurnVerdict` in `chat/verdict.ts` (the file now only holds the note for a stored failed turn), and the tests
+  `chat-verdict*.test.ts`, `chat-approval-server.test.ts`, `chat-approval-delivery.test.ts`,
+  `chat-approval-persistence.test.ts`, `chat-incomplete-tool-calls.test.ts`, `chat-replay.test.ts`,
+  `chat/stream/route.test.ts`, `route.grounding-persistence.test.ts` and `route.request-dates.test.ts`. The production
+  failure that started it (a confirmed action stored as a failed turn, 37 of 62 answers stored failed) was the AI SDK's
+  stream reducer throwing on an approval continuation; the one-line fix for the previous stack is commit `92212c6ccc`.
+
 - Generated insight evidence can drift from real data if adapters or fallback paths skip citation validation.
 - **Coach chat's grounding audit (`auditNumericClaims`, `src/lib/coachhelm/v3/chat/provenance.ts`) is precision-sensitive: a false positive discards a correct answer exactly like a real fabrication does, and both look identical to the coach.** Issue #1540 / repair plan N15 (2026-09-22): ~46% of chat replies (33 of the last 30 days, all-time 33 failed/29 complete/8 null) were marked `'failed'`, almost all real, tool-sourced answers wrongly flagged. Two dominant causes, both fixed:
   1. `collectNumbers` only walked numeric leaves, so `get_player_insights`' own pre-composed prose (`detail.insights[].content`/`.title` — team averages, attempt counts, even that insight's own PGA Tour comparison) was invisible to the audit; a chat turn that faithfully restated an insight's own wording was flagged as fabricating it. Fixed by scanning string leaves for numeric substrings too (skipping whole-string UUIDs/ISO timestamps so an id never "supports" an unrelated number).

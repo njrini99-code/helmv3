@@ -237,7 +237,8 @@ export async function saveTurn(sb: Sb, mode: StoreMode, turn: TurnWrite): Promis
     res = await write(false);
   }
   if (res.error) throw new Error(`chat turn not saved: ${res.error.message}`);
-  const id = (res.data as { id?: string } | null)?.id ?? turn.id;
+  // An update that matched no row (the row is gone, or not this coach's) returns none: that is not a save.
+  const id = (res.data as { id?: string } | null)?.id;
   if (!id) throw new Error('chat turn not saved: no row returned');
   return { id, mode: used };
 }
