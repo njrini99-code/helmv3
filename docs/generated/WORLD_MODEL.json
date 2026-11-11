@@ -22374,6 +22374,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/tasks/development-tasks.ts",
+          "anchor": "src/lib/coachhelm/focus-areas/target-metric"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/composite/synthesis.ts",
           "anchor": "src/lib/coachhelm/insight-types"
         },

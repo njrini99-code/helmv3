@@ -814,12 +814,12 @@ Ask's wider reads) describe the previous tool set and are history; the mapping f
 replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
 
 - **The list** is `toolsFor(surface, who)` in `chat/registry.ts`, on the contract in `chat/engine/tool.ts`. A coach
-  has 51 tools (54 with the `golf_tournaments_v1` flag on; the previous stack had 67 and 71), thirteen of them
-  registered for the context work (`find_in_app`, `save_note`, `remove_note` and the ten task tools of
+  has 53 tools (56 with the `golf_tournaments_v1` flag on; the previous stack had 67 and 71), fifteen of them
+  registered for the context work (`find_in_app`, `save_note`, `remove_note` and the twelve task tools of
   `chat/tasks/list.ts`, from `chat/context/**` and `chat/tasks/**`, always last in their group), the same list on
   the Ask tab and in the practice helper so they share one cached prefix; quick chat has `send_message` in place of
   `publish_artifact` and no `write_artifact`, `draft_message` or `draft_poll`. A player has 10, all reads. Tool
-  definitions plus the whole cached policy are 21,469 tokens on Ask by characters / 4, and 21,884 with the flag on
+  definitions plus the whole cached policy are 21,870 tokens on Ask by characters / 4, and 22,284 with the flag on
   (26,063 before, measured the same way); `__tests__/registry-size.test.ts` is the measurement and holds three
   lines: 12,000 for the registry's own tools and rules (11,997 on 10 Nov), 26,000 for the whole cached prefix, and
   24,000 with the flag on, past which rarely used tasks are to be deferred behind tool search.
@@ -960,10 +960,14 @@ route and the registry is in `engine/CONTRACT_NOTES.md`, sections C1 to C7.
   a system message on a conversation's first turn; the tone goes with every turn. Without held migration
   20261101090100 there are no notes and nothing fails. A player has none. Anthropic's memory tool is not used
   (CONTRACT_NOTES C3 says why).
-- **What it can do after a thing exists.** Ten task tools on the contract (`tasks/list.ts` is their order):
+- **What it can do after a thing exists.** Twelve task tools on the contract (`tasks/list.ts` is their order):
   `send_event_reminder`, `record_attendance`, `update_event`, `cancel_event`, `set_focus_area_status`,
-  `set_goal_state`, `mark_signal_handled`, `set_qualifier_coach_pick`, `set_task_reminder`, `dismiss_signal`. Each wraps the app's own action, makes that
-  action's permission check first in `plan`, and reads back before a receipt says nothing was saved. `cancel_event` is
+  `set_goal_state`, `mark_signal_handled`, `set_qualifier_coach_pick`, `set_task_reminder`, `dismiss_signal`,
+  `log_focus_progress`, `record_focus_outcome`. Each wraps the app's own action, makes that
+  action's permission check first in `plan`, and reads back before a receipt says nothing was saved. Each card says
+  what the player will see on their own pages, established from the page's code and held by a test that reads it
+  (a focus area's value shows, an entry's note does not; an outcome completes the focus area and credits the signal
+  it came from, and if that second half fails the receipt is `partial`). `cancel_event` is
   the app's soft cancellation and never the row delete; `update_event` and `cancel_event` act on one date, as the
   Calendar does for "this date only". Where something is sent the card names who gets it and shows the words, and a
   test pins those words to the app's own lines.
