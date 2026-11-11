@@ -91,7 +91,11 @@
 --   -- while this file was live stay; nothing depends on how a member got in.
 -- pgTAP: supabase/tests/rls/golf_team_chat_self_join.sql
 
-SET lock_timeout = '3s';
+-- SET LOCAL: the timeout ends with this file's transaction, so it cannot
+-- follow a reused connection. db:apply, supabase db reset and psql -1 each
+-- run the file as one transaction; under a plain `psql -f` this line only
+-- warns and no timeout is set, so never apply it that way.
+SET LOCAL lock_timeout = '3s';
 
 DO $$
 DECLARE
