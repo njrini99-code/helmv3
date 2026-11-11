@@ -243,7 +243,8 @@ const share = (n: number, of: number): number => (of ? Math.round((n / of) * 100
 function fingerprintOf(sheet: FactSheet): string {
   const text = JSON.stringify([
     sheet.windows.season.rounds,
-    sheet.strokes_gained_by_round_season.map((r) => [r.date, r.total, r.approach, r.putting]),
+    // Sorted by content: two rounds on one day are ordered by round id, and a clone's ids differ.
+    sheet.strokes_gained_by_round_season.map((r) => JSON.stringify([r.date, r.total, r.approach, r.putting])).sort(),
     sheet.breakdowns.map((a) => a.bands.map((b) => [b.shots, b.strokes_gained_per_round?.value ?? null])),
   ]);
   let h = 5381;

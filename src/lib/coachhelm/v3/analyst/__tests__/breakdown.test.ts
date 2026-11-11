@@ -449,6 +449,10 @@ describe('a team whose players all lose strokes on approach', () => {
     // m1 to m5 played identical rounds (clones): counted once, the one that is left is alone with its signature.
     expect(report.distinctness.deduplicated).toEqual({ players: 3, distinct_from_every_teammate: 3 });
     expect(report.distinctness.signatures[0]).toMatchObject({ players: 5 });
+    // The same golf under another id has the same fingerprint, whatever its round ids are; different shots do not.
+    const print = (id: string) => report.per_player.find((p) => p.player_id === id)!.data_fingerprint;
+    expect(print('m1')).toBe(print('m5'));
+    expect(print('far')).not.toBe(print('near'));
     const far = report.per_player.find((p) => p.player_id === 'far')!;
     expect(far.priority).toMatchObject({ measure_id: 'strokes_gained_approach', certainty: 'clear', finding: 'band', band: '125_175', band_shots: 20, signature: 'approach/125_175/green_hit:below_team' });
     expect(far.priority!.pattern).toMatchObject({ id: 'green_hit', value: 0, count: 0, of: 20, team_median: 75, differs_from_team: true, scope: 'band' });
