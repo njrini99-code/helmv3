@@ -45,8 +45,8 @@ const NO_NOTICE = 'No notification is sent.';
 
 const FOCUS_WORDS: Record<string, string> = { active: 'Active', in_progress: 'In progress', paused: 'Paused', completed: 'Completed', proposed: 'Proposed to the player', declined: 'Declined by the player', archived: 'Archived' };
 const FocusInput = z.strictObject({
-  focus_area_id: z.string().uuid().describe('The focus area’s id, from the CoachHelm reader.'),
-  status: z.enum(['completed', 'active']).describe('completed: the player has achieved it. active: reopen one that was completed.'),
+  focus_area_id: z.string().uuid(),
+  status: z.enum(['completed', 'active']),
 });
 type FocusInput = z.infer<typeof FocusInput>;
 const FocusStored = z.object({ focus_area_id: z.string().uuid(), status: z.enum(['completed', 'active']), title: z.string(), player: z.string() });
@@ -61,7 +61,7 @@ export const setFocusAreaStatus: TaskTool<FocusInput, StoredProposal> = {
   kind: 'task',
   name: 'set_focus_area_status',
   description:
-    'Mark one of a player’s focus areas as achieved, or reopen one that was completed. Use it when the coach says a player has done what a focus area asked, or wants a finished one active again. The card names the player and the focus area and says what the player will see; it saves after the coach confirms. Nothing is sent.',
+    'Mark one of a player’s focus areas completed when the coach says it is achieved, or active to reopen a completed one. Nothing is sent.',
   input: FocusInput,
   progress: () => 'Preparing the focus area',
   plan: async (ctx, input) => {
@@ -123,9 +123,9 @@ const GOAL_STATES = ['paused', 'active', 'abandoned'] as const;
 type GoalState = (typeof GOAL_STATES)[number];
 const GOAL_WORDS: Record<string, string> = { active: 'Active', paused: 'Paused', abandoned: 'Closed without being reached', achieved: 'Achieved', missed: 'Missed', proposed: 'Proposed', declined: 'Declined' };
 const GoalInput = z.strictObject({
-  goal_id: z.string().uuid().describe('The goal’s id, from the CoachHelm reader.'),
-  state: z.enum(GOAL_STATES).describe('paused: stop tracking it for now. active: resume a paused goal. abandoned: close it without it being reached.'),
-  reason: z.string().min(1).max(300).nullable().describe('Why it is being closed, in the coach’s words, when state is abandoned and a reason was given; otherwise null.'),
+  goal_id: z.string().uuid(),
+  state: z.enum(GOAL_STATES),
+  reason: z.string().min(1).max(300).nullable(),
 });
 type GoalInput = z.infer<typeof GoalInput>;
 const GoalStored = z.object({ goal_id: z.string().uuid(), state: z.enum(GOAL_STATES), reason: z.string().nullable(), title: z.string(), player: z.string() });
@@ -147,7 +147,7 @@ export const setGoalState: TaskTool<GoalInput, StoredProposal> = {
   kind: 'task',
   name: 'set_goal_state',
   description:
-    'Pause, resume or close one of a player’s goals. Use it when the coach wants a goal put on hold, picked up again, or dropped without being reached. A goal that was reached is marked by the app from the rounds, not here. The card names the player and the goal and says what the player will see; it saves after the coach confirms. Nothing is sent.',
+    'Pause a player’s goal, make a paused one active again, or abandon it (close it without it being reached; pass the coach’s reason if given, else null). A goal that was reached is marked by the app from the rounds. Nothing is sent.',
   input: GoalInput,
   progress: () => 'Preparing the goal',
   plan: async (ctx, input) => {
@@ -213,7 +213,7 @@ export const setGoalState: TaskTool<GoalInput, StoredProposal> = {
 // mark_signal_handled
 // ---------------------------------------------------------------------------------------------------------------------
 
-const SignalInput = z.strictObject({ insight_id: z.string().uuid().describe('The signal’s id, from the CoachHelm reader.') });
+const SignalInput = z.strictObject({ insight_id: z.string().uuid() });
 type SignalInput = z.infer<typeof SignalInput>;
 const SignalStored = z.object({ insight_id: z.string().uuid(), title: z.string(), about: z.string() });
 
@@ -227,7 +227,7 @@ export const markSignalHandled: TaskTool<SignalInput, StoredProposal> = {
   kind: 'task',
   name: 'mark_signal_handled',
   description:
-    'Mark one CoachHelm signal as handled, so it stops reading as an open priority. Use it when the coach says they have dealt with or talked through a signal you read. It does not dismiss or remove the signal. The card names the signal and says what the player will see on their own page; it saves after the coach confirms. Nothing is sent.',
+    'Mark one CoachHelm signal handled when the coach says they have dealt with it. It stops reading as an open priority; it is not dismissed. Nothing is sent.',
   input: SignalInput,
   progress: () => 'Preparing the signal',
   plan: async (ctx, input) => {

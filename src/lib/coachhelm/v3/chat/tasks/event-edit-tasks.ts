@@ -90,12 +90,12 @@ async function reachable(ctx: ToolContext, who: CoachChatContext, ids: readonly 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 const UpdateInput = z.strictObject({
-  event_id: z.string().uuid().describe('The event’s id, from the schedule reader.'),
-  new_date: z.string().regex(DAY).nullable().describe('The new day as YYYY-MM-DD in the team’s timezone, or null to keep the day.'),
-  new_start: z.string().regex(TIME).nullable().describe('The new start as 24-hour HH:MM, or null to keep it.'),
-  new_end: z.string().regex(TIME).nullable().describe('The new end as 24-hour HH:MM, or null to keep the event’s length.'),
-  new_location: z.string().min(1).max(500).nullable().describe('The new place, or null to keep it.'),
-  new_title: z.string().min(1).max(200).nullable().describe('The new title, or null to keep it.'),
+  event_id: z.string().uuid(),
+  new_date: z.string().regex(DAY).nullable().describe('YYYY-MM-DD, team timezone.'),
+  new_start: z.string().regex(TIME).nullable().describe('24-hour HH:MM.'),
+  new_end: z.string().regex(TIME).nullable().describe('24-hour HH:MM.'),
+  new_location: z.string().min(1).max(500).nullable(),
+  new_title: z.string().min(1).max(200).nullable(),
 });
 type UpdateInput = z.infer<typeof UpdateInput>;
 
@@ -124,7 +124,7 @@ export const updateEvent: TaskTool<UpdateInput, StoredProposal> = {
   kind: 'task',
   name: 'update_event',
   description:
-    'Move or edit one event already on the calendar: a new day, start, end, place or title. Use it when the coach asks to move, reschedule, push back or rename a practice, meeting, qualifier day or other event. Pass only what changes and null for the rest; the length is kept unless you give a new end. For a repeating practice it changes that one date only. The card shows the event before and after, who is told and the exact words; it saves after the coach confirms.',
+    'Move or edit one event on the calendar: day, start, end, place or title. Pass only what changes and null for the rest; the length is kept unless you give a new end. A repeating practice changes on that one date only.',
   input: UpdateInput,
   progress: () => 'Preparing the change',
   plan: async (ctx, input) => {
@@ -245,8 +245,8 @@ export const updateEvent: TaskTool<UpdateInput, StoredProposal> = {
 // ---------------------------------------------------------------------------------------------------------------------
 
 const CancelInput = z.strictObject({
-  event_id: z.string().uuid().describe('The event’s id, from the schedule reader.'),
-  reason: z.string().min(1).max(200).nullable().describe('The reason in the coach’s words, shown to players, or null if none was given.'),
+  event_id: z.string().uuid(),
+  reason: z.string().min(1).max(200).nullable(),
 });
 type CancelInput = z.infer<typeof CancelInput>;
 const CancelStored = z.object({ event_id: z.string().uuid(), title: z.string(), reason: z.string().nullable(), detail: z.string(), told: z.number().int().nonnegative() });
@@ -258,7 +258,7 @@ export const cancelEvent: TaskTool<CancelInput, StoredProposal> = {
   kind: 'task',
   name: 'cancel_event',
   description:
-    'Cancel one event on the calendar. Use it when the coach says a practice, meeting or other event is off. The event stays on the calendar marked cancelled and replies are kept; it is not deleted and can be restored on the Calendar. For a repeating practice it cancels that one date only. The card shows who is told, in the app and by e-mail, and the exact words; it runs after the coach confirms. Pass the reason only if the coach gave one.',
+    'Cancel one event on the calendar when the coach says it is off. It is marked cancelled, not deleted, and can be restored on the Calendar; a repeating practice is cancelled on that date only. reason: the coach’s, shown to players, else null.',
   input: CancelInput,
   progress: () => 'Preparing the cancellation',
   plan: async (ctx, input) => {

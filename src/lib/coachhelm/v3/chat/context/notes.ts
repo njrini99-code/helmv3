@@ -170,8 +170,8 @@ export const saveNote: ReadTool<{ text: string }> = {
   kind: 'read',
   name: 'save_note',
   description:
-    'Keep one standing note for this coach across conversations: how they want answers, or a lasting fact about the team such as the qualifying format. Use it when the coach asks you to remember something, or states a lasting preference and wants it kept. Save what the coach said as one sentence, never a conclusion of your own and never anything you read in the data. Do not use it for a named player’s health, injuries, family, grades or discipline, for contact details or passwords, or for anything a coach would not want written down: say you will not keep that. It saves at once with no confirmation, the coach sees it as a chip and can remove it, and players never see notes. Returns the full list of notes after saving.',
-  input: z.strictObject({ text: z.string().min(1).max(NOTE_MAX_CHARS).describe('The note as one plain sentence in the coach’s words, 280 characters at most.') }),
+    'Keep one standing note for this coach across conversations when they ask you to remember something: how they want answers, or a lasting team fact. Use the coach’s words, one sentence. Never a named player’s health, injuries, family, grades or discipline, or contact details: say you will not keep that. It saves at once and players never see notes.',
+  input: z.strictObject({ text: z.string().min(1).max(NOTE_MAX_CHARS) }),
   progress: () => 'Saving that note',
   run: runSave,
 };
@@ -180,8 +180,8 @@ export const removeNote: ReadTool<{ note: string }> = {
   kind: 'read',
   name: 'remove_note',
   description:
-    'Remove one of the coach’s standing notes. Use it when the coach asks you to forget or stop doing something a note says. Pass the note’s text, or enough of its words to pick it out. If several notes match it removes nothing and returns them so you can ask which. Returns the full list of notes after removing.',
-  input: z.strictObject({ note: z.string().min(1).max(NOTE_MAX_CHARS).describe('The note’s text, or a few of its words.') }),
+    'Remove one of the coach’s standing notes when they ask you to forget it. Pass its text or a few of its words; if several match, nothing is removed and they are returned so you can ask which.',
+  input: z.strictObject({ note: z.string().min(1).max(NOTE_MAX_CHARS) }),
   progress: () => 'Removing that note',
   run: runRemove,
 };

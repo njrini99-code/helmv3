@@ -78,9 +78,9 @@ const failed = (action: string, summary: string, retryable: boolean, error?: str
 // ---------------------------------------------------------------------------------------------------------------------
 
 const ReminderInput = z.strictObject({
-  event_id: z.string().uuid().describe('The event’s id, from the schedule reader.'),
-  recipients: z.enum(['not_replied', 'invited', 'named']).describe('not_replied: invited players who have not answered. invited: everyone invited. named: only the players in player_ids.'),
-  player_ids: z.array(z.string().uuid()).max(80).describe('Roster player ids when recipients is named; otherwise an empty list.'),
+  event_id: z.string().uuid(),
+  recipients: z.enum(['not_replied', 'invited', 'named']),
+  player_ids: z.array(z.string().uuid()).max(80),
 });
 type ReminderInput = z.infer<typeof ReminderInput>;
 
@@ -104,7 +104,7 @@ export const sendEventReminder: TaskTool<ReminderInput, EventTaskProposal> = {
   kind: 'task',
   name: 'send_event_reminder',
   description:
-    'Send players an in-app reminder about one event already on the calendar. Use it when the coach asks to remind or nudge players about a practice, qualifier, meeting or trip day. Choose who: the invited players who have not replied, everyone invited, or named players. It shows the coach a card with every recipient by name and the reminder’s exact words, and sends only after they confirm. It cannot change the wording or the event.',
+    'Send players the app’s in-app reminder about one event on the calendar. recipients: not_replied (invited, no answer yet), invited, or named (only player_ids; otherwise an empty list).',
   input: ReminderInput,
   progress: () => 'Preparing the reminder',
   plan: async (ctx, input) => {
@@ -211,10 +211,10 @@ const MARK_WORDS: Record<Mark, string> = { present: 'Present', late: 'Late', no_
 
 const Ids = z.array(z.string().uuid()).max(80);
 const AttendanceInput = z.strictObject({
-  event_id: z.string().uuid().describe('The event’s id, from the schedule reader.'),
-  present_player_ids: Ids.describe('Roster players who were there. An empty list if none.'),
-  late_player_ids: Ids.describe('Roster players who came late. An empty list if none.'),
-  no_show_player_ids: Ids.describe('Roster players who did not come. An empty list if none.'),
+  event_id: z.string().uuid(),
+  present: Ids,
+  late: Ids,
+  no_show: Ids,
 });
 type AttendanceInput = z.infer<typeof AttendanceInput>;
 
@@ -232,7 +232,7 @@ export const recordAttendance: TaskTool<AttendanceInput, EventTaskProposal> = {
   kind: 'task',
   name: 'record_attendance',
   description:
-    'Record who was present, late or a no-show at one event on the calendar. Use it when the coach tells you who was or was not at a practice or meeting. Put each player in exactly one list; "everyone except" means the rest of the roster goes in present. It shows the coach a card with every player and the mark they will get, and saves after they confirm. Nothing is sent to players.',
+    'Record who was present, late or a no-show at one event. Each player in exactly one list, an empty list where there is none; "everyone except" puts the rest of the roster in present. Nothing is sent.',
   input: AttendanceInput,
   progress: () => 'Preparing attendance',
   plan: async (ctx, input) => {
@@ -240,7 +240,7 @@ export const recordAttendance: TaskTool<AttendanceInput, EventTaskProposal> = {
     const event = await ownEvent(ctx, who, input.event_id);
     await requireStaff(ctx, who);
 
-    const asked: Array<[Mark, string[]]> = [['present', input.present_player_ids], ['late', input.late_player_ids], ['no_show', input.no_show_player_ids]];
+    const asked: Array<[Mark, string[]]> = [['present', input.present], ['late', input.late], ['no_show', input.no_show]];
     const seen = new Map<string, Mark>();
     for (const [mark, ids] of asked) {
       for (const id of ids) {

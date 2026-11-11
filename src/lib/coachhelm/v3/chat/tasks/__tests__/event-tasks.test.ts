@@ -200,7 +200,7 @@ describe('send_event_reminder: the send', () => {
 });
 
 describe('record_attendance', () => {
-  const input = { event_id: EVENT, present_player_ids: [AVERY, BLAKE], late_player_ids: [], no_show_player_ids: [CASEY] };
+  const input = { event_id: EVENT, present: [AVERY, BLAKE], late: [], no_show: [CASEY] };
   /** The action's own write, standing in: an upsert on (event, player) into the table the read-back reads. */
   const saving = (tables: ReturnType<typeof fakeSb>['tables'], fail: Record<string, { landed: boolean }> = {}) => {
     actions.markAttendance.mockImplementation(async (event: string, player: string, mark: string) => {
@@ -277,9 +277,9 @@ describe('record_attendance', () => {
     await expect(recordAttendance.commit(toolCtx(db().sb, playerWho(), 'player'), { input: {} } as never)).rejects.toThrow('Only a coach can do that.');
     await expect(recordAttendance.plan(toolCtx(db({ staff: false }).sb, coach()), input)).rejects.toThrow('Only this team’s coaches can do that.');
     await expect(recordAttendance.plan(toolCtx(db().sb, coach()), { ...input, event_id: FOREIGN_EVENT })).rejects.toThrow(/not on your team’s calendar/);
-    await expect(recordAttendance.plan(toolCtx(db().sb, coach()), { ...input, late_player_ids: [STRANGER] })).rejects.toThrow('One of those players is not on your active roster.');
-    await expect(recordAttendance.plan(toolCtx(db().sb, coach()), { ...input, late_player_ids: [AVERY] })).rejects.toThrow('Avery Lane is in two lists. Put each player in one.');
-    await expect(recordAttendance.plan(toolCtx(db().sb, coach()), { event_id: EVENT, present_player_ids: [], late_player_ids: [], no_show_player_ids: [] })).rejects.toThrow('Say who was present, late or missing.');
+    await expect(recordAttendance.plan(toolCtx(db().sb, coach()), { ...input, late: [STRANGER] })).rejects.toThrow('One of those players is not on your active roster.');
+    await expect(recordAttendance.plan(toolCtx(db().sb, coach()), { ...input, late: [AVERY] })).rejects.toThrow('Avery Lane is in two lists. Put each player in one.');
+    await expect(recordAttendance.plan(toolCtx(db().sb, coach()), { event_id: EVENT, present: [], late: [], no_show: [] })).rejects.toThrow('Say who was present, late or missing.');
     expect(actions.markAttendance).not.toHaveBeenCalled();
   });
 
