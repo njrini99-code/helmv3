@@ -27,6 +27,18 @@ afterEach(cleanup);
 const data = tourFixture('ready').links;
 const draw = (d: ChTourLinksData, opts: { phone?: boolean; load?: ChTourLoad } = {}) => render(<LinkInbox data={d} load={opts.load ?? 'ready'} phone={opts.phone ?? false} />).container;
 
+describe('Link rounds on the phone (F-0054)', () => {
+  it('names where it is once: the bar’s Back says Tournaments, so no eyebrow repeats it over the title', () => {
+    const c = draw(data, { phone: true });
+    expect(c.querySelector('h1.ch-large-title')?.textContent).toBe('Link rounds');
+    expect([...c.querySelectorAll('.ch-intro__eyebrow')].map((e) => e.textContent)).not.toContain('Tournaments');
+  });
+  it('a desk keeps its eyebrow, as the qualifier forms do', () => {
+    const c = draw(data);
+    expect(c.querySelector('.ch-tour-head__k')?.textContent).toBe('Tournaments');
+  });
+});
+
 describe('LinkInbox', () => {
   it('lists each round with its player, day, course, score and the match it is suggested for', () => {
     const c = draw(data);

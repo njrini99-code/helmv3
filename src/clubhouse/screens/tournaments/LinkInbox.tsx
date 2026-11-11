@@ -57,7 +57,8 @@ function LinkInboxPage({ data, phone }: { data: ChTourLinksData; phone: boolean 
   return (
     <TourMain view="links" phone={phone} labelledBy={TITLE_ID} className={'ch-tour-rev ch-tour-links'}>
       <TourPhoneTop phone={phone} title="Link rounds" back={{ label: 'Tournaments', href: paths.home() }} />
-      <TourHead tightAlways id={TITLE_ID} phone={phone} crumb={phone ? undefined : <TourCrumb href={paths.home()} />} eyebrow="Tournaments" title="Link rounds" line={LINE} />
+      {/* The phone's back label already says Tournaments, as on New event (F-0054). */}
+      <TourHead tightAlways id={TITLE_ID} phone={phone} crumb={phone ? undefined : <TourCrumb href={paths.home()} />} eyebrow={phone ? undefined : 'Tournaments'} title="Link rounds" line={LINE} />
       <div className="ch-tour-links-body">
         <Section id="ch-tour-links-rounds" title="Rounds to link" meta={data.errors.candidates ? undefined : `${rows.length} ${pluralWord(rows.length, 'round')}${data.dismissed ? ` · ${data.dismissed} dismissed` : ''}`}>
           {data.errors.candidates ? (
