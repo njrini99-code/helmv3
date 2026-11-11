@@ -2043,6 +2043,82 @@ describe('Calendar · what each role is given', () => {
     }
   });
 
+  // The full-width week's panel lay under the grid: an opened event's detail was off the screen.
+  describe('something open in the full-width week', () => {
+    const body = () => document.querySelector<HTMLElement>('.ch-cal-body')!;
+    const details = () => screen.getByRole('complementary', { name: 'Details' });
+    const summary = () => document.querySelector<HTMLElement>('.ch-in-wrap[data-under]')!;
+    const block = (id: string) => document.querySelector<HTMLElement>(`.ch-wk [data-ev-id="${id}"]`)!;
+
+    it('closed, the week is whole: the summary is under it and the Details region is on the page, empty', () => {
+      wrap(cal());
+      expect(body().hasAttribute('data-open')).toBe(false);
+      expect(within(summary()).getByText('Needs attention')).toBeTruthy();
+      expect(summary().getAttribute('aria-label')).toBe('This week');
+      expect(details().textContent).toBe('');
+      expect(details().hasAttribute('data-enter')).toBe(false);
+      // In that order: the view, the panel, the summary, so the panel is beside the grid's row and runs down both.
+      expect([...body().children].map((c) => (c === details() ? 'details' : c === summary() ? 'summary' : 'view'))).toEqual(['view', 'details', 'summary']);
+    });
+
+    it('an event opens in the panel beside the grid, fading in; the summary stays under the grid; closing empties the panel', async () => {
+      const user = userEvent.setup();
+      wrap(cal());
+      await user.click(block('e3'));
+      expect(body().hasAttribute('data-open')).toBe(true);
+      expect(within(details()).getByRole('heading', { name: 'Range and wedges' })).toBeTruthy();
+      expect(details().hasAttribute('data-enter')).toBe(true);
+      expect(within(summary()).getByText('Needs attention')).toBeTruthy();
+      expect(within(details()).queryByText('Needs attention')).toBeNull();
+      // Another event opens in the panel already there.
+      await user.click(block('e2'));
+      expect(within(details()).getByRole('heading', { name: 'Strength' })).toBeTruthy();
+      await user.keyboard('{Escape}');
+      expect(body().hasAttribute('data-open')).toBe(false);
+      expect(details().textContent).toBe('');
+    });
+
+    it('a row of the summary opens beside the grid too, and the list stays where it is', async () => {
+      const user = userEvent.setup();
+      wrap(cal());
+      const rows = summary().querySelectorAll('.ch-in__need').length;
+      await user.click(summary().querySelector<HTMLElement>('.ch-in__need')!);
+      expect(body().hasAttribute('data-open')).toBe(true);
+      expect(details().textContent).not.toBe('');
+      expect(summary().querySelectorAll('.ch-in__need')).toHaveLength(rows);
+    });
+
+    it('an event the page loads with is simply there: no fade on the first paint, nor when another opens in its place', async () => {
+      const user = userEvent.setup();
+      wrap(cal(), { initialEvent: 'e3' });
+      expect(body().hasAttribute('data-open')).toBe(true);
+      expect(details().hasAttribute('data-enter')).toBe(false);
+      await user.click(block('e2'));
+      expect(details().hasAttribute('data-enter')).toBe(false);
+    });
+
+    it('the week narrows as the panel opens: the second click of a double click does not open the block that slid under the pointer', () => {
+      wrap(cal());
+      fireEvent.click(block('e3'), { detail: 1 });
+      expect(within(details()).getByRole('heading', { name: 'Range and wedges' })).toBeTruthy();
+      fireEvent.click(block('e2'), { detail: 2 });
+      expect(within(details()).getByRole('heading', { name: 'Range and wedges' })).toBeTruthy();
+      // A click of its own opens it.
+      fireEvent.click(block('e2'), { detail: 1 });
+      expect(within(details()).getByRole('heading', { name: 'Strength' })).toBeTruthy();
+    });
+
+    it('Day, Month and List are as they were: one panel, with the summary in it', () => {
+      for (const view of ['day', 'month', 'agenda'] as const) {
+        const page = wrap(cal({ view }));
+        expect(body().hasAttribute('data-open')).toBe(false);
+        expect(document.querySelector('.ch-in-wrap[data-under]')).toBeNull();
+        expect(within(details()).getByText('Needs attention')).toBeTruthy();
+        page.unmount();
+      }
+    });
+  });
+
   // Owner, 2026-11-11: the desktop week opens with the now line in the canvas's upper third, with no easing.
   describe('where the page opens', () => {
     let canvas: HTMLDivElement;

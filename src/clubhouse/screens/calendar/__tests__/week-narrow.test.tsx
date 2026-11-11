@@ -245,21 +245,38 @@ describe('a 45-minute block takes two title lines in a narrow column', () => {
   });
 });
 
-/** Owner, 2026-11-11: the desktop week takes the page's full width; its panel lies under it, as a narrow canvas stacks it. */
+/** Owner, 2026-11-11: the desktop week takes the page's full width; its summary lies under it, as a narrow canvas stacks it. */
 describe('the desktop week takes the full width', () => {
-  it('the week’s body is one column at any width, with the panel in the page’s flow under it', () => {
-    expect(css).toMatch(/\n\.ch-cal-body\[data-view='week'\] \{\s*grid-template-columns: minmax\(0, 1fr\);\s*\}/);
-    expect(css).toMatch(/\n\.ch-cal-body\[data-view='week'\] > \.ch-in-wrap \{\s*position: static;\s*max-height: none;\s*\}/);
+  it('with nothing open the week’s body is one column at any width, with the summary in the page’s flow under it', () => {
+    expect(css).toMatch(/\n\.ch-cal-body\[data-view='week'\]:not\(\[data-open\]\) \{\s*grid-template-columns: minmax\(0, 1fr\);\s*\}/);
+    expect(css).toMatch(/\n\.ch-cal-body\[data-view='week'\] > \.ch-in-wrap\[data-under\] \{\s*grid-column: 1;\s*position: static;\s*max-height: none;\s*\}/);
   });
 
-  it('on the Ledger it is the narrow canvas’s stack: its gap, no column rule, and a hairline above the panel', () => {
-    expect(css).toMatch(/\.ch-cal\[data-canopy\] \.ch-cal-body\[data-view='week'\] \{\s*grid-template-columns: minmax\(0, 1fr\);\s*gap: 32px;\s*\}/);
-    expect(css).toMatch(/\.ch-cal\[data-canopy\] \.ch-cal-body\[data-view='week'\]::before \{\s*content: none;\s*\}/);
-    expect(css).toMatch(/\.ch-cal\[data-canopy\] \.ch-cal-body\[data-view='week'\] > \.ch-in-wrap\.ch-cal-surface \{\s*padding: 24px 0 0;\s*box-shadow: inset 0 var\(--ch-hairline-w\) 0 var\(--ch-ledger-rule\);\s*\}/);
+  it('on the Ledger it is the narrow canvas’s stack: no column rule, and a hairline above the summary', () => {
+    expect(css).toMatch(/\.ch-cal\[data-canopy\] \.ch-cal-body\[data-view='week'\]:not\(\[data-open\]\) \{\s*grid-template-columns: minmax\(0, 1fr\);\s*\}/);
+    expect(css).toMatch(/\.ch-cal\[data-canopy\] \.ch-cal-body\[data-view='week'\]:not\(\[data-open\]\)::before \{\s*content: none;\s*\}/);
+    expect(css).toMatch(/\.ch-cal\[data-canopy\] \.ch-cal-body\[data-view='week'\] > \.ch-in-wrap\.ch-cal-surface\[data-under\] \{\s*padding: 24px 0 0;\s*box-shadow: inset 0 var\(--ch-hairline-w\) 0 var\(--ch-ledger-rule\);\s*\}/);
   });
 
   it('Day, Month and List keep the panel beside them: no rule names their view', () => {
     expect(css.match(/\.ch-cal-body\[data-view='(?!week')/)).toBeNull();
+  });
+
+  // The detail of an event opened in the full-width week lay under the grid, off the screen, and the page jumped 170px.
+  it('with something open the panel is beside the grid, down both rows, and the summary keeps the grid’s column', () => {
+    // Open, no week rule sets the columns: the body is the side-by-side layout every view has.
+    expect(css.match(/\.ch-cal-body\[data-view='week'\](?:\[data-open\])? \{/)).toBeNull();
+    expect(css).toMatch(/\n\.ch-cal-body\[data-view='week'\] > \.ch-in-wrap:not\(\[data-under\]\) \{\s*grid-column: 2;\s*grid-row: 1 \/ span 2;[\s\S]*?max-height: calc\(100vh - 144px\);\s*\}/);
+    // A narrow canvas stacks the three.
+    expect(css).toMatch(/@container \(max-width: 1060px\) \{\s*\.ch-cal-body\[data-view='week'\] > \.ch-in-wrap:not\(\[data-under\]\) \{\s*grid-column: auto;\s*grid-row: auto;\s*max-height: none;\s*\}\s*\}/);
+  });
+
+  it('closed, the panel has no place in the grid; opened after the page is drawn it fades in, and not with motion off', () => {
+    expect(css).toMatch(/\n\.ch-cal-body\[data-view='week'\]:not\(\[data-open\]\) > \.ch-in-wrap:not\(\[data-under\]\) \{\s*position: absolute;\s*width: 0;\s*height: 0;/);
+    expect(css).toMatch(/\n\.ch-cal-body\[data-view='week'\] > \.ch-in-wrap\[data-enter\] \{\s*animation: ch-cal-panel-in var\(--ch-dur-base\) var\(--ch-ease\) both;\s*\}/);
+    expect(css).toMatch(/@keyframes ch-cal-panel-in \{\s*from \{\s*opacity: 0;\s*\}\s*\}/);
+    expect(css).toMatch(/\[data-ui='clubhouse'\]\[data-motion='off'\] \.ch-cal-body\[data-view='week'\] > \.ch-in-wrap\[data-enter\] \{\s*animation: none;/);
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{\s*\.ch-cal-body\[data-view='week'\] > \.ch-in-wrap\[data-enter\] \{\s*animation: none;/);
   });
 });
 

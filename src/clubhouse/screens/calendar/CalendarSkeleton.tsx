@@ -30,7 +30,7 @@ export function CalendarSkeleton() {
           <Skeleton width="100%" height={48} radius={10} />
           <Skeleton width="100%" height={820} radius={10} />
         </div>
-        <div className="ch-in-wrap ch-cal-surface">
+        <div className="ch-in-wrap ch-cal-surface" data-under="">
           <div className="ch-in">
             <Skeleton width={120} height={12} />
             <Skeleton width={220} height={24} radius={8} />

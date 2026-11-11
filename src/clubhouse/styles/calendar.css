@@ -2782,13 +2782,63 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
 }
 /* Owner, 2026-11-11: the desktop week takes the page's full width, so its event titles fit their columns (151px a day
    at 1440, where they were 100). The week's body takes the stacked shape a narrow canvas has just above, at any width:
-   the panel under the view. Day, Month and List keep the panel beside them. */
-.ch-cal-body[data-view='week'] {
+   its summary ([data-under]: Today, what needs attention) under the view. Day, Month and List keep the panel beside
+   them.
+   While an event, an overlap or attendance is open ([data-open]) the body is the side-by-side layout again, with the
+   detail panel beside the grid: it sticks under the top bar, so it is on screen wherever the page is scrolled. The
+   summary stays under the grid, in the grid's column, and the panel runs down both rows; the page keeps its height,
+   so nothing moves up or down under the pointer when the panel opens or closes. */
+.ch-cal-body[data-view='week']:not([data-open]) {
   grid-template-columns: minmax(0, 1fr);
 }
-.ch-cal-body[data-view='week'] > .ch-in-wrap {
+.ch-cal-body[data-view='week'] > .ch-in-wrap[data-under] {
+  grid-column: 1;
   position: static;
   max-height: none;
+}
+.ch-cal-body[data-view='week'] > .ch-in-wrap:not([data-under]) {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  /* The toolbar's button takes the page to its end, where a row of the list opens this panel: it must fit between the
+     top bar and the page's foot there (72px above, 64px and the frame's 8px below), or its Back link slides under the
+     bar (at the 790px it has beside the other views, by 34px). */
+  max-height: calc(100vh - 144px);
+}
+/* Closed, the panel is empty and has no place in the grid; it stays on the page as the live region that says what
+   opens (CH-6802). */
+.ch-cal-body[data-view='week']:not([data-open]) > .ch-in-wrap:not([data-under]) {
+  position: absolute;
+  width: 0;
+  height: 0;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+/* The panel opened after the page was drawn fades in over the base duration; the grid takes its width at once (no
+   width animates, so opening never lays the week out per frame). None with Animations off or reduced motion. */
+.ch-cal-body[data-view='week'] > .ch-in-wrap[data-enter] {
+  animation: ch-cal-panel-in var(--ch-dur-base) var(--ch-ease) both;
+}
+@keyframes ch-cal-panel-in {
+  from {
+    opacity: 0;
+  }
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-cal-body[data-view='week'] > .ch-in-wrap[data-enter] {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-cal-body[data-view='week'] > .ch-in-wrap[data-enter] {
+    animation: none;
+  }
+}
+/* A narrow canvas stacks all three: the view, the open panel, the summary. */
+@container (max-width: 1060px) {
+  .ch-cal-body[data-view='week'] > .ch-in-wrap:not([data-under]) {
+    grid-column: auto;
+    grid-row: auto;
+    max-height: none;
+  }
 }
 @container (max-width: 900px) {
   .ch-ed {
@@ -3820,16 +3870,16 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
     }
   }
   /* The week stacks the same way at any width (owner, 2026-11-11; .ch-cal-body[data-view='week'] above): the same
-     three rules, so the panel under the full-width week is the one a narrow canvas already draws. Its rule is the
-     hairline the column rule it replaces was (row 36), as the page's other Ledger rules are. */
-  .ch-cal[data-canopy] .ch-cal-body[data-view='week'] {
+     three rules, so the summary under the full-width week is the panel a narrow canvas already draws. Its rule is the
+     hairline the column rule it replaces was (row 36), as the page's other Ledger rules are. With something open the
+     body is the Ledger's own two columns and column rule again; the summary keeps its rule, in the grid's column. */
+  .ch-cal[data-canopy] .ch-cal-body[data-view='week']:not([data-open]) {
     grid-template-columns: minmax(0, 1fr);
-    gap: 32px;
   }
-  .ch-cal[data-canopy] .ch-cal-body[data-view='week']::before {
+  .ch-cal[data-canopy] .ch-cal-body[data-view='week']:not([data-open])::before {
     content: none;
   }
-  .ch-cal[data-canopy] .ch-cal-body[data-view='week'] > .ch-in-wrap.ch-cal-surface {
+  .ch-cal[data-canopy] .ch-cal-body[data-view='week'] > .ch-in-wrap.ch-cal-surface[data-under] {
     padding: 24px 0 0;
     box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule);
   }

@@ -847,10 +847,18 @@ function CalendarBody({
   const reduced = useChReducedMotion();
   const panel = useRef<HTMLElement | null>(null);
   usePanelSmoothScroll(panel);
+  // The week's summary, under the grid; the toolbar's button goes to its list.
+  const under = useRef<HTMLElement | null>(null);
+  // Whether something is open in the panel, and whether it was opened after the page was drawn: the week's panel fades
+  // in then (calendar.css, [data-enter]); one the page loads with is simply there, as is another event opened in it.
+  const [shown, setShown] = useState({ open: !!insp, late: false });
+  if (shown.open !== !!insp) setShown({ open: !!insp, late: true });
   // A-25: was the last press a key that activates a button (Enter or Space), not a pointer?
   const keyed = useRef(false);
   const opener = useRef<HTMLElement | null>(null);
   const toPanel = useRef(false);
+  // Which click of a run the one in hand is (the browser's count: 2 for a double click's second; 0 from the keyboard).
+  const clicks = useRef(0);
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       keyed.current = e.key === 'Enter' || e.key === ' ';
@@ -858,11 +866,16 @@ function CalendarBody({
     const point = () => {
       keyed.current = false;
     };
+    const click = (e: MouseEvent) => {
+      clicks.current = e.detail;
+    };
     window.addEventListener('keydown', key, true);
     window.addEventListener('pointerdown', point, true);
+    window.addEventListener('click', click, true);
     return () => {
       window.removeEventListener('keydown', key, true);
       window.removeEventListener('pointerdown', point, true);
+      window.removeEventListener('click', click, true);
     };
   }, []);
   useEffect(() => {
@@ -905,6 +918,9 @@ function CalendarBody({
     // panel, and closing the panel hands focus back to it. A click leaves focus where the pointer put it.
     const from = document.activeElement;
     const keyboard = keyed.current && !phone && from instanceof HTMLElement && from.matches('.ch-ev, .ch-ev-bar, .ch-ag__row');
+    // The week narrows as its panel opens, so another block can slide under a pointer that has not moved: the second
+    // click of a double click must not open that one instead (F-0057: a double click runs nothing twice).
+    if (view === 'week' && !phone && insp && clicks.current > 1 && !(insp.kind === 'event' && insp.id === e.id)) return;
     opener.current = keyboard ? from : null;
     toPanel.current = keyboard;
     // The event already open stays the same state, so a double click runs nothing twice (F-0057).
@@ -964,11 +980,9 @@ function CalendarBody({
   const toAttention = () => {
     // From the keyboard, focus goes with the page, to the list's first row.
     const keyboard = keyed.current;
-    // An event open in the panel gives way to the summary, where the list is.
-    setInsp(null);
     requestAnimationFrame(() => {
       const canvas = document.getElementById('ch-canvas');
-      const sec = panel.current?.querySelector<HTMLElement>('[data-ch-attention]');
+      const sec = under.current?.querySelector<HTMLElement>('[data-ch-attention]');
       if (!canvas || !sec) return;
       // The list's heading comes to rest 16px under the top bar.
       const bar = Number.parseFloat(getComputedStyle(canvas).getPropertyValue('--ch-topbar-h')) || 56;
@@ -1298,7 +1312,7 @@ function CalendarBody({
           <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again." onRetry={refresh} covered={covered} />
         </div>
       ) : (
-        <div className="ch-cal-body" data-view={view}>
+        <div className="ch-cal-body" data-view={view} data-open={view === 'week' && insp ? '' : undefined}>
           <div style={{ minWidth: 0 }}>
             <SectionBoundary surface={`calendar.${view}`} label="The calendar" code="CH-6210">
               {/* CH-6604: another view settles in (base in, quick out); CH-6605: another day, week or month slides 12px the
@@ -1342,14 +1356,27 @@ function CalendarBody({
               </Swap>
             </SectionBoundary>
           </div>
-          <aside ref={panel} className="ch-in-wrap ch-cal-surface" aria-label="Details" aria-live="polite" /* CH-6802 */>
+          {/* Day, Month and List keep the panel beside them: the summary, or what is open. The week is full width with
+              its summary under it; an event, an overlap or attendance opened there brings the panel back beside the
+              grid, where it is on screen wherever the page is scrolled, and the summary stays under the grid so the
+              page keeps its height and nothing under the pointer moves down or up. Closed, the week is whole again:
+              the panel stays on the page, empty and without a place, so it is the live region that says what opens
+              (CH-6802). */}
+          <aside ref={panel} className="ch-in-wrap ch-cal-surface" data-enter={shown.open && shown.late ? '' : undefined} aria-label="Details" aria-live="polite" /* CH-6802 */>
             <SectionBoundary surface="calendar.panel" label="The detail panel" code="CH-6211">
-              {!insp && <Summary ctx={ctx} />}
+              {!insp && view !== 'week' && <Summary ctx={ctx} />}
               {insp?.kind === 'event' && <EventDetail key={`${insp.id}${insp.date}`} ctx={ctx} id={insp.id} date={insp.date} />}
               {insp?.kind === 'attendance' && <Attendance key={insp.id} ctx={ctx} id={insp.id} date={insp.date} />}
               {insp?.kind === 'overlap' && <Overlap key={insp.id} ctx={ctx} id={insp.id} />}
             </SectionBoundary>
           </aside>
+          {view === 'week' && (
+            <aside ref={under} className="ch-in-wrap ch-cal-surface" data-under="" aria-label="This week">
+              <SectionBoundary surface="calendar.panel" label="The summary" code="CH-6211">
+                <Summary ctx={ctx} />
+              </SectionBoundary>
+            </aside>
+          )}
         </div>
       )}
 
