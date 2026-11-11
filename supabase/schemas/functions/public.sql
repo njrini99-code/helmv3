@@ -15508,13 +15508,10 @@ $$;
 ALTER FUNCTION "public"."golf_tournament_untrack"("p_tournament_id" "uuid", "p_expected_version" integer) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."golf_tournament_my_lineup"("p_tournament_id" "uuid")
-RETURNS jsonb
-LANGUAGE plpgsql
-STABLE
-SECURITY DEFINER
-SET search_path = ''
-AS $$
+CREATE OR REPLACE FUNCTION "public"."golf_tournament_my_lineup"("p_tournament_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
 DECLARE
   v_uid       uuid := (SELECT auth.uid());
   v_team      uuid;
@@ -15534,12 +15531,14 @@ BEGIN
     FROM public.golf_tournaments t
    WHERE t.id = p_tournament_id;
 
-  -- Unknown tournament, or the coach has not published (or scheduled it for later): nothing to reveal.
+  -- Unknown tournament, or the coach has not published (or scheduled it for
+  -- later): nothing to reveal.
   IF v_team IS NULL OR v_published IS NULL OR v_published > now() THEN
     RETURN NULL;
   END IF;
 
-  -- The caller's own player row, active on this team. A coach, an outsider or another team's player gets NULL.
+  -- The caller's own player row, active on this team. A coach, an outsider or
+  -- another team's player gets NULL.
   SELECT gp.id
     INTO v_player
     FROM public.golf_players gp
@@ -15564,27 +15563,59 @@ BEGIN
   WITH field AS (
     SELECT r.round_event_id, l.player_id, l.role, l.slot
       FROM public.golf_tournament_rounds r
-      JOIN public.golf_tournament_round_lineups l ON l.round_event_id = r.round_event_id
+      JOIN public.golf_tournament_round_lineups l
+        ON l.round_event_id = r.round_event_id
      WHERE r.tournament_id = p_tournament_id
     UNION ALL
     SELECT r.round_event_id, e.player_id, e.role, e.slot
       FROM public.golf_tournament_rounds r
-      JOIN public.golf_tournament_entries e ON e.tournament_id = r.tournament_id
+      JOIN public.golf_tournament_entries e
+        ON e.tournament_id = r.tournament_id
      WHERE r.tournament_id = p_tournament_id
-       AND NOT EXISTS (SELECT 1 FROM public.golf_tournament_round_lineups l2 WHERE l2.round_event_id = r.round_event_id)
+       AND NOT EXISTS (
+         SELECT 1
+           FROM public.golf_tournament_round_lineups l2
+          WHERE l2.round_event_id = r.round_event_id
+       )
   )
   SELECT coalesce(jsonb_agg(jsonb_build_object(
            'round_event_id', r.round_event_id,
            'round_number', r.round_number,
-           'my_role', (SELECT f.role FROM field f WHERE f.round_event_id = r.round_event_id AND f.player_id = v_player),
-           'my_slot', (SELECT f.slot FROM field f WHERE f.round_event_id = r.round_event_id AND f.player_id = v_player),
-           -- Gated on the caller's role IN THIS ROUND (the locked snapshot after a substitution, else the entries), never on the
-           -- tournament-level role: a player substituted out must not keep the round's lineup, and one substituted in gets it.
+           'my_role', (
+             SELECT f.role
+               FROM field f
+              WHERE f.round_event_id = r.round_event_id
+                AND f.player_id = v_player
+           ),
+           'my_slot', (
+             SELECT f.slot
+               FROM field f
+              WHERE f.round_event_id = r.round_event_id
+                AND f.player_id = v_player
+           ),
+           -- Gated on the caller's role IN THIS ROUND (the locked snapshot
+           -- after a substitution, else the entries), never on the
+           -- tournament-level role: a player substituted out must not keep
+           -- the round's lineup, and one substituted in gets it.
            'players', CASE
-             WHEN (SELECT f.role FROM field f WHERE f.round_event_id = r.round_event_id AND f.player_id = v_player) = 'lineup' THEN
-               (SELECT coalesce(jsonb_agg(jsonb_build_object('player_id', f.player_id, 'slot', f.slot) ORDER BY f.slot), '[]'::jsonb)
+             WHEN (
+               SELECT f.role
+                 FROM field f
+                WHERE f.round_event_id = r.round_event_id
+                  AND f.player_id = v_player
+             ) = 'lineup' THEN
+               (SELECT coalesce(
+                         jsonb_agg(
+                           jsonb_build_object(
+                             'player_id', f.player_id, 'slot', f.slot
+                           )
+                           ORDER BY f.slot
+                         ),
+                         '[]'::jsonb
+                       )
                   FROM field f
-                 WHERE f.round_event_id = r.round_event_id AND f.role = 'lineup')
+                 WHERE f.round_event_id = r.round_event_id
+                   AND f.role = 'lineup')
              ELSE '[]'::jsonb
            END
          ) ORDER BY r.round_number), '[]'::jsonb)
@@ -15601,7 +15632,6 @@ BEGIN
   );
 END;
 $$;
-
 
 ALTER FUNCTION "public"."golf_tournament_my_lineup"("p_tournament_id" "uuid") OWNER TO "postgres";
 
@@ -15827,15 +15857,18 @@ DECLARE
   v_block   record;
   i         integer;
 BEGIN
-  IF p_team_id IS NULL OR p_player_id IS NULL OR NOT public.is_golf_team_coach(p_team_id) THEN
+  IF p_team_id IS NULL OR p_player_id IS NULL
+     OR NOT public.is_golf_team_coach(p_team_id) THEN
     RAISE EXCEPTION 'not a coach of this team' USING ERRCODE = '42501';
   END IF;
 
-  IF v_from < now() - interval '7 days' OR v_from > now() + interval '14 days' THEN
+  IF v_from < now() - interval '7 days'
+     OR v_from > now() + interval '14 days' THEN
     RAISE EXCEPTION 'time out of range' USING ERRCODE = '22023';
   END IF;
 
-  -- Not shared, not an active member of this team, or not a player at all: nothing to say.
+  -- Not shared, not an active member of this team, or not a player at all:
+  -- nothing to say.
   IF NOT public.golf_player_shares_class_status(p_team_id, p_player_id) THEN
     RETURN NULL;
   END IF;
@@ -15844,7 +15877,8 @@ BEGIN
   FROM public.golf_team_settings s WHERE s.team_id = p_team_id LIMIT 1;
   v_team_tz := coalesce(v_team_tz, 'America/New_York');
 
-  -- The date rule of golf_team_class_day: the zone of the term covering the instant, else the team zone.
+  -- The date rule of golf_team_class_day: the zone of the term covering the
+  -- instant, else the team zone.
   v_term := public.golf_class_term_at(p_team_id, v_from);
   v_zone := coalesce(v_term.time_zone, v_team_tz);
   v_start := (v_from AT TIME ZONE v_zone)::date;
@@ -15852,7 +15886,9 @@ BEGIN
   FOR i IN 0..14 LOOP
     SELECT bl.starts_at, bl.ends_at, bl.label, bl.kind
     INTO v_block
-    FROM public.golf_class_blocks_internal(p_team_id, v_start + i, p_player_id) bl
+    FROM public.golf_class_blocks_internal(
+      p_team_id, v_start + i, p_player_id
+    ) bl
     WHERE bl.starts_at > v_from
     ORDER BY bl.starts_at
     LIMIT 1;
@@ -15884,7 +15920,9 @@ BEGIN
   IF char_length(v_q) < 2 THEN
     RETURN;
   END IF;
-  v_pattern := '%' || replace(replace(replace(v_q, '\', '\\'), '%', '\%'), '_', '\_') || '%';
+  v_pattern := '%'
+    || replace(replace(replace(v_q, '\', '\\'), '%', '\%'), '_', '\_')
+    || '%';
 
   RETURN QUERY
   SELECT m.id, m.conversation_id, m.sender_id, m.content, m.created_at
