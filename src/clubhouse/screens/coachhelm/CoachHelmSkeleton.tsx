@@ -24,9 +24,9 @@ function Line({ h, w, sh, r }: { h: number; w: number | string; sh: number; r?: 
 
 /**
  * The phone's focus in its loaded shape (the Mobile clubhouse pass): the claim's feature card, then the evidence, the week's
- * drill and the reasoning's row flush on the parchment under it. `claim` is the card's height for a typical claim of the role
- * (measured at 390: the coach's one-line claim and two-line opening, 146px; the player's two-line claim and three-line opening,
- * 194px); a longer or shorter claim still moves what follows by its difference.
+ * drill and the reasoning's row flush on the parchment under it. `claim` is the card's height for a typical claim
+ * (measured at 390: the coach's one-line claim and two-line opening, 146px); a longer or shorter claim still moves what follows
+ * by its difference. A player's phone draws Your week's cards instead (YourWeekBody).
  */
 function PhoneFocusSkeleton({ claim }: { claim: number }) {
   return (
@@ -44,19 +44,77 @@ function PhoneFocusSkeleton({ claim }: { claim: number }) {
   );
 }
 
-function FocusSkeleton() {
+/**
+ * Your week's cards while they load (a player's Board), in the page's own frame, grid and card classes (coachhelm-file.css, which
+ * the route's loading.tsx and the page import: never this module, see loading.tsx), so the shapes are the ones the page lands as: the green focus card, the plan and "Where the strokes go" under it, and beside them (after
+ * the focus on a phone, in the page's order) "What's working", "Last round in context" and "Also worth knowing". Each card keeps
+ * its head, as the file's skeleton does (FileSkeleton). `WEEK`: the height each lands at for a player with a focus and a plan, on a
+ * desk and on a phone (WebKit 1440 and 390, 2026-11-11); a page with less still moves by the difference.
+ */
+const WEEK = {
+  feat: { desk: 326, phone: 380 },
+  plan: { desk: 358, phone: 361 },
+  sg: { desk: 297, phone: 297 },
+  working: { desk: 121, phone: 121 },
+  field: { desk: 208, phone: 208 },
+  reads: { desk: 241, phone: 262 },
+} as const;
+const WEEK_TITLE: Record<Exclude<keyof typeof WEEK, 'feat'>, string> = { plan: 'Your plan', sg: 'Where the strokes go', working: 'What’s working', field: 'Last round in context', reads: 'Also worth knowing' };
+
+function WeekCard({ part, phone }: { part: Exclude<keyof typeof WEEK, 'feat'>; phone: boolean }) {
+  const height = WEEK[part][phone ? 'phone' : 'desk'];
+  // A line for about every 56px under the head, so a tall card is not one bar over an empty sheet.
+  const lines = Math.max(2, Math.min(5, Math.round((height - 64) / 56)));
   return (
-    <div className="ch-hl-sk__card">
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <Skeleton width={140} height={11} />
-        <Skeleton width={90} height={22} radius={11} />
+    <section className="card" style={{ minHeight: height }}>
+      <div className="card__h">
+        <h4>{WEEK_TITLE[part]}</h4>
       </div>
-      <Skeleton width="84%" height={30} radius={8} />
-      <Skeleton width="56%" height={30} radius={8} />
-      <Skeleton width="92%" height={13} />
-      <Skeleton width="70%" height={13} />
-      <Skeleton width="100%" height={140} radius={16} />
-      <Skeleton width="100%" height={90} radius={16} />
+      <div className="sk">
+        {Array.from({ length: lines }, (_, i) => (
+          <i key={i} className="ch-skel" style={{ width: `${[82, 64, 74, 56, 68][i]}%` }} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function YourWeekBody({ phone }: { phone: boolean }) {
+  const feat = (
+    <section className="feat ch-hl-sk__card" style={{ minHeight: WEEK.feat[phone ? 'phone' : 'desk'] }}>
+      <div className="sk">
+        <i className="ch-skel" style={{ width: '28%' }} />
+        <i className="ch-skel t" style={{ width: '70%' }} />
+        <i className="ch-skel" style={{ width: '92%' }} />
+        <i className="ch-skel" style={{ width: '70%' }} />
+      </div>
+    </section>
+  );
+  return (
+    <div className="ch-hf-flow ch-hl-sk--player">
+      {phone ? (
+        <>
+          {feat}
+          <WeekCard part="working" phone />
+          <WeekCard part="plan" phone />
+          <WeekCard part="field" phone />
+          <WeekCard part="sg" phone />
+          <WeekCard part="reads" phone />
+        </>
+      ) : (
+        <div className="grid2">
+          <div className="col">
+            {feat}
+            <WeekCard part="plan" phone={false} />
+            <WeekCard part="sg" phone={false} />
+          </div>
+          <div className="col">
+            <WeekCard part="working" phone={false} />
+            <WeekCard part="field" phone={false} />
+            <WeekCard part="reads" phone={false} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -139,100 +197,88 @@ function CoachBoardBody(): ReactNode {
 
 /**
  * Route loading for CoachHelm, in each role's own shape (gh-states.jsx): the
- * player's focus beside a short list; the coach's header with its "Since you
+ * player's Your week (its head, the focus card over the plan, the right column's cards); the coach's header with its "Since you
  * were last here" line, then the players beside the focus. CH-13401 (player) and CH-13402 (coach). `chained`: the page's own Suspense draws it after the route's
  * `loading.tsx` skeleton, in the same place, so it does not fade in again over it (a second fade would dip the page).
  */
 export function CoachHelmSkeleton({ view, chained, active }: { view: 'coach' | 'player'; chained?: boolean; active?: CoachHelmView }) {
   const coach = view === 'coach';
   const phone = useChPhone();
+  const head = phone ? (
+    coach ? (
+      // The phone's intro at its loaded line heights: the coach's eyebrow, the large title and the live line under the double rule.
+      <header className="ch-hl-h" data-canopy-head="">
+        <Line h={14.4} w={56} sh={11} />
+        <LargeTitleSkeleton width={176} />
+        <Line h={21.75} w="74%" sh={13} />
+        {/* The header's "Since you were last here" line (D4). */}
+        <Line h={32} w={196} sh={13} />
+      </header>
+    ) : (
+      // Your week's phone head: the large title and its one line, at their loaded heights.
+      <div className="dhead is-week">
+        <div>
+          <LargeTitleSkeleton width={176} />
+          <p>
+            <SkelLine line={20} bar={13} width="62%" />
+          </p>
+        </div>
+      </div>
+    )
+  ) : (
+    // Each line at the loaded line's height (the role 18, the title 48, the line 21, "Since you were last here" 32), so the
+    // head is the loaded head's 195px (coach) and the strip sits where the page puts it.
+    // A player's head is the tight one on the page's canvas, as the loaded page's (Head's `tight`).
+    <header className="ch-hl-h has-aside" data-canopy-head={coach ? '' : 'tight'}>
+      {/* The role line is the coach's only (Head). */}
+      {coach && <SkelLine line={18} bar={11} width={40} />}
+      <SkelLine line={48} bar={38} width={196} />
+      <SkelLine line={21} bar={13} width={210} />
+      {coach && <SkelLine line={32} bar={13} width={196} />}
+      <div className="ch-hl-h__aside">
+        <StripSkeleton coach={coach} phone={false} active={active} />
+      </div>
+    </header>
+  );
+  const body = !coach ? (
+    <YourWeekBody phone={phone} />
+  ) : phone ? (
+    <div className="ch-hl-sk ch-hl-sk--coach">
+      <div className="ch-hl-sk__chips" aria-hidden="true">
+        {[132, 140, 120].map((w) => (
+          <Skeleton key={w} width={w} height={40} radius={20} />
+        ))}
+      </div>
+      <PhoneFocusSkeleton claim={146} />
+    </div>
+  ) : (
+    <CoachBoardBody />
+  );
   return (
     // Desktop: on the canopy, with the view strip level with the title as the page draws it (Head's aside), so neither the
-    // green nor the content below moves when the page lands.
-    <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-busy="true" aria-label="Loading CoachHelm" data-skel={chained ? 'chained' : undefined} data-ch-code={coach ? 'CH-13402' : 'CH-13401'} data-canopy={phone ? undefined : ''}>
+    // green nor the content below moves when the page lands. A player's Board is Your week, so theirs is that page's own frame
+    // (the `.ch-hf` page and its `.dfile` measure and gutters): the head, the views and every card stand where the page draws them.
+    <main
+      className={coach ? 'ch-hl' + (phone ? ' is-phone' : '') : 'ch-hf ' + (phone ? 'is-phone' : 'is-desk')}
+      aria-busy="true"
+      aria-label="Loading CoachHelm"
+      data-skel={chained ? 'chained' : undefined}
+      data-ch-code={coach ? 'CH-13402' : 'CH-13401'}
+      data-ch={coach ? undefined : 'your-week'}
+      data-canopy={phone ? undefined : ''}
+    >
       {/* The screen's one h1 while it loads, for the page outline (P013 D8). */}
       <h1 className="ch-sr-only">CoachHelm</h1>
       {phone && <StripSkeleton coach={coach} phone active={active} />}
-      {phone ? (
-        // The phone's intro at its loaded line heights: the coach's eyebrow, the large title and the live line under the double rule.
-        <header className="ch-hl-h" data-canopy-head="">
-          {coach && <Line h={14.4} w={56} sh={11} />}
-          <LargeTitleSkeleton width={176} />
-          {coach ? (
-            <>
-              <Line h={21.75} w="74%" sh={13} />
-              {/* The header's "Since you were last here" line (D4). */}
-              <Line h={32} w={196} sh={13} />
-            </>
-          ) : (
-            // The player's line runs to two lines at the phone's width.
-            <span className="ch-hl-sk__line is-two">
-              <Skeleton width="92%" height={13} />
-              <Skeleton width="48%" height={13} />
-            </span>
-          )}
-        </header>
+      {coach ? (
+        <>
+          {head}
+          {body}
+        </>
       ) : (
-        // Each line at the loaded line's height (the role 18, the title 48, the line 21, "Since you were last here" 32), so the
-        // head is the loaded head's 195px (coach) and the strip sits where the page puts it.
-        // A player's head is the tight one on the page's canvas, as the loaded page's (Head's `tight`).
-        <header className="ch-hl-h has-aside" data-canopy-head={coach ? '' : 'tight'}>
-          {/* The role line is the coach's only (Head). */}
-          {coach && <SkelLine line={18} bar={11} width={40} />}
-          <SkelLine line={48} bar={38} width={196} />
-          <SkelLine line={21} bar={13} width={coach ? 210 : 360} />
-          {coach && <SkelLine line={32} bar={13} width={196} />}
-          <div className="ch-hl-h__aside">
-            <StripSkeleton coach={coach} phone={false} active={active} />
-          </div>
-        </header>
-      )}
-      {phone ? (
-        coach ? (
-          <div className="ch-hl-sk ch-hl-sk--coach">
-            <div className="ch-hl-sk__chips" aria-hidden="true">
-              {[132, 140, 120].map((w) => (
-                <Skeleton key={w} width={w} height={40} radius={20} />
-              ))}
-            </div>
-            <PhoneFocusSkeleton claim={146} />
-          </div>
-        ) : (
-          <div className="ch-hl-sk ch-hl-sk--player">
-            <PhoneFocusSkeleton claim={194} />
-            <div className="ch-hl-sk__col">
-              <Line h={22.8} w={170} sh={17} r={6} />
-              {[0, 1].map((i) => (
-                <div key={i} className="ch-hl-sk__row">
-                  <Skeleton width={8} height={8} radius={4} />
-                  <span>
-                    <Skeleton width="34%" height={10} />
-                    <Skeleton width="76%" height={13} />
-                  </span>
-                  <Skeleton width={34} height={13} />
-                </div>
-              ))}
-            </div>
-          </div>
-        )
-      ) : coach ? (
-        <CoachBoardBody />
-      ) : (
-        <div className="ch-hl-sk ch-hl-sk--player">
-          <FocusSkeleton />
-          <div className="ch-hl-sk__col">
-            <Skeleton width={120} height={11} />
-            {[0, 1, 2].map((i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <Skeleton width={10} height={10} radius={5} />
-                <span style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <Skeleton width="40%" height={10} />
-                  <Skeleton width="80%" height={13} />
-                </span>
-                <Skeleton width={36} height={13} />
-              </div>
-            ))}
-          </div>
+        <div className="dfile">
+          {head}
+          {body}
         </div>
       )}
     </main>

@@ -2,6 +2,7 @@
 
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
 import type { PlayerFileCard } from '../data/coachhelm-views-shape';
+import { CoachHelmSkeleton } from '../screens/coachhelm/CoachHelmSkeleton';
 import { FileSkeleton } from '../screens/coachhelm/file/FileSkeleton';
 import { PlayerFile } from '../screens/coachhelm/file/PlayerFile';
 import { YourWeek } from '../screens/coachhelm/file/YourWeek';
@@ -12,7 +13,8 @@ const wait = <T,>(v: T, ms = 600) => new Promise<T>((r) => setTimeout(() => r(v)
 
 /** The file and "Your week" on fake writes. Nothing reaches the server. */
 export function PreviewCoachHelmPlayerFile({ state = 'accepted', viewer, lens, at }: { state?: string; viewer?: string; lens?: string; at?: string }) {
-  if (state === 'loading') return <FileSkeleton first={CAST.eli.first} />;
+  // A player's route draws their own skeleton (routes/coachhelm.tsx viewSkeleton), a coach's file its own.
+  if (state === 'loading') return viewer === 'player' ? <CoachHelmSkeleton view="player" /> : <FileSkeleton first={CAST.eli.first} />;
   const fail = state === 'failwrites';
   const res = fail ? ({ success: false, error: 'Preview: refused' } as const) : ({ success: true } as const);
   if (viewer === 'player') {

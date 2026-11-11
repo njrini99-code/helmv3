@@ -4,6 +4,10 @@ import { FROSTED_CARD_CLASS } from '@/components/fairway/modules/frosted';
 import { cn } from '@/lib/utils';
 import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
 import { CoachHelmRouteSkeleton } from '@/clubhouse/screens/coachhelm/CoachHelmSkeleton';
+// A player's skeleton is Your week's own cards (CoachHelmSkeleton), which this sheet styles. It is imported here, on the server
+// side as the page imports it (routes/coachhelm.tsx), and not from the skeleton's client module: from there it loaded ahead of
+// ui.css, whose tabular-figures rules then won over this sheet's own type on the file's figures.
+import '@/clubhouse/styles/coachhelm-file.css';
 
 /* ============================================================================
  * Route Suspense fallback for the Player CoachHelm overview

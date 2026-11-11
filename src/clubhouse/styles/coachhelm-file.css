@@ -60,6 +60,8 @@
 .ch-hf.is-desk[data-ch='your-week'] .ch-hl-h { row-gap: 4px; margin-bottom: var(--ch-gap-section); }
 .ch-hf.is-phone .dhead.is-week { margin-top: 20px; display: block; }
 .ch-hf.is-phone .dhead.is-week p { margin-top: 4px; }
+/* The loading title block keeps the title's own 41px line (its bar is 30px), so the line and the cards under it do not move. */
+.ch-hf.is-phone .dhead .ch-large-title--skel { display: flex; align-items: center; min-height: calc(41 * var(--ch-type-k)); }
 .ch-hf .feat { color: var(--ch-hf-a-feat-1); }
 .ch-hf .ch-hf-coachline { margin: 0 -16px; }
 .ch-hf .goal svg .gl { stroke: var(--ch-hf-c-gain); stroke-width: 1.5; stroke-dasharray: 4 4; }
