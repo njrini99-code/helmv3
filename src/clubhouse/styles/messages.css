@@ -3406,12 +3406,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   background: var(--ch-card-bg);
   box-shadow: var(--ch-card-shadow);
 }
+/* The fold's face is the announcement coin its rows wear (.ch-ms-grp.is-ann): round, as every face in the list is. It
+   was a square well, the one square among circles. */
 [data-ch-ms-v2] .ch-ms-fold .ch-ms-grp.is-ann {
   width: 44px;
   height: 44px;
-  border-radius: var(--ch-radius-md);
-  background: var(--ch-well-bg-flat);
-  color: var(--ch-green-600);
 }
 [data-ch-ms-v2] .ch-ms-fold__b b {
   font: var(--ch-type-17-strong);

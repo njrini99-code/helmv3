@@ -47,8 +47,10 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
           setOpen(!shown);
         }}
       >
-        <span className={'ch-ms-grp is-ann' + (api.announcements[0]?.urgent ? ' is-urgent' : '')}>
-          <Icon icon={api.announcements[0]?.urgent ? TriangleAlert : Megaphone} size={15} />
+        {/* The section's own face: always the megaphone in the announcement coin, round like every face in the list.
+            Urgency is said on the announcement's own row, never here. */}
+        <span className="ch-ms-grp is-ann">
+          <Icon icon={Megaphone} size={15} />
         </span>
         <span className="ch-ms-fold__b">
           <b>
