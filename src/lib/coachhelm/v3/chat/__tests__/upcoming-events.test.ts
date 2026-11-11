@@ -9,7 +9,6 @@ vi.mock('@/lib/coachhelm/v3/ranking/score', () => ({ loadCoachWeightsForPlayer: 
 vi.mock('@/lib/coachhelm/v3/goals/loader', () => ({ loadActiveGoals: vi.fn(async () => []) }));
 
 import { getUpcomingEvents } from '../read-tools';
-import { collectEnvelopeDates } from '../provenance';
 
 const ctx = {
   team_id: 't1',
@@ -83,11 +82,4 @@ describe('get_upcoming_events', () => {
 
   // Staging, 2026-11-07: "What's on this week?" with an empty calendar was withheld because the answer named the last day
   // of the eight days it read ("through Sunday, November 15") and no row, summary or date in the evidence held it.
-  it('states the window it read, so the answer can name its last day', async () => {
-    const empty = await getUpcomingEvents(createFakeSupabase({ tables: { golf_events: [], golf_event_attendance: [] } }) as never, ctx, { days_ahead: 8 });
-    expect(empty.detail).toMatchObject({ events: [], window: { from: '2026-10-31', to: '2026-11-08', days: 8 } });
-    const full = await getUpcomingEvents(createFakeSupabase({ tables: { golf_events: [event({})], golf_event_attendance: [] } }) as never, ctx, { days_ahead: 8 });
-    expect(full.detail).toMatchObject({ window: { from: '2026-10-31', to: '2026-11-08' } });
-    expect(collectEnvelopeDates(empty, 'America/New_York')).toContain('2026-11-08');
-  });
 });

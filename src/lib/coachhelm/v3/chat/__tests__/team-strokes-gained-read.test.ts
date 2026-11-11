@@ -5,9 +5,8 @@ vi.mock('server-only', () => ({}));
 import type { CoachChatContext } from '../context';
 import { getTeamStrokesGained } from '../practice-reads';
 import { loadTeamStrokesGained } from '@/clubhouse/data/team-sg';
-import { collectDates, collectEnvelopeNumbers } from '../provenance';
 import type { ToolEnvelope } from '../provenance';
-import { computeTurnVerdict } from '../verdict';
+import { checkGrounding } from '../grounding';
 import { compileComposition } from '../visuals/compile-composition';
 import { CompositionSpec } from '../visuals/composition';
 
@@ -117,20 +116,10 @@ describe('get_team_strokes_gained is a chartable read on the one strokes-gained 
   it('keeps the four figures the model quotes grounded, on the team measurements and the detail alike', async () => {
     const env: ToolEnvelope = await read(rows);
     const a = (env.detail as { areas: Record<string, number> }).areas;
-    const verdict = (text: string) =>
-      computeTurnVerdict({
-        streamComplete: true,
-        text,
-        measurements: env.measurements,
-        series: [],
-        detailNumbers: collectEnvelopeNumbers(env),
-        detailDates: env.detail === undefined ? [] : collectDates(env.detail, ctx.timezone),
-        timezone: ctx.timezone,
-        players: ctx.roster,
-      });
+    const verdict = (text: string) => checkGrounding(text, [env]);
     const said = `The team's strokes gained by area, over 13 rounds:\n\n- **Approach:** ${a.approach}\n- **Putting:** ${a.putting}\n- **Short game:** ${a.short}\n- **Off the tee:** ${a.tee}`;
-    expect(verdict(said)).toEqual({ outcome: 'accepted' });
+    expect(verdict(said)).toEqual({ grounded: true, unmatched: [] });
     // A figure that is not in the read is still caught.
-    expect(verdict(said.replace(String(a.short), '-7.77')).outcome).toBe('rejected');
+    expect(verdict(said.replace(String(a.short), '-7.77')).unmatched).toEqual(['-7.77']);
   });
 });

@@ -3,7 +3,8 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('server-only', () => ({}));
 
 import type { CoachChatContext } from '../context';
-import { auditNumericClaims, collectEnvelopeDates, collectEnvelopeNumbers, ToolEnvelope } from '../provenance';
+import { ToolEnvelope } from '../provenance';
+import { auditNumericClaims, collectEnvelopeDates, collectEnvelopeNumbers } from './grounded';
 import { competitionRank, summariseData, type SummariseInput } from '../summarise-data';
 import { queryTeamData } from '../team-query';
 

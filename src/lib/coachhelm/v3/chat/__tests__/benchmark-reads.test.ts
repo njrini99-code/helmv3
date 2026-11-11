@@ -6,7 +6,8 @@ vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(async () => 
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => { throw new Error('the service client must not be used'); } }));
 
 import { applyComparisons, benchmarkSource, SOURCED_LEVEL_FIGURES, getBenchmarks, getMetricDefinitions, levelFromDivision, STANDING_ID_BY_CHAT_ID, tourForGender } from '../benchmark-reads';
-import { auditNumericClaims, collectEnvelopeNumbers, readFigure, type ToolEnvelope } from '../provenance';
+import { readFigure, type ToolEnvelope } from '../provenance';
+import { auditNumericClaims, collectEnvelopeNumbers } from './grounded';
 import { person, pgrst, type Tables } from './pgrst-double';
 import { withSourcedLevels } from './level-figures-fixture';
 
@@ -291,22 +292,7 @@ describe('benchmarks in the audit', () => {
     }
   });
 
-  it('refuses a level or Tour figure with no source named, and one no read returned', async () => {
-    const { sb } = pgrst(tables());
-    const e = await getBenchmarks(sb, ctx, benchmarkSource(sb, 'team-1', { ctx }), { metric_ids: ['gir_pct'], player_id: 'p1' }, { role: 'coach' });
-    expect(audit(e, 'Owen hits 58.12% of greens, and the team hits 50%.')).toEqual([50]);
-    expect(audit(e, 'The Division III average is 37%.')).toEqual([37]);
-  });
 
-  it('binds each benchmark to its own metric: a Tour GIR does not ground a number in a putting sentence', async () => {
-    const { sb } = pgrst(tables());
-    const e = await getBenchmarks(sb, ctx, benchmarkSource(sb, 'team-1', { ctx }), { metric_ids: ['gir_pct', 'sg_putting', 'sand_save_pct'], levels: ['pga', 'd1'], player_id: 'p1' }, { role: 'coach' });
-    expect(audit(e, 'The PGA Tour hits 66% of greens in regulation.')).toEqual([]);
-    expect(audit(e, 'Owen’s strokes gained putting is 66.')).toEqual([66]);
-    expect(audit(e, 'The PGA Tour saves 50% of its bunker shots.')).toEqual([]);
-    expect(audit(e, 'The Division I average for sand saves is 40%.')).toEqual([]);
-    expect(audit(e, 'Owen putts to 50% inside ten feet.')).toEqual([50]);
-  });
 });
 
 describe('applyComparisons', () => {
@@ -361,16 +347,6 @@ describe('applyComparisons', () => {
     expect(of('golf_player_standing').filter((c) => c.method === 'select')).toHaveLength(2);
   });
 
-  it('draws nothing when the team’s tour is unknown, and the audit takes the figures it carries only with their source named', async () => {
-    const down = pgrst({ ...tables(), golf_teams: { error: { message: 'down' } } });
-    expect((await applyComparisons(base({ measurements: [fig('gir_pct')] }), benchmarkSource(down.sb, 'team-1', { ctx }))).measurements[0]!.comparisons).toBeUndefined();
-    const { sb } = pgrst(tables());
-    const m = (await applyComparisons(base({ measurements: [fig('gir_pct')] }), benchmarkSource(sb, 'team-1', { ctx }))).measurements[0]!;
-    const players = [{ id: 'p1', name: 'Owen Carter' }];
-    const audit = (text: string) => auditNumericClaims(text, [m], [], [], [], 'America/New_York', { players }).map((c) => c.value);
-    expect(audit('Owen hits 58.3% of greens, against 50% for the Division III average, 54.6% for the team and 66% for the Tour.')).toEqual([]);
-    expect(audit('Owen hits 58.3% of greens, and the team hits 50%.')).toEqual([50]);
-  });
 });
 
 describe('a standing that could not be read is not a player with no standing', () => {

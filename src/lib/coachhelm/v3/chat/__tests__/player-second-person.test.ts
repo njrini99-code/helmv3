@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('server-only', () => ({}));
 vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: () => true }));
 
-import { inSecondPerson } from '../player-tools';
+import { inSecondPerson } from '../player-reads';
 import { getRecentRounds } from '../read-tools';
 import type { ToolEnvelope } from '../provenance';
 

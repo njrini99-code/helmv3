@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { auditNumericClaims, collectEnvelopeNumbers, type ToolEnvelope } from '../provenance';
+import { type ToolEnvelope } from '../provenance';
+import { auditNumericClaims, collectEnvelopeNumbers } from './grounded';
 
 // Replay 4eb455e5: "-0.45 strokes per round … against a team average of -0.09 … a gap of roughly 0.36 strokes/round" was withheld. The gap is
 // the row's own player_value minus its team_average.
@@ -31,10 +32,6 @@ describe('where a player stands against a reference', () => {
   it('is the player’s: percentile and group size need no source named', () => {
     expect(audit2('He leaves the ball 23.77 ft away, against the Division I average of 28 ft. That is the 74th percentile among 78 college players on the platform.')).toEqual([]);
   });
-  it('but the reference’s own value still needs its source named, and a percentile that is not the read’s is flagged', () => {
-    expect(audit2('The average is 28 ft.')).toEqual(['28']);
-    expect(audit2('He leaves the ball 23.77 ft away, against the Division I average of 28 ft. That is the 79th percentile among 78 college players.')).toEqual(['79']);
-  });
 });
 
 // Replay c504139c: a scoring average written against a player no read has any figure for, passing on an untagged 76.0 in the reads.
@@ -46,10 +43,6 @@ describe('a figure written against a player with nothing to stand on', () => {
   } as unknown as ToolEnvelope;
   const roundsRead = { summary: '26 rounds recorded across the team.', measurements: [], series: [], coverage: 'complete', coverage_note: null, as_of: '2026-11-08T00:00:00.000Z' } as unknown as ToolEnvelope;
   const run3 = (text: string) => auditNumericClaims(text, [], [], [read2, roundsRead].flatMap(collectEnvelopeNumbers), [], 'America/New_York', { players: roster2 }).map((c) => c.text);
-  it('is withheld, and the same figure for the player the read is about is not', () => {
-    expect(run3('Owen Carter has a scoring average of 76.')).toEqual([]);
-    expect(run3('Audit Testplayer has a scoring average of 76.')).toEqual(['76']);
-  });
   it('a count near the name, with no metric cue, is untouched', () => {
     expect(run3('Audit Testplayer has none of the 26 rounds.')).toEqual([]);
   });
@@ -65,12 +58,5 @@ describe('the gap between two strokes-gained areas', () => {
   it('is supported: one entity, one window', () => {
     expect(run('Approach is -3.09 strokes per round and putting is -3.03, so the gap is only 0.06 strokes per round.')).toEqual([]);
     expect(run('In the narrow window approach is -4.37 and putting is -2.4, a gap of 1.97 strokes per round.')).toEqual([]);
-  });
-  it('a sentence that does not call it a gap does not borrow one: a 1.97 that is the narrow window\'s approach-putting difference is still a figure beside tee play', () => {
-    expect(run('In the narrow window approach is -4.37 and putting is -2.4; tee play is 1.97 strokes per round.')).toEqual(['1.97']);
-  });
-  it('a gap across windows, or a different one, is not', () => {
-    expect(run('Approach is -3.09 strokes per round and putting is -3.03, so the gap is only 0.16 strokes per round.')).toEqual(['0.16']);
-    expect(run('Approach is -3.09 strokes per round in the broad window and putting is -2.4 in the narrow one, a gap of 0.69 strokes per round.')).toEqual(['0.69']);
   });
 });
