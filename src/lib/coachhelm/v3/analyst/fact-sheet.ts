@@ -78,11 +78,16 @@ interface Lookups {
   measuredRoundIds: Set<string>;
 }
 
+/**
+ * The rows in one fixed order (holes by number, shots by id), so the sheets do not depend on the order a database
+ * happened to return them in: a sum of the same numbers in another order can differ in its last digit.
+ */
 function lookups(rows: TeamRows): Lookups {
-  const shotsByRound = groupBy(rows.shots, (s) => s.round_id);
+  const shotsByRound = groupBy([...rows.shots].sort((a, b) => a.id.localeCompare(b.id)), (s) => s.round_id);
+  const holes = [...rows.holes].sort((a, b) => a.round_id.localeCompare(b.round_id) || a.hole_number - b.hole_number || a.id.localeCompare(b.id));
   return {
     cache: new Map(rows.roundCache.map((c) => [c.round_id, cacheForFigures(c)])),
-    holesByRound: groupBy(rows.holes, (h) => h.round_id),
+    holesByRound: groupBy(holes, (h) => h.round_id),
     shotsByRound,
     parByHole: new Map(rows.holes.map((h) => [h.id, h.par])),
     measuredRoundIds: new Set([...shotsByRound].filter(([, shots]) => hasMeasuredStrokesGained(shots)).map(([id]) => id)),

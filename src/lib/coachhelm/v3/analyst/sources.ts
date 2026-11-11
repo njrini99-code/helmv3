@@ -74,6 +74,7 @@ export interface HoleRow {
 
 /** One `golf_shots` row: what the make-rate definition, the approach bands and the measured-or-estimated check read. */
 export interface ShotRow {
+  id: string;
   round_id: string;
   hole_id: string | null;
   shot_type: string | null;

@@ -151,6 +151,7 @@ export class TeamFixture {
     scores.forEach((s, i) => this.holes.push({ id: `${id}-h${i + 1}`, round_id: id, hole_number: i + 1, par: PAR_LAYOUT[i]!, score: s }));
     if (spec.shots === false) return;
     const shot = (s: Partial<ShotRow>): ShotRow => ({
+      id: `${id}-s${String(this.shots.length).padStart(6, '0')}`,
       round_id: id,
       hole_id: `${id}-h1`,
       shot_type: null,

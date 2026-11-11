@@ -265,15 +265,26 @@ function scoredHoles(w: WindowData): Array<{ round_id: string; hole_number: numb
   );
 }
 
-/** Average score on the holes of one par. Stats prints par + the calculator's average to par, which is the same mean over the same holes. */
+/**
+ * Average score on the holes of one par. Stats prints par + the calculator's average to par, which is the same mean
+ * over the same holes. The standard error is taken over ROUNDS (each round's own average on those holes), not over
+ * holes: the holes of one round rise and fall together, so counting them as separate observations would understate it.
+ */
 function parScoring(w: WindowData, par: 3 | 4 | 5): RawFigure {
   const holes = scoredHoles(w).filter((h) => h.par === par);
-  return meanFigure(holes.map((h) => h.score), {
-    rounds: new Set(holes.map((h) => h.round_id)).size,
-    unit: 'holes',
-    min: 1,
-    needs: `needs a par ${par} scored`,
-  });
+  const byRound = new Map<string, number[]>();
+  for (const h of holes) byRound.set(h.round_id, [...(byRound.get(h.round_id) ?? []), h.score]);
+  const sample = { attempts: holes.length, unit: 'holes' as const, rounds: byRound.size };
+  if (holes.length === 0) return { value: null, range95: null, sample, stat: null, withheld: `needs a par ${par} scored; none so far` };
+  const value = holes.reduce((a, h) => a + h.score, 0) / holes.length;
+  const rounds = meanSummary([...byRound.values()].map((scores) => scores.reduce((a, b) => a + b, 0) / scores.length))!;
+  const range = rounds.se != null && rounds.df != null ? tRange95(value, rounds.se, rounds.df) : null;
+  return {
+    value: r4(value),
+    range95: range ? { low: r4(range.low), high: r4(range.high), method: 't' } : null,
+    sample,
+    stat: { kind: 'mean', n: rounds.n, sd: rounds.sd, se: rounds.se, df: rounds.df },
+  };
 }
 
 /**
