@@ -2747,12 +2747,15 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   .ch-es__copy {
     flex-direction: column;
   }
-  .ch-es__copy:has(> .ch-es__glyph) {
+  /* A section's line keeps its glyph at the left, where the row's leading mark will be. A page-sized state is one centred
+     column on a phone as on a desk, its glyph above the title: beside centred words the glyph read as stray (design review,
+     10 Nov 2026). */
+  .ch-es:not(.ch-es--page) > .ch-es__copy:has(> .ch-es__glyph) {
     display: grid;
     grid-template-columns: 20px minmax(0, 1fr);
     column-gap: 12px;
   }
-  .ch-es__copy:has(> .ch-es__glyph) > .ch-es__a {
+  .ch-es:not(.ch-es--page) > .ch-es__copy:has(> .ch-es__glyph) > .ch-es__a {
     grid-column: 1 / -1;
   }
   .ch-es__a {

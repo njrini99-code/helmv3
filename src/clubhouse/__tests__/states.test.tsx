@@ -209,6 +209,18 @@ describe('The waiting form: four states that read differently', () => {
     expect(onClear).toHaveBeenCalledTimes(1);
   });
 
+  it('on a phone a page-sized state keeps its glyph above the title, centred; only a section\'s line sets the glyph at its left', () => {
+    const { container } = render(<EmptyState size="page" kind="filtered" code="CH-10311" title="No rounds match these filters" body="Try a wider time." />);
+    const el = container.querySelector('[data-ch-code="CH-10311"]')!;
+    // The glyph is the copy's first child, so the centred column draws it over the title.
+    expect(el.classList.contains('ch-es--page')).toBe(true);
+    expect(el.querySelector(':scope > .ch-es__copy > :first-child')!.className).toBe('ch-es__glyph');
+    const phone = uiCss.slice(uiCss.indexOf('@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {\n  .ch-es--page > .ch-es__copy'));
+    // The two-column row (glyph, then words) is a section's only.
+    expect(phone).toMatch(/\.ch-es:not\(\.ch-es--page\) > \.ch-es__copy:has\(> \.ch-es__glyph\) \{\s*display: grid;\s*grid-template-columns: 20px minmax\(0, 1fr\);/);
+    expect(phone.slice(0, phone.indexOf('.ch-es-shape--people'))).not.toMatch(/\n {2}\.ch-es__copy:has\(> \.ch-es__glyph\) \{/);
+  });
+
   it('restricted shows a lock and no action, and is told apart from filtered', () => {
     const { container } = render(<EmptyState kind="restricted" code="CH-10309" title="Only coaches can see this." body="Ask your coach to share it." />);
     const el = container.querySelector('[data-ch-code="CH-10309"]')!;
