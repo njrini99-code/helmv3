@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { useLayoutEffect, type ReactElement, type ReactNode } from 'react';
+import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
 /**
@@ -81,7 +81,7 @@ import { loadCalendar, parseDate, parseNewType, parseView, type ChCalendarData }
 import { chReport, chTrail } from '../lib/track';
 import { ClubhouseCalendarRoute } from '../routes/calendar';
 import { resolveClubhouseTeam } from '../routes/team';
-import { CAL_HH, monthCells, type ChCalEvent, type ChCalType } from '../screens/calendar/model';
+import { monthCells, type ChCalEvent, type ChCalType } from '../screens/calendar/model';
 import { Calendar } from '../screens/calendar/Calendar';
 import { CalendarSkeleton } from '../screens/calendar/CalendarSkeleton';
 import { CalendarNoTeam } from '../screens/calendar/CalendarNoTeam';
@@ -2150,69 +2150,6 @@ describe('Calendar · what each role is given', () => {
     }
     const css = readFileSync(join(__dirname, '..', 'styles', 'calendar.css'), 'utf8');
     expect(css).toMatch(/\n\.ch-wk__top > \.ch-cal-legend \{\s*flex-wrap: wrap;\s*justify-content: flex-end;\s*margin: 0 0 var\(--ch-space-2\);\s*\}/);
-  });
-
-  // Owner, 2026-11-11: the desktop week opens with the now line in the canvas's upper third, with no easing.
-  describe('where the page opens', () => {
-    let canvas: HTMLDivElement;
-    let scrollTo: Mock;
-    beforeEach(() => {
-      canvas = document.body.appendChild(Object.assign(document.createElement('div'), { id: 'ch-canvas' }));
-      scrollTo = vi.fn((to: ScrollToOptions) => void (canvas.scrollTop = to.top ?? 0));
-      canvas.scrollTo = scrollTo as unknown as typeof canvas.scrollTo;
-    });
-    afterEach(() => canvas.remove());
-    // 2:40 PM in the frozen clock, from the grid's first hour, at the grid's hour height (jsdom has no layout: the
-    // canvas's 30% and the grid's own offset are 0).
-    const nowTop = () => Math.round((14 + 40 / 60 - Number(document.querySelector<HTMLElement>('.ch-wk__grid')!.dataset.from)) * CAL_HH);
-
-    it('the week is put on the now line at once; Day, Month and a week without today open at the top', () => {
-      const week = wrap(cal());
-      expect(nowTop()).toBeGreaterThan(0);
-      expect(scrollTo).toHaveBeenCalledWith({ top: nowTop(), behavior: 'instant' });
-      expect(canvas.scrollTop).toBe(nowTop());
-      week.unmount();
-      for (const over of [{ view: 'day' }, { view: 'month' }, { view: 'agenda' }, { anchor: '2026-10-21' }] as Array<Partial<ChCalendarData>>) {
-        scrollTo.mockClear();
-        const other = wrap(cal(over));
-        expect(scrollTo).not.toHaveBeenCalled();
-        other.unmount();
-      }
-    });
-
-    it('a first switch to Week from Month keeps the canvas where it is', async () => {
-      const user = userEvent.setup();
-      wrap(cal({ view: 'month' }));
-      await user.click(screen.getByRole('radio', { name: 'Week' }));
-      expect(document.querySelector('.ch-wk__grid')).not.toBeNull();
-      expect(scrollTo).not.toHaveBeenCalled();
-    });
-
-    it('a return by Back keeps the place the page was left at: the week does not move it', () => {
-      // An hour before the other tests' clock, so the mark is long past for them (CH_RETURN_WINDOW_MS).
-      vi.setSystemTime(new Date('2026-10-14T17:40:00Z'));
-      window.dispatchEvent(new PopStateEvent('popstate'));
-      wrap(cal());
-      expect(scrollTo).not.toHaveBeenCalled();
-    });
-
-    it('a page opened from another: the shell puts the canvas at its top after the week placed it, and the place is back before the paint', async () => {
-      // RouteFrame's layout effect, which runs after its children's in the commit that opens the page.
-      const Shell = ({ children }: { children: ReactNode }) => {
-        useLayoutEffect(() => canvas.scrollTo({ top: 0, behavior: 'instant' }), []);
-        return children;
-      };
-      // No frame is drawn in this test: only what runs before the paint can put the place back.
-      const frames = vi.spyOn(window, 'requestAnimationFrame').mockImplementation(() => 0);
-      try {
-        render(<Shell>{tree(cal())}</Shell>);
-        await Promise.resolve();
-        expect(scrollTo.mock.calls.map(([to]) => (to as ScrollToOptions).top)).toEqual([nowTop(), 0, nowTop()]);
-        expect(canvas.scrollTop).toBe(nowTop());
-      } finally {
-        frames.mockRestore();
-      }
-    });
   });
 
   it('60801 a player has no planning tools: no New event or N key, no editor from ?new=1, no busy time, people filter, overlap panel, responses, attendance, edit or cancel; a coach has them', async () => {

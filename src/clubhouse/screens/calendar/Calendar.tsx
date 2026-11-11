@@ -46,7 +46,6 @@ import { useChClock } from '../../lib/use-clock';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { CH_POP, chTween } from '../../lib/motion';
 import { useLightPlace } from '../../shell/light';
-import { chReturning } from '../../lib/pop-mark';
 import { canvasLenis, canvasScrollNow, usePanelSmoothScroll } from '../../lib/smooth-scroll';
 import { usePopoverFit } from '../../lib/use-popover-fit';
 import { CalendarFirstRun } from './CalendarFirstRun';
@@ -62,36 +61,27 @@ function zonedNow(timeZone: string, d: Date): ChNow {
 }
 
 /**
- * P006-B1: T or Today puts now (or the next event) about 30% down the canvas. A step to another week keeps the canvas
- * where it is, so the same hours stay in view. Instant with reduced motion; eased otherwise. `tick` asks again; the
- * request waits until the grid for `first` (the first day on show) is on the page, since Today may have to load
- * another week first.
- *
- * Owner, 2026-11-11: the desktop week opens there too, on `openHour` (the now line, when it is on show): placed at
- * once, with no easing on the first paint. Every other view and a week without the now line open at the top, and a
- * return by Back keeps the place the page was left at (RouteFrame restores it).
+ * P006-B1: T or Today puts now (or the next event) about 30% down the canvas; the page itself opens at its top. A step
+ * to another week keeps the canvas where it is, so the same hours stay in view. Instant with reduced motion; eased
+ * otherwise. `tick` asks again; the request waits until the grid for `first` (the
+ * first day on show) is on the page, since Today may have to load another week first.
  */
-function useOpenOnNow(tick: number, first: string, on: boolean, hour: number | null, reduced: boolean, openHour: number | null) {
+function useOpenOnNow(tick: number, first: string, on: boolean, hour: number | null, reduced: boolean) {
   const seen = useRef(0);
-  const born = useRef(true);
   const settle = useRef<(() => void) | null>(null);
   useLayoutEffect(() => {
-    // Only the page's own opening: a first switch to Week from Month or List keeps the canvas where it is, as every
-    // later switch does.
-    const fresh = born.current;
-    born.current = false;
     if (!on || seen.current === tick) return;
     const canvas = document.getElementById('ch-canvas');
     const grid = document.querySelector<HTMLElement>(`.ch-wk__grid[data-first="${first}"]`);
     if (!canvas || !grid) return;
     const opening = seen.current === 0;
     seen.current = tick;
-    const at = opening ? (fresh && !chReturning() ? openHour : null) : hour;
-    if (at == null) return;
+    // The page opens at its top (RouteFrame owns that); only T or Today moves the grid to now.
+    if (hour == null || opening) return;
     const place = () =>
-      Math.max(0, Math.round(grid.getBoundingClientRect().top - canvas.getBoundingClientRect().top + canvas.scrollTop + (at - Number(grid.dataset.from ?? 0)) * CAL_HH - canvas.clientHeight * 0.3));
+      Math.max(0, Math.round(grid.getBoundingClientRect().top - canvas.getBoundingClientRect().top + canvas.scrollTop + (hour - Number(grid.dataset.from ?? 0)) * CAL_HH - canvas.clientHeight * 0.3));
     settle.current?.();
-    if (!reduced && !opening) {
+    if (!reduced) {
       const lenis = canvasLenis();
       if (lenis) lenis.scrollTo(place());
       else canvas.scrollTo({ top: place(), behavior: 'smooth' });
@@ -106,23 +96,17 @@ function useOpenOnNow(tick: number, first: string, on: boolean, hour: number | n
       for (const t of ['wheel', 'touchstart', 'pointerdown', 'keydown']) window.removeEventListener(t, stop, true);
       settle.current = null;
     };
-    const put = () => {
-      const to = place();
-      if (Math.abs(canvas.scrollTop - to) > 2) canvasScrollNow(to);
-    };
     const hold = () => {
       if (!grid.isConnected) return stop();
-      put();
+      const to = place();
+      if (Math.abs(canvas.scrollTop - to) > 2) canvasScrollNow(to);
       if (Date.now() < until) frame = requestAnimationFrame(hold);
       else stop();
     };
     for (const t of ['wheel', 'touchstart', 'pointerdown', 'keydown']) window.addEventListener(t, stop, { capture: true, passive: true });
     settle.current = stop;
     hold();
-    // A page opened from another puts the canvas at its top in RouteFrame's own layout effect, which runs after this
-    // one in the same commit: put the place back before that commit is painted, not a frame later.
-    if (opening) queueMicrotask(() => settle.current === stop && grid.isConnected && put());
-  }, [tick, first, on, hour, reduced, openHour]);
+  }, [tick, first, on, hour, reduced]);
 }
 
 /** Widgets whose arrow keys move their own selection or focus, and the page's popovers (A-09). */
@@ -893,8 +877,7 @@ function CalendarBody({
     if (at && at !== document.body && !panel.current?.contains(at)) return;
     chFocusQuietly(el);
   }, [insp]);
-  // The week opens on the now line (focusHour with no events is now inside the day's hours on show, or nothing).
-  useOpenOnNow(focusTick, dates[0]!, !phone && (view === 'week' || view === 'day') && !data.eventsError, focusHour(dates, events, now), reduced, view === 'week' ? focusHour(dates, [], now) : null);
+  useOpenOnNow(focusTick, dates[0]!, !phone && (view === 'week' || view === 'day') && !data.eventsError, focusHour(dates, events, now), reduced);
   // The day, week or month on show. Stepping to another slides the grid the way it went (CH-6605): a later period comes in
   // from the right, an earlier one from the left.
   const periodKey = view === 'week' ? weekDates(anchor)[0]! : view === 'month' ? monthKey(anchor) : view === 'day' ? anchor : 'agenda';
