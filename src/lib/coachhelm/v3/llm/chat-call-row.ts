@@ -33,9 +33,10 @@ export type ChatVerdictReason = 'stream_incomplete' | 'ungrounded_claims' | 'cla
 
 export interface ChatLlmCallRow {
   task: 'coach_chat';
-  coach_id: string;
-  /** A chat turn is coach-scoped; it is not about one player. */
-  player_id: null;
+  /** The coach whose turn it was. Null on a player's own Ask turn, which carries `player_id` instead. */
+  coach_id: string | null;
+  /** Null on a coach's turn (it is coach-scoped, not about one player). The asking player on a player's own Ask turn. */
+  player_id: string | null;
   prompt_hash: string;
   model_id: string;
   prompt_tokens: number;
@@ -66,6 +67,12 @@ export interface ChatLlmCallRow {
     unmatched_tokens: string[];
     /** Counts of the turn's per-figure citations (cites.ts): figures examined, cited, verified, unresolved, mismatched and the fallback. Recorded for a grounded turn too (reason `grounded`), so the share of answers the citations carried can be read from the ledger. */
     citation_stats?: Record<string, number>;
+    /**
+     * The optional request features the turn gave up because the API rejected a request that carried them (chat
+     * engine, `FEATURE_GROUPS`), in the order it gave them up. Present only on such a turn: a row that has it ran
+     * without part of its configuration and is not evidence that the configuration works.
+     */
+    features_dropped?: string[];
   } | null;
   verified: boolean;
   /**
@@ -80,7 +87,11 @@ export interface ChatLlmCallRow {
 }
 
 export function buildChatLlmCallRow(args: {
-  coachId: string;
+  /** Null on a player's own Ask turn. */
+  coachId: string | null;
+  /** The asking player, on a player's own Ask turn only. */
+  playerId?: string | null;
+  /** The conversation id, or for a turn that has no stored conversation (a player's Ask) the turn's own id. Opaque either way. */
   conversationId: string;
   modelId: string;
   promptTokens: number;
@@ -94,11 +105,14 @@ export function buildChatLlmCallRow(args: {
   verdictReason?: ChatVerdictReason;
   /** The turn's citation counts, recorded with the row whether the turn was grounded or not (null `citations` when grounded and there were none). */
   citationStats?: Record<string, number>;
+  /** The request feature groups the turn gave up after the API rejected them. Left out or empty on a turn that ran as configured. */
+  featuresDropped?: readonly string[];
 }): ChatLlmCallRow {
+  const dropped = args.featuresDropped && args.featuresDropped.length > 0 ? { features_dropped: [...args.featuresDropped] } : null;
   return {
     task: 'coach_chat',
     coach_id: args.coachId,
-    player_id: null,
+    player_id: args.playerId ?? null,
     // The conversation id, truncated — deliberately NOT a hash of the prompt.
     // Telemetry carries model, latency and cost; it carries no prompt text,
     // player name or database value.
@@ -110,14 +124,15 @@ export function buildChatLlmCallRow(args: {
     // Bare number literals only ('71', '-25') — never the surrounding prose,
     // a player name or a database value. See the ChatLlmCallRow doc comment.
     citations: args.grounded
-      ? args.citationStats
-        ? { reason: 'grounded', unmatched_tokens: [], citation_stats: args.citationStats }
+      ? args.citationStats || dropped
+        ? { reason: 'grounded', unmatched_tokens: [], ...(args.citationStats ? { citation_stats: args.citationStats } : {}), ...(dropped ?? {}) }
         : null
       : {
           reason: 'verification_failed',
           ...(args.verdictReason ? { verdict_reason: args.verdictReason } : {}),
           unmatched_tokens: args.unmatchedTokens ?? [],
           ...(args.citationStats ? { citation_stats: args.citationStats } : {}),
+          ...(dropped ?? {}),
         },
     verified: args.grounded,
     fallback_to_template: false,

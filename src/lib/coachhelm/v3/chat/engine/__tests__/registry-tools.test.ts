@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 
-import { buildModelRequest, chatFeatures, modelToolFor, plainFeatures } from '../model';
+import { buildModelRequest, chatFeatures, modelToolFor, plainFeatures, STRICT_LIMITS, strictCostOf, strictToolNames } from '../model';
 import { instructionBlocks } from '../../instructions';
 import { toolsFor } from '../../registry';
 import type { ChatSurface } from '../tool';
@@ -62,29 +62,54 @@ describe('the registry’s tools as the model is given them', () => {
     expect(prefix(surface, who, plainFeatures(chatFeatures(surface))).cached).toBe(prefix(surface, who, plainFeatures(chatFeatures(surface))).cached);
   });
 
-  it.each(surfaces.filter(([surface]) => surface !== 'player'))('%s: with the model’s code on, every read may be called from code and is not strict, every task is direct-only and strict, and the code tool is last', (surface, who) => {
+  it.each(surfaces.filter(([surface]) => surface !== 'player'))('%s: with the model’s code on, every read may be called from code and is not strict, every task is direct-only, and the code tool is last', (surface, who) => {
     const registry = toolsFor(surface, who as never);
     const tools = prefix(surface, who).request.tools as Array<{ name: string; type?: string; strict?: boolean; allowed_callers?: string[] }>;
     expect(tools.at(-1)).toEqual({ type: 'code_execution_20260120', name: 'code_execution' });
     expect(tools.slice(0, -1).map((t) => t.name)).toEqual(registry.map((t) => t.name));
     for (const tool of registry) {
       const sent = tools.find((t) => t.name === tool.name)!;
-      // A read that writes (`direct_only`: the coach's two note tools, CONTRACT_NOTES E19) is sent as a task is: strict, and not callable from the model's code.
+      // A read that writes (`direct_only`: the coach's two note tools, CONTRACT_NOTES E19) is sent as a task is: not callable from the model's code.
       if (tool.kind === 'read' && !tool.direct_only) {
         expect(sent.allowed_callers).toEqual(['direct', 'code_execution_20260120']);
         expect(sent).not.toHaveProperty('strict');
       } else {
-        expect(sent.strict).toBe(true);
         expect(sent).not.toHaveProperty('allowed_callers');
       }
     }
     expect(registry.filter((t) => t.kind === 'read' && t.direct_only).map((t) => t.name)).toEqual(['save_note', 'remove_note']);
   });
 
-  it('a player’s request has no code tool, and every tool in it is strict', () => {
-    const tools = prefix('player', player).request.tools as Array<{ name: string; type?: string; strict?: boolean; allowed_callers?: string[] }>;
-    expect(tools.some((t) => t.name === 'code_execution')).toBe(false);
-    expect(tools.every((t) => t.strict === true && t.allowed_callers === undefined)).toBe(true);
+  // The first live requests (10 Nov 2026) were all rejected: every tool was sent `strict`, 33 strict tools and 72 union parameters
+  // on a coach's request and 56 union parameters on a player's, against the API's 20, 24 and 16 for one request.
+  it.each(surfaces)('%s: the strict tools of one request stay within the API’s limits, and the same ones are chosen every time', (surface, who) => {
+    const registry = toolsFor(surface, who as never);
+    const tools = prefix(surface, who).request.tools as Array<{ name: string; strict?: boolean; input_schema?: unknown }>;
+    const strict = tools.filter((t) => t.strict === true);
+    const spent = strict.map((t) => strictCostOf(t.input_schema)).reduce((sum, c) => ({ optional: sum.optional + c.optional, unions: sum.unions + c.unions }), { optional: 0, unions: 0 });
+    expect(strict.length).toBeGreaterThan(0);
+    expect(strict.length).toBeLessThanOrEqual(STRICT_LIMITS.tools);
+    expect(spent.optional).toBeLessThanOrEqual(STRICT_LIMITS.optional);
+    expect(spent.unions).toBeLessThanOrEqual(STRICT_LIMITS.unions);
+    // What is sent strict is exactly what the budget chose, and choosing again gives the same names (the tools are cached bytes).
+    expect(strict.map((t) => t.name).sort()).toEqual([...strictToolNames(registry, chatFeatures(surface))].sort());
+    expect([...strictToolNames(registry, chatFeatures(surface))]).toEqual([...strictToolNames([...registry], chatFeatures(surface))]);
+    // A tool left out of the budget is sent with its schema as written: nothing is dropped from the request.
+    expect(tools.filter((t) => t.name !== 'code_execution').map((t) => t.name)).toEqual(registry.map((t) => t.name));
+  });
+
+  it('a coach’s budget goes to tasks, in the registry’s order; a player’s request has no code tool and its budget goes to its reads', () => {
+    const registry = toolsFor('ask', coach);
+    const chosen = strictToolNames(registry, chatFeatures('ask'));
+    // No read a coach's code may call is ever strict (the API does not take the two together).
+    for (const tool of registry) if (tool.kind === 'read' && !tool.direct_only) expect(chosen.has(tool.name)).toBe(false);
+    // The first task in the list is in; so is every task before the first one that did not fit.
+    const tasks = registry.filter((t) => t.kind === 'task');
+    expect(chosen.has(tasks[0]!.name)).toBe(true);
+    const sent = prefix('player', player).request.tools as Array<{ name: string; strict?: boolean; allowed_callers?: string[] }>;
+    expect(sent.some((t) => t.name === 'code_execution')).toBe(false);
+    expect(sent.every((t) => t.allowed_callers === undefined)).toBe(true);
+    expect(sent.filter((t) => t.strict === true).length).toBeGreaterThan(0);
   });
 
   it('the prefix as sent (the JSON of tools and system, characters / 4) stays near what was measured with the model’s code on', () => {

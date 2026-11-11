@@ -4,7 +4,7 @@ import { z } from 'zod';
 vi.mock('server-only', () => ({}));
 
 import Anthropic from '@anthropic-ai/sdk';
-import { addUsage, anthropicModelClient, buildModelRequest, callCostUsd, CHAT_FEATURES, CHAT_MODEL_OVERRIDE, chatFeatures, emptyUsage, fallbackModelOf, isPlain, isRejectedRequest, MissingModelKeyError, MODEL_PROFILES, modelToolFor, onLongCard, plainFeatures, profileFor, promptTokens, ratesFor, SURFACE_MODEL, turnCostUsd, type ChatFeatures } from '../model';
+import { addUsage, anthropicModelClient, buildModelRequest, callCostUsd, CHAT_FEATURES, CHAT_MODEL_OVERRIDE, chatFeatures, emptyUsage, fallbackModelOf, FEATURE_GROUPS, groupsOn, groupToDrop, isPlain, isRejectedRequest, rejectionOf, STRICT_LIMITS, strictCostOf, strictToolNames, withoutGroup, MissingModelKeyError, MODEL_PROFILES, modelToolFor, onLongCard, plainFeatures, profileFor, promptTokens, ratesFor, SURFACE_MODEL, turnCostUsd, type ChatFeatures } from '../model';
 import { echoable } from '../loop';
 import { estimateCostUsd, MODEL_FOR_TASK, PLAYER_CHAT_MODEL } from '@/lib/coachhelm/v3/llm/types';
 import type { ChatTool } from '../tool';
@@ -183,7 +183,77 @@ describe('the model request', () => {
     expect(player.map((t) => [t.name, t.strict ?? null])).toEqual([['get_rounds', true], ['create_event', true]]);
   });
 
-  it('the plain request a rejected one is retried as carries no beta and no strict schema, and is not retried again', () => {
+  it('strict is a budget across one request: 20 tools, 24 optional parameters, 16 union parameters; tasks first, then the list’s order', () => {
+    expect(STRICT_LIMITS).toEqual({ tools: 20, optional: 24, unions: 16 });
+    const direct = { ...HAIKU.features, programmaticReads: false };
+    const named = (name: string, kind: 'read' | 'task', input: z.ZodType<unknown>): ChatTool => ({ ...tool(input, kind), name }) as ChatTool;
+    const union = (n: number) => z.object(Object.fromEntries(Array.from({ length: n }, (_, i) => [`f${i}`, z.string().nullable()])));
+    const optional = (n: number) => z.object(Object.fromEntries(Array.from({ length: n }, (_, i) => [`f${i}`, z.string().optional()])));
+    // What a schema spends: a field not in `required`, a field whose type is a union, at any depth.
+    expect(strictCostOf(modelToolFor(named('a', 'read', union(3)), direct).input_schema)).toEqual({ optional: 0, unions: 3 });
+    expect(strictCostOf(modelToolFor(named('b', 'read', optional(2)), direct).input_schema)).toEqual({ optional: 2, unions: 0 });
+    expect(strictCostOf(modelToolFor(named('c', 'read', z.object({ inner: z.object({ x: z.string().nullable(), y: z.number().optional() }) })), direct).input_schema)).toEqual({ optional: 1, unions: 1 });
+
+    // Unions: 10 + 10 does not fit in 16, so the second is left out and the next that fits is taken.
+    const byUnions = [named('r1', 'read', union(10)), named('r2', 'read', union(10)), named('r3', 'read', union(6)), named('r4', 'read', union(1))];
+    expect([...strictToolNames(byUnions, direct)]).toEqual(['r1', 'r3']);
+    // Optional parameters have their own limit of 24.
+    expect([...strictToolNames([named('o1', 'read', optional(20)), named('o2', 'read', optional(5)), named('o3', 'read', optional(4))], direct)]).toEqual(['o1', 'o3']);
+    // Tasks are served before reads, whatever the order of the list; the list itself keeps its order in the request.
+    const mixed = [named('r1', 'read', union(10)), named('t1', 'task', union(10)), named('r2', 'read', union(6))];
+    expect([...strictToolNames(mixed, direct)]).toEqual(['t1', 'r2']);
+    expect(buildModelRequest({ tools: mixed, system: { stable: 'P', team: 'T' }, messages, profile: HAIKU, features: direct }).tools!.map((t) => [(t as { name: string }).name, (t as { strict?: boolean }).strict ?? null])).toEqual([['r1', null], ['t1', true], ['r2', true]]);
+    // Never more than twenty, however cheap they are.
+    const many = Array.from({ length: 30 }, (_, i) => named(`n${i}`, 'read', z.object({ id: z.string() })));
+    expect(strictToolNames(many, direct).size).toBe(20);
+    expect([...strictToolNames(many, direct)].at(-1)).toBe('n19');
+    // A read the model's code may call is never strict and spends nothing; with strict off nothing is.
+    expect([...strictToolNames(byUnions, { ...direct, programmaticReads: true })]).toEqual([]);
+    expect([...strictToolNames(byUnions, { ...direct, strictTools: false })]).toEqual([]);
+  });
+
+  it('the features form groups, given up one at a time in a fixed order unless the API names one', () => {
+    expect(FEATURE_GROUPS).toEqual(['progress_notes', 'refusal_fallback', 'task_budget', 'strict_tools', 'compaction', 'programmatic_reads', 'thinking_binding']);
+    expect(groupsOn(SONNET.features)).toEqual(['progress_notes', 'refusal_fallback', 'strict_tools', 'compaction', 'programmatic_reads', 'thinking_binding']);
+    expect(groupsOn(chatFeatures('player'))).toEqual(['strict_tools', 'compaction', 'thinking_binding']);
+    // Giving up a group changes that group's field and nothing else.
+    expect(withoutGroup(SONNET.features, 'strict_tools')).toEqual({ ...SONNET.features, strictTools: false });
+    expect(withoutGroup({ ...SONNET.features, taskBudgetTokens: 60_000 }, 'task_budget')).toEqual(SONNET.features);
+    expect(request(withoutGroup(SONNET.features, 'refusal_fallback'), { profile: SONNET })).not.toHaveProperty('fallbacks');
+    expect(request(withoutGroup(SONNET.features, 'refusal_fallback'), { profile: SONNET }).betas).toEqual(['thinking-binding-controls-2026-08-01', 'thinking-display-updates-2026-08-18', 'compact-2026-01-12']);
+
+    // The API's message names one group the request carries: that one goes.
+    expect(groupToDrop(SONNET.features, 'tools: Too many strict tools (33). The maximum number of strict tools is 20.')).toBe('strict_tools');
+    expect(groupToDrop(SONNET.features, 'Schema is too complex for compilation.')).toBe('strict_tools');
+    expect(groupToDrop(SONNET.features, 'thinking.block_binding: Extra inputs are not permitted')).toBe('thinking_binding');
+    expect(groupToDrop(SONNET.features, 'Unexpected value(s) `compact-2026-01-12` for the `anthropic-beta` header.')).toBe('compaction');
+    expect(groupToDrop(SONNET.features, 'fallbacks: Input should be a valid list')).toBe('refusal_fallback');
+    expect(groupToDrop(SONNET.features, 'thinking.display: Input should be \'summarized\' or \'omitted\'')).toBe('progress_notes');
+    expect(groupToDrop(SONNET.features, 'tools.3.custom.allowed_callers: Extra inputs are not permitted')).toBe('programmatic_reads');
+    // It names none, or more than one, or one the request does not carry: the next in order.
+    expect(groupToDrop(SONNET.features, 'messages.2: unexpected role')).toBe('progress_notes');
+    expect(groupToDrop(SONNET.features, 'tools.3: a strict tool cannot be given allowed_callers')).toBe('progress_notes');
+    expect(groupToDrop(chatFeatures('player'), 'fallbacks: not supported on this model')).toBe('strict_tools');
+    expect(groupToDrop(withoutGroup(SONNET.features, 'progress_notes'), 'messages.2: unexpected role')).toBe('refusal_fallback');
+    // Nothing left to give up.
+    expect(groupToDrop(plainFeatures(SONNET.features), 'messages: invalid')).toBeNull();
+  });
+
+  it('what the API said about a rejected request is read for the log: status, type, code, and its own message cut short with ids removed', () => {
+    const error = Anthropic.APIError.generate(400, { type: 'error', error: { type: 'invalid_request_error', message: `tools.4.custom.strict: schema for 00000000-0000-4000-8000-000000000001 is not supported.\n${'x'.repeat(400)}` } }, undefined, new Headers());
+    const why = rejectionOf(error);
+    expect(why).toMatchObject({ status: 400, type: 'invalid_request_error', code: null });
+    expect(why.message.startsWith('tools.4.custom.strict: schema for <id> is not supported. xxx')).toBe(true);
+    expect(why.message).toHaveLength(300);
+    // An account or billing fault carries the API's own code: no plainer request cures it.
+    const held = Anthropic.APIError.generate(400, { type: 'error', error: { type: 'invalid_request_error', message: 'The organization is on hold.', details: { error_code: 'organization_on_hold' } } }, undefined, new Headers());
+    expect(rejectionOf(held).code).toBe('organization_on_hold');
+    // Anything that is not an API error still reads as something.
+    expect(rejectionOf(new Error('socket hang up'))).toEqual({ status: null, type: null, code: null, message: 'socket hang up' });
+    expect(rejectionOf(null)).toEqual({ status: null, type: null, code: null, message: '' });
+  });
+
+  it('the plain request (every group given up) carries no beta and no strict schema, and has nothing left to give up', () => {
     const plain = plainFeatures({ ...SONNET.features, taskBudgetTokens: 60_000 });
     expect(isPlain(SONNET.features)).toBe(false);
     expect(isPlain(HAIKU.features)).toBe(false);

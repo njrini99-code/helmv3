@@ -81,7 +81,7 @@ export function score(question, text) {
  * `tools` is every read the turn ran, by name, once each: the ones the model asked for itself and the ones its code called
  * (`code_execution` is the code step itself). The protocol does not carry a read's input, so `toolCalls[].input` is null.
  */
-export const newTurnState = () => ({ texts: [], open: false, conversationId: null, status: null, durationMs: null, declined: false, error: null, errorKind: null, evidence: 0, tools: [], evidenceParts: [], toolCalls: [], failedReads: [], cards: 0 });
+export const newTurnState = () => ({ texts: [], dropped: [], open: false, conversationId: null, status: null, durationMs: null, declined: false, error: null, errorKind: null, evidence: 0, tools: [], evidenceParts: [], toolCalls: [], failedReads: [], cards: 0 });
 
 /** The words of the answer, without the read markers the engine appends to a sentence (" [e3]"): a marker's digit is not a figure. */
 export const answerText = (state) => state.texts.join('').replace(/[ \t]?\[e\d+\]/g, '');
@@ -127,7 +127,11 @@ export function applyEvent(state, ev) {
     return state;
   }
   if (ev.type === 'message_start') state.conversationId = ev.conversation_id ?? state.conversationId;
-  else if (ev.type === 'usage' || ev.type === 'phase') return state;
+  else if (ev.type === 'usage') {
+    // The request features the turn gave up because the API rejected them (`features_dropped`); nothing on a turn that ran as configured.
+    if (Array.isArray(ev.features_dropped)) state.dropped = ev.features_dropped.filter((g) => typeof g === 'string');
+    return state;
+  } else if (ev.type === 'phase') return state;
   else if (ev.type === 'done') {
     state.status = ev.status ?? null;
     state.durationMs = ev.duration_ms ?? null;
@@ -161,10 +165,13 @@ export function applyEvent(state, ev) {
  *   declined   the model would not answer (a complete turn whose words are the app's sentence; its `data-turn-meta` says so)
  *   failed     the turn failed and said so            stopped    it was cancelled
  *   incomplete the stream ended without saying how
+ *   degraded   it answered (or reached a card), but only after the API rejected a request and a feature was given up
+ *              (`features_dropped` on the `usage` event). It did not run as configured, so it is never counted as complete.
  */
 export function verdictOf(state) {
   if (state.status === 'failed' || state.error) return 'failed';
   if (state.declined) return 'declined';
+  if ((state.status === 'complete' || state.status === 'awaiting_decision') && state.dropped?.length > 0) return 'degraded';
   if (state.status === 'complete') return 'complete';
   if (state.status === 'awaiting_decision') return 'card';
   if (state.status === 'stopped') return 'stopped';
@@ -304,6 +311,23 @@ export function citesFromLog(logText, answerText, surface, turnId) {
   return hit ? hit.cites.filter(Array.isArray).map(([v, ref, key, subject, flag]) => ({ v: String(v), ref, key, subject, ...(flag === 'c' ? { c: 1 } : {}) })) : null;
 }
 
+/**
+ * Why the API rejected a request, from the dev server's log: the engine logs one line per rejection,
+ * "chat/stream: the API rejected a request (400 invalid_request_error) and it was sent again without strict_tools: <the API's message>".
+ * `logText` is the part of the log written while one question was being answered. Each reason is cut to 400 characters.
+ */
+export function rejectionsFromLog(logText) {
+  const reasons = [];
+  for (const line of String(logText ?? '').split('\n')) {
+    const at = line.indexOf('the API rejected a request');
+    if (at === -1) continue;
+    // The logger prints the message as a quoted field of an object; what follows the message's own text is not part of it.
+    const reason = line.slice(at).replace(/['"`],?\s*(action|severity)\b.*$/, '').replace(/['"`]\s*[,}]?\s*$/, '').trim().slice(0, 400);
+    if (!reasons.includes(reason)) reasons.push(reason);
+  }
+  return reasons;
+}
+
 // ------------------------- the report -------------------------
 
 /**
@@ -316,7 +340,8 @@ export function reportLines({ report, asked, skipped, base, ref, team, maxUsd, s
   const count = (fn) => report.filter(fn).length;
   const data = report.filter((r) => !r.question.golfSense);
   const golf = report.filter((r) => r.question.golfSense);
-  const right = (r) => (r.question.golfSense ? Boolean(r.sense?.sense.pass) : Boolean(r.scored?.allRight));
+  // A degraded turn is never right, whatever it said: it did not run as configured.
+  const right = (r) => r.verdict !== 'degraded' && (r.question.golfSense ? Boolean(r.sense?.sense.pass) : Boolean(r.scored?.allRight));
   const notRight = report.filter((r) => r.verdict === 'complete' && !right(r));
   const times = report.filter((r) => r.verdict === 'complete').map((r) => r.seconds).sort((a, b) => a - b);
   const ruleCounts = {};
@@ -329,7 +354,10 @@ export function reportLines({ report, asked, skipped, base, ref, team, maxUsd, s
   lines.push(`Server ${base}, staging ${ref}, team ${team}. ${report.length} of ${asked} questions asked, total cost $${report.reduce((a, r) => a + r.cost, 0).toFixed(2)} (cap $${maxUsd.toFixed(2)}), total time ${report.reduce((a, r) => a + r.seconds, 0).toFixed(0)}s${times.length ? `, median ${times[Math.floor(times.length / 2)].toFixed(1)}s per complete answer` : ''}.`, '');
   if (stoppedBecause) lines.push(`**${stoppedBecause}**`, '');
   if (skipped.length) lines.push(`Not asked (nobody on the roster fits the placeholder): ${skipped.join(', ')}.`, '');
-  lines.push(`Verdicts: ${['complete', 'card', 'declined', 'failed', 'stopped', 'incomplete', 'error'].map((v) => `${v} ${count((r) => r.verdict === v)}`).join(', ')}.`);
+  lines.push(`Verdicts: ${['complete', 'card', 'declined', 'degraded', 'failed', 'stopped', 'incomplete', 'error'].map((v) => `${v} ${count((r) => r.verdict === v)}`).join(', ')}.`);
+  // A turn the API only accepted after a request feature was given up did not run as configured: its score says nothing about the configuration.
+  const gaveUp = report.filter((r) => r.dropped?.length);
+  if (gaveUp.length) lines.push(`**Ran without part of their configuration (the API rejected a request feature): ${gaveUp.length} of ${report.length}: ${[...new Set(gaveUp.flatMap((r) => r.dropped))].join(', ')}.** See each question's run note.`);
   lines.push(`Models, from the ledger: ${Object.entries(models).map(([m, n]) => `${m} ${n}`).join(', ') || 'none recorded'}.`);
   if (data.length) lines.push(`Data questions fully right: ${data.filter(right).length} of ${data.length}.`);
   if (golf.length) lines.push(`Golf sense: ${golf.filter(right).length} of ${golf.length} pass. Used a read they should: ${golf.filter((r) => r.sense?.reads.pass).length} of ${golf.length}.`);

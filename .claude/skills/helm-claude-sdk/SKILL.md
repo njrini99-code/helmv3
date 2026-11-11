@@ -36,11 +36,18 @@ the tie-breaker.
    rewrite an answer.
 7. **A task never runs without the coach's Confirm**, and the closing words repeat what the tool result
    says happened (held for Undo, committed, cancelled, failed). The receipt card is the record.
-8. **Model settings live in one place** (`src/lib/coachhelm/v3/llm/types.ts` and `engine/model.ts`): the model id
-   (Claude Haiku 5.5), the effort (`high`, sent explicitly because this model defaults to `medium`), max output, the
-   cache breakpoints, and every optional feature as one field of `CHAT_FEATURES` with a tested off path. This model
-   has no server-side refusal fallback: never send `fallbacks`; a refusal is a complete turn with a sentence the coach
-   can act on. Changing the model or effort is an owner decision; measure it on the eval first.
+8. **Model settings live in one place** (`src/lib/coachhelm/v3/llm/types.ts` and `engine/model.ts`): a model PROFILE
+   per surface (`profileFor(surface)`: Ask, quick chat and the practice helper on Claude Sonnet 5.5 at effort
+   `medium`; the player's Ask on Claude Haiku 5.5 at `high`, sent explicitly because it defaults to `medium`), max
+   output, the cache breakpoints, and every optional feature as one field of the profile's `features` with a tested
+   off path. Sonnet 5.5 is sent `fallbacks: 'default'`; Haiku 5.5 has no server-side refusal fallback and is never
+   sent the parameter. A refusal is a complete turn with a sentence the coach can act on. Changing a model or an
+   effort is an owner decision; measure it on the eval first.
+8a. **A request the API rejects is a fault, not a fallback.** The loop gives up one feature group at a time
+   (`FEATURE_GROUPS`) so the coach still gets an answer, logs the API's own reason, and marks the turn
+   (`features_dropped`). Never read a degraded turn as proof the configuration works: run the eval with
+   `--require-features`. `strict: true` is limited per REQUEST (20 strict tools, 24 optional parameters, 16 union
+   parameters across them); `strictToolNames` spends that budget, do not set `strict` on a tool yourself.
 9. **The prompt prefix is stable, byte for byte.** Tools in a fixed order, the policy, golf and data-map blocks
    identical for every team, then the team block (team, season rule, timezone, roster). Nothing that changes during
    a conversation's life goes in `system` or `tools`: today's date, the screen the coach is on and the coach's notes

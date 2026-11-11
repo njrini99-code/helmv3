@@ -236,7 +236,11 @@ export type ChatEvent =
    * failed, and so this one was not run: nothing was written for it. Its held receipt is withdrawn with it.
    */
   | { type: 'decision_reopened'; key: string; reason: 'batch_stopped' }
-  | { type: 'usage'; input_tokens: number; output_tokens: number; cache_read_input_tokens: number }
+  /**
+   * `features_dropped`: sent only when the turn could not run as configured: the request feature groups the API rejected and the
+   * turn went on without (`engine/model.ts`, `FEATURE_GROUPS`). For the eval and the log, never drawn.
+   */
+  | { type: 'usage'; input_tokens: number; output_tokens: number; cache_read_input_tokens: number; features_dropped?: string[] }
   /** A sentence a coach can act on. Never provider text. */
   | { type: 'error'; message: string; action: ChatErrorAction; kind?: ChatErrorKind }
   /** Last event of every response. `duration_ms`: what this request took. */

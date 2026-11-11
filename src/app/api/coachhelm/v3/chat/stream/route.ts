@@ -427,7 +427,7 @@ async function recordTurn(args: { admin: ReturnType<typeof createAdminClient>; c
   try {
     const cost = input + usage.output > 0 ? turnCostUsd(usage) : turnCostEstimateUsd(ledgerId);
     await admin.from('golf_coachhelm_llm_calls').insert(
-      buildChatLlmCallRow({ coachId: ctx.coach_id, conversationId, modelId: ledgerId, promptTokens: input, completionTokens: usage.output, costUsd: cost, grounded: summary.grounded, unmatchedTokens: summary.unmatched }),
+      buildChatLlmCallRow({ coachId: ctx.coach_id, conversationId, modelId: ledgerId, promptTokens: input, completionTokens: usage.output, costUsd: cost, grounded: summary.grounded, unmatchedTokens: summary.unmatched, featuresDropped: summary.featuresDropped }),
     );
     await recordSpend(admin, { coach_id: ctx.coach_id, task: 'coach_chat', cost_usd: cost });
   } catch {
@@ -449,7 +449,7 @@ async function recordTurn(args: { admin: ReturnType<typeof createAdminClient>; c
       action: 'v3.chat.stream.turn',
       featureArea: 'coachhelm',
       skipSentry: true,
-      extra: { conversationId, coachId: ctx.coach_id, status: summary.status, stop: summary.stop, firstTextMs: summary.firstTextMs, totalMs: summary.totalMs, calls: usage.calls, grounded: summary.grounded, unmatchedCount: summary.unmatched.length, refusalCategory: summary.refusalCategory, degraded: summary.degraded, model: ledgerId, fallbackModel: summary.fallbackModel },
+      extra: { conversationId, coachId: ctx.coach_id, status: summary.status, stop: summary.stop, firstTextMs: summary.firstTextMs, totalMs: summary.totalMs, calls: usage.calls, grounded: summary.grounded, unmatchedCount: summary.unmatched.length, refusalCategory: summary.refusalCategory, degraded: summary.degraded, featuresDropped: summary.featuresDropped, model: ledgerId, fallbackModel: summary.fallbackModel },
     },
     'info',
   ).catch(() => undefined);

@@ -19,7 +19,7 @@ import { stripReadMarkers } from '../read-markers';
 import { aboutLine } from './about';
 import { defaultGroundingCheck, type GroundingCheck } from './grounding';
 import { runModelLoop, toolResultsMessage, type LoopState, type LoopStop, type PendingDecision } from './loop';
-import { emptyUsage, fallbackModelOf, profileFor, type ChatFeatures, type ModelClient, type ModelMessage, type ModelProfile, type SystemPrompt, type ToolResultBlock, type UsageTotals } from './model';
+import { emptyUsage, fallbackModelOf, profileFor, type ChatFeatures, type FeatureGroup, type ModelClient, type ModelMessage, type ModelProfile, type SystemPrompt, type ToolResultBlock, type UsageTotals } from './model';
 import { applyChatEvent, CARD_REVISION_PART, CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, eventsForStoredParts, textOfParts, TURN_META_PART, turnMetaOf, type ChatCardRevision, type ChatErrorAction, type ChatErrorKind, type ChatEvent, type ChatScreenEcho, type ChatTurnMeta, type ChatTurnStatus, type ChatUIMessage, type ChatUIPart, type WireDataPart } from './protocol';
 import { buildHistory, collectReads, findOpenDecision, saveCardState, saveResumeToLedger, saveTurn, type LoadedConversation, type OpenDecision } from './store';
 import { lastRowNumberOf, lastSeqOf, workOf } from './steps';
@@ -56,8 +56,10 @@ export interface TurnSummary {
   error: unknown;
   /** The API's category when the model declined (`cyber`, `bio`, `frontier_llm`, `general_harms`), for the log. */
   refusalCategory: string | null;
-  /** True when the API rejected a request with optional features and the turn went on with plain requests. */
+  /** True when the API rejected a request and the turn went on without one or more feature groups. */
   degraded: boolean;
+  /** Those groups, in the order they were given up (`engine/model.ts`, `FEATURE_GROUPS`). Empty on a turn that ran as configured. */
+  featuresDropped: FeatureGroup[];
   /** The substitute model that answered when a refusal fallback did; null otherwise. */
   fallbackModel: string | null;
 }
@@ -184,7 +186,9 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
   let messageId: string | null = null;
   let refusalCategory: string | null = null;
   const finish = async (status: ChatTurnStatus, stop: TurnSummary['stop'], error: unknown, grounding: { grounded: boolean; unmatched: string[] }, before: readonly ChatUIPart[]) => {
-    send({ type: 'usage', input_tokens: usage.input + usage.cacheRead + usage.cacheWrite, output_tokens: usage.output, cache_read_input_tokens: usage.cacheRead });
+    // `features_dropped`: the request features this turn had to give up to be accepted. Names only, never the API's words.
+    const gaveUp = state.dropped.map((d) => d.group);
+    send({ type: 'usage', input_tokens: usage.input + usage.cacheRead + usage.cacheWrite, output_tokens: usage.output, cache_read_input_tokens: usage.cacheRead, ...(gaveUp.length > 0 ? { features_dropped: gaveUp } : {}) });
     // The turn's work, beside its whole duration: how many steps, and for how long at least one of them was running.
     const work = workOf(ui.parts);
     send({ type: 'done', status, duration_ms: Date.now() - started, ...(work.steps > 0 ? { work } : {}) });
@@ -202,7 +206,8 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
         proposalKeys: proposalKeysOf(ui.parts).filter((k) => !earlier.has(k)),
         error,
         refusalCategory,
-        degraded: state.degraded,
+        degraded: state.dropped.length > 0,
+        featuresDropped: state.dropped.map((d) => d.group),
         fallbackModel: fallbackModelOf(usage),
       });
     } catch {
@@ -228,7 +233,7 @@ async function runTurn(deps: TurnDeps, input: TurnInput, signal: AbortSignal, se
   const open = deps.store ? await findOpenDecision(sb, loaded, coachId).catch(() => null) : null;
   const { reads, nextRef } = collectReads(loaded);
   const profile = deps.profile ?? profileFor('ask');
-  const state: LoopState = { messages: [], appended: [], steps: 0, usage, reads, nextRef, nextProgress: 0, profile, features: deps.features ?? profile.features, degraded: false, container: null };
+  const state: LoopState = { messages: [], appended: [], steps: 0, usage, reads, nextRef, nextProgress: 0, profile, features: deps.features ?? profile.features, dropped: [], container: null };
   /** The assistant row this request writes: the waiting turn (a decision), or a failed attempt a retry replaces. */
   let rowId: string | undefined;
 

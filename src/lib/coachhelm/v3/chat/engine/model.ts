@@ -33,8 +33,16 @@
  * (unbilled, counted in `input_transformations`). Blocks are always passed back unchanged, never stripped here.
  *
  * Every optional feature is one field of a profile's `features`. Turn it off there and the request no longer carries
- * it; if the API ever rejects a request that carries one, the loop retries that call once as a plain request (see
- * `loop.ts`), so a beta the API stops accepting costs the coach nothing but the feature.
+ * it. The fields form GROUPS (`FEATURE_GROUPS`): if the API rejects a request (a 400), the loop gives up ONE group,
+ * the one the API's message names or else the next in the list's order, and sends the call again; the rest of the turn
+ * runs without that group, and which groups a turn gave up is logged with the API's own reason, sent on the `usage`
+ * event and written to the ledger row. A request that is accepted only after a group was dropped is a fault to fix,
+ * never a pass (the eval's `--require-features` fails the run on one).
+ *
+ * `strict: true` has a budget the API enforces per REQUEST, not per tool (structured outputs, "Schema complexity
+ * limits"): at most 20 strict tools, 24 optional parameters and 16 parameters with a union type, summed over every
+ * strict tool. `modelToolsFor` spends that budget in the tool list's own order, tasks first; a tool that does not fit
+ * is sent without `strict` (the engine checks every input itself, strict or not).
  */
 import Anthropic from '@anthropic-ai/sdk';
 import { transformJSONSchema } from '@anthropic-ai/sdk/lib/transform-json-schema';
@@ -72,7 +80,7 @@ export interface ChatFeatures {
    * stored thinking block the API can no longer verify is dropped, not a 400. Confirmed in the SDK types and the guide.
    */
   dropStaleThinking: boolean;
-  /** `strict: true` on each tool, so the model's input matches the schema exactly. Stable; no beta. */
+  /** `strict: true` on a tool, so the model's input matches the schema exactly. Stable; no beta. On as many tools as the API's per-request budget allows (`strictToolNames`). */
   strictTools: boolean;
   /**
    * A read goes back to the model as a `search_result` block with citations on (stable, no beta; this model is listed
@@ -173,22 +181,77 @@ export const CHAT_FEATURES: ChatFeatures = profileFor('ask', null).features;
 export const chatFeatures = (surface: ChatSurface = 'ask'): ChatFeatures => profileFor(surface).features;
 
 /**
- * The same request without anything the API could refuse as unknown: no beta, no strict schema, no code tool. What a
- * rejected request is retried as. (A conversation that already holds a call made from the model's code cannot be
- * replayed without the code tool; if the plain request is rejected too, the turn fails with a sentence, as any other.)
+ * The optional request features, as the API accepts or rejects them together, in the order they are given up when a
+ * rejected request does not say which one it objects to: what is newest and costs the coach least to lose comes
+ * first; the thinking-binding control comes last, because without it a stored conversation whose prompt has since
+ * changed is a 400 instead of a dropped block.
  */
-export const plainFeatures = (features: ChatFeatures): ChatFeatures => ({
-  ...features,
-  dropStaleThinking: false,
-  strictTools: false,
-  compaction: false,
-  taskBudgetTokens: null,
-  progressNotes: false,
-  programmaticReads: false,
-  refusalFallback: false,
-});
+export const FEATURE_GROUPS = ['progress_notes', 'refusal_fallback', 'task_budget', 'strict_tools', 'compaction', 'programmatic_reads', 'thinking_binding'] as const;
+export type FeatureGroup = (typeof FEATURE_GROUPS)[number];
 
-export const isPlain = (f: ChatFeatures): boolean => !f.dropStaleThinking && !f.strictTools && !f.compaction && f.taskBudgetTokens === null && !f.progressNotes && !f.programmaticReads && !f.refusalFallback;
+const GROUPS: Record<FeatureGroup, { on: (f: ChatFeatures) => boolean; off: Partial<ChatFeatures>; named: RegExp }> = {
+  progress_notes: { on: (f) => f.progressNotes, off: { progressNotes: false }, named: /thinking-display-updates|display/i },
+  refusal_fallback: { on: (f) => f.refusalFallback, off: { refusalFallback: false }, named: /fallback/i },
+  task_budget: { on: (f) => f.taskBudgetTokens !== null, off: { taskBudgetTokens: null }, named: /task[-_]budget/i },
+  strict_tools: { on: (f) => f.strictTools, off: { strictTools: false }, named: /strict|schema is too complex|optional parameters|union|grammar|additionalProperties/i },
+  compaction: { on: (f) => f.compaction, off: { compaction: false }, named: /context_management|compact/i },
+  programmatic_reads: { on: (f) => f.programmaticReads, off: { programmaticReads: false }, named: /allowed_callers|code_execution|programmatic|container/i },
+  thinking_binding: { on: (f) => f.dropStaleThinking, off: { dropStaleThinking: false }, named: /block_binding|thinking-binding-controls|prefix_mismatch/i },
+};
+
+/** The groups a request with these features carries, in the order they would be given up. */
+export const groupsOn = (features: ChatFeatures): FeatureGroup[] => FEATURE_GROUPS.filter((group) => GROUPS[group].on(features));
+
+/** The same features without one group. */
+export const withoutGroup = (features: ChatFeatures, group: FeatureGroup): ChatFeatures => ({ ...features, ...GROUPS[group].off });
+
+/**
+ * Which group to give up after the API rejected a request: the one its message names, when it names exactly one of
+ * the groups the request carried (a 400 names the field or the beta it objects to); otherwise the next in order.
+ * Null when the request carried none: there is nothing plainer to send. The message is only a hint, and a wrong one
+ * costs one more rejected request, never the answer.
+ */
+export function groupToDrop(features: ChatFeatures, apiMessage: string): FeatureGroup | null {
+  const on = groupsOn(features);
+  const named = on.filter((group) => GROUPS[group].named.test(apiMessage));
+  return (named.length === 1 ? named[0] : on[0]) ?? null;
+}
+
+/**
+ * The same request without anything the API could refuse as unknown: every group off. (A conversation that already
+ * holds a call made from the model's code cannot be replayed without the code tool; if the request without it is
+ * rejected too, the turn fails with a sentence, as any other.)
+ */
+export const plainFeatures = (features: ChatFeatures): ChatFeatures => FEATURE_GROUPS.reduce(withoutGroup, features);
+
+export const isPlain = (f: ChatFeatures): boolean => groupsOn(f).length === 0;
+
+/**
+ * What the API said when it rejected a request, for the log: the status, its error type, its stable code when it has
+ * one, and its own message cut to 300 characters with ids removed. The API's validation messages name the field or
+ * header they object to; nothing of the request body is read here.
+ */
+export interface ModelRejection {
+  status: number | null;
+  type: string | null;
+  /** `error.details.error_code`: set for account, billing and key faults, which no plainer request cures. */
+  code: string | null;
+  message: string;
+}
+export function rejectionOf(error: unknown): ModelRejection {
+  const e = (error ?? {}) as { status?: unknown; type?: unknown; errorCode?: unknown; apiMessage?: unknown; message?: unknown };
+  const words = typeof e.apiMessage === 'string' && e.apiMessage ? e.apiMessage : typeof e.message === 'string' ? e.message : '';
+  return {
+    status: typeof e.status === 'number' ? e.status : null,
+    type: typeof e.type === 'string' ? e.type : null,
+    code: typeof e.errorCode === 'string' ? e.errorCode : null,
+    message: words
+      .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '<id>')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 300),
+  };
+}
 
 const CODE_EXECUTION = 'code_execution_20260120' as const;
 
@@ -213,25 +276,107 @@ export function anthropicModelClient(): ModelClient {
 }
 
 /**
+ * The API's limits on `strict` across ONE request (structured outputs, "Schema complexity limits"; read 10 Nov 2026):
+ * the number of strict tools, the optional parameters summed over them, and their parameters that use a union type
+ * (`anyOf` or a list of types). Over any of them the whole request is a 400.
+ */
+export const STRICT_LIMITS = { tools: 20, optional: 24, unions: 16 } as const;
+
+// A tool is the same object on every request (the registry builds each once), so its schemas are worked out once.
+const plainSchemas = new WeakMap<object, Record<string, unknown>>();
+const strictSchemas = new WeakMap<object, { schema: ModelTool['input_schema'] | null }>();
+
+const jsonSchemaOf = (tool: ChatTool): Record<string, unknown> => {
+  let schema = plainSchemas.get(tool.input);
+  if (!schema) {
+    const { $schema: _draft, ...rest } = z.toJSONSchema(tool.input, { io: 'input', unrepresentable: 'any' }) as Record<string, unknown>;
+    schema = rest;
+    plainSchemas.set(tool.input, schema);
+  }
+  return schema;
+};
+
+/** What a strict schema spends of the request's budget: its optional parameters and its parameters with a union type, at every depth. */
+export function strictCostOf(schema: unknown): { optional: number; unions: number } {
+  const cost = { optional: 0, unions: 0 };
+  const visit = (node: unknown): void => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) return node.forEach(visit);
+    const object = node as Record<string, unknown>;
+    if (object.properties && typeof object.properties === 'object') {
+      const required = new Set(Array.isArray(object.required) ? (object.required as unknown[]) : []);
+      for (const [name, property] of Object.entries(object.properties as Record<string, unknown>)) {
+        if (!required.has(name)) cost.optional += 1;
+        const p = (property ?? {}) as { anyOf?: unknown; type?: unknown };
+        if (Array.isArray(p.anyOf) || Array.isArray(p.type)) cost.unions += 1;
+      }
+    }
+    Object.values(object).forEach(visit);
+  };
+  visit(schema);
+  return cost;
+}
+
+/** The schema `strict` takes for a tool (the SDK's own transform), or null when it cannot be expressed. */
+function strictSchemaOf(tool: ChatTool): ModelTool['input_schema'] | null {
+  let known = strictSchemas.get(tool.input);
+  if (!known) {
+    try {
+      known = { schema: { ...transformJSONSchema({ ...jsonSchemaOf(tool), type: 'object' }), type: 'object' } as ModelTool['input_schema'] };
+    } catch {
+      known = { schema: null };
+    }
+    strictSchemas.set(tool.input, known);
+  }
+  return known.schema;
+}
+
+/** The code may call the reads; a task is only ever asked for directly, so it can be planned, shown and confirmed. */
+const isProgrammatic = (tool: ChatTool, features: ChatFeatures): boolean => features.programmaticReads && tool.kind === 'read' && !tool.direct_only;
+
+/**
  * A tool as the API takes it. `eager_input_streaming` streams large inputs as written; the engine validates every input
  * itself either way. With `strict`, the schema is passed through the SDK's own transform (objects closed, keywords the
  * API does not take moved into the description); a schema it cannot express is sent without `strict` rather than
- * failing the request.
+ * failing the request. `strict` here is this ONE tool's: whether it fits the request's budget is `modelToolsFor`'s.
  */
-export function modelToolFor(tool: ChatTool, features: ChatFeatures = CHAT_FEATURES): ModelTool {
-  const { $schema: _draft, ...schema } = z.toJSONSchema(tool.input, { io: 'input', unrepresentable: 'any' }) as Record<string, unknown>;
+export function modelToolFor(tool: ChatTool, features: ChatFeatures = CHAT_FEATURES, strict: boolean = features.strictTools): ModelTool {
   const base = { name: tool.name, description: tool.description, eager_input_streaming: true };
-  // The code may call the reads; a task is only ever asked for directly, so it can be planned, shown and confirmed.
-  const programmatic = features.programmaticReads && tool.kind === 'read' && !tool.direct_only;
+  const programmatic = isProgrammatic(tool, features);
   const callers = programmatic ? { allowed_callers: ['direct' as const, CODE_EXECUTION] } : {};
-  if (features.strictTools && !programmatic) {
-    try {
-      return { ...base, input_schema: { ...transformJSONSchema({ ...schema, type: 'object' }), type: 'object' } as ModelTool['input_schema'], strict: true };
-    } catch {
-      // Falls through to the plain definition.
-    }
+  const strictSchema = strict && !programmatic ? strictSchemaOf(tool) : null;
+  if (strictSchema) return { ...base, input_schema: strictSchema, strict: true };
+  return { ...base, ...callers, input_schema: { ...jsonSchemaOf(tool), type: 'object' } as ModelTool['input_schema'] };
+}
+
+/**
+ * The names of the tools sent `strict`, within the request's budget (`STRICT_LIMITS`). Tasks come first, because a
+ * write's arguments matter most; within tasks and within reads the list's own order decides, so the order of the
+ * registry is the order of priority. A tool that would take the request over any limit is left out and the next one
+ * is tried. The same list and features always give the same names: the tools are part of the cached prefix.
+ */
+export function strictToolNames(tools: readonly ChatTool[], features: ChatFeatures = CHAT_FEATURES): Set<string> {
+  const names = new Set<string>();
+  if (!features.strictTools) return names;
+  const spent = { optional: 0, unions: 0 };
+  for (const tool of [...tools.filter((t) => t.kind === 'task'), ...tools.filter((t) => t.kind !== 'task')]) {
+    if (names.size >= STRICT_LIMITS.tools) break;
+    if (isProgrammatic(tool, features)) continue;
+    const schema = strictSchemaOf(tool);
+    if (!schema) continue;
+    const cost = strictCostOf(schema);
+    if (spent.optional + cost.optional > STRICT_LIMITS.optional || spent.unions + cost.unions > STRICT_LIMITS.unions) continue;
+    spent.optional += cost.optional;
+    spent.unions += cost.unions;
+    names.add(tool.name);
   }
-  return { ...base, ...callers, input_schema: { ...schema, type: 'object' } as ModelTool['input_schema'] };
+  return names;
+}
+
+/** Every tool of a request as the API takes it, in the list's order, `strict` on the ones the budget allows. */
+export function modelToolsFor(tools: readonly ChatTool[], features: ChatFeatures = CHAT_FEATURES): ModelTool[] {
+  const strict = strictToolNames(tools, features);
+  return tools.map((tool) => modelToolFor(tool, features, strict.has(tool.name)));
 }
 
 /** The prompt, in cache order: policy first (identical for every team and conversation, one hour), then the team's own block (five minutes). */
@@ -272,7 +417,7 @@ export function buildModelRequest(args: {
   if (f.taskBudgetTokens !== null) betas.push('task-budgets-2026-03-13');
   if (f.compaction) betas.push('compact-2026-01-12');
   if (f.refusalFallback) betas.push('server-side-fallback-2026-07-01');
-  const tools: NonNullable<ModelRequest['tools']> = args.tools.map((t) => modelToolFor(t, f));
+  const tools: NonNullable<ModelRequest['tools']> = modelToolsFor(args.tools, f);
   if (f.programmaticReads) tools.push({ type: CODE_EXECUTION, name: 'code_execution' });
   return {
     model: profile.modelId,

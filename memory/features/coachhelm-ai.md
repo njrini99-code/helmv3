@@ -110,10 +110,26 @@ entries are history. The tool list and the prompt are described where the tools 
   zod), `citations` (below), `compaction` (`compact_20260112` at the default trigger, beta `compact-2026-01-12`),
   `programmaticReads` (below), and on Sonnet 5.5 only `progressNotes` (`thinking.display: 'updates'`, beta
   `thinking-display-updates-2026-08-18`: the model's short progress updates reach the thread as `note` events) and
-  `refusalFallback` (next item). Built and off: `taskBudgetTokens` (null). If the API rejects a request (HTTP 400)
-  that carries any of them, the loop sends that call once more as a plain request (no beta, no `strict`, no code
-  tool, no `fallbacks`), keeps the rest of the turn plain, completes the turn and logs `v3.chat.stream.degraded` as
-  an error: the coach loses the feature, not the answer.
+  `refusalFallback` (next item). Built and off: `taskBudgetTokens` (null).
+- **A rejected request gives up one feature group at a time** (`FEATURE_GROUPS` in `engine/model.ts`:
+  `progress_notes`, `refusal_fallback`, `task_budget`, `strict_tools`, `compaction`, `programmatic_reads`,
+  `thinking_binding`). On an HTTP 400 the loop gives up the group the API's message names (when it names exactly one
+  the request carried), otherwise the next in that order, sends the call again, and the rest of the turn runs without
+  that group; the coach loses the feature, not the answer. A 400 that carries the API's own error code (an account,
+  billing or key fault) is not retried. Each rejection is logged as an error under `v3.chat.stream.degraded`
+  (`errorCode: chat_feature_rejected`) with the status, the error type and the API's message (300 characters, ids
+  removed, nothing of the request) in the line itself. What a turn gave up is on the `usage` event
+  (`features_dropped`, group names only), in the turn's log line (`featuresDropped`) and in the ledger row
+  (`citations.features_dropped`). **A turn that gave something up did not run as configured**: the eval calls it
+  `degraded`, never `complete`, and `--require-features` stops the run on the first one. First live run, 10 Nov 2026:
+  every request was rejected and retried plain, because every tool was sent `strict` (next item).
+- **`strict` is a budget per request, not per tool.** The API accepts at most 20 strict tools, 24 optional
+  parameters and 16 parameters with a union type, summed over every strict tool of one request (structured outputs,
+  "Schema complexity limits"); over any of them the whole request is a 400. `strictToolNames` spends that budget:
+  tasks first, then reads, each in the registry's order, skipping a tool that would pass a limit; the rest are sent
+  with their schema as written. The registry shows an optional field as a required nullable one, so each costs one
+  union: a coach's 33 direct-only tools hold 72 and a player's 10 reads hold 56, against 16. The engine checks every
+  input with the tool's own zod schema whether or not it was sent strict.
 - **Refusal fallback (Sonnet 5.5 only).** Requests carry `fallbacks: 'default'` (beta
   `server-side-fallback-2026-07-01`): when the model declines for a category the API retries, the API answers with a
   substitute model inside the same response. The loop keeps the words already streamed, drops from the echoed turn
@@ -131,7 +147,8 @@ entries are history. The tool list and the prompt are described where the tools 
   by the tool's zod schema, runs with the signed-in coach's session client under row-level security and the same
   ownership checks, and its envelope reaches the store, the evidence parts (marked `via: 'code'`) and the grounding
   check. A task can never be called from code, and no card is prepared while code is waiting on a read. Reads are not
-  `strict` while this is on (the API does not allow both); tasks stay strict. An answer computed in code carries no
+  `strict` while this is on (the API does not allow both); tasks are strict as far as the request's strict budget
+  goes. An answer computed in code carries no
   citation markers; its sources are the turn's `via: 'code'` evidence parts. Each run of the code also leaves one
   `data-computed` part (`ChatComputed`: the reads it called by evidence ref, how many, how many players, the window
   they share, and a method sentence when the code began with a `# Method:` line), stored with the turn; its progress
@@ -897,7 +914,8 @@ replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
   coach's message, and the policy tells it to expect them there. There are no output formats to parse.
 - **Strict tool use** (`chat/strict-input.ts`): every registered tool's input is shown to the model as a closed
   object with every field required and optional fields nullable, with no length or range keywords; the tool's own
-  zod schema validates behind it, so no bound is lost. A new tool needs only an ordinary zod object.
+  zod schema validates behind it, so no bound is lost. A new tool needs only an ordinary zod object. Which tools are
+  actually SENT strict is the engine's budget (above): a nullable field is a union, and one request may hold 16.
 - **What a read says to the model**: one figure per line, each naming whose it is, what it is, the window and the
   sample ("Eli Brandt, Scoring avg, last 10 rounds: 74.2 (n=10 rounds) | team average 75.1"). Several players in one
   `get_player_stats` call are set side by side by the reader, best first with the gap.

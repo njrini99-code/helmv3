@@ -5,7 +5,7 @@ import { encodeChatEvent, type ChatEvent } from '@/lib/coachhelm/v3/chat/engine/
 import { EVAL_GLOBAL_FORBID, golfSenseQuestions as compiled, sentenceCount as sentencesOf } from '@/lib/coachhelm/v3/chat/knowledge/eval';
 import senseData from '@/lib/coachhelm/v3/chat/knowledge/eval/golf-sense.json';
 // @ts-expect-error -- plain .mjs helper, scripts/ is outside tsconfig.
-import { EVERYDAY_WORDS, answerText, applyEvent, captureFixture, citesFromLog, dateRe, eventReader, golfSenseQuestions, newTurnState, reportLines, score, scoreSense, sentenceCount, verdictOf, writingRules } from '../ask-eval-score.mjs';
+import { EVERYDAY_WORDS, answerText, applyEvent, captureFixture, citesFromLog, dateRe, eventReader, golfSenseQuestions, newTurnState, rejectionsFromLog, reportLines, score, scoreSense, sentenceCount, verdictOf, writingRules } from '../ask-eval-score.mjs';
 
 const owen = {
   facts: [
@@ -249,7 +249,8 @@ describe('ask-eval report', () => {
     expect(text).toContain('median 12.3s per complete answer');
     expect(text).toContain('**Stopped before x: $24.90 spent.**');
     expect(text).toContain('Not asked (nobody on the roster fits the placeholder): sg-few-tracked-rounds.');
-    expect(text).toContain('Verdicts: complete 3, card 0, declined 0, failed 1, stopped 0, incomplete 0, error 1.');
+    expect(text).toContain('Verdicts: complete 3, card 0, declined 0, degraded 0, failed 1, stopped 0, incomplete 0, error 1.');
+    expect(text).not.toContain('Ran without part of their configuration');
     expect(text).toContain('Models, from the ledger: anthropic/claude-sonnet-5-5 2, anthropic/claude-sonnet-5-5 + anthropic/claude-sonnet-5 1.');
   });
 
@@ -274,6 +275,60 @@ describe('ask-eval report', () => {
     expect(text).toContain('- writing: abbreviation');
     expect(text).toContain('> The team has played 8 rounds.');
     expect(text).toContain('> (no text)');
+  });
+});
+
+describe('ask-eval: a turn the API only accepted after a feature was given up', () => {
+  const usage = (dropped?: string[]) => ({ type: 'usage', input_tokens: 10, output_tokens: 2, cache_read_input_tokens: 0, ...(dropped ? { features_dropped: dropped } : {}) });
+  const turn = (dropped: string[] | undefined, status: string, extra: Array<Record<string, unknown>> = []) => {
+    const state = newTurnState();
+    for (const ev of [{ type: 'text_delta', delta: 'The team has played 8 rounds.' }, ...extra, usage(dropped), { type: 'done', status }]) applyEvent(state, ev);
+    return state;
+  };
+
+  it('is degraded, never complete or a card; a turn that ran as configured is unchanged', () => {
+    expect(turn(undefined, 'complete').dropped).toEqual([]);
+    expect(verdictOf(turn(undefined, 'complete'))).toBe('complete');
+    expect(turn(['strict_tools'], 'complete').dropped).toEqual(['strict_tools']);
+    expect(verdictOf(turn(['strict_tools'], 'complete'))).toBe('degraded');
+    expect(verdictOf(turn(['progress_notes', 'strict_tools'], 'awaiting_decision'))).toBe('degraded');
+    // A turn that failed anyway is still a failure, and one the model declined is still declined.
+    expect(verdictOf(turn(['strict_tools'], 'failed'))).toBe('failed');
+    const meta = { type: 'part', part: { type: 'data-turn-meta', id: 'turn-meta', data: { started_at: 'x', duration_ms: 1, reads: 0, declined: true } } };
+    expect(verdictOf(turn(['strict_tools'], 'complete', [meta]))).toBe('declined');
+  });
+
+  it('reads the API’s own reason from what the dev server logged during the turn', () => {
+    const log = [
+      ' POST /api/coachhelm/v3/chat/stream 200 in 9123ms',
+      "[ServerErrorLogger] not persisted off-prod { severity: 'error', traceMessage: 'chat/stream: the API rejected a request (400 invalid_request_error) and it was sent again without strict_tools: tools: Too many strict tools (33). The maximum number of strict tools is 20.', action: 'v3.chat.stream.degraded' }",
+      "[ServerErrorLogger] not persisted off-prod { severity: 'error', traceMessage: 'chat/stream: the API rejected a request (400 invalid_request_error) and it was sent again without compaction: context_management: Extra inputs are not permitted', action: 'v3.chat.stream.degraded' }",
+      'something else entirely',
+    ].join('\n');
+    expect(rejectionsFromLog(log)).toEqual([
+      'the API rejected a request (400 invalid_request_error) and it was sent again without strict_tools: tools: Too many strict tools (33). The maximum number of strict tools is 20.',
+      'the API rejected a request (400 invalid_request_error) and it was sent again without compaction: context_management: Extra inputs are not permitted',
+    ]);
+    // The same line twice is one reason; no log, or nothing in it, is no reasons; a long one is cut.
+    expect(rejectionsFromLog(`${log}\n${log}`)).toHaveLength(2);
+    expect(rejectionsFromLog('')).toEqual([]);
+    expect(rejectionsFromLog(undefined)).toEqual([]);
+    expect(rejectionsFromLog(`x the API rejected a request ${'y'.repeat(900)}`)[0]).toHaveLength(400);
+  });
+
+  it('is counted on its own in the report, named at the top, and never among the answers that were right', () => {
+    const question = { id: 'count-rounds', category: 'count', viewer: 'coach', ask: 'How many rounds?', facts: [{ label: 'rounds 8', kind: 'number', value: 8 }] };
+    const rows = [
+      { question, verdict: 'degraded', text: 'The team has played 8 rounds.', seconds: 9, cost: 0.2, note: 'ran without strict_tools (the API rejected a request that carried it): the API rejected a request (400 invalid_request_error) and it was sent again without strict_tools: tools: Too many strict tools (33).', tools: ['get_team_stats'], failedReads: [], dropped: ['strict_tools'], grounded: true, unmatched: [], model: 'anthropic/claude-sonnet-5-5', scored: score(question, 'The team has played 8 rounds.'), sense: null },
+      { question, verdict: 'complete', text: 'The team has played 8 rounds.', seconds: 9, cost: 0.03, note: '', tools: ['get_team_stats'], failedReads: [], dropped: [], grounded: true, unmatched: [], model: 'anthropic/claude-sonnet-5-5', scored: score(question, 'The team has played 8 rounds.'), sense: null },
+    ];
+    const text = reportLines({ report: rows, asked: 2, skipped: [], base: 'http://localhost:3200', ref: 'staging-ref', team: 'Demo University Golf', maxUsd: 25, stoppedBecause: '', at: '2026-11-11T04:00:00.000Z' }).join('\n');
+    expect(text).toContain('Verdicts: complete 1, card 0, declined 0, degraded 1, failed 0, stopped 0, incomplete 0, error 0.');
+    expect(text).toContain('**Ran without part of their configuration (the API rejected a request feature): 1 of 2: strict_tools.** See each question\'s run note.');
+    // Both answers state the right figure; only the one that ran as configured counts.
+    expect(text).toContain('Data questions fully right: 1 of 2.');
+    expect(text).toContain('### count-rounds (degraded)');
+    expect(text).toContain('Run note: ran without strict_tools (the API rejected a request that carried it): the API rejected a request (400 invalid_request_error)');
   });
 });
 

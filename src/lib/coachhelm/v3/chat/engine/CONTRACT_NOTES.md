@@ -1361,3 +1361,41 @@ P23. The shapes below are each read's `detail` as it is today; CAPABILITIES writ
 - Addresses: an event `/golf/dashboard/calendar?event=<id>`, a round `/golf/dashboard/rounds/<id>`, a qualifier
   `/golf/dashboard/qualifiers/<id>`. A player row carries `player_id` and no address: the player page's address is
   yours. `href` is never read out to the model.
+
+E33. **A rejected request, and `strict` as a budget (11 Nov 2026, after the first live run).** Every live request had
+been rejected (HTTP 400) and answered only by the plain retry, so no optional feature had ever run. Cause found
+without a live call: every tool was sent `strict: true`, and the API limits strict use per REQUEST (structured
+outputs, "Schema complexity limits": 20 strict tools, 24 optional parameters, 16 parameters with a union type, summed
+over all strict tools). A coach's request held 33 strict tools and 72 unions; a player's 10 and 56.
+- `strictToolNames(tools, features)` chooses the strict tools within the three limits: tasks before reads, each in
+  the registry's order, a tool that would pass a limit is skipped and the next is tried. `modelToolsFor` builds the
+  list; `modelToolFor(tool, features, strict?)` is one tool. Same list and features, same names (the tools are cached
+  bytes). Today that is 20 of a coach's 33 direct-only tools and 8 of a player's 10 reads.
+- **PLANS / CONTEXT:** the order of the registry is now the order of priority for `strict`. `strict-input.ts` shows
+  every optional field as required-and-nullable, which costs a union each (16 a request). An optional field left
+  optional costs from the other limit (24). Using both would let about 40 optional fields be strict in one request
+  instead of 16; say if you want the engine to count differently. Nothing else changes for a tool: the engine's zod
+  check runs on every input, strict or not.
+- **The ladder.** `FEATURE_GROUPS`, in the order they are given up: `progress_notes`, `refusal_fallback`,
+  `task_budget`, `strict_tools`, `compaction`, `programmatic_reads`, `thinking_binding`. On a 400 the loop drops the
+  group the API's message names when it names exactly one the request carries (`groupToDrop`), otherwise the next in
+  order, and sends the call again; at most one request per group. A 400 with the API's `error_code` (account,
+  billing, key) is not retried. `plainFeatures` is every group off.
+- **Where a drop is recorded.** `LoopState.dropped` (group, status, type, code, message); `TurnSummary.featuresDropped`
+  and `degraded`; the `usage` event's `features_dropped` (names only: the API's words never go to a browser); the log
+  line `v3.chat.stream.degraded`, whose MESSAGE holds the status, type and the API's words, because off production
+  the logger prints the message and no `extra`; the turn's log line; the ledger row's `citations.features_dropped`.
+- **The eval.** A turn with `features_dropped` is `degraded`, never `complete`, and is never counted right.
+  `--require-features` stops the run at the first one (exit 1, after its cost is read); `--server-log <file>` puts the
+  API's reason in the question's run note.
+- **Not verifiable without a live call, in the order I would suspect them next:** (1) a strict tool in the same
+  request as the code tool: the programmatic-calling page says "Tools with `strict: true` are not supported with
+  programmatic calling", which I read as per tool (ours are never both) but may be per request; (2)
+  `fallbacks: 'default'` on a request that also carries a `role: 'system'` message and `display: 'updates'`, neither
+  of which the substitute model (Claude Sonnet 5) accepts as a direct request; (3) `strict` beside
+  `eager_input_streaming` on one tool. Each would show as one named drop in the log, and the turn would still answer.
+- **The player's ledger row** was never written: the insert named a `grounded` column that does not exist and left
+  out `prompt_hash` and `verified` (both NOT NULL). It is now the same row a coach's turn writes
+  (`buildChatLlmCallRow` with `coachId: null, playerId`), keyed by the turn's own id; a ledger that refuses it is
+  logged once per process.
+

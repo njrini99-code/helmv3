@@ -5,6 +5,7 @@
  * (with and without the held columns), the action ledger and the Undo hold. Only the model, the database, the tool set
  * and the session are stand-ins (helpers.ts).
  */
+import Anthropic from '@anthropic-ai/sdk';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
@@ -107,6 +108,7 @@ vi.mock('@/lib/coachhelm/v3/chat/undo-hold', async (original) => {
 
 import { POST } from '../route';
 import { restoreUIMessages } from '@/lib/coachhelm/v3/chat/restore';
+import { resetPlayerLedgerFault } from '@/lib/coachhelm/v3/chat/player-turn';
 import { CHAT_FEATURES, MissingModelKeyError, plainFeatures } from '@/lib/coachhelm/v3/chat/engine/model';
 import { cancelHeld } from '@/lib/coachhelm/v3/chat/undo-hold';
 import { listConversations, resetSurfaceColumnCheck } from '@/lib/coachhelm/v3/chat/persistence';
@@ -533,34 +535,127 @@ describe('what a read tells the model, and how an answer points back at it', () 
 });
 
 describe('the optional request features', () => {
-  it('a request the API rejects is sent once more as a plain request, the turn completes, and the rejection is logged to be fixed', async () => {
-    const model = script({ content: [], reject: rejected() }, { content: [toolUse('tu_1', 'get_team_stats', {})] }, { content: [text('74.2.')] });
+  const ALL_BETAS = ['thinking-binding-controls-2026-08-01', 'thinking-display-updates-2026-08-18', 'compact-2026-01-12', 'server-side-fallback-2026-07-01'];
+  const strictOf = (request: FakeModel['requests'][number]) => (request.tools as Array<{ name: string; strict?: boolean }>).filter((t) => t.strict).map((t) => t.name);
+  const usageOf = (events: ChatEvent[]) => events.find((e) => e.type === 'usage') as { features_dropped?: string[] };
+  const degradedLogs = () => h.logServerError.mock.calls.map((c) => c as unknown[]).filter((c) => (c[1] as { action?: string })?.action === 'v3.chat.stream.degraded');
+  const turnLogExtra = () => (h.logServerEvent.mock.calls.map((c) => c as unknown[]).find((c) => c[0] === 'chat/stream: turn')![1] as { extra: { degraded: boolean; featuresDropped: string[] } }).extra;
+  const ledgerRows = () => ((h.admin as unknown as FakeDb).tables.golf_coachhelm_llm_calls ?? []) as Array<{ citations: { features_dropped?: string[] } | null }>;
+
+  it('a request the API rejects gives up the ONE feature its message names, the turn completes with everything else on, and the rejection is logged with the API’s own words', async () => {
+    const model = script({ content: [], reject: rejected('tools: Too many strict tools (33). The maximum number of strict tools is 20.') }, { content: [toolUse('tu_1', 'get_team_stats', {})] }, { content: [text('74.2.')] });
     const { events } = await ask('How is the team scoring?');
 
     expect(done(events)?.status).toBe('complete');
     expect(textOf(events)).toBe('74.2.');
     expect(events.some((e) => e.type === 'error')).toBe(false);
     expect(model.requests).toHaveLength(3);
-    expect(model.requests[0]!.betas).toEqual(['thinking-binding-controls-2026-08-01', 'thinking-display-updates-2026-08-18', 'compact-2026-01-12', 'server-side-fallback-2026-07-01']);
-    // The retry, and every later call of the turn, carries no beta and nothing a beta or `strict` added.
+    // As configured, the request carried strict tools (the task; the reads a coach's code may call never are).
+    expect(model.requests[0]!.betas).toEqual(ALL_BETAS);
+    expect(strictOf(model.requests[0]!)).toEqual(['create_focus_area']);
+    // The retry, and every later call of the turn, has no strict tool and is otherwise the same request.
     for (const request of model.requests.slice(1)) {
-      expect(request).not.toHaveProperty('betas');
-      expect(request).not.toHaveProperty('fallbacks');
-      expect(request).not.toHaveProperty('context_management');
-      expect(request.thinking).toEqual({ type: 'adaptive' });
-      expect((request.tools as Array<{ strict?: boolean }>).some((t) => t.strict !== undefined)).toBe(false);
-      // The plain request has no code tool either, and no read says it may be called from code.
-      expect(JSON.stringify(request.tools)).not.toMatch(/code_execution|allowed_callers/);
-      // What is not optional is unchanged.
+      expect(strictOf(request)).toEqual([]);
+      expect(request.betas).toEqual(ALL_BETAS);
+      expect(request.fallbacks).toBe('default');
+      expect(request.context_management).toEqual({ edits: [{ type: 'compact_20260112' }] });
+      expect(request.thinking).toEqual({ type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' }, display: 'updates' });
+      expect(JSON.stringify(request.tools)).toMatch(/code_execution_20260120/);
+      expect((request.tools as Array<{ name: string }>).map((t) => t.name)).toEqual((model.requests[0]!.tools as Array<{ name: string }>).map((t) => t.name));
       expect(request.model).toBe('claude-sonnet-5-5');
       expect(request.output_config).toEqual({ effort: 'medium' });
       expect(request.messages.slice(0, 2)).toEqual([{ role: 'user', content: 'How is the team scoring?' }, sys]);
     }
-    const logged = h.logServerError.mock.calls.map((c) => c as unknown[]).find((c) => (c[1] as { action?: string })?.action === 'v3.chat.stream.degraded');
-    expect(logged).toBeTruthy();
-    expect(logged![2]).toBe('error');
-    const turnLog = h.logServerEvent.mock.calls.map((c) => c as unknown[]).find((c) => c[0] === 'chat/stream: turn');
-    expect((turnLog![1] as { extra: { degraded: boolean } }).extra.degraded).toBe(true);
+    // One log line, an error to be fixed, and the reason is in the line itself: the status, the type, what was given up, what the API said.
+    const logged = degradedLogs();
+    expect(logged).toHaveLength(1);
+    expect(logged[0]![0]).toBe('chat/stream: the API rejected a request (400 invalid_request_error) and it was sent again without strict_tools: tools: Too many strict tools (33). The maximum number of strict tools is 20.');
+    expect(logged[0]![1]).toMatchObject({ errorCode: 'chat_feature_rejected', handled: true, extra: { dropped: 'strict_tools', alreadyDropped: [], status: 400, errorType: 'invalid_request_error', model: 'claude-sonnet-5-5' } });
+    expect(logged[0]![2]).toBe('error');
+    // Nothing of the request is in it.
+    expect(JSON.stringify(logged[0])).not.toContain('How is the team scoring');
+    // The turn says what it ran without: on the wire (names only), in its log line and in its ledger row.
+    expect(usageOf(events).features_dropped).toEqual(['strict_tools']);
+    expect(JSON.stringify(events)).not.toContain('Too many strict tools');
+    expect(turnLogExtra()).toMatchObject({ degraded: true, featuresDropped: ['strict_tools'] });
+    expect(ledgerRows()).toHaveLength(1);
+    expect(ledgerRows()[0]!.citations).toMatchObject({ features_dropped: ['strict_tools'] });
+  });
+
+  it('a turn that runs as configured says nothing was given up: no field on the wire, none in the ledger row', async () => {
+    script({ content: [text('74.2.')] });
+    const { events } = await ask('How is the team scoring?');
+    expect(done(events)?.status).toBe('complete');
+    expect(usageOf(events)).not.toHaveProperty('features_dropped');
+    expect(degradedLogs()).toEqual([]);
+    expect(turnLogExtra()).toMatchObject({ degraded: false, featuresDropped: [] });
+    expect(JSON.stringify(ledgerRows()[0])).not.toContain('features_dropped');
+  });
+
+  it('a rejection that names nothing gives the features up one at a time, in order, down to the plain request', async () => {
+    const order = ['progress_notes', 'refusal_fallback', 'strict_tools', 'compaction', 'programmatic_reads', 'thinking_binding'];
+    const model = script(...order.map(() => ({ content: [], reject: rejected('messages.1: something the request does not say') })), { content: [text('74.2.')] });
+    const { events } = await ask('How is the team scoring?');
+
+    expect(done(events)?.status).toBe('complete');
+    expect(textOf(events)).toBe('74.2.');
+    expect(model.requests).toHaveLength(7);
+    expect(usageOf(events).features_dropped).toEqual(order);
+    expect(degradedLogs().map((c) => (c[1] as { extra: { dropped: string } }).extra.dropped)).toEqual(order);
+    expect((degradedLogs()[2]![1] as { extra: { alreadyDropped: string[] } }).extra.alreadyDropped).toEqual(['progress_notes', 'refusal_fallback']);
+    // Each rung drops one thing and keeps the rest.
+    expect(model.requests[1]!.betas).toEqual(['thinking-binding-controls-2026-08-01', 'compact-2026-01-12', 'server-side-fallback-2026-07-01']);
+    expect(model.requests[1]!.thinking).toEqual({ type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } });
+    expect(model.requests[2]).not.toHaveProperty('fallbacks');
+    expect(strictOf(model.requests[2]!)).toEqual(['create_focus_area']);
+    expect(strictOf(model.requests[3]!)).toEqual([]);
+    expect(model.requests[3]!.context_management).toBeDefined();
+    expect(model.requests[4]).not.toHaveProperty('context_management');
+    expect(JSON.stringify(model.requests[4]!.tools)).toMatch(/code_execution_20260120/);
+    expect(JSON.stringify(model.requests[5]!.tools)).not.toMatch(/code_execution|allowed_callers/);
+    expect(model.requests[5]!.betas).toEqual(['thinking-binding-controls-2026-08-01']);
+    // The last request carries no beta and nothing a beta or `strict` added. What is not optional is unchanged.
+    const plain = model.requests[6]!;
+    expect(plain).not.toHaveProperty('betas');
+    expect(plain).not.toHaveProperty('fallbacks');
+    expect(plain).not.toHaveProperty('context_management');
+    expect(plain.thinking).toEqual({ type: 'adaptive' });
+    expect((plain.tools as Array<{ strict?: boolean }>).some((t) => t.strict !== undefined)).toBe(false);
+    expect(plain.model).toBe('claude-sonnet-5-5');
+    expect(plain.output_config).toEqual({ effort: 'medium' });
+    expect(plain.messages.slice(0, 2)).toEqual([{ role: 'user', content: 'How is the team scoring?' }, sys]);
+  });
+
+  it('when the plain request is rejected too the turn fails with a sentence, and nothing is tried twice', async () => {
+    const model = script(...Array.from({ length: 7 }, () => ({ content: [], reject: rejected('messages: invalid') })));
+    const { events } = await ask('How is the team scoring?');
+    expect(model.requests).toHaveLength(7);
+    expect(done(events)?.status).toBe('failed');
+    expect((events.find((e) => e.type === 'error') as { message: string }).message).not.toContain('invalid');
+    expect(usageOf(events).features_dropped).toHaveLength(6);
+  });
+
+  it('a rejection that carries the API’s own error code (an account, billing or key fault) gives up nothing and is not retried', async () => {
+    const held = Anthropic.APIError.generate(400, { type: 'error', error: { type: 'invalid_request_error', message: 'The organization is on hold.', details: { error_code: 'organization_on_hold' } } }, undefined, new Headers());
+    const model = script({ content: [], reject: held });
+    const { events } = await ask('How is the team scoring?');
+    expect(model.requests).toHaveLength(1);
+    expect(done(events)?.status).toBe('failed');
+    expect(degradedLogs()).toEqual([]);
+    expect(usageOf(events)).not.toHaveProperty('features_dropped');
+  });
+
+  it('a player’s rejected request gives up its own groups: the turn answers and its ledger row says what it ran without', async () => {
+    h.role = 'player';
+    const model = script({ content: [], reject: rejected('tools: 56 parameters use a union type; the maximum across strict tools is 16.') }, { content: [text('You are averaging 73.1.')] });
+    const { events } = await ask('How am I scoring?');
+    expect(done(events)?.status).toBe('complete');
+    expect(model.requests[0]!.betas).toEqual(['thinking-binding-controls-2026-08-01', 'compact-2026-01-12']);
+    expect(strictOf(model.requests[0]!).length).toBeGreaterThan(0);
+    expect(strictOf(model.requests[1]!)).toEqual([]);
+    expect(model.requests[1]!.betas).toEqual(['thinking-binding-controls-2026-08-01', 'compact-2026-01-12']);
+    expect(usageOf(events).features_dropped).toEqual(['strict_tools']);
+    expect(ledgerRows()[0]!.citations).toMatchObject({ features_dropped: ['strict_tools'] });
   });
 
   it('a plain request that is rejected is not retried: the coach gets a sentence and the turn is stored failed', async () => {
@@ -2273,6 +2368,47 @@ describe('a player’s turn', () => {
     await loaders.playerStats!('player-me', 'season');
     expect(h.loadPlayerProfile.mock.calls.at(-1)?.[0]).toMatchObject({ viewer: 'player', playerId: 'player-me', teamId: 'team-1', window: 'season' });
     expect(db.tables[MESSAGES] ?? []).toHaveLength(0);
+  });
+
+  it('writes the model-call ledger row a coach’s turn writes, with the player in place of the coach and every column the table requires', async () => {
+    // An answer with no figure in it, so the grounding check has nothing to object to and the row is the plain one.
+    script({ content: [text('Your scoring has been steady.')], usage: { input_tokens: 1000, output_tokens: 200, cache_read_input_tokens: 0 } });
+    await post({ message: 'How am I scoring?', conversation_id: null, client_turn_id: '3f6c2a10-7b1e-4c55-9d2a-0a1b2c3d4e5f' });
+    const rows = ((h.admin as unknown as FakeDb).tables.golf_coachhelm_llm_calls ?? []) as Array<Record<string, unknown>>;
+    expect(rows).toHaveLength(1);
+    const { id: _id, created_at: _at, ...row } = rows[0]!;
+    // Exactly the table's columns (`src/lib/types/database.ts`): `prompt_hash` and `verified` are NOT NULL, and there is no `grounded`.
+    expect(row).toEqual({
+      task: 'coach_chat',
+      coach_id: null,
+      player_id: 'player-me',
+      // The turn's own id, cut short: opaque, and nothing of the player or the question.
+      prompt_hash: '3f6c2a10-7b1e-4c',
+      model_id: 'anthropic/claude-haiku-5-5',
+      prompt_tokens: 1000,
+      completion_tokens: 200,
+      cost_usd: (1000 * 0.1 + 200 * 0.5) / 1e6,
+      citations: null,
+      verified: true,
+      fallback_to_template: false,
+    });
+    expect(h.logServerError.mock.calls.some((c) => String((c as unknown[])[0]).includes('llm ledger failed'))).toBe(false);
+  });
+
+  it('a ledger that refuses the row is said once per process, not once per turn, and the player still gets the answer', async () => {
+    resetPlayerLedgerFault();
+    const admin = h.admin.client as { from: (table: string) => unknown };
+    const real = admin.from.bind(admin);
+    admin.from = (table: string) => (table === 'golf_coachhelm_llm_calls' ? { insert: async () => ({ error: { message: 'new row violates check constraint' } }) } : real(table));
+    const said = () => h.logServerError.mock.calls.map((c) => c as unknown[]).filter((c) => String(c[0]).includes('llm ledger failed'));
+    for (const question of ['How am I scoring?', 'And my putting?']) {
+      script({ content: [text('You are averaging 73.1.')] });
+      const { events } = await ask(question);
+      expect(done(events)?.status).toBe('complete');
+    }
+    expect(said()).toHaveLength(1);
+    expect(said()[0]![2]).toBe('warning');
+    resetPlayerLedgerFault();
   });
 
   it('cannot make a change: a task call is refused before it is planned, and no ledger row is written', async () => {

@@ -24,9 +24,13 @@
  *               would read it. No figure is expected; each answer passes or fails on meaning, and on the reads it used.
  * Every answer, from either set, is also held to the writing rules of that file, in a column of its own.
  *
- * The verdict is the engine's own: complete, card (stopped at a card waiting for Confirm), declined, failed, stopped or
+ * The verdict is the engine's own: complete, card (stopped at a card waiting for Confirm), declined, degraded, failed, stopped or
  * incomplete (the stream ended without saying how). No answer is withheld, so there is no "rejected": whether a complete
  * answer's figures all matched its reads is the ledger's `verified`, reported beside the verdict.
+ *
+ * A turn the API only accepted after a request feature was given up (the `usage` event's `features_dropped`) is `degraded`, never
+ * `complete`: it did not run as configured. With --require-features the run stops at the first one and exits 1; with
+ * --server-log <file> the API's own reason is read from what the dev server logged during that turn.
  *
  * Writes (only with --apply): staging conversation and ledger rows (what any chat turn writes), a magic-link token on the demo
  * coach's and Cole Bennett's auth users (the sign-in, unless --cookie is given; no email is sent), and the markdown report.
@@ -34,7 +38,7 @@
  * The report defaults to the OS temp dir: pass --out <file> to put it elsewhere.
  * Never run against production: it refuses unless the Supabase URL is the staging project.
  */
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { closeSync, mkdirSync, mkdtempSync, openSync, readSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -45,7 +49,7 @@ import { cliGuard } from '../lib/cli-guard.mjs';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { answerText, applyEvent, captureFixture, eventReader, golfSenseQuestions, newTurnState, reportLines, score, scoreSense, verdictOf, writingRules } from './ask-eval-score.mjs';
+import { answerText, applyEvent, captureFixture, eventReader, golfSenseQuestions, newTurnState, rejectionsFromLog, reportLines, score, scoreSense, verdictOf, writingRules } from './ask-eval-score.mjs';
 import { fetchAllRows } from './fetch-all-rows.mjs';
 
 const STAGING_REF = 'ybmwektreyrwjscxlogv';
@@ -59,7 +63,7 @@ const cli = cliGuard({
   name: 'scripts/coachhelm/ask-eval.mjs',
   summary:
     'Ask CoachHelm chat about 100 real questions on the local dev server against the staging demo team (the data questions, scored against an expected answer computed from staging data, and the golf-sense questions), and write a markdown report. Dry run by default (free, no model call); --apply spends model budget.',
-  usage: '[--env-file <file>] [--base-url <url>] [--set data|golf-sense|all] [--only <id,id>] [--max-usd <n>] [--names key=Name,...] [--out <file>] [--capture-dir <dir>] [--cookie <header>] [--player-cookie <header>] [--list]',
+  usage: '[--env-file <file>] [--base-url <url>] [--set data|golf-sense|all] [--only <id,id>] [--max-usd <n>] [--require-features] [--server-log <file>] [--names key=Name,...] [--out <file>] [--capture-dir <dir>] [--cookie <header>] [--player-cookie <header>] [--list]',
   options: [
     ['--base-url <url>', `Dev server (default ${DEFAULT_BASE}). It must run on the staging env, with ANTHROPIC_API_KEY, CoachHelm on for the demo team and a daily budget that covers the run.`],
     ['--env-file <file>', 'The staging env file to read (default: .env.local in the current directory). It must name the staging project, or the script refuses.'],
@@ -71,6 +75,8 @@ const cli = cliGuard({
     ['--capture-dir <dir>', "Also write each turn as a replay-suite fixture (JSON: question, answer text, the reads' envelopes, the reads by name, verdict) to <dir>/<question id>.json. A player's turn is stored nowhere else until HM3. Copy the files you want into src/lib/coachhelm/v3/chat/__tests__/fixtures/ask-turns-player/ and label them."],
     ['--cookie <header>', 'Cookie header of a signed-in demo coach (or ASK_EVAL_COOKIE). Skips the magic-link sign-in.'],
     ['--player-cookie <header>', 'Cookie header of a signed-in Cole Bennett (or ASK_EVAL_PLAYER_COOKIE).'],
+    ['--require-features', 'Fail the run at the first turn the API only accepted after a request feature was given up (strict tools, the code tool, a beta). Such a turn did not run as configured, so its score says nothing; the run stops there and exits 1.'],
+    ['--server-log <file>', "The dev server's log file. When a turn ran without a feature, the API's own reason is read from the lines the server wrote during that turn and put in the question's run note."],
     ['--list', 'Print the question ids and exit.'],
   ],
   writes: true,
@@ -597,6 +603,34 @@ async function ledgerRows(viewerKey, id, since) {
 }
 
 const captureDir = flag('--capture-dir');
+const requireFeatures = argv.includes('--require-features');
+const serverLog = flag('--server-log');
+/** The size of the server's log now, and what it has written since a given size. Never throws: a log that cannot be read is no reasons. */
+const logSize = () => {
+  try {
+    return serverLog ? statSync(serverLog).size : 0;
+  } catch {
+    return 0;
+  }
+};
+const logSince = (from) => {
+  if (!serverLog) return '';
+  try {
+    const length = Math.min(Math.max(0, statSync(serverLog).size - from), 2_000_000);
+    if (length === 0) return '';
+    const buffer = Buffer.alloc(length);
+    const fd = openSync(serverLog, 'r');
+    try {
+      readSync(fd, buffer, 0, length, from);
+    } finally {
+      closeSync(fd);
+    }
+    return buffer.toString('utf8');
+  } catch {
+    return '';
+  }
+};
+let degradedRun = false;
 const report = [];
 let spent = 0;
 let dearest = median;
@@ -611,10 +645,12 @@ try {
     const cookie = question.viewer === 'player' ? playerCookie : coachCookie;
     const startedAt = new Date();
     const t0 = Date.now();
+    const logFrom = logSize();
     let verdict;
     let text = '';
     let note;
     let state = newTurnState();
+    let stopAfter = '';
     try {
       const res = await fetch(`${base}/api/coachhelm/v3/chat/stream`, {
         method: 'POST',
@@ -634,6 +670,13 @@ try {
         text = answerText(state);
         verdict = verdictOf(state);
         note = state.error ? `${state.error}${state.errorKind ? ` (${state.errorKind})` : ''}` : '';
+        if (state.dropped.length > 0) {
+          // The turn answered, but only after the API rejected a request and a feature was given up: it did not run as configured.
+          const reasons = rejectionsFromLog(logSince(logFrom));
+          note = [note, `ran without ${state.dropped.join(', ')} (the API rejected a request that carried ${state.dropped.length === 1 ? 'it' : 'them'})${reasons.length ? `: ${reasons.join(' | ')}` : serverLog ? '; no reason found in the server log' : '; pass --server-log to read the reason'}`].filter(Boolean).join(' ');
+          // With --require-features the run ends here, after this turn's cost has been read from the ledger.
+          if (requireFeatures) stopAfter = `Stopped at ${question.id}: the turn ran without ${state.dropped.join(', ')} (--require-features). Nothing after it was asked: fix the request first, a score from a degraded turn says nothing about the configuration.`;
+        }
       }
     } catch (err) {
       verdict = 'error';
@@ -641,7 +684,7 @@ try {
     }
     const seconds = (Date.now() - t0) / 1000;
     if (stoppedBecause) {
-      report.push({ question, verdict, text, seconds, cost: 0, scored: null, sense: null, note, tools: [], grounded: null, model: null });
+      report.push({ question, verdict, text, seconds, cost: 0, scored: null, sense: null, note, tools: state.tools, dropped: state.dropped, grounded: null, model: null });
       break;
     }
   
@@ -665,7 +708,7 @@ try {
     // The data questions are scored on their facts; the golf-sense questions on meaning and reads; every answer on the writing rules.
     const scored = answered && !question.golfSense ? score(question, text) : null;
     const sense = answered ? scoreSense(question.golfSense ? question : { readers: [] }, text, state.tools, writing) : null;
-    report.push({ question, verdict, text, seconds, cost, scored, sense, note, tools: state.tools, failedReads: state.failedReads, grounded, unmatched, model });
+    report.push({ question, verdict, text, seconds, cost, scored, sense, note, tools: state.tools, failedReads: state.failedReads, dropped: state.dropped, grounded, unmatched, model });
     if (captureDir && verdict !== 'error') {
       const who = question.viewer === 'player' ? [byName('Cole Bennett')] : roster;
       const fixture = captureFixture({
@@ -680,6 +723,11 @@ try {
     }
     const marks = question.golfSense ? `sense ${sense ? (sense.sense.pass ? 'pass' : 'FAIL') : '-'}  reads ${sense ? (sense.reads.pass ? 'ok' : 'FAIL') : '-'}` : `correct ${scored?.correct ?? '-'} wrong ${scored?.wrong ?? '-'} missing ${scored?.missing ?? '-'}`;
     console.log(`${verdict.padEnd(10)} ${question.id.padEnd(34)} ${marks}  writing ${sense ? (sense.writing.pass ? 'pass' : 'FAIL') : '-'}  ${seconds.toFixed(1)}s  $${cost.toFixed(3)}  (total $${spent.toFixed(2)})`);
+    if (stopAfter) {
+      degradedRun = true;
+      stoppedBecause = stopAfter;
+      break;
+    }
   }
 } catch (err) {
   stoppedBecause = `Stopped after ${report.length} questions: ${err instanceof Error ? err.message : String(err)}`;
@@ -696,3 +744,5 @@ const out = chosen ?? join(mkdtempSync(join(tmpdir(), 'ask-eval-')), `ask-eval-$
 if (chosen) mkdirSync(join(chosen, '..'), { recursive: true });
 writeFileSync(out, `${lines.join('\n')}\n`);
 console.log(`\nreport: ${out}`);
+// A run that was told to require every feature and met a degraded turn has failed, whatever else it scored.
+if (degradedRun) process.exitCode = 1;

@@ -17,7 +17,7 @@
 import { logServerError } from '@/lib/server-error-logger';
 import { CoachContextError } from '../context';
 import type { ToolEnvelope } from '../provenance';
-import { addUsage, buildModelRequest, isModelApiError, isPlain, isRejectedRequest, plainFeatures, type ChatFeatures, type ModelClient, type ModelMessage, type ModelProfile, type ModelResponse, type SearchResultBlock, type SystemPrompt, type ToolResultBlock, type ToolUseBlock, type UsageTotals } from './model';
+import { addUsage, buildModelRequest, groupToDrop, isModelApiError, isRejectedRequest, rejectionOf, withoutGroup, type ChatFeatures, type FeatureGroup, type ModelRejection, type ModelClient, type ModelMessage, type ModelProfile, type ModelResponse, type SearchResultBlock, type SystemPrompt, type ToolResultBlock, type ToolUseBlock, type UsageTotals } from './model';
 import { partialInput } from './draft';
 import { COMPUTED_PART, eventForPart, type ChatComputed, type ChatEvent, type ChatStep, type ChatStepSubject } from './protocol';
 import { countOfEnvelope, playersCovered, stepKindOf, subjectsOfEnvelope, subjectsOfInput, withSubjects } from './steps';
@@ -62,12 +62,12 @@ export interface LoopState {
   reads: Map<string, ToolEnvelope>;
   nextRef: number;
   nextProgress: number;
-  /** What requests are sent with. Starts as the deployment's features; becomes the plain set if the API rejects a request. */
   /** The model this turn runs on and its settings. Fixed for the turn. */
   profile: ModelProfile;
+  /** What requests are sent with. Starts as the profile's features; loses one group each time the API rejects a request. */
   features: ChatFeatures;
-  /** True once a request was rejected and retried plain, for the turn's log line. */
-  degraded: boolean;
+  /** The feature groups this turn gave up, in the order it gave them up, each with what the API said. Empty on a turn that ran as configured. */
+  dropped: Array<{ group: FeatureGroup } & ModelRejection>;
   /** The code execution container of a programmatic call in progress. */
   container: string | null;
   /** The progress row of the model's code while it runs. In memory only. */
@@ -364,19 +364,31 @@ async function streamOnce(deps: LoopDeps, state: LoopState, answerOnly: boolean)
 }
 
 /**
- * One model call. If the API rejects the request as malformed while it carries an optional feature (a beta it no
- * longer accepts, a schema `strict` does not take), the call is sent once more as a plain request and the rest of the
- * turn stays plain: the coach loses the feature, not the answer. The rejection is logged as an error to be fixed.
+ * One model call. If the API rejects the request (a 400) while it carries an optional feature, ONE feature group is
+ * given up (the one the API's message names, or else the next in `FEATURE_GROUPS`' order), the call is sent again, and
+ * the rest of the turn runs without that group: the coach loses the feature, not the answer. Each rejection is logged
+ * with the API's own status, type and message, because a request that is only accepted without a feature is a fault
+ * to fix. A rejection that carries the API's error code is an account, billing or key fault: no plainer request cures
+ * it, so it is not retried.
  */
 async function callModel(deps: LoopDeps, state: LoopState, answerOnly: boolean): Promise<Call> {
-  try {
-    return await streamOnce(deps, state, answerOnly);
-  } catch (err) {
-    if (deps.signal.aborted || !isRejectedRequest(err) || isPlain(state.features)) throw err;
-    void logServerError('chat/stream: the API rejected a request with optional features; retried as a plain request', { action: 'v3.chat.stream.degraded', feature: 'coachhelm_chat', handled: true, extra: { features: state.features, providerMessage: String((err as Error)?.message ?? '').slice(0, 300) } }, 'error');
-    state.features = plainFeatures(state.features);
-    state.degraded = true;
-    return streamOnce(deps, state, answerOnly);
+  for (;;) {
+    try {
+      return await streamOnce(deps, state, answerOnly);
+    } catch (err) {
+      if (deps.signal.aborted || !isRejectedRequest(err)) throw err;
+      const why = rejectionOf(err);
+      const group = why.code ? null : groupToDrop(state.features, why.message);
+      if (!group) throw err;
+      // The reason is in the message itself: off production the logger prints the message and nothing else.
+      void logServerError(
+        `chat/stream: the API rejected a request (${why.status ?? 'no status'} ${why.type ?? 'unknown'}) and it was sent again without ${group}: ${why.message}`,
+        { action: 'v3.chat.stream.degraded', errorCode: 'chat_feature_rejected', feature: 'coachhelm_chat', handled: true, extra: { dropped: group, alreadyDropped: state.dropped.map((d) => d.group), status: why.status, errorType: why.type, providerMessage: why.message, model: state.profile.modelId, conversationId: deps.toolContext.conversationId } },
+        'error',
+      );
+      state.features = withoutGroup(state.features, group);
+      state.dropped.push({ group, ...why });
+    }
   }
 }
 
