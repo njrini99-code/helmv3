@@ -15718,3 +15718,50 @@ CREATE OR REPLACE FUNCTION "public"."golf_conversation_team_link_ok"("p_conversa
   );$$;
 
 ALTER FUNCTION "public"."golf_conversation_team_link_ok"("p_conversation_id" "uuid") OWNER TO "postgres";
+
+-- Coach roster writes (HELD 20261110090700): a join request and a roster row keep their team and player
+CREATE OR REPLACE FUNCTION "public"."golf_team_join_requests_identity_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Only client sessions are held to this. service_role, the table owner and
+  -- SECURITY DEFINER functions run as other roles and pass.
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.id IS DISTINCT FROM OLD.id
+     OR NEW.team_id IS DISTINCT FROM OLD.team_id
+     OR NEW.player_id IS DISTINCT FROM OLD.player_id THEN
+    RAISE EXCEPTION 'A join request cannot be moved to another team or player'
+      USING ERRCODE = '42501';
+  END IF;
+  IF NEW.status = 'pending' AND OLD.status IS DISTINCT FROM 'pending' THEN
+    RAISE EXCEPTION 'A decided join request cannot be reopened'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+ALTER FUNCTION "public"."golf_team_join_requests_identity_guard"() OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."golf_team_members_identity_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  -- Only client sessions are held to this. service_role, the table owner and
+  -- SECURITY DEFINER functions run as other roles and pass.
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.id IS DISTINCT FROM OLD.id
+     OR NEW.team_id IS DISTINCT FROM OLD.team_id
+     OR NEW.player_id IS DISTINCT FROM OLD.player_id THEN
+    RAISE EXCEPTION 'A roster row cannot be moved to another team or player'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END $$;
+
+ALTER FUNCTION "public"."golf_team_members_identity_guard"() OWNER TO "postgres";

@@ -1133,7 +1133,10 @@ CREATE POLICY "golf_team_coach_staff_select" ON "public"."golf_team_coach_staff"
 
 CREATE POLICY "golf_team_members_delete_coach" ON "public"."golf_team_members" FOR DELETE TO "authenticated" USING ("public"."is_golf_team_coach"("team_id"));
 
-CREATE POLICY "golf_team_members_insert_coach" ON "public"."golf_team_members" FOR INSERT TO "authenticated" WITH CHECK ("public"."is_golf_team_coach"("team_id"));
+-- Coach roster writes (HELD 20261110090700): a coach adds only a player with a pending join request for that team
+CREATE POLICY "golf_team_members_insert_coach" ON "public"."golf_team_members" FOR INSERT TO "authenticated" WITH CHECK (("public"."is_golf_team_coach"("team_id") AND (EXISTS ( SELECT 1
+   FROM "public"."golf_team_join_requests" "r"
+  WHERE (("r"."team_id" = "golf_team_members"."team_id") AND ("r"."player_id" = "golf_team_members"."player_id") AND ("r"."status" = 'pending'::"text"))))));
 
 CREATE POLICY "golf_team_members_select_v5" ON "public"."golf_team_members" FOR SELECT USING (((EXISTS ( SELECT 1
    FROM ("public"."golf_team_coach_staff" "gtcs"

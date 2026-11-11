@@ -213,4 +213,9 @@ CREATE OR REPLACE TRIGGER "golf_team_members_leave_team_chats" AFTER UPDATE OF "
 
 CREATE OR REPLACE TRIGGER "golf_team_members_delete_leave_team_chats" AFTER DELETE ON "public"."golf_team_members" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_team_chats_leave_member"();
 
+-- Coach roster writes (HELD 20261110090700): identity guards on the roster and on join requests, client sessions only
+CREATE OR REPLACE TRIGGER "golf_team_join_requests_identity_guard" BEFORE UPDATE ON "public"."golf_team_join_requests" FOR EACH ROW WHEN ((("old"."id" IS DISTINCT FROM "new"."id") OR ("old"."team_id" IS DISTINCT FROM "new"."team_id") OR ("old"."player_id" IS DISTINCT FROM "new"."player_id") OR (("new"."status" = 'pending'::"text") AND ("old"."status" IS DISTINCT FROM 'pending'::"text")))) EXECUTE FUNCTION "public"."golf_team_join_requests_identity_guard"();
+
+CREATE OR REPLACE TRIGGER "golf_team_members_identity_guard" BEFORE UPDATE ON "public"."golf_team_members" FOR EACH ROW WHEN ((("old"."id" IS DISTINCT FROM "new"."id") OR ("old"."team_id" IS DISTINCT FROM "new"."team_id") OR ("old"."player_id" IS DISTINCT FROM "new"."player_id"))) EXECUTE FUNCTION "public"."golf_team_members_identity_guard"();
+
 CREATE OR REPLACE TRIGGER "golf_team_coach_staff_leave_team_chats" AFTER DELETE ON "public"."golf_team_coach_staff" FOR EACH ROW EXECUTE FUNCTION "helm_private"."golf_team_chats_leave_staff"();

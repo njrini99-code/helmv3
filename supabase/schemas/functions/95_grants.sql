@@ -1762,3 +1762,12 @@ REVOKE ALL ON FUNCTION "helm_private"."golf_team_channel_backfill"() FROM PUBLIC
 REVOKE ALL ON FUNCTION "public"."golf_conversation_team_link_ok"("p_conversation_id" "uuid") FROM PUBLIC, "anon";
 GRANT EXECUTE ON FUNCTION "public"."golf_conversation_team_link_ok"("p_conversation_id" "uuid") TO "authenticated";
 GRANT EXECUTE ON FUNCTION "public"."golf_conversation_team_link_ok"("p_conversation_id" "uuid") TO "service_role";
+
+-- Coach roster writes (HELD 20261110090700)
+REVOKE ALL ON FUNCTION "public"."golf_team_join_requests_identity_guard"() FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_team_join_requests_identity_guard"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_team_join_requests_identity_guard"() TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_team_members_identity_guard"() FROM PUBLIC, "anon";
+GRANT ALL ON FUNCTION "public"."golf_team_members_identity_guard"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_team_members_identity_guard"() TO "service_role";
