@@ -569,6 +569,8 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
   });
   afterEach(() => {
     window.matchMedia = real;
+    // A detail a test opened lives in the address: the next test starts on the summary.
+    window.history.replaceState(null, '', window.location.pathname);
   });
 
   it('the window switch on the phone changes the window', async () => {
@@ -582,6 +584,51 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     wrap(emptyWindow());
     expect(code('CH-4301')).not.toBeNull();
     expect(screen.getByRole('button', { name: /season/i })).toBeTruthy();
+  });
+
+  it('41901 at 820 and below Team stats is the phone page, never a shrunken desktop: one row for which rounds, then the team’s summary cards', () => {
+    wrap(stats());
+    expect(document.querySelector('.ch-st-desk')).toBeNull();
+    expect(document.querySelector('.ch-shs')).not.toBeNull();
+    expect(screen.getByRole('heading', { level: 1, name: 'Team stats' })).toBeTruthy();
+    const rows = document.querySelectorAll('.ch-shs-ctl .ch-shs-ctl__row');
+    expect(rows).toHaveLength(1);
+    expect([...rows[0]!.querySelectorAll('[role="radio"]')].map((r) => r.getAttribute('aria-label') ?? r.textContent)).toEqual(['Last 5', 'Last 10', 'Last 20', 'Season', 'Qualifiers', 'All time']);
+    const titles = [...document.querySelectorAll('.ch-shs-card h3')].map((h) => h.textContent);
+    for (const t of ['Team scoring average', 'Strokes gained by leg', 'Who gains and loses']) expect(titles).toContain(t);
+    // The card's window sits beside its title on one line: the unit is a day the team played.
+    expect(document.querySelector('.ch-shs-feature')!.textContent).toContain('10 round days');
+    expect(document.querySelector('.ch-shs-feature')!.textContent).not.toContain('Last 10 round days');
+  });
+
+  it('CH-4703 CH-4805 on Players, sorting by Avg or SG is one selection tick and the chosen sort again is silent; each row is one link read as name, rounds, average and strokes gained', async () => {
+    const user = userEvent.setup();
+    wrap(stats());
+    await user.click(screen.getByRole('button', { name: /^Who gains and loses/ }));
+    const names = () => [...document.querySelectorAll('.ch-stm-row__b b')].map((b) => b.textContent);
+    expect(names().length).toBe(PREVIEW_TEAM_STATS.grid.length);
+    const byAvg = names();
+    hapticSpy.mockClear();
+    const sg = screen.getByRole('radio', { name: 'SG, strokes gained' });
+    await user.click(sg);
+    expect(hapticSpy.mock.calls.filter(([kind]) => kind === 'select')).toHaveLength(1);
+    expect(sg.getAttribute('aria-checked')).toBe('true');
+    expect(names()).not.toEqual(byAvg);
+    await user.click(sg);
+    expect(hapticSpy.mock.calls.filter(([kind]) => kind === 'select')).toHaveLength(1);
+    const luca = screen.getByRole('link', { name: /Luca Ferraro/ });
+    expect(luca.getAttribute('href')).toMatch(/luca/);
+    expect(luca.textContent).toMatch(/Early read/);
+  });
+
+  it('CH-4805 the team’s scoring line comes with a written reading, so the picture is never the only way to it', async () => {
+    const user = userEvent.setup();
+    wrap(stats());
+    await user.click(screen.getByRole('button', { name: /^Team scoring average/ }));
+    const detail = document.querySelector<HTMLElement>('[data-ch-shs-detail]')!;
+    expect(within(detail).getByText(/^Lower is better\. /)).toBeTruthy();
+    // The same days as a table, for anyone who can't read the picture.
+    expect(within(detail).getByRole('columnheader', { name: 'Team average' })).toBeTruthy();
   });
 
   it('CH-1209 on the phone figures and putting that both fail are told once, with one Try again', () => {

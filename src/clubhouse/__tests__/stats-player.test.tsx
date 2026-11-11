@@ -78,6 +78,13 @@ function shell(node: React.ReactNode) {
     </LazyMotion>
   );
 }
+/** A page as a first visit sees it: no tab kept from an earlier test, no address naming one, no detail open. */
+function fresh() {
+  window.sessionStorage.clear();
+  search.current = new URLSearchParams();
+  window.history.replaceState(null, '', window.location.pathname);
+}
+
 function wrap(node: React.ReactNode) {
   return render(shell(node));
 }
@@ -779,6 +786,89 @@ describe('Stats player · the loader', () => {
 /* ── The page ── */
 
 describe('Stats player · the page', () => {
+
+  it('50101 a coach opens a profile on Overview: who it is, the four sections, the one row for which rounds, and the ways on (Team stats, Add focus area)', () => {
+    fresh();
+    show(player());
+    expect(screen.getByRole('heading', { level: 1, name: 'Jonah Okafor' })).toBeTruthy();
+    expect(screen.getAllByRole('tab').map((t) => t.textContent!.replace(/\d+$/, ''))).toEqual(['Overview', 'Game detail', 'Rounds', 'Development']);
+    expect(screen.getByRole('tab', { selected: true }).textContent).toBe('Overview');
+    // One control answers "which rounds", ending in All time: no second switch beside it.
+    expect(screen.getAllByRole('radiogroup', { name: 'Rounds shown' })).toHaveLength(1);
+    expect(screen.getByRole('radio', { name: 'All time' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Team stats' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add focus area' })).toBeTruthy();
+  });
+
+  it("50104 a coach's Message opens the direct thread with this player, on desktop and on the phone; a player's profile has none", () => {
+    fresh();
+    const { unmount } = show(player());
+    expect(screen.getByRole('link', { name: 'Message' }).getAttribute('href')).toBe('/golf/dashboard/messages?player=jonah');
+    unmount();
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
+    try {
+      const phoneView = wrap(
+        <PhoneChromeProvider>
+          <StatsPlayer data={player()} coachId="c1" />
+        </PhoneChromeProvider>,
+      );
+      expect(screen.getByRole('link', { name: 'Message Jonah' }).getAttribute('href')).toBe('/golf/dashboard/messages?player=jonah');
+      phoneView.unmount();
+      wrap(
+        <PhoneChromeProvider>
+          <StatsPlayer data={player({ viewer: 'player' })} coachId={null} />
+        </PhoneChromeProvider>,
+      );
+      expect(screen.queryByRole('link', { name: /Message/ })).toBeNull();
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+
+  it('51901 at 820 and below the profile is the phone page, never a shrunken desktop: one row for which rounds, then Overview, Your game, Rounds and Development', () => {
+    fresh();
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px), (max-height: 500px) and (pointer: coarse)' })) as typeof window.matchMedia;
+    try {
+      wrap(
+        <PhoneChromeProvider>
+          <StatsPlayer data={player({ viewer: 'player' })} coachId={null} />
+        </PhoneChromeProvider>,
+      );
+      expect(document.querySelector('.ch-shs')).not.toBeNull();
+      expect(document.querySelector('.ch-pf-hero')).toBeNull();
+      expect(screen.queryAllByRole('tab')).toHaveLength(0);
+      const rows = document.querySelectorAll('.ch-shs-ctl .ch-shs-ctl__row');
+      expect(rows).toHaveLength(1);
+      expect([...rows[0]!.querySelectorAll('[role="radio"]')].map((r) => r.getAttribute('aria-label') ?? r.textContent)).toEqual(['Last 5', 'Last 10', 'Last 20', 'Season', 'Qualifiers', 'All time']);
+      expect([...document.querySelectorAll('.ch-shs-sech')].map((h) => h.textContent)).toEqual(['Overview', 'Your game', 'Rounds', 'Development']);
+      // What changed draws one measure and names it above its two bars.
+      const changed = document.querySelector('[data-ch-stats-changed]');
+      expect(changed).not.toBeNull();
+      expect(changed!.querySelector('.ch-shs-cmp-h')!.textContent!.length).toBeGreaterThan(3);
+      expect(changed!.querySelectorAll('.ch-shs-cmp-row')).toHaveLength(2);
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+
+  it('50901 51501 a proposal lands: a proposal for this player from this coach is sent, the toast and the success tick say so, the sheet closes and empties, and the page is read again with no reload', async () => {
+    fresh();
+    const user = userEvent.setup();
+    createFocusArea.mockResolvedValue({ success: true });
+    show(player());
+    await user.click(screen.getByRole('button', { name: 'Add focus area' }));
+    await user.type(screen.getByRole('textbox', { name: 'What to work on' }), '  Lag putting  ');
+    await user.click(screen.getByRole('button', { name: 'Propose focus area' }));
+    expect(await screen.findByText('Focus area proposed to Jonah. It starts when Jonah accepts.')).toBeTruthy();
+    expect(createFocusArea).toHaveBeenCalledWith(expect.objectContaining({ player_id: 'jonah', coach_id: 'c1', title: 'Lag putting', status: 'proposed' }));
+    expect(hapticSpy).toHaveBeenCalledWith('success');
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Add a focus area for Jonah' })).toBeNull());
+    await user.click(screen.getByRole('button', { name: 'Add focus area' }));
+    expect((screen.getByRole('textbox', { name: 'What to work on' }) as HTMLInputElement).value).toBe('');
+  });
 
   it("a coach's Schedule 1:1 opens Calendar's editor with only this player invited (D-52); a player's profile has none", () => {
     const { unmount } = show(player());
