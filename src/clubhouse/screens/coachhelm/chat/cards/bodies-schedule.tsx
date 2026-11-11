@@ -5,6 +5,7 @@ import { useState } from 'react';
 import type { ActionProposal, ProposalFact } from '@/lib/coachhelm/v3/chat/action-types';
 import { Avatar } from '../../../../ui/Avatar';
 import { Button } from '../../../../ui/Button';
+import { pluralWord } from '../../../../lib/plural';
 import type { CardCopy } from './catalog';
 import { clockRange, countedFact, dayWords, daysBetween, factOf, namesIn, peopleOf, plural, restOf, stampWords, valueOf } from './facts';
 import { Body, Change, Delivery, Notice, People, Thing, Warning, Who, tense } from './kit';
@@ -275,7 +276,7 @@ function Seating({ visual, roster, fallback }: { visual: Seats; roster?: readonl
       <SeatList seats={playing} roster={roster} label="Lineup" />
       {alternates.length > 0 && (
         <>
-          <small>{alternates.length === 1 ? 'Alternate' : 'Alternates'}</small>
+          <small>{pluralWord(alternates.length, 'Alternate')}</small>
           <SeatList seats={alternates} roster={roster} label="Alternates" />
         </>
       )}

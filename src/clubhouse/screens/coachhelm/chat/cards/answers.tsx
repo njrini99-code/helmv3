@@ -3,6 +3,7 @@
 import { ArrowUpRight, Calculator, SearchX, StickyNote, X } from 'lucide-react';
 import { IconButton } from '../../../../ui/Button';
 import { Icon } from '../../../../ui/Icon';
+import { pluralWord } from '../../../../lib/plural';
 import { count } from './facts';
 
 /**
@@ -102,7 +103,7 @@ export function WorkedOut({ computed }: { computed: ComputedPart }) {
 
 /** The work line's summary for a turn that calculated: "14 reads · 1 calculation · 4s". */
 export function computedSummary(reads: number, seconds: number | null): string {
-  return [`${count(reads)} ${reads === 1 ? 'read' : 'reads'}`, '1 calculation', seconds == null ? null : `${seconds}s`].filter(Boolean).join(' · ');
+  return [`${count(reads)} ${pluralWord(reads, 'read')}`, '1 calculation', seconds == null ? null : `${seconds}s`].filter(Boolean).join(' · ');
 }
 
 /** The shape asked for on a read's envelope when the app does not collect the thing (CAPABILITIES E-26). */

@@ -15,7 +15,7 @@ export interface WorkKind {
 }
 
 export const WORK_KINDS: readonly WorkKind[] = [
-  { id: 'sending', kind: 'Nothing from the server yet', mark: 'turning', words: ['(no words for 1.2 s)', 'Sending', 'Still sending. Check your connection.', 'No answer yet. You can stop and ask again.'] },
+  { id: 'sending', kind: 'Nothing from the server yet', mark: 'turning', words: ['(no words for 1.2 s)', 'Sending', 'Still sending. This is taking longer than usual.', 'No answer yet. You can stop and ask again.'] },
   { id: 'thinking', kind: 'The server has the turn', mark: 'turning', words: ['Thinking', 'Still thinking. Long questions take a little longer.'] },
   {
     id: 'reading',

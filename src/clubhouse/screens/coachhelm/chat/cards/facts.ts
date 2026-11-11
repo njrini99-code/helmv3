@@ -1,5 +1,7 @@
 import type { ActionProposal, ProposalFact } from '@/lib/coachhelm/v3/chat/action-types';
 import { formatWallClock, formatWith } from '../../../../lib/dates';
+import { formatWhole } from '../../../../lib/format';
+import { plural } from '../../../../lib/plural';
 import type { CardPerson } from './types';
 
 /** A fact by its label, as the planner wrote it. Null when the plan has none, or has it unset. */
@@ -79,8 +81,9 @@ export function stampWords(value: string | null): string {
   return [dayWords(day), clockWords(time)].filter(Boolean).join(', ');
 }
 
-export const plural = (n: number, one: string, many = `${one}s`): string => `${n} ${n === 1 ? one : many}`;
-export const count = (n: number): string => n.toLocaleString('en-US');
+/** The app's one plural rule and its whole-count formatter, under the names the bodies use. */
+export { plural };
+export const count = (n: number): string => formatWhole(n);
 
 /** Does a plan's notification line say that somebody is told? "Nobody is told…" and an empty list do not. */
 export function tellsSomebody(p: ActionProposal): boolean {

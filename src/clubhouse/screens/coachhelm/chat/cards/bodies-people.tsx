@@ -4,6 +4,7 @@ import { missingRows, unsetOf, type BodyProps } from './bodies-schedule';
 import { count, dayWords, factOf, peopleOf, plural, restOf, valueOf } from './facts';
 import { Body, Bubble, Change, Clamp, Delivery, Diff, Meta, Notice, People, Quote, Thing, Who, sentence, tense } from './kit';
 import type { CardPerson } from './types';
+import { pluralWord } from '../../../../lib/plural';
 
 /**
  * The bodies of the tasks about a player, words that are sent, and things that are published (CAPABILITIES.md A8 to A18).
@@ -278,7 +279,7 @@ export function MessageBody(props: BodyProps) {
         {msg?.members?.length ? (
           <People people={msg.members.map((name) => who(roster, name))} total={n} density={density} label="people" />
         ) : (
-          <p className="ch-akc-people__gap">The plan does not list who is in {thread}: {count(n)} {n === 1 ? 'player' : 'players'}.</p>
+          <p className="ch-akc-people__gap">The plan does not list who is in {thread}: {count(n)} {pluralWord(n, 'player')}.</p>
         )}
       </Who>
       <Bubble text={msg?.draft ?? valueOf(p, 'Message') ?? ''} before={msg?.last} caption={thread} density={density} />

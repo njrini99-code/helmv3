@@ -10,6 +10,7 @@ import { Segmented } from '../../../../ui/Segmented';
 import { Select } from '../../../../ui/Select';
 import { Switch } from '../../../../ui/Switch';
 import { TimeField } from '../../../../ui/TimeField';
+import { count } from './facts';
 import type { EditableField } from './types';
 
 /**
@@ -23,7 +24,6 @@ import type { EditableField } from './types';
 type Value = EditableField['value'];
 const same = (a: Value, b: Value): boolean => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 const empty = (v: Value): boolean => v == null || (typeof v === 'string' && v.trim() === '') || (Array.isArray(v) && v.length === 0);
-const count = (n: number): string => n.toLocaleString('en-US');
 
 /** An ISO instant as the day and the time on the viewer's own clock, and back. */
 function instantParts(iso: string | null): { date: string; time: string } {

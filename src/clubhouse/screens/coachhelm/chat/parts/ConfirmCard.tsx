@@ -15,6 +15,7 @@ import { Icon } from '../../../../ui/Icon';
 import { Switch } from '../../../../ui/Switch';
 import { useChReducedMotion } from '../../../../lib/reduced-motion';
 import { haptic } from '../../../../lib/haptics';
+import { plural } from '../../../../lib/plural';
 import { flyDraftHome } from '../ask-flight';
 import { isOutOfDate } from '../cards/truth';
 import { DateTile, GoalDraft, LineupDraft, NoteDraft, TaskDraft, TripDraft, draftDate, LockPreview, QualDraft, WeekDraft } from './DraftVisual';
@@ -486,7 +487,7 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
     );
   if (phase.kind === 'held' || phase.kind === 'undoing') {
     const frozen = phase.kind === 'undoing' || closed;
-    const when = `${secs} ${secs === 1 ? 'second' : 'seconds'}`;
+    const when = plural(secs, 'second');
     return (
       <div ref={holdRow} className="receipt is-hold" role="status" aria-label={`${receipt.action}. Not saved yet. Undo is available for ${Math.round(left / 1000)} seconds.`}>
         {/* The countdown: what happens if the coach does nothing, drawn as time. Linear, because it is a clock. Its place becomes the check. */}
