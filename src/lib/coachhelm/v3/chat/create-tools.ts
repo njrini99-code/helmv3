@@ -261,8 +261,9 @@ const eventFlow: FlowDef<EventStored> = {
       recipients,
       not_reached,
       delivery,
-      visible_to: 'team',
-      visible_note: `On the team calendar: every player and coach on ${ctx.team_name} can see it.`,
+      // golf_events_select_team: a player reads a meeting only when invited to it; every other kind of event is the whole team's.
+      visible_to: i.event_type === 'meeting' ? 'recipients' : 'team',
+      visible_note: i.event_type !== 'meeting' ? `On the team calendar: every player and coach on ${ctx.team_name} can see it.` : people.length ? 'A meeting is on the calendar only for the players invited to it and this team’s coaches.' : 'Nobody is invited, so only this team’s coaches see this meeting.',
       key: ['event', i.title, i.date, i.start ?? '', end ?? '', i.invite_player_ids.join(',')],
     };
   },

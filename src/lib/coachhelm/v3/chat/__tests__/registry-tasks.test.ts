@@ -485,6 +485,9 @@ describe('the card is the truth', () => {
     const quiet = await plan('create_event', { ...(SAMPLES.create_event as object), invite_player_ids: [P1] });
     expect(quiet).toMatchObject({ recipients: [], delivery: null, notifications: ['Nobody is told.'], visible_to: 'team' });
     expect(quiet.affects).toEqual([{ kind: 'player', id: P1, label: 'Eli Brandt' }]);
+    // A meeting is seen only by the players invited to it; a practice by the whole team.
+    expect(await plan('create_event', { ...(SAMPLES.create_event as object), event_type: 'meeting', end: '16:00', invite_player_ids: [P1] })).toMatchObject({ visible_to: 'recipients', visible_note: expect.stringMatching(/only for the players invited/) });
+    expect(await plan('create_event', { ...(SAMPLES.create_event as object), event_type: 'meeting', end: '16:00' })).toMatchObject({ visible_to: 'recipients', visible_note: expect.stringMatching(/only this team’s coaches see this meeting/) });
     const asked = await plan('create_event', { ...(SAMPLES.create_event as object), invite_player_ids: [P1], requires_rsvp: true });
     expect(asked.delivery).toMatchObject({ title: 'RSVP Reminder', body: 'Please RSVP for Team practice' });
   });
