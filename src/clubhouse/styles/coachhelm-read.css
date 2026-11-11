@@ -63,6 +63,8 @@
 .ch-hr-stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .ch-hr.is-desk .ch-hr-stack > .ch-hr-dos { margin-bottom: 8px; }
 .ch-hr .ch-hd-main { position: relative; min-width: 0; }
+/* The rail stays in view while the read scrolls; it rests under the top bar, which sits over the scrolling page, not behind it. */
+.ch-hr.is-desk .ch-hd-rail { top: calc(var(--ch-topbar-h) + 16px); }
 .ch-hr .ch-hd-it { text-decoration: none; }
 
 /* ---------- a Surface per section ---------- */
