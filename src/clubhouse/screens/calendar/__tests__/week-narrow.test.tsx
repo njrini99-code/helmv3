@@ -98,6 +98,33 @@ describe('a busy block under an event comes out as a tile of its own', () => {
     expect(b.getAttribute('aria-label')).toMatch(/^Busy · staff, 12:00 – 1:00 PM/);
   });
 
+  // Owner, 2026-11-11: "Busy · Staff meeting" was cut in the week's column (136px of words in 129).
+  it('on one row it says its name alone, by its lock and its hatch; its accessible name keeps the word', () => {
+    const { container } = grid([round, staff]);
+    const b = container.querySelector<HTMLElement>('[data-ev-id="staff"]')!;
+    expect(b.className).toContain('ch-ev--short');
+    expect(b.className).not.toContain('ch-ev--two');
+    expect(b.querySelector('.ch-ev__t')!.textContent).toBe('staff');
+    expect(b.querySelector('.ch-ev__t .ch-ev__g')).not.toBeNull();
+    expect(b.getAttribute('aria-label')).toMatch(/^Busy · staff, /);
+  });
+
+  it('with a row for its time, or two lines for its title, it keeps the word', () => {
+    const hour = grid([ev({ id: 'call', type: 'busy', start: 9, end: 10 })]);
+    expect(hour.container.querySelector('[data-ev-id="call"] .ch-ev__t')!.textContent).toBe('Busy · call');
+    cleanup();
+    // 45 minutes: one short row in a wide column, two title lines in a narrow one.
+    const two = grid([ev({ id: 'sync', type: 'busy', start: 14, end: 14.75 })]);
+    const b = two.container.querySelector<HTMLElement>('[data-ev-id="sync"]')!;
+    expect(b.className).toContain('ch-ev--two');
+    expect(b.querySelector('.ch-ev__t')!.textContent).toBe('Busy · sync');
+  });
+
+  it('a one-row event that is not busy time is untouched', () => {
+    const { container } = grid([ev({ id: 'brief', type: 'meeting', start: 13.5, end: 14 })]);
+    expect(container.querySelector('[data-ev-id="brief"] .ch-ev__t')!.textContent).toBe('brief');
+  });
+
   it('nothing changes when it starts first, when it is covered whole, or when two busy blocks overlap', () => {
     const early = ev({ id: 'early', type: 'busy', start: 7, end: 9 });
     expect(clearFrom(early, layoutLanes([round, early]))).toBeUndefined();

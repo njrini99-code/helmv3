@@ -243,11 +243,15 @@ export function EventBlock({
   const two = short && !pill && !showChg && h >= 2 * titleLine && (over == null || over >= (h + 2 * titleLine) / 2);
   const pinned = over != null && !two && over < (h + titleLine) / 2;
   const solo = Math.max(1, Math.min(3, held, room != null ? Math.floor((room + 0.5) / titleLine) : 3));
+  // Owner, 2026-11-11: a busy block of one row says its name alone ("Staff meeting"). Its lock and its hatch already
+  // say Busy, and with the word the name was cut in the week's column ("Busy · Staff meet…", 136px in 129). The
+  // block's accessible name and its peek keep the full words.
+  const stub = e.type === 'busy' && short && !two;
   const words = (
     <>
       <span className="ch-ev__t">
         {tier !== 'sliver' && <Icon icon={TYPE_ICON[e.type]} size={12} className="ch-ev__g" />}
-        {pill ? rl.name : title}
+        {pill ? rl.name : stub ? e.title : title}
       </span>
       <span className="ch-ev__m ch-ev__m--fit">
         {when.map((part, i) => (
