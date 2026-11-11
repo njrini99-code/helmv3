@@ -441,11 +441,18 @@ Nothing else of CONTEXT's depends on the shell: the notes and the two event task
 18. K1 is wired as K1 asks, one level down: `policyBlock(surface)` now returns the whole cached policy (rules, golf,
     data map, joined by a blank line, built once per surface) and `instructionBlocks(surface, who).policy` is that
     string. ENGINE changes nothing: `prompt.stable` is still one block. `rulesBlock(surface)` is the rules alone.
-19. Size, characters / 4, tournaments flag off: Ask and the practice helper 19,708 (tools 11,334, rules 1,554, golf
-    and data map 6,820), quick chat 19,217, player 7,482. The whole-prefix ceiling in `registry-size.test.ts` is
-    21,000 by the lead's decision (K2's 19,000 is superseded); TOOLS's own tools and rules keep their 12,000 (11,668).
+19. Size, characters / 4, tournaments flag off (corrected after items 21 and 22): Ask and the practice helper 19,876
+    (tools 11,349, rules 1,707, golf and data map 6,820), quick chat 19,384, player 7,497. The whole-prefix ceiling in `registry-size.test.ts` is
+    21,000 by the lead's decision (K2's 19,000 is superseded); TOOLS's own tools and rules keep their 12,000 (11,836).
     K2's lever (a) is taken: the rules no longer list which read answers which question and point at the data map.
 20. `find_in_app` stays registered for every coach and player. ENGINE drops it by name in the route when Clubhouse is
     not on for the team (`isClubhouseForTeam`), which gives two byte-stable tool lists. Both policies read correctly
     without it ("If you have find_in_app ... If you do not have it, name the screen in words").
-
+21. Task results: rule 4 of the coach's Tasks rules now names what the loop sends (`Committed`, `Partly done`,
+    `Failed`, and the three results that say nothing was written). No rule mentions a held result.
+22. Code (E8, `code_execution`): the coach's rules carry four sentences, worded "If you have code_execution", so the
+    prompt is the same bytes with `programmaticReads` on or off and reads correctly either way: use it when a question
+    spans many players or rounds or needs a calculation across several reads; for one player or one figure call the
+    read directly; never do arithmetic in the answer; a task is never called from code, the task tool is called
+    directly so the coach gets the card. The player's policy does not mention code. ENGINE: if the tool is offered
+    under another name than `code_execution`, or you need other words, say so here and TOOLS changes the sentences.

@@ -98,6 +98,18 @@ describe('the whole cached policy', () => {
     expect(rulesBlock('player')).toMatch(/and you have find_in_app, call it .* If you do not have it, name the screen in words\./);
   });
 
+  it('says when to work in code and when to call a read directly, for a coach only', () => {
+    const rules = rulesBlock('ask');
+    // Worded "if you have": the engine offers the tool behind a switch, and these bytes are the same either way.
+    expect(rules).toContain('If you have code_execution, use it when a question spans many players or many rounds, or needs a calculation across several reads.');
+    expect(rules).toContain('For one player or one figure, call the read directly');
+    expect(rules).toContain('Never do arithmetic in your answer, with or without code.');
+    expect(rules).toContain('A task is never called from code: call the task tool directly, so the coach gets the card to confirm.');
+    expect(rulesBlock('quick_chat')).toBe(rules);
+    expect(rulesBlock('practice_helper')).toBe(rules);
+    expect(policyBlock('player')).not.toMatch(/code_execution|from code|in code/);
+  });
+
   it('a player\'s whole policy names no table, no team read and no task', () => {
     expect(policyBlock('player')).not.toMatch(/query_team_data|get_team_stats|golf_[a-z_]+|Confirm/);
   });

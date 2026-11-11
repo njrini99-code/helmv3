@@ -743,13 +743,16 @@ replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
   `chat/context/**` and `chat/tasks/**`, always last in their group), the same list on the Ask tab and in
   the practice helper so they share one cached prefix; quick chat has `send_message` in place of `publish_artifact`
   and no `write_artifact`, `draft_message` or `draft_poll`. A player has 10, all reads. Tool definitions plus the
-  whole cached policy are 19,708 tokens on Ask by characters / 4 (26,063 before, measured the same way);
+  whole cached policy are 19,876 tokens on Ask by characters / 4 (26,063 before, measured the same way);
   `__tests__/registry-size.test.ts` is the measurement and holds two ceilings: 12,000 for the registry's own tools
-  and rules (11,668 today) and 21,000 for the whole cached prefix.
+  and rules (11,836 today) and 21,000 for the whole cached prefix.
 - **The cached policy** is `policyBlock(surface)` in `chat/instructions.ts`: this file's rules (`rulesBlock`), then
   golf as the app measures it, then where things are in the data (`knowledgeBlocks` from `chat/knowledge/`), in that
   order and the same bytes for every team and day. The rules do not list which read answers which question; the
-  data map does. `teamBlock(who)` follows it: the team, its timezone, when a season runs, the roster with ids.
+  data map does. For a coach they say when to work in code (`code_execution`, offered by the engine behind
+  `CHAT_FEATURES.programmaticReads`): a question across many players or rounds, or a calculation across reads;
+  otherwise the read is called directly, and a task is never called from code. The sentences are worded "if you
+  have", so the bytes are the same with the switch on or off. `teamBlock(who)` follows it: the team, its timezone, when a season runs, the roster with ids.
 - **One number, one source.** `get_player_stats`, `get_team_stats`, `get_rounds`, `get_season` and `get_qualifiers`
   (`chat/readers.ts`), and `get_round` and `get_tournaments` (`chat/readers-direct.ts`), do not compute their
   figures: they call the Clubhouse screen's own loader for the window asked
