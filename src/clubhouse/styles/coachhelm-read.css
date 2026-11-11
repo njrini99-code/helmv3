@@ -15,6 +15,9 @@
 
 /* ---------- the head: the green feature card, phone and desktop alike ---------- */
 .ch-hr .ch-hr-dos { display: flex; flex-direction: column; gap: 16px; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+/* The phone: the full-width green primary under the green card read as one slab at 16px; 24px of paper sets the key apart
+   (fix wave 2026-11-11). */
+.ch-hr-page.is-phone .ch-hr-dos { gap: 24px; }
 .ch-hr-page .ch-hd-dos__h {
   position: relative; overflow: hidden; gap: 8px; padding: 16px;
   border-radius: var(--ch-radius-lg); color: var(--ch-on-green-ink); background: var(--ch-feature-bg); box-shadow: var(--ch-elevation-feature);

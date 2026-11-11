@@ -2182,8 +2182,11 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   }
   /* Roster's desktop head keeps its own layout (no rules, no band) but its title is the same title: one page name, one
      style, on every page (design review, 10 Nov 2026). */
+  /* The CoachHelm read's desktop head has no canopy either, and its player's name was the old light 52px hero face: it is a
+     page title too (fix wave 2026-11-11). */
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] h1,
-  [data-ui='clubhouse'] main[data-ch-crh='on'].ch-rsd .ch-rs-head h1 {
+  [data-ui='clubhouse'] main[data-ch-crh='on'].ch-rsd .ch-rs-head h1,
+  [data-ui='clubhouse'] main.ch-hr-page.is-desk .ch-hl-h h1 {
     margin: 0;
     font: 600 calc(44 * var(--ch-type-k))/1.08 var(--ch-font-sans);
     letter-spacing: -0.036em;
