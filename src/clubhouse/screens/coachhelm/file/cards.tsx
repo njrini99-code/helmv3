@@ -385,13 +385,13 @@ export function SgCard({ sg, who, standingHref }: { sg: ChFileSg; who: string; s
                   {r.strokes != null && <i className={`sg__bar ${toneOfStrokes(r.strokes)}`} style={{ width: `${width}%` }} />}
                   {r.team != null && <i className="sg__team" style={{ left: `${50 + Math.max(-1, Math.min(1, r.team)) * 50}%` }} />}
                 </div>
-                <b className={r.tone === 'none' ? 'none' : r.tone}>{r.figure}</b>
+                <b className={'ch-num ' + (r.tone === 'none' ? 'none' : r.tone)}>{r.figure}</b>
               </div>
             );
           })}
           <div className="sg__axis">
             <span />
-            <div>
+            <div className="ch-num">
               <span>−1.0</span>
               <span>Tour</span>
               <span>+1.0</span>

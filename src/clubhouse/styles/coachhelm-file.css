@@ -180,8 +180,10 @@
 .ch-hf .drill .r__ic { background: var(--ch-hf-a-card); }
 .ch-hf .drill b { display: block; font: var(--ch-type-16-medium); letter-spacing: var(--ch-track-16); }
 .ch-hf .drill small { display: block; font: var(--ch-type-15);  color: var(--ch-hf-a-ink-2); letter-spacing: var(--ch-track-15); }
-.ch-hf .sg { display: flex; flex-direction: column; gap: 12px; padding-top: 4px; }
-.ch-hf .sg__row { display: grid; grid-template-columns: minmax(max-content, 40%) minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+/* The value column is one fixed width (room for "−0.4" at 16px, in tabular figures), on the rows and on the axis under them: at
+   `auto` a wider figure shortened its own row's track, so the zero ticks stood 4px apart and the axis ran past the tracks. */
+.ch-hf .sg { --ch-hf-sg-cols: minmax(max-content, 40%) minmax(0, 1fr) calc(40 * var(--ch-type-k)); display: flex; flex-direction: column; gap: 12px; padding-top: 4px; }
+.ch-hf .sg__row { display: grid; grid-template-columns: var(--ch-hf-sg-cols); align-items: center; gap: 8px; }
 .ch-hf .sg__row span { font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); }
 .ch-hf .sg__row b { text-align: right; font: var(--ch-type-16-strong); letter-spacing: var(--ch-track-16); }
 .ch-hf .sg__row b.loss { color: var(--ch-hf-a-loss); } .ch-hf .sg__row b.gain { color: var(--ch-hf-a-gain); }
@@ -190,7 +192,7 @@
 .ch-hf .sg__bar { position: absolute; top: 3px; bottom: 3px; border-radius: var(--ch-radius-xs); transform-origin: var(--ch-hf-o) 50%; }
 .ch-hf .sg__bar.loss { background: var(--ch-hf-c-loss); right: 50%; --ch-hf-o: 100%; }
 .ch-hf .sg__bar.gain { background: var(--ch-hf-c-gain); left: 50%; --ch-hf-o: 0%; }
-.ch-hf .sg__axis { display: grid; grid-template-columns: minmax(max-content, 40%) minmax(0, 1fr) auto; gap: 8px; font: var(--ch-type-13);  color: var(--ch-hf-a-ink-3); }
+.ch-hf .sg__axis { display: grid; grid-template-columns: var(--ch-hf-sg-cols); gap: 8px; font: var(--ch-type-13);  color: var(--ch-hf-a-ink-3); }
 .ch-hf .sg__axis div { display: flex; justify-content: space-between; }
 .ch-hf .sg__team { position: absolute; top: -3px; bottom: -3px; width: 3px; margin-left: -1px; border-radius: var(--ch-radius-mark); background: var(--ch-hf-a-ink); box-shadow: 0 0 0 1.5px var(--ch-hf-a-card); }
 .ch-hf .sg__key { position: relative; display: flex; align-items: center; gap: 8px; padding-left: 48px; font: var(--ch-type-13);  color: var(--ch-hf-a-ink-2); }
