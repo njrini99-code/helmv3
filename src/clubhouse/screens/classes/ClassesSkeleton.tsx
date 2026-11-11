@@ -1,93 +1,49 @@
-import { SkelLine, Skeleton } from '../../ui/States';
+import { Skeleton } from '../../ui/States';
 import '../../styles/classes.css';
-import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 import { CrhSkelCard } from '../../ui/CrhSkelCard';
 
-/** Route loading for Classes: the header, the term overview, then the deck of classes beside the week's side card, in place. On desktop the header is the framed page head at its loaded height and the deck's placeholders are rows (classes.css). */
+/**
+ * Route loading for Classes (06 §4.8), in the loaded page's shape so nothing moves when the classes land. Two shapes,
+ * and classes.css shows the one for the width, so the server needs no width to draw it. Both keep what is already
+ * known: the title is real, the term card is its green plate with ivory bars, and Today and Your classes are named.
+ */
 export function ClassesSkeleton() {
   return (
-    <main className="ch-cl" aria-busy="true" aria-label="Loading your classes" data-ch-code="CH-12401" data-canopy="">
-      {/* The lane's desktop page: the head, the green term card, the binders beside the overlaps. CSS picks it. */}
+    <main className="ch-cl" aria-busy="true" aria-label="Loading your classes" data-ch-code="CH-12401">
+      {/* Desktop: the head and its two actions, the term card, three binders to a row beside the overlaps. */}
       <div className="ch-cl-sk-dcrh" aria-hidden="true">
         <header className="ch-cl-sk-dcrh__h">
           <div className="ch-cl-sk-dcrh__stack">
             <Skeleton width={190} height={13} />
-            <Skeleton width={150} height={36} radius={10} />
+            <p className="ch-cl-sk-dcrh__title">Classes</p>
           </div>
           <div className="ch-cl-sk-dcrh__acts">
             <Skeleton width={150} height={36} radius={10} />
             <Skeleton width={120} height={36} radius={10} />
           </div>
         </header>
-        <div className="ch-cl-sk-dcrh__term" />
+        <span className="ch-cl-sk-crh__term is-desk">
+          {['24%', '46%', '100%', '32%'].map((w, i) => (
+            <i key={i} style={{ width: w, height: [16, 28, 12, 14][i] }} />
+          ))}
+        </span>
         <div className="ch-cl-sk-dcrh__grid">
           <section>
-            <Skeleton width={130} height={17} />
+            <b className="ch-cl-sk-dcrh__label">Your classes</b>
             <div className="ch-cl-sk-dcrh__deck">
               {[0, 1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} width="100%" height={236} radius={18} shape="solid" />
+                <Skeleton key={i} width="100%" height={236} radius={16} shape="solid" />
               ))}
             </div>
           </section>
           <div className="ch-cl-sk-dcrh__stack">
-            <Skeleton width="100%" height={220} radius={18} shape="solid" />
-            <Skeleton width="100%" height={120} radius={18} shape="solid" />
+            <CrhSkelCard title="Overlaps" rows={2} />
+            <Skeleton width="100%" height={120} radius={16} shape="solid" />
           </div>
         </div>
       </div>
-      <div className="ch-cl-sk-desk">
-        <header className="ch-cl-h" data-canopy-head="">
-          <div>
-            <Skeleton width={190} height={13} />
-            <div style={{ height: 10 }} />
-            <Skeleton width={150} height={36} radius={10} />
-          </div>
-          <div className="ch-cl-h__a">
-            <Skeleton width={150} height={40} radius={11} />
-            <Skeleton width={120} height={40} radius={11} />
-          </div>
-        </header>
-        <Skeleton width="100%" height={146} radius={22} />
-        <div className="ch-cl-grid">
-          {/* Your classes under its heading, the week's days once over the rows (TimetableHead), then the rows. Shapes only:
-              a team event's name under its day is drawn when it loads. */}
-          <section className="ch-sec ch-cl-sec">
-            <div className="ch-sec__head">
-              <div className="ch-sec__titles">
-                <SkelLine line={22.8} bar={17} width={120} />
-              </div>
-            </div>
-            <div className="ch-cl-deck">
-              <div className="ch-cl-tthead" style={{ ['--ch-cl-cols' as string]: 5 }}>
-                <span className="ch-cl-tthead__lead">
-                  <SkelLine line={15} bar={10} width={64} />
-                </span>
-                <span className="ch-cl-tthead__days">
-                  {[0, 1, 2, 3, 4].map((i) => (
-                    <span key={i}>
-                      <SkelLine line={12.5} bar={10} width={28} />
-                    </span>
-                  ))}
-                </span>
-              </div>
-              {[0, 1, 2, 3].map((i) => (
-                <Skeleton key={i} width="100%" height={236} radius={18} />
-              ))}
-            </div>
-          </section>
-          <div className="ch-cl-side">
-            <Skeleton width="100%" height={200} radius={18} />
-            <Skeleton width="100%" height={92} radius={18} />
-          </div>
-        </div>
-      </div>
-      {/* The phone (the Mobile clubhouse pass, 2026-10-08), at the loaded page's geometry so nothing moves when it lands (measured
-          at 390): the term line's box under the double rule over the two actions, the term's feature card, Today and its rows, the
-          week's overlaps and what your coach sees (the rail comes first on the phone), then your classes as rows. classes.css shows
-          the shape for the width, so the server needs no width to draw it. */}
-      {/* The lane's flag is on `.ch-root`; CSS picks which phone skeleton shows, since this route's loading is a client component (06 §4.8). */}
+      {/* Phone: the large title, the term line, the term card, then Today and Your classes as named cards. */}
       <div className="ch-cl-sk-crh" aria-hidden="true">
-        {/* A plain title: the skeleton's one large-title block is the phone shape's below, and CSS shows one shape. */}
         <p className="ch-large-title ch-cl-title">Classes</p>
         <Skeleton width={190} height={15} />
         <span className="ch-cl-sk-crh__term">
@@ -98,72 +54,6 @@ export function ClassesSkeleton() {
         {['Today', 'Your classes'].map((t) => (
           <CrhSkelCard key={t} title={t} />
         ))}
-      </div>
-      <div className="ch-cl-sk-phone">
-        <header className="ch-cl-sk-h">
-          <div>
-            <span className="ch-cl-sk-line">
-              <Skeleton width={190} height={11} />
-            </span>
-            <LargeTitleSkeleton width={130} className="ch-cl-title" />
-          </div>
-          <span className="ch-cl-sk-acts">
-            <Skeleton width="100%" height={44} radius={11} />
-            <Skeleton width="100%" height={44} radius={11} />
-          </span>
-        </header>
-        <Skeleton width="100%" height={116.7} radius={14} shape="solid" />
-        <div className="ch-cl-sk-sec">
-          <span className="ch-cl-sk-head">
-            <Skeleton width={70} height={17} radius={6} />
-          </span>
-          {[0, 1].map((i) => (
-            <span key={i} className="ch-cl-sk-row">
-              <Skeleton width={72} height={13} />
-              <span>
-                <Skeleton width="70%" height={14} />
-                <Skeleton width="46%" height={11} />
-              </span>
-            </span>
-          ))}
-        </div>
-        <div className="ch-cl-sk-sec is-over">
-          <span className="ch-cl-sk-head is-two">
-            <Skeleton width="78%" height={17} radius={6} />
-            <Skeleton width="56%" height={11} />
-          </span>
-          {[0, 1, 2].map((i) => (
-            <span key={i} className="ch-cl-sk-row is-short">
-              <span>
-                <Skeleton width={i === 0 ? '52%' : '30%'} height={13} />
-                <Skeleton width="44%" height={11} />
-              </span>
-              <Skeleton width={44} height={11} />
-            </span>
-          ))}
-        </div>
-        <span className="ch-cl-sk-note">
-          <Skeleton width={16} height={16} radius={8} />
-          <span>
-            <Skeleton width="48%" height={13} />
-            <Skeleton width="96%" height={11} />
-            <Skeleton width="88%" height={11} />
-            <Skeleton width="62%" height={11} />
-          </span>
-        </span>
-        <div className="ch-cl-sk-sec">
-          <span className="ch-cl-sk-head">
-            <Skeleton width={120} height={17} radius={6} />
-          </span>
-          {[0, 1].map((i) => (
-            <span key={i} className="ch-cl-sk-class">
-              <Skeleton width={84} height={14} />
-              <Skeleton width="72%" height={16} />
-              <Skeleton width="40%" height={12} />
-              <Skeleton width="100%" height={42} radius={8} shape="solid" />
-            </span>
-          ))}
-        </div>
       </div>
     </main>
   );

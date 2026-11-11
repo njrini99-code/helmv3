@@ -571,10 +571,17 @@ describe('Classes route and page', () => {
     render(<ClassesSkeleton />);
     await expectCode('CH-12401');
     expect(screen.getByRole('main', { name: 'Loading your classes' }).getAttribute('aria-busy')).toBe('true');
-    // Four rows, under Your classes' heading and the week's days once (2026-10-18: the first row landed 82px lower without them).
-    expect(document.querySelectorAll('.ch-cl-deck > .ch-skel')).toHaveLength(4);
-    expect(document.querySelector('.ch-cl-sk-desk .ch-cl-sec > .ch-sec__head + .ch-cl-deck > .ch-cl-tthead:first-child')).not.toBeNull();
-    expect(document.querySelectorAll('.ch-cl-sk-desk .ch-cl-tthead__days > span')).toHaveLength(5);
+    // Two shapes, one per width, and nothing else: the phone's and the desktop's. Each keeps what is already known: the
+    // title is the real word, the term card is its plate with four bars, and Today and Your classes are named.
+    expect([...document.querySelectorAll('main > div')].map((d) => d.className)).toEqual(['ch-cl-sk-dcrh', 'ch-cl-sk-crh']);
+    expect(document.querySelector('.ch-cl-sk-crh .ch-large-title')?.textContent).toBe('Classes');
+    expect(document.querySelector('.ch-cl-sk-dcrh__title')?.textContent).toBe('Classes');
+    expect(document.querySelectorAll('.ch-cl-sk-crh .ch-cl-sk-crh__term > i')).toHaveLength(4);
+    expect([...document.querySelectorAll('.ch-cl-sk-crh .ch-crh-skcard > b')].map((b) => b.textContent)).toEqual(['Today', 'Your classes']);
+    // Five binders on the desktop, three to a row, beside the overlaps.
+    expect(document.querySelectorAll('.ch-cl-sk-dcrh__deck > .ch-skel')).toHaveLength(5);
+    // The shapes are drawing: a screen reader hears "Loading your classes" once, from the page.
+    for (const d of document.querySelectorAll('main > div')) expect(d.getAttribute('aria-hidden')).toBe('true');
   });
 
   it('the no-team page draws without the router (it is a server component)', () => {
@@ -1034,10 +1041,10 @@ describe('Classes, states', () => {
     expect(online.querySelector('[data-ch-code="CH-12304"]')).toBeNull();
   });
 
-  it('every control goes somewhere: the Add tile opens the same sheet as the header, and a card only ever opens its class', async () => {
+  it('every control goes somewhere: the header\u2019s Add class opens the sheet, and a binder only ever opens its class', async () => {
     const user = userEvent.setup();
     show();
-    await user.click(screen.getByRole('button', { name: /^Add a class/ }));
+    await user.click(headerButton('Add class'));
     expect(await screen.findByRole('dialog', { name: 'Add a class' })).toBeTruthy();
     expect(document.querySelectorAll('a[href]')).toHaveLength(0);
   });
@@ -1249,8 +1256,12 @@ const page1 = (): ChClassesPage => ({ ...PREVIEW_CLASSES, classes: { list: PREVI
 
 describe('Classes, delete all', () => {
   const ALL_IDS = PREVIEW_CLASS_ROWS.map((r) => r.id).sort();
-  /** The control under the deck (the dialog has a button of the same name). */
-  const deleteAll = () => within(document.querySelector('.ch-cl-delall') as HTMLElement).getByRole('button', { name: 'Delete all classes' }) as HTMLButtonElement;
+  const more = () => screen.queryByRole('button', { name: 'More for your classes' });
+  /** The destructive row in Your classes' More menu (the dialog has a button of the same name). Opens the menu when it is shut. While a write runs the More key itself is off, so nothing in it can be picked. */
+  const deleteAll = () => {
+    if (!screen.queryByRole('menuitem', { name: 'Delete all classes' })) fireEvent.click(more()!);
+    return screen.getByRole('menuitem', { name: 'Delete all classes' }) as HTMLButtonElement;
+  };
   const question = () => screen.getByRole('dialog', { name: 'Delete all classes?' });
   const confirm = (user: ReturnType<typeof userEvent.setup>) => user.click(within(question()).getByRole('button', { name: /^(Delete all classes|Deleting…)$/ }));
   const answer = (over: Partial<ChRemoveAllData>, error = 'stopped'): { success: boolean; error: string; data: ChRemoveAllData } => ({ success: false, error, data: { removed: [], kept: [], offCalendar: [], ...over } });
@@ -1281,7 +1292,7 @@ describe('Classes, delete all', () => {
     expect(await screen.findByText('All 5 classes deleted')).toBeTruthy();
     expect(hapticSpy.mock.calls.map((c) => c[0])).toEqual(['success']);
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(document.querySelector('.ch-cl-delall')).toBeNull();
+    expect(more()).toBeNull();
   });
 
   it('CH-12503 the question counts the classes from other terms too, and a single class is named', async () => {
@@ -1303,12 +1314,12 @@ describe('Classes, delete all', () => {
 
   it('CH-12301 the control is not drawn with no classes', () => {
     show(PREVIEW_CLASSES_EMPTY);
-    expect(document.querySelector('.ch-cl-delall')).toBeNull();
+    expect(more()).toBeNull();
   });
 
   it('CH-12201 the control is not drawn beside a schedule that did not load', () => {
     show(PREVIEW_CLASSES_FAILED);
-    expect(document.querySelector('.ch-cl-delall')).toBeNull();
+    expect(more()).toBeNull();
   });
 
   it('CH-12503 while a delete runs the question says Deleting and cannot be closed or pressed again, and the control is off; while a calendar sync runs the control is off too', async () => {
@@ -1320,7 +1331,7 @@ describe('Classes, delete all', () => {
     await waitFor(() => expect(within(question()).getByRole('button', { name: 'Deleting…' })).toBeTruthy());
     expect((within(question()).getByRole('button', { name: 'Deleting…' }) as HTMLButtonElement).disabled).toBe(true);
     expect((within(question()).getByRole('button', { name: 'Keep them' }) as HTMLButtonElement).disabled).toBe(true);
-    expect(deleteAll().disabled).toBe(true);
+    expect((more() as HTMLButtonElement).disabled).toBe(true);
     // Esc and the Close button leave it open: closing would hide a delete that is still going.
     fireEvent(question(), new Event('cancel', { cancelable: true }));
     await user.click(within(question()).getByRole('button', { name: 'Close' }));
@@ -1334,14 +1345,14 @@ describe('Classes, delete all', () => {
     const user = userEvent.setup();
     const held = later<{ success: boolean }>();
     show(PREVIEW_CLASSES, { sync: vi.fn((c: ChClass) => (c.code === 'GEOG 110' ? held.promise : Promise.resolve({ success: true }))) });
-    expect(deleteAll().disabled).toBe(false);
+    expect((more() as HTMLButtonElement).disabled).toBe(false);
     await fillGeog(user);
     await submitForm(user);
     await expectCode('CH-12403', /Adding to your calendar…/);
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    expect(deleteAll().disabled).toBe(true);
+    expect((more() as HTMLButtonElement).disabled).toBe(true);
     await act(async () => held.resolve({ success: true }));
-    await waitFor(() => expect(deleteAll().disabled).toBe(false));
+    await waitFor(() => expect((more() as HTMLButtonElement).disabled).toBe(false));
   });
 
   it('CH-12005 a delete where no class could be taken off the calendar keeps every class and the question, says so, and Retry deletes them', async () => {

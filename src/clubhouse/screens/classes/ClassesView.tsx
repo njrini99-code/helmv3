@@ -2,14 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { GraduationCap, Plus, RotateCw, Trash2, TriangleAlert, Upload } from 'lucide-react';
+import { GraduationCap, Ellipsis, Plus, RotateCw, Trash2, TriangleAlert, Upload } from 'lucide-react';
 import { classClashes, classNameOf, conflictsOf, dayToken, groupConflicts, inTerm, orderClasses, shortDay, syncStartFor, toChClass, type ChClass, type ChClassesPage, type ChClassInput, type ChImportRow } from '../../data/classes-shape';
 import { chTrail } from '../../lib/track';
 import { friendlyReason, normalise, useAction, type ServerResult } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { PhoneIconAction } from '../../ui/PhoneBar';
-import { Button } from '../../ui/Button';
+import { Button, IconButton } from '../../ui/Button';
+import { Menu } from '../../ui/Menu';
 import { Modal } from '../../ui/Modal';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { ClassDetail } from './ClassDetail';
@@ -17,7 +18,7 @@ import { ClassStatusPanel } from './ClassStatusPanel';
 import type { ChClassStatusWrites } from './class-status-writes';
 import { ClassForm } from './ClassForm';
 import { ImportSchedule } from './ImportSchedule';
-import { AddTile, ClassCard, CoachNote, SyncStatus, TimetableHead, timetableDays } from './parts';
+import { ClassCard, CoachNote, SyncStatus, timetableDays } from './parts';
 import { newClassId, type ChClassesWrites, type ChRemoveAllData } from './writes';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { chScrollIntoView } from '../../lib/smooth-scroll';
@@ -310,10 +311,32 @@ export function ClassesView({ data, writes, statusWrites }: { data: ChClassesPag
   const days = timetableDays(classes);
   const teamDays = new Set(week.error ? [] : conflicts.filter((x) => week.dates.includes(x.date)).map((x) => dayToken(x.date)));
   const deck = (
-    <>
-      {/* CH-12801: the page is labelled by "Classes"; each card is one button. */}
+    <section className="ch-cl-yours" aria-labelledby="ch-cl-deck-h">
+      {/* The binders' heading carries the count and the one way out of a whole schedule (CH-12503): a destructive row in the
+          More menu, never loose red words on the page. The key is off while any write runs. The warning comes before the question (CH-12704). */}
+      <div className="ch-cl-yours__h">
+        <h2 id="ch-cl-deck-h">
+          Your classes<span className="ch-num">{classes.length}</span>
+        </h2>
+        <Menu
+          label="More for your classes"
+          items={[
+            {
+              label: 'Delete all classes',
+              icon: Trash2,
+              danger: true,
+              feel: 'warning',
+              onSelect: () => {
+                chTrail('classes delete all');
+                setAskingAll(true);
+              },
+            },
+          ]}
+          trigger={(p) => <IconButton icon={Ellipsis} label="More for your classes" menu={p} disabled={busy} />}
+        />
+      </div>
+      {/* CH-12801: the page is labelled by "Classes"; each binder is one button. */}
       <div className="ch-cl-deck">
-        <TimetableHead days={days} todayIso={todayIso} weekDates={week.dates} conflicts={week.error ? [] : conflicts} />
         {classes.map((c) => (
           <ClassCard
             key={c.id}
@@ -330,25 +353,8 @@ export function ClassesView({ data, writes, statusWrites }: { data: ChClassesPag
             }}
           />
         ))}
-        <AddTile onAdd={startAdd} />
       </div>
-      {/* CH-12503: the way out of a whole schedule, quiet and below the deck, red because it deletes (D-42). The warning comes before the question (CH-12704). */}
-      <div className="ch-cl-delall">
-        <Button
-          variant="ghost"
-          className={'ch-cl-danger' + (phone ? '' : ' ch-btn--flush-end')}
-          leftIcon={Trash2}
-          feel="warning"
-          disabled={busy}
-          onClick={() => {
-            chTrail('classes delete all');
-            setAskingAll(true);
-          }}
-        >
-          Delete all classes
-        </Button>
-      </div>
-    </>
+    </section>
   );
 
   const crhOverlaps = (
@@ -470,12 +476,7 @@ export function ClassesView({ data, writes, statusWrites }: { data: ChClassesPag
             // Desktop keeps the side layout (06 §4.9): the binders in three columns, the overlaps and the status card beside them.
             <div className="ch-cl-dgrid">
               <SectionBoundary surface="classes.deck" label="Your classes" code="CH-12203">
-                <section aria-labelledby="ch-cl-deck-h">
-                  <h2 id="ch-cl-deck-h" className="ch-cl-dgrid__h">
-                    Your classes<span className="ch-num">{classes.length}</span>
-                  </h2>
-                  {deck}
-                </section>
+                {deck}
               </SectionBoundary>
               <aside className="ch-cl-dgrid__side">
                 {crhOverlaps}

@@ -1,16 +1,14 @@
 'use client';
 
-import { Eye, MapPin, Plus, RotateCw, TriangleAlert } from 'lucide-react';
+import { Eye, MapPin, RotateCw, TriangleAlert } from 'lucide-react';
 import {
   CH_DAYS,
   CH_WEEKDAYS,
   DAY_LETTER,
-  DAY_SHORT,
   clockLabel,
   conflictFlag,
   dayToken,
   daysLabel,
-  eventLabel,
   hasNoDays,
   hasNoTime,
   inTerm,
@@ -19,70 +17,15 @@ import {
   timeRange,
   type ChClass,
   type ChConflict,
-  type ChTeamEvent,
   type ChTerm,
 } from '../../data/classes-shape';
 import { useChClock } from '../../lib/use-clock';
-
-/** Minutes from "HH:MM". */
-const minutesOf = (t: string | null | undefined): number | null => {
-  const m = t ? /^(\d{1,2}):(\d{2})/.exec(t) : null;
-  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
-};
-
-/** A meeting's length as a share of the longest the timetable draws (three hours), so a lab reads longer than a lecture. */
-function lengthShare(c: Pick<ChClass, 'start' | 'end'>): number {
-  const a = minutesOf(c.start);
-  const b = minutesOf(c.end);
-  if (a == null || b == null || b <= a) return 0.3;
-  return Math.max(0.22, Math.min(1, (b - a) / 180));
-}
 
 /** The days the timetable shows: the weekdays, and the weekend only when a class meets then. */
 export function timetableDays(classes: readonly ChClass[]): readonly string[] {
   return classes.some((c) => c.days.some((d) => d === 'Sa' || d === 'Su')) ? CH_DAYS : CH_WEEKDAYS;
 }
 
-/**
- * P012-A1/A2: the one header over Your classes. The days once (not 25 raised keys), today a soft light band down the
- * list, and a team event this week that meets a class drawn where it happens: a field-green band on its day, named
- * in the day's column on desktop and on a line under the days on the phone.
- * Drawing only: each class says when it meets in its own name (CH-12801), and the overlaps are said in words beside.
- */
-export function TimetableHead({ days, todayIso, weekDates, conflicts }: { days: readonly string[]; todayIso: string; weekDates: readonly string[]; conflicts: readonly ChConflict[] }) {
-  const today = dayToken(todayIso);
-  const byDay = new Map<string, ChTeamEvent>();
-  for (const x of conflicts) if (weekDates.includes(x.date) && !byDay.has(dayToken(x.date))) byDay.set(dayToken(x.date), x.event);
-  return (
-    <div className="ch-cl-tthead" aria-hidden="true" style={{ ['--ch-cl-cols' as string]: days.length }}>
-      <span className="ch-cl-tthead__lead">This week</span>
-      <span className="ch-cl-tthead__days">
-        {days.map((d) => {
-          const ev = byDay.get(d);
-          return (
-            <span key={d} className={(d === today ? 'is-today' : '') + (ev ? ' is-team' : '')}>
-              <em>{DAY_SHORT[d]}</em>
-              {ev && <i title={eventLabel(ev)}>{eventLabel(ev)}</i>}
-            </span>
-          );
-        })}
-      </span>
-      {/* The phone names the event on a line of its own under the days, at the 12px floor, where a fifth of the
-          screen held it to 11px and a cut word (design picks, 2026-10-28). The day keeps its band. */}
-      {byDay.size > 0 && (
-        <span className="ch-cl-tthead__evs">
-          {days
-            .filter((d) => byDay.has(d))
-            .map((d) => (
-              <span key={d}>
-                <b>{DAY_SHORT[d]}</b> {eventLabel(byDay.get(d)!)}
-              </span>
-            ))}
-        </span>
-      )}
-    </div>
-  );
-}
 import { haptic } from '../../lib/haptics';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
@@ -135,7 +78,6 @@ export function ClassCard({
   const today = dayToken(todayIso);
   const strip = days;
   const clash = new Set(overlaps.map((x) => dayToken(x.date)));
-  const share = lengthShare(c);
   const range = timeRange(c.start, c.end, hours);
   const when = flexible ? (noTime ? `${daysLabel(c.days)}, no time set` : 'no fixed meeting') : `${daysLabel(c.days)} ${range}`;
   const overlap = conflictFlag(overlaps);
@@ -156,8 +98,10 @@ export function ClassCard({
         </span>
         {c.credits != null && <span className="ch-cl-card__cr">{c.credits} cr</span>}
       </span>
-      <b className="ch-cl-card__name">{c.name}</b>
-      <span className="ch-cl-card__prof">{c.instructor ?? 'Instructor not listed'}</span>
+      <span className="ch-cl-card__n">
+        <b className="ch-cl-card__name">{c.name}</b>
+        <span className="ch-cl-card__prof">{c.instructor ?? 'Instructor not listed'}</span>
+      </span>
       {flexible ? (
         <span className="ch-cl-card__flex" data-ch-code={noDays || noTime ? undefined : 'CH-12303'}>
           {noDays ? 'Add the days this class meets.' : noTime ? 'Add the time this class meets.' : 'Online or arranged. No fixed meeting.'}
@@ -166,13 +110,12 @@ export function ClassCard({
         <span className="ch-cl-card__week" aria-hidden="true" style={{ ['--ch-cl-cols' as string]: strip.length }}>
           {strip.map((d) => {
             const on = c.days.includes(d);
-            // A1: a meeting is an ink bar as long as the class, its start in the cell numeral; a day off is empty paper.
-            // A2: a meeting a team event overlaps carries the amber notch.
+            // A meeting is a raised paper tile with its start under the day; a day off is an outline. Today is ringed, and a
+            // meeting a team event overlaps wears the amber ring (the flag under the week says which event).
             return (
               <span key={d} className={(on ? 'is-on' : '') + (d === today ? ' is-today' : '') + (on && clash.has(d) ? ' is-clash' : '') + (teamDays?.has(d) ? ' is-team' : '')}>
                 <em>{DAY_LETTER[d]}</em>
                 {on && <b className="ch-num">{clockLabel(c.start, hours)}</b>}
-                {on && <i className="ch-cl-tt__bar" style={{ ['--ch-cl-len' as string]: share }} />}
               </span>
             );
           })}
@@ -181,8 +124,8 @@ export function ClassCard({
       <span className="ch-cl-card__f">
         {c.location && (
           <span className="ch-cl-card__loc">
-            <Icon icon={MapPin} size={12} />
-            {c.location}
+            <Icon icon={MapPin} size={14} />
+            <span>{c.location}</span>
           </span>
         )}
         {noDays && (
@@ -211,19 +154,6 @@ export function ClassCard({
         )}
         {!inTerm(c, term) && <span className="ch-cl-card__term">{c.semester}</span>}
       </span>
-    </button>
-  );
-}
-
-/** The dashed tile at the end of the deck (classes.jsx `AddCard`): it opens the same Add a class sheet as the header's button. */
-export function AddTile({ onAdd }: { onAdd: () => void }) {
-  return (
-    <button type="button" className="ch-cl-add" onClick={onAdd}>
-      <span className="ch-cl-add__plus">
-        <Icon icon={Plus} size={22} />
-      </span>
-      <b>Add a class</b>
-      <em>Course, days, time and room</em>
     </button>
   );
 }
