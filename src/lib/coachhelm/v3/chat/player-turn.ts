@@ -1,99 +1,108 @@
 import 'server-only';
 import { after, NextResponse } from 'next/server';
-import { convertToModelMessages, createUIMessageStream, createUIMessageStreamResponse, stepCountIs, streamText, type UIMessage, type UIMessageStreamWriter } from 'ai';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/auth/rate-limit';
 import { isCoachHelmEnabledForPlayer } from '@/lib/coachhelm/v2/gate';
-import { resolveModelProvider } from '@/lib/ai/model-provider';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { logServerError, logServerEvent } from '@/lib/server-error-logger';
-import { estimateCachedCostUsd, MODEL_FOR_TASK } from '@/lib/coachhelm/v3/llm/types';
-import { resolvePlayerChatContext } from './player-context';
+import { logServerError } from '@/lib/server-error-logger';
 import { CoachContextError } from './context';
-import { buildPlayerTools, PLAYER_INSTRUCTIONS } from './player-tools';
+import { anthropicModelClient, CHAT_MODEL_LEDGER_ID, PLAYER_MAX_STEPS, promptTokens, turnCostUsd } from './engine/model';
+import { CHAT_STREAM_CONTENT_TYPE, encodeChatEvent, type ChatErrorAction, type ChatEvent } from './engine/protocol';
+import { chatTurnResponse, type TurnSummary } from './engine/turn';
+import type { PlayerChatContext, ScreenLoaders } from './engine/tool';
+import { checkGrounding } from './grounding';
+import { instructionBlocks } from './instructions';
 import { readBucket, recordPlayerSpend } from './player-allowance';
-import { auditPlayerAnswerCited, playerLedgerRow } from './player-audit';
-import { CITES_CLOSE, CITES_OPEN, extractCites } from './cites';
-import { withholdBlocks } from './stream-blocks';
-import type { ToolEnvelope } from './provenance';
-import type { PlayerFiguresSource, PuttBandsSource } from './read-tools';
-import { stripReadMarkers } from './read-markers';
-import { isIncompleteToolPart } from './ui-parts';
-import { systemCached, withTailBreakpoint } from './prompt-cache';
+import { resolvePlayerChatContext } from './player-context';
+import { toolsFor } from './registry';
+
+const describePlayerError = (): { message: string; action: ChatErrorAction } => ({ message: 'CoachHelm couldn’t finish that answer. Please try again.', action: 'retry' });
 
 /**
- * A player's turn on the same stream route (02 §13.1: the role comes from the session, never the request). No conversation is saved until HM3; the allowance is read before the model and written after, so no bucket means no ask (02 §16: no cap, no ship).
+ * A player's turn, on the same runner as a coach's (the role comes from the session, never the request). Reads only:
+ * the registry gives a player no task, and the runner is given no ledger, so a task call could not be planned even if
+ * one were offered. The allowance is read before the model and written after: no bucket, no ask.
+ *
+ * Nothing is stored yet: player-owned conversations are the held migration 20261101090200. Until it is applied each
+ * question is answered on its own; the browser's copy of the thread is never replayed to the model.
  */
-export async function runPlayerTurn(sb: SupabaseClient<Database>, body: { messages: unknown[] }, signal: AbortSignal, playerFigures?: (timezone: string) => PlayerFiguresSource, puttBands?: (timezone: string) => PuttBandsSource): Promise<Response> {
-  let ctx: Awaited<ReturnType<typeof resolvePlayerChatContext>>;
+export async function runPlayerTurn(
+  sb: SupabaseClient<Database>,
+  body: { text: string; clientTurnId: string },
+  signal: AbortSignal,
+  loadersFor: (who: PlayerChatContext) => ScreenLoaders,
+): Promise<Response> {
+  let ctx: PlayerChatContext;
   try {
     ctx = await resolvePlayerChatContext(sb);
   } catch (err) {
     const status = err instanceof CoachContextError ? err.status : 500;
     return NextResponse.json({ error: 'Ask could not load.' }, { status });
   }
-  // CoachHelm switched off for the player or their team answers nothing here, as for a coach (CH13-20). The gate fails closed on a lookup error.
+  // CoachHelm switched off for the player or their team answers nothing here, as for a coach. The gate fails closed on a lookup error.
   const helmGate = await isCoachHelmEnabledForPlayer(ctx.player_id);
   if (!helmGate.effectivelyEnabled) return NextResponse.json({ error: 'CoachHelm is off for your team.' }, { status: 403 });
-  // The rate limit and the allowance do not depend on each other: one wait, not two (and still nothing is read for a team that is off).
   const [rl, bucket] = await Promise.all([checkRateLimit(`coachhelm:chat:player:${ctx.player_id}`, RATE_LIMITS.API_GENERAL), readBucket(ctx.player_id, ctx.timezone)]);
   if (!rl.allowed) return NextResponse.json({ error: 'Too many requests. Please slow down.' }, { status: 429 });
   if (!bucket) return NextResponse.json({ error: 'Ask is off for your team.' }, { status: 403 });
+  const conversationId = `player-${ctx.player_id}`;
   if (bucket === 'out') {
-    return createUIMessageStreamResponse({
-      stream: createUIMessageStream({ execute: ({ writer }) => writer.write({ type: 'data-allowance', id: 'allowance', data: { state: 'out' } }) }),
-    });
+    const events: ChatEvent[] = [
+      { type: 'message_start', conversation_id: conversationId, message_id: crypto.randomUUID(), resumed: false },
+      { type: 'part', part: { type: 'data-allowance', id: 'allowance', data: { state: 'out' } } },
+      { type: 'done', status: 'complete' },
+    ];
+    return new Response(events.map(encodeChatEvent).join(''), { headers: { 'content-type': CHAT_STREAM_CONTENT_TYPE } });
   }
-  const uiMessages = body.messages as UIMessage[];
-  const first = ctx.roster[0]?.name.split(' ')[0] ?? 'there';
-  const envelopes: ToolEnvelope[] = [];
-  const evidenceRefs = new Map<string, ToolEnvelope>();
-  const stream = createUIMessageStream({
-    execute: async ({ writer }) => {
-      const tools = buildPlayerTools({ sb, ctx, playerId: ctx.player_id, writer, collect: (e) => envelopes.push(e), playerFigures: playerFigures?.(ctx.timezone), puttBands: puttBands?.(ctx.timezone), evidenceRefs });
-      const result = streamText({
-        model: resolveModelProvider(MODEL_FOR_TASK.coach_chat),
-        abortSignal: signal,
-        // The prompt and the conversation so far are cached (prompt-cache.ts): a step pays only for what the step before it added.
-        instructions: systemCached(PLAYER_INSTRUCTIONS(first, ctx.team_name, ctx.timezone)),
-        prepareStep: ({ messages }) => ({ messages: withTailBreakpoint(messages) }),
-        messages: await convertToModelMessages(uiMessages.map((m) => ({ ...m, parts: m.parts.filter((p) => !isIncompleteToolPart(p)) })), { tools }),
-        tools,
-        stopWhen: stepCountIs(6),
-        experimental_telemetry: { isEnabled: true, functionId: 'coachhelm.chat.player', recordInputs: false, recordOutputs: false },
-      });
-      // The citations block the model appends is machine-readable: the player never sees it, live or in a saved part.
-      // The SDK's overload does not carry the chunk type through (the coach route casts it the same way); the writer's own parameter type is the source of truth.
-      type Chunk = Parameters<UIMessageStreamWriter['write']>[0];
-      const uiStream = result.toUIMessageStream({ sendReasoning: false, onError: () => 'CoachHelm couldn’t finish that answer.' }) as unknown as ReadableStream<Chunk>;
-      writer.merge(uiStream.pipeThrough(withholdBlocks<Chunk>([[CITES_OPEN, CITES_CLOSE]])));
-      const extracted = extractCites(await result.text);
-      const text = stripReadMarkers(extracted.text);
-      const { unsupported, citations } = auditPlayerAnswerCited({ text, envelopes, messages: uiMessages, timezone: ctx.timezone, roster: ctx.roster, cites: { cites: extracted.cites, evidence: evidenceRefs, blocks: extracted.blocks, invalid: extracted.invalid } });
-      const usage = await result.usage;
-      const input = usage.inputTokens ?? 0;
-      const output = usage.outputTokens ?? 0;
-      const usd = estimateCachedCostUsd(MODEL_FOR_TASK.coach_chat, input, output, usage.inputTokenDetails);
-      // The allowance, the ledger row and the log line run after the response is sent: the stream stays open until `execute` returns, and the
-      // player was waiting on bookkeeping that is theirs only in the sense of a counter.
-      const bookkeeping = async () => {
-        if (citations) await logServerEvent('player ask: citation coverage', { action: 'v3.chat.stream.citations', featureArea: 'coachhelm', skipSentry: true, extra: { ...citations, surface: 'player', outcome: unsupported.length === 0 ? 'accepted' : 'flagged' } }, 'info').catch(() => undefined);
-        await recordPlayerSpend({ playerId: ctx.player_id, teamId: ctx.team_id, zone: ctx.timezone, usd }).catch(() => undefined);
-        try {
-          const { error } = await createAdminClient().from('golf_coachhelm_llm_calls').insert(playerLedgerRow({ playerId: ctx.player_id, promptTokens: input, completionTokens: output, costUsd: usd, unsupported, citations }));
-          if (error) throw new Error(error.message);
-        } catch (err) {
-          void logServerError(`player ask: llm ledger failed: ${err instanceof Error ? err.message : 'unknown'}`, { action: 'coachhelm.ask.player' }, 'warning');
-        }
-      };
-      // `after` only exists inside a request; anywhere else (a script, a test) the work is simply awaited, as it was before.
+
+  const blocks = instructionBlocks('player', ctx, { today: new Date() });
+  const onFinished = (summary: TurnSummary) => {
+    if (summary.usage.calls.length === 0) return;
+    // The allowance and the ledger row run after the response is sent: the player was not waiting on a counter.
+    const bookkeeping = async () => {
+      const usd = turnCostUsd(summary.usage);
+      await recordPlayerSpend({ playerId: ctx.player_id, teamId: ctx.team_id, zone: ctx.timezone, usd }).catch(() => undefined);
       try {
-        after(bookkeeping);
-      } catch {
-        await bookkeeping();
+        const { error } = await createAdminClient()
+          .from('golf_coachhelm_llm_calls')
+          .insert({
+            task: 'coach_chat',
+            player_id: ctx.player_id,
+            coach_id: null,
+            model_id: CHAT_MODEL_LEDGER_ID,
+            prompt_tokens: promptTokens(summary.usage),
+            completion_tokens: summary.usage.output,
+            cost_usd: usd,
+            grounded: summary.grounded,
+          } as never);
+        if (error) throw new Error(error.message);
+      } catch (err) {
+        void logServerError(`player ask: llm ledger failed: ${err instanceof Error ? err.message : 'unknown'}`, { action: 'coachhelm.ask.player' }, 'warning');
       }
+    };
+    try {
+      after(bookkeeping);
+    } catch {
+      void bookkeeping();
+    }
+  };
+
+  return chatTurnResponse(
+    {
+      model: anthropicModelClient,
+      tools: toolsFor('player', ctx),
+      system: { stable: blocks.policy, team: blocks.team },
+      toolContext: { sb, who: ctx, conversationId, surface: 'player', loaders: loadersFor(ctx) },
+      tasks: null,
+      maxSteps: PLAYER_MAX_STEPS,
+      requestSignal: signal,
+      store: null,
+      clientTurnId: body.clientTurnId,
+      describeError: describePlayerError,
+      checkGrounding: ({ text, reads }) => checkGrounding(text, reads),
+      onFinished,
     },
-  });
-  return createUIMessageStreamResponse({ stream });
+    { kind: 'message', text: body.text },
+  );
 }

@@ -1,0 +1,211 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ActionReceipt } from '../action-types';
+import type { CoachChatContext } from '../context';
+import { CoachContextError } from '../context';
+import type { PlayerChatContext, TaskTool, ToolContext } from '../engine/tool';
+import type { TaskProposal } from '../tasks';
+import { person } from './pgrst-double';
+
+/**
+ * Every task, against a database double that records any write and server actions that are spies:
+ *   plan writes nothing and calls no action;
+ *   commit writes once, and a second commit of the same card finds the first attempt's row instead of writing again;
+ *   a write that throws after its row landed is reported done, and "nothing was saved" is only said after looking.
+ */
+const { world, action, executed } = vi.hoisted(() => {
+  const world = { landed: false, lookFails: false, mode: 'ok' as 'ok' | 'fail' | 'throw_after_write', actionCalls: [] as string[], dbWrites: [] as string[] };
+  const action = (name: string, extra: Record<string, unknown> = {}) =>
+    vi.fn(async (..._args: unknown[]) => {
+      world.actionCalls.push(name);
+      if (world.mode === 'fail') return { success: false, ok: false, data: null, error: 'The server said no.' };
+      world.landed = true;
+      if (world.mode === 'throw_after_write') throw new Error('updateTag failed after the insert');
+      return { success: true, ok: true, data: { id: 'row-1' }, recipients: 2, ...extra };
+    });
+  const executed = (name: string) =>
+    vi.fn(async (..._args: unknown[]) => {
+      world.actionCalls.push(name);
+      if (world.mode === 'fail') return { status: 'failed' as const, action: name, summary: 'The server said no.', created: [], notifications: [], partial_failures: [], error: 'The server said no.', retryable: true, at: 'now' };
+      world.landed = true;
+      if (world.mode === 'throw_after_write') throw new Error('threw after the insert');
+      return { status: 'completed' as const, action: name, summary: 'Done.', created: [{ kind: name, count: 1 }], notifications: [], partial_failures: [], retryable: false, at: 'now' };
+    });
+  return { world, action, executed };
+});
+
+vi.mock('server-only', () => ({}));
+vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: () => true }));
+vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(), logServerEvent: vi.fn() }));
+vi.mock('@/lib/supabase/server', () => ({ createClient: vi.fn(async () => ({ from: () => ({ select: () => ({ eq: () => ({ eq: () => ({ limit: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }) }) }) })) }));
+vi.mock('@/app/actions/messages', () => ({ sendGolfMessage: action('sendGolfMessage'), sendMessage: action('sendMessage') }));
+vi.mock('@/app/golf/actions/calendar-events', () => ({ createGolfEvent: action('createGolfEvent') }));
+vi.mock('@/app/golf/actions/travel', () => ({ createGolfTravelItinerary: action('createGolfTravelItinerary') }));
+vi.mock('@/app/golf/actions/qualifier-actions', () => ({ createGolfQualifier: action('createGolfQualifier') }));
+vi.mock('@/app/golf/actions/v3/goals', () => ({ createGoal: action('createGoal') }));
+vi.mock('@/app/golf/actions/round-coach-note', () => ({ saveRoundCoachNote: action('saveRoundCoachNote') }));
+vi.mock('@/app/golf/actions/calendar-blocked-time', () => ({ addCoachBlockedTime: action('addCoachBlockedTime') }));
+vi.mock('@/app/golf/actions/class-status', () => ({ addTeamBreak: action('addTeamBreak'), saveTeamTerm: action('saveTeamTerm') }));
+vi.mock('@/app/golf/actions/team-management', () => ({ setPlayerAvailabilityCoachNote: action('setPlayerAvailabilityCoachNote') }));
+vi.mock('@/app/golf/actions/recruiting', () => ({ createRecruit: action('createRecruit') }));
+vi.mock('@/app/golf/actions/tournaments', () => ({ lockTournamentLineup: action('lockTournamentLineup'), setTournamentEntries: action('setTournamentEntries') }));
+vi.mock('@/app/golf/actions/practice-library', () => ({ createTeamDrill: action('createTeamDrill') }));
+vi.mock('@/app/golf/actions/documents', () => ({ saveTextDocument: action('saveTextDocument') }));
+vi.mock('@/app/golf/actions/practice-publish', () => ({ publishPracticePlan: action('publishPracticePlan') }));
+vi.mock('../action-planners', async (orig) => ({ ...(await orig<typeof import('../action-planners')>()), executeFocusArea: executed('create_focus_area'), executeTask: executed('create_task'), executeAnnouncement: executed('create_team_announcement') }));
+vi.mock('../practice-planner', async (orig) => ({ ...(await orig<typeof import('../practice-planner')>()), executeRecurringPractice: executed('create_recurring_practice') }));
+
+import { commitOnce, failedReceipt, taskTools } from '../tasks';
+
+const P1 = '00000000-0000-4000-8000-000000000001';
+const ID = '00000000-0000-4000-8000-0000000000aa';
+const coach: CoachChatContext = { coach_id: 'c1', user_id: 'u1', team_id: 'team-1', team_name: 'Rini University', timezone: 'America/New_York', roster: [person(P1, 'Eli Brandt')] };
+
+/** A database that answers "is the row there?" from `world.landed`, never holds a held lineup, and records every write made through it. */
+function db() {
+  const from = (table: string) => {
+    const rows = () => (table === 'golf_coachhelm_action_runs' ? [] : table === 'golf_round_reviews' ? [{ coach_notes: '' }] : world.landed ? [{ id: 'row-1' }] : []);
+    const answer = () => (world.lookFails && table !== 'golf_round_reviews' ? { data: null, error: { message: 'timeout' } } : { data: rows(), error: null });
+    const q: Record<string, unknown> = {};
+    for (const m of ['select', 'eq', 'neq', 'in', 'is', 'gte', 'lte', 'gt', 'lt', 'match', 'or', 'not', 'ilike', 'order', 'limit', 'range']) q[m] = () => q;
+    for (const m of ['insert', 'update', 'upsert', 'delete']) q[m] = () => (world.dbWrites.push(`${m} ${table}`), q);
+    q.maybeSingle = async () => ({ data: answer().data?.[0] ?? null, error: answer().error });
+    q.single = q.maybeSingle;
+    q.then = (ok: (r: unknown) => unknown) => Promise.resolve(answer()).then(ok);
+    return q;
+  };
+  return { from, rpc: (name: string) => (world.dbWrites.push(`rpc ${name}`), Promise.resolve({ data: null, error: null })) } as never;
+}
+const ctx = (who: CoachChatContext | PlayerChatContext = coach): ToolContext => ({ sb: db(), who, conversationId: 'conv-1', surface: 'ask', loaders: {}, signal: new AbortController().signal, reads: new Map() });
+
+const SAMPLES: Record<string, unknown> = {
+  create_event: { title: 'Team practice', event_type: 'practice', date: '2026-11-12', start: '15:00' },
+  create_trip: { event_name: 'Fall Classic', destination: 'Raleigh', transportation_type: 'van', departure_date: '2026-11-14' },
+  create_qualifier: { name: 'Fall qualifier', start_date: '2026-11-15', num_rounds: 2, selection_slots_total: 5, selection_slots_coach_pick: 1, player_ids: [P1] },
+  create_goal: { player_id: P1, metric_id: 'gir_pct', label: 'Greens', window_days: 30, target_value: 60, mode: 'suggested' },
+  add_round_note: { round_id: ID, player_id: P1, note: 'Good wedge numbers' },
+  add_blocked_time: { title: 'Recruiting trip', date: '2026-11-20' },
+  add_team_break: { first_day: '2026-11-25', last_day: '2026-11-29', label: 'Thanksgiving' },
+  save_team_term: { name: 'Spring 2027', classes_start: '2027-01-11', classes_end: '2027-04-30', exams_end: '2027-05-07' },
+  set_availability_note: { player_id: P1, note: 'Out Thursday' },
+  create_recruit: { first_name: 'Sam', last_name: 'Lee' },
+  create_recurring_practice: { weekdays: [2], start_time: '15:00', occurrence_count: 4 },
+  create_focus_area: { player_id: P1, title: 'Lag putting', area_type: 'putting' },
+  create_task: { title: 'Log your rounds' },
+  create_team_announcement: { title: 'Bus time', body: 'The bus leaves at seven.' },
+  create_drill: { name: 'Ladder', area: 'putting', minutes: 15 },
+  publish_practice_plan: { plan_id: ID, version: 1, title: 'Thursday practice', people: 2, when: 'Thu 3:00 PM', first_player_line: 'Practice is up', player_ids: [P1], team_chat: false },
+  publish_artifact: { title: 'Eli report', body: 'Words about Eli.', players: 1 },
+  send_message: { conversation_id: ID, thread: 'Team', member_count: 5, content: 'See you at three.' },
+  set_lineup: { tournament_id: ID, version: 1, entries: [{ player_id: P1, role: 'lineup', slot: 1 }] },
+  lock_lineup: { tournament_id: ID },
+};
+/** The tasks whose own row can be looked for: by request id, or by the card's natural key since it was planned. */
+const LOOKABLE = ['create_event', 'add_blocked_time', 'create_recruit', 'create_trip', 'create_qualifier', 'create_goal', 'save_team_term', 'send_message', 'create_drill', 'publish_artifact', 'create_focus_area', 'create_task', 'create_team_announcement', 'create_recurring_practice'];
+
+type Task = TaskTool<unknown, TaskProposal>;
+const all = (): Task[] => {
+  const byName = new Map<string, Task>();
+  for (const t of [...taskTools({ quickChat: false }), ...taskTools({ quickChat: true })]) byName.set(t.name, t as Task);
+  return [...byName.values()];
+};
+const planned = async (t: Task) => t.plan(ctx(), t.input.parse(SAMPLES[t.name]));
+
+beforeEach(() => {
+  Object.assign(world, { landed: false, lookFails: false, mode: 'ok' });
+  world.actionCalls.length = 0;
+  world.dbWrites.length = 0;
+});
+
+describe('every task', () => {
+  it('has a sample here, so a new task cannot skip these checks', () => {
+    expect(all().map((t) => t.name).sort()).toEqual(Object.keys(SAMPLES).sort());
+  });
+
+  it.each(Object.keys(SAMPLES))('%s: plan builds the card and writes nothing', async (name) => {
+    const tool = all().find((t) => t.name === name)!;
+    const proposal = await planned(tool);
+    expect(proposal).toMatchObject({ tool: name, idempotency_key: expect.any(String), action: expect.any(String), summary: expect.any(String) });
+    expect(JSON.parse(JSON.stringify(proposal))).toEqual(proposal);
+    expect(world.actionCalls).toEqual([]);
+    expect(world.dbWrites).toEqual([]);
+  });
+
+  it.each(Object.keys(SAMPLES))('%s: commit writes once and says it is done', async (name) => {
+    const tool = all().find((t) => t.name === name)!;
+    const proposal = await planned(tool);
+    const receipt = await tool.commit(ctx(), { ...proposal, idempotency_key: `${proposal.idempotency_key}:req1` });
+    expect(receipt.status).toBe('completed');
+    expect(world.actionCalls).toHaveLength(1);
+    expect(receipt.summary.length).toBeGreaterThan(3);
+  });
+
+  it.each(LOOKABLE)('%s: a second commit of the same card does not write again', async (name) => {
+    const tool = all().find((t) => t.name === name)!;
+    const proposal = { ...(await planned(tool)), idempotency_key: 'card-1' };
+    await tool.commit(ctx(), proposal);
+    const again = await tool.commit(ctx(), proposal);
+    expect(again.status).toBe('completed');
+    expect(world.actionCalls).toHaveLength(1);
+  });
+
+  it.each(LOOKABLE)('%s: a write that threw after its row landed is reported done, not offered again', async (name) => {
+    world.mode = 'throw_after_write';
+    const tool = all().find((t) => t.name === name)!;
+    const receipt = await tool.commit(ctx(), { ...(await planned(tool)), idempotency_key: 'card-2' });
+    expect(receipt.status).toBe('completed');
+    expect(receipt.summary).not.toMatch(/nothing was saved/i);
+  });
+
+  it.each(LOOKABLE)('%s: "nothing was saved" is said only after looking', async (name) => {
+    world.mode = 'fail';
+    const tool = all().find((t) => t.name === name)!;
+    const looked = await tool.commit(ctx(), { ...(await planned(tool)), idempotency_key: 'card-3' });
+    expect(looked).toMatchObject({ status: 'failed', retryable: true });
+    expect(looked.summary).toMatch(/Nothing was saved\.$/);
+    // When the look itself fails, the receipt says it could not check, and is not offered for a blind retry.
+    world.lookFails = true;
+    const blind = await tool.commit(ctx(), { ...(await planned(tool)), idempotency_key: 'card-4' });
+    expect(blind).toMatchObject({ status: 'failed', retryable: false });
+    expect(blind.summary).toMatch(/could not check whether anything was saved/);
+    expect(blind.summary).not.toMatch(/Nothing was saved/);
+  });
+
+  it('a card for the same words on a later request is its own message', async () => {
+    const { sendGolfMessage } = await import('@/app/actions/messages');
+    vi.mocked(sendGolfMessage).mockClear();
+    const tool = all().find((t) => t.name === 'send_message')!;
+    const proposal = await planned(tool);
+    await tool.commit(ctx(), { ...proposal, idempotency_key: 'first-request' });
+    world.landed = false;
+    await tool.commit(ctx(), { ...proposal, idempotency_key: 'second-request' });
+    const ids = vi.mocked(sendGolfMessage).mock.calls.map((c) => c[2]);
+    expect(ids).toHaveLength(2);
+    expect(ids[0]).not.toBe(ids[1]);
+  });
+
+  it('only lock_lineup skips the Undo window', () => {
+    expect(all().filter((t) => t.immediate).map((t) => t.name)).toEqual(['lock_lineup']);
+  });
+
+  it('a player cannot plan or commit any of them', async () => {
+    const player: PlayerChatContext = { ...coach, player_id: P1 };
+    for (const tool of all()) {
+      await expect(tool.plan(ctx(player), tool.input.parse(SAMPLES[tool.name]))).rejects.toBeInstanceOf(CoachContextError);
+      await expect(tool.commit(ctx(player), { tool: tool.name, input: SAMPLES[tool.name], planned_at: new Date().toISOString(), idempotency_key: 'k', action: '', summary: '', facts: [], affects: [], notifications: [], missing: [] })).rejects.toBeInstanceOf(CoachContextError);
+    }
+    expect(world.actionCalls).toEqual([]);
+  });
+});
+
+describe('commitOnce', () => {
+  it('with nothing to look by, it still writes, and a failure says it could not check', async () => {
+    const write = vi.fn(async (): Promise<ActionReceipt> => ({ status: 'failed', action: 'add_team_break', summary: 'No.', created: [], notifications: [], partial_failures: [], error: 'No.', retryable: false, at: 'now' }));
+    const receipt = await commitOnce('add_team_break', async () => 'unknown', write);
+    expect(write).toHaveBeenCalledTimes(1);
+    expect(receipt.summary).toBe('No. I could not check whether anything was saved: look in the Calendar before trying again.');
+  });
+
+  it('never repeats "nothing was saved" twice', () => {
+    expect(failedReceipt('create_event', 'not_there', 'That didn’t go through. Nothing was saved.', 'the Calendar').summary).toBe('That didn’t go through. Nothing was saved.');
+  });
+});

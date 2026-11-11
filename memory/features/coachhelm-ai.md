@@ -57,6 +57,8 @@ The feature currently spans two generations:
 
 - `src/lib/coachhelm/v2/**`
 - `src/lib/coachhelm/v3/**`
+- `src/lib/coachhelm/v3/chat/engine/**`: the chat turn engine on `@anthropic-ai/sdk` (see "CoachHelm chat: the engine").
+- `src/app/api/coachhelm/v3/chat/stream/route.ts`: the chat endpoint; it binds the Clubhouse screens' loaders for the tools.
 
 ## Core Data
 
@@ -74,6 +76,82 @@ The feature currently spans two generations:
 Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary.md` for table lookup.
 
 ## Business Rules
+
+### CoachHelm chat: the engine (rebuilt 2026-11-10)
+
+This section is the current truth for how a chat turn runs (coach Ask, quick chat, the practice helper, Fairway's
+chat and the player's Ask). It replaces what older entries below say about the stream route: the held answer text, the
+withheld card, the repair pass, the `<<<CLAIMS>>>` / `<<<CITES>>>` blocks as a gate, `denyAbandonedApprovals`, the
+dangling-tool-call filters, `prompt-cache.ts`, `ask-perf.ts` and the AI SDK (`ai`, `@ai-sdk/*`) in the chat path. Those
+entries are history. The tool list and the prompt are described where the tools are.
+
+- **The server owns the conversation.** The browser sends one thing per request to
+  `POST /api/coachhelm/v3/chat/stream`: `{ conversation_id, client_turn_id, surface, message }` or
+  `{ conversation_id, client_turn_id, surface, decision: { key, approved } }`. It never sends the thread. The server
+  loads the stored turns, appends, runs the turn and stores the exact result (`src/lib/coachhelm/v3/chat/engine/`:
+  `turn.ts` one request, `loop.ts` the model loop, `store.ts` the stored conversation, `tasks.ts` the action gate,
+  `model.ts` the only file that calls `@anthropic-ai/sdk`, `protocol.ts` the wire events and the reducer, `tool.ts`
+  the tool contract).
+- **Model settings** (`engine/model.ts`): `claude-sonnet-5-5` from `MODEL_FOR_TASK.coach_chat`, called directly with
+  `ANTHROPIC_API_KEY` (no gateway fallback: a missing key is a logged, coach-readable failure). `max_tokens` 16000,
+  streamed. Thinking is adaptive and cannot be turned off on this model; depth is `output_config.effort`, one constant
+  (`CHAT_EFFORT`, `medium`). `tool_choice` is `auto` (a forced tool is rejected by the model); the step after the last
+  allowed read is sent with `none` so the model answers from what it has. Refusals use `fallbacks: 'default'`. At most
+  8 model calls plus that closing call per coach turn, 6 for a player.
+- **Stored model messages are exactly what the API returned**, appended only: thinking blocks with their signatures,
+  text and tool calls in order, and each tool-result message. Thinking is never sent to the browser. Because the
+  team block of the prompt changes with the day and the roster and the tool list changes with a deploy, requests set
+  `thinking.block_binding.prefix_mismatch_behavior: 'drop_block'`, so a thinking block the API can no longer verify is
+  dropped by the API instead of failing the coach's question.
+- **Prompt caching**: tools, then the policy block (1 hour), then the team block (5 minutes), each with a breakpoint;
+  the conversation tail is cached by the request-level `cache_control`, so no marker is written into a stored message.
+  Nothing volatile is in the prefix. `cache_read_input_tokens` is logged per model call (`v3.chat.stream.turn`).
+- **Text streams live.** There is no audit between the model and the coach. After the turn a deterministic check
+  compares the numbers in the answer with the numbers the conversation's reads returned and LOGS the result
+  (`grounded`, unmatched tokens in `golf_coachhelm_llm_calls`). It never hides, delays or rewrites an answer.
+- **Reads** run in parallel and go back to the model in one message. Each read gets an `evidence_ref` (`e1`, `e2`, ...,
+  unique in a conversation for turns this engine wrote) and an evidence part. A tool input is validated against the
+  tool's zod schema before anything runs; an invalid one is an error result the model is told about.
+- **Tasks.** A mutating tool call is never run by the model. The engine builds the real plan (`plan`), records it in
+  `golf_coachhelm_action_runs` (`proposed_input = { v: 2, input, proposal }`), shows the card and ends the stream with
+  the turn stored `complete` and waiting. The ledger key is the planner's key plus a hash of the conversation and the
+  model's `tool_use` id, so a retried Confirm of one card is one key and an identical request made later is a new
+  one. Confirm or Cancel is a new request carrying that key. It continues the SAME assistant turn and the same
+  stored row: the tool call gets its tool_result (held until HH:MM:SS, committed, declined, failed with the reason)
+  and the model writes the closing words. Confirm claims the row (so two Confirms cannot both run), holds it for the
+  8-second Undo window when the hold column exists, and commits the STORED proposal: the plan is not built a second
+  time. Cancel calls `recordDenial`. A new message while a card waits counts as Cancel: the card is declined first and
+  the model is told so in the same message as the new question. A task that committed is never stored as a failed
+  turn because the closing words did not arrive: the receipt is the record. The result of `recordProposal`,
+  `recordOutcome` and `recordDenial` is checked; a proposal that cannot be recorded shows no card.
+- **Idempotency.** A retried `client_turn_id` that already has an answer is sent the stored turn as events, with no
+  model call. A retry of a failed turn runs again and replaces the failed row (one question, one assistant row). A
+  repeated decision for a key that was already answered is sent the stored outcome.
+- **Storage.** `ui_parts` keeps its shapes (text, `data-progress`, `data-evidence`, proposals, receipts, visuals,
+  artifacts, and a `tool-<name>` part whose `approval.id` is the card's ledger key), written by the same reducer the
+  browser folds the stream with (`applyChatEvent`), so a reload restores what was on screen and a waiting card can be
+  confirmed after a reload. The held migration `20261110120000_coachhelm_chat_model_messages.sql` adds
+  `model_messages` and `pending_decision` to `golf_coachhelm_chat_messages`. The code runs WITHOUT it: earlier turns
+  are then replayed to the model as text (with a line per card from the stored parts), and a waiting card's turn is
+  kept in its ledger row (`proposed_input.resume`) so Confirm still continues the same turn. Conversations written by
+  the previous stack replay as text and still restore; their old cards are not offered for Confirm.
+  Both new columns are readable and writable by the owning coach under the table's existing policy, like `ui_parts`
+  (self-only). Restricting them to the service role is an open decision.
+- **A failed turn** (a model error, a refusal, a truncated tool call, a stop) is stored `failed` with a
+  `data-turn-incomplete` note and only the question in its model messages, so nothing half-finished is replayed. The
+  coach is sent one sentence from `classifyProviderFault` or the generic line; provider text never reaches the browser.
+- **The player's Ask** runs on the same runner with the player's tool set, no ledger (a task call is refused before
+  it is planned) and loaders bound to the player's own id. Nothing is stored for a player yet (player conversations
+  are the held migration `20261101090200`), so each player question is answered on its own; the browser's copy of the
+  thread is not replayed to the model.
+- **Wire protocol** (`engine/protocol.ts`, server-sent events): `message_start`, `text_delta`, `text_discard`,
+  `read_started`, `read_finished`, `evidence`, `visual`, `proposal`, `receipt`, `part`, `decision_needed`, `decision`,
+  `usage`, `error`, `done`. `useCoachHelmChat` keeps its interface and is the only client of it.
+- **Hold release** is unchanged in mechanism: `after()` in the request that held it, the card's own
+  `GET /api/coachhelm/v3/chat/actions/[key]` when its ring ends, and a sweep on the coach's next chat request. A held
+  row is rebuilt from the stored proposal (`held-runner.ts`). There is still no cron for it.
+- Tests: `src/app/api/coachhelm/v3/chat/stream/__tests__/route.turns.test.ts` (the route against a scripted model and
+  an in-memory database) and `src/components/golf/coachhelm/chat/__tests__/useCoachHelmChat.test.tsx`.
 
 - One-team canary (`src/lib/coachhelm/canary.ts`, env `HELM_COACHHELM_TEAMS`,
   2026-10-21): the v3 flags `coachhelm_reads_v1_copy`,
@@ -616,6 +694,66 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   get it on their next re-analyze. Contract:
   `docs/architecture/coachhelm-evidence-contract.md` "Coach voice".
 
+### CoachHelm chat: the tools, the prompt and the grounding check (rebuilt 2026-11-10)
+
+This section is the current truth for what the chat can read and do. The two sections after it (whole-team reads,
+Ask's wider reads) describe the previous tool set and are history; the mapping from every old tool to its
+replacement is `src/lib/coachhelm/v3/chat/TOOLS.md`.
+
+- **The list** is `toolsFor(surface, who)` in `chat/registry.ts`, on the contract in `chat/engine/tool.ts`. A coach
+  has 38 tools (41 with `golf_tournaments_v1`; the previous stack had 67 and 71), the same list on the Ask tab and in
+  the practice helper so they share one cached prefix; quick chat has `send_message` in place of `publish_artifact`
+  and no `write_artifact`, `draft_message` or `draft_poll`. A player has 9, all reads. Tool definitions plus the
+  policy are 11,991 tokens on Ask by characters / 4 (26,063 before, measured the same way);
+  `__tests__/registry-size.test.ts` is the measurement and holds the 12,000 ceiling.
+- **One number, one source.** `get_player_stats`, `get_team_stats`, `get_rounds`, `get_season` and `get_qualifiers`
+  (`chat/readers.ts`) do not compute their figures: they call the Clubhouse screen's own loader for the window asked
+  (`loadPlayerProfile`, `loadTeamStats`, `loadTeamRounds`, `loadRoster`, `loadQualifierList` / `loadQualifierDetail`)
+  and label what it returned. The route binds those loaders (`chat/screen-loaders.ts` lists each binding; `src/lib`
+  does not import `src/clubhouse`). There is one team average, Team Stats'. Places in a ranking, gaps to the team
+  and per-player counts and averages over the Rounds list are worked out in the reader, so the model adds nothing
+  up. A loader that is missing or fails is an `unavailable` read, never an empty one.
+- **Read directly** through the session client, because no screen computes them (`chat/readers-direct.ts`): one
+  round (`get_round`, with its tallies counted), logged approach shots (`get_shots`), tournaments, the schedule
+  with replies, travel and attendance (`get_schedule`), CoachHelm's signals, causes, focus areas, goals and tasks
+  (`get_coachhelm`), practice (`get_practice`), reference (`get_reference`), and `query_team_data` with its
+  allowlist, team scope and 200-row bound unchanged. Its column dictionary is no longer in its description:
+  `get_reference` with topic `data_dictionary` returns it. `summarise_data` and `show_visual` are unchanged in
+  what they do; the model is shown one flat input shape for each and the strict schemas still validate in `run`.
+  Not yet on a screen loader, in this order: one round (`loadRoundReview`), a course (`course-history.ts`),
+  tournaments (`loadTournamentsHome`), last season beside this one (no screen draws it).
+- **A player** gets `get_player_stats`, `get_round`, `get_shots`, `get_season`, `get_schedule`, `get_coachhelm`,
+  `get_reference`, `summarise_data` and `show_visual`. Every reader takes the player from the session
+  (`reader-kit.ts` `ownOr`), whatever id the model sends; a round is checked for ownership before its holes are
+  read; the schedule carries the caller's own reply only; the figures come from the player's own Stats page, which
+  has no team column; CoachHelm's reads come back as titles. No task tool is offered and every task refuses a
+  player's context.
+- **Tasks** (`chat/tasks.ts`): `plan` builds the card with the planner that will run it and writes nothing;
+  `commit` runs the stored proposal after Confirm and the Undo window. `commit` first looks for the row an earlier
+  attempt of the same card left, writes, and on a failure looks again before the receipt says nothing was saved.
+  The look is exact where the server action takes a request id derived from the proposal's key (`create_event`,
+  `add_blocked_time`, `create_recruit`, `send_message`); elsewhere it is the card's natural key among rows made
+  since the card was planned. When the look cannot be made the receipt says so and is not offered for retry.
+  `add_team_break`, `set_availability_note`, `add_round_note`, the lineup pair and `publish_practice_plan` have no
+  look of their own (the note and the lineup are safe to repeat by how their actions work; a break is not).
+  Receipt notification lines of the four older tasks are still the planner's prediction, not what the fan-out did.
+- **The prompt** (`chat/instructions.ts`): `policyBlock(surface)` is the same text for every team and day (one for
+  the coach surfaces, one for a player); `teamBlock(who, { today, notes })` has the team, the timezone, the date to
+  the day, the season's start, the roster with ids and the coach's standing notes. There are no output formats to
+  parse and no rules about a checker.
+- **The grounding check** is `chat/grounding.ts` (`checkGrounding(text, reads, question)`): the numbers in the
+  answer against every number in the conversation's reads and the differences between their figures; dates, times,
+  ids, ordinals and small counts are not figures. It only logs. Against the 165 hand-labelled staging turns it
+  finds 141 of the 142 accepted answers grounded and flags 3 of the 22 rejected ones; the other 19 are a wrong
+  place, a wrong tally or a figure given to the wrong player, which the readers now answer at the source.
+- Still on disk and no longer registered (delete with their tests): the second implementations in `read-tools.ts`
+  (`getPlayerMetric`, `getTeamMetricRanking`, `getPlayerTrend`, `getRecentRounds`, `getTeamRounds`,
+  `getQualifiers`, `getPuttingDistanceProfile`, `comparePlayers`, `getPlayerWeakestAreas`, `getTeamOverview`),
+  `getTeamStrokesGained` / `getTeamPuttingProfile` in `practice-reads.ts`, `getRoundStats` / `getQualifierEntries`
+  in `team-reads.ts` and `metrics-catalog.ts`'s cache columns. The model cannot reach them.
+- Tests: `chat/__tests__/registry-readers.test.ts`, `registry-tasks.test.ts`, `registry-size.test.ts`,
+  `instructions.test.ts`, `grounding-fixtures.test.ts`.
+
 ### Coach chat read tools: whole-team reads (2026-10-25)
 
 `get_team_rounds`, `get_tournaments` and `get_qualifiers`
@@ -651,7 +789,7 @@ Registered with Ask v2 only (`askV2`; Fairway's chat is unchanged). All read thr
 - Rounds (2026-11-08): `get_recent_rounds` (coach and player) lists the rounds Stats counts for "last N" (the figures source names them, practice left out) so the list and the scoring figure agree, and carries each round's stat line (putts, three-putts, greens, fairways, up-and-downs) for the player's own rounds. `round_lines` and the stat line read `three_putts` and `total_putts` as empty, never 0, for a round with no putts recorded (the cache writes 0). A cache rate with no hole count beside it (three-putt rate) is sampled over rounds, not holes.
 - A coach never reads the model's notes (2026-11-08): `coverage_note` is for the model. A cut list's caption comes from the read's detail (`rows-caption.ts`: "Newest 5 of 124 rounds"; a summary carries `detail.caption`, "Worked out from the newest 5 of 124 rounds"); a note that names columns or instructs the model is not drawn; a figure card's title names the field in a coach's words and what it covers (`summary-labels.ts`: "Putts per round, 3 tournament rounds"); a model visual that plots the same metric for the same players as a read's chart folds that chart.
 - Answer layout (2026-11-08, `coachhelm-chat-thread.ts`): a failed read the model then repeated with success is not drawn (steps say "One calculation was retried" / "One read was retried", no field names); an unrecovered `summarise_data` failure reads "That calculation could not be completed." Once a `summarise_data` result exists, the reads it names in `detail.sources` (by evidence ref) fold into the reads disclosure and any other read stays drawn (a summary that names none folds every `team_data` read before it); two reads listing the same player's same rounds draw one table (the one with three-putts, then putts); a figure's card title comes from `detail.titles` ("Owen Carter vs team (pooled), strokes gained approach"), while the labels the model reads stay as they are; a cut record list is captioned "Newest 5 of 127 rounds" from `detail.noun` and the order (the model's `coverage_note` never reaches the coach); a putts or three-putts cell of a round in progress reads "In progress" and a 0 with no putts recorded is empty, never 0; a record list longer than the table draws (8 rows) folds into the reads; a recent-rounds table draws every round it lists; a missing reference is one sentence per metric ("SG Putting: no level figure (no college figure), no team figure (all rounds only)."); a read's inline chip is drawn once per paragraph, list or table, and reads "By player · Jun 9–Sep 26" (the dates, never a count of days); the benchmark line reads "PGA Tour (2024): 0.0"; its list is the answer's table, its figures one figure card. A generic record table orders columns by a fixed priority (who and when, then the asked figure, then course and score, then status-like labels last), five at most, trimmed to 393 px, identical live and after a reload.
-- Speed and cost of a turn (2026-11-08, `chat/stream/route.ts`, `player-turn.ts`, `prompt-cache.ts`, `ask-perf.ts`): the reads before the model (gate, rate limit, conversation, answered-turn lookup, prior evidence, and for a new conversation the budget) run in ONE wave and are applied in the old order, so a coach is told the same thing for the same fault; a continued conversation reads its budget only after the answered-turn lookup (a retry runs neither the model nor the budget gate). Only the answer's own row is written before the stream closes; the conversation touch, proposal links, cost ledger and log lines run in `after()` (awaited where `after` does not exist, so tests and scripts are unchanged), because the stream stays open until `onFinish` returns (about a second a turn). The system prompt is two blocks (`buildInstructionBlocks`: `stable`, byte-identical for every team, one-hour cache, behind the tool definitions; `dynamic`: standing notes, team, date, roster, five-minute cache), plus one breakpoint on the last message moved forward every step (`withTailBreakpoint`), so a step pays fresh tokens only for what the step before it added. New prompt text that names a team, a coach or a date goes in `dynamic`, never `stable`. Ask v2's `dynamic` block lists the roster's player ids for the tools, so a named player is read in the same step instead of after `find_player` (the tools still refuse an id that is not on the roster; the prompt keeps ids out of answers). Measuring: a development request with `x-ask-perf: 1` ends with a transient `data-ask-perf` part (phase marks, per-step tokens split fresh / cache read / cache write, time to first output); `x-ask-perf: capture` adds the last model request for replay; `x-ask-effort: low|medium|high` varies the model's effort. Never on in production. The largest remaining cost is output: the `<<<CLAIMS>>>` and `<<<CITES>>>` blocks are about half of a cited answer's output tokens (about 5 s and $0.014); effort low or medium roughly halves the wait but makes the model read less, which is an owner decision (`ask-perf-baseline.md`).
+- (Superseded 2026-11-10 by "CoachHelm chat: the engine" above; `prompt-cache.ts` and `ask-perf.ts` are deleted.) Speed and cost of a turn (2026-11-08, `chat/stream/route.ts`, `player-turn.ts`, `prompt-cache.ts`, `ask-perf.ts`): the reads before the model (gate, rate limit, conversation, answered-turn lookup, prior evidence, and for a new conversation the budget) run in ONE wave and are applied in the old order, so a coach is told the same thing for the same fault; a continued conversation reads its budget only after the answered-turn lookup (a retry runs neither the model nor the budget gate). Only the answer's own row is written before the stream closes; the conversation touch, proposal links, cost ledger and log lines run in `after()` (awaited where `after` does not exist, so tests and scripts are unchanged), because the stream stays open until `onFinish` returns (about a second a turn). The system prompt is two blocks (`buildInstructionBlocks`: `stable`, byte-identical for every team, one-hour cache, behind the tool definitions; `dynamic`: standing notes, team, date, roster, five-minute cache), plus one breakpoint on the last message moved forward every step (`withTailBreakpoint`), so a step pays fresh tokens only for what the step before it added. New prompt text that names a team, a coach or a date goes in `dynamic`, never `stable`. Ask v2's `dynamic` block lists the roster's player ids for the tools, so a named player is read in the same step instead of after `find_player` (the tools still refuse an id that is not on the roster; the prompt keeps ids out of answers). Measuring: a development request with `x-ask-perf: 1` ends with a transient `data-ask-perf` part (phase marks, per-step tokens split fresh / cache read / cache write, time to first output); `x-ask-perf: capture` adds the last model request for replay; `x-ask-effort: low|medium|high` varies the model's effort. Never on in production. The largest remaining cost is output: the `<<<CLAIMS>>>` and `<<<CITES>>>` blocks are about half of a cited answer's output tokens (about 5 s and $0.014); effort low or medium roughly halves the wait but makes the model read less, which is an owner decision (`ask-perf-baseline.md`).
 - A turn that ends with no answer (the stream died: a reload, a timeout, a crash; no error, no stored assistant text, or only progress steps) is not left as the question alone: `answerNeverCame` (`coachhelm-chat-thread.ts`) makes `Ask.tsx` show "This answer didn't finish coming through." with Try again, which `regenerate`s the same question (no second copy). Not shown while streaming, after an answer, or over a real error.
 - Data dictionary and `round_lines` (2026-11-08): `data-dictionary.ts` holds, for every allowlisted table and column (typed against the allowlist; a test fails on a gap), the unit, meaning, sign and when it is empty, built from `database.ts`, the SQL that fills the caches and the CHECK constraints; a column whose unit the code does not show is `unknown` and listed in `UNKNOWN_ENTRIES` (today: `golf_player_focus_areas.priority`). `describeQueryTables` prints each column with its unit and the reading guide (`DATA_QUIRKS`: several rounds a day, total-only rounds, round types, SG against the team's baseline, units and signs); `DATA_READING_PROMPT` is the compact system-prompt version. Every `query_team_data` envelope carries `detail.units`, and a generic table puts ft/yd/% in its headings. `round_lines` (`team-round-lines.ts`) is a virtual source: the roster's `golf_rounds` (test rounds out) plus `golf_round_stats_cache` for the same ids, merged in code through the caller's session (no view, no migration), one row per round with `three_putts` from the stat line and empty (never zero) where a round has none. Without an `order`, a read follows the question's own date (the filtered date, else an asked-for date column), never `updated_at`. Every read counts rows exactly (`count: 'exact'`): a cut result is `coverage: 'partial'` with "the first N of M rows", `detail.total_rows` and `detail.truncated`, and the prompt tells the model to say so.
 - Windows (2026-11-08): `get_putting_distance_profile` and `get_player_weakest_areas` take the same `window` as `get_player_metrics` (last5/last10/last20/season, default last10, `cache` explicit). Putting by distance reads the window's rounds and shots in the Stats page's six bands (`loadPlayerPuttBands`, handed in by the route as `puttBands`, same cut as `stats-player.ts`). The player's own Ask has the same tool with the same `window` input and no `player_id` (forced to the session player; `buildPlayerTools({ puttBands })`, `runPlayerTurn` passes it from the route); `ask-putt-bands-parity.test.ts` pins both roles to the Stats bands; weakest areas compares the round-based areas for the player and each teammate over the window and marks the shot-level areas it can only take from the cache. Every window-bearing read is stamped `window_label` on its envelope (`window-label.ts`; "all recorded rounds" when the figures were the cache's), and the Ask scope line shows the last turn's labels, falling back to the question's words before any read.
@@ -791,7 +929,7 @@ Plan storage and publishing are in `memory/features/team-operations.md`.
   - Follow-ups: the prompt tells the model to read again instead of restating an earlier answer's player figures, because the player guard (`route.ts`) drops them. A live model call has to prove the prompt changes hold.
 
 - The grounding audit does not flag a plain calendar year (2026-09-30). `auditNumericClaims` blanks a year, or a season span like "2025-26", out of the text after the date audit and before the number scan (`CALENDAR_YEAR` in `provenance.ts`): 1900-2099 only, an integer that is not the start of a decimal or a signed, prefixed or percent value, and not followed within two words by a unit of measurement (yards, feet, meters, miles, mph, pounds, degrees). "1250 yards", "2050 yards", "2026%" and "2026.5" are still flagged; a dated expression ("Aug 16, 2026") is still audited as a whole. Putts, strokes, shots and rounds are deliberately not on the unit list ("in 2026 putts per round fell", "in 2026 she shot 84" are ordinary years). The typed claim gate (`claim-validator.ts`, flag `coachhelm_chat_claim_gate`, off) has its own uncited-number scan and was not changed. Tests: `chat-provenance.test.ts`, "calendar years".
-- A Confirm card the coach never answers is a Cancel when they ask something else (2026-09-30). The server half of Confirm is proven through the real `streamText` (`src/lib/coachhelm/v3/__tests__/chat-approval-server.test.ts`: an approved thread runs the gated write once, a declined one does not). The browser resends the whole thread with every question, so an unanswered `approval-requested` card followed by a newer user message used to reach the SDK as a tool call with no result, and the request died with "Tool result is missing for tool call …" before the model ran (production 2026-08-26 18:54:06, the only proposal recorded after the July Confirm fix), for every later question in the thread until the card was answered. That was ai 7.0.37; on ai 7.0.128 `convertToModelMessages` strips such a card itself, so the request survives but the proposal silently vanishes from the prompt (the "why the guard exists" case in that test pins this). `denyAbandonedApprovals` (`src/lib/coachhelm/v3/chat/abandoned-approvals.ts`, called in `chat/stream/route.ts` before `convertToModelMessages`) turns any still-pending card that has a newer user message after it into a denial: nothing is created and the model reads that the coach did not confirm it. `ChatThread` draws the same card as "Cancelled. Nothing was created." (it is not drawn as cancelled when a receipt for its idempotency key exists anywhere in the thread, since after a reload the approval state is not replayed and the receipt is the only proof the write ran). The `golf_coachhelm_action_runs` row is not updated: it stays `proposed`.
+- (Mechanism superseded 2026-11-10: the server now holds the waiting card and declines it itself, see "CoachHelm chat: the engine" above; `denyAbandonedApprovals` is deleted.) A Confirm card the coach never answers is a Cancel when they ask something else (2026-09-30). The server half of Confirm is proven through the real `streamText` (`src/lib/coachhelm/v3/__tests__/chat-approval-server.test.ts`: an approved thread runs the gated write once, a declined one does not). The browser resends the whole thread with every question, so an unanswered `approval-requested` card followed by a newer user message used to reach the SDK as a tool call with no result, and the request died with "Tool result is missing for tool call …" before the model ran (production 2026-08-26 18:54:06, the only proposal recorded after the July Confirm fix), for every later question in the thread until the card was answered. That was ai 7.0.37; on ai 7.0.128 `convertToModelMessages` strips such a card itself, so the request survives but the proposal silently vanishes from the prompt (the "why the guard exists" case in that test pins this). `denyAbandonedApprovals` (`src/lib/coachhelm/v3/chat/abandoned-approvals.ts`, called in `chat/stream/route.ts` before `convertToModelMessages`) turns any still-pending card that has a newer user message after it into a denial: nothing is created and the model reads that the coach did not confirm it. `ChatThread` draws the same card as "Cancelled. Nothing was created." (it is not drawn as cancelled when a receipt for its idempotency key exists anywhere in the thread, since after a reload the approval state is not replayed and the receipt is the only proof the write ran). The `golf_coachhelm_action_runs` row is not updated: it stays `proposed`.
 - A question started on the Brief tab (`CoachIntelligenceHome` → `?q=` → the Ask page) auto-submits exactly once through `PromptComposer`'s own `submit()` (2026-09-02). Since 2026-09-24 (audit DATA-15) that auto-submit requires a hand-off token: the Brief tab calls `markAskHandoff(question)` just before navigating, and `AskSurface` auto-sends only when `hasAskHandoff(question)` matches (same question, under 60 s old, one use; `src/lib/golf/ask-handoff.ts`, sessionStorage). A bare, pasted, emailed or crawled `?q=` link only pre-fills the composer, so it can no longer spend an LLM call or create a conversation on its own. `AskSurface` strips `q` from the URL the moment the submit is kicked off, before the server has minted a conversation, so a refresh or back-navigation in that window cannot resend it. `PromptComposer` also now restores the just-submitted text into the field on a failed turn (never on success) instead of the previous unconditional clear-on-submit, so a failure does not force retyping. See `src/components/golf/coachhelm/chat/PromptComposer.tsx`, `CoachHelmChat.tsx` (`autoSubmitInitialInput`), and `AskSurface.tsx`.
 - A route's `loading.tsx` reserves the page's paint at t=0 — for a
   `'use client'` page holding its own `loading` state that is that
@@ -801,6 +939,18 @@ Plan storage and publishing are in `memory/features/team-operations.md`.
   Reference implementation: `dashboard/alerts/loading.tsx`.
 
 ## Known Risk Areas
+
+- **Chat entries below dated before 2026-11-10 describe the previous chat stack** (the AI SDK route with its held text,
+  prose audit, verdict parts, repair pass, claims and cites blocks and client-held thread). They are kept as the record
+  of why the rebuild was made. What runs now is in "CoachHelm chat: the engine" under Business Rules. Files and tests
+  those entries name that no longer exist: `chat/abandoned-approvals.ts`, `chat/stream-blocks.ts`,
+  `chat/repair-pass.ts`, `chat/repair-feedback.ts`, `chat/prompt-cache.ts`, `chat/ask-perf.ts`, `chat/ui-parts.ts`,
+  `computeTurnVerdict` in `chat/verdict.ts` (the file now only holds the note for a stored failed turn), and the tests
+  `chat-verdict*.test.ts`, `chat-approval-server.test.ts`, `chat-approval-delivery.test.ts`,
+  `chat-approval-persistence.test.ts`, `chat-incomplete-tool-calls.test.ts`, `chat-replay.test.ts`,
+  `chat/stream/route.test.ts`, `route.grounding-persistence.test.ts` and `route.request-dates.test.ts`. The production
+  failure that started it (a confirmed action stored as a failed turn, 37 of 62 answers stored failed) was the AI SDK's
+  stream reducer throwing on an approval continuation; the one-line fix for the previous stack is commit `92212c6ccc`.
 
 - Generated insight evidence can drift from real data if adapters or fallback paths skip citation validation.
 - **Coach chat's grounding audit (`auditNumericClaims`, `src/lib/coachhelm/v3/chat/provenance.ts`) is precision-sensitive: a false positive discards a correct answer exactly like a real fabrication does, and both look identical to the coach.** Issue #1540 / repair plan N15 (2026-09-22): ~46% of chat replies (33 of the last 30 days, all-time 33 failed/29 complete/8 null) were marked `'failed'`, almost all real, tool-sourced answers wrongly flagged. Two dominant causes, both fixed:

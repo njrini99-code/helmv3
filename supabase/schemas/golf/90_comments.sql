@@ -34,6 +34,10 @@ COMMENT ON TABLE "public"."golf_coachhelm_chat_messages" IS 'v3 W32 coach chat m
 
 COMMENT ON COLUMN "public"."golf_coachhelm_chat_messages"."ui_parts" IS 'AI SDK UIMessage parts for this message (text, tool calls, typed data parts, approvals, receipts). Lets a reload reproduce charts/mentions/approvals instead of only the prose in content.';
 
+COMMENT ON COLUMN "public"."golf_coachhelm_chat_messages"."model_messages" IS 'CoachHelm chat: the exact model API messages this assistant turn added to the conversation (user message, assistant content blocks as returned including thinking signatures, tool results), in order. Append-only. NULL on user rows and on rows written before 20261110120000.';
+
+COMMENT ON COLUMN "public"."golf_coachhelm_chat_messages"."pending_decision" IS 'CoachHelm chat: set while this assistant turn waits for the coach to confirm or cancel an action: { order, results, tasks, steps }. NULL when nothing waits.';
+
 COMMENT ON TABLE "public"."golf_coachhelm_coach_weights" IS 'v3 W35 Bayesian-updated per-coach weights. weight × |strokes_impact| × confidence = ranker score (W36). Default 1.0 until sample_n ≥ 10.';
 
 COMMENT ON TABLE "public"."golf_coachhelm_llm_budget" IS 'v3 W30 per-coach daily LLM spend cap. compose() reads (coach_id, today) before every call; on exhaustion falls back to non-LLM template path per Part XI.4 priority (round_review > coach_chat > hero_narrative).';

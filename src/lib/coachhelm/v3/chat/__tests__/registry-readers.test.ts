@@ -1,0 +1,295 @@
+import { describe, expect, it, vi } from 'vitest';
+import type { CoachChatContext } from '../context';
+import { CoachContextError } from '../context';
+import type { ChatTool, PlayerChatContext, ReadTool, ToolContext, ToolResult } from '../engine/tool';
+import { toolsFor } from '../registry';
+import type { PlayerStatsScreen, QualifierBoardScreen, RosterScreen, ScreenLoaders, TeamRoundRow, TeamRoundsScreen, TeamStatsScreen } from '../screen-loaders';
+import { person, pgrst, type Tables } from './pgrst-double';
+
+vi.mock('server-only', () => ({}));
+vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: () => false }));
+
+const ELI = '00000000-0000-4000-8000-000000000001';
+const MAYA = '00000000-0000-4000-8000-000000000002';
+const NOAH = '00000000-0000-4000-8000-000000000003';
+const OUTSIDER = '00000000-0000-4000-8000-0000000000ff';
+const coach: CoachChatContext = { coach_id: 'c1', user_id: 'u1', team_id: 'team-1', team_name: 'Rini University', timezone: 'America/New_York', roster: [person(ELI, 'Eli Brandt'), person(MAYA, 'Maya Ortiz'), person(NOAH, 'Noah Kim')] };
+/** A player's context: the roster is reduced to them, as `resolvePlayerChatContext` builds it. */
+const maya: PlayerChatContext = { ...coach, roster: [person(MAYA, 'Maya Ortiz')], player_id: MAYA };
+
+function ctxFor(who: CoachChatContext | PlayerChatContext, loaders: ScreenLoaders = {}, tables: Tables = {}): ToolContext & { db: ReturnType<typeof pgrst> } {
+  const db = pgrst(tables);
+  return { sb: db.sb, who, conversationId: 'conv-1', surface: 'player_id' in who ? 'player' : 'ask', loaders, signal: new AbortController().signal, reads: new Map(), db };
+}
+const read = <I = never>(who: CoachChatContext | PlayerChatContext, name: string) => toolsFor('player_id' in who ? 'player' : 'ask', who).find((t) => t.name === name) as ReadTool<I>;
+const textOf = (r: ToolResult) => (r as ToolResult & { model_text?: string }).model_text ?? '';
+
+function statsPage(name: string, over: Partial<PlayerStatsScreen> = {}): PlayerStatsScreen {
+  return {
+    name,
+    win: { rounds: 10, avg: 74.23, toPar: 2.2, sgPerRound: 0.42, sgRounds: 9, sgLegs: { tee: 0.1, approach: -0.31, around: 0.22, putting: 0.41 }, holeRounds: 9, lastRoundDate: '2026-11-02' },
+    season: { rounds: 14, avg: 74.61, toPar: 2.6 },
+    teamAvg: 75.1,
+    puttBands: [
+      { label: '3–5 ft', made: 18, attempts: 20, bench: 88 },
+      { label: '5–10 ft', made: 9, attempts: 14, bench: 56 },
+    ],
+    rounds: Array.from({ length: 30 }, (_, i) => ({ id: `round-${i}`, course: 'Pine Hill', date: 'Nov 2', iso: `2026-10-${String(30 - i).padStart(2, '0')}`, type: 'tournament' as const, holes: 18, score: 73 + (i % 3), toPar: 1, fairwaysPct: 60, girPct: 61, scramblePct: 50, putts: 31, sg: 0.5, sgLegs: [0.1, 0.1, 0.1, 0.2] as [number, number, number, number] })),
+    comparisons: [
+      { label: 'SG approach', group: 'Strokes gained', you: -0.31, team: 0.05, bench: null, unit: '', digits: 2, lowerIsBetter: false, signed: true },
+      { label: 'Scoring avg', group: 'Scoring', you: 74.23, team: 75.1, bench: null, unit: '', digits: 1, lowerIsBetter: true },
+      { label: 'Greens in regulation', group: 'Approach', you: 61, team: 58, bench: 66, unit: '%', digits: 0, lowerIsBetter: false },
+      { label: 'Scrambling', group: 'Short game', you: 41, team: 52, bench: null, unit: '%', digits: 0, lowerIsBetter: false },
+      { label: 'Sand saves', group: 'Short game', you: null, team: 40, bench: 50, unit: '%', digits: 0, lowerIsBetter: false, floor: 'Needs 10 chances.' },
+    ],
+    extra: { toughest: null, pressure: { gap: null, pressureRounds: 0, practiceRounds: 0 }, opening: null, approach: null, holesError: false, approachError: false, puttsError: false, truncated: false },
+    roundsError: false,
+    statsError: false,
+    cacheError: false,
+    ...over,
+  };
+}
+
+describe('get_player_stats: the figure in chat is the figure on the Stats page', () => {
+  it('returns exactly what the injected loader returned, with its window, sample and source', async () => {
+    const playerStats = vi.fn(async (id: string) => statsPage(id === ELI ? 'Eli Brandt' : 'Maya Ortiz'));
+    const out = await read<{ player_ids: string[]; window: string; sections: string[] }>(coach, 'get_player_stats').run(ctxFor(coach, { playerStats }), { player_ids: [ELI], window: 'last20', sections: [] });
+    expect(playerStats).toHaveBeenCalledWith(ELI, 'last20');
+    const scoring = out.measurements.find((m) => m.metric_id === 'scoring_average');
+    expect(scoring).toMatchObject({ value: 74.2, sample_size: 10, sample_unit: 'rounds', source: 'Stats page', entity: { id: ELI, label: 'Eli Brandt' }, direction: 'lower_better' });
+    expect(scoring?.comparisons?.find((c) => c.kind === 'team')?.value).toBe(75.1);
+    expect(out.measurements.find((m) => m.metric_id === 'gir_pct')?.benchmark?.value).toBe(66);
+    expect(out.measurements.find((m) => m.metric_id === 'sg_approach')).toMatchObject({ value: -0.31, sample_size: 9 });
+    expect(out.window_label).toBe('last 20 rounds');
+    expect(textOf(out)).toContain('Scoring avg: 74.2 | team 75.1');
+    expect(textOf(out)).toContain('Greens in regulation: 61% | team 58% | Tour 66%');
+    // A figure with no value yet is said to be missing with its reason, never printed as zero.
+    expect(out.measurements.some((m) => m.metric_id === 'sand_save_pct')).toBe(false);
+    expect(textOf(out)).toContain('Sand saves: no figure yet (Needs 10 chances.)');
+  });
+
+  it('works out the gaps to the team, worst first, so the model does not', async () => {
+    const out = await read<{ player_ids: string[]; window: string; sections: string[] }>(coach, 'get_player_stats').run(ctxFor(coach, { playerStats: async () => statsPage('Eli Brandt') }), { player_ids: [ELI], window: 'last10', sections: [] });
+    const gaps = (out.detail as { gaps_to_team: Array<{ label: string; gap: number }> }).gaps_to_team;
+    expect(gaps.map((g) => g.label)).toEqual(['SG approach', 'Scrambling']);
+    expect(gaps[1]).toMatchObject({ gap: -11 });
+  });
+
+  it('a read that failed is reported as failed, not as a player with no rounds', async () => {
+    const tool = read<{ player_ids: string[]; window: string; sections: string[] }>(coach, 'get_player_stats');
+    const input = { player_ids: [ELI], window: 'last10', sections: [] };
+    expect((await tool.run(ctxFor(coach, { playerStats: async () => null }), input)).coverage).toBe('unavailable');
+    expect((await tool.run(ctxFor(coach, { playerStats: async () => Promise.reject(new Error('boom')) }), input)).coverage).toBe('unavailable');
+    expect((await tool.run(ctxFor(coach, {}), input)).coverage).toBe('unavailable');
+    // A player who really has no rounds in the window is empty, which is a different sentence.
+    const none = await tool.run(ctxFor(coach, { playerStats: async () => statsPage('Eli Brandt', { win: { ...statsPage('x').win, rounds: 0 }, comparisons: [], rounds: [] }) }), input);
+    expect(none.coverage).toBe('empty');
+  });
+
+  it('one of two players failing is partial and names who is missing', async () => {
+    const out = await read<{ player_ids: string[]; window: string; sections: string[] }>(coach, 'get_player_stats').run(ctxFor(coach, { playerStats: async (id) => (id === ELI ? statsPage('Eli Brandt') : null) }), { player_ids: [ELI, MAYA], window: 'last10', sections: [] });
+    expect(out.coverage).toBe('partial');
+    expect(out.coverage_note).toContain('Maya Ortiz');
+    expect(out.measurements.every((m) => m.entity.id === ELI)).toBe(true);
+  });
+
+  it('caps the rounds it lists and says how many there are', async () => {
+    const out = await read<{ player_ids: string[]; window: string; sections: string[] }>(coach, 'get_player_stats').run(ctxFor(coach, { playerStats: async () => statsPage('Eli Brandt') }), { player_ids: [ELI], window: 'season', sections: ['rounds', 'putting'] });
+    expect((out.detail as { rounds: unknown[] }).rounds).toHaveLength(20);
+    expect(textOf(out)).toContain('(20 of 30)');
+    expect(textOf(out)).toContain('5–10 ft 9 of 14 (64%, Tour 56%)');
+  });
+
+  it('refuses a player who is not on the coach\'s roster before any read', async () => {
+    const playerStats = vi.fn(async () => statsPage('x'));
+    await expect(read<{ player_ids: string[]; window: string; sections: string[] }>(coach, 'get_player_stats').run(ctxFor(coach, { playerStats }), { player_ids: [OUTSIDER], window: 'last10', sections: [] })).rejects.toBeInstanceOf(CoachContextError);
+    expect(playerStats).not.toHaveBeenCalled();
+  });
+});
+
+const teamPage = (over: Partial<TeamStatsScreen> = {}): TeamStatsScreen => ({
+  teamName: 'Rini University',
+  activeCount: 3,
+  roundCount: 28,
+  figures: [
+    { key: 'score', label: 'Scoring avg', value: 75.12, unit: '', digits: 1, delta: -0.4, lowerIsBetter: true, context: 'vs previous 10' },
+    { key: 'gir', label: 'Greens in regulation', value: 58, unit: '%', digits: 0, delta: null, lowerIsBetter: false, context: '' },
+  ],
+  team: { sgMean: 0.1, scoreMean: 75.12 },
+  grid: [
+    { id: ELI, name: 'Eli Brandt', rounds: 10, legs: [0.1, -0.3, 0.2, 0.4], total: 0.4, change: null, avg: 74.2 },
+    { id: MAYA, name: 'Maya Ortiz', rounds: 10, legs: [0.3, 0.2, 0.1, -0.2], total: 0.4, change: null, avg: 73.9 },
+    { id: NOAH, name: 'Noah Kim', rounds: 2, legs: [null, null, null, null], total: null, change: null, avg: 79.5 },
+  ],
+  legTotals: [0.2, -0.05, 0.15, 0.1],
+  putting: { bands: [{ label: '3–5 ft', made: 40, attempts: 50, bench: 88 }], putts: 900 },
+  bests: [],
+  sgRounds: 20,
+  roundsError: false,
+  cacheError: false,
+  puttsError: false,
+  ...over,
+});
+
+describe('get_team_stats: one team average, places already worked out', () => {
+  const tool = () => read<{ window: string; rank_by?: string; putting: boolean }>(coach, 'get_team_stats');
+
+  it('quotes the Team Stats page and ranks on the asked column, ties sharing a place, no figure unranked', async () => {
+    const teamStats = vi.fn(async () => teamPage());
+    const out = await tool().run(ctxFor(coach, { teamStats }), { window: 'last10', putting: true });
+    expect(teamStats).toHaveBeenCalledWith('last10');
+    expect(out.measurements.find((m) => m.entity.kind === 'team' && m.metric_id === 'scoring_average')).toMatchObject({ value: 75.1, sample_size: 28, source: 'Team Stats page' });
+    const ranking = (out.detail as { ranking: Array<{ player: string; place: number | null; value: number | null }> }).ranking;
+    expect(ranking).toEqual([expect.objectContaining({ player: 'Eli Brandt', place: 1, value: 0.4 }), expect.objectContaining({ player: 'Maya Ortiz', place: 1, value: 0.4 }), expect.objectContaining({ player: 'Noah Kim', place: null, value: null })]);
+    expect(textOf(out)).toContain('3–5 ft 40 of 50 (80%, Tour 88%)');
+  });
+
+  it('ranks a lower-is-better column the right way round', async () => {
+    const out = await tool().run(ctxFor(coach, { teamStats: async () => teamPage() }), { window: 'last10', rank_by: 'scoring_average', putting: false });
+    expect((out.detail as { ranking: Array<{ player: string }> }).ranking.map((r) => r.player)).toEqual(['Maya Ortiz', 'Eli Brandt', 'Noah Kim']);
+  });
+
+  it('a column the grid has no figure for comes from Stats\' own per-player calculation, and a failed read of it is said', async () => {
+    const figures = (putts: number) => ({ rounds: 10, hole_rounds: 10, scoring_average: 74, putts_per_round: putts, putt_rounds: 10, sg_total: null, sg_rounds: 0, legs: { tee: null, approach: null, around: null, putting: null }, gir_pct: 60, gir_holes: 180, fairway_pct: 55, fairway_holes: 140, window_start: null, window_end: null });
+    const playerFigures = vi.fn(async () => new Map([[ELI, figures(31.2)], [MAYA, figures(29.8)], [NOAH, figures(33)]]));
+    const out = await tool().run(ctxFor(coach, { teamStats: async () => teamPage(), playerFigures }), { window: 'last10', rank_by: 'putts_per_round', putting: false });
+    expect(playerFigures).toHaveBeenCalledWith([ELI, MAYA, NOAH], 'last10');
+    expect((out.detail as { ranking: Array<{ player: string; value: number }> }).ranking.map((r) => [r.player, r.value])).toEqual([['Maya Ortiz', 29.8], ['Eli Brandt', 31.2], ['Noah Kim', 33]]);
+    const failed = await tool().run(ctxFor(coach, { teamStats: async () => teamPage(), playerFigures: async () => null }), { window: 'last10', rank_by: 'putts_per_round', putting: false });
+    expect(failed.coverage).toBe('partial');
+    expect(failed.coverage_note).toContain('Could not read');
+  });
+
+  it('a failed page is unavailable, never an empty team', async () => {
+    expect((await tool().run(ctxFor(coach, { teamStats: async () => null }), { window: 'last10', putting: false })).coverage).toBe('unavailable');
+    expect((await tool().run(ctxFor(coach, {}), { window: 'last10', putting: false })).coverage).toBe('unavailable');
+  });
+});
+
+const roundRow = (i: number, over: Partial<TeamRoundRow> = {}): TeamRoundRow => ({ id: `r${i}`, date: `2026-10-${String(1 + (i % 28)).padStart(2, '0')}`, course: 'Pine Hill', type: 'tournament', holes: 18, score: 72 + (i % 5), toPar: i % 5, putts: 30, countable: true, playerId: i % 2 ? ELI : MAYA, player: i % 2 ? 'Eli Brandt' : 'Maya Ortiz', ...over });
+const roundsPage = (list: TeamRoundRow[], over: Partial<TeamRoundsScreen> = {}): TeamRoundsScreen => ({ seasonStart: '2026-08-01', rounds: { list, error: false }, rosterError: false, season: { rounds: list.length, players: 2, avg: 74, underPar: 1, best: null }, ...over });
+
+describe('get_rounds: the Rounds page\'s list, with the adding up done here', () => {
+  const tool = () => read<{ player_ids?: string[]; round_type?: string; from?: string; to?: string; list: number }>(coach, 'get_rounds');
+
+  it('averages only full rounds the page counts, and lists at most thirty', async () => {
+    const list = [...Array.from({ length: 40 }, (_, i) => roundRow(i)), roundRow(100, { playerId: ELI, player: 'Eli Brandt', holes: 9, score: 38 }), roundRow(101, { playerId: ELI, player: 'Eli Brandt', countable: false, score: 120 })];
+    const out = await tool().run(ctxFor(coach, { teamRounds: async () => roundsPage(list) }), { list: 30 });
+    const detail = out.detail as { rounds: unknown[]; rounds_total: number; per_player: Array<{ player: string; rounds: number; counted: number; avg_score: number }> };
+    expect(detail.rounds).toHaveLength(30);
+    expect(detail.rounds_total).toBe(42);
+    const eli = detail.per_player.find((p) => p.player === 'Eli Brandt');
+    expect(eli).toMatchObject({ rounds: 22, counted: 20 });
+    const expected = Math.round((list.filter((r) => r.playerId === ELI && r.countable && r.holes === 18).reduce((s, r) => s + r.score, 0) / 20) * 10) / 10;
+    expect(eli?.avg_score).toBe(expected);
+    expect(out.measurements.find((m) => m.entity.id === ELI)).toMatchObject({ value: expected, sample_size: 20, source: 'Rounds page' });
+  });
+
+  it('never lists a round of someone who is not on the roster', async () => {
+    const out = await tool().run(ctxFor(coach, { teamRounds: async () => roundsPage([roundRow(1), roundRow(2, { playerId: OUTSIDER, player: 'Former Player' })]) }), { list: 10 });
+    expect(JSON.stringify(out)).not.toContain('Former Player');
+  });
+
+  it('a failed list is unavailable; a filter that matches nothing is empty', async () => {
+    expect((await tool().run(ctxFor(coach, { teamRounds: async () => roundsPage([], { rounds: { list: [], error: true } }) }), { list: 10 })).coverage).toBe('unavailable');
+    expect((await tool().run(ctxFor(coach, { teamRounds: async () => null }), { list: 10 })).coverage).toBe('unavailable');
+    expect((await tool().run(ctxFor(coach, { teamRounds: async () => roundsPage([roundRow(1)]) }), { round_type: 'practice', list: 10 })).coverage).toBe('empty');
+  });
+});
+
+describe('get_season and get_qualifiers: the screen\'s own figures and order', () => {
+  const roster: RosterScreen = { teamName: 'Rini University', season: '2026-27', players: [{ id: ELI, name: 'Eli Brandt', status: 'active', rounds: 12, avg: 74.4, sgPerRound: 0.3, sgLegs: { tee: 0, approach: 0, around: 0, putting: 0 }, trend: [], form: 'steady' }, { id: MAYA, name: 'Maya Ortiz', status: 'active', rounds: 11, avg: 73.8, sgPerRound: null, sgLegs: { tee: null, approach: null, around: null, putting: null }, trend: [], form: 'improving' }], playersError: false, statsError: false, teamAvg: 74.12 };
+
+  it('the season figures are the Roster page\'s', async () => {
+    const out = await read<{ compare_last_season: boolean }>(coach, 'get_season').run(ctxFor(coach, { roster: async () => roster }), { compare_last_season: false });
+    expect(out.measurements.find((m) => m.entity.kind === 'team')).toMatchObject({ value: 74.1, source: 'Roster page' });
+    expect((out.detail as { players: Array<{ player: string; place: number }> }).players.map((p) => [p.player, p.place])).toEqual([['Maya Ortiz', 1], ['Eli Brandt', 2]]);
+    expect((await read<{ compare_last_season: boolean }>(coach, 'get_season').run(ctxFor(coach, { roster: async () => ({ ...roster, statsError: true }) }), { compare_last_season: false })).coverage).toBe('unavailable');
+  });
+
+  it('a qualifier board keeps the board\'s order and says who is a round short', async () => {
+    const board: QualifierBoardScreen = { id: 'q1', name: 'Fall qualifier', status: 'in_progress', selectionState: 'open', startDate: '2026-09-25', endDate: '2026-09-26', numRounds: 2, squad: 5, picks: 1, entrants: 3, board: { rows: [{ playerId: MAYA, name: 'Maya Ortiz', position: 1, tied: false, played: 2, toPar: 3, total: 147, avg: 73.5, shortRounds: 0, state: 'qualifying' }, { playerId: ELI, name: 'Eli Brandt', position: 2, tied: false, played: 1, toPar: -1, total: 71, avg: 71, shortRounds: 1, state: null }], unscored: [{ playerId: NOAH, name: 'Noah Kim' }] }, selections: null, entriesError: false, roundsError: false };
+    const qualifierBoard = vi.fn(async () => board);
+    const out = await read<{ qualifier_id?: string; limit: number }>(coach, 'get_qualifiers').run(ctxFor(coach, { qualifierBoard }), { qualifier_id: '00000000-0000-4000-8000-00000000aaaa', limit: 5 });
+    // Eli is under par but a round short: the board ranks him below the full card, and so does the read.
+    expect((out.detail as { standings: Array<{ player: string; position: string }> }).standings.map((s) => [s.player, s.position])).toEqual([['Maya Ortiz', '1'], ['Eli Brandt', '2']]);
+    expect(textOf(out)).toContain('1 short, ranked below full cards');
+    expect(textOf(out)).toContain('No score yet: Noah Kim');
+    expect((await read<{ qualifier_id?: string; limit: number }>(coach, 'get_qualifiers').run(ctxFor(coach, { qualifierBoard: async () => ({ ...board, roundsError: true }) }), { qualifier_id: '00000000-0000-4000-8000-00000000aaaa', limit: 5 })).coverage).toBe('unavailable');
+  });
+});
+
+describe('what each surface is offered', () => {
+  const names = (tools: ChatTool[]) => tools.map((t) => t.name);
+
+  it('a coach keeps every capability, on fewer tools', () => {
+    const ask = toolsFor('ask', coach);
+    expect(names(ask)).toEqual(['get_player_stats', 'get_team_stats', 'get_rounds', 'get_round', 'get_shots', 'get_season', 'get_qualifiers', 'get_schedule', 'get_coachhelm', 'get_practice', 'get_reference', 'query_team_data', 'summarise_data', 'show_visual', 'find_thread', 'write_artifact', 'ask_practice_brief', 'draft_practice_plan', 'draft_message', 'draft_poll', 'draft_board', 'create_event', 'create_trip', 'create_qualifier', 'create_goal', 'add_round_note', 'add_blocked_time', 'add_team_break', 'save_team_term', 'set_availability_note', 'create_recruit', 'create_recurring_practice', 'create_focus_area', 'create_task', 'create_team_announcement', 'create_drill', 'publish_practice_plan', 'publish_artifact']);
+    expect(new Set(names(ask)).size).toBe(ask.length);
+  });
+
+  it('quick chat sends and does not keep documents or hand drafts to Messages', () => {
+    const quick = names(toolsFor('quick_chat', coach));
+    expect(quick).toContain('send_message');
+    for (const absent of ['publish_artifact', 'write_artifact', 'draft_message', 'draft_poll']) expect(quick).not.toContain(absent);
+  });
+
+  it('a player is offered reads of their own data and nothing that writes, ranks or reads the team', () => {
+    const tools = toolsFor('player', maya);
+    expect(names(tools)).toEqual(['get_player_stats', 'get_round', 'get_shots', 'get_season', 'get_schedule', 'get_coachhelm', 'get_reference', 'summarise_data', 'show_visual']);
+    expect(tools.every((t) => t.kind === 'read')).toBe(true);
+    // The session decides, whatever surface the request names.
+    expect(names(toolsFor('ask', maya))).toEqual(names(tools));
+    expect(toolsFor('player', coach)).toEqual([]);
+  });
+});
+
+describe('a player cannot reach a teammate\'s figure or a coach-only field', () => {
+  it('the Stats read is always the caller\'s own, whatever ids the model sends', async () => {
+    const playerStats = vi.fn(async (_id: string, _window: string) => statsPage('Maya Ortiz'));
+    const mine = read<Record<string, unknown>>(maya, 'get_player_stats');
+    // The player's schema has no player field at all.
+    expect(mine.input.safeParse({ player_ids: [ELI], window: 'last10' }).data).not.toHaveProperty('player_ids');
+    await mine.run(ctxFor(maya, { playerStats }), { player_ids: [ELI], window: 'last10', sections: [] });
+    // And the coach's tool, run in a player's session, still reads only the caller.
+    await read<Record<string, unknown>>(coach, 'get_player_stats').run(ctxFor(maya, { playerStats }), { player_ids: [ELI, NOAH], window: 'last10', sections: [] });
+    expect(playerStats.mock.calls.map((c) => c[0])).toEqual([MAYA, MAYA]);
+  });
+
+  it('a teammate\'s round reads as no round at all, and its holes are never fetched', async () => {
+    const ctx = ctxFor(maya, {}, { golf_rounds: { rows: [{ id: 'round-eli', player_id: ELI, team_id: 'team-1', round_date: '2026-10-01', course_name: 'Pine Hill', total_score: 70, score_to_par: -2 }] }, golf_holes: { rows: [{ round_id: 'round-eli', hole_number: 1, par: 4, score: 3, putts: 1, penalty_strokes: 0, gir: true }] } });
+    const out = await read<{ round_id: string }>(maya, 'get_round').run(ctx, { round_id: 'round-eli' });
+    expect(out.coverage).toBe('empty');
+    expect(JSON.stringify(out)).not.toContain('Pine Hill');
+    expect(ctx.db.of('golf_holes')).toHaveLength(0);
+  });
+
+  it('the player\'s CoachHelm and reference readers do not offer the coach\'s parts', async () => {
+    expect(read(maya, 'get_coachhelm').input.safeParse({ what: ['signals'] }).success).toBe(false);
+    expect(read(maya, 'get_coachhelm').input.safeParse({ what: ['causes'] }).success).toBe(false);
+    expect(read(maya, 'get_reference').input.safeParse({ topic: 'documents' }).success).toBe(false);
+    expect(read(maya, 'get_reference').input.safeParse({ topic: 'data_dictionary' }).success).toBe(false);
+    // The coach's reference reader, run in a player's session, refuses the coach's topics too.
+    const out = await read<{ topic: string }>(coach, 'get_reference').run(ctxFor(maya), { topic: 'documents' });
+    expect(out.coverage).toBe('unavailable');
+  });
+
+  it('the schedule carries the player\'s own reply and nobody else\'s', async () => {
+    const soon = new Date(Date.now() + 2 * 86_400_000).toISOString();
+    const ctx = ctxFor(maya, {}, { golf_events: { rows: [{ id: 'ev1', team_id: 'team-1', title: 'Team meeting', event_type: 'meeting', start_time: soon, end_time: soon, location: null, requires_rsvp: true, rsvp_deadline: null, status: 'scheduled', all_day: false }] }, golf_event_attendance: { rows: [{ event_id: 'ev1', player_id: MAYA, status: 'accepted' }, { event_id: 'ev1', player_id: ELI, status: 'declined' }] } });
+    const out = await read<{ days_ahead: number }>(maya, 'get_schedule').run(ctx, { days_ahead: 14 });
+    expect(ctx.db.of('golf_event_attendance').some((c) => c.method === 'eq' && c.args[0] === 'player_id' && c.args[1] === MAYA)).toBe(true);
+    expect(JSON.stringify(out)).not.toContain('declined');
+    expect(JSON.stringify(out)).not.toContain(ELI);
+  });
+
+  it('a player\'s season comes from their own Stats page, never the Roster page', async () => {
+    const roster = vi.fn(async () => null);
+    const playerStats = vi.fn(async () => statsPage('Maya Ortiz'));
+    const out = await read<{ compare_last_season: boolean }>(maya, 'get_season').run(ctxFor(maya, { roster, playerStats }), { compare_last_season: false });
+    expect(roster).not.toHaveBeenCalled();
+    expect(playerStats).toHaveBeenCalledWith(MAYA, 'season');
+    expect(out.measurements).toHaveLength(1);
+    expect(out.measurements[0]).toMatchObject({ value: 74.6, sample_size: 14, entity: { id: MAYA } });
+  });
+});

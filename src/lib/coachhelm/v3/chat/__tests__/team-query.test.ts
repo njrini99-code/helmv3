@@ -6,7 +6,6 @@ vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(async () => 
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => { throw new Error('the service client must not be used'); } }));
 
 import { describeQueryTables, queryTeamData, QUERY_ROW_LIMIT, TeamQueryInput } from '../team-query';
-import { auditNumericClaims, collectEnvelopeNumbers } from '../provenance';
 import { person, pgrst, type Tables } from './pgrst-double';
 
 const ctx: CoachChatContext = { coach_id: 'c1', user_id: 'u1', team_id: 'team-1', team_name: 'Varsity', timezone: 'America/New_York', roster: [person('p1', 'Owen Carter'), person('p2', 'Cole Bennett')] };
@@ -163,12 +162,4 @@ describe('query_team_data results', () => {
     expect(e.summary).toBe('2 rows of rounds.');
   });
 
-  it('grounds a figure in the rows for that player, and refuses it for another', async () => {
-    const e = await queryTeamData(pgrst(tables).sb, ctx, parse({ table: 'golf_rounds', columns: ['total_score', 'round_date'] }), on);
-    const players = [{ id: 'p1', name: 'Owen Carter' }, { id: 'p2', name: 'Cole Bennett' }];
-    const audit = (text: string) => auditNumericClaims(text, e.measurements, e.series, collectEnvelopeNumbers(e), [], 'America/New_York', { players }).map((c) => c.value);
-    expect(audit('Owen Carter shot 74 in the tournament.')).toEqual([]);
-    expect(audit('Cole Bennett shot 74 in the tournament.')).toEqual([74]);
-    expect(audit('Owen Carter shot 81.')).toEqual([81]);
-  });
 });

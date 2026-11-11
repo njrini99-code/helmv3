@@ -22,17 +22,27 @@ const setMessagesSpy = vi.fn();
 const clearErrorSpy = vi.fn();
 let currentError: Error | undefined;
 
-vi.mock('@ai-sdk/react', () => ({
-  useChat: () => ({
+// The chat hook itself is the stand-in here: this file is about what the surface does with the hook's state. The hook's own
+// behaviour (what it sends, how it folds the stream, retry and new chat) is covered in __tests__/useCoachHelmChat.test.tsx.
+vi.mock('./useCoachHelmChat', () => ({
+  useCoachHelmChat: () => ({
     messages: [{ id: 'u1', role: 'user', parts: [{ type: 'text', text: 'How is the team putting?' }] }],
     status: currentError ? 'error' : 'ready',
     error: currentError,
-    sendMessage: vi.fn(),
-    regenerate: regenerateSpy,
+    send: vi.fn(),
+    retry: regenerateSpy,
+    newConversation: () => {
+      setMessagesSpy([]);
+      clearErrorSpy();
+    },
+    busy: false,
+    conversationId: null,
+    context: [],
+    addContext: vi.fn(),
+    removeContext: vi.fn(),
     stop: vi.fn(),
-    setMessages: setMessagesSpy,
-    clearError: clearErrorSpy,
-    addToolApprovalResponse: vi.fn(),
+    approve: vi.fn(),
+    deny: vi.fn(),
   }),
 }));
 
