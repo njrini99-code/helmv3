@@ -2382,8 +2382,18 @@ describe('Qualifiers · races and pending scope (owner rules 2 and 4, 2026-10-01
       const answer = deferred<{ success: boolean; error?: string }>();
       const writes = fakeWrites({ setStatus: vi.fn(() => answer.promise) });
       const d = detail('completed');
-      wrap(<QualifierDetail data={d} writes={writes} live={false} />);
-      await user.click(screen.getByRole('button', { name: 'Edit' }));
+      // In the phone's shell, so the bar's key (the sheet's door) is drawn.
+      function Bar() {
+        const { setSlot } = usePhoneChromeState();
+        return <div ref={setSlot} />;
+      }
+      wrap(
+        <PhoneChromeProvider>
+          <Bar />
+          <QualifierDetail data={d} writes={writes} live={false} />
+        </PhoneChromeProvider>,
+      );
+      await user.click(screen.getByRole('button', { name: 'Qualifier actions' }));
       const sheet = () => screen.getByRole('dialog', { name: d.name });
       await user.click(within(await screen.findByRole('dialog', { name: d.name })).getByRole('button', { name: 'Reopen qualifier' }));
       // In flight: the sheet is still there and its button says what it is doing.
@@ -2841,14 +2851,34 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
     expect(screen.queryByRole('link', { name: 'Manage selections' })).toBeNull();
   });
 
-  it('Q-20 CH-09501: Close sits behind Edit as a sheet action, and still asks first', async () => {
+  it('Q-20 CH-09501: Close sits in the bar’s actions sheet, and still asks first', async () => {
     const user = userEvent.setup();
     const w = fakeWrites();
-    wrap(<QualifierDetail data={detail('live')} writes={w} live={false} />);
-    await user.click(screen.getByRole('button', { name: 'Edit' }));
+    inPhone(<QualifierDetail data={detail('live')} writes={w} live={false} />);
+    await user.click(screen.getByRole('button', { name: 'Qualifier actions' }));
     await user.click(await screen.findByRole('button', { name: 'Close qualifier' }));
     await expectCode('CH-09501', /Close this qualifier/);
     expect(w.setStatus).not.toHaveBeenCalled();
+  });
+
+  it('the phone says Edit once: in the actions sheet with Close or Reopen, never as a second door to it on the page', async () => {
+    const user = userEvent.setup();
+    const d = detail('live');
+    inPhone(<QualifierDetail data={d} writes={fakeWrites()} live={false} />);
+    const edits = () => [...document.querySelectorAll('button, a')].filter((el) => /^Edit/.test(el.textContent?.trim() ?? ''));
+    // At rest the page's row is its one job; nothing on the page says Edit.
+    expect(edits()).toHaveLength(0);
+    expect([...document.querySelectorAll('.ch-qfm-acts .ch-btn')].map((b) => b.textContent?.trim())).toEqual(['Manage selections']);
+    await user.click(screen.getByRole('button', { name: 'Qualifier actions' }));
+    const sheet = await screen.findByRole('dialog', { name: d.name });
+    expect(within(sheet).getByRole('link', { name: 'Edit details' }).getAttribute('href')).toBe(`/golf/dashboard/qualifiers/${d.id}/edit`);
+    expect(edits()).toHaveLength(1);
+  });
+
+  it('a concluded qualifier with its squad confirmed has no row of page keys at all: its actions are the sheet’s', () => {
+    inPhone(<QualifierDetail data={detail('selected')} writes={fakeWrites()} live={false} />);
+    expect(document.querySelector('.ch-qfm-acts')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Qualifier actions' })).toBeTruthy();
   });
 
   /** The shell's phone top bar, where a page's PhoneTop renders, and a probe for whether the tab bar has stepped aside. */
@@ -2932,16 +2962,19 @@ describe('Qualifiers · phone (docs/clubhouse/phone/qualifiers.md)', () => {
     expect(document.querySelectorAll('h1')).toHaveLength(1);
   });
 
-  it('90808 on the phone a player has no Qualifier actions, no Edit and no Manage selections, and the coach has all three', () => {
+  it('90808 on the phone a player has no Qualifier actions, no Edit and no Manage selections, and the coach has all three', async () => {
+    const user = userEvent.setup();
     const player = inPhone(<QualifierDetail data={detail('live', 'player')} writes={fakeWrites()} live={false} />);
     expect(screen.queryByRole('button', { name: 'Qualifier actions' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Edit details' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Manage selections' })).toBeNull();
     player.unmount();
     inPhone(<QualifierDetail data={detail('live')} writes={fakeWrites()} live={false} />);
-    expect(screen.getByRole('button', { name: 'Qualifier actions' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Edit' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Manage selections' })).toBeTruthy();
+    // The coach's Edit is in the sheet the bar's key opens.
+    await user.click(screen.getByRole('button', { name: 'Qualifier actions' }));
+    expect(await screen.findByRole('link', { name: 'Edit details' })).toBeTruthy();
   });
 
   it('CH-09901 the coach’s closed note on the phone carries the whole rule, as on desktop; a player’s says the qualifier is closed', () => {

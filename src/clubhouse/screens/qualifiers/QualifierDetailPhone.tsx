@@ -35,7 +35,7 @@ const LIST = '/golf/dashboard/qualifiers';
 /**
  * One qualifier on the phone (docs/clubhouse/phone/qualifiers.md, boards 02,
  * 03 and 05): one column, three facts, the leaderboard as stacked cards, and
- * a sheet with a player's rounds. Close and Reopen sit behind Edit (Q-20);
+ * a sheet with a player's rounds. Edit, Close and Reopen sit in the bar's actions sheet (Q-20);
  * round-by-round stays on desktop, since the sheet has each round. The
  * confirmed squad sits above the leaderboard. Same data, writes and catalog
  * as desktop; the close confirm is the desktop's, passed in.
@@ -72,6 +72,8 @@ export function QualifierDetailPhone({
   onCourse?: ChQOnCourse;
 }) {
   const coach = data.role === 'coach';
+  // The squad is the coach's to manage until it is confirmed.
+  const manage = data.selectionState !== 'selected';
   const [actions, setActions] = useState(false);
   const [peek, setPeek] = useState<string | null>(null);
   const b = data.board;
@@ -127,15 +129,12 @@ export function QualifierDetailPhone({
         <p>{[data.entriesError ? null : plural(data.entrants, 'entrant'), data.course].filter(Boolean).join(' · ')}</p>
       </header>
 
-      {coach && (
+      {/* The page's own keys are the jobs of the day. Edit is said once, in the bar's sheet with the other actions: on the
+          page it was a second door to that sheet, whose first row said Edit again. */}
+      {coach && manage && (
         <div className="ch-qfm-acts" onClickCapture={onSelectionClick}>
-          {data.selectionState !== 'selected' && (
-            <Button leftIcon={Users} href={`${LIST}/${data.id}/selection`}>
-              Manage selections
-            </Button>
-          )}
-          <Button variant="ghost" leftIcon={Pencil} onClick={() => setActions(true)}>
-            Edit
+          <Button leftIcon={Users} href={`${LIST}/${data.id}/selection`}>
+            Manage selections
           </Button>
         </div>
       )}

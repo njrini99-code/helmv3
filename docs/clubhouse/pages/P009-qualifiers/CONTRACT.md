@@ -534,7 +534,7 @@ The phone spec is `docs/clubhouse/phone/qualifiers.md` (approved).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 91901 | — | `PHONE_DETAIL` | At 820px and below a qualifier is one column: two facts (rounds in, spots), the leaderboard as cards that open a player's rounds in a sheet, the confirmed squad above it, and Close and Reopen behind Edit; round-by-round stays on desktop. |
+| 91901 | — | `PHONE_DETAIL` | At 820px and below a qualifier is one column: two facts (rounds in, spots), the leaderboard as cards that open a player's rounds in a sheet, the confirmed squad above it, and Edit, Close and Reopen in the bar's actions sheet; round-by-round stays on desktop. |
 | 91902 | — | `PHONE_FORM` | On the phone the form's Cancel and Create (Save when editing) sit in the top bar and the tab bar steps aside; Create runs the same checks as the page's button, and Cancel asks before discarding changes. |
 | 91903 | — | `PHONE_SELECTION` | On the phone Manage selections has its own top bar (Selections, with a way back to the qualifier) and the one primary action in a foot at the bottom of the page. |
 | 91904 | — | `PHONE_LIST` | On the phone the list's top bar reads the title, Qualifiers, for a coach and a player alike; the list itself is the desktop list with phone CSS. |
