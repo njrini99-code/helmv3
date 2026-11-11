@@ -73,7 +73,7 @@ When a player asks why everything is negative, say it plainly: the number is mea
 
 const SG_LIMITS = `
 What it is not. It is not a handicap, not a score against par and not a prediction of a score. The total is not the gap to a Tour scoring average, because Tour events are played on longer, harder setups; it is the same holes from the same tees. It shows where strokes go, not why.
-It moves a lot on a few rounds. A strokes gained figure needs at least three rounds that have one, and the read gives the count: say it.
+It moves a lot on a few rounds. A strokes gained figure needs at least three rounds that have one, and the read gives the count: say it in words, such as "over his last 10 rounds".
 Measured and estimated. With shots logged, a round's strokes gained is measured shot by shot as above. With holes scored but no shots logged, the app stores a rough estimate from the scorecard (fairways, greens, putts, up-and-downs). The estimate is not measured against the Tour, so it is not on the same scale as a measured figure. Use it only loosely, as the direction of that player's own rounds. Do not read one part of the game from it, do not compare it with a measured figure, and do not call it a gap to the Tour.
 The reads do not say which rounds were estimated. The sign that a player does not log shots is a read with no make rate by distance and no proximity for them. Then say their strokes gained is a rough estimate, and lean on score, greens, putts and scrambling.
 A round posted as a total only has no strokes gained at all.
@@ -123,7 +123,7 @@ Team averages pool the rounds, so a player with more rounds in the window weighs
 
 ## Being careful
 Golf scores swing from round to round for the same player. A difference smaller than that swing is not a change. The Roster's form word (improving, steady, slipping, early) already allows for this: trust it over your own reading of a few scores.
-With only a few rounds, give the figure with its count and say it is early. Do the same for a rate from few chances.
+With only a few rounds, give the figure with its count in words ("over 4 rounds") and say it is early. Do the same for a rate from few chances.
 One bad round or one blow-up hole is an event, not a trend. Say what happened and wait for more rounds before calling it a pattern.
 Practice rounds usually score differently from tournament rounds. When you compare, say which kinds of round each figure covers.
 A player new to shot tracking has strokes gained and distance figures resting on few measured rounds, with scorecard estimates mixed in. Say so before drawing a conclusion from them.

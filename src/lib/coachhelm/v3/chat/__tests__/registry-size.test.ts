@@ -45,11 +45,12 @@ describe('the cached prefix: tool definitions and policy', () => {
     ['practice_helper', coach],
     ['quick_chat', coach],
     ['player', player],
-  ] as const)('%s stays under 21,000 tokens, and its own tools and rules under 12,000', (surface, who) => {
+  ] as const)('%s stays under 26,000 tokens, and its own tools and rules under 12,000', (surface, who) => {
     const size = sizeOf(surface, who);
     console.info(`prefix ${surface}: ${size.tools} tools, ${size.toolTokens} tokens of definitions + ${size.policyTokens} of policy (${size.rulesTokens} of rules, the rest golf and the data map) = ${size.total}; own tools and rules ${size.own}; largest ${size.largest.map(([n, t]) => `${n} ${t}`).join(', ')}`);
     expect(size.own).toBeLessThan(12_000);
-    expect(size.total).toBeLessThan(21_000);
+    // 26,000 by the lead's decision of 10 Nov 2026 (was 21,000): the knowledge blocks carry what strokes gained means and the writing rules.
+    expect(size.total).toBeLessThan(26_000);
   });
 
   it('the Ask tab and the practice helper send the same definitions, so they share one cache entry', () => {

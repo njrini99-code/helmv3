@@ -39,7 +39,8 @@ describe('the golf block of the cached prompt', () => {
       // A sign in front of a number (not the hyphen of "last-10" or "18-hole").
       expect(text).not.toMatch(/(?<![A-Za-z0-9])[+\u2212-]\s?\d/);
       expect(text).not.toMatch(/\d\s*(ft|feet|foot|yards?|yds?|mph|strokes?|putts?|shots?|birdies|points?)\b/i);
-      expect(text).not.toMatch(/\b(under|over|above|below|around|about|roughly|at least|more than|less than)\s+\d/i);
+      // A threshold ("over 60"); a sample said in words ("over 4 rounds") is the style the block models.
+      expect(text).not.toMatch(/\b(under|over|above|below|around|about|roughly|at least|more than|less than)\s+\d(?!\d* rounds\b)/i);
       const numbers = text.match(/\d+/g) ?? [];
       expect(numbers.filter((n) => !DEFINITIONS.has(n))).toEqual([]);
     }
@@ -87,6 +88,24 @@ describe('the golf block of the cached prompt', () => {
     expect(playerSg).not.toMatch(/teammate|against the team|his approach/i);
     expect(playerSg).toMatch(/When a player asks why everything is negative, say it plainly/);
     expect(playerSg).toMatch(/"you putt near Tour level, and most of your gap is on approach shots/);
+  });
+
+  it('models the writing it asks for: no notation, abbreviation or Title Case a model could copy into an answer', () => {
+    for (const s of SURFACES) {
+      const text = golfBlock(s);
+      // The sample is said in words.
+      expect(text).toMatch(/give the figure with its count in words \("over 4 rounds"\)/);
+      expect(text).not.toMatch(/\b[nN]\s?[=:\u2212-]\s?\d|\(\s?[nN]\s?=|\(\d+ rounds?\)/);
+      // What a coach says aloud, in full.
+      expect(text).not.toMatch(/\b(SG|GIR|FIR|FW|OTT|ARG|APP|T2G|HCP|avg|pct|vs|yds?|rds?|ft)\b/);
+      // Sentence case: "strokes gained", "greens in regulation"; "Tour" capitalised.
+      expect(text).not.toMatch(/Strokes Gained|Greens In Regulation|Greens in Regulation|Scoring Average|Fairways Hit|Putts Per Round|Off [Tt]he Tee|Around [Tt]he Green|Make Rate/);
+      expect(text).not.toMatch(/\b(?:the|against|men's|women's) tour\b/);
+      for (const heading of text.match(/^#+ .+$/gm) ?? []) expect(heading, heading).toMatch(/^#+ [A-Z][^A-Z]*(?:Tour[^A-Z]*)?$/);
+      // No table, and no table or column name anywhere.
+      expect(text).not.toMatch(/^\s*\|.*\|\s*$/m);
+      expect(text).not.toMatch(/\bgolf_[a-z_]+\b/);
+    }
   });
 
   it('says what it must not do', () => {

@@ -71,7 +71,7 @@ describe('the data dictionary', () => {
     // Strokes gained is Tour level for every team since 2026-06-22 (sg-benchmarks.ts): the dictionary said "not always against the Tour" until 2026-11-10.
     expect(q).toMatch(/against Tour level for the team/);
     expect(q).not.toMatch(/not always against the Tour|chosen baseline/);
-    expect(q).toMatch(/"15\.3 ft", never "15\.3"/);
+    expect(q).toMatch(/in full \("15 feet", "281 yards"\), never a bare number/);
   });
 
   it('keeps the value lists the schema fixes (checked against the migrations)', () => {
@@ -87,7 +87,11 @@ describe('the data dictionary', () => {
 
   it('puts the unit after each column in the compact description, and the guide with it', () => {
     expect(columnWithUnit('golf_rounds', 'total_score')).toBe('total_score[strokes]');
-    expect(columnWithUnit('golf_player_stats_cache', 'approach_proximity_average')).toBe('approach_proximity_average[ft]');
+    expect(columnWithUnit('golf_player_stats_cache', 'approach_proximity_average')).toBe('approach_proximity_average[feet]');
+    // No shorthand a model could copy into an answer: a count is "count", never "n".
+    expect(columnWithUnit('golf_player_stats_cache', 'rounds_played')).toBe('rounds_played[count]');
+    expect(columnWithUnit('golf_player_stats_cache', 'driving_distance_average')).toBe('driving_distance_average[yards]');
+    expect(describeDictionary()).not.toMatch(/\bn is a count\b|\[n\]|\bpctile\b|\bft\b|\byd\b/);
     expect(columnWithUnit('golf_rounds', 'round_date')).toBe('round_date');
     expect(describeDictionary()).toMatch(/several rounds on one day/);
     expect(columnUnits('golf_rounds', ['round_date', 'total_putts', 'strokes_gained_putting'])).toEqual({ total_putts: 'count', strokes_gained_putting: 'strokes' });

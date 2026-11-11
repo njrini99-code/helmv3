@@ -1,6 +1,6 @@
 # Golf-sense eval for CoachHelm chat
 
-`golf-sense.json` holds 69 questions a college coach or player really asks, written to test whether the assistant
+`golf-sense.json` holds 74 questions a college coach or player really asks, written to test whether the assistant
 reads golf figures the way a coach's analyst would. They complement the data questions in
 `scripts/coachhelm/ask-eval.mjs`, which check that figures are right; these check meaning, direction and caution.
 
@@ -17,6 +17,11 @@ Each question: `id`, `area`, `viewer` (`coach` or `player`), `ask`, `readers`, `
 - `readers`: the reads a correct turn uses, as the harness records them in `toolCalls`. Any one of them counts
   unless the note says both. An empty list means the prompt or the reference answers it and no read of team data
   is required.
+- `global_forbid` (top of the file): the writing rules, scored against every answer whatever the question: the
+  sample as notation (`n=4`, `N-4`), a heading or a table, an abbreviation a coach would not say aloud (`SG`,
+  `GIR`, `avg`, `vs`), Title Case stat names or a lower-case "tour", and a tool or table name.
+- `style.max_sentences` (the `writing` questions): the answer fails when it runs longer. `index.ts` exports the
+  `sentenceCount` these limits mean.
 - Placeholders `{player}`, `{player2}`, `{new_player}`, `{no_shots_player}`, `{teammate}` are filled from the staging roster.
 
 ## To run it later

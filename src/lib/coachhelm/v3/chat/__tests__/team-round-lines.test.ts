@@ -129,7 +129,9 @@ describe('round_lines', () => {
     const d = describeQueryTables({ tournamentsOn: false });
     expect(d.startsWith('round_lines')).toBe(true);
     expect(d).toContain('total_score[strokes]');
-    expect(d).toContain('three_putts[n]');
+    // A count's tag is the word, never "n": a tag the model reads is one it may write (owner, 10 Nov 2026).
+    expect(d).toContain('three_putts[count]');
+    expect(d).not.toMatch(/\[n\]/);
     expect(d).toMatch(/Reading the data/);
     expect(d).toMatch(/Prefer round_lines/);
   });

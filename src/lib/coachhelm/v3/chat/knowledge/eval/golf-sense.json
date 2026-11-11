@@ -1,5 +1,5 @@
 {
- "about": "Golf-sense questions for CoachHelm chat. Each question says what a correct answer must state (facts), must not state (forbid), and which reads it should use (readers; an empty list means it can be answered from the prompt or the reference). Placeholders in braces are filled from the staging roster by the harness: {player}, {player2} (two active players with rounds), {new_player} (a player with fewer than three shot-tracked rounds), {no_shots_player} (a player with hole-by-hole rounds and no logged shots), {teammate} (for a player's turn: any other player on the team). A fact is a phrase the answer must match; these questions test meaning and direction, so no figure is expected here (the data questions in scripts/coachhelm/ask-eval.mjs check figures).",
+ "about": "Golf-sense questions for CoachHelm chat. Each question says what a correct answer must state (facts), must not state (forbid), and which reads it should use (readers; an empty list means it can be answered from the prompt or the reference). Placeholders in braces are filled from the staging roster by the harness: {player}, {player2} (two active players with rounds), {new_player} (a player with fewer than three shot-tracked rounds), {no_shots_player} (a player with hole-by-hole rounds and no logged shots), {teammate} (for a player's turn: any other player on the team). A fact is a phrase the answer must match; these questions test meaning and direction, so no figure is expected here (the data questions in scripts/coachhelm/ask-eval.mjs check figures). Every question is also scored against the patterns named in global_forbid (the writing rules: no n= notation, no heading or table, no abbreviation a coach would not say aloud, sentence-case stat names with Tour capitalised, no tool or table name). A question with style.max_sentences fails when the answer runs longer.",
  "patterns": {
   "tour_figure_from_memory": {
    "re": "\\b(tour|pga|lpga|division (i{1,3}|[123])|d[123]|college|scratch)\\b[^.\\n]{0,40}\\b(average[sd]?|avg|makes?|hits?|shoots?|is about|is around|is roughly)\\b[^.\\n]{0,25}\\d",
@@ -75,6 +75,26 @@
    "re": "\\b(estimate[sd]?|scorecard)\\b[^.\\n]{0,80}\\b(behind|below|short of|gap to|against)\\b[^.\\n]{0,20}\\btour\\b",
    "flags": "i",
    "why": "Treats a scorecard estimate as a measured gap to the Tour."
+  },
+  "sample_notation": {
+   "re": "\\b[nN]\\s?[=:−–-]\\s?\\d|\\(\\s?[nN]\\s?[=:]?\\s?\\d+\\s?\\)|\\(\\d+\\s?(?:rds?|r)\\)|\\bsample size\\s?[:=]",
+   "flags": "",
+   "why": "The sample written as notation (n=4, N-4, (n 4)). Say it in words: over 4 rounds."
+  },
+  "heading_or_table": {
+   "re": "^\\s{0,3}#{1,6}\\s|^\\s*\\*\\*[^*\\n]{1,60}\\*\\*:?\\s*$|^[A-Z][A-Z0-9 :&/-]{5,}$|^(?:[A-Z][a-z]+:? ){2,}[A-Z][a-z]+:?\\s*$|^\\s*\\|.+\\|\\s*$",
+   "flags": "m",
+   "why": "A heading (markdown, bold line, ALL CAPS or Title Case) or a table. An answer is a few plain sentences."
+  },
+  "abbreviation": {
+   "re": "\\b(?:SG|GIR|FIR|FW|OTT|ARG|APP|T2G|UD|HCP|YTD|avg|pct|vs|yds?|rds?|approx|stdev)\\b|\\bw/",
+   "flags": "",
+   "why": "An abbreviation a coach would not say aloud (SG, GIR, avg, vs, yds). Write strokes gained, greens in regulation, average, against, yards."
+  },
+  "wrong_case": {
+   "re": "Strokes Gained|Greens [Ii]n Regulation|Scoring Average|Fairways Hit|Putts Per Round|Make Rate|Off [Tt]he Tee|Around [Tt]he Green|\\b(?:the|against|PGA|LPGA) tour\\b",
+   "flags": "",
+   "why": "Capitalisation: stats are sentence case (strokes gained, greens in regulation) and Tour is capitalised."
   }
  },
  "questions": [
@@ -2119,6 +2139,215 @@
     }
    ],
    "note": "A player who reads the sign as a verdict on themself. Plain, and encouraging only where the data has earned it."
+  },
+  {
+   "id": "write-how-is-he-putting",
+   "area": "writing",
+   "viewer": "coach",
+   "ask": "How is {player} putting?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "leads with the answer about his putting",
+     "kind": "phrase",
+     "re": "\\bputt",
+     "flags": "i"
+    },
+    {
+     "label": "the sample in words (over his last 10 rounds, over 4 rounds, from 12 putts)",
+     "kind": "phrase",
+     "re": "\\b(over|across|in|from)\\b\\s+(?:(?:his|her|their|your|the|its)\\s+)?(?:last\\s+|past\\s+)?(?:\\d+|one|two|three|four|five|six|seven|eight|nine|ten)\\s+(?:counted\\s+|full\\s+)?(?:rounds?|putts|shots|holes|chances|attempts)\\b|\\bthis season\\b",
+     "flags": "i"
+    },
+    {
+     "label": "names the measure in full",
+     "kind": "phrase",
+     "re": "strokes gained putting|make rate|three-putts?|putts per round",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    },
+    {
+     "label": "A Tour or level figure may be stated only when a standards read returned it in this turn (get_reference, topic standards). The scorer skips this pattern when that read ran.",
+     "pattern": "tour_figure_from_memory"
+    }
+   ],
+   "note": "The owner's example. Two or three plain sentences: the answer first, the figure with its window and sample in words, what to do about it if the data says. No heading, no list, no notation.",
+   "style": {
+    "max_sentences": 4
+   }
+  },
+  {
+   "id": "write-team-quick-read",
+   "area": "writing",
+   "viewer": "coach",
+   "ask": "Give me a quick read on the team.",
+   "readers": [
+    "get_team_stats"
+   ],
+   "facts": [
+    {
+     "label": "leads with the team's figure in words",
+     "kind": "phrase",
+     "re": "\\bteam\\b",
+     "flags": "i"
+    },
+    {
+     "label": "the sample in words (over his last 10 rounds, over 4 rounds, from 12 putts)",
+     "kind": "phrase",
+     "re": "\\b(over|across|in|from)\\b\\s+(?:(?:his|her|their|your|the|its)\\s+)?(?:last\\s+|past\\s+)?(?:\\d+|one|two|three|four|five|six|seven|eight|nine|ten)\\s+(?:counted\\s+|full\\s+)?(?:rounds?|putts|shots|holes|chances|attempts)\\b|\\bthis season\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    },
+    {
+     "label": "A Tour or level figure may be stated only when a standards read returned it in this turn (get_reference, topic standards). The scorer skips this pattern when that read ran.",
+     "pattern": "tour_figure_from_memory"
+    }
+   ],
+   "note": "A summary is still prose: no headings, no bullet list of every stat, a few sentences a coach can read on a phone.",
+   "style": {
+    "max_sentences": 5
+   }
+  },
+  {
+   "id": "write-compare-two",
+   "area": "writing",
+   "viewer": "coach",
+   "ask": "Compare {player} and {player2} off the tee.",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "names the measure in full: strokes gained off the tee",
+     "kind": "phrase",
+     "re": "strokes gained off the tee|off the tee",
+     "flags": "i"
+    },
+    {
+     "label": "the sample in words (over his last 10 rounds, over 4 rounds, from 12 putts)",
+     "kind": "phrase",
+     "re": "\\b(over|across|in|from)\\b\\s+(?:(?:his|her|their|your|the|its)\\s+)?(?:last\\s+|past\\s+)?(?:\\d+|one|two|three|four|five|six|seven|eight|nine|ten)\\s+(?:counted\\s+|full\\s+)?(?:rounds?|putts|shots|holes|chances|attempts)\\b|\\bthis season\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    },
+    {
+     "label": "A swing fault inferred from numbers.",
+     "pattern": "swing_diagnosis"
+    }
+   ],
+   "note": "A comparison may be a short list of two lines, never a table, and the stat names stay in sentence case and in full.",
+   "style": {
+    "max_sentences": 5
+   }
+  },
+  {
+   "id": "write-last-round",
+   "area": "writing",
+   "viewer": "coach",
+   "ask": "How did {player}'s last round go?",
+   "readers": [
+    "get_player_stats",
+    "get_round"
+   ],
+   "facts": [
+    {
+     "label": "the score and the course or the day, in a sentence",
+     "kind": "phrase",
+     "re": "\\b(shot|scored|posted|round)\\b",
+     "flags": "i"
+    },
+    {
+     "label": "counts said in words (three birdies, 31 putts), not as a strip of holes",
+     "kind": "phrase",
+     "re": "\\b(birdies?|bogeys?|putts|greens|pars?)\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A round explained by weather nobody recorded.",
+     "pattern": "weather_guess"
+    },
+    {
+     "label": "A verdict on a player instead of the measure.",
+     "pattern": "label"
+    }
+   ],
+   "note": "One round told as a coach would tell it: the score first, then what made it. Not a scorecard.",
+   "style": {
+    "max_sentences": 5
+   }
+  },
+  {
+   "id": "write-player-irons",
+   "area": "writing",
+   "viewer": "player",
+   "ask": "How am I hitting my irons?",
+   "readers": [
+    "get_player_stats"
+   ],
+   "facts": [
+    {
+     "label": "second person",
+     "kind": "phrase",
+     "re": "\\byou(r)?\\b",
+     "flags": "i"
+    },
+    {
+     "label": "strokes gained approach, greens or proximity, named in full",
+     "kind": "phrase",
+     "re": "strokes gained approach|greens in regulation|greens|proximity|approach",
+     "flags": "i"
+    },
+    {
+     "label": "the sample in words (over his last 10 rounds, over 4 rounds, from 12 putts)",
+     "kind": "phrase",
+     "re": "\\b(over|across|in|from)\\b\\s+(?:(?:his|her|their|your|the|its)\\s+)?(?:last\\s+|past\\s+)?(?:\\d+|one|two|three|four|five|six|seven|eight|nine|ten)\\s+(?:counted\\s+|full\\s+)?(?:rounds?|putts|shots|holes|chances|attempts)\\b|\\bthis season\\b",
+     "flags": "i"
+    }
+   ],
+   "forbid": [
+    {
+     "label": "A player's answer names a teammate (the harness substitutes a real teammate's name).",
+     "pattern": "teammate_named"
+    },
+    {
+     "label": "A swing fault inferred from numbers.",
+     "pattern": "swing_diagnosis"
+    },
+    {
+     "label": "Reads the sign of a strokes gained figure as a verdict.",
+     "pattern": "sign_as_verdict"
+    }
+   ],
+   "note": "The same plain writing for a player: their own figure, its sample in words, one thing to work on if the data supports it.",
+   "style": {
+    "max_sentences": 4
+   }
   }
+ ],
+ "global_forbid": [
+  "sample_notation",
+  "heading_or_table",
+  "abbreviation",
+  "wrong_case",
+  "names_internals"
  ]
 }
