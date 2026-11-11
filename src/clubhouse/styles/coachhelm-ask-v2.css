@@ -125,37 +125,6 @@ html[data-fw-theme='dark'] .ch-ak-th {
 @media (prefers-reduced-motion: reduce) {
   .ch-ak-th .conf.flash::before, .ch-ak-th .receipt.in .ck::after, .ch-ak-sv .receipt.in .ck::after, .ch-ak-th .conf .btns .p.cap::before, .ch-ak-th .acard .tile.busy::after { animation: none; display: none; }
 }
-/* AK6, AK7: shot and engine blocks. Drawn at rest; marks never grow on first paint without the card's own reveal. */
-.ch-ak-miss { margin: 0; display: grid; gap: 8px; justify-items: center; }
-.ch-ak-miss svg { width: 180px; height: 180px; }
-.ch-ak-miss .trk { fill: var(--ch-well-bg-flat); }
-.ch-ak-miss .w { fill: var(--ch-chart-flat, #6b675f); opacity: 0.55; }
-.ch-ak-miss .w.hi { fill: var(--ch-chart-loss-fill, #b86f0c); opacity: 1; }
-.ch-ak-miss .flag { fill: var(--ch-text-primary); }
-.ch-ak-miss .dot { fill: var(--ch-text-primary); stroke: var(--ch-card-bg); stroke-width: 1; }
-.ch-ak-miss figcaption { font: var(--ch-type-14); color: var(--ch-text-secondary); text-align: center; }
-.ch-ak-putts { display: grid; gap: 8px; }
-.ch-ak-putts > button { width: 100%; display: grid; grid-template-columns: 84px minmax(0, 1fr) 40px 24px; align-items: center; gap: 8px; font: var(--ch-type-14);  color: var(--ch-text-secondary); }
-.ch-ak-putts .t { position: relative; display: block; height: 10px; border-radius: var(--ch-radius-xs); background: var(--ch-chart-track, #ebe5d8); overflow: hidden; }
-.ch-ak-putts .t .tick { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--ch-text-primary); }
-.ch-ak-putts .t i { display: block; height: 100%; background: var(--ch-chart-gain-fill, #1f6b45); transform-origin: 0 50%; }
-.ch-ak-putts b { font-weight:var(--ch-fw-600); color: var(--ch-text-primary); text-align: right; }
-.ch-ak-putts small { color: var(--ch-text-tertiary); text-align: right; font: var(--ch-type-13); }
-.ch-ak-season { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.ch-ak-season .scale { grid-column: 1 / -1; display: block; width: 100%; height: auto; }
-.ch-ak-season .band { fill: var(--ch-chart-track); }
-.ch-ak-season .last { stroke: var(--ch-text-tertiary); stroke-width: 2; }
-.ch-ak-season .range { stroke: var(--ch-chart-gain-fill); stroke-width: 2; stroke-linecap: round; }
-.ch-ak-season .now { fill: var(--ch-chart-gain-fill); stroke: var(--ch-card-bg); stroke-width: 2; }
-.ch-ak-season .ch-ak-mark { padding: 12px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); }
-.ch-ak-season b { display: block; font: var(--ch-type-22-medium);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-22); }
-.ch-ak-season span { display: block; margin-top: 6px; font: var(--ch-type-13);  color: var(--ch-text-secondary); }
-.ch-ak-season p { grid-column: 1 / -1; margin: 0; font: var(--ch-type-13);  color: var(--ch-text-tertiary); }
-.ch-ak-holes { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 4px; }
-.ch-ak-holes .ch-ak-mark { display: grid; gap: 2px; justify-items: center; padding: 6px 0; border-radius: var(--ch-radius-sm); background: var(--ch-well-bg-flat); }
-.ch-ak-holes small { font: var(--ch-type-12); color: var(--ch-text-tertiary); }
-.ch-ak-holes b { font: var(--ch-type-14-strong);  color: var(--ch-text-primary); }
-.ch-ak-holes .u b { color: var(--ch-flag); }
 /* AK9, AK10: brief card and the allowance */
 .ch-ak-th .qcard { overflow: hidden; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-ask-shadow-2); }
 .ch-ak-th .qh { display: flex; align-items: center; gap: 12px; padding: 12px 16px 12px; border-bottom: 0.5px solid var(--ch-ak-ak-hair); }
@@ -258,7 +227,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
   --ch-ask-shadow-1: 0 0 0 0.5px var(--ch-ak-ak-hair), 0 1px 2px rgb(28 25 18 / 0.05);
   --ch-ask-shadow-2: var(--ch-elevation-reading);
 }
-.ch-ak-th, .ch-ak-pane, .ch-ak-out, .ch-ak-season, .ch-ak-knows, .ch-ak-meter, .ch-ak-handoff {
+.ch-ak-th, .ch-ak-pane, .ch-ak-out, .ch-ak-knows, .ch-ak-meter, .ch-ak-handoff {
   --ch-ask-v2-x1: 0 0 0 0.5px rgb(28 27 24 / 0.14);
 }
 
@@ -496,18 +465,6 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-root.is-phone .ch-ak-home {
   padding-inline: 0;
 }
-.ch-ak-mark {
-  all: unset;
-  box-sizing: border-box;
-  cursor: pointer;
-}
-.ch-ak-mark:focus-visible {
-  outline: 2px solid var(--ch-border-focus);
-  outline-offset: 2px;
-}
-.ch-ak-miss .w {
-  cursor: pointer;
-}
 .ch-ak-th .conf .btns .ch-btn--primary, .ch-ak-th .conf .btns .p.cap {
   width: 100%;
 }
@@ -565,11 +522,6 @@ html[data-fw-theme='dark'] .ch-ak-th {
 /* ASK-22: the phone's 12 floor. */
 .ch-ak-hs .hs-h small {
   font: var(--ch-type-12-strong);
-}
-/* ASK-28: unset took the focus ring with it. */
-.ch-ak-mark:focus-visible {
-  outline: 2px solid var(--ch-border-focus);
-  outline-offset: 2px;
 }
 /* ASK-20: the version arrows in the pane and on the phone's dock alike. */
 .ch-ak-pane .vers, .ch-ak-push .vers {
@@ -719,17 +671,10 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .ch-ak-stopped button { position: relative; padding: 0; border: 0; background: none; font: var(--ch-type-14-strong); color: var(--ch-ask-accent); cursor: pointer; }
 .ch-ak-th .ch-ak-stopped button::after { content: ''; position: absolute; inset: -12px 0; }
 
-/* M-ASK-18, 20: the shot and engine blocks' marks grow once, on an answer this visit watched. */
-[data-live] .ch-ak-putts .t i { animation: ch-ak-growx var(--ch-dur-marks) var(--ch-ease-spring-settle) var(--ch-cv-lag, 0s) both; }
-[data-live] .ch-ak-miss .w { animation: ch-ak-wedge var(--ch-dur-marks) var(--ch-ease-spring-settle) var(--ch-cv-lag, 0s) both; transform-origin: 90px 90px; }
-[data-live] .ch-ak-season .ch-ak-mark, [data-live] .ch-ak-holes .ch-ak-mark { animation: ch-ak-rise6 var(--ch-dur-marks) var(--ch-ease-spring-settle) var(--ch-cv-lag, 0s) both; }
-@keyframes ch-ak-growx { from { transform: scaleX(0); } }
-@keyframes ch-ak-wedge { from { opacity: 0; transform: scale(0.9); } }
-
 @media (prefers-reduced-motion: reduce) {
-  .ch-ak-th .work .fold, .ch-ak-th .cpop, [data-live] .ch-ak-putts .t i, [data-live] .ch-ak-miss .w, [data-live] .ch-ak-season .ch-ak-mark, [data-live] .ch-ak-holes .ch-ak-mark { animation: none; }
+  .ch-ak-th .work .fold, .ch-ak-th .cpop { animation: none; }
 }
-[data-motion='off'] .ch-ak-th :is(.work .fold, .cpop), [data-motion='off'] [data-live] :is(.ch-ak-putts .t i, .ch-ak-miss .w, .ch-ak-season .ch-ak-mark, .ch-ak-holes .ch-ak-mark) { animation: none; }
+[data-motion='off'] .ch-ak-th :is(.work .fold, .cpop) { animation: none; }
 
 /* E-COMP: the scope chips say what the next answer reads; never a figure. */
 .ch-ak-root .ch-ak-cscope { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0 0 4px; }
@@ -797,12 +742,6 @@ html[data-fw-theme='dark'] .ch-ak-th {
   margin: 0;
   font: var(--ch-type-14);
   color: var(--ch-warning-600);
-}
-/* ASK-21: under par is marked by a circle as well as its colour. */
-.ch-ak-holes .u b {
-  border-radius: 50%;
-  box-shadow: 0 0 0 var(--ch-hairline-w) currentcolor;
-  padding-inline: 4px;
 }
 
 /* MOB-ASK-16: a chip fits the line it sits in. */
@@ -1535,13 +1474,6 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 .ch-ak-leaf > .ch-ak-leaf__head + .ch-ak-vis {
   padding-top: 0;
   border-top: 0;
-}
-.ch-ak-th[data-v3] .ch-ak-leaf :is(.ch-th-fig, .ch-th-va, .ch-th-cv) {
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: none;
-  box-shadow: none;
 }
 /* The studio in a leaf (coachhelm-ask-studio.css). A visual that opens with its figure hangs from the lead with no rule
    between them. And its finding is not set twice: where the lead stands over it, the visual's own title and takeaway are

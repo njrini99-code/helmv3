@@ -7,12 +7,13 @@ import type { ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
 import type { AskBriefData, AskHandoffData } from '../data/coachhelm-chat-thread';
 import { CARD_PHASES, CardBody, cardCopy, drawsSubject, editableOf, isOutOfDate, isWithdrawn, type CardDensity, type CardPerson, type CardPhase, type EditableField } from '../screens/coachhelm/chat/cards';
 import { landsOf } from '../screens/coachhelm/chat/parts/ConfirmCard';
-import { AppLinkRow, CoachNoteChip, NotTracked, WorkedOut, computedSummary } from '../screens/coachhelm/chat/cards/answers';
+import { NotTracked, WorkedOut, computedSummary } from '../screens/coachhelm/chat/cards/answers';
 import { BriefBody, DocBody, HandoffBody } from '../screens/coachhelm/chat/cards/drafts';
 import { WORK_KINDS } from '../screens/coachhelm/chat/cards/work-words';
 import { CoachMark } from '../screens/coachhelm/chat/CoachMark';
 import { AskEvidenceView } from '../screens/coachhelm/chat/Evidence';
 import { WorkLine, type WorkModel } from '../screens/coachhelm/chat/parts/Work';
+import { Studio } from '../screens/coachhelm/chat/studio/registry';
 import { PlanCard } from '../screens/coachhelm/plan/PlanCard';
 import { useChPhone } from '../lib/use-phone';
 import { Badge, type BadgeTone } from '../ui/Badge';
@@ -392,11 +393,11 @@ function forms(density: CardDensity): Record<string, { group: 'drafts' | 'notes'
     draft_message: { group: 'drafts', node: <Form id="draft_message" title="B4. A message draft"><Plain><HandoffBody handoff={HANDOFF_MESSAGE} roster={CAP_ROSTER} density={density} /></Plain></Form> },
     draft_poll: { group: 'drafts', node: <Form id="draft_poll" title="B5. A poll draft"><Plain><HandoffBody handoff={HANDOFF_POLL} roster={CAP_ROSTER} density={density} timeZone="America/Chicago" /></Plain></Form> },
     draft_board: { group: 'drafts', node: <Form id="draft_board" title="B6. A board for a player"><Plain><HandoffBody handoff={HANDOFF_BOARD} roster={CAP_ROSTER} density={density} tiles={[{ label: 'Make rate, 4 to 8 ft', value: '47%' }, { label: 'Team', value: '58%' }, { label: 'Three putts a round', value: '2.4' }, { label: 'Putts a round', value: '31.2' }]} /></Plain></Form> },
-    save_note: { group: 'notes', node: <Form id="save_note" title="C. A note, saved"><CoachNoteChip note={{ op: 'saved', note_id: 'n1', text: 'Qualifying is 54 holes and the low four count.' }} onRemove={() => undefined} /></Form> },
-    save_note_long: { group: 'notes', node: <Form id="save_note_long" title="C. A long note, saved"><CoachNoteChip note={{ op: 'saved', note_id: 'n2', text: 'When I ask about putting, always split it inside 8 feet and outside 20 feet, lead with the make rate and the number of attempts, and compare to the team before you compare to Tour, because that is the conversation I have with the players on Mondays.' }} onRemove={() => undefined} /></Form> },
-    remove_note: { group: 'notes', node: <Form id="remove_note" title="C. A note, removed"><CoachNoteChip note={{ op: 'removed', note_id: 'n1', text: 'Qualifying is 54 holes and the low four count.' }} /></Form> },
+    save_note: { group: 'notes', node: <Form id="save_note" title="C. A note, saved"><Studio part={{ kind: 'note', data: { form: 'kept', note: { op: 'saved', note_id: 'n1', text: 'Qualifying is 54 holes and the low four count.' } } }} size={density} /></Form> },
+    save_note_long: { group: 'notes', node: <Form id="save_note_long" title="C. A long note, saved"><Studio part={{ kind: 'note', data: { form: 'kept', note: { op: 'saved', note_id: 'n2', text: 'When I ask about putting, always split it inside 8 feet and outside 20 feet, lead with the make rate and the number of attempts, and compare to the team before you compare to Tour, because that is the conversation I have with the players on Mondays.' } } }} size={density} /></Form> },
+    remove_note: { group: 'notes', node: <Form id="remove_note" title="C. A note, removed"><Studio part={{ kind: 'note', data: { form: 'kept', note: { op: 'removed', note_id: 'n1', text: 'Qualifying is 54 holes and the low four count.' } } }} size={density} /></Form> },
     ...Object.fromEntries(EVIDENCE.map((e) => [e.id, { group: 'answers' as const, node: <Form id={e.id} title={e.title}><AskEvidenceView envelope={e.envelope} roster={[]} /></Form> }])),
-    app_link: { group: 'answers', node: <Form id="app_link" title="D14. A link into the app"><AppLinkRow link={{ label: 'Open Roster requests', href: '#app_link', purpose: 'Players who asked to join, waiting for you.' }} /><AppLinkRow link={{ label: 'Open Stats for Eli Brandt', href: '#app_link' }} /></Form> },
+    app_link: { group: 'answers', node: <Form id="app_link" title="D14. A link into the app"><Studio part={{ kind: 'app_link', data: { link: { label: 'Open Roster requests', href: '#app_link', purpose: 'Players who asked to join, waiting for you.' } } }} size={density} /><Studio part={{ kind: 'app_link', data: { link: { label: 'Open Stats for Eli Brandt', href: '#app_link' } } }} size={density} /></Form> },
     computed: { group: 'answers', node: <Form id="computed" title="D15. Worked out across the team" note="Built against a typed stub: the engine emits nothing for a calculation yet (E-25)."><Plain><WorkedOut computed={{ method: 'Averaged each player’s putts per round over their last 8 counting rounds, then ranked the team from fewest to most.', players: 14, reads: 14, rounds: 212, window: 'Sep 1 to Nov 9 · counting rounds only' }} /></Plain></Form> },
     not_tracked: { group: 'answers', node: <Form id="not_tracked" title="D16. “That isn’t tracked”" note="Built against a typed stub (E-26); today it is prose only."><NotTracked part={{ what: 'club used off the tee', nearest: ['Fairways hit', 'Driving distance', 'Penalty strokes off the tee'] }} /></Form> },
     work_line: {

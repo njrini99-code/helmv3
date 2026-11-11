@@ -144,10 +144,6 @@
 .ch-th--phone .ch-th-card {
   padding: 12px 16px;
 }
-.ch-th-card .ch-th-fig {
-  background: var(--ch-bg-subtle);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
-}
 .ch-th--phone .ch-th-ans {
   gap: 12px;
 }
@@ -373,37 +369,6 @@
   flex-direction: column;
   gap: 16px;
 }
-.ch-th-fig {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 16px 20px 16px;
-  border-radius: var(--ch-radius-xl);
-  background: var(--ch-ivory-25);
-  box-shadow: var(--ch-elevation-reading);
-}
-.ch-th--phone .ch-th-fig {
-  padding: 16px 16px 12px;
-  border-radius: var(--ch-radius-lg);
-}
-.ch-th-fig--bare {
-  padding: 16px;
-  gap: 8px;
-  border-radius: var(--ch-radius-lg);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
-}
-.ch-th-fig--bare > figcaption {
-  font: var(--ch-type-14-strong);
-}
-.ch-th-fig__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-.ch-th-fig__head > figcaption {
-  font: var(--ch-type-14-strong);
-}
 /* "View as table": a quiet secondary control on every figure (owner, 2026-10-29: the green link was noise), small and in
    the secondary ink, still a 44px reach on a phone. */
 .ch-th-toggle {
@@ -435,21 +400,6 @@
   inset: 50% 0 auto;
   height: 44px;
   translate: 0 -50%;
-}
-.ch-th-fig__note {
-  font: var(--ch-type-13);
-  color: var(--ch-text-secondary);
-}
-.ch-th-fig__src {
-  padding-top: 8px;
-  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
-  font: var(--ch-type-13);
-  color: var(--ch-text-secondary);
-}
-.ch-th-fig__take {
-  margin-top: 8px;
-  font: var(--ch-type-13);
-  color: var(--ch-text-secondary);
 }
 
 .ch-th-read {
@@ -610,8 +560,7 @@
   background: transparent;
   transform: rotate(45deg);
 }
-.ch-th-bar__val,
-.ch-th-va__val {
+.ch-th-bar__val {
   font: var(--ch-type-14-strong);
   font-variant-numeric: tabular-nums;
 }
@@ -991,20 +940,6 @@ a.ch-th-reads__r:focus-visible {
   border-radius: var(--ch-radius-lg);
   box-shadow: var(--ch-elevation-reading);
   background: var(--ch-ivory-25);
-}
-/* Inside a figure the table is the figure's rows, not a card of its own (P013 D11). */
-.ch-th-fig .ch-th-tablewrap {
-  border-radius: 0;
-  box-shadow: none;
-  background: none;
-}
-.ch-th-fig .ch-th-table th:first-child,
-.ch-th-fig .ch-th-table td:first-child {
-  padding-left: 0;
-}
-.ch-th-fig .ch-th-table th:last-child,
-.ch-th-fig .ch-th-table td:last-child {
-  padding-right: 0;
 }
 .ch-th-table {
   width: 100%;
@@ -1510,18 +1445,7 @@ a.ch-th-reads__r:focus-visible {
   .ch-th-evp__body.is-phone .ch-th-tile[data-tone='loss'] .ch-th-tile__value {
     color: var(--ch-chart-loss);
   }
-  .ch-th-evp__body.is-phone .ch-th-fig--bare {
-    padding: 16px 0 0;
-    border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
-    border-radius: 0;
-    background: none;
-    box-shadow: none;
-  }
   /* Under the figure rows, whose closing hairline already parts them from it. */
-  .ch-th-evp__body.is-phone .ch-th-tiles + .ch-th-fig--bare {
-    padding-top: 4px;
-    border-top: 0;
-  }
   .ch-th--phone .ch-th-act__note {
     margin: 4px 16px 0;
     padding: 12px 0 0;
@@ -1557,11 +1481,6 @@ a.ch-th-reads__r:focus-visible {
 :where(html[data-fw-theme='dark']) .ch-th-act[data-status='cancelled'] .ch-th-act__icon,
 :where(html[data-fw-theme='dark']) .ch-th-act[data-status='abandoned'] .ch-th-act__icon {
   background: var(--ch-ivory-400);
-}
-/* A chosen visual row: at night its fill sits within a shade of the card (about 1.01:1), so the selected ink rings it,
-   well over 3:1 (2026-10-28). The bold label stays the second cue; light is unchanged. */
-:where(html[data-fw-theme='dark']) .ch-th-va__row.is-on {
-  box-shadow: inset 0 0 0 1px var(--ch-selected-ink);
 }
 
 /* Phone: touch areas reach 44 x 44 without changing how they are drawn (W4b, 2026-10-19). */
@@ -1613,513 +1532,6 @@ a.ch-th-reads__r:focus-visible {
   color: var(--ch-text-primary);
 }
 
-/* A validated visual (visuals/schema.ts, CoachVisualArtifact): strokes gained anatomy. Restored after the token pass
-   (6a51a084d) dropped the block. Final geometry on first paint, no draw-in; only a selection moves anything, and it
-   moves opacity alone on the base beat (reduced motion and Animations off swap at once, base.css and the duration
-   tokens). Gains green, losses amber, the zero line one hairline through every row. */
-.ch-th-va {
-  --ch-th-va-label: 132px;
-  --ch-th-va-value: 52px;
-  --ch-th-va-gap: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 0;
-  padding: 16px 20px;
-  border-radius: var(--ch-radius-xl);
-  background: var(--ch-bg-subtle);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
-}
-.ch-th--phone .ch-th-va {
-  --ch-th-va-label: 88px;
-  --ch-th-va-value: 44px;
-  --ch-th-va-gap: 8px;
-  padding: 12px 16px;
-  border-radius: var(--ch-radius-lg);
-}
-.ch-th-va__head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-.ch-th-va__title {
-  font: var(--ch-type-16-strong);
-  letter-spacing: var(--ch-track-16);
-  color: var(--ch-text-primary);
-}
-.ch-th-va__sub {
-  margin: 2px 0 0;
-  font: var(--ch-type-13);
-  letter-spacing: var(--ch-track-13);
-  color: var(--ch-text-secondary);
-}
-.ch-th-va__chip,
-.ch-th-va__kind {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-control);
-  font: var(--ch-type-12-medium);
-  font-style: normal;
-  color: var(--ch-text-primary);
-}
-.ch-th-va__chip {
-  margin-left: 8px;
-}
-.ch-th-va__kind {
-  margin-right: 4px;
-}
-.ch-th-va__chart {
-  position: relative;
-  isolation: isolate;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-/* The zero line: centred on the track column (row padding, label, gap, then half the track), one line for all rows,
-   drawn over the tracks and bars (the tracks are positioned too) inside the chart's own stacking context. */
-.ch-th-va__axis {
-  position: absolute;
-  z-index: 1;
-  top: 6px;
-  bottom: 6px;
-  left: calc(8px + var(--ch-th-va-label) + var(--ch-th-va-gap) + (100% - 16px - var(--ch-th-va-label) - var(--ch-th-va-value) - 2 * var(--ch-th-va-gap)) / 2);
-  width: var(--ch-hairline-w);
-  background: var(--ch-ink-rule);
-  pointer-events: none;
-}
-.ch-th-va__row {
-  display: grid;
-  grid-template-columns: var(--ch-th-va-label) minmax(0, 1fr) var(--ch-th-va-value);
-  align-items: center;
-  gap: var(--ch-th-va-gap);
-  min-height: 44px;
-  padding: 0 8px;
-  border: 0;
-  border-radius: var(--ch-radius-md);
-  background: none;
-  text-align: left;
-  color: var(--ch-text-primary);
-  cursor: pointer;
-  transition: background-color var(--ch-dur-quick) var(--ch-ease);
-}
-@media (hover: hover) {
-  .ch-th-va__row:hover {
-    background: var(--ch-bg-hover);
-  }
-}
-.ch-th-va__row.is-on {
-  background: var(--ch-selected-bg);
-}
-.ch-th-va__row:focus-visible {
-  outline: 2px solid var(--ch-border-focus);
-  outline-offset: -2px;
-}
-.ch-th-va__label {
-  overflow: hidden;
-  font: var(--ch-type-14);
-  letter-spacing: var(--ch-track-14);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.ch-th-va__row.is-on .ch-th-va__label {
-  font: var(--ch-type-14-strong);
-}
-/* The phone column is narrow, and a leg's name grows with iPhone Text Size: it wraps rather than clipping. */
-.ch-th--phone .ch-th-va__label {
-  overflow: visible;
-  text-overflow: clip;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-.ch-th-va__track {
-  position: relative;
-  height: 16px;
-  border-radius: var(--ch-radius-sm);
-  background: var(--ch-bg-inset);
-}
-.ch-th-va__bar {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  border-radius: var(--ch-radius-sm);
-  transition: opacity var(--ch-dur-base) var(--ch-ease);
-}
-.ch-th-va__row[data-sign='gain'] .ch-th-va__bar {
-  left: 50%;
-  background: var(--ch-chart-gain);
-}
-.ch-th-va__row[data-sign='loss'] .ch-th-va__bar {
-  right: 50%;
-  background: var(--ch-chart-loss);
-}
-.ch-th-va__row.is-quiet .ch-th-va__bar {
-  opacity: 0.75;
-}
-.ch-th-va__val {
-  text-align: right;
-}
-@media (forced-colors: active) {
-  .ch-th-va {
-    border: 1px solid CanvasText;
-  }
-  .ch-th-va__track {
-    border: 1px solid CanvasText;
-  }
-  .ch-th-va__row[data-sign] .ch-th-va__bar {
-    background: CanvasText;
-    forced-color-adjust: none;
-  }
-  .ch-th-va__row.is-on {
-    outline: 2px solid Highlight;
-    outline-offset: -2px;
-  }
-}
-.ch-th-va__detail,
-.ch-th-va__hint,
-.ch-th-va__total {
-  margin: 0;
-  font: var(--ch-type-14);
-  letter-spacing: var(--ch-track-14);
-  color: var(--ch-text-primary);
-}
-.ch-th-va__hint,
-.ch-th-va__total {
-  color: var(--ch-text-secondary);
-}
-.ch-th-va__total b {
-  font: var(--ch-type-14-strong);
-  color: var(--ch-text-primary);
-}
-.ch-th-va__detail {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.ch-th-va__detail p {
-  margin: 0;
-}
-.ch-th-va__note {
-  color: var(--ch-text-secondary);
-}
-.ch-th-va__note[data-kind='hypothesis'] {
-  font-style: italic;
-}
-
-/* ── A model-designed visual (CoachComposition, playbook §2) ─────────────────────────────────────────────────────────
-   One card: whose figures → the finding as a title → the takeaway → the blocks → coverage → one provenance line. */
-.ch-th-cv {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-  padding: 16px 20px;
-  border-radius: var(--ch-radius-xl);
-  background: var(--ch-bg-subtle);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
-}
-.ch-th--phone .ch-th-cv {
-  padding: 16px;
-  border-radius: var(--ch-radius-lg);
-}
-.ch-th-cv__head {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  /* Clear of the expand button in the corner (ASK-4). */
-  padding-right: 48px;
-}
-.ch-th-cv__entity {
-  font: var(--ch-type-13-medium);
-  color: var(--ch-text-secondary);
-}
-.ch-th-cv__title {
-  font: var(--ch-type-17-strong);
-  letter-spacing: var(--ch-track-17);
-  color: var(--ch-text-primary);
-  text-wrap: balance;
-}
-.ch-th-cv__lede {
-  font: var(--ch-type-15);
-  letter-spacing: var(--ch-track-15);
-  color: var(--ch-text-secondary);
-  text-wrap: pretty;
-}
-.ch-th-cv__grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
-}
-/* `split` sets figure blocks two-up on a wide screen only; a phone always stacks. */
-@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
-  .ch-th:not(.ch-th--phone) .ch-th-cv[data-layout='split'] .ch-th-cv__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .ch-th:not(.ch-th--phone) .ch-th-cv[data-layout='split'] .ch-th-cv__block[data-wide] {
-    grid-column: 1 / -1;
-  }
-}
-.ch-th-cv__block {
-  min-width: 0;
-}
-.ch-th-cv__fig {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-  height: 100%;
-  padding: 12px 16px 16px;
-  border-radius: var(--ch-radius-lg);
-  background: var(--ch-sheet-bg);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
-}
-.ch-th--phone .ch-th-cv__fig {
-  padding: 12px;
-}
-.ch-th-cv__fig-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 28px;
-}
-.ch-th-cv__fig-title {
-  font: var(--ch-type-14-strong);
-  color: var(--ch-text-primary);
-}
-/* QA-6: the sticky name column takes the card's own ground, so no tinted stripe runs down the table. */
-.ch-th-cv__fig .ch-th-team__table th:first-child {
-  background: var(--ch-bg-subtle);
-}
-/* QA-4: one surface. A figure sits flat on the visual's card, with no box of its own inside it. */
-.ch-th-cv .ch-th-cv__fig {
-  padding: 0;
-  border-radius: 0;
-  background: none;
-  box-shadow: none;
-}
-/* QA-6: a jump to the title clears the sticky bar, so its Table toggle isn't under it. */
-.ch-th-cv__head { scroll-margin-top: 64px; }
-/* The answer as a number: its words on the left, the figure large on the right with a verdict in the metric's direction. */
-.ch-th-cv__hero {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px;
-  border-radius: var(--ch-radius-lg);
-  background: var(--ch-sheet-bg);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
-}
-.ch-th-cv__hero-words {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-.ch-th-cv__hero-label {
-  font: var(--ch-type-15-strong);
-  letter-spacing: var(--ch-track-15);
-  color: var(--ch-text-primary);
-}
-.ch-th-cv__hero-sub {
-  font: var(--ch-type-13);
-  color: var(--ch-text-secondary);
-}
-/* What the figure is read against: the level, the team average, the Tour. */
-.ch-th-cv__refs {
-  margin: 4px 0 0;
-  padding: 0;
-  list-style: none;
-  font: var(--ch-type-13);
-  color: var(--ch-text-tertiary);
-}
-/* On a phone the figure goes under its words, so neither is squeezed into a column of single words. */
-.ch-th--phone .ch-th-cv__hero {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-}
-.ch-th--phone .ch-th-cv__hero-fig {
-  justify-items: start;
-}
-.ch-th-cv__hero-fig {
-  display: grid;
-  justify-items: end;
-  gap: 6px;
-  flex: none;
-}
-.ch-th-cv__hero-n {
-  font: var(--ch-type-34-strong);
-  line-height: var(--ch-lead-tight);
-  letter-spacing: var(--ch-track-34);
-  color: var(--ch-text-primary);
-}
-.ch-th-cv__chip {
-  padding: 2px 8px;
-  border-radius: 999px;
-  font: var(--ch-type-12-medium);
-  white-space: nowrap;
-}
-.ch-th-cv__chip[data-tone='good'] {
-  background: var(--ch-chart-gain-tint);
-  color: var(--ch-chart-gain);
-}
-.ch-th-cv__chip[data-tone='loss'] {
-  background: var(--ch-chart-loss-tint);
-  color: var(--ch-chart-loss-on-tint);
-}
-/* A note, labelled for the kind of claim it is. */
-.ch-th-cv__note {
-  /* The kind pill sits on its own line above the sentence: beside it, "Measured" read as the sentence's first word. */
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  font: var(--ch-type-15);
-  letter-spacing: var(--ch-track-15);
-  color: var(--ch-text-primary);
-}
-.ch-th-cv__kind {
-  display: inline-block;
-  margin-right: 0;
-  padding: 1px 8px;
-  border-radius: 999px;
-  font: var(--ch-type-12-strong);
-  vertical-align: 1px;
-  background: var(--ch-ivory-150);
-  color: var(--ch-text-primary);
-}
-.ch-th-cv__note[data-kind='measured'] .ch-th-cv__kind {
-  background: var(--ch-chart-gain-tint);
-  color: var(--ch-chart-gain);
-}
-.ch-th-cv__note[data-kind='hypothesis'] .ch-th-cv__kind {
-  background: var(--ch-chart-loss-tint);
-  color: var(--ch-chart-loss-on-tint);
-}
-.ch-th-cv__cover {
-  font: var(--ch-type-13);
-  color: var(--ch-text-secondary);
-}
-.ch-th-cv__cover b {
-  font: var(--ch-type-13-strong);
-  color: var(--ch-text-primary);
-}
-.ch-th-cv__src {
-  margin-top: -4px;
-}
-
-/* Motion (playbook §3; the CoachHelm chat exception in .claude/rules/clubhouse.md). Only a visual that arrived in a live
-   answer carries data-live (decided once at mount, never under reduced motion or Animations off). Opacity, transform and the
-   line's path length only, on the D-64 beats: each block rises 8px over the base beat, var(--ch-dur-press) apart (capped at six, --ch-b);
-   the line draws over the reveal beat var(--ch-dur-press) after its block (--ch-cv-lag); its points fade in on the quick beat as the line
-   reaches them; bars grow from their baseline over the base beat, var(--ch-dur-press) apart (--ch-cv-step). The offsets are set on the card
-   by CoachComposition, since only durations are tokens. Numbers are never counted up. */
-@keyframes ch-th-cv-rise {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-}
-@keyframes ch-th-cv-draw {
-  from {
-    stroke-dashoffset: 1;
-  }
-}
-@keyframes ch-th-cv-fade {
-  from {
-    opacity: 0;
-  }
-}
-@keyframes ch-th-cv-grow {
-  from {
-    transform: scaleX(0);
-  }
-}
-.ch-th-cv[data-live] .ch-th-cv__in {
-  animation: ch-th-cv-rise var(--ch-dur-base) var(--ch-ease) backwards;
-  animation-delay: var(--ch-b);
-}
-.ch-th-cv[data-live] .ch-line[data-draw] .ch-line__path {
-  stroke-dasharray: 1;
-  animation: ch-th-cv-draw var(--ch-dur-reveal) var(--ch-ease) backwards;
-  animation-delay: calc(var(--ch-b) + var(--ch-cv-lag));
-}
-.ch-th-cv[data-live] .ch-line[data-draw] .ch-line__dot {
-  animation: ch-th-cv-fade var(--ch-dur-quick) var(--ch-ease) backwards;
-  animation-delay: calc(var(--ch-b) + var(--ch-cv-lag) + var(--ch-dur-reveal) * var(--ch-i, 0) / (var(--ch-n, 2) - 1));
-}
-.ch-th-cv[data-live] .ch-th-bar__track > span,
-.ch-th-cv[data-live] .ch-th-rank__bar,
-.ch-th-cv[data-live] .ch-th-leg__track > span {
-  transform-origin: left center;
-  animation: ch-th-cv-grow var(--ch-dur-base) var(--ch-ease) backwards;
-  animation-delay: calc(var(--ch-b) + var(--ch-cv-lag) + var(--ch-i, 0) * var(--ch-cv-step));
-}
-/* A loss grows leftward from zero. */
-.ch-th-cv[data-live] .ch-th-rank__bar[data-side='neg'],
-.ch-th-cv[data-live] .ch-th-leg[data-sign='loss'] .ch-th-leg__track > span {
-  transform-origin: right center;
-}
-/* The delays are not durations, so Animations off and Reduce Motion end every one here too, in case a live mark outlives
-   the setting being turned on mid-answer. */
-@media (prefers-reduced-motion: reduce) {
-  .ch-th-cv[data-live] .ch-th-cv__in,
-  .ch-th-cv[data-live] .ch-line[data-draw] .ch-line__path,
-  .ch-th-cv[data-live] .ch-line[data-draw] .ch-line__dot,
-  .ch-th-cv[data-live] .ch-th-bar__track > span,
-  .ch-th-cv[data-live] .ch-th-rank__bar,
-  .ch-th-cv[data-live] .ch-th-leg__track > span {
-    animation: none;
-  }
-}
-[data-motion='off'] .ch-th-cv[data-live] .ch-th-cv__in,
-[data-motion='off'] .ch-th-cv[data-live] .ch-line[data-draw] .ch-line__path,
-[data-motion='off'] .ch-th-cv[data-live] .ch-line[data-draw] .ch-line__dot,
-[data-motion='off'] .ch-th-cv[data-live] .ch-th-bar__track > span,
-[data-motion='off'] .ch-th-cv[data-live] .ch-th-rank__bar,
-[data-motion='off'] .ch-th-cv[data-live] .ch-th-leg__track > span {
-  animation: none;
-}
-.ch-th-cv__head {
-  position: relative;
-}
-.ch-th-cv__expand {
-  position: absolute;
-  top: 0;
-  right: 0;
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border: 0;
-  border-radius: var(--ch-radius-sm);
-  background: var(--ch-well-bg-flat);
-  color: var(--ch-text-secondary);
-}
-.ch-th-cv__expand::before {
-  content: '';
-  position: absolute;
-  inset: -6px;
-}
-/* One card deep inside the answer (ASK-5): the group is a hairline-separated section, and the figure the only well. */
-.msg-a .ch-th-cv {
-  padding: 12px 0 0;
-  border-top: var(--ch-hairline-w) solid var(--ch-separator);
-  border-radius: 0;
-  background: none;
-  box-shadow: none;
-}
-.msg-a .ch-th-cv__fig {
-  border-radius: var(--ch-radius-md);
-}
-.ch-th-cv__full {
-  display: grid;
-  gap: 16px;
-}
-
 /* ASK-7: an answer's heading and numbered list, on the page's roles. */
 .ch-th-h {
   margin: 0;
@@ -2132,7 +1544,7 @@ a.ch-th-reads__r:focus-visible {
 }
 
 /* The answer's figures at 320 and at XXL: the words get their own row before a track or a name is squeezed to nothing. */
-.ch-th-fig, .ch-th-card { container-type: inline-size; }
+.ch-th-card { container-type: inline-size; }
 @container (max-width: 260px) {
   /* MOB-ASK-1 */
   .ch-th--phone .ch-th-bar { grid-template-columns: minmax(0, 1fr) auto; }
@@ -2142,9 +1554,6 @@ a.ch-th-reads__r:focus-visible {
   .ch-th--phone .ch-th-rank li > :nth-child(3) { grid-column: 2 / -1; grid-row: 2; }
 }
 @container (max-width: 280px) {
-  /* MOB-ASK-2 */
-  .ch-th--phone .ch-th-va { grid-template-columns: minmax(0, 1fr) var(--ch-th-va-value, 44px); }
-  .ch-th--phone .ch-th-va > :nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
   /* MOB-ASK-7 */
   .ch-th--phone .ch-th-act__facts > div { grid-template-columns: minmax(0, 1fr); }
 }
