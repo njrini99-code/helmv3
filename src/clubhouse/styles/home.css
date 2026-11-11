@@ -125,30 +125,6 @@
 .ch-h-pane > .ch-ph-next:first-child {
   margin: 0;
 }
-/* On the desk the card is as wide as its column (565px at 1440px), and the countdown under the words was one well
-   stretched across it: 265px for "1 d", 265px for "18 h". The same well keeps the width its two figures need and sits
-   beside the words, under the day and time it counts down to. The phone's card is unchanged. */
-.ch-h-main--desk .ch-ph-next {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  column-gap: var(--ch-space-5);
-}
-.ch-h-main--desk .ch-ph-next > * {
-  grid-column: 1;
-}
-.ch-h-main--desk .ch-ph-next > .ch-ph-next__k {
-  grid-column: 1 / -1;
-}
-.ch-h-main--desk .ch-ph-next > .ch-badge {
-  justify-self: start;
-}
-.ch-h-main--desk .ch-ph-next > .ch-cd {
-  grid-column: 2;
-  grid-row: 2 / span 4;
-  align-self: end;
-  inline-size: calc(var(--ch-space-12) * 4);
-  margin-top: var(--ch-space-2);
-}
 .ch-h-pane {
   display: flex;
   flex-direction: column;
