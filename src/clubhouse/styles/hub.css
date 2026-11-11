@@ -3131,6 +3131,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 }
 /* The plan as a rail: a stop a column, the line through the stops. */
 .ch-hw-rail {
+  --ch-hw-rail-line: rgb(255 255 255 / 0.18);
   position: relative;
   display: grid;
   grid-auto-columns: minmax(0, 1fr);
@@ -3146,7 +3147,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   right: 6px;
   left: 6px;
   height: 2px;
-  background: rgb(255 255 255 / 0.18);
+  background: var(--ch-hw-rail-line);
   content: '';
 }
 .ch-hw-rail li {
@@ -3186,6 +3187,50 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   font-style: normal;
   color: var(--ch-on-green-ink-soft);
   overflow-wrap: anywhere;
+}
+/* A phone-wide page: three 105px columns broke "Pine Needles · Southern Pines, NC" over three lines and left Leaves and
+   Home short beside it. The stops stack as rows down a rail, the stop's name left and its time or place right, with the
+   second line (where from, where it is) under it on the same right edge. Each stop's dot sits on its first line, and the
+   rail runs from one dot to the next, however many lines a stop takes. */
+@container chhb (max-width: 480px) {
+  .ch-hw-rail {
+    --ch-hw-rail-dot: calc((19 * var(--ch-type-k) - 12px) / 2);
+    grid-auto-flow: row;
+    gap: 0;
+  }
+  .ch-hw-rail::before {
+    display: none;
+  }
+  .ch-hw-rail li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 2px 16px;
+    padding: 0 0 16px 24px;
+  }
+  .ch-hw-rail li:last-child {
+    padding-bottom: 0;
+  }
+  .ch-hw-rail li::before {
+    z-index: 1;
+    top: var(--ch-hw-rail-dot);
+  }
+  .ch-hw-rail li:not(:last-child)::after {
+    position: absolute;
+    top: calc(var(--ch-hw-rail-dot) + 6px);
+    bottom: calc(-1 * var(--ch-hw-rail-dot) - 6px);
+    left: 5px;
+    width: 2px;
+    background: var(--ch-hw-rail-line);
+    content: '';
+  }
+  .ch-hw-rail b,
+  .ch-hw-rail em {
+    text-align: right;
+  }
+  .ch-hw-rail em {
+    grid-column: 1 / -1;
+  }
 }
 .ch-hw-trip__f {
   display: flex;
