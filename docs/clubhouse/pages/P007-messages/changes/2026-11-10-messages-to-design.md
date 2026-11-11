@@ -43,7 +43,9 @@ Held items:     "Seen 8:15 AM" (needs the other person's read time from the data
   forced sizes and types are deleted. Seen faces are the shared coin.
 - First run's two actions are the shared Button (primary, ghost).
 - Seen by rows: a strong name over the class year or title (a coach's view), the separator runs under the time too,
-  and the column fits the 36 px face.
+  and the column fits the 36 px face. Under "Not seen yet" a coach comes first.
+- A lifted message with no menu rows draws no menu (someone else's photo drew an empty box), and someone else's
+  photo or file can be replied to.
 - Phone thread bar: above the default Text Size the role line gives way, so the title never hangs below the bar. A
   pushed thread lands focus on the name's box, not on the Details key, so a fresh load draws no keyboard ring.
 - Card shadows are `--ch-card-shadow`; the pin bubblet and the receipt pill are a hairline ring plus

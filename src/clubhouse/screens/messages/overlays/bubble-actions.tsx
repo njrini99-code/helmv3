@@ -357,7 +357,8 @@ export function useBubbleActions({ api, m, group, picking, setPicking, onEdit, o
         ]
       : m.text
         ? [...seenItem, ...(onReply ? [{ label: "Reply", icon: Reply, onSelect: onReply }] : []), { label: "Copy", icon: Copy, onSelect: () => void copyText() }]
-        : seenItem;
+        : // Someone else's photo or file: nothing to copy, but it can be replied to, as your own can.
+          [...seenItem, ...(onReply ? [{ label: "Reply", icon: Reply, onSelect: onReply }] : [])];
   const reacts = api.reactions.get(m.id) ?? [];
   // Redesign: two taps within 300ms toggle Like, once (MSG-HOLD-06).
   const lastTap = useRef(0);

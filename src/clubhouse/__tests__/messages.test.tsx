@@ -1911,3 +1911,31 @@ describe('Messages · the phone thread bar', () => {
     expect(document.activeElement).toBe(key);
   });
 });
+
+describe('Messages · a message’s menu holds only what it can do', () => {
+  it('someone else’s photo can be replied to and has nothing to copy; the menu is never an empty box', async () => {
+    // jsdom has no Web Animations: the lift's close finishes on the next microtask, as it would in a browser.
+    HTMLElement.prototype.animate = (() => {
+      const anim = { cancel: () => {}, finish: () => {}, reverse: () => {}, finished: Promise.resolve() };
+      Object.defineProperty(anim, 'onfinish', { configurable: true, set(fn: (() => void) | null) { if (fn) queueMicrotask(fn); }, get: () => null });
+      return anim;
+    }) as never;
+    const user = userEvent.setup();
+    live.msgs.messages = [{ ...mine, id: 'p1', sender_id: 'jonah', content: '', has_attachments: true }, { ...mine, id: 'm2', content: 'Got it' }];
+    a.getGolfMessageAttachments.mockResolvedValue({ attachments: [{ id: 'f1', fileName: 'Card.jpg', fileSize: 2048, mimeType: 'image/jpeg', url: 'https://files.example/card.jpg' }] });
+    show();
+    await screen.findByText('Got it', { selector: '.ch-ms-bub' });
+    const theirs = document.querySelector<HTMLElement>('#ch-ms-message-p1 .ch-ms-msg__stack')!;
+    expect(theirs).not.toBeNull();
+    fireEvent.contextMenu(theirs, { clientX: 100, clientY: 100 });
+    await expectCode('CH-7604');
+    const lift = code('CH-7604') as HTMLElement;
+    const menus = [...lift.querySelectorAll('[role="menu"]')];
+    // Either the rows it has, or no menu at all.
+    for (const menu of menus) expect(menu.querySelectorAll('[role="menuitem"]').length).toBeGreaterThan(0);
+    const rows = [...lift.querySelectorAll('[role="menuitem"]')].map((x) => x.textContent?.trim());
+    expect(rows).toEqual(['Reply']);
+    await user.click(within(lift).getByRole('menuitem', { name: 'Reply' }));
+    expect(await screen.findByRole('button', { name: 'Cancel reply' })).toBeTruthy();
+  });
+});

@@ -1,7 +1,7 @@
 'use client';
 
 import { CH_PHONE_QUERY } from '../../lib/phone-query';
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
+import { Children, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { MS_BEATS, msAnimate, sheetCloseCurve } from './motion/messages-motion';
@@ -276,9 +276,12 @@ export function HoldLift({ messageId, mine, bar, children, onClosed, closeSignal
       <div ref={rbar} className="ch-mso-rbar" role="toolbar" aria-label="React" aria-orientation="horizontal" onKeyDown={arrows('x')} style={{ top: geom.bubble.top - 56, transformOrigin: mine ? '100% 100%' : '0% 100%' }}>
         {bar}
       </div>
-      <div ref={menu} className="ch-mso-menu" role="menu" tabIndex={-1} aria-label="Message" onKeyDown={arrows('y')} style={{ top: geom.bubble.bottom + 10, transformOrigin: mine ? '100% 0%' : '0% 0%' }}>
-        {children}
-      </div>
+      {/* No rows, no menu: a message with nothing to offer (someone else's deleted one) lifts with its reactions alone. */}
+      {Children.count(children) > 0 && (
+        <div ref={menu} className="ch-mso-menu" role="menu" tabIndex={-1} aria-label="Message" onKeyDown={arrows('y')} style={{ top: geom.bubble.bottom + 10, transformOrigin: mine ? '100% 0%' : '0% 0%' }}>
+          {children}
+        </div>
+      )}
     </div>,
     document.querySelector('.ch-root') ?? document.body,
   );

@@ -144,3 +144,21 @@ describe('the line under a name in the list (MSG-405)', () => {
     expect(sub('eli')).toBe('Player');
   });
 });
+
+describe('the order under "Not seen yet" (MSG-405)', () => {
+  it('a coach comes first, then the players in the list’s own order', () => {
+    const directory = [
+      { userId: 'coach', name: 'Maya Reyes', role: 'coach' },
+      { userId: 'ava', name: 'Ava Lindqvist', role: 'player' },
+      { userId: 'eli', name: 'Eli Brandt', role: 'player' },
+      { userId: 'ben', name: 'Ben Hale', role: 'player' },
+      { userId: 'dana', name: 'Dana Whitfield', role: 'coach' },
+    ];
+    // Ava has seen it; Ben opened the chat before it was sent, Eli never, Dana (a coach) two days before.
+    const marks = { coach: SENT, ava: '2026-10-24T18:20:00Z', eli: null, ben: '2026-10-23T09:00:00Z', dana: '2026-10-22T10:00:00Z' };
+    render(<SeenBySheet api={api(marks, { directory } as unknown as Partial<ChMessagesApi>)} m={msg()} onClose={() => {}} />);
+    const sections = [...document.querySelectorAll('.ch-seen-sec')];
+    const notYet = sections.find((x) => /^Not seen yet/.test(x.querySelector('h3')?.textContent ?? ''))!;
+    expect([...notYet.querySelectorAll('.ch-seen-row__name')].map((n) => n.textContent)).toEqual(['Dana Whitfield', 'Ben Hale', 'Eli Brandt']);
+  });
+});

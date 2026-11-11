@@ -1964,7 +1964,6 @@ What the built screens still do differently from
 | Nobody has seen a group message | each row says when they last opened the chat | each row says "Hasn’t opened this chat" | As built before this pass; the wording is the design page's motion note (MOT-TEAM-3). |
 | Phone thread bar above the default Text Size | name over role | the name alone | The shell's bar row is 44 px at every Text Size; name and role fit it only up to the default, so the role gives way. |
 | Phone Details back label | "Back" | the conversation's name | The shared back label names the parent screen. |
-| Seen by, "Not seen yet" order | the coach first | players first, coaches last | The list's existing order rule (`orderReceiptRows`). |
 | Seen by, the line under a name, for a player viewer | class year | "Player" or "Coach" | Class years are a coach's view; the list itself opens for a coach only. |
 
 Still open, not a design difference: the keyboard ride moves the list with an

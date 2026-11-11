@@ -290,7 +290,10 @@ function SeenByBody({ api, m, compact }: { api: ChMessagesApi; m: ChMsg; compact
     const sub = (api.viewer.role === "coach" && p?.subtitle) || plain;
     return { userId, name, role, lastOpened, seenAt: null, meta, sub, label: [name, meta.toLowerCase()].filter(Boolean).join(", ") };
   };
-  const notYet = orderReceiptRows(s.notYet.map((id) => row(id, "notYet")), "notYet");
+  // The design lists a coach first under "Not seen yet" (MSG-405; owner, 10 Nov). The shared order keeps coaches last,
+  // so they are moved to the top here; everyone keeps the shared order within their group.
+  const waiting = orderReceiptRows(s.notYet.map((id) => row(id, "notYet")), "notYet");
+  const notYet = [...waiting.filter((x) => x.role === "coach"), ...waiting.filter((x) => x.role !== "coach")];
   // The list reads top to bottom in the order they opened it (MSG-405: Maya 7:06, Owen 7:08, ...).
   const seen = s.seen.map((id) => row(id, "seen")).sort((a, b) => String(a.lastOpened).localeCompare(String(b.lastOpened)));
   const offline = typeof navigator !== "undefined" && navigator.onLine === false;
